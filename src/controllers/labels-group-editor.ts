@@ -4,7 +4,6 @@ import { LAYER_TOGGLES } from "@/components/layers-tab";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { LABEL_TYPES, type LabelGroup, type LabelNameMode, type LabelType } from "@/generators/labels-generator";
-import { styles } from "@/generators/styles";
 import { getLabelsData } from "@/renderers/labels/label-data";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { ensureEl } from "@/utils";

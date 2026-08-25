@@ -1,7 +1,6 @@
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { Resample } from "@/generators/resample";
-import { styles } from "@/generators/styles";
 import { burgGroupFromElement } from "@/generators/styles-legacy";
 import { getLatitude, getLongitude } from "@/utils";
 import { ensureEl, minmax, rn } from "../utils";

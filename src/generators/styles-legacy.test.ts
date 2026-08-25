@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { expect, test, vi } from "vitest";
-import { parseStyles } from "./styles";
+import { Styles } from "./styles";
 import { DEFAULT_STYLES } from "./styles-defaults";
 import { isLegacyPreset, labelGroupFromLegacy, presetFromLegacy, presetToLegacy } from "./styles-legacy";
 import fixture from "./styles-legacy-default.fixture.json";
@@ -111,7 +111,7 @@ test("all 12 shipped presets parse as the new format with zero warnings", () => 
   for (const file of files) {
     const json = JSON.parse(fs.readFileSync(path.join(presetDir, file), "utf8"));
     expect(isLegacyPreset(json), file).toBe(false);
-    parseStyles(json);
+    Styles.parse(json);
   }
   expect(warn).not.toHaveBeenCalled();
 });

@@ -1,5 +1,4 @@
 import { select } from "d3";
-import { styles } from "@/generators/styles";
 import { burgGroupFromElement } from "@/generators/styles-legacy";
 
 export const drawBurgIcons = (): void => {

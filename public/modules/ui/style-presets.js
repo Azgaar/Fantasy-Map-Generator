@@ -74,11 +74,11 @@ async function fetchSystemPreset(preset) {
 function applyStylePreset(presetJson) {
   const parsed = stylesLegacy.isLegacyPreset(presetJson)
     ? stylesLegacy.presetFromLegacy(presetJson, {onUnknown: "skip"})
-    : stylesStore.parseStyles(presetJson);
+    : Styles.parse(presetJson);
 
   const previousReliefSize = styles.relief.options.size;
-  stylesStore.setStyles(parsed);
-  stylesStore.writeStyles(...Object.keys(styles));
+  Styles.set(parsed);
+  Styles.write(...Object.keys(styles));
 
   projectPresetOptions();
   applyReliefOptions(previousReliefSize);

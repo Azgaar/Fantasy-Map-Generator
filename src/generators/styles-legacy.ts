@@ -2,7 +2,7 @@
 // edges use this: map-file save/load and legacy preset routing. Dies when those write the new
 // format natively.
 
-import { parseStyles, styles } from "./styles";
+import "./styles";
 import { DEFAULT_STYLES } from "./styles-defaults";
 import type { Styles } from "./styles-schema";
 
@@ -350,7 +350,7 @@ export function presetFromLegacy(
     applyPresetBag(node, bag, route, selector, onUnknown);
   }
 
-  return parseStyles(built);
+  return Styles.parse(built);
 }
 
 // bag[legacyKey] = node.options[optionKey], the inverse of applyPresetBag's option overlay;

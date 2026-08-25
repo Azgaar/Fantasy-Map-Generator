@@ -69,19 +69,20 @@ test("the library styles the live map through the contract", async ({page}, test
   await page.screenshot({path: testInfo.outputPath("styles-demo-before.png")});
 
   const result = await page.evaluate(async () => {
-    const {styles, applyStyles, parseStyles} = await import("/Fantasy-Map-Generator/styles/styles.ts");
+    const {Styles} = await import("/Fantasy-Map-Generator/generators/styles.ts");
+    const styles = globalThis.styles;
     styles.rivers.attrs.fill = "#ff00aa";
     styles.routes.roads.attrs.stroke = "#00e5ff";
     styles.routes.roads.attrs["stroke-width"] = 2;
     styles.lakes.freshwater.attrs.fill = "#ffe000";
     styles.states.statesHalo.attrs.filter = null; // null = remove
-    applyStyles("rivers", "routes", "lakes", "states");
+    Styles.apply("rivers", "routes", "lakes", "states");
     return {
       riverFill: document.querySelector('[data-layer="rivers"]')?.getAttribute("fill"),
       roadStroke: document.querySelector('[data-group="roads"]')?.getAttribute("stroke"),
       lakeFill: document.querySelector('[data-group="freshwater"]')?.getAttribute("fill"),
       haloFilterRemoved: !document.querySelector('[data-group="statesHalo"]')?.hasAttribute("filter"),
-      parseRoundTrip: JSON.stringify(parseStyles(JSON.parse(JSON.stringify(styles)))) === JSON.stringify(styles)
+      parseRoundTrip: JSON.stringify(Styles.parse(JSON.parse(JSON.stringify(styles)))) === JSON.stringify(styles)
     };
   });
 

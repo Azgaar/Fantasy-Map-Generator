@@ -1,39 +1,35 @@
 import { type LayerId, Layers } from "@/components/layers";
 import { DEFAULT_STYLES } from "./styles-defaults";
-import { type StyleLayerId, type Styles, stylesSchema } from "./styles-schema";
+import { type StyleLayerId, type Styles as StylesData, stylesSchema } from "./styles-schema";
 
-// The active styles. Read and write directly: styles.labels.groups[id].attrs.opacity.
-// Replaces the legacy `style` global when that retires.
-export let styles: Styles = DEFAULT_STYLES;
-// src imports the live binding; classic public/ scripts read the global
-globalThis.styles = styles;
-globalThis.stylesStore = { parseStyles, setStyles, writeStyles, applyStyles };
-
-export function setStyles(data: Styles): void {
-  styles = data;
-  globalThis.styles = styles;
-}
+// The active styles, a plain global. Read and write directly:
+// styles.labels.groups[id].attrs.opacity. Replaces the legacy `style` global when that retires.
+globalThis.styles = DEFAULT_STYLES;
 
 // New format only; legacy selector-keyed presets are converted by migration code, not here.
 // An invalid or missing layer falls back to the default with one warning, so the result is
 // always complete.
-export function parseStyles(json: unknown): Styles {
+function parse(json: unknown): StylesData {
   const input = typeof json === "object" && json !== null ? (json as Record<string, unknown>) : {};
   const result = {} as Record<string, unknown>;
   for (const [layer, schema] of Object.entries(stylesSchema.shape)) {
     const parsed = schema.safeParse(input[layer]);
     if (parsed.success) result[layer] = parsed.data;
     else {
-      console.warn(`parseStyles: invalid or missing "${layer}", default used`);
-      result[layer] = structuredClone(DEFAULT_STYLES[layer as keyof Styles]);
+      console.warn(`Styles.parse: invalid or missing "${layer}", default used`);
+      result[layer] = structuredClone(DEFAULT_STYLES[layer as keyof StylesData]);
     }
   }
-  return result as Styles;
+  return result as StylesData;
+}
+
+function set(data: StylesData): void {
+  globalThis.styles = data;
 }
 
 // Write the layers' attrs onto the DOM, addressed by data-layer/data-group. Options are never
 // written; renderers read them from `styles` directly. Does not redraw.
-export function writeStyles(...ids: StyleLayerId[]): void {
+function write(...ids: StyleLayerId[]): void {
   for (const id of ids) {
     const root = document.querySelector(`[data-layer="${id}"]`);
     if (!root) continue;
@@ -41,9 +37,9 @@ export function writeStyles(...ids: StyleLayerId[]): void {
   }
 }
 
-// writeStyles, then redraw the layers
-export function applyStyles(...ids: StyleLayerId[]): void {
-  writeStyles(...ids);
+// write, then redraw the layers
+function apply(...ids: StyleLayerId[]): void {
+  write(...ids);
   Layers.draw(...ids.filter((id): id is StyleLayerId & LayerId => id !== "map"));
 }
 
@@ -65,3 +61,6 @@ function writeNode(el: Element, node: object): void {
     }
   }
 }
+
+export const Styles = { defaults: DEFAULT_STYLES, parse, set, write, apply };
+globalThis.Styles = Styles;

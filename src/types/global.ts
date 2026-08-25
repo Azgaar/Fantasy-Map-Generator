@@ -88,13 +88,8 @@ declare global {
 
   var notes: any[]; // TODO: correct type
   var styles: import("@/generators/styles-schema").Styles;
+  var Styles: typeof import("@/generators/styles")["Styles"];
   var stylesLegacy: typeof import("@/generators/styles-legacy");
-  var stylesStore: {
-    parseStyles: typeof import("@/generators/styles").parseStyles;
-    setStyles: typeof import("@/generators/styles").setStyles;
-    writeStyles: typeof import("@/generators/styles").writeStyles;
-    applyStyles: typeof import("@/generators/styles").applyStyles;
-  };
 
   // IO / loading helpers defined in classic public/ scripts
   var ldb: {

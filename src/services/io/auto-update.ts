@@ -7,7 +7,7 @@ import { Emblems } from "@/generators/emblems-generator";
 import type { GraphOverrides } from "@/generators/graph-override";
 import type { Label, LabelNameMode } from "@/generators/labels-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
-import { parseStyles, styles } from "@/generators/styles";
+
 import { isLegacyPreset, labelGroupFromLegacy, presetToLegacy } from "@/generators/styles-legacy";
 import type { Point } from "@/generators/voronoi";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
@@ -1825,7 +1825,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
     async function restoreLayerStyles(): Promise<void> {
       const [, raw] = await (window as any).getStylePreset(localStorage.getItem("presetStyle") || "default");
-      const preset = isLegacyPreset(raw) ? raw : presetToLegacy(parseStyles(raw));
+      const preset = isLegacyPreset(raw) ? raw : presetToLegacy(Styles.parse(raw));
 
       for (const layer of Layers.all) {
         restoreGroupStyle(layer.elementId, preset[`#${layer.elementId}`], layer.params.attrs);

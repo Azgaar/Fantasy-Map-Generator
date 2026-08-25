@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from "vitest";
-import { parseStyles } from "./styles";
+import { Styles } from "./styles";
 import { DEFAULT_STYLES } from "./styles-defaults";
 import { stylesSchema } from "./styles-schema";
 
@@ -18,7 +18,7 @@ describe("stylesSchema", () => {
 describe("parseStyles", () => {
   test("a valid document round-trips unchanged", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    expect(parseStyles(structuredClone(DEFAULT_STYLES))).toEqual(DEFAULT_STYLES);
+    expect(Styles.parse(structuredClone(DEFAULT_STYLES))).toEqual(DEFAULT_STYLES);
     expect(warn).not.toHaveBeenCalled();
     warn.mockRestore();
   });
@@ -28,7 +28,7 @@ describe("parseStyles", () => {
     const doc = structuredClone(DEFAULT_STYLES);
     doc.rivers.attrs.fill = "#123456";
     (doc as Record<string, unknown>).markers = { attrs: { opacity: "not a number" } };
-    const parsed = parseStyles(doc);
+    const parsed = Styles.parse(doc);
     expect(parsed.rivers.attrs.fill).toBe("#123456");
     expect(parsed.markers).toEqual(DEFAULT_STYLES.markers);
     expect(warn).toHaveBeenCalledTimes(1);
@@ -37,7 +37,7 @@ describe("parseStyles", () => {
 
   test("garbage input yields the complete defaults", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const parsed = parseStyles("nonsense");
+    const parsed = Styles.parse("nonsense");
     expect(parsed).toEqual(DEFAULT_STYLES);
     expect(Object.keys(parsed).sort()).toEqual(Object.keys(stylesSchema.shape).sort());
     warn.mockRestore();
@@ -46,7 +46,7 @@ describe("parseStyles", () => {
   test("null survives — it means the attribute is not set", () => {
     const doc = structuredClone(DEFAULT_STYLES);
     doc.rivers.attrs.filter = null;
-    expect(parseStyles(doc).rivers.attrs.filter).toBeNull();
+    expect(Styles.parse(doc).rivers.attrs.filter).toBeNull();
   });
 });
 
