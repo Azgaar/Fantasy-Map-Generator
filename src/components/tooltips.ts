@@ -78,8 +78,6 @@ function initialize(): void {
 
 initialize();
 
-export const Tooltips = { tip, showMainTip, clearMainTip, showDataTip, showElementLockTip };
-
 window.tip = tip;
 window.clearMainTip = clearMainTip;
 window.showDataTip = showDataTip;

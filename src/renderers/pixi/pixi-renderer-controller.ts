@@ -255,7 +255,6 @@ const api: PixiRendererControllerApi = {
   updateInteraction: patch => interactionOverlay.update(patch)
 };
 
-export const clearPixiRenderer = api.clear;
 export const clearMapInteractionOverlay = api.clearInteraction;
 export const createPixiRendererOverview = api.createOverview;
 export const getPixiRendererCanvas = api.getCanvas;
@@ -268,7 +267,6 @@ export const queuePixiRendererRebuild = api.queueRebuild;
 export const pickPixiRenderer = api.pick;
 export const renderPixiRasterFrame = api.renderRasterFrame;
 export const setPixiRendererLayerOrder = api.setLayerOrder;
-export const startPixiRenderer = api.start;
 export const whenPixiRendererCommitted = api.whenCommitted;
 export const syncPixiRendererCamera = api.syncCamera;
 export const getPixiMapPointAtClient = api.toMapPoint;

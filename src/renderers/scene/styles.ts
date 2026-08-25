@@ -607,7 +607,4 @@ export const DEFAULT_PIXI_MAP_STYLE: Readonly<MapStyle> = {
   }
 };
 
-export const normalizeOpacity = (value: number): number =>
-  Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 1;
-
 import type { GridPatternType } from "./layers/grid-scene";

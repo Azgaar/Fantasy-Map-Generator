@@ -1,7 +1,5 @@
 import type { PackedGraph } from "@/types/PackedGraph";
 
-export const STATIC_VIEWER_MAP_SIZE = { height: 60, width: 100 } as const;
-
 /** Small editor-independent fixture used to prove the standalone renderer entry. */
 export const STATIC_VIEWER_WORLD = {
   addedLabels: [],

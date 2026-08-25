@@ -24,64 +24,6 @@ export interface ViewportBounds {
   y1: number;
 }
 
-export class Scene<T extends { id: string }> {
-  private items = new Map<string, T>();
-  valid = false;
-
-  replace(items: T[]): void {
-    const next = new Map<string, T>();
-    for (const item of items) next.set(item.id, item);
-    this.items = next;
-    this.valid = true;
-  }
-
-  replaceWhere(match: (item: T) => boolean, replacements: T[]): string[] {
-    const next = new Map(replacements.map(item => [item.id, item]));
-    const changed = new Set<string>();
-
-    for (const [id, item] of this.items) {
-      if (!match(item)) continue;
-      changed.add(id);
-      const replacement = next.get(id);
-      if (replacement) {
-        this.items.set(id, replacement);
-        next.delete(id);
-      } else {
-        this.items.delete(id);
-      }
-    }
-
-    for (const [id, item] of next) {
-      changed.add(id);
-      this.items.set(id, item);
-    }
-
-    this.valid = true;
-    return [...changed];
-  }
-
-  set(item: T): void {
-    this.items.set(item.id, item);
-  }
-
-  remove(id: string): void {
-    this.items.delete(id);
-  }
-
-  invalidate(): void {
-    this.items.clear();
-    this.valid = false;
-  }
-
-  get(id: string): T | undefined {
-    return this.items.get(id);
-  }
-
-  values(): IterableIterator<T> {
-    return this.items.values();
-  }
-}
-
 /** A compact bucket index for large, immutable viewport draw lists. */
 export class SpatialIndex<T> {
   private readonly buckets = new Map<number, Map<number, number[]>>();

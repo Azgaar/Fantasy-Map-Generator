@@ -1,4 +1,4 @@
-import { ensureReliefIconIds, type ReliefIcon } from "@/generators/relief-generator";
+import { ensureReliefIconIds } from "@/generators/relief-generator";
 import { invalidatePixiRendererLayer } from "@/renderers/pixi/pixi-renderer-controller";
 
 let frameId: number | null = null;
@@ -22,9 +22,6 @@ export const redrawRelief = (): void => {
     drawRelief();
   });
 };
-
-export const getSceneReliefIcon = (id: number | string): ReliefIcon | undefined =>
-  pack.relief?.find(icon => icon.i === Number(id));
 
 function removeRelief(): void {
   document.querySelector("#terrain")?.replaceChildren();

@@ -1,33 +1,5 @@
-import type { LabelGroup, LabelType } from "@/generators/labels-generator";
+import type { LabelType } from "@/generators/labels-generator";
 import type { LabelGroupStyle } from "@/types/style";
-
-export function renderLabelGroups(root: ParentNode = document): void {
-  const labels = root.querySelector<SVGGElement>("#labels");
-  if (!labels) throw new Error("Labels container not found");
-
-  labels.replaceChildren();
-  for (const groupOptions of options.labels.groups) {
-    renderLabelGroup(labels, groupOptions);
-  }
-}
-
-export function renderLabelGroup(labels: SVGGElement, groupOptions: LabelGroup): SVGGElement {
-  const group = labels.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "g");
-  group.id = `labels-${groupOptions.name}`;
-  group.dataset.group = groupOptions.name;
-
-  const groupStyle = getGroupStyle(groupOptions);
-  for (const [attribute, value] of Object.entries(groupStyle)) {
-    if (value !== null) group.setAttribute(attribute, String(value));
-  }
-
-  const dx = Number(group.dataset.dx) || 0;
-  const dy = Number(group.dataset.dy) || 0;
-  group.style.transform = dx || dy ? `translate(${dx}em, ${dy}em)` : "";
-
-  labels.appendChild(group);
-  return group;
-}
 
 const BASE_STYLE: LabelGroupStyle = {
   fill: "#3e3e4b",
