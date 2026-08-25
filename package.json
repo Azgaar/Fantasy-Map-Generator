@@ -15,11 +15,12 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build && node scripts/check-bundle-size.mts",
-    "build:viewer": "tsc && vite build --config vite.viewer.config.ts",
-    "benchmark:renderer": "playwright test --config=playwright.benchmark.config.ts",
+    "build:viewer": "tsc && vite build --config config/vite.viewer.config.ts",
+    "benchmark:renderer": "playwright test --config=tests/benchmarks/playwright.config.ts",
     "preview": "vite preview",
     "test": "vitest",
     "test:e2e": "playwright test",
+    "test:exploratory": "playwright test --config=tests/exploratory/playwright.config.ts",
     "lint": "biome check --write",
     "prepare": "simple-git-hooks"
   },

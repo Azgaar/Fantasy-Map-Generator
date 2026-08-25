@@ -318,6 +318,12 @@ The four-layer model above (state → generators → editors → renderers) is t
 core, but a real application also needs code that is none of those: persistence,
 app-shell lifecycle, static content, and shared helpers.
 
+At the repository root, keep only conventional entry points: package metadata, licensing and
+contribution documents, the primary Vite/Vitest/Playwright/TypeScript configuration, and the
+container definition. Put assets used only by documentation in `docs/assets/`; put an explicit
+test or benchmark configuration next to its suite under `tests/`; and put an explicit
+non-default build configuration under `config/`.
+
 | Folder             | Layer       | Holds                                                |
 | ------------------ | ----------- | ---------------------------------------------------- |
 | `src/generators/`  | Model       | procedural generators & domain logic                 |

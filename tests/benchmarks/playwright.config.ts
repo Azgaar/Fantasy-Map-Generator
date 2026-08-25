@@ -3,11 +3,11 @@ import { defineConfig, devices } from "@playwright/test";
 const isCI = Boolean(process.env.CI);
 
 export default defineConfig({
-  testDir: "./tests/benchmarks",
+  testDir: ".",
   fullyParallel: false,
   retries: 0,
   workers: 1,
-  reporter: [["./tests/benchmarks/renderer-benchmark-reporter.ts"]],
+  reporter: [["./renderer-benchmark-reporter.ts"]],
   use: {
     ...devices["Desktop Chrome"],
     baseURL: isCI ? "http://localhost:4173" : "http://localhost:5173",
