@@ -1,0 +1,186 @@
+.fmg-charts-dialog {
+  width: min(100%, 1120px) !important;
+}
+
+.fmg-charts-dialog .fmg-dialog__body {
+  padding: 0;
+}
+
+.fmg-charts-overview {
+  display: grid;
+  height: min(720px, calc(100vh - 150px));
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.fmg-charts-overview__form {
+  display: grid;
+  gap: 12px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--kui-line);
+  background: var(--kui-surface-raised);
+}
+
+.fmg-charts-overview__controls,
+.fmg-charts-overview__options {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.fmg-charts-overview__options {
+  align-items: center;
+}
+
+.fmg-charts-overview__field,
+.fmg-charts-overview__checkbox {
+  display: grid;
+  gap: 4px;
+  color: var(--kui-text-secondary);
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.fmg-charts-overview__field > span {
+  color: var(--kui-text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.fmg-charts-overview select,
+.fmg-charts-overview button {
+  min-height: 30px;
+  border: 1px solid var(--kui-line);
+  border-radius: 0;
+  background: var(--kui-surface-panel);
+  color: var(--kui-text);
+  font: 600 12px/18px inherit;
+}
+
+.fmg-charts-overview select {
+  min-width: 116px;
+  padding: 4px 26px 4px 8px;
+}
+
+.fmg-charts-overview button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 9px;
+  cursor: pointer;
+}
+
+.fmg-charts-overview button:hover,
+.fmg-charts-overview button:focus-visible,
+.fmg-charts-overview select:hover,
+.fmg-charts-overview select:focus-visible {
+  border-color: var(--kui-line-strong);
+  outline: 0;
+  background: var(--kui-surface-hover);
+}
+
+.fmg-charts-overview__plot {
+  border-color: var(--kui-accent, var(--kui-line-strong)) !important;
+  background: var(--kui-accent, var(--kui-surface-hover)) !important;
+  color: var(--kui-accent-contrast, var(--kui-text)) !important;
+}
+
+.fmg-charts-overview__checkbox {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  grid-auto-flow: column;
+  gap: 7px;
+  margin-left: 4px;
+  white-space: nowrap;
+}
+
+.fmg-charts-overview__checkbox input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--kui-accent, currentColor);
+}
+
+#chartsOverview__plotByInfo {
+  margin-left: 4px;
+  cursor: help;
+  opacity: 0.72;
+}
+
+#chartsOverview__charts {
+  display: grid;
+  min-height: 0;
+  overflow: auto;
+  scroll-behavior: smooth;
+}
+
+#chartsOverview__charts figure {
+  min-width: 0;
+  margin: 0;
+  padding: 14px 18px 18px;
+  border-top: 1px solid var(--kui-line-soft);
+}
+
+#chartsOverview__charts figure:first-child {
+  border-top: 0;
+}
+
+#chartsOverview__charts figcaption {
+  display: grid;
+  align-items: center;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  margin-bottom: 8px;
+  color: var(--kui-text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+#chartsOverview__charts figcaption strong {
+  color: var(--kui-text);
+}
+
+#chartsOverview__charts figcaption > div:last-child {
+  display: inline-flex;
+  gap: 4px;
+}
+
+#chartsOverview__charts figcaption button {
+  width: 30px;
+  min-width: 30px;
+  padding: 0;
+  color: var(--kui-text-muted);
+}
+
+#chartsOverview__charts figcaption button:hover,
+#chartsOverview__charts figcaption button:focus-visible {
+  color: var(--kui-text);
+}
+
+#chartsOverview__charts svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+@media (max-width: 760px) {
+  .fmg-charts-overview {
+    height: min(760px, calc(100vh - 130px));
+  }
+
+  .fmg-charts-overview__form,
+  #chartsOverview__charts figure {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .fmg-charts-overview__field,
+  .fmg-charts-overview__field select {
+    flex: 1 1 140px;
+    min-width: 0;
+  }
+}

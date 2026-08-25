@@ -3,6 +3,7 @@ import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers"
 import { stopMapPlacement } from "@/components/map-placement";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
+import "@/components/ui/map-feature-editor.css";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Route } from "@/generators/routes-generator";
@@ -67,18 +68,25 @@ function openAt(point: Point, defaultGroup?: string): void {
 function renderDialog(): void {
   destroyDialog("routeCreator");
 
-  const html = /* html */ `<div id="routeCreator" class="dialog">
-    <div>Click on map to add/remove route points</div>
-    <div id="routeCreatorBody" class="table" style="margin: 0.3em 0"></div>
-    <div id="routeCreatorBottom">
-      <button id="routeCreatorComplete" data-tip="Complete route creation" class="icon-check"></button>
-      <button id="routeCreatorCancel" data-tip="Cancel the creation" class="icon-cancel"></button>
-      <div style="display: inline-block">
-        Group:
-        <select id="routeCreatorGroupSelect"></select>
-        <span id="routeCreatorGroupEdit" data-tip="Edit route groups" class="icon-pencil pointer"></span>
+  const html = /* html */ `<div id="routeCreator" class="dialog fmg-map-feature-editor">
+    <p class="fmg-map-feature-editor__hint">Click the map to add route points. Drag handles to reposition them.</p>
+    <section class="fmg-map-feature-editor__section">
+      <div class="fmg-map-feature-editor__field">
+        <label for="routeCreatorGroupSelect">Route group</label>
+        <div class="fmg-map-feature-editor__control">
+          <select id="routeCreatorGroupSelect" data-tip="Choose the visual group for this route"></select>
+          <button id="routeCreatorGroupEdit" aria-label="Edit route groups" data-tip="Edit route groups" class="fmg-map-feature-editor__icon-button icon-pencil"></button>
+        </div>
       </div>
-    </div>
+    </section>
+    <section class="fmg-map-feature-editor__section">
+      <h3 class="fmg-map-feature-editor__section-title">Route points</h3>
+      <div id="routeCreatorBody" class="fmg-map-feature-editor__list"></div>
+    </section>
+    <footer class="fmg-map-feature-editor__toolbar">
+      <button id="routeCreatorComplete" data-tip="Create this route from the selected points" class="fmg-map-feature-editor__action icon-check">Create route</button>
+      <button id="routeCreatorCancel" data-tip="Cancel route creation" class="fmg-map-feature-editor__action icon-cancel">Cancel</button>
+    </footer>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
@@ -203,16 +211,16 @@ function moveCreatorPoint(event: CustomEvent<MapInteractionHandleEventDetail>): 
 }
 
 function renderCreatorRows(): void {
-  ensureEl("routeCreatorBody").innerHTML = creatorPoints
-    .map(
-      point => `<div class="editorLine" style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 1em;" data-point="${point.join("-")}">
-        <span><b>Cell</b>: ${point[2]}</span>
-        <span><b>X</b>: ${point[0]}</span>
-        <span><b>Y</b>: ${point[1]}</span>
-        <span data-tip="Remove the point" class="icon-trash-empty pointer"></span>
+  ensureEl("routeCreatorBody").innerHTML =
+    creatorPoints
+      .map(
+        point => `<div class="fmg-map-feature-editor__row" data-point="${point.join("-")}">
+        <span>Cell ${point[2]} · ${point[0]}, ${point[1]}</span>
+        <span></span>
+        <button aria-label="Remove point in cell ${point[2]}" data-tip="Remove this route point" class="fmg-map-feature-editor__icon-button icon-trash-empty"></button>
       </div>`
-    )
-    .join("");
+      )
+      .join("") || `<div class="fmg-map-feature-editor__empty">No points selected yet</div>`;
 }
 
 export const RouteCreator = { open, openAt };

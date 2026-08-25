@@ -2,6 +2,7 @@ import { select } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
+import "@/components/ui/map-feature-editor.css";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Point } from "@/generators/voronoi";
@@ -48,12 +49,16 @@ function open(): void {
 function renderDialog(): void {
   destroyDialog("riverCreator");
 
-  const html = /* html */ `<div id="riverCreator" class="dialog">
-    <div id="riverCreatorBody" class="table"></div>
-    <div id="riverCreatorBottom">
-      <button id="riverCreatorComplete" data-tip="Complete river creation" class="icon-check"></button>
-      <button id="riverCreatorCancel" data-tip="Cancel the creation" class="icon-cancel"></button>
-    </div>
+  const html = /* html */ `<div id="riverCreator" class="dialog fmg-map-feature-editor">
+    <p class="fmg-map-feature-editor__hint">Click map cells to build the river course. Click an added cell again to remove it.</p>
+    <section class="fmg-map-feature-editor__section">
+      <h3 class="fmg-map-feature-editor__section-title">River cells</h3>
+      <div id="riverCreatorBody" class="fmg-map-feature-editor__list"></div>
+    </section>
+    <footer class="fmg-map-feature-editor__toolbar">
+      <button id="riverCreatorComplete" data-tip="Create this river from the selected cells" class="fmg-map-feature-editor__action icon-check">Create river</button>
+      <button id="riverCreatorCancel" data-tip="Cancel river creation" class="fmg-map-feature-editor__action icon-cancel">Cancel</button>
+    </footer>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
@@ -201,16 +206,16 @@ function moveCreatorCell(event: CustomEvent<MapInteractionHandleEventDetail>): v
 }
 
 function renderCreatorCells(): void {
-  ensureEl("riverCreatorBody").innerHTML = creatorCells
-    .map(
-      cell => `<div class="editorLine" data-cell="${cell}">
+  ensureEl("riverCreatorBody").innerHTML =
+    creatorCells
+      .map(
+        cell => `<div class="fmg-map-feature-editor__row" data-cell="${cell}">
         <span>Cell ${cell}</span>
-        <span data-tip="Set flux affects river width" style="margin-left: 0.4em">Flux</span>
-        <input type="number" min=0 value="${pack.cells.fl[cell]}" class="editFlux" style="width: 5em"/>
-        <span data-tip="Remove the cell" class="icon-trash-empty pointer"></span>
+        <input aria-label="Flux for cell ${cell}" data-tip="Set flux; it affects river width" type="number" min=0 value="${pack.cells.fl[cell]}" class="editFlux" />
+        <button aria-label="Remove cell ${cell}" data-tip="Remove this cell from the river" class="fmg-map-feature-editor__icon-button icon-trash-empty"></button>
       </div>`
-    )
-    .join("");
+      )
+      .join("") || `<div class="fmg-map-feature-editor__empty">No cells selected yet</div>`;
 }
 
 export const RiverCreator = { open };

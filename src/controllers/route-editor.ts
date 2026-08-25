@@ -2,6 +2,7 @@ import { select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
+import "@/components/ui/map-feature-editor.css";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { insertRoutePoint, moveRoutePoint, removeRoutePoint, replaceRoutePoints } from "@/controllers/editor-mutations";
@@ -68,34 +69,39 @@ function open(routeId: number): void {
 function renderDialog(): void {
   destroyDialog("routeEditor");
 
-  const html = /* html */ `<div id="routeEditor" class="dialog">
-    <div id="routeBody" style="padding-bottom: 0.3em">
-      <div>
-        <div class="label">Name:</div>
-        <input id="routeName" data-tip="Type to rename the route" autocorrect="off" spellcheck="false" />
-        <span id="routeNameSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
-        <span id="routeGenerateName" data-tip="Generate route name" class="icon-globe pointer"></span>
+  const html = /* html */ `<div id="routeEditor" class="dialog fmg-map-feature-editor">
+    <p class="fmg-map-feature-editor__hint">Drag map handles to reshape the route. Click its line to add a point.</p>
+    <section class="fmg-map-feature-editor__section">
+      <h3 class="fmg-map-feature-editor__section-title">Route details</h3>
+      <div class="fmg-map-feature-editor__fields">
+        <div class="fmg-map-feature-editor__field fmg-map-feature-editor__field--wide">
+          <label for="routeName">Name</label>
+          <div class="fmg-map-feature-editor__control">
+            <input id="routeName" data-tip="Type to rename the route" autocorrect="off" spellcheck="false" />
+            <button id="routeNameSpeak" aria-label="Speak route name" data-tip="Speak the name. You can change voice and language in options" class="fmg-map-feature-editor__icon-button speaker">🔊</button>
+            <button id="routeGenerateName" aria-label="Generate route name" data-tip="Generate route name" class="fmg-map-feature-editor__icon-button icon-globe"></button>
+          </div>
+        </div>
+        <div class="fmg-map-feature-editor__field fmg-map-feature-editor__field--wide">
+          <label for="routeGroup">Group</label>
+          <div class="fmg-map-feature-editor__control">
+            <select id="routeGroup" data-tip="Select route group"></select>
+            <button id="routeGroupEdit" aria-label="Edit route groups" data-tip="Edit route groups" class="fmg-map-feature-editor__icon-button icon-pencil"></button>
+            <button id="routeEditStyle" aria-label="Edit route group style" data-tip="Edit style for this route group" class="fmg-map-feature-editor__icon-button icon-brush"></button>
+          </div>
+        </div>
+        <div class="fmg-map-feature-editor__field"><label for="routeLength">Length</label><input id="routeLength" data-tip="Route length in selected units" disabled /></div>
       </div>
-      <div data-tip="Select route group">
-        <div class="label">Group:</div>
-        <select id="routeGroup"></select>
-        <span id="routeGroupEdit" data-tip="Edit route groups" class="icon-pencil pointer"></span>
-        <span id="routeEditStyle" data-tip="Edit style for the route group" class="icon-brush pointer"></span>
-      </div>
-      <div data-tip="Route length in selected units">
-        <div class="label">Length:</div>
-        <input id="routeLength" disabled />
-      </div>
-    </div>
-    <div id="routeBottom">
-      <button id="routeCreateSelectingCells" data-tip="Create a new route selecting route cells" class="icon-map-pin"></button>
-      <button id="routeJoin" data-tip="Click to join the route to another route that starts or ends at the same cell" class="icon-link"></button>
-      <button id="routeSplit" data-tip="Click on a control point to split the route there" class="icon-unlink"></button>
-      <button id="routeElevationProfile" data-tip="Show the elevation profile for the route" class="icon-chart-area"></button>
-      <button id="routeLegend" data-tip="Edit free text notes (legend) for the route" class="icon-edit"></button>
-      <button id="routeLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
-      <button id="routeRemove" data-tip="Remove route" data-shortcut="Delete" class="icon-trash fastDelete"></button>
-    </div>
+    </section>
+    <footer class="fmg-map-feature-editor__toolbar">
+      <button id="routeCreateSelectingCells" data-tip="Create a new route by selecting route cells" class="fmg-map-feature-editor__action icon-map-pin">New route</button>
+      <button id="routeJoin" data-tip="Join this route to another route that shares an endpoint" class="fmg-map-feature-editor__action icon-link">Join</button>
+      <button id="routeSplit" data-tip="Turn on split mode, then click a control point to split the route there" class="fmg-map-feature-editor__action icon-unlink">Split</button>
+      <button id="routeElevationProfile" data-tip="Show the elevation profile for this route" class="fmg-map-feature-editor__action icon-chart-area">Elevation</button>
+      <button id="routeLegend" data-tip="Edit free-text notes for this route" class="fmg-map-feature-editor__action icon-edit">Notes</button>
+      <button id="routeLock" aria-label="Lock route" class="fmg-map-feature-editor__action icon-lock-open" onmouseover="showElementLockTip(event)">Lock</button>
+      <button id="routeRemove" data-tip="Remove this route" data-shortcut="Delete" class="fmg-map-feature-editor__action fmg-map-feature-editor__action--danger icon-trash fastDelete">Remove</button>
+    </footer>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
@@ -410,12 +416,19 @@ function toggleLockButton(): void {
 
 function updateLockIcon(): void {
   const route = getRoute();
+  const button = ensureEl("routeLock");
   if (route.lock) {
-    ensureEl("routeLock").classList.remove("icon-lock-open");
-    ensureEl("routeLock").classList.add("icon-lock");
+    button.classList.remove("icon-lock-open");
+    button.classList.add("icon-lock");
+    button.setAttribute("aria-label", "Unlock route");
+    button.dataset.tip = "Locked. Click to unlock this route and allow regeneration tools to change it";
+    button.textContent = "Unlock";
   } else {
-    ensureEl("routeLock").classList.remove("icon-lock");
-    ensureEl("routeLock").classList.add("icon-lock-open");
+    button.classList.remove("icon-lock");
+    button.classList.add("icon-lock-open");
+    button.setAttribute("aria-label", "Lock route");
+    button.dataset.tip = "Unlocked. Click to lock this route and prevent regeneration tools from changing it";
+    button.textContent = "Lock";
   }
 }
 

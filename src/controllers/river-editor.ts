@@ -2,6 +2,7 @@ import { select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
+import "@/components/ui/map-feature-editor.css";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { insertRiverPoint, moveRiverPoint, removeRiverPoint } from "@/controllers/editor-mutations";
@@ -67,55 +68,42 @@ function open(riverId: number): void {
 function renderDialog(): void {
   destroyDialog("riverEditor");
 
-  const html = /* html */ `<div id="riverEditor" class="dialog">
-    <div id="riverBody" style="padding-bottom: 0.3em">
-      <div>
-        <div class="label" style="width: 4.8em">Name:</div>
-        <span id="riverNameCulture" data-tip="Generate culture-specific name for the river" class="icon-book pointer"></span>
-        <span id="riverNameRandom" data-tip="Generate random name for the river" class="icon-globe pointer"></span>
-        <input id="riverName" data-tip="Type to rename the river" autocorrect="off" spellcheck="false" />
-        <span id="riverNameSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+  const html = /* html */ `<div id="riverEditor" class="dialog fmg-map-feature-editor">
+    <p class="fmg-map-feature-editor__hint">Drag map handles to reshape the river. Click its line to add a point.</p>
+    <section class="fmg-map-feature-editor__section">
+      <h3 class="fmg-map-feature-editor__section-title">Identity</h3>
+      <div class="fmg-map-feature-editor__fields">
+        <div class="fmg-map-feature-editor__field fmg-map-feature-editor__field--wide">
+          <label for="riverName">Name</label>
+          <div class="fmg-map-feature-editor__control">
+            <input id="riverName" data-tip="Type to rename the river" autocorrect="off" spellcheck="false" />
+            <button id="riverNameCulture" aria-label="Generate culture-specific river name" data-tip="Generate culture-specific name for the river" class="fmg-map-feature-editor__icon-button icon-book"></button>
+            <button id="riverNameRandom" aria-label="Generate random river name" data-tip="Generate random name for the river" class="fmg-map-feature-editor__icon-button icon-globe"></button>
+            <button id="riverNameSpeak" aria-label="Speak river name" data-tip="Speak the name. You can change voice and language in options" class="fmg-map-feature-editor__icon-button speaker">🔊</button>
+          </div>
+        </div>
+        <div class="fmg-map-feature-editor__field"><label for="riverType">Type</label><input id="riverType" data-tip="Change the river type, for example fork, creek, river, brook, or stream" autocorrect="off" spellcheck="false" /></div>
+        <div class="fmg-map-feature-editor__field"><label for="riverMainstem">Mainstem</label><select id="riverMainstem" data-tip="Select the river this waterway flows into"></select></div>
       </div>
-      <div data-tip="Type to change river type (e.g. fork, creek, river, brook, stream)">
-        <div class="label">Type:</div>
-        <input id="riverType" autocorrect="off" spellcheck="false" />
+    </section>
+    <section class="fmg-map-feature-editor__section">
+      <h3 class="fmg-map-feature-editor__section-title">Hydrology</h3>
+      <div class="fmg-map-feature-editor__fields">
+        <div class="fmg-map-feature-editor__field"><label for="riverBasin">Basin</label><input id="riverBasin" data-tip="River drainage basin (watershed)" disabled /></div>
+        <div class="fmg-map-feature-editor__field"><label for="riverDischarge">Discharge</label><input id="riverDischarge" data-tip="River discharge (flux power)" disabled /></div>
+        <div class="fmg-map-feature-editor__field"><label for="riverLength">Length</label><input id="riverLength" data-tip="River length in selected units" disabled /></div>
+        <div class="fmg-map-feature-editor__field"><label for="riverWidth">Mouth width</label><input id="riverWidth" data-tip="River mouth width in selected units" disabled /></div>
+        <div class="fmg-map-feature-editor__field"><label for="riverSourceWidth">Source width</label><input id="riverSourceWidth" data-tip="Additional width at the source. Default is 0" type="number" min="0" max="3" step=".01" /></div>
+        <div class="fmg-map-feature-editor__field"><label for="riverWidthFactor">Width modifier</label><input id="riverWidthFactor" data-tip="Multiplier for the river width. Default is 1" type="number" min=".1" max="4" step=".1" /></div>
       </div>
-      <div data-tip="Select parent river">
-        <div class="label">Mainstem:</div>
-        <select id="riverMainstem"></select>
-      </div>
-      <div data-tip="River drainage basin (watershed)">
-        <div class="label">Basin:</div>
-        <input id="riverBasin" disabled />
-      </div>
-      <div data-tip="River discharge (flux power)">
-        <div class="label">Discharge:</div>
-        <input id="riverDischarge" disabled />
-      </div>
-      <div data-tip="River length in selected units">
-        <div class="label">Length:</div>
-        <input id="riverLength" disabled />
-      </div>
-      <div data-tip="River mouth width in selected units">
-        <div class="label">Mouth width:</div>
-        <input id="riverWidth" disabled />
-      </div>
-      <div data-tip="River source additional width. Default value is 0">
-        <div class="label">Source width:</div>
-        <input id="riverSourceWidth" type="number" min="0" max="3" step=".01" />
-      </div>
-      <div data-tip="River width multiplier. Default value is 1">
-        <div class="label">Width modifier:</div>
-        <input id="riverWidthFactor" type="number" min=".1" max="4" step=".1" />
-      </div>
-    </div>
-    <div id="riverBottom">
-      <button id="riverCreateSelectingCells" data-tip="Create a new river selecting river cells" class="icon-map-pin"></button>
-      <button id="riverEditStyle" data-tip="Edit style for all rivers in Style Editor" class="icon-brush"></button>
-      <button id="riverElevationProfile" data-tip="Show the elevation profile for the river" class="icon-chart-area"></button>
-      <button id="riverLegend" data-tip="Edit free text notes (legend) for the river" class="icon-edit"></button>
-      <button id="riverRemove" data-tip="Remove river" data-shortcut="Delete" class="icon-trash fastDelete"></button>
-    </div>
+    </section>
+    <footer class="fmg-map-feature-editor__toolbar">
+      <button id="riverCreateSelectingCells" data-tip="Create a new river by selecting river cells" class="fmg-map-feature-editor__action icon-map-pin">New river</button>
+      <button id="riverEditStyle" data-tip="Edit the style for all rivers" class="fmg-map-feature-editor__action icon-brush">Style</button>
+      <button id="riverElevationProfile" data-tip="Show the elevation profile for this river" class="fmg-map-feature-editor__action icon-chart-area">Elevation</button>
+      <button id="riverLegend" data-tip="Edit free-text notes for this river" class="fmg-map-feature-editor__action icon-edit">Notes</button>
+      <button id="riverRemove" data-tip="Remove this river and its tributaries" data-shortcut="Delete" class="fmg-map-feature-editor__action fmg-map-feature-editor__action--danger icon-trash fastDelete">Remove</button>
+    </footer>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 

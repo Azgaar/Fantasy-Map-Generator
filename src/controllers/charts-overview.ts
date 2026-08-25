@@ -17,11 +17,12 @@ import {
   stackOrderNone,
   sum
 } from "d3";
-import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
 import { downloadFile, getArea, getAreaUnit, getFileName, getHeight, getPrecipitation } from "@/utils";
 import { capitalize, convertTemperature, ensureEl, formatPrice, isWater, rn, si } from "../utils";
+import "./charts-overview.css";
 
 interface Dimension {
   label: string;
@@ -375,7 +376,10 @@ function open() {
 
   showDomDialog({
     access: "inspect",
+    className: "fmg-charts-dialog",
     content: ensureEl("chartsOverview"),
+    isModal: true,
+    maxHeight: "calc(100vh - 32px)",
     onClose: handleClose,
     placement: "center",
     placementTarget: document.getElementById("map"),
@@ -393,32 +397,35 @@ function renderDialog() {
   const createOption = ([value, label]: [string, string]) => `<option value="${value}">${label}</option>`;
   const createOptions = (values: [string, string][]) => values.map(createOption).join("");
 
-  const html = /* html */ `<div id="chartsOverview" class="dialog stable">
-    <form id="chartsOverview__form">
-      <div>
-        <button data-tip="Add a chart" type="submit">Plot</button>
+  const html = /* html */ `<div id="chartsOverview" class="dialog stable fmg-charts-overview">
+    <form id="chartsOverview__form" class="fmg-charts-overview__form">
+      <div class="fmg-charts-overview__controls">
+        <button class="fmg-charts-overview__plot" data-tip="Add a chart" type="submit">Plot chart</button>
 
-        <select data-tip="Select entity (y axis)" id="chartsOverview__entitiesSelect">
-          ${createOptions(entities)}
-        </select>
+        <label class="fmg-charts-overview__field" for="chartsOverview__entitiesSelect">
+          <span>Entity</span>
+          <select data-tip="Select entity (y axis)" id="chartsOverview__entitiesSelect">
+            ${createOptions(entities)}
+          </select>
+        </label>
 
-        <label for="chartsOverview__plotBySelect" data-tip="Select metric to plot (x axis)">
-          <span>by</span>
+        <label class="fmg-charts-overview__field" for="chartsOverview__plotBySelect" data-tip="Select metric to plot (x axis)">
+          <span>Metric</span>
           <select id="chartsOverview__plotBySelect">
             ${createOptions(plotBy)}
           </select>
           <i id="chartsOverview__plotByInfo" class="icon-info-circled" style="display: none"></i>
         </label>
 
-        <label for="chartsOverview__groupBySelect" data-tip="Select entity to group by. If you don't need grouping, set it the same as the entity">
-          <span>grouped by</span>
+        <label class="fmg-charts-overview__field" for="chartsOverview__groupBySelect" data-tip="Select entity to group by. If you don't need grouping, set it the same as the entity">
+          <span>Group by</span>
           <select id="chartsOverview__groupBySelect">
             ${createOptions(entities)}
           </select>
         </label>
 
-        <label data-tip="Sorting type" for="chartsOverview__sortingSelect">
-          <span>sorted</span>
+        <label class="fmg-charts-overview__field" data-tip="Sorting type" for="chartsOverview__sortingSelect">
+          <span>Sort</span>
           <select id="chartsOverview__sortingSelect">
             <option value="value">by value</option>
             <option value="name">by name</option>
@@ -427,8 +434,8 @@ function renderDialog() {
         </label>
       </div>
 
-      <div>
-        <label data-tip="Select chart type" for="chartsOverview__chartType">
+      <div class="fmg-charts-overview__options">
+        <label class="fmg-charts-overview__field" data-tip="Select chart type" for="chartsOverview__chartType">
           <span>Type</span>
           <select id="chartsOverview__chartType">
             <option value="stackedBar" selected>Stacked Bar</option>
@@ -436,7 +443,7 @@ function renderDialog() {
           </select>
         </label>
 
-        <label data-tip="Show the charts in 1, 2, 3 or 4 columns" for="chartsOverview__viewColumns">
+        <label class="fmg-charts-overview__field" data-tip="Show the charts in 1, 2, 3 or 4 columns" for="chartsOverview__viewColumns">
           <span>Columns</span>
           <select id="chartsOverview__viewColumns">
             <option value="1" selected>1</option>
@@ -446,14 +453,14 @@ function renderDialog() {
           </select>
         </label>
 
-        <label data-tip="Exclude zero element from the results (id 0, e.g. the neutral state)" for="chartsOverview__excludeNeutral">
+        <label class="fmg-charts-overview__checkbox" data-tip="Exclude zero element from the results (id 0, e.g. the neutral state)" for="chartsOverview__excludeNeutral">
           <input id="chartsOverview__excludeNeutral" type="checkbox" class="native" />
           <span>Exclude neutral</span>
         </label>
       </div>
     </form>
 
-    <section id="chartsOverview__charts"></section>
+    <section aria-live="polite" id="chartsOverview__charts"></section>
   </div>`;
 
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -466,69 +473,6 @@ function renderDialog() {
   ensureEl("chartsOverview__form").addEventListener("submit", addChart as EventListener);
   ensureEl("chartsOverview__viewColumns").addEventListener("change", changeViewColumns);
   ensureEl("chartsOverview__plotBySelect").addEventListener("change", updateMetricInfo);
-
-  document.getElementById("chartsOverviewStyle")?.remove();
-  const style = document.createElement("style");
-  style.id = "chartsOverviewStyle";
-  style.textContent = /* css */ `
-    #chartsOverview {
-      max-width: 90vw !important;
-      max-height: 90vh !important;
-      overflow: hidden;
-      display: grid;
-      grid-template-rows: auto 1fr;
-    }
-
-    #chartsOverview__form {
-      display: grid;
-      font-size: 1.1em;
-      margin: 0.3em 0;
-    }
-
-    #chartsOverview__form > div:first-child {
-      display: flex;
-      align-items: center;
-      gap: 0.2em;
-    }
-
-    #chartsOverview__form > div:nth-child(2) {
-      display: flex;
-      align-items: center;
-      gap: 1em;
-    }
-
-    #chartsOverview__form label {
-      display: inline-flex;
-      align-items: center;
-    }
-
-    #chartsOverview__charts {
-      overflow: auto;
-      scroll-behavior: smooth;
-      display: grid;
-    }
-
-    #chartsOverview__charts figure {
-      margin: 0;
-      padding: 0.6em 0 1em;
-      border-top: 1px solid rgba(128, 128, 128, 0.4);
-    }
-
-    #chartsOverview__charts figcaption {
-      font-size: 1.2em;
-      margin: 0 1% 0.4em 4%;
-      display: grid;
-      align-items: center;
-      grid-template-columns: 1fr auto;
-    }
-
-    #chartsOverview__plotByInfo {
-      margin-left: 0.3em;
-      cursor: help;
-      opacity: 0.6;
-    }
-  `;
-  document.head.appendChild(style);
 }
 
 // Show the selected metric's hint via an info icon tooltip (keeps the dropdown labels compact).
@@ -581,7 +525,6 @@ function addChart(event?: Event) {
   const chartOptions: ChartOptions = { id: Date.now(), entity, plotBy, groupBy, sorting, type, excludeNeutral };
   charts.push(chartOptions);
   renderChart(chartOptions);
-  updateDialogPosition();
 }
 
 function renderChart({ id, entity, plotBy, groupBy, sorting, type, excludeNeutral }: ChartOptions) {
@@ -829,10 +772,10 @@ function insertChart(id: number, sortedData: ChartDatum[], $chart: SVGSVGElement
       <strong>Figure ${figureNo}</strong>. ${title}
     </div>
     <div>
-      <button data-tip="Download chart data as a text file (.csv)" class="icon-download"></button>
-      <button data-tip="Download the chart as a PNG image" class="icon-export"></button>
-      <button data-tip="Download the chart in SVG format (vector, opens in a browser or Inkscape)" class="icon-chart-bar"></button>
-      <button data-tip="Remove the chart" class="icon-trash"></button>
+      <button aria-label="Download chart data as CSV" data-tip="Download chart data as a text file (.csv)" class="icon-download"></button>
+      <button aria-label="Download chart as PNG" data-tip="Download the chart as a PNG image" class="icon-export"></button>
+      <button aria-label="Download chart as SVG" data-tip="Download the chart in SVG format (vector, opens in a browser or Inkscape)" class="icon-chart-bar"></button>
+      <button aria-label="Remove chart" data-tip="Remove the chart" class="icon-trash"></button>
     </div>
   `;
 
@@ -883,7 +826,6 @@ function insertChart(id: number, sortedData: ChartDatum[], $chart: SVGSVGElement
   const removeChart = () => {
     $figure.remove();
     charts = charts.filter(chart => chart.id !== id);
-    updateDialogPosition();
   };
 
   $figure.querySelector("button.icon-download")?.addEventListener("click", downloadChartData);
@@ -896,18 +838,10 @@ function changeViewColumns() {
   const columns = ensureEl<HTMLSelectElement>("chartsOverview__viewColumns").value;
   const $charts = ensureEl("chartsOverview__charts");
   $charts.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
-  updateDialogPosition();
-}
-
-function updateDialogPosition() {
-  updateDialog("chartsOverview", {
-    position: { my: "center", at: "center", of: "svg", collision: "fit" }
-  });
 }
 
 function handleClose() {
   destroyDialog("chartsOverview");
-  document.getElementById("chartsOverviewStyle")?.remove();
 }
 
 // config

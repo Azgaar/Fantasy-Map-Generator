@@ -1,6 +1,7 @@
 import { confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
+import "@/components/ui/map-feature-editor.css";
 import type { Route } from "@/generators/routes-generator";
 import { invalidatePixiRendererLayer } from "@/renderers/pixi/pixi-renderer-controller";
 import { getMapRendererStyle } from "@/renderers/scene/map-style-state";
@@ -31,11 +32,15 @@ function open(): void {
 function renderDialog(): void {
   destroyDialog("routeGroupsEditor");
 
-  const html = /* html */ `<div id="routeGroupsEditor" class="dialog">
-    <div id="routeGroupsEditorBody" class="table" style="padding: 0.3em 0; width: 100%"></div>
-    <div id="routeGroupsEditorBottom">
-      <button id="routeGroupsEditorAdd" data-tip="Add route group" class="icon-plus"></button>
-    </div>
+  const html = /* html */ `<div id="routeGroupsEditor" class="dialog fmg-map-feature-editor">
+    <p class="fmg-map-feature-editor__hint">Groups define route appearance and make it easier to organize paths.</p>
+    <section class="fmg-map-feature-editor__section">
+      <h3 class="fmg-map-feature-editor__section-title">Route groups</h3>
+      <div id="routeGroupsEditorBody" class="fmg-map-feature-editor__list"></div>
+    </section>
+    <footer class="fmg-map-feature-editor__toolbar">
+      <button id="routeGroupsEditorAdd" data-tip="Add a route group" class="fmg-map-feature-editor__action icon-plus">Add group</button>
+    </footer>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
@@ -50,7 +55,7 @@ function closeRouteGroupsEditor(): void {
 
 function onBodyClick(ev: Event): void {
   const target = ev.target as HTMLElement;
-  const group = target.closest<HTMLElement>(".states")?.dataset.id;
+  const group = target.closest<HTMLElement>(".fmg-map-feature-editor__row")?.dataset.id;
   if (target.classList.contains("editStyle") && group) window.StyleEditor.edit("routes", group);
   else if (target.classList.contains("removeGroup") && group) removeGroup(group);
 }
@@ -65,12 +70,10 @@ function addLines(): void {
   ]);
   const lines = [...groups].map(group => {
     const count = pack.routes.filter((route: Route) => route.group === group).length;
-    return /* html */ `<div data-id="${group}" class="states" style="display: flex; justify-content: space-between;">
-          <span>${group} (${count})</span>
-          <div style="width: auto; display: flex; gap: 0.4em;">
-            <span data-tip="Edit style" class="editStyle icon-brush pointer" style="font-size: smaller;"></span>
-            <span data-tip="Remove group" class="removeGroup icon-trash pointer"></span>
-          </div>
+    return /* html */ `<div data-id="${group}" class="fmg-map-feature-editor__row">
+          <span>${group} · ${count} route${count === 1 ? "" : "s"}</span>
+          <button data-tip="Edit this group’s route style" class="fmg-map-feature-editor__action editStyle icon-brush">Style</button>
+          <button aria-label="Remove ${group}" data-tip="Remove this group and every route in it" class="fmg-map-feature-editor__icon-button fmg-map-feature-editor__action--danger removeGroup icon-trash"></button>
         </div>`;
   });
 

@@ -1,5 +1,6 @@
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { showDomDialog } from "@/components/ui/dom-dialog";
+import "@/components/ui/map-feature-editor.css";
 import { ensureEl } from "../utils";
 
 const DEFAULTS = TradeAnimation.getDefaultOptions();
@@ -124,25 +125,20 @@ function buildDialogHTML(): string {
         ? `<select id="${id}" style="width: 100%; font-size: smaller;">${selectOptions.map((opt: string) => `<option value="${opt}" ${opt === current ? "selected" : ""}>${opt}</option>`).join("")}</select>`
         : `<slider-input id="${id}" min="${min}" max="${max}" step="${step}" value="${current}"></slider-input>`;
     return /* html */ `
-      <tr data-tip="${tip}">
-        <td style="padding: 0">${label}</td>
-        <td style="padding: 0">${input}</td>
-        <td style="padding: 0">
-          <button id="${id}Reset" data-tip="Reset to default"
-            style="font-size:.85em; padding:1px 5px; margin-left: 0.3em">↺</button>
-        </td>
-      </tr>`;
+      <div class="fmg-map-feature-editor__field" data-tip="${tip}">
+        <label for="${id}">${label}</label>
+        <div class="fmg-map-feature-editor__control">${input}</div>
+        <button id="${id}Reset" aria-label="Reset ${label.toLocaleLowerCase()}" data-tip="Reset ${label.toLocaleLowerCase()} to its default" class="fmg-map-feature-editor__icon-button icon-cw"></button>
+      </div>`;
   }).join("");
 
   return /* html */ `
-    <div id="tradeAnimationEditor" class="dialog" style="display:none">
-      <style>
-        #tradeAnimationEditor slider-input { width: 100%; }
-        #tradeAnimationEditor slider-input input[type=range] { flex: 1; min-width: 0; }
-      </style>
-      <table style="border-collapse: collapse;width:100%">
-        <tbody>${rows}</tbody>
-      </table>
+    <div id="tradeAnimationEditor" class="dialog fmg-map-feature-editor fmg-map-feature-editor--trade" style="display:none">
+      <p class="fmg-map-feature-editor__hint">Adjust the map’s visible trade flows. Changes apply immediately.</p>
+      <section class="fmg-map-feature-editor__section">
+        <h3 class="fmg-map-feature-editor__section-title">Animation settings</h3>
+        <div class="fmg-map-feature-editor__fields">${rows}</div>
+      </section>
     </div>`;
 }
 
