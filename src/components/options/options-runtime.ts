@@ -4,6 +4,7 @@ import { hsl } from "d3";
 import { ApplicationController } from "@/application/application-controller";
 import { getViewportSurface } from "@/application/viewport-surface";
 import { getWorkspaceMode, requireWorkspaceCapability } from "@/application/workspace-mode";
+import { mountAboutPanel } from "@/components/app-info/about-panel";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { enableElementDragging } from "@/components/element-dragging";
 import { clearMainTip, tip } from "@/components/tooltips";
@@ -13,6 +14,9 @@ import { fitScaleBar } from "@/renderers/draw-scalebar";
 import { getUnitSettings } from "@/services/units-settings";
 import { applyOption, ensureEl, gauss, last, minmax, P, rand, rn, rw } from "@/utils";
 import { lock, stored, unlock } from "@/utils/preferences";
+import { mountLayerPanel } from "../layers/layer-panel";
+import { mountStylePanel } from "../style/style-panel";
+import { mountCustomizationPanel } from "./customization-panel";
 import { createExportMapDialog, createLoadMapDialog, createPngTilesDialog, createSaveMapDialog } from "./io-dialogs";
 import {
   bindOptionsController,
@@ -20,6 +24,7 @@ import {
   type OptionsControllerApi,
   type RegenerateOptions
 } from "./options-controller";
+import { mountOptionsPanel } from "./options-panel";
 
 interface ValueElement extends HTMLElement {
   max: string;
@@ -35,6 +40,11 @@ interface GoogleTranslateApi {
   };
 }
 
+mountLayerPanel();
+mountStylePanel();
+mountOptionsPanel();
+mountCustomizationPanel();
+mountAboutPanel();
 getUnitSettings();
 
 const optionsRoot = ensureEl("options");

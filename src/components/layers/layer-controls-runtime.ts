@@ -23,6 +23,7 @@ import {
   type LayerPresetOption,
   type LegacyLayerControls
 } from "./layer-controls";
+import { mountLayerPanel } from "./layer-panel";
 
 type LayerToggleId = keyof typeof PIXI_LAYER_BY_TOGGLE | "toggleRulers" | "toggleScaleBar" | "toggleVignette";
 type LayerPresetMap = Record<string, LayerToggleId[]>;
@@ -246,6 +247,7 @@ let selectedPreset = "political";
 
 export function initializeLayerControlsRuntime(): void {
   if (initialized) return;
+  mountLayerPanel();
   initialized = true;
   initializePresetStateFromDom();
   restoreCustomPresets();

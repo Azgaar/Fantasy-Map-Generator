@@ -1,0 +1,470 @@
+<div id="optionsContent" class="tabcontent" data-workspace-view="preferences">
+  <section class="fantasia-options-section" data-options-section="world-setup">
+    <p data-tip="Map generation settings. Generate a new map to apply the settings">Custom settings:</p>
+    <table>
+    <tr
+      data-tip="Set original map size on generation. It cannot be changed later. Always keep canvas size equal to your screen size or less. The best option is to use the default value. For full-globe maps use aspect ratio 2:1"
+    >
+      <td>
+        <i data-tip="Restore default canvas size" id="restoreDefaultCanvasSize" class="icon-ccw"></i>
+      </td>
+      <td>Canvas size</td>
+      <td>
+        <input id="mapWidthInput" class="paired" type="number" min="240" value="960" />
+        <span>x</span>
+        <input id="mapHeightInput" class="paired" type="number" min="135" value="540" />
+        <span>px</span>
+      </td>
+      <td></td>
+    </tr>
+    <tr
+      data-tip="Map seed number. Press 'Enter' to apply. Seed produces the same map only if canvas size and options are the same"
+    >
+      <td>
+        <i
+          data-tip="Show seed history to apply a previous seed"
+          id="optionsMapHistory"
+          class="icon-hourglass-1"
+        ></i>
+      </td>
+      <td>Map seed</td>
+      <td>
+        <input id="optionsSeed" class="long" type="number" min="1" max="999999999" step="1" />
+      </td>
+      <td>
+        <i
+          data-tip="Copy map seed as URL. It will produce the same map only if options are default or the same"
+          id="optionsCopySeed"
+          class="icon-docs"
+        ></i>
+      </td>
+    </tr>
+    <tr
+      data-tip="Set number of points to be used for graph generation. Highly affects performance. 10K is the only recommended value"
+    >
+      <td>
+        <i data-locked="0" id="lock_points" class="icon-lock-open"></i>
+      </td>
+      <td>Points number</td>
+      <td>
+        <input
+          id="pointsInput"
+          data-stored="points"
+          type="range"
+          min="1"
+          max="13"
+          value="4"
+          data-cells="10000"
+        />
+      </td>
+      <td>
+        <output id="pointsOutputFormatted" style="color: #053305">10K</output>
+      </td>
+    </tr>
+    <tr data-tip="Define map name (will be used to name downloaded files)">
+      <td>
+        <i data-locked="0" id="lock_mapName" class="icon-lock-open"></i>
+      </td>
+      <td>Map name</td>
+      <td>
+        <input
+          id="mapName"
+          data-stored="mapName"
+          class="long"
+          autocorrect="off"
+          spellcheck="false"
+          type="text"
+        />
+      </td>
+      <td>
+        <i data-tip="Regenerate map name" onclick="Names.getMapName(true)" class="icon-arrows-cw"></i>
+      </td>
+    </tr>
+    <tr data-tip="Define current year and era name">
+      <td>
+        <i data-locked="0" id="lock_year" data-ids="year,era" class="icon-lock-open"></i>
+      </td>
+      <td>Year and era</td>
+      <td>
+        <input
+          id="yearInput"
+          data-stored="year"
+          type="number"
+          step="1"
+          class="paired"
+          style="width: 24%; float: left; font-size: smaller"
+        />
+        <input
+          id="eraInput"
+          data-stored="era"
+          autocorrect="off"
+          spellcheck="false"
+          type="text"
+          style="width: 75%; float: right"
+          class="long"
+        />
+      </td>
+      <td>
+        <i id="optionsEraRegenerate" data-tip="Regenerate era" class="icon-arrows-cw"></i>
+      </td>
+    </tr>
+    <tr data-tip="Select template or precreated heightmap to be used on generation">
+      <td>
+        <i data-locked="0" id="lock_template" class="icon-lock-open"></i>
+      </td>
+      <td>Heightmap</td>
+      <td id="templateInputContainer" class="pointer">
+        <select id="templateInput" data-stored="template" style="pointer-events: none"></select>
+      </td>
+      <td></td>
+    </tr>
+    <tr data-tip="Define how many Cultures should be generated">
+      <td>
+        <i data-locked="0" id="lock_cultures" class="icon-lock-open"></i>
+      </td>
+      <td>Cultures number</td>
+      <td>
+        <input id="culturesInput" data-stored="cultures" type="range" min="1" />
+      </td>
+      <td>
+        <input id="culturesOutput" data-stored="cultures" type="number" min="1" />
+      </td>
+    </tr>
+    <tr data-tip="Select a set of cultures to be used for names and cultures generation">
+      <td>
+        <i data-locked="0" id="lock_culturesSet" class="icon-lock-open"></i>
+      </td>
+      <td>Cultures set</td>
+      <td>
+        <select id="culturesSet" data-stored="culturesSet">
+          <option value="world" data-max="32" selected>All-world</option>
+          <option value="european" data-max="15">European</option>
+          <option value="oriental" data-max="13">Oriental</option>
+          <option value="english" data-max="10">English</option>
+          <option value="antique" data-max="10">Antique</option>
+          <option value="highFantasy" data-max="17">High Fantasy</option>
+          <option value="darkFantasy" data-max="18">Dark Fantasy</option>
+          <option value="random" data-max="100">Random</option>
+        </select>
+      </td>
+      <td></td>
+    </tr>
+    <tr data-tip="Define how many states and capitals should be generated">
+      <td>
+        <i data-locked="0" id="lock_statesNumber" class="icon-lock-open"></i>
+      </td>
+      <td>States number</td>
+      <td colspan="2">
+        <slider-input id="statesNumber" data-stored="statesNumber" min="0" max="100"></slider-input>
+      </td>
+    </tr>
+    <tr
+      data-tip="Set what share of eligible burgs in each state will become province centers. Higher values create more provinces"
+    >
+      <td>
+        <i data-locked="0" id="lock_provincesRatio" class="icon-lock-open"></i>
+      </td>
+      <td>Provinces ratio</td>
+      <td colspan="2">
+        <slider-input id="provincesRatio" data-stored="provincesRatio" min="0" max="100"></slider-input>
+      </td>
+    </tr>
+    <tr data-tip="Define how much states and cultures can vary in size. Defines expansionism value">
+      <td>
+        <i data-locked="0" id="lock_sizeVariety" class="icon-lock-open"></i>
+      </td>
+      <td>Size variety</td>
+      <td colspan="2">
+        <slider-input id="sizeVariety" data-stored="sizeVariety" min="0" max="10" step=".1"></slider-input>
+      </td>
+    </tr>
+    <tr data-tip="Set state and cultures growth rate. Defines how many lands will stay neutral">
+      <td>
+        <i data-locked="0" id="lock_growthRate" class="icon-lock-open"></i>
+      </td>
+      <td>Growth rate</td>
+      <td colspan="2">
+        <slider-input id="growthRate" data-stored="growthRate" min=".1" max="2" step=".1"></slider-input>
+      </td>
+    </tr>
+    <tr data-tip="Define a number of non-capital settlements to be placed (if enough suitable land exists)">
+      <td>
+        <i data-locked="0" id="lock_manors" class="icon-lock-open"></i>
+      </td>
+      <td>Burgs number</td>
+      <td>
+        <input id="manorsInput" data-stored="manors" type="range" min="0" max="1000" step="1" value="1000" />
+      </td>
+      <td>
+        <output id="manorsOutput" data-stored="manors" value="auto"></output>
+      </td>
+    </tr>
+    <tr
+      data-tip="Define how many organized religions and cults should be generated. Cultures will have their own folk religions in any case"
+    >
+      <td>
+        <i data-locked="0" id="lock_religionsNumber" class="icon-lock-open"></i>
+      </td>
+      <td>Religions number</td>
+      <td colspan="2">
+        <slider-input
+          id="religionsNumber"
+          data-stored="religionsNumber"
+          min="0"
+          max="50"
+          step="1"
+        ></slider-input>
+      </td>
+    </tr>
+    </table>
+    <div class="fantasia-options-actions">
+      <button
+        id="configureWorld"
+        data-tip="Click to open world configurator to setup map position on Globe and World climate"
+        onclick="window.Controllers.WorldConfigurator.open()"
+      >
+        Configure World
+      </button>
+      <button
+        id="generateMapFromSetup"
+        type="button"
+        data-tip="Generate a new map from the selected world and settings"
+      >
+        Generate Map
+      </button>
+    </div>
+  </section>
+  <section class="fantasia-options-section" data-options-section="preferences">
+    <p data-tip="Tool settings that don't affect maps. Changes are getting applied immediately">Preferences:</p>
+    <table>
+    <tr
+      data-tip="Set user interface size. Please note browser zoom also affects interface size (Ctrl + or Ctrl - to change)"
+    >
+      <td></td>
+      <td>Interface size</td>
+      <td colspan="2">
+        <slider-input id="uiSize" data-stored="uiSize" min=".6" max="3" step=".1"></slider-input>
+      </td>
+    </tr>
+    <tr data-tip="Set tooltip size">
+      <td></td>
+      <td>Tooltip size</td>
+      <td colspan="2">
+        <slider-input id="tooltipSize" data-stored="tooltipSize" min="1" max="32" value="14"></slider-input>
+      </td>
+    </tr>
+    <tr data-tip="Set theme hue for dialogs and tool windows">
+      <td>
+        <i data-tip="Restore default theme color: pale magenta" id="themeColorRestore" class="icon-ccw"></i>
+      </td>
+      <td>Theme color</td>
+      <td>
+        <input id="themeHueInput" type="range" min="0" max="359" />
+      </td>
+      <td>
+        <input id="themeColorInput" data-stored="themeColor" type="color" />
+      </td>
+    </tr>
+    <tr data-tip="Set dialog and tool windows transparency">
+      <td></td>
+      <td>Transparency</td>
+      <td colspan="2">
+        <slider-input id="transparencyInput" data-stored="transparency" min="0" max="100"></slider-input>
+      </td>
+    </tr>
+    <tr data-tip="Set autosave interval in minutes. Set 0 to disable autosave. Map is saved to browser memory">
+      <td></td>
+      <td>Autosave interval</td>
+      <td>
+        <input
+          id="autosaveIntervalInput"
+          data-stored="autosaveInterval"
+          type="range"
+          min="0"
+          max="60"
+          step="1"
+          value="15"
+        />
+      </td>
+      <td>
+        <input
+          id="autosaveIntervalOutput"
+          data-stored="autosaveInterval"
+          type="number"
+          min="0"
+          max="60"
+          step="1"
+          value="15"
+        />
+      </td>
+    </tr>
+    <tr data-tip="Set what Generator should do on load">
+      <td></td>
+      <td>Onload behavior</td>
+      <td>
+        <select id="onloadBehavior" data-stored="onloadBehavior">
+          <option value="random" selected>Generate random map</option>
+          <option value="lastSaved">Open last saved map</option>
+        </select>
+      </td>
+      <td></td>
+    </tr>
+    <tr data-tip="Select speech synthesis voice to pronounce generated names">
+      <td></td>
+      <td>Speaker voice</td>
+      <td>
+        <select id="speakerVoice" data-stored="speakerVoice"></select>
+      </td>
+      <td>
+        <span id="speakerTest" data-tip="Click to test the voice" style="cursor: pointer">🔊</span>
+      </td>
+    </tr>
+    <tr data-tip="Select emblem shape. Can be changed indivudually in Emblem editor">
+      <td>
+        <i data-locked="0" id="lock_emblemShape" class="icon-lock"></i>
+      </td>
+      <td>Emblem shape</td>
+      <td>
+        <select id="emblemShape" data-stored="emblemShape">
+          <optgroup label="Diversiform">
+            <option value="culture" selected>Culture-specific</option>
+            <option value="random">Culture-random</option>
+            <option value="state">State-specific</option>
+          </optgroup>
+          <optgroup label="Basic">
+            <option value="heater">Heater</option>
+            <option value="spanish">Spanish</option>
+            <option value="french">French</option>
+          </optgroup>
+          <optgroup label="Regional">
+            <option value="horsehead">Horsehead</option>
+            <option value="horsehead2">Horsehead Edgy</option>
+            <option value="polish">Polish</option>
+            <option value="hessen">Hessen</option>
+            <option value="swiss">Swiss</option>
+          </optgroup>
+          <optgroup label="Historical">
+            <option value="boeotian">Boeotian</option>
+            <option value="roman">Roman</option>
+            <option value="kite">Kite</option>
+            <option value="oldFrench">Old French</option>
+            <option value="renaissance">Renaissance</option>
+            <option value="baroque">Baroque</option>
+          </optgroup>
+          <optgroup label="Specific">
+            <option value="targe">Targe</option>
+            <option value="targe2">Targe2</option>
+            <option value="pavise">Pavise</option>
+            <option value="wedged">Wedged</option>
+          </optgroup>
+          <optgroup label="Banner">
+            <option value="flag">Flag</option>
+            <option value="pennon">Pennon</option>
+            <option value="guidon">Guidon</option>
+            <option value="banner">Banner</option>
+            <option value="dovetail">Dovetail</option>
+            <option value="gonfalon">Gonfalon</option>
+            <option value="pennant">Pennant</option>
+          </optgroup>
+          <optgroup label="Simple">
+            <option value="round">Round</option>
+            <option value="oval">Oval</option>
+            <option value="vesicaPiscis">Vesica Piscis</option>
+            <option value="square">Square</option>
+            <option value="diamond">Diamond</option>
+          </optgroup>
+          <optgroup label="Fantasy">
+            <option value="fantasy1">Fantasy1</option>
+            <option value="fantasy2">Fantasy2</option>
+            <option value="fantasy3">Fantasy3</option>
+            <option value="fantasy4">Fantasy4</option>
+            <option value="fantasy5">Fantasy5</option>
+          </optgroup>
+          <optgroup label="Middle Earth">
+            <option value="noldor">Noldor</option>
+            <option value="gondor">Gondor</option>
+            <option value="easterling">Easterling</option>
+            <option value="erebor">Erebor</option>
+            <option value="ironHills">Iron Hills</option>
+            <option value="urukHai">UrukHai</option>
+            <option value="moriaOrc">Moria Orc</option>
+          </optgroup>
+        </select>
+      </td>
+      <td>
+        <svg class="emblemShapePreview" viewBox="0 0 200 210"><path id="emblemShapeImage" /></svg>
+      </td>
+    </tr>
+    <tr data-tip="Set minimum and maximum possible zoom level">
+      <td>
+        <i data-tip="Restore default zoom extent: [1, 20]" id="zoomExtentDefault" class="icon-ccw"></i>
+      </td>
+      <td>Zoom extent</td>
+      <td>
+        <span data-tip="Mimimal possible zoom level (should be > 0)">min</span>
+        <input
+          data-tip="Mimimal possible zoom level (should be > 0)"
+          id="zoomExtentMin"
+          class="paired"
+          type="number"
+          min=".2"
+          step=".1"
+          max="20"
+          value="1"
+        />
+        <span data-tip="Maximal possible zoom level (should be > 1)">max</span>
+        <input
+          data-tip="Maximal possible zoom level (should be > 1)"
+          id="zoomExtentMax"
+          class="paired"
+          type="number"
+          min="1"
+          max="50"
+          value="20"
+        />
+      </td>
+      <td>
+        <i
+          data-tip="Allow to drag map beyond canvas borders"
+          id="translateExtent"
+          data-on="0"
+          class="icon-hand-paper-o"
+        ></i>
+      </td>
+    </tr>
+    <tr data-tip="Select rendering model. Try to set to 'optimized' if you face performance issues">
+      <td></td>
+      <td>Rendering</td>
+      <td>
+        <select id="shapeRendering" data-stored="shapeRendering">
+          <option value="geometricPrecision">Best quality</option>
+          <option value="optimizeSpeed" selected>Best performance</option>
+        </select>
+      </td>
+      <td></td>
+    </tr>
+    <tr
+      data-tip="Load Google Translate and select language. Note that automatic translation can break some page functional. In this case reset the language back to English or refresh the page"
+    >
+      <td>
+        <i data-tip="Reset language to English" id="resetLanguage" class="icon-ccw"></i>
+      </td>
+      <td>Language</td>
+      <td>
+        <button id="loadGoogleTranslateButton">Init Google Translate</button>
+        <div id="google_translate_element"></div>
+      </td>
+      <td></td>
+    </tr>
+    </table>
+    <div class="fantasia-options-actions">
+      <button
+        id="optionsReset"
+        data-tip="Click to restore default options and reload the page"
+        onclick="cleanupData()"
+      >
+        Reset to defaults
+      </button>
+    </div>
+  </section>
+</div>
