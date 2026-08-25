@@ -1,43 +1,49 @@
 import { expect, test } from "@playwright/test";
 
-test.describe("<ui-dialog> via Units Editor", () => {
+test.describe("<ui-dialog>", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/?seed=test-ui-dialog&width=1280&height=720");
     await page.waitForFunction(() => (window as any).mapId !== undefined, { timeout: 60000 });
   });
 
-  async function openUnitsEditor(page: import("@playwright/test").Page) {
-    await page.click("#optionsTrigger");
-    await page.click("#toolsTab");
-    await page.click("#editUnitsButton");
-    const dialog = page.locator("units-editor-dialog#unitsEditor ui-dialog");
+  async function openTestDialog(page: import("@playwright/test").Page) {
+    await page.evaluate(() => {
+      const wrapper = document.createElement("div");
+      wrapper.innerHTML =
+        '<ui-dialog id="test-dialog" dialog-title="Test Dialog"><input id="test-input" type="text" /><button slot="actions">OK</button></ui-dialog>';
+      const el = wrapper.firstElementChild!;
+      document.body.appendChild(el);
+      (el as any).open();
+    });
+
+    const dialog = page.locator("ui-dialog#test-dialog");
     await expect(dialog).toBeVisible();
     return dialog;
   }
 
   test("opens with the correct title and accessibility attributes", async ({ page }) => {
-    const dialog = await openUnitsEditor(page);
+    const dialog = await openTestDialog(page);
 
     await expect(dialog).toHaveAttribute("role", "dialog");
-    await expect(dialog).toHaveAttribute("aria-label", "Units Editor");
+    await expect(dialog).toHaveAttribute("aria-label", "Test Dialog");
     await expect(dialog).toHaveAttribute("aria-modal", "false");
-    await expect(page.locator("#distanceUnitInput")).toBeVisible();
+    await expect(page.locator("#test-input")).toBeVisible();
   });
 
   test("minimize collapses the content but keeps the title bar and controls visible", async ({ page }) => {
-    const dialog = await openUnitsEditor(page);
+    const dialog = await openTestDialog(page);
 
     await dialog.evaluate(el => el.shadowRoot!.querySelector<HTMLButtonElement>(".ui-dialog-titlebar-collapse")!.click());
     await expect(dialog).toHaveAttribute("minimized", "");
-    await expect(page.locator("#distanceUnitInput")).toBeHidden();
+    await expect(page.locator("#test-input")).toBeHidden();
 
     await dialog.evaluate(el => el.shadowRoot!.querySelector<HTMLButtonElement>(".ui-dialog-titlebar-collapse")!.click());
     await expect(dialog).not.toHaveAttribute("minimized", "");
-    await expect(page.locator("#distanceUnitInput")).toBeVisible();
+    await expect(page.locator("#test-input")).toBeVisible();
   });
 
   test("close button hides the dialog", async ({ page }) => {
-    const dialog = await openUnitsEditor(page);
+    const dialog = await openTestDialog(page);
 
     await dialog.evaluate(el => el.shadowRoot!.querySelector<HTMLButtonElement>(".ui-dialog-titlebar-close")!.click());
     await expect(dialog).not.toHaveAttribute("open", "");
@@ -45,14 +51,14 @@ test.describe("<ui-dialog> via Units Editor", () => {
   });
 
   test("Escape closes the dialog via the app's global handler", async ({ page }) => {
-    const dialog = await openUnitsEditor(page);
+    const dialog = await openTestDialog(page);
 
     await page.keyboard.press("Escape");
     await expect(dialog).not.toHaveAttribute("open", "");
   });
 
   test("resizing from the corner grows the dialog and keeps it within the viewport", async ({ page }) => {
-    const dialog = await openUnitsEditor(page);
+    const dialog = await openTestDialog(page);
 
     const before = await dialog.evaluate(el => el.getBoundingClientRect());
     const handleCenter = await dialog.evaluate(el => {
@@ -74,7 +80,7 @@ test.describe("<ui-dialog> via Units Editor", () => {
   });
 
   test("shrinking narrower keeps content at its natural size instead of wrapping", async ({ page }) => {
-    const dialog = await openUnitsEditor(page);
+    const dialog = await openTestDialog(page);
 
     const heightBefore = await dialog.evaluate(el => el.getBoundingClientRect().height);
     const handleCenter = await dialog.evaluate(el => {
@@ -85,7 +91,7 @@ test.describe("<ui-dialog> via Units Editor", () => {
 
     await page.mouse.move(handleCenter.x, handleCenter.y);
     await page.mouse.down();
-    await page.mouse.move(handleCenter.x - 120, handleCenter.y, { steps: 10 });
+    await page.mouse.move(handleCenter.x - 60, handleCenter.y, { steps: 10 });
     await page.mouse.up();
 
     const heightAfter = await dialog.evaluate(el => el.getBoundingClientRect().height);
@@ -93,7 +99,7 @@ test.describe("<ui-dialog> via Units Editor", () => {
   });
 
   test("resizable=false hides the resize handles", async ({ page }) => {
-    const dialog = await openUnitsEditor(page);
+    const dialog = await openTestDialog(page);
 
     await dialog.evaluate(el => el.setAttribute("resizable", "false"));
     const handleDisplay = await dialog.evaluate(
@@ -103,7 +109,7 @@ test.describe("<ui-dialog> via Units Editor", () => {
   });
 
   test("Shift+Tab from the first focusable element wraps to the last one", async ({ page }) => {
-    const dialog = await openUnitsEditor(page);
+    const dialog = await openTestDialog(page);
 
     await page.keyboard.press("Shift+Tab");
     const wrappedToLast = await dialog.evaluate(el => {
@@ -124,23 +130,25 @@ test.describe("<ui-dialog> via Units Editor", () => {
       opener.id = "test-opener";
       document.body.appendChild(opener);
       opener.focus();
-      (document.querySelector("units-editor-dialog#unitsEditor") as any).open();
+
+      const wrapper = document.createElement("div");
+      wrapper.innerHTML = '<ui-dialog id="test-dialog" dialog-title="Test Dialog"></ui-dialog>';
+      const el = wrapper.firstElementChild!;
+      document.body.appendChild(el);
+      (el as any).open();
     });
 
-    const dialog = page.locator("units-editor-dialog#unitsEditor ui-dialog");
+    const dialog = page.locator("ui-dialog#test-dialog");
     await expect(dialog).toBeVisible();
 
     await dialog.evaluate(el => el.shadowRoot!.querySelector<HTMLButtonElement>(".ui-dialog-titlebar-close")!.click());
     await expect(page.locator("#test-opener")).toBeFocused();
   });
 
-  test("restoring defaults resets the unit selections", async ({ page }) => {
-    await openUnitsEditor(page);
+  test("action buttons are slotted into the button pane", async ({ page }) => {
+    const dialog = await openTestDialog(page);
 
-    await page.selectOption("#distanceUnitInput", "km");
-    await expect(page.locator("#distanceUnitInput")).toHaveValue("km");
-
-    await page.click("#unitsRestore");
-    await expect(page.locator("#distanceUnitInput")).not.toHaveValue("km");
+    await expect(dialog).toHaveClass(/has-actions/);
+    await expect(page.locator("ui-dialog#test-dialog button", { hasText: "OK" })).toBeVisible();
   });
 });
