@@ -5,15 +5,10 @@ import { Pipeline, type PipelineStep } from "@/generators/pipeline";
 import type { PackedGraph } from "@/types/PackedGraph";
 import { generateGrid, shouldRegenerateGrid } from "@/utils";
 
-interface GenerationContext {
-  seed?: string; // requested seed, if the caller wants a specific one; undefined for "any is fine"
-  graph?: unknown; // pre-created grid (e.g. loaded from a save) to use instead of generating one
-}
-
 const pipelineSteps: PipelineStep<string, GenerationContext>[] = [
   {
     id: "grid",
-    run: (context: GenerationContext) => {
+    run: context => {
       if (shouldRegenerateGrid(grid, context.seed, graphWidth, graphHeight)) {
         grid = context.graph ?? generateGrid(seed, graphWidth, graphHeight);
       } else {
@@ -28,8 +23,8 @@ const pipelineSteps: PipelineStep<string, GenerationContext>[] = [
     }
   },
   { id: "markupGrid", run: () => Features.markupGrid() },
-  { id: "addLakesInDeepDepressions", run: () => addLakesInDeepDepressions() },
-  { id: "openNearSeaLakes", run: () => openNearSeaLakes() },
+  { id: "depressionLakes", run: () => addLakesInDeepDepressions() },
+  { id: "nearSeaLakes", run: () => openNearSeaLakes() },
   { id: "mapSize", run: () => defineMapSize() },
   { id: "mapCoordinates", run: () => calculateMapCoordinates() },
   { id: "temperatures", run: () => calculateTemperatures() },
@@ -68,34 +63,22 @@ const pipelineSteps: PipelineStep<string, GenerationContext>[] = [
 ];
 
 type PipelineStepId = (typeof pipelineSteps)[number]["id"];
-export const GenerationPipeline = new Pipeline<PipelineStepId, GenerationContext>("Generation Pipeline", pipelineSteps);
 
-interface EraseContext {
-  erosion: boolean;
-}
+type GenerationContext = {
+  seed?: string; // requested seed, if the caller wants a specific one; undefined for "any is fine"
+  graph?: unknown; // pre-created grid (e.g. loaded from a save) to use instead of generating one
+};
+export const GenerationPipeline = new Pipeline<PipelineStepId, GenerationContext>("Generation Pipeline", pipelineSteps);
 
 const erasePipelineSteps: PipelineStep<PipelineStepId, EraseContext>[] = [
   { id: "markupGrid", run: () => Features.markupGrid() },
-  { id: "addLakesInDeepDepressions", run: ({ erosion }: EraseContext) => erosion && addLakesInDeepDepressions() },
-  { id: "openNearSeaLakes", run: ({ erosion }: EraseContext) => erosion && openNearSeaLakes() },
+  { id: "depressionLakes", run: ({ erosion }) => erosion && addLakesInDeepDepressions() },
+  { id: "nearSeaLakes", run: ({ erosion }) => erosion && openNearSeaLakes() },
   { id: "temperatures", run: () => calculateTemperatures() },
   { id: "precipitation", run: () => generatePrecipitation() },
   { id: "regraph", run: () => reGraph() },
   { id: "markupPack", run: () => Features.markupPack() },
-  {
-    id: "rivers",
-    run: ({ erosion }: EraseContext) => {
-      Rivers.generate(erosion);
-      if (!erosion) {
-        for (const i of pack.cells.i) {
-          const g = pack.cells.g[i];
-          if (pack.cells.h[i] !== grid.cells.h[g] && pack.cells.h[i] >= 20 === grid.cells.h[g] >= 20) {
-            pack.cells.h[i] = grid.cells.h[g];
-          }
-        }
-      }
-    }
-  },
+  { id: "rivers", run: ({ erosion }) => Rivers.generate(erosion) },
   { id: "biomes", run: () => Biomes.define() },
   { id: "featureGroups", run: () => Features.defineGroups() },
   { id: "ice", run: () => Ice.generate() },
@@ -122,6 +105,7 @@ const erasePipelineSteps: PipelineStep<PipelineStepId, EraseContext>[] = [
   { id: "zones", run: () => Zones.generate() }
 ];
 
+type EraseContext = { erosion: boolean };
 export const ErasePipeline = new Pipeline<PipelineStepId, EraseContext>("Erase Heightmap", erasePipelineSteps);
 
 declare global {

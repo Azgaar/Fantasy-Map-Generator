@@ -493,6 +493,7 @@ async function regenerateErasedData(): Promise<void> {
   pack.states = [];
   pack.provinces = [];
   pack.religions = [];
+  pack.relief = [];
 
   const erosionAllowed = ensureEl<HTMLInputElement>("allowErosion").checked;
   await ErasePipeline.run({ erosion: erosionAllowed });
