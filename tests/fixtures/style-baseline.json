@@ -97,9 +97,7 @@
   "#goodsCells": {
     "opacity": "1"
   },
-  "#goodsIcons": {
-    "data-circle": "1"
-  },
+  "#goodsIcons": {},
   "#goodsBurgs": {
     "opacity": "1",
     "stroke": "#41414f",
@@ -183,8 +181,7 @@
     "style": "display: none;"
   },
   "#oceanLayers": {
-    "filter": "",
-    "layers": "-6,-3,-1"
+    "filter": ""
   },
   "#oceanBase": {
     "fill": "#05001f",
@@ -322,9 +319,6 @@
   "#texture": {
     "opacity": "0.2",
     "mask": "url(#water)",
-    "data-x": "0",
-    "data-y": "0",
-    "data-href": "./images/textures/mercury-small.jpg",
     "style": "display: none;"
   },
   "#tradeAnimation": {

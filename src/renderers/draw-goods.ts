@@ -65,8 +65,7 @@ function buildGoodsCellsContent(displayedGoods: Set<number>): string {
 function buildGoodsIconsContent(displayedGoods: Set<number>): string {
   if (!displayedGoods.size || !pack.cells.good) return "";
 
-  const iconsGroup = select("#goods").select("#goodsIcons");
-  const drawCircle = +iconsGroup.attr("data-circle");
+  const drawCircle = styles.goods.goodsIcons.options.circle;
   const iconSize = styles.goods.goodsIcons.options.size;
   const half = iconSize / 2;
   let html = "";

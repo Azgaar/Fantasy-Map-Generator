@@ -13,7 +13,7 @@ const waitForMap = (page: Page) =>
 
 const rn = (v: number, d = 0): number => Math.round(v * 10 ** d) / 10 ** d;
 
-async function openStyleElement(page: Page, element: "markers" | "regions" | "coordinates" | "ruler" | "legend" | "emblems" | "goodsIcons" | "goodsBurgs" | "markets" | "terrs" | "armies" | "gridOverlay"): Promise<void> {
+async function openStyleElement(page: Page, element: "markers" | "regions" | "coordinates" | "ruler" | "legend" | "emblems" | "goodsIcons" | "goodsBurgs" | "markets" | "terrs" | "armies" | "gridOverlay" | "texture" | "ocean"): Promise<void> {
   await page.evaluate(() => (window as any).showOptions());
   await page.locator("#styleTab").click();
   await page.locator("#styleElementSelect").selectOption(element);
@@ -243,9 +243,10 @@ test.describe("style editor events drive the store", () => {
     expect(stored).toBe(6);
     expect(typeof stored).toBe("number");
 
-    // fontSize and icon are not in this family: their attrs must survive on the element
-    expect(await page.locator("#markets").getAttribute("data-size")).toBeNull();
-    expect(await page.locator("#markets").getAttribute("font-size")).not.toBeNull();
+    // the whole markets option family is off the DOM now
+    for (const attr of ["data-size", "font-size", "data-icon"]) {
+      expect(await page.locator("#markets").getAttribute(attr), attr).toBeNull();
+    }
   });
 
   test("heightmap controls write the store per group and the renderer derives from it", async ({ page }) => {
@@ -353,5 +354,59 @@ test.describe("style editor events drive the store", () => {
     await page.locator("#mapFilters #sepia").click();
     expect(await page.evaluate(() => (window as any).styles.map.options.dataFilter)).toBeNull();
     expect(await page.locator("#map").getAttribute("filter")).toBeNull();
+  });
+
+  test("markets icon size and goods circle write the store and drive the renderer", async ({ page }) => {
+    await page.evaluate(() => {
+      (window as any).Layers.show("goods");
+      (window as any).Layers.show("markets");
+    });
+
+    await openStyleElement(page, "markets");
+    await page.locator("#styleMarketsIconSize input[type=number]").fill("11");
+    await page.locator("#styleMarketsIconSize").dispatchEvent("change");
+
+    expect(await page.evaluate(() => (window as any).styles.markets.options.fontSize)).toBe(11);
+    // drawn glyphs derive from the store base plus the zoom term (baseFont + 1/scale)
+    const scale = await currentScale(page);
+    const expectedFont = `${rn(11 + 1 / scale, 2)}px`;
+    await expect(page.locator("#markets text").first()).toHaveAttribute("font-size", expectedFont);
+    for (const attr of ["font-size", "data-icon", "data-size"]) {
+      expect(await page.locator("#markets").getAttribute(attr), attr).toBeNull();
+    }
+
+    await openStyleElement(page, "goodsIcons");
+    const before = await page.evaluate(() => (window as any).styles.goods.goodsIcons.options.circle);
+    await page.locator('label[for="styleGoodsCircle"]').click();
+    expect(await page.evaluate(() => (window as any).styles.goods.goodsIcons.options.circle)).toBe(!before);
+    expect(typeof (await page.evaluate(() => (window as any).styles.goods.goodsIcons.options.circle))).toBe("boolean");
+    expect(await page.locator("#goodsIcons").getAttribute("data-circle")).toBeNull();
+  });
+
+  test("texture controls write the store and the renderer rebuilds the image", async ({ page }) => {
+    await page.evaluate(() => (window as any).Layers.show("texture"));
+    await openStyleElement(page, "texture");
+
+    await page.locator("#styleTextureShiftX").fill("40");
+    await page.locator("#styleTextureShiftX").dispatchEvent("input");
+
+    const stored = await page.evaluate(() => (window as any).styles.texture.options);
+    expect(stored.x).toBe(40);
+    expect(typeof stored.href).toBe("string");
+
+    await expect(page.locator("#texture image")).toHaveAttribute("x", "40");
+    for (const attr of ["data-href", "data-x", "data-y"]) {
+      expect(await page.locator("#texture").getAttribute(attr), attr).toBeNull();
+    }
+  });
+
+  test("ocean outline select writes the store and redraws the layers", async ({ page }) => {
+    await openStyleElement(page, "ocean");
+
+    await page.locator("#outlineLayers").selectOption("-6,-4,-2");
+
+    expect(await page.evaluate(() => (window as any).styles.ocean.oceanLayers.options.outline)).toBe("-6,-4,-2");
+    expect(await page.locator("#oceanLayers").getAttribute("layers")).toBeNull();
+    expect(await page.evaluate(() => document.querySelectorAll("#oceanLayers > path").length)).toBe(3);
   });
 });

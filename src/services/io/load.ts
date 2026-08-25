@@ -466,7 +466,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
 
     {
       // add custom texture if any
-      const textureHref = select("#texture").attr("data-href");
+      const textureHref = styles.texture.options.href;
       if (textureHref) updateTextureSelectValue(textureHref);
     }
 

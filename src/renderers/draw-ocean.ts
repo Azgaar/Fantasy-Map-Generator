@@ -7,7 +7,7 @@ export function drawOcean(): void {
   const oceanLayers = ensureEl<SVGGElement>("oceanLayers");
   removeOcean();
 
-  const limits = Ocean.getLimits(oceanLayers.getAttribute("layers") ?? "");
+  const limits = Ocean.getLimits(styles.ocean.oceanLayers.options.outline);
   if (!limits.length) return;
 
   TIME && console.time("drawOcean");

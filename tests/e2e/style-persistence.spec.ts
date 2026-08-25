@@ -214,7 +214,11 @@ test.describe("style persistence round trips", () => {
       .replace('<g id="oceanHeights"', '<g id="oceanHeights" scheme="bright" terracing="0" skip="0" relax="0" curve="curveBasisClosed" data-render="1"')
       .replace('<g id="armies"', '<g id="armies" box-size="9"')
       .replace('<g id="gridOverlay"', '<g id="gridOverlay" type="square" scale="9" dx="9" dy="9"')
-      .replace('<g id="sea_island"', '<g id="sea_island" auto-filter="0"');
+      .replace('<g id="sea_island"', '<g id="sea_island" auto-filter="0"')
+      .replace('<g id="markets"', '<g id="markets" font-size="66" data-icon="Z"')
+      .replace('<g id="goodsIcons"', '<g id="goodsIcons" data-circle="0"')
+      .replace('<g id="texture"', '<g id="texture" data-href="./z.jpg" data-x="66" data-y="66"')
+      .replace('<g id="oceanLayers"', '<g id="oceanLayers" layers="-6"');
     const staleBuffer = Buffer.from(lines.join("\r\n"), "utf8");
 
     await reload(page, staleBuffer, "style-persistence-step4-era-reloaded");
@@ -241,6 +245,14 @@ test.describe("style persistence round trips", () => {
         document.getElementById("sea_island")?.getAttribute("auto-filter")
       ],
       gridScale: styles.grid.options.scale,
+      contentAttrs: [
+        document.getElementById("markets")?.getAttribute("font-size"),
+        document.getElementById("markets")?.getAttribute("data-icon"),
+        document.getElementById("goodsIcons")?.getAttribute("data-circle"),
+        document.getElementById("texture")?.getAttribute("data-href"),
+        document.getElementById("oceanLayers")?.getAttribute("layers")
+      ],
+      oceanOutline: styles.ocean.oceanLayers.options.outline,
       rescale: styles.markers.options.rescale,
       haloWidth: styles.states.statesHalo.options.width,
       coordinatesSize: styles.coordinates.options.fontSize
@@ -260,6 +272,8 @@ test.describe("style persistence round trips", () => {
     expect(afterLoad.landScheme).not.toBe("olive");
     expect(afterLoad.smallFamilyAttrs).toEqual([null, null, null, null]);
     expect(afterLoad.gridScale).toBe(1);
+    expect(afterLoad.contentAttrs).toEqual([null, null, null, null, null]);
+    expect(afterLoad.oceanOutline).toBe("-6,-3,-1");
     expect(afterLoad.rescale).toBe(1);
     expect(afterLoad.haloWidth).toBe(10);
     expect(afterLoad.coordinatesSize).toBe(12);

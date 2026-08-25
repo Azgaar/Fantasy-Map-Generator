@@ -198,6 +198,35 @@ test("save sync lets an old map's armies, grid, map-filter and auto-filter attrs
   expect(styles.coastline.sea_island.options.autoFilter).toBe(1);
 });
 
+test("save sync keeps store markets, goods-circle, texture and ocean-outline options when their attrs are absent", () => {
+  document.body.innerHTML = `<svg id="map"><g id="markets"></g><g id="goods"><g id="goodsIcons"></g></g><g id="texture"></g><g id="oceanLayers"></g></svg>`;
+  styles.markets.options.fontSize = 11;
+  styles.markets.options.icon = "X";
+  styles.goods.goodsIcons.options.circle = false;
+  styles.texture.options.x = 40;
+  styles.ocean.oceanLayers.options.outline = "-6,-4,-2";
+  syncStylesFromMap();
+  expect(styles.markets.options.fontSize).toBe(11);
+  expect(styles.markets.options.icon).toBe("X");
+  expect(styles.goods.goodsIcons.options.circle).toBe(false);
+  expect(styles.texture.options.x).toBe(40);
+  expect(styles.ocean.oceanLayers.options.outline).toBe("-6,-4,-2");
+});
+
+test("save sync lets an old map's markets, goods-circle, texture and ocean-outline attrs win", () => {
+  document.body.innerHTML = `<svg id="map"><g id="markets" data-size="3" font-size="7" data-icon="Y"></g><g id="goods"><g id="goodsIcons" data-circle="1"></g></g><g id="texture" data-href="./t.jpg" data-x="5" data-y="6"></g><g id="oceanLayers" layers="-6"></g></svg>`;
+  styles.markets.options.fontSize = 11;
+  styles.goods.goodsIcons.options.circle = false;
+  styles.texture.options.x = 40;
+  styles.ocean.oceanLayers.options.outline = "-6,-4,-2";
+  syncStylesFromMap();
+  expect(styles.markets.options.fontSize).toBe(7);
+  expect(styles.markets.options.icon).toBe("Y");
+  expect(styles.goods.goodsIcons.options.circle).toBe(true);
+  expect(styles.texture.options).toEqual({ href: "./t.jpg", x: 5, y: 6 });
+  expect(styles.ocean.oceanLayers.options.outline).toBe("-6");
+});
+
 test("save sync lets an old map's coordinates data-size win over the store", () => {
   document.body.innerHTML = `<svg id="map"><g id="coordinates" data-size="14"></g></svg>`;
   styles.coordinates.options.fontSize = 20;
