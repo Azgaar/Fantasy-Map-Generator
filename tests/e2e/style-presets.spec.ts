@@ -20,6 +20,19 @@ async function switchTo(page: Page, preset: string) {
   }, preset);
 }
 
+// Relief.changeSize (src/generators/relief-generator.ts) writes the resized value into
+// pack.relief[i].s, and the viewport renderer copies that straight into the <use> width/height
+// attrs (src/renderers/draw-relief-icons.ts) - so a stuck-shrunk icon is observable on a specific
+// icon's width attr without forcing a full relief regeneration.
+async function firstReliefIconId(page: Page) {
+  return page.evaluate(() => document.querySelector("#terrain > use")?.getAttribute("data-id") ?? null);
+}
+
+async function reliefIconWidth(page: Page, id: string) {
+  const width = await page.locator(`#terrain > use[data-id="${id}"]`).getAttribute("width");
+  return width == null ? null : Number(width);
+}
+
 // two independently-sourced attributes (ocean vs landmass fill) so a preset apply that silently
 // no-ops can't hide behind the previous preset's leftover value - see the collision check below
 async function readPinnedAttrs(page: Page) {
@@ -79,4 +92,36 @@ test("every shipped preset applies through the store with no console errors", as
 
   expect(consoleErrors, "console errors during preset switching").toEqual([]);
   expect(pageErrors, "page errors during preset switching").toEqual([]);
+});
+
+test("relief icon size round-trips through a preset switch and back", async ({page}) => {
+  await page.goto("/?seed=test-seed&width=1280&height=720");
+  await page.waitForFunction(() => (window as any).mapId !== undefined, {timeout: 60000});
+  await page.waitForSelector("#burgIcons > g", {state: "attached", timeout: 60000});
+  await page.waitForSelector("#labels > g", {state: "attached", timeout: 60000});
+  await page.waitForTimeout(500);
+
+  await page.evaluate(() => sessionStorage.setItem("styleChangeConfirmed", "true"));
+
+  // the "relief" layer is off in the default layers preset - turn it on so the terrain icons render
+  await page.evaluate(() => (window as any).Layers.show("relief"));
+  await page.waitForSelector("#terrain > use", {state: "attached", timeout: 60000});
+
+  await switchTo(page, "default");
+  await page.waitForTimeout(100);
+
+  const id = await firstReliefIconId(page);
+  expect(id, "a relief icon to measure").not.toBeNull();
+  const baselineWidth = await reliefIconWidth(page, id as string);
+  expect(baselineWidth, "baseline relief icon width").toBeGreaterThan(0);
+
+  await switchTo(page, "pale");
+  await page.waitForTimeout(100);
+  const paleWidth = await reliefIconWidth(page, id as string);
+  expect(paleWidth, "relief icon width after switching to pale (size 0.7)").toBeCloseTo(baselineWidth! * 0.7, 1);
+
+  await switchTo(page, "default");
+  await page.waitForTimeout(100);
+  const revertedWidth = await reliefIconWidth(page, id as string);
+  expect(revertedWidth, "relief icon width after switching back to default (size 1)").toBeCloseTo(baselineWidth!, 1);
 });

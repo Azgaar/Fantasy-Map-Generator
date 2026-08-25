@@ -94,7 +94,7 @@ function applyStoredStyles() {
 
 function applyReliefOptions(previousSize) {
   const {set, size} = styles.relief.options;
-  if (size && size / previousSize !== 1) Relief.changeSize(size);
+  if (size && size / previousSize !== 1) Relief.changeSize(size / previousSize);
   if (set) Relief.changeSet(set);
 }
 
