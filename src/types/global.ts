@@ -87,7 +87,7 @@ declare global {
   var svgHeight: number;
 
   var notes: any[]; // TODO: correct type
-  var styles: import("@/generators/styles").Styles;
+  var styles: import("@/generators/styles-schema").Styles;
   var stylesLegacy: typeof import("@/generators/styles-legacy");
   var stylesStore: {
     parseStyles: typeof import("@/generators/styles").parseStyles;

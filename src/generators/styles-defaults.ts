@@ -1,4 +1,4 @@
-import type { Styles } from "./styles";
+import type { Styles } from "./styles-schema";
 
 // The default preset, complete: the single place style defaults exist in the app.
 export const DEFAULT_STYLES: Styles = {

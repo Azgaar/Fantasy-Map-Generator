@@ -2,8 +2,9 @@
 // edges use this: map-file save/load and legacy preset routing. Dies when those write the new
 // format natively.
 
-import { parseStyles, type Styles, styles } from "./styles";
+import { parseStyles, styles } from "./styles";
 import { DEFAULT_STYLES } from "./styles-defaults";
+import type { Styles } from "./styles-schema";
 
 type LabelGroupStyle = Styles["labels"]["groups"][string];
 
