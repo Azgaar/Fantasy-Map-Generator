@@ -6,7 +6,8 @@ import { pointer } from "d3";
  * @returns The element with the specified ID, cast to the specified type
  */
 export const ensureEl = <T extends Element = HTMLElement>(id: string): T => {
-  const el = document.getElementById(id);
+  const globalElement = (window as unknown as Record<string, unknown>)[id];
+  const el = document.getElementById(id) ?? (globalElement instanceof Element ? globalElement : null);
   if (!el) {
     // TODO: throw an error instead of logging it, and handle it properly in the caller
     ERROR && console.error(`Element with id "${id}" not found.`);

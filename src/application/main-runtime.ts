@@ -32,8 +32,8 @@ import { clearMapInteractionOverlay } from "@/renderers/pixi/pixi-renderer-contr
 import { tradeAnimation } from "@/renderers/trade-animation";
 import { initiateAutosave } from "@/services/autosave";
 import { LocalMapStorage } from "@/services/io/local-map-storage";
-import { getUnitSettings } from "@/services/units-settings";
 import { notifyMapMutation } from "@/services/map-mutation";
+import { getUnitSettings } from "@/services/units-settings";
 import { cleanupData } from "@/services/versioning";
 import type { Grid } from "@/types/grid";
 import type { PackedGraph } from "@/types/PackedGraph";

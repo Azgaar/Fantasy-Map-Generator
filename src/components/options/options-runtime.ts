@@ -6,13 +6,13 @@ import { getViewportSurface } from "@/application/viewport-surface";
 import { getWorkspaceMode, requireWorkspaceCapability } from "@/application/workspace-mode";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { enableElementDragging } from "@/components/element-dragging";
-import { showDomDialog } from "@/components/ui/dom-dialog";
 import { clearMainTip, tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { fitLegendBox } from "@/renderers/draw-legend";
 import { fitScaleBar } from "@/renderers/draw-scalebar";
+import { getUnitSettings } from "@/services/units-settings";
 import { applyOption, ensureEl, gauss, last, minmax, P, rand, rn, rw } from "@/utils";
 import { lock, stored, unlock } from "@/utils/preferences";
-import { getUnitSettings } from "@/services/units-settings";
 import { createExportMapDialog, createLoadMapDialog, createPngTilesDialog, createSaveMapDialog } from "./io-dialogs";
 import {
   bindOptionsController,
@@ -983,7 +983,10 @@ function showExportPane(): void {
     });
   });
   content.querySelectorAll<HTMLButtonElement>("[data-export-json]").forEach(button => {
-    button.addEventListener("click", () => void exportToJson(button.dataset.exportJson as "Full" | "GridCells" | "Minimal" | "PackCells"));
+    button.addEventListener(
+      "click",
+      () => void exportToJson(button.dataset.exportJson as "Full" | "GridCells" | "Minimal" | "PackCells")
+    );
   });
   showDomDialog({
     actions: [{ label: "Close" }],
