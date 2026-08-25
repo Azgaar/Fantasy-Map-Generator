@@ -46,6 +46,7 @@ function open(id: number | string): void {
     onClose: closeBurgEditor,
     placement: "top-right",
     placementTarget: document.getElementById("map"),
+    presentation: "panel",
     resizable: false,
     title: "Edit Burg"
   });

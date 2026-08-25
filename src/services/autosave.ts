@@ -1,9 +1,10 @@
 // Background save lifecycle: the autosave timer and the periodic "remember to save" reminder
 
 import { tip } from "@/components/tooltips";
-import { MAP_CONTENT_CHANGED_EVENT } from "@/renderers/pixi/pixi-renderer-controller";
 import { Services } from "@/services";
 import { ensureEl, ra } from "@/utils";
+import { getWorkspaceMode } from "@/application/workspace-mode";
+import { MAP_MUTATED_EVENT } from "./map-mutation";
 
 const MINUTE = 60000; // minute in milliseconds
 
@@ -14,10 +15,17 @@ export function initiateAutosave(): void {
     dirty = true;
   };
 
-  window.addEventListener(MAP_CONTENT_CHANGED_EVENT, markDirty);
+  window.addEventListener(MAP_MUTATED_EVENT, markDirty);
   window.addEventListener("map:generated", markDirty);
-  document.addEventListener("change", markDirty, { capture: true });
-  document.addEventListener("input", markDirty, { capture: true });
+  document.addEventListener("change", markLegacyDocumentControlDirty, { capture: true });
+  document.addEventListener("input", markLegacyDocumentControlDirty, { capture: true });
+
+  function markLegacyDocumentControlDirty(event: Event): void {
+    if (getWorkspaceMode() !== "edit") return;
+    const target = event.target as Element | null;
+    if (!target || target.closest("#mapLayers, #mapPreviewRoot, .fmg-dialog")) return;
+    markDirty();
+  }
   window.addEventListener("map:loaded", () => {
     dirty = false;
   });

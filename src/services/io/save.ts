@@ -3,7 +3,8 @@
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { LayerControls } from "@/components/layers/layer-controls";
 import { tip } from "@/components/tooltips";
-import { capturePixiLayerVisibility } from "@/renderers/pixi/pixi-layer-visibility-state";
+import { getDocumentLayerVisibility } from "@/application/view-session-state";
+import { getCapturedPixiLayerVisibility } from "@/renderers/pixi/pixi-layer-visibility-state";
 import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
 import { VERSION } from "@/services/versioning";
@@ -88,7 +89,10 @@ async function prepareMapData(): Promise<string> {
   cloneEl.querySelector("#viewbox")?.removeAttribute("transform");
   cloneEl
     .querySelector("#labels")
-    ?.setAttribute("data-layer-active", String(window.LayerControls.isLayerOn("toggleLabels")));
+    ?.setAttribute(
+      "data-layer-active",
+      String(getDocumentLayerVisibility("toggleLabels", window.LayerControls.isLayerOn("toggleLabels")))
+    );
   cloneEl.querySelector("#mapInteractionOverlay")?.remove();
   cloneEl.querySelector("#mapInteractionSurface")?.remove();
 
@@ -105,8 +109,13 @@ async function prepareMapData(): Promise<string> {
 
   const { spacing, cellsX, cellsY, boundary, points, features, cellsDesired } = grid;
   const gridGeneral = { spacing, cellsX, cellsY, boundary, points, features, cellsDesired };
-  capturePixiLayerVisibility(style, controlId => window.LayerControls.isLayerOn(controlId));
-  style.mapLayerOrder = LayerControls.getLayerOrder();
+  const serializedStyle = {
+    ...structuredClone(style),
+    mapLayerOrder: [...LayerControls.getLayerOrder()],
+    mapLayerVisibility: getCapturedPixiLayerVisibility(style, controlId =>
+      getDocumentLayerVisibility(controlId, window.LayerControls.isLayerOn(controlId))
+    )
+  };
 
   // store custom good icons
   const goodIconsEl = ensureEl("good-icons");
@@ -176,7 +185,7 @@ async function prepareMapData(): Promise<string> {
     text(customGoodIcons),
     json(pack.measurers ?? []),
     json(pack.addedLabels || []),
-    json(style),
+    json(serializedStyle),
     json(pack.relief || [])
   ]);
 }

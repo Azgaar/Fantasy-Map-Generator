@@ -54,6 +54,12 @@ import { stored } from "@/utils/preferences";
 import { bindApplicationController } from "./application-controller";
 import { initializeApplicationState } from "./application-state";
 import { getViewportSurface, initializeViewportSurface } from "./viewport-surface";
+import { endViewSession, startViewSession } from "./view-session-state";
+import {
+  getWorkspaceMode,
+  initializeWorkspaceMode,
+  registerWorkspaceModeTransitionHandler
+} from "./workspace-mode";
 
 // set debug options
 const PRODUCTION = Boolean(location.hostname && location.hostname !== "localhost" && location.hostname !== "127.0.0.1");
@@ -147,6 +153,26 @@ const app = initializeApplicationState({
   urbanization: +ensureEl<HTMLInputElement>("urbanizationInput").value,
   viewX: 0,
   viewY: 0
+});
+
+initializeWorkspaceMode({ onCapabilityDenied: message => tip(message, false, "error") });
+registerWorkspaceModeTransitionHandler(nextMode => {
+  if (nextMode === "view") {
+    if (app.customization) {
+      tip("Finish or cancel the active editing workflow before entering View mode", false, "error");
+      return false;
+    }
+    startViewSession(new Map(LayerControls.getSnapshot().layers.map(layer => [layer.id, layer.visible])));
+    return true;
+  }
+
+  endViewSession((layerId, visible) => LayerControls.setLayerVisibility(layerId, visible));
+  return true;
+});
+window.addEventListener("map:loaded", () => {
+  if (getWorkspaceMode() === "view") {
+    startViewSession(new Map(LayerControls.getSnapshot().layers.map(layer => [layer.id, layer.visible])));
+  }
 });
 
 OptionsController.applyStoredOptions();

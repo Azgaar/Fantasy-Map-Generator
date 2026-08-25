@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Style } from "@/types/style";
 import {
-  capturePixiLayerVisibility,
+  getCapturedPixiLayerVisibility,
   getStoredPixiLayerVisibility,
   PIXI_LAYER_CONTROL_IDS
 } from "./pixi-layer-visibility-state";
@@ -9,7 +9,7 @@ import {
 describe("Pixi layer visibility state", () => {
   it("captures every toggleable owned layer without discarding future visibility entries", () => {
     const appStyle = { mapLayerVisibility: { texture: false, vignette: false } } as Pick<Style, "mapLayerVisibility">;
-    capturePixiLayerVisibility(appStyle, controlId => controlId !== "toggleReligions");
+    const visibility = getCapturedPixiLayerVisibility(appStyle, controlId => controlId !== "toggleReligions");
 
     expect(Object.keys(PIXI_LAYER_CONTROL_IDS)).toEqual([
       "biomes",
@@ -41,7 +41,7 @@ describe("Pixi layer visibility state", () => {
       "trade",
       "zones"
     ]);
-    expect(appStyle.mapLayerVisibility).toMatchObject({
+    expect(visibility).toMatchObject({
       emblems: true,
       labels: true,
       religions: false,
@@ -49,7 +49,8 @@ describe("Pixi layer visibility state", () => {
       states: true,
       vignette: false
     });
-    expect(appStyle.mapLayerVisibility).not.toHaveProperty("texture");
+    expect(visibility).not.toHaveProperty("texture");
+    expect(appStyle.mapLayerVisibility).toEqual({ texture: false, vignette: false });
   });
 
   it("distinguishes an absent value from an explicitly hidden layer", () => {

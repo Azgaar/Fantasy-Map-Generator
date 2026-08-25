@@ -1,3 +1,5 @@
+import { getWorkspaceMode } from "@/application/workspace-mode";
+import { setViewSessionLayerVisibility } from "@/application/view-session-state";
 import { tip } from "@/components/tooltips";
 import type { MapLayerId } from "@/renderers/core/layer-registry";
 import { MAP_LAYER_REGISTRY, normalizeMapLayerOrder, resolveMapLayerOrder } from "@/renderers/core/layer-registry";
@@ -10,6 +12,7 @@ import {
 } from "@/renderers/pixi/pixi-renderer-controller";
 import type { PixiOwnedLayer } from "@/renderers/pixi/pixi-renderer-ownership";
 import { getMapRendererStyle } from "@/renderers/scene/map-style-state";
+import { notifyMapMutation } from "@/services/map-mutation";
 import { ensureEl, findEl } from "@/utils";
 import { enableVerticalSortable } from "../dialog/vertical-sortable";
 import {
@@ -256,6 +259,10 @@ export function initializeLayerControlsRuntime(): void {
       syncLayerOrderFromDom();
       moveSvgLayerById(item.id, item.previousElementSibling?.id, item.nextElementSibling?.id);
       syncRendererLayerOrder();
+      if (getWorkspaceMode() === "edit") {
+        style.mapLayerOrder = getMapLayerOrder();
+        notifyMapMutation("layer-order");
+      }
       notifyLayerControlsChanged();
     }
   });
@@ -305,6 +312,8 @@ export function isLayerOn(id: string): boolean {
 
 export function setLayerButtonVisibility(id: string, visible: boolean): void {
   ensureEl(id).classList.toggle("buttonoff", !visible);
+  if (getWorkspaceMode() === "view") setViewSessionLayerVisibility(id, visible);
+  else persistLayerVisibility(id, visible);
   getCurrentPreset();
   ViewportLayers.invalidateAll();
   notifyLayerControlsChanged();
@@ -652,6 +661,10 @@ function moveLayerById(id: string, previousId?: string, nextId?: string): void {
   layerOrder = nextOrder;
   moveSvgLayerById(id, previousId, nextId);
   syncRendererLayerOrder();
+  if (getWorkspaceMode() === "edit") {
+    style.mapLayerOrder = getMapLayerOrder();
+    notifyMapMutation("layer-order");
+  }
   notifyLayerControlsChanged();
 }
 
@@ -696,6 +709,13 @@ function restoreMapLayerOrder(order: readonly MapLayerId[]): void {
   }
   syncRendererLayerOrder();
   notifyLayerControlsChanged();
+}
+
+function persistLayerVisibility(id: string, visible: boolean): void {
+  const layer = PIXI_LAYER_BY_TOGGLE[id as keyof typeof PIXI_LAYER_BY_TOGGLE] as MapLayerId | undefined;
+  if (!layer) return;
+  style.mapLayerVisibility = { ...style.mapLayerVisibility, [layer]: visible };
+  notifyMapMutation("layer-visibility");
 }
 
 function getSvgLayer(id: string): Element | null {

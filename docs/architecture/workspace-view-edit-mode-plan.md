@@ -2,7 +2,9 @@
 
 ## Status
 
-Proposed. Implementation has not started.
+In progress. Milestone 1 foundation is implemented: the workspace mode store defaults to Edit mode, exposes the
+capability API, and publishes the current mode as an application-root diagnostic attribute. The mode switch remains
+intentionally unavailable until persisted layer state and serializer purity are separated in milestone 2.
 
 This document defines how Fantasy Map Generator should introduce two workspace access modes:
 

@@ -34,16 +34,16 @@ export const PIXI_LAYER_CONTROL_IDS = {
 
 export type ToggleablePixiLayer = keyof typeof PIXI_LAYER_CONTROL_IDS;
 
-export function capturePixiLayerVisibility(
+export function getCapturedPixiLayerVisibility(
   appStyle: Pick<Style, "mapLayerVisibility">,
   isControlOn: (controlId: string) => boolean
-): void {
+): NonNullable<Style["mapLayerVisibility"]> {
   const visibility = { ...appStyle.mapLayerVisibility };
   delete visibility.texture;
   for (const [layer, controlId] of Object.entries(PIXI_LAYER_CONTROL_IDS) as [ToggleablePixiLayer, string][]) {
     visibility[layer] = isControlOn(controlId);
   }
-  appStyle.mapLayerVisibility = visibility;
+  return visibility;
 }
 
 export function getStoredPixiLayerVisibility(
