@@ -39,6 +39,14 @@
   gap: 8px;
 }
 
+.fmg-workspace-toolbar__identity {
+  position: relative;
+}
+
+.fmg-workspace-toolbar__identity:has(.fmg-country-selection) .fmg-fantasia {
+  display: none;
+}
+
 .fmg-workspace-toolbar__group--right {
   flex: 0 0 auto;
 }

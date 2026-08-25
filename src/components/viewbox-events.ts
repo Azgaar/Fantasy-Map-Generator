@@ -7,6 +7,7 @@ import { dragLegendBox } from "@/renderers/draw-legend";
 import { ensureMapInteractionSurface } from "@/renderers/interaction/map-interaction-overlay";
 import { getPixiMapPointAtClient, pickPixiRenderer } from "@/renderers/pixi/pixi-renderer-controller";
 import { debounce, findClosestCell } from "@/utils";
+import { selectCountry } from "./country-selection";
 import { buildMapContext } from "./map-context";
 import { handleMouseMove } from "./map-tooltip";
 import { applyZoomBehavior } from "./zoom";
@@ -65,6 +66,7 @@ const GREAT_EDITORS: Record<string, Opener> = {
 /** Handle a click on the map: open the editor for the clicked element */
 function onClick(event: MouseEvent): void {
   const hit = pickPixiRenderer(event.clientX, event.clientY);
+  if (hit?.domainKind === "state" && selectCountry(Number(hit.domainId))) return;
   if (hit && openMapHit(hit)) return;
 
   const target = event?.target as SVGElement | null;

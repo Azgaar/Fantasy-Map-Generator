@@ -7,6 +7,7 @@ import {
   type LayerView,
   type LegacyLayerControls
 } from "./layers/layer-controls";
+import { CountrySelection } from "./country-details";
 import { getToolCommands, TOOL_GROUPS } from "./tool-registry";
 import { executeLegacyCommand } from "./ui/legacy-command";
 import "./workspace-toolbar.css";
@@ -497,7 +498,10 @@ export function WorkspaceToolbar(props: WorkspaceToolbarProps): React.JSX.Elemen
   return (
     <nav aria-label="Map workspace" className="fmg-workspace-toolbar">
       <div className="fmg-workspace-toolbar__group">
-        <MapIdentity initialMapName={props.initialMapName} />
+        <div className="fmg-workspace-toolbar__identity">
+          <MapIdentity initialMapName={props.initialMapName} />
+          <CountrySelection />
+        </div>
         <ProjectMenu onOpenSection={props.onOpenSection} />
         <ToolMenu
           groupId="analysis"
