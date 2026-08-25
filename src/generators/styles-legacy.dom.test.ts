@@ -87,3 +87,17 @@ test("save sync lets an old map's attrs win when present", () => {
   expect(styles.markers.options.rescale).toBe(1);
   expect(styles.states.statesHalo.options.width).toBe(13);
 });
+
+test("save sync keeps the store's coordinates size when data-size is absent, even beside a derived font-size", () => {
+  document.body.innerHTML = `<svg id="map"><g id="coordinates" font-size="6.6"></g></svg>`;
+  styles.coordinates.options.fontSize = 20;
+  syncStylesFromMap();
+  expect(styles.coordinates.options.fontSize).toBe(20);
+});
+
+test("save sync lets an old map's coordinates data-size win over the store", () => {
+  document.body.innerHTML = `<svg id="map"><g id="coordinates" data-size="14"></g></svg>`;
+  styles.coordinates.options.fontSize = 20;
+  syncStylesFromMap();
+  expect(styles.coordinates.options.fontSize).toBe(14);
+});

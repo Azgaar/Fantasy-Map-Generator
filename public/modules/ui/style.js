@@ -356,7 +356,7 @@ function selectStyleElement() {
 
   if (styleElement === "coordinates") {
     styleSize.style.display = "block";
-    styleFontSize.value = el.attr("data-size");
+    styleFontSize.value = styles.coordinates.options.fontSize;
   }
 
   if (styleElement === "ruler") {
@@ -966,8 +966,13 @@ function changeFontSize(el, size) {
     return;
   }
 
-  const scaleSize = styleElementSelect.value === "coordinates" ? rn(size / scale ** 0.8, 2) : size;
-  el.attr("data-size", size).attr("font-size", scaleSize);
+  if (styleElementSelect.value === "coordinates") {
+    styles.coordinates.options.fontSize = size;
+    Layers.draw("coordinates");
+    return;
+  }
+
+  el.attr("data-size", size).attr("font-size", size);
 
   if (styleElementSelect.value === "legend") Layers.draw("legend");
   if (styleElementSelect.value === "ruler") Layers.draw("rulers");

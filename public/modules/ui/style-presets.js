@@ -138,10 +138,6 @@ function projectPresetOptions() {
   setOrRemove(armies, "font-size", styles.military.options.fontSize);
   setOrRemove(armies, "box-size", styles.military.options.boxSize);
 
-  const coordinates = byId("coordinates");
-  setOrRemove(coordinates, "data-size", styles.coordinates.options.fontSize);
-  setOrRemove(coordinates, "font-size", styles.coordinates.options.fontSize);
-
   setOrRemove(byId("sea_island"), "auto-filter", styles.coastline.sea_island.options.autoFilter);
 
   const gridOverlay = byId("gridOverlay");

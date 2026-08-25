@@ -1874,4 +1874,5 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
   // authority rule in syncStylesFromMap would let them clobber the record's values forever
   document.getElementById("markers")?.removeAttribute("rescale");
   document.getElementById("statesHalo")?.removeAttribute("data-width");
+  document.getElementById("coordinates")?.removeAttribute("data-size");
 }

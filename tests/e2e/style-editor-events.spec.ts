@@ -13,7 +13,7 @@ const waitForMap = (page: Page) =>
 
 const rn = (v: number, d = 0): number => Math.round(v * 10 ** d) / 10 ** d;
 
-async function openStyleElement(page: Page, element: "markers" | "regions"): Promise<void> {
+async function openStyleElement(page: Page, element: "markers" | "regions" | "coordinates"): Promise<void> {
   await page.evaluate(() => (window as any).showOptions());
   await page.locator("#styleTab").click();
   await page.locator("#styleElementSelect").selectOption(element);
@@ -128,5 +128,29 @@ test.describe("style editor events drive the store", () => {
 
     // (4) the retired attribute never lands on the element
     expect(await page.locator("#statesHalo").getAttribute("data-width")).toBeNull();
+  });
+
+  test("coordinates size input writes the store and the renderer derives from it", async ({ page }) => {
+    await page.evaluate(() => (window as any).Layers.show("coordinates"));
+    await openStyleElement(page, "coordinates");
+
+    await page.locator("#styleFontSize").fill("24");
+    await page.locator("#styleFontSize").dispatchEvent("change");
+
+    // (2) typed store value
+    const stored = await page.evaluate(() => (window as any).styles.coordinates.options.fontSize);
+    expect(stored).toBe(24);
+    expect(typeof stored).toBe("number");
+
+    // (1)+(3) rendered size re-derived from the store base on redraw at a changed zoom
+    await page.evaluate(() => (window as any).setMapZoom(4));
+    await page.waitForTimeout(50);
+    await page.evaluate(() => (window as any).Layers.draw("coordinates"));
+    const scale = await currentScale(page);
+    const fontSize = await page.locator("#coordinates").getAttribute("font-size");
+    expect(parseFloat(fontSize!)).toBeCloseTo(rn(24 / scale ** 0.8, 2), 1);
+
+    // (4) the retired attribute is gone from the element
+    expect(await page.locator("#coordinates").getAttribute("data-size")).toBeNull();
   });
 });

@@ -11,7 +11,7 @@ export function drawCoordinates(): void {
   const goal = lonT / scale / 10;
   const step = STEPS.reduce((prev, curr) => (Math.abs(curr - goal) < Math.abs(prev - goal) ? curr : prev));
 
-  const desiredSize = +coordinates.attr("data-size");
+  const desiredSize = styles.coordinates.options.fontSize;
   coordinates.attr("font-size", Math.max(rn(desiredSize / scale ** 0.8, 2), 0.1));
 
   const graticule = geoGraticule()

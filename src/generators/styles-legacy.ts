@@ -380,6 +380,9 @@ export function syncStylesFromMap(): void {
     harvested.markers.options = structuredClone(styles.markers.options);
   if (!document.getElementById("statesHalo")?.hasAttribute("data-width"))
     harvested.states.statesHalo.options = structuredClone(styles.states.statesHalo.options);
+  // gated on data-size alone: #coordinates' font-size is the zoom-derived render value, never the base
+  if (!document.getElementById("coordinates")?.hasAttribute("data-size"))
+    harvested.coordinates.options = structuredClone(styles.coordinates.options);
   Styles.set(harvested);
 }
 
