@@ -103,9 +103,6 @@ declare global {
   }
 }
 
-window.shouldRegenerateGrid = (grid: any, expectedSeed: number) =>
-  shouldRegenerateGrid(grid, expectedSeed, (window as any).graphWidth, (window as any).graphHeight);
-window.generateGrid = () => generateGrid((window as any).seed, (window as any).graphWidth, (window as any).graphHeight);
 window.findCell = (x: number, y: number, radius?: number) => findClosestCell(x, y, radius, (window as any).pack);
 window.getPackPolygon = (cellIndex: number) => getPackPolygon(cellIndex, (window as any).pack);
 window.getGridPolygon = (cellIndex: number) => getGridPolygon(cellIndex, (window as any).grid);

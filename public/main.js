@@ -422,61 +422,7 @@ async function generate(options) {
     applyGraphSize();
     randomizeOptions();
 
-    if (shouldRegenerateGrid(grid, precreatedSeed)) grid = precreatedGraph || generateGrid();
-    else delete grid.cells.h;
-    grid.cells.h = await HeightmapGenerator.generate(grid);
-    pack = {}; // reset pack
-
-    Features.markupGrid();
-    addLakesInDeepDepressions();
-    openNearSeaLakes();
-
-    defineMapSize();
-    calculateMapCoordinates();
-    calculateTemperatures();
-    generatePrecipitation();
-
-    reGraph();
-    Features.markupPack();
-    Measurers.createDefaultRuler();
-
-    Rivers.generate();
-    Biomes.generate();
-    Features.defineGroups();
-
-    Ice.generate();
-
-    Goods.generate();
-
-    rankCells();
-    Cultures.generate();
-    Cultures.expand();
-
-    Burgs.generate();
-    States.generate();
-    Routes.generate();
-    Religions.generate();
-
-    Burgs.specify();
-    States.collectStatistics();
-    States.defineStateForms();
-
-    Provinces.generate();
-    Provinces.getPoles();
-
-    Rivers.specify();
-    Lakes.defineNames();
-
-    Markets.generate();
-    Production.produce();
-    States.collectTaxes();
-
-    Military.generate();
-    Markers.generate();
-    Zones.generate();
-
-    AddedLabels.initiate();
-    Names.getMapName();
+    await GenerationPipeline.run({ seed: precreatedSeed, graph: precreatedGraph });
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - timeStart) / 1000, 2)}s`);
     showStatistics();

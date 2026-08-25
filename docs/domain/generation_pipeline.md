@@ -1,15 +1,17 @@
 # Generation Pipeline
 
-The canonical "build a world from scratch" routine lives in [`public/main.js`](../../public/main.js) → `async function generate(options)`. Several other code paths rebuild large portions of `grid` and `pack`, and each must replicate the relevant slice of that pipeline. When a new global generator step is added (e.g. `Goods.generate` / `Production.produce`), every replication site that reaches the same lifecycle phase has to be updated as well, or features will silently fail when entered through that path.
+The canonical "build a world from scratch" sequence is declared as `GenerationPipeline` in [`src/generators/generation-pipeline.ts`](../../src/generators/generation-pipeline.ts) — an ordered list of `{ id, run }` steps run through the generic [`Pipeline`](../../src/generators/pipeline.ts) runner. [`public/main.js`](../../public/main.js) → `async function generate(options)` drives it: it resolves `seed`/`applyGraphSize`/`randomizeOptions` (which the pipeline itself doesn't own) and then calls `await GenerationPipeline.run({ seed: precreatedSeed, graph: precreatedGraph })`. Several other code paths rebuild large portions of `grid` and `pack`, and each must replicate the relevant slice of that pipeline. When a new global generator step is added (e.g. `Goods.generate` / `Production.produce`), every replication site that reaches the same lifecycle phase has to be updated as well, or features will silently fail when entered through that path.
+
+`Pipeline` also wraps every run in `INFO`/`TIME`-gated console grouping and per-step timing, and rethrows a step's error as `` `${pipelineName} failed at step "${id}"` `` (with the original error as `cause`) so failures are traceable to a specific phase. Steps that need per-call parameters (e.g. whether erosion is allowed) receive a typed `context` argument passed to `run()`/`runFrom()` — see `GenerationContext` and `EraseContext` in `generation-pipeline.ts` — rather than branching on outer closure state.
 
 ## Canonical sequence
 
-`generate()` is the single source of truth. Conceptually it is split into phases; downstream replications differ in **which phases they re-run** and **which artefacts they restore from the previous map**.
+`GenerationPipeline` is the single source of truth. Conceptually it is split into phases; downstream replications differ in **which phases they re-run** and **which artefacts they restore from the previous map**.
 
 | #   | Phase                                | Calls                                                                                                       | Outputs (selection)                                                                                |
 | --- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| 1   | **Seed & sizing**                    | `setSeed`, `applyGraphSize`, `randomizeOptions`                                                             | `seed`, graph dimensions, randomized inputs                                                        |
-| 2   | **Grid + heightmap**                 | `shouldRegenerateGrid`, `generateGrid`, `HeightmapGenerator.generate`                                       | `grid.cells.h`                                                                                     |
+| 1   | **Seed & sizing**                    | `setSeed`, `applyGraphSize`, `randomizeOptions` (in `main.js`, before the pipeline runs)                    | `seed`, graph dimensions, randomized inputs                                                        |
+| 2   | **Grid + heightmap**                 | `generateGrid` step (`shouldRegenerateGrid`, `generateGrid`), `heightmap` step (`HeightmapGenerator.generate`) | `grid`, `grid.cells.h`                                                                             |
 | 3   | **Hydrology base**                   | `Features.markupGrid`, `addLakesInDeepDepressions`, `openNearSeaLakes`                                      | grid features, lake/ocean topology                                                                 |
 | 4   | **World position & climate**         | `OceanLayers`, `defineMapSize`, `calculateMapCoordinates`, `calculateTemperatures`, `generatePrecipitation` | `mapCoordinates`, `cells.temp`, `cells.prec`                                                       |
 | 5   | **Repack**                           | `reGraph`, `Features.markupPack`, `Measurers.createDefaultRuler`                                            | `pack.cells.*`, default ruler                                                                      |
@@ -38,15 +40,15 @@ The codebase has three places that re-run a large slice of the canonical pipelin
 
 ### 1. Heightmap edit exit — full settlement regeneration
 
-**File:** [`public/modules/ui/heightmap-editor.js`](../../public/modules/ui/heightmap-editor.js) → `regenerateErasedData()`
+**File:** [`src/generators/generation-pipeline.ts`](../../src/generators/generation-pipeline.ts) → `ErasePipeline`, run from `src/controllers/heightmap-editor.ts` → `regenerateErasedData()`
 
-Runs when the user exits the heightmap editor without preserving downstream data. It clears all settlement state (`pack.cultures`, `pack.burgs`, `pack.states`, `pack.provinces`, `pack.religions`) and walks phases **3 → 15** of the canonical pipeline. This is effectively a "second generate" — every global generator that runs in `generate()` after `reGraph()` must also run here.
+Runs when the user exits the heightmap editor without preserving downstream data. `regenerateErasedData()` clears all settlement state (`pack.cultures`, `pack.burgs`, `pack.states`, `pack.provinces`, `pack.religions`) and calls `ErasePipeline.runFrom("markupGrid", { erosion: erosionAllowed })` — a separate `Pipeline` instance (not a derived/sliced copy of `GenerationPipeline`) whose steps are written out explicitly, covering phases **3 → 15** of the canonical sequence minus `mapCoordinates`, `defaultRuler`, `addedLabels`, and `mapName` (map bounds and the default ruler don't change on an edit; labels/name aren't touched). This is effectively a "second generate" — every global generator that runs in `GenerationPipeline` after `reGraph()` must also run here.
 
-Note: `Ice.generate()` here is called after `Provinces.getPoles()` rather than after `Features.defineGroups()` (the relative position vs. settlement layer is irrelevant because `Ice` only depends on temperature/features).
+Instead of conditionally omitting steps, `addLakesInDeepDepressions`/`openNearSeaLakes`/`rivers` always run but read `context.erosion` (the `EraseContext`) to decide their behavior — e.g. `rivers` calls `Rivers.generate(erosion)` and, when erosion isn't allowed, snaps `pack.cells.h` back to the grid heights where the land/water side flipped. `Ice.generate()` keeps its canonical position, between `featureGroups` and `goods`.
 
 ### 2. Heightmap edit exit — preserved settlement data
 
-**File:** [`public/modules/ui/heightmap-editor.js`](../../public/modules/ui/heightmap-editor.js) → `restoreRiskedData()`
+**File:** [`src/controllers/heightmap-editor.ts`](../../src/controllers/heightmap-editor.ts) → `restoreRiskedData()`
 
 Runs when the user exits the heightmap editor with "keep data" enabled. Settlement entities (cultures, burgs, states, provinces, religions, zones) are remapped onto the new pack rather than regenerated. This path:
 
@@ -88,15 +90,15 @@ These are partial regenerations triggered from the UI and do **not** replicate t
 
 - Generator modules own their corresponding `regenerate` interfaces. [`src/components/tools.ts`](../../src/components/tools.ts) contains only Tools-tab event handlers that compose generator, renderer, and controller interfaces.
 - [`src/services/io/auto-update.ts`](../../src/services/io/auto-update.ts): version-bump migrations (e.g. the `1.124.0` block that introduced goods/markets/production/taxes).
-- [`public/modules/ui/world-configurator.js`](../../public/modules/ui/world-configurator.js) → `updateWorld`: climate-only refresh; does not touch the settlement / economy layers.
+- [`src/controllers/world-configurator.ts`](../../src/controllers/world-configurator.ts) → `updateWorld`: climate-only refresh; does not touch the settlement / economy layers.
 
 When extending the pipeline, audit each of these for whether their scope reaches the new phase.
 
 ## Adding a new global generation step — checklist
 
-1. Add the call in `public/main.js` `generate()` at the correct phase boundary.
-2. If the step runs **after phase 5 (`reGraph`)**, add it to `heightmap-editor.js` `regenerateErasedData()` at the matching boundary.
-3. If the step's output depends on **cell-indexed data** (anything in `pack.cells.*`) or on entity identities that the restore path re-maps, also add it to `heightmap-editor.js` `restoreRiskedData()`.
+1. Add the step to `pipelineSteps` in `src/generators/generation-pipeline.ts` at the correct phase boundary. `public/main.js` `generate()` no longer sequences generator calls itself — it only resolves `seed`/graph sizing and then calls `GenerationPipeline.run(context)`.
+2. If the step runs **after phase 5 (`reGraph`)**, add it to `erasePipelineSteps` (same file, backing `ErasePipeline`) at the matching boundary.
+3. If the step's output depends on **cell-indexed data** (anything in `pack.cells.*`) or on entity identities that the restore path re-maps, also add it to `heightmap-editor.ts` `restoreRiskedData()`.
 4. For `src/generators/resample.ts`: if the step writes to a **per-cell array**, add it to `restoreCellData` (parent-quadtree mapping). If it writes to a **list keyed by an entity id** (markets, deals, etc.), add it to `Resampler.restoreEconomy` (or a sibling restore method) with the appropriate validity filter for removed entities. Only call the generator directly if the output is irrecoverable from the parent (e.g. depends on a re-flood across the new cell graph) — in that case prefer exposing a partial method (cf. `Markets.expandTerritories`) over running the full generator.
-5. Add or update the version-bump migration block in `public/modules/dynamic/auto-update.js` so older saves gain the new fields on load.
+5. Add or update the version-bump migration block in [`src/services/io/auto-update.ts`](../../src/services/io/auto-update.ts) so older saves gain the new fields on load.
 6. Update the canonical sequence table at the top of this file.
