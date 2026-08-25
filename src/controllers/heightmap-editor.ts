@@ -483,7 +483,6 @@ async function finalizeHeightmap(): Promise<void> {
 }
 
 async function regenerateErasedData(): Promise<void> {
-  // remove data
   pack.cultures = [];
   pack.burgs = [];
   pack.states = [];
@@ -491,8 +490,7 @@ async function regenerateErasedData(): Promise<void> {
   pack.religions = [];
 
   const erosionAllowed = ensureEl<HTMLInputElement>("allowErosion").checked;
-
-  await ErasePipeline.runFrom("markupGrid", { erosion: erosionAllowed });
+  await ErasePipeline.run({ erosion: erosionAllowed });
 }
 
 function restoreKeptData(): void {

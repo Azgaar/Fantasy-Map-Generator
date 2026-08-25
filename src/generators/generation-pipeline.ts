@@ -5,12 +5,12 @@ import { Pipeline, type PipelineStep } from "@/generators/pipeline";
 import type { PackedGraph } from "@/types/PackedGraph";
 import { generateGrid, shouldRegenerateGrid } from "@/utils";
 
-export interface GenerationContext {
+interface GenerationContext {
   seed?: string; // requested seed, if the caller wants a specific one; undefined for "any is fine"
   graph?: unknown; // pre-created grid (e.g. loaded from a save) to use instead of generating one
 }
 
-const pipelineSteps = [
+const pipelineSteps: PipelineStep<string, GenerationContext>[] = [
   {
     id: "generateGrid",
     run: (context: GenerationContext) => {
@@ -40,13 +40,8 @@ const pipelineSteps = [
   },
   { id: "temperatures", run: () => calculateTemperatures() },
   { id: "precipitation", run: () => generatePrecipitation() },
-  {
-    id: "repack",
-    run: () => {
-      reGraph();
-      Features.markupPack();
-    }
-  },
+  { id: "regraph", run: () => reGraph() },
+  { id: "markupPack", run: () => Features.markupPack() },
   { id: "defaultRuler", run: () => Measurers.createDefaultRuler() },
   { id: "rivers", run: () => Rivers.generate() },
   { id: "biomes", run: () => Biomes.generate() },
@@ -56,12 +51,7 @@ const pipelineSteps = [
   { id: "rankCells", run: () => rankCells() },
   { id: "cultures", run: () => Cultures.generate() },
   { id: "culturesExpand", run: () => Cultures.expand() },
-  {
-    id: "burgs",
-    run: () => {
-      Burgs.generate();
-    }
-  },
+  { id: "burgs", run: () => Burgs.generate() },
   { id: "states", run: () => States.generate() },
   { id: "routes", run: () => Routes.generate() },
   { id: "religions", run: () => Religions.generate() },
@@ -72,61 +62,31 @@ const pipelineSteps = [
   { id: "provincePoles", run: () => Provinces.getPoles() },
   { id: "riversSpecify", run: () => Rivers.specify() },
   { id: "lakeNames", run: () => Lakes.defineNames() },
-  {
-    id: "markets",
-    run: () => {
-      Markets.generate();
-    }
-  },
+  { id: "markets", run: () => Markets.generate() },
   { id: "production", run: () => Production.produce() },
   { id: "taxes", run: () => States.collectTaxes() },
   { id: "military", run: () => Military.generate() },
   { id: "markers", run: () => Markers.generate() },
   { id: "zones", run: () => Zones.generate() },
   { id: "addedLabels", run: () => AddedLabels.initiate() },
-  {
-    id: "mapName",
-    run: () => {
-      Names.getMapName(false); // no-arg call in generate() passes undefined, which is equally falsy
-    }
-  }
-] as const satisfies readonly PipelineStep<string, GenerationContext>[];
+  { id: "mapName", run: () => Names.getMapName(false) }
+];
 
-export type PipelineStepId = (typeof pipelineSteps)[number]["id"];
+type PipelineStepId = (typeof pipelineSteps)[number]["id"];
 export const GenerationPipeline = new Pipeline<PipelineStepId, GenerationContext>("Generation Pipeline", pipelineSteps);
 
-export interface EraseContext {
-  erosion: boolean; // whether erosion-driven river/lake behavior is allowed during a heightmap edit
+interface EraseContext {
+  erosion: boolean;
 }
 
-// The heightmap-edit "erase" flow: the canonical sequence from markupGrid onward, with the
-// heightmap-edit-specific differences. Map bounds and the default ruler don't change, so those
-// steps are dropped; rivers and biomes need parameterized/alternate behavior instead of their
-// generate()-from-scratch defaults; ice keeps its canonical position (between featureGroups and
-// goods) rather than being special-cased.
-const erasePipelineSteps = [
+const erasePipelineSteps: PipelineStep<PipelineStepId, EraseContext>[] = [
   { id: "markupGrid", run: () => Features.markupGrid() },
-  {
-    id: "addLakesInDeepDepressions",
-    run: ({ erosion }: EraseContext) => {
-      if (erosion) addLakesInDeepDepressions();
-    }
-  },
-  {
-    id: "openNearSeaLakes",
-    run: ({ erosion }: EraseContext) => {
-      if (erosion) openNearSeaLakes();
-    }
-  },
+  { id: "addLakesInDeepDepressions", run: ({ erosion }: EraseContext) => erosion && addLakesInDeepDepressions() },
+  { id: "openNearSeaLakes", run: ({ erosion }: EraseContext) => erosion && openNearSeaLakes() },
   { id: "temperatures", run: () => calculateTemperatures() },
   { id: "precipitation", run: () => generatePrecipitation() },
-  {
-    id: "repack",
-    run: () => {
-      reGraph();
-      Features.markupPack();
-    }
-  },
+  { id: "regraph", run: () => reGraph() },
+  { id: "markupPack", run: () => Features.markupPack() },
   {
     id: "rivers",
     run: ({ erosion }: EraseContext) => {
@@ -141,19 +101,14 @@ const erasePipelineSteps = [
       }
     }
   },
-  { id: "biomes", run: () => Biomes.define() }, // recompute cell biomes against the existing catalog, don't reset it
+  { id: "biomes", run: () => Biomes.define() },
   { id: "featureGroups", run: () => Features.defineGroups() },
   { id: "ice", run: () => Ice.generate() },
   { id: "goods", run: () => Goods.generate() },
   { id: "rankCells", run: () => rankCells() },
   { id: "cultures", run: () => Cultures.generate() },
   { id: "culturesExpand", run: () => Cultures.expand() },
-  {
-    id: "burgs",
-    run: () => {
-      Burgs.generate();
-    }
-  },
+  { id: "burgs", run: () => Burgs.generate() },
   { id: "states", run: () => States.generate() },
   { id: "routes", run: () => Routes.generate() },
   { id: "religions", run: () => Religions.generate() },
@@ -164,18 +119,13 @@ const erasePipelineSteps = [
   { id: "provincePoles", run: () => Provinces.getPoles() },
   { id: "riversSpecify", run: () => Rivers.specify() },
   { id: "lakeNames", run: () => Lakes.defineNames() },
-  {
-    id: "markets",
-    run: () => {
-      Markets.generate();
-    }
-  },
+  { id: "markets", run: () => Markets.generate() },
   { id: "production", run: () => Production.produce() },
   { id: "taxes", run: () => States.collectTaxes() },
   { id: "military", run: () => Military.generate() },
   { id: "markers", run: () => Markers.generate() },
   { id: "zones", run: () => Zones.generate() }
-] as const satisfies readonly PipelineStep<PipelineStepId, EraseContext>[];
+];
 
 export const ErasePipeline = new Pipeline<PipelineStepId, EraseContext>("Erase Heightmap", erasePipelineSteps);
 
