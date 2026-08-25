@@ -138,10 +138,6 @@ function projectPresetOptions() {
   setOrRemove(armies, "font-size", styles.military.options.fontSize);
   setOrRemove(armies, "box-size", styles.military.options.boxSize);
 
-  const coordinates = byId("coordinates");
-  setOrRemove(coordinates, "data-size", styles.coordinates.options.fontSize);
-  setOrRemove(coordinates, "font-size", styles.coordinates.options.fontSize);
-
   setOrRemove(byId("sea_island"), "auto-filter", styles.coastline.sea_island.options.autoFilter);
 
   const gridOverlay = byId("gridOverlay");
@@ -165,24 +161,11 @@ function projectPresetOptions() {
   setOrRemove(oceanHeights, "curve", styles.heightmap.oceanHeights.options.curve);
   setOrRemove(oceanHeights, "data-render", Number(styles.heightmap.oceanHeights.options.render));
 
-  setOrRemove(byId("stateEmblems"), "data-size", styles.emblems.stateEmblems.options.size);
-  setOrRemove(byId("provinceEmblems"), "data-size", styles.emblems.provinceEmblems.options.size);
-  setOrRemove(byId("burgEmblems"), "data-size", styles.emblems.burgEmblems.options.size);
-
-  const goodsIcons = byId("goodsIcons");
-  setOrRemove(goodsIcons, "data-size", styles.goods.goodsIcons.options.size);
-  setOrRemove(goodsIcons, "data-circle", Number(styles.goods.goodsIcons.options.circle));
-
-  setOrRemove(byId("goodsBurgs"), "data-size", styles.goods.goodsBurgs.options.size);
+  setOrRemove(byId("goodsIcons"), "data-circle", Number(styles.goods.goodsIcons.options.circle));
 
   const markets = byId("markets");
-  setOrRemove(markets, "data-size", styles.markets.options.size);
   setOrRemove(markets, "font-size", styles.markets.options.fontSize);
   setOrRemove(markets, "data-icon", styles.markets.options.icon);
-
-  const ruler = byId("ruler");
-  setOrRemove(ruler, "data-size", styles.rulers.options.fontSize);
-  setOrRemove(ruler, "font-size", styles.rulers.options.fontSize);
 
   const scaleBar = byId("scaleBar");
   setOrRemove(scaleBar, "data-bar-size", styles.scaleBar.options.barSize);
@@ -198,8 +181,6 @@ function projectPresetOptions() {
   writeAttrsById("scaleBarBack", styles.scaleBar.back.attrs);
 
   const legend = byId("legend");
-  setOrRemove(legend, "data-size", styles.legend.options.fontSize);
-  setOrRemove(legend, "font-size", styles.legend.options.fontSize);
   setOrRemove(legend, "data-x", styles.legend.options.x);
   setOrRemove(legend, "data-y", styles.legend.options.y);
   setOrRemove(legend, "data-columns", styles.legend.options.columns);
@@ -519,6 +500,27 @@ function addStylePreset() {
     if (presetStyle["#markers"]) presetStyle["#markers"].rescale = styles.markers.options.rescale;
     if (presetStyle["#statesHalo"])
       presetStyle["#statesHalo"]["data-width"] = styles.states.statesHalo.options.width;
+    if (presetStyle["#coordinates"]) {
+      presetStyle["#coordinates"]["data-size"] = styles.coordinates.options.fontSize;
+      presetStyle["#coordinates"]["font-size"] = styles.coordinates.options.fontSize;
+    }
+    if (presetStyle["#ruler"]) {
+      presetStyle["#ruler"]["data-size"] = styles.rulers.options.fontSize;
+      presetStyle["#ruler"]["font-size"] = styles.rulers.options.fontSize;
+    }
+    if (presetStyle["#legend"]) {
+      presetStyle["#legend"]["data-size"] = styles.legend.options.fontSize;
+      presetStyle["#legend"]["font-size"] = styles.legend.options.fontSize;
+    }
+    if (presetStyle["#emblems > #stateEmblems"])
+      presetStyle["#emblems > #stateEmblems"]["data-size"] = styles.emblems.stateEmblems.options.size;
+    if (presetStyle["#emblems > #provinceEmblems"])
+      presetStyle["#emblems > #provinceEmblems"]["data-size"] = styles.emblems.provinceEmblems.options.size;
+    if (presetStyle["#emblems > #burgEmblems"])
+      presetStyle["#emblems > #burgEmblems"]["data-size"] = styles.emblems.burgEmblems.options.size;
+    if (presetStyle["#goodsIcons"]) presetStyle["#goodsIcons"]["data-size"] = styles.goods.goodsIcons.options.size;
+    if (presetStyle["#goodsBurgs"]) presetStyle["#goodsBurgs"]["data-size"] = styles.goods.goodsBurgs.options.size;
+    if (presetStyle["#markets"]) presetStyle["#markets"]["data-size"] = styles.markets.options.size;
 
     for (const [group, groupStyle] of Object.entries(styles.labels.groups)) {
       addStoredLabelStyle(`#labels > #${group}`, stylesLegacy.labelGroupToLegacy(groupStyle));

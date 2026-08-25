@@ -1874,4 +1874,11 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
   // authority rule in syncStylesFromMap would let them clobber the record's values forever
   document.getElementById("markers")?.removeAttribute("rescale");
   document.getElementById("statesHalo")?.removeAttribute("data-width");
+  document.getElementById("coordinates")?.removeAttribute("data-size");
+  document.getElementById("ruler")?.removeAttribute("data-size");
+  document.getElementById("ruler")?.removeAttribute("font-size");
+  document.getElementById("legend")?.removeAttribute("data-size");
+  for (const id of ["stateEmblems", "provinceEmblems", "burgEmblems", "goodsIcons", "goodsBurgs", "markets"]) {
+    document.getElementById(id)?.removeAttribute("data-size");
+  }
 }

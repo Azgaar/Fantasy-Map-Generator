@@ -202,7 +202,14 @@ test.describe("style persistence round trips", () => {
     const lines = buffer.toString("utf8").split("\r\n");
     lines[5] = lines[5]
       .replace('<g id="markers"', '<g id="markers" rescale="0"')
-      .replace('<g id="statesHalo"', '<g id="statesHalo" data-width="7"');
+      .replace('<g id="statesHalo"', '<g id="statesHalo" data-width="7"')
+      .replace('<g id="coordinates"', '<g id="coordinates" data-size="55"')
+      .replace('<g id="ruler"', '<g id="ruler" data-size="44" font-size="44"')
+      .replace('<g id="legend"', '<g id="legend" data-size="33"')
+      .replace('<g id="stateEmblems"', '<g id="stateEmblems" data-size="4"')
+      .replace('<g id="goodsIcons"', '<g id="goodsIcons" data-size="66"')
+      .replace('<g id="goodsBurgs"', '<g id="goodsBurgs" data-size="66"')
+      .replace('<g id="markets"', '<g id="markets" data-size="66"');
     const staleBuffer = Buffer.from(lines.join("\r\n"), "utf8");
 
     await reload(page, staleBuffer, "style-persistence-step4-era-reloaded");
@@ -210,15 +217,29 @@ test.describe("style persistence round trips", () => {
     const afterLoad = await page.evaluate(() => ({
       markersRescaleAttr: document.getElementById("markers")?.getAttribute("rescale"),
       statesHaloWidthAttr: document.getElementById("statesHalo")?.getAttribute("data-width"),
+      coordinatesSizeAttr: document.getElementById("coordinates")?.getAttribute("data-size"),
+      rulerSizeAttr: document.getElementById("ruler")?.getAttribute("data-size"),
+      legendSizeAttr: document.getElementById("legend")?.getAttribute("data-size"),
+      familySizeAttrs: ["stateEmblems", "goodsIcons", "goodsBurgs", "markets"].map(id =>
+        document.getElementById(id)?.getAttribute("data-size")
+      ),
+      marketsSize: styles.markets.options.size,
       rescale: styles.markers.options.rescale,
-      haloWidth: styles.states.statesHalo.options.width
+      haloWidth: styles.states.statesHalo.options.width,
+      coordinatesSize: styles.coordinates.options.fontSize
     }));
 
-    // both attrs are gone immediately, and the record's own values won - not the stale attrs
+    // the attrs are gone immediately, and the record's own values won - not the stale attrs
     expect(afterLoad.markersRescaleAttr).toBeNull();
     expect(afterLoad.statesHaloWidthAttr).toBeNull();
+    expect(afterLoad.coordinatesSizeAttr).toBeNull();
+    expect(afterLoad.rulerSizeAttr).toBeNull();
+    expect(afterLoad.legendSizeAttr).toBeNull();
+    expect(afterLoad.familySizeAttrs).toEqual([null, null, null, null]);
+    expect(afterLoad.marketsSize).toBe(3);
     expect(afterLoad.rescale).toBe(1);
     expect(afterLoad.haloWidth).toBe(10);
+    expect(afterLoad.coordinatesSize).toBe(12);
 
     // flip both through the store the way the real editor handlers do, then re-run the save-time
     // harvest directly: with the attrs already stripped, it must keep the flipped values rather
@@ -226,16 +247,19 @@ test.describe("style persistence round trips", () => {
     await page.evaluate(() => {
       styles.markers.options.rescale = 0;
       styles.states.statesHalo.options.width = 3;
+      styles.coordinates.options.fontSize = 21;
       (window as any).stylesLegacy.syncStylesFromMap();
     });
 
     const afterSync = await page.evaluate(() => ({
       rescale: styles.markers.options.rescale,
-      haloWidth: styles.states.statesHalo.options.width
+      haloWidth: styles.states.statesHalo.options.width,
+      coordinatesSize: styles.coordinates.options.fontSize
     }));
 
     expect(afterSync.rescale).toBe(0);
     expect(afterSync.haloWidth).toBe(3);
+    expect(afterSync.coordinatesSize).toBe(21);
   });
 
   test("relief attrs persistence: a DOM-only #terrain write survives a save and load", async ({ page, context }) => {

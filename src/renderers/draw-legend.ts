@@ -20,10 +20,11 @@ export function drawLegend(name: string, data: LegendItem[]): void {
   const itemsInCol = Number(boxStyle("data-columns", "styleLegendColItems"));
   const backColor = boxStyle("fill", "styleLegendBack");
   const opacity = Number(boxStyle("fill-opacity", "styleLegendOpacity"));
-  const fontSize = Number(legend.attr("font-size"));
+  const fontSize = styles.legend.options.fontSize;
 
   legend.selectAll("*").remove(); // fully redraw every time
   legend.attr("data", data.join("|")); // store data to redraw on style change
+  legend.attr("font-size", fontSize); // the drawn texts size by inheritance
 
   const lineHeight = Math.round(fontSize * 1.7);
   const colorBoxSize = Math.round(fontSize / 1.7);
