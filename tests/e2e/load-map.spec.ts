@@ -58,8 +58,7 @@ function getReliefState(page: Page) {
     const terrain = document.getElementById("terrain");
     return {
       relief: (window as any).pack.relief,
-      // `style` is script-scoped, so it has to be read off the lexical global rather than off window
-      style: style.relief,
+      style: (window as any).styles.relief.options,
       layerIsOn: (window as any).Layers.isOn("relief"),
       terrainStyle: terrain?.getAttribute("style") ?? null
     };

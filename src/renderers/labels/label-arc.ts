@@ -20,9 +20,9 @@ type ArcSource = {
 /** Gentle arc centered on the label anchor, wide enough to fit the label text */
 export function createLabelArc(label: ArcSource): Point[] {
   const groupStyle = getGroupStyle({ name: label.group, type: label.type });
-  const baseFontSize = Number.parseFloat(String(groupStyle["font-size"])) || 18;
+  const baseFontSize = Number.parseFloat(groupStyle.attrs["font-size"]) || 18;
   const fontSize = baseFontSize * ((label.fontSize ?? 100) / 100);
-  const letterSpacing = label.letterSpacing ?? Number(groupStyle["letter-spacing"]) ?? 0;
+  const letterSpacing = label.letterSpacing ?? groupStyle.attrs["letter-spacing"] ?? 0;
 
   const lines = label.text.split("|");
   const textWidth = Math.max(...lines.map(estimateTextWidth), 0) * fontSize;

@@ -73,6 +73,7 @@ export function drawLegend(name: string, data: LegendItem[]): void {
     .insert("rect", ":first-child")
     .attr("id", "legendBox")
     .attr("data-columns", itemsInCol)
+    .attr("data-group", "box")
     .attr("x", 0)
     .attr("y", 0)
     .attr("width", bbox.width + colOffset * 2)

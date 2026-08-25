@@ -77,34 +77,34 @@ function applyStylePreset(presetJson) {
     let labelGroup = null;
     if (selector.startsWith("#labels > #")) {
       labelGroup = selector.split("#").pop();
-      style.labels.groups[labelGroup] = getStyleAttributes(presetJson[selector]);
+      styles.labels.groups[labelGroup] = stylesLegacy.labelGroupFromLegacy(getStyleAttributes(presetJson[selector]));
     }
 
     if (selector.startsWith("#burgIcons")) {
       const group = selector.split("#").pop();
-      style.burgIcons[group] = presetJson[selector];
+      styles.burgIcons.burgIcons.groups[group] = stylesLegacy.burgGroupFromLegacy(presetJson[selector]);
     }
 
     if (selector.startsWith("#anchors")) {
       const group = selector.split("#").pop();
-      style.anchors[group] = presetJson[selector];
+      styles.burgIcons.anchors.groups[group] = stylesLegacy.burgGroupFromLegacy(presetJson[selector]);
     }
 
     if (selector === "#terrain") {
       const { set, size, density } = presetJson[selector];
 
       if (size) {
-        const ratio = size / style.relief.size;
-        style.relief.size = size;
+        const ratio = size / styles.relief.options.size;
+        styles.relief.options.size = size;
         if (ratio !== 1) Relief.changeSize(size);
       }
 
       if (set) {
-        style.relief.set = set;
+        styles.relief.options.set = set;
         Relief.changeSet(set);
       }
 
-      if (density) style.relief.density = density; // no model change as it would require regeneration
+      if (density) styles.relief.options.density = density; // no model change as it would require regeneration
     }
 
     const el = labelGroup
@@ -114,7 +114,7 @@ function applyStylePreset(presetJson) {
 
     for (const attribute in presetJson[selector]) {
       if (attribute === "id") continue;
-      if (selector === "#terrain" && RELIEF_STYLE_ATTRIBUTES.includes(attribute)) continue; // stored in style.relief
+      if (selector === "#terrain" && RELIEF_STYLE_ATTRIBUTES.includes(attribute)) continue; // stored in styles.relief.options
       const value = presetJson[selector][attribute];
 
       if (value === "null" || value === null) {
@@ -149,9 +149,9 @@ function applyStylePreset(presetJson) {
   // a group the preset doesn't cover takes the style of the default group of its type. It's left without a
   // style if there is none: getGroupStyle falls back to the built-in style, an empty one would win over it
   for (const group of options.labels.groups) {
-    if (style.labels.groups[group.name]) continue;
-    const defaultGroupStyle = style.labels.groups[Labels.getFallbackGroup(group.type).name];
-    if (defaultGroupStyle) style.labels.groups[group.name] = { ...defaultGroupStyle };
+    if (styles.labels.groups[group.name]) continue;
+    const defaultGroupStyle = styles.labels.groups[Labels.getFallbackGroup(group.type).name];
+    if (defaultGroupStyle) styles.labels.groups[group.name] = structuredClone(defaultGroupStyle);
   }
 
   function getStyleAttributes(attributes) {
@@ -434,10 +434,10 @@ function addStylePreset() {
       }
     }
 
-    if (presetStyle["#terrain"]) Object.assign(presetStyle["#terrain"], style.relief);
+    if (presetStyle["#terrain"]) Object.assign(presetStyle["#terrain"], styles.relief.options);
 
-    for (const [group, groupStyle] of Object.entries(style.labels.groups)) {
-      addStoredLabelStyle(`#labels > #${group}`, groupStyle);
+    for (const [group, groupStyle] of Object.entries(styles.labels.groups)) {
+      addStoredLabelStyle(`#labels > #${group}`, stylesLegacy.labelGroupToLegacy(groupStyle));
     }
 
     function addStoredLabelStyle(selector, groupStyle) {

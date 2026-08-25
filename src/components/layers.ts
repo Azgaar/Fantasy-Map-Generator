@@ -90,12 +90,17 @@ export class LayersRegistry<Id extends string = string> {
 
       let group = findEl<SVGGElement>(layer.elementId);
       if (!group) group = createEl<SVGGElement>("g", layer.elementId);
+      group.dataset.layer = layer.id; // styles address layers by data-layer, not element id
       for (const [name, value] of Object.entries(attrs ?? {})) group.setAttribute(name, value);
       ensureEl(parent).append(group);
 
       for (const { id, tag, attrs } of layer.children) {
-        if (group.querySelector(`#${id}`)) continue;
-        group.append(createEl(tag, id, attrs));
+        let child = group.querySelector<SVGElement>(`#${id}`);
+        if (!child) {
+          child = createEl<SVGElement>(tag, id, attrs);
+          group.append(child);
+        }
+        child.dataset.group = id;
       }
 
       this.setVisible(group, this.active.has(layer.id));
