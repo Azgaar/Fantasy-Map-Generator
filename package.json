@@ -12,7 +12,6 @@
   },
   "license": "MIT",
   "author": "Azgaar",
-  "main": "main.js",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build && node scripts/check-bundle-size.mts",
