@@ -97,7 +97,9 @@ function applyStylePreset(presetJson) {
 
 function applyStoredStyles() {
   Styles.write(...Object.keys(styles));
-  projectPresetOptions();
+  // the defs resources are renderer-owned; their appliers shape them from the store
+  window.applyVignetteOptions();
+  window.applyOceanPattern();
 }
 
 function applyReliefOptions(previousSize) {
@@ -135,21 +137,7 @@ function writeAttrsById(id, attrs) {
 }
 
 // Transitional: renderers that still read these options from DOM attributes (not yet
-// migrated to read `styles` directly) get them written here, byte-for-byte where the legacy
-// selector-keyed loop wrote them. Each row dies once its owning renderer is ported.
-function projectPresetOptions() {
-  const byId = id => document.getElementById(id);
 
-  window.applyVignetteOptions();
-  window.applyOceanPattern();
-
-  for (const [group, style] of Object.entries(styles.labels.groups)) {
-    const el = document.querySelector(`#labels > [data-group="${CSS.escape(group)}"]`);
-    if (!el) continue;
-    const {dx, dy} = style.options;
-    el.style.transform = dx || dy ? `translate(${dx}em, ${dy}em)` : "";
-  }
-}
 
 function requestStylePresetChange(preset) {
   const isConfirmed = sessionStorage.getItem("styleChangeConfirmed");

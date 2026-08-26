@@ -22,9 +22,9 @@ One bridge: the map file's legacy style record keeps being written (`stylesToLeg
 
 **5. Options, per consumer.** Each decision-attribute moves as one small PR: the renderer read, the style-editor input and the attribute's removal migrate together (`data-size` family; heightmap `scheme/terracing/skip/relax/curve`; `rescale`, halo `data-width`, ocean `layers`; texture/vignette/scale-bar geometry). After each PR that attribute no longer exists in the DOM. The zoom family (markers `rescale`, states halo `data-width`) is done on this branch; the rest of step 5 stays open.
 
-**6. Editor through `styles`.** `style.js` reads from `styles` and writes by mutation + `applyStyles` — its hand-maintained per-input DOM writes and redraw calls go away. The burg-icon DOM harvest dies here.
+**6. Editor through `styles`.** *(done)* Every editor control mutates the store and writes only the edited attribute to the DOM (whole-layer writes would reset zoom-derived sibling values). The burg-icon DOM harvest and the legacy Style Saver serializer are gone; custom presets save in the store format; the defs resources (oceanicPattern, vignette-rect) gained store-driven appliers. Generic read sites stay on the DOM deliberately (they run in the stale-group-select window and the values are identical by invariant).
 
-**7. Delete the legacy layer.** The `Style` interface and its global retire; the registry's hand-written `erase` overrides protecting DOM-held style state (`removeRoutes`, `removePrecipitation`, `removeBurgIcons`) become deletable — uniform `eraseContent` is safe once styling lives off-DOM.
+**7. Delete the legacy layer.** *(done)* Save serializes the store directly — the save-time harvest and its authority gates are load-only migration code now (`syncStylesFromMap` runs solely for record-less old maps, like the preset upgrader it lives beside forever). The preset projection is gone. `removeBurgIcons` and `removePrecipitation` erase overrides are deleted (uniform `eraseContent` is safe); `removeRoutes` stays — custom route groups' styling is still DOM-held because `styles.routes` is a fixed three-group schema (a future `routes.groups` record would retire it). The legacy `Style` interface and global retired back at step 2.
 
 ## Invariants
 
