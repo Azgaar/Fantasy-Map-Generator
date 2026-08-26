@@ -17,7 +17,6 @@ import {
   getCoordinates,
   getFileName,
   getFriendlyHeight,
-  getGridPolygon,
   rn,
   unique
 } from "@/utils";
@@ -538,15 +537,16 @@ function removeUnusedElements(clone: MapSelection): void {
 
 function updateMeshCells(clone: MapSelection): void {
   const renderOcean = ensureEl<HTMLInputElement>("renderOcean").checked;
-  const data = renderOcean ? grid.cells.i : grid.cells.i.filter((i: number) => grid.cells.h[i] >= 20);
+  const cellIds = Array.from(grid.cells.i);
+  const data = renderOcean ? cellIds : cellIds.filter(i => grid.cells.h[i] >= 20);
   const scheme = getColorScheme(select("#terrs").select("#landHeights").attr("scheme"));
   clone.select("#heights").attr("filter", "url(#blur1)");
   clone
     .select("#heights")
     .selectAll("polygon")
-    .data(data as number[])
+    .data(data)
     .join("polygon")
-    .attr("points", (d: number) => getGridPolygon(d, grid))
+    .attr("points", (d: number) => String(Grid.getPolygon(d)))
     .attr("id", (d: number) => `cell${d}`)
     .attr("stroke", (d: number) => getColor(grid.cells.h[d], scheme));
 }

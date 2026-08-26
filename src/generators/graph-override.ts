@@ -2,7 +2,7 @@
 import { polygonArea } from "d3";
 import type { Point } from "@/types/global";
 import type { PackedGraph } from "@/types/PackedGraph";
-import { clipPoly, getPackPolygon, rn, TYPED_ARRAY_MAX, unique } from "@/utils";
+import { clipPoly, rn, TYPED_ARRAY_MAX, unique } from "@/utils";
 
 type OverrideValue = number | number[];
 /** property name → element id → [original value, custom value] */
@@ -74,7 +74,7 @@ function refreshDerivedData(vertexIds: number[]): void {
 
   const cellIds = unique(vertexIds.flatMap(vertexId => vertices.c[vertexId])).filter(cellId => cellId < cells.i.length);
   for (const cellId of cellIds) {
-    const area = Math.abs(polygonArea(getPackPolygon(cellId, pack)));
+    const area = Math.abs(polygonArea(Pack.getPolygon(cellId)));
     cells.area[cellId] = Math.min(rn(area), TYPED_ARRAY_MAX.UINT16);
   }
 

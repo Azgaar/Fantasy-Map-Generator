@@ -1,4 +1,9 @@
 import "./voronoi";
+import "./grid-generator";
+import "./temperature-generator";
+import "./precipitation-generator";
+import "./coordinates";
+import "./pack-generator";
 import "./heightmap-generator";
 import "./features";
 import "./names-generator";

@@ -1,9 +1,10 @@
 # Generation Pipeline
 
 Building a world is one long, strictly ordered sequence of generator calls. The generators talk to
-each other almost entirely through the two shared globals — `grid` (the raw jittered-square graph)
-and `pack` (the repacked graph everything downstream is indexed against) — so **the execution order
-_is_ the dependency graph**: a step depends on every earlier step that last wrote a global it reads.
+each other almost entirely through the two shared globals — `grid` (the raw jittered-square graph,
+typed as [`GridGraph`](../../src/types/GridGraph.ts)) and `pack` (the repacked graph everything
+downstream is indexed against) — so **the execution order _is_ the dependency graph**: a step depends
+on every earlier step that last wrote a global it reads.
 
 That order used to live as a hardcoded call list in `generate()`, retyped by hand at every site that
 rebuilds part of a map. It is now declared once, as data:
@@ -11,6 +12,7 @@ rebuilds part of a map. It is now declared once, as data:
 | File                                                                                                          | Role                                                                                               |
 | ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | [`src/generators/pipeline.ts`](../../src/generators/pipeline.ts)                                              | The runner. Generic, knows nothing about generators, `pack` or `grid`                              |
+| [`src/generators/grid-generator.ts`](../../src/generators/grid-generator.ts)                                  | The `Grid` module and its siblings `Temperature`, `Precipitation` and `Pack` (see below)           |
 | [`src/generators/generation-pipeline.ts`](../../src/generators/generation-pipeline.ts)                        | The configuration: `GenerationPipeline` and `ErasePipeline` step lists                             |
 | [`public/main.js`](../../public/main.js) → `generate()`                                                       | Drives `GenerationPipeline` and owns everything around it (seed, sizing, statistics, error dialog) |
 | [`src/controllers/heightmap-editor.ts`](../../src/controllers/heightmap-editor.ts) → `regenerateErasedData()` | Drives `ErasePipeline`                                                                             |
@@ -55,9 +57,9 @@ anything but a straight line — so it added validation logic and API surface wi
 
 | Phase                    | Step ids                                                      | Writes (selection)                                                              |
 | ------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Grid + heightmap         | `generateGrid`, `heightmap`                                   | `grid`, `grid.cells.h`; resets `pack`                                           |
-| Hydrology base           | `markupGrid`, `addLakesInDeepDepressions`, `openNearSeaLakes` | `grid.cells.f/t/b`, lake and ocean topology                                     |
-| World position & climate | `mapCoordinates`, `temperatures`, `precipitation`             | `mapCoordinates`, `grid.cells.temp/prec`                                        |
+| Grid + heightmap         | `grid`, `heightmap`                                           | `grid`, `grid.cells.h`; resets `pack`                                           |
+| Hydrology base           | `markupGrid`, `depressionLakes`, `nearSeaLakes`               | `grid.cells.f/t/b`, lake and ocean topology                                     |
+| World position & climate | `mapSize`, `mapCoordinates`, `temperatures`, `precipitation`  | `options.mapSize/latitude/longitude`, `mapCoordinates`, `grid.cells.temp/prec`  |
 | Repack                   | `regraph`, `markupPack`, `defaultRuler`                       | `pack.cells.*` (**invalidates every earlier `pack` cell index**), default ruler |
 | Rivers & biomes          | `rivers`, `biomes`, `featureGroups`                           | `pack.rivers`, `cells.r/fl/conf`, `pack.biomes`, `cells.biome`                  |
 | Climate art              | `ice`                                                         | `pack.ice`                                                                      |
@@ -91,11 +93,11 @@ flowchart TD
     end
     seed --> size --> rnd --> gg
 
-    gg["generateGrid<br/><i>only if size/seed changed</i>"]
+    gg["grid<br/><i>Grid.prepare: regenerates only if size/seed changed</i>"]
     hm["heightmap<br/><i>writes: grid.cells.h; resets pack</i>"]
     mg["markupGrid<br/><i>writes: grid.cells.f/t/b</i>"]
     lakes["addLakesInDeepDepressions +<br/>openNearSeaLakes<br/><i>writes: grid.cells.h/f</i>"]
-    coord["mapCoordinates<br/><i>writes: mapCoordinates</i>"]
+    coord["mapSize + mapCoordinates<br/><i>writes: options.mapSize/latitude/longitude, mapCoordinates</i>"]
     temp["temperatures<br/><i>writes: grid.cells.temp</i>"]
     prec["precipitation<br/><i>writes: grid.cells.prec</i>"]
     repack["regraph + markupPack<br/><i>writes: pack.* (new graph)</i>"]
@@ -155,8 +157,8 @@ It is a separate list, not a slice of `GenerationPipeline` — the ids are typed
 a step id that does not exist in the canonical list is a compile error, but the two lists are kept in
 sync by hand. Differences, all deliberate:
 
-- **Dropped:** `generateGrid`, `heightmap` (the user just edited the heights), `mapCoordinates` and
-  `defaultRuler` (map bounds don't change on an edit), `addedLabels` and `mapName` (not touched).
+- **Dropped:** `grid`, `heightmap` (the user just edited the heights), `mapSize`, `mapCoordinates`
+  and `defaultRuler` (map bounds don't change on an edit), `addedLabels` and `mapName` (not touched).
 - **`erosion` context:** `addLakesInDeepDepressions` and `openNearSeaLakes` run only when erosion is
   allowed; `rivers` calls `Rivers.generate(erosion)` and, when it isn't, snaps `pack.cells.h` back to
   the grid heights wherever the land/water side didn't flip.
@@ -215,3 +217,59 @@ reaches a phase you change.
 5. Add a version-bump migration in [`auto-update.ts`](../../src/services/io/auto-update.ts) so older
    saves gain the new fields on load.
 6. Update the phase table above.
+
+## The grid modules
+
+Everything that builds or reads the raw graph lives in five sibling modules, each reachable as a
+global the same way `Features`, `Rivers` and the other generators are:
+
+### `Grid` — [`grid-generator.ts`](../../src/generators/grid-generator.ts)
+
+| Method                                                       | Role                                                                 |
+| ------------------------------------------------------------ | -------------------------------------------------------------------- |
+| `generate(seed, width, height)`                              | jittered points, boundary and Voronoi diagram for a fresh graph      |
+| `shouldRegenerate(graph, expectedSeed, width, height)`       | does the graph still fit the requested seed and canvas size?         |
+| `prepare(expectedSeed?, precreated?)`                        | the `grid` pipeline step: reuse the current graph or build a new one |
+| `rebuildGraph(graph)`                                        | restore cells and vertices of a saved graph from its points          |
+| `resetHeights(graph)`                                        | blank the heightmap, keeping the graph                               |
+| `getCellsDesired()`                                          | the cell count requested in the options                              |
+| `findCell(x, y)` / `findAll(x, y, radius)` / `getPolygon(id)` | lookups on the regular square grid; all take an optional graph       |
+| `addDeepDepressionLakes()` / `openNearSeaLakes()`            | lake topology over `grid.cells.h/t/f` and `grid.features`            |
+
+### `Temperature` — [`temperature-generator.ts`](../../src/generators/temperature-generator.ts)
+
+`generate()` fills `grid.cells.temp` from each row's latitude and each cell's altitude.
+
+### `Precipitation` — [`precipitation-generator.ts`](../../src/generators/precipitation-generator.ts)
+
+`generate()` passes the winds over the cells, filling `grid.cells.prec`. `getWinds()` returns the
+bands they enter through; it is free of randomness — derived from `options.winds` and the map
+position — so [`drawPrecipitation`](../../src/renderers/draw-precipitation.ts) calls it to draw the
+wind arrows whenever the layer is rendered. The generators never touch the DOM.
+
+### `Coordinates` — [`coordinates.ts`](../../src/generators/coordinates.ts)
+
+`defineMapSize()` is the `mapSize` step: it picks how much of the globe the map covers and where it
+sits, from the heightmap template (real-world templates have fixed values, random ones a
+distribution) unless the option is locked. `calculate()` is the `mapCoordinates` step: it turns
+`options.mapSize/latitude/longitude` and the canvas aspect ratio into the `mapCoordinates` lat/lon
+box every latitude-dependent generator and renderer reads.
+
+### `Pack` — [`pack-generator.ts`](../../src/generators/pack-generator.ts)
+
+`generate()` is the `regraph` step: it repacks the grid into `pack`, dropping deep ocean points and
+splitting coastal cells so the packed graph is denser exactly where the map needs it.
+
+It also owns the spatial lookups against the packed graph, mirroring `Grid`'s: `findCell(x, y, radius?)`
+and `findAll(x, y, radius)` (both backed by one cached quadtree per graph, rebuilt when the cell points
+are replaced) and `getPolygon(cellId)`. Each takes an optional graph, defaulting to the global `pack`.
+
+## `Population` — [`population-generator.ts`](../../src/generators/population-generator.ts)
+
+`rankCells()` is the `rankCells` step: it scores every land cell — biome habitability, river flux,
+elevation, what it is coastal to and the goods around it — into `cells.s`, then turns that score into
+rural population in `cells.pop`. Everything placed by population (cultures, burgs, states) reads it,
+so it has to run after `biomes` and `goods` and before `cultures`.
+
+Unlike the grid modules it is imported rather than global, and it runs outside the pipeline too:
+`Burgs.regenerate()` and `Population.regenerate()` re-rank the cells before replacing burgs.

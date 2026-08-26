@@ -6,7 +6,7 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Route } from "@/generators/routes-generator";
-import { ensureEl, getPackPolygon, getPointer, rn } from "../utils";
+import { ensureEl, getPointer, rn } from "../utils";
 
 let creatorPoints: number[][] = [];
 
@@ -80,7 +80,7 @@ function onBodyClick(ev: Event): void {
 
 function onClick(this: any, event: any): void {
   const [x, y] = getPointer(event, this);
-  const cellId = findCell(x, y);
+  const cellId = Pack.findCell(x, y);
   const point = [rn(x, 2), rn(y, 2), cellId!];
   creatorPoints.push(point);
 
@@ -109,7 +109,7 @@ function drawRoute(points: number[][]): void {
     .selectAll("polygon")
     .data(points)
     .join("polygon")
-    .attr("points", (p: number[]) => getPackPolygon(p[2], pack))
+    .attr("points", (p: number[]) => String(Pack.getPolygon(p[2])))
     .attr("class", "current");
 
   select("#debug")

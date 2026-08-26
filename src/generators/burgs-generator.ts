@@ -2,10 +2,11 @@ import { quadtree } from "d3-quadtree";
 import { Emblems } from "@/generators/emblems-generator";
 import type { BurgGroup } from "@/types/burg-groups";
 import type { Emblem } from "@/types/emblems";
-import { each, ensureEl, findClosestCell, gauss, minmax, normalize, P, rn } from "../utils";
+import { each, ensureEl, gauss, minmax, normalize, P, rn } from "../utils";
 import { type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
 import { NON_NAVIGABLE_LAKE_GROUPS } from "./features";
 import type { Label } from "./labels-generator";
+import { Population } from "./population-generator";
 import type { ProductionRecord } from "./production-generator";
 import type { River } from "./river-generator";
 import type { Point } from "./voronoi";
@@ -706,7 +707,7 @@ class BurgModule {
     const { cells } = pack;
 
     const burgId = pack.burgs.length;
-    const cellId = findClosestCell(x, y, undefined, pack);
+    const cellId = Pack.findCell(x, y);
     const culture = cells.culture[cellId as number];
     const name = Names.getCulture(culture);
     const state = cells.state[cellId as number];
@@ -743,7 +744,7 @@ class BurgModule {
 
   regenerate(): void {
     const { cells, burgs, states, provinces } = pack;
-    rankCells();
+    Population.rankCells();
 
     notes = notes.filter(note => {
       if (!note.id.startsWith("burg")) return true;

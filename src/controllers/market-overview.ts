@@ -232,7 +232,7 @@ function relocateMarketOnClick(this: SVGGElement, event: MouseEvent): void {
   if (!market) return;
 
   const [x, y] = getPointer(event, this);
-  const cellId = findCell(x, y);
+  const cellId = Pack.findCell(x, y);
   if (cellId === undefined) return;
 
   const burgId = pack.cells.burg[cellId];

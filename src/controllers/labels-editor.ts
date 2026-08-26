@@ -410,12 +410,12 @@ const nameGenerators: Record<LabelType, (label: LabelData) => string> = {
     return Names.getState(province.name, pack.cells.culture[province.center]);
   },
   added: label => {
-    const cellId = findCell(...label.anchor);
+    const cellId = Pack.findCell(...label.anchor);
     if (!cellId) return "";
     return Names.getCulture(pack.cells.culture[cellId]);
   },
   river: label => {
-    const cellId = findCell(...label.anchor);
+    const cellId = Pack.findCell(...label.anchor);
     if (!cellId) return "";
     return Rivers.getName(cellId);
   },
