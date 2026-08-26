@@ -15,7 +15,7 @@ The project is under active development. Join our [Discord server](https://disco
 
 ## How can I use the tool? 
 
-* *Exploration* - click on the _New map!_ button to get a random map. Open the _Layers_ tab (press <kbd>Tab</kbd>) and select a desired layers preset. Zoom in and explore the generated world
+* *Exploration* - click on the _New Map_ button to get a random map. Open the _Layers_ tab (press <kbd>Tab</kbd>) and select a desired layers preset. Zoom in and explore the generated world
 
 * *Tuning* - go to _Options_, change the default settings like map template and states number and generate a new map to better fit your needs
 

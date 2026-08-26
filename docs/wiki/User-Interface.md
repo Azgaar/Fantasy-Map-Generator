@@ -231,7 +231,7 @@ A dropdown that displays a set of predefined layers.
 
 For example, the group of layers called "political map", contains (and toggle) the layers of the states, borders, rivers, etc.
 
-Available presets: Political map, Cultural map, Religions map, Provinces map, Biomes map, Heightmap, Physical map, Places of interest, Military map, Emblems, Pure landmass.
+Available presets: Political map, Cultural map, Religions map, Provinces map, Biomes map, Heightmap, Physical map, Places of interest, Goods map, Trade animation, Military map, Emblems, Pure landmass.
 
 ## Biomes
 
@@ -264,6 +264,18 @@ This layer shows the icons of the burgs. When this layer is on, when hovering a 
 This layer shows the topographical map. When this layer is on, when hovering a cell, its height will be displayed in the tooltip. A topographic map describes the height (relative to sea level) of the map at the various points (cells). All secondary data (rivers, cities, countries, markers, etc.) depend on the topographical map, so it is of great importance.
 
 Each cell is associated with a height, which is a number between 0 and 100.
+
+## Other layer toggles
+
+A few more layers can be toggled the same way as the ones described above:
+
+* **Lakes**: shows lakes, grouped internally as fresh water, salt, sinkhole, frozen, lava and dry.
+
+* **Goods**: shows the goods produced and traded by burgs (cells, icons and burg markers for the economy system).
+
+* **Trade**: plays the trade animation, showing goods moving along trade routes.
+
+* **Vignette**: draws a soft darkened border around the edge of the map canvas, a purely cosmetic framing effect.
 
 # Style tab
 
@@ -497,8 +509,54 @@ These settings are applied when you generate a new map.
 
 * Growth rate: A slider that defines how far countries and civilizations will expand into neutral lands after a generation. The lower its value, the more land will remain politically neutral.
 
-* Towns number. A slider that determines the number of towns.
+* Burgs number: A slider that determines the number of non-capital settlements to be placed (if enough suitable land exists).
 
 * Religions number: A slider that determines the number of religions and sects.
 
-* States labels: Dropdown that defines whether full names or a shortened version of the state names are displayed when there is no room for the full name.
+Note: the "States labels" option (full vs. shortened state names) is no longer a single global dropdown here. It has moved to the Style tab, where it can be set per label group.
+
+# View mode
+
+At the bottom of the Layers tab there is a View mode selector, in addition to the regular (Standard) map view:
+
+* **3D scene**: presents the map as a 3D mesh, driven by the heightmap. Works best when a heightmap layer is present. The map cannot be edited while in this mode.
+
+* **Globe**: projects the map onto a globe. Like the 3D scene, it is a presentation mode only and cannot be used for editing.
+
+# Options tab additions
+
+## Azgaar Assistant
+
+In the Options tab, under Generator settings, a "Azgaar assistant" dropdown lets you show or hide the help bubble that appears in the bottom right corner of the screen.
+
+# Economy and trade tools
+
+FMG includes a suite of tools, reachable from the Tools tab, for simulating and displaying an economy of goods, markets and trade on the map:
+
+* **Goods Editor** (Shift + G): lets you view and edit the goods produced across the map, and their properties.
+
+* **Markets Overview**: lists the markets that have formed, together with their territories and the goods traded within them.
+
+* **Trade Animation Editor**: configures the animated trade routes shown when the Trade layer is toggled on.
+
+* **Regenerate: Economy / Goods / Markets / Production**: in the Tools tab's Regenerate section, these buttons let you rebuild the trade network from the current goods and markets, regenerate bonus goods placement, regenerate markets and their territories, or regenerate production and trade deals, respectively, without regenerating the whole map.
+
+# Coastline Settings Editor
+
+Opened from the Tools tab, this editor lets you customize the settings that control how the coastline (the line separating land from sea) is generated and displayed.
+
+# Measurers Editor
+
+Opened from the Tools tab (shortcut Shift + =), this editor manages measurement rulers placed on the map, letting you measure distances and areas.
+
+# Minimap
+
+Found in the Tools tab's Show section, this opens a small overview of the whole map. Clicking on the minimap re-centers the main map view on the clicked location.
+
+# Submap and Transform tools
+
+In the Tools tab's Create section:
+
+* **Submap**: generates a new, separate map from the area currently visible in the viewport.
+
+* **Transform**: opens a tool to transform (e.g. reshape or resize) the current map.

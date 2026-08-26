@@ -1,4 +1,4 @@
-_The tutorial is for version 1.98_
+_This tutorial tracks the current version of the Generator._
 
 ![loading_screen](https://github.com/user-attachments/assets/154617dd-a690-4da5-a36c-187cd51a5c04)
 
@@ -15,7 +15,9 @@ The map is generated fully zoomed out. Double click on the map to zoom into the 
 The same operations can be performed using keyboard. Press <kbd>+</kbd> to zoom in, <kbd>-</kbd> to zoom out. Use <kbd>1</kbd>-<kbd>9</kbd> number keys to set an exact zoom level. Press <kbd>0</kbd> to reset zoom to default. Use arrows keys to move around.
 
 ## Map layers
-By default the map shows the world’s political situation, but it’s not the only available preset. Open the first tab of the menu – _Layers_ – to change the preset. _Preset_ is a set of layers to be toggled on. There are number of presets available by default: political, cultural, religions, biomes, provinces, heightmap, places of interest, and other. You can either select one of the presets or use buttons below to display or hide a particular layer.
+By default the map shows the world’s political situation, but it’s not the only available preset. Open the first tab of the menu – _Layers_ – to change the preset. _Preset_ is a set of layers to be toggled on. There are a number of presets available by default: Political, Cultural, Religions, Provinces, Biomes, Heightmap, Physical, Places of interest, Goods map, Trade animation, Military map, Emblems and Pure landmass. You can either select one of the presets or use buttons below to display or hide a particular layer.
+
+The same tab also has a _View mode_ switcher. Besides the default _Standard_ (editable) view, you can render the map as a _3D scene_ (best with a heightmap layer, view-only) or projected on a _Globe_ (also view-only).
 
 ![menu](https://github.com/user-attachments/assets/70171c15-a44e-4460-9e33-4f4eed7f1b2a)
 
@@ -73,9 +75,8 @@ Let’s move to the settings overview. Open the Menu and click on the _Options_ 
 * _Provinces ratio_: the percentage of burgs that will have their own province. Provinces are sub-units of states and can be edited via the _Provinces Editor_.
 * _Size variety_:  defines how much states area should be different. The lower value, the more uniform state areas are.
 * _Growth rate_: defines how far states and cultures will expand into neutral lands on generation. The lower value you have, the more lands will stay politically neutral.
-* _Towns number_: the number of towns to be generated. Towns are non-capital settled areas (_burgs_). If there is not enough suitable space to put a requested number of towns, the Generator will place only a limited number of towns.
+* _Burgs number_: the number of non-capital settlements (_burgs_) to be generated. If there is not enough suitable space to put a requested number of burgs, the Generator will place only a limited number of them.
 * _Religions number_: the number of religions to be generated. Controls only the number of organized religions and cults. Religions can be edited via the _Religions Editor_.
-* _State labels_: defines whether the generator should render full state names or can use short variants where there is not enought space.
 
 Generator settings:
 * _Interface size_: size of the control panes. If the GUI size is too small, please also check out browser's zoom level (<kbd>Ctrl +</kbd>, <kbd>Ctrl -</kbd>).
@@ -117,13 +118,16 @@ Heightmap editing process has multiple build-in tools. These tools won’t be co
 ![paint_brushes](https://github.com/user-attachments/assets/dab037a3-797e-447a-ab96-6c99af1342d9)
 
 ## Customization tools
-The Heightmap Editor tools are not the only available ones. From the same _Tools_  tab you can also open Biomes, States, Provinces, Diplomacy, Cultures, Namesbase, Zones, Religions, Burgs, Units and Notes editors. All these Editors work in a different way and won’t be covered in this tutorial.
+The Heightmap Editor tools are not the only available ones. The _Edit_ section of the same _Tools_ tab opens a whole set of editors and overviews: Biomes, States, Provinces, Diplomacy, Cultures, Namesbase, Zones, Religions, Coastlines, Units and Notes; overview panels for Burgs, Labels, Rivers, Routes, Markers and Military forces; and, for the economy system, Goods, Markets and the Trade Animation editor. All these tools work in a different way and won’t be covered in this tutorial.
 
-The same tab contains tools to re-generate map elements. If, for example, you have added and moved some burgs, the burgs won’t be connected with roads anymore. You can click on initiate routes regeneration to get them connected. You can also re-calculate State Labels positions, relief icons, population, rivers, burgs and states.
+The _Regenerate_ section lets you re-run a piece of the generation on demand. If, for example, you have added and moved some burgs, they won’t be connected with roads anymore – click _Routes_ there to reconnect them. Other buttons let you regenerate burgs, cultures, states, provinces, religions, zones, military forces, relief icons, population, rivers, ice, markers, and – for the economy system – Economy, Goods, Markets and Production, as well as recalculate State Labels placement.
 
-The next _Tools_ section allows adding elements like burgs, labels, rivers, routes and markers. Select the tool and then click on the map to add an object. Hold <kbd>Shift</kbd> and click multiple times to add several objects.
+The _Add_ section lets you place new elements: Burg, Label, Marker, River and Route. Select the tool and then click on the map to add an object. Hold <kbd>Shift</kbd> and click multiple times to add several objects.
 
-The last section, which is collapsed by default, provides some info about the map cell your cursor is over.
+The _Show_ section opens read-only overviews (Cells, Charts, Minimap), and the _Create_ section holds two map-transformation tools: generating a Submap from the current viewport, and the Transform tool. The last panel, which is collapsed by default, provides some info about the map cell your cursor is over.
+
+## Economy and trade
+Since the world also simulates an economy, the map tracks Goods and Markets, and trade deals between them can be replayed with the Trade Animation tool (also available as a _Trade animation_ layer preset). These are generated automatically along with the rest of the map, and can be regenerated or edited from the _Tools_ tab as described above. The economy system has its own dedicated wiki pages with the full details.
 
 ## Editing map elements (labels, rivers, roads etc.)
 Individual map elements such as rivers, routes, relief icons, labels, markers, burgs and labels can be edited on mouse click. The editor screen that is opened is different for each element and it’s also out of this tutorial's coverage.
@@ -131,4 +135,4 @@ Individual map elements such as rivers, routes, relief icons, labels, markers, b
 ![label_editor](https://github.com/user-attachments/assets/37e706d1-7674-4c81-abc4-0be166c85d5b)
 
 ## Points of contact
-That was a brief overview of the main Generator elements and approaches. It’s not full by any meaning and just serves as a starting point. You can always find more details and help on our supportive [Discord server]( https://discordapp.com/invite/X7E84HU) and [Reddit community]( https://www.reddit.com/r/FantasyMapGenerator).
+That was a brief overview of the main Generator elements and approaches. It’s not full by any meaning and just serves as a starting point. You can always find more details and help on our supportive [Discord server](https://discordapp.com/invite/X7E84HU) and [Reddit community](https://www.reddit.com/r/FantasyMapGenerator).
