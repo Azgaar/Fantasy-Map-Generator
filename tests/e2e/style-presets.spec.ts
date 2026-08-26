@@ -152,7 +152,10 @@ test("a saved custom preset carries the retired sizes from the store", async ({p
 
   const raw = await page.locator("#styleSaverJSON").inputValue();
   const roundTripped = await page.evaluate(rawJson => {
-    const upgraded = (window as any).stylesLegacy.presetFromLegacy(JSON.parse(rawJson), {onUnknown: "skip"});
+    const json = JSON.parse(rawJson);
+    // the saver emits the store format now: no legacy selector keys, parseable directly
+    if ((window as any).stylesLegacy.isLegacyPreset(json)) throw new Error("saver emitted the legacy format");
+    const upgraded = (window as any).Styles.parse(json);
     return {
       coordinates: upgraded.coordinates.options.fontSize,
       rulers: upgraded.rulers.options.fontSize,
@@ -187,6 +190,8 @@ test("a saved custom preset carries the retired sizes from the store", async ({p
     gridScale: 2,
     marketsIcon: "K",
     textureX: 33,
-    oceanOutline: "-6,-4,-2"
+    oceanOutline: "-6,-4,-2",
+    scaleBarLabel: "posterity",
+    legendColumns: 5
   });
 });
