@@ -3,7 +3,8 @@ import { expect, test } from "@playwright/test";
 declare let customization: number; // page global, resolved inside page.evaluate
 
 // Turning a layer off erases its content. Some sub-groups are user data rather than render output —
-// custom route groups, burg icon groups, the wind arrows — and must survive the erasure.
+// custom route groups, burg icon groups — and must survive the erasure. The wind arrows are the
+// counter-example: they are render output and must be rebuilt identically when the layer comes back.
 test.describe("layer teardown keeps user data", () => {
   test.beforeEach(async ({ context, page }) => {
     await context.clearCookies();
@@ -47,17 +48,22 @@ test.describe("layer teardown keeps user data", () => {
     expect(await page.locator("#routes > #caravans path").count()).toBe(5);
   });
 
-  test("precipitation keeps the wind direction group", async ({ page }) => {
+  test("precipitation rebuilds the wind direction group with the layer", async ({ page }) => {
     const wind = page.locator("#prec > #wind");
-    await expect(wind).toBeAttached(); // written once, by generatePrecipitation
-    const arrows = await page.locator("#prec > #wind text").count();
-    expect(arrows).toBeGreaterThan(0);
+    await expect(wind).toHaveCount(0); // render output: generation no longer touches the DOM
 
     await page.evaluate(() => (window as any).Layers.show("precipitation"));
+    await expect(wind).toBeAttached();
+    const arrows = await page.locator("#prec > #wind text").count();
+    expect(arrows).toBeGreaterThan(0);
     expect(await page.locator("#prec > circle").count()).toBeGreaterThan(0);
 
     await page.evaluate(() => (window as any).Layers.hide("precipitation"));
     expect(await page.locator("#prec > circle").count()).toBe(0);
+    await expect(wind).toHaveCount(0);
+
+    // Precipitation.getWinds() is free of randomness, so the redraw restores the same arrows
+    await page.evaluate(() => (window as any).Layers.show("precipitation"));
     await expect(wind).toBeAttached();
     expect(await page.locator("#prec > #wind text").count()).toBe(arrows);
   });
