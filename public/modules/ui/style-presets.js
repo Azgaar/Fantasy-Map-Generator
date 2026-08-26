@@ -73,7 +73,15 @@ async function fetchSystemPreset(preset) {
   }
 }
 
+function isKnownStyleFormat(json) {
+  return stylesLegacy.isLegacyPreset(json) || stylesLegacy.isStoreStyles(json);
+}
+
 function applyStylePreset(presetJson) {
+  if (!isKnownStyleFormat(presetJson)) {
+    tip("The file is not a style preset - the current style is kept", false, "error", 5000);
+    return;
+  }
   const parsed = stylesLegacy.isLegacyPreset(presetJson)
     ? stylesLegacy.presetFromLegacy(presetJson, {onUnknown: "skip"})
     : Styles.parse(presetJson);
@@ -216,6 +224,8 @@ function addStylePreset() {
 
     if (!styleJSON) return tip("Please provide a style JSON", false, "error");
     if (!JSON.isValid(styleJSON)) return tip("JSON string is not valid, please check the format", false, "error");
+    if (!isKnownStyleFormat(JSON.parse(styleJSON)))
+      return tip("The JSON is not a style preset - nothing was saved", false, "error", 5000);
     if (!desiredName) return tip("Please provide a preset name", false, "error");
     if (styleSaverTip.innerHTML === "default")
       return tip("You cannot overwrite default preset, please change the name", false, "error");
