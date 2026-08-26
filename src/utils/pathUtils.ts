@@ -71,17 +71,6 @@ const restorePath = (exit: number, start: number, from: number[]): number[] => {
   return pathCells.reverse();
 };
 
-/**
- * Returns isolines (borders) for different types of cells in the graph.
- * @param {object} graph - The graph object containing cells and vertices.
- * @param {(cellId: number) => string | number} getType - A function that returns the type of a cell given its ID.
- * @param {object} [options] - Options to specify which isoline formats to generate.
- * @param {boolean} [options.polygons=false] - Whether to generate polygons for each type.
- * @param {boolean} [options.fill=false] - Whether to generate fill paths for each type.
- * @param {boolean} [options.halo=false] - Whether to generate halo paths for each type.
- * @param {boolean} [options.waterGap=false] - Whether to generate water gap paths for each type.
- * @returns {object} An object containing isolines for each type based on the specified options.
- */
 /** both the grid and the packed graph are valid inputs, only the fields below are used */
 type IsolineGraph = {
   cells: {
@@ -96,6 +85,17 @@ type IsolineGraph = {
   features: { type: string; shoreline?: number[] }[];
 };
 
+/**
+ * Returns isolines (borders) for different types of cells in the graph.
+ * @param {object} graph - The graph object containing cells and vertices.
+ * @param {(cellId: number) => string | number} getType - A function that returns the type of a cell given its ID.
+ * @param {object} [options] - Options to specify which isoline formats to generate.
+ * @param {boolean} [options.polygons=false] - Whether to generate polygons for each type.
+ * @param {boolean} [options.fill=false] - Whether to generate fill paths for each type.
+ * @param {boolean} [options.halo=false] - Whether to generate halo paths for each type.
+ * @param {boolean} [options.waterGap=false] - Whether to generate water gap paths for each type.
+ * @returns {object} An object containing isolines for each type based on the specified options.
+ */
 export const getIsolines = (
   { cells, vertices, features }: IsolineGraph,
   getType: (cellId: number) => string | number | null,
