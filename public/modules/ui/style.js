@@ -291,10 +291,11 @@ function selectStyleElement() {
 
   if (styleElement === "burgIcons") {
     styleBurgIcons.style.display = "block";
-    styleBurgIconsIcon.value = el.attr("data-icon");
-    styleBurgIconsIconSize.value = el.attr("font-size");
-    styleBurgIconsStrokeLinejoin.value = el.attr("stroke-linejoin");
-    styleBurgIconsFillOpacity.value = el.attr("fill-opacity");
+    const burgGroupStyle = styles.burgIcons.burgIcons.groups[styleGroupSelect.value];
+    styleBurgIconsIcon.value = burgGroupStyle?.options.icon ?? el.attr("data-icon");
+    styleBurgIconsIconSize.value = burgGroupStyle?.options.size ?? el.attr("font-size");
+    styleBurgIconsStrokeLinejoin.value = burgGroupStyle?.attrs["stroke-linejoin"] ?? el.attr("stroke-linejoin");
+    styleBurgIconsFillOpacity.value = burgGroupStyle?.attrs["fill-opacity"] ?? el.attr("fill-opacity");
 
     styleFill.style.display = "block";
     styleStroke.style.display = "block";
@@ -315,7 +316,7 @@ function selectStyleElement() {
     styleFillInput.value = styleFillOutput.value = el.attr("fill") || "#ffffff";
     styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke") || "#3e3e4b";
     styleStrokeWidthInput.value = el.attr("stroke-width") || 0.24;
-    styleFontSize.value = el.attr("font-size") || 1;
+    styleFontSize.value = styles.burgIcons.anchors.groups[styleGroupSelect.value]?.options.size || 1;
   }
 
   if (styleElement === "legend") {
@@ -850,20 +851,26 @@ stylePopulationUrbanStrokeInput.addEventListener("input", e => {
   stylePopulationUrbanStrokeOutput.value = e.target.value;
 });
 
+const burgIconsGroup = () => styles.burgIcons.burgIcons.groups[styleGroupSelect.value];
+
 styleBurgIconsIcon.addEventListener("change", e => {
+  const group = burgIconsGroup();
+  if (group) group.options.icon = e.target.value;
   getEl().attr("data-icon", e.target.value).selectAll("use").attr("href", e.target.value);
 });
 
 styleBurgIconsIconSize.addEventListener("input", e => {
+  const group = burgIconsGroup();
+  if (group) group.options.size = +e.target.value || 1;
   getEl().attr("font-size", e.target.value);
 });
 
 styleBurgIconsStrokeLinejoin.addEventListener("change", e => {
-  getEl().attr("stroke-linejoin", e.target.value);
+  writeSelectedAttr("stroke-linejoin", e.target.value || null);
 });
 
 styleBurgIconsFillOpacity.addEventListener("input", e => {
-  getEl().attr("fill-opacity", e.target.value);
+  writeSelectedAttr("fill-opacity", +e.target.value);
 });
 
 styleCompassSizeInput.addEventListener("input", shiftCompass);
@@ -981,6 +988,13 @@ function changeFontSize(el, size) {
   if (styleElementSelect.value === "ruler") {
     styles.rulers.options.fontSize = size;
     Layers.draw("rulers");
+    return;
+  }
+
+  if (styleElementSelect.value === "anchors") {
+    const group = styles.burgIcons.anchors.groups[styleGroupSelect.value];
+    if (group) group.options.size = size;
+    el.attr("font-size", size);
     return;
   }
 

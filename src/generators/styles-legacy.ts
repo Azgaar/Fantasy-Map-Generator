@@ -405,12 +405,6 @@ export function syncStylesFromMap(): void {
   const harvested = stylesFromMap();
   harvested.labels = structuredClone(styles.labels);
   harvested.burgIcons = structuredClone(styles.burgIcons);
-  for (const el of document.querySelectorAll("#burgIcons > g")) {
-    if (el.id) harvested.burgIcons.burgIcons.groups[el.id] = burgGroupFromElement(el);
-  }
-  for (const el of document.querySelectorAll("#anchors > g")) {
-    if (el.id) harvested.burgIcons.anchors.groups[el.id] = burgGroupFromElement(el);
-  }
   harvested.relief.options = structuredClone(styles.relief.options);
   // post-migration maps carry no rescale/data-width attrs, so the store owns these
   // options; a loaded old map's attrs win here until the load-time strip removes them

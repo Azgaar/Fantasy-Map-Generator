@@ -13,7 +13,7 @@ const waitForMap = (page: Page) =>
 
 const rn = (v: number, d = 0): number => Math.round(v * 10 ** d) / 10 ** d;
 
-async function openStyleElement(page: Page, element: "markers" | "regions" | "coordinates" | "ruler" | "legend" | "emblems" | "goodsIcons" | "goodsBurgs" | "markets" | "terrs" | "armies" | "gridOverlay" | "texture" | "ocean" | "scaleBar" | "labels" | "lakes" | "rivers" | "compass"): Promise<void> {
+async function openStyleElement(page: Page, element: "markers" | "regions" | "coordinates" | "ruler" | "legend" | "emblems" | "goodsIcons" | "goodsBurgs" | "markets" | "terrs" | "armies" | "gridOverlay" | "texture" | "ocean" | "scaleBar" | "labels" | "lakes" | "rivers" | "compass" | "burgIcons" | "anchors"): Promise<void> {
   await page.evaluate(() => (window as any).showOptions());
   await page.locator("#styleTab").click();
   await page.locator("#styleElementSelect").selectOption(element);
@@ -557,6 +557,43 @@ test.describe("style editor events drive the store", () => {
     expect(after.stored).toBe(2.5);
     expect(after.target).toBe("2.5");
     expect(after.sibling, "sibling derived DOM value must survive").toBe("7.77");
+  });
+
+  test("burg icon controls write the store and the redraw derives from it", async ({ page }) => {
+    await openStyleElement(page, "burgIcons");
+    const group = await page.evaluate(() => (window as any).styleGroupSelect.value);
+
+    await page.locator("#styleBurgIconsIconSize input[type=number]").fill("2.5");
+    await page.locator("#styleBurgIconsFillOpacity input[type=number]").fill("0.6");
+    await page.locator("#styleBurgIconsStrokeLinejoin").selectOption("round");
+
+    const stored = await page.evaluate(
+      g => ({
+        size: (window as any).styles.burgIcons.burgIcons.groups[g].options.size,
+        fillOpacity: (window as any).styles.burgIcons.burgIcons.groups[g].attrs["fill-opacity"],
+        linejoin: (window as any).styles.burgIcons.burgIcons.groups[g].attrs["stroke-linejoin"]
+      }),
+      group
+    );
+    expect(stored).toEqual({ size: 2.5, fillOpacity: 0.6, linejoin: "round" });
+
+    // the live group carries the presentation; a full redraw keeps the store values
+    await page.evaluate(() => (window as any).Layers.draw("burgIcons"));
+    const el = page.locator(`#burgIcons > g#${group}`);
+    await expect(el).toHaveAttribute("font-size", "2.5");
+    await expect(el).toHaveAttribute("fill-opacity", "0.6");
+
+    // anchors size writes its own store node without minting data-size
+    await openStyleElement(page, "anchors");
+    const anchorGroup = await page.evaluate(() => (window as any).styleGroupSelect.value);
+    await page.locator("#styleFontSize").fill("1.8");
+    await page.locator("#styleFontSize").dispatchEvent("change");
+    const anchorStored = await page.evaluate(
+      g => (window as any).styles.burgIcons.anchors.groups[g].options.size,
+      anchorGroup
+    );
+    expect(anchorStored).toBe(1.8);
+    expect(await page.locator(`#anchors > g#${anchorGroup}`).getAttribute("data-size")).toBeNull();
   });
 
   test("compass shift writes the rose transform through the store", async ({ page }) => {

@@ -1,5 +1,4 @@
 import { select } from "d3";
-import { burgGroupFromElement } from "@/generators/styles-legacy";
 
 export const drawBurgIcons = (): void => {
   TIME && console.time("drawBurgIcons");
@@ -45,17 +44,10 @@ export const removeBurgIcon = (burgId: number): void => {
 };
 
 function createIconGroups(): void {
-  // save existing styles (the style editor edits the DOM) and remove all groups
+  // the store is authoritative (the style editor writes it); groups fully recreate from it
   const { burgIcons, anchors } = styles.burgIcons;
-  document.querySelectorAll("g#burgIcons > g").forEach(group => {
-    burgIcons.groups[group.id] = burgGroupFromElement(group);
-    group.remove();
-  });
-
-  document.querySelectorAll("g#anchors > g").forEach(group => {
-    anchors.groups[group.id] = burgGroupFromElement(group);
-    group.remove();
-  });
+  for (const group of document.querySelectorAll("g#burgIcons > g")) group.remove();
+  for (const group of document.querySelectorAll("g#anchors > g")) group.remove();
 
   // create groups for each burg group and apply stored or default style
   const defaultIconStyle = burgIcons.groups.town || Object.values(burgIcons.groups)[0];

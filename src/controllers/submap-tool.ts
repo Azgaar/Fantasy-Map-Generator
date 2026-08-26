@@ -1,7 +1,6 @@
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { Resample } from "@/generators/resample";
-import { burgGroupFromElement } from "@/generators/styles-legacy";
 import { getLatitude, getLongitude } from "@/utils";
 import { ensureEl, minmax, rn } from "../utils";
 
@@ -114,10 +113,8 @@ function recalculateMapSize(x0: number, y0: number): void {
 
 function rescaleBurgStyles(scale: number): void {
   for (const group of ensureEl("burgIcons").querySelectorAll<SVGGElement>(":scope > g")) {
-    const iconStyle = burgGroupFromElement(group);
-    iconStyle.options.size = rn(minmax(iconStyle.options.size * scale, 0.2, 10), 2);
-
-    styles.burgIcons.burgIcons.groups[group.id] = iconStyle;
+    const iconStyle = styles.burgIcons.burgIcons.groups[group.id];
+    if (iconStyle) iconStyle.options.size = rn(minmax(iconStyle.options.size * scale, 0.2, 10), 2);
     group.remove();
   }
 
