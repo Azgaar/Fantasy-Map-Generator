@@ -1,24 +1,50 @@
-To run the Generator locally you need to download its files and start a local web-server.
+Fantasy Map Generator is built with [Vite](https://vitejs.dev) and TypeScript, so a plain static web server can't run the source directly &mdash; you need Node.js and a build step.
+
+## Requirements
+
+* [Node.js](https://nodejs.org) 24 or later (see `engines` in `package.json`).
+* `npm` (bundled with Node.js).
 
 ## Download
-Open [Releases](https://github.com/Azgaar/Fantasy-Map-Generator/releases) page, select the latest available version and click on _Source code (zip)_. Unzip _all files_ from the downloaded archive.
 
-## Live Server
-If you are a developer you probably don't want to restart the server manually each time you make a change to the code. So you need a web-server with live reload feature. If you are VS Code user, I recommend to install the [Live Server](https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer) extension. It runs a local server in one click and automatically restarts it on file save.
+Clone the repository:
 
-### Python server
-The easiest way to run a local web-server is to use Python's `http.server` module.
+```
+git clone https://github.com/Azgaar/Fantasy-Map-Generator.git
+```
 
-1. Install Python. If you are using Linux or macOS, it should be available on your system already. If you are a Windows user, you can get an installer from the [Python homepage](https://www.python.org/downloads). On the first installer page, make sure you check the "Add Python 3.xxx to PATH" checkbox.
+or download a zip of the `master` branch from GitHub (**Code** &rarr; **Download ZIP**) and unzip it.
 
-2. If you are Windows user, run the `run_python_server.bat` file in the Fantasy Map Generator folder. It will start the web-server and automatically open the Application in Chrome. You can edit the `.bat` file in any text editor if you want to use a different browser or host. 
+Note: the [Releases](https://github.com/Azgaar/Fantasy-Map-Generator/releases) page is not cut every version and can lag well behind `master`. For the current code, use `master` rather than the latest tagged release.
 
-3. For other systems open the terminal and print a `python -m http.server 8000` command. Then open `http://localhost:8000/` in browser.
+## Development
 
-### PHP server
+Install dependencies once, then start the dev server:
 
-1. Install PHP (version 5.4 and higher) from package repository or build from sources. If you are a Windows user, you can get an zip from the [PHP website](https://windows.php.net/download/). Don't forget add path to `php` executable to `PATH` variable.
+```
+npm install
+npm run dev
+```
 
-2. If you are Windows user, run the `run_php_server.bat` file in the Fantasy Map Generator folder. It will start the web-server and automatically open the Application in Chrome. You can edit the `.bat` file in any text editor if you want to use a different browser, host, port or set path to PHP (by default is globally defined in Windows `PATH` variable). 
+This starts a Vite dev server with live reload: the app rebuilds and refreshes the browser automatically whenever you save a file. Vite prints the local URL to open (typically `http://localhost:5173/`).
 
-3. For other systems open the terminal and print a `php -S localhost:3000` command. Then open `http://localhost:3000/` in browser.
+## Just running a local copy
+
+If you only want to run the tool without editing it, build it once and serve the output:
+
+```
+npm install
+npm run build
+```
+
+This runs `tsc` and `vite build`, producing a static `dist/` folder. Serve that folder with any static web server (for example `npx serve dist`, `python -m http.server` from inside `dist/`, or an existing web server) and open it in a browser. This is the same process the project's own deployment uses to publish the live site.
+
+## Contributor scripts
+
+A few other scripts are useful when working on the code:
+
+* `npm run lint` &mdash; run the [Biome](https://biomejs.dev) linter/formatter.
+* `npm run test` &mdash; run unit tests ([Vitest](https://vitest.dev)).
+* `npm run test:e2e` &mdash; run end-to-end tests ([Playwright](https://playwright.dev)).
+
+See also [Working offline](Working-offline) and [Dependencies](Dependencies).
