@@ -419,9 +419,11 @@ function selectStyleElement() {
   styleGroupSelect.options.length = 0; // remove all options
   if (["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs"].includes(styleElement)) {
     if (styleElement === "labels") {
+      // count from the label data: the culled DOM only holds labels rendered at this zoom
+      const labelCounts = {};
+      for (const label of window.getLabelsData()) labelCounts[label.group] = (labelCounts[label.group] || 0) + 1;
       options.labels.groups.forEach(group => {
-        const groupElement = ensureEl("labels").querySelector(`[data-group="${CSS.escape(group.name)}"]`);
-        const count = groupElement?.childElementCount || 0;
+        const count = labelCounts[group.name] || 0;
         styleGroupSelect.options.add(new Option(`${group.name} (${count})`, group.name, false, false));
       });
       styleGroupSelect.value = el.attr("data-group");
@@ -504,43 +506,44 @@ function updateLabelGroupInlineStyle(group) {
   groupStyle.attrs.style = value || null;
 }
 
+// generic controls: mirror the edit into the selection's store node, then write ONLY the
+// edited attribute to the DOM - a whole-layer Styles.write would reset sibling groups'
+// zoom-derived values (label/halo stroke-widths and sizes) to their stored bases
+function writeSelectedAttr(attr, value) {
+  const resolved = stylesLegacy.styleNodeFor(styleElementSelect.value, styleGroupSelect.value);
+  if (resolved && attr in resolved.node.attrs) resolved.node.attrs[attr] = value;
+  getEl().attr(attr, value ?? null);
+}
+
 styleFillInput.addEventListener("input", function () {
   styleFillOutput.value = this.value;
-  getEl().attr("fill", this.value);
-  const groupStyle = styles.labels.groups[styleGroupSelect.value];
-  if (groupStyle) groupStyle.attrs.fill = this.value;
+  writeSelectedAttr("fill", this.value);
 });
 
 styleStrokeInput.addEventListener("input", function () {
   styleStrokeOutput.value = this.value;
-  getEl().attr("stroke", this.value);
-  const groupStyle = styles.labels.groups[styleGroupSelect.value];
-  if (groupStyle) groupStyle.attrs.stroke = this.value;
+  writeSelectedAttr("stroke", this.value);
   if (styleElementSelect.value === "gridOverlay") Layers.draw("grid");
 });
 
 styleStrokeWidthInput.addEventListener("input", e => {
-  getEl().attr("stroke-width", e.target.value);
-  const groupStyle = styles.labels.groups[styleGroupSelect.value];
-  if (groupStyle) groupStyle.attrs["stroke-width"] = +e.target.value;
+  writeSelectedAttr("stroke-width", +e.target.value || 0);
   if (styleElementSelect.value === "gridOverlay") Layers.draw("grid");
   if (styleElementSelect.value === "ruler") Layers.draw("rulers");
 });
 
 styleLetterSpacingInput.addEventListener("input", e => {
-  getEl().attr("letter-spacing", e.target.value);
-  const groupStyle = styles.labels.groups[styleGroupSelect.value];
-  if (groupStyle) groupStyle.attrs["letter-spacing"] = +e.target.value;
+  writeSelectedAttr("letter-spacing", +e.target.value || 0);
 });
 
 styleStrokeDasharrayInput.addEventListener("input", function () {
-  getEl().attr("stroke-dasharray", this.value);
+  writeSelectedAttr("stroke-dasharray", this.value || null);
   if (styleElementSelect.value === "gridOverlay") Layers.draw("grid");
   if (styleElementSelect.value === "ruler") Layers.draw("rulers");
 });
 
 styleStrokeLinecapInput.addEventListener("change", function () {
-  getEl().attr("stroke-linecap", this.value);
+  writeSelectedAttr("stroke-linecap", this.value || null);
   if (styleElementSelect.value === "gridOverlay") Layers.draw("grid");
 });
 
@@ -549,16 +552,15 @@ styleDisplayInput.addEventListener("change", function () {
 });
 
 styleOpacityInput.addEventListener("input", e => {
-  getEl().attr("opacity", e.target.value);
-  const groupStyle = styles.labels.groups[styleGroupSelect.value];
-  if (groupStyle) groupStyle.attrs.opacity = +e.target.value;
+  writeSelectedAttr("opacity", +e.target.value);
 });
 
 styleFilterInput.addEventListener("change", function () {
-  if (styleGroupSelect.value === "ocean") return d3.select("#oceanLayers").attr("filter", this.value);
-  getEl().attr("filter", this.value);
-  const groupStyle = styles.labels.groups[styleGroupSelect.value];
-  if (groupStyle) groupStyle.attrs.filter = this.value || null;
+  if (styleGroupSelect.value === "ocean") {
+    styles.ocean.oceanLayers.attrs.filter = this.value || null;
+    return Styles.write("ocean");
+  }
+  writeSelectedAttr("filter", this.value || null);
 });
 
 styleTextureInput.addEventListener("change", function () {
@@ -591,7 +593,7 @@ styleTextureShiftY.addEventListener("input", function () {
 });
 
 styleClippingInput.addEventListener("change", function () {
-  getEl().attr("mask", this.value);
+  writeSelectedAttr("mask", this.value || null);
 });
 
 styleGridType.addEventListener("change", function () {
@@ -628,6 +630,7 @@ styleRescaleMarkers.addEventListener("change", function () {
 });
 
 styleOceanFill.addEventListener("input", function () {
+  styles.ocean.base.attrs.fill = this.value;
   d3.select("#oceanLayers").select("rect").attr("fill", this.value);
   styleOceanFillOutput.value = this.value;
 });
@@ -820,24 +823,29 @@ styleReliefDensity.addEventListener("change", e => {
 });
 
 styleTemperatureFillOpacityInput.addEventListener("input", e => {
+  styles.temperature.attrs["fill-opacity"] = +e.target.value;
   d3.select("#temperature").attr("fill-opacity", e.target.value);
 });
 
 styleTemperatureFontSizeInput.addEventListener("input", e => {
+  styles.temperature.attrs["font-size"] = e.target.value + "px";
   d3.select("#temperature").attr("font-size", e.target.value + "px");
 });
 
 styleTemperatureFillInput.addEventListener("input", e => {
+  styles.temperature.attrs.fill = e.target.value;
   d3.select("#temperature").attr("fill", e.target.value);
   styleTemperatureFillOutput.value = e.target.value;
 });
 
 stylePopulationRuralStrokeInput.addEventListener("input", e => {
+  styles.population.rural.attrs.stroke = e.target.value;
   d3.select("#population").select("#rural").attr("stroke", e.target.value);
   stylePopulationRuralStrokeOutput.value = e.target.value;
 });
 
 stylePopulationUrbanStrokeInput.addEventListener("input", e => {
+  styles.population.urban.attrs.stroke = e.target.value;
   d3.select("#population").select("#urban").attr("stroke", e.target.value);
   stylePopulationUrbanStrokeOutput.value = e.target.value;
 });
@@ -864,6 +872,7 @@ styleCompassShiftY.addEventListener("input", shiftCompass);
 
 function shiftCompass() {
   const tr = `translate(${styleCompassShiftX.value} ${styleCompassShiftY.value}) scale(${styleCompassSizeInput.value})`;
+  styles.compass.compassRose.attrs.transform = tr;
   d3.select("#compass").select("use").attr("transform", tr);
 }
 
@@ -874,20 +883,18 @@ styleLegendColItems.addEventListener("input", e => {
 
 styleLegendBack.addEventListener("input", e => {
   styleLegendBackOutput.value = e.target.value;
+  styles.legend.box.attrs.fill = e.target.value;
   d3.select("#legend").select("#legendBox").attr("fill", e.target.value);
 });
 
 styleLegendOpacity.addEventListener("input", e => {
+  styles.legend.box.attrs["fill-opacity"] = +e.target.value;
   d3.select("#legend").select("#legendBox").attr("fill-opacity", e.target.value);
 });
 
 styleSelectFont.addEventListener("change", changeFont);
 function changeFont() {
-  const family = styleSelectFont.value;
-  getEl().attr("font-family", family);
-  const groupStyle = styles.labels.groups[styleGroupSelect.value];
-  if (groupStyle) groupStyle.attrs["font-family"] = family;
-
+  writeSelectedAttr("font-family", styleSelectFont.value);
   if (styleElementSelect.value === "legend") Layers.draw("legend");
 }
 
@@ -993,11 +1000,13 @@ styleFontShiftX.addEventListener("input", e => applyLabelShift("dx", e.target.va
 styleFontShiftY.addEventListener("input", e => applyLabelShift("dy", e.target.value));
 
 styleStatesBodyOpacity.addEventListener("input", e => {
+  styles.states.statesBody.attrs.opacity = +e.target.value;
   d3.select("#statesBody").attr("opacity", e.target.value);
 });
 
 styleStatesBodyFilter.addEventListener("change", function () {
-  d3.select("#statesBody").attr("filter", this.value);
+  styles.states.statesBody.attrs.filter = this.value || null;
+  d3.select("#statesBody").attr("filter", this.value || null);
 });
 
 styleStatesHaloWidth.addEventListener("input", e => {
@@ -1008,16 +1017,19 @@ styleStatesHaloWidth.addEventListener("input", e => {
 });
 
 styleStatesHaloOpacity.addEventListener("input", e => {
+  styles.states.statesHalo.attrs.opacity = +e.target.value;
   d3.select("#statesHalo").attr("opacity", e.target.value);
 });
 
 styleStatesHaloBlur.addEventListener("input", e => {
   const value = Number(e.target.value);
   const blur = value > 0 ? `blur(${value}px)` : null;
+  styles.states.statesHalo.attrs.filter = blur;
   d3.select("#statesHalo").attr("filter", blur);
 });
 
 styleArmiesFillOpacity.addEventListener("input", e => {
+  styles.military.attrs["fill-opacity"] = +e.target.value;
   d3.select("#armies").attr("fill-opacity", e.target.value);
 });
 
@@ -1064,6 +1076,7 @@ styleGoodsBurgsSize.addEventListener("input", function () {
 });
 
 styleMarketsLayerFillOpacity.addEventListener("input", e => {
+  styles.markets.attrs["fill-opacity"] = +e.target.value;
   d3.select("#markets").attr("fill-opacity", e.target.value);
 });
 
@@ -1202,7 +1215,10 @@ styleScaleBar.addEventListener("input", function (event) {
   const { id, value } = event.target;
 
   if (id === "styleScaleBarSize") styles.scaleBar.options.barSize = +value || 1;
-  else if (id === "styleScaleBarFontSize") d3.select("#scaleBar").attr("font-size", value);
+  else if (id === "styleScaleBarFontSize") {
+    styles.scaleBar.attrs["font-size"] = +value || 10;
+    d3.select("#scaleBar").attr("font-size", value);
+  }
   else if (id === "styleScaleBarPositionX") styles.scaleBar.options.x = +value || 0;
   else if (id === "styleScaleBarPositionY") styles.scaleBar.options.y = +value || 0;
   else if (id === "styleScaleBarLabel") styles.scaleBar.options.label = value;
@@ -1224,11 +1240,13 @@ function applyMapFilter(event) {
   if (event.target.tagName !== "BUTTON") return;
   const button = event.target;
   styles.map.options.dataFilter = null;
+  styles.map.attrs.filter = null;
   d3.select("#map").attr("filter", null);
   if (button.classList.contains("pressed")) return button.classList.remove("pressed");
 
   mapFilters.querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
   button.classList.add("pressed");
   styles.map.options.dataFilter = button.id;
+  styles.map.attrs.filter = "url(#filter-" + button.id + ")";
   d3.select("#map").attr("filter", "url(#filter-" + button.id + ")");
 }

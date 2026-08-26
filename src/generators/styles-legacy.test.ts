@@ -2,7 +2,14 @@ import fs from "node:fs";
 import path from "node:path";
 import { expect, test, vi } from "vitest";
 import { Styles } from "./styles";
-import { isLegacyPreset, isStoreStyles, labelGroupFromLegacy, presetFromLegacy, presetToLegacy } from "./styles-legacy";
+import {
+  isLegacyPreset,
+  isStoreStyles,
+  labelGroupFromLegacy,
+  presetFromLegacy,
+  presetToLegacy,
+  styleNodeFor
+} from "./styles-legacy";
 import fixture from "./styles-legacy-default.fixture.json";
 import serializerFixture from "./styles-legacy-serializer.fixture.json";
 import { DEFAULT_STYLES } from "./styles-schema";
@@ -97,6 +104,29 @@ test("R9: #terrs > #landHeights never legitimately carried data-render, so it st
   ).toBe(false);
 });
 
+test("styleNodeFor resolves editor selections to live store nodes", () => {
+  expect(styleNodeFor("rivers", "")).toEqual({ node: styles.rivers, layer: "rivers" });
+  expect(styleNodeFor("rivers", "rivers")).toEqual({ node: styles.rivers, layer: "rivers" });
+  expect(styleNodeFor("lakes", "freshwater")).toEqual({ node: styles.lakes.freshwater, layer: "lakes" });
+  expect(styleNodeFor("terrs", "landHeights")).toEqual({ node: styles.heightmap.landHeights, layer: "heightmap" });
+  expect(styleNodeFor("labels", "capital")).toEqual({ node: styles.labels.groups.capital, layer: "labels" });
+  expect(styleNodeFor("burgIcons", "town")).toEqual({
+    node: styles.burgIcons.burgIcons.groups.town,
+    layer: "burgIcons"
+  });
+  expect(styleNodeFor("anchors", "capital")).toEqual({
+    node: styles.burgIcons.anchors.groups.capital,
+    layer: "burgIcons"
+  });
+  expect(styleNodeFor("regions", "statesHalo")).toEqual({ node: styles.states.statesHalo, layer: "states" });
+});
+
+test("styleNodeFor returns undefined for structural parents and unknown groups", () => {
+  expect(styleNodeFor("icons", "")).toBeUndefined();
+  expect(styleNodeFor("labels", "no-such-group")).toBeUndefined();
+  expect(styleNodeFor("burgIcons", "no-such-group")).toBeUndefined();
+});
+
 test("numeric-looking string options coerce back to strings, not schema-rejected numbers", () => {
   const styles = presetFromLegacy(
     { "#oceanLayers": { layers: -6 }, "#scaleBar": { "data-label": 100 }, "#markets": { "data-icon": 8 } } as any,
@@ -105,6 +135,13 @@ test("numeric-looking string options coerce back to strings, not schema-rejected
   expect(styles.ocean.oceanLayers.options.outline).toBe("-6");
   expect(styles.scaleBar.options.label).toBe("100");
   expect(styles.markets.options.icon).toBe("8");
+});
+
+test("labelGroupFromLegacy treats a zoom-faded opacity 0 as visible", () => {
+  const group = labelGroupFromLegacy({ opacity: 0 });
+  expect(group.attrs.opacity).toBe(1);
+  expect(labelGroupFromLegacy({ opacity: 0.5 }).attrs.opacity).toBe(0.5);
+  expect(labelGroupFromLegacy({ opacity: null }).attrs.opacity).toBeNull();
 });
 
 test("labelGroupFromLegacy keeps font-size when data-size is absent", () => {

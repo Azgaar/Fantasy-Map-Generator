@@ -21,9 +21,12 @@ const strOr = (value: unknown, fallback: string | null): string | null =>
 
 export function labelGroupFromLegacy(legacy: object): LabelGroupStyle {
   const bag = legacy as Record<string, unknown>;
+  // legacy builds rewrote label-group opacity on every zoom, so a saved 0 is the fade state
+  // at save-time, not a preference - the culled renderer would keep the group invisible forever
+  const opacity = numOr(bag.opacity, 1);
   return {
     attrs: {
-      opacity: numOr(bag.opacity, 1),
+      opacity: opacity === 0 ? 1 : opacity,
       fill: strOr(bag.fill, "#3e3e4b"),
       "fill-opacity": numOr(bag["fill-opacity"], null),
       stroke: strOr(bag.stroke, "#3a3a3a"),
@@ -244,6 +247,25 @@ const PRESET_ROUTES: Record<string, PresetRoute> = {
   "#oceanicPattern": { path: ["ocean"], options: { href: "pattern", opacity: "patternOpacity" } },
   "#landmass": { path: ["landmass"] }
 };
+
+// The style editor's element/group selection resolves through the same route table the preset
+// upgrader uses; the first path segment is the store layer to rewrite.
+export function styleNodeFor(element: string, group: string): { node: object; layer: keyof Styles } | undefined {
+  const selector =
+    !group || group === element
+      ? `#${element}`
+      : element === "labels"
+        ? `#labels > #${group}`
+        : element === "burgIcons" || element === "anchors"
+          ? `#${element} > g#${group}`
+          : element === "terrs"
+            ? `#terrs > #${group}`
+            : `#${group}`;
+  const route = routeFor(selector);
+  if (!route) return undefined;
+  const node = getPath(styles, route.path);
+  return node ? { node, layer: route.path[0] as keyof Styles } : undefined;
+}
 
 function routeFor(selector: string): PresetRoute | undefined {
   if (selector in PRESET_ROUTES) return PRESET_ROUTES[selector];
@@ -533,6 +555,7 @@ export function presetToLegacy(source: Styles): Record<string, Record<string, st
 
 // the legacy preset pipeline (public/modules/ui/style-presets.js) converts through these
 globalThis.stylesLegacy = {
+  styleNodeFor,
   labelGroupFromLegacy,
   labelGroupToLegacy,
   labelGroupsFromLegacy,
