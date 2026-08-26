@@ -10,14 +10,10 @@ The Units settings appear following the path Menu → Tools → edit Units or us
 * Temperature
 * Population
 
-In the icons at the bottom of the Units editor are more options:
-* Linear ruler on the map
-* Curve ruler, opisometer
-* Route opisometer
-* Planimeter
-* Remove all rulers. A popup appears that reads: Are you sure you want to remove all placed rulers?
-If you just want to hide rulers, toggle the Rulers layer off in Menu. And buttons remove and cancel.
+At the bottom of the Units editor there is now only one button:
 * Restore default unit settings. Set values to default but don't remove rulers.
+
+The ruler tools (linear ruler, curve ruler/opisometer, route opisometer, planimeter, remove all measurers) used to live here but have moved to their own dialog, the **Measurers Editor**. See the [Rulers](#rulers) section below.
 
 ### Distance
 
@@ -38,7 +34,7 @@ When you click on "custom name" a popup appears A popup will appear that says "P
 
 ### How to change the scale of your map
 
-The value who decides how big is your map is the ratio between pixels and your distance unit. By default this ratio is: "1 pixel is 3 km" but you can change it on the slider. Accepted values are from 0.01 where your whole map is only a few tens of units (10-20 units) to 19.91. that makes your map a few something units.
+The value who decides how big is your map is the ratio between pixels and your distance unit. By default this ratio is "1 pixel is 3 mi" (the distance unit itself defaults to Mile, not km; km is only used as the fallback default for some locales) but you can change it on the slider. Accepted values are from 0.01, where your whole map is only a few tens of units (10-20 units), to 20, that makes your map a few something units.
 
 ### Altitude
 
@@ -50,7 +46,7 @@ The dropdown has these units to choose from:
 * Fathom (f).
 * Custom name. It opens a pop with an input text field. Write your unit name and click confirm.
 
-The height exponent goes from 1.5 to 2.2 and affect higher numbers more. The default value of height exponent is 1.8. Here is an example of heights with different exponents.
+The height exponent goes from 1.5 to 2.2 and affect higher numbers more. On a fresh map the slider starts at 2, though clicking "Restore default unit settings" resets it to 1.8. Here is an example of heights with different exponents.
 
 * Island coast. Exp: 1.5 → 11 m. 1.8 → 25 m. 2.2 → 34 m. An average of that cell above the sea level.
 * Central lands. Exp: 1.5 → 225 m. 1.8 → 665 m. 2.2 → 2819 m.
@@ -79,7 +75,17 @@ Here you can change the amount of people and population ratio live in the map.
 
 ## Rulers
 
-Click on a ruler to delete it or the button with a bin to remove all rulers.
+The four ruler tools live in their own dialog, the **Measurers Editor**, opened via Menu → Tools → Measurers Editor or the shortcut `SHIFT` + `=` (not the Units editor's `SHIFT` + `Q`).
+
+The dialog has a table listing every placed measurer (name, value, zoom, remove per row) and, at the bottom, one button per ruler type plus a "remove all measurers" bin button:
+* Linear ruler on the map
+* Curve ruler, opisometer
+* Route opisometer
+* Planimeter
+* Remove all measurers. A popup appears that reads: Are you sure you want to remove all placed rulers?
+If you just want to hide rulers, toggle the Rulers layer off in Menu. And buttons remove and cancel.
+
+Click on a ruler to delete it, use the remove icon in its table row, or use the bin button to remove all rulers at once.
 
 ### Linear rulers.
 When you click on the ruler icon a new linear ruler is created in the middle of the screen.
@@ -114,7 +120,7 @@ When you click the planimeter button, your cursor changes to a cross. You need t
 In Layers → Routes you can show/hide routes on your map. In Style → select element "routes" you can change the how your routes look. Clicking on a route show their "edit route" menu. This have name, group, length and a row of buttons.
 
 * Name. Write on the text field to rename. Click speaker icon to make the software speak the name in audio. Click earth globe to create a new random name.
-* Group. Open the dropdown list to choose from a group. Click on pencil to open "edit route groups". You can add, remove and style route groups.
+* Group. Open the dropdown list to choose from a group. Click on pencil to open "edit route groups". You can add, remove and style route groups. Next to the group dropdown, click the brush icon to edit the style of the current route group directly.
 * Length. Automatically calculated length appears in the length unit that you choose in units editor.
 * Pin. Create a new route selecting route cells.
 * Chain. Click to join the route to another route that starts or ends at the same cell.
@@ -136,6 +142,13 @@ At the botton there is:
 * Save routes-related data as a text file (.csv).
 * Lock or unlock all routes.
 * Remove all routes.
+
+## Transform map and Create a submap
+
+Two other Tools-menu features affect map scale directly:
+
+* **Transform** (Menu → Tools → Transform) re-triangulates the whole map, letting you shift, rotate, scale and mirror it horizontally or vertically. It is destructive, changing point density and positions.
+* **Submap** (Menu → Tools → Submap) crops the current viewport into a new, denser map, with an option to "Rescale burg styles" so icon and label sizes fit the new scale.
 
 ## Scale bar
 

@@ -17,3 +17,4 @@ This parameters are used by MFCG and not intended to be set manually.
 * `coast` - `1` if city is on a coastline
 * `port` - `1` if city is a port
 * `river` - `1` if city is on a river
+* `name` - sets the name of the burg that is auto-selected via the `burg` parameter

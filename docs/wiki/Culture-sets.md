@@ -1,12 +1,13 @@
 ## Culture Sets
-A culture set is a collection of cultures to be displayed in the same map.
-* All-world: A group of 32 cultures from around the globe.
+A culture set is a collection of cultures to be displayed in the same map. Each set also has a data-max limit which caps how many of its pool are actually generated on a given map, regardless of how large the pool is.
+* All-world: A pool of 33 cultures from around the globe (up to 32 generated).
 * European: A list of 15 cultures from Europe.
 * Oriental: A list of 13 cultures from Asia.
 * English: A group of 10 cultures all with English culture.
-* Antique: A list of 15 cultures from ancient europe.
+* Antique: A pool of 16 cultures from ancient europe (up to 10 generated).
 * High fantasy: A list of 13 fictional and 4 human cultures for fantasy settings.
 * Dark fantasy: A list of 6 english, 5 european, 14 ethnic, and 9 fictional cultures for human ruled fantasies.
+* Random: Fully random name-bases, not drawn from any of the other sets' rosters.
 
 ### All-world
 * Shwazen: It represents proto-Germanic and Germanic peoples of different times and places. Namesbase: German. [More info about Germanic culture](https://en.wikipedia.org/wiki/Germanic_culture).
@@ -41,6 +42,7 @@ A culture set is a collection of cultures to be displayed in the same map.
 * Vietic: Represents a [group of ethnicities](https://en.wikipedia.org/wiki/Vietic_peoples) from Southeast Asia. Namesbase: Vietnamese. [More info about Vietnamese culture](https://en.wikipedia.org/wiki/Culture_of_Vietnam).
 * Guantzu: Inspired by [Cantonese people](https://en.wikipedia.org/wiki/Cantonese_people). Useful as an additional culture in China. Namesbase: Cantonese. [More info about Cantonese culture](https://en.wikipedia.org/wiki/Lingnan_culture).
 * Ulus: Inspired by the [Mongolic peoples](https://en.wikipedia.org/wiki/Mongolic_peoples) like the [Mongols](https://en.wikipedia.org/wiki/Mongols). Ulus translates to "state" or "nation" in a political way. Namesbase: Mongolian. [More info about Mongolian culture](https://en.wikipedia.org/wiki/Culture_of_Mongolia).
+* Hebrew: Represents the [Hebrew/Jewish peoples](https://en.wikipedia.org/wiki/Jews) and related Levantine groups. Namesbase: Hebrew. [More info about Jewish culture](https://en.wikipedia.org/wiki/Jewish_culture).
 
 ### European
 * Shwazen
@@ -92,6 +94,7 @@ This contains a pool of ten cultures all of english culture. Useful for making m
 * Cantabrian: Namesbase: Basque.
 * Estian: Namesbase: Finnic.
 * Carthaginian: Namesbase: Berber.
+* Hebrew: Namesbase: Hebrew.
 * Mesopotamian
 
 ### High fantasy
@@ -156,4 +159,4 @@ This contains a pool of ten cultures all of english culture. Useful for making m
 * Aj'Snaga
 
 ### Random
-This culture set picks a random list of cultures from the total.
+Unlike the other sets, Random does not draw from a curated roster of named cultures. Instead each culture gets a random name-base picked from the full list of available name bases, giving fully randomized cultures rather than a subset of the world's real-world/fantasy roster.

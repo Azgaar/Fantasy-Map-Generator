@@ -12,8 +12,10 @@ Possible actions are:
 * **Multiply** all heights
 * **Smooth** all heights
 
+The Template Editor opens with a "Select template" dropdown offering a set of base templates you can start from instead of building one from scratch: Volcano, High Island, Low Island, Continents, Archipelago, Atoll, Mediterranean, Peninsula, Pangea, Isthmus, Shattered, Taklamakan, Old World, Fractious.
+
 Once you have given all the instructions, you can then run the template (process all instructions in sequence).
-There are also options to download and upload templates.
+There are also options to download and upload templates; downloading also saves each step's skipped/enabled state and the current row order (rows can be dragged to reorder via the handle icon).
 
 When running a template, the map is cleared first. Undo / redo buttons can be used to check the heightmap on each step. In seed is locked, it will be used for heightmap generation, so the map will be the same on each execution.
 
@@ -82,8 +84,10 @@ Trough works exactly like Range, except that it lowers height.
 Delete all the instructions and click on the + button to get the "Add" instruction.
 The Add instruction adds height - it can have a negative value to lower height.
 
+The Add and Multiply steps also have a "to:" dropdown that scopes the change to "all cells", "land only", or a custom "interval" (a height range you type in, e.g. `17-20`) instead of always applying to the whole map.
+
 Change the V to 20 so your whole line looks like this:
-* `Add     V:20    to all cells`
+* `Add     to:all cells    V:20`
 
 Run it and it will change to whole map to land at sea-level - remember that 20 is just above sea-level.
 Add a Strait - it only has 2 values, width and direction:
@@ -97,7 +101,7 @@ Run it and you will see land divided by a river somewhere - note that you cannot
 ## Multiply
 Multiply works similar to add, except you have slightly better control to adjust small things, so multiplying by 1.1 
 will make raise land slightly - smaller changes to low values, and larger changes to high values.  You can multiply 
-by decimals as well, so multiply by 0.8 will lower everything a bit.
+by decimals as well, so multiply by 0.8 will lower everything a bit. Like Add, it has a "to:" dropdown to scope the change to all cells, land only, or a custom height interval.
 
 ## Smooth
 Smooth averages cell heights by their neighbors heights. This means land next to a pit will lower, and land next to a hill will rise. Smooth removes any spiky bits near land and makes FMG performance better.

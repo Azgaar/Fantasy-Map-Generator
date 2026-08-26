@@ -7,9 +7,9 @@ Regiments are displayed as state-colored boxes in a separate layer called _Milit
 ## Military overview
 ![](https://cdn.discordapp.com/attachments/587406457725779968/719203701180596779/military_overview.png)
 
-Military overview shows the army that states have. _Total_ value shows sum of all military units, considering unit crew (see the next section for the details). _Rate_ shows a percentage of military personnel to state population (militarization index), by default is about 1-2%. _War Alert_ defines how much state is willing to wage a war and works as a multiplier to the units number. The calculation method is described in details in the Generation logic section below. The button on the right shows a list of all state's regiments and alow to add new regiments.
+Military overview shows the army that states have. _Total_ value shows sum of all military units, considering unit crew (see the next section for the details). _Rate_ shows a percentage of military personnel to state population (militarization index), by default is about 1-2%. _War Alert_ defines how much state is willing to wage a war and works as a multiplier to the units number. The calculation method is described in details in the Generation logic section below. War Alert is editable directly in the table: typing a new value rescales that state's existing regiments' troop counts to match the new/old ratio, without a full regeneration. The button on the right shows a list of all state's regiments and alow to add new regiments.
 
-The bottom menu allows you to open Units Editor (see below), show units numbers as a percentage, download data for reference and trigger military forces recalculation. 
+The bottom menu allows you to open Units Editor (see below), show units numbers as a percentage, download data as a CSV file for reference and trigger military forces recalculation. The Regiments overview (opened from a state's regiment-list button) has its own CSV export button as well.
 
 ## Military units editor
 ![](https://cdn.discordapp.com/attachments/587406457725779968/720368676360028252/military_options.png)
@@ -17,8 +17,9 @@ The bottom menu allows you to open Units Editor (see below), show units numbers 
 Military units that are used for generation are customizable. To open units editor click on the _Cog_ icon in the Military overview screen. Here you can add new units and specify their features. The maximum number of units is not defined, but having a lot will make overview screens too complex to observe. The idea of unit is defined by its _type_. Type variants are hard-coded and define specific rules to be applied on generation, you can see all of these rules described in the next section.
 
 Customizable parameters are:
-* **Icon** - unit symbol. We are using Unicode emojis for simplicity. While there is a list of pre-selected ones, you can use any Unicode character. Please note that Unicode emojis look different in different systems and browsers. Here is [the full list](https://unicode.org/emoji/charts/full-emoji-list.html)
+* **Icon** - unit symbol. We are using Unicode emojis for simplicity. While there is a list of pre-selected ones, you can use any Unicode character. Please note that Unicode emojis look different in different systems and browsers. Here is [the full list](https://unicode.org/emoji/charts/full-emoji-list.html). The icon can also be an uploaded or pasted image (a URL or `data:image` URI) instead of an emoji, the same way as in the [Icon Selector](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Markers#custom-icons) used elsewhere in the app.
 * **Name** - a unique unit name. Can be pretty much any
+* **Biomes / States / Cultures / Religions** - optional limiters. Each opens a checklist popup letting you restrict the unit to specific biomes, states, cultures or religions; if a limiter is left empty the unit is generated everywhere as usual. Only cells/burgs matching all set limiters produce that unit.
 * **Rural** - percentage of rural population to be conscripted to the unit. It defines how many troops of this unit will be generated for a cell population point. Then this number is getting adjusted based on specific rules described in the next section. Set to 0 if you want unit to be generated in burgs only
 * **Urban** - percentage of urban population to be conscripted to the unit. Works the same as _rural_, but for burg population
 * **Crew** - average number of people in one unit. Like tank crew is usually 4. This number is used for total people calculation and does not affect unit _power_ at all
@@ -31,7 +32,13 @@ For any change you have to click on _Apply_ and it will trigger generation. It's
 ## Generation logic
 Fantasy Map Generator regiments creation logic is pretty advanced and considers different aspects such as state diplomacy, type, culture and religion, cell biome and elevation, as well as military unit specific.
 
-For each state _War Alert_ is getting calculated. It shows how much state is willing to wage a war. War Alert acts as a modifier to all military forces of the state. For example if state has 1000 infantry generated and War Alert is 2, total infantry number will be 2000. War Alert rate is a combination of _Expansion Fulfillment_ (State Expansionism / State Area) and _Diplomatic alert_ (rate of diplomatic relations). It means that expansionist states with relatively small area get higher War Alert rate than big states with moderate expansionism. Diplomatic alert is a sum of relations rates, where bad relations increase the value, while good decrease it. Diplomatic alert is calculated separately for neighboring and all states, so relations with neighbors have more impact on War Alert. Diplomatic relations modifiers are:
+For each state _War Alert_ is getting calculated. It shows how much state is willing to wage a war. War Alert acts as a modifier to all military forces of the state. For example if state has 1000 infantry generated and War Alert is 2, total infantry number will be 2000. War Alert is the product of three separately-calculated factors, clamped to the [0.1, 5] range:
+
+* **Expansion rate** - State Expansionism / State Area, clamped to [0.25, 4]. Expansionist states with relatively small area get a higher rate than big states with moderate expansionism.
+* **Diplomacy rate** - a lookup on the single _worst_ relation the state has with any of its neighbors (not a sum): Enemy → 1, Rival → 0.8, Suspicion → 0.5, anything better → 0.1. One bad neighbor is enough to drive this factor to its highest value.
+* **Neighbors rate** - the sum of relation modifiers across all of the state's neighbors, clamped to [0.3, 3]. This is where the relations table below actually gets summed.
+
+So War Alert = `Expansion rate × Diplomacy rate × Neighbors rate`, clamped to [0.1, 5]. Diplomatic relations modifiers (used for the neighbors-rate sum, and to classify Enemy/Rival/Suspicion for the diplomacy rate) are:
 
 `Ally: -0.2, Friendly: -0.1, Neutral: 0, Suspicion: 0.1, Enemy: 1, Unknown: 0, Rival: 0.5, Vassal: 0.5, Suzerain: -0.5`
 

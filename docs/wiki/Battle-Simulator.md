@@ -6,7 +6,9 @@ To start a battle select a regiment, click on the _Attack foreign regiment_ butt
 
 ![](https://cdn.discordapp.com/attachments/587406457725779968/722571310290567209/Battle_Simulator.png)
 
-Battle simulation is iterative. It means that it is processed step by step, with each step being controlled automatically, but there is also an ability of a manual change. To progress to the next iteration click on ▶️ button. To apply the current result and end the battle click on ✅, to abandon and cancel the results - click on ❎ button. To add a regiment click on 🙍‍♂️➕ button, select any regiment the list and click on a button to set the side. There is no restriction for state - you can add regiment of the same state both to attackers and defenders side. You can also define battle name using 🅰️ button.
+Battle simulation is iterative. It means that it is processed step by step, with each step being controlled automatically, but there is also an ability of a manual change. To progress to the next iteration click on ▶️ button. To apply the current result and end the battle click on ✅, to abandon and cancel the results - click on ❎ button. To add a regiment click on 🙍‍♂️➕ button, select any regiment from the list, which is sorted by distance to the battlefield, and click on a button to set the side. There is no restriction for state - you can add regiment of the same state both to attackers and defenders side. You can also define battle name using 🅰️ button; a name is auto-generated but can be edited freely.
+
+Each regiment's distance to its home base is shown alongside it and feeds the initial-morale supply-line penalty described below.
 
 Once battle is initiated, system automatically selects a _Battle type_. Battle type defines _battle phases_, which control the battle process. There are 6 battle types supported, each having its own specific and logic. Both battle type and specific phase can be changed manually at any time. For each iteration _strength_ of both sides are getting calculated. Strength depends on available units quantity and their power, modified by phase adjuster. See the next section for the details.
 
@@ -69,7 +71,7 @@ If siege is not successful, which is a pretty common case, attacker may decide t
 
 #### 🌳 Ambush
 
-Ambush is getting auto-selected with a 20% chance if defenders are in forest or marshes biomes. It starts with a ⚡ _surprise attack_ of the defenders that causes attackers' 💫 _shock_. Defenders get a huge advantage with the surprise factor, but if attackers army is still stronger, the shock will end quickly. Once shock is over, sides enter a standard ⚔️ _melee_ phase, which usually ends with a 🏳️ _retreat_ of the side with dropped morale. Other side start a 🐎 _pursue_ where mounted units excel.
+Ambush is getting auto-selected with a 10% chance if defenders are in one of these biomes: Tropical seasonal forest, Temperate deciduous forest, Tropical rainforest, Temperate rainforest, Taiga or Wetland (i.e. forest and wetland biomes; deserts, grassland, tundra and glacier don't qualify). It starts with a ⚡ _surprise attack_ of the defenders that causes attackers' 💫 _shock_. Defenders get a huge advantage with the surprise factor, but if attackers army is still stronger, the shock will end quickly. Once shock is over, sides enter a standard ⚔️ _melee_ phase, which usually ends with a 🏳️ _retreat_ of the side with dropped morale. Other side start a 🐎 _pursue_ where mounted units excel.
 
 |               | Melee | Ranged | Mounted | Machinery | Naval | Armored | Aviation | Magical |
 |---------------|-------|--------|---------|-----------|-------|---------|----------|---------|

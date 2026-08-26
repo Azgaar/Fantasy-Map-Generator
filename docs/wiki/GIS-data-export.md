@@ -30,7 +30,7 @@ You are not, of course, limited to only QGIS. Data exported can also be used in 
 Fantasy Map Generator allows to export some data in GIS-compatible format. 
 
 ## Cell Data
-In the Save... menu of the Generator there is an option _.json_ to save the cell data into as a GeoJSON file. These can be imported into QGIS by choosing _Layer_ -> _Add Layer..._ -> _Add Vector Layer..._
+In the Save... menu of the Generator, under _Export to GeoJSON_, there is a _cells_ button to save the cell data as a GeoJSON file. These can be imported into QGIS by choosing _Layer_ -> _Add Layer..._ -> _Add Vector Layer..._
 
 ![Steps](https://azgaar.files.wordpress.com/2019/09/add_vectorlayer.png)
 
@@ -53,7 +53,16 @@ Choose the exported .csv file. It should all be set up correctly automatically, 
 ![Steps](https://azgaar.files.wordpress.com/2019/09/add_csv2.png)
 
 ## Marker Data
-Points-of-Interest (markers) also contain location information and can be exported and imported in the same way as Burgs data.
+Points-of-Interest (markers) also contain location information and can be exported as a _.csv_ file and imported in the same way as Burgs data. In addition, the Save... menu's _Export to GeoJSON_ section has a _markers_ button that exports markers as GeoJSON, including icon, type, size and fill/stroke colour, and notes as properties.
+
+## Routes Data
+The _routes_ button in the _Export to GeoJSON_ section exports all routes (roads, trails, sea routes, etc.) as GeoJSON LineStrings, with id, group and name as properties.
+
+## Rivers Data
+The _rivers_ button exports rivers as GeoJSON LineStrings (with meandering already applied), including id, source, mouth, parent, basin, widthFactor, sourceWidth, discharge, name and type as properties.
+
+## Zones Data
+The _zones_ button exports zones as GeoJSON Polygons/MultiPolygons (hole-aware boundary tracing), with id, name, type, color and the list of cells as properties.
 
 
 # Processing in QGIS

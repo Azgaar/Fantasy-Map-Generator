@@ -14,7 +14,7 @@ Highland cultures are generated in cells where height is over 50 points.
 Lake cultures are generated in cells around lakes that are over 5 cells in size.
 
 ### Naval
-Naval cultures have a chance of being generated in coastal cells. The chance is slightly higher if the cell is next to an ocean (as opposed to a lake), and significantly higher if the cell is an island.
+Naval cultures have a chance of being generated in coastal cells. The dominant mechanic is a flat 60% chance for any cell with exactly one water-adjacent neighbor cell (harbor score of 1), regardless of whether that water is ocean or lake. A smaller, secondary chance (10%) applies to any harbor cell next to an ocean (not a lake). Island cells get a further, independent 40% chance on top of the above.
 
 ### River
 River cultures are generated in cells with a river of over 100 flux points.
@@ -41,6 +41,8 @@ Every culture has a randomly generated expansionism value. The random value is t
 
 The more expansionism values is, the less cell cost is for the culture. So Nomadic cultures generally tends to occupy vast territories, while Hunting and Lake cultures are usually pretty limited in area.
 
+The type multiplier above is not the final value: it is further randomized per culture by the Size Variety option, so two cultures of the same type will still end up with somewhat different expansionism.
+
 ### Biome cost
 
 The base biome costs are as follows:
@@ -62,8 +64,13 @@ The cost is reduced to 10 if it's the culture's native biome type. The cost is m
 ### Water crossing cost
 Lake cultures crossing a lake has a flat cost of 10. Naval cultures crossing water costs 2 times the size of the cell in pixels. Nomadic cultures crossing water costs 50 times the size of the cell in pixels. All other cultures crossing water (and Lake cultures crossing a sea) costs 6 times the size of the cell in pixels.
 
+### Elevation crossing cost
+Crossing higher terrain also adds a cost, which differs by culture type:
+* Highland cultures: crossing lowlands (height under 44) costs 3000, crossing lowhills (height under 62) costs 200, and crossing highlands costs nothing.
+* All other culture types: crossing mountains (height 67 or more) costs 200, and crossing hills (height 44 or more) costs 30.
+
 ### River crossing cost
 For non-River cultures, river cells costs 20-100 more to cross, depending on the flux of the river. For River cultures, river cells don't cost extra, but non-river cells cost 100 more.
 
 ### Distance to coast cost
-Coastal cells cost 60 more for Nomadic cultures, and 20 for other non-Naval non-River cultures. Cells next to coastal cells costs 30 more for Naval and Nomadic cultures. Cells further inland costs 100 more for Naval and River cultures. The costs are added together then divided by expansionism of the culture. When the total cost exceeds the budget, expansion stops.
+Coastal cells cost nothing extra for Naval and Lake cultures, 60 more for Nomadic cultures, and 20 for all other types (Generic, River, Hunting, Highland). Cells next to coastal cells cost 30 more for Naval and Nomadic cultures, and nothing extra for other types. Cells further inland cost 100 more for Naval and Lake cultures, and nothing extra for other types. The costs are added together then divided by expansionism of the culture. The running total is checked against a budget of `number of cells * 0.6 * neutral rate` (the Neutral Rate option); when a culture's expansion cost exceeds this budget, its expansion stops.

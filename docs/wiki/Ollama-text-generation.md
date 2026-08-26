@@ -79,11 +79,11 @@ If you are running FMG locally, you don't need this step. But if you want Ollama
 ## Step 4: Start the server
 
 1. Open Command Prompt/Terminal. Type: `ollama serve`. Leave this window open** - Ollama is now running!
-2. Open Fantasy Map Generator. Open AI notes generator and select "ollama" from the AI model list
+2. Open Fantasy Map Generator. Open AI notes generator and select "ollama (local models)" from the AI model list
 3. In the key field, type: `llama3.2` (or whatever model you downloaded)
 4. Update the prompt and click on `generate`
 
-**Important:** Fantasy Map Generator connects to Ollama at `http://localhost:11434/api/generate`. This should work automatically by default. If you need to change the connection address, you can modify the endpoint in the FMG `ai-generator.js` file.
+**Important:** Fantasy Map Generator connects to Ollama at `http://localhost:11434/api/generate`. This should work automatically by default. If you need to change the connection address, you can modify the endpoint in the FMG `src/controllers/ai-generator.ts` file.
 
 That's It! You can now generate text using your local AI model.
 

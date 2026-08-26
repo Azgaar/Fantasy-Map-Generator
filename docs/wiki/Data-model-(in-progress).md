@@ -1,3 +1,5 @@
+> **Status: unimplemented design proposal.** This page describes an aspirational future `.map` save format and has never been built. The current save format is still the flat, pipe-delimited `.map` text file (per-section `JSON.stringify()` blocks joined with newlines) — see [Data-model](Data-model) for how maps are actually structured today. Do not use this page as a reference for the current file format; version numbers and example values below are illustrative only.
+
 In this document I would like to outline the expected data structure. 
 
 Relevant links:

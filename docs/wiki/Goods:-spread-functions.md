@@ -1,76 +1,82 @@
-# 🚧 Under construction
+Every raw good in Fantasy Map Generator has a **distribution** expression that decides which cells are eligible to receive it. This page documents how distribution expressions work today, the built-in functions you can use in them, and where to edit them in the UI.
 
-Goods **spread models** are applied to check whether goods can or cannot be placed in a cell. Fantasy Map Generator allows to create custom spread models, but it requires some understanding on how models work. Goods are generated before states and cultures, so models are built on top of geographical data. Once model is changed, you need to regenerate all goods.
+Goods are generated before states and cultures, so distributions are built purely on top of geographical data (height, temperature, biome, shoreline, rivers). Whenever a good's distribution changes, that good needs to be regenerated (or the whole Goods layer regenerated) to reflect the new expression.
 
 # Technical info
-Technically spread models are expressions evaluated for each cell to return `true` or `false`. If `true` is returned, the good can be placed in the cell. The expressions are valid JS functions, you can use logical operators (`!` for not, `||` for OR, `&&` for and, etc.) and other features.
 
-The options are limited to a number of build-in functions. These functions make models syntax easier to read and write:
-* `random(number)`: percentage of true, e.g. `50` will return true in 50% of cases
-* `nth(number)`: true for each only n-th cell: 1st, 2nd, 3rd and so on. For example `nth(2)` skips 1/2 (50%) of cells and `nth(5)` skips 4/5 (80%) of cells.
-* `habitable()`: true if biome habitability is greater than 0
-* `habitability()`: check against biome habitability. Always true for habitability `>=100`, false for `0`, skips 50% of cells if habitability is `50` and so on
-* `elevation()`: check against cell's height - the higher cell is, the greater chance is. If you need a good to be more frequent in lower elevation areas, than just negate the function: `!elevation()`
-* `biome(biomeId, biomeId, ...)`: check against list of biome ids, see below to get biome id reference
-* `minHeight(number)`: true if cell height >= number. Number is in range `[0-100]`, where `0` is deep ocean and `20` is minimal land elevation
-* `maxHeight(number)`: true if cell height <= number
-* `minTemp(number)`: true if cell temperature (in Celsius) >= number
-* `maxTemp(number)`: true if cell temperature <= number
-* `shore(ringId, ringId, ...)`: check against distance to the closest shoreline. `1` is land cells next to water (coastline), `2` - next land ring, `-1` - water cells next to land (shallow water), `-2, -3, ...` - deeper water cells
-* `type(string, string, ...)`: check against cell type. Types of all water cells connected to map border is `ocean`, lake types are `freshwater`, `salt`, `sinkhole`, `frozen`, `lava` and `dry`. Land types are defined not so clear, so I don't recommend to use them. In any case land types are `continent`, `island`, `isle` and `lake_island`
-* `river()`: true if there is a river in the cell
+A distribution is a small JS-like boolean expression evaluated once per cell. If it returns `true`, the cell is *eligible* — the good may still not end up there, because each good also has a `chance` (0–5, how often it's rolled per cell) and a per-map cap on how many cells any one raw good can occupy (roughly `200 × totalCells / 5000`, rounded up). Expressions support the usual JS logical operators: `!` (not), `&&` (and), `||` (or), and parentheses for grouping.
 
-### Biomes ids
+The functions below are the only building blocks available inside a distribution string (see `getMethods()` in `src/generators/goods-generator.ts`):
 
-* 0: Marine;
-* 1: Hot desert;
-* 2: Cold desert;
-* 3: Savanna;
-* 4: Grassland;
-* 5: Tropical seasonal forest;
-* 6: Temperate deciduous forest;
-* 7: Tropical rainforest;
-* 8: Temperate rainforest;
-* 9: Taiga;
-* 10: Tundra;
-* 11: Glacier;
-* 12: Wetland.
+* `random(number)`: percentage chance of being true, e.g. `random(50)` returns true for about half of cells it's checked on.
+* `nth(number)`: true for every Nth cell by cell id. `nth(2)` keeps roughly 1 in 2 cells, `nth(5)` keeps roughly 1 in 5.
+* `minHabitability(number)`: true if the cell's biome habitability is at or above `number` (0–100). This is the eligibility gate — use it to rule biomes like glaciers or deep ocean in or out outright.
+* `habitability()`: a *weighted* check against biome habitability — always true at habitability 100, always false at 0, and roughly a 50% chance at habitability 50. Use it (instead of, or together with, `minHabitability`) when you want frequency to scale smoothly with how livable a biome is, rather than a hard cutoff.
+* `elevation()`: a weighted check against cell height — the higher the cell, the greater the chance of true. Negate it (`!elevation()`) if you want a good to favor lower elevations instead.
+* `biome(id, id, ...)`: true if the cell's biome id is in the list. See "Biome ids" below.
+* `minHeight(number)`: true if cell height is at or above `number`. Height is on the map's internal 0–100 scale, where `20` is roughly sea level and higher values are progressively more elevated (around `50` for highlands, `70` for mountains).
+* `maxHeight(number)`: true if cell height is at or below `number`.
+* `minTemp(number)`: true if the cell's average temperature (°C) is at or above `number`.
+* `maxTemp(number)`: true if cell's average temperature is at or below `number`.
+* `shore(ring, ring, ...)`: true if the cell's distance-to-shore ring matches. `1` = coastal land (land adjacent to water), `2` = next land ring inland, `-1` = shallow water adjacent to land, `-2` = deeper water, and so on.
+* `type(string, string, ...)`: true if the cell's water feature type matches. Ocean-connected water is `"ocean"`; lake subtypes are `"freshwater"`, `"salt"`, `"sinkhole"`, `"frozen"`, `"lava"`, and `"dry"`.
+* `river()`: true if a river flows through the cell.
 
-These are the default biomes. To get actual ids run `biomesData.name.map((n,i) => i+". "+n)` in FMG console (F12).
+There is no longer a standalone `habitable()` function — it was replaced by `minHabitability(n)`. Any old custom expression using `habitable()` will fail; rewrite it as `minHabitability(1)` (or another threshold) or as `habitability()` if you actually wanted the weighted check.
+
+### Biome ids
+
+Biome ids depend on the current biomes configuration and can be renumbered by biome edits, so don't hard-code them from memory. To get the current, authoritative list, run this in the FMG browser console (F12):
+
+```js
+pack.biomes.map((b, i) => `${i}: ${b.name}`)
+```
+
+For a freshly generated map the defaults are typically Marine, Hot desert, Cold desert, Savanna, Grassland, Tropical seasonal forest, Temperate deciduous forest, Tropical rainforest, Temperate rainforest, Taiga, Tundra, Glacier, Wetland (ids 0–12) — but treat this as a starting point, not a guarantee.
+
+# Editing distributions in the UI
+
+You don't have to hand-write these expressions. The Goods Editor's **Distribution Editor** (opened per-good) provides a visual builder: pick a function from a dropdown, fill in its parameters (with pickers for biomes, shore rings, and waterbody types), optionally negate a condition, and combine conditions with AND within a group and OR across groups. It shows the generated expression live, a plain-language interpretation of it, and how many cells (and what percentage of the map) currently qualify — so you can sanity-check a model before applying it. The raw expression field is still shown and editable directly if you prefer to type it.
 
 # Examples
 
-Let's say we want a a good to be generated in hot and highly elevated areas. If altitude is medium, let it also be allowed, but pretty rarely. The model will be something like `minTemp(15) && (minHeight(70) || minHeight(40) && nth(5))`.
+Want a good that appears in hot, highly elevated areas, with rarer appearances at medium altitude?
 
-Another usual case is when we want a good frequency vary based on biomes. In this case you need to join multiple `biome()` functions like `biome(1) && (biome(2) && nth(2)) && (biome(3) && nth(3))`.
+```
+minTemp(15) && (minHeight(70) || (minHeight(40) && nth(5)))
+```
 
-Check the build-in models below to get the gist.
+Want frequency to vary by biome, with each biome thinned out differently?
 
-### Built-in models
-* Deciduous_forests: `biome(6, 7, 8)`
-* Any_forest: `biome(5, 6, 7, 8, 9)`
-* Temperate_and_boreal_forests: `biome(6, 8, 9)`
-* Hills: `minHeight(40) || (minHeight(30) && nth(10))`
-* Mountains: `minHeight(60) || (minHeight(40) && nth(10))`
-* Mountains_and_wetlands: `minHeight(60) || (biome(12) && nth(8))`
-* Headwaters: `river() && minHeight(40)`
-* Biome_habitability: `habitability()`
-* Marine_and_rivers: `type("ocean", "freshwater", "salt") || (river() && shore(1, 2))`
-* Pastures_and_temperate_forest: `(biome(3, 4) && !elevation()) || (biome(6) && random(70)) || (biome(5) && nth(5))`
-* Tropical_forests: `biome(5, 7)`
-* Arid_land_and_salt_lakes: `type("salt", "dry") || (biome(1, 2) && random(70)) || (biome(12) && nth(10))`
-* Hot_desert: `biome(1)`
-* Deserts: `biome(1, 2)`
-* Grassland_and_cold_desert: `biome(3) || (biome(2) && nth(4))`
-* Hot_biomes: `biome(1, 3, 5, 7)`
-* Hot_desert_and_tropical_forest: `biome(1, 7)`
-* Tropical_rainforest: `biome(7)`
-* Tropical_waters: `shore(-1) && minTemp(18)`
-* Hilly_tropical_rainforest: `minHeight(40) && biome(7)`
-* Subtropical_waters: `shore(-1) && minTemp(14)`
-* Habitable_biome_or_marine: `shore(-1) || habitable()`
-* Foresty_seashore: `shore(1) && biome(6, 7, 8, 9)`
-* Boreal_forests: `biome(9) || (biome(10) && nth(2)) || (biome(6, 8) && nth(5)) || (biome(12) && nth(10))`
-* Less_habitable_seashore: `shore(1) && habitable() && !habitability()`
-* Less_habitable_biomes: `habitable() && !habitability()`
-* Arctic_waters: `biome(0) && maxTemp(7)`
+```
+biome(1) || (biome(2) && nth(2)) || (biome(3) && nth(3))
+```
+
+## Current built-in goods
+
+There's no longer a separate library of named, reusable "spread models" to pick from — each good in the built-in catalogue (`GOODS_DATA` in `src/generators/goods-generator.ts`) carries its own bespoke `distribution` string directly. A few representative examples from the current catalogue:
+
+| Good | Distribution |
+|---|---|
+| Wood | `biome(5, 6, 7, 8, 9)` |
+| Stone | `(minHeight(40) \|\| (minHeight(20) && elevation())) && biome(1, 2, 3, 4)` |
+| Iron | `minHeight(60) \|\| (biome(12) && nth(7)) \|\| (minHeight(20) && nth(10))` |
+| Gold | `river() && minHeight(40)` |
+| Grain | `minHabitability(20) && habitability()` |
+| Fish | `shore(-1) && (type("ocean", "freshwater", "salt") \|\| (river() && shore(1, 2)))` |
+| Salt | `shore(1) && type("salt", "dry") \|\| (biome(1, 2) && random(70)) \|\| (biome(12) && nth(10))` |
+| Whales | `shore(-1) && type('ocean') && maxTemp(7)` |
+| Dyes | `shore(-1) \|\| minHabitability(1)` |
+
+To see every built-in good's actual distribution (and every other field), open the Goods Editor in the app, or read `GOODS_DATA` in `src/generators/goods-generator.ts` directly — it's the single source of truth and can change between versions.
+
+Some goods have no `distribution` at all (an empty `chance: 0`), because they aren't placed on the map by cell eligibility — they're purely **manufactured**, produced from other goods via `recipes` (e.g. Tools, Arms, Cloth, Beer).
+
+# Beyond placement: production and the market
+
+Cell placement (what this page covers) decides where a raw good's *bonus resource* can appear on the map — it's only one part of the current goods system. Separately, each good can also define:
+
+* `biomeOutput` — a baseline amount produced by ordinary rural population in matching biomes, regardless of whether the bonus resource was placed there.
+* `recipes` — one or more input combinations that let a good be manufactured from other goods (used by the production/market simulation, not by cell placement).
+
+These feed into burg production, trade, and the market/price system, which are documented separately from spread functions — see `docs/domain/goods_schema.md` in the repository for the full goods/markets/production model.

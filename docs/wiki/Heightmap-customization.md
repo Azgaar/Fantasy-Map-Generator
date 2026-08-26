@@ -54,9 +54,9 @@ The Heightmap Editor includes tools to help you create and customize your map. B
   - Opens a 3D version of the map in a new window.
   - Allows for a more immersive view of the map's shape and features.
 
-- **Enable Ocean Cells**:
-  - Enable or disable ocean cells on your map.
-  - Useful for defining water bodies and coastlines.
+- **Render ocean cells**:
+  - Checkbox that toggles whether ocean/water cells are drawn in the preview.
+  - This only affects the display, not the underlying data — it doesn't add or remove water bodies.
 
 - **Allow Water Erosion**:
   - Simulate water erosion effects on the terrain.
@@ -83,14 +83,17 @@ Once you are satisfied with the Heightmap, click on **Exit Customization** in th
   - **Align**: Fits cell height to the first tagged cell; drag for continuous usage.
   - **Smooth**: Smooths cell height; drag the map for continuous usage.
   - **Disrupt**: Randomizes heights slightly; drag for continuous usage.
-  - **Checkbox “change only land cells”**: Prevents changes to the coastline.
+  - **Fill**: Click an enclosed water area or a same-height land area to flood-fill it into a cone-shaped blob.
   - **Line Tool**: Creates mountains or trenches in lines.
+    - The **Power** slider (-100 to 100) sets both intensity and direction: positive values raise a mountain range, negative values lower a trench.
+    - The **Randomness** slider (0-100) controls how much the line meanders instead of running straight.
+  - **Cells to change** dropdown ("all cells" / "only land cells" / "only water cells"): replaces the old "change only land cells" checkbox. It's a 3-way filter that restricts brushes (and the footer tools below) to land cells, water cells, or all cells — "only water cells" is a newer option that restricts changes to ocean cells only.
 
 ### Footer Buttons
   - **Un-do**: Steps back, works only for Heightmap customization.
   - **Re-do**: Steps forward, works only for Heightmap customization.
-  - **Rescaler**: Slider to rescale all cells.
-  - **Condition**: Conditional height rescaler.
+  - **Rescaler**: Slider (-10 to 10, step 1) to raise or lower all cells at once.
+  - **Condition**: Conditional height rescaler. Set a height range (h ≥ X and ≤ Y) and an operation to apply to matching cells: multiply, divide, add, subtract or exponent, with an operand from 0 to 1.5.
   - **Smooth**: Smooths all heights a bit.
   - **Disrupt**: Randomizes all heights a bit.
   - **Clear**: Sets all heights to 0.
@@ -106,6 +109,14 @@ Once you are satisfied with the Heightmap, click on **Exit Customization** in th
 
 Please see [Template Editor](../wiki/Heightmap-template-editor).
 
+## Related Tools-menu tools
+
+Two other Tools-menu features are heightmap-adjacent and destructive, though they live outside the heightmap editor itself:
+
+* **Transform map** (Menu → Tools → Transform) re-triangulates the whole map, letting you shift, rotate, scale and mirror it horizontally or vertically.
+* **Create a submap** (Menu → Tools → Submap) crops the current viewport into a new, denser map, with an option to "Rescale burg styles" so icon and label sizes fit the new scale.
+
+See also [Scale and distance](../wiki/Scale-and-distance) for more on both.
 
 ## Image Converter
 
