@@ -195,3 +195,25 @@ test("a saved custom preset carries the retired sizes from the store", async ({p
     legendColumns: 5
   });
 });
+
+test("a non-style JSON is rejected by the saver, not applied as defaults", async ({page}) => {
+  await page.goto("/?seed=test-seed&width=1280&height=720");
+  await page.waitForFunction(() => (window as any).mapId !== undefined, {timeout: 60000});
+
+  const before = await page.evaluate(() => styles.rivers.attrs.fill);
+  await page.evaluate(() => (window as any).addStylePreset());
+  await page.evaluate(() => {
+    (document.getElementById("styleSaverJSON") as HTMLTextAreaElement).value =
+      JSON.stringify({road: "#D1B86E", roofType: "Gable", treeShape: "Cotton"});
+    (document.getElementById("styleSaverName") as HTMLInputElement).value = "bogus";
+  });
+  await page.locator("#styleSaverSave").click();
+
+  await expect(page.locator("#tooltip")).toContainText("not a style preset");
+  const after = await page.evaluate(() => ({
+    fill: styles.rivers.attrs.fill,
+    saved: localStorage.getItem("fmgStyle_bogus")
+  }));
+  expect(after.fill).toBe(before);
+  expect(after.saved).toBeNull();
+});
