@@ -1,5 +1,5 @@
 import { quadtree, sum } from "d3";
-import { findAllInQuadtree, gauss, minmax, nth, ra, rand, rn, si } from "../utils";
+import { findAllInQuadtree, gauss, minmax, nth, ra, rand, rn, si, timeEnd, timeStart } from "../utils";
 import type { State } from "./states-generator";
 
 declare global {
@@ -49,7 +49,7 @@ class MilitaryModule {
   }
 
   generate() {
-    TIME && console.time("generateMilitary");
+    TIME && timeStart("generateMilitary");
     const { cells, states } = pack;
     const { p } = cells;
     const valid = states.filter(s => s.i && !s.removed); // valid states
@@ -459,7 +459,7 @@ class MilitaryModule {
       delete s.temp; // do not store temp data
     });
 
-    TIME && console.timeEnd("generateMilitary");
+    TIME && timeEnd("generateMilitary");
   }
 
   getDefaultOptions() {

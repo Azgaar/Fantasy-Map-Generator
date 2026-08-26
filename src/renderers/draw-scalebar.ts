@@ -1,5 +1,5 @@
 import { range, select } from "d3";
-import { ensureEl, rn } from "../utils";
+import { ensureEl, rn, timeEnd, timeStart } from "../utils";
 
 export function drawScaleBar(parent?: SVGSVGElement, scaleLevel = scale, width = svgWidth, height = svgHeight): void {
   const parentEl = parent || ensureEl<SVGSVGElement>("map");
@@ -11,7 +11,7 @@ export function drawScaleBar(parent?: SVGSVGElement, scaleLevel = scale, width =
 
   const renderedContent = scaleBar.select("#scaleBarContent");
   const isRendered = Boolean(renderedContent.size());
-  TIME && !isRendered && console.time("drawScaleBar");
+  TIME && !isRendered && timeStart("drawScaleBar");
 
   const unit = distanceUnitInput.value;
   const size = +scaleBar.attr("data-bar-size");
@@ -93,7 +93,7 @@ export function drawScaleBar(parent?: SVGSVGElement, scaleLevel = scale, width =
     scaleBar.attr("transform", `translate(${x},${y})`);
   }
 
-  TIME && !isRendered && console.timeEnd("drawScaleBar");
+  TIME && !isRendered && timeEnd("drawScaleBar");
 
   function getLength(): number {
     const init = 100;

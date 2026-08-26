@@ -23,7 +23,7 @@ import {
   select
 } from "d3";
 import { tip } from "../components/tooltips";
-import { round } from "../utils";
+import { round, timeEnd, timeStart } from "../utils";
 
 const CURVE_MAP: Record<string, CurveFactory> = {
   curveBasis,
@@ -49,7 +49,7 @@ export const drawHeightmap = (): void => {
   if (customization === 1)
     return void tip("The Layer control is not available in the heightmap edit mode", false, "error");
 
-  TIME && console.time("drawHeightmap");
+  TIME && timeStart("drawHeightmap");
 
   const ocean = select("#terrs").select<SVGGElement>("#oceanHeights");
   const land = select("#terrs").select<SVGGElement>("#landHeights");
@@ -192,5 +192,5 @@ export const drawHeightmap = (): void => {
     return chain.filter((_d, i) => i % n === 0);
   }
 
-  TIME && console.timeEnd("drawHeightmap");
+  TIME && timeEnd("drawHeightmap");
 };

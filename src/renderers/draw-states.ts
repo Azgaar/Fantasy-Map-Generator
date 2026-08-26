@@ -1,9 +1,9 @@
 import { color as d3Color } from "d3";
-import { ensureEl, getIsolines } from "@/utils";
+import { ensureEl, getIsolines, timeEnd, timeStart } from "@/utils";
 import { buildFillPaths } from "./isoline-fills";
 
 export function drawStates(): void {
-  TIME && console.time("drawStates");
+  TIME && timeStart("drawStates");
   const { cells, states } = pack;
 
   const renderHalo = ensureEl<HTMLSelectElement>("shapeRendering").value === "geometricPrecision";
@@ -25,5 +25,5 @@ export function drawStates(): void {
   ensureEl("statePaths").innerHTML = clipPaths.join("");
   ensureEl("statesHalo").innerHTML = haloPaths.join("");
 
-  TIME && console.timeEnd("drawStates");
+  TIME && timeEnd("drawStates");
 }

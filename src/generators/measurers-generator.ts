@@ -1,3 +1,4 @@
+import { timeEnd, timeStart } from "@/utils";
 import type { Point } from "./voronoi";
 
 export type MeasurerType = "Ruler" | "Opisometer" | "RouteOpisometer" | "Planimeter";
@@ -20,7 +21,7 @@ function remove(measurer: Measurer): void {
 
 // default ruler across the largest landmass, created on map generation
 function createDefaultRuler(): void {
-  TIME && console.time("createDefaultRuler");
+  TIME && timeStart("createDefaultRuler");
   const { features, vertices } = pack;
 
   const areas = features.map(f => (f.land ? f.area || 0 : -Infinity));
@@ -45,7 +46,7 @@ function createDefaultRuler(): void {
   pack.measurers = [];
   create("Ruler", [leftmostVertex, rightmostVertex]);
 
-  TIME && console.timeEnd("createDefaultRuler");
+  TIME && timeEnd("createDefaultRuler");
 }
 
 export const Measurers = { create, remove, createDefaultRuler };

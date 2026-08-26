@@ -1,7 +1,7 @@
-import { ensureEl } from "@/utils";
+import { ensureEl, timeEnd, timeStart } from "@/utils";
 
 export function drawRivers(): void {
-  TIME && console.time("drawRivers");
+  TIME && timeStart("drawRivers");
 
   const riverPaths = pack.rivers.map(({ cells, points, i, widthFactor, sourceWidth }) => {
     if (!cells || cells.length < 2) return "";
@@ -18,5 +18,5 @@ export function drawRivers(): void {
 
   ensureEl("rivers").innerHTML = riverPaths.join("");
 
-  TIME && console.timeEnd("drawRivers");
+  TIME && timeEnd("drawRivers");
 }

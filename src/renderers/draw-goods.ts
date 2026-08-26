@@ -1,6 +1,6 @@
 import { select } from "d3";
 import type { Good } from "../generators/goods-generator";
-import { normalize, rn } from "../utils";
+import { normalize, rn, timeEnd, timeStart } from "../utils";
 import { getPackPolygon } from "../utils/graphUtils";
 
 const PLATE_ICON = 3;
@@ -15,13 +15,13 @@ const PLATE_FILL = "#f5f5f5";
 const DEFAULT_SIZE = 6;
 
 export function drawGoods() {
-  TIME && console.time("drawGoods");
+  TIME && timeStart("drawGoods");
 
   const visible = new Set(pack.goods.filter(good => good.visible).map(good => good.i));
   select("#goods").select("#goodsCells").html(buildGoodsCellsContent(visible));
   select("#goods").select("#goodsIcons").html(buildGoodsIconsContent(visible));
   select("#goods").select("#goodsBurgs").html(buildGoodsBurgsContent(visible));
-  TIME && console.timeEnd("drawGoods");
+  TIME && timeEnd("drawGoods");
 }
 
 function buildGoodsCellsContent(displayedGoods: Set<number>): string {

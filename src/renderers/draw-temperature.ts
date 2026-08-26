@@ -10,10 +10,10 @@ import {
   scaleSequential,
   select
 } from "d3";
-import { connectVertices, convertTemperature, ensureEl, round } from "../utils";
+import { connectVertices, convertTemperature, ensureEl, round, timeEnd, timeStart } from "../utils";
 
 const temperatureRenderer = (): void => {
-  TIME && console.time("drawTemperature");
+  TIME && timeStart("drawTemperature");
 
   select("#temperature").selectAll("*").remove();
   const lineGen = line<[number, number]>().curve(curveBasisClosed);
@@ -128,7 +128,7 @@ const temperatureRenderer = (): void => {
     labels.push([x, y, t]);
   }
 
-  TIME && console.timeEnd("drawTemperature");
+  TIME && timeEnd("drawTemperature");
 };
 
 export { temperatureRenderer as drawTemperature };

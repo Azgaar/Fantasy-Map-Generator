@@ -1,5 +1,6 @@
 import Alea from "alea";
 import { color, shuffler } from "d3";
+import { timeEnd, timeStart } from "@/utils";
 import type { PackedGraph } from "../types/PackedGraph";
 import type { CultureType } from "./cultures-generator";
 
@@ -964,7 +965,7 @@ export class GoodsModule {
 
   // Place a bonus good on every eligible cell based on the current catalogue
   generate(options: { randomSeed?: number } = {}) {
-    TIME && console.time("generateGoods");
+    TIME && timeStart("generateGoods");
     Math.random = Alea(options.randomSeed ?? seed);
     const shuffle = shuffler(() => Math.random());
 
@@ -1002,7 +1003,7 @@ export class GoodsModule {
       }
     }
 
-    TIME && console.timeEnd("generateGoods");
+    TIME && timeEnd("generateGoods");
     this.sync();
   }
 
@@ -1011,7 +1012,7 @@ export class GoodsModule {
     const good = this.get(goodId);
     if (!good) return;
 
-    TIME && console.time("regenerateGoodPlacement");
+    TIME && timeStart("regenerateGoodPlacement");
     this.cells = pack.cells;
     if (!this.cells.good || this.cells.good.length !== this.cells.i.length) {
       this.cells.good = new Uint16Array(this.cells.i.length);
@@ -1022,7 +1023,7 @@ export class GoodsModule {
     }
 
     if (!good.distribution || !good.chance) {
-      TIME && console.timeEnd("regenerateGoodPlacement");
+      TIME && timeEnd("regenerateGoodPlacement");
       return;
     }
 
@@ -1046,7 +1047,7 @@ export class GoodsModule {
       resources[good.i] = (resources[good.i] || 0) + 1;
     }
 
-    TIME && console.timeEnd("regenerateGoodPlacement");
+    TIME && timeEnd("regenerateGoodPlacement");
   }
 
   restoreDefaults() {

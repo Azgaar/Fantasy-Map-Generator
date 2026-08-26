@@ -1,6 +1,19 @@
 import { max, quadtree, range } from "d3";
 import { Emblems } from "@/generators/emblems-generator";
-import { abbreviate, biased, ensureEl, getColors, getRandomColor, minmax, P, rand, rn, rw } from "../utils";
+import {
+  abbreviate,
+  biased,
+  ensureEl,
+  getColors,
+  getRandomColor,
+  minmax,
+  P,
+  rand,
+  rn,
+  rw,
+  timeEnd,
+  timeStart
+} from "../utils";
 
 declare global {
   var Cultures: CulturesGenerator;
@@ -1016,7 +1029,7 @@ class CulturesGenerator {
   }
 
   generate() {
-    TIME && console.time("generateCultures");
+    TIME && timeStart("generateCultures");
     this.cells = pack.cells;
     const cultureIds = new Uint16Array(this.cells.i.length); // cell cultures
 
@@ -1204,7 +1217,7 @@ class CulturesGenerator {
       c.base = c.base % Names.nameBases.length;
     });
 
-    TIME && console.timeEnd("generateCultures");
+    TIME && timeEnd("generateCultures");
   }
 
   add(center: number) {
@@ -1246,7 +1259,7 @@ class CulturesGenerator {
   }
 
   expand() {
-    TIME && console.time("expandCultures");
+    TIME && timeStart("expandCultures");
     const { cells, cultures } = pack;
 
     const queue = new FlatQueue();
@@ -1337,7 +1350,7 @@ class CulturesGenerator {
       });
     }
 
-    TIME && console.timeEnd("expandCultures");
+    TIME && timeEnd("expandCultures");
   }
 
   regenerate(): void {

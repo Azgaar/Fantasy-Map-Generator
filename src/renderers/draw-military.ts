@@ -1,9 +1,9 @@
 import { color, easeSinInOut, select, transition } from "d3";
 import type { Regiment } from "../generators/military-generator";
-import { rn } from "../utils";
+import { rn, timeEnd, timeStart } from "../utils";
 
 export const drawMilitary = (): void => {
-  TIME && console.time("drawMilitary");
+  TIME && timeStart("drawMilitary");
 
   select<SVGGElement, unknown>("#armies").selectAll("g").remove();
   for (const state of pack.states) {
@@ -11,7 +11,7 @@ export const drawMilitary = (): void => {
     drawRegimentsRenderer(state.military || [], state.i);
   }
 
-  TIME && console.timeEnd("drawMilitary");
+  TIME && timeEnd("drawMilitary");
 };
 
 const drawRegimentsRenderer = (regiments: Regiment[], s: number): void => {

@@ -1,5 +1,5 @@
 import { sum } from "d3";
-import { rn } from "@/utils";
+import { rn, timeEnd, timeStart } from "@/utils";
 import { minmax } from "../utils";
 import type { Burg } from "./burgs-generator";
 import { DEFAULT_CULTURE_TYPE } from "./cultures-generator";
@@ -34,7 +34,7 @@ export class ProductionModule {
   }
 
   produce() {
-    TIME && console.time("generateProduction");
+    TIME && timeStart("generateProduction");
 
     this.zoneCellSets = null; // rebuild lookup to reflect any in-place zone edits
     Markets.collectRuralProduction();
@@ -63,7 +63,7 @@ export class ProductionModule {
     Markets.runGlobalTrade();
     this.fillBurgsDemand(sortedBurgs, index);
 
-    TIME && console.timeEnd("generateProduction");
+    TIME && timeEnd("generateProduction");
   }
 
   private fillBurgsDemand(sortedBurgs: Burg[], index: ProductionIndex): void {

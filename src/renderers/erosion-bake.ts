@@ -2,6 +2,7 @@
 
 import type * as THREEType from "three";
 import { Coastline } from "@/generators/coastline-generator";
+import { timeEnd, timeStart } from "@/utils";
 
 export type BakeParams = {
   strength: number;
@@ -873,7 +874,7 @@ export async function bake(renderer: THREEType.WebGLRenderer, params: BakeParams
   if (cached && cached.key === key) return cached;
 
   try {
-    TIME && console.time("erosionBake");
+    TIME && timeStart("erosionBake");
     const [bakeW, bakeH] = getBakeSize(params.bakeResolution);
 
     const coast = buildCoastTexture(bakeW, bakeH);
@@ -896,7 +897,7 @@ export async function bake(renderer: THREEType.WebGLRenderer, params: BakeParams
     const result: ErosionBakeResult = { key, heights, pixels, coast: coast.data, cols: bakeW, rows: bakeH };
     if (params.riverDepth > 0) enforceDownhillCourses(result);
     cached = result;
-    TIME && console.timeEnd("erosionBake");
+    TIME && timeEnd("erosionBake");
     return cached;
   } catch (error) {
     console.error("3D erosion bake failed:", error);

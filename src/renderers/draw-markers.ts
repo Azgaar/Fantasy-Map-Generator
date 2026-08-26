@@ -1,6 +1,6 @@
 import { select } from "d3";
 import type { Marker } from "@/generators/markers-generator";
-import { rn } from "../utils";
+import { rn, timeEnd, timeStart } from "../utils";
 
 type PinShapeFunction = (fill: string, stroke: string) => string;
 type PinShapes = { [key: string]: PinShapeFunction };
@@ -61,7 +61,7 @@ export const setMarkersFilter = (ids: number[] | null): void => {
 };
 
 export const drawMarkers = (): void => {
-  TIME && console.time("drawMarkers");
+  TIME && timeStart("drawMarkers");
 
   const rescale = +select("#markers").attr("rescale");
   const pinned = +select("#markers").attr("pinned");
@@ -73,5 +73,5 @@ export const drawMarkers = (): void => {
   const html = markersData.map(marker => drawMarker(marker, rescale));
   select("#markers").html(html.join(""));
 
-  TIME && console.timeEnd("drawMarkers");
+  TIME && timeEnd("drawMarkers");
 };

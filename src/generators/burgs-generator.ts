@@ -2,7 +2,7 @@ import { quadtree } from "d3-quadtree";
 import { Emblems } from "@/generators/emblems-generator";
 import type { BurgGroup } from "@/types/burg-groups";
 import type { Emblem } from "@/types/emblems";
-import { each, ensureEl, findClosestCell, gauss, minmax, normalize, P, rn } from "../utils";
+import { each, ensureEl, findClosestCell, gauss, minmax, normalize, P, rn, timeEnd, timeStart } from "../utils";
 import { type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
 import { NON_NAVIGABLE_LAKE_GROUPS } from "./features";
 import type { Label } from "./labels-generator";
@@ -52,7 +52,7 @@ type PortCandidate = {
 
 class BurgModule {
   generate() {
-    TIME && console.time("generateBurgs");
+    TIME && timeStart("generateBurgs");
     const { cells } = pack;
 
     let burgs: Burg[] = [0 as any]; // burgs array
@@ -151,7 +151,7 @@ class BurgModule {
     pack.burgs = burgs;
     this.assignPorts();
 
-    TIME && console.timeEnd("generateBurgs");
+    TIME && timeEnd("generateBurgs");
 
     function getCapitalsNumber() {
       let number = (ensureEl("statesNumber") as HTMLInputElement).valueAsNumber;
@@ -524,7 +524,7 @@ class BurgModule {
   }
 
   specify() {
-    TIME && console.time("specifyBurgs");
+    TIME && timeStart("specifyBurgs");
 
     pack.burgs.forEach(burg => {
       if (!burg.i || burg.removed || burg.lock) return;
@@ -543,7 +543,7 @@ class BurgModule {
       this.defineGroup(burg, populations);
     });
 
-    TIME && console.timeEnd("specifyBurgs");
+    TIME && timeEnd("specifyBurgs");
   }
 
   private createWatabouCityLinks(burg: Burg) {

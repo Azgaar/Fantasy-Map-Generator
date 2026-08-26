@@ -11,6 +11,8 @@ import {
   ra,
   rand,
   rw,
+  timeEnd,
+  timeStart,
   trimVowels
 } from "../utils";
 
@@ -620,7 +622,7 @@ class ReligionsModule {
   }
 
   generate() {
-    TIME && console.time("generateReligions");
+    TIME && timeStart("generateReligions");
     const lockedReligions = pack.religions?.filter(r => r.i && r.lock && !r.removed) || [];
 
     const folkReligions = this.generateFolkReligions();
@@ -639,7 +641,7 @@ class ReligionsModule {
 
     this.checkCenters();
 
-    TIME && console.timeEnd("generateReligions");
+    TIME && timeEnd("generateReligions");
   }
 
   private generateFolkReligions(): ReligionBase[] {

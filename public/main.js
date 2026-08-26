@@ -484,8 +484,9 @@ async function generate(options) {
     AddedLabels.initiate();
     Names.getMapName();
 
-    WARN && console.warn(`TOTAL: ${rn((performance.now() - timeStart) / 1000, 2)}s`);
-    showStatistics();
+    const totalMs = performance.now() - timeStart;
+    WARN && console.warn(`TOTAL: ${rn(totalMs / 1000, 2)}s`);
+    showStatistics(totalMs);
   } catch (error) {
     ERROR && console.error(error);
     const parsedError = parseError(error);
@@ -532,7 +533,7 @@ function setSeed(precreatedSeed) {
 }
 
 function addLakesInDeepDepressions() {
-  TIME && console.time("addLakesInDeepDepressions");
+  TIME && timeStart("addLakesInDeepDepressions");
   const elevationLimit = +ensureEl("lakeElevationLimitOutput").value;
   if (elevationLimit === 80) return;
 
@@ -588,7 +589,7 @@ function addLakesInDeepDepressions() {
     features.push({ i: f, land: false, border: false, type: "lake" });
   }
 
-  TIME && console.timeEnd("addLakesInDeepDepressions");
+  TIME && timeEnd("addLakesInDeepDepressions");
 }
 
 // near sea lakes usually get a lot of water inflow, most of them should break threshold and flow out to sea (see Ancylus Lake)
@@ -598,7 +599,7 @@ function openNearSeaLakes() {
   const cells = grid.cells;
   const features = grid.features;
   if (!features.find(f => f.type === "lake")) return; // no lakes
-  TIME && console.time("openLakes");
+  TIME && timeStart("openLakes");
   const LIMIT = 22; // max height that can be breached by water
 
   for (const i of cells.i) {
@@ -631,7 +632,7 @@ function openNearSeaLakes() {
     features[lakeFeatureId].type = "ocean"; // mark former lake as ocean
   }
 
-  TIME && console.timeEnd("openLakes");
+  TIME && timeEnd("openLakes");
 }
 
 // define map size and position based on template and random factor
@@ -712,7 +713,7 @@ function calculateMapCoordinates() {
 // temperature model, trying to follow real-world data
 // based on http://www-das.uwyo.edu/~geerts/cwx/notes/chap16/Image64.gif
 function calculateTemperatures() {
-  TIME && console.time("calculateTemperatures");
+  TIME && timeStart("calculateTemperatures");
   const cells = grid.cells;
   cells.temp = new Int8Array(cells.i.length); // temperature array
 
@@ -756,12 +757,12 @@ function calculateTemperatures() {
     return rn((height / 1000) * 6.5);
   }
 
-  TIME && console.timeEnd("calculateTemperatures");
+  TIME && timeEnd("calculateTemperatures");
 }
 
 // simplest precipitation model
 function generatePrecipitation() {
-  TIME && console.time("generatePrecipitation");
+  TIME && timeStart("generatePrecipitation");
   d3.select("#prec").selectAll("*").remove();
   const { cells, cellsX, cellsY } = grid;
   cells.prec = new Uint8Array(cells.i.length); // precipitation array
@@ -920,12 +921,12 @@ function generatePrecipitation() {
         .text("\u21C8");
   })();
 
-  TIME && console.timeEnd("generatePrecipitation");
+  TIME && timeEnd("generatePrecipitation");
 }
 
 // recalculate Voronoi Graph to pack cells
 function reGraph() {
-  TIME && console.time("reGraph");
+  TIME && timeStart("reGraph");
   const { cells: gridCells, points, features } = grid;
   const newCells = { p: [], g: [], h: [] }; // store new data
   const spacing2 = grid.spacing ** 2;
@@ -975,7 +976,7 @@ function reGraph() {
     }
   );
 
-  TIME && console.timeEnd("reGraph");
+  TIME && timeEnd("reGraph");
 }
 
 function isWetLand(moisture, temperature, height) {
@@ -986,7 +987,7 @@ function isWetLand(moisture, temperature, height) {
 
 // assess cells suitability to calculate population and rand cells for culture center and burgs placement
 function rankCells() {
-  TIME && console.time("rankCells");
+  TIME && timeStart("rankCells");
   const { cells, features } = pack;
   cells.s = new Int16Array(cells.i.length); // cell suitability array
   cells.pop = new Float32Array(cells.i.length); // cell population array
@@ -1039,11 +1040,11 @@ function rankCells() {
     cells.pop[i] = cells.s[i] > 0 ? (cells.s[i] * cells.area[i]) / meanArea : 0;
   }
 
-  TIME && console.timeEnd("rankCells");
+  TIME && timeEnd("rankCells");
 }
 
 // show map stats on generation complete
-function showStatistics() {
+function showStatistics(totalMs) {
   const heightmap = ensureEl("templateInput").value;
   const isTemplate = heightmap in heightmapTemplates;
   const heightmapType = isTemplate ? "template" : "precreated";
@@ -1069,7 +1070,8 @@ function showStatistics() {
   INFO && console.info(stats);
 
   // Dispatch event for test automation and external integrations
-  window.dispatchEvent(new CustomEvent("map:generated", { detail: { seed, mapId } }));
+  const detail = typeof totalMs === "number" ? { seed, mapId, totalMs } : { seed, mapId };
+  window.dispatchEvent(new CustomEvent("map:generated", { detail }));
 }
 
 const regenerateMap = debounce(async function (config) {

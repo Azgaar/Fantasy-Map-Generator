@@ -1,0 +1,30 @@
+export interface PerfStageEventDetail {
+  stage: string;
+  ms: number;
+}
+
+const starts = new Map<string, number>();
+
+export function timeStart(label: string): void {
+  starts.set(label, performance.now());
+  console.time(label);
+}
+
+export function timeEnd(label: string): void {
+  const start = starts.get(label);
+  if (start === undefined) return;
+  starts.delete(label);
+  console.timeEnd(label);
+
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent<PerfStageEventDetail>("perf:stage", { detail: { stage: label, ms: performance.now() - start } })
+  );
+}
+
+declare global {
+  interface Window {
+    timeStart: typeof timeStart;
+    timeEnd: typeof timeEnd;
+  }
+}
