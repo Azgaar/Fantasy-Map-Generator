@@ -16,7 +16,7 @@ const waitForMap = (page: Page) =>
 
 const rn = (v: number, d = 0): number => Math.round(v * 10 ** d) / 10 ** d;
 
-async function openStyleElement(page: Page, element: "markers" | "regions" | "coordinates" | "ruler" | "legend" | "emblems" | "goodsIcons" | "goodsBurgs" | "markets" | "terrs" | "armies" | "gridOverlay" | "texture" | "ocean" | "scaleBar" | "labels" | "lakes" | "rivers" | "compass" | "burgIcons" | "anchors"): Promise<void> {
+async function openStyleElement(page: Page, element: "markers" | "regions" | "coordinates" | "ruler" | "legend" | "emblems" | "goodsIcons" | "goodsBurgs" | "markets" | "terrs" | "armies" | "gridOverlay" | "texture" | "ocean" | "scaleBar" | "labels" | "lakes" | "rivers" | "compass" | "burgIcons" | "anchors" | "vignette"): Promise<void> {
   await page.evaluate(() => (window as any).showOptions());
   await page.locator("#styleTab").click();
   await page.locator("#styleElementSelect").selectOption(element);
@@ -623,6 +623,53 @@ test.describe("style editor events drive the store", () => {
     expect(after.labelGroupNames).not.toContain("cities");
     expect(after.labelGroupNames).toContain("river");
     expect(after.burgsInLegacyGroup).toBe(0);
+  });
+
+  test("ocean pattern controls write the store and the applier derives from it", async ({ page }) => {
+    await openStyleElement(page, "ocean");
+
+    await page.locator("#styleOceanPattern").selectOption({ index: 2 });
+    const chosen = await page.locator("#styleOceanPattern").inputValue();
+    await page.locator("#styleOceanPatternOpacity input[type=number]").fill("0.55");
+    await page.locator("#styleOceanPatternOpacity").dispatchEvent("input");
+
+    const stored = await page.evaluate(() => ({
+      pattern: (window as any).styles.ocean.options.pattern,
+      opacity: (window as any).styles.ocean.options.patternOpacity
+    }));
+    expect(stored).toEqual({ pattern: chosen, opacity: 0.55 });
+
+    // the applier restores the store values over a stale element on redraw
+    await page.evaluate(() => {
+      document.getElementById("oceanicPattern")!.setAttribute("opacity", "0.11");
+      (window as any).Layers.draw("ocean");
+    });
+    await expect(page.locator("#oceanicPattern")).toHaveAttribute("opacity", "0.55");
+    await expect(page.locator("#oceanicPattern")).toHaveAttribute("href", chosen);
+  });
+
+  test("vignette controls write the store and shape the mask rect", async ({ page }) => {
+    await page.evaluate(() => (window as any).Layers.show("vignette"));
+    await openStyleElement(page, "vignette");
+
+    await page.locator("#styleVignetteX").fill("7");
+    await page.locator("#styleVignetteX").dispatchEvent("input");
+    await page.locator("#styleVignetteBlur input[type=number]").fill("12");
+    await page.locator("#styleVignetteBlur").dispatchEvent("input");
+
+    const stored = await page.evaluate(() => (window as any).styles.vignette.options);
+    expect(stored.x).toBe("7%");
+    expect(stored.filter).toBe("blur(12px)");
+    await expect(page.locator("#vignette-rect")).toHaveAttribute("x", "7%");
+
+    // a vignette preset moves both the display attrs and the mask geometry through the store
+    await page.locator("#styleVignettePreset").selectOption("spotlight");
+    const preset = await page.evaluate(() => ({
+      fill: (window as any).styles.vignette.attrs.fill,
+      rx: (window as any).styles.vignette.options.rx
+    }));
+    expect(preset).toEqual({ fill: "#000000", rx: "50%" });
+    await expect(page.locator("#vignette-rect")).toHaveAttribute("rx", "50%");
   });
 
   test("compass shift writes the rose transform through the store", async ({ page }) => {

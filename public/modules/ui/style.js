@@ -637,10 +637,12 @@ styleOceanFill.addEventListener("input", function () {
 });
 
 styleOceanPattern.addEventListener("change", function () {
+  styles.ocean.options.pattern = this.value;
   ensureEl("oceanicPattern").setAttribute("href", this.value);
 });
 
 styleOceanPatternOpacity.addEventListener("input", e => {
+  styles.ocean.options.patternOpacity = +e.target.value;
   ensureEl("oceanicPattern").setAttribute("opacity", e.target.value);
 });
 
@@ -1168,9 +1170,12 @@ styleVignettePreset.addEventListener("change", function () {
   for (const selector in attributes) {
     const el = document.querySelector(selector);
     if (!el) continue;
+    const target = selector === "#vignette" ? styles.vignette.attrs : styles.vignette.options;
     for (const attr in attributes[selector]) {
       const value = attributes[selector][attr];
-      el.setAttribute(attr, value);
+      if (attr in target) target[attr] = value;
+      if (value === null) el.removeAttribute(attr);
+      else el.setAttribute(attr, value);
     }
   }
 
@@ -1195,30 +1200,37 @@ styleVignettePreset.addEventListener("change", function () {
 });
 
 styleVignetteX.addEventListener("input", e => {
+  styles.vignette.options.x = `${e.target.value}%`;
   ensureEl("vignette-rect").setAttribute("x", `${e.target.value}%`);
 });
 
 styleVignetteWidth.addEventListener("input", e => {
+  styles.vignette.options.width = `${e.target.value}%`;
   ensureEl("vignette-rect").setAttribute("width", `${e.target.value}%`);
 });
 
 styleVignetteY.addEventListener("input", e => {
+  styles.vignette.options.y = `${e.target.value}%`;
   ensureEl("vignette-rect").setAttribute("y", `${e.target.value}%`);
 });
 
 styleVignetteHeight.addEventListener("input", e => {
+  styles.vignette.options.height = `${e.target.value}%`;
   ensureEl("vignette-rect").setAttribute("height", `${e.target.value}%`);
 });
 
 styleVignetteRx.addEventListener("input", e => {
+  styles.vignette.options.rx = `${e.target.value}%`;
   ensureEl("vignette-rect").setAttribute("rx", `${e.target.value}%`);
 });
 
 styleVignetteRy.addEventListener("input", e => {
+  styles.vignette.options.ry = `${e.target.value}%`;
   ensureEl("vignette-rect").setAttribute("ry", `${e.target.value}%`);
 });
 
 styleVignetteBlur.addEventListener("input", e => {
+  styles.vignette.options.filter = `blur(${e.target.value}px)`;
   ensureEl("vignette-rect").setAttribute("filter", `blur(${e.target.value}px)`);
 });
 
