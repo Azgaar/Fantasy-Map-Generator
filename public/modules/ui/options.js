@@ -600,6 +600,11 @@ function applyStoredOptions() {
 function randomizeOptions() {
   const randomize = new URL(window.location.href).searchParams.get("options") === "default"; // ignore stored options
 
+  // a loaded map's migrated group registries are map data, not session preferences: re-seed
+  // from the same source boot uses, so new maps get the user's saved groups or the defaults
+  options.burgs.groups = JSON.safeParse(localStorage.getItem("burg-groups")) || Burgs.getDefaultGroups();
+  options.labels = JSON.safeParse(localStorage.getItem("options-labels")) || Labels.getDefaultOptions();
+
   // 'Options' settings
   if (randomize || !stored("points")) changeCellsDensity(4); // reset to default, no need to randomize
   if (randomize || !stored("template")) randomizeHeightmapTemplate();

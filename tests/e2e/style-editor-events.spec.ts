@@ -1,5 +1,8 @@
 import { test, expect, type Page } from "@playwright/test";
 
+declare const options: any;
+declare const regeneratePrompt: (config?: { seed?: string }) => void;
+
 // Real-control regression for the two zoom-family editor handlers: the styleRescaleMarkers change
 // handler and the styleStatesHaloWidth input handler (public/modules/ui/style.js).
 // Both now read/write the store (src/styles/styles.ts) instead of DOM attributes on #markers /
@@ -594,6 +597,32 @@ test.describe("style editor events drive the store", () => {
     );
     expect(anchorStored).toBe(1.8);
     expect(await page.locator(`#anchors > g#${anchorGroup}`).getAttribute("data-size")).toBeNull();
+  });
+
+  test("a new map resets migrated group registries to saved-or-default groups", async ({ page }) => {
+    // simulate what loading an old map's migration leaves behind in the session registries
+    await page.evaluate(() => {
+      options.burgs.groups = [
+        { name: "cities", isDefault: true, active: true, features: {}, preview: "" }
+      ];
+      options.labels.groups = [{ name: "cities", type: "burg", zoom: { min: 1, max: 25 } }];
+    });
+
+    const before = await page.evaluate(() => (window as any).mapId);
+    await page.evaluate(() => regeneratePrompt({ seed: "registry-reset-test" }));
+    await page.waitForFunction(prev => (window as any).mapId !== prev, before, { timeout: 120000 });
+    await page.waitForTimeout(500);
+
+    const after = await page.evaluate(() => ({
+      burgGroupNames: options.burgs.groups.map((g: any) => g.name),
+      labelGroupNames: options.labels.groups.map((g: any) => g.name),
+      burgsInLegacyGroup: (window as any).pack.burgs.filter((b: any) => b?.i && b.group === "cities").length
+    }));
+    expect(after.burgGroupNames).not.toContain("cities");
+    expect(after.burgGroupNames).toContain("town");
+    expect(after.labelGroupNames).not.toContain("cities");
+    expect(after.labelGroupNames).toContain("river");
+    expect(after.burgsInLegacyGroup).toBe(0);
   });
 
   test("compass shift writes the rose transform through the store", async ({ page }) => {
