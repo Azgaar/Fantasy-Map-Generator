@@ -69,7 +69,10 @@ test.describe("style persistence round trips", () => {
     expect(after.dom).toBe(expectedFill);
   });
 
-  test("editor-edit persistence: a DOM-only style write survives a save and load", async ({ page, context }) => {
+  test("a DOM-only style write does not survive a save and load: the store is the authority", async ({
+    page,
+    context
+  }) => {
     await context.clearCookies();
     await page.goto("/");
     await page.evaluate(() => {
@@ -80,7 +83,9 @@ test.describe("style persistence round trips", () => {
     await page.goto("/?seed=style-persistence-editor&width=1280&height=720");
     await waitForMap(page);
 
-    // the style editor writes the DOM directly until step 6; this is that exact staleness class
+    // pre-step-7 saves harvested the DOM, so this exact staleness class used to persist;
+    // now the save serializes the store and the reload applies it back over the rogue value
+    const storeFill = await page.evaluate(() => styles.rivers.attrs.fill);
     await page.evaluate(() => {
       d3.select("#rivers").attr("fill", "#ff0000");
     });
@@ -94,8 +99,8 @@ test.describe("style persistence round trips", () => {
       dom: document.getElementById("rivers")?.getAttribute("fill")
     }));
 
-    expect(after.store).toBe("#ff0000");
-    expect(after.dom).toBe("#ff0000");
+    expect(after.store).toBe(storeFill);
+    expect(after.dom).toBe(storeFill);
   });
 
   test("old-map harvest: a record-less map is harvested into the store and re-saves as store-format", async ({
@@ -292,28 +297,44 @@ test.describe("style persistence round trips", () => {
     expect(afterLoad.haloWidth).toBe(10);
     expect(afterLoad.coordinatesSize).toBe(12);
 
-    // flip both through the store the way the real editor handlers do, then re-run the save-time
-    // harvest directly: with the attrs already stripped, it must keep the flipped values rather
-    // than reharvesting the (now-absent) stale attrs
+    // flip values through the store the way the real editor handlers do, then run a REAL save:
+    // since step 7 the record serializes the store directly, no harvest in between
     await page.evaluate(() => {
       styles.markers.options.rescale = 0;
       styles.states.statesHalo.options.width = 3;
       styles.coordinates.options.fontSize = 21;
-      (window as any).stylesLegacy.syncStylesFromMap();
     });
 
-    const afterSync = await page.evaluate(() => ({
-      rescale: styles.markers.options.rescale,
-      haloWidth: styles.states.statesHalo.options.width,
-      coordinatesSize: styles.coordinates.options.fontSize
-    }));
-
-    expect(afterSync.rescale).toBe(0);
-    expect(afterSync.haloWidth).toBe(3);
-    expect(afterSync.coordinatesSize).toBe(21);
+    const savedAgain = await saveAsDownload(page);
+    const record = JSON.parse(savedAgain.toString("utf8").split("\r\n")[48]);
+    expect(record.markers.options.rescale).toBe(0);
+    expect(record.states.statesHalo.options.width).toBe(3);
+    expect(record.coordinates.options.fontSize).toBe(21);
   });
 
-  test("relief attrs persistence: a DOM-only #terrain write survives a save and load", async ({ page, context }) => {
+  test("save serializes the store: a rogue DOM-only attr does not leak into the record", async ({ page, context }) => {
+    await context.clearCookies();
+    await page.goto("/");
+    await page.evaluate(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
+    await page.goto("/?seed=store-authoritative-save&width=1280&height=720");
+    await waitForMap(page);
+
+    // diverge DOM and store: the store is the authority, the DOM write is rogue
+    await page.evaluate(() => {
+      styles.rivers.attrs.fill = "#0000aa";
+      document.querySelector('[data-layer="rivers"]')!.setAttribute("fill", "#aa0000");
+    });
+
+    const buffer = await saveAsDownload(page);
+    const lines = buffer.toString("utf8").split("\r\n");
+    const record = JSON.parse(lines[48]);
+    expect(record.rivers.attrs.fill).toBe("#0000aa");
+  });
+
+  test("relief attrs persistence: a store write survives a save and load", async ({ page, context }) => {
     await context.clearCookies();
     await page.goto("/");
     await page.evaluate(() => {
@@ -324,12 +345,12 @@ test.describe("style persistence round trips", () => {
     await page.goto("/?seed=style-persistence-relief&width=1280&height=720");
     await waitForMap(page);
 
-    // #terrain attrs are DOM-authoritative until step 6; the style editor writes them by DOM,
-    // not through the store (public/modules/ui/style.js:551-552)
+    // since step 7 the store is the only persistence path: the editor writes it, and a
+    // DOM-only write is presentation that does not outlive the session
     await page.evaluate(() => {
+      styles.relief.attrs.opacity = 0.42;
       d3.select("#terrain").attr("opacity", "0.42");
     });
-    expect(await page.locator("#terrain").getAttribute("opacity")).toBe("0.42");
 
     const buffer = await saveAsDownload(page);
     await reload(page, buffer, "style-persistence-relief-reloaded");
@@ -339,7 +360,7 @@ test.describe("style persistence round trips", () => {
       dom: document.getElementById("terrain")?.getAttribute("opacity")
     }));
 
-    expect(String(after.store)).toBe("0.42");
+    expect(after.store).toBe(0.42);
     expect(after.dom).toBe("0.42");
   });
 });

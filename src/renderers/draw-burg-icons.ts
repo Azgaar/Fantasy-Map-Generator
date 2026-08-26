@@ -30,11 +30,6 @@ export const drawBurgIcons = (): void => {
   TIME && console.timeEnd("drawBurgIcons");
 };
 
-/** drop the icons, keeping the burg groups: they carry the styles edited in the Style editor */
-export const removeBurgIcons = (): void => {
-  for (const icon of Array.from(document.querySelectorAll("#icons use, #icons circle"))) icon.remove();
-};
-
 export const removeBurgIcon = (burgId: number): void => {
   const existingIcon = document.getElementById(`burg${burgId}`);
   if (existingIcon) existingIcon.remove();
