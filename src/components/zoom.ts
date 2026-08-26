@@ -54,10 +54,7 @@ function handleZoomPerFrame(): void {
   if (didScaleChange) {
     Layers.draw("scaleBar");
 
-    if (options.labels.resizeOnZoom) {
-      const fontSize = Math.max(Math.round(((100 + 100 / scale) / 2) * 100) / 100, 1);
-      select("#labels").attr("font-size", `${fontSize}px`);
-    }
+    if (options.labels.resizeOnZoom) applyLabelsZoomSize();
   }
 
   if (didPositionChange) {
@@ -91,9 +88,17 @@ function redrawTracedImage(): void {
 }
 
 /** Rescale zoom-dependent map content to the settled scale. TODO: Legacy, to be reworked */
+/** the #labels container font-size is zoom-derived; anything that rewrites the base
+ * (preset apply, load) re-derives it here */
+function applyLabelsZoomSize(): void {
+  const fontSize = Math.max(Math.round(((100 + 100 / scale) / 2) * 100) / 100, 1);
+  select("#labels").attr("font-size", `${fontSize}px`);
+}
+
 function invokeActiveZooming(): void {
   const isOptimized = ensureEl<HTMLSelectElement>("shapeRendering").value === "optimizeSpeed";
 
+  if (options.labels.resizeOnZoom) applyLabelsZoomSize();
   ViewportLayers.renderNow();
 
   if (!customization && !isOptimized) {

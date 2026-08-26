@@ -672,6 +672,22 @@ test.describe("style editor events drive the store", () => {
     await expect(page.locator("#vignette-rect")).toHaveAttribute("rx", "50%");
   });
 
+  test("a preset switch keeps the zoom-derived label container size", async ({ page }) => {
+    await page.evaluate(() => (window as any).setMapZoom(4));
+    await page.waitForTimeout(300);
+    const zoomed = await page.locator("#labels").getAttribute("font-size");
+    expect(zoomed).not.toBe("100px");
+
+    await page.evaluate(async () => {
+      sessionStorage.setItem("styleChangeConfirmed", "true");
+      await (window as any).changeStyle("pale");
+    });
+    await page.waitForTimeout(200);
+
+    // the store base (100px) must not stick - the container re-derives for the current zoom
+    await expect(page.locator("#labels")).toHaveAttribute("font-size", zoomed!);
+  });
+
   test("compass shift writes the rose transform through the store", async ({ page }) => {
     await page.evaluate(() => (window as any).Layers.show("compass"));
     await openStyleElement(page, "compass");
