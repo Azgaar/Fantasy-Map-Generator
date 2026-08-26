@@ -6,7 +6,7 @@ import { Controllers } from "@/controllers";
 import type { River } from "@/generators/river-generator";
 import type { Point } from "@/generators/voronoi";
 import { speak } from "@/utils";
-import { ensureEl, findEl, getPackPolygon, getPointer, getSegmentId, rand, rn } from "../utils";
+import { ensureEl, findEl, getPointer, getSegmentId, rand, rn } from "../utils";
 
 let selectedRiver: Selection<SVGElement, unknown, HTMLElement, unknown>;
 
@@ -195,7 +195,7 @@ function drawCells(cells: number[]): void {
     .selectAll(`polygon`)
     .data(validCells)
     .join("polygon")
-    .attr("points", (d: number) => getPackPolygon(d, pack));
+    .attr("points", (d: number) => String(Pack.getPolygon(d)));
 }
 
 function dragControlPoint(event: any): void {
@@ -203,13 +203,13 @@ function dragControlPoint(event: any): void {
   const river = getRiver();
 
   const { x: x0, y: y0 } = event;
-  const initCell = findCell(x0, y0);
+  const initCell = Pack.findCell(x0, y0);
 
   let movedToCell: number | null = null;
 
   event.on("drag", function (this: any, dragEvent: any) {
     const { x, y } = dragEvent;
-    const currentCell = findCell(x, y);
+    const currentCell = Pack.findCell(x, y);
 
     movedToCell = initCell !== currentCell ? currentCell! : null;
 
@@ -236,7 +236,7 @@ function dragControlPoint(event: any): void {
 function redrawRiver(): void {
   const river = getRiver();
   river.points = select("#controlPoints").selectAll("*").data() as Point[];
-  river.cells = river.points.map(([x, y]) => findCell(x, y)!);
+  river.cells = river.points.map(([x, y]) => Pack.findCell(x, y)!);
 
   const meanderedPoints = Rivers.addMeandering(river.cells, river.points);
   const path = Rivers.getRiverPath(meanderedPoints, river.widthFactor, river.sourceWidth);
@@ -308,7 +308,7 @@ function changeWidthFactor(this: HTMLInputElement): void {
 }
 
 function showRiverElevationProfile(): void {
-  const points = (select("#controlPoints").selectAll("*").data() as Point[]).map(([x, y]) => findCell(x, y)!);
+  const points = (select("#controlPoints").selectAll("*").data() as Point[]).map(([x, y]) => Pack.findCell(x, y)!);
   const river = getRiver();
   const riverLen = rn(river.length * distanceScale);
   void Controllers.ElevationProfile.open(points, riverLen, true);

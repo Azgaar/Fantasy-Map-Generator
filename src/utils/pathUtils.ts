@@ -82,8 +82,22 @@ const restorePath = (exit: number, start: number, from: number[]): number[] => {
  * @param {boolean} [options.waterGap=false] - Whether to generate water gap paths for each type.
  * @returns {object} An object containing isolines for each type based on the specified options.
  */
+/** both the grid and the packed graph are valid inputs, only the fields below are used */
+type IsolineGraph = {
+  cells: {
+    i: Iterable<number> & ArrayLike<number>;
+    c: number[][];
+    v: number[][];
+    f: ArrayLike<number>;
+    h: ArrayLike<number>;
+    b: ArrayLike<number | boolean>;
+  };
+  vertices: Vertices;
+  features: { type: string; shoreline?: number[] }[];
+};
+
 export const getIsolines = (
-  { cells, vertices, features }: PackedGraph,
+  { cells, vertices, features }: IsolineGraph,
   getType: (cellId: number) => string | number | null,
   options: {
     polygons?: boolean;

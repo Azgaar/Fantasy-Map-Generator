@@ -5,7 +5,7 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
 import { speak } from "@/utils";
-import { ensureEl, findEl, getPackPolygon, getPointer, getSegmentId, rn } from "../utils";
+import { ensureEl, findEl, getPointer, getSegmentId, rn } from "../utils";
 
 let selectedRoute: Selection<SVGElement, unknown, HTMLElement, unknown>;
 
@@ -146,7 +146,7 @@ function drawCells(points: number[][]): void {
     .selectAll("polygon")
     .data(points)
     .join("polygon")
-    .attr("points", (p: number[]) => getPackPolygon(p[2], pack));
+    .attr("points", (p: number[]) => String(Pack.getPolygon(p[2])));
 }
 
 function dragControlPoint(event: any): void {
@@ -160,7 +160,7 @@ function dragControlPoint(event: any): void {
 
     const x = rn(dragEvent.x, 2);
     const y = rn(dragEvent.y, 2);
-    const cellId = findCell(x, y);
+    const cellId = Pack.findCell(x, y);
 
     this.__data__ = route.points[pointIndex] = [x, y, cellId!];
     redrawRoute(route);
@@ -168,7 +168,7 @@ function dragControlPoint(event: any): void {
   });
 
   event.on("end", () => {
-    const movedToCell = findCell(event.x, event.y);
+    const movedToCell = Pack.findCell(event.x, event.y);
 
     if (movedToCell !== initCell) {
       const prev = route.points[pointIndex - 1];
@@ -196,7 +196,7 @@ function redrawRoute(route: Route): void {
 function addControlPoint(this: any, event: any): void {
   const route = getRoute();
   const [x, y] = getPointer(event, this);
-  const cellId = findCell(x, y);
+  const cellId = Pack.findCell(x, y);
 
   const point = [rn(x, 2), rn(y, 2), cellId!];
   const isNewCell = !route.points.some(p => p[2] === cellId);

@@ -1,7 +1,8 @@
 import Alea from "alea";
 import { range as d3Range, leastIndex, mean } from "d3";
 import { heightmapTemplates } from "@/data/heightmap-templates";
-import { createTypedArray, ensureEl, findGridCell, getNumberInRange, lim, minmax, P, rand } from "../utils";
+import type { GridGraph } from "@/types/GridGraph";
+import { ensureEl, getNumberInRange, lim, minmax, P, rand } from "../utils";
 
 declare global {
   var HeightmapGenerator: HeightmapModule;
@@ -70,14 +71,9 @@ class HeightmapModule {
     return rand(min * length, max * length);
   }
 
-  setGraph(graph: any) {
-    const { cellsDesired, cells, points } = graph;
-    this.heights = cells.h
-      ? Uint8Array.from(cells.h)
-      : (createTypedArray({
-          maxValue: 100,
-          length: points.length
-        }) as Uint8Array);
+  setGraph(graph: GridGraph) {
+    const { cellsDesired, cells } = graph;
+    this.heights = Uint8Array.from(cells.h);
     this.blobPower = this.getBlobPower(cellsDesired);
     this.linePower = this.getLinePower(cellsDesired);
     this.grid = graph;
@@ -95,7 +91,7 @@ class HeightmapModule {
         const x = this.getPointInRange(rangeX, graphWidth);
         const y = this.getPointInRange(rangeY, graphHeight);
         if (x === undefined || y === undefined) return;
-        start = findGridCell(x, y, this.grid);
+        start = Grid.findCell(x, y, this.grid);
         limit++;
       } while (this.heights[start] + h > 90 && limit < 50);
       change[start] = h;
@@ -131,7 +127,7 @@ class HeightmapModule {
         const x = this.getPointInRange(rangeX, graphWidth);
         const y = this.getPointInRange(rangeY, graphHeight);
         if (x === undefined || y === undefined) return;
-        start = findGridCell(x, y, this.grid);
+        start = Grid.findCell(x, y, this.grid);
         limit++;
       } while (this.heights[start] < 20 && limit < 50);
 
@@ -216,8 +212,8 @@ class HeightmapModule {
           limit++;
         } while ((dist < graphWidth / 8 || dist > graphWidth / 3) && limit < 50);
 
-        startCellId = findGridCell(startX, startY, this.grid);
-        endCellId = findGridCell(endX, endY, this.grid);
+        startCellId = Grid.findCell(startX, startY, this.grid);
+        endCellId = Grid.findCell(endX, endY, this.grid);
       }
 
       const range = getRange(startCellId as number, endCellId as number);
@@ -319,7 +315,7 @@ class HeightmapModule {
         do {
           startX = this.getPointInRange(rangeX, graphWidth) as number;
           startY = this.getPointInRange(rangeY, graphHeight) as number;
-          startCellId = findGridCell(startX, startY, this.grid);
+          startCellId = Grid.findCell(startX, startY, this.grid);
           limit++;
         } while (this.heights[startCellId] < 20 && limit < 50);
 
@@ -331,7 +327,7 @@ class HeightmapModule {
           limit++;
         } while ((dist < graphWidth / 8 || dist > graphWidth / 2) && limit < 50);
 
-        endCellId = findGridCell(endX, endY, this.grid);
+        endCellId = Grid.findCell(endX, endY, this.grid);
       }
 
       const range = getRange(startCellId as number, endCellId as number);
@@ -396,8 +392,8 @@ class HeightmapModule {
       ? graphHeight - 5
       : Math.floor(graphHeight - startY - graphHeight * 0.1 + Math.random() * graphHeight * 0.2);
 
-    const start = findGridCell(startX, startY, this.grid);
-    const end = findGridCell(endX, endY, this.grid);
+    const start = Grid.findCell(startX, startY, this.grid);
+    const end = Grid.findCell(endX, endY, this.grid);
 
     const getRange = (cur: number, end: number) => {
       const range = [];

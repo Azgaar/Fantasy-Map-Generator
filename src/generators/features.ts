@@ -1,15 +1,6 @@
 import Alea from "alea";
 import { polygonArea } from "d3";
-import {
-  clipPoly,
-  connectVertices,
-  createTypedArray,
-  distanceSquared,
-  isLand,
-  isWater,
-  rn,
-  TYPED_ARRAY_MAX
-} from "../utils";
+import { clipPoly, connectVertices, distanceSquared, isLand, isWater, rn, TYPED_ARRAY_MAX } from "../utils";
 
 declare global {
   var Features: FeatureModule;
@@ -146,7 +137,7 @@ class FeatureModule {
     });
     grid.cells.t = distanceField;
     grid.cells.f = featureIds;
-    grid.features = [0, ...features];
+    grid.features = [0 as unknown as GridFeature, ...features];
   }
 
   /**
@@ -252,10 +243,7 @@ class FeatureModule {
 
     const distanceField = new Int8Array(packCellsNumber); // pack.cells.t
     const featureIds = new Uint16Array(packCellsNumber); // pack.cells.f
-    const haven = createTypedArray({
-      maxValue: packCellsNumber,
-      length: packCellsNumber
-    }); // haven: opposite water cell
+    const haven = new Uint32Array(packCellsNumber); // haven: opposite water cell
     const harbor = new Uint8Array(packCellsNumber); // harbor: number of adjacent water cells
     const features: Feature[] = [];
 

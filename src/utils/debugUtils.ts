@@ -1,7 +1,6 @@
 import { curveBundle, line, max, min, select } from "d3";
 import type { Point } from "../generators/voronoi";
 import { C_12 } from "./colorUtils";
-import { getGridPolygon } from "./graphUtils";
 import { normalize } from "./numberUtils";
 import { round } from "./stringUtils";
 
@@ -38,7 +37,7 @@ export const drawPolygons = (data: number[], terrs: any, grid: any): void => {
     .data(data)
     .enter()
     .append("polygon")
-    .attr("points", (_d: number, i: number) => getGridPolygon(i, grid))
+    .attr("points", (_d: number, i: number) => String(Grid.getPolygon(i, grid)))
     .attr("fill", (d: number) => scheme(d))
     .attr("stroke", (d: number) => scheme(d));
 };

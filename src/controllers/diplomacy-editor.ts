@@ -305,7 +305,7 @@ function showStateRelations(): void {
 
 function selectStateOnMapClick(this: SVGElement, event: any): void {
   const point = getPointer(event, this);
-  const i = findCell(point[0], point[1])!;
+  const i = Pack.findCell(point[0], point[1])!;
   const state = pack.cells.state[i];
   if (!state || !pack.states[state] || pack.states[state].removed || selectedDiplomacyId === state) return;
 

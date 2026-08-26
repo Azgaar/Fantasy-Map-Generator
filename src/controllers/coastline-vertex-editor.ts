@@ -7,7 +7,7 @@ import { Coastline } from "@/generators/coastline-generator";
 import type { Feature } from "@/generators/features";
 import { GraphOverride } from "@/generators/graph-override";
 import { getArea, getAreaUnit } from "@/utils";
-import { ensureEl, findEl, getPackPolygon, rn, si, unique } from "../utils";
+import { ensureEl, findEl, rn, si, unique } from "../utils";
 
 let selectedCoastline: Selection<SVGElement, unknown, HTMLElement, unknown>;
 
@@ -75,7 +75,7 @@ function drawCoastlineVertices(): void {
     .data(neibCells)
     .enter()
     .append("polygon")
-    .attr("points", (d: number) => getPackPolygon(d, pack))
+    .attr("points", (d: number) => String(Pack.getPolygon(d)))
     .attr("data-c", (d: number) => d);
 
   select<SVGGElement, unknown>("#debug")
@@ -123,7 +123,7 @@ function handleVertexDrag(
   select("#debug")
     .select("#vertices")
     .selectAll<SVGPolygonElement, number>("polygon")
-    .attr("points", d => getPackPolygon(d, pack));
+    .attr("points", d => String(Pack.getPolygon(d)));
 }
 
 function handleVertexDragEnd(): void {
