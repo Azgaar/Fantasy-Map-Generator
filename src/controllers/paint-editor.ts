@@ -12,7 +12,7 @@ import {
   removePaintOverlayCells,
   updatePaintOverlay
 } from "@/renderers/overlays/paint-overlay";
-import { ensureEl, findAllCellsInRadius, getPointer } from "@/utils";
+import { ensureEl, getPointer } from "@/utils";
 
 export interface PaintEditorItem {
   id: number;
@@ -176,7 +176,7 @@ function handleItemChange(event: Event): void {
 
 function handleMapClick(this: SVGElement, event: MouseEvent): void {
   const [x, y] = getPointer(event, this);
-  const cell = findCell(x, y);
+  const cell = Pack.findCell(x, y);
   if (cell === undefined) return;
 
   const value = getCurrentValues(cell).at(-1);
@@ -194,7 +194,7 @@ function handleDragStart(this: SVGElement, event: D3DragEvent<SVGElement, unknow
     const [x, y] = getPointer(dragEvent, this);
     moveCircle(x, y, radius);
 
-    const found = radius > 5 ? findAllCellsInRadius(x, y, radius, pack) : [findCell(x, y)];
+    const found = radius > 5 ? Pack.findAll(x, y, radius) : [Pack.findCell(x, y)];
     const cells = found.filter((cell): cell is number => cell !== undefined);
     const selectedId = getState().selectedId;
     if (!cells.length || selectedId === undefined || !paintCells(cells, selectedId, historyEntry) || recorded) return;
@@ -208,7 +208,7 @@ function handlePointerMove(this: SVGElement, event: MouseEvent | TouchEvent): vo
   const [x, y] = getPointer(event, this);
   moveCircle(x, y, getRadius());
 
-  const cell = findCell(x, y);
+  const cell = Pack.findCell(x, y);
   if (cell === undefined) return;
 
   const { itemsById } = getState();

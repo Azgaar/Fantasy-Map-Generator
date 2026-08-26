@@ -97,6 +97,8 @@ test.describe("map layers", () => {
     expect(html).toMatchSnapshot("temperature.html");
   });
 
+  // The layer is off by default and its content is render output, so the group is empty here.
+  // Wind arrows and circles are covered by layer-teardown.spec.ts, which turns the layer on.
   test("precipitation layer", async () => {
     const prec = sharedPage.locator("#prec");
     await expect(prec).toBeAttached();

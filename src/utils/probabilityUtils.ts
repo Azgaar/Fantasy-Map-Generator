@@ -61,11 +61,11 @@ export const Pint = (float: number): number => {
 };
 
 /**
- * Returns a random element from an array.
- * @param {Array} array - the array to pick from
- * @return {any} a random element from the array
+ * Returns a random element from an array or any other indexed collection, a typed array included.
+ * @param {ArrayLike} array - the collection to pick from
+ * @return {any} a random element from the collection
  */
-export const ra = <T>(array: T[]): T => {
+export const ra = <T>(array: ArrayLike<T>): T => {
   return array[Math.floor(Math.random() * array.length)];
 };
 

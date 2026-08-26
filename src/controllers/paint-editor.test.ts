@@ -3,6 +3,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PaintEditorOptions } from "./paint-editor";
 import { PaintEditor } from "./paint-editor";
+import "@/generators/pack-generator"; // registers the Pack global the editor finds cells with
 
 vi.mock("@/components/viewbox-events", () => ({ applyDefaultViewboxEvents: vi.fn() }));
 vi.mock("@/components/dialog/dialog-helpers", async importOriginal => ({
@@ -43,7 +44,7 @@ beforeEach(() => {
   document.body.innerHTML =
     '<div id="dialogs"><div id="parentDialog" class="dialog"></div></div><div id="tooltip"></div><svg><g id="viewbox"></g><g id="debug"></g></svg>';
   globalThis.customization = 0;
-  globalThis.findCell = vi.fn(() => 3);
+  vi.spyOn(Pack, "findCell").mockReturnValue(3);
   globalThis.pack = {
     cells: {
       h: new Uint8Array(4).fill(30),

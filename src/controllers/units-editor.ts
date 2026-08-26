@@ -67,7 +67,7 @@ function changeHeightUnit(this: HTMLSelectElement): void {
 }
 
 function changeHeightExponent(): void {
-  calculateTemperatures();
+  Temperature.generate();
   Layers.draw("temperature");
 }
 
@@ -108,7 +108,7 @@ function restoreDefaultUnits(): void {
   // height exponent
   heightExponentInput.value = "1.8";
   localStorage.removeItem("heightExponent");
-  calculateTemperatures();
+  Temperature.generate();
 
   Layers.draw("scaleBar");
 

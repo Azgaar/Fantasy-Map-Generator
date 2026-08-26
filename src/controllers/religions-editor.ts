@@ -726,7 +726,7 @@ function religionCenterDrag(this: any, event: any): void {
   function handleDrag(this: any, dragEvent: any) {
     const { x, y } = dragEvent;
     this.setAttribute("transform", `translate(${x0 + x},${y0 + y})`);
-    const cell = findCell(x, y);
+    const cell = Pack.findCell(x, y);
     if (cell == null || pack.cells.h[cell] < 20) return; // ignore dragging on water
 
     pack.religions[religionId].center = cell;
@@ -878,7 +878,7 @@ function exitAddReligionMode(): void {
 
 function addReligion(this: SVGElement, event: MouseEvent): void {
   const [x, y] = getPointer(event, this);
-  const center = findCell(x, y)!;
+  const center = Pack.findCell(x, y)!;
   if (pack.cells.h[center] < 20) {
     tip("You cannot place religion center into the water. Please click on a land cell", false, "error");
     return;

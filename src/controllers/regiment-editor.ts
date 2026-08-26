@@ -332,7 +332,7 @@ function toggleAdd(): void {
 function addRegimentOnClick(this: SVGGElement, event: MouseEvent): void {
   if (!selectedRegiment) return;
   const point = getPointer(event, this);
-  const cell = findCell(point[0], point[1]);
+  const cell = Pack.findCell(point[0], point[1]);
   if (cell === undefined) return;
   const [x, y] = pack.cells.p[cell];
   const state = +selectedRegiment.dataset.state!;

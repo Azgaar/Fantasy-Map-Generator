@@ -22,7 +22,7 @@ function toggle(): void {
 
 function addOnClick(event: MouseEvent): void {
   const point = pointer(event, event.currentTarget as SVGGElement);
-  const cell = findCell(point[0], point[1]);
+  const cell = Pack.findCell(point[0], point[1]);
   if (cell === undefined) return;
   if (pack.cells.r[cell]) {
     tip("There is already a river here", false, "error");

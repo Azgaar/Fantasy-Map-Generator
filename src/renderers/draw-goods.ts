@@ -1,7 +1,6 @@
 import { select } from "d3";
 import type { Good } from "../generators/goods-generator";
 import { normalize, rn } from "../utils";
-import { getPackPolygon } from "../utils/graphUtils";
 
 const PLATE_ICON = 3;
 const PLATE_FONT = 3.5;
@@ -52,7 +51,7 @@ function buildGoodsCellsContent(displayedGoods: Set<number>): string {
   let html = "";
   for (const [cellId, { produced, total }] of cellTotals) {
     const opacity = 0.1 + 0.9 * normalize(total, 0, maxTotal);
-    const points = getPackPolygon(cellId, pack).join(" ");
+    const points = Pack.getPolygon(cellId).join(" ");
     for (const [goodId, amount] of produced) {
       if (amount <= 0) continue;
       const good = Goods.get(goodId);

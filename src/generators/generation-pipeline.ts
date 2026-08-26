@@ -1,36 +1,20 @@
-// Canonical generation sequence, as a declared pipeline instead of a hand-written call list.
-// See docs/architecture/generation-pipeline.md.
-
+// Canonical generation sequence, as a declared pipeline instead of a hand-written call list. See docs/architecture/generation-pipeline.md.
 import { Pipeline, type PipelineStep } from "@/generators/pipeline";
-import type { PackedGraph } from "@/types/PackedGraph";
-import { generateGrid, shouldRegenerateGrid } from "@/utils";
+import { Population } from "@/generators/population-generator";
+import type { GridGraph } from "@/types/GridGraph";
 
-const pipelineSteps: PipelineStep<string, GenerationContext>[] = [
-  {
-    id: "grid",
-    run: context => {
-      if (shouldRegenerateGrid(grid, context.seed, graphWidth, graphHeight)) {
-        grid = context.graph ?? generateGrid(seed, graphWidth, graphHeight);
-      } else {
-        delete grid.cells.h;
-      }
-    }
-  },
-  {
-    id: "heightmap",
-    run: async () => {
-      grid.cells.h = await HeightmapGenerator.generate(grid);
-    }
-  },
+const generationPipelineSteps = [
+  { id: "grid", run: ({ seed: expectedSeed, graph }) => Grid.prepare(expectedSeed, graph) },
+  { id: "heightmap", run: () => HeightmapGenerator.generate() },
   { id: "markupGrid", run: () => Features.markupGrid() },
-  { id: "depressionLakes", run: () => addLakesInDeepDepressions() },
-  { id: "nearSeaLakes", run: () => openNearSeaLakes() },
-  { id: "mapSize", run: () => defineMapSize() },
-  { id: "mapCoordinates", run: () => calculateMapCoordinates() },
-  { id: "temperatures", run: () => calculateTemperatures() },
-  { id: "precipitation", run: () => generatePrecipitation() },
-  { id: "clearPack", run: () => (pack = {} as PackedGraph) },
-  { id: "regraph", run: () => reGraph() },
+  { id: "depressionLakes", run: () => Grid.addDeepDepressionLakes() },
+  { id: "nearSeaLakes", run: () => Grid.openNearSeaLakes() },
+  { id: "mapSize", run: () => Coordinates.defineMapSize() },
+  { id: "mapCoordinates", run: () => Coordinates.calculate() },
+  { id: "temperatures", run: () => Temperature.generate() },
+  { id: "precipitation", run: () => Precipitation.generate() },
+  { id: "clearPack", run: () => Pack.clear() },
+  { id: "regraph", run: () => Pack.generate() },
   { id: "markupPack", run: () => Features.markupPack() },
   { id: "defaultRuler", run: () => Measurers.createDefaultRuler() },
   { id: "rivers", run: () => Rivers.generate() },
@@ -38,7 +22,7 @@ const pipelineSteps: PipelineStep<string, GenerationContext>[] = [
   { id: "featureGroups", run: () => Features.defineGroups() },
   { id: "ice", run: () => Ice.generate() },
   { id: "goods", run: () => Goods.generate() },
-  { id: "rankCells", run: () => rankCells() },
+  { id: "rankCells", run: () => Population.rankCells() },
   { id: "cultures", run: () => Cultures.generate() },
   { id: "culturesExpand", run: () => Cultures.expand() },
   { id: "burgs", run: () => Burgs.generate() },
@@ -60,30 +44,33 @@ const pipelineSteps: PipelineStep<string, GenerationContext>[] = [
   { id: "zones", run: () => Zones.generate() },
   { id: "addedLabels", run: () => AddedLabels.initiate() },
   { id: "mapName", run: () => Names.getMapName(false) }
-];
+] as const satisfies PipelineStep<string, GenerationContext>[];
 
-type PipelineStepId = (typeof pipelineSteps)[number]["id"];
+type GenerationPipelineStepId = (typeof generationPipelineSteps)[number]["id"];
 
 type GenerationContext = {
-  seed?: string; // requested seed, if the caller wants a specific one; undefined for "any is fine"
-  graph?: unknown; // pre-created grid (e.g. loaded from a save) to use instead of generating one
+  seed?: string; // seed if the caller wants a specific one
+  graph?: GridGraph; // pre-created grid to use instead of generating one
 };
-export const GenerationPipeline = new Pipeline<PipelineStepId, GenerationContext>("Generation Pipeline", pipelineSteps);
+export const GenerationPipeline = new Pipeline<GenerationPipelineStepId, GenerationContext>(
+  "Generation Pipeline",
+  generationPipelineSteps
+);
 
-const erasePipelineSteps: PipelineStep<PipelineStepId, EraseContext>[] = [
+const erasePipelineSteps = [
   { id: "markupGrid", run: () => Features.markupGrid() },
-  { id: "depressionLakes", run: ({ erosion }) => erosion && addLakesInDeepDepressions() },
-  { id: "nearSeaLakes", run: ({ erosion }) => erosion && openNearSeaLakes() },
-  { id: "temperatures", run: () => calculateTemperatures() },
-  { id: "precipitation", run: () => generatePrecipitation() },
-  { id: "regraph", run: () => reGraph() },
+  { id: "depressionLakes", run: ({ erosion }) => erosion && Grid.addDeepDepressionLakes() },
+  { id: "nearSeaLakes", run: ({ erosion }) => erosion && Grid.openNearSeaLakes() },
+  { id: "temperatures", run: () => Temperature.generate() },
+  { id: "precipitation", run: () => Precipitation.generate() },
+  { id: "regraph", run: () => Pack.generate() },
   { id: "markupPack", run: () => Features.markupPack() },
   { id: "rivers", run: ({ erosion }) => Rivers.generate(erosion) },
   { id: "biomes", run: () => Biomes.define() },
   { id: "featureGroups", run: () => Features.defineGroups() },
   { id: "ice", run: () => Ice.generate() },
   { id: "goods", run: () => Goods.generate() },
-  { id: "rankCells", run: () => rankCells() },
+  { id: "rankCells", run: () => Population.rankCells() },
   { id: "cultures", run: () => Cultures.generate() },
   { id: "culturesExpand", run: () => Cultures.expand() },
   { id: "burgs", run: () => Burgs.generate() },
@@ -103,13 +90,16 @@ const erasePipelineSteps: PipelineStep<PipelineStepId, EraseContext>[] = [
   { id: "military", run: () => Military.generate() },
   { id: "markers", run: () => Markers.generate() },
   { id: "zones", run: () => Zones.generate() }
-];
+] as const satisfies PipelineStep<GenerationPipelineStepId, EraseContext>[];
 
 type EraseContext = { erosion: boolean };
-export const ErasePipeline = new Pipeline<PipelineStepId, EraseContext>("Erase Heightmap", erasePipelineSteps);
+export const ErasePipeline = new Pipeline<GenerationPipelineStepId, EraseContext>(
+  "Erase Heightmap",
+  erasePipelineSteps
+);
 
 declare global {
   // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy JS
-  var GenerationPipeline: import("@/generators/pipeline").Pipeline<PipelineStepId, GenerationContext>;
+  var GenerationPipeline: import("@/generators/pipeline").Pipeline<GenerationPipelineStepId, GenerationContext>;
 }
 window.GenerationPipeline = GenerationPipeline;

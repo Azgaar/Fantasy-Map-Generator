@@ -11,21 +11,7 @@ import { GraphOverride } from "@/generators/graph-override";
 import { removeEmblem } from "@/renderers/draw-emblems";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { downloadFile, getFileName, uploadFile } from "@/utils";
-import {
-  ensureEl,
-  findEl,
-  findGridAll,
-  findGridCell,
-  generateSeed,
-  getGridPolygon,
-  getPointer,
-  last,
-  lim,
-  link,
-  minmax,
-  rn,
-  unique
-} from "../utils";
+import { ensureEl, findEl, generateSeed, getPointer, last, lim, link, minmax, rn, unique } from "../utils";
 import type { PromptOptions } from "../utils/commonUtils";
 
 // Legacy app prompt shadows the DOM built-in (same pattern as burg-editor / route-groups-editor). TODO: replace with dialog
@@ -399,7 +385,7 @@ function enterHeightmapEditMode(mode: string, tool?: string): void {
 
 function moveCursor(this: SVGElement, event: any): void {
   const [x, y] = getPointer(event, this);
-  const cell = findGridCell(x, y, grid);
+  const cell = Grid.findCell(x, y);
   ensureEl("heightmapInfoX").innerHTML = String(rn(x));
   ensureEl("heightmapInfoY").innerHTML = String(rn(y));
   ensureEl("heightmapInfoCell").innerHTML = String(cell);
@@ -595,10 +581,10 @@ function restoreRiskedData(): void {
   }
 
   Features.markupGrid();
-  if (erosionAllowed) addLakesInDeepDepressions();
-  calculateTemperatures();
-  generatePrecipitation();
-  reGraph();
+  if (erosionAllowed) Grid.addDeepDepressionLakes();
+  Temperature.generate();
+  Precipitation.generate();
+  Pack.generate();
   Features.markupPack();
   GraphOverride.restore(); // the graph is rebuilt, re-apply user edits that still fit it
 
@@ -707,7 +693,7 @@ function restoreRiskedData(): void {
 
   for (const c of pack.cultures) {
     if (!c.i || c.removed) continue;
-    c.center = findCell(c.x!, c.y!)!;
+    c.center = Pack.findCell(c.x!, c.y!)!;
   }
 
   States.getPoles();
@@ -794,16 +780,15 @@ function getColor(value: number, scheme = getColorScheme("bright")): string {
 
 // draw or update heightmap
 function mockHeightmap(): void {
-  const data: number[] = ensureEl<HTMLInputElement>("renderOcean").checked
-    ? grid.cells.i
-    : grid.cells.i.filter((i: number) => grid.cells.h[i] >= 20);
+  const cellIds = Array.from(grid.cells.i);
+  const data = ensureEl<HTMLInputElement>("renderOcean").checked ? cellIds : cellIds.filter(i => grid.cells.h[i] >= 20);
 
   select<SVGElement, unknown>("#viewbox")
     .select("#heights")
     .selectAll<SVGPolygonElement, number>("polygon")
     .data<number>(data)
     .join("polygon")
-    .attr("points", (d: number) => getGridPolygon(d, grid))
+    .attr("points", (d: number) => String(Grid.getPolygon(d)))
     .attr("id", (d: number) => `cell${d}`)
     .attr("fill", (d: number) => getColor(grid.cells.h[d]));
 }
@@ -823,7 +808,7 @@ function mockHeightmapSelection(selection: number[]): void {
       cell = select<SVGElement, unknown>("#viewbox")
         .select("#heights")
         .append("polygon")
-        .attr("points", getGridPolygon(i, grid))
+        .attr("points", String(Grid.getPolygon(i)))
         .attr("id", `cell${i}`);
     }
     cell.attr("fill", getColor(grid.cells.h[i]));
@@ -1098,7 +1083,7 @@ function toggleBrushMode(event: Event): void {
 
 function placeLinearFeature(this: SVGElement, event: any): void {
   const [x, y] = getPointer(event, this);
-  const toCell = findGridCell(x, y, grid);
+  const toCell = Grid.findCell(x, y);
 
   const lineCircle = select("#debug").selectAll(".lineCircle");
   if (!lineCircle.size()) {
@@ -1156,7 +1141,7 @@ function placeLinearFeature(this: SVGElement, event: any): void {
 
 function applyFillBrush(this: SVGElement, event: any): void {
   const [x, y] = getPointer(event, this);
-  const start = findGridCell(x, y, grid);
+  const start = Grid.findCell(x, y);
   const startHeight = grid.cells.h[start];
   const isWaterFill = startHeight < 20;
   const MIN_FILL_CELLS = 3;
@@ -1268,13 +1253,13 @@ function applyConeToSelection(selection: number[], isWaterFill: boolean, targetH
 function dragBrush(this: SVGElement, event: any): void {
   const r = ensureEl<HTMLInputElement>("heightmapBrushRadius").valueAsNumber;
   const [startX, startY] = getPointer(event, this);
-  const start = findGridCell(startX, startY, grid); // fixed once per drag: Align replicates this cell's height
+  const start = Grid.findCell(startX, startY); // fixed once per drag: Align replicates this cell's height
 
   const applyBrush = (pointerEvent: any) => {
     const p = getPointer(pointerEvent, this);
     moveCircle(p[0], p[1], r);
 
-    const inRadius = findGridAll(p[0], p[1], r, grid);
+    const inRadius = Grid.findAll(p[0], p[1], r);
     let selection = inRadius;
     const cellTypeFilter = ensureEl<HTMLSelectElement>("cellTypeFilter").value;
     if (cellTypeFilter === "land") {
@@ -1394,14 +1379,14 @@ function rescaleWithCondition(): void {
     HeightmapGenerator.modify(range, 0, 1, operand);
   }
 
-  grid.cells.h = HeightmapGenerator.getHeights();
+  grid.cells.h = HeightmapGenerator.getHeights()!;
   updateHeightmap();
 }
 
 function smoothAllHeights(): void {
   HeightmapGenerator.setGraph(grid);
   HeightmapGenerator.smooth(4, 1.5);
-  grid.cells.h = HeightmapGenerator.getHeights();
+  grid.cells.h = HeightmapGenerator.getHeights()!;
   updateHeightmap();
 }
 
@@ -1694,11 +1679,11 @@ function executeTemplate(): void {
     else if (type === "Multiply") HeightmapGenerator.modify(dist, 0, +count);
     else if (type === "Smooth") HeightmapGenerator.smooth(+count);
 
-    grid.cells.h = HeightmapGenerator.getHeights();
+    grid.cells.h = HeightmapGenerator.getHeights()!;
     updateHistory("noStat"); // update history on every step
   }
 
-  grid.cells.h = HeightmapGenerator.getHeights();
+  grid.cells.h = HeightmapGenerator.getHeights()!;
   updateStatistics();
   mockHeightmap();
   if (document.getElementById("preview")) drawHeightmapPreview();
@@ -1835,9 +1820,9 @@ function heightsFromImage(count: number): void {
   select<SVGElement, unknown>("#viewbox")
     .select("#heights")
     .selectAll<SVGPolygonElement, number>("polygon")
-    .data<number>(grid.cells.i as number[])
+    .data<number>(Array.from(grid.cells.i))
     .join("polygon")
-    .attr("points", (d: number) => getGridPolygon(d, grid))
+    .attr("points", (d: number) => String(Grid.getPolygon(d)))
     .attr("id", (d: number) => `cell${d}`)
     .attr("fill", (d: number) => `rgb(${data[d * 4]}, ${data[d * 4 + 1]}, ${data[d * 4 + 2]})`)
     .on("click", mapClicked);
