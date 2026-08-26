@@ -66,6 +66,40 @@ export function applyLayersPreset(): void {
   Layers.restore({ order: Layers.state.order, active: presets[name] });
 }
 
+/** Apply ?preset= or ?layers= from the URL. Layer names are canonical LayerId values and layers takes precedence. */
+export function applyURLLayers(params: URLSearchParams): void {
+  const layersParam = params.get("layers");
+  const presetParam = params.get("preset");
+  if (!layersParam && !presetParam) return;
+
+  if (layersParam) {
+    const ids = layersParam
+      .split(",")
+      .map(s => s.trim())
+      .filter(id => Layers.has(id));
+    Layers.set(ids);
+    return;
+  }
+
+  const name = presetParam && findPresetName(presetParam);
+  if (!name) return;
+
+  setPresetName(name);
+  Layers.set(presets[name]);
+}
+
+/** Find a preset by its case-insensitive key or displayed name. */
+function findPresetName(param: string): string | undefined {
+  const needle = param.toLowerCase().trim();
+  const byKey = Object.keys(presets).find(key => key.toLowerCase() === needle);
+  if (byKey) return byKey;
+
+  const option = Array.from(ensureEl<HTMLSelectElement>("layersPreset").options).find(
+    option => option.text.toLowerCase() === needle
+  );
+  return option?.value && option.value in presets ? option.value : undefined;
+}
+
 function setPresetName(name: string): void {
   ensureEl<HTMLSelectElement>("layersPreset").value = name;
   localStorage.setItem("preset", name);
@@ -137,7 +171,9 @@ Layers.subscribe(highlightCurrentPreset);
 declare global {
   interface Window {
     applyLayersPreset: typeof applyLayersPreset;
+    applyURLLayers: typeof applyURLLayers;
   }
 }
 
 window.applyLayersPreset = applyLayersPreset;
+window.applyURLLayers = applyURLLayers;
