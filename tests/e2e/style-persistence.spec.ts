@@ -154,6 +154,51 @@ test.describe("style persistence round trips", () => {
     expect(parsed).toHaveProperty("map");
   });
 
+  test("record-less burg and anchor groups: the map's own styling reaches the store and the record", async ({
+    page,
+    context
+  }) => {
+    await context.clearCookies();
+    await page.goto("/");
+    await page.evaluate(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
+
+    // a pre-1.9x-dialect map: same-named groups under #burgIcons and #anchors (by design, not
+    // duplicates), styled via the bare `size` attr. The 1.145 dedupe migration must keep both,
+    // and the record-less harvest must carry them into the store instead of the boot defaults.
+    const fixture = fs.readFileSync(path.join(__dirname, "../fixtures/1.112.1.map"));
+    const lines = fixture.toString("utf8").split("\r\n");
+    lines[5] = lines[5]
+      .replace('<g id="burgIcons"/>', '<g id="burgIcons"><g id="cities" fill="#ee2222" size="0.9"><use></use></g></g>')
+      .replace('<g id="anchors"/>', '<g id="anchors"><g id="cities" fill="#22ee22" size="2.2"><use></use></g></g>');
+    expect(lines[5], "burg group injection must match the serialized svg").toContain('fill="#ee2222"');
+    expect(lines[5], "anchor group injection must match the serialized svg").toContain('fill="#22ee22"');
+
+    await waitForMap(page);
+    await reload(page, Buffer.from(lines.join("\r\n"), "utf8"), "recordless-burg-groups");
+    await page.waitForTimeout(1000);
+
+    const harvested = await page.evaluate(() => ({
+      iconFill: styles.burgIcons.burgIcons.groups.cities?.attrs?.fill ?? null,
+      iconSize: styles.burgIcons.burgIcons.groups.cities?.options?.size ?? null,
+      anchorFill: styles.burgIcons.anchors.groups.cities?.attrs?.fill ?? null,
+      anchorSize: styles.burgIcons.anchors.groups.cities?.options?.size ?? null
+    }));
+
+    // this fixture postdates the 1.109 size-doubling migration, so the sizes harvest as written
+    expect(harvested.iconFill).toBe("#ee2222");
+    expect(harvested.iconSize).toBe(0.9);
+    expect(harvested.anchorFill).toBe("#22ee22");
+    expect(harvested.anchorSize).toBe(2.2);
+
+    const savedAgain = await saveAsDownload(page);
+    const record = JSON.parse(savedAgain.toString("utf8").split("\r\n")[48]);
+    expect(record.burgIcons.burgIcons.groups.cities.options.size).toBe(0.9);
+    expect(record.burgIcons.anchors.groups.cities.options.size).toBe(2.2);
+  });
+
   test("preset-nulled attr stays absent: a preset switch survives a save and load with no backfill", async ({
     page,
     context

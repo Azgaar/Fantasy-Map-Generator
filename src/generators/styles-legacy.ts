@@ -78,7 +78,8 @@ export function burgGroupFromLegacy(legacy: object): BurgGroupStyle {
       filter: strOr(bag.filter, null)
     },
     options: {
-      size: toNumber(bag["font-size"], 1),
+      // pre-1.9x maps carry the group size as a bare `size` attr instead of font-size
+      size: toNumber(bag["font-size"], toNumber(bag.size, 1)),
       icon: strOr(bag["data-icon"], null) ?? "#icon-circle"
     }
   };
@@ -369,7 +370,7 @@ function harvestBag(
 const LABEL_SCHEMA_ATTRS = Object.keys(Object.values(DEFAULT_STYLES.labels.groups)[0].attrs);
 const LABEL_ATTRS = [...LABEL_SCHEMA_ATTRS, "data-dx", "data-dy", "data-size"];
 const BURG_SCHEMA_ATTRS = Object.keys(Object.values(DEFAULT_STYLES.burgIcons.burgIcons.groups)[0].attrs);
-const BURG_ATTRS = [...BURG_SCHEMA_ATTRS, "font-size", "data-icon"];
+const BURG_ATTRS = [...BURG_SCHEMA_ATTRS, "font-size", "size", "data-icon"];
 
 export function stylesFromMap(root: ParentNode = document): Styles {
   const bags: Record<string, Record<string, unknown>> = {};
@@ -399,12 +400,15 @@ export function stylesFromMap(root: ParentNode = document): Styles {
   return presetFromLegacy(bags, { onUnknown: "skip" });
 }
 
-// runs on both edges (save, and record-less old-map migration on load): harvest the
-// DOM-authoritative layers, overlay the domains the store owns
-export function syncStylesFromMap(): void {
+// load-only migration for maps without a store record: harvest the DOM-authoritative
+// layers, overlay the domains the store owns
+export function syncStylesFromMap({ hasStyleRecord = false } = {}): void {
   const harvested = stylesFromMap();
+  // the labels migration seeds styles.labels from the DOM before this runs, and a legacy
+  // record seeds burg groups via stylesFromLegacy; with no record at all the map's own
+  // DOM groups are the only source of their styling, so the harvest keeps them
   harvested.labels = structuredClone(styles.labels);
-  harvested.burgIcons = structuredClone(styles.burgIcons);
+  if (hasStyleRecord) harvested.burgIcons = structuredClone(styles.burgIcons);
   harvested.relief.options = structuredClone(styles.relief.options);
   // post-migration maps carry no rescale/data-width attrs, so the store owns these
   // options; a loaded old map's attrs win here until the load-time strip removes them

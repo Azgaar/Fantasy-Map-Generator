@@ -58,15 +58,29 @@ test("an omitted option still defaults, unlike a schema attr", () => {
   expect(result.grid.options.type).toBe(DEFAULT_STYLES.grid.options.type);
 });
 
-test("syncStylesFromMap keeps burg/anchor groups store-authoritative on save", () => {
+test("record-less sync harvests burg/anchor groups from the DOM, size dialect included", () => {
+  document.body.innerHTML = `<svg id="map">
+    <g id="burgIcons"><g id="largetowns" fill="#fffff0" fill-opacity="0.7" size="0.8" stroke="#3e3e4b"></g></g>
+    <g id="anchors"><g id="largetowns" fill="#fffff0" size="1.6"></g></g>
+  </svg>`;
+  syncStylesFromMap();
+  // a map with no style record at all: its DOM groups are the only source of their styling
+  expect(styles.burgIcons.burgIcons.groups.largetowns.attrs.fill).toBe("#fffff0");
+  expect(styles.burgIcons.burgIcons.groups.largetowns.options.size).toBe(0.8);
+  expect(styles.burgIcons.anchors.groups.largetowns.options.size).toBe(1.6);
+  expect(styles.burgIcons.burgIcons.groups.capital).toBeDefined(); // defaults stay as fallbacks
+  Styles.set(structuredClone(Styles.defaults));
+});
+
+test("a legacy style record keeps its burg/anchor groups against the DOM harvest", () => {
   document.body.innerHTML = `<svg id="map">
     <g id="burgIcons"><g id="capital" fill="#00ff00" font-size="3"></g></g>
     <g id="anchors"><g id="capital" fill="#00ff00" font-size="3"></g></g>
   </svg>`;
   styles.burgIcons.burgIcons.groups.capital.attrs.fill = "#000000";
   styles.burgIcons.burgIcons.groups.town = structuredClone(styles.burgIcons.burgIcons.groups.capital);
-  syncStylesFromMap();
-  // the editor writes the store now: stale DOM attrs no longer win at save time
+  syncStylesFromMap({ hasStyleRecord: true });
+  // stylesFromLegacy already seeded these from the record; the DOM may carry stale values
   expect(styles.burgIcons.burgIcons.groups.capital.attrs.fill).toBe("#000000");
   expect(styles.burgIcons.burgIcons.groups.town).toBeDefined();
   styles.burgIcons.burgIcons.groups.capital.attrs.fill = "#ffffff";

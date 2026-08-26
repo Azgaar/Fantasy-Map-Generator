@@ -3,6 +3,7 @@ import path from "node:path";
 import { expect, test, vi } from "vitest";
 import { Styles } from "./styles";
 import {
+  burgGroupFromLegacy,
   isLegacyPreset,
   isStoreStyles,
   labelGroupFromLegacy,
@@ -203,4 +204,10 @@ test("save.ts's master-compat shim: a top-level anchors:{} still parses clean", 
   const parsed = Styles.parse(record);
   expect(parsed).toEqual(DEFAULT_STYLES);
   expect(warn).not.toHaveBeenCalled();
+});
+
+test("burg group size reads the pre-1.9x size attr when font-size is absent", () => {
+  expect(burgGroupFromLegacy({ size: "0.8" }).options.size).toBe(0.8);
+  expect(burgGroupFromLegacy({ "font-size": "2", size: "0.8" }).options.size).toBe(2);
+  expect(burgGroupFromLegacy({}).options.size).toBe(1);
 });

@@ -1676,11 +1676,14 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       }
     }
 
+    // scoped to the parent: same-named groups under different parents are by design
+    // (#burgIcons > g#city beside #anchors > g#city), only same-parent copies are duplicates
     const groupsById = new Map<string, SVGGElement[]>();
     for (const group of groups) {
-      const sameId = groupsById.get(group.id) ?? [];
+      const key = `${(group.parentNode as Element | null)?.id ?? ""}>${group.id}`;
+      const sameId = groupsById.get(key) ?? [];
       sameId.push(group);
-      groupsById.set(group.id, sameId);
+      groupsById.set(key, sameId);
     }
 
     const declared = new Set<string>();
@@ -1890,8 +1893,11 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   // Version-lie maps make the record's own shape the only trustworthy signal: harvest fills the store for
   // record-less maps so the next save persists correctly, while absorbed domains stay with migration-gate values
-  if (!isStoreStyles(safeParseJSON(data[48]))) {
-    syncStylesFromMap();
+  {
+    const styleRecord = safeParseJSON(data[48]);
+    if (!isStoreStyles(styleRecord)) {
+      syncStylesFromMap({ hasStyleRecord: Boolean(styleRecord) });
+    }
   }
 
   // unconditional: step-4-era saves carry these attrs beside a store record too, and the
