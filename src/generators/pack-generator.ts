@@ -1,6 +1,5 @@
 // The packed graph: a second Voronoi diagram built from the grid points that actually matter for the map
-
-import { polygonArea, quadtree } from "d3";
+import { polygonArea, type Quadtree, quadtree } from "d3";
 import type { Point } from "@/types/global";
 import type { PackedGraph } from "@/types/PackedGraph";
 import { findAllInQuadtree, rn, SEA_LEVEL, TYPED_ARRAY_MAX } from "@/utils";
@@ -10,28 +9,10 @@ declare global {
   var Pack: PackModule;
 }
 
-type PackPoint = [number, number, number];
-type PackPointTree = ReturnType<typeof quadtree<PackPoint>>;
-
-const quadtreeCache = new WeakMap<object, PackPointTree>();
-
-/** one quadtree per graph, rebuilt when the cell points are replaced */
-function getQuadtree(graph: PackedGraph): PackPointTree {
-  if (!graph.cells?.p) throw new Error("Pack cells not found");
-
-  let qTree = quadtreeCache.get(graph.cells.p);
-  if (!qTree) {
-    qTree = quadtree(graph.cells.p.map(([x, y], cellId) => [x, y, cellId] as PackPoint));
-    quadtreeCache.set(graph.cells.p, qTree);
-  }
-  return qTree;
-}
-
 class PackModule {
-  /**
-   * repack the grid into `pack`: deep ocean points are dropped and coastal cells are split, so the
-   * packed graph has a higher resolution exactly where the map needs it
-   */
+  private readonly quadtreeCache = new WeakMap<object, Quadtree<[number, number, number]>>();
+
+  /** deep ocean points dropped and coastal cells split so packed graph has a higher resolution where needed */
   generate(): void {
     const { cells: gridCells, points, features, spacing, boundary } = grid;
     const newCells: { p: Point[]; g: number[]; h: number[] } = { p: [], g: [], h: [] };
@@ -79,16 +60,31 @@ class PackModule {
     );
   }
 
-  /* ------------------------------------------------- lookups ------------------------------------------------- */
+  /** generate does clean pack graph so clear data where required */
+  clear(): void {
+    pack = {} as PackedGraph;
+  }
+
+  /** one quadtree per graph, rebuilt when the cell points are replaced */
+  private getQuadtree(graph: PackedGraph) {
+    if (!graph.cells?.p) throw new Error("Pack cells not found");
+
+    let qTree = this.quadtreeCache.get(graph.cells.p);
+    if (!qTree) {
+      qTree = quadtree(graph.cells.p.map(([x, y], cellId) => [x, y, cellId]));
+      this.quadtreeCache.set(graph.cells.p, qTree);
+    }
+    return qTree;
+  }
 
   /** cell closest to the given coordinates, undefined if there is none within the radius */
   findCell(x: number, y: number, radius = Infinity, graph: PackedGraph = pack): number | undefined {
-    return getQuadtree(graph).find(x, y, radius)?.[2];
+    return this.getQuadtree(graph).find(x, y, radius)?.[2];
   }
 
   /** cell indexes within the radius from the given coordinates */
   findAll(x: number, y: number, radius: number, graph: PackedGraph = pack): number[] {
-    const found: PackPoint[] = findAllInQuadtree(x, y, radius, getQuadtree(graph));
+    const found = findAllInQuadtree(x, y, radius, this.getQuadtree(graph));
     return found.map(point => point[2]);
   }
 

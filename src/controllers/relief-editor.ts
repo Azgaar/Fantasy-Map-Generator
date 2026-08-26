@@ -341,7 +341,7 @@ function dragToRemove(this: SVGElement, event: any): void {
     const p = getPointer(dragEvent, this);
     moveCircle(p[0], p[1], r);
 
-    const found: [number, number, ReliefIcon][] = findAllInQuadtree(p[0], p[1], r, tree);
+    const found = findAllInQuadtree(p[0], p[1], r, tree);
     if (!found.length) return;
 
     const removed = new Set(found.map(entry => entry[2]));

@@ -1,5 +1,4 @@
 // The simplest precipitation model: winds enter the map from each side and drop humidity as they pass the cells
-
 import { mean, range } from "d3";
 import { minmax, rand, SEA_LEVEL } from "@/utils";
 
@@ -7,9 +6,8 @@ declare global {
   var Precipitation: PrecipitationModule;
 }
 
-/** a row or column the wind enters the map through: [firstCellId, latitudeModifier, windTier] */
-export type WindBand = [number, number, number];
-export type Winds = { westerly: WindBand[]; easterly: WindBand[]; northerly: number; southerly: number };
+type WindBand = [number, number, number]; // [firstCellId, latitudeModifier, windTier]
+type Winds = { westerly: WindBand[]; easterly: WindBand[]; northerly: number; southerly: number };
 
 // precipitation modifier per 5° latitude band
 // x4 = 0-5 latitude: wet through the year (rising zone)
@@ -25,32 +23,6 @@ const LATITUDE_MODIFIER = [4, 2, 2, 2, 1, 1, 2, 2, 2, 2, 3, 3, 2, 2, 1, 1, 1, 0.
 const MAX_PASSABLE_ELEVATION = 85;
 
 class PrecipitationModule {
-  /**
-   * rows and columns the prevailing winds enter the map through, derived from the map position and
-   * the wind angles. Free of randomness, so the renderer can ask for them at any time
-   */
-  getWinds(): Winds {
-    const { cells, cellsX, cellsY } = grid;
-    const westerly: WindBand[] = [];
-    const easterly: WindBand[] = [];
-    let northerly = 0;
-    let southerly = 0;
-
-    range(0, cells.i.length, cellsX).forEach((cellId, rowId) => {
-      const lat = mapCoordinates.latN! - (rowId / cellsY) * mapCoordinates.latT!;
-      const latMod = LATITUDE_MODIFIER[((Math.abs(lat) - 1) / 5) | 0];
-      const tier = (Math.abs(lat - 89) / 30) | 0; // 30° tiers from 0 to 5, north to south
-      const angle = options.winds[tier];
-
-      if (angle > 40 && angle < 140) westerly.push([cellId, latMod, tier]);
-      if (angle > 220 && angle < 320) easterly.push([cellId + cellsX - 1, latMod, tier]);
-      if (angle > 100 && angle < 260) northerly++;
-      if (angle > 280 || angle < 80) southerly++;
-    });
-
-    return { westerly, easterly, northerly, southerly };
-  }
-
   /** pass every wind over the cells it reaches, filling `grid.cells.prec` on the way */
   generate(): void {
     const { cells, cellsX, cellsY } = grid;
@@ -122,6 +94,32 @@ class PrecipitationModule {
       const maxPrecS = (southerly / vertT) * 60 * modifier * latModS;
       passWind(range(cells.i.length - cellsX, cells.i.length, 1), maxPrecS, -cellsX, cellsY);
     }
+  }
+
+  /**
+   * rows and columns the prevailing winds enter the map through, derived from the map position and
+   * the wind angles. Free of randomness, so the renderer can ask for them at any time
+   */
+  getWinds(): Winds {
+    const { cells, cellsX, cellsY } = grid;
+    const westerly: WindBand[] = [];
+    const easterly: WindBand[] = [];
+    let northerly = 0;
+    let southerly = 0;
+
+    range(0, cells.i.length, cellsX).forEach((cellId, rowId) => {
+      const lat = mapCoordinates.latN! - (rowId / cellsY) * mapCoordinates.latT!;
+      const latMod = LATITUDE_MODIFIER[((Math.abs(lat) - 1) / 5) | 0];
+      const tier = (Math.abs(lat - 89) / 30) | 0; // 30° tiers from 0 to 5, north to south
+      const angle = options.winds[tier];
+
+      if (angle > 40 && angle < 140) westerly.push([cellId, latMod, tier]);
+      if (angle > 220 && angle < 320) easterly.push([cellId + cellsX - 1, latMod, tier]);
+      if (angle > 100 && angle < 260) northerly++;
+      if (angle > 280 || angle < 80) southerly++;
+    });
+
+    return { westerly, easterly, northerly, southerly };
   }
 }
 

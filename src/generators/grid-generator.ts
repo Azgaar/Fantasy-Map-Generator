@@ -1,6 +1,4 @@
-// The initial graph: a jittered square grid of points, its Voronoi diagram and the lake topology
-// defined on it. See docs/architecture/generation-pipeline.md
-
+// The initial graph: a jittered square grid of points
 import Alea from "alea";
 import { min } from "d3";
 import type { GridCells, GridGraph } from "@/types/GridGraph";
@@ -13,18 +11,15 @@ declare global {
 }
 
 class GridModule {
-  /* -------------------------------------------------- graph -------------------------------------------------- */
-
-  /** generate a new grid graph: jittered square points and the Voronoi diagram built on them */
   generate(seed: string, width: number, height: number): GridGraph {
     Math.random = Alea(seed); // reset PRNG
 
     const cellsDesired = this.getCellsDesired();
-    const spacing = getSpacing(cellsDesired, width, height);
-    const boundary = getBoundaryPoints(width, height, spacing);
+    const spacing = this.getSpacing(cellsDesired, width, height);
+    const boundary = this.getBoundaryPoints(width, height, spacing);
 
     TIME && console.time("placePoints");
-    const points = getJitteredPoints(width, height, spacing);
+    const points = this.getJitteredPoints(width, height, spacing);
     TIME && console.timeEnd("placePoints");
 
     const { cells, vertices } = calculateVoronoi(points, boundary);
@@ -33,8 +28,8 @@ class GridModule {
       seed,
       spacing,
       cellsDesired,
-      cellsX: getCellsCount(spacing, width),
-      cellsY: getCellsCount(spacing, height),
+      cellsX: this.getCellsCount(spacing, width),
+      cellsY: this.getCellsCount(spacing, height),
       boundary,
       points,
       cells,
@@ -52,12 +47,12 @@ class GridModule {
     const cellsDesired = this.getCellsDesired();
     if (cellsDesired !== graph.cellsDesired) return true;
 
-    const spacing = getSpacing(cellsDesired, width, height);
+    const spacing = this.getSpacing(cellsDesired, width, height);
     if (graph.spacing !== spacing) return true;
-    return graph.cellsX !== getCellsCount(spacing, width) || graph.cellsY !== getCellsCount(spacing, height);
+    return graph.cellsX !== this.getCellsCount(spacing, width) || graph.cellsY !== this.getCellsCount(spacing, height);
   }
 
-  /** pipeline step: make the global grid fit the requested seed and canvas size, keeping the current one if it does */
+  /** make the global grid fit the requested seed and canvas size, keeping the current one if it does */
   prepare(expectedSeed?: string, precreated?: GridGraph): void {
     if (this.shouldRegenerate(grid, expectedSeed, graphWidth, graphHeight)) {
       grid = precreated ?? this.generate(seed, graphWidth, graphHeight);
@@ -86,8 +81,6 @@ class GridModule {
   getCellsDesired(): number {
     return +(ensureEl<HTMLInputElement>("pointsInput").dataset.cells || 0);
   }
-
-  /* ------------------------------------------------- lookups ------------------------------------------------- */
 
   /** cell index at the given coordinates, resolved by the regular square grid the points sit on */
   findCell(x: number, y: number, graph: GridGraph = grid): number {
@@ -125,7 +118,54 @@ class GridModule {
     return graph.cells.v[cellId].map(vertexId => graph.vertices.p[vertexId]);
   }
 
-  /* ------------------------------------------------- lakes --------------------------------------------------- */
+  /** distance between points before jittering */
+  private getSpacing(cellsDesired: number, width: number, height: number): number {
+    return rn(Math.sqrt((width * height) / cellsDesired), 2);
+  }
+
+  /** number of cells fitting the given map dimension */
+  private getCellsCount(spacing: number, size: number): number {
+    return Math.floor((size + 0.5 * spacing - 1e-10) / spacing);
+  }
+
+  /** pseudo-points along the map edge, they clip the outer Voronoi cells but get no cells of their own */
+  private getBoundaryPoints(width: number, height: number, spacing: number): Point[] {
+    const offset = rn(-1 * spacing);
+    const bSpacing = spacing * 2;
+    const w = width - offset * 2;
+    const h = height - offset * 2;
+    const numberX = Math.ceil(w / bSpacing) - 1;
+    const numberY = Math.ceil(h / bSpacing) - 1;
+    const points: Point[] = [];
+
+    for (let i = 0.5; i < numberX; i++) {
+      const x = Math.ceil((w * i) / numberX + offset);
+      points.push([x, offset], [x, h + offset]);
+    }
+
+    for (let i = 0.5; i < numberY; i++) {
+      const y = Math.ceil((h * i) / numberY + offset);
+      points.push([offset, y], [w + offset, y]);
+    }
+
+    return points;
+  }
+
+  /** points of a square grid, each one randomly shifted within its square */
+  private getJitteredPoints(width: number, height: number, spacing: number): Point[] {
+    const radius = spacing / 2;
+    const jittering = radius * 0.9;
+    const doubleJittering = jittering * 2;
+    const jitter = () => Math.random() * doubleJittering - jittering;
+
+    const points: Point[] = [];
+    for (let y = radius; y < height; y += spacing) {
+      for (let x = radius; x < width; x += spacing) {
+        points.push([Math.min(rn(x + jitter(), 2), width), Math.min(rn(y + jitter(), 2), height)]);
+      }
+    }
+    return points;
+  }
 
   /** turn depressions that cannot pour to water into lakes */
   addDeepDepressionLakes(): void {
@@ -221,51 +261,5 @@ class GridModule {
     }
   }
 }
-
-/** distance between points before jittering */
-const getSpacing = (cellsDesired: number, width: number, height: number): number =>
-  rn(Math.sqrt((width * height) / cellsDesired), 2);
-
-/** number of cells fitting the given map dimension: pass the width for cellsX, the height for cellsY */
-const getCellsCount = (spacing: number, size: number): number => Math.floor((size + 0.5 * spacing - 1e-10) / spacing);
-
-/** pseudo-points along the map edge, they clip the outer Voronoi cells but get no cells of their own */
-const getBoundaryPoints = (width: number, height: number, spacing: number): Point[] => {
-  const offset = rn(-1 * spacing);
-  const bSpacing = spacing * 2;
-  const w = width - offset * 2;
-  const h = height - offset * 2;
-  const numberX = Math.ceil(w / bSpacing) - 1;
-  const numberY = Math.ceil(h / bSpacing) - 1;
-  const points: Point[] = [];
-
-  for (let i = 0.5; i < numberX; i++) {
-    const x = Math.ceil((w * i) / numberX + offset);
-    points.push([x, offset], [x, h + offset]);
-  }
-
-  for (let i = 0.5; i < numberY; i++) {
-    const y = Math.ceil((h * i) / numberY + offset);
-    points.push([offset, y], [w + offset, y]);
-  }
-
-  return points;
-};
-
-/** points of a square grid, each one randomly shifted within its square */
-const getJitteredPoints = (width: number, height: number, spacing: number): Point[] => {
-  const radius = spacing / 2; // square radius
-  const jittering = radius * 0.9; // max deviation
-  const doubleJittering = jittering * 2;
-  const jitter = () => Math.random() * doubleJittering - jittering;
-
-  const points: Point[] = [];
-  for (let y = radius; y < height; y += spacing) {
-    for (let x = radius; x < width; x += spacing) {
-      points.push([Math.min(rn(x + jitter(), 2), width), Math.min(rn(y + jitter(), 2), height)]);
-    }
-  }
-  return points;
-};
 
 window.Grid = new GridModule();

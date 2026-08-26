@@ -1,18 +1,10 @@
-// Canonical generation sequence, as a declared pipeline instead of a hand-written call list.
-// See docs/architecture/generation-pipeline.md.
-
+// Canonical generation sequence, as a declared pipeline instead of a hand-written call list. See docs/architecture/generation-pipeline.md.
 import { Pipeline, type PipelineStep } from "@/generators/pipeline";
 import type { GridGraph } from "@/types/GridGraph";
-import type { PackedGraph } from "@/types/PackedGraph";
 
-const pipelineSteps = [
+const generationPipelineSteps = [
   { id: "grid", run: ({ seed: expectedSeed, graph }) => Grid.prepare(expectedSeed, graph) },
-  {
-    id: "heightmap",
-    run: async () => {
-      grid.cells.h = await HeightmapGenerator.generate(grid);
-    }
-  },
+  { id: "heightmap", run: () => HeightmapGenerator.generate() },
   { id: "markupGrid", run: () => Features.markupGrid() },
   { id: "depressionLakes", run: () => Grid.addDeepDepressionLakes() },
   { id: "nearSeaLakes", run: () => Grid.openNearSeaLakes() },
@@ -20,7 +12,7 @@ const pipelineSteps = [
   { id: "mapCoordinates", run: () => calculateMapCoordinates() },
   { id: "temperatures", run: () => Temperature.generate() },
   { id: "precipitation", run: () => Precipitation.generate() },
-  { id: "clearPack", run: () => (pack = {} as PackedGraph) },
+  { id: "clearPack", run: () => Pack.clear() },
   { id: "regraph", run: () => Pack.generate() },
   { id: "markupPack", run: () => Features.markupPack() },
   { id: "defaultRuler", run: () => Measurers.createDefaultRuler() },
@@ -53,13 +45,16 @@ const pipelineSteps = [
   { id: "mapName", run: () => Names.getMapName(false) }
 ] as const satisfies PipelineStep<string, GenerationContext>[];
 
-type PipelineStepId = (typeof pipelineSteps)[number]["id"];
+type GenerationPipelineStepId = (typeof generationPipelineSteps)[number]["id"];
 
 type GenerationContext = {
-  seed?: string; // requested seed, if the caller wants a specific one; undefined for "any is fine"
-  graph?: GridGraph; // pre-created grid (e.g. selected in the heightmap gallery) to use instead of generating one
+  seed?: string; // seed if the caller wants a specific one
+  graph?: GridGraph; // pre-created grid to use instead of generating one
 };
-export const GenerationPipeline = new Pipeline<PipelineStepId, GenerationContext>("Generation Pipeline", pipelineSteps);
+export const GenerationPipeline = new Pipeline<GenerationPipelineStepId, GenerationContext>(
+  "Generation Pipeline",
+  generationPipelineSteps
+);
 
 const erasePipelineSteps = [
   { id: "markupGrid", run: () => Features.markupGrid() },
@@ -94,13 +89,16 @@ const erasePipelineSteps = [
   { id: "military", run: () => Military.generate() },
   { id: "markers", run: () => Markers.generate() },
   { id: "zones", run: () => Zones.generate() }
-] as const satisfies PipelineStep<PipelineStepId, EraseContext>[];
+] as const satisfies PipelineStep<GenerationPipelineStepId, EraseContext>[];
 
 type EraseContext = { erosion: boolean };
-export const ErasePipeline = new Pipeline<PipelineStepId, EraseContext>("Erase Heightmap", erasePipelineSteps);
+export const ErasePipeline = new Pipeline<GenerationPipelineStepId, EraseContext>(
+  "Erase Heightmap",
+  erasePipelineSteps
+);
 
 declare global {
   // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy JS
-  var GenerationPipeline: import("@/generators/pipeline").Pipeline<PipelineStepId, GenerationContext>;
+  var GenerationPipeline: import("@/generators/pipeline").Pipeline<GenerationPipelineStepId, GenerationContext>;
 }
 window.GenerationPipeline = GenerationPipeline;

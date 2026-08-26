@@ -542,18 +542,23 @@ class HeightmapModule {
     }
   }
 
-  async generate(graph: any): Promise<Uint8Array> {
-    const id = (ensureEl("templateInput")! as HTMLInputElement).value;
-    Math.random = Alea(seed);
-    const isTemplate = id in heightmapTemplates;
+  /** heightmap template or precreated heightmap selected in the options */
+  getSelectedId(): string {
+    return ensureEl<HTMLInputElement>("templateInput").value;
+  }
 
+  /** build the heightmap from the selected template or image and store it as the graph cell heights */
+  async generate(graph: GridGraph = grid, id: string = this.getSelectedId()): Promise<Uint8Array> {
+    Math.random = Alea(seed); // reset PRNG
+    const isTemplate = id in heightmapTemplates;
     const heights = isTemplate ? this.fromTemplate(graph, id) : await this.fromPrecreated(graph, id);
 
     this.clearData();
-    return heights as Uint8Array;
+    graph.cells.h = heights;
+    return heights;
   }
 
-  fromTemplate(graph: any, id: string): Uint8Array | null {
+  fromTemplate(graph: GridGraph, id: string): Uint8Array {
     const templateString = heightmapTemplates[id]?.template || "";
     const steps = templateString.split("\n");
 
@@ -566,7 +571,7 @@ class HeightmapModule {
       this.addStep(...(elements as [Tool, string, string, string, string]));
     }
 
-    return this.heights;
+    return this.heights!;
   }
 
   private getHeightsFromImageData(imageData: Uint8ClampedArray): void {
@@ -578,7 +583,7 @@ class HeightmapModule {
     }
   }
 
-  fromPrecreated(graph: any, id: string): Promise<Uint8Array> {
+  fromPrecreated(graph: GridGraph, id: string): Promise<Uint8Array> {
     return new Promise(resolve => {
       // create canvas where 1px corresponds to a cell
       const canvas = document.createElement("canvas");

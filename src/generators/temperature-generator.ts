@@ -1,6 +1,3 @@
-// Cell temperatures on the initial graph, following the real-world model
-// based on http://www-das.uwyo.edu/~geerts/cwx/notes/chap16/Image64.gif
-
 import { minmax, rn, SEA_LEVEL } from "@/utils";
 
 declare global {
