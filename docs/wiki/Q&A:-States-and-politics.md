@@ -5,6 +5,8 @@ Part of the [FMG Q&A](Q&A). Related topics are listed there.
 ### How do I create a new country?
 Tools → States → click the add-state button at the bottom, then click the map to place its capital. Expand its territory with the editor's brush. Rename it by clicking its name in the list.
 
+![States editor with the brush tool](states--editor.png)
+
 ### How do I change state, province, culture, or religion borders?
 Open the matching editor in Tools, click the brush button at the bottom, then click and drag on the map to paint territory. Confirm the changes when done. Rivers cross cell centers while borders follow cell edges, so borders cannot exactly follow rivers.
 

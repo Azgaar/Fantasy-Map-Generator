@@ -2,6 +2,8 @@
 
 ## Install as an app (recommended)
 
+![PWA install prompt](offline--pwa-install.png)
+
 The easiest way to use FMG offline is to install it as a Progressive Web App (PWA) straight from your browser. On a supported browser, an **Install** button appears in the top-right corner of the tool; clicking it opens a dialog that lets you install the app so it gets its own icon on your desktop or home screen and looks and feels like a native application.
 
 Once installed, a service worker caches the app's HTML, scripts and stylesheets, so it keeps working offline after the first visit &mdash; you don't need to download or unzip anything, or run a local server.

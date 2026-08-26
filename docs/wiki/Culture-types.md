@@ -2,6 +2,8 @@ Each culture gets a type assigned on generation. The type define how culture wil
 
 ## Culture generation
 
+![Cultures editor with the Type column](cultures--editor.png)
+
 When a culture is generated, its type is determined by the geographical features it spawned in. A culture is guaranteed to be assigned the first culture type that meets the criteria in the listed order, except the Naval culture type which has a random probability check in addition to its normal requirement. 
 
 ### Nomadic

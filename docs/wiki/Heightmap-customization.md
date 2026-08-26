@@ -17,6 +17,8 @@ The heightmap editor offers three different modes to choose from. Its recommende
    - This mode regenerates all data on your map, including cultures, states, biomes, and more.
    - It offers the most customization features, such as the image converter and template editor.
 
+![Edit Heightmap mode dialog: Erase, Keep, Risk](heightmap--mode-dialog.png)
+
 2. **Keep**:
    - This mode allows you to retain most of the map's existing data.
    - However, it does not allow changes to the coastline.
@@ -73,6 +75,13 @@ Once you are satisfied with the Heightmap, click on **Exit Customization** in th
 
 ## Paint brushes
 
+![Paint Brushes panel with the Cells to change selector](heightmap--editor-brushes.png)
+
+Before and after a raise-brush stroke:
+
+![Coastline before the brush stroke](heightmap--before.png)
+![Coastline after the brush stroke](heightmap--after.png)
+
   - **Radius (top slider)**: Controls the radius for brushes.
   - **Power (bottom slider)**: Controls the intensity of brushes.
     - Note: This has no effect on align tool.
@@ -119,6 +128,8 @@ Two other Tools-menu features are heightmap-adjacent and destructive, though the
 See also [Scale and distance](../wiki/Scale-and-distance) for more on both.
 
 ## Image Converter
+
+![Image Converter with a loaded image](quick-start--image-converter.png)
 
 Once opened, you'll be asked to select an image from your files.
 

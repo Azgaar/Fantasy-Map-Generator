@@ -77,6 +77,8 @@ Here you can change the amount of people and population ratio live in the map.
 
 The four ruler tools live in their own dialog, the **Measurers Editor**, opened via Menu → Tools → Measurers Editor or the shortcut `SHIFT` + `=` (not the Units editor's `SHIFT` + `Q`).
 
+![Measurers Editor](measurers--editor.png)
+
 The dialog has a table listing every placed measurer (name, value, zoom, remove per row) and, at the bottom, one button per ruler type plus a "remove all measurers" bin button:
 * Linear ruler on the map
 * Curve ruler, opisometer

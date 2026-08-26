@@ -15,10 +15,14 @@ Click the _select_ button next to a marker's icon to open the Icon Selector. It 
 * **Unicode emojis** — pick from the grid, or type/paste any Unicode character into the input field.
 * **External images** — paste a link to an image (`http(s)://` or a `data:image/...` URI) and click _Add_, or click _Upload file_ to load a local SVG or raster image (up to 200kB) from disk; it is embedded into the map file as a data URI. Once added, the image appears as a swatch you can reuse for other markers, unit icons, etc.
 
+![Icon Selector with the External images field](markers--icon-selector.png)
+
 There is no "no custom icons" limitation — any image reachable by URL, or any local SVG/PNG you upload, can be used as a marker icon this way.
 
 ## Markers Overview
 Open it from the marker editor, or via _Tools_. It shows every marker on the map as a sortable, filterable table (by state, culture, type, and free-text search), with a Pin column and Lock column you can toggle per row, a CSV export button, and a button to trigger regeneration of all unlocked markers. Clicking a row highlights and can jump to the corresponding marker on the map.
+
+![Markers Overview dialog](markers--overview.png)
 
 ## Markers In Radius
 Opened from a marker's editor (the target-circle button), this dialog lists every other marker within a chosen radius (in the map's distance unit) of the selected one, lets you locate the source marker on the map, and export the in-range list as a CSV file.
@@ -28,6 +32,8 @@ Opened from the Markers layer's settings, this dialog lists every marker type wi
 
 ## Pin shapes and colors
 Besides the icon itself, each marker sits on a colored "pin" shape. Twelve pin shapes are selectable: bubble, pin, square, squarish, diamond, hex, hexy, shieldy, shield, pentagon, heptagon, circle, and "no" (no pin, icon only). Fill and stroke colors for the pin are set independently via two color pickers. As with the icon, changing pin shape or colors on one marker affects every marker of the same type (see the gotcha above).
+
+![Pin shape selector](markers--pin-shapes.png)
 
 ## Special markers
 There are special markers for dungeons, which link to Watabou's one-page dungeon generator (https://watabou.itch.io/one-page-dungeon).  These special markers show a preview in the notes.  In the notes editor, click on the <> button to show the HTML code used for the preview.  You can use the same text to generate your own previews to dungeons.  The text is below:

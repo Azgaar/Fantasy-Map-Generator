@@ -7,6 +7,8 @@ Also watch the [video tutorial](https://www.youtube.com/playlist?list=PLtgiuDC8i
 ## Introduction
 _Fantasy Map Generator_ is a tool that creates highly customizable fantasy worlds for you. It runs in a browser and does not require any software installation. It’s free and you can use created maps for any purposes including commercial.
 
+![A generated world in Fantasy Map Generator](quick-start--hero.png)
+
 The tool generates a new fantasy map on opening. The map is auto-generated, but it doesn’t mean that you cannot control the generation. To open the controls click on the arrow button at the top left corner of the screen or press <kbd>Tab</kbd>. You can either change the generation parameters and generate a new map, or edit the current map. You can also create a new map from scratch using paint brushes.
 
 ## Moving around
@@ -16,6 +18,8 @@ The same operations can be performed using keyboard. Press <kbd>+</kbd> to zoom 
 
 ## Map layers
 By default the map shows the world’s political situation, but it’s not the only available preset. Open the first tab of the menu – _Layers_ – to change the preset. _Preset_ is a set of layers to be toggled on. There are a number of presets available by default: Political, Cultural, Religions, Provinces, Biomes, Heightmap, Physical, Places of interest, Goods map, Trade animation, Military map, Emblems and Pure landmass. You can either select one of the presets or use buttons below to display or hide a particular layer.
+
+![Layers tab with the presets dropdown open](quick-start--layers-presets.png)
 
 The same tab also has a _View mode_ switcher. Besides the default _Standard_ (editable) view, you can render the map as a _3D scene_ (best with a heightmap layer, view-only) or projected on a _Globe_ (also view-only).
 
@@ -46,6 +50,8 @@ Some users report performance issues on map dragging and zooming. These are numb
 ## Saving the map
 If you like the current map you probably want to **Save** it for a later use. There are 3 saving options:
 
+![Save options dialog](quick-start--save-options.png)
+
 * _Save to machine_. Download `.map` file that stores all the map data including your manual changes to your machine. The file then can be directly loaded into the Generator. It's highly recommend to save the map you are working on at least every 30 minutes.
 
 * _Save to dropbox_. Log into your Dropbox account and save the `.map` file there.
@@ -60,6 +66,8 @@ There are also a few ways how you can get the map _image_ or map _data_. Click o
 
 ## Generation and UI settings
 Let’s move to the settings overview. Open the Menu and click on the _Options_ tab. There are multiple options split into 2 categories. Map generation options require a new map to be applied. Generator settings are getting applied immediately on change.
+
+![Options tab with map settings](quick-start--options.png)
 
 ![options](https://github.com/user-attachments/assets/65fefee6-cdc7-439f-83e2-374c21f9a455)
 
@@ -119,6 +127,8 @@ Heightmap editing process has multiple build-in tools. These tools won’t be co
 
 ## Customization tools
 The Heightmap Editor tools are not the only available ones. The _Edit_ section of the same _Tools_ tab opens a whole set of editors and overviews: Biomes, States, Provinces, Diplomacy, Cultures, Namesbase, Zones, Religions, Coastlines, Units and Notes; overview panels for Burgs, Labels, Rivers, Routes, Markers and Military forces; and, for the economy system, Goods, Markets and the Trade Animation editor. All these tools work in a different way and won’t be covered in this tutorial.
+
+![Tools tab overview](quick-start--tools.png)
 
 The _Regenerate_ section lets you re-run a piece of the generation on demand. If, for example, you have added and moved some burgs, they won’t be connected with roads anymore – click _Routes_ there to reconnect them. Other buttons let you regenerate burgs, cultures, states, provinces, religions, zones, military forces, relief icons, population, rivers, ice, markers, and – for the economy system – Economy, Goods, Markets and Production, as well as recalculate State Labels placement.
 

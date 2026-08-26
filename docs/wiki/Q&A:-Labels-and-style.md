@@ -5,6 +5,8 @@ Part of the [FMG Q&A](Q&A). Related topics are listed there.
 ### How do I add my own text or label to the map?
 Tools tab → Add label button → click the map where the text goes (hold <kbd>Shift</kbd> to place several). Click any label to edit its text; fonts, sizes and colors per label group are in Style → Labels.
 
+![Adding a label from the Tools tab](labels--add-label.png)
+
 ### How do I keep burg labels visible when zoomed out?
 Style → Labels → uncheck "Toggle visibility automatically".
 
@@ -19,6 +21,8 @@ Icon colors can't be changed, but there is an alternative pre-colored icon set i
 
 ### How do I regenerate emblems (coats of arms)?
 For everything: Tools → regenerate Emblems. For one state, province or burg: click its emblem and use Regenerate in the Edit Emblem dialog.
+
+![Edit Emblem dialog](emblems--editor.png)
 
 ### What do the Style sliders like "Stroke dash" mean?
 They are standard SVG properties. Stroke dash sets the line's dash pattern and endcaps (round, butt, square). Hover any control for a tooltip explaining it.

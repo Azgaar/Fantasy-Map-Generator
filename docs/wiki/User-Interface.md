@@ -517,6 +517,8 @@ Note: the "States labels" option (full vs. shortened state names) is no longer a
 
 # View mode
 
+![3D scene view of the map](ui--3d-scene.png)
+
 At the bottom of the Layers tab there is a View mode selector, in addition to the regular (Standard) map view:
 
 * **3D scene**: presents the map as a 3D mesh, driven by the heightmap. Works best when a heightmap layer is present. The map cannot be edited while in this mode.
@@ -530,6 +532,8 @@ At the bottom of the Layers tab there is a View mode selector, in addition to th
 In the Options tab, under Generator settings, a "Azgaar assistant" dropdown lets you show or hide the help bubble that appears in the bottom right corner of the screen.
 
 # Economy and trade tools
+
+![Goods map layers preset](ui--goods-map.png)
 
 FMG includes a suite of tools, reachable from the Tools tab, for simulating and displaying an economy of goods, markets and trade on the map:
 
@@ -550,6 +554,8 @@ Opened from the Tools tab, this editor lets you customize the settings that cont
 Opened from the Tools tab (shortcut Shift + =), this editor manages measurement rulers placed on the map, letting you measure distances and areas.
 
 # Minimap
+
+![Minimap overview panel](ui--minimap.png)
 
 Found in the Tools tab's Show section, this opens a small overview of the whole map. Clicking on the minimap re-centers the main map view on the clicked location.
 

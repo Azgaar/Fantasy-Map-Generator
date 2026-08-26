@@ -1,3 +1,5 @@
+![Fantasy Map Generator](quick-start--hero.png)
+
 Welcome to the ***Fantasy Map Generator*** wiki! 
 _The Wiki is incomplete, please [contact me](mailto:azgaar.fmg@yandex.com) if you can help with editing_
 
