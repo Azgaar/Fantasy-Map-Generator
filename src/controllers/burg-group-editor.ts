@@ -419,6 +419,7 @@ function submitForm(event: Event): void {
   const validBurgs = pack.burgs.filter(b => b.i && !b.removed);
   const populations = validBurgs.map(b => b.population!).sort((a, b) => a - b);
   validBurgs.forEach(burg => void Burgs.defineGroup(burg, populations));
+  window.Labels.ensureBurgLabelGroups();
 
   Layers.draw("burgIcons");
   Layers.draw("labels");
