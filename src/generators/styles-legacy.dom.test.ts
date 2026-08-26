@@ -58,7 +58,7 @@ test("an omitted option still defaults, unlike a schema attr", () => {
   expect(result.grid.options.type).toBe(DEFAULT_STYLES.grid.options.type);
 });
 
-test("syncStylesFromMap harvests burg/anchor groups present in the DOM over the live store", () => {
+test("syncStylesFromMap keeps burg/anchor groups store-authoritative on save", () => {
   document.body.innerHTML = `<svg id="map">
     <g id="burgIcons"><g id="capital" fill="#00ff00" font-size="3"></g></g>
     <g id="anchors"><g id="capital" fill="#00ff00" font-size="3"></g></g>
@@ -66,9 +66,10 @@ test("syncStylesFromMap harvests burg/anchor groups present in the DOM over the 
   styles.burgIcons.burgIcons.groups.capital.attrs.fill = "#000000";
   styles.burgIcons.burgIcons.groups.town = structuredClone(styles.burgIcons.burgIcons.groups.capital);
   syncStylesFromMap();
-  expect(styles.burgIcons.burgIcons.groups.capital.attrs.fill).toBe("#00ff00");
-  expect(styles.burgIcons.anchors.groups.capital.attrs.fill).toBe("#00ff00");
+  // the editor writes the store now: stale DOM attrs no longer win at save time
+  expect(styles.burgIcons.burgIcons.groups.capital.attrs.fill).toBe("#000000");
   expect(styles.burgIcons.burgIcons.groups.town).toBeDefined();
+  styles.burgIcons.burgIcons.groups.capital.attrs.fill = "#ffffff";
 });
 
 test("save sync keeps store-authoritative zoom options when the DOM lacks the attrs", () => {
