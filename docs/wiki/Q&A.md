@@ -1,87 +1,146 @@
-Here I want to answer the most common questions _Fantasy Map Generator_ (FMG) users may have. Please feel free to raise a new [issue](https://github.com/Azgaar/Fantasy-Map-Generator/issues) in order to request additional answers.
+Answers to the most common questions _Fantasy Map Generator_ (FMG) users have. The questions below are ranked and grouped from analysis of ~116 000 real user questions asked via the in-app assistant and the Discord help channels. Please feel free to raise a new [issue](https://github.com/Azgaar/Fantasy-Map-Generator/issues) to request additional answers.
 
-### I have issues with the Generator, what should I do?
-Please try to reproduce the issue on your own. If it's reproducible, please log [an issue](https://github.com/Azgaar/Fantasy-Map-Generator/issues). A lot of issues are caused by browsers, please also try to use incognito mode and/or another browser. I recommend Chrome as the fastest browser in terms of svg rendering.
+Pick a topic, or jump straight to a question:
 
-### The map performance is poor, how can I improve it?
-The performance mainly depends on the number of visible elements and visible map area. The optimization strategies are: 
-* Toggle off unnecessary layers. Be mindful of the _Relief Icons_ layer in particular – it’s the most resource-demanding one.
-* Open the Generator in a separate browser window, make it _much_ smaller (about 900 x 560 pixels) and re-generate the map. Then, zoom in to see the map in detail. It will reduce the rending area and _drastically_ improve the performance.
-* When generating maps, set _Points number_ to 10K. Points (cells) number highly affects performance. 
-* Toggle off map and element filters.
-* Close all irrelevant browser tabs and applications.
-* Use a leading edge browser (fresh versions on Chrome or Edge). Firefox is reported to be slower.
+### [About the project](Q&A:-About-the-project)
+* [What is Azgaar's Fantasy Map Generator?](Q&A:-About-the-project#what-is-azgaars-fantasy-map-generator)
+* [What does _Azgaar_ mean?](Q&A:-About-the-project#what-does-azgaar-mean)
+* [Who owns the maps created?](Q&A:-About-the-project#who-owns-the-maps-created)
+* [What is the team behind the project?](Q&A:-About-the-project#what-is-the-team-behind-the-project)
+* [Is there a place to discuss the Generator and share maps?](Q&A:-About-the-project#is-there-a-place-to-discuss-the-generator-and-share-maps)
+* [Where do I suggest new features or report problems?](Q&A:-About-the-project#where-do-i-suggest-new-features-or-report-problems)
+* [How can I help to improve the Generator?](Q&A:-About-the-project#how-can-i-help-to-improve-the-generator)
+* [What's new in the latest version?](Q&A:-About-the-project#whats-new-in-the-latest-version)
+* [How can I contact Azgaar directly?](Q&A:-About-the-project#how-can-i-contact-azgaar-directly)
+* [You've mentioned a Medieval Dynasty simulator. What is it?](Q&A:-About-the-project#youve-mentioned-a-medieval-dynasty-simulator-what-is-it)
 
-### Who owns the maps created?
-You. The Generator is licensed under [MIT license](https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE) and derivative works such as maps are free of charge. You can sell them or make them available for free.
+### [Getting started](Q&A:-Getting-started)
+* [How do I use the tool? Where do I begin?](Q&A:-Getting-started#how-do-i-use-the-tool-where-do-i-begin)
+* [Is there a tutorial?](Q&A:-Getting-started#is-there-a-tutorial)
+* [How do I create my own map from scratch instead of a random one?](Q&A:-Getting-started#how-do-i-create-my-own-map-from-scratch-instead-of-a-random-one)
+* [Can the Generator (or the AI assistant) make a specific map for me — my nation or my book's world?](Q&A:-Getting-started#can-the-generator-or-the-ai-assistant-make-a-specific-map-for-me--my-nation-or-my-books-world)
+* [In which order should I build a custom world?](Q&A:-Getting-started#in-which-order-should-i-build-a-custom-world)
+* [How do I make a realistic, Earth-like world?](Q&A:-Getting-started#how-do-i-make-a-realistic-earth-like-world)
+* [Where can I get a map of Earth, Europe, or a fictional world like Westeros?](Q&A:-Getting-started#where-can-i-get-a-map-of-earth-europe-or-a-fictional-world-like-westeros)
+* [How do I get several continents, one big continent, or lots of islands?](Q&A:-Getting-started#how-do-i-get-several-continents-one-big-continent-or-lots-of-islands)
+* [How do I start over with a fresh or empty map?](Q&A:-Getting-started#how-do-i-start-over-with-a-fresh-or-empty-map)
+* [How do I generate a new map with the same seed after changing a setting?](Q&A:-Getting-started#how-do-i-generate-a-new-map-with-the-same-seed-after-changing-a-setting)
 
-### My saved map is not working properly. What should I do?
-If there is no version conflict, please [raise a defect](https://github.com/Azgaar/Fantasy-Map-Generator/issues/new). If your map is _obsolete_, and it's clearly stated on load, you may either use an [appropriate version](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog) of the Generator or re-create the map in a current version. There is no way to update it. The tool is under development and version conflicts are inevitable.
+### [Saving and loading](Q&A:-Saving-and-loading)
+* [How do I save my map?](Q&A:-Saving-and-loading#how-do-i-save-my-map)
+* [How can I open a saved .gz or .map file?](Q&A:-Saving-and-loading#how-can-i-open-a-saved-gz-or-map-file)
+* [Is there an autosave?](Q&A:-Saving-and-loading#is-there-an-autosave)
+* [Is there an undo button?](Q&A:-Saving-and-loading#is-there-an-undo-button)
+* [My saved map is not working properly. What should I do?](Q&A:-Saving-and-loading#my-saved-map-is-not-working-properly-what-should-i-do)
+* [Can I manually edit the save file?](Q&A:-Saving-and-loading#can-i-manually-edit-the-save-file)
+* [Can I make the .map file smaller?](Q&A:-Saving-and-loading#can-i-make-the-map-file-smaller)
+* [Can I make the map open at a specific zoom and position?](Q&A:-Saving-and-loading#can-i-make-the-map-open-at-a-specific-zoom-and-position)
+* [Can I share my map with my players so it stays interactive?](Q&A:-Saving-and-loading#can-i-share-my-map-with-my-players-so-it-stays-interactive)
 
-### Can I export a created map?
-Sure, there are a number of available options: 
-* Save to machine: save file can be directly loaded to the Generator.
-* Save to Dropbox: save file can be directly loaded to the Generator.
-* Save to storage: save map data to the browser's internal database. File will be loaded automatically on page refresh. Bear in mind that saving to desktop is safer since browser storage can be accidentally cleared
+### [Exporting](Q&A:-Exporting)
+* [Can I export a created map?](Q&A:-Exporting#can-i-export-a-created-map)
+* [How can I export the heightmap as an image?](Q&A:-Exporting#how-can-i-export-the-heightmap-as-an-image)
+* [How do I get an FMG map into Roblox Studio or a similar engine?](Q&A:-Exporting#how-do-i-get-an-fmg-map-into-roblox-studio-or-a-similar-engine)
+* [Can I embed the map into my website?](Q&A:-Exporting#can-i-embed-the-map-into-my-website)
 
-* Export .svg: save a full map as a scalable vector image. You can open the file in a browser or edit it using a vector graphics editor.
-* Export .png: save the currently displayed map fragment as a raster image. You can edit the file in any raster graphics editor.
-* Export to tiles as .zip: split map on .png chunks and save them all as a single .zip file. it allows to save giant raster images once chunks are combined.
-* Export to .json: save the map data to be used in GIS software.
+### [Interface and performance](Q&A:-Interface-and-performance)
+* [Where is the Tools menu?](Q&A:-Interface-and-performance#where-is-the-tools-menu)
+* [Is there a list of keyboard shortcuts?](Q&A:-Interface-and-performance#is-there-a-list-of-keyboard-shortcuts)
+* [How do I zoom out / see the whole map?](Q&A:-Interface-and-performance#how-do-i-zoom-out--see-the-whole-map)
+* [The menu or interface is too big or too small. How do I fix it?](Q&A:-Interface-and-performance#the-menu-or-interface-is-too-big-or-too-small-how-do-i-fix-it)
+* [My map colors look inverted or wrong.](Q&A:-Interface-and-performance#my-map-colors-look-inverted-or-wrong)
+* [The map performance is poor, how can I improve it?](Q&A:-Interface-and-performance#the-map-performance-is-poor-how-can-i-improve-it)
+* [How is the map rendered — CPU or GPU?](Q&A:-Interface-and-performance#how-is-the-map-rendered--cpu-or-gpu)
+* [Which browsers are supported?](Q&A:-Interface-and-performance#which-browsers-are-supported)
+* [Can I use the Generator on mobile?](Q&A:-Interface-and-performance#can-i-use-the-generator-on-mobile)
+* [Can I use the Generator offline or as a desktop app?](Q&A:-Interface-and-performance#can-i-use-the-generator-offline-or-as-a-desktop-app)
+* [I have issues with the Generator, what should I do?](Q&A:-Interface-and-performance#i-have-issues-with-the-generator-what-should-i-do)
+* [Does it use cookies or cache?](Q&A:-Interface-and-performance#does-it-use-cookies-or-cache)
+* [Is FMG available in other languages?](Q&A:-Interface-and-performance#is-fmg-available-in-other-languages)
+* [How do I hide the AI assistant?](Q&A:-Interface-and-performance#how-do-i-hide-the-ai-assistant)
+* [How do I get exact values on sliders?](Q&A:-Interface-and-performance#how-do-i-get-exact-values-on-sliders)
 
-### How can I open a saved .gz or .map file?
-Open the generator, click on _Load_ and select the file. Or just drag and drop the file onto the Generator window.
+### [Heightmap and terrain](Q&A:-Heightmap-and-terrain)
+* [How do I change the land — add or remove landmass?](Q&A:-Heightmap-and-terrain#how-do-i-change-the-land--add-or-remove-landmass)
+* [How do the heightmap brushes work?](Q&A:-Heightmap-and-terrain#how-do-the-heightmap-brushes-work)
+* [How do I make mountains taller?](Q&A:-Heightmap-and-terrain#how-do-i-make-mountains-taller)
+* [How do I create a lake?](Q&A:-Heightmap-and-terrain#how-do-i-create-a-lake)
+* [How do I add an island and name it?](Q&A:-Heightmap-and-terrain#how-do-i-add-an-island-and-name-it)
+* [Can I use the Coastline Editor (the red dots on the coast) to change the land?](Q&A:-Heightmap-and-terrain#can-i-use-the-coastline-editor-the-red-dots-on-the-coast-to-change-the-land)
+* [There are white bits / transparent land on my map. Why?](Q&A:-Heightmap-and-terrain#there-are-white-bits--transparent-land-on-my-map-why)
+* [Can I increase the number of cells / detail of an existing map?](Q&A:-Heightmap-and-terrain#can-i-increase-the-number-of-cells--detail-of-an-existing-map)
+* [Can I take a part of my map and make it a new map?](Q&A:-Heightmap-and-terrain#can-i-take-a-part-of-my-map-and-make-it-a-new-map)
+* [Can the tool add generated detail on top of my imported heightmap?](Q&A:-Heightmap-and-terrain#can-the-tool-add-generated-detail-on-top-of-my-imported-heightmap)
+* [How do I import an image to create terrain?](Q&A:-Heightmap-and-terrain#how-do-i-import-an-image-to-create-terrain)
+* [I only have a screenshot of an old map. Can I recreate it?](Q&A:-Heightmap-and-terrain#i-only-have-a-screenshot-of-an-old-map-can-i-recreate-it)
+* [Where can I find a real-world heightmap to import?](Q&A:-Heightmap-and-terrain#where-can-i-find-a-real-world-heightmap-to-import)
+* [How do I change the heightmap colors?](Q&A:-Heightmap-and-terrain#how-do-i-change-the-heightmap-colors)
+* [How do I change the map's physical size (km/miles)?](Q&A:-Heightmap-and-terrain#how-do-i-change-the-maps-physical-size-kmmiles)
 
-### Can I manually edit save file?
-Yes, you can do it using any text editor. However, if you break the formatting the file won't be loading. The common error is that most text editors automatically split embedded svg into separate lines.
+### [Climate and biomes](Q&A:-Climate-and-biomes)
+* [How do I make my world colder / put ice caps on both poles?](Q&A:-Climate-and-biomes#how-do-i-make-my-world-colder--put-ice-caps-on-both-poles)
+* [How do I make my map more (or less) desert-like?](Q&A:-Climate-and-biomes#how-do-i-make-my-map-more-or-less-desert-like)
+* [How do I paint biomes exactly where I want them?](Q&A:-Climate-and-biomes#how-do-i-paint-biomes-exactly-where-i-want-them)
+* [How do I change habitability?](Q&A:-Climate-and-biomes#how-do-i-change-habitability)
+* [Why are there no burgs or states in an area?](Q&A:-Climate-and-biomes#why-are-there-no-burgs-or-states-in-an-area)
+* [Can I move where ice caps start without changing my biomes?](Q&A:-Climate-and-biomes#can-i-move-where-ice-caps-start-without-changing-my-biomes)
 
-### Can I use the Generator offline?
-Yes, but it's more complex. You must have a source code editor ([VS Code](https://code.visualstudio.com/) is the best free one) and [node.js](https://nodejs.org) installed.
+### [Rivers and water](Q&A:-Rivers-and-water)
+* [How do I create a river?](Q&A:-Rivers-and-water#how-do-i-create-a-river)
+* [Can I add a lake without resetting rivers?](Q&A:-Rivers-and-water#can-i-add-a-lake-without-resetting-rivers)
+* [Can I see a river's width along its length, or what it passes through?](Q&A:-Rivers-and-water#can-i-see-a-rivers-width-along-its-length-or-what-it-passes-through)
 
-Download the [source code](https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/heads/master.zip) and unzip _all files_ from the archive.
+### [States and politics](Q&A:-States-and-politics)
+* [How do I create a new country?](Q&A:-States-and-politics#how-do-i-create-a-new-country)
+* [How do I change state, province, culture, or religion borders?](Q&A:-States-and-politics#how-do-i-change-state-province-culture-or-religion-borders)
+* [How do I merge countries?](Q&A:-States-and-politics#how-do-i-merge-countries)
+* [How do I make a state bigger or smaller?](Q&A:-States-and-politics#how-do-i-make-a-state-bigger-or-smaller)
+* [How do I represent an invasion or conquest?](Q&A:-States-and-politics#how-do-i-represent-an-invasion-or-conquest)
+* [How do provinces work? Can I merge them or nest them?](Q&A:-States-and-politics#how-do-provinces-work-can-i-merge-them-or-nest-them)
+* [How do I keep states from filling the whole map?](Q&A:-States-and-politics#how-do-i-keep-states-from-filling-the-whole-map)
+* [How do I stop a state from expanding across the sea?](Q&A:-States-and-politics#how-do-i-stop-a-state-from-expanding-across-the-sea)
+* [How do I rename a state, or regenerate its name?](Q&A:-States-and-politics#how-do-i-rename-a-state-or-regenerate-its-name)
+* [How do I change state colors?](Q&A:-States-and-politics#how-do-i-change-state-colors)
+* [Which is my biggest country?](Q&A:-States-and-politics#which-is-my-biggest-country)
+* [Can I remove a state's capital?](Q&A:-States-and-politics#can-i-remove-a-states-capital)
+* [Can borders regenerate automatically after my battles or story events?](Q&A:-States-and-politics#can-borders-regenerate-automatically-after-my-battles-or-story-events)
 
-Open the folder in VS Code and run `npm install` in terminal to install dependencies. Then run `npm run dev` to start the development server. The Tool will be available as `http://localhost:5173` (open it in your browser).
+### [Burgs and population](Q&A:-Burgs-and-population)
+* [What is a "burg"?](Q&A:-Burgs-and-population#what-is-a-burg)
+* [How do I add a city or town (burg)?](Q&A:-Burgs-and-population#how-do-i-add-a-city-or-town-burg)
+* [How do I edit a burg — name, size, type?](Q&A:-Burgs-and-population#how-do-i-edit-a-burg--name-size-type)
+* [What do the icons next to a burg mean?](Q&A:-Burgs-and-population#what-do-the-icons-next-to-a-burg-mean)
+* [How is population calculated?](Q&A:-Burgs-and-population#how-is-population-calculated)
+* [Can I upload a custom icon for cities?](Q&A:-Burgs-and-population#can-i-upload-a-custom-icon-for-cities)
+* [Can I have underwater towns or kingdoms?](Q&A:-Burgs-and-population#can-i-have-underwater-towns-or-kingdoms)
+* [Can I underline capital names?](Q&A:-Burgs-and-population#can-i-underline-capital-names)
 
-### Is there a desktop version?
-Modern technologies allow any web-application to be turned into a desktop application that supports all features of the web app. There are 3 options supported:
-* Chrome App. A shortcut app can be created in Chrome in just three clicks without installation: `Settings => More Tools => Create Shortcut...`.
-* PWA. Chromium-based browsers (Chrome, Edge, etc.) in Windows will prompt you with a big button 'Install'. Just click on it and confirm the installation. The installed tool will be added to your desktop and opened automatically. You can also create a shortcut (app) manually, see [how to do it in Chrome](https://support.google.com/chrome_webstore/answer/3060053).
+### [Cultures, religions and names](Q&A:-Cultures,-religions-and-names)
+* [What are culture types and what do they do?](Q&A:-Cultures,-religions-and-names#what-are-culture-types-and-what-do-they-do)
+* [Can I have more cultures than the slider allows?](Q&A:-Cultures,-religions-and-names#can-i-have-more-cultures-than-the-slider-allows)
+* [Can I use my own name lists for states, burgs and people?](Q&A:-Cultures,-religions-and-names#can-i-use-my-own-name-lists-for-states-burgs-and-people)
+* [How do I make generated names sound like a specific language?](Q&A:-Cultures,-religions-and-names#how-do-i-make-generated-names-sound-like-a-specific-language)
+* [Can I generate a map with no cultures or states and add my own?](Q&A:-Cultures,-religions-and-names#can-i-generate-a-map-with-no-cultures-or-states-and-add-my-own)
 
-### Which browsers are supported?
-The Generator should work in any modern browser except for Safari. The tool is developed using Chrome, so it has the best support. Firefox is reported to have worse performance. Edge 79 and later will also work. Latest Opera and Yandex Browser should work fine as well. Outdated browsers like Internet Explorer are not supported. Weird browsers like Brave may not work at all.
+### [Labels and style](Q&A:-Labels-and-style)
+* [How do I add my own text or label to the map?](Q&A:-Labels-and-style#how-do-i-add-my-own-text-or-label-to-the-map)
+* [How do I keep burg labels visible when zoomed out?](Q&A:-Labels-and-style#how-do-i-keep-burg-labels-visible-when-zoomed-out)
+* [Does the tool name mountains, forests and seas?](Q&A:-Labels-and-style#does-the-tool-name-mountains-forests-and-seas)
+* [Can I overlay my own image on the map?](Q&A:-Labels-and-style#can-i-overlay-my-own-image-on-the-map)
+* [Can I recolor relief icons, or draw them above routes?](Q&A:-Labels-and-style#can-i-recolor-relief-icons-or-draw-them-above-routes)
+* [How do I regenerate emblems (coats of arms)?](Q&A:-Labels-and-style#how-do-i-regenerate-emblems-coats-of-arms)
+* [What do the Style sliders like "Stroke dash" mean?](Q&A:-Labels-and-style#what-do-the-style-sliders-like-stroke-dash-mean)
 
-### Can I use the Generator on mobile?
-You can, but I doubt you will enjoy the experience. The Generator GUI is not suitable for mobile devices and performance is subpar. In general, I would say mobile devices are not supported.
+### [Military and battles](Q&A:-Military-and-battles)
+* [How do I create an army or regiment?](Q&A:-Military-and-battles#how-do-i-create-an-army-or-regiment)
+* [Can I simulate battles or wars?](Q&A:-Military-and-battles#can-i-simulate-battles-or-wars)
 
-### What about non-English localization?
-Localization is planned, but not ready from the coding side. Once my part with code support is done, I will inform the community to help me with actual translations. Preparation can take a lot of time as it's not a current priority.
-
-### Can I embed the map to my website?
-Yes, you can and it's easy to do. Please follow the guide [here](https://sites.google.com/view/fantasy-map-generator-embedded/home).
-
-### What does _Azgaar_ mean?
-It's my nickname, it has no meaning. The name of the tool is _Azgaar's Fantasy Map generator_, pointing to me as creator. The short form is _FMG_.
-
-### You've mentioned a Medieval Dynasty simulator. What is it?
-It's my meta-project. A CK2-style genealogical game focused on genetics. Generally a wedding/dynasty breeding simulator (see the [screenshot](https://i2.wp.com/azgaar.files.wordpress.com/2018/02/screenshot-2018-2-9-dynasty-v0-11.png)). It's in pre-alpha and currently on hold, so no demo is available. 
-
-### How can I help to improve the Generator?
-Just use it, log defects and suggest enhancements (please use the [issues](https://github.com/Azgaar/Fantasy-Map-Generator/issues) page for both cases). Share the Generator link within your community! Post on FB, Twitter etc. 
-
-We need a good video-tutorial. Please contact me if you have a video-blog and want to help.
-
-Professional help from coders / UI designers is highly appreciated.
-
-We also accept donations on [Patreon](https://www.patreon.com/azgaar).
-
-### What is the team behind the project?
-There is no team, but there is a Community. The tool is created by me, Azgaar. The community is based on our Reddit and Discord servers. Thanks for [contributors](https://github.com/Azgaar/Fantasy-Map-Generator/graphs/contributors), Community moderators and all our community members.
-
-### Do you accept donations?
-Yes, you can support the project on [Patreon](https://www.patreon.com/azgaar). If you don't want to pay monthly, you are able to decline the donation at any moment in time. Other donation platforms are not supported.
-
-### Is there a place where I can discuss the Generator, share created maps and so on?
-Yes, we have a dedicated [Discord server](https://discordapp.com/invite/X7E84HU) and [Reddit community](https://www.reddit.com/r/FantasyMapGenerator/). Both have a very active and supportive community.
-
-### How can I contact you directly?
-Please PM me on Discord or [send me an email](mailto:azgaar.fmg@yandex.com).
+### [Markers, zones and extras](Q&A:-Markers,-zones-and-extras)
+* [How do rulers (distance measurement) work?](Q&A:-Markers,-zones-and-extras#how-do-rulers-distance-measurement-work)
+* [Can a marker link to a generated dungeon map?](Q&A:-Markers,-zones-and-extras#can-a-marker-link-to-a-generated-dungeon-map)
+* [Is there time, a calendar, or history simulation?](Q&A:-Markers,-zones-and-extras#is-there-time-a-calendar-or-history-simulation)
+* [Are there rulers/leaders or dynasties for states?](Q&A:-Markers,-zones-and-extras#are-there-rulersleaders-or-dynasties-for-states)
+* [Can the hex grid number its hexes, or be used for counting?](Q&A:-Markers,-zones-and-extras#can-the-hex-grid-number-its-hexes-or-be-used-for-counting)
+* [Can fog of war edges be blurred?](Q&A:-Markers,-zones-and-extras#can-fog-of-war-edges-be-blurred)
+* [Can I focus on just one state and hide the rest?](Q&A:-Markers,-zones-and-extras#can-i-focus-on-just-one-state-and-hide-the-rest)
+* [Can I make city maps or galaxy maps with FMG?](Q&A:-Markers,-zones-and-extras#can-i-make-city-maps-or-galaxy-maps-with-fmg)
