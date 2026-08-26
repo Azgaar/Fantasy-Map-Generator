@@ -162,11 +162,21 @@ export const parseError = (error: Error): string => {
 export const getBase64 = (url: string, callback: (result: string | ArrayBuffer | null) => void): void => {
   const xhr = new XMLHttpRequest();
   xhr.onload = () => {
+    const blob = xhr.response as Blob | null;
+    // don't inline error pages (e.g. a 404 html document) as image data
+    if (xhr.status < 200 || xhr.status >= 300 || !blob?.type.startsWith("image/")) {
+      ERROR && console.error(`Cannot load image ${url}: status ${xhr.status}, type ${blob?.type || "unknown"}`);
+      return callback(null);
+    }
     const reader = new FileReader();
     reader.onloadend = () => {
       callback(reader.result);
     };
-    reader.readAsDataURL(xhr.response);
+    reader.readAsDataURL(blob);
+  };
+  xhr.onerror = () => {
+    ERROR && console.error(`Cannot load image ${url}: network error`);
+    callback(null);
   };
   xhr.open("GET", url);
   xhr.responseType = "blob";

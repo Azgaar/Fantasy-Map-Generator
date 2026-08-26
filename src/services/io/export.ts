@@ -288,7 +288,10 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
   if (noVignette) clone.select("#vignette").remove();
   if (noScaleBar) clone.select("#scaleBar").remove();
 
-  if (type === "svg") removeUnusedElements(clone);
+  if (type === "svg") {
+    removeUnusedElements(clone);
+    relocateRootFilter(cloneEl);
+  }
   if (customization && type === "mesh") updateMeshCells(clone);
   inlineStyle(clone);
 
@@ -336,13 +339,15 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
   }
 
   {
-    // replace ocean pattern href to base64
+    // replace ocean pattern href to base64; drop the image if it cannot be loaded,
+    // as an app-relative href is dead in an exported file
     const image = cloneEl.getElementById("oceanicPattern");
     const href = image?.getAttribute("href");
     if (image && href) {
       await new Promise<void>(resolve => {
         getBase64(href, base64 => {
           if (typeof base64 === "string") image.setAttribute("href", base64);
+          else image.remove();
           resolve();
         });
       });
@@ -350,13 +355,14 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
   }
 
   {
-    // replace texture href to base64
+    // replace texture href to base64; drop the image if it cannot be loaded
     const image = cloneEl.querySelector("#texture > image");
     const href = image?.getAttribute("href");
     if (image && href) {
       await new Promise<void>(resolve => {
         getBase64(href, base64 => {
           if (typeof base64 === "string") image.setAttribute("href", base64);
+          else image.remove();
           resolve();
         });
       });
@@ -517,6 +523,24 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
   const url = window.URL.createObjectURL(blob);
   window.setTimeout(() => window.URL.revokeObjectURL(url), 5000);
   return url;
+}
+
+// Inkscape can't render filters on the root svg element and miscomposites default filter regions on large groups,
+// so move the global filter to #viewbox and give all filters an explicit full-viewport region
+export function relocateRootFilter(svg: SVGSVGElement): void {
+  const filter = svg.getAttribute("filter");
+  const viewbox = svg.querySelector("#viewbox");
+  if (!filter || !viewbox) return;
+  svg.removeAttribute("filter");
+  viewbox.setAttribute("filter", filter);
+
+  svg.querySelectorAll("filter").forEach(filterEl => {
+    filterEl.setAttribute("filterUnits", "userSpaceOnUse");
+    filterEl.setAttribute("x", "0");
+    filterEl.setAttribute("y", "0");
+    filterEl.setAttribute("width", "100%");
+    filterEl.setAttribute("height", "100%");
+  });
 }
 
 // remove hidden g elements and g elements without children to make downloaded svg smaller in size
