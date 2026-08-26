@@ -119,7 +119,8 @@ function renderDownloads(release: Release, target: string | undefined): string {
         (${Math.round(primary.size / 1024 / 1024)} MB). The file goes to your Downloads folder, open it to install the app.</p>`
     : "";
 
-  return `${main}<p>${primary ? "Other systems" : "Downloads"}: ${others}.</p>`;
+  const rest = others ? `<p>${primary ? "Other systems" : "Downloads"}: ${others}.</p>` : "";
+  return `${main}${rest}`;
 }
 
 async function renderOffer(): Promise<string> {
