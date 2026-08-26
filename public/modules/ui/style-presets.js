@@ -132,18 +132,8 @@ function writeAttrsById(id, attrs) {
 function projectPresetOptions() {
   const byId = id => document.getElementById(id);
 
-  const vignetteRect = byId("vignette-rect");
-  setOrRemove(vignetteRect, "x", styles.vignette.options.x);
-  setOrRemove(vignetteRect, "y", styles.vignette.options.y);
-  setOrRemove(vignetteRect, "width", styles.vignette.options.width);
-  setOrRemove(vignetteRect, "height", styles.vignette.options.height);
-  setOrRemove(vignetteRect, "rx", styles.vignette.options.rx);
-  setOrRemove(vignetteRect, "ry", styles.vignette.options.ry);
-  setOrRemove(vignetteRect, "filter", styles.vignette.options.filter);
-
-  const oceanicPattern = byId("oceanicPattern");
-  setOrRemove(oceanicPattern, "href", styles.ocean.options.pattern);
-  setOrRemove(oceanicPattern, "opacity", styles.ocean.options.patternOpacity);
+  window.applyVignetteOptions();
+  window.applyOceanPattern();
 
   for (const [group, style] of Object.entries(styles.labels.groups)) {
     const el = document.querySelector(`#labels > [data-group="${CSS.escape(group)}"]`);

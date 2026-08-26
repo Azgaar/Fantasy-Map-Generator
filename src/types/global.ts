@@ -41,6 +41,8 @@ declare global {
     setZoomExtent: typeof import("../components/zoom").setZoomExtent;
     setTranslateExtent: typeof import("../components/zoom").setTranslateExtent;
     getLabelsData: typeof import("../renderers/labels/label-data").getLabelsData;
+    applyVignetteOptions: typeof import("../renderers/draw-vignette").applyVignetteOptions;
+    applyOceanPattern: typeof import("../renderers/draw-ocean").applyOceanPattern;
   }
 
   var mapId: number;
