@@ -380,7 +380,7 @@ function updateWorld(): void {
 function updateGlobePosition(): void {
   const eqD = ((graphHeight / 2) * 100) / options.mapSize;
 
-  calculateMapCoordinates();
+  Coordinates.calculate();
   const mc = mapCoordinates;
   const unit = distanceUnitInput.value;
   const meridian = toKilometer(eqD * 2 * distanceScale);

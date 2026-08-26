@@ -433,7 +433,7 @@ class Resampler {
     Grid.addDeepDepressionLakes();
     Grid.openNearSeaLakes();
 
-    calculateMapCoordinates();
+    Coordinates.calculate();
     Temperature.generate();
 
     Pack.generate();

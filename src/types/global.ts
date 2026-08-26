@@ -124,8 +124,6 @@ declare global {
 
   var $: (selector: any) => any;
   var changeFont: () => void;
-  var defineMapSize: () => void;
-  var calculateMapCoordinates: () => void;
   var logStats: () => void;
   var applyGraphSize: () => void;
   var cellsDensityMap: Record<number, number>;
