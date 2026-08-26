@@ -26,7 +26,7 @@ function toggle(baseMarker?: Marker): void {
 
 function addOnClick(event: MouseEvent, baseMarker?: Marker): void {
   const point = pointer(event, event.currentTarget as SVGGElement);
-  const cell = findCell(point[0], point[1]);
+  const cell = Pack.findCell(point[0], point[1]);
   if (cell === undefined) return;
 
   const selectedType = ensureEl<HTMLSelectElement>("addedMarkerType").value;

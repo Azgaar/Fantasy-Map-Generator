@@ -1114,7 +1114,7 @@ function enterAddProvinceMode(this: HTMLElement): void {
 function addProvince(this: SVGElement, event: any): void {
   const { cells, provinces } = pack;
   const point = getPointer(event, this);
-  const center = findCell(point[0], point[1])!;
+  const center = Pack.findCell(point[0], point[1])!;
   if (cells.h[center] < 20) {
     tip("You cannot place province into the water. Please click on a land cell", false, "error");
     return;

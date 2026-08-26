@@ -1,8 +1,21 @@
 ## Marker overview
-Markers are icons on the map representing a point of interest, e.g. a battlefield, a bridge, an inn, etc.  You can toggle the markers layer on or off using the button on the Layers tab.
+Markers are icons on the map representing a point of interest, e.g. a battlefield, a bridge, an inn, etc. You can toggle the markers layer on or off using the button on the Layers tab or the <kbd>K</kbd> hotkey. The _Markers Overview_ (<kbd>Shift</kbd> + <kbd>K</kbd>) lists every marker, lets you filter and remove them, and exports them as a `.csv` file.
 
 ## Marker generation and editing
-After map generation, the markers are randomly generated according to a set of criteria (e.g. bridges can only appear on rivers), and you can add your own markers anywhere you want.  Each randomly generated marker has some randomly generated relevant notes attached.  Notes on both randomly generated markers and manually added markers can be edited.  Notes can have different fonts which you can edit in the notes editor.  You can also edit properties for markers like the icon, icon size, and position.  Icons have to be from a list of icons, or you can add a new icon which must be a unicode character.  Custom icons are not possible at the moment.  To edit a marker, click the marker icon.  A small window with marker properties will appear.  You can edit notes using the bottom-left button.
+After map generation the markers are randomly generated according to a set of criteria (e.g. bridges can only appear on rivers), and you can add your own markers anywhere you want (<kbd>Shift</kbd> + <kbd>3</kbd>, or _Tools_ → _Add_ → _Marker_). Each randomly generated marker has a relevant note attached. Notes on both generated and manually added markers can be edited in the Notes editor, which supports rich text.
+
+To edit a marker, click its icon. A small window with the marker properties appears, where you can change:
+
+* **Type** — style changes apply to all markers of the same type. Leave it blank to make the marker unique
+* **Icon** — a Unicode character or an image URL / data URI
+* **Size** — the marker element size in pixels and the icon size separately
+* **Icon shift** — the icon offset by X and Y as a percentage; 50 centers the icon
+* **Pin shape** and its **fill** and **stroke** colors
+
+The buttons at the bottom let you edit the legend, show all markers within a radius of this one, lock the marker so regeneration does not touch it, add another marker of the same type and remove the marker.
+
+### Generation settings
+The _Markers Overview_ has a settings dialog listing every marker type with its icon, a **multiplier** and the current count on the map. Set a multiplier to 0 to stop a type from being generated, or raise it to get more of them. Some types (disturbed burials, rifts, portals) are only generated when a fantasy culture set is used, i.e. their default multiplier is 0 otherwise.
 
 ## Special markers
 There are special markers for dungeons, which link to Watabou's one-page dungeon generator (https://watabou.itch.io/one-page-dungeon).  These special markers show a preview in the notes.  In the notes editor, click on the <> button to show the HTML code used for the preview.  You can use the same text to generate your own previews to dungeons.  The text is below:
@@ -28,7 +41,7 @@ You can also make a clickable link with an image preview:
 
 
 ## Marker criteria
-Criteria and types of randomly added markers are below:
+Criteria and types of randomly added markers are defined in the generator and can change between versions. The current generator includes the following types:
 
 * Battlefields: These are areas within a state that have a noticeable population, found in mid-elevation regions.
 * Bridges: These are found in cities located near rivers, especially where the river is not close to the ocean and the water flow is significant.
@@ -58,4 +71,11 @@ Criteria and types of randomly added markers are below:
 * Statues: These monuments appear in low to mid-elevation regions.
 * Volcanoes: Found in very high mountain regions, representing active or dormant volcanic activity.
 * Waterfalls: Located in hilly or mountainous areas with rivers, especially where there’s a sharp drop in terrain nearby.
-
+* Water sources: cells above height 30 that have a river.
+* Libraries: burgs with a culture and a noticeable population.
+* Fairs: small burgs.
+* Caves: populated cells at height 50 and above.
+* Disturbed burials: populated land cells. Fantasy culture sets only.
+* Necropolises: land cells with almost no population.
+* Encounters: populated land cells.
+* Party: a single movable marker placed in a burg, meant to track the current location of an adventuring party.

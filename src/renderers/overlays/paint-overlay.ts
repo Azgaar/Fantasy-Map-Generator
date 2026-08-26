@@ -1,5 +1,4 @@
 import type { PackedGraph } from "@/types/PackedGraph";
-import { getPackPolygon } from "@/utils";
 
 export interface PaintOverlayValue {
   id: number;
@@ -39,7 +38,7 @@ export function updatePaintOverlay(graph: PackedGraph, cells: readonly PaintOver
   const newPolygons = document.createDocumentFragment();
   for (const { cell, values } of cells) {
     const rendered = renderedCells.get(cell);
-    const points = rendered?.points ?? getPackPolygon(cell, graph).join(" ");
+    const points = rendered?.points ?? Pack.getPolygon(cell, graph).join(" ");
     if (rendered) {
       for (const polygon of rendered.polygons) polygon.remove();
     }

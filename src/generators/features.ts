@@ -1,15 +1,6 @@
 import Alea from "alea";
 import { polygonArea } from "d3";
-import {
-  clipPoly,
-  connectVertices,
-  createTypedArray,
-  distanceSquared,
-  isLand,
-  isWater,
-  rn,
-  TYPED_ARRAY_MAX
-} from "../utils";
+import { clipPoly, connectVertices, distanceSquared, isLand, isWater, rn, TYPED_ARRAY_MAX } from "../utils";
 
 declare global {
   var Features: FeatureModule;
@@ -97,7 +88,6 @@ class FeatureModule {
    * mark Grid features (ocean, lakes, islands) and calculate distance field
    */
   markupGrid() {
-    TIME && console.time("markupGrid");
     Math.random = Alea(seed); // get the same result on heightmap edit in Erase mode
 
     const { h: heights, c: neighbors, b: borderCells, i } = grid.cells;
@@ -147,9 +137,7 @@ class FeatureModule {
     });
     grid.cells.t = distanceField;
     grid.cells.f = featureIds;
-    grid.features = [0, ...features];
-
-    TIME && console.timeEnd("markupGrid");
+    grid.features = [0 as unknown as GridFeature, ...features];
   }
 
   /**
@@ -248,8 +236,6 @@ class FeatureModule {
       } as Feature;
     };
 
-    TIME && console.time("markupPack");
-
     const { cells, vertices } = pack;
     const { c: neighbors, b: borderCells, i } = cells;
     const packCellsNumber = i.length;
@@ -257,10 +243,7 @@ class FeatureModule {
 
     const distanceField = new Int8Array(packCellsNumber); // pack.cells.t
     const featureIds = new Uint16Array(packCellsNumber); // pack.cells.f
-    const haven = createTypedArray({
-      maxValue: packCellsNumber,
-      length: packCellsNumber
-    }); // haven: opposite water cell
+    const haven = new Uint32Array(packCellsNumber); // haven: opposite water cell
     const harbor = new Uint8Array(packCellsNumber); // harbor: number of adjacent water cells
     const features: Feature[] = [];
 
@@ -322,7 +305,6 @@ class FeatureModule {
     pack.cells.haven = haven;
     pack.cells.harbor = harbor;
     pack.features = [0 as unknown as Feature, ...features];
-    TIME && console.timeEnd("markupPack");
   }
 
   /**

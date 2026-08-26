@@ -4,20 +4,13 @@ The map generator operates on a scale that you can adjust through the `Units` se
 
 ## Units editor
 
-The Units settings appear following the path Menu → Tools → edit Units or using the shortcut `SHIFT` + `Q`. Once you open the Units Editor, you see several options.
+The Units settings appear following the path Menu → Tools → Units, or using the shortcut <kbd>Shift</kbd> + <kbd>Q</kbd>. The Units Editor has four sections:
 * Distance
 * Altitude
 * Temperature
 * Population
 
-In the icons at the bottom of the Units editor are more options:
-* Linear ruler on the map
-* Curve ruler, opisometer
-* Route opisometer
-* Planimeter
-* Remove all rulers. A popup appears that reads: Are you sure you want to remove all placed rulers?
-If you just want to hide rulers, toggle the Rulers layer off in Menu. And buttons remove and cancel.
-* Restore default unit settings. Set values to default but don't remove rulers.
+The only button at the bottom of the Units Editor restores the default unit settings. Rulers and other measuring tools live in a separate **Measurers Editor** (Menu → Tools → Measurers, or <kbd>Shift</kbd> + <kbd>=</kbd>) — see the [Measurers](#measurers) section below.
 
 ### Distance
 
@@ -30,7 +23,7 @@ Here you can select the unit your maps are going to use. You can select from:
 * Nautical league (nlg)
 * Custom name
 
-Area unit name is just to customize the name of that unit.
+The **Area unit** field customizes the name of the area unit. Type `square` to get the distance unit with a superscript ² (e.g. `mi²`); type anything else to use that text verbatim.
 
 ### How to add a distance unit
 
@@ -38,7 +31,7 @@ When you click on "custom name" a popup appears A popup will appear that says "P
 
 ### How to change the scale of your map
 
-The value who decides how big is your map is the ratio between pixels and your distance unit. By default this ratio is: "1 pixel is 3 km" but you can change it on the slider. Accepted values are from 0.01 where your whole map is only a few tens of units (10-20 units) to 19.91. that makes your map a few something units.
+The **1 map pixel** slider decides how many distance units one map pixel represents. The default is 3, and the input accepts values from 0.01 to 20. This value is unit-agnostic: the distance unit selected above defines how it is displayed. Increasing it makes the same map cover a larger world.
 
 ### Altitude
 
@@ -50,7 +43,7 @@ The dropdown has these units to choose from:
 * Fathom (f).
 * Custom name. It opens a pop with an input text field. Write your unit name and click confirm.
 
-The height exponent goes from 1.5 to 2.2 and affect higher numbers more. The default value of height exponent is 1.8. Here is an example of heights with different exponents.
+The height exponent goes from 1.5 to 2.2 and affects higher numbers more. The default value is 2. Altitude also affects temperature and hence biomes. Here is an example of heights with different exponents.
 
 * Island coast. Exp: 1.5 → 11 m. 1.8 → 25 m. 2.2 → 34 m. An average of that cell above the sea level.
 * Central lands. Exp: 1.5 → 225 m. 1.8 → 665 m. 2.2 → 2819 m.
@@ -77,24 +70,26 @@ Here you can change the amount of people and population ratio live in the map.
 * Urbanization rate. Burg population relative to all population. This does not modify the total population or decrease rural population. It only increases the people at burgs and makes the percentage of people living at burgs higher. By default: 1. Min: 0.01. Max: 5.
 * Urban density. Average people per building in medieval fantasy city generator. By default: 10. Min: 1. Max: 200.
 
-## Rulers
+## Measurers
 
-Click on a ruler to delete it or the button with a bin to remove all rulers.
+Measurers are placed and managed from the **Measurers Editor** (Menu → Tools → Measurers, or <kbd>Shift</kbd> + <kbd>=</kbd>). The dialog lists every measurer on the map with buttons to zoom to it or remove it, and the toolbar at the bottom adds a linear ruler, an opisometer, a route opisometer or a planimeter, or removes all measurers at once.
 
-### Linear rulers.
-When you click on the ruler icon a new linear ruler is created in the middle of the screen.
+Measurers are drawn on the _Rulers_ layer (<kbd>=</kbd> to toggle), so you can hide them without deleting them.
+
+### Linear rulers
+When you click the ruler icon a new linear ruler is created in the middle of the screen.
 
 * Drag the whole ruler clicking on the label and holding.
 * Extend the ruler clicking on the dot at one of the two ends of the ruler. Hold the mouse button to extend and move the mouse to control the direction.
 * Click anywhere inside the ruler to create a ruler anchor point. A circle appears at that anchor point to indicate it. Even if you move the ruler at the edges, it will remain fixed at the anchor point. This allows you to measure contours that are not straight. Click on the same point to delete that anchor point.
-* You can hold `CTRL` and drag the dot at one of the ends to keep the previous endpoint as an anchor point and extend the ruler.
+* You can hold <kbd>Ctrl</kbd> and drag the dot at one of the ends to keep the previous endpoint as an anchor point and extend the ruler.
 * Click on the endpoint to delete that and return to previous, shorter length of the ruler.
-* Click on an anchor point and hold `SHIFT` to move the anchor point only in horizontal or vertical of the origin point. This is called to "keep the axial direction".
+* Click on an anchor point and hold <kbd>Shift</kbd> to move the anchor point only in horizontal or vertical of the origin point. This is called to "keep the axial direction".
 
 ### Curve ruler, opisometer
 
 When you click the opisometer ruler you, your cursor changes to a cross. You need to click and hold on the origin of your ruler and draw the opisometer on the map.
-* Meanwhile your cursor is a cross, you can hold `SHIFT` to disallow path optimization.
+* While the cursor is a cross, hold <kbd>Shift</kbd> to disallow path optimization.
 * Click and hold on the label or the line to drag the opisometer.
 * Click on the circle at the end to extend the opisometer.
 
@@ -106,8 +101,8 @@ When you click the opisometer ruler you, your cursor changes to a cross. You nee
 ### Planimeter
 When you click the planimeter button, your cursor changes to a cross. You need to click and hold on the origin of your ruler and draw the planimeter on the map.
 * The planimeter will cover a 2D area.
-* Meanwhile your cursor is a cross, you can hold `SHIFT` to disallow path optimization.
-* A number with your "area unit" set in Units Editor → Distance → Area unit will appear. By default is "square" that appears as Km2.
+* While the cursor is a cross, hold <kbd>Shift</kbd> to disallow path optimization.
+* The measured area is shown using the area unit set in Units Editor → Distance → Area unit. With the default settings that is `mi²`.
 
 ## Routes
 
@@ -122,9 +117,9 @@ In Layers → Routes you can show/hide routes on your map. In Style → select e
 * Graphic. Show the elevation profile for the route.
 * Edit free text notes (legend) for the route.
 * Lockpad. Click to lock route and prevent changes to it by regeneration tools.
-* Remove route. Shortcut: `delete` key.
+* Remove route. Shortcut: <kbd>Delete</kbd> key.
 
-Clicking on menu → tools → edit → routes opens the "Routes Overview" menu. This shows a list of all routes on a table with sortable headers. Sorted by default by length. Click on a table header to change the sorting criteria. The table shows: Target icon, route name, route group, length, edit, lock and remove icons.
+Menu → Tools → Routes (<kbd>Shift</kbd> + <kbd>U</kbd>) opens the "Routes Overview". This shows a list of all routes on a table with sortable headers. Sorted by default by length. Click on a table header to change the sorting criteria. The table shows: Target icon, route name, route group, length, edit, lock and remove icons.
 * Clicking on the target icon focus the map on the selected route.
 * Edit icon opens the "edit route" menu.
 
@@ -147,12 +142,18 @@ Grid can be used to refer to several things. Grids due to the voronoi cells that
 
 to show/hide the grid go to: menu → layers → grid. You can customize the look and features of your grid in style → select element → grid. In style you can customize:
 * **Opacity** of the grid. From 0 invisible to 1 visible.
-* **Type**.
-    * Hex grid (pointy). Hexagons. They are joined horizontally at the sides. This makes them have two vertical vertices.
-    * Hex grid (flat). They are joined vertically at the sides. They show two horizontal vertices.
+* **Type**. Ten tilings are available:
+    * Hex grid (pointy). Hexagons joined horizontally at the sides, so they have two vertical vertices.
+    * Hex grid (flat). Joined vertically at the sides, so they show two horizontal vertices.
     * Square grid. Squares parallel to the ground.
+    * Square 45 degrees grid. The same squares rotated so the cells run diagonally.
+    * Truncated square grid. Alternating octagons and small squares.
+    * Tetrakis square grid. Each square divided into triangles.
+    * Triangle grid (horizontal) and Triangle grid (vertical).
+    * Trihexagonal grid. Alternating hexagons and triangles.
+    * Rhombille grid. Rhombi arranged in a cube-like pattern.
 * **Scale**. Default 1. Min: 0.1. Max: 10. Set the scale of the grid overlay.
-* Next to the scale is the **distance** between grid cell centers in map scale. Default: scale 1 → 75 km. Min: 0.1 → 7.5 km. Max: 10 → 750 km.
+* Next to the scale is the read-only **distance** between grid cell centers in map scale. At the default distance scale of 3, grid scale 1 corresponds to 75 distance units, scale 0.1 to 7.5 and scale 10 to 750. The selected distance unit is used for the label.
 * **Shift by axes**. The input fields are shifting in X or Y axis in pixels. By default 0, 0.
 * **Stroke color** of the grid. Color selector.
 * **Stroke width**. The line that draws the grid. By default 0.5. Min: 0. Max: 5.

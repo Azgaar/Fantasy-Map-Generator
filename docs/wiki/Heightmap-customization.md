@@ -2,7 +2,7 @@ The **heightmap editor** allows you to create and customize the heightmap manual
 
 To access the Heightmap Editor, you can either:
 1. Navigate to Tools > Heightmap in the menu. (Look at the image below)
-2. Use the hotkey *shift + h*.
+2. Use the hotkey <kbd>Shift</kbd> + <kbd>H</kbd>.
 
 <details>
 <summary>Show Image</summary>
@@ -51,18 +51,18 @@ The Heightmap Editor includes tools to help you create and customize your map. B
   - You can click the image to download it.
 
 - **3D Scene**:
-  - Opens a 3D version of the map in a new window.
+  - Opens the map in the app's 3D preview.
   - Allows for a more immersive view of the map's shape and features.
 
-- **Enable Ocean Cells**:
-  - Enable or disable ocean cells on your map.
-  - Useful for defining water bodies and coastlines.
+- **Render Ocean Cells**:
+  - Renders or hides ocean cells in the editor preview.
+  - It does not enable or disable ocean cells in the map.
 
 - **Allow Water Erosion**:
   - Simulate water erosion effects on the terrain.
   - Adds realism to the map by shaping the landscape according to water flow.
 
-Once you are satisfied with the Heightmap, click on **Exit Customization** in the bottom right.
+Once you are satisfied with the heightmap, click **Exit Customization** in the bottom right. The map must have at least 200 land cells, and the Image Converter must be closed first.
 
 <details>
 <summary>Show Image</summary>
@@ -73,27 +73,33 @@ Once you are satisfied with the Heightmap, click on **Exit Customization** in th
 
 ## Paint brushes
 
-  - **Radius (top slider)**: Controls the radius for brushes.
-  - **Power (bottom slider)**: Controls the intensity of brushes.
-    - Note: This has no effect on align tool.
-  - **Raise**: Increases cell height by power value; drag for continuous usage.
-  - **Elevate**: Drag to gradually increase cell height by power value.
-  - **Lower**: Decreases cell height by power value; drag for continuous usage.
-  - **Depress**: Drag to gradually decrease cell height.
-  - **Align**: Fits cell height to the first tagged cell; drag for continuous usage.
-  - **Smooth**: Smooths cell height; drag the map for continuous usage.
-  - **Disrupt**: Randomizes heights slightly; drag for continuous usage.
-  - **Checkbox “change only land cells”**: Prevents changes to the coastline.
-  - **Line Tool**: Creates mountains or trenches in lines.
+  - **Raise**: increases the height of cells in radius by the Power value; drag for continuous use.
+  - **Elevate**: drag to gradually increase the height of cells in radius by the Power value.
+  - **Lower**: drag to decrease the height of cells in radius by the Power value.
+  - **Depress**: drag to gradually decrease the height of cells in radius.
+  - **Align**: drag to set the height of cells in radius to the height of the cell under the cursor.
+  - **Smooth**: drag to level the height of cells in radius towards the height of the adjacent cells.
+  - **Disrupt**: drag to randomize the height of cells in radius based on the Power value.
+  - **Fill**: click an enclosed water area or a same-height land area to create a cone-shaped blob.
+  - **Line**: select two points to change the heights along a line — useful for ridges and trenches.
+
+### Sliders
+  - **Size**: brush radius (1–100). Shortcut: <kbd>+</kbd> / <kbd>-</kbd>, or <kbd>[</kbd> / <kbd>]</kbd>.
+  - **Power**: brush intensity (1–10). Not used by the Align brush.
+  - **Power** (Line tool): the height change along the line, from -100 to 100.
+  - **Randomness** (Line tool): line jitter — zero makes the line as straight as possible.
+
+### Cells to change
+A dropdown restricting which cells a brush may touch: _all cells_, _only land cells_ or _only water cells_. Restricting to land or water prevents the brush from moving the coastline.
 
 ### Footer Buttons
-  - **Un-do**: Steps back, works only for Heightmap customization.
-  - **Re-do**: Steps forward, works only for Heightmap customization.
-  - **Rescaler**: Slider to rescale all cells.
-  - **Condition**: Conditional height rescaler.
-  - **Smooth**: Smooths all heights a bit.
-  - **Disrupt**: Randomizes all heights a bit.
-  - **Clear**: Sets all heights to 0.
+  - **Undo** (<kbd>Ctrl</kbd> + <kbd>Z</kbd>): step back. Works only within heightmap customization.
+  - **Redo** (<kbd>Ctrl</kbd> + <kbd>Y</kbd>): step forward.
+  - **Rescaler**: a slider that shifts all heights up or down.
+  - **Conditional rescaler**: applies an operation to heights within a given interval — "if height is between X and Y, then do Z with operand V".
+  - **Smooth**: smooths all heights a bit.
+  - **Disrupt**: randomizes all heights a bit.
+  - **Clear**: sets all heights to 0 (erases the map).
 
 <details>
 <summary>Show Image</summary>
@@ -104,7 +110,7 @@ Once you are satisfied with the Heightmap, click on **Exit Customization** in th
 
 ## Template Editor
 
-Please see [Template Editor](../wiki/Heightmap-template-editor).
+Please see [Template Editor](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-template-editor).
 
 
 ## Image Converter
@@ -128,8 +134,11 @@ Once opened, you'll be asked to select an image from your files.
   - Ideal for maps made with the generator.
 
 - **Set Maximum Amount of Colors**:
-  - Allows you to set the number of colors you can assign.
-  - Can be any number from 3 to 255.
+  - Allows you to set the number of colors to quantize the image to (100 by default).
+  - The converter may produce fewer colors than the requested maximum, depending on the source image and palette.
+
+- **Overlay opacity**:
+  - A slider that fades the source image over the heightmap being built, so you can trace it.
 
 - **Cancel the Conversion**:
   - Cancel the image conversion and revert back to the previous map.
@@ -138,7 +147,7 @@ Once opened, you'll be asked to select an image from your files.
   - Fully loads the map into the Fantasy Map Generator.
   - All unassigned colors will default to ocean.
 
-To assign a color by hand, click the color you want to edit and then click the height you want on the set height slider.
+Colors are listed in two groups — _Assigned colors_ and _Unassigned colors_. To assign a color by hand, click the color you want to edit and then pick the height on the slider above. Click an already assigned color to re-assign it.
 
 
 <details>

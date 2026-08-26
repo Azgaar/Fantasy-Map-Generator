@@ -99,7 +99,6 @@ test.describe("Map loading", () => {
     await fileInput.setInputFiles(mapFilePath);
 
     // Wait for map to be fully loaded
-    // mapId is set at the very end of map loading in showStatistics()
     await page.waitForFunction(() => (window as any).mapId !== undefined, {
       timeout: 120000
     });

@@ -10,7 +10,7 @@ Think of it like having your own personal AI generator living on your computer!
 
 ## Step 1: Download and Install Ollama
 
-1. Go to [[ollama.com](https://ollama.com/)](https://ollama.com/)
+1. Go to [ollama.com](https://ollama.com/)
 2. Click the download button and select your system (Windows, Mac, or Linux)
 3. Run the downloaded file and follow the installation steps
 4. That's it! Ollama is now installed.
@@ -41,19 +41,19 @@ If you are running FMG locally, you don't need this step. But if you want Ollama
 ### For Windows Users:
 1. **Press `Windows key + R`**
 2. **Type `sysdm.cpl` and press Enter**
-3. **Click "Environment Variables..." button**
-7. **Click "New..." and enter:**
+3. **Click the "Environment Variables..." button**
+4. **Click "New..." and enter:**
    - Variable name: `OLLAMA_ORIGINS`
-   - Variable value: `https://azgaar.github.io,https://*afmg.netlify.app,http://127.0.0.1:5501`
-8. **Click "OK" on everything**
-9. **Restart ollama sever if it's running. You may need to restart you computer as well**
+   - Variable value: the FMG origins you use, for example `https://azgaar.github.io,http://localhost:5173`
+5. **Click "OK" on everything**
+6. **Restart the Ollama server if it is running. You may need to restart your computer as well**
 
 ### For Mac Users:
 1. **Open Terminal**
 2. **Type this command:** `nano ~/.zshrc`
-3. **Add these two lines at the end:**
+3. **Add this line at the end:**
    ```
-   export OLLAMA_ORIGINS="https://azgaar.github.io,https://*afmg.netlify.app,http://127.0.0.1:5501"
+   export OLLAMA_ORIGINS="https://azgaar.github.io,http://localhost:5173"
    ```
 4. **Save and exit:**
    - Press `Ctrl + X`
@@ -71,19 +71,19 @@ If you are running FMG locally, you don't need this step. But if you want Ollama
 2. **Type these commands one by one:**
    ```
    echo 'export OLLAMA_HOST="0.0.0.0"' >> ~/.bashrc
-   echo 'export OLLAMA_ORIGINS="https://azgaar.github.io,https://*afmg.netlify.app,http://127.0.0.1:5501"' >> ~/.bashrc
+   echo 'export OLLAMA_ORIGINS="https://azgaar.github.io,http://localhost:5173"' >> ~/.bashrc
    source ~/.bashrc
    ```
 3. **Restart your computer**
 
 ## Step 4: Start the server
 
-1. Open Command Prompt/Terminal. Type: `ollama serve`. Leave this window open** - Ollama is now running!
-2. Open Fantasy Map Generator. Open AI notes generator and select "ollama" from the AI model list
-3. In the key field, type: `llama3.2` (or whatever model you downloaded)
-4. Update the prompt and click on `generate`
+1. Open Command Prompt/Terminal and type `ollama serve`. **Leave this window open** — Ollama is now running.
+2. Open Fantasy Map Generator and open the AI text generator with the robot button in the Notes editor. Select **ollama (local models)** from the model list.
+3. In the key field, type the model name: `llama3.2` (or whatever model you downloaded). This field is a model name, not an API key.
+4. Update the prompt, optionally adjust the temperature, and click **Generate**
 
-**Important:** Fantasy Map Generator connects to Ollama at `http://localhost:11434/api/generate`. This should work automatically by default. If you need to change the connection address, you can modify the endpoint in the FMG `ai-generator.js` file.
+**Important:** Fantasy Map Generator connects to Ollama at `http://localhost:11434/api/generate`. This should work automatically by default. If you need to change the connection address, modify the endpoint in `src/controllers/ai-generator.ts` in a local source build.
 
 That's It! You can now generate text using your local AI model.
 
@@ -92,3 +92,9 @@ That's It! You can now generate text using your local AI model.
 **If it doesn't work:**
 - Check that `ollama serve` is still running in your command prompt/terminal
 - Try typing `ollama list` to see if your model downloaded correctly
+- Make sure the model name you typed in the key field matches exactly what `ollama list` reports
+- If you use the hosted version of FMG, double-check `OLLAMA_ORIGINS` includes `https://azgaar.github.io`
+
+## Other providers
+
+The same dialog also supports OpenAI and Anthropic models. For those, the key field is a real API key, which is stored only in your browser's local storage and sent directly to the provider.

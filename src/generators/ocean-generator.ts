@@ -19,8 +19,6 @@ class OceanModule {
 
   /** trace the ocean rings for the requested distances, clipped to the map */
   generate(limits: number[]): OceanOutline[] {
-    TIME && console.time("generateOcean");
-
     const { cells, vertices } = grid;
     const pointsN = cells.i.length;
     const used = new Uint8Array(pointsN); // cells already covered by a traced ring
@@ -49,8 +47,6 @@ class OceanModule {
       );
       outlines.get(t)!.push(ring);
     }
-
-    TIME && console.timeEnd("generateOcean");
 
     // in limits order, so the renderer stacks the rings from the coast outwards
     return limits.map(t => ({ t, rings: outlines.get(t)! }));

@@ -45,8 +45,6 @@ class ZonesModule {
   }
 
   generate(globalModifier = 1) {
-    TIME && console.time("generateZones");
-
     const usedCells = new Uint8Array(pack.cells.i.length);
     pack.zones = [];
 
@@ -55,8 +53,6 @@ class ZonesModule {
       let number = gauss(expectedNumber, expectedNumber / 2, 0, 100);
       while (number--) type.generate(usedCells);
     });
-
-    TIME && console.timeEnd("generateZones");
   }
 
   private addInvasion(usedCells: Uint8Array) {

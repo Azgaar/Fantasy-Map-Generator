@@ -1,16 +1,9 @@
 import { mean, quadtree } from "d3";
 import { clipPolyline } from "lineclip";
 import { Measurers } from "@/generators/measurers-generator";
+import type { GridGraph } from "../types/GridGraph";
 import type { PackedGraph } from "../types/PackedGraph";
-import {
-  findAllCellsInRadius,
-  findClosestCell,
-  generateGrid,
-  getPolesOfInaccessibility,
-  isWater,
-  rn,
-  unique
-} from "../utils";
+import { getPolesOfInaccessibility, isWater, rn, unique } from "../utils";
 import type { River } from "./river-generator";
 import type { Point } from "./voronoi";
 
@@ -23,7 +16,7 @@ interface ResamplerProcessOptions {
 }
 
 type ParentMapDefinition = {
-  grid: any;
+  grid: GridGraph;
   pack: PackedGraph;
   notes: any[];
 };
@@ -159,9 +152,7 @@ class Resampler {
         });
         if (points.length < 2) return null;
 
-        const cells = points
-          .map(point => findClosestCell(...point, Infinity, pack))
-          .filter(cellId => cellId !== undefined);
+        const cells = points.map(point => Pack.findCell(...point)).filter(cellId => cellId !== undefined);
         cells.forEach(cellId => {
           if (pack.cells.r[cellId]) pack.cells.conf[cellId] = 1;
           pack.cells.r[cellId] = river.i;
@@ -198,7 +189,7 @@ class Resampler {
       const [xp, yp] = projection(parentCoords[0], parentCoords[1]);
       const [x, y] = [rn(xp, 2), rn(yp, 2)];
       const [centerX, centerY] = this.isInMap(x, y) ? [x, y] : culturePoles[culture.i];
-      const center = findClosestCell(centerX, centerY, Infinity, pack);
+      const center = Pack.findCell(centerX, centerY, Infinity);
       return { ...culture, center };
     });
   }
@@ -248,7 +239,7 @@ class Resampler {
       const [xp, yp] = projection(burg.x, burg.y);
       if (!this.isInMap(xp, yp)) return { ...burg, removed: true, lock: false };
 
-      const closestCell = findClosestCell(xp, yp, Infinity, pack) as number;
+      const closestCell = Pack.findCell(xp, yp, Infinity) as number;
       const cell = isWater(closestCell, pack) ? (findLandCell(xp, yp) as number) : closestCell;
 
       if (pack.cells.burg[cell]) {
@@ -277,7 +268,7 @@ class Resampler {
 
       const capital = pack.burgs[state.capital];
       const [poleX, poleY] = state.pole as Point;
-      state.center = !capital || capital.removed ? findClosestCell(poleX, poleY, Infinity, pack)! : capital.cell;
+      state.center = !capital || capital.removed ? Pack.findCell(poleX, poleY, Infinity)! : capital.cell;
 
       const military = state.military!.reduce(
         (acc, regiment) => {
@@ -290,7 +281,7 @@ class Resampler {
           }
 
           const cellCoords = projection(...parentMap.pack.cells.p[regiment.cell]);
-          const cell = this.isInMap(...cellCoords) ? findClosestCell(...cellCoords, Infinity, pack)! : state.center;
+          const cell = this.isInMap(...cellCoords) ? Pack.findCell(...cellCoords, Infinity)! : state.center;
 
           const [xBase, yBase] = projection(regiment.bx, regiment.by);
           const [xCell, yCell] = pack.cells.p[cell];
@@ -329,7 +320,7 @@ class Resampler {
         const clippedSegments = clipPolyline(points, bbox) as unknown as Point[][];
         if (!clippedSegments[0]?.length) return null;
         const clipped = clippedSegments[0].map(
-          ([x, y]) => [rn(x, 2), rn(y, 2), findClosestCell(x, y, Infinity, pack) as number] as [number, number, number]
+          ([x, y]) => [rn(x, 2), rn(y, 2), Pack.findCell(x, y, Infinity) as number] as [number, number, number]
         );
         const firstCell = clipped[0][2];
         const feature = pack.cells.f[firstCell];
@@ -351,7 +342,7 @@ class Resampler {
       const [xp, yp] = projection(...parentMap.pack.cells.p[religion.center]);
       const [x, y] = [rn(xp, 2), rn(yp, 2)];
       const [centerX, centerY] = this.isInMap(x, y) ? [x, y] : religionPoles[religion.i];
-      const center = findClosestCell(centerX, centerY, Infinity, pack) as number;
+      const center = Pack.findCell(centerX, centerY, Infinity) as number;
       return { ...religion, center };
     });
   }
@@ -371,7 +362,7 @@ class Resampler {
       if (!province.i || province.removed) return;
       const capital = pack.burgs[province.burg];
       const [poleX, poleY] = province.pole as Point;
-      province.center = !capital?.removed ? capital.cell : findClosestCell(poleX, poleY, Infinity, pack)!;
+      province.center = !capital?.removed ? capital.cell : Pack.findCell(poleX, poleY, Infinity)!;
     });
   }
 
@@ -398,7 +389,7 @@ class Resampler {
       const [x, y] = projection(marker.x, marker.y);
       if (!this.isInMap(x, y)) Markers.deleteMarker(marker.i);
 
-      const cell = findClosestCell(x, y, Infinity, pack) as number;
+      const cell = Pack.findCell(x, y, Infinity) as number;
       marker.x = rn(x, 2);
       marker.y = rn(y, 2);
       marker.cell = cell;
@@ -416,7 +407,7 @@ class Resampler {
       const cells = zone.cells.flatMap(cellId => {
         const [newX, newY] = projection(...parentMap.pack.cells.p[cellId]);
         if (!this.isInMap(newX, newY)) return [];
-        return findAllCellsInRadius(newX, newY, getSearchRadius(cellId), pack);
+        return Pack.findAll(newX, newY, getSearchRadius(cellId));
       });
 
       return { ...zone, cells: unique(cells) };
@@ -432,21 +423,20 @@ class Resampler {
     };
     const riversData = this.saveRiversData(pack.rivers);
 
-    grid = generateGrid(seed, graphWidth, graphHeight);
+    grid = Grid.generate(seed, graphWidth, graphHeight);
     pack = {} as PackedGraph;
     notes = parentMap.notes;
 
     this.resamplePrimaryGridData(parentMap, inverse, scale);
 
     Features.markupGrid();
-    addLakesInDeepDepressions();
-    openNearSeaLakes();
+    Grid.addDeepDepressionLakes();
+    Grid.openNearSeaLakes();
 
-    Layers.draw("ocean");
-    calculateMapCoordinates();
-    calculateTemperatures();
+    Coordinates.calculate();
+    Temperature.generate();
 
-    reGraph();
+    Pack.generate();
     Features.markupPack();
     Ice.generate();
     Measurers.createDefaultRuler();
@@ -476,7 +466,7 @@ class Resampler {
       };
     });
 
-    showStatistics();
+    logStats();
   }
 }
 

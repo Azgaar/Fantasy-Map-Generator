@@ -1,9 +1,11 @@
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { precreatedHeightmaps } from "@/data/precreated-heightmaps";
+import { drawHeights } from "@/renderers/draw-heightmap";
+import type { GridGraph } from "@/types/GridGraph";
 import { applyOption } from "@/utils";
 import { lock } from "@/utils/preferences";
-import { drawHeights, ensureEl, generateGrid, generateSeed, shouldRegenerateGrid } from "../utils";
+import { ensureEl, generateSeed } from "../utils";
 
 const initialSeed = generateSeed();
 let graph = getGraph(grid);
@@ -274,11 +276,11 @@ function getName(id: string): string {
   return isTemplate ? heightmapTemplates[id].name : precreatedHeightmaps[id].name;
 }
 
-function getGraph(currentGraph: any): any {
-  const newGraph = shouldRegenerateGrid(currentGraph, seed as unknown as number, graphWidth, graphHeight)
-    ? generateGrid(seed, graphWidth, graphHeight)
+function getGraph(currentGraph: GridGraph): GridGraph {
+  const newGraph = Grid.shouldRegenerate(currentGraph, seed, graphWidth, graphHeight)
+    ? Grid.generate(seed, graphWidth, graphHeight)
     : structuredClone(currentGraph);
-  delete newGraph.cells.h;
+  Grid.resetHeights(newGraph);
   return newGraph;
 }
 

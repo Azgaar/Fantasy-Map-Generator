@@ -151,7 +151,7 @@ function dragMarker(this: SVGElement, event: any): void {
 
     selectedMarker.x = rn(x + dx + zoomSize / 2, 1);
     selectedMarker.y = rn(y + dy + zoomSize, 1);
-    selectedMarker.cell = findCell(selectedMarker.x, selectedMarker.y)!;
+    selectedMarker.cell = Pack.findCell(selectedMarker.x, selectedMarker.y)!;
   });
 }
 

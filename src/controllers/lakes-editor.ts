@@ -8,7 +8,7 @@ import { Coastline } from "@/generators/coastline-generator";
 import type { Feature } from "@/generators/features";
 import { GraphOverride } from "@/generators/graph-override";
 import { getArea, getAreaUnit, speak } from "@/utils";
-import { ensureEl, findEl, getPackPolygon, rand, rn, si, unique } from "../utils";
+import { ensureEl, findEl, rand, rn, si, unique } from "../utils";
 import { getHeight } from "../utils/unitUtils";
 
 let selectedLake: Selection<SVGElement, unknown, HTMLElement, unknown>;
@@ -154,7 +154,7 @@ function drawLakeVertices(): void {
     .data(neibCells)
     .enter()
     .append("polygon")
-    .attr("points", (d: number) => getPackPolygon(d, pack))
+    .attr("points", (d: number) => String(Pack.getPolygon(d)))
     .attr("data-c", (d: number) => d);
 
   select<SVGGElement, unknown>("#debug")
@@ -193,7 +193,7 @@ function handleVertexDrag(this: SVGCircleElement, event: any, vertexId: number):
   select("#debug")
     .select("#vertices")
     .selectAll<SVGPolygonElement, number>("polygon")
-    .attr("points", d => getPackPolygon(d, pack));
+    .attr("points", d => String(Pack.getPolygon(d)));
 }
 
 function handleVertexDragEnd(): void {

@@ -4,7 +4,7 @@ import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { redrawIceberg } from "@/renderers/draw-ice";
-import { ensureEl, findGridCell, getPointer, parseTransform } from "../utils";
+import { ensureEl, getPointer, parseTransform } from "../utils";
 
 let selectedIce: Selection<SVGElement, unknown, HTMLElement, unknown>;
 
@@ -89,7 +89,7 @@ function toggleAdd(): void {
 
 function addIcebergOnClick(event: PointerEvent): void {
   const [x, y] = getPointer(event, select<SVGElement, unknown>("#viewbox").node());
-  const i = findGridCell(x, y, grid);
+  const i = Grid.findCell(x, y);
   const size = +ensureEl<HTMLInputElement>("iceSize").value || 1;
 
   Ice.addIceberg(i, size);

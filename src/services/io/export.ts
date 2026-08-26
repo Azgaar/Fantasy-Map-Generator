@@ -6,6 +6,7 @@ import { renderEmblemDefinitions } from "@/renderers/draw-emblems";
 import { drawScaleBar } from "@/renderers/draw-scalebar";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { getUsedFonts, loadFontsAsDataURI } from "@/services/fonts";
+import { savedMessage } from "@/services/platform";
 import {
   connectVertices,
   downloadFile,
@@ -16,7 +17,6 @@ import {
   getCoordinates,
   getFileName,
   getFriendlyHeight,
-  getGridPolygon,
   rn,
   unique
 } from "@/utils";
@@ -46,7 +46,7 @@ async function exportToSvg(): Promise<void> {
     link.href = url;
     link.click();
 
-    const message = `${link.download} is saved. Open 'Downloads' screen (CTRL + J) to check`;
+    const message = savedMessage(link.download);
     tip(message, true, "success", 5000);
   } catch (error) {
     ERROR && console.error(error);
@@ -88,7 +88,7 @@ async function exportToPng(): Promise<void> {
       window.URL.revokeObjectURL(link.href);
     }, 1000);
 
-    const message = `${link.download} is saved. Open 'Downloads' screen (CTRL + J) to check. You can set image scale in options`;
+    const message = `${savedMessage(link.download)}. You can set image scale in options`;
     tip(message, true, "success", 5000);
   } catch (error) {
     ERROR && console.error(error);
@@ -130,7 +130,7 @@ async function exportToJpeg(): Promise<void> {
     link.download = `${getFileName()}.jpeg`;
     link.href = window.URL.createObjectURL(blob);
     link.click();
-    tip(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
+    tip(savedMessage(link.download), true, "success", 7000);
     window.setTimeout(() => window.URL.revokeObjectURL(link.href), 5000);
   } catch (error) {
     ERROR && console.error(error);
@@ -212,7 +212,7 @@ async function exportToPngTiles(): Promise<void> {
       link.click();
       link.remove();
 
-      status.innerHTML = 'Done. Check .zip file in "Downloads" (CTRL + J)';
+      status.innerHTML = savedMessage("The .zip file");
       setTimeout(() => URL.revokeObjectURL(link.href), 5000);
     })
     .catch((error: Error) => {
@@ -537,15 +537,16 @@ function removeUnusedElements(clone: MapSelection): void {
 
 function updateMeshCells(clone: MapSelection): void {
   const renderOcean = ensureEl<HTMLInputElement>("renderOcean").checked;
-  const data = renderOcean ? grid.cells.i : grid.cells.i.filter((i: number) => grid.cells.h[i] >= 20);
+  const cellIds = Array.from(grid.cells.i);
+  const data = renderOcean ? cellIds : cellIds.filter(i => grid.cells.h[i] >= 20);
   const scheme = getColorScheme(select("#terrs").select("#landHeights").attr("scheme"));
   clone.select("#heights").attr("filter", "url(#blur1)");
   clone
     .select("#heights")
     .selectAll("polygon")
-    .data(data as number[])
+    .data(data)
     .join("polygon")
-    .attr("points", (d: number) => getGridPolygon(d, grid))
+    .attr("points", (d: number) => String(Grid.getPolygon(d)))
     .attr("id", (d: number) => `cell${d}`)
     .attr("stroke", (d: number) => getColor(grid.cells.h[d], scheme));
 }

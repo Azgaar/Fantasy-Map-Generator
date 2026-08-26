@@ -1,17 +1,49 @@
-Welcome to the ***Fantasy Map Generator*** wiki! 
-_The Wiki is incomplete, please [contact me](mailto:azgaar.fmg@yandex.com) if you can help with editing_
+Welcome to the ***Fantasy Map Generator*** wiki!
+
+_These pages are maintained in [docs/wiki](https://github.com/Azgaar/Fantasy-Map-Generator/tree/master/docs/wiki) in the main repository and mirrored here automatically — please open a pull request instead of editing the wiki directly._
 
 ## Introduction 
 _**Fantasy Map Generator**_ (FMG) is a free tool that [procedurally generates](https://en.wikipedia.org/wiki/Procedural_generation) highly customizable fantasy maps. You can use auto-generated maps or create your own world from scratch. 
 
 The project is under active development. Join our [Discord server](https://discordapp.com/invite/X7E84HU) and [Reddit forum](https://www.reddit.com/r/FantasyMapGenerator) for the latest updates and to get help from the community.
 
-[Q&A](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A) | 
-[Quick Start Tutorial](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Quick-Start-Tutorial) | 
-[Current Generator version](https://azgaar.github.io/Fantasy-Map-Generator/) | 
-[Changelog](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog) | 
-[Blog](https://azgaar.wordpress.com/) | 
+[Q&A](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A) |
+[Quick Start Tutorial](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Quick-Start-Tutorial) |
+[Current Generator version](https://azgaar.github.io/Fantasy-Map-Generator/) |
+[Changelog](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog) |
+[Blog](https://azgaar.wordpress.com/) |
 [Development board](https://trello.com/b/7x832DG4/fantasy-map-generator)
+
+## Wiki pages
+
+**Getting started**
+[Quick Start Tutorial](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Quick-Start-Tutorial) ·
+[User Interface](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/User-Interface) ·
+[Hotkeys](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys) ·
+[Q&A](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A)
+
+**Terrain**
+[Heightmap customization](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-customization) ·
+[Heightmap template editor](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-template-editor) ·
+[Heightmap image overlay](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-image-overlay) ·
+[River Editor](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/River-Editor)
+
+**World building**
+[Culture sets](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Culture-sets) ·
+[Culture types](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Culture-types) ·
+[Markers](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Markers) ·
+[Goods spread functions](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Goods-spread-functions) ·
+[Military Forces](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Military-Forces) ·
+[Battle Simulator](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Battle-Simulator) ·
+[Scale and distance](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Scale-and-distance)
+
+**Running and integrating**
+[Run FMG locally](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Run-FMG-locally) ·
+[Working offline](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Working-offline) ·
+[URL parameters](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/URL-parameters) ·
+[GIS data export](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export) ·
+[Ollama text generation](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Ollama-text-generation) ·
+[Dependencies](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Dependencies)
 
 ## How can I use the tool? 
 

@@ -6,6 +6,7 @@ import { tip } from "@/components/tooltips";
 import { GraphOverride } from "@/generators/graph-override";
 import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
+import { savedMessage } from "@/services/platform";
 
 import { VERSION } from "@/services/versioning";
 import { ensureEl, getFileName, link, parseError, rn } from "@/utils";
@@ -226,7 +227,7 @@ function saveToMachine(mapData: string, filename: string): void {
   link.href = URL;
   link.click();
 
-  tip('Map is saved to the "Downloads" folder (CTRL + J to open)', true, "success", 8000);
+  tip(savedMessage("Map"), true, "success", 8000);
   setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
 }
 

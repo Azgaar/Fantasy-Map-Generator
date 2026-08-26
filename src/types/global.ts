@@ -5,6 +5,7 @@ import type { GoodsModule } from "../generators/goods-generator";
 import type { MarketsModule } from "../generators/markets-generator";
 import type { ProductionModule } from "../generators/production-generator";
 import type { BurgGroup } from "./burg-groups";
+import type { GridGraph } from "./GridGraph";
 import type { PackedGraph } from "./PackedGraph";
 import type { Style } from "./style";
 
@@ -35,7 +36,6 @@ declare global {
     confirmationDialog: typeof import("../components/dialog/dialog-helpers").confirmationDialog;
     downloadFile: typeof import("../utils").downloadFile;
     uploadFile: typeof import("../utils").uploadFile;
-    getPrecipitation: typeof import("../utils").getPrecipitation;
     panMap: typeof import("../components/zoom").panMap;
     setMapZoom: typeof import("../components/zoom").setMapZoom;
     changeMapZoom: typeof import("../components/zoom").changeMapZoom;
@@ -46,7 +46,7 @@ declare global {
   var mapId: number;
   var seed: string;
   var pack: PackedGraph;
-  var grid: any;
+  var grid: GridGraph;
   var graphHeight: number;
   var graphWidth: number;
   var TIME: boolean;
@@ -110,8 +110,6 @@ declare global {
   var color: (value: number) => string;
   var edits: any; // heightmap edit history: Uint8Array[] with an extra .n cursor
   var undraw: () => void;
-  var rankCells: () => void;
-  var generatePrecipitation: () => void;
   var changeViewMode: (event?: Event) => void;
   var resetZoom: (duration?: number) => void;
   var RgbQuant: any; // external RgbQuant image-quantization lib
@@ -125,12 +123,7 @@ declare global {
 
   var $: (selector: any) => any;
   var changeFont: () => void;
-  var addLakesInDeepDepressions: () => void;
-  var openNearSeaLakes: () => void;
-  var calculateMapCoordinates: () => void;
-  var calculateTemperatures: () => void;
-  var reGraph: () => void;
-  var showStatistics: () => void;
+  var logStats: () => void;
   var applyGraphSize: () => void;
   var cellsDensityMap: Record<number, number>;
   var changeCellsDensity: (value: string) => void;
@@ -148,7 +141,6 @@ declare global {
   var capitalize: (str: string) => string;
   var rn: (value: number, decimals?: number) => number;
   var openURL: (url: string) => void;
-  var findCell: (x: number, y: number, radius?: number) => number | undefined;
 
   var tinymce:
     | {
