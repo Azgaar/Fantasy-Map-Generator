@@ -459,61 +459,6 @@ function setSeed(precreatedSeed) {
   Math.random = aleaPRNG(seed);
 }
 
-// assess cells suitability to calculate population and rand cells for culture center and burgs placement
-function rankCells() {
-  const { cells, features } = pack;
-  cells.s = new Int16Array(cells.i.length); // cell suitability array
-  cells.pop = new Float32Array(cells.i.length); // cell population array
-
-  const meanFlux = d3.median(cells.fl.filter(f => f)) || 0;
-  const maxFlux = d3.max(cells.fl) + d3.max(cells.conf); // to normalize flux
-  const meanArea = d3.mean(cells.area); // to adjust population by cell area
-  const getResValue = i => (cells.good && cells.good[i] ? Goods.get(cells.good[i])?.value : 0);
-
-  const scoreMap = {
-    estuary: 15,
-    ocean_coast: 5,
-    save_harbor: 20,
-    freshwater: 30,
-    salt: 10,
-    frozen: 1,
-    dry: -5,
-    sinkhole: -5,
-    lava: -30
-  };
-
-  for (const i of cells.i) {
-    if (cells.h[i] < 20) continue; // no population in water
-    let score = pack.biomes[cells.biome[i]].habitability; // base suitability derived from biome habitability
-    if (!score) continue; // uninhabitable biomes has 0 suitability
-
-    if (meanFlux) score += normalize(cells.fl[i] + cells.conf[i], meanFlux, maxFlux) * 250; // big rivers and confluences are valued
-    score -= (cells.h[i] - 50) / 5; // low elevation is valued, high is not;
-
-    if (cells.t[i] === 1) {
-      if (cells.r[i]) score += scoreMap.estuary;
-      const feature = features[cells.f[cells.haven[i]]];
-      if (feature.type === "lake") {
-        score += scoreMap[feature.subtype] || 0;
-      } else {
-        score += scoreMap.ocean_coast;
-        if (cells.harbor[i] === 1) score += scoreMap.save_harbor;
-      }
-    }
-
-    cells.s[i] = score / 5; // general population rate
-    // add bonus for goods around
-    if (cells.good && (cells.good[i] || cells.c[i].some(c => cells.good[c]))) {
-      const cellRes = getResValue(i);
-      const neibRes = d3.mean(cells.c[i].map(c => getResValue(c)));
-      const resBonus = (cellRes ? cellRes + 10 : 0) + neibRes;
-      cells.s[i] += resBonus;
-    }
-    // cell rural population is suitability adjusted by cell area
-    cells.pop[i] = cells.s[i] > 0 ? (cells.s[i] * cells.area[i]) / meanArea : 0;
-  }
-}
-
 function logStats() {
   const heightmap = ensureEl("templateInput").value;
   const isTemplate = heightmap in heightmapTemplates;

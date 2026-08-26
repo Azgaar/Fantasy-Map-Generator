@@ -1,5 +1,6 @@
 // Canonical generation sequence, as a declared pipeline instead of a hand-written call list. See docs/architecture/generation-pipeline.md.
 import { Pipeline, type PipelineStep } from "@/generators/pipeline";
+import { Population } from "@/generators/population-generator";
 import type { GridGraph } from "@/types/GridGraph";
 
 const generationPipelineSteps = [
@@ -21,7 +22,7 @@ const generationPipelineSteps = [
   { id: "featureGroups", run: () => Features.defineGroups() },
   { id: "ice", run: () => Ice.generate() },
   { id: "goods", run: () => Goods.generate() },
-  { id: "rankCells", run: () => rankCells() },
+  { id: "rankCells", run: () => Population.rankCells() },
   { id: "cultures", run: () => Cultures.generate() },
   { id: "culturesExpand", run: () => Cultures.expand() },
   { id: "burgs", run: () => Burgs.generate() },
@@ -69,7 +70,7 @@ const erasePipelineSteps = [
   { id: "featureGroups", run: () => Features.defineGroups() },
   { id: "ice", run: () => Ice.generate() },
   { id: "goods", run: () => Goods.generate() },
-  { id: "rankCells", run: () => rankCells() },
+  { id: "rankCells", run: () => Population.rankCells() },
   { id: "cultures", run: () => Cultures.generate() },
   { id: "culturesExpand", run: () => Cultures.expand() },
   { id: "burgs", run: () => Burgs.generate() },

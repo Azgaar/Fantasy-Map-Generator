@@ -220,7 +220,7 @@ reaches a phase you change.
 
 ## The grid modules
 
-Everything that builds or reads the raw graph lives in four sibling modules, each reachable as a
+Everything that builds or reads the raw graph lives in five sibling modules, each reachable as a
 global the same way `Features`, `Rivers` and the other generators are:
 
 ### `Grid` — [`grid-generator.ts`](../../src/generators/grid-generator.ts)
@@ -263,3 +263,13 @@ splitting coastal cells so the packed graph is denser exactly where the map need
 It also owns the spatial lookups against the packed graph, mirroring `Grid`'s: `findCell(x, y, radius?)`
 and `findAll(x, y, radius)` (both backed by one cached quadtree per graph, rebuilt when the cell points
 are replaced) and `getPolygon(cellId)`. Each takes an optional graph, defaulting to the global `pack`.
+
+## `Population` — [`population-generator.ts`](../../src/generators/population-generator.ts)
+
+`rankCells()` is the `rankCells` step: it scores every land cell — biome habitability, river flux,
+elevation, what it is coastal to and the goods around it — into `cells.s`, then turns that score into
+rural population in `cells.pop`. Everything placed by population (cultures, burgs, states) reads it,
+so it has to run after `biomes` and `goods` and before `cultures`.
+
+Unlike the grid modules it is imported rather than global, and it runs outside the pipeline too:
+`Burgs.regenerate()` and `Population.regenerate()` re-rank the cells before replacing burgs.

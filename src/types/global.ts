@@ -110,7 +110,6 @@ declare global {
   var color: (value: number) => string;
   var edits: any; // heightmap edit history: Uint8Array[] with an extra .n cursor
   var undraw: () => void;
-  var rankCells: () => void;
   var changeViewMode: (event?: Event) => void;
   var resetZoom: (duration?: number) => void;
   var RgbQuant: any; // external RgbQuant image-quantization lib
