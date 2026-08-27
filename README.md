@@ -26,6 +26,16 @@ _Inspiration:_
 
 - Scott Turner's [_Here Dragons Abound_](https://heredragonsabound.blogspot.com)
 
+## Desktop app
+
+Installers for Linux, Windows and macOS are attached to each
+[release](https://github.com/Azgaar/Fantasy-Map-Generator/releases). Nix users can build
+the same app from the flake instead — see [Install with Nix](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Install-with-Nix):
+
+```sh
+nix run github:Azgaar/Fantasy-Map-Generator
+```
+
 ## Contribution
 
 Pull requests are highly welcomed. The codebase is messy and I will appreciate if you start with minor changes. Check out the [data model](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Data-model) before contributing.
