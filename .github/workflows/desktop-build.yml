@@ -45,6 +45,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # electron-builder stamps package.json's version on the installers and into latest.yml.
+      # If it lags versioning.ts, the release builds fine but no client is ever offered the update
+      - name: Check the version is in sync across versioning.ts and the package files
+        run: node scripts/sync-version.js --check
+
       - name: Compile main process and renderer
         run: npm run electron build
 

@@ -1,6 +1,4 @@
 // The Desktop App dialog: what the app is and which file this visitor needs
-const RELEASE_CACHE = "appOfferRelease";
-const CACHE_TTL = 24 * 60 * 60 * 1000;
 const RELEASES_API = "https://api.github.com/repos/Azgaar/Fantasy-Map-Generator/releases/latest";
 const RELEASES_PAGE = "https://github.com/Azgaar/Fantasy-Map-Generator/releases/latest";
 
@@ -77,25 +75,17 @@ async function detectTarget(): Promise<string | undefined> {
   return "-linux-x86_64.AppImage";
 }
 
+/** Opening the dialog is a deliberate, one-off action, so it always asks GitHub for the current release */
 async function loadRelease(): Promise<Release | undefined> {
-  try {
-    const cached = JSON.parse(localStorage.getItem(RELEASE_CACHE) || "null");
-    if (cached && Date.now() - cached.time < CACHE_TTL) return cached.release;
-  } catch {
-    // malformed cache, fetch a fresh one
-  }
-
   try {
     const response = await fetch(RELEASES_API);
     if (!response.ok) return undefined;
 
     const { tag_name, assets } = await response.json();
-    const release: Release = {
+    return {
       version: String(tag_name).replace(/^v/, ""),
       assets: assets.map(({ name, browser_download_url, size }: Asset) => ({ name, browser_download_url, size }))
     };
-    localStorage.setItem(RELEASE_CACHE, JSON.stringify({ time: Date.now(), release }));
-    return release;
   } catch {
     return undefined;
   }

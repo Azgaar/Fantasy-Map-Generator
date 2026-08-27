@@ -4,23 +4,24 @@
  * We use Semantic Versioning: major.minor.patch. Refer to https://semver.org
  * Our .map file format is considered the public API.
  *
- * Update the version on each merge to master:
+ * Update the version before merging to master:
  * 1. MAJOR version: Incompatible changes that break existing maps
  * 2. MINOR version: Additions or changes that are backward-compatible but may require old .map files to be updated
  * 3. PATCH version: Backward-compatible bug fixes and small features that don't affect the .map file format
  *
  * Example: 1.102.2 -> Major version 1, Minor version 102, Patch version 2
- * Version bumping is automated via GitHub Actions on PR merge.
+ * VERSION below is the only source of truth. Edit it by hand: the pre-commit hook copies it where needed.
  *
- * For the changes that may be interesting to end users, update the `latestPublicChanges` array below (new changes on top).
+ * For the changes that may be interesting for end users, update the `latestPublicChanges` below.
  */
 
 import { dialogState } from "@/components/dialog/state";
 import { tip } from "@/components/tooltips";
 import { isElectron } from "./platform";
 
-export const VERSION = "1.149.1";
+export const VERSION = "1.149.2";
 
+// new changes on top
 const latestPublicChanges = [
   "Desktop App",
   "URL params to open specific layers or preset",

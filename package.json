@@ -1,7 +1,7 @@
 {
   "name": "fantasy-map-generator",
   "productName": "Fantasy Map Generator",
-  "version": "1.149.0",
+  "version": "1.149.2",
   "description": "Azgaar's _Fantasy Map Generator_ is a free web application that helps fantasy writers, game masters, and cartographers create and edit fantasy maps.",
   "homepage": "https://github.com/Azgaar/Fantasy-Map-Generator#readme",
   "bugs": {
@@ -22,10 +22,12 @@
     "test": "vitest",
     "test:e2e": "playwright test",
     "lint": "biome check --write",
+    "sync-version": "node scripts/sync-version.js",
+    "stamp-assets": "node scripts/stamp-assets.js",
     "prepare": "simple-git-hooks"
   },
   "simple-git-hooks": {
-    "pre-commit": "npm run lint"
+    "pre-commit": "npm run lint && node scripts/sync-version.js --stage && node scripts/stamp-assets.js --stage"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.6",
