@@ -19,7 +19,7 @@ import { dialogState } from "@/components/dialog/state";
 import { tip } from "@/components/tooltips";
 import { isElectron } from "./platform";
 
-export const VERSION = "1.149.0";
+export const VERSION = "1.149.1";
 
 const latestPublicChanges = [
   "Desktop App",

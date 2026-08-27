@@ -746,9 +746,6 @@ function regeneratePrompt(options) {
 }
 
 function showSavePane() {
-  const sharableLinkContainer = ensureEl("sharableLinkContainer");
-  sharableLinkContainer.style.display = "none";
-
   $("#saveMapData").dialog({
     title: "Save map",
     resizable: false,
@@ -805,6 +802,12 @@ async function showLoadPane() {
       }
     }
   });
+
+  // Electron has no Dropbox integration, the whole block is removed from the DOM there
+  if (!findEl("loadFromDropbox")) return;
+
+  // the sharable link belongs to this dialog, drop the one made for a previously selected file
+  ensureEl("sharableLinkContainer").style.display = "none";
 
   // already connected to Dropbox: list saved maps
   if (await window.Services.Cloud.isConnected()) {
