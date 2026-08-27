@@ -14,15 +14,24 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 
 # Recent changes
 
+- to be added
+
+# Releases
+
+**[1.149](https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/tags/v1.149.zip) - 2026-08-27**:
+
+- Desktop App support [1.149.0]
+- SVG export fixes by _[barrulus](https://github.com/barrulus)_ [1.149.0]
+- URL params to open specific layers or preset by _[AlistairHeus](https://github.com/AlistairHeus)_ [1.149.0]
+- Generation Pipeline by _[StempunkDev](https://github.com/StempunkDev)_ [1.149.0]
 - Emblems rendering optimization [1.148.0]
 - Dialogs state preserved between sessions [1.148.0]
 - Paint Area dialogs rework [1.147.0]
 - Coastline Editor: manually moved vertices are preserved [1.146.0]
+- Layers: unified registry, layer state saved with the map [1.144.0]
 - Configurable table columns in the overview editors by _[barrulus](https://github.com/barrulus)_ [1.143.0]
 - Relief icons: improved performance [1.142.0]
 - Burg Editor: zoom and pan in the preview by _[barrulus](https://github.com/barrulus)_ [1.141.0]
-
-# Releases
 
 **[1.140](https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/tags/v1.140.zip) - 2026-06-12**:
 

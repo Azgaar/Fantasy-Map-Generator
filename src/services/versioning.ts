@@ -23,6 +23,7 @@ export const VERSION = "1.149.0";
 
 const latestPublicChanges = [
   "Desktop App",
+  "URL params to open specific layers or preset",
   "Emblems rendering optimization",
   "Dialogs state preserved between sessions",
   "Paint Area dialogs rework",
