@@ -13,9 +13,9 @@ The `.zip`, `.blockmap` and `latest*.yml` files are for the built-in updater —
 
 ### First launch
 
-The builds are not code-signed yet, so the system warns about an unknown developer:
+The builds are not code-signed, so the system warns about an unknown developer:
 
-- **macOS**: right-click the app → **Open** → **Open**
+- **macOS**: the first launch is blocked — open **System Settings → Privacy & Security**, scroll down and click **Open Anyway**
 - **Windows**: **More info** → **Run anyway**
 
 Prefer the browser? The generator also runs at [azgaar.github.io/Fantasy-Map-Generator](https://azgaar.github.io/Fantasy-Map-Generator/).

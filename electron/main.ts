@@ -31,7 +31,8 @@ app.setAboutPanelOptions({
 
 type WindowState = { width: number; height: number; x?: number; y?: number; maximized: boolean; fullscreen: boolean };
 
-const DEFAULT_STATE: WindowState = { width: 1440, height: 900, maximized: true, fullscreen: false };
+// the map only reads well at size, so a first run takes the whole screen; later runs honour what the user left
+const DEFAULT_STATE: WindowState = { width: 1440, height: 900, maximized: false, fullscreen: true };
 
 const stateFile = () => path.join(app.getPath("userData"), "window-state.json");
 
@@ -261,6 +262,7 @@ function createWindow(): void {
 
   const window = new BrowserWindow({
     ...bounds,
+    fullscreen, // set here rather than after: entering fullscreen on a window that is not shown yet is unreliable
     minWidth: 800,
     minHeight: 600,
     show: false,
@@ -276,8 +278,7 @@ function createWindow(): void {
     }
   });
 
-  if (maximized) window.maximize();
-  if (fullscreen) window.setFullScreen(true);
+  if (maximized && !fullscreen) window.maximize();
 
   window.once("ready-to-show", () => window.show());
   enableDevTools(window);

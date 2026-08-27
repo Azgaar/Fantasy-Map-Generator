@@ -8,6 +8,7 @@ files:
   - package.json
   - "!node_modules/**/*" # the renderer is bundled by Vite, the main process only needs Electron itself
 asar: true
+afterPack: ./scripts/adhoc-sign.mjs
 artifactName: fmg-${version}-${os}-${arch}.${ext}
 mac:
   category: public.app-category.graphics-design

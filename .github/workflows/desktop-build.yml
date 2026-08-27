@@ -86,7 +86,7 @@ jobs:
         run: npm run electron -- dist --publish never
 
       - name: Upload installers
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: fantasy-map-generator-${{ matrix.platform }}
           if-no-files-found: error
@@ -113,7 +113,7 @@ jobs:
           ref: ${{ env.TAG }}
 
       - name: Collect the installers
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           pattern: fantasy-map-generator-*
           merge-multiple: true

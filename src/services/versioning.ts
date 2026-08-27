@@ -153,6 +153,11 @@ function announceVersion(): void {
   if (loadingScreenVersion) loadingScreenVersion.innerText = `v${VERSION}`;
 
   const storedVersion = localStorage.getItem("version");
+  if (!storedVersion) {
+    setTimeout(() => showUpdateWindow(null), 6000);
+    return;
+  }
+
   if (compareVersions(storedVersion, VERSION, { major: true, minor: true, patch: false }).isOlder) {
     setTimeout(() => showUpdateWindow(storedVersion), 6000);
   } else if (compareVersions(storedVersion, VERSION).isOlder) {

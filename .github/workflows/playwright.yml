@@ -24,7 +24,7 @@ jobs:
         run: npm ci
       - name: Cache Playwright browsers
         id: playwright-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-${{ hashFiles('package-lock.json') }}
@@ -36,7 +36,7 @@ jobs:
         run: npx playwright install-deps chromium
       - name: Cache build output
         id: dist-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: dist/
           key: dist-${{ hashFiles('src/**', 'public/**', 'vite.config.ts',
@@ -48,7 +48,7 @@ jobs:
         run: npm run test:e2e
         env:
           SKIP_BUILD: "1"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
           name: playwright-report
