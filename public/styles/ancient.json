@@ -221,6 +221,15 @@
     "stroke-dasharray": "2 2",
     "stroke-linecap": "butt"
   },
+  "#journeys": {
+    "opacity": 1,
+    "stroke": "#7a2320",
+    "stroke-width": 1.8,
+    "stroke-dasharray": 0,
+    "stroke-linecap": "round",
+    "filter": null,
+    "mask": null
+  },
   "#statesBody": {
     "opacity": 0.2,
     "filter": null

@@ -5,19 +5,21 @@
 
 const NEARBY_BURG_MAX_CELLS = 3;
 
-const getBurgAtCell = (cellId: number): { name: string } | undefined => {
+type NamedBurg = { name: string; x: number; y: number };
+
+const getBurgAtCell = (cellId: number): NamedBurg | undefined => {
   const burgId = pack.cells.burg[cellId];
   if (!burgId) return undefined;
   const burg = pack.burgs[burgId];
   if (!burg || burg.removed) return undefined;
-  return { name: burg.name || `Burg ${burg.i}` };
+  return { name: burg.name || `Burg ${burg.i}`, x: burg.x, y: burg.y };
 };
 
 /**
  * Find the nearest burg to a cell, within `maxCells` graph steps (BFS).
  * Returns undefined if none is close enough.
  */
-const findNearbyBurg = (cellId: number, maxCells: number): { name: string } | undefined => {
+const findNearbyBurg = (cellId: number, maxCells: number): NamedBurg | undefined => {
   if (!pack.cells.burg || !pack.burgs?.length) return undefined;
   const visited = new Set<number>([cellId]);
   let frontier: number[] = [cellId];
@@ -62,4 +64,13 @@ export function cellEndpointTooltip(cellId: number | undefined): string {
   const nearby = findNearbyBurg(cellId, NEARBY_BURG_MAX_CELLS);
   if (nearby) return `Vicinity of ${nearby.name} (cell ${cellId}) — click to pick a different cell`;
   return `Cell ${cellId} — click to pick a different cell`;
+}
+
+/** Where to centre the map to show an endpoint: its burg if it has one, else the cell itself */
+export function getCellPoint(cellId: number | undefined): [x: number, y: number] | undefined {
+  if (cellId === undefined) return undefined;
+  const burg = getBurgAtCell(cellId);
+  if (burg) return [burg.x, burg.y];
+  const point = pack.cells.p[cellId];
+  return point ? [point[0], point[1]] : undefined;
 }

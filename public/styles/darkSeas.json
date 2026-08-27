@@ -212,6 +212,15 @@
     "filter": null,
     "mask": null
   },
+  "#journeys": {
+    "opacity": 1,
+    "stroke": "#ffd34d",
+    "stroke-width": 1.8,
+    "stroke-dasharray": 0,
+    "stroke-linecap": "round",
+    "filter": null,
+    "mask": null
+  },
   "#statesBody": {
     "opacity": 0.5,
     "filter": null

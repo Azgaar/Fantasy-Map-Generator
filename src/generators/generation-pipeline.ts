@@ -43,7 +43,7 @@ const generationPipelineSteps = [
   { id: "military", run: () => Military.generate() },
   { id: "markers", run: () => Markers.generate() },
   { id: "zones", run: () => Zones.generate() },
-  { id: "journeysDemo", run: () => Journeys.generateDemo() },
+  { id: "journeys", run: () => Journeys.generate() },
   { id: "addedLabels", run: () => AddedLabels.initiate() },
   { id: "mapName", run: () => Names.getMapName(false) }
 ] as const satisfies PipelineStep<string, GenerationContext>[];

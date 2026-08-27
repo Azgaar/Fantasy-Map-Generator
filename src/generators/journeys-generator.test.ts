@@ -1,19 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import type { Journey, Segment } from "@/types/Journey";
-import {
-  effectiveSpeed,
-  formatTravelTime,
-  journeyTotals,
-  OFF_ROAD_SPEED_FACTOR,
-  segmentLengthKm,
-  segmentTimeHours
-} from "./journeys-generator";
+import type { JouneySegment, Journey } from "@/types/Journey";
+import { OFF_ROAD_SPEED_FACTOR } from "./journeys-generator";
 
-beforeEach(() => {
-  (globalThis as any).distanceScale = 1;
-});
-
-const makeSeg = (distance: number, speed: number, avoidRoads = false): Segment => ({
+const makeSeg = (distance: number, speed: number, avoidRoads = false): JouneySegment => ({
   id: 0,
   name: "s",
   visible: true,
@@ -27,36 +16,44 @@ const makeSeg = (distance: number, speed: number, avoidRoads = false): Segment =
 });
 
 describe("journey metrics", () => {
-  it("segmentLengthKm multiplies by distanceScale", () => {
+  let Journeys: any;
+
+  beforeEach(async () => {
+    (globalThis as any).distanceScale = 1;
+    await import("./journeys-generator");
+    Journeys = (globalThis as any).Journeys;
+  });
+
+  it("getSegmentDistance multiplies by distanceScale", () => {
     (globalThis as any).distanceScale = 2;
-    expect(segmentLengthKm(makeSeg(10, 5))).toBe(20);
+    expect(Journeys.getSegmentDistance(makeSeg(10, 5))).toBe(20);
   });
 
-  it("segmentTimeHours = km/speed", () => {
-    expect(segmentTimeHours(makeSeg(10, 5))).toBe(2);
+  it("getSegmentTime = distance/speed", () => {
+    expect(Journeys.getSegmentTime(makeSeg(10, 5))).toBe(2);
   });
 
-  it("segmentTimeHours returns 0 for zero speed", () => {
-    expect(segmentTimeHours(makeSeg(10, 0))).toBe(0);
+  it("getSegmentTime returns 0 for zero speed", () => {
+    expect(Journeys.getSegmentTime(makeSeg(10, 0))).toBe(0);
   });
 
-  it("effectiveSpeed returns base speed for on-road", () => {
-    expect(effectiveSpeed(makeSeg(10, 8))).toBe(8);
+  it("getEffectiveSpeed returns base speed for on-road", () => {
+    expect(Journeys.getEffectiveSpeed(makeSeg(10, 8))).toBe(8);
   });
 
-  it("effectiveSpeed applies OFF_ROAD_SPEED_FACTOR when avoidRoads", () => {
+  it("getEffectiveSpeed applies OFF_ROAD_SPEED_FACTOR when avoidRoads", () => {
     const seg = makeSeg(10, 8, true);
-    expect(effectiveSpeed(seg)).toBe(8 * OFF_ROAD_SPEED_FACTOR);
+    expect(Journeys.getEffectiveSpeed(seg)).toBe(8 * OFF_ROAD_SPEED_FACTOR);
   });
 
-  it("segmentTimeHours is slower for off-road segments", () => {
-    const onRoad = segmentTimeHours(makeSeg(10, 5, false));
-    const offRoad = segmentTimeHours(makeSeg(10, 5, true));
+  it("getSegmentTime is slower for off-road segments", () => {
+    const onRoad = Journeys.getSegmentTime(makeSeg(10, 5, false));
+    const offRoad = Journeys.getSegmentTime(makeSeg(10, 5, true));
     expect(offRoad).toBeGreaterThan(onRoad);
     expect(offRoad).toBe(onRoad / OFF_ROAD_SPEED_FACTOR);
   });
 
-  it("journeyTotals sums correctly with weighted avg speed", () => {
+  it("getTotals sums correctly with weighted avg speed", () => {
     const j: Journey = {
       i: 0,
       name: "j",
@@ -64,13 +61,13 @@ describe("journey metrics", () => {
       color: "#000",
       segments: [makeSeg(10, 5), makeSeg(20, 10)]
     };
-    const t = journeyTotals(j);
-    expect(t.totalKm).toBe(30);
+    const t = Journeys.getTotals(j);
+    expect(t.totalDistance).toBe(30);
     expect(t.totalHours).toBe(4); // 2 + 2
     expect(t.avgSpeed).toBe(7.5);
   });
 
-  it("journeyTotals accounts for off-road penalty", () => {
+  it("getTotals accounts for off-road penalty", () => {
     const j: Journey = {
       i: 0,
       name: "j",
@@ -78,26 +75,40 @@ describe("journey metrics", () => {
       color: "#000",
       segments: [makeSeg(10, 5, false), makeSeg(10, 5, true)]
     };
-    const t = journeyTotals(j);
-    expect(t.totalKm).toBe(20);
+    const t = Journeys.getTotals(j);
+    expect(t.totalDistance).toBe(20);
     const onRoadHours = 10 / 5;
     const offRoadHours = 10 / (5 * OFF_ROAD_SPEED_FACTOR);
     expect(t.totalHours).toBe(onRoadHours + offRoadHours);
   });
 
   it("formatTravelTime handles days/hours/minutes with default 8h/day", () => {
-    expect(formatTravelTime(0)).toBe("0m");
-    expect(formatTravelTime(0.5)).toBe("30m");
-    expect(formatTravelTime(1.5)).toBe("1h 30m");
+    expect(Journeys.formatTravelTime(0)).toBe("0m");
+    expect(Journeys.formatTravelTime(0.5)).toBe("30m");
+    expect(Journeys.formatTravelTime(1.5)).toBe("1h 30m");
     // 25h at 8h/day = 3d 1h
-    expect(formatTravelTime(25)).toBe("3d 1h");
+    expect(Journeys.formatTravelTime(25)).toBe("3d 1h");
+  });
+
+  it("formatTravelTime drops the smaller unit once the larger dominates", () => {
+    expect(Journeys.formatTravelTime(2400)).toBe("300d"); // 300 travel days at 8h/day
+    expect(Journeys.formatTravelTime(2404.15)).toBe("300d"); // the odd hours are noise
+    expect(Journeys.formatTravelTime(75)).toBe("9d 3h"); // under 10 days, hours still matter
+    expect(Journeys.formatTravelTime(11.5, 24)).toBe("11h"); // hours-only above the threshold
+    expect(Journeys.formatTravelTime(3.25, 24)).toBe("3h 15m"); // below it, minutes still show
+  });
+
+  it("formatTravelTimeFull keeps every unit for the tooltip", () => {
+    expect(Journeys.formatTravelTimeFull(2404.15)).toBe("300d 4h 9m");
+    expect(Journeys.formatTravelTimeFull(0)).toBe("0m");
+    expect(Journeys.formatTravelTimeFull(25, 24)).toBe("1d 1h");
   });
 
   it("formatTravelTime respects a custom hoursPerDay", () => {
     // 25h at 24h/day = 1d 1h (legacy behaviour)
-    expect(formatTravelTime(25, 24)).toBe("1d 1h");
+    expect(Journeys.formatTravelTime(25, 24)).toBe("1d 1h");
     // 20h at 10h/day = 2d
-    expect(formatTravelTime(20, 10)).toBe("2d");
+    expect(Journeys.formatTravelTime(20, 10)).toBe("2d");
   });
 
   it("stay-domain segment contributes duration to totalHours, not distance/speed", () => {
@@ -110,8 +121,8 @@ describe("journey metrics", () => {
       color: "#000",
       segments: [walk, stay]
     };
-    const t = journeyTotals(j);
-    expect(t.totalKm).toBe(10);
+    const t = Journeys.getTotals(j);
+    expect(t.totalDistance).toBe(10);
     expect(t.totalHours).toBe(2 + 4);
     // avgSpeed based on moving hours only
     expect(t.avgSpeed).toBe(10 / 2);
