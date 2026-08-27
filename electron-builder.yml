@@ -8,7 +8,6 @@ files:
   - package.json
   - "!node_modules/**/*" # the renderer is bundled by Vite, the main process only needs Electron itself
 asar: true
-# Short, space-free download names that still say what they are: fmg-1.148.3-mac-arm64.dmg, fmg-1.148.3-win-x64.exe
 artifactName: fmg-${version}-${os}-${arch}.${ext}
 mac:
   category: public.app-category.graphics-design
@@ -23,6 +22,7 @@ win:
       arch: [x64, arm64]
 linux:
   category: Graphics
+  maintainer: Azgaar <azgaar.fmg@yandex.com>
   synopsis: Generate and edit fantasy maps
   target:
     - target: AppImage

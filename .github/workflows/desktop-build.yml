@@ -1,9 +1,9 @@
 name: Build desktop app
 
 on:
-  # Tagging a release (e.g. v1.149) builds installers and attaches them to a draft GitHub release
+  # Tagging a release (v1.150) builds installers and attaches them to its GitHub release
   push:
-    tags: ["v*"]
+    tags: ["v[0-9]*"]
 
   # Cheap guard: make sure the desktop app still compiles when its own files change
   pull_request:
@@ -14,8 +14,12 @@ on:
       - "scripts/electron.mjs"
       - "package.json"
 
-  # Allows building the app from the Actions tab without tagging
+  # Allows building the app from the Actions tab, optionally against an already existing tag
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to build and attach the installers to. Leave empty to only build."
+        type: string
 
 permissions:
   contents: write
@@ -29,6 +33,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Set up Node
         uses: actions/setup-node@v6
@@ -61,6 +67,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Set up Node
         uses: actions/setup-node@v6
@@ -73,10 +81,9 @@ jobs:
 
       - name: Build and package
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # The builds are unsigned: skip the certificate lookup instead of failing on it
           CSC_IDENTITY_AUTO_DISCOVERY: false
-        run: npm run electron -- dist --publish onTagOrDraft
+        run: npm run electron -- dist --publish never
 
       - name: Upload installers
         uses: actions/upload-artifact@v4
@@ -89,26 +96,48 @@ jobs:
             release/*.exe
             release/*.AppImage
             release/*.deb
+            release/*.blockmap
+            release/latest*.yml
 
-  # electron-builder leaves the draft release empty: give it download instructions to publish with
-  notes:
+  release:
     needs: build
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') || inputs.tag != ''
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TAG: ${{ inputs.tag || github.ref_name }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          ref: ${{ env.TAG }}
 
-      - name: Fill in the draft release notes
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Collect the installers
+        uses: actions/download-artifact@v5
+        with:
+          pattern: fantasy-map-generator-*
+          merge-multiple: true
+          path: release
+
+      # A tag push has no release yet: start a draft one to fill in and publish by hand
+      - name: Make sure the release exists
+        run: gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --draft --title "$TAG" --generate-notes
+
+      # latest*.yml and the blockmaps are what the built-in updater reads, so they go up as well
+      - name: Attach the installers
+        run: gh release upload "$TAG" release/* --clobber
+
+      # The downloads go above the changelog: they are what a visitor opening the release came for
+      - name: Add the download instructions
         run: |
-          TAG="${{ github.ref_name }}"
-          BODY=$(gh release view "$TAG" --json body -q .body || echo "")
+          MARKER="Which file do I need?"
+          BODY=$(gh release view "$TAG" --json body -q .body)
 
-          if [ -n "$BODY" ]; then
-            echo "$TAG already has release notes, leaving them alone"
+          if [[ "$BODY" == *"$MARKER"* ]]; then
+            echo "$TAG already explains the downloads, leaving the notes alone"
           else
-            gh release edit "$TAG" --notes-file .github/release-notes.md
-            echo "Added download instructions to $TAG"
+            cp .github/release-notes.md notes.md
+            if [ -n "$BODY" ]; then printf '\n---\n\n%s\n' "$BODY" >> notes.md; fi
+            gh release edit "$TAG" --notes-file notes.md
+            echo "Put the download instructions on top of the $TAG notes"
           fi
