@@ -283,7 +283,7 @@ function addRegimentOnClick(this: SVGGElement, event: MouseEvent): void {
   }
 
   const point = getPointer(event, this);
-  const cell = findCell(point[0], point[1]);
+  const cell = Pack.findCell(point[0], point[1]);
   if (cell === undefined) return;
   const x = pack.cells.p[cell][0];
   const y = pack.cells.p[cell][1];

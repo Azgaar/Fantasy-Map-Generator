@@ -1,10 +1,12 @@
-import { ensureEl, getGridPolygon, getPackPolygon } from "@/utils";
+import { ensureEl } from "@/utils";
 
 export function drawCells(): void {
   const isGridMode = customization === 1; // the heightmap editor works on the grid graph
-  const graph = isGridMode ? grid : pack;
-  const polygon = isGridMode ? getGridPolygon : getPackPolygon;
+  const cellIds = (isGridMode ? grid.cells.i : pack.cells.i) as ArrayLike<number>;
+  const getPolygon = isGridMode
+    ? (cellId: number) => Grid.getPolygon(cellId)
+    : (cellId: number) => Pack.getPolygon(cellId);
 
-  const paths = Array.from(graph.cells.i as ArrayLike<number>, cellId => `M${polygon(cellId, graph)}`);
+  const paths = Array.from(cellIds, cellId => `M${getPolygon(cellId)}`);
   ensureEl("cells").innerHTML = /* html */ `<path d="${paths.join("")}" />`;
 }

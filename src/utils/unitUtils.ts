@@ -1,5 +1,4 @@
 import type { PackedGraph } from "../types/PackedGraph";
-import { findClosestCell, findGridCell } from "./graphUtils";
 import { ensureEl } from "./nodeUtils";
 import { rn } from "./numberUtils";
 
@@ -85,8 +84,8 @@ export function getFriendlyPrecipitation(cellId: number, pack: PackedGraph, grid
 
 /** Get user-friendly height value at a point */
 export function getFriendlyHeight([x, y]: [number, number], pack: PackedGraph, grid: any): string {
-  const packH = pack.cells.h[findClosestCell(x, y, undefined, pack) as number];
-  const gridH = grid.cells.h[findGridCell(x, y, grid)];
+  const packH = pack.cells.h[Pack.findCell(x, y, Infinity, pack) as number];
+  const gridH = grid.cells.h[Grid.findCell(x, y, grid)];
   return getHeight(packH < 20 ? gridH : packH);
 }
 

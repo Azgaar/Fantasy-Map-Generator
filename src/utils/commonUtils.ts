@@ -124,6 +124,21 @@ export const throttle = <T extends (...args: any[]) => any>(func: T, ms: number)
   return wrapper;
 };
 
+const MAX_ERROR_CAUSES = 4;
+
+/** unwrap an error and everything it was caused by, outermost first */
+const getErrorChain = (error: Error): Error[] => {
+  const chain: Error[] = [];
+  let current: unknown = error;
+
+  while (current instanceof Error && chain.length <= MAX_ERROR_CAUSES) {
+    chain.push(current);
+    current = current.cause;
+  }
+
+  return chain;
+};
+
 /**
  * Parse error to get the readable string in Chrome and Firefox
  * @param error - The error object to parse
@@ -131,7 +146,8 @@ export const throttle = <T extends (...args: any[]) => any>(func: T, ms: number)
  */
 export const parseError = (error: Error): string => {
   const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
-  const errorString = isFirefox ? `${error.toString()} ${error.stack}` : error.stack || "";
+  const stringify = (e: Error) => (isFirefox ? `${e.toString()} ${e.stack}` : e.stack || e.toString());
+  const errorString = getErrorChain(error).map(stringify).join("<br>Caused by: ");
   const regex = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%=~_|])/gi;
   const errorNoURL = errorString.replace(regex, url => `<i>${last(url.split("/"))}</i>`);
   const errorParsed = errorNoURL.replace(/at /gi, "<br>&nbsp;&nbsp;at ");
@@ -146,11 +162,21 @@ export const parseError = (error: Error): string => {
 export const getBase64 = (url: string, callback: (result: string | ArrayBuffer | null) => void): void => {
   const xhr = new XMLHttpRequest();
   xhr.onload = () => {
+    const blob = xhr.response as Blob | null;
+    // don't inline error pages (e.g. a 404 html document) as image data
+    if (xhr.status < 200 || xhr.status >= 300 || !blob?.type.startsWith("image/")) {
+      ERROR && console.error(`Cannot load image ${url}: status ${xhr.status}, type ${blob?.type || "unknown"}`);
+      return callback(null);
+    }
     const reader = new FileReader();
     reader.onloadend = () => {
       callback(reader.result);
     };
-    reader.readAsDataURL(xhr.response);
+    reader.readAsDataURL(blob);
+  };
+  xhr.onerror = () => {
+    ERROR && console.error(`Cannot load image ${url}: network error`);
+    callback(null);
   };
   xhr.open("GET", url);
   xhr.responseType = "blob";

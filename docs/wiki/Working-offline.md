@@ -1,8 +1,8 @@
-**Fantasy Map Generator** is a web-tool, but it can be run offline if previously downloaded. Download [the archive](https://github.com/Azgaar/Fantasy-Map-Generator/archive/master.zip) and unzip it to any folder. Then you need to run a local web-server, follow [the instructions](Run-FMG-locally). 
+**Fantasy Map Generator** is a web tool, but the application logic can run offline once the app assets are available locally. For source code, download or clone the repository, run `npm install`, and start the local Vite server as described in [Run FMG locally](Run-FMG-locally).
 
 *Known Limitations:*
 
-* Additional Fonts are not available
-* Additional Textures are not available
+* Fonts and textures loaded from external URLs require an internet connection unless they have been downloaded or embedded locally.
+* A production build or installed PWA can work without network access after its assets have been cached.
 
-You can also try an **Electron desktop application** - download [an archive](https://github.com/Azgaar/Fantasy-Map-Generator/releases) for your architecture, unzip and run the _Azgaar's Fantasy Map Generator.exe_.
+This repository does not build an Electron desktop application. Use the local Vite app or install the web app as a PWA when supported by your browser.

@@ -9,12 +9,11 @@ test.describe("3D view with eroded terrain", () => {
 
   test("bakes erosion detail and renders without errors", async ({ page }) => {
     const errors: string[] = [];
-    page.on("pageerror", (error) => errors.push(`pageerror: ${error.message}`));
+    page.on("pageerror", error => errors.push(`pageerror: ${error.message}`));
 
     await page.goto("/");
-    // mapId is set at the very end of map generation in showStatistics()
     await page.waitForFunction(() => (window as any).mapId !== undefined, {
-      timeout: 120000,
+      timeout: 120000
     });
 
     const hasWebGL = await page.evaluate(() => {
@@ -27,7 +26,7 @@ test.describe("3D view with eroded terrain", () => {
     await page.evaluate(() => (window as any).Controllers.View3d.open("viewMesh"));
     await page.waitForSelector("#canvas3d", { state: "attached", timeout: 60000 });
     await page.waitForFunction(async () => (await (window as any).Controllers.View3d.isOn()) === true, {
-      timeout: 60000,
+      timeout: 60000
     });
 
     // enable eroded terrain via the settings checkbox (dialog opens with the view)
@@ -36,7 +35,7 @@ test.describe("3D view with eroded terrain", () => {
 
     // the bake must complete and cache the dense height field
     await page.waitForFunction(async () => await (window as any).Controllers.View3d.isCached(), {
-      timeout: 60000,
+      timeout: 60000
     });
 
     // labels and icons sample the baked field: heights must be finite numbers

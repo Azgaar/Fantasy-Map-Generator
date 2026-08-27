@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { GraphOverride } from "./graph-override";
+import "./pack-generator"; // registers the Pack global the module looks cell polygons up with
 
 // square of 4 cells sharing the central vertex 0
 const createGraph = () => ({

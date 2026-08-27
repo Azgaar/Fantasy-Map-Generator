@@ -1006,7 +1006,7 @@ class CulturesGenerator {
         shield: "banner"
       },
       {
-        name: "Hebrew",
+        name: "Levent",
         base: 42,
         odd: 0.2,
         sort: (i: number) => (n(i) / td(i, 18)) * sf(i),
@@ -1016,7 +1016,6 @@ class CulturesGenerator {
   }
 
   generate() {
-    TIME && console.time("generateCultures");
     this.cells = pack.cells;
     const cultureIds = new Uint16Array(this.cells.i.length); // cell cultures
 
@@ -1203,8 +1202,6 @@ class CulturesGenerator {
     cultures.forEach((c: Culture) => {
       c.base = c.base % Names.nameBases.length;
     });
-
-    TIME && console.timeEnd("generateCultures");
   }
 
   add(center: number) {
@@ -1246,14 +1243,13 @@ class CulturesGenerator {
   }
 
   expand() {
-    TIME && console.time("expandCultures");
     const { cells, cultures } = pack;
 
     const queue = new FlatQueue();
     const cost: number[] = [];
 
-    const neutralRate = (document.getElementById("neutralRate") as HTMLInputElement | null)?.valueAsNumber || 1;
-    const maxExpansionCost = cells.i.length * 0.6 * neutralRate; // limit cost for culture growth
+    const growthRate = (ensureEl("growthRate") as HTMLInputElement).valueAsNumber;
+    const maxExpansionCost = cells.i.length * 0.6 * growthRate; // limit cost for culture growth
 
     // remove culture from all cells except of locked
     const hasLocked = cultures.some(c => !c.removed && c.lock);
@@ -1336,8 +1332,6 @@ class CulturesGenerator {
         }
       });
     }
-
-    TIME && console.timeEnd("expandCultures");
   }
 
   regenerate(): void {

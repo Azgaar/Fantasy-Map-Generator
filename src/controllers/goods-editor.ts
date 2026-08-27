@@ -543,7 +543,7 @@ function selectResourceOnLineClick(this: HTMLElement) {
 function changeResourceOnCellClick(this: SVGElement, event: MouseEvent) {
   const body = ensureEl("goodsBody");
   const point = getPointer(event, this);
-  const cellId = findCell(...point);
+  const cellId = Pack.findCell(...point);
   if (cellId === undefined) return;
 
   const selected = body.querySelector<HTMLElement>("div.selected");

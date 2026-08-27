@@ -27,7 +27,6 @@ test.describe("map layers", () => {
     await sharedPage.goto("/?seed=test-seed&&width=1280&height=720");
 
     // Wait for map generation to complete by checking window.mapId
-    // mapId is exposed on window at the very end of showStatistics()
     await sharedPage.waitForFunction(() => (window as any).mapId !== undefined, { timeout: 60000 });
 
     // Additional wait for any rendering/animations to settle
@@ -98,6 +97,8 @@ test.describe("map layers", () => {
     expect(html).toMatchSnapshot("temperature.html");
   });
 
+  // The layer is off by default and its content is render output, so the group is empty here.
+  // Wind arrows and circles are covered by layer-teardown.spec.ts, which turns the layer on.
   test("precipitation layer", async () => {
     const prec = sharedPage.locator("#prec");
     await expect(prec).toBeAttached();

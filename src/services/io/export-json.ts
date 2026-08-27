@@ -1,5 +1,6 @@
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
+import { savedMessage } from "@/services/platform";
 import { VERSION } from "@/services/versioning";
 import { getFileName } from "@/utils";
 
@@ -27,7 +28,7 @@ function exportToJson(type: ExportJsonType): void {
   link.download = `${getFileName(type)}.json`;
   link.href = URL;
   link.click();
-  tip(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
+  tip(savedMessage(link.download), true, "success", 7000);
   window.URL.revokeObjectURL(URL);
   TIME && console.timeEnd("exportToJson");
 }

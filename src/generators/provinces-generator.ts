@@ -77,7 +77,6 @@ class ProvinceModule {
   }
 
   generate(regenerate = false, regenerateLockedStates = false) {
-    TIME && console.time("generateProvinces");
     const localSeed = regenerate ? generateSeed() : seed;
     Math.random = Alea(localSeed);
 
@@ -326,8 +325,6 @@ class ProvinceModule {
 
     cells.province = provinceIds;
     pack.provinces = provinces;
-
-    TIME && console.timeEnd("generateProvinces");
   }
 
   // calculate pole of inaccessibility for each province

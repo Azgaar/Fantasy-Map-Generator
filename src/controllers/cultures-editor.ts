@@ -773,7 +773,7 @@ function cultureCenterDrag(this: any, event: any): void {
   function handleDrag(this: any, dragEvent: any) {
     const { x, y } = dragEvent;
     this.setAttribute("transform", `translate(${x0 + x},${y0 + y})`);
-    const cell = findCell(x, y);
+    const cell = Pack.findCell(x, y);
     if (cell == null || pack.cells.h[cell] < 20) return; // ignore dragging on water
 
     pack.cultures[cultureId].center = cell;
@@ -922,7 +922,7 @@ function exitAddCultureMode(): void {
 
 function addCulture(this: SVGElement, event: MouseEvent): void {
   const point = getPointer(event, this);
-  const center = findCell(point[0], point[1])!;
+  const center = Pack.findCell(point[0], point[1])!;
 
   if (pack.cells.h[center] < 20) {
     tip("You cannot place culture center into the water. Please click on a land cell", false, "error");

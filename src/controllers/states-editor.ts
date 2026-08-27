@@ -1476,7 +1476,7 @@ function enterAddStateMode(this: HTMLElement): void {
 function addState(this: SVGElement, event: MouseEvent): void {
   const { cells, states, burgs } = pack as any;
   const point = getPointer(event, this);
-  const center = findCell(point[0], point[1])!;
+  const center = Pack.findCell(point[0], point[1])!;
   if (cells.h[center] < 20) {
     tip("You cannot place state into the water. Please click on a land cell", false, "error");
     return;

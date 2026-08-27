@@ -293,4 +293,54 @@ test.describe("layer scenarios", () => {
     expect(svg).not.toMatch(/<g[^>]*id="borders"/);
     expect(svg).toMatch(/<g[^>]*id="biomes"/);
   });
+
+  test("a preset URL param applies that preset on load", async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.goto("/?seed=url-preset&width=1280&height=720&preset=religions");
+    await waitForMap(page);
+
+    await expect(page.locator("#layersPreset")).toHaveValue("religions");
+    const active = await page.evaluate(() => Layers.state.active.slice().sort());
+    expect(active).toEqual(
+      ["borders", "burgIcons", "labels", "lakes", "religions", "rivers", "routes", "scaleBar", "vignette"].sort()
+    );
+    expect(await page.evaluate(() => localStorage.getItem("preset"))).toBe("religions");
+    expect(await visibilityDrift(page)).toEqual([]);
+    expect(errors).toEqual([]);
+  });
+
+  test("a preset URL param matches the select display name", async ({ page }) => {
+    await page.goto("/?seed=url-preset-name&width=1280&height=720&preset=Religions%20map");
+    await waitForMap(page);
+    await expect(page.locator("#layersPreset")).toHaveValue("religions");
+  });
+
+  test("a layers URL param shows only the listed layers", async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.goto("/?seed=url-layers&width=1280&height=720&layers=provinces,borders,lakes,rivers");
+    await waitForMap(page);
+
+    await expect(page.locator("#layersPreset")).toHaveValue("custom");
+    const active = await page.evaluate(() => Layers.state.active.slice().sort());
+    expect(active).toEqual(["borders", "lakes", "provinces", "rivers"]);
+    expect(await visibilityDrift(page)).toEqual([]);
+    expect(errors).toEqual([]);
+  });
+
+  test("layers wins over preset, ignores unknown ids and clears the set when none are known", async ({ page }) => {
+    await page.goto(
+      "/?seed=url-layers-override&width=1280&height=720&preset=religions&layers=provinces,nope,borders"
+    );
+    await waitForMap(page);
+
+    await expect(page.locator("#layersPreset")).toHaveValue("custom");
+    const active = await page.evaluate(() => Layers.state.active.slice().sort());
+    expect(active).toEqual(["borders", "provinces"]);
+
+    await page.evaluate(() => {
+      const params = new URLSearchParams({ layers: "nope,missing" });
+      (window as any).applyURLLayers(params);
+    });
+    expect(await page.evaluate(() => Layers.state.active)).toEqual([]);
+  });
 });

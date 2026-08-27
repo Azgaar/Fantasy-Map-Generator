@@ -4,9 +4,7 @@ import { highlightEmblemElement } from "@/renderers/overlays/highlight";
 import type { Point } from "@/types/global";
 import {
   convertTemperature,
-  findClosestCell,
   findEl,
-  findGridCell,
   getCellPopulation,
   getComposedPath,
   getFriendlyHeight,
@@ -21,12 +19,12 @@ export function handleMouseMove(event: MouseEvent | TouchEvent): void {
   if (!node || !pack.cells?.p) return;
 
   const point = getPointer(event, node);
-  const cellId = findClosestCell(point[0], point[1], undefined, pack);
+  const cellId = Pack.findCell(point[0], point[1]);
   if (cellId === undefined) return;
 
   showNotes(event);
 
-  const gridCellId = findGridCell(point[0], point[1], grid);
+  const gridCellId = Grid.findCell(point[0], point[1]);
   if (findEl("tooltip")?.dataset.main) showMainTip();
   else showMapTooltip(point, event, cellId, gridCellId);
 }
