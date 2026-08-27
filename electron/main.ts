@@ -181,7 +181,11 @@ function buildMenu(): void {
   const isMac = process.platform === "darwin";
 
   const template: MenuItemConstructorOptions[] = [
-    ...(isMac ? ([{ role: "appMenu" }] satisfies MenuItemConstructorOptions[]) : []),
+    ...(isMac
+      ? ([{ role: "appMenu" }] satisfies MenuItemConstructorOptions[])
+      : // the app menu carries Quit on macOS; elsewhere there is otherwise no way to leave the app
+        // from the UI at all, which a window manager that draws no titlebar leaves with none
+        ([{ label: "File", submenu: [{ role: "quit" }] }] satisfies MenuItemConstructorOptions[])),
     { role: "editMenu" },
     {
       label: "View",
