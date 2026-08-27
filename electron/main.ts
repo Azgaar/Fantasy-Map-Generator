@@ -225,10 +225,16 @@ function allowClose(): void {
  * silently instead of prompting, which would make the window unclosable. Ask natively instead
  */
 function confirmOnClose(window: BrowserWindow): void {
+  let confirming = false;
+
   window.on("close", event => {
     saveState(window);
     if (skipConfirmation) return;
     event.preventDefault();
+    // Cmd+Q reaches the window through before-quit as well as the close itself, and a window
+    // manager binding can deliver it more than once; without this the dialog stacks on itself
+    if (confirming) return;
+    confirming = true;
 
     dialog
       .showMessageBox(window, {
@@ -241,6 +247,7 @@ function confirmOnClose(window: BrowserWindow): void {
         detail: "The map is autosaved to the app storage, but save it to a file to be safe"
       })
       .then(({ response }) => {
+        confirming = false;
         if (response !== 0) {
           quitting = false;
           return;
