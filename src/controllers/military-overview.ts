@@ -395,21 +395,15 @@ function militaryCustomize(): void {
     }
   });
 
-  if (modules.overviewMilitaryCustomize) return;
-  modules.overviewMilitaryCustomize = true;
-
+  // renderOptions() rebuilds the dialog markup on every open, so the listener is bound to the fresh
+  // tbody each time. Do not guard this with a one-time flag: the old node is gone with its listener
   tableBody.addEventListener("click", event => {
-    const el = event.target as HTMLElement;
-    if (el.tagName !== "BUTTON") return;
+    const el = (event.target as HTMLElement).closest<HTMLButtonElement>("button");
+    if (!el) return;
     const type = el.dataset.type;
 
     if (type === "icon") {
-      Controllers.IconSelector.open(el.textContent || "", value => {
-        el.innerHTML =
-          value.startsWith("http") || value.startsWith("data:image")
-            ? `<img src="${value}" style="width:1.2em;height:1.2em;pointer-events:none;">`
-            : value;
-      });
+      Controllers.IconSelector.open(el.dataset.icon || "", value => setIconButton(el, value));
       return;
     }
 
@@ -459,13 +453,7 @@ function militaryCustomize(): void {
     };
 
     row.innerHTML = /* html */ `<td>
-          <button data-type="icon" data-tip="Click to select unit icon">
-            ${
-              icon.startsWith("http") || icon.startsWith("data:image")
-                ? `<img src="${icon}" style="width:1.2em;height:1.2em;pointer-events:none;">`
-                : icon || ""
-            }
-          </button>
+          <button data-type="icon" data-tip="Click to select unit icon" translate="no"></button>
         </td>
         <td><input data-tip="Type unit name. If name is changed for existing unit, old unit will be replaced" value="${name}" /></td>
         <td>${getLimitButton("biomes")}</td>
@@ -488,7 +476,24 @@ function militaryCustomize(): void {
         <td data-tip="Remove the unit">
           <span data-tip="Remove unit type" class="icon-trash-empty pointer" onclick="this.parentElement.parentElement.remove();"></span>
         </td>`;
+    setIconButton(row.querySelector<HTMLButtonElement>("button[data-type='icon']")!, icon || "");
     tableBody.appendChild(row);
+  }
+
+  // the button holds the canonical icon in a dataset attribute: its content is presentation only and
+  // may be rewritten by the browser or extensions (e.g. Google Translate wrapping text nodes in <font>)
+  function setIconButton(button: HTMLElement, icon: string): void {
+    button.dataset.icon = icon;
+    button.textContent = "";
+
+    if (icon.startsWith("http") || icon.startsWith("data:image")) {
+      const image = document.createElement("img");
+      image.src = icon;
+      image.style.cssText = "width: 1.2em; height: 1.2em; pointer-events: none";
+      button.appendChild(image);
+    } else {
+      button.textContent = icon;
+    }
   }
 
   function restoreDefaultUnits(): void {
@@ -574,11 +579,7 @@ function militaryCustomize(): void {
       );
       const values = elements.map(el => {
         const { type, value } = (el as HTMLElement).dataset || {};
-        if (type === "icon") {
-          const html = el.innerHTML.trim();
-          const isImage = html.startsWith("<img");
-          return isImage ? html.match(/src="([^"]*)"/)![1] : html || "⠀";
-        }
+        if (type === "icon") return (el as HTMLElement).dataset.icon?.trim() || "⠀";
         if (type) return value ? value.split(",").map(v => parseInt(v, 10)) : null;
         if ((el as HTMLInputElement).type === "number") return +(el as HTMLInputElement).value || 0;
         if ((el as HTMLInputElement).type === "checkbox") return +(el as HTMLInputElement).checked || 0;
