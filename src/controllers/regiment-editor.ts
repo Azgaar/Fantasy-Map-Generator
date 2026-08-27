@@ -61,7 +61,7 @@ function renderDialog(): void {
       </div>
       <div data-tip="Regiment emblem" style="display: flex; align-items: center">
         <div class="label">Emblem:</div>
-        <div id="regimentEmblem" style="font-size: 1.5em; width: 3.7em"></div>
+        <div id="regimentEmblem" translate="no" style="font-size: 1.5em; width: 3.7em"></div>
         <button id="regimentEmblemChange" style="padding: 0; width: 4.5em">change</button>
       </div>
       <div id="regimentComposition" class="table"></div>
@@ -237,7 +237,7 @@ function changeEmblem(): void {
     regiment.icon = value;
     const isExternal = value.startsWith("http") || value.startsWith("data:image");
     ensureEl("regimentEmblem").innerHTML = isExternal ? `<img src="${value}" style="width: 1em; height: 1em;">` : value;
-    selectedRegiment!.querySelector(".regimentIcon")!.innerHTML = isExternal ? "" : value;
+    selectedRegiment!.querySelector(".regimentIcon")!.textContent = isExternal ? "" : value;
     selectedRegiment!.querySelector(".regimentImage")!.setAttribute("href", isExternal ? value : "");
   });
 }
