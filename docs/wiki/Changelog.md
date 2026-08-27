@@ -18,7 +18,7 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 
 # Releases
 
-**[1.149](https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/tags/v1.149.zip) - 2026-08-27**:
+**[1.149.0](https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/tags/v1.149.0.zip) - 2026-08-27**:
 
 - Desktop App support [1.149.0]
 - SVG export fixes by _[barrulus](https://github.com/barrulus)_ [1.149.0]

@@ -69,23 +69,27 @@ export function applyLayersPreset(): void {
 /** Apply ?preset= or ?layers= from the URL. Layer names are canonical LayerId values and layers takes precedence. */
 export function applyURLLayers(params: URLSearchParams): void {
   const layersParam = params.get("layers");
-  const presetParam = params.get("preset");
-  if (!layersParam && !presetParam) return;
-
   if (layersParam) {
     const ids = layersParam
       .split(",")
       .map(s => s.trim())
       .filter(id => Layers.has(id));
-    Layers.set(ids);
+    if (ids.length) {
+      Layers.set(ids);
+    } else {
+      ERROR && console.error(`URL param layers="${layersParam}" has no valid layer ids`);
+    }
     return;
   }
 
-  const name = presetParam && findPresetName(presetParam);
-  if (!name) return;
-
-  setPresetName(name);
-  Layers.set(presets[name]);
+  const presetParam = params.get("preset");
+  const presetName = presetParam && findPresetName(presetParam);
+  if (presetName) {
+    setPresetName(presetName);
+    Layers.set(presets[presetName]);
+  } else if (presetParam) {
+    ERROR && console.error(`URL param preset="${presetParam}" is invalid`);
+  }
 }
 
 /** Find a preset by its case-insensitive key or displayed name. */
