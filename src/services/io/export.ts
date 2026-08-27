@@ -288,7 +288,10 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
   if (noVignette) clone.select("#vignette").remove();
   if (noScaleBar) clone.select("#scaleBar").remove();
 
-  if (type === "svg") removeUnusedElements(clone);
+  if (type === "svg") {
+    removeUnusedElements(clone);
+    relocateRootFilter(cloneEl);
+  }
   if (customization && type === "mesh") updateMeshCells(clone);
   inlineStyle(clone);
 
@@ -336,13 +339,15 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
   }
 
   {
-    // replace ocean pattern href to base64
+    // replace ocean pattern href to base64; drop the image if it cannot be loaded,
+    // as an app-relative href is dead in an exported file
     const image = cloneEl.getElementById("oceanicPattern");
     const href = image?.getAttribute("href");
     if (image && href) {
       await new Promise<void>(resolve => {
         getBase64(href, base64 => {
           if (typeof base64 === "string") image.setAttribute("href", base64);
+          else image.remove();
           resolve();
         });
       });
@@ -350,13 +355,14 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
   }
 
   {
-    // replace texture href to base64
+    // replace texture href to base64; drop the image if it cannot be loaded
     const image = cloneEl.querySelector("#texture > image");
     const href = image?.getAttribute("href");
     if (image && href) {
       await new Promise<void>(resolve => {
         getBase64(href, base64 => {
           if (typeof base64 === "string") image.setAttribute("href", base64);
+          else image.remove();
           resolve();
         });
       });
@@ -392,7 +398,8 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
   if (cloneEl.getElementById("burgIcons")) {
     const groups = cloneEl.getElementById("burgIcons")!.querySelectorAll("g");
     for (const group of Array.from(groups)) {
-      const icon = group.dataset.icon && svgDefs.querySelector(group.dataset.icon);
+      if (!group.dataset.icon || cloneDefs.querySelector(group.dataset.icon)) continue;
+      const icon = svgDefs.querySelector(group.dataset.icon);
       if (icon) cloneDefs.appendChild(icon.cloneNode(true));
     }
   }
@@ -474,6 +481,8 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
     );
   }
 
+  if (type === "svg") flattenSymbolReferences(cloneEl);
+
   // add xlink: for href to support svg 1.1
   if (type === "svg") {
     cloneEl.querySelectorAll("[href]").forEach(el => {
@@ -517,6 +526,85 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
   const url = window.URL.createObjectURL(blob);
   window.setTimeout(() => window.URL.revokeObjectURL(url), 5000);
   return url;
+}
+
+// resolve the font-size an em-sized symbol would inherit at this node
+function getInheritedFontSize(el: Element | null): number {
+  for (; el; el = el.parentElement) {
+    const attr = el.getAttribute("font-size");
+    if (attr && Number.isFinite(parseFloat(attr))) return parseFloat(attr);
+    const style = el.getAttribute("style");
+    const match = style?.match(/font(?:-size)?\s*:\s*([\d.]+)px/);
+    if (match) return parseFloat(match[1]);
+  }
+  return 16;
+}
+
+// Inkscape (and other non-browser renderers) don't size use->symbol references reliably,
+// especially em-sized symbols, so bake the viewBox scaling into a transform and turn symbols into groups
+export function flattenSymbolReferences(svg: SVGSVGElement): void {
+  const flattened = new Set<SVGSymbolElement>();
+
+  svg.querySelectorAll("use").forEach(use => {
+    const href = use.getAttribute("href") || use.getAttribute("xlink:href");
+    if (!href?.startsWith("#")) return;
+    const symbol = svg.querySelector<SVGSymbolElement>(`symbol[id="${href.slice(1)}"]`);
+    if (!symbol) return;
+
+    const viewBox = (symbol.getAttribute("viewBox") || "").split(/[\s,]+/).map(Number);
+    const [minX, minY, vw, vh] = viewBox.length === 4 && viewBox.every(Number.isFinite) ? viewBox : [0, 0, 1, 1];
+
+    const resolveLength = (value: string | null): number | null => {
+      if (!value) return null;
+      const em = value.match(/^([\d.]+)em$/);
+      if (em) return parseFloat(em[1]) * getInheritedFontSize(use);
+      const number = parseFloat(value);
+      return Number.isFinite(number) && !value.includes("%") ? number : null;
+    };
+
+    const width = resolveLength(use.getAttribute("width")) ?? resolveLength(symbol.getAttribute("width")) ?? vw;
+    const height = resolveLength(use.getAttribute("height")) ?? resolveLength(symbol.getAttribute("height")) ?? vh;
+
+    const scale = Math.min(width / vw, height / vh);
+    const x = parseFloat(use.getAttribute("x") || "0");
+    const y = parseFloat(use.getAttribute("y") || "0");
+    const tx = rn(x + (width - vw * scale) / 2 - minX * scale, 2);
+    const ty = rn(y + (height - vh * scale) / 2 - minY * scale, 2);
+
+    for (const attr of ["x", "y", "width", "height"]) use.removeAttribute(attr);
+    const transform = `translate(${tx},${ty}) scale(${rn(scale, 4)})`;
+    const existing = use.getAttribute("transform");
+    use.setAttribute("transform", existing ? `${transform} ${existing}` : transform);
+    flattened.add(symbol);
+  });
+
+  flattened.forEach(symbol => {
+    const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    for (const attr of Array.from(symbol.attributes)) {
+      if (["viewBox", "width", "height", "overflow", "preserveAspectRatio"].includes(attr.name)) continue;
+      group.setAttribute(attr.name, attr.value);
+    }
+    while (symbol.firstChild) group.appendChild(symbol.firstChild);
+    symbol.replaceWith(group);
+  });
+}
+
+// Inkscape can't render filters on the root svg element and miscomposites default filter regions on large groups,
+// so move the global filter to #viewbox and give all filters an explicit full-viewport region
+export function relocateRootFilter(svg: SVGSVGElement): void {
+  const filter = svg.getAttribute("filter");
+  const viewbox = svg.querySelector("#viewbox");
+  if (!filter || !viewbox) return;
+  svg.removeAttribute("filter");
+  viewbox.setAttribute("filter", filter);
+
+  svg.querySelectorAll("filter").forEach(filterEl => {
+    filterEl.setAttribute("filterUnits", "userSpaceOnUse");
+    filterEl.setAttribute("x", "0");
+    filterEl.setAttribute("y", "0");
+    filterEl.setAttribute("width", "100%");
+    filterEl.setAttribute("height", "100%");
+  });
 }
 
 // remove hidden g elements and g elements without children to make downloaded svg smaller in size
