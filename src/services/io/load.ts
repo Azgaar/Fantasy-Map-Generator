@@ -3,6 +3,7 @@ import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import { getDefaultTransportTypes } from "@/data/transport-types";
 import { GraphOverride } from "@/generators/graph-override";
 import { invalidateEmblems } from "@/renderers/draw-emblems";
 import { clearLegend } from "@/renderers/draw-legend";
@@ -406,6 +407,19 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.measurers = data[46] ? JSON.parse(data[46]) : [];
     pack.addedLabels = data[47] ? JSON.parse(data[47]) : [];
     pack.relief = data[49] ? JSON.parse(data[49]) : [];
+    pack.journeys = data[52] ? JSON.parse(data[52]) : [];
+    pack.transportTypes = data[53] ? JSON.parse(data[53]) : getDefaultTransportTypes();
+    if (!pack.transportTypes.length) pack.transportTypes = getDefaultTransportTypes();
+    // Migrate pre-branch transport types that used pathMode (direct/route/sea) to domain (air/land/water).
+    // Also drop the legacy `color` field (transport-type color no longer has any effect).
+    for (const t of pack.transportTypes as unknown as Array<Record<string, unknown>>) {
+      if (!("domain" in t) && "pathMode" in t) {
+        const legacy = t.pathMode as string;
+        t.domain = legacy === "sea" ? "water" : legacy === "route" ? "land" : "air";
+        delete t.pathMode;
+      }
+      if ("color" in t) delete t.color;
+    }
 
     if (data[31]) {
       const namesDL = data[31].split("/");
@@ -437,6 +451,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     Markets.sync();
     Routes.sync();
     TradeAnimation.sync();
+    Journeys.sync();
 
     select("#scaleBar")
       .on("mousemove", () => tip("Click to open Units Editor"))

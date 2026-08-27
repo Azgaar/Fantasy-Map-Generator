@@ -135,6 +135,7 @@ function selectStyleElement() {
       "gridOverlay",
       "ice",
       "icons",
+      "journeys",
       "lakes",
       "prec",
       "relig",
@@ -155,6 +156,7 @@ function selectStyleElement() {
       "cells",
       "coordinates",
       "gridOverlay",
+      "journeys",
       "legend",
       "population",
       "routes",
@@ -175,6 +177,7 @@ function selectStyleElement() {
       "compass",
       "coordinates",
       "gridOverlay",
+      "journeys",
       "population",
       "prec",
       "routes",
@@ -518,6 +521,8 @@ styleStrokeInput.addEventListener("input", function () {
   const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle.stroke = this.value;
   if (styleElementSelect.value === "gridOverlay") Layers.draw("grid");
+  // journey endpoint dots are filled, so they bake the layer stroke and width instead of inheriting them
+  if (styleElementSelect.value === "journeys") Layers.draw("journeys");
 });
 
 styleStrokeWidthInput.addEventListener("input", e => {
@@ -526,6 +531,7 @@ styleStrokeWidthInput.addEventListener("input", e => {
   if (groupStyle) groupStyle["stroke-width"] = e.target.value;
   if (styleElementSelect.value === "gridOverlay") Layers.draw("grid");
   if (styleElementSelect.value === "ruler") Layers.draw("rulers");
+  if (styleElementSelect.value === "journeys") Layers.draw("journeys");
 });
 
 styleLetterSpacingInput.addEventListener("input", e => {

@@ -1,4 +1,5 @@
 // Global layers registry: owns layers list, order, and svg skeleton
+import { DEFAULT_JOURNEY_COLOR } from "@/generators/journeys-generator";
 import { drawBiomes } from "@/renderers/draw-biomes";
 import { drawBorders } from "@/renderers/draw-borders";
 import { drawBurgIcons, removeBurgIcons } from "@/renderers/draw-burg-icons";
@@ -11,6 +12,7 @@ import { drawGoods } from "@/renderers/draw-goods";
 import { drawGrid } from "@/renderers/draw-grid";
 import { drawHeightmap } from "@/renderers/draw-heightmap";
 import { drawIce } from "@/renderers/draw-ice";
+import { drawJourneys } from "@/renderers/draw-journeys";
 import { drawLakes } from "@/renderers/draw-lakes";
 import { drawLandmass } from "@/renderers/draw-landmass";
 import { redrawLegend } from "@/renderers/draw-legend";
@@ -387,6 +389,18 @@ const mapLayers = [
   new Layer({ id: "military", element: "armies", parent: "viewbox", draw: drawMilitary }),
   new Layer({ id: "markers", parent: "viewbox", draw: drawMarkers }),
   new Layer({ id: "fogging", parent: "viewbox", attrs: { mask: "url(#fog)" }, permanent: true, draw: drawFogging }),
+  new Layer({
+    id: "journeys",
+    parent: "viewbox",
+    attrs: {
+      fill: "none",
+      stroke: DEFAULT_JOURNEY_COLOR,
+      "stroke-width": "1.8",
+      "stroke-linecap": "round",
+      "marker-end": "url(#journey-arrow)"
+    },
+    draw: drawJourneys
+  }),
   new Layer({ id: "rulers", element: "ruler", parent: "viewbox", draw: drawMeasurers }),
   new Layer({ id: "debug", parent: "viewbox", permanent: true, keepContent: true }),
   new Layer({ id: "scaleBar", parent: "map", draw: () => drawScaleBar(), erase: removeScaleBar }),
