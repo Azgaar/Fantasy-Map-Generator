@@ -28,6 +28,9 @@ export interface JourneyArchetype {
   bivouac: string[];
 }
 
+/** Journeys with no story behind them: a plain trip from A to B */
+export const DEFAULT_JOURNEY_TYPE = "Travel";
+
 export const COMPANY_ADJECTIVES = [
   "Iron",
   "Gilded",
@@ -153,21 +156,21 @@ export const NAMELESS = [
   "Ostrik"
 ];
 
-export const HIGHLAND_TERMS = ["mountains", "high passes", "peaks"];
-export const UPLAND_TERMS = ["hills", "uplands"];
-export const UNKNOWN_WILD = "wilds";
+export const HIGHLAND_TERMS = ["mountains", "mountain passes"];
+export const UPLAND_TERMS = ["hills", "highlands"];
+export const UNKNOWN_WILD = "wilderness";
 
 export const BIOME_TERMS: Record<string, string> = {
   Marine: "open water",
-  "Hot desert": "dunes",
-  "Cold desert": "stony waste",
+  "Hot desert": "desert",
+  "Cold desert": "cold desert",
   Savanna: "savanna",
   Grassland: "grasslands",
   "Tropical seasonal forest": "jungle",
-  "Temperate deciduous forest": "greenwood",
+  "Temperate deciduous forest": "forest",
   "Tropical rainforest": "rainforest",
   "Temperate rainforest": "rainforest",
-  Taiga: "pinewoods",
+  Taiga: "pine forest",
   Tundra: "tundra",
   Glacier: "ice",
   Wetland: "marshes"
@@ -175,33 +178,33 @@ export const BIOME_TERMS: Record<string, string> = {
 
 export const LEG_NAMES = {
   air: {
-    first: ["Aloft from {from}", "Rising over the {wild}", "Cast off from {from}"],
-    second: ["Down to {to}", "Mooring at {to}", "Descent on {to}"],
-    whole: ["Over the {wild} to {to}", "Flight to {to}", "{from} to {to} by air", "Above the {wild}"]
+    first: ["Takeoff from {from}", "Up over the {wild}", "Leaving {from} by air"],
+    second: ["Landing at {to}", "Down to {to}", "Approach to {to}"],
+    whole: ["Flight to {to}", "Over the {wild} to {to}", "{from} to {to} by air", "Air route to {to}"]
   },
   water: {
-    first: ["Out of {from} harbour", "Standing out into {water}", "Under sail from {from}"],
-    second: ["Landfall at {to}", "Into the roads of {to}", "Last watch to {to}"],
-    whole: ["Passage to {to}", "Crossing {water}", "By sea to {to}", "{from} to {to} by water"]
+    first: ["Out of {from} port", "Sailing from {from}", "Leaving {from} by sea"],
+    second: ["Landing at {to}", "Into {to} port", "Last stretch to {to}"],
+    whole: ["Sailing to {to}", "By sea to {to}", "Across {water} to {to}", "{from} to {to} by sea"]
   },
   land: {
-    first: ["Into the {wild}", "Out of {from} into the {wild}", "Up the {wild} track", "{from} to the {wild}"],
-    second: ["On to {to}", "Down out of the {wild} to {to}", "Last stretch to {to}"],
-    offRoadLast: ["Cross-country to {to}", "Down out of the {wild} to {to}", "Into {to} by back ways"],
-    offRoad: ["Cross-country to {to}", "Through the {wild}", "Trackless {wild}", "Around the road to {to}"],
-    opening: ["Out of {from}", "The road from {from}", "{from} to {to}", "Setting out for {to}"],
-    closing: ["Last miles to {to}", "Down to {to}", "The road into {to}"],
-    whole: ["{from} to {to}", "On to {to}", "The {wild} road"]
+    first: ["Into the {wild}", "Out of {from} into the {wild}", "{from} to the {wild}"],
+    second: ["On to {to}", "Out of the {wild} to {to}", "Last stretch to {to}"],
+    offRoadLast: ["Off-road to {to}", "Out of the {wild} to {to}", "Into {to} the back way"],
+    offRoad: ["Off-road to {to}", "Through the {wild}", "Across the {wild} to {to}", "Around the road to {to}"],
+    opening: ["Out of {from}", "{from} to {to}", "The road from {from}", "Setting out for {to}"],
+    closing: ["Last miles to {to}", "The road into {to}", "Down to {to}"],
+    whole: ["{from} to {to}", "On to {to}", "The road to {to}", "The {wild} road"]
   }
 };
 
 /** Names for the stops no archetype speaks for */
 export const HALT_NAMES = {
-  muster: ["Mustering in {place}", "Provisioning in {place}", "Gathering at {tavern}"],
-  harborWait: ["Waiting on the tide at {from}", "Held up in {from} harbour", "Buying a passage in {from}"],
+  muster: ["Gathering in {place}", "Getting supplies in {place}", "Meeting at {tavern}"],
+  harborWait: ["Waiting for a ship in {from}", "Held up in {from} port", "Booking passage in {from}"],
   /** A night at sea within reach of a named place, and out of sight of one */
-  anchoredNear: ["Anchored {label}", "A night at anchor {label}", "Lying to {label}"],
-  anchored: ["Night at anchor", "Becalmed in {water}", "Hove to till dawn"],
+  anchoredNear: ["Anchored {label}", "A night at anchor {label}", "Stopped {label}"],
+  anchored: ["Night at anchor", "A night out on {water}", "Anchored till morning"],
   /** A camp within reach of a named place; the party's own bivouac names join these */
   campNear: ["Camp {label}", "A night {label}"]
 };

@@ -96,17 +96,19 @@ describe("generateStoryJourney", () => {
     expect(generateStoryJourney(pathfinder)).toBeNull();
   });
 
-  it("plots a named, multi-segment journey", () => {
+  it("plots a named journey", () => {
     const journey = generateStoryJourney(pathfinder)!;
     expect(journey).not.toBeNull();
     expect(journey.name).toBeTruthy();
     expect(journey.type).toBeTruthy(); // the party's kind of travel, shown in the overview
-    expect(journey.segments.length).toBeGreaterThan(1);
+    expect(journey.segments.length).toBeGreaterThan(0);
     expect(journey.visible).not.toBe(false);
   });
 
   // Invariants must hold for every party the generator can invent, so sample many
   it("holds its invariants across many rolls", () => {
+    const lengths: number[] = [];
+
     for (let run = 0; run < 100; run++) {
       const journey = generateStoryJourney(pathfinder)!;
       expect(journey).not.toBeNull();
@@ -125,11 +127,11 @@ describe("generateStoryJourney", () => {
       // legs are committed whole, so the route both starts and ends at a burg
       expect(BURG_CELLS.includes(segments[0].from!)).toBe(true);
       expect(BURG_CELLS.includes(segments[segments.length - 1].to!)).toBe(true);
-      expect(segments.length).toBeLessThanOrEqual(12);
+      expect(segments.length).toBeLessThanOrEqual(20);
+      lengths.push(segments.length);
 
-      // at least one rest, and every rest is a zero-speed stay with a duration and no distance
+      // every rest is a zero-speed stay with a duration and no distance
       const stays = segments.filter(isStay);
-      expect(stays.length).toBeGreaterThan(0);
       for (const stay of stays) {
         expect(transportDomain(stay.transportType)).toBe("stay");
         expect(stay.duration).toBeGreaterThan(0);
@@ -148,6 +150,10 @@ describe("generateStoryJourney", () => {
         expect(segment.points[segment.points.length - 1][2]).toBe(segment.to);
       }
     }
+
+    // journeys come in different sizes: some are a single hop, some run long
+    expect(Math.min(...lengths)).toBeLessThanOrEqual(2);
+    expect(Math.max(...lengths)).toBeGreaterThanOrEqual(6);
   });
 
   it("varies the party, the route and the transport between runs", () => {

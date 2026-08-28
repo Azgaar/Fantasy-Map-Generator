@@ -1,9 +1,10 @@
+import { DEFAULT_JOURNEY_TYPE } from "@/data/journey-lore";
 import { getDefaultTransportTypes } from "@/data/transport-types";
 import type { JouneySegment, Journey, JourneyPoint, TransportDomain, TransportType } from "@/types/Journey";
 import { isLand } from "../utils";
 import { getCardinalColor } from "../utils/colorUtils";
 import type { Burg } from "./burgs-generator";
-import { DEFAULT_JOURNEY_TYPE, generateStoryJourney } from "./journey-story";
+import { generateStoryJourney } from "./journey-story";
 import type { Route } from "./routes-generator";
 
 const DEFAULT_HOURS_PER_DAY = 8;

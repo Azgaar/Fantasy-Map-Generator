@@ -26,8 +26,7 @@ import type { PathfindingResult } from "./journeys-generator";
 const ORIGIN_POOL_SIZE = 8;
 const ORIGIN_RETRIES = 3;
 const CANDIDATE_POOL_SIZE = 5;
-const MIN_STOPS = 3;
-const MAX_STOPS = 5;
+const LEG_COUNT_WEIGHTS: Record<string, number> = { 1: 3, 2: 5, 3: 4, 4: 3, 5: 2, 6: 1 };
 
 const LEG_MIN_FACTOR = 0.08;
 const LEG_MAX_FACTOR = 0.4;
@@ -36,7 +35,7 @@ const MIN_SPLIT_POINTS = 9;
 const SPLIT_BAND: [number, number] = [0.35, 0.65];
 const HARBOR_WAIT_CHANCE = 0.45;
 const MUSTER_CHANCE = 0.25;
-const MAX_SEGMENTS = 12;
+const MAX_SEGMENTS = 15;
 
 interface PlannedLeg {
   from: Burg;
@@ -93,7 +92,7 @@ function planLegs(pathfinder: JourneyPathfinder, archetype: JourneyArchetype, bu
 
   let current = origin;
   let attempts = 0;
-  const legCount = rand(MIN_STOPS, MAX_STOPS) - 1;
+  const legCount = Number(rw(LEG_COUNT_WEIGHTS));
 
   while (legs.length < legCount && attempts < MAX_PATH_ATTEMPTS) {
     const candidates = rankCandidates(current, burgs, visited, band, archetype);
@@ -247,13 +246,13 @@ function buildSegments(
     rest: Boolean(stayType) && index < legs.length - 1 && P(archetype.rest)
   }));
 
-  let muster = Boolean(stayType) && P(MUSTER_CHANCE);
-  // a journey without a single pause is the bare A→B line this generator exists to replace
-  if (stayType && !muster && !plans.some(plan => plan.harborWait || plan.camp || plan.rest)) {
+  const muster = Boolean(stayType) && P(MUSTER_CHANCE);
+  // a long route with no pause anywhere is the bare A→B line this generator exists to replace;
+  // a single hop is allowed to be exactly that
+  if (stayType && legs.length > 1 && !muster && !plans.some(plan => plan.harborWait || plan.camp || plan.rest)) {
     const splittable = plans.find(plan => plan.leg.points.length >= MIN_SPLIT_POINTS);
     if (splittable) splittable.camp = true;
-    else if (plans.length > 1) plans[0].rest = true;
-    else muster = true;
+    else plans[0].rest = true;
   }
 
   const segments: JouneySegment[] = [];
