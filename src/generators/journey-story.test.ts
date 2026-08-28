@@ -100,8 +100,9 @@ describe("generateStoryJourney", () => {
     const journey = generateStoryJourney(pathfinder)!;
     expect(journey).not.toBeNull();
     expect(journey.name).toBeTruthy();
+    expect(journey.type).toBeTruthy(); // the party's kind of travel, shown in the overview
     expect(journey.segments.length).toBeGreaterThan(1);
-    expect(journey.visible).toBe(true);
+    expect(journey.visible).not.toBe(false);
   });
 
   // Invariants must hold for every party the generator can invent, so sample many
@@ -115,7 +116,7 @@ describe("generateStoryJourney", () => {
       segments.forEach((segment, index) => {
         expect(segment.id).toBe(index);
         expect(segment.name).toBeTruthy();
-        expect(segment.visible).toBe(true);
+        expect(segment.visible).not.toBe(false);
       });
 
       // the route is continuous: every segment starts where the previous one ended

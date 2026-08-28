@@ -19,6 +19,7 @@ import { tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { TRANSPORT_TYPES_CHANGED } from "@/controllers/transport-types-editor";
+import { getJourneyTypes } from "@/generators/journey-story";
 import { OFF_ROAD_SPEED_FACTOR } from "@/generators/journeys-generator";
 import { getSegmentColor } from "@/renderers/draw-journeys";
 import type { JouneySegment, Journey } from "@/types/Journey";
@@ -123,6 +124,13 @@ function renderDialog(journey: Journey): void {
       <label for="journeyName" data-tip="Journey name" style="flex: 1; grid-template-columns: 3.2em 1fr">Name:
         <input id="journeyName" type="text" value="${escapeAttr(journey.name)}" />
       </label>
+      <label for="journeyType" data-tip="Kind of travel this is: a quest, a caravan, a campaign"
+        style="flex: 0 1 14em; grid-template-columns: 3.2em 1fr">Type:
+        <input id="journeyType" type="text" value="${escapeAttr(journey.type)}" list="journeyTypes" />
+      </label>
+      <datalist id="journeyTypes">${getJourneyTypes()
+        .map(type => `<option value="${type}"></option>`)
+        .join("")}</datalist>
       <fill-box id="journeyColor" size="1.2em" data-tip="Journey color. Click to change"></fill-box>
     </div>
 
@@ -136,7 +144,7 @@ function renderDialog(journey: Journey): void {
       <button id="journeyEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
       <button id="journeyAddSegment" data-tip="Add a segment to the journey" class="icon-plus"></button>
       <button id="journeyRecompute" data-tip="Recompute every segment's path" class="icon-retweet"></button>
-      <button id="journeyVisible" data-tip="Toggle journey visibility on the map" class="icon-eye"></button>
+      <button id="journeyVisible" data-tip="Toggle journey visibility on the map" class="${journey.visible === false ? "icon-eye-off" : "icon-eye"}"></button>
       <button id="journeyLock" data-tip="Lock or unlock the journey" class="${journey.lock ? "icon-lock" : "icon-lock-open"}"></button>
       <button id="journeyEditTransport" data-tip="Edit transport types" class="icon-cog"></button>
       <button id="journeyExport" data-tip="Save journey segments as a text file (.csv)" class="icon-download"></button>
@@ -154,6 +162,7 @@ function renderDialog(journey: Journey): void {
     onUpdate: () => updateDialog(dialogId, { width: "fit-content", position: getPosition() })
   });
   ensureEl("journeyName").addEventListener("input", onNameInput);
+  ensureEl("journeyType").addEventListener("input", onTypeInput);
   ensureEl("journeyColor").addEventListener("click", onColorPick);
   ensureEl("journeyVisible").addEventListener("click", onToggleVisible);
   ensureEl("journeyLock").addEventListener("click", onToggleLock);
@@ -241,7 +250,7 @@ function renderSegmentLine(journey: Journey, segment: JouneySegment): string {
     <div data-col="roads">${renderRoadsToggle(segment, domain === "land")}</div>
     <div data-col="color">${renderColorCell(journey, segment)}</div>
     <div data-col="actions">
-      <span class="segVisible pointer ${segment.visible ? "icon-eye" : "icon-eye-off"}" data-tip="Toggle segment visibility"></span>
+      <span class="segVisible pointer ${segment.visible === false ? "icon-eye-off" : "icon-eye"}" data-tip="Toggle segment visibility"></span>
       <span class="segPoints icon-pencil ${canEditPoints ? "pointer" : "inactive"}" ${activeStyle(isEditingPoints)}
         data-tip="${!canEditPoints ? "Set both endpoints first" : isEditingPoints ? "Finish editing path points" : "Edit path points"}"></span>
       <span class="segDraw icon-brush ${isStay ? "inactive" : "pointer"}" ${activeStyle(isDrawing)}
@@ -313,6 +322,11 @@ function onNameInput(this: HTMLInputElement): void {
   if (journey) journey.name = this.value;
 }
 
+function onTypeInput(this: HTMLInputElement): void {
+  const journey = getJourney();
+  if (journey) journey.type = this.value;
+}
+
 function onColorPick(): void {
   const journey = getJourney();
   if (!journey) return;
@@ -328,8 +342,10 @@ function onColorPick(): void {
 function onToggleVisible(this: HTMLElement): void {
   const journey = getJourney();
   if (!journey) return;
-  journey.visible = !journey.visible;
-  this.className = journey.visible ? "icon-eye" : "icon-eye-off";
+  const visible = !journey.visible;
+  if (!visible) journey.visible = false;
+  else delete journey.visible;
+  this.className = visible ? "icon-eye" : "icon-eye-off";
   Layers.draw("journeys");
 }
 
@@ -417,8 +433,12 @@ function onSegColorReset(this: HTMLElement): void {
 function onToggleSegVisible(this: HTMLElement): void {
   const segment = getLineSegment(this);
   if (!segment) return;
-  segment.visible = !segment.visible;
-  if (!segment.visible) PathEditor.stopEditing(segment.id);
+
+  const visible = !segment.visible;
+  if (!visible) segment.visible = false;
+  else delete segment.visible;
+
+  if (!visible) PathEditor.stopEditing(segment.id);
   segmentsTable.refresh();
 }
 
@@ -512,7 +532,6 @@ function addSegment(): void {
   journey.segments.push({
     id,
     name: `Segment ${id + 1}`,
-    visible: true,
     from: journey.segments[journey.segments.length - 1]?.to,
     transportType: transport?.name ?? "Direct",
     speed: transport?.speed ?? 5,
@@ -572,7 +591,7 @@ function downloadSegmentsData(): void {
       segment.to ?? "",
       segment.avoidRoads ? "yes" : "no",
       segment.custom ? "yes" : "no",
-      segment.visible ? "yes" : "no",
+      segment.visible === false ? "no" : "yes",
       segment.color ?? ""
     ].join(",")
   );

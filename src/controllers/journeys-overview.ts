@@ -17,7 +17,7 @@ import { Controllers } from "@/controllers";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import type { Journey } from "@/types/Journey";
 import { downloadFile, ensureEl, findEl, getFileName, getHoursPerDay, rn } from "@/utils";
-import { cellEndpointLabel } from "@/utils/cell-labels";
+import { cellEndpointLabel, getCellPoint } from "@/utils/cell-labels";
 
 const dialogId = "journeysOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
@@ -26,6 +26,7 @@ let filterState: { search: string };
 const columns: EditorColumn<Journey>[] = [
   { key: "locate", width: "1.4em", permanent: true },
   { key: "name", label: "Journey", width: "14em", permanent: true, sortBy: j => j.name || "", sortType: "alpha" },
+  { key: "type", label: "Type", width: "8em", sortBy: j => j.type || "", sortType: "alpha" },
   {
     key: "from",
     label: "From",
@@ -73,7 +74,7 @@ function getFilteredJourneys(): Journey[] {
 
   return pack.journeys.filter(journey => {
     const places = [cellEndpointLabel(getStart(journey)), cellEndpointLabel(getEnd(journey))];
-    return [journey.name, ...places].some(value => (value || "").toLowerCase().includes(searchText));
+    return [journey.name, journey.type, ...places].some(value => (value || "").toLowerCase().includes(searchText));
   });
 }
 
@@ -97,7 +98,7 @@ function renderDialog(): void {
     <div id="journeysBody" class="table">${renderEditorHeader({ dialogId, columns })}</div>
 
     <div id="journeysFilters" class="editorFilters">
-      <label for="journeysSearch" data-tip="Filter by journey name or endpoint">Search: <input id="journeysSearch" type="search" /></label>
+      <label for="journeysSearch" data-tip="Filter by journey name, type or endpoint" style="grid-template-columns: 4em 12em">Search: <input id="journeysSearch" type="search" /></label>
     </div>
 
     <div id="journeysFooter" class="totalLine">
@@ -164,8 +165,9 @@ function renderJourneysPage(view: TableView<Journey>): void {
         <fill-box class="journeyColor" fill="${journey.color}" size="0.8em" data-tip="Journey color. Click to change"></fill-box>
         <span data-tip="Journey name">${journey.name}</span>
       </div>
-      <div data-tip="Start of the first segment" data-col="from">${cellEndpointLabel(getStart(journey))}</div>
-      <div data-tip="End of the last segment" data-col="to">${cellEndpointLabel(getEnd(journey))}</div>
+      <div data-tip="Kind of travel this is" data-col="type">${journey.type}</div>
+      ${renderEndpoint("from", getStart(journey))}
+      ${renderEndpoint("to", getEnd(journey))}
       <div data-tip="Total distance" data-col="distance">${rn(totalDistance)} ${unit}</div>
       <div data-tip="Average speed, moving segments only" data-col="speed">${avgSpeed ? `${rn(avgSpeed, 1)} ${unit}/h` : "-"}</div>
       <div data-tip="Total travel time: ${Journeys.formatTravelTimeFull(totalHours, hoursPerDay)}" data-col="time">${Journeys.formatTravelTime(totalHours, hoursPerDay)}</div>
@@ -191,12 +193,26 @@ function renderJourneysPage(view: TableView<Journey>): void {
   body.querySelectorAll("div.states").forEach(el => void el.addEventListener("mouseenter", journeyHighlightOn));
   body.querySelectorAll("div.states").forEach(el => void el.addEventListener("mouseleave", journeyHighlightOff));
   body.querySelectorAll("fill-box.journeyColor").forEach(el => void el.addEventListener("click", changeJourneyColor));
-  body.querySelectorAll("span.icon-target").forEach(el => void el.addEventListener("click", zoomToJourney));
+  body.querySelectorAll("[data-col='locate']").forEach(el => void el.addEventListener("click", zoomToJourney));
+  body.querySelectorAll("span.journeyLocate.pointer").forEach(el => void el.addEventListener("click", zoomToEndpoint));
   body.querySelectorAll("span.icon-pencil").forEach(el => void el.addEventListener("click", openJourneyEditor));
   body.querySelectorAll("span.locks").forEach(el => void el.addEventListener("click", toggleLockStatus));
   body.querySelectorAll("span.icon-trash-empty").forEach(el => void el.addEventListener("click", triggerJourneyRemove));
 
   renderEditorPagination(ensureEl("journeysFooter"), view, journeysTable.goto);
+}
+
+/** Endpoint cell with a target icon that flies to the place, like the row's own locate icon */
+function renderEndpoint(endpoint: "from" | "to", cellId: number | undefined): string {
+  const label = cellEndpointLabel(cellId);
+  const isSet = cellId !== undefined;
+  const what = endpoint === "from" ? "Start of the first segment" : "End of the last segment";
+
+  return /* html */ `<div data-tip="${what}" data-col="${endpoint}">
+    <span class="journeyLocate icon-target ${isSet ? "pointer" : "inactive"}" data-cell="${cellId ?? ""}"
+      data-tip="${isSet ? `Zoom to ${label}` : "Endpoint is not set"}"></span>
+    <span>${label}</span>
+  </div>`;
 }
 
 const getLineId = (el: HTMLElement): number => +(el.closest<HTMLElement>(".states")?.dataset.id ?? "-1");
@@ -224,6 +240,11 @@ function journeyHighlightOff(this: HTMLElement): void {
 function zoomToJourney(this: HTMLElement): void {
   const group = findEl<SVGGElement>(`journey${getLineId(this)}`);
   if (group) highlightElement(group, 3);
+}
+
+function zoomToEndpoint(this: HTMLElement): void {
+  const point = getCellPoint(Number(this.dataset.cell));
+  if (point) zoomTo(point[0], point[1], 8, 2000);
 }
 
 function changeJourneyColor(this: FillBoxElement): void {
@@ -308,7 +329,7 @@ function triggerAllJourneysRemove(): void {
 
 function downloadJourneysData(): void {
   const unit = distanceUnitInput.value;
-  let data = `Id,Journey,From,To,Segments,Distance(${unit}),AvgSpeed(${unit}/h),TravelHours\n`; // headers
+  let data = `Id,Journey,Type,From,To,Segments,Distance(${unit}),AvgSpeed(${unit}/h),TravelHours\n`; // headers
 
   for (const journey of journeysTable.view().all) {
     const { totalDistance, totalHours, avgSpeed } = Journeys.getTotals(journey);
@@ -316,6 +337,7 @@ function downloadJourneysData(): void {
     const values = [
       journey.i,
       `"${journey.name}"`,
+      `"${journey.type}"`,
       `"${places[0]}"`,
       `"${places[1]}"`,
       journey.segments.length,

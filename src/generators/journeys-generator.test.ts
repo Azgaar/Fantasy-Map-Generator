@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { JouneySegment, Journey } from "@/types/Journey";
-import { C_12 } from "@/utils/colorUtils";
+import { CARDINAL_10 } from "@/utils/colorUtils";
 import { OFF_ROAD_SPEED_FACTOR } from "./journeys-generator";
 
 const makeSeg = (distance: number, speed: number, avoidRoads = false): JouneySegment => ({
@@ -58,6 +58,7 @@ describe("journey metrics", () => {
     const j: Journey = {
       i: 0,
       name: "j",
+      type: "Travel",
       visible: true,
       color: "#000",
       segments: [makeSeg(10, 5), makeSeg(20, 10)]
@@ -72,6 +73,7 @@ describe("journey metrics", () => {
     const j: Journey = {
       i: 0,
       name: "j",
+      type: "Travel",
       visible: true,
       color: "#000",
       segments: [makeSeg(10, 5, false), makeSeg(10, 5, true)]
@@ -118,6 +120,7 @@ describe("journey metrics", () => {
     const j: Journey = {
       i: 0,
       name: "j",
+      type: "Travel",
       visible: true,
       color: "#000",
       segments: [walk, stay]
@@ -245,24 +248,24 @@ describe("journey colors", () => {
     Journeys = (globalThis as any).Journeys;
   });
 
-  it("gives every new journey a color from the shared palette", () => {
+  it("gives every new journey a color from the cardinal palette", () => {
     const journey: Journey = Journeys.addEmpty();
-    expect(C_12.includes(journey.color)).toBe(true);
+    expect(CARDINAL_10.includes(journey.color)).toBe(true);
   });
 
   it("keeps the colors distinct while the palette lasts", () => {
-    const colors = Array.from({ length: C_12.length }, () => Journeys.addEmpty().color);
-    expect(new Set(colors).size).toBe(C_12.length);
+    const colors = Array.from({ length: CARDINAL_10.length }, () => Journeys.addEmpty().color);
+    expect(new Set(colors).size).toBe(CARDINAL_10.length);
   });
 
   it("still colors journeys once the palette is exhausted", () => {
-    for (let i = 0; i <= C_12.length; i++) Journeys.addEmpty();
-    expect(C_12.includes((globalThis as any).pack.journeys.at(-1).color)).toBe(true);
+    for (let i = 0; i <= CARDINAL_10.length; i++) Journeys.addEmpty();
+    expect(CARDINAL_10.includes((globalThis as any).pack.journeys.at(-1).color)).toBe(true);
   });
 
   it("backfills colors for journeys saved before they had one", () => {
     (globalThis as any).pack.journeys = [{ i: 0, name: "old", segments: [] }];
     Journeys.sync();
-    expect(C_12.includes((globalThis as any).pack.journeys[0].color)).toBe(true);
+    expect(CARDINAL_10.includes((globalThis as any).pack.journeys[0].color)).toBe(true);
   });
 });

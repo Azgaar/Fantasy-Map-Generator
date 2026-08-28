@@ -15,7 +15,7 @@ export function getSegmentColor(journey: Journey, segment: JouneySegment): strin
 export function drawJourneys(): void {
   TIME && console.time("drawJourneys");
 
-  const journeys = (pack.journeys ?? []).filter(journey => journey.visible);
+  const journeys = (pack.journeys ?? []).filter(j => j.visible !== false);
   ensureEl("journeys").innerHTML = journeys.map(getJourneyPaths).join("");
 
   TIME && console.timeEnd("drawJourneys");
@@ -24,7 +24,7 @@ export function drawJourneys(): void {
 /** Every path carries its own stroke: journeys own their color, the layer has none to give */
 function getJourneyPaths(journey: Journey): string {
   const paths = journey.segments
-    .filter(segment => segment.visible && segment.points.length > 1)
+    .filter(segment => segment.visible !== false && segment.points.length > 1)
     .map(segment => {
       const d = round(curve(segment.points) ?? "", 1);
       return /* html */ `<path id="segment${journey.i}_${segment.id}" d="${d}" stroke="${getSegmentColor(journey, segment)}"/>`;

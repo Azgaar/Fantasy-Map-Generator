@@ -1,4 +1,13 @@
-import { color, interpolate, interpolateRainbow, type RGBColor, range, scaleSequential, shuffler } from "d3";
+import {
+  color,
+  interpolate,
+  interpolateRainbow,
+  type RGBColor,
+  range,
+  scaleSequential,
+  schemeCategory10,
+  shuffler
+} from "d3";
 
 /**
  * Convert RGB or RGBA color to HEX
@@ -32,6 +41,16 @@ export const C_12 = [
   "#8dd3c7",
   "#eb8de7"
 ];
+
+/** d3's categorical scheme: saturated colors that stay legible as lines drawn over a map */
+export const CARDINAL_10 = [...schemeCategory10];
+
+/**
+ * The cardinal palette in random order
+ * Uses shuffler with current Math.random to ensure seeded randomness works
+ * @returns {string[]} - The palette, shuffled
+ */
+export const getCardinalColors = (): string[] => shuffler(() => Math.random())([...CARDINAL_10]);
 
 /**
  * Get an array of distinct colors

@@ -1,9 +1,9 @@
 import { getDefaultTransportTypes } from "@/data/transport-types";
 import type { JouneySegment, Journey, JourneyPoint, TransportDomain, TransportType } from "@/types/Journey";
 import { isLand, ra } from "../utils";
-import { C_12, getColors } from "../utils/colorUtils";
+import { getCardinalColors } from "../utils/colorUtils";
 import type { Burg } from "./burgs-generator";
-import { generateStoryJourney } from "./journey-story";
+import { DEFAULT_JOURNEY_TYPE, generateStoryJourney } from "./journey-story";
 import type { Route } from "./routes-generator";
 
 export const OFF_ROAD_SPEED_FACTOR = 0.5;
@@ -41,17 +41,23 @@ class JourneysModule {
   addEmpty(): Journey {
     this.sync();
     const i = this.getNextId();
-    const journey: Journey = { i, name: `Journey ${i + 1}`, color: this.pickColor(), visible: true, segments: [] };
+    const journey: Journey = {
+      i,
+      name: `Journey ${i + 1}`,
+      type: DEFAULT_JOURNEY_TYPE,
+      color: this.pickColor(),
+      segments: []
+    };
     pack.journeys.push(journey);
     return journey;
   }
 
   /**
-   * A color from the shared 12-color palette, preferring one no other journey
-   * uses — so up to a dozen journeys stay tellable apart at a glance.
+   * A color from d3's cardinal palette, preferring one no other journey uses —
+   * so the first ten stay tellable apart at a glance.
    */
   pickColor(): string {
-    const palette = getColors(C_12.length); // the whole palette, shuffled
+    const palette = getCardinalColors();
     const used = new Set(pack.journeys?.map(journey => journey.color));
     return palette.find(color => !used.has(color)) ?? ra(palette);
   }
@@ -62,7 +68,10 @@ class JourneysModule {
     if (!pack.transportTypes?.length) pack.transportTypes = getDefaultTransportTypes();
 
     // journeys own their color; saves made before that inherited the layer stroke
-    for (const journey of pack.journeys) if (!journey.color) journey.color = this.pickColor();
+    for (const journey of pack.journeys) {
+      if (!journey.color) journey.color = this.pickColor();
+      if (!journey.type) journey.type = DEFAULT_JOURNEY_TYPE;
+    }
   }
 
   remove(journeyId: number): void {
@@ -457,7 +466,7 @@ class JourneysModule {
       );
     if (!segment) return null;
 
-    return { name: segment.name, visible: true, segments: [segment] };
+    return { name: segment.name, type: DEFAULT_JOURNEY_TYPE, segments: [segment] };
   }
 
   /** First burg pair in `pool` joined by a path that is genuinely valid for `domain`. */
@@ -476,7 +485,6 @@ class JourneysModule {
         return {
           id: 0,
           name: `${pool[i].name ?? "Start"} → ${pool[j].name ?? "End"}`,
-          visible: true,
           from,
           to,
           transportType: transport.name,

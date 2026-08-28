@@ -1,8 +1,22 @@
+/**
+ * Story-driven journey generation.
+ *
+ * A journey is built party-first: an archetype is picked — a caravan, an embassy,
+ * a band of exiles — and it decides how the route is planned (roads or wilderness,
+ * ship or hoof or airship, how often they stop) and supplies every name the
+ * itinerary shows. The geometry is real: every leg comes out of the same pathfinder
+ * the editor uses, so the result is an itinerary the user can open and edit.
+ *
+ * Add a party to buildArchetypes and it starts appearing on new maps.
+ */
+
 import type { JouneySegment, Journey, JourneyPoint, TransportDomain, TransportType } from "@/types/Journey";
 import { getAdjective, P, ra, rand, rw } from "@/utils";
 import { cellEndpointLabel } from "@/utils/cell-labels";
 import type { Burg } from "./burgs-generator";
 import type { PathfindingResult } from "./journeys-generator";
+
+// ---- tuning -------------------------------------------------------------
 
 const ORIGIN_POOL_SIZE = 8;
 const ORIGIN_RETRIES = 3;
@@ -18,6 +32,8 @@ const SPLIT_BAND: [number, number] = [0.35, 0.65];
 const HARBOR_WAIT_CHANCE = 0.45;
 const MUSTER_CHANCE = 0.25;
 const MAX_SEGMENTS = 12;
+
+// ---- lore ---------------------------------------------------------------
 
 const COMPANY_ADJECTIVES = [
   "Iron",
@@ -37,7 +53,43 @@ const COMPANY_ADJECTIVES = [
   "Last",
   "Patient"
 ];
+
+const BANNERS = [
+  "Hart",
+  "Rose",
+  "Chalice",
+  "Tower",
+  "Serpent",
+  "Star",
+  "Lantern",
+  "Owl",
+  "Wolf",
+  "Falcon",
+  "Oak",
+  "Key"
+];
+
 const CARGO = ["Salt", "Amber", "Silk", "Spice", "Wool", "Iron", "Wine", "Furs", "Ivory", "Glass", "Pearl", "Tin"];
+
+const RELICS = ["Crown", "Chalice", "Codex", "Shard", "Seal", "Blade", "Ring", "Mask", "Horn", "Tome", "Sceptre"];
+
+const BEASTS = [
+  "dragon",
+  "wyrm",
+  "basilisk",
+  "griffin",
+  "manticore",
+  "troll",
+  "werewolf",
+  "kraken",
+  "chimera",
+  "serpent",
+  "direwolf",
+  "wendigo"
+];
+
+const TITLES = ["Ser", "Dame", "Captain", "Brother", "Sister", "Master", "Mistress", "Old"];
+
 const TAVERN_QUALIFIERS = [
   "Golden",
   "Crooked",
@@ -52,6 +104,7 @@ const TAVERN_QUALIFIERS = [
   "Weeping",
   "Merry"
 ];
+
 const TAVERN_SUBJECTS = [
   "Stag",
   "Anchor",
@@ -68,64 +121,113 @@ const TAVERN_SUBJECTS = [
   "Pilgrim",
   "Gate"
 ];
-const BIOME_TERMS: Record<string, string> = {
-  Marine: "open water",
-  "Hot desert": "dunes",
-  "Cold desert": "stony waste",
-  Savanna: "savanna",
-  Grassland: "grasslands",
-  "Tropical seasonal forest": "jungle",
-  "Temperate deciduous forest": "greenwood",
-  "Tropical rainforest": "rainforest",
-  "Temperate rainforest": "rainforest",
-  Taiga: "pinewoods",
-  Tundra: "tundra",
-  Glacier: "ice",
-  Wetland: "marshes"
-};
+
+/** Stand-ins for maps generated without cultures, so a party always has a name */
+const NAMELESS = ["Aldric", "Marek", "Ysolde", "Corvin", "Nadia", "Halvar", "Ilona", "Tarrin", "Sable", "Ostrik"];
 
 const tavernName = (): string => `The ${ra(TAVERN_QUALIFIERS)} ${ra(TAVERN_SUBJECTS)}`;
 
+const relicName = (): string => `${ra(COMPANY_ADJECTIVES)} ${ra(RELICS)}`;
+
+/** A culture-appropriate given name for someone out of this burg */
+function personName(burg: Burg): string {
+  const culture = burg.culture;
+  if (culture === undefined || !pack.cultures?.[culture]) return ra(NAMELESS);
+  return Names.getCultureShort(culture) || ra(NAMELESS);
+}
+
+// ---- party archetypes ---------------------------------------------------
+
 interface TitleContext {
+  /** Named traveller out of the origin burg — the party's hero, envoy or captain */
+  hero: string;
   origin: string;
   destination: string;
   destinationAdjective: string;
+  /** The country the route crosses, in a traveller's words: "pinewoods", "high passes" */
   wild: string;
 }
 
 interface Archetype {
-  /** Chance a land leg leaves the road network (and travels at the off-road penalty). */
+  /** What kind of travel this is, shown as the journey's type: "Quest", "Raid" */
+  type: string;
+  /** How often this party turns up, relative to the others */
+  weight: number;
+  /** Chance a land leg leaves the road network (and travels at the off-road penalty) */
   offRoad: number;
-  /** Chance a leg between two ports is sailed rather than walked. */
+  /** Chance a leg between two ports is sailed rather than walked */
   sea: number;
-  /** Chance the party stops over at an intermediate burg. */
+  /** Chance a leg is flown instead — reserved for parties that can */
+  air?: number;
+  /** Chance the party stops over at an intermediate burg */
   rest: number;
-  /** Chance a long leg is broken by a camp in the wild. */
+  /** Chance a long leg is broken by a camp in the wild */
   camp: number;
-  /** Preferred transport by name, weighted; resolved against pack.transportTypes. */
+  /** Preferred transport by name, weighted; resolved against pack.transportTypes */
   land: Record<string, number>;
   water: Record<string, number>;
+  /** Air-domain transport, for the parties that fly */
+  sky?: Record<string, number>;
   title: (context: TitleContext) => string;
-  /** Name for a night spent in a burg. */
+  /** Name for a land leg, in the party's own voice; falls back to the shared pool */
+  leg?: (to: string, wild: string) => string;
+  /** Name for a night spent in a burg */
   stopover: (place: string) => string;
-  /** Name for a night spent in the open. */
+  /** Name for a night spent in the open */
   bivouac: (wild: string) => string;
 }
 
-type StoryKind = "caravan" | "embassy" | "pilgrimage" | "expedition" | "exiles" | "smugglers";
-
-const ARCHETYPE_WEIGHTS: Record<StoryKind, number> = {
-  caravan: 6,
-  embassy: 4,
-  pilgrimage: 4,
-  expedition: 3,
-  exiles: 2,
-  smugglers: 2
-};
-
-function buildArchetypes(): Record<StoryKind, Archetype> {
+/** Every party the generator can invent, built fresh so nothing is shared between journeys. */
+function buildArchetypes(): Record<string, Archetype> {
   return {
+    // The staple: a named hero and their companions, out on a road that matters
+    heroes: {
+      type: "Quest",
+      weight: 10,
+      offRoad: 0.45,
+      sea: 0.3,
+      rest: 0.7,
+      camp: 0.7,
+      land: { "On Foot": 4, Horse: 4, Carriage: 1 },
+      water: { Boat: 3, Ship: 2 },
+      title: ({ hero, destination, wild }) =>
+        ra([
+          `${ra(TITLES)} ${hero} and the Company of the ${ra(COMPANY_ADJECTIVES)} ${ra(BANNERS)}`,
+          `The Quest of ${ra(TITLES)} ${hero}`,
+          `${hero}'s Company`,
+          `The ${ra(COMPANY_ADJECTIVES)} ${ra(BANNERS)} rides to ${destination}`,
+          `${hero} and the road through the ${wild}`
+        ]),
+      leg: (to, wild) => ra([`The road to ${to}`, `Through the ${wild}`, `Riding for ${to}`]),
+      stopover: place => ra([`A night at ${tavernName()}`, `Rumours in ${place}`, `Resupply in ${place}`]),
+      bivouac: wild => ra([`Camp in the ${wild}`, `Watches kept in the ${wild}`, `A fire in the ${wild}`])
+    },
+
+    // One traveller, one road: the knight-errant, the wanderer, the outcast scholar
+    wanderer: {
+      type: "Wandering",
+      weight: 6,
+      offRoad: 0.5,
+      sea: 0.25,
+      rest: 0.6,
+      camp: 0.7,
+      land: { "On Foot": 4, Horse: 3 },
+      water: { Boat: 4, Ship: 1 },
+      title: ({ hero, origin, destination }) =>
+        ra([
+          `${ra(TITLES)} ${hero} of ${origin}`,
+          `The Long Road of ${hero}`,
+          `${hero} walks to ${destination}`,
+          `The ${ra(COMPANY_ADJECTIVES)} Wanderer`
+        ]),
+      leg: to => ra([`Walking to ${to}`, `Alone to ${to}`, `The road to ${to}`]),
+      stopover: place => ra([`A bed at ${tavernName()}`, `Working for board in ${place}`, `A night in ${place}`]),
+      bivouac: wild => ra([`Sleeping rough in the ${wild}`, `A cold night in the ${wild}`, `Alone in the ${wild}`])
+    },
+
     caravan: {
+      type: "Trade caravan",
+      weight: 6,
       offRoad: 0.1,
       sea: 0.35,
       rest: 0.8,
@@ -139,22 +241,47 @@ function buildArchetypes(): Record<StoryKind, Archetype> {
           `The ${origin} Caravan`,
           `${ra(CARGO)} out of ${origin}`
         ]),
+      leg: to => ra([`Hauling to ${to}`, `The road to ${to}`, `Toll road to ${to}`]),
       stopover: place => ra([`Wagon yard at ${tavernName()}`, `A night at ${tavernName()}`, `Market day in ${place}`]),
       bivouac: wild => ra([`Wagons circled in the ${wild}`, `Night halt in the ${wild}`, `Cold camp in the ${wild}`])
     },
 
+    // An army on the march: musters, forced marches, a siege camp at the end
+    campaign: {
+      type: "Military campaign",
+      weight: 4,
+      offRoad: 0.25,
+      sea: 0.3,
+      rest: 0.5,
+      camp: 0.8,
+      land: { "On Foot": 5, Horse: 3, Carriage: 1 },
+      water: { Ship: 5, Boat: 1 },
+      title: ({ destination, destinationAdjective, hero }) =>
+        ra([
+          `The March on ${destination}`,
+          `${ra(TITLES)} ${hero}'s Host`,
+          `The ${destinationAdjective} Campaign`,
+          `The ${ra(COMPANY_ADJECTIVES)} Host`
+        ]),
+      leg: (to, wild) => ra([`March on ${to}`, `The column crosses the ${wild}`, `Forced march to ${to}`]),
+      stopover: place => ra([`Billeted in ${place}`, `Requisitions in ${place}`, `${place} opens its gates`]),
+      bivouac: wild => ra([`War camp in the ${wild}`, `Pickets set in the ${wild}`, `Night muster in the ${wild}`])
+    },
+
     embassy: {
+      type: "Embassy",
+      weight: 4,
       offRoad: 0.05,
       sea: 0.4,
       rest: 0.9,
       camp: 0.25,
       land: { Horse: 4, Carriage: 4, "On Foot": 1 },
       water: { Ship: 5, Boat: 1 },
-      title: ({ destination, destinationAdjective }) =>
+      title: ({ destination, destinationAdjective, hero }) =>
         ra([
           `Embassy to ${destination}`,
           `The ${destinationAdjective} Mission`,
-          `The ${ra(COMPANY_ADJECTIVES)} Envoy`,
+          `${ra(TITLES)} ${hero} goes to ${destination}`,
           `Errand to the court of ${destination}`
         ]),
       stopover: place => ra([`Guested at ${tavernName()}`, `Audience in ${place}`, `Two nights in ${place}`]),
@@ -162,55 +289,182 @@ function buildArchetypes(): Record<StoryKind, Archetype> {
     },
 
     pilgrimage: {
+      type: "Pilgrimage",
+      weight: 4,
       offRoad: 0.35,
       sea: 0.2,
       rest: 0.7,
       camp: 0.6,
-      land: { "On Foot": 1 },
+      land: { "On Foot": 6, Horse: 1 },
       water: { Boat: 3, Ship: 2 },
-      title: ({ destination }) =>
+      title: ({ destination, hero }) =>
         ra([
           `Pilgrimage to ${destination}`,
           `The ${ra(COMPANY_ADJECTIVES)} Pilgrims`,
-          `The ${getAdjective(origin)} Pilgrims`,
-          `Penance to ${destination}`
+          `The Long Walk to ${destination}`,
+          `${ra(TITLES)} ${hero} walks to ${destination}`
         ]),
+      leg: to => ra([`Barefoot to ${to}`, `On to ${to}`, `The pilgrim road to ${to}`]),
       stopover: place => ra([`Alms and rest at ${tavernName()}`, `Vigil in ${place}`, `Shelter in ${place}`]),
       bivouac: wild => ra([`Vigil in the ${wild}`, `Night prayer in the ${wild}`, `Sleeping rough in the ${wild}`])
     },
 
+    // A free company riding to whoever is paying this season
+    mercenaries: {
+      type: "Mercenary contract",
+      weight: 3,
+      offRoad: 0.3,
+      sea: 0.35,
+      rest: 0.6,
+      camp: 0.6,
+      land: { Horse: 5, "On Foot": 3, Carriage: 1 },
+      water: { Ship: 4, Boat: 2 },
+      title: ({ hero, destination }) =>
+        ra([
+          `The ${ra(COMPANY_ADJECTIVES)} Blades`,
+          `${hero}'s Free Company`,
+          `Contract to ${destination}`,
+          `The ${ra(COMPANY_ADJECTIVES)} ${ra(BANNERS)} takes coin in ${destination}`
+        ]),
+      leg: to => ra([`Riding for ${to}`, `Paid road to ${to}`, `On to ${to}`]),
+      stopover: place =>
+        ra([`Drinking the advance at ${tavernName()}`, `Recruiting in ${place}`, `Paid off in ${place}`]),
+      bivouac: wild => ra([`Camp in the ${wild}`, `Cold camp in the ${wild}`, `Dice and watches in the ${wild}`])
+    },
+
+    // Word that cannot wait: fresh horses, short nights, no detours
+    courier: {
+      type: "Courier ride",
+      weight: 3,
+      offRoad: 0.15,
+      sea: 0.3,
+      rest: 0.5,
+      camp: 0.3,
+      land: { Horse: 8, Carriage: 1 },
+      water: { Boat: 3, Ship: 3 },
+      title: ({ origin, destination, hero }) =>
+        ra([
+          `The Ride to ${destination}`,
+          `News out of ${origin}`,
+          `${hero} carries word to ${destination}`,
+          `The ${ra(COMPANY_ADJECTIVES)} Post`
+        ]),
+      leg: to => ra([`Hard riding to ${to}`, `Fast road to ${to}`, `Post road to ${to}`]),
+      stopover: place =>
+        ra([`Change of horses in ${place}`, `Three hours at ${tavernName()}`, `Fresh mount in ${place}`]),
+      bivouac: wild => ra([`Snatched sleep in the ${wild}`, `Horse rested in the ${wild}`])
+    },
+
     expedition: {
+      type: "Expedition",
+      weight: 3,
       offRoad: 0.7,
       sea: 0.3,
       rest: 0.5,
       camp: 0.8,
       land: { "On Foot": 4, Horse: 3 },
       water: { Boat: 3, Ship: 2 },
-      title: ({ wild, destination }) =>
+      title: ({ wild, destination, hero }) =>
         ra([
           `Expedition to the ${wild}`,
           `The ${ra(COMPANY_ADJECTIVES)} Expedition`,
           `Survey of the ${wild}`,
-          `Reckoning the road to ${destination}`
+          `${ra(TITLES)} ${hero}'s survey of the road to ${destination}`
         ]),
+      leg: (to, wild) => ra([`Mapping the ${wild}`, `Into the ${wild}`, `Traverse to ${to}`]),
       stopover: place =>
         ra([`Resupply in ${place}`, `Notes and repairs at ${tavernName()}`, `Hired guides in ${place}`]),
       bivouac: wild => ra([`Base camp in the ${wild}`, `Survey camp in the ${wild}`, `Weathered in on the ${wild}`])
     },
 
+    // A whole village on the move, carrying what it could lift
+    refugees: {
+      type: "Refugee flight",
+      weight: 3,
+      offRoad: 0.4,
+      sea: 0.35,
+      rest: 0.5,
+      camp: 0.8,
+      land: { "On Foot": 7, Carriage: 2 },
+      water: { Boat: 4, Ship: 2 },
+      title: ({ origin, destination }) =>
+        ra([
+          `The Road out of ${origin}`,
+          `${origin} on the Move`,
+          `The ${ra(COMPANY_ADJECTIVES)} Column`,
+          `Seeking shelter in ${destination}`
+        ]),
+      leg: to => ra([`Trudging to ${to}`, `The long walk to ${to}`, `On to ${to}`]),
+      stopover: place =>
+        ra([`Turned away at ${place}`, `Bread and straw in ${place}`, `Counting the missing in ${place}`]),
+      bivouac: wild => ra([`Camp in the ${wild}`, `A hungry night in the ${wild}`, `Burying the dead in the ${wild}`])
+    },
+
+    // Fantasy: someone is paying very well for a thing that should stay buried
+    relicseekers: {
+      type: "Treasure hunt",
+      weight: 3,
+      offRoad: 0.6,
+      sea: 0.3,
+      rest: 0.6,
+      camp: 0.7,
+      land: { "On Foot": 4, Horse: 3 },
+      water: { Boat: 3, Ship: 2 },
+      title: ({ hero, wild }) => {
+        const relic = relicName();
+        return ra([
+          `The Search for the ${relic}`,
+          `${hero} and the ${relic}`,
+          `The ${relic} lies in the ${wild}`,
+          `Digging for the ${relic}`
+        ]);
+      },
+      leg: (to, wild) => ra([`Following the map into the ${wild}`, `On to ${to}`, `Old roads to ${to}`]),
+      stopover: place =>
+        ra([`Buying rumours at ${tavernName()}`, `Bribing a clerk in ${place}`, `Lying low in ${place}`]),
+      bivouac: wild => ra([`Camp in the ${wild}`, `Reading the map in the ${wild}`, `A watchful night in the ${wild}`])
+    },
+
+    // Fantasy: a hunt that follows the kills from village to village
+    monsterhunt: {
+      type: "Monster hunt",
+      weight: 3,
+      offRoad: 0.65,
+      sea: 0.2,
+      rest: 0.6,
+      camp: 0.7,
+      land: { Horse: 4, "On Foot": 4 },
+      water: { Boat: 3, Ship: 1 },
+      title: ({ hero, wild, destination }) => {
+        const beast = ra(BEASTS);
+        return ra([
+          `The Hunt for the ${wild} ${beast}`,
+          `${ra(TITLES)} ${hero} hunts the ${beast}`,
+          `The ${beast} of ${destination}`,
+          `Bounty on the ${beast}`
+        ]);
+      },
+      leg: (to, wild) => ra([`Following the trail into the ${wild}`, `The kills lead to ${to}`, `Tracking to ${to}`]),
+      stopover: place =>
+        ra([`Questioning the locals in ${place}`, `Bounty posted in ${place}`, `A night at ${tavernName()}`]),
+      bivouac: wild => ra([`Blind camp in the ${wild}`, `Bait set in the ${wild}`, `No fire tonight — ${wild}`])
+    },
+
     exiles: {
+      type: "Exile's flight",
+      weight: 2,
       offRoad: 0.6,
       sea: 0.6,
       rest: 0.4,
       camp: 0.7,
       land: { "On Foot": 5, Carriage: 2, Horse: 2 },
       water: { Boat: 3, Ship: 3 },
-      title: ({ origin, destination }) =>
+      title: ({ origin, destination, hero }) =>
         ra([
           `Flight from ${origin}`,
           `The ${ra(COMPANY_ADJECTIVES)} Exiles`,
           `Exodus from ${origin}`,
-          `The road out of ${origin} to ${destination}`
+          `${hero} is banished to ${destination}`
         ]),
       stopover: place =>
         ra([`Hidden a night in ${place}`, `Begging bread in ${place}`, `Back room of ${tavernName()}`]),
@@ -218,6 +472,8 @@ function buildArchetypes(): Record<StoryKind, Archetype> {
     },
 
     smugglers: {
+      type: "Smuggling run",
+      weight: 2,
       offRoad: 0.8,
       sea: 0.7,
       rest: 0.35,
@@ -231,18 +487,108 @@ function buildArchetypes(): Record<StoryKind, Archetype> {
           `The ${ra(CARGO)} Run`,
           `Untaxed to ${destination}`
         ]),
+      leg: to => ra([`Quiet road to ${to}`, `Around the tollgates to ${to}`, `Night haul to ${to}`]),
       stopover: place =>
         ra([`Lying low at ${tavernName()}`, `Unloading quietly in ${place}`, `Palms greased in ${place}`]),
       bivouac: wild =>
         ra([`Cache dug in the ${wild}`, `No fire, no names — ${wild}`, `Waiting out the patrol in the ${wild}`])
+    },
+
+    // Sea-wolves: a fast keel, a short season, and somebody else's harvest
+    raiders: {
+      type: "Raid",
+      weight: 2,
+      offRoad: 0.6,
+      sea: 0.85,
+      rest: 0.3,
+      camp: 0.6,
+      land: { "On Foot": 4, Horse: 2 },
+      water: { Ship: 4, Boat: 4 },
+      title: ({ hero, destination, origin }) =>
+        ra([
+          `The ${ra(COMPANY_ADJECTIVES)} Reavers`,
+          `${hero}'s Raid`,
+          `Raid on ${destination}`,
+          `The ${origin} Keels`
+        ]),
+      leg: to => ra([`Falling on ${to}`, `Overland to ${to}`, `Driving the herd to ${to}`]),
+      stopover: place =>
+        ra([`Dividing the take in ${place}`, `Selling the plunder in ${place}`, `Drinking ${place} dry`]),
+      bivouac: wild =>
+        ra([`Beach camp in the ${wild}`, `Keel hauled up in the ${wild}`, `A watchful night in the ${wild}`])
+    },
+
+    // A crown showing itself to its own country, slowly and at great expense
+    progress: {
+      type: "Royal progress",
+      weight: 2,
+      offRoad: 0.02,
+      sea: 0.3,
+      rest: 0.95,
+      camp: 0.1,
+      land: { Carriage: 8, Horse: 3 },
+      water: { Ship: 6, Boat: 1 },
+      title: ({ hero, destinationAdjective, origin }) =>
+        ra([
+          `The Progress of ${ra(TITLES)} ${hero}`,
+          `The ${destinationAdjective} Progress`,
+          `The Crown rides out of ${origin}`,
+          `The ${ra(COMPANY_ADJECTIVES)} Progress`
+        ]),
+      leg: to => ra([`The royal road to ${to}`, `Received at ${to}`, `Procession to ${to}`]),
+      stopover: place => ra([`Feasted in ${place}`, `Court held in ${place}`, `Three nights in ${place}`]),
+      bivouac: wild => ra([`Pavilions raised in the ${wild}`, `The hunt camps in the ${wild}`])
+    },
+
+    // Fantasy: the one party that never touches the ground between towers
+    skyfarers: {
+      type: "Airship voyage",
+      weight: 2,
+      offRoad: 0.3,
+      sea: 0.2,
+      air: 0.65,
+      rest: 0.6,
+      camp: 0.4,
+      land: { Horse: 3, "On Foot": 2 },
+      water: { Boat: 2, Ship: 2 },
+      sky: { Airship: 5 },
+      title: ({ hero, destination, origin }) =>
+        ra([
+          `The ${ra(COMPANY_ADJECTIVES)} Airship`,
+          `${hero} sails over ${origin}`,
+          `Skyroad to ${destination}`,
+          `The ${ra(BANNERS)} takes to the air`
+        ]),
+      leg: (to, wild) => ra([`Over the ${wild} to ${to}`, `Above the ${wild}`, `Sky lane to ${to}`]),
+      stopover: place => ra([`Moored over ${place}`, `Gas and ballast in ${place}`, `A night at ${tavernName()}`]),
+      bivouac: wild => ra([`Grounded in the ${wild}`, `Repairs in the ${wild}`, `Anchored above the ${wild}`])
     }
   };
 }
 
+/** Journeys with no story behind them: a plain trip from A to B */
+export const DEFAULT_JOURNEY_TYPE = "Travel";
+
+/** Type labels the generator uses, offered as suggestions when a journey is edited by hand */
+export function getJourneyTypes(): string[] {
+  const types = Object.values(buildArchetypes()).map(archetype => archetype.type);
+  return [...new Set([DEFAULT_JOURNEY_TYPE, ...types])].sort();
+}
+
+/** Pick a party for a new journey, weighted so heroes take the road most often */
+function pickArchetype(): Archetype {
+  const archetypes = buildArchetypes();
+  const weights: Record<string, number> = {};
+  for (const [key, archetype] of Object.entries(archetypes)) weights[key] = archetype.weight;
+  return archetypes[rw(weights)];
+}
+
+// ---- planning -----------------------------------------------------------
+
 interface PlannedLeg {
   from: Burg;
   to: Burg;
-  domain: "land" | "water";
+  domain: "land" | "water" | "air";
   transport: TransportType;
   avoidRoads: boolean;
   points: JourneyPoint[];
@@ -267,14 +613,14 @@ export function generateStoryJourney(pathfinder: JourneyPathfinder): Omit<Journe
   const burgs = (pack.burgs ?? []).filter((burg: Burg) => burg?.i && !burg.removed && burg.cell !== undefined);
   if (burgs.length < 2) return null;
 
-  const archetype = buildArchetypes()[rw(ARCHETYPE_WEIGHTS) as StoryKind];
+  const archetype = pickArchetype();
   // an origin can turn out to be a dead end — a lone burg on an island nothing sails to
   for (let attempt = 0; attempt < ORIGIN_RETRIES; attempt++) {
     const legs = planLegs(pathfinder, archetype, burgs);
     if (!legs.length) continue;
 
     const segments = buildSegments(pathfinder, archetype, legs);
-    if (segments.length) return { name: titleFor(archetype, legs), visible: true, segments };
+    if (segments.length) return { name: titleFor(archetype, legs), type: archetype.type, segments };
   }
 
   return null;
@@ -390,7 +736,7 @@ function buildLeg(pathfinder: JourneyPathfinder, archetype: Archetype, from: Bur
   const bothPorts = Boolean(from.port && to.port);
   const preferSea = bothPorts && P(archetype.sea);
 
-  type Attempt = { domain: "land" | "water"; avoidRoads: boolean };
+  type Attempt = { domain: PlannedLeg["domain"]; avoidRoads: boolean };
   const attempts: Attempt[] = [];
   const landAttempts: Attempt[] = P(archetype.offRoad)
     ? [
@@ -399,12 +745,14 @@ function buildLeg(pathfinder: JourneyPathfinder, archetype: Archetype, from: Bur
       ]
     : [{ domain: "land", avoidRoads: false }];
 
+  // a party that can fly goes over everything — terrain never refuses an air path
+  if (archetype.air && P(archetype.air)) attempts.push({ domain: "air", avoidRoads: false });
   if (preferSea) attempts.push({ domain: "water", avoidRoads: false }, ...landAttempts);
   else attempts.push(...landAttempts);
   if (bothPorts && !preferSea) attempts.push({ domain: "water", avoidRoads: false });
 
   for (const { domain, avoidRoads } of attempts) {
-    const transport = resolveTransport(domain === "land" ? archetype.land : archetype.water, domain);
+    const transport = resolveTransport(transportWeights(archetype, domain), domain);
     if (!transport) continue;
 
     const { points, distance, errorCode } = pathfinder.findPath(from.cell, to.cell, domain, { avoidRoads });
@@ -416,6 +764,12 @@ function buildLeg(pathfinder: JourneyPathfinder, archetype: Archetype, from: Bur
   return null;
 }
 
+const transportWeights = (archetype: Archetype, domain: PlannedLeg["domain"]): Record<string, number> => {
+  if (domain === "water") return archetype.water;
+  if (domain === "air") return archetype.sky ?? {};
+  return archetype.land;
+};
+
 /** The named type if the map still has it, otherwise any type that can travel this domain. */
 function resolveTransport(weights: Record<string, number>, domain: TransportDomain): TransportType | undefined {
   const types: TransportType[] = pack.transportTypes ?? [];
@@ -424,6 +778,8 @@ function resolveTransport(weights: Record<string, number>, domain: TransportDoma
     types.find(type => type.name === preferred && type.domain === domain) ?? types.find(type => type.domain === domain)
   );
 }
+
+// ---- segment assembly ---------------------------------------------------
 
 interface LegPlan {
   leg: PlannedLeg;
@@ -479,12 +835,16 @@ function buildSegments(pathfinder: JourneyPathfinder, archetype: Archetype, legs
       const wild = describeWild(split.campCell);
       // a night broken into a sea leg is spent at anchor, not in a camp
       const halt = leg.domain === "water" ? anchorName(leg, split.campCell) : campName(archetype, split.campCell, wild);
-      group.push(makeTravel(leg, split.first, nameTravel({ leg, from, to, wild, isFirst, isLast, part: "first" })));
+      group.push(
+        makeTravel(leg, split.first, nameTravel({ archetype, leg, from, to, wild, isFirst, isLast, part: "first" }))
+      );
       group.push(makeStay(stayType!, split.campCell, halt, rand(6, 12)));
-      group.push(makeTravel(leg, split.second, nameTravel({ leg, from, to, wild, isFirst, isLast, part: "second" })));
+      group.push(
+        makeTravel(leg, split.second, nameTravel({ archetype, leg, from, to, wild, isFirst, isLast, part: "second" }))
+      );
     } else {
       const wild = describeWild(leg.points[Math.floor(leg.points.length / 2)][2]);
-      group.push(makeTravel(leg, leg, nameTravel({ leg, from, to, wild, isFirst, isLast, part: "whole" })));
+      group.push(makeTravel(leg, leg, nameTravel({ archetype, leg, from, to, wild, isFirst, isLast, part: "whole" })));
     }
 
     if (plan.rest) group.push(makeStay(stayType!, leg.to.cell, archetype.stopover(to), 12 * rand(1, 3)));
@@ -524,7 +884,6 @@ function makeTravel(leg: PlannedLeg, slice: PathSlice, name: string): JouneySegm
   const segment: JouneySegment = {
     id: 0, // reassigned on push, so the ids stay sequential
     name,
-    visible: true,
     from: slice.points[0][2],
     to: slice.points[slice.points.length - 1][2],
     transportType: leg.transport.name,
@@ -541,7 +900,6 @@ function makeStay(stayType: TransportType, cellId: number, name: string, duratio
   return {
     id: 0,
     name,
-    visible: true,
     from: cellId,
     to: cellId,
     transportType: stayType.name,
@@ -562,6 +920,7 @@ function titleFor(archetype: Archetype, legs: PlannedLeg[]): string {
   const middle = namedLeg.points[Math.floor(namedLeg.points.length / 2)][2];
 
   return archetype.title({
+    hero: personName(origin),
     origin: burgName(origin),
     destination: burgName(destination),
     destinationAdjective: getAdjective(stateName(destination) || burgName(destination)),
@@ -571,6 +930,7 @@ function titleFor(archetype: Archetype, legs: PlannedLeg[]): string {
 }
 
 function nameTravel({
+  archetype,
   leg,
   from,
   to,
@@ -579,6 +939,7 @@ function nameTravel({
   isLast,
   part
 }: {
+  archetype: Archetype;
   leg: PlannedLeg;
   from: string;
   to: string;
@@ -587,6 +948,12 @@ function nameTravel({
   isLast: boolean;
   part: "whole" | "first" | "second";
 }): string {
+  if (leg.domain === "air") {
+    if (part === "second") return ra([`Down to ${to}`, `Mooring at ${to}`, `Descent on ${to}`]);
+    if (part === "first") return ra([`Aloft from ${from}`, `Rising over the ${wild}`, `Cast off from ${from}`]);
+    return ra([`Over the ${wild} to ${to}`, `Flight to ${to}`, `${from} to ${to} by air`, `Above the ${wild}`]);
+  }
+
   if (leg.domain === "water") {
     const water = describeWater(leg);
     if (part === "second") return ra([`Landfall at ${to}`, `Into the roads of ${to}`, `Last watch to ${to}`]);
@@ -611,6 +978,8 @@ function nameTravel({
   }
   if (isFirst) return ra([`Out of ${from}`, `The road from ${from}`, `${from} to ${to}`, `Setting out for ${to}`]);
   if (isLast) return ra([`Last miles to ${to}`, `Down to ${to}`, `The road into ${to}`]);
+  // half the time the party names the leg in its own voice, if it has one
+  if (archetype.leg && P(0.5)) return archetype.leg(to, wild);
   return ra([`${from} to ${to}`, `On to ${to}`, `The ${wild} road`]);
 }
 
@@ -636,6 +1005,22 @@ function anchorName(leg: PlannedLeg, cellId: number): string {
 const burgName = (burg: Burg): string => burg.name || `Burg ${burg.i}`;
 
 const stateName = (burg: Burg): string => (burg.state ? pack.states?.[burg.state]?.name || "" : "");
+
+const BIOME_TERMS: Record<string, string> = {
+  Marine: "open water",
+  "Hot desert": "dunes",
+  "Cold desert": "stony waste",
+  Savanna: "savanna",
+  Grassland: "grasslands",
+  "Tropical seasonal forest": "jungle",
+  "Temperate deciduous forest": "greenwood",
+  "Tropical rainforest": "rainforest",
+  "Temperate rainforest": "rainforest",
+  Taiga: "pinewoods",
+  Tundra: "tundra",
+  Glacier: "ice",
+  Wetland: "marshes"
+};
 
 /** What the country underfoot is called, in the words a traveller would use. */
 function describeWild(cellId: number): string {
