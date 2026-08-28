@@ -1,6 +1,6 @@
 import { getDefaultTransportTypes } from "@/data/transport-types";
 import type { JouneySegment, Journey, JourneyPoint, TransportDomain, TransportType } from "@/types/Journey";
-import { isLand, ra } from "../utils";
+import { isLand } from "../utils";
 import { getCardinalColor } from "../utils/colorUtils";
 import type { Burg } from "./burgs-generator";
 import { DEFAULT_JOURNEY_TYPE, generateStoryJourney } from "./journey-story";
@@ -82,7 +82,7 @@ class JourneysModule {
   }
 
   getSegmentTime(seg: JouneySegment): number {
-    if (this.isStaySegment(seg)) return Math.max(0, seg.duration ?? 0);
+    if (seg.duration !== undefined) return seg.duration; // an explicit override wins
     const speed = this.getEffectiveSpeed(seg);
     return speed > 0 ? this.getSegmentDistance(seg) / speed : 0;
   }

@@ -119,7 +119,6 @@ export {
   applyOption,
   biased,
   C_12,
-  type CARDINAL_10,
   capitalize,
   clipPoly,
   connectVertices,

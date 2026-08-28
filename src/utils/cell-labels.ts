@@ -48,22 +48,22 @@ const findNearbyBurg = (cellId: number, maxCells: number): NamedBurg | undefined
  *   - "cell <id>" otherwise
  */
 export function cellEndpointLabel(cellId: number | undefined): string {
-  if (cellId === undefined) return "not set";
+  if (cellId === undefined) return "unset";
   const here = getBurgAtCell(cellId);
   if (here) return here.name;
   const nearby = findNearbyBurg(cellId, NEARBY_BURG_MAX_CELLS);
-  if (nearby) return `near ${nearby.name}`;
+  if (nearby) return `${nearby.name} vicinity`;
   return `cell ${cellId}`;
 }
 
 /** Longer tooltip form; distinguishes the three cases explicitly. */
 export function cellEndpointTooltip(cellId: number | undefined): string {
-  if (cellId === undefined) return "Not set — click, then click a cell on the map to set this endpoint";
+  if (cellId === undefined) return "Not set: click, then click a cell on the map to set this endpoint";
   const here = getBurgAtCell(cellId);
-  if (here) return `${here.name} (cell ${cellId}) — click to pick a different cell`;
+  if (here) return `${here.name} (cell ${cellId}), click to pick a different cell`;
   const nearby = findNearbyBurg(cellId, NEARBY_BURG_MAX_CELLS);
-  if (nearby) return `Vicinity of ${nearby.name} (cell ${cellId}) — click to pick a different cell`;
-  return `Cell ${cellId} — click to pick a different cell`;
+  if (nearby) return `Vicinity of ${nearby.name} (cell ${cellId}), click to pick a different cell`;
+  return `Cell ${cellId}, click to pick a different cell`;
 }
 
 /** Where to centre the map to show an endpoint: its burg if it has one, else the cell itself */

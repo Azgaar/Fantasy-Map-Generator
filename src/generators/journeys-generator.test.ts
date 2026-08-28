@@ -101,6 +101,30 @@ describe("journey metrics", () => {
     // avgSpeed based on moving hours only
     expect(t.avgSpeed).toBe(10 / 2);
   });
+
+  it("duration overrides the calculated time on a moving segment", () => {
+    const ride = { ...makeSeg(10, 5), duration: 7 };
+    expect(Journeys.getSegmentTime(ride)).toBe(7);
+    expect(Journeys.getSegmentDistance(ride)).toBe(10); // still covers the ground
+  });
+
+  it("a zero duration overrides too, but a missing one falls back to distance/speed", () => {
+    expect(Journeys.getSegmentTime({ ...makeSeg(10, 5), duration: 0 })).toBe(0);
+    expect(Journeys.getSegmentTime(makeSeg(10, 5))).toBe(2);
+  });
+
+  it("an overridden segment still counts toward avg speed", () => {
+    const j: Journey = {
+      i: 0,
+      name: "j",
+      type: "Travel",
+      color: "#000",
+      segments: [{ ...makeSeg(10, 5), duration: 5 }]
+    };
+    const t = Journeys.getTotals(j);
+    expect(t.totalHours).toBe(5);
+    expect(t.avgSpeed).toBe(10 / 5);
+  });
 });
 
 describe("land pathfinding stays on land", () => {

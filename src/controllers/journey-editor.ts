@@ -34,12 +34,12 @@ let editingJourneyId: number | null = null;
 const columns: EditorColumn<JouneySegment>[] = [
   { key: "color", width: "1.2em" },
   { key: "name", label: "Name", width: "14em", permanent: true },
-  { key: "transport", label: "Transport", width: "6em" },
-  { key: "speed", label: "Speed", width: "4em", mobileHidden: true },
   { key: "from", label: "From", width: "9em", mobileHidden: true },
   { key: "to", label: "To", width: "9em", mobileHidden: true },
+  { key: "transport", label: "Transport", width: "6em" },
+  { key: "speed", label: "Speed", width: "4em", mobileHidden: true },
   { key: "distance", label: "Distance", width: "6em" },
-  { key: "time", label: "Time", width: "6em", mobileHidden: true },
+  { key: "time", label: "Time", width: "7em", mobileHidden: true },
   { key: "roads", label: "Roads", width: "4em", mobileHidden: true },
   { key: "actions", width: "7.5em", permanent: true, align: "right" }
 ];
@@ -182,6 +182,7 @@ function renderSegmentsPage(view: TableView<JouneySegment>): void {
   on(".segTransport", "change", onSegTransportChange);
   on(".segSpeed:not([disabled])", "input", onSegSpeedInput);
   on(".segDuration", "input", onSegDurationInput);
+  on(".segDurationReset", "click", onSegDurationReset);
   on(".segLocate.pointer", "click", onLocateEndpoint);
   on(".segFrom", "click", onPickFrom);
   on(".segTo", "click", onPickTo);
@@ -213,22 +214,8 @@ function renderSegmentLine(journey: Journey, segment: JouneySegment): string {
   const isDrawing = mode?.kind === "draw" && mode.segmentId === segment.id;
   const canEditPoints = segment.points.length >= 2 && !isStay;
 
-  const transportOptions = pack.transportTypes.map(
-    type =>
-      `<option value="${type.name}" ${type.name === segment.transportType ? "selected" : ""}>${type.name}</option>`
-  );
-
-  const speedCell = isStay
-    ? /* html */ `<input class="segSpeed" type="number" value="0" disabled data-tip="A stay covers no ground" />`
-    : /* html */ `<input class="segSpeed" type="number" step="0.5" min="0" value="${segment.speed}"
-        data-tip="Travel speed in ${unit}/h${segment.avoidRoads ? `. Effective off-road: ${rn(Journeys.getEffectiveSpeed(segment), 1)}` : ""}" />`;
-
-  const timeCell = isStay
-    ? /* html */ `<input class="segDuration" type="number" min="0" step="0.5" value="${segment.duration ?? 0}"
-        data-tip="Stay duration in hours" style="flex: 0 1 3em" />h`
-    : Journeys.formatTravelTime(Journeys.getSegmentTime(segment), getHoursPerDay());
-
-  const activeStyle = (isActive: boolean): string => (isActive ? ` style="color: #2a6e2a"` : "");
+  const hoursPerDay = getHoursPerDay();
+  const hours = Journeys.getSegmentTime(segment);
 
   return /* html */ `<div class="states" data-id="${segment.id}">
     <div data-col="color">
@@ -236,18 +223,28 @@ function renderSegmentLine(journey: Journey, segment: JouneySegment): string {
       <span class="segColorReset icon-ccw pointer" data-tip="Reset to the journey color" style="${segment.color ? "" : "visibility: hidden"}"></span>
     </div>
     <div data-col="name"><input class="segName" value="${segment.name}" data-tip="Segment name" /></div>
-    <div data-col="transport"><select class="segTransport" data-tip="Transport type, sets the speed and where the segment may go">${transportOptions.join("")}</select></div>
-    <div data-col="speed">${speedCell}</div>
     ${renderEndpointCell("from", segment)}
     ${renderEndpointCell("to", segment)}
+    <div data-col="transport"><select class="segTransport" data-tip="Transport type, sets the default speed and where the segment may go">${pack.transportTypes
+      .map(
+        type =>
+          `<option value="${type.name}" ${type.name === segment.transportType ? "selected" : ""}>${type.name}</option>`
+      )
+      .join("")}</select></div>
+    <div data-col="speed">
+      <input class="segSpeed" type="number" step="0.1" min="0" value="${segment.speed}" data-tip="Travel speed in ${unit}/h, type to override. ${segment.avoidRoads ? `Off-road speed: ${rn(Journeys.getEffectiveSpeed(segment), 1)}` : ""}" />
+    </div>
     <div data-tip="Segment distance" data-col="distance">${isStay ? "—" : `${rn(Journeys.getSegmentDistance(segment))} ${unit}`}</div>
-    <div data-tip="${isStay ? "Stay duration" : `Time spent on this segment: ${Journeys.formatTravelTimeFull(Journeys.getSegmentTime(segment), getHoursPerDay())}`}" data-col="time">${timeCell}</div>
+    <div data-col="time" data-tip="Travel time in hours, type to override. Equals to ${Journeys.formatTravelTimeFull(hours, hoursPerDay)}">
+      <input class="segDuration" type="number" min="0" step="0.1" value="${rn(hours, 2)}" style="width: 5.5em"/>
+      <span class="segDurationReset icon-ccw pointer" data-tip="Use the calculated time" style="margin-right: 1em; ${isStay || segment.duration === undefined ? "visibility: hidden" : ""}"></span>
+    </div>
     <div data-col="roads">${renderRoadsToggle(segment, domain === "land")}</div>
     <div data-col="actions" style="gap: 0.5em">
       <span class="segVisible pointer ${segment.visible === false ? "icon-eye-off" : "icon-eye"}" data-tip="Toggle segment visibility"></span>
-      <span class="segPoints icon-pencil ${canEditPoints ? "pointer" : "inactive"}" ${activeStyle(isEditingPoints)}
+      <span class="segPoints icon-pencil ${canEditPoints ? "pointer" : "inactive"}" ${isEditingPoints ? ` style="color: #2a6e2a"` : ""}
         data-tip="${!canEditPoints ? "Set both endpoints first" : isEditingPoints ? "Finish editing path points" : "Edit path points"}"></span>
-      <span class="segDraw icon-brush ${isStay ? "inactive" : "pointer"}" ${activeStyle(isDrawing)}
+      <span class="segDraw icon-brush ${isStay ? "inactive" : "pointer"}" ${isDrawing ? ` style="color: #2a6e2a"` : ""}
         data-tip="${isDrawing ? "Click to finish drawing (Esc to cancel)" : "Draw a custom path cell by cell"}"></span>
       <span class="segRecompute pointer icon-cw" data-tip="Recompute this segment's path"></span>
       <span class="segUp icon-up-open ${index ? "pointer" : "inactive"}" data-tip="Move the segment up"></span>
@@ -376,7 +373,7 @@ function onSegTransportChange(this: HTMLSelectElement): void {
 
   segment.transportType = newType.name;
   segment.speed = newType.speed;
-  if (Journeys.getDomain(previousType) === "stay") segment.duration = undefined;
+  if (Journeys.getDomain(previousType) === "stay") delete segment.duration;
   PathEditor.recomputeSegment(segment);
   segmentsTable.refresh();
 }
@@ -392,8 +389,18 @@ function onSegDurationInput(this: HTMLInputElement): void {
   const segment = getLineSegment(this);
   const journey = getJourney();
   if (!segment || !journey) return;
+
   segment.duration = Math.max(0, +this.value || 0);
+  const reset = this.parentElement?.querySelector<HTMLElement>(".segDurationReset");
+  if (reset) reset.style.visibility = "";
   updateTotals(journey);
+}
+
+function onSegDurationReset(this: HTMLElement): void {
+  const segment = getLineSegment(this);
+  if (segment?.duration === undefined) return;
+  delete segment.duration;
+  segmentsTable.refresh();
 }
 
 function onSegColorPick(this: FillBoxElement): void {

@@ -24,7 +24,6 @@ const position = { my: "right top", at: "right-10 top+10", of: "svg", collision:
 let filterState: { search: string };
 
 const columns: EditorColumn<Journey>[] = [
-  { key: "locate", width: "1.4em", permanent: true },
   { key: "name", label: "Journey", width: "14em", permanent: true, sortBy: j => j.name || "", sortType: "alpha" },
   { key: "type", label: "Type", width: "8em", sortBy: j => j.type || "", sortType: "alpha" },
   {
@@ -60,7 +59,7 @@ const columns: EditorColumn<Journey>[] = [
     mobileHidden: true,
     sortBy: j => Journeys.getTotals(j).totalHours
   },
-  { key: "actions", width: "3.2em", permanent: true, align: "right" }
+  { key: "actions", width: "4em", permanent: true, align: "right" }
 ];
 
 const journeysTable = initEditorTable<Journey>({
@@ -160,7 +159,6 @@ function renderJourneysPage(view: TableView<Journey>): void {
   for (const journey of view.rows) {
     const { totalDistance, totalHours, avgSpeed } = Journeys.getTotals(journey);
     lines += /* html */ `<div class="states" data-id="${journey.i}">
-      <span data-tip="Locate the journey" class="icon-target" data-col="locate"></span>
       <div data-col="name" style="width: 93%; overflow: hidden">
         <fill-box class="journeyColor" fill="${journey.color}" size="0.8em" data-tip="Journey color. Click to change"></fill-box>
         <span data-tip="Journey name">${journey.name}</span>
@@ -172,6 +170,7 @@ function renderJourneysPage(view: TableView<Journey>): void {
       <div data-tip="Average speed, moving segments only" data-col="speed">${avgSpeed ? `${rn(avgSpeed, 1)} ${unit}/h` : "-"}</div>
       <div data-tip="Total travel time: ${Journeys.formatTravelTimeFull(totalHours, hoursPerDay)}" data-col="time">${Journeys.formatTravelTime(totalHours, hoursPerDay)}</div>
       <div data-col="actions">
+        <span data-tip="Locate the journey" class="icon-target"></span>
         <span data-tip="Edit journey" class="icon-pencil"></span>
         <span class="locks pointer ${journey.lock ? "icon-lock" : "icon-lock-open inactive"}" onmouseover="showElementLockTip(event)"></span>
         <span data-tip="Remove journey" class="icon-trash-empty"></span>
@@ -192,7 +191,7 @@ function renderJourneysPage(view: TableView<Journey>): void {
   body.querySelectorAll("div.states").forEach(el => void el.addEventListener("mouseenter", journeyHighlightOn));
   body.querySelectorAll("div.states").forEach(el => void el.addEventListener("mouseleave", journeyHighlightOff));
   body.querySelectorAll("fill-box.journeyColor").forEach(el => void el.addEventListener("click", changeJourneyColor));
-  body.querySelectorAll("[data-col='locate']").forEach(el => void el.addEventListener("click", zoomToJourney));
+  body.querySelectorAll("span.icon-target").forEach(el => void el.addEventListener("click", zoomToJourney));
   body.querySelectorAll("span.journeyLocate.pointer").forEach(el => void el.addEventListener("click", zoomToEndpoint));
   body.querySelectorAll("span.icon-pencil").forEach(el => void el.addEventListener("click", openJourneyEditor));
   body.querySelectorAll("span.locks").forEach(el => void el.addEventListener("click", toggleLockStatus));
@@ -234,7 +233,7 @@ function journeyHighlightOff(this: HTMLElement): void {
 
 function zoomToJourney(this: HTMLElement): void {
   const group = findEl<SVGGElement>(`journey${getLineId(this)}`);
-  if (group) highlightElement(group, 3);
+  if (group) highlightElement(group, 2);
 }
 
 function zoomToEndpoint(this: HTMLElement): void {
