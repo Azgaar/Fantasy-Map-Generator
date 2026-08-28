@@ -9,7 +9,6 @@ import type { Route } from "./routes-generator";
 
 const DEFAULT_HOURS_PER_DAY = 8;
 const COARSE_UNIT_THRESHOLD = 10;
-const MIN_PASSABLE_SEA_TEMP = -5;
 const ON_ROAD_DISCOUNT = 0.5;
 const OFF_ROAD_PENALTY = 5;
 const FALLBACK_POOL_SIZE = 6;
@@ -153,24 +152,25 @@ class JourneysModule {
   /**
    * Is the cell a valid endpoint for the domain?
    *   land:  cell must be on land (coastal land is fine — you can board/disembark there)
-   *   water: cell must be water, or coastal land (so a boat can be boarded from the shore)
+   *   water: cell must be water, or land a boat can put in at (see {@link isMoorage})
    *   air:   any cell
    */
   isValidEndpoint(cellId: number, domain: TransportDomain): boolean {
     if (cellId === undefined || cellId === null) return false;
     if (domain === "air" || domain === "stay") return true;
     if (domain === "land") return isLand(cellId, pack);
-    return !isLand(cellId, pack) || this.isCoastalLand(cellId);
+    return !isLand(cellId, pack) || this.isMoorage(cellId);
   }
 
   /**
-   * Stricter than {@link isValidEndpoint}: a water route may start or end on a coastal
-   * land cell (you board from shore), but it must never run overland mid-route.
+   * Stricter than {@link isValidEndpoint}: a water route may start or end on the shore
+   * (you board from land), but overland it may only follow a navigable river, as searoutes do.
    */
   isValidPathPoint(cellId: number, domain: TransportDomain): boolean {
     if (cellId === undefined || cellId === null) return false;
     if (domain === "air" || domain === "stay") return true;
-    return isLand(cellId, pack) === (domain === "land");
+    if (domain === "land") return isLand(cellId, pack);
+    return !isLand(cellId, pack) || Rivers.isNavigable(cellId);
   }
 
   /** Whole-path form of {@link isValidPathPoint}; endpoints are skipped deliberately. */
@@ -184,6 +184,7 @@ class JourneysModule {
   describeCell(cellId: number): string {
     if (cellId === undefined || cellId === null) return "no cell";
     if (!isLand(cellId, pack)) return `water cell ${cellId}`;
+    if (Rivers.isNavigable(cellId)) return `navigable river cell ${cellId}`;
     if (this.isCoastalLand(cellId)) return `coastal land cell ${cellId}`;
     return `inland land cell ${cellId}`;
   }
@@ -214,7 +215,7 @@ class JourneysModule {
         distance: 0,
         errorCode: "no-water",
         warning:
-          "Water transport needs a water cell (or a coastal cell touching water) at both ends. At least one endpoint is inland."
+          "Water transport needs a water cell, a coastal cell or a navigable river at both ends. At least one endpoint is landlocked."
       };
     }
 
@@ -259,11 +260,7 @@ class JourneysModule {
   }
 
   private findWaterPath(from: number, to: number): PathfindingResult {
-    const pathCells = this.findPathAStar(from, to, (a, b) => {
-      if (isLand(b, pack) && b !== to && b !== from) return Infinity;
-      if (grid.cells.temp[pack.cells.g[b]] < MIN_PASSABLE_SEA_TEMP) return Infinity;
-      return this.getDistance(this.getPoint(a), this.getPoint(b));
-    });
+    const pathCells = Routes.findWaterPath(from, to);
 
     if (!pathCells) {
       return {
@@ -274,7 +271,8 @@ class JourneysModule {
       };
     }
 
-    return this.toResult(pathCells.map(cellId => this.getPoint(cellId)));
+    // the same geometry searoutes are drawn with: burg positions at ports, meandering along rivers
+    return this.toResult(Routes.getWaterPoints(pathCells) as JourneyPoint[]);
   }
 
   /**
@@ -429,6 +427,11 @@ class JourneysModule {
   private isCoastalLand(cellId: number): boolean {
     if (!isLand(cellId, pack)) return false;
     return (pack.cells.c[cellId] ?? []).some(neibCellId => !isLand(neibCellId, pack));
+  }
+
+  /** Land a boat can put in at: a coastal cell with a haven, or a navigable river cell */
+  private isMoorage(cellId: number): boolean {
+    return Boolean(pack.cells.haven?.[cellId]) || Rivers.isNavigable(cellId);
   }
 
   /** Single-domain A→B leg between the most notable burgs — never a land leg that secretly crosses water. */

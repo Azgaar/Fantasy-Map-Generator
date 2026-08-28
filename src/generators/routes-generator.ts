@@ -362,24 +362,41 @@ class RoutesModule {
     return segments;
   }
 
+  /** A water route may only reach its destination cell from a legitimate approach */
+  private createWaterExitCheck(exit: number) {
+    return (next: number, current?: number) => {
+      if (next !== exit) return false;
+      if (current === undefined) return true;
+      // river port: approach along the river course
+      if (this.riverEdges.get(current)?.has(next)) return true;
+      // coastal port: approach only over water, through the haven the burg was shifted towards
+      if (pack.cells.h[current] >= 20) return false;
+      const haven = pack.cells.haven?.[exit];
+      return !haven || current === haven;
+    };
+  }
+
   private findPathSegments({ isWater, start, exit }: { isWater: boolean; start: number; exit: number }) {
     const getCost = this.createCostEvaluator({ isWater });
-    const isExit = isWater
-      ? (next: number, current?: number) => {
-          if (next !== exit) return false;
-          if (current === undefined) return true;
-          // river port: approach along the river course
-          if (this.riverEdges.get(current)?.has(next)) return true;
-          // coastal port: approach only over water, through the haven the burg was shifted towards
-          if (pack.cells.h[current] >= 20) return false;
-          const haven = pack.cells.haven?.[exit];
-          return !haven || current === haven;
-        }
-      : (next: number) => next === exit;
+    const isExit = isWater ? this.createWaterExitCheck(exit) : (next: number) => next === exit;
     const pathCells = findPath(start, isExit, getCost, pack);
     if (!pathCells) return [];
     const segments = this.getRouteSegments(pathCells);
     return segments;
+  }
+
+  /**
+   * Cell chain of a sea route between two cells, or null if they are not connected by water.
+   * Follows the same rules as generated searoutes: ports are left and entered through their
+   * haven, navigable rivers are passable, colder seas are not, and existing routes are cheap.
+   */
+  findWaterPath(start: number, exit: number): number[] | null {
+    return findPath(start, this.createWaterExitCheck(exit), this.getWaterPathCost.bind(this), pack);
+  }
+
+  /** Sea route geometry for a cell chain: burg positions at ports, meandering along river runs */
+  getWaterPoints(cells: number[]): [number, number, number][] {
+    return this.getPoints("searoutes", cells, this.preparePointsArray()) as [number, number, number][];
   }
 
   private generateMainRoads() {

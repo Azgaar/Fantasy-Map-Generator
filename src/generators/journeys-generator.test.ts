@@ -201,8 +201,12 @@ describe("Journeys.isValidPath", () => {
   let Journeys: any;
   const at = (cellId: number): [number, number, number] => [cellId * 10, 0, cellId];
 
+  const navigable = new Set<number>();
+
   beforeEach(async () => {
     (globalThis as any).pack = { cells: { h: [30, 30, 5, 30] } }; // cell 2 is water
+    navigable.clear();
+    (globalThis as any).Rivers = { isNavigable: (cellId: number) => navigable.has(cellId) };
     await import("./journeys-generator");
     Journeys = (globalThis as any).Journeys;
   });
@@ -221,6 +225,11 @@ describe("Journeys.isValidPath", () => {
 
   it("rejects a water path that runs overland mid-route", () => {
     expect(Journeys.isValidPath([at(2), at(1), at(2)], "water")).toBe(false);
+  });
+
+  it("lets a water path run overland along a navigable river", () => {
+    navigable.add(1);
+    expect(Journeys.isValidPath([at(2), at(1), at(2)], "water")).toBe(true);
   });
 
   it("accepts any path for unrestricted domains", () => {

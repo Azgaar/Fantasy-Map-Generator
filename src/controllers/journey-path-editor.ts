@@ -84,13 +84,9 @@ function onKeyDown(event: KeyboardEvent): void {
   } else if (event.key === "Enter" && mode.kind === "draw") finishDrawing();
 }
 
-// ---- validation messages -----------------------------------------------
-
 function terrainRejection(cellId: number, domain: TransportDomain, transportType: string): string {
   const rule =
-    domain === "land"
-      ? "its path has to stay on land"
-      : "its path has to stay on water (only the start and end may sit on a coast)";
+    domain === "land" ? "its path has to stay on land" : "its path has to stay on water or a navigable river";
   return `${transportType} is a ${domain} transport — ${rule}. That spot is a ${Journeys.describeCell(cellId)}.`;
 }
 
@@ -108,7 +104,7 @@ export function domainMismatchMessage(seg: JouneySegment, domain: TransportDomai
   const need =
     domain === "land"
       ? "endpoints must be on land (coastal is fine)"
-      : "endpoints must be in water, or on a coast touching water";
+      : "endpoints must be in water, on a coast touching water, or on a navigable river";
   return `${bad.join(" and ")}.<br/><br/>This transport type is <b>${domain}</b> — ${need}.`;
 }
 
