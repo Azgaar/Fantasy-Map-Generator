@@ -14,6 +14,7 @@ import type { FillBoxElement } from "@/components/fill-box";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
+import { startJourneyTravel, stopJourneyTravel } from "@/renderers/journey-travel";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import type { Journey } from "@/types/Journey";
 import { downloadFile, ensureEl, findEl, getFileName, getHoursPerDay, rn } from "@/utils";
@@ -228,10 +229,12 @@ const getJourneyPaths = (journeyId: number): SVGPathElement[] =>
 function journeyHighlightOn(this: HTMLElement): void {
   Layers.show("journeys");
   for (const path of getJourneyPaths(getLineId(this))) path.setAttribute("stroke-width", "3");
+  startJourneyTravel(getLineId(this));
 }
 
 function journeyHighlightOff(this: HTMLElement): void {
   for (const path of getJourneyPaths(getLineId(this))) path.removeAttribute("stroke-width");
+  stopJourneyTravel();
 }
 
 function zoomToJourney(this: HTMLElement): void {
@@ -362,6 +365,7 @@ function downloadJourneysData(): void {
 }
 
 function onClose(): void {
+  stopJourneyTravel();
   destroyDialog(dialogId);
 }
 

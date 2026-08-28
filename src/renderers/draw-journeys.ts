@@ -1,5 +1,5 @@
 import { curveCatmullRom, line } from "d3";
-import type { Journey, JourneyPoint } from "@/types/Journey";
+import type { JouneySegment, Journey, JourneyPoint } from "@/types/Journey";
 import { ensureEl, round } from "@/utils";
 
 export function drawJourneys(): void {
@@ -16,11 +16,16 @@ const curve = line<JourneyPoint>()
   .y(point => point[1])
   .curve(curveCatmullRom.alpha(0.5));
 
+/** The drawn path of a segment: the travel animation follows the same curve */
+export function getSegmentPathData(segment: JouneySegment): string {
+  return round(curve(segment.points) ?? "", 1);
+}
+
 function getJourneyPaths(journey: Journey): string {
   const paths = journey.segments
     .filter(segment => segment.visible !== false && segment.points.length > 1)
     .map(segment => {
-      const d = round(curve(segment.points) ?? "", 1);
+      const d = getSegmentPathData(segment);
       return /* html */ `<path id="segment${journey.i}_${segment.id}" d="${d}" stroke="${segment.color || journey.color}"/>`;
     })
     .join("");

@@ -20,6 +20,7 @@ import { tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { TRANSPORT_TYPES_CHANGED } from "@/controllers/transport-types-editor";
+import { startJourneyTravel, stopJourneyTravel } from "@/renderers/journey-travel";
 import type { JouneySegment, Journey } from "@/types/Journey";
 import { downloadFile, ensureEl, findEl, getFileName, getHoursPerDay, rn } from "@/utils";
 import { cellEndpointLabel, cellEndpointTooltip, getCellPoint } from "@/utils/cell-labels";
@@ -492,10 +493,12 @@ const getSegmentPath = (el: HTMLElement): SVGPathElement | null =>
 function segmentHighlightOn(this: HTMLElement): void {
   Layers.show("journeys");
   getSegmentPath(this)?.setAttribute("stroke-width", "3");
+  if (editingJourneyId !== null) startJourneyTravel(editingJourneyId, getLineId(this));
 }
 
 function segmentHighlightOff(this: HTMLElement): void {
   getSegmentPath(this)?.removeAttribute("stroke-width");
+  stopJourneyTravel();
 }
 
 // ---- journey actions ---------------------------------------------------
@@ -569,6 +572,7 @@ function triggerJourneyRemove(): void {
 }
 
 function onClose(): void {
+  stopJourneyTravel();
   PathEditor.detach();
   applyDefaultViewboxEvents();
   document.removeEventListener(TRANSPORT_TYPES_CHANGED, onTransportTypesChanged);
