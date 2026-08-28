@@ -42,13 +42,7 @@ const columns: EditorColumn<Journey>[] = [
     sortBy: j => cellEndpointLabel(getEnd(j)),
     sortType: "alpha"
   },
-  {
-    key: "distance",
-    label: "Distance",
-    width: "7em",
-    sortBy: j => Journeys.getTotals(j).totalDistance,
-    defaultSort: "desc"
-  },
+  { key: "distance", label: "Distance", width: "7em", sortBy: j => Journeys.getTotals(j).totalDistance },
   {
     key: "speed",
     label: "Speed",

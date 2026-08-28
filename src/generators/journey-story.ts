@@ -166,14 +166,14 @@ function buildArchetypes(): Record<StoryKind, Archetype> {
       sea: 0.2,
       rest: 0.7,
       camp: 0.6,
-      land: { "On Foot": 6, Horse: 1 },
+      land: { "On Foot": 1 },
       water: { Boat: 3, Ship: 2 },
       title: ({ destination }) =>
         ra([
           `Pilgrimage to ${destination}`,
           `The ${ra(COMPANY_ADJECTIVES)} Pilgrims`,
-          `The Long Walk to ${destination}`,
-          `Penance road to ${destination}`
+          `The ${getAdjective(origin)} Pilgrims`,
+          `Penance to ${destination}`
         ]),
       stopover: place => ra([`Alms and rest at ${tavernName()}`, `Vigil in ${place}`, `Shelter in ${place}`]),
       bivouac: wild => ra([`Vigil in the ${wild}`, `Night prayer in the ${wild}`, `Sleeping rough in the ${wild}`])
