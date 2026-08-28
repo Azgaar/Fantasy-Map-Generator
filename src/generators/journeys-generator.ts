@@ -1,18 +1,18 @@
 import { getDefaultTransportTypes } from "@/data/transport-types";
 import type { JouneySegment, Journey, JourneyPoint, TransportDomain, TransportType } from "@/types/Journey";
 import { isLand, ra } from "../utils";
-import { getCardinalColors } from "../utils/colorUtils";
+import { getCardinalColor } from "../utils/colorUtils";
 import type { Burg } from "./burgs-generator";
 import { DEFAULT_JOURNEY_TYPE, generateStoryJourney } from "./journey-story";
 import type { Route } from "./routes-generator";
 
-export const OFF_ROAD_SPEED_FACTOR = 0.5;
 const DEFAULT_HOURS_PER_DAY = 8;
 const COARSE_UNIT_THRESHOLD = 10;
 const MIN_PASSABLE_SEA_TEMP = -5;
 const ON_ROAD_DISCOUNT = 0.5;
 const OFF_ROAD_PENALTY = 5;
 const FALLBACK_POOL_SIZE = 6;
+const OFF_ROAD_SPEED_FACTOR = 0.5;
 
 export interface PathfindingResult {
   points: JourneyPoint[];
@@ -33,7 +33,8 @@ class JourneysModule {
     const story = generateStoryJourney(this) ?? this.buildFallbackJourney();
     if (!story) return null;
 
-    const journey = { ...story, i: this.getNextId(), color: this.pickColor() };
+    const i = this.getNextId();
+    const journey = { ...story, i, color: getCardinalColor(i) };
     pack.journeys.push(journey);
     return journey;
   }
@@ -45,30 +46,17 @@ class JourneysModule {
       i,
       name: `Journey ${i + 1}`,
       type: DEFAULT_JOURNEY_TYPE,
-      color: this.pickColor(),
+      color: getCardinalColor(i),
       segments: []
     };
     pack.journeys.push(journey);
     return journey;
   }
 
-  /** A cardinal color no other journey uses, so the first ten stay tellable apart */
-  pickColor(): string {
-    const palette = getCardinalColors();
-    const used = new Set(pack.journeys?.map(journey => journey.color));
-    return palette.find(color => !used.has(color)) ?? ra(palette);
-  }
-
   /** Ensure the pack carries the journey collections; safe to call repeatedly */
   sync(): void {
     if (!pack.journeys) pack.journeys = [];
     if (!pack.transportTypes?.length) pack.transportTypes = getDefaultTransportTypes();
-
-    // journeys own their color; saves made before that inherited the layer stroke
-    for (const journey of pack.journeys) {
-      if (!journey.color) journey.color = this.pickColor();
-      if (!journey.type) journey.type = DEFAULT_JOURNEY_TYPE;
-    }
   }
 
   remove(journeyId: number): void {

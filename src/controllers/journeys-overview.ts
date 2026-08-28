@@ -54,13 +54,13 @@ const columns: EditorColumn<Journey>[] = [
   },
   {
     key: "time",
-    label: "Duration",
-    width: "7em",
+    label: "Time",
+    width: "5em",
     tip: "Total travel time",
     mobileHidden: true,
     sortBy: j => Journeys.getTotals(j).totalHours
   },
-  { key: "actions", width: "3.6em", permanent: true, align: "right" }
+  { key: "actions", width: "3.2em", permanent: true, align: "right" }
 ];
 
 const journeysTable = initEditorTable<Journey>({

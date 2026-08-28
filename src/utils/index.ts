@@ -2,7 +2,7 @@ import { last, TYPED_ARRAY_MAX, unique } from "./arrayUtils";
 import { abbreviate, getAdjective, isVowel, list, nth, trimVowels } from "./languageUtils";
 import { lerp, lim, minmax, normalize, rn } from "./numberUtils";
 import "./polyfills";
-import { C_12, CARDINAL_10, getCardinalColors, getColors, getMixedColor, getRandomColor, toHEX } from "./colorUtils";
+import { C_12, getCardinalColor, getColors, getMixedColor, getRandomColor, toHEX } from "./colorUtils";
 import {
   clipPoly,
   debounce,
@@ -119,7 +119,7 @@ export {
   applyOption,
   biased,
   C_12,
-  CARDINAL_10,
+  type CARDINAL_10,
   capitalize,
   clipPoly,
   connectVertices,
@@ -145,7 +145,7 @@ export {
   getArea,
   getAreaUnit,
   getBase64,
-  getCardinalColors,
+  getCardinalColor,
   getCellPopulation,
   getColors,
   getComposedPath,

@@ -26,7 +26,7 @@ export const toHEX = (rgba: string): string => {
     : "";
 };
 
-/** Predefined set of 12 distinct colors */
+/** Predefined set of 12 distinct pastel colors */
 export const C_12 = [
   "#dababf",
   "#fb8072",
@@ -42,15 +42,7 @@ export const C_12 = [
   "#eb8de7"
 ];
 
-/** d3's categorical scheme: saturated colors that stay legible as lines drawn over a map */
-export const CARDINAL_10 = [...schemeCategory10];
-
-/**
- * The cardinal palette in random order
- * Uses shuffler with current Math.random to ensure seeded randomness works
- * @returns {string[]} - The palette, shuffled
- */
-export const getCardinalColors = (): string[] => shuffler(() => Math.random())([...CARDINAL_10]);
+export const getCardinalColor = (index: number) => schemeCategory10[index % schemeCategory10.length];
 
 /**
  * Get an array of distinct colors

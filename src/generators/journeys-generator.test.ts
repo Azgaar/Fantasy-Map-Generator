@@ -1,7 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { JouneySegment, Journey } from "@/types/Journey";
-import { CARDINAL_10 } from "@/utils/colorUtils";
-import { OFF_ROAD_SPEED_FACTOR } from "./journeys-generator";
 
 const makeSeg = (distance: number, speed: number, avoidRoads = false): JouneySegment => ({
   id: 0,
@@ -42,18 +40,6 @@ describe("journey metrics", () => {
     expect(Journeys.getEffectiveSpeed(makeSeg(10, 8))).toBe(8);
   });
 
-  it("getEffectiveSpeed applies OFF_ROAD_SPEED_FACTOR when avoidRoads", () => {
-    const seg = makeSeg(10, 8, true);
-    expect(Journeys.getEffectiveSpeed(seg)).toBe(8 * OFF_ROAD_SPEED_FACTOR);
-  });
-
-  it("getSegmentTime is slower for off-road segments", () => {
-    const onRoad = Journeys.getSegmentTime(makeSeg(10, 5, false));
-    const offRoad = Journeys.getSegmentTime(makeSeg(10, 5, true));
-    expect(offRoad).toBeGreaterThan(onRoad);
-    expect(offRoad).toBe(onRoad / OFF_ROAD_SPEED_FACTOR);
-  });
-
   it("getTotals sums correctly with weighted avg speed", () => {
     const j: Journey = {
       i: 0,
@@ -67,22 +53,6 @@ describe("journey metrics", () => {
     expect(t.totalDistance).toBe(30);
     expect(t.totalHours).toBe(4); // 2 + 2
     expect(t.avgSpeed).toBe(7.5);
-  });
-
-  it("getTotals accounts for off-road penalty", () => {
-    const j: Journey = {
-      i: 0,
-      name: "j",
-      type: "Travel",
-      visible: true,
-      color: "#000",
-      segments: [makeSeg(10, 5, false), makeSeg(10, 5, true)]
-    };
-    const t = Journeys.getTotals(j);
-    expect(t.totalDistance).toBe(20);
-    const onRoadHours = 10 / 5;
-    const offRoadHours = 10 / (5 * OFF_ROAD_SPEED_FACTOR);
-    expect(t.totalHours).toBe(onRoadHours + offRoadHours);
   });
 
   it("formatTravelTime handles days/hours/minutes with default 8h/day", () => {
@@ -236,36 +206,5 @@ describe("Journeys.isValidPath", () => {
 
   it("accepts paths too short to have a middle", () => {
     expect(Journeys.isValidPath([at(0), at(3)], "land")).toBe(true);
-  });
-});
-
-describe("journey colors", () => {
-  let Journeys: any;
-
-  beforeEach(async () => {
-    (globalThis as any).pack = { journeys: [] };
-    await import("./journeys-generator");
-    Journeys = (globalThis as any).Journeys;
-  });
-
-  it("gives every new journey a color from the cardinal palette", () => {
-    const journey: Journey = Journeys.addEmpty();
-    expect(CARDINAL_10.includes(journey.color)).toBe(true);
-  });
-
-  it("keeps the colors distinct while the palette lasts", () => {
-    const colors = Array.from({ length: CARDINAL_10.length }, () => Journeys.addEmpty().color);
-    expect(new Set(colors).size).toBe(CARDINAL_10.length);
-  });
-
-  it("still colors journeys once the palette is exhausted", () => {
-    for (let i = 0; i <= CARDINAL_10.length; i++) Journeys.addEmpty();
-    expect(CARDINAL_10.includes((globalThis as any).pack.journeys.at(-1).color)).toBe(true);
-  });
-
-  it("backfills colors for journeys saved before they had one", () => {
-    (globalThis as any).pack.journeys = [{ i: 0, name: "old", segments: [] }];
-    Journeys.sync();
-    expect(CARDINAL_10.includes((globalThis as any).pack.journeys[0].color)).toBe(true);
   });
 });

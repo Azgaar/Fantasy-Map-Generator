@@ -20,7 +20,6 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { TRANSPORT_TYPES_CHANGED } from "@/controllers/transport-types-editor";
 import { getJourneyTypes } from "@/generators/journey-story";
-import { OFF_ROAD_SPEED_FACTOR } from "@/generators/journeys-generator";
 import type { JouneySegment, Journey } from "@/types/Journey";
 import { downloadFile, ensureEl, findEl, getFileName, getHoursPerDay, rn } from "@/utils";
 import { cellEndpointLabel, cellEndpointTooltip, getCellPoint } from "@/utils/cell-labels";
@@ -30,29 +29,19 @@ const dialogId = "journeyEditor" as const;
 const MAP_POSITION = { my: "left top", at: "left+10 top+10", of: "#map", collision: "fit" };
 const OVERVIEW_POSITION = { my: "right top", at: "right bottom+16", of: "#journeysOverview", collision: "fit" };
 
-/** Dock under the Journeys Overview when it is on screen, so the two read as one panel */
-const getPosition = () => (findEl("journeysOverview")?.offsetParent ? OVERVIEW_POSITION : MAP_POSITION);
-
-const SUCCESS_TIP_MS = 2500;
-const ERROR_TIP_MS = 9000;
-const OFF_ROAD_PENALTY_PCT = Math.round((1 - OFF_ROAD_SPEED_FACTOR) * 100);
-const ACTIVE_COLOR = "#2a6e2a"; // marks the segment an on-map editing mode is armed for
-
 let editingJourneyId: number | null = null;
 
-// Segments are an ordered itinerary, so no column is sortable — reordering is done with the move handle
 const columns: EditorColumn<JouneySegment>[] = [
-  { key: "name", label: "Name", width: "11em", permanent: true },
-  { key: "transport", label: "Transport", width: "7em" },
-  { key: "speed", label: "Speed", width: "4.5em" },
-  { key: "from", label: "From", width: "9em" },
-  { key: "to", label: "To", width: "9em" },
-  { key: "distance", label: "Dist", width: "5.5em" },
-  { key: "time", label: "Time", width: "6em" },
-  { key: "roads", label: "Roads", width: "3.8em", mobileHidden: true },
-  { key: "color", label: "Color", width: "3.8em" },
-  // wide enough for the six row icons plus the columns button the header parks here
-  { key: "actions", width: "10.5em", permanent: true, align: "right" }
+  { key: "color", width: "1.2em" },
+  { key: "name", label: "Name", width: "14em", permanent: true },
+  { key: "transport", label: "Transport", width: "6em" },
+  { key: "speed", label: "Speed", width: "4em", mobileHidden: true },
+  { key: "from", label: "From", width: "9em", mobileHidden: true },
+  { key: "to", label: "To", width: "9em", mobileHidden: true },
+  { key: "distance", label: "Distance", width: "6em" },
+  { key: "time", label: "Time", width: "6em", mobileHidden: true },
+  { key: "roads", label: "Roads", width: "4em", mobileHidden: true },
+  { key: "actions", width: "7.5em", permanent: true, align: "right" }
 ];
 
 const segmentsTable = initEditorTable<JouneySegment>({
@@ -79,9 +68,10 @@ function open(journeyId: number): void {
 
   Journeys.sync();
   editingJourneyId = journeyId;
+
   const journey = getJourney();
   if (!journey) {
-    tip("Journey not found", true, "error", ERROR_TIP_MS);
+    tip("Journey not found", true, "error", 6000);
     return;
   }
 
@@ -94,7 +84,7 @@ function open(journeyId: number): void {
     title: "Edit Journey",
     resizable: false,
     width: "fit-content",
-    position: getPosition(),
+    position: findEl("journeysOverview") ? OVERVIEW_POSITION : MAP_POSITION,
     close: onClose
   });
 }
@@ -116,21 +106,21 @@ const getLineSegment = (el: HTMLElement): JouneySegment | undefined => getSegmen
 function renderDialog(journey: Journey): void {
   destroyDialog(dialogId);
 
-  const html = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog" style="max-width: 96vw">
+  const html = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
     <div id="segmentsBody" class="table">${renderEditorHeader({ dialogId, columns })}</div>
 
     <div id="journeyControls" class="editorFilters" style="flex-direction: row; align-items: center">
+      <fill-box id="journeyColor" size="1em" data-tip="Journey color. Click to change" fill="${journey.color}"></fill-box>
       <label for="journeyName" data-tip="Journey name" style="flex: 1; grid-template-columns: 3.2em 1fr">Name:
-        <input id="journeyName" type="text" value="${escapeAttr(journey.name)}" />
+        <input id="journeyName" type="text" value="${journey.name}" />
       </label>
       <label for="journeyType" data-tip="Kind of travel this is: a quest, a caravan, a campaign"
         style="flex: 0 1 14em; grid-template-columns: 3.2em 1fr">Type:
-        <input id="journeyType" type="text" value="${escapeAttr(journey.type)}" list="journeyTypes" />
+        <input id="journeyType" type="text" value="${journey.type}" list="journeyTypes" />
       </label>
       <datalist id="journeyTypes">${getJourneyTypes()
         .map(type => `<option value="${type}"></option>`)
         .join("")}</datalist>
-      <fill-box id="journeyColor" size="1.2em" data-tip="Journey color. Click to change"></fill-box>
     </div>
 
     <div id="journeyFooter" class="totalLine">
@@ -151,14 +141,16 @@ function renderDialog(journey: Journey): void {
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
-  ensureEl<FillBoxElement>("journeyColor").fill = journey.color;
 
-  // add listeners — dropped together with the dialog HTML on close
   ensureEl("journeyEditorRefresh").addEventListener("click", segmentsTable.refresh);
   initColumnVisibility({
     dialogId,
     columns,
-    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position: getPosition() })
+    onUpdate: () =>
+      updateDialog(dialogId, {
+        width: "fit-content",
+        position: findEl("journeysOverview") ? OVERVIEW_POSITION : MAP_POSITION
+      })
   });
   ensureEl("journeyName").addEventListener("input", onNameInput);
   ensureEl("journeyType").addEventListener("input", onTypeInput);
@@ -221,12 +213,10 @@ function renderSegmentLine(journey: Journey, segment: JouneySegment): string {
   const isDrawing = mode?.kind === "draw" && mode.segmentId === segment.id;
   const canEditPoints = segment.points.length >= 2 && !isStay;
 
-  const transportOptions = pack.transportTypes
-    .map(
-      type =>
-        `<option value="${type.name}" ${type.name === segment.transportType ? "selected" : ""}>${type.name}</option>`
-    )
-    .join("");
+  const transportOptions = pack.transportTypes.map(
+    type =>
+      `<option value="${type.name}" ${type.name === segment.transportType ? "selected" : ""}>${type.name}</option>`
+  );
 
   const speedCell = isStay
     ? /* html */ `<input class="segSpeed" type="number" value="0" disabled data-tip="A stay covers no ground" />`
@@ -238,17 +228,22 @@ function renderSegmentLine(journey: Journey, segment: JouneySegment): string {
         data-tip="Stay duration in hours" style="flex: 0 1 3em" />h`
     : Journeys.formatTravelTime(Journeys.getSegmentTime(segment), getHoursPerDay());
 
+  const activeStyle = (isActive: boolean): string => (isActive ? ` style="color: #2a6e2a"` : "");
+
   return /* html */ `<div class="states" data-id="${segment.id}">
-    <div data-col="name"><input class="segName" value="${escapeAttr(segment.name)}" data-tip="Segment name" /></div>
-    <div data-col="transport"><select class="segTransport" data-tip="Transport type, sets the speed and where the segment may go">${transportOptions}</select></div>
+    <div data-col="color">
+      <fill-box class="segColor" fill="${segment.color || journey.color}" data-tip="Segment color. Click to change"></fill-box>
+      <span class="segColorReset icon-ccw pointer" data-tip="Reset to the journey color" style="${segment.color ? "" : "visibility: hidden"}"></span>
+    </div>
+    <div data-col="name"><input class="segName" value="${segment.name}" data-tip="Segment name" /></div>
+    <div data-col="transport"><select class="segTransport" data-tip="Transport type, sets the speed and where the segment may go">${transportOptions.join("")}</select></div>
     <div data-col="speed">${speedCell}</div>
     ${renderEndpointCell("from", segment)}
     ${renderEndpointCell("to", segment)}
     <div data-tip="Segment distance" data-col="distance">${isStay ? "—" : `${rn(Journeys.getSegmentDistance(segment))} ${unit}`}</div>
     <div data-tip="${isStay ? "Stay duration" : `Time spent on this segment: ${Journeys.formatTravelTimeFull(Journeys.getSegmentTime(segment), getHoursPerDay())}`}" data-col="time">${timeCell}</div>
     <div data-col="roads">${renderRoadsToggle(segment, domain === "land")}</div>
-    <div data-col="color">${renderColorCell(journey, segment)}</div>
-    <div data-col="actions">
+    <div data-col="actions" style="gap: 0.5em">
       <span class="segVisible pointer ${segment.visible === false ? "icon-eye-off" : "icon-eye"}" data-tip="Toggle segment visibility"></span>
       <span class="segPoints icon-pencil ${canEditPoints ? "pointer" : "inactive"}" ${activeStyle(isEditingPoints)}
         data-tip="${!canEditPoints ? "Set both endpoints first" : isEditingPoints ? "Finish editing path points" : "Edit path points"}"></span>
@@ -281,22 +276,10 @@ function renderRoadsToggle(segment: JouneySegment, isLand: boolean): string {
     return /* html */ `<span class="segRoads inactive icon-map-signs" data-tip="Land transport only"></span>`;
 
   const tipText = segment.avoidRoads
-    ? `Off-road: avoids the road network at a ${OFF_ROAD_PENALTY_PCT}% speed penalty. Click to follow roads.`
+    ? `Off-road: avoids the road network. Click to follow roads.`
     : "On-road: follows the road network at full speed. Click to go off-road.";
   return /* html */ `<span class="segRoads pointer ${segment.avoidRoads ? "icon-tree" : "icon-map-signs"}" data-tip="${tipText}"></span>`;
 }
-
-/** The reset keeps its slot when hidden, so the column track never reflows */
-function renderColorCell(journey: Journey, segment: JouneySegment): string {
-  const tipText = segment.color ? "Segment color. Click to change" : "Follows the journey color. Click to override";
-  return /* html */ `<fill-box class="segColor" fill="${segment.color || journey.color}" data-tip="${tipText}"></fill-box>
-    <span class="segColorReset icon-ccw pointer" data-tip="Reset to the journey color"
-      style="${segment.color ? "" : "visibility: hidden"}"></span>`;
-}
-
-const activeStyle = (isActive: boolean): string => (isActive ? ` style="color: ${ACTIVE_COLOR}"` : "");
-
-const escapeAttr = (value: string): string => value.replace(/"/g, "&quot;");
 
 function updateTotals(journey: Journey): void {
   const unit = distanceUnitInput.value;
@@ -332,7 +315,6 @@ function onColorPick(): void {
 
   void Controllers.ColorPicker.open(journey.color, (fill: string) => {
     journey.color = fill;
-    // the swatch lives outside the table, so a refresh alone would leave it stale
     ensureEl<FillBoxElement>("journeyColor").fill = fill;
     segmentsTable.refresh();
   });
@@ -449,11 +431,6 @@ function onToggleAvoidRoads(this: HTMLElement): void {
   segment.avoidRoads = !segment.avoidRoads;
   PathEditor.recomputeSegment(segment);
   segmentsTable.refresh();
-
-  const message = segment.avoidRoads
-    ? `Segment set to off-road: avoids roads at a ${OFF_ROAD_PENALTY_PCT}% speed penalty.`
-    : "Segment set to follow roads at full speed.";
-  tip(message, true, "success", SUCCESS_TIP_MS);
 }
 
 function onLocateEndpoint(this: HTMLElement): void {
@@ -557,7 +534,7 @@ function recomputeAll(): void {
       PathEditor.recomputeSegment(segment);
     }
     segmentsTable.refresh();
-    tip("All segments recomputed", true, "success", SUCCESS_TIP_MS);
+    tip("All segments recomputed", true, "success", 4000);
   };
   if (!customCount) {
     recompute();
