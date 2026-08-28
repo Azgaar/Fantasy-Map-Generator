@@ -1,8 +1,8 @@
-import type { TransportType } from "@/types/Journey";
+import type { Transport } from "@/types/Journey";
 
 // Speeds are in the app's current distance unit per hour (mph when distanceUnitInput is "mi").
 // Values below are reasonable sustained travel speeds in miles per hour.
-export const DEFAULT_TRANSPORT_TYPES: TransportType[] = [
+export const DEFAULT_TRANSPORT_TYPES: Transport[] = [
   { i: 0, name: "On Foot", speed: 3, domain: "land" },
   { i: 1, name: "Horse", speed: 8, domain: "land" },
   { i: 2, name: "Carriage", speed: 5, domain: "land" },
@@ -12,4 +12,4 @@ export const DEFAULT_TRANSPORT_TYPES: TransportType[] = [
   { i: 6, name: "Stay", speed: 0, domain: "stay" }
 ];
 
-export const getDefaultTransportTypes = (): TransportType[] => DEFAULT_TRANSPORT_TYPES.map(t => ({ ...t }));
+export const getDefaultTransportTypes = (): Transport[] => DEFAULT_TRANSPORT_TYPES.map(t => ({ ...t }));

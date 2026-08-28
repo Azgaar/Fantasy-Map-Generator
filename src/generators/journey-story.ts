@@ -17,7 +17,7 @@ import {
   UNKNOWN_WILD,
   UPLAND_TERMS
 } from "@/data/journey-lore";
-import type { JouneySegment, Journey, JourneyPoint, TransportDomain, TransportType } from "@/types/Journey";
+import type { JouneySegment, Journey, JourneyPoint, Transport, TransportDomain } from "@/types/Journey";
 import { getAdjective, P, ra, rand, rw } from "@/utils";
 import { cellEndpointLabel } from "@/utils/cell-labels";
 import type { Burg } from "./burgs-generator";
@@ -41,7 +41,7 @@ interface PlannedLeg {
   from: Burg;
   to: Burg;
   domain: "land" | "water" | "air";
-  transport: TransportType;
+  transport: Transport;
   avoidRoads: boolean;
   points: JourneyPoint[];
   distance: number;
@@ -204,8 +204,8 @@ function buildLeg(pathfinder: JourneyPathfinder, archetype: JourneyArchetype, fr
 }
 
 /** The preferred type if the map still has it, otherwise any type of this domain */
-function resolveTransport(weights: Record<string, number>, domain: TransportDomain): TransportType | undefined {
-  const types: TransportType[] = pack.transportTypes ?? [];
+function resolveTransport(weights: Record<string, number>, domain: TransportDomain): Transport | undefined {
+  const types: Transport[] = pack.transports ?? [];
   const preferred = rw(weights);
   return (
     types.find(type => type.name === preferred && type.domain === domain) ?? types.find(type => type.domain === domain)
@@ -233,7 +233,7 @@ function buildSegments(
   archetype: JourneyArchetype,
   legs: PlannedLeg[]
 ): JouneySegment[] {
-  const stayType = (pack.transportTypes ?? []).find((type: TransportType) => type.domain === "stay");
+  const stayType = (pack.transports ?? []).find((type: Transport) => type.domain === "stay");
 
   const plans = legs.map((leg, index) => ({
     leg,
@@ -331,7 +331,7 @@ function makeTravel(leg: PlannedLeg, slice: PathSlice, name: string): JouneySegm
     name,
     from: slice.points[0][2],
     to: slice.points[slice.points.length - 1][2],
-    transportType: leg.transport.name,
+    transport: leg.transport.name,
     speed: leg.transport.speed,
     distance: slice.distance,
     points: slice.points
@@ -340,14 +340,14 @@ function makeTravel(leg: PlannedLeg, slice: PathSlice, name: string): JouneySegm
   return segment;
 }
 
-function makeStay(stayType: TransportType, cellId: number, name: string, duration: number): JouneySegment {
+function makeStay(stayType: Transport, cellId: number, name: string, duration: number): JouneySegment {
   const [x, y] = pack.cells.p[cellId];
   return {
     id: 0,
     name,
     from: cellId,
     to: cellId,
-    transportType: stayType.name,
+    transport: stayType.name,
     speed: 0,
     distance: 0,
     points: [[x, y, cellId]],

@@ -1,6 +1,6 @@
 import { DEFAULT_JOURNEY_TYPE } from "@/data/journey-lore";
 import { getDefaultTransportTypes } from "@/data/transport-types";
-import type { JouneySegment, Journey, JourneyPoint, TransportDomain, TransportType } from "@/types/Journey";
+import type { JouneySegment, Journey, JourneyPoint, Transport, TransportDomain } from "@/types/Journey";
 import { isLand } from "../utils";
 import { getCardinalColor } from "../utils/colorUtils";
 import type { Burg } from "./burgs-generator";
@@ -56,7 +56,7 @@ class JourneysModule {
   /** Ensure the pack carries the journey collections; safe to call repeatedly */
   sync(): void {
     if (!pack.journeys) pack.journeys = [];
-    if (!pack.transportTypes?.length) pack.transportTypes = getDefaultTransportTypes();
+    if (!pack.transports?.length) pack.transports = getDefaultTransportTypes();
   }
 
   remove(journeyId: number): void {
@@ -140,8 +140,8 @@ class JourneysModule {
     return total;
   }
 
-  getTransportType(name: string): TransportType | undefined {
-    return pack.transportTypes.find(type => type.name === name);
+  getTransportType(name: string): Transport | undefined {
+    return pack.transports.find(type => type.name === name);
   }
 
   /** Domain of the named transport type; unknown types are treated as unrestricted. */
@@ -457,7 +457,7 @@ class JourneysModule {
 
   /** First burg pair in `pool` joined by a path that is genuinely valid for `domain`. */
   private findFallbackLeg(pool: Burg[], domain: TransportDomain): JouneySegment | null {
-    const transport = pack.transportTypes.find(type => type.domain === domain);
+    const transport = pack.transports.find(type => type.domain === domain);
     if (!transport) return null;
 
     for (let i = 0; i < pool.length; i++) {
@@ -473,7 +473,7 @@ class JourneysModule {
           name: `${pool[i].name ?? "Start"} → ${pool[j].name ?? "End"}`,
           from,
           to,
-          transportType: transport.name,
+          transport: transport.name,
           speed: transport.speed,
           distance,
           points

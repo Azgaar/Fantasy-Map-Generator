@@ -87,7 +87,7 @@ describe("generateStoryJourney", () => {
         ...Array.from({ length: 12 }, (_, i) => ({ i: i + 1, name: "Temperate deciduous forest" }))
       ],
       features: [0, { i: 1, type: "ocean", subtype: "sea", name: "" }],
-      transportTypes: getDefaultTransportTypes()
+      transports: getDefaultTransportTypes()
     };
   });
 
@@ -133,7 +133,7 @@ describe("generateStoryJourney", () => {
       // every rest is a zero-speed stay with a duration and no distance
       const stays = segments.filter(isStay);
       for (const stay of stays) {
-        expect(transportDomain(stay.transportType)).toBe("stay");
+        expect(transportDomain(stay.transport)).toBe("stay");
         expect(stay.duration).toBeGreaterThan(0);
         expect(stay.distance).toBe(0);
         expect(stay.from).toBe(stay.to);
@@ -145,7 +145,7 @@ describe("generateStoryJourney", () => {
       for (const segment of travel) {
         expect(segment.points.length).toBeGreaterThan(1);
         expect(segment.distance).toBeGreaterThan(0);
-        expect(segment.speed).toBe(transportSpeed(segment.transportType));
+        expect(segment.speed).toBe(transportSpeed(segment.transport));
         expect(segment.points[0][2]).toBe(segment.from);
         expect(segment.points[segment.points.length - 1][2]).toBe(segment.to);
       }
@@ -162,7 +162,7 @@ describe("generateStoryJourney", () => {
     for (let run = 0; run < 40; run++) {
       const journey = generateStoryJourney(pathfinder)!;
       names.add(journey.name);
-      for (const segment of journey.segments) transports.add(segment.transportType);
+      for (const segment of journey.segments) transports.add(segment.transport);
     }
     expect(names.size).toBeGreaterThan(10);
     expect(transports.size).toBeGreaterThan(2);
@@ -170,7 +170,7 @@ describe("generateStoryJourney", () => {
 });
 
 const transportSpeed = (name: string): number =>
-  ((globalThis as any).pack.transportTypes.find((type: any) => type.name === name)?.speed ?? -1) as number;
+  ((globalThis as any).pack.transports.find((type: any) => type.name === name)?.speed ?? -1) as number;
 
 const transportDomain = (name: string): TransportDomain =>
-  (globalThis as any).pack.transportTypes.find((type: any) => type.name === name)?.domain;
+  (globalThis as any).pack.transports.find((type: any) => type.name === name)?.domain;

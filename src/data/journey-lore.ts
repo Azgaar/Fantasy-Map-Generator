@@ -13,7 +13,7 @@ export interface JourneyArchetype {
   rest: number;
   /** Chance a long leg is broken by a camp in the wild */
   camp: number;
-  /** Preferred transport by name, weighted; resolved against pack.transportTypes */
+  /** Preferred transport by name, weighted; resolved against pack.transports */
   land: Record<string, number>;
   water: Record<string, number>;
   /** Air-domain transport, for the parties that fly */

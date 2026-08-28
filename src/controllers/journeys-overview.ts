@@ -140,7 +140,7 @@ function renderDialog(): void {
   ensureEl("journeyCreateNew").addEventListener("click", createEmptyJourney);
   ensureEl("journeyGenerateStory").addEventListener("click", generateRandomJourney);
   ensureEl("journeysEditStyle").addEventListener("click", () => editStyle("journeys"));
-  ensureEl("journeysEditTransport").addEventListener("click", () => void Controllers.TransportTypesEditor.open());
+  ensureEl("journeysEditTransport").addEventListener("click", () => void Controllers.TransportEditor.open());
   ensureEl("journeysExport").addEventListener("click", downloadJourneysData);
   ensureEl("journeysLockAll").addEventListener("click", toggleLockAll);
   ensureEl("journeysRemoveAll").addEventListener("click", triggerAllJourneysRemove);
@@ -223,17 +223,12 @@ const getStart = (journey: Journey) => journey.segments[0]?.from;
 
 const getEnd = (journey: Journey) => journey.segments.at(-1)?.to;
 
-const getJourneyPaths = (journeyId: number): SVGPathElement[] =>
-  Array.from(document.querySelectorAll<SVGPathElement>(`#journeys > #journey${journeyId} > path`));
-
 function journeyHighlightOn(this: HTMLElement): void {
   Layers.show("journeys");
-  for (const path of getJourneyPaths(getLineId(this))) path.setAttribute("stroke-width", "3");
   startJourneyTravel(getLineId(this));
 }
 
-function journeyHighlightOff(this: HTMLElement): void {
-  for (const path of getJourneyPaths(getLineId(this))) path.removeAttribute("stroke-width");
+function journeyHighlightOff(): void {
   stopJourneyTravel();
 }
 

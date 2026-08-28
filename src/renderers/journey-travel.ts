@@ -129,9 +129,9 @@ function play(steps: Step[], id: number): void {
       .attr("d", step.d)
       .attr("fill", "none")
       .attr("stroke", step.color)
-      .attr("stroke-width", width * 1.8)
+      .attr("stroke-width", width * 2.2)
       .attr("stroke-linecap", "round")
-      .attr("opacity", 0.5)
+      .attr("opacity", 0.6)
       .attr("filter", "url(#blur1)");
 
     const path = trail.node() as SVGPathElement;

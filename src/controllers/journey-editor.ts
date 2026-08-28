@@ -19,7 +19,7 @@ import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { TRANSPORT_TYPES_CHANGED } from "@/controllers/transport-types-editor";
+import { TRANSPORT_TYPES_CHANGED } from "@/controllers/transport-editor";
 import { startJourneyTravel, stopJourneyTravel } from "@/renderers/journey-travel";
 import type { JouneySegment, Journey } from "@/types/Journey";
 import { downloadFile, ensureEl, findEl, getFileName, getHoursPerDay, rn } from "@/utils";
@@ -164,7 +164,7 @@ function renderDialog(journey: Journey): void {
   ensureEl("journeyType").addEventListener("input", onTypeInput);
   ensureEl("journeyColor").addEventListener("click", onColorPick);
   ensureEl("journeyAddSegment").addEventListener("click", addSegment);
-  ensureEl("journeyEditTransport").addEventListener("click", () => void Controllers.TransportTypesEditor.open());
+  ensureEl("journeyEditTransport").addEventListener("click", () => void Controllers.TransportEditor.open());
   ensureEl("journeyExport").addEventListener("click", downloadSegmentsData);
   ensureEl("journeyRemove").addEventListener("click", triggerJourneyRemove);
 }
@@ -211,7 +211,7 @@ function renderSegmentsPage(view: TableView<JouneySegment>): void {
 function renderSegmentLine(journey: Journey, segment: JouneySegment): string {
   const unit = distanceUnitInput.value;
   const index = journey.segments.indexOf(segment);
-  const domain = Journeys.getDomain(segment.transportType);
+  const domain = Journeys.getDomain(segment.transport);
   const isStay = domain === "stay" || Journeys.isStaySegment(segment);
 
   const mode = PathEditor.getMode();
@@ -231,10 +231,10 @@ function renderSegmentLine(journey: Journey, segment: JouneySegment): string {
     </div>
     ${renderEndpointCell("from", segment)}
     ${renderEndpointCell("to", segment)}
-    <div data-col="transport"><select class="segTransport" data-tip="Transport type, sets the default speed and where the segment may go">${pack.transportTypes
+    <div data-col="transport"><select class="segTransport" data-tip="Transport type, sets the default speed and where the segment may go">${pack.transports
       .map(
         type =>
-          `<option value="${type.name}" ${type.name === segment.transportType ? "selected" : ""}>${type.name}</option>`
+          `<option value="${type.name}" ${type.name === segment.transport ? "selected" : ""}>${type.name}</option>`
       )
       .join("")}</select></div>
     <div data-tip="Segment distance" data-col="distance">${rn(Journeys.getSegmentDistance(segment))} ${unit}</div>
@@ -332,13 +332,13 @@ function onSegTransportChange(this: HTMLSelectElement): void {
   const segment = getLineSegment(this);
   if (!segment) return;
 
-  const previousType = segment.transportType;
+  const previousType = segment.transport;
   const newType = Journeys.getTransportType(this.value);
   if (!newType) return;
 
   // Stay: clear the pathfinding-derived state, keeping the endpoints as anchors
   if (newType.domain === "stay") {
-    Object.assign(segment, { transportType: newType.name, speed: 0, duration: segment.duration ?? 1 });
+    Object.assign(segment, { transport: newType.name, speed: 0, duration: segment.duration ?? 1 });
     segment.avoidRoads = false;
     segment.custom = false;
     PathEditor.recomputeSegment(segment);
@@ -356,7 +356,7 @@ function onSegTransportChange(this: HTMLSelectElement): void {
     return;
   }
 
-  segment.transportType = newType.name;
+  segment.transport = newType.name;
   segment.speed = newType.speed;
   if (Journeys.getDomain(previousType) === "stay") delete segment.duration;
   PathEditor.recomputeSegment(segment);
@@ -437,9 +437,9 @@ function onSegReset(this: HTMLElement): void {
   if (!segment) return;
 
   const reset = () => {
-    const isStay = Journeys.getDomain(segment.transportType) === "stay";
+    const isStay = Journeys.getDomain(segment.transport) === "stay";
     delete segment.color;
-    segment.speed = Journeys.getTransportType(segment.transportType)?.speed ?? segment.speed;
+    segment.speed = Journeys.getTransportType(segment.transport)?.speed ?? segment.speed;
     // a stay has no speed to derive its time from, so it falls back to the default one hour
     if (isStay) segment.duration = 1;
     else delete segment.duration;
@@ -487,17 +487,12 @@ function onSegDelete(this: HTMLElement): void {
   });
 }
 
-const getSegmentPath = (el: HTMLElement): SVGPathElement | null =>
-  editingJourneyId === null ? null : findEl<SVGPathElement>(`segment${editingJourneyId}_${getLineId(el)}`);
-
 function segmentHighlightOn(this: HTMLElement): void {
   Layers.show("journeys");
-  getSegmentPath(this)?.setAttribute("stroke-width", "3");
   if (editingJourneyId !== null) startJourneyTravel(editingJourneyId, getLineId(this));
 }
 
-function segmentHighlightOff(this: HTMLElement): void {
-  getSegmentPath(this)?.removeAttribute("stroke-width");
+function segmentHighlightOff(): void {
   stopJourneyTravel();
 }
 
@@ -509,13 +504,13 @@ function addSegment(): void {
 
   const isFirst = !journey.segments.length;
   const id = journey.segments.length ? Math.max(...journey.segments.map(segment => segment.id)) + 1 : 0;
-  const transport = pack.transportTypes.find(type => type.domain !== "stay") ?? pack.transportTypes[0];
+  const transport = pack.transports.find(type => type.domain !== "stay") ?? pack.transports[0];
 
   journey.segments.push({
     id,
     name: `Segment ${id + 1}`,
     from: journey.segments[journey.segments.length - 1]?.to,
-    transportType: transport?.name ?? "Direct",
+    transport: transport?.name ?? "Direct",
     speed: transport?.speed ?? 5,
     distance: 0,
     points: []
@@ -532,12 +527,12 @@ function downloadSegmentsData(): void {
   if (!journey) return;
 
   const unit = distanceUnitInput.value;
-  const headers = `Idx,Name,TransportType,Speed(${unit}/h),EffectiveSpeed(${unit}/h),DistancePx,Distance(${unit}),TimeHours,From,To,AvoidRoads,Custom,Visible,Color`;
+  const headers = `Idx,Name,Transport,Speed(${unit}/h),EffectiveSpeed(${unit}/h),DistancePx,Distance(${unit}),TimeHours,From,To,AvoidRoads,Custom,Visible,Color`;
   const lines = journey.segments.map((segment, index) =>
     [
       index + 1,
       `"${segment.name}"`,
-      `"${segment.transportType}"`,
+      `"${segment.transport}"`,
       segment.speed,
       rn(Journeys.getEffectiveSpeed(segment), 2),
       rn(segment.distance, 2),

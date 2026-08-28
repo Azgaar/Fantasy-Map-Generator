@@ -408,17 +408,27 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.addedLabels = data[47] ? JSON.parse(data[47]) : [];
     pack.relief = data[49] ? JSON.parse(data[49]) : [];
     pack.journeys = data[52] ? JSON.parse(data[52]) : [];
-    pack.transportTypes = data[53] ? JSON.parse(data[53]) : getDefaultTransportTypes();
-    if (!pack.transportTypes.length) pack.transportTypes = getDefaultTransportTypes();
+    pack.transports = data[53] ? JSON.parse(data[53]) : getDefaultTransportTypes();
+    if (!pack.transports.length) pack.transports = getDefaultTransportTypes();
     // Migrate pre-branch transport types that used pathMode (direct/route/sea) to domain (air/land/water).
     // Also drop the legacy `color` field (transport-type color no longer has any effect).
-    for (const t of pack.transportTypes as unknown as Array<Record<string, unknown>>) {
+    for (const t of pack.transports as unknown as Array<Record<string, unknown>>) {
       if (!("domain" in t) && "pathMode" in t) {
         const legacy = t.pathMode as string;
         t.domain = legacy === "sea" ? "water" : legacy === "route" ? "land" : "air";
         delete t.pathMode;
       }
       if ("color" in t) delete t.color;
+    }
+
+    // Migrate pre-branch segments that stored the transport name as `transportType`.
+    for (const journey of pack.journeys) {
+      for (const segment of journey.segments as unknown as Array<Record<string, unknown>>) {
+        if ("transportType" in segment) {
+          segment.transport = segment.transportType;
+          delete segment.transportType;
+        }
+      }
     }
 
     if (data[31]) {

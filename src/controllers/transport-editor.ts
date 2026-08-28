@@ -9,21 +9,21 @@ import {
 } from "@/components/dialog/table";
 import { tip } from "@/components/tooltips";
 import { getDefaultTransportTypes } from "@/data/transport-types";
-import type { TransportDomain, TransportType } from "@/types/Journey";
+import type { Transport, TransportDomain } from "@/types/Journey";
 import { ensureEl } from "@/utils";
 
-const dialogId = "transportTypesEditor" as const;
+const dialogId = "transportEditor" as const;
 const position = { my: "center", at: "center", of: "svg", collision: "fit" };
 
-const columns: EditorColumn<TransportType>[] = [
+const columns: EditorColumn<Transport>[] = [
   { key: "name", label: "Name", width: "7em", permanent: true },
   { key: "speed", label: "Speed", width: "5em" },
   { key: "domain", label: "Domain", width: "5em" },
   { key: "actions", width: "1.4em", permanent: true, align: "right" }
 ];
 
-const typesTable = initEditorTable<TransportType>({
-  getData: () => pack.transportTypes,
+const typesTable = initEditorTable<Transport>({
+  getData: () => pack.transports,
   onUpdate: renderTypesPage
 });
 
@@ -35,7 +35,7 @@ const DOMAIN_LABEL: Record<TransportDomain, string> = {
 };
 const DOMAINS = Object.keys(DOMAIN_LABEL) as TransportDomain[];
 
-export const TRANSPORT_TYPES_CHANGED = "journey-transport-types-changed";
+export const TRANSPORT_TYPES_CHANGED = "journey-transport-changed";
 const emitChanged = () => document.dispatchEvent(new CustomEvent(TRANSPORT_TYPES_CHANGED));
 
 function open(): void {
@@ -53,33 +53,33 @@ function renderDialog(): void {
   destroyDialog(dialogId);
 
   const html = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
-    <div id="transportTypesBody" class="table">${renderEditorHeader({ dialogId, columns })}</div>
+    <div id="transportBody" class="table">${renderEditorHeader({ dialogId, columns })}</div>
 
-    <div id="transportTypesFooter" class="totalLine">
-      <div data-tip="Transport types number" style="margin-left: 4px">Types:&nbsp;<span id="transportTypesFooterNumber">0</span></div>
+    <div id="transportFooter" class="totalLine">
+      <div data-tip="Transport types number" style="margin-left: 4px">Types:&nbsp;<span id="transportFooterNumber">0</span></div>
       <div style="margin-left: 12px"><i>Speed is in ${distanceUnitInput.value}/h</i></div>
     </div>
 
-    <div id="transportTypesBottom" class="editorToolbar">
-      <button id="transportTypesRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
-      <button id="transportTypesAdd" data-tip="Add a new transport type" class="icon-plus"></button>
-      <button id="transportTypesRestore" data-tip="Restore the default transport types, removing custom ones" class="icon-ccw"></button>
+    <div id="transportBottom" class="editorToolbar">
+      <button id="transportRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
+      <button id="transportAdd" data-tip="Add a new transport type" class="icon-plus"></button>
+      <button id="transportRestore" data-tip="Restore the default transport types, removing custom ones" class="icon-ccw"></button>
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
-  ensureEl("transportTypesRefresh").addEventListener("click", typesTable.refresh);
+  ensureEl("transportRefresh").addEventListener("click", typesTable.refresh);
   initColumnVisibility({
     dialogId,
     columns,
     onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
   });
-  ensureEl("transportTypesAdd").addEventListener("click", addType);
-  ensureEl("transportTypesRestore").addEventListener("click", triggerDefaultsRestore);
+  ensureEl("transportAdd").addEventListener("click", addType);
+  ensureEl("transportRestore").addEventListener("click", triggerDefaultsRestore);
 }
 
-function renderTypesPage(view: TableView<TransportType>): void {
-  const body = ensureEl("transportTypesBody");
+function renderTypesPage(view: TableView<Transport>): void {
+  const body = ensureEl("transportBody");
   body.querySelectorAll(":scope > .states").forEach(row => {
     row.remove();
   });
@@ -103,7 +103,7 @@ function renderTypesPage(view: TableView<TransportType>): void {
   }
   body.insertAdjacentHTML("beforeend", lines);
 
-  ensureEl("transportTypesFooterNumber").innerHTML = String(view.all.length);
+  ensureEl("transportFooterNumber").innerHTML = String(view.all.length);
 
   // add listeners
   const on = (selector: string, event: string, handler: EventListener) => {
@@ -114,21 +114,20 @@ function renderTypesPage(view: TableView<TransportType>): void {
   on(".ttDomain", "change", onDomainChange);
   on(".ttDelete", "click", triggerTypeRemove);
 
-  renderEditorPagination(ensureEl("transportTypesFooter"), view, typesTable.goto);
+  renderEditorPagination(ensureEl("transportFooter"), view, typesTable.goto);
 }
 
 /** Transport type of the row a control lives in */
 const getLineId = (el: HTMLElement): number => +(el.closest<HTMLElement>(".states")?.dataset.id ?? "-1");
 
-const getLineType = (el: HTMLElement): TransportType | undefined =>
-  pack.transportTypes.find(type => type.i === getLineId(el));
+const getLineType = (el: HTMLElement): Transport | undefined => pack.transports.find(type => type.i === getLineId(el));
 
 function onNameChange(this: HTMLInputElement): void {
   const type = getLineType(this);
   if (!type) return;
 
   const newName = this.value.trim();
-  const isTaken = pack.transportTypes.some(other => other.name === newName && other.i !== type.i);
+  const isTaken = pack.transports.some(other => other.name === newName && other.i !== type.i);
   if (!newName || isTaken) {
     this.value = type.name;
     tip(newName ? "A transport type with that name already exists" : "Name cannot be empty", true, "error", 8000);
@@ -137,7 +136,7 @@ function onNameChange(this: HTMLInputElement): void {
 
   // segments reference the type by name, so keep them pointing at it
   for (const journey of pack.journeys ?? []) {
-    for (const segment of journey.segments) if (segment.transportType === type.name) segment.transportType = newName;
+    for (const segment of journey.segments) if (segment.transport === type.name) segment.transport = newName;
   }
   type.name = newName;
   emitChanged();
@@ -160,15 +159,15 @@ function onDomainChange(this: HTMLSelectElement): void {
 }
 
 function addType(): void {
-  const nextId = pack.transportTypes.length ? Math.max(...pack.transportTypes.map(type => type.i)) + 1 : 0;
+  const nextId = pack.transports.length ? Math.max(...pack.transports.map(type => type.i)) + 1 : 0;
   let name = "New Type";
-  for (let n = 2; pack.transportTypes.some(type => type.name === name); n++) name = `New Type ${n}`;
+  for (let n = 2; pack.transports.some(type => type.name === name); n++) name = `New Type ${n}`;
 
-  pack.transportTypes.push({ i: nextId, name, speed: 5, domain: "land" });
+  pack.transports.push({ i: nextId, name, speed: 5, domain: "land" });
   typesTable.refresh();
   emitChanged();
 
-  const input = document.querySelector<HTMLInputElement>(`#transportTypesBody [data-id="${nextId}"] .ttName`);
+  const input = document.querySelector<HTMLInputElement>(`#transportBody [data-id="${nextId}"] .ttName`);
   input?.select();
   tip("Transport type added — rename it and set the speed and domain.", true, "success", 5000);
 }
@@ -178,7 +177,7 @@ function triggerTypeRemove(this: HTMLElement): void {
   if (!type) return;
 
   const isUsed = (pack.journeys ?? []).some(journey =>
-    journey.segments.some(segment => segment.transportType === type.name)
+    journey.segments.some(segment => segment.transport === type.name)
   );
   if (isUsed) {
     tip(`'${type.name}' is used by existing segments. Reassign them first.`, true, "error", 8000);
@@ -190,7 +189,7 @@ function triggerTypeRemove(this: HTMLElement): void {
     message: `Remove transport type <b>${type.name}</b>?`,
     confirm: "Remove",
     onConfirm: () => {
-      pack.transportTypes = pack.transportTypes.filter(other => other.i !== type.i);
+      pack.transports = pack.transports.filter(other => other.i !== type.i);
       typesTable.refresh();
       emitChanged();
     }
@@ -204,7 +203,7 @@ function triggerDefaultsRestore(): void {
       "Restore the default transport types? Custom ones will be removed. Segments referencing a removed type keep its name but will no longer resolve.",
     confirm: "Restore",
     onConfirm: () => {
-      pack.transportTypes = getDefaultTransportTypes();
+      pack.transports = getDefaultTransportTypes();
       typesTable.refresh();
       emitChanged();
     }
@@ -215,4 +214,4 @@ function onClose(): void {
   destroyDialog(dialogId);
 }
 
-export const TransportTypesEditor = { open };
+export const TransportEditor = { open };

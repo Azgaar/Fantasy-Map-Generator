@@ -84,10 +84,10 @@ function onKeyDown(event: KeyboardEvent): void {
   } else if (event.key === "Enter" && mode.kind === "draw") finishDrawing();
 }
 
-function terrainRejection(cellId: number, domain: TransportDomain, transportType: string): string {
+function terrainRejection(cellId: number, domain: TransportDomain, transport: string): string {
   const rule =
     domain === "land" ? "its path has to stay on land" : "its path has to stay on water or a navigable river";
-  return `${transportType} is a ${domain} transport — ${rule}. That spot is a ${Journeys.describeCell(cellId)}.`;
+  return `${transport} is a ${domain} transport — ${rule}. That spot is a ${Journeys.describeCell(cellId)}.`;
 }
 
 /** Explain which endpoints clash with the segment's domain, or null when both fit */
@@ -142,10 +142,10 @@ function onPickCell(clicked: ClickedCell): void {
 
   const cellId = clicked[2];
 
-  const domain = Journeys.getDomain(seg.transportType);
+  const domain = Journeys.getDomain(seg.transport);
   if (!Journeys.isValidEndpoint(cellId, domain)) {
     tip(
-      `Can't put an endpoint there — ${terrainRejection(cellId, domain, seg.transportType)}`,
+      `Can't put an endpoint there — ${terrainRejection(cellId, domain, seg.transport)}`,
       true,
       "error",
       ERROR_TIP_MS
@@ -170,7 +170,7 @@ export function recomputeSegment(seg: JouneySegment): void {
   if (seg.custom) return; // never overwrite a custom-drawn path silently
   if (seg.from === undefined || seg.to === undefined) return;
 
-  const domain = Journeys.getDomain(seg.transportType);
+  const domain = Journeys.getDomain(seg.transport);
   // a stay has no movement: a direct line anchors it between its endpoints
   const result = Journeys.findPath(seg.from, seg.to, domain === "stay" ? "air" : domain, {
     avoidRoads: domain === "land" && !!seg.avoidRoads
@@ -181,7 +181,7 @@ export function recomputeSegment(seg: JouneySegment): void {
   if (!result.warning) return;
   if (result.errorCode) {
     alertDialog({
-      title: `Can't use ${seg.transportType} here`,
+      title: `Can't use ${seg.transport} here`,
       message: `Segment "<b>${seg.name}</b>": ${domainMismatchMessage(seg, domain) ?? result.warning}`
     });
   } else tip(result.warning, true, "warn", ERROR_TIP_MS);
@@ -209,7 +209,7 @@ function onDragPoint(this: SVGCircleElement, event: D3DragEvent<SVGCircleElement
 
   const index = +this.dataset.index!;
   const isEndpoint = index === 0 || index === seg.points.length - 1;
-  const domain = Journeys.getDomain(seg.transportType);
+  const domain = Journeys.getDomain(seg.transport);
   const original = seg.points[index];
   const originalFrom = seg.from;
   const originalTo = seg.to;
@@ -240,7 +240,7 @@ function onDragPoint(this: SVGCircleElement, event: D3DragEvent<SVGCircleElement
       seg.from = originalFrom;
       seg.to = originalTo;
       seg.distance = Journeys.getPathLength(seg.points);
-      tip(`Point reverted — ${terrainRejection(droppedCell, domain, seg.transportType)}`, true, "error", ERROR_TIP_MS);
+      tip(`Point reverted — ${terrainRejection(droppedCell, domain, seg.transport)}`, true, "error", ERROR_TIP_MS);
     }
     host?.refresh();
   });
@@ -277,10 +277,10 @@ function onAddPoint(this: SVGPathElement, event: MouseEvent): void {
   if (!clicked) return;
   const [x, y, cellId] = clicked;
 
-  const domain = Journeys.getDomain(seg.transportType);
+  const domain = Journeys.getDomain(seg.transport);
   if (!Journeys.isValidPathPoint(cellId, domain)) {
     tip(
-      `Can't add a point there — ${terrainRejection(cellId, domain, seg.transportType)}`,
+      `Can't add a point there — ${terrainRejection(cellId, domain, seg.transport)}`,
       true,
       "error",
       ERROR_TIP_MS
@@ -328,12 +328,12 @@ function onDrawCell(clicked: ClickedCell): void {
 
   const [x, y, cellId] = clicked;
 
-  const domain = Journeys.getDomain(seg.transportType);
+  const domain = Journeys.getDomain(seg.transport);
   const isEndpoint = !mode.points.length;
   const allowed = isEndpoint ? Journeys.isValidEndpoint(cellId, domain) : Journeys.isValidPathPoint(cellId, domain);
   if (!allowed) {
     tip(
-      `Can't add a point there — ${terrainRejection(cellId, domain, seg.transportType)}`,
+      `Can't add a point there — ${terrainRejection(cellId, domain, seg.transport)}`,
       true,
       "error",
       ERROR_TIP_MS
@@ -367,7 +367,7 @@ function finishDrawing(): void {
 
   // points are checked as they are added, but the transport type can be changed
   // mid-draw, so the finished path has to be re-checked as a whole
-  const domain = Journeys.getDomain(seg.transportType);
+  const domain = Journeys.getDomain(seg.transport);
   if (!Journeys.isValidPath(points, domain)) {
     tip(
       `This path isn't valid for a ${domain} transport type — right-click to undo the bad points.`,

@@ -7,7 +7,7 @@
  */
 export type TransportDomain = "land" | "water" | "air" | "stay";
 
-export interface TransportType {
+export interface Transport {
   i: number;
   name: string;
   speed: number; // current distance unit per hour
@@ -23,7 +23,7 @@ export interface JouneySegment {
   color?: string;
   from?: number;
   to?: number;
-  transportType: string;
+  transport: string;
   speed: number; // in current distance-unit per hour
   distance: number; // px
   points: JourneyPoint[];
