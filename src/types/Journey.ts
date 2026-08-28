@@ -36,7 +36,7 @@ export interface JouneySegment {
 export interface Journey {
   i: number;
   name: string;
-  type: string; // what kind of travel this is: "Quest", "Trade caravan", "Pilgrimage"
+  type: string; // what kind of travel this is: "Quest", "s", "Pilgrimage"
   color: string; // segments may override it
   segments: JouneySegment[];
   visible?: boolean;

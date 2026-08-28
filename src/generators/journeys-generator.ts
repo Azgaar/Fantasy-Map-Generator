@@ -448,7 +448,7 @@ class JourneysModule {
       );
     if (!segment) return null;
 
-    return { name: segment.name, type: DEFAULT_JOURNEY_TYPE, segments: [segment] };
+    return { name: segment.name, type: "Travel", segments: [segment] };
   }
 
   /** First burg pair in `pool` joined by a path that is genuinely valid for `domain`. */
