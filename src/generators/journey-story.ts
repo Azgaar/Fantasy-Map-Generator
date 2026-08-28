@@ -4,53 +4,20 @@ import { cellEndpointLabel } from "@/utils/cell-labels";
 import type { Burg } from "./burgs-generator";
 import type { PathfindingResult } from "./journeys-generator";
 
-/** The slice of the Journeys module the planner needs — passed in, so the planner stays testable. */
-export interface JourneyPathfinder {
-  findPath(
-    from: number,
-    to: number,
-    domain: TransportDomain,
-    options?: {
-      avoidRoads?: boolean;
-    }
-  ): PathfindingResult;
-  isValidPath(points: JourneyPoint[], domain: TransportDomain): boolean;
-  getPathLength(points: JourneyPoint[]): number;
-}
-
-// How many of the most notable burgs the party may set out from.
 const ORIGIN_POOL_SIZE = 8;
-
-// How many origins to try before conceding the map cannot carry a story route.
 const ORIGIN_RETRIES = 3;
-
-// How many next stops are considered before a leg is given up on.
 const CANDIDATE_POOL_SIZE = 5;
-
-// Burg stops in the itinerary, origin included — so 2 to 4 travel legs.
 const MIN_STOPS = 3;
 const MAX_STOPS = 5;
 
-// A leg should be a day's travel or more, but never span the whole map.
 const LEG_MIN_FACTOR = 0.08;
 const LEG_MAX_FACTOR = 0.4;
-
-// Pathfinding is the expensive part; stop planning rather than trawl every burg pair.
 const MAX_PATH_ATTEMPTS = 24;
-
-// A leg is only worth breaking with a camp if it has enough points to split cleanly.
 const MIN_SPLIT_POINTS = 9;
 const SPLIT_BAND: [number, number] = [0.35, 0.65];
-
-// Waiting on a tide, a captain or a bribe.
 const HARBOR_WAIT_CHANCE = 0.45;
-
-// Gathering the party before the first step.
-const MUSTER_CHANCE = 0.35;
-
+const MUSTER_CHANCE = 0.25;
 const MAX_SEGMENTS = 12;
-
-// ---- lore ---------------------------------------------------------------
 
 const COMPANY_ADJECTIVES = [
   "Iron",
@@ -70,9 +37,7 @@ const COMPANY_ADJECTIVES = [
   "Last",
   "Patient"
 ];
-
 const CARGO = ["Salt", "Amber", "Silk", "Spice", "Wool", "Iron", "Wine", "Furs", "Ivory", "Glass", "Pearl", "Tin"];
-
 const TAVERN_QUALIFIERS = [
   "Golden",
   "Crooked",
@@ -87,7 +52,6 @@ const TAVERN_QUALIFIERS = [
   "Weeping",
   "Merry"
 ];
-
 const TAVERN_SUBJECTS = [
   "Stag",
   "Anchor",
@@ -104,8 +68,6 @@ const TAVERN_SUBJECTS = [
   "Pilgrim",
   "Gate"
 ];
-
-/** Evocative shorthand for the default biomes; custom biomes fall back to their own name. */
 const BIOME_TERMS: Record<string, string> = {
   Marine: "open water",
   "Hot desert": "dunes",
@@ -123,10 +85,6 @@ const BIOME_TERMS: Record<string, string> = {
 };
 
 const tavernName = (): string => `The ${ra(TAVERN_QUALIFIERS)} ${ra(TAVERN_SUBJECTS)}`;
-
-// ---- party archetypes ---------------------------------------------------
-
-type StoryKind = "caravan" | "embassy" | "pilgrimage" | "expedition" | "exiles" | "smugglers";
 
 interface TitleContext {
   origin: string;
@@ -154,6 +112,8 @@ interface Archetype {
   bivouac: (wild: string) => string;
 }
 
+type StoryKind = "caravan" | "embassy" | "pilgrimage" | "expedition" | "exiles" | "smugglers";
+
 const ARCHETYPE_WEIGHTS: Record<StoryKind, number> = {
   caravan: 6,
   embassy: 4,
@@ -163,119 +123,121 @@ const ARCHETYPE_WEIGHTS: Record<StoryKind, number> = {
   smugglers: 2
 };
 
-const ARCHETYPES: Record<StoryKind, Archetype> = {
-  caravan: {
-    offRoad: 0.1,
-    sea: 0.35,
-    rest: 0.8,
-    camp: 0.4,
-    land: { Carriage: 5, Horse: 3, "On Foot": 1 },
-    water: { Ship: 4, Boat: 1 },
-    title: ({ origin, destination }) =>
-      ra([
-        `The ${ra(COMPANY_ADJECTIVES)} Caravan`,
-        `${ra(CARGO)} Road to ${destination}`,
-        `The ${origin} Caravan`,
-        `${ra(CARGO)} out of ${origin}`
-      ]),
-    stopover: place => ra([`Wagon yard at ${tavernName()}`, `A night at ${tavernName()}`, `Market day in ${place}`]),
-    bivouac: wild => ra([`Wagons circled in the ${wild}`, `Night halt in the ${wild}`, `Cold camp in the ${wild}`])
-  },
+function buildArchetypes(): Record<StoryKind, Archetype> {
+  return {
+    caravan: {
+      offRoad: 0.1,
+      sea: 0.35,
+      rest: 0.8,
+      camp: 0.4,
+      land: { Carriage: 5, Horse: 3, "On Foot": 1 },
+      water: { Ship: 4, Boat: 1 },
+      title: ({ origin, destination }) =>
+        ra([
+          `The ${ra(COMPANY_ADJECTIVES)} Caravan`,
+          `${ra(CARGO)} Road to ${destination}`,
+          `The ${origin} Caravan`,
+          `${ra(CARGO)} out of ${origin}`
+        ]),
+      stopover: place => ra([`Wagon yard at ${tavernName()}`, `A night at ${tavernName()}`, `Market day in ${place}`]),
+      bivouac: wild => ra([`Wagons circled in the ${wild}`, `Night halt in the ${wild}`, `Cold camp in the ${wild}`])
+    },
 
-  embassy: {
-    offRoad: 0.05,
-    sea: 0.4,
-    rest: 0.9,
-    camp: 0.25,
-    land: { Horse: 4, Carriage: 4, "On Foot": 1 },
-    water: { Ship: 5, Boat: 1 },
-    title: ({ destination, destinationAdjective }) =>
-      ra([
-        `Embassy to ${destination}`,
-        `The ${destinationAdjective} Mission`,
-        `The ${ra(COMPANY_ADJECTIVES)} Envoy`,
-        `Errand to the court of ${destination}`
-      ]),
-    stopover: place => ra([`Guested at ${tavernName()}`, `Audience in ${place}`, `Two nights in ${place}`]),
-    bivouac: wild => ra([`Escort camp in the ${wild}`, `Night under guard in the ${wild}`])
-  },
+    embassy: {
+      offRoad: 0.05,
+      sea: 0.4,
+      rest: 0.9,
+      camp: 0.25,
+      land: { Horse: 4, Carriage: 4, "On Foot": 1 },
+      water: { Ship: 5, Boat: 1 },
+      title: ({ destination, destinationAdjective }) =>
+        ra([
+          `Embassy to ${destination}`,
+          `The ${destinationAdjective} Mission`,
+          `The ${ra(COMPANY_ADJECTIVES)} Envoy`,
+          `Errand to the court of ${destination}`
+        ]),
+      stopover: place => ra([`Guested at ${tavernName()}`, `Audience in ${place}`, `Two nights in ${place}`]),
+      bivouac: wild => ra([`Escort camp in the ${wild}`, `Night under guard in the ${wild}`])
+    },
 
-  pilgrimage: {
-    offRoad: 0.35,
-    sea: 0.2,
-    rest: 0.7,
-    camp: 0.6,
-    land: { "On Foot": 6, Horse: 1 },
-    water: { Boat: 3, Ship: 2 },
-    title: ({ destination }) =>
-      ra([
-        `Pilgrimage to ${destination}`,
-        `The ${ra(COMPANY_ADJECTIVES)} Pilgrims`,
-        `The Long Walk to ${destination}`,
-        `Penance road to ${destination}`
-      ]),
-    stopover: place => ra([`Alms and rest at ${tavernName()}`, `Vigil in ${place}`, `Shelter in ${place}`]),
-    bivouac: wild => ra([`Vigil in the ${wild}`, `Night prayer in the ${wild}`, `Sleeping rough in the ${wild}`])
-  },
+    pilgrimage: {
+      offRoad: 0.35,
+      sea: 0.2,
+      rest: 0.7,
+      camp: 0.6,
+      land: { "On Foot": 6, Horse: 1 },
+      water: { Boat: 3, Ship: 2 },
+      title: ({ destination }) =>
+        ra([
+          `Pilgrimage to ${destination}`,
+          `The ${ra(COMPANY_ADJECTIVES)} Pilgrims`,
+          `The Long Walk to ${destination}`,
+          `Penance road to ${destination}`
+        ]),
+      stopover: place => ra([`Alms and rest at ${tavernName()}`, `Vigil in ${place}`, `Shelter in ${place}`]),
+      bivouac: wild => ra([`Vigil in the ${wild}`, `Night prayer in the ${wild}`, `Sleeping rough in the ${wild}`])
+    },
 
-  expedition: {
-    offRoad: 0.7,
-    sea: 0.3,
-    rest: 0.5,
-    camp: 0.8,
-    land: { "On Foot": 4, Horse: 3 },
-    water: { Boat: 3, Ship: 2 },
-    title: ({ wild, destination }) =>
-      ra([
-        `Expedition to the ${wild}`,
-        `The ${ra(COMPANY_ADJECTIVES)} Expedition`,
-        `Survey of the ${wild}`,
-        `Reckoning the road to ${destination}`
-      ]),
-    stopover: place => ra([`Resupply in ${place}`, `Notes and repairs at ${tavernName()}`, `Hired guides in ${place}`]),
-    bivouac: wild => ra([`Base camp in the ${wild}`, `Survey camp in the ${wild}`, `Weathered in on the ${wild}`])
-  },
+    expedition: {
+      offRoad: 0.7,
+      sea: 0.3,
+      rest: 0.5,
+      camp: 0.8,
+      land: { "On Foot": 4, Horse: 3 },
+      water: { Boat: 3, Ship: 2 },
+      title: ({ wild, destination }) =>
+        ra([
+          `Expedition to the ${wild}`,
+          `The ${ra(COMPANY_ADJECTIVES)} Expedition`,
+          `Survey of the ${wild}`,
+          `Reckoning the road to ${destination}`
+        ]),
+      stopover: place =>
+        ra([`Resupply in ${place}`, `Notes and repairs at ${tavernName()}`, `Hired guides in ${place}`]),
+      bivouac: wild => ra([`Base camp in the ${wild}`, `Survey camp in the ${wild}`, `Weathered in on the ${wild}`])
+    },
 
-  exiles: {
-    offRoad: 0.6,
-    sea: 0.6,
-    rest: 0.4,
-    camp: 0.7,
-    land: { "On Foot": 5, Carriage: 2, Horse: 2 },
-    water: { Boat: 3, Ship: 3 },
-    title: ({ origin, destination }) =>
-      ra([
-        `Flight from ${origin}`,
-        `The ${ra(COMPANY_ADJECTIVES)} Exiles`,
-        `Exodus from ${origin}`,
-        `The road out of ${origin} to ${destination}`
-      ]),
-    stopover: place => ra([`Hidden a night in ${place}`, `Begging bread in ${place}`, `Back room of ${tavernName()}`]),
-    bivouac: wild => ra([`Fireless camp in the ${wild}`, `Hiding in the ${wild}`, `A cold night in the ${wild}`])
-  },
+    exiles: {
+      offRoad: 0.6,
+      sea: 0.6,
+      rest: 0.4,
+      camp: 0.7,
+      land: { "On Foot": 5, Carriage: 2, Horse: 2 },
+      water: { Boat: 3, Ship: 3 },
+      title: ({ origin, destination }) =>
+        ra([
+          `Flight from ${origin}`,
+          `The ${ra(COMPANY_ADJECTIVES)} Exiles`,
+          `Exodus from ${origin}`,
+          `The road out of ${origin} to ${destination}`
+        ]),
+      stopover: place =>
+        ra([`Hidden a night in ${place}`, `Begging bread in ${place}`, `Back room of ${tavernName()}`]),
+      bivouac: wild => ra([`Fireless camp in the ${wild}`, `Hiding in the ${wild}`, `A cold night in the ${wild}`])
+    },
 
-  smugglers: {
-    offRoad: 0.8,
-    sea: 0.7,
-    rest: 0.35,
-    camp: 0.6,
-    land: { "On Foot": 3, Horse: 3, Carriage: 1 },
-    water: { Boat: 5, Ship: 2 },
-    title: ({ destination }) =>
-      ra([
-        `The ${ra(COMPANY_ADJECTIVES)} Run`,
-        `Smugglers' road to ${destination}`,
-        `The ${ra(CARGO)} Run`,
-        `Untaxed to ${destination}`
-      ]),
-    stopover: place =>
-      ra([`Lying low at ${tavernName()}`, `Unloading quietly in ${place}`, `Palms greased in ${place}`]),
-    bivouac: wild =>
-      ra([`Cache dug in the ${wild}`, `No fire, no names — ${wild}`, `Waiting out the patrol in the ${wild}`])
-  }
-};
-
-// ---- planning -----------------------------------------------------------
+    smugglers: {
+      offRoad: 0.8,
+      sea: 0.7,
+      rest: 0.35,
+      camp: 0.6,
+      land: { "On Foot": 3, Horse: 3, Carriage: 1 },
+      water: { Boat: 5, Ship: 2 },
+      title: ({ destination }) =>
+        ra([
+          `The ${ra(COMPANY_ADJECTIVES)} Run`,
+          `Smugglers' road to ${destination}`,
+          `The ${ra(CARGO)} Run`,
+          `Untaxed to ${destination}`
+        ]),
+      stopover: place =>
+        ra([`Lying low at ${tavernName()}`, `Unloading quietly in ${place}`, `Palms greased in ${place}`]),
+      bivouac: wild =>
+        ra([`Cache dug in the ${wild}`, `No fire, no names — ${wild}`, `Waiting out the patrol in the ${wild}`])
+    }
+  };
+}
 
 interface PlannedLeg {
   from: Burg;
@@ -287,13 +249,25 @@ interface PlannedLeg {
   distance: number;
 }
 
+export interface JourneyPathfinder {
+  findPath(
+    from: number,
+    to: number,
+    domain: TransportDomain,
+    options?: {
+      avoidRoads?: boolean;
+    }
+  ): PathfindingResult;
+  isValidPath(points: JourneyPoint[], domain: TransportDomain): boolean;
+  getPathLength(points: JourneyPoint[]): number;
+}
+
 /** Invent a party and plot their route; null when the map cannot carry one. */
-export function generateStoryJourney(pathfinder: JourneyPathfinder): Omit<Journey, "i"> | null {
+export function generateStoryJourney(pathfinder: JourneyPathfinder): Omit<Journey, "i" | "color"> | null {
   const burgs = (pack.burgs ?? []).filter((burg: Burg) => burg?.i && !burg.removed && burg.cell !== undefined);
   if (burgs.length < 2) return null;
 
-  const archetype = ARCHETYPES[rw(ARCHETYPE_WEIGHTS) as StoryKind];
-
+  const archetype = buildArchetypes()[rw(ARCHETYPE_WEIGHTS) as StoryKind];
   // an origin can turn out to be a dead end — a lone burg on an island nothing sails to
   for (let attempt = 0; attempt < ORIGIN_RETRIES; attempt++) {
     const legs = planLegs(pathfinder, archetype, burgs);
@@ -450,8 +424,6 @@ function resolveTransport(weights: Record<string, number>, domain: TransportDoma
     types.find(type => type.name === preferred && type.domain === domain) ?? types.find(type => type.domain === domain)
   );
 }
-
-// ---- segment assembly ---------------------------------------------------
 
 interface LegPlan {
   leg: PlannedLeg;

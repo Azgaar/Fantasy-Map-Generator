@@ -135,7 +135,6 @@ function selectStyleElement() {
       "gridOverlay",
       "ice",
       "icons",
-      "journeys",
       "lakes",
       "prec",
       "relig",
@@ -145,6 +144,12 @@ function selectStyleElement() {
   ) {
     styleStroke.style.display = "block";
     styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke");
+    styleStrokeWidth.style.display = "block";
+    styleStrokeWidthInput.value = el.attr("stroke-width") || 0;
+  }
+
+  // stroke width only: journeys carry their own colors, there is no layer color to set
+  if (styleElement === "journeys") {
     styleStrokeWidth.style.display = "block";
     styleStrokeWidthInput.value = el.attr("stroke-width") || 0;
   }

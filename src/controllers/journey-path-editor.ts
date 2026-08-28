@@ -5,7 +5,7 @@ import { type D3DragEvent, drag, select } from "d3";
 import { alertDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
-import { getJourneyColor } from "@/renderers/draw-journeys";
+import { getSegmentColor } from "@/renderers/draw-journeys";
 import type { JouneySegment, Journey, JourneyPoint, TransportDomain } from "@/types/Journey";
 import { ensureEl, findEl, getPointer, rn } from "@/utils";
 import { createEl } from "@/utils/nodeUtils";
@@ -404,7 +404,7 @@ export function drawOverlays(): void {
   }
 
   const journey = host?.getJourney();
-  const color = seg.color || (journey ? getJourneyColor(journey) : "#000");
+  const color = journey ? getSegmentColor(journey, seg) : seg.color || "#000";
   const points = mode.kind === "draw" ? mode.points : seg.points;
 
   const dots = points

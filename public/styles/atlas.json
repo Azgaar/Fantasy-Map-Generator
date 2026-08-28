@@ -225,7 +225,6 @@
   },
   "#journeys": {
     "opacity": 1,
-    "stroke": "#7b2fbf",
     "stroke-width": 1.8,
     "stroke-dasharray": 0,
     "stroke-linecap": "round",

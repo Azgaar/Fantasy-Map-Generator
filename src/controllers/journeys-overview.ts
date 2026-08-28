@@ -14,7 +14,6 @@ import type { FillBoxElement } from "@/components/fill-box";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
-import { getJourneyColor } from "@/renderers/draw-journeys";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import type { Journey } from "@/types/Journey";
 import { downloadFile, ensureEl, findEl, getFileName, getHoursPerDay, rn } from "@/utils";
@@ -26,7 +25,7 @@ let filterState: { search: string };
 
 const columns: EditorColumn<Journey>[] = [
   { key: "locate", width: "1.4em", permanent: true },
-  { key: "name", label: "Journey", width: "12em", permanent: true, sortBy: j => j.name || "", sortType: "alpha" },
+  { key: "name", label: "Journey", width: "14em", permanent: true, sortBy: j => j.name || "", sortType: "alpha" },
   {
     key: "from",
     label: "From",
@@ -165,14 +164,10 @@ function renderJourneysPage(view: TableView<Journey>): void {
 
   for (const journey of view.rows) {
     const { totalDistance, totalHours, avgSpeed } = Journeys.getTotals(journey);
-    const colorTip = journey.color
-      ? "Journey color. Click to change"
-      : "Follows the Journeys layer style. Click to override";
-
     lines += /* html */ `<div class="states" data-id="${journey.i}">
       <span data-tip="Locate the journey" class="icon-target" data-col="locate"></span>
-      <div data-col="name">
-        <fill-box class="journeyColor" fill="${getJourneyColor(journey)}" size="0.8em" data-tip="${colorTip}"></fill-box>
+      <div data-col="name" style="width: 93%; overflow: hidden">
+        <fill-box class="journeyColor" fill="${journey.color}" size="0.8em" data-tip="Journey color. Click to change"></fill-box>
         <span data-tip="Journey name">${journey.name}</span>
       </div>
       <div data-tip="Start of the first segment" data-col="from">${cellEndpointLabel(getStart(journey))}</div>

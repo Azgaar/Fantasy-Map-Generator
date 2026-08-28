@@ -1,18 +1,15 @@
 import { curveCatmullRom, line } from "d3";
-import type { Journey, JourneyPoint } from "@/types/Journey";
+import type { JouneySegment, Journey, JourneyPoint } from "@/types/Journey";
 import { ensureEl, round } from "@/utils";
-
-/** Fallback stroke for custom style presets that predate the Journeys layer */
-export const DEFAULT_JOURNEY_COLOR = "#8b1a1a";
 
 const curve = line<JourneyPoint>()
   .x(point => point[0])
   .y(point => point[1])
   .curve(curveCatmullRom.alpha(0.5));
 
-/** Colour a journey is drawn in: its own if set, otherwise the layer stroke it inherits */
-export function getJourneyColor(journey: Journey): string {
-  return journey.color || ensureEl("journeys").getAttribute("stroke") || DEFAULT_JOURNEY_COLOR;
+/** Color a segment is drawn in: its own override if set, otherwise its journey's */
+export function getSegmentColor(journey: Journey, segment: JouneySegment): string {
+  return segment.color || journey.color;
 }
 
 export function drawJourneys(): void {
@@ -24,15 +21,13 @@ export function drawJourneys(): void {
   TIME && console.timeEnd("drawJourneys");
 }
 
-/** Segments inherit the layer style; only an explicit colour is baked into the path */
+/** Every path carries its own stroke: journeys own their color, the layer has none to give */
 function getJourneyPaths(journey: Journey): string {
   const paths = journey.segments
     .filter(segment => segment.visible && segment.points.length > 1)
     .map(segment => {
       const d = round(curve(segment.points) ?? "", 1);
-      const color = segment.color || journey.color;
-      const stroke = color ? ` stroke="${color}"` : "";
-      return /* html */ `<path id="segment${journey.i}_${segment.id}" d="${d}"${stroke}/>`;
+      return /* html */ `<path id="segment${journey.i}_${segment.id}" d="${d}" stroke="${getSegmentColor(journey, segment)}"/>`;
     })
     .join("");
 

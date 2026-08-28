@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { JouneySegment, Journey } from "@/types/Journey";
+import { C_12 } from "@/utils/colorUtils";
 import { OFF_ROAD_SPEED_FACTOR } from "./journeys-generator";
 
 const makeSeg = (distance: number, speed: number, avoidRoads = false): JouneySegment => ({
@@ -232,5 +233,36 @@ describe("Journeys.isValidPath", () => {
 
   it("accepts paths too short to have a middle", () => {
     expect(Journeys.isValidPath([at(0), at(3)], "land")).toBe(true);
+  });
+});
+
+describe("journey colors", () => {
+  let Journeys: any;
+
+  beforeEach(async () => {
+    (globalThis as any).pack = { journeys: [] };
+    await import("./journeys-generator");
+    Journeys = (globalThis as any).Journeys;
+  });
+
+  it("gives every new journey a color from the shared palette", () => {
+    const journey: Journey = Journeys.addEmpty();
+    expect(C_12.includes(journey.color)).toBe(true);
+  });
+
+  it("keeps the colors distinct while the palette lasts", () => {
+    const colors = Array.from({ length: C_12.length }, () => Journeys.addEmpty().color);
+    expect(new Set(colors).size).toBe(C_12.length);
+  });
+
+  it("still colors journeys once the palette is exhausted", () => {
+    for (let i = 0; i <= C_12.length; i++) Journeys.addEmpty();
+    expect(C_12.includes((globalThis as any).pack.journeys.at(-1).color)).toBe(true);
+  });
+
+  it("backfills colors for journeys saved before they had one", () => {
+    (globalThis as any).pack.journeys = [{ i: 0, name: "old", segments: [] }];
+    Journeys.sync();
+    expect(C_12.includes((globalThis as any).pack.journeys[0].color)).toBe(true);
   });
 });

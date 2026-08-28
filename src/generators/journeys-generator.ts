@@ -1,6 +1,7 @@
 import { getDefaultTransportTypes } from "@/data/transport-types";
 import type { JouneySegment, Journey, JourneyPoint, TransportDomain, TransportType } from "@/types/Journey";
-import { isLand } from "../utils";
+import { isLand, ra } from "../utils";
+import { C_12, getColors } from "../utils/colorUtils";
 import type { Burg } from "./burgs-generator";
 import { generateStoryJourney } from "./journey-story";
 import type { Route } from "./routes-generator";
@@ -32,7 +33,7 @@ class JourneysModule {
     const story = generateStoryJourney(this) ?? this.buildFallbackJourney();
     if (!story) return null;
 
-    const journey = { ...story, i: this.getNextId() };
+    const journey = { ...story, i: this.getNextId(), color: this.pickColor() };
     pack.journeys.push(journey);
     return journey;
   }
@@ -40,15 +41,28 @@ class JourneysModule {
   addEmpty(): Journey {
     this.sync();
     const i = this.getNextId();
-    const journey: Journey = { i, name: `Journey ${i + 1}`, visible: true, segments: [] };
+    const journey: Journey = { i, name: `Journey ${i + 1}`, color: this.pickColor(), visible: true, segments: [] };
     pack.journeys.push(journey);
     return journey;
+  }
+
+  /**
+   * A color from the shared 12-color palette, preferring one no other journey
+   * uses — so up to a dozen journeys stay tellable apart at a glance.
+   */
+  pickColor(): string {
+    const palette = getColors(C_12.length); // the whole palette, shuffled
+    const used = new Set(pack.journeys?.map(journey => journey.color));
+    return palette.find(color => !used.has(color)) ?? ra(palette);
   }
 
   /** Ensure the pack carries the journey collections; safe to call repeatedly */
   sync(): void {
     if (!pack.journeys) pack.journeys = [];
     if (!pack.transportTypes?.length) pack.transportTypes = getDefaultTransportTypes();
+
+    // journeys own their color; saves made before that inherited the layer stroke
+    for (const journey of pack.journeys) if (!journey.color) journey.color = this.pickColor();
   }
 
   remove(journeyId: number): void {
@@ -426,7 +440,7 @@ class JourneysModule {
   }
 
   /** Single-domain A→B leg between the most notable burgs — never a land leg that secretly crosses water. */
-  private buildFallbackJourney(): Omit<Journey, "i"> | null {
+  private buildFallbackJourney() {
     const burgs = (pack.burgs ?? []).filter(burg => burg?.i && !burg.removed && burg.cell !== undefined);
     if (burgs.length < 2) return null;
 

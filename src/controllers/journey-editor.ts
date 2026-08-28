@@ -20,7 +20,7 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { TRANSPORT_TYPES_CHANGED } from "@/controllers/transport-types-editor";
 import { OFF_ROAD_SPEED_FACTOR } from "@/generators/journeys-generator";
-import { getJourneyColor } from "@/renderers/draw-journeys";
+import { getSegmentColor } from "@/renderers/draw-journeys";
 import type { JouneySegment, Journey } from "@/types/Journey";
 import { downloadFile, ensureEl, findEl, getFileName, getHoursPerDay, rn } from "@/utils";
 import { cellEndpointLabel, cellEndpointTooltip, getCellPoint } from "@/utils/cell-labels";
@@ -123,8 +123,7 @@ function renderDialog(journey: Journey): void {
       <label for="journeyName" data-tip="Journey name" style="flex: 1; grid-template-columns: 3.2em 1fr">Name:
         <input id="journeyName" type="text" value="${escapeAttr(journey.name)}" />
       </label>
-      <fill-box id="journeyColor" size="1.2em"></fill-box>
-      <span id="journeyColorReset" class="icon-ccw pointer" data-tip="Reset to follow the Journeys layer style"></span>
+      <fill-box id="journeyColor" size="1.2em" data-tip="Journey color. Click to change"></fill-box>
     </div>
 
     <div id="journeyFooter" class="totalLine">
@@ -145,7 +144,7 @@ function renderDialog(journey: Journey): void {
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
-  updateColorControls(journey);
+  ensureEl<FillBoxElement>("journeyColor").fill = journey.color;
 
   // add listeners — dropped together with the dialog HTML on close
   ensureEl("journeyEditorRefresh").addEventListener("click", segmentsTable.refresh);
@@ -156,7 +155,6 @@ function renderDialog(journey: Journey): void {
   });
   ensureEl("journeyName").addEventListener("input", onNameInput);
   ensureEl("journeyColor").addEventListener("click", onColorPick);
-  ensureEl("journeyColorReset").addEventListener("click", onColorReset);
   ensureEl("journeyVisible").addEventListener("click", onToggleVisible);
   ensureEl("journeyLock").addEventListener("click", onToggleLock);
   ensureEl("journeyAddSegment").addEventListener("click", addSegment);
@@ -283,7 +281,7 @@ function renderRoadsToggle(segment: JouneySegment, isLand: boolean): string {
 /** The reset keeps its slot when hidden, so the column track never reflows */
 function renderColorCell(journey: Journey, segment: JouneySegment): string {
   const tipText = segment.color ? "Segment color. Click to change" : "Follows the journey color. Click to override";
-  return /* html */ `<fill-box class="segColor" fill="${segment.color || getJourneyColor(journey)}" data-tip="${tipText}"></fill-box>
+  return /* html */ `<fill-box class="segColor" fill="${getSegmentColor(journey, segment)}" data-tip="${tipText}"></fill-box>
     <span class="segColorReset icon-ccw pointer" data-tip="Reset to the journey color"
       style="${segment.color ? "" : "visibility: hidden"}"></span>`;
 }
@@ -319,31 +317,12 @@ function onColorPick(): void {
   const journey = getJourney();
   if (!journey) return;
 
-  void Controllers.ColorPicker.open(getJourneyColor(journey), (fill: string) => {
+  void Controllers.ColorPicker.open(journey.color, (fill: string) => {
     journey.color = fill;
-    updateColorControls(journey);
+    // the swatch lives outside the table, so a refresh alone would leave it stale
+    ensureEl<FillBoxElement>("journeyColor").fill = fill;
     segmentsTable.refresh();
   });
-}
-
-/** Drop the journey override so it follows the Journeys layer style again */
-function onColorReset(): void {
-  const journey = getJourney();
-  if (!journey?.color) return;
-  journey.color = undefined;
-  updateColorControls(journey);
-  segmentsTable.refresh();
-}
-
-// The colour controls change appearance with the override state and live outside
-// the table, so a table refresh alone would leave them stale.
-function updateColorControls(journey: Journey): void {
-  const swatch = ensureEl<FillBoxElement>("journeyColor");
-  swatch.fill = getJourneyColor(journey);
-  swatch.dataset.tip = journey.color
-    ? "Journey color. Click to change"
-    : "Follows the Journeys layer style. Click to override";
-  ensureEl("journeyColorReset").style.visibility = journey.color ? "" : "hidden";
 }
 
 function onToggleVisible(this: HTMLElement): void {
