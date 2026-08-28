@@ -60,9 +60,9 @@ export function cellEndpointLabel(cellId: number | undefined): string {
 export function cellEndpointTooltip(cellId: number | undefined): string {
   if (cellId === undefined) return "Not set: click, then click a cell on the map to set this endpoint";
   const here = getBurgAtCell(cellId);
-  if (here) return `${here.name} (cell ${cellId}), click to pick a different cell`;
+  if (here) return `${here.name}, click to pick a different cell`;
   const nearby = findNearbyBurg(cellId, NEARBY_BURG_MAX_CELLS);
-  if (nearby) return `Vicinity of ${nearby.name} (cell ${cellId}), click to pick a different cell`;
+  if (nearby) return `Vicinity of ${nearby.name}, click to pick a different cell`;
   return `Cell ${cellId}, click to pick a different cell`;
 }
 

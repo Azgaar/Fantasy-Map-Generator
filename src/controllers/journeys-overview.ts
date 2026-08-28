@@ -59,7 +59,11 @@ const columns: EditorColumn<Journey>[] = [
     mobileHidden: true,
     sortBy: j => Journeys.getTotals(j).totalHours
   },
-  { key: "actions", width: "4em", permanent: true, align: "right" }
+  { key: "edit", width: "1.4em" },
+  { key: "locate", width: "1.4em" },
+  { key: "visible", width: "1.4em" },
+  { key: "lock", width: "1.4em" },
+  { key: "remove", width: "1.4em", permanent: true }
 ];
 
 const journeysTable = initEditorTable<Journey>({
@@ -161,7 +165,7 @@ function renderJourneysPage(view: TableView<Journey>): void {
     lines += /* html */ `<div class="states" data-id="${journey.i}">
       <div data-col="name" style="width: 93%; overflow: hidden">
         <fill-box class="journeyColor" fill="${journey.color}" size="0.8em" data-tip="Journey color. Click to change"></fill-box>
-        <span data-tip="Journey name">${journey.name}</span>
+        <span data-tip="Journey name: ${journey.name}">${journey.name}</span>
       </div>
       <div data-tip="Kind of travel this is" data-col="type">${journey.type}</div>
       ${renderEndpoint("from", getStart(journey))}
@@ -169,12 +173,11 @@ function renderJourneysPage(view: TableView<Journey>): void {
       <div data-tip="Total distance" data-col="distance">${rn(totalDistance)} ${unit}</div>
       <div data-tip="Average speed, moving segments only" data-col="speed">${avgSpeed ? `${rn(avgSpeed, 1)} ${unit}/h` : "-"}</div>
       <div data-tip="Total travel time: ${Journeys.formatTravelTimeFull(totalHours, hoursPerDay)}" data-col="time">${Journeys.formatTravelTime(totalHours, hoursPerDay)}</div>
-      <div data-col="actions">
-        <span data-tip="Locate the journey" class="icon-target"></span>
-        <span data-tip="Edit journey" class="icon-pencil"></span>
-        <span class="locks pointer ${journey.lock ? "icon-lock" : "icon-lock-open inactive"}" onmouseover="showElementLockTip(event)"></span>
-        <span data-tip="Remove journey" class="icon-trash-empty"></span>
-      </div>
+      <div data-col="edit"><span class="journeyEdit pointer icon-pencil" data-tip="Edit journey"></span></div>
+      <div data-col="locate"><span class="journeyZoom pointer icon-target" data-tip="Locate the journey"></span></div>
+      <div data-col="visible"><span class="journeyVisible pointer ${journey.visible === false ? "icon-eye-off" : "icon-eye"}" data-tip="Toggle journey visibility on the map"></span></div>
+      <div data-col="lock"><span class="locks pointer ${journey.lock ? "icon-lock" : "icon-lock-open inactive"}" onmouseover="showElementLockTip(event)"></span></div>
+      <div data-col="remove"><span class="journeyRemove pointer icon-trash-empty" data-tip="Remove journey"></span></div>
     </div>`;
   }
   body.insertAdjacentHTML("beforeend", lines);
@@ -191,16 +194,16 @@ function renderJourneysPage(view: TableView<Journey>): void {
   body.querySelectorAll("div.states").forEach(el => void el.addEventListener("mouseenter", journeyHighlightOn));
   body.querySelectorAll("div.states").forEach(el => void el.addEventListener("mouseleave", journeyHighlightOff));
   body.querySelectorAll("fill-box.journeyColor").forEach(el => void el.addEventListener("click", changeJourneyColor));
-  body.querySelectorAll("span.icon-target").forEach(el => void el.addEventListener("click", zoomToJourney));
+  body.querySelectorAll("span.journeyZoom").forEach(el => void el.addEventListener("click", zoomToJourney));
   body.querySelectorAll("span.journeyLocate.pointer").forEach(el => void el.addEventListener("click", zoomToEndpoint));
-  body.querySelectorAll("span.icon-pencil").forEach(el => void el.addEventListener("click", openJourneyEditor));
+  body.querySelectorAll("span.journeyEdit").forEach(el => void el.addEventListener("click", openJourneyEditor));
+  body.querySelectorAll("span.journeyVisible").forEach(el => void el.addEventListener("click", toggleVisibility));
   body.querySelectorAll("span.locks").forEach(el => void el.addEventListener("click", toggleLockStatus));
-  body.querySelectorAll("span.icon-trash-empty").forEach(el => void el.addEventListener("click", triggerJourneyRemove));
+  body.querySelectorAll("span.journeyRemove").forEach(el => void el.addEventListener("click", triggerJourneyRemove));
 
   renderEditorPagination(ensureEl("journeysFooter"), view, journeysTable.goto);
 }
 
-/** Endpoint cell with a target icon that flies to the place, like the row's own locate icon */
 function renderEndpoint(endpoint: "from" | "to", cellId: number | undefined): string {
   const label = cellEndpointLabel(cellId);
   const isSet = cellId !== undefined;
@@ -273,6 +276,19 @@ function generateRandomJourney(): void {
   Layers.draw("journeys");
   journeysTable.refresh();
   tip(`Generated "${journey.name}": ${journey.segments.length} segments`, true, "success", 6000);
+}
+
+function toggleVisibility(this: HTMLElement): void {
+  const journey = pack.journeys.find(j => j.i === getLineId(this));
+  if (!journey) return;
+
+  // an absent flag means visible, so only hiding stores anything
+  const visible = journey.visible === false;
+  if (visible) delete journey.visible;
+  else journey.visible = false;
+
+  Layers.draw("journeys");
+  journeysTable.refresh();
 }
 
 function toggleLockStatus(this: HTMLElement): void {

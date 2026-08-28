@@ -221,7 +221,7 @@ function buildArchetypes(): Record<string, Archetype> {
     },
 
     caravan: {
-      type: "Trade caravan",
+      type: "Caravan",
       weight: 6,
       offRoad: 0.1,
       sea: 0.35,
@@ -554,12 +554,6 @@ function buildArchetypes(): Record<string, Archetype> {
 
 /** Journeys with no story behind them: a plain trip from A to B */
 export const DEFAULT_JOURNEY_TYPE = "Travel";
-
-/** Type labels the generator uses, offered as suggestions when a journey is edited by hand */
-export function getJourneyTypes(): string[] {
-  const types = Object.values(buildArchetypes()).map(archetype => archetype.type);
-  return [...new Set([DEFAULT_JOURNEY_TYPE, ...types])].sort();
-}
 
 /** Pick a party for a new journey, weighted so heroes take the road most often */
 function pickArchetype(): Archetype {

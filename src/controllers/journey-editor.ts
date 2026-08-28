@@ -5,6 +5,7 @@ import {
   destroyDialog,
   updateDialog
 } from "@/components/dialog/dialog-helpers";
+import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import {
   type EditorColumn,
   initColumnVisibility,
@@ -19,7 +20,6 @@ import { tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { TRANSPORT_TYPES_CHANGED } from "@/controllers/transport-types-editor";
-import { getJourneyTypes } from "@/generators/journey-story";
 import type { JouneySegment, Journey } from "@/types/Journey";
 import { downloadFile, ensureEl, findEl, getFileName, getHoursPerDay, rn } from "@/utils";
 import { cellEndpointLabel, cellEndpointTooltip, getCellPoint } from "@/utils/cell-labels";
@@ -27,7 +27,7 @@ import * as PathEditor from "./journey-path-editor";
 
 const dialogId = "journeyEditor" as const;
 const MAP_POSITION = { my: "left top", at: "left+10 top+10", of: "#map", collision: "fit" };
-const OVERVIEW_POSITION = { my: "right top", at: "right bottom+16", of: "#journeysOverview", collision: "fit" };
+const OVERVIEW_POSITION = { my: "right top", at: "right bottom+10", of: "#journeysOverview", collision: "fit" };
 
 let editingJourneyId: number | null = null;
 
@@ -37,11 +37,16 @@ const columns: EditorColumn<JouneySegment>[] = [
   { key: "from", label: "From", width: "9em", mobileHidden: true },
   { key: "to", label: "To", width: "9em", mobileHidden: true },
   { key: "transport", label: "Transport", width: "6em" },
-  { key: "speed", label: "Speed", width: "4em", mobileHidden: true },
-  { key: "distance", label: "Distance", width: "6em" },
-  { key: "time", label: "Time", width: "7em", mobileHidden: true },
-  { key: "roads", label: "Roads", width: "4em", mobileHidden: true },
-  { key: "actions", width: "7.5em", permanent: true, align: "right" }
+  { key: "distance", label: "Distance", width: "5em" },
+  { key: "speed", label: "Speed", width: "5em", mobileHidden: true },
+  { key: "time", label: "Time", width: "5em" },
+  { key: "roads", width: "1.4em", mobileHidden: true },
+  { key: "visible", width: "1.4em", mobileHidden: true },
+  { key: "points", width: "1.4em", mobileHidden: true },
+  { key: "draw", width: "1.4em", mobileHidden: true },
+  { key: "reset", width: "1.4em" },
+  { key: "move", width: "1.4em", mobileHidden: true },
+  { key: "delete", width: "1.4em", permanent: true }
 ];
 
 const segmentsTable = initEditorTable<JouneySegment>({
@@ -116,31 +121,33 @@ function renderDialog(journey: Journey): void {
       </label>
       <label for="journeyType" data-tip="Kind of travel this is: a quest, a caravan, a campaign"
         style="flex: 0 1 14em; grid-template-columns: 3.2em 1fr">Type:
-        <input id="journeyType" type="text" value="${journey.type}" list="journeyTypes" />
+        <input id="journeyType" type="text" value="${journey.type}" />
       </label>
-      <datalist id="journeyTypes">${getJourneyTypes()
-        .map(type => `<option value="${type}"></option>`)
-        .join("")}</datalist>
     </div>
 
     <div id="journeyFooter" class="totalLine">
-      <div data-tip="Total distance" style="margin-left: 4px" data-col="distance">Distance:&nbsp;<span id="journeyTotalDistance">0</span></div>
-      <div data-tip="Average speed, moving segments only" style="margin-left: 12px" data-col="speed">Avg speed:&nbsp;<span id="journeyAvgSpeed">0</span></div>
+      <div data-tip="Total distance" data-col="distance">Distance:&nbsp;<span id="journeyTotalDistance">0</span></div>
+      <div data-tip="Average speed, segments with non-zero speed only" style="margin-left: 12px" data-col="speed">Avg speed:&nbsp;<span id="journeyAvgSpeed">0</span></div>
       <div data-tip="Total travel time at the configured travel hours per day" style="margin-left: 12px" data-col="time">Time:&nbsp;<span id="journeyTravelTime">0</span></div>
+
     </div>
 
     <div id="journeyBottom" class="editorToolbar">
       <button id="journeyEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
       <button id="journeyAddSegment" data-tip="Add a segment to the journey" class="icon-plus"></button>
-      <button id="journeyRecompute" data-tip="Recompute every segment's path" class="icon-retweet"></button>
-      <button id="journeyVisible" data-tip="Toggle journey visibility on the map" class="${journey.visible === false ? "icon-eye-off" : "icon-eye"}"></button>
-      <button id="journeyLock" data-tip="Lock or unlock the journey" class="${journey.lock ? "icon-lock" : "icon-lock-open"}"></button>
       <button id="journeyEditTransport" data-tip="Edit transport types" class="icon-cog"></button>
       <button id="journeyExport" data-tip="Save journey segments as a text file (.csv)" class="icon-download"></button>
       <button id="journeyRemove" data-tip="Remove the journey" class="icon-trash"></button>
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
+
+  applyLineHighlighting(dialogId, ({ target }) => {
+    const path = target.closest<SVGElement>("#journeys path[id^='segment']");
+    if (!path) return undefined;
+    const [journeyId, segmentId] = path.id.slice("segment".length).split("_").map(Number);
+    return journeyId === editingJourneyId ? segmentId : undefined;
+  });
 
   ensureEl("journeyEditorRefresh").addEventListener("click", segmentsTable.refresh);
   initColumnVisibility({
@@ -155,10 +162,7 @@ function renderDialog(journey: Journey): void {
   ensureEl("journeyName").addEventListener("input", onNameInput);
   ensureEl("journeyType").addEventListener("input", onTypeInput);
   ensureEl("journeyColor").addEventListener("click", onColorPick);
-  ensureEl("journeyVisible").addEventListener("click", onToggleVisible);
-  ensureEl("journeyLock").addEventListener("click", onToggleLock);
   ensureEl("journeyAddSegment").addEventListener("click", addSegment);
-  ensureEl("journeyRecompute").addEventListener("click", recomputeAll);
   ensureEl("journeyEditTransport").addEventListener("click", () => void Controllers.TransportTypesEditor.open());
   ensureEl("journeyExport").addEventListener("click", downloadSegmentsData);
   ensureEl("journeyRemove").addEventListener("click", triggerJourneyRemove);
@@ -182,19 +186,19 @@ function renderSegmentsPage(view: TableView<JouneySegment>): void {
   on(".segTransport", "change", onSegTransportChange);
   on(".segSpeed:not([disabled])", "input", onSegSpeedInput);
   on(".segDuration", "input", onSegDurationInput);
-  on(".segDurationReset", "click", onSegDurationReset);
   on(".segLocate.pointer", "click", onLocateEndpoint);
   on(".segFrom", "click", onPickFrom);
   on(".segTo", "click", onPickTo);
   on(".segRoads.pointer", "click", onToggleAvoidRoads);
   on(".segColor", "click", onSegColorPick);
-  on(".segColorReset", "click", onSegColorReset);
   on(".segVisible", "click", onToggleSegVisible);
   on(".segPoints.pointer", "click", onToggleEditPoints);
   on(".segDraw.pointer", "click", onToggleDrawPath);
-  on(".segRecompute", "click", onSegRecompute);
+  on(".segReset", "click", onSegReset);
   on(".segUp.pointer", "click", onSegMoveUp);
   on(".segDelete", "click", onSegDelete);
+  on(".states", "mouseenter", segmentHighlightOn);
+  on(".states", "mouseleave", segmentHighlightOff);
 
   updateTotals(journey);
   renderEditorPagination(ensureEl("journeyFooter"), view, segmentsTable.goto);
@@ -220,9 +224,10 @@ function renderSegmentLine(journey: Journey, segment: JouneySegment): string {
   return /* html */ `<div class="states" data-id="${segment.id}">
     <div data-col="color">
       <fill-box class="segColor" fill="${segment.color || journey.color}" data-tip="Segment color. Click to change"></fill-box>
-      <span class="segColorReset icon-ccw pointer" data-tip="Reset to the journey color" style="${segment.color ? "" : "visibility: hidden"}"></span>
     </div>
-    <div data-col="name"><input class="segName" value="${segment.name}" data-tip="Segment name" /></div>
+    <div data-col="name" style="width: 95%; overflow: hidden">
+      <input class="segName" value="${segment.name}" data-tip="Segment name: ${segment.name}" />
+    </div>
     ${renderEndpointCell("from", segment)}
     ${renderEndpointCell("to", segment)}
     <div data-col="transport"><select class="segTransport" data-tip="Transport type, sets the default speed and where the segment may go">${pack.transportTypes
@@ -231,23 +236,34 @@ function renderSegmentLine(journey: Journey, segment: JouneySegment): string {
           `<option value="${type.name}" ${type.name === segment.transportType ? "selected" : ""}>${type.name}</option>`
       )
       .join("")}</select></div>
+    <div data-tip="Segment distance" data-col="distance">${rn(Journeys.getSegmentDistance(segment))} ${unit}</div>
     <div data-col="speed">
       <input class="segSpeed" type="number" step="0.1" min="0" value="${segment.speed}" data-tip="Travel speed in ${unit}/h, type to override. ${segment.avoidRoads ? `Off-road speed: ${rn(Journeys.getEffectiveSpeed(segment), 1)}` : ""}" />
     </div>
-    <div data-tip="Segment distance" data-col="distance">${isStay ? "—" : `${rn(Journeys.getSegmentDistance(segment))} ${unit}`}</div>
     <div data-col="time" data-tip="Travel time in hours, type to override. Equals to ${Journeys.formatTravelTimeFull(hours, hoursPerDay)}">
-      <input class="segDuration" type="number" min="0" step="0.1" value="${rn(hours, 2)}" style="width: 5.5em"/>
-      <span class="segDurationReset icon-ccw pointer" data-tip="Use the calculated time" style="margin-right: 1em; ${isStay || segment.duration === undefined ? "visibility: hidden" : ""}"></span>
+      <input class="segDuration" type="number" min="0" step="0.1" value="${rn(hours, 1)}"/>
     </div>
-    <div data-col="roads">${renderRoadsToggle(segment, domain === "land")}</div>
-    <div data-col="actions" style="gap: 0.5em">
+    <div data-col="roads">
+      <span class="segRoads pointer ${segment.avoidRoads ? "icon-tree" : "icon-map-signs"} ${domain === "land" ? "" : "hidden"}" data-tip="${segment.avoidRoads ? `Off-road: avoids the road network. Click to follow roads.` : `On-road: follows the road network at full speed. Click to go off-road.`}"></span>
+    </div>
+    <div data-col="visible">
       <span class="segVisible pointer ${segment.visible === false ? "icon-eye-off" : "icon-eye"}" data-tip="Toggle segment visibility"></span>
+    </div>
+    <div data-col="points">
       <span class="segPoints icon-pencil ${canEditPoints ? "pointer" : "inactive"}" ${isEditingPoints ? ` style="color: #2a6e2a"` : ""}
         data-tip="${!canEditPoints ? "Set both endpoints first" : isEditingPoints ? "Finish editing path points" : "Edit path points"}"></span>
+    </div>
+    <div data-col="draw">
       <span class="segDraw icon-brush ${isStay ? "inactive" : "pointer"}" ${isDrawing ? ` style="color: #2a6e2a"` : ""}
         data-tip="${isDrawing ? "Click to finish drawing (Esc to cancel)" : "Draw a custom path cell by cell"}"></span>
-      <span class="segRecompute pointer icon-cw" data-tip="Recompute this segment's path"></span>
+    </div>
+    <div data-col="reset">
+      <span class="segReset pointer icon-cw" data-tip="Reset the segment: recompute the path and restore the default color, speed and time"></span>
+    </div>
+    <div data-col="move">
       <span class="segUp icon-up-open ${index ? "pointer" : "inactive"}" data-tip="Move the segment up"></span>
+    </div>
+    <div data-col="delete">
       <span class="segDelete pointer icon-trash-empty" data-tip="Remove the segment"></span>
     </div>
   </div>`;
@@ -265,17 +281,6 @@ function renderEndpointCell(endpoint: "from" | "to", segment: JouneySegment): st
     <span class="seg${endpoint === "from" ? "From" : "To"} pointer" data-tip="${cellEndpointTooltip(cellId)}"
       ${isSet ? "" : 'style="opacity: 0.55; font-style: italic"'}>${label}</span>
   </div>`;
-}
-
-/** One icon that both shows and toggles the road preference; greyed out off land */
-function renderRoadsToggle(segment: JouneySegment, isLand: boolean): string {
-  if (!isLand)
-    return /* html */ `<span class="segRoads inactive icon-map-signs" data-tip="Land transport only"></span>`;
-
-  const tipText = segment.avoidRoads
-    ? `Off-road: avoids the road network. Click to follow roads.`
-    : "On-road: follows the road network at full speed. Click to go off-road.";
-  return /* html */ `<span class="segRoads pointer ${segment.avoidRoads ? "icon-tree" : "icon-map-signs"}" data-tip="${tipText}"></span>`;
 }
 
 function updateTotals(journey: Journey): void {
@@ -317,27 +322,6 @@ function onColorPick(): void {
   });
 }
 
-function onToggleVisible(this: HTMLElement): void {
-  const journey = getJourney();
-  if (!journey) return;
-  // an absent flag means visible, so only hiding stores anything
-  const visible = journey.visible === false;
-  if (visible) delete journey.visible;
-  else journey.visible = false;
-
-  this.className = visible ? "icon-eye" : "icon-eye-off";
-  Layers.draw("journeys");
-}
-
-function onToggleLock(this: HTMLElement): void {
-  const journey = getJourney();
-  if (!journey) return;
-  journey.lock = !journey.lock;
-  this.className = journey.lock ? "icon-lock" : "icon-lock-open";
-}
-
-// ---- segment handlers --------------------------------------------------
-
 function onSegNameInput(this: HTMLInputElement): void {
   const segment = getLineSegment(this);
   if (segment) segment.name = this.value;
@@ -366,7 +350,7 @@ function onSegTransportChange(this: HTMLSelectElement): void {
     this.value = previousType;
     alertDialog({
       title: `Can't switch to ${newType.name}`,
-      message: `${message}<br/><br/>Pick different endpoints first, then change the transport type — or use an <b>air</b> transport type, which accepts any endpoints.`
+      message: `${message}<br/><br/>Pick different endpoints first, then change the transport type or use an <b>air</b> transport type, which accepts any endpoints.`
     });
     return;
   }
@@ -391,16 +375,7 @@ function onSegDurationInput(this: HTMLInputElement): void {
   if (!segment || !journey) return;
 
   segment.duration = Math.max(0, +this.value || 0);
-  const reset = this.parentElement?.querySelector<HTMLElement>(".segDurationReset");
-  if (reset) reset.style.visibility = "";
   updateTotals(journey);
-}
-
-function onSegDurationReset(this: HTMLElement): void {
-  const segment = getLineSegment(this);
-  if (segment?.duration === undefined) return;
-  delete segment.duration;
-  segmentsTable.refresh();
 }
 
 function onSegColorPick(this: FillBoxElement): void {
@@ -411,13 +386,6 @@ function onSegColorPick(this: FillBoxElement): void {
     segment.color = fill;
     segmentsTable.refresh();
   });
-}
-
-function onSegColorReset(this: HTMLElement): void {
-  const segment = getLineSegment(this);
-  if (!segment?.color) return;
-  segment.color = undefined;
-  segmentsTable.refresh();
 }
 
 function onToggleSegVisible(this: HTMLElement): void {
@@ -462,25 +430,32 @@ function onToggleDrawPath(this: HTMLElement): void {
   PathEditor.toggleDrawPath(getLineId(this));
 }
 
-function onSegRecompute(this: HTMLElement): void {
+/** Drop every manual override on the segment and re-run the pathfinder for it */
+function onSegReset(this: HTMLElement): void {
   const segment = getLineSegment(this);
   if (!segment) return;
 
-  const recompute = () => {
+  const reset = () => {
+    const isStay = Journeys.getDomain(segment.transportType) === "stay";
+    delete segment.color;
+    segment.speed = Journeys.getTransportType(segment.transportType)?.speed ?? segment.speed;
+    // a stay has no speed to derive its time from, so it falls back to the default one hour
+    if (isStay) segment.duration = 1;
+    else delete segment.duration;
     segment.custom = false;
     PathEditor.recomputeSegment(segment);
     segmentsTable.refresh();
   };
   if (!segment.custom) {
-    recompute();
+    reset();
     return;
   }
 
   confirmationDialog({
     title: "Overwrite custom path?",
-    message: `Segment "<b>${segment.name}</b>" has a custom-drawn path. Recomputing replaces it with the pathfinder's route. Continue?`,
-    confirm: "Overwrite",
-    onConfirm: recompute
+    message: `Segment "<b>${segment.name}</b>" has a custom-drawn path. Resetting replaces it with the pathfinder's route. Continue?`,
+    confirm: "Reset",
+    onConfirm: reset
   });
 }
 
@@ -496,12 +471,31 @@ function onSegMoveUp(this: HTMLElement): void {
 
 function onSegDelete(this: HTMLElement): void {
   const journey = getJourney();
-  if (!journey) return;
+  const segment = getLineSegment(this);
+  if (!journey || !segment) return;
 
-  const segmentId = getLineId(this);
-  PathEditor.stopEditing(segmentId);
-  journey.segments = journey.segments.filter(segment => segment.id !== segmentId);
-  segmentsTable.refresh();
+  confirmationDialog({
+    title: "Remove segment",
+    message: `Remove segment <b>${segment.name}</b>? This action cannot be reverted.`,
+    confirm: "Remove",
+    onConfirm: () => {
+      PathEditor.stopEditing(segment.id);
+      journey.segments = journey.segments.filter(other => other.id !== segment.id);
+      segmentsTable.refresh();
+    }
+  });
+}
+
+const getSegmentPath = (el: HTMLElement): SVGPathElement | null =>
+  editingJourneyId === null ? null : findEl<SVGPathElement>(`segment${editingJourneyId}_${getLineId(el)}`);
+
+function segmentHighlightOn(this: HTMLElement): void {
+  Layers.show("journeys");
+  getSegmentPath(this)?.setAttribute("stroke-width", "3");
+}
+
+function segmentHighlightOff(this: HTMLElement): void {
+  getSegmentPath(this)?.removeAttribute("stroke-width");
 }
 
 // ---- journey actions ---------------------------------------------------
@@ -528,32 +522,6 @@ function addSegment(): void {
   // a first segment needs both ends; a following one starts where the previous ended
   if (isFirst) PathEditor.startCellPick(id, "from", true);
   else PathEditor.startCellPick(id, "to");
-}
-
-function recomputeAll(): void {
-  const journey = getJourney();
-  if (!journey) return;
-
-  const customCount = journey.segments.filter(segment => segment.custom).length;
-  const recompute = () => {
-    for (const segment of journey.segments) {
-      segment.custom = false;
-      PathEditor.recomputeSegment(segment);
-    }
-    segmentsTable.refresh();
-    tip("All segments recomputed", true, "success", 4000);
-  };
-  if (!customCount) {
-    recompute();
-    return;
-  }
-
-  confirmationDialog({
-    title: "Overwrite custom paths?",
-    message: `${customCount} segment${customCount > 1 ? "s have" : " has"} a custom-drawn path. Recomputing replaces them. Continue?`,
-    confirm: "Overwrite",
-    onConfirm: recompute
-  });
 }
 
 function downloadSegmentsData(): void {

@@ -12,27 +12,14 @@ import { getDefaultTransportTypes } from "@/data/transport-types";
 import type { TransportDomain, TransportType } from "@/types/Journey";
 import { ensureEl } from "@/utils";
 
-export const TRANSPORT_TYPES_CHANGED = "journey-transport-types-changed";
-
 const dialogId = "transportTypesEditor" as const;
 const position = { my: "center", at: "center", of: "svg", collision: "fit" };
 
-const ERROR_TIP_MS = 9000;
-const SUCCESS_TIP_MS = 4000;
-
-const DOMAIN_LABEL: Record<TransportDomain, string> = {
-  land: "land — walks, wheels and hooves; endpoints must be on land (coastal is fine)",
-  water: "water — boats and ships; endpoints must be in water or on a coast touching water",
-  air: "air — flight and magic; no restrictions, travels in a straight line",
-  stay: "stay — no movement; time comes from the segment's own duration, for tavern rests and delays"
-};
-const DOMAINS = Object.keys(DOMAIN_LABEL) as TransportDomain[];
-
 const columns: EditorColumn<TransportType>[] = [
-  { key: "name", label: "Name", width: "10em", permanent: true },
-  { key: "speed", label: "Speed", width: "5.5em" },
-  { key: "domain", label: "Domain", width: "7em" },
-  { key: "actions", width: "2.2em", permanent: true, align: "right" }
+  { key: "name", label: "Name", width: "7em", permanent: true },
+  { key: "speed", label: "Speed", width: "5em" },
+  { key: "domain", label: "Domain", width: "5em" },
+  { key: "actions", width: "1.4em", permanent: true, align: "right" }
 ];
 
 const typesTable = initEditorTable<TransportType>({
@@ -40,6 +27,15 @@ const typesTable = initEditorTable<TransportType>({
   onUpdate: renderTypesPage
 });
 
+const DOMAIN_LABEL: Record<TransportDomain, string> = {
+  land: "Land: walks, wheels and hooves. Endpoints must be on land",
+  water: "Water: boats and ships. Endpoints must be in water or on a coast touching water",
+  air: "Air: flight and magic. No restrictions, travels in a straight line",
+  stay: "Stay: no movement. For preparation, tavern rests and delays"
+};
+const DOMAINS = Object.keys(DOMAIN_LABEL) as TransportDomain[];
+
+export const TRANSPORT_TYPES_CHANGED = "journey-transport-types-changed";
 const emitChanged = () => document.dispatchEvent(new CustomEvent(TRANSPORT_TYPES_CHANGED));
 
 function open(): void {
@@ -50,13 +46,7 @@ function open(): void {
   renderDialog();
   typesTable.reset();
 
-  $(`#${dialogId}`).dialog({
-    title: "Transport Types",
-    resizable: false,
-    width: "fit-content",
-    position,
-    close: onClose
-  });
+  $(`#${dialogId}`).dialog({ title: "Transport Types", position, close: onClose });
 }
 
 function renderDialog(): void {
@@ -67,7 +57,7 @@ function renderDialog(): void {
 
     <div id="transportTypesFooter" class="totalLine">
       <div data-tip="Transport types number" style="margin-left: 4px">Types:&nbsp;<span id="transportTypesFooterNumber">0</span></div>
-      <div style="margin-left: 12px"><i>speed is in ${distanceUnitInput.value}/h</i></div>
+      <div style="margin-left: 12px"><i>Speed is in ${distanceUnitInput.value}/h</i></div>
     </div>
 
     <div id="transportTypesBottom" class="editorToolbar">
@@ -141,12 +131,7 @@ function onNameChange(this: HTMLInputElement): void {
   const isTaken = pack.transportTypes.some(other => other.name === newName && other.i !== type.i);
   if (!newName || isTaken) {
     this.value = type.name;
-    tip(
-      newName ? "A transport type with that name already exists" : "Name cannot be empty",
-      true,
-      "error",
-      ERROR_TIP_MS
-    );
+    tip(newName ? "A transport type with that name already exists" : "Name cannot be empty", true, "error", 8000);
     return;
   }
 
@@ -185,7 +170,7 @@ function addType(): void {
 
   const input = document.querySelector<HTMLInputElement>(`#transportTypesBody [data-id="${nextId}"] .ttName`);
   input?.select();
-  tip("Transport type added — rename it and set the speed and domain.", true, "success", SUCCESS_TIP_MS);
+  tip("Transport type added — rename it and set the speed and domain.", true, "success", 5000);
 }
 
 function triggerTypeRemove(this: HTMLElement): void {
@@ -196,7 +181,7 @@ function triggerTypeRemove(this: HTMLElement): void {
     journey.segments.some(segment => segment.transportType === type.name)
   );
   if (isUsed) {
-    tip(`'${type.name}' is used by existing segments. Reassign them first.`, true, "error", ERROR_TIP_MS);
+    tip(`'${type.name}' is used by existing segments. Reassign them first.`, true, "error", 8000);
     return;
   }
 
