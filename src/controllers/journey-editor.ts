@@ -21,7 +21,6 @@ import { Controllers } from "@/controllers";
 import { TRANSPORT_TYPES_CHANGED } from "@/controllers/transport-types-editor";
 import { getJourneyTypes } from "@/generators/journey-story";
 import { OFF_ROAD_SPEED_FACTOR } from "@/generators/journeys-generator";
-import { getSegmentColor } from "@/renderers/draw-journeys";
 import type { JouneySegment, Journey } from "@/types/Journey";
 import { downloadFile, ensureEl, findEl, getFileName, getHoursPerDay, rn } from "@/utils";
 import { cellEndpointLabel, cellEndpointTooltip, getCellPoint } from "@/utils/cell-labels";
@@ -290,7 +289,7 @@ function renderRoadsToggle(segment: JouneySegment, isLand: boolean): string {
 /** The reset keeps its slot when hidden, so the column track never reflows */
 function renderColorCell(journey: Journey, segment: JouneySegment): string {
   const tipText = segment.color ? "Segment color. Click to change" : "Follows the journey color. Click to override";
-  return /* html */ `<fill-box class="segColor" fill="${getSegmentColor(journey, segment)}" data-tip="${tipText}"></fill-box>
+  return /* html */ `<fill-box class="segColor" fill="${segment.color || journey.color}" data-tip="${tipText}"></fill-box>
     <span class="segColorReset icon-ccw pointer" data-tip="Reset to the journey color"
       style="${segment.color ? "" : "visibility: hidden"}"></span>`;
 }
@@ -342,9 +341,11 @@ function onColorPick(): void {
 function onToggleVisible(this: HTMLElement): void {
   const journey = getJourney();
   if (!journey) return;
-  const visible = !journey.visible;
-  if (!visible) journey.visible = false;
-  else delete journey.visible;
+  // an absent flag means visible, so only hiding stores anything
+  const visible = journey.visible === false;
+  if (visible) delete journey.visible;
+  else journey.visible = false;
+
   this.className = visible ? "icon-eye" : "icon-eye-off";
   Layers.draw("journeys");
 }
@@ -434,9 +435,9 @@ function onToggleSegVisible(this: HTMLElement): void {
   const segment = getLineSegment(this);
   if (!segment) return;
 
-  const visible = !segment.visible;
-  if (!visible) segment.visible = false;
-  else delete segment.visible;
+  const visible = segment.visible === false;
+  if (visible) delete segment.visible;
+  else segment.visible = false;
 
   if (!visible) PathEditor.stopEditing(segment.id);
   segmentsTable.refresh();

@@ -52,10 +52,7 @@ class JourneysModule {
     return journey;
   }
 
-  /**
-   * A color from d3's cardinal palette, preferring one no other journey uses —
-   * so the first ten stay tellable apart at a glance.
-   */
+  /** A cardinal color no other journey uses, so the first ten stay tellable apart */
   pickColor(): string {
     const palette = getCardinalColors();
     const used = new Set(pack.journeys?.map(journey => journey.color));
@@ -178,11 +175,8 @@ class JourneysModule {
   }
 
   /**
-   * Is the cell valid for an *intermediate* point on a path of this domain?
-   *
-   * Stricter than endpoint validation: a water route may legitimately start or end
-   * on a coastal land cell (you board the boat from shore), but it must not run
-   * overland mid-route. Land routes must stay on land throughout.
+   * Stricter than {@link isValidEndpoint}: a water route may start or end on a coastal
+   * land cell (you board from shore), but it must never run overland mid-route.
    */
   isValidPathPoint(cellId: number, domain: TransportDomain): boolean {
     if (cellId === undefined || cellId === null) return false;

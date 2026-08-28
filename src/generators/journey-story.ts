@@ -127,9 +127,6 @@ const NAMELESS = ["Aldric", "Marek", "Ysolde", "Corvin", "Nadia", "Halvar", "Ilo
 
 const tavernName = (): string => `The ${ra(TAVERN_QUALIFIERS)} ${ra(TAVERN_SUBJECTS)}`;
 
-const relicName = (): string => `${ra(COMPANY_ADJECTIVES)} ${ra(RELICS)}`;
-
-/** A culture-appropriate given name for someone out of this burg */
 function personName(burg: Burg): string {
   const culture = burg.culture;
   if (culture === undefined || !pack.cultures?.[culture]) return ra(NAMELESS);
@@ -177,10 +174,9 @@ interface Archetype {
   bivouac: (wild: string) => string;
 }
 
-/** Every party the generator can invent, built fresh so nothing is shared between journeys. */
+/** Built fresh each call, so nothing is shared between journeys */
 function buildArchetypes(): Record<string, Archetype> {
   return {
-    // The staple: a named hero and their companions, out on a road that matters
     heroes: {
       type: "Quest",
       weight: 10,
@@ -203,7 +199,6 @@ function buildArchetypes(): Record<string, Archetype> {
       bivouac: wild => ra([`Camp in the ${wild}`, `Watches kept in the ${wild}`, `A fire in the ${wild}`])
     },
 
-    // One traveller, one road: the knight-errant, the wanderer, the outcast scholar
     wanderer: {
       type: "Wandering",
       weight: 6,
@@ -246,7 +241,6 @@ function buildArchetypes(): Record<string, Archetype> {
       bivouac: wild => ra([`Wagons circled in the ${wild}`, `Night halt in the ${wild}`, `Cold camp in the ${wild}`])
     },
 
-    // An army on the march: musters, forced marches, a siege camp at the end
     campaign: {
       type: "Military campaign",
       weight: 4,
@@ -309,7 +303,6 @@ function buildArchetypes(): Record<string, Archetype> {
       bivouac: wild => ra([`Vigil in the ${wild}`, `Night prayer in the ${wild}`, `Sleeping rough in the ${wild}`])
     },
 
-    // A free company riding to whoever is paying this season
     mercenaries: {
       type: "Mercenary contract",
       weight: 3,
@@ -332,7 +325,6 @@ function buildArchetypes(): Record<string, Archetype> {
       bivouac: wild => ra([`Camp in the ${wild}`, `Cold camp in the ${wild}`, `Dice and watches in the ${wild}`])
     },
 
-    // Word that cannot wait: fresh horses, short nights, no detours
     courier: {
       type: "Courier ride",
       weight: 3,
@@ -377,7 +369,6 @@ function buildArchetypes(): Record<string, Archetype> {
       bivouac: wild => ra([`Base camp in the ${wild}`, `Survey camp in the ${wild}`, `Weathered in on the ${wild}`])
     },
 
-    // A whole village on the move, carrying what it could lift
     refugees: {
       type: "Refugee flight",
       weight: 3,
@@ -400,7 +391,6 @@ function buildArchetypes(): Record<string, Archetype> {
       bivouac: wild => ra([`Camp in the ${wild}`, `A hungry night in the ${wild}`, `Burying the dead in the ${wild}`])
     },
 
-    // Fantasy: someone is paying very well for a thing that should stay buried
     relicseekers: {
       type: "Treasure hunt",
       weight: 3,
@@ -411,7 +401,7 @@ function buildArchetypes(): Record<string, Archetype> {
       land: { "On Foot": 4, Horse: 3 },
       water: { Boat: 3, Ship: 2 },
       title: ({ hero, wild }) => {
-        const relic = relicName();
+        const relic = `${ra(COMPANY_ADJECTIVES)} ${ra(RELICS)}`;
         return ra([
           `The Search for the ${relic}`,
           `${hero} and the ${relic}`,
@@ -425,7 +415,6 @@ function buildArchetypes(): Record<string, Archetype> {
       bivouac: wild => ra([`Camp in the ${wild}`, `Reading the map in the ${wild}`, `A watchful night in the ${wild}`])
     },
 
-    // Fantasy: a hunt that follows the kills from village to village
     monsterhunt: {
       type: "Monster hunt",
       weight: 3,
@@ -494,7 +483,6 @@ function buildArchetypes(): Record<string, Archetype> {
         ra([`Cache dug in the ${wild}`, `No fire, no names — ${wild}`, `Waiting out the patrol in the ${wild}`])
     },
 
-    // Sea-wolves: a fast keel, a short season, and somebody else's harvest
     raiders: {
       type: "Raid",
       weight: 2,
@@ -518,7 +506,6 @@ function buildArchetypes(): Record<string, Archetype> {
         ra([`Beach camp in the ${wild}`, `Keel hauled up in the ${wild}`, `A watchful night in the ${wild}`])
     },
 
-    // A crown showing itself to its own country, slowly and at great expense
     progress: {
       type: "Royal progress",
       weight: 2,
@@ -540,7 +527,6 @@ function buildArchetypes(): Record<string, Archetype> {
       bivouac: wild => ra([`Pavilions raised in the ${wild}`, `The hunt camps in the ${wild}`])
     },
 
-    // Fantasy: the one party that never touches the ground between towers
     skyfarers: {
       type: "Airship voyage",
       weight: 2,
@@ -626,7 +612,6 @@ export function generateStoryJourney(pathfinder: JourneyPathfinder): Omit<Journe
   return null;
 }
 
-/** Chain burg to burg for as long as the pathfinder keeps finding honest routes. */
 function planLegs(pathfinder: JourneyPathfinder, archetype: Archetype, burgs: Burg[]): PlannedLeg[] {
   const diagonal = Math.hypot(graphWidth, graphHeight) || 1;
   const band: [number, number] = [diagonal * LEG_MIN_FACTOR, diagonal * LEG_MAX_FACTOR];
@@ -661,9 +646,9 @@ function planLegs(pathfinder: JourneyPathfinder, archetype: Archetype, burgs: Bu
   return legs;
 }
 
-/** The party sets out from somewhere that matters: a capital, a large burg, a busy port. */
 function pickOrigin(burgs: Burg[], archetype: Archetype): Burg {
-  const neighbours = countBurgsPerLandmass(burgs);
+  const neighbours: Record<number, number> = {};
+  for (const burg of burgs) neighbours[pack.cells.f[burg.cell]] = (neighbours[pack.cells.f[burg.cell]] ?? 0) + 1;
 
   const scored = burgs
     .map(burg => {
@@ -679,20 +664,7 @@ function pickOrigin(burgs: Burg[], archetype: Archetype): Burg {
   return ra(scored.slice(0, ORIGIN_POOL_SIZE)).burg;
 }
 
-const countBurgsPerLandmass = (burgs: Burg[]): Record<number, number> => {
-  const counts: Record<number, number> = {};
-  for (const burg of burgs) {
-    const landmass = pack.cells.f[burg.cell];
-    counts[landmass] = (counts[landmass] ?? 0) + 1;
-  }
-  return counts;
-};
-
-/**
- * Next stops worth trying, best first. A good stop is a comfortable leg away,
- * notable in its own right, and ideally over a border — a route that crosses
- * states tells more of a story than one that circles a single province.
- */
+/** Next stops worth trying, best first: a comfortable leg away, notable, and ideally over a border */
 function rankCandidates(
   current: Burg,
   burgs: Burg[],
@@ -727,11 +699,7 @@ function rankCandidates(
     .map(candidate => candidate.burg);
 }
 
-/**
- * Route one leg, trying the party's preferred way of travelling first. An
- * off-road party still takes the road rather than not travelling at all, and a
- * pair of ports falls back to sea when no land connects them.
- */
+/** Route one leg the party's preferred way, falling back to whatever the terrain does allow */
 function buildLeg(pathfinder: JourneyPathfinder, archetype: Archetype, from: Burg, to: Burg): PlannedLeg | null {
   const bothPorts = Boolean(from.port && to.port);
   const preferSea = bothPorts && P(archetype.sea);
@@ -752,7 +720,8 @@ function buildLeg(pathfinder: JourneyPathfinder, archetype: Archetype, from: Bur
   if (bothPorts && !preferSea) attempts.push({ domain: "water", avoidRoads: false });
 
   for (const { domain, avoidRoads } of attempts) {
-    const transport = resolveTransport(transportWeights(archetype, domain), domain);
+    const weights = domain === "water" ? archetype.water : domain === "air" ? (archetype.sky ?? {}) : archetype.land;
+    const transport = resolveTransport(weights, domain);
     if (!transport) continue;
 
     const { points, distance, errorCode } = pathfinder.findPath(from.cell, to.cell, domain, { avoidRoads });
@@ -764,13 +733,7 @@ function buildLeg(pathfinder: JourneyPathfinder, archetype: Archetype, from: Bur
   return null;
 }
 
-const transportWeights = (archetype: Archetype, domain: PlannedLeg["domain"]): Record<string, number> => {
-  if (domain === "water") return archetype.water;
-  if (domain === "air") return archetype.sky ?? {};
-  return archetype.land;
-};
-
-/** The named type if the map still has it, otherwise any type that can travel this domain. */
+/** The preferred type if the map still has it, otherwise any type of this domain */
 function resolveTransport(weights: Record<string, number>, domain: TransportDomain): TransportType | undefined {
   const types: TransportType[] = pack.transportTypes ?? [];
   const preferred = rw(weights);
@@ -781,29 +744,24 @@ function resolveTransport(weights: Record<string, number>, domain: TransportDoma
 
 // ---- segment assembly ---------------------------------------------------
 
-interface LegPlan {
-  leg: PlannedLeg;
-  harborWait: boolean;
-  camp: boolean;
-  rest: boolean;
-}
-
-/** Turn planned legs into the segment list: travel, rests, and the camps between them. */
 function buildSegments(pathfinder: JourneyPathfinder, archetype: Archetype, legs: PlannedLeg[]): JouneySegment[] {
   const stayType = (pack.transportTypes ?? []).find((type: TransportType) => type.domain === "stay");
 
-  const plans: LegPlan[] = legs.map((leg, index) => ({
+  const plans = legs.map((leg, index) => ({
     leg,
     harborWait: Boolean(stayType) && leg.domain === "water" && P(HARBOR_WAIT_CHANCE),
     // a party already off the road is far likelier to sleep beside it
-    camp: Boolean(stayType) && canSplit(leg) && P(leg.avoidRoads ? archetype.camp : archetype.camp / 2),
+    camp:
+      Boolean(stayType) &&
+      leg.points.length >= MIN_SPLIT_POINTS &&
+      P(leg.avoidRoads ? archetype.camp : archetype.camp / 2),
     rest: Boolean(stayType) && index < legs.length - 1 && P(archetype.rest)
   }));
 
   let muster = Boolean(stayType) && P(MUSTER_CHANCE);
-  // A journey without a single pause is exactly the journey this generator exists to replace
+  // a journey without a single pause is the bare A→B line this generator exists to replace
   if (stayType && !muster && !plans.some(plan => plan.harborWait || plan.camp || plan.rest)) {
-    const splittable = plans.find(plan => canSplit(plan.leg));
+    const splittable = plans.find(plan => plan.leg.points.length >= MIN_SPLIT_POINTS);
     if (splittable) splittable.camp = true;
     else if (plans.length > 1) plans[0].rest = true;
     else muster = true;
@@ -811,14 +769,18 @@ function buildSegments(pathfinder: JourneyPathfinder, archetype: Archetype, legs
 
   const segments: JouneySegment[] = [];
 
-  /** A leg goes in whole or not at all, so a truncated route still ends at a stop. */
+  /** A leg goes in whole or not at all, so a truncated route still ends at a stop */
   const commit = (group: JouneySegment[]): boolean => {
     if (segments.length + group.length > MAX_SEGMENTS) return false;
     for (const segment of group) segments.push({ ...segment, id: segments.length });
     return true;
   };
 
-  if (muster) commit([makeStay(stayType!, legs[0].from.cell, musterName(burgName(legs[0].from)), rand(6, 24))]);
+  if (muster) {
+    const place = burgName(legs[0].from);
+    const name = ra([`Mustering in ${place}`, `Provisioning in ${place}`, `Gathering at ${tavernName()}`]);
+    commit([makeStay(stayType!, legs[0].from.cell, name, rand(6, 24))]);
+  }
 
   for (const [index, plan] of plans.entries()) {
     const { leg } = plan;
@@ -828,23 +790,21 @@ function buildSegments(pathfinder: JourneyPathfinder, archetype: Archetype, legs
     const to = burgName(leg.to);
     const group: JouneySegment[] = [];
 
-    if (plan.harborWait) group.push(makeStay(stayType!, leg.from.cell, harborWaitName(from), rand(6, 30)));
+    if (plan.harborWait) {
+      const name = ra([`Waiting on the tide at ${from}`, `Held up in ${from} harbour`, `Buying a passage in ${from}`]);
+      group.push(makeStay(stayType!, leg.from.cell, name, rand(6, 30)));
+    }
 
     const split = plan.camp ? splitLeg(pathfinder, leg) : null;
+    const wild = describeWild(split?.campCell ?? leg.points[Math.floor(leg.points.length / 2)][2]);
+    const naming = { archetype, leg, from, to, wild, isFirst, isLast };
+
     if (split) {
-      const wild = describeWild(split.campCell);
-      // a night broken into a sea leg is spent at anchor, not in a camp
-      const halt = leg.domain === "water" ? anchorName(leg, split.campCell) : campName(archetype, split.campCell, wild);
-      group.push(
-        makeTravel(leg, split.first, nameTravel({ archetype, leg, from, to, wild, isFirst, isLast, part: "first" }))
-      );
-      group.push(makeStay(stayType!, split.campCell, halt, rand(6, 12)));
-      group.push(
-        makeTravel(leg, split.second, nameTravel({ archetype, leg, from, to, wild, isFirst, isLast, part: "second" }))
-      );
+      group.push(makeTravel(leg, split.first, nameTravel({ ...naming, part: "first" })));
+      group.push(makeStay(stayType!, split.campCell, nameHalt(archetype, leg, split.campCell, wild), rand(6, 12)));
+      group.push(makeTravel(leg, split.second, nameTravel({ ...naming, part: "second" })));
     } else {
-      const wild = describeWild(leg.points[Math.floor(leg.points.length / 2)][2]);
-      group.push(makeTravel(leg, leg, nameTravel({ archetype, leg, from, to, wild, isFirst, isLast, part: "whole" })));
+      group.push(makeTravel(leg, leg, nameTravel({ ...naming, part: "whole" })));
     }
 
     if (plan.rest) group.push(makeStay(stayType!, leg.to.cell, archetype.stopover(to), 12 * rand(1, 3)));
@@ -855,9 +815,6 @@ function buildSegments(pathfinder: JourneyPathfinder, archetype: Archetype, legs
   return segments;
 }
 
-const canSplit = (leg: PlannedLeg): boolean => leg.points.length >= MIN_SPLIT_POINTS;
-
-/** Break a leg in two around a point somewhere in its middle third, for a camp. */
 function splitLeg(
   pathfinder: JourneyPathfinder,
   leg: PlannedLeg
@@ -923,22 +880,13 @@ function titleFor(archetype: Archetype, legs: PlannedLeg[]): string {
     hero: personName(origin),
     origin: burgName(origin),
     destination: burgName(destination),
-    destinationAdjective: getAdjective(stateName(destination) || burgName(destination)),
+    destinationAdjective: getAdjective(pack.states?.[destination.state ?? 0]?.name || burgName(destination)),
     // titles supply their own article ("to the ..."), so drop the one describeWater adds
     wild: namedLeg.domain === "land" ? describeWild(middle) : describeWater(namedLeg).replace(/^the /, "")
   });
 }
 
-function nameTravel({
-  archetype,
-  leg,
-  from,
-  to,
-  wild,
-  isFirst,
-  isLast,
-  part
-}: {
+interface TravelNaming {
   archetype: Archetype;
   leg: PlannedLeg;
   from: string;
@@ -946,8 +894,11 @@ function nameTravel({
   wild: string;
   isFirst: boolean;
   isLast: boolean;
+  /** A leg split by a camp is named in two halves */
   part: "whole" | "first" | "second";
-}): string {
+}
+
+function nameTravel({ archetype, leg, from, to, wild, isFirst, isLast, part }: TravelNaming): string {
   if (leg.domain === "air") {
     if (part === "second") return ra([`Down to ${to}`, `Mooring at ${to}`, `Descent on ${to}`]);
     if (part === "first") return ra([`Aloft from ${from}`, `Rising over the ${wild}`, `Cast off from ${from}`]);
@@ -983,28 +934,21 @@ function nameTravel({
   return ra([`${from} to ${to}`, `On to ${to}`, `The ${wild} road`]);
 }
 
-const musterName = (place: string): string =>
-  ra([`Mustering in ${place}`, `Provisioning in ${place}`, `Last night in ${place}`, `Gathering at ${tavernName()}`]);
-
-const harborWaitName = (place: string): string =>
-  ra([`Waiting on the tide at ${place}`, `Held up in ${place} harbour`, `Buying a passage in ${place}`]);
-
-function campName(archetype: Archetype, cellId: number, wild: string): string {
+/** A night broken into a leg: at anchor at sea, in a camp on land */
+function nameHalt(archetype: Archetype, leg: PlannedLeg, cellId: number, wild: string): string {
   const label = cellEndpointLabel(cellId);
-  if (label.startsWith("near ")) return ra([`Camp ${label}`, `A night ${label}`, archetype.bivouac(wild)]);
+  const nearby = label.startsWith("near ");
+
+  if (leg.domain === "water") {
+    if (nearby) return ra([`Anchored ${label}`, `A night at anchor ${label}`, `Lying to ${label}`]);
+    return ra(["Night at anchor", `Becalmed in ${describeWater(leg)}`, "Hove to till dawn"]);
+  }
+
+  if (nearby) return ra([`Camp ${label}`, `A night ${label}`, archetype.bivouac(wild)]);
   return archetype.bivouac(wild);
 }
 
-/** A night broken into a sea crossing: hove to, at anchor, or waiting out the dark in sight of a coast. */
-function anchorName(leg: PlannedLeg, cellId: number): string {
-  const label = cellEndpointLabel(cellId);
-  if (label.startsWith("near ")) return ra([`Anchored ${label}`, `A night at anchor ${label}`, `Lying to ${label}`]);
-  return ra([`Night at anchor`, `Becalmed in ${describeWater(leg)}`, `Hove to till dawn`]);
-}
-
 const burgName = (burg: Burg): string => burg.name || `Burg ${burg.i}`;
-
-const stateName = (burg: Burg): string => (burg.state ? pack.states?.[burg.state]?.name || "" : "");
 
 const BIOME_TERMS: Record<string, string> = {
   Marine: "open water",
@@ -1022,7 +966,6 @@ const BIOME_TERMS: Record<string, string> = {
   Wetland: "marshes"
 };
 
-/** What the country underfoot is called, in the words a traveller would use. */
 function describeWild(cellId: number): string {
   const height = pack.cells.h[cellId];
   if (height >= 70) return ra(["mountains", "high passes", "peaks"]);
@@ -1033,7 +976,6 @@ function describeWild(cellId: number): string {
   return BIOME_TERMS[biome.name] ?? biome.name.toLowerCase();
 }
 
-/** The named water a sea leg crosses, or a generic for the unnamed open sea. */
 function describeWater(leg: PlannedLeg): string {
   const middle = leg.points[Math.floor(leg.points.length / 2)][2];
   const feature = pack.features?.[pack.cells.f[middle]];

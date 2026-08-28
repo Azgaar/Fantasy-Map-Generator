@@ -189,7 +189,6 @@ function renderJourneysPage(view: TableView<Journey>): void {
   footerTime.innerHTML = Journeys.formatTravelTime(totalHours, hoursPerDay);
   footerTime.parentElement!.dataset.tip = `Total travel time at ${hoursPerDay}h/day: ${Journeys.formatTravelTimeFull(totalHours, hoursPerDay)}`;
 
-  // add listeners
   body.querySelectorAll("div.states").forEach(el => void el.addEventListener("mouseenter", journeyHighlightOn));
   body.querySelectorAll("div.states").forEach(el => void el.addEventListener("mouseleave", journeyHighlightOff));
   body.querySelectorAll("fill-box.journeyColor").forEach(el => void el.addEventListener("click", changeJourneyColor));
@@ -217,13 +216,9 @@ function renderEndpoint(endpoint: "from" | "to", cellId: number | undefined): st
 
 const getLineId = (el: HTMLElement): number => +(el.closest<HTMLElement>(".states")?.dataset.id ?? "-1");
 
-function getStart(journey: Journey) {
-  return journey.segments[0]?.from;
-}
+const getStart = (journey: Journey) => journey.segments[0]?.from;
 
-function getEnd(journey: Journey) {
-  return journey.segments[journey.segments.length - 1]?.to;
-}
+const getEnd = (journey: Journey) => journey.segments.at(-1)?.to;
 
 const getJourneyPaths = (journeyId: number): SVGPathElement[] =>
   Array.from(document.querySelectorAll<SVGPathElement>(`#journeys > #journey${journeyId} > path`));
