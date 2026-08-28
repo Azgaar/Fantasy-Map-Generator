@@ -327,7 +327,7 @@ test.describe("layer scenarios", () => {
     expect(errors).toEqual([]);
   });
 
-  test("layers wins over preset, ignores unknown ids and clears the set when none are known", async ({ page }) => {
+  test("layers wins over preset, ignores unknown ids and leaves the set when none are known", async ({ page }) => {
     await page.goto(
       "/?seed=url-layers-override&width=1280&height=720&preset=religions&layers=provinces,nope,borders"
     );
@@ -337,10 +337,18 @@ test.describe("layer scenarios", () => {
     const active = await page.evaluate(() => Layers.state.active.slice().sort());
     expect(active).toEqual(["borders", "provinces"]);
 
+    // a typo-only layers= must not wipe the map; it logs and keeps the current set
+    const invalidLayersErrors: string[] = [];
+    page.on("console", msg => {
+      if (msg.type() === "error") invalidLayersErrors.push(msg.text());
+    });
+
     await page.evaluate(() => {
       const params = new URLSearchParams({ layers: "nope,missing" });
       (window as any).applyURLLayers(params);
     });
-    expect(await page.evaluate(() => Layers.state.active)).toEqual([]);
+
+    expect(await page.evaluate(() => Layers.state.active.slice().sort())).toEqual(["borders", "provinces"]);
+    expect(invalidLayersErrors.some(text => text.includes("no valid layer ids"))).toBe(true);
   });
 });
