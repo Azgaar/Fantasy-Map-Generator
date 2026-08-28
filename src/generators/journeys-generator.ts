@@ -1,6 +1,5 @@
 import { DEFAULT_JOURNEY_TYPE } from "@/data/journey-lore";
-import { getDefaultTransportTypes } from "@/data/transport-types";
-import type { JouneySegment, Journey, JourneyPoint, Transport, TransportDomain } from "@/types/Journey";
+import type { JouneySegment, Journey, JourneyPoint, TransportDomain } from "@/types/Journey";
 import { isLand } from "../utils";
 import { getCardinalColor } from "../utils/colorUtils";
 import type { Burg } from "./burgs-generator";
@@ -53,10 +52,9 @@ class JourneysModule {
     return journey;
   }
 
-  /** Ensure the pack carries the journey collections; safe to call repeatedly */
+  /** Ensure the pack carries the journey collection; safe to call repeatedly */
   sync(): void {
     if (!pack.journeys) pack.journeys = [];
-    if (!pack.transports?.length) pack.transports = getDefaultTransportTypes();
   }
 
   remove(journeyId: number): void {
@@ -138,15 +136,6 @@ class JourneysModule {
     let total = 0;
     for (let i = 1; i < points.length; i++) total += this.getDistance(points[i - 1], points[i]);
     return total;
-  }
-
-  getTransportType(name: string): Transport | undefined {
-    return pack.transports.find(type => type.name === name);
-  }
-
-  /** Domain of the named transport type; unknown types are treated as unrestricted. */
-  getDomain(name: string): TransportDomain {
-    return this.getTransportType(name)?.domain ?? "air";
   }
 
   /**
@@ -457,7 +446,7 @@ class JourneysModule {
 
   /** First burg pair in `pool` joined by a path that is genuinely valid for `domain`. */
   private findFallbackLeg(pool: Burg[], domain: TransportDomain): JouneySegment | null {
-    const transport = pack.transports.find(type => type.domain === domain);
+    const transport = Transports.getByDomain(domain);
     if (!transport) return null;
 
     for (let i = 0; i < pool.length; i++) {

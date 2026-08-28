@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { getDefaultTransportTypes } from "@/data/transport-types";
 import type { JouneySegment, JourneyPoint, TransportDomain } from "@/types/Journey";
 import { generateStoryJourney, type JourneyPathfinder } from "./journey-story";
+import "./transports-generator";
 
 /**
  * A 10×10 land grid, 100px apart, with eight burgs scattered over two states.
@@ -86,9 +86,10 @@ describe("generateStoryJourney", () => {
         { i: 0, name: "Marine" },
         ...Array.from({ length: 12 }, (_, i) => ({ i: i + 1, name: "Temperate deciduous forest" }))
       ],
-      features: [0, { i: 1, type: "ocean", subtype: "sea", name: "" }],
-      transports: getDefaultTransportTypes()
+      features: [0, { i: 1, type: "ocean", subtype: "sea", name: "" }]
     };
+
+    (globalThis as any).options = { transports: Transports.getDefaults() };
   });
 
   it("returns null when the map has fewer than two burgs", () => {
@@ -169,8 +170,6 @@ describe("generateStoryJourney", () => {
   });
 });
 
-const transportSpeed = (name: string): number =>
-  ((globalThis as any).pack.transports.find((type: any) => type.name === name)?.speed ?? -1) as number;
+const transportSpeed = (name: string): number => Transports.get(name)?.speed ?? -1;
 
-const transportDomain = (name: string): TransportDomain =>
-  (globalThis as any).pack.transports.find((type: any) => type.name === name)?.domain;
+const transportDomain = (name: string): TransportDomain => Transports.getDomain(name);

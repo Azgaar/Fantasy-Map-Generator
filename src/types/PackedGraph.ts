@@ -15,7 +15,7 @@ import type { River } from "@/generators/river-generator";
 import type { Route } from "@/generators/routes-generator";
 import type { State } from "@/generators/states-generator";
 import type { Zone } from "@/generators/zones-generator";
-import type { Journey, Transport } from "./Journey";
+import type { Journey } from "./Journey";
 
 export type TypedArray = Uint8Array | Uint16Array | Uint32Array | Int8Array | Int16Array | Float32Array | Float64Array;
 
@@ -75,5 +75,4 @@ export interface PackedGraph {
   measurers: Measurer[];
   addedLabels: AddedLabel[];
   journeys: Journey[];
-  transports: Transport[];
 }

@@ -205,7 +205,7 @@ function buildLeg(pathfinder: JourneyPathfinder, archetype: JourneyArchetype, fr
 
 /** The preferred type if the map still has it, otherwise any type of this domain */
 function resolveTransport(weights: Record<string, number>, domain: TransportDomain): Transport | undefined {
-  const types: Transport[] = pack.transports ?? [];
+  const types: Transport[] = Transports.all;
   const preferred = rw(weights);
   return (
     types.find(type => type.name === preferred && type.domain === domain) ?? types.find(type => type.domain === domain)
@@ -233,7 +233,7 @@ function buildSegments(
   archetype: JourneyArchetype,
   legs: PlannedLeg[]
 ): JouneySegment[] {
-  const stayType = (pack.transports ?? []).find((type: Transport) => type.domain === "stay");
+  const stayType = Transports.getByDomain("stay");
 
   const plans = legs.map((leg, index) => ({
     leg,

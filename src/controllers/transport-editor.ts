@@ -8,7 +8,6 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { tip } from "@/components/tooltips";
-import { getDefaultTransportTypes } from "@/data/transport-types";
 import type { Transport, TransportDomain } from "@/types/Journey";
 import { ensureEl } from "@/utils";
 
@@ -23,7 +22,7 @@ const columns: EditorColumn<Transport>[] = [
 ];
 
 const typesTable = initEditorTable<Transport>({
-  getData: () => pack.transports,
+  getData: () => Transports.all,
   onUpdate: renderTypesPage
 });
 
@@ -120,14 +119,14 @@ function renderTypesPage(view: TableView<Transport>): void {
 /** Transport type of the row a control lives in */
 const getLineId = (el: HTMLElement): number => +(el.closest<HTMLElement>(".states")?.dataset.id ?? "-1");
 
-const getLineType = (el: HTMLElement): Transport | undefined => pack.transports.find(type => type.i === getLineId(el));
+const getLineType = (el: HTMLElement): Transport | undefined => Transports.all.find(type => type.i === getLineId(el));
 
 function onNameChange(this: HTMLInputElement): void {
   const type = getLineType(this);
   if (!type) return;
 
   const newName = this.value.trim();
-  const isTaken = pack.transports.some(other => other.name === newName && other.i !== type.i);
+  const isTaken = Transports.all.some(other => other.name === newName && other.i !== type.i);
   if (!newName || isTaken) {
     this.value = type.name;
     tip(newName ? "A transport type with that name already exists" : "Name cannot be empty", true, "error", 8000);
@@ -139,6 +138,7 @@ function onNameChange(this: HTMLInputElement): void {
     for (const segment of journey.segments) if (segment.transport === type.name) segment.transport = newName;
   }
   type.name = newName;
+  Transports.save();
   emitChanged();
 }
 
@@ -146,6 +146,7 @@ function onSpeedInput(this: HTMLInputElement): void {
   const type = getLineType(this);
   if (!type) return;
   type.speed = +this.value || 0;
+  Transports.save();
   emitChanged();
 }
 
@@ -154,16 +155,18 @@ function onDomainChange(this: HTMLSelectElement): void {
   if (!type) return;
   type.domain = this.value as TransportDomain;
   if (type.domain === "stay") type.speed = 0; // stay types have no speed
+  Transports.save();
   typesTable.refresh();
   emitChanged();
 }
 
 function addType(): void {
-  const nextId = pack.transports.length ? Math.max(...pack.transports.map(type => type.i)) + 1 : 0;
+  const nextId = Transports.getNextId();
   let name = "New Type";
-  for (let n = 2; pack.transports.some(type => type.name === name); n++) name = `New Type ${n}`;
+  for (let n = 2; Transports.all.some(type => type.name === name); n++) name = `New Type ${n}`;
 
-  pack.transports.push({ i: nextId, name, speed: 5, domain: "land" });
+  Transports.all.push({ i: nextId, name, speed: 5, domain: "land" });
+  Transports.save();
   typesTable.refresh();
   emitChanged();
 
@@ -189,7 +192,7 @@ function triggerTypeRemove(this: HTMLElement): void {
     message: `Remove transport type <b>${type.name}</b>?`,
     confirm: "Remove",
     onConfirm: () => {
-      pack.transports = pack.transports.filter(other => other.i !== type.i);
+      Transports.set(Transports.all.filter(other => other.i !== type.i));
       typesTable.refresh();
       emitChanged();
     }
@@ -203,7 +206,7 @@ function triggerDefaultsRestore(): void {
       "Restore the default transport types? Custom ones will be removed. Segments referencing a removed type keep its name but will no longer resolve.",
     confirm: "Restore",
     onConfirm: () => {
-      pack.transports = getDefaultTransportTypes();
+      Transports.set(Transports.getDefaults());
       typesTable.refresh();
       emitChanged();
     }

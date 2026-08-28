@@ -211,7 +211,7 @@ function renderSegmentsPage(view: TableView<JouneySegment>): void {
 function renderSegmentLine(journey: Journey, segment: JouneySegment): string {
   const unit = distanceUnitInput.value;
   const index = journey.segments.indexOf(segment);
-  const domain = Journeys.getDomain(segment.transport);
+  const domain = Transports.getDomain(segment.transport);
   const isStay = domain === "stay" || Journeys.isStaySegment(segment);
 
   const mode = PathEditor.getMode();
@@ -231,7 +231,7 @@ function renderSegmentLine(journey: Journey, segment: JouneySegment): string {
     </div>
     ${renderEndpointCell("from", segment)}
     ${renderEndpointCell("to", segment)}
-    <div data-col="transport"><select class="segTransport" data-tip="Transport type, sets the default speed and where the segment may go">${pack.transports
+    <div data-col="transport"><select class="segTransport" data-tip="Transport type, sets the default speed and where the segment may go">${Transports.all
       .map(
         type =>
           `<option value="${type.name}" ${type.name === segment.transport ? "selected" : ""}>${type.name}</option>`
@@ -333,7 +333,7 @@ function onSegTransportChange(this: HTMLSelectElement): void {
   if (!segment) return;
 
   const previousType = segment.transport;
-  const newType = Journeys.getTransportType(this.value);
+  const newType = Transports.get(this.value);
   if (!newType) return;
 
   // Stay: clear the pathfinding-derived state, keeping the endpoints as anchors
@@ -358,7 +358,7 @@ function onSegTransportChange(this: HTMLSelectElement): void {
 
   segment.transport = newType.name;
   segment.speed = newType.speed;
-  if (Journeys.getDomain(previousType) === "stay") delete segment.duration;
+  if (Transports.getDomain(previousType) === "stay") delete segment.duration;
   PathEditor.recomputeSegment(segment);
   segmentsTable.refresh();
 }
@@ -437,9 +437,9 @@ function onSegReset(this: HTMLElement): void {
   if (!segment) return;
 
   const reset = () => {
-    const isStay = Journeys.getDomain(segment.transport) === "stay";
+    const isStay = Transports.getDomain(segment.transport) === "stay";
     delete segment.color;
-    segment.speed = Journeys.getTransportType(segment.transport)?.speed ?? segment.speed;
+    segment.speed = Transports.get(segment.transport)?.speed ?? segment.speed;
     // a stay has no speed to derive its time from, so it falls back to the default one hour
     if (isStay) segment.duration = 1;
     else delete segment.duration;
@@ -504,7 +504,7 @@ function addSegment(): void {
 
   const isFirst = !journey.segments.length;
   const id = journey.segments.length ? Math.max(...journey.segments.map(segment => segment.id)) + 1 : 0;
-  const transport = pack.transports.find(type => type.domain !== "stay") ?? pack.transports[0];
+  const transport = Transports.all.find(type => type.domain !== "stay") ?? Transports.all[0];
 
   journey.segments.push({
     id,
