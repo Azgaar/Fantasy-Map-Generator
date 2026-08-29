@@ -46,7 +46,7 @@ export function stopJourneyTravel(): void {
 function getSteps(journey: Journey, segmentId?: number): Step[] {
   const segments = journey.segments.filter(
     segment =>
-      segment.visible !== false && segment.points.length && (segmentId === undefined || segment.id === segmentId)
+      segment.visible !== false && segment.points.length && (segmentId === undefined || segment.i === segmentId)
   );
 
   if (!segments.length) return [];

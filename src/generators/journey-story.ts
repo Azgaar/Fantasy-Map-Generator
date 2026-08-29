@@ -319,7 +319,7 @@ function buildSegments(
   /** A leg goes in whole or not at all, so a truncated route still ends at a stop */
   const commit = (group: JourneySegment[]): boolean => {
     if (segments.length + group.length > MAX_SEGMENTS) return false;
-    for (const segment of group) segments.push({ ...segment, id: segments.length });
+    for (const segment of group) segments.push({ ...segment, i: segments.length });
     return true;
   };
 
@@ -388,7 +388,7 @@ interface PathSlice {
 
 function makeTravel(leg: PlannedLeg, slice: PathSlice, name: string): JourneySegment {
   const segment: JourneySegment = {
-    id: 0, // reassigned on push, so the ids stay sequential
+    i: 0, // reassigned on push, so the ids stay sequential
     name,
     from: slice.points[0][2],
     to: slice.points[slice.points.length - 1][2],
@@ -404,7 +404,7 @@ function makeTravel(leg: PlannedLeg, slice: PathSlice, name: string): JourneySeg
 function makeStay(stayType: Transport, cellId: number, name: string, duration: number): JourneySegment {
   const [x, y] = pack.cells.p[cellId];
   return {
-    id: 0,
+    i: 0,
     name,
     from: cellId,
     to: cellId,

@@ -7,7 +7,7 @@ const makeSeg = (
   avoidRoads = false,
   transport = "On foot (laden)"
 ): JourneySegment => ({
-  id: 0,
+  i: 0,
   name: "s",
   visible: true,
   from: 0,

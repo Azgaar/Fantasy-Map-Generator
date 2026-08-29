@@ -476,7 +476,7 @@ class JourneysModule {
         if (errorCode || points.length < 2 || !this.isValidPath(points, domain)) continue;
 
         return {
-          id: 0,
+          i: 0,
           name: `${pool[i].name ?? "Start"} → ${pool[j].name ?? "End"}`,
           from,
           to,

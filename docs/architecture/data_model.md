@@ -482,7 +482,7 @@ Journeys are stored in `pack.journeys: Journey[]`. One journey is generated per 
 
 A journey segment is one leg: a stretch of travel, or a halt:
 
-- `id`: `number` - segment id, unique within the journey
+- `i`: `number` - segment id, unique within the journey. Sequential on a generated journey, but editing does not reindex, so it is not reliably the array index
 - `name`: `string` - segment name
 - `color`: `string` - optional. Overrides the journey color
 - `from` / `to`: `number` - optional. Endpoint cell ids. Absent until the user picks them

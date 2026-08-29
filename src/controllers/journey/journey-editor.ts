@@ -112,7 +112,7 @@ function getJourney(): Journey | undefined {
 }
 
 function getSegment(id: number): JourneySegment | undefined {
-  return getJourney()?.segments.find(segment => segment.id === id);
+  return getJourney()?.segments.find(segment => segment.i === id);
 }
 
 /** Segment id of the row a control lives in */
@@ -226,14 +226,14 @@ function renderSegmentLine(journey: Journey, segment: JourneySegment): string {
   const isStay = domain === "stay";
 
   const mode = PathEditor.getMode();
-  const isEditingPoints = mode?.kind === "points" && mode.segmentId === segment.id;
-  const isDrawing = mode?.kind === "draw" && mode.segmentId === segment.id;
+  const isEditingPoints = mode?.kind === "points" && mode.segmentId === segment.i;
+  const isDrawing = mode?.kind === "draw" && mode.segmentId === segment.i;
   const canEditPoints = segment.points.length >= 2 && !isStay;
 
   const hoursPerDay = Journeys.getSegmentHoursPerDay(segment); // each transport sustains its own travel day
   const hours = Journeys.getSegmentTime(segment);
 
-  return /* html */ `<div class="states" data-id="${segment.id}">
+  return /* html */ `<div class="states" data-id="${segment.i}">
     <div data-col="color">
       <fill-box class="segColor" fill="${segment.color || journey.color}" data-tip="Segment color. Click to change"></fill-box>
     </div>
@@ -407,7 +407,7 @@ function onToggleSegVisible(this: HTMLElement): void {
   if (visible) delete segment.visible;
   else segment.visible = false;
 
-  if (!visible) PathEditor.stopEditing(segment.id);
+  if (!visible) PathEditor.stopEditing(segment.i);
   segmentsTable.refresh();
 }
 
@@ -474,7 +474,7 @@ function onSegMoveUp(this: HTMLElement): void {
   const journey = getJourney();
   if (!journey) return;
 
-  const index = journey.segments.findIndex(segment => segment.id === getLineId(this));
+  const index = journey.segments.findIndex(segment => segment.i === getLineId(this));
   if (index <= 0) return;
   journey.segments.splice(index - 1, 0, ...journey.segments.splice(index, 1));
   segmentsTable.refresh();
@@ -490,8 +490,8 @@ function onSegDelete(this: HTMLElement): void {
     message: `Remove segment <b>${escapeHtml(segment.name)}</b>? This action cannot be reverted.`,
     confirm: "Remove",
     onConfirm: () => {
-      PathEditor.stopEditing(segment.id);
-      journey.segments = journey.segments.filter(other => other.id !== segment.id);
+      PathEditor.stopEditing(segment.i);
+      journey.segments = journey.segments.filter(other => other.i !== segment.i);
       segmentsTable.refresh();
     }
   });
@@ -513,12 +513,12 @@ function addSegment(): void {
   if (!journey) return;
 
   const isFirst = !journey.segments.length;
-  const id = journey.segments.length ? Math.max(...journey.segments.map(segment => segment.id)) + 1 : 0;
+  const i = journey.segments.length ? Math.max(...journey.segments.map(segment => segment.i)) + 1 : 0;
   const transport = Transports.all.find(type => type.domain !== "stay") ?? Transports.all[0];
 
   journey.segments.push({
-    id,
-    name: `Segment ${id + 1}`,
+    i,
+    name: `Segment ${i + 1}`,
     from: journey.segments[journey.segments.length - 1]?.to,
     transport: transport?.name ?? "Direct",
     speed: transport?.speed ?? 5,
@@ -528,8 +528,8 @@ function addSegment(): void {
   segmentsTable.refresh();
 
   // a first segment needs both ends; a following one starts where the previous ended
-  if (isFirst) PathEditor.startCellPick(id, "from", true);
-  else PathEditor.startCellPick(id, "to");
+  if (isFirst) PathEditor.startCellPick(i, "from", true);
+  else PathEditor.startCellPick(i, "to");
 }
 
 function downloadSegmentsData(): void {

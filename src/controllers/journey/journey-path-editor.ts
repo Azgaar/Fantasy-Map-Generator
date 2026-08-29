@@ -161,7 +161,7 @@ function onPickCell(clicked: ClickedCell): void {
   if (seg.from !== undefined && seg.to !== undefined) recomputeSegment(seg);
   host?.refresh();
 
-  if (chainTo) startCellPick(seg.id, "to");
+  if (chainTo) startCellPick(seg.i, "to");
 }
 
 // ---- path recomputation ------------------------------------------------
@@ -422,7 +422,7 @@ export function drawOverlays(): void {
     .on("contextmenu", onRemovePoint);
 
   // listeners on the segment path go with it: refresh() redraws the layer from scratch
-  select<SVGPathElement, unknown>(`#segment${journey?.i}_${seg.id}`).on("click", onAddPoint);
+  select<SVGPathElement, unknown>(`#segment${journey?.i}_${seg.i}`).on("click", onAddPoint);
 }
 
 function getOverlay(): SVGGElement {

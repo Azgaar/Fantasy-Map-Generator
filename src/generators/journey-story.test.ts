@@ -119,7 +119,7 @@ describe("generateStoryJourney", () => {
 
       // ids are sequential, names are set, everything is visible
       segments.forEach((segment, index) => {
-        expect(segment.id).toBe(index);
+        expect(segment.i).toBe(index);
         expect(segment.name).toBeTruthy();
         expect(segment.visible).not.toBe(false);
       });

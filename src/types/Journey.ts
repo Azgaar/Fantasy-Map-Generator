@@ -1,7 +1,7 @@
 export type JourneyPoint = [number, number, number]; // [x, y, cellId]
 
 export interface JourneySegment {
-  id: number;
+  i: number;
   name: string;
   color?: string;
   from?: number;
