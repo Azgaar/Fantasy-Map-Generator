@@ -148,7 +148,6 @@ function selectStyleElement() {
     styleStrokeWidthInput.value = el.attr("stroke-width") || 0;
   }
 
-  // stroke width only: journeys carry their own colors, there is no layer color to set
   if (styleElement === "journeys") {
     styleStrokeWidth.style.display = "block";
     styleStrokeWidthInput.value = el.attr("stroke-width") || 0;

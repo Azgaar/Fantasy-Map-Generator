@@ -17,7 +17,6 @@ const generationPipelineSteps = [
   { id: "regraph", run: () => Pack.generate() },
   { id: "markupPack", run: () => Features.markupPack() },
   { id: "defaultRuler", run: () => Measurers.createDefaultRuler() },
-  { id: "journeysSync", run: () => Journeys.sync() },
   { id: "rivers", run: () => Rivers.generate() },
   { id: "biomes", run: () => Biomes.generate() },
   { id: "featureGroups", run: () => Features.defineGroups() },
