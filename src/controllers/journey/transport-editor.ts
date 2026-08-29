@@ -8,7 +8,7 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { tip } from "@/components/tooltips";
-import type { Transport, TransportDomain } from "@/generators/transports-generator";
+import { MAX_HOURS_PER_DAY, type Transport, type TransportDomain } from "@/generators/transports-generator";
 import { convertSpeed, ensureEl, getDistanceUnit, parseSpeed } from "@/utils";
 
 const dialogId = "transportEditor" as const;
@@ -17,6 +17,7 @@ const position = { my: "center", at: "center", of: "svg", collision: "fit" };
 const columns: EditorColumn<Transport>[] = [
   { key: "name", label: "Name", width: "14em", permanent: true },
   { key: "speed", label: "Speed", width: "5em" },
+  { key: "hoursPerDay", label: "h/day", width: "4em", tip: "Hours of travel a day sustains with this transport" },
   { key: "domain", label: "Domain", width: "5em" },
   { key: "actions", width: "1.4em", permanent: true, align: "right" }
 ];
@@ -96,6 +97,8 @@ function renderTypesPage(view: TableView<Transport>): void {
       <div data-col="name"><input class="ttName" value="${type.name.replace(/"/g, "&quot;")}" data-tip="Transport type name" /></div>
       <div data-col="speed"><input class="ttSpeed" type="number" min="0" step="0.5" value="${convertSpeed(type.speed)}" ${isStay ? "disabled" : ""}
         data-tip="${isStay ? "Stay types have no speed" : `Sustained travel speed in ${unit}/h`}" /></div>
+      <div data-col="hoursPerDay"><input class="ttHours" type="number" min="1" max="${MAX_HOURS_PER_DAY}" step="1" value="${Transports.resolveHoursPerDay(type)}"
+        data-tip="${isStay ? "Hours a day of waiting covers: 24 means a full day passes" : "Hours of travel a day sustains: a caravan walks ~8 h/day, a ship sails 24"}" /></div>
       <div data-col="domain"><select class="ttDomain" data-tip="${DOMAIN_LABEL[type.domain]}">${options}</select></div>
       <div data-col="actions"><span data-tip="Remove the transport type" class="ttDelete pointer icon-trash-empty"></span></div>
     </div>`;
@@ -110,6 +113,7 @@ function renderTypesPage(view: TableView<Transport>): void {
   };
   on(".ttName", "change", onNameChange);
   on(".ttSpeed:not([disabled])", "input", onSpeedInput);
+  on(".ttHours", "change", onHoursChange);
   on(".ttDomain", "change", onDomainChange);
   on(".ttDelete", "click", triggerTypeRemove);
 
@@ -150,6 +154,23 @@ function onSpeedInput(this: HTMLInputElement): void {
   emitChanged();
 }
 
+function onHoursChange(this: HTMLInputElement): void {
+  const type = getLineType(this);
+  if (!type) return;
+
+  const hours = Math.round(+this.value);
+  if (!Number.isFinite(hours) || hours < 1 || hours > MAX_HOURS_PER_DAY) {
+    this.value = String(Transports.resolveHoursPerDay(type));
+    tip(`Travel hours per day must be between 1 and ${MAX_HOURS_PER_DAY}`, true, "error", 6000);
+    return;
+  }
+
+  type.hoursPerDay = hours;
+  this.value = String(hours);
+  Transports.save();
+  emitChanged();
+}
+
 function onDomainChange(this: HTMLSelectElement): void {
   const type = getLineType(this);
   if (!type) return;
@@ -165,14 +186,14 @@ function addType(): void {
   let name = "New Type";
   for (let n = 2; Transports.all.some(type => type.name === name); n++) name = `New Type ${n}`;
 
-  Transports.all.push({ i: nextId, name, speed: 5, domain: "land" });
+  Transports.all.push({ i: nextId, name, speed: 5, domain: "land", hoursPerDay: 8 });
   Transports.save();
   typesTable.refresh();
   emitChanged();
 
   const input = document.querySelector<HTMLInputElement>(`#transportBody [data-id="${nextId}"] .ttName`);
   input?.select();
-  tip("Transport type added — rename it and set the speed and domain.", true, "success", 5000);
+  tip("Transport type added — rename it and set the speed, travel hours and domain.", true, "success", 5000);
 }
 
 function triggerTypeRemove(this: HTMLElement): void {

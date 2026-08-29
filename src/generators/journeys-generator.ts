@@ -88,22 +88,24 @@ class JourneysModule {
     return speed > 0 ? this.getSegmentDistance(seg) / speed : 0;
   }
 
-  /** Distance in the user unit, hours, and average km/h over moving segments only, so a long stay doesn't drag it down. */
   getTotals(journey: Journey) {
     let totalDistance = 0;
     let totalHours = 0;
     let movingHours = 0;
+    let totalDays = 0;
 
     for (const seg of journey.segments) {
       const hours = this.getSegmentTime(seg);
       totalDistance += this.getSegmentDistance(seg);
       totalHours += hours;
+      totalDays += hours / Transports.getHoursPerDay(seg.transport);
       if (!this.isStaySegment(seg)) movingHours += hours;
     }
 
     // avgSpeed is km/h like every other stored speed, so the distance-unit ratio has to come back out
     const avgSpeed = movingHours > 0 ? totalDistance / movingHours / getDistanceUnitRatio() : 0;
-    return { totalDistance, totalHours, avgSpeed };
+    const hoursPerDay = totalDays > 0 ? totalHours / totalDays : DEFAULT_HOURS_PER_DAY;
+    return { totalDistance, totalHours, avgSpeed, totalDays, hoursPerDay };
   }
 
   /** Readable duration, e.g. "2d 3h". Days are counted from `hoursPerDay` */
@@ -131,8 +133,13 @@ class JourneysModule {
   private splitTravelTime(hours: number, hoursPerDay: number): { days: number; hours: number; minutes: number } {
     const minutesPerDay = (hoursPerDay > 0 ? hoursPerDay : DEFAULT_HOURS_PER_DAY) * 60;
     const totalMinutes = Number.isFinite(hours) && hours > 0 ? Math.round(hours * 60) : 0;
-    const days = Math.floor(totalMinutes / minutesPerDay);
-    const rest = totalMinutes - days * minutesPerDay;
+    let days = Math.floor(totalMinutes / minutesPerDay);
+    // a journey mixing transports has a fractional rate, so the remainder needs rounding to whole minutes
+    let rest = Math.round(totalMinutes - days * minutesPerDay);
+    if (rest >= Math.round(minutesPerDay)) {
+      days += 1;
+      rest = 0;
+    }
     return { days, hours: Math.floor(rest / 60), minutes: rest % 60 };
   }
 

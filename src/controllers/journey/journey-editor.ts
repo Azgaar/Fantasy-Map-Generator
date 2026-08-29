@@ -23,17 +23,7 @@ import { cellEndpointLabel, cellEndpointTooltip, getCellPoint } from "@/controll
 import { TRANSPORT_TYPES_CHANGED } from "@/controllers/journey/transport-editor";
 import { startJourneyTravel, stopJourneyTravel } from "@/renderers/journey-travel";
 import type { JouneySegment, Journey } from "@/types/Journey";
-import {
-  convertSpeed,
-  downloadFile,
-  ensureEl,
-  findEl,
-  getDistanceUnit,
-  getFileName,
-  getHoursPerDay,
-  parseSpeed,
-  rn
-} from "@/utils";
+import { convertSpeed, downloadFile, ensureEl, findEl, getDistanceUnit, getFileName, parseSpeed, rn } from "@/utils";
 import * as PathEditor from "./journey-path-editor";
 
 const dialogId = "journeyEditor" as const;
@@ -229,7 +219,7 @@ function renderSegmentLine(journey: Journey, segment: JouneySegment): string {
   const isDrawing = mode?.kind === "draw" && mode.segmentId === segment.id;
   const canEditPoints = segment.points.length >= 2 && !isStay;
 
-  const hoursPerDay = getHoursPerDay();
+  const hoursPerDay = Journeys.getSegmentHoursPerDay(segment); // each transport sustains its own travel day
   const hours = Journeys.getSegmentTime(segment);
 
   return /* html */ `<div class="states" data-id="${segment.id}">
@@ -251,7 +241,7 @@ function renderSegmentLine(journey: Journey, segment: JouneySegment): string {
     <div data-col="speed">
       <input class="segSpeed" type="number" step="0.1" min="0" value="${convertSpeed(segment.speed)}" data-tip="Average travel speed in ${unit}/h, type to override. ${segment.avoidRoads ? `Off-road speed: ${convertSpeed(Journeys.getEffectiveSpeed(segment))}` : ""}" />
     </div>
-    <div data-col="time" data-tip="Travel time in hours, type to override. Equals to ${Journeys.formatTravelTimeFull(hours, hoursPerDay)}">
+    <div data-col="time" data-tip="Travel time in hours, type to override. Equals to ${Journeys.formatTravelTimeFull(hours, hoursPerDay)} at ${hoursPerDay}h of travel per day">
       <input class="segDuration" type="number" min="0" step="0.1" value="${rn(hours, 1)}"/>
     </div>
     <div data-col="roads">
@@ -296,14 +286,13 @@ function renderEndpointCell(endpoint: "from" | "to", segment: JouneySegment): st
 
 function updateTotals(journey: Journey): void {
   const unit = getDistanceUnit();
-  const { totalDistance, totalHours, avgSpeed } = Journeys.getTotals(journey);
+  const { totalDistance, totalHours, avgSpeed, hoursPerDay } = Journeys.getTotals(journey);
 
   ensureEl("journeyTotalDistance").innerHTML = `${rn(totalDistance)} ${unit}`;
   ensureEl("journeyAvgSpeed").innerHTML = avgSpeed ? `${convertSpeed(avgSpeed)} ${unit}/h` : "-";
-  const hoursPerDay = getHoursPerDay();
   const travelTime = ensureEl("journeyTravelTime");
   travelTime.innerHTML = Journeys.formatTravelTime(totalHours, hoursPerDay);
-  travelTime.parentElement!.dataset.tip = `Total travel time at ${hoursPerDay}h/day: ${Journeys.formatTravelTimeFull(totalHours, hoursPerDay)}`;
+  travelTime.parentElement!.dataset.tip = `Total travel time: ${Journeys.formatTravelTimeFull(totalHours, hoursPerDay)}. Days are counted from each transport's travel hours`;
 }
 
 function onTransportTypesChanged(): void {

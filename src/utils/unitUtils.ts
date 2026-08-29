@@ -195,18 +195,6 @@ export function parseSpeed(speedInUnits: number): number {
 }
 
 /**
- * Read the user-configured travel hours per day (from the Units editor).
- * Journeys use it to convert cumulative travel hours into days.
- * Defaults to 8 h/day — a realistic caravan day.
- */
-export function getHoursPerDay(): number {
-  const el = document.getElementById("hoursPerDayInput") as HTMLInputElement | null;
-  const raw = Number(el?.value);
-  if (Number.isFinite(raw) && raw > 0 && raw <= 24) return raw;
-  return 8;
-}
-
-/**
  * Get the area unit as configured by the user
  * @param squareMark - The mark appended to a linear unit to make it square
  * @returns {string} - The area unit, e.g. "mi²"

@@ -1,13 +1,18 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { JouneySegment, Journey } from "@/types/Journey";
 
-const makeSeg = (distance: number, speed: number, avoidRoads = false): JouneySegment => ({
+const makeSeg = (
+  distance: number,
+  speed: number,
+  avoidRoads = false,
+  transport = "On foot (laden)"
+): JouneySegment => ({
   id: 0,
   name: "s",
   visible: true,
   from: 0,
   to: 1,
-  transport: "On foot (laden)",
+  transport,
   speed,
   distance,
   points: [],
@@ -19,6 +24,8 @@ describe("journey metrics", () => {
 
   beforeEach(async () => {
     (globalThis as any).distanceScale = 1;
+    await import("./transports-generator");
+    (globalThis as any).options = { transports: (globalThis as any).Transports.getDefaults() };
     await import("./journeys-generator");
     Journeys = (globalThis as any).Journeys;
   });
@@ -55,6 +62,29 @@ describe("journey metrics", () => {
     expect(t.avgSpeed).toBe(7.5);
   });
 
+  it("getSegmentHoursPerDay comes from the transport type", () => {
+    expect(Journeys.getSegmentHoursPerDay(makeSeg(10, 3))).toBe(8); // On foot (laden)
+    expect(Journeys.getSegmentHoursPerDay(makeSeg(10, 20, false, "Dirigible"))).toBe(24);
+    expect(Journeys.getSegmentHoursPerDay(makeSeg(10, 5, false, "Removed type"))).toBe(8); // unknown: domain fallback
+  });
+
+  it("getTotals counts days per segment transport", () => {
+    const j: Journey = {
+      i: 0,
+      name: "j",
+      type: "Travel",
+      visible: true,
+      color: "#000",
+      // 24h on foot is 3 travel days, the same 24h aboard a dirigible is 1
+      segments: [makeSeg(72, 3), makeSeg(480, 20, false, "Dirigible")]
+    };
+    const t = Journeys.getTotals(j);
+    expect(t.totalHours).toBe(48);
+    expect(t.totalDays).toBe(4);
+    expect(t.hoursPerDay).toBe(12); // the rate that reproduces 4 days from 48 hours
+    expect(Journeys.formatTravelTime(t.totalHours, t.hoursPerDay)).toBe("4d");
+  });
+
   it("formatTravelTime handles days/hours/minutes with default 8h/day", () => {
     expect(Journeys.formatTravelTime(0)).toBe("0m");
     expect(Journeys.formatTravelTime(0.5)).toBe("30m");
@@ -69,6 +99,11 @@ describe("journey metrics", () => {
     expect(Journeys.formatTravelTime(75)).toBe("9d 3h"); // under 10 days, hours still matter
     expect(Journeys.formatTravelTime(11.5, 24)).toBe("11h"); // hours-only above the threshold
     expect(Journeys.formatTravelTime(3.25, 24)).toBe("3h 15m"); // below it, minutes still show
+  });
+
+  it("formatTravelTime keeps whole minutes at a fractional (mixed-transport) rate", () => {
+    expect(Journeys.formatTravelTimeFull(77.248512, 12.5)).toBe("6d 2h 15m");
+    expect(Journeys.formatTravelTimeFull(10, 9.9)).toBe("1d 6m");
   });
 
   it("formatTravelTimeFull keeps every unit for the tooltip", () => {

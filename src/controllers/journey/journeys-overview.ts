@@ -18,16 +18,7 @@ import { cellEndpointLabel, getCellPoint } from "@/controllers/journey/journey-c
 import { startJourneyTravel, stopJourneyTravel } from "@/renderers/journey-travel";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import type { Journey } from "@/types/Journey";
-import {
-  convertSpeed,
-  downloadFile,
-  ensureEl,
-  findEl,
-  getDistanceUnit,
-  getFileName,
-  getHoursPerDay,
-  rn
-} from "@/utils";
+import { convertSpeed, downloadFile, ensureEl, findEl, getDistanceUnit, getFileName, rn } from "@/utils";
 
 const dialogId = "journeysOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
@@ -167,11 +158,10 @@ function renderJourneysPage(view: TableView<Journey>): void {
   });
 
   const unit = getDistanceUnit();
-  const hoursPerDay = getHoursPerDay();
   let lines = "";
 
   for (const journey of view.rows) {
-    const { totalDistance, totalHours, avgSpeed } = Journeys.getTotals(journey);
+    const { totalDistance, totalHours, avgSpeed, hoursPerDay } = Journeys.getTotals(journey);
     lines += /* html */ `<div class="states" data-id="${journey.i}">
       <div data-col="name" style="width: 93%; overflow: hidden">
         <fill-box class="journeyColor" fill="${journey.color}" size="0.8em" data-tip="Journey color. Click to change"></fill-box>
@@ -197,9 +187,12 @@ function renderJourneysPage(view: TableView<Journey>): void {
   ensureEl("journeysFooterNumber").innerHTML = `${view.all.length} of ${pack.journeys.length}`;
   ensureEl("journeysFooterDistance").innerHTML = `${rn(sum(totals.map(t => t.totalDistance)))} ${unit}`;
   const totalHours = sum(totals.map(t => t.totalHours));
+  // days are counted per transport, so the rate that reproduces them is what the total formats with
+  const totalDays = sum(totals.map(t => t.totalDays));
+  const footerHoursPerDay = totalDays > 0 ? totalHours / totalDays : undefined;
   const footerTime = ensureEl("journeysFooterTime");
-  footerTime.innerHTML = Journeys.formatTravelTime(totalHours, hoursPerDay);
-  footerTime.parentElement!.dataset.tip = `Total travel time at ${hoursPerDay}h/day: ${Journeys.formatTravelTimeFull(totalHours, hoursPerDay)}`;
+  footerTime.innerHTML = Journeys.formatTravelTime(totalHours, footerHoursPerDay);
+  footerTime.parentElement!.dataset.tip = `Total travel time: ${Journeys.formatTravelTimeFull(totalHours, footerHoursPerDay)}. Days are counted from each transport's travel hours`;
 
   body.querySelectorAll("div.states").forEach(el => void el.addEventListener("mouseenter", journeyHighlightOn));
   body.querySelectorAll("div.states").forEach(el => void el.addEventListener("mouseleave", journeyHighlightOff));
@@ -346,10 +339,10 @@ function triggerAllJourneysRemove(): void {
 
 function downloadJourneysData(): void {
   const unit = getDistanceUnit();
-  let data = `Id,Journey,Type,From,To,Segments,Distance(${unit}),AvgSpeed(${unit}/h),TravelHours\n`; // headers
+  let data = `Id,Journey,Type,From,To,Segments,Distance(${unit}),AvgSpeed(${unit}/h),TravelHours,TravelDays\n`; // headers
 
   for (const journey of journeysTable.view().all) {
-    const { totalDistance, totalHours, avgSpeed } = Journeys.getTotals(journey);
+    const { totalDistance, totalHours, avgSpeed, totalDays } = Journeys.getTotals(journey);
     const places = [cellEndpointLabel(getStart(journey)), cellEndpointLabel(getEnd(journey))];
     const values = [
       journey.i,
@@ -360,7 +353,8 @@ function downloadJourneysData(): void {
       journey.segments.length,
       rn(totalDistance, 2),
       convertSpeed(avgSpeed),
-      rn(totalHours, 2)
+      rn(totalHours, 2),
+      rn(totalDays, 2) // days counted from each transport's travel hours
     ];
     data += `${values.join(",")}\n`;
   }
