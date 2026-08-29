@@ -7,7 +7,7 @@ const makeSeg = (distance: number, speed: number, avoidRoads = false): JouneySeg
   visible: true,
   from: 0,
   to: 1,
-  transport: "On Foot",
+  transport: "On foot (laden)",
   speed,
   distance,
   points: [],

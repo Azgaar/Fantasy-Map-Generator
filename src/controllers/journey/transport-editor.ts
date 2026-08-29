@@ -15,7 +15,7 @@ const dialogId = "transportEditor" as const;
 const position = { my: "center", at: "center", of: "svg", collision: "fit" };
 
 const columns: EditorColumn<Transport>[] = [
-  { key: "name", label: "Name", width: "7em", permanent: true },
+  { key: "name", label: "Name", width: "14em", permanent: true },
   { key: "speed", label: "Speed", width: "5em" },
   { key: "domain", label: "Domain", width: "5em" },
   { key: "actions", width: "1.4em", permanent: true, align: "right" }

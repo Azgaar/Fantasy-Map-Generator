@@ -1,23 +1,31 @@
+/** Where a party travels. `stay` is a halt, not a way of moving, so it is not one of these */
+export type TravelDomain = "land" | "water" | "air";
+
 export interface JourneyArchetype {
   /** What kind of travel this is, shown as the journey's type: "Quest", "Raid" */
   type: string;
   /** How often this party turns up, relative to the others */
   weight: number;
+  /**
+   * How the party travels, weighted per domain — the shape of the whole journey.
+   * The heaviest domain is what the party *is*: it steers where the journey starts and which
+   * stops it heads for, and the lighter ones are the exception it falls back on. A domain left
+   * out never happens. A leg still has to be possible: water needs a port at both ends and a
+   * sailable path, land needs a land path, air is never refused.
+   */
+  domains: Partial<Record<TravelDomain, number>>;
+  /**
+   * Preferred transport by name, weighted, for each domain the party travels.
+   * Names are matched against the configured transports, so a party falls back to what
+   * the map actually has. Every domain in `domains` should appear here.
+   */
+  transports: Partial<Record<TravelDomain, Record<string, number>>>;
   /** Chance a land leg leaves the road network (and travels at the off-road penalty) */
   offRoad: number;
-  /** Chance a leg between two ports is sailed rather than walked */
-  sea: number;
-  /** Chance a leg is flown instead — reserved for parties that can */
-  air?: number;
   /** Chance the party stops over at an intermediate burg */
   rest: number;
   /** Chance a long leg is broken by a camp in the wild */
   camp: number;
-  /** Preferred transport by name, weighted; resolved against the configured transports */
-  land: Record<string, number>;
-  water: Record<string, number>;
-  /** Air-domain transport, for the parties that fly */
-  sky?: Record<string, number>;
   /** Journey titles; tokens: {hero} {origin} {destination} {destinationAdjective} {wild} */
   title: string[];
   /** Names for a land leg, in the party's own voice; tokens: {to} {wild}. Falls back to the shared pool */
@@ -47,7 +55,53 @@ export const COMPANY_ADJECTIVES = [
   "Hollow",
   "Winter",
   "Last",
-  "Patient"
+  "Patient",
+  "Bronze",
+  "Copper",
+  "Silver",
+  "Golden",
+  "Leaden",
+  "Scarlet",
+  "Sable",
+  "Russet",
+  "Pale",
+  "Bright",
+  "Bitter",
+  "Quiet",
+  "Restless",
+  "Weary",
+  "Ragged",
+  "Faithful",
+  "Fearless",
+  "Stubborn",
+  "Solemn",
+  "Steadfast",
+  "Vigilant",
+  "Wayward",
+  "Errant",
+  "Crooked",
+  "Nameless",
+  "Lost",
+  "Free",
+  "Sworn",
+  "Bold",
+  "Proud",
+  "Cold",
+  "Frost",
+  "Storm",
+  "Ember",
+  "Cinder",
+  "Flint",
+  "Stone",
+  "Glass",
+  "Bramble",
+  "Briar",
+  "Starless",
+  "Sunless",
+  "Hidden",
+  "Veiled",
+  "Hallowed",
+  "Weathered"
 ];
 
 export const BANNERS = [
@@ -62,7 +116,59 @@ export const BANNERS = [
   "Wolf",
   "Falcon",
   "Oak",
-  "Key"
+  "Key",
+  "Lion",
+  "Bear",
+  "Boar",
+  "Stag",
+  "Ram",
+  "Bull",
+  "Hound",
+  "Fox",
+  "Hare",
+  "Adder",
+  "Raven",
+  "Eagle",
+  "Hawk",
+  "Swan",
+  "Heron",
+  "Magpie",
+  "Pike",
+  "Salmon",
+  "Griffin",
+  "Wyvern",
+  "Dragon",
+  "Phoenix",
+  "Unicorn",
+  "Basilisk",
+  "Crown",
+  "Crescent",
+  "Sun",
+  "Moon",
+  "Comet",
+  "Flame",
+  "Anchor",
+  "Helm",
+  "Gauntlet",
+  "Sword",
+  "Spear",
+  "Arrow",
+  "Shield",
+  "Chain",
+  "Bell",
+  "Harp",
+  "Horn",
+  "Sheaf",
+  "Wheel",
+  "Anvil",
+  "Hammer",
+  "Gate",
+  "Thistle",
+  "Ivy",
+  "Yew",
+  "Lily",
+  "Feather",
+  "Antler"
 ];
 
 export const CARGO = [
@@ -77,7 +183,60 @@ export const CARGO = [
   "Ivory",
   "Glass",
   "Pearl",
-  "Tin"
+  "Tin",
+  "Copper",
+  "Bronze",
+  "Steel",
+  "Silver",
+  "Gold",
+  "Lead",
+  "Flint",
+  "Marble",
+  "Obsidian",
+  "Jade",
+  "Lapis",
+  "Alum",
+  "Saltpetre",
+  "Quicksilver",
+  "Flax",
+  "Linen",
+  "Cotton",
+  "Velvet",
+  "Dye",
+  "Indigo",
+  "Pepper",
+  "Cinnamon",
+  "Cloves",
+  "Saffron",
+  "Incense",
+  "Myrrh",
+  "Sandalwood",
+  "Grain",
+  "Barley",
+  "Olives",
+  "Honey",
+  "Cheese",
+  "Ale",
+  "Mead",
+  "Vinegar",
+  "Sugar",
+  "Tea",
+  "Fish",
+  "Timber",
+  "Charcoal",
+  "Coal",
+  "Pitch",
+  "Tar",
+  "Hemp",
+  "Wax",
+  "Oil",
+  "Leather",
+  "Hides",
+  "Horses",
+  "Cattle",
+  "Tobacco",
+  "Parchment",
+  "Ink"
 ];
 
 export const RELICS = [
@@ -91,7 +250,58 @@ export const RELICS = [
   "Mask",
   "Horn",
   "Tome",
-  "Sceptre"
+  "Sceptre",
+  "Circlet",
+  "Diadem",
+  "Torc",
+  "Amulet",
+  "Talisman",
+  "Sigil",
+  "Cloak",
+  "Mantle",
+  "Veil",
+  "Gauntlet",
+  "Orb",
+  "Staff",
+  "Rod",
+  "Crozier",
+  "Spear",
+  "Dagger",
+  "Bow",
+  "Shield",
+  "Helm",
+  "Hammer",
+  "Scroll",
+  "Tablet",
+  "Grimoire",
+  "Chronicle",
+  "Ledger",
+  "Reliquary",
+  "Casket",
+  "Coffer",
+  "Urn",
+  "Vial",
+  "Flask",
+  "Cup",
+  "Lantern",
+  "Mirror",
+  "Hourglass",
+  "Bell",
+  "Harp",
+  "Key",
+  "Chain",
+  "Coin",
+  "Banner",
+  "Throne",
+  "Wheel",
+  "Stone",
+  "Heart",
+  "Eye",
+  "Tear",
+  "Feather",
+  "Fang",
+  "Egg",
+  "Thorn"
 ];
 
 export const BEASTS = [
@@ -106,7 +316,43 @@ export const BEASTS = [
   "chimera",
   "serpent",
   "direwolf",
-  "wendigo"
+  "wendigo",
+  "wyvern",
+  "drake",
+  "hydra",
+  "cockatrice",
+  "salamander",
+  "leviathan",
+  "harpy",
+  "gorgon",
+  "minotaur",
+  "sphinx",
+  "roc",
+  "ogre",
+  "giant",
+  "ettin",
+  "yeti",
+  "behemoth",
+  "colossus",
+  "golem",
+  "gargoyle",
+  "homunculus",
+  "banshee",
+  "wraith",
+  "revenant",
+  "ghoul",
+  "lich",
+  "vampire",
+  "wight",
+  "draugr",
+  "shade",
+  "nightmare",
+  "kelpie",
+  "siren",
+  "hellhound",
+  "barghest",
+  "boggart",
+  "sabrecat"
 ];
 
 export const RANKS = ["Ser", "Dame", "Captain", "Brother", "Sister", "Master", "Mistress", "Old"];
@@ -123,7 +369,52 @@ export const TAVERN_QUALIFIERS = [
   "Painted",
   "Old",
   "Weeping",
-  "Merry"
+  "Merry",
+  "Broken",
+  "Bent",
+  "Leaning",
+  "Battered",
+  "Cracked",
+  "Tarnished",
+  "Hollow",
+  "Dancing",
+  "Singing",
+  "Whistling",
+  "Grinning",
+  "Jolly",
+  "Roaring",
+  "Prancing",
+  "Galloping",
+  "Thirsty",
+  "Drunken",
+  "Weary",
+  "Idle",
+  "Restless",
+  "Limping",
+  "Blind",
+  "Toothless",
+  "Green",
+  "Blue",
+  "Black",
+  "White",
+  "Scarlet",
+  "Copper",
+  "Brazen",
+  "Gilded",
+  "Lucky",
+  "Lost",
+  "Wayward",
+  "Wandering",
+  "Quiet",
+  "Sly",
+  "Fat",
+  "Bold",
+  "Proud",
+  "Hidden",
+  "Wild",
+  "Salty",
+  "Smoky",
+  "Frosty"
 ];
 
 export const TAVERN_SUBJECTS = [
@@ -140,7 +431,95 @@ export const TAVERN_SUBJECTS = [
   "Bell",
   "Otter",
   "Pilgrim",
-  "Gate"
+  "Gate",
+  "Barrel",
+  "Cask",
+  "Tankard",
+  "Flagon",
+  "Goblet",
+  "Jug",
+  "Ladle",
+  "Hearth",
+  "Smith",
+  "Miller",
+  "Cooper",
+  "Drover",
+  "Sailor",
+  "Widow",
+  "Maiden",
+  "Monk",
+  "Friar",
+  "Knight",
+  "Squire",
+  "Herald",
+  "Minstrel",
+  "Piper",
+  "Fiddler",
+  "Jester",
+  "Hammer",
+  "Anvil",
+  "Plough",
+  "Cart",
+  "Wagon",
+  "Saddle",
+  "Horseshoe",
+  "Compass",
+  "Beacon",
+  "Goose",
+  "Swan",
+  "Magpie",
+  "Raven",
+  "Rook",
+  "Wren",
+  "Cat",
+  "Fox",
+  "Badger",
+  "Hare",
+  "Ram",
+  "Bull",
+  "Ox",
+  "Pony",
+  "Mare",
+  "Goat",
+  "Salmon",
+  "Trout",
+  "Pike",
+  "Eel",
+  "Whale",
+  "Crab",
+  "Dragon",
+  "Wyvern",
+  "Unicorn",
+  "Phoenix",
+  "Serpent",
+  "Lion",
+  "Bear",
+  "Wolf",
+  "Star",
+  "Moon",
+  "Sun",
+  "Bridge",
+  "Ford",
+  "Mill",
+  "Well",
+  "Oak",
+  "Willow",
+  "Yew",
+  "Thorn",
+  "Rose",
+  "Thistle",
+  "Crown",
+  "Sword",
+  "Shield",
+  "Helm",
+  "Arrow",
+  "Key",
+  "Chain",
+  "Boot",
+  "Glove",
+  "Cloak",
+  "Purse",
+  "Coin"
 ];
 
 export const NAMELESS = [
@@ -201,7 +580,10 @@ export const LEG_NAMES = {
 /** Names for the stops no archetype speaks for */
 export const HALT_NAMES = {
   muster: ["Gathering in {place}", "Getting supplies in {place}", "Meeting at {tavern}"],
+  /** A party taking passage on someone else's ship */
   harborWait: ["Waiting for a ship in {from}", "Held up in {from} port", "Booking passage in {from}"],
+  /** A party sailing its own: it waits on the tide and the loading, not on a berth */
+  castingOff: ["Loading at {from} quay", "Tide and weather in {from}", "Making ready in {from} port"],
   /** A night at sea within reach of a named place, and out of sight of one */
   anchoredNear: ["Anchored {label}", "A night at anchor {label}", "Stopped {label}"],
   anchored: ["Night at anchor", "A night out on {water}", "Anchored till morning"],
@@ -213,14 +595,16 @@ export const JOURNEY_ARCHETYPES: Record<string, JourneyArchetype> = {
   heroes: {
     type: "Quest",
     weight: 10,
-    offRoad: 0.45,
-    sea: 0.3,
+    domains: { land: 7, water: 2 },
+    transports: {
+      land: { "On foot (light)": 4, "Horseback (no spare horse)": 4, Carriage: 1 },
+      water: { "Sailing boat": 3, "Sailing Ship": 2, Rowboat: 1 }
+    },
+    offRoad: 0.4,
     rest: 0.7,
     camp: 0.7,
-    land: { "On Foot": 4, Horse: 4, Carriage: 1 },
-    water: { Boat: 3, Ship: 2 },
     title: [
-      "{rank} {hero} and the Company of the {company} {banner}",
+      "The Company of the {company} {banner}",
       "The Quest of {rank} {hero}",
       "{hero}'s Company",
       "The {company} {banner} rides to {destination}",
@@ -233,13 +617,15 @@ export const JOURNEY_ARCHETYPES: Record<string, JourneyArchetype> = {
 
   wanderer: {
     type: "Wandering",
-    weight: 6,
+    weight: 4,
+    domains: { land: 8, water: 2 },
+    transports: {
+      land: { "On foot (light)": 5, "On foot (laden)": 2, "Horseback (no spare horse)": 1 },
+      water: { Rowboat: 3, "Sailing boat": 2, "Sailing Ship": 1 }
+    },
     offRoad: 0.5,
-    sea: 0.25,
     rest: 0.6,
     camp: 0.7,
-    land: { "On Foot": 4, Horse: 3 },
-    water: { Boat: 4, Ship: 1 },
     title: [
       "{rank} {hero} of {origin}",
       "The Long Road of {hero}",
@@ -253,13 +639,15 @@ export const JOURNEY_ARCHETYPES: Record<string, JourneyArchetype> = {
 
   caravan: {
     type: "Caravan",
-    weight: 6,
+    weight: 4,
+    domains: { land: 6, water: 3 },
+    transports: {
+      land: { Carriage: 3, "On foot (laden)": 1 },
+      water: { "Sailing Ship": 4, "Sailing boat": 1 }
+    },
     offRoad: 0.1,
-    sea: 0.35,
     rest: 0.8,
     camp: 0.4,
-    land: { Carriage: 5, Horse: 3, "On Foot": 1 },
-    water: { Ship: 4, Boat: 1 },
     title: [
       "The {company} Caravan",
       "{cargo} Road to {destination}",
@@ -274,12 +662,14 @@ export const JOURNEY_ARCHETYPES: Record<string, JourneyArchetype> = {
   campaign: {
     type: "Military campaign",
     weight: 4,
+    domains: { land: 7, water: 3 },
+    transports: {
+      land: { "On foot (laden)": 5, "Horseback (no spare horse)": 3, Carriage: 1 },
+      water: { "Sailing Ship": 5, "Sailing boat": 1 }
+    },
     offRoad: 0.25,
-    sea: 0.3,
     rest: 0.5,
     camp: 0.8,
-    land: { "On Foot": 5, Horse: 3, Carriage: 1 },
-    water: { Ship: 5, Boat: 1 },
     title: [
       "The March on {destination}",
       "{rank} {hero}'s Host",
@@ -293,13 +683,15 @@ export const JOURNEY_ARCHETYPES: Record<string, JourneyArchetype> = {
 
   embassy: {
     type: "Embassy",
-    weight: 4,
+    weight: 2,
+    domains: { land: 6, water: 4 },
+    transports: {
+      land: { Carriage: 4, Stagecoach: 3, "Horseback (no spare horse)": 3, "On foot (light)": 1 },
+      water: { "Sailing Ship": 5, "Sailing boat": 1 }
+    },
     offRoad: 0.05,
-    sea: 0.4,
     rest: 0.9,
     camp: 0.25,
-    land: { Horse: 4, Carriage: 4, "On Foot": 1 },
-    water: { Ship: 5, Boat: 1 },
     title: [
       "Embassy to {destination}",
       "The {destinationAdjective} Mission",
@@ -313,12 +705,14 @@ export const JOURNEY_ARCHETYPES: Record<string, JourneyArchetype> = {
   pilgrimage: {
     type: "Pilgrimage",
     weight: 4,
+    domains: { land: 8, water: 2 },
+    transports: {
+      land: { "On foot (laden)": 4, "On foot (light)": 3, "Horseback (no spare horse)": 1 },
+      water: { "Sailing boat": 3, "Sailing Ship": 2, Rowboat: 1 }
+    },
     offRoad: 0.35,
-    sea: 0.2,
     rest: 0.7,
     camp: 0.6,
-    land: { "On Foot": 6, Horse: 1 },
-    water: { Boat: 3, Ship: 2 },
     title: [
       "Pilgrimage to {destination}",
       "The {company} Pilgrims",
@@ -333,12 +727,14 @@ export const JOURNEY_ARCHETYPES: Record<string, JourneyArchetype> = {
   mercenaries: {
     type: "Mercenary contract",
     weight: 3,
+    domains: { land: 7, water: 3 },
+    transports: {
+      land: { "Horseback (no spare horse)": 5, "On foot (laden)": 3, "Horseback (spare horse)": 1, Carriage: 1 },
+      water: { "Sailing Ship": 4, "Sailing boat": 2 }
+    },
     offRoad: 0.3,
-    sea: 0.35,
     rest: 0.6,
     camp: 0.6,
-    land: { Horse: 5, "On Foot": 3, Carriage: 1 },
-    water: { Ship: 4, Boat: 2 },
     title: [
       "The {company} Blades",
       "{hero}'s Free Company",
@@ -353,12 +749,14 @@ export const JOURNEY_ARCHETYPES: Record<string, JourneyArchetype> = {
   courier: {
     type: "Courier ride",
     weight: 3,
+    domains: { land: 7, water: 3 },
+    transports: {
+      land: { "Horseback (spare horse)": 3, Stagecoach: 1, "On foot (light)": 1 },
+      water: { "Sailing boat": 3, "Sailing Ship": 3 }
+    },
     offRoad: 0.15,
-    sea: 0.3,
     rest: 0.5,
     camp: 0.3,
-    land: { Horse: 8, Carriage: 1 },
-    water: { Boat: 3, Ship: 3 },
     title: [
       "The Ride to {destination}",
       "News out of {origin}",
@@ -373,12 +771,14 @@ export const JOURNEY_ARCHETYPES: Record<string, JourneyArchetype> = {
   expedition: {
     type: "Expedition",
     weight: 3,
+    domains: { land: 7, water: 3 },
+    transports: {
+      land: { "On foot (laden)": 5, "Horseback (no spare horse)": 2, "On foot (light)": 1 },
+      water: { "Sailing boat": 3, "Sailing Ship": 2, Rowboat: 1 }
+    },
     offRoad: 0.7,
-    sea: 0.3,
     rest: 0.5,
     camp: 0.8,
-    land: { "On Foot": 4, Horse: 3 },
-    water: { Boat: 3, Ship: 2 },
     title: [
       "Expedition to the {wild}",
       "The {company} Expedition",
@@ -393,12 +793,14 @@ export const JOURNEY_ARCHETYPES: Record<string, JourneyArchetype> = {
   refugees: {
     type: "Refugee flight",
     weight: 3,
+    domains: { land: 6, water: 3 },
+    transports: {
+      land: { "On foot (laden)": 7, Carriage: 2, "On foot (light)": 1 },
+      water: { Rowboat: 3, "Sailing boat": 2, "Sailing Ship": 1 }
+    },
     offRoad: 0.4,
-    sea: 0.35,
     rest: 0.5,
     camp: 0.8,
-    land: { "On Foot": 7, Carriage: 2 },
-    water: { Boat: 4, Ship: 2 },
     title: [
       "The Road out of {origin}",
       "{origin} on the Move",
@@ -413,12 +815,14 @@ export const JOURNEY_ARCHETYPES: Record<string, JourneyArchetype> = {
   relicseekers: {
     type: "Treasure hunt",
     weight: 3,
+    domains: { land: 7, water: 3 },
+    transports: {
+      land: { "On foot (light)": 4, "Horseback (no spare horse)": 3, "On foot (laden)": 1 },
+      water: { "Sailing boat": 3, "Sailing Ship": 2 }
+    },
     offRoad: 0.6,
-    sea: 0.3,
     rest: 0.6,
     camp: 0.7,
-    land: { "On Foot": 4, Horse: 3 },
-    water: { Boat: 3, Ship: 2 },
     title: [
       "The Search for the {relic}",
       "{hero} and the {relic}",
@@ -433,12 +837,14 @@ export const JOURNEY_ARCHETYPES: Record<string, JourneyArchetype> = {
   monsterhunt: {
     type: "Monster hunt",
     weight: 3,
+    domains: { land: 8, water: 2 },
+    transports: {
+      land: { "Horseback (no spare horse)": 4, "On foot (light)": 4, "On foot (laden)": 1 },
+      water: { "Sailing boat": 3, Rowboat: 2, "Sailing Ship": 1 }
+    },
     offRoad: 0.65,
-    sea: 0.2,
     rest: 0.6,
     camp: 0.7,
-    land: { Horse: 4, "On Foot": 4 },
-    water: { Boat: 3, Ship: 1 },
     title: [
       "The Hunt for the {wild} {beast}",
       "{rank} {hero} hunts the {beast}",
@@ -453,12 +859,14 @@ export const JOURNEY_ARCHETYPES: Record<string, JourneyArchetype> = {
   exiles: {
     type: "Exile's flight",
     weight: 2,
+    domains: { water: 6, land: 4 },
+    transports: {
+      land: { "On foot (laden)": 5, Carriage: 2, "On foot (light)": 2, "Horseback (no spare horse)": 1 },
+      water: { Rowboat: 3, "Sailing boat": 2, "Sailing Ship": 2 }
+    },
     offRoad: 0.6,
-    sea: 0.6,
     rest: 0.4,
     camp: 0.7,
-    land: { "On Foot": 5, Carriage: 2, Horse: 2 },
-    water: { Boat: 3, Ship: 3 },
     title: [
       "Flight from {origin}",
       "The {company} Exiles",
@@ -472,12 +880,14 @@ export const JOURNEY_ARCHETYPES: Record<string, JourneyArchetype> = {
   smugglers: {
     type: "Smuggling run",
     weight: 2,
+    domains: { water: 6, land: 4 },
+    transports: {
+      land: { "On foot (light)": 3, "Horseback (no spare horse)": 3, "On foot (laden)": 1, Carriage: 1 },
+      water: { Rowboat: 4, "Sailing boat": 3, "Sailing Ship": 1 }
+    },
     offRoad: 0.8,
-    sea: 0.7,
     rest: 0.35,
     camp: 0.6,
-    land: { "On Foot": 3, Horse: 3, Carriage: 1 },
-    water: { Boat: 5, Ship: 2 },
     title: ["The {company} Run", "Smugglers' road to {destination}", "The {cargo} Run", "Untaxed to {destination}"],
     leg: ["Quiet road to {to}", "Around the tollgates to {to}", "Night haul to {to}"],
     stopover: ["Lying low at {tavern}", "Unloading quietly in {place}", "Palms greased in {place}"],
@@ -487,12 +897,14 @@ export const JOURNEY_ARCHETYPES: Record<string, JourneyArchetype> = {
   raiders: {
     type: "Raid",
     weight: 2,
+    domains: { water: 8, land: 2 },
+    transports: {
+      land: { "On foot (light)": 4, "Horseback (spare horse)": 3, "Horseback (no spare horse)": 1 },
+      water: { "Sailing Ship": 4, "Sailing boat": 3, Rowboat: 1 }
+    },
     offRoad: 0.6,
-    sea: 0.85,
     rest: 0.3,
     camp: 0.6,
-    land: { "On Foot": 4, Horse: 2 },
-    water: { Ship: 4, Boat: 4 },
     title: ["The {company} Reavers", "{hero}'s Raid", "Raid on {destination}", "The {origin} Keels"],
     leg: ["Falling on {to}", "Overland to {to}", "Driving the herd to {to}"],
     stopover: ["Dividing the take in {place}", "Selling the plunder in {place}", "Drinking {place} dry"],
@@ -502,12 +914,14 @@ export const JOURNEY_ARCHETYPES: Record<string, JourneyArchetype> = {
   progress: {
     type: "Royal progress",
     weight: 2,
+    domains: { land: 7, water: 3 },
+    transports: {
+      land: { Carriage: 6, Stagecoach: 3, "Horseback (no spare horse)": 3, "On foot (laden)": 1 },
+      water: { "Sailing Ship": 6, "Sailing boat": 1 }
+    },
     offRoad: 0.02,
-    sea: 0.3,
     rest: 0.95,
     camp: 0.1,
-    land: { Carriage: 8, Horse: 3 },
-    water: { Ship: 6, Boat: 1 },
     title: [
       "The Progress of {rank} {hero}",
       "The {destinationAdjective} Progress",
@@ -515,21 +929,22 @@ export const JOURNEY_ARCHETYPES: Record<string, JourneyArchetype> = {
       "The {company} Progress"
     ],
     leg: ["The royal road to {to}", "Received at {to}", "Procession to {to}"],
-    stopover: ["Feasted in {place}", "Court held in {place}", "Three nights in {place}"],
+    stopover: ["Feasted in {place}", "Court held in {place}", "Stay in {place}"],
     bivouac: ["Pavilions raised in the {wild}", "The hunt camps in the {wild}"]
   },
 
   skyfarers: {
     type: "Airship voyage",
     weight: 2,
-    offRoad: 0.3,
-    sea: 0.2,
-    air: 0.65,
-    rest: 0.6,
-    camp: 0.4,
-    land: { Horse: 3, "On Foot": 2 },
-    water: { Boat: 2, Ship: 2 },
-    sky: { Airship: 5 },
+    domains: { air: 12, land: 1, water: 1 },
+    transports: {
+      land: { "Horseback (no spare horse)": 3, "On foot (light)": 2 },
+      water: { "Sailing boat": 2, "Sailing Ship": 2 },
+      air: { Dirigible: 6, Teleport: 1 }
+    },
+    offRoad: 0.1,
+    rest: 0.2,
+    camp: 0.1,
     title: [
       "The {company} Airship",
       "{hero} sails over {origin}",
@@ -539,5 +954,29 @@ export const JOURNEY_ARCHETYPES: Record<string, JourneyArchetype> = {
     leg: ["Over the {wild} to {to}", "Above the {wild}", "Sky lane to {to}"],
     stopover: ["Moored over {place}", "Gas and ballast in {place}", "A night at {tavern}"],
     bivouac: ["Grounded in the {wild}", "Repairs in the {wild}", "Anchored above the {wild}"]
+  },
+
+  arcanists: {
+    type: "Arcane errand",
+    weight: 2,
+    domains: { land: 4, air: 3, water: 1 },
+    transports: {
+      land: { "On foot (light)": 3, "Horseback (no spare horse)": 2, Carriage: 1 },
+      water: { "Sailing boat": 2, "Sailing Ship": 1 },
+      air: { Teleport: 4, Dirigible: 1 }
+    },
+    offRoad: 0.4,
+    rest: 0.5,
+    camp: 0.3,
+    title: [
+      "The {company} Circle",
+      "{rank} {hero} carries the {relic}",
+      "The {relic} must reach {destination}",
+      "{hero} steps out of {origin}",
+      "The short road to {destination}"
+    ],
+    leg: ["Warding the road to {to}", "Through the {wild} unseen", "The long way round to {to}"],
+    stopover: ["Reading the signs in {place}", "A sealed room at {tavern}", "A night of study in {place}"],
+    bivouac: ["A circle drawn in the {wild}", "Wards set in the {wild}", "A silent camp in the {wild}"]
   }
 };

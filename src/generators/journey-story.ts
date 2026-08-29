@@ -15,13 +15,15 @@ import {
   RELICS,
   TAVERN_QUALIFIERS,
   TAVERN_SUBJECTS,
+  type TravelDomain,
   UNKNOWN_WILD,
   UPLAND_TERMS
 } from "@/data/journey-lore";
-import type { JouneySegment, Journey, JourneyPoint, Transport, TransportDomain } from "@/types/Journey";
+import type { JouneySegment, Journey, JourneyPoint } from "@/types/Journey";
 import { getAdjective, P, ra, rand, rw } from "@/utils";
 import type { Burg } from "./burgs-generator";
 import type { PathfindingResult } from "./journeys-generator";
+import type { Transport, TransportDomain } from "./transports-generator";
 
 const ORIGIN_POOL_SIZE = 8;
 const ORIGIN_RETRIES = 3;
@@ -40,7 +42,7 @@ const MAX_SEGMENTS = 15;
 interface PlannedLeg {
   from: Burg;
   to: Burg;
-  domain: "land" | "water" | "air";
+  domain: TravelDomain;
   transport: Transport;
   avoidRoads: boolean;
   points: JourneyPoint[];
@@ -120,13 +122,22 @@ function pickOrigin(burgs: Burg[], archetype: JourneyArchetype): Burg {
   const neighbours: Record<number, number> = {};
   for (const burg of burgs) neighbours[pack.cells.f[burg.cell]] = (neighbours[pack.cells.f[burg.cell]] ?? 0) + 1;
 
-  const scored = burgs
+  const sea = domainShare(archetype, "water");
+  const overWater = Math.min(1, sea + domainShare(archetype, "air"));
+
+  // a party that mostly sails has to start where the ships are — unless the map has no coast to speak of
+  const ports = burgs.filter(burg => burg.port);
+  const pool = primaryDomain(archetype) === "water" && ports.length > 1 ? ports : burgs;
+
+  const scored = pool
     .map(burg => {
       let score = (burg.population ?? 1) + 1;
       if (burg.capital) score *= 2.5;
-      if (burg.port) score *= 1 + archetype.sea;
-      // a burg alone on its island has nowhere overland to go
-      score *= Math.min(1, (neighbours[pack.cells.f[burg.cell]] ?? 1) / 3);
+      // the more of the journey goes by sea, the less a party can afford to start away from the water
+      score *= burg.port ? 1 + sea * 2 : 1 - sea * 0.7;
+      // a burg alone on its island has nowhere overland to go — no trouble to a party that leaves by sea or air
+      const overland = Math.min(1, (neighbours[pack.cells.f[burg.cell]] ?? 1) / 3);
+      score *= overland + (1 - overland) * overWater;
       return { burg, score: score * (0.5 + Math.random()) };
     })
     .sort((a, b) => b.score - a.score);
@@ -144,17 +155,24 @@ function rankCandidates(
 ): Burg[] {
   const [minLeg, maxLeg] = band;
   const bandMid = (minLeg + maxLeg) / 2;
+  const sea = domainShare(archetype, "water");
+  const landbound = !crossesWater(archetype);
 
   const inBand: { burg: Burg; score: number }[] = [];
   const outOfBand: { burg: Burg; score: number }[] = [];
 
   for (const burg of burgs) {
     if (visited.has(burg.i)) continue;
+    // a party with no way over water can only reach its own landmass, so don't waste a try on the rest
+    if (landbound && pack.cells.f[burg.cell] !== pack.cells.f[current.cell]) continue;
 
     let score = 1 + Math.log10(1 + (burg.population ?? 0));
     if (burg.capital) score += 0.8;
     if (burg.state !== current.state) score += 0.8;
-    if (burg.port && current.port) score += archetype.sea * 2;
+    // sailors steer from port to port; for everyone else a port is a pleasant coincidence
+    const sailable = burg.port && current.port;
+    if (burg.port) score += sailable ? sea * 3 : sea;
+    if (!sailable) score *= 1 - sea * 0.8;
     score *= 0.5 + Math.random();
 
     const distance = Math.hypot(burg.x - current.x, burg.y - current.y);
@@ -169,47 +187,88 @@ function rankCandidates(
     .map(candidate => candidate.burg);
 }
 
-/** Route one leg the party's preferred way, falling back to whatever the terrain does allow */
+/**
+ * Route one leg the way this party travels: its domains rolled by weight, best first.
+ * The roll decides the leg; the rest are there for when the map refuses — an inland pair
+ * for a party of sailors, a lake crossing with no port on the far side.
+ */
 function buildLeg(pathfinder: JourneyPathfinder, archetype: JourneyArchetype, from: Burg, to: Burg): PlannedLeg | null {
-  const bothPorts = Boolean(from.port && to.port);
-  const preferSea = bothPorts && P(archetype.sea);
+  for (const domain of rollDomains(archetype)) {
+    // a water leg needs somewhere to tie up at both ends; land and air are only refused by the path
+    if (domain === "water" && !(from.port && to.port)) continue;
 
-  type Attempt = { domain: PlannedLeg["domain"]; avoidRoads: boolean };
-  const attempts: Attempt[] = [];
-  const landAttempts: Attempt[] = P(archetype.offRoad)
-    ? [
-        { domain: "land", avoidRoads: true },
-        { domain: "land", avoidRoads: false }
-      ]
-    : [{ domain: "land", avoidRoads: false }];
-
-  // a party that can fly goes over everything — terrain never refuses an air path
-  if (archetype.air && P(archetype.air)) attempts.push({ domain: "air", avoidRoads: false });
-  if (preferSea) attempts.push({ domain: "water", avoidRoads: false }, ...landAttempts);
-  else attempts.push(...landAttempts);
-  if (bothPorts && !preferSea) attempts.push({ domain: "water", avoidRoads: false });
-
-  for (const { domain, avoidRoads } of attempts) {
-    const weights = domain === "water" ? archetype.water : domain === "air" ? (archetype.sky ?? {}) : archetype.land;
-    const transport = resolveTransport(weights, domain);
+    const transport = resolveTransport(archetype, domain);
     if (!transport) continue;
 
-    const { points, distance, errorCode } = pathfinder.findPath(from.cell, to.cell, domain, { avoidRoads });
-    if (errorCode || points.length < 2 || !pathfinder.isValidPath(points, domain)) continue;
+    for (const avoidRoads of roadPreference(archetype, domain)) {
+      const { points, distance, errorCode } = pathfinder.findPath(from.cell, to.cell, domain, { avoidRoads });
+      if (errorCode || points.length < 2 || !pathfinder.isValidPath(points, domain)) continue;
 
-    return { from, to, domain, transport, avoidRoads, points, distance };
+      return { from, to, domain, transport, avoidRoads, points, distance };
+    }
   }
 
   return null;
 }
 
-/** The preferred type if the map still has it, otherwise any type of this domain */
-function resolveTransport(weights: Record<string, number>, domain: TransportDomain): Transport | undefined {
-  const types: Transport[] = Transports.all;
-  const preferred = rw(weights);
-  return (
-    types.find(type => type.name === preferred && type.domain === domain) ?? types.find(type => type.domain === domain)
-  );
+/** The party's domains in the order it would try them: a weighted shuffle, so weight decides how often */
+function rollDomains(archetype: JourneyArchetype): TravelDomain[] {
+  const remaining: Record<string, number> = { ...archetype.domains };
+  const order: TravelDomain[] = [];
+
+  while (Object.keys(remaining).length) {
+    const domain = rw(remaining) as TravelDomain;
+    order.push(domain);
+    delete remaining[domain];
+  }
+
+  return order;
+}
+
+/** Off-road is a land habit: a party that takes to the wild still falls back to the roads */
+function roadPreference(archetype: JourneyArchetype, domain: TravelDomain): boolean[] {
+  if (domain !== "land") return [false];
+  return P(archetype.offRoad) ? [true, false] : [false];
+}
+
+/**
+ * The party's rolled preference if the map still has it, then any other type it would have taken,
+ * and only then the most modest type of the domain. The last resort matters: falling back to the
+ * first type of a domain would put a fantasy party in whatever sits at the top of the list.
+ */
+function resolveTransport(archetype: JourneyArchetype, domain: TravelDomain): Transport | undefined {
+  const inDomain: Transport[] = Transports.all.filter(type => type.domain === domain);
+  if (!inDomain.length) return undefined;
+
+  const weights = archetype.transports[domain] ?? {};
+  const byName = (name: string) => inDomain.find(type => type.name === name);
+  const preferred = Object.keys(weights).length ? byName(rw(weights)) : undefined;
+  if (preferred) return preferred;
+
+  for (const name of Object.keys(weights)) {
+    const alternative = byName(name);
+    if (alternative) return alternative;
+  }
+
+  return inDomain.reduce((slowest, type) => (type.speed < slowest.speed ? type : slowest));
+}
+
+/** The domain the party is built around: what it does unless the map won't let it */
+function primaryDomain(archetype: JourneyArchetype): TravelDomain {
+  const entries = Object.entries(archetype.domains) as [TravelDomain, number][];
+  return entries.reduce((first, entry) => (entry[1] > first[1] ? entry : first))[0];
+}
+
+/** The share of this party's travel that goes by `domain`, 0 to 1 */
+function domainShare(archetype: JourneyArchetype, domain: TravelDomain): number {
+  const weights = Object.values(archetype.domains) as number[];
+  const total = weights.reduce((sum, weight) => sum + weight, 0);
+  return total ? (archetype.domains[domain] ?? 0) / total : 0;
+}
+
+/** Whether the party can leave its landmass at all — everyone else is stuck with what it can walk to */
+function crossesWater(archetype: JourneyArchetype): boolean {
+  return domainShare(archetype, "water") + domainShare(archetype, "air") > 0;
 }
 
 /** Lore words, drawn fresh from the pools each time a token comes up */
@@ -278,7 +337,9 @@ function buildSegments(
     const group: JouneySegment[] = [];
 
     if (plan.harborWait) {
-      const name = phrase(HALT_NAMES.harborWait, { from });
+      // a party of sailors is waiting on its own ship, not on a berth to be found
+      const pool = primaryDomain(archetype) === "water" ? HALT_NAMES.castingOff : HALT_NAMES.harborWait;
+      const name = phrase(pool, { from });
       group.push(makeStay(stayType!, leg.from.cell, name, rand(6, 30)));
     }
 

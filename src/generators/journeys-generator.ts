@@ -1,10 +1,11 @@
 import { DEFAULT_JOURNEY_TYPE } from "@/data/journey-lore";
-import type { JouneySegment, Journey, JourneyPoint, TransportDomain } from "@/types/Journey";
+import type { JouneySegment, Journey, JourneyPoint } from "@/types/Journey";
 import { getDistanceUnitRatio, isLand } from "../utils";
 import { getCardinalColor } from "../utils/colorUtils";
 import type { Burg } from "./burgs-generator";
 import { generateStoryJourney } from "./journey-story";
 import type { Route } from "./routes-generator";
+import type { TransportDomain } from "./transports-generator";
 
 const DEFAULT_HOURS_PER_DAY = 8;
 const COARSE_UNIT_THRESHOLD = 10;

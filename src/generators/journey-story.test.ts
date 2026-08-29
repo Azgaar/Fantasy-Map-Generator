@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import type { JouneySegment, JourneyPoint, TransportDomain } from "@/types/Journey";
+import { JOURNEY_ARCHETYPES } from "@/data/journey-lore";
+import type { JouneySegment, JourneyPoint } from "@/types/Journey";
 import { generateStoryJourney, type JourneyPathfinder } from "./journey-story";
+import type { TransportDomain } from "./transports-generator";
 import "./transports-generator";
 
 /**
@@ -157,6 +159,26 @@ describe("generateStoryJourney", () => {
     expect(Math.max(...lengths)).toBeGreaterThanOrEqual(6);
   });
 
+  // the point of the domain weights: a party built around one way of travelling should
+  // read as that party, not as a land journey with an occasional flight
+  it("keeps an air party in the air", () => {
+    let air = 0;
+    let ground = 0;
+
+    for (let run = 0; run < 600; run++) {
+      const journey = generateStoryJourney(pathfinder)!;
+      if (journey.type !== JOURNEY_ARCHETYPES.skyfarers.type) continue;
+
+      for (const segment of journey.segments.filter(s => !isStay(s))) {
+        if (transportDomain(segment.transport) === "air") air++;
+        else ground++;
+      }
+    }
+
+    expect(air).toBeGreaterThan(0); // the archetype has to turn up at all for this to mean anything
+    expect(air / (air + ground)).toBeGreaterThan(0.6);
+  });
+
   it("varies the party, the route and the transport between runs", () => {
     const names = new Set<string>();
     const transports = new Set<string>();
@@ -167,6 +189,70 @@ describe("generateStoryJourney", () => {
     }
     expect(names.size).toBeGreaterThan(10);
     expect(transports.size).toBeGreaterThan(2);
+  });
+});
+
+/** Types kept in the default list for modern maps, which generation must never reach for on its own */
+const MODERN_TYPES = [
+  "Train",
+  "Automobile",
+  "Modern Automobile",
+  "Steamship",
+  "Modern Ship",
+  "Aircraft",
+  "Helicopter",
+  "Modern Airplane"
+];
+
+describe("archetype transport preferences", () => {
+  beforeEach(() => {
+    (globalThis as any).options = { transports: Transports.getDefaults() };
+  });
+
+  // A preference is matched by name against the configured types, so a renamed default
+  // silently degrades every party of that archetype to the slowest type of the domain
+  it("names a transport type that exists in the right domain", () => {
+    for (const [key, archetype] of Object.entries(JOURNEY_ARCHETYPES)) {
+      for (const [domain, weights] of Object.entries(archetype.transports)) {
+        for (const name of Object.keys(weights)) {
+          expect(`${key}: ${name} (${transportDomain(name)})`).toBe(`${key}: ${name} (${domain})`);
+        }
+      }
+    }
+  });
+
+  // the two maps describe the same journey from different sides: a domain the party travels
+  // with nothing to travel it in, or transports for a domain it never enters, is a config slip
+  it("declares transports for exactly the domains it travels", () => {
+    for (const [key, archetype] of Object.entries(JOURNEY_ARCHETYPES)) {
+      expect(`${key}: ${Object.keys(archetype.transports).sort()}`).toBe(
+        `${key}: ${Object.keys(archetype.domains).sort()}`
+      );
+      for (const [domain, weight] of Object.entries(archetype.domains)) {
+        expect(`${key}.${domain}: ${weight > 0}`).toBe(`${key}.${domain}: true`);
+      }
+    }
+  });
+
+  it("leaves the modern types to the user", () => {
+    for (const [key, archetype] of Object.entries(JOURNEY_ARCHETYPES)) {
+      const named = Object.values(archetype.transports).flatMap(weights => Object.keys(weights));
+      expect(`${key}: ${named.filter(name => MODERN_TYPES.includes(name))}`).toBe(`${key}: `);
+    }
+  });
+
+  // every configured type a party could want should be reachable, or it only ever
+  // arrives when the user picks it by hand
+  it("covers every default type a fantasy party would use", () => {
+    const named = new Set(
+      Object.values(JOURNEY_ARCHETYPES).flatMap(archetype =>
+        Object.values(archetype.transports).flatMap(weights => Object.keys(weights))
+      )
+    );
+    const unused = Transports.getDefaults()
+      .filter(type => type.domain !== "stay" && !MODERN_TYPES.includes(type.name) && !named.has(type.name))
+      .map(type => type.name);
+    expect(unused).toEqual([]);
   });
 });
 

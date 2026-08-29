@@ -157,7 +157,7 @@ export function getTemperatureLikeness(temperature: number): string | null {
   return meanTempCityMap[temperature] || null;
 }
 
-// kilometers in one distance unit; a custom unit name has no known ratio and is taken as kilometers
+// kilometers in one distance unit; a custom unit is taken as kilometers
 const KM_IN_DISTANCE_UNIT: Record<string, number> = {
   km: 1,
   mi: 1.609344,
@@ -179,22 +179,19 @@ export function getDistanceUnitRatio(): number {
   return km ? 1 / km : 1;
 }
 
-/**
- * Convert a stored speed (always km/h) into the user distance unit per hour.
- * Rounded to 1 decimal: speeds are shown and typed at that precision.
- */
+/** Convert a stored speed (always km/h) into the user distance unit per hour */
 export function convertSpeed(speedInKmH: number): number {
   return rn(speedInKmH * getDistanceUnitRatio(), 1);
+}
+
+/** Format a stored km/h speed for display, e.g. "2.8 mi/h" */
+export function formatSpeed(speedInKmH: number): string {
+  return `${convertSpeed(speedInKmH)} ${getDistanceUnit()}/h`;
 }
 
 /** Convert a speed the user typed in their distance unit per hour back into stored km/h */
 export function parseSpeed(speedInUnits: number): number {
   return speedInUnits / getDistanceUnitRatio();
-}
-
-/** Format a stored km/h speed for display, e.g. "2.8 mi/h" */
-export function getSpeed(speedInKmH: number): string {
-  return `${convertSpeed(speedInKmH)} ${getDistanceUnit()}/h`;
 }
 
 /**

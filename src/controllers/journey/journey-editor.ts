@@ -45,9 +45,9 @@ let editingJourneyId: number | null = null;
 const columns: EditorColumn<JouneySegment>[] = [
   { key: "color", width: "1.2em" },
   { key: "name", label: "Name", width: "14em", permanent: true },
-  { key: "from", label: "From", width: "9em", mobileHidden: true },
-  { key: "to", label: "To", width: "9em", mobileHidden: true },
-  { key: "transport", label: "Transport", width: "6em" },
+  { key: "from", label: "From", width: "11em", mobileHidden: true },
+  { key: "to", label: "To", width: "11em", mobileHidden: true },
+  { key: "transport", label: "Transport", width: "10em" },
   { key: "distance", label: "Distance", width: "5em" },
   { key: "speed", label: "Speed", width: "5em", mobileHidden: true },
   { key: "time", label: "Time", width: "5em" },
@@ -249,7 +249,7 @@ function renderSegmentLine(journey: Journey, segment: JouneySegment): string {
       .join("")}</select></div>
     <div data-tip="Segment distance" data-col="distance">${rn(Journeys.getSegmentDistance(segment))} ${unit}</div>
     <div data-col="speed">
-      <input class="segSpeed" type="number" step="0.1" min="0" value="${convertSpeed(segment.speed)}" data-tip="Travel speed in ${unit}/h, type to override. ${segment.avoidRoads ? `Off-road speed: ${convertSpeed(Journeys.getEffectiveSpeed(segment))}` : ""}" />
+      <input class="segSpeed" type="number" step="0.1" min="0" value="${convertSpeed(segment.speed)}" data-tip="Average travel speed in ${unit}/h, type to override. ${segment.avoidRoads ? `Off-road speed: ${convertSpeed(Journeys.getEffectiveSpeed(segment))}` : ""}" />
     </div>
     <div data-col="time" data-tip="Travel time in hours, type to override. Equals to ${Journeys.formatTravelTimeFull(hours, hoursPerDay)}">
       <input class="segDuration" type="number" min="0" step="0.1" value="${rn(hours, 1)}"/>

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { convertSpeed, convertTemperature, getDistanceUnitRatio, getSpeed, parseSpeed } from "./unitUtils";
+import { convertSpeed, convertTemperature, formatSpeed, getDistanceUnitRatio, parseSpeed } from "./unitUtils";
 
 // The default (no targetScale) path reads the #temperatureScale select and is
 // covered end-to-end in tests/e2e/temperature-units.spec.ts
@@ -37,16 +37,16 @@ describe("distance unit conversion", () => {
     setDistanceUnit("km");
     expect(getDistanceUnitRatio()).toBe(1);
     expect(convertSpeed(4.5)).toBe(4.5);
-    expect(getSpeed(4.5)).toBe("4.5 km/h");
+    expect(formatSpeed(4.5)).toBe("4.5 km/h");
   });
 
   it("converts a stored km/h speed into the user distance unit, rounded to 1 decimal", () => {
     setDistanceUnit("mi");
     expect(convertSpeed(8)).toBe(5); // 8 km/h = 4.97 mi/h
-    expect(getSpeed(3)).toBe("1.9 mi/h");
+    expect(formatSpeed(3)).toBe("1.9 mi/h");
 
     setDistanceUnit("nmi");
-    expect(getSpeed(10)).toBe("5.4 nmi/h");
+    expect(formatSpeed(10)).toBe("5.4 nmi/h");
   });
 
   it("parses a speed typed in the user unit back into km/h", () => {
@@ -58,6 +58,6 @@ describe("distance unit conversion", () => {
   it("treats an unknown custom unit as kilometers", () => {
     setDistanceUnit("Marches");
     expect(getDistanceUnitRatio()).toBe(1);
-    expect(getSpeed(6)).toBe("6 Marches/h");
+    expect(formatSpeed(6)).toBe("6 Marches/h");
   });
 });

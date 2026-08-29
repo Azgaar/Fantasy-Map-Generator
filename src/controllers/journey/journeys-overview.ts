@@ -34,7 +34,7 @@ const position = { my: "right top", at: "right-10 top+10", of: "svg", collision:
 let filterState: { search: string };
 
 const columns: EditorColumn<Journey>[] = [
-  { key: "name", label: "Journey", width: "14em", permanent: true, sortBy: j => j.name || "", sortType: "alpha" },
+  { key: "name", label: "Journey", width: "16em", permanent: true, sortBy: j => j.name || "", sortType: "alpha" },
   { key: "type", label: "Type", width: "8em", sortBy: j => j.type || "", sortType: "alpha" },
   {
     key: "from",
