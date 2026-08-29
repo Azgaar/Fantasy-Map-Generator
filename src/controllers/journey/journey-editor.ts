@@ -35,7 +35,7 @@ import {
   rn,
   toCsvField
 } from "@/utils";
-import * as PathEditor from "./journey-path-editor";
+import { domainMismatchMessage, JourneyPathEditor, recomputeSegment } from "./journey-path-editor";
 
 const dialogId = "journeyEditor" as const;
 const MAP_POSITION = { my: "left top", at: "left+10 top+10", of: "#map", collision: "fit" };
@@ -66,12 +66,14 @@ const segmentsTable = initEditorTable<JourneySegment>({
   onUpdate: renderSegmentsPage
 });
 
+const pathEditor = new JourneyPathEditor({ getJourney, getSegment, refresh: segmentsTable.refresh });
+
 function open(journeyId: number): void {
   if (customization) return;
 
   if (editingJourneyId === journeyId) {
     // an armed on-map mode owns the click that got us here, e.g. drawing over the journey's own path
-    if (PathEditor.getMode()) return;
+    if (pathEditor.isActive()) return;
     // re-opening the journey already being edited should not rebuild the dialog
     if (findEl(dialogId)?.offsetParent) {
       segmentsTable.refresh();
@@ -79,7 +81,7 @@ function open(journeyId: number): void {
     }
   }
 
-  PathEditor.detach(); // drop any mode left armed for the journey we are leaving
+  pathEditor.cancel(); // drop any mode left armed for the journey we are leaving
   closeDialogs(`#${dialogId}, .stable`);
   Layers.show("journeys");
 
@@ -92,7 +94,6 @@ function open(journeyId: number): void {
     return;
   }
 
-  PathEditor.attach({ getJourney, getSegment, refresh: segmentsTable.refresh });
   renderDialog(journey);
   segmentsTable.reset();
   document.addEventListener(TRANSPORT_TYPES_CHANGED, onTransportTypesChanged);
@@ -216,7 +217,7 @@ function renderSegmentsPage(view: TableView<JourneySegment>): void {
   renderEditorPagination(ensureEl("journeyFooter"), view, segmentsTable.goto);
 
   Layers.draw("journeys");
-  PathEditor.drawOverlays();
+  pathEditor.drawOverlays();
 }
 
 function renderSegmentLine(journey: Journey, segment: JourneySegment): string {
@@ -225,9 +226,8 @@ function renderSegmentLine(journey: Journey, segment: JourneySegment): string {
   const domain = Transports.getDomain(segment.transport);
   const isStay = domain === "stay";
 
-  const mode = PathEditor.getMode();
-  const isEditingPoints = mode?.kind === "points" && mode.segmentId === segment.i;
-  const isDrawing = mode?.kind === "draw" && mode.segmentId === segment.i;
+  const isEditingPoints = pathEditor.isEditing(segment.i, "points");
+  const isDrawing = pathEditor.isEditing(segment.i, "draw");
   const canEditPoints = segment.points.length >= 2 && !isStay;
 
   const hoursPerDay = Journeys.getSegmentHoursPerDay(segment); // each transport sustains its own travel day
@@ -351,12 +351,12 @@ function onSegTransportChange(this: HTMLSelectElement): void {
     Object.assign(segment, { transport: newType.name, speed: 0, duration: segment.duration ?? 1 });
     segment.avoidRoads = false;
     segment.custom = false;
-    PathEditor.recomputeSegment(segment);
+    recomputeSegment(segment);
     segmentsTable.refresh();
     return;
   }
 
-  const message = PathEditor.domainMismatchMessage(segment, newType.domain);
+  const message = domainMismatchMessage(segment, newType.domain);
   if (message) {
     this.value = previousType;
     alertDialog({
@@ -369,7 +369,7 @@ function onSegTransportChange(this: HTMLSelectElement): void {
   segment.transport = newType.name;
   segment.speed = newType.speed;
   if (Transports.getDomain(previousType) === "stay") delete segment.duration;
-  PathEditor.recomputeSegment(segment);
+  recomputeSegment(segment);
   segmentsTable.refresh();
 }
 
@@ -407,7 +407,7 @@ function onToggleSegVisible(this: HTMLElement): void {
   if (visible) delete segment.visible;
   else segment.visible = false;
 
-  if (!visible) PathEditor.stopEditing(segment.i);
+  if (!visible) pathEditor.stopEditing(segment.i);
   segmentsTable.refresh();
 }
 
@@ -415,7 +415,7 @@ function onToggleAvoidRoads(this: HTMLElement): void {
   const segment = getLineSegment(this);
   if (!segment) return;
   segment.avoidRoads = !segment.avoidRoads;
-  PathEditor.recomputeSegment(segment);
+  recomputeSegment(segment);
   segmentsTable.refresh();
 }
 
@@ -426,19 +426,19 @@ function onLocateEndpoint(this: HTMLElement): void {
 }
 
 function onPickFrom(this: HTMLElement): void {
-  PathEditor.startCellPick(getLineId(this), "from");
+  pathEditor.pickEndpoint(getLineId(this), "from");
 }
 
 function onPickTo(this: HTMLElement): void {
-  PathEditor.startCellPick(getLineId(this), "to");
+  pathEditor.pickEndpoint(getLineId(this), "to");
 }
 
 function onToggleEditPoints(this: HTMLElement): void {
-  PathEditor.togglePointEdit(getLineId(this));
+  pathEditor.togglePointEdit(getLineId(this));
 }
 
 function onToggleDrawPath(this: HTMLElement): void {
-  PathEditor.toggleDrawPath(getLineId(this));
+  pathEditor.toggleDrawing(getLineId(this));
 }
 
 /** Drop every manual override on the segment and re-run the pathfinder for it */
@@ -454,7 +454,7 @@ function onSegReset(this: HTMLElement): void {
     if (isStay) segment.duration = 1;
     else delete segment.duration;
     segment.custom = false;
-    PathEditor.recomputeSegment(segment);
+    recomputeSegment(segment);
     segmentsTable.refresh();
   };
   if (!segment.custom) {
@@ -490,7 +490,7 @@ function onSegDelete(this: HTMLElement): void {
     message: `Remove segment <b>${escapeHtml(segment.name)}</b>? This action cannot be reverted.`,
     confirm: "Remove",
     onConfirm: () => {
-      PathEditor.stopEditing(segment.i);
+      pathEditor.stopEditing(segment.i);
       journey.segments = journey.segments.filter(other => other.i !== segment.i);
       segmentsTable.refresh();
     }
@@ -528,8 +528,8 @@ function addSegment(): void {
   segmentsTable.refresh();
 
   // a first segment needs both ends; a following one starts where the previous ended
-  if (isFirst) PathEditor.startCellPick(i, "from", true);
-  else PathEditor.startCellPick(i, "to");
+  if (isFirst) pathEditor.pickEndpoint(i, "from", true);
+  else pathEditor.pickEndpoint(i, "to");
 }
 
 function downloadSegmentsData(): void {
@@ -578,7 +578,7 @@ function triggerJourneyRemove(): void {
 
 function onClose(): void {
   stopJourneyTravel();
-  PathEditor.detach();
+  pathEditor.cancel();
   applyDefaultViewboxEvents();
   document.removeEventListener(TRANSPORT_TYPES_CHANGED, onTransportTypesChanged);
   editingJourneyId = null;
