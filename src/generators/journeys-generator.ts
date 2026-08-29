@@ -5,9 +5,8 @@ import { getCardinalColor } from "../utils/colorUtils";
 import type { Burg } from "./burgs-generator";
 import { generateStoryJourney } from "./journey-story";
 import type { Route } from "./routes-generator";
-import type { TransportDomain } from "./transports-generator";
+import { MAX_HOURS_PER_DAY, type TransportDomain } from "./transports-generator";
 
-const DEFAULT_HOURS_PER_DAY = 8;
 const COARSE_UNIT_THRESHOLD = 10;
 const ON_ROAD_DISCOUNT = 0.5;
 const OFF_ROAD_PENALTY = 5;
@@ -110,12 +109,13 @@ class JourneysModule {
 
     // avgSpeed is km/h like every other stored speed, so the distance-unit ratio has to come back out
     const avgSpeed = movingHours > 0 ? totalDistance / movingHours / getDistanceUnitRatio() : 0;
-    const hoursPerDay = totalDays > 0 ? totalHours / totalDays : DEFAULT_HOURS_PER_DAY;
+    // the rate that reproduces the per-transport day count; with nothing to divide, any rate formats "0m"
+    const hoursPerDay = totalDays > 0 ? totalHours / totalDays : MAX_HOURS_PER_DAY;
     return { totalDistance, totalHours, avgSpeed, totalDays, hoursPerDay };
   }
 
   /** Readable duration, e.g. "2d 3h". Days are counted from `hoursPerDay` */
-  formatTravelTime(hours: number, hoursPerDay = DEFAULT_HOURS_PER_DAY): string {
+  formatTravelTime(hours: number, hoursPerDay: number): string {
     const { days, hours: restHours, minutes } = this.splitTravelTime(hours, hoursPerDay);
 
     if (days >= COARSE_UNIT_THRESHOLD) return `${days}d`;
@@ -126,7 +126,7 @@ class JourneysModule {
   }
 
   /** Exact duration down to the minute, e.g. "52d 4h 9m" — for tooltips */
-  formatTravelTimeFull(hours: number, hoursPerDay = DEFAULT_HOURS_PER_DAY): string {
+  formatTravelTimeFull(hours: number, hoursPerDay: number): string {
     const { days, hours: restHours, minutes } = this.splitTravelTime(hours, hoursPerDay);
 
     const parts: string[] = [];
@@ -137,7 +137,8 @@ class JourneysModule {
   }
 
   private splitTravelTime(hours: number, hoursPerDay: number): { days: number; hours: number; minutes: number } {
-    const minutesPerDay = (hoursPerDay > 0 ? hoursPerDay : DEFAULT_HOURS_PER_DAY) * 60;
+    // a corrupt rate must not inflate the day count, so fall back to the longest possible day
+    const minutesPerDay = (hoursPerDay > 0 ? hoursPerDay : MAX_HOURS_PER_DAY) * 60;
     const totalMinutes = Number.isFinite(hours) && hours > 0 ? Math.round(hours * 60) : 0;
     let days = Math.floor(totalMinutes / minutesPerDay);
     // a journey mixing transports has a fractional rate, so the remainder needs rounding to whole minutes

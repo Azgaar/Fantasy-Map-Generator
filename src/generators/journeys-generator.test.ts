@@ -85,18 +85,18 @@ describe("journey metrics", () => {
     expect(Journeys.formatTravelTime(t.totalHours, t.hoursPerDay)).toBe("4d");
   });
 
-  it("formatTravelTime handles days/hours/minutes with default 8h/day", () => {
-    expect(Journeys.formatTravelTime(0)).toBe("0m");
-    expect(Journeys.formatTravelTime(0.5)).toBe("30m");
-    expect(Journeys.formatTravelTime(1.5)).toBe("1h 30m");
+  it("formatTravelTime handles days/hours/minutes", () => {
+    expect(Journeys.formatTravelTime(0, 8)).toBe("0m");
+    expect(Journeys.formatTravelTime(0.5, 8)).toBe("30m");
+    expect(Journeys.formatTravelTime(1.5, 8)).toBe("1h 30m");
     // 25h at 8h/day = 3d 1h
-    expect(Journeys.formatTravelTime(25)).toBe("3d 1h");
+    expect(Journeys.formatTravelTime(25, 8)).toBe("3d 1h");
   });
 
   it("formatTravelTime drops the smaller unit once the larger dominates", () => {
-    expect(Journeys.formatTravelTime(2400)).toBe("300d"); // 300 travel days at 8h/day
-    expect(Journeys.formatTravelTime(2404.15)).toBe("300d"); // the odd hours are noise
-    expect(Journeys.formatTravelTime(75)).toBe("9d 3h"); // under 10 days, hours still matter
+    expect(Journeys.formatTravelTime(2400, 8)).toBe("300d"); // 300 travel days at 8h/day
+    expect(Journeys.formatTravelTime(2404.15, 8)).toBe("300d"); // the odd hours are noise
+    expect(Journeys.formatTravelTime(75, 8)).toBe("9d 3h"); // under 10 days, hours still matter
     expect(Journeys.formatTravelTime(11.5, 24)).toBe("11h"); // hours-only above the threshold
     expect(Journeys.formatTravelTime(3.25, 24)).toBe("3h 15m"); // below it, minutes still show
   });
@@ -107,8 +107,8 @@ describe("journey metrics", () => {
   });
 
   it("formatTravelTimeFull keeps every unit for the tooltip", () => {
-    expect(Journeys.formatTravelTimeFull(2404.15)).toBe("300d 4h 9m");
-    expect(Journeys.formatTravelTimeFull(0)).toBe("0m");
+    expect(Journeys.formatTravelTimeFull(2404.15, 8)).toBe("300d 4h 9m");
+    expect(Journeys.formatTravelTimeFull(0, 8)).toBe("0m");
     expect(Journeys.formatTravelTimeFull(25, 24)).toBe("1d 1h");
   });
 

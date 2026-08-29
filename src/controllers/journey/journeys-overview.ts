@@ -15,6 +15,7 @@ import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { cellEndpointLabel, getCellPoint } from "@/controllers/journey/journey-cell-labels";
+import { MAX_HOURS_PER_DAY } from "@/generators/transports-generator";
 import { startJourneyTravel, stopJourneyTravel } from "@/renderers/journey-travel";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import type { Journey } from "@/types/Journey";
@@ -199,7 +200,7 @@ function renderJourneysPage(view: TableView<Journey>): void {
   const totalHours = sum(totals.map(t => t.totalHours));
   // days are counted per transport, so the rate that reproduces them is what the total formats with
   const totalDays = sum(totals.map(t => t.totalDays));
-  const footerHoursPerDay = totalDays > 0 ? totalHours / totalDays : undefined;
+  const footerHoursPerDay = totalDays > 0 ? totalHours / totalDays : MAX_HOURS_PER_DAY;
   const footerTime = ensureEl("journeysFooterTime");
   footerTime.innerHTML = Journeys.formatTravelTime(totalHours, footerHoursPerDay);
   footerTime.parentElement!.dataset.tip = `Total travel time: ${Journeys.formatTravelTimeFull(totalHours, footerHoursPerDay)}. Days are counted from each transport's travel hours`;
