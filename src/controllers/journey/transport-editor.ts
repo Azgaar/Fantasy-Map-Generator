@@ -8,8 +8,8 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { tip } from "@/components/tooltips";
-import type { Transport, TransportDomain } from "@/types/Journey";
-import { ensureEl } from "@/utils";
+import type { Transport, TransportDomain } from "@/generators/transports-generator";
+import { convertSpeed, ensureEl, getDistanceUnit, parseSpeed } from "@/utils";
 
 const dialogId = "transportEditor" as const;
 const position = { my: "center", at: "center", of: "svg", collision: "fit" };
@@ -56,7 +56,7 @@ function renderDialog(): void {
 
     <div id="transportFooter" class="totalLine">
       <div data-tip="Transport types number" style="margin-left: 4px">Types:&nbsp;<span id="transportFooterNumber">0</span></div>
-      <div style="margin-left: 12px"><i>Speed is in ${distanceUnitInput.value}/h</i></div>
+      <div style="margin-left: 12px"><i>Speed is in ${getDistanceUnit()}/h</i></div>
     </div>
 
     <div id="transportBottom" class="editorToolbar">
@@ -83,7 +83,7 @@ function renderTypesPage(view: TableView<Transport>): void {
     row.remove();
   });
 
-  const unit = distanceUnitInput.value;
+  const unit = getDistanceUnit();
   let lines = "";
 
   for (const type of view.rows) {
@@ -94,7 +94,7 @@ function renderTypesPage(view: TableView<Transport>): void {
 
     lines += /* html */ `<div class="states" data-id="${type.i}">
       <div data-col="name"><input class="ttName" value="${type.name.replace(/"/g, "&quot;")}" data-tip="Transport type name" /></div>
-      <div data-col="speed"><input class="ttSpeed" type="number" min="0" step="0.5" value="${type.speed}" ${isStay ? "disabled" : ""}
+      <div data-col="speed"><input class="ttSpeed" type="number" min="0" step="0.5" value="${convertSpeed(type.speed)}" ${isStay ? "disabled" : ""}
         data-tip="${isStay ? "Stay types have no speed" : `Sustained travel speed in ${unit}/h`}" /></div>
       <div data-col="domain"><select class="ttDomain" data-tip="${DOMAIN_LABEL[type.domain]}">${options}</select></div>
       <div data-col="actions"><span data-tip="Remove the transport type" class="ttDelete pointer icon-trash-empty"></span></div>
@@ -145,7 +145,7 @@ function onNameChange(this: HTMLInputElement): void {
 function onSpeedInput(this: HTMLInputElement): void {
   const type = getLineType(this);
   if (!type) return;
-  type.speed = +this.value || 0;
+  type.speed = parseSpeed(+this.value || 0); // stored in km/h, typed in the user distance unit
   Transports.save();
   emitChanged();
 }

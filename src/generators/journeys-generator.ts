@@ -1,6 +1,6 @@
 import { DEFAULT_JOURNEY_TYPE } from "@/data/journey-lore";
 import type { JouneySegment, Journey, JourneyPoint, TransportDomain } from "@/types/Journey";
-import { isLand } from "../utils";
+import { getDistanceUnitRatio, isLand } from "../utils";
 import { getCardinalColor } from "../utils/colorUtils";
 import type { Burg } from "./burgs-generator";
 import { generateStoryJourney } from "./journey-story";
@@ -74,6 +74,7 @@ class JourneysModule {
     return this.isStaySegment(seg) ? 0 : seg.distance * distanceScale;
   }
 
+  /** Speed in km/h, after the off-road penalty. The UI converts it to the user distance unit */
   getEffectiveSpeed(seg: JouneySegment): number {
     if (!seg.speed || seg.speed <= 0) return 0;
     return seg.avoidRoads ? seg.speed * OFF_ROAD_SPEED_FACTOR : seg.speed;
@@ -81,11 +82,12 @@ class JourneysModule {
 
   getSegmentTime(seg: JouneySegment): number {
     if (seg.duration !== undefined) return seg.duration; // an explicit override wins
-    const speed = this.getEffectiveSpeed(seg);
+    // distances are in the user distance unit, speeds in km/h: bring the speed over to compare them
+    const speed = this.getEffectiveSpeed(seg) * getDistanceUnitRatio();
     return speed > 0 ? this.getSegmentDistance(seg) / speed : 0;
   }
 
-  /** Average speed covers moving segments only, so a long stay doesn't drag it down. */
+  /** Distance in the user unit, hours, and average km/h over moving segments only, so a long stay doesn't drag it down. */
   getTotals(journey: Journey) {
     let totalDistance = 0;
     let totalHours = 0;
@@ -98,7 +100,9 @@ class JourneysModule {
       if (!this.isStaySegment(seg)) movingHours += hours;
     }
 
-    return { totalDistance, totalHours, avgSpeed: movingHours > 0 ? totalDistance / movingHours : 0 };
+    // avgSpeed is km/h like every other stored speed, so the distance-unit ratio has to come back out
+    const avgSpeed = movingHours > 0 ? totalDistance / movingHours / getDistanceUnitRatio() : 0;
+    return { totalDistance, totalHours, avgSpeed };
   }
 
   /** Readable duration, e.g. "2d 3h". Days are counted from `hoursPerDay` */

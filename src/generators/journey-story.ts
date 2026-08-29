@@ -1,3 +1,4 @@
+import { cellEndpointLabel } from "@/controllers/journey/journey-cell-labels";
 import {
   BANNERS,
   BEASTS,
@@ -19,7 +20,6 @@ import {
 } from "@/data/journey-lore";
 import type { JouneySegment, Journey, JourneyPoint, Transport, TransportDomain } from "@/types/Journey";
 import { getAdjective, P, ra, rand, rw } from "@/utils";
-import { cellEndpointLabel } from "@/utils/cell-labels";
 import type { Burg } from "./burgs-generator";
 import type { PathfindingResult } from "./journeys-generator";
 

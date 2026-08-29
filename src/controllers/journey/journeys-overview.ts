@@ -14,11 +14,20 @@ import type { FillBoxElement } from "@/components/fill-box";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
+import { cellEndpointLabel, getCellPoint } from "@/controllers/journey/journey-cell-labels";
 import { startJourneyTravel, stopJourneyTravel } from "@/renderers/journey-travel";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import type { Journey } from "@/types/Journey";
-import { downloadFile, ensureEl, findEl, getFileName, getHoursPerDay, rn } from "@/utils";
-import { cellEndpointLabel, getCellPoint } from "@/utils/cell-labels";
+import {
+  convertSpeed,
+  downloadFile,
+  ensureEl,
+  findEl,
+  getDistanceUnit,
+  getFileName,
+  getHoursPerDay,
+  rn
+} from "@/utils";
 
 const dialogId = "journeysOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
@@ -157,7 +166,7 @@ function renderJourneysPage(view: TableView<Journey>): void {
     row.remove();
   });
 
-  const unit = distanceUnitInput.value;
+  const unit = getDistanceUnit();
   const hoursPerDay = getHoursPerDay();
   let lines = "";
 
@@ -172,7 +181,7 @@ function renderJourneysPage(view: TableView<Journey>): void {
       ${renderEndpoint("from", getStart(journey))}
       ${renderEndpoint("to", getEnd(journey))}
       <div data-tip="Total distance" data-col="distance">${rn(totalDistance)} ${unit}</div>
-      <div data-tip="Average speed, moving segments only" data-col="speed">${avgSpeed ? `${rn(avgSpeed, 1)} ${unit}/h` : "-"}</div>
+      <div data-tip="Average speed, moving segments only" data-col="speed">${avgSpeed ? `${convertSpeed(avgSpeed)} ${unit}/h` : "-"}</div>
       <div data-tip="Total travel time: ${Journeys.formatTravelTimeFull(totalHours, hoursPerDay)}" data-col="time">${Journeys.formatTravelTime(totalHours, hoursPerDay)}</div>
       <div data-col="edit"><span class="journeyEdit pointer icon-pencil" data-tip="Edit journey"></span></div>
       <div data-col="locate"><span class="journeyZoom pointer icon-target" data-tip="Locate the journey"></span></div>
@@ -336,7 +345,7 @@ function triggerAllJourneysRemove(): void {
 }
 
 function downloadJourneysData(): void {
-  const unit = distanceUnitInput.value;
+  const unit = getDistanceUnit();
   let data = `Id,Journey,Type,From,To,Segments,Distance(${unit}),AvgSpeed(${unit}/h),TravelHours\n`; // headers
 
   for (const journey of journeysTable.view().all) {
@@ -350,7 +359,7 @@ function downloadJourneysData(): void {
       `"${places[1]}"`,
       journey.segments.length,
       rn(totalDistance, 2),
-      rn(avgSpeed, 2),
+      convertSpeed(avgSpeed),
       rn(totalHours, 2)
     ];
     data += `${values.join(",")}\n`;

@@ -157,6 +157,46 @@ export function getTemperatureLikeness(temperature: number): string | null {
   return meanTempCityMap[temperature] || null;
 }
 
+// kilometers in one distance unit; a custom unit name has no known ratio and is taken as kilometers
+const KM_IN_DISTANCE_UNIT: Record<string, number> = {
+  km: 1,
+  mi: 1.609344,
+  lg: 4.828032, // land league: 3 miles
+  vr: 1.0668, // versta
+  nmi: 1.852,
+  nlg: 5.556 // nautical league: 3 nautical miles
+};
+
+/** The distance unit selected in the Units editor, e.g. "mi" */
+export function getDistanceUnit(): string {
+  const el = document.getElementById("distanceUnitInput") as HTMLSelectElement | null;
+  return el?.value || "km";
+}
+
+/** How many user distance units make a kilometer, 1 for unknown (custom) units */
+export function getDistanceUnitRatio(): number {
+  const km = KM_IN_DISTANCE_UNIT[getDistanceUnit()];
+  return km ? 1 / km : 1;
+}
+
+/**
+ * Convert a stored speed (always km/h) into the user distance unit per hour.
+ * Rounded to 1 decimal: speeds are shown and typed at that precision.
+ */
+export function convertSpeed(speedInKmH: number): number {
+  return rn(speedInKmH * getDistanceUnitRatio(), 1);
+}
+
+/** Convert a speed the user typed in their distance unit per hour back into stored km/h */
+export function parseSpeed(speedInUnits: number): number {
+  return speedInUnits / getDistanceUnitRatio();
+}
+
+/** Format a stored km/h speed for display, e.g. "2.8 mi/h" */
+export function getSpeed(speedInKmH: number): string {
+  return `${convertSpeed(speedInKmH)} ${getDistanceUnit()}/h`;
+}
+
 /**
  * Read the user-configured travel hours per day (from the Units editor).
  * Journeys use it to convert cumulative travel hours into days.

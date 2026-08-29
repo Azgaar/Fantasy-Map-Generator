@@ -5,7 +5,8 @@ import { type D3DragEvent, drag, select } from "d3";
 import { alertDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
-import type { JouneySegment, Journey, JourneyPoint, TransportDomain } from "@/types/Journey";
+import type { TransportDomain } from "@/generators/transports-generator";
+import type { JouneySegment, Journey, JourneyPoint } from "@/types/Journey";
 import { ensureEl, findEl, getPointer, rn } from "@/utils";
 import { createEl } from "@/utils/nodeUtils";
 

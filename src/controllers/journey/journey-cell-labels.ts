@@ -1,10 +1,5 @@
-/**
- * Human labels for a Voronoi cell — journeys use these instead of raw ids
- * so From/To read as places, not indices.
- */
-
+/** Readable labels for a Voronoi cell — journeys use these instead of raw ids */
 const NEARBY_BURG_MAX_CELLS = 3;
-
 type NamedBurg = { name: string; x: number; y: number };
 
 const getBurgAtCell = (cellId: number): NamedBurg | undefined => {
@@ -15,10 +10,7 @@ const getBurgAtCell = (cellId: number): NamedBurg | undefined => {
   return { name: burg.name || `Burg ${burg.i}`, x: burg.x, y: burg.y };
 };
 
-/**
- * Find the nearest burg to a cell, within `maxCells` graph steps (BFS).
- * Returns undefined if none is close enough.
- */
+/** Find the nearest burg to a cell, within `maxCells` graph steps (BFS) */
 const findNearbyBurg = (cellId: number, maxCells: number): NamedBurg | undefined => {
   if (!pack.cells.burg || !pack.burgs?.length) return undefined;
   const visited = new Set<number>([cellId]);
@@ -41,12 +33,7 @@ const findNearbyBurg = (cellId: number, maxCells: number): NamedBurg | undefined
   return undefined;
 };
 
-/**
- * A short display label for an endpoint cell:
- *   - burg name if the cell has a burg
- *   - "near <burg>" if a burg is within a few cells
- *   - "cell <id>" otherwise
- */
+/** A short display label for an endpoint cell */
 export function cellEndpointLabel(cellId: number | undefined): string {
   if (cellId === undefined) return "unset";
   const here = getBurgAtCell(cellId);

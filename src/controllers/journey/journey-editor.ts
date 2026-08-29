@@ -19,11 +19,21 @@ import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { TRANSPORT_TYPES_CHANGED } from "@/controllers/transport-editor";
+import { cellEndpointLabel, cellEndpointTooltip, getCellPoint } from "@/controllers/journey/journey-cell-labels";
+import { TRANSPORT_TYPES_CHANGED } from "@/controllers/journey/transport-editor";
 import { startJourneyTravel, stopJourneyTravel } from "@/renderers/journey-travel";
 import type { JouneySegment, Journey } from "@/types/Journey";
-import { downloadFile, ensureEl, findEl, getFileName, getHoursPerDay, rn } from "@/utils";
-import { cellEndpointLabel, cellEndpointTooltip, getCellPoint } from "@/utils/cell-labels";
+import {
+  convertSpeed,
+  downloadFile,
+  ensureEl,
+  findEl,
+  getDistanceUnit,
+  getFileName,
+  getHoursPerDay,
+  parseSpeed,
+  rn
+} from "@/utils";
 import * as PathEditor from "./journey-path-editor";
 
 const dialogId = "journeyEditor" as const;
@@ -209,7 +219,7 @@ function renderSegmentsPage(view: TableView<JouneySegment>): void {
 }
 
 function renderSegmentLine(journey: Journey, segment: JouneySegment): string {
-  const unit = distanceUnitInput.value;
+  const unit = getDistanceUnit();
   const index = journey.segments.indexOf(segment);
   const domain = Transports.getDomain(segment.transport);
   const isStay = domain === "stay" || Journeys.isStaySegment(segment);
@@ -239,7 +249,7 @@ function renderSegmentLine(journey: Journey, segment: JouneySegment): string {
       .join("")}</select></div>
     <div data-tip="Segment distance" data-col="distance">${rn(Journeys.getSegmentDistance(segment))} ${unit}</div>
     <div data-col="speed">
-      <input class="segSpeed" type="number" step="0.1" min="0" value="${segment.speed}" data-tip="Travel speed in ${unit}/h, type to override. ${segment.avoidRoads ? `Off-road speed: ${rn(Journeys.getEffectiveSpeed(segment), 1)}` : ""}" />
+      <input class="segSpeed" type="number" step="0.1" min="0" value="${convertSpeed(segment.speed)}" data-tip="Travel speed in ${unit}/h, type to override. ${segment.avoidRoads ? `Off-road speed: ${convertSpeed(Journeys.getEffectiveSpeed(segment))}` : ""}" />
     </div>
     <div data-col="time" data-tip="Travel time in hours, type to override. Equals to ${Journeys.formatTravelTimeFull(hours, hoursPerDay)}">
       <input class="segDuration" type="number" min="0" step="0.1" value="${rn(hours, 1)}"/>
@@ -285,11 +295,11 @@ function renderEndpointCell(endpoint: "from" | "to", segment: JouneySegment): st
 }
 
 function updateTotals(journey: Journey): void {
-  const unit = distanceUnitInput.value;
+  const unit = getDistanceUnit();
   const { totalDistance, totalHours, avgSpeed } = Journeys.getTotals(journey);
 
   ensureEl("journeyTotalDistance").innerHTML = `${rn(totalDistance)} ${unit}`;
-  ensureEl("journeyAvgSpeed").innerHTML = avgSpeed ? `${rn(avgSpeed, 1)} ${unit}/h` : "-";
+  ensureEl("journeyAvgSpeed").innerHTML = avgSpeed ? `${convertSpeed(avgSpeed)} ${unit}/h` : "-";
   const hoursPerDay = getHoursPerDay();
   const travelTime = ensureEl("journeyTravelTime");
   travelTime.innerHTML = Journeys.formatTravelTime(totalHours, hoursPerDay);
@@ -366,7 +376,7 @@ function onSegTransportChange(this: HTMLSelectElement): void {
 function onSegSpeedInput(this: HTMLInputElement): void {
   const segment = getLineSegment(this);
   if (!segment) return;
-  segment.speed = +this.value || 0;
+  segment.speed = parseSpeed(+this.value || 0); // stored in km/h, typed in the user distance unit
   segmentsTable.refresh();
 }
 
@@ -526,15 +536,15 @@ function downloadSegmentsData(): void {
   const journey = getJourney();
   if (!journey) return;
 
-  const unit = distanceUnitInput.value;
+  const unit = getDistanceUnit();
   const headers = `Idx,Name,Transport,Speed(${unit}/h),EffectiveSpeed(${unit}/h),DistancePx,Distance(${unit}),TimeHours,From,To,AvoidRoads,Custom,Visible,Color`;
   const lines = journey.segments.map((segment, index) =>
     [
       index + 1,
       `"${segment.name}"`,
       `"${segment.transport}"`,
-      segment.speed,
-      rn(Journeys.getEffectiveSpeed(segment), 2),
+      convertSpeed(segment.speed),
+      convertSpeed(Journeys.getEffectiveSpeed(segment)),
       rn(segment.distance, 2),
       rn(Journeys.getSegmentDistance(segment), 2),
       rn(Journeys.getSegmentTime(segment), 2),
