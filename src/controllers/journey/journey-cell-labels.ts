@@ -53,6 +53,18 @@ export function cellEndpointTooltip(cellId: number | undefined): string {
   return `Cell ${cellId}, click to pick a different cell`;
 }
 
+/**
+ * Where a halt happened, as a phrase a lore template can drop in: "at Redgate", "near Redgate",
+ * or null when there is no burg close enough to name. Templates supply their own leading word,
+ * so this deliberately differs from {@link cellEndpointLabel}, which is a bare column label.
+ */
+export function cellPlacePhrase(cellId: number): string | null {
+  const here = getBurgAtCell(cellId);
+  if (here) return `at ${here.name}`;
+  const nearby = findNearbyBurg(cellId, NEARBY_BURG_MAX_CELLS);
+  return nearby ? `near ${nearby.name}` : null;
+}
+
 /** Where to centre the map to show an endpoint: its burg if it has one, else the cell itself */
 export function getCellPoint(cellId: number | undefined): [x: number, y: number] | undefined {
   if (cellId === undefined) return undefined;

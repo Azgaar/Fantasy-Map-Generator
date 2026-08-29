@@ -286,7 +286,8 @@ function addStylePreset() {
       "#roads": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter", "mask"],
       "#trails": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter", "mask"],
       "#searoutes": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter", "mask"],
-      "#journeys": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter", "mask"],
+      // no "stroke": journey segments carry their own colors, there is no layer color to set
+      "#journeys": ["opacity", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter", "mask"],
       "#statesBody": ["opacity", "filter"],
       "#statesHalo": ["opacity", "data-width", "stroke-width", "filter"],
       "#provs": ["opacity", "fill", "font-size", "font-family", "filter"],

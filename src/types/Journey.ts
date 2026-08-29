@@ -1,6 +1,6 @@
 export type JourneyPoint = [number, number, number]; // [x, y, cellId]
 
-export interface JouneySegment {
+export interface JourneySegment {
   id: number;
   name: string;
   color?: string;
@@ -19,9 +19,9 @@ export interface JouneySegment {
 export interface Journey {
   i: number;
   name: string;
-  type: string; // what kind of travel this is: "Quest", "s", "Pilgrimage"
+  type: string; // what kind of travel this is: "Quest", "Raid", "Pilgrimage"
   color: string; // segments may override it
-  segments: JouneySegment[];
+  segments: JourneySegment[];
   visible?: boolean;
   lock?: boolean;
 }

@@ -173,9 +173,14 @@ export function getDistanceUnit(): string {
   return el?.value || "km";
 }
 
+/** Kilometers in one user distance unit, 0 for an unrecognized (custom) unit */
+export function getKmInDistanceUnit(): number {
+  return KM_IN_DISTANCE_UNIT[getDistanceUnit()] ?? 0;
+}
+
 /** How many user distance units make a kilometer, 1 for unknown (custom) units */
 export function getDistanceUnitRatio(): number {
-  const km = KM_IN_DISTANCE_UNIT[getDistanceUnit()];
+  const km = getKmInDistanceUnit();
   return km ? 1 / km : 1;
 }
 

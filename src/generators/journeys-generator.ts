@@ -1,5 +1,5 @@
 import { DEFAULT_JOURNEY_TYPE } from "@/data/journey-lore";
-import type { JouneySegment, Journey, JourneyPoint } from "@/types/Journey";
+import type { Journey, JourneyPoint, JourneySegment } from "@/types/Journey";
 import { getDistanceUnitRatio, isLand } from "../utils";
 import { getCardinalColor } from "../utils/colorUtils";
 import type { Burg } from "./burgs-generator";
@@ -66,22 +66,28 @@ class JourneysModule {
     return pack.journeys.length ? Math.max(...pack.journeys.map(journey => journey.i)) + 1 : 0;
   }
 
-  isStaySegment(seg: JouneySegment): boolean {
-    return seg.speed <= 0;
+  /** A halt, not a slow leg: decided by the transport's domain, never by a speed the user typed */
+  isStaySegment(seg: JourneySegment): boolean {
+    return Transports.getDomain(seg.transport) === "stay";
+  }
+
+  /** Hours of travel a day the segment's transport sustains */
+  getSegmentHoursPerDay(seg: JourneySegment): number {
+    return Transports.getHoursPerDay(seg.transport);
   }
 
   /** Segment length in the current distance unit; a stay covers no ground. */
-  getSegmentDistance(seg: JouneySegment): number {
+  getSegmentDistance(seg: JourneySegment): number {
     return this.isStaySegment(seg) ? 0 : seg.distance * distanceScale;
   }
 
   /** Speed in km/h, after the off-road penalty. The UI converts it to the user distance unit */
-  getEffectiveSpeed(seg: JouneySegment): number {
+  getEffectiveSpeed(seg: JourneySegment): number {
     if (!seg.speed || seg.speed <= 0) return 0;
     return seg.avoidRoads ? seg.speed * OFF_ROAD_SPEED_FACTOR : seg.speed;
   }
 
-  getSegmentTime(seg: JouneySegment): number {
+  getSegmentTime(seg: JourneySegment): number {
     if (seg.duration !== undefined) return seg.duration; // an explicit override wins
     // distances are in the user distance unit, speeds in km/h: bring the speed over to compare them
     const speed = this.getEffectiveSpeed(seg) * getDistanceUnitRatio();
@@ -98,7 +104,7 @@ class JourneysModule {
       const hours = this.getSegmentTime(seg);
       totalDistance += this.getSegmentDistance(seg);
       totalHours += hours;
-      totalDays += hours / Transports.getHoursPerDay(seg.transport);
+      totalDays += hours / this.getSegmentHoursPerDay(seg);
       if (!this.isStaySegment(seg)) movingHours += hours;
     }
 
@@ -457,7 +463,7 @@ class JourneysModule {
   }
 
   /** First burg pair in `pool` joined by a path that is genuinely valid for `domain`. */
-  private findFallbackLeg(pool: Burg[], domain: TransportDomain): JouneySegment | null {
+  private findFallbackLeg(pool: Burg[], domain: TransportDomain): JourneySegment | null {
     const transport = Transports.getByDomain(domain);
     if (!transport) return null;
 

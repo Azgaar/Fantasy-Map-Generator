@@ -1,7 +1,7 @@
 import { max as d3max, min as d3min, mean, median } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
-import { downloadFile, getFileName, speak, uploadFile } from "@/utils";
+import { downloadFile, escapeHtml, getFileName, speak, uploadFile } from "@/utils";
 import { ensureEl, openURL, rn, unique } from "../utils";
 
 function open(): void {
@@ -442,9 +442,6 @@ function namesbaseUpload(dataLoaded: string, override = true): void {
 }
 
 const unsafe = /[|/]/g;
-
-const escapeHtml = (str: string): string =>
-  str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 
 interface ParseError {
   id: number;

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { JOURNEY_ARCHETYPES } from "@/data/journey-lore";
-import type { JouneySegment, JourneyPoint } from "@/types/Journey";
+import type { JourneyPoint, JourneySegment } from "@/types/Journey";
 import { generateStoryJourney, type JourneyPathfinder } from "./journey-story";
 import type { TransportDomain } from "./transports-generator";
 import "./transports-generator";
@@ -46,7 +46,7 @@ const pathfinder: JourneyPathfinder = {
   }
 };
 
-const isStay = (segment: JouneySegment) => segment.speed === 0;
+const isStay = (segment: JourneySegment) => segment.speed === 0;
 
 describe("generateStoryJourney", () => {
   beforeEach(() => {

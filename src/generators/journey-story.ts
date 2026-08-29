@@ -1,4 +1,4 @@
-import { cellEndpointLabel } from "@/controllers/journey/journey-cell-labels";
+import { cellPlacePhrase } from "@/controllers/journey/journey-cell-labels";
 import {
   BANNERS,
   BEASTS,
@@ -19,7 +19,7 @@ import {
   UNKNOWN_WILD,
   UPLAND_TERMS
 } from "@/data/journey-lore";
-import type { JouneySegment, Journey, JourneyPoint } from "@/types/Journey";
+import type { Journey, JourneyPoint, JourneySegment } from "@/types/Journey";
 import { getAdjective, P, ra, rand, rw } from "@/utils";
 import type { Burg } from "./burgs-generator";
 import type { PathfindingResult } from "./journeys-generator";
@@ -291,7 +291,7 @@ function buildSegments(
   pathfinder: JourneyPathfinder,
   archetype: JourneyArchetype,
   legs: PlannedLeg[]
-): JouneySegment[] {
+): JourneySegment[] {
   const stayType = Transports.getByDomain("stay");
 
   const plans = legs.map((leg, index) => ({
@@ -314,10 +314,10 @@ function buildSegments(
     else plans[0].rest = true;
   }
 
-  const segments: JouneySegment[] = [];
+  const segments: JourneySegment[] = [];
 
   /** A leg goes in whole or not at all, so a truncated route still ends at a stop */
-  const commit = (group: JouneySegment[]): boolean => {
+  const commit = (group: JourneySegment[]): boolean => {
     if (segments.length + group.length > MAX_SEGMENTS) return false;
     for (const segment of group) segments.push({ ...segment, id: segments.length });
     return true;
@@ -334,7 +334,7 @@ function buildSegments(
     const isLast = index === plans.length - 1;
     const from = burgName(leg.from);
     const to = burgName(leg.to);
-    const group: JouneySegment[] = [];
+    const group: JourneySegment[] = [];
 
     if (plan.harborWait) {
       // a party of sailors is waiting on its own ship, not on a berth to be found
@@ -386,8 +386,8 @@ interface PathSlice {
   distance: number;
 }
 
-function makeTravel(leg: PlannedLeg, slice: PathSlice, name: string): JouneySegment {
-  const segment: JouneySegment = {
+function makeTravel(leg: PlannedLeg, slice: PathSlice, name: string): JourneySegment {
+  const segment: JourneySegment = {
     id: 0, // reassigned on push, so the ids stay sequential
     name,
     from: slice.points[0][2],
@@ -401,7 +401,7 @@ function makeTravel(leg: PlannedLeg, slice: PathSlice, name: string): JouneySegm
   return segment;
 }
 
-function makeStay(stayType: Transport, cellId: number, name: string, duration: number): JouneySegment {
+function makeStay(stayType: Transport, cellId: number, name: string, duration: number): JourneySegment {
   const [x, y] = pack.cells.p[cellId];
   return {
     id: 0,
@@ -463,16 +463,15 @@ function nameTravel({ archetype, leg, from, to, wild, isFirst, isLast, part }: T
 
 /** A night broken into a leg: at anchor at sea, in a camp on land */
 function nameHalt(archetype: JourneyArchetype, leg: PlannedLeg, cellId: number, wild: string): string {
-  const label = cellEndpointLabel(cellId);
-  const nearby = label.startsWith("near ");
+  const label = cellPlacePhrase(cellId); // "at Redgate" / "near Redgate", or null out in the wild
 
   if (leg.domain === "water") {
-    const names = nearby ? HALT_NAMES.anchoredNear : HALT_NAMES.anchored;
-    return phrase(names, { label, water: describeWater(leg) });
+    const names = label ? HALT_NAMES.anchoredNear : HALT_NAMES.anchored;
+    return phrase(names, { label: label ?? "", water: describeWater(leg) });
   }
 
   // near something worth naming, the party is as likely to say where it slept as how
-  if (nearby) return phrase([...HALT_NAMES.campNear, ra(archetype.bivouac)], { label, wild });
+  if (label) return phrase([...HALT_NAMES.campNear, ra(archetype.bivouac)], { label, wild });
   return phrase(archetype.bivouac, { wild });
 }
 

@@ -6,7 +6,7 @@ import { alertDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import type { TransportDomain } from "@/generators/transports-generator";
-import type { JouneySegment, Journey, JourneyPoint } from "@/types/Journey";
+import type { Journey, JourneyPoint, JourneySegment } from "@/types/Journey";
 import { ensureEl, findEl, getPointer, rn } from "@/utils";
 import { createEl } from "@/utils/nodeUtils";
 
@@ -21,7 +21,7 @@ const HINTS = {
 
 interface PathEditorHost {
   getJourney: () => Journey | undefined;
-  getSegment: (id: number) => JouneySegment | undefined;
+  getSegment: (id: number) => JourneySegment | undefined;
   refresh: () => void;
 }
 
@@ -51,7 +51,7 @@ export function stopEditing(segmentId: number): void {
   if (mode?.segmentId === segmentId) setMode(null);
 }
 
-const getSegment = (): JouneySegment | undefined => (mode ? host?.getSegment(mode.segmentId) : undefined);
+const getSegment = (): JourneySegment | undefined => (mode ? host?.getSegment(mode.segmentId) : undefined);
 
 /**
  * Single entry point for mode changes: tears the previous mode's map bindings down,
@@ -92,7 +92,7 @@ function terrainRejection(cellId: number, domain: TransportDomain, transport: st
 }
 
 /** Explain which endpoints clash with the segment's domain, or null when both fit */
-export function domainMismatchMessage(seg: JouneySegment, domain: TransportDomain): string | null {
+export function domainMismatchMessage(seg: JourneySegment, domain: TransportDomain): string | null {
   const bad: string[] = [];
   for (const endpoint of ["from", "to"] as const) {
     const cellId = seg[endpoint];
@@ -167,7 +167,7 @@ function onPickCell(clicked: ClickedCell): void {
 // ---- path recomputation ------------------------------------------------
 
 /** Re-run the pathfinder for a segment, reporting any domain problem to the user */
-export function recomputeSegment(seg: JouneySegment): void {
+export function recomputeSegment(seg: JourneySegment): void {
   if (seg.custom) return; // never overwrite a custom-drawn path silently
   if (seg.from === undefined || seg.to === undefined) return;
 

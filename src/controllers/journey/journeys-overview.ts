@@ -18,7 +18,17 @@ import { cellEndpointLabel, getCellPoint } from "@/controllers/journey/journey-c
 import { startJourneyTravel, stopJourneyTravel } from "@/renderers/journey-travel";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import type { Journey } from "@/types/Journey";
-import { convertSpeed, downloadFile, ensureEl, findEl, getDistanceUnit, getFileName, rn } from "@/utils";
+import {
+  convertSpeed,
+  downloadFile,
+  ensureEl,
+  escapeHtml,
+  findEl,
+  getDistanceUnit,
+  getFileName,
+  rn,
+  toCsvField
+} from "@/utils";
 
 const dialogId = "journeysOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
@@ -165,9 +175,9 @@ function renderJourneysPage(view: TableView<Journey>): void {
     lines += /* html */ `<div class="states" data-id="${journey.i}">
       <div data-col="name" style="width: 93%; overflow: hidden">
         <fill-box class="journeyColor" fill="${journey.color}" size="0.8em" data-tip="Journey color. Click to change"></fill-box>
-        <span data-tip="Journey name: ${journey.name}">${journey.name}</span>
+        <span data-tip="Journey name: ${escapeHtml(journey.name)}">${escapeHtml(journey.name)}</span>
       </div>
-      <div data-tip="Kind of travel this is" data-col="type">${journey.type}</div>
+      <div data-tip="Kind of travel this is" data-col="type">${escapeHtml(journey.type)}</div>
       ${renderEndpoint("from", getStart(journey))}
       ${renderEndpoint("to", getEnd(journey))}
       <div data-tip="Total distance" data-col="distance">${rn(totalDistance)} ${unit}</div>
@@ -208,7 +218,7 @@ function renderJourneysPage(view: TableView<Journey>): void {
 }
 
 function renderEndpoint(endpoint: "from" | "to", cellId: number | undefined): string {
-  const label = cellEndpointLabel(cellId);
+  const label = escapeHtml(cellEndpointLabel(cellId)); // burg names are user-editable
   const isSet = cellId !== undefined;
   const what = endpoint === "from" ? "Start of the first segment" : "End of the last segment";
 
@@ -275,7 +285,7 @@ function generateRandomJourney(): void {
 
   Layers.draw("journeys");
   journeysTable.refresh();
-  tip(`Generated "${journey.name}": ${journey.segments.length} segments`, true, "success", 6000);
+  tip(`Generated "${escapeHtml(journey.name)}": ${journey.segments.length} segments`, true, "success", 6000);
 }
 
 function toggleVisibility(this: HTMLElement): void {
@@ -346,10 +356,10 @@ function downloadJourneysData(): void {
     const places = [cellEndpointLabel(getStart(journey)), cellEndpointLabel(getEnd(journey))];
     const values = [
       journey.i,
-      `"${journey.name}"`,
-      `"${journey.type}"`,
-      `"${places[0]}"`,
-      `"${places[1]}"`,
+      toCsvField(journey.name),
+      toCsvField(journey.type),
+      toCsvField(places[0]),
+      toCsvField(places[1]),
       journey.segments.length,
       rn(totalDistance, 2),
       convertSpeed(avgSpeed),

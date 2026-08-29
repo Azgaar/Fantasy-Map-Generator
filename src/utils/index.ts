@@ -29,12 +29,21 @@ import { applyOption, ensureEl, findEl, getComposedPath, getNextId, getPointer }
 import { connectVertices, findPath, getIsolines, getPolesOfInaccessibility, getVertexPath } from "./pathUtils";
 import { biased, each, gauss, generateSeed, getNumberInRange, P, Pint, ra, rand, rw } from "./probabilityUtils";
 import { findAllInQuadtree } from "./quadtree";
-import { capitalize, isValidJSON, parseTransform, round, safeParseJSON, sanitizeId, splitInTwo } from "./stringUtils";
+import {
+  capitalize,
+  escapeHtml,
+  isValidJSON,
+  parseTransform,
+  round,
+  safeParseJSON,
+  sanitizeId,
+  splitInTwo,
+  toCsvField
+} from "./stringUtils";
 import {
   convertSpeed,
   convertTemperature,
   formatPrice,
-  formatSpeed,
   getArea,
   getAreaUnit,
   getCellPopulation,
@@ -44,6 +53,7 @@ import {
   getFriendlyPrecipitation,
   getHeight,
   getIntegerFromSI,
+  getKmInDistanceUnit,
   getPrecipitation,
   getTemperatureLikeness,
   parseSpeed,
@@ -138,11 +148,11 @@ export {
   drawRouteConnections,
   each,
   ensureEl,
+  escapeHtml,
   findAllInQuadtree,
   findEl,
   findPath,
   formatPrice,
-  formatSpeed as getSpeed,
   gauss,
   generateDate,
   generateSeed,
@@ -163,6 +173,7 @@ export {
   getHeight,
   getIntegerFromSI,
   getIsolines,
+  getKmInDistanceUnit,
   getLatitude,
   getLongitude,
   getMixedColor,
@@ -209,6 +220,7 @@ export {
   splitInTwo,
   TYPED_ARRAY_MAX,
   throttle,
+  toCsvField,
   toHEX,
   trimVowels,
   unique,

@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import type { JouneySegment, Journey } from "@/types/Journey";
+import type { Journey, JourneySegment } from "@/types/Journey";
 
 const makeSeg = (
   distance: number,
   speed: number,
   avoidRoads = false,
   transport = "On foot (laden)"
-): JouneySegment => ({
+): JourneySegment => ({
   id: 0,
   name: "s",
   visible: true,
@@ -120,7 +120,7 @@ describe("journey metrics", () => {
   });
 
   it("stay-domain segment contributes duration to totalHours, not distance/speed", () => {
-    const stay = { ...makeSeg(0, 0), duration: 4 };
+    const stay = { ...makeSeg(0, 0, false, "Stay"), duration: 4 };
     const walk = makeSeg(10, 5);
     const j: Journey = {
       i: 0,
@@ -135,6 +135,14 @@ describe("journey metrics", () => {
     expect(t.totalHours).toBe(2 + 4);
     // avgSpeed based on moving hours only
     expect(t.avgSpeed).toBe(10 / 2);
+  });
+
+  it("a zero speed does not turn a moving segment into a stay", () => {
+    // a stay is a transport domain, not a speed: a leg the user zeroed out still covers its ground
+    const stalled = makeSeg(10, 0);
+    expect(Journeys.isStaySegment(stalled)).toBe(false);
+    expect(Journeys.getSegmentDistance(stalled)).toBe(10);
+    expect(Journeys.isStaySegment(makeSeg(10, 0, false, "Stay"))).toBe(true);
   });
 
   it("duration overrides the calculated time on a moving segment", () => {

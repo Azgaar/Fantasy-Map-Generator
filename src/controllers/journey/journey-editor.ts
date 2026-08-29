@@ -22,8 +22,19 @@ import { Controllers } from "@/controllers";
 import { cellEndpointLabel, cellEndpointTooltip, getCellPoint } from "@/controllers/journey/journey-cell-labels";
 import { TRANSPORT_TYPES_CHANGED } from "@/controllers/journey/transport-editor";
 import { startJourneyTravel, stopJourneyTravel } from "@/renderers/journey-travel";
-import type { JouneySegment, Journey } from "@/types/Journey";
-import { convertSpeed, downloadFile, ensureEl, findEl, getDistanceUnit, getFileName, parseSpeed, rn } from "@/utils";
+import type { Journey, JourneySegment } from "@/types/Journey";
+import {
+  convertSpeed,
+  downloadFile,
+  ensureEl,
+  escapeHtml,
+  findEl,
+  getDistanceUnit,
+  getFileName,
+  parseSpeed,
+  rn,
+  toCsvField
+} from "@/utils";
 import * as PathEditor from "./journey-path-editor";
 
 const dialogId = "journeyEditor" as const;
@@ -32,7 +43,7 @@ const OVERVIEW_POSITION = { my: "right top", at: "right bottom+10", of: "#journe
 
 let editingJourneyId: number | null = null;
 
-const columns: EditorColumn<JouneySegment>[] = [
+const columns: EditorColumn<JourneySegment>[] = [
   { key: "color", width: "1.2em" },
   { key: "name", label: "Name", width: "14em", permanent: true },
   { key: "from", label: "From", width: "11em", mobileHidden: true },
@@ -50,7 +61,7 @@ const columns: EditorColumn<JouneySegment>[] = [
   { key: "delete", width: "1.4em", permanent: true }
 ];
 
-const segmentsTable = initEditorTable<JouneySegment>({
+const segmentsTable = initEditorTable<JourneySegment>({
   getData: () => getJourney()?.segments ?? [],
   onUpdate: renderSegmentsPage
 });
@@ -100,14 +111,14 @@ function getJourney(): Journey | undefined {
   return pack.journeys.find(journey => journey.i === editingJourneyId);
 }
 
-function getSegment(id: number): JouneySegment | undefined {
+function getSegment(id: number): JourneySegment | undefined {
   return getJourney()?.segments.find(segment => segment.id === id);
 }
 
 /** Segment id of the row a control lives in */
 const getLineId = (el: HTMLElement): number => +(el.closest<HTMLElement>(".states")?.dataset.id ?? "-1");
 
-const getLineSegment = (el: HTMLElement): JouneySegment | undefined => getSegment(getLineId(el));
+const getLineSegment = (el: HTMLElement): JourneySegment | undefined => getSegment(getLineId(el));
 
 function renderDialog(journey: Journey): void {
   destroyDialog(dialogId);
@@ -118,11 +129,11 @@ function renderDialog(journey: Journey): void {
     <div id="journeyControls" class="editorFilters" style="flex-direction: row; align-items: center">
       <fill-box id="journeyColor" size="1em" data-tip="Journey color. Click to change" fill="${journey.color}"></fill-box>
       <label for="journeyName" data-tip="Journey name" style="flex: 1; grid-template-columns: 3.2em 1fr">Name:
-        <input id="journeyName" type="text" value="${journey.name}" />
+        <input id="journeyName" type="text" value="${escapeHtml(journey.name)}" />
       </label>
       <label for="journeyType" data-tip="Kind of travel this is: a quest, a caravan, a campaign"
         style="flex: 0 1 14em; grid-template-columns: 3.2em 1fr">Type:
-        <input id="journeyType" type="text" value="${journey.type}" />
+        <input id="journeyType" type="text" value="${escapeHtml(journey.type)}" />
       </label>
     </div>
 
@@ -169,7 +180,7 @@ function renderDialog(journey: Journey): void {
   ensureEl("journeyRemove").addEventListener("click", triggerJourneyRemove);
 }
 
-function renderSegmentsPage(view: TableView<JouneySegment>): void {
+function renderSegmentsPage(view: TableView<JourneySegment>): void {
   const journey = getJourney();
   if (!journey) return;
 
@@ -208,11 +219,11 @@ function renderSegmentsPage(view: TableView<JouneySegment>): void {
   PathEditor.drawOverlays();
 }
 
-function renderSegmentLine(journey: Journey, segment: JouneySegment): string {
+function renderSegmentLine(journey: Journey, segment: JourneySegment): string {
   const unit = getDistanceUnit();
   const index = journey.segments.indexOf(segment);
   const domain = Transports.getDomain(segment.transport);
-  const isStay = domain === "stay" || Journeys.isStaySegment(segment);
+  const isStay = domain === "stay";
 
   const mode = PathEditor.getMode();
   const isEditingPoints = mode?.kind === "points" && mode.segmentId === segment.id;
@@ -227,14 +238,14 @@ function renderSegmentLine(journey: Journey, segment: JouneySegment): string {
       <fill-box class="segColor" fill="${segment.color || journey.color}" data-tip="Segment color. Click to change"></fill-box>
     </div>
     <div data-col="name" style="width: 95%; overflow: hidden">
-      <input class="segName" value="${segment.name}" data-tip="Segment name: ${segment.name}" />
+      <input class="segName" value="${escapeHtml(segment.name)}" data-tip="Segment name: ${escapeHtml(segment.name)}" />
     </div>
     ${renderEndpointCell("from", segment)}
     ${renderEndpointCell("to", segment)}
     <div data-col="transport"><select class="segTransport" data-tip="Transport type, sets the default speed and where the segment may go">${Transports.all
       .map(
         type =>
-          `<option value="${type.name}" ${type.name === segment.transport ? "selected" : ""}>${type.name}</option>`
+          `<option value="${escapeHtml(type.name)}" ${type.name === segment.transport ? "selected" : ""}>${escapeHtml(type.name)}</option>`
       )
       .join("")}</select></div>
     <div data-tip="Segment distance" data-col="distance">${rn(Journeys.getSegmentDistance(segment))} ${unit}</div>
@@ -271,15 +282,15 @@ function renderSegmentLine(journey: Journey, segment: JouneySegment): string {
 }
 
 /** Locate icon to zoom to the place, then the place name itself to re-pick the cell */
-function renderEndpointCell(endpoint: "from" | "to", segment: JouneySegment): string {
+function renderEndpointCell(endpoint: "from" | "to", segment: JourneySegment): string {
   const cellId = segment[endpoint];
   const isSet = cellId !== undefined;
-  const label = cellEndpointLabel(cellId);
+  const label = escapeHtml(cellEndpointLabel(cellId)); // burg names are user-editable
 
   return /* html */ `<div data-col="${endpoint}">
     <span class="segLocate icon-target ${isSet ? "pointer" : "inactive"}" data-endpoint="${endpoint}"
       data-tip="${isSet ? `Zoom to ${label}` : "Set the endpoint first"}"></span>
-    <span class="seg${endpoint === "from" ? "From" : "To"} pointer" data-tip="${cellEndpointTooltip(cellId)}"
+    <span class="seg${endpoint === "from" ? "From" : "To"} pointer" data-tip="${escapeHtml(cellEndpointTooltip(cellId))}"
       ${isSet ? "" : 'style="opacity: 0.55; font-style: italic"'}>${label}</span>
   </div>`;
 }
@@ -453,7 +464,7 @@ function onSegReset(this: HTMLElement): void {
 
   confirmationDialog({
     title: "Overwrite custom path?",
-    message: `Segment "<b>${segment.name}</b>" has a custom-drawn path. Resetting replaces it with the pathfinder's route. Continue?`,
+    message: `Segment "<b>${escapeHtml(segment.name)}</b>" has a custom-drawn path. Resetting replaces it with the pathfinder's route. Continue?`,
     confirm: "Reset",
     onConfirm: reset
   });
@@ -476,7 +487,7 @@ function onSegDelete(this: HTMLElement): void {
 
   confirmationDialog({
     title: "Remove segment",
-    message: `Remove segment <b>${segment.name}</b>? This action cannot be reverted.`,
+    message: `Remove segment <b>${escapeHtml(segment.name)}</b>? This action cannot be reverted.`,
     confirm: "Remove",
     onConfirm: () => {
       PathEditor.stopEditing(segment.id);
@@ -530,8 +541,8 @@ function downloadSegmentsData(): void {
   const lines = journey.segments.map((segment, index) =>
     [
       index + 1,
-      `"${segment.name}"`,
-      `"${segment.transport}"`,
+      toCsvField(segment.name),
+      toCsvField(segment.transport),
       convertSpeed(segment.speed),
       convertSpeed(Journeys.getEffectiveSpeed(segment)),
       rn(segment.distance, 2),
@@ -555,7 +566,7 @@ function triggerJourneyRemove(): void {
 
   confirmationDialog({
     title: "Remove journey",
-    message: `Remove journey <b>${journey.name}</b>? This action cannot be reverted.`,
+    message: `Remove journey <b>${escapeHtml(journey.name)}</b>? This action cannot be reverted.`,
     confirm: "Remove",
     onConfirm: () => {
       Journeys.remove(journey.i);

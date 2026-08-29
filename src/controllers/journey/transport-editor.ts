@@ -9,7 +9,7 @@ import {
 } from "@/components/dialog/table";
 import { tip } from "@/components/tooltips";
 import { MAX_HOURS_PER_DAY, type Transport, type TransportDomain } from "@/generators/transports-generator";
-import { convertSpeed, ensureEl, getDistanceUnit, parseSpeed } from "@/utils";
+import { convertSpeed, ensureEl, escapeHtml, getDistanceUnit, parseSpeed } from "@/utils";
 
 const dialogId = "transportEditor" as const;
 const position = { my: "center", at: "center", of: "svg", collision: "fit" };
@@ -94,7 +94,7 @@ function renderTypesPage(view: TableView<Transport>): void {
     ).join("");
 
     lines += /* html */ `<div class="states" data-id="${type.i}">
-      <div data-col="name"><input class="ttName" value="${type.name.replace(/"/g, "&quot;")}" data-tip="Transport type name" /></div>
+      <div data-col="name"><input class="ttName" value="${escapeHtml(type.name)}" data-tip="Transport type name" /></div>
       <div data-col="speed"><input class="ttSpeed" type="number" min="0" step="0.5" value="${convertSpeed(type.speed)}" ${isStay ? "disabled" : ""}
         data-tip="${isStay ? "Stay types have no speed" : `Sustained travel speed in ${unit}/h`}" /></div>
       <div data-col="hoursPerDay"><input class="ttHours" type="number" min="1" max="${MAX_HOURS_PER_DAY}" step="1" value="${Transports.resolveHoursPerDay(type)}"
@@ -210,7 +210,7 @@ function triggerTypeRemove(this: HTMLElement): void {
 
   confirmationDialog({
     title: "Remove transport type",
-    message: `Remove transport type <b>${type.name}</b>?`,
+    message: `Remove transport type <b>${escapeHtml(type.name)}</b>?`,
     confirm: "Remove",
     onConfirm: () => {
       Transports.set(Transports.all.filter(other => other.i !== type.i));

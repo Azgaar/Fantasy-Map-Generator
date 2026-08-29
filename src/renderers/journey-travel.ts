@@ -1,6 +1,6 @@
 // Traveler marker tweened along a hovered journey (or one of its segments), drawn on #debug
 import { easeLinear, easeSinInOut, select } from "d3";
-import type { JouneySegment, Journey, JourneyPoint } from "@/types/Journey";
+import type { Journey, JourneyPoint, JourneySegment } from "@/types/Journey";
 import { findEl } from "@/utils";
 import { getSegmentPathData } from "./draw-journeys";
 
@@ -51,7 +51,7 @@ function getSteps(journey: Journey, segmentId?: number): Step[] {
 
   if (!segments.length) return [];
 
-  const isMoving = (segment: JouneySegment) => !Journeys.isStaySegment(segment) && segment.points.length > 1;
+  const isMoving = (segment: JourneySegment) => !Journeys.isStaySegment(segment) && segment.points.length > 1;
   const moving = segments.filter(isMoving);
 
   const hours = new Map(moving.map(segment => [segment, Journeys.getSegmentTime(segment) || segment.distance || 1]));
