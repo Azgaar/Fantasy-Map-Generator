@@ -60,3 +60,19 @@ describe("schema reconciliation", () => {
     expect(DEFAULT_STYLES.labels.attrs["font-size"]).toBe("100px");
   });
 });
+
+describe("per-attribute repair", () => {
+  test("an invalid attribute falls back alone, not with its whole layer", () => {
+    const doc = structuredClone(DEFAULT_STYLES) as any;
+    doc.provinces.attrs.opacity = 0.6;
+    doc.provinces.attrs["font-family"] = null; // non-nullable in the schema
+    const parsed = Styles.parse(doc);
+    expect(parsed.provinces.attrs.opacity).toBe(0.6);
+    expect(parsed.provinces.attrs["font-family"]).toBe(DEFAULT_STYLES.provinces.attrs["font-family"]);
+  });
+
+  test("a layer that cannot be repaired still falls back whole", () => {
+    const parsed = Styles.parse({ ...DEFAULT_STYLES, provinces: "not a layer" });
+    expect(parsed.provinces).toEqual(DEFAULT_STYLES.provinces);
+  });
+});

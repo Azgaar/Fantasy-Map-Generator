@@ -4,7 +4,7 @@
 
 import "./styles";
 import type { Styles } from "./styles-schema";
-import { DEFAULT_STYLES } from "./styles-schema";
+import { DEFAULT_STYLES, nullableAttrsAt } from "./styles-schema";
 
 type LabelGroupStyle = Styles["labels"]["groups"][string];
 
@@ -351,19 +351,20 @@ function harvestValue(value: string): string | number {
   return Number.isNaN(n) ? value : n;
 }
 
-// a schema attr the element does not carry becomes an explicit null, so a preset-nulled
-// attr round-trips as null instead of the seeded default; options keep omit-means-default
+// a nullable schema attr the element does not carry becomes an explicit null, so a preset-nulled
+// attr round-trips as null instead of the seeded default; a non-nullable one is omitted, keeping
+// the default the schema demands. Options keep omit-means-default either way
 function harvestBag(
   el: Element,
   attrs: string[],
-  schemaAttrs: string[] = attrs
+  nullableAttrs: string[] = attrs
 ): Record<string, string | number | null> {
   const bag: Record<string, string | number | null> = {};
   for (const attr of attrs) {
     const inline = (el as HTMLElement).style?.[attr as any];
     const value = inline ? inline : el.getAttribute(attr);
     if (value !== null && value !== undefined) bag[attr] = harvestValue(value);
-    else if (schemaAttrs.includes(attr)) bag[attr] = null;
+    else if (nullableAttrs.includes(attr)) bag[attr] = null;
   }
   return bag;
 }
@@ -380,8 +381,8 @@ export function stylesFromMap(root: ParentNode = document): Styles {
     const el = root.querySelector(selector);
     if (!el) continue;
     const route = PRESET_ROUTES[selector];
-    const schemaAttrs = route.ownAttrs === false ? [] : attrKeysAt(route.path);
-    bags[selector] = harvestBag(el, attrs, schemaAttrs);
+    const nullable = route.ownAttrs === false ? [] : nullableAttrsAt(route.path);
+    bags[selector] = harvestBag(el, attrs, nullable);
   }
   for (const el of root.querySelectorAll("#labels > *")) {
     const name = (el as HTMLElement).dataset.group || el.id.replace(/^labels-/, "");

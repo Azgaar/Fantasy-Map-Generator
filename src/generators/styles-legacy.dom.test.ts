@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import { harvestAttributes, stylesFromMap, syncStylesFromMap } from "./styles-legacy";
 import { DEFAULT_STYLES } from "./styles-schema";
 
@@ -274,4 +274,20 @@ test("save sync lets an old map's coordinates data-size win over the store", () 
   styles.coordinates.options.fontSize = 20;
   syncStylesFromMap();
   expect(styles.coordinates.options.fontSize).toBe(14);
+});
+
+test("an old map omitting a non-nullable attr keeps the values it does carry", () => {
+  // #provs in pre-1.148 maps carries opacity alone
+  document.body.innerHTML = `<svg id="map"><g id="provs" opacity="0.6"></g></svg>`;
+  const result = stylesFromMap(document);
+  expect(result.provinces.attrs.opacity).toBe(0.6);
+  expect(result.provinces.attrs["font-family"]).toBe(DEFAULT_STYLES.provinces.attrs["font-family"]);
+});
+
+test("harvesting an old map does not emit values the schema rejects", () => {
+  document.body.innerHTML = `<svg id="map"><g id="provs" opacity="0.6"></g></svg>`;
+  const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  stylesFromMap(document);
+  expect(warn).not.toHaveBeenCalled();
+  warn.mockRestore();
 });
