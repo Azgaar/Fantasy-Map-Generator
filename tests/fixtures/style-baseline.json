@@ -270,8 +270,7 @@
   "#scaleBar": {
     "opacity": "1",
     "fill": "#d0d0dc",
-    "font-size": "11",
-    "transform": "translate(1039,696)"
+    "font-size": "11"
   },
   "#scaleBarBack": {
     "opacity": "0.3",
@@ -281,7 +280,6 @@
     "filter": "",
     "x": "-12",
     "y": "-23",
-    "width": "237.84375",
     "height": "36.60000038146973"
   },
   "#temperature": {

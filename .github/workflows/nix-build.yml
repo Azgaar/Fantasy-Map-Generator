@@ -5,7 +5,7 @@ on:
   # otherwise reach main unnoticed: the npm lock file carries the app version, and a
   # version bump alone is enough to invalidate the hash
   pull_request:
-    branches: [main]
+    branches: [master]
     paths:
       - "flake.nix"
       - "flake.lock"

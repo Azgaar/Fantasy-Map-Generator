@@ -63,6 +63,16 @@ function collectStyleSnapshot(page: Page) {
   );
 }
 
+// drawScaleBar sizes #scaleBarBack from the getBBox() of the bar's rendered tick labels, and
+// derives #scaleBar's transform from that width. Both are content-derived layout rather than
+// preset style, and neither is stable enough to baseline: the width tracks text metrics, which
+// differ between platforms, and on a generated map it also tracks the "nice" round distance the
+// bar picks for that map's scale. Excluded from both comparisons below.
+function stripContentDerivedLayout(snapshot: Record<string, Record<string, string>>) {
+  delete snapshot["#scaleBar"]?.transform;
+  delete snapshot["#scaleBarBack"]?.width;
+}
+
 test("styled attributes match the pre-migration baseline", async ({page}) => {
   await page.goto("/");
   await page.waitForSelector("#mapToLoad", {state: "attached"});
@@ -77,6 +87,7 @@ test("styled attributes match the pre-migration baseline", async ({page}) => {
   await page.waitForTimeout(500);
 
   const snapshot = await collectStyleSnapshot(page);
+  stripContentDerivedLayout(snapshot);
 
   if (process.env.UPDATE_STYLE_BASELINE) {
     fs.writeFileSync(BASELINE_PATH, JSON.stringify(snapshot, null, 2));
@@ -92,16 +103,6 @@ test("styled attributes match the pre-migration baseline", async ({page}) => {
     expect.soft(snapshot[sel], sel).toEqual(baseline[sel]);
   }
 });
-
-// drawScaleBar/fitScaleBar compute #scaleBar's transform and #scaleBarBack's width from the
-// generated map's real-world distance-per-pixel scale, which varies map to map (a "nice" round
-// distance for the bar) - content-derived layout, not a preset style attribute, so it's excluded
-// from this generated-map comparison. The loaded-map spec above is unaffected: it snapshots a
-// fixed saved file, where these values are already deterministic.
-function stripContentDerivedLayout(snapshot: Record<string, Record<string, string>>) {
-  delete snapshot["#scaleBar"]?.transform;
-  delete snapshot["#scaleBarBack"]?.width;
-}
 
 // the spec above only exercises the load-a-saved-map path (load.ts replaces the whole #map SVG
 // wholesale, bypassing applyStylePreset's DOM writes entirely). This covers the other path:
