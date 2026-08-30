@@ -1,4 +1,3 @@
-import { cellPlacePhrase } from "@/controllers/journey/journey-cell-labels";
 import {
   BANNERS,
   BEASTS,
@@ -21,9 +20,10 @@ import {
 } from "@/data/journey-lore";
 import type { Journey, JourneyPoint, JourneySegment } from "@/types/Journey";
 import { getAdjective, P, ra, rand, rw } from "@/utils";
-import type { Burg } from "./burgs-generator";
+import type { Burg } from "../burgs-generator";
+import type { Transport, TransportDomain } from "../transports-generator";
+import { cellPlacePhrase } from "./journey-places";
 import type { PathfindingResult } from "./journeys-generator";
-import type { Transport, TransportDomain } from "./transports-generator";
 
 const ORIGIN_POOL_SIZE = 8;
 const ORIGIN_RETRIES = 3;

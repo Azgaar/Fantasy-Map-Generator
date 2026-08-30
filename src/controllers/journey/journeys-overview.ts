@@ -15,7 +15,7 @@ import type { FillBoxElement } from "@/components/fill-box";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
-import { cellEndpointLabel, getCellPoint } from "@/controllers/journey/journey-cell-labels";
+import { cellEndpointLabel, getCellPoint } from "@/generators/journeys/journey-places";
 import { MAX_HOURS_PER_DAY } from "@/generators/transports-generator";
 import { startJourneyTravel, stopJourneyTravel } from "@/renderers/journey-travel";
 import { highlightElement } from "@/renderers/overlays/highlight";

@@ -24,7 +24,7 @@ describe("journey metrics", () => {
 
   beforeEach(async () => {
     (globalThis as any).distanceScale = 1;
-    await import("./transports-generator");
+    await import("../transports-generator");
     (globalThis as any).options = { transports: (globalThis as any).Transports.getDefaults() };
     await import("./journeys-generator");
     Journeys = (globalThis as any).Journeys;

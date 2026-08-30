@@ -36,15 +36,6 @@ const DOMAIN_LABEL: Record<TransportDomain, string> = {
 };
 const DOMAINS = Object.keys(DOMAIN_LABEL) as TransportDomain[];
 
-export const TRANSPORT_TYPES_CHANGED = "journey-transport-changed";
-const emitChanged = () => document.dispatchEvent(new CustomEvent(TRANSPORT_TYPES_CHANGED));
-
-/** Persist the set and let open journey editors redraw against it */
-const saveTypes = () => {
-  Transports.save();
-  emitChanged();
-};
-
 function open(): void {
   if (customization) return;
   closeDialogs(`#${dialogId}, .stable`);
@@ -146,14 +137,14 @@ function onNameChange(this: HTMLInputElement): void {
     for (const segment of journey.segments) if (segment.transport === type.name) segment.transport = newName;
   }
   type.name = newName;
-  saveTypes();
+  Transports.save();
 }
 
 function onSpeedInput(this: HTMLInputElement): void {
   const type = getLineType(this);
   if (!type) return;
   type.speed = parseSpeed(+this.value || 0); // stored in km/h, typed in the user distance unit
-  saveTypes();
+  Transports.save();
 }
 
 function onHoursChange(this: HTMLInputElement): void {
@@ -169,7 +160,7 @@ function onHoursChange(this: HTMLInputElement): void {
 
   type.hoursPerDay = hours;
   this.value = String(hours);
-  saveTypes();
+  Transports.save();
 }
 
 function onDomainChange(this: HTMLSelectElement): void {
@@ -177,7 +168,7 @@ function onDomainChange(this: HTMLSelectElement): void {
   if (!type) return;
   type.domain = this.value as TransportDomain;
   if (type.domain === "stay") type.speed = 0; // stay types have no speed
-  saveTypes();
+  Transports.save();
   typesTable.refresh();
 }
 
@@ -188,7 +179,7 @@ function addType(): void {
 
   // hoursPerDay is left out on purpose: the domain fallback defines the default travel day
   Transports.all.push({ i: nextId, name, speed: 5, domain: "land" });
-  saveTypes();
+  Transports.save();
   typesTable.refresh();
 
   const input = document.querySelector<HTMLInputElement>(`#transportBody [data-id="${nextId}"] .ttName`);
@@ -215,7 +206,6 @@ function triggerTypeRemove(this: HTMLElement): void {
     onConfirm: () => {
       Transports.set(Transports.all.filter(other => other.i !== type.i));
       typesTable.refresh();
-      emitChanged();
     }
   });
 }
@@ -229,7 +219,6 @@ function triggerDefaultsRestore(): void {
     onConfirm: () => {
       Transports.set(Transports.getDefaults());
       typesTable.refresh();
-      emitChanged();
     }
   });
 }

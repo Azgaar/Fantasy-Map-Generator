@@ -1,9 +1,8 @@
-/** Readable labels for a Voronoi cell — journeys use these instead of raw ids */
 const NEARBY_BURG_MAX_CELLS = 3;
 type NamedBurg = { name: string; x: number; y: number };
 
 /** What names a cell: the burg on it, the nearest burg within reach, or nothing at all */
-type CellPlace = { burg: NamedBurg; nearby: boolean } | null;
+export type CellPlace = { burg: NamedBurg; nearby: boolean } | null;
 
 const getBurgAtCell = (cellId: number): NamedBurg | undefined => {
   const burgId = pack.cells.burg[cellId];
@@ -53,18 +52,6 @@ export function cellEndpointLabel(cellId: number | undefined, place?: CellPlace)
   const resolved = place === undefined ? resolveCellPlace(cellId) : place;
   if (!resolved) return `cell ${cellId}`;
   return resolved.nearby ? `${resolved.burg.name} vicinity` : resolved.burg.name;
-}
-
-/** Longer tooltip form; distinguishes the three cases explicitly. */
-export function cellEndpointTooltip(cellId: number | undefined, place?: CellPlace): string {
-  if (cellId === undefined) return "Not set: click, then click a cell on the map to set this endpoint";
-  const resolved = place === undefined ? resolveCellPlace(cellId) : place;
-  const what = !resolved
-    ? `Cell ${cellId}`
-    : resolved.nearby
-      ? `Vicinity of ${resolved.burg.name}`
-      : resolved.burg.name;
-  return `${what}, click to pick a different cell`;
 }
 
 /**

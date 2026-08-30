@@ -18,15 +18,13 @@ import {
 import type { FillBoxElement } from "@/components/fill-box";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
-import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import {
+  type CellPlace,
   cellEndpointLabel,
-  cellEndpointTooltip,
   getCellPoint,
   resolveCellPlace
-} from "@/controllers/journey/journey-cell-labels";
-import { TRANSPORT_TYPES_CHANGED } from "@/controllers/journey/transport-editor";
+} from "@/generators/journeys/journey-places";
 import { startJourneyTravel, stopJourneyTravel } from "@/renderers/journey-travel";
 import type { Journey, JourneySegment } from "@/types/Journey";
 import {
@@ -88,7 +86,7 @@ function open(journeyId: number): void {
     }
   }
 
-  pathEditor.cancel(); // drop any mode left armed for the journey we are leaving
+  teardown();
   closeDialogs(`#${dialogId}, .stable`);
   Layers.show("journeys");
 
@@ -103,7 +101,6 @@ function open(journeyId: number): void {
 
   renderDialog(journey);
   segmentsTable.reset();
-  document.addEventListener(TRANSPORT_TYPES_CHANGED, onTransportTypesChanged);
 
   $(`#${dialogId}`).dialog({
     title: "Edit Journey",
@@ -112,6 +109,11 @@ function open(journeyId: number): void {
     position: findEl("journeysOverview") ? OVERVIEW_POSITION : MAP_POSITION,
     close: onClose
   });
+}
+
+function teardown(): void {
+  stopJourneyTravel();
+  pathEditor.cancel();
 }
 
 function getJourney(): Journey | undefined {
@@ -234,7 +236,6 @@ function renderSegmentLine(journey: Journey, segment: JourneySegment): string {
   const isDrawing = pathEditor.isEditing(segment.i, "draw");
   const canEditPoints = segment.points.length >= 2 && !isStay;
 
-  const hoursPerDay = Journeys.getSegmentHoursPerDay(segment); // each transport sustains its own travel day
   const hours = Journeys.getSegmentTime(segment);
 
   return /* html */ `<div class="states" data-id="${segment.i}">
@@ -254,9 +255,10 @@ function renderSegmentLine(journey: Journey, segment: JourneySegment): string {
       .join("")}</select></div>
     <div data-tip="Segment distance" data-col="distance">${rn(Journeys.getSegmentDistance(segment))} ${unit}</div>
     <div data-col="speed">
-      <input class="segSpeed" type="number" step="0.1" min="0" value="${convertSpeed(segment.speed)}" data-tip="Average travel speed in ${unit}/h, type to override. ${segment.avoidRoads ? `Off-road speed: ${convertSpeed(Journeys.getEffectiveSpeed(segment))}` : ""}" />
+      <input class="segSpeed" type="number" step="0.1" min="0" value="${convertSpeed(segment.speed)}" ${isStay ? "disabled" : ""}
+        data-tip="${isStay ? "A stay covers no ground, so it has no speed" : `Average travel speed in ${unit}/h, type to override. ${segment.avoidRoads ? `Off-road speed: ${convertSpeed(Journeys.getEffectiveSpeed(segment))}` : ""}`}" />
     </div>
-    <div data-col="time" data-tip="Travel time in hours, type to override. Equals to ${Journeys.formatTravelTimeFull(hours, hoursPerDay)} at ${hoursPerDay}h of travel per day">
+    <div data-col="time" data-tip="${timeCellTip(segment)}">
       <input class="segDuration" type="number" min="0" step="0.1" value="${rn(hours, 1)}"/>
     </div>
     <div data-col="roads">
@@ -285,6 +287,33 @@ function renderSegmentLine(journey: Journey, segment: JourneySegment): string {
   </div>`;
 }
 
+/** What the time column explains: the hours in the input, spelled out at the transport's travel day */
+function timeCellTip(segment: JourneySegment): string {
+  const hoursPerDay = Journeys.getSegmentHoursPerDay(segment); // each transport sustains its own travel day
+  const full = Journeys.formatTravelTimeFull(Journeys.getSegmentTime(segment), hoursPerDay);
+  return `Travel time in hours, type to override. Equals to ${full} at ${hoursPerDay}h of travel per day`;
+}
+
+/**
+ * Re-render the row's time cell alone. Used while the speed input next to it has focus, where
+ * rebuilding the whole row would take the field the user is typing in with it.
+ */
+function syncTimeCell(el: HTMLElement, segment: JourneySegment): void {
+  const cell = el.closest<HTMLElement>(".states")?.querySelector<HTMLElement>('[data-col="time"]');
+  const duration = cell?.querySelector<HTMLInputElement>(".segDuration");
+  if (!cell || !duration) return;
+
+  cell.dataset.tip = timeCellTip(segment);
+  if (document.activeElement !== duration) duration.value = String(rn(Journeys.getSegmentTime(segment), 1));
+}
+
+/** Longer endpoint tooltip; distinguishes the three cases explicitly */
+function cellEndpointTooltip(cellId: number | undefined, place: CellPlace): string {
+  if (cellId === undefined) return "Not set: click, then click a cell on the map to set this endpoint";
+  const what = !place ? `Cell ${cellId}` : place.nearby ? `Vicinity of ${place.burg.name}` : place.burg.name;
+  return `${what}, click to pick a different cell`;
+}
+
 /** Locate icon to zoom to the place, then the place name itself to re-pick the cell */
 function renderEndpointCell(endpoint: "from" | "to", segment: JourneySegment): string {
   const cellId = segment[endpoint];
@@ -310,12 +339,6 @@ function updateTotals(journey: Journey): void {
   travelTime.innerHTML = Journeys.formatTravelTime(totalHours, hoursPerDay);
   travelTime.parentElement!.dataset.tip = `Total travel time: ${Journeys.formatTravelTimeFull(totalHours, hoursPerDay)}. Days are counted from each transport's travel hours`;
 }
-
-function onTransportTypesChanged(): void {
-  if (getJourney()) segmentsTable.refresh();
-}
-
-// ---- journey-level handlers --------------------------------------------
 
 function onNameInput(this: HTMLInputElement): void {
   const journey = getJourney();
@@ -380,9 +403,13 @@ function onSegTransportChange(this: HTMLSelectElement): void {
 
 function onSegSpeedInput(this: HTMLInputElement): void {
   const segment = getLineSegment(this);
-  if (!segment) return;
+  const journey = getJourney();
+  if (!segment || !journey) return;
+
   segment.speed = parseSpeed(+this.value || 0); // stored in km/h, typed in the user distance unit
-  segmentsTable.refresh();
+  // a full refresh would tear this very input out of the DOM mid-keystroke, so update in place
+  syncTimeCell(this, segment);
+  updateTotals(journey);
 }
 
 function onSegDurationInput(this: HTMLInputElement): void {
@@ -390,7 +417,9 @@ function onSegDurationInput(this: HTMLInputElement): void {
   const journey = getJourney();
   if (!segment || !journey) return;
 
-  segment.duration = Math.max(0, +this.value || 0);
+  // an emptied field is not a zero-hour leg: it gives the segment back to distance/speed
+  if (this.value.trim() === "") delete segment.duration;
+  else segment.duration = Math.max(0, +this.value || 0);
   updateTotals(journey);
 }
 
@@ -565,10 +594,7 @@ function triggerJourneyRemove(): void {
 }
 
 function onClose(): void {
-  stopJourneyTravel();
-  pathEditor.cancel();
-  applyDefaultViewboxEvents();
-  document.removeEventListener(TRANSPORT_TYPES_CHANGED, onTransportTypesChanged);
+  teardown();
   editingJourneyId = null;
   destroyDialog(dialogId);
 }

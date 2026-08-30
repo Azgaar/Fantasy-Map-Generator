@@ -110,6 +110,7 @@ function prepareMapData(): string {
   const cloneTradeAnimation = cloneEl.querySelector("#tradeAnimation");
   if (cloneTradeAnimation) cloneTradeAnimation.innerHTML = ""; // always remove transient trade animations
   cloneEl.querySelector("#journeyOverlay")?.remove(); // transient journey path-editing handles
+  cloneEl.querySelector("#journeyTravel")?.remove(); // transient journey travel animation
 
   const serializedSVG = new XMLSerializer().serializeToString(cloneEl);
 

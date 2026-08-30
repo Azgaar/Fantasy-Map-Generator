@@ -396,7 +396,11 @@ class RoutesModule {
 
   /** Sea route geometry for a cell chain: burg positions at ports, meandering along river runs */
   getWaterPoints(cells: number[]): [number, number, number][] {
-    return this.getPoints("searoutes", cells, this.preparePointsArray()) as [number, number, number][];
+    // only the chain's own cells are read, so this skips preparePointsArray's whole-map allocation
+    return this.addMeandering(
+      cells,
+      cells.map(cellId => this.getCellAnchor(cellId))
+    );
   }
 
   private generateMainRoads() {
@@ -483,12 +487,16 @@ class RoutesModule {
   }
 
   private preparePointsArray(): Point[] {
+    return pack.cells.p.map((_point, cellId) => this.getCellAnchor(cellId));
+  }
+
+  /** The point a route passes through in a cell: the burg's position at a port, the cell centre otherwise */
+  private getCellAnchor(cellId: number): Point {
     const { cells, burgs } = pack;
-    return cells.p.map(([x, y], cellId) => {
-      const burgId = cells.burg[cellId];
-      if (burgId) return [burgs[burgId].x, burgs[burgId].y];
-      return [x, y];
-    });
+    const burgId = cells.burg[cellId];
+    if (burgId) return [burgs[burgId].x, burgs[burgId].y];
+    const [x, y] = cells.p[cellId];
+    return [x, y];
   }
 
   // Group consecutive route cells that follow a single river in one direction into maximal runs.

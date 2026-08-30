@@ -3,6 +3,7 @@ import { type D3DragEvent, drag, select } from "d3";
 import { alertDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
+import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import type { TransportDomain } from "@/generators/transports-generator";
 import type { Journey, JourneyPoint, JourneySegment } from "@/types/Journey";
 import { ensureEl, findEl, getPointer, rn } from "@/utils";
@@ -143,18 +144,24 @@ export class JourneyPathEditor {
   }
 
   private setMode(next: Mode | null): void {
+    const wasPickingCells = this.mode?.kind === "pick" || this.mode?.kind === "draw";
     this.mode = next;
 
     const picksCells = next?.kind === "pick" || next?.kind === "draw";
     const viewbox = ensureEl<SVGGElement>("viewbox");
-    viewbox.style.cursor = picksCells ? "crosshair" : "";
 
-    viewbox.removeEventListener("click", this.onViewboxClick);
+    // Take the map click over the way every other cell-picking editor does, replacing the default
+    // handler rather than stacking on top of it: a second listener would keep opening the editor
+    // of whatever was clicked — a burg icon, a route — while the user is only picking a cell.
+    if (picksCells)
+      select<SVGGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", this.onViewboxClick);
+    else if (wasPickingCells) applyDefaultViewboxEvents();
+
     document.removeEventListener("keydown", this.onKeyDown);
-    document.removeEventListener("contextmenu", this.onDrawUndo);
-    if (picksCells) viewbox.addEventListener("click", this.onViewboxClick);
+    viewbox.removeEventListener("contextmenu", this.onDrawUndo);
     if (next) document.addEventListener("keydown", this.onKeyDown);
-    if (next?.kind === "draw") document.addEventListener("contextmenu", this.onDrawUndo);
+    // scoped to the map: a draw in progress must not eat the context menu of the dialogs around it
+    if (next?.kind === "draw") viewbox.addEventListener("contextmenu", this.onDrawUndo);
 
     if (next) tip(HINTS[next.kind], true);
     else clearMainTip();

@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { JOURNEY_ARCHETYPES } from "@/data/journey-lore";
 import type { JourneyPoint, JourneySegment } from "@/types/Journey";
+import type { TransportDomain } from "../transports-generator";
 import { generateStoryJourney, type JourneyPathfinder } from "./journey-story";
-import type { TransportDomain } from "./transports-generator";
-import "./transports-generator";
+import "../transports-generator";
 
 /**
  * A 10×10 land grid, 100px apart, with eight burgs scattered over two states.
