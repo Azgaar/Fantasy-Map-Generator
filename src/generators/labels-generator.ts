@@ -134,6 +134,18 @@ export class LabelsModule {
     };
   }
 
+  /** burgs can be assigned to groups the label registry has never seen (old maps, the Burg
+   * Groups editor) - without an entry the renderer draws no label at all */
+  ensureBurgLabelGroups(): void {
+    for (const { name } of options.burgs.groups) {
+      if (options.labels.groups.some(group => group.type === "burg" && group.name === name)) continue;
+      const defaultGroup = this.getDefaultGroups().find(group => group.type === "burg" && group.name === name);
+      options.labels.groups.push(
+        defaultGroup ?? { ...structuredClone(this.getFallbackGroup("burg")), name, isDefault: false }
+      );
+    }
+  }
+
   getFallbackGroup(type: LabelType): LabelGroup {
     const fallbackGroup = this.getDefaultGroups().find(group => group.isDefault && group.type === type);
     return fallbackGroup ?? { name: type, type, zoom: { min: null, max: null }, isDefault: true };
@@ -182,4 +194,7 @@ export class LabelsModule {
   }
 }
 
-window.Labels = new LabelsModule();
+const labelsInstance = new LabelsModule();
+window.Labels = labelsInstance;
+
+export { labelsInstance as Labels };

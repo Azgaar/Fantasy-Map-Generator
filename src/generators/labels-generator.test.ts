@@ -46,3 +46,37 @@ describe("LabelsModule", () => {
     expect(pack.addedLabels[0].label).toEqual({ text: "Aldor", group: "added" });
   });
 });
+
+describe("ensureBurgLabelGroups", () => {
+  beforeEach(() => {
+    globalThis.options = {
+      ...globalThis.options,
+      burgs: { groups: [{ name: "city" }, { name: "town" }, { name: "customgroup" }] },
+      labels: {
+        resizeOnZoom: true,
+        showAll: false,
+        groups: [{ name: "cities", type: "burg", zoom: { min: 1, max: 25 } }]
+      }
+    } as never;
+  });
+
+  it("adds registry entries for burg groups the label registry lacks", () => {
+    labels.ensureBurgLabelGroups();
+    const names = options.labels.groups.filter(g => g.type === "burg").map(g => g.name);
+    expect(names.includes("city")).toBe(true);
+    expect(names.includes("town")).toBe(true);
+    expect(names.includes("customgroup")).toBe(true);
+    // known modern names take their default bounds; unknown names get the fallback
+    expect(options.labels.groups.find(g => g.name === "city")?.zoom).toEqual({ min: 1.4, max: 25 });
+    expect(options.labels.groups.find(g => g.name === "customgroup")?.zoom).toEqual({ min: 2, max: 30 });
+    // existing entries are left alone
+    expect(options.labels.groups.find(g => g.name === "cities")?.zoom).toEqual({ min: 1, max: 25 });
+  });
+
+  it("is idempotent", () => {
+    labels.ensureBurgLabelGroups();
+    const count = options.labels.groups.length;
+    labels.ensureBurgLabelGroups();
+    expect(options.labels.groups.length).toBe(count);
+  });
+});

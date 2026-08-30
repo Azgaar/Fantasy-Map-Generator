@@ -1,6 +1,6 @@
 import Alea from "alea";
 import type { LabelType } from "@/generators/labels-generator";
-import { getGroupStyle } from "@/renderers/labels/label-groups";
+import { getGroupStyle, writeGroupStyle } from "@/renderers/labels/label-groups";
 import { createLabelElements } from "@/renderers/labels/label-markup";
 import type { LabelData } from "@/renderers/labels/labels";
 import { getVisibleLabels } from "@/renderers/labels/labels-renderer";
@@ -542,13 +542,7 @@ class LabelMeasurementSandbox {
     const groupOptions = options.labels.groups.find(group => group.name === groupName);
     if (!groupOptions) throw new Error(`Label Group not found: ${groupName}`);
     const group = document.createElementNS(SVG_NS, "g");
-    const groupStyle = getGroupStyle(groupOptions);
-    for (const [attribute, value] of Object.entries(groupStyle)) {
-      if (value !== null) group.setAttribute(attribute, String(value));
-    }
-    const dx = Number(group.dataset.dx) || 0;
-    const dy = Number(group.dataset.dy) || 0;
-    group.style.transform = dx || dy ? `translate(${dx}em, ${dy}em)` : "";
+    writeGroupStyle(group, getGroupStyle(groupOptions));
     this.root.appendChild(group);
     return group;
   }

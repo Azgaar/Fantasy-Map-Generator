@@ -15,6 +15,10 @@ import type { PromptOptions } from "../utils/commonUtils";
 declare const prompt: (text: string, options: PromptOptions, callback: (value: string | number) => void) => void;
 
 let selected: Selection<any, any, any, any> | null = null;
+// The burg being edited. `selected` is only a handle on its rendered node, and there may not be
+// one: the GPU icon layer puts no <use> in #burgIcons, and a label outside the viewport or below
+// its group's zoom gate is never materialized. Identity must not depend on the DOM.
+let selectedId: number | null = null;
 let previewTransform: PanZoom = { ...PAN_ZOOM_IDENTITY };
 let previewMaxZoom = MAX_ZOOM;
 let previewCommittedK = 1;
@@ -26,6 +30,7 @@ function open(id: number | string): void {
   closeDialogs(".stable");
   Layers.show("burgIcons", "labels");
 
+  selectedId = +id;
   selected = select<any, unknown>("#labels").select(`[data-label-type='burg'][data-id='${id}']`);
   if (!selected.size()) selected = select<any, unknown>("#burgIcons").select(`[data-id='${id}']`);
 
@@ -276,7 +281,13 @@ function renderDialog(): void {
 }
 
 function getSelectedId(): number {
-  return +selected!.attr("data-id");
+  return selectedId ?? +selected!.attr("data-id");
+}
+
+/** The rendered node for the edited burg, or null when nothing was materialized for it. */
+function selectedNode(): Element | null {
+  const node = selected?.node() as Element | undefined;
+  return node ?? null;
 }
 
 function updateGroupsList(): void {
@@ -505,9 +516,10 @@ function hideStyleSection(): void {
 }
 
 function editGroupLabelStyle(): void {
-  const g = (selected!.node() as Element).parentNode as HTMLElement;
+  const parent = selectedNode()?.parentNode as HTMLElement | undefined;
+  const groupId = parent?.id || `labels-${pack.burgs[getSelectedId()].group}`;
   closeDialogs(".stable");
-  editStyle("labels", g.id);
+  editStyle("labels", groupId);
 }
 
 function editBurgLabel(): void {
@@ -517,15 +529,17 @@ function editBurgLabel(): void {
 }
 
 function editGroupIconStyle(): void {
-  const g = (selected!.node() as Element).parentNode as HTMLElement;
+  const parent = selectedNode()?.parentNode as HTMLElement | undefined;
+  const groupId = parent?.id || `${pack.burgs[getSelectedId()].group}`;
   closeDialogs(".stable");
-  editStyle("burgIcons", g.id);
+  editStyle("burgIcons", groupId);
 }
 
 function editGroupAnchorStyle(): void {
-  const g = (selected!.node() as Element).parentNode as HTMLElement;
+  const parent = selectedNode()?.parentNode as HTMLElement | undefined;
+  const groupId = parent?.id || `${pack.burgs[getSelectedId()].group}`;
   closeDialogs(".stable");
-  editStyle("anchors", g.id);
+  editStyle("anchors", groupId);
 }
 
 function getPreviewViewport(): { width: number; height: number } {
@@ -780,13 +794,12 @@ function relocateBurgOnClick(this: SVGGElement, event: any): void {
 }
 
 function editBurgLegend(): void {
-  const id = selected!.attr("data-id");
-  const name = selected!.text();
-  void Controllers.NotesEditor.open(`burg${id}`, name);
+  const id = getSelectedId();
+  void Controllers.NotesEditor.open(`burg${id}`, pack.burgs[id].name);
 }
 
 function showTemperatureGraph(): void {
-  const id = +selected!.attr("data-id");
+  const id = getSelectedId();
   void Controllers.TemperatureGraph.open(id);
 }
 

@@ -4,12 +4,13 @@ import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { GraphOverride } from "@/generators/graph-override";
+import { isStoreStyles, stylesFromLegacy } from "@/generators/styles-legacy";
 import { invalidateEmblems } from "@/renderers/draw-emblems";
 import { clearLegend } from "@/renderers/draw-legend";
 import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
 import { clearCache, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
-import { applyOption, ensureEl, last, link, minmax, parseError, rn } from "@/utils";
+import { applyOption, calculateVoronoi, ensureEl, last, link, minmax, parseError, rn, safeParseJSON } from "@/utils";
 
 async function quickLoad(): Promise<void> {
   const blob = await ldb.get("lastMap");
@@ -423,7 +424,11 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       if (goodIconsDefs) goodIconsDefs.insertAdjacentHTML("beforeend", data[45]);
     }
 
-    if (data[48]) style = JSON.parse(data[48]);
+    const styleRecord = data[48] ? safeParseJSON(data[48]) : undefined;
+    if (styleRecord) {
+      if (isStoreStyles(styleRecord)) Styles.set(Styles.parse(styleRecord));
+      else stylesFromLegacy(styleRecord);
+    }
 
     {
       const { resolveVersionConflicts } = await import("./auto-update");
@@ -432,6 +437,8 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
 
     if (data[51]) GraphOverride.restore(JSON.parse(data[51]));
     if (data[50]) Layers.restore(JSON.parse(data[50]));
+
+    if (isStoreStyles(styleRecord)) (window as any).applyStoredStyles();
 
     Goods.sync();
     Markets.sync();
@@ -447,17 +454,14 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
 
     // add custom heightmap color scheme if any
     if (heightmapColorSchemes) {
-      const oceanHeights = document.getElementById("oceanHeights");
-      const oceanScheme = oceanHeights?.getAttribute("scheme");
-      if (oceanScheme && !(oceanScheme in heightmapColorSchemes)) addCustomColorScheme(oceanScheme);
-      const landHeights = document.getElementById("landHeights");
-      const landScheme = landHeights?.getAttribute("scheme");
-      if (landScheme && !(landScheme in heightmapColorSchemes)) addCustomColorScheme(landScheme);
+      for (const { scheme } of [styles.heightmap.oceanHeights.options, styles.heightmap.landHeights.options]) {
+        if (scheme && !(scheme in heightmapColorSchemes)) addCustomColorScheme(scheme);
+      }
     }
 
     {
       // add custom texture if any
-      const textureHref = select("#texture").attr("data-href");
+      const textureHref = styles.texture.options.href;
       if (textureHref) updateTextureSelectValue(textureHref);
     }
 

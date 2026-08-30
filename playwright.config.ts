@@ -21,7 +21,13 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        // CHROMIUM_PATH: point at a system-installed browser (e.g. NixOS, where Playwright's own
+        // downloaded chromium is dynamically linked against libs the sandbox doesn't have).
+        // Unset elsewhere (CI, other machines) so Playwright uses its own managed browser.
+        ...(process.env.CHROMIUM_PATH ? { launchOptions: { executablePath: process.env.CHROMIUM_PATH } } : {}),
+      },
     },
   ],
   webServer: {

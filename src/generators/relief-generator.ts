@@ -19,7 +19,8 @@ class ReliefModule {
     TIME && console.time("generateRelief");
 
     const cells = pack.cells;
-    const { set, size, density } = style.relief;
+    const { size, density } = styles.relief.options;
+    const set = styles.relief.options.set as ReliefSet;
     const iconSize = 2 * size;
     const sizeModifier = 0.2 * iconSize;
 

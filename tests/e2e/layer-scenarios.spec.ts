@@ -171,8 +171,8 @@ test.describe("layer scenarios", () => {
     await page.waitForTimeout(500);
 
     // only the layers on the default teardown are asserted here: `keepContent` layers hold their
-    // content by design, and a custom `erase` defines its own contract (the wind rose and custom
-    // burg icon groups outlive it on purpose), each covered in layer-teardown.spec.ts
+    // content by design, and a custom `erase` defines its own contract (the wind arrows and
+    // custom route groups outlive it on purpose), each covered in layer-teardown.spec.ts
     const leftovers = await page.evaluate(() =>
       Layers.all
         .filter(

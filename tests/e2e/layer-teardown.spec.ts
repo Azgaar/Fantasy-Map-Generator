@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 
-declare let customization: number; // page global, resolved inside page.evaluate
+// page globals, resolved inside page.evaluate
+declare let customization: number;
+declare const styles: any;
 
 // Turning a layer off erases its content. Some sub-groups are user data rather than render output —
 // custom route groups, burg icon groups — and must survive the erasure. The wind arrows are the
@@ -72,13 +74,13 @@ test.describe("layer teardown keeps user data", () => {
     const capitals = page.locator("#burgIcons > #capital");
     await expect(capitals).toBeAttached();
 
-    // the Style editor writes straight to the DOM; the style object is only harvested at draw time
-    await page.evaluate(() => document.querySelector("#burgIcons > #capital")!.setAttribute("fill", "#123456"));
+    // the Style editor writes the store; the groups fully recreate from it on every draw
+    await page.evaluate(() => {
+      styles.burgIcons.burgIcons.groups.capital.attrs.fill = "#123456";
+      document.querySelector("#burgIcons > #capital")!.setAttribute("fill", "#123456");
+    });
 
     await page.evaluate(() => (window as any).Layers.hide("burgIcons"));
-    await expect(capitals).toBeAttached();
-    expect(await capitals.getAttribute("fill")).toBe("#123456");
-
     await page.evaluate(() => (window as any).Layers.show("burgIcons"));
     expect(await capitals.getAttribute("fill")).toBe("#123456");
     expect(await page.locator("#burgIcons > #capital use").count()).toBeGreaterThan(0);
@@ -96,7 +98,7 @@ test.describe("layer teardown keeps user data", () => {
 
   test("texture renders nothing when no image is set", async ({ page }) => {
     await page.evaluate(() => {
-      document.getElementById("texture")!.removeAttribute("data-href"); // pre-1.94 maps saved with texture off
+      styles.texture.options.href = ""; // pre-1.94 maps saved with texture off
       (window as any).Layers.show("texture");
     });
 
@@ -164,8 +166,8 @@ test.describe("layer teardown keeps user data", () => {
     expect(await page.locator("#landmass rect").count()).toBe(1); // redrawn, exactly once
   });
 
-  // the ocean outline is regenerated from the `layers` attribute on every draw
-  test("ocean outlines follow the layers attribute and keep the base rect", async ({ page }) => {
+  // the ocean outline is regenerated from the stored outline setting on every draw
+  test("ocean outlines follow the stored outline setting and keep the base rect", async ({ page }) => {
     const rings = page.locator("#oceanLayers path");
     const base = page.locator("#oceanLayers #oceanBase");
 
@@ -174,14 +176,14 @@ test.describe("layer teardown keeps user data", () => {
     await expect(base).toBeAttached();
 
     await page.evaluate(() => {
-      document.getElementById("oceanLayers")!.setAttribute("layers", "none");
+      styles.ocean.oceanLayers.options.outline = "none";
       (window as any).Layers.draw("ocean");
     });
     expect(await rings.count()).toBe(0); // the renderer clears its own content, style.js no longer does
     await expect(base).toBeAttached(); // the base rect is not outline content
 
     await page.evaluate(() => {
-      document.getElementById("oceanLayers")!.setAttribute("layers", "-6,-3,-1");
+      styles.ocean.oceanLayers.options.outline = "-6,-3,-1";
       (window as any).Layers.draw("ocean");
     });
     expect(await rings.count()).toBe(drawn);

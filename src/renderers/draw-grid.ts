@@ -5,10 +5,8 @@ export function drawGrid(): void {
   const gridOverlay = select(ensureEl<SVGGElement>("gridOverlay"));
   gridOverlay.selectAll("*").remove();
 
-  const pattern = `#pattern_${gridOverlay.attr("type") || "pointyHex"}`;
-  const scale = gridOverlay.attr("scale") || 1;
-  const dx = gridOverlay.attr("dx") || 0;
-  const dy = gridOverlay.attr("dy") || 0;
+  const { type, scale, dx, dy } = styles.grid.options;
+  const pattern = `#pattern_${type || "pointyHex"}`;
 
   select(pattern)
     .attr("stroke", gridOverlay.attr("stroke") || "#808080")

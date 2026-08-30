@@ -161,7 +161,7 @@
   </head>
   <body>
     <svg
-      id="map"
+      id="map" data-layer="map"
       width="100%"
       height="100%"
       version="1.1"
@@ -333,7 +333,7 @@
       </defs>
       <g id="viewbox"></g>
       <g id="scaleBar">
-        <rect id="scaleBarBack"></rect>
+        <rect id="scaleBarBack" data-group="back"></rect>
       </g>
     </svg>
     <div id="loading">
@@ -5168,6 +5168,7 @@
     <script type="module" src="renderers/index.ts"></script>
     <script type="module" src="controllers/index.ts"></script>
     <script type="module" src="services/index.ts"></script>
+    <script type="module" src="generators/styles-legacy.ts"></script>
     <script defer src="libs/alea.min.js?v1.105.0"></script>
     <script defer src="libs/polylabel.min.js?v1.105.0"></script>
     <script defer src="libs/simplify.js?v1.105.6"></script>

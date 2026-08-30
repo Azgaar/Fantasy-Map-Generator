@@ -9,7 +9,6 @@ const closedCurveGen = line<Point>().curve(curveCatmullRomClosed.alpha(0.5));
 
 // style defaults, overridable via attributes on the #ruler group (Style tab)
 export const DEFAULT_STROKE_WIDTH = 2;
-export const DEFAULT_FONT_SIZE = 20;
 export const DEFAULT_DASHARRAY = "10";
 
 type MeasurerStyle = { strokeWidth: number; dasharray: string; fontSize: number };
@@ -17,7 +16,7 @@ type MeasurerStyle = { strokeWidth: number; dasharray: string; fontSize: number 
 function getMeasurerStyle(): MeasurerStyle {
   const ruler = document.getElementById("ruler");
   const strokeWidth = Number(ruler?.getAttribute("stroke-width")) || DEFAULT_STROKE_WIDTH;
-  const fontSize = Number(ruler?.getAttribute("font-size")) || DEFAULT_FONT_SIZE;
+  const fontSize = styles.rulers.options.fontSize;
   // an empty attribute means "no dashes"; only a missing one falls back to the default
   const dasharray = ruler?.getAttribute("stroke-dasharray") ?? DEFAULT_DASHARRAY;
   return { strokeWidth, dasharray, fontSize };
