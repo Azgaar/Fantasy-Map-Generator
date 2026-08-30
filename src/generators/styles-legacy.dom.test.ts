@@ -291,3 +291,10 @@ test("harvesting an old map does not emit values the schema rejects", () => {
   expect(warn).not.toHaveBeenCalled();
   warn.mockRestore();
 });
+
+test("an attr the layer registry declares survives a map that predates it", () => {
+  // #fogging in old maps carries no mask; the registry stamps it after the harvest runs
+  document.body.innerHTML = `<svg id="map"><g id="fogging" opacity="0.98"></g></svg>`;
+  syncStylesFromMap({ hasStyleRecord: true });
+  expect(styles.fogging.attrs.mask).toBe(DEFAULT_STYLES.fogging.attrs.mask);
+});

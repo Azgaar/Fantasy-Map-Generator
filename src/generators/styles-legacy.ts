@@ -2,6 +2,7 @@
 // edges use this: map-file save/load and legacy preset routing. Dies when those write the new
 // format natively.
 
+import { Layers } from "@/components/layers";
 import "./styles";
 import type { Styles } from "./styles-schema";
 import { DEFAULT_STYLES, nullableAttrsAt } from "./styles-schema";
@@ -468,6 +469,17 @@ export function syncStylesFromMap({ hasStyleRecord = false } = {}): void {
     harvested.scaleBar.options = structuredClone(styles.scaleBar.options);
   if (!document.getElementById("scaleBarBack")?.hasAttribute("data-top"))
     harvested.scaleBar.back.options = structuredClone(styles.scaleBar.back.options);
+  // the layer registry stamps its declared attrs after this runs, so a map predating one
+  // harvests it as null; the store keeps the attr until the element itself carries it
+  for (const layer of Layers.all) {
+    const node = (harvested as Record<string, any>)[layer.id]?.attrs;
+    const stored = (styles as Record<string, any>)[layer.id]?.attrs;
+    if (!node || !stored) continue;
+    const el = document.getElementById(layer.elementId);
+    for (const attr of Object.keys(layer.params.attrs ?? {})) {
+      if (attr in node && !el?.hasAttribute(attr)) node[attr] = stored[attr];
+    }
+  }
   Styles.set(harvested);
 }
 
