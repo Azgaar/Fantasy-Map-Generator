@@ -14,7 +14,7 @@ export function drawScaleBar(parent?: SVGSVGElement, scaleLevel = scale, width =
   TIME && !isRendered && console.time("drawScaleBar");
 
   const unit = distanceUnitInput.value;
-  const size = +scaleBar.attr("data-bar-size");
+  const { barSize: size, label, x: posX, y: posY } = styles.scaleBar.options;
 
   renderedContent?.remove(); // redraw content every time, but not scaleBarBack
   const content = scaleBar.append("g").attr("id", "scaleBarContent");
@@ -59,7 +59,6 @@ export function drawScaleBar(parent?: SVGSVGElement, scaleLevel = scale, width =
     .attr("dy", "-.6em")
     .text((d: number) => rn((((d * length) / 5) * distanceScale) / scaleLevel) + (d < 5 ? "" : ` ${unit}`));
 
-  const label = scaleBar.attr("data-label");
   if (label) {
     texts
       .append("text")
@@ -73,10 +72,12 @@ export function drawScaleBar(parent?: SVGSVGElement, scaleLevel = scale, width =
   const scaleBarBack = scaleBar.select<SVGRectElement>("#scaleBarBack");
   if (scaleBarBack.size()) {
     const bbox = (content.node() as SVGGElement).getBBox();
-    const paddingTop = +scaleBarBack.attr("data-top") || 0;
-    const paddingLeft = +scaleBarBack.attr("data-left") || 0;
-    const paddingRight = +scaleBarBack.attr("data-right") || 0;
-    const paddingBottom = +scaleBarBack.attr("data-bottom") || 0;
+    const {
+      top: paddingTop,
+      left: paddingLeft,
+      right: paddingRight,
+      bottom: paddingBottom
+    } = styles.scaleBar.back.options;
 
     scaleBar
       .select("#scaleBarBack")
@@ -85,8 +86,6 @@ export function drawScaleBar(parent?: SVGSVGElement, scaleLevel = scale, width =
       .attr("width", bbox.width + paddingRight)
       .attr("height", bbox.height + paddingBottom);
 
-    const posX = +scaleBar.attr("data-x") || 99;
-    const posY = +scaleBar.attr("data-y") || 99;
     const backBbox = (scaleBarBack.node() as SVGGElement).getBBox();
     const x = rn((width * posX) / 100 - backBbox.width + 10);
     const y = rn((height * posY) / 100 - backBbox.height + 20);
@@ -98,7 +97,6 @@ export function drawScaleBar(parent?: SVGSVGElement, scaleLevel = scale, width =
   function getLength(): number {
     const init = 100;
 
-    const size = +scaleBar.attr("data-bar-size");
     let val = (init * size * distanceScale) / scaleLevel; // bar length in distance unit
     if (val > 900)
       val = rn(val, -3); // round to 1000

@@ -558,7 +558,6 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
   }
 
   function closeElevationProfile(): void {
-    modules.elevation = false;
     $("#elevationProfile").dialog("destroy");
     ensureEl("elevationProfile").remove();
   }

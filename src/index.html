@@ -161,7 +161,7 @@
   </head>
   <body>
     <svg
-      id="map"
+      id="map" data-layer="map"
       width="100%"
       height="100%"
       version="1.1"
@@ -333,7 +333,7 @@
       </defs>
       <g id="viewbox"></g>
       <g id="scaleBar">
-        <rect id="scaleBarBack"></rect>
+        <rect id="scaleBarBack" data-group="back"></rect>
       </g>
     </svg>
     <div id="loading">
@@ -5186,13 +5186,14 @@
     <script type="module" src="renderers/index.ts"></script>
     <script type="module" src="controllers/index.ts"></script>
     <script type="module" src="services/index.ts"></script>
+    <script type="module" src="generators/styles-legacy.ts"></script>
     <script defer src="libs/alea.min.js?v1.105.0"></script>
     <script defer src="libs/polylabel.min.js?v1.105.0"></script>
     <script defer src="libs/simplify.js?v1.105.6"></script>
-    <script defer src="modules/ui/style-presets.js?v=ce8fad23"></script>
-    <script defer src="modules/ui/options.js?v=5d601345"></script>
-    <script defer src="main.js?v=6cf16ab8"></script>
-    <script defer src="modules/ui/style.js?v=4a3fe7f3"></script>
+    <script defer src="modules/ui/style-presets.js?v=b4f7d72b"></script>
+    <script defer src="modules/ui/options.js?v=d2008f94"></script>
+    <script defer src="main.js?v=369ec61c"></script>
+    <script defer src="modules/ui/style.js?v=f0e271b5"></script>
     <script defer src="libs/rgbquant.min.js"></script>
     <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
   </body>

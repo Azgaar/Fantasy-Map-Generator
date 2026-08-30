@@ -458,13 +458,13 @@ async function createLabels() {
 
   function getBurgLabelOptions(burg: Burg) {
     const groupStyle = getGroupStyle({ name: burg.label?.group || burg.group || "burg", type: "burg" });
-    const size = Number.parseFloat(String(groupStyle["font-size"]));
-    const letterSpacing = Number(burg?.label?.letterSpacing ?? groupStyle["letter-spacing"]) || 0;
+    const size = Number.parseFloat(groupStyle.attrs["font-size"]);
+    const letterSpacing = Number(burg?.label?.letterSpacing ?? groupStyle.attrs["letter-spacing"]) || 0;
 
     return {
-      font: String(groupStyle["font-family"]),
+      font: groupStyle.attrs["font-family"],
       size,
-      color: String(groupStyle.fill || "#000"),
+      color: groupStyle.attrs.fill || "#000",
       letterSpacing,
       elevation: Math.max(5, size * 0.5),
       iconSize: Math.max(0.3, size * 0.08),
@@ -475,14 +475,14 @@ async function createLabels() {
 
   function getStateLabelOptions(state: State) {
     const groupStyle = getGroupStyle({ name: state.label?.group || "state", type: "state" });
-    const size = Number.parseFloat(String(groupStyle["font-size"]));
-    const letterSpacing = Number(state?.label?.letterSpacing ?? groupStyle["letter-spacing"]) || 0;
+    const size = Number.parseFloat(groupStyle.attrs["font-size"]);
+    const letterSpacing = Number(state?.label?.letterSpacing ?? groupStyle.attrs["letter-spacing"]) || 0;
 
     return {
       text: state.label?.text || state.name,
-      font: String(groupStyle["font-family"]),
+      font: groupStyle.attrs["font-family"],
       size,
-      color: String(groupStyle.fill || "#000"),
+      color: groupStyle.attrs.fill || "#000",
       letterSpacing,
       elevation: 20,
       quality: 80

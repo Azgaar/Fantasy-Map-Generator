@@ -9,19 +9,15 @@ export function drawMarkets() {
   TIME && console.timeEnd("drawMarkets");
 }
 
-const MARKET_RADIUS = 3;
-const MARKET_FONT = 5;
-const MARKET_ICON = "⚖️";
-
 function buildMarketsContent(): string {
   const linegen = line().curve(curveBasisClosed);
   const getType = (cellId: number) => pack.cells.market[cellId];
   const isolines = getIsolines(pack, getType, { polygons: true });
 
   // marker circle size, emoji size and emoji icon are independently user-configurable
-  const baseRadius = +select("#markets").attr("data-size") || MARKET_RADIUS;
-  const baseFont = +select("#markets").attr("font-size") || MARKET_FONT;
-  const icon = select("#markets").attr("data-icon") || MARKET_ICON;
+  const baseRadius = styles.markets.options.size;
+  const baseFont = styles.markets.options.fontSize;
+  const icon = styles.markets.options.icon;
 
   return pack.markets
     .map(market => {

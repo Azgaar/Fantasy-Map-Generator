@@ -61,7 +61,7 @@ function renderDialog(): void {
       </div>
       <div data-tip="Regiment emblem" style="display: flex; align-items: center">
         <div class="label">Emblem:</div>
-        <div id="regimentEmblem" style="font-size: 1.5em; width: 3.7em"></div>
+        <div id="regimentEmblem" translate="no" style="font-size: 1.5em; width: 3.7em"></div>
         <button id="regimentEmblemChange" style="padding: 0; width: 4.5em">change</button>
       </div>
       <div id="regimentComposition" class="table"></div>
@@ -203,7 +203,7 @@ function changeType(): void {
   reg.n = +!reg.n;
   ensureEl("regimentType").className = reg.n ? "icon-anchor" : "icon-users";
 
-  const size = +select<SVGGElement, unknown>("#armies").attr("box-size");
+  const size = styles.military.options.boxSize;
   const baseRect = selectedRegiment.querySelectorAll("rect")[0];
   const iconRect = selectedRegiment.querySelectorAll("rect")[1];
   const icon = selectedRegiment.querySelector(".regimentIcon")!;
@@ -237,7 +237,7 @@ function changeEmblem(): void {
     regiment.icon = value;
     const isExternal = value.startsWith("http") || value.startsWith("data:image");
     ensureEl("regimentEmblem").innerHTML = isExternal ? `<img src="${value}" style="width: 1em; height: 1em;">` : value;
-    selectedRegiment!.querySelector(".regimentIcon")!.innerHTML = isExternal ? "" : value;
+    selectedRegiment!.querySelector(".regimentIcon")!.textContent = isExternal ? "" : value;
     selectedRegiment!.querySelector(".regimentImage")!.setAttribute("href", isExternal ? value : "");
   });
 }
@@ -284,7 +284,7 @@ function splitRegiment(): void {
   selectedRegiment.querySelector("text")!.innerHTML = String(Military.getTotal(reg));
 
   // create new regiment
-  const shift = +select<SVGGElement, unknown>("#armies").attr("box-size") * 2;
+  const shift = styles.military.options.boxSize * 2;
   const findY = (x: number, startY: number): number => {
     let y = startY;
     do {
@@ -544,7 +544,7 @@ function dragRegiment(this: SVGGElement, event: D3DragEvent<SVGGElement, unknown
 
   const reg = pack.states[+this.dataset.state!].military!.find(r => r.i === +this.dataset.id!);
   if (!reg) return;
-  const size = +select<SVGGElement, unknown>("#armies").attr("box-size");
+  const size = styles.military.options.boxSize;
   const w = reg.n ? size * 4 : size * 6;
   const h = size * 2;
 

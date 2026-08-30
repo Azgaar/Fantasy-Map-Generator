@@ -51,10 +51,7 @@ function handleZoomPerFrame(): void {
   if (didScaleChange) {
     Layers.draw("scaleBar");
 
-    if (options.labels.resizeOnZoom) {
-      const fontSize = Math.max(Math.round(((100 + 100 / scale) / 2) * 100) / 100, 1);
-      select("#labels").attr("font-size", `${fontSize}px`);
-    }
+    if (options.labels.resizeOnZoom) applyLabelsZoomSize();
   }
 
   if (didPositionChange) Layers.draw("coordinates");
@@ -93,19 +90,27 @@ function redrawTracedImage(): void {
 }
 
 /** Rescale zoom-dependent map content to the settled scale. TODO: Legacy, to be reworked */
+/** the #labels container font-size is zoom-derived; anything that rewrites the base
+ * (preset apply, load) re-derives it here */
+function applyLabelsZoomSize(): void {
+  const fontSize = Math.max(Math.round(((100 + 100 / scale) / 2) * 100) / 100, 1);
+  select("#labels").attr("font-size", `${fontSize}px`);
+}
+
 function invokeActiveZooming(): void {
   const isOptimized = ensureEl<HTMLSelectElement>("shapeRendering").value === "optimizeSpeed";
 
+  if (options.labels.resizeOnZoom) applyLabelsZoomSize();
   ViewportLayers.renderNow();
 
   if (!customization && !isOptimized) {
     const statesHalo = select("#statesHalo");
-    const desired = Number(statesHalo.attr("data-width"));
+    const desired = styles.states.statesHalo.options.width;
     const haloSize = rn(desired / scale ** 0.8, 2);
     statesHalo.attr("stroke-width", haloSize).style("display", haloSize > 0.1 ? "block" : "none");
   }
 
-  if (Number(select("#markers").attr("rescale"))) {
+  if (styles.markers.options.rescale) {
     for (const marker of pack.markers ?? []) {
       const { i, x, y, size = 30, hidden } = marker;
       const element = hidden ? null : document.getElementById(`marker${i}`);

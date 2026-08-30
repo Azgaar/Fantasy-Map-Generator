@@ -48,6 +48,7 @@ vi.mock("d3", async importOriginal => {
   };
 });
 
+import "@/generators/styles";
 import { drawEmblems, redrawEmblem, removeEmblem, renderEmblemDefinitions } from "./draw-emblems";
 
 function renderViewport(): void {

@@ -30,11 +30,6 @@ export const drawBurgIcons = (): void => {
   TIME && console.timeEnd("drawBurgIcons");
 };
 
-/** drop the icons, keeping the burg groups: they carry the styles edited in the Style editor */
-export const removeBurgIcons = (): void => {
-  for (const icon of Array.from(document.querySelectorAll("#icons use, #icons circle"))) icon.remove();
-};
-
 export const removeBurgIcon = (burgId: number): void => {
   const existingIcon = document.getElementById(`burg${burgId}`);
   if (existingIcon) existingIcon.remove();
@@ -44,40 +39,30 @@ export const removeBurgIcon = (burgId: number): void => {
 };
 
 function createIconGroups(): void {
-  // save existing styles and remove all groups
-  document.querySelectorAll("g#burgIcons > g").forEach(group => {
-    style.burgIcons[group.id] = Array.from(group.attributes).reduce((acc: { [key: string]: string }, attribute) => {
-      acc[attribute.name] = attribute.value;
-      return acc;
-    }, {});
-    group.remove();
-  });
-
-  document.querySelectorAll("g#anchors > g").forEach(group => {
-    style.anchors[group.id] = Array.from(group.attributes).reduce((acc: { [key: string]: string }, attribute) => {
-      acc[attribute.name] = attribute.value;
-      return acc;
-    }, {});
-    group.remove();
-  });
+  // the store is authoritative (the style editor writes it); groups fully recreate from it
+  const { burgIcons, anchors } = styles.burgIcons;
+  for (const group of document.querySelectorAll("g#burgIcons > g")) group.remove();
+  for (const group of document.querySelectorAll("g#anchors > g")) group.remove();
 
   // create groups for each burg group and apply stored or default style
-  const defaultIconStyle = style.burgIcons.town || Object.values(style.burgIcons)[0] || {};
-  const defaultAnchorStyle = style.anchors.town || Object.values(style.anchors)[0] || {};
+  const defaultIconStyle = burgIcons.groups.town || Object.values(burgIcons.groups)[0];
+  const defaultAnchorStyle = anchors.groups.town || Object.values(anchors.groups)[0];
   const sortedGroups = [...options.burgs.groups].sort((a, b) => a.order - b.order);
   for (const { name } of sortedGroups) {
     const burgGroup = select("#burgIcons").append("g");
-    const iconStyles = style.burgIcons[name] || defaultIconStyle;
-    Object.entries(iconStyles).forEach(([key, value]) => {
-      burgGroup.attr(key, value);
-    });
-    burgGroup.attr("id", name);
+    const iconStyle = burgIcons.groups[name] || defaultIconStyle;
+    if (iconStyle) {
+      for (const [key, value] of Object.entries(iconStyle.attrs)) burgGroup.attr(key, value);
+      burgGroup.attr("font-size", iconStyle.options.size).attr("data-icon", iconStyle.options.icon);
+    }
+    burgGroup.attr("id", name).attr("data-group", name);
 
     const anchorGroup = select("#anchors").append("g");
-    const anchorStyles = style.anchors[name] || defaultAnchorStyle;
-    Object.entries(anchorStyles).forEach(([key, value]) => {
-      anchorGroup.attr(key, value);
-    });
-    anchorGroup.attr("id", name);
+    const anchorStyle = anchors.groups[name] || defaultAnchorStyle;
+    if (anchorStyle) {
+      for (const [key, value] of Object.entries(anchorStyle.attrs)) anchorGroup.attr(key, value);
+      anchorGroup.attr("font-size", anchorStyle.options.size);
+    }
+    anchorGroup.attr("id", name).attr("data-group", name);
   }
 }
