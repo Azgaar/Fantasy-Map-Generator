@@ -1,5 +1,4 @@
 import type { TypedArray } from "@/types/PackedGraph";
-import { findClosestCell } from "@/utils/graphUtils";
 
 export interface Ray {
   angle: number;
@@ -62,7 +61,7 @@ export function raycast({ regionId, regionIds, x0, y0, dx, dy, maxLakeSize, offs
 
   function isInsideRegion(x: number, y: number, regionId: number): boolean {
     if (x < 0 || x > graphWidth || y < 0 || y > graphHeight) return false;
-    const cellId = findClosestCell(x, y, undefined, pack) as number;
+    const cellId = Pack.findCell(x, y) as number;
 
     const feature = features[cells.f[cellId]];
     if (feature.type === "lake") return isInnerLake(feature) || isSmallLake(feature);

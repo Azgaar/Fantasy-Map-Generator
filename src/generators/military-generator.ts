@@ -49,7 +49,6 @@ class MilitaryModule {
   }
 
   generate() {
-    TIME && console.time("generateMilitary");
     const { cells, states } = pack;
     const { p } = cells;
     const valid = states.filter(s => s.i && !s.removed); // valid states
@@ -458,8 +457,6 @@ class MilitaryModule {
       s.military = createRegiments(s.temp.platoons, s);
       delete s.temp; // do not store temp data
     });
-
-    TIME && console.timeEnd("generateMilitary");
   }
 
   getDefaultOptions() {

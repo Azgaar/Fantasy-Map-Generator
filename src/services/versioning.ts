@@ -4,23 +4,27 @@
  * We use Semantic Versioning: major.minor.patch. Refer to https://semver.org
  * Our .map file format is considered the public API.
  *
- * Update the version on each merge to master:
+ * Update the version before merging to master:
  * 1. MAJOR version: Incompatible changes that break existing maps
  * 2. MINOR version: Additions or changes that are backward-compatible but may require old .map files to be updated
  * 3. PATCH version: Backward-compatible bug fixes and small features that don't affect the .map file format
  *
  * Example: 1.102.2 -> Major version 1, Minor version 102, Patch version 2
- * Version bumping is automated via GitHub Actions on PR merge.
+ * VERSION below is the only source of truth. Edit it by hand: the pre-commit hook copies it where needed.
  *
- * For the changes that may be interesting to end users, update the `latestPublicChanges` array below (new changes on top).
+ * For the changes that may be interesting for end users, update the `latestPublicChanges` below.
  */
 
 import { dialogState } from "@/components/dialog/state";
 import { tip } from "@/components/tooltips";
+import { isElectron } from "./platform";
 
-export const VERSION = "1.148.1";
+export const VERSION = "1.149.3";
 
+// new changes on top
 const latestPublicChanges = [
+  "Desktop App",
+  "URL params to open specific layers or preset",
   "Emblems rendering optimization",
   "Dialogs state preserved between sessions",
   "Paint Area dialogs rework",
@@ -88,11 +92,13 @@ export function compareVersions(
 }
 
 export async function clearCache(): Promise<void> {
-  const cacheNames = await caches.keys();
-  await Promise.all(cacheNames.map(cacheName => caches.delete(cacheName)));
+  if (!isElectron()) {
+    const cacheNames = await caches.keys();
+    await Promise.all(cacheNames.map(cacheName => caches.delete(cacheName)));
 
-  const registrations = (await navigator.serviceWorker?.getRegistrations()) ?? [];
-  await Promise.all(registrations.map(registration => registration.unregister()));
+    const registrations = (await navigator.serviceWorker?.getRegistrations()) ?? [];
+    await Promise.all(registrations.map(registration => registration.unregister()));
+  }
 
   location.reload();
 }
@@ -121,6 +127,8 @@ function showUpdateWindow(storedVersion: string | null): void {
       ${latestPublicChanges.map(change => `<li>${change}</li>`).join("")}
     </ul>
 
+    ${isElectron() ? "" : `<p>The Generator is also available as a <a href="#" onclick="window.Services.AppOffer.open(); return false">desktop app</a> that works offline.</p>`}
+
     <p>Join our <a href="${discord}" target="_blank">Discord server</a> and <a href="${reddit}" target="_blank">Reddit community</a> to ask questions, share maps, discuss the Generator and Worldbuilding, report bugs and propose new features.</p>
     <span><i>Thanks for all supporters on <a href="${patreon}" target="_blank">Patreon</a>!</i></span>`;
 
@@ -146,6 +154,11 @@ function announceVersion(): void {
   if (loadingScreenVersion) loadingScreenVersion.innerText = `v${VERSION}`;
 
   const storedVersion = localStorage.getItem("version");
+  if (!storedVersion) {
+    setTimeout(() => showUpdateWindow(null), 6000);
+    return;
+  }
+
   if (compareVersions(storedVersion, VERSION, { major: true, minor: true, patch: false }).isOlder) {
     setTimeout(() => showUpdateWindow(storedVersion), 6000);
   } else if (compareVersions(storedVersion, VERSION).isOlder) {

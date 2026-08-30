@@ -1,0 +1,148 @@
+name: Build desktop app
+
+on:
+  # Tagging a release (v1.150) builds installers and attaches them to its GitHub release
+  push:
+    tags: ["v[0-9]*"]
+
+  # Cheap guard: make sure the desktop app still compiles when its own files change
+  pull_request:
+    branches: [master]
+    paths:
+      - "electron/**"
+      - "electron-builder.yml"
+      - "scripts/electron.mjs"
+      - "package.json"
+
+  # Allows building the app from the Actions tab, optionally against an already existing tag
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to build and attach the installers to. Leave empty to only build."
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    env:
+      # Compiling needs no Electron binary, only its type definitions
+      ELECTRON_SKIP_BINARY_DOWNLOAD: 1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      # electron-builder stamps package.json's version on the installers and into latest.yml.
+      # If it lags versioning.ts, the release builds fine but no client is ever offered the update
+      - name: Check the version is in sync across versioning.ts and the package files
+        run: node scripts/sync-version.js --check
+
+      - name: Compile main process and renderer
+        run: npm run electron build
+
+  build:
+    needs: compile
+    if: github.event_name != 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            platform: macos
+          - os: windows-latest
+            platform: windows
+          - os: ubuntu-latest
+            platform: linux
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and package
+        env:
+          # The builds are unsigned: skip the certificate lookup instead of failing on it
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+        run: npm run electron -- dist --publish never
+
+      - name: Upload installers
+        uses: actions/upload-artifact@v7
+        with:
+          name: fantasy-map-generator-${{ matrix.platform }}
+          if-no-files-found: error
+          path: |
+            release/*.dmg
+            release/*.zip
+            release/*.exe
+            release/*.AppImage
+            release/*.deb
+            release/*.blockmap
+            release/latest*.yml
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/') || inputs.tag != ''
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ env.TAG }}
+
+      - name: Collect the installers
+        uses: actions/download-artifact@v8
+        with:
+          pattern: fantasy-map-generator-*
+          merge-multiple: true
+          path: release
+
+      # A tag push has no release yet: start a draft one to fill in and publish by hand
+      - name: Make sure the release exists
+        run: gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --draft --title "$TAG" --generate-notes
+
+      # latest*.yml and the blockmaps are what the built-in updater reads, so they go up as well
+      - name: Attach the installers
+        run: gh release upload "$TAG" release/* --clobber
+
+      # The downloads go above the changelog: they are what a visitor opening the release came for
+      - name: Add the download instructions
+        run: |
+          MARKER="Which file do I need?"
+          BODY=$(gh release view "$TAG" --json body -q .body)
+
+          if [[ "$BODY" == *"$MARKER"* ]]; then
+            echo "$TAG already explains the downloads, leaving the notes alone"
+          else
+            cp .github/release-notes.md notes.md
+            if [ -n "$BODY" ]; then printf '\n---\n\n%s\n' "$BODY" >> notes.md; fi
+            gh release edit "$TAG" --notes-file notes.md
+            echo "Put the download instructions on top of the $TAG notes"
+          fi

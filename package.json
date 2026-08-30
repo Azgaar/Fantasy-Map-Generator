@@ -1,6 +1,7 @@
 {
   "name": "fantasy-map-generator",
-  "version": "1.148.1",
+  "productName": "Fantasy Map Generator",
+  "version": "1.149.3",
   "description": "Azgaar's _Fantasy Map Generator_ is a free web application that helps fantasy writers, game masters, and cartographers create and edit fantasy maps.",
   "homepage": "https://github.com/Azgaar/Fantasy-Map-Generator#readme",
   "bugs": {
@@ -12,21 +13,26 @@
   },
   "license": "MIT",
   "author": "Azgaar",
-  "main": "main.js",
+  "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "electron": "node scripts/electron.mjs",
     "test": "vitest",
     "test:e2e": "playwright test",
     "lint": "biome check --write",
+    "sync-version": "node scripts/sync-version.js",
+    "stamp-assets": "node scripts/stamp-assets.js",
     "prepare": "simple-git-hooks"
   },
   "simple-git-hooks": {
-    "pre-commit": "npm run lint"
+    "pre-commit": "npm run lint && node scripts/sync-version.js --stage && node scripts/stamp-assets.js --stage"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.6",
+    "@emnapi/core": "^1.11.3",
+    "@emnapi/runtime": "^1.11.3",
     "@playwright/test": "^1.57.0",
     "@types/d3": "^7.4.3",
     "@types/delaunator": "^5.0.3",
@@ -36,6 +42,9 @@
     "@types/three": "^0.184.1",
     "@vitest/browser": "^4.1.10",
     "@vitest/browser-playwright": "^4.0.18",
+    "electron": "^43.4.1",
+    "electron-builder": "^26.15.3",
+    "electron-updater": "^6.8.9",
     "jsdom": "^29.1.1",
     "playwright": "^1.57.0",
     "simple-git-hooks": "^2.13.1",

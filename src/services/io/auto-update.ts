@@ -326,8 +326,8 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
         const s = this.getPointAtLength(length);
         const e = this.getPointAtLength(0);
-        const source = findCell(s.x, s.y)!;
-        const mouth = findCell(e.x, e.y)!;
+        const source = Pack.findCell(s.x, s.y)!;
+        const mouth = Pack.findCell(e.x, e.y)!;
         const name = Rivers.getName(mouth);
         const type = length < 25 ? rw({ Creek: 9, River: 3, Brook: 3, Stream: 1 }) : "River";
         pack.rivers.push({ i, parent: 0, length, source, mouth, basin: i, name, type } as (typeof pack.rivers)[number]);
@@ -592,7 +592,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
           const x = rn((x1 + x2) / 2, 1);
           const y = rn((y1 + y2) / 2, 1);
 
-          const cell = findCell(x, y);
+          const cell = Pack.findCell(x, y);
           riverPoints.push([x, y]);
           riverCells.push(cell);
         }
@@ -639,7 +639,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
           if (dx) x += +dx;
           if (dy) y += +dy;
         }
-        const cell = findCell(x, y);
+        const cell = Pack.findCell(x, y);
         const size = rn(rescale ? +el.dataset.size! * 30 : +el.getAttribute("width")!, 1);
 
         const href = el.href.baseVal;
@@ -961,7 +961,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
           const point = node.getPointAtLength(i);
           const x = rn(point.x, 2);
           const y = rn(point.y, 2);
-          const cellId = findCell(x, y);
+          const cellId = Pack.findCell(x, y);
           points.push([x, y, cellId]);
         }
 

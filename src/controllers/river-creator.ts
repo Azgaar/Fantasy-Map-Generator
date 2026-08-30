@@ -5,7 +5,7 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Point } from "@/generators/voronoi";
-import { ensureEl, getPackPolygon, getPointer, last, rn } from "../utils";
+import { ensureEl, getPointer, last, rn } from "../utils";
 
 let creatorCells: number[] = [];
 
@@ -65,7 +65,7 @@ function onBodyClick(ev: Event): void {
 }
 
 function onCellClick(this: any, event: any): void {
-  const cell = findCell(...(getPointer(event, this) as [number, number]))!;
+  const cell = Pack.findCell(...(getPointer(event, this) as [number, number]))!;
 
   if (creatorCells.includes(cell)) removeCell(cell);
   else addCell(cell);
@@ -97,7 +97,7 @@ function drawCells(cells: number[]): void {
     .selectAll(`polygon`)
     .data(cells)
     .join("polygon")
-    .attr("points", (d: number) => getPackPolygon(d, pack))
+    .attr("points", (d: number) => String(Pack.getPolygon(d)))
     .attr("class", "current");
 }
 

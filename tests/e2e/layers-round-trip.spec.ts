@@ -67,5 +67,16 @@ test.describe("layers round-trip", () => {
       labels: document.getElementById("labels")!.style.display
     }));
     expect(visibility).toEqual({ biomes: "", labels: "none" });
+
+    // URL state is applied after a saved map is restored, using canonical layer ids.
+    await page.evaluate(() => history.replaceState(null, "", "?layers=scaleBar,burgIcons"));
+    await page.locator("#mapToLoad").setInputFiles([]);
+    await page.locator("#mapToLoad").setInputFiles({ name: "round-trip.map", mimeType: "text/plain", buffer });
+    await page.waitForFunction(
+      () => JSON.stringify(Layers.state.active.slice().sort()) === JSON.stringify(["burgIcons", "scaleBar"])
+    );
+
+    expect(await page.evaluate(() => Layers.state.active.slice().sort())).toEqual(["burgIcons", "scaleBar"]);
+    await expect(page.locator("#layersPreset")).toHaveValue("custom");
   });
 });

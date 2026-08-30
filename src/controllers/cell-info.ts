@@ -7,8 +7,6 @@ import {
   convertTemperature,
   debounce,
   ensureEl,
-  findClosestCell,
-  findGridCell,
   getArea,
   getAreaUnit,
   getCellPopulation,
@@ -74,10 +72,10 @@ const updateCellInfo = debounce((event: MouseEvent | TouchEvent): void => {
   if (!node || !pack.cells?.p) return;
 
   const point = getPointer(event, node);
-  const packCellId = findClosestCell(...point, undefined, pack);
+  const packCellId = Pack.findCell(...point);
   if (packCellId === undefined) return;
 
-  const gridCellId = findGridCell(point[0], point[1], grid);
+  const gridCellId = Grid.findCell(point[0], point[1]);
   updateFields(point, packCellId, gridCellId);
 }, 100);
 
@@ -186,7 +184,7 @@ function getElevation(feature: Feature, h: number): string {
 function getDepth(feature: Feature, [x, y]: Point): string {
   if (feature.land) return `0 ${ensureEl<HTMLSelectElement>("heightUnit").value}`; // land: 0
 
-  const gridH = grid.cells.h[findGridCell(x, y, grid)];
+  const gridH = grid.cells.h[Grid.findCell(x, y)];
   // lake: difference between surface and bottom
   if (feature.type === "lake") return getHeight(gridH === 19 ? feature.height / 2 : gridH, true);
 

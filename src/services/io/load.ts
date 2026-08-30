@@ -342,19 +342,14 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     if (!select("#emblems").size()) {
       viewbox.insert("g", "#labels").attr("id", "emblems").style("display", "none");
     }
-
-    {
-      grid = JSON.parse(data[6]);
-      const { cells, vertices } = calculateVoronoi(grid.points, grid.boundary);
-      grid.cells = cells;
-      grid.vertices = vertices;
-      grid.cells.h = Uint8Array.from(data[7].split(","), Number);
-      grid.cells.prec = Uint8Array.from(data[8].split(","), Number);
-      grid.cells.f = Uint16Array.from(data[9].split(","), Number);
-      grid.cells.t = Int8Array.from(data[10].split(","), Number);
-      grid.cells.temp = Int8Array.from(data[11].split(","), Number);
-    }
-    reGraph();
+    grid = JSON.parse(data[6]);
+    Grid.rebuildGraph(grid);
+    grid.cells.h = Uint8Array.from(data[7].split(","), Number);
+    grid.cells.prec = Uint8Array.from(data[8].split(","), Number);
+    grid.cells.f = Uint16Array.from(data[9].split(","), Number);
+    grid.cells.t = Int8Array.from(data[10].split(","), Number);
+    grid.cells.temp = Int8Array.from(data[11].split(","), Number);
+    Pack.generate();
     Features.markupPack();
     if (data[3]?.startsWith("[")) {
       type LoadedBiome = (typeof pack.biomes)[number] & {
@@ -580,7 +575,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
 
         if (burg.cell >= cells.i.length) {
           ERROR && console.error("[Data integrity] Burg", burg.i, "is linked to invalid cell", burg.cell);
-          burg.cell = findCell(burg.x, burg.y)!;
+          burg.cell = Pack.findCell(burg.x, burg.y)!;
           cells.i
             .filter(i => cells.burg[i] === burg.i)
             .forEach(i => {
@@ -720,7 +715,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     fitMapToScreen();
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - uploadTimeStart) / 1000, 2)}s`);
-    showStatistics();
+    logStats();
     tip("Map is successfully loaded", true, "success", 7000);
   } catch (error) {
     ERROR && console.error(error);

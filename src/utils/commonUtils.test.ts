@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { getCoordinates, getLatitude, getLongitude } from "./commonUtils";
+// @vitest-environment jsdom
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { getBase64, getCoordinates, getLatitude, getLongitude, parseError } from "./commonUtils";
 
 describe("getLongitude", () => {
   const mapCoordinates = { lonW: -10, lonT: 20 };
@@ -93,5 +94,75 @@ describe("getCoordinates", () => {
     const globalMap = { lonW: -180, lonT: 360, latN: 90, latT: 180 };
     const result = getCoordinates(500, 400, globalMap, graphWidth, graphHeight, 2);
     expect(result).toEqual([0, 0]); // center of the world
+  });
+});
+
+describe("parseError", () => {
+  it("should report the error itself", () => {
+    expect(parseError(new Error("boom")).includes("boom")).toBe(true);
+  });
+
+  it("should report the causes the error was wrapped over", () => {
+    const original = new Error("cell 42 is not defined");
+    const wrapped = new Error('Generation Pipeline failed at step "rivers"', { cause: original });
+
+    const parsed = parseError(wrapped);
+
+    expect(parsed.includes('step "rivers"')).toBe(true); // "at " is reformatted, so the message is matched in parts
+    expect(parsed.includes("Caused by:")).toBe(true);
+    expect(parsed.includes("cell 42 is not defined")).toBe(true);
+  });
+
+  it("should not follow a cause that is not an error", () => {
+    expect(parseError(new Error("boom", { cause: "just a string" })).includes("Caused by:")).toBe(false);
+  });
+});
+
+describe("getBase64", () => {
+  type NextResponse = { status: number; blob: Blob } | { networkError: true };
+  let next: NextResponse;
+
+  class FakeXhr {
+    onload: (() => void) | null = null;
+    onerror: (() => void) | null = null;
+    status = 0;
+    response: Blob | null = null;
+    responseType = "";
+    open() {}
+    send() {
+      queueMicrotask(() => {
+        if ("networkError" in next) return this.onerror?.();
+        this.status = next.status;
+        this.response = next.blob;
+        this.onload?.();
+      });
+    }
+  }
+  vi.stubGlobal("XMLHttpRequest", FakeXhr);
+  afterEach(() => vi.stubGlobal("XMLHttpRequest", FakeXhr));
+
+  const call = () =>
+    new Promise<string | ArrayBuffer | null>(resolve => getBase64("https://example.com/img.png", resolve));
+
+  it("inlines a successful image response as a data URI", async () => {
+    next = { status: 200, blob: new Blob(["fake-png-bytes"], { type: "image/png" }) };
+    const result = await call();
+    expect(typeof result).toBe("string");
+    expect(result).toMatch(/^data:image\/png/);
+  });
+
+  it("returns null for a non-2xx response instead of inlining the error page", async () => {
+    next = { status: 404, blob: new Blob(["<!DOCTYPE html><h1>404</h1>"], { type: "text/html" }) };
+    expect(await call()).toBeNull();
+  });
+
+  it("returns null for a 2xx response that is not an image", async () => {
+    next = { status: 200, blob: new Blob(["<!DOCTYPE html>"], { type: "text/html" }) };
+    expect(await call()).toBeNull();
+  });
+
+  it("returns null on network error", async () => {
+    next = { networkError: true };
+    expect(await call()).toBeNull();
   });
 });

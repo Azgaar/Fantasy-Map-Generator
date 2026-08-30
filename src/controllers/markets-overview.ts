@@ -293,7 +293,7 @@ function exitAddMarketMode(): void {
 
 function addMarketOnClick(this: SVGElement, ev: MouseEvent): void {
   const [x, y] = getPointer(ev, this);
-  const cellId = findCell(x, y);
+  const cellId = Pack.findCell(x, y);
   if (cellId === undefined) return;
 
   const burgId = pack.cells.burg[cellId];

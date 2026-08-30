@@ -1,4 +1,4 @@
-_The tutorial is for version 1.98_
+_The tutorial describes the current UI; exact labels and screenshots may change._
 
 ![loading_screen](https://github.com/user-attachments/assets/154617dd-a690-4da5-a36c-187cd51a5c04)
 
@@ -15,7 +15,7 @@ The map is generated fully zoomed out. Double click on the map to zoom into the 
 The same operations can be performed using keyboard. Press <kbd>+</kbd> to zoom in, <kbd>-</kbd> to zoom out. Use <kbd>1</kbd>-<kbd>9</kbd> number keys to set an exact zoom level. Press <kbd>0</kbd> to reset zoom to default. Use arrows keys to move around.
 
 ## Map layers
-By default the map shows the world’s political situation, but it’s not the only available preset. Open the first tab of the menu – _Layers_ – to change the preset. _Preset_ is a set of layers to be toggled on. There are number of presets available by default: political, cultural, religions, biomes, provinces, heightmap, places of interest, and other. You can either select one of the presets or use buttons below to display or hide a particular layer.
+By default the map shows the world’s political situation, but it’s not the only available preset. Open the first tab of the menu – _Layers_ – to change the preset. _Preset_ is a set of layers to be toggled on. The default presets are Political map, Cultural map, Religions map, Provinces map, Biomes map, Heightmap, Physical map, Places of interest, Goods map, Trade animation, Military map, Emblems and Pure landmass. You can either select one of the presets or use buttons below to display or hide a particular layer.
 
 ![menu](https://github.com/user-attachments/assets/70171c15-a44e-4460-9e33-4f4eed7f1b2a)
 
@@ -63,7 +63,7 @@ Let’s move to the settings overview. Open the Menu and click on the _Options_ 
 
 * _Canvas size_: the size of the map in pixels. There is no way to change the map size after the map generation and it's always advised to use the default value. The button on the left resets the size back to the default.
 * _Map seed_: a number defining random values generation. If options and map size are the same, two maps generated with the same seed will be exactly the same. The seed cannot store user’s changes, so please don’t use it as a save function. The small button on the left allows to browse through generated seeds and restore previous maps if map options where not locked.
-* _Points number_: the number of generated points and cells. The more points are generated, the more detailed is map. Points number highly affects performance, so the only recommended value is 10K.
+* _Points number_: the number of generated points and cells. The more points are generated, the more detailed the map. Points number highly affects performance, so 10K is the recommended value.
 * _Map name_: the name of the map or the world. Click on button with arrows to re-generate the name.
 * _Year and era_: current year of the world and the era name. Used for some text generation.
 * _Heightmap_: template to be applied on heightmap generation. Basically a type of the landmass: high island, continents, archipelago etc. You can create your own template or change the existing in the _Template Editor_ (part of the _Heightmap Editor_ tools).
@@ -73,9 +73,8 @@ Let’s move to the settings overview. Open the Menu and click on the _Options_ 
 * _Provinces ratio_: the percentage of burgs that will have their own province. Provinces are sub-units of states and can be edited via the _Provinces Editor_.
 * _Size variety_:  defines how much states area should be different. The lower value, the more uniform state areas are.
 * _Growth rate_: defines how far states and cultures will expand into neutral lands on generation. The lower value you have, the more lands will stay politically neutral.
-* _Towns number_: the number of towns to be generated. Towns are non-capital settled areas (_burgs_). If there is not enough suitable space to put a requested number of towns, the Generator will place only a limited number of towns.
+* _Burgs number_: the number of burgs (settlements) to be generated. If there is not enough suitable space for the requested number, the Generator will place fewer. Set it to `auto` to let the Generator decide.
 * _Religions number_: the number of religions to be generated. Controls only the number of organized religions and cults. Religions can be edited via the _Religions Editor_.
-* _State labels_: defines whether the generator should render full state names or can use short variants where there is not enought space.
 
 Generator settings:
 * _Interface size_: size of the control panes. If the GUI size is too small, please also check out browser's zoom level (<kbd>Ctrl +</kbd>, <kbd>Ctrl -</kbd>).
@@ -84,13 +83,14 @@ Generator settings:
 * _Transparency_: opacity of the control panes.
 * _Autosave interval_: number of minutes the map should be auto-saved to browser memory. Set to `0` to disable the autosave.
 * _Onload behavior_: define what should be done when Generator is opened: a new map generated or a previously saved map auto-opened.
-* _Speaker voice_: select voice to speak burg and other names. Voice generation functionality if provided by browser.
+* _Azgaar assistant_: show or hide the in-app chat assistant.
+* _Speaker voice_: select the voice used to speak burg and other names. Voice synthesis is provided by the browser.
 * _Emblem shape_: defines shield shape used during emblems generation.
 * _Zoom extent_: minimal and maximal zoom levels. Click on the button on the right to restore the default values.
 * _Rendering_: set map rendering quality. Best quality can reduce the map performance.
-* _Language_: load Google Translator and select a language to translate the tool. Translations can cause issues with saving.
+* _Language_: load Google Translate and select a language to translate the interface. Automatic translation can break some functionality — use the reset icon or refresh the page if it does.
 
-There is also the _Reset to defaults_ button. The button cancels all user changes and refreshes the page.
+There is also the _Restore default options_ button. It cancels all user changes and refreshes the page.
 
 ## Climate configuration
 Click on _Configure World_ to set up map position on a globe and climate. Toggle biomes, precipitation or temperature layers on to see how configuration changes affect the map.
@@ -117,13 +117,13 @@ Heightmap editing process has multiple build-in tools. These tools won’t be co
 ![paint_brushes](https://github.com/user-attachments/assets/dab037a3-797e-447a-ab96-6c99af1342d9)
 
 ## Customization tools
-The Heightmap Editor tools are not the only available ones. From the same _Tools_  tab you can also open Biomes, States, Provinces, Diplomacy, Cultures, Namesbase, Zones, Religions, Burgs, Units and Notes editors. All these Editors work in a different way and won’t be covered in this tutorial.
+The Heightmap Editor tools are not the only ones available. The _Tools_ tab is split into five sections:
 
-The same tab contains tools to re-generate map elements. If, for example, you have added and moved some burgs, the burgs won’t be connected with roads anymore. You can click on initiate routes regeneration to get them connected. You can also re-calculate State Labels positions, relief icons, population, rivers, burgs and states.
-
-The next _Tools_ section allows adding elements like burgs, labels, rivers, routes and markers. Select the tool and then click on the map to add an object. Hold <kbd>Shift</kbd> and click multiple times to add several objects.
-
-The last section, which is collapsed by default, provides some info about the map cell your cursor is over.
+* **Edit** — the editors and overviews: Biomes, Burgs, Cultures, Diplomacy, Emblems, Goods, Heightmap, Markers, Markets, Measurers, Labels, Military, Namesbase, Notes, Provinces, Religions, Rivers, Routes, States, Trade animation, Units and Zones. Most of them have a keyboard shortcut shown in the tooltip.
+* **Regenerate** — re-runs a single generation step. If, for example, you have added and moved some burgs, they will not be connected by routes anymore; regenerating routes reconnects them. You can also regenerate cultures, emblems, goods, ice, state labels, markers, markets, military, population, production, provinces, relief icons, religions, rivers, states and zones.
+* **Add** — click a tool and then click on the map to place a feature, burg, label, marker, river or route. Hold <kbd>Shift</kbd> and click multiple times to add several objects.
+* **Show** — the Cells details view, the Data charts and the Minimap.
+* **Create** — the Submap and Transform tools, which rebuild the map from a fragment of the current one or reproject it.
 
 ## Editing map elements (labels, rivers, roads etc.)
 Individual map elements such as rivers, routes, relief icons, labels, markers, burgs and labels can be edited on mouse click. The editor screen that is opened is different for each element and it’s also out of this tutorial's coverage.

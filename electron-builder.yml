@@ -1,0 +1,41 @@
+appId: com.azgaar.fantasy-map-generator
+copyright: Copyright © 2017-2026 Azgaar and contributors
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist-electron/**/*
+  - package.json
+  - "!node_modules/**/*" # the renderer is bundled by Vite, the main process only needs Electron itself
+asar: true
+afterPack: ./scripts/adhoc-sign.mjs
+artifactName: fmg-${version}-${os}-${arch}.${ext}
+mac:
+  category: public.app-category.graphics-design
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+    - target: zip
+      arch: [arm64, x64]
+win:
+  target:
+    - target: nsis
+      arch: [x64, arm64]
+linux:
+  category: Graphics
+  maintainer: Azgaar <azgaar.fmg@yandex.com>
+  synopsis: Generate and edit fantasy maps
+  target:
+    - target: AppImage
+      arch: [x64]
+    - target: deb
+      arch: [x64]
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  # otherwise a third installer carrying both architectures is built next to the per-arch ones
+  buildUniversalInstaller: false
+publish:
+  provider: github
+  releaseType: draft

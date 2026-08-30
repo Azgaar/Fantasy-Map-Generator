@@ -1,4 +1,4 @@
-import { debounce, findClosestCell, findEl, getPointer } from "@/utils";
+import { debounce, findEl, getPointer } from "@/utils";
 
 const cleanups = new Map<string, () => void>();
 
@@ -17,7 +17,7 @@ export function applyLineHighlighting(
     if (!(event.target instanceof Element) || !pack.cells?.p) return;
 
     const [x, y] = getPointer(event, viewbox);
-    const cellId = findClosestCell(x, y, undefined, pack);
+    const cellId = Pack.findCell(x, y);
     const lineId = cellId === undefined ? undefined : resolveLineId({ target: event.target, cellId });
 
     if (lineId === undefined) unhighlightLines(dialogId);

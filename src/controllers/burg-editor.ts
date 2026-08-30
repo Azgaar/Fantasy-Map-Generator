@@ -743,7 +743,7 @@ function toggleRelocateBurg(): void {
 function relocateBurgOnClick(this: SVGGElement, event: any): void {
   const cells = pack.cells;
   const point = getPointer(event, this);
-  const cellId = findCell(point[0], point[1])!;
+  const cellId = Pack.findCell(point[0], point[1])!;
   const id = getSelectedId();
   const burg = pack.burgs[id];
 

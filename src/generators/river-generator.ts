@@ -165,7 +165,6 @@ class RiverModule {
   }
 
   generate(allowErosion = true) {
-    TIME && console.time("generateRivers");
     Math.random = Alea(seed);
     const { cells, features } = pack;
 
@@ -409,8 +408,6 @@ class RiverModule {
       cells.h = Uint8Array.from(h); // apply gradient
       downcutRivers(); // downcut river beds
     }
-
-    TIME && console.timeEnd("generateRivers");
   }
 
   alterHeights(): number[] {

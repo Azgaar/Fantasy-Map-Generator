@@ -2630,19 +2630,8 @@ body.tour-free-roam * {
   pointer-events: auto !important;
 }
 
-#startTourButton {
-  display: block;
-  margin: 0.8em auto 0.4em auto;
-  padding: 0.4em 1.2em;
-  background-color: #3a3a5c;
-  border: 1px solid #5a5a7a;
-  color: #e8d5a3;
-  font-family: Georgia, serif;
-  cursor: pointer;
-  border-radius: 3px;
-  font-size: 0.95em;
-}
-
-#startTourButton:hover {
-  background-color: #4a4a6c;
+.aboutActions {
+  display: flex;
+  gap: 0.5em;
+  margin: 0.8em 0 0.4em 0;
 }

@@ -3,6 +3,7 @@ import { Layers } from "@/components/layers";
 import type { Burg } from "@/generators/burgs-generator";
 import type { State } from "@/generators/states-generator";
 import { Services } from "@/services";
+import { savedMessage } from "@/services/platform";
 import { downloadFile, getFileName } from "@/utils";
 import { timeOfDayPresets } from "../data/view-3d-options";
 import { minmax, rn, throttle } from "../utils";
@@ -317,7 +318,7 @@ const saveScreenshot = async () => {
   link.download = `${getFileName()}.jpeg`;
   link.href = URL;
   link.click();
-  window.tip(`Screenshot is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
+  window.tip(savedMessage("Screenshot"), true, "success", 7000);
   window.setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
 };
 

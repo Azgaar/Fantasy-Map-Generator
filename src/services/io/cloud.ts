@@ -8,6 +8,7 @@
 //   initialize(): restore access tokens from storage if possible, else authenticate
 
 import { tip } from "@/components/tooltips";
+import { isElectron } from "@/services/platform";
 
 export interface CloudFile {
   name: string;
@@ -121,6 +122,13 @@ const dropbox: DropboxProvider = {
   },
 
   auth() {
+    // Dropbox only redirects back to a registered https address, which the app:// origin can never be
+    if (isElectron()) {
+      const message = "Dropbox is not available in the Desktop App, use the browser version to sync maps";
+      this.returnError(message);
+      return Promise.reject(new Error(message));
+    }
+
     const width = 640;
     const height = 480;
     const left = window.innerWidth / 2 - width / 2;

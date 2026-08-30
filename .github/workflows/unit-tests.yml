@@ -1,10 +1,14 @@
 name: Unit Tests
 on:
   pull_request:
-    branches: [master]
+    branches: [master, "[0-9]*.[0-9]*.[0-9]*"]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+
+env:
+  # Electron is only needed to package the desktop app, skip its ~100 MB binary here
+  ELECTRON_SKIP_BINARY_DOWNLOAD: 1
 
 jobs:
   test:
@@ -17,5 +21,11 @@ jobs:
           node-version: "24"
       - name: Install dependencies
         run: npm ci
+      - name: Check the version is in sync across versioning.ts and the package files
+        run: node scripts/sync-version.js --check
+
+      - name: Check the public assets index.html serves are stamped with their current contents
+        run: node scripts/stamp-assets.js --check
+
       - name: Run Unit tests
         run: npm run test

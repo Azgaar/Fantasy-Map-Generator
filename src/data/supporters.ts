@@ -637,7 +637,15 @@ Tom Hollingworth
 Scott Gunn
 Gabe Hurd
 Benjamin Sardinsky
-Task_Failer`;
+Task_Failer
+Gawain Yeo
+Tom Hollingworth
+Scott Gunn
+Gabe Hurd
+Benjamin Sardinsky
+Task_Failer
+Sable Crow
+HaginZuria`;
 
 window.Supporters = supporters;
 

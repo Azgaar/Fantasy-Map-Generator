@@ -1,10 +1,14 @@
 name: Playwright Tests
 on:
   pull_request:
-    branches: [master]
+    branches: [master, "[0-9]*.[0-9]*.[0-9]*"]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+
+env:
+  # Electron is only needed to package the desktop app, skip its ~100 MB binary here
+  ELECTRON_SKIP_BINARY_DOWNLOAD: 1
 
 jobs:
   test:
@@ -20,7 +24,7 @@ jobs:
         run: npm ci
       - name: Cache Playwright browsers
         id: playwright-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-${{ hashFiles('package-lock.json') }}
@@ -32,7 +36,7 @@ jobs:
         run: npx playwright install-deps chromium
       - name: Cache build output
         id: dist-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: dist/
           key: dist-${{ hashFiles('src/**', 'public/**', 'vite.config.ts',
@@ -44,7 +48,7 @@ jobs:
         run: npm run test:e2e
         env:
           SKIP_BUILD: "1"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
           name: playwright-report

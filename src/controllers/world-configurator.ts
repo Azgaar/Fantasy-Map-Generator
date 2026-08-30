@@ -362,8 +362,8 @@ function updateInputValues(): void {
 function updateWorld(): void {
   updateGlobeTemperature();
   updateGlobePosition();
-  calculateTemperatures();
-  generatePrecipitation();
+  Temperature.generate();
+  Precipitation.generate();
   const heights = new Uint8Array(pack.cells.h);
   Rivers.generate();
   Rivers.specify();
@@ -380,7 +380,7 @@ function updateWorld(): void {
 function updateGlobePosition(): void {
   const eqD = ((graphHeight / 2) * 100) / options.mapSize;
 
-  calculateMapCoordinates();
+  Coordinates.calculate();
   const mc = mapCoordinates;
   const unit = distanceUnitInput.value;
   const meridian = toKilometer(eqD * 2 * distanceScale);

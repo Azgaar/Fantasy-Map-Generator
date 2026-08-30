@@ -44,7 +44,7 @@ function open(attacker: Regiment, defender: Regiment): void {
 
   const x = defender.x;
   const y = defender.y;
-  const cell = findCell(x, y) ?? 0;
+  const cell = Pack.findCell(x, y) ?? 0;
 
   battle = {
     iteration: 0,
