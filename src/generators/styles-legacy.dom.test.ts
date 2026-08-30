@@ -298,3 +298,12 @@ test("an attr the layer registry declares survives a map that predates it", () =
   syncStylesFromMap({ hasStyleRecord: true });
   expect(styles.fogging.attrs.mask).toBe(DEFAULT_STYLES.fogging.attrs.mask);
 });
+
+test("a child group the map predates leaves its parent's styling in place", () => {
+  // pre-1.143 maps have no #sea_island: the layer group itself is styled
+  document.body.innerHTML = `<svg id="map"><g id="coastline" opacity="0.5" stroke-width="0.7"></g></svg>`;
+  const result = stylesFromMap(document);
+  expect(DEFAULT_STYLES.coastline.sea_island.attrs["stroke-width"]).not.toBeNull();
+  expect(result.coastline.sea_island.attrs["stroke-width"]).toBeNull();
+  expect(result.coastline.sea_island.attrs.opacity).toBeNull();
+});

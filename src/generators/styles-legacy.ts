@@ -346,6 +346,13 @@ export function harvestAttributes(): Record<string, string[]> {
   return table;
 }
 
+// the group a child route hangs off: #sea_island's is #coastline, #landHeights' is #terrs
+function layerElementFor(route: PresetRoute, root: ParentNode): Element | null {
+  if (route.path.length < 2) return null;
+  const layer = Layers.all.find(({ id }) => id === route.path[0]);
+  return layer ? root.querySelector(`#${layer.elementId}`) : null;
+}
+
 function harvestValue(value: string): string | number {
   if (value === "") return "";
   const n = Number(value);
@@ -379,10 +386,19 @@ export function stylesFromMap(root: ParentNode = document): Styles {
   const bags: Record<string, Record<string, unknown>> = {};
 
   for (const [selector, attrs] of Object.entries(harvestAttributes())) {
-    const el = root.querySelector(selector);
-    if (!el) continue;
     const route = PRESET_ROUTES[selector];
     const nullable = route.ownAttrs === false ? [] : nullableAttrsAt(route.path);
+    const el = root.querySelector(selector);
+
+    if (!el) {
+      // a map predating the child groups styles the layer group itself; leaving the child at its
+      // default would stamp it over the parent, so record the parent's attrs as "not set" here
+      const parent = layerElementFor(route, root);
+      const inherited = parent ? nullable.filter(attr => parent.hasAttribute(attr)) : [];
+      if (inherited.length) bags[selector] = Object.fromEntries(inherited.map(attr => [attr, null]));
+      continue;
+    }
+
     bags[selector] = harvestBag(el, attrs, nullable);
   }
   for (const el of root.querySelectorAll("#labels > *")) {
