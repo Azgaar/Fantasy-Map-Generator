@@ -148,6 +148,11 @@ function selectStyleElement() {
     styleStrokeWidthInput.value = el.attr("stroke-width") || 0;
   }
 
+  if (styleElement === "journeys") {
+    styleStrokeWidth.style.display = "block";
+    styleStrokeWidthInput.value = el.attr("stroke-width") || 0;
+  }
+
   // stroke dash
   if (
     [
@@ -155,6 +160,7 @@ function selectStyleElement() {
       "cells",
       "coordinates",
       "gridOverlay",
+      "journeys",
       "legend",
       "population",
       "routes",
@@ -175,6 +181,7 @@ function selectStyleElement() {
       "compass",
       "coordinates",
       "gridOverlay",
+      "journeys",
       "population",
       "prec",
       "routes",

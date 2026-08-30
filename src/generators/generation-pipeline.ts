@@ -43,7 +43,8 @@ const generationPipelineSteps = [
   { id: "markers", run: () => Markers.generate() },
   { id: "zones", run: () => Zones.generate() },
   { id: "addedLabels", run: () => AddedLabels.initiate() },
-  { id: "mapName", run: () => Names.getMapName(false) }
+  { id: "mapName", run: () => Names.getMapName(false) },
+  { id: "journeys", run: () => Journeys.generate() } // last: it draws from the PRNG, so it must not shift the steps above
 ] as const satisfies PipelineStep<string, GenerationContext>[];
 
 type GenerationPipelineStepId = (typeof generationPipelineSteps)[number]["id"];

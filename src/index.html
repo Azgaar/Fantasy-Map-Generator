@@ -133,7 +133,7 @@
     </style>
     <link
       rel="preload"
-      href="index.css?v=9589682e"
+      href="index.css?v=f319eac5"
       as="style"
       onload="
         this.onload = null;
@@ -498,6 +498,7 @@
             <option value="terrs">Heightmap</option>
             <option value="ice">Ice</option>
             <option value="icons">Icons</option>
+            <option value="journeys">Journeys</option>
             <option value="labels">Labels</option>
             <option value="lakes">Lakes</option>
             <option value="landmass">Landmass</option>
@@ -1802,6 +1803,9 @@
             <button id="overviewRoutesButton" data-tip="Click to open Routes Overview" data-shortcut="Shift + U">
               Routes
             </button>
+            <button id="overviewJourneysButton" data-tip="Click to open Journeys Overview" data-shortcut="Shift + J">
+              Journeys
+            </button>
             <button id="editStatesButton" data-tip="Click to open States Editor" data-shortcut="Shift + S">
               States
             </button>
@@ -2607,6 +2611,20 @@
         </marker>
         <marker id="end-arrow-small" viewBox="0 -5 10 10" refX="6" markerWidth="2" markerHeight="2" orient="auto">
           <path d="M0,-5L10,0L0,5" fill="#555" />
+        </marker>
+        <marker id="journey-start" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="2.4" markerHeight="2.4">
+          <circle cx="5" cy="5" r="4" fill="context-stroke" stroke="#fff" stroke-width="1" />
+        </marker>
+        <marker
+          id="journey-arrow"
+          viewBox="0 0 10 10"
+          refX="8"
+          refY="5"
+          markerWidth="3"
+          markerHeight="3"
+          orient="auto-start-reverse"
+        >
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke" />
         </marker>
         <g id="defs-relief">
           <symbol id="relief-mount-1" viewBox="0 0 100 100">
@@ -5172,10 +5190,10 @@
     <script defer src="libs/alea.min.js?v1.105.0"></script>
     <script defer src="libs/polylabel.min.js?v1.105.0"></script>
     <script defer src="libs/simplify.js?v1.105.6"></script>
-    <script defer src="modules/ui/style-presets.js?v=77037ce6"></script>
-    <script defer src="modules/ui/options.js?v=5d601345"></script>
-    <script defer src="main.js?v=6cf16ab8"></script>
-    <script defer src="modules/ui/style.js?v=6f7c8b78"></script>
+    <script defer src="modules/ui/style-presets.js?v=b4f7d72b"></script>
+    <script defer src="modules/ui/options.js?v=d2008f94"></script>
+    <script defer src="main.js?v=369ec61c"></script>
+    <script defer src="modules/ui/style.js?v=f0e271b5"></script>
     <script defer src="libs/rgbquant.min.js"></script>
     <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
   </body>

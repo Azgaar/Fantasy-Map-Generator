@@ -121,6 +121,17 @@ export const stylesSchema = z.strictObject({
     provinceBorders: z.strictObject({ attrs: z.strictObject({ opacity, ...strokeAttrs, filter }) })
   }),
   routes: z.strictObject({ roads: routeGroup, trails: routeGroup, searoutes: routeGroup }),
+  // journeys have no stroke: every segment carries its own colour from the journey data
+  journeys: z.strictObject({
+    attrs: z.strictObject({
+      opacity,
+      "stroke-width": strokeWidth,
+      "stroke-dasharray": strokeDasharray,
+      "stroke-linecap": strokeLinecap,
+      filter,
+      mask
+    })
+  }),
   temperature: z.strictObject({
     attrs: z.strictObject({ opacity, ...fillAttrs, ...strokeAttrs, "font-size": fontSize, filter })
   }),

@@ -193,6 +193,7 @@ const PRESET_ROUTES: Record<string, PresetRoute> = {
   "#roads": { path: ["routes", "roads"] },
   "#trails": { path: ["routes", "trails"] },
   "#searoutes": { path: ["routes", "searoutes"] },
+  "#journeys": { path: ["journeys"] },
   "#temperature": { path: ["temperature"] },
   "#ice": { path: ["ice"] },
   "#prec": { path: ["precipitation"] },

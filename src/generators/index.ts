@@ -29,5 +29,7 @@ import "./measurers-generator";
 import "./goods-generator";
 import "./production-generator";
 import "./markets-generator";
+import "./transports-generator";
+import "./journeys/journeys-generator";
 import "./resample";
 import "./generation-pipeline";

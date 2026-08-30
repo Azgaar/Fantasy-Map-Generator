@@ -11,6 +11,7 @@ import "./draw-markers";
 import "./draw-military";
 import "./draw-relief-icons";
 import "./draw-measurers";
+import "./draw-journeys";
 import "./draw-scalebar";
 import "./draw-temperature";
 import "./draw-goods";

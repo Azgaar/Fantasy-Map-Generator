@@ -10,7 +10,7 @@ import { clearLegend } from "@/renderers/draw-legend";
 import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
 import { clearCache, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
-import { applyOption, calculateVoronoi, ensureEl, last, link, minmax, parseError, rn, safeParseJSON } from "@/utils";
+import { applyOption, ensureEl, last, link, minmax, parseError, rn, safeParseJSON } from "@/utils";
 
 async function quickLoad(): Promise<void> {
   const blob = await ldb.get("lastMap");
@@ -407,6 +407,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.measurers = data[46] ? JSON.parse(data[46]) : [];
     pack.addedLabels = data[47] ? JSON.parse(data[47]) : [];
     pack.relief = data[49] ? JSON.parse(data[49]) : [];
+    pack.journeys = data[52] ? JSON.parse(data[52]) : [];
 
     if (data[31]) {
       const namesDL = data[31].split("/");
@@ -444,6 +445,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     Markets.sync();
     Routes.sync();
     TradeAnimation.sync();
+    Journeys.sync();
 
     select("#scaleBar")
       .on("mousemove", () => tip("Click to open Units Editor"))

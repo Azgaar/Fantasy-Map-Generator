@@ -375,6 +375,16 @@
       }
     }
   },
+  "journeys": {
+    "attrs": {
+      "opacity": 1,
+      "stroke-width": 1.8,
+      "stroke-dasharray": 0,
+      "stroke-linecap": "round",
+      "filter": null,
+      "mask": null
+    }
+  },
   "temperature": {
     "attrs": {
       "opacity": 0.8,

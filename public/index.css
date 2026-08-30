@@ -263,6 +263,13 @@ t,
   cursor: pointer;
 }
 
+#journeys {
+  fill: none;
+  cursor: pointer;
+  marker-start: url(#journey-start);
+  marker-end: url(#journey-arrow);
+}
+
 i.icon-lock {
   cursor: pointer;
 }

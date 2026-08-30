@@ -1,4 +1,13 @@
-import { color, interpolate, interpolateRainbow, type RGBColor, range, scaleSequential, shuffler } from "d3";
+import {
+  color,
+  interpolate,
+  interpolateRainbow,
+  type RGBColor,
+  range,
+  scaleSequential,
+  schemeCategory10,
+  shuffler
+} from "d3";
 
 /**
  * Convert RGB or RGBA color to HEX
@@ -17,7 +26,7 @@ export const toHEX = (rgba: string): string => {
     : "";
 };
 
-/** Predefined set of 12 distinct colors */
+/** Predefined set of 12 distinct pastel colors */
 export const C_12 = [
   "#dababf",
   "#fb8072",
@@ -32,6 +41,8 @@ export const C_12 = [
   "#8dd3c7",
   "#eb8de7"
 ];
+
+export const getCardinalColor = (index: number) => schemeCategory10[index % schemeCategory10.length];
 
 /**
  * Get an array of distinct colors

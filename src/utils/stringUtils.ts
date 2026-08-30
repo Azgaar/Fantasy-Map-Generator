@@ -22,6 +22,26 @@ export const capitalize = (inputString: string) => {
 };
 
 /**
+ * Escape a string for interpolation into generated HTML, in text and attribute positions alike
+ * @param {string} inputString - The input string
+ * @returns {string} - The escaped string
+ */
+export const escapeHtml = (inputString: string): string =>
+  String(inputString ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+/**
+ * Quote a value for one CSV field, doubling any embedded quotes per RFC 4180
+ * @param {string|number} value - The value to quote
+ * @returns {string} - The quoted field
+ */
+export const toCsvField = (value: string | number): string => `"${String(value ?? "").replace(/"/g, '""')}"`;
+
+/**
  * Split a string into two parts, trying to balance their lengths
  * @param {string} inputString - The input string
  * @returns {[string, string]} - An array with two parts of the string

@@ -68,6 +68,7 @@ function handleKeyup(event: KeyboardEvent): void {
   else if ((shift || altShift) && code === "KeyK") Controllers.MarkersOverview.open();
   else if ((shift || altShift) && code === "KeyE") Controllers.CellInfo.open();
   else if ((shift || altShift) && code === "KeyG") Controllers.GoodsEditor.open();
+  else if ((shift || altShift) && code === "KeyJ") Controllers.JourneysOverview.open();
   else if ((shift || altShift) && code === "Equal") Controllers.MeasurersEditor.open();
   else if (key === "!") Controllers.BurgCreator.toggle();
   else if (key === "@") Controllers.LabelCreator.toggle();

@@ -6,6 +6,7 @@ import { tip } from "@/components/tooltips";
 import { GraphOverride } from "@/generators/graph-override";
 import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
+import { savedMessage } from "@/services/platform";
 import { VERSION } from "@/services/versioning";
 import { ensureEl, getFileName, link, parseError, rn } from "@/utils";
 
@@ -84,6 +85,7 @@ function prepareMapData(): string {
   const coords = JSON.stringify(mapCoordinates);
   const notesData = JSON.stringify(notes);
   const measurers = JSON.stringify(pack.measurers ?? []);
+  const journeys = JSON.stringify(pack.journeys ?? []);
   const fonts = JSON.stringify(getUsedFonts(ensureEl("map") as Element as SVGSVGElement));
   const layers = JSON.stringify(Layers.state);
   const graphOverride = JSON.stringify(GraphOverride.state);
@@ -106,6 +108,8 @@ function prepareMapData(): string {
   if (cloneRuler) cloneRuler.innerHTML = ""; // always remove rulers
   const cloneTradeAnimation = cloneEl.querySelector("#tradeAnimation");
   if (cloneTradeAnimation) cloneTradeAnimation.innerHTML = ""; // always remove transient trade animations
+  cloneEl.querySelector("#journeyOverlay")?.remove(); // transient journey path-editing handles
+  cloneEl.querySelector("#journeyTravel")?.remove(); // transient journey travel animation
 
   const serializedSVG = new XMLSerializer().serializeToString(cloneEl);
 
@@ -206,7 +210,8 @@ function prepareMapData(): string {
     styleData,
     relief,
     layers,
-    graphOverride
+    graphOverride,
+    journeys
   ].join("\r\n");
   return mapData;
 }

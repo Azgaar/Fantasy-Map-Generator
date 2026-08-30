@@ -4,6 +4,7 @@ import type { CoastlineSettings } from "../generators/coastline-generator";
 import type { GoodsModule } from "../generators/goods-generator";
 import type { MarketsModule } from "../generators/markets-generator";
 import type { ProductionModule } from "../generators/production-generator";
+import type { Transport } from "../generators/transports-generator";
 import type { BurgGroup } from "./burg-groups";
 import type { GridGraph } from "./GridGraph";
 import type { PackedGraph } from "./PackedGraph";
@@ -192,6 +193,7 @@ type Options = {
   burgs: { groups: BurgGroup[] };
   labels: { resizeOnZoom: boolean; showAll: boolean; groups: LabelGroup[] };
   military: MilitaryUnit[];
+  transports: Transport[];
   trade: {
     animation: ReturnType<typeof TradeAnimation.getDefaultOptions>;
   };
