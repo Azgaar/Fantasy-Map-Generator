@@ -53,6 +53,8 @@ export function initEditorTable<T>({
   };
 }
 
+export const getRowId = (el: HTMLElement): number => +(el.closest<HTMLElement>(".states")?.dataset.id ?? "-1");
+
 export function renderEditorPagination(
   footer: HTMLElement,
   view: { page: number; totalPages: number },

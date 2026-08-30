@@ -8,6 +8,7 @@ import {
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import {
   type EditorColumn,
+  getRowId,
   initColumnVisibility,
   initEditorTable,
   renderEditorHeader,
@@ -19,7 +20,12 @@ import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { cellEndpointLabel, cellEndpointTooltip, getCellPoint } from "@/controllers/journey/journey-cell-labels";
+import {
+  cellEndpointLabel,
+  cellEndpointTooltip,
+  getCellPoint,
+  resolveCellPlace
+} from "@/controllers/journey/journey-cell-labels";
 import { TRANSPORT_TYPES_CHANGED } from "@/controllers/journey/transport-editor";
 import { startJourneyTravel, stopJourneyTravel } from "@/renderers/journey-travel";
 import type { Journey, JourneySegment } from "@/types/Journey";
@@ -29,6 +35,7 @@ import {
   ensureEl,
   escapeHtml,
   findEl,
+  formatSpeed,
   getDistanceUnit,
   getFileName,
   parseSpeed,
@@ -116,10 +123,7 @@ function getSegment(id: number): JourneySegment | undefined {
   return getJourney()?.segments.find(segment => segment.i === id);
 }
 
-/** Segment id of the row a control lives in */
-const getLineId = (el: HTMLElement): number => +(el.closest<HTMLElement>(".states")?.dataset.id ?? "-1");
-
-const getLineSegment = (el: HTMLElement): JourneySegment | undefined => getSegment(getLineId(el));
+const getLineSegment = (el: HTMLElement): JourneySegment | undefined => getSegment(getRowId(el));
 
 function renderDialog(journey: Journey): void {
   destroyDialog(dialogId);
@@ -285,12 +289,13 @@ function renderSegmentLine(journey: Journey, segment: JourneySegment): string {
 function renderEndpointCell(endpoint: "from" | "to", segment: JourneySegment): string {
   const cellId = segment[endpoint];
   const isSet = cellId !== undefined;
-  const label = escapeHtml(cellEndpointLabel(cellId)); // burg names are user-editable
+  const place = isSet ? resolveCellPlace(cellId) : null; // resolved once, worded twice below
+  const label = escapeHtml(cellEndpointLabel(cellId, place)); // burg names are user-editable
 
   return /* html */ `<div data-col="${endpoint}">
     <span class="segLocate icon-target ${isSet ? "pointer" : "inactive"}" data-endpoint="${endpoint}"
       data-tip="${isSet ? `Zoom to ${label}` : "Set the endpoint first"}"></span>
-    <span class="seg${endpoint === "from" ? "From" : "To"} pointer" data-tip="${escapeHtml(cellEndpointTooltip(cellId))}"
+    <span class="seg${endpoint === "from" ? "From" : "To"} pointer" data-tip="${escapeHtml(cellEndpointTooltip(cellId, place))}"
       ${isSet ? "" : 'style="opacity: 0.55; font-style: italic"'}>${label}</span>
   </div>`;
 }
@@ -300,7 +305,7 @@ function updateTotals(journey: Journey): void {
   const { totalDistance, totalHours, avgSpeed, hoursPerDay } = Journeys.getTotals(journey);
 
   ensureEl("journeyTotalDistance").innerHTML = `${rn(totalDistance)} ${unit}`;
-  ensureEl("journeyAvgSpeed").innerHTML = avgSpeed ? `${convertSpeed(avgSpeed)} ${unit}/h` : "-";
+  ensureEl("journeyAvgSpeed").innerHTML = avgSpeed ? formatSpeed(avgSpeed) : "-";
   const travelTime = ensureEl("journeyTravelTime");
   travelTime.innerHTML = Journeys.formatTravelTime(totalHours, hoursPerDay);
   travelTime.parentElement!.dataset.tip = `Total travel time: ${Journeys.formatTravelTimeFull(totalHours, hoursPerDay)}. Days are counted from each transport's travel hours`;
@@ -403,11 +408,8 @@ function onToggleSegVisible(this: HTMLElement): void {
   const segment = getLineSegment(this);
   if (!segment) return;
 
-  const visible = segment.visible === false;
-  if (visible) delete segment.visible;
-  else segment.visible = false;
-
-  if (!visible) pathEditor.stopEditing(segment.i);
+  Journeys.toggleVisibility(segment);
+  if (segment.visible === false) pathEditor.stopEditing(segment.i); // a hidden segment can't be edited on the map
   segmentsTable.refresh();
 }
 
@@ -426,19 +428,19 @@ function onLocateEndpoint(this: HTMLElement): void {
 }
 
 function onPickFrom(this: HTMLElement): void {
-  pathEditor.pickEndpoint(getLineId(this), "from");
+  pathEditor.pickEndpoint(getRowId(this), "from");
 }
 
 function onPickTo(this: HTMLElement): void {
-  pathEditor.pickEndpoint(getLineId(this), "to");
+  pathEditor.pickEndpoint(getRowId(this), "to");
 }
 
 function onToggleEditPoints(this: HTMLElement): void {
-  pathEditor.togglePointEdit(getLineId(this));
+  pathEditor.togglePointEdit(getRowId(this));
 }
 
 function onToggleDrawPath(this: HTMLElement): void {
-  pathEditor.toggleDrawing(getLineId(this));
+  pathEditor.toggleDrawing(getRowId(this));
 }
 
 /** Drop every manual override on the segment and re-run the pathfinder for it */
@@ -474,7 +476,7 @@ function onSegMoveUp(this: HTMLElement): void {
   const journey = getJourney();
   if (!journey) return;
 
-  const index = journey.segments.findIndex(segment => segment.i === getLineId(this));
+  const index = journey.segments.findIndex(segment => segment.i === getRowId(this));
   if (index <= 0) return;
   journey.segments.splice(index - 1, 0, ...journey.segments.splice(index, 1));
   segmentsTable.refresh();
@@ -499,35 +501,21 @@ function onSegDelete(this: HTMLElement): void {
 
 function segmentHighlightOn(this: HTMLElement): void {
   Layers.show("journeys");
-  if (editingJourneyId !== null) startJourneyTravel(editingJourneyId, getLineId(this));
+  if (editingJourneyId !== null) startJourneyTravel(editingJourneyId, getRowId(this));
 }
 
 function segmentHighlightOff(): void {
   stopJourneyTravel();
 }
 
-// ---- journey actions ---------------------------------------------------
-
 function addSegment(): void {
   const journey = getJourney();
   if (!journey) return;
 
   const isFirst = !journey.segments.length;
-  const i = journey.segments.length ? Math.max(...journey.segments.map(segment => segment.i)) + 1 : 0;
-  const transport = Transports.all.find(type => type.domain !== "stay") ?? Transports.all[0];
-
-  journey.segments.push({
-    i,
-    name: `Segment ${i + 1}`,
-    from: journey.segments[journey.segments.length - 1]?.to,
-    transport: transport?.name ?? "Direct",
-    speed: transport?.speed ?? 5,
-    distance: 0,
-    points: []
-  });
+  const { i } = Journeys.addSegment(journey);
   segmentsTable.refresh();
 
-  // a first segment needs both ends; a following one starts where the previous ended
   if (isFirst) pathEditor.pickEndpoint(i, "from", true);
   else pathEditor.pickEndpoint(i, "to");
 }

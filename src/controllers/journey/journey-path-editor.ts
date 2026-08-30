@@ -9,6 +9,9 @@ import { ensureEl, findEl, getPointer, rn } from "@/utils";
 import { createEl } from "@/utils/nodeUtils";
 
 const OVERLAY_ID = "journeyOverlay";
+const ERROR_TIP_TIME = 8000;
+
+const warn = (message: string) => tip(message, true, "error", ERROR_TIP_TIME);
 
 const HINTS = {
   pick: "Click a cell on the map to set the endpoint. Esc to cancel.",
@@ -56,7 +59,7 @@ export class JourneyPathEditor {
     } else {
       const seg = this.host.getSegment(segmentId);
       if (!seg || seg.points.length < 2) {
-        tip("This segment has no path yet: set both endpoints first", true, "error", 8000);
+        warn("This segment has no path yet: set both endpoints first");
         return;
       }
       this.setMode({ kind: "points", segmentId });
@@ -186,7 +189,7 @@ export class JourneyPathEditor {
 
     const domain = Transports.getDomain(seg.transport);
     if (!Journeys.isValidEndpoint(cellId, domain)) {
-      tip(`Can't put an endpoint there — ${terrainRejection(cellId, domain, seg.transport)}`, true, "error", 8000);
+      warn(`Can't put an endpoint there — ${terrainRejection(cellId, domain, seg.transport)}`);
       return;
     }
 
@@ -210,8 +213,7 @@ export class JourneyPathEditor {
     const originalFrom = seg.from;
     const originalTo = seg.to;
 
-    const isAllowed = (cellId: number) =>
-      isEndpoint ? Journeys.isValidEndpoint(cellId, domain) : Journeys.isValidPathPoint(cellId, domain);
+    const isAllowed = (cellId: number) => Journeys.isValidPointAt(cellId, domain, isEndpoint);
 
     let droppedCell = original[2];
 
@@ -226,7 +228,7 @@ export class JourneyPathEditor {
 
       seg.points[index] = [x, y, droppedCell];
       if (isEndpoint) seg[index ? "to" : "from"] = droppedCell;
-      seg.distance = Journeys.getPathLength(seg.points);
+      syncGeometry(seg);
       Layers.draw("journeys");
     });
 
@@ -235,8 +237,8 @@ export class JourneyPathEditor {
         seg.points[index] = original;
         seg.from = originalFrom;
         seg.to = originalTo;
-        seg.distance = Journeys.getPathLength(seg.points);
-        tip(`Point reverted — ${terrainRejection(droppedCell, domain, seg.transport)}`, true, "error", 8000);
+        syncGeometry(seg);
+        warn(`Point reverted — ${terrainRejection(droppedCell, domain, seg.transport)}`);
       }
       this.host.refresh();
     });
@@ -253,12 +255,12 @@ export class JourneyPathEditor {
 
     const domain = Transports.getDomain(seg.transport);
     if (!Journeys.isValidPathPoint(cellId, domain)) {
-      tip(`Can't add a point there — ${terrainRejection(cellId, domain, seg.transport)}`, true, "error", 8000);
+      warn(`Can't add a point there — ${terrainRejection(cellId, domain, seg.transport)}`);
       return;
     }
 
     seg.points.splice(closestSegmentIndex(seg.points, x, y), 0, [x, y, cellId]);
-    seg.distance = Journeys.getPathLength(seg.points);
+    syncGeometry(seg);
     this.host.refresh();
   }
 
@@ -268,14 +270,12 @@ export class JourneyPathEditor {
     if (!seg) return;
 
     if (seg.points.length <= 2) {
-      tip("A path needs at least two points.", true, "error", 8000);
+      warn("A path needs at least two points.");
       return;
     }
 
     seg.points.splice(index, 1);
-    seg.from = seg.points[0][2];
-    seg.to = seg.points[seg.points.length - 1][2];
-    seg.distance = Journeys.getPathLength(seg.points);
+    syncGeometry(seg, true);
     this.host.refresh();
   }
 
@@ -287,9 +287,8 @@ export class JourneyPathEditor {
 
     const domain = Transports.getDomain(seg.transport);
     const isEndpoint = !this.mode.points.length;
-    const allowed = isEndpoint ? Journeys.isValidEndpoint(cellId, domain) : Journeys.isValidPathPoint(cellId, domain);
-    if (!allowed) {
-      tip(`Can't add a point there — ${terrainRejection(cellId, domain, seg.transport)}`, true, "error", 8000);
+    if (!Journeys.isValidPointAt(cellId, domain, isEndpoint)) {
+      warn(`Can't add a point there — ${terrainRejection(cellId, domain, seg.transport)}`);
       return;
     }
 
@@ -313,7 +312,7 @@ export class JourneyPathEditor {
 
     const points = this.mode.points;
     if (points.length < 2) {
-      tip("A custom path needs at least two points.", true, "error", 8000);
+      warn("A custom path needs at least two points.");
       return;
     }
 
@@ -321,24 +320,26 @@ export class JourneyPathEditor {
     // mid-draw, so the finished path has to be re-checked as a whole
     const domain = Transports.getDomain(seg.transport);
     if (!Journeys.isValidPath(points, domain)) {
-      tip(
-        `This path isn't valid for a ${domain} transport type — right-click to undo the bad points.`,
-        true,
-        "error",
-        8000
-      );
+      warn(`This path isn't valid for a ${domain} transport type — right-click to undo the bad points.`);
       return;
     }
 
     seg.points = points;
-    seg.from = points[0][2];
-    seg.to = points[points.length - 1][2];
-    seg.distance = Journeys.getPathLength(seg.points);
+    syncGeometry(seg, true);
     seg.custom = true;
 
     this.setMode(null);
     this.host.refresh();
   }
+}
+
+/** Bring the segment's stored geometry back in line with its points: length always, endpoints on request */
+function syncGeometry(seg: JourneySegment, syncEndpoints = false): void {
+  if (syncEndpoints) {
+    seg.from = seg.points[0][2];
+    seg.to = seg.points[seg.points.length - 1][2];
+  }
+  seg.distance = Journeys.getPathLength(seg.points);
 }
 
 /** Re-run the pathfinder for a segment, reporting any domain problem to the user */

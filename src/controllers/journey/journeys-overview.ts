@@ -4,6 +4,7 @@ import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sortin
 import { dialogState } from "@/components/dialog/state";
 import {
   type EditorColumn,
+  getRowId,
   initColumnVisibility,
   initEditorTable,
   renderEditorHeader,
@@ -25,6 +26,7 @@ import {
   ensureEl,
   escapeHtml,
   findEl,
+  formatSpeed,
   getDistanceUnit,
   getFileName,
   rn,
@@ -182,7 +184,7 @@ function renderJourneysPage(view: TableView<Journey>): void {
       ${renderEndpoint("from", getStart(journey))}
       ${renderEndpoint("to", getEnd(journey))}
       <div data-tip="Total distance" data-col="distance">${rn(totalDistance)} ${unit}</div>
-      <div data-tip="Average speed, moving segments only" data-col="speed">${avgSpeed ? `${convertSpeed(avgSpeed)} ${unit}/h` : "-"}</div>
+      <div data-tip="Average speed, moving segments only" data-col="speed">${avgSpeed ? formatSpeed(avgSpeed) : "-"}</div>
       <div data-tip="Total travel time: ${Journeys.formatTravelTimeFull(totalHours, hoursPerDay)}" data-col="time">${Journeys.formatTravelTime(totalHours, hoursPerDay)}</div>
       <div data-col="edit"><span class="journeyEdit pointer icon-pencil" data-tip="Edit journey"></span></div>
       <div data-col="locate"><span class="journeyZoom pointer icon-target" data-tip="Locate the journey"></span></div>
@@ -206,7 +208,7 @@ function renderJourneysPage(view: TableView<Journey>): void {
   footerTime.parentElement!.dataset.tip = `Total travel time: ${Journeys.formatTravelTimeFull(totalHours, footerHoursPerDay)}. Days are counted from each transport's travel hours`;
 
   body.querySelectorAll("div.states").forEach(el => void el.addEventListener("mouseenter", journeyHighlightOn));
-  body.querySelectorAll("div.states").forEach(el => void el.addEventListener("mouseleave", journeyHighlightOff));
+  body.querySelectorAll("div.states").forEach(el => void el.addEventListener("mouseleave", stopJourneyTravel));
   body.querySelectorAll("fill-box.journeyColor").forEach(el => void el.addEventListener("click", changeJourneyColor));
   body.querySelectorAll("span.journeyZoom").forEach(el => void el.addEventListener("click", zoomToJourney));
   body.querySelectorAll("span.journeyLocate.pointer").forEach(el => void el.addEventListener("click", zoomToEndpoint));
@@ -230,7 +232,8 @@ function renderEndpoint(endpoint: "from" | "to", cellId: number | undefined): st
   </div>`;
 }
 
-const getLineId = (el: HTMLElement): number => +(el.closest<HTMLElement>(".states")?.dataset.id ?? "-1");
+const getLineJourney = (el: HTMLElement): Journey | undefined =>
+  pack.journeys.find(journey => journey.i === getRowId(el));
 
 const getStart = (journey: Journey) => journey.segments[0]?.from;
 
@@ -238,15 +241,11 @@ const getEnd = (journey: Journey) => journey.segments.at(-1)?.to;
 
 function journeyHighlightOn(this: HTMLElement): void {
   Layers.show("journeys");
-  startJourneyTravel(getLineId(this));
-}
-
-function journeyHighlightOff(): void {
-  stopJourneyTravel();
+  startJourneyTravel(getRowId(this));
 }
 
 function zoomToJourney(this: HTMLElement): void {
-  const group = findEl<SVGGElement>(`journey${getLineId(this)}`);
+  const group = findEl<SVGGElement>(`journey${getRowId(this)}`);
   if (group) highlightElement(group, 2);
 }
 
@@ -256,7 +255,7 @@ function zoomToEndpoint(this: HTMLElement): void {
 }
 
 function changeJourneyColor(this: FillBoxElement): void {
-  const journey = pack.journeys.find(j => j.i === getLineId(this));
+  const journey = getLineJourney(this);
   if (!journey) return;
 
   void Controllers.ColorPicker.open(this.fill, (fill: string) => {
@@ -267,7 +266,7 @@ function changeJourneyColor(this: FillBoxElement): void {
 }
 
 function openJourneyEditor(this: HTMLElement): void {
-  void Controllers.JourneyEditor.open(getLineId(this));
+  void Controllers.JourneyEditor.open(getRowId(this));
 }
 
 function createEmptyJourney(): void {
@@ -290,20 +289,16 @@ function generateRandomJourney(): void {
 }
 
 function toggleVisibility(this: HTMLElement): void {
-  const journey = pack.journeys.find(j => j.i === getLineId(this));
+  const journey = getLineJourney(this);
   if (!journey) return;
 
-  // an absent flag means visible, so only hiding stores anything
-  const visible = journey.visible === false;
-  if (visible) delete journey.visible;
-  else journey.visible = false;
-
+  Journeys.toggleVisibility(journey);
   Layers.draw("journeys");
   journeysTable.refresh();
 }
 
 function toggleLockStatus(this: HTMLElement): void {
-  const journey = pack.journeys.find(j => j.i === getLineId(this));
+  const journey = getLineJourney(this);
   if (!journey) return;
   journey.lock = !journey.lock;
   journeysTable.refresh();
@@ -316,7 +311,7 @@ function toggleLockAll(): void {
 }
 
 function triggerJourneyRemove(this: HTMLElement): void {
-  const journeyId = getLineId(this);
+  const journeyId = getRowId(this);
   confirmationDialog({
     title: "Remove journey",
     message: "Are you sure you want to remove the journey? <br>This action cannot be reverted.",

@@ -2,6 +2,9 @@
 const NEARBY_BURG_MAX_CELLS = 3;
 type NamedBurg = { name: string; x: number; y: number };
 
+/** What names a cell: the burg on it, the nearest burg within reach, or nothing at all */
+type CellPlace = { burg: NamedBurg; nearby: boolean } | null;
+
 const getBurgAtCell = (cellId: number): NamedBurg | undefined => {
   const burgId = pack.cells.burg[cellId];
   if (!burgId) return undefined;
@@ -33,24 +36,35 @@ const findNearbyBurg = (cellId: number, maxCells: number): NamedBurg | undefined
   return undefined;
 };
 
-/** A short display label for an endpoint cell */
-export function cellEndpointLabel(cellId: number | undefined): string {
-  if (cellId === undefined) return "unset";
+/**
+ * The burg a cell is named after, if any. Every label below is a wording of this one lookup,
+ * so a caller needing more than one of them should resolve the place once and format it twice.
+ */
+export function resolveCellPlace(cellId: number): CellPlace {
   const here = getBurgAtCell(cellId);
-  if (here) return here.name;
+  if (here) return { burg: here, nearby: false };
   const nearby = findNearbyBurg(cellId, NEARBY_BURG_MAX_CELLS);
-  if (nearby) return `${nearby.name} vicinity`;
-  return `cell ${cellId}`;
+  return nearby ? { burg: nearby, nearby: true } : null;
+}
+
+/** A short display label for an endpoint cell */
+export function cellEndpointLabel(cellId: number | undefined, place?: CellPlace): string {
+  if (cellId === undefined) return "unset";
+  const resolved = place === undefined ? resolveCellPlace(cellId) : place;
+  if (!resolved) return `cell ${cellId}`;
+  return resolved.nearby ? `${resolved.burg.name} vicinity` : resolved.burg.name;
 }
 
 /** Longer tooltip form; distinguishes the three cases explicitly. */
-export function cellEndpointTooltip(cellId: number | undefined): string {
+export function cellEndpointTooltip(cellId: number | undefined, place?: CellPlace): string {
   if (cellId === undefined) return "Not set: click, then click a cell on the map to set this endpoint";
-  const here = getBurgAtCell(cellId);
-  if (here) return `${here.name}, click to pick a different cell`;
-  const nearby = findNearbyBurg(cellId, NEARBY_BURG_MAX_CELLS);
-  if (nearby) return `Vicinity of ${nearby.name}, click to pick a different cell`;
-  return `Cell ${cellId}, click to pick a different cell`;
+  const resolved = place === undefined ? resolveCellPlace(cellId) : place;
+  const what = !resolved
+    ? `Cell ${cellId}`
+    : resolved.nearby
+      ? `Vicinity of ${resolved.burg.name}`
+      : resolved.burg.name;
+  return `${what}, click to pick a different cell`;
 }
 
 /**
@@ -59,10 +73,9 @@ export function cellEndpointTooltip(cellId: number | undefined): string {
  * so this deliberately differs from {@link cellEndpointLabel}, which is a bare column label.
  */
 export function cellPlacePhrase(cellId: number): string | null {
-  const here = getBurgAtCell(cellId);
-  if (here) return `at ${here.name}`;
-  const nearby = findNearbyBurg(cellId, NEARBY_BURG_MAX_CELLS);
-  return nearby ? `near ${nearby.name}` : null;
+  const place = resolveCellPlace(cellId);
+  if (!place) return null;
+  return `${place.nearby ? "near" : "at"} ${place.burg.name}`;
 }
 
 /** Where to centre the map to show an endpoint: its burg if it has one, else the cell itself */

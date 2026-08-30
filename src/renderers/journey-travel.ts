@@ -56,7 +56,7 @@ function getSteps(journey: Journey, segmentId?: number): Step[] {
 
   const hours = new Map(moving.map(segment => [segment, Journeys.getSegmentTime(segment) || segment.distance || 1]));
   const totalHours = moving.reduce((sum, segment) => sum + hours.get(segment)!, 0) || 1;
-  const totalDistance = moving.reduce((sum, segment) => sum + Journeys.getPathLength(segment.points), 0);
+  const totalDistance = moving.reduce((sum, segment) => sum + segment.distance, 0); // px, kept in sync by the editor
   const totalDuration = Math.min(Math.max(totalDistance / PX_PER_MS, MIN_DURATION), MAX_DURATION);
 
   return segments.map(segment => {

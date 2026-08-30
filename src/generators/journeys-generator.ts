@@ -32,7 +32,7 @@ class JourneysModule {
     const story = generateStoryJourney(this) ?? this.buildFallbackJourney();
     if (!story) return null;
 
-    const i = this.getNextId();
+    const i = this.getNextId(pack.journeys);
     const journey = { ...story, i, color: getCardinalColor(i) };
     pack.journeys.push(journey);
     return journey;
@@ -40,7 +40,7 @@ class JourneysModule {
 
   addEmpty(): Journey {
     this.sync();
-    const i = this.getNextId();
+    const i = this.getNextId(pack.journeys);
     const journey: Journey = {
       i,
       name: `Journey ${i + 1}`,
@@ -61,8 +61,32 @@ class JourneysModule {
     pack.journeys = pack.journeys.filter(journey => journey.i !== journeyId);
   }
 
-  getNextId(): number {
-    return pack.journeys.length ? Math.max(...pack.journeys.map(journey => journey.i)) + 1 : 0;
+  private getNextId(items: { i: number }[]): number {
+    return items.length ? Math.max(...items.map(({ i }) => i)) + 1 : 0;
+  }
+
+  /** Append an empty segment, starting where the previous one ended */
+  addSegment(journey: Journey): JourneySegment {
+    const i = this.getNextId(journey.segments);
+    const transport = Transports.all.find(type => type.domain !== "stay") ?? Transports.all[0];
+
+    const segment: JourneySegment = {
+      i,
+      name: `Segment ${i + 1}`,
+      from: journey.segments.at(-1)?.to,
+      transport: transport?.name ?? "Direct",
+      speed: transport?.speed ?? 5,
+      distance: 0,
+      points: []
+    };
+    journey.segments.push(segment);
+    return segment;
+  }
+
+  /** An absent flag means visible, so only hiding stores anything */
+  toggleVisibility(target: { visible?: boolean }): void {
+    if (target.visible === false) delete target.visible;
+    else target.visible = false;
   }
 
   /** A halt, not a slow leg: decided by the transport's domain, never by a speed the user typed */
@@ -179,6 +203,11 @@ class JourneysModule {
     if (domain === "air" || domain === "stay") return true;
     if (domain === "land") return isLand(cellId, pack);
     return !isLand(cellId, pack) || Rivers.isNavigable(cellId);
+  }
+
+  /** Endpoints and intermediate points answer to different rules; this picks the right one */
+  isValidPointAt(cellId: number, domain: TransportDomain, isEndpoint: boolean): boolean {
+    return isEndpoint ? this.isValidEndpoint(cellId, domain) : this.isValidPathPoint(cellId, domain);
   }
 
   /** Whole-path form of {@link isValidPathPoint}; endpoints are skipped deliberately. */

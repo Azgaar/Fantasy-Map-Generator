@@ -103,16 +103,20 @@ function restoreSortState(dialogId: string, headers: HTMLElement): void {
 export function sortData<T>(data: T[], sort: DialogSort, accessors: SortAccessors<T>): T[] {
   const get = accessors[sort.sortBy];
   if (!get) return data;
-  return data.sort((a, b) => {
-    const aValue = get(a);
-    const bValue = get(b);
+
+  // read the sort value once per item, not once per comparison: an accessor may be expensive
+  const keyed = data.map(item => ({ item, key: get(item) }));
+  keyed.sort((a, b) => {
     if (sort.alphabetically) {
-      const aString = String(aValue);
-      const bString = String(bValue);
+      const aString = String(a.key);
+      const bString = String(b.key);
       return (aString > bString ? 1 : aString < bString ? -1 : 0) * sort.direction;
     }
-    return (Number(aValue) - Number(bValue)) * sort.direction;
+    return (Number(a.key) - Number(b.key)) * sort.direction;
   });
+
+  for (let i = 0; i < keyed.length; i++) data[i] = keyed[i].item; // sortData sorts in place
+  return data;
 }
 
 export function bindColumnSorting(dialogId: string, onSort: () => void): void {
