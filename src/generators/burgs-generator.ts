@@ -470,6 +470,18 @@ class BurgModule {
     ];
   }
 
+  /** burg groups can exist without a style entry (the Burg Groups editor, presets that don't
+   * list them) - without one the renderer falls back to the default group and edits never persist */
+  ensureBurgGroupStyles(): void {
+    const { burgIcons, anchors } = styles.burgIcons;
+    const iconTemplate = burgIcons.groups.town || Object.values(burgIcons.groups)[0];
+    const anchorTemplate = anchors.groups.town || Object.values(anchors.groups)[0];
+    for (const { name } of options.burgs.groups) {
+      if (!burgIcons.groups[name] && iconTemplate) burgIcons.groups[name] = structuredClone(iconTemplate);
+      if (!anchors.groups[name] && anchorTemplate) anchors.groups[name] = structuredClone(anchorTemplate);
+    }
+  }
+
   defineGroup(burg: Burg, populations: number[]) {
     if (burg.lock && burg.group) {
       // locked burgs: don't change group if it still exists

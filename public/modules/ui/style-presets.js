@@ -89,6 +89,7 @@ function applyStylePreset(presetJson) {
   const previousReliefSize = styles.relief.options.size;
   Styles.set(parsed);
   fillMissingLabelGroups();
+  Burgs.ensureBurgGroupStyles();
   applyStoredStyles();
   applyReliefOptions(previousReliefSize);
   registerCustomScheme();
