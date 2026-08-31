@@ -6,7 +6,7 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import type { TransportDomain } from "@/generators/transports-generator";
 import type { Journey, JourneyPoint, JourneySegment } from "@/types/Journey";
-import { ensureEl, findEl, getPointer, rn } from "@/utils";
+import { ensureEl, escapeHtml, findEl, getPointer, rn } from "@/utils";
 import { createEl } from "@/utils/nodeUtils";
 
 const OVERLAY_ID = "journeyOverlay";
@@ -366,7 +366,7 @@ export function recomputeSegment(seg: JourneySegment): void {
   if (result.errorCode) {
     alertDialog({
       title: `Can't use ${seg.transport} here`,
-      message: `Segment "<b>${seg.name}</b>": ${domainMismatchMessage(seg, domain) ?? result.warning}`
+      message: `Segment "<b>${escapeHtml(seg.name)}</b>": ${domainMismatchMessage(seg, domain) ?? result.warning}`
     });
   } else tip(result.warning, true, "warn", 8000);
 }

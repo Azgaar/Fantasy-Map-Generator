@@ -195,7 +195,7 @@ function triggerTypeRemove(this: HTMLElement): void {
     journey.segments.some(segment => segment.transport === type.name)
   );
   if (isUsed) {
-    tip(`'${type.name}' is used by existing segments. Reassign them first.`, true, "error", 8000);
+    tip(`'${escapeHtml(type.name)}' is used by existing segments. Reassign them first.`, true, "error", 8000);
     return;
   }
 
