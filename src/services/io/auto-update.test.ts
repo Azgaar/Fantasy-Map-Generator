@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import indexHtml from "@/index.html?raw";
 import "@/generators/features"; // migrations call the Features module through its global
 import { VERSION } from "@/services/versioning";
-import { legacyBurgLabelZoom, resolveVersionConflicts } from "./auto-update";
+import { resolveVersionConflicts } from "./auto-update";
 
 beforeEach(() => {
   document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox"></g></svg>`;

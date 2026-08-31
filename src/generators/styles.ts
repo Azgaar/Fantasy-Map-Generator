@@ -3,7 +3,7 @@ import { type LayerId, Layers } from "@/components/layers";
 import defaultStyles from "./default-styles.json";
 import { type StyleLayerId, type Styles as StylesData, stylesSchema } from "./styles-schema";
 
-const DEFAULT_STYLES: StylesData = stylesSchema.parse(defaultStyles);
+const DEFAULT_STYLES: DeepReadonly<StylesData> = stylesSchema.parse(defaultStyles);
 globalThis.styles = structuredClone(DEFAULT_STYLES);
 
 function parse(json: unknown): StylesData {
@@ -91,6 +91,12 @@ function writeNode(el: Element, node: object): void {
     }
   }
 }
+
+type DeepReadonly<T> = T extends (...args: any[]) => any
+  ? T
+  : T extends object
+    ? { readonly [K in keyof T]: DeepReadonly<T[K]> }
+    : T;
 
 export const Styles = { defaults: DEFAULT_STYLES, parse, set, write, apply };
 globalThis.Styles = Styles;

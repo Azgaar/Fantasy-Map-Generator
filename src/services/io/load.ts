@@ -4,7 +4,6 @@ import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { GraphOverride } from "@/generators/graph-override";
-import { isStoreStyles, stylesFromLegacy } from "@/generators/styles-legacy";
 import { invalidateEmblems } from "@/renderers/draw-emblems";
 import { clearLegend } from "@/renderers/draw-legend";
 import { Services } from "@/services";
@@ -425,21 +424,16 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       if (goodIconsDefs) goodIconsDefs.insertAdjacentHTML("beforeend", data[45]);
     }
 
-    const styleRecord = data[48] ? safeParseJSON(data[48]) : undefined;
-    if (styleRecord) {
-      if (isStoreStyles(styleRecord)) Styles.set(Styles.parse(styleRecord));
-      else stylesFromLegacy(styleRecord);
-    }
+    console.log(data[48]);
+    const { resolveVersionConflicts } = await import("./auto-update"); // TODO: don't load if not required
+    await resolveVersionConflicts(mapVersion!, data);
+    console.log(data[48]);
 
-    {
-      const { resolveVersionConflicts } = await import("./auto-update");
-      await resolveVersionConflicts(mapVersion!, data);
-    }
+    const styleRecord = data[48] ? safeParseJSON(data[48]) : undefined; // data[48] should be already migrated by auto-update
+    Styles.set(Styles.parse(styleRecord));
 
-    if (data[51]) GraphOverride.restore(JSON.parse(data[51]));
     if (data[50]) Layers.restore(JSON.parse(data[50]));
-
-    if (isStoreStyles(styleRecord)) (window as any).applyStoredStyles();
+    if (data[51]) GraphOverride.restore(JSON.parse(data[51]));
 
     Goods.sync();
     Markets.sync();
@@ -711,6 +705,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     }
 
     Layers.drawAll();
+    applyStoredStyles();
     applyDefaultViewboxEvents();
     focusOn();
     invokeActiveZooming();

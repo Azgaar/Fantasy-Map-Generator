@@ -1847,6 +1847,6 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   if (isOlderThan("1.150.0")) {
     // v1.150.0 made the styles store the source of truth
-    await migrateStyles(data[48]);
+    data[48] = await migrateStyles(data[48]);
   }
 }

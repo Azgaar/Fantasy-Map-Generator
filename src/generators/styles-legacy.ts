@@ -1,146 +1,16 @@
 // Conversions between the legacy `style` object shapes and the styles store
-
+import "./styles";
 import { Layers } from "@/components/layers";
 import { safeParseJSON } from "@/utils";
-import "./styles";
 import type { Styles } from "./styles-schema";
 import { stylesSchema } from "./styles-schema";
 
-type LabelGroupStyle = Styles["labels"]["groups"][string];
-
-const toNumber = (value: unknown, fallback: number): number => {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : fallback;
-};
-// legacy read the store as {...BASE_STYLE, ...bag}: a missing key takes the base default,
-// an explicit null stays null (= attribute not written). These mirror that merge exactly.
-const numOr = (value: unknown, fallback: number | null): number | null =>
-  value === undefined ? fallback : value === null ? null : toNumber(value, 0);
-const strOr = (value: unknown, fallback: string | null): string | null =>
-  value === undefined || value === "" ? fallback : value === null ? null : String(value);
-
-export function labelGroupFromLegacy(legacy: object): LabelGroupStyle {
-  const bag = legacy as Record<string, unknown>;
-  // legacy builds rewrote label-group opacity on every zoom, so a saved 0 is the fade state
-  // at save-time, not a preference - the culled renderer would keep the group invisible forever
-  const opacity = numOr(bag.opacity, 1);
-  return {
-    attrs: {
-      opacity: opacity === 0 ? 1 : opacity,
-      fill: strOr(bag.fill, "#3e3e4b"),
-      "fill-opacity": numOr(bag["fill-opacity"], null),
-      stroke: strOr(bag.stroke, "#3a3a3a"),
-      "stroke-width": numOr(bag["stroke-width"], 0),
-      "stroke-dasharray": strOr(bag["stroke-dasharray"], null),
-      "stroke-linecap": strOr(bag["stroke-linecap"], null),
-      "letter-spacing": numOr(bag["letter-spacing"], 0),
-      // legacy wrote the BASE size under data-size (font-size held the live zoom-rescaled value);
-      // prefer data-size when present, matching what the style editor's size input reads
-      "font-size": strOr(bag["data-size"], null) ?? strOr(bag["font-size"], "18%") ?? "18%",
-      "font-family": strOr(bag["font-family"], "Almendra SC") ?? "Almendra SC",
-      style: strOr(bag.style, null),
-      filter: strOr(bag.filter, null)
-    },
-    options: {
-      dx: toNumber(bag["data-dx"], 0),
-      dy: toNumber(bag["data-dy"], 0)
-    }
-  };
-}
-
-export function labelGroupToLegacy(group: LabelGroupStyle): Record<string, unknown> {
-  const legacy: Record<string, unknown> = { ...group.attrs };
-  if (group.options.dx) legacy["data-dx"] = group.options.dx;
-  if (group.options.dy) legacy["data-dy"] = group.options.dy;
-  return legacy;
-}
-
-export function labelGroupsFromLegacy(groups: Record<string, object>): Record<string, LabelGroupStyle> {
-  return Object.fromEntries(Object.entries(groups).map(([name, group]) => [name, labelGroupFromLegacy(group)]));
-}
-
-type BurgGroupStyle = Styles["burgIcons"]["burgIcons"]["groups"][string];
-
-// legacy wrote stored burg-group bags to the DOM verbatim with no per-key defaults; only
-// size and icon are required by the renderer (anchors ignore icon - they always draw #icon-anchor)
-export function burgGroupFromLegacy(legacy: object): BurgGroupStyle {
-  const bag = legacy as Record<string, unknown>;
-  return {
-    attrs: {
-      opacity: numOr(bag.opacity, null),
-      fill: strOr(bag.fill, null),
-      "fill-opacity": numOr(bag["fill-opacity"], null),
-      stroke: strOr(bag.stroke, null),
-      "stroke-width": numOr(bag["stroke-width"], null),
-      "stroke-dasharray": strOr(bag["stroke-dasharray"], null),
-      "stroke-linecap": strOr(bag["stroke-linecap"], null),
-      "stroke-linejoin": strOr(bag["stroke-linejoin"], null),
-      filter: strOr(bag.filter, null)
-    },
-    options: {
-      // pre-1.9x maps carry the group size as a bare `size` attr instead of font-size
-      size: toNumber(bag["font-size"], toNumber(bag.size, 1)),
-      icon: strOr(bag["data-icon"], null) ?? "#icon-circle"
-    }
-  };
-}
-
-export function burgGroupToLegacy(group: BurgGroupStyle, withIcon = true): Record<string, unknown> {
-  const legacy: Record<string, unknown> = { ...group.attrs, "font-size": group.options.size };
-  if (withIcon) legacy["data-icon"] = group.options.icon;
-  return legacy;
-}
-
-export function burgGroupsFromLegacy(groups: Record<string, object>): Record<string, BurgGroupStyle> {
-  return Object.fromEntries(Object.entries(groups).map(([name, group]) => [name, burgGroupFromLegacy(group)]));
-}
-
-type RouteGroupStyle = Styles["routes"]["groups"][string];
-
-// custom route groups were pure DOM before the store: the editor stamped these attributes on
-// creation and nothing else ever seeded them, so an absent key means "attribute not set"
-export function routeGroupFromLegacy(legacy: object): RouteGroupStyle {
-  const bag = legacy as Record<string, unknown>;
-  return {
-    attrs: {
-      opacity: numOr(bag.opacity, null),
-      stroke: strOr(bag.stroke, null),
-      "stroke-width": numOr(bag["stroke-width"], null),
-      "stroke-dasharray": strOr(bag["stroke-dasharray"], null),
-      "stroke-linecap": strOr(bag["stroke-linecap"], null),
-      filter: strOr(bag.filter, null),
-      mask: strOr(bag.mask, null)
-    }
-  };
-}
-
-export function reliefFromLegacy(legacy: object): Styles["relief"]["options"] {
-  const bag = legacy as Record<string, unknown>;
-  return {
-    set: strOr(bag.set, null) ?? "simple",
-    size: toNumber(bag.size, 1),
-    density: toNumber(bag.density, 0.4)
-  };
-}
-
-export function stylesFromLegacy(json: unknown): void {
-  const legacy = (typeof json === "object" && json !== null ? json : {}) as Record<string, any>;
-  if (legacy.labels?.groups) styles.labels.groups = labelGroupsFromLegacy(legacy.labels.groups);
-  if (legacy.burgIcons) styles.burgIcons.burgIcons.groups = burgGroupsFromLegacy(legacy.burgIcons);
-  if (legacy.anchors) styles.burgIcons.anchors.groups = burgGroupsFromLegacy(legacy.anchors);
-  if (legacy.relief) styles.relief.options = reliefFromLegacy(legacy.relief);
-}
-
-// selector -> store path, plus the legacy-key -> option-name renames for that node. Attrs need
-// no listing: any bag key left after options are pulled out is overlaid onto the path's attrs
-// by name, so an unrecognized key is what "unknown legacy attribute" catches.
+// selector -> store path, plus the legacy-key -> option-name renames for that node.
 type PresetRoute = {
   path: string[];
   options?: Record<string, string>;
   bools?: string[];
-  // options that must stay strings: the DOM harvest and legacy preset saver numify
-  // numeric-looking values ("-6", "100"), which the string schema would reject
-  strings?: string[];
+  strings?: string[]; // options that must stay strings
   kind?: "label" | "burg" | "route";
   drop?: string[];
   ownAttrs?: boolean;
@@ -260,6 +130,186 @@ const PRESET_ROUTES: Record<string, PresetRoute> = {
   "#landmass": { path: ["landmass"] }
 };
 
+const DEFAULT_ROUTE_GROUPS = Object.keys(Styles.defaults.routes.groups);
+const LABEL_SCHEMA_ATTRS = Object.keys(Object.values(Styles.defaults.labels.groups)[0].attrs);
+const BURG_SCHEMA_ATTRS = Object.keys(Object.values(Styles.defaults.burgIcons.burgIcons.groups)[0].attrs);
+
+// The v1.150.0 style migration auto-update
+export async function migrateStyles(legacyStyleString: string | undefined): Promise<string> {
+  const legacyStyleObj = legacyStyleString ? safeParseJSON(legacyStyleString) : undefined;
+  if (legacyStyleObj) migrateLegacyStyleObj(legacyStyleObj); // updates pre-v1.150 style object
+  await restoreStrippedLayerStyles(); // do we need it?
+
+  harvestStylesFromSvg({ hasStyleRecord: Boolean(legacyStyleObj) });
+
+  stripMigratedAttributes();
+  return JSON.stringify(styles);
+}
+
+function migrateLegacyStyleObj(obj: unknown): void {
+  const legacy = (typeof obj === "object" ? obj : {}) as Record<string, any>;
+  if (legacy.labels?.groups)
+    styles.labels.groups = Object.fromEntries(
+      Object.entries(legacy.labels.groups).map(([name, group]) => [name, labelGroupFromLegacy(group)])
+    );
+
+  if (legacy.burgIcons)
+    styles.burgIcons.burgIcons.groups = Object.fromEntries(
+      Object.entries(legacy.burgIcons).map(([name, group]) => [name, burgGroupFromLegacy(group)])
+    );
+
+  if (legacy.anchors)
+    styles.burgIcons.anchors.groups = Object.fromEntries(
+      Object.entries(legacy.anchors).map(([name, group]) => [name, burgGroupFromLegacy(group)])
+    );
+
+  if (legacy.relief)
+    styles.relief.options = {
+      set: strOr(legacy.relief.set, null) ?? "simple",
+      size: toNumber(legacy.relief.size, 1),
+      density: toNumber(legacy.relief.density, 0.4)
+    };
+}
+
+export function stylesFromMap(root: ParentNode = document): Styles {
+  const bags: Record<string, Record<string, unknown>> = {};
+
+  for (const [selector, attrs] of Object.entries(harvestAttributes())) {
+    const route = PRESET_ROUTES[selector];
+    const nullable = route.ownAttrs === false ? [] : nullableAttrsAt(route.path);
+    const el = root.querySelector(selector);
+
+    if (!el) {
+      // a map predating the child groups styles the layer group itself; leaving the child at its
+      // default would stamp it over the parent, so record the parent's attrs as "not set" here
+      const parent = layerElementFor(route, root);
+      const inherited = parent ? nullable.filter(attr => parent.hasAttribute(attr)) : [];
+      if (inherited.length) bags[selector] = Object.fromEntries(inherited.map(attr => [attr, null]));
+      continue;
+    }
+
+    bags[selector] = harvestBag(el, attrs, nullable);
+  }
+
+  for (const el of root.querySelectorAll("#labels > *")) {
+    const name = (el as HTMLElement).dataset.group || el.id.replace(/^labels-/, "");
+    if (name)
+      bags[`#labels > #${name}`] = harvestBag(
+        el,
+        [...LABEL_SCHEMA_ATTRS, "data-dx", "data-dy", "data-size"],
+        LABEL_SCHEMA_ATTRS
+      );
+  }
+
+  for (const el of root.querySelectorAll<SVGGElement>("#routes > g")) {
+    if (el.id) el.dataset.group = el.id;
+    if (el.id && !DEFAULT_ROUTE_GROUPS.includes(el.id)) {
+      bags[`#routes > g#${el.id}`] = harvestBag(el, Object.keys(Object.values(Styles.defaults.routes.groups)[0].attrs));
+    }
+  }
+
+  for (const el of root.querySelectorAll("#burgIcons > g")) {
+    if (el.id)
+      bags[`#burgIcons > g#${el.id}`] = harvestBag(
+        el,
+        [...BURG_SCHEMA_ATTRS, "font-size", "size", "data-icon"],
+        BURG_SCHEMA_ATTRS
+      );
+  }
+
+  for (const el of root.querySelectorAll("#anchors > g")) {
+    if (el.id)
+      bags[`#anchors > g#${el.id}`] = harvestBag(
+        el,
+        [...BURG_SCHEMA_ATTRS, "font-size", "size", "data-icon"],
+        BURG_SCHEMA_ATTRS
+      );
+  }
+
+  for (const name of ["stateEmblems", "provinceEmblems", "burgEmblems"]) {
+    const el = root.querySelector(`#emblems > #${name}`);
+    if (el) bags[`#emblems > #${name}`] = harvestBag(el, ["data-size"], []);
+  }
+
+  return presetFromLegacy(bags, { onUnknown: "skip" });
+}
+
+// migration for pre v1.150 maps: harvest the DOM
+export function harvestStylesFromSvg({ hasStyleRecord = false } = {}): void {
+  const harvested = stylesFromMap();
+  harvested.labels = structuredClone(styles.labels);
+  if (hasStyleRecord) harvested.burgIcons = structuredClone(styles.burgIcons);
+  harvested.relief.options = structuredClone(styles.relief.options);
+  // post-migration maps carry no rescale/data-width attrs, so the store owns these
+  // options; a loaded old map's attrs win here until the load-time strip removes them
+  if (!document.getElementById("markers")?.hasAttribute("rescale"))
+    harvested.markers.options = structuredClone(styles.markers.options);
+  if (!document.getElementById("statesHalo")?.hasAttribute("data-width"))
+    harvested.states.statesHalo.options = structuredClone(styles.states.statesHalo.options);
+  // gated on data-size alone: #coordinates' font-size is the zoom-derived render value, never the base
+  if (!document.getElementById("coordinates")?.hasAttribute("data-size"))
+    harvested.coordinates.options = structuredClone(styles.coordinates.options);
+  if (!document.getElementById("ruler")?.hasAttribute("data-size"))
+    harvested.rulers.options = structuredClone(styles.rulers.options);
+  if (!document.getElementById("legend")?.hasAttribute("data-size"))
+    harvested.legend.options.fontSize = styles.legend.options.fontSize;
+  if (!document.getElementById("legend")?.hasAttribute("data-x")) {
+    harvested.legend.options.x = styles.legend.options.x;
+    harvested.legend.options.y = styles.legend.options.y;
+  }
+  if (!document.getElementById("legend")?.hasAttribute("data-columns"))
+    harvested.legend.options.columns = styles.legend.options.columns;
+  for (const key of ["stateEmblems", "provinceEmblems", "burgEmblems"] as const) {
+    if (!document.getElementById(key)?.hasAttribute("data-size"))
+      harvested.emblems[key].options = structuredClone(styles.emblems[key].options);
+  }
+  // per-key: goodsIcons' circle and markets' fontSize/icon are still attr-authoritative
+  if (!document.getElementById("goodsIcons")?.hasAttribute("data-size"))
+    harvested.goods.goodsIcons.options.size = styles.goods.goodsIcons.options.size;
+  if (!document.getElementById("goodsBurgs")?.hasAttribute("data-size"))
+    harvested.goods.goodsBurgs.options = structuredClone(styles.goods.goodsBurgs.options);
+  if (!document.getElementById("markets")?.hasAttribute("data-size"))
+    harvested.markets.options.size = styles.markets.options.size;
+  for (const key of ["landHeights", "oceanHeights"] as const) {
+    if (!document.getElementById(key)?.hasAttribute("scheme"))
+      harvested.heightmap[key].options = structuredClone(styles.heightmap[key].options);
+  }
+  if (!document.getElementById("armies")?.hasAttribute("box-size"))
+    harvested.military.options = structuredClone(styles.military.options);
+  if (!document.getElementById("gridOverlay")?.hasAttribute("type"))
+    harvested.grid.options = structuredClone(styles.grid.options);
+  if (!document.getElementById("map")?.hasAttribute("data-filter"))
+    harvested.map.options.dataFilter = styles.map.options.dataFilter;
+  if (!document.getElementById("sea_island")?.hasAttribute("auto-filter"))
+    harvested.coastline.sea_island.options.autoFilter = styles.coastline.sea_island.options.autoFilter;
+  if (!document.getElementById("markets")?.hasAttribute("font-size"))
+    harvested.markets.options.fontSize = styles.markets.options.fontSize;
+  if (!document.getElementById("markets")?.hasAttribute("data-icon"))
+    harvested.markets.options.icon = styles.markets.options.icon;
+  if (!document.getElementById("goodsIcons")?.hasAttribute("data-circle"))
+    harvested.goods.goodsIcons.options.circle = styles.goods.goodsIcons.options.circle;
+  if (!document.getElementById("texture")?.hasAttribute("data-href"))
+    harvested.texture.options = structuredClone(styles.texture.options);
+  if (!document.getElementById("oceanLayers")?.hasAttribute("layers"))
+    harvested.ocean.oceanLayers.options.outline = styles.ocean.oceanLayers.options.outline;
+  if (!document.getElementById("scaleBar")?.hasAttribute("data-bar-size"))
+    harvested.scaleBar.options = structuredClone(styles.scaleBar.options);
+  if (!document.getElementById("scaleBarBack")?.hasAttribute("data-top"))
+    harvested.scaleBar.back.options = structuredClone(styles.scaleBar.back.options);
+  // the layer registry stamps its declared attrs after this runs, so a map predating one
+  // harvests it as null; the store keeps the attr until the element itself carries it
+  for (const layer of Layers.all) {
+    const node = (harvested as Record<string, any>)[layer.id]?.attrs;
+    const stored = (styles as Record<string, any>)[layer.id]?.attrs;
+    if (!node || !stored) continue;
+    const el = document.getElementById(layer.elementId);
+    for (const attr of Object.keys(layer.params.attrs ?? {})) {
+      if (attr in node && !el?.hasAttribute(attr)) node[attr] = stored[attr];
+    }
+  }
+  Styles.set(harvested);
+}
+
 // The style editor's element/group selection resolves through the same route table the preset
 // upgrader uses; the first path segment is the store layer to rewrite.
 export function styleNodeFor(element: string, group: string): { node: object; layer: keyof Styles } | undefined {
@@ -295,11 +345,6 @@ function routeFor(selector: string): PresetRoute | undefined {
   if (emblem) return { path: ["emblems", emblem[1]], options: { "data-size": "size" } };
   return undefined;
 }
-
-const getPath = (obj: any, path: string[]): any => path.reduce((o, k) => (o == null ? undefined : o[k]), obj);
-const coerce = (v: unknown): unknown => (v === "null" ? null : v);
-const coerceLegacyAttr = (key: string, value: unknown): unknown =>
-  key === "stroke-dasharray" && typeof value === "number" ? String(value) : coerce(value);
 
 function fail(onUnknown: "throw" | "skip", message: string): void {
   if (onUnknown === "skip") console.warn(message);
@@ -392,156 +437,6 @@ function harvestBag(
   return bag;
 }
 
-const DECLARED_ROUTE_GROUPS = Object.keys(Styles.defaults.routes.groups);
-const ROUTE_ATTRS = Object.keys(Object.values(Styles.defaults.routes.groups)[0].attrs);
-const LABEL_SCHEMA_ATTRS = Object.keys(Object.values(Styles.defaults.labels.groups)[0].attrs);
-const LABEL_ATTRS = [...LABEL_SCHEMA_ATTRS, "data-dx", "data-dy", "data-size"];
-const BURG_SCHEMA_ATTRS = Object.keys(Object.values(Styles.defaults.burgIcons.burgIcons.groups)[0].attrs);
-const BURG_ATTRS = [...BURG_SCHEMA_ATTRS, "font-size", "size", "data-icon"];
-
-export function stylesFromMap(root: ParentNode = document): Styles {
-  const bags: Record<string, Record<string, unknown>> = {};
-
-  for (const [selector, attrs] of Object.entries(harvestAttributes())) {
-    const route = PRESET_ROUTES[selector];
-    const nullable = route.ownAttrs === false ? [] : nullableAttrsAt(route.path);
-    const el = root.querySelector(selector);
-
-    if (!el) {
-      // a map predating the child groups styles the layer group itself; leaving the child at its
-      // default would stamp it over the parent, so record the parent's attrs as "not set" here
-      const parent = layerElementFor(route, root);
-      const inherited = parent ? nullable.filter(attr => parent.hasAttribute(attr)) : [];
-      if (inherited.length) bags[selector] = Object.fromEntries(inherited.map(attr => [attr, null]));
-      continue;
-    }
-
-    bags[selector] = harvestBag(el, attrs, nullable);
-  }
-  for (const el of root.querySelectorAll("#labels > *")) {
-    const name = (el as HTMLElement).dataset.group || el.id.replace(/^labels-/, "");
-    if (name) bags[`#labels > #${name}`] = harvestBag(el, LABEL_ATTRS, LABEL_SCHEMA_ATTRS);
-  }
-  for (const el of root.querySelectorAll("#routes > g")) {
-    if (el.id && !DECLARED_ROUTE_GROUPS.includes(el.id)) {
-      bags[`#routes > g#${el.id}`] = harvestBag(el, ROUTE_ATTRS);
-    }
-  }
-  for (const el of root.querySelectorAll("#burgIcons > g")) {
-    if (el.id) bags[`#burgIcons > g#${el.id}`] = harvestBag(el, BURG_ATTRS, BURG_SCHEMA_ATTRS);
-  }
-  for (const el of root.querySelectorAll("#anchors > g")) {
-    if (el.id) bags[`#anchors > g#${el.id}`] = harvestBag(el, BURG_ATTRS, BURG_SCHEMA_ATTRS);
-  }
-  for (const name of ["stateEmblems", "provinceEmblems", "burgEmblems"]) {
-    const el = root.querySelector(`#emblems > #${name}`);
-    if (el) bags[`#emblems > #${name}`] = harvestBag(el, ["data-size"], []);
-  }
-
-  return presetFromLegacy(bags, { onUnknown: "skip" });
-}
-
-// load-only migration for maps without a store record: harvest the DOM-authoritative
-// layers, overlay the domains the store owns
-export function syncStylesFromMap({ hasStyleRecord = false } = {}): void {
-  const harvested = stylesFromMap();
-  // the labels migration seeds styles.labels from the DOM before this runs, and a legacy
-  // record seeds burg groups via stylesFromLegacy; with no record at all the map's own
-  // DOM groups are the only source of their styling, so the harvest keeps them
-  harvested.labels = structuredClone(styles.labels);
-  if (hasStyleRecord) harvested.burgIcons = structuredClone(styles.burgIcons);
-  harvested.relief.options = structuredClone(styles.relief.options);
-  // post-migration maps carry no rescale/data-width attrs, so the store owns these
-  // options; a loaded old map's attrs win here until the load-time strip removes them
-  if (!document.getElementById("markers")?.hasAttribute("rescale"))
-    harvested.markers.options = structuredClone(styles.markers.options);
-  if (!document.getElementById("statesHalo")?.hasAttribute("data-width"))
-    harvested.states.statesHalo.options = structuredClone(styles.states.statesHalo.options);
-  // gated on data-size alone: #coordinates' font-size is the zoom-derived render value, never the base
-  if (!document.getElementById("coordinates")?.hasAttribute("data-size"))
-    harvested.coordinates.options = structuredClone(styles.coordinates.options);
-  if (!document.getElementById("ruler")?.hasAttribute("data-size"))
-    harvested.rulers.options = structuredClone(styles.rulers.options);
-  if (!document.getElementById("legend")?.hasAttribute("data-size"))
-    harvested.legend.options.fontSize = styles.legend.options.fontSize;
-  if (!document.getElementById("legend")?.hasAttribute("data-x")) {
-    harvested.legend.options.x = styles.legend.options.x;
-    harvested.legend.options.y = styles.legend.options.y;
-  }
-  if (!document.getElementById("legend")?.hasAttribute("data-columns"))
-    harvested.legend.options.columns = styles.legend.options.columns;
-  for (const key of ["stateEmblems", "provinceEmblems", "burgEmblems"] as const) {
-    if (!document.getElementById(key)?.hasAttribute("data-size"))
-      harvested.emblems[key].options = structuredClone(styles.emblems[key].options);
-  }
-  // per-key: goodsIcons' circle and markets' fontSize/icon are still attr-authoritative
-  if (!document.getElementById("goodsIcons")?.hasAttribute("data-size"))
-    harvested.goods.goodsIcons.options.size = styles.goods.goodsIcons.options.size;
-  if (!document.getElementById("goodsBurgs")?.hasAttribute("data-size"))
-    harvested.goods.goodsBurgs.options = structuredClone(styles.goods.goodsBurgs.options);
-  if (!document.getElementById("markets")?.hasAttribute("data-size"))
-    harvested.markets.options.size = styles.markets.options.size;
-  for (const key of ["landHeights", "oceanHeights"] as const) {
-    if (!document.getElementById(key)?.hasAttribute("scheme"))
-      harvested.heightmap[key].options = structuredClone(styles.heightmap[key].options);
-  }
-  if (!document.getElementById("armies")?.hasAttribute("box-size"))
-    harvested.military.options = structuredClone(styles.military.options);
-  if (!document.getElementById("gridOverlay")?.hasAttribute("type"))
-    harvested.grid.options = structuredClone(styles.grid.options);
-  if (!document.getElementById("map")?.hasAttribute("data-filter"))
-    harvested.map.options.dataFilter = styles.map.options.dataFilter;
-  if (!document.getElementById("sea_island")?.hasAttribute("auto-filter"))
-    harvested.coastline.sea_island.options.autoFilter = styles.coastline.sea_island.options.autoFilter;
-  if (!document.getElementById("markets")?.hasAttribute("font-size"))
-    harvested.markets.options.fontSize = styles.markets.options.fontSize;
-  if (!document.getElementById("markets")?.hasAttribute("data-icon"))
-    harvested.markets.options.icon = styles.markets.options.icon;
-  if (!document.getElementById("goodsIcons")?.hasAttribute("data-circle"))
-    harvested.goods.goodsIcons.options.circle = styles.goods.goodsIcons.options.circle;
-  if (!document.getElementById("texture")?.hasAttribute("data-href"))
-    harvested.texture.options = structuredClone(styles.texture.options);
-  if (!document.getElementById("oceanLayers")?.hasAttribute("layers"))
-    harvested.ocean.oceanLayers.options.outline = styles.ocean.oceanLayers.options.outline;
-  if (!document.getElementById("scaleBar")?.hasAttribute("data-bar-size"))
-    harvested.scaleBar.options = structuredClone(styles.scaleBar.options);
-  if (!document.getElementById("scaleBarBack")?.hasAttribute("data-top"))
-    harvested.scaleBar.back.options = structuredClone(styles.scaleBar.back.options);
-  // the layer registry stamps its declared attrs after this runs, so a map predating one
-  // harvests it as null; the store keeps the attr until the element itself carries it
-  for (const layer of Layers.all) {
-    const node = (harvested as Record<string, any>)[layer.id]?.attrs;
-    const stored = (styles as Record<string, any>)[layer.id]?.attrs;
-    if (!node || !stored) continue;
-    const el = document.getElementById(layer.elementId);
-    for (const attr of Object.keys(layer.params.attrs ?? {})) {
-      if (attr in node && !el?.hasAttribute(attr)) node[attr] = stored[attr];
-    }
-  }
-  Styles.set(harvested);
-}
-
-// The v1.150.0 style migration auto-update
-export async function migrateStyles(styleRecordJson: string | undefined): Promise<void> {
-  await restoreStrippedLayerStyles();
-
-  // version lines lie, so the record's own shape decides what the map can offer: a store record
-  // is already migrated, anything else leaves the svg as the only source for the harvest
-  const styleRecord = styleRecordJson ? safeParseJSON(styleRecordJson) : undefined;
-  if (!isStoreStyles(styleRecord)) syncStylesFromMap({ hasStyleRecord: Boolean(styleRecord) });
-
-  stampRouteGroups();
-  stripMigratedAttributes();
-}
-
-// the registry stamps only its declared children, so the groups the user added carry no
-// data-group until here; Styles.write addresses every group by it
-function stampRouteGroups(): void {
-  for (const el of document.querySelectorAll<SVGGElement>("#routes > g")) {
-    if (el.id) el.dataset.group = el.id;
-  }
-}
-
 // v1.145-1.147 saved maps with the layer styling stripped out. Seed the groups that carry none
 // at all from the preset the user has applied; a group with any styling of its own is left alone,
 // which is what keeps this harmless for the older maps that never lost theirs
@@ -579,7 +474,7 @@ async function restoreStrippedLayerStyles(): Promise<void> {
 
 // the attributes the store took over. They are dropped rather than left in place because the
 // harvest above reads them: a stale one beside a store record would outrank it forever
-function stripMigratedAttributes(): void {
+export function stripMigratedAttributes(): void {
   const strip = (id: string, ...attrs: string[]) => {
     const el = document.getElementById(id);
     for (const attr of attrs) el?.removeAttribute(attr);
@@ -682,7 +577,7 @@ export function presetToLegacy(source: Styles): Record<string, Record<string, st
     legacy[`#labels > #${name}`] = labelGroupToLegacy(group) as Record<string, string | number | null>;
   }
   for (const [name, group] of Object.entries(source.routes.groups)) {
-    if (DECLARED_ROUTE_GROUPS.includes(name)) continue; // already emitted as #roads/#trails/#searoutes
+    if (DEFAULT_ROUTE_GROUPS.includes(name)) continue; // already emitted as #roads/#trails/#searoutes
     legacy[`#routes > g#${name}`] = { ...group.attrs };
   }
   for (const [name, group] of Object.entries(source.burgIcons.burgIcons.groups)) {
@@ -700,6 +595,90 @@ export function presetToLegacy(source: Styles): Record<string, Record<string, st
   return legacy;
 }
 
+export function labelGroupFromLegacy(legacy: unknown): Styles["labels"]["groups"][string] {
+  const bag = legacy as Record<string, unknown>;
+  // legacy builds rewrote label-group opacity on every zoom, so a saved 0 is the fade state
+  // at save-time, not a preference - the culled renderer would keep the group invisible forever
+  const opacity = numOr(bag.opacity, 1);
+  return {
+    attrs: {
+      opacity: opacity === 0 ? 1 : opacity,
+      fill: strOr(bag.fill, "#3e3e4b"),
+      "fill-opacity": numOr(bag["fill-opacity"], null),
+      stroke: strOr(bag.stroke, "#3a3a3a"),
+      "stroke-width": numOr(bag["stroke-width"], 0),
+      "stroke-dasharray": strOr(bag["stroke-dasharray"], null),
+      "stroke-linecap": strOr(bag["stroke-linecap"], null),
+      "letter-spacing": numOr(bag["letter-spacing"], 0),
+      // legacy wrote the BASE size under data-size (font-size held the live zoom-rescaled value);
+      // prefer data-size when present, matching what the style editor's size input reads
+      "font-size": strOr(bag["data-size"], null) ?? strOr(bag["font-size"], "18%") ?? "18%",
+      "font-family": strOr(bag["font-family"], "Almendra SC") ?? "Almendra SC",
+      style: strOr(bag.style, null),
+      filter: strOr(bag.filter, null)
+    },
+    options: {
+      dx: toNumber(bag["data-dx"], 0),
+      dy: toNumber(bag["data-dy"], 0)
+    }
+  };
+}
+
+// legacy wrote stored burg-group bags to the DOM verbatim with no per-key defaults; only
+// size and icon are required by the renderer (anchors ignore icon - they always draw #icon-anchor)
+export function burgGroupFromLegacy(legacy: unknown): Styles["burgIcons"]["burgIcons"]["groups"][string] {
+  const bag = legacy as Record<string, unknown>;
+  return {
+    attrs: {
+      opacity: numOr(bag.opacity, null),
+      fill: strOr(bag.fill, null),
+      "fill-opacity": numOr(bag["fill-opacity"], null),
+      stroke: strOr(bag.stroke, null),
+      "stroke-width": numOr(bag["stroke-width"], null),
+      "stroke-dasharray": strOr(bag["stroke-dasharray"], null),
+      "stroke-linecap": strOr(bag["stroke-linecap"], null),
+      "stroke-linejoin": strOr(bag["stroke-linejoin"], null),
+      filter: strOr(bag.filter, null)
+    },
+    options: {
+      // pre-1.9x maps carry the group size as a bare `size` attr instead of font-size
+      size: toNumber(bag["font-size"], toNumber(bag.size, 1)),
+      icon: strOr(bag["data-icon"], null) ?? "#icon-circle"
+    }
+  };
+}
+
+function burgGroupToLegacy(
+  group: Styles["burgIcons"]["burgIcons"]["groups"][string],
+  withIcon = true
+): Record<string, unknown> {
+  const legacy: Record<string, unknown> = { ...group.attrs, "font-size": group.options.size };
+  if (withIcon) legacy["data-icon"] = group.options.icon;
+  return legacy;
+}
+
+function labelGroupToLegacy(group: Styles["labels"]["groups"][string]): Record<string, unknown> {
+  const legacy: Record<string, unknown> = { ...group.attrs };
+  if (group.options.dx) legacy["data-dx"] = group.options.dx;
+  if (group.options.dy) legacy["data-dy"] = group.options.dy;
+  return legacy;
+}
+
+function routeGroupFromLegacy(legacy: object): Styles["routes"]["groups"][string] {
+  const bag = legacy as Record<string, unknown>;
+  return {
+    attrs: {
+      opacity: numOr(bag.opacity, null),
+      stroke: strOr(bag.stroke, null),
+      "stroke-width": numOr(bag["stroke-width"], null),
+      "stroke-dasharray": strOr(bag["stroke-dasharray"], null),
+      "stroke-linecap": strOr(bag["stroke-linecap"], null),
+      filter: strOr(bag.filter, null),
+      mask: strOr(bag.mask, null)
+    }
+  };
+}
+
 // the attrs at a store path that accept null, i.e. may be harvested as "attribute not set"
 function nullableAttrsAt(path: string[]): string[] {
   let node: any = stylesSchema;
@@ -709,24 +688,43 @@ function nullableAttrsAt(path: string[]): string[] {
   return Object.keys(shape).filter(attr => shape[attr].safeParse(null).success);
 }
 
+function toNumber(value: unknown, fallback: number): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function numOr(value: unknown, fallback: number | null): number | null {
+  return value === undefined ? fallback : value === null ? null : toNumber(value, 0);
+}
+
+function strOr(value: unknown, fallback: string | null): string | null {
+  return value === undefined || value === "" ? fallback : value === null ? null : String(value);
+}
+
+function getPath(obj: any, path: string[]): any {
+  return path.reduce((o, k) => (o == null ? undefined : o[k]), obj);
+}
+
+function coerce(v: unknown): unknown {
+  return v === "null" ? null : v;
+}
+
+function coerceLegacyAttr(key: string, value: unknown): unknown {
+  return key === "stroke-dasharray" && typeof value === "number" ? String(value) : coerce(value);
+}
+
 // the legacy preset pipeline (public/modules/ui/style-presets.js) converts through these
 globalThis.stylesLegacy = {
   styleNodeFor,
   labelGroupFromLegacy,
-  labelGroupToLegacy,
-  labelGroupsFromLegacy,
   burgGroupFromLegacy,
-  burgGroupToLegacy,
-  burgGroupsFromLegacy,
-  routeGroupFromLegacy,
-  reliefFromLegacy,
-  stylesFromLegacy,
   presetFromLegacy,
   presetToLegacy,
   isLegacyPreset,
   isStoreStyles,
   harvestAttributes,
   stylesFromMap,
-  syncStylesFromMap,
-  migrateStyles
+  harvestStylesFromSvg,
+  migrateStyles,
+  stripMigratedAttributes
 };

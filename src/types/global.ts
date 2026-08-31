@@ -92,7 +92,7 @@ declare global {
 
   var notes: any[]; // TODO: correct type
   var styles: import("@/generators/styles-schema").Styles;
-  var Styles: typeof import("@/generators/styles")["Styles"];
+  var Styles: (typeof import("@/generators/styles"))["Styles"];
   var stylesLegacy: typeof import("@/generators/styles-legacy");
 
   // IO / loading helpers defined in classic public/ scripts
@@ -118,6 +118,7 @@ declare global {
   var changeViewMode: (event?: Event) => void;
   var resetZoom: (duration?: number) => void;
   var RgbQuant: any; // external RgbQuant image-quantization lib
+  var applyStoredStyles: any;
 
   var shiftCompass: () => void;
 
