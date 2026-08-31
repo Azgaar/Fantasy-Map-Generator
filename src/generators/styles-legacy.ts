@@ -130,6 +130,19 @@ const PRESET_ROUTES: Record<string, PresetRoute> = {
   "#landmass": { path: ["landmass"] }
 };
 
+// layers that can carry an opacity the store keeps on their style groups alone, see the harvest
+const STRANDED_OPACITY_LAYERS = [
+  "regions",
+  "terrs",
+  "lakes",
+  "coastline",
+  "borders",
+  "routes",
+  "labels",
+  "burgIcons",
+  "anchors"
+] as const;
+
 const DEFAULT_ROUTE_GROUPS = Object.keys(Styles.defaults.routes.groups);
 const LABEL_SCHEMA_ATTRS = Object.keys(Object.values(Styles.defaults.labels.groups)[0].attrs);
 const BURG_SCHEMA_ATTRS = Object.keys(Object.values(Styles.defaults.burgIcons.burgIcons.groups)[0].attrs);
@@ -243,6 +256,25 @@ export function harvestStylesFromSvg({ hasStyleRecord = false } = {}): void {
   // options; a loaded old map's attrs win here until the load-time strip removes them
   if (!document.getElementById("markers")?.hasAttribute("rescale"))
     harvested.markers.options = structuredClone(styles.markers.options);
+
+  // the pre-v1.150 style editor wrote to the layer group itself whenever the layer had no groups
+  const strandedOpacity: Record<(typeof STRANDED_OPACITY_LAYERS)[number], { attrs: { opacity: number | null } }[]> = {
+    regions: [harvested.states.statesBody],
+    terrs: Object.values(harvested.heightmap),
+    lakes: Object.values(harvested.lakes),
+    coastline: Object.values(harvested.coastline),
+    borders: Object.values(harvested.borders),
+    routes: Object.values(harvested.routes.groups),
+    labels: Object.values(harvested.labels.groups),
+    burgIcons: Object.values(harvested.burgIcons.burgIcons.groups),
+    anchors: Object.values(harvested.burgIcons.anchors.groups)
+  };
+  for (const [layer, groups] of Object.entries(strandedOpacity)) {
+    const opacity = document.getElementById(layer)?.getAttribute("opacity");
+    if (opacity === null || opacity === undefined) continue;
+    for (const group of groups) group.attrs.opacity = Number(opacity) || 0;
+  }
+
   if (!document.getElementById("statesHalo")?.hasAttribute("data-width"))
     harvested.states.statesHalo.options = structuredClone(styles.states.statesHalo.options);
   // gated on data-size alone: #coordinates' font-size is the zoom-derived render value, never the base
@@ -497,6 +529,8 @@ export function stripMigratedAttributes(): void {
     for (const attr of attrs) el?.removeAttribute(attr);
   };
 
+  // layer-level opacity the style groups took over on harvest: left here it composites over them
+  for (const layer of STRANDED_OPACITY_LAYERS) strip(layer, "opacity");
   strip("markers", "rescale");
   strip("statesHalo", "data-width");
   strip("coordinates", "data-size");

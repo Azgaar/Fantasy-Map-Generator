@@ -326,3 +326,22 @@ test("store-format loads strip retired option attributes from the restored svg",
   expect(document.getElementById("legend")?.getAttribute("data-columns")).toBeNull();
   expect(document.getElementById("markets")?.getAttribute("data-icon")).toBeNull();
 });
+
+test("opacity stranded on a layer group moves to the style groups the store keeps it on", () => {
+  // the old style editor wrote to the layer group itself while the layer had no groups to pick
+  document.body.innerHTML = `<svg id="map">
+    <g id="coastline" opacity="0.5" stroke="#1f3846"></g>
+    <g id="lakes" opacity="0.7"></g>
+    <g id="routes" opacity="0.4" fill="none"><g id="roads" opacity="0.9"></g></g></svg>`;
+  harvestStylesFromSvg();
+  expect(styles.coastline.sea_island.attrs.opacity).toBe(0.5);
+  expect(styles.coastline.lake_island.attrs.opacity).toBe(0.5);
+  expect(styles.lakes.freshwater.attrs.opacity).toBe(0.7);
+  expect(styles.routes.groups.roads.attrs.opacity).toBe(0.4);
+
+  stripMigratedAttributes();
+  expect(document.getElementById("coastline")?.getAttribute("opacity")).toBeNull();
+  expect(document.getElementById("lakes")?.getAttribute("opacity")).toBeNull();
+  expect(document.getElementById("routes")?.getAttribute("fill")).toBe("none"); // not opacity, left alone
+  Styles.set(structuredClone(Styles.defaults));
+});
