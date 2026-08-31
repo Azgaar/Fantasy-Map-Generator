@@ -138,7 +138,7 @@ const BURG_SCHEMA_ATTRS = Object.keys(Object.values(Styles.defaults.burgIcons.bu
 export async function migrateStyles(legacyStyleString: string | undefined): Promise<string> {
   const legacyStyleObj = legacyStyleString ? safeParseJSON(legacyStyleString) : undefined;
   if (legacyStyleObj) migrateLegacyStyleObj(legacyStyleObj); // updates pre-v1.150 style object
-  await restoreStrippedLayerStyles(); // do we need it?
+  await restoreStrippedLayerStyles(); // v1.145-1.147 saved maps with bare layer groups
 
   harvestStylesFromSvg({ hasStyleRecord: Boolean(legacyStyleObj) });
 
@@ -437,6 +437,24 @@ function harvestBag(
   return bag;
 }
 
+/** A legacy '#'-keyed preset carries the attr bag directly; a store-format preset (every system
+ * preset since v1.150) resolves through the same selector route table the preset upgrader uses */
+export function presetBagFor(
+  preset: Record<string, any>,
+  ...selectors: string[]
+): Record<string, string | number | null> | undefined {
+  for (const selector of selectors) {
+    if (!isStoreStyles(preset)) {
+      if (preset[selector]) return preset[selector];
+      continue;
+    }
+    const route = routeFor(selector);
+    const node = route && (getPath(preset, route.path) as { attrs?: Record<string, string | number | null> });
+    if (node?.attrs) return node.attrs;
+  }
+  return undefined;
+}
+
 // v1.145-1.147 saved maps with the layer styling stripped out. Seed the groups that carry none
 // at all from the preset the user has applied; a group with any styling of its own is left alone,
 // which is what keeps this harmless for the older maps that never lost theirs
@@ -464,9 +482,9 @@ async function restoreStrippedLayerStyles(): Promise<void> {
   };
 
   for (const layer of Layers.all) {
-    restore(layer.elementId, preset[`#${layer.elementId}`], layer.params.attrs);
+    restore(layer.elementId, presetBagFor(preset, `#${layer.elementId}`), layer.params.attrs);
     for (const child of layer.children) {
-      restore(child.id, preset[`#${child.id}`] || preset[`#${layer.elementId} > #${child.id}`], child.attrs);
+      restore(child.id, presetBagFor(preset, `#${child.id}`, `#${layer.elementId} > #${child.id}`), child.attrs);
     }
   }
 }
@@ -658,6 +676,7 @@ function coerceLegacyAttr(key: string, value: unknown): unknown {
 // the legacy preset pipeline (public/modules/ui/style-presets.js) converts through these
 globalThis.stylesLegacy = {
   styleNodeFor,
+  presetBagFor,
   labelGroupFromLegacy,
   burgGroupFromLegacy,
   presetFromLegacy,

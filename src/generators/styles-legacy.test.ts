@@ -7,6 +7,7 @@ import {
   isLegacyPreset,
   isStoreStyles,
   labelGroupFromLegacy,
+  presetBagFor,
   presetFromLegacy,
   styleNodeFor
 } from "./styles-legacy";
@@ -199,4 +200,19 @@ test("burg group size reads the pre-1.9x size attr when font-size is absent", ()
   expect(burgGroupFromLegacy({ size: "0.8" }).options.size).toBe(0.8);
   expect(burgGroupFromLegacy({ "font-size": "2", size: "0.8" }).options.size).toBe(2);
   expect(burgGroupFromLegacy({}).options.size).toBe(1);
+});
+
+test("presetBagFor reads a legacy '#'-keyed preset bag directly", () => {
+  expect(presetBagFor({ "#rivers": { opacity: 0.5 } }, "#rivers")).toEqual({ opacity: 0.5 });
+});
+
+test("presetBagFor resolves a store-format preset through the selector route table", () => {
+  const preset = { map: {}, rivers: { attrs: { opacity: 0.7, filter: null } } };
+  expect(presetBagFor(preset, "#rivers")).toEqual({ opacity: 0.7, filter: null });
+});
+
+test("presetBagFor tries selectors in order and returns undefined when none resolve", () => {
+  const preset = { map: {}, routes: { groups: { roads: { attrs: { opacity: 0.9 } } } } };
+  expect(presetBagFor(preset, "#roads", "#routes > #roads")).toEqual({ opacity: 0.9 });
+  expect(presetBagFor(preset, "#nonexistent")).toBeUndefined();
 });
