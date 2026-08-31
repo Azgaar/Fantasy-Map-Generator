@@ -66,6 +66,10 @@ export function alertDialog({ title = "Warning", message, width = "26em" }: Aler
     resizable: false,
     title,
     width,
+    // the #alert dialog is shared with raw .dialog() callers: reset what they may have set
+    height: "auto",
+    modal: false,
+    close: () => {},
     position: { my: "center", at: "center", of: "svg" },
     buttons: {
       OK: function (this: HTMLElement) {
