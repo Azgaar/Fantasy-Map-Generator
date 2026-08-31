@@ -65,7 +65,7 @@ function getEmblemSize(type: EmblemType, count: number): number {
   const { extent, min, max, expected, countDivisor, deficitDivisor } = SIZING[type];
   const startSize = minmax((graphHeight + graphWidth) / extent, min, max);
   const countMod = 1 + count / countDivisor - (expected - count) / deficitDivisor;
-  const sizeMod = styles.emblems[`${type}Emblems`].options.size;
+  const sizeMod = styles.emblems[`${type}Emblems`].options.size || 1;
   return rn((startSize / countMod) * sizeMod);
 }
 
