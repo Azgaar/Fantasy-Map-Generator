@@ -275,14 +275,13 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
   }
 
   if (isOlderThan("1.21.0")) {
-    // v1.11 replaced "display" attribute by "display" style
+    // v1.11 replaced "display" attribute by "display" style. Only "none" hid the element: layers
+    // that were on carry "block" (compass, prec, fogging), so those just lose the attribute
     select("#viewbox")
-      .selectAll<SVGGElement, unknown>("g")
+      .selectAll<SVGGraphicsElement, unknown>("[display]")
       .each(function () {
-        if (this.hasAttribute("display")) {
-          this.removeAttribute("display");
-          this.style.display = "none";
-        }
+        if (this.getAttribute("display") === "none") this.style.display = "none";
+        this.removeAttribute("display");
       });
 
     // v1.21 added rivers data to pack
