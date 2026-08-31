@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import { harvestAttributes, stylesFromMap, syncStylesFromMap } from "./styles-legacy";
 import { DEFAULT_STYLES } from "./styles-schema";
 
@@ -274,4 +274,36 @@ test("save sync lets an old map's coordinates data-size win over the store", () 
   styles.coordinates.options.fontSize = 20;
   syncStylesFromMap();
   expect(styles.coordinates.options.fontSize).toBe(14);
+});
+
+test("an old map omitting a non-nullable attr keeps the values it does carry", () => {
+  // #provs in pre-1.148 maps carries opacity alone
+  document.body.innerHTML = `<svg id="map"><g id="provs" opacity="0.6"></g></svg>`;
+  const result = stylesFromMap(document);
+  expect(result.provinces.attrs.opacity).toBe(0.6);
+  expect(result.provinces.attrs["font-family"]).toBe(DEFAULT_STYLES.provinces.attrs["font-family"]);
+});
+
+test("harvesting an old map does not emit values the schema rejects", () => {
+  document.body.innerHTML = `<svg id="map"><g id="provs" opacity="0.6"></g></svg>`;
+  const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  stylesFromMap(document);
+  expect(warn).not.toHaveBeenCalled();
+  warn.mockRestore();
+});
+
+test("an attr the layer registry declares survives a map that predates it", () => {
+  // #fogging in old maps carries no mask; the registry stamps it after the harvest runs
+  document.body.innerHTML = `<svg id="map"><g id="fogging" opacity="0.98"></g></svg>`;
+  syncStylesFromMap({ hasStyleRecord: true });
+  expect(styles.fogging.attrs.mask).toBe(DEFAULT_STYLES.fogging.attrs.mask);
+});
+
+test("a child group the map predates leaves its parent's styling in place", () => {
+  // pre-1.143 maps have no #sea_island: the layer group itself is styled
+  document.body.innerHTML = `<svg id="map"><g id="coastline" opacity="0.5" stroke-width="0.7"></g></svg>`;
+  const result = stylesFromMap(document);
+  expect(DEFAULT_STYLES.coastline.sea_island.attrs["stroke-width"]).not.toBeNull();
+  expect(result.coastline.sea_island.attrs["stroke-width"]).toBeNull();
+  expect(result.coastline.sea_island.attrs.opacity).toBeNull();
 });

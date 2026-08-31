@@ -1,3 +1,4 @@
+import type { z } from "zod";
 import { type LayerId, Layers } from "@/components/layers";
 import { DEFAULT_STYLES, type StyleLayerId, type Styles as StylesData, stylesSchema } from "./styles-schema";
 
@@ -11,13 +12,48 @@ function parse(json: unknown): StylesData {
   const result = {} as Record<string, unknown>;
   for (const [layer, schema] of Object.entries(stylesSchema.shape)) {
     const parsed = schema.safeParse(input[layer]);
-    if (parsed.success) result[layer] = parsed.data;
-    else {
+    if (parsed.success) {
+      result[layer] = parsed.data;
+      continue;
+    }
+
+    const fallback = structuredClone(DEFAULT_STYLES[layer as keyof StylesData]);
+    const repaired = replaceInvalidValues(input[layer], fallback, parsed.error);
+    const reparsed = repaired === undefined ? undefined : schema.safeParse(repaired);
+
+    if (reparsed?.success) {
+      console.warn(`Styles.parse: invalid "${layer}" values replaced with defaults`);
+      result[layer] = reparsed.data;
+    } else {
       console.warn(`Styles.parse: invalid or missing "${layer}", default used`);
-      result[layer] = structuredClone(DEFAULT_STYLES[layer as keyof StylesData]);
+      result[layer] = fallback;
     }
   }
   return result as StylesData;
+}
+
+// replaces the failing values alone, so one bad attribute does not cost the layer around it;
+// undefined when that cannot be done, leaving the caller its whole-layer fallback
+function replaceInvalidValues(input: unknown, fallback: unknown, error: z.ZodError): unknown {
+  if (typeof input !== "object" || input === null) return undefined;
+
+  const repaired = structuredClone(input) as Record<PropertyKey, any>;
+  for (const { path } of error.issues) {
+    if (!path.length) return undefined;
+
+    let target: any = repaired;
+    let source: any = fallback;
+    for (const key of path.slice(0, -1)) {
+      target = target?.[key];
+      source = source?.[key];
+    }
+
+    const key = path[path.length - 1];
+    if (target === undefined || target === null || source === undefined || source === null) return undefined;
+    if (!(key in source)) return undefined;
+    target[key] = structuredClone(source[key]);
+  }
+  return repaired;
 }
 
 function set(data: StylesData): void {

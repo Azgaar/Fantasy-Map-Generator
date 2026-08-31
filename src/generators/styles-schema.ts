@@ -246,3 +246,12 @@ export type StyleLayerId = keyof Styles & (LayerId | "map");
 
 // default-styles.json is the single source of style defaults, validated strictly at boot
 export const DEFAULT_STYLES: Styles = stylesSchema.parse(defaultStyles);
+
+// the attrs at a store path that accept null, i.e. may be harvested as "attribute not set"
+export function nullableAttrsAt(path: string[]): string[] {
+  let node: any = stylesSchema;
+  for (const key of [...path, "attrs"]) node = node?.shape?.[key];
+  const shape = node?.shape;
+  if (!shape) return [];
+  return Object.keys(shape).filter(attr => shape[attr].safeParse(null).success);
+}

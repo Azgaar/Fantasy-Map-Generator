@@ -2,9 +2,10 @@
 // edges use this: map-file save/load and legacy preset routing. Dies when those write the new
 // format natively.
 
+import { Layers } from "@/components/layers";
 import "./styles";
 import type { Styles } from "./styles-schema";
-import { DEFAULT_STYLES } from "./styles-schema";
+import { DEFAULT_STYLES, nullableAttrsAt } from "./styles-schema";
 
 type LabelGroupStyle = Styles["labels"]["groups"][string];
 
@@ -345,25 +346,33 @@ export function harvestAttributes(): Record<string, string[]> {
   return table;
 }
 
+// the group a child route hangs off: #sea_island's is #coastline, #landHeights' is #terrs
+function layerElementFor(route: PresetRoute, root: ParentNode): Element | null {
+  if (route.path.length < 2) return null;
+  const layer = Layers.all.find(({ id }) => id === route.path[0]);
+  return layer ? root.querySelector(`#${layer.elementId}`) : null;
+}
+
 function harvestValue(value: string): string | number {
   if (value === "") return "";
   const n = Number(value);
   return Number.isNaN(n) ? value : n;
 }
 
-// a schema attr the element does not carry becomes an explicit null, so a preset-nulled
-// attr round-trips as null instead of the seeded default; options keep omit-means-default
+// a nullable schema attr the element does not carry becomes an explicit null, so a preset-nulled
+// attr round-trips as null instead of the seeded default; a non-nullable one is omitted, keeping
+// the default the schema demands. Options keep omit-means-default either way
 function harvestBag(
   el: Element,
   attrs: string[],
-  schemaAttrs: string[] = attrs
+  nullableAttrs: string[] = attrs
 ): Record<string, string | number | null> {
   const bag: Record<string, string | number | null> = {};
   for (const attr of attrs) {
     const inline = (el as HTMLElement).style?.[attr as any];
     const value = inline ? inline : el.getAttribute(attr);
     if (value !== null && value !== undefined) bag[attr] = harvestValue(value);
-    else if (schemaAttrs.includes(attr)) bag[attr] = null;
+    else if (nullableAttrs.includes(attr)) bag[attr] = null;
   }
   return bag;
 }
@@ -377,11 +386,20 @@ export function stylesFromMap(root: ParentNode = document): Styles {
   const bags: Record<string, Record<string, unknown>> = {};
 
   for (const [selector, attrs] of Object.entries(harvestAttributes())) {
-    const el = root.querySelector(selector);
-    if (!el) continue;
     const route = PRESET_ROUTES[selector];
-    const schemaAttrs = route.ownAttrs === false ? [] : attrKeysAt(route.path);
-    bags[selector] = harvestBag(el, attrs, schemaAttrs);
+    const nullable = route.ownAttrs === false ? [] : nullableAttrsAt(route.path);
+    const el = root.querySelector(selector);
+
+    if (!el) {
+      // a map predating the child groups styles the layer group itself; leaving the child at its
+      // default would stamp it over the parent, so record the parent's attrs as "not set" here
+      const parent = layerElementFor(route, root);
+      const inherited = parent ? nullable.filter(attr => parent.hasAttribute(attr)) : [];
+      if (inherited.length) bags[selector] = Object.fromEntries(inherited.map(attr => [attr, null]));
+      continue;
+    }
+
+    bags[selector] = harvestBag(el, attrs, nullable);
   }
   for (const el of root.querySelectorAll("#labels > *")) {
     const name = (el as HTMLElement).dataset.group || el.id.replace(/^labels-/, "");
@@ -467,6 +485,17 @@ export function syncStylesFromMap({ hasStyleRecord = false } = {}): void {
     harvested.scaleBar.options = structuredClone(styles.scaleBar.options);
   if (!document.getElementById("scaleBarBack")?.hasAttribute("data-top"))
     harvested.scaleBar.back.options = structuredClone(styles.scaleBar.back.options);
+  // the layer registry stamps its declared attrs after this runs, so a map predating one
+  // harvests it as null; the store keeps the attr until the element itself carries it
+  for (const layer of Layers.all) {
+    const node = (harvested as Record<string, any>)[layer.id]?.attrs;
+    const stored = (styles as Record<string, any>)[layer.id]?.attrs;
+    if (!node || !stored) continue;
+    const el = document.getElementById(layer.elementId);
+    for (const attr of Object.keys(layer.params.attrs ?? {})) {
+      if (attr in node && !el?.hasAttribute(attr)) node[attr] = stored[attr];
+    }
+  }
   Styles.set(harvested);
 }
 
