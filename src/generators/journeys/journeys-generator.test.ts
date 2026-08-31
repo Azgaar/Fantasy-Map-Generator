@@ -200,6 +200,7 @@ describe("land pathfinding stays on land", () => {
     (globalThis as any).pack = {
       cells: {
         h: [30, 30, 5, 30], // cell 2 is water
+        f: [1, 1, 2, 3], // cells 0-1 share a landmass; cell 3 is a separate island across water 2
         p: [
           [0, 0],
           [10, 0],

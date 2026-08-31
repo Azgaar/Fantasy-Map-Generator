@@ -262,6 +262,16 @@ class JourneysModule {
   }
 
   private findLandPath(from: number, to: number, avoidRoads = false): PathfindingResult {
+    // different landmasses can never connect over land: skip the exhaustive A* flood
+    if (isLand(from, pack) && isLand(to, pack) && pack.cells.f[from] !== pack.cells.f[to]) {
+      return {
+        points: [],
+        distance: 0,
+        errorCode: "no-land-path",
+        warning: "No land route exists — the cells are on different landmasses."
+      };
+    }
+
     if (!avoidRoads) {
       // Try the exact road-network path first: it walks the underlying Route.points
       // slices, so it follows the drawn road geometry rather than cell centres.
@@ -329,7 +339,9 @@ class JourneysModule {
   ): number[] | null {
     const { cells } = pack;
     const [endX, endY] = cells.p[end];
-    const heuristic = (cellId: number) => Math.hypot(cells.p[cellId][0] - endX, cells.p[cellId][1] - endY);
+    // scaled by the cheapest possible step cost (the road discount) to stay admissible
+    const heuristic = (cellId: number) =>
+      ON_ROAD_DISCOUNT * Math.hypot(cells.p[cellId][0] - endX, cells.p[cellId][1] - endY);
 
     const from: number[] = [];
     const gScore: number[] = [];
