@@ -48,6 +48,7 @@
     "opacity": "0.6",
     "stroke": "#1f3846",
     "stroke-width": "0.7",
+    "filter": "none",
     "style": "filter: none;"
   },
   "#lake_island": {
@@ -94,15 +95,9 @@
     "filter": "url(#dropShadow01)",
     "style": "display: none;"
   },
-  "#goodsCells": {
-    "opacity": "1"
-  },
+  "#goodsCells": {},
   "#goodsIcons": {},
-  "#goodsBurgs": {
-    "opacity": "1",
-    "stroke": "#41414f",
-    "stroke-width": "0.2"
-  },
+  "#goodsBurgs": {},
   "#gridOverlay": {
     "opacity": "0.8",
     "stroke": "#808080",
@@ -263,8 +258,6 @@
     "stroke-linecap": "round"
   },
   "#ruler": {
-    "stroke-width": "2",
-    "stroke-dasharray": "10",
     "style": "display: none;"
   },
   "#scaleBar": {

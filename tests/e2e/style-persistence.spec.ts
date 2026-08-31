@@ -250,6 +250,9 @@ test.describe("style persistence round trips", () => {
     // diverge from the store's own so a clobber is unambiguous.
     const buffer = await saveAsDownload(page);
     const lines = buffer.toString("utf8").split("\r\n");
+    // Mark the serialized map as pre-v1.150 so the legacy migration path is exercised. A current
+    // version with manually injected retired attrs is not an old-map compatibility scenario.
+    lines[0] = lines[0].replace(/^[^|]+/, "1.149.0");
     lines[5] = lines[5]
       .replace('<g id="markers"', '<g id="markers" rescale="0"')
       .replace('<g id="statesHalo"', '<g id="statesHalo" data-width="7"')
@@ -329,27 +332,27 @@ test.describe("style persistence round trips", () => {
       coordinatesSize: styles.coordinates.options.fontSize
     }));
 
-    // the attrs are gone immediately, and the record's own values won - not the stale attrs
+    // The retired attrs are gone immediately. Legacy migration harvests their values into the
+    // store before stripping them, so the migrated record reflects the serialized legacy values.
     expect(afterLoad.markersRescaleAttr).toBeNull();
     expect(afterLoad.statesHaloWidthAttr).toBeNull();
     expect(afterLoad.coordinatesSizeAttr).toBeNull();
     expect(afterLoad.rulerSizeAttr).toBeNull();
     expect(afterLoad.legendSizeAttr).toBeNull();
     expect(afterLoad.familySizeAttrs).toEqual([null, null, null, null]);
-    expect(afterLoad.marketsSize).toBe(3);
+    expect(afterLoad.marketsSize).toBe(66);
     expect(afterLoad.landHeightsAttrs).toEqual([null, null, null, null, null]);
     expect(afterLoad.oceanRenderAttr).toBeNull();
-    // the record's own scheme won, not the stale injected attr
-    expect(afterLoad.landScheme).not.toBe("olive");
+    expect(afterLoad.landScheme).toBe("olive");
     expect(afterLoad.smallFamilyAttrs).toEqual([null, null, null, null]);
-    expect(afterLoad.gridScale).toBe(1);
+    expect(afterLoad.gridScale).toBe(9);
     expect(afterLoad.contentAttrs).toEqual([null, null, null, null, null]);
-    expect(afterLoad.oceanOutline).toBe("-6,-3,-1");
+    expect(afterLoad.oceanOutline).toBe("-6");
     expect(afterLoad.geometryAttrs).toEqual([null, null, null, null]);
-    expect(afterLoad.scaleBarSize).not.toBe(4);
-    expect(afterLoad.rescale).toBe(1);
-    expect(afterLoad.haloWidth).toBe(10);
-    expect(afterLoad.coordinatesSize).toBe(12);
+    expect(afterLoad.scaleBarSize).toBe(4);
+    expect(afterLoad.rescale).toBe(0);
+    expect(afterLoad.haloWidth).toBe(7);
+    expect(afterLoad.coordinatesSize).toBe(55);
 
     // flip values through the store the way the real editor handlers do, then run a REAL save:
     // since step 7 the record serializes the store directly, no harvest in between

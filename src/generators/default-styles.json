@@ -626,7 +626,7 @@
           "letter-spacing": 0,
           "font-size": "22%",
           "font-family": "Almendra SC",
-          "style": "text-shadow: white 0px 0px 4px;",
+          "style": "text-shadow: white 0px 0px 4px",
           "filter": null
         }
       },
@@ -642,7 +642,7 @@
           "letter-spacing": 0,
           "font-size": "6%",
           "font-family": "Cinzel",
-          "style": "text-shadow: white 0px 0px 4px;",
+          "style": "text-shadow: white 0px 0px 4px",
           "filter": null
         }
       },
@@ -658,7 +658,7 @@
           "letter-spacing": 0,
           "font-size": "1.5%",
           "font-family": "Lugrasimo",
-          "style": "text-shadow: white 0px 1px 6px;",
+          "style": "text-shadow: white 0px 1px 6px",
           "filter": null
         }
       },
@@ -674,7 +674,7 @@
           "letter-spacing": 0,
           "font-size": "1.5%",
           "font-family": "Lugrasimo",
-          "style": "text-shadow: white 0px 1px 6px;",
+          "style": "text-shadow: white 0px 1px 6px",
           "filter": null
         }
       },
@@ -690,7 +690,7 @@
           "letter-spacing": 0,
           "font-size": "18%",
           "font-family": "Almendra SC",
-          "style": "text-shadow: white 0px 0px 4px;",
+          "style": "text-shadow: white 0px 0px 4px",
           "filter": null
         }
       }
