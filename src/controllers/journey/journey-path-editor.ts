@@ -1,6 +1,6 @@
 // On-map interaction modes for journey segments
 import { type D3DragEvent, drag, select } from "d3";
-import { alertDialog } from "@/components/dialog/dialog-helpers";
+import { alertDialog, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -200,14 +200,31 @@ export class JourneyPathEditor {
       return;
     }
 
-    seg[this.mode.endpoint] = cellId;
+    const endpoint = this.mode.endpoint;
     const chainTo = this.mode.chainTo;
-    this.setMode(null);
+    const apply = () => {
+      seg[endpoint] = cellId;
+      this.setMode(null);
+      if (seg.from !== undefined && seg.to !== undefined) recomputeSegment(seg);
+      this.host.refresh();
+      if (chainTo) this.pickEndpoint(seg.i, "to");
+    };
 
-    if (seg.from !== undefined && seg.to !== undefined) recomputeSegment(seg);
-    this.host.refresh();
+    // recomputeSegment never overwrites a custom path, so a silent endpoint change would desync it
+    if (seg.custom) {
+      confirmationDialog({
+        title: "Overwrite custom path?",
+        message: `Segment "<b>${escapeHtml(seg.name)}</b>" has a custom-drawn path. Moving an endpoint replaces it with the pathfinder's route. Continue?`,
+        confirm: "Replace",
+        onConfirm: () => {
+          seg.custom = false;
+          apply();
+        }
+      });
+      return;
+    }
 
-    if (chainTo) this.pickEndpoint(seg.i, "to");
+    apply();
   }
 
   private dragPoint(event: DragStart, circle: SVGCircleElement, index: number): void {

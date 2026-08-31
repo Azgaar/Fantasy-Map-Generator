@@ -396,11 +396,33 @@ function onSegTransportChange(this: HTMLSelectElement): void {
     return;
   }
 
-  segment.transport = newType.name;
-  segment.speed = newType.speed;
-  if (Transports.getDomain(previousType) === "stay") delete segment.duration;
-  recomputeSegment(segment);
-  segmentsTable.refresh();
+  const applyChange = () => {
+    segment.transport = newType.name;
+    segment.speed = newType.speed;
+    if (Transports.getDomain(previousType) === "stay") delete segment.duration;
+    recomputeSegment(segment);
+    segmentsTable.refresh();
+  };
+
+  // endpoints were checked above, but a custom-drawn path body can still clash with the new domain
+  if (segment.custom && !Journeys.isValidPath(segment.points, newType.domain)) {
+    this.value = previousType;
+    confirmationDialog({
+      title: "Overwrite custom path?",
+      message: `Segment "<b>${escapeHtml(segment.name)}</b>" has a custom-drawn path that ${escapeHtml(
+        newType.name
+      )} can't follow. Replace it with the pathfinder's route?`,
+      confirm: "Replace",
+      onConfirm: () => {
+        this.value = newType.name;
+        segment.custom = false;
+        applyChange();
+      }
+    });
+    return;
+  }
+
+  applyChange();
 }
 
 function onSegSpeedInput(this: HTMLInputElement): void {
