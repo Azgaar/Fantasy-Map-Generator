@@ -16,7 +16,8 @@ export function drawRoutes(): void {
   const routes = select(ensureEl<SVGGElement>("routes"));
   routes.attr("fill", "none").selectAll("path").remove();
   for (const group in routePaths) {
-    routes.select(`#${group}`).html(routePaths[group].join(""));
+    // custom groups from loaded maps miss the data-group the layer registry stamps on declared ones
+    routes.select(`#${group}`).attr("data-group", group).html(routePaths[group].join(""));
   }
 
   TIME && console.timeEnd("drawRoutes");

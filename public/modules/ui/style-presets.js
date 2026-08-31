@@ -90,6 +90,7 @@ function applyStylePreset(presetJson) {
   Styles.set(parsed);
   fillMissingLabelGroups();
   Burgs.ensureBurgGroupStyles();
+  Routes.ensureRouteGroupStyles();
   applyStoredStyles();
   applyReliefOptions(previousReliefSize);
   registerCustomScheme();

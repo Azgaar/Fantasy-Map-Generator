@@ -730,6 +730,17 @@ class RoutesModule {
     }
   }
 
+  /** custom route groups (old maps, the route groups editor) can miss a style entry - without
+   * one the style editor's edits are DOM-only and presets drop the group */
+  ensureRouteGroupStyles(): void {
+    const { groups } = styles.routes;
+    const template = groups.roads || Object.values(groups)[0];
+    if (!template) return;
+    for (const group of new Set(pack.routes.map(route => route.group))) {
+      if (!groups[group]) groups[group] = structuredClone(template);
+    }
+  }
+
   buildLinks(routes: Route[]): Record<number, Record<number, number>> {
     const links: Record<number, Record<number, number>> = {};
 

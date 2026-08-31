@@ -589,3 +589,31 @@ describe("RoutesModule.remove", () => {
     expect(globalThis.pack.cells.routes[10][20]).toBeUndefined();
   });
 });
+
+describe("ensureRouteGroupStyles", () => {
+  it("seeds styles for route groups missing from the store, keeping existing entries", async () => {
+    globalThis.TIME = false;
+    globalThis.window = globalThis.window || ({} as any);
+    globalThis.grid = { cells: { temp: [20] } } as any;
+    globalThis.pack = {
+      cells: { h: [], r: [], fl: [], p: [], t: [], g: [] },
+      rivers: [],
+      routes: [
+        { i: 0, group: "roads", points: [] },
+        { i: 1, group: "route-royal", points: [] }
+      ]
+    } as any;
+    await import("./routes-generator");
+    const Routes = (globalThis as any).Routes;
+
+    const roads = { attrs: { opacity: 0.9, stroke: "#d06324", "stroke-width": 0.7 } };
+    (globalThis as any).styles = { routes: { groups: { roads: structuredClone(roads) } } };
+
+    Routes.ensureRouteGroupStyles();
+
+    const groups = (globalThis as any).styles.routes.groups;
+    expect(groups.roads).toEqual(roads);
+    expect(groups["route-royal"]).toEqual(roads);
+    expect(groups["route-royal"]).not.toBe(groups.roads);
+  });
+});
