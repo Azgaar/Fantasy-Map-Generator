@@ -8,10 +8,13 @@ import { MAX_HOURS_PER_DAY, type TransportDomain } from "../transports-generator
 import { generateStoryJourney } from "./journey-story";
 
 const COARSE_UNIT_THRESHOLD = 10;
+const MINUTES_PER_DAY = MAX_HOURS_PER_DAY * 60;
 const ON_ROAD_DISCOUNT = 0.5;
 const OFF_ROAD_PENALTY = 5;
 const FALLBACK_POOL_SIZE = 6;
 const OFF_ROAD_SPEED_FACTOR = 0.5;
+const BASELINE_BIOME_COST = 50;
+const HEIGHT_COST_THRESHOLD = 25;
 
 export interface PathfindingResult {
   points: JourneyPoint[];
@@ -117,60 +120,91 @@ class JourneysModule {
     return speed > 0 ? this.getSegmentDistance(seg) / speed : 0;
   }
 
+  /**
+   * Calendar hours a stretch of travel takes: every full travel day the transport sustains
+   * costs a whole 24h day (8 hours of walking fill a walker's day), the hours left over
+   * cost only themselves. A stay travels 24h a day, so waiting hours are calendar hours.
+   */
+  getElapsedHours(hours: number, hoursPerDay: number): number {
+    if (!Number.isFinite(hours) || hours <= 0) return 0;
+    // a corrupt rate must not inflate the day count, so fall back to the longest possible day
+    const rate = hoursPerDay > 0 ? hoursPerDay : MAX_HOURS_PER_DAY;
+    const days = Math.floor(hours / rate);
+    return days * MAX_HOURS_PER_DAY + (hours - days * rate);
+  }
+
+  /** Calendar hours the segment takes, counted at its own transport's travel day */
+  getSegmentElapsedHours(seg: JourneySegment): number {
+    return this.getElapsedHours(this.getSegmentTime(seg), this.getSegmentHoursPerDay(seg));
+  }
+
   getTotals(journey: Journey) {
     let totalDistance = 0;
     let totalHours = 0;
     let movingHours = 0;
-    let totalDays = 0;
+    let elapsedHours = 0;
+    let hiddenSegments = 0;
 
     for (const seg of journey.segments) {
+      // a hidden leg is off the map and out of the totals: an alternative route, a leg not taken yet
+      if (seg.visible === false) {
+        hiddenSegments++;
+        continue;
+      }
+
       const hours = this.getSegmentTime(seg);
       totalDistance += this.getSegmentDistance(seg);
       totalHours += hours;
-      totalDays += hours / this.getSegmentHoursPerDay(seg);
+      // each segment converts to calendar hours at its own travel day, so the sum stays exact
+      elapsedHours += this.getSegmentElapsedHours(seg);
       if (!this.isStaySegment(seg)) movingHours += hours;
     }
 
     // avgSpeed is km/h like every other stored speed, so the distance-unit ratio has to come back out
     const avgSpeed = movingHours > 0 ? totalDistance / movingHours / getDistanceUnitRatio() : 0;
-    // the rate that reproduces the per-transport day count; with nothing to divide, any rate formats "0m"
-    const hoursPerDay = totalDays > 0 ? totalHours / totalDays : MAX_HOURS_PER_DAY;
-    return { totalDistance, totalHours, avgSpeed, totalDays, hoursPerDay };
+    const totalDays = elapsedHours / MAX_HOURS_PER_DAY;
+    return { totalDistance, totalHours, avgSpeed, elapsedHours, totalDays, hiddenSegments };
   }
 
-  /** Readable duration, e.g. "2d 3h". Days are counted from `hoursPerDay` */
-  formatTravelTime(hours: number, hoursPerDay: number): string {
-    const { days, hours: restHours, minutes } = this.splitTravelTime(hours, hoursPerDay);
+  /** Readable calendar duration, e.g. "2d 3h", from the hours `getElapsedHours` returns */
+  formatTravelTime(elapsedHours: number): string {
+    const { days, hours, minutes } = this.splitTravelTime(elapsedHours);
 
     if (days >= COARSE_UNIT_THRESHOLD) return `${days}d`;
-    if (days) return restHours ? `${days}d ${restHours}h` : `${days}d`;
+    if (days) return hours ? `${days}d ${hours}h` : `${days}d`;
+    if (hours >= COARSE_UNIT_THRESHOLD) return `${hours}h`;
+    if (hours) return minutes ? `${hours}h ${minutes}m` : `${hours}h`;
+    return `${minutes}m`;
+  }
+
+  /**
+   * Hours spent moving or waiting, e.g. "733h" — no travel day applied, so it stays
+   * comparable to the hours typed into a segment. Never days: those are calendar time.
+   */
+  formatHours(hours: number): string {
+    const totalMinutes = Number.isFinite(hours) && hours > 0 ? Math.round(hours * 60) : 0;
+    const [restHours, minutes] = [Math.floor(totalMinutes / 60), totalMinutes % 60];
+
     if (restHours >= COARSE_UNIT_THRESHOLD) return `${restHours}h`;
     if (restHours) return minutes ? `${restHours}h ${minutes}m` : `${restHours}h`;
     return `${minutes}m`;
   }
 
-  /** Exact duration down to the minute, e.g. "52d 4h 9m" — for tooltips */
-  formatTravelTimeFull(hours: number, hoursPerDay: number): string {
-    const { days, hours: restHours, minutes } = this.splitTravelTime(hours, hoursPerDay);
+  /** Exact calendar duration down to the minute, e.g. "52d 4h 9m" — for tooltips */
+  formatTravelTimeFull(elapsedHours: number): string {
+    const { days, hours, minutes } = this.splitTravelTime(elapsedHours);
 
     const parts: string[] = [];
     if (days) parts.push(`${days}d`);
-    if (restHours) parts.push(`${restHours}h`);
+    if (hours) parts.push(`${hours}h`);
     if (minutes || !parts.length) parts.push(`${minutes}m`);
     return parts.join(" ");
   }
 
-  private splitTravelTime(hours: number, hoursPerDay: number): { days: number; hours: number; minutes: number } {
-    // a corrupt rate must not inflate the day count, so fall back to the longest possible day
-    const minutesPerDay = (hoursPerDay > 0 ? hoursPerDay : MAX_HOURS_PER_DAY) * 60;
-    const totalMinutes = Number.isFinite(hours) && hours > 0 ? Math.round(hours * 60) : 0;
-    let days = Math.floor(totalMinutes / minutesPerDay);
-    // a journey mixing transports has a fractional rate, so the remainder needs rounding to whole minutes
-    let rest = Math.round(totalMinutes - days * minutesPerDay);
-    if (rest >= Math.round(minutesPerDay)) {
-      days += 1;
-      rest = 0;
-    }
+  private splitTravelTime(elapsedHours: number): { days: number; hours: number; minutes: number } {
+    const totalMinutes = Number.isFinite(elapsedHours) && elapsedHours > 0 ? Math.round(elapsedHours * 60) : 0;
+    const days = Math.floor(totalMinutes / MINUTES_PER_DAY);
+    const rest = totalMinutes - days * MINUTES_PER_DAY;
     return { days, hours: Math.floor(rest / 60), minutes: rest % 60 };
   }
 
@@ -262,7 +296,6 @@ class JourneysModule {
   }
 
   private findLandPath(from: number, to: number, avoidRoads = false): PathfindingResult {
-    // different landmasses can never connect over land: skip the exhaustive A* flood
     if (isLand(from, pack) && isLand(to, pack) && pack.cells.f[from] !== pack.cells.f[to]) {
       return {
         points: [],
@@ -273,22 +306,16 @@ class JourneysModule {
     }
 
     if (!avoidRoads) {
-      // Try the exact road-network path first: it walks the underlying Route.points
-      // slices, so it follows the drawn road geometry rather than cell centres.
       const chain = this.findRouteChain(from, to, cellId => isLand(cellId, pack));
       if (chain) {
         const points = this.collectRoutePoints(chain);
-        // The chain is land-only, but a route's own geometry between two land cells
-        // can still dip into water — fall through to A* when it does.
         if (this.isValidPath(points, "land")) return this.toResult(points);
       }
     }
 
-    // On-road fallback: road cells get a discount so the path seeks roads out.
-    // Off-road: road cells get a penalty so the path routes around them.
     const pathCells = this.findPathAStar(from, to, (a, b) => {
       if (!isLand(b, pack) && b !== to && b !== from) return Infinity;
-      const cost = this.getDistance(this.getPoint(a), this.getPoint(b));
+      const cost = this.getDistance(this.getPoint(a), this.getPoint(b)) * this.getTerrainCost(b);
       if (!this.hasRoute(b)) return cost;
       return cost * (avoidRoads ? OFF_ROAD_PENALTY : ON_ROAD_DISCOUNT);
     });
@@ -298,7 +325,7 @@ class JourneysModule {
         points: [],
         distance: 0,
         errorCode: "no-land-path",
-        warning: "No land route found between these cells — they may be on different landmasses."
+        warning: "No land route found between these cells"
       };
     }
 
@@ -322,16 +349,7 @@ class JourneysModule {
     return this.toResult(Routes.getWaterPoints(pathCells) as JourneyPoint[]);
   }
 
-  /**
-   * A* shortest-path over the Voronoi cell graph.
-   *
-   * Two critical differences from the shared `findPath` in pathUtils:
-   *  1. Uses a Euclidean-distance heuristic so exploration fans toward the
-   *     target, producing visually straighter paths.
-   *  2. Checks the exit condition when a cell is **popped** from the priority
-   *     queue (not when discovered as a neighbour), guaranteeing the returned
-   *     path is truly optimal.
-   */
+  /** A* shortest-path over the Voronoi cell graph */
   private findPathAStar(
     start: number,
     end: number,
@@ -467,6 +485,14 @@ class JourneysModule {
 
   private getDistance(a: JourneyPoint, b: JourneyPoint): number {
     return Math.hypot(a[0] - b[0], a[1] - b[1]);
+  }
+
+  private getTerrainCost(cellId: number): number {
+    const { cells, biomes } = pack;
+    const biomeCost = biomes?.[cells.biome?.[cellId] ?? 0]?.cost ?? BASELINE_BIOME_COST;
+    const biomeModifier = Math.max(biomeCost / BASELINE_BIOME_COST, 1); // [1, 100] by default
+    const heightModifier = 1 + Math.max(cells.h[cellId] - HEIGHT_COST_THRESHOLD, 0) / HEIGHT_COST_THRESHOLD; // [1, 4]
+    return biomeModifier * heightModifier;
   }
 
   private hasRoute(cellId: number): boolean {

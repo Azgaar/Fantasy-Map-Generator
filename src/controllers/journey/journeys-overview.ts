@@ -16,7 +16,6 @@ import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { cellEndpointLabel, getCellPoint } from "@/generators/journeys/journey-places";
-import { MAX_HOURS_PER_DAY } from "@/generators/transports-generator";
 import { startJourneyTravel, stopJourneyTravel } from "@/renderers/journey-travel";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import type { Journey } from "@/types/Journey";
@@ -67,11 +66,11 @@ const columns: EditorColumn<Journey>[] = [
   },
   {
     key: "time",
-    label: "Time",
-    width: "5em",
-    tip: "Total travel time",
+    label: "Total time",
+    width: "5.6em",
+    tip: "Time from start to finish, travel days counted at each transport's travel hours",
     mobileHidden: true,
-    sortBy: j => Journeys.getTotals(j).totalHours
+    sortBy: j => Journeys.getTotals(j).elapsedHours
   },
   { key: "edit", width: "1.4em" },
   { key: "locate", width: "1.4em" },
@@ -121,7 +120,8 @@ function renderDialog(): void {
     <div id="journeysFooter" class="totalLine">
       <div data-tip="Journeys number" style="margin-left: 4px">Journeys:&nbsp;<span id="journeysFooterNumber">0</span></div>
       <div data-tip="Total distance" style="margin-left: 12px" data-col="distance">Distance:&nbsp;<span id="journeysFooterDistance">0</span></div>
-      <div data-tip="Total travel time" style="margin-left: 12px" data-col="time">Time:&nbsp;<span id="journeysFooterTime">0</span></div>
+      <div data-tip="Total time" style="margin-left: 12px" data-col="time">Total time:&nbsp;<span id="journeysFooterTime">0</span></div>
+      <div data-tip="Travel time" style="margin-left: 12px" data-col="time">Travel time:&nbsp;<span id="journeysFooterTravelTime">0</span></div>
     </div>
 
     <div id="journeysBottom" class="editorToolbar">
@@ -174,7 +174,10 @@ function renderJourneysPage(view: TableView<Journey>): void {
   let lines = "";
 
   for (const journey of view.rows) {
-    const { totalDistance, totalHours, avgSpeed, hoursPerDay } = Journeys.getTotals(journey);
+    const { totalDistance, totalHours, avgSpeed, elapsedHours, hiddenSegments } = Journeys.getTotals(journey);
+    const hiddenNote = hiddenSegments
+      ? `. ${hiddenSegments} hidden segment${hiddenSegments > 1 ? "s" : ""} left out`
+      : "";
     lines += /* html */ `<div class="states" data-id="${journey.i}">
       <div data-col="name" style="width: 93%; overflow: hidden">
         <fill-box class="journeyColor" fill="${journey.color}" size="0.8em" data-tip="Journey color. Click to change"></fill-box>
@@ -185,7 +188,7 @@ function renderJourneysPage(view: TableView<Journey>): void {
       ${renderEndpoint("to", getEnd(journey))}
       <div data-tip="Total distance" data-col="distance">${rn(totalDistance)} ${unit}</div>
       <div data-tip="Average speed, moving segments only" data-col="speed">${avgSpeed ? formatSpeed(avgSpeed) : "-"}</div>
-      <div data-tip="Total travel time: ${Journeys.formatTravelTimeFull(totalHours, hoursPerDay)}" data-col="time">${Journeys.formatTravelTime(totalHours, hoursPerDay)}</div>
+      <div data-tip="Total time: ${Journeys.formatTravelTimeFull(elapsedHours)}. Travel time: ${Journeys.formatHours(totalHours)}${hiddenNote}" data-col="time">${Journeys.formatTravelTime(elapsedHours)}</div>
       <div data-col="edit"><span class="journeyEdit pointer icon-pencil" data-tip="Edit journey"></span></div>
       <div data-col="locate"><span class="journeyZoom pointer icon-target" data-tip="Locate the journey"></span></div>
       <div data-col="visible"><span class="journeyVisible pointer ${journey.visible === false ? "icon-eye-off" : "icon-eye"}" data-tip="Toggle journey visibility on the map"></span></div>
@@ -199,13 +202,21 @@ function renderJourneysPage(view: TableView<Journey>): void {
   const sum = (values: number[]) => values.reduce((a, b) => a + b, 0);
   ensureEl("journeysFooterNumber").innerHTML = `${view.all.length} of ${pack.journeys.length}`;
   ensureEl("journeysFooterDistance").innerHTML = `${rn(sum(totals.map(t => t.totalDistance)))} ${unit}`;
-  const totalHours = sum(totals.map(t => t.totalHours));
-  // days are counted per transport, so the rate that reproduces them is what the total formats with
-  const totalDays = sum(totals.map(t => t.totalDays));
-  const footerHoursPerDay = totalDays > 0 ? totalHours / totalDays : MAX_HOURS_PER_DAY;
+  const hiddenSegments = sum(totals.map(t => t.hiddenSegments));
+  const hiddenNote = hiddenSegments
+    ? ` ${hiddenSegments} hidden segment${hiddenSegments > 1 ? "s" : ""} left out.`
+    : "";
+
+  // every journey is already in calendar hours, so the totals just add up
+  const elapsedHours = sum(totals.map(t => t.elapsedHours));
   const footerTime = ensureEl("journeysFooterTime");
-  footerTime.innerHTML = Journeys.formatTravelTime(totalHours, footerHoursPerDay);
-  footerTime.parentElement!.dataset.tip = `Total travel time: ${Journeys.formatTravelTimeFull(totalHours, footerHoursPerDay)}. Days are counted from each transport's travel hours`;
+  footerTime.innerHTML = Journeys.formatTravelTime(elapsedHours);
+  footerTime.parentElement!.dataset.tip = `Time from start to finish: ${Journeys.formatTravelTimeFull(elapsedHours)}. A day of travel fills a whole day, however many hours the transport sustains.${hiddenNote}`;
+
+  const travelHours = sum(totals.map(t => t.totalHours));
+  const footerTravelTime = ensureEl("journeysFooterTravelTime");
+  footerTravelTime.innerHTML = Journeys.formatHours(travelHours);
+  footerTravelTime.parentElement!.dataset.tip = `Hours spent moving or waiting: ${rn(travelHours, 1)}h, the sum of the segment times. Rest between travel days is not counted.${hiddenNote}`;
 
   body.querySelectorAll("div.states").forEach(el => void el.addEventListener("mouseenter", journeyHighlightOn));
   body.querySelectorAll("div.states").forEach(el => void el.addEventListener("mouseleave", stopJourneyTravel));
@@ -345,7 +356,7 @@ function triggerAllJourneysRemove(): void {
 
 function downloadJourneysData(): void {
   const unit = getDistanceUnit();
-  let data = `Id,Journey,Type,From,To,Segments,Distance(${unit}),AvgSpeed(${unit}/h),TravelHours,TravelDays\n`; // headers
+  let data = `Id,Journey,Type,From,To,Segments,Distance(${unit}),AvgSpeed(${unit}/h),TravelHours,TotalDays\n`; // headers
 
   for (const journey of journeysTable.view().all) {
     const { totalDistance, totalHours, avgSpeed, totalDays } = Journeys.getTotals(journey);
@@ -360,7 +371,7 @@ function downloadJourneysData(): void {
       rn(totalDistance, 2),
       convertSpeed(avgSpeed),
       rn(totalHours, 2),
-      rn(totalDays, 2) // days counted from each transport's travel hours
+      rn(totalDays, 2) // calendar days from start to finish, a full travel day counting as a whole day
     ];
     data += `${values.join(",")}\n`;
   }

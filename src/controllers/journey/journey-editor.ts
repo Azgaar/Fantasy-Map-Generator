@@ -147,8 +147,8 @@ function renderDialog(journey: Journey): void {
     <div id="journeyFooter" class="totalLine">
       <div data-tip="Total distance" data-col="distance">Distance:&nbsp;<span id="journeyTotalDistance">0</span></div>
       <div data-tip="Average speed, segments with non-zero speed only" style="margin-left: 12px" data-col="speed">Avg speed:&nbsp;<span id="journeyAvgSpeed">0</span></div>
-      <div data-tip="Total travel time at the configured travel hours per day" style="margin-left: 12px" data-col="time">Time:&nbsp;<span id="journeyTravelTime">0</span></div>
-
+      <div data-tip="Total time" style="margin-left: 12px" data-col="time">Total time:&nbsp;<span id="journeyTotalTime">0</span></div>
+      <div data-tip="Travel time" style="margin-left: 12px" data-col="time">Travel time:&nbsp;<span id="journeyTravelTime">0</span></div>
     </div>
 
     <div id="journeyBottom" class="editorToolbar">
@@ -292,8 +292,8 @@ function renderSegmentLine(journey: Journey, segment: JourneySegment): string {
 /** What the time column explains: the hours in the input, spelled out at the transport's travel day */
 function timeCellTip(segment: JourneySegment): string {
   const hoursPerDay = Journeys.getSegmentHoursPerDay(segment); // each transport sustains its own travel day
-  const full = Journeys.formatTravelTimeFull(Journeys.getSegmentTime(segment), hoursPerDay);
-  return `Travel time in hours, type to override. Equals to ${full} at ${hoursPerDay}h of travel per day`;
+  const full = Journeys.formatTravelTimeFull(Journeys.getSegmentElapsedHours(segment));
+  return `Travel time in hours, type to override. Takes ${full} at ${hoursPerDay}h of travel per day`;
 }
 
 /**
@@ -333,13 +333,22 @@ function renderEndpointCell(endpoint: "from" | "to", segment: JourneySegment): s
 
 function updateTotals(journey: Journey): void {
   const unit = getDistanceUnit();
-  const { totalDistance, totalHours, avgSpeed, hoursPerDay } = Journeys.getTotals(journey);
+  const { totalDistance, totalHours, avgSpeed, elapsedHours, hiddenSegments } = Journeys.getTotals(journey);
+  const hiddenNote = hiddenSegments
+    ? ` ${hiddenSegments} hidden segment${hiddenSegments > 1 ? "s" : ""} left out.`
+    : "";
 
   ensureEl("journeyTotalDistance").innerHTML = `${rn(totalDistance)} ${unit}`;
   ensureEl("journeyAvgSpeed").innerHTML = avgSpeed ? formatSpeed(avgSpeed) : "-";
+
+  // the two clocks the journey runs on: days on the calendar, hours actually spent on the road
+  const totalTime = ensureEl("journeyTotalTime");
+  totalTime.innerHTML = Journeys.formatTravelTime(elapsedHours);
+  totalTime.parentElement!.dataset.tip = `Time from start to finish: ${Journeys.formatTravelTimeFull(elapsedHours)}. A day of travel fills a whole day, however many hours the transport sustains.${hiddenNote}`;
+
   const travelTime = ensureEl("journeyTravelTime");
-  travelTime.innerHTML = Journeys.formatTravelTime(totalHours, hoursPerDay);
-  travelTime.parentElement!.dataset.tip = `Total travel time: ${Journeys.formatTravelTimeFull(totalHours, hoursPerDay)}. Days are counted from each transport's travel hours`;
+  travelTime.innerHTML = Journeys.formatHours(totalHours);
+  travelTime.parentElement!.dataset.tip = `Hours spent moving or waiting: ${rn(totalHours, 1)}h, the sum of the segment times. Rest between travel days is not counted.${hiddenNote}`;
 }
 
 function onNameInput(this: HTMLInputElement): void {

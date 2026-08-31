@@ -68,6 +68,31 @@ describe("journey metrics", () => {
     expect(Journeys.getSegmentHoursPerDay(makeSeg(10, 5, false, "Removed type"))).toBe(8); // unknown: domain fallback
   });
 
+  it("getTotals leaves hidden segments out of every total", () => {
+    const j: Journey = {
+      i: 0,
+      name: "j",
+      type: "Travel",
+      visible: true,
+      color: "#000",
+      segments: [makeSeg(24, 3), { ...makeSeg(48, 3), visible: false }]
+    };
+    const t = Journeys.getTotals(j);
+    expect(t.totalDistance).toBe(24); // the hidden leg's 48 are not there
+    expect(t.totalHours).toBe(8);
+    expect(t.elapsedHours).toBe(24); // one walking day
+    expect(t.avgSpeed).toBe(3);
+    expect(t.hiddenSegments).toBe(1);
+  });
+
+  it("getElapsedHours spends a whole day on every full travel day", () => {
+    expect(Journeys.getElapsedHours(25, 8)).toBe(73); // 3 travel days (72h of calendar) + 1 leftover hour
+    expect(Journeys.getElapsedHours(8, 8)).toBe(24); // a walker's day fills the calendar day
+    expect(Journeys.getElapsedHours(12, 24)).toBe(12); // waiting hours are calendar hours
+    expect(Journeys.getElapsedHours(0, 8)).toBe(0);
+    expect(Journeys.getElapsedHours(12, 0)).toBe(12); // a corrupt rate falls back to the longest day
+  });
+
   it("getTotals counts days per segment transport", () => {
     const j: Journey = {
       i: 0,
@@ -80,43 +105,59 @@ describe("journey metrics", () => {
     };
     const t = Journeys.getTotals(j);
     expect(t.totalHours).toBe(48);
+    expect(t.elapsedHours).toBe(96); // 3 walking days + 1 flying day of calendar time
     expect(t.totalDays).toBe(4);
-    expect(t.hoursPerDay).toBe(12); // the rate that reproduces 4 days from 48 hours
-    expect(Journeys.formatTravelTime(t.totalHours, t.hoursPerDay)).toBe("4d");
+    expect(Journeys.formatTravelTime(t.elapsedHours)).toBe("4d");
+  });
+
+  it("getTotals adds the calendar hours of each segment, never a blended rate", () => {
+    const j: Journey = {
+      i: 0,
+      name: "j",
+      type: "Travel",
+      visible: true,
+      color: "#000",
+      // a full walking day (24h of calendar) followed by a 12h wait
+      segments: [makeSeg(24, 3), { ...makeSeg(0, 0, false, "Stay"), duration: 12 }]
+    };
+    const t = Journeys.getTotals(j);
+    expect(t.totalHours).toBe(20);
+    expect(t.elapsedHours).toBe(36);
+    expect(Journeys.formatTravelTime(t.elapsedHours)).toBe("1d 12h");
   });
 
   it("formatTravelTime handles days/hours/minutes", () => {
-    expect(Journeys.formatTravelTime(0, 8)).toBe("0m");
-    expect(Journeys.formatTravelTime(0.5, 8)).toBe("30m");
-    expect(Journeys.formatTravelTime(1.5, 8)).toBe("1h 30m");
-    // 25h at 8h/day = 3d 1h
-    expect(Journeys.formatTravelTime(25, 8)).toBe("3d 1h");
+    expect(Journeys.formatTravelTime(0)).toBe("0m");
+    expect(Journeys.formatTravelTime(0.5)).toBe("30m");
+    expect(Journeys.formatTravelTime(1.5)).toBe("1h 30m");
+    // 25h on foot at 8h/day = 3 days and an hour
+    expect(Journeys.formatTravelTime(Journeys.getElapsedHours(25, 8))).toBe("3d 1h");
   });
 
   it("formatTravelTime drops the smaller unit once the larger dominates", () => {
-    expect(Journeys.formatTravelTime(2400, 8)).toBe("300d"); // 300 travel days at 8h/day
-    expect(Journeys.formatTravelTime(2404.15, 8)).toBe("300d"); // the odd hours are noise
-    expect(Journeys.formatTravelTime(75, 8)).toBe("9d 3h"); // under 10 days, hours still matter
-    expect(Journeys.formatTravelTime(11.5, 24)).toBe("11h"); // hours-only above the threshold
-    expect(Journeys.formatTravelTime(3.25, 24)).toBe("3h 15m"); // below it, minutes still show
+    expect(Journeys.formatTravelTime(7200)).toBe("300d"); // 300 days
+    expect(Journeys.formatTravelTime(7204.15)).toBe("300d"); // the odd hours are noise
+    expect(Journeys.formatTravelTime(219)).toBe("9d 3h"); // under 10 days, hours still matter
+    expect(Journeys.formatTravelTime(11.5)).toBe("11h"); // hours-only above the threshold
+    expect(Journeys.formatTravelTime(3.25)).toBe("3h 15m"); // below it, minutes still show
   });
 
-  it("formatTravelTime keeps whole minutes at a fractional (mixed-transport) rate", () => {
-    expect(Journeys.formatTravelTimeFull(77.248512, 12.5)).toBe("6d 2h 15m");
-    expect(Journeys.formatTravelTimeFull(10, 9.9)).toBe("1d 6m");
+  it("formatTravelTime keeps whole minutes at a fractional hour", () => {
+    expect(Journeys.formatTravelTimeFull(146.2521)).toBe("6d 2h 15m");
+    expect(Journeys.formatTravelTimeFull(24.1)).toBe("1d 6m");
   });
 
   it("formatTravelTimeFull keeps every unit for the tooltip", () => {
-    expect(Journeys.formatTravelTimeFull(2404.15, 8)).toBe("300d 4h 9m");
-    expect(Journeys.formatTravelTimeFull(0, 8)).toBe("0m");
-    expect(Journeys.formatTravelTimeFull(25, 24)).toBe("1d 1h");
+    expect(Journeys.formatTravelTimeFull(7204.15)).toBe("300d 4h 9m");
+    expect(Journeys.formatTravelTimeFull(0)).toBe("0m");
+    expect(Journeys.formatTravelTimeFull(25)).toBe("1d 1h");
   });
 
-  it("formatTravelTime respects a custom hoursPerDay", () => {
-    // 25h at 24h/day = 1d 1h (legacy behaviour)
-    expect(Journeys.formatTravelTime(25, 24)).toBe("1d 1h");
-    // 20h at 10h/day = 2d
-    expect(Journeys.formatTravelTime(20, 10)).toBe("2d");
+  it("a stay of half a day stays half a day", () => {
+    // the reason the elapsed conversion exists: 12h of waiting is 12h, not 1d 4h
+    expect(Journeys.formatTravelTime(Journeys.getElapsedHours(12, 24))).toBe("12h");
+    // while 12h of walking at 8h/day is a day and a half of calendar time
+    expect(Journeys.formatTravelTime(Journeys.getElapsedHours(12, 8))).toBe("1d 4h");
   });
 
   it("stay-domain segment contributes duration to totalHours, not distance/speed", () => {
@@ -283,5 +324,127 @@ describe("Journeys.isValidPath", () => {
 
   it("accepts paths too short to have a middle", () => {
     expect(Journeys.isValidPath([at(0), at(3)], "land")).toBe(true);
+  });
+});
+
+/** Minimal FlatQueue polyfill (correct, not optimised — tests only). */
+class TestFlatQueue {
+  private items: Array<{ id: number; value: number }> = [];
+  get length() {
+    return this.items.length;
+  }
+  push(id: number, value: number) {
+    this.items.push({ id, value });
+    this.items.sort((a, b) => a.value - b.value);
+  }
+  pop() {
+    return this.items.shift()?.id;
+  }
+}
+
+/**
+ * A 9x9 land grid, 10px apart, 4-way connected. Cell id = row * 9 + col.
+ * Everything is lowland grassland until a test paints harsher ground on it.
+ */
+const TERRAIN_GRID = 9;
+const TERRAIN_STEP = 10;
+const CELL_COUNT = TERRAIN_GRID * TERRAIN_GRID;
+const GRASSLAND = 4;
+const GLACIER = 11;
+const cellAt = (row: number, col: number) => row * TERRAIN_GRID + col;
+
+function makeTerrainPack() {
+  const c: number[][] = [];
+  const p: [number, number][] = [];
+  for (let i = 0; i < CELL_COUNT; i++) {
+    const [row, col] = [Math.floor(i / TERRAIN_GRID), i % TERRAIN_GRID];
+    p.push([col * TERRAIN_STEP, row * TERRAIN_STEP]);
+    const neibs: number[] = [];
+    if (row > 0) neibs.push(cellAt(row - 1, col));
+    if (row < TERRAIN_GRID - 1) neibs.push(cellAt(row + 1, col));
+    if (col > 0) neibs.push(cellAt(row, col - 1));
+    if (col < TERRAIN_GRID - 1) neibs.push(cellAt(row, col + 1));
+    c.push(neibs);
+  }
+
+  return {
+    cells: {
+      p,
+      c,
+      h: new Uint8Array(CELL_COUNT).fill(25), // lowland: no height penalty
+      biome: new Uint8Array(CELL_COUNT).fill(GRASSLAND),
+      f: new Uint8Array(CELL_COUNT).fill(1), // one landmass
+      routes: {} as Record<number, Record<number, number>>
+    },
+    // the default biome table, of which only `cost` matters here
+    biomes: Array.from({ length: 13 }, (_, i) => ({
+      i,
+      cost: [10, 200, 150, 60, 50, 70, 70, 80, 90, 200, 1000, 5000, 150][i]
+    })),
+    routes: [],
+    journeys: []
+  };
+}
+
+describe("land pathfinding respects terrain", () => {
+  let Journeys: any;
+
+  /** Straight west→east crossing of the middle row, with room to detour north or south */
+  const [START, END] = [cellAt(4, 0), cellAt(4, 8)];
+  const rowsOf = (points: any[]) => points.map(([, , cellId]) => Math.floor(cellId / TERRAIN_GRID));
+
+  beforeEach(async () => {
+    (globalThis as any).FlatQueue = TestFlatQueue;
+    (globalThis as any).distanceScale = 1;
+    (globalThis as any).pack = makeTerrainPack();
+    await import("../transports-generator");
+    (globalThis as any).options = { transports: (globalThis as any).Transports.getDefaults() };
+    await import("./journeys-generator");
+    Journeys = (globalThis as any).Journeys;
+  });
+
+  it("goes straight across uniform lowland", () => {
+    const { points } = Journeys.findPath(START, END, "land", { avoidRoads: true });
+    expect(points).toHaveLength(9);
+    expect(rowsOf(points).every(row => row === 4)).toBe(true);
+  });
+
+  it("rounds a glacier instead of ploughing through it", () => {
+    const { cells } = (globalThis as any).pack;
+    // a 3x3 ice field squarely astride the straight line
+    for (let row = 3; row <= 5; row++) for (let col = 3; col <= 5; col++) cells.biome[cellAt(row, col)] = GLACIER;
+
+    const { points } = Journeys.findPath(START, END, "land", { avoidRoads: true });
+    const crossed = points.map(([, , cellId]: any) => cellId);
+    expect(crossed.includes(START)).toBe(true);
+    expect(crossed.includes(END)).toBe(true);
+    expect(crossed.some((cellId: number) => cells.biome[cellId] === GLACIER)).toBe(false);
+  });
+
+  it("rounds a mountain range instead of climbing it", () => {
+    const { cells } = (globalThis as any).pack;
+    // a block of peaks squarely astride the straight line, open to the north and south
+    for (let row = 3; row <= 5; row++) for (let col = 3; col <= 5; col++) cells.h[cellAt(row, col)] = 100;
+
+    const { points } = Journeys.findPath(START, END, "land", { avoidRoads: true });
+    expect(points.every(([, , cellId]: any) => cells.h[cellId] < 100)).toBe(true);
+  });
+
+  it("still crosses a glacier when there is no way around it", () => {
+    const { cells } = (globalThis as any).pack;
+    // ice from edge to edge: expensive, but a polar crossing must stay plottable
+    for (let row = 0; row < TERRAIN_GRID; row++) cells.biome[cellAt(row, 4)] = GLACIER;
+
+    const { points, errorCode } = Journeys.findPath(START, END, "land", { avoidRoads: true });
+    expect(errorCode).toBeUndefined();
+    expect(points.some(([, , cellId]: any) => cells.biome[cellId] === GLACIER)).toBe(true);
+  });
+
+  it("applies terrain on-road too, not just off-road", () => {
+    const { cells } = (globalThis as any).pack;
+    for (let row = 3; row <= 5; row++) for (let col = 3; col <= 5; col++) cells.biome[cellAt(row, col)] = GLACIER;
+
+    const { points } = Journeys.findPath(START, END, "land", { avoidRoads: false });
+    expect(points.some(([, , cellId]: any) => cells.biome[cellId] === GLACIER)).toBe(false);
   });
 });
