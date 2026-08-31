@@ -192,6 +192,8 @@ function renderSegmentsPage(view: TableView<JourneySegment>): void {
   if (!journey) return;
 
   const body = ensureEl("segmentsBody");
+  // removed rows never fire mouseleave, so a hover-started travel animation would loop forever
+  stopJourneyTravel();
   body.querySelectorAll(":scope > .states").forEach(row => {
     row.remove();
   });
