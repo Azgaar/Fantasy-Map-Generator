@@ -285,3 +285,28 @@ describe("Journeys.isValidPath", () => {
     expect(Journeys.isValidPath([at(0), at(3)], "land")).toBe(true);
   });
 });
+
+describe("Journeys.getOrphanTransports", () => {
+  it("lists segment transports that no longer exist, once each", async () => {
+    globalThis.window = globalThis.window || ({} as any);
+    await import("./journeys-generator");
+    const Journeys = (globalThis as any).Journeys;
+
+    (globalThis as any).Transports = { all: [{ name: "Horse rider" }] };
+    (globalThis as any).pack = {
+      journeys: [
+        {
+          i: 0,
+          segments: [
+            { i: 0, transport: "Horse rider" },
+            { i: 1, transport: "Royal galleon" },
+            { i: 2, transport: "Royal galleon" }
+          ]
+        },
+        { i: 1, segments: [{ i: 0, transport: "Sky barge" }] }
+      ]
+    };
+
+    expect(Journeys.getOrphanTransports()).toEqual(["Royal galleon", "Sky barge"]);
+  });
+});

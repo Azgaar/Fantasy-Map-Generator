@@ -9,7 +9,7 @@ import { clearLegend } from "@/renderers/draw-legend";
 import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
 import { clearCache, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
-import { applyOption, ensureEl, last, link, minmax, parseError, rn, safeParseJSON } from "@/utils";
+import { applyOption, ensureEl, escapeHtml, last, link, minmax, parseError, rn, safeParseJSON } from "@/utils";
 
 async function quickLoad(): Promise<void> {
   const blob = await ldb.get("lastMap");
@@ -438,6 +438,16 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     Routes.sync();
     TradeAnimation.sync();
     Journeys.sync();
+    const orphanTransports = Journeys.getOrphanTransports();
+    if (orphanTransports.length) {
+      const names = orphanTransports.map(escapeHtml).join(", ");
+      tip(
+        `Journey transport types not found on this device: ${names}. Affected segments follow air-travel rules until the types are recreated in the Transports editor.`,
+        false,
+        "warn",
+        10000
+      );
+    }
 
     select("#scaleBar")
       .on("mousemove", () => tip("Click to open Units Editor"))

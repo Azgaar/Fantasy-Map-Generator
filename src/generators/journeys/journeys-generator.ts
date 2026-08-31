@@ -57,6 +57,18 @@ class JourneysModule {
     if (!pack.journeys) pack.journeys = [];
   }
 
+  /** Segment transports with no transport type behind them - they'd silently fall back to air rules */
+  getOrphanTransports(): string[] {
+    const known = new Set(Transports.all.map(transport => transport.name));
+    const orphans = new Set<string>();
+    for (const journey of pack.journeys ?? []) {
+      for (const segment of journey.segments) {
+        if (!known.has(segment.transport)) orphans.add(segment.transport);
+      }
+    }
+    return [...orphans];
+  }
+
   remove(journeyId: number): void {
     pack.journeys = pack.journeys.filter(journey => journey.i !== journeyId);
   }
