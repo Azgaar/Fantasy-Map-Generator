@@ -310,13 +310,22 @@ export class JourneyPathEditor {
     const [x, y, cellId] = clicked;
 
     const domain = Transports.getDomain(seg.transport);
-    const isEndpoint = !this.mode.points.length;
-    if (!Journeys.isValidPointAt(cellId, domain, isEndpoint)) {
+    const points = this.mode.points;
+
+    // a mid-path point valid only as an endpoint (e.g. a port) can never be continued from
+    const last = points.length > 1 ? points[points.length - 1] : undefined;
+    if (last && !Journeys.isValidPathPoint(last[2], domain)) {
+      warn("The path reached a terminal point — finish the drawing there, or undo it with a right-click.");
+      return;
+    }
+
+    // any click may turn out to be the last one, so cells valid only as endpoints are accepted too
+    if (!Journeys.isValidPathPoint(cellId, domain) && !Journeys.isValidEndpoint(cellId, domain)) {
       warn(`Can't add a point there — ${terrainRejection(cellId, domain, seg.transport)}`);
       return;
     }
 
-    this.mode.points.push([x, y, cellId]);
+    points.push([x, y, cellId]);
     this.drawOverlays();
   }
 
