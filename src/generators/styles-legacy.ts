@@ -441,8 +441,7 @@ function harvestBag(
 // at all from the preset the user has applied; a group with any styling of its own is left alone,
 // which is what keeps this harmless for the older maps that never lost theirs
 async function restoreStrippedLayerStyles(): Promise<void> {
-  const [, raw] = await (window as any).getStylePreset(localStorage.getItem("presetStyle") || "default");
-  const preset = isLegacyPreset(raw) ? raw : presetToLegacy(Styles.parse(raw));
+  const [, preset] = await (window as any).getStylePreset(localStorage.getItem("presetStyle") || "default");
 
   const isBareGroup = (group: Element, declared: Record<string, string> = {}): boolean => {
     const ignored = new Set(["id", "style", "data-layer", "data-group", ...Object.keys(declared)]);
@@ -552,53 +551,8 @@ export function presetFromLegacy(
   return Styles.parse(built);
 }
 
-// bag[legacyKey] = node.options[optionKey], the inverse of applyPresetBag's option overlay;
-// bools re-spell as 0/1 (matching every other bool-attribute writer in this codebase, not "true"/"false")
-function bagFromNode(node: any, route: PresetRoute): Record<string, string | number | null> {
-  const bag: Record<string, string | number | null> = route.ownAttrs === false ? {} : { ...(node.attrs ?? {}) };
-  for (const [legacyKey, optionKey] of Object.entries(route.options ?? {})) {
-    const value = node.options?.[optionKey];
-    bag[legacyKey] = route.bools?.includes(optionKey) ? Number(value) : value;
-  }
-  return bag;
-}
-
-// the inverse of presetFromLegacy: store shape -> legacy selector-keyed bags, reusing
-// PRESET_ROUTES/routeFor as the single source of truth for selectors and option renames
-export function presetToLegacy(source: Styles): Record<string, Record<string, string | number | null>> {
-  const legacy: Record<string, Record<string, string | number | null>> = {};
-
-  for (const [selector, route] of Object.entries(PRESET_ROUTES)) {
-    const node = getPath(source, route.path);
-    if (node) legacy[selector] = bagFromNode(node, route);
-  }
-
-  for (const [name, group] of Object.entries(source.labels.groups)) {
-    legacy[`#labels > #${name}`] = labelGroupToLegacy(group) as Record<string, string | number | null>;
-  }
-  for (const [name, group] of Object.entries(source.routes.groups)) {
-    if (DEFAULT_ROUTE_GROUPS.includes(name)) continue; // already emitted as #roads/#trails/#searoutes
-    legacy[`#routes > g#${name}`] = { ...group.attrs };
-  }
-  for (const [name, group] of Object.entries(source.burgIcons.burgIcons.groups)) {
-    legacy[`#burgIcons > g#${name}`] = burgGroupToLegacy(group, true) as Record<string, string | number | null>;
-  }
-  for (const [name, group] of Object.entries(source.burgIcons.anchors.groups)) {
-    legacy[`#anchors > g#${name}`] = burgGroupToLegacy(group, false) as Record<string, string | number | null>;
-  }
-  for (const name of ["stateEmblems", "provinceEmblems", "burgEmblems"] as const) {
-    const selector = `#emblems > #${name}`;
-    const route = routeFor(selector) as PresetRoute;
-    legacy[selector] = bagFromNode(getPath(source, route.path), route);
-  }
-
-  return legacy;
-}
-
 export function labelGroupFromLegacy(legacy: unknown): Styles["labels"]["groups"][string] {
   const bag = legacy as Record<string, unknown>;
-  // legacy builds rewrote label-group opacity on every zoom, so a saved 0 is the fade state
-  // at save-time, not a preference - the culled renderer would keep the group invisible forever
   const opacity = numOr(bag.opacity, 1);
   return {
     attrs: {
@@ -610,18 +564,22 @@ export function labelGroupFromLegacy(legacy: unknown): Styles["labels"]["groups"
       "stroke-dasharray": strOr(bag["stroke-dasharray"], null),
       "stroke-linecap": strOr(bag["stroke-linecap"], null),
       "letter-spacing": numOr(bag["letter-spacing"], 0),
-      // legacy wrote the BASE size under data-size (font-size held the live zoom-rescaled value);
-      // prefer data-size when present, matching what the style editor's size input reads
       "font-size": strOr(bag["data-size"], null) ?? strOr(bag["font-size"], "18%") ?? "18%",
       "font-family": strOr(bag["font-family"], "Almendra SC") ?? "Almendra SC",
-      style: strOr(bag.style, null),
+      style: labelStyleFromLegacy(bag),
       filter: strOr(bag.filter, null)
-    },
-    options: {
-      dx: toNumber(bag["data-dx"], 0),
-      dy: toNumber(bag["data-dy"], 0)
     }
   };
+}
+
+function labelStyleFromLegacy(bag: Record<string, unknown>): string | null {
+  const style = strOr(bag.style, null);
+  const dx = toNumber(bag["data-dx"], 0);
+  const dy = toNumber(bag["data-dy"], 0);
+  const declarations = style?.trim().replace(/;+$/, "") || "";
+  const transform = dx || dy ? `transform: translate(${dx}em, ${dy}em)` : "";
+  const cssText = [declarations, transform].filter(Boolean).join("; ");
+  return cssText ?? null;
 }
 
 // legacy wrote stored burg-group bags to the DOM verbatim with no per-key defaults; only
@@ -646,22 +604,6 @@ export function burgGroupFromLegacy(legacy: unknown): Styles["burgIcons"]["burgI
       icon: strOr(bag["data-icon"], null) ?? "#icon-circle"
     }
   };
-}
-
-function burgGroupToLegacy(
-  group: Styles["burgIcons"]["burgIcons"]["groups"][string],
-  withIcon = true
-): Record<string, unknown> {
-  const legacy: Record<string, unknown> = { ...group.attrs, "font-size": group.options.size };
-  if (withIcon) legacy["data-icon"] = group.options.icon;
-  return legacy;
-}
-
-function labelGroupToLegacy(group: Styles["labels"]["groups"][string]): Record<string, unknown> {
-  const legacy: Record<string, unknown> = { ...group.attrs };
-  if (group.options.dx) legacy["data-dx"] = group.options.dx;
-  if (group.options.dy) legacy["data-dy"] = group.options.dy;
-  return legacy;
 }
 
 function routeGroupFromLegacy(legacy: object): Styles["routes"]["groups"][string] {
@@ -719,7 +661,6 @@ globalThis.stylesLegacy = {
   labelGroupFromLegacy,
   burgGroupFromLegacy,
   presetFromLegacy,
-  presetToLegacy,
   isLegacyPreset,
   isStoreStyles,
   harvestAttributes,

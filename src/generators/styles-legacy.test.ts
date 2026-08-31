@@ -8,7 +8,6 @@ import {
   isStoreStyles,
   labelGroupFromLegacy,
   presetFromLegacy,
-  presetToLegacy,
   styleNodeFor
 } from "./styles-legacy";
 import fixture from "./styles-legacy-default.fixture.json";
@@ -186,32 +185,6 @@ test("all 12 shipped presets parse as the new format with zero warnings", () => 
 test("the shipped default preset is exactly the converted fixture", () => {
   const shipped = JSON.parse(fs.readFileSync(path.join(__dirname, "default-styles.json"), "utf8"));
   expect(presetFromLegacy(fixture as any)).toEqual(shipped);
-});
-
-test("R8: presetToLegacy round-trips every fixture key/value (superset is fine)", () => {
-  const roundTripped = presetToLegacy(presetFromLegacy(fixture as any));
-  for (const [selector, bag] of Object.entries(fixture as Record<string, Record<string, unknown>>)) {
-    for (const [key, value] of Object.entries(bag)) {
-      if (selector === "#provs" && key === "data-size") continue; // R7: dead cargo, dropped on the way in
-      // background-color never rendered as an svg attribute; it left the schema for css
-      if (selector === "#map" && key === "background-color") continue;
-      const expected =
-        value === "null"
-          ? null
-          : selector !== "#provs" && key === "stroke-dasharray" && typeof value === "number"
-            ? String(value)
-            : value;
-      expect(roundTripped[selector]?.[key], `${selector} ${key}`).toEqual(expected);
-    }
-  }
-});
-
-test("R8: the heal-consumed #terrs > #landHeights bag carries no keys beyond the fixture's", () => {
-  const roundTripped = presetToLegacy(presetFromLegacy(fixture as any));
-  const selector = "#terrs > #landHeights";
-  const fixtureKeys = Object.keys((fixture as Record<string, Record<string, unknown>>)[selector]);
-  expect(Object.keys(roundTripped[selector])).toEqual(expect.arrayContaining(fixtureKeys));
-  expect(Object.keys(roundTripped[selector])).toHaveLength(fixtureKeys.length);
 });
 
 test("save.ts's master-compat shim: a top-level anchors:{} still parses clean", () => {

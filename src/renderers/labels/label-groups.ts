@@ -26,11 +26,12 @@ export function renderLabelGroup(labels: SVGGElement, groupOptions: LabelGroup):
 
 export function writeGroupStyle(group: SVGGElement, groupStyle: LabelGroupStyle): void {
   for (const [attribute, value] of Object.entries(groupStyle.attrs)) {
-    if (value !== null) group.setAttribute(attribute, String(value));
+    if (value !== null) {
+      group.setAttribute(attribute, String(value));
+    } else {
+      group.removeAttribute(attribute);
+    }
   }
-
-  const { dx, dy } = groupStyle.options;
-  group.style.transform = dx || dy ? `translate(${dx}em, ${dy}em)` : "";
 }
 
 const BASE_ATTRS: LabelGroupStyle["attrs"] = {
@@ -64,7 +65,6 @@ export function getGroupStyle(group: { name: string; type: LabelType }): LabelGr
   const fontSize = FALLBACK_FONT_SIZES[group.type];
   if (!fontSize) ERROR && console.error(`No fallback style for label group ${group.name} of type ${group.type}`);
   return {
-    attrs: { ...BASE_ATTRS, "font-size": fontSize ?? BASE_ATTRS["font-size"] },
-    options: { dx: 0, dy: 0 }
+    attrs: { ...BASE_ATTRS, "font-size": fontSize ?? BASE_ATTRS["font-size"] }
   };
 }

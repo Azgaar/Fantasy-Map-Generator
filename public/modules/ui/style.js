@@ -283,8 +283,9 @@ function selectStyleElement() {
     styleFontSize.value = parseFloat(attrs["font-size"]) || 18;
 
     styleFontShift.style.display = "block";
-    styleFontShiftX.value = opts.dx || 0;
-    styleFontShiftY.value = opts.dy || 0;
+    const { dx, dy } = getLabelShift(attrs.style);
+    styleFontShiftX.value = dx;
+    styleFontShiftY.value = dy;
   }
 
   if (styleElement === "burgIcons") {
@@ -471,6 +472,10 @@ function updateGroupOptions(styleElement, layerEl) {
 }
 
 const getTextShadow = style => style?.match(/(?:^|;)\s*text-shadow\s*:\s*([^;]+)/)?.[1].trim() || "";
+const getLabelShift = style => {
+  const match = style?.match(/(?:^|;)\s*transform\s*:\s*translate\(\s*(-?[\d.]+)em\s*,\s*(-?[\d.]+)em\s*\)/);
+  return match ? { dx: +match[1], dy: +match[2] } : { dx: 0, dy: 0 };
+};
 
 function updateVignetteInputs() {
   const { x, y, width, height, rx, ry, filter } = styles.vignette.options;
@@ -998,9 +1003,13 @@ function changeFontSize(el, size) {
 function applyLabelShift(axis, value) {
   const groupStyle = styles.labels.groups[styleGroupSelect.value];
   if (!groupStyle) return;
-  groupStyle.options[axis] = +value || 0;
-  const { dx, dy } = groupStyle.options;
-  getEl().style("transform", dx || dy ? `translate(${dx}em, ${dy}em)` : null);
+  const current = getLabelShift(groupStyle.attrs.style);
+  current[axis] = +value || 0;
+  const style = document.createElement("span").style;
+  style.cssText = groupStyle.attrs.style || "";
+  style.transform = current.dx || current.dy ? `translate(${current.dx}em, ${current.dy}em)` : "";
+  groupStyle.attrs.style = style.cssText || null;
+  getEl().attr("style", groupStyle.attrs.style);
 }
 
 styleFontShiftX.addEventListener("input", e => applyLabelShift("dx", e.target.value));

@@ -11,12 +11,36 @@ declare const regeneratePrompt: (config?: { seed?: string }) => void;
 // immediate effect, (2) the typed store value, (3) survival across invokeActiveZooming() at a
 // changed zoom, (4) the retired attribute is gone from the element.
 
-const waitForMap = (page: Page) =>
-  page.waitForFunction(() => (window as any).mapId !== undefined, { timeout: 60000 });
+const waitForMap = (page: Page) => page.waitForFunction(() => (window as any).mapId !== undefined, { timeout: 60000 });
 
 const rn = (v: number, d = 0): number => Math.round(v * 10 ** d) / 10 ** d;
 
-async function openStyleElement(page: Page, element: "markers" | "regions" | "coordinates" | "ruler" | "legend" | "emblems" | "goodsIcons" | "goodsBurgs" | "markets" | "terrs" | "armies" | "gridOverlay" | "texture" | "ocean" | "scaleBar" | "labels" | "lakes" | "rivers" | "compass" | "burgIcons" | "anchors" | "vignette"): Promise<void> {
+async function openStyleElement(
+  page: Page,
+  element:
+    | "markers"
+    | "regions"
+    | "coordinates"
+    | "ruler"
+    | "legend"
+    | "emblems"
+    | "goodsIcons"
+    | "goodsBurgs"
+    | "markets"
+    | "terrs"
+    | "armies"
+    | "gridOverlay"
+    | "texture"
+    | "ocean"
+    | "scaleBar"
+    | "labels"
+    | "lakes"
+    | "rivers"
+    | "compass"
+    | "burgIcons"
+    | "anchors"
+    | "vignette"
+): Promise<void> {
   await page.evaluate(() => (window as any).showOptions());
   await page.locator("#styleTab").click();
   await page.locator("#styleElementSelect").selectOption(element);
@@ -46,8 +70,19 @@ test.describe("style editor events drive the store", () => {
       pack.markers = pack.markers || [];
       const i = pack.markers.length;
       pack.markers.push({
-        i, type: "custom", icon: "♨", x: 200, y: 200,
-        dx: 50, dy: 50, px: 12, size: 30, pin: "bubble", fill: "#fff", stroke: "#000", cell: 0
+        i,
+        type: "custom",
+        icon: "♨",
+        x: 200,
+        y: 200,
+        dx: 50,
+        dy: 50,
+        px: 12,
+        size: 30,
+        pin: "bubble",
+        fill: "#fff",
+        stroke: "#000",
+        cell: 0
       });
       (window as any).Layers.show("markers");
       return i;
@@ -334,10 +369,7 @@ test.describe("style editor events drive the store", () => {
     const stored = await page.evaluate(() => (window as any).styles.grid.options);
     expect(stored).toEqual({ type: "pointyHex", scale: 2, dx: 10, dy: 5 });
 
-    await expect(page.locator("#pattern_pointyHex")).toHaveAttribute(
-      "patternTransform",
-      "scale(2) translate(10 5)"
-    );
+    await expect(page.locator("#pattern_pointyHex")).toHaveAttribute("patternTransform", "scale(2) translate(10 5)");
 
     for (const attr of ["type", "scale", "dx", "dy"]) {
       expect(await page.locator("#gridOverlay").getAttribute(attr), attr).toBeNull();
@@ -488,11 +520,8 @@ test.describe("style editor events drive the store", () => {
     await page.locator("#styleFontShiftY").fill("-0.5");
     await page.locator("#styleFontShiftY").dispatchEvent("input");
 
-    const stored = await page.evaluate(
-      g => (window as any).styles.labels.groups[g].options,
-      group
-    );
-    expect(stored).toEqual({ dx: 1.5, dy: -0.5 });
+    const stored = await page.evaluate(g => (window as any).styles.labels.groups[g].attrs.style, group);
+    expect(stored).toContain("transform: translate(1.5em, -0.5em)");
 
     const el = page.locator(`#labels > [data-group="${group}"]`);
     expect(await el.evaluate(node => (node as SVGElement).style.transform)).toBe("translate(1.5em, -0.5em)");
@@ -531,7 +560,10 @@ test.describe("style editor events drive the store", () => {
     expect(typeof stored.riversOpacity).toBe("number");
 
     // the DOM presentation is written identically
-    await expect(page.locator('#lakes [data-group="freshwater"], #freshwater').first()).toHaveAttribute("fill", "#123456");
+    await expect(page.locator('#lakes [data-group="freshwater"], #freshwater').first()).toHaveAttribute(
+      "fill",
+      "#123456"
+    );
     await expect(page.locator("#rivers")).toHaveAttribute("opacity", "0.4");
   });
 
@@ -632,9 +664,7 @@ test.describe("style editor events drive the store", () => {
   test("a new map resets migrated group registries to saved-or-default groups", async ({ page }) => {
     // simulate what loading an old map's migration leaves behind in the session registries
     await page.evaluate(() => {
-      options.burgs.groups = [
-        { name: "cities", isDefault: true, active: true, features: {}, preview: "" }
-      ];
+      options.burgs.groups = [{ name: "cities", isDefault: true, active: true, features: {}, preview: "" }];
       options.labels.groups = [{ name: "cities", type: "burg", zoom: { min: 1, max: 25 } }];
     });
 

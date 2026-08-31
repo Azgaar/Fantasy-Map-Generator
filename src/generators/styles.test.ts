@@ -24,7 +24,7 @@ describe("parseStyles", () => {
 
   test("an invalid layer falls back to the default with one warning; the rest survive", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const doc = structuredClone(Styles.defaults);
+    const doc = structuredClone(Styles.defaults) as any;
     doc.rivers.attrs.fill = "#123456";
     (doc as Record<string, unknown>).markers = { attrs: { opacity: "not a number" } };
     const parsed = Styles.parse(doc);
@@ -43,7 +43,7 @@ describe("parseStyles", () => {
   });
 
   test("null survives — it means the attribute is not set", () => {
-    const doc = structuredClone(Styles.defaults);
+    const doc = structuredClone(Styles.defaults) as any;
     doc.rivers.attrs.filter = null;
     expect(Styles.parse(doc).rivers.attrs.filter).toBeNull();
   });

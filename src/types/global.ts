@@ -92,7 +92,7 @@ declare global {
 
   var notes: any[]; // TODO: correct type
   var styles: import("@/generators/styles-schema").Styles;
-  var Styles: (typeof import("@/generators/styles"))["Styles"];
+  var Styles: typeof import("@/generators/styles")["Styles"];
   var stylesLegacy: typeof import("@/generators/styles-legacy");
 
   // IO / loading helpers defined in classic public/ scripts

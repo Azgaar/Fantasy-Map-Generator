@@ -482,12 +482,8 @@
           "letter-spacing": 0,
           "font-size": "6%",
           "font-family": "UnifrakturMaguntia",
-          "style": "text-shadow: white 0px 0px 4px",
+          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, 0.85em)",
           "filter": null
-        },
-        "options": {
-          "dx": 0,
-          "dy": 0.85
         }
       },
       "city": {
@@ -502,12 +498,8 @@
           "letter-spacing": 0,
           "font-size": "5%",
           "font-family": "UnifrakturMaguntia",
-          "style": "text-shadow: white 0px 0px 4px",
+          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, 0.85em)",
           "filter": null
-        },
-        "options": {
-          "dx": 0,
-          "dy": 0.85
         }
       },
       "fort": {
@@ -522,12 +514,8 @@
           "letter-spacing": 0,
           "font-size": "3%",
           "font-family": "UnifrakturMaguntia",
-          "style": "text-shadow: white 0px 0px 4px",
+          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, 0.85em)",
           "filter": null
-        },
-        "options": {
-          "dx": 0,
-          "dy": 0.85
         }
       },
       "monastery": {
@@ -542,12 +530,8 @@
           "letter-spacing": 0,
           "font-size": "2%",
           "font-family": "UnifrakturMaguntia",
-          "style": "text-shadow: white 0px 0px 4px",
+          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, 0.85em)",
           "filter": null
-        },
-        "options": {
-          "dx": 0,
-          "dy": 0.85
         }
       },
       "caravanserai": {
@@ -562,12 +546,8 @@
           "letter-spacing": 0,
           "font-size": "2%",
           "font-family": "UnifrakturMaguntia",
-          "style": "text-shadow: white 0px 0px 4px",
+          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, 0.85em)",
           "filter": null
-        },
-        "options": {
-          "dx": 0,
-          "dy": 0.85
         }
       },
       "trading_post": {
@@ -582,12 +562,8 @@
           "letter-spacing": 0,
           "font-size": "2%",
           "font-family": "UnifrakturMaguntia",
-          "style": "text-shadow: white 0px 0px 4px",
+          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, 0.85em)",
           "filter": null
-        },
-        "options": {
-          "dx": 0,
-          "dy": 0.85
         }
       },
       "village": {
@@ -602,12 +578,8 @@
           "letter-spacing": 0,
           "font-size": "3%",
           "font-family": "UnifrakturMaguntia",
-          "style": "text-shadow: white 0px 0px 4px",
+          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, 0.85em)",
           "filter": null
-        },
-        "options": {
-          "dx": 0,
-          "dy": 0.85
         }
       },
       "hamlet": {
@@ -622,12 +594,8 @@
           "letter-spacing": 0,
           "font-size": "2%",
           "font-family": "UnifrakturMaguntia",
-          "style": "text-shadow: white 0px 0px 4px",
+          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, 0.85em)",
           "filter": null
-        },
-        "options": {
-          "dx": 0,
-          "dy": 0.85
         }
       },
       "town": {
@@ -642,12 +610,8 @@
           "letter-spacing": 0,
           "font-size": "3%",
           "font-family": "UnifrakturMaguntia",
-          "style": "text-shadow: white 0px 0px 4px",
+          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, 0.85em)",
           "filter": null
-        },
-        "options": {
-          "dx": 0,
-          "dy": 0.85
         }
       },
       "state": {
@@ -662,12 +626,8 @@
           "letter-spacing": 0,
           "font-size": "22%",
           "font-family": "Great Vibes",
-          "style": "text-shadow: white 0px 0px 4px",
+          "style": "text-shadow: white 0px 0px 4px;",
           "filter": "url(#filter-sepia)"
-        },
-        "options": {
-          "dx": 0,
-          "dy": 0
         }
       },
       "province": {
@@ -682,12 +642,8 @@
           "letter-spacing": 0,
           "font-size": "6%",
           "font-family": "Great Vibes",
-          "style": "text-shadow: white 0px 0px 4px",
+          "style": "text-shadow: white 0px 0px 4px;",
           "filter": "url(#filter-sepia)"
-        },
-        "options": {
-          "dx": 0,
-          "dy": 0
         }
       },
       "route": {
@@ -702,12 +658,8 @@
           "letter-spacing": 0,
           "font-size": "2%",
           "font-family": "Great Vibes",
-          "style": "text-shadow: white 0px 0px 4px",
+          "style": "text-shadow: white 0px 0px 4px;",
           "filter": "url(#filter-sepia)"
-        },
-        "options": {
-          "dx": 0,
-          "dy": 0
         }
       },
       "river": {
@@ -722,12 +674,8 @@
           "letter-spacing": 0,
           "font-size": "2%",
           "font-family": "Great Vibes",
-          "style": "text-shadow: white 0px 0px 4px",
+          "style": "text-shadow: white 0px 0px 4px;",
           "filter": "url(#filter-sepia)"
-        },
-        "options": {
-          "dx": 0,
-          "dy": 0
         }
       },
       "added": {
@@ -742,12 +690,8 @@
           "letter-spacing": 0,
           "font-size": "18%",
           "font-family": "Times New Roman",
-          "style": "text-shadow: white 0px 0px 4px",
+          "style": "text-shadow: white 0px 0px 4px;",
           "filter": "url(#filter-sepia)"
-        },
-        "options": {
-          "dx": 0,
-          "dy": 0
         }
       }
     }

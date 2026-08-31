@@ -424,10 +424,8 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       if (goodIconsDefs) goodIconsDefs.insertAdjacentHTML("beforeend", data[45]);
     }
 
-    console.log(data[48]);
     const { resolveVersionConflicts } = await import("./auto-update"); // TODO: don't load if not required
     await resolveVersionConflicts(mapVersion!, data);
-    console.log(data[48]);
 
     const styleRecord = data[48] ? safeParseJSON(data[48]) : undefined; // data[48] should be already migrated by auto-update
     Styles.set(Styles.parse(styleRecord));

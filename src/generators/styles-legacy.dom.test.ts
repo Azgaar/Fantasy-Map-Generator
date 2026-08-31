@@ -240,20 +240,20 @@ test("save sync lets an old map's markets, goods-circle, texture and ocean-outli
   expect(styles.ocean.oceanLayers.options.outline).toBe("-6");
 });
 
-test("save sync keeps store scaleBar and label-shift options when their attrs are absent", () => {
+test("save sync keeps store scaleBar and label-shift styles when their attrs are absent", () => {
   document.body.innerHTML = `<svg id="map"><g id="scaleBar" font-size="10"><rect id="scaleBarBack" data-group="back" fill="#ffffff"></rect></g>
     <g id="labels"><g data-group="capital" font-size="6%" font-family="Almendra SC"></g></g></svg>`;
   styles.scaleBar.options.x = 50;
   styles.scaleBar.options.label = "here";
   styles.scaleBar.back.options.top = 12;
-  styles.labels.groups.capital.options.dx = 1.5;
+  styles.labels.groups.capital.attrs.style = "transform: translate(1.5em, 0em)";
   harvestStylesFromSvg();
   expect(styles.scaleBar.options.x).toBe(50);
   expect(styles.scaleBar.options.label).toBe("here");
   expect(styles.scaleBar.back.options.top).toBe(12);
   // labels are store-authoritative on save (step 4): the missing attr changes nothing
-  expect(styles.labels.groups.capital.options.dx).toBe(1.5);
-  styles.labels.groups.capital.options.dx = 0;
+  expect(styles.labels.groups.capital.attrs.style).toBe("transform: translate(1.5em, 0em)");
+  styles.labels.groups.capital.attrs.style = null;
 });
 
 test("save sync lets an old map's scaleBar and label-shift attrs win", () => {
@@ -264,7 +264,7 @@ test("save sync lets an old map's scaleBar and label-shift attrs win", () => {
   expect(styles.scaleBar.options).toEqual({ barSize: 2, x: 40, y: 41, label: "old" });
   expect(styles.scaleBar.back.options).toEqual({ top: 3, right: 4, bottom: 5, left: 6 });
   // the record-less LOAD path still harvests the label shift off an old map's attrs
-  expect(stylesFromMap(document).labels.groups.capital.options).toEqual({ dx: 0.7, dy: -0.2 });
+  expect(stylesFromMap(document).labels.groups.capital.attrs.style).toBe("transform: translate(0.7em, -0.2em)");
 });
 
 test("save sync lets an old map's coordinates data-size win over the store", () => {

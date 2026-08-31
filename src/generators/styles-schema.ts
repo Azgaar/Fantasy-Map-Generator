@@ -16,7 +16,7 @@ const transform = z.string().nullable();
 const percentage = z.string().regex(/^-?\d+(\.\d+)?%$/);
 // font sizes carry legacy dialects ("6%", "12px", "18"), so no format validator
 const fontSize = z.string();
-const textShadowStyle = z.string().nullable();
+const styleAttr = z.string().nullable(); // CSSStyleDeclaration.cssText: textShadow and transform
 
 const strokeAttrs = {
   stroke: color,
@@ -165,10 +165,9 @@ export const stylesSchema = z.strictObject({
           "letter-spacing": letterSpacing,
           "font-size": fontSize,
           "font-family": fontFamily,
-          style: textShadowStyle,
+          style: styleAttr,
           filter
-        }),
-        options: z.strictObject({ dx: z.number(), dy: z.number() })
+        })
       })
     )
   }),
