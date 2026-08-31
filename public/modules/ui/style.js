@@ -901,11 +901,10 @@ function changeFont() {
 }
 
 styleShadowInput.addEventListener("input", function () {
-  // the group's transform is derived from the dx/dy options at draw time, so the stored style
-  // holds the shadow alone - it is the only inline property the editor owns
+  // the label shift transform lives in the same inline style, so merge instead of replacing
   const groupStyle = styles.labels.groups[styleGroupSelect.value];
   const shadow = this.value.trim();
-  if (groupStyle) groupStyle.attrs.style = shadow ? `text-shadow: ${shadow}` : null;
+  if (groupStyle) groupStyle.attrs.style = setInlineStyleProperty(groupStyle.attrs.style, "text-shadow", shadow);
   getEl().style("text-shadow", shadow || null);
 });
 
@@ -1005,10 +1004,8 @@ function applyLabelShift(axis, value) {
   if (!groupStyle) return;
   const current = getLabelShift(groupStyle.attrs.style);
   current[axis] = +value || 0;
-  const style = document.createElement("span").style;
-  style.cssText = groupStyle.attrs.style || "";
-  style.transform = current.dx || current.dy ? `translate(${current.dx}em, ${current.dy}em)` : "";
-  groupStyle.attrs.style = style.cssText || null;
+  const transform = current.dx || current.dy ? `translate(${current.dx}em, ${current.dy}em)` : "";
+  groupStyle.attrs.style = setInlineStyleProperty(groupStyle.attrs.style, "transform", transform);
   getEl().attr("style", groupStyle.attrs.style);
 }
 

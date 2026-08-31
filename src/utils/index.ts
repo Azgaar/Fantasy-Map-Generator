@@ -37,6 +37,7 @@ import {
   round,
   safeParseJSON,
   sanitizeId,
+  setInlineStyleProperty,
   splitInTwo,
   toCsvField
 } from "./stringUtils";
@@ -93,6 +94,7 @@ window.getVertexPath = cellsArray => getVertexPath(cellsArray, (window as any).p
 window.round = round;
 window.capitalize = capitalize;
 window.parseTransform = parseTransform;
+window.setInlineStyleProperty = setInlineStyleProperty;
 
 JSON.isValid = isValidJSON;
 JSON.safeParse = safeParseJSON;
@@ -217,6 +219,7 @@ export {
   SEA_LEVEL,
   safeParseJSON,
   sanitizeId,
+  setInlineStyleProperty,
   si,
   speak,
   splitInTwo,

@@ -35,6 +35,22 @@ export const escapeHtml = (inputString: string): string =>
     .replace(/'/g, "&#39;");
 
 /**
+ * Set or remove one property in an inline style string, keeping the other declarations
+ * @param {string|null} style - The current inline style, null when not set
+ * @param {string} property - The css property name, lowercase
+ * @param {string} value - The new value; an empty string removes the property
+ * @returns {string|null} - The merged style, null when no declarations remain
+ */
+export const setInlineStyleProperty = (style: string | null, property: string, value: string): string | null => {
+  const declarations = (style || "")
+    .split(";")
+    .map(declaration => declaration.trim())
+    .filter(declaration => declaration && declaration.split(":")[0].trim().toLowerCase() !== property);
+  if (value) declarations.push(`${property}: ${value}`);
+  return declarations.join("; ") || null;
+};
+
+/**
  * Quote a value for one CSV field, doubling any embedded quotes per RFC 4180
  * @param {string|number} value - The value to quote
  * @returns {string} - The quoted field
@@ -146,5 +162,6 @@ declare global {
     round: typeof round;
     capitalize: typeof capitalize;
     parseTransform: typeof parseTransform;
+    setInlineStyleProperty: typeof setInlineStyleProperty;
   }
 }
