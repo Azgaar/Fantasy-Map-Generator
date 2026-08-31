@@ -82,4 +82,33 @@ describe("per-attribute repair", () => {
     const parsed = Styles.parse({ ...Styles.defaults, provinces: "not a layer" });
     expect(parsed.provinces).toEqual(Styles.defaults.provinces);
   });
+
+  test("an invalid value inside a custom group repairs alone — the group and its layer survive", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const doc = structuredClone(Styles.defaults) as any;
+    doc.routes.groups.royal_roads = structuredClone(doc.routes.groups.roads);
+    doc.routes.groups.royal_roads.attrs.stroke = "#8b0000";
+    doc.routes.groups.royal_roads.attrs["stroke-width"] = "2px"; // invalid: schema wants a number
+    doc.routes.groups.roads.attrs.opacity = 0.55;
+
+    const parsed = Styles.parse(doc);
+    expect(parsed.routes.groups.roads.attrs.opacity).toBe(0.55);
+    expect(parsed.routes.groups.royal_roads.attrs.stroke).toBe("#8b0000");
+    expect(parsed.routes.groups.royal_roads.attrs["stroke-width"]).toBe(
+      Styles.defaults.routes.groups.roads.attrs["stroke-width"]
+    );
+    warn.mockRestore();
+  });
+
+  test("an unrepairable custom group is rebuilt from a stock group without resetting the layer", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const doc = structuredClone(Styles.defaults) as any;
+    doc.routes.groups.royal_roads = "not a group";
+    doc.routes.groups.roads.attrs.opacity = 0.55;
+
+    const parsed = Styles.parse(doc);
+    expect(parsed.routes.groups.roads.attrs.opacity).toBe(0.55);
+    expect(parsed.routes.groups.royal_roads).toEqual(Object.values(Styles.defaults.routes.groups)[0]);
+    warn.mockRestore();
+  });
 });

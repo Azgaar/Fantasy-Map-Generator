@@ -42,17 +42,27 @@ function replaceInvalidValues(input: unknown, fallback: unknown, error: z.ZodErr
 
     let target: any = repaired;
     let source: any = fallback;
+    let parentKey: PropertyKey | undefined;
     for (const key of path.slice(0, -1)) {
       target = target?.[key];
-      source = source?.[key];
+      source = sourceValueFor(source, key, parentKey);
+      parentKey = key;
     }
 
     const key = path[path.length - 1];
     if (target === undefined || target === null || source === undefined || source === null) return undefined;
-    if (!(key in source)) return undefined;
-    target[key] = structuredClone(source[key]);
+    const sourceValue = sourceValueFor(source, key, parentKey);
+    if (sourceValue === undefined) return undefined;
+    target[key] = structuredClone(sourceValue);
   }
   return repaired;
+}
+
+// custom group names don't exist in the defaults, so any stock group of the same record stands in as template
+function sourceValueFor(source: any, key: PropertyKey, parentKey: PropertyKey | undefined): unknown {
+  const value = source?.[key];
+  if (value !== undefined || parentKey !== "groups") return value;
+  return Object.values(source)[0];
 }
 
 function set(data: StylesData): void {
