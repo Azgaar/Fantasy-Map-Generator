@@ -284,12 +284,6 @@ function getSelectedId(): number {
   return selectedId ?? +selected!.attr("data-id");
 }
 
-/** The rendered node for the edited burg, or null when nothing was materialized for it. */
-function selectedNode(): Element | null {
-  const node = selected?.node() as Element | undefined;
-  return node ?? null;
-}
-
 function updateGroupsList(): void {
   const groupSelect = ensureEl<HTMLSelectElement>("burgGroup");
   groupSelect.options.length = 0; // remove all options
@@ -515,11 +509,11 @@ function hideStyleSection(): void {
   ensureEl("burgStyleSection").style.display = "none";
 }
 
+// the style editor selects groups by bare name, never by the DOM id of the rendered node
 function editGroupLabelStyle(): void {
-  const parent = selectedNode()?.parentNode as HTMLElement | undefined;
-  const groupId = parent?.id || `labels-${pack.burgs[getSelectedId()].group}`;
+  const burg = pack.burgs[getSelectedId()];
   closeDialogs(".stable");
-  editStyle("labels", groupId);
+  editStyle("labels", burg.label?.group || burg.group);
 }
 
 function editBurgLabel(): void {
@@ -529,17 +523,15 @@ function editBurgLabel(): void {
 }
 
 function editGroupIconStyle(): void {
-  const parent = selectedNode()?.parentNode as HTMLElement | undefined;
-  const groupId = parent?.id || `${pack.burgs[getSelectedId()].group}`;
+  const burg = pack.burgs[getSelectedId()];
   closeDialogs(".stable");
-  editStyle("burgIcons", groupId);
+  editStyle("burgIcons", burg.group);
 }
 
 function editGroupAnchorStyle(): void {
-  const parent = selectedNode()?.parentNode as HTMLElement | undefined;
-  const groupId = parent?.id || `${pack.burgs[getSelectedId()].group}`;
+  const burg = pack.burgs[getSelectedId()];
   closeDialogs(".stable");
-  editStyle("anchors", groupId);
+  editStyle("anchors", burg.group);
 }
 
 function getPreviewViewport(): { width: number; height: number } {
