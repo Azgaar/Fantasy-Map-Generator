@@ -138,7 +138,6 @@ const BURG_SCHEMA_ATTRS = Object.keys(Object.values(Styles.defaults.burgIcons.bu
 export async function migrateStyles(legacyStyleString: string | undefined): Promise<string> {
   const legacyStyleObj = legacyStyleString ? safeParseJSON(legacyStyleString) : undefined;
   if (legacyStyleObj) migrateLegacyStyleObj(legacyStyleObj); // updates pre-v1.150 style object
-  await restoreStrippedLayerStyles(); // v1.145-1.147 saved maps with bare layer groups
 
   harvestStylesFromSvg({ hasStyleRecord: Boolean(legacyStyleObj) });
 
@@ -456,9 +455,10 @@ export function presetBagFor(
 }
 
 // v1.145-1.147 saved maps with the layer styling stripped out. Seed the groups that carry none
-// at all from the preset the user has applied; a group with any styling of its own is left alone,
-// which is what keeps this harmless for the older maps that never lost theirs
-async function restoreStrippedLayerStyles(): Promise<void> {
+// at all from the preset the user has applied, so the harvest in migrateStyles reads real styling
+// instead of recording bare groups; the caller gates this to the affected version range, because
+// in older maps a bare group is normal and would wrongly take on the preset's attrs
+export async function restoreStrippedLayerStyles(): Promise<void> {
   const [, preset] = await (window as any).getStylePreset(localStorage.getItem("presetStyle") || "default");
 
   const isBareGroup = (group: Element, declared: Record<string, string> = {}): boolean => {
@@ -686,5 +686,6 @@ globalThis.stylesLegacy = {
   stylesFromMap,
   harvestStylesFromSvg,
   migrateStyles,
+  restoreStrippedLayerStyles,
   stripMigratedAttributes
 };

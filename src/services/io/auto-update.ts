@@ -8,7 +8,7 @@ import type { GraphOverrides } from "@/generators/graph-override";
 import { type Label, type LabelNameMode, Labels as LabelsGenerator } from "@/generators/labels-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
 
-import { labelGroupFromLegacy, migrateStyles } from "@/generators/styles-legacy";
+import { labelGroupFromLegacy, migrateStyles, restoreStrippedLayerStyles } from "@/generators/styles-legacy";
 import type { Point } from "@/generators/voronoi";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { unfog } from "@/renderers/overlays/fogging";
@@ -1846,6 +1846,8 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
   }
 
   if (isOlderThan("1.150.0")) {
+    // v1.145-1.147 stripped the layer style from saved maps; the migration harvest reads what this re-seeds
+    if (!isOlderThan("1.145.0") && isOlderThan("1.148.0")) await restoreStrippedLayerStyles();
     // v1.150.0 made the styles store the source of truth
     data[48] = await migrateStyles(data[48]);
   }
