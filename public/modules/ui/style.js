@@ -535,7 +535,9 @@ styleLetterSpacingInput.addEventListener("input", e => {
 });
 
 styleStrokeDasharrayInput.addEventListener("input", function () {
-  writeSelectedAttr("stroke-dasharray", this.value || null);
+  // rulers fall back to the default pattern when the attr is unset, so a cleared field means solid, not default
+  const cleared = styleElementSelect.value === "ruler" ? "none" : null;
+  writeSelectedAttr("stroke-dasharray", this.value || cleared);
   if (styleElementSelect.value === "gridOverlay") Layers.draw("grid");
   if (styleElementSelect.value === "ruler") Layers.draw("rulers");
 });
