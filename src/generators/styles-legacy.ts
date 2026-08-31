@@ -1,11 +1,10 @@
-// Conversions between the legacy `style` object shapes and the styles store. Only migration
-// edges use this: map-file save/load and legacy preset routing. Dies when those write the new
-// format natively.
+// Conversions between the legacy `style` object shapes and the styles store
 
 import { Layers } from "@/components/layers";
+import { safeParseJSON } from "@/utils";
 import "./styles";
 import type { Styles } from "./styles-schema";
-import { DEFAULT_STYLES, nullableAttrsAt } from "./styles-schema";
+import { stylesSchema } from "./styles-schema";
 
 type LabelGroupStyle = Styles["labels"]["groups"][string];
 
@@ -86,13 +85,6 @@ export function burgGroupFromLegacy(legacy: object): BurgGroupStyle {
   };
 }
 
-// the style editor edits burg groups on the DOM; drawing harvests them back into the store
-export function burgGroupFromElement(el: Element): BurgGroupStyle {
-  const bag: Record<string, string> = {};
-  for (const { name, value } of Array.from(el.attributes)) bag[name] = value;
-  return burgGroupFromLegacy(bag);
-}
-
 export function burgGroupToLegacy(group: BurgGroupStyle, withIcon = true): Record<string, unknown> {
   const legacy: Record<string, unknown> = { ...group.attrs, "font-size": group.options.size };
   if (withIcon) legacy["data-icon"] = group.options.icon;
@@ -101,6 +93,25 @@ export function burgGroupToLegacy(group: BurgGroupStyle, withIcon = true): Recor
 
 export function burgGroupsFromLegacy(groups: Record<string, object>): Record<string, BurgGroupStyle> {
   return Object.fromEntries(Object.entries(groups).map(([name, group]) => [name, burgGroupFromLegacy(group)]));
+}
+
+type RouteGroupStyle = Styles["routes"]["groups"][string];
+
+// custom route groups were pure DOM before the store: the editor stamped these attributes on
+// creation and nothing else ever seeded them, so an absent key means "attribute not set"
+export function routeGroupFromLegacy(legacy: object): RouteGroupStyle {
+  const bag = legacy as Record<string, unknown>;
+  return {
+    attrs: {
+      opacity: numOr(bag.opacity, null),
+      stroke: strOr(bag.stroke, null),
+      "stroke-width": numOr(bag["stroke-width"], null),
+      "stroke-dasharray": strOr(bag["stroke-dasharray"], null),
+      "stroke-linecap": strOr(bag["stroke-linecap"], null),
+      filter: strOr(bag.filter, null),
+      mask: strOr(bag.mask, null)
+    }
+  };
 }
 
 export function reliefFromLegacy(legacy: object): Styles["relief"]["options"] {
@@ -130,7 +141,7 @@ type PresetRoute = {
   // options that must stay strings: the DOM harvest and legacy preset saver numify
   // numeric-looking values ("-6", "100"), which the string schema would reject
   strings?: string[];
-  kind?: "label" | "burg";
+  kind?: "label" | "burg" | "route";
   drop?: string[];
   ownAttrs?: boolean;
 };
@@ -141,7 +152,7 @@ const SELECTOR_ALIASES: Record<string, string> = {
 };
 
 const PRESET_ROUTES: Record<string, PresetRoute> = {
-  "#map": { path: ["map"], options: { "data-filter": "dataFilter" } },
+  "#map": { path: ["map"], options: { "data-filter": "dataFilter" }, drop: ["background-color"] },
   "#armies": { path: ["military"], options: { "font-size": "fontSize", "box-size": "boxSize" } },
   "#biomes": { path: ["biomes"] },
   "#cells": { path: ["cells"] },
@@ -185,15 +196,13 @@ const PRESET_ROUTES: Record<string, PresetRoute> = {
   "#cults": { path: ["cultures"] },
   "#statesBody": { path: ["states", "statesBody"] },
   "#statesHalo": { path: ["states", "statesHalo"], options: { "data-width": "width" } },
-  // data-size was never written by collectStyleData (public/modules/ui/style-presets.js);
-  // it's dead cargo left over next to font-size in older saves/presets
   "#provs": { path: ["provinces"], drop: ["data-size"] },
   "#zones": { path: ["zones"] },
   "#stateBorders": { path: ["borders", "stateBorders"] },
   "#provinceBorders": { path: ["borders", "provinceBorders"] },
-  "#roads": { path: ["routes", "roads"] },
-  "#trails": { path: ["routes", "trails"] },
-  "#searoutes": { path: ["routes", "searoutes"] },
+  "#roads": { path: ["routes", "groups", "roads"] },
+  "#trails": { path: ["routes", "groups", "trails"] },
+  "#searoutes": { path: ["routes", "groups", "searoutes"] },
   "#journeys": { path: ["journeys"] },
   "#temperature": { path: ["temperature"] },
   "#ice": { path: ["ice"] },
@@ -261,9 +270,11 @@ export function styleNodeFor(element: string, group: string): { node: object; la
         ? `#labels > #${group}`
         : element === "burgIcons" || element === "anchors"
           ? `#${element} > g#${group}`
-          : element === "terrs"
-            ? `#terrs > #${group}`
-            : `#${group}`;
+          : element === "routes"
+            ? `#routes > g#${group}`
+            : element === "terrs"
+              ? `#terrs > #${group}`
+              : `#${group}`;
   const route = routeFor(selector);
   if (!route) return undefined;
   const node = getPath(styles, route.path);
@@ -278,6 +289,8 @@ function routeFor(selector: string): PresetRoute | undefined {
   if (burg) return { path: ["burgIcons", "burgIcons", "groups", burg[1]], kind: "burg" };
   const anchor = selector.match(/^#anchors > g#(.+)$/);
   if (anchor) return { path: ["burgIcons", "anchors", "groups", anchor[1]], kind: "burg" };
+  const routeGroup = selector.match(/^#routes > g#(.+)$/);
+  if (routeGroup) return { path: ["routes", "groups", routeGroup[1]], kind: "route" };
   const emblem = selector.match(/^#emblems > #(.+)$/);
   if (emblem) return { path: ["emblems", emblem[1]], options: { "data-size": "size" } };
   return undefined;
@@ -285,13 +298,15 @@ function routeFor(selector: string): PresetRoute | undefined {
 
 const getPath = (obj: any, path: string[]): any => path.reduce((o, k) => (o == null ? undefined : o[k]), obj);
 const coerce = (v: unknown): unknown => (v === "null" ? null : v);
+const coerceLegacyAttr = (key: string, value: unknown): unknown =>
+  key === "stroke-dasharray" && typeof value === "number" ? String(value) : coerce(value);
 
 function fail(onUnknown: "throw" | "skip", message: string): void {
   if (onUnknown === "skip") console.warn(message);
   else throw new Error(message);
 }
 
-// overlays a legacy bag onto a node already seeded with its DEFAULT_STYLES value: an absent
+// overlays a legacy bag onto a node already seeded with its Styles.defaults value: an absent
 // key leaves the default in place (legacy left it alone), an explicit null clears it.
 function applyPresetBag(
   node: any,
@@ -323,7 +338,7 @@ function applyPresetBag(
   if (node.attrs && route.ownAttrs !== false) {
     for (const key of Object.keys(rest)) {
       if (key in node.attrs) {
-        node.attrs[key] = coerce(rest[key]);
+        node.attrs[key] = coerceLegacyAttr(key, rest[key]);
         delete rest[key];
       }
     }
@@ -333,7 +348,7 @@ function applyPresetBag(
 }
 
 function attrKeysAt(path: string[]): string[] {
-  const node = getPath(DEFAULT_STYLES, path) as { attrs?: object } | undefined;
+  const node = getPath(Styles.defaults, path) as { attrs?: object } | undefined;
   return node?.attrs ? Object.keys(node.attrs) : [];
 }
 
@@ -377,9 +392,11 @@ function harvestBag(
   return bag;
 }
 
-const LABEL_SCHEMA_ATTRS = Object.keys(Object.values(DEFAULT_STYLES.labels.groups)[0].attrs);
+const DECLARED_ROUTE_GROUPS = Object.keys(Styles.defaults.routes.groups);
+const ROUTE_ATTRS = Object.keys(Object.values(Styles.defaults.routes.groups)[0].attrs);
+const LABEL_SCHEMA_ATTRS = Object.keys(Object.values(Styles.defaults.labels.groups)[0].attrs);
 const LABEL_ATTRS = [...LABEL_SCHEMA_ATTRS, "data-dx", "data-dy", "data-size"];
-const BURG_SCHEMA_ATTRS = Object.keys(Object.values(DEFAULT_STYLES.burgIcons.burgIcons.groups)[0].attrs);
+const BURG_SCHEMA_ATTRS = Object.keys(Object.values(Styles.defaults.burgIcons.burgIcons.groups)[0].attrs);
 const BURG_ATTRS = [...BURG_SCHEMA_ATTRS, "font-size", "size", "data-icon"];
 
 export function stylesFromMap(root: ParentNode = document): Styles {
@@ -404,6 +421,11 @@ export function stylesFromMap(root: ParentNode = document): Styles {
   for (const el of root.querySelectorAll("#labels > *")) {
     const name = (el as HTMLElement).dataset.group || el.id.replace(/^labels-/, "");
     if (name) bags[`#labels > #${name}`] = harvestBag(el, LABEL_ATTRS, LABEL_SCHEMA_ATTRS);
+  }
+  for (const el of root.querySelectorAll("#routes > g")) {
+    if (el.id && !DECLARED_ROUTE_GROUPS.includes(el.id)) {
+      bags[`#routes > g#${el.id}`] = harvestBag(el, ROUTE_ATTRS);
+    }
   }
   for (const el of root.querySelectorAll("#burgIcons > g")) {
     if (el.id) bags[`#burgIcons > g#${el.id}`] = harvestBag(el, BURG_ATTRS, BURG_SCHEMA_ATTRS);
@@ -499,6 +521,94 @@ export function syncStylesFromMap({ hasStyleRecord = false } = {}): void {
   Styles.set(harvested);
 }
 
+// The v1.150.0 style migration auto-update
+export async function migrateStyles(styleRecordJson: string | undefined): Promise<void> {
+  await restoreStrippedLayerStyles();
+
+  // version lines lie, so the record's own shape decides what the map can offer: a store record
+  // is already migrated, anything else leaves the svg as the only source for the harvest
+  const styleRecord = styleRecordJson ? safeParseJSON(styleRecordJson) : undefined;
+  if (!isStoreStyles(styleRecord)) syncStylesFromMap({ hasStyleRecord: Boolean(styleRecord) });
+
+  stampRouteGroups();
+  stripMigratedAttributes();
+}
+
+// the registry stamps only its declared children, so the groups the user added carry no
+// data-group until here; Styles.write addresses every group by it
+function stampRouteGroups(): void {
+  for (const el of document.querySelectorAll<SVGGElement>("#routes > g")) {
+    if (el.id) el.dataset.group = el.id;
+  }
+}
+
+// v1.145-1.147 saved maps with the layer styling stripped out. Seed the groups that carry none
+// at all from the preset the user has applied; a group with any styling of its own is left alone,
+// which is what keeps this harmless for the older maps that never lost theirs
+async function restoreStrippedLayerStyles(): Promise<void> {
+  const [, raw] = await (window as any).getStylePreset(localStorage.getItem("presetStyle") || "default");
+  const preset = isLegacyPreset(raw) ? raw : presetToLegacy(Styles.parse(raw));
+
+  const isBareGroup = (group: Element, declared: Record<string, string> = {}): boolean => {
+    const ignored = new Set(["id", "style", "data-layer", "data-group", ...Object.keys(declared)]);
+    return Array.from(group.attributes).every(attribute => ignored.has(attribute.name));
+  };
+
+  const restore = (
+    id: string,
+    style: Record<string, string | number | null> | undefined,
+    declared?: Record<string, string>
+  ): void => {
+    const group = document.getElementById(id);
+    if (!style || group?.tagName !== "g" || !isBareGroup(group, declared)) return;
+
+    for (const [name, value] of Object.entries(style)) {
+      if (value === null || value === "null") continue;
+      if (id === "terrain" && ["set", "size", "density"].includes(name)) continue;
+      group.setAttribute(name, String(value));
+    }
+  };
+
+  for (const layer of Layers.all) {
+    restore(layer.elementId, preset[`#${layer.elementId}`], layer.params.attrs);
+    for (const child of layer.children) {
+      restore(child.id, preset[`#${child.id}`] || preset[`#${layer.elementId} > #${child.id}`], child.attrs);
+    }
+  }
+}
+
+// the attributes the store took over. They are dropped rather than left in place because the
+// harvest above reads them: a stale one beside a store record would outrank it forever
+function stripMigratedAttributes(): void {
+  const strip = (id: string, ...attrs: string[]) => {
+    const el = document.getElementById(id);
+    for (const attr of attrs) el?.removeAttribute(attr);
+  };
+
+  strip("markers", "rescale");
+  strip("statesHalo", "data-width");
+  strip("coordinates", "data-size");
+  strip("ruler", "data-size", "font-size");
+  strip("legend", "data-size", "data-x", "data-y", "data-columns");
+  for (const id of ["stateEmblems", "provinceEmblems", "burgEmblems", "goodsBurgs"]) strip(id, "data-size");
+  for (const id of ["landHeights", "oceanHeights"]) strip(id, "scheme", "terracing", "skip", "relax", "curve");
+  strip("oceanHeights", "data-render");
+  strip("armies", "box-size");
+  strip("gridOverlay", "type", "scale", "dx", "dy");
+  strip("map", "data-filter");
+  strip("sea_island", "auto-filter");
+  strip("markets", "data-size", "font-size", "data-icon");
+  strip("goodsIcons", "data-size", "data-circle");
+  strip("texture", "data-href", "data-x", "data-y");
+  strip("oceanLayers", "layers");
+  strip("scaleBar", "data-bar-size", "data-x", "data-y", "data-label");
+  strip("scaleBarBack", "data-top", "data-right", "data-bottom", "data-left");
+  for (const el of document.querySelectorAll("#labels > *")) {
+    el.removeAttribute("data-dx");
+    el.removeAttribute("data-dy");
+  }
+}
+
 export function isLegacyPreset(json: object): boolean {
   return Object.keys(json).some(key => key.startsWith("#"));
 }
@@ -512,7 +622,7 @@ export function presetFromLegacy(
   opts: { onUnknown?: "throw" | "skip" } = {}
 ): Styles {
   const onUnknown = opts.onUnknown ?? "throw";
-  const built = structuredClone(DEFAULT_STYLES) as any;
+  const built = structuredClone(Styles.defaults) as any;
 
   for (const [rawSelector, bag] of Object.entries(legacy)) {
     const selector = SELECTOR_ALIASES[rawSelector] ?? rawSelector;
@@ -527,8 +637,13 @@ export function presetFromLegacy(
         fail(onUnknown, `unknown legacy selector "${selector}"`);
         continue;
       }
-      parent[route.path.at(-1) as string] =
-        route.kind === "label" ? labelGroupFromLegacy(bag) : burgGroupFromLegacy(bag);
+      const fromLegacy =
+        route.kind === "label"
+          ? labelGroupFromLegacy
+          : route.kind === "burg"
+            ? burgGroupFromLegacy
+            : routeGroupFromLegacy;
+      parent[route.path.at(-1) as string] = fromLegacy(bag);
       continue;
     }
     const node = getPath(built, route.path);
@@ -566,6 +681,10 @@ export function presetToLegacy(source: Styles): Record<string, Record<string, st
   for (const [name, group] of Object.entries(source.labels.groups)) {
     legacy[`#labels > #${name}`] = labelGroupToLegacy(group) as Record<string, string | number | null>;
   }
+  for (const [name, group] of Object.entries(source.routes.groups)) {
+    if (DECLARED_ROUTE_GROUPS.includes(name)) continue; // already emitted as #roads/#trails/#searoutes
+    legacy[`#routes > g#${name}`] = { ...group.attrs };
+  }
   for (const [name, group] of Object.entries(source.burgIcons.burgIcons.groups)) {
     legacy[`#burgIcons > g#${name}`] = burgGroupToLegacy(group, true) as Record<string, string | number | null>;
   }
@@ -581,6 +700,15 @@ export function presetToLegacy(source: Styles): Record<string, Record<string, st
   return legacy;
 }
 
+// the attrs at a store path that accept null, i.e. may be harvested as "attribute not set"
+function nullableAttrsAt(path: string[]): string[] {
+  let node: any = stylesSchema;
+  for (const key of [...path, "attrs"]) node = node?.shape?.[key];
+  const shape = node?.shape;
+  if (!shape) return [];
+  return Object.keys(shape).filter(attr => shape[attr].safeParse(null).success);
+}
+
 // the legacy preset pipeline (public/modules/ui/style-presets.js) converts through these
 globalThis.stylesLegacy = {
   styleNodeFor,
@@ -588,9 +716,9 @@ globalThis.stylesLegacy = {
   labelGroupToLegacy,
   labelGroupsFromLegacy,
   burgGroupFromLegacy,
-  burgGroupFromElement,
   burgGroupToLegacy,
   burgGroupsFromLegacy,
+  routeGroupFromLegacy,
   reliefFromLegacy,
   stylesFromLegacy,
   presetFromLegacy,
@@ -599,5 +727,6 @@ globalThis.stylesLegacy = {
   isStoreStyles,
   harvestAttributes,
   stylesFromMap,
-  syncStylesFromMap
+  syncStylesFromMap,
+  migrateStyles
 };

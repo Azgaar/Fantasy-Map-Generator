@@ -449,6 +449,36 @@ test.describe("style editor events drive the store", () => {
     }
   });
 
+  // regression: these five were DOM-only writes, so the store kept the preset's values and
+  // Styles.write restored them over the edit on the next load
+  test("scale bar background paint writes the store and survives a store write", async ({ page }) => {
+    await page.evaluate(() => (window as any).Layers.show("scaleBar"));
+    await openStyleElement(page, "scaleBar");
+
+    await page.locator("#styleScaleBarBackgroundOpacity input[type=number]").fill("0.65");
+    await page.locator("#styleScaleBarBackgroundOpacity input[type=number]").dispatchEvent("input");
+    await page.locator("#styleScaleBarBackgroundStrokeWidth").fill("2.5");
+    await page.locator("#styleScaleBarBackgroundStrokeWidth").dispatchEvent("input");
+    for (const [input, value] of [
+      ["#styleScaleBarBackgroundFill", "#123456"],
+      ["#styleScaleBarBackgroundStroke", "#654321"]
+    ] as const) {
+      await page.locator(input).fill(value);
+      await page.locator(input).dispatchEvent("input");
+    }
+
+    const expected = { opacity: 0.65, fill: "#123456", stroke: "#654321", "stroke-width": 2.5 };
+    expect(await page.evaluate(() => (window as any).styles.scaleBar.back.attrs)).toMatchObject(expected);
+
+    // what load does after restoring the svg: the edit must be what the store writes back
+    await page.evaluate(() => (window as any).Styles.write("scaleBar"));
+    const back = page.locator("#scaleBarBack");
+    await expect(back).toHaveAttribute("opacity", "0.65");
+    await expect(back).toHaveAttribute("fill", "#123456");
+    await expect(back).toHaveAttribute("stroke", "#654321");
+    await expect(back).toHaveAttribute("stroke-width", "2.5");
+  });
+
   test("label shift inputs write the store and apply the em transform", async ({ page }) => {
     await openStyleElement(page, "labels");
     const group = await page.evaluate(() => (window as any).styleGroupSelect.value);

@@ -11,13 +11,13 @@ One typed, complete data object is the store and the API. Zod schemas are the si
 ```ts
 import { styles, applyStyles } from "@/styles/styles";
 
-styles.labels.groups[groupId].attrs.opacity;   // number | null, by inference
-styles.rivers.attrs.fill = "hotpink";          // typed direct mutation
-applyStyles("rivers");                         // write attrs to the DOM, redraw the layer
+styles.labels.groups[groupId].attrs.opacity; // number | null, by inference
+styles.rivers.attrs.fill = "hotpink"; // typed direct mutation
+applyStyles("rivers"); // write attrs to the DOM, redraw the layer
 ```
 
 - **`attrs` are written to the DOM; `options` never are** — they are renderer inputs (`fontSize`, `scheme`, `rescale`, `size`, `icon`…), read from `styles` directly. `null` on an attr means the attribute is not set.
-- **Styles are complete by construction.** `parseStyles(json)` validates per layer and falls back to `DEFAULT_STYLES` (the default preset as typed data — the single place defaults exist) for any invalid or missing layer, with one warning. No read site ever carries a fallback.
+- **Styles are complete by construction.** `parseStyles(json)` validates per layer and falls back to `Styles.defaults` for any invalid or missing layer, with one warning. No read site ever carries a fallback.
 - **Addressing is `data-layer`/`data-group`, never element ids.** The registry stamps its layer groups and declared children; renderers stamp the elements they create; a few static elements carry theirs in the markup. The id quirks (`terrain`/`regions`/`armies`/`icons`, the `labels-` prefix) never enter the style code.
 - **Writes are direct mutation + one call.** `applyStyles(id)` writes the layer's attrs and redraws it — matching how the rest of the codebase already works. Serialization is `JSON.stringify(styles)`.
 - **Legacy formats are migration's problem.** `parseStyles` accepts the new format only; converting old selector-keyed presets is a separate function used only by migration code.

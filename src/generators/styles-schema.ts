@@ -1,12 +1,11 @@
 import { z } from "zod";
 import type { LayerId } from "@/components/layers";
-import defaultStyles from "./default-styles.json";
 
 // One shared type per recurring attribute; attrs written to the DOM, null = attribute not set
 const opacity = z.number().nullable();
 const color = z.string().nullable();
 const strokeWidth = z.number().nullable();
-const strokeDasharray = z.union([z.string(), z.number()]).nullable();
+const strokeDasharray = z.string().nullable();
 const strokeLinecap = z.string().nullable();
 const strokeLinejoin = z.string().nullable();
 const letterSpacing = z.number().nullable();
@@ -27,8 +26,6 @@ const strokeAttrs = {
 };
 const fillAttrs = { fill: color, "fill-opacity": opacity };
 
-// group schemas reused across siblings: one definition keeps their shapes identical
-const routeGroup = z.strictObject({ attrs: z.strictObject({ opacity, ...strokeAttrs, filter, mask }) });
 const lake = z.strictObject({ attrs: z.strictObject({ opacity, ...fillAttrs, ...strokeAttrs, filter }) });
 const heights = z.strictObject({
   attrs: z.strictObject({ opacity, filter, mask }),
@@ -47,10 +44,10 @@ const burgGroup = z.strictObject({
 });
 const emblemGroup = z.strictObject({ options: z.strictObject({ size: z.number() }) });
 
-// One strict schema per layer. attrs go to the DOM; options are renderer inputs and never do.
+// One schema per layer; attrs go to the DOM; options are renderer inputs and never do
 export const stylesSchema = z.strictObject({
   map: z.strictObject({
-    attrs: z.strictObject({ "background-color": color, filter }),
+    attrs: z.strictObject({ filter }),
     options: z.strictObject({ dataFilter: z.string().nullable() })
   }),
   ocean: z.strictObject({
@@ -120,8 +117,9 @@ export const stylesSchema = z.strictObject({
     stateBorders: z.strictObject({ attrs: z.strictObject({ opacity, ...strokeAttrs, filter }) }),
     provinceBorders: z.strictObject({ attrs: z.strictObject({ opacity, ...strokeAttrs, filter }) })
   }),
-  routes: z.strictObject({ roads: routeGroup, trails: routeGroup, searoutes: routeGroup }),
-  // journeys have no stroke: every segment carries its own colour from the journey data
+  routes: z.strictObject({
+    groups: z.record(z.string(), z.strictObject({ attrs: z.strictObject({ opacity, ...strokeAttrs, filter, mask }) }))
+  }),
   journeys: z.strictObject({
     attrs: z.strictObject({
       opacity,
@@ -133,17 +131,18 @@ export const stylesSchema = z.strictObject({
     })
   }),
   temperature: z.strictObject({
-    attrs: z.strictObject({ opacity, ...fillAttrs, ...strokeAttrs, "font-size": fontSize, filter })
+    attrs: z.strictObject({ opacity, ...fillAttrs, ...strokeAttrs, "font-size": fontSize, filter, mask })
   }),
   ice: z.strictObject({ attrs: z.strictObject({ opacity, fill: color, ...strokeAttrs, filter }) }),
-  precipitation: z.strictObject({ attrs: z.strictObject({ opacity, fill: color, ...strokeAttrs, filter }) }),
+  precipitation: z.strictObject({ attrs: z.strictObject({ opacity, fill: color, ...strokeAttrs, filter, mask }) }),
   population: z.strictObject({
     attrs: z.strictObject({
       opacity,
       "stroke-width": strokeWidth,
       "stroke-dasharray": strokeDasharray,
       "stroke-linecap": strokeLinecap,
-      filter
+      filter,
+      mask
     }),
     rural: z.strictObject({ attrs: z.strictObject({ stroke: color }) }),
     urban: z.strictObject({ attrs: z.strictObject({ stroke: color }) })
@@ -195,7 +194,7 @@ export const stylesSchema = z.strictObject({
   trade: z.strictObject({ attrs: z.strictObject({ opacity, filter }) }),
   markers: z.strictObject({
     attrs: z.strictObject({ opacity, filter }),
-    options: z.strictObject({ rescale: z.number() })
+    options: z.strictObject({ rescale: z.number() }) // TODO: move to global ontions.markers.resizeOnZoom
   }),
   military: z.strictObject({
     attrs: z.strictObject({ opacity, ...strokeAttrs, "fill-opacity": opacity, filter }),
@@ -241,17 +240,4 @@ export const stylesSchema = z.strictObject({
 });
 
 export type Styles = z.infer<typeof stylesSchema>;
-// every styled layer is a registry layer; "map" (the svg root) is the one deliberate extra
 export type StyleLayerId = keyof Styles & (LayerId | "map");
-
-// default-styles.json is the single source of style defaults, validated strictly at boot
-export const DEFAULT_STYLES: Styles = stylesSchema.parse(defaultStyles);
-
-// the attrs at a store path that accept null, i.e. may be harvested as "attribute not set"
-export function nullableAttrsAt(path: string[]): string[] {
-  let node: any = stylesSchema;
-  for (const key of [...path, "attrs"]) node = node?.shape?.[key];
-  const shape = node?.shape;
-  if (!shape) return [];
-  return Object.keys(shape).filter(attr => shape[attr].safeParse(null).success);
-}

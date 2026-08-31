@@ -16,8 +16,7 @@ export function drawFogging(layer: Layer): void {
     <rect x="0" y="0" width="100%" height="100%" fill="#e8f0f6" filter="url(#splotch)"></rect>`;
 
   const fogging = select(element);
-  const opacity = fogging.attr("opacity");
-  fogging.attr("opacity", 0).transition(fadeIn()).attr("opacity", opacity);
+  fogging.attr("opacity", 0).transition(fadeIn()).attr("opacity", styles.fogging.attrs.opacity);
 }
 
 export function fog(id: string, path: string): void {

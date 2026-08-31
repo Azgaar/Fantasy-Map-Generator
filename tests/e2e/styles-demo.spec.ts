@@ -1,5 +1,8 @@
-import {test, expect} from "@playwright/test";
-import {DEFAULT_STYLES} from "../../src/generators/styles-schema";
+import { test, expect } from "@playwright/test";
+import defaultStyles from "../../src/generators/default-styles.json";
+import { stylesSchema } from "../../src/generators/styles-schema";
+
+const DEFAULT_STYLES = stylesSchema.parse(defaultStyles);
 
 // The data-layer/data-group addressing contract between src/styles and the app:
 // every address the styles schema can produce must resolve in the real DOM.
@@ -21,11 +24,11 @@ const LAZY = new Set(["legend/box", "scaleBar/back"]);
 
 async function generateMap(page: import("@playwright/test").Page) {
   await page.goto("/");
-  await page.waitForFunction(() => (window as any).mapId !== undefined, {timeout: 120000});
+  await page.waitForFunction(() => (window as any).mapId !== undefined, { timeout: 120000 });
   await page.waitForTimeout(500);
 }
 
-test("every styles address resolves in the generated map's DOM", async ({page}) => {
+test("every styles address resolves in the generated map's DOM", async ({ page }) => {
   await generateMap(page);
 
   const result = await page.evaluate(addresses => {
@@ -46,7 +49,7 @@ test("every styles address resolves in the generated map's DOM", async ({page}) 
       if (root.querySelector(`[data-group="${group}"]`)) resolved.push(key);
       else missing.push(key);
     }
-    return {resolved, absentRoot, missing};
+    return { resolved, absentRoot, missing };
   }, ADDRESSES);
 
   // a schema key with no stamped element under an existing layer is a contract break
@@ -63,13 +66,13 @@ test("every styles address resolves in the generated map's DOM", async ({page}) 
   }
 });
 
-test("the library styles the live map through the contract", async ({page}, testInfo) => {
+test("the library styles the live map through the contract", async ({ page }, testInfo) => {
   test.skip(!!process.env.CI, "imports library source - needs the vite dev server");
   await generateMap(page);
-  await page.screenshot({path: testInfo.outputPath("styles-demo-before.png")});
+  await page.screenshot({ path: testInfo.outputPath("styles-demo-before.png") });
 
   const result = await page.evaluate(async () => {
-    const {Styles} = await import("/Fantasy-Map-Generator/generators/styles.ts");
+    const { Styles } = await import("/Fantasy-Map-Generator/generators/styles.ts");
     const styles = globalThis.styles;
     styles.rivers.attrs.fill = "#ff00aa";
     styles.routes.roads.attrs.stroke = "#00e5ff";
@@ -87,7 +90,7 @@ test("the library styles the live map through the contract", async ({page}, test
   });
 
   await page.waitForTimeout(400);
-  await page.screenshot({path: testInfo.outputPath("styles-demo-after.png")});
+  await page.screenshot({ path: testInfo.outputPath("styles-demo-after.png") });
 
   expect(result).toEqual({
     riverFill: "#ff00aa",

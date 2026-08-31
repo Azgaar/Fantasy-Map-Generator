@@ -38,7 +38,7 @@ describe("applyStyles", () => {
     expect(Layers.draw).toHaveBeenCalledWith("rivers");
 
     const routes = mount("routes", ["roads", "trails", "searoutes"]);
-    styles.routes.roads.attrs.stroke = "#803a2b";
+    styles.routes.groups.roads.attrs.stroke = "#803a2b";
     Styles.apply("routes");
     expect(routes.querySelector('[data-group="roads"]')?.getAttribute("stroke")).toBe("#803a2b");
   });

@@ -25,11 +25,14 @@ function storeStyleOption(ev) {
   if (ev.target.dataset.stored) lock(ev.target.dataset.stored);
 }
 
+// #icons and #goods hold no styling of their own
+const STYLE_ELEMENT_ALIASES = { icons: "burgIcons", goods: "goodsCells" };
+
 // select element to be edited
 function editStyle(element, group) {
   showOptions();
   styleTab.click();
-  styleElementSelect.value = element;
+  styleElementSelect.value = STYLE_ELEMENT_ALIASES[element] || element;
   if (group) styleGroupSelect.options.add(new Option(group, group, true, true));
   selectStyleElement();
 
@@ -81,9 +84,15 @@ function getColor(value, scheme = getColorScheme("bright")) {
 // Toggle style sections on element select
 styleElementSelect.addEventListener("change", selectStyleElement);
 
+// groups the editor addresses by name; everything else is styled as a whole
+const GROUPED_STYLE_ELEMENTS = ["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs"];
+
+// the styles store is the source of truth: the editor writes the DOM but never reads it back.
+// Values live either in the selection's own node or, for controls that edit a sibling
+// (#statesHalo, #legendBox, #scaleBarBack), in that sibling's node - addressed directly
 function selectStyleElement() {
   const styleElement = styleElementSelect.value;
-  let el = d3.select("#" + styleElement);
+  const el = d3.select("#" + styleElement);
 
   styleElements.querySelectorAll("tbody").forEach(e => (e.style.display = "none")); // hide all sections
 
@@ -91,34 +100,28 @@ function selectStyleElement() {
   const isLayerOff = styleElement !== "ocean" && (el.style("display") === "none" || !el.selectAll("*").size());
   styleIsOff.style.display = isLayerOff ? "block" : "none";
 
-  // active group element
-  if (["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs"].includes(styleElement)) {
-    const group = styleGroupSelect.value;
-    const defaultGroupSelector = styleElement === "terrs" ? "#landHeights" : "g";
-    if (styleElement === "labels") {
-      const selected = group && el.select(`[data-group="${CSS.escape(group)}"]`);
-      el = selected && selected.size() ? selected : el.select(defaultGroupSelector);
-    } else {
-      el = group && el.select("#" + group).size() ? el.select("#" + group) : el.select(defaultGroupSelector);
-    }
-  }
+  // the group list comes first: it settles which store node every value below is read from
+  updateGroupOptions(styleElement, el);
+  const node = stylesLegacy.styleNodeFor(styleElement, styleGroupSelect.value)?.node;
+  const attrs = node?.attrs || {};
+  const opts = node?.options || {};
 
   // opacity
   if (!["landmass", "legend", "ocean", "regions"].includes(styleElement)) {
     styleOpacity.style.display = "block";
-    styleOpacityInput.value = el.attr("opacity") || 1;
+    styleOpacityInput.value = attrs.opacity ?? 1;
   }
 
   // filter
   if (!["landmass", "legend", "regions", "scaleBar"].includes(styleElement)) {
     styleFilter.style.display = "block";
-    styleFilterInput.value = el.attr("filter") || "";
+    styleFilterInput.value = attrs.filter || "";
   }
 
   // fill
   if (["fogging", "ice", "lakes", "landmass", "prec", "rivers", "scaleBar", "vignette"].includes(styleElement)) {
     styleFill.style.display = "block";
-    styleFillInput.value = styleFillOutput.value = el.attr("fill");
+    styleFillInput.value = styleFillOutput.value = attrs.fill;
   }
 
   // stroke color and width
@@ -131,10 +134,8 @@ function selectStyleElement() {
       "coastline",
       "coordinates",
       "cults",
-      "goods",
       "gridOverlay",
       "ice",
-      "icons",
       "lakes",
       "prec",
       "relig",
@@ -143,14 +144,14 @@ function selectStyleElement() {
     ].includes(styleElement)
   ) {
     styleStroke.style.display = "block";
-    styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke");
+    styleStrokeInput.value = styleStrokeOutput.value = attrs.stroke;
     styleStrokeWidth.style.display = "block";
-    styleStrokeWidthInput.value = el.attr("stroke-width") || 0;
+    styleStrokeWidthInput.value = attrs["stroke-width"] ?? 0;
   }
 
   if (styleElement === "journeys") {
     styleStrokeWidth.style.display = "block";
-    styleStrokeWidthInput.value = el.attr("stroke-width") || 0;
+    styleStrokeWidthInput.value = attrs["stroke-width"] ?? 0;
   }
 
   // stroke dash
@@ -169,8 +170,8 @@ function selectStyleElement() {
     ].includes(styleElement)
   ) {
     styleStrokeDash.style.display = "block";
-    styleStrokeDasharrayInput.value = el.attr("stroke-dasharray") || "";
-    styleStrokeLinecapInput.value = el.attr("stroke-linecap") || "inherit";
+    styleStrokeDasharrayInput.value = attrs["stroke-dasharray"] || "";
+    styleStrokeLinecapInput.value = attrs["stroke-linecap"] || "inherit";
   }
 
   // clipping
@@ -192,46 +193,45 @@ function selectStyleElement() {
     ].includes(styleElement)
   ) {
     styleClipping.style.display = "block";
-    styleClippingInput.value = el.attr("mask") || "";
+    styleClippingInput.value = attrs.mask || "";
   }
 
   // show specific sections
   if (styleElement === "texture") {
     styleTexture.style.display = "block";
-    styleTextureShiftX.value = styles.texture.options.x;
-    styleTextureShiftY.value = styles.texture.options.y;
-    updateTextureSelectValue(styles.texture.options.href);
+    styleTextureShiftX.value = opts.x;
+    styleTextureShiftY.value = opts.y;
+    updateTextureSelectValue(opts.href);
   }
 
   if (styleElement === "terrs") {
     styleHeightmap.style.display = "block";
-    styleHeightmapRenderOceanOption.style.display = el.attr("id") === "oceanHeights" ? "block" : "none";
-    const heights = styles.heightmap[el.attr("id")].options;
-    styleHeightmapRenderOcean.checked = heights.render;
-    styleHeightmapScheme.value = heights.scheme;
-    styleHeightmapTerracing.value = heights.terracing;
-    styleHeightmapSkip.value = heights.skip;
-    styleHeightmapSimplification.value = heights.relax;
-    styleHeightmapCurve.value = heights.curve;
+    styleHeightmapRenderOceanOption.style.display = styleGroupSelect.value === "oceanHeights" ? "block" : "none";
+    styleHeightmapRenderOcean.checked = opts.render;
+    styleHeightmapScheme.value = opts.scheme;
+    styleHeightmapTerracing.value = opts.terracing;
+    styleHeightmapSkip.value = opts.skip;
+    styleHeightmapSimplification.value = opts.relax;
+    styleHeightmapCurve.value = opts.curve;
   }
 
   if (styleElement === "markers") {
     styleMarkers.style.display = "block";
-    styleRescaleMarkers.checked = Boolean(styles.markers.options.rescale);
+    styleRescaleMarkers.checked = Boolean(opts.rescale);
   }
 
   if (styleElement === "gridOverlay") {
     styleGrid.style.display = "block";
-    styleGridType.value = styles.grid.options.type;
-    styleGridScale.value = styles.grid.options.scale;
-    styleGridShiftX.value = styles.grid.options.dx;
-    styleGridShiftY.value = styles.grid.options.dy;
+    styleGridType.value = opts.type;
+    styleGridScale.value = opts.scale;
+    styleGridShiftX.value = opts.dx;
+    styleGridShiftY.value = opts.dy;
     calculateFriendlyGridSize();
   }
 
   if (styleElement === "compass") {
     styleCompass.style.display = "block";
-    const tr = parseTransform(d3.select("#compass").select("use").attr("transform"));
+    const tr = parseTransform(styles.compass.compassRose.attrs.transform);
     styleCompassShiftX.value = tr[0];
     styleCompassShiftY.value = tr[1];
     styleCompassSizeInput.value = tr[2];
@@ -239,38 +239,29 @@ function selectStyleElement() {
 
   if (styleElement === "terrain") {
     styleRelief.style.display = "block";
-    styleReliefSize.value = styles.relief.options.size;
-    styleReliefDensity.value = styles.relief.options.density;
-    styleReliefSet.value = styles.relief.options.set;
+    styleReliefSize.value = opts.size;
+    styleReliefDensity.value = opts.density;
+    styleReliefSet.value = opts.set;
   }
 
   if (styleElement === "population") {
     stylePopulation.style.display = "block";
-    stylePopulationRuralStrokeInput.value = stylePopulationRuralStrokeOutput.value = d3
-      .select("#population")
-      .select("#rural")
-      .attr("stroke");
-    stylePopulationUrbanStrokeInput.value = stylePopulationUrbanStrokeOutput.value = d3
-      .select("#population")
-      .select("#urban")
-      .attr("stroke");
+    stylePopulationRuralStrokeInput.value = stylePopulationRuralStrokeOutput.value =
+      styles.population.rural.attrs.stroke;
+    stylePopulationUrbanStrokeInput.value = stylePopulationUrbanStrokeOutput.value =
+      styles.population.urban.attrs.stroke;
     styleStrokeWidth.style.display = "block";
-    styleStrokeWidthInput.value = el.attr("stroke-width") || 0;
+    styleStrokeWidthInput.value = attrs["stroke-width"] ?? 0;
   }
 
   if (styleElement === "regions") {
+    const { statesBody, statesHalo } = styles.states;
     styleStates.style.display = "block";
-    styleStatesBodyOpacity.value = d3.select("#statesBody").attr("opacity") || 1;
-    styleStatesBodyFilter.value = d3.select("#statesBody").attr("filter") || "";
-    styleStatesHaloWidth.value = styles.states.statesHalo.options.width;
-    styleStatesHaloOpacity.value = d3.select("#statesHalo").attr("opacity") || 1;
-    styleStatesHaloBlur.value =
-      parseFloat(
-        d3
-          .select("#statesHalo")
-          .attr("filter")
-          ?.match(/blur\(([^)]+)\)/)?.[1]
-      ) || 0;
+    styleStatesBodyOpacity.value = statesBody.attrs.opacity ?? 1;
+    styleStatesBodyFilter.value = statesBody.attrs.filter || "";
+    styleStatesHaloWidth.value = statesHalo.options.width;
+    styleStatesHaloOpacity.value = statesHalo.attrs.opacity ?? 1;
+    styleStatesHaloBlur.value = parseFloat(statesHalo.attrs.filter?.match(/blur\(([^)]+)\)/)?.[1]) || 0;
   }
 
   if (styleElement === "labels") {
@@ -281,38 +272,37 @@ function selectStyleElement() {
 
     styleShadow.style.display = "block";
     styleSize.style.display = "block";
-    styleFillInput.value = styleFillOutput.value = el.attr("fill") || "#3e3e4b";
-    styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke") || "#3a3a3a";
-    styleStrokeWidthInput.value = el.attr("stroke-width") || 0;
-    styleLetterSpacingInput.value = el.attr("letter-spacing") || 0;
-    styleShadowInput.value = el.style("text-shadow") || "";
+    styleFillInput.value = styleFillOutput.value = attrs.fill || "#3e3e4b";
+    styleStrokeInput.value = styleStrokeOutput.value = attrs.stroke || "#3a3a3a";
+    styleStrokeWidthInput.value = attrs["stroke-width"] ?? 0;
+    styleLetterSpacingInput.value = attrs["letter-spacing"] ?? 0;
+    styleShadowInput.value = getTextShadow(attrs.style);
 
     styleFont.style.display = "block";
-    styleSelectFont.value = el.attr("font-family");
-    styleFontSize.value = parseFloat(el.attr("font-size")) || 18;
+    styleSelectFont.value = attrs["font-family"];
+    styleFontSize.value = parseFloat(attrs["font-size"]) || 18;
 
     styleFontShift.style.display = "block";
-    styleFontShiftX.value = styles.labels.groups[styleGroupSelect.value]?.options.dx || 0;
-    styleFontShiftY.value = styles.labels.groups[styleGroupSelect.value]?.options.dy || 0;
+    styleFontShiftX.value = opts.dx || 0;
+    styleFontShiftY.value = opts.dy || 0;
   }
 
   if (styleElement === "burgIcons") {
     styleBurgIcons.style.display = "block";
-    const burgGroupStyle = styles.burgIcons.burgIcons.groups[styleGroupSelect.value];
-    styleBurgIconsIcon.value = burgGroupStyle?.options.icon ?? el.attr("data-icon");
-    styleBurgIconsIconSize.value = burgGroupStyle?.options.size ?? el.attr("font-size");
-    styleBurgIconsStrokeLinejoin.value = burgGroupStyle?.attrs["stroke-linejoin"] ?? el.attr("stroke-linejoin");
-    styleBurgIconsFillOpacity.value = burgGroupStyle?.attrs["fill-opacity"] ?? el.attr("fill-opacity");
+    styleBurgIconsIcon.value = opts.icon;
+    styleBurgIconsIconSize.value = opts.size;
+    styleBurgIconsStrokeLinejoin.value = attrs["stroke-linejoin"] || "inherit";
+    styleBurgIconsFillOpacity.value = attrs["fill-opacity"] ?? 1;
 
     styleFill.style.display = "block";
     styleStroke.style.display = "block";
     styleStrokeWidth.style.display = "block";
     styleStrokeDash.style.display = "block";
-    styleFillInput.value = styleFillOutput.value = el.attr("fill") || "#ffffff";
-    styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke") || "#3e3e4b";
-    styleStrokeWidthInput.value = el.attr("stroke-width") || 0.24;
-    styleStrokeDasharrayInput.value = el.attr("stroke-dasharray") || "";
-    styleStrokeLinecapInput.value = el.attr("stroke-linecap") || "inherit";
+    styleFillInput.value = styleFillOutput.value = attrs.fill || "#ffffff";
+    styleStrokeInput.value = styleStrokeOutput.value = attrs.stroke || "#3e3e4b";
+    styleStrokeWidthInput.value = attrs["stroke-width"] ?? 0.24;
+    styleStrokeDasharrayInput.value = attrs["stroke-dasharray"] || "";
+    styleStrokeLinecapInput.value = attrs["stroke-linecap"] || "inherit";
   }
 
   if (styleElement === "anchors") {
@@ -320,10 +310,10 @@ function selectStyleElement() {
     styleStroke.style.display = "block";
     styleStrokeWidth.style.display = "block";
     styleSize.style.display = "block";
-    styleFillInput.value = styleFillOutput.value = el.attr("fill") || "#ffffff";
-    styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke") || "#3e3e4b";
-    styleStrokeWidthInput.value = el.attr("stroke-width") || 0.24;
-    styleFontSize.value = styles.burgIcons.anchors.groups[styleGroupSelect.value]?.options.size || 1;
+    styleFillInput.value = styleFillOutput.value = attrs.fill || "#ffffff";
+    styleStrokeInput.value = styleStrokeOutput.value = attrs.stroke || "#3e3e4b";
+    styleStrokeWidthInput.value = attrs["stroke-width"] ?? 0.24;
+    styleFontSize.value = opts.size || 1;
   }
 
   if (styleElement === "legend") {
@@ -332,64 +322,62 @@ function selectStyleElement() {
     styleSize.style.display = "block";
 
     styleLegend.style.display = "block";
-    styleLegendColItems.value = styles.legend.options.columns;
-    const legendBox = el.select("#legendBox");
-    styleLegendBack.value = styleLegendBackOutput.value = legendBox.size() ? legendBox.attr("fill") : "#ffffff";
-    styleLegendOpacity.value = legendBox.size() ? legendBox.attr("fill-opacity") : 1;
+    styleLegendColItems.value = opts.columns;
+    styleLegendBack.value = styleLegendBackOutput.value = styles.legend.box.attrs.fill || "#ffffff";
+    styleLegendOpacity.value = styles.legend.box.attrs["fill-opacity"] ?? 1;
 
-    styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke") || "#111111";
-    styleStrokeWidthInput.value = el.attr("stroke-width") || 0.5;
+    styleStrokeInput.value = styleStrokeOutput.value = attrs.stroke || "#111111";
+    styleStrokeWidthInput.value = attrs["stroke-width"] ?? 0.5;
 
     styleFont.style.display = "block";
-    styleSelectFont.value = el.attr("font-family");
-    styleFontSize.value = styles.legend.options.fontSize;
+    styleSelectFont.value = attrs["font-family"];
+    styleFontSize.value = opts.fontSize;
   }
 
   if (styleElement === "ocean") {
     styleOcean.style.display = "block";
-    styleOceanFill.value = styleOceanFillOutput.value = d3.select("#oceanLayers").select("#oceanBase").attr("fill");
-    styleOceanPattern.value = ensureEl("oceanicPattern").getAttribute("href");
-    styleOceanPatternOpacity.value = ensureEl("oceanicPattern").getAttribute("opacity") || 1;
+    styleOceanFill.value = styleOceanFillOutput.value = styles.ocean.base.attrs.fill;
+    styleOceanPattern.value = styles.ocean.options.pattern;
+    styleOceanPatternOpacity.value = styles.ocean.options.patternOpacity;
     outlineLayers.value = styles.ocean.oceanLayers.options.outline;
   }
 
   if (styleElement === "temperature") {
     styleStrokeWidth.style.display = "block";
     styleTemperature.style.display = "block";
-    styleStrokeWidthInput.value = el.attr("stroke-width") || "";
-    styleTemperatureFillOpacityInput.value = el.attr("fill-opacity") || 0.1;
-    styleTemperatureFillInput.value = styleTemperatureFillOutput.value = el.attr("fill") || "#000";
-    styleTemperatureFontSizeInput.value = el.attr("font-size") || "8px";
+    styleStrokeWidthInput.value = attrs["stroke-width"] ?? "";
+    styleTemperatureFillOpacityInput.value = attrs["fill-opacity"] ?? 0.1;
+    styleTemperatureFillInput.value = styleTemperatureFillOutput.value = attrs.fill || "#000";
+    styleTemperatureFontSizeInput.value = parseFloat(attrs["font-size"]) || 8;
   }
 
   if (styleElement === "coordinates") {
     styleSize.style.display = "block";
-    styleFontSize.value = styles.coordinates.options.fontSize;
+    styleFontSize.value = opts.fontSize;
   }
 
   if (styleElement === "ruler") {
     styleStrokeWidth.style.display = "block";
-    styleStrokeWidthInput.value = el.attr("stroke-width") || 2;
+    styleStrokeWidthInput.value = attrs["stroke-width"] ?? 2;
 
-    // show the effective dash, so maps predating the attribute don't display a misleading blank
     styleStrokeDash.style.display = "block";
-    styleStrokeDasharrayInput.value = el.attr("stroke-dasharray") ?? "10";
-    styleStrokeLinecapInput.value = el.attr("stroke-linecap") || "inherit";
+    styleStrokeDasharrayInput.value = attrs["stroke-dasharray"] ?? "10";
+    styleStrokeLinecapInput.value = attrs["stroke-linecap"] || "inherit";
 
     styleSize.style.display = "block";
-    styleFontSize.value = styles.rulers.options.fontSize;
+    styleFontSize.value = opts.fontSize;
   }
 
   if (styleElement === "armies") {
     styleArmies.style.display = "block";
-    styleArmiesFillOpacity.value = el.attr("fill-opacity");
-    styleArmiesSize.value = styles.military.options.boxSize;
+    styleArmiesFillOpacity.value = attrs["fill-opacity"];
+    styleArmiesSize.value = opts.boxSize;
   }
 
   if (styleElement === "emblems") {
     styleEmblems.style.display = "block";
     styleStrokeWidth.style.display = "block";
-    styleStrokeWidthInput.value = el.attr("stroke-width") || 1;
+    styleStrokeWidthInput.value = attrs["stroke-width"] ?? 1;
     emblemsStateSizeInput.value = styles.emblems.stateEmblems.options.size;
     emblemsProvinceSizeInput.value = styles.emblems.provinceEmblems.options.size;
     emblemsBurgSizeInput.value = styles.emblems.burgEmblems.options.size;
@@ -398,95 +386,102 @@ function selectStyleElement() {
 
   if (styleElement === "goodsIcons") {
     styleStrokeWidth.style.display = "block";
-    styleStrokeWidthInput.value = el.attr("stroke-width") || "";
+    styleStrokeWidthInput.value = attrs["stroke-width"] ?? "";
     styleGoods.style.display = "block";
-    styleGoodsCircle.checked = styles.goods.goodsIcons.options.circle;
-    styleGoodsSize.value = styles.goods.goodsIcons.options.size;
+    styleGoodsCircle.checked = opts.circle;
+    styleGoodsSize.value = opts.size;
   }
 
   if (styleElement === "goodsBurgs") {
     styleStrokeWidth.style.display = "block";
-    styleStrokeWidthInput.value = el.attr("stroke-width") || "0.2";
+    styleStrokeWidthInput.value = attrs["stroke-width"] ?? 0.2;
     styleStroke.style.display = "block";
-    styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke") || "#41414f";
+    styleStrokeInput.value = styleStrokeOutput.value = attrs.stroke || "#41414f";
     styleGoodsBurgs.style.display = "block";
-    styleGoodsBurgsSize.value = styles.goods.goodsBurgs.options.size;
+    styleGoodsBurgsSize.value = opts.size;
   }
 
   if (styleElement === "markets") {
     styleStrokeWidth.style.display = "block";
-    styleStrokeWidthInput.value = el.attr("stroke-width") || "0.5";
+    styleStrokeWidthInput.value = attrs["stroke-width"] ?? 0.5;
     styleMarketsLayer.style.display = "block";
-    styleMarketsLayerFillOpacity.value = el.attr("fill-opacity") || "0";
-    styleMarketsSize.value = styles.markets.options.size;
-    styleMarketsIconSize.value = styles.markets.options.fontSize;
-    styleMarketsIcon.innerHTML = styles.markets.options.icon;
-  }
-
-  // update group options
-  styleGroupSelect.options.length = 0; // remove all options
-  if (["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs"].includes(styleElement)) {
-    if (styleElement === "labels") {
-      // count from the label data: the culled DOM only holds labels rendered at this zoom
-      const labelCounts = {};
-      for (const label of window.getLabelsData()) labelCounts[label.group] = (labelCounts[label.group] || 0) + 1;
-      options.labels.groups.forEach(group => {
-        const count = labelCounts[group.name] || 0;
-        styleGroupSelect.options.add(new Option(`${group.name} (${count})`, group.name, false, false));
-      });
-      styleGroupSelect.value = el.attr("data-group");
-    } else {
-      const groups = ensureEl(styleElement).querySelectorAll("g");
-      groups.forEach(el => {
-        const option = new Option(`${el.id} (${el.childElementCount})`, el.id, false, false);
-        styleGroupSelect.options.add(option);
-      });
-      styleGroupSelect.value = el.attr("id");
-    }
-    styleGroup.style.display = "block";
-  } else {
-    styleGroupSelect.options.add(new Option(styleElement, styleElement, false, true));
-    styleGroup.style.display = "none";
+    styleMarketsLayerFillOpacity.value = attrs["fill-opacity"] ?? 0;
+    styleMarketsSize.value = opts.size;
+    styleMarketsIconSize.value = opts.fontSize;
+    styleMarketsIcon.innerHTML = opts.icon;
   }
 
   if (styleElement === "scaleBar") {
+    const back = styles.scaleBar.back;
     styleScaleBar.style.display = "block";
 
-    styleScaleBarSize.value = styles.scaleBar.options.barSize;
-    styleScaleBarFontSize.value = el.attr("font-size");
-    styleScaleBarPositionX.value = styles.scaleBar.options.x;
-    styleScaleBarPositionY.value = styles.scaleBar.options.y;
-    styleScaleBarLabel.value = styles.scaleBar.options.label;
+    styleScaleBarSize.value = opts.barSize;
+    styleScaleBarFontSize.value = attrs["font-size"];
+    styleScaleBarPositionX.value = opts.x;
+    styleScaleBarPositionY.value = opts.y;
+    styleScaleBarLabel.value = opts.label;
 
-    const scaleBarBack = el.select("#scaleBarBack");
-    if (scaleBarBack.size()) {
-      styleScaleBarBackgroundOpacity.value = scaleBarBack.attr("opacity");
-      styleScaleBarBackgroundFill.value = styleScaleBarBackgroundFillOutput.value = scaleBarBack.attr("fill");
-      styleScaleBarBackgroundStroke.value = styleScaleBarBackgroundStrokeOutput.value = scaleBarBack.attr("stroke");
-      styleScaleBarBackgroundStrokeWidth.value = scaleBarBack.attr("stroke-width");
-      styleScaleBarBackgroundFilter.value = scaleBarBack.attr("filter");
-      styleScaleBarBackgroundPaddingTop.value = styles.scaleBar.back.options.top;
-      styleScaleBarBackgroundPaddingRight.value = styles.scaleBar.back.options.right;
-      styleScaleBarBackgroundPaddingBottom.value = styles.scaleBar.back.options.bottom;
-      styleScaleBarBackgroundPaddingLeft.value = styles.scaleBar.back.options.left;
-    }
+    styleScaleBarBackgroundOpacity.value = back.attrs.opacity ?? 1;
+    styleScaleBarBackgroundFill.value = styleScaleBarBackgroundFillOutput.value = back.attrs.fill;
+    styleScaleBarBackgroundStroke.value = styleScaleBarBackgroundStrokeOutput.value = back.attrs.stroke;
+    styleScaleBarBackgroundStrokeWidth.value = back.attrs["stroke-width"] ?? 0;
+    styleScaleBarBackgroundFilter.value = back.attrs.filter || "";
+    styleScaleBarBackgroundPaddingTop.value = back.options.top;
+    styleScaleBarBackgroundPaddingRight.value = back.options.right;
+    styleScaleBarBackgroundPaddingBottom.value = back.options.bottom;
+    styleScaleBarBackgroundPaddingLeft.value = back.options.left;
   }
 
   if (styleElement === "vignette") {
     styleVignette.style.display = "block";
-
-    const maskRect = ensureEl("vignette-rect");
-    if (maskRect) {
-      const digit = str => str.replace(/[^\d.]/g, "");
-      styleVignetteX.value = digit(maskRect.getAttribute("x"));
-      styleVignetteY.value = digit(maskRect.getAttribute("y"));
-      styleVignetteWidth.value = digit(maskRect.getAttribute("width"));
-      styleVignetteHeight.value = digit(maskRect.getAttribute("height"));
-      styleVignetteRx.value = digit(maskRect.getAttribute("rx"));
-      styleVignetteRy.value = digit(maskRect.getAttribute("ry"));
-      styleVignetteBlur.value = digit(maskRect.getAttribute("filter"));
-    }
+    updateVignetteInputs();
   }
+}
+
+// the group names are structure, not styling: the layer's own children, or the groups the
+// user has defined. Sets styleGroupSelect.value to the group the sections below read
+function updateGroupOptions(styleElement, layerEl) {
+  const selected = styleGroupSelect.value; // read before clearing: emptying the list clears it
+  styleGroupSelect.options.length = 0;
+
+  if (!GROUPED_STYLE_ELEMENTS.includes(styleElement)) {
+    styleGroupSelect.options.add(new Option(styleElement, styleElement, false, true));
+    styleGroup.style.display = "none";
+    return;
+  }
+
+  styleGroup.style.display = "block";
+
+  if (styleElement === "labels") {
+    // count from the label data: the culled DOM only holds labels rendered at this zoom
+    const labelCounts = {};
+    for (const label of window.getLabelsData()) labelCounts[label.group] = (labelCounts[label.group] || 0) + 1;
+    const groups = options.labels.groups.map(({ name }) => name);
+    groups.forEach(name => styleGroupSelect.options.add(new Option(`${name} (${labelCounts[name] || 0})`, name)));
+    styleGroupSelect.value = groups.includes(selected) ? selected : groups[0] || "";
+    return;
+  }
+
+  // custom route groups exist only in the svg, so the group list is read from it
+  const groups = Array.from(layerEl.node()?.querySelectorAll(":scope > g") || []);
+  groups.forEach(g => styleGroupSelect.options.add(new Option(`${g.id} (${g.childElementCount})`, g.id)));
+  const ids = groups.map(g => g.id);
+  const fallback = styleElement === "terrs" ? "landHeights" : ids[0];
+  styleGroupSelect.value = ids.includes(selected) ? selected : fallback || "";
+}
+
+const getTextShadow = style => style?.match(/(?:^|;)\s*text-shadow\s*:\s*([^;]+)/)?.[1].trim() || "";
+
+function updateVignetteInputs() {
+  const { x, y, width, height, rx, ry, filter } = styles.vignette.options;
+  const digit = value => String(value ?? "").replace(/[^\d.]/g, "");
+  styleVignetteX.value = digit(x);
+  styleVignetteY.value = digit(y);
+  styleVignetteWidth.value = digit(width);
+  styleVignetteHeight.value = digit(height);
+  styleVignetteRx.value = digit(rx);
+  styleVignetteRy.value = digit(ry);
+  styleVignetteBlur.value = digit(filter);
 }
 
 // Handle style inputs change
@@ -501,25 +496,15 @@ function getEl() {
   else return map.select("#" + el).select("#" + g);
 }
 
-function updateLabelGroupInlineStyle(group) {
-  const groupStyle = styles.labels.groups[styleGroupSelect.value];
-  if (!groupStyle) return;
-
-  const inlineStyle = group.node().style;
-  const value = Array.from(inlineStyle)
-    .filter(property => property !== "transform")
-    .map(property => `${property}: ${inlineStyle.getPropertyValue(property)}`)
-    .join("; ");
-
-  groupStyle.attrs.style = value || null;
-}
-
-// generic controls: mirror the edit into the selection's store node, then write ONLY the
-// edited attribute to the DOM - a whole-layer Styles.write would reset sibling groups'
-// zoom-derived values (label/halo stroke-widths and sizes) to their stored bases
 function writeSelectedAttr(attr, value) {
   const resolved = stylesLegacy.styleNodeFor(styleElementSelect.value, styleGroupSelect.value);
-  if (resolved && attr in resolved.node.attrs) resolved.node.attrs[attr] = value;
+  if (resolved?.node.attrs && attr in resolved.node.attrs) resolved.node.attrs[attr] = value;
+  else {
+    ERROR &&
+      console.error(
+        `Style editor: "${attr}" is not in the styles schema for ${styleElementSelect.value} > ${styleGroupSelect.value}. The change is applied to the map but is not stored in the style`
+      );
+  }
   getEl().attr(attr, value ?? null);
 }
 
@@ -553,10 +538,6 @@ styleStrokeDasharrayInput.addEventListener("input", function () {
 styleStrokeLinecapInput.addEventListener("change", function () {
   writeSelectedAttr("stroke-linecap", this.value || null);
   if (styleElementSelect.value === "gridOverlay") Layers.draw("grid");
-});
-
-styleDisplayInput.addEventListener("change", function () {
-  getEl().attr("display", this.value || null);
 });
 
 styleOpacityInput.addEventListener("input", e => {
@@ -658,7 +639,7 @@ outlineLayers.addEventListener("change", function () {
   Layers.draw("ocean");
 });
 
-const heightsOptions = () => styles.heightmap[getEl().attr("id")].options;
+const heightsOptions = () => styles.heightmap[styleGroupSelect.value].options;
 
 styleHeightmapScheme.addEventListener("change", function () {
   heightsOptions().scheme = this.value;
@@ -915,8 +896,12 @@ function changeFont() {
 }
 
 styleShadowInput.addEventListener("input", function () {
-  const group = getEl().style("text-shadow", this.value);
-  updateLabelGroupInlineStyle(group);
+  // the group's transform is derived from the dx/dy options at draw time, so the stored style
+  // holds the shadow alone - it is the only inline property the editor owns
+  const groupStyle = styles.labels.groups[styleGroupSelect.value];
+  const shadow = this.value.trim();
+  if (groupStyle) groupStyle.attrs.style = shadow ? `text-shadow: ${shadow}` : null;
+  getEl().style("text-shadow", shadow || null);
 });
 
 styleFontAdd.addEventListener("click", function () {
@@ -1007,7 +992,7 @@ function changeFontSize(el, size) {
     return;
   }
 
-  el.attr("data-size", size).attr("font-size", size);
+  ERROR && console.error(`Style editor: no font size handler for ${styleElementSelect.value}`);
 }
 
 function applyLabelShift(axis, value) {
@@ -1186,24 +1171,10 @@ styleVignettePreset.addEventListener("change", function () {
     }
   }
 
-  const vignette = ensureEl("vignette");
-  if (vignette) {
-    styleOpacityInput.value = vignette.getAttribute("opacity");
-    styleFillInput.value = styleFillOutput.value = vignette.getAttribute("fill");
-    styleFilterInput.value = vignette.getAttribute("filter");
-  }
-
-  const maskRect = ensureEl("vignette-rect");
-  if (maskRect) {
-    const digit = str => str.replace(/[^\d.]/g, "");
-    styleVignetteX.value = digit(maskRect.getAttribute("x"));
-    styleVignetteY.value = digit(maskRect.getAttribute("y"));
-    styleVignetteWidth.value = digit(maskRect.getAttribute("width"));
-    styleVignetteHeight.value = digit(maskRect.getAttribute("height"));
-    styleVignetteRx.value = digit(maskRect.getAttribute("rx"));
-    styleVignetteRy.value = digit(maskRect.getAttribute("ry"));
-    styleVignetteBlur.value = digit(maskRect.getAttribute("filter"));
-  }
+  styleOpacityInput.value = styles.vignette.attrs.opacity ?? 1;
+  styleFillInput.value = styleFillOutput.value = styles.vignette.attrs.fill;
+  styleFilterInput.value = styles.vignette.attrs.filter || "";
+  updateVignetteInputs();
 });
 
 styleVignetteX.addEventListener("input", e => {
@@ -1251,20 +1222,26 @@ styleScaleBar.addEventListener("input", function (event) {
   else if (id === "styleScaleBarFontSize") {
     styles.scaleBar.attrs["font-size"] = +value || 10;
     d3.select("#scaleBar").attr("font-size", value);
-  }
-  else if (id === "styleScaleBarPositionX") styles.scaleBar.options.x = +value || 0;
+  } else if (id === "styleScaleBarPositionX") styles.scaleBar.options.x = +value || 0;
   else if (id === "styleScaleBarPositionY") styles.scaleBar.options.y = +value || 0;
   else if (id === "styleScaleBarLabel") styles.scaleBar.options.label = value;
-  else if (id === "styleScaleBarBackgroundOpacity") scaleBarBack.attr("opacity", value);
-  else if (id === "styleScaleBarBackgroundFill") scaleBarBack.attr("fill", value);
-  else if (id === "styleScaleBarBackgroundStroke") scaleBarBack.attr("stroke", value);
-  else if (id === "styleScaleBarBackgroundStrokeWidth") scaleBarBack.attr("stroke-width", value);
-  else if (id === "styleScaleBarBackgroundFilter") scaleBarBack.attr("filter", value);
+  else if (id === "styleScaleBarBackgroundOpacity") writeBackAttr("opacity", +value || 0);
+  else if (id === "styleScaleBarBackgroundFill") writeBackAttr("fill", value);
+  else if (id === "styleScaleBarBackgroundStroke") writeBackAttr("stroke", value);
+  else if (id === "styleScaleBarBackgroundStrokeWidth") writeBackAttr("stroke-width", +value || 0);
+  else if (id === "styleScaleBarBackgroundFilter") writeBackAttr("filter", value || null);
   else if (id === "styleScaleBarBackgroundPaddingTop") styles.scaleBar.back.options.top = +value || 0;
   else if (id === "styleScaleBarBackgroundPaddingRight") styles.scaleBar.back.options.right = +value || 0;
   else if (id === "styleScaleBarBackgroundPaddingBottom") styles.scaleBar.back.options.bottom = +value || 0;
   else if (id === "styleScaleBarBackgroundPaddingLeft") styles.scaleBar.back.options.left = +value || 0;
   Layers.draw("scaleBar");
+
+  // drawScaleBar only lays the background rect out; its paint comes from the store, so the
+  // edit must land there or Styles.write would restore the stored value on the next load
+  function writeBackAttr(attr, attrValue) {
+    styles.scaleBar.back.attrs[attr] = attrValue;
+    scaleBarBack.attr(attr, attrValue);
+  }
 });
 
 // GLOBAL FILTERS

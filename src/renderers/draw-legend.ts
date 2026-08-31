@@ -12,12 +12,10 @@ const getLegend = () => select<SVGGElement, unknown>("#legend");
 export function drawLegend(name: string, data: LegendItem[]): void {
   const legend = getLegend();
 
-  // the box drawn before carries the box styling (Styles.write restyles it in place);
-  // the store seeds a legend drawn anew and always owns the column count
-  const box = legend.select<SVGRectElement>("#legendBox").node();
+  // the store owns the box styling and the column count; the box is redrawn from it every time
   const itemsInCol = styles.legend.options.columns;
-  const backColor = box?.getAttribute("fill") ?? styles.legend.box.attrs.fill;
-  const opacity = Number(box?.getAttribute("fill-opacity") ?? styles.legend.box.attrs["fill-opacity"]);
+  const backColor = styles.legend.box.attrs.fill;
+  const opacity = Number(styles.legend.box.attrs["fill-opacity"]);
   const fontSize = styles.legend.options.fontSize;
 
   legend.selectAll("*").remove(); // fully redraw every time

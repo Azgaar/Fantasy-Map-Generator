@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import indexHtml from "@/index.html?raw";
 import "@/generators/features"; // migrations call the Features module through its global
 import { VERSION } from "@/services/versioning";
-import { legacyBurgGroupZoom, legacyBurgLabelZoom, resolveVersionConflicts } from "./auto-update";
+import { legacyBurgLabelZoom, resolveVersionConflicts } from "./auto-update";
 
 beforeEach(() => {
   document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox"></g></svg>`;
@@ -369,34 +369,5 @@ describe("missing svg defs", () => {
 
     const restored = Array.from(document.querySelectorAll("#map defs [id]"), node => node.id);
     expect(restored).toEqual(declared.map(([, id]) => id));
-  });
-});
-
-describe("legacyBurgLabelZoom", () => {
-  it("derives bounds from the legacy font size within the modern envelope", () => {
-    // a modern-sized legacy group lands where the formula says
-    expect(legacyBurgLabelZoom(6)).toEqual({ min: 1, max: 25 });
-    // oversized legacy dialects (asema's cities at 15) must not become always-visible
-    expect(legacyBurgLabelZoom(15).min).toBeGreaterThanOrEqual(1);
-    expect(legacyBurgLabelZoom(15).max).toBeGreaterThanOrEqual(25);
-    // tiny sizes clamp to the least prominent modern tier
-    expect(legacyBurgLabelZoom(1).min).toBeLessThanOrEqual(5);
-    expect(legacyBurgLabelZoom(1).max).toBeLessThanOrEqual(60);
-    // garbage font sizes fall back to the default tier
-    expect(legacyBurgLabelZoom(Number.NaN)).toEqual({ min: 2, max: 30 });
-  });
-});
-
-describe("legacyBurgGroupZoom", () => {
-  it("maps legacy tier names to their modern equivalents' bounds", () => {
-    expect(legacyBurgGroupZoom("cities", 15)).toEqual({ min: 1.4, max: 25 });
-    expect(legacyBurgGroupZoom("towns", 4)).toEqual({ min: 2, max: 30 });
-    expect(legacyBurgGroupZoom("town_small", 4)).toEqual({ min: 3, max: 40 });
-    expect(legacyBurgGroupZoom("town_large", 4)).toEqual({ min: 2, max: 30 });
-  });
-
-  it("falls back to the clamped size formula for unknown group names", () => {
-    expect(legacyBurgGroupZoom("customgroup", 6)).toEqual({ min: 1, max: 25 });
-    expect(legacyBurgGroupZoom("customgroup", 15).min).toBeGreaterThanOrEqual(1);
   });
 });

@@ -6,7 +6,7 @@ import { expect, test, type Page } from "@playwright/test";
 // These tests pin the round trips the doc promises: a store-format save/reload survives a preset
 // switch and a DOM-only editor write, an old, record-less map gets harvested into the store on
 // load and then produces a store-format record of its own on the next save, a preset-nulled attr
-// stays absent rather than getting backfilled from DEFAULT_STYLES, and a DOM-only #terrain write
+// stays absent rather than getting backfilled from Styles.defaults, and a DOM-only #terrain write
 // survives because the relief overlay no longer clobbers it.
 
 declare const changeStyle: (preset: string) => Promise<void>;
@@ -260,8 +260,14 @@ test.describe("style persistence round trips", () => {
       .replace('<g id="goodsIcons"', '<g id="goodsIcons" data-size="66"')
       .replace('<g id="goodsBurgs"', '<g id="goodsBurgs" data-size="66"')
       .replace('<g id="markets"', '<g id="markets" data-size="66"')
-      .replace('<g id="landHeights"', '<g id="landHeights" scheme="olive" terracing="2" skip="1" relax="1" curve="curveLinear"')
-      .replace('<g id="oceanHeights"', '<g id="oceanHeights" scheme="bright" terracing="0" skip="0" relax="0" curve="curveBasisClosed" data-render="1"')
+      .replace(
+        '<g id="landHeights"',
+        '<g id="landHeights" scheme="olive" terracing="2" skip="1" relax="1" curve="curveLinear"'
+      )
+      .replace(
+        '<g id="oceanHeights"',
+        '<g id="oceanHeights" scheme="bright" terracing="0" skip="0" relax="0" curve="curveBasisClosed" data-render="1"'
+      )
       .replace('<g id="armies"', '<g id="armies" box-size="9"')
       .replace('<g id="gridOverlay"', '<g id="gridOverlay" type="square" scale="9" dx="9" dy="9"')
       .replace('<g id="sea_island"', '<g id="sea_island" auto-filter="0"')
@@ -270,7 +276,10 @@ test.describe("style persistence round trips", () => {
       .replace('<g id="texture"', '<g id="texture" data-href="./z.jpg" data-x="66" data-y="66"')
       .replace('<g id="oceanLayers"', '<g id="oceanLayers" layers="-6"')
       .replace('<g id="scaleBar"', '<g id="scaleBar" data-bar-size="4" data-x="40" data-y="40" data-label="stale"')
-      .replace('<rect id="scaleBarBack"', '<rect id="scaleBarBack" data-top="66" data-right="66" data-bottom="66" data-left="66"')
+      .replace(
+        '<rect id="scaleBarBack"',
+        '<rect id="scaleBarBack" data-top="66" data-right="66" data-bottom="66" data-left="66"'
+      )
       .replace('<g id="legend"', '<g id="legend" data-x="11" data-y="11" data-columns="2"');
     expect(lines[5], "scaleBar injection must match the serialized svg").toContain('data-bar-size="4"');
     expect(lines[5], "legend injection must match the serialized svg").toContain('data-columns="2"');

@@ -13,7 +13,6 @@ import {
 } from "./styles-legacy";
 import fixture from "./styles-legacy-default.fixture.json";
 import serializerFixture from "./styles-legacy-serializer.fixture.json";
-import { DEFAULT_STYLES } from "./styles-schema";
 
 test("detects the legacy selector-keyed format", () => {
   expect(isLegacyPreset(fixture)).toBe(true);
@@ -21,7 +20,7 @@ test("detects the legacy selector-keyed format", () => {
 });
 
 test("isStoreStyles tells the two record shapes apart", () => {
-  expect(isStoreStyles(DEFAULT_STYLES)).toBe(true);
+  expect(isStoreStyles(DEFASULT_STYLES)).toBe(true);
   expect(isStoreStyles({ labels: { groups: {} }, burgIcons: {}, anchors: {}, relief: {} })).toBe(false);
   expect(isStoreStyles(null)).toBe(false);
 });
@@ -42,7 +41,7 @@ test("unknown selector throws by default, skips on request", () => {
   const bad = { "#nope": { opacity: 1 } };
   expect(() => presetFromLegacy(bad as any)).toThrow(/unknown legacy selector/);
   const warn = vi.spyOn(console, "warn");
-  expect(presetFromLegacy(bad as any, { onUnknown: "skip" }).map).toEqual(DEFAULT_STYLES.map);
+  expect(presetFromLegacy(bad as any, { onUnknown: "skip" }).map).toEqual(Styles.defaults.map);
   expect(warn).toHaveBeenCalledOnce();
 });
 
@@ -53,8 +52,8 @@ test('the string "null" converts to a real null', () => {
 
 test("R5: an attribute absent from the legacy bag keeps the default, not null", () => {
   const styles = presetFromLegacy({ "#armies": { "font-size": 6, "box-size": 3 } } as any, { onUnknown: "skip" });
-  expect(styles.military.attrs["stroke-dasharray"]).toBe(DEFAULT_STYLES.military.attrs["stroke-dasharray"]);
-  expect(styles.military.attrs["stroke-linecap"]).toBe(DEFAULT_STYLES.military.attrs["stroke-linecap"]);
+  expect(styles.military.attrs["stroke-dasharray"]).toBe(Styles.defaults.military.attrs["stroke-dasharray"]);
+  expect(styles.military.attrs["stroke-linecap"]).toBe(Styles.defaults.military.attrs["stroke-linecap"]);
 });
 
 test("sea_island's legacy auto-filter routes to options.autoFilter", () => {
@@ -123,7 +122,11 @@ test("styleNodeFor resolves editor selections to live store nodes", () => {
 });
 
 test("styleNodeFor returns undefined for structural parents and unknown groups", () => {
-  expect(styleNodeFor("icons", "")).toBeUndefined();
+  // #regions, #terrs, #icons and #goods are containers: styling lives on their children
+  expect(styleNodeFor("regions", "")).toBeUndefined();
+  expect(styleNodeFor("terrs", "")).toBeUndefined();
+  expect(styleNodeFor("icons", "icons")).toBeUndefined();
+  expect(styleNodeFor("goods", "goods")).toBeUndefined();
   expect(styleNodeFor("labels", "no-such-group")).toBeUndefined();
   expect(styleNodeFor("burgIcons", "no-such-group")).toBeUndefined();
 });
@@ -136,6 +139,12 @@ test("numeric-looking string options coerce back to strings, not schema-rejected
   expect(styles.ocean.oceanLayers.options.outline).toBe("-6");
   expect(styles.scaleBar.options.label).toBe("100");
   expect(styles.markets.options.icon).toBe("8");
+});
+
+test("legacy numeric stroke-dasharray values migrate to strings", () => {
+  const styles = presetFromLegacy({ "#gridOverlay": { "stroke-dasharray": 5 } } as any);
+
+  expect(styles.grid.attrs["stroke-dasharray"]).toBe("5");
 });
 
 test("labelGroupFromLegacy treats a zoom-faded opacity 0 as visible", () => {
@@ -184,7 +193,14 @@ test("R8: presetToLegacy round-trips every fixture key/value (superset is fine)"
   for (const [selector, bag] of Object.entries(fixture as Record<string, Record<string, unknown>>)) {
     for (const [key, value] of Object.entries(bag)) {
       if (selector === "#provs" && key === "data-size") continue; // R7: dead cargo, dropped on the way in
-      const expected = value === "null" ? null : value;
+      // background-color never rendered as an svg attribute; it left the schema for css
+      if (selector === "#map" && key === "background-color") continue;
+      const expected =
+        value === "null"
+          ? null
+          : selector !== "#provs" && key === "stroke-dasharray" && typeof value === "number"
+            ? String(value)
+            : value;
       expect(roundTripped[selector]?.[key], `${selector} ${key}`).toEqual(expected);
     }
   }
@@ -200,9 +216,9 @@ test("R8: the heal-consumed #terrs > #landHeights bag carries no keys beyond the
 
 test("save.ts's master-compat shim: a top-level anchors:{} still parses clean", () => {
   const warn = vi.spyOn(console, "warn");
-  const record = JSON.parse(JSON.stringify({ ...DEFAULT_STYLES, anchors: {} }));
+  const record = JSON.parse(JSON.stringify({ ...Styles.defaults, anchors: {} }));
   const parsed = Styles.parse(record);
-  expect(parsed).toEqual(DEFAULT_STYLES);
+  expect(parsed).toEqual(Styles.defaults);
   expect(warn).not.toHaveBeenCalled();
 });
 

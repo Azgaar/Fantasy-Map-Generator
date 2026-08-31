@@ -1,12 +1,11 @@
 import type { z } from "zod";
 import { type LayerId, Layers } from "@/components/layers";
-import { DEFAULT_STYLES, type StyleLayerId, type Styles as StylesData, stylesSchema } from "./styles-schema";
+import defaultStyles from "./default-styles.json";
+import { type StyleLayerId, type Styles as StylesData, stylesSchema } from "./styles-schema";
 
-// the active styles global; a clone, so pre-preset edits can't taint Styles.defaults
+const DEFAULT_STYLES: StylesData = stylesSchema.parse(defaultStyles);
 globalThis.styles = structuredClone(DEFAULT_STYLES);
 
-// new format only (legacy presets are converted by migration code first); an invalid or
-// missing layer falls back to the default with one warning, so the result is always complete
 function parse(json: unknown): StylesData {
   const input = typeof json === "object" && json !== null ? (json as Record<string, unknown>) : {};
   const result = {} as Record<string, unknown>;

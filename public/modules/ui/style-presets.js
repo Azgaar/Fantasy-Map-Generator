@@ -83,16 +83,15 @@ function applyStylePreset(presetJson) {
     return;
   }
   const parsed = stylesLegacy.isLegacyPreset(presetJson)
-    ? stylesLegacy.presetFromLegacy(presetJson, {onUnknown: "skip"})
+    ? stylesLegacy.presetFromLegacy(presetJson, { onUnknown: "skip" })
     : Styles.parse(presetJson);
 
   const previousReliefSize = styles.relief.options.size;
   Styles.set(parsed);
+  fillMissingLabelGroups();
   applyStoredStyles();
-
   applyReliefOptions(previousReliefSize);
   registerCustomScheme();
-  fillMissingLabelGroups();
 }
 
 function applyStoredStyles() {
@@ -103,13 +102,13 @@ function applyStoredStyles() {
 }
 
 function applyReliefOptions(previousSize) {
-  const {set, size} = styles.relief.options;
+  const { set, size } = styles.relief.options;
   if (size && size / previousSize !== 1) Relief.changeSize(size / previousSize);
   if (set) Relief.changeSet(set);
 }
 
 function registerCustomScheme() {
-  for (const {options} of [styles.heightmap.landHeights, styles.heightmap.oceanHeights]) {
+  for (const { options } of [styles.heightmap.landHeights, styles.heightmap.oceanHeights]) {
     if (!(options.scheme in heightmapColorSchemes)) addCustomColorScheme(options.scheme);
   }
 }
@@ -123,21 +122,6 @@ function fillMissingLabelGroups() {
     if (defaultGroupStyle) styles.labels.groups[group.name] = structuredClone(defaultGroupStyle);
   }
 }
-
-function setOrRemove(el, attribute, value) {
-  if (el == null) return;
-  if (value == null) el.removeAttribute(attribute);
-  else el.setAttribute(attribute, value);
-}
-
-function writeAttrsById(id, attrs) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  for (const [attribute, value] of Object.entries(attrs)) setOrRemove(el, attribute, value);
-}
-
-// Transitional: renderers that still read these options from DOM attributes (not yet
-
 
 function requestStylePresetChange(preset) {
   const isConfirmed = sessionStorage.getItem("styleChangeConfirmed");

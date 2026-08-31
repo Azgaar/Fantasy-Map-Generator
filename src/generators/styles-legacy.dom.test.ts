@@ -1,6 +1,5 @@
 import { expect, test, vi } from "vitest";
 import { harvestAttributes, stylesFromMap, syncStylesFromMap } from "./styles-legacy";
-import { DEFAULT_STYLES } from "./styles-schema";
 
 test("harvestAttributes derives from routes and schema", () => {
   const table = harvestAttributes();
@@ -47,7 +46,7 @@ test("syncStylesFromMap harvests the DOM but keeps store-authoritative domains",
 test("a schema attr the element omits harvests as an explicit null, not the seeded default", () => {
   document.body.innerHTML = `<svg id="map"><g id="rivers" opacity="0.9"></g></svg>`;
   const result = stylesFromMap(document);
-  expect(DEFAULT_STYLES.rivers.attrs.fill).not.toBeNull();
+  expect(Styles.defaults.rivers.attrs.fill).not.toBeNull();
   expect(result.rivers.attrs.fill).toBeNull();
   expect(result.rivers.attrs.opacity).toBe(0.9);
 });
@@ -55,7 +54,7 @@ test("a schema attr the element omits harvests as an explicit null, not the seed
 test("an omitted option still defaults, unlike a schema attr", () => {
   document.body.innerHTML = `<svg id="map"><g id="gridOverlay" stroke="#777"></g></svg>`;
   const result = stylesFromMap(document);
-  expect(result.grid.options.type).toBe(DEFAULT_STYLES.grid.options.type);
+  expect(result.grid.options.type).toBe(Styles.defaults.grid.options.type);
 });
 
 test("record-less sync harvests burg/anchor groups from the DOM, size dialect included", () => {
@@ -281,7 +280,7 @@ test("an old map omitting a non-nullable attr keeps the values it does carry", (
   document.body.innerHTML = `<svg id="map"><g id="provs" opacity="0.6"></g></svg>`;
   const result = stylesFromMap(document);
   expect(result.provinces.attrs.opacity).toBe(0.6);
-  expect(result.provinces.attrs["font-family"]).toBe(DEFAULT_STYLES.provinces.attrs["font-family"]);
+  expect(result.provinces.attrs["font-family"]).toBe(Styles.defaults.provinces.attrs["font-family"]);
 });
 
 test("harvesting an old map does not emit values the schema rejects", () => {
@@ -296,14 +295,14 @@ test("an attr the layer registry declares survives a map that predates it", () =
   // #fogging in old maps carries no mask; the registry stamps it after the harvest runs
   document.body.innerHTML = `<svg id="map"><g id="fogging" opacity="0.98"></g></svg>`;
   syncStylesFromMap({ hasStyleRecord: true });
-  expect(styles.fogging.attrs.mask).toBe(DEFAULT_STYLES.fogging.attrs.mask);
+  expect(styles.fogging.attrs.mask).toBe(Styles.defaults.fogging.attrs.mask);
 });
 
 test("a child group the map predates leaves its parent's styling in place", () => {
   // pre-1.143 maps have no #sea_island: the layer group itself is styled
   document.body.innerHTML = `<svg id="map"><g id="coastline" opacity="0.5" stroke-width="0.7"></g></svg>`;
   const result = stylesFromMap(document);
-  expect(DEFAULT_STYLES.coastline.sea_island.attrs["stroke-width"]).not.toBeNull();
+  expect(Styles.defaults.coastline.sea_island.attrs["stroke-width"]).not.toBeNull();
   expect(result.coastline.sea_island.attrs["stroke-width"]).toBeNull();
   expect(result.coastline.sea_island.attrs.opacity).toBeNull();
 });

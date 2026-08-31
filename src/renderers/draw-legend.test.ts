@@ -47,23 +47,25 @@ describe("drawLegend", () => {
     styles.legend.box.attrs.fill = "#ffffff";
   });
 
-  it("keeps the drawn box attrs on redraw but takes columns from the store", () => {
+  it("redraws the box from the store, not from the attrs the drawn box carried", () => {
     drawLegend("States", items);
 
     const box = document.getElementById("legendBox")!;
-    box.setAttribute("fill", "#f0e0c0"); // Styles.write restyles the drawn box directly
-    box.setAttribute("fill-opacity", "0.6");
+    box.setAttribute("fill", "#f0e0c0"); // a stale DOM value the store never learned about
+    styles.legend.box.attrs.fill = "#abcdef";
+    styles.legend.box.attrs["fill-opacity"] = 0.6;
     styles.legend.options.columns = 1;
 
     redrawLegend();
 
     const redrawn = document.getElementById("legendBox")!;
     expect(redrawn.getAttribute("data-columns")).toBe("1");
-    expect(redrawn.getAttribute("fill")).toBe("#f0e0c0");
+    expect(redrawn.getAttribute("fill")).toBe("#abcdef");
     expect(redrawn.getAttribute("fill-opacity")).toBe("0.6");
     expect(document.getElementById("legendLabel")?.textContent).toBe("States");
     expect(document.querySelectorAll("#legend text")).toHaveLength(3); // 2 items + the label
     styles.legend.options.columns = 8;
+    styles.legend.box.attrs.fill = "#ffffff";
   });
 
   it("fitLegendBox positions from the store, ignoring the retired data attrs", () => {

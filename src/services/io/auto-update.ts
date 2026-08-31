@@ -8,13 +8,7 @@ import type { GraphOverrides } from "@/generators/graph-override";
 import { type Label, type LabelNameMode, Labels as LabelsGenerator } from "@/generators/labels-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
 
-import {
-  isLegacyPreset,
-  isStoreStyles,
-  labelGroupFromLegacy,
-  presetToLegacy,
-  syncStylesFromMap
-} from "@/generators/styles-legacy";
+import { labelGroupFromLegacy, migrateStyles } from "@/generators/styles-legacy";
 import type { Point } from "@/generators/voronoi";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { unfog } from "@/renderers/overlays/fogging";
@@ -22,30 +16,6 @@ import { compareVersions } from "@/services/versioning";
 import type { ReliefSet } from "@/types/relief";
 import { ensureEl, findEl, minmax, P, parseTransform, rand, rn, rw, safeParseJSON, unique } from "@/utils";
 import { parsePathPoints } from "@/utils/pathUtils";
-
-// legacy zoom bounds derive from the group's font size (bigger labels surface earlier), but
-// old size dialects vary wildly - clamp into the modern capital..hamlet envelope so an
-// oversized legacy group can't become always-visible (and a tiny one never-visible)
-export function legacyBurgLabelZoom(fontSize: number): { min: number; max: number } {
-  if (!Number.isFinite(fontSize) || fontSize <= 0) return { min: 2, max: 30 };
-  return { min: minmax(rn(12 / fontSize - 1, 1), 1, 5), max: minmax(rn(120 / fontSize - 1, 1), 25, 60) };
-}
-
-// old-era tier names map onto the modern tiers' visibility, so a migrated map's cities appear
-// at the same zooms a modern city does instead of inheriting formula noise from size dialects
-const LEGACY_BURG_GROUP_EQUIVALENTS: Record<string, string> = {
-  cities: "city",
-  towns: "town",
-  town_small: "village",
-  town_large: "town"
-};
-
-export function legacyBurgGroupZoom(name: string, fontSize: number): { min: number | null; max: number | null } {
-  const modernName = LEGACY_BURG_GROUP_EQUIVALENTS[name];
-  const modern =
-    modernName && LabelsGenerator.getDefaultGroups().find(group => group.type === "burg" && group.name === modernName);
-  return modern ? structuredClone(modern.zoom) : legacyBurgLabelZoom(fontSize);
-}
 
 export async function resolveVersionConflicts(mapVersion: string, data: string[]): Promise<void> {
   const isOlderThan = (tagVersion: string) => compareVersions(mapVersion, tagVersion).isOlder;
@@ -1293,7 +1263,6 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   if (isOlderThan("1.140.0")) {
     // v1.140.0 migrated label data and styles to the unified flat Label Group model
-
     let labels = document.querySelector<SVGGElement>("#labels");
     if (!labels) {
       labels = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -1317,6 +1286,28 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     for (const type of ["river", "route"] as const) {
       options.labels.groups.push(Labels.getFallbackGroup(type));
       styles.labels.groups[type] = getGroupStyle({ name: type, type });
+    }
+
+    function legacyBurgLabelZoom(fontSize: number): { min: number; max: number } {
+      if (!Number.isFinite(fontSize) || fontSize <= 0) return { min: 2, max: 30 };
+      return { min: minmax(rn(12 / fontSize - 1, 1), 1, 5), max: minmax(rn(120 / fontSize - 1, 1), 25, 60) };
+    }
+
+    // old-era tier names map onto the modern tiers' visibility, so a migrated map's cities appear
+    // at the same zooms a modern city does instead of inheriting formula noise from size dialects
+    const LEGACY_BURG_GROUP_EQUIVALENTS: Record<string, string> = {
+      cities: "city",
+      towns: "town",
+      town_small: "village",
+      town_large: "town"
+    };
+
+    function legacyBurgGroupZoom(name: string, fontSize: number): { min: number | null; max: number | null } {
+      const modernName = LEGACY_BURG_GROUP_EQUIVALENTS[name];
+      const modern =
+        modernName &&
+        LabelsGenerator.getDefaultGroups().find(group => group.type === "burg" && group.name === modernName);
+      return modern ? structuredClone(modern.zoom) : legacyBurgLabelZoom(fontSize);
     }
 
     const burgGroups = Array.from(document.querySelectorAll<SVGGElement>("#burgLabels > g"));
@@ -1852,87 +1843,10 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       for (const node of Array.from(template.children)) restore(node, defs);
       if (restored.length) WARN && console.warn("[Auto-update] Restored missing svg defs:", restored.join(", "));
     }
-
-    // v1.145-1.147 stripped the layer style from saved maps
-    await restoreLayerStyles();
-
-    async function restoreLayerStyles(): Promise<void> {
-      const [, raw] = await (window as any).getStylePreset(localStorage.getItem("presetStyle") || "default");
-      const preset = isLegacyPreset(raw) ? raw : presetToLegacy(Styles.parse(raw));
-
-      for (const layer of Layers.all) {
-        restoreGroupStyle(layer.elementId, preset[`#${layer.elementId}`], layer.params.attrs);
-
-        for (const child of layer.children) {
-          const style = preset[`#${child.id}`] || preset[`#${layer.elementId} > #${child.id}`];
-          restoreGroupStyle(child.id, style, child.attrs);
-        }
-      }
-    }
-
-    function restoreGroupStyle(
-      id: string,
-      style: Record<string, string | number | null> | undefined,
-      declared?: Record<string, string>
-    ): void {
-      const group = document.getElementById(id);
-      if (!style || group?.tagName !== "g" || !isBareGroup(group, declared)) return;
-
-      for (const [name, value] of Object.entries(style)) {
-        if (value === null || value === "null") continue;
-        if (id === "terrain" && ["set", "size", "density"].includes(name)) continue;
-        group.setAttribute(name, String(value));
-      }
-    }
-
-    function isBareGroup(group: Element, declared: Record<string, string> = {}): boolean {
-      const ignored = new Set(["id", "style", ...Object.keys(declared)]);
-      return Array.from(group.attributes).every(attribute => ignored.has(attribute.name));
-    }
   }
 
-  // Version-lie maps make the record's own shape the only trustworthy signal: harvest fills the store for
-  // record-less maps so the next save persists correctly, while absorbed domains stay with migration-gate values
-  {
-    const styleRecord = safeParseJSON(data[48]);
-    if (!isStoreStyles(styleRecord)) {
-      syncStylesFromMap({ hasStyleRecord: Boolean(styleRecord) });
-    }
-  }
-
-  // unconditional: step-4-era saves carry these attrs beside a store record too, and the
-  // authority rule in syncStylesFromMap would let them clobber the record's values forever
-  document.getElementById("markers")?.removeAttribute("rescale");
-  document.getElementById("statesHalo")?.removeAttribute("data-width");
-  document.getElementById("coordinates")?.removeAttribute("data-size");
-  document.getElementById("ruler")?.removeAttribute("data-size");
-  document.getElementById("ruler")?.removeAttribute("font-size");
-  document.getElementById("legend")?.removeAttribute("data-size");
-  for (const id of ["stateEmblems", "provinceEmblems", "burgEmblems", "goodsIcons", "goodsBurgs", "markets"]) {
-    document.getElementById(id)?.removeAttribute("data-size");
-  }
-  for (const id of ["landHeights", "oceanHeights"]) {
-    for (const attr of ["scheme", "terracing", "skip", "relax", "curve"]) {
-      document.getElementById(id)?.removeAttribute(attr);
-    }
-  }
-  document.getElementById("oceanHeights")?.removeAttribute("data-render");
-  document.getElementById("armies")?.removeAttribute("box-size");
-  for (const attr of ["type", "scale", "dx", "dy"]) document.getElementById("gridOverlay")?.removeAttribute(attr);
-  document.getElementById("map")?.removeAttribute("data-filter");
-  document.getElementById("sea_island")?.removeAttribute("auto-filter");
-  document.getElementById("markets")?.removeAttribute("font-size");
-  document.getElementById("markets")?.removeAttribute("data-icon");
-  document.getElementById("goodsIcons")?.removeAttribute("data-circle");
-  for (const attr of ["data-href", "data-x", "data-y"]) document.getElementById("texture")?.removeAttribute(attr);
-  document.getElementById("oceanLayers")?.removeAttribute("layers");
-  for (const attr of ["data-bar-size", "data-x", "data-y", "data-label"])
-    document.getElementById("scaleBar")?.removeAttribute(attr);
-  for (const attr of ["data-top", "data-right", "data-bottom", "data-left"])
-    document.getElementById("scaleBarBack")?.removeAttribute(attr);
-  for (const attr of ["data-x", "data-y", "data-columns"]) document.getElementById("legend")?.removeAttribute(attr);
-  for (const el of document.querySelectorAll("#labels > *")) {
-    el.removeAttribute("data-dx");
-    el.removeAttribute("data-dy");
+  if (isOlderThan("1.150.0")) {
+    // v1.150.0 made the styles store the source of truth
+    await migrateStyles(data[48]);
   }
 }

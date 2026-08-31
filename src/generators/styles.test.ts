@@ -1,14 +1,14 @@
 import { describe, expect, test, vi } from "vitest";
 import { Styles } from "./styles";
-import { DEFAULT_STYLES, stylesSchema } from "./styles-schema";
+import { stylesSchema } from "./styles-schema";
 
 describe("stylesSchema", () => {
   test("the default styles are valid — defaults and schema cannot drift", () => {
-    expect(stylesSchema.safeParse(DEFAULT_STYLES).success).toBe(true);
+    expect(stylesSchema.safeParse(Styles.defaults).success).toBe(true);
   });
 
   test("unknown keys are rejected by the strict schemas", () => {
-    const routes = structuredClone(DEFAULT_STYLES.routes) as Record<string, unknown>;
+    const routes = structuredClone(Styles.defaults.routes) as Record<string, unknown>;
     routes.bogus = {};
     expect(stylesSchema.shape.routes.safeParse(routes).success).toBe(false);
   });
@@ -17,19 +17,19 @@ describe("stylesSchema", () => {
 describe("parseStyles", () => {
   test("a valid document round-trips unchanged", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    expect(Styles.parse(structuredClone(DEFAULT_STYLES))).toEqual(DEFAULT_STYLES);
+    expect(Styles.parse(structuredClone(Styles.defaults))).toEqual(Styles.defaults);
     expect(warn).not.toHaveBeenCalled();
     warn.mockRestore();
   });
 
   test("an invalid layer falls back to the default with one warning; the rest survive", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const doc = structuredClone(DEFAULT_STYLES);
+    const doc = structuredClone(Styles.defaults);
     doc.rivers.attrs.fill = "#123456";
     (doc as Record<string, unknown>).markers = { attrs: { opacity: "not a number" } };
     const parsed = Styles.parse(doc);
     expect(parsed.rivers.attrs.fill).toBe("#123456");
-    expect(parsed.markers).toEqual(DEFAULT_STYLES.markers);
+    expect(parsed.markers).toEqual(Styles.defaults.markers);
     expect(warn).toHaveBeenCalledTimes(1);
     warn.mockRestore();
   });
@@ -37,42 +37,49 @@ describe("parseStyles", () => {
   test("garbage input yields the complete defaults", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const parsed = Styles.parse("nonsense");
-    expect(parsed).toEqual(DEFAULT_STYLES);
+    expect(parsed).toEqual(Styles.defaults);
     expect(Object.keys(parsed).sort()).toEqual(Object.keys(stylesSchema.shape).sort());
     warn.mockRestore();
   });
 
   test("null survives — it means the attribute is not set", () => {
-    const doc = structuredClone(DEFAULT_STYLES);
+    const doc = structuredClone(Styles.defaults);
     doc.rivers.attrs.filter = null;
     expect(Styles.parse(doc).rivers.attrs.filter).toBeNull();
+  });
+
+  test("numeric stroke-dasharray values are not coerced by the regular parser", () => {
+    const doc = structuredClone(Styles.defaults) as any;
+    doc.routes.groups.roads.attrs["stroke-dasharray"] = 5;
+
+    expect(Styles.parse(doc).routes.groups.roads.attrs["stroke-dasharray"]).toBe("2");
   });
 });
 
 describe("schema reconciliation", () => {
   test("ocean filter and outline live under the oceanLayers subgroup", () => {
-    expect(DEFAULT_STYLES.ocean.oceanLayers.attrs.filter).toBeNull();
-    expect(DEFAULT_STYLES.ocean.oceanLayers.options.outline).toBe("-6,-3,-1");
-    expect(DEFAULT_STYLES.ocean.options).toEqual({ pattern: "./images/pattern1.png", patternOpacity: 0.2 });
+    expect(Styles.defaults.ocean.oceanLayers.attrs.filter).toBeNull();
+    expect(Styles.defaults.ocean.oceanLayers.options.outline).toBe("-6,-3,-1");
+    expect(Styles.defaults.ocean.options).toEqual({ pattern: "./images/pattern1.png", patternOpacity: 0.2 });
   });
 
   test("labels base font-size is the css length the registry stamps", () => {
-    expect(DEFAULT_STYLES.labels.attrs["font-size"]).toBe("100px");
+    expect(Styles.defaults.labels.attrs["font-size"]).toBe("100px");
   });
 });
 
 describe("per-attribute repair", () => {
   test("an invalid attribute falls back alone, not with its whole layer", () => {
-    const doc = structuredClone(DEFAULT_STYLES) as any;
+    const doc = structuredClone(Styles.defaults) as any;
     doc.provinces.attrs.opacity = 0.6;
     doc.provinces.attrs["font-family"] = null; // non-nullable in the schema
     const parsed = Styles.parse(doc);
     expect(parsed.provinces.attrs.opacity).toBe(0.6);
-    expect(parsed.provinces.attrs["font-family"]).toBe(DEFAULT_STYLES.provinces.attrs["font-family"]);
+    expect(parsed.provinces.attrs["font-family"]).toBe(Styles.defaults.provinces.attrs["font-family"]);
   });
 
   test("a layer that cannot be repaired still falls back whole", () => {
-    const parsed = Styles.parse({ ...DEFAULT_STYLES, provinces: "not a layer" });
-    expect(parsed.provinces).toEqual(DEFAULT_STYLES.provinces);
+    const parsed = Styles.parse({ ...Styles.defaults, provinces: "not a layer" });
+    expect(parsed.provinces).toEqual(Styles.defaults.provinces);
   });
 });

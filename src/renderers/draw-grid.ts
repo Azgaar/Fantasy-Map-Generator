@@ -6,13 +6,14 @@ export function drawGrid(): void {
   gridOverlay.selectAll("*").remove();
 
   const { type, scale, dx, dy } = styles.grid.options;
+  const { attrs } = styles.grid;
   const pattern = `#pattern_${type || "pointyHex"}`;
 
   select(pattern)
-    .attr("stroke", gridOverlay.attr("stroke") || "#808080")
-    .attr("stroke-width", gridOverlay.attr("stroke-width") || 0.5)
-    .attr("stroke-dasharray", gridOverlay.attr("stroke-dasharray"))
-    .attr("stroke-linecap", gridOverlay.attr("stroke-linecap"))
+    .attr("stroke", attrs.stroke || "#808080")
+    .attr("stroke-width", attrs["stroke-width"] || 0.5)
+    .attr("stroke-dasharray", attrs["stroke-dasharray"])
+    .attr("stroke-linecap", attrs["stroke-linecap"])
     .attr("patternTransform", `scale(${scale}) translate(${dx} ${dy})`);
 
   gridOverlay
