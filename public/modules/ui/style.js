@@ -505,6 +505,7 @@ function writeSelectedAttr(attr, value) {
   const resolved = stylesLegacy.styleNodeFor(styleElementSelect.value, styleGroupSelect.value);
   if (resolved?.node.attrs && attr in resolved.node.attrs) resolved.node.attrs[attr] = value;
   else {
+    tip("This change shows on the map but can't be stored in the style, so it won't survive a redraw or save", false, "warn", 5000);
     ERROR &&
       console.error(
         `Style editor: "${attr}" is not in the styles schema for ${styleElementSelect.value} > ${styleGroupSelect.value}. The change is applied to the map but is not stored in the style`
