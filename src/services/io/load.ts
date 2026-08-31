@@ -438,16 +438,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     Routes.sync();
     TradeAnimation.sync();
     Journeys.sync();
-    const orphanTransports = Journeys.getOrphanTransports();
-    if (orphanTransports.length) {
-      const names = orphanTransports.map(escapeHtml).join(", ");
-      tip(
-        `Journey transport types not found on this device: ${names}. Affected segments follow air-travel rules until the types are recreated in the Transports editor.`,
-        false,
-        "warn",
-        10000
-      );
-    }
 
     select("#scaleBar")
       .on("mousemove", () => tip("Click to open Units Editor"))
@@ -709,6 +699,22 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
 
         // sort markers by index
         pack.markers.sort((a, b) => a.i - b.i);
+      }
+
+      {
+        // segment transports with no transport type behind them - they'd silently fall back to air rules
+        const transportNames = new Set(Transports.all.map(transport => transport.name));
+        const orphans = new Set<string>();
+        for (const journey of pack.journeys) {
+          for (const segment of journey.segments) {
+            if (!transportNames.has(segment.transport)) orphans.add(segment.transport);
+          }
+        }
+
+        if (orphans.size) {
+          const names = [...orphans];
+          ERROR && console.error("[Data integrity] Journey transports missing", names.map(escapeHtml).join(", "));
+        }
       }
     }
 
