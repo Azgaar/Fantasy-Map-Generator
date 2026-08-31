@@ -20,7 +20,7 @@ test("detects the legacy selector-keyed format", () => {
 });
 
 test("isStoreStyles tells the two record shapes apart", () => {
-  expect(isStoreStyles(DEFASULT_STYLES)).toBe(true);
+  expect(isStoreStyles(Styles.defaults)).toBe(true);
   expect(isStoreStyles({ labels: { groups: {} }, burgIcons: {}, anchors: {}, relief: {} })).toBe(false);
   expect(isStoreStyles(null)).toBe(false);
 });
