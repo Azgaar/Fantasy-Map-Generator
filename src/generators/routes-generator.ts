@@ -736,7 +736,8 @@ class RoutesModule {
     const { groups } = styles.routes;
     const template = groups.roads || Object.values(groups)[0];
     if (!template) return;
-    for (const group of new Set(pack.routes.map(route => route.group))) {
+    // presets are also applied on initial page load, before any map (and its routes) exists
+    for (const group of new Set((pack.routes ?? []).map(route => route.group))) {
       if (!groups[group]) groups[group] = structuredClone(template);
     }
   }

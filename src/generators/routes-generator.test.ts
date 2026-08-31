@@ -617,3 +617,19 @@ describe("ensureRouteGroupStyles", () => {
     expect(groups["route-royal"]).not.toBe(groups.roads);
   });
 });
+
+describe("ensureRouteGroupStyles before a map exists", () => {
+  it("is a no-op when the pack has no routes yet (style preset applied on initial load)", async () => {
+    globalThis.TIME = false;
+    globalThis.window = globalThis.window || ({} as any);
+    globalThis.grid = { cells: { temp: [20] } } as any;
+    globalThis.pack = {} as any;
+    await import("./routes-generator");
+    const Routes = (globalThis as any).Routes;
+
+    (globalThis as any).styles = { routes: { groups: { roads: { attrs: { opacity: 0.9 } } } } };
+
+    expect(() => Routes.ensureRouteGroupStyles()).not.toThrow();
+    expect(Object.keys((globalThis as any).styles.routes.groups)).toEqual(["roads"]);
+  });
+});
