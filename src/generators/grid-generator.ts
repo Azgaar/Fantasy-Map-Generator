@@ -3,7 +3,7 @@ import Alea from "alea";
 import { min } from "d3";
 import type { GridCells, GridGraph } from "@/types/GridGraph";
 import type { Point } from "@/types/global";
-import { ensureEl, rn, SEA_LEVEL } from "@/utils";
+import { rn, SEA_LEVEL } from "@/utils";
 import { calculateVoronoi } from "./voronoi";
 
 declare global {
@@ -79,7 +79,7 @@ class GridModule {
 
   /** number of cells requested by the user, the generated number is close but not equal to it */
   getCellsDesired(): number {
-    return +(ensureEl<HTMLInputElement>("pointsInput").dataset.cells || 0);
+    return options.graph.cellsDesired;
   }
 
   /** cell index at the given coordinates, resolved by the regular square grid the points sit on */
@@ -169,7 +169,7 @@ class GridModule {
 
   /** turn depressions that cannot pour to water into lakes */
   addDeepDepressionLakes(): void {
-    const elevationLimit = +ensureEl<HTMLOutputElement>("lakeElevationLimitOutput").value;
+    const elevationLimit = options.heightmap.lakeElevationLimit;
     if (elevationLimit === 80) return;
 
     const { cells, features } = grid;
@@ -224,7 +224,7 @@ class GridModule {
 
   /** near sea lakes get a lot of water inflow, most of them should break the threshold and flow out to sea (see Ancylus Lake) */
   openNearSeaLakes(): void {
-    if (ensureEl<HTMLInputElement>("templateInput").value === "Atoll") return; // no need for Atolls
+    if (options.heightmap.template === "Atoll") return; // no need for Atolls
 
     const { cells, features } = grid;
     if (!features.find(f => f.type === "lake")) return; // no lakes

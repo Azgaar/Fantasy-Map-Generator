@@ -11,8 +11,9 @@ import { stored } from "@/utils/preferences";
 function onResize(): void {
   if (stored("mapWidth") && stored("mapHeight")) return;
 
-  ensureEl<HTMLInputElement>("mapWidthInput").value = String(window.innerWidth);
-  ensureEl<HTMLInputElement>("mapHeightInput").value = String(window.innerHeight);
+  options.graph.width = window.innerWidth;
+  options.graph.height = window.innerHeight;
+  options.syncInputs();
   fitMapToScreen();
 }
 

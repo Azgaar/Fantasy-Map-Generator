@@ -2,7 +2,7 @@ import Alea from "alea";
 import { range as d3Range, leastIndex, mean } from "d3";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import type { GridGraph } from "@/types/GridGraph";
-import { ensureEl, getNumberInRange, lim, minmax, P, rand } from "../utils";
+import { getNumberInRange, lim, minmax, P, rand } from "../utils";
 
 declare global {
   var HeightmapGenerator: HeightmapModule;
@@ -544,7 +544,7 @@ class HeightmapModule {
 
   /** heightmap template or precreated heightmap selected in the options */
   getSelectedId(): string {
-    return ensureEl<HTMLInputElement>("templateInput").value;
+    return options.heightmap.template;
   }
 
   /** build the heightmap from the selected template or image and store it as the graph cell heights */

@@ -17,7 +17,7 @@ export function drawPopulation(): void {
 
   const urban: Bar[] = burgs
     .filter(burg => burg.i && !burg.removed)
-    .map(burg => [burg.x!, burg.y!, burg.y! - (burg.population! / 5) * urbanization]);
+    .map(burg => [burg.x!, burg.y!, burg.y! - (burg.population! / 5) * options.units.population.urbanization.rate]);
   drawBars(population.select("#urban"), urban, show, 500);
 }
 

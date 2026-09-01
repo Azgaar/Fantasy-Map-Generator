@@ -12,7 +12,7 @@ export function drawPrecipitation(): void {
   drawWindDirections();
   prec.selectAll("text").attr("opacity", 0).transition(show).attr("opacity", 1);
 
-  const cellsNumberModifier = (+ensureEl<HTMLInputElement>("pointsInput").dataset.cells! / 10000) ** 0.25;
+  const cellsNumberModifier = (options.graph.cellsDesired / 10000) ** 0.25;
   const data = Array.from(cells.i as ArrayLike<number>).filter(i => cells.h[i] >= 20 && cells.prec[i]);
   const getRadius = (precipitation: number) => rn(Math.sqrt(precipitation / 4) / cellsNumberModifier, 2);
 

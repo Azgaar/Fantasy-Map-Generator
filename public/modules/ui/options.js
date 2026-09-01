@@ -255,7 +255,7 @@ const voiceInterval = setInterval(function () {
 }, 1000);
 
 function testSpeaker() {
-  const text = `${mapName.value}, ${options.year} ${options.era}`;
+  const text = `${mapName.value}, ${options.lore.calendar.year} ${options.lore.calendar.era}`;
   const speaker = new SpeechSynthesisUtterance(text);
   const voices = speechSynthesis.getVoices();
   if (voices.length) {
@@ -267,28 +267,12 @@ function testSpeaker() {
 
 // seed handling and the shareable map URL now live in src/components/seed.ts and src/services/url-params.ts
 
-const cellsDensityMap = {
-  1: 1000,
-  2: 2000,
-  3: 5000,
-  4: 10000,
-  5: 20000,
-  6: 30000,
-  7: 40000,
-  8: 50000,
-  9: 60000,
-  10: 70000,
-  11: 80000,
-  12: 90000,
-  13: 100000
-};
-
 function changeCellsDensity(value) {
+  options.setDensity(+value);
   pointsInput.value = value;
-  const cells = cellsDensityMap[value] || pointsInput.dataset.cells;
-  pointsInput.dataset.cells = cells;
-  pointsOutputFormatted.value = cells / 1000 + "K";
-  pointsOutputFormatted.style.color = getCellsDensityColor(cells);
+  pointsInput.dataset.cells = options.graph.cellsDesired;
+  pointsOutputFormatted.value = options.graph.cellsDesired / 1000 + "K";
+  pointsOutputFormatted.style.color = getCellsDensityColor(options.graph.cellsDesired);
 }
 
 function getCellsDensityColor(cells) {
@@ -475,13 +459,8 @@ function restoreDefaultZoomExtent() {
   setMapZoom(1);
 }
 
-// restore options stored in localStorage
+// restore the panel's own UI state. Option *values* are restored by components/options.ts
 function applyStoredOptions() {
-  if (!stored("mapWidth") || !stored("mapHeight")) {
-    mapWidthInput.value = window.innerWidth;
-    mapHeightInput.value = window.innerHeight;
-  }
-
   const heightmapId = stored("template");
   if (heightmapId) {
     const name = heightmapTemplates[heightmapId]?.name || precreatedHeightmaps[heightmapId]?.name || heightmapId;
@@ -504,23 +483,12 @@ function applyStoredOptions() {
     lock(key);
 
     if (key === "points") changeCellsDensity(+value);
-    if (key === "distanceScale") distanceScale = +value;
 
     // add saved style presets to options
     if (key.slice(0, 5) === "style") applyOption(stylePreset, key, key.slice(5));
   }
 
   Emblems.setShape(emblemShape.value);
-
-  if (stored("winds")) options.winds = stored("winds").split(",").map(Number);
-  if (stored("temperatureEquator")) options.temperatureEquator = +stored("temperatureEquator");
-  if (stored("temperatureNorthPole")) options.temperatureNorthPole = +stored("temperatureNorthPole");
-  if (stored("temperatureSouthPole")) options.temperatureSouthPole = +stored("temperatureSouthPole");
-  if (stored("mapSize")) options.mapSize = +stored("mapSize");
-  if (stored("latitude")) options.latitude = +stored("latitude");
-  if (stored("longitude")) options.longitude = +stored("longitude");
-  if (stored("prec")) options.prec = +stored("prec");
-  if (stored("military")) options.military = JSON.parse(stored("military"));
 
   if (stored("tooltipSize")) changeTooltipSize(stored("tooltipSize"));
   if (stored("regions")) changeStatesNumber(stored("regions"));
@@ -529,19 +497,6 @@ function applyStoredOptions() {
   if (stored("uiSize")) changeUiSize(+stored("uiSize"));
   else changeUiSize(minmax(rn(mapWidthInput.value / 1280, 1), 1, 2.5));
 
-  // search params overwrite stored and default options
-  const params = new URL(window.location.href).searchParams;
-  const width = +params.get("width");
-  const height = +params.get("height");
-  if (width) mapWidthInput.value = width;
-  if (height) mapHeightInput.value = height;
-
-  // a zero-sized window (hidden or headless tab) or a stored 0 would produce a degenerate grid
-  if (!(+mapWidthInput.value > 0) || !(+mapHeightInput.value > 0)) {
-    mapWidthInput.value = window.innerWidth || 1280;
-    mapHeightInput.value = window.innerHeight || 800;
-  }
-
   const transparency = stored("transparency") || 5;
   const themeColor = stored("themeColor");
   changeDialogsTheme(themeColor, transparency);
@@ -549,73 +504,7 @@ function applyStoredOptions() {
   setRendering(shapeRendering.value);
 }
 
-// randomize options if randomization is allowed (not locked or queryParam options='default')
-function randomizeOptions() {
-  const randomize = new URL(window.location.href).searchParams.get("options") === "default"; // ignore stored options
-
-  // a loaded map's migrated group registries are map data, not session preferences: re-seed
-  // from the same source boot uses, so new maps get the user's saved groups or the defaults
-  options.burgs.groups = JSON.safeParse(localStorage.getItem("burg-groups")) || Burgs.getDefaultGroups();
-  options.labels = JSON.safeParse(localStorage.getItem("options-labels")) || Labels.getDefaultOptions();
-
-  // 'Options' settings
-  if (randomize || !stored("points")) changeCellsDensity(4); // reset to default, no need to randomize
-  if (randomize || !stored("template")) randomizeHeightmapTemplate();
-  if (randomize || !stored("statesNumber")) statesNumber.value = gauss(18, 5, 2, 30);
-  if (randomize || !stored("provincesRatio")) provincesRatio.value = gauss(20, 10, 20, 100);
-  if (randomize || !stored("manors")) {
-    manorsInput.value = 1000;
-    manorsOutput.value = "auto";
-  }
-  if (randomize || !stored("religionsNumber")) religionsNumber.value = gauss(6, 3, 2, 10);
-  if (randomize || !stored("sizeVariety")) sizeVariety.value = gauss(4, 2, 0, 10, 1);
-  if (randomize || !stored("growthRate")) growthRate.value = rn(1 + Math.random(), 1);
-  if (randomize || !stored("cultures")) culturesInput.value = culturesOutput.value = gauss(12, 3, 5, 30);
-  if (randomize || !stored("culturesSet")) randomizeCultureSet();
-
-  // 'Configure World' settings
-  if (randomize || !stored("temperatureEquator")) options.temperatureEquator = gauss(25, 7, 20, 35, 0);
-  if (randomize || !stored("temperatureNorthPole")) options.temperatureNorthPole = gauss(-25, 7, -40, 10, 0);
-  if (randomize || !stored("temperatureSouthPole")) options.temperatureSouthPole = gauss(-15, 7, -40, 10, 0);
-  if (randomize || !stored("prec")) options.prec = gauss(100, 40, 5, 500);
-
-  // 'Units Editor' settings
-  const US = navigator.language === "en-US";
-  if (randomize || !stored("distanceScale")) distanceScale = distanceScaleInput.value = gauss(3, 1, 1, 5);
-  if (!stored("distanceUnit")) distanceUnitInput.value = US ? "mi" : "km";
-  if (!stored("heightUnit")) heightUnit.value = US ? "ft" : "m";
-  if (!stored("temperatureScale")) temperatureScale.value = US ? "°F" : "°C";
-
-  // World settings
-  generateEra();
-}
-
-// select heightmap template pseudo-randomly
-function randomizeHeightmapTemplate() {
-  const templates = {};
-  for (const key in heightmapTemplates) {
-    templates[key] = heightmapTemplates[key].probability || 0;
-  }
-  const template = rw(templates);
-  const name = heightmapTemplates[template].name;
-  applyOption(ensureEl("templateInput"), template, name);
-}
-
-// select culture set pseudo-randomly
-function randomizeCultureSet() {
-  const sets = {
-    world: 10,
-    european: 10,
-    oriental: 2,
-    english: 5,
-    antique: 3,
-    highFantasy: 11,
-    darkFantasy: 3,
-    random: 1
-  };
-  culturesSet.value = rw(sets);
-  changeCultureSet();
-}
+// randomizeOptions, randomizeHeightmapTemplate and randomizeCultureSet moved to components/options.ts
 
 function setRendering(value) {
   d3.select("#viewbox").attr("shape-rendering", value);
@@ -630,40 +519,26 @@ function setRendering(value) {
   }
 }
 
-// generate current year and era name
-function generateEra() {
-  if (!stored("year")) yearInput.value = rand(100, 2000); // current year
-  if (!stored("era")) eraInput.value = Names.getBaseShort(P(0.7) ? 1 : rand(Names.nameBases.length)) + " Era";
-  options.year = +yearInput.value;
-  options.era = eraInput.value;
-  options.eraShort = options.era
-    .split(" ")
-    .map(w => w[0].toUpperCase())
-    .join(""); // short name for era
-}
-
-function regenerateEra() {
-  unlock("era");
-  options.era = eraInput.value = Names.getBaseShort(P(0.7) ? 1 : rand(Names.nameBases.length)) + " Era";
-  options.eraShort = options.era
-    .split(" ")
-    .map(w => w[0].toUpperCase())
-    .join("");
-}
-
 function changeYear() {
   if (!yearInput.value) return;
   if (isNaN(+yearInput.value)) {
     tip("Current year should be a number", false, "error");
     return;
   }
-  options.year = +yearInput.value;
+  options.lore.calendar.year = +yearInput.value;
 }
 
 function changeEra() {
   if (!eraInput.value) return;
   lock("era");
-  options.era = eraInput.value;
+  options.setEra(eraInput.value);
+}
+
+// regenerate the era name and show it
+function regenerateEra() {
+  unlock("era");
+  options.setEra(options.randomEra());
+  eraInput.value = options.lore.calendar.era;
 }
 
 async function openTemplateSelectionDialog() {

@@ -303,7 +303,9 @@ function updateBurgValues(): void {
   ensureEl<HTMLInputElement>("burgName").value = b.name!;
   ensureEl<HTMLSelectElement>("burgGroup").value = b.group!;
   ensureEl<HTMLSelectElement>("burgType").value = b.type || "Generic";
-  ensureEl<HTMLInputElement>("burgPopulation").value = String(rn(b.population! * populationRate * urbanization));
+  ensureEl<HTMLInputElement>("burgPopulation").value = String(
+    rn(b.population! * options.units.population.scale * options.units.population.urbanization.rate)
+  );
   ensureEl("burgWealth").innerHTML = `🟡 ${rn(b.population! > 0 ? (b.product || 0) / b.population! : 0, 2)}`;
   ensureEl("burgTreasury").innerHTML = `🟡 ${rn(b.treasury || 0, 2)}`;
   ensureEl("burgEditAnchorStyle").style.display = +b.port! ? "inline-block" : "none";
@@ -384,7 +386,9 @@ function changePopulation(): void {
   const burg = pack.burgs[id];
 
   pack.burgs[id].population = rn(
-    ensureEl<HTMLInputElement>("burgPopulation").valueAsNumber / populationRate / urbanization,
+    ensureEl<HTMLInputElement>("burgPopulation").valueAsNumber /
+      options.units.population.scale /
+      options.units.population.urbanization.rate,
     4
   );
   updateBurgPreview(burg);

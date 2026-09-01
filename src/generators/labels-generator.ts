@@ -194,7 +194,7 @@ export class LabelsModule {
   }
 }
 
-const labelsInstance = new LabelsModule();
-window.Labels = labelsInstance;
+// biome-ignore lint/suspicious/noRedeclare: legacy seam
+export const Labels = new LabelsModule();
 
-export { labelsInstance as Labels };
+window.Labels = Labels;

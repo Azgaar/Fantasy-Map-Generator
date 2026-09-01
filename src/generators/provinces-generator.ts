@@ -2,7 +2,7 @@ import Alea from "alea";
 import { max } from "d3";
 import { Emblems } from "@/generators/emblems-generator";
 import type { Emblem } from "@/types/emblems";
-import { ensureEl, gauss, generateSeed, getMixedColor, getPolesOfInaccessibility, P, rand, rw } from "../utils";
+import { gauss, generateSeed, getMixedColor, getPolesOfInaccessibility, P, rand, rw } from "../utils";
 import type { Label } from "./labels-generator";
 
 declare global {
@@ -102,7 +102,7 @@ class ProvinceModule {
       });
     }
 
-    const provincesRatio = (ensureEl("provincesRatio") as HTMLInputElement).valueAsNumber;
+    const provincesRatio = options.provinces.ratio;
     const maxGrowth = provincesRatio === 100 ? 1000 : gauss(20, 5, 5, 100) * provincesRatio ** 0.5; // max growth
 
     // generate provinces for selected burgs

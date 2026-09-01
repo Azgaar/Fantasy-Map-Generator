@@ -70,7 +70,9 @@ const columns: EditorColumn<Religion>[] = [
     key: "population",
     label: "Population",
     width: "6em",
-    sortBy: religion => (religion.rural || 0) * populationRate + (religion.urban || 0) * populationRate * urbanization
+    sortBy: religion =>
+      (religion.rural || 0) * options.units.population.scale +
+      (religion.urban || 0) * options.units.population.scale * options.units.population.urbanization.rate
   },
   {
     key: "expansion",
@@ -225,13 +227,16 @@ function religionsEditorAddLines(view: TableView<Religion>): void {
   // totals span the full filtered set, not just the current page
   for (const r of view.all) {
     totalArea += getArea(r.area ?? 0);
-    totalPopulation += rn((r.rural ?? 0) * populationRate + (r.urban ?? 0) * populationRate * urbanization);
+    totalPopulation += rn(
+      (r.rural ?? 0) * options.units.population.scale +
+        (r.urban ?? 0) * options.units.population.scale * options.units.population.urbanization.rate
+    );
   }
 
   for (const r of view.rows) {
     const area = getArea(r.area ?? 0);
-    const rural = (r.rural ?? 0) * populationRate;
-    const urban = (r.urban ?? 0) * populationRate * urbanization;
+    const rural = (r.rural ?? 0) * options.units.population.scale;
+    const urban = (r.urban ?? 0) * options.units.population.scale * options.units.population.urbanization.rate;
     const population = rn(rural + urban);
     const populationTip = `Believers: ${si(population)}; Rural areas: ${si(rural)}; Urban areas: ${si(
       urban
@@ -549,8 +554,8 @@ function changePopulation(this: HTMLElement): void {
     return;
   }
 
-  const rural = rn((religion.rural ?? 0) * populationRate);
-  const urban = rn((religion.urban ?? 0) * populationRate * urbanization);
+  const rural = rn((religion.rural ?? 0) * options.units.population.scale);
+  const urban = rn((religion.urban ?? 0) * options.units.population.scale * options.units.population.urbanization.rate);
   const total = rural + urban;
   const format = (n: number) => Number(n).toLocaleString();
   const burgs = pack.burgs.filter(b => !b.removed && pack.cells.religion[b.cell] === religionId);
@@ -607,7 +612,7 @@ function changePopulation(this: HTMLElement): void {
       });
     }
     if (!Number.isFinite(ruralChange) && +ruralPop.value > 0) {
-      const points = +ruralPop.value / populationRate;
+      const points = +ruralPop.value / options.units.population.scale;
       const cells = (pack.cells.i as unknown as number[]).filter(i => pack.cells.religion[i] === religionId);
       const pop = rn(points / cells.length);
       cells.forEach(i => {
@@ -622,7 +627,7 @@ function changePopulation(this: HTMLElement): void {
       });
     }
     if (!Number.isFinite(urbanChange) && +urbanPop.value > 0) {
-      const points = +urbanPop.value / populationRate / urbanization;
+      const points = +urbanPop.value / options.units.population.scale / options.units.population.urbanization.rate;
       const population = rn(points / burgs.length, 4);
       burgs.forEach(b => {
         b.population = population;
@@ -784,7 +789,9 @@ async function showHierarchy(): Promise<void> {
     };
 
     const formText = form === type ? "" : `. ${form}`;
-    const population = rural * populationRate + urban * populationRate * urbanization;
+    const population =
+      rural * options.units.population.scale +
+      urban * options.units.population.scale * options.units.population.urbanization.rate;
     const populationText = population > 0 ? `${si(rn(population))} people` : "Extinct";
 
     return `${name}${getTypeText()}${formText}. ${populationText}`;
@@ -904,7 +911,10 @@ function downloadReligionsCsv(): void {
   // export the full filtered set (all pages), not just the visible page
   const data = religionsTable.view().all.map(r => {
     const area = getArea(r.area ?? 0);
-    const population = rn((r.rural ?? 0) * populationRate + (r.urban ?? 0) * populationRate * urbanization);
+    const population = rn(
+      (r.rural ?? 0) * options.units.population.scale +
+        (r.urban ?? 0) * options.units.population.scale * options.units.population.urbanization.rate
+    );
     const deityText = `"${r.deity || ""}"`;
     const originList = (r.origins ?? [])
       .filter((origin): origin is number => Boolean(origin))

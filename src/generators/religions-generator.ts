@@ -2,7 +2,6 @@ import { quadtree } from "d3";
 import {
   abbreviate,
   each,
-  ensureEl,
   gauss,
   getAdjective,
   getMixedColor,
@@ -623,7 +622,7 @@ class ReligionsModule {
     const lockedReligions = pack.religions?.filter(r => r.i && r.lock && !r.removed) || [];
 
     const folkReligions = this.generateFolkReligions();
-    const organizedReligions = this.generateOrganizedReligions(+religionsNumber.value, lockedReligions);
+    const organizedReligions = this.generateOrganizedReligions(options.religions.limit, lockedReligions);
 
     const namedReligions = this.specifyReligions([...folkReligions, ...organizedReligions]);
     const indexedReligions = this.combineReligions(namedReligions, lockedReligions);
@@ -1026,7 +1025,7 @@ class ReligionsModule {
     const cost: number[] = [];
 
     // limit cost for organized religions growth
-    const maxExpansionCost = (cells.i.length / 20) * (ensureEl("growthRate") as HTMLInputElement).valueAsNumber;
+    const maxExpansionCost = (cells.i.length / 20) * options.cultures.growthRate;
 
     religions
       .filter(r => r.i && !r.lock && r.type !== "Folk" && r.type !== "Heresy" && !r.removed)
@@ -1074,7 +1073,7 @@ class ReligionsModule {
     const { cells } = pack;
     const queue = new FlatQueue();
     const cost: number[] = [];
-    const maxExpansionCost = (cells.i.length / 20) * (ensureEl("growthRate") as HTMLInputElement).valueAsNumber;
+    const maxExpansionCost = (cells.i.length / 20) * options.cultures.growthRate;
     const religionsMap = new Map(religions.map(religion => [religion.i, religion]));
 
     for (const heresy of heresies) {

@@ -178,7 +178,7 @@ class RiverModule {
 
     const drainWater = () => {
       const MIN_FLUX_TO_FORM_RIVER = 30;
-      const cellsNumberModifier = ((pointsInput.dataset.cells as any) / 10000) ** 0.25;
+      const cellsNumberModifier = (options.graph.cellsDesired / 10000) ** 0.25;
 
       const prec = grid.cells.prec;
       const land = cells.i.filter((i: number) => h[i] >= 20).sort((a: number, b: number) => h[b] - h[a]);
@@ -310,7 +310,7 @@ class RiverModule {
       cells.conf = new Uint16Array(cells.i.length);
       pack.rivers = [];
 
-      const defaultWidthFactor = rn(1 / ((pointsInput.dataset.cells as any) / 10000) ** 0.25, 2);
+      const defaultWidthFactor = rn(1 / (options.graph.cellsDesired / 10000) ** 0.25, 2);
       const mainStemWidthFactor = defaultWidthFactor * 1.2;
 
       for (const key in riversData) {
@@ -425,7 +425,7 @@ class RiverModule {
   // depression filling algorithm (for a correct water flux modeling)
   resolveDepressions(h: number[]) {
     const { cells, features } = pack;
-    const maxIterations = +(document.getElementById("resolveDepressionsStepsOutput") as HTMLInputElement)?.value;
+    const maxIterations = options.heightmap.resolveDepressionsSteps;
     const checkLakeMaxIteration = maxIterations * 0.85;
     const elevateLakeMaxIteration = maxIterations * 0.75;
 

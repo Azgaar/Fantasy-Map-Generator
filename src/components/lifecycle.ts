@@ -2,7 +2,6 @@
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { hideLoading, showLoading } from "@/components/loading";
-import { readScaleInputs } from "@/components/options";
 import { setSeed } from "@/components/seed";
 import { warnIfServerless } from "@/components/shell";
 import { clearMainTip } from "@/components/tooltips";
@@ -19,15 +18,20 @@ import { cleanupData } from "@/services/versioning";
 import type { GridGraph } from "@/types/GridGraph";
 import { debounce, ensureEl, findEl, parseError } from "@/utils";
 
+/**
+ * Bring the app up. Runs on `DOMContentLoaded`, so after the classic `public/modules/ui/*.js`
+ * scripts that still own the options panel and the style presets
+ */
 export async function boot(): Promise<void> {
   registerServiceWorker();
 
-  readScaleInputs(); // before applyStoredOptions, which overrides distanceScale from localStorage
-  applyStoredOptions();
+  options.restoreStored(); // defaults, then what the user pinned in localStorage, then search params
+  options.syncInputs(); // options are the source of truth, the inputs only display them
+  applyStoredOptions(); // the classic panel's own restore: theme, ui size, style preset list
 
   // the voronoi graph extent is fixed for the life of a map, the svg canvas is resized to the window
-  graphWidth = +ensureEl<HTMLInputElement>("mapWidthInput").value;
-  graphHeight = +ensureEl<HTMLInputElement>("mapHeightInput").value;
+  graphWidth = options.graph.width;
+  graphHeight = options.graph.height;
   svgWidth = graphWidth;
   svgHeight = graphHeight;
 
@@ -50,8 +54,9 @@ export async function generate(config?: GenerationConfig): Promise<void> {
   try {
     const { seed: precreatedSeed, graph: precreatedGraph } = config || {};
     setSeed(precreatedSeed);
+    options.randomize();
+    options.syncInputs();
     applyGraphSize();
-    randomizeOptions();
 
     await GenerationPipeline.run({ seed: precreatedSeed, graph: precreatedGraph });
 
@@ -89,8 +94,7 @@ export const regenerateMap = debounce(async (config?: GenerationConfig | string)
   WARN && console.warn("Generate new random map");
 
   // a big grid takes long enough that the splash is worth showing
-  const cellsDesired = +(ensureEl("pointsInput").dataset.cells ?? 0);
-  const shouldShowLoading = cellsDesired > 10000;
+  const shouldShowLoading = options.graph.cellsDesired > 10000;
   shouldShowLoading && showLoading();
 
   closeDialogs("#worldConfigurator, #options3d");

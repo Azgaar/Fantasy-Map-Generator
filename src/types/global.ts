@@ -44,7 +44,6 @@ declare global {
   var hideOptions: (event?: Event) => void;
   var changeViewMode: (event?: Event) => void;
   var showExportPane: () => void;
-  var cellsDensityMap: Record<number, number>;
   var changeCellsDensity: (value: string) => void;
   var getCellsDensityColor: (cells: number) => string;
 

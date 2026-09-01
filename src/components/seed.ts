@@ -52,9 +52,10 @@ export function showSeedHistoryDialog(): void {
 export function restoreSeed(index: number): void {
   const { seed, width, height, template } = mapHistory[index] as Record<string, string>;
   ensureEl<HTMLInputElement>("optionsSeed").value = seed;
-  ensureEl<HTMLInputElement>("mapWidthInput").value = width;
-  ensureEl<HTMLInputElement>("mapHeightInput").value = height;
-  ensureEl<HTMLInputElement>("templateInput").value = template;
+  options.graph.width = +width;
+  options.graph.height = +height;
+  options.heightmap.template = template;
+  options.syncInputs();
 
   if (stored("template")) unlock("template");
   regeneratePrompt({ seed });

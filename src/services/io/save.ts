@@ -54,20 +54,20 @@ function prepareMapData(): string {
   const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
   const params = [VERSION, license, dateString, seed, graphWidth, graphHeight, mapId].join("|");
   const settings = [
-    distanceUnitInput.value,
-    distanceScale,
-    areaUnit.value,
-    heightUnit.value,
-    heightExponentInput.value,
-    temperatureScale.value,
+    options.units.distance.unit,
+    options.units.distance.scale,
+    options.units.area.unit,
+    options.units.height.unit,
+    options.units.height.exponent,
+    options.units.temperature.unit,
     "", // previously used for barSize.value
     "", // previously used for barLabel.value
     "", // previously used for barBackColor.value
     "", // previously used for barBackColor.value
     "", // previously used for barPosX.value
     "", // previously used for barPosY.value
-    populationRate,
-    urbanization,
+    options.units.population.scale,
+    options.units.population.urbanization.rate,
     "", // previously used for mapSizeOutput.value, part of options now
     "", // previously used for latitudeOutput.value, part of options now
     "", // previously used for temperatureEquatorOutput.value
@@ -78,9 +78,9 @@ function prepareMapData(): string {
     "", // previously used for hideLabels
     stylePreset.value,
     "", // previously used for rescaleLabels
-    urbanDensity,
+    options.units.population.urbanization.density,
     "", // previously used for longitudeOutput.value, part of options now
-    ensureEl<HTMLInputElement>("growthRate").value
+    options.cultures.growthRate
   ].join("|");
   const coords = JSON.stringify(mapCoordinates);
   const notesData = JSON.stringify(notes);

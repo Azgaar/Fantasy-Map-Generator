@@ -14,6 +14,7 @@ import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { State } from "@/generators/states-generator";
+import type { MilitaryUnit } from "@/types/Military";
 import { downloadFile, getFileName } from "@/utils";
 import { capitalize, ensureEl, rn, sanitizeId, si, wiki } from "../utils";
 
@@ -211,7 +212,10 @@ function getMilitaryData(): MilitaryRow[] {
           (state.military || []).reduce((total, regiment) => total + (regiment.u[unit.name] || 0), 0)
         ])
       );
-      const population = rn(((state.rural || 0) + (state.urban || 0) * urbanization) * populationRate);
+      const population = rn(
+        ((state.rural || 0) + (state.urban || 0) * options.units.population.urbanization.rate) *
+          options.units.population.scale
+      );
       const total = options.military.reduce((sum, unit) => sum + (forces[unit.name] || 0) * unit.crew, 0);
       return {
         state,

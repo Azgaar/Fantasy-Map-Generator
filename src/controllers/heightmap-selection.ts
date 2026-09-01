@@ -3,7 +3,6 @@ import { heightmapTemplates } from "@/data/heightmap-templates";
 import { precreatedHeightmaps } from "@/data/precreated-heightmaps";
 import { drawHeights } from "@/renderers/draw-heightmap";
 import type { GridGraph } from "@/types/GridGraph";
-import { applyOption } from "@/utils";
 import { lock } from "@/utils/preferences";
 import { ensureEl, generateSeed } from "../utils";
 
@@ -17,8 +16,7 @@ addListeners();
 function open(): void {
   closeDialogs(".stable");
 
-  const $templateInput = ensureEl<HTMLInputElement>("templateInput");
-  setSelected($templateInput.value);
+  setSelected(options.heightmap.template);
   graph = getGraph(graph);
 
   $("#heightmapSelection").dialog({
@@ -32,7 +30,8 @@ function open(): void {
       Select: function (this: HTMLElement) {
         const id = getSelected();
         if (!id) return;
-        applyOption($templateInput, id, getName(id));
+        options.heightmap.template = id;
+        options.syncInputs();
         lock("template");
 
         $(this).dialog("close");
@@ -40,7 +39,8 @@ function open(): void {
       "New Map": function (this: HTMLElement) {
         const id = getSelected();
         if (!id) return;
-        applyOption($templateInput, id, getName(id));
+        options.heightmap.template = id;
+        options.syncInputs();
         lock("template");
 
         const seed = getSeed();
@@ -269,11 +269,6 @@ function setSelected(id: string): void {
 
 function getSeed(): string | undefined {
   return ensureEl("heightmapSelection").querySelector<HTMLElement>(".selected")?.dataset?.seed;
-}
-
-function getName(id: string): string {
-  const isTemplate = id in heightmapTemplates;
-  return isTemplate ? heightmapTemplates[id].name : precreatedHeightmaps[id].name;
 }
 
 function getGraph(currentGraph: GridGraph): GridGraph {

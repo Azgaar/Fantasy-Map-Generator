@@ -157,7 +157,7 @@ function updateRiverData(): void {
 
 function updateRiverLength(river: River): void {
   river.length = rn((selectedRiver.node() as SVGGeometryElement).getTotalLength() / 2, 2);
-  const lengthUI = `${rn(river.length * distanceScale)} ${distanceUnitInput.value}`;
+  const lengthUI = `${rn(river.length * options.units.distance.scale)} ${options.units.distance.unit}`;
   ensureEl<HTMLInputElement>("riverLength").value = lengthUI;
 }
 
@@ -173,7 +173,7 @@ function updateRiverWidth(river: River): void {
     })
   );
 
-  const width = `${rn(river.width * distanceScale, 3)} ${distanceUnitInput.value}`;
+  const width = `${rn(river.width * options.units.distance.scale, 3)} ${options.units.distance.unit}`;
   ensureEl<HTMLInputElement>("riverWidth").value = width;
 }
 
@@ -310,7 +310,7 @@ function changeWidthFactor(this: HTMLInputElement): void {
 function showRiverElevationProfile(): void {
   const points = (select("#controlPoints").selectAll("*").data() as Point[]).map(([x, y]) => Pack.findCell(x, y)!);
   const river = getRiver();
-  const riverLen = rn(river.length * distanceScale);
+  const riverLen = rn(river.length * options.units.distance.scale);
   void Controllers.ElevationProfile.open(points, riverLen, true);
 }
 

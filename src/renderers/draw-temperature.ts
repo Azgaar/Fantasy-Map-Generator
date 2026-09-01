@@ -10,7 +10,7 @@ import {
   scaleSequential,
   select
 } from "d3";
-import { connectVertices, convertTemperature, ensureEl, round } from "../utils";
+import { connectVertices, convertTemperature, round } from "../utils";
 
 const temperatureRenderer = (): void => {
   TIME && console.time("drawTemperature");
@@ -79,7 +79,7 @@ const temperatureRenderer = (): void => {
     select("#temperature").append("path").attr("d", path).attr("fill", fill).attr("stroke", stroke.toString());
   }
 
-  const scale = (ensureEl("temperatureScale") as HTMLSelectElement).value as Parameters<typeof convertTemperature>[1];
+  const scale = options.units.temperature.unit as Parameters<typeof convertTemperature>[1];
 
   const tempLabels = select("#temperature").append("g").attr("id", "tempLabels").attr("fill-opacity", 1);
   tempLabels

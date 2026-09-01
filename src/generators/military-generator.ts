@@ -283,7 +283,7 @@ class MilitaryModule {
                 unit.type as keyof (typeof cellTypeModifier)[keyof typeof cellTypeModifier]
               ]; // cell specific modifier
         const army = modifier * perc * cellTypeMod; // rural cell army
-        const total = rn(army * stateObj.temp[unit.name] * populationRate); // total troops
+        const total = rn(army * stateObj.temp[unit.name] * options.units.population.scale); // total troops
         if (!total) continue;
 
         let [x, y] = p[i];
@@ -320,7 +320,7 @@ class MilitaryModule {
       const religion = cells.religion[b.cell];
 
       const stateObj = states[state];
-      let m = (b.population * urbanization) / 100; // basic urban army in percentages
+      let m = (b.population * options.units.population.urbanization.rate) / 100; // basic urban army in percentages
       if (b.capital) m *= 1.2; // capital has household troops
       if (culture !== stateObj.culture) m = stateObj.form === "Union" ? m / 1.2 : m / 2; // non-dominant culture
       if (religion !== cells.religion[stateObj.center]) m = stateObj.form === "Theocracy" ? m / 2.2 : m / 1.4; // non-dominant religion
@@ -340,7 +340,7 @@ class MilitaryModule {
                 unit.type as keyof (typeof burgTypeModifier)[keyof typeof burgTypeModifier]
               ]; // cell specific modifier
         const army = m * perc * mod; // urban cell army
-        const total = rn(army * stateObj.temp[unit.name] * populationRate); // total troops
+        const total = rn(army * stateObj.temp[unit.name] * options.units.population.scale); // total troops
         if (!total) continue;
 
         let [x, y] = p[b.cell];
@@ -367,7 +367,7 @@ class MilitaryModule {
       }
     }
 
-    const expected = 3 * populationRate; // expected regiment size
+    const expected = 3 * options.units.population.scale; // expected regiment size
     const mergeable = (n0: { s: number; u: string }, n1: { s: number; u: string }) => (!n0.s && !n1.s) || n0.u === n1.u; // check if regiments can be merged
     const createRegiments = (nodes: Platoon[], s: State): Regiment[] => {
       if (!nodes.length) return [];
@@ -549,15 +549,15 @@ class MilitaryModule {
           .join("\r\n")
       : null;
     const troops = composition
-      ? `\r\n\r\nRegiment composition in ${options.year} ${options.eraShort}:\r\n${composition}.`
+      ? `\r\n\r\nRegiment composition in ${options.lore.calendar.year} ${options.lore.calendar.eraShort}:\r\n${composition}.`
       : "";
 
     const campaign = s.campaigns ? ra(s.campaigns) : null;
     const year = campaign
-      ? rand(campaign.start, campaign.end || options.year)
-      : gauss(options.year - 100, 150, 1, options.year - 6);
+      ? rand(campaign.start, campaign.end || options.lore.calendar.year)
+      : gauss(options.lore.calendar.year - 100, 150, 1, options.lore.calendar.year - 6);
     const conflict = campaign ? ` during the ${campaign.name}` : "";
-    const legend = `Regiment was formed in ${year} ${options.era}${conflict}. ${station}${troops}`;
+    const legend = `Regiment was formed in ${year} ${options.lore.calendar.era}${conflict}. ${station}${troops}`;
     const id = `regiment${s.i}-${r.i}`;
     const existing = notes.find(n => n.id === id);
     if (existing) {

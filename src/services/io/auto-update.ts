@@ -315,7 +315,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     const era = `${Names.getBaseShort(P(0.7) ? 1 : rand(Names.nameBases.length))} Era`;
     const eraShort = `${era[0]}E`;
     const military = Military.getDefaultOptions();
-    options = { winds, year, era, eraShort, military } as typeof options;
+    options.restoreSaved({ winds, year, era, eraShort, military });
 
     // v1.3 added campaings data for all states
     States.generateCampaigns();
@@ -1029,7 +1029,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   if (isOlderThan("1.109.0")) {
     // v1.109.0 added customizable burg groups and icons
-    options.burgs = { groups: [] };
+    options.burgs.groups = [];
 
     select("#burgIcons")
       .selectAll<SVGElement, unknown>("circle, use")
@@ -1092,7 +1092,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       }
     });
 
-    const opts = options as Record<string, unknown>;
+    const opts = options as unknown as Record<string, unknown>;
     delete opts.showBurgPreview;
     delete opts.showMFCGMap;
     delete opts.villageMaxPopulation;

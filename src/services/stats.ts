@@ -1,10 +1,9 @@
 // What was generated, for the console and for anything watching the app from outside
-import { ensureEl } from "@/utils/nodeUtils";
 import { stored } from "@/utils/preferences";
 
 /** Stamp the new map with an id, record it in the session history and report it */
 export function logStats(): void {
-  const heightmap = ensureEl<HTMLInputElement>("templateInput").value;
+  const heightmap = options.heightmap.template;
   const isTemplate = heightmap in heightmapTemplates;
   const heightmapType = isTemplate ? "template" : "precreated";
   const isRandomTemplate = isTemplate && !stored("template") ? "random " : "";
@@ -19,7 +18,7 @@ export function logStats(): void {
     Template: ${isRandomTemplate}${heightmapType}
     Points: ${grid.points.length}
     Cells: ${pack.cells.i.length}
-    Map size: ${options.mapSize}%
+    Map size: ${options.geography.mapSize}%
     States: ${pack.states.length - 1}
     Provinces: ${pack.provinces.length - 1}
     Burgs: ${pack.burgs.length - 1}

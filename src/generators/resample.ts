@@ -235,7 +235,7 @@ class Resampler {
 
     pack.burgs = parentMap.pack.burgs.map(burg => {
       if (!burg.i || burg.removed) return burg;
-      burg.population! *= scale; // adjust for populationRate change
+      burg.population! *= scale; // adjust for options.units.population.scale change
 
       const [xp, yp] = projection(burg.x, burg.y);
       if (!this.isInMap(xp, yp)) return { ...burg, removed: true, lock: false };

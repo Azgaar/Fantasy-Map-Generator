@@ -149,7 +149,7 @@ function renderRoutesPage(view: TableView<Route>): void {
   let lines = "";
 
   for (const route of view.rows) {
-    const length = `${rn((route.length || 0) * distanceScale)} ${distanceUnitInput.value}`;
+    const length = `${rn((route.length || 0) * options.units.distance.scale)} ${options.units.distance.unit}`;
 
     lines += /* html */ `<div
         class="states"
@@ -175,7 +175,8 @@ function renderRoutesPage(view: TableView<Route>): void {
 
   ensureEl("routesFooterNumber").innerHTML = `${view.all.length} of ${pack.routes.length}`;
   const averageLength = rn(mean(view.all.map(r => r.length)) || 0) || 0;
-  ensureEl("routesFooterLength").innerHTML = `${averageLength * distanceScale} ${distanceUnitInput.value}`;
+  ensureEl("routesFooterLength").innerHTML =
+    `${averageLength * options.units.distance.scale} ${options.units.distance.unit}`;
 
   // add listeners
   body.querySelectorAll("div.states").forEach(el => void el.addEventListener("mouseenter", routeHighlightOn));
@@ -221,7 +222,7 @@ function downloadRoutesData(): void {
   // export the full sorted+filtered set (all pages), not the DOM (which only holds the current page)
   const exported = routesTable.view().all;
   exported.forEach((route: Route) => {
-    const length = `${rn((route.length || 0) * distanceScale)} ${distanceUnitInput.value}`;
+    const length = `${rn((route.length || 0) * options.units.distance.scale)} ${options.units.distance.unit}`;
     data += `${[route.i, route.name, route.group, length].join(",")}\n`;
   });
 

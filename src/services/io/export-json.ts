@@ -108,18 +108,18 @@ function getMapInfo() {
 
 function getSettings() {
   return {
-    distanceUnit: distanceUnitInput.value,
-    distanceScale,
-    areaUnit: areaUnit.value,
-    heightUnit: heightUnit.value,
-    heightExponent: heightExponentInput.value,
-    temperatureScale: temperatureScale.value,
-    populationRate,
-    urbanization,
+    distanceUnit: options.units.distance.unit,
+    distanceScale: options.units.distance.scale,
+    areaUnit: options.units.area.unit,
+    heightUnit: options.units.height.unit,
+    heightExponent: options.units.height.exponent,
+    temperatureScale: options.units.temperature.unit,
+    populationRate: options.units.population.scale,
+    urbanization: options.units.population.urbanization.rate,
+    urbanDensity: options.units.population.urbanization.density,
     options,
     mapName: mapName.value,
-    stylePreset: stylePreset.value,
-    urbanDensity
+    stylePreset: stylePreset.value
   };
 }
 

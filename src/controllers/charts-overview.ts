@@ -976,11 +976,11 @@ function getUrbanPopulation(cellId: number): number {
   const burgId = pack.cells.burg[cellId];
   if (!burgId) return 0;
   const populationPoints = pack.burgs[burgId].population || 0;
-  return populationPoints * populationRate * urbanization;
+  return populationPoints * options.units.population.scale * options.units.population.urbanization.rate;
 }
 
 function getRuralPopulation(cellId: number): number {
-  return pack.cells.pop[cellId] * populationRate;
+  return pack.cells.pop[cellId] * options.units.population.scale;
 }
 
 function sortData(data: ChartDatum[], sorting: string): ChartDatum[] {

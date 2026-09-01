@@ -1,5 +1,6 @@
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
+import { CELLS_BY_DENSITY } from "@/components/options";
 import { Resample } from "@/generators/resample";
 import { ensureEl, rn } from "../utils";
 
@@ -32,8 +33,8 @@ function open(): void {
 function renderDialog(): void {
   destroyDialog("transformTool");
 
-  const pointsValue = ensureEl<HTMLInputElement>("pointsInput").value;
-  const cells = cellsDensityMap[+pointsValue];
+  const pointsValue = String(options.graph.density);
+  const cells = CELLS_BY_DENSITY[+pointsValue];
 
   const html = /* html */ `<div id="transformTool" class="dialog">
     <div style="padding-top: 0.5em; width: 40em; font-weight: bold">
@@ -127,7 +128,7 @@ async function loadPreview(): Promise<void> {
 }
 
 function handlePointsInput(e: Event): void {
-  const cells = cellsDensityMap[+(e.target as HTMLInputElement).value];
+  const cells = CELLS_BY_DENSITY[+(e.target as HTMLInputElement).value];
   const output = ensureEl<HTMLOutputElement>("transformPointsFormatted");
   output.value = `${cells / 1000}K`;
   output.style.color = getCellsDensityColor(cells);
@@ -193,7 +194,7 @@ function transformMap(): void {
   INFO && console.group("transformMap");
 
   const transformPointsValue = ensureEl<HTMLInputElement>("transformPointsInput").value;
-  const globalPointsValue = ensureEl<HTMLInputElement>("pointsInput").value;
+  const globalPointsValue = String(options.graph.density);
   if (transformPointsValue !== globalPointsValue) changeCellsDensity(transformPointsValue);
 
   const [projection, inverse] = getProjection();

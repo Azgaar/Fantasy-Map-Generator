@@ -1,6 +1,6 @@
 // Where the map sits on the globe: its share of the world and the resulting lat/lon box
 import { stored } from "@/utils/preferences";
-import { ensureEl, gauss, P, rn } from "../utils";
+import { gauss, P, rn } from "../utils";
 
 declare global {
   var Coordinates: CoordinatesModule;
@@ -60,16 +60,16 @@ class CoordinatesModule {
   defineMapSize(): void {
     const [size, latitude, longitude] = this.getSizeAndPosition();
     const randomize = new URL(window.location.href).searchParams.get("options") === "default"; // ignore stored options
-    if (randomize || !stored("mapSize")) options.mapSize = size;
-    if (randomize || !stored("latitude")) options.latitude = latitude;
-    if (randomize || !stored("longitude")) options.longitude = longitude;
+    if (randomize || !stored("mapSize")) options.geography.mapSize = size;
+    if (randomize || !stored("latitude")) options.geography.latitude = latitude;
+    if (randomize || !stored("longitude")) options.geography.longitude = longitude;
   }
 
   /** calculate the map lat/lon box from its size and position */
   calculate(): void {
-    const sizeFraction = options.mapSize / 100;
-    const latShift = options.latitude / 100;
-    const lonShift = options.longitude / 100;
+    const sizeFraction = options.geography.mapSize / 100;
+    const latShift = options.geography.latitude / 100;
+    const lonShift = options.geography.longitude / 100;
 
     const latT = rn(sizeFraction * 180, 1);
     const latN = rn(90 - (180 - latT) * latShift, 1);
@@ -83,7 +83,7 @@ class CoordinatesModule {
   }
 
   private getSizeAndPosition(): SizeAndPosition {
-    const template = ensureEl<HTMLInputElement>("templateInput").value; // heightmap template
+    const template = options.heightmap.template;
     const realWorldPosition = TEMPLATE_POSITIONS[template];
     if (realWorldPosition) return realWorldPosition;
 

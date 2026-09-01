@@ -104,7 +104,7 @@ class JourneysModule {
 
   /** Segment length in the current distance unit; a stay covers no ground. */
   getSegmentDistance(seg: JourneySegment): number {
-    return this.isStaySegment(seg) ? 0 : seg.distance * distanceScale;
+    return this.isStaySegment(seg) ? 0 : seg.distance * options.units.distance.scale;
   }
 
   /** Speed in km/h, after the off-road penalty. The UI converts it to the user distance unit */

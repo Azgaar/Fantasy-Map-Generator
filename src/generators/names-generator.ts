@@ -292,4 +292,7 @@ class NamesGenerator {
   }
 }
 
-window.Names = new NamesGenerator();
+// biome-ignore lint/suspicious/noRedeclare: legacy seam
+export const Names = new NamesGenerator();
+
+window.Names = Names;

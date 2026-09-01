@@ -52,7 +52,7 @@ function changeDistanceUnit(this: HTMLSelectElement): void {
 }
 
 function changeDistanceScale(this: HTMLInputElement): void {
-  distanceScale = +this.value;
+  options.units.distance.scale = +this.value;
   Layers.draw("scaleBar");
   calculateFriendlyGridSize();
 }
@@ -76,29 +76,28 @@ function changeTemperatureScale(): void {
 }
 
 function changePopulationRate(this: HTMLInputElement): void {
-  populationRate = +this.value;
+  options.units.population.scale = +this.value;
 }
 
 function changeUrbanizationRate(this: HTMLInputElement): void {
-  urbanization = +this.value;
+  options.units.population.urbanization.rate = +this.value;
 }
 
 function changeUrbanDensity(this: HTMLInputElement): void {
-  urbanDensity = +this.value;
+  options.units.population.urbanization.density = +this.value;
 }
 
 function restoreDefaultUnits(): void {
-  distanceScale = 3;
-  ensureEl<HTMLInputElement>("distanceScaleInput").value = String(distanceScale);
+  options.units.distance.scale = 3;
   unlock("distanceScale");
 
   // units
   const US = navigator.language === "en-US";
   const UK = navigator.language === "en-GB";
-  distanceUnitInput.value = US || UK ? "mi" : "km";
-  heightUnit.value = US || UK ? "ft" : "m";
-  temperatureScale.value = US ? "°F" : "°C";
-  areaUnit.value = "square";
+  options.units.distance.unit = US || UK ? "mi" : "km";
+  options.units.height.unit = US || UK ? "ft" : "m";
+  options.units.temperature.unit = US ? "°F" : "°C";
+  options.units.area.unit = "square";
   localStorage.removeItem("distanceUnit");
   localStorage.removeItem("heightUnit");
   localStorage.removeItem("temperatureScale");
@@ -106,22 +105,21 @@ function restoreDefaultUnits(): void {
   calculateFriendlyGridSize();
 
   // height exponent
-  heightExponentInput.value = "1.8";
+  options.units.height.exponent = 1.8;
   localStorage.removeItem("heightExponent");
   Temperature.generate();
 
   Layers.draw("scaleBar");
 
   // population
-  populationRate = 1000;
-  ensureEl<HTMLInputElement>("populationRateInput").value = String(populationRate);
-  urbanization = 1;
-  ensureEl<HTMLInputElement>("urbanizationInput").value = String(urbanization);
-  urbanDensity = 10;
-  ensureEl<HTMLInputElement>("urbanDensityInput").value = String(urbanDensity);
+  options.units.population.scale = 1000;
+  options.units.population.urbanization.rate = 1;
+  options.units.population.urbanization.density = 10;
   localStorage.removeItem("populationRate");
   localStorage.removeItem("urbanization");
   localStorage.removeItem("urbanDensity");
+
+  options.syncInputs();
 }
 
 export const UnitsEditor = { open };
