@@ -16,3 +16,7 @@
 /dist-electron
 /release
 .DS_Store
+
+# nix build output
+/result
+/result-*

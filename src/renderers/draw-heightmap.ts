@@ -62,13 +62,15 @@ export const drawHeightmap = (): void => {
   const used = new Uint8Array(cells.i.length);
   const heights = Array.from(cells.i).sort((a, b) => cells.h[a] - cells.h[b]);
 
+  const landOptions = styles.heightmap.landHeights.options;
+  const oceanOptions = styles.heightmap.oceanHeights.options;
+
   // ocean cells
-  const renderOceanCells = Boolean(+ocean.attr("data-render"));
+  const renderOceanCells = oceanOptions.render;
   if (renderOceanCells) {
-    const skip = +ocean.attr("skip") + 1 || 1;
-    const relax = +ocean.attr("relax") || 0;
-    const curveType = ocean.attr("curve") || "curveBasisClosed";
-    const lineGen = line().curve(CURVE_MAP[curveType] ?? curveBasisClosed);
+    const skip = oceanOptions.skip + 1 || 1;
+    const relax = oceanOptions.relax;
+    const lineGen = line().curve(CURVE_MAP[oceanOptions.curve] ?? curveBasisClosed);
 
     let currentLayer = 0;
     for (const i of heights) {
@@ -91,10 +93,9 @@ export const drawHeightmap = (): void => {
 
   // land cells
   {
-    const skip = +land.attr("skip") + 1 || 1;
-    const relax = +land.attr("relax") || 0;
-    const curveType = land.attr("curve") || "curveBasisClosed";
-    const lineGen = line().curve(CURVE_MAP[curveType] ?? curveBasisClosed);
+    const skip = landOptions.skip + 1 || 1;
+    const relax = landOptions.relax;
+    const lineGen = line().curve(CURVE_MAP[landOptions.curve] ?? curveBasisClosed);
 
     let currentLayer = 20;
     for (const i of heights) {
@@ -120,7 +121,8 @@ export const drawHeightmap = (): void => {
   // render paths
   for (const height of range(0, 101)) {
     const group = height < 20 ? ocean : land;
-    const scheme = getColorScheme(group.attr("scheme"));
+    const options = height < 20 ? oceanOptions : landOptions;
+    const scheme = getColorScheme(options.scheme);
 
     if (height === 0 && renderOceanCells) {
       // draw base ocean layer
@@ -145,7 +147,7 @@ export const drawHeightmap = (): void => {
     }
 
     if (paths[height] && paths[height]!.length >= 10) {
-      const terracing = +group.attr("terracing") / 10 || 0;
+      const terracing = options.terracing / 10 || 0;
       const fillColor = getColor(height, scheme);
 
       if (terracing) {

@@ -276,11 +276,11 @@ function submitForm(event: Event): void {
       if (oldName) {
         // group is renamed
         replaceGroupInEntities(oldName, newGroup.name);
-        style.labels.groups[newGroup.name] = style.labels.groups[oldName];
-        delete style.labels.groups[oldName];
+        styles.labels.groups[newGroup.name] = styles.labels.groups[oldName];
+        delete styles.labels.groups[oldName];
       } else {
         // group is new
-        style.labels.groups[newGroup.name] = getGroupStyle(newGroup);
+        styles.labels.groups[newGroup.name] = getGroupStyle(newGroup);
       }
     }
   });
@@ -290,14 +290,14 @@ function submitForm(event: Event): void {
     // group is removed
     const fallback = Labels.getFallbackGroup(group.type);
     replaceGroupInEntities(group.name, fallback.name);
-    delete style.labels.groups[group.name];
+    delete styles.labels.groups[group.name];
   });
 
   options.labels.groups = rows.map(rowToGroup);
   options.labels.resizeOnZoom = ensureEl<HTMLInputElement>("labelsResizeOnZoom").checked;
   options.labels.showAll = ensureEl<HTMLInputElement>("labelsShowAll").checked;
 
-  for (const group of options.labels.groups) style.labels.groups[group.name] ??= getGroupStyle(group);
+  for (const group of options.labels.groups) styles.labels.groups[group.name] ??= getGroupStyle(group);
   localStorage.setItem("options-labels", JSON.stringify(options.labels));
 
   Layers.draw("labels");

@@ -5,16 +5,16 @@ import { RELIEF_SETS } from "@/data/relief-icons";
 import { defaultOptions } from "@/data/view-3d-options";
 import { Emblems } from "@/generators/emblems-generator";
 import type { GraphOverrides } from "@/generators/graph-override";
-import type { Label, LabelNameMode } from "@/generators/labels-generator";
+import { type Label, type LabelNameMode, Labels as LabelsGenerator } from "@/generators/labels-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
+
+import { labelGroupFromLegacy, migrateStyles, restoreStrippedLayerStyles } from "@/generators/styles-legacy";
 import type { Point } from "@/generators/voronoi";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { unfog } from "@/renderers/overlays/fogging";
-
 import { compareVersions } from "@/services/versioning";
 import type { ReliefSet } from "@/types/relief";
-import type { LabelGroupStyle } from "@/types/style";
-import { ensureEl, findEl, P, parseTransform, rand, rn, rw, safeParseJSON, unique } from "@/utils";
+import { ensureEl, findEl, minmax, P, parseTransform, rand, rn, rw, safeParseJSON, unique } from "@/utils";
 import { parsePathPoints } from "@/utils/pathUtils";
 
 export async function resolveVersionConflicts(mapVersion: string, data: string[]): Promise<void> {
@@ -275,14 +275,13 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
   }
 
   if (isOlderThan("1.21.0")) {
-    // v1.11 replaced "display" attribute by "display" style
+    // v1.11 replaced "display" attribute by "display" style. Only "none" hid the element: layers
+    // that were on carry "block" (compass, prec, fogging), so those just lose the attribute
     select("#viewbox")
-      .selectAll<SVGGElement, unknown>("g")
+      .selectAll<SVGGraphicsElement, unknown>("[display]")
       .each(function () {
-        if (this.hasAttribute("display")) {
-          this.removeAttribute("display");
-          this.style.display = "none";
-        }
+        if (this.getAttribute("display") === "none") this.style.display = "none";
+        this.removeAttribute("display");
       });
 
     // v1.21 added rivers data to pack
@@ -866,6 +865,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     select("#scaleBar")
       .append("rect")
       .attr("id", "scaleBarBack")
+      .attr("data-group", "back")
       .attr("opacity", 0.2)
       .attr("fill", "#ffffff")
       .attr("stroke", "#000000")
@@ -1262,7 +1262,6 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   if (isOlderThan("1.140.0")) {
     // v1.140.0 migrated label data and styles to the unified flat Label Group model
-
     let labels = document.querySelector<SVGGElement>("#labels");
     if (!labels) {
       labels = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -1281,32 +1280,55 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     const autoVisibility = settings[21] ? Boolean(Number(settings[21])) : true;
     const resizeOnZoom = settings[23] ? Boolean(Number(settings[23])) : true;
     options.labels = { resizeOnZoom, showAll: !autoVisibility, groups: [] };
-    style.labels.groups = {};
+    styles.labels.groups = {};
 
     for (const type of ["river", "route"] as const) {
       options.labels.groups.push(Labels.getFallbackGroup(type));
-      style.labels.groups[type] = getGroupStyle({ name: type, type });
+      styles.labels.groups[type] = getGroupStyle({ name: type, type });
+    }
+
+    function legacyBurgLabelZoom(fontSize: number): { min: number; max: number } {
+      if (!Number.isFinite(fontSize) || fontSize <= 0) return { min: 2, max: 30 };
+      return { min: minmax(rn(12 / fontSize - 1, 1), 1, 5), max: minmax(rn(120 / fontSize - 1, 1), 25, 60) };
+    }
+
+    // old-era tier names map onto the modern tiers' visibility, so a migrated map's cities appear
+    // at the same zooms a modern city does instead of inheriting formula noise from size dialects
+    const LEGACY_BURG_GROUP_EQUIVALENTS: Record<string, string> = {
+      cities: "city",
+      towns: "town",
+      town_small: "village",
+      town_large: "town"
+    };
+
+    function legacyBurgGroupZoom(name: string, fontSize: number): { min: number | null; max: number | null } {
+      const modernName = LEGACY_BURG_GROUP_EQUIVALENTS[name];
+      const modern =
+        modernName &&
+        LabelsGenerator.getDefaultGroups().find(group => group.type === "burg" && group.name === modernName);
+      return modern ? structuredClone(modern.zoom) : legacyBurgLabelZoom(fontSize);
     }
 
     const burgGroups = Array.from(document.querySelectorAll<SVGGElement>("#burgLabels > g"));
     for (const burgGroup of burgGroups) {
       const name = burgGroup.id;
       const oldStyle = deriveLabelsStyle(burgGroup);
-      const fontSize = Number.parseFloat(oldStyle["font-size"] as string);
-      const zoom = { min: rn(12 / fontSize - 1, 1), max: rn(120 / fontSize - 1, 1) };
+      const zoom = legacyBurgGroupZoom(name, Number.parseFloat(oldStyle["font-size"] as string));
 
       options.labels.groups.push({ name, type: "burg", isDefault: name === "towns", zoom });
-      style.labels.groups[name] = oldStyle;
+      styles.labels.groups[name] = labelGroupFromLegacy(oldStyle);
     }
 
-    const migratedBurgStyle = burgGroups.length ? style.labels.groups[burgGroups[0].id] : undefined;
+    const migratedBurgStyle = burgGroups.length ? styles.labels.groups[burgGroups[0].id] : undefined;
     for (const { name } of options.burgs.groups) {
       if (options.labels.groups.some(group => group.name === name)) continue;
 
       const defaultGroup = Labels.getDefaultGroups().find(group => group.type === "burg" && group.name === name);
       const { zoom } = defaultGroup ?? Labels.getFallbackGroup("burg");
       options.labels.groups.push({ name, type: "burg", zoom });
-      style.labels.groups[name] = migratedBurgStyle ? { ...migratedBurgStyle } : getGroupStyle({ name, type: "burg" });
+      styles.labels.groups[name] = migratedBurgStyle
+        ? structuredClone(migratedBurgStyle)
+        : getGroupStyle({ name, type: "burg" });
     }
 
     if (options.labels.groups.every(group => !group.isDefault) && options.labels.groups[0])
@@ -1340,10 +1362,10 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         layerDependency: "provinces",
         active: false
       });
-      style.labels.groups.province = oldStyle;
+      styles.labels.groups.province = labelGroupFromLegacy(oldStyle);
     } else {
       options.labels.groups.push(Labels.getFallbackGroup("province"));
-      style.labels.groups.province = getGroupStyle({ name: "province", type: "province" });
+      styles.labels.groups.province = getGroupStyle({ name: "province", type: "province" });
     }
 
     pack.addedLabels = [];
@@ -1362,7 +1384,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         isDefault: name === "added",
         zoom: deriveZoomExtent(fontSize)
       });
-      style.labels.groups[name] = oldStyle;
+      styles.labels.groups[name] = labelGroupFromLegacy(oldStyle);
 
       for (const textEl of addedGroup.querySelectorAll<SVGTextElement>(":scope > text")) {
         const note = notes.find(note => note.id === textEl.id);
@@ -1393,10 +1415,10 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         zoom: deriveZoomExtent(fontSize),
         mode: stateMode
       });
-      style.labels.groups.state = oldStyle;
+      styles.labels.groups.state = labelGroupFromLegacy(oldStyle);
     } else {
       options.labels.groups.push({ ...Labels.getFallbackGroup("state"), mode: stateMode });
-      style.labels.groups.state = getGroupStyle({ name: "state", type: "state" });
+      styles.labels.groups.state = getGroupStyle({ name: "state", type: "state" });
     }
 
     for (const textEl of document.querySelectorAll<SVGTextElement>("#labels #states > text")) {
@@ -1408,10 +1430,9 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       if (pathEl) state.label = getPathLabel({ textEl, pathEl, names: [state.name, state.fullName] });
     }
 
-    delete (style as any).burgLabels; // migrated to style.labels.groups
     delete (options as any).stateLabelsMode; // migrated to group settings
 
-    function deriveLabelsStyle(groupEl: SVGGElement): LabelGroupStyle {
+    function deriveLabelsStyle(groupEl: SVGGElement): Record<string, string | number | null> {
       return {
         opacity: groupEl.hasAttribute("opacity") ? Number(groupEl.getAttribute("opacity")) : 1,
         fill: groupEl.getAttribute("fill") || "#000000",
@@ -1487,9 +1508,9 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     // v1.142.0 moved relief icons from the svg to pack.relief, rendered within the viewport only
     const terrainEl = document.getElementById("terrain");
     if (terrainEl) {
-      // v1.142.0 moved the relief style from the #terrain attributes to style.relief
+      // v1.142.0 moved the relief style from the #terrain attributes to the style store
       const set = terrainEl.getAttribute("set");
-      style.relief = {
+      styles.relief.options = {
         set: set && set in RELIEF_SETS ? (set as ReliefSet) : "simple",
         size: Number(terrainEl.getAttribute("size")) || 1,
         density: Number(terrainEl.getAttribute("density")) || 0.4
@@ -1645,11 +1666,14 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       }
     }
 
+    // scoped to the parent: same-named groups under different parents are by design
+    // (#burgIcons > g#city beside #anchors > g#city), only same-parent copies are duplicates
     const groupsById = new Map<string, SVGGElement[]>();
     for (const group of groups) {
-      const sameId = groupsById.get(group.id) ?? [];
+      const key = `${(group.parentNode as Element | null)?.id ?? ""}>${group.id}`;
+      const sameId = groupsById.get(key) ?? [];
       sameId.push(group);
-      groupsById.set(group.id, sameId);
+      groupsById.set(key, sameId);
     }
 
     const declared = new Set<string>();
@@ -1818,41 +1842,12 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       for (const node of Array.from(template.children)) restore(node, defs);
       if (restored.length) WARN && console.warn("[Auto-update] Restored missing svg defs:", restored.join(", "));
     }
+  }
 
-    // v1.145-1.147 stripped the layer style from saved maps
-    await restoreLayerStyles();
-
-    async function restoreLayerStyles(): Promise<void> {
-      const [, preset] = await (window as any).getStylePreset(localStorage.getItem("presetStyle") || "default");
-
-      for (const layer of Layers.all) {
-        restoreGroupStyle(layer.elementId, preset[`#${layer.elementId}`], layer.params.attrs);
-
-        for (const child of layer.children) {
-          const style = preset[`#${child.id}`] || preset[`#${layer.elementId} > #${child.id}`];
-          restoreGroupStyle(child.id, style, child.attrs);
-        }
-      }
-    }
-
-    function restoreGroupStyle(
-      id: string,
-      style: Record<string, string | number | null> | undefined,
-      declared?: Record<string, string>
-    ): void {
-      const group = document.getElementById(id);
-      if (!style || group?.tagName !== "g" || !isBareGroup(group, declared)) return;
-
-      for (const [name, value] of Object.entries(style)) {
-        if (value === null || value === "null") continue;
-        if (id === "terrain" && ["set", "size", "density"].includes(name)) continue;
-        group.setAttribute(name, String(value));
-      }
-    }
-
-    function isBareGroup(group: Element, declared: Record<string, string> = {}): boolean {
-      const ignored = new Set(["id", "style", ...Object.keys(declared)]);
-      return Array.from(group.attributes).every(attribute => ignored.has(attribute.name));
-    }
+  if (isOlderThan("1.150.0")) {
+    // v1.145-1.147 stripped the layer style from saved maps; the migration harvest reads what this re-seeds
+    if (!isOlderThan("1.145.0") && isOlderThan("1.148.0")) await restoreStrippedLayerStyles();
+    // v1.150.0 made the styles store the source of truth
+    data[48] = await migrateStyles(data[48]);
   }
 }

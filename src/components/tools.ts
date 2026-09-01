@@ -34,6 +34,7 @@ ensureEl("toolsContent").addEventListener("click", event => {
   else if (buttonId === "overviewChartsButton") void Controllers.ChartsOverview.open();
   else if (buttonId === "overviewBurgsButton") void Controllers.BurgsOverview.open();
   else if (buttonId === "overviewRoutesButton") void Controllers.RoutesOverview.open();
+  else if (buttonId === "overviewJourneysButton") void Controllers.JourneysOverview.open();
   else if (buttonId === "overviewRiversButton") void Controllers.RiversOverview.open();
   else if (buttonId === "overviewMilitaryButton") void Controllers.MilitaryOverview.open();
   else if (buttonId === "overviewLabelsButton") void Controllers.LabelsOverview.open();

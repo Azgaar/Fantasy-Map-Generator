@@ -3,7 +3,7 @@ import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { stored } from "@/utils/preferences";
-import { convertTemperature, ensureEl, findEl, parseTransform, rn, round } from "../utils";
+import { convertTemperature, ensureEl, findEl, getKmInDistanceUnit, parseTransform, rn, round } from "../utils";
 
 const projection = geoOrthographic().translate([100, 100]).scale(100);
 const path = geoPath(projection);
@@ -383,7 +383,7 @@ function updateGlobePosition(): void {
   Coordinates.calculate();
   const mc = mapCoordinates;
   const unit = distanceUnitInput.value;
-  const meridian = toKilometer(eqD * 2 * distanceScale);
+  const meridian = eqD * 2 * distanceScale * getKmInDistanceUnit(); // 0 for a custom unit
   ensureEl("mapSize").innerHTML = `${graphWidth}x${graphHeight}`;
   ensureEl("mapSizeFriendly").innerHTML =
     `${rn(graphWidth * distanceScale)}x${rn(graphHeight * distanceScale)} ${unit}`;
@@ -392,16 +392,6 @@ function updateGlobePosition(): void {
   ensureEl("meridianLengthEarth").innerHTML = meridian ? ` = ${rn(meridian / 200)}%🌏` : "";
   ensureEl("mapCoordinates").innerHTML =
     `${lat(mc.latN ?? 0)} ${Math.abs(rn(mc.lonW ?? 0))}°W; ${lat(mc.latS ?? 0)} ${rn(mc.lonE ?? 0)}°E`;
-
-  function toKilometer(v: number): number {
-    if (unit === "km") return v;
-    if (unit === "mi") return v * 1.60934;
-    if (unit === "lg") return v * 4.828;
-    if (unit === "vr") return v * 1.0668;
-    if (unit === "nmi") return v * 1.852;
-    if (unit === "nlg") return v * 5.556;
-    return 0; // 0 if distanceUnitInput is a custom unit
-  }
 
   // parse latitude value
   function lat(latitude: number): string {

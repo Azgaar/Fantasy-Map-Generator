@@ -157,6 +157,48 @@ export function getTemperatureLikeness(temperature: number): string | null {
   return meanTempCityMap[temperature] || null;
 }
 
+// kilometers in one distance unit; a custom unit is taken as kilometers
+const KM_IN_DISTANCE_UNIT: Record<string, number> = {
+  km: 1,
+  mi: 1.609344,
+  lg: 4.828032, // land league: 3 miles
+  vr: 1.0668, // versta
+  nmi: 1.852,
+  nlg: 5.556 // nautical league: 3 nautical miles
+};
+
+/** The distance unit selected in the Units editor, e.g. "mi" */
+export function getDistanceUnit(): string {
+  const el = document.getElementById("distanceUnitInput") as HTMLSelectElement | null;
+  return el?.value || "km";
+}
+
+/** Kilometers in one user distance unit, 0 for an unrecognized (custom) unit */
+export function getKmInDistanceUnit(): number {
+  return KM_IN_DISTANCE_UNIT[getDistanceUnit()] ?? 0;
+}
+
+/** How many user distance units make a kilometer, 1 for unknown (custom) units */
+export function getDistanceUnitRatio(): number {
+  const km = getKmInDistanceUnit();
+  return km ? 1 / km : 1;
+}
+
+/** Convert a stored speed (always km/h) into the user distance unit per hour */
+export function convertSpeed(speedInKmH: number): number {
+  return rn(speedInKmH * getDistanceUnitRatio(), 1);
+}
+
+/** Format a stored km/h speed for display, e.g. "2.8 mi/h" */
+export function formatSpeed(speedInKmH: number): string {
+  return `${convertSpeed(speedInKmH)} ${getDistanceUnit()}/h`;
+}
+
+/** Convert a speed the user typed in their distance unit per hour back into stored km/h */
+export function parseSpeed(speedInUnits: number): number {
+  return speedInUnits / getDistanceUnitRatio();
+}
+
 /**
  * Get the area unit as configured by the user
  * @param squareMark - The mark appended to a linear unit to make it square

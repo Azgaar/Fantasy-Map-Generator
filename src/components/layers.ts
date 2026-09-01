@@ -1,7 +1,7 @@
 // Global layers registry: owns layers list, order, and svg skeleton
 import { drawBiomes } from "@/renderers/draw-biomes";
 import { drawBorders } from "@/renderers/draw-borders";
-import { drawBurgIcons, removeBurgIcons } from "@/renderers/draw-burg-icons";
+import { drawBurgIcons } from "@/renderers/draw-burg-icons";
 import { drawCells } from "@/renderers/draw-cells";
 import { drawCoastline } from "@/renderers/draw-coastline";
 import { drawCoordinates } from "@/renderers/draw-coordinates";
@@ -11,6 +11,7 @@ import { drawGoods } from "@/renderers/draw-goods";
 import { drawGrid } from "@/renderers/draw-grid";
 import { drawHeightmap } from "@/renderers/draw-heightmap";
 import { drawIce } from "@/renderers/draw-ice";
+import { drawJourneys } from "@/renderers/draw-journeys";
 import { drawLakes } from "@/renderers/draw-lakes";
 import { drawLandmass } from "@/renderers/draw-landmass";
 import { redrawLegend } from "@/renderers/draw-legend";
@@ -90,12 +91,17 @@ export class LayersRegistry<Id extends string = string> {
 
       let group = findEl<SVGGElement>(layer.elementId);
       if (!group) group = createEl<SVGGElement>("g", layer.elementId);
+      group.dataset.layer = layer.id; // styles address layers by data-layer, not element id
       for (const [name, value] of Object.entries(attrs ?? {})) group.setAttribute(name, value);
       ensureEl(parent).append(group);
 
       for (const { id, tag, attrs } of layer.children) {
-        if (group.querySelector(`#${id}`)) continue;
-        group.append(createEl(tag, id, attrs));
+        let child = group.querySelector<SVGElement>(`#${id}`);
+        if (!child) {
+          child = createEl<SVGElement>(tag, id, attrs);
+          group.append(child);
+        }
+        child.dataset.group = id;
       }
 
       this.setVisible(group, this.active.has(layer.id));
@@ -374,8 +380,7 @@ const mapLayers = [
     element: "icons",
     parent: "viewbox",
     children: ["burgIcons", "anchors"].map(id => ({ id, tag: "g" })),
-    draw: drawBurgIcons,
-    erase: removeBurgIcons
+    draw: drawBurgIcons
   }),
   new Layer({
     id: "labels",
@@ -387,6 +392,7 @@ const mapLayers = [
   new Layer({ id: "military", element: "armies", parent: "viewbox", draw: drawMilitary }),
   new Layer({ id: "markers", parent: "viewbox", draw: drawMarkers }),
   new Layer({ id: "fogging", parent: "viewbox", attrs: { mask: "url(#fog)" }, permanent: true, draw: drawFogging }),
+  new Layer({ id: "journeys", parent: "viewbox", draw: drawJourneys }),
   new Layer({ id: "rulers", element: "ruler", parent: "viewbox", draw: drawMeasurers }),
   new Layer({ id: "debug", parent: "viewbox", permanent: true, keepContent: true }),
   new Layer({ id: "scaleBar", parent: "map", draw: () => drawScaleBar(), erase: removeScaleBar }),

@@ -85,13 +85,21 @@ function addGroup(): void {
       return tip("Element with this name already exists. Provide a unique name", false, "error");
     if (Number.isFinite(+group.charAt(0))) return tip("Group name should start with a letter", false, "error");
 
-    select("#routes")
-      .append("g")
-      .attr("id", group)
-      .attr("stroke", "#000000")
-      .attr("stroke-width", 0.5)
-      .attr("stroke-dasharray", "1 0.5")
-      .attr("stroke-linecap", "butt");
+    // the store is authoritative: seed an entry so style edits and presets can address the group
+    const template = styles.routes.groups.roads || Object.values(styles.routes.groups)[0];
+    const groupStyle = structuredClone(template);
+    Object.assign(groupStyle.attrs, {
+      stroke: "#000000",
+      "stroke-width": 0.5,
+      "stroke-dasharray": "1 0.5",
+      "stroke-linecap": "butt"
+    });
+    styles.routes.groups[group] = groupStyle;
+
+    const groupEl = select("#routes").append("g").attr("id", group).attr("data-group", group);
+    for (const [attr, value] of Object.entries(groupStyle.attrs)) {
+      if (value !== null && value !== undefined) groupEl.attr(attr, value);
+    }
     ensureEl<HTMLSelectElement>("routeGroup").options.add(new Option(group, group));
     addLines();
 

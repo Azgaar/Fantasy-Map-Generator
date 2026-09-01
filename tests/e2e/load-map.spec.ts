@@ -58,8 +58,7 @@ function getReliefState(page: Page) {
     const terrain = document.getElementById("terrain");
     return {
       relief: (window as any).pack.relief,
-      // `style` is script-scoped, so it has to be read off the lexical global rather than off window
-      style: style.relief,
+      style: (window as any).styles.relief.options,
       layerIsOn: (window as any).Layers.isOn("relief"),
       terrainStyle: terrain?.getAttribute("style") ?? null
     };
@@ -480,9 +479,9 @@ test.describe("Map loading", () => {
     expect(savedLayers.active).toContain("labels");
   });
 
-  // 1.143.1.map carries both a pre-v1.104 defs skeleton and layer groups stripped of their styles.
-  // The v1.148.0 migration repairs both before the loaded map is rendered.
-  test("an old map fixture should get its defs, geometry and layer styles back", async ({ page }) => {
+  // 1.143.1.map carries a pre-v1.104 defs skeleton and legacy geometry containers.
+  // The migration repairs both before the loaded map is rendered.
+  test("an old map fixture should get its defs and geometry back", async ({ page }) => {
     const mapFilePath = path.join(__dirname, "../fixtures/1.143.1.map");
     await page.locator("#mapToLoad").setInputFiles(mapFilePath);
     await expect(page.locator("#tooltip")).toContainText("Map is successfully loaded", { timeout: 120000 });
@@ -502,11 +501,7 @@ test.describe("Map loading", () => {
         coastline: document.querySelectorAll("#coastline use").length,
         lakes: document.querySelectorAll("#lakes use").length,
         defsEmblems: Boolean(document.getElementById("defs-emblems")),
-        vignetteMask: Boolean(document.getElementById("vignette-rect")),
-        fogging: {
-          opacity: document.getElementById("fogging")?.getAttribute("opacity"),
-          fill: document.getElementById("fogging")?.getAttribute("fill")
-        }
+        vignetteMask: Boolean(document.getElementById("vignette-rect"))
       };
     });
 
@@ -518,7 +513,6 @@ test.describe("Map loading", () => {
     expect(restored.lakes).toBeGreaterThan(0);
     expect(restored.defsEmblems).toBe(true);
     expect(restored.vignetteMask).toBe(true);
-    expect(restored.fogging).toEqual({ opacity: "0.98", fill: "#30426f" });
   });
 
   test("loaded map should preserve burg data", async ({ page }) => {

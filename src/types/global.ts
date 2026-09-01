@@ -4,10 +4,10 @@ import type { CoastlineSettings } from "../generators/coastline-generator";
 import type { GoodsModule } from "../generators/goods-generator";
 import type { MarketsModule } from "../generators/markets-generator";
 import type { ProductionModule } from "../generators/production-generator";
+import type { Transport } from "../generators/transports-generator";
 import type { BurgGroup } from "./burg-groups";
 import type { GridGraph } from "./GridGraph";
 import type { PackedGraph } from "./PackedGraph";
-import type { Style } from "./style";
 
 declare global {
   var MOBILE: boolean;
@@ -41,6 +41,9 @@ declare global {
     changeMapZoom: typeof import("../components/zoom").changeMapZoom;
     setZoomExtent: typeof import("../components/zoom").setZoomExtent;
     setTranslateExtent: typeof import("../components/zoom").setTranslateExtent;
+    getLabelsData: typeof import("../renderers/labels/label-data").getLabelsData;
+    applyVignetteOptions: typeof import("../renderers/draw-vignette").applyVignetteOptions;
+    applyOceanPattern: typeof import("../renderers/draw-ocean").applyOceanPattern;
   }
 
   var mapId: number;
@@ -88,7 +91,9 @@ declare global {
   var svgHeight: number;
 
   var notes: any[]; // TODO: correct type
-  var style: Style;
+  var styles: import("@/generators/styles-schema").Styles;
+  var Styles: typeof import("@/generators/styles")["Styles"];
+  var stylesLegacy: typeof import("@/generators/styles-legacy");
 
   // IO / loading helpers defined in classic public/ scripts
   var ldb: {
@@ -113,6 +118,7 @@ declare global {
   var changeViewMode: (event?: Event) => void;
   var resetZoom: (duration?: number) => void;
   var RgbQuant: any; // external RgbQuant image-quantization lib
+  var applyStoredStyles: any;
 
   var shiftCompass: () => void;
 
@@ -188,6 +194,7 @@ type Options = {
   burgs: { groups: BurgGroup[] };
   labels: { resizeOnZoom: boolean; showAll: boolean; groups: LabelGroup[] };
   military: MilitaryUnit[];
+  transports: Transport[];
   trade: {
     animation: ReturnType<typeof TradeAnimation.getDefaultOptions>;
   };

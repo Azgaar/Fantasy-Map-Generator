@@ -2,6 +2,7 @@ import { mean, quadtree } from "d3";
 import { clipPolyline } from "lineclip";
 import { Measurers } from "@/generators/measurers-generator";
 import type { GridGraph } from "../types/GridGraph";
+import type { JourneyPoint } from "../types/Journey";
 import type { PackedGraph } from "../types/PackedGraph";
 import { getPolesOfInaccessibility, isWater, rn, unique } from "../utils";
 import type { River } from "./river-generator";
@@ -414,6 +415,38 @@ class Resampler {
     });
   }
 
+  private restoreJourneys(parentMap: ParentMapDefinition, projection: (x: number, y: number) => [number, number]) {
+    let dropped = 0;
+    pack.journeys = (parentMap.pack.journeys ?? [])
+      .map(journey => {
+        const segments = journey.segments
+          .map(seg => {
+            const points: JourneyPoint[] = [];
+            for (const [parentX, parentY] of seg.points) {
+              const [x, y] = projection(parentX, parentY);
+              // a clipped path can't stay valid cell-by-cell, so a segment leaving the map goes whole
+              if (!this.isInMap(x, y)) return null;
+              points.push([rn(x, 2), rn(y, 2), Pack.findCell(x, y, Infinity) as number]);
+            }
+            if (!points.length) return null;
+            return {
+              ...seg,
+              points,
+              from: points[0][2],
+              to: points[points.length - 1][2],
+              distance: Journeys.getPathLength(points)
+            };
+          })
+          .filter(seg => seg !== null);
+        dropped += journey.segments.length - segments.length;
+        if (!segments.length) return null;
+        return { ...journey, segments };
+      })
+      .filter(journey => journey !== null);
+
+    if (dropped) WARN && console.warn(`Resample: dropped ${dropped} journey segment(s) outside the new map`);
+  }
+
   process(options: ResamplerProcessOptions): void {
     const { projection, inverse, scale } = options;
     const parentMap = {
@@ -452,6 +485,7 @@ class Resampler {
     this.restoreFeatureDetails(parentMap, inverse);
     this.restoreMarkers(parentMap, projection);
     this.restoreZones(parentMap, projection, scale);
+    this.restoreJourneys(parentMap, projection);
     this.restoreEconomy(parentMap);
     for (const state of pack.states) {
       if (state.label) state.label.pathPoints = undefined;

@@ -1,0 +1,51 @@
+name: Nix package
+
+on:
+  # Nothing else builds the flake, so a stale npmDepsHash or a broken derivation would
+  # otherwise reach main unnoticed: the npm lock file carries the app version, and a
+  # version bump alone is enough to invalidate the hash
+  pull_request:
+    branches: [master]
+    paths:
+      - "flake.nix"
+      - "flake.lock"
+      - "nix/**"
+      - "package.json"
+      - "package-lock.json"
+      - "electron/**"
+      - "scripts/electron.mjs"
+      - "vite.config.ts"
+
+  workflow_dispatch:
+
+jobs:
+  nix-build:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - name: Check the flake evaluates
+        run: nix flake check --no-build --all-systems
+      - name: Build the desktop package
+        run: nix build .#fantasy-map-generator -L
+      - name: Check the built app is complete
+        run: |
+          set -euo pipefail
+          test -x result/bin/fantasy-map-generator
+          for file in main.js preload.js icon.png renderer/index.html; do
+            test -f "result/share/fantasy-map-generator/dist-electron/$file"
+          done
+          # the app reads its version from the package.json shipped beside the bundle
+          version=$(jq -r .version result/share/fantasy-map-generator/package.json)
+          test "$version" = "$(jq -r .version package.json)"
+          echo "built fantasy-map-generator $version"

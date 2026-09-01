@@ -9,7 +9,7 @@ import { clearLegend } from "@/renderers/draw-legend";
 import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
 import { clearCache, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
-import { applyOption, ensureEl, last, link, minmax, parseError, rn } from "@/utils";
+import { applyOption, ensureEl, escapeHtml, last, link, minmax, parseError, rn, safeParseJSON } from "@/utils";
 
 async function quickLoad(): Promise<void> {
   const blob = await ldb.get("lastMap");
@@ -406,6 +406,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.measurers = data[46] ? JSON.parse(data[46]) : [];
     pack.addedLabels = data[47] ? JSON.parse(data[47]) : [];
     pack.relief = data[49] ? JSON.parse(data[49]) : [];
+    pack.journeys = data[52] ? JSON.parse(data[52]) : [];
 
     if (data[31]) {
       const namesDL = data[31].split("/");
@@ -423,20 +424,20 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       if (goodIconsDefs) goodIconsDefs.insertAdjacentHTML("beforeend", data[45]);
     }
 
-    if (data[48]) style = JSON.parse(data[48]);
+    const { resolveVersionConflicts } = await import("./auto-update"); // TODO: don't load if not required
+    await resolveVersionConflicts(mapVersion!, data);
 
-    {
-      const { resolveVersionConflicts } = await import("./auto-update");
-      await resolveVersionConflicts(mapVersion!, data);
-    }
+    const styleRecord = data[48] ? safeParseJSON(data[48]) : undefined; // data[48] should be already migrated by auto-update
+    Styles.set(Styles.parse(styleRecord));
 
-    if (data[51]) GraphOverride.restore(JSON.parse(data[51]));
     if (data[50]) Layers.restore(JSON.parse(data[50]));
+    if (data[51]) GraphOverride.restore(JSON.parse(data[51]));
 
     Goods.sync();
     Markets.sync();
     Routes.sync();
     TradeAnimation.sync();
+    Journeys.sync();
 
     select("#scaleBar")
       .on("mousemove", () => tip("Click to open Units Editor"))
@@ -447,17 +448,14 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
 
     // add custom heightmap color scheme if any
     if (heightmapColorSchemes) {
-      const oceanHeights = document.getElementById("oceanHeights");
-      const oceanScheme = oceanHeights?.getAttribute("scheme");
-      if (oceanScheme && !(oceanScheme in heightmapColorSchemes)) addCustomColorScheme(oceanScheme);
-      const landHeights = document.getElementById("landHeights");
-      const landScheme = landHeights?.getAttribute("scheme");
-      if (landScheme && !(landScheme in heightmapColorSchemes)) addCustomColorScheme(landScheme);
+      for (const { scheme } of [styles.heightmap.oceanHeights.options, styles.heightmap.landHeights.options]) {
+        if (scheme && !(scheme in heightmapColorSchemes)) addCustomColorScheme(scheme);
+      }
     }
 
     {
       // add custom texture if any
-      const textureHref = select("#texture").attr("data-href");
+      const textureHref = styles.texture.options.href;
       if (textureHref) updateTextureSelectValue(textureHref);
     }
 
@@ -702,9 +700,26 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         // sort markers by index
         pack.markers.sort((a, b) => a.i - b.i);
       }
+
+      {
+        // segment transports with no transport type behind them - they'd silently fall back to air rules
+        const transportNames = new Set(Transports.all.map(transport => transport.name));
+        const orphans = new Set<string>();
+        for (const journey of pack.journeys) {
+          for (const segment of journey.segments) {
+            if (!transportNames.has(segment.transport)) orphans.add(segment.transport);
+          }
+        }
+
+        if (orphans.size) {
+          const names = [...orphans];
+          ERROR && console.error("[Data integrity] Journey transports missing", names.map(escapeHtml).join(", "));
+        }
+      }
     }
 
     Layers.drawAll();
+    applyStoredStyles();
     applyDefaultViewboxEvents();
     focusOn();
     invokeActiveZooming();

@@ -1,0 +1,615 @@
+{
+  "#map": {
+    "width": "1280",
+    "height": "720"
+  },
+  "#armies": {
+    "fill-opacity": "1",
+    "stroke": "#000",
+    "stroke-width": "0.3",
+    "style": "display: none;"
+  },
+  "#anchors": {},
+  "#biomes": {
+    "mask": "url(#land)",
+    "style": "display: none;"
+  },
+  "#borders": {
+    "fill": "none"
+  },
+  "#stateBorders": {
+    "opacity": "0.8",
+    "stroke": "#56566d",
+    "stroke-width": "1",
+    "stroke-dasharray": "2",
+    "stroke-linecap": "butt"
+  },
+  "#provinceBorders": {
+    "opacity": "0.8",
+    "stroke": "#56566d",
+    "stroke-width": "0.12",
+    "stroke-dasharray": "0.75 0.75",
+    "stroke-linecap": "butt"
+  },
+  "#burgIcons": {},
+  "#cells": {
+    "stroke": "#808080",
+    "stroke-width": "0.1",
+    "style": "display: none;"
+  },
+  "#coastline": {},
+  "#sea_island": {
+    "opacity": "0.5",
+    "stroke": "#1f3846",
+    "stroke-width": "0.5"
+  },
+  "#lake_island": {
+    "opacity": "1",
+    "stroke": "#7c8eaf",
+    "stroke-width": "0.35"
+  },
+  "#compass": {
+    "opacity": "0.8",
+    "mask": "url(#water)",
+    "shape-rendering": "optimizespeed",
+    "style": "display: none;"
+  },
+  "#coordinates": {
+    "opacity": "1",
+    "stroke": "#d4d4d4",
+    "stroke-width": "1",
+    "stroke-dasharray": "5",
+    "style": "display: none;"
+  },
+  "#cults": {
+    "opacity": "0.6",
+    "stroke": "#777777",
+    "stroke-width": "0.5",
+    "style": "display: none;"
+  },
+  "#emblems": {
+    "opacity": "0.9",
+    "stroke-width": "1",
+    "style": "display: none;"
+  },
+  "#stateEmblems": {},
+  "#provinceEmblems": {},
+  "#burgEmblems": {},
+  "#fogging": {
+    "opacity": "0.98",
+    "fill": "#30426f",
+    "mask": "url(#fog)"
+  },
+  "#goods": {
+    "style": "display: none;"
+  },
+  "#goodsCells": {
+    "opacity": "1"
+  },
+  "#goodsIcons": {
+    "opacity": "1",
+    "stroke-width": "0.3",
+    "filter": "url(#dropShadow01)"
+  },
+  "#goodsBurgs": {
+    "opacity": "1",
+    "stroke": "#41414f",
+    "stroke-width": "0.2"
+  },
+  "#gridOverlay": {
+    "opacity": "0.8",
+    "stroke": "#777777",
+    "stroke-width": "0.5",
+    "style": "display: none;"
+  },
+  "#ice": {
+    "opacity": "0.9",
+    "fill": "#f1f8fe",
+    "stroke": "#e8f0f6",
+    "stroke-width": "0.5",
+    "filter": "url(#dropShadow01)"
+  },
+  "#labels": {
+    "font-size": "100px"
+  },
+  "#lakes": {},
+  "#freshwater": {
+    "opacity": "0.5",
+    "fill": "#a6c1fd",
+    "stroke": "#5f799d",
+    "stroke-width": "0.7"
+  },
+  "#salt": {
+    "opacity": "0.5",
+    "fill": "#409b8a",
+    "stroke": "#388985",
+    "stroke-width": "0.7"
+  },
+  "#sinkhole": {
+    "opacity": "1",
+    "fill": "#5bc9fd",
+    "stroke": "#53a3b0",
+    "stroke-width": "0.7"
+  },
+  "#frozen": {
+    "opacity": "0.95",
+    "fill": "#cdd4e7",
+    "stroke": "#cfe0eb",
+    "stroke-width": "0"
+  },
+  "#lava": {
+    "opacity": "0.7",
+    "fill": "#90270d",
+    "stroke": "#f93e0c",
+    "stroke-width": "2",
+    "filter": "url(#crumpled)"
+  },
+  "#dry": {
+    "opacity": "1",
+    "fill": "#c9bfa7",
+    "stroke": "#8e816f",
+    "stroke-width": "0.7"
+  },
+  "#landmass": {
+    "opacity": "1",
+    "fill": "#eef6fb"
+  },
+  "#legend": {
+    "stroke": "#812929",
+    "stroke-width": "2.5",
+    "stroke-dasharray": "0 4 10 4",
+    "stroke-linecap": "round",
+    "font-family": "Almendra SC"
+  },
+  "#markers": {
+    "style": "display: none;"
+  },
+  "#markets": {
+    "opacity": "1",
+    "fill-opacity": "0.03",
+    "stroke-width": "1",
+    "stroke-opacity": "0.8",
+    "style": "display: none;"
+  },
+  "#oceanLayers": {},
+  "#oceanBase": {
+    "fill": "#466eab",
+    "x": "0",
+    "y": "0",
+    "width": "1280",
+    "height": "720"
+  },
+  "#oceanicPattern": {
+    "opacity": "0.2",
+    "href": "./images/pattern1.png"
+  },
+  "#population": {
+    "stroke-width": "1.6",
+    "stroke-linecap": "butt",
+    "style": "display: none;"
+  },
+  "#rural": {
+    "stroke": "#0000ff"
+  },
+  "#urban": {
+    "stroke": "#ff0000"
+  },
+  "#prec": {
+    "fill": "#003dff",
+    "stroke": "#000000",
+    "stroke-width": "0",
+    "style": "display: none;"
+  },
+  "#provs": {
+    "opacity": "0.7",
+    "fill": "#000000",
+    "font-size": "10",
+    "font-family": "Georgia",
+    "style": "display: none;"
+  },
+  "#regions": {},
+  "#statesBody": {
+    "opacity": "0.4"
+  },
+  "#statesHalo": {
+    "opacity": "0.4",
+    "stroke-width": "10",
+    "filter": "blur(3.5px)",
+    "style": "display: none;"
+  },
+  "#relig": {
+    "opacity": "0.7",
+    "stroke": "#777777",
+    "stroke-width": "0",
+    "style": "display: none;"
+  },
+  "#rivers": {
+    "fill": "#5d97bb"
+  },
+  "#routes": {
+    "fill": "none"
+  },
+  "#roads": {
+    "opacity": "0.9",
+    "stroke": "#d06324",
+    "stroke-width": "0.7",
+    "stroke-dasharray": "2",
+    "stroke-linecap": "butt"
+  },
+  "#trails": {
+    "opacity": "0.9",
+    "stroke": "#d06324",
+    "stroke-width": "0.25",
+    "stroke-dasharray": ".8 1.6",
+    "stroke-linecap": "butt"
+  },
+  "#searoutes": {
+    "opacity": "0.9",
+    "stroke": "#ffffff",
+    "stroke-width": "0.35",
+    "stroke-dasharray": "1 2",
+    "stroke-linecap": "round"
+  },
+  "#ruler": {
+    "stroke-width": "2",
+    "stroke-dasharray": "10",
+    "style": "display: none;"
+  },
+  "#scaleBar": {
+    "opacity": "1",
+    "fill": "#353540",
+    "font-size": "10"
+  },
+  "#scaleBarBack": {
+    "opacity": "0.2",
+    "fill": "#ffffff",
+    "stroke": "#000000",
+    "stroke-width": "1",
+    "filter": "url(#blur5)",
+    "x": "-10",
+    "y": "-20",
+    "height": "32"
+  },
+  "#temperature": {
+    "fill": "#000000",
+    "fill-opacity": "0.3",
+    "stroke-width": "1.8",
+    "font-size": "8px",
+    "style": "display: none;"
+  },
+  "#terrain": {
+    "style": "display: none;"
+  },
+  "#terrs": {
+    "style": "display: none;"
+  },
+  "#landHeights": {
+    "opacity": "1",
+    "mask": "url(#land)"
+  },
+  "#oceanHeights": {
+    "opacity": "1"
+  },
+  "#texture": {
+    "mask": "url(#land)",
+    "style": "display: none;"
+  },
+  "#tradeAnimation": {
+    "style": "display: none;"
+  },
+  "#vignette": {
+    "opacity": "0.3",
+    "fill": "#000000",
+    "mask": "url(#vignette-mask)"
+  },
+  "#vignette-rect": {
+    "fill": "black",
+    "filter": "blur(20px)",
+    "x": "0.3%",
+    "y": "0.4%",
+    "width": "99.6%",
+    "height": "99.2%",
+    "rx": "5%",
+    "ry": "5%"
+  },
+  "#zones": {
+    "opacity": "0.6",
+    "stroke": "#333333",
+    "stroke-width": "0",
+    "stroke-linecap": "butt",
+    "style": "display: none;"
+  },
+  "#burgIcons > g#capital": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "fill-opacity": "0.7",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1",
+    "stroke-linecap": "butt",
+    "font-size": "2",
+    "data-icon": "#icon-square"
+  },
+  "#burgIcons > g#city": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "fill-opacity": "0.7",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1",
+    "stroke-linecap": "butt",
+    "font-size": "1.5",
+    "data-icon": "#icon-circle"
+  },
+  "#burgIcons > g#town": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "fill-opacity": "0.7",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1.2",
+    "stroke-linecap": "butt",
+    "font-size": "1",
+    "data-icon": "#icon-circle"
+  },
+  "#burgIcons > g#village": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "fill-opacity": "0.7",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1.2",
+    "stroke-linecap": "butt",
+    "font-size": "0.7",
+    "data-icon": "#icon-circle"
+  },
+  "#burgIcons > g#hamlet": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "fill-opacity": "0.7",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1.2",
+    "stroke-linecap": "butt",
+    "font-size": "0.5",
+    "data-icon": "#icon-circle"
+  },
+  "#burgIcons > g#fort": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "fill-opacity": "0.7",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1",
+    "stroke-linecap": "butt",
+    "font-size": "0.7",
+    "data-icon": "#icon-square"
+  },
+  "#burgIcons > g#monastery": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "fill-opacity": "0.7",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1",
+    "stroke-linecap": "butt",
+    "font-size": "0.7",
+    "data-icon": "#icon-cross"
+  },
+  "#burgIcons > g#caravanserai": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "fill-opacity": "0.7",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1",
+    "stroke-linecap": "butt",
+    "font-size": "0.7",
+    "data-icon": "#icon-triangle"
+  },
+  "#burgIcons > g#trading_post": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "fill-opacity": "0.7",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1",
+    "stroke-linecap": "butt",
+    "font-size": "0.7",
+    "data-icon": "#icon-triangle"
+  },
+  "#anchors > g#capital": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1.2",
+    "font-size": "1.9"
+  },
+  "#anchors > g#city": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1.2",
+    "font-size": "1.5"
+  },
+  "#anchors > g#town": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1.2",
+    "font-size": "1"
+  },
+  "#anchors > g#village": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1.2",
+    "font-size": "0.7"
+  },
+  "#anchors > g#hamlet": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1.2",
+    "font-size": "0.5"
+  },
+  "#anchors > g#fort": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1.2",
+    "font-size": "0.7"
+  },
+  "#anchors > g#monastery": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1.2",
+    "font-size": "0.7"
+  },
+  "#anchors > g#caravanserai": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1.2",
+    "font-size": "0.7"
+  },
+  "#anchors > g#trading_post": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1.2",
+    "font-size": "0.7"
+  },
+  "#labels > [data-group=\"capital\"]": {
+    "opacity": "1",
+    "fill": "#3e3e4b",
+    "stroke": "#3a3a3a",
+    "stroke-width": "0",
+    "font-size": "6%",
+    "font-family": "Almendra SC",
+    "letter-spacing": "0",
+    "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.5em)"
+  },
+  "#labels > [data-group=\"city\"]": {
+    "opacity": "1",
+    "fill": "#3e3e4b",
+    "stroke": "#3a3a3a",
+    "stroke-width": "0",
+    "font-size": "5%",
+    "font-family": "Almendra SC",
+    "letter-spacing": "0",
+    "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)"
+  },
+  "#labels > [data-group=\"town\"]": {
+    "opacity": "1",
+    "fill": "#3e3e4b",
+    "stroke": "#3a3a3a",
+    "stroke-width": "0",
+    "font-size": "4%",
+    "font-family": "Almendra SC",
+    "letter-spacing": "0",
+    "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)"
+  },
+  "#labels > [data-group=\"village\"]": {
+    "opacity": "1",
+    "fill": "#3e3e4b",
+    "stroke": "#3a3a3a",
+    "stroke-width": "0",
+    "font-size": "3%",
+    "font-family": "Almendra SC",
+    "letter-spacing": "0",
+    "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)"
+  },
+  "#labels > [data-group=\"hamlet\"]": {
+    "opacity": "1",
+    "fill": "#3e3e4b",
+    "stroke": "#3a3a3a",
+    "stroke-width": "0",
+    "font-size": "2%",
+    "font-family": "Almendra SC",
+    "letter-spacing": "0",
+    "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)"
+  },
+  "#labels > [data-group=\"fort\"]": {
+    "opacity": "1",
+    "fill": "#3e3e4b",
+    "stroke": "#3a3a3a",
+    "stroke-width": "0",
+    "font-size": "2%",
+    "font-family": "Almendra SC",
+    "letter-spacing": "0",
+    "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.5em)"
+  },
+  "#labels > [data-group=\"monastery\"]": {
+    "opacity": "1",
+    "fill": "#3e3e4b",
+    "stroke": "#3a3a3a",
+    "stroke-width": "0",
+    "font-size": "2%",
+    "font-family": "Almendra SC",
+    "letter-spacing": "0",
+    "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.5em)"
+  },
+  "#labels > [data-group=\"caravanserai\"]": {
+    "opacity": "1",
+    "fill": "#3e3e4b",
+    "stroke": "#3a3a3a",
+    "stroke-width": "0",
+    "font-size": "2%",
+    "font-family": "Almendra SC",
+    "letter-spacing": "0",
+    "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.5em)"
+  },
+  "#labels > [data-group=\"trading_post\"]": {
+    "opacity": "1",
+    "fill": "#3e3e4b",
+    "stroke": "#3a3a3a",
+    "stroke-width": "0",
+    "font-size": "2%",
+    "font-family": "Almendra SC",
+    "letter-spacing": "0",
+    "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.5em)"
+  },
+  "#labels > [data-group=\"state\"]": {
+    "opacity": "1",
+    "fill": "#3e3e4b",
+    "stroke": "#3a3a3a",
+    "stroke-width": "0",
+    "font-size": "22%",
+    "font-family": "Almendra SC",
+    "letter-spacing": "0",
+    "style": "text-shadow: white 0px 0px 4px"
+  },
+  "#labels > [data-group=\"province\"]": {
+    "opacity": "1",
+    "fill": "#3e3e4b",
+    "stroke": "#3a3a3a",
+    "stroke-width": "0",
+    "font-size": "6%",
+    "font-family": "Cinzel",
+    "letter-spacing": "0",
+    "style": "text-shadow: white 0px 0px 4px"
+  },
+  "#labels > [data-group=\"river\"]": {
+    "opacity": "1",
+    "fill": "#3e3e4b",
+    "stroke": "#3a3a3a",
+    "stroke-width": "0",
+    "font-size": "1.5%",
+    "font-family": "Lugrasimo",
+    "letter-spacing": "0",
+    "style": "text-shadow: white 0px 1px 6px"
+  },
+  "#labels > [data-group=\"route\"]": {
+    "opacity": "1",
+    "fill": "#3e3e4b",
+    "stroke": "#3a3a3a",
+    "stroke-width": "0",
+    "font-size": "1.5%",
+    "font-family": "Lugrasimo",
+    "letter-spacing": "0",
+    "style": "text-shadow: white 0px 1px 6px"
+  },
+  "#labels > [data-group=\"added\"]": {
+    "opacity": "1",
+    "fill": "#3e3e4b",
+    "stroke": "#3a3a3a",
+    "stroke-width": "0",
+    "font-size": "18%",
+    "font-family": "Almendra SC",
+    "letter-spacing": "0",
+    "style": "text-shadow: white 0px 0px 4px"
+  }
+}

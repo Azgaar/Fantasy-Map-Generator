@@ -32,6 +32,7 @@ The project is under active development. Join our [Discord server](https://disco
 [Culture sets](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Culture-sets) ·
 [Culture types](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Culture-types) ·
 [Markers](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Markers) ·
+[Journeys](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Journeys) ·
 [Goods spread functions](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Goods-spread-functions) ·
 [Military Forces](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Military-Forces) ·
 [Battle Simulator](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Battle-Simulator) ·
@@ -39,6 +40,7 @@ The project is under active development. Join our [Discord server](https://disco
 
 **Running and integrating**
 [Run FMG locally](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Run-FMG-locally) ·
+[Install with Nix](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Install-with-Nix) ·
 [Working offline](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Working-offline) ·
 [URL parameters](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/URL-parameters) ·
 [GIS data export](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export) ·

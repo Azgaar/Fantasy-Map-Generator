@@ -89,6 +89,7 @@ Tools (<kbd>Alt</kbd> + <kbd>Shift</kbd> works as an alternative to <kbd>Shift</
 * <kbd>Shift</kbd> + <kbd>K</kbd> - open Markers Overview
 * <kbd>Shift</kbd> + <kbd>E</kbd> - open Cells Details view
 * <kbd>Shift</kbd> + <kbd>G</kbd> - open Goods editor
+* <kbd>Shift</kbd> + <kbd>J</kbd> - open Journeys Overview
 * <kbd>Shift</kbd> + <kbd>=</kbd> - open Measurers editor
 
 These creation modes are bound to the produced characters, so they work on layouts where <kbd>Shift</kbd> + digit gives <kbd>!@#$%</kbd>:

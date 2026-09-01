@@ -112,14 +112,10 @@ function recalculateMapSize(x0: number, y0: number): void {
 }
 
 function rescaleBurgStyles(scale: number): void {
+  window.Burgs.ensureBurgGroupStyles(); // a group without a store entry would silently skip the rescale
   for (const group of ensureEl("burgIcons").querySelectorAll<SVGGElement>(":scope > g")) {
-    const iconStyle: Record<string, string> = { ...style.burgIcons[group.id] };
-    for (const { name, value } of group.attributes) iconStyle[name] = value;
-
-    const size = Number(iconStyle["font-size"]) || 1;
-    iconStyle["font-size"] = String(rn(minmax(size * scale, 0.2, 10), 2));
-
-    style.burgIcons[group.id] = iconStyle;
+    const iconStyle = styles.burgIcons.burgIcons.groups[group.id];
+    if (iconStyle) iconStyle.options.size = rn(minmax(iconStyle.options.size * scale, 0.2, 10), 2);
     group.remove();
   }
 
@@ -128,12 +124,12 @@ function rescaleBurgStyles(scale: number): void {
   );
 
   for (const groupName of burgLabelGroups) {
-    const groupStyle = style.labels.groups[groupName];
+    const groupStyle = styles.labels.groups[groupName];
     if (!groupStyle) continue;
 
-    const size = Number.parseFloat(groupStyle["font-size"]) || 0;
+    const size = Number.parseFloat(groupStyle.attrs["font-size"]) || 0;
     const rescaledSize = Math.max(rn((size + size / scale) / 2, 2), 1) * scale;
-    groupStyle["font-size"] = `${rn(rescaledSize, 2)}%`;
+    groupStyle.attrs["font-size"] = `${rn(rescaledSize, 2)}%`;
   }
 }
 

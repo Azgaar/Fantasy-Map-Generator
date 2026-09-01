@@ -6,17 +6,19 @@ Compatible `.gz` and `.map` files from `v0.70.0` onward are checked and auto-upd
 
 For older maps use the [old version](https://azgaar.github.io/Fantasy-Map-Generator-old).
 
-Check out [Trello board](https://trello.com/b/7x832DG4/fantasy-map-generator) to see what is planned.
+Check out [Dev board](https://github.com/users/Azgaar/projects/3/views/1?sumFields=&hideItemsCount=true) to see what is planned.
 
 # Current version
 
 Current version of the Fantasy Map Generator is the latest `master` branch. You can download it here: https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/heads/master.zip. Also see [the wiki](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#can-i-use-the-generator-offline).
 
-# Recent changes
-
-- to be added
-
 # Releases
+
+**[1.150.0](https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/tags/v1.150.0.zip) - 2026-09-05**:
+
+- Journey Editor and new Journeys layer [1.150.0]
+- Styles migration from DOM to global store by _[barrulus](https://github.com/barrulus)_ [1.150.0]
+- Desktop App fixes [1.150.0]
 
 **[1.149.0](https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/tags/v1.149.0.zip) - 2026-08-27**:
 

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
-import { drawLegend, redrawLegend } from "./draw-legend";
+import "@/generators/styles";
+import { dragLegendBox, drawLegend, fitLegendBox, redrawLegend } from "./draw-legend";
 
 beforeEach(() => {
   document.body.innerHTML = /* html */ `<svg id="map" width="800" height="600">
@@ -27,29 +28,73 @@ const items = [
 ];
 
 describe("drawLegend", () => {
-  it("takes the styling from the style inputs when the legend is drawn anew", () => {
+  it("sizes the legend from the store and stamps the group font-size", () => {
+    styles.legend.options.fontSize = 20;
     drawLegend("States", items);
-
-    const box = document.getElementById("legendBox")!;
-    expect(box.getAttribute("data-columns")).toBe("8");
-    expect(box.getAttribute("fill")).toBe("#ffffff");
+    expect(document.getElementById("legend")!.getAttribute("font-size")).toBe("20");
+    styles.legend.options.fontSize = 13;
   });
 
-  it("keeps the styling of the drawn legend on redraw, ignoring the style inputs", () => {
+  it("takes the styling from the store when the legend is drawn anew", () => {
+    styles.legend.options.columns = 4;
+    styles.legend.box.attrs.fill = "#123456";
     drawLegend("States", items);
 
     const box = document.getElementById("legendBox")!;
-    box.setAttribute("data-columns", "1"); // the user restyles the legend
-    box.setAttribute("fill", "#f0e0c0");
-    box.setAttribute("fill-opacity", "0.6");
+    expect(box.getAttribute("data-columns")).toBe("4");
+    expect(box.getAttribute("fill")).toBe("#123456");
+    styles.legend.options.columns = 8;
+    styles.legend.box.attrs.fill = "#ffffff";
+  });
+
+  it("redraws the box from the store, not from the attrs the drawn box carried", () => {
+    drawLegend("States", items);
+
+    const box = document.getElementById("legendBox")!;
+    box.setAttribute("fill", "#f0e0c0"); // a stale DOM value the store never learned about
+    styles.legend.box.attrs.fill = "#abcdef";
+    styles.legend.box.attrs["fill-opacity"] = 0.6;
+    styles.legend.options.columns = 1;
 
     redrawLegend();
 
     const redrawn = document.getElementById("legendBox")!;
     expect(redrawn.getAttribute("data-columns")).toBe("1");
-    expect(redrawn.getAttribute("fill")).toBe("#f0e0c0");
+    expect(redrawn.getAttribute("fill")).toBe("#abcdef");
     expect(redrawn.getAttribute("fill-opacity")).toBe("0.6");
     expect(document.getElementById("legendLabel")?.textContent).toBe("States");
     expect(document.querySelectorAll("#legend text")).toHaveLength(3); // 2 items + the label
+    styles.legend.options.columns = 8;
+    styles.legend.box.attrs.fill = "#ffffff";
+  });
+
+  it("fitLegendBox positions from the store, ignoring the retired data attrs", () => {
+    styles.legend.options.x = 50;
+    styles.legend.options.y = 50;
+    drawLegend("States", items);
+    fitLegendBox();
+
+    const transform = document.getElementById("legend")!.getAttribute("transform");
+    // svgWidth 800 * 0.5 - bbox width 60 = 340; svgHeight 600 * 0.5 - bbox height 40 = 260
+    expect(transform).toBe("translate(340,260)");
+    styles.legend.options.x = 99;
+    styles.legend.options.y = 93;
+  });
+
+  it("dragLegendBox stores the dragged position in the store", () => {
+    drawLegend("States", items);
+    document.getElementById("legend")!.setAttribute("transform", "translate(100,100)");
+
+    dragLegendBox({
+      x: 0,
+      y: 0,
+      on: (_type: string, cb: (e: { x: number; y: number }) => void) => cb({ x: 60, y: 20 })
+    } as never);
+
+    // (100+60+60)/800*100 = 27.5 ; (100+20+40)/600*100 = 26.67
+    expect(styles.legend.options.x).toBe(27.5);
+    expect(styles.legend.options.y).toBe(26.67);
+    styles.legend.options.x = 99;
+    styles.legend.options.y = 93;
   });
 });

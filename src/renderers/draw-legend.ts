@@ -1,7 +1,7 @@
 // The legend box: a titled, multi-column list of color swatches drawn over the map
 
 import { type D3DragEvent, select } from "d3";
-import { ensureEl, parseTransform, rn } from "@/utils";
+import { parseTransform, rn } from "@/utils";
 
 // [id, color, label] as stored in the legend `data` attribute
 export type LegendItem = (string | number | undefined)[];
@@ -12,18 +12,15 @@ const getLegend = () => select<SVGGElement, unknown>("#legend");
 export function drawLegend(name: string, data: LegendItem[]): void {
   const legend = getLegend();
 
-  // the box drawn before carries the legend styling; the style inputs only seed a legend drawn anew
-  const box = legend.select<SVGRectElement>("#legendBox").node();
-  const styleInput = (id: string) => ensureEl<HTMLInputElement>(id).value;
-  const boxStyle = (attr: string, inputId: string) => box?.getAttribute(attr) ?? styleInput(inputId);
-
-  const itemsInCol = Number(boxStyle("data-columns", "styleLegendColItems"));
-  const backColor = boxStyle("fill", "styleLegendBack");
-  const opacity = Number(boxStyle("fill-opacity", "styleLegendOpacity"));
-  const fontSize = Number(legend.attr("font-size"));
+  // the store owns the box styling and the column count; the box is redrawn from it every time
+  const itemsInCol = styles.legend.options.columns;
+  const backColor = styles.legend.box.attrs.fill;
+  const opacity = Number(styles.legend.box.attrs["fill-opacity"]);
+  const fontSize = styles.legend.options.fontSize;
 
   legend.selectAll("*").remove(); // fully redraw every time
   legend.attr("data", data.join("|")); // store data to redraw on style change
+  legend.attr("font-size", fontSize); // the drawn texts size by inheritance
 
   const lineHeight = Math.round(fontSize * 1.7);
   const colorBoxSize = Math.round(fontSize / 1.7);
@@ -73,6 +70,7 @@ export function drawLegend(name: string, data: LegendItem[]): void {
     .insert("rect", ":first-child")
     .attr("id", "legendBox")
     .attr("data-columns", itemsInCol)
+    .attr("data-group", "box")
     .attr("x", 0)
     .attr("y", 0)
     .attr("width", bbox.width + colOffset * 2)
@@ -98,8 +96,8 @@ export function fitLegendBox(): void {
   const legend = getLegend();
   if (!legend.selectAll("*").size()) return;
 
-  const px = Number.isNaN(Number(legend.attr("data-x"))) ? 0.99 : Number(legend.attr("data-x")) / 100;
-  const py = Number.isNaN(Number(legend.attr("data-y"))) ? 0.93 : Number(legend.attr("data-y")) / 100;
+  const px = styles.legend.options.x / 100;
+  const py = styles.legend.options.y / 100;
 
   const bbox = getBBox(legend);
   const x = rn(svgWidth * px - bbox.width);
@@ -118,10 +116,9 @@ export function dragLegendBox(event: D3DragEvent<SVGGElement, unknown, unknown>)
   event.on("drag", dragEvent => {
     const px = rn(((x + dragEvent.x + bbox.width) / svgWidth) * 100, 2);
     const py = rn(((y + dragEvent.y + bbox.height) / svgHeight) * 100, 2);
-    legend
-      .attr("transform", `translate(${x + dragEvent.x},${y + dragEvent.y})`)
-      .attr("data-x", px)
-      .attr("data-y", py);
+    legend.attr("transform", `translate(${x + dragEvent.x},${y + dragEvent.y})`);
+    styles.legend.options.x = px;
+    styles.legend.options.y = py;
   });
 }
 

@@ -180,6 +180,92 @@ describe("RoutesModule river-aware water cost", () => {
   });
 });
 
+describe("RoutesModule.findWaterPath", () => {
+  let Routes: any;
+
+  // Two coastal ports (land cells 0 and 4) with three sea cells between them.
+  // Cell 0's haven is cell 1; cell 4's haven is set per test.
+  function setupTwoPortsPack(destinationHaven: number) {
+    globalThis.TIME = false;
+    globalThis.window = globalThis.window || ({} as any);
+    // Minimal stand-in for the legacy FlatQueue global the shared findPath uses
+    (globalThis as any).window.FlatQueue = class {
+      items: { id: number; priority: number }[] = [];
+      get length() {
+        return this.items.length;
+      }
+      push(id: number, priority: number) {
+        this.items.push({ id, priority });
+        this.items.sort((a, b) => a.priority - b.priority);
+      }
+      peekValue() {
+        return this.items[0]?.priority;
+      }
+      pop() {
+        return this.items.shift()?.id;
+      }
+    };
+    globalThis.grid = { cells: { temp: [20, 20, 20, 20, 20] } } as any;
+    globalThis.pack = {
+      cells: {
+        h: [25, 5, 5, 5, 25],
+        r: [0, 0, 0, 0, 0],
+        fl: [0, 0, 0, 0, 0],
+        haven: [1, 0, 0, 0, destinationHaven],
+        burg: [1, 0, 0, 0, 2],
+        c: [
+          [1, 2],
+          [0, 2, 3],
+          [0, 1, 3, 4],
+          [1, 2, 4],
+          [2, 3]
+        ],
+        p: [
+          [0, 0],
+          [10, 0],
+          [10, 10],
+          [20, 0],
+          [30, 0]
+        ],
+        t: [1, -1, -2, -1, 1],
+        g: [0, 0, 0, 0, 0]
+      },
+      burgs: [{}, { x: 2, y: 1 }, { x: 28, y: 1 }],
+      rivers: [],
+      routes: []
+    } as any;
+  }
+
+  beforeEach(async () => {
+    setupTwoPortsPack(3);
+    await import("./routes-generator");
+    Routes = (globalThis as any).Routes;
+    Routes.sync();
+  });
+
+  it("leaves and enters ports through their havens", () => {
+    expect(Routes.findWaterPath(0, 4)).toEqual([0, 1, 3, 4]);
+  });
+
+  it("detours to the haven the destination port was shifted towards", () => {
+    setupTwoPortsPack(2);
+    Routes.sync();
+    expect(Routes.findWaterPath(0, 4)).toEqual([0, 1, 2, 4]);
+  });
+
+  it("returns null when the destination cannot be reached over water", () => {
+    globalThis.pack.cells.h = [25, 25, 25, 5, 25] as any; // the sea is cut off by land
+    Routes.sync();
+    expect(Routes.findWaterPath(0, 4)).toBe(null);
+  });
+
+  it("getWaterPoints anchors the path at the burg positions, not the cell centres", () => {
+    const points = Routes.getWaterPoints([0, 1, 3, 4]);
+    expect(points.at(0)).toEqual([2, 1, 0]);
+    expect(points.at(-1)).toEqual([28, 1, 4]);
+  });
+});
+
 describe("RoutesModule.addMeandering", () => {
   let Routes: any;
   let Rivers: any;
@@ -501,5 +587,49 @@ describe("RoutesModule.remove", () => {
     expect(() => Routes.remove(globalThis.pack.routes[0])).not.toThrow();
     expect(globalThis.pack.routes).toHaveLength(0);
     expect(globalThis.pack.cells.routes[10][20]).toBeUndefined();
+  });
+});
+
+describe("ensureRouteGroupStyles", () => {
+  it("seeds styles for route groups missing from the store, keeping existing entries", async () => {
+    globalThis.TIME = false;
+    globalThis.window = globalThis.window || ({} as any);
+    globalThis.grid = { cells: { temp: [20] } } as any;
+    globalThis.pack = {
+      cells: { h: [], r: [], fl: [], p: [], t: [], g: [] },
+      rivers: [],
+      routes: [
+        { i: 0, group: "roads", points: [] },
+        { i: 1, group: "route-royal", points: [] }
+      ]
+    } as any;
+    await import("./routes-generator");
+    const Routes = (globalThis as any).Routes;
+
+    const roads = { attrs: { opacity: 0.9, stroke: "#d06324", "stroke-width": 0.7 } };
+    (globalThis as any).styles = { routes: { groups: { roads: structuredClone(roads) } } };
+
+    Routes.ensureRouteGroupStyles();
+
+    const groups = (globalThis as any).styles.routes.groups;
+    expect(groups.roads).toEqual(roads);
+    expect(groups["route-royal"]).toEqual(roads);
+    expect(groups["route-royal"]).not.toBe(groups.roads);
+  });
+});
+
+describe("ensureRouteGroupStyles before a map exists", () => {
+  it("is a no-op when the pack has no routes yet (style preset applied on initial load)", async () => {
+    globalThis.TIME = false;
+    globalThis.window = globalThis.window || ({} as any);
+    globalThis.grid = { cells: { temp: [20] } } as any;
+    globalThis.pack = {} as any;
+    await import("./routes-generator");
+    const Routes = (globalThis as any).Routes;
+
+    (globalThis as any).styles = { routes: { groups: { roads: { attrs: { opacity: 0.9 } } } } };
+
+    expect(() => Routes.ensureRouteGroupStyles()).not.toThrow();
+    expect(Object.keys((globalThis as any).styles.routes.groups)).toEqual(["roads"]);
   });
 });

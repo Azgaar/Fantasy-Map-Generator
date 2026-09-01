@@ -124,7 +124,10 @@ describe("v1.145 svg layer cleanup", () => {
     expect(cults).not.toBeNull();
     expect(cults?.getAttribute("stroke")).toBe("#777777");
     expect(cults?.getAttribute("stroke-width")).toBe("0.5");
-    expect(document.querySelector("#texture")?.getAttribute("data-href")).toBe("./images/textures/marble-big.jpg");
+    // the style migration harvests store-owned attrs off the DOM: the href now lives in the store
+    expect(document.querySelector("#texture")).not.toBeNull();
+    expect(document.querySelector("#texture")?.getAttribute("data-href")).toBeNull();
+    expect((globalThis as any).styles.texture.options.href).toBe("./images/textures/marble-big.jpg");
   });
 
   it("keeps an empty declared child group that is the only one with its id", () => {

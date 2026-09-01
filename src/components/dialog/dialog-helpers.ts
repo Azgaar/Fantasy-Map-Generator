@@ -52,6 +52,33 @@ export function confirmationDialog(options: ConfirmationOptions): void {
   });
 }
 
+interface AlertOptions {
+  title?: string;
+  message: string;
+  width?: string;
+}
+
+/** Tell the user something they only need to acknowledge */
+export function alertDialog({ title = "Warning", message, width = "26em" }: AlertOptions): void {
+  ensureEl("alertMessage").innerHTML = message;
+
+  $("#alert").dialog({
+    resizable: false,
+    title,
+    width,
+    // the #alert dialog is shared with raw .dialog() callers: reset what they may have set
+    height: "auto",
+    modal: false,
+    close: () => {},
+    position: { my: "center", at: "center", of: "svg" },
+    buttons: {
+      OK: function (this: HTMLElement) {
+        $(this).dialog("close");
+      }
+    }
+  });
+}
+
 // TODO: editors should register a refresh callback when they open,
 // so it can call them without needing to know their button IDs
 const REFRESHABLE_EDITORS = [
@@ -71,7 +98,8 @@ const REFRESHABLE_EDITORS = [
   "riversOverviewRefresh",
   "militaryOverviewRefresh",
   "regimentsOverviewRefresh",
-  "markersOverviewRefresh"
+  "markersOverviewRefresh",
+  "journeysOverviewRefresh"
 ];
 
 /** Refresh every editor that is currently open */

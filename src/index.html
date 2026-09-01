@@ -133,7 +133,7 @@
     </style>
     <link
       rel="preload"
-      href="index.css?v=9589682e"
+      href="index.css?v=f319eac5"
       as="style"
       onload="
         this.onload = null;
@@ -161,7 +161,7 @@
   </head>
   <body>
     <svg
-      id="map"
+      id="map" data-layer="map"
       width="100%"
       height="100%"
       version="1.1"
@@ -333,7 +333,7 @@
       </defs>
       <g id="viewbox"></g>
       <g id="scaleBar">
-        <rect id="scaleBarBack"></rect>
+        <rect id="scaleBarBack" data-group="back"></rect>
       </g>
     </svg>
     <div id="loading">
@@ -480,24 +480,23 @@
             id="styleElementSelect"
             style="width: 42%"
           >
-            <option value="anchors">Anchor Icons</option>
             <option value="biomes">Biomes</option>
             <option value="borders">Borders</option>
             <option value="burgIcons">Burg Icons</option>
+            <option value="anchors">Burg Anchors</option>
             <option value="cells">Cells</option>
             <option value="coastline">Coastline</option>
             <option value="coordinates">Coordinates</option>
             <option value="cults">Cultures</option>
             <option value="emblems">Emblems</option>
             <option value="fogging">Fogging</option>
-            <option value="goods">Goods</option>
             <option value="goodsCells">Goods: production</option>
             <option value="goodsIcons">Goods: resources</option>
             <option value="goodsBurgs">Goods: burg plates</option>
             <option value="gridOverlay">Grid</option>
             <option value="terrs">Heightmap</option>
             <option value="ice">Ice</option>
-            <option value="icons">Icons</option>
+            <option value="journeys">Journeys</option>
             <option value="labels">Labels</option>
             <option value="lakes">Lakes</option>
             <option value="landmass">Landmass</option>
@@ -583,18 +582,6 @@
                     data-stops="#ffffff,#EEEECC,#D2B48C,#008000,#008080"
                     class="icon-plus sideButton"
                   ></button>
-                </td>
-              </tr>
-            </tbody>
-            <tbody id="styleDisplay" style="display: none">
-              <tr data-tip="Set element display: Default keeps CSS/inherited rendering, Block forces visible, None hides the element">
-                <td>Display</td>
-                <td>
-                  <select id="styleDisplayInput">
-                    <option value="">default</option>
-                    <option value="block">block</option>
-                    <option value="none">none</option>
-                  </select>
                 </td>
               </tr>
             </tbody>
@@ -1802,6 +1789,9 @@
             <button id="overviewRoutesButton" data-tip="Click to open Routes Overview" data-shortcut="Shift + U">
               Routes
             </button>
+            <button id="overviewJourneysButton" data-tip="Click to open Journeys Overview" data-shortcut="Shift + J">
+              Journeys
+            </button>
             <button id="editStatesButton" data-tip="Click to open States Editor" data-shortcut="Shift + S">
               States
             </button>
@@ -2607,6 +2597,20 @@
         </marker>
         <marker id="end-arrow-small" viewBox="0 -5 10 10" refX="6" markerWidth="2" markerHeight="2" orient="auto">
           <path d="M0,-5L10,0L0,5" fill="#555" />
+        </marker>
+        <marker id="journey-start" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="2.4" markerHeight="2.4">
+          <circle cx="5" cy="5" r="4" fill="context-stroke" stroke="#fff" stroke-width="1" />
+        </marker>
+        <marker
+          id="journey-arrow"
+          viewBox="0 0 10 10"
+          refX="8"
+          refY="5"
+          markerWidth="3"
+          markerHeight="3"
+          orient="auto-start-reverse"
+        >
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke" />
         </marker>
         <g id="defs-relief">
           <symbol id="relief-mount-1" viewBox="0 0 100 100">
@@ -5168,13 +5172,14 @@
     <script type="module" src="renderers/index.ts"></script>
     <script type="module" src="controllers/index.ts"></script>
     <script type="module" src="services/index.ts"></script>
+    <script type="module" src="generators/styles-legacy.ts"></script>
     <script defer src="libs/alea.min.js?v1.105.0"></script>
     <script defer src="libs/polylabel.min.js?v1.105.0"></script>
     <script defer src="libs/simplify.js?v1.105.6"></script>
-    <script defer src="modules/ui/style-presets.js?v=77037ce6"></script>
-    <script defer src="modules/ui/options.js?v=5d601345"></script>
-    <script defer src="main.js?v=6cf16ab8"></script>
-    <script defer src="modules/ui/style.js?v=6f7c8b78"></script>
+    <script defer src="modules/ui/style-presets.js?v=75cc6072"></script>
+    <script defer src="modules/ui/options.js?v=d2008f94"></script>
+    <script defer src="main.js?v=369ec61c"></script>
+    <script defer src="modules/ui/style.js?v=75385c7b"></script>
     <script defer src="libs/rgbquant.min.js"></script>
     <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
   </body>

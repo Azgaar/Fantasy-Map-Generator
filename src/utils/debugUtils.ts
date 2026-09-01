@@ -25,10 +25,10 @@ export const drawCellsValue = (data: unknown[], points: Point[]): void => {
  * @param {number[]} data - Array of numerical values corresponding to each cell
  * @param {any} terrs - The SVG group element where the polygons will be drawn
  */
-export const drawPolygons = (data: number[], terrs: any, grid: any): void => {
+export const drawPolygons = (data: number[], _terrs: any, grid: any): void => {
   const maximum: number = max(data) as number;
   const minimum: number = min(data) as number;
-  const scheme = window.getColorScheme(terrs.select("#landHeights").attr("scheme"));
+  const scheme = window.getColorScheme(styles.heightmap.landHeights.options.scheme);
 
   data = data.map(d => 1 - normalize(d, minimum, maximum));
   select("#debug").selectAll("polygon").remove();

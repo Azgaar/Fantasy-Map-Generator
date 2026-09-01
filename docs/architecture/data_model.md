@@ -468,6 +468,43 @@ Trade transaction log stored in `pack.deals: Deal[]`. Append-only within a produ
 - `price`: `number` - per-unit price at the time of the deal, rounded to 2 decimals. For inter-market trades this is the importer's landed cost (exporter price + transport + exporter sales tax)
 - `tax`: `number` - optional. Absolute sales-tax amount in currency units, set on burg sells and inter-market trades when the seller's state has a non-zero `salesTax`. `States.collectTaxes()` sums it into the seller state's treasury
 
+## Journeys
+
+Journeys are stored in `pack.journeys: Journey[]`. One journey is generated per map by default. Object structure:
+
+- `i`: `number` - journey id, unique but not necessarily the array index (removal does not reindex)
+- `name`: `string` - journey name
+- `type`: `string` - what kind of travel this is, e.g. `Quest`, `Raid`, `Pilgrimage`. Free-form, set by the generating archetype
+- `color`: `string` - journey color in hex; individual segments may override it
+- `segments`: `JourneySegment[]` - the legs of the journey, in travel order
+- `visible`: `boolean` - optional. `false` hides the journey on the map. Absent means visible
+- `lock`: `boolean` - optional. Locked journeys survive "remove all"
+
+A journey segment is one leg: a stretch of travel, or a halt:
+
+- `i`: `number` - segment id, unique within the journey. Sequential on a generated journey, but editing does not reindex, so it is not reliably the array index
+- `name`: `string` - segment name
+- `color`: `string` - optional. Overrides the journey color
+- `from` / `to`: `number` - optional. Endpoint cell ids. Absent until the user picks them
+- `transport`: `string` - transport type **name** (not id): segments reference `options.transports` by name, so renaming a type updates every segment, and removing one leaves the segment unresolved
+- `speed`: `number` - travel speed in km/h, always, regardless of the user's distance unit. Defaults to the transport's speed; the user may override it per segment
+- `distance`: `number` - path length in px. Multiply by `distanceScale` for the user distance unit
+- `points`: `[x, y, cellId][]` - the drawn path, from pathfinding or hand-drawn
+- `avoidRoads`: `boolean` - optional, land segments only. Routes around the road network and applies the off-road speed penalty
+- `duration`: `number` - optional. Travel time in hours; overrides the distance/speed calculation when set. Always set on a halt, which has no speed to derive time from
+- `custom`: `boolean` - optional. `true` when the user drew the path cell by cell; the pathfinder will not silently overwrite it
+- `visible`: `boolean` - optional. `false` hides the segment. Absent means visible
+
+## Transports
+
+Transport types are configuration, not map state: they live in `options.transports: Transport[]` (serialized with the rest of `options` at data index 19) and are mirrored to `localStorage` under `options-transports`, so the set the user configured carries over to the next map. Loading a map replaces `options` wholesale, so a map brings its own transports; a map saved before transports existed has none and falls back to `localStorage`, then to the defaults. Object structure:
+
+- `i`: `number` - transport type id
+- `name`: `string` - transport type name. This is the key segments reference, so it must stay unique
+- `speed`: `number` - travel speed in km/h
+- `domain`: `"land" | "water" | "air" | "stay"` - decides both the pathfinding strategy and which endpoints are valid. `stay` means no movement at all
+- `hoursPerDay`: `number` - optional. Hours of travel a day sustains with this transport, used to convert travel hours into days. Absent in maps saved before it became configurable, which fall back to a per-domain default
+
 ## Notes
 
 Notes (legends) data is stored in unordered array of objects: `notes`. Object structure is as simple as:

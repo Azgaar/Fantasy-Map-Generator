@@ -2,7 +2,7 @@ import { last, TYPED_ARRAY_MAX, unique } from "./arrayUtils";
 import { abbreviate, getAdjective, isVowel, list, nth, trimVowels } from "./languageUtils";
 import { lerp, lim, minmax, normalize, rn } from "./numberUtils";
 import "./polyfills";
-import { C_12, getColors, getMixedColor, getRandomColor, toHEX } from "./colorUtils";
+import { C_12, getCardinalColor, getColors, getMixedColor, getRandomColor, toHEX } from "./colorUtils";
 import {
   clipPoly,
   debounce,
@@ -29,19 +29,36 @@ import { applyOption, ensureEl, findEl, getComposedPath, getNextId, getPointer }
 import { connectVertices, findPath, getIsolines, getPolesOfInaccessibility, getVertexPath } from "./pathUtils";
 import { biased, each, gauss, generateSeed, getNumberInRange, P, Pint, ra, rand, rw } from "./probabilityUtils";
 import { findAllInQuadtree } from "./quadtree";
-import { capitalize, isValidJSON, parseTransform, round, safeParseJSON, sanitizeId, splitInTwo } from "./stringUtils";
 import {
+  capitalize,
+  escapeHtml,
+  isValidJSON,
+  parseTransform,
+  round,
+  safeParseJSON,
+  sanitizeId,
+  setInlineStyleProperty,
+  splitInTwo,
+  toCsvField
+} from "./stringUtils";
+import {
+  convertSpeed,
   convertTemperature,
   formatPrice,
+  formatSpeed,
   getArea,
   getAreaUnit,
   getCellPopulation,
+  getDistanceUnit,
+  getDistanceUnitRatio,
   getFriendlyHeight,
   getFriendlyPrecipitation,
   getHeight,
   getIntegerFromSI,
+  getKmInDistanceUnit,
   getPrecipitation,
   getTemperatureLikeness,
+  parseSpeed,
   si
 } from "./unitUtils";
 
@@ -77,6 +94,7 @@ window.getVertexPath = cellsArray => getVertexPath(cellsArray, (window as any).p
 window.round = round;
 window.capitalize = capitalize;
 window.parseTransform = parseTransform;
+window.setInlineStyleProperty = setInlineStyleProperty;
 
 JSON.isValid = isValidJSON;
 JSON.safeParse = safeParseJSON;
@@ -121,6 +139,7 @@ export {
   capitalize,
   clipPoly,
   connectVertices,
+  convertSpeed,
   convertTemperature,
   debounce,
   distanceSquared,
@@ -132,10 +151,12 @@ export {
   drawRouteConnections,
   each,
   ensureEl,
+  escapeHtml,
   findAllInQuadtree,
   findEl,
   findPath,
   formatPrice,
+  formatSpeed,
   gauss,
   generateDate,
   generateSeed,
@@ -143,16 +164,20 @@ export {
   getArea,
   getAreaUnit,
   getBase64,
+  getCardinalColor,
   getCellPopulation,
   getColors,
   getComposedPath,
   getCoordinates,
+  getDistanceUnit,
+  getDistanceUnitRatio,
   getFileName,
   getFriendlyHeight,
   getFriendlyPrecipitation,
   getHeight,
   getIntegerFromSI,
   getIsolines,
+  getKmInDistanceUnit,
   getLatitude,
   getLongitude,
   getMixedColor,
@@ -183,6 +208,7 @@ export {
   P,
   Pint,
   parseError,
+  parseSpeed,
   parseTransform,
   ra,
   rand,
@@ -193,11 +219,13 @@ export {
   SEA_LEVEL,
   safeParseJSON,
   sanitizeId,
+  setInlineStyleProperty,
   si,
   speak,
   splitInTwo,
   TYPED_ARRAY_MAX,
   throttle,
+  toCsvField,
   toHEX,
   trimVowels,
   unique,

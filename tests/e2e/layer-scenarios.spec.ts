@@ -171,8 +171,8 @@ test.describe("layer scenarios", () => {
     await page.waitForTimeout(500);
 
     // only the layers on the default teardown are asserted here: `keepContent` layers hold their
-    // content by design, and a custom `erase` defines its own contract (the wind rose and custom
-    // burg icon groups outlive it on purpose), each covered in layer-teardown.spec.ts
+    // content by design, and a custom `erase` defines its own contract (the wind arrows and
+    // custom route groups outlive it on purpose), each covered in layer-teardown.spec.ts
     const leftovers = await page.evaluate(() =>
       Layers.all
         .filter(
@@ -327,7 +327,8 @@ test.describe("layer scenarios", () => {
     expect(errors).toEqual([]);
   });
 
-  test("layers wins over preset, ignores unknown ids and clears the set when none are known", async ({ page }) => {
+  test("layers wins over preset, ignores unknown ids and keeps the map when none are known", async ({ page }) => {
+    const errors = watchErrors(page);
     await page.goto(
       "/?seed=url-layers-override&width=1280&height=720&preset=religions&layers=provinces,nope,borders"
     );
@@ -336,11 +337,15 @@ test.describe("layer scenarios", () => {
     await expect(page.locator("#layersPreset")).toHaveValue("custom");
     const active = await page.evaluate(() => Layers.state.active.slice().sort());
     expect(active).toEqual(["borders", "provinces"]);
+    expect(errors).toEqual([]);
 
+    // a layers param naming nothing the app knows is unusable, not an instruction to show
+    // nothing: it leaves the map as it is and says so, rather than blanking it
     await page.evaluate(() => {
       const params = new URLSearchParams({ layers: "nope,missing" });
       (window as any).applyURLLayers(params);
     });
-    expect(await page.evaluate(() => Layers.state.active)).toEqual([]);
+    expect(await page.evaluate(() => Layers.state.active.slice().sort())).toEqual(["borders", "provinces"]);
+    await expect.poll(() => errors.join("\n")).toContain('layers="nope,missing"');
   });
 });
