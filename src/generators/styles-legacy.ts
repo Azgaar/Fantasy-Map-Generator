@@ -272,7 +272,7 @@ export function harvestStylesFromSvg({ hasStyleRecord = false } = {}): void {
   for (const [layer, groups] of Object.entries(strandedOpacity)) {
     const opacity = document.getElementById(layer)?.getAttribute("opacity");
     if (opacity === null || opacity === undefined) continue;
-    for (const group of groups) group.attrs.opacity = Number(opacity) || 0;
+    for (const group of groups) group.attrs.opacity = Number(opacity) || null;
   }
 
   if (!document.getElementById("statesHalo")?.hasAttribute("data-width"))

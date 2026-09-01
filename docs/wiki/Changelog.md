@@ -18,6 +18,7 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 
 - Journey Editor and new Journeys layer [1.150.0]
 - Styles migration from DOM to global store by _[barrulus](https://github.com/barrulus)_ [1.150.0]
+- Desktop App fixes [1.150.0]
 
 **[1.149.0](https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/tags/v1.149.0.zip) - 2026-08-27**:
 
