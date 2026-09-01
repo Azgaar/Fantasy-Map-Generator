@@ -32,6 +32,7 @@ The project is under active development. Join our [Discord server](https://disco
 [Culture sets](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Culture-sets) ·
 [Culture types](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Culture-types) ·
 [Markers](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Markers) ·
+[Journeys](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Journeys) ·
 [Goods spread functions](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Goods-spread-functions) ·
 [Military Forces](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Military-Forces) ·
 [Battle Simulator](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Battle-Simulator) ·
