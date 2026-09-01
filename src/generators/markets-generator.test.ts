@@ -11,7 +11,6 @@ describe("MarketsModule", () => {
       globalThis.graphWidth = 1000;
       globalThis.graphHeight = 800;
       globalThis.TIME = false;
-      globalThis.rn = (v: number, _d?: number) => Math.round(v * 100) / 100;
       globalThis.States = {
         getSalesTax: (burg: { state?: number }) => {
           const stateId = burg?.state || 0;

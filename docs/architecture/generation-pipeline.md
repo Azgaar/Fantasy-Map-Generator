@@ -14,7 +14,7 @@ rebuilds part of a map. It is now declared once, as data:
 | [`src/generators/pipeline.ts`](../../src/generators/pipeline.ts)                                              | The runner. Generic, knows nothing about generators, `pack` or `grid`                              |
 | [`src/generators/grid-generator.ts`](../../src/generators/grid-generator.ts)                                  | The `Grid` module and its siblings `Temperature`, `Precipitation` and `Pack` (see below)           |
 | [`src/generators/generation-pipeline.ts`](../../src/generators/generation-pipeline.ts)                        | The configuration: `GenerationPipeline` and `ErasePipeline` step lists                             |
-| [`public/main.js`](../../public/main.js) → `generate()`                                                       | Drives `GenerationPipeline` and owns everything around it (seed, sizing, statistics, error dialog) |
+| [`src/components/lifecycle.ts`](../../src/components/lifecycle.ts) → `generate()`                             | Drives `GenerationPipeline` and owns everything around it (seed, sizing, statistics, error dialog) |
 | [`src/controllers/heightmap-editor.ts`](../../src/controllers/heightmap-editor.ts) → `regenerateErasedData()` | Drives `ErasePipeline`                                                                             |
 
 ## The runner
@@ -50,7 +50,7 @@ anything but a straight line — so it added validation logic and API surface wi
 
 ## `GenerationPipeline` — build a world from scratch
 
-`generate(options)` in `main.js` resolves what the pipeline doesn't own (`setSeed`, `applyGraphSize`,
+`generate(config)` in `components/lifecycle.ts` resolves what the pipeline doesn't own (`setSeed`, `applyGraphSize`,
 `randomizeOptions`), calls `await GenerationPipeline.run({seed, graph})`, then reports (`logStats`,
 `TOTAL` timing) or shows the generation error dialog. The pipeline is exposed as
 `window.GenerationPipeline` because `main.js` is a classic script.
@@ -205,7 +205,7 @@ reaches a phase you change.
 ## Adding a new generation step
 
 1. Add a `{id, run}` entry to `pipelineSteps` in `generation-pipeline.ts`, at the correct phase
-   boundary. `generate()` in `main.js` does not sequence generator calls any more.
+   boundary. `generate()` in `components/lifecycle.ts` does not sequence generator calls any more.
 2. If the step runs **after `regraph`**, add it to `erasePipelineSteps` at the matching boundary —
    otherwise the feature is missing from every map that went through the heightmap editor.
 3. If the step's output is cell-indexed or belongs to an entity the risk path re-maps, handle it in

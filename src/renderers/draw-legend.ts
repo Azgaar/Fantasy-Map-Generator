@@ -1,6 +1,7 @@
 // The legend box: a titled, multi-column list of color swatches drawn over the map
 
 import { type D3DragEvent, select } from "d3";
+import { tip } from "@/components/tooltips";
 import { parseTransform, rn } from "@/utils";
 
 // [id, color, label] as stored in the legend `data` attribute
@@ -17,6 +18,11 @@ export function drawLegend(name: string, data: LegendItem[]): void {
   const backColor = styles.legend.box.attrs.fill;
   const opacity = Number(styles.legend.box.attrs["fill-opacity"]);
   const fontSize = styles.legend.options.fontSize;
+
+  // TODO: a renderer should not own controls. Move this to a proper legend component once one exists
+  legend
+    .on("mousemove", () => tip("Drag to change the position. Click to hide the legend"))
+    .on("click", () => clearLegend());
 
   legend.selectAll("*").remove(); // fully redraw every time
   legend.attr("data", data.join("|")); // store data to redraw on style change
@@ -133,4 +139,3 @@ const getBBox = (legend: ReturnType<typeof getLegend>) => (legend.node() as SVGG
 export const Legend = { draw: drawLegend, redraw: redrawLegend, fit: fitLegendBox, clear: clearLegend };
 
 window.fitLegendBox = fitLegendBox;
-window.clearLegend = clearLegend;

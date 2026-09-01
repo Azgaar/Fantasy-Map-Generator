@@ -1,10 +1,37 @@
 import { curveBasisClosed, line } from "d3";
 import { Ocean } from "@/generators/ocean-generator";
-import { ensureEl, rn, round } from "@/utils";
+import { rn, round } from "@/utils";
+import { createEl, ensureEl } from "@/utils/nodeUtils";
+
+/**
+ * The two full-graph rects the rings are drawn over: the textured pattern fill and the flat base
+ * colour. Created on first draw and resized on every one, so the map can be generated without them
+ */
+function drawOceanBase(): void {
+  const patternRect = ensureFullGraphRect(ensureEl("oceanPattern"), "oceanPatternRect");
+  patternRect.setAttribute("fill", "url(#oceanic)");
+
+  const baseRect = ensureFullGraphRect(ensureEl("oceanLayers"), "oceanBase");
+  baseRect.dataset.group = "base"; // the style store addresses it by group
+}
+
+/** find or create a rect covering the whole graph, kept below whatever else the group holds */
+function ensureFullGraphRect(parent: HTMLElement, id: string): SVGRectElement {
+  const existing = parent.querySelector<SVGRectElement>(`#${id}`);
+  const rect = existing ?? createEl<SVGRectElement>("rect", id);
+  if (!existing) parent.prepend(rect);
+
+  rect.setAttribute("x", "0");
+  rect.setAttribute("y", "0");
+  rect.setAttribute("width", String(graphWidth));
+  rect.setAttribute("height", String(graphHeight));
+  return rect;
+}
 
 /** the ocean outline rings, stacked from the coast outwards so the overlap deepens the shade */
 export function drawOcean(): void {
   applyOceanPattern();
+  drawOceanBase();
   const oceanLayers = ensureEl<SVGGElement>("oceanLayers");
   removeOcean();
 
@@ -37,5 +64,4 @@ export function applyOceanPattern(): void {
   pattern.setAttribute("href", styles.ocean.options.pattern);
   pattern.setAttribute("opacity", String(styles.ocean.options.patternOpacity));
 }
-
 window.applyOceanPattern = applyOceanPattern;

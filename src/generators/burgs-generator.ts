@@ -893,4 +893,7 @@ declare global {
   var Burgs: BurgModule;
 }
 
-window.Burgs = new BurgModule();
+// biome-ignore lint/suspicious/noRedeclare: legacy seam
+export const Burgs = new BurgModule();
+
+window.Burgs = Burgs;

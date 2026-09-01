@@ -1,3 +1,4 @@
+import "./options";
 import "./app-info";
 import "./tooltips";
 import "./map-tooltip";
@@ -8,6 +9,9 @@ import "./hotkeys";
 import "./layers";
 import "./layers-presets";
 import "./layers-tab";
+import "./shell";
+import "./seed";
+import "./lifecycle";
 import "./dialog/dialog-helpers";
 import "./dialog/sorting";
 import "./fill-box";

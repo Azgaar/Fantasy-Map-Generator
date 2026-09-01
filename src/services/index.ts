@@ -1,7 +1,10 @@
 import { createRegistry } from "@/utils/registry";
-import "./app-shell";
+import "./platform";
+import "./assistant";
 import "./autosave";
 import "./fonts";
+import "./stats";
+import "./url-params";
 import "./versioning";
 
 export const Services = createRegistry({

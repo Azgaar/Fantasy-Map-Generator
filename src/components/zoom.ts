@@ -97,7 +97,7 @@ function applyLabelsZoomSize(): void {
   select("#labels").attr("font-size", `${fontSize}px`);
 }
 
-function invokeActiveZooming(): void {
+export function invokeActiveZooming(): void {
   const isOptimized = ensureEl<HTMLSelectElement>("shapeRendering").value === "optimizeSpeed";
 
   if (options.labels.resizeOnZoom) applyLabelsZoomSize();
@@ -126,13 +126,13 @@ function invokeActiveZooming(): void {
 }
 
 /** Zoom to a specific point */
-function zoomTo(x: number, y: number, z = 8, duration = 2000): void {
+export function zoomTo(x: number, y: number, z = 8, duration = 2000): void {
   const transform = zoomIdentity.translate(x * -z + svgWidth / 2, y * -z + svgHeight / 2).scale(z);
   select<SVGSVGElement, unknown>("#map").transition().duration(duration).call(zoomBehavior.transform, transform);
 }
 
 /** Reset zoom to initial */
-function resetZoom(duration = 1000): void {
+export function resetZoom(duration = 1000): void {
   select<SVGSVGElement, unknown>("#map").transition().duration(duration).call(zoomBehavior.transform, zoomIdentity);
 }
 
@@ -159,6 +159,19 @@ export function setTranslateExtent(x0: number, y0: number, x1: number, y1: numbe
   ]);
 }
 
+type ZoomTo = typeof zoomTo;
+type ResetZoom = typeof resetZoom;
+type InvokeActiveZooming = typeof invokeActiveZooming;
+
+declare global {
+  // biome-ignore lint/suspicious/noRedeclare: the bridges registered just below
+  var zoomTo: ZoomTo;
+  // biome-ignore lint/suspicious/noRedeclare: the bridges registered just below
+  var resetZoom: ResetZoom;
+  // biome-ignore lint/suspicious/noRedeclare: the bridges registered just below
+  var invokeActiveZooming: InvokeActiveZooming;
+}
+
 // Bridges for classic public/ code. These take numbers only, never a selection: the behavior is
 // d3 v7 while `public/` still speaks the global d3 v5, and the two must not meet.
 window.zoomTo = zoomTo;
@@ -166,6 +179,4 @@ window.setZoomExtent = setZoomExtent;
 window.setTranslateExtent = setTranslateExtent;
 window.resetZoom = resetZoom;
 window.invokeActiveZooming = invokeActiveZooming;
-window.panMap = panMap;
 window.setMapZoom = setMapZoom;
-window.changeMapZoom = changeMapZoom;

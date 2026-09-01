@@ -1,4 +1,17 @@
-import { drag, easeSinInOut, hsl, interpolateRound, lab, max, mean, quadtree, range, select } from "d3";
+import {
+  drag,
+  easeSinInOut,
+  hsl,
+  interpolateRound,
+  interpolateSpectral,
+  lab,
+  max,
+  mean,
+  quadtree,
+  range,
+  scaleSequential,
+  select
+} from "d3";
 import { closeDialogs, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { dialogState } from "@/components/dialog/state";
 import { Layers } from "@/components/layers";
@@ -13,6 +26,9 @@ import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { downloadFile, getFileName, uploadFile } from "@/utils";
 import { ensureEl, findEl, generateSeed, getPointer, last, lim, link, minmax, rn, unique } from "../utils";
 import type { PromptOptions } from "../utils/commonUtils";
+
+// the palette the image converter paints heights with: spectral, blue-low to red-high
+const heightColor = scaleSequential(interpolateSpectral);
 
 // Legacy app prompt shadows the DOM built-in (same pattern as burg-editor / route-groups-editor). TODO: replace with dialog
 declare const prompt: (text: string, options: PromptOptions, callback: (value: string | number) => void) => void;
@@ -245,7 +261,7 @@ function renderImageConverter(): void {
     .enter()
     .append("div")
     .attr("data-color", (i: number) => i)
-    .style("background-color", (i: number) => color(1 - (i < 20 ? i - 5 : i) / 100))
+    .style("background-color", (i: number) => heightColor(1 - (i < 20 ? i - 5 : i) / 100))
     .style("width", (i: number) => (i < 40 || i > 68 ? ".2em" : ".1em"))
     .on("touchmove mousemove", showPalleteHeight)
     .on("click", assignHeight);
@@ -1880,7 +1896,7 @@ function colorClicked(this: HTMLElement): void {
 
 function assignHeight(this: HTMLElement): void {
   const height = +this.dataset.color!;
-  const rgb = color(1 - (height < 20 ? height - 5 : height) / 100);
+  const rgb = heightColor(1 - (height < 20 ? height - 5 : height) / 100);
   const selectedColor = ensureEl("imageConverter").querySelector<HTMLElement>("div.selectedColor")!;
   selectedColor.style.backgroundColor = rgb;
   selectedColor.setAttribute("data-color", rgb);
@@ -1944,7 +1960,7 @@ function autoAssing(type: string): void {
   unassigned.forEach(el => {
     const clr = el.dataset.color!;
     const height = type === "hue" ? getHeightByHue(clr) : type === "lum" ? getHeightByLum(clr) : getHeightByScheme(clr);
-    const colorTo = color(1 - (height < 20 ? (height - 5) / 100 : height / 100));
+    const colorTo = heightColor(1 - (height < 20 ? (height - 5) / 100 : height / 100));
     select<SVGElement, unknown>("#viewbox")
       .select("#heights")
       .selectAll(`polygon[fill='${clr}']`)
@@ -2121,3 +2137,7 @@ function downloadPreview(): void {
 }
 
 export const HeightmapEditor = { open };
+
+declare global {
+  var edits: any; // heightmap edit history: Uint8Array[] with an extra .n cursor
+}

@@ -11,7 +11,7 @@ import { createLabelArc } from "@/renderers/labels/label-arc";
 import { getLabelPath } from "@/renderers/labels/label-markup";
 import type { LabelData } from "@/renderers/labels/labels";
 import { getSceneLabel, redrawLabel } from "@/renderers/labels/labels-renderer";
-import { speak } from "@/utils";
+import { rn, speak } from "@/utils";
 import { ensureEl, getPointer, round } from "../utils";
 
 let lastSelectedGroup = ""; // the default group for newly added labels

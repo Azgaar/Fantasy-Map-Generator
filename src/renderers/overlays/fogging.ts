@@ -39,4 +39,3 @@ export function unfog(id?: string): void {
 }
 
 // legacy seam:
-window.unfog = unfog;

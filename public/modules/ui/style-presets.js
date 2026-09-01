@@ -162,6 +162,8 @@ function applyStyleWithUiRefresh(style) {
   setPresetRemoveButtonVisibiliy();
 }
 
+let isSaveStyleInitialized = false;
+
 function addStylePreset() {
   $("#styleSaver").dialog({ title: "Style Saver", width: "26em", position: { my: "center", at: "center", of: "svg" } });
 
@@ -170,8 +172,8 @@ function addStylePreset() {
   styleSaverJSON.value = JSON.stringify(styles, null, 2);
   checkName();
 
-  if (modules.saveStyle) return;
-  modules.saveStyle = true;
+  if (isSaveStyleInitialized) return;
+  isSaveStyleInitialized = true;
 
   // add listeners
   document.getElementById("styleSaverName").addEventListener("input", checkName);

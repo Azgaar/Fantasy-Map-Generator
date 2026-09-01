@@ -109,4 +109,14 @@ type DeepReadonly<T> = T extends (...args: any[]) => any
     : T;
 
 export const Styles = { defaults: DEFAULT_STYLES, parse, set, write, apply };
+
+type StylesApi = typeof Styles;
+
+declare global {
+  /** the live style record, read bare across every layer and replaced wholesale on load */
+  var styles: import("./styles-schema").Styles;
+  // biome-ignore lint/suspicious/noRedeclare: the bridge registered just below
+  var Styles: StylesApi;
+}
+
 globalThis.Styles = Styles;

@@ -14,5 +14,4 @@ export function applyVignetteOptions(): void {
     else rect.setAttribute(key, String(value));
   }
 }
-
 window.applyVignetteOptions = applyVignetteOptions;

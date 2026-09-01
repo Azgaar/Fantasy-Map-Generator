@@ -141,7 +141,7 @@ optionsContent.addEventListener("input", event => {
 optionsContent.addEventListener("change", event => {
   const { id, value } = event.target;
   if (id === "zoomExtentMin" || id === "zoomExtentMax") changeZoomExtent(value);
-  else if (id === "optionsSeed") generateMapWithSeed("seed change");
+  else if (id === "optionsSeed") generateMapWithSeed();
   else if (id === "uiSize") changeUiSize(+value);
   else if (id === "shapeRendering") setRendering(value);
   else if (id === "yearInput") changeYear();
@@ -265,54 +265,7 @@ function testSpeaker() {
   speechSynthesis.speak(speaker);
 }
 
-function generateMapWithSeed() {
-  if (optionsSeed.value === seed) return tip("The current map already has this seed", false, "error");
-  regeneratePrompt({ seed: optionsSeed.value });
-}
-
-function showSeedHistoryDialog() {
-  const lines = mapHistory.map((h, i) => {
-    const created = new Date(h.created).toLocaleTimeString();
-    const button = `<i data-tip="Click to generate a map with this seed" onclick="restoreSeed(${i})" class="icon-history optionsSeedRestore"></i>`;
-    return `<li>Seed: ${h.seed} ${button}. Size: ${h.width}x${h.height}. Template: ${h.template}. Created: ${created}</li>`;
-  });
-  alertMessage.innerHTML = /* html */ `<ol style="margin: 0; padding-left: 1.5em">
-    ${lines.join("")}
-  </ol>`;
-
-  $("#alert").dialog({
-    resizable: false,
-    title: "Seed history",
-    position: { my: "center", at: "center", of: "svg" }
-  });
-}
-
-// generate map with historical seed
-function restoreSeed(id) {
-  const { seed, width, height, template } = mapHistory[id];
-  ensureEl("optionsSeed").value = seed;
-  ensureEl("mapWidthInput").value = width;
-  ensureEl("mapHeightInput").value = height;
-  ensureEl("templateInput").value = template;
-
-  if (stored("template")) unlock("template");
-
-  regeneratePrompt({ seed });
-}
-
-function copyMapURL() {
-  const locked = document.querySelectorAll("i.icon-lock").length; // check if some options are locked
-  const search = `?seed=${optionsSeed.value}&width=${graphWidth}&height=${graphHeight}${
-    locked ? "" : "&options=default"
-  }`;
-  navigator.clipboard
-    .writeText(location.host + location.pathname + search)
-    .then(() => {
-      tip("Map URL is copied to clipboard", false, "success", 3000);
-      //window.history.pushState({}, null, search);
-    })
-    .catch(err => tip("Could not copy URL: " + err, false, "error", 5000));
-}
+// seed handling and the shareable map URL now live in src/components/seed.ts and src/services/url-params.ts
 
 const cellsDensityMap = {
   1: 1000,

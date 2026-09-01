@@ -708,7 +708,8 @@ function coerceLegacyAttr(key: string, value: unknown): unknown {
 }
 
 // the legacy preset pipeline (public/modules/ui/style-presets.js) converts through these
-globalThis.stylesLegacy = {
+// only the classic public/modules/ui/style*.js scripts read this bridge
+const stylesLegacyBridge = {
   styleNodeFor,
   presetBagFor,
   labelGroupFromLegacy,
@@ -723,3 +724,9 @@ globalThis.stylesLegacy = {
   restoreStrippedLayerStyles,
   stripMigratedAttributes
 };
+
+globalThis.stylesLegacy = stylesLegacyBridge;
+
+declare global {
+  var stylesLegacy: typeof stylesLegacyBridge;
+}

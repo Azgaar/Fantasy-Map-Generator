@@ -1,5 +1,12 @@
-import { range, select } from "d3";
+import { range, type Selection, select } from "d3";
+import { tip } from "@/components/tooltips";
+import { Controllers } from "@/controllers";
 import { ensureEl, rn } from "../utils";
+
+// TODO: a renderer should not own controls. Move this to a proper scale-bar component once one exists
+function addScaleBarControls(scaleBar: Selection<SVGGElement, unknown, null, undefined>): void {
+  scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", () => Controllers.UnitsEditor.open());
+}
 
 export function drawScaleBar(parent?: SVGSVGElement, scaleLevel = scale, width = svgWidth, height = svgHeight): void {
   const parentEl = parent || ensureEl<SVGSVGElement>("map");
@@ -8,6 +15,8 @@ export function drawScaleBar(parent?: SVGSVGElement, scaleLevel = scale, width =
   // getBBox() below throws on a subtree that is not rendered, so never draw into a hidden scale bar
   const scaleBarEl = scaleBar.node();
   if (!scaleBarEl || getComputedStyle(scaleBarEl).display === "none") return;
+
+  if (!parent) addScaleBarControls(scaleBar); // the on-map bar is clickable, an exported copy is not
 
   const renderedContent = scaleBar.select("#scaleBarContent");
   const isRendered = Boolean(renderedContent.size());
