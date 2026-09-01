@@ -2488,17 +2488,6 @@ svg.button {
   }
 }
 
-#chat-widget-container {
-  user-select: none;
-  z-index: 99 !important;
-}
-
-#chat-widget-minimized {
-  animation: fadeIn 1s ease-in;
-  transform: scale(0.65);
-  opacity: var(--bg-opacity);
-}
-
 @keyframes fadeIn {
   from {
     opacity: 0;

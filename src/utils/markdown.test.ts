@@ -62,6 +62,14 @@ describe("renderMarkdown", () => {
     expect(renderMarkdown("[bad](javascript:alert(1))")).toBe("<p>[bad](javascript:alert(1))</p>");
   });
 
+  it("cannot break out of the href attribute to inject a second attribute", () => {
+    const output = renderMarkdown('[t](https://a"onmouseover=alert(1))');
+    expect(output).toBe(
+      '<p><a href="https://a&quot;onmouseover=alert(1" target="_blank" rel="noopener noreferrer">t</a>)</p>'
+    );
+    expect((output.match(/ [a-z-]+="/g) || []).length).toBe(3); // href, target, rel — no extra attribute
+  });
+
   it("escapes markup so model output cannot inject HTML", () => {
     expect(renderMarkdown('<img src=x onerror="alert(1)">')).toBe(
       "<p>&lt;img src=x onerror=&quot;alert(1)&quot;&gt;</p>"
