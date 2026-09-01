@@ -7,9 +7,10 @@ export const GATEWAY_URL = "https://ask.azgaarsfmg.com";
 // Scheme + host only — the origin the gateway allows, NOT where requests go
 export const OFFICIAL_ORIGIN = "https://azgaar.github.io";
 
-// On a 200 only `answer` is reliable (always a non-empty string). A refusal or empty
-// model reply is a normal 200 with requestId/model/usage null — never an error state.
-// requestId (number when present) is slice 3's feedback handle; null = nothing to rate.
+// On a 200 only `answer` is reliable (always a non-empty string); the other fields are
+// nullable, though in practice requestId is always a number — refusals are ledgered and
+// rateable. A refusal or empty reply is a normal 200, never an error state. requestId is
+// slice 3's feedback handle; hide feedback only when it is actually null.
 export interface AskResponse {
   requestId: number | null;
   answer: string;

@@ -40,7 +40,7 @@ describe("ask", () => {
     expect(result.answer).toBe("**hi**");
   });
 
-  it("parses a refusal 200 (nullable requestId/model/usage) as a normal answer", async () => {
+  it("tolerates nullable requestId/model/usage on a 200 (contract allows null)", async () => {
     const refusal = { requestId: null, answer: "I can't help with topics unrelated to FMG.", model: null, usage: null };
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, refusal)));
 
