@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { HelpApiError } from "@/services/help/api";
 import { renderMarkdown } from "@/utils/markdown";
-import { limitsLabel, normalizeQuestion, noticeFor } from "./help-assistant";
+import { limitsLabel, normalizeQuestion, noticeFor, shouldAutoRetry } from "./help-assistant";
 
 describe("noticeFor", () => {
   // Budget-refusal text is the server's to write (it carries wiki/Discord links as live
@@ -47,6 +47,24 @@ describe("limitsLabel", () => {
     expect(limitsLabel(limits(5))).toBe("5 questions left today");
     expect(limitsLabel(limits(1))).toBe("1 question left today");
     expect(limitsLabel(limits(0))).toBe("No questions left today");
+  });
+});
+
+describe("shouldAutoRetry", () => {
+  it("auto-retries a rate_limited error with a server-sent retryAfter, once", () => {
+    const error = new HelpApiError("rate_limited", "Slow down.", 12);
+    expect(shouldAutoRetry(error, false)).toBe(true);
+    expect(shouldAutoRetry(error, true)).toBe(false);
+  });
+
+  it("never auto-retries on the client-default countdown (no server retryAfter)", () => {
+    const error = new HelpApiError("rate_limited", "Slow down.");
+    expect(shouldAutoRetry(error, false)).toBe(false);
+  });
+
+  it("never auto-retries non-rate_limited errors", () => {
+    expect(shouldAutoRetry(new HelpApiError("quota", "Budget used.", 12), false)).toBe(false);
+    expect(shouldAutoRetry(new HelpApiError("provider_error", "oops", 12), false)).toBe(false);
   });
 });
 

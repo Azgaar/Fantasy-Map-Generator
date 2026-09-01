@@ -32,6 +32,12 @@ export function noticeFor(error: HelpApiError): WidgetNotice {
   }
 }
 
+// One automatic retry only where the server sent a retryAfter — never on the client's default
+// countdown, and never twice in a row for the same failure chain.
+export function shouldAutoRetry(error: HelpApiError, alreadyRetried: boolean): boolean {
+  return error.code === "rate_limited" && error.retryAfter !== undefined && !alreadyRetried;
+}
+
 export function limitsLabel(limits: Limits): string {
   if (limits.remaining <= 0) return "No questions left today";
   return `${limits.remaining} question${limits.remaining === 1 ? "" : "s"} left today`;
@@ -47,6 +53,10 @@ export function normalizeQuestion(raw: string): string | null {
 
 const isOfficialOrigin = (): boolean => location.origin === OFFICIAL_ORIGIN || import.meta.env.DEV;
 
+function isMounted(): boolean {
+  return document.getElementById("helpAssistant") !== null;
+}
+
 function open(): void {
   renderDialog();
 
@@ -54,7 +64,14 @@ function open(): void {
     title: "Azgaar's Assistant",
     position: { my: "center", at: "center", of: "svg" },
     resizable: false,
-    close: () => destroyDialog("helpAssistant")
+    close: () => {
+      if (retryTimer) {
+        clearInterval(retryTimer);
+        retryTimer = null;
+      }
+      autoRetried = false;
+      destroyDialog("helpAssistant");
+    }
   });
 
   if (isOfficialOrigin()) void refreshLimits();
@@ -93,41 +110,50 @@ function renderDialog(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
   if (!isOfficialOrigin()) return;
-  ensureEl("helpAssistantAsk").addEventListener("click", () => void submit());
+  ensureEl("helpAssistantAsk").addEventListener("click", () => void submit(normalizeQuestion(getQuestionInput())));
   ensureEl("helpAssistantQuestion").addEventListener("keydown", event => {
     if (
       (event as KeyboardEvent).key === "Enter" &&
       ((event as KeyboardEvent).ctrlKey || (event as KeyboardEvent).metaKey)
     ) {
-      void submit();
+      void submit(normalizeQuestion(getQuestionInput()));
     }
   });
 }
 
-async function submit(): Promise<void> {
-  const textarea = ensureEl<HTMLTextAreaElement>("helpAssistantQuestion");
-  const question = normalizeQuestion(textarea.value);
+function getQuestionInput(): string {
+  return ensureEl<HTMLTextAreaElement>("helpAssistantQuestion").value;
+}
+
+// isRetry marks an automatic re-submission of a rate-limited question after its countdown —
+// distinct from the user clicking Ask again, which always starts a fresh retry chain.
+async function submit(question: string | null, isRetry = false): Promise<void> {
   if (!question) return;
 
   const button = ensureEl<HTMLButtonElement>("helpAssistantAsk");
   button.disabled = true;
   button.textContent = "Asking…";
-  appendEntry("helpAssistantAsked", question);
+  if (!isRetry) appendEntry("helpAssistantAsked", question);
 
   try {
     const { answer } = await ask(question);
+    if (!isMounted()) return;
     appendAnswer(renderMarkdown(answer));
-    textarea.value = "";
+    ensureEl<HTMLTextAreaElement>("helpAssistantQuestion").value = "";
     setNotice(null);
+    autoRetried = false;
   } catch (error) {
-    if (error instanceof HelpApiError) applyNotice(noticeFor(error));
-    else throw error;
+    if (!isMounted()) return;
+    if (error instanceof HelpApiError) applyNotice(noticeFor(error), error, question);
+    else console.error(error);
   } finally {
-    if (!button.dataset.locked) {
-      button.disabled = false;
-      button.textContent = "Ask";
+    if (isMounted()) {
+      if (!button.dataset.locked) {
+        button.disabled = false;
+        button.textContent = "Ask";
+      }
+      void refreshLimits();
     }
-    void refreshLimits();
   }
 }
 
@@ -160,8 +186,9 @@ function setNotice(safeHtml: string | null): void {
 }
 
 let retryTimer: ReturnType<typeof setInterval> | null = null;
+let autoRetried = false;
 
-function applyNotice(notice: WidgetNotice): void {
+function applyNotice(notice: WidgetNotice, error: HelpApiError, question: string): void {
   setNotice(notice.html);
   const button = ensureEl<HTMLButtonElement>("helpAssistantAsk");
   if (retryTimer) clearInterval(retryTimer);
@@ -170,7 +197,12 @@ function applyNotice(notice: WidgetNotice): void {
   button.disabled = true;
   button.dataset.locked = "true";
 
-  if (notice.retryCountdown === undefined) return; // quota/cap/blocked: stays disabled
+  if (notice.retryCountdown === undefined) {
+    button.textContent = "Ask"; // stable label — cap_reached/quota/blocked have no countdown
+    return;
+  }
+
+  const autoRetry = shouldAutoRetry(error, autoRetried);
   let secondsLeft = notice.retryCountdown;
   button.textContent = `Wait ${secondsLeft}s`;
   retryTimer = setInterval(() => {
@@ -185,6 +217,10 @@ function applyNotice(notice: WidgetNotice): void {
     button.disabled = false;
     button.textContent = "Ask";
     setNotice(null);
+    if (autoRetry && isMounted()) {
+      autoRetried = true;
+      void submit(question, true);
+    }
   }, 1000);
 }
 
