@@ -2,8 +2,11 @@
 // answer as escaped markdown. Replaces the OpenWidget bubble. Client design spec:
 // docs/superpowers/specs/2026-09-01-help-box-client-design.md (fork repo).
 
-import type { HelpApiError, Limits } from "@/services/help/api";
+import { destroyDialog } from "@/components/dialog/dialog-helpers";
+import type { Limits } from "@/services/help/api";
+import { ask, getLimits, HelpApiError, OFFICIAL_ORIGIN } from "@/services/help/api";
 import { renderMarkdown } from "@/utils/markdown";
+import { ensureEl } from "../utils";
 
 export interface WidgetNotice {
   html: string;
@@ -41,3 +44,157 @@ export function normalizeQuestion(raw: string): string | null {
   if (!question.length || question.length > MAX_QUESTION_LENGTH) return null;
   return question;
 }
+
+const isOfficialOrigin = (): boolean => location.origin === OFFICIAL_ORIGIN || import.meta.env.DEV;
+
+function open(): void {
+  renderDialog();
+
+  $("#helpAssistant").dialog({
+    title: "Azgaar's Assistant",
+    position: { my: "center", at: "center", of: "svg" },
+    resizable: false,
+    close: () => destroyDialog("helpAssistant")
+  });
+
+  if (isOfficialOrigin()) void refreshLimits();
+}
+
+function renderDialog(): void {
+  destroyDialog("helpAssistant");
+
+  const form = /* html */ `
+    <div id="helpAssistantLog" class="helpAssistantLog">
+      <p>Ask anything about using the Fantasy Map Generator.</p>
+    </div>
+    <div id="helpAssistantNotice" hidden></div>
+    <textarea id="helpAssistantQuestion" rows="3" maxlength="1000"
+      placeholder="e.g. How do I export my map as SVG?"></textarea>
+    <div class="helpAssistantFooter">
+      <span id="helpAssistantLimits"></span>
+      <button id="helpAssistantAsk">Ask</button>
+    </div>
+    <div class="helpAssistantDisclosure">Questions are kept for 90 days to help improve the documentation.</div>`;
+
+  // Self-hosted copies are not on the gateway's origin allowlist: explain, don't error
+  const unlisted = /* html */ `
+    <div class="helpAssistantLog">
+      <p>The free assistant is only available on the official site:
+        <a href="https://azgaar.github.io/Fantasy-Map-Generator/" target="_blank" rel="noopener noreferrer">
+          azgaar.github.io/Fantasy-Map-Generator</a>.</p>
+      <p>On a self-hosted copy, the
+        <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki" target="_blank" rel="noopener noreferrer">documentation</a>
+        covers most questions.</p>
+    </div>`;
+
+  const html = /* html */ `<div id="helpAssistant" class="dialog stable">
+    ${isOfficialOrigin() ? form : unlisted}
+  </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
+
+  if (!isOfficialOrigin()) return;
+  ensureEl("helpAssistantAsk").addEventListener("click", () => void submit());
+  ensureEl("helpAssistantQuestion").addEventListener("keydown", event => {
+    if (
+      (event as KeyboardEvent).key === "Enter" &&
+      ((event as KeyboardEvent).ctrlKey || (event as KeyboardEvent).metaKey)
+    ) {
+      void submit();
+    }
+  });
+}
+
+async function submit(): Promise<void> {
+  const textarea = ensureEl<HTMLTextAreaElement>("helpAssistantQuestion");
+  const question = normalizeQuestion(textarea.value);
+  if (!question) return;
+
+  const button = ensureEl<HTMLButtonElement>("helpAssistantAsk");
+  button.disabled = true;
+  button.textContent = "Asking…";
+  appendEntry("helpAssistantAsked", question);
+
+  try {
+    const { answer } = await ask(question);
+    appendAnswer(renderMarkdown(answer));
+    textarea.value = "";
+    setNotice(null);
+  } catch (error) {
+    if (error instanceof HelpApiError) applyNotice(noticeFor(error));
+    else throw error;
+  } finally {
+    if (!button.dataset.locked) {
+      button.disabled = false;
+      button.textContent = "Ask";
+    }
+    void refreshLimits();
+  }
+}
+
+// The question is the user's own text: insert via textContent, never as markup
+function appendEntry(className: string, text: string): void {
+  const entry = document.createElement("p");
+  entry.className = className;
+  entry.textContent = text;
+  appendToLog(entry);
+}
+
+// renderMarkdown output only — the renderer escapes every leaf
+function appendAnswer(safeHtml: string): void {
+  const entry = document.createElement("div");
+  entry.className = "helpAssistantAnswer";
+  entry.innerHTML = safeHtml;
+  appendToLog(entry);
+}
+
+function appendToLog(node: HTMLElement): void {
+  const log = ensureEl("helpAssistantLog");
+  log.appendChild(node);
+  log.scrollTop = log.scrollHeight;
+}
+
+function setNotice(safeHtml: string | null): void {
+  const notice = ensureEl("helpAssistantNotice");
+  notice.hidden = safeHtml === null;
+  notice.innerHTML = safeHtml ?? "";
+}
+
+let retryTimer: ReturnType<typeof setInterval> | null = null;
+
+function applyNotice(notice: WidgetNotice): void {
+  setNotice(notice.html);
+  const button = ensureEl<HTMLButtonElement>("helpAssistantAsk");
+  if (retryTimer) clearInterval(retryTimer);
+
+  if (!notice.askDisabled) return;
+  button.disabled = true;
+  button.dataset.locked = "true";
+
+  if (notice.retryCountdown === undefined) return; // quota/cap/blocked: stays disabled
+  let secondsLeft = notice.retryCountdown;
+  button.textContent = `Wait ${secondsLeft}s`;
+  retryTimer = setInterval(() => {
+    secondsLeft -= 1;
+    if (secondsLeft > 0) {
+      button.textContent = `Wait ${secondsLeft}s`;
+      return;
+    }
+    if (retryTimer) clearInterval(retryTimer);
+    retryTimer = null;
+    delete button.dataset.locked;
+    button.disabled = false;
+    button.textContent = "Ask";
+    setNotice(null);
+  }, 1000);
+}
+
+async function refreshLimits(): Promise<void> {
+  try {
+    const limits = await getLimits();
+    ensureEl("helpAssistantLimits").textContent = limitsLabel(limits);
+  } catch {
+    // limits are a nicety; asking still reports the authoritative state
+  }
+}
+
+export const HelpAssistant = { open };
