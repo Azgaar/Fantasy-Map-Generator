@@ -53,7 +53,7 @@ describe("ask", () => {
   it.each([
     ["rate_limited", 429, 10],
     ["quota", 429, undefined],
-    ["cap_reached", 403, undefined],
+    ["cap_reached", 503, undefined],
     ["blocked", 403, undefined],
     ["provider_error", 502, undefined],
     ["invalid_request", 400, undefined]
@@ -72,6 +72,13 @@ describe("ask", () => {
   it("maps a non-2xx with an unparseable body to provider_error", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("<html>bad gateway</html>", { status: 502 })));
     const error = await ask("q").catch((e: unknown) => e);
+    expect((error as HelpApiError).code).toBe("provider_error");
+  });
+
+  it("maps a 200 with an unparseable body to provider_error", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("<html>interstitial</html>", { status: 200 })));
+    const error = await ask("q").catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(HelpApiError);
     expect((error as HelpApiError).code).toBe("provider_error");
   });
 

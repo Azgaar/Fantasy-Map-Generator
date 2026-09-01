@@ -66,7 +66,13 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
     throw new HelpApiError("unreachable", "The assistant is unreachable. Check your connection and try again.");
   }
 
-  if (response.ok) return response.json() as Promise<T>;
+  if (response.ok) {
+    try {
+      return (await response.json()) as T;
+    } catch {
+      throw new HelpApiError("provider_error", "The assistant returned an unreadable response.");
+    }
+  }
 
   let code: HelpErrorCode = "provider_error";
   let message = `The assistant returned an error (${response.status}).`;
