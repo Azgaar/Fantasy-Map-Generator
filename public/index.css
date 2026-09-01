@@ -2642,3 +2642,50 @@ body.tour-free-roam * {
   gap: 0.5em;
   margin: 0.8em 0 0.4em 0;
 }
+
+#helpAssistantBubble {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #35424d;
+  color: #fff;
+  font-size: 1.4em;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 35%);
+  z-index: 99;
+}
+
+#helpAssistant .helpAssistantLog {
+  max-height: 40vh;
+  min-height: 8em;
+  overflow-y: auto;
+  margin-bottom: 0.5em;
+}
+
+#helpAssistant .helpAssistantAsked {
+  font-style: italic;
+  opacity: 0.8;
+}
+
+#helpAssistant .helpAssistantFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.3em;
+}
+
+#helpAssistant .helpAssistantDisclosure {
+  font-size: 0.85em;
+  opacity: 0.7;
+  margin-top: 0.5em;
+}
+
+#helpAssistant textarea {
+  width: 100%;
+  box-sizing: border-box;
+}

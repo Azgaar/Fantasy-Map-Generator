@@ -28,6 +28,7 @@ Layers.init(); // create the svg layer groups
 d3.select("#scaleBar")
   .on("mousemove", () => tip("Click to open Units Editor"))
   .on("click", () => window.Controllers.UnitsEditor.open());
+document.getElementById("helpAssistantBubble")?.addEventListener("click", () => window.Controllers.HelpAssistant.open());
 d3.select("#legend")
   .on("mousemove", () => tip("Drag to change the position. Click to hide the legend"))
   .on("click", () => clearLegend());
@@ -251,31 +252,13 @@ function focusOn() {
   }
 }
 
-let isAssistantLoaded = false;
 function toggleAssistant() {
   if (window.electron) return;
 
+  const bubble = document.getElementById("helpAssistantBubble");
+  if (!bubble) return;
   const showAssistant = document.getElementById("azgaarAssistant")?.value === "show";
-  if (showAssistant) {
-    if (isAssistantLoaded) {
-      const assistantContainer = document.getElementById("chat-widget-container");
-      if (assistantContainer) assistantContainer.style.display = "block";
-    } else {
-      import("./libs/openwidget.min.js").then(() => {
-        isAssistantLoaded = true;
-        setTimeout(() => {
-          const bubble = document.getElementById("chat-widget-minimized");
-          if (bubble) {
-            bubble.dataset.tip = "Click to open the Assistant";
-            bubble.addEventListener("mouseover", showDataTip);
-          }
-        }, 5000);
-      });
-    }
-  } else if (isAssistantLoaded) {
-    const assistantContainer = document.getElementById("chat-widget-container");
-    if (assistantContainer) assistantContainer.style.display = "none";
-  }
+  bubble.style.display = showAssistant ? "flex" : "none";
 }
 
 function initTourPromptButton() {
