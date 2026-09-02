@@ -21,9 +21,15 @@ describe("constants", () => {
 
 describe("ask", () => {
   it("POSTs exactly {question} to /v1/ask and returns the parsed answer", async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValue(jsonResponse(200, { requestId: 4711, answer: "**hi**", model: "m", usage: { prompt: 1 } }));
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse(200, {
+        conversationId: "x".repeat(16),
+        requestId: 4711,
+        answer: "**hi**",
+        model: "m",
+        usage: { prompt: 1 }
+      })
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await ask("How do I export SVG?");
@@ -41,7 +47,13 @@ describe("ask", () => {
   });
 
   it("tolerates nullable requestId/model/usage on a 200 (contract allows null)", async () => {
-    const refusal = { requestId: null, answer: "I can't help with topics unrelated to FMG.", model: null, usage: null };
+    const refusal = {
+      conversationId: "x".repeat(16),
+      requestId: null,
+      answer: "I can't help with topics unrelated to FMG.",
+      model: null,
+      usage: null
+    };
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, refusal)));
 
     const result = await ask("recipe for baked potatoes");
@@ -58,7 +70,10 @@ describe("ask", () => {
     ["provider_error", 502, undefined],
     ["invalid_request", 400, undefined]
   ])("maps a %s error body to HelpApiError with verbatim message", async (code, status, retryAfter) => {
-    const errorBody = { error: { code, message: `server text for ${code}`, ...(retryAfter ? { retryAfter } : {}) } };
+    const errorBody = {
+      conversationId: "x".repeat(16),
+      error: { code, message: `server text for ${code}`, ...(retryAfter ? { retryAfter } : {}) }
+    };
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(status, errorBody)));
 
     const error = await ask("q").catch((e: unknown) => e);
@@ -112,9 +127,14 @@ describe("bearer token", () => {
       setItem: () => {},
       removeItem: () => {}
     });
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValue(jsonResponse(200, { tier: "member", remaining: 10, resetsAt: "2026-09-03T00:00:00.000Z" }));
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse(200, {
+        conversationId: "x".repeat(16),
+        tier: "member",
+        remaining: 10,
+        resetsAt: "2026-09-03T00:00:00.000Z"
+      })
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     await getLimits();
@@ -131,7 +151,11 @@ describe("bearer token", () => {
       setItem: () => {},
       removeItem: () => {}
     });
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, { tier: "anonymous", remaining: 5, resetsAt: "x" }));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        jsonResponse(200, { conversationId: "x".repeat(16), tier: "anonymous", remaining: 5, resetsAt: "x" })
+      );
     vi.stubGlobal("fetch", fetchMock);
 
     await getLimits();
@@ -157,5 +181,31 @@ describe("bearer token", () => {
     expect(error).toBeInstanceOf(HelpApiError);
     expect((error as HelpApiError).code).toBe("unauthorized");
     expect(removed.includes("fmg-help-token")).toBe(true);
+  });
+});
+
+describe("conversation id", () => {
+  const okBody = { conversationId: "abc123DEF456ghi789JKL0-_", requestId: 7, answer: "a", model: "m", usage: null };
+
+  it("omits conversationId entirely when none is given", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, okBody));
+    vi.stubGlobal("fetch", fetchMock);
+    await ask("q");
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body as string);
+    expect(Object.keys(body)).toEqual(["question"]);
+  });
+
+  it("sends conversationId alongside the question when given", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, okBody));
+    vi.stubGlobal("fetch", fetchMock);
+    await ask("q", "abc123DEF456ghi789JKL0-_");
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body as string);
+    expect(body).toEqual({ question: "q", conversationId: "abc123DEF456ghi789JKL0-_" });
+  });
+
+  it("returns the conversationId from the response", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, okBody)));
+    const result = await ask("q");
+    expect(result.conversationId).toBe("abc123DEF456ghi789JKL0-_");
   });
 });

@@ -14,6 +14,8 @@ export const OFFICIAL_ORIGIN = "https://azgaar.github.io";
 // rateable. A refusal or empty reply is a normal 200, never an error state. requestId is
 // slice 3's feedback handle; hide feedback only when it is actually null.
 export interface AskResponse {
+  // always present on a 200, refusals included — always adopt the returned id
+  conversationId: string;
   requestId: number | null;
   answer: string;
   model: string | null;
@@ -104,11 +106,12 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
   throw new HelpApiError(code, message, retryAfter);
 }
 
-export const ask = (question: string): Promise<AskResponse> =>
+export const ask = (question: string, conversationId?: string): Promise<AskResponse> =>
   request<AskResponse>("/v1/ask", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ question })
+    // exact schema: the field is present or absent, never null
+    body: JSON.stringify(conversationId ? { question, conversationId } : { question })
   });
 
 export const getLimits = (): Promise<Limits> => request<Limits>("/v1/limits", { method: "GET" });
