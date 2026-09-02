@@ -72,9 +72,7 @@ Options.set(o => (o.climate.precipitation = Number(value)));
 ```
 
 - **Writes are debounced, not immediate.** `set` schedules `persist()` 500 ms later, so dragging a
-  slider does not hammer `localStorage`. A `pagehide` listener in
-  [`shell.ts`](../../src/components/shell.ts) flushes the pending write, and `persist()` clears the
-  timer — a debounced edit is never lost.
+  slider does not hammer `localStorage`.
 - **`restore` merges, it does not replace.** It runs [`deepMerge`](../../src/utils/objectUtils.ts)
   over the live object, so a stored blob or an old `.map` that predates a field simply leaves that
   field at its default. This is the whole backwards-compatibility mechanism for options, and the
