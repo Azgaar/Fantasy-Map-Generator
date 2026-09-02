@@ -106,7 +106,6 @@ export class OptionsModule {
 
   burgs = {
     limit: 1000, // 1000 means "auto"
-    showMapPreview: true,
     groups: Burgs.getDefaultGroups() as BurgGroup[]
   };
 
@@ -194,7 +193,11 @@ export class OptionsModule {
     if (roll("manors")) this.burgs.limit = 1000; // auto
     if (roll("religionsNumber")) this.religions.limit = gauss(6, 3, 2, 10);
     if (roll("sizeVariety")) this.setSizeVariety(gauss(4, 2, 0, 10, 1));
-    if (roll("growthRate")) this.setGrowthRate(rn(1 + Math.random(), 1));
+    if (roll("growthRate")) {
+      const rate = rn(1 + Math.random(), 1);
+      this.states.growthRate = rate;
+      this.cultures.growthRate = rate;
+    }
     if (roll("cultures")) this.cultures.limit = gauss(12, 3, 5, 30);
     if (roll("culturesSet")) this.cultures.set = randomCultureSet();
 
@@ -211,11 +214,6 @@ export class OptionsModule {
   setDensity(density: number): void {
     this.graph.density = density;
     this.graph.cellsDesired = CELLS_BY_DENSITY[density] ?? this.graph.cellsDesired;
-  }
-
-  /** One panel slider drives both, until the UI offers them separately */
-  setGrowthRate(rate: number): void {
-    this.cultures.growthRate = this.states.growthRate = rate;
   }
 
   /** One panel slider drives both, until the UI offers them separately */
@@ -279,7 +277,14 @@ export const PANEL_SETTINGS: Setting[] = [
   { key: "cultures", get: o => o.cultures.limit, set: (o, v) => (o.cultures.limit = +v) },
   { key: "culturesSet", get: o => o.cultures.set, set: (o, v) => (o.cultures.set = v) },
   { key: "statesNumber", get: o => o.states.limit, set: (o, v) => (o.states.limit = +v) },
-  { key: "growthRate", get: o => o.states.growthRate, set: (o, v) => o.setGrowthRate(+v) },
+  {
+    key: "growthRate",
+    get: o => o.states.growthRate,
+    set: (o, v) => {
+      o.states.growthRate = +v;
+      o.cultures.growthRate = +v;
+    }
+  },
   { key: "sizeVariety", get: o => o.states.sizeVariety, set: (o, v) => o.setSizeVariety(+v) },
   { key: "provincesRatio", get: o => o.provinces.ratio, set: (o, v) => (o.provinces.ratio = +v) },
   { key: "manors", get: o => o.burgs.limit, set: (o, v) => (o.burgs.limit = +v) },

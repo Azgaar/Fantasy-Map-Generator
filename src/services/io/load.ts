@@ -241,13 +241,13 @@ function showUploadMessage(type: string, mapData: string[] | null, mapVersion: s
 
 async function parseLoadedData(data: string[], mapVersion: string | null): Promise<void> {
   try {
+    const { migrateLegacySettings, resolveVersionConflicts } = await import("./auto-update"); // TODO: don't load if not required
+
     closeDialogs();
     customization = 0;
     if (ensureEl("customizationMenu").offsetParent) ensureEl("styleTab").click();
 
-    const { migrateSettingsFormat } = await import("./auto-update");
-    migrateSettingsFormat(mapVersion!, data);
-
+    migrateLegacySettings(mapVersion!, data);
     if (data[1]) options.restore(JSON.parse(data[1]));
     syncInputs();
 
@@ -370,7 +370,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       if (goodIconsDefs) goodIconsDefs.insertAdjacentHTML("beforeend", data[45]);
     }
 
-    const { resolveVersionConflicts } = await import("./auto-update"); // TODO: don't load if not required
     await resolveVersionConflicts(mapVersion!, data);
 
     const styleRecord = data[48] ? safeParseJSON(data[48]) : undefined; // data[48] should be already migrated by auto-update

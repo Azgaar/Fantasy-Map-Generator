@@ -13,7 +13,7 @@ import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { unfog } from "@/renderers/overlays/fogging";
 import { compareVersions } from "@/services/versioning";
 import type { ReliefSet } from "@/types/relief";
-import { ensureEl, findEl, minmax, P, parseTransform, rand, rn, rw, safeParseJSON, unique } from "@/utils";
+import { ensureEl, findEl, minmax, parseTransform, rn, rw, safeParseJSON, unique } from "@/utils";
 import { parsePathPoints } from "@/utils/pathUtils";
 
 export async function resolveVersionConflicts(mapVersion: string, data: string[]): Promise<void> {
@@ -1839,7 +1839,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
   }
 }
 
-export function migrateSettingsFormat(mapVersion: string, data: string[]): void {
+export function migrateLegacySettings(mapVersion: string, data: string[]): void {
   if (!compareVersions(mapVersion, "1.151.0").isOlder) return;
 
   // v1.151.0 changed the settings format from a legacy pipe-delimited string to a JSON object
@@ -1860,7 +1860,8 @@ export function migrateSettingsFormat(mapVersion: string, data: string[]): void 
   if (oldSettings[13]) options.units.population.urbanization.rate = +oldSettings[13];
   if (oldSettings[20]) options.lore.name = oldSettings[20];
   if (oldSettings[24]) options.units.population.urbanization.density = +oldSettings[24];
-  if (oldSettings[26]) options.setGrowthRate(+oldSettings[26]);
+  if (oldSettings[26]) options.cultures.growthRate = +oldSettings[26];
+  if (oldSettings[26]) options.states.growthRate = +oldSettings[26];
 
   // very old maps kept the world configuration in the pipe string, and it wins over the object
   if (oldSettings[14]) options.geography.mapSize = +oldSettings[14];
@@ -1868,8 +1869,8 @@ export function migrateSettingsFormat(mapVersion: string, data: string[]): void 
   if (oldSettings[16]) options.climate.temperature.equator = +oldSettings[16];
   if (oldSettings[17]) options.climate.temperature.northPole = +oldSettings[17];
   if (oldSettings[17]) options.climate.temperature.southPole = +oldSettings[17];
-  if (oldSettings[18]) options.climate.precipitation = minmax(+oldSettings[18], 0, 500);
-  if (oldSettings[25]) options.geography.longitude = minmax(+oldSettings[25], 0, 100);
+  if (oldSettings[18]) options.climate.precipitation = +oldSettings[18];
+  if (oldSettings[25]) options.geography.longitude = +oldSettings[25];
 
   // before v1.3 the slot held the winds array, since then the whole options object
   const oldSettings19 = safeParseJSON(oldSettings[19] ?? "");

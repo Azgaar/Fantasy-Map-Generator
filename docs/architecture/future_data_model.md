@@ -58,7 +58,6 @@ This document outlines the expected data structure. Current data model described
 
     "burgs": {
       "limit": null,
-      "showMapPreview": true
     },
 
     "religions": {
