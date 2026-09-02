@@ -98,27 +98,27 @@ function getMapInfo() {
     version: VERSION,
     description: "Azgaar's Fantasy Map Generator output: azgaar.github.io/Fantasy-map-generator",
     exportedAt: new Date().toISOString(),
-    mapName: Options.lore.name,
+    mapName: options.lore.name,
     width: graphWidth,
     height: graphHeight,
-    seed: Options.seed,
+    seed: options.seed,
     mapId
   };
 }
 
 function getSettings() {
   return {
-    distanceUnit: Options.units.distance.unit,
-    distanceScale: Options.units.distance.scale,
-    areaUnit: Options.units.area.unit,
-    heightUnit: Options.units.height.unit,
-    heightExponent: Options.units.height.exponent,
-    temperatureScale: Options.units.temperature.unit,
-    populationRate: Options.units.population.scale,
-    urbanization: Options.units.population.urbanization.rate,
-    urbanDensity: Options.units.population.urbanization.density,
-    options: Options,
-    mapName: Options.lore.name,
+    distanceUnit: options.units.distance.unit,
+    distanceScale: options.units.distance.scale,
+    areaUnit: options.units.area.unit,
+    heightUnit: options.units.height.unit,
+    heightExponent: options.units.height.exponent,
+    temperatureScale: options.units.temperature.unit,
+    populationRate: options.units.population.scale,
+    urbanization: options.units.population.urbanization.rate,
+    urbanDensity: options.units.population.urbanization.density,
+    options,
+    mapName: options.lore.name,
     stylePreset: stylePreset.value
   };
 }

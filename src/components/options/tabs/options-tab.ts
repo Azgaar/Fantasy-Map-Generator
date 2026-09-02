@@ -1,7 +1,7 @@
 import { hsl, select } from "d3";
 import { fitMapToScreen } from "@/components/canvas";
 import { Layers } from "@/components/layers";
-import type { OptionsModule } from "@/components/options";
+import type { OptionsData } from "@/components/options-store";
 import { generateMapWithSeed, showSeedHistoryDialog } from "@/components/seed";
 import { tip } from "@/components/tooltips";
 import { setMapZoom, setTranslateExtent, setZoomExtent } from "@/components/zoom";
@@ -491,8 +491,8 @@ const TEMPLATE = /* html */ `
 
 type Setting = {
   key: string; // the id the input carries in `data-stored`, and the key its lock is kept under
-  get: (options: OptionsModule) => string | number;
-  set: (options: OptionsModule, value: string) => void;
+  get: (options: OptionsData) => string | number;
+  set: (options: OptionsData, value: string) => void;
 };
 
 /** Every setting this tab shows */
@@ -513,7 +513,14 @@ const PANEL_SETTINGS: Setting[] = [
     set: (o, v) => (o.heightmap.lakeElevationLimit = +v)
   },
   { key: "year", get: o => o.lore.calendar.year, set: (o, v) => (o.lore.calendar.year = +v) },
-  { key: "era", get: o => o.lore.calendar.era, set: (o, v) => o.setEra(v) },
+  {
+    key: "era",
+    get: o => o.lore.calendar.era,
+    set: (o, v) => {
+      o.lore.calendar.era = v;
+      o.lore.calendar.eraShort = Options.shortEra();
+    }
+  },
   { key: "cultures", get: o => o.cultures.limit, set: (o, v) => (o.cultures.limit = +v) },
   { key: "culturesSet", get: o => o.cultures.set, set: (o, v) => (o.cultures.set = v) },
   { key: "statesNumber", get: o => o.states.limit, set: (o, v) => (o.states.limit = +v) },
@@ -525,7 +532,7 @@ const PANEL_SETTINGS: Setting[] = [
       o.cultures.growthRate = +v;
     }
   },
-  { key: "sizeVariety", get: o => o.states.sizeVariety, set: (o, v) => o.setSizeVariety(+v) },
+  { key: "sizeVariety", get: o => o.states.sizeVariety, set: (_o, v) => Options.setSizeVariety(+v) },
   { key: "provincesRatio", get: o => o.provinces.ratio, set: (o, v) => (o.provinces.ratio = +v) },
   { key: "manors", get: o => o.burgs.limit, set: (o, v) => (o.burgs.limit = +v) },
   { key: "religionsNumber", get: o => o.religions.limit, set: (o, v) => (o.religions.limit = +v) },
@@ -605,19 +612,19 @@ export function syncInputs(): void {
   for (const { key, get } of PANEL_SETTINGS) {
     if (key === "template") continue; // a select whose options are added on demand, see below
 
-    const value = String(get(Options));
+    const value = String(get(options));
     const input = inputFor(key);
     if (input) input.value = value;
     const output = findEl<HTMLOutputElement>(`${key}Output`);
     if (output) output.value = value;
   }
 
-  const id = Options.heightmap.template;
+  const id = options.heightmap.template;
   const template = findEl<HTMLSelectElement>("templateInput");
   if (template && id) applyOption(template, id, heightmapTemplates[id]?.name || precreatedHeightmaps[id]?.name || id);
 
   const manors = findEl<HTMLOutputElement>("manorsOutput");
-  if (manors) manors.value = Options.isAutoBurgLimit ? "auto" : String(Options.burgs.limit);
+  if (manors) manors.value = Options.isAutoBurgLimit ? "auto" : String(options.burgs.limit);
 }
 
 /**
@@ -633,13 +640,13 @@ function watchInputs(): void {
     const key = target?.dataset?.stored;
     if (!key) return;
 
-    const apply = (options: OptionsModule) => {
+    const apply = (options: OptionsData) => {
       if (key === "points") Options.setDensity(+target.value);
       else byKey.get(key)?.set(options, target.value);
     };
 
     // an input event is a drag in progress: apply it, but wait for the change event to keep it
-    if (event.type !== "change") return void (isOption(key) && apply(Options));
+    if (event.type !== "change") return void (isOption(key) && apply(options));
 
     lock(key); // the user set it by hand: keep the value on the next map
     if (isOption(key)) Options.set(apply);
@@ -654,8 +661,8 @@ function watchInputs(): void {
 
   // the canvas size inputs are not `data-stored`, the panel persists them by hand
   for (const [inputId, set] of [
-    ["mapWidthInput", (value: number) => (Options.graph.width = value)],
-    ["mapHeightInput", (value: number) => (Options.graph.height = value)]
+    ["mapWidthInput", (value: number) => (options.graph.width = value)],
+    ["mapHeightInput", (value: number) => (options.graph.height = value)]
   ] as const) {
     findEl(inputId)?.addEventListener("change", event => set(+(event.target as HTMLInputElement).value));
   }
@@ -672,7 +679,7 @@ function onCanvasSizeChange(): void {
   lock("mapWidth");
   lock("mapHeight");
 
-  if (Options.graph.width > window.innerWidth || Options.graph.height > window.innerHeight) {
+  if (options.graph.width > window.innerWidth || options.graph.height > window.innerHeight) {
     const size = `${window.innerWidth} x ${window.innerHeight}`;
     tip(`Canvas size is larger than window size (${size}). It can affect performance`, false, "warn", 4000);
   }
@@ -693,7 +700,7 @@ function restoreDefaultCanvasSize(): void {
 export function changeCellsDensity(density: number): void {
   Options.setDensity(density);
 
-  const { cellsDesired } = Options.graph;
+  const { cellsDesired } = options.graph;
   const input = ensureEl<HTMLInputElement>("pointsInput");
   input.value = String(density);
   input.dataset.cells = String(cellsDesired);
@@ -708,13 +715,13 @@ export const cellsDensityColor = (cells: number): string =>
   cells > 50000 ? "#b12117" : cells === 10000 ? "#053305" : "#dfdf12";
 
 /** Each culture set holds a different number of cultures: cap the slider at what the set can give */
-function changeCultureSet(set = Options.cultures.set): void {
+function changeCultureSet(set = options.cultures.set): void {
   const max = String(CULTURE_SETS[set]?.max ?? 0);
   const input = ensureEl<HTMLInputElement>("culturesInput");
   const output = ensureEl<HTMLInputElement>("culturesOutput");
   input.max = output.max = max;
-  if (Options.cultures.limit > +max) {
-    Options.cultures.limit = +max;
+  if (options.cultures.limit > +max) {
+    options.cultures.limit = +max;
     input.value = output.value = max;
   }
 }
@@ -777,20 +784,23 @@ function changeYear(): void {
     tip("Current year should be a number", false, "error");
     return;
   }
-  Options.lore.calendar.year = +value;
+  options.lore.calendar.year = +value;
 }
 
 function changeEra(): void {
   const value = ensureEl<HTMLInputElement>("eraInput").value;
   if (!value) return;
   lock("era");
-  Options.setEra(value);
+  Options.set(o => (o.lore.calendar.era = value));
 }
 
 function regenerateEra(): void {
   unlock("era");
-  Options.setEra(Options.randomEra());
-  ensureEl<HTMLInputElement>("eraInput").value = Options.lore.calendar.era;
+  Options.set(o => {
+    o.lore.calendar.era = Options.randomEra();
+    o.lore.calendar.eraShort = Options.shortEra();
+  });
+  ensureEl<HTMLInputElement>("eraInput").value = options.lore.calendar.era;
 }
 
 function changeUiSize(value: number): void {
@@ -878,7 +888,7 @@ function toggleTranslateExtent(el: HTMLElement): void {
   const isOn = !+(el.dataset.on ?? 0);
   el.dataset.on = String(+isOn);
 
-  const { width, height } = Options.graph;
+  const { width, height } = options.graph;
   if (isOn) setTranslateExtent(-width / 2, -height / 2, width * 1.5, height * 1.5);
   else setTranslateExtent(0, 0, width, height);
 }
@@ -905,8 +915,8 @@ function loadVoices(): void {
 }
 
 function testSpeaker(): void {
-  const { year, era } = Options.lore.calendar;
-  const speech = new SpeechSynthesisUtterance(`${Options.lore.name}, ${year} ${era}`);
+  const { year, era } = options.lore.calendar;
+  const speech = new SpeechSynthesisUtterance(`${options.lore.name}, ${year} ${era}`);
   const voices = speechSynthesis.getVoices();
   if (voices.length) speech.voice = voices[+ensureEl<HTMLSelectElement>("speakerVoice").value];
   speechSynthesis.speak(speech);
@@ -944,15 +954,15 @@ function resetLanguage(): void {
  * settings. The option *values* are restored by components/options.ts before this runs
  */
 export function restoreUi(): void {
-  const template = Options.heightmap.template;
+  const template = options.heightmap.template;
   if (template) {
     const name = heightmapTemplates[template]?.name || precreatedHeightmaps[template]?.name || template;
     applyOption(ensureEl("templateInput"), template, name);
   }
 
   // a custom unit name is not among the options of its select until it is put back there
-  applyOption(ensureEl("distanceUnitInput"), Options.units.distance.unit);
-  applyOption(ensureEl("heightUnit"), Options.units.height.unit);
+  applyOption(ensureEl("distanceUnitInput"), options.units.distance.unit);
+  applyOption(ensureEl("heightUnit"), options.units.height.unit);
 
   bindLockIcons(ensureEl("options"));
 
@@ -974,7 +984,7 @@ export function restoreUi(): void {
     }
   }
 
-  changeCellsDensity(Options.graph.density);
+  changeCellsDensity(options.graph.density);
   changeCultureSet();
   Emblems.setShape(ensureEl<HTMLSelectElement>("emblemShape").value);
 
@@ -985,7 +995,7 @@ export function restoreUi(): void {
 
   ensureEl<HTMLInputElement>("uiSize").max = String(maxUiSize());
   const uiSize = stored("uiSize");
-  changeUiSize(uiSize ? +uiSize : minmax(rn(Options.graph.width / 1280, 1), 1, 2.5));
+  changeUiSize(uiSize ? +uiSize : minmax(rn(options.graph.width / 1280, 1), 1, 2.5));
 
   changeDialogsTheme(stored("themeColor"), stored("transparency") || 5);
   setRendering(ensureEl<HTMLSelectElement>("shapeRendering").value);

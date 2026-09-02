@@ -104,8 +104,8 @@ const columns: EditorColumn<State>[] = [
     width: "6em",
     sortBy: s =>
       rn(
-        (s.rural || 0) * Options.units.population.scale +
-          (s.urban || 0) * Options.units.population.scale * Options.units.population.urbanization.rate
+        (s.rural || 0) * options.units.population.scale +
+          (s.urban || 0) * options.units.population.scale * options.units.population.urbanization.rate
       )
   },
   {
@@ -230,7 +230,7 @@ function renderDialog(): void {
   ensureEl("statesRecalculate").addEventListener("click", () => recalculateStates(true));
   ensureEl("statesRandomize").addEventListener("click", randomizeStatesExpansion);
   ensureEl("statesGrowthRate").addEventListener("input", event => {
-    Options.states.growthModifier = (event.target as HTMLInputElement).valueAsNumber;
+    options.states.growthModifier = (event.target as HTMLInputElement).valueAsNumber;
     recalculateStates(false);
   });
   ensureEl("statesManually").addEventListener("click", openPaintEditor);
@@ -291,8 +291,8 @@ function renderStatesPage(view: TableView<State>): void {
   let totalBurgs = 0;
   for (const s of view.all) {
     totalArea += getArea(s.area || 0);
-    const rural = (s.rural || 0) * Options.units.population.scale;
-    const urban = (s.urban || 0) * Options.units.population.scale * Options.units.population.urbanization.rate;
+    const rural = (s.rural || 0) * options.units.population.scale;
+    const urban = (s.urban || 0) * options.units.population.scale * options.units.population.urbanization.rate;
     totalPopulation += rn(rural + urban);
     totalBurgs += s.burgs || 0;
   }
@@ -300,8 +300,8 @@ function renderStatesPage(view: TableView<State>): void {
   let lines = "";
   for (const s of view.rows) {
     const area = getArea(s.area || 0);
-    const rural = (s.rural || 0) * Options.units.population.scale;
-    const urban = (s.urban || 0) * Options.units.population.scale * Options.units.population.urbanization.rate;
+    const rural = (s.rural || 0) * options.units.population.scale;
+    const urban = (s.urban || 0) * options.units.population.scale * options.units.population.urbanization.rate;
     const population = rn(rural + urban);
     const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(
       urban
@@ -789,8 +789,8 @@ function changePopulation(stateId: number): void {
     return;
   }
 
-  const rural = rn((state.rural || 0) * Options.units.population.scale);
-  const urban = rn((state.urban || 0) * Options.units.population.scale * Options.units.population.urbanization.rate);
+  const rural = rn((state.rural || 0) * options.units.population.scale);
+  const urban = rn((state.urban || 0) * options.units.population.scale * options.units.population.urbanization.rate);
   const total = rural + urban;
   const format = (n: number) => Number(n).toLocaleString();
 
@@ -845,7 +845,7 @@ function changePopulation(stateId: number): void {
       });
     }
     if (!Number.isFinite(ruralChange) && +ruralPop.value > 0) {
-      const points = +ruralPop.value / Options.units.population.scale;
+      const points = +ruralPop.value / options.units.population.scale;
       const cells = (pack.cells.i as unknown as number[]).filter(i => pack.cells.state[i] === stateId);
       const pop = points / cells.length;
       cells.forEach(i => {
@@ -861,7 +861,7 @@ function changePopulation(stateId: number): void {
       });
     }
     if (!Number.isFinite(urbanChange) && +urbanPop.value > 0) {
-      const points = +urbanPop.value / Options.units.population.scale / Options.units.population.urbanization.rate;
+      const points = +urbanPop.value / options.units.population.scale / options.units.population.urbanization.rate;
       const burgs = pack.burgs.filter(b => !b.removed && b.state === stateId);
       const population = rn(points / burgs.length, 4);
       burgs.forEach(b => {
@@ -1145,8 +1145,8 @@ function showStatesChart(): void {
     const state = d.data.fullName;
 
     const area = `${getArea(d.data.area)} ${getAreaUnit()}`;
-    const rural = rn(d.data.rural * Options.units.population.scale);
-    const urban = rn(d.data.urban * Options.units.population.scale * Options.units.population.urbanization.rate);
+    const rural = rn(d.data.rural * options.units.population.scale);
+    const urban = rn(d.data.urban * options.units.population.scale * options.units.population.urbanization.rate);
 
     const option = ensureEl<HTMLSelectElement>("statesTreeType").value;
     const value =
@@ -1784,8 +1784,8 @@ function downloadStatesCsv(): void {
     const rural = s.rural || 0;
     const urban = s.urban || 0;
     const population = rn(
-      rural * Options.units.population.scale +
-        urban * Options.units.population.scale * Options.units.population.urbanization.rate
+      rural * options.units.population.scale +
+        urban * options.units.population.scale * options.units.population.urbanization.rate
     );
     return [
       s.i,
@@ -1801,8 +1801,8 @@ function downloadStatesCsv(): void {
       s.burgs,
       getArea(s.area || 0),
       population,
-      Math.round(rural * Options.units.population.scale),
-      Math.round(urban * Options.units.population.scale * Options.units.population.urbanization.rate)
+      Math.round(rural * options.units.population.scale),
+      Math.round(urban * options.units.population.scale * options.units.population.urbanization.rate)
     ].join(",");
   });
   const csvData = [headers].concat(data).join("\n");

@@ -35,8 +35,8 @@ export async function boot(): Promise<void> {
   restoreUi(); // the tab's own restore: locks, style presets, theme, ui size
 
   // the voronoi graph extent is fixed for the life of a map, the svg canvas is resized to the window
-  graphWidth = Options.graph.width;
-  graphHeight = Options.graph.height;
+  graphWidth = options.graph.width;
+  graphHeight = options.graph.height;
   svgWidth = graphWidth;
   svgHeight = graphHeight;
 
@@ -100,7 +100,7 @@ export const regenerateMap = debounce(async (config?: GenerationConfig | string)
   WARN && console.warn("Generate new random map");
 
   // a big grid takes long enough that the splash is worth showing
-  const shouldShowLoading = Options.graph.cellsDesired > 10000;
+  const shouldShowLoading = options.graph.cellsDesired > 10000;
   shouldShowLoading && showLoading();
 
   closeDialogs("#worldConfigurator, #options3d");
@@ -110,7 +110,7 @@ export const regenerateMap = debounce(async (config?: GenerationConfig | string)
   await generate(typeof config === "string" ? undefined : config);
   Layers.drawAll();
 
-  if (Options.threeD.isOn) Controllers.View3d.redraw();
+  if (options.threeD.isOn) Controllers.View3d.redraw();
   if (findEl("worldConfigurator")?.offsetParent) Controllers.WorldConfigurator.open();
 
   fitMapToScreen();

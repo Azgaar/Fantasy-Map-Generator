@@ -1,7 +1,7 @@
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
-import { CELLS_BY_DENSITY } from "@/components/options";
 import { cellsDensityColor, changeCellsDensity } from "@/components/options/tabs/options-tab";
+import { CELLS_BY_DENSITY } from "@/components/options-store";
 import { Resample } from "@/generators/resample";
 import { getLatitude, getLongitude } from "@/utils";
 import { ensureEl, minmax, rn } from "../utils";
@@ -31,7 +31,7 @@ function open(): void {
 function renderDialog(): void {
   destroyDialog("submapTool");
 
-  const pointsValue = String(Options.graph.density);
+  const pointsValue = String(options.graph.density);
   const cells = CELLS_BY_DENSITY[+pointsValue];
 
   const html = /* html */ `<div id="submapTool" class="dialog">
@@ -78,7 +78,7 @@ function generateSubmap(): void {
   recalculateMapSize(x0, y0);
 
   const submapPointsValue = ensureEl<HTMLInputElement>("submapPointsInput").value;
-  const globalPointsValue = String(Options.graph.density);
+  const globalPointsValue = String(options.graph.density);
   if (submapPointsValue !== globalPointsValue) changeCellsDensity(+submapPointsValue);
 
   const projection = (x: number, y: number): [number, number] => [(x - x0) * scale, (y - y0) * scale];
@@ -97,20 +97,20 @@ function generateSubmap(): void {
 }
 
 function recalculateMapSize(x0: number, y0: number): void {
-  Options.geography.mapSize = rn(Options.geography.mapSize / scale, 2);
+  options.geography.mapSize = rn(options.geography.mapSize / scale, 2);
 
   const latT = (mapCoordinates.latT ?? 0) / scale;
   const latN = getLatitude(y0, mapCoordinates, graphHeight);
-  Options.geography.latitude = rn(((90 - latN) / (180 - latT)) * 100, 2);
+  options.geography.latitude = rn(((90 - latN) / (180 - latT)) * 100, 2);
 
   const lotT = (mapCoordinates.lonT ?? 0) / scale;
   const lonE = getLongitude(x0 + graphWidth / scale, mapCoordinates, graphWidth);
-  Options.geography.longitude = rn(((180 - lonE) / (360 - lotT)) * 100, 2);
+  options.geography.longitude = rn(((180 - lonE) / (360 - lotT)) * 100, 2);
 
-  Options.units.distance.scale = rn(Options.units.distance.scale / scale, 2);
-  ensureEl<HTMLInputElement>("distanceScaleInput").value = String(Options.units.distance.scale);
-  Options.units.population.scale = rn(Options.units.population.scale / scale, 2);
-  ensureEl<HTMLInputElement>("populationRateInput").value = String(Options.units.population.scale);
+  options.units.distance.scale = rn(options.units.distance.scale / scale, 2);
+  ensureEl<HTMLInputElement>("distanceScaleInput").value = String(options.units.distance.scale);
+  options.units.population.scale = rn(options.units.population.scale / scale, 2);
+  ensureEl<HTMLInputElement>("populationRateInput").value = String(options.units.population.scale);
 }
 
 function rescaleBurgStyles(scale: number): void {

@@ -111,7 +111,7 @@ function closeRegimentsOverview(): void {
 const unitColumnKey = (name: string) => `unit:${name}`;
 
 function getRegimentColumns(): EditorColumn<RegimentRow>[] {
-  const unitColumns: EditorColumn<RegimentRow>[] = Options.military.map(unit => ({
+  const unitColumns: EditorColumn<RegimentRow>[] = options.military.map(unit => ({
     key: unitColumnKey(unit.name),
     label: capitalize(unit.name.replace(/_/g, " ")),
     width: "5em",
@@ -171,14 +171,14 @@ function renderRegimentsPage(view: TableView<RegimentRow>): void {
   const body = ensureEl("regimentsBody");
   const percentage = body.dataset.type === "percentage";
   const unitTotals = Object.fromEntries(
-    Options.military.map(unit => [unit.name, sum(view.all.map(row => row.regiment.u[unit.name] || 0))])
+    options.military.map(unit => [unit.name, sum(view.all.map(row => row.regiment.u[unit.name] || 0))])
   );
   const total = sum(view.all.map(row => row.regiment.a));
   const percent = (value: number, all: number) => `${Math.round(all ? (value / all) * 100 : 0)}%`;
 
   const lines = view.rows
     .map(({ state, regiment }) => {
-      const unitCells = Options.military
+      const unitCells = options.military
         .map(unit => {
           const value = regiment.u[unit.name] || 0;
           return `<div data-col="${unitColumnKey(unit.name)}" data-tip="${capitalize(unit.name)} units number">${percentage ? percent(value, unitTotals[unit.name]) : value}</div>`;
@@ -208,7 +208,7 @@ function renderRegimentsPage(view: TableView<RegimentRow>): void {
 
   const footer = ensureEl("regimentsFooter");
   footer.innerHTML = /* html */ `<div style="margin-left:4px">Regiments:&nbsp;${view.all.length}</div>
-    ${Options.military.map(unit => `<div data-col="${unitColumnKey(unit.name)}" style="margin-left:12px">${capitalize(unit.name)}:&nbsp;${si(unitTotals[unit.name])}</div>`).join("")}
+    ${options.military.map(unit => `<div data-col="${unitColumnKey(unit.name)}" style="margin-left:12px">${capitalize(unit.name)}:&nbsp;${si(unitTotals[unit.name])}</div>`).join("")}
     <div data-col="total" style="margin-left:12px">Total:&nbsp;${si(total)}</div>`;
   renderEditorPagination(footer, view, regimentsTable.goto);
 
@@ -315,7 +315,7 @@ function addRegimentOnClick(this: SVGGElement, event: MouseEvent): void {
 }
 
 function downloadRegimentsData(): void {
-  const units = Options.military.map(u => u.name);
+  const units = options.military.map(u => u.name);
   let data = `State,Id,Icon,Name,${units.map(u => capitalize(u)).join(",")},X,Y,Latitude,Longitude,Base X,Base Y,Base Latitude,Base Longitude\n`; // headers
 
   for (const s of pack.states) {

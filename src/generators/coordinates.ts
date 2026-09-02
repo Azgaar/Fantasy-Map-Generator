@@ -60,16 +60,16 @@ class CoordinatesModule {
   defineMapSize(): void {
     const [size, latitude, longitude] = this.getSizeAndPosition();
     const randomize = new URL(window.location.href).searchParams.get("options") === "default"; // ignore stored options
-    if (randomize || !isLocked("mapSize")) Options.geography.mapSize = size;
-    if (randomize || !isLocked("latitude")) Options.geography.latitude = latitude;
-    if (randomize || !isLocked("longitude")) Options.geography.longitude = longitude;
+    if (randomize || !isLocked("mapSize")) options.geography.mapSize = size;
+    if (randomize || !isLocked("latitude")) options.geography.latitude = latitude;
+    if (randomize || !isLocked("longitude")) options.geography.longitude = longitude;
   }
 
   /** calculate the map lat/lon box from its size and position */
   calculate(): void {
-    const sizeFraction = Options.geography.mapSize / 100;
-    const latShift = Options.geography.latitude / 100;
-    const lonShift = Options.geography.longitude / 100;
+    const sizeFraction = options.geography.mapSize / 100;
+    const latShift = options.geography.latitude / 100;
+    const lonShift = options.geography.longitude / 100;
 
     const latT = rn(sizeFraction * 180, 1);
     const latN = rn(90 - (180 - latT) * latShift, 1);
@@ -83,7 +83,7 @@ class CoordinatesModule {
   }
 
   private getSizeAndPosition(): SizeAndPosition {
-    const template = Options.heightmap.template;
+    const template = options.heightmap.template;
     const realWorldPosition = TEMPLATE_POSITIONS[template];
     if (realWorldPosition) return realWorldPosition;
 

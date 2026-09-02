@@ -287,7 +287,7 @@ function getSelectedId(): number {
 function updateGroupsList(): void {
   const groupSelect = ensureEl<HTMLSelectElement>("burgGroup");
   groupSelect.options.length = 0; // remove all options
-  for (const { name } of Options.burgs.groups) {
+  for (const { name } of options.burgs.groups) {
     groupSelect.options.add(new Option(name, name));
   }
 }
@@ -304,7 +304,7 @@ function updateBurgValues(): void {
   ensureEl<HTMLSelectElement>("burgGroup").value = b.group!;
   ensureEl<HTMLSelectElement>("burgType").value = b.type || "Generic";
   ensureEl<HTMLInputElement>("burgPopulation").value = String(
-    rn(b.population! * Options.units.population.scale * Options.units.population.urbanization.rate)
+    rn(b.population! * options.units.population.scale * options.units.population.urbanization.rate)
   );
   ensureEl("burgWealth").innerHTML = `🟡 ${rn(b.population! > 0 ? (b.product || 0) / b.population! : 0, 2)}`;
   ensureEl("burgTreasury").innerHTML = `🟡 ${rn(b.treasury || 0, 2)}`;
@@ -387,8 +387,8 @@ function changePopulation(): void {
 
   pack.burgs[id].population = rn(
     ensureEl<HTMLInputElement>("burgPopulation").valueAsNumber /
-      Options.units.population.scale /
-      Options.units.population.urbanization.rate,
+      options.units.population.scale /
+      options.units.population.urbanization.rate,
     4
   );
   updateBurgPreview(burg);

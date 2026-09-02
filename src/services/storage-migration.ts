@@ -2,7 +2,7 @@
 // A migration describes a world that no longer exists, so it carries its own copy of it and never
 // leans on the live model: what the app calls things today is free to keep changing
 
-import { CELLS_BY_DENSITY, STORAGE_KEY } from "@/components/options";
+import { CELLS_BY_DENSITY, STORAGE_KEY } from "@/components/options-store";
 import { LOCKS_KEY } from "@/utils/preferences";
 import { safeParseJSON } from "@/utils/stringUtils";
 

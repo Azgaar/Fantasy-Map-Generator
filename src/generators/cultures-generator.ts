@@ -71,7 +71,7 @@ class CulturesGenerator {
     const sf = (cell: number, fee = 4) =>
       cells.haven[cell] && pack.features[cells.f[cells.haven[cell]]].type !== "lake" ? 1 : fee; // not on sea coast fee
 
-    if (Options.cultures.set === "european") {
+    if (options.cultures.set === "european") {
       return [
         {
           name: "Shwazen",
@@ -181,7 +181,7 @@ class CulturesGenerator {
       ];
     }
 
-    if (Options.cultures.set === "oriental") {
+    if (options.cultures.set === "oriental") {
       return [
         {
           name: "Koryo",
@@ -277,7 +277,7 @@ class CulturesGenerator {
       ];
     }
 
-    if (Options.cultures.set === "english") {
+    if (options.cultures.set === "english") {
       const getName = () => Names.getBase(1, 5, 9, "");
       return [
         { name: getName(), base: 1, odd: 1, shield: "heater" },
@@ -293,7 +293,7 @@ class CulturesGenerator {
       ];
     }
 
-    if (Options.cultures.set === "antique") {
+    if (options.cultures.set === "antique") {
       return [
         {
           name: "Roman",
@@ -410,7 +410,7 @@ class CulturesGenerator {
       ];
     }
 
-    if (Options.cultures.set === "highFantasy") {
+    if (options.cultures.set === "highFantasy") {
       return [
         // fantasy races
         {
@@ -536,7 +536,7 @@ class CulturesGenerator {
       ];
     }
 
-    if (Options.cultures.set === "darkFantasy") {
+    if (options.cultures.set === "darkFantasy") {
       return [
         // common real-world English
         {
@@ -783,7 +783,7 @@ class CulturesGenerator {
       ];
     }
 
-    if (Options.cultures.set === "random") {
+    if (options.cultures.set === "random") {
       return range(count).map(() => {
         const rnd = rand(Names.nameBases.length - 1);
         const name = Names.getBaseShort(rnd);
@@ -1031,8 +1031,8 @@ class CulturesGenerator {
     this.cells = pack.cells;
     const cultureIds = new Uint16Array(this.cells.i.length); // cell cultures
 
-    const culturesInputNumber = Options.cultures.limit;
-    const culturesInSetNumber = CULTURE_SETS[Options.cultures.set]?.max ?? 0;
+    const culturesInputNumber = options.cultures.limit;
+    const culturesInSetNumber = CULTURE_SETS[options.cultures.set]?.max ?? 0;
     let count = Math.min(culturesInputNumber, culturesInSetNumber);
     const populated = this.cells.i.filter((i: number) => this.cells.s[i]); // populated cells
 
@@ -1068,7 +1068,7 @@ class CulturesGenerator {
       } else {
         WARN && console.warn(`Not enough populated cells (${populated.length}). Will generate only ${count} cultures`);
         alertMessage.innerHTML = /* html */ ` There are only ${populated.length} populated cells and it's insufficient livable area.<br />
-          Only ${count} out of ${Options.cultures.limit} requested cultures will be generated.<br />
+          Only ${count} out of ${options.cultures.limit} requested cultures will be generated.<br />
           Please consider changing climate settings in the World Configurator`;
         $("#alert").dialog({
           resizable: false,
@@ -1157,7 +1157,7 @@ class CulturesGenerator {
       else if (type === "Nomadic") base = 1.5;
       else if (type === "Hunting") base = 0.7;
       else if (type === "Highland") base = 1.2;
-      return rn(((Math.random() * Options.cultures.sizeVariety) / 2 + 1) * base, 1);
+      return rn(((Math.random() * options.cultures.sizeVariety) / 2 + 1) * base, 1);
     };
 
     cultures.forEach((c: Culture, i: number) => {
@@ -1260,7 +1260,7 @@ class CulturesGenerator {
     const queue = new FlatQueue();
     const cost: number[] = [];
 
-    const growthRate = Options.cultures.growthRate;
+    const growthRate = options.cultures.growthRate;
     const maxExpansionCost = cells.i.length * 0.6 * growthRate; // limit cost for culture growth
 
     // remove culture from all cells except of locked

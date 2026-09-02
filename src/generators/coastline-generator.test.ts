@@ -9,16 +9,15 @@ const island = {
   vertices: [0, 1, 2, 3]
 } as unknown as Feature;
 
-/** The generator only needs a seed and the single write method it calls */
-const stubOptions = () => {
-  const stub: Record<string, unknown> = { seed: "1" };
-  stub.set = (change: (o: unknown) => void) => change(stub);
-  return stub as unknown as typeof globalThis.Options;
-};
+/** The generator reads a seed off the store and writes its settings through the model */
+const stubStore = () => ({ seed: "1" }) as unknown as typeof globalThis.options;
+const stubModel = () =>
+  ({ set: (change: (o: unknown) => void) => change(globalThis.options) }) as unknown as typeof globalThis.Options;
 
 beforeEach(() => {
   localStorage.clear();
-  globalThis.Options = stubOptions();
+  globalThis.options = stubStore();
+  globalThis.Options = stubModel();
   globalThis.graphWidth = 100;
   globalThis.graphHeight = 100;
   globalThis.pack = {
@@ -41,19 +40,19 @@ describe("settings", () => {
 
   it("keeps them in options, so they are saved and restored with the map", () => {
     Coastline.update({ maxDepth: 2 });
-    expect(Options.coastline.maxDepth).toBe(2);
+    expect(options.coastline.maxDepth).toBe(2);
 
-    Options.coastline = { ...Coastline.getDefaultSettings(), maxDepth: 5 };
+    options.coastline = { ...Coastline.getDefaultSettings(), maxDepth: 5 };
     expect(Coastline.settings.maxDepth).toBe(5);
   });
 
   it("goes through Options.set, so the next session starts from the values the user picked", () => {
-    const set = vi.fn((change: (o: unknown) => void) => change(globalThis.Options));
-    globalThis.Options = { seed: "1", set } as unknown as typeof globalThis.Options;
+    const set = vi.fn((change: (o: unknown) => void) => change(globalThis.options));
+    globalThis.Options = { set } as unknown as typeof globalThis.Options;
 
     Coastline.update({ baseAmplitude: 3, enabled: false });
     expect(set).toHaveBeenCalled();
-    expect(Options.coastline).toEqual({ ...Coastline.getDefaultSettings(), baseAmplitude: 3, enabled: false });
+    expect(options.coastline).toEqual({ ...Coastline.getDefaultSettings(), baseAmplitude: 3, enabled: false });
   });
 });
 
@@ -61,13 +60,13 @@ describe("getFeaturePath", () => {
   it("reproduces the same coastline for the same seed and settings", () => {
     const path = Coastline.getFeaturePath(island);
 
-    delete (Options as Partial<typeof Options>).coastline; // reload: settings are read from the map again
+    delete (options as Partial<typeof options>).coastline; // reload: settings are read from the map again
     expect(Coastline.getFeaturePath(island)).toBe(path);
 
     for (let i = 0; i < 100; i++) Math.random(); // an own rng per feature, unaffected by what was generated before
     expect(Coastline.getFeaturePath(island)).toBe(path);
 
-    globalThis.Options.seed = "2";
+    globalThis.options.seed = "2";
     expect(Coastline.getFeaturePath(island)).not.toBe(path);
   });
 

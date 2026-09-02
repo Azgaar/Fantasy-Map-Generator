@@ -36,7 +36,7 @@ class IceModule {
     this.clear();
     const { cells, features } = grid;
     const { temp, h } = cells;
-    Math.random = Alea(Options.seed);
+    Math.random = Alea(options.seed);
 
     const ICEBERG_MAX_TEMP = 0;
     const GLACIER_MAX_TEMP = -8;

@@ -141,7 +141,7 @@ export async function calculateLabelSpread(): Promise<LabelSpreadResult> {
 
     await nextFrame();
     const ids = items.map(item => item.id).sort();
-    const solution = optimizeLabelPlacements(items, mapBounds(), `${Options.seed}|${ids.join("|")}`);
+    const solution = optimizeLabelPlacements(items, mapBounds(), `${options.seed}|${ids.join("|")}`);
     return {
       patches: getPatches(visibleLabels, solution.selected),
       displayedLabels: visibleLabels.length,
@@ -539,7 +539,7 @@ class LabelMeasurementSandbox {
   }
 
   private createGroup(groupName: string): SVGGElement {
-    const groupOptions = Options.labels.groups.find(group => group.name === groupName);
+    const groupOptions = options.labels.groups.find(group => group.name === groupName);
     if (!groupOptions) throw new Error(`Label Group not found: ${groupName}`);
     const group = document.createElementNS(SVG_NS, "g");
     writeGroupStyle(group, getGroupStyle(groupOptions));

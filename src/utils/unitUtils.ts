@@ -9,7 +9,7 @@ type TemperatureScale = "°C" | "°F" | "K" | "°R" | "°De" | "°N" | "°Ré" |
  * @returns {string} - Converted temperature with unit
  */
 export const convertTemperature = (temperatureInCelsius: number, targetScale?: TemperatureScale) => {
-  const scale = targetScale || (Options.units.temperature.unit as TemperatureScale) || "°C";
+  const scale = targetScale || (options.units.temperature.unit as TemperatureScale) || "°C";
   const temperatureConversionMap: { [key: string]: (temp: number) => string } = {
     "°C": (temp: number) => `${rn(temp)}°C`,
     "°F": (temp: number) => `${rn((temp * 9) / 5 + 32)}°F`,
@@ -57,14 +57,14 @@ export const getIntegerFromSI = (value: string): number => {
  * @returns {string} - The converted height with unit
  */
 export function getHeight(h: number, abs = false): string {
-  const unit = Options.units.height.unit;
+  const unit = options.units.height.unit;
   let unitRatio = 3.281; // default calculations are in feet
   if (unit === "m")
     unitRatio = 1; // if meter
   else if (unit === "f") unitRatio = 0.5468; // if fathom
 
   let height = -990;
-  if (h >= 20) height = (h - 18) ** Options.units.height.exponent;
+  if (h >= 20) height = (h - 18) ** options.units.height.exponent;
   else if (h < 20 && h > 0) height = ((h - 20) / h) * 50;
 
   if (abs) height = Math.abs(height);
@@ -90,10 +90,10 @@ export function getFriendlyHeight([x, y]: [number, number], pack: PackedGraph, g
 
 /** Get [rural, urban] real-world population of a cell */
 export function getCellPopulation(cellId: number, pack: PackedGraph): [number, number] {
-  const rural = pack.cells.pop[cellId] * Options.units.population.scale;
+  const rural = pack.cells.pop[cellId] * options.units.population.scale;
   const burgId = pack.cells.burg[cellId];
   const urban = burgId
-    ? (pack.burgs[burgId].population || 0) * Options.units.population.scale * Options.units.population.urbanization.rate
+    ? (pack.burgs[burgId].population || 0) * options.units.population.scale * options.units.population.urbanization.rate
     : 0;
   return [rural, urban];
 }
@@ -170,7 +170,7 @@ const KM_IN_DISTANCE_UNIT: Record<string, number> = {
 
 /** The distance unit selected in the Units editor, e.g. "mi" */
 export function getDistanceUnit(): string {
-  return Options.units.distance.unit || "km";
+  return options.units.distance.unit || "km";
 }
 
 /** Kilometers in one user distance unit, 0 for an unrecognized (custom) unit */
@@ -205,8 +205,8 @@ export function parseSpeed(speedInUnits: number): number {
  * @returns {string} - The area unit, e.g. "mi²"
  */
 export function getAreaUnit(squareMark = "²"): string {
-  if (Options.units.area.unit !== "square") return Options.units.area.unit;
-  return Options.units.distance.unit + squareMark;
+  if (options.units.area.unit !== "square") return options.units.area.unit;
+  return options.units.distance.unit + squareMark;
 }
 
 /**
@@ -215,5 +215,5 @@ export function getAreaUnit(squareMark = "²"): string {
  * @returns {number} - The area in real-world units
  */
 export function getArea(rawArea: number): number {
-  return rawArea * Options.units.distance.scale ** 2;
+  return rawArea * options.units.distance.scale ** 2;
 }

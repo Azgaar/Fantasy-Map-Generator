@@ -249,15 +249,15 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
 
     migrateLegacySettings(mapVersion!, data);
     if (data[1]) Options.restore(JSON.parse(data[1]));
-    Options.persist(); // the file's settings are the current ones now, stored like any other
+    Options.persist();
     syncInputs();
 
-    graphWidth = Options.graph.width;
-    graphHeight = Options.graph.height;
+    graphWidth = options.graph.width;
+    graphHeight = options.graph.height;
     mapId = +data[0].split("|")[6] || Date.now();
     stylePreset.value = "default"; // the styles are restored below, the preset name is not saved
 
-    INFO && console.group(Options.seed ? `Loaded Map ${Options.seed}` : "Loaded Map");
+    INFO && console.group(options.seed ? `Loaded Map ${options.seed}` : "Loaded Map");
 
     ensureEl<HTMLInputElement>("shapeRendering").value =
       select("#viewbox").attr("shape-rendering") || "geometricPrecision";

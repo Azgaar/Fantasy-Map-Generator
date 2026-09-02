@@ -80,8 +80,8 @@ const columns: EditorColumn<Culture>[] = [
     width: "6em",
     defaultSort: "desc",
     sortBy: culture =>
-      (culture.rural || 0) * Options.units.population.scale +
-      (culture.urban || 0) * Options.units.population.scale * Options.units.population.urbanization.rate
+      (culture.rural || 0) * options.units.population.scale +
+      (culture.urban || 0) * options.units.population.scale * options.units.population.urbanization.rate
   },
   {
     key: "emblems",
@@ -217,15 +217,15 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
   for (const c of view.all) {
     totalArea += getArea(c.area ?? 0);
     totalPopulation += rn(
-      (c.rural ?? 0) * Options.units.population.scale +
-        (c.urban ?? 0) * Options.units.population.scale * Options.units.population.urbanization.rate
+      (c.rural ?? 0) * options.units.population.scale +
+        (c.urban ?? 0) * options.units.population.scale * options.units.population.urbanization.rate
     );
   }
 
   for (const c of view.rows) {
     const area = getArea(c.area ?? 0);
-    const rural = (c.rural ?? 0) * Options.units.population.scale;
-    const urban = (c.urban ?? 0) * Options.units.population.scale * Options.units.population.urbanization.rate;
+    const rural = (c.rural ?? 0) * options.units.population.scale;
+    const urban = (c.urban ?? 0) * options.units.population.scale * options.units.population.urbanization.rate;
     const population = rn(rural + urban);
     const populationTip = `Total population: ${si(population)}. Rural population: ${si(rural)}. Urban population: ${si(
       urban
@@ -578,8 +578,8 @@ function changePopulation(this: HTMLElement): void {
     return;
   }
 
-  const rural = rn((culture.rural ?? 0) * Options.units.population.scale);
-  const urban = rn((culture.urban ?? 0) * Options.units.population.scale * Options.units.population.urbanization.rate);
+  const rural = rn((culture.rural ?? 0) * options.units.population.scale);
+  const urban = rn((culture.urban ?? 0) * options.units.population.scale * options.units.population.urbanization.rate);
   const total = rural + urban;
   const format = (n: number) => Number(n).toLocaleString();
   const burgs = pack.burgs.filter(b => !b.removed && b.culture === cultureId);
@@ -643,7 +643,7 @@ function applyPopulationChange(
     });
   }
   if (!Number.isFinite(ruralChange) && +newRural > 0) {
-    const points = newRural / Options.units.population.scale;
+    const points = newRural / options.units.population.scale;
     const cells = (pack.cells.i as unknown as number[]).filter(i => pack.cells.culture[i] === culture);
     const pop = rn(points / cells.length);
     cells.forEach(i => {
@@ -659,7 +659,7 @@ function applyPopulationChange(
     });
   }
   if (!Number.isFinite(urbanChange) && +newUrban > 0) {
-    const points = newUrban / Options.units.population.scale / Options.units.population.urbanization.rate;
+    const points = newUrban / options.units.population.scale / options.units.population.urbanization.rate;
     const population = rn(points / burgs.length, 4);
     burgs.forEach(b => {
       b.population = population;
@@ -831,8 +831,8 @@ async function showHierarchy(): Promise<void> {
     const { name, type, rural, urban } = culture;
 
     const population =
-      rural * Options.units.population.scale +
-      urban * Options.units.population.scale * Options.units.population.urbanization.rate;
+      rural * options.units.population.scale +
+      urban * options.units.population.scale * options.units.population.urbanization.rate;
     const populationText = population > 0 ? `${si(rn(population))} people` : "Extinct";
     return `${name} culture. ${type}. ${populationText}`;
   };
@@ -956,8 +956,8 @@ function downloadCulturesCsv(): void {
   const data = culturesTable.view().all.map(c => {
     const area = getArea(c.area ?? 0);
     const population = rn(
-      (c.rural ?? 0) * Options.units.population.scale +
-        (c.urban ?? 0) * Options.units.population.scale * Options.units.population.urbanization.rate
+      (c.rural ?? 0) * options.units.population.scale +
+        (c.urban ?? 0) * options.units.population.scale * options.units.population.urbanization.rate
     );
     const namesbase = Names.nameBases[c.base].name;
     const originList = (c.origins ?? [])

@@ -88,7 +88,7 @@ class FeatureModule {
    * mark Grid features (ocean, lakes, islands) and calculate distance field
    */
   markupGrid() {
-    Math.random = Alea(Options.seed); // get the same result on heightmap edit in Erase mode
+    Math.random = Alea(options.seed); // get the same result on heightmap edit in Erase mode
 
     const { h: heights, c: neighbors, b: borderCells, i } = grid.cells;
     const cellsNumber = i.length;

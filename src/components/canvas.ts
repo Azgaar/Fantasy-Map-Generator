@@ -7,8 +7,8 @@ import { rn } from "@/utils/numberUtils";
 
 /** Adopt the configured graph size. Called on map creation only: the extent cannot change after it */
 export function applyGraphSize(): void {
-  graphWidth = Options.graph.width;
-  graphHeight = Options.graph.height;
+  graphWidth = options.graph.width;
+  graphHeight = options.graph.height;
 
   const cover = (selector: string, child: string) =>
     select(selector).selectAll(child).attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
@@ -23,8 +23,8 @@ export function applyGraphSize(): void {
 
 /** Size the svg to the window and re-fit everything that is drawn in screen space */
 export function fitMapToScreen(): void {
-  svgWidth = Math.min(Options.graph.width, window.innerWidth);
-  svgHeight = Math.min(Options.graph.height, window.innerHeight);
+  svgWidth = Math.min(options.graph.width, window.innerWidth);
+  svgHeight = Math.min(options.graph.height, window.innerHeight);
   select("#map").attr("width", svgWidth).attr("height", svgHeight);
 
   const zoomMin = rn(Math.max(svgWidth / graphWidth, svgHeight / graphHeight), 3);

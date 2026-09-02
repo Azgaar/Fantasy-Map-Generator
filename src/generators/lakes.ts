@@ -60,7 +60,7 @@ export class LakesModule {
     };
 
     const getLakeEvaporation = (lake: Feature) => {
-      const height = (lake.height - 18) ** Options.units.height.exponent; // height in meters
+      const height = (lake.height - 18) ** options.units.height.exponent; // height in meters
       const evaporation = ((700 * (lake.temp + 0.006 * height)) / 50 + 75) / (80 - lake.temp); // based on Penman formula, [1-11]
       return rn(evaporation * lake.cells);
     };
@@ -86,7 +86,7 @@ export class LakesModule {
   // check if lake can be potentially open (not in deep depression)
   detectCloseLakes(h: number[] | Uint8Array) {
     const { cells } = pack;
-    const ELEVATION_LIMIT = Options.heightmap.lakeElevationLimit;
+    const ELEVATION_LIMIT = options.heightmap.lakeElevationLimit;
 
     pack.features.forEach(feature => {
       if (feature.type !== "lake") return;

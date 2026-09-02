@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
+import { STORAGE_KEY } from "@/components/options-store";
+import { LOCKS_KEY } from "@/utils/preferences";
 import { migrateStoredOptions } from "./storage-migration";
 
-const storedOptions = () => JSON.parse(localStorage.getItem("options") ?? "null");
-const storedLocks = () => JSON.parse(localStorage.getItem("locks") ?? "null");
+const storedOptions = () => JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
+const storedLocks = () => JSON.parse(localStorage.getItem(LOCKS_KEY) ?? "null");
 
 beforeEach(() => localStorage.clear());
 
@@ -58,7 +60,7 @@ describe("migrateStoredOptions", () => {
   });
 
   it("leaves a browser that already has the current layout alone", () => {
-    localStorage.setItem("options", '{"states":{"limit":7}}');
+    localStorage.setItem(STORAGE_KEY, '{"states":{"limit":7}}');
     localStorage.setItem("statesNumber", "33");
 
     migrateStoredOptions();

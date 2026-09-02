@@ -428,7 +428,7 @@ function moveCursor(this: SVGElement, event: any): void {
 
 // get user-friendly (real-world) height value from map data
 function getFriendlyHeight(h: number): string {
-  const unit = Options.units.height.unit;
+  const unit = options.units.height.unit;
   let unitRatio = 3.281; // default calculations are in feet
   if (unit === "m") unitRatio = 1;
   // if meter

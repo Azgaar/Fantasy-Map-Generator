@@ -78,8 +78,8 @@ function renderDialog(): void {
         <label data-tip="Groups referenced by labels but not defined here. Such labels are not rendered until they are reassigned to an existing group"><strong>Missing groups:</strong> <span id="labelGroupsMissing"></span></label>
       </div>
       <div style="display:flex; gap:1.2em; align-items:center; margin:.6em 0 0">
-        <label data-tip="Automatically scale label font size as you zoom in or out"><input id="labelsResizeOnZoom" class="checkbox" type="checkbox" ${Options.labels.resizeOnZoom ? "checked" : ""}><span class="checkbox-label">Resize labels on zoom</span></label>
-        <label data-tip="Ignore zoom bounds and show all labels regardless of the current zoom level"><input id="labelsShowAll" class="checkbox" type="checkbox" ${Options.labels.showAll ? "checked" : ""}><span class="checkbox-label">Show all labels <small>[slow]</small></span></label>
+        <label data-tip="Automatically scale label font size as you zoom in or out"><input id="labelsResizeOnZoom" class="checkbox" type="checkbox" ${options.labels.resizeOnZoom ? "checked" : ""}><span class="checkbox-label">Resize labels on zoom</span></label>
+        <label data-tip="Ignore zoom bounds and show all labels regardless of the current zoom level"><input id="labelsShowAll" class="checkbox" type="checkbox" ${options.labels.showAll ? "checked" : ""}><span class="checkbox-label">Show all labels <small>[slow]</small></span></label>
         <div style="padding: 0.5em 0; font-style: italic;">To change Burg Groups open <a id="labelGroupsBurgGroupsLink" style="text-decoration: underline;">Burg Group Configurator</a>.</div>
       </div>
     </form>
@@ -95,7 +95,7 @@ function renderDialog(): void {
   ensureEl("labelGroupsMissing").addEventListener("click", onMissingGroupsClick);
 }
 
-function addRows(groups: LabelGroup[] = Options.labels.groups): void {
+function addRows(groups: LabelGroup[] = options.labels.groups): void {
   const counts = countLabelsByGroup();
   ensureEl("labelGroupsBody").innerHTML = groups
     .map(group => createRow(group, false, counts.get(group.name) ?? 0))
@@ -285,7 +285,7 @@ function submitForm(event: Event): void {
     }
   });
 
-  Options.labels.groups.forEach(group => {
+  options.labels.groups.forEach(group => {
     if (newGroupNames.has(group.name)) return;
     // group is removed
     const fallback = Labels.getFallbackGroup(group.type);
@@ -299,7 +299,7 @@ function submitForm(event: Event): void {
     o.labels.showAll = ensureEl<HTMLInputElement>("labelsShowAll").checked;
   });
 
-  for (const group of Options.labels.groups) styles.labels.groups[group.name] ??= getGroupStyle(group);
+  for (const group of options.labels.groups) styles.labels.groups[group.name] ??= getGroupStyle(group);
 
   Layers.draw("labels");
   $("#labelGroupsConfigurator").dialog("close");

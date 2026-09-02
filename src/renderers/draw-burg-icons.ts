@@ -4,7 +4,7 @@ export const drawBurgIcons = (): void => {
   TIME && console.time("drawBurgIcons");
   createIconGroups();
 
-  for (const { name } of Options.burgs.groups) {
+  for (const { name } of options.burgs.groups) {
     const burgsInGroup = pack.burgs.filter(b => b.group === name && !b.removed);
     if (!burgsInGroup.length) continue;
 
@@ -47,7 +47,7 @@ function createIconGroups(): void {
   // create groups for each burg group and apply stored or default style
   const defaultIconStyle = burgIcons.groups.town || Object.values(burgIcons.groups)[0];
   const defaultAnchorStyle = anchors.groups.town || Object.values(anchors.groups)[0];
-  const sortedGroups = [...Options.burgs.groups].sort((a, b) => a.order - b.order);
+  const sortedGroups = [...options.burgs.groups].sort((a, b) => a.order - b.order);
   for (const { name } of sortedGroups) {
     const burgGroup = select("#burgIcons").append("g");
     const iconStyle = burgIcons.groups[name] || defaultIconStyle;

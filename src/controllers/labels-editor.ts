@@ -178,7 +178,7 @@ function selectLabelGroup(group: string): void {
   const groupSelect = ensureEl<HTMLSelectElement>("labelGroupSelect");
   groupSelect.options.length = 0; // remove all options
 
-  for (const groupOptions of Options.labels.groups) {
+  for (const groupOptions of options.labels.groups) {
     groupSelect.options.add(new Option(groupOptions.name, groupOptions.name, false, groupOptions.name === group));
   }
 }
@@ -361,7 +361,7 @@ function hideGroupSection(): void {
 
 function changeGroup(this: HTMLSelectElement): void {
   const nextGroup = this.value;
-  const targetType = Options.labels.groups.find(group => group.name === nextGroup)?.type;
+  const targetType = options.labels.groups.find(group => group.name === nextGroup)?.type;
   const apply = () => {
     lastSelectedGroup = nextGroup;
     label.group = nextGroup;

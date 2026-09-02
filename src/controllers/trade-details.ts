@@ -171,7 +171,7 @@ function renderTradeDetailsPage(view: TableView<TradeDetailRow>): void {
   );
   ensureEl("tradeDetailsBody").innerHTML = html.join("");
   ensureEl("tradeDetailsFooterDistance").innerHTML =
-    `${rn(length * Options.units.distance.scale)} ${Options.units.distance.unit}`;
+    `${rn(length * options.units.distance.scale)} ${options.units.distance.unit}`;
   ensureEl("tradeDetailsFooterUnits").innerHTML = String(rn(totalUnits, 2));
   ensureEl("tradeDetailsFooterValue").innerHTML = formatPrice(totalValue);
 

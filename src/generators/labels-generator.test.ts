@@ -49,8 +49,8 @@ describe("LabelsModule", () => {
 
 describe("ensureBurgLabelGroups", () => {
   beforeEach(() => {
-    globalThis.Options = {
-      ...globalThis.Options,
+    globalThis.options = {
+      ...globalThis.options,
       burgs: { groups: [{ name: "city" }, { name: "town" }, { name: "customgroup" }] },
       labels: {
         resizeOnZoom: true,
@@ -62,21 +62,21 @@ describe("ensureBurgLabelGroups", () => {
 
   it("adds registry entries for burg groups the label registry lacks", () => {
     labels.ensureBurgLabelGroups();
-    const names = Options.labels.groups.filter(g => g.type === "burg").map(g => g.name);
+    const names = options.labels.groups.filter(g => g.type === "burg").map(g => g.name);
     expect(names.includes("city")).toBe(true);
     expect(names.includes("town")).toBe(true);
     expect(names.includes("customgroup")).toBe(true);
     // known modern names take their default bounds; unknown names get the fallback
-    expect(Options.labels.groups.find(g => g.name === "city")?.zoom).toEqual({ min: 1.4, max: 25 });
-    expect(Options.labels.groups.find(g => g.name === "customgroup")?.zoom).toEqual({ min: 2, max: 30 });
+    expect(options.labels.groups.find(g => g.name === "city")?.zoom).toEqual({ min: 1.4, max: 25 });
+    expect(options.labels.groups.find(g => g.name === "customgroup")?.zoom).toEqual({ min: 2, max: 30 });
     // existing entries are left alone
-    expect(Options.labels.groups.find(g => g.name === "cities")?.zoom).toEqual({ min: 1, max: 25 });
+    expect(options.labels.groups.find(g => g.name === "cities")?.zoom).toEqual({ min: 1, max: 25 });
   });
 
   it("is idempotent", () => {
     labels.ensureBurgLabelGroups();
-    const count = Options.labels.groups.length;
+    const count = options.labels.groups.length;
     labels.ensureBurgLabelGroups();
-    expect(Options.labels.groups.length).toBe(count);
+    expect(options.labels.groups.length).toBe(count);
   });
 });

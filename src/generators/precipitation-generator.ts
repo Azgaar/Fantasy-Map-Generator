@@ -29,7 +29,7 @@ class PrecipitationModule {
     cells.prec = new Uint8Array(cells.i.length);
 
     const cellsNumberModifier = (Grid.getCellsDesired() / 10000) ** 0.25;
-    const modifier = cellsNumberModifier * (Options.climate.precipitation / 100);
+    const modifier = cellsNumberModifier * (options.climate.precipitation / 100);
 
     const getPrecipitation = (humidity: number, i: number, n: number) => {
       const normalLoss = Math.max(humidity / (10 * modifier), 1); // precipitation in normal conditions
@@ -111,7 +111,7 @@ class PrecipitationModule {
       const lat = mapCoordinates.latN! - (rowId / cellsY) * mapCoordinates.latT!;
       const latMod = LATITUDE_MODIFIER[((Math.abs(lat) - 1) / 5) | 0];
       const tier = (Math.abs(lat - 89) / 30) | 0; // 30° tiers from 0 to 5, north to south
-      const angle = Options.climate.winds[tier];
+      const angle = options.climate.winds[tier];
 
       if (angle > 40 && angle < 140) westerly.push([cellId, latMod, tier]);
       if (angle > 220 && angle < 320) easterly.push([cellId + cellsX - 1, latMod, tier]);

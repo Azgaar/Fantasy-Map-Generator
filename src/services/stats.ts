@@ -6,14 +6,14 @@ import { isLocked } from "@/utils/preferences";
  * with a new identity; a loaded one keeps the one it was saved with
  */
 export function logStats({ isNewMap = true } = {}): void {
-  const heightmap = Options.heightmap.template;
+  const heightmap = options.heightmap.template;
   const isTemplate = heightmap in heightmapTemplates;
   const heightmapType = isTemplate ? "template" : "precreated";
   const isRandomTemplate = isTemplate && !isLocked("template") ? "random " : "";
 
   if (isNewMap) mapId = Date.now(); // a map's id is the moment it was generated
   mapHistory.push({
-    seed: Options.seed,
+    seed: options.seed,
     width: graphWidth,
     height: graphHeight,
     template: heightmap,
@@ -21,13 +21,13 @@ export function logStats({ isNewMap = true } = {}): void {
   });
 
   INFO &&
-    console.info(`  Seed: ${Options.seed}
+    console.info(`  Seed: ${options.seed}
     Canvas size: ${graphWidth}x${graphHeight} px
     Heightmap: ${heightmap}
     Template: ${isRandomTemplate}${heightmapType}
     Points: ${grid.points.length}
     Cells: ${pack.cells.i.length}
-    Map size: ${Options.geography.mapSize}%
+    Map size: ${options.geography.mapSize}%
     States: ${pack.states.length - 1}
     Provinces: ${pack.provinces.length - 1}
     Burgs: ${pack.burgs.length - 1}
@@ -37,7 +37,7 @@ export function logStats({ isNewMap = true } = {}): void {
 
   // consumed by the e2e suite and by external integrations
   window.mapId = mapId;
-  window.dispatchEvent(new CustomEvent("map:generated", { detail: { seed: Options.seed, mapId: mapId } }));
+  window.dispatchEvent(new CustomEvent("map:generated", { detail: { seed: options.seed, mapId: mapId } }));
 }
 
 // Legacy seam: classic public/ code reaches it as a global

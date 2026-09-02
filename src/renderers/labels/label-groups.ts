@@ -8,7 +8,7 @@ export function renderLabelGroups(root: ParentNode = document): void {
   if (!labels) throw new Error("Labels container not found");
 
   labels.replaceChildren();
-  for (const groupOptions of Options.labels.groups) {
+  for (const groupOptions of options.labels.groups) {
     renderLabelGroup(labels, groupOptions);
   }
 }

@@ -144,7 +144,7 @@ function isPlainText(label?: Label): boolean {
 
 // name mode is resolved by group name, the same way fitStateLabel resolves it
 function getStateName(state: State, group: string): string {
-  const mode = Options.labels.groups.find(option => option.name === group)?.mode || "auto";
+  const mode = options.labels.groups.find(option => option.name === group)?.mode || "auto";
   return mode === "short" ? state.name : state.fullName || state.name;
 }
 

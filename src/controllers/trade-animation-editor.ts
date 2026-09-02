@@ -89,11 +89,11 @@ function renderDialog(): void {
   document.body.insertAdjacentHTML("beforeend", buildDialogHTML());
 
   for (const def of INPUTS) {
-    const key = def.key as keyof typeof Options.trade.animation;
+    const key = def.key as keyof typeof options.trade.animation;
     const input = ensureEl<HTMLInputElement | HTMLSelectElement>(def.id);
     const resetBtn = ensureEl(`${def.id}Reset`);
 
-    const current = Options.trade.animation[key] ?? def.default;
+    const current = options.trade.animation[key] ?? def.default;
     input.value = String(current);
 
     input.addEventListener("input", e => {
@@ -115,7 +115,7 @@ function renderDialog(): void {
 
 function buildDialogHTML(): string {
   const rows = INPUTS.map(({ id, label, type, selectOptions, tip, min, max, step, key, default: def }) => {
-    const current = Options.trade.animation[key as keyof typeof Options.trade.animation] ?? def;
+    const current = options.trade.animation[key as keyof typeof options.trade.animation] ?? def;
     const input =
       type === "select" && selectOptions
         ? `<select id="${id}" style="width: 100%; font-size: smaller;">${selectOptions.map((opt: string) => `<option value="${opt}" ${opt === current ? "selected" : ""}>${opt}</option>`).join("")}</select>`

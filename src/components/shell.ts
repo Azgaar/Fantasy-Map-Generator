@@ -12,8 +12,8 @@ import { isLocked } from "@/utils/preferences";
 function onResize(): void {
   if (isLocked("mapWidth") && isLocked("mapHeight")) return;
 
-  Options.graph.width = window.innerWidth;
-  Options.graph.height = window.innerHeight;
+  options.graph.width = window.innerWidth;
+  options.graph.height = window.innerHeight;
   syncInputs();
   fitMapToScreen();
 }

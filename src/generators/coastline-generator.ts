@@ -253,8 +253,8 @@ class CoastlineGenerator {
    * brand new map) starts from the last values the user picked
    */
   get settings(): CoastlineSettings {
-    Options.coastline ??= this.getDefaultSettings();
-    return Options.coastline;
+    options.coastline ??= this.getDefaultSettings();
+    return options.coastline;
   }
 
   /** Apply a user change: it defines the coastlines of this map and the defaults for the next one */
@@ -305,7 +305,7 @@ class CoastlineGenerator {
         ? { ...this.settings, smoothThreshold: Math.min(1, smoothThreshold * lakeSmoothThreshMult) }
         : this.settings;
 
-    return fractalize(points, Alea(`${Options.seed}_c${i}`), settings);
+    return fractalize(points, Alea(`${options.seed}_c${i}`), settings);
   }
 }
 

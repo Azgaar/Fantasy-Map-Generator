@@ -284,7 +284,7 @@ class NamesGenerator {
     const max = Math.max(this.nameBases[base].max - 3, min);
     const baseName = this.getBase(base, min, max, "") as string;
     const name = P(0.7) ? this.addSuffix(baseName) : baseName;
-    Options.lore.name = name;
+    options.lore.name = name;
   }
 
   getNameBases(): NameBase[] {

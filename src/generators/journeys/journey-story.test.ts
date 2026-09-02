@@ -91,7 +91,7 @@ describe("generateStoryJourney", () => {
       features: [0, { i: 1, type: "ocean", subtype: "sea", name: "" }]
     };
 
-    (globalThis as any).Options = { transports: Transports.getDefaults() };
+    (globalThis as any).options = { transports: Transports.getDefaults() };
   });
 
   it("returns null when the map has fewer than two burgs", () => {
@@ -206,7 +206,7 @@ const MODERN_TYPES = [
 
 describe("archetype transport preferences", () => {
   beforeEach(() => {
-    (globalThis as any).Options = { transports: Transports.getDefaults() };
+    (globalThis as any).options = { transports: Transports.getDefaults() };
   });
 
   // A preference is matched by name against the configured types, so a renamed default

@@ -347,7 +347,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       .attr("filter", "url(#dropShadow05)");
 
     // v1.4 added icon and power attributes for units
-    for (const unit of Options.military) {
+    for (const unit of options.military) {
       if (!unit.icon) unit.icon = getUnitIcon(unit.type);
       if (!unit.power) unit.power = unit.crew;
     }
@@ -1020,7 +1020,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   if (isOlderThan("1.109.0")) {
     // v1.109.0 added customizable burg groups and icons
-    Options.burgs.groups = [];
+    options.burgs.groups = [];
 
     select("#burgIcons")
       .selectAll<SVGElement, unknown>("circle, use")
@@ -1036,7 +1036,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       .each(function (_el, index) {
         const name = this.id;
         const isDefault = name === "towns";
-        Options.burgs.groups.push({ name, active: true, order: index + 1, isDefault, preview: "watabou-city" });
+        options.burgs.groups.push({ name, active: true, order: index + 1, isDefault, preview: "watabou-city" });
         if (!this.dataset.icon) this.dataset.icon = "#icon-circle";
 
         const size = Number(this.getAttribute("size") || 2) * 2;
@@ -1046,8 +1046,8 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         this.setAttribute("stroke-width", "1");
       });
 
-    if (Options.burgs.groups.filter(g => g.isDefault).length === 0) {
-      Options.burgs.groups[0].isDefault = true;
+    if (options.burgs.groups.filter(g => g.isDefault).length === 0) {
+      options.burgs.groups[0].isDefault = true;
     }
 
     select("#anchors")
@@ -1083,7 +1083,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       }
     });
 
-    const opts = Options as unknown as Record<string, unknown>;
+    const opts = options as unknown as Record<string, unknown>;
     delete opts.showBurgPreview;
     delete opts.showMFCGMap;
     delete opts.villageMaxPopulation;
@@ -1178,7 +1178,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     select("#viewbox").insert("g", "#emblems").attr("id", "markets").attr("fill-opacity", "0").style("display", "none");
     select("#viewbox").insert("g", "#goods").attr("id", "tradeAnimation").style("display", "none");
 
-    Options.trade = { animation: TradeAnimation.getDefaultOptions() };
+    options.trade = { animation: TradeAnimation.getDefaultOptions() };
 
     for (const state of pack.states) {
       if (!state) continue;
@@ -1209,7 +1209,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   if (isOlderThan("1.132.0")) {
     // v1.132.0 added global 3D view options
-    Options.threeD = { ...defaultOptions };
+    options.threeD = { ...defaultOptions };
   }
 
   if (isOlderThan("1.138.0")) {
@@ -1265,12 +1265,12 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     labels.style.removeProperty("display");
 
     // the labels options are already migrated, only the groups are rebuilt from the map
-    const stateMode: LabelNameMode = Options.labels.groups.find(group => group.type === "state")?.mode ?? "auto";
-    Options.labels.groups = [];
+    const stateMode: LabelNameMode = options.labels.groups.find(group => group.type === "state")?.mode ?? "auto";
+    options.labels.groups = [];
     styles.labels.groups = {};
 
     for (const type of ["river", "route"] as const) {
-      Options.labels.groups.push(Labels.getFallbackGroup(type));
+      options.labels.groups.push(Labels.getFallbackGroup(type));
       styles.labels.groups[type] = getGroupStyle({ name: type, type });
     }
 
@@ -1302,24 +1302,24 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       const oldStyle = deriveLabelsStyle(burgGroup);
       const zoom = legacyBurgGroupZoom(name, Number.parseFloat(oldStyle["font-size"] as string));
 
-      Options.labels.groups.push({ name, type: "burg", isDefault: name === "towns", zoom });
+      options.labels.groups.push({ name, type: "burg", isDefault: name === "towns", zoom });
       styles.labels.groups[name] = labelGroupFromLegacy(oldStyle);
     }
 
     const migratedBurgStyle = burgGroups.length ? styles.labels.groups[burgGroups[0].id] : undefined;
-    for (const { name } of Options.burgs.groups) {
-      if (Options.labels.groups.some(group => group.name === name)) continue;
+    for (const { name } of options.burgs.groups) {
+      if (options.labels.groups.some(group => group.name === name)) continue;
 
       const defaultGroup = Labels.getDefaultGroups().find(group => group.type === "burg" && group.name === name);
       const { zoom } = defaultGroup ?? Labels.getFallbackGroup("burg");
-      Options.labels.groups.push({ name, type: "burg", zoom });
+      options.labels.groups.push({ name, type: "burg", zoom });
       styles.labels.groups[name] = migratedBurgStyle
         ? structuredClone(migratedBurgStyle)
         : getGroupStyle({ name, type: "burg" });
     }
 
-    if (Options.labels.groups.every(group => !group.isDefault) && Options.labels.groups[0])
-      Options.labels.groups[0].isDefault = true;
+    if (options.labels.groups.every(group => !group.isDefault) && options.labels.groups[0])
+      options.labels.groups[0].isDefault = true;
 
     // migrate manually shifted burg labels to pack.burgs[burgId].label
     for (const textEl of document.querySelectorAll<SVGTextElement>("#burgLabels > g > text")) {
@@ -1341,7 +1341,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       const oldStyle = deriveLabelsStyle(provs);
       const fontSize = Number.parseFloat(oldStyle["font-size"] as string);
 
-      Options.labels.groups.push({
+      options.labels.groups.push({
         name: "province",
         type: "province",
         isDefault: true,
@@ -1351,7 +1351,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       });
       styles.labels.groups.province = labelGroupFromLegacy(oldStyle);
     } else {
-      Options.labels.groups.push(Labels.getFallbackGroup("province"));
+      options.labels.groups.push(Labels.getFallbackGroup("province"));
       styles.labels.groups.province = getGroupStyle({ name: "province", type: "province" });
     }
 
@@ -1359,13 +1359,13 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     const addedGroups = Array.from(labels.querySelectorAll<SVGGElement>(":scope > g:not(#states):not(#burgLabels)"));
     for (const addedGroup of addedGroups) {
       let name = addedGroup.id === "addedLabels" ? "added" : addedGroup.id;
-      const isExisting = Options.labels.groups.find(group => group.name === name);
-      if (isExisting) name += Options.labels.groups.length;
+      const isExisting = options.labels.groups.find(group => group.name === name);
+      if (isExisting) name += options.labels.groups.length;
 
       const oldStyle = deriveLabelsStyle(addedGroup);
       const fontSize = Number.parseFloat(oldStyle["font-size"] as string);
 
-      Options.labels.groups.push({
+      options.labels.groups.push({
         name,
         type: "added",
         isDefault: name === "added",
@@ -1395,7 +1395,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       const oldStyle = deriveLabelsStyle(stateGroup);
       const fontSize = Number.parseFloat(oldStyle["font-size"] as string);
 
-      Options.labels.groups.push({
+      options.labels.groups.push({
         name: "state",
         type: "state",
         isDefault: true,
@@ -1404,7 +1404,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       });
       styles.labels.groups.state = labelGroupFromLegacy(oldStyle);
     } else {
-      Options.labels.groups.push({ ...Labels.getFallbackGroup("state"), mode: stateMode });
+      options.labels.groups.push({ ...Labels.getFallbackGroup("state"), mode: stateMode });
       styles.labels.groups.state = getGroupStyle({ name: "state", type: "state" });
     }
 
@@ -1417,7 +1417,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       if (pathEl) state.label = getPathLabel({ textEl, pathEl, names: [state.name, state.fullName] });
     }
 
-    delete (Options as any).stateLabelsMode; // migrated to group settings
+    delete (options as any).stateLabelsMode; // migrated to group settings
 
     function deriveLabelsStyle(groupEl: SVGGElement): Record<string, string | number | null> {
       return {
@@ -1555,7 +1555,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       toggleScaleBar: "scaleBar",
       toggleVignette: "vignette"
     };
-    for (const group of Options.labels?.groups ?? []) {
+    for (const group of options.labels?.groups ?? []) {
       const layer = group.layerDependency && LAYER_ID_MAP[group.layerDependency];
       if (layer) group.layerDependency = layer;
     }
@@ -1845,7 +1845,7 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
   // v1.151.0 changed the settings format from a legacy pipe-delimited string to a JSON object
   const oldHeader = data[0].split("|");
   const oldSettings = (data[1] || "").split("|");
-  const migrated = structuredClone(Options);
+  const migrated = structuredClone(options);
 
   if (oldHeader[3]) migrated.seed = oldHeader[3];
   if (oldHeader[4]) migrated.graph.width = +oldHeader[4];

@@ -52,8 +52,8 @@ const DEFAULT_TRANSPORTS: readonly Transport[] = [
 
 class TransportsModule {
   get all(): Transport[] {
-    if (!Options.transports?.length) Options.transports = this.getDefaults();
-    return Options.transports;
+    if (!options.transports?.length) options.transports = this.getDefaults();
+    return options.transports;
   }
 
   getDefaults(): Transport[] {
@@ -97,7 +97,7 @@ class TransportsModule {
 
   /** Replace the whole set, e.g. on removal or defaults restore */
   set(transports: Transport[]): void {
-    Options.transports = transports;
+    options.transports = transports;
     this.save();
   }
 

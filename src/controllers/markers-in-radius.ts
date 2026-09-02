@@ -13,7 +13,7 @@ let lastRadius = 0;
 let inRangeMarkers: Marker[] = [];
 
 function defaultRadius(): number {
-  const distance = (Math.min(svgWidth, svgHeight) / 4) * Options.units.distance.scale;
+  const distance = (Math.min(svgWidth, svgHeight) / 4) * options.units.distance.scale;
   const magnitude = 10 ** Math.floor(Math.log10(distance || 1));
   return Math.max(1, Math.round(distance / magnitude) * magnitude);
 }
@@ -56,7 +56,7 @@ function renderDialog(): void {
       <div data-tip="Radius around the marker, in the map's distance unit — markers inside it are listed and shown on the map">
         <span class="label" style="display:inline">Radius:</span>
         <input id="markersRadiusValue" type="number" min="1" step="1" value="${getRadius()}" style="width:6em" />
-        <span>${Options.units.distance.unit}</span>
+        <span>${options.units.distance.unit}</span>
       </div>
 
       <div class="label" style="margin-top:.4em">In range: <span id="markersRadiusCount">0</span></div>
@@ -85,7 +85,7 @@ function onRadiusChange(this: HTMLInputElement): void {
 function applyRadius(distance: number): void {
   if (!center) return;
 
-  const radiusPx = distance / Options.units.distance.scale;
+  const radiusPx = distance / options.units.distance.scale;
   drawMarkerRadius(center.x, center.y, radiusPx);
 
   const inRange = pack.markers.filter(marker => Math.hypot(marker.x - center!.x, marker.y - center!.y) <= radiusPx);

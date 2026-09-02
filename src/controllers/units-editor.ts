@@ -54,7 +54,7 @@ function changeDistanceUnit(this: HTMLSelectElement): void {
 }
 
 function changeDistanceScale(this: HTMLInputElement): void {
-  Options.units.distance.scale = +this.value;
+  options.units.distance.scale = +this.value;
   Layers.draw("scaleBar");
   calculateFriendlyGridSize();
 }
@@ -79,15 +79,15 @@ function changeTemperatureScale(): void {
 }
 
 function changePopulationRate(this: HTMLInputElement): void {
-  Options.units.population.scale = +this.value;
+  options.units.population.scale = +this.value;
 }
 
 function changeUrbanizationRate(this: HTMLInputElement): void {
-  Options.units.population.urbanization.rate = +this.value;
+  options.units.population.urbanization.rate = +this.value;
 }
 
 function changeUrbanDensity(this: HTMLInputElement): void {
-  Options.units.population.urbanization.density = +this.value;
+  options.units.population.urbanization.density = +this.value;
 }
 
 function restoreDefaultUnits(): void {

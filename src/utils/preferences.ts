@@ -3,7 +3,7 @@ import { findEl } from "@/utils";
 import { safeParseJSON } from "@/utils/stringUtils";
 
 /* The options the user pinned */
-export const LOCKS_KEY = "locks";
+export const LOCKS_KEY = "fmg-locks";
 
 export function stored(key: string): string | null {
   return localStorage.getItem(key) || null;

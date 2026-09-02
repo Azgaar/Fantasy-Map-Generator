@@ -76,8 +76,8 @@ export const drawRouteConnections = (packedGraph: any): void => {
  * Drawing a point for debugging purposes
  * @param {[number, number]} point - The [x, y] coordinates of the point to draw
  * @param {Object} options - Options for drawing the point
- * @param {string} Options.color - Color of the point
- * @param {number} Options.radius - Radius of the point
+ * @param {string} options.color - Color of the point
+ * @param {number} options.radius - Radius of the point
  */
 export const drawPoint = ([x, y]: [number, number], { color = "red", radius = 0.5 }): void => {
   select("#debug").append("circle").attr("cx", x).attr("cy", y).attr("r", radius).attr("fill", color);
@@ -87,8 +87,8 @@ export const drawPoint = ([x, y]: [number, number], { color = "red", radius = 0.
  * Drawing a path for debugging purposes
  * @param {[number, number][]} points - Array of [x, y] coordinates representing the path
  * @param {Object} options - Options for drawing the path
- * @param {string} Options.color - Color of the path
- * @param {number} Options.width - Stroke width of the path
+ * @param {string} options.color - Color of the path
+ * @param {number} options.width - Stroke width of the path
  */
 export const drawPath = (points: [number, number][], { color = "red", width = 0.5 }): void => {
   const lineGen = line().curve(curveBundle);
