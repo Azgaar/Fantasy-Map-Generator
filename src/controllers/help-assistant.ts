@@ -4,7 +4,8 @@
 
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import type { Limits } from "@/services/help/api";
-import { ask, getLimits, HelpApiError, OFFICIAL_ORIGIN } from "@/services/help/api";
+import { ask, getLimits, HelpApiError, OFFICIAL_ORIGIN, signIn, signOut } from "@/services/help/api";
+import { getToken } from "@/services/help/auth";
 import { renderMarkdown } from "@/utils/markdown";
 import { ensureEl } from "../utils";
 
@@ -90,6 +91,7 @@ function renderDialog(): void {
       placeholder="e.g. How do I export my map as SVG?"></textarea>
     <div class="helpAssistantFooter">
       <span id="helpAssistantLimits"></span>
+      <span id="helpAssistantAuth"></span>
       <button id="helpAssistantAsk">Ask</button>
     </div>
     <div class="helpAssistantDisclosure">Questions are kept for 90 days to help improve the documentation.</div>`;
@@ -237,12 +239,46 @@ function applyNotice(notice: WidgetNotice, error: HelpApiError, question: string
   }, 1000);
 }
 
+// Sign-in is shown only on the exact official origin (or DEV, where the stub closes the
+// loop) — NOT via isOfficialOrigin(): a staging build widens that gate, and sign-in from
+// staging would land the user on production with their token (server redirect is fixed).
+const canSignIn = (): boolean => import.meta.env.DEV || location.origin === OFFICIAL_ORIGIN;
+
+function renderAuth(tier: string): void {
+  const host = document.getElementById("helpAssistantAuth");
+  if (!host) return;
+  host.textContent = "";
+
+  if (tier === "anonymous") {
+    if (!canSignIn()) return;
+    const button = document.createElement("button");
+    button.textContent = "Sign in with Discord for more";
+    button.addEventListener("click", signIn);
+    host.appendChild(button);
+    return;
+  }
+
+  const label = document.createElement("span");
+  label.textContent = `Signed in (${tier}) · `;
+  const out = document.createElement("a");
+  out.href = "#";
+  out.textContent = "Sign out";
+  out.addEventListener("click", event => {
+    event.preventDefault();
+    void signOut().then(() => refreshLimits());
+  });
+  host.appendChild(label);
+  host.appendChild(out);
+}
+
 async function refreshLimits(): Promise<void> {
   try {
     const limits = await getLimits();
     ensureEl("helpAssistantLimits").textContent = limitsLabel(limits);
+    renderAuth(limits.tier);
   } catch {
     // limits are a nicety; asking still reports the authoritative state
+    if (!getToken()) renderAuth("anonymous");
   }
 }
 

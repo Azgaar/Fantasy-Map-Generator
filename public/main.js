@@ -116,6 +116,15 @@ d3.select("#oceanLayers")
   .attr("height", graphHeight);
 
 document.addEventListener("DOMContentLoaded", async () => {
+  // OAuth callback from the help gateway: stash the fragment token and scrub the URL.
+  // Storage key must match TOKEN_STORAGE in src/services/help/auth.ts.
+  if (location.hash.startsWith("#token=")) {
+    try {
+      localStorage.setItem("fmg-help-token", location.hash.slice("#token=".length));
+    } catch {}
+    history.replaceState(null, "", location.pathname + location.search);
+  }
+
   // binds the zoom behaviour and its handlers (see src/components/viewbox-events.ts), so it has to
   // run before checkLoadParameters - deep links (MFCG, a stored view position) zoom the map on load
   applyDefaultViewboxEvents();
