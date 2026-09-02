@@ -1,9 +1,11 @@
 import { applyGraphSize, fitMapToScreen } from "@/components/canvas";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
+import { registerMap } from "@/components/lifecycle";
 import { cellsDensityColor, changeCellsDensity } from "@/components/options/tabs/options-tab";
 import { CELLS_BY_DENSITY } from "@/components/options-store";
 import { Resample } from "@/generators/resample";
+import { logStats } from "@/services/logging";
 import { ensureEl, rn } from "../utils";
 
 let mouseIsDown = false;
@@ -208,6 +210,9 @@ function transformMap(): void {
   Resample.process({ projection, inverse, scale: 1 });
 
   Layers.drawAll();
+
+  registerMap(); // a transformed map is a new map: it gets its own id and history entry
+  logStats();
 
   INFO && console.groupEnd();
 }

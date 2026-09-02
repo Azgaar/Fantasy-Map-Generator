@@ -500,8 +500,6 @@ class Resampler {
         label: { ...addedLabel.label, pathPoints: addedLabel.label.pathPoints?.map(([x, y]) => projection(x, y)) }
       };
     });
-
-    logStats();
   }
 }
 

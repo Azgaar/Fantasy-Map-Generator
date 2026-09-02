@@ -2,7 +2,7 @@ import { select } from "d3";
 import { fitMapToScreen } from "@/components/canvas";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
-import { getMapHistory, setMapId } from "@/components/lifecycle";
+import { getMapHistory, registerMap } from "@/components/lifecycle";
 import { syncInputs } from "@/components/options/tabs/options-tab";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -11,7 +11,7 @@ import { invalidateEmblems } from "@/renderers/draw-emblems";
 import { clearLegend } from "@/renderers/draw-legend";
 import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
-import { logStats } from "@/services/stats";
+import { logStats } from "@/services/logging";
 import { clearCache, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
 import { ensureEl, escapeHtml, last, link, parseError, rn, safeParseJSON } from "@/utils";
 
@@ -52,7 +52,8 @@ async function createSharableDropboxLink(): Promise<void> {
 }
 
 function loadMapPrompt(blob: Blob): void {
-  const workingTime = (Date.now() - last(getMapHistory()).created) / 60000; // minutes
+  const current = last(getMapHistory());
+  const workingTime = current ? (Date.now() - current.created) / 60000 : 0; // minutes
   if (workingTime < 5) {
     loadLastSavedMap();
     return;
@@ -243,6 +244,8 @@ function showUploadMessage(type: string, mapData: string[] | null, mapVersion: s
 }
 
 async function parseLoadedData(data: string[], mapVersion: string | null): Promise<void> {
+  let isLogGroupOpen = false;
+
   try {
     const { migrateLegacySettings, resolveVersionConflicts } = await import("./auto-update"); // TODO: don't load if not required
 
@@ -251,14 +254,15 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     if (ensureEl("customizationMenu").offsetParent) ensureEl("styleTab").click();
 
     migrateLegacySettings(mapVersion!, data);
-    if (data[1]) Options.restore(JSON.parse(data[1]));
-    Options.persist();
+    const settings = data[1] ? safeParseJSON(data[1]) : null;
+    if (!settings) throw new Error("Map settings are missing or malformed");
+    Options.restore(settings);
     syncInputs();
 
-    setMapId(+data[0].split("|")[6] || Date.now());
-    stylePreset.value = "default"; // the styles are restored below, the preset name is not saved
+    setStylePresetSelect();
 
     INFO && console.group(options.seed ? `Loaded Map ${options.seed}` : "Loaded Map");
+    isLogGroupOpen = true;
 
     ensureEl<HTMLInputElement>("shapeRendering").value =
       select("#viewbox").attr("shape-rendering") || "geometricPrecision";
@@ -672,6 +676,9 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     fitMapToScreen();
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - uploadTimeStart) / 1000, 2)}s`);
+
+    const loadedMapId = +data[0].split("|")[6] || Date.now();
+    registerMap(loadedMapId);
     logStats();
     tip("Map is successfully loaded", true, "success", 7000);
   } catch (error) {
@@ -702,7 +709,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       position: { my: "center", at: "center", of: "svg" }
     });
   } finally {
-    INFO && console.groupEnd();
+    if (isLogGroupOpen) console.groupEnd();
   }
 }
 

@@ -1,10 +1,12 @@
 import { applyGraphSize, fitMapToScreen } from "@/components/canvas";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
+import { registerMap } from "@/components/lifecycle";
 import { cellsDensityColor, changeCellsDensity } from "@/components/options/tabs/options-tab";
 import { CELLS_BY_DENSITY } from "@/components/options-store";
 import { viewport } from "@/components/viewport";
 import { Resample } from "@/generators/resample";
+import { logStats } from "@/services/logging";
 import { getLatitude, getLongitude } from "@/utils";
 import { ensureEl, minmax, rn } from "../utils";
 
@@ -95,6 +97,9 @@ function generateSubmap(): void {
 
   if (ensureEl<HTMLInputElement>("submapRescaleBurgStyles").checked) rescaleBurgStyles(scale);
   Layers.drawAll();
+
+  registerMap(); // a submap is a new map: it gets its own id and history entry
+  logStats();
 
   INFO && console.groupEnd();
 }

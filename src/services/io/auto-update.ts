@@ -635,17 +635,6 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     }
   }
 
-  if (isOlderThan("1.72.0")) {
-    // v1.72 renamed custom style presets
-    const storedStyles = Object.keys(localStorage).filter(key => key.startsWith("style"));
-    storedStyles.forEach(styleName => {
-      const style = localStorage.getItem(styleName)!;
-      const newStyleName = styleName.replace(/^style/, customPresetPrefix);
-      localStorage.setItem(newStyleName, style);
-      localStorage.removeItem(styleName);
-    });
-  }
-
   if (isOlderThan("1.73.0")) {
     // v1.73 moved the hatching patterns out of the user's SVG
     document.getElementById("hatching")?.remove();
@@ -1862,6 +1851,7 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
   if (oldSettings[12]) migrated.units.population.scale = +oldSettings[12];
   if (oldSettings[13]) migrated.units.population.urbanization.rate = +oldSettings[13];
   if (oldSettings[20]) migrated.lore.name = oldSettings[20];
+  if (oldSettings[22]) migrated.style.preset = oldSettings[22];
   if (oldSettings[24]) migrated.units.population.urbanization.density = +oldSettings[24];
   if (oldSettings[26]) migrated.cultures.growthRate = +oldSettings[26];
   if (oldSettings[26]) migrated.states.growthRate = +oldSettings[26];

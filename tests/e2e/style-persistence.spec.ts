@@ -16,6 +16,7 @@ declare const Services: {
   Save: { saveMap: (method: string) => Promise<void>; prepareMapData: () => string | Promise<string> };
 };
 declare const styles: any;
+declare const options: any;
 
 function readPreset(name: string): any {
   return JSON.parse(fs.readFileSync(path.join(__dirname, `../../public/styles/${name}.json`), "utf8"));
@@ -66,6 +67,38 @@ test.describe("style persistence round trips", () => {
 
     expect(after.store).toBe(expectedFill);
     expect(after.dom).toBe(expectedFill);
+
+    // the name travels with the map, so the Style tab shows which preset the styles came from
+    const preset = await page.evaluate(() => ({
+      option: options.style.preset,
+      select: (document.getElementById("stylePreset") as HTMLSelectElement).value
+    }));
+    expect(preset).toEqual({ option: "ancient", select: "ancient" });
+  });
+
+  test("a legacy map's preset name is migrated out of the pipe string and into the options", async ({
+    page,
+    context
+  }) => {
+    await context.clearCookies();
+    await page.goto("/");
+    await page.evaluate(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
+    await waitForMap(page);
+    const mapsBefore = await countMaps(page);
+
+    // up to v1.151.0 the preset name was settings[22] of the pipe string; this fixture holds "cyberpunk"
+    await page.locator("#mapToLoad").setInputFiles(path.join(__dirname, "../fixtures/1.112.1.map"));
+    await expect(page.locator("#tooltip")).toContainText("Map is successfully loaded", { timeout: 120000 });
+    await waitForNextMap(page, mapsBefore);
+
+    const preset = await page.evaluate(() => ({
+      option: options.style.preset,
+      select: (document.getElementById("stylePreset") as HTMLSelectElement).value
+    }));
+    expect(preset).toEqual({ option: "cyberpunk", select: "cyberpunk" });
   });
 
   test("a DOM-only style write does not survive a save and load: the store is the authority", async ({

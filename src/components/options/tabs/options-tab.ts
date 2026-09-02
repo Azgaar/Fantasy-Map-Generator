@@ -10,6 +10,7 @@ import { heightmapTemplates } from "@/data/heightmap-templates";
 import { precreatedHeightmaps } from "@/data/precreated-heightmaps";
 import { CULTURE_SETS, Cultures } from "@/generators/cultures-generator";
 import { Emblems } from "@/generators/emblems-generator";
+import { Names } from "@/generators/names-generator";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { toggleAssistant } from "@/services/assistant";
 import { copyMapURL } from "@/services/url-params";
@@ -97,7 +98,7 @@ const TEMPLATE = /* html */ `
         />
       </td>
       <td>
-        <i data-tip="Regenerate map name" onclick="Names.getMapName(true)" class="icon-arrows-cw"></i>
+        <i data-tip="Regenerate map name" id="optionsMapNameRegenerate" class="icon-arrows-cw"></i>
       </td>
     </tr>
     <tr data-tip="Define current year and era name">
@@ -597,6 +598,7 @@ function addListeners(): void {
     else if (target.id === "optionsMapHistory") showSeedHistoryDialog();
     else if (target.id === "optionsCopySeed") copyMapURL();
     else if (target.id === "optionsEraRegenerate") regenerateEra();
+    else if (target.id === "optionsMapNameRegenerate") regenerateMapName();
     else if (target.id === "templateInputContainer") Controllers.HeightmapSelection.open();
     else if (target.id === "zoomExtentDefault") restoreDefaultZoomExtent();
     else if (target.id === "translateExtent") toggleTranslateExtent(target);
@@ -648,9 +650,13 @@ function watchInputs(): void {
     // an input event is a drag in progress: apply it, but wait for the change event to keep it
     if (event.type !== "change") return void (isOption(key) && apply(options));
 
-    lock(key); // the user set it by hand: keep the value on the next map
-    if (isOption(key)) Options.set(apply);
-    else store(key, target.value); // interface preferences are not part of the options
+    if (isOption(key)) {
+      lock(key); // the user set it by hand: keep the value on the next map
+      Options.set(apply);
+    } else {
+      // an interface preference is not a map option: it keeps a key of its own and has no lock
+      store(key, target.value);
+    }
   };
 
   for (const rootId of ["options", "dialogs"]) {
@@ -794,6 +800,12 @@ function changeEra(): void {
   if (!value) return;
   lock("era");
   Options.set(o => (o.lore.calendar.era = value));
+}
+
+function regenerateMapName(): void {
+  Names.getMapName(true); // writes options.lore.name, and unpins the name if the user had pinned it
+  Options.persist();
+  syncInputs();
 }
 
 function regenerateEra(): void {
@@ -972,7 +984,8 @@ export function restoreUi(): void {
     const key = localStorage.key(i);
     if (!key || key === "speakerVoice") continue;
 
-    // saved style presets are listed as options of the preset select
+    // custom presets predating the fmgStyle_ prefix kept a "style<Name>" key of their own; today's
+    // are listed by public/modules/ui/style-presets.js when it builds the select
     if (key.startsWith("style")) {
       applyOption(stylePreset, key, key.slice(5));
       continue;

@@ -74,16 +74,16 @@ function getDefaultOptions() {
     religions: { limit: 6 },
     burgs: {
       limit: 1000, // 1000 means "auto"
-      showMapPreview: true,
       groups: Burgs.getDefaultGroups()
     },
     units: {
       distance: { unit: navigator.language === "en-US" ? "mi" : "km", scale: 3 },
       area: { unit: "square" },
-      height: { unit: navigator.language === "en-US" ? "ft" : "m", exponent: 1.8 },
+      height: { unit: navigator.language === "en-US" ? "ft" : "m", exponent: 2 },
       temperature: { unit: navigator.language === "en-US" ? "°F" : "°C" },
       population: { scale: 1000, urbanization: { rate: 1, density: 10 } }
     },
+    style: { preset: "default" },
     labels: Labels.getDefaultOptions(),
     notes: { pinned: false },
     emblems: { showAll: false },

@@ -37,5 +37,3 @@ export function unfog(id?: string): void {
 
   Layers.draw("fogging");
 }
-
-// legacy seam:

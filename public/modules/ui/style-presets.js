@@ -29,13 +29,22 @@ const customPresetPrefix = "fmgStyle_";
 }
 
 async function applyStyleOnLoad() {
-  const desiredPreset = localStorage.getItem("presetStyle") || "default";
-  const styleData = await getStylePreset(desiredPreset);
+  const styleData = await getStylePreset(options.style.preset || "default");
   const [appliedPreset, style] = styleData;
 
   applyStylePreset(style);
   updateMapFilter();
-  stylePreset.value = stylePreset.dataset.old = appliedPreset;
+  Options.set(o => (o.style.preset = appliedPreset)); // the fallback preset, if the stored one is gone
+  setStylePresetSelect();
+}
+
+// the select follows options.style.preset: a preset this browser doesn't have falls back to default
+function setStylePresetSelect() {
+  const preset = options.style.preset || "default";
+  const isKnown = Array.from(stylePreset.options).some(option => option.value === preset);
+  if (!isKnown) Options.set(o => (o.style.preset = "default"));
+
+  stylePreset.value = stylePreset.dataset.old = isKnown ? preset : "default";
   setPresetRemoveButtonVisibiliy();
 }
 
@@ -146,7 +155,7 @@ function requestStylePresetChange(preset) {
 async function changeStyle(desiredPreset) {
   const styleData = await getStylePreset(desiredPreset);
   const [presetName, style] = styleData;
-  localStorage.setItem("presetStyle", presetName);
+  Options.set(o => (o.style.preset = presetName));
   applyStyleWithUiRefresh(style);
 }
 
@@ -154,12 +163,11 @@ function applyStyleWithUiRefresh(style) {
   applyStylePreset(style);
   selectStyleElement(); // re-select element to trigger values update
   updateMapFilter();
-  stylePreset.dataset.old = stylePreset.value;
+  setStylePresetSelect();
 
   Layers.drawAll(); // a style change can affect any layer, so redraw the active ones
 
   invokeActiveZooming();
-  setPresetRemoveButtonVisibiliy();
 }
 
 let isSaveStyleInitialized = false;
@@ -208,7 +216,7 @@ function addStylePreset() {
 
     const presetName = customPresetPrefix + desiredName;
     applyOption(stylePreset, presetName, desiredName + " [custom]");
-    localStorage.setItem("presetStyle", presetName);
+    Options.set(o => (o.style.preset = presetName));
     localStorage.setItem(presetName, styleJSON);
 
     applyStyleWithUiRefresh(JSON.parse(styleJSON));
@@ -257,7 +265,6 @@ function requestRemoveStylePreset() {
 }
 
 function removeStylePreset() {
-  localStorage.removeItem("presetStyle");
   localStorage.removeItem(stylePreset.value);
   stylePreset.selectedOptions[0].remove();
 

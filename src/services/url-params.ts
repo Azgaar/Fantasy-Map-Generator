@@ -20,6 +20,12 @@ const searchParams = () => new URL(window.location.href).searchParams;
 export async function checkLoadParameters(): Promise<void> {
   const params = searchParams();
 
+  // search params win over both stored and default values
+  const width = +(params.get("width") ?? 0);
+  const height = +(params.get("height") ?? 0);
+  if (width) options.graph.width = width;
+  if (height) options.graph.height = height;
+
   const maplink = params.get("maplink");
   if (maplink) {
     WARN && console.warn("Load map from URL");

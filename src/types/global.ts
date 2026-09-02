@@ -49,8 +49,8 @@ declare global {
 
   // Still defined in public/modules/ui/style-presets.js
   var applyStyleOnLoad: () => Promise<void>;
+  var setStylePresetSelect: () => void;
   var applyStoredStyles: any;
-  var customPresetPrefix: string;
 
   // Vendored libraries, each loaded by its own <script> tag in index.html
   var $: (selector: any) => any; // jQuery + jQuery UI
@@ -74,5 +74,4 @@ declare global {
 }
 
 export type Point = [number, number];
-
-export type Note = { id: string; name?: string; legend: string };
+export type Note = { id: string; name: string; legend: string };

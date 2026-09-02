@@ -8,7 +8,10 @@ import { resolveVersionConflicts } from "./auto-update";
 beforeEach(() => {
   document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox"></g></svg>`;
   localStorage.clear();
-  globalThis.options = { labels: { groups: [] } } as unknown as typeof globalThis.options;
+  globalThis.options = {
+    labels: { groups: [] },
+    style: { preset: "default" }
+  } as unknown as typeof globalThis.options;
   globalThis.pack = { features: [] } as unknown as typeof globalThis.pack; // migrations run against a loaded map
   (globalThis as typeof globalThis & { getStylePreset: () => Promise<[string, object]> }).getStylePreset = async () => [
     "default",

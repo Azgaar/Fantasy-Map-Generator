@@ -182,6 +182,11 @@ export const drawHeightmap = (): void => {
       if (v[0] !== prev && c0 !== c1) current = v[0];
       else if (v[1] !== prev && c1 !== c2) current = v[1];
       else if (v[2] !== prev && c0 !== c2) current = v[2];
+      // a hull half-edge has no opposite triangle, so `vertices.v` holds -1 for it
+      if (current < 0 || current >= vertices.c.length) {
+        ERROR && console.error("Next vertex is out of bounds");
+        break;
+      }
       if (current === chain[chain.length - 1]) {
         ERROR && console.error("Next vertex is not found");
         break;

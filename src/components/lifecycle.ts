@@ -15,9 +15,8 @@ import { Controllers } from "@/controllers";
 import { GenerationPipeline } from "@/generators/generation-pipeline";
 import { unfog } from "@/renderers/overlays/fogging";
 import { initiateAutosave } from "@/services/autosave";
+import { logStats } from "@/services/logging";
 import { registerServiceWorker } from "@/services/platform";
-import { logStats } from "@/services/stats";
-import { migrateStoredOptions } from "@/services/storage-migration";
 import { checkLoadParameters } from "@/services/url-params";
 import { cleanupData } from "@/services/versioning";
 import type { GridGraph } from "@/types/GridGraph";
@@ -37,31 +36,30 @@ const mapHistory: MapHistoryEntry[] = [];
 export const getMapId = (): number => mapId;
 export const getMapHistory = (): readonly MapHistoryEntry[] => mapHistory;
 
-export function setMapId(id: number): void {
+/** Take note of a map that is now on screen: a generated one is dated now, a loaded one keeps its own id */
+export function registerMap(id: number = Date.now()): void {
   mapId = id;
-}
-
-export function recordMapInHistory(entry: MapHistoryEntry): void {
-  mapHistory.push(entry);
-  const mapsGenerated = mapHistory.length;
-  window.mapsGenerated = mapsGenerated;
-  window.dispatchEvent(new CustomEvent("map:generated", { detail: { seed: entry.seed, mapsGenerated } }));
+  mapHistory.push({
+    seed: options.seed,
+    width: options.graph.width,
+    height: options.graph.height,
+    template: options.heightmap.template,
+    created: mapId
+  });
+  window.mapsGenerated = mapHistory.length;
+  window.dispatchEvent(
+    new CustomEvent("map:generated", { detail: { seed: options.seed, mapId, mapsGenerated: mapHistory.length } })
+  );
 }
 
 /** Bring the app up */
 export async function boot(): Promise<void> {
   registerServiceWorker();
 
-  migrateStoredOptions(); // an older browser keeps a key per option: fold them into one object
   Options.restoreStored(); // the options of the last session, then the search params
   syncInputs(); // options are the source of truth, the inputs only display them
   restoreUi(); // the tab's own restore: locks, style presets, theme, ui size
-
-  // the svg canvas starts at the configured map size, then follows the window
   setViewportSize(options.graph.width, options.graph.height);
-
-  // binds the zoom behaviour and its handlers (see components/viewbox-events.ts), so it has to run
-  // before checkLoadParameters - deep links (MFCG, a stored view position) zoom the map on load
   applyDefaultViewboxEvents();
 
   if (!warnIfServerless()) {
@@ -83,10 +81,10 @@ export async function generate(config?: GenerationConfig): Promise<void> {
     applyGraphSize();
 
     await GenerationPipeline.run({ seed: precreatedSeed, graph: precreatedGraph });
-    mapId = Date.now();
 
     syncInputs(); // after the pipeline: it names the map, which the panel shows
     Options.persist(); // what was generated is what the next session starts from
+    registerMap(); // a generated map's id is the moment it was generated
     logStats();
     invokeActiveZooming();
   } catch (error) {
@@ -118,7 +116,8 @@ export async function generate(config?: GenerationConfig): Promise<void> {
 
 /** Replace the current map with a new one. Debounced: the hotkey and the button both fire it */
 export const regenerateMap = debounce(async (config?: GenerationConfig | string) => {
-  WARN && console.warn("Generate new random map");
+  const reason = typeof config === "string" ? config : "user request";
+  WARN && console.warn(`Generate new random map: ${reason}`);
 
   // a big grid takes long enough that the splash is worth showing
   const shouldShowLoading = options.graph.cellsDesired > 10000;
@@ -146,7 +145,8 @@ export function regeneratePrompt(config?: GenerationConfig): void {
     return;
   }
 
-  const workingMinutes = (Date.now() - last(mapHistory).created) / 60000;
+  const current = last(mapHistory);
+  const workingMinutes = current ? (Date.now() - current.created) / 60000 : 0;
   if (workingMinutes < 1) {
     regenerateMap(config);
     return;
@@ -175,6 +175,7 @@ export function undraw(): void {
 
 declare global {
   interface Window {
+    mapId: number;
     mapsGenerated: number;
   }
   // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy JS

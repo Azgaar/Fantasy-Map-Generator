@@ -1,35 +1,50 @@
 import { curveBasisClosed, line } from "d3";
 import { Ocean } from "@/generators/ocean-generator";
 import { rn, round } from "@/utils";
-import { createEl, ensureEl } from "@/utils/nodeUtils";
+import { ensureEl } from "@/utils/nodeUtils";
 
 /**
  * The two full-graph rects the rings are drawn over: the textured pattern fill and the flat base
- * colour. Created on first draw and resized on every one, so the map can be generated without them
+ * colour. The ocean layer is permanent, so both are in place from the first draw onwards; each
+ * draw re-sizes them, which is what keeps them covering the graph after a canvas resize
  */
 function drawOceanBase(): void {
-  const patternRect = ensureFullGraphRect(ensureEl("oceanPattern"), "oceanPatternRect");
-  patternRect.setAttribute("fill", "url(#oceanic)");
+  const pattern = ensureEl("oceanPattern");
+  const patternRect =
+    pattern.querySelector<SVGRectElement>(":scope > rect") ??
+    prepend(pattern, createSvgRect({ fill: "url(#oceanic)" }));
+  sizeToGraph(patternRect);
 
-  const baseRect = ensureFullGraphRect(ensureEl("oceanLayers"), "oceanBase");
-  baseRect.dataset.group = "base"; // the style store addresses it by group
+  const layers = ensureEl("oceanLayers");
+  const baseRect =
+    layers.querySelector<SVGRectElement>("#oceanBase") ??
+    prepend(layers, createSvgRect({ id: "oceanBase", "data-group": "base" })); // the style store addresses it by group
+  sizeToGraph(baseRect);
+
   // the rect is born after the startup Styles.write, so it has to take its own fill from the store
   const { fill } = styles.ocean.base.attrs;
   if (fill === null) baseRect.removeAttribute("fill");
   else baseRect.setAttribute("fill", fill);
 }
 
-/** find or create a rect covering the whole graph, kept below whatever else the group holds */
-function ensureFullGraphRect(parent: HTMLElement, id: string): SVGRectElement {
-  const existing = parent.querySelector<SVGRectElement>(`#${id}`);
-  const rect = existing ?? createEl<SVGRectElement>("rect", id);
-  if (!existing) parent.prepend(rect);
+/** a rect with its attributes in the given order: the saved svg is compared attribute by attribute */
+function createSvgRect(attrs: Record<string, string>): SVGRectElement {
+  const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+  for (const [name, value] of Object.entries(attrs)) rect.setAttribute(name, value);
+  return rect;
+}
 
+/** keep the rect below whatever else the group holds */
+function prepend(parent: Element, rect: SVGRectElement): SVGRectElement {
+  parent.prepend(rect);
+  return rect;
+}
+
+function sizeToGraph(rect: SVGRectElement): void {
   rect.setAttribute("x", "0");
   rect.setAttribute("y", "0");
   rect.setAttribute("width", String(options.graph.width));
   rect.setAttribute("height", String(options.graph.height));
-  return rect;
 }
 
 /** the ocean outline rings, stacked from the coast outwards so the overlap deepens the shade */
@@ -56,7 +71,7 @@ export function drawOcean(): void {
   TIME && console.timeEnd("drawOcean");
 }
 
-/** drop the rings, keeping #oceanBase: the base rect is created once, at startup */
+/** drop the rings, keeping the two full-graph rects drawOceanBase owns */
 export function removeOcean(): void {
   for (const path of Array.from(document.querySelectorAll("#oceanLayers path"))) path.remove();
 }

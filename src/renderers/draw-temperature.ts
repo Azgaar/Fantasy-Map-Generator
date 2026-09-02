@@ -43,11 +43,11 @@ const temperatureRenderer = (): void => {
     const t = cells.temp[cellId];
     if (checkedCells[cellId] || !isolines.includes(t)) continue;
 
-    const startingVertex = findStart(cellId, t);
-    if (!startingVertex) continue;
-    checkedCells[cellId] = 1;
-
     const ofSameType = (cellId: number) => cells.temp[cellId] >= t;
+
+    const startingVertex = findStart(cellId, ofSameType);
+    if (startingVertex === undefined) continue;
+    checkedCells[cellId] = 1;
     const chain = connectVertices({
       vertices,
       startingVertex,
@@ -92,10 +92,10 @@ const temperatureRenderer = (): void => {
     .attr("y", d => d[1])
     .text(d => convertTemperature(d[2], scale));
 
-  // find cell with temp < isotherm and find vertex to start path detection
-  function findStart(i: number, t: number): number | undefined {
+  // find a vertex of the cell that lies on the isotherm, i.e. one that touches a colder cell
+  function findStart(i: number, ofSameType: (cellId: number) => boolean): number | undefined {
     if (cells.b[i]) return cells.v[i].find((v: number) => vertices.c[v].some((c: number) => c >= n)); // map border cell
-    return cells.v[i][cells.c[i].findIndex((c: number) => cells.temp[c] < t || !cells.temp[c])];
+    return cells.v[i].find((v: number) => vertices.c[v].some((c: number) => !ofSameType(c)));
   }
 
   function addLabel(points: [number, number][], t: number): void {

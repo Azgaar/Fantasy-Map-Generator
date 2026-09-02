@@ -87,7 +87,11 @@ test.describe("layer content on hide and show", () => {
     await expect(fogging).toBeVisible();
     expect(await rects.count()).toBe(2);
 
-    await page.evaluate(() => (window as any).unfog());
+    // clearing the last revealed shape empties the overlay, the way unfog() does on a focus reset
+    await page.evaluate(() => {
+      document.querySelectorAll("#fog path").forEach(path => path.remove());
+      (window as any).Layers.draw("fogging");
+    });
     expect(await rects.count()).toBe(0); // no revealed area left: the overlay empties itself
   });
 });

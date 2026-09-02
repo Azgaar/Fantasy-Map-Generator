@@ -30,20 +30,11 @@ export class OptionsModel {
   restoreStored(): void {
     this.restore(readStored());
 
-    // search params win over both stored and default values
-    const params = new URL(window.location.href).searchParams;
-    const width = +(params.get("width") ?? 0);
-    const height = +(params.get("height") ?? 0);
-    if (width) options.graph.width = width;
-    if (height) options.graph.height = height;
+    if (!isLocked("mapWidth")) options.graph.width = window.innerWidth;
+    if (!isLocked("mapHeight")) options.graph.height = window.innerHeight;
 
-    // a zero-sized window (hidden or headless tab) would produce a degenerate grid
-    if (!isLocked("mapWidth") || !isLocked("mapHeight")) {
-      options.graph.width = window.innerWidth || 1280;
-      options.graph.height = window.innerHeight || 800;
-    }
-    if (options.graph.width <= 0) options.graph.width = 1280;
-    if (options.graph.height <= 0) options.graph.height = 800;
+    if (!(options.graph.width > 0)) options.graph.width = 1280;
+    if (!(options.graph.height > 0)) options.graph.height = 800;
   }
 
   /** Adopt a stored settings object, without remembering it: the caller decides what to store */
@@ -113,6 +104,7 @@ export class OptionsModel {
   shortEra(): string {
     return options.lore.calendar.era
       .split(" ")
+      .filter(Boolean)
       .map(word => word[0].toUpperCase())
       .join("");
   }

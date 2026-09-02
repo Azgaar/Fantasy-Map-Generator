@@ -662,7 +662,8 @@ Profile real maps at large cell counts and optimise the measured bottleneck.
 Settings, options, and style panels are a large share of the app's surface — and a
 large share of its memory cost. The configuration _data_
 is **State**, and the panels that edit it are **Controllers** (a settings subtype beside
-editors and overviews).
+editors and overviews). How the map config object is stored, persisted, locked, randomized and
+migrated today is described in [options.md](./options.md).
 
 ## Configuration is state, not the DOM
 

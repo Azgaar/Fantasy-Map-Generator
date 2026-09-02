@@ -9,12 +9,12 @@ import { ensureEl, findEl } from "@/utils";
 import { isLocked } from "@/utils/preferences";
 import { fitMapToScreen } from "./canvas";
 
-/** Keep the map canvas in sync with the window unless the user pinned a map size */
+/** Keep the map canvas in sync with the window, dimension by dimension, unless the user pinned it */
 function onResize(): void {
   if (isLocked("mapWidth") && isLocked("mapHeight")) return;
 
-  options.graph.width = window.innerWidth;
-  options.graph.height = window.innerHeight;
+  if (!isLocked("mapWidth")) options.graph.width = window.innerWidth;
+  if (!isLocked("mapHeight")) options.graph.height = window.innerHeight;
   syncInputs();
   fitMapToScreen();
 }
