@@ -242,14 +242,22 @@ export function buildFeedbackControl(requestId: number): HTMLElement {
     button.type = "button";
     button.textContent = rating === "up" ? "👍" : "👎";
     button.setAttribute("aria-label", rating === "up" ? "Good answer" : "Bad answer");
+    button.setAttribute("aria-pressed", "false");
     button.addEventListener("click", () => {
       const previous = row.querySelector(".selected");
       previous?.classList.remove("selected");
+      previous?.setAttribute("aria-pressed", "false");
       button.classList.add("selected");
+      button.setAttribute("aria-pressed", "true");
       // a failed post is a silent nicety-miss: revert the selection, never a widget state
-      sendFeedback(requestId, rating).catch(() => {
+      sendFeedback(requestId, rating).catch((error: unknown) => {
         button.classList.remove("selected");
+        button.setAttribute("aria-pressed", "false");
         previous?.classList.add("selected");
+        previous?.setAttribute("aria-pressed", "true");
+        // the shared transport already cleared the token on a 401 — resync the footer
+        // instead of leaving it stuck claiming "Signed in"
+        if (error instanceof HelpApiError && error.code === "unauthorized") void refreshLimits();
       });
     });
     row.appendChild(button);

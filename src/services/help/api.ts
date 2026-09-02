@@ -109,13 +109,18 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
   throw new HelpApiError(code, message, retryAfter);
 }
 
-export const ask = (question: string, conversationId?: string): Promise<AskResponse> =>
-  request<AskResponse>("/v1/ask", {
+export const ask = async (question: string, conversationId?: string): Promise<AskResponse> => {
+  const result = await request<AskResponse>("/v1/ask", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     // exact schema: the field is present or absent, never null
     body: JSON.stringify(conversationId ? { question, conversationId } : { question })
   });
+  // /v1/ask is contractually always-bodied on a 200; a bodyless 204 (the transport's
+  // shortcut resolves undefined) is a contract violation, not a silent empty answer.
+  if (!result) throw new HelpApiError("provider_error", "The assistant returned an unreadable response.");
+  return result;
+};
 
 export type FeedbackRating = "up" | "down";
 

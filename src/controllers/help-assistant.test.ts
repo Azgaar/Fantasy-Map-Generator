@@ -92,16 +92,19 @@ describe("buildFeedbackControl", () => {
     const buttons = row.querySelectorAll("button");
     expect(buttons.length).toBe(2);
     expect(row.querySelector(".selected")).toBeNull();
+    for (const button of Array.from(buttons)) expect(button.getAttribute("aria-pressed")).toBe("false");
   });
 
   it("marks the clicked rating selected and posts it", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
     vi.stubGlobal("fetch", fetchMock);
     const row = buildFeedbackControl(41);
-    const [up] = Array.from(row.querySelectorAll("button"));
+    const [up, down] = Array.from(row.querySelectorAll("button"));
     up.click();
     await Promise.resolve();
     expect(up.classList.contains("selected")).toBe(true);
+    expect(up.getAttribute("aria-pressed")).toBe("true");
+    expect(down.getAttribute("aria-pressed")).toBe("false");
     const body = JSON.parse(fetchMock.mock.calls[0][1].body as string);
     expect(body).toEqual({ requestId: 41, rating: "up" });
   });
@@ -113,6 +116,7 @@ describe("buildFeedbackControl", () => {
     up.click();
     await new Promise(resolve => setTimeout(resolve, 0));
     expect(up.classList.contains("selected")).toBe(false);
+    expect(up.getAttribute("aria-pressed")).toBe("false");
   });
 
   it("moves the selection when the user switches rating", async () => {
@@ -124,6 +128,41 @@ describe("buildFeedbackControl", () => {
     down.click();
     await new Promise(resolve => setTimeout(resolve, 0));
     expect(up.classList.contains("selected")).toBe(false);
+    expect(up.getAttribute("aria-pressed")).toBe("false");
     expect(down.classList.contains("selected")).toBe(true);
+    expect(down.getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("refreshes limits after an unauthorized feedback rejection (token already cleared by the transport)", async () => {
+    const fetchMock = vi.fn((url: string) => {
+      if (String(url).includes("/v1/feedback")) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ error: { code: "unauthorized", message: "Session expired." } }), {
+            status: 401,
+            headers: { "Content-Type": "application/json" }
+          })
+        );
+      }
+      if (String(url).includes("/v1/limits")) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ tier: "anonymous", remaining: 3, resetsAt: "2026-09-03T00:00:00Z" }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" }
+          })
+        );
+      }
+      return Promise.reject(new Error(`unexpected fetch: ${url}`));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const row = buildFeedbackControl(41);
+    const [up] = Array.from(row.querySelectorAll("button"));
+    up.click();
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(up.classList.contains("selected")).toBe(false);
+    expect(up.getAttribute("aria-pressed")).toBe("false");
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/v1/limits"))).toBe(true);
   });
 });

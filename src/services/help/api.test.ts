@@ -101,6 +101,13 @@ describe("ask", () => {
     const error = await ask("q").catch((e: unknown) => e);
     expect((error as HelpApiError).code).toBe("unreachable");
   });
+
+  it("rejects a contract-violating bodyless 204 with provider_error instead of resolving undefined", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 204 })));
+    const error = await ask("q").catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(HelpApiError);
+    expect((error as HelpApiError).code).toBe("provider_error");
+  });
 });
 
 describe("getLimits", () => {
