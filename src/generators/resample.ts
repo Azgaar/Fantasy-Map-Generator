@@ -235,7 +235,7 @@ class Resampler {
 
     pack.burgs = parentMap.pack.burgs.map(burg => {
       if (!burg.i || burg.removed) return burg;
-      burg.population! *= scale; // adjust for options.units.population.scale change
+      burg.population! *= scale; // adjust for Options.units.population.scale change
 
       const [xp, yp] = projection(burg.x, burg.y);
       if (!this.isInMap(xp, yp)) return { ...burg, removed: true, lock: false };
@@ -456,7 +456,7 @@ class Resampler {
     };
     const riversData = this.saveRiversData(pack.rivers);
 
-    grid = Grid.generate(globalThis.options.seed, graphWidth, graphHeight);
+    grid = Grid.generate(globalThis.Options.seed, graphWidth, graphHeight);
     pack = {} as PackedGraph;
     notes = parentMap.notes;
 

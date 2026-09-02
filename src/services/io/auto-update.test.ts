@@ -8,7 +8,7 @@ import { resolveVersionConflicts } from "./auto-update";
 beforeEach(() => {
   document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox"></g></svg>`;
   localStorage.clear();
-  globalThis.options = { labels: { groups: [] } } as unknown as typeof globalThis.options;
+  globalThis.Options = { labels: { groups: [] } } as unknown as typeof globalThis.Options;
   globalThis.pack = { features: [] } as unknown as typeof globalThis.pack; // migrations run against a loaded map
   (globalThis as typeof globalThis & { getStylePreset: () => Promise<[string, object]> }).getStylePreset = async () => [
     "default",
@@ -30,7 +30,7 @@ describe("v1.144 layer id migration", () => {
   });
 
   it("maps exceptional legacy toggle ids and preserves unknown dependencies", () => {
-    globalThis.options = {
+    globalThis.Options = {
       labels: {
         groups: ["toggleHeight", "toggleMarketsLayer", "toggleBurgIcons", "toggleScaleBar", "customLayer"].map(
           (layerDependency, index) => ({
@@ -41,12 +41,12 @@ describe("v1.144 layer id migration", () => {
           })
         )
       }
-    } as typeof globalThis.options;
+    } as typeof globalThis.Options;
     const data: string[] = [];
 
     resolveVersionConflicts("1.143.0", data);
 
-    expect(options.labels?.groups.map(group => group.layerDependency)).toEqual([
+    expect(Options.labels?.groups.map(group => group.layerDependency)).toEqual([
       "heightmap",
       "markets",
       "burgIcons",

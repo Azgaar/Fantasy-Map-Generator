@@ -181,13 +181,13 @@ function renderRiversPage(view: TableView<River>): void {
     row.remove();
   });
   let lines = "";
-  const unit = options.units.distance.unit;
+  const unit = Options.units.distance.unit;
   const riversById = getRiversById();
 
   for (const r of view.rows) {
     const discharge = `${r.discharge} m³/s`;
-    const length = `${rn(r.length * options.units.distance.scale)} ${unit}`;
-    const width = `${rn(r.width * options.units.distance.scale, 3)} ${unit}`;
+    const length = `${rn(r.length * Options.units.distance.scale)} ${unit}`;
+    const width = `${rn(r.width * Options.units.distance.scale, 3)} ${unit}`;
     const basin = riversById.get(r.basin)?.name;
 
     lines += /* html */ `<div
@@ -219,9 +219,9 @@ function renderRiversPage(view: TableView<River>): void {
   const averageDischarge = rn(mean(view.all.map(r => r.discharge))!) || 0;
   ensureEl("riversFooterDischarge").innerHTML = `${averageDischarge} m³/s`;
   const averageLength = rn(mean(view.all.map(r => r.length))!) || 0;
-  ensureEl("riversFooterLength").innerHTML = `${averageLength * options.units.distance.scale} ${unit}`;
+  ensureEl("riversFooterLength").innerHTML = `${averageLength * Options.units.distance.scale} ${unit}`;
   const averageWidth = rn(mean(view.all.map(r => r.width))!, 3) || 0;
-  ensureEl("riversFooterWidth").innerHTML = `${rn(averageWidth * options.units.distance.scale, 3)} ${unit}`;
+  ensureEl("riversFooterWidth").innerHTML = `${rn(averageWidth * Options.units.distance.scale, 3)} ${unit}`;
 
   // add listeners
   body
@@ -295,8 +295,8 @@ function downloadRiversData(): void {
 
   exported.forEach((r: River) => {
     const discharge = `${r.discharge} m³/s`;
-    const length = `${rn(r.length * options.units.distance.scale)} ${options.units.distance.unit}`;
-    const width = `${rn(r.width * options.units.distance.scale, 3)} ${options.units.distance.unit}`;
+    const length = `${rn(r.length * Options.units.distance.scale)} ${Options.units.distance.unit}`;
+    const width = `${rn(r.width * Options.units.distance.scale, 3)} ${Options.units.distance.unit}`;
     const basin = riversById.get(r.basin)?.name || "";
     data += `${[r.i, r.name, r.type, discharge, length, width, basin].join(",")}\n`;
   });

@@ -25,7 +25,7 @@ class GridModule {
     const { cells, vertices } = calculateVoronoi(points, boundary);
 
     const graph = {
-      seed: options.seed,
+      seed: Options.seed,
       spacing,
       cellsDesired,
       cellsX: this.getCellsCount(spacing, width),
@@ -55,7 +55,7 @@ class GridModule {
   /** make the global grid fit the requested seed and canvas size, keeping the current one if it does */
   prepare(expectedSeed?: string, precreated?: GridGraph): void {
     if (this.shouldRegenerate(grid, expectedSeed, graphWidth, graphHeight)) {
-      grid = precreated ?? this.generate(options.seed, graphWidth, graphHeight);
+      grid = precreated ?? this.generate(Options.seed, graphWidth, graphHeight);
     } else {
       this.resetHeights(grid);
     }
@@ -79,7 +79,7 @@ class GridModule {
 
   /** number of cells requested by the user, the generated number is close but not equal to it */
   getCellsDesired(): number {
-    return options.graph.cellsDesired;
+    return Options.graph.cellsDesired;
   }
 
   /** cell index at the given coordinates, resolved by the regular square grid the points sit on */
@@ -169,7 +169,7 @@ class GridModule {
 
   /** turn depressions that cannot pour to water into lakes */
   addDeepDepressionLakes(): void {
-    const elevationLimit = options.heightmap.lakeElevationLimit;
+    const elevationLimit = Options.heightmap.lakeElevationLimit;
     if (elevationLimit === 80) return;
 
     const { cells, features } = grid;
@@ -224,7 +224,7 @@ class GridModule {
 
   /** near sea lakes get a lot of water inflow, most of them should break the threshold and flow out to sea (see Ancylus Lake) */
   openNearSeaLakes(): void {
-    if (options.heightmap.template === "Atoll") return; // no need for Atolls
+    if (Options.heightmap.template === "Atoll") return; // no need for Atolls
 
     const { cells, features } = grid;
     if (!features.find(f => f.type === "lake")) return; // no lakes

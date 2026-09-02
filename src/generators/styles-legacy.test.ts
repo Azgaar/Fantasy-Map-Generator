@@ -56,7 +56,7 @@ test("R5: an attribute absent from the legacy bag keeps the default, not null", 
   expect(styles.military.attrs["stroke-linecap"]).toBe(Styles.defaults.military.attrs["stroke-linecap"]);
 });
 
-test("sea_island's legacy auto-filter routes to options.autoFilter", () => {
+test("sea_island's legacy auto-filter routes to Options.autoFilter", () => {
   const styles = presetFromLegacy(fixture as any);
   expect(styles.coastline.sea_island.options.autoFilter).toBe(1);
 });

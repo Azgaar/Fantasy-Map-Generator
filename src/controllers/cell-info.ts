@@ -175,14 +175,14 @@ export function toDMS(coord: number, type: "lat" | "lon"): string {
 /** Get surface elevation of a feature */
 function getElevation(feature: Feature, h: number): string {
   if (feature.land) return `${getHeight(h)} (${h})`; // land: usual height
-  if (feature.border) return `0 ${options.units.height.unit}`; // ocean: 0
+  if (feature.border) return `0 ${Options.units.height.unit}`; // ocean: 0
   if (feature.type === "lake") return `${getHeight(feature.height)} (${feature.height})`; // lake: set on river generation
   return "n/a";
 }
 
 /** Get water depth at a point */
 function getDepth(feature: Feature, [x, y]: Point): string {
-  if (feature.land) return `0 ${options.units.height.unit}`; // land: 0
+  if (feature.land) return `0 ${Options.units.height.unit}`; // land: 0
 
   const gridH = grid.cells.h[Grid.findCell(x, y)];
   // lake: difference between surface and bottom

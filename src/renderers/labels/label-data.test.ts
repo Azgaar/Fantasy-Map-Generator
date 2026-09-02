@@ -20,7 +20,7 @@ function stubPack(rivers: unknown[]): void {
     rivers,
     cells: { p: CELL_POINTS }
   } as any;
-  globalThis.options = { labels: { groups: [] } } as any;
+  globalThis.Options = { labels: { groups: [] } } as any;
   // the label path is not under test here; only the anchor is
   globalThis.Rivers = { addMeandering: () => [] } as any;
 }

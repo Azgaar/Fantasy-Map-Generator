@@ -57,7 +57,7 @@ export function showNotes(event: Event): void {
     return;
   }
 
-  if (options.notes.pinned || findEl("markerEditor") || (event as MouseEvent).shiftKey) return;
+  if (Options.notes.pinned || findEl("markerEditor") || (event as MouseEvent).shiftKey) return;
 
   const notesEl = findEl("notes");
   if (notesEl) notesEl.style.display = "none";
@@ -115,7 +115,7 @@ function getElementTip({ group, subgroup, target, event, path, cellId }: TipCont
     const burg = pack.burgs[burgId];
     if (!burg) return "Click to edit the Burg";
     const population = si(
-      (burg.population || 0) * options.units.population.scale * options.units.population.urbanization.rate
+      (burg.population || 0) * Options.units.population.scale * Options.units.population.urbanization.rate
     );
     return `${burg.name} ${burg.group}. Population: ${population}. Click to edit`;
   }

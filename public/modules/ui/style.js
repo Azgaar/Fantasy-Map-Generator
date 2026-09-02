@@ -382,7 +382,7 @@ function selectStyleElement() {
     emblemsStateSizeInput.value = styles.emblems.stateEmblems.options.size;
     emblemsProvinceSizeInput.value = styles.emblems.provinceEmblems.options.size;
     emblemsBurgSizeInput.value = styles.emblems.burgEmblems.options.size;
-    showAllEmblems.checked = options.emblems.showAll;
+    showAllEmblems.checked = Options.emblems.showAll;
   }
 
   if (styleElement === "goodsIcons") {
@@ -457,7 +457,7 @@ function updateGroupOptions(styleElement, layerEl) {
     // count from the label data: the culled DOM only holds labels rendered at this zoom
     const labelCounts = {};
     for (const label of window.getLabelsData()) labelCounts[label.group] = (labelCounts[label.group] || 0) + 1;
-    const groups = options.labels.groups.map(({ name }) => name);
+    const groups = Options.labels.groups.map(({ name }) => name);
     groups.forEach(name => styleGroupSelect.options.add(new Option(`${name} (${labelCounts[name] || 0})`, name)));
     styleGroupSelect.value = groups.includes(selected) ? selected : groups[0] || "";
     return;
@@ -1073,7 +1073,7 @@ emblemsBurgSizeInput.addEventListener("change", e => {
 });
 
 showAllEmblems.addEventListener("change", e => {
-  options.emblems.showAll = e.target.checked;
+  Options.set(options => (options.emblems.showAll = e.target.checked));
   invokeActiveZooming();
 });
 

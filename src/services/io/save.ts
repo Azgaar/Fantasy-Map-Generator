@@ -52,9 +52,9 @@ function prepareMapData(): string {
   const date = new Date();
   const dateString = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
   const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
-  const params = [VERSION, license, dateString, options.seed, graphWidth, graphHeight, mapId].join("|");
+  const params = [VERSION, license, dateString, Options.seed, graphWidth, graphHeight, mapId].join("|");
 
-  const settings = JSON.stringify(options);
+  const settings = JSON.stringify(Options);
   const coords = JSON.stringify(mapCoordinates);
   const notesData = JSON.stringify(notes);
   const measurers = JSON.stringify(pack.measurers ?? []);

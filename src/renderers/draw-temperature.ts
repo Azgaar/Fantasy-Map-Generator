@@ -79,7 +79,7 @@ const temperatureRenderer = (): void => {
     select("#temperature").append("path").attr("d", path).attr("fill", fill).attr("stroke", stroke.toString());
   }
 
-  const scale = options.units.temperature.unit as Parameters<typeof convertTemperature>[1];
+  const scale = Options.units.temperature.unit as Parameters<typeof convertTemperature>[1];
 
   const tempLabels = select("#temperature").append("g").attr("id", "tempLabels").attr("fill-opacity", 1);
   tempLabels

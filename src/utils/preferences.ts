@@ -3,7 +3,7 @@ import { findEl } from "@/utils";
 import { safeParseJSON } from "@/utils/stringUtils";
 
 /* The options the user pinned */
-const LOCKS_KEY = "locks";
+export const LOCKS_KEY = "locks";
 
 export function stored(key: string): string | null {
   return localStorage.getItem(key) || null;
@@ -91,7 +91,6 @@ export function bindLockIcons(root: ParentNode = document): void {
     lockEl.addEventListener("click", () => {
       const toggle = lockEl.className === "icon-lock" ? unlock : lock;
       lockedIds(lockEl).forEach(toggle);
-      options.store(); // a locked option keeps its value, so the value has to be stored with the lock
     });
   }
 

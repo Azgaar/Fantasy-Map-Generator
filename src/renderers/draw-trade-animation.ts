@@ -50,10 +50,10 @@ export async function draw(
     }
 
     const segment = segments[idx];
-    const size = options.trade.animation.markerSize;
+    const size = Options.trade.animation.markerSize;
     const imgSize = segment.type === "land" ? size / 1.6 : size;
-    const duration = options.trade.animation.duration;
-    const segDuration = segment.type === "land" ? duration * options.trade.animation.landDurationModifier : duration;
+    const duration = Options.trade.animation.duration;
+    const segDuration = segment.type === "land" ? duration * Options.trade.animation.landDurationModifier : duration;
 
     const group = select("#tradeAnimation").append("g");
     group
@@ -121,7 +121,7 @@ export async function draw(
       })
       .on("end", () => {
         group.remove();
-        setTimeout(() => animateSegment(idx + 1), options.trade.animation.segmentChangePause);
+        setTimeout(() => animateSegment(idx + 1), Options.trade.animation.segmentChangePause);
       });
   }
 }

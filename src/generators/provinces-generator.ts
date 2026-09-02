@@ -77,7 +77,7 @@ class ProvinceModule {
   }
 
   generate(regenerate = false, regenerateLockedStates = false) {
-    const localSeed = regenerate ? generateSeed() : options.seed;
+    const localSeed = regenerate ? generateSeed() : Options.seed;
     Math.random = Alea(localSeed);
 
     const { cells, states, burgs } = pack;
@@ -102,7 +102,7 @@ class ProvinceModule {
       });
     }
 
-    const provincesRatio = options.provinces.ratio;
+    const provincesRatio = Options.provinces.ratio;
     const maxGrowth = provincesRatio === 100 ? 1000 : gauss(20, 5, 5, 100) * provincesRatio ** 0.5; // max growth
 
     // generate provinces for selected burgs

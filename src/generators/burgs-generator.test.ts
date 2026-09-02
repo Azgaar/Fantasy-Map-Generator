@@ -427,7 +427,7 @@ describe("ensureBurgGroupStyles", () => {
     await import("./burgs-generator");
     const Burgs = (globalThis as any).Burgs;
 
-    (globalThis as any).options = { burgs: { groups: [{ name: "town" }, { name: "fortresses" }] } };
+    (globalThis as any).Options = { burgs: { groups: [{ name: "town" }, { name: "fortresses" }] } };
     const town = { attrs: { fill: "#aaa" }, options: { size: 1, icon: "#icon-burg" } };
     const townAnchor = { attrs: { fill: "#bbb" }, options: { size: 2 } };
     (globalThis as any).styles = {

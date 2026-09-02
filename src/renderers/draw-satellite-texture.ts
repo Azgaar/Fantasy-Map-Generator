@@ -544,7 +544,7 @@ export function generateSatelliteTexture(
           value: new THREE.Vector2(worldPerHeight / (graphWidth / cols), worldPerHeight / (graphHeight / rows))
         },
         uAspect: { value: graphHeight / graphWidth },
-        uSeed: { value: (Number.parseInt(options.seed, 10) % 1e5 || 1) / 1e5 + 1 }
+        uSeed: { value: (Number.parseInt(Options.seed, 10) % 1e5 || 1) / 1e5 + 1 }
       },
       depthTest: false,
       depthWrite: false

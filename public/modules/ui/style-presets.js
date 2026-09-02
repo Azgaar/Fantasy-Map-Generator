@@ -118,7 +118,7 @@ function registerCustomScheme() {
 function fillMissingLabelGroups() {
   // a group the preset doesn't cover takes the style of the default group of its type. It's left without a
   // style if there is none: getGroupStyle falls back to the built-in style, an empty one would win over it
-  for (const group of options.labels.groups) {
+  for (const group of Options.labels.groups) {
     if (styles.labels.groups[group.name]) continue;
     const defaultGroupStyle = styles.labels.groups[Labels.getFallbackGroup(group.type).name];
     if (defaultGroupStyle) styles.labels.groups[group.name] = structuredClone(defaultGroupStyle);

@@ -100,7 +100,7 @@ class StatesModule {
 
   private recreate(): { warning?: string; error?: string; states?: State[] } {
     Math.random = aleaPRNG(generateSeed());
-    const statesCount = options.states.limit;
+    const statesCount = Options.states.limit;
     if (!statesCount) return { error: "<i>States Number</i> option value is zero. No counties are generated" };
 
     const validBurgs = pack.burgs.filter(burg => burg.i && !burg.removed);
@@ -182,7 +182,7 @@ class StatesModule {
         : pack.cultures[culture].type === "Nomadic"
           ? "Generic"
           : pack.cultures[culture].type;
-      const expansionism = rn(Math.random() * options.states.sizeVariety + 1, 1);
+      const expansionism = rn(Math.random() * Options.states.sizeVariety + 1, 1);
       const coa = Emblems.generate(capital.coa, 0.3, null, pack.cultures[culture].type);
       coa.shield = capital.coa?.shield;
       newStates.push({
@@ -206,7 +206,7 @@ class StatesModule {
   private createStates() {
     const states: State[] = [{ i: 0, name: "Neutrals", salesTax: 0, pollTax: 0, treasury: 0 } as State];
     const each5th = each(5);
-    const sizeVariety = options.states.sizeVariety;
+    const sizeVariety = Options.states.sizeVariety;
 
     pack.burgs.forEach(burg => {
       if (!burg.i || !burg.capital) return;
@@ -287,8 +287,8 @@ class StatesModule {
     const queue = new FlatQueue();
     const cost: number[] = [];
 
-    const globalGrowthRate = options.states.growthRate;
-    const statesGrowthRate = options.states.growthModifier;
+    const globalGrowthRate = Options.states.growthRate;
+    const statesGrowthRate = Options.states.growthModifier;
     const growthRate = (cells.i.length / 2) * globalGrowthRate * statesGrowthRate; // limit cost for state growth
 
     // remove state from all cells except of locked
@@ -468,8 +468,8 @@ class StatesModule {
     return neighbors
       .map((i: number) => {
         const name = i && P(0.8) ? pack.states[i].name : Names.getCultureShort(state.culture);
-        const start = gauss(options.lore.calendar.year - 100, 150, 1, options.lore.calendar.year - 6);
-        const end = start + gauss(4, 5, 1, options.lore.calendar.year - start - 1);
+        const start = gauss(Options.lore.calendar.year - 100, 150, 1, Options.lore.calendar.year - 6);
+        const end = start + gauss(4, 5, 1, Options.lore.calendar.year - start - 1);
         return { name: `${getAdjective(name)} ${rw(wars)}`, start, end, attacker: state.i!, defender: i };
       })
       .sort((a, b) => a.start - b.start);
@@ -580,7 +580,7 @@ class StatesModule {
 
       // start an ongoing war
       const name = `${an}-${trimVowels(dn)}ian War`;
-      const start = options.lore.calendar.year - gauss(2, 3, 0, 10);
+      const start = Options.lore.calendar.year - gauss(2, 3, 0, 10);
       const war = [name, `${an} declared a war on its rival ${dn}`];
       const campaign: Campaign = { name, start, attacker, defender };
       states[attacker].campaigns!.push(campaign);

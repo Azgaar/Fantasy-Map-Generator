@@ -24,7 +24,7 @@ function showSavePane(): void {
 }
 
 function showExportPane(): void {
-  ensureEl<HTMLInputElement>("showLabels").checked = options.labels.showAll;
+  ensureEl<HTMLInputElement>("showLabels").checked = Options.labels.showAll;
 
   $("#exportMapData").dialog({
     title: "Export map data",
@@ -187,7 +187,7 @@ function updateTilesOptions(): void {
 
 function initialize(): void {
   ensureEl("showLabels").addEventListener("change", function (this: HTMLInputElement) {
-    options.labels.showAll = this.checked;
+    Options.labels.showAll = this.checked;
     Layers.draw("labels");
   });
 

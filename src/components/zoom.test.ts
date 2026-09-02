@@ -35,7 +35,7 @@ beforeEach(() => {
     svgWidth: 1000,
     svgHeight: 600,
     customization: 0,
-    options: { labels: { resizeOnZoom: false } },
+    Options: { labels: { resizeOnZoom: false } },
     pack: { markers: [{ i: 0, x: 200, y: 200, size: 30, hidden: false }] }
   });
 

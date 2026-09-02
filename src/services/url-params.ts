@@ -171,7 +171,7 @@ export function copyMapURL(): void {
     .catch(error => tip(`Could not copy URL: ${error}`, false, "error", 5000));
 }
 
-// Legacy seam: the loader refocuses after a map is loaded, options.js wires the copy button
+// Legacy seam: the loader refocuses after a map is loaded, Options.js wires the copy button
 declare global {
   // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy JS
   var focusOn: () => void;

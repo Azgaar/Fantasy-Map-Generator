@@ -17,7 +17,7 @@ addListeners();
 function open(): void {
   closeDialogs(".stable");
 
-  setSelected(options.heightmap.template);
+  setSelected(Options.heightmap.template);
   graph = getGraph(graph);
 
   $("#heightmapSelection").dialog({
@@ -31,7 +31,7 @@ function open(): void {
       Select: function (this: HTMLElement) {
         const id = getSelected();
         if (!id) return;
-        options.heightmap.template = id;
+        Options.heightmap.template = id;
         syncInputs();
         lock("template");
 
@@ -40,7 +40,7 @@ function open(): void {
       "New Map": function (this: HTMLElement) {
         const id = getSelected();
         if (!id) return;
-        options.heightmap.template = id;
+        Options.heightmap.template = id;
         syncInputs();
         lock("template");
 
@@ -273,8 +273,8 @@ function getSeed(): string | undefined {
 }
 
 function getGraph(currentGraph: GridGraph): GridGraph {
-  const newGraph = Grid.shouldRegenerate(currentGraph, options.seed, graphWidth, graphHeight)
-    ? Grid.generate(options.seed, graphWidth, graphHeight)
+  const newGraph = Grid.shouldRegenerate(currentGraph, Options.seed, graphWidth, graphHeight)
+    ? Grid.generate(Options.seed, graphWidth, graphHeight)
     : structuredClone(currentGraph);
   Grid.resetHeights(newGraph);
   return newGraph;

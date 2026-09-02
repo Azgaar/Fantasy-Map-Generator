@@ -127,7 +127,7 @@ function updateRouteData(route: Route): void {
 function updateRouteLength(route: Route): void {
   route.length = Routes.getLength(route.i);
   ensureEl<HTMLInputElement>("routeLength").value =
-    `${rn(route.length * options.units.distance.scale)} ${options.units.distance.unit}`;
+    `${rn(route.length * Options.units.distance.scale)} ${Options.units.distance.unit}`;
 }
 
 function drawControlPoints(points: number[][]): void {
@@ -309,7 +309,7 @@ function openJoinRoutesDialog(): void {
     const routeOptions = candidateRoutes.map((r: Route) => {
       r.name = r.name || Routes.generateName(r) || UNNAMED_ROUTE;
       r.length = r.length || Routes.getLength(r.i);
-      const length = `${rn(r.length * options.units.distance.scale)} ${options.units.distance.unit}`;
+      const length = `${rn(r.length * Options.units.distance.scale)} ${Options.units.distance.unit}`;
       return `<option value="${r.i}">${r.name} (${length})</option>`;
     });
     alertMessage.innerHTML = /* html */ `<div>Route to join with:
@@ -412,7 +412,7 @@ function generateName(): void {
 
 function showRouteElevationProfile(): void {
   const route = getRoute();
-  const length = rn(route.length! * options.units.distance.scale);
+  const length = rn(route.length! * Options.units.distance.scale);
   void Controllers.ElevationProfile.open(
     route.points.map(p => p[2]),
     length,

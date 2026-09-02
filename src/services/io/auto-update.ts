@@ -347,7 +347,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       .attr("filter", "url(#dropShadow05)");
 
     // v1.4 added icon and power attributes for units
-    for (const unit of options.military) {
+    for (const unit of Options.military) {
       if (!unit.icon) unit.icon = getUnitIcon(unit.type);
       if (!unit.power) unit.power = unit.crew;
     }
@@ -1020,7 +1020,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   if (isOlderThan("1.109.0")) {
     // v1.109.0 added customizable burg groups and icons
-    options.burgs.groups = [];
+    Options.burgs.groups = [];
 
     select("#burgIcons")
       .selectAll<SVGElement, unknown>("circle, use")
@@ -1036,7 +1036,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       .each(function (_el, index) {
         const name = this.id;
         const isDefault = name === "towns";
-        options.burgs.groups.push({ name, active: true, order: index + 1, isDefault, preview: "watabou-city" });
+        Options.burgs.groups.push({ name, active: true, order: index + 1, isDefault, preview: "watabou-city" });
         if (!this.dataset.icon) this.dataset.icon = "#icon-circle";
 
         const size = Number(this.getAttribute("size") || 2) * 2;
@@ -1046,8 +1046,8 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         this.setAttribute("stroke-width", "1");
       });
 
-    if (options.burgs.groups.filter(g => g.isDefault).length === 0) {
-      options.burgs.groups[0].isDefault = true;
+    if (Options.burgs.groups.filter(g => g.isDefault).length === 0) {
+      Options.burgs.groups[0].isDefault = true;
     }
 
     select("#anchors")
@@ -1083,7 +1083,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       }
     });
 
-    const opts = options as unknown as Record<string, unknown>;
+    const opts = Options as unknown as Record<string, unknown>;
     delete opts.showBurgPreview;
     delete opts.showMFCGMap;
     delete opts.villageMaxPopulation;
@@ -1178,7 +1178,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     select("#viewbox").insert("g", "#emblems").attr("id", "markets").attr("fill-opacity", "0").style("display", "none");
     select("#viewbox").insert("g", "#goods").attr("id", "tradeAnimation").style("display", "none");
 
-    options.trade = { animation: TradeAnimation.getDefaultOptions() };
+    Options.trade = { animation: TradeAnimation.getDefaultOptions() };
 
     for (const state of pack.states) {
       if (!state) continue;
@@ -1209,7 +1209,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   if (isOlderThan("1.132.0")) {
     // v1.132.0 added global 3D view options
-    options.threeD = { ...defaultOptions };
+    Options.threeD = { ...defaultOptions };
   }
 
   if (isOlderThan("1.138.0")) {
@@ -1265,12 +1265,12 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     labels.style.removeProperty("display");
 
     // the labels options are already migrated, only the groups are rebuilt from the map
-    const stateMode: LabelNameMode = options.labels.groups.find(group => group.type === "state")?.mode ?? "auto";
-    options.labels.groups = [];
+    const stateMode: LabelNameMode = Options.labels.groups.find(group => group.type === "state")?.mode ?? "auto";
+    Options.labels.groups = [];
     styles.labels.groups = {};
 
     for (const type of ["river", "route"] as const) {
-      options.labels.groups.push(Labels.getFallbackGroup(type));
+      Options.labels.groups.push(Labels.getFallbackGroup(type));
       styles.labels.groups[type] = getGroupStyle({ name: type, type });
     }
 
@@ -1302,24 +1302,24 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       const oldStyle = deriveLabelsStyle(burgGroup);
       const zoom = legacyBurgGroupZoom(name, Number.parseFloat(oldStyle["font-size"] as string));
 
-      options.labels.groups.push({ name, type: "burg", isDefault: name === "towns", zoom });
+      Options.labels.groups.push({ name, type: "burg", isDefault: name === "towns", zoom });
       styles.labels.groups[name] = labelGroupFromLegacy(oldStyle);
     }
 
     const migratedBurgStyle = burgGroups.length ? styles.labels.groups[burgGroups[0].id] : undefined;
-    for (const { name } of options.burgs.groups) {
-      if (options.labels.groups.some(group => group.name === name)) continue;
+    for (const { name } of Options.burgs.groups) {
+      if (Options.labels.groups.some(group => group.name === name)) continue;
 
       const defaultGroup = Labels.getDefaultGroups().find(group => group.type === "burg" && group.name === name);
       const { zoom } = defaultGroup ?? Labels.getFallbackGroup("burg");
-      options.labels.groups.push({ name, type: "burg", zoom });
+      Options.labels.groups.push({ name, type: "burg", zoom });
       styles.labels.groups[name] = migratedBurgStyle
         ? structuredClone(migratedBurgStyle)
         : getGroupStyle({ name, type: "burg" });
     }
 
-    if (options.labels.groups.every(group => !group.isDefault) && options.labels.groups[0])
-      options.labels.groups[0].isDefault = true;
+    if (Options.labels.groups.every(group => !group.isDefault) && Options.labels.groups[0])
+      Options.labels.groups[0].isDefault = true;
 
     // migrate manually shifted burg labels to pack.burgs[burgId].label
     for (const textEl of document.querySelectorAll<SVGTextElement>("#burgLabels > g > text")) {
@@ -1341,7 +1341,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       const oldStyle = deriveLabelsStyle(provs);
       const fontSize = Number.parseFloat(oldStyle["font-size"] as string);
 
-      options.labels.groups.push({
+      Options.labels.groups.push({
         name: "province",
         type: "province",
         isDefault: true,
@@ -1351,7 +1351,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       });
       styles.labels.groups.province = labelGroupFromLegacy(oldStyle);
     } else {
-      options.labels.groups.push(Labels.getFallbackGroup("province"));
+      Options.labels.groups.push(Labels.getFallbackGroup("province"));
       styles.labels.groups.province = getGroupStyle({ name: "province", type: "province" });
     }
 
@@ -1359,13 +1359,13 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     const addedGroups = Array.from(labels.querySelectorAll<SVGGElement>(":scope > g:not(#states):not(#burgLabels)"));
     for (const addedGroup of addedGroups) {
       let name = addedGroup.id === "addedLabels" ? "added" : addedGroup.id;
-      const isExisting = options.labels.groups.find(group => group.name === name);
-      if (isExisting) name += options.labels.groups.length;
+      const isExisting = Options.labels.groups.find(group => group.name === name);
+      if (isExisting) name += Options.labels.groups.length;
 
       const oldStyle = deriveLabelsStyle(addedGroup);
       const fontSize = Number.parseFloat(oldStyle["font-size"] as string);
 
-      options.labels.groups.push({
+      Options.labels.groups.push({
         name,
         type: "added",
         isDefault: name === "added",
@@ -1395,7 +1395,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       const oldStyle = deriveLabelsStyle(stateGroup);
       const fontSize = Number.parseFloat(oldStyle["font-size"] as string);
 
-      options.labels.groups.push({
+      Options.labels.groups.push({
         name: "state",
         type: "state",
         isDefault: true,
@@ -1404,7 +1404,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       });
       styles.labels.groups.state = labelGroupFromLegacy(oldStyle);
     } else {
-      options.labels.groups.push({ ...Labels.getFallbackGroup("state"), mode: stateMode });
+      Options.labels.groups.push({ ...Labels.getFallbackGroup("state"), mode: stateMode });
       styles.labels.groups.state = getGroupStyle({ name: "state", type: "state" });
     }
 
@@ -1417,7 +1417,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       if (pathEl) state.label = getPathLabel({ textEl, pathEl, names: [state.name, state.fullName] });
     }
 
-    delete (options as any).stateLabelsMode; // migrated to group settings
+    delete (Options as any).stateLabelsMode; // migrated to group settings
 
     function deriveLabelsStyle(groupEl: SVGGElement): Record<string, string | number | null> {
       return {
@@ -1555,7 +1555,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       toggleScaleBar: "scaleBar",
       toggleVignette: "vignette"
     };
-    for (const group of options.labels?.groups ?? []) {
+    for (const group of Options.labels?.groups ?? []) {
       const layer = group.layerDependency && LAYER_ID_MAP[group.layerDependency];
       if (layer) group.layerDependency = layer;
     }
@@ -1845,68 +1845,69 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
   // v1.151.0 changed the settings format from a legacy pipe-delimited string to a JSON object
   const oldHeader = data[0].split("|");
   const oldSettings = (data[1] || "").split("|");
+  const migrated = structuredClone(Options);
 
-  if (oldHeader[3]) options.seed = oldHeader[3];
-  if (oldHeader[4]) options.graph.width = +oldHeader[4];
-  if (oldHeader[5]) options.graph.height = +oldHeader[5];
+  if (oldHeader[3]) migrated.seed = oldHeader[3];
+  if (oldHeader[4]) migrated.graph.width = +oldHeader[4];
+  if (oldHeader[5]) migrated.graph.height = +oldHeader[5];
 
-  if (oldSettings[0]) options.units.distance.unit = oldSettings[0];
-  if (oldSettings[1]) options.units.distance.scale = +oldSettings[1];
-  if (oldSettings[2]) options.units.area.unit = oldSettings[2];
-  if (oldSettings[3]) options.units.height.unit = oldSettings[3];
-  if (oldSettings[4]) options.units.height.exponent = +oldSettings[4];
-  if (oldSettings[5]) options.units.temperature.unit = oldSettings[5];
-  if (oldSettings[12]) options.units.population.scale = +oldSettings[12];
-  if (oldSettings[13]) options.units.population.urbanization.rate = +oldSettings[13];
-  if (oldSettings[20]) options.lore.name = oldSettings[20];
-  if (oldSettings[24]) options.units.population.urbanization.density = +oldSettings[24];
-  if (oldSettings[26]) options.cultures.growthRate = +oldSettings[26];
-  if (oldSettings[26]) options.states.growthRate = +oldSettings[26];
+  if (oldSettings[0]) migrated.units.distance.unit = oldSettings[0];
+  if (oldSettings[1]) migrated.units.distance.scale = +oldSettings[1];
+  if (oldSettings[2]) migrated.units.area.unit = oldSettings[2];
+  if (oldSettings[3]) migrated.units.height.unit = oldSettings[3];
+  if (oldSettings[4]) migrated.units.height.exponent = +oldSettings[4];
+  if (oldSettings[5]) migrated.units.temperature.unit = oldSettings[5];
+  if (oldSettings[12]) migrated.units.population.scale = +oldSettings[12];
+  if (oldSettings[13]) migrated.units.population.urbanization.rate = +oldSettings[13];
+  if (oldSettings[20]) migrated.lore.name = oldSettings[20];
+  if (oldSettings[24]) migrated.units.population.urbanization.density = +oldSettings[24];
+  if (oldSettings[26]) migrated.cultures.growthRate = +oldSettings[26];
+  if (oldSettings[26]) migrated.states.growthRate = +oldSettings[26];
 
   // very old maps kept the world configuration in the pipe string, and it wins over the object
-  if (oldSettings[14]) options.geography.mapSize = +oldSettings[14];
-  if (oldSettings[15]) options.geography.latitude = +oldSettings[15];
-  if (oldSettings[16]) options.climate.temperature.equator = +oldSettings[16];
-  if (oldSettings[17]) options.climate.temperature.northPole = +oldSettings[17];
-  if (oldSettings[17]) options.climate.temperature.southPole = +oldSettings[17];
-  if (oldSettings[18]) options.climate.precipitation = +oldSettings[18];
-  if (oldSettings[25]) options.geography.longitude = +oldSettings[25];
+  if (oldSettings[14]) migrated.geography.mapSize = +oldSettings[14];
+  if (oldSettings[15]) migrated.geography.latitude = +oldSettings[15];
+  if (oldSettings[16]) migrated.climate.temperature.equator = +oldSettings[16];
+  if (oldSettings[17]) migrated.climate.temperature.northPole = +oldSettings[17];
+  if (oldSettings[17]) migrated.climate.temperature.southPole = +oldSettings[17];
+  if (oldSettings[18]) migrated.climate.precipitation = +oldSettings[18];
+  if (oldSettings[25]) migrated.geography.longitude = +oldSettings[25];
 
   // before v1.3 the slot held the winds array, since then the whole options object
   const oldSettings19 = safeParseJSON(oldSettings[19] ?? "");
-  if (Array.isArray(oldSettings19)) options.climate.winds = oldSettings19;
+  if (Array.isArray(oldSettings19)) migrated.climate.winds = oldSettings19;
   const oldOptions = (Array.isArray(oldSettings19) ? null : oldSettings19) ?? {};
 
-  if (oldOptions.labels) options.labels = oldOptions.labels;
-  if (oldOptions.emblems) options.emblems = oldOptions.emblems;
-  if (oldOptions.military) options.military = oldOptions.military;
-  if (oldOptions.transports) options.transports = oldOptions.transports;
-  if (oldOptions.coastline) options.coastline = oldOptions.coastline;
+  if (oldOptions.labels) migrated.labels = oldOptions.labels;
+  if (oldOptions.emblems) migrated.emblems = oldOptions.emblems;
+  if (oldOptions.military) migrated.military = oldOptions.military;
+  if (oldOptions.transports) migrated.transports = oldOptions.transports;
+  if (oldOptions.coastline) migrated.coastline = oldOptions.coastline;
 
-  if (oldOptions.burgs) options.burgs = oldOptions.burgs;
-  if (oldOptions.trade) options.trade = oldOptions.trade;
-  if (oldOptions.threeD) options.threeD = oldOptions.threeD;
+  if (oldOptions.burgs) migrated.burgs = oldOptions.burgs;
+  if (oldOptions.trade) migrated.trade = oldOptions.trade;
+  if (oldOptions.threeD) migrated.threeD = oldOptions.threeD;
 
-  if (oldOptions.pinNotes !== undefined) options.notes.pinned = oldOptions.pinNotes;
-  if (oldOptions.mapSize !== undefined) options.geography.mapSize = oldOptions.mapSize;
-  if (oldOptions.latitude !== undefined) options.geography.latitude = oldOptions.latitude;
-  if (oldOptions.longitude !== undefined) options.geography.longitude = oldOptions.longitude;
-  if (oldOptions.temperatureEquator !== undefined) options.climate.temperature.equator = oldOptions.temperatureEquator;
+  if (oldOptions.pinNotes !== undefined) migrated.notes.pinned = oldOptions.pinNotes;
+  if (oldOptions.mapSize !== undefined) migrated.geography.mapSize = oldOptions.mapSize;
+  if (oldOptions.latitude !== undefined) migrated.geography.latitude = oldOptions.latitude;
+  if (oldOptions.longitude !== undefined) migrated.geography.longitude = oldOptions.longitude;
+  if (oldOptions.temperatureEquator !== undefined) migrated.climate.temperature.equator = oldOptions.temperatureEquator;
   if (oldOptions.temperatureNorthPole !== undefined)
-    options.climate.temperature.northPole = oldOptions.temperatureNorthPole;
+    migrated.climate.temperature.northPole = oldOptions.temperatureNorthPole;
   if (oldOptions.temperatureSouthPole !== undefined)
-    options.climate.temperature.southPole = oldOptions.temperatureSouthPole;
-  if (oldOptions.prec !== undefined) options.climate.precipitation = oldOptions.prec;
-  if (oldOptions.winds) options.climate.winds = oldOptions.winds;
-  if (oldOptions.year !== undefined) options.lore.calendar.year = oldOptions.year;
-  if (oldOptions.era) options.lore.calendar.era = oldOptions.era;
-  if (oldOptions.eraShort) options.lore.calendar.eraShort = oldOptions.eraShort;
+    migrated.climate.temperature.southPole = oldOptions.temperatureSouthPole;
+  if (oldOptions.prec !== undefined) migrated.climate.precipitation = oldOptions.prec;
+  if (oldOptions.winds) migrated.climate.winds = oldOptions.winds;
+  if (oldOptions.year !== undefined) migrated.lore.calendar.year = oldOptions.year;
+  if (oldOptions.era) migrated.lore.calendar.era = oldOptions.era;
+  if (oldOptions.eraShort) migrated.lore.calendar.eraShort = oldOptions.eraShort;
 
   // v1.140.0 moved the label settings into the labels options, the naming mode onto the state group
-  if (oldSettings[21]) options.labels.showAll = !Number(oldSettings[21]);
-  if (oldSettings[23]) options.labels.resizeOnZoom = Boolean(Number(oldSettings[23]));
-  const stateGroup = options.labels.groups.find(group => group.type === "state");
+  if (oldSettings[21]) migrated.labels.showAll = !Number(oldSettings[21]);
+  if (oldSettings[23]) migrated.labels.resizeOnZoom = Boolean(Number(oldSettings[23]));
+  const stateGroup = migrated.labels.groups.find(group => group.type === "state");
   if (stateGroup && oldOptions.stateLabelsMode) stateGroup.mode = oldOptions.stateLabelsMode;
 
-  data[1] = JSON.stringify(options);
+  data[1] = JSON.stringify(migrated);
 }

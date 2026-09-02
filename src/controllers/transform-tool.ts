@@ -34,7 +34,7 @@ function open(): void {
 function renderDialog(): void {
   destroyDialog("transformTool");
 
-  const pointsValue = String(options.graph.density);
+  const pointsValue = String(Options.graph.density);
   const cells = CELLS_BY_DENSITY[+pointsValue];
 
   const html = /* html */ `<div id="transformTool" class="dialog">
@@ -195,7 +195,7 @@ function transformMap(): void {
   INFO && console.group("transformMap");
 
   const transformPointsValue = ensureEl<HTMLInputElement>("transformPointsInput").value;
-  const globalPointsValue = String(options.graph.density);
+  const globalPointsValue = String(Options.graph.density);
   if (transformPointsValue !== globalPointsValue) changeCellsDensity(+transformPointsValue);
 
   const [projection, inverse] = getProjection();

@@ -87,7 +87,7 @@ beforeEach(() => {
         { i: 2, center: 2, coa: { shield: "heater", t1: "azure" } }
       ]
     },
-    options: { emblems: { showAll: false } },
+    Options: { emblems: { showAll: false } },
     EmblemRenderer: mocks.emblemRenderer
   });
   Object.assign(mocks.bounds, { scale: 2, x0: 0, y0: 0, x1: 100, y1: 100 });
@@ -140,7 +140,7 @@ describe("viewport emblem rendering", () => {
     expect(document.getElementById("stateEmblems")?.classList).toContain("hidden");
     expect(document.querySelectorAll("#stateEmblems > use")).toHaveLength(0);
 
-    options.emblems.showAll = true;
+    Options.emblems.showAll = true;
     renderViewport();
     expect(document.getElementById("stateEmblems")?.classList).not.toContain("hidden");
     expect(document.querySelectorAll("#stateEmblems > use")).toHaveLength(1);

@@ -193,7 +193,7 @@ export const stylesSchema = z.strictObject({
   trade: z.strictObject({ attrs: z.strictObject({ opacity, filter }) }),
   markers: z.strictObject({
     attrs: z.strictObject({ opacity, filter }),
-    options: z.strictObject({ rescale: z.number() }) // TODO: move to global options.markers.resizeOnZoom
+    options: z.strictObject({ rescale: z.number() }) // TODO: move to global Options.markers.resizeOnZoom
   }),
   military: z.strictObject({
     attrs: z.strictObject({ opacity, ...strokeAttrs, "fill-opacity": opacity, filter }),

@@ -125,7 +125,7 @@ function updateLakeValues(): void {
 
   const length = polygonLength(l.vertices.map(v => vertices.p[v] as [number, number]));
   ensureEl<HTMLInputElement>("lakeShoreLength").value =
-    `${si(length * options.units.distance.scale)} ${options.units.distance.unit}`;
+    `${si(length * Options.units.distance.scale)} ${Options.units.distance.unit}`;
 
   const lakeCells = Array.from(cells.i.filter(i => cells.f[i] === l.i));
   const heights = lakeCells.map(i => cells.h[i]);

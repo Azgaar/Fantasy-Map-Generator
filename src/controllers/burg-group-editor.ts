@@ -23,7 +23,7 @@ function editBurgGroups(): void {
         ensureEl<HTMLFormElement>("burgGroupsForm").requestSubmit();
       },
       Add: () => {
-        const maxOrder = Math.max(0, ...options.burgs.groups.map(({ order }) => order));
+        const maxOrder = Math.max(0, ...Options.burgs.groups.map(({ order }) => order));
         const group: BurgGroup = { name: "", order: maxOrder + 1, active: true };
         ensureEl("burgGroupsBody").insertAdjacentHTML("beforeend", createRow(group));
       },
@@ -110,7 +110,7 @@ function closeBurgGroupsEditor(): void {
   ensureEl("burgGroupsEditor").remove();
 }
 
-function addRows(groups: BurgGroup[] = options.burgs.groups): void {
+function addRows(groups: BurgGroup[] = Options.burgs.groups): void {
   const rows = groups.map(createRow);
   ensureEl("burgGroupsBody").innerHTML = rows.join("");
 }
@@ -412,8 +412,7 @@ function submitForm(event: Event): void {
     return;
   }
 
-  options.burgs.groups = rows.map(rowToGroup);
-  options.store();
+  Options.set(o => (o.burgs.groups = rows.map(rowToGroup)));
 
   // put burgs to new groups
   const validBurgs = pack.burgs.filter(b => b.i && !b.removed);

@@ -12,8 +12,8 @@ import { isLocked } from "@/utils/preferences";
 function onResize(): void {
   if (isLocked("mapWidth") && isLocked("mapHeight")) return;
 
-  options.graph.width = window.innerWidth;
-  options.graph.height = window.innerHeight;
+  Options.graph.width = window.innerWidth;
+  Options.graph.height = window.innerHeight;
   syncInputs();
   fitMapToScreen();
 }
@@ -129,6 +129,7 @@ function initialize(): void {
 
   window.addEventListener("resize", onResize);
   window.addEventListener("vite:preloadError", onChunkLoadError);
+  window.addEventListener("pagehide", () => Options.persist()); // a debounced edit must not be lost
   document.addEventListener("touchstart", onTitlebarButtonTouch, { capture: true, passive: true });
   addDragToUpload();
   initTourPromptButton();

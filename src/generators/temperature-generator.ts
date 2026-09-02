@@ -14,7 +14,7 @@ class TemperatureModule {
       equator: temperatureEquator,
       northPole: temperatureNorthPole,
       southPole: temperatureSouthPole
-    } = options.climate.temperature;
+    } = Options.climate.temperature;
     const tropics = [16, -20]; // tropics zone
     const tropicalGradient = 0.15;
 
@@ -24,7 +24,7 @@ class TemperatureModule {
     const tempSouthTropic = temperatureEquator + tropics[1] * tropicalGradient;
     const southernGradient = (tempSouthTropic - temperatureSouthPole) / (90 + tropics[1]);
 
-    const exponent = options.units.height.exponent;
+    const exponent = Options.units.height.exponent;
 
     const getSeaLevelTemperature = (latitude: number) => {
       const isTropical = latitude <= 16 && latitude >= -20;

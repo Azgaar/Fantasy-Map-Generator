@@ -29,7 +29,7 @@ describe("StatesModule.collectTaxes", () => {
       get: (marketId: number | undefined) =>
         marketId ? globalThis.pack.markets?.find((m: any) => m?.i === marketId) : undefined
     } as any;
-    globalThis.options = {} as any;
+    globalThis.Options = {} as any;
 
     // Reload module fresh
     await import("./states-generator");

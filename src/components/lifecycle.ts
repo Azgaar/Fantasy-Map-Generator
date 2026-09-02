@@ -16,6 +16,7 @@ import { unfog } from "@/renderers/overlays/fogging";
 import { initiateAutosave } from "@/services/autosave";
 import { registerServiceWorker } from "@/services/platform";
 import { logStats } from "@/services/stats";
+import { migrateStoredOptions } from "@/services/storage-migration";
 import { checkLoadParameters } from "@/services/url-params";
 import { cleanupData } from "@/services/versioning";
 import type { GridGraph } from "@/types/GridGraph";
@@ -28,13 +29,14 @@ import { debounce, ensureEl, findEl, last, parseError } from "@/utils";
 export async function boot(): Promise<void> {
   registerServiceWorker();
 
-  options.restoreStored(); // the options of the last session, then the search params
+  migrateStoredOptions(); // an older browser keeps a key per option: fold them into one object
+  Options.restoreStored(); // the options of the last session, then the search params
   syncInputs(); // options are the source of truth, the inputs only display them
   restoreUi(); // the tab's own restore: locks, style presets, theme, ui size
 
   // the voronoi graph extent is fixed for the life of a map, the svg canvas is resized to the window
-  graphWidth = options.graph.width;
-  graphHeight = options.graph.height;
+  graphWidth = Options.graph.width;
+  graphHeight = Options.graph.height;
   svgWidth = graphWidth;
   svgHeight = graphHeight;
 
@@ -57,12 +59,13 @@ export async function generate(config?: GenerationConfig): Promise<void> {
   try {
     const { seed: precreatedSeed, graph: precreatedGraph } = config || {};
     setSeed(precreatedSeed);
-    options.randomize();
+    Options.randomize();
     applyGraphSize();
 
     await GenerationPipeline.run({ seed: precreatedSeed, graph: precreatedGraph });
 
     syncInputs(); // after the pipeline: it names the map, which the panel shows
+    Options.persist(); // what was generated is what the next session starts from
     logStats();
     invokeActiveZooming();
   } catch (error) {
@@ -97,7 +100,7 @@ export const regenerateMap = debounce(async (config?: GenerationConfig | string)
   WARN && console.warn("Generate new random map");
 
   // a big grid takes long enough that the splash is worth showing
-  const shouldShowLoading = options.graph.cellsDesired > 10000;
+  const shouldShowLoading = Options.graph.cellsDesired > 10000;
   shouldShowLoading && showLoading();
 
   closeDialogs("#worldConfigurator, #options3d");
@@ -107,7 +110,7 @@ export const regenerateMap = debounce(async (config?: GenerationConfig | string)
   await generate(typeof config === "string" ? undefined : config);
   Layers.drawAll();
 
-  if (options.threeD.isOn) Controllers.View3d.redraw();
+  if (Options.threeD.isOn) Controllers.View3d.redraw();
   if (findEl("worldConfigurator")?.offsetParent) Controllers.WorldConfigurator.open();
 
   fitMapToScreen();

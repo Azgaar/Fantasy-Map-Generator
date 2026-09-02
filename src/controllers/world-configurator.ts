@@ -241,101 +241,95 @@ function addListeners(): void {
       });
       el.addEventListener("click", () => {
         if (el.className === "icon-lock") unlock(id);
-        else lockOption(id);
+        else lock(id);
       });
     });
 }
 
-/** A locked option keeps its value on new map generation, so the value has to be stored with it */
-function lockOption(id: string): void {
-  lock(id);
-  options.store();
-}
-
 // inputs are always in °C; show " = <value>" in user units if user units are not °C
 function convertedTemperature(temperatureCelsius: number): string {
-  const userUnits = options.units.temperature.unit;
+  const userUnits = Options.units.temperature.unit;
   if (userUnits === "°C") return "";
   return ` = ${convertTemperature(temperatureCelsius)}`;
 }
 
 function changeTemperatureEquator(this: HTMLInputElement): void {
-  options.climate.temperature.equator = Number(this.value);
+  Options.set(o => (o.climate.temperature.equator = Number(this.value)));
   ensureEl<HTMLInputElement>("temperatureEquatorInput").value = this.value;
   ensureEl<HTMLInputElement>("temperatureEquatorOutput").value = this.value;
-  ensureEl("temperatureEquatorConverted").innerText = convertedTemperature(options.climate.temperature.equator);
-  lockOption("temperatureEquator");
+  ensureEl("temperatureEquatorConverted").innerText = convertedTemperature(Options.climate.temperature.equator);
+  lock("temperatureEquator");
   if (ensureEl<HTMLInputElement>("wcAutoChange").checked) updateWorld();
 }
 
 function changeTemperatureNorthPole(this: HTMLInputElement): void {
-  options.climate.temperature.northPole = Number(this.value);
+  Options.set(o => (o.climate.temperature.northPole = Number(this.value)));
   ensureEl<HTMLInputElement>("temperatureNorthPoleInput").value = this.value;
   ensureEl<HTMLInputElement>("temperatureNorthPoleOutput").value = this.value;
-  ensureEl("temperatureNorthPoleConverted").innerText = convertedTemperature(options.climate.temperature.northPole);
-  lockOption("temperatureNorthPole");
+  ensureEl("temperatureNorthPoleConverted").innerText = convertedTemperature(Options.climate.temperature.northPole);
+  lock("temperatureNorthPole");
   if (ensureEl<HTMLInputElement>("wcAutoChange").checked) updateWorld();
 }
 
 function changeTemperatureSouthPole(this: HTMLInputElement): void {
-  options.climate.temperature.southPole = Number(this.value);
+  Options.set(o => (o.climate.temperature.southPole = Number(this.value)));
   ensureEl<HTMLInputElement>("temperatureSouthPoleInput").value = this.value;
   ensureEl<HTMLInputElement>("temperatureSouthPoleOutput").value = this.value;
-  ensureEl("temperatureSouthPoleConverted").innerText = convertedTemperature(options.climate.temperature.southPole);
-  lockOption("temperatureSouthPole");
+  ensureEl("temperatureSouthPoleConverted").innerText = convertedTemperature(Options.climate.temperature.southPole);
+  lock("temperatureSouthPole");
   if (ensureEl<HTMLInputElement>("wcAutoChange").checked) updateWorld();
 }
 
 function changeMapSize(this: HTMLInputElement): void {
-  options.geography.mapSize = Number(this.value);
+  Options.set(o => (o.geography.mapSize = Number(this.value)));
   ensureEl<HTMLInputElement>("mapSizeInput").value = this.value;
   ensureEl<HTMLInputElement>("mapSizeOutput").value = this.value;
-  lockOption("mapSize");
+  lock("mapSize");
   if (ensureEl<HTMLInputElement>("wcAutoChange").checked) updateWorld();
 }
 
 function changeLatitude(this: HTMLInputElement): void {
-  options.geography.latitude = Number(this.value);
+  Options.set(o => (o.geography.latitude = Number(this.value)));
   ensureEl<HTMLInputElement>("latitudeInput").value = this.value;
   ensureEl<HTMLInputElement>("latitudeOutput").value = this.value;
-  lockOption("latitude");
+  lock("latitude");
   if (ensureEl<HTMLInputElement>("wcAutoChange").checked) updateWorld();
 }
 
 function changeLongitude(this: HTMLInputElement): void {
-  options.geography.longitude = Number(this.value);
+  Options.set(o => (o.geography.longitude = Number(this.value)));
   ensureEl<HTMLInputElement>("longitudeInput").value = this.value;
   ensureEl<HTMLInputElement>("longitudeOutput").value = this.value;
-  lockOption("longitude");
+  lock("longitude");
   if (ensureEl<HTMLInputElement>("wcAutoChange").checked) updateWorld();
 }
 
 function changePrecipitation(this: HTMLInputElement): void {
-  options.climate.precipitation = Number(this.value);
+  Options.set(o => (o.climate.precipitation = Number(this.value)));
   ensureEl<HTMLInputElement>("precInput").value = this.value;
   ensureEl<HTMLInputElement>("precOutput").value = this.value;
-  lockOption("prec");
+  lock("prec");
   if (ensureEl<HTMLInputElement>("wcAutoChange").checked) updateWorld();
 }
 
 function updateInputValues(): void {
-  ensureEl<HTMLInputElement>("temperatureEquatorInput").value = String(options.climate.temperature.equator);
-  ensureEl<HTMLInputElement>("temperatureEquatorOutput").value = String(options.climate.temperature.equator);
-  ensureEl<HTMLInputElement>("temperatureNorthPoleInput").value = String(options.climate.temperature.northPole);
-  ensureEl<HTMLInputElement>("temperatureNorthPoleOutput").value = String(options.climate.temperature.northPole);
-  ensureEl<HTMLInputElement>("temperatureSouthPoleInput").value = String(options.climate.temperature.southPole);
-  ensureEl<HTMLInputElement>("temperatureSouthPoleOutput").value = String(options.climate.temperature.southPole);
-  ensureEl<HTMLInputElement>("mapSizeInput").value = String(options.geography.mapSize);
-  ensureEl<HTMLInputElement>("mapSizeOutput").value = String(options.geography.mapSize);
-  ensureEl<HTMLInputElement>("latitudeInput").value = String(options.geography.latitude);
-  ensureEl<HTMLInputElement>("latitudeOutput").value = String(options.geography.latitude);
-  ensureEl<HTMLInputElement>("longitudeInput").value = String(options.geography.longitude);
-  ensureEl<HTMLInputElement>("longitudeOutput").value = String(options.geography.longitude);
-  ensureEl<HTMLInputElement>("precInput").value = String(options.climate.precipitation);
-  ensureEl<HTMLInputElement>("precOutput").value = String(options.climate.precipitation);
-  ensureEl("temperatureEquatorConverted").innerText = convertedTemperature(options.climate.temperature.equator);
-  ensureEl("temperatureNorthPoleConverted").innerText = convertedTemperature(options.climate.temperature.northPole);
-  ensureEl("temperatureSouthPoleConverted").innerText = convertedTemperature(options.climate.temperature.southPole);
+  ensureEl<HTMLInputElement>("temperatureEquatorInput").value = String(Options.climate.temperature.equator);
+  ensureEl<HTMLInputElement>("temperatureEquatorOutput").value = String(Options.climate.temperature.equator);
+  ensureEl<HTMLInputElement>("temperatureNorthPoleInput").value = String(Options.climate.temperature.northPole);
+  ensureEl<HTMLInputElement>("temperatureNorthPoleOutput").value = String(Options.climate.temperature.northPole);
+  ensureEl<HTMLInputElement>("temperatureSouthPoleInput").value = String(Options.climate.temperature.southPole);
+  ensureEl<HTMLInputElement>("temperatureSouthPoleOutput").value = String(Options.climate.temperature.southPole);
+  ensureEl<HTMLInputElement>("mapSizeInput").value = String(Options.geography.mapSize);
+  ensureEl<HTMLInputElement>("mapSizeOutput").value = String(Options.geography.mapSize);
+  ensureEl<HTMLInputElement>("latitudeInput").value = String(Options.geography.latitude);
+  ensureEl<HTMLInputElement>("latitudeOutput").value = String(Options.geography.latitude);
+  ensureEl<HTMLInputElement>("longitudeInput").value = String(Options.geography.longitude);
+  ensureEl<HTMLInputElement>("longitudeOutput").value = String(Options.geography.longitude);
+  ensureEl<HTMLInputElement>("precInput").value = String(Options.climate.precipitation);
+  ensureEl<HTMLInputElement>("precOutput").value = String(Options.climate.precipitation);
+  ensureEl("temperatureEquatorConverted").innerText = convertedTemperature(Options.climate.temperature.equator);
+  ensureEl("temperatureNorthPoleConverted").innerText = convertedTemperature(Options.climate.temperature.northPole);
+  ensureEl("temperatureSouthPoleConverted").innerText = convertedTemperature(Options.climate.temperature.southPole);
 }
 
 function updateWorld(): void {
@@ -357,17 +351,17 @@ function updateWorld(): void {
 }
 
 function updateGlobePosition(): void {
-  const eqD = ((graphHeight / 2) * 100) / options.geography.mapSize;
+  const eqD = ((graphHeight / 2) * 100) / Options.geography.mapSize;
 
   Coordinates.calculate();
   const mc = mapCoordinates;
-  const unit = options.units.distance.unit;
-  const meridian = eqD * 2 * options.units.distance.scale * getKmInDistanceUnit(); // 0 for a custom unit
+  const unit = Options.units.distance.unit;
+  const meridian = eqD * 2 * Options.units.distance.scale * getKmInDistanceUnit(); // 0 for a custom unit
   ensureEl("mapSize").innerHTML = `${graphWidth}x${graphHeight}`;
   ensureEl("mapSizeFriendly").innerHTML =
-    `${rn(graphWidth * options.units.distance.scale)}x${rn(graphHeight * options.units.distance.scale)} ${unit}`;
+    `${rn(graphWidth * Options.units.distance.scale)}x${rn(graphHeight * Options.units.distance.scale)} ${unit}`;
   ensureEl("meridianLength").innerHTML = String(rn(eqD * 2));
-  ensureEl("meridianLengthFriendly").innerHTML = `${rn(eqD * 2 * options.units.distance.scale)} ${unit}`;
+  ensureEl("meridianLengthFriendly").innerHTML = `${rn(eqD * 2 * Options.units.distance.scale)} ${unit}`;
   ensureEl("meridianLengthEarth").innerHTML = meridian ? ` = ${rn(meridian / 200)}%🌏` : "";
   ensureEl("mapCoordinates").innerHTML =
     `${lat(mc.latN ?? 0)} ${Math.abs(rn(mc.lonW ?? 0))}°W; ${lat(mc.latS ?? 0)} ${rn(mc.lonE ?? 0)}°E`;
@@ -389,9 +383,9 @@ function updateGlobePosition(): void {
 
 // update temperatures on globe (visual-only)
 function updateGlobeTemperature(): void {
-  const tEq = options.climate.temperature.equator;
-  const tNP = options.climate.temperature.northPole;
-  const tSP = options.climate.temperature.southPole;
+  const tEq = Options.climate.temperature.equator;
+  const tNP = Options.climate.temperature.northPole;
+  const tSP = Options.climate.temperature.southPole;
 
   const scale = scaleSequential(interpolateSpectral);
   const getColor = (value: number): string => scale(1 - value);
@@ -427,7 +421,7 @@ function updateWindDirections(): void {
     .selectAll<SVGPathElement, unknown>("path")
     .each(function (_d, i) {
       const tr = parseTransform(this.getAttribute("transform") ?? "");
-      this.setAttribute("transform", `rotate(${options.climate.winds[i]} ${tr[1]} ${tr[2]})`);
+      this.setAttribute("transform", `rotate(${Options.climate.winds[i]} ${tr[1]} ${tr[2]})`);
     });
 }
 
@@ -437,10 +431,9 @@ function handleWindChange(event: Event): void {
   const arrow = (target.tagName === "path" ? target : target.nextElementSibling) as SVGPathElement | null;
   if (!arrow?.dataset.tier) return;
   const tier = +arrow.dataset.tier;
-  options.climate.winds[tier] = (options.climate.winds[tier] + 45) % 360;
+  Options.set(o => (o.climate.winds[tier] = (o.climate.winds[tier] + 45) % 360));
   const tr = parseTransform(arrow.getAttribute("transform") ?? "");
-  arrow.setAttribute("transform", `rotate(${options.climate.winds[tier]} ${tr[1]} ${tr[2]})`);
-  options.store();
+  arrow.setAttribute("transform", `rotate(${Options.climate.winds[tier]} ${tr[1]} ${tr[2]})`);
 
   const mapTiers = range(mapCoordinates.latN ?? 0, mapCoordinates.latS ?? 0, -30).map(c => ((90 - c) / 30) | 0);
   if (ensureEl<HTMLInputElement>("wcAutoChange").checked && mapTiers.includes(tier)) updateWorld();
@@ -451,19 +444,20 @@ function restoreDefaultWinds(): void {
   const mapTiers = range(mapCoordinates.latN ?? 0, mapCoordinates.latS ?? 0, -30).map(c => ((90 - c) / 30) | 0);
   const shouldUpdate =
     ensureEl<HTMLInputElement>("wcAutoChange").checked &&
-    mapTiers.some(t => options.climate.winds[t] !== defaultWinds[t]);
-  options.climate.winds = defaultWinds;
-  options.store();
+    mapTiers.some(t => Options.climate.winds[t] !== defaultWinds[t]);
+  Options.set(o => (o.climate.winds = defaultWinds));
   updateWindDirections();
   if (shouldUpdate) updateWorld();
 }
 
 function applyWorldPreset(size: number, latitude: number): void {
-  options.geography.mapSize = size;
-  options.geography.latitude = latitude;
+  Options.set(o => {
+    o.geography.mapSize = size;
+    o.geography.latitude = latitude;
+  });
   updateInputValues();
-  lockOption("mapSize");
-  lockOption("latitude");
+  lock("mapSize");
+  lock("latitude");
   if (ensureEl<HTMLInputElement>("wcAutoChange").checked) updateWorld();
 }
 

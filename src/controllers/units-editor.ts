@@ -41,9 +41,8 @@ function changeDistanceUnit(this: HTMLSelectElement): void {
   if (this.value === "custom_name") {
     prompt("Provide a custom name for a distance unit", { default: "" }, custom => {
       this.options.add(new Option(String(custom), String(custom), false, true));
-      options.units.distance.unit = String(custom);
+      Options.set(o => (o.units.distance.unit = String(custom)));
       lock("distanceUnit");
-      options.store();
       Layers.draw("scaleBar");
       calculateFriendlyGridSize();
     });
@@ -55,7 +54,7 @@ function changeDistanceUnit(this: HTMLSelectElement): void {
 }
 
 function changeDistanceScale(this: HTMLInputElement): void {
-  options.units.distance.scale = +this.value;
+  Options.units.distance.scale = +this.value;
   Layers.draw("scaleBar");
   calculateFriendlyGridSize();
 }
@@ -65,9 +64,8 @@ function changeHeightUnit(this: HTMLSelectElement): void {
 
   prompt("Provide a custom name for a height unit", { default: "" }, custom => {
     this.options.add(new Option(String(custom), String(custom), false, true));
-    options.units.height.unit = String(custom);
+    Options.set(o => (o.units.height.unit = String(custom)));
     lock("heightUnit");
-    options.store();
   });
 }
 
@@ -81,50 +79,49 @@ function changeTemperatureScale(): void {
 }
 
 function changePopulationRate(this: HTMLInputElement): void {
-  options.units.population.scale = +this.value;
+  Options.units.population.scale = +this.value;
 }
 
 function changeUrbanizationRate(this: HTMLInputElement): void {
-  options.units.population.urbanization.rate = +this.value;
+  Options.units.population.urbanization.rate = +this.value;
 }
 
 function changeUrbanDensity(this: HTMLInputElement): void {
-  options.units.population.urbanization.density = +this.value;
+  Options.units.population.urbanization.density = +this.value;
 }
 
 function restoreDefaultUnits(): void {
-  options.units.distance.scale = 3;
-  unlock("distanceScale");
-
-  // units
   const US = navigator.language === "en-US";
   const UK = navigator.language === "en-GB";
-  options.units.distance.unit = US || UK ? "mi" : "km";
-  options.units.height.unit = US || UK ? "ft" : "m";
-  options.units.temperature.unit = US ? "°F" : "°C";
-  options.units.area.unit = "square";
-  unlock("distanceUnit");
-  unlock("heightUnit");
-  unlock("temperatureScale");
-  unlock("areaUnit");
+
+  Options.set(o => {
+    o.units.distance.scale = 3;
+    o.units.distance.unit = US || UK ? "mi" : "km";
+    o.units.height.unit = US || UK ? "ft" : "m";
+    o.units.height.exponent = 1.8;
+    o.units.temperature.unit = US ? "°F" : "°C";
+    o.units.area.unit = "square";
+    o.units.population.scale = 1000;
+    o.units.population.urbanization.rate = 1;
+    o.units.population.urbanization.density = 10;
+  });
+
+  for (const setting of [
+    "distanceScale",
+    "distanceUnit",
+    "heightUnit",
+    "temperatureScale",
+    "areaUnit",
+    "heightExponent",
+    "populationRate",
+    "urbanization",
+    "urbanDensity"
+  ])
+    unlock(setting);
+
   calculateFriendlyGridSize();
-
-  // height exponent
-  options.units.height.exponent = 1.8;
-  unlock("heightExponent");
   Temperature.generate();
-
   Layers.draw("scaleBar");
-
-  // population
-  options.units.population.scale = 1000;
-  options.units.population.urbanization.rate = 1;
-  options.units.population.urbanization.density = 10;
-  unlock("populationRate");
-  unlock("urbanization");
-  unlock("urbanDensity");
-
-  options.store();
   syncInputs();
 }
 
