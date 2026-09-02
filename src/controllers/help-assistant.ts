@@ -63,6 +63,7 @@ function open(): void {
   $("#helpAssistant").dialog({
     title: "Azgaar's Assistant",
     position: { my: "center", at: "center", of: "svg" },
+    width: Math.min(420, window.innerWidth - 20), // fixed sane width — FMG dialogs otherwise grow with content
     resizable: false,
     close: () => {
       if (retryTimer) {

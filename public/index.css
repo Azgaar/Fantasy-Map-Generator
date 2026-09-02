@@ -2669,6 +2669,8 @@ body.tour-free-roam * {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.8em;
+  width: 100%;
   margin-top: 0.3em;
 }
 
