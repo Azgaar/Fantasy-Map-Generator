@@ -2,13 +2,14 @@
 // size from the store, not the retired data-size attribute.
 import { beforeEach, expect, test } from "vitest";
 import "@/generators/styles";
+import { setViewportTransform } from "@/components/viewport";
 import { drawCoordinates } from "./draw-coordinates";
 
 beforeEach(() => {
   document.body.innerHTML = `<svg id="map" width="800" height="600">
       <g id="viewbox"><g id="coordinates"></g></g>
     </svg>`;
-  globalThis.scale = 4;
+  setViewportTransform(4, 0, 0);
   globalThis.options = {
     graph: { width: 800, height: 600 },
     geography: { coordinates: { lonT: 100, lonW: -50, lonE: 50, latN: 40, latS: -40, latT: 80 } }

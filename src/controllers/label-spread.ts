@@ -1,4 +1,5 @@
 import Alea from "alea";
+import { viewport } from "@/components/viewport";
 import type { LabelType } from "@/generators/labels-generator";
 import { getGroupStyle, writeGroupStyle } from "@/renderers/labels/label-groups";
 import { createLabelElements } from "@/renderers/labels/label-markup";
@@ -183,7 +184,7 @@ function buildBurgCandidates(
     iconBounds: iconBounds ?? pointBounds(label.anchor),
     gap: toMapUnits(BURG_ICON_GAP_SCREEN),
     changePenalty: getBurgChangePenalty(current.bounds),
-    displacementScale: scale
+    displacementScale: viewport.scale
   });
 }
 
@@ -231,7 +232,7 @@ function getBurgLabelCandidates({
 }
 
 function getBurgChangePenalty(bounds: LabelBounds): number {
-  const screenHeight = (bounds.y2 - bounds.y1) * Math.max(scale, 1);
+  const screenHeight = (bounds.y2 - bounds.y1) * Math.max(viewport.scale, 1);
   return BASE_BURG_PLACEMENT_CHANGE_PENALTY * (screenHeight / BASE_BURG_SCREEN_HEIGHT) ** 2;
 }
 
@@ -626,7 +627,7 @@ function transformRectToRootBounds(
 
 /** Screen-space distances stay constant on screen, so convert them with the current zoom */
 function toMapUnits(screenValue: number): number {
-  return screenValue / Math.max(scale, MINIMUM_SCALE);
+  return screenValue / Math.max(viewport.scale, MINIMUM_SCALE);
 }
 
 function padBounds(bounds: LabelBounds, screenPadding = LABEL_PADDING_SCREEN): LabelBounds {

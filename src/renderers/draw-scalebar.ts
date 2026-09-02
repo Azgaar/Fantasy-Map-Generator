@@ -1,6 +1,6 @@
 import { range, type Selection, select } from "d3";
-import { viewport } from "@/components/canvas";
 import { tip } from "@/components/tooltips";
+import { viewport } from "@/components/viewport";
 import { Controllers } from "@/controllers";
 import { ensureEl, rn } from "../utils";
 
@@ -11,7 +11,7 @@ function addScaleBarControls(scaleBar: Selection<SVGGElement, unknown, null, und
 
 export function drawScaleBar(
   parent?: SVGSVGElement,
-  scaleLevel = scale,
+  scaleLevel = viewport.scale,
   width = viewport.width,
   height = viewport.height
 ): void {

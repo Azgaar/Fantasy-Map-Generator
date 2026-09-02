@@ -1,8 +1,8 @@
 // The legend box: a titled, multi-column list of color swatches drawn over the map
 
 import { type D3DragEvent, select } from "d3";
-import { viewport } from "@/components/canvas";
 import { tip } from "@/components/tooltips";
+import { viewport } from "@/components/viewport";
 import { parseTransform, rn } from "@/utils";
 
 // [id, color, label] as stored in the legend `data` attribute

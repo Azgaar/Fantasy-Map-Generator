@@ -1,6 +1,6 @@
 import { type D3ZoomEvent, select, zoom, zoomIdentity } from "d3";
-import { viewport } from "@/components/canvas";
 import { Layers } from "@/components/layers";
+import { setViewportTransform, viewport } from "@/components/viewport";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
 import { rn } from "@/utils/numberUtils";
@@ -20,14 +20,12 @@ let isViewChanged = false;
 function onZoom(event: D3ZoomEvent<SVGSVGElement, unknown>): void {
   const { k, x, y } = event.transform;
 
-  const isScaleChanged = scale !== k;
-  const isPositionChanged = viewX !== x || viewY !== y;
+  const isScaleChanged = viewport.scale !== k;
+  const isPositionChanged = viewport.x !== x || viewport.y !== y;
   if (!isScaleChanged && !isPositionChanged) return;
   isViewChanged = true;
 
-  scale = k;
-  viewX = x;
-  viewY = y;
+  setViewportTransform(k, x, y);
 
   pendingScaleChange = pendingScaleChange || isScaleChanged;
   pendingPositionChange = pendingPositionChange || isPositionChanged;
@@ -47,7 +45,10 @@ function handleZoomPerFrame(): void {
   pendingPositionChange = false;
   if (!didScaleChange && !didPositionChange) return;
 
-  ensureEl<SVGGElement>("viewbox").setAttribute("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
+  ensureEl<SVGGElement>("viewbox").setAttribute(
+    "transform",
+    `translate(${viewport.x} ${viewport.y}) scale(${viewport.scale})`
+  );
 
   if (didScaleChange) {
     Layers.draw("scaleBar");
@@ -86,12 +87,12 @@ function redrawTracedImage(): void {
   if (!context) return;
 
   context.clearRect(0, 0, canvas.width, canvas.height);
-  context.setTransform(scale, 0, 0, scale, viewX, viewY);
+  context.setTransform(viewport.scale, 0, 0, viewport.scale, viewport.x, viewport.y);
   context.drawImage(image, 0, 0, canvas.width, canvas.height);
 }
 
 function applyLabelsZoomSize(): void {
-  const fontSize = Math.max(Math.round(((100 + 100 / scale) / 2) * 100) / 100, 1);
+  const fontSize = Math.max(Math.round(((100 + 100 / viewport.scale) / 2) * 100) / 100, 1);
   select("#labels").attr("font-size", `${fontSize}px`);
 }
 
@@ -104,7 +105,7 @@ export function invokeActiveZooming(): void {
   if (!customization && !isOptimized) {
     const statesHalo = select("#statesHalo");
     const desired = styles.states.statesHalo.options.width;
-    const haloSize = rn(desired / scale ** 0.8, 2);
+    const haloSize = rn(desired / viewport.scale ** 0.8, 2);
     statesHalo.attr("stroke-width", haloSize).style("display", haloSize > 0.1 ? "block" : "none");
   }
 
@@ -114,7 +115,7 @@ export function invokeActiveZooming(): void {
       const element = hidden ? null : document.getElementById(`marker${i}`);
       if (!element) continue;
 
-      const zoomedSize = Math.max(rn(size / 5 + 24 / scale, 2), 1);
+      const zoomedSize = Math.max(rn(size / 5 + 24 / viewport.scale, 2), 1);
       element.setAttribute("width", String(zoomedSize));
       element.setAttribute("height", String(zoomedSize));
       element.setAttribute("x", String(rn(x - zoomedSize / 2, 1)));

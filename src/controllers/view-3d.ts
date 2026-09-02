@@ -1,5 +1,5 @@
-import { viewport } from "@/components/canvas";
 import { tip } from "@/components/tooltips";
+import { viewport } from "@/components/viewport";
 import { timeOfDayPresets } from "@/data/view-3d-options";
 import { ensureEl } from "@/utils";
 

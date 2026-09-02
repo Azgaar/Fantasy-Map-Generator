@@ -1,4 +1,5 @@
 import { easeBounceOut, easeLinear, easeSinIn, select, transition } from "d3";
+import { viewport } from "@/components/viewport";
 import { parseTransform } from "@/utils";
 
 const debugLayer = () => select<SVGGElement, unknown>("#debug");
@@ -41,7 +42,7 @@ export function highlightElement(target: Element | null, zoom?: number): void {
   const [shiftX, shiftY] = parseTransform(transformAttr || "");
   const x = box.x + box.width / 2 + (Number(shiftX) || 0);
   const y = box.y + box.height / 2 + (Number(shiftY) || 0);
-  zoomTo(x, y, scale > 2 ? scale : zoom, 1600);
+  zoomTo(x, y, viewport.scale > 2 ? viewport.scale : zoom, 1600);
 }
 
 /** Animate the area or place an emblem belongs to */

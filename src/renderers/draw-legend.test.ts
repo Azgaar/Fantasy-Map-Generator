@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
 import "@/generators/styles";
-import { setViewport } from "@/components/canvas";
+import { setViewportSize } from "@/components/viewport";
 import { dragLegendBox, drawLegend, fitLegendBox, redrawLegend } from "./draw-legend";
 
 beforeEach(() => {
@@ -19,7 +19,7 @@ beforeEach(() => {
     width: 60,
     height: 40
   });
-  setViewport(800, 600);
+  setViewportSize(800, 600);
 });
 
 const items = [

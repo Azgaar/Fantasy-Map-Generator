@@ -1,9 +1,9 @@
 import { type D3DragEvent, drag, type Selection, select } from "d3";
-import { viewport } from "@/components/canvas";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import { viewport } from "@/components/viewport";
 import { type Measurer, Measurers, type MeasurerType } from "@/generators/measurers-generator";
 import type { Point } from "@/generators/voronoi";
 import { highlightElement } from "@/renderers/overlays/highlight";
@@ -102,7 +102,7 @@ function onListClick(event: Event): void {
     redraw();
   } else if (target.matches("[data-zoom]")) {
     const [x, y] = measurer.points[Math.floor(measurer.points.length / 2)];
-    zoomTo(x, y, scale, 800);
+    zoomTo(x, y, viewport.scale, 800);
     highlightElement(document.querySelectorAll("#ruler > g")[index], 2);
   }
 }
@@ -138,7 +138,7 @@ function addRuler(): void {
   pt.y = height / 4;
   const p = pt.matrixTransform((select("#viewbox").node() as SVGGraphicsElement).getScreenCTM()!.inverse());
 
-  const dx = width / 4 / scale;
+  const dx = width / 4 / viewport.scale;
   const dy = (pack.measurers.length * 40) % (height / 2);
   Measurers.create("Ruler", [
     [(p.x - dx) | 0, (p.y + dy) | 0],

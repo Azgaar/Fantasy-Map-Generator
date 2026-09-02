@@ -1,6 +1,6 @@
 // The app and map lifecycle: start the app, erase what is on screen, generate a new world, put it back
 
-import { applyGraphSize, fitMapToScreen, setViewport } from "@/components/canvas";
+import { applyGraphSize, fitMapToScreen } from "@/components/canvas";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { hideLoading, showLoading } from "@/components/loading";
@@ -9,6 +9,7 @@ import { setSeed } from "@/components/seed";
 import { warnIfServerless } from "@/components/shell";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import { setViewportSize } from "@/components/viewport";
 import { invokeActiveZooming, resetZoom } from "@/components/zoom";
 import { Controllers } from "@/controllers";
 import { GenerationPipeline } from "@/generators/generation-pipeline";
@@ -35,7 +36,7 @@ export async function boot(): Promise<void> {
   restoreUi(); // the tab's own restore: locks, style presets, theme, ui size
 
   // the svg canvas starts at the configured map size, then follows the window
-  setViewport(options.graph.width, options.graph.height);
+  setViewportSize(options.graph.width, options.graph.height);
 
   // binds the zoom behaviour and its handlers (see components/viewbox-events.ts), so it has to run
   // before checkLoadParameters - deep links (MFCG, a stored view position) zoom the map on load

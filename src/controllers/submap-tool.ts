@@ -3,6 +3,7 @@ import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { cellsDensityColor, changeCellsDensity } from "@/components/options/tabs/options-tab";
 import { CELLS_BY_DENSITY } from "@/components/options-store";
+import { viewport } from "@/components/viewport";
 import { Resample } from "@/generators/resample";
 import { getLatitude, getLongitude } from "@/utils";
 import { ensureEl, minmax, rn } from "../utils";
@@ -75,8 +76,9 @@ function handlePointsInput(e: Event): void {
 function generateSubmap(): void {
   INFO && console.group("generateSubmap");
 
+  const { scale, x: viewX, y: viewY } = viewport;
   const [x0, y0] = [Math.abs(viewX / scale), Math.abs(viewY / scale)]; // top-left corner
-  recalculateMapSize(x0, y0);
+  recalculateMapSize(x0, y0, scale);
 
   const submapPointsValue = ensureEl<HTMLInputElement>("submapPointsInput").value;
   const globalPointsValue = String(options.graph.density);
@@ -97,7 +99,7 @@ function generateSubmap(): void {
   INFO && console.groupEnd();
 }
 
-function recalculateMapSize(x0: number, y0: number): void {
+function recalculateMapSize(x0: number, y0: number, scale: number): void {
   options.geography.mapSize = rn(options.geography.mapSize / scale, 2);
 
   const latT = options.geography.coordinates.latT / scale;

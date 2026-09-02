@@ -13,11 +13,6 @@ globalThis.notes = [];
 globalThis.mapId = 0;
 globalThis.mapHistory = [];
 
-// current map view transform, written by the zoom handlers in components/zoom.ts
-globalThis.scale = 1;
-globalThis.viewX = 0;
-globalThis.viewY = 0;
-
 // active customization mode, 0 when none. Editors set it to claim exclusive control of the map
 globalThis.customization = 0;
 
@@ -27,8 +22,5 @@ declare global {
   var notes: any[]; // TODO: correct type
   var mapId: number;
   var mapHistory: { created: number; [key: string]: unknown }[];
-  var scale: number;
-  var viewX: number;
-  var viewY: number;
   var customization: number;
 }

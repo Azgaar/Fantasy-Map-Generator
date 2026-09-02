@@ -1,16 +1,10 @@
-// The map canvas: the voronoi extent a map is generated on (options.graph), and the svg viewport
+// The map canvas: the voronoi extent a map is generated on (options.graph)
 import { select } from "d3";
 import { Layers } from "@/components/layers";
+import { setViewportSize, viewport } from "@/components/viewport";
 import { setTranslateExtent, setZoomExtent } from "@/components/zoom";
 import { fitLegendBox } from "@/renderers/draw-legend";
 import { rn } from "@/utils/numberUtils";
-
-// The svg viewport resolution
-export const viewport = { width: 0, height: 0 };
-export function setViewport(width: number, height: number): void {
-  viewport.width = width;
-  viewport.height = height;
-}
 
 /** Resize everything that covers the whole map to the configured graph size */
 export function applyGraphSize(): void {
@@ -30,7 +24,7 @@ export function applyGraphSize(): void {
 /** Size the svg to the window and re-fit everything that is drawn in screen space */
 export function fitMapToScreen(): void {
   const { width, height } = options.graph;
-  setViewport(Math.min(width, window.innerWidth), Math.min(height, window.innerHeight));
+  setViewportSize(Math.min(width, window.innerWidth), Math.min(height, window.innerHeight));
   select("#map").attr("width", viewport.width).attr("height", viewport.height);
 
   const zoomMin = rn(Math.max(viewport.width / width, viewport.height / height), 3);

@@ -1,8 +1,8 @@
 import type { Selection } from "d3";
 import { select } from "d3";
-import { viewport } from "@/components/canvas";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
+import { viewport } from "@/components/viewport";
 import { renderEmblemDefinitions } from "@/renderers/draw-emblems";
 import { drawScaleBar } from "@/renderers/draw-scalebar";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";

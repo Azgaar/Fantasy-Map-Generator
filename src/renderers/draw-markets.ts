@@ -1,4 +1,5 @@
 import { color, curveBasisClosed, line, select } from "d3";
+import { viewport } from "@/components/viewport";
 import { rn } from "../utils";
 import { getIsolines } from "../utils/pathUtils";
 
@@ -37,8 +38,8 @@ function buildMarketsContent(): string {
       const centerBurg = pack.burgs[market.centerBurgId];
       if (centerBurg) {
         const { x, y } = centerBurg;
-        const radius = Math.max(rn(baseRadius + 1 / scale, 2), 2);
-        const fontSize = Math.max(rn(baseFont + 1 / scale, 2), 2);
+        const radius = Math.max(rn(baseRadius + 1 / viewport.scale, 2), 2);
+        const fontSize = Math.max(rn(baseFont + 1 / viewport.scale, 2), 2);
         const strokeWidth = rn(radius / 8, 2);
 
         content += `<circle cx="${x}" cy="${y}" r="${radius}" fill="${fillColor}" fill-opacity="1" stroke="${strokeColor}" stroke-width="${strokeWidth}" />`;

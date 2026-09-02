@@ -1,5 +1,5 @@
-import { viewport } from "@/components/canvas";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { viewport } from "@/components/viewport";
 import { ensureEl, minmax, rn } from "../utils";
 
 function open(): void {
@@ -95,7 +95,7 @@ function minimapClickToPan(event: MouseEvent): void {
   const svgPoint = point.matrixTransform(ctm.inverse());
   const x = minmax(svgPoint.x, 0, options.graph.width);
   const y = minmax(svgPoint.y, 0, options.graph.height);
-  zoomTo(x, y, scale, 450);
+  zoomTo(x, y, viewport.scale, 450);
 }
 
 function updateMinimap(): void {
@@ -107,14 +107,14 @@ function updateMinimap(): void {
   minimap.setAttribute("viewBox", `0 0 ${options.graph.width} ${options.graph.height}`);
 
   // #viewbox already has the current transform; invert it in minimap to show the whole world map.
-  const inverseScale = scale ? 1 / scale : 1;
+  const inverseScale = viewport.scale ? 1 / viewport.scale : 1;
   mapUse.setAttribute(
     "transform",
-    `translate(${rn(-viewX * inverseScale, 3)} ${rn(-viewY * inverseScale, 3)}) scale(${rn(inverseScale, 6)})`
+    `translate(${rn(-viewport.x * inverseScale, 3)} ${rn(-viewport.y * inverseScale, 3)}) scale(${rn(inverseScale, 6)})`
   );
 
-  const left = Math.max(0, -viewX * inverseScale);
-  const top = Math.max(0, -viewY * inverseScale);
+  const left = Math.max(0, -viewport.x * inverseScale);
+  const top = Math.max(0, -viewport.y * inverseScale);
   const right = Math.min(options.graph.width, left + viewport.width * inverseScale);
   const bottom = Math.min(options.graph.height, top + viewport.height * inverseScale);
 

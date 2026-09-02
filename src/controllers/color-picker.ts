@@ -1,7 +1,7 @@
 // The fill picker: an SVG overlay to pick a color or a hatching pattern.
 import { type D3DragEvent, drag, hsl, rgb, select } from "d3";
-import { viewport } from "@/components/canvas";
 import { tip } from "@/components/tooltips";
+import { viewport } from "@/components/viewport";
 import { parseTransform, rn } from "@/utils";
 
 type ColorSpace = "hsl" | "rgb" | "hex";
