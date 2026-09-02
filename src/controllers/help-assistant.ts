@@ -94,12 +94,15 @@ function renderDialog(): void {
     </div>
     <div class="helpAssistantDisclosure">Questions are kept for 90 days to help improve the documentation.</div>`;
 
-  // The community channels the OpenWidget panel used to offer — alternative ways to get help
+  // The community channels the OpenWidget panel used to offer — alternative ways to get help.
+  // GitHub points at the wiki (a turned-away user wants docs, not source). Patreon lives HERE
+  // deliberately and must NOT be added to the cap_reached text — that asymmetry is a ruling.
   const links = /* html */ `
     <div class="helpAssistantLinks">
-      <a href="https://github.com/Azgaar/Fantasy-Map-Generator" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki" target="_blank" rel="noopener noreferrer">GitHub</a>
       <a href="https://discordapp.com/invite/X7E84HU" target="_blank" rel="noopener noreferrer">Discord</a>
       <a href="https://www.reddit.com/r/FantasyMapGenerator/" target="_blank" rel="noopener noreferrer">Reddit</a>
+      <a href="https://www.patreon.com/azgaar" target="_blank" rel="noopener noreferrer">Patreon</a>
     </div>`;
 
   // Self-hosted copies are not on the gateway's origin allowlist: explain, don't error
