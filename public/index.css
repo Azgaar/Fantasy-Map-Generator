@@ -2676,6 +2676,20 @@ body.tour-free-roam * {
   margin-bottom: 0.5em;
 }
 
+#helpAssistant .helpAssistantDivider {
+  text-align: center;
+  opacity: 0.55;
+  font-size: 0.85em;
+  margin: 0.5em 0;
+}
+
+#helpAssistant .helpAssistantNewChat {
+  display: block;
+  text-align: right;
+  font-size: 0.85em;
+  margin-bottom: 0.2em;
+}
+
 #helpAssistant .helpAssistantAsked {
   font-style: italic;
   opacity: 0.8;

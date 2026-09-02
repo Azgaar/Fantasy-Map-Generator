@@ -6,6 +6,12 @@ import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import type { Limits } from "@/services/help/api";
 import { ask, getLimits, HelpApiError, OFFICIAL_ORIGIN, signIn, signOut } from "@/services/help/api";
 import { getToken } from "@/services/help/auth";
+import {
+  adoptConversationId,
+  clearConversationId,
+  getConversationId,
+  isNewConversation
+} from "@/services/help/conversation";
 import { renderMarkdown } from "@/utils/markdown";
 import { ensureEl } from "../utils";
 
@@ -83,6 +89,7 @@ function renderDialog(): void {
   destroyDialog("helpAssistant");
 
   const form = /* html */ `
+    <a href="#" id="helpAssistantNewChat" class="helpAssistantNewChat">New chat</a>
     <div id="helpAssistantLog" class="helpAssistantLog">
       <p>Ask anything about using the Fantasy Map Generator.</p>
     </div>
@@ -134,6 +141,16 @@ function renderDialog(): void {
       void submit(normalizeQuestion(getQuestionInput()));
     }
   });
+  ensureEl("helpAssistantNewChat").addEventListener("click", event => {
+    event.preventDefault();
+    clearConversationId();
+    const log = ensureEl("helpAssistantLog");
+    log.textContent = "";
+    const welcome = document.createElement("p");
+    welcome.textContent = "Ask anything about using the Fantasy Map Generator.";
+    log.appendChild(welcome);
+    setNotice(null);
+  });
 }
 
 function getQuestionInput(): string {
@@ -150,9 +167,12 @@ async function submit(question: string | null, isRetry = false): Promise<void> {
   button.textContent = "Asking…";
   if (!isRetry) appendEntry("helpAssistantAsked", question);
 
+  const sentId = getConversationId();
   try {
-    const { answer } = await ask(question);
+    const { answer, conversationId } = await ask(question, sentId ?? undefined);
     if (!isMounted()) return;
+    if (isNewConversation(sentId, conversationId)) appendDivider();
+    adoptConversationId(conversationId);
     appendAnswer(renderMarkdown(answer));
     ensureEl<HTMLTextAreaElement>("helpAssistantQuestion").value = "";
     setNotice(null);
@@ -178,6 +198,13 @@ function appendEntry(className: string, text: string): void {
   entry.className = className;
   entry.textContent = text;
   appendToLog(entry);
+}
+
+function appendDivider(): void {
+  const divider = document.createElement("div");
+  divider.className = "helpAssistantDivider";
+  divider.textContent = "— new conversation —";
+  appendToLog(divider);
 }
 
 // renderMarkdown output only — the renderer escapes every leaf
@@ -253,7 +280,10 @@ function renderAuth(tier: string): void {
     if (!canSignIn()) return;
     const button = document.createElement("button");
     button.textContent = "Sign in with Discord for more";
-    button.addEventListener("click", signIn);
+    button.addEventListener("click", () => {
+      clearConversationId();
+      signIn();
+    });
     host.appendChild(button);
     return;
   }
@@ -265,6 +295,7 @@ function renderAuth(tier: string): void {
   out.textContent = "Sign out";
   out.addEventListener("click", event => {
     event.preventDefault();
+    clearConversationId();
     void signOut().then(() => refreshLimits());
   });
   host.appendChild(label);
