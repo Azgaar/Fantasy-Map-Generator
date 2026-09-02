@@ -1,4 +1,5 @@
 import { select } from "d3";
+import { fitMapToScreen } from "@/components/canvas";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { syncInputs } from "@/components/options/tabs/options-tab";
@@ -259,7 +260,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
 
     ensureEl<HTMLInputElement>("shapeRendering").value =
       select("#viewbox").attr("shape-rendering") || "geometricPrecision";
-    if (data[2]) mapCoordinates = JSON.parse(data[2]);
     if (data[4]) notes = JSON.parse(data[4]);
     if (data[34]) {
       const usedFonts = JSON.parse(data[34]);

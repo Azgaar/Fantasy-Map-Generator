@@ -942,7 +942,7 @@ async function MapControls(camera: THREE.Camera, domElement: HTMLElement): Promi
 }
 
 async function updateGlobeTexure(addMesh?: boolean) {
-  const world = (mapCoordinates.latT ?? 0) > 179; // define if map covers whole world
+  const world = options.geography.coordinates.latT > 179; // define if map covers whole world
 
   // texture size
   options.threeD.resolutionScale = clampToRendererLimit(options.threeD.resolutionScale);
@@ -951,9 +951,9 @@ async function updateGlobeTexure(addMesh?: boolean) {
 
   // calculate map size and offset position
   const height = Math.max(1, Math.round(width / 2));
-  const mapHeight = rn(((mapCoordinates.latT ?? 0) / 180) * height);
+  const mapHeight = rn((options.geography.coordinates.latT / 180) * height);
   const mapWidth = world ? mapHeight * 2 : rn((options.graph.width / options.graph.height) * mapHeight);
-  const dy = world ? 0 : ((90 - (mapCoordinates.latN ?? 0)) / 180) * height;
+  const dy = world ? 0 : ((90 - options.geography.coordinates.latN) / 180) * height;
   const dx = world ? 0 : mapWidth / 4;
 
   // draw map on canvas

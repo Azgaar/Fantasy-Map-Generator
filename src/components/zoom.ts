@@ -1,4 +1,5 @@
 import { type D3ZoomEvent, select, zoom, zoomIdentity } from "d3";
+import { viewport } from "@/components/canvas";
 import { Layers } from "@/components/layers";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
@@ -89,9 +90,6 @@ function redrawTracedImage(): void {
   context.drawImage(image, 0, 0, canvas.width, canvas.height);
 }
 
-/** Rescale zoom-dependent map content to the settled scale. TODO: Legacy, to be reworked */
-/** the #labels container font-size is zoom-derived; anything that rewrites the base
- * (preset apply, load) re-derives it here */
 function applyLabelsZoomSize(): void {
   const fontSize = Math.max(Math.round(((100 + 100 / scale) / 2) * 100) / 100, 1);
   select("#labels").attr("font-size", `${fontSize}px`);
@@ -127,7 +125,7 @@ export function invokeActiveZooming(): void {
 
 /** Zoom to a specific point */
 export function zoomTo(x: number, y: number, z = 8, duration = 2000): void {
-  const transform = zoomIdentity.translate(x * -z + svgWidth / 2, y * -z + svgHeight / 2).scale(z);
+  const transform = zoomIdentity.translate(x * -z + viewport.width / 2, y * -z + viewport.height / 2).scale(z);
   select<SVGSVGElement, unknown>("#map").transition().duration(duration).call(zoomBehavior.transform, transform);
 }
 

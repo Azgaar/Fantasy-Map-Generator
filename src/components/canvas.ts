@@ -5,6 +5,13 @@ import { setTranslateExtent, setZoomExtent } from "@/components/zoom";
 import { fitLegendBox } from "@/renderers/draw-legend";
 import { rn } from "@/utils/numberUtils";
 
+// The svg viewport resolution
+export const viewport = { width: 0, height: 0 };
+export function setViewport(width: number, height: number): void {
+  viewport.width = width;
+  viewport.height = height;
+}
+
 /** Resize everything that covers the whole map to the configured graph size */
 export function applyGraphSize(): void {
   const { width, height } = options.graph;
@@ -23,11 +30,10 @@ export function applyGraphSize(): void {
 /** Size the svg to the window and re-fit everything that is drawn in screen space */
 export function fitMapToScreen(): void {
   const { width, height } = options.graph;
-  svgWidth = Math.min(width, window.innerWidth);
-  svgHeight = Math.min(height, window.innerHeight);
-  select("#map").attr("width", svgWidth).attr("height", svgHeight);
+  setViewport(Math.min(width, window.innerWidth), Math.min(height, window.innerHeight));
+  select("#map").attr("width", viewport.width).attr("height", viewport.height);
 
-  const zoomMin = rn(Math.max(svgWidth / width, svgHeight / height), 3);
+  const zoomMin = rn(Math.max(viewport.width / width, viewport.height / height), 3);
   const zoomInput = document.getElementById("zoomExtentMin") as HTMLInputElement | null;
   if (zoomInput) zoomInput.value = String(zoomMin);
   const zoomMax = +((document.getElementById("zoomExtentMax") as HTMLInputElement | null)?.value ?? 20);
@@ -38,13 +44,3 @@ export function fitMapToScreen(): void {
   Layers.draw("scaleBar");
   fitLegendBox();
 }
-
-// Legacy seam: the classic style scripts refit the map after a style change
-declare global {
-  // biome-ignore lint/suspicious/noRedeclare: legacy seam
-  var applyGraphSize: () => void;
-  // biome-ignore lint/suspicious/noRedeclare: legacy seam
-  var fitMapToScreen: () => void;
-}
-window.applyGraphSize = applyGraphSize;
-window.fitMapToScreen = fitMapToScreen;

@@ -354,7 +354,7 @@ function updateGlobePosition(): void {
   const eqD = ((options.graph.height / 2) * 100) / options.geography.mapSize;
 
   Coordinates.calculate();
-  const mc = mapCoordinates;
+  const mc = options.geography.coordinates;
   const unit = options.units.distance.unit;
   const meridian = eqD * 2 * options.units.distance.scale * getKmInDistanceUnit(); // 0 for a custom unit
   ensureEl("mapSize").innerHTML = `${options.graph.width}x${options.graph.height}`;
@@ -363,8 +363,7 @@ function updateGlobePosition(): void {
   ensureEl("meridianLength").innerHTML = String(rn(eqD * 2));
   ensureEl("meridianLengthFriendly").innerHTML = `${rn(eqD * 2 * options.units.distance.scale)} ${unit}`;
   ensureEl("meridianLengthEarth").innerHTML = meridian ? ` = ${rn(meridian / 200)}%🌏` : "";
-  ensureEl("mapCoordinates").innerHTML =
-    `${lat(mc.latN ?? 0)} ${Math.abs(rn(mc.lonW ?? 0))}°W; ${lat(mc.latS ?? 0)} ${rn(mc.lonE ?? 0)}°E`;
+  ensureEl("mapCoordinates").innerHTML = `${lat(mc.latN)} ${Math.abs(rn(mc.lonW))}°W; ${lat(mc.latS)} ${rn(mc.lonE)}°E`;
 
   // parse latitude value
   function lat(latitude: number): string {
@@ -435,13 +434,17 @@ function handleWindChange(event: Event): void {
   const tr = parseTransform(arrow.getAttribute("transform") ?? "");
   arrow.setAttribute("transform", `rotate(${options.climate.winds[tier]} ${tr[1]} ${tr[2]})`);
 
-  const mapTiers = range(mapCoordinates.latN ?? 0, mapCoordinates.latS ?? 0, -30).map(c => ((90 - c) / 30) | 0);
+  const mapTiers = range(options.geography.coordinates.latN, options.geography.coordinates.latS, -30).map(
+    c => ((90 - c) / 30) | 0
+  );
   if (ensureEl<HTMLInputElement>("wcAutoChange").checked && mapTiers.includes(tier)) updateWorld();
 }
 
 function restoreDefaultWinds(): void {
   const defaultWinds = [225, 45, 225, 315, 135, 315];
-  const mapTiers = range(mapCoordinates.latN ?? 0, mapCoordinates.latS ?? 0, -30).map(c => ((90 - c) / 30) | 0);
+  const mapTiers = range(options.geography.coordinates.latN, options.geography.coordinates.latS, -30).map(
+    c => ((90 - c) / 30) | 0
+  );
   const shouldUpdate =
     ensureEl<HTMLInputElement>("wcAutoChange").checked &&
     mapTiers.some(t => options.climate.winds[t] !== defaultWinds[t]);

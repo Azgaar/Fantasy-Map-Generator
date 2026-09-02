@@ -32,6 +32,8 @@ export const DEFAULT_DENSITY = 4;
 
 export const STORAGE_KEY = "fmg-options";
 
+export type OptionsData = ReturnType<typeof getDefaultOptions>;
+
 function getDefaultOptions() {
   return {
     seed: "",
@@ -49,7 +51,8 @@ function getDefaultOptions() {
     geography: {
       mapSize: 100, // map size in % of the world
       latitude: 50, // North-South map shift in %, 50 is centered on equator
-      longitude: 50 // West-East map shift in %, 50 is centered on prime meridian
+      longitude: 50, // West-East map shift in %, 50 is centered on prime meridian
+      coordinates: { latT: 180, latN: 90, latS: -90, lonT: 320, lonW: -160, lonE: 160 } // derived from the three values above by Coordinates.calculate()
     },
     climate: {
       temperature: { equator: 27, northPole: -30, southPole: -15 },
@@ -91,9 +94,6 @@ function getDefaultOptions() {
     coastline: undefined as unknown as CoastlineSettings
   };
 }
-
-/** The options tree: derived from the defaults, so the two can never drift apart */
-export type OptionsData = ReturnType<typeof getDefaultOptions>;
 
 // biome-ignore lint/suspicious/noRedeclare: legacy seam
 export const options: OptionsData = getDefaultOptions();

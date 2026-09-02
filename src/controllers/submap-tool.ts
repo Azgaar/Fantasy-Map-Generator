@@ -1,3 +1,4 @@
+import { applyGraphSize, fitMapToScreen } from "@/components/canvas";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { cellsDensityColor, changeCellsDensity } from "@/components/options/tabs/options-tab";
@@ -99,12 +100,12 @@ function generateSubmap(): void {
 function recalculateMapSize(x0: number, y0: number): void {
   options.geography.mapSize = rn(options.geography.mapSize / scale, 2);
 
-  const latT = (mapCoordinates.latT ?? 0) / scale;
-  const latN = getLatitude(y0, mapCoordinates, options.graph.height);
+  const latT = options.geography.coordinates.latT / scale;
+  const latN = getLatitude(y0, options.geography.coordinates, options.graph.height);
   options.geography.latitude = rn(((90 - latN) / (180 - latT)) * 100, 2);
 
-  const lotT = (mapCoordinates.lonT ?? 0) / scale;
-  const lonE = getLongitude(x0 + options.graph.width / scale, mapCoordinates, options.graph.width);
+  const lotT = options.geography.coordinates.lonT / scale;
+  const lonE = getLongitude(x0 + options.graph.width / scale, options.geography.coordinates, options.graph.width);
   options.geography.longitude = rn(((180 - lonE) / (360 - lotT)) * 100, 2);
 
   options.units.distance.scale = rn(options.units.distance.scale / scale, 2);

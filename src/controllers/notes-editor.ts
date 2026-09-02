@@ -1,3 +1,4 @@
+import { viewport } from "@/components/canvas";
 import { confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { highlightElement } from "@/renderers/overlays/highlight";
@@ -53,8 +54,8 @@ function open(id?: string, name?: string): void {
 
   $("#notesEditor").dialog({
     title: "Notes Editor",
-    width: svgWidth * 0.8,
-    height: svgHeight * 0.75,
+    width: viewport.width * 0.8,
+    height: viewport.height * 0.75,
     position: { my: "center", at: "center", of: "svg" },
     close: closeNotesEditor
   });

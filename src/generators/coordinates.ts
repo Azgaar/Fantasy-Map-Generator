@@ -79,7 +79,7 @@ class CoordinatesModule {
     const lonE = rn(180 - (360 - lonT) * lonShift, 1);
     const lonW = rn(lonE - lonT, 1);
 
-    mapCoordinates = { latT, latN, latS, lonT, lonW, lonE };
+    options.geography.coordinates = { latT, latN, latS, lonT, lonW, lonE };
   }
 
   private getSizeAndPosition(): SizeAndPosition {

@@ -1,5 +1,6 @@
 import type { Selection } from "d3";
 import { select } from "d3";
+import { viewport } from "@/components/canvas";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { renderEmblemDefinitions } from "@/renderers/draw-emblems";
@@ -25,7 +26,7 @@ type MapSelection = Selection<SVGSVGElement, unknown, null, undefined>;
 
 // project canvas coordinates to geographic [lon, lat], rounded to 4 decimals
 const toGeoCoordinates = (x: number, y: number) =>
-  getCoordinates(x, y, mapCoordinates, options.graph.width, options.graph.height, 4);
+  getCoordinates(x, y, options.geography.coordinates, options.graph.width, options.graph.height, 4);
 
 export interface GetMapURLOptions {
   debug?: boolean;
@@ -65,8 +66,8 @@ async function exportToPng(): Promise<void> {
     const link = document.createElement("a");
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d")!;
-    canvas.width = svgWidth * resolution;
-    canvas.height = svgHeight * resolution;
+    canvas.width = viewport.width * resolution;
+    canvas.height = viewport.height * resolution;
 
     const blob = await new Promise<Blob>((resolve, reject) => {
       const img = new Image();
@@ -106,8 +107,8 @@ async function exportToJpeg(): Promise<void> {
     const resolution = ensureEl<HTMLInputElement>("pngResolutionInput").valueAsNumber;
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d")!;
-    canvas.width = svgWidth * resolution;
-    canvas.height = svgHeight * resolution;
+    canvas.width = viewport.width * resolution;
+    canvas.height = viewport.height * resolution;
 
     const quality = Math.min(rn(1 - resolution / 20, 2), 0.92);
     const blob = await new Promise<Blob>((resolve, reject) => {

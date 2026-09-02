@@ -86,9 +86,9 @@ function updateFields(point: Point, cellId: number, gridCellId: number): void {
   set("infoX", x);
   set("infoY", y);
 
-  const latitude = getLatitude(y, mapCoordinates, options.graph.height, 4);
+  const latitude = getLatitude(y, options.geography.coordinates, options.graph.height, 4);
   set("infoLat", toDMS(latitude, "lat"));
-  set("infoLon", toDMS(getLongitude(x, mapCoordinates, options.graph.width, 4), "lon"));
+  set("infoLon", toDMS(getLongitude(x, options.geography.coordinates, options.graph.width, 4), "lon"));
   set("infoGeozone", getGeozone(latitude));
 
   const featureId = cells.f[cellId];

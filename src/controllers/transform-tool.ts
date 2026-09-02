@@ -1,3 +1,4 @@
+import { applyGraphSize, fitMapToScreen } from "@/components/canvas";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { cellsDensityColor, changeCellsDensity } from "@/components/options/tabs/options-tab";

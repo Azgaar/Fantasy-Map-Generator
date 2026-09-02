@@ -12,6 +12,7 @@ import {
   scaleSequential,
   select
 } from "d3";
+import { viewport } from "@/components/canvas";
 import { closeDialogs, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { dialogState } from "@/components/dialog/state";
 import { Layers } from "@/components/layers";
@@ -371,8 +372,8 @@ function enterHeightmapEditMode(mode: string, tool?: string): void {
     sessionStorage.setItem("noExitButtonAnimation", "true");
     exitCustomization.style.opacity = "0";
     const width = 12 * +ensureEl<HTMLInputElement>("uiSize").value * 11;
-    exitCustomization.style.right = `${(svgWidth - width) / 2}px`;
-    exitCustomization.style.bottom = `${svgHeight / 2}px`;
+    exitCustomization.style.right = `${(viewport.width - width) / 2}px`;
+    exitCustomization.style.bottom = `${viewport.height / 2}px`;
     exitCustomization.style.transform = "scale(2)";
     exitCustomization.style.display = "block";
     select("#exitCustomization")
@@ -1759,7 +1760,7 @@ function openImageConverter(): void {
 
   $("#imageConverter").dialog({
     title: "Image Converter",
-    maxHeight: svgHeight * 0.8,
+    maxHeight: viewport.height * 0.8,
     minHeight: "auto",
     width: "20em",
     position: { my: "right top", at: "right-10 top+10", of: "svg" },

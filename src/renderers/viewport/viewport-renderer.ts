@@ -1,3 +1,5 @@
+import { viewport } from "@/components/canvas";
+
 interface ViewportLayerHandle {
   render: () => void;
   unregister: () => void;
@@ -168,7 +170,7 @@ const OVERSCAN_PIXELS = 80;
 const GUARD_PIXELS = OVERSCAN_PIXELS / 2;
 
 export const ViewportLayers = new ViewportRenderer({
-  getViewport: () => ({ scale, x: viewX, y: viewY, width: svgWidth, height: svgHeight }),
+  getViewport: () => ({ scale, x: viewX, y: viewY, width: viewport.width, height: viewport.height }),
   overscanPixels: OVERSCAN_PIXELS,
   guardPixels: GUARD_PIXELS
 });

@@ -57,7 +57,6 @@ function prepareMapData(): string {
   );
 
   const settings = JSON.stringify(options);
-  const coords = JSON.stringify(mapCoordinates);
   const notesData = JSON.stringify(notes);
   const measurers = JSON.stringify(pack.measurers ?? []);
   const journeys = JSON.stringify(pack.journeys ?? []);
@@ -133,7 +132,7 @@ function prepareMapData(): string {
   const mapData = [
     params,
     settings,
-    coords,
+    "", // deprecated separate mapCoordinates, now options.geography.coordinates
     biomes,
     notesData,
     serializedSVG,

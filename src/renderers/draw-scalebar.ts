@@ -1,4 +1,5 @@
 import { range, type Selection, select } from "d3";
+import { viewport } from "@/components/canvas";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { ensureEl, rn } from "../utils";
@@ -8,7 +9,12 @@ function addScaleBarControls(scaleBar: Selection<SVGGElement, unknown, null, und
   scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", () => Controllers.UnitsEditor.open());
 }
 
-export function drawScaleBar(parent?: SVGSVGElement, scaleLevel = scale, width = svgWidth, height = svgHeight): void {
+export function drawScaleBar(
+  parent?: SVGSVGElement,
+  scaleLevel = scale,
+  width = viewport.width,
+  height = viewport.height
+): void {
   const parentEl = parent || ensureEl<SVGSVGElement>("map");
   const scaleBar = select(parentEl).select<SVGGElement>("#scaleBar");
 

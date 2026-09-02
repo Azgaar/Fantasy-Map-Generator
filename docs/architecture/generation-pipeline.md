@@ -59,7 +59,7 @@ anything but a straight line — so it added validation logic and API surface wi
 | ------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | Grid + heightmap         | `grid`, `heightmap`                                           | `grid`, `grid.cells.h`; resets `pack`                                           |
 | Hydrology base           | `markupGrid`, `depressionLakes`, `nearSeaLakes`               | `grid.cells.f/t/b`, lake and ocean topology                                     |
-| World position & climate | `mapSize`, `mapCoordinates`, `temperatures`, `precipitation`  | `options.mapSize/latitude/longitude`, `mapCoordinates`, `grid.cells.temp/prec`  |
+| World position & climate | `mapSize`, `mapCoordinates`, `temperatures`, `precipitation`  | `options.geography.*` (incl. `coordinates`), `grid.cells.temp/prec`             |
 | Repack                   | `regraph`, `markupPack`, `defaultRuler`                       | `pack.cells.*` (**invalidates every earlier `pack` cell index**), default ruler |
 | Rivers & biomes          | `rivers`, `biomes`, `featureGroups`                           | `pack.rivers`, `cells.r/fl/conf`, `pack.biomes`, `cells.biome`                  |
 | Climate art              | `ice`                                                         | `pack.ice`                                                                      |
@@ -97,7 +97,7 @@ flowchart TD
     hm["heightmap<br/><i>writes: grid.cells.h; resets pack</i>"]
     mg["markupGrid<br/><i>writes: grid.cells.f/t/b</i>"]
     lakes["addLakesInDeepDepressions +<br/>openNearSeaLakes<br/><i>writes: grid.cells.h/f</i>"]
-    coord["mapSize + mapCoordinates<br/><i>writes: options.mapSize/latitude/longitude, mapCoordinates</i>"]
+    coord["mapSize + mapCoordinates<br/><i>writes: options.geography.*</i>"]
     temp["temperatures<br/><i>writes: grid.cells.temp</i>"]
     prec["precipitation<br/><i>writes: grid.cells.prec</i>"]
     repack["regraph + markupPack<br/><i>writes: pack.* (new graph)</i>"]
@@ -125,7 +125,7 @@ flowchart TD
     %% cross-step (non-adjacent) global dependencies
     hm -. "grid.cells.h" .-> temp
     hm -. "grid.cells.h" .-> repack
-    coord -. "mapCoordinates" .-> prec
+    coord -. "options.geography.coordinates" .-> prec
     temp -. "grid.cells.temp" .-> biomes
     temp -. "grid.cells.temp" .-> ice
     prec -. "grid.cells.prec" .-> biomes
@@ -252,8 +252,8 @@ wind arrows whenever the layer is rendered. The generators never touch the DOM.
 `defineMapSize()` is the `mapSize` step: it picks how much of the globe the map covers and where it
 sits, from the heightmap template (real-world templates have fixed values, random ones a
 distribution) unless the option is locked. `calculate()` is the `mapCoordinates` step: it turns
-`options.mapSize/latitude/longitude` and the canvas aspect ratio into the `mapCoordinates` lat/lon
-box every latitude-dependent generator and renderer reads.
+`options.geography.mapSize/latitude/longitude` and the canvas aspect ratio into the
+`options.geography.coordinates` lat/lon box every latitude-dependent generator and renderer reads.
 
 ### `Pack` — [`pack-generator.ts`](../../src/generators/pack-generator.ts)
 

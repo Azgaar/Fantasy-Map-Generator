@@ -1846,6 +1846,7 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
   // v1.151.0 changed the settings format from a legacy pipe-delimited string to a JSON object
   const oldHeader = data[0].split("|");
   const oldSettings = (data[1] || "").split("|");
+  const oldCoordinates = safeParseJSON(data[2] ?? "");
   const migrated = structuredClone(options);
 
   if (oldHeader[3]) migrated.seed = oldHeader[3];
@@ -1909,6 +1910,9 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
   if (oldSettings[23]) migrated.labels.resizeOnZoom = Boolean(Number(oldSettings[23]));
   const stateGroup = migrated.labels.groups.find(group => group.type === "state");
   if (stateGroup && oldOptions.stateLabelsMode) stateGroup.mode = oldOptions.stateLabelsMode;
+
+  // v1.151.0 moved the mapCoordinates from own slot into the settings object
+  if (oldCoordinates) migrated.geography.coordinates = oldCoordinates;
 
   data[1] = JSON.stringify(migrated);
 }

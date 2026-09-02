@@ -1,3 +1,4 @@
+import { viewport } from "@/components/canvas";
 import { tip } from "@/components/tooltips";
 import { timeOfDayPresets } from "@/data/view-3d-options";
 import { ensureEl } from "@/utils";
@@ -76,8 +77,8 @@ async function open(type: string): Promise<void> {
     canvas.height = canvas.width / (options.graph.width / options.graph.height);
     canvas.style.display = "block";
   } else {
-    canvas.width = svgWidth;
-    canvas.height = svgHeight;
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
     canvas.style.position = "absolute";
     canvas.style.display = "none";
   }

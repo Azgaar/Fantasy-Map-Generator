@@ -1,4 +1,5 @@
 import { type D3DragEvent, drag, type Selection, select } from "d3";
+import { viewport } from "@/components/canvas";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
@@ -129,8 +130,8 @@ function removeAllMeasurers(): void {
 // measurer creation tools
 
 function addRuler(): void {
-  const width = Math.min(options.graph.width, svgWidth);
-  const height = Math.min(options.graph.height, svgHeight);
+  const width = Math.min(options.graph.width, viewport.width);
+  const height = Math.min(options.graph.height, viewport.height);
   const svgEl = ensureEl<HTMLElement>("map") as unknown as SVGSVGElement;
   const pt = svgEl.createSVGPoint();
   pt.x = width / 2;

@@ -1,3 +1,4 @@
+import { viewport } from "@/components/canvas";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { ensureEl, minmax, rn } from "../utils";
 
@@ -99,9 +100,9 @@ function minimapClickToPan(event: MouseEvent): void {
 
 function updateMinimap(): void {
   const minimap = document.getElementById("minimapSurface") as SVGSVGElement | null;
-  const viewport = document.getElementById("minimapViewport") as SVGRectElement | null;
+  const viewportRect = document.getElementById("minimapViewport") as SVGRectElement | null;
   const mapUse = document.getElementById("minimapMapUse") as SVGUseElement | null;
-  if (!minimap || !viewport || !mapUse) return;
+  if (!minimap || !viewportRect || !mapUse) return;
 
   minimap.setAttribute("viewBox", `0 0 ${options.graph.width} ${options.graph.height}`);
 
@@ -114,13 +115,13 @@ function updateMinimap(): void {
 
   const left = Math.max(0, -viewX * inverseScale);
   const top = Math.max(0, -viewY * inverseScale);
-  const right = Math.min(options.graph.width, left + svgWidth * inverseScale);
-  const bottom = Math.min(options.graph.height, top + svgHeight * inverseScale);
+  const right = Math.min(options.graph.width, left + viewport.width * inverseScale);
+  const bottom = Math.min(options.graph.height, top + viewport.height * inverseScale);
 
-  viewport.setAttribute("x", String(rn(left, 3)));
-  viewport.setAttribute("y", String(rn(top, 3)));
-  viewport.setAttribute("width", String(rn(Math.max(0, right - left), 3)));
-  viewport.setAttribute("height", String(rn(Math.max(0, bottom - top), 3)));
+  viewportRect.setAttribute("x", String(rn(left, 3)));
+  viewportRect.setAttribute("y", String(rn(top, 3)));
+  viewportRect.setAttribute("width", String(rn(Math.max(0, right - left), 3)));
+  viewportRect.setAttribute("height", String(rn(Math.max(0, bottom - top), 3)));
 }
 
 declare global {

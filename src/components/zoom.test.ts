@@ -7,6 +7,7 @@ vi.mock("@/renderers/viewport/viewport-renderer", () => ({
 }));
 
 import "@/generators/styles";
+import { setViewport } from "@/components/canvas";
 import { rn } from "@/utils/numberUtils";
 import { applyZoomBehavior, setMapZoom } from "./zoom";
 
@@ -32,12 +33,11 @@ beforeEach(() => {
     scale: 1,
     viewX: 0,
     viewY: 0,
-    svgWidth: 1000,
-    svgHeight: 600,
     customization: 0,
     options: { labels: { resizeOnZoom: false } },
     pack: { markers: [{ i: 0, x: 200, y: 200, size: 30, hidden: false }] }
   });
+  setViewport(1000, 600);
 
   vi.stubGlobal(
     "requestAnimationFrame",

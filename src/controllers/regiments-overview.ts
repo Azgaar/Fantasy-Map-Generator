@@ -330,13 +330,13 @@ function downloadRegimentsData(): void {
 
       data += `${r.x},`;
       data += `${r.y},`;
-      data += `${getLatitude(r.y, mapCoordinates, options.graph.height, 2)},`;
-      data += `${getLongitude(r.x, mapCoordinates, options.graph.width, 2)},`;
+      data += `${getLatitude(r.y, options.geography.coordinates, options.graph.height, 2)},`;
+      data += `${getLongitude(r.x, options.geography.coordinates, options.graph.width, 2)},`;
 
       data += `${r.bx},`;
       data += `${r.by},`;
-      data += `${getLatitude(r.by, mapCoordinates, options.graph.height, 2)},`;
-      data += `${getLongitude(r.bx, mapCoordinates, options.graph.width, 2)}\n`;
+      data += `${getLatitude(r.by, options.geography.coordinates, options.graph.height, 2)},`;
+      data += `${getLongitude(r.bx, options.geography.coordinates, options.graph.width, 2)}\n`;
     }
   }
 

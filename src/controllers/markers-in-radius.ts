@@ -1,3 +1,4 @@
+import { viewport } from "@/components/canvas";
 import { closeDialogs, confirmationDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
@@ -13,7 +14,7 @@ let lastRadius = 0;
 let inRangeMarkers: Marker[] = [];
 
 function defaultRadius(): number {
-  const distance = (Math.min(svgWidth, svgHeight) / 4) * options.units.distance.scale;
+  const distance = (Math.min(viewport.width, viewport.height) / 4) * options.units.distance.scale;
   const magnitude = 10 ** Math.floor(Math.log10(distance || 1));
   return Math.max(1, Math.round(distance / magnitude) * magnitude);
 }
@@ -192,8 +193,8 @@ function exportInRange(): void {
     const culture = pack.cultures[pack.cells.culture[cell]];
     const stateName = state ? quote(state.fullName || state.name) : "";
     const cultureName = culture ? quote(culture.name) : "";
-    const lat = getLatitude(y, mapCoordinates, options.graph.height, 2);
-    const lon = getLongitude(x, mapCoordinates, options.graph.width, 2);
+    const lat = getLatitude(y, options.geography.coordinates, options.graph.height, 2);
+    const lon = getLongitude(x, options.geography.coordinates, options.graph.width, 2);
     return [i, type, icon, name, legend, stateName, cultureName, x, y, lat, lon].join(",");
   });
 

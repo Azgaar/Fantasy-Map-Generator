@@ -7,7 +7,7 @@ export function drawCoordinates(): void {
   const coordinates = select(ensureEl<SVGGElement>("coordinates"));
   coordinates.selectAll("*").remove(); // redraw every time: the label size depends on the zoom level
 
-  const { lonT, lonW, lonE, latN, latS } = mapCoordinates as Required<typeof mapCoordinates>;
+  const { lonT, lonW, lonE, latN, latS } = options.geography.coordinates;
   const goal = lonT / scale / 10;
   const step = STEPS.reduce((prev, curr) => (Math.abs(curr - goal) < Math.abs(prev - goal) ? curr : prev));
 

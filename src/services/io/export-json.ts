@@ -42,7 +42,7 @@ function getFullDataJson(): string {
   return JSON.stringify({
     info,
     settings,
-    mapCoordinates,
+    mapCoordinates: options.geography.coordinates,
     pack: packData,
     grid: gridData,
     notes,
@@ -74,7 +74,7 @@ function getMinimalDataJson(): string {
   return JSON.stringify({
     info,
     settings,
-    mapCoordinates,
+    mapCoordinates: options.geography.coordinates,
     pack: packData,
     notes,
     nameBases: Names.nameBases

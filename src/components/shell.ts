@@ -7,6 +7,7 @@ import { Services } from "@/services";
 import { isElectron, isLocalhost } from "@/services/platform";
 import { ensureEl, findEl } from "@/utils";
 import { isLocked } from "@/utils/preferences";
+import { fitMapToScreen } from "./canvas";
 
 /** Keep the map canvas in sync with the window unless the user pinned a map size */
 function onResize(): void {

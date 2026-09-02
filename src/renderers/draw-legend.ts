@@ -1,6 +1,7 @@
 // The legend box: a titled, multi-column list of color swatches drawn over the map
 
 import { type D3DragEvent, select } from "d3";
+import { viewport } from "@/components/canvas";
 import { tip } from "@/components/tooltips";
 import { parseTransform, rn } from "@/utils";
 
@@ -106,8 +107,8 @@ export function fitLegendBox(): void {
   const py = styles.legend.options.y / 100;
 
   const bbox = getBBox(legend);
-  const x = rn(svgWidth * px - bbox.width);
-  const y = rn(svgHeight * py - bbox.height);
+  const x = rn(viewport.width * px - bbox.width);
+  const y = rn(viewport.height * py - bbox.height);
   legend.attr("transform", `translate(${x},${y})`);
 }
 
@@ -120,8 +121,8 @@ export function dragLegendBox(event: D3DragEvent<SVGGElement, unknown, unknown>)
   const bbox = getBBox(legend);
 
   event.on("drag", dragEvent => {
-    const px = rn(((x + dragEvent.x + bbox.width) / svgWidth) * 100, 2);
-    const py = rn(((y + dragEvent.y + bbox.height) / svgHeight) * 100, 2);
+    const px = rn(((x + dragEvent.x + bbox.width) / viewport.width) * 100, 2);
+    const py = rn(((y + dragEvent.y + bbox.height) / viewport.height) * 100, 2);
     legend.attr("transform", `translate(${x + dragEvent.x},${y + dragEvent.y})`);
     styles.legend.options.x = px;
     styles.legend.options.y = py;

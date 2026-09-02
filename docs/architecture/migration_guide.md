@@ -277,11 +277,6 @@ the boot sequence on `DOMContentLoaded`. Two ordering rules follow from that:
   and friends exist from `globals.ts` (and `options-store.ts`) onwards, but they hold placeholder
   values until the boot sequence and the first generation fill them in. Read them lazily _inside_
   the function.
-- **The classic `public/modules/ui/*.js` scripts evaluate _after_ the whole module graph**, because
-  they sit below `main.ts` in `index.html`. So `applyStoredOptions`, `randomizeOptions`,
-  `applyStyleOnLoad`, `applyGraphSize` and `fitMapToScreen` are undefined at module top level and
-  only become callable once `DOMContentLoaded` has fired. Never call one outside the boot sequence
-  or an event handler.
 
 (An `import { … } from "d3"` at top level is always safe — it's part of the module graph, not a
 runtime global.)

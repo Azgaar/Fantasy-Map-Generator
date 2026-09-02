@@ -43,7 +43,8 @@ class TemperatureModule {
 
     for (let rowCellId = 0; rowCellId < cells.i.length; rowCellId += cellsX) {
       const [, y] = points[rowCellId];
-      const rowLatitude = mapCoordinates.latN! - (y / options.graph.height) * mapCoordinates.latT!; // [90; -90]
+      const rowLatitude =
+        options.geography.coordinates.latN - (y / options.graph.height) * options.geography.coordinates.latT; // [90; -90]
       const seaLevelTemp = getSeaLevelTemperature(rowLatitude);
       DEBUG.temperature && console.info(`${rn(rowLatitude)}° sea temperature: ${rn(seaLevelTemp)}°C`);
 

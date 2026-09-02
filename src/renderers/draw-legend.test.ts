@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
 import "@/generators/styles";
+import { setViewport } from "@/components/canvas";
 import { dragLegendBox, drawLegend, fitLegendBox, redrawLegend } from "./draw-legend";
 
 beforeEach(() => {
@@ -18,8 +19,7 @@ beforeEach(() => {
     width: 60,
     height: 40
   });
-  globalThis.svgWidth = 800;
-  globalThis.svgHeight = 600;
+  setViewport(800, 600);
 });
 
 const items = [
@@ -75,7 +75,7 @@ describe("drawLegend", () => {
     fitLegendBox();
 
     const transform = document.getElementById("legend")!.getAttribute("transform");
-    // svgWidth 800 * 0.5 - bbox width 60 = 340; svgHeight 600 * 0.5 - bbox height 40 = 260
+    // viewport 800 * 0.5 - bbox width 60 = 340; 600 * 0.5 - bbox height 40 = 260
     expect(transform).toBe("translate(340,260)");
     styles.legend.options.x = 99;
     styles.legend.options.y = 93;

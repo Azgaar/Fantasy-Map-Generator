@@ -82,15 +82,17 @@ class PrecipitationModule {
 
     const vertT = southerly + northerly;
     if (northerly) {
-      const bandN = ((Math.abs(mapCoordinates.latN!) - 1) / 5) | 0;
-      const latModN = mapCoordinates.latT! > 60 ? (mean(LATITUDE_MODIFIER) as number) : LATITUDE_MODIFIER[bandN];
+      const bandN = ((Math.abs(options.geography.coordinates.latN) - 1) / 5) | 0;
+      const latModN =
+        options.geography.coordinates.latT > 60 ? (mean(LATITUDE_MODIFIER) as number) : LATITUDE_MODIFIER[bandN];
       const maxPrecN = (northerly / vertT) * 60 * modifier * latModN;
       passWind(range(0, cellsX, 1), maxPrecN, cellsX, cellsY);
     }
 
     if (southerly) {
-      const bandS = ((Math.abs(mapCoordinates.latS!) - 1) / 5) | 0;
-      const latModS = mapCoordinates.latT! > 60 ? (mean(LATITUDE_MODIFIER) as number) : LATITUDE_MODIFIER[bandS];
+      const bandS = ((Math.abs(options.geography.coordinates.latS) - 1) / 5) | 0;
+      const latModS =
+        options.geography.coordinates.latT > 60 ? (mean(LATITUDE_MODIFIER) as number) : LATITUDE_MODIFIER[bandS];
       const maxPrecS = (southerly / vertT) * 60 * modifier * latModS;
       passWind(range(cells.i.length - cellsX, cells.i.length, 1), maxPrecS, -cellsX, cellsY);
     }
@@ -108,7 +110,7 @@ class PrecipitationModule {
     let southerly = 0;
 
     range(0, cells.i.length, cellsX).forEach((cellId, rowId) => {
-      const lat = mapCoordinates.latN! - (rowId / cellsY) * mapCoordinates.latT!;
+      const lat = options.geography.coordinates.latN - (rowId / cellsY) * options.geography.coordinates.latT;
       const latMod = LATITUDE_MODIFIER[((Math.abs(lat) - 1) / 5) | 0];
       const tier = (Math.abs(lat - 89) / 30) | 0; // 30° tiers from 0 to 5, north to south
       const angle = options.climate.winds[tier];
