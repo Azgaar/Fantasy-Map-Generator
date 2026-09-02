@@ -2,6 +2,8 @@
 // docs/superpowers/specs/2026-09-01-web-help-endpoint-design.md). Everything is server-pinned;
 // the request body is exactly {question} by contract — unknown fields are a 400.
 
+import { clearToken, getToken } from "./auth";
+
 export const GATEWAY_URL = "https://ask.azgaarsfmg.com";
 
 // Scheme + host only — the origin the gateway allows, NOT where requests go
@@ -31,7 +33,8 @@ export type HelpErrorCode =
   | "blocked"
   | "provider_error"
   | "invalid_request"
-  | "unreachable";
+  | "unreachable"
+  | "unauthorized";
 
 export class HelpApiError extends Error {
   code: HelpErrorCode;
@@ -59,9 +62,15 @@ function gatewayBase(): string {
 }
 
 async function request<T>(path: string, init: RequestInit): Promise<T> {
+  const token = getToken();
+  const headers: Record<string, string> = {
+    ...(init.headers as Record<string, string> | undefined),
+    ...(token ? { Authorization: `Bearer ${token}` } : {})
+  };
+
   let response: Response;
   try {
-    response = await fetch(`${gatewayBase()}${path}`, init);
+    response = await fetch(`${gatewayBase()}${path}`, { ...init, headers });
   } catch {
     throw new HelpApiError("unreachable", "The assistant is unreachable. Check your connection and try again.");
   }
@@ -72,6 +81,11 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
     } catch {
       throw new HelpApiError("provider_error", "The assistant returned an unreadable response.");
     }
+  }
+
+  if (response.status === 401) {
+    clearToken();
+    throw new HelpApiError("unauthorized", "Your sign-in has expired. Sign in with Discord again for more questions.");
   }
 
   let code: HelpErrorCode = "provider_error";
@@ -98,3 +112,18 @@ export const ask = (question: string): Promise<AskResponse> =>
   });
 
 export const getLimits = (): Promise<Limits> => request<Limits>("/v1/limits", { method: "GET" });
+
+// Sign-in is a full-page redirect; the gateway lands the user back on the app URL with
+// #token=… in the fragment (server-configured target — the client passes nothing).
+export function signIn(): void {
+  location.assign(`${gatewayBase()}/v1/auth/discord`);
+}
+
+export async function signOut(): Promise<void> {
+  try {
+    await request<void>("/v1/auth/logout", { method: "POST" });
+  } catch {
+    // signing out locally still works when the server is unreachable
+  }
+  clearToken();
+}

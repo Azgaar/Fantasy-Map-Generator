@@ -104,3 +104,51 @@ describe("getLimits", () => {
     expect(limits.remaining).toBe(3);
   });
 });
+
+describe("bearer token", () => {
+  it("attaches Authorization when a token is stored", async () => {
+    vi.stubGlobal("localStorage", {
+      getItem: () => "tok-abc",
+      setItem: () => {},
+      removeItem: () => {}
+    });
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse(200, { tier: "member", remaining: 10, resetsAt: "2026-09-03T00:00:00.000Z" }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getLimits();
+
+    const [, init] = fetchMock.mock.calls[0];
+    expect((init.headers as Record<string, string>).Authorization).toBe("Bearer tok-abc");
+  });
+
+  it("sends no Authorization header when no token is stored", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, { tier: "anonymous", remaining: 5, resetsAt: "x" }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getLimits();
+
+    const [, init] = fetchMock.mock.calls[0];
+    expect((init.headers as Record<string, string> | undefined)?.Authorization).toBeUndefined();
+  });
+
+  it("maps 401 to unauthorized and clears the stored token", async () => {
+    const removed: string[] = [];
+    vi.stubGlobal("localStorage", {
+      getItem: () => "tok-expired",
+      setItem: () => {},
+      removeItem: (k: string) => void removed.push(k)
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(jsonResponse(401, { error: { code: "unauthorized", message: "Session expired." } }))
+    );
+
+    const error = await ask("q").catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(HelpApiError);
+    expect((error as HelpApiError).code).toBe("unauthorized");
+    expect(removed.includes("fmg-help-token")).toBe(true);
+  });
+});

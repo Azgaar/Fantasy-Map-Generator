@@ -39,6 +39,10 @@ describe("noticeFor", () => {
     const notice = noticeFor(new HelpApiError("provider_error", '<img src=x onerror="alert(1)">'));
     expect(notice.html).not.toContain("<img");
   });
+
+  it("leaves asking enabled for unauthorized (signed-out is not a lockout)", () => {
+    expect(noticeFor(new HelpApiError("unauthorized", "Session expired.")).askDisabled).toBe(false);
+  });
 });
 
 describe("limitsLabel", () => {
