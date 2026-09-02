@@ -13,6 +13,10 @@ function drawOceanBase(): void {
 
   const baseRect = ensureFullGraphRect(ensureEl("oceanLayers"), "oceanBase");
   baseRect.dataset.group = "base"; // the style store addresses it by group
+  // the rect is born after the startup Styles.write, so it has to take its own fill from the store
+  const { fill } = styles.ocean.base.attrs;
+  if (fill === null) baseRect.removeAttribute("fill");
+  else baseRect.setAttribute("fill", fill);
 }
 
 /** find or create a rect covering the whole graph, kept below whatever else the group holds */
