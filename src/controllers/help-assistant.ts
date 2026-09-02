@@ -4,7 +4,7 @@
 
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import type { Limits } from "@/services/help/api";
-import { ask, getLimits, HelpApiError, OFFICIAL_ORIGIN, signIn, signOut } from "@/services/help/api";
+import { ask, getLimits, HelpApiError, OFFICIAL_ORIGIN, sendFeedback, signIn, signOut } from "@/services/help/api";
 import { getToken } from "@/services/help/auth";
 import {
   adoptConversationId,
@@ -177,7 +177,7 @@ async function submit(question: string | null, isRetry = false): Promise<void> {
 
   const sentId = getConversationId();
   try {
-    const { answer, conversationId } = await ask(question, sentId ?? undefined);
+    const { answer, conversationId, requestId } = await ask(question, sentId ?? undefined);
     const isNew = isNewConversation(sentId, conversationId);
     // Pure storage — safe to do even if the dialog was closed during a slow ask, so it runs
     // before the isMounted() guard: otherwise closing the dialog mid-ask would lose the
@@ -185,7 +185,7 @@ async function submit(question: string | null, isRetry = false): Promise<void> {
     adoptConversationId(conversationId);
     if (!isMounted()) return;
     if (isNew) appendDivider();
-    appendAnswer(renderMarkdown(answer));
+    appendAnswer(renderMarkdown(answer), requestId);
     ensureEl<HTMLTextAreaElement>("helpAssistantQuestion").value = "";
     setNotice(null);
     autoRetried = false;
@@ -224,11 +224,37 @@ function appendDivider(): void {
 }
 
 // renderMarkdown output only — the renderer escapes every leaf
-function appendAnswer(safeHtml: string): void {
+function appendAnswer(safeHtml: string, requestId: number | null): void {
   const entry = document.createElement("div");
   entry.className = "helpAssistantAnswer";
   entry.innerHTML = safeHtml;
+  // requestId null means there is nothing server-side to rate — no control (never post null)
+  if (requestId !== null) entry.appendChild(buildFeedbackControl(requestId));
   appendToLog(entry);
+}
+
+export function buildFeedbackControl(requestId: number): HTMLElement {
+  const row = document.createElement("div");
+  row.className = "helpAssistantFeedback";
+
+  for (const rating of ["up", "down"] as const) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = rating === "up" ? "👍" : "👎";
+    button.setAttribute("aria-label", rating === "up" ? "Good answer" : "Bad answer");
+    button.addEventListener("click", () => {
+      const previous = row.querySelector(".selected");
+      previous?.classList.remove("selected");
+      button.classList.add("selected");
+      // a failed post is a silent nicety-miss: revert the selection, never a widget state
+      sendFeedback(requestId, rating).catch(() => {
+        button.classList.remove("selected");
+        previous?.classList.add("selected");
+      });
+    });
+    row.appendChild(button);
+  }
+  return row;
 }
 
 function appendToLog(node: HTMLElement): void {

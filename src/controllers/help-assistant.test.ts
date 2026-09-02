@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
 
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { HelpApiError } from "@/services/help/api";
 import { renderMarkdown } from "@/utils/markdown";
-import { limitsLabel, normalizeQuestion, noticeFor, shouldAutoRetry } from "./help-assistant";
+import { buildFeedbackControl, limitsLabel, normalizeQuestion, noticeFor, shouldAutoRetry } from "./help-assistant";
+
+afterEach(() => vi.unstubAllGlobals());
 
 describe("noticeFor", () => {
   // Budget-refusal text is the server's to write (it carries wiki/Discord links as live
@@ -81,5 +83,47 @@ describe("normalizeQuestion", () => {
     expect(normalizeQuestion("")).toBeNull();
     expect(normalizeQuestion("   \n ")).toBeNull();
     expect(normalizeQuestion("a".repeat(1001))).toBeNull();
+  });
+});
+
+describe("buildFeedbackControl", () => {
+  it("renders both thumbs unselected", () => {
+    const row = buildFeedbackControl(41);
+    const buttons = row.querySelectorAll("button");
+    expect(buttons.length).toBe(2);
+    expect(row.querySelector(".selected")).toBeNull();
+  });
+
+  it("marks the clicked rating selected and posts it", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const row = buildFeedbackControl(41);
+    const [up] = Array.from(row.querySelectorAll("button"));
+    up.click();
+    await Promise.resolve();
+    expect(up.classList.contains("selected")).toBe(true);
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body as string);
+    expect(body).toEqual({ requestId: 41, rating: "up" });
+  });
+
+  it("reverts the selection when the post fails", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("down")));
+    const row = buildFeedbackControl(41);
+    const [up] = Array.from(row.querySelectorAll("button"));
+    up.click();
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(up.classList.contains("selected")).toBe(false);
+  });
+
+  it("moves the selection when the user switches rating", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 204 })));
+    const row = buildFeedbackControl(41);
+    const [up, down] = Array.from(row.querySelectorAll("button"));
+    up.click();
+    await new Promise(resolve => setTimeout(resolve, 0));
+    down.click();
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(up.classList.contains("selected")).toBe(false);
+    expect(down.classList.contains("selected")).toBe(true);
   });
 });

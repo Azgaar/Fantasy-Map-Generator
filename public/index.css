@@ -2695,6 +2695,30 @@ body.tour-free-roam * {
   opacity: 0.8;
 }
 
+#helpAssistant .helpAssistantFeedback {
+  display: flex;
+  gap: 0.3em;
+  justify-content: flex-end;
+  margin-top: 0.2em;
+}
+
+#helpAssistant .helpAssistantFeedback button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0.4;
+  font-size: 1em;
+  padding: 0 0.15em;
+}
+
+#helpAssistant .helpAssistantFeedback button:hover {
+  opacity: 0.8;
+}
+
+#helpAssistant .helpAssistantFeedback button.selected {
+  opacity: 1;
+}
+
 #helpAssistant .helpAssistantFooter {
   display: flex;
   flex-wrap: wrap;
