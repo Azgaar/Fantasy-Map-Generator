@@ -1,9 +1,9 @@
-// Browser preferences: localStorage-backed UI state plus temporary legacy listeners.
-// This is browser-local state, not a map service.
-
 import { tip } from "@/components/tooltips";
 import { findEl } from "@/utils";
 import { safeParseJSON } from "@/utils/stringUtils";
+
+/* The options the user pinned */
+const LOCKS_KEY = "locks";
 
 export function stored(key: string): string | null {
   return localStorage.getItem(key) || null;
@@ -12,12 +12,6 @@ export function stored(key: string): string | null {
 export function store(key: string, value: string): void {
   localStorage.setItem(key, value);
 }
-
-/**
- * The options the user pinned. Values live in the stored options object (see components/options.ts),
- * so this is only the set of keys the generator has to leave alone
- */
-const LOCKS_KEY = "locks";
 
 function readLocks(): Set<string> {
   const keys = safeParseJSON(localStorage.getItem(LOCKS_KEY) ?? "");
