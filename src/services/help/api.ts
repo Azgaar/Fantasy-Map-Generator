@@ -3,6 +3,7 @@
 // the request body is exactly {question} by contract — unknown fields are a 400.
 
 import { clearToken, getToken } from "./auth";
+import { clearConversationId } from "./conversation";
 
 export const GATEWAY_URL = "https://ask.azgaarsfmg.com";
 
@@ -87,6 +88,7 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
 
   if (response.status === 401) {
     clearToken();
+    clearConversationId();
     throw new HelpApiError("unauthorized", "Your sign-in has expired. Sign in with Discord again for more questions.");
   }
 

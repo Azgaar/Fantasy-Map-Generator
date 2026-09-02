@@ -71,7 +71,6 @@ describe("ask", () => {
     ["invalid_request", 400, undefined]
   ])("maps a %s error body to HelpApiError with verbatim message", async (code, status, retryAfter) => {
     const errorBody = {
-      conversationId: "x".repeat(16),
       error: { code, message: `server text for ${code}`, ...(retryAfter ? { retryAfter } : {}) }
     };
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(status, errorBody)));
@@ -129,7 +128,6 @@ describe("bearer token", () => {
     });
     const fetchMock = vi.fn().mockResolvedValue(
       jsonResponse(200, {
-        conversationId: "x".repeat(16),
         tier: "member",
         remaining: 10,
         resetsAt: "2026-09-03T00:00:00.000Z"
@@ -151,11 +149,7 @@ describe("bearer token", () => {
       setItem: () => {},
       removeItem: () => {}
     });
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValue(
-        jsonResponse(200, { conversationId: "x".repeat(16), tier: "anonymous", remaining: 5, resetsAt: "x" })
-      );
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, { tier: "anonymous", remaining: 5, resetsAt: "x" }));
     vi.stubGlobal("fetch", fetchMock);
 
     await getLimits();
@@ -164,12 +158,18 @@ describe("bearer token", () => {
     expect((init.headers as Record<string, string> | undefined)?.Authorization).toBeUndefined();
   });
 
-  it("maps 401 to unauthorized and clears the stored token", async () => {
-    const removed: string[] = [];
+  it("maps 401 to unauthorized and clears both the stored token and the conversation id", async () => {
+    const removedFromLocal: string[] = [];
+    const removedFromSession: string[] = [];
     vi.stubGlobal("localStorage", {
       getItem: () => "tok-expired",
       setItem: () => {},
-      removeItem: (k: string) => void removed.push(k)
+      removeItem: (k: string) => void removedFromLocal.push(k)
+    });
+    vi.stubGlobal("sessionStorage", {
+      getItem: () => "convo-expired",
+      setItem: () => {},
+      removeItem: (k: string) => void removedFromSession.push(k)
     });
     vi.stubGlobal(
       "fetch",
@@ -180,7 +180,8 @@ describe("bearer token", () => {
 
     expect(error).toBeInstanceOf(HelpApiError);
     expect((error as HelpApiError).code).toBe("unauthorized");
-    expect(removed.includes("fmg-help-token")).toBe(true);
+    expect(removedFromLocal.includes("fmg-help-token")).toBe(true);
+    expect(removedFromSession.includes("fmg-help-conversation")).toBe(true);
   });
 });
 

@@ -14,7 +14,13 @@ export function getConversationId(): string | null {
   }
 }
 
+// The server's id format. Defensive against regressions/tampering — a poisoned or malformed
+// stored value would otherwise 400 every ask for the rest of the session, so a bad value is
+// silently dropped rather than stored.
+const VALID_ID = /^[A-Za-z0-9_-]{16,64}$/;
+
 export function adoptConversationId(id: string): void {
+  if (!VALID_ID.test(id)) return;
   try {
     sessionStorage.setItem(CONVERSATION_STORAGE, id);
   } catch {

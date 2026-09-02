@@ -32,6 +32,20 @@ describe("conversation id storage", () => {
     expect(getConversationId()).toBeNull();
   });
 
+  it("rejects a malformed id (storage stays empty)", () => {
+    vi.stubGlobal("sessionStorage", fakeStorage());
+    adoptConversationId("not valid!");
+    expect(getConversationId()).toBeNull();
+  });
+
+  it("accepts a 24-char base64url id", () => {
+    vi.stubGlobal("sessionStorage", fakeStorage());
+    const id = "abcDEF123_-abcDEF123_-ab";
+    expect(id).toHaveLength(24);
+    adoptConversationId(id);
+    expect(getConversationId()).toBe(id);
+  });
+
   it("survives a throwing storage without throwing", () => {
     const throwing = {
       getItem: () => {

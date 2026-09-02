@@ -143,14 +143,22 @@ function renderDialog(): void {
   });
   ensureEl("helpAssistantNewChat").addEventListener("click", event => {
     event.preventDefault();
-    clearConversationId();
-    const log = ensureEl("helpAssistantLog");
-    log.textContent = "";
-    const welcome = document.createElement("p");
-    welcome.textContent = "Ask anything about using the Fantasy Map Generator.";
-    log.appendChild(welcome);
-    setNotice(null);
+    resetConversationLog();
   });
+}
+
+// Rollover must be SHOWN, not silent: whenever the conversation id is dropped, the old
+// transcript is cleared too — otherwise the next exchange reads as one continuous thread
+// that stopped making sense. Used by both "New chat" and sign-out; NOT sign-in (the page
+// navigates away anyway).
+function resetConversationLog(): void {
+  clearConversationId();
+  const log = ensureEl("helpAssistantLog");
+  log.textContent = "";
+  const welcome = document.createElement("p");
+  welcome.textContent = "Ask anything about using the Fantasy Map Generator.";
+  log.appendChild(welcome);
+  setNotice(null);
 }
 
 function getQuestionInput(): string {
@@ -170,17 +178,25 @@ async function submit(question: string | null, isRetry = false): Promise<void> {
   const sentId = getConversationId();
   try {
     const { answer, conversationId } = await ask(question, sentId ?? undefined);
-    if (!isMounted()) return;
-    if (isNewConversation(sentId, conversationId)) appendDivider();
+    const isNew = isNewConversation(sentId, conversationId);
+    // Pure storage — safe to do even if the dialog was closed during a slow ask, so it runs
+    // before the isMounted() guard: otherwise closing the dialog mid-ask would lose the
+    // server-issued id and silently orphan the conversation.
     adoptConversationId(conversationId);
+    if (!isMounted()) return;
+    if (isNew) appendDivider();
     appendAnswer(renderMarkdown(answer));
     ensureEl<HTMLTextAreaElement>("helpAssistantQuestion").value = "";
     setNotice(null);
     autoRetried = false;
   } catch (error) {
     if (!isMounted()) return;
-    if (error instanceof HelpApiError) applyNotice(noticeFor(error), error, question);
-    else console.error(error);
+    if (error instanceof HelpApiError) {
+      // A poisoned/rejected id is the server's most likely reason for invalid_request — start
+      // the next ask clean rather than repeating the same 400 forever.
+      if (error.code === "invalid_request") clearConversationId();
+      applyNotice(noticeFor(error), error, question);
+    } else console.error(error);
   } finally {
     if (isMounted()) {
       if (!button.dataset.locked) {
@@ -295,8 +311,10 @@ function renderAuth(tier: string): void {
   out.textContent = "Sign out";
   out.addEventListener("click", event => {
     event.preventDefault();
-    clearConversationId();
-    void signOut().then(() => refreshLimits());
+    void signOut().then(() => {
+      resetConversationLog();
+      void refreshLimits();
+    });
   });
   host.appendChild(label);
   host.appendChild(out);
