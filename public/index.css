@@ -2635,7 +2635,7 @@ body.tour-free-roam * {
 #helpAssistantBubble {
   position: fixed;
   right: 16px;
-  bottom: 16px;
+  bottom: 64px; /* clear of the scale bar in the corner */
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -2647,6 +2647,10 @@ body.tour-free-roam * {
   cursor: pointer;
   box-shadow: 0 2px 6px rgb(0 0 0 / 35%);
   z-index: 99;
+}
+
+#helpAssistant .helpAssistantUnlisted {
+  max-width: 20em;
 }
 
 #helpAssistant .helpAssistantLog {

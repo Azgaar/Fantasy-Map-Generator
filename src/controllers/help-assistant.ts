@@ -95,7 +95,7 @@ function renderDialog(): void {
 
   // Self-hosted copies are not on the gateway's origin allowlist: explain, don't error
   const unlisted = /* html */ `
-    <div class="helpAssistantLog">
+    <div class="helpAssistantUnlisted">
       <p>The free assistant is only available on the official site:
         <a href="https://azgaar.github.io/Fantasy-Map-Generator/" target="_blank" rel="noopener noreferrer">
           azgaar.github.io/Fantasy-Map-Generator</a>.</p>
