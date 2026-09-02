@@ -52,7 +52,9 @@ function prepareMapData(): string {
   const date = new Date();
   const dateString = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
   const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
-  const params = [VERSION, license, dateString, options.seed, graphWidth, graphHeight, mapId].join("|");
+  const params = [VERSION, license, dateString, options.seed, options.graph.width, options.graph.height, mapId].join(
+    "|"
+  );
 
   const settings = JSON.stringify(options);
   const coords = JSON.stringify(mapCoordinates);
@@ -67,8 +69,8 @@ function prepareMapData(): string {
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
 
   // reset transform values to default
-  cloneEl.setAttribute("width", String(graphWidth));
-  cloneEl.setAttribute("height", String(graphHeight));
+  cloneEl.setAttribute("width", String(options.graph.width));
+  cloneEl.setAttribute("height", String(options.graph.height));
   cloneEl.querySelector("#viewbox")?.removeAttribute("transform");
 
   // relief icons are stored in pack.relief, the layer holds only the currently visible ones

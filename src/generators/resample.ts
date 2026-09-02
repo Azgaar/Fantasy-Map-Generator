@@ -74,7 +74,7 @@ class Resampler {
   }
 
   private isInMap(x: number, y: number) {
-    return x >= 0 && x <= graphWidth && y >= 0 && y <= graphHeight;
+    return x >= 0 && x <= options.graph.width && y >= 0 && y <= options.graph.height;
   }
 
   private restoreCellData(
@@ -316,7 +316,7 @@ class Resampler {
         });
         if (points.length < 2) return null;
 
-        const bbox: [number, number, number, number] = [0, 0, graphWidth, graphHeight];
+        const bbox: [number, number, number, number] = [0, 0, options.graph.width, options.graph.height];
         // @types/lineclip is incorrect - lineclip returns Point[][] (array of line segments), not Point[]
         const clippedSegments = clipPolyline(points, bbox) as unknown as Point[][];
         if (!clippedSegments[0]?.length) return null;
@@ -456,7 +456,8 @@ class Resampler {
     };
     const riversData = this.saveRiversData(pack.rivers);
 
-    grid = Grid.generate(globalThis.options.seed, graphWidth, graphHeight);
+    const { width, height } = globalThis.options.graph;
+    grid = Grid.generate(globalThis.options.seed, width, height);
     pack = {} as PackedGraph;
     notes = parentMap.notes;
 

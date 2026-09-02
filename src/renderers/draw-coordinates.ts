@@ -21,7 +21,7 @@ export function drawCoordinates(): void {
     ])
     .stepMajor([400, 400])
     .stepMinor([step, step]);
-  const projection = geoEquirectangular().fitSize([graphWidth, graphHeight], graticule());
+  const projection = geoEquirectangular().fitSize([options.graph.width, options.graph.height], graticule());
 
   // labels are placed at the top left corner of the screen, in map coordinates
   const point = new DOMPoint(scale + desiredSize + 2, scale + desiredSize / 2);

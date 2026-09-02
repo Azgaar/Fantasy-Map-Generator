@@ -206,8 +206,8 @@ class FeatureModule {
       const [startCell, featureVertices] = getCellsData(type, firstCell);
       const points = clipPoly(
         featureVertices.map((vertex: number) => vertices.p[vertex]),
-        graphWidth,
-        graphHeight
+        options.graph.width,
+        options.graph.height
       );
       const area = polygonArea(points); // feature perimiter area
       const absArea = Math.abs(rn(area));

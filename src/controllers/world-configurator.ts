@@ -351,15 +351,15 @@ function updateWorld(): void {
 }
 
 function updateGlobePosition(): void {
-  const eqD = ((graphHeight / 2) * 100) / options.geography.mapSize;
+  const eqD = ((options.graph.height / 2) * 100) / options.geography.mapSize;
 
   Coordinates.calculate();
   const mc = mapCoordinates;
   const unit = options.units.distance.unit;
   const meridian = eqD * 2 * options.units.distance.scale * getKmInDistanceUnit(); // 0 for a custom unit
-  ensureEl("mapSize").innerHTML = `${graphWidth}x${graphHeight}`;
+  ensureEl("mapSize").innerHTML = `${options.graph.width}x${options.graph.height}`;
   ensureEl("mapSizeFriendly").innerHTML =
-    `${rn(graphWidth * options.units.distance.scale)}x${rn(graphHeight * options.units.distance.scale)} ${unit}`;
+    `${rn(options.graph.width * options.units.distance.scale)}x${rn(options.graph.height * options.units.distance.scale)} ${unit}`;
   ensureEl("meridianLength").innerHTML = String(rn(eqD * 2));
   ensureEl("meridianLengthFriendly").innerHTML = `${rn(eqD * 2 * options.units.distance.scale)} ${unit}`;
   ensureEl("meridianLengthEarth").innerHTML = meridian ? ` = ${rn(meridian / 200)}%🌏` : "";

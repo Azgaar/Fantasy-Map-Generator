@@ -14,9 +14,7 @@ globalThis.notes = [];
 globalThis.mapId = 0;
 globalThis.mapHistory = [];
 
-// voronoi graph extent, fixed once a map is generated; the svg canvas resolution, which is not
-globalThis.graphWidth = 0;
-globalThis.graphHeight = 0;
+// the svg canvas resolution: the window-sized viewport the map is looked at through
 globalThis.svgWidth = 0;
 globalThis.svgHeight = 0;
 
@@ -35,8 +33,6 @@ declare global {
   var notes: any[]; // TODO: correct type
   var mapId: number;
   var mapHistory: { created: number; [key: string]: unknown }[];
-  var graphWidth: number;
-  var graphHeight: number;
   var svgWidth: number;
   var svgHeight: number;
   var scale: number;

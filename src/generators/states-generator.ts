@@ -138,7 +138,7 @@ class StatesModule {
       .sort((a, b) => b[1] - a[1])
       .map(([burg]) => burg);
     const count = Math.min(statesCount, validBurgs.length) + 1;
-    let spacing = (graphWidth + graphHeight) / 2 / count;
+    let spacing = (options.graph.width + options.graph.height) / 2 / count;
     const capitalsTree = quadtree<[number, number]>();
     const newStates: State[] = [{ ...pack.states[0], i: 0, name: pack.states[0].name }];
 

@@ -14,15 +14,15 @@ export function logStats({ isNewMap = true } = {}): void {
   if (isNewMap) mapId = Date.now(); // a map's id is the moment it was generated
   mapHistory.push({
     seed: options.seed,
-    width: graphWidth,
-    height: graphHeight,
+    width: options.graph.width,
+    height: options.graph.height,
     template: heightmap,
     created: mapId
   });
 
   INFO &&
     console.info(`  Seed: ${options.seed}
-    Canvas size: ${graphWidth}x${graphHeight} px
+    Canvas size: ${options.graph.width}x${options.graph.height} px
     Heightmap: ${heightmap}
     Template: ${isRandomTemplate}${heightmapType}
     Points: ${grid.points.length}

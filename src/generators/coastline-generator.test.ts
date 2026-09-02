@@ -10,7 +10,7 @@ const island = {
 } as unknown as Feature;
 
 /** The generator reads a seed off the store and writes its settings through the model */
-const stubStore = () => ({ seed: "1" }) as unknown as typeof globalThis.options;
+const stubStore = () => ({ seed: "1", graph: { width: 100, height: 100 } }) as unknown as typeof globalThis.options;
 const stubModel = () =>
   ({ set: (change: (o: unknown) => void) => change(globalThis.options) }) as unknown as typeof globalThis.Options;
 
@@ -18,8 +18,6 @@ beforeEach(() => {
   localStorage.clear();
   globalThis.options = stubStore();
   globalThis.Options = stubModel();
-  globalThis.graphWidth = 100;
-  globalThis.graphHeight = 100;
   globalThis.pack = {
     vertices: {
       p: [

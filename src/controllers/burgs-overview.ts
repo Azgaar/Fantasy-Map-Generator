@@ -682,8 +682,8 @@ function downloadBurgsData(): void {
     // add geography data
     data += `${b.x},`;
     data += `${b.y},`;
-    data += `${getLatitude(b.y, mapCoordinates, graphHeight, 2)},`;
-    data += `${getLongitude(b.x, mapCoordinates, graphWidth, 2)},`;
+    data += `${getLatitude(b.y, mapCoordinates, options.graph.height, 2)},`;
+    data += `${getLongitude(b.x, mapCoordinates, options.graph.width, 2)},`;
     data += `${parseInt(getHeight(pack.cells.h[b.cell]), 10)},`;
     const temperature = grid.cells.temp[pack.cells.g[b.cell]];
     data += `${convertTemperature(temperature)},`;

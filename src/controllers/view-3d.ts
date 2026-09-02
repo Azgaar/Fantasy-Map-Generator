@@ -72,8 +72,8 @@ async function open(type: string): Promise<void> {
 
   if (type === "heightmap3DView") {
     const preview3d = ensureEl("preview3d");
-    canvas.width = parseFloat(preview3d.style.width) || graphWidth / 3;
-    canvas.height = canvas.width / (graphWidth / graphHeight);
+    canvas.width = parseFloat(preview3d.style.width) || options.graph.width / 3;
+    canvas.height = canvas.width / (options.graph.width / options.graph.height);
     canvas.style.display = "block";
   } else {
     canvas.width = svgWidth;

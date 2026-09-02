@@ -98,7 +98,12 @@ export function focusOn(): void {
     return;
   }
 
-  zoomTo(+(params.get("x") ?? 0) || graphWidth / 2, +(params.get("y") ?? 0) || graphHeight / 2, zoom, 1600);
+  zoomTo(
+    +(params.get("x") ?? 0) || options.graph.width / 2,
+    +(params.get("y") ?? 0) || options.graph.height / 2,
+    zoom,
+    1600
+  );
 }
 
 /** Pick the burg that best matches the settlement MFCG generated, adopt its data and focus on it */
@@ -163,7 +168,7 @@ function findBurgForMFCG(params: URLSearchParams): void {
 export function copyMapURL(): void {
   const isRandomized = !document.querySelectorAll("i.icon-lock").length;
   const seedValue = ensureEl<HTMLInputElement>("seedInput").value;
-  const search = `?options.seed=${seedValue}&width=${graphWidth}&height=${graphHeight}${isRandomized ? "&options=default" : ""}`;
+  const search = `?seed=${seedValue}&width=${options.graph.width}&height=${options.graph.height}${isRandomized ? "&options=default" : ""}`;
 
   navigator.clipboard
     .writeText(location.host + location.pathname + search)

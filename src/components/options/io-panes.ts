@@ -160,21 +160,21 @@ function updateTilesOptions(): void {
   const rows = +ensureEl<HTMLOutputElement>("tileRowsOutput").value || 2;
   const scale = +ensureEl<HTMLOutputElement>("tileScaleOutput").value || 1;
 
-  const sizeX = graphWidth * scale * columns;
-  const sizeY = graphHeight * scale * rows;
+  const sizeX = options.graph.width * scale * columns;
+  const sizeY = options.graph.height * scale * rows;
   const totalSize = sizeX * sizeY;
 
   const tileSize = ensureEl("tileSize");
   tileSize.innerHTML = `${sizeX} x ${sizeY} px`;
   tileSize.style.color = totalSize > 1e9 ? "#d00b0b" : totalSize > 1e8 ? "#9e6409" : "#1a941a";
 
-  const tileWidth = (graphWidth / columns) | 0;
-  const tileHeight = (graphHeight / rows) | 0;
+  const tileWidth = (options.graph.width / columns) | 0;
+  const tileHeight = (options.graph.height / rows) | 0;
   const rects: string[] = [];
   const labels: string[] = [];
 
-  for (let y = 0, row = 0; y + tileHeight <= graphHeight; y += tileHeight, row++) {
-    for (let x = 0, column = 1; x + tileWidth <= graphWidth; x += tileWidth, column++) {
+  for (let y = 0, row = 0; y + tileHeight <= options.graph.height; y += tileHeight, row++) {
+    for (let x = 0, column = 1; x + tileWidth <= options.graph.width; x += tileWidth, column++) {
       rects.push(`<rect x=${x} y=${y} width=${tileWidth} height=${tileHeight} />`);
       const label = `${rowLabel(row)}${column}`;
       labels.push(`<text x=${x + tileWidth / 2} y=${y + tileHeight / 2}>${label}</text>`);

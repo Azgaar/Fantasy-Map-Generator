@@ -43,6 +43,7 @@ export function raycast({ regionId, regionIds, x0, y0, dx, dy, maxLakeSize, offs
   y: number;
 } {
   const { cells, features } = pack;
+  const { width, height } = options.graph;
   let ray = { length: 0, x: x0, y: y0 };
 
   for (let length = LENGTH_START; length < LENGTH_MAX; length += LENGTH_STEP) {
@@ -60,7 +61,7 @@ export function raycast({ regionId, regionIds, x0, y0, dx, dy, maxLakeSize, offs
   return ray;
 
   function isInsideRegion(x: number, y: number, regionId: number): boolean {
-    if (x < 0 || x > graphWidth || y < 0 || y > graphHeight) return false;
+    if (x < 0 || x > width || y < 0 || y > height) return false;
     const cellId = Pack.findCell(x, y) as number;
 
     const feature = features[cells.f[cellId]];

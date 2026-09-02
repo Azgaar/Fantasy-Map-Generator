@@ -135,7 +135,7 @@ function appendStyleSheet(): void {
 
     .heightmap-selection article > img {
       width: 100%;
-      aspect-ratio: ${graphWidth}/${graphHeight};
+      aspect-ratio: ${options.graph.width}/${options.graph.height};
       border-radius: 8px;
       object-fit: fill;
     }
@@ -273,8 +273,8 @@ function getSeed(): string | undefined {
 }
 
 function getGraph(currentGraph: GridGraph): GridGraph {
-  const newGraph = Grid.shouldRegenerate(currentGraph, options.seed, graphWidth, graphHeight)
-    ? Grid.generate(options.seed, graphWidth, graphHeight)
+  const newGraph = Grid.shouldRegenerate(currentGraph, options.seed, options.graph.width, options.graph.height)
+    ? Grid.generate(options.seed, options.graph.width, options.graph.height)
     : structuredClone(currentGraph);
   Grid.resetHeights(newGraph);
   return newGraph;

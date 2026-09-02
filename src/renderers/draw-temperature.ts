@@ -64,7 +64,7 @@ const temperatureRenderer = (): void => {
   // min temp isoline covers all graph
   select("#temperature")
     .append("path")
-    .attr("d", `M0,0 h${graphWidth} v${graphHeight} h${-graphWidth} Z`)
+    .attr("d", `M0,0 h${options.graph.width} v${options.graph.height} h${-options.graph.width} Z`)
     .attr("fill", scheme(1 - (minTemp - tMin) / delta))
     .attr("stroke", "none");
 

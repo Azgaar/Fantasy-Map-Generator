@@ -1,5 +1,5 @@
 import { hsl, select } from "d3";
-import { fitMapToScreen } from "@/components/canvas";
+import { applyGraphSize, fitMapToScreen } from "@/components/canvas";
 import { Layers } from "@/components/layers";
 import type { OptionsData } from "@/components/options-store";
 import { generateMapWithSeed, showSeedHistoryDialog } from "@/components/seed";
@@ -675,6 +675,7 @@ function onCanvasSizeChange(): void {
     o.graph.width = +ensureEl<HTMLInputElement>("mapWidthInput").value;
     o.graph.height = +ensureEl<HTMLInputElement>("mapHeightInput").value;
   });
+  applyGraphSize(); // the full-map covers follow the configured extent, the map itself on regeneration
   fitMapToScreen();
   lock("mapWidth");
   lock("mapHeight");
@@ -693,6 +694,7 @@ function restoreDefaultCanvasSize(): void {
   unlock("mapWidth");
   unlock("mapHeight");
   syncInputs();
+  applyGraphSize();
   fitMapToScreen();
 }
 

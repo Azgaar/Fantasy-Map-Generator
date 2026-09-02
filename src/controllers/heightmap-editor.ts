@@ -1769,8 +1769,8 @@ function openImageConverter(): void {
   // create canvas for image
   const canvas = document.createElement("canvas");
   canvas.id = "canvas";
-  canvas.width = graphWidth;
-  canvas.height = graphHeight;
+  canvas.width = options.graph.width;
+  canvas.height = options.graph.height;
   document.body.insertBefore(canvas, ensureEl("optionsContainer"));
 
   setOverlayOpacity(0);
@@ -1804,7 +1804,7 @@ function loadImage(this: HTMLInputElement): void {
 
   img.onload = () => {
     const ctx = ensureEl<HTMLCanvasElement>("canvas").getContext("2d")!;
-    ctx.drawImage(img, 0, 0, graphWidth, graphHeight);
+    ctx.drawImage(img, 0, 0, options.graph.width, options.graph.height);
     heightsFromImage(+ensureEl<HTMLInputElement>("convertColors").value);
     resetZoom();
   };
@@ -2124,10 +2124,10 @@ function downloadPreview(): void {
   img.onload = () => {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d")!;
-    canvas.width = graphWidth;
-    canvas.height = graphHeight;
+    canvas.width = options.graph.width;
+    canvas.height = options.graph.height;
     document.body.insertBefore(canvas, ensureEl("optionsContainer"));
-    ctx.drawImage(img, 0, 0, graphWidth, graphHeight);
+    ctx.drawImage(img, 0, 0, options.graph.width, options.graph.height);
     const imgBig = canvas.toDataURL("image/png");
     const link = document.createElement("a");
     link.download = `${getFileName("Heightmap")}.png`;

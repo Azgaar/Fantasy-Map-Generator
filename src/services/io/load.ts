@@ -252,8 +252,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     Options.persist();
     syncInputs();
 
-    graphWidth = options.graph.width;
-    graphHeight = options.graph.height;
     mapId = +data[0].split("|")[6] || Date.now();
     stylePreset.value = "default"; // the styles are restored below, the preset name is not saved
 

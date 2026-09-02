@@ -462,11 +462,11 @@ class LabelMeasurementSandbox {
 
   constructor(labels: LabelData[]) {
     this.root = document.createElementNS(SVG_NS, "svg");
-    this.root.setAttribute("width", String(graphWidth));
-    this.root.setAttribute("height", String(graphHeight));
-    this.root.setAttribute("viewBox", `0 0 ${graphWidth} ${graphHeight}`);
+    this.root.setAttribute("width", String(options.graph.width));
+    this.root.setAttribute("height", String(options.graph.height));
+    this.root.setAttribute("viewBox", `0 0 ${options.graph.width} ${options.graph.height}`);
     this.root.setAttribute("aria-hidden", "true");
-    this.root.style.cssText = `position:fixed;left:0;top:0;width:${graphWidth}px;height:${graphHeight}px;overflow:visible;opacity:0;pointer-events:none;z-index:-1`;
+    this.root.style.cssText = `position:fixed;left:0;top:0;width:${options.graph.width}px;height:${options.graph.height}px;overflow:visible;opacity:0;pointer-events:none;z-index:-1`;
     const renderedLabels = document.querySelector<SVGGElement>("#labels");
     const fontSize =
       renderedLabels?.getAttribute("font-size") || (renderedLabels && getComputedStyle(renderedLabels).fontSize);
@@ -670,7 +670,7 @@ function getOutsideArea(bounds: LabelBounds, map = mapBounds()): number {
 }
 
 function mapBounds(): LabelBounds {
-  return { x1: 0, y1: 0, x2: graphWidth, y2: graphHeight };
+  return { x1: 0, y1: 0, x2: options.graph.width, y2: options.graph.height };
 }
 
 function fitsPath(measurement: Measurement, startOffset: number): boolean {

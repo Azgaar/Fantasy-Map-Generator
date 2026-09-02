@@ -547,7 +547,7 @@ class RoutesModule {
       meandering: 0.5,
       startStep: h[river.cells[0]] < 20 ? 1 : 10,
       isWaterCell: river.cells.map(c => c !== -1 && h[c] < 20),
-      bounds: { width: graphWidth, height: graphHeight }
+      bounds: { width: options.graph.width, height: options.graph.height }
     });
 
     this.riverGeometryCache.set(river.i, geometry);

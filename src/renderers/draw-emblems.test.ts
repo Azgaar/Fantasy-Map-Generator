@@ -69,8 +69,6 @@ beforeEach(() => {
 
   Object.assign(globalThis, {
     TIME: false,
-    graphWidth: 1000,
-    graphHeight: 500,
     pack: {
       cells: {
         p: [
@@ -87,7 +85,7 @@ beforeEach(() => {
         { i: 2, center: 2, coa: { shield: "heater", t1: "azure" } }
       ]
     },
-    options: { emblems: { showAll: false } },
+    options: { emblems: { showAll: false }, graph: { width: 1000, height: 500 } },
     EmblemRenderer: mocks.emblemRenderer
   });
   Object.assign(mocks.bounds, { scale: 2, x0: 0, y0: 0, x1: 100, y1: 100 });

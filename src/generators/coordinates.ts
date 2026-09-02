@@ -75,7 +75,7 @@ class CoordinatesModule {
     const latN = rn(90 - (180 - latT) * latShift, 1);
     const latS = rn(latN - latT, 1);
 
-    const lonT = rn(Math.min((graphWidth / graphHeight) * latT, 360), 1);
+    const lonT = rn(Math.min((options.graph.width / options.graph.height) * latT, 360), 1);
     const lonE = rn(180 - (360 - lonT) * lonShift, 1);
     const lonW = rn(lonE - lonT, 1);
 

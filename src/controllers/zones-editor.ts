@@ -182,7 +182,7 @@ function getZonesData(): ZoneRow[] {
 
 function renderZonesPage(view: TableView<ZoneRow>): void {
   const body = ensureEl("zonesBodySection");
-  const totalArea = getArea(graphWidth * graphHeight);
+  const totalArea = getArea(options.graph.width * options.graph.height);
   const totalPopulation =
     (sum(pack.cells.pop) +
       sum(pack.burgs.filter(b => !b.removed).map(b => b.population ?? 0)) *

@@ -23,8 +23,8 @@ function ensureFullGraphRect(parent: HTMLElement, id: string): SVGRectElement {
 
   rect.setAttribute("x", "0");
   rect.setAttribute("y", "0");
-  rect.setAttribute("width", String(graphWidth));
-  rect.setAttribute("height", String(graphHeight));
+  rect.setAttribute("width", String(options.graph.width));
+  rect.setAttribute("height", String(options.graph.height));
   return rect;
 }
 

@@ -88,8 +88,8 @@ class HeightmapModule {
       const h = lim(getNumberInRange(height));
 
       do {
-        const x = this.getPointInRange(rangeX, graphWidth);
-        const y = this.getPointInRange(rangeY, graphHeight);
+        const x = this.getPointInRange(rangeX, options.graph.width);
+        const y = this.getPointInRange(rangeY, options.graph.height);
         if (x === undefined || y === undefined) return;
         start = Grid.findCell(x, y, this.grid);
         limit++;
@@ -124,8 +124,8 @@ class HeightmapModule {
       let h = lim(getNumberInRange(height));
 
       do {
-        const x = this.getPointInRange(rangeX, graphWidth);
-        const y = this.getPointInRange(rangeY, graphHeight);
+        const x = this.getPointInRange(rangeX, options.graph.width);
+        const y = this.getPointInRange(rangeY, options.graph.height);
         if (x === undefined || y === undefined) return;
         start = Grid.findCell(x, y, this.grid);
         limit++;
@@ -197,8 +197,8 @@ class HeightmapModule {
 
       if (rangeX && rangeY) {
         // find start and end points
-        const startX = this.getPointInRange(rangeX, graphWidth) as number;
-        const startY = this.getPointInRange(rangeY, graphHeight) as number;
+        const startX = this.getPointInRange(rangeX, options.graph.width) as number;
+        const startY = this.getPointInRange(rangeY, options.graph.height) as number;
 
         let dist = 0;
         let limit = 0;
@@ -206,11 +206,11 @@ class HeightmapModule {
         let endX: number;
 
         do {
-          endX = Math.random() * graphWidth * 0.8 + graphWidth * 0.1;
-          endY = Math.random() * graphHeight * 0.7 + graphHeight * 0.15;
+          endX = Math.random() * options.graph.width * 0.8 + options.graph.width * 0.1;
+          endY = Math.random() * options.graph.height * 0.7 + options.graph.height * 0.15;
           dist = Math.abs(endY - startY) + Math.abs(endX - startX);
           limit++;
-        } while ((dist < graphWidth / 8 || dist > graphWidth / 3) && limit < 50);
+        } while ((dist < options.graph.width / 8 || dist > options.graph.width / 3) && limit < 50);
 
         startCellId = Grid.findCell(startX, startY, this.grid);
         endCellId = Grid.findCell(endX, endY, this.grid);
@@ -313,19 +313,19 @@ class HeightmapModule {
         let endX: number;
         let endY: number;
         do {
-          startX = this.getPointInRange(rangeX, graphWidth) as number;
-          startY = this.getPointInRange(rangeY, graphHeight) as number;
+          startX = this.getPointInRange(rangeX, options.graph.width) as number;
+          startY = this.getPointInRange(rangeY, options.graph.height) as number;
           startCellId = Grid.findCell(startX, startY, this.grid);
           limit++;
         } while (this.heights[startCellId] < 20 && limit < 50);
 
         limit = 0;
         do {
-          endX = Math.random() * graphWidth * 0.8 + graphWidth * 0.1;
-          endY = Math.random() * graphHeight * 0.7 + graphHeight * 0.15;
+          endX = Math.random() * options.graph.width * 0.8 + options.graph.width * 0.1;
+          endY = Math.random() * options.graph.height * 0.7 + options.graph.height * 0.15;
           dist = Math.abs(endY - startY) + Math.abs(endX - startX);
           limit++;
-        } while ((dist < graphWidth / 8 || dist > graphWidth / 2) && limit < 50);
+        } while ((dist < options.graph.width / 8 || dist > options.graph.width / 2) && limit < 50);
 
         endCellId = Grid.findCell(endX, endY, this.grid);
       }
@@ -383,14 +383,16 @@ class HeightmapModule {
     if (desiredWidth < 1 && P(desiredWidth)) return;
     const used = new Uint8Array(this.heights.length);
     const vert = direction === "vertical";
-    const startX = vert ? Math.floor(Math.random() * graphWidth * 0.4 + graphWidth * 0.3) : 5;
-    const startY = vert ? 5 : Math.floor(Math.random() * graphHeight * 0.4 + graphHeight * 0.3);
+    const startX = vert ? Math.floor(Math.random() * options.graph.width * 0.4 + options.graph.width * 0.3) : 5;
+    const startY = vert ? 5 : Math.floor(Math.random() * options.graph.height * 0.4 + options.graph.height * 0.3);
     const endX = vert
-      ? Math.floor(graphWidth - startX - graphWidth * 0.1 + Math.random() * graphWidth * 0.2)
-      : graphWidth - 5;
+      ? Math.floor(options.graph.width - startX - options.graph.width * 0.1 + Math.random() * options.graph.width * 0.2)
+      : options.graph.width - 5;
     const endY = vert
-      ? graphHeight - 5
-      : Math.floor(graphHeight - startY - graphHeight * 0.1 + Math.random() * graphHeight * 0.2);
+      ? options.graph.height - 5
+      : Math.floor(
+          options.graph.height - startY - options.graph.height * 0.1 + Math.random() * options.graph.height * 0.2
+        );
 
     const start = Grid.findCell(startX, startY, this.grid);
     const end = Grid.findCell(endX, endY, this.grid);
@@ -469,8 +471,8 @@ class HeightmapModule {
 
     this.heights = this.heights.map((h, i) => {
       const [x, y] = this.grid.points[i];
-      const nx = (2 * x) / graphWidth - 1; // [-1, 1], 0 is center
-      const ny = (2 * y) / graphHeight - 1; // [-1, 1], 0 is center
+      const nx = (2 * x) / options.graph.width - 1; // [-1, 1], 0 is center
+      const ny = (2 * y) / options.graph.height - 1; // [-1, 1], 0 is center
       let distance = (1 - nx ** 2) * (1 - ny ** 2); // 1 is center, 0 is edge
       if (power < 0) distance = 1 - distance; // inverted, 0 is center, 1 is edge
       const masked = h * distance;

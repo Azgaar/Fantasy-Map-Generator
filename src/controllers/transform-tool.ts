@@ -106,14 +106,14 @@ function cleanup(): void {
 
 async function loadPreview(): Promise<void> {
   const width = Math.min(400, window.innerWidth * 0.5);
-  const previewScale = width / graphWidth;
-  const height = graphHeight * previewScale;
+  const previewScale = width / options.graph.width;
+  const height = options.graph.height * previewScale;
 
   ensureEl("transformPreview").style.width = `${width}px`;
   ensureEl("transformPreview").style.height = `${height}px`;
 
-  const options = { noWater: true, fullMap: true, noLabels: true, noScaleBar: true, noVignette: true, noIce: true };
-  const url = await window.Services.ExportMap.getMapURL("png", options);
+  const urlOptions = { noWater: true, fullMap: true, noLabels: true, noScaleBar: true, noVignette: true, noIce: true };
+  const url = await window.Services.ExportMap.getMapURL("png", urlOptions);
   const SCALE = 4;
 
   const img = new Image();
@@ -137,7 +137,7 @@ function handlePointsInput(e: Event): void {
 
 function handleInput(): void {
   const width = Math.min(400, window.innerWidth * 0.5);
-  const previewScale = width / graphWidth;
+  const previewScale = width / options.graph.width;
 
   const angleDegrees = ensureEl<HTMLInputElement>("transformAngleInput").value;
   ensureEl<HTMLOutputElement>("transformAngleOutput").value = angleDegrees;
@@ -160,7 +160,7 @@ function handleInput(): void {
 
 function handleMousedown(e: MouseEvent): void {
   const width = Math.min(400, window.innerWidth * 0.5);
-  const previewScale = width / graphWidth;
+  const previewScale = width / options.graph.width;
 
   mouseIsDown = true;
   const shiftX = +ensureEl<HTMLInputElement>("transformShiftX").value;
@@ -178,7 +178,7 @@ function handleMousemove(e: MouseEvent): void {
   e.preventDefault();
 
   const width = Math.min(400, window.innerWidth * 0.5);
-  const previewScale = width / graphWidth;
+  const previewScale = width / options.graph.width;
 
   ensureEl<HTMLInputElement>("transformShiftX").value = String(Math.round(mouseX + e.clientX / previewScale));
   ensureEl<HTMLInputElement>("transformShiftY").value = String(Math.round(mouseY + e.clientY / previewScale));
@@ -212,8 +212,8 @@ function transformMap(): void {
 }
 
 function getProjection(): [(x: number, y: number) => [number, number], (x: number, y: number) => [number, number]] {
-  const centerX = graphWidth / 2;
-  const centerY = graphHeight / 2;
+  const centerX = options.graph.width / 2;
+  const centerY = options.graph.height / 2;
   const shiftX = +ensureEl<HTMLInputElement>("transformShiftX").value;
   const shiftY = +ensureEl<HTMLInputElement>("transformShiftY").value;
   const angle = (+ensureEl<HTMLInputElement>("transformAngleInput").value / 180) * Math.PI;

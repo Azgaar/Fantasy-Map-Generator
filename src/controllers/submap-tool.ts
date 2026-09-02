@@ -100,11 +100,11 @@ function recalculateMapSize(x0: number, y0: number): void {
   options.geography.mapSize = rn(options.geography.mapSize / scale, 2);
 
   const latT = (mapCoordinates.latT ?? 0) / scale;
-  const latN = getLatitude(y0, mapCoordinates, graphHeight);
+  const latN = getLatitude(y0, mapCoordinates, options.graph.height);
   options.geography.latitude = rn(((90 - latN) / (180 - latT)) * 100, 2);
 
   const lotT = (mapCoordinates.lonT ?? 0) / scale;
-  const lonE = getLongitude(x0 + graphWidth / scale, mapCoordinates, graphWidth);
+  const lonE = getLongitude(x0 + options.graph.width / scale, mapCoordinates, options.graph.width);
   options.geography.longitude = rn(((180 - lonE) / (360 - lotT)) * 100, 2);
 
   options.units.distance.scale = rn(options.units.distance.scale / scale, 2);

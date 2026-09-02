@@ -54,8 +54,8 @@ class GridModule {
 
   /** make the global grid fit the requested seed and canvas size, keeping the current one if it does */
   prepare(expectedSeed?: string, precreated?: GridGraph): void {
-    if (this.shouldRegenerate(grid, expectedSeed, graphWidth, graphHeight)) {
-      grid = precreated ?? this.generate(options.seed, graphWidth, graphHeight);
+    if (this.shouldRegenerate(grid, expectedSeed, options.graph.width, options.graph.height)) {
+      grid = precreated ?? this.generate(options.seed, options.graph.width, options.graph.height);
     } else {
       this.resetHeights(grid);
     }

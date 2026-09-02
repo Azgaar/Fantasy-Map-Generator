@@ -171,7 +171,7 @@ function fractalize(points: [number, number][], rand: () => number, settings: Co
 }
 
 function isOnBorder([x, y]: [number, number]) {
-  return x === 0 || x === graphWidth || y === 0 || y === graphHeight;
+  return x === 0 || x === options.graph.width || y === 0 || y === options.graph.height;
 }
 
 /**
@@ -275,7 +275,7 @@ class CoastlineGenerator {
     }
 
     const simplifiedPoints = simplify(points, SIMPLIFICATION_TOLERANCE);
-    const clippedPoints = clipPoly(simplifiedPoints, graphWidth, graphHeight, 1);
+    const clippedPoints = clipPoly(simplifiedPoints, options.graph.width, options.graph.height, 1);
     const shape = this.fractalizeFeature(clippedPoints, feature);
     return `${round(buildCoastlinePath(shape))}Z`;
   }

@@ -659,7 +659,8 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   if (isOlderThan("1.84.0")) {
     // v1.84.0 added grid.cellsDesired to stored data
-    if (!grid.cellsDesired) grid.cellsDesired = rn((graphWidth * graphHeight) / grid.spacing ** 2, -3);
+    if (!grid.cellsDesired)
+      grid.cellsDesired = rn((options.graph.width * options.graph.height) / grid.spacing ** 2, -3);
   }
 
   if (isOlderThan("1.85.0")) {

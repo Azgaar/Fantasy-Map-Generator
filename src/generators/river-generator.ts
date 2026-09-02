@@ -490,7 +490,7 @@ class RiverModule {
       meandering: 0.5,
       startStep: h[riverCells[0]] < 20 ? 1 : 10,
       isWaterCell: riverCells.map(c => c !== -1 && h[c] < 20),
-      bounds: { width: graphWidth, height: graphHeight }
+      bounds: { width: options.graph.width, height: options.graph.height }
     });
 
     const flux: number[] = new Array(points.length).fill(0);
@@ -509,7 +509,7 @@ class RiverModule {
 
     const { p } = pack.cells;
     return riverCells.map((cell, i) => {
-      if (cell === -1) return projectToNearestEdge(p[riverCells[i - 1]], graphWidth, graphHeight);
+      if (cell === -1) return projectToNearestEdge(p[riverCells[i - 1]], options.graph.width, options.graph.height);
       return p[cell];
     });
   }

@@ -1116,7 +1116,7 @@ class CulturesGenerator {
     const codes: string[] = [];
 
     const placeCenter = (sortingFn: (i: number) => number) => {
-      let spacing = (graphWidth + graphHeight) / 2 / count;
+      let spacing = (options.graph.width + options.graph.height) / 2 / count;
       const MAX_ATTEMPTS = 100;
 
       const sorted = [...populated].sort((a, b) => sortingFn(b) - sortingFn(a));

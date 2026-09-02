@@ -96,7 +96,7 @@ const redraw = () => {
   scene.remove(mesh);
   Renderer.setSize(Renderer.domElement.width, Renderer.domElement.height);
   if (options.threeD.isGlobe) updateGlobeTexure(true);
-  else createMesh(graphWidth, graphHeight, grid.cellsX, grid.cellsY);
+  else createMesh(options.graph.width, options.graph.height, grid.cellsX, grid.cellsY);
   render();
 };
 
@@ -213,7 +213,7 @@ const toggleSky = () => {
     scene.background = null;
     scene.fog = null;
     scene.remove(waterMesh);
-  } else extendWater(graphWidth, graphHeight);
+  } else extendWater(options.graph.width, options.graph.height);
 
   options.threeD.extendedWater = !options.threeD.extendedWater;
   redraw();
@@ -355,8 +355,8 @@ async function newMesh(canvas: HTMLCanvasElement) {
   options.threeD.resolutionScale = clampToRendererLimit(options.threeD.resolutionScale);
   options.threeD.resolution = resolutionScaleToGlobeMultiplier(options.threeD.resolutionScale);
 
-  if (options.threeD.extendedWater) extendWater(graphWidth, graphHeight);
-  createMesh(graphWidth, graphHeight, grid.cellsX, grid.cellsY);
+  if (options.threeD.extendedWater) extendWater(options.graph.width, options.graph.height);
+  createMesh(options.graph.width, options.graph.height, grid.cellsX, grid.cellsY);
 
   camera = new Three.PerspectiveCamera(70, canvas.width / canvas.height, 0.1, 2000);
   camera.position.set(0, 400, 500); // Set initial camera position for isometric view
@@ -429,8 +429,8 @@ async function createTextLabel({ text, font, size, color, quality, letterSpacing
 }
 
 function get3dCoords(baseX: number, baseY: number) {
-  const x = baseX - graphWidth / 2;
-  const z = baseY - graphHeight / 2;
+  const x = baseX - options.graph.width / 2;
+  const z = baseY - options.graph.height / 2;
 
   // eroded mesh is too dense to raycast per label (no BVH in three r140):
   // sample the baked height field instead
@@ -952,7 +952,7 @@ async function updateGlobeTexure(addMesh?: boolean) {
   // calculate map size and offset position
   const height = Math.max(1, Math.round(width / 2));
   const mapHeight = rn(((mapCoordinates.latT ?? 0) / 180) * height);
-  const mapWidth = world ? mapHeight * 2 : rn((graphWidth / graphHeight) * mapHeight);
+  const mapWidth = world ? mapHeight * 2 : rn((options.graph.width / options.graph.height) * mapHeight);
   const dy = world ? 0 : ((90 - (mapCoordinates.latN ?? 0)) / 180) * height;
   const dx = world ? 0 : mapWidth / 4;
 

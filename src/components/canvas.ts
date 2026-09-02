@@ -1,38 +1,38 @@
-// The map canvas: the fixed voronoi extent a map is generated on, and the resizable svg viewport
+// The map canvas: the voronoi extent a map is generated on (options.graph), and the svg viewport
 import { select } from "d3";
 import { Layers } from "@/components/layers";
 import { setTranslateExtent, setZoomExtent } from "@/components/zoom";
 import { fitLegendBox } from "@/renderers/draw-legend";
 import { rn } from "@/utils/numberUtils";
 
-/** Adopt the configured graph size. Called on map creation only: the extent cannot change after it */
+/** Resize everything that covers the whole map to the configured graph size */
 export function applyGraphSize(): void {
-  graphWidth = options.graph.width;
-  graphHeight = options.graph.height;
+  const { width, height } = options.graph;
 
   const cover = (selector: string, child: string) =>
-    select(selector).selectAll(child).attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
+    select(selector).selectAll(child).attr("x", 0).attr("y", 0).attr("width", width).attr("height", height);
 
   cover("#landmass", "rect");
   cover("#oceanPattern", "rect");
   cover("#oceanLayers", "rect");
   cover("#fogging", "rect");
-  select("#deftemp").select("mask#fog > rect").attr("width", graphWidth).attr("height", graphHeight);
-  select("#deftemp").select("mask#water > rect").attr("width", graphWidth).attr("height", graphHeight);
+  select("#deftemp").select("mask#fog > rect").attr("width", width).attr("height", height);
+  select("#deftemp").select("mask#water > rect").attr("width", width).attr("height", height);
 }
 
 /** Size the svg to the window and re-fit everything that is drawn in screen space */
 export function fitMapToScreen(): void {
-  svgWidth = Math.min(options.graph.width, window.innerWidth);
-  svgHeight = Math.min(options.graph.height, window.innerHeight);
+  const { width, height } = options.graph;
+  svgWidth = Math.min(width, window.innerWidth);
+  svgHeight = Math.min(height, window.innerHeight);
   select("#map").attr("width", svgWidth).attr("height", svgHeight);
 
-  const zoomMin = rn(Math.max(svgWidth / graphWidth, svgHeight / graphHeight), 3);
+  const zoomMin = rn(Math.max(svgWidth / width, svgHeight / height), 3);
   const zoomInput = document.getElementById("zoomExtentMin") as HTMLInputElement | null;
   if (zoomInput) zoomInput.value = String(zoomMin);
   const zoomMax = +((document.getElementById("zoomExtentMax") as HTMLInputElement | null)?.value ?? 20);
 
-  setTranslateExtent(0, 0, graphWidth, graphHeight);
+  setTranslateExtent(0, 0, width, height);
   setZoomExtent(zoomMin, zoomMax);
 
   Layers.draw("scaleBar");

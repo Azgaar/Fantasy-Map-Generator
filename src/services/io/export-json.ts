@@ -99,8 +99,8 @@ function getMapInfo() {
     description: "Azgaar's Fantasy Map Generator output: azgaar.github.io/Fantasy-map-generator",
     exportedAt: new Date().toISOString(),
     mapName: options.lore.name,
-    width: graphWidth,
-    height: graphHeight,
+    width: options.graph.width,
+    height: options.graph.height,
     seed: options.seed,
     mapId
   };

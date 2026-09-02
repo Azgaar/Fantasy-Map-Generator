@@ -42,8 +42,8 @@ class OceanModule {
 
       const ring = clipPoly(
         relaxed.map(v => vertices.p[v]),
-        graphWidth,
-        graphHeight
+        options.graph.width,
+        options.graph.height
       );
       outlines.get(t)!.push(ring);
     }

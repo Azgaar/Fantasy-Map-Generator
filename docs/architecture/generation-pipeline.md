@@ -51,7 +51,7 @@ anything but a straight line — so it added validation logic and API surface wi
 ## `GenerationPipeline` — build a world from scratch
 
 `generate(config)` in `components/lifecycle.ts` resolves what the pipeline doesn't own (`setSeed`, `applyGraphSize`,
-`randomizeOptions`), calls `await GenerationPipeline.run({seed, graph})`, then reports (`logStats`,
+`Options.randomize`), calls `await GenerationPipeline.run({seed, graph})`, then reports (`logStats`,
 `TOTAL` timing) or shows the generation error dialog. The pipeline is exposed as
 `window.GenerationPipeline` because `main.js` is a classic script.
 
@@ -88,8 +88,8 @@ Two constraints are easy to break when replicating a slice of this:
 flowchart TD
     subgraph pre["generate() — inline setup"]
         seed["setSeed<br/><i>writes: seed, Math.random</i>"]
-        size["applyGraphSize<br/><i>writes: graphWidth/Height</i>"]
-        rnd["randomizeOptions<br/><i>writes: option globals</i>"]
+        size["applyGraphSize<br/><i>sizes the full-map covers to options.graph</i>"]
+        rnd["Options.randomize<br/><i>writes: options</i>"]
     end
     seed --> size --> rnd --> gg
 

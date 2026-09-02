@@ -50,7 +50,7 @@ class IceModule {
 
       if (isolines[type]?.polygons) {
         isolines[type].polygons.forEach((points: Point[]) => {
-          const clipped = clipPoly(points, graphWidth, graphHeight);
+          const clipped = clipPoly(points, options.graph.width, options.graph.height);
           const ice: Glacier = { i: this.getNextId(), points: clipped, type: "glacier" };
           pack.ice.push(ice);
         });

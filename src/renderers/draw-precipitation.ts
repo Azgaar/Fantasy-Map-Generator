@@ -53,10 +53,10 @@ function drawWindDirections(): void {
 
     if (easterly.length > 1) {
       const east = easterly.filter(band => band[2] === tier);
-      if (east.length > 3) addArrow(graphWidth - 52, getMeanY(east[0][0], east[east.length - 1][0]), "\u21C7");
+      if (east.length > 3) addArrow(options.graph.width - 52, getMeanY(east[0][0], east[east.length - 1][0]), "\u21C7");
     }
   }
 
-  if (northerly) addArrow(graphWidth / 2, 42, "\u21CA");
-  if (southerly) addArrow(graphWidth / 2, graphHeight - 20, "\u21C8");
+  if (northerly) addArrow(options.graph.width / 2, 42, "\u21CA");
+  if (southerly) addArrow(options.graph.width / 2, options.graph.height - 20, "\u21C8");
 }

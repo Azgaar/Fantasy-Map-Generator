@@ -75,7 +75,7 @@ class BurgModule {
       const sorted = populatedCells.sort((a, b) => score[b] - score[a]);
 
       const capitalsNumber = getCapitalsNumber();
-      let spacing = (graphWidth + graphHeight) / 2 / capitalsNumber; // min distance between capitals
+      let spacing = (options.graph.width + options.graph.height) / 2 / capitalsNumber; // min distance between capitals
 
       for (let i = 0; burgs.length <= capitalsNumber; i++) {
         const cell = sorted[i];
@@ -114,7 +114,7 @@ class BurgModule {
       const sorted = populatedCells.sort((a, b) => score[b] - score[a]);
 
       const burgsNumber = getTownsNumber();
-      let spacing = (graphWidth + graphHeight) / 150 / (burgsNumber ** 0.7 / 66); // min distance between town
+      let spacing = (options.graph.width + options.graph.height) / 150 / (burgsNumber ** 0.7 / 66); // min distance between town
 
       for (let added = 0; added < burgsNumber && spacing > 1; ) {
         for (let i = 0; added < burgsNumber && i < sorted.length; i++) {
@@ -822,7 +822,7 @@ class BurgModule {
     const burgsCount =
       (isAutoManors() ? rn(sorted.length / 5 / (grid.points.length / 10000) ** 0.8) : options.burgs.limit) +
       statesCount;
-    const spacing = (graphWidth + graphHeight) / 150 / (burgsCount ** 0.7 / 66);
+    const spacing = (options.graph.width + options.graph.height) / 150 / (burgsCount ** 0.7 / 66);
 
     for (let index = 0; index < sorted.length && newBurgs.length < burgsCount; index++) {
       const id = newBurgs.length;

@@ -34,11 +34,9 @@ export async function boot(): Promise<void> {
   syncInputs(); // options are the source of truth, the inputs only display them
   restoreUi(); // the tab's own restore: locks, style presets, theme, ui size
 
-  // the voronoi graph extent is fixed for the life of a map, the svg canvas is resized to the window
-  graphWidth = options.graph.width;
-  graphHeight = options.graph.height;
-  svgWidth = graphWidth;
-  svgHeight = graphHeight;
+  // the svg canvas starts at the configured map size, then follows the window
+  svgWidth = options.graph.width;
+  svgHeight = options.graph.height;
 
   // binds the zoom behaviour and its handlers (see components/viewbox-events.ts), so it has to run
   // before checkLoadParameters - deep links (MFCG, a stored view position) zoom the map on load
