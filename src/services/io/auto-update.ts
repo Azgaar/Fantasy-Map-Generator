@@ -308,14 +308,6 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
   }
 
   if (isOlderThan("1.3.0")) {
-    // v1.3 added global options object
-    const winds = (options as unknown as number[]).slice(); // previostly wind was saved in settings[19]
-    const year = rand(100, 2000);
-    const era = `${Names.getBaseShort(P(0.7) ? 1 : rand(Names.nameBases.length))} Era`;
-    const eraShort = `${era[0]}E`;
-    const military = Military.getDefaultOptions();
-    options.restore({ winds, year, era, eraShort, military });
-
     // v1.3 added campaings data for all states
     States.generateCampaigns();
 
@@ -1272,13 +1264,9 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     const hadVisibleLabels = getComputedStyle(labels).display !== "none";
     labels.style.removeProperty("display");
 
-    const legacyStateMode = "stateLabelsMode" in options ? options.stateLabelsMode : undefined;
-    const stateMode: LabelNameMode =
-      legacyStateMode === "short" || legacyStateMode === "full" ? legacyStateMode : "auto";
-    const settings = (data[1] || "").split("|");
-    const autoVisibility = settings[21] ? Boolean(Number(settings[21])) : true;
-    const resizeOnZoom = settings[23] ? Boolean(Number(settings[23])) : true;
-    options.labels = { resizeOnZoom, showAll: !autoVisibility, groups: [] };
+    // the labels options are already migrated, only the groups are rebuilt from the map
+    const stateMode: LabelNameMode = options.labels.groups.find(group => group.type === "state")?.mode ?? "auto";
+    options.labels.groups = [];
     styles.labels.groups = {};
 
     for (const type of ["river", "route"] as const) {
@@ -1852,50 +1840,72 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 }
 
 export function migrateSettingsFormat(mapVersion: string, data: string[]): void {
-  if (compareVersions(mapVersion, "1.151.0").isOlder) {
-    // v1.151.0 changed the settings format from a legacy pipe-delimited string to a JSON object
-    const oldHeader = data[0].split("|");
-    const oldSettings = data[1].split("|");
+  if (!compareVersions(mapVersion, "1.151.0").isOlder) return;
 
-    if (oldHeader[3]) options.seed = oldHeader[3];
-    if (oldHeader[4]) options.graph.width = +oldHeader[4];
-    if (oldHeader[5]) options.graph.height = +oldHeader[5];
+  // v1.151.0 changed the settings format from a legacy pipe-delimited string to a JSON object
+  const oldHeader = data[0].split("|");
+  const oldSettings = (data[1] || "").split("|");
 
-    if (oldSettings[0]) options.units.distance.unit = oldSettings[0];
-    if (oldSettings[1]) options.units.distance.scale = +oldSettings[1];
-    if (oldSettings[2]) options.units.area.unit = oldSettings[2];
-    if (oldSettings[3]) options.units.height.unit = oldSettings[3];
-    if (oldSettings[4]) options.units.height.exponent = +oldSettings[4];
-    if (oldSettings[5]) options.units.temperature.unit = oldSettings[5];
-    if (oldSettings[12]) options.units.population.scale = +oldSettings[12];
-    if (oldSettings[13]) options.units.population.urbanization.rate = +oldSettings[13];
-    if (oldSettings[20]) options.lore.name = oldSettings[20];
-    if (oldSettings[24]) options.units.population.urbanization.density = +oldSettings[24];
-    if (oldSettings[26]) options.cultures.growthRate = +oldSettings[26];
-    if (oldSettings[26]) options.states.growthRate = +oldSettings[26];
+  if (oldHeader[3]) options.seed = oldHeader[3];
+  if (oldHeader[4]) options.graph.width = +oldHeader[4];
+  if (oldHeader[5]) options.graph.height = +oldHeader[5];
 
-    const oldOptions = safeParseJSON(oldSettings[19] ?? "") ?? {};
-    if (oldOptions.labels) options.labels = oldOptions.labels;
-    if (oldOptions.emblems) options.emblems = oldOptions.emblems;
-    if (oldOptions.trade) options.trade = oldOptions.trade;
-    if (oldOptions.threeD) options.threeD = oldOptions.threeD;
-    if (oldOptions.military) options.military = oldOptions.military;
-    if (oldOptions.transports) options.transports = oldOptions.transports;
-    if (oldOptions.coastline) options.coastline = oldOptions.coastline;
-    if (oldOptions.burgs) options.burgs = oldOptions.burgs;
-    if (oldOptions.pinNotes) options.notes.pinned = oldOptions.pinNotes;
-    if (oldOptions.mapSize) options.geography.mapSize = oldOptions.mapSize;
-    if (oldOptions.latitude) options.geography.latitude = oldOptions.latitude;
-    if (oldOptions.longitude) options.geography.longitude = oldOptions.longitude;
-    if (oldOptions.temperatureEquator) options.climate.temperature.equator = oldOptions.temperatureEquator;
-    if (oldOptions.temperatureNorthPole) options.climate.temperature.northPole = oldOptions.temperatureNorthPole;
-    if (oldOptions.temperatureSouthPole) options.climate.temperature.southPole = oldOptions.temperatureSouthPole;
-    if (oldOptions.prec) options.climate.precipitation = oldOptions.prec;
-    if (oldOptions.winds) options.climate.winds = oldOptions.winds;
-    if (oldOptions.year) options.lore.calendar.year = oldOptions.year;
-    if (oldOptions.era) options.lore.calendar.era = oldOptions.era;
-    if (oldOptions.eraShort) options.lore.calendar.eraShort = oldOptions.eraShort;
+  if (oldSettings[0]) options.units.distance.unit = oldSettings[0];
+  if (oldSettings[1]) options.units.distance.scale = +oldSettings[1];
+  if (oldSettings[2]) options.units.area.unit = oldSettings[2];
+  if (oldSettings[3]) options.units.height.unit = oldSettings[3];
+  if (oldSettings[4]) options.units.height.exponent = +oldSettings[4];
+  if (oldSettings[5]) options.units.temperature.unit = oldSettings[5];
+  if (oldSettings[12]) options.units.population.scale = +oldSettings[12];
+  if (oldSettings[13]) options.units.population.urbanization.rate = +oldSettings[13];
+  if (oldSettings[20]) options.lore.name = oldSettings[20];
+  if (oldSettings[24]) options.units.population.urbanization.density = +oldSettings[24];
+  if (oldSettings[26]) options.setGrowthRate(+oldSettings[26]);
 
-    data[1] = JSON.stringify(options);
-  }
+  // very old maps kept the world configuration in the pipe string, and it wins over the object
+  if (oldSettings[14]) options.geography.mapSize = +oldSettings[14];
+  if (oldSettings[15]) options.geography.latitude = +oldSettings[15];
+  if (oldSettings[16]) options.climate.temperature.equator = +oldSettings[16];
+  if (oldSettings[17]) options.climate.temperature.northPole = +oldSettings[17];
+  if (oldSettings[17]) options.climate.temperature.southPole = +oldSettings[17];
+  if (oldSettings[18]) options.climate.precipitation = minmax(+oldSettings[18], 0, 500);
+  if (oldSettings[25]) options.geography.longitude = minmax(+oldSettings[25], 0, 100);
+
+  // before v1.3 the slot held the winds array, since then the whole options object
+  const oldSettings19 = safeParseJSON(oldSettings[19] ?? "");
+  if (Array.isArray(oldSettings19)) options.climate.winds = oldSettings19;
+  const oldOptions = (Array.isArray(oldSettings19) ? null : oldSettings19) ?? {};
+
+  if (oldOptions.labels) options.labels = oldOptions.labels;
+  if (oldOptions.emblems) options.emblems = oldOptions.emblems;
+  if (oldOptions.military) options.military = oldOptions.military;
+  if (oldOptions.transports) options.transports = oldOptions.transports;
+  if (oldOptions.coastline) options.coastline = oldOptions.coastline;
+
+  if (oldOptions.burgs) options.burgs = oldOptions.burgs;
+  if (oldOptions.trade) options.trade = oldOptions.trade;
+  if (oldOptions.threeD) options.threeD = oldOptions.threeD;
+
+  if (oldOptions.pinNotes !== undefined) options.notes.pinned = oldOptions.pinNotes;
+  if (oldOptions.mapSize !== undefined) options.geography.mapSize = oldOptions.mapSize;
+  if (oldOptions.latitude !== undefined) options.geography.latitude = oldOptions.latitude;
+  if (oldOptions.longitude !== undefined) options.geography.longitude = oldOptions.longitude;
+  if (oldOptions.temperatureEquator !== undefined) options.climate.temperature.equator = oldOptions.temperatureEquator;
+  if (oldOptions.temperatureNorthPole !== undefined)
+    options.climate.temperature.northPole = oldOptions.temperatureNorthPole;
+  if (oldOptions.temperatureSouthPole !== undefined)
+    options.climate.temperature.southPole = oldOptions.temperatureSouthPole;
+  if (oldOptions.prec !== undefined) options.climate.precipitation = oldOptions.prec;
+  if (oldOptions.winds) options.climate.winds = oldOptions.winds;
+  if (oldOptions.year !== undefined) options.lore.calendar.year = oldOptions.year;
+  if (oldOptions.era) options.lore.calendar.era = oldOptions.era;
+  if (oldOptions.eraShort) options.lore.calendar.eraShort = oldOptions.eraShort;
+
+  // v1.140.0 moved the label settings into the labels options, the naming mode onto the state group
+  if (oldSettings[21]) options.labels.showAll = !Number(oldSettings[21]);
+  if (oldSettings[23]) options.labels.resizeOnZoom = Boolean(Number(oldSettings[23]));
+  const stateGroup = options.labels.groups.find(group => group.type === "state");
+  if (stateGroup && oldOptions.stateLabelsMode) stateGroup.mode = oldOptions.stateLabelsMode;
+
+  data[1] = JSON.stringify(options);
 }
