@@ -79,6 +79,7 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
   }
 
   if (response.ok) {
+    if (response.status === 204) return undefined as T;
     try {
       return (await response.json()) as T;
     } catch {
@@ -114,6 +115,16 @@ export const ask = (question: string, conversationId?: string): Promise<AskRespo
     headers: { "Content-Type": "application/json" },
     // exact schema: the field is present or absent, never null
     body: JSON.stringify(conversationId ? { question, conversationId } : { question })
+  });
+
+export type FeedbackRating = "up" | "down";
+
+// Idempotent per requestId server-side: a second rating replaces the first.
+export const sendFeedback = (requestId: number, rating: FeedbackRating): Promise<void> =>
+  request<void>("/v1/feedback", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ requestId, rating })
   });
 
 export const getLimits = (): Promise<Limits> => request<Limits>("/v1/limits", { method: "GET" });

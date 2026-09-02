@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ask, GATEWAY_URL, getLimits, HelpApiError, OFFICIAL_ORIGIN } from "./api";
+import { ask, GATEWAY_URL, getLimits, HelpApiError, OFFICIAL_ORIGIN, sendFeedback, signOut } from "./api";
 
 const jsonResponse = (status: number, body: unknown): Response =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -208,5 +208,36 @@ describe("conversation id", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, okBody)));
     const result = await ask("q");
     expect(result.conversationId).toBe("abc123DEF456ghi789JKL0-_");
+  });
+});
+
+describe("sendFeedback", () => {
+  it("POSTs exactly {requestId, rating} and resolves on a bodyless 204", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(sendFeedback(41, "up")).resolves.toBeUndefined();
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe(`${GATEWAY_URL}/v1/feedback`);
+    expect(init.method).toBe("POST");
+    const body = JSON.parse(init.body as string);
+    expect(body).toEqual({ requestId: 41, rating: "up" });
+    expect(Object.keys(body).sort()).toEqual(["rating", "requestId"]);
+  });
+
+  it("maps a feedback error body to HelpApiError as usual", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(jsonResponse(400, { error: { code: "invalid_request", message: "bad rating" } }))
+    );
+    const error = await sendFeedback(41, "down").catch((e: unknown) => e);
+    expect((error as HelpApiError).code).toBe("invalid_request");
+  });
+
+  it("resolves any bodyless 2xx from the transport without a parse error", async () => {
+    // signOut's /v1/auth/logout is a 204 — previously survived only via a swallowed SyntaxError
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 204 })));
+    await expect(signOut()).resolves.toBeUndefined();
   });
 });
