@@ -117,11 +117,32 @@ d3.select("#oceanLayers")
 
 document.addEventListener("DOMContentLoaded", async () => {
   // OAuth callback from the help gateway: stash the fragment token and scrub the URL.
-  // Storage key must match TOKEN_STORAGE in src/services/help/auth.ts.
+  // Storage key must match TOKEN_STORAGE in src/services/help/auth.ts. The token is taken
+  // verbatim after "#token=" (opaque token assumed; revisit if the gateway ever appends more
+  // fragment params).
   if (location.hash.startsWith("#token=")) {
+    // Token-fixation guard: only accept the fragment token if THIS client initiated sign-in
+    // (flag set in signIn(), src/services/help/api.ts) — otherwise a third party could plant
+    // #token=<their token> in a link and silently sign the victim in as them.
+    let signInPending = false;
     try {
-      localStorage.setItem("fmg-help-token", location.hash.slice("#token=".length));
-    } catch {}
+      signInPending = sessionStorage.getItem("fmg-help-signin-pending") === "1";
+    } catch {
+      // storage unavailable — treat as not pending, i.e. do not accept the token
+    }
+    try {
+      sessionStorage.removeItem("fmg-help-signin-pending");
+    } catch {
+      // nothing to clear
+    }
+    if (signInPending) {
+      try {
+        localStorage.setItem("fmg-help-token", location.hash.slice("#token=".length));
+      } catch {
+        // storage unavailable — the user simply stays signed out
+      }
+    }
+    // Always scrub the fragment, accepted or not — an unexpected token must not linger in the URL.
     history.replaceState(null, "", location.pathname + location.search);
   }
 

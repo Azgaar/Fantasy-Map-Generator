@@ -277,8 +277,10 @@ async function refreshLimits(): Promise<void> {
     ensureEl("helpAssistantLimits").textContent = limitsLabel(limits);
     renderAuth(limits.tier);
   } catch {
-    // limits are a nicety; asking still reports the authoritative state
-    if (!getToken()) renderAuth("anonymous");
+    // limits are a nicety; asking still reports the authoritative state. Render auth from
+    // local state rather than dropping it — a signed-in user must keep the sign-out affordance
+    // even when /v1/limits is failing.
+    renderAuth(getToken() ? "member" : "anonymous");
   }
 }
 

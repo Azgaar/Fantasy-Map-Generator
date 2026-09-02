@@ -124,6 +124,13 @@ describe("bearer token", () => {
   });
 
   it("sends no Authorization header when no token is stored", async () => {
+    // Explicit empty storage — not reliance on node lacking localStorage — so this asserts
+    // "no token stored" rather than "no storage available".
+    vi.stubGlobal("localStorage", {
+      getItem: () => null,
+      setItem: () => {},
+      removeItem: () => {}
+    });
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, { tier: "anonymous", remaining: 5, resetsAt: "x" }));
     vi.stubGlobal("fetch", fetchMock);
 

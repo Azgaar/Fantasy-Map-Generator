@@ -21,7 +21,7 @@ export interface AskResponse {
 }
 
 export interface Limits {
-  tier: "anonymous" | "member" | "moderator";
+  tier: "anonymous" | "member";
   remaining: number;
   resetsAt: string;
 }
@@ -116,6 +116,14 @@ export const getLimits = (): Promise<Limits> => request<Limits>("/v1/limits", { 
 // Sign-in is a full-page redirect; the gateway lands the user back on the app URL with
 // #token=… in the fragment (server-configured target — the client passes nothing).
 export function signIn(): void {
+  // Marks that THIS client initiated sign-in, so the fragment-token stash in public/main.js
+  // can refuse a #token= planted by a third party (token-fixation guard) — see the matching
+  // comment there.
+  try {
+    sessionStorage.setItem("fmg-help-signin-pending", "1");
+  } catch {
+    // storage unavailable — the stash falls back to treating this as an unsolicited token
+  }
   location.assign(`${gatewayBase()}/v1/auth/discord`);
 }
 
