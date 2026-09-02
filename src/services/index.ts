@@ -3,7 +3,6 @@ import "./platform";
 import "./assistant";
 import "./autosave";
 import "./fonts";
-import "./stats";
 import "./url-params";
 import "./versioning";
 

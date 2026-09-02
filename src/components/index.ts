@@ -12,7 +12,6 @@ import "./canvas";
 import "./options/io-panes";
 import "./options/view-mode";
 import "./options/options-panel";
-import "./shell";
 import "./seed";
 import "./lifecycle";
 import "./dialog/dialog-helpers";

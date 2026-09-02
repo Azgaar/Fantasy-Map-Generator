@@ -6,7 +6,7 @@ import { Layers } from "@/components/layers";
 import { hideLoading, showLoading } from "@/components/loading";
 import { restoreUi, syncInputs } from "@/components/options/tabs/options-tab";
 import { setSeed } from "@/components/seed";
-import { warnIfServerless } from "@/components/shell";
+import { initShell, warnIfServerless } from "@/components/shell";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { setViewportSize } from "@/components/viewport";
@@ -54,6 +54,7 @@ export function registerMap(id: number = Date.now()): void {
 
 /** Bring the app up */
 export async function boot(): Promise<void> {
+  initShell();
   registerServiceWorker();
 
   Options.restoreStored(); // the options of the last session, then the search params

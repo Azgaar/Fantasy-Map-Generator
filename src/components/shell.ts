@@ -125,7 +125,8 @@ export function warnIfServerless(): boolean {
   return true;
 }
 
-function initialize(): void {
+/** Wire the window up: the svg layer scaffold and the browser-level behaviours around it. Called by boot() */
+export function initShell(): void {
   Layers.init(); // create the svg layer groups the renderers draw into
 
   window.addEventListener("resize", onResize);
@@ -146,5 +147,3 @@ function removeWebOnlyControls(): void {
   findEl("saveToDropboxButton")?.remove();
   findEl("loadFromDropbox")?.remove();
 }
-
-initialize();
