@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { waitForMap } from "./wait-for-map";
 
 // Scenarios that exercise the registry through the paths a user actually takes — preset switching,
 // map regeneration and reordering — rather than through a single layer's content. The invariant
@@ -33,8 +34,6 @@ const PRESETS = [
   "emblems",
   "landmass"
 ];
-
-const waitForMap = (page: Page) => page.waitForFunction(() => (window as any).mapId !== undefined, { timeout: 120000 });
 
 /** console errors are the cheapest signal that a draw or teardown went wrong, so every test watches them */
 function watchErrors(page: Page): string[] {

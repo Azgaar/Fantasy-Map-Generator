@@ -2,6 +2,7 @@ import { select } from "d3";
 import { fitMapToScreen } from "@/components/canvas";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
+import { getMapHistory, setMapId } from "@/components/lifecycle";
 import { syncInputs } from "@/components/options/tabs/options-tab";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -10,6 +11,7 @@ import { invalidateEmblems } from "@/renderers/draw-emblems";
 import { clearLegend } from "@/renderers/draw-legend";
 import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
+import { logStats } from "@/services/stats";
 import { clearCache, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
 import { ensureEl, escapeHtml, last, link, parseError, rn, safeParseJSON } from "@/utils";
 
@@ -50,7 +52,7 @@ async function createSharableDropboxLink(): Promise<void> {
 }
 
 function loadMapPrompt(blob: Blob): void {
-  const workingTime = (Date.now() - last(mapHistory).created) / 60000; // minutes
+  const workingTime = (Date.now() - last(getMapHistory()).created) / 60000; // minutes
   if (workingTime < 5) {
     loadLastSavedMap();
     return;
@@ -253,7 +255,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     Options.persist();
     syncInputs();
 
-    mapId = +data[0].split("|")[6] || Date.now();
+    setMapId(+data[0].split("|")[6] || Date.now());
     stylePreset.value = "default"; // the styles are restored below, the preset name is not saved
 
     INFO && console.group(options.seed ? `Loaded Map ${options.seed}` : "Loaded Map");

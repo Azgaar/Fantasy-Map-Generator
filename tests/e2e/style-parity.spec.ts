@@ -1,6 +1,7 @@
 import {test, expect, type Page} from "@playwright/test";
 import fs from "fs";
 import path from "path";
+import { waitForMap } from "./wait-for-map";
 
 const BASELINE_PATH = path.join(__dirname, "../fixtures/style-baseline.json");
 const GENERATED_BASELINE_PATH = path.join(__dirname, "../fixtures/style-baseline-generated.json");
@@ -79,7 +80,7 @@ test("styled attributes match the pre-migration baseline", async ({page}) => {
   // demo.map was renamed to 1.112.1.map on master (commit 7d2fc33c) - this is the current
   // stand-in for the round-1 harness's "demo.map" fixture
   await page.locator("#mapToLoad").setInputFiles(path.join(__dirname, "../fixtures/1.112.1.map"));
-  await page.waitForFunction(() => (window as any).mapId !== undefined, {timeout: 120000});
+  await waitForMap(page);
   // burg icon, anchor and label groups render late - under full-suite load a fixed delay races the draw
   await page.waitForSelector("#burgIcons > g", {state: "attached", timeout: 120000});
   await page.waitForSelector("#anchors > g", {state: "attached", timeout: 120000});
@@ -111,7 +112,7 @@ test("styled attributes match the pre-migration baseline", async ({page}) => {
 test("styled attributes on a freshly generated map match the preset-apply baseline", async ({page}) => {
   await page.goto("/");
   await page.waitForFunction(() => Boolean((window as any).pack?.cells?.i?.length), {timeout: 120000});
-  await page.waitForFunction(() => (window as any).mapId !== undefined, {timeout: 120000});
+  await waitForMap(page);
   await page.waitForSelector("#burgIcons > g", {state: "attached", timeout: 120000});
   await page.waitForSelector("#anchors > g", {state: "attached", timeout: 120000});
   await page.waitForSelector("#labels > g", {state: "attached", timeout: 120000});

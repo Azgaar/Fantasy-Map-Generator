@@ -1,11 +1,10 @@
 import { test, expect, Page } from "@playwright/test";
+import { waitForMap } from "./wait-for-map";
 
 const STORAGE_KEY = "fmg-tour-prompt-count";
 
 async function waitForMapLoad(page: Page) {
-  await page.waitForFunction(() => (window as any).mapId !== undefined, {
-    timeout: 60000,
-  });
+  await waitForMap(page);
   await page.waitForTimeout(500);
 }
 

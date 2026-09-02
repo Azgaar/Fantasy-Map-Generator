@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { expect, test, type Page } from "@playwright/test";
+import { countMaps, waitForMap, waitForNextMap } from "./wait-for-map";
 
 // Step 4 of the style-migration doc: styles.ts is now its own record (data[48]) in the map file.
 // These tests pin the round trips the doc promises: a store-format save/reload survives a preset
@@ -15,8 +16,6 @@ declare const Services: {
   Save: { saveMap: (method: string) => Promise<void>; prepareMapData: () => string | Promise<string> };
 };
 declare const styles: any;
-
-const waitForMap = (page: Page) => page.waitForFunction(() => (window as any).mapId !== undefined, { timeout: 60000 });
 
 function readPreset(name: string): any {
   return JSON.parse(fs.readFileSync(path.join(__dirname, `../../public/styles/${name}.json`), "utf8"));
@@ -116,22 +115,18 @@ test.describe("style persistence round trips", () => {
 
     // page.goto("/") kicks off an async auto-generated map (main.js's unawaited
     // generateMapOnLoad()) that can still be in flight here. Its own later showStatistics()
-    // also sets window.mapId and re-applies styles, which can race with - and overwrite - the
-    // uploaded fixture's harvested store right after this test observes it. Wait for the initial
-    // generation to settle first, then require a fresh, different mapId after the upload so the
-    // read below is provably this load's own harvest (same technique as e3ea5938).
-    await page.waitForFunction(() => (window as any).mapId !== undefined, { timeout: 120000 });
-    const initialMapId = await page.evaluate(() => (window as any).mapId);
+    // also re-applies styles, which can race with - and overwrite - the uploaded fixture's
+    // harvested store right after this test observes it. Wait for the initial generation to settle
+    // first, then require a further map after the upload so the read below is provably this load's
+    // own harvest (same technique as e3ea5938).
+    await waitForMap(page);
+    const mapsBefore = await countMaps(page);
 
     await page.waitForSelector("#mapToLoad", { state: "attached" });
     const mapFilePath = path.join(__dirname, "../fixtures/1.112.1.map");
     await page.locator("#mapToLoad").setInputFiles(mapFilePath);
     await expect(page.locator("#tooltip")).toContainText("Map is successfully loaded", { timeout: 120000 });
-    await page.waitForFunction(
-      id => (window as any).mapId !== undefined && (window as any).mapId !== id,
-      initialMapId,
-      { timeout: 120000 }
-    );
+    await waitForNextMap(page, mapsBefore);
 
     // fixture carries fill="#6738bc" on #rivers and data-width="13" on #statesHalo - pin both
     // against those known embedded values, not just against each other, so the assertion actually

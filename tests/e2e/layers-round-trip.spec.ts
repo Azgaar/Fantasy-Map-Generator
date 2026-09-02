@@ -1,5 +1,6 @@
 import fs from "fs";
 import { expect, test } from "@playwright/test";
+import { waitForMap } from "./wait-for-map";
 
 // data[50] exists so that the layers the user had enabled — and the order they put them in —
 // come back exactly as they were. Save the state, reload it, assert nothing drifted.
@@ -12,9 +13,6 @@ declare const Layers: {
   move: (layer: unknown, before?: unknown) => void;
 };
 declare const Services: { Save: { saveMap: (method: string) => Promise<void> } };
-
-const waitForMap = (page: import("@playwright/test").Page) =>
-  page.waitForFunction(() => (window as any).mapId !== undefined, { timeout: 60000 });
 
 test.describe("layers round-trip", () => {
   test("saved layer state and custom order survive a save and load", async ({ page, context }) => {

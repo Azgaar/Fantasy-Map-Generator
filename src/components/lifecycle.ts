@@ -23,10 +23,32 @@ import { cleanupData } from "@/services/versioning";
 import type { GridGraph } from "@/types/GridGraph";
 import { debounce, ensureEl, findEl, last, parseError } from "@/utils";
 
-/**
- * Bring the app up. Runs on `DOMContentLoaded`, so after the classic `public/modules/ui/*.js`
- * scripts that still own the options panel and the style presets
- */
+export interface MapHistoryEntry {
+  seed: string;
+  width: number;
+  height: number;
+  template: string;
+  created: number;
+}
+
+let mapId = 0; // A map's id is the moment it was generated
+const mapHistory: MapHistoryEntry[] = [];
+
+export const getMapId = (): number => mapId;
+export const getMapHistory = (): readonly MapHistoryEntry[] => mapHistory;
+
+export function setMapId(id: number): void {
+  mapId = id;
+}
+
+export function recordMapInHistory(entry: MapHistoryEntry): void {
+  mapHistory.push(entry);
+  const mapsGenerated = mapHistory.length;
+  window.mapsGenerated = mapsGenerated;
+  window.dispatchEvent(new CustomEvent("map:generated", { detail: { seed: entry.seed, mapsGenerated } }));
+}
+
+/** Bring the app up */
 export async function boot(): Promise<void> {
   registerServiceWorker();
 
@@ -61,6 +83,7 @@ export async function generate(config?: GenerationConfig): Promise<void> {
     applyGraphSize();
 
     await GenerationPipeline.run({ seed: precreatedSeed, graph: precreatedGraph });
+    mapId = Date.now();
 
     syncInputs(); // after the pipeline: it names the map, which the panel shows
     Options.persist(); // what was generated is what the next session starts from
@@ -116,10 +139,7 @@ export const regenerateMap = debounce(async (config?: GenerationConfig | string)
   clearMainTip();
 }, 250);
 
-/**
- * Ask before throwing away a map the user has been working on for a while. Under a minute of work
- * is not worth a prompt, and an active edit mode blocks regeneration outright
- */
+/** Ask before throwing away a map the user has been working on for a while */
 export function regeneratePrompt(config?: GenerationConfig): void {
   if (customization) {
     tip("New map cannot be generated when edit mode is active, please exit the mode and retry", false, "error");
@@ -153,8 +173,10 @@ export function undraw(): void {
   unfog();
 }
 
-// Legacy seam: classic public/ code regenerates and clears the map through the globals
 declare global {
+  interface Window {
+    mapsGenerated: number;
+  }
   // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy JS
   var regeneratePrompt: (config?: GenerationConfig) => void;
   // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy JS

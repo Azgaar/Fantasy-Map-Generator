@@ -2,6 +2,7 @@
 
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
+import { getMapId } from "@/components/lifecycle";
 import { tip } from "@/components/tooltips";
 import { GraphOverride } from "@/generators/graph-override";
 import { Services } from "@/services";
@@ -52,9 +53,15 @@ function prepareMapData(): string {
   const date = new Date();
   const dateString = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
   const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
-  const params = [VERSION, license, dateString, options.seed, options.graph.width, options.graph.height, mapId].join(
-    "|"
-  );
+  const params = [
+    VERSION,
+    license,
+    dateString,
+    options.seed,
+    options.graph.width,
+    options.graph.height,
+    getMapId()
+  ].join("|");
 
   const settings = JSON.stringify(options);
   const notesData = JSON.stringify(notes);

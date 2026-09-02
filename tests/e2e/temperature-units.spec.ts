@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { waitForMap } from "./wait-for-map";
 
 // Regression test: temperature must be shown in the scale selected in the Units Editor
 // (https://github.com/Azgaar/Fantasy-Map-Generator/issues — burg CSV export and burg
@@ -17,10 +18,7 @@ test.describe("Temperature units", () => {
     await page.goto("/?seed=test-temperature&width=1280&height=720");
 
     // Wait for map generation to complete
-    await page.waitForFunction(
-      () => (window as any).mapId !== undefined,
-      { timeout: 60000 }
-    );
+    await waitForMap(page);
 
     // Additional wait for any rendering/animations to settle
     await page.waitForTimeout(500);

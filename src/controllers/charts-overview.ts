@@ -18,6 +18,7 @@ import {
   sum
 } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { getMapId } from "@/components/lifecycle";
 import { tip } from "@/components/tooltips";
 import { downloadFile, getArea, getAreaUnit, getFileName, getHeight, getPrecipitation } from "@/utils";
 import { capitalize, convertTemperature, ensureEl, formatPrice, isWater, rn, si } from "../utils";
@@ -364,9 +365,9 @@ function open() {
 
   closeDialogs("#chartsOverview, .stable");
 
-  if (prevMapId !== mapId) {
+  if (prevMapId !== getMapId()) {
     charts = [];
-    prevMapId = mapId;
+    prevMapId = getMapId();
   }
 
   if (!charts.length) addChart();

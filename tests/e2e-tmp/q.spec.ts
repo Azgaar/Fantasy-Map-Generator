@@ -1,4 +1,5 @@
 import {test, expect} from "@playwright/test";
+import { waitForMap } from "../e2e/wait-for-map";
 
 declare const options: any;
 declare const style: any;
@@ -12,7 +13,7 @@ function watch(page: any, errors: string[]) {
 }
 async function fresh(page: any, seed = "labels-test") {
   await page.goto(`/?seed=${seed}&width=1280&height=720`);
-  await page.waitForFunction(() => (window as any).mapId !== undefined, {timeout: 180000});
+  await waitForMap(page, 180000);
   await page.waitForTimeout(1200);
 }
 

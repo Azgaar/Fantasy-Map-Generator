@@ -1,9 +1,10 @@
 import { expect, test } from "@playwright/test";
+import { waitForMap } from "./wait-for-map";
 
 test.describe("removing a river removes its label", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/?seed=123456789&width=1280&height=720");
-    await page.waitForFunction(() => (window as any).mapId !== undefined, { timeout: 120000 });
+    await waitForMap(page);
 
     // river labels are zoom-gated, so bring one into view
     await page.evaluate(() => {

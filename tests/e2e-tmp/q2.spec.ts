@@ -1,9 +1,10 @@
 import {test} from "@playwright/test";
+import { waitForMap } from "../e2e/wait-for-map";
 declare const pack: any;
 
 test("does route regeneration change geometry or only names?", async ({page}) => {
   await page.goto("/?seed=alea-check&width=1280&height=720");
-  await page.waitForFunction(() => (window as any).mapId !== undefined, {timeout: 180000});
+  await waitForMap(page, 180000);
   await page.waitForTimeout(1200);
   const out = await page.evaluate(async () => {
     const w = window as any;

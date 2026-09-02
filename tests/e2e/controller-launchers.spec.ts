@@ -1,9 +1,10 @@
 import {expect, test} from "@playwright/test";
+import { waitForMap } from "./wait-for-map";
 
 test.describe("controller launchers", () => {
   test.beforeEach(async ({page}) => {
     await page.goto("/?seed=test-controller-launchers&width=1280&height=720");
-    await page.waitForFunction(() => (window as any).mapId !== undefined, {timeout: 60000});
+    await waitForMap(page);
   });
 
   test("opens Markers generation settings from Markers Overview", async ({page}) => {
