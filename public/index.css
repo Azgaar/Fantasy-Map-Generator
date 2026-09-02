@@ -2649,6 +2649,12 @@ body.tour-free-roam * {
   z-index: 99;
 }
 
+/* the dialog is fixed-width; undo the global .dialog > div { width: max-content } so
+   children wrap instead of overflowing */
+#helpAssistant > div {
+  width: auto;
+}
+
 #helpAssistant .helpAssistantLinks {
   display: flex;
   gap: 1.2em;
