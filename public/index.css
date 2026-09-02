@@ -2683,9 +2683,10 @@ body.tour-free-roam * {
 
 #helpAssistant .helpAssistantFooter {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  gap: 0.8em;
+  gap: 0.4em 0.8em;
   width: 100%;
   margin-top: 0.3em;
 }
@@ -2694,6 +2695,7 @@ body.tour-free-roam * {
   flex: 1;
   text-align: right;
   font-size: 0.92em;
+  white-space: nowrap;
 }
 
 #helpAssistant .helpAssistantDisclosure {
