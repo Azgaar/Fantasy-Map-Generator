@@ -10,8 +10,7 @@ globalThis.pack = {} as PackedGraph; // packed graph and everything derived from
 globalThis.mapCoordinates = {}; // where the map sits on the globe
 globalThis.notes = [];
 
-// map identity, written by services/stats.ts on generation and by the loader
-globalThis.seed = "";
+// map metadata: the id is the moment of generation, the history lets a seed be revisited
 globalThis.mapId = 0;
 globalThis.mapHistory = [];
 
@@ -34,7 +33,6 @@ declare global {
   var pack: PackedGraph;
   var mapCoordinates: { latT?: number; latN?: number; latS?: number; lonT?: number; lonW?: number; lonE?: number };
   var notes: any[]; // TODO: correct type
-  var seed: string;
   var mapId: number;
   var mapHistory: { created: number; [key: string]: unknown }[];
   var graphWidth: number;

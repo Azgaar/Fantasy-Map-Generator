@@ -549,7 +549,7 @@ class HeightmapModule {
 
   /** build the heightmap from the selected template or image and store it as the graph cell heights */
   async generate(graph: GridGraph = grid, id: string = this.getSelectedId()): Promise<Uint8Array> {
-    Math.random = Alea(seed); // reset PRNG
+    Math.random = Alea(options.seed); // reset PRNG
     const isTemplate = id in heightmapTemplates;
     const heights = isTemplate ? this.fromTemplate(graph, id) : await this.fromPrecreated(graph, id);
 

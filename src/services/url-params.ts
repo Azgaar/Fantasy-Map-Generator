@@ -162,8 +162,8 @@ function findBurgForMFCG(params: URLSearchParams): void {
 /** Copy a link that reproduces the current map: the seed, the canvas size and whether options are pinned */
 export function copyMapURL(): void {
   const isRandomized = !document.querySelectorAll("i.icon-lock").length;
-  const seedValue = ensureEl<HTMLInputElement>("optionsSeed").value;
-  const search = `?seed=${seedValue}&width=${graphWidth}&height=${graphHeight}${isRandomized ? "&options=default" : ""}`;
+  const seedValue = ensureEl<HTMLInputElement>("seedInput").value;
+  const search = `?options.seed=${seedValue}&width=${graphWidth}&height=${graphHeight}${isRandomized ? "&options=default" : ""}`;
 
   navigator.clipboard
     .writeText(location.host + location.pathname + search)

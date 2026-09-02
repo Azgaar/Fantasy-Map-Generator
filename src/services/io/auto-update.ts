@@ -7,7 +7,6 @@ import { Emblems } from "@/generators/emblems-generator";
 import type { GraphOverrides } from "@/generators/graph-override";
 import { type Label, type LabelNameMode, Labels as LabelsGenerator } from "@/generators/labels-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
-
 import { labelGroupFromLegacy, migrateStyles, restoreStrippedLayerStyles } from "@/generators/styles-legacy";
 import type { Point } from "@/generators/voronoi";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
@@ -315,7 +314,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     const era = `${Names.getBaseShort(P(0.7) ? 1 : rand(Names.nameBases.length))} Era`;
     const eraShort = `${era[0]}E`;
     const military = Military.getDefaultOptions();
-    options.restoreSaved({ winds, year, era, eraShort, military });
+    options.restore({ winds, year, era, eraShort, military });
 
     // v1.3 added campaings data for all states
     States.generateCampaigns();
@@ -1849,5 +1848,54 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     if (!isOlderThan("1.145.0") && isOlderThan("1.148.0")) await restoreStrippedLayerStyles();
     // v1.150.0 made the styles store the source of truth
     data[48] = await migrateStyles(data[48]);
+  }
+}
+
+export function migrateSettingsFormat(mapVersion: string, data: string[]): void {
+  if (compareVersions(mapVersion, "1.151.0").isOlder) {
+    // v1.151.0 changed the settings format from a legacy pipe-delimited string to a JSON object
+    const oldHeader = data[0].split("|");
+    const oldSettings = data[1].split("|");
+
+    if (oldHeader[3]) options.seed = oldHeader[3];
+    if (oldHeader[4]) options.graph.width = +oldHeader[4];
+    if (oldHeader[5]) options.graph.height = +oldHeader[5];
+
+    if (oldSettings[0]) options.units.distance.unit = oldSettings[0];
+    if (oldSettings[1]) options.units.distance.scale = +oldSettings[1];
+    if (oldSettings[2]) options.units.area.unit = oldSettings[2];
+    if (oldSettings[3]) options.units.height.unit = oldSettings[3];
+    if (oldSettings[4]) options.units.height.exponent = +oldSettings[4];
+    if (oldSettings[5]) options.units.temperature.unit = oldSettings[5];
+    if (oldSettings[12]) options.units.population.scale = +oldSettings[12];
+    if (oldSettings[13]) options.units.population.urbanization.rate = +oldSettings[13];
+    if (oldSettings[20]) options.lore.name = oldSettings[20];
+    if (oldSettings[24]) options.units.population.urbanization.density = +oldSettings[24];
+    if (oldSettings[26]) options.cultures.growthRate = +oldSettings[26];
+    if (oldSettings[26]) options.states.growthRate = +oldSettings[26];
+
+    const oldOptions = safeParseJSON(oldSettings[19] ?? "") ?? {};
+    if (oldOptions.labels) options.labels = oldOptions.labels;
+    if (oldOptions.emblems) options.emblems = oldOptions.emblems;
+    if (oldOptions.trade) options.trade = oldOptions.trade;
+    if (oldOptions.threeD) options.threeD = oldOptions.threeD;
+    if (oldOptions.military) options.military = oldOptions.military;
+    if (oldOptions.transports) options.transports = oldOptions.transports;
+    if (oldOptions.coastline) options.coastline = oldOptions.coastline;
+    if (oldOptions.burgs) options.burgs = oldOptions.burgs;
+    if (oldOptions.pinNotes) options.notes.pinned = oldOptions.pinNotes;
+    if (oldOptions.mapSize) options.geography.mapSize = oldOptions.mapSize;
+    if (oldOptions.latitude) options.geography.latitude = oldOptions.latitude;
+    if (oldOptions.longitude) options.geography.longitude = oldOptions.longitude;
+    if (oldOptions.temperatureEquator) options.climate.temperature.equator = oldOptions.temperatureEquator;
+    if (oldOptions.temperatureNorthPole) options.climate.temperature.northPole = oldOptions.temperatureNorthPole;
+    if (oldOptions.temperatureSouthPole) options.climate.temperature.southPole = oldOptions.temperatureSouthPole;
+    if (oldOptions.prec) options.climate.precipitation = oldOptions.prec;
+    if (oldOptions.winds) options.climate.winds = oldOptions.winds;
+    if (oldOptions.year) options.lore.calendar.year = oldOptions.year;
+    if (oldOptions.era) options.lore.calendar.era = oldOptions.era;
+    if (oldOptions.eraShort) options.lore.calendar.eraShort = oldOptions.eraShort;
+
+    data[1] = JSON.stringify(options);
   }
 }

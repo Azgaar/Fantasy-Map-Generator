@@ -1,4 +1,5 @@
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { syncInputs } from "@/components/options/tabs/options-tab";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { precreatedHeightmaps } from "@/data/precreated-heightmaps";
 import { drawHeights } from "@/renderers/draw-heightmap";
@@ -31,7 +32,7 @@ function open(): void {
         const id = getSelected();
         if (!id) return;
         options.heightmap.template = id;
-        options.syncInputs();
+        syncInputs();
         lock("template");
 
         $(this).dialog("close");
@@ -40,7 +41,7 @@ function open(): void {
         const id = getSelected();
         if (!id) return;
         options.heightmap.template = id;
-        options.syncInputs();
+        syncInputs();
         lock("template");
 
         const seed = getSeed();
@@ -272,8 +273,8 @@ function getSeed(): string | undefined {
 }
 
 function getGraph(currentGraph: GridGraph): GridGraph {
-  const newGraph = Grid.shouldRegenerate(currentGraph, seed, graphWidth, graphHeight)
-    ? Grid.generate(seed, graphWidth, graphHeight)
+  const newGraph = Grid.shouldRegenerate(currentGraph, options.seed, graphWidth, graphHeight)
+    ? Grid.generate(options.seed, graphWidth, graphHeight)
     : structuredClone(currentGraph);
   Grid.resetHeights(newGraph);
   return newGraph;

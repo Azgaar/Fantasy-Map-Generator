@@ -413,7 +413,7 @@ function submitForm(event: Event): void {
   }
 
   options.burgs.groups = rows.map(rowToGroup);
-  localStorage.setItem("burg-groups", JSON.stringify(options.burgs.groups));
+  options.store();
 
   // put burgs to new groups
   const validBurgs = pack.burgs.filter(b => b.i && !b.removed);

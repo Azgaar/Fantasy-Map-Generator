@@ -141,7 +141,7 @@ export async function calculateLabelSpread(): Promise<LabelSpreadResult> {
 
     await nextFrame();
     const ids = items.map(item => item.id).sort();
-    const solution = optimizeLabelPlacements(items, mapBounds(), `${seed}|${ids.join("|")}`);
+    const solution = optimizeLabelPlacements(items, mapBounds(), `${options.seed}|${ids.join("|")}`);
     return {
       patches: getPatches(visibleLabels, solution.selected),
       displayedLabels: visibleLabels.length,

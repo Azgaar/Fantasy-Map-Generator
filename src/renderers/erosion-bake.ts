@@ -52,7 +52,7 @@ export function makeKey(params: BakeParams): string {
   };
 
   const paramString = [
-    seed,
+    options.seed,
     graphWidth,
     graphHeight,
     grid.cellsX,
@@ -739,7 +739,7 @@ function runErosionPass(
       uGridSize: { value: new THREE.Vector2(grid.cellsX, grid.cellsY) },
       uResolution: { value: new THREE.Vector2(bakeW, bakeH) },
       uAspect: { value: graphHeight / graphWidth },
-      uSeed: { value: (Number.parseInt(seed, 10) % 1e5 || 1) / 1e5 + 1 },
+      uSeed: { value: (Number.parseInt(options.seed, 10) % 1e5 || 1) / 1e5 + 1 },
       uStrength: { value: params.strength / 50 },
       uRiverDepth: { value: params.riverDepth / 100 },
       uOctaves: { value: params.octaves }

@@ -1,5 +1,6 @@
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
+import { syncInputs } from "@/components/options/tabs/options-tab";
 import { lock, unlock } from "@/utils/preferences";
 import { ensureEl } from "../utils";
 import type { PromptOptions } from "../utils/commonUtils";
@@ -40,7 +41,9 @@ function changeDistanceUnit(this: HTMLSelectElement): void {
   if (this.value === "custom_name") {
     prompt("Provide a custom name for a distance unit", { default: "" }, custom => {
       this.options.add(new Option(String(custom), String(custom), false, true));
+      options.units.distance.unit = String(custom);
       lock("distanceUnit");
+      options.store();
       Layers.draw("scaleBar");
       calculateFriendlyGridSize();
     });
@@ -62,7 +65,9 @@ function changeHeightUnit(this: HTMLSelectElement): void {
 
   prompt("Provide a custom name for a height unit", { default: "" }, custom => {
     this.options.add(new Option(String(custom), String(custom), false, true));
+    options.units.height.unit = String(custom);
     lock("heightUnit");
+    options.store();
   });
 }
 
@@ -98,15 +103,15 @@ function restoreDefaultUnits(): void {
   options.units.height.unit = US || UK ? "ft" : "m";
   options.units.temperature.unit = US ? "°F" : "°C";
   options.units.area.unit = "square";
-  localStorage.removeItem("distanceUnit");
-  localStorage.removeItem("heightUnit");
-  localStorage.removeItem("temperatureScale");
-  localStorage.removeItem("areaUnit");
+  unlock("distanceUnit");
+  unlock("heightUnit");
+  unlock("temperatureScale");
+  unlock("areaUnit");
   calculateFriendlyGridSize();
 
   // height exponent
   options.units.height.exponent = 1.8;
-  localStorage.removeItem("heightExponent");
+  unlock("heightExponent");
   Temperature.generate();
 
   Layers.draw("scaleBar");
@@ -115,11 +120,12 @@ function restoreDefaultUnits(): void {
   options.units.population.scale = 1000;
   options.units.population.urbanization.rate = 1;
   options.units.population.urbanization.density = 10;
-  localStorage.removeItem("populationRate");
-  localStorage.removeItem("urbanization");
-  localStorage.removeItem("urbanDensity");
+  unlock("populationRate");
+  unlock("urbanization");
+  unlock("urbanDensity");
 
-  options.syncInputs();
+  options.store();
+  syncInputs();
 }
 
 export const UnitsEditor = { open };

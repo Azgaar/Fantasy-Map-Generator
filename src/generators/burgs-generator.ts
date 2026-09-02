@@ -555,7 +555,7 @@ class BurgModule {
   private createWatabouCityLinks(burg: Burg) {
     const cells = pack.cells;
     const { i, name, population: burgPopulation, cell } = burg;
-    const burgSeed = burg.MFCG || seed + String(burg.i).padStart(4, "0");
+    const burgSeed = burg.MFCG || options.seed + String(burg.i).padStart(4, "0");
 
     const sizeRaw =
       2.13 *
@@ -622,7 +622,7 @@ class BurgModule {
     const { cells, features } = pack;
     const { i, population, cell } = burg;
 
-    const burgSeed = seed + String(i).padStart(4, "0");
+    const burgSeed = options.seed + String(i).padStart(4, "0");
     const pop = rn(population! * options.units.population.scale * options.units.population.urbanization.rate);
     const tags = [];
 
@@ -682,7 +682,7 @@ class BurgModule {
   }
 
   private createWatabouDwellingLinks(burg: Burg) {
-    const burgSeed = seed + String(burg.i).padStart(4, "0");
+    const burgSeed = options.seed + String(burg.i).padStart(4, "0");
     const pop = rn(burg.population! * options.units.population.scale * options.units.population.urbanization.rate);
 
     const tags = (() => {

@@ -1,0 +1,805 @@
+// Style tab markup. The controls are still driven by the classic public/modules/ui/style.js
+import { ensureEl } from "@/utils/nodeUtils";
+
+const TEMPLATE = /* html */ `
+  <p
+    data-tip="Select a style preset. State labels may required regeneration if font is changed"
+    style="display: inline-block"
+  >
+    Style preset:
+  </p>
+  <select
+    data-tip="Select a style preset"
+    id="stylePreset"
+    onchange="requestStylePresetChange(this.value)"
+    style="width: 45%; text-transform: capitalize"
+  ></select>
+  <button
+    id="addStyleButton"
+    data-tip="Click to save current style as a new preset"
+    class="icon-plus sideButton"
+    style="display: inline-block"
+    onclick="addStylePreset()"
+  ></button>
+  <button
+    id="removeStyleButton"
+    data-tip="Click to remove current custom style preset"
+    class="icon-minus sideButton"
+    style="display: none"
+    onclick="requestRemoveStylePreset()"
+  ></button>
+  <p data-tip="Select an element to edit its style" style="display: inline-block">Select element:</p>
+  <select
+    data-tip="Select an element to edit its style (list is ordered alphabetically)"
+    id="styleElementSelect"
+    style="width: 42%"
+  >
+    <option value="biomes">Biomes</option>
+    <option value="borders">Borders</option>
+    <option value="burgIcons">Burg Icons</option>
+    <option value="anchors">Burg Anchors</option>
+    <option value="cells">Cells</option>
+    <option value="coastline">Coastline</option>
+    <option value="coordinates">Coordinates</option>
+    <option value="cults">Cultures</option>
+    <option value="emblems">Emblems</option>
+    <option value="fogging">Fogging</option>
+    <option value="goodsCells">Goods: production</option>
+    <option value="goodsIcons">Goods: resources</option>
+    <option value="goodsBurgs">Goods: burg plates</option>
+    <option value="gridOverlay">Grid</option>
+    <option value="terrs">Heightmap</option>
+    <option value="ice">Ice</option>
+    <option value="journeys">Journeys</option>
+    <option value="labels">Labels</option>
+    <option value="lakes">Lakes</option>
+    <option value="landmass">Landmass</option>
+    <option value="legend">Legend</option>
+    <option value="markers">Markers</option>
+    <option value="markets">Markets</option>
+    <option value="armies">Military</option>
+    <option value="ocean">Ocean</option>
+    <option value="population">Population</option>
+    <option value="prec">Precipitation</option>
+    <option value="provs">Provinces</option>
+    <option value="terrain">Relief Icons</option>
+    <option value="relig">Religions</option>
+    <option value="rivers">Rivers</option>
+    <option value="routes">Routes</option>
+    <option value="ruler">Rulers</option>
+    <option value="scaleBar">Scale Bar</option>
+    <option value="regions" selected>States</option>
+    <option value="temperature">Temperature</option>
+    <option value="texture">Texture</option>
+    <option value="tradeAnimation">Trade Animation</option>
+    <option value="vignette">Vignette</option>
+    <option value="compass">Wind Rose</option>
+    <option value="zones">Zones</option>
+  </select>
+  <table id="styleElements">
+    <caption
+      id="styleIsOff"
+      data-tip="The selected layer is not visible. Toogle it on to see style changes effect"
+    >
+      Ensure the element visibility is toggled on!
+    </caption>
+    <tbody id="styleGroup">
+      <tr data-tip="Select element group">
+        <td><b>Group</b></td>
+        <td>
+          <select id="styleGroupSelect"></select>
+        </td>
+      </tr>
+    </tbody>
+    <tbody id="styleHeightmap">
+      <tr id="styleHeightmapRenderOceanOption" data-tip="Check to render ocean heights">
+        <td colspan="2">
+          <input id="styleHeightmapRenderOcean" class="checkbox" type="checkbox" />
+          <label for="styleHeightmapRenderOcean" class="checkbox-label">Render ocean heights</label>
+        </td>
+      </tr>
+      <tr data-tip="Terracing power. Set to 0 to toggle off">
+        <td>Terracing</td>
+        <td>
+          <slider-input id="styleHeightmapTerracing" min="0" max="20" step="1"></slider-input>
+        </td>
+      </tr>
+      <tr data-tip="Layers reduction rate. Increase to improve performance">
+        <td>Reduce layers</td>
+        <td>
+          <slider-input id="styleHeightmapSkip" min="0" max="10" step="1"></slider-input>
+        </td>
+      </tr>
+      <tr data-tip="Line simplification rate. Increase to slightly improve performance">
+        <td>Simplify line</td>
+        <td>
+          <slider-input id="styleHeightmapSimplification" min="0" max="10" step="1"></slider-input>
+        </td>
+      </tr>
+      <tr data-tip="Select line interpolation type">
+        <td>Line style</td>
+        <td>
+          <select id="styleHeightmapCurve">
+            <option value="curveBasisClosed" selected>Curved</option>
+            <option value="curveLinear">Linear</option>
+            <option value="curveStep">Rectangular</option>
+          </select>
+        </td>
+      </tr>
+      <tr data-tip="Select color scheme for the element">
+        <td>Color scheme</td>
+        <td>
+          <select id="styleHeightmapScheme" style="width: 86%"></select>
+          <button
+            id="openCreateHeightmapSchemeButton"
+            data-tip="Click to add a custom heightmap color scheme"
+            data-stops="#ffffff,#EEEECC,#D2B48C,#008000,#008080"
+            class="icon-plus sideButton"
+          ></button>
+        </td>
+      </tr>
+    </tbody>
+    <tbody id="styleOpacity" style="display: none">
+      <tr data-tip="Set opacity. 0: transparent, 1: solid">
+        <td>Opacity</td>
+        <td>
+          <slider-input id="styleOpacityInput" min="0" max="1" step="0.01"></slider-input>
+        </td>
+      </tr>
+    </tbody>
+    <tbody id="styleLegend">
+      <tr data-tip="Set maximum number of items in one column">
+        <td>Column items</td>
+        <td>
+          <slider-input id="styleLegendColItems" min="1" max="30" step="1" value="8"></slider-input>
+        </td>
+      </tr>
+      <tr data-tip="Set background color">
+        <td>Background</td>
+        <td>
+          <input id="styleLegendBack" type="color" value="#ffffff" />
+          <output id="styleLegendBackOutput">#ffffff</output>
+        </td>
+      </tr>
+      <tr data-tip="Set background opacity">
+        <td>Opacity</td>
+        <td>
+          <slider-input id="styleLegendOpacity" min="0" max="1" step=".01"></slider-input>
+        </td>
+      </tr>
+    </tbody>
+    <tbody id="stylePopulation">
+      <tr data-tip="Set bar color for rural population">
+        <td>Rural color</td>
+        <td>
+          <input id="stylePopulationRuralStrokeInput" type="color" value="#0000ff" />
+          <output id="stylePopulationRuralStrokeOutput">#0000ff</output>
+        </td>
+      </tr>
+      <tr data-tip="Set bar color for urban population">
+        <td>Urban color</td>
+        <td>
+          <input id="stylePopulationUrbanStrokeInput" type="color" value="#ff0000" />
+          <output id="stylePopulationUrbanStrokeOutput">#ff0000</output>
+        </td>
+      </tr>
+    </tbody>
+    <tbody id="styleTexture">
+      <tr data-tip="Select texture image. Big textures can highly affect performance">
+        <td>Image</td>
+        <td>
+          <select id="styleTextureInput" style="width: 86%">
+            <option value="">No texture</option>
+            <option value="./images/textures/folded-paper-big.jpg">Folded paper big</option>
+            <option value="./images/textures/folded-paper-small.jpg">Folded paper small</option>
+            <option value="./images/textures/gray-paper.jpg">Gray paper</option>
+            <option value="./images/textures/soiled-paper.jpg">Soiled paper horizontal</option>
+            <option value="./images/textures/soiled-paper-vertical.jpg">Soided paper vertical</option>
+            <option value="./images/textures/plaster.jpg">Plaster</option>
+            <option value="./images/textures/ocean.jpg">Ocean</option>
+            <option value="./images/textures/antique-small.jpg">Antique small</option>
+            <option value="./images/textures/antique-big.jpg">Antique big</option>
+            <option value="./images/textures/pergamena-small.jpg">Pergamena small</option>
+            <option value="./images/textures/marble-big.jpg" selected>Marble big</option>
+            <option value="./images/textures/marble-small.jpg">Marble small</option>
+            <option value="./images/textures/marble-blue-small.jpg">Marble Blue</option>
+            <option value="./images/textures/marble-blue-big.jpg">Marble Blue big</option>
+            <option value="./images/textures/stone-small.jpg">Stone small</option>
+            <option value="./images/textures/stone-big.jpg">Stone big</option>
+            <option value="./images/textures/timbercut-small.jpg">Timber Cut small</option>
+            <option value="./images/textures/timbercut-big.jpg">Timber Cut big</option>
+            <option value="./images/textures/mars-small.jpg">Mars small</option>
+            <option value="./images/textures/mars-big.jpg">Mars big</option>
+            <option value="./images/textures/mercury-small.jpg">Mercury small</option>
+            <option value="./images/textures/mercury-big.jpg">Mercury big</option>
+            <option value="./images/textures/mauritania-small.jpg">Mauritania small</option>
+            <option value="./images/textures/iran-small.jpg">Iran small</option>
+            <option value="./images/textures/spain-small.jpg">Spain small</option>
+          </select>
+          <button
+            data-tip="Click and provide a URL to image to be set as a texture"
+            class="icon-plus sideButton"
+            onclick="textureProvideURL()"
+          ></button>
+        </td>
+      </tr>
+      <tr data-tip="Shift the texture by axes">
+        <td>Shift by axes</td>
+        <td>
+          <input id="styleTextureShiftX" type="number" value="0" data-tip="Shift texture by x axis in pixels" />
+          <input id="styleTextureShiftY" type="number" value="0" data-tip="Shift texture by y axis in pixels" />
+        </td>
+      </tr>
+    </tbody>
+    <tbody id="styleVignette">
+      <tr data-tip="Select precreated vignette">
+        <td>Preset</td>
+        <td>
+          <select id="styleVignettePreset"></select>
+        </td>
+      </tr>
+      <tr data-tip="Vignette rectangle position (in percents)">
+        <td>Position</td>
+        <td style="display: flex; flex-direction: column; gap: 2px">
+          <div>
+            <span>x </span>
+            <input id="styleVignetteX" type="number" min="0" max="100" step="0.1" style="width: 5em" />
+            <span>width&nbsp; </span>
+            <input id="styleVignetteWidth" type="number" min="0" max="100" step="0.1" style="width: 5em" />
+          </div>
+          <div>
+            <span>y </span>
+            <input id="styleVignetteY" type="number" min="0" max="100" step="0.1" style="width: 5em" />
+            <span>height </span>
+            <input id="styleVignetteHeight" type="number" min="0" max="100" step="0.1" style="width: 5em" />
+          </div>
+        </td>
+      </tr>
+      <tr data-tip="Set vignette X and Y radius (in percents)">
+        <td>Radius</td>
+        <td>
+          <span>x </span>
+          <input id="styleVignetteRx" type="number" min="0" max="50" style="width: 5em" />
+          <span>y </span>
+          <input id="styleVignetteRy" type="number" min="0" max="50" style="width: 5em" />
+        </td>
+      </tr>
+      <tr data-tip="Set vignette blue propagation (in pixels)">
+        <td>Blur</td>
+        <td>
+          <slider-input id="styleVignetteBlur" min="0" max="400" step="1"></slider-input>
+        </td>
+      </tr>
+    </tbody>
+    <tbody id="styleOcean">
+      <tr data-tip="Select ocean pattern">
+        <td>Pattern</td>
+        <td>
+          <select id="styleOceanPattern">
+            <option value="">No pattern</option>
+            <option value="./images/pattern1.png">Pattern 1</option>
+            <option value="./images/pattern2.png">Pattern 2</option>
+            <option value="./images/pattern3.png">Pattern 3</option>
+            <option value="./images/pattern4.png">Pattern 4</option>
+            <option value="./images/pattern5.png">Pattern 5</option>
+            <option value="./images/pattern6.png">Pattern 6</option>
+            <option value="./images/kiwiroo.png">Kiwiroo</option>
+          </select>
+        </td>
+      </tr>
+      <tr data-tip="Set ocean pattern opacity">
+        <td>Pattern opacity</td>
+        <td>
+          <slider-input id="styleOceanPatternOpacity" min="0" max="1" step=".01"></slider-input>
+        </td>
+      </tr>
+      <tr data-tip="Define the coast outline contours scheme">
+        <td>Ocean layers</td>
+        <td>
+          <select id="outlineLayers">
+            <option value="none">No outline</option>
+            <option value="-6,-3,-1" selected>Standard 3</option>
+            <option value="-6,-4,-2">Indented 3</option>
+            <option value="-9,-6,-3,-1">Standard 4</option>
+            <option value="-6,-5,-4,-3,-2,-1">Smooth 6</option>
+            <option value="-9,-8,-7,-6,-5,-4,-3,-2,-1">Smooth 9</option>
+          </select>
+        </td>
+      </tr>
+      <tr data-tip="Set ocean color">
+        <td>Color</td>
+        <td>
+          <input id="styleOceanFill" type="color" value="#466eab" />
+          <output id="styleOceanFillOutput">#466eab</output>
+        </td>
+      </tr>
+    </tbody>
+    <tbody id="styleBurgIcons">
+      <tr data-tip="Select group icon">
+        <td>Icon</td>
+        <td>
+          <select id="styleBurgIconsIcon">
+            <option value="#icon-circle">Circle</option>
+            <option value="#icon-square">Square</option>
+            <option value="#icon-triangle">Triangle</option>
+            <option value="#icon-cross">Cross</option>
+            <option value="#icon-star">Star</option>
+            <option value="#icon-circled">Circled</option>
+            <option value="#icon-squared">Squared</option>
+            <option value="#icon-star-circled">Star circled</option>
+            <option value="#icon-star-circled-empty">Star circled empty</option>
+            <option value="#icon-star-squared">Star squared</option>
+            <option value="#icon-watabou-capital">Watabou capital</option>
+            <option value="#icon-watabou-city">Watabou city</option>
+            <option value="#icon-watabou-town">Watabou town</option>
+            <option value="#icon-watabou-village">Watabou village</option>
+            <option value="#icon-watabou-hamlet">Watabou hamlet</option>
+            <option value="#icon-watabou-fort">Watabou fort</option>
+            <option value="#icon-watabou-monastery">Watabou monastery</option>
+            <option value="#icon-watabou-caravanserai">Watabou caravanserai</option>
+            <option value="#icon-watabou-post">Watabou trade post</option>
+          </select>
+        </td>
+      </tr>
+      <tr data-tip="Set icon size">
+        <td>Icon size</td>
+        <td>
+          <slider-input id="styleBurgIconsIconSize" min="0.01" max="20" step=".01"></slider-input>
+        </td>
+      </tr>
+      <tr data-tip="Set icon stroke linejoin">
+        <td>Stroke linejoin</td>
+        <td>
+          <select id="styleBurgIconsStrokeLinejoin">
+            <option value="inherit" selected>Inherit</option>
+            <option value="butt">Butt</option>
+            <option value="round">Round</option>
+            <option value="square">Square</option>
+          </select>
+        </td>
+      </tr>
+      <tr data-tip="Define transparency of fill color">
+        <td>Fill opacity</td>
+        <td>
+          <slider-input id="styleBurgIconsFillOpacity" min="0" max="1" step=".01"></slider-input>
+        </td>
+      </tr>
+    </tbody>
+    <tbody id="styleGrid">
+      <tr data-tip="Select grid overlay type">
+        <td>Type</td>
+        <td>
+          <select id="styleGridType">
+            <option value="pointyHex">Hex grid (pointy)</option>
+            <option value="flatHex">Hex grid (flat)</option>
+            <option value="square">Square grid</option>
+            <option value="square45deg">Square 45 degrees grid</option>
+            <option value="squareTruncated">Truncated square grid</option>
+            <option value="squareTetrakis">Tetrakis square grid</option>
+            <option value="triangleHorizontal">Triangle grid (horizontal)</option>
+            <option value="triangleVertical">Triangle grid (vertical)</option>
+            <option value="trihexagonal">Trihexagonal grid</option>
+            <option value="rhombille">Rhombille grid</option>
+          </select>
+        </td>
+      </tr>
+      <tr data-tip="Set grid cells scale multiplier">
+        <td>Scale</td>
+        <td>
+          <input id="styleGridScale" type="number" min=".1" max="10" step=".01" />
+          <output
+            id="styleGridSizeFriendly"
+            data-tip="Distance between grid cell centers (in map scale)"
+          ></output>
+          <a
+            href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Scale-and-distance#grids"
+            target="_blank"
+          >
+            <span
+              data-tip="Open wiki article scale and distance to know about grid scale"
+              class="icon-info-circled pointer"
+            ></span>
+          </a>
+        </td>
+      </tr>
+      <tr data-tip="Shift the element by axes">
+        <td>Shift by axes</td>
+        <td>
+          <input id="styleGridShiftX" type="number" data-tip="Shift by x axis in pixels" />
+          <input id="styleGridShiftY" type="number" data-tip="Shift by y axis in pixels" />
+        </td>
+      </tr>
+    </tbody>
+    <tbody id="styleCompass">
+      <tr data-tip="Set wind (compass) rose size">
+        <td>Size</td>
+        <td>
+          <slider-input id="styleCompassSizeInput" min=".02" max="1" step=".01"></slider-input>
+        </td>
+      </tr>
+      <tr data-tip="Shift wind (compass) rose by axes">
+        <td>Shift by axes</td>
+        <td>
+          <input id="styleCompassShiftX" type="number" value="80" data-tip="Shift by x axis in pixels" />
+          <input id="styleCompassShiftY" type="number" value="80" data-tip="Shift by y axis in pixels" />
+        </td>
+      </tr>
+    </tbody>
+    <tbody id="styleRelief">
+      <tr data-tip="Select set of relief icons. Existing icons are restyled, not regenerated">
+        <td>Style</td>
+        <td>
+          <select id="styleReliefSet">
+            <option value="simple" selected>Simple</option>
+            <option value="gray">Gray</option>
+            <option value="colored">Colored</option>
+          </select>
+        </td>
+      </tr>
+      <tr data-tip="Define the size of relief icons. Existing icons are resized, not regenerated">
+        <td>Size</td>
+        <td>
+          <slider-input id="styleReliefSize" min=".2" max="4" step=".01"></slider-input>
+        </td>
+      </tr>
+      <tr
+        data-tip="Define the density of relief icons. All relief icons will be regenerated. Highly affects performance!"
+      >
+        <td>Density</td>
+        <td>
+          <slider-input id="styleReliefDensity" min=".3" max=".8" step=".01"></slider-input>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2" style="opacity: 0.6">
+          <i>Density change regenerates relief icons, discarding manual edits</i>
+        </td>
+      </tr>
+    </tbody>
+    <tbody id="styleFill">
+      <tr data-tip="Set fill color">
+        <td>Fill color</td>
+        <td>
+          <input id="styleFillInput" type="color" value="#5E4FA2" />
+          <output id="styleFillOutput">#5E4FA2</output>
+        </td>
+      </tr>
+    </tbody>
+    <tbody id="styleStroke">
+      <tr data-tip="Set stroke color">
+        <td>Stroke color</td>
+        <td>
+          <input id="styleStrokeInput" type="color" value="#5E4FA2" />
+          <output id="styleStrokeOutput">#5E4FA2</output>
+        </td>
+      </tr>
+    </tbody>
+    <tbody id="styleStrokeWidth">
+      <tr data-tip="Set stroke width">
+        <td>Stroke width</td>
+        <td>
+          <slider-input id="styleStrokeWidthInput" min="0" max="10" step=".01"></slider-input>
+        </td>
+      </tr>
+    </tbody>
+    <tbody id="styleLetterSpacing">
+      <tr data-tip="Set letter spacing">
+        <td>Letter spacing</td>
+        <td>
+          <slider-input id="styleLetterSpacingInput" min="-1" max="10" step=".01"></slider-input>
+        </td>
+      </tr>
+    </tbody>
+    <tbody id="styleStrokeDash">
+      <tr data-tip="Set stroke dash array (e.g. 5 2) and linecap">
+        <td>Stroke dash</td>
+        <td>
+          <input id="styleStrokeDasharrayInput" type="text" value="1 2" style="width: 26%" />
+          <select id="styleStrokeLinecapInput" style="width: 32%">
+            <option value="inherit" selected>Inherit</option>
+            <option value="butt">Butt</option>
+            <option value="round">Round</option>
+            <option value="square">Square</option>
+          </select>
+        </td>
+      </tr>
+    </tbody>
+    <tbody id="styleShadow">
+      <tr data-tip="Set text shadow">
+        <td>Text shadow</td>
+        <td>
+          <input id="styleShadowInput" type="text" />
+        </td>
+      </tr>
+    </tbody>
+    <tbody id="styleFont">
+      <tr data-tip="Select font">
+        <td>Font</td>
+        <td>
+          <select id="styleSelectFont" style="width: 85%"></select>
+          <button id="styleFontAdd" data-tip="Add a font" class="icon-plus sideButton"></button>
+        </td>
+      </tr>
+    </tbody>
+    <tbody id="styleSize">
+      <tr data-tip="Set font size">
+        <td>Font size</td>
+        <td>
+          <button id="styleFontPlus" data-tip="Increase font" class="whiteButton">+</button>
+          <button id="styleFontMinus" data-tip="Descrease font" class="whiteButton">-</button>
+          <input id="styleFontSize" type="number" min=".5" max="100" step=".1" />
+        </td>
+      </tr>
+    </tbody>
+    <tbody id="styleFontShift">
+      <tr data-tip="Set label shift along X and Y axes">
+        <td>Label shift</td>
+        <td>
+          <input
+            id="styleFontShiftX"
+            data-tip="Set label shift along Y axis"
+            type="number"
+            min="-5"
+            max="5"
+            step=".01"
+          />
+          <input
+            id="styleFontShiftY"
+            data-tip="Set label shift along Y axis"
+            type="number"
+            min="-5"
+            max="5"
+            step=".01"
+          />
+        </td>
+      </tr>
+    </tbody>
+    <tbody id="styleTemperature">
+      <tr data-tip="Define transparency of temperature leyer. Set to 0 to make it fully transparent">
+        <td>Fill opacity</td>
+        <td>
+          <slider-input id="styleTemperatureFillOpacityInput" min="0" max="1" step=".01"></slider-input>
+        </td>
+      </tr>
+      <tr data-tip="Set labels size">
+        <td>Labels size</td>
+        <td>
+          <slider-input id="styleTemperatureFontSizeInput" min="0" max="30" step="1"></slider-input>
+        </td>
+      </tr>
+      <tr data-tip="Set labels color">
+        <td>Labels color</td>
+        <td>
+          <input id="styleTemperatureFillInput" type="color" />
+          <output id="styleTemperatureFillOutput">#000</output>
+        </td>
+      </tr>
+    </tbody>
+    <tbody id="styleStates" style="display: block">
+      <tr data-tip="Set states fill opacity. 0: invisible, 1: solid">
+        <td>Body opacity</td>
+        <td>
+          <slider-input id="styleStatesBodyOpacity" min="0" max="1" step="0.01"></slider-input>
+        </td>
+      </tr>
+      <tr data-tip="Select filter for states fill. Please note filters may cause performance issues!">
+        <td>Body filter</td>
+        <td><select id="styleStatesBodyFilter" /></td>
+      </tr>
+      <tr style="margin-top: 0.8em">
+        <td style="font-style: italic">
+          Halo is only rendered if "Rendering" option is set to "Best quality"!
+        </td>
+      </tr>
+      <tr data-tip="Set states halo effect width">
+        <td>Halo width</td>
+        <td>
+          <slider-input id="styleStatesHaloWidth" min="0" max="30" step="0.1"></slider-input>
+        </td>
+      </tr>
+      <tr data-tip="Set states halo effect opacity. 0: invisible, 1: solid">
+        <td>Halo opacity</td>
+        <td>
+          <slider-input id="styleStatesHaloOpacity" min="0" max="1" step="0.01"></slider-input>
+        </td>
+      </tr>
+      <tr data-tip="Select halo effect power (blur). Set to 0 to make it solid line" style="margin-bottom: 1em">
+        <td>Halo blur</td>
+        <td>
+          <slider-input id="styleStatesHaloBlur" min="0" max="10" step="0.01"></slider-input>
+        </td>
+      </tr>
+    </tbody>
+    <tbody id="styleArmies">
+      <tr data-tip="Set fill transparency. Set to 0 to make it fully transparent">
+        <td>Fill opacity</td>
+        <td>
+          <slider-input id="styleArmiesFillOpacity" min="0" max="1" step=".01"></slider-input>
+        </td>
+      </tr>
+      <tr data-tip="Set regiment box size. All regiments will be redrawn on change (position will defaulted)">
+        <td>Box Size</td>
+        <td>
+          <slider-input id="styleArmiesSize" min="0" max="10" step=".1"></slider-input>
+        </td>
+      </tr>
+    </tbody>
+    <tbody id="styleEmblems">
+      <tr data-tip="Set state emblems size multiplier">
+        <td>State size</td>
+        <td>
+          <slider-input id="emblemsStateSizeInput" min="0" max="5" step=".01"></slider-input>
+        </td>
+      </tr>
+      <tr data-tip="Set province emblems size multiplier">
+        <td>Province size</td>
+        <td>
+          <slider-input id="emblemsProvinceSizeInput" min="0" max="5" step=".01"></slider-input>
+        </td>
+      </tr>
+      <tr data-tip="Set burg emblems size multiplier">
+        <td>Burg size</td>
+        <td>
+          <slider-input id="emblemsBurgSizeInput" min="0" max="5" step=".01"></slider-input>
+        </td>
+      </tr>
+      <tr data-tip="Show emblem groups even if their size is too small or too big at the current scale">
+        <td colspan="2">
+          <input id="showAllEmblems" class="checkbox" type="checkbox" />
+          <label for="showAllEmblems" class="checkbox-label">Show all emblems</label>
+        </td>
+      </tr>
+    </tbody>
+    <tbody id="styleGoods" style="display: none">
+      <tr data-tip="Set good marker (icon and circle) size in pixels">
+        <td>Marker size</td>
+        <td>
+          <slider-input id="styleGoodsSize" min="1" max="20" step=".5"></slider-input>
+        </td>
+      </tr>
+      <tr data-tip="Show or hide circle around good icons">
+        <td colspan="2">
+          <input id="styleGoodsCircle" class="checkbox" type="checkbox" />
+          <label for="styleGoodsCircle" class="checkbox-label">Show circle</label>
+        </td>
+      </tr>
+    </tbody>
+    <tbody id="styleGoodsBurgs" style="display: none">
+      <tr data-tip="Set burg production plate icon size in pixels. Plate and font scale together with it">
+        <td>Plate size</td>
+        <td>
+          <slider-input id="styleGoodsBurgsSize" min="1" max="12" step=".5"></slider-input>
+        </td>
+      </tr>
+    </tbody>
+    <tbody id="styleMarketsLayer" style="display: none">
+      <tr data-tip="Set market territory zone fill transparency. Defaults to transparent">
+        <td>Fill opacity</td>
+        <td>
+          <slider-input id="styleMarketsLayerFillOpacity" min="0" max="1" step=".01"></slider-input>
+        </td>
+      </tr>
+      <tr data-tip="Set market marker (circle) size in pixels">
+        <td>Marker size</td>
+        <td>
+          <slider-input id="styleMarketsSize" min="1" max="12" step=".5"></slider-input>
+        </td>
+      </tr>
+      <tr data-tip="Set market marker emoji icon size in pixels">
+        <td>Icon size</td>
+        <td>
+          <slider-input id="styleMarketsIconSize" min="1" max="20" step=".5"></slider-input>
+        </td>
+      </tr>
+      <tr data-tip="Set the emoji icon shown inside the market marker">
+        <td>Marker icon</td>
+        <td>
+          <button id="styleMarketsIcon" type="button" style="background: none; padding: 0;">⚖️</button>
+        </td>
+      </tr>
+    </tbody>
+    <tbody id="styleFilter" style="display: block">
+      <tr data-tip="Select filter for element. Please note filters may cause performance issues!">
+        <td>Filter</td>
+        <td><select id="styleFilterInput" /></td>
+      </tr>
+    </tbody>
+    <tbody id="styleClipping">
+      <tr data-tip="Set clipping. Only non-clipped part will be visible">
+        <td>Clipping</td>
+        <td>
+          <select id="styleClippingInput">
+            <option value="" selected>No clipping</option>
+            <option value="url(#land)">Clip water</option>
+            <option value="url(#water)">Clip land</option>
+          </select>
+        </td>
+      </tr>
+    </tbody>
+    <tbody id="styleMarkers">
+      <tr data-tip="Try to keep the same size on any map scale, turn off to get size change depending on scale">
+        <td colspan="2">
+          <input id="styleRescaleMarkers" class="checkbox" type="checkbox" />
+          <label for="styleRescaleMarkers" class="checkbox-label">Keep initial size on zoom change</label>
+        </td>
+      </tr>
+    </tbody>
+    <tbody id="styleScaleBar">
+      <tr data-tip="Set bar and font size">
+        <td>Size</td>
+        <td>
+          <span>Bar </span>
+          <input id="styleScaleBarSize" type="number" min=".5" max="5" step=".1" />
+          <span>Font </span>
+          <input id="styleScaleBarFontSize" type="number" min="1" max="100" step=".1" />
+        </td>
+      </tr>
+      <tr data-tip="Set position of the Scale bar bottom right corner (in percents)">
+        <td>Position</td>
+        <td>
+          <span>x </span>
+          <input id="styleScaleBarPositionX" type="number" min="0" max="100" step="0.1" style="width: 5em" />
+          <span>y </span>
+          <input id="styleScaleBarPositionY" type="number" min="0" max="100" step="0.1" style="width: 5em" />
+        </td>
+      </tr>
+      <tr data-tip="Type scale bar label, leave blank to hide label">
+        <td>Label</td>
+        <td>
+          <input id="styleScaleBarLabel" type="text" />
+        </td>
+      </tr>
+      <tr data-tip="Set background opacity. 0: transparent, 1: solid">
+        <td>Back opacity</td>
+        <td>
+          <slider-input id="styleScaleBarBackgroundOpacity" min="0" max="1" step=".01"></slider-input>
+        </td>
+      </tr>
+      <tr data-tip="Set background fill color">
+        <td>Back fill</td>
+        <td>
+          <input id="styleScaleBarBackgroundFill" type="color" />
+          <output id="styleScaleBarBackgroundFillOutput"></output>
+        </td>
+      </tr>
+      <tr data-tip="Set background stroke color and width">
+        <td>Back stroke</td>
+        <td>
+          <input id="styleScaleBarBackgroundStroke" type="color" />
+          <output id="styleScaleBarBackgroundStrokeOutput"></output>
+          <span>Width </span>
+          <input
+            id="styleScaleBarBackgroundStrokeWidth"
+            type="number"
+            min="0"
+            max="10"
+            step="0.1"
+            style="width: 5em"
+          />
+        </td>
+      </tr>
+      <tr data-tip="Set background element padding: top, right, bottom, left (in pixels)">
+        <td>Back padding</td>
+        <td style="display: flex; gap: 4px">
+          <input id="styleScaleBarBackgroundPaddingTop" type="number" min="0" max="100" style="width: 5em" />
+          <input id="styleScaleBarBackgroundPaddingRight" type="number" min="0" max="100" style="width: 5em" />
+          <input id="styleScaleBarBackgroundPaddingBottom" type="number" min="0" max="100" style="width: 5em" />
+          <input id="styleScaleBarBackgroundPaddingLeft" type="number" min="0" max="100" style="width: 5em" />
+        </td>
+      </tr>
+      <tr data-tip="Select background filter">
+        <td>Back filter</td>
+        <td><select id="styleScaleBarBackgroundFilter" /></td>
+      </tr>
+    </tbody>
+  </table>
+  <div id="mapFilters" data-tip="Set a filter to be applied to the map in general">
+    <p>Toggle global filters:</p>
+    <button id="grayscale" class="radio">Grayscale</button>
+    <button id="sepia" class="radio">Sepia</button>
+    <button id="dingy" class="radio">Dingy</button>
+    <button id="tint" class="radio">Tint</button>
+  </div>
+`;
+
+ensureEl("styleContent").innerHTML = TEMPLATE;

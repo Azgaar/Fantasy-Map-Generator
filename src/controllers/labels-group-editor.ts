@@ -1,6 +1,6 @@
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
-import { LAYER_TOGGLES } from "@/components/layers-tab";
+import { LAYER_TOGGLES } from "@/components/options/tabs/layers-tab";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { LABEL_TYPES, type LabelGroup, type LabelNameMode, type LabelType } from "@/generators/labels-generator";
@@ -298,7 +298,7 @@ function submitForm(event: Event): void {
   options.labels.showAll = ensureEl<HTMLInputElement>("labelsShowAll").checked;
 
   for (const group of options.labels.groups) styles.labels.groups[group.name] ??= getGroupStyle(group);
-  localStorage.setItem("options-labels", JSON.stringify(options.labels));
+  options.store();
 
   Layers.draw("labels");
   $("#labelGroupsConfigurator").dialog("close");

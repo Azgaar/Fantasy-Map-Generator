@@ -25,7 +25,7 @@ class GridModule {
     const { cells, vertices } = calculateVoronoi(points, boundary);
 
     const graph = {
-      seed,
+      seed: options.seed,
       spacing,
       cellsDesired,
       cellsX: this.getCellsCount(spacing, width),
@@ -55,7 +55,7 @@ class GridModule {
   /** make the global grid fit the requested seed and canvas size, keeping the current one if it does */
   prepare(expectedSeed?: string, precreated?: GridGraph): void {
     if (this.shouldRegenerate(grid, expectedSeed, graphWidth, graphHeight)) {
-      grid = precreated ?? this.generate(seed, graphWidth, graphHeight);
+      grid = precreated ?? this.generate(options.seed, graphWidth, graphHeight);
     } else {
       this.resetHeights(grid);
     }

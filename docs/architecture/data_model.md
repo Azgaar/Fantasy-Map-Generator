@@ -497,7 +497,7 @@ A journey segment is one leg: a stretch of travel, or a halt:
 
 ## Transports
 
-Transport types are configuration, not map state: they live in `options.transports: Transport[]` (serialized with the rest of `options` at data index 19) and are mirrored to `localStorage` under `options-transports`, so the set the user configured carries over to the next map. Loading a map replaces `options` wholesale, so a map brings its own transports; a map saved before transports existed has none and falls back to `localStorage`, then to the defaults. Object structure:
+Transport types are configuration, not map state: they live in `options.transports: Transport[]`. Object structure:
 
 - `i`: `number` - transport type id
 - `name`: `string` - transport type name. This is the key segments reference, so it must stay unique

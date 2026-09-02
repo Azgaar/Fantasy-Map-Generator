@@ -620,7 +620,7 @@ function militaryCustomize(): void {
       if (religions) unit.religions = religions;
       return unit;
     });
-    localStorage.setItem("military", JSON.stringify(options.military));
+    options.store();
     Military.generate();
     rebuildMilitaryColumns();
   }

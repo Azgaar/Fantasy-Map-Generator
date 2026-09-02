@@ -1,8 +1,9 @@
 // The map seed: where it comes from, and the UI to revisit or share it
 import { alertDialog } from "@/components/dialog/dialog-helpers";
+import { syncInputs } from "@/components/options/tabs/options-tab";
 import { tip } from "@/components/tooltips";
 import { ensureEl } from "@/utils/nodeUtils";
-import { stored, unlock } from "@/utils/preferences";
+import { isLocked, unlock } from "@/utils/preferences";
 import { generateSeed } from "@/utils/probabilityUtils";
 
 /**
@@ -10,25 +11,24 @@ import { generateSeed } from "@/utils/probabilityUtils";
  * honours a `seed` search param (MFCG appends a 4-digit burg id to its 13-char seeds); later ones don't
  */
 export function setSeed(precreatedSeed?: string): void {
-  if (precreatedSeed) seed = precreatedSeed;
+  if (precreatedSeed) options.seed = precreatedSeed;
   else {
     const isFirstMap = !mapHistory[0];
     const urlSeed = new URL(window.location.href).searchParams.get("seed");
 
     if (isFirstMap && urlSeed) {
       const isMfcgSeed = new URL(window.location.href).searchParams.get("from") === "MFCG" && urlSeed.length === 13;
-      seed = isMfcgSeed ? urlSeed.slice(0, -4) : urlSeed;
-    } else seed = generateSeed();
+      options.seed = isMfcgSeed ? urlSeed.slice(0, -4) : urlSeed;
+    } else options.seed = generateSeed();
   }
 
-  ensureEl<HTMLInputElement>("optionsSeed").value = seed;
-  Math.random = aleaPRNG(seed);
+  Math.random = aleaPRNG(options.seed);
 }
 
 /** Regenerate with the seed the user typed into the options panel */
 export function generateMapWithSeed(): void {
-  const requested = ensureEl<HTMLInputElement>("optionsSeed").value;
-  if (requested === seed) {
+  const requested = ensureEl<HTMLInputElement>("seedInput").value;
+  if (requested === options.seed) {
     tip("The current map already has this seed", false, "error");
     return;
   }
@@ -51,13 +51,12 @@ export function showSeedHistoryDialog(): void {
 /** Generate a map with a seed from this session's history, restoring the size and template it used */
 export function restoreSeed(index: number): void {
   const { seed, width, height, template } = mapHistory[index] as Record<string, string>;
-  ensureEl<HTMLInputElement>("optionsSeed").value = seed;
   options.graph.width = +width;
   options.graph.height = +height;
   options.heightmap.template = template;
-  options.syncInputs();
+  syncInputs();
 
-  if (stored("template")) unlock("template");
+  if (isLocked("template")) unlock("template");
   regeneratePrompt({ seed });
 }
 

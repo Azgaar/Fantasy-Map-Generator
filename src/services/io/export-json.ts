@@ -98,10 +98,10 @@ function getMapInfo() {
     version: VERSION,
     description: "Azgaar's Fantasy Map Generator output: azgaar.github.io/Fantasy-map-generator",
     exportedAt: new Date().toISOString(),
-    mapName: mapName.value,
+    mapName: options.lore.name,
     width: graphWidth,
     height: graphHeight,
-    seed,
+    seed: options.seed,
     mapId
   };
 }
@@ -118,7 +118,7 @@ function getSettings() {
     urbanization: options.units.population.urbanization.rate,
     urbanDensity: options.units.population.urbanization.density,
     options,
-    mapName: mapName.value,
+    mapName: options.lore.name,
     stylePreset: stylePreset.value
   };
 }

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Coastline } from "./coastline-generator";
 import type { Feature } from "./features";
 
@@ -11,8 +11,7 @@ const island = {
 
 beforeEach(() => {
   localStorage.clear();
-  globalThis.options = {} as typeof globalThis.options;
-  globalThis.seed = "1";
+  globalThis.options = { seed: "1", store: () => {} } as unknown as typeof globalThis.options;
   globalThis.graphWidth = 100;
   globalThis.graphHeight = 100;
   globalThis.pack = {
@@ -41,20 +40,13 @@ describe("settings", () => {
     expect(Coastline.settings.maxDepth).toBe(5);
   });
 
-  it("reuses the last values the user picked on the next map", () => {
+  it("stores the options, so the next session starts from the values the user picked", () => {
+    const store = vi.fn();
+    globalThis.options = { seed: "1", store } as unknown as typeof globalThis.options;
+
     Coastline.update({ baseAmplitude: 3, enabled: false });
-
-    globalThis.options = {} as typeof globalThis.options; // new map
-    expect(Coastline.settings).toEqual({ ...Coastline.getDefaultSettings(), baseAmplitude: 3, enabled: false });
-  });
-
-  it("fills in the keys stored data misses and survives corrupted data", () => {
-    localStorage.setItem("coastline-settings", JSON.stringify({ minEdge: 4 }));
-    expect(Coastline.settings).toEqual({ ...Coastline.getDefaultSettings(), minEdge: 4 });
-
-    globalThis.options = {} as typeof globalThis.options;
-    localStorage.setItem("coastline-settings", "{not json");
-    expect(Coastline.settings).toEqual(Coastline.getDefaultSettings());
+    expect(store).toHaveBeenCalled();
+    expect(options.coastline).toEqual({ ...Coastline.getDefaultSettings(), baseAmplitude: 3, enabled: false });
   });
 });
 
@@ -68,7 +60,7 @@ describe("getFeaturePath", () => {
     for (let i = 0; i < 100; i++) Math.random(); // an own rng per feature, unaffected by what was generated before
     expect(Coastline.getFeaturePath(island)).toBe(path);
 
-    globalThis.seed = "2";
+    globalThis.options.seed = "2";
     expect(Coastline.getFeaturePath(island)).not.toBe(path);
   });
 

@@ -1,10 +1,13 @@
 // The app and map lifecycle: start the app, erase what is on screen, generate a new world, put it back
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
+
+import { applyGraphSize } from "@/components/canvas";
+import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { hideLoading, showLoading } from "@/components/loading";
+import { restoreUi, syncInputs } from "@/components/options/tabs/options-tab";
 import { setSeed } from "@/components/seed";
 import { warnIfServerless } from "@/components/shell";
-import { clearMainTip } from "@/components/tooltips";
+import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { invokeActiveZooming, resetZoom } from "@/components/zoom";
 import { Controllers } from "@/controllers";
@@ -16,7 +19,7 @@ import { logStats } from "@/services/stats";
 import { checkLoadParameters } from "@/services/url-params";
 import { cleanupData } from "@/services/versioning";
 import type { GridGraph } from "@/types/GridGraph";
-import { debounce, ensureEl, findEl, parseError } from "@/utils";
+import { debounce, ensureEl, findEl, last, parseError } from "@/utils";
 
 /**
  * Bring the app up. Runs on `DOMContentLoaded`, so after the classic `public/modules/ui/*.js`
@@ -25,9 +28,9 @@ import { debounce, ensureEl, findEl, parseError } from "@/utils";
 export async function boot(): Promise<void> {
   registerServiceWorker();
 
-  options.restoreStored(); // defaults, then what the user pinned in localStorage, then search params
-  options.syncInputs(); // options are the source of truth, the inputs only display them
-  applyStoredOptions(); // the classic panel's own restore: theme, ui size, style preset list
+  options.restoreStored(); // the options of the last session, then the search params
+  syncInputs(); // options are the source of truth, the inputs only display them
+  restoreUi(); // the tab's own restore: locks, style presets, theme, ui size
 
   // the voronoi graph extent is fixed for the life of a map, the svg canvas is resized to the window
   graphWidth = options.graph.width;
@@ -55,11 +58,11 @@ export async function generate(config?: GenerationConfig): Promise<void> {
     const { seed: precreatedSeed, graph: precreatedGraph } = config || {};
     setSeed(precreatedSeed);
     options.randomize();
-    options.syncInputs();
     applyGraphSize();
 
     await GenerationPipeline.run({ seed: precreatedSeed, graph: precreatedGraph });
 
+    syncInputs(); // after the pipeline: it names the map, which the panel shows
     logStats();
     invokeActiveZooming();
   } catch (error) {
@@ -112,6 +115,34 @@ export const regenerateMap = debounce(async (config?: GenerationConfig | string)
   clearMainTip();
 }, 250);
 
+/**
+ * Ask before throwing away a map the user has been working on for a while. Under a minute of work
+ * is not worth a prompt, and an active edit mode blocks regeneration outright
+ */
+export function regeneratePrompt(config?: GenerationConfig): void {
+  if (customization) {
+    tip("New map cannot be generated when edit mode is active, please exit the mode and retry", false, "error");
+    return;
+  }
+
+  const workingMinutes = (Date.now() - last(mapHistory).created) / 60000;
+  if (workingMinutes < 1) {
+    regenerateMap(config);
+    return;
+  }
+
+  confirmationDialog({
+    title: "Generate new map",
+    message:
+      "Are you sure you want to generate a new map?<br />All unsaved changes made to the current map will be lost",
+    confirm: "Generate",
+    onConfirm: () => {
+      closeDialogs();
+      regenerateMap(config);
+    }
+  });
+}
+
 /** Clear the map: every layer, the transient defs and the notes that described what was there */
 export function undraw(): void {
   Layers.eraseAll();
@@ -124,9 +155,12 @@ export function undraw(): void {
 // Legacy seam: classic public/ code regenerates and clears the map through the globals
 declare global {
   // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy JS
+  var regeneratePrompt: (config?: GenerationConfig) => void;
+  // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy JS
   var regenerateMap: (config?: GenerationConfig | string) => void;
   // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy JS
   var undraw: () => void;
 }
+window.regeneratePrompt = regeneratePrompt;
 window.regenerateMap = regenerateMap;
 window.undraw = undraw;

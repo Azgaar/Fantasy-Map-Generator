@@ -41,7 +41,7 @@ export class MarketsModule {
   }
 
   generate(regenerate: boolean = false): Market[] {
-    if (!regenerate) Math.random = Alea(seed);
+    if (!regenerate) Math.random = Alea(options.seed);
     const markets = this.createMarkets();
     this.expandMarkets(markets);
 

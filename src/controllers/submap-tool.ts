@@ -1,6 +1,7 @@
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { CELLS_BY_DENSITY } from "@/components/options";
+import { cellsDensityColor, changeCellsDensity } from "@/components/options/tabs/options-tab";
 import { Resample } from "@/generators/resample";
 import { getLatitude, getLongitude } from "@/utils";
 import { ensureEl, minmax, rn } from "../utils";
@@ -43,7 +44,7 @@ function renderDialog(): void {
         <div>Points number</div>
         <div>
           <input id="submapPointsInput" type="range" min="1" max="13" value="${pointsValue}" />
-          <output id="submapPointsFormatted" style="color: ${getCellsDensityColor(cells)}">${cells / 1000}K</output>
+          <output id="submapPointsFormatted" style="color: ${cellsDensityColor(cells)}">${cells / 1000}K</output>
         </div>
       </div>
       <div data-tip="Check to fit burg styles (icon and label size) to the submap scale">
@@ -67,7 +68,7 @@ function handlePointsInput(e: Event): void {
   const cells = CELLS_BY_DENSITY[+(e.target as HTMLInputElement).value];
   const output = ensureEl<HTMLOutputElement>("submapPointsFormatted");
   output.value = `${cells / 1000}K`;
-  output.style.color = getCellsDensityColor(cells);
+  output.style.color = cellsDensityColor(cells);
 }
 
 function generateSubmap(): void {
@@ -78,7 +79,7 @@ function generateSubmap(): void {
 
   const submapPointsValue = ensureEl<HTMLInputElement>("submapPointsInput").value;
   const globalPointsValue = String(options.graph.density);
-  if (submapPointsValue !== globalPointsValue) changeCellsDensity(submapPointsValue);
+  if (submapPointsValue !== globalPointsValue) changeCellsDensity(+submapPointsValue);
 
   const projection = (x: number, y: number): [number, number] => [(x - x0) * scale, (y - y0) * scale];
   const inverse = (x: number, y: number): [number, number] => [x / scale + x0, y / scale + y0];

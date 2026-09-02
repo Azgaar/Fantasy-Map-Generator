@@ -165,7 +165,7 @@ class RiverModule {
   }
 
   generate(allowErosion = true) {
-    Math.random = Alea(seed);
+    Math.random = Alea(options.seed);
     const { cells, features } = pack;
 
     const riversData: { [riverId: number]: number[] } = {};

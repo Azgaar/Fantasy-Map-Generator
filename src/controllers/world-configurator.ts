@@ -2,7 +2,7 @@ import { geoGraticule, geoOrthographic, geoPath, interpolateSpectral, range, sca
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
-import { stored } from "@/utils/preferences";
+import { lock, syncLockIcons, unlock } from "@/utils/preferences";
 import { convertTemperature, ensureEl, findEl, getKmInDistanceUnit, parseTransform, rn, round } from "../utils";
 
 const projection = geoOrthographic().translate([100, 100]).scale(100);
@@ -226,12 +226,12 @@ function addListeners(): void {
   ensureEl("wcTropical").addEventListener("click", () => applyWorldPreset(33, 50));
   ensureEl("wcSouthern").addEventListener("click", () => applyWorldPreset(33, 75));
 
-  // lock icons: sync state from storage and toggle on click (stored == locked)
+  // lock icons: sync state from the locks and toggle on click
+  syncLockIcons();
   ensureEl("worldConfigurator")
     .querySelectorAll<HTMLElement>("[data-locked]")
     .forEach(el => {
-      const id = el.id.slice(5) as WorldOption; // drop "lock_" prefix
-      setLockIcon(el, stored(id) !== null);
+      const id = el.id.slice(5); // drop "lock_" prefix
 
       el.addEventListener("mouseover", (event: Event) => {
         event.stopPropagation();
@@ -240,41 +240,16 @@ function addListeners(): void {
         else tip("Click to lock the option and always use the current value on new map generation");
       });
       el.addEventListener("click", () => {
-        if (el.className === "icon-lock") unlockOption(id);
+        if (el.className === "icon-lock") unlock(id);
         else lockOption(id);
       });
     });
 }
 
-type WorldOption = keyof typeof WORLD_OPTION_VALUES;
-
-// the localStorage key each configurator control persists under, and the value behind it
-const WORLD_OPTION_VALUES = {
-  temperatureEquator: () => options.climate.temperature.equator,
-  temperatureNorthPole: () => options.climate.temperature.northPole,
-  temperatureSouthPole: () => options.climate.temperature.southPole,
-  mapSize: () => options.geography.mapSize,
-  latitude: () => options.geography.latitude,
-  longitude: () => options.geography.longitude,
-  prec: () => options.climate.precipitation
-};
-
-// stored options are locked (won't be randomized on new map generation), the icon is just a mirror
-function lockOption(id: WorldOption): void {
-  localStorage.setItem(id, String(WORLD_OPTION_VALUES[id]()));
-  const icon = findEl(`lock_${id}`);
-  if (icon) setLockIcon(icon, true);
-}
-
-function unlockOption(id: WorldOption): void {
-  localStorage.removeItem(id);
-  const icon = findEl(`lock_${id}`);
-  if (icon) setLockIcon(icon, false);
-}
-
-function setLockIcon(el: HTMLElement, isLocked: boolean): void {
-  el.dataset.locked = isLocked ? "1" : "0";
-  el.className = isLocked ? "icon-lock" : "icon-lock-open";
+/** A locked option keeps its value on new map generation, so the value has to be stored with it */
+function lockOption(id: string): void {
+  lock(id);
+  options.store();
 }
 
 // inputs are always in °C; show " = <value>" in user units if user units are not °C
@@ -465,7 +440,7 @@ function handleWindChange(event: Event): void {
   options.climate.winds[tier] = (options.climate.winds[tier] + 45) % 360;
   const tr = parseTransform(arrow.getAttribute("transform") ?? "");
   arrow.setAttribute("transform", `rotate(${options.climate.winds[tier]} ${tr[1]} ${tr[2]})`);
-  localStorage.setItem("winds", String(options.climate.winds));
+  options.store();
 
   const mapTiers = range(mapCoordinates.latN ?? 0, mapCoordinates.latS ?? 0, -30).map(c => ((90 - c) / 30) | 0);
   if (ensureEl<HTMLInputElement>("wcAutoChange").checked && mapTiers.includes(tier)) updateWorld();
@@ -478,6 +453,7 @@ function restoreDefaultWinds(): void {
     ensureEl<HTMLInputElement>("wcAutoChange").checked &&
     mapTiers.some(t => options.climate.winds[t] !== defaultWinds[t]);
   options.climate.winds = defaultWinds;
+  options.store();
   updateWindDirections();
   if (shouldUpdate) updateWorld();
 }

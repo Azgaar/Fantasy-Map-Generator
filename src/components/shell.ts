@@ -2,18 +2,19 @@
 // mobile input quirks) and the whole-window drop target for opening a map file
 import { alertDialog, closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
+import { syncInputs } from "@/components/options/tabs/options-tab";
 import { Services } from "@/services";
 import { isElectron, isLocalhost } from "@/services/platform";
 import { ensureEl, findEl } from "@/utils";
-import { stored } from "@/utils/preferences";
+import { isLocked } from "@/utils/preferences";
 
 /** Keep the map canvas in sync with the window unless the user pinned a map size */
 function onResize(): void {
-  if (stored("mapWidth") && stored("mapHeight")) return;
+  if (isLocked("mapWidth") && isLocked("mapHeight")) return;
 
   options.graph.width = window.innerWidth;
   options.graph.height = window.innerHeight;
-  options.syncInputs();
+  syncInputs();
   fitMapToScreen();
 }
 

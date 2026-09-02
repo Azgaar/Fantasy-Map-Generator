@@ -102,14 +102,14 @@ function renderDialog(): void {
       const value =
         def.type === "slider" ? (input as HTMLInputElement).valueAsNumber : (input as HTMLSelectElement).value;
       options.trade.animation = { ...options.trade.animation, [key]: value };
-      localStorage.setItem("trade-animation", JSON.stringify(options.trade.animation));
+      options.store();
       Layers.draw("trade");
     });
 
     resetBtn.addEventListener("click", () => {
       options.trade.animation = { ...options.trade.animation, [key]: def.default };
       input.value = String(def.default);
-      localStorage.setItem("trade-animation", JSON.stringify(options.trade.animation));
+      options.store();
       Layers.draw("trade");
     });
   }

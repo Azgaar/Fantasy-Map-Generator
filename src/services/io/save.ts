@@ -52,36 +52,9 @@ function prepareMapData(): string {
   const date = new Date();
   const dateString = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
   const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
-  const params = [VERSION, license, dateString, seed, graphWidth, graphHeight, mapId].join("|");
-  const settings = [
-    options.units.distance.unit,
-    options.units.distance.scale,
-    options.units.area.unit,
-    options.units.height.unit,
-    options.units.height.exponent,
-    options.units.temperature.unit,
-    "", // previously used for barSize.value
-    "", // previously used for barLabel.value
-    "", // previously used for barBackColor.value
-    "", // previously used for barBackColor.value
-    "", // previously used for barPosX.value
-    "", // previously used for barPosY.value
-    options.units.population.scale,
-    options.units.population.urbanization.rate,
-    "", // previously used for mapSizeOutput.value, part of options now
-    "", // previously used for latitudeOutput.value, part of options now
-    "", // previously used for temperatureEquatorOutput.value
-    "", // previously used for tempNorthOutput.value
-    "", // previously used for precOutput.value, part of options now
-    JSON.stringify(options),
-    mapName.value,
-    "", // previously used for hideLabels
-    stylePreset.value,
-    "", // previously used for rescaleLabels
-    options.units.population.urbanization.density,
-    "", // previously used for longitudeOutput.value, part of options now
-    options.cultures.growthRate
-  ].join("|");
+  const params = [VERSION, license, dateString, options.seed, graphWidth, graphHeight, mapId].join("|");
+
+  const settings = JSON.stringify(options);
   const coords = JSON.stringify(mapCoordinates);
   const notesData = JSON.stringify(notes);
   const measurers = JSON.stringify(pack.measurers ?? []);

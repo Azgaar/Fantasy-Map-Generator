@@ -1,6 +1,7 @@
 import { select } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
+import { syncInputs } from "@/components/options/tabs/options-tab";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { GraphOverride } from "@/generators/graph-override";
@@ -9,7 +10,7 @@ import { clearLegend } from "@/renderers/draw-legend";
 import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
 import { clearCache, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
-import { ensureEl, escapeHtml, last, link, minmax, parseError, rn, safeParseJSON } from "@/utils";
+import { ensureEl, escapeHtml, last, link, parseError, rn, safeParseJSON } from "@/utils";
 
 async function quickLoad(): Promise<void> {
   const blob = await ldb.get("lastMap");
@@ -239,70 +240,24 @@ function showUploadMessage(type: string, mapData: string[] | null, mapVersion: s
 }
 
 async function parseLoadedData(data: string[], mapVersion: string | null): Promise<void> {
-  let loadGroupOpen = false;
-
   try {
-    // exit customization
-    if (typeof window.closeDialogs === "function") closeDialogs();
+    closeDialogs();
     customization = 0;
     if (ensureEl("customizationMenu").offsetParent) ensureEl("styleTab").click();
 
-    {
-      const params = data[0].split("|");
-      if (params[3]) {
-        seed = params[3];
-        ensureEl<HTMLInputElement>("optionsSeed").value = seed;
-      }
-      if (INFO) {
-        console.group(params[3] ? `Loaded Map ${seed}` : "Loaded Map");
-        loadGroupOpen = true;
-      }
-      if (params[4]) graphWidth = +params[4];
-      if (params[5]) graphHeight = +params[5];
-      mapId = params[6] ? +params[6] : Date.now();
-    }
+    const { migrateSettingsFormat } = await import("./auto-update");
+    migrateSettingsFormat(mapVersion!, data);
 
-    {
-      const settings = data[1].split("|");
-      if (settings[0]) options.units.distance.unit = settings[0];
-      if (settings[1]) options.units.distance.scale = +settings[1];
-      if (settings[2]) options.units.area.unit = settings[2];
-      if (settings[3]) options.units.height.unit = settings[3];
-      if (settings[4]) options.units.height.exponent = +settings[4];
-      if (settings[5]) options.units.temperature.unit = settings[5];
-      // setting 6-11 (scaleBar) are part of style now, kept as "" in newer versions for compatibility
-      if (settings[12]) options.units.population.scale = +settings[12];
-      if (settings[13]) options.units.population.urbanization.rate = +settings[13];
-      // the stored object only covers what the saving version knew about: merge, never replace
-      if (settings[19]) options = { ...options, ...JSON.parse(settings[19]) };
-      // settings 14, 15, 18, 25 (world configuration) are part of options now, only read for old maps
-      if (settings[14]) options.geography.mapSize = minmax(+settings[14], 1, 100);
-      if (settings[15]) options.geography.latitude = minmax(+settings[15], 0, 100);
-      if (settings[18]) options.climate.precipitation = minmax(+settings[18], 0, 500);
-      options.geography.mapSize ??= 100;
-      options.geography.latitude ??= 50;
-      options.climate.precipitation ??= 100;
-      options.labels ??= Labels.getDefaultOptions();
-      options.emblems ??= { showAll: false };
-      options.emblems.showAll ??= false;
-      options.burgs.groups ??= Burgs.getDefaultGroups();
-      // setting 16 and 17 (temperature) are part of options now, kept as "" in newer versions for compatibility
-      if (settings[16]) options.climate.temperature.equator = +settings[16];
-      if (settings[17]) options.climate.temperature.northPole = options.climate.temperature.southPole = +settings[17];
-      if (settings[20]) mapName.value = settings[20];
-      // if (settings[21]) hideLabels.checked = Boolean(+settings[21]); // moved to options.labels.showAll
-      if (settings[22]) stylePreset.value = settings[22];
-      // if (settings[23]) rescaleLabels.checked = Boolean(+settings[23]); // moved to options.labels.resizeOnZoom
-      if (settings[24]) options.units.population.urbanization.density = +settings[24];
-      if (settings[25]) options.geography.longitude = minmax(+settings[25], 0, 100);
-      options.geography.longitude ??= 50;
-      if (settings[26]) options.cultures.growthRate = +settings[26];
+    if (data[1]) options.restore(JSON.parse(data[1]));
+    syncInputs();
 
-      options.syncInputs(); // the panel shows what the map was saved with
-    }
-    // ensureEl<HTMLInputElement>("stateLabelsModeInput").value = options.stateLabelsMode; // moved to options.labels.groups[group].mode
-    ensureEl<HTMLInputElement>("yearInput").value = String(options.lore.calendar.year);
-    ensureEl<HTMLInputElement>("eraInput").value = options.lore.calendar.era;
+    graphWidth = options.graph.width;
+    graphHeight = options.graph.height;
+    mapId = +data[0].split("|")[6] || Date.now();
+    stylePreset.value = "default"; // the styles are restored below, the preset name is not saved
+
+    INFO && console.group(options.seed ? `Loaded Map ${options.seed}` : "Loaded Map");
+
     ensureEl<HTMLInputElement>("shapeRendering").value =
       select("#viewbox").attr("shape-rendering") || "geometricPrecision";
     if (data[2]) mapCoordinates = JSON.parse(data[2]);
@@ -747,7 +702,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       position: { my: "center", at: "center", of: "svg" }
     });
   } finally {
-    if (loadGroupOpen) console.groupEnd();
+    INFO && console.groupEnd();
   }
 }
 

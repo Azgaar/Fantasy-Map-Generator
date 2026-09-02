@@ -35,17 +35,6 @@ declare global {
   var temperatureScale: HTMLSelectElement;
 
   // Still defined in public/modules/ui/options.js
-  var applyStoredOptions: () => void;
-  var randomizeOptions: () => void;
-  var applyGraphSize: () => void;
-  var fitMapToScreen: () => void;
-  var regeneratePrompt: (options?: { seed?: string; graph?: any }) => void;
-  var toggleOptions: (event?: Event) => void;
-  var hideOptions: (event?: Event) => void;
-  var changeViewMode: (event?: Event) => void;
-  var showExportPane: () => void;
-  var changeCellsDensity: (value: string) => void;
-  var getCellsDensityColor: (cells: number) => string;
 
   // Still defined in public/modules/ui/style.js
   var editStyle: (layer: string, group?: string) => void;

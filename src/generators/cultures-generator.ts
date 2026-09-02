@@ -1362,4 +1362,6 @@ class CulturesGenerator {
   }
 }
 
-window.Cultures = new CulturesGenerator();
+// biome-ignore lint/suspicious/noRedeclare: legacy seam
+export const Cultures = new CulturesGenerator();
+window.Cultures = Cultures;

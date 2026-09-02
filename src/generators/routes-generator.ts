@@ -206,7 +206,7 @@ class RoutesModule {
   }
 
   generate(lockedRoutes: Route[] = [], randomSeed?: number) {
-    Math.random = Alea(randomSeed ?? seed);
+    Math.random = Alea(randomSeed ?? options.seed);
     this.connections = new Map();
     this.buildRiverEdges();
     lockedRoutes.forEach((route: Route) => {

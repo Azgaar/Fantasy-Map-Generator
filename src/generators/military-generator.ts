@@ -52,7 +52,7 @@ class MilitaryModule {
     const { cells, states } = pack;
     const { p } = cells;
     const valid = states.filter(s => s.i && !s.removed); // valid states
-    if (!options.military) options.military = this.getDefaultOptions();
+    if (!options.military?.length) options.military = this.getDefaultOptions();
 
     const expn = sum(valid.map(s => s.expansionism)); // total expansion
     const area = sum(valid.map(s => s.area)); // total area

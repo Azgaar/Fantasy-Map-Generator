@@ -1013,9 +1013,9 @@ class MarkersModule {
   }
 
   private addDungeon(id: string, cell: number) {
-    const dungeonSeed = `${seed}${cell}`;
+    const dungeonSeed = `${options.seed}${cell}`;
     const name = "Dungeon";
-    const legend = `<div>Undiscovered dungeon. See <a href="https://watabou.github.io/one-page-dungeon/?seed=${dungeonSeed}" target="_blank">One page dungeon</a></div><iframe style="pointer-events: none;" src="https://watabou.github.io/one-page-dungeon/?seed=${dungeonSeed}" sandbox="allow-scripts allow-same-origin"></iframe>`;
+    const legend = `<div>Undiscovered dungeon. See <a href="https://watabou.github.io/one-page-dungeon/?options.seed=${dungeonSeed}" target="_blank">One page dungeon</a></div><iframe style="pointer-events: none;" src="https://watabou.github.io/one-page-dungeon/?options.seed=${dungeonSeed}" sandbox="allow-scripts allow-same-origin"></iframe>`;
     notes.push({ id, name, legend });
   }
 

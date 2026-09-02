@@ -1,7 +1,5 @@
 // Reading and writing local files, plus naming downloads and exports.
 
-import { ensureEl } from "./nodeUtils";
-
 /** Build a filename from the map name, optional type and current time */
 export function getFileName(dataType?: string): string {
   const pad = (value: number) => String(value).padStart(2, "0");
@@ -16,7 +14,7 @@ export function getFileName(dataType?: string): string {
   ].join("-");
 
   const type = dataType ? `${dataType} ` : "";
-  return `${ensureEl<HTMLInputElement>("mapName").value} ${type}${dateString}`;
+  return `${options.lore.name} ${type}${dateString}`;
 }
 
 /** Download data as a file */

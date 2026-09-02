@@ -37,7 +37,6 @@ const DEFAULT_SETTINGS: Readonly<CoastlineSettings> = {
   lakeSmoothThreshMult: 2.0
 };
 
-const STORAGE_KEY = "coastline-settings";
 const SIMPLIFICATION_TOLERANCE = 0.3;
 
 const PROFILE_SIZE = 256;
@@ -254,14 +253,14 @@ class CoastlineGenerator {
    * brand new map) starts from the last values the user picked
    */
   get settings(): CoastlineSettings {
-    options.coastline ??= this.getStoredSettings();
+    options.coastline ??= this.getDefaultSettings();
     return options.coastline;
   }
 
   /** Apply a user change: it defines the coastlines of this map and the defaults for the next one */
   update(change: Partial<CoastlineSettings>): void {
-    const settings = Object.assign(this.settings, change);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+    Object.assign(this.settings, change);
+    options.store();
   }
 
   getDefaultSettings(): CoastlineSettings {
@@ -307,20 +306,7 @@ class CoastlineGenerator {
         ? { ...this.settings, smoothThreshold: Math.min(1, smoothThreshold * lakeSmoothThreshMult) }
         : this.settings;
 
-    return fractalize(points, Alea(`${seed}_c${i}`), settings);
-  }
-
-  /** The values the user picked last, falling back to the defaults for keys the stored data misses */
-  private getStoredSettings(): CoastlineSettings {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return this.getDefaultSettings();
-
-    try {
-      return { ...DEFAULT_SETTINGS, ...JSON.parse(stored) };
-    } catch (error) {
-      ERROR && console.error("Invalid stored coastline settings", error);
-      return this.getDefaultSettings();
-    }
+    return fractalize(points, Alea(`${options.seed}_c${i}`), settings);
   }
 }
 

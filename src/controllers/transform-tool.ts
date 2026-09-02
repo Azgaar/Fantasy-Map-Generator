@@ -1,6 +1,7 @@
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { CELLS_BY_DENSITY } from "@/components/options";
+import { cellsDensityColor, changeCellsDensity } from "@/components/options/tabs/options-tab";
 import { Resample } from "@/generators/resample";
 import { ensureEl, rn } from "../utils";
 
@@ -55,7 +56,7 @@ function renderDialog(): void {
       <div>Points number</div>
       <div>
         <input id="transformPointsInput" type="range" min="1" max="13" value="${pointsValue}" />
-        <output id="transformPointsFormatted" style="color: ${getCellsDensityColor(cells)}">${cells / 1000}K</output>
+        <output id="transformPointsFormatted" style="color: ${cellsDensityColor(cells)}">${cells / 1000}K</output>
       </div>
       <div>Shift</div>
       <div>
@@ -131,7 +132,7 @@ function handlePointsInput(e: Event): void {
   const cells = CELLS_BY_DENSITY[+(e.target as HTMLInputElement).value];
   const output = ensureEl<HTMLOutputElement>("transformPointsFormatted");
   output.value = `${cells / 1000}K`;
-  output.style.color = getCellsDensityColor(cells);
+  output.style.color = cellsDensityColor(cells);
 }
 
 function handleInput(): void {
@@ -195,7 +196,7 @@ function transformMap(): void {
 
   const transformPointsValue = ensureEl<HTMLInputElement>("transformPointsInput").value;
   const globalPointsValue = String(options.graph.density);
-  if (transformPointsValue !== globalPointsValue) changeCellsDensity(transformPointsValue);
+  if (transformPointsValue !== globalPointsValue) changeCellsDensity(+transformPointsValue);
 
   const [projection, inverse] = getProjection();
 

@@ -1,18 +1,27 @@
 // What was generated, for the console and for anything watching the app from outside
-import { stored } from "@/utils/preferences";
+import { isLocked } from "@/utils/preferences";
 
-/** Stamp the new map with an id, record it in the session history and report it */
-export function logStats(): void {
+/**
+ * Record the current map in the session history and report it. A freshly generated map is stamped
+ * with a new identity; a loaded one keeps the one it was saved with
+ */
+export function logStats({ isNewMap = true } = {}): void {
   const heightmap = options.heightmap.template;
   const isTemplate = heightmap in heightmapTemplates;
   const heightmapType = isTemplate ? "template" : "precreated";
-  const isRandomTemplate = isTemplate && !stored("template") ? "random " : "";
+  const isRandomTemplate = isTemplate && !isLocked("template") ? "random " : "";
 
-  mapId = Date.now(); // the unique map id is its creation date
-  mapHistory.push({ seed, width: graphWidth, height: graphHeight, template: heightmap, created: mapId });
+  if (isNewMap) mapId = Date.now(); // a map's id is the moment it was generated
+  mapHistory.push({
+    seed: options.seed,
+    width: graphWidth,
+    height: graphHeight,
+    template: heightmap,
+    created: mapId
+  });
 
   INFO &&
-    console.info(`  Seed: ${seed}
+    console.info(`  Seed: ${options.seed}
     Canvas size: ${graphWidth}x${graphHeight} px
     Heightmap: ${heightmap}
     Template: ${isRandomTemplate}${heightmapType}
@@ -28,13 +37,13 @@ export function logStats(): void {
 
   // consumed by the e2e suite and by external integrations
   window.mapId = mapId;
-  window.dispatchEvent(new CustomEvent("map:generated", { detail: { seed, mapId } }));
+  window.dispatchEvent(new CustomEvent("map:generated", { detail: { seed: options.seed, mapId: mapId } }));
 }
 
 // Legacy seam: classic public/ code reaches it as a global
 declare global {
   // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy JS
-  var logStats: () => void;
+  var logStats: typeof import("./stats").logStats;
   interface Window {
     mapId: number;
   }

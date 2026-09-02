@@ -1,5 +1,5 @@
 // Where the map sits on the globe: its share of the world and the resulting lat/lon box
-import { stored } from "@/utils/preferences";
+import { isLocked } from "@/utils/preferences";
 import { gauss, P, rn } from "../utils";
 
 declare global {
@@ -60,9 +60,9 @@ class CoordinatesModule {
   defineMapSize(): void {
     const [size, latitude, longitude] = this.getSizeAndPosition();
     const randomize = new URL(window.location.href).searchParams.get("options") === "default"; // ignore stored options
-    if (randomize || !stored("mapSize")) options.geography.mapSize = size;
-    if (randomize || !stored("latitude")) options.geography.latitude = latitude;
-    if (randomize || !stored("longitude")) options.geography.longitude = longitude;
+    if (randomize || !isLocked("mapSize")) options.geography.mapSize = size;
+    if (randomize || !isLocked("latitude")) options.geography.latitude = latitude;
+    if (randomize || !isLocked("longitude")) options.geography.longitude = longitude;
   }
 
   /** calculate the map lat/lon box from its size and position */

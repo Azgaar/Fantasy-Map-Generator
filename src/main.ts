@@ -3,6 +3,7 @@
 
 import "@/services/logging";
 import "@/components/globals";
+import "@/components/options/tabs";
 
 import "@/utils";
 import "@/data/supporters";

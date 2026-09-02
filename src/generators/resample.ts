@@ -456,7 +456,7 @@ class Resampler {
     };
     const riversData = this.saveRiversData(pack.rivers);
 
-    grid = Grid.generate(seed, graphWidth, graphHeight);
+    grid = Grid.generate(globalThis.options.seed, graphWidth, graphHeight);
     pack = {} as PackedGraph;
     notes = parentMap.notes;
 
