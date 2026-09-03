@@ -9,6 +9,7 @@ import { getSceneReliefIcon, redrawRelief } from "@/renderers/draw-relief-icons"
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import type { ReliefSet } from "@/types/relief";
 import { capitalize, ensureEl, findAllInQuadtree, getPointer, rn } from "../utils";
+import { createBrushStroke } from "../utils/brushUtils";
 
 const ICON_BOX = 40; // icon preview box size in px, as defined in css
 
@@ -267,15 +268,12 @@ function dragToAdd(this: SVGElement, event: any): void {
 
   const tree = quadtree(pack.relief.map(({ x, y, s }) => [x + s / 2, y + s / 2] as [number, number]));
 
-  event.on("drag", function (this: SVGElement, dragEvent: any) {
-    const p = getPointer(dragEvent, this);
-    moveCircle(p[0], p[1], r);
-
+  const stroke = createBrushStroke(r / 2, (x, y) => {
     range(Math.ceil(r / 10)).forEach(() => {
       const a = Math.PI * 2 * Math.random();
       const rad = r * Math.random();
-      const cx = p[0] + rad * Math.cos(a);
-      const cy = p[1] + rad * Math.sin(a);
+      const cx = x + rad * Math.cos(a);
+      const cy = y + rad * Math.sin(a);
 
       if (tree.find(cx, cy, spacing)) return; // too close to existing icon
       if (pack.cells.h[Pack.findCell(cx, cy)!] < 20) return; // on water cell
@@ -284,7 +282,19 @@ function dragToAdd(this: SVGElement, event: any): void {
       tree.add([cx, cy]);
       insertIcon({ icon, x: rn(cx - h, 2), y: rn(cy - h, 2), s: rn(h * 2, 2) });
     });
+  });
+  const [startX, startY] = getPointer(event, this);
+  let started = false;
 
+  event.on("drag", function (this: SVGElement, dragEvent: any) {
+    const [x, y] = getPointer(dragEvent, this);
+    moveCircle(x, y, r);
+
+    if (!started) {
+      started = true;
+      stroke.moveTo(startX, startY); // no stamps on a plain click
+    }
+    stroke.moveTo(x, y);
     redrawRelief();
   });
 }
@@ -337,11 +347,8 @@ function dragToRemove(this: SVGElement, event: any): void {
     tree.add([reliefIcon.x + reliefIcon.s / 2, reliefIcon.y + reliefIcon.s / 2, reliefIcon]);
   }
 
-  event.on("drag", function (this: SVGElement, dragEvent: any) {
-    const p = getPointer(dragEvent, this);
-    moveCircle(p[0], p[1], r);
-
-    const found = findAllInQuadtree(p[0], p[1], r, tree);
+  const stroke = createBrushStroke(r / 2, (x, y) => {
+    const found = findAllInQuadtree(x, y, r, tree);
     if (!found.length) return;
 
     const removed = new Set(found.map(entry => entry[2]));
@@ -349,6 +356,19 @@ function dragToRemove(this: SVGElement, event: any): void {
     pack.relief = pack.relief.filter(reliefIcon => !removed.has(reliefIcon));
     if (selectedIcon && removed.has(selectedIcon)) selectedIcon = null;
     redrawRelief();
+  });
+  const [startX, startY] = getPointer(event, this);
+  let started = false;
+
+  event.on("drag", function (this: SVGElement, dragEvent: any) {
+    const [x, y] = getPointer(dragEvent, this);
+    moveCircle(x, y, r);
+
+    if (!started) {
+      started = true;
+      stroke.moveTo(startX, startY);
+    }
+    stroke.moveTo(x, y);
   });
 }
 
