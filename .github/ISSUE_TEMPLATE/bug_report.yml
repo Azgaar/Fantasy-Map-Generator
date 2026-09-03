@@ -1,0 +1,71 @@
+name: Bug report
+description: Report a problem
+labels: ["pending review"]
+assignees: [Azgaar]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the bug
+      description: A clear and concise description of what the bug is
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Please try to explain like to a person who had never used the tool before
+      placeholder: |
+        1. Click on ...
+        2. Type ...
+        3. See the ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: A clear and concise description of what you expected to happen
+  - type: dropdown
+    id: theme
+    attributes:
+      label: Theme
+      description: Which part of the generator is this about?
+      options:
+        - Not sure
+        - States / Provinces / Diplomacy
+        - Import / Export / Save
+        - UI / Editors
+        - Cultures / Religions / Society
+        - Burgs & Population
+        - Labels & Styling
+        - Climate / Biomes / Terrain
+        - Markers / Notes / Zones
+        - Military
+        - Rivers / Lakes / Coast
+        - Integrations & External
+        - Architecture / Performance
+        - Routes & Roads
+    validations:
+      required: true
+  - type: textarea
+    id: mapfile
+    attributes:
+      label: .map file
+      description: Attach an archived .map file (zip archive) so we can fix the issue faster
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: Add screenshots to help explain your problem
+  - type: textarea
+    id: system
+    attributes:
+      label: System
+      description: Version is displayed as a part of the page title and at the loading screen. If the issue is for the desktop version, please specify it as well
+      value: |
+        - Version: ...
+        - Browser: ...
+        - OS: ...
+    validations:
+      required: true
