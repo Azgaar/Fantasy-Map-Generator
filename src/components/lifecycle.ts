@@ -1,10 +1,10 @@
 // The app and map lifecycle: start the app, erase what is on screen, generate a new world, put it back
-
 import { applyGraphSize, fitMapToScreen } from "@/components/canvas";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { hideLoading, showLoading } from "@/components/loading";
 import { restoreUi, syncInputs } from "@/components/options/tabs/options-tab";
+import { is3dView } from "@/components/options/view-mode";
 import { setSeed } from "@/components/seed";
 import { initShell, warnIfServerless } from "@/components/shell";
 import { clearMainTip, tip } from "@/components/tooltips";
@@ -20,46 +20,16 @@ import { registerServiceWorker } from "@/services/platform";
 import { checkLoadParameters } from "@/services/url-params";
 import { cleanupData } from "@/services/versioning";
 import type { GridGraph } from "@/types/GridGraph";
-import { debounce, ensureEl, findEl, last, parseError } from "@/utils";
-
-export interface MapHistoryEntry {
-  seed: string;
-  width: number;
-  height: number;
-  template: string;
-  created: number;
-}
-
-let mapId = 0; // A map's id is the moment it was generated
-const mapHistory: MapHistoryEntry[] = [];
-
-export const getMapId = (): number => mapId;
-export const getMapHistory = (): readonly MapHistoryEntry[] => mapHistory;
-
-/** Take note of a map that is now on screen: a generated one is dated now, a loaded one keeps its own id */
-export function registerMap(id: number = Date.now()): void {
-  mapId = id;
-  mapHistory.push({
-    seed: options.seed,
-    width: options.graph.width,
-    height: options.graph.height,
-    template: options.heightmap.template,
-    created: mapId
-  });
-  window.mapsGenerated = mapHistory.length;
-  window.dispatchEvent(
-    new CustomEvent("map:generated", { detail: { seed: options.seed, mapId, mapsGenerated: mapHistory.length } })
-  );
-}
+import { debounce, ensureEl, findEl, parseError } from "@/utils";
 
 /** Bring the app up */
 export async function boot(): Promise<void> {
-  initShell();
   registerServiceWorker();
+  initShell();
 
-  Options.restoreStored(); // the options of the last session, then the search params
-  syncInputs(); // options are the source of truth, the inputs only display them
-  restoreUi(); // the tab's own restore: locks, style presets, theme, ui size
+  Options.restoreStored();
+  syncInputs();
+  restoreUi();
   setViewportSize(options.graph.width, options.graph.height);
   applyDefaultViewboxEvents();
 
@@ -71,13 +41,14 @@ export async function boot(): Promise<void> {
   initiateAutosave();
 }
 
-export type GenerationConfig = { seed?: string; graph?: GridGraph };
+export type GenerationConfig = { seed?: string; graph?: GridGraph; width?: number; height?: number };
 
 /** Generate a whole new world. The pipeline owns the sequence, this owns everything around it */
 export async function generate(config?: GenerationConfig): Promise<void> {
   try {
-    const { seed: precreatedSeed, graph: precreatedGraph } = config || {};
+    const { seed: precreatedSeed, graph: precreatedGraph, width, height } = config || {};
     setSeed(precreatedSeed);
+    Options.setGraphSize(width, height); // a new map is made at window size unless asked otherwise
     Options.randomize();
     applyGraphSize();
 
@@ -131,7 +102,7 @@ export const regenerateMap = debounce(async (config?: GenerationConfig | string)
   await generate(typeof config === "string" ? undefined : config);
   Layers.drawAll();
 
-  if (options.threeD.isOn) Controllers.View3d.redraw();
+  if (is3dView()) Controllers.View3d.redraw();
   if (findEl("worldConfigurator")?.offsetParent) Controllers.WorldConfigurator.open();
 
   fitMapToScreen();
@@ -146,7 +117,7 @@ export function regeneratePrompt(config?: GenerationConfig): void {
     return;
   }
 
-  const current = last(mapHistory);
+  const current = mapHistory.at(-1);
   const workingMinutes = current ? (Date.now() - current.created) / 60000 : 0;
   if (workingMinutes < 1) {
     regenerateMap(config);
@@ -165,6 +136,28 @@ export function regeneratePrompt(config?: GenerationConfig): void {
   });
 }
 
+interface MapHistoryEntry {
+  seed: string;
+  width: number;
+  height: number;
+  template: string;
+  created: number;
+}
+
+// every map this session put on screen, oldest first; the last one is what is on screen now
+globalThis.mapHistory = [];
+
+/** Take note of a map that is now on screen */
+export function registerMap(created: number = Date.now()): void {
+  mapHistory.push({
+    seed: options.seed,
+    width: options.graph.width,
+    height: options.graph.height,
+    template: options.heightmap.template,
+    created: created
+  });
+}
+
 /** Clear the map: every layer, the transient defs and the notes that described what was there */
 export function undraw(): void {
   Layers.eraseAll();
@@ -175,17 +168,11 @@ export function undraw(): void {
 }
 
 declare global {
-  interface Window {
-    mapId: number;
-    mapsGenerated: number;
-  }
+  var mapHistory: MapHistoryEntry[];
   // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy JS
   var regeneratePrompt: (config?: GenerationConfig) => void;
   // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy JS
   var regenerateMap: (config?: GenerationConfig | string) => void;
-  // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy JS
-  var undraw: () => void;
 }
 window.regeneratePrompt = regeneratePrompt;
 window.regenerateMap = regenerateMap;
-window.undraw = undraw;

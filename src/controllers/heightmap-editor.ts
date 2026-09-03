@@ -15,6 +15,7 @@ import {
 import { closeDialogs, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { dialogState } from "@/components/dialog/state";
 import { Layers } from "@/components/layers";
+import { undraw } from "@/components/lifecycle";
 import { changeViewMode } from "@/components/options/view-mode";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -436,7 +437,7 @@ function getFriendlyHeight(h: number): string {
   else if (unit === "f") unitRatio = 0.5468; // if fathom
 
   let height = -990;
-  if (h >= 20) height = (h - 18) ** +heightExponentInput.value;
+  if (h >= 20) height = (h - 18) ** options.units.height.exponent;
   else if (h < 20 && h > 0) height = ((h - 20) / h) * 50;
 
   return `${rn(height * unitRatio)} ${unit}`;

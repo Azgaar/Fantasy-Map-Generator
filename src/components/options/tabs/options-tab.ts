@@ -627,6 +627,9 @@ export function syncInputs(): void {
 
   const manors = findEl<HTMLOutputElement>("manorsOutput");
   if (manors) manors.value = Options.isAutoBurgLimit ? "auto" : String(options.burgs.limit);
+
+  syncCellsDensity(); // the Points slider shows a step, the object holds the cell count it resolves to
+  syncCultures(); // the cultures slider is capped by the selected set
 }
 
 /**
@@ -707,13 +710,21 @@ function restoreDefaultCanvasSize(): void {
 /** The Points slider picks a density step; the readout shows the cell count it resolves to */
 export function changeCellsDensity(density: number): void {
   Options.setDensity(density);
+  syncCellsDensity();
+}
 
-  const { cellsDesired } = options.graph;
-  const input = ensureEl<HTMLInputElement>("pointsInput");
-  input.value = String(density);
-  input.dataset.cells = String(cellsDesired);
+/** Push the density step and the cell count it resolves to into the slider and its readout */
+function syncCellsDensity(): void {
+  const { density, cellsDesired } = options.graph;
 
-  const readout = ensureEl<HTMLOutputElement>("pointsOutputFormatted");
+  const input = findEl<HTMLInputElement>("pointsInput");
+  if (input) {
+    input.value = String(density);
+    input.dataset.cells = String(cellsDesired);
+  }
+
+  const readout = findEl<HTMLOutputElement>("pointsOutputFormatted");
+  if (!readout) return;
   readout.value = `${cellsDesired / 1000}K`;
   readout.style.color = cellsDensityColor(cellsDesired);
 }
@@ -722,16 +733,24 @@ export function changeCellsDensity(density: number): void {
 export const cellsDensityColor = (cells: number): string =>
   cells > 50000 ? "#b12117" : cells === 10000 ? "#053305" : "#dfdf12";
 
-/** Each culture set holds a different number of cultures: cap the slider at what the set can give */
-function changeCultureSet(set = options.cultures.set): void {
-  const max = String(CULTURE_SETS[set]?.max ?? 0);
-  const input = ensureEl<HTMLInputElement>("culturesInput");
-  const output = ensureEl<HTMLInputElement>("culturesOutput");
+/** Each culture set holds a different number of cultures, and the number asked for cannot exceed it */
+function changeCultureSet(set: string): void {
+  Options.set(o => {
+    o.cultures.set = set;
+    Options.capCultures();
+  });
+  syncCultures();
+}
+
+/** Cap the cultures slider at what the selected set can give, and show the number that survived it */
+function syncCultures(): void {
+  const max = String(CULTURE_SETS[options.cultures.set]?.max ?? 0);
+  const input = findEl<HTMLInputElement>("culturesInput");
+  const output = findEl<HTMLInputElement>("culturesOutput");
+  if (!input || !output) return;
+
   input.max = output.max = max;
-  if (options.cultures.limit > +max) {
-    options.cultures.limit = +max;
-    input.value = output.value = max;
-  }
+  input.value = output.value = String(options.cultures.limit);
 }
 
 /** More states means smaller labels, so they keep fitting the shrinking territories */
@@ -974,10 +993,6 @@ export function restoreUi(): void {
     applyOption(ensureEl("templateInput"), template, name);
   }
 
-  // a custom unit name is not among the options of its select until it is put back there
-  applyOption(ensureEl("distanceUnitInput"), options.units.distance.unit);
-  applyOption(ensureEl("heightUnit"), options.units.height.unit);
-
   bindLockIcons(ensureEl("options"));
 
   for (let i = 0; i < localStorage.length; i++) {
@@ -999,14 +1014,11 @@ export function restoreUi(): void {
     }
   }
 
-  changeCellsDensity(options.graph.density);
-  changeCultureSet();
   Emblems.setShape(ensureEl<HTMLSelectElement>("emblemShape").value);
 
   const tooltipSize = stored("tooltipSize");
   if (tooltipSize) changeTooltipSize(tooltipSize);
-  const regions = stored("regions");
-  if (regions) changeStatesNumber(+regions);
+  changeStatesNumber(options.states.limit); // state label sizes follow the number of states
 
   ensureEl<HTMLInputElement>("uiSize").max = String(maxUiSize());
   const uiSize = stored("uiSize");

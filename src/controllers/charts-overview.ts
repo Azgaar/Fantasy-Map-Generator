@@ -18,7 +18,6 @@ import {
   sum
 } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
-import { getMapId } from "@/components/lifecycle";
 import { tip } from "@/components/tooltips";
 import { downloadFile, getArea, getAreaUnit, getFileName, getHeight, getPrecipitation } from "@/utils";
 import { capitalize, convertTemperature, ensureEl, formatPrice, isWater, rn, si } from "../utils";
@@ -357,7 +356,7 @@ const plotTypeMap: Record<
 };
 
 let charts: ChartOptions[] = [];
-let prevMapId: number | undefined;
+let chartedMap: number | undefined; // the map the charts were built for, by its creation stamp
 function open() {
   renderDialog();
   changeViewColumns();
@@ -365,9 +364,10 @@ function open() {
 
   closeDialogs("#chartsOverview, .stable");
 
-  if (prevMapId !== getMapId()) {
+  const currentMap = mapHistory.at(-1)?.created;
+  if (chartedMap !== currentMap) {
     charts = [];
-    prevMapId = getMapId();
+    chartedMap = currentMap;
   }
 
   if (!charts.length) addChart();

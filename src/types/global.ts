@@ -21,18 +21,8 @@ declare global {
   }
 
   // Elements the browser exposes as globals by their id. New code should use `ensureEl` instead
-  var pointsInput: HTMLInputElement;
-  var culturesInput: HTMLInputElement;
-  var culturesSet: HTMLSelectElement;
-  var heightExponentInput: HTMLInputElement;
   var alertMessage: HTMLElement;
-  var mapName: HTMLInputElement;
-  var religionsNumber: HTMLInputElement;
-  var distanceUnitInput: HTMLInputElement;
-  var heightUnit: HTMLSelectElement;
-  var areaUnit: HTMLInputElement;
   var stylePreset: HTMLSelectElement;
-  var temperatureScale: HTMLSelectElement;
 
   // Still defined in public/modules/ui/options.js
 

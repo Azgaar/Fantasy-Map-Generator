@@ -112,7 +112,7 @@ test.describe("Map loading", () => {
         hasBurgs: pack.burgs && pack.burgs.length > 1,
         hasCells: pack.cells && pack.cells.i && pack.cells.i.length > 0,
         hasRivers: pack.rivers && pack.rivers.length > 0,
-        mapsGenerated: (window as any).mapsGenerated
+        mapsGenerated: (window as any).mapHistory.length
       };
     });
 

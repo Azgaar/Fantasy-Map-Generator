@@ -15,7 +15,7 @@ export const savedMessage = (name: string): string =>
   isElectron() ? `${name} is saved` : `${name} is saved. Open "Downloads" screen (CTRL + J) to check`;
 
 export function registerServiceWorker(): void {
-  if (!isProduction() || isElectron() || !("serviceWorker" in navigator)) return;
+  if (!("serviceWorker" in navigator) || !isProduction() || isElectron()) return;
 
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js").catch(error => {

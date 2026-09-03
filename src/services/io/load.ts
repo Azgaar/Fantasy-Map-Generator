@@ -2,7 +2,7 @@ import { select } from "d3";
 import { fitMapToScreen } from "@/components/canvas";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
-import { getMapHistory, registerMap } from "@/components/lifecycle";
+import { registerMap } from "@/components/lifecycle";
 import { syncInputs } from "@/components/options/tabs/options-tab";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -52,7 +52,7 @@ async function createSharableDropboxLink(): Promise<void> {
 }
 
 function loadMapPrompt(blob: Blob): void {
-  const current = last(getMapHistory());
+  const current = mapHistory.at(-1);
   const workingTime = current ? (Date.now() - current.created) / 60000 : 0; // minutes
   if (workingTime < 5) {
     loadLastSavedMap();
@@ -677,8 +677,8 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - uploadTimeStart) / 1000, 2)}s`);
 
-    const loadedMapId = +data[0].split("|")[6] || Date.now();
-    registerMap(loadedMapId);
+    const mapCreatedAt = +data[0].split("|")[6] || Date.now();
+    registerMap(mapCreatedAt);
     logStats();
     tip("Map is successfully loaded", true, "success", 7000);
   } catch (error) {

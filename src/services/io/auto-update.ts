@@ -438,7 +438,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       f.temp = grid.cells.temp[pack.cells.g[f.firstCell]];
       const heights = pack.cells.c[f.firstCell].map(c => pack.cells.h[c]).filter(h => h >= 20);
       f.height = f.height || min(heights) || 0;
-      const height = (f.height - 18) ** heightExponentInput.valueAsNumber;
+      const height = (f.height - 18) ** options.units.height.exponent;
       const evaporation = ((700 * (f.temp + 0.006 * height)) / 50 + 75) / (80 - f.temp);
       f.evaporation = rn(evaporation * f.cells);
       if (!f.shoreline) f.shoreline = Lakes.defineShoreline(f);
@@ -532,7 +532,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     // v1.65 changed rivers data
     select("#rivers").attr("style", null); // remove style to unhide layer
     const { cells, rivers } = pack;
-    const defaultWidthFactor = rn(1 / (Number(pointsInput.dataset.cells) / 10000) ** 0.25, 2);
+    const defaultWidthFactor = rn(1 / (options.graph.cellsDesired / 10000) ** 0.25, 2);
 
     for (const river of rivers) {
       const node = document.getElementById(`river${river.i}`) as unknown as SVGPathElement | null;

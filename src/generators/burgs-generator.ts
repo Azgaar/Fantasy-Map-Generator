@@ -11,9 +11,6 @@ import type { ProductionRecord } from "./production-generator";
 import type { River } from "./river-generator";
 import type { Point } from "./voronoi";
 
-/** the Towns slider maxed out means "pick a sensible number for this map" */
-const isAutoManors = () => options.burgs.limit === 1000;
-
 export interface Burg {
   cell: number;
   x: number;
@@ -166,7 +163,7 @@ class BurgModule {
     }
 
     function getTownsNumber() {
-      if (isAutoManors()) return rn(populatedCells.length / 5 / (grid.points.length / 10000) ** 0.8);
+      if (Options.isAutoBurgLimit) return rn(populatedCells.length / 5 / (grid.points.length / 10000) ** 0.8);
       return Math.min(options.burgs.limit, populatedCells.length);
     }
   }
@@ -820,7 +817,7 @@ class BurgModule {
     const sorted = cells.i.filter(i => score[i] > 0 && cells.culture[i]).sort((a, b) => score[b] - score[a]);
     const statesCount = states.filter(state => state.i && !state.removed).length;
     const burgsCount =
-      (isAutoManors() ? rn(sorted.length / 5 / (grid.points.length / 10000) ** 0.8) : options.burgs.limit) +
+      (Options.isAutoBurgLimit ? rn(sorted.length / 5 / (grid.points.length / 10000) ** 0.8) : options.burgs.limit) +
       statesCount;
     const spacing = (options.graph.width + options.graph.height) / 150 / (burgsCount ** 0.7 / 66);
 

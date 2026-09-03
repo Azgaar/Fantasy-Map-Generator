@@ -1,7 +1,7 @@
 import { applyGraphSize, fitMapToScreen } from "@/components/canvas";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
-import { registerMap } from "@/components/lifecycle";
+import { registerMap, undraw } from "@/components/lifecycle";
 import { cellsDensityColor, changeCellsDensity } from "@/components/options/tabs/options-tab";
 import { CELLS_BY_DENSITY } from "@/components/options-store";
 import { viewport } from "@/components/viewport";
@@ -116,9 +116,7 @@ function recalculateMapSize(x0: number, y0: number, scale: number): void {
   options.geography.longitude = rn(((180 - lonE) / (360 - lotT)) * 100, 2);
 
   options.units.distance.scale = rn(options.units.distance.scale / scale, 2);
-  ensureEl<HTMLInputElement>("distanceScaleInput").value = String(options.units.distance.scale);
   options.units.population.scale = rn(options.units.population.scale / scale, 2);
-  ensureEl<HTMLInputElement>("populationRateInput").value = String(options.units.population.scale);
 }
 
 function rescaleBurgStyles(scale: number): void {

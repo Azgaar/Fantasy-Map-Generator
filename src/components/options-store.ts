@@ -67,8 +67,7 @@ function getDefaultOptions() {
     states: {
       limit: 18,
       sizeVariety: 4,
-      growthRate: 1,
-      growthModifier: 1 // transient, the States Editor slider while it recalculates
+      growthRate: 1
     },
     provinces: { ratio: 20 },
     religions: { limit: 6 },

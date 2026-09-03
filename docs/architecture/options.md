@@ -22,7 +22,6 @@ Three things it is _not_:
 | [`src/components/options-model.ts`](../../src/components/options-model.ts)                              | The model: the only thing that writes the store — `Options.set/restore/persist/randomize` |
 | [`src/components/options/tabs/options-tab.ts`](../../src/components/options/tabs/options-tab.ts)        | The Options tab: markup, the `PANEL_SETTINGS` binding table, `syncInputs`, `restoreUi`    |
 | [`src/utils/preferences.ts`](../../src/utils/preferences.ts)                                            | Locks (pinned options) and the per-key `stored`/`store` interface preferences             |
-| [`src/services/storage-migration.ts`](../../src/services/storage-migration.ts)                          | Folds the pre-v1.151 key-per-option localStorage layout into the object                   |
 | [`src/services/io/save.ts`](../../src/services/io/save.ts) / [`load.ts`](../../src/services/io/load.ts) | Writes `JSON.stringify(options)` as `.map` field 1 and restores it                        |
 | [`src/services/io/auto-update.ts`](../../src/services/io/auto-update.ts) → `migrateLegacySettings`      | Converts the pre-v1.151 pipe-delimited `.map` settings string into the object             |
 
@@ -89,21 +88,28 @@ Options.set(o => (o.climate.precipitation = Number(value)));
 [`boot()`](../../src/components/lifecycle.ts) resolves options before anything reads them:
 
 ```text
-Options.restoreStored()  defaults ← stored session ← ?width/?height ← real window size
+Options.restoreStored()  defaults ← stored session ← the real window size
 syncInputs()             push the object into the panel inputs
 restoreUi()              the tab's own restore: lock icons, style presets, theme, UI size
 ```
 
-Precedence is lowest to highest: **built-in defaults → last session → URL search params → the actual
-window size**. The window size wins unless `mapWidth`/`mapHeight` are locked, and a zero-sized window
+Precedence is lowest to highest: **built-in defaults → last session → the actual window size**. Then
+every generation resolves the canvas size once more through `Options.setGraphSize(width?, height?)`:
+a size the caller asked for wins (`?width`/`?height`, a seed restored from the map history),
+otherwise the window size, and neither overrides a pinned `mapWidth`/`mapHeight`. A zero-sized window
 (a hidden or headless tab, see [the browser-pane gotcha](#gotchas)) falls back to 1280×800 rather than
 producing a degenerate grid.
+
+**A generated map cannot be resized.** `options.graph.width`/`height` is the extent the Voronoi graph
+was built on, so it is fixed for the life of the map: resizing the browser window re-fits the viewport
+([`fitMapToScreen`](../../src/components/canvas.ts)) and leaves the extent alone. The new window size
+reaches the map only when the next one is generated.
 
 ## Locks and randomization
 
 A **lock** pins an option so `Options.randomize()` leaves it alone on the next map. Locks are a set of
 panel keys in the `fmg-locks` localStorage key, owned by
-[`preferences.ts`](../../src/utils/preferences.ts) (`isLocked`, `lock`, `unlock`, `setLocks`).
+[`preferences.ts`](../../src/utils/preferences.ts) (`isLocked`, `lock`, `unlock`).
 
 - **Editing a control locks it.** `watchInputs` calls `lock(key)` on the `change` event: setting a
   value by hand is taken as intent to keep it. Randomized values stay unlocked.
@@ -143,11 +149,11 @@ setting:
 
 ## Three storage scopes
 
-| Scope                     | Key                         | Written by                 | In the `.map`? |
-| ------------------------- | --------------------------- | -------------------------- | -------------- |
-| **Map config**            | `fmg-options` (one object)  | `Options.persist()`        | yes, field 1   |
-| **Locks**                 | `fmg-locks` (array of keys) | `lock`/`unlock`/`setLocks` | no             |
-| **Interface preferences** | one key per setting         | `store(key, value)`        | no             |
+| Scope                     | Key                         | Written by          | In the `.map`? |
+| ------------------------- | --------------------------- | ------------------- | -------------- |
+| **Map config**            | `fmg-options` (one object)  | `Options.persist()` | yes, field 1   |
+| **Locks**                 | `fmg-locks` (array of keys) | `lock`/`unlock`     | no             |
+| **Interface preferences** | one key per setting         | `store(key, value)` | no             |
 
 Other localStorage owners are deliberately separate and not part of options: dialog geometry and
 filters (`fmg-dialog-state`), layer presets (`preset`, `presets`), saved style presets (`style*`), and
@@ -163,7 +169,6 @@ be identified without parsing the settings. Loading is the mirror image:
 ```text
 migrateLegacySettings(mapVersion, data)  pre-v1.151 pipe string → an options-shaped object
 Options.restore(JSON.parse(data[1]))     merge over the current object
-Options.persist()                        the loaded map becomes this session's starting point
 syncInputs()                             the panel follows
 ```
 
@@ -172,12 +177,17 @@ default, and a field removed from the schema is ignored.
 
 ## Migrations
 
-Two migrations exist, both for the v1.151 change of format, and both follow the same rule: **a
-migration describes a world that no longer exists, so it carries its own copy of that world and never
-leans on the live model.** Renaming a field today must not silently change what an old file means.
+One migration exists, for the v1.151 change of format, and it follows the rule every migration
+follows: **a migration describes a world that no longer exists, so it carries its own copy of that
+world and never leans on the live model.** Renaming a field today must not silently change what an
+old file means.
 
-- **Stored options** are not migrated as we don't expect users to keep sentitive data in localStorage.
-- **Saved maps** — `migrateLegacySettings` in [`auto-update.ts`](../../src/services/io/auto-update.ts).
+- **Saved maps** — `migrateLegacySettings` in [`auto-update.ts`](../../src/services/io/auto-update.ts)
+  turns the pre-v1.151 pipe-delimited settings string into an options-shaped object.
+- **Stored options are deliberately not migrated.** The pre-v1.151 layout kept a localStorage key per
+  option, and its presence doubled as the option's lock. Nothing folds those keys into `fmg-options`
+  or into `fmg-locks`: a returning browser starts from the defaults, and the stale keys are inert.
+  Session preferences are cheap to set again, and none of them is worth the migration code.
 
 ## Adding an option
 
@@ -198,9 +208,6 @@ browser and every existing `.map`.
 - **Never read `options` at module top level.** Bundled modules evaluate before boot restores the
   stored values, so a top-level read captures a placeholder. Read inside the function that uses it —
   see [migration_guide.md](./migration_guide.md).
-- **Some fields are transient.** `states.growthModifier` is the States Editor's live slider,
-  `threeD.isOn`/`isGlobe` are the current view mode. They sit in the object because it is the one
-  config bag, but nothing should treat them as remembered preferences.
 - **`coastline` is defaulted lazily** by `Coastline.settings` (`options.coastline ??= …`), because its
   shape belongs to the generator. Do not assume it is populated on a fresh object.
 - **`randomize()` runs before the pipeline**, so a generator reading an option always sees the rolled

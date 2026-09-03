@@ -1,3 +1,4 @@
+import { is3dView } from "@/components/options/view-mode";
 import { tip } from "@/components/tooltips";
 import { viewport } from "@/components/viewport";
 import { timeOfDayPresets } from "@/data/view-3d-options";
@@ -39,7 +40,7 @@ const setTimeOfDay = (presetName: string) => loadRenderer().then(m => m.setTimeO
 const saveScreenshot = () => loadRenderer().then(m => m.saveScreenshot());
 const saveOBJ = () => loadRenderer().then(m => m.saveOBJ());
 // read access to view/erosion state (used by label/icon placement and e2e tests)
-const isOn = () => options.threeD.isOn;
+const isOn = () => is3dView();
 const isCached = (key?: string) => loadRenderer().then(m => m.isCached(key));
 const heightAt = (x: number, y: number, scale: number) => loadRenderer().then(m => m.heightAt(x, y, scale));
 

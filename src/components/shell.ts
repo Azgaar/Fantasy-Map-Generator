@@ -1,22 +1,23 @@
-// The app window itself: the SVG layer scaffold, browser-level behaviours (resizing, navigating away,
-// mobile input quirks) and the whole-window drop target for opening a map file
+// The app window itself: the SVG layer scaffold, browser-level behaviours
 import { alertDialog, closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
-import { syncInputs } from "@/components/options/tabs/options-tab";
 import { Services } from "@/services";
 import { isElectron, isLocalhost } from "@/services/platform";
 import { ensureEl, findEl } from "@/utils";
-import { isLocked } from "@/utils/preferences";
 import { fitMapToScreen } from "./canvas";
 
-/** Keep the map canvas in sync with the window, dimension by dimension, unless the user pinned it */
-function onResize(): void {
-  if (isLocked("mapWidth") && isLocked("mapHeight")) return;
+/** Wire the window up: the svg layer scaffold and the browser-level behaviours around it. Called by boot() */
+export function initShell(): void {
+  Layers.init(); // create the svg layer groups the renderers draw into
 
-  if (!isLocked("mapWidth")) options.graph.width = window.innerWidth;
-  if (!isLocked("mapHeight")) options.graph.height = window.innerHeight;
-  syncInputs();
-  fitMapToScreen();
+  window.addEventListener("resize", fitMapToScreen);
+  window.addEventListener("vite:preloadError", onChunkLoadError);
+  document.addEventListener("touchstart", onTitlebarButtonTouch, { capture: true, passive: true });
+  addDragToUpload();
+  initTourPromptButton();
+
+  if (!isLocalhost() && !isElectron()) window.onbeforeunload = () => "Are you sure you want to navigate away?";
+  if (isElectron()) removeWebOnlyControls();
 }
 
 /**
@@ -123,22 +124,6 @@ export function warnIfServerless(): boolean {
     message: /* html */ `Fantasy Map Generator cannot run serverless. Follow the <a href="${wiki}" target="_blank">instructions</a> on how you can easily run a local web-server`
   });
   return true;
-}
-
-/** Wire the window up: the svg layer scaffold and the browser-level behaviours around it. Called by boot() */
-export function initShell(): void {
-  Layers.init(); // create the svg layer groups the renderers draw into
-
-  window.addEventListener("resize", onResize);
-  window.addEventListener("vite:preloadError", onChunkLoadError);
-  document.addEventListener("touchstart", onTitlebarButtonTouch, { capture: true, passive: true });
-  addDragToUpload();
-  initTourPromptButton();
-
-  // Electron silently cancels the close on `onbeforeunload` instead of prompting, it asks natively instead
-  if (!isLocalhost() && !isElectron()) window.onbeforeunload = () => "Are you sure you want to navigate away?";
-
-  if (isElectron()) removeWebOnlyControls();
 }
 
 function removeWebOnlyControls(): void {

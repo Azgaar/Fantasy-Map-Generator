@@ -22,11 +22,6 @@ function writeLocks(locks: Set<string>): void {
   localStorage.setItem(LOCKS_KEY, JSON.stringify(Array.from(locks)));
 }
 
-/** Replace the whole set, e.g. when adopting the locks of an older storage layout */
-export function setLocks(keys: string[]): void {
-  writeLocks(new Set(keys));
-}
-
 /** Whether the option keeps its current value on new map generation */
 export function isLocked(optionId: string): boolean {
   return readLocks().has(optionId);

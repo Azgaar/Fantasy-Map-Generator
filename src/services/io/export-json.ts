@@ -1,5 +1,4 @@
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
-import { getMapId } from "@/components/lifecycle";
 import { tip } from "@/components/tooltips";
 import { savedMessage } from "@/services/platform";
 import { VERSION } from "@/services/versioning";
@@ -103,7 +102,7 @@ function getMapInfo() {
     width: options.graph.width,
     height: options.graph.height,
     seed: options.seed,
-    mapId: getMapId()
+    mapId: mapHistory.at(-1)?.created ?? Date.now()
   };
 }
 

@@ -4,7 +4,7 @@ import { leastIndex, select } from "d3";
 import { fitMapToScreen } from "@/components/canvas";
 import { Layers } from "@/components/layers";
 import { applyLayersPreset, applyURLLayers } from "@/components/layers-presets";
-import { generate } from "@/components/lifecycle";
+import { type GenerationConfig, generate } from "@/components/lifecycle";
 import { tip } from "@/components/tooltips";
 import { zoomTo } from "@/components/zoom";
 import type { Burg } from "@/generators/burgs-generator";
@@ -20,11 +20,8 @@ const searchParams = () => new URL(window.location.href).searchParams;
 export async function checkLoadParameters(): Promise<void> {
   const params = searchParams();
 
-  // search params win over both stored and default values
-  const width = +(params.get("width") ?? 0);
-  const height = +(params.get("height") ?? 0);
-  if (width) options.graph.width = width;
-  if (height) options.graph.height = height;
+  // a linked map is generated at the size the link asks for, whatever the window measures
+  const size = { width: +(params.get("width") ?? 0), height: +(params.get("height") ?? 0) };
 
   const maplink = params.get("maplink");
   if (maplink) {
@@ -39,7 +36,7 @@ export async function checkLoadParameters(): Promise<void> {
   // a seed provided by the user or by MFCG: generate the map it describes
   if (params.get("seed")) {
     WARN && console.warn("Generate map for seed", params.get("seed"));
-    await generateMapOnLoad();
+    await generateMapOnLoad(size);
     return;
   }
 
@@ -57,13 +54,13 @@ export async function checkLoadParameters(): Promise<void> {
   }
 
   WARN && console.warn("Generate random map");
-  generateMapOnLoad();
+  generateMapOnLoad(size);
 }
 
 /** The start-up path: style, world, layers, then wherever the URL says to look */
-export async function generateMapOnLoad(): Promise<void> {
+export async function generateMapOnLoad(config?: GenerationConfig): Promise<void> {
   await applyStyleOnLoad(); // the previously selected default or custom style
-  await generate();
+  await generate(config);
   applyLayersPreset();
   Layers.drawAll();
   fitMapToScreen();

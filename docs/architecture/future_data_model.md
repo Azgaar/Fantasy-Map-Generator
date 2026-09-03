@@ -31,9 +31,8 @@ This document outlines the expected data structure. Current data model described
 
     "heightmap": {
       "template": "Volcano",
-      "isRandom": false,
-      "isPrecreated": false,
-      "isCustom": false
+      "resolveDepressionsSteps": 250,
+      "lakeElevationLimit": 20
     },
 
     "cultures": {
@@ -108,11 +107,9 @@ This document outlines the expected data structure. Current data model described
     },
 
     "geography": {
-      "mapSize": 11,
-      "latitudeShift": 50,
-      "coordinates": {
-        "latN": 34
-      }
+      "mapSize": 100,
+      "latitude": 50,
+      "longitude": 50,
     },
 
     "units": {

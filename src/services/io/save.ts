@@ -2,7 +2,6 @@
 
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
-import { getMapId } from "@/components/lifecycle";
 import { tip } from "@/components/tooltips";
 import { GraphOverride } from "@/generators/graph-override";
 import { Services } from "@/services";
@@ -60,7 +59,7 @@ function prepareMapData(): string {
     options.seed,
     options.graph.width,
     options.graph.height,
-    getMapId()
+    mapHistory.at(-1)?.created ?? Date.now() // the map id: when the map on screen was created
   ].join("|");
 
   const settings = JSON.stringify(options);

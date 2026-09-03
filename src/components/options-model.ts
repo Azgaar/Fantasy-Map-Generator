@@ -26,19 +26,15 @@ export class OptionsModel {
     this.saveTimer = window.setTimeout(() => this.persist(), this.SAVE_DELAY);
   }
 
-  /** Overlay the options of the last session, then the search params, on the defaults */
+  /** Overlay the options of the last session on the defaults */
   restoreStored(): void {
     this.restore(readStored());
-
-    if (!isLocked("mapWidth")) options.graph.width = window.innerWidth;
-    if (!isLocked("mapHeight")) options.graph.height = window.innerHeight;
-
-    if (!(options.graph.width > 0)) options.graph.width = 1280;
-    if (!(options.graph.height > 0)) options.graph.height = 800;
+    this.setGraphSize();
   }
 
   /** Adopt a stored settings object, without remembering it: the caller decides what to store */
   restore(saved: Record<string, unknown>): void {
+    // TODO: add zor validation step to avoid loading a corrupted object
     deepMerge(options, saved);
   }
 
@@ -47,6 +43,20 @@ export class OptionsModel {
     clearTimeout(this.saveTimer);
     this.saveTimer = 0;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(options));
+  }
+
+  /** The extent the next map is generated on */
+  setGraphSize(width?: number, height?: number): void {
+    const { graph } = options;
+
+    if (width) graph.width = width;
+    else if (!isLocked("mapWidth")) graph.width = window.innerWidth;
+
+    if (height) graph.height = height;
+    else if (!isLocked("mapHeight")) graph.height = window.innerHeight;
+
+    if (!(graph.width > 0)) graph.width = 1280;
+    if (!(graph.height > 0)) graph.height = 800;
   }
 
   /** Re-roll every option the user has not pinned */
@@ -72,6 +82,7 @@ export class OptionsModel {
     }
     if (roll("cultures")) options.cultures.limit = gauss(12, 3, 5, 30);
     if (roll("culturesSet")) options.cultures.set = randomCultureSet();
+    this.capCultures();
 
     const temperature = options.climate.temperature;
     if (roll("temperatureEquator")) temperature.equator = gauss(25, 7, 20, 35, 0);
@@ -90,6 +101,12 @@ export class OptionsModel {
   setDensity(density: number): void {
     options.graph.density = density;
     options.graph.cellsDesired = CELLS_BY_DENSITY[density] ?? options.graph.cellsDesired;
+  }
+
+  /** A culture set holds a fixed number of cultures: the map cannot ask for more than it has */
+  capCultures(): void {
+    const max = CULTURE_SETS[options.cultures.set]?.max;
+    if (max && options.cultures.limit > max) options.cultures.limit = max;
   }
 
   /** One panel slider drives both, until the UI offers them separately */

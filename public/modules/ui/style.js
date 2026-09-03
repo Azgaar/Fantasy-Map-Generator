@@ -606,9 +606,9 @@ styleGridScale.addEventListener("input", function () {
 });
 
 function calculateFriendlyGridSize() {
+  const { scale, unit } = options.units.distance;
   const size = styleGridScale.value * 25;
-  const friendly = `${rn(size * distanceScale, 2)} ${distanceUnitInput.value}`;
-  styleGridSizeFriendly.value = friendly;
+  styleGridSizeFriendly.value = `${rn(size * scale, 2)} ${unit}`;
 }
 
 styleGridShiftX.addEventListener("input", function () {

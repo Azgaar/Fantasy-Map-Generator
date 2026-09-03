@@ -287,9 +287,7 @@ class StatesModule {
     const queue = new FlatQueue();
     const cost: number[] = [];
 
-    const globalGrowthRate = options.states.growthRate;
-    const statesGrowthRate = options.states.growthModifier;
-    const growthRate = (cells.i.length / 2) * globalGrowthRate * statesGrowthRate; // limit cost for state growth
+    const growthRate = (cells.i.length / 2) * options.states.growthRate; // limit cost for state growth
 
     // remove state from all cells except of locked
     for (const cellId of cells.i) {

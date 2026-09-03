@@ -189,9 +189,6 @@ function renderDialog(): void {
       <div id="statesRegenerateButtons" style="display: none">
         <button id="statesRegenerateBack" data-tip="Hide the regeneration menu" class="icon-cog-alt"></button>
         <button id="statesRandomize" data-tip="Randomize states Expansion value and re-calculate states and provinces" class="icon-shuffle"></button>
-        <div data-tip="Additional growth rate. Defines how many land cells remain neutral" style="display: inline-block">
-          <slider-input id="statesGrowthRate" min=".1" max="3" step=".05" value="1">Growth rate:</slider-input>
-        </div>
         <button id="statesRecalculate" data-tip="Recalculate states based on current values of growth-related attributes" class="icon-retweet"></button>
         <div data-tip="Allow states neutral distance, expansion and type changes to take an immediate effect" style="display: inline-block">
           <input id="statesAutoChange" class="checkbox" type="checkbox" />
@@ -229,10 +226,6 @@ function renderDialog(): void {
   ensureEl("statesRegenerateBack").addEventListener("click", exitRegenerationMenu);
   ensureEl("statesRecalculate").addEventListener("click", () => recalculateStates(true));
   ensureEl("statesRandomize").addEventListener("click", randomizeStatesExpansion);
-  ensureEl("statesGrowthRate").addEventListener("input", event => {
-    options.states.growthModifier = (event.target as HTMLInputElement).valueAsNumber;
-    recalculateStates(false);
-  });
   ensureEl("statesManually").addEventListener("click", openPaintEditor);
   ensureEl("statesAdd").addEventListener("click", enterAddStateMode);
   ensureEl("statesMerge").addEventListener("click", openStateMergeDialog);

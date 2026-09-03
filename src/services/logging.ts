@@ -33,6 +33,6 @@ export function logStats(): void {
     Provinces: ${pack.provinces.length - 1}
     Burgs: ${pack.burgs.length - 1}
     Religions: ${pack.religions.length - 1}
-    Culture set: ${culturesSet.value}
+    Culture set: ${options.cultures.set}
     Cultures: ${pack.cultures.length - 1}`);
 }

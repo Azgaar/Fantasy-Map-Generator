@@ -1,7 +1,5 @@
 // The map seed: where it comes from, and the UI to revisit or share it
 import { alertDialog } from "@/components/dialog/dialog-helpers";
-import { getMapHistory } from "@/components/lifecycle";
-import { syncInputs } from "@/components/options/tabs/options-tab";
 import { tip } from "@/components/tooltips";
 import { ensureEl } from "@/utils/nodeUtils";
 import { isLocked, unlock } from "@/utils/preferences";
@@ -14,7 +12,7 @@ import { generateSeed } from "@/utils/probabilityUtils";
 export function setSeed(precreatedSeed?: string): void {
   if (precreatedSeed) options.seed = precreatedSeed;
   else {
-    const isFirstMap = !getMapHistory()[0];
+    const isFirstMap = !mapHistory.length;
     const urlSeed = new URL(window.location.href).searchParams.get("seed");
 
     if (isFirstMap && urlSeed) {
@@ -37,7 +35,7 @@ export function generateMapWithSeed(): void {
 }
 
 export function showSeedHistoryDialog(): void {
-  const lines = getMapHistory().map((entry, index) => {
+  const lines = mapHistory.map((entry, index) => {
     const created = new Date(entry.created).toLocaleTimeString();
     const button = /* html */ `<i data-tip="Click to generate a map with this seed" onclick="restoreSeed(${index})" class="icon-history optionsSeedRestore"></i>`;
     return /* html */ `<li>Seed: ${entry.seed} ${button}. Size: ${entry.width}x${entry.height}. Template: ${entry.template}. Created: ${created}</li>`;
@@ -51,14 +49,11 @@ export function showSeedHistoryDialog(): void {
 
 /** Generate a map with a seed from this session's history, restoring the size and template it used */
 export function restoreSeed(index: number): void {
-  const { seed, width, height, template } = getMapHistory()[index];
-  options.graph.width = width;
-  options.graph.height = height;
+  const { seed, width, height, template } = mapHistory[index];
   options.heightmap.template = template;
-  syncInputs();
 
   if (isLocked("template")) unlock("template");
-  regeneratePrompt({ seed });
+  regeneratePrompt({ seed, width, height });
 }
 
 // Legacy seam: the seed history list wires its buttons with an inline onclick

@@ -1,5 +1,6 @@
 import type * as THREE from "three";
 import { Layers } from "@/components/layers";
+import { isGlobeView, setViewMode } from "@/components/options/view-mode";
 import type { Burg } from "@/generators/burgs-generator";
 import type { State } from "@/generators/states-generator";
 import { Services } from "@/services";
@@ -85,9 +86,12 @@ const context2d = document.createElement("canvas").getContext("2d")!;
 
 // initiate 3d scene
 const create = async (canvas: HTMLCanvasElement, type = "viewMesh") => {
-  options.threeD.isOn = true;
-  options.threeD.isGlobe = type === "viewGlobe";
-  return options.threeD.isGlobe ? newGlobe(canvas) : newMesh(canvas);
+  const isGlobe = type === "viewGlobe";
+  setViewMode(isGlobe ? "globe" : "mesh"); // the builders below read the mode they are building for
+
+  const started = await (isGlobe ? newGlobe(canvas) : newMesh(canvas));
+  if (!started) setViewMode("standard"); // the scene never came up, so the flat map is what is on screen
+  return started;
 };
 
 // redraw 3d scene
@@ -95,14 +99,14 @@ const redraw = () => {
   deleteLabels();
   scene.remove(mesh);
   Renderer.setSize(Renderer.domElement.width, Renderer.domElement.height);
-  if (options.threeD.isGlobe) updateGlobeTexure(true);
+  if (isGlobeView()) updateGlobeTexure(true);
   else createMesh(options.graph.width, options.graph.height, grid.cellsX, grid.cellsY);
   render();
 };
 
 // update 3d texture
 const update = () => {
-  if (options.threeD.isGlobe) updateGlobeTexure();
+  if (isGlobeView()) updateGlobeTexure();
   else update3dTexture();
 };
 
@@ -132,7 +136,7 @@ const stop = () => {
 
   texture = null;
 
-  options.threeD.isOn = false;
+  setViewMode("standard");
 };
 
 const setScale = (scale: number) => {
@@ -195,7 +199,7 @@ const setSun = (x: number, y: number, z: number = options.threeD.sun.z) => {
 
 const setRotation = (speed: number) => {
   if (!controls) return;
-  if (options.threeD.isGlobe) options.threeD.rotateGlobe = speed;
+  if (isGlobeView()) options.threeD.rotateGlobe = speed;
   else options.threeD.rotateMesh = speed;
   controls.autoRotateSpeed = speed;
 
@@ -673,7 +677,7 @@ async function createMesh(width: number, height: number, segmentsX: number, segm
 
   // satellite texture is independent of erosion: it replaces the SVG map
   // render entirely, so the render is only loaded when satellite is off
-  const useSatellite = Boolean(options.threeD.satellite && !options.threeD.isGlobe && !options.threeD.wireframe);
+  const useSatellite = Boolean(options.threeD.satellite && !isGlobeView() && !options.threeD.wireframe);
   if (!options.threeD.wireframe && !useSatellite) await loadMapTexture();
 
   if (material) material.dispose();
@@ -690,7 +694,7 @@ async function createMesh(width: number, height: number, segmentsX: number, segm
   // vertices, the satellite texture for its slope/coast/drainage fields.
   // With erosion off the bake runs with zero strength — a clean field
   let bakeResult: ErosionBake.ErosionBakeResult | null = null;
-  if ((options.threeD.erosion || useSatellite) && !options.threeD.isGlobe) {
+  if ((options.threeD.erosion || useSatellite) && !isGlobeView()) {
     const baseBakeResolution =
       options.threeD.erosionDetail >= 2048 ? 4096 : options.threeD.erosionDetail > 512 ? 2048 : 1024;
     const satelliteBakeResolution =
@@ -841,7 +845,7 @@ function extendWater(width: number, height: number) {
 
 async function update3dTexture() {
   if (!material || !Renderer) return;
-  if (options.threeD.satellite && erosionBakeData && !options.threeD.isGlobe && !options.threeD.wireframe) {
+  if (options.threeD.satellite && erosionBakeData && !isGlobeView() && !options.threeD.wireframe) {
     const satelliteTexture = generateSatelliteTexture(Renderer, erosionBakeData, {
       scale: options.threeD.scale,
       maxOutput: clampTextureResolution(options.threeD.resolutionScale)
