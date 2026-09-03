@@ -1268,9 +1268,8 @@ function dragBrush(this: SVGElement, event: any): void {
     if (selection?.length) changeHeightForSelection(selection, start);
   };
 
-  // stamps follow the distance travelled, so the stroke does not depend on the pointer event rate
   const stroke = createBrushStroke(r / 2, applyAt);
-  stroke.moveTo(startX, startY); // stamps once on start, so a plain click changes height
+  stroke.moveTo(startX, startY); // so a plain click changes height
 
   event.on("drag", (dragEvent: any) => {
     const [x, y] = getPointer(dragEvent, this);

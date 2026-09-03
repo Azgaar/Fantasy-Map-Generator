@@ -292,7 +292,7 @@ function dragToAdd(this: SVGElement, event: any): void {
 
     if (!started) {
       started = true;
-      stroke.moveTo(startX, startY); // the stroke starts where the pointer went down, on the first move
+      stroke.moveTo(startX, startY); // no stamps on a plain click
     }
     stroke.moveTo(x, y);
     redrawRelief();

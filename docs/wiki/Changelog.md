@@ -14,6 +14,10 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 
 # Releases
 
+**1.151.1 - 2026-09-03**:
+
+- Brushes stamp by distance travelled: smooth, gap-free painting at any refresh rate by _[barrulus](https://github.com/barrulus)_ [1.151.1]
+
 **[1.150.0](https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/tags/v1.150.0.zip) - 2026-09-05**:
 
 - Journey Editor and new Journeys layer [1.150.0]

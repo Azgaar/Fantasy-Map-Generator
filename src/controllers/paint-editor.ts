@@ -207,7 +207,7 @@ function handleDragStart(this: SVGElement, event: D3DragEvent<SVGElement, unknow
     const [x, y] = getPointer(dragEvent, this);
     moveCircle(x, y, radius);
 
-    // a plain click selects (see handleMapClick): the stroke starts where the pointer went down, on the first move
+    // start only on real movement: a plain click selects instead (handleMapClick)
     if (!started) {
       started = true;
       stroke.moveTo(startX, startY);
