@@ -119,7 +119,7 @@ function addRiver(): void {
   const source = riverCells[0];
   const mouth = parent === riverId ? last(riverCells) : riverCells[riverCells.length - 2];
   const sourceWidth = Rivers.getSourceWidth(cells.fl[source]);
-  const defaultWidthFactor = rn(1 / (options.graph.cellsDesired / 10000) ** 0.25, 2);
+  const defaultWidthFactor = rn(1 / (facts.graph.points / 10000) ** 0.25, 2);
   const widthFactor = 1.2 * defaultWidthFactor;
 
   const meanderedPoints = Rivers.addMeandering(riverCells);

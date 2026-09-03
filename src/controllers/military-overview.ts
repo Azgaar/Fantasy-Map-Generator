@@ -139,7 +139,7 @@ async function openRegimentsOverview(state: number): Promise<void> {
 }
 
 function getMilitaryColumns(): EditorColumn<MilitaryRow>[] {
-  const unitColumns: EditorColumn<MilitaryRow>[] = options.military.map(unit => ({
+  const unitColumns: EditorColumn<MilitaryRow>[] = facts.military.units.map(unit => ({
     key: `unit:${unit.name}`,
     label: capitalize(unit.name.replace(/_/g, " ")),
     width: "5em",
@@ -207,16 +207,16 @@ function getMilitaryData(): MilitaryRow[] {
     .filter(state => state.i && !state.removed)
     .map(state => {
       const forces = Object.fromEntries(
-        options.military.map(unit => [
+        facts.military.units.map(unit => [
           unit.name,
           (state.military || []).reduce((total, regiment) => total + (regiment.u[unit.name] || 0), 0)
         ])
       );
       const population = rn(
-        ((state.rural || 0) + (state.urban || 0) * options.units.population.urbanization.rate) *
-          options.units.population.scale
+        ((state.rural || 0) + (state.urban || 0) * facts.units.population.urbanization.rate) *
+          facts.units.population.scale
       );
-      const total = options.military.reduce((sum, unit) => sum + (forces[unit.name] || 0) * unit.crew, 0);
+      const total = facts.military.units.reduce((sum, unit) => sum + (forces[unit.name] || 0) * unit.crew, 0);
       return {
         state,
         forces,
@@ -240,7 +240,7 @@ function renderMilitaryPage(view: TableView<MilitaryRow>): void {
     (result, row) => {
       result.total += row.total;
       result.population += row.population;
-      for (const unit of options.military)
+      for (const unit of facts.military.units)
         result.units[unit.name] = (result.units[unit.name] || 0) + row.forces[unit.name];
       return result;
     },
@@ -249,7 +249,7 @@ function renderMilitaryPage(view: TableView<MilitaryRow>): void {
   const percent = (value: number, total: number) => `${rn(total ? (value / total) * 100 : 0)}%`;
   const lines = view.rows
     .map(row => {
-      const unitCells = options.military
+      const unitCells = facts.military.units
         .map(unit => {
           const value = row.forces[unit.name] || 0;
           return `<div data-col="${`unit:${unit.name}`}" data-tip="State ${unit.name} units number">${percentage ? percent(value, totals.units[unit.name] || 0) : value}</div>`;
@@ -362,7 +362,7 @@ function militaryCustomize(): void {
   const types = ["melee", "ranged", "mounted", "machinery", "naval", "armored", "aviation", "magical"];
   const tableBody = ensureEl("militaryOptions").querySelector("tbody")!;
   removeUnitLines();
-  options.military.map(unit => addUnitLine(unit));
+  facts.military.units.map(unit => addUnitLine(unit));
 
   $("#militaryOptions").dialog({
     title: "Edit Military Units",
@@ -620,7 +620,8 @@ function militaryCustomize(): void {
       if (religions) unit.religions = religions;
       return unit;
     });
-    Options.set(o => (o.military = units));
+    Facts.set(f => (f.military.units = units));
+    Options.remember("military", units, Military.getDefaultOptions()); // the user's own units, carried to the next map
     Military.generate();
     rebuildMilitaryColumns();
   }
@@ -682,7 +683,7 @@ function militaryRecalculate(): void {
 }
 
 function downloadMilitaryData(): void {
-  const units = options.military.map(u => u.name);
+  const units = facts.military.units.map(u => u.name);
   let data = `Id,State,${units.map(u => capitalize(u)).join(",")},Total,Population,Rate,War Alert\n`; // headers
 
   for (const row of getMilitaryData()) {

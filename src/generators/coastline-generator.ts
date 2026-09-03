@@ -171,7 +171,7 @@ function fractalize(points: [number, number][], rand: () => number, settings: Co
 }
 
 function isOnBorder([x, y]: [number, number]) {
-  return x === 0 || x === options.graph.width || y === 0 || y === options.graph.height;
+  return x === 0 || x === facts.graph.width || y === 0 || y === facts.graph.height;
 }
 
 /**
@@ -253,13 +253,18 @@ class CoastlineGenerator {
    * brand new map) starts from the last values the user picked
    */
   get settings(): CoastlineSettings {
-    options.coastline ??= this.getDefaultSettings();
-    return options.coastline;
+    facts.coastline ??= this.getDefaultSettings();
+    return facts.coastline;
   }
 
-  /** Apply a user change: it defines the coastlines of this map and the defaults for the next one */
+  /**
+   * Apply a user change. A user edit writes both: the facts of this map, and the preservation
+   * library so the next map starts from what they picked.
+   * See docs/architecture/configuration.md#preservation-across-maps
+   */
   update(change: Partial<CoastlineSettings>): void {
-    Options.set(() => Object.assign(this.settings, change));
+    Facts.set(() => Object.assign(this.settings, change));
+    Options.remember("coastline", this.settings, this.getDefaultSettings());
   }
 
   getDefaultSettings(): CoastlineSettings {
@@ -275,7 +280,7 @@ class CoastlineGenerator {
     }
 
     const simplifiedPoints = simplify(points, SIMPLIFICATION_TOLERANCE);
-    const clippedPoints = clipPoly(simplifiedPoints, options.graph.width, options.graph.height, 1);
+    const clippedPoints = clipPoly(simplifiedPoints, facts.graph.width, facts.graph.height, 1);
     const shape = this.fractalizeFeature(clippedPoints, feature);
     return `${round(buildCoastlinePath(shape))}Z`;
   }
@@ -305,7 +310,7 @@ class CoastlineGenerator {
         ? { ...this.settings, smoothThreshold: Math.min(1, smoothThreshold * lakeSmoothThreshMult) }
         : this.settings;
 
-    return fractalize(points, Alea(`${options.seed}_c${i}`), settings);
+    return fractalize(points, Alea(`${facts.seed}_c${i}`), settings);
   }
 }
 

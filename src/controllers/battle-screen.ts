@@ -453,8 +453,8 @@ function defineType(): void {
   const defender = b.defenders.regiments[0];
 
   const getType = (): string => {
-    const typesA = Object.keys(attacker.u).map(name => options.military.find(u => u.name === name)!.type);
-    const typesD = Object.keys(defender.u).map(name => options.military.find(u => u.name === name)!.type);
+    const typesA = Object.keys(attacker.u).map(name => facts.military.units.find(u => u.name === name)!.type);
+    const typesD = Object.keys(defender.u).map(name => facts.military.units.find(u => u.name === name)!.type);
 
     if (attacker.n && defender.n) return "naval"; // attacker and defender are navals
     if (typesA.every(t => t === "aviation") && typesD.every(t => t === "aviation")) return "air"; // if attackers and defender have only aviation units
@@ -525,7 +525,7 @@ function getTypeName(): string {
 function addHeaders(): void {
   let headers = "<thead><tr><th></th><th></th>";
 
-  for (const u of options.military) {
+  for (const u of facts.military.units) {
     const label = capitalize(u.name.replace(/_/g, " "));
     const isExternal = u.icon.startsWith("http") || u.icon.startsWith("data:image");
     const iconHTML = isExternal ? `<img src="${u.icon}" width="15" height="15">` : u.icon;
@@ -546,7 +546,7 @@ function addRegimentToSide(side: Side, regiment: Regiment): void {
   regiment.survivors = { ...regiment.u };
 
   const state = pack.states[regiment.state];
-  const distance = (Math.hypot(b.y - regiment.by, b.x - regiment.bx) * options.units.distance.scale) | 0; // distance between regiment and its base
+  const distance = (Math.hypot(b.y - regiment.by, b.x - regiment.bx) * facts.units.distance.scale) | 0; // distance between regiment and its base
   const color = state.color?.[0] === "#" ? state.color : "#999";
 
   const isExternal = regiment.icon!.startsWith("http") || regiment.icon!.startsWith("data:image");
@@ -564,9 +564,9 @@ function addRegimentToSide(side: Side, regiment: Regiment): void {
     0,
     26
   )}</td>`;
-  let survivorsRow = `<tr class="battleSurvivors"><td></td><td data-tip="Supply line length, affects morale">Distance to base: ${distance} ${options.units.distance.unit}</td>`;
+  let survivorsRow = `<tr class="battleSurvivors"><td></td><td data-tip="Supply line length, affects morale">Distance to base: ${distance} ${facts.units.distance.unit}</td>`;
 
-  for (const u of options.military) {
+  for (const u of facts.military.units) {
     initial += `<td data-tip="Initial forces" style="width: 2.5em; text-align: center">${regiment.u[u.name] || 0}</td>`;
     casualtiesRow += `<td data-tip="Casualties" style="width: 2.5em; text-align: center; color: red">0</td>`;
     survivorsRow += `<td data-tip="Survivors" style="width: 2.5em; text-align: center; color: green">${
@@ -591,7 +591,7 @@ function addSide(): void {
   const body = ensureEl("regimentSelectorBody");
   const regiments = pack.states.filter(s => s.military && !s.removed).flatMap(s => s.military!);
 
-  const distance = (reg: Regiment): number => rn(Math.hypot(b.y - reg.y, b.x - reg.x) * options.units.distance.scale);
+  const distance = (reg: Regiment): number => rn(Math.hypot(b.y - reg.y, b.x - reg.x) * facts.units.distance.scale);
   const isAdded = (reg: Regiment): boolean =>
     b.defenders.regiments.some(r => r === reg) || b.attackers.regiments.some(r => r === reg);
 
@@ -600,7 +600,7 @@ function addSide(): void {
       const s = pack.states[r.state];
       const added = isAdded(r);
       const dist = added ? 0 : distance(r);
-      const distLabel = `${dist} ${options.units.distance.unit}`;
+      const distLabel = `${dist} ${facts.units.distance.unit}`;
       return `<div ${added ? "class='inactive'" : ""} data-s=${s.i} data-i=${r.i} data-state=${
         s.name
       } data-regiment=${r.name}
@@ -886,8 +886,9 @@ function calculateStrength(side: Side): void {
 
   const forces = getJoinedForces(b[side].regiments);
   const phase = b[side].phase!;
-  const adjuster = Math.max(options.units.population.scale / 10, 10); // population adjuster, by default 100
-  b[side].power = sum(options.military.map(u => (forces[u.name] || 0) * u.power * scheme[phase][u.type])) / adjuster;
+  const adjuster = Math.max(facts.units.population.scale / 10, 10); // population adjuster, by default 100
+  b[side].power =
+    sum(facts.military.units.map(u => (forces[u.name] || 0) * u.power * scheme[phase][u.type])) / adjuster;
   const uiValue = b[side].power ? Math.max(b[side].power | 0, 1) : 0;
   ensureEl(`battlePower_${side}`).innerHTML = String(uiValue);
 }
@@ -950,7 +951,7 @@ function selectPhase(): void {
       const total = sum(Object.values(forces)); // total forces
       const ranged =
         sum(
-          options.military
+          facts.military.units
             .filter(u => u.type === "ranged")
             .map(u => u.name)
             .map(u => forces[u])
@@ -991,7 +992,7 @@ function selectPhase(): void {
     if (P((powerRatio - 1) / 2)) return ["storming", "defense"]; // start storm
 
     if (prev[0] !== "storming") {
-      const machinery = options.military.filter(u => u.type === "machinery").map(u => u.name); // machinery units
+      const machinery = facts.military.units.filter(u => u.type === "machinery").map(u => u.name); // machinery units
 
       const attackersForces = getJoinedForces(b.attackers.regiments);
       const machineryA = sum(machinery.map(u => attackersForces[u]));
@@ -1178,7 +1179,7 @@ function updateTable(side: Side): void {
     const battleSurvivors = tbody.querySelector(".battleSurvivors")!;
 
     let index = 3; // index to find table element easily
-    for (const u of options.military) {
+    for (const u of facts.military.units) {
       battleCasualties.querySelector(`td:nth-child(${index})`)!.innerHTML = String(r.casualties![u.name] || 0);
       battleSurvivors.querySelector(`td:nth-child(${index})`)!.innerHTML = String(r.survivors![u.name] || 0);
       index++;
@@ -1293,7 +1294,7 @@ function applyResults(): void {
         .map(t => (r.casualties![t] ? `${Math.abs(r.casualties![t])} ${t}` : null))
         .filter((c): c is string => Boolean(c));
       const casualtiesText = casualtiesList.length ? ` Casualties: ${list(casualtiesList)}.` : "";
-      const legend = `<br><br>${battleName} (${options.lore.calendar.year} ${options.lore.calendar.eraShort}): ${status}. The regiment ${regStatus}.${initialText}${casualtiesText}`;
+      const legend = `<br><br>${battleName} (${facts.lore.calendar.year} ${facts.lore.calendar.eraShort}): ${status}. The regiment ${regStatus}.${initialText}${casualtiesText}`;
       note.legend += legend;
     }
 
@@ -1343,7 +1344,7 @@ function applyResults(): void {
 
   const status = battleStatus[+P(0.7)];
   const result = `The ${getTypeName()} ended in ${status}`;
-  let legend = `${b.name} took place in ${options.lore.calendar.year} ${options.lore.calendar.eraShort}. It was fought between ${getSide(
+  let legend = `${b.name} took place in ${facts.lore.calendar.year} ${facts.lore.calendar.eraShort}. It was fought between ${getSide(
     b.attackers.regiments,
     1
   )} and ${getSide(b.defenders.regiments, 0)}. ${result}.

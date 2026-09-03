@@ -40,7 +40,7 @@ export async function checkLoadParameters(): Promise<void> {
     return;
   }
 
-  if (ensureEl<HTMLSelectElement>("onloadBehavior").value === "lastSaved") {
+  if (options.view.onLoad === "lastSaved") {
     try {
       const blob = await ldb.get("lastMap");
       if (blob) {
@@ -103,8 +103,8 @@ export function focusOn(): void {
   }
 
   zoomTo(
-    +(params.get("x") ?? 0) || options.graph.width / 2,
-    +(params.get("y") ?? 0) || options.graph.height / 2,
+    +(params.get("x") ?? 0) || facts.graph.width / 2,
+    +(params.get("y") ?? 0) || facts.graph.height / 2,
     zoom,
     1600
   );
@@ -172,7 +172,7 @@ function findBurgForMFCG(params: URLSearchParams): void {
 export function copyMapURL(): void {
   const isRandomized = !document.querySelectorAll("i.icon-lock").length;
   const seedValue = ensureEl<HTMLInputElement>("seedInput").value;
-  const search = `?seed=${seedValue}&width=${options.graph.width}&height=${options.graph.height}${isRandomized ? "&options=default" : ""}`;
+  const search = `?seed=${seedValue}&width=${facts.graph.width}&height=${facts.graph.height}${isRandomized ? "&options=default" : ""}`;
 
   navigator.clipboard
     .writeText(location.host + location.pathname + search)

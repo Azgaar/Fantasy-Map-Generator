@@ -56,13 +56,13 @@ function prepareMapData(): string {
     VERSION,
     license,
     dateString,
-    options.seed,
-    options.graph.width,
-    options.graph.height,
+    facts.seed,
+    facts.graph.width,
+    facts.graph.height,
     mapHistory.at(-1)?.created ?? Date.now() // the map id: when the map on screen was created
   ].join("|");
 
-  const settings = JSON.stringify(options);
+  const settings = JSON.stringify(facts); // the map's facts; this browser's options stay out
   const notesData = JSON.stringify(notes);
   const measurers = JSON.stringify(pack.measurers ?? []);
   const journeys = JSON.stringify(pack.journeys ?? []);
@@ -74,8 +74,8 @@ function prepareMapData(): string {
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
 
   // reset transform values to default
-  cloneEl.setAttribute("width", String(options.graph.width));
-  cloneEl.setAttribute("height", String(options.graph.height));
+  cloneEl.setAttribute("width", String(facts.graph.width));
+  cloneEl.setAttribute("height", String(facts.graph.height));
   cloneEl.querySelector("#viewbox")?.removeAttribute("transform");
 
   // relief icons are stored in pack.relief, the layer holds only the currently visible ones
@@ -138,7 +138,7 @@ function prepareMapData(): string {
   const mapData = [
     params,
     settings,
-    "", // deprecated separate mapCoordinates, now options.geography.coordinates
+    "", // deprecated separate mapCoordinates, now facts.geography.coordinates
     biomes,
     notesData,
     serializedSVG,

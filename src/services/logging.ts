@@ -16,23 +16,23 @@ declare global {
 }
 
 export function logStats(): void {
-  const heightmap = options.heightmap.template;
+  const heightmap = facts.heightmap.template;
   const isTemplate = heightmap in heightmapTemplates;
   const heightmapType = isTemplate ? "template" : "precreated";
   const isRandomTemplate = isTemplate && !isLocked("template") ? "random " : "";
 
   INFO &&
-    console.info(` Seed: ${options.seed}
-    Canvas size: ${options.graph.width}x${options.graph.height} px
+    console.info(` Seed: ${facts.seed}
+    Canvas size: ${facts.graph.width}x${facts.graph.height} px
     Heightmap: ${heightmap}
     Template: ${isRandomTemplate}${heightmapType}
     Points: ${grid.points.length}
     Cells: ${pack.cells.i.length}
-    Map size: ${options.geography.mapSize}%
+    Map size: ${facts.geography.mapSize}%
     States: ${pack.states.length - 1}
     Provinces: ${pack.provinces.length - 1}
     Burgs: ${pack.burgs.length - 1}
     Religions: ${pack.religions.length - 1}
-    Culture set: ${options.cultures.set}
+    Culture set: ${facts.cultures.set}
     Cultures: ${pack.cultures.length - 1}`);
 }

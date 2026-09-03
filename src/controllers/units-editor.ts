@@ -1,5 +1,5 @@
 // The Units Editor: the distance, altitude, temperature and population scales a map is read in.
-// Every control here edits `options.units` - the dialog is built and filled from the object on open,
+// Every control here edits `facts.units` - the dialog is built and filled from the object on open,
 // and nothing outside reads its inputs
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
@@ -141,7 +141,7 @@ function renderDialog(): void {
 
 /** The object is the source: push every unit it holds into the control that shows it */
 function fillInputs(): void {
-  const { distance, area, height, temperature, population } = options.units;
+  const { distance, area, height, temperature, population } = facts.units;
 
   // a unit the user named themselves is not among the options of its select until it is put back there
   applyOption(ensureEl("distanceUnitInput"), distance.unit);
@@ -156,16 +156,42 @@ function fillInputs(): void {
   ensureEl<HTMLInputElement>("urbanDensityInput").value = String(population.urbanization.density);
 }
 
-// The `data-stored` delegation in the Options tab writes and pins every control here. These
-// listeners own the custom unit names and the redraws a change asks for, and write the value they
-// redraw from themselves rather than counting on running after the delegated writer
+// Units are facts of the map, and this dialog is the only writer of them: it owns every control
+// it shows, writes the value it redraws from, and pins what the user set by hand
 function addListeners(): void {
   ensureEl("distanceUnitInput").addEventListener("change", changeDistanceUnit);
   ensureEl("distanceScaleInput").addEventListener("change", changeDistanceScale);
   ensureEl("heightUnit").addEventListener("change", changeHeightUnit);
   ensureEl("heightExponentInput").addEventListener("change", changeHeightExponent);
   ensureEl("temperatureScale").addEventListener("change", changeTemperatureScale);
+  ensureEl("areaUnit").addEventListener("change", changeAreaUnit);
+  ensureEl("populationRateInput").addEventListener("change", changePopulationRate);
+  ensureEl("urbanizationInput").addEventListener("change", changeUrbanization);
+  ensureEl("urbanDensityInput").addEventListener("change", changeUrbanDensity);
   ensureEl("unitsRestore").addEventListener("click", restoreDefaultUnits);
+}
+
+function changeAreaUnit(this: HTMLInputElement): void {
+  Facts.set(f => (f.units.area.unit = this.value));
+  lock("areaUnit");
+}
+
+function changePopulationRate(this: HTMLInputElement, event: Event): void {
+  if (isInnerSliderEvent(event)) return;
+  Facts.set(f => (f.units.population.scale = +this.value));
+  lock("populationRate");
+}
+
+function changeUrbanization(this: HTMLInputElement, event: Event): void {
+  if (isInnerSliderEvent(event)) return;
+  Facts.set(f => (f.units.population.urbanization.rate = +this.value));
+  lock("urbanization");
+}
+
+function changeUrbanDensity(this: HTMLInputElement, event: Event): void {
+  if (isInnerSliderEvent(event)) return;
+  Facts.set(f => (f.units.population.urbanization.density = +this.value));
+  lock("urbanDensity");
 }
 
 function changeDistanceUnit(this: HTMLSelectElement): void {
@@ -182,29 +208,36 @@ function changeDistanceUnit(this: HTMLSelectElement): void {
 }
 
 function setDistanceUnit(unit: string): void {
-  Options.set(o => (o.units.distance.unit = unit));
+  Facts.set(f => (f.units.distance.unit = unit));
+  lock("distanceUnit");
   redrawDistances();
 }
 
 function changeDistanceScale(this: HTMLInputElement, event: Event): void {
   if (isInnerSliderEvent(event)) return;
-  Options.set(o => (o.units.distance.scale = +this.value));
+  Facts.set(f => (f.units.distance.scale = +this.value));
+  lock("distanceScale");
   redrawDistances();
 }
 
 function changeHeightUnit(this: HTMLSelectElement): void {
-  if (this.value !== "custom_name") return;
+  if (this.value !== "custom_name") {
+    Facts.set(f => (f.units.height.unit = this.value));
+    lock("heightUnit");
+    return;
+  }
 
   prompt("Provide a custom name for a height unit", { default: "" }, custom => {
     this.options.add(new Option(String(custom), String(custom), false, true));
-    Options.set(o => (o.units.height.unit = String(custom)));
+    Facts.set(f => (f.units.height.unit = String(custom)));
     lock("heightUnit");
   });
 }
 
 function changeHeightExponent(this: HTMLInputElement, event: Event): void {
   if (isInnerSliderEvent(event)) return;
-  Options.set(o => (o.units.height.exponent = +this.value));
+  Facts.set(f => (f.units.height.exponent = +this.value));
+  lock("heightExponent");
   Temperature.generate();
   Layers.draw("temperature");
 }
@@ -213,7 +246,8 @@ function changeHeightExponent(this: HTMLInputElement, event: Event): void {
 const isInnerSliderEvent = (event: Event): boolean => event.target !== event.currentTarget;
 
 function changeTemperatureScale(this: HTMLSelectElement): void {
-  Options.set(o => (o.units.temperature.unit = this.value));
+  Facts.set(f => (f.units.temperature.unit = this.value));
+  lock("temperatureScale");
   Layers.draw("temperature");
 }
 
@@ -227,16 +261,16 @@ function restoreDefaultUnits(): void {
   const US = navigator.language === "en-US";
   const UK = navigator.language === "en-GB";
 
-  Options.set(o => {
-    o.units.distance.scale = 3;
-    o.units.distance.unit = US || UK ? "mi" : "km";
-    o.units.height.unit = US || UK ? "ft" : "m";
-    o.units.height.exponent = 1.8;
-    o.units.temperature.unit = US ? "°F" : "°C";
-    o.units.area.unit = "square";
-    o.units.population.scale = 1000;
-    o.units.population.urbanization.rate = 1;
-    o.units.population.urbanization.density = 10;
+  Facts.set(f => {
+    f.units.distance.scale = 3;
+    f.units.distance.unit = US || UK ? "mi" : "km";
+    f.units.height.unit = US || UK ? "ft" : "m";
+    f.units.height.exponent = 1.8;
+    f.units.temperature.unit = US ? "°F" : "°C";
+    f.units.area.unit = "square";
+    f.units.population.scale = 1000;
+    f.units.population.urbanization.rate = 1;
+    f.units.population.urbanization.density = 10;
   });
 
   for (const setting of [

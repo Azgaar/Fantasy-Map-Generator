@@ -17,7 +17,7 @@ addListeners();
 function open(): void {
   closeDialogs(".stable");
 
-  setSelected(options.heightmap.template);
+  setSelected(facts.heightmap.template);
   graph = getGraph(graph);
 
   $("#heightmapSelection").dialog({
@@ -31,7 +31,7 @@ function open(): void {
       Select: function (this: HTMLElement) {
         const id = getSelected();
         if (!id) return;
-        options.heightmap.template = id;
+        facts.heightmap.template = id;
         syncInputs();
         lock("template");
 
@@ -40,7 +40,7 @@ function open(): void {
       "New Map": function (this: HTMLElement) {
         const id = getSelected();
         if (!id) return;
-        options.heightmap.template = id;
+        facts.heightmap.template = id;
         syncInputs();
         lock("template");
 
@@ -135,7 +135,7 @@ function appendStyleSheet(): void {
 
     .heightmap-selection article > img {
       width: 100%;
-      aspect-ratio: ${options.graph.width}/${options.graph.height};
+      aspect-ratio: ${facts.graph.width}/${facts.graph.height};
       border-radius: 8px;
       object-fit: fill;
     }
@@ -273,8 +273,8 @@ function getSeed(): string | undefined {
 }
 
 function getGraph(currentGraph: GridGraph): GridGraph {
-  const newGraph = Grid.shouldRegenerate(currentGraph, options.seed, options.graph.width, options.graph.height)
-    ? Grid.generate(options.seed, options.graph.width, options.graph.height)
+  const newGraph = Grid.shouldRegenerate(currentGraph, facts.seed, facts.graph.width, facts.graph.height)
+    ? Grid.generate(facts.seed, facts.graph.width, facts.graph.height)
     : structuredClone(currentGraph);
   Grid.resetHeights(newGraph);
   return newGraph;

@@ -211,7 +211,7 @@ export const stylesSchema = z.strictObject({
   }),
   scaleBar: z.strictObject({
     attrs: z.strictObject({ opacity, fill: color, "font-size": z.number().nullable() }),
-    options: z.strictObject({ barSize: z.number(), x: z.number(), y: z.number(), label: z.string() }),
+    options: z.strictObject({ barSize: z.number() }),
     back: z.strictObject({
       attrs: z.strictObject({ opacity, ...fillAttrs, stroke: color, "stroke-width": strokeWidth, filter }),
       options: z.strictObject({ top: z.number(), right: z.number(), bottom: z.number(), left: z.number() })

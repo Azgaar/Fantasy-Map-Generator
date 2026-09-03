@@ -37,7 +37,7 @@ function open(): void {
 function renderDialog(): void {
   destroyDialog("transformTool");
 
-  const pointsValue = String(options.graph.density);
+  const pointsValue = String(options.nextMap.density);
   const cells = CELLS_BY_DENSITY[+pointsValue];
 
   const html = /* html */ `<div id="transformTool" class="dialog">
@@ -109,8 +109,8 @@ function cleanup(): void {
 
 async function loadPreview(): Promise<void> {
   const width = Math.min(400, window.innerWidth * 0.5);
-  const previewScale = width / options.graph.width;
-  const height = options.graph.height * previewScale;
+  const previewScale = width / facts.graph.width;
+  const height = facts.graph.height * previewScale;
 
   ensureEl("transformPreview").style.width = `${width}px`;
   ensureEl("transformPreview").style.height = `${height}px`;
@@ -140,7 +140,7 @@ function handlePointsInput(e: Event): void {
 
 function handleInput(): void {
   const width = Math.min(400, window.innerWidth * 0.5);
-  const previewScale = width / options.graph.width;
+  const previewScale = width / facts.graph.width;
 
   const angleDegrees = ensureEl<HTMLInputElement>("transformAngleInput").value;
   ensureEl<HTMLOutputElement>("transformAngleOutput").value = angleDegrees;
@@ -163,7 +163,7 @@ function handleInput(): void {
 
 function handleMousedown(e: MouseEvent): void {
   const width = Math.min(400, window.innerWidth * 0.5);
-  const previewScale = width / options.graph.width;
+  const previewScale = width / facts.graph.width;
 
   mouseIsDown = true;
   const shiftX = +ensureEl<HTMLInputElement>("transformShiftX").value;
@@ -181,7 +181,7 @@ function handleMousemove(e: MouseEvent): void {
   e.preventDefault();
 
   const width = Math.min(400, window.innerWidth * 0.5);
-  const previewScale = width / options.graph.width;
+  const previewScale = width / facts.graph.width;
 
   ensureEl<HTMLInputElement>("transformShiftX").value = String(Math.round(mouseX + e.clientX / previewScale));
   ensureEl<HTMLInputElement>("transformShiftY").value = String(Math.round(mouseY + e.clientY / previewScale));
@@ -198,7 +198,7 @@ function transformMap(): void {
   INFO && console.group("transformMap");
 
   const transformPointsValue = ensureEl<HTMLInputElement>("transformPointsInput").value;
-  const globalPointsValue = String(options.graph.density);
+  const globalPointsValue = String(options.nextMap.density);
   if (transformPointsValue !== globalPointsValue) changeCellsDensity(+transformPointsValue);
 
   const [projection, inverse] = getProjection();
@@ -218,8 +218,8 @@ function transformMap(): void {
 }
 
 function getProjection(): [(x: number, y: number) => [number, number], (x: number, y: number) => [number, number]] {
-  const centerX = options.graph.width / 2;
-  const centerY = options.graph.height / 2;
+  const centerX = facts.graph.width / 2;
+  const centerY = facts.graph.height / 2;
   const shiftX = +ensureEl<HTMLInputElement>("transformShiftX").value;
   const shiftY = +ensureEl<HTMLInputElement>("transformShiftY").value;
   const angle = (+ensureEl<HTMLInputElement>("transformAngleInput").value / 180) * Math.PI;

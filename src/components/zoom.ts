@@ -53,7 +53,7 @@ function handleZoomPerFrame(): void {
   if (didScaleChange) {
     Layers.draw("scaleBar");
 
-    if (options.labels.resizeOnZoom) applyLabelsZoomSize();
+    if (facts.labels.resizeOnZoom) applyLabelsZoomSize();
   }
 
   if (didPositionChange) Layers.draw("coordinates");
@@ -99,7 +99,7 @@ function applyLabelsZoomSize(): void {
 export function invokeActiveZooming(): void {
   const isOptimized = ensureEl<HTMLSelectElement>("shapeRendering").value === "optimizeSpeed";
 
-  if (options.labels.resizeOnZoom) applyLabelsZoomSize();
+  if (facts.labels.resizeOnZoom) applyLabelsZoomSize();
   ViewportLayers.renderNow();
 
   if (!customization && !isOptimized) {

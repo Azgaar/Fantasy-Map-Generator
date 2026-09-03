@@ -14,7 +14,7 @@ let lastRadius = 0;
 let inRangeMarkers: Marker[] = [];
 
 function defaultRadius(): number {
-  const distance = (Math.min(viewport.width, viewport.height) / 4) * options.units.distance.scale;
+  const distance = (Math.min(viewport.width, viewport.height) / 4) * facts.units.distance.scale;
   const magnitude = 10 ** Math.floor(Math.log10(distance || 1));
   return Math.max(1, Math.round(distance / magnitude) * magnitude);
 }
@@ -57,7 +57,7 @@ function renderDialog(): void {
       <div data-tip="Radius around the marker, in the map's distance unit — markers inside it are listed and shown on the map">
         <span class="label" style="display:inline">Radius:</span>
         <input id="markersRadiusValue" type="number" min="1" step="1" value="${getRadius()}" style="width:6em" />
-        <span>${options.units.distance.unit}</span>
+        <span>${facts.units.distance.unit}</span>
       </div>
 
       <div class="label" style="margin-top:.4em">In range: <span id="markersRadiusCount">0</span></div>
@@ -86,7 +86,7 @@ function onRadiusChange(this: HTMLInputElement): void {
 function applyRadius(distance: number): void {
   if (!center) return;
 
-  const radiusPx = distance / options.units.distance.scale;
+  const radiusPx = distance / facts.units.distance.scale;
   drawMarkerRadius(center.x, center.y, radiusPx);
 
   const inRange = pack.markers.filter(marker => Math.hypot(marker.x - center!.x, marker.y - center!.y) <= radiusPx);
@@ -193,8 +193,8 @@ function exportInRange(): void {
     const culture = pack.cultures[pack.cells.culture[cell]];
     const stateName = state ? quote(state.fullName || state.name) : "";
     const cultureName = culture ? quote(culture.name) : "";
-    const lat = getLatitude(y, options.geography.coordinates, options.graph.height, 2);
-    const lon = getLongitude(x, options.geography.coordinates, options.graph.width, 2);
+    const lat = getLatitude(y, facts.geography.coordinates, facts.graph.height, 2);
+    const lon = getLongitude(x, facts.geography.coordinates, facts.graph.width, 2);
     return [i, type, icon, name, legend, stateName, cultureName, x, y, lat, lon].join(",");
   });
 

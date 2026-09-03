@@ -215,8 +215,8 @@ function biomesEditorAddLines(view: TableView<Biome>, statistics: BiomeStatistic
     const { i, name, color, habitability } = biome;
     const { cells, area: rawArea, rural: rawRural, urban: rawUrban } = statistics[i];
     const area = getArea(rawArea);
-    const rural = rawRural * options.units.population.scale;
-    const urban = rawUrban * options.units.population.scale * options.units.population.urbanization.rate;
+    const rural = rawRural * facts.units.population.scale;
+    const urban = rawUrban * facts.units.population.scale * facts.units.population.urbanization.rate;
     const population = rn(rural + urban);
     const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}`;
     lines += /* html */ `
@@ -256,8 +256,8 @@ function biomesEditorAddLines(view: TableView<Biome>, statistics: BiomeStatistic
     const statistic = statistics[biome.i];
     totalArea += getArea(statistic.area);
     totalPopulation += rn(
-      statistic.rural * options.units.population.scale +
-        statistic.urban * options.units.population.scale * options.units.population.urbanization.rate
+      statistic.rural * facts.units.population.scale +
+        statistic.urban * facts.units.population.scale * facts.units.population.urbanization.rate
     );
   }
   const totalMapArea = getArea(sum(pack.cells.area));
@@ -448,15 +448,15 @@ function removeCustomBiomeLine(el: HTMLElement): void {
 }
 
 function downloadBiomesData(): void {
-  const unit = options.units.area.unit === "square" ? `${options.units.distance.unit}2` : options.units.area.unit;
+  const unit = facts.units.area.unit === "square" ? `${facts.units.distance.unit}2` : facts.units.area.unit;
   let data = `Id,Biome,Color,Habitability,Cells,Area ${unit},Population\n`; // headers
   const statistics = biomesCollectStatistics();
   for (const biome of pack.biomes) {
     if (!biome.i || biome.removed) continue;
     const { cells, area, rural, urban } = statistics[biome.i];
     const population = rn(
-      rural * options.units.population.scale +
-        urban * options.units.population.scale * options.units.population.urbanization.rate
+      rural * facts.units.population.scale +
+        urban * facts.units.population.scale * facts.units.population.urbanization.rate
     );
     data += `${biome.i},${biome.name},${biome.color},${biome.habitability}%,${cells},${getArea(area)},${population}\n`;
   }

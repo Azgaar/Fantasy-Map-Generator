@@ -1,7 +1,8 @@
 import { hsl, select } from "d3";
-import { applyGraphSize, fitMapToScreen } from "@/components/canvas";
+import type { FactsData } from "@/components/facts-schema";
 import { Layers } from "@/components/layers";
-import type { OptionsData } from "@/components/options-store";
+import { getDefaultOptions, type OptionsData, THEME_COLOR } from "@/components/options-schema";
+import { PINNABLE } from "@/components/pinnable";
 import { generateMapWithSeed, showSeedHistoryDialog } from "@/components/seed";
 import { tip } from "@/components/tooltips";
 import { setMapZoom, setTranslateExtent, setZoomExtent } from "@/components/zoom";
@@ -16,7 +17,7 @@ import { toggleAssistant } from "@/services/assistant";
 import { copyMapURL } from "@/services/url-params";
 import { applyOption, ensureEl, findEl } from "@/utils/nodeUtils";
 import { minmax, rn } from "@/utils/numberUtils";
-import { bindLockIcons, lock, store, stored, unlock } from "@/utils/preferences";
+import { bindLockIcons, lock, unlock } from "@/utils/preferences";
 
 const TEMPLATE = /* html */ `
   <p data-tip="Map generation settings. Generate a new map to apply the settings">
@@ -267,14 +268,14 @@ const TEMPLATE = /* html */ `
         <input id="themeHueInput" type="range" min="0" max="359" />
       </td>
       <td>
-        <input id="themeColorInput" data-stored="themeColor" type="color" />
+        <input id="themeColorInput" type="color" />
       </td>
     </tr>
     <tr data-tip="Set dialog and tool windows transparency">
       <td></td>
       <td>Transparency</td>
       <td colspan="2">
-        <slider-input id="transparencyInput" data-stored="transparency" min="0" max="100"></slider-input>
+        <slider-input id="transparencyInput" min="0" max="100"></slider-input>
       </td>
     </tr>
     <tr data-tip="Set autosave interval in minutes. Set 0 to disable autosave. Map is saved to browser memory">
@@ -335,9 +336,8 @@ const TEMPLATE = /* html */ `
       </td>
     </tr>
     <tr data-tip="Select emblem shape. Can be changed indivudually in Emblem editor">
-      <td>
-        <i data-locked="0" id="lock_emblemShape" class="icon-lock"></i>
-      </td>
+      <td></td>
+      <!-- no lock: the shape is an interface preference, kept by this browser whatever map is on screen -->
       <td>Emblem shape</td>
       <td>
         <select id="emblemShape" data-stored="emblemShape">
@@ -490,70 +490,108 @@ const TEMPLATE = /* html */ `
   </div>
 `;
 
-type Setting = {
+type Setting<T> = {
   key: string; // the id the input carries in `data-stored`, and the key its lock is kept under
-  get: (options: OptionsData) => string | number;
-  set: (options: OptionsData, value: string) => void;
+  get: (source: T) => string | number | null; // null: nothing chosen yet, the control keeps its own value
+  set?: (target: T, value: string) => void; // absent when the row is a readout with its own action
 };
 
-/** Every setting this tab shows */
-const PANEL_SETTINGS: Setting[] = [
-  { key: "seed", get: o => o.seed, set: (o, v) => (o.seed = v) },
-  { key: "mapName", get: o => o.lore.name, set: (o, v) => (o.lore.name = v) },
-  { key: "mapWidth", get: o => o.graph.width, set: (o, v) => (o.graph.width = +v) },
-  { key: "mapHeight", get: o => o.graph.height, set: (o, v) => (o.graph.height = +v) },
-  { key: "template", get: o => o.heightmap.template, set: (o, v) => (o.heightmap.template = v) },
+/**
+ * Requests: what the next map will be generated with. Editing one changes nothing on screen -
+ * the tab says so in its own heading. See docs/architecture/configuration.md
+ */
+const REQUEST_SETTINGS: Setting<OptionsData>[] = [
+  { key: "mapWidth", get: o => o.nextMap.width, set: (o, v) => (o.nextMap.width = +v) },
+  { key: "mapHeight", get: o => o.nextMap.height, set: (o, v) => (o.nextMap.height = +v) },
+  { key: "template", get: o => o.generation.template, set: (o, v) => (o.generation.template = v) },
   {
     key: "resolveDepressionsSteps",
-    get: o => o.heightmap.resolveDepressionsSteps,
-    set: (o, v) => (o.heightmap.resolveDepressionsSteps = +v)
+    get: o => o.generation.resolveDepressionsSteps,
+    set: (o, v) => (o.generation.resolveDepressionsSteps = +v)
   },
   {
     key: "lakeElevationLimit",
-    get: o => o.heightmap.lakeElevationLimit,
-    set: (o, v) => (o.heightmap.lakeElevationLimit = +v)
+    get: o => o.generation.lakeElevationLimit,
+    set: (o, v) => (o.generation.lakeElevationLimit = +v)
   },
-  { key: "year", get: o => o.lore.calendar.year, set: (o, v) => (o.lore.calendar.year = +v) },
-  {
-    key: "era",
-    get: o => o.lore.calendar.era,
-    set: (o, v) => {
-      o.lore.calendar.era = v;
-      o.lore.calendar.eraShort = Options.shortEra();
-    }
-  },
-  { key: "cultures", get: o => o.cultures.limit, set: (o, v) => (o.cultures.limit = +v) },
-  { key: "culturesSet", get: o => o.cultures.set, set: (o, v) => (o.cultures.set = v) },
-  { key: "statesNumber", get: o => o.states.limit, set: (o, v) => (o.states.limit = +v) },
+  { key: "cultures", get: o => o.generation.cultures.limit, set: (o, v) => (o.generation.cultures.limit = +v) },
+  { key: "culturesSet", get: o => o.generation.cultures.set, set: (o, v) => (o.generation.cultures.set = v) },
+  { key: "statesNumber", get: o => o.generation.states.limit, set: (o, v) => (o.generation.states.limit = +v) },
   {
     key: "growthRate",
-    get: o => o.states.growthRate,
+    get: o => o.generation.states.growthRate,
     set: (o, v) => {
-      o.states.growthRate = +v;
-      o.cultures.growthRate = +v;
+      o.generation.states.growthRate = +v;
+      o.generation.cultures.growthRate = +v;
     }
   },
-  { key: "sizeVariety", get: o => o.states.sizeVariety, set: (_o, v) => Options.setSizeVariety(+v) },
-  { key: "provincesRatio", get: o => o.provinces.ratio, set: (o, v) => (o.provinces.ratio = +v) },
-  { key: "manors", get: o => o.burgs.limit, set: (o, v) => (o.burgs.limit = +v) },
-  { key: "religionsNumber", get: o => o.religions.limit, set: (o, v) => (o.religions.limit = +v) },
-  { key: "heightExponent", get: o => o.units.height.exponent, set: (o, v) => (o.units.height.exponent = +v) },
-  { key: "populationRate", get: o => o.units.population.scale, set: (o, v) => (o.units.population.scale = +v) },
+  { key: "sizeVariety", get: o => o.generation.states.sizeVariety, set: (_o, v) => Options.setSizeVariety(+v) },
+  { key: "provincesRatio", get: o => o.generation.provinces.ratio, set: (o, v) => (o.generation.provinces.ratio = +v) },
+  { key: "manors", get: o => o.generation.burgs.limit, set: (o, v) => (o.generation.burgs.limit = +v) },
+  { key: "religionsNumber", get: o => o.generation.religions.limit, set: (o, v) => (o.generation.religions.limit = +v) }
+];
+
+/**
+ * Preferences: what this browser wants, whatever map is on screen. They take effect the moment
+ * they change, nothing generated depends on them, and no lock pins them - there is nothing to pin
+ * a value against when it is never re-rolled. A row with no `set` is written by the dialog that
+ * owns the control; the table still gives the panel a way to show it
+ */
+const PREFERENCE_SETTINGS: Setting<OptionsData>[] = [
+  { key: "uiSize", get: o => o.view.ui.size, set: (o, v) => (o.view.ui.size = +v) },
+  { key: "tooltipSize", get: o => o.view.ui.tooltipSize, set: (o, v) => (o.view.ui.tooltipSize = +v) },
+  { key: "azgaarAssistant", get: o => o.view.ui.assistant, set: (o, v) => (o.view.ui.assistant = v) },
+  { key: "speakerVoice", get: o => o.view.ui.speakerVoice, set: (o, v) => (o.view.ui.speakerVoice = v) },
+  { key: "emblemShape", get: o => o.view.emblemShape, set: (o, v) => (o.view.emblemShape = v) },
+  { key: "shapeRendering", get: o => o.view.rendering, set: (o, v) => (o.view.rendering = v) },
+  { key: "onloadBehavior", get: o => o.view.onLoad, set: (o, v) => (o.view.onLoad = v) },
+  { key: "autosaveInterval", get: o => o.view.autosave.interval, set: (o, v) => (o.view.autosave.interval = +v) },
+
+  // the zoom extent is normalised as a pair, and the theme as a colour and its transparency, so
+  // each group keeps a writer of its own and the table only shows what that writer settled on
+  { key: "zoomExtentMin", get: o => o.view.zoomExtent.min },
+  { key: "zoomExtentMax", get: o => o.view.zoomExtent.max },
+
+  // the export dialogs own these controls and write them; see components/options/io-panes.ts
+  { key: "pngResolution", get: o => o.view.export.pngResolution },
+  { key: "tileCols", get: o => o.view.export.tiles.cols },
+  { key: "tileRows", get: o => o.view.export.tiles.rows },
+  { key: "tileScale", get: o => o.view.export.tiles.scale }
+];
+
+/** Every control `options` answers for, requests and preferences alike */
+const OPTION_SETTINGS: Setting<OptionsData>[] = [...REQUEST_SETTINGS, ...PREFERENCE_SETTINGS];
+
+/**
+ * Facts: what is true about the map on screen. Editing one changes the map now, so these write
+ * `facts` and never a request. The Units editor owns its own controls the same way
+ */
+const FACT_SETTINGS: Setting<FactsData>[] = [
+  { key: "seed", get: f => f.seed }, // a readout: typing a seed regenerates rather than editing this map
+  // the depression settings are the one pair of controls that answer to both objects: the heightmap
+  // being customized re-derives its rivers and lakes from the fact as the slider moves, and the
+  // request is what the next map starts from. Two names, two objects, one control - see
+  // docs/architecture/configuration.md#generation-mechanics
   {
-    key: "urbanization",
-    get: o => o.units.population.urbanization.rate,
-    set: (o, v) => (o.units.population.urbanization.rate = +v)
+    key: "resolveDepressionsSteps",
+    get: f => f.heightmap.resolveDepressionsSteps,
+    set: (f, v) => (f.heightmap.resolveDepressionsSteps = +v)
   },
   {
-    key: "urbanDensity",
-    get: o => o.units.population.urbanization.density,
-    set: (o, v) => (o.units.population.urbanization.density = +v)
+    key: "lakeElevationLimit",
+    get: f => f.heightmap.lakeElevationLimit,
+    set: (f, v) => (f.heightmap.lakeElevationLimit = +v)
   },
-  { key: "distanceScale", get: o => o.units.distance.scale, set: (o, v) => (o.units.distance.scale = +v) },
-  { key: "distanceUnit", get: o => o.units.distance.unit, set: (o, v) => (o.units.distance.unit = v) },
-  { key: "heightUnit", get: o => o.units.height.unit, set: (o, v) => (o.units.height.unit = v) },
-  { key: "areaUnit", get: o => o.units.area.unit, set: (o, v) => (o.units.area.unit = v) },
-  { key: "temperatureScale", get: o => o.units.temperature.unit, set: (o, v) => (o.units.temperature.unit = v) }
+  { key: "mapName", get: f => f.lore.name, set: (f, v) => (f.lore.name = v) },
+  { key: "year", get: f => f.lore.calendar.year, set: (f, v) => (f.lore.calendar.year = +v) },
+  {
+    key: "era",
+    get: f => f.lore.calendar.era,
+    set: (f, v) => {
+      f.lore.calendar.era = v;
+      f.lore.calendar.eraShort = Facts.shortEra();
+    }
+  }
 ];
 
 ensureEl("optionsContent").innerHTML = TEMPLATE;
@@ -571,12 +609,12 @@ function addListeners(): void {
     else if (id === "culturesSet") changeCultureSet(value);
     else if (id === "statesNumber") changeStatesNumber(+value);
     else if (id === "emblemShape") changeEmblemShape(value);
-    else if (id === "tooltipSize") changeTooltipSize(value);
+    else if (id === "tooltipSize") changeTooltipSize(+value);
     else if (id === "themeHueInput") changeThemeHue(value);
     else if (id === "themeColorInput" || id === "transparencyInput") {
-      changeDialogsTheme(
+      setTheme(
         ensureEl<HTMLInputElement>("themeColorInput").value,
-        ensureEl<HTMLInputElement>("transparencyInput").value
+        +ensureEl<HTMLInputElement>("transparencyInput").value
       );
     }
   });
@@ -589,7 +627,7 @@ function addListeners(): void {
     else if (id === "shapeRendering") setRendering(value);
     else if (id === "yearInput") changeYear();
     else if (id === "eraInput") changeEra();
-    else if (id === "azgaarAssistant") toggleAssistant();
+    else if (id === "azgaarAssistant") toggleAssistant(value === "show");
   });
 
   content.addEventListener("click", event => {
@@ -609,24 +647,28 @@ function addListeners(): void {
   });
 }
 
-/** Push every setting the tab shows into its input, so the DOM reflects the object */
+/** Push every setting the tab shows into its input, so the DOM reflects the objects behind it */
 export function syncInputs(): void {
-  for (const { key, get } of PANEL_SETTINGS) {
-    if (key === "template") continue; // a select whose options are added on demand, see below
-
-    const value = String(get(options));
+  const push = (key: string, value: string | number | null) => {
+    if (value === null) return; // nothing chosen yet: the control keeps the value it derived
     const input = inputFor(key);
-    if (input) input.value = value;
+    if (input) input.value = String(value);
     const output = findEl<HTMLOutputElement>(`${key}Output`);
-    if (output) output.value = value;
-  }
+    if (output) output.value = String(value);
+  };
 
-  const id = options.heightmap.template;
+  for (const { key, get } of OPTION_SETTINGS) {
+    if (key === "template") continue; // a select whose options are added on demand, see below
+    push(key, get(options));
+  }
+  for (const { key, get } of FACT_SETTINGS) push(key, get(facts));
+
+  const id = options.generation.template;
   const template = findEl<HTMLSelectElement>("templateInput");
   if (template && id) applyOption(template, id, heightmapTemplates[id]?.name || precreatedHeightmaps[id]?.name || id);
 
   const manors = findEl<HTMLOutputElement>("manorsOutput");
-  if (manors) manors.value = Options.isAutoBurgLimit ? "auto" : String(options.burgs.limit);
+  if (manors) manors.value = Options.isAutoBurgLimit() ? "auto" : String(options.generation.burgs.limit);
 
   syncCellsDensity(); // the Points slider shows a step, the object holds the cell count it resolves to
   syncCultures(); // the cultures slider is capped by the selected set
@@ -637,59 +679,51 @@ export function syncInputs(): void {
  * pinned under. Every control writes to the object, never the other way round
  */
 function watchInputs(): void {
-  const byKey = new Map(PANEL_SETTINGS.map(setting => [setting.key, setting]));
-  const isOption = (key: string) => key === "points" || byKey.has(key);
+  const optionRows = new Map(OPTION_SETTINGS.map(setting => [setting.key, setting]));
+  const factRows = new Map(FACT_SETTINGS.map(setting => [setting.key, setting]));
 
   const onChange = (event: Event) => {
     const target = event.target as HTMLInputElement | null;
     const key = target?.dataset?.stored;
     if (!key) return;
 
-    const apply = (options: OptionsData) => {
-      if (key === "points") Options.setDensity(+target.value);
-      else byKey.get(key)?.set(options, target.value);
+    // one table per object: a key in both is a control that owns two differently-named values,
+    // never one value with two writers
+    const apply = () => {
+      if (key === "points") return Options.setDensity(+target.value);
+      optionRows.get(key)?.set?.(options, target.value);
+      factRows.get(key)?.set?.(facts, target.value);
     };
 
     // an input event is a drag in progress: apply it, but wait for the change event to keep it
-    if (event.type !== "change") return void (isOption(key) && apply(options));
+    apply();
+    if (event.type !== "change") return;
 
-    if (isOption(key)) {
-      lock(key); // the user set it by hand: keep the value on the next map
-      Options.set(apply);
-    } else {
-      // an interface preference is not a map option: it keeps a key of its own and has no lock
-      store(key, target.value);
-    }
+    if (PINNABLE[key]) lock(key); // a request the user set by hand: keep the value on the next map
+    Options.persist();
   };
 
-  for (const rootId of ["options", "dialogs"]) {
-    const root = findEl(rootId);
-    root?.addEventListener("input", onChange);
-    root?.addEventListener("change", onChange);
-  }
+  // only this tab's own controls: every dialog wires the controls it owns
+  const root = findEl("options");
+  root?.addEventListener("input", onChange);
+  root?.addEventListener("change", onChange);
 
-  // the canvas size inputs are not `data-stored`, the panel persists them by hand
-  for (const [inputId, set] of [
-    ["mapWidthInput", (value: number) => (options.graph.width = value)],
-    ["mapHeightInput", (value: number) => (options.graph.height = value)]
-  ] as const) {
-    findEl(inputId)?.addEventListener("change", event => set(+(event.target as HTMLInputElement).value));
-  }
+  // the canvas size inputs are not `data-stored`: `onCanvasSizeChange` is their single writer, and
+  // it writes the request. The extent on screen belongs to the graph this map was built on
 }
 
 const inputFor = (key: string) => findEl<HTMLInputElement>(`${key}Input`) ?? findEl<HTMLInputElement>(key);
 
 function onCanvasSizeChange(): void {
   Options.set(o => {
-    o.graph.width = +ensureEl<HTMLInputElement>("mapWidthInput").value;
-    o.graph.height = +ensureEl<HTMLInputElement>("mapHeightInput").value;
+    o.nextMap.width = +ensureEl<HTMLInputElement>("mapWidthInput").value;
+    o.nextMap.height = +ensureEl<HTMLInputElement>("mapHeightInput").value;
   });
-  applyGraphSize(); // the full-map covers follow the configured extent, the map itself on regeneration
-  fitMapToScreen();
+  // the map on screen keeps the extent its graph was built on - this asks for the next one
   lock("mapWidth");
   lock("mapHeight");
 
-  if (options.graph.width > window.innerWidth || options.graph.height > window.innerHeight) {
+  if (options.nextMap.width > window.innerWidth || options.nextMap.height > window.innerHeight) {
     const size = `${window.innerWidth} x ${window.innerHeight}`;
     tip(`Canvas size is larger than window size (${size}). It can affect performance`, false, "warn", 4000);
   }
@@ -697,14 +731,12 @@ function onCanvasSizeChange(): void {
 
 function restoreDefaultCanvasSize(): void {
   Options.set(o => {
-    o.graph.width = window.innerWidth;
-    o.graph.height = window.innerHeight;
+    o.nextMap.width = window.innerWidth;
+    o.nextMap.height = window.innerHeight;
   });
   unlock("mapWidth");
   unlock("mapHeight");
   syncInputs();
-  applyGraphSize();
-  fitMapToScreen();
 }
 
 /** The Points slider picks a density step; the readout shows the cell count it resolves to */
@@ -715,7 +747,7 @@ export function changeCellsDensity(density: number): void {
 
 /** Push the density step and the cell count it resolves to into the slider and its readout */
 function syncCellsDensity(): void {
-  const { density, cellsDesired } = options.graph;
+  const { density, points: cellsDesired } = options.nextMap;
 
   const input = findEl<HTMLInputElement>("pointsInput");
   if (input) {
@@ -736,7 +768,7 @@ export const cellsDensityColor = (cells: number): string =>
 /** Each culture set holds a different number of cultures, and the number asked for cannot exceed it */
 function changeCultureSet(set: string): void {
   Options.set(o => {
-    o.cultures.set = set;
+    o.generation.cultures.set = set;
     Options.capCultures();
   });
   syncCultures();
@@ -744,13 +776,13 @@ function changeCultureSet(set: string): void {
 
 /** Cap the cultures slider at what the selected set can give, and show the number that survived it */
 function syncCultures(): void {
-  const max = String(CULTURE_SETS[options.cultures.set]?.max ?? 0);
+  const max = String(CULTURE_SETS[options.generation.cultures.set]?.max ?? 0);
   const input = findEl<HTMLInputElement>("culturesInput");
   const output = findEl<HTMLInputElement>("culturesOutput");
   if (!input || !output) return;
 
   input.max = output.max = max;
-  input.value = output.value = String(options.cultures.limit);
+  input.value = output.value = String(options.generation.cultures.limit);
 }
 
 /** More states means smaller labels, so they keep fitting the shrinking territories */
@@ -811,29 +843,28 @@ function changeYear(): void {
     tip("Current year should be a number", false, "error");
     return;
   }
-  options.lore.calendar.year = +value;
+  facts.lore.calendar.year = +value;
 }
 
 function changeEra(): void {
   const value = ensureEl<HTMLInputElement>("eraInput").value;
   if (!value) return;
   lock("era");
-  Options.set(o => (o.lore.calendar.era = value));
+  Facts.set(f => (f.lore.calendar.era = value));
 }
 
 function regenerateMapName(): void {
-  Names.getMapName(true); // writes options.lore.name, and unpins the name if the user had pinned it
-  Options.persist();
+  Names.getMapName(true); // writes facts.lore.name, and unpins the name if the user had pinned it
   syncInputs();
 }
 
 function regenerateEra(): void {
   unlock("era");
-  Options.set(o => {
-    o.lore.calendar.era = Options.randomEra();
-    o.lore.calendar.eraShort = Options.shortEra();
+  Facts.set(f => {
+    f.lore.calendar.era = Facts.randomEra();
+    f.lore.calendar.eraShort = Facts.shortEra();
   });
-  ensureEl<HTMLInputElement>("eraInput").value = options.lore.calendar.era;
+  ensureEl<HTMLInputElement>("eraInput").value = facts.lore.calendar.era;
 }
 
 function changeUiSize(value: number): void {
@@ -847,29 +878,43 @@ function changeUiSize(value: number): void {
 
 const maxUiSize = () => rn(Math.min(window.innerHeight / 465, window.innerWidth / 302), 1);
 
-function changeTooltipSize(value: string): void {
+function changeTooltipSize(value: number): void {
   ensureEl("tooltip").style.fontSize = `calc(${value}px + 0.5vw)`;
 }
 
-const THEME_COLOR = "#997787";
+/**
+ * The theme is a colour and a transparency edited by three controls - a picker, a hue slider and a
+ * reset. One writer for the pair keeps the object holding what the dialogs are actually painted
+ * with, whichever control moved. See docs/architecture/configuration.md
+ */
+function setTheme(themeColor: string, transparency: number): void {
+  Options.set(o => {
+    o.view.ui.themeColor = themeColor;
+    o.view.ui.transparency = transparency;
+  });
+  changeDialogsTheme(themeColor, transparency);
+}
+
 function restoreDefaultThemeColor(): void {
-  localStorage.removeItem("themeColor");
-  changeDialogsTheme(THEME_COLOR, ensureEl<HTMLInputElement>("transparencyInput").value);
+  setTheme(THEME_COLOR, options.view.ui.transparency);
 }
 
 function changeThemeHue(hue: string): void {
-  const { s, l } = hsl(ensureEl<HTMLInputElement>("themeColorInput").value);
-  changeDialogsTheme(hsl(+hue, s, l).hex(), ensureEl<HTMLInputElement>("transparencyInput").value);
+  const { s, l } = hsl(options.view.ui.themeColor);
+  setTheme(hsl(+hue, s, l).hex(), options.view.ui.transparency);
 }
 
-/** Derive the whole dialog palette from one colour and one transparency */
-function changeDialogsTheme(themeColor: string | null, transparency: string | number): void {
+/**
+ * Derive the whole dialog palette from one colour and one transparency. This applies what the
+ * object holds; `setTheme` is what puts it there
+ */
+function changeDialogsTheme(themeColor: string, transparency: number): void {
   ensureEl<HTMLInputElement>("transparencyInput").value = String(transparency);
-  const alpha = (100 - +transparency) / 100;
+  const alpha = (100 - transparency) / 100;
   const alphaReduced = Math.min(alpha + 0.3, 1);
 
-  const { h, s, l } = hsl(themeColor || THEME_COLOR);
-  ensureEl<HTMLInputElement>("themeColorInput").value = themeColor || THEME_COLOR;
+  const { h, s, l } = hsl(themeColor);
+  ensureEl<HTMLInputElement>("themeColorInput").value = themeColor;
   ensureEl<HTMLInputElement>("themeHueInput").value = String(h);
 
   const variables: [name: string, value: string][] = [
@@ -900,20 +945,22 @@ function changeZoomExtent(value: string): void {
   const maxInput = ensureEl<HTMLInputElement>("zoomExtentMax");
   if (+minInput.value > +maxInput.value) [minInput.value, maxInput.value] = [maxInput.value, minInput.value];
 
-  const min = Math.max(+minInput.value, 0.01);
-  const max = Math.min(+maxInput.value, 200);
-  minInput.value = String(min);
-  maxInput.value = String(max);
-
-  setZoomExtent(min, max);
+  setZoomExtentPreference(Math.max(+minInput.value, 0.01), Math.min(+maxInput.value, 200));
   setMapZoom(minmax(+value, 0.01, 200));
 }
 
 function restoreDefaultZoomExtent(): void {
-  ensureEl<HTMLInputElement>("zoomExtentMin").value = "1";
-  ensureEl<HTMLInputElement>("zoomExtentMax").value = "20";
-  setZoomExtent(1, 20);
-  setMapZoom(1);
+  const { min, max } = getDefaultOptions().view.zoomExtent;
+  setZoomExtentPreference(min, max);
+  setMapZoom(min);
+}
+
+/** The single writer of the zoom extent: one pair, normalised together and shown together */
+function setZoomExtentPreference(min: number, max: number): void {
+  Options.set(o => (o.view.zoomExtent = { min, max }));
+  ensureEl<HTMLInputElement>("zoomExtentMin").value = String(min);
+  ensureEl<HTMLInputElement>("zoomExtentMax").value = String(max);
+  setZoomExtent(min, max);
 }
 
 /** Let the user pan beyond the canvas edges, so a map can be inspected off-centre */
@@ -921,7 +968,7 @@ function toggleTranslateExtent(el: HTMLElement): void {
   const isOn = !+(el.dataset.on ?? 0);
   el.dataset.on = String(+isOn);
 
-  const { width, height } = options.graph;
+  const { width, height } = facts.graph;
   if (isOn) setTranslateExtent(-width / 2, -height / 2, width * 1.5, height * 1.5);
   else setTranslateExtent(0, 0, width, height);
 }
@@ -943,13 +990,13 @@ function loadVoices(): void {
 
     clearInterval(interval);
     for (const [index, voice] of voices.entries()) select.options.add(new Option(voice.name, String(index)));
-    select.value = stored("speakerVoice") ?? String(voices.findIndex(voice => voice.lang === "en-US"));
+    select.value = options.view.ui.speakerVoice || String(voices.findIndex(voice => voice.lang === "en-US"));
   }, 1000);
 }
 
 function testSpeaker(): void {
-  const { year, era } = options.lore.calendar;
-  const speech = new SpeechSynthesisUtterance(`${options.lore.name}, ${year} ${era}`);
+  const { year, era } = facts.lore.calendar;
+  const speech = new SpeechSynthesisUtterance(`${facts.lore.name}, ${year} ${era}`);
   const voices = speechSynthesis.getVoices();
   if (voices.length) speech.voice = voices[+ensureEl<HTMLSelectElement>("speakerVoice").value];
   speechSynthesis.speak(speech);
@@ -986,46 +1033,43 @@ function resetLanguage(): void {
  * Restore what the tab itself shows: the lock icons, the saved style presets and the interface
  * settings. The option *values* are restored by components/options.ts before this runs
  */
+/**
+ * Custom style presets predating the `fmgStyle_` prefix kept a `style<Name>` key of their own;
+ * today's are listed by public/modules/ui/style-presets.js when it builds the select
+ */
+function restoreLegacyStylePresets(): void {
+  for (const key of Object.keys(localStorage)) {
+    if (key.startsWith("style")) applyOption(stylePreset, key, key.slice(5));
+  }
+}
+
+/** The interface size a browser that has never chosen one gets: the map's own extent, scaled */
+const defaultUiSize = (): number => minmax(rn(facts.graph.width / 1280, 1), 1, 2.5);
+
 export function restoreUi(): void {
-  const template = options.heightmap.template;
+  const template = facts.heightmap.template;
   if (template) {
     const name = heightmapTemplates[template]?.name || precreatedHeightmaps[template]?.name || template;
     applyOption(ensureEl("templateInput"), template, name);
   }
 
   bindLockIcons(ensureEl("options"));
+  restoreLegacyStylePresets();
 
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (!key || key === "speakerVoice") continue;
+  // `syncInputs` has already put every preference in its control; these are the ones that also do
+  // something the moment they are read back. See docs/architecture/configuration.md
+  const { ui, rendering, emblemShape, zoomExtent } = options.view;
 
-    // custom presets predating the fmgStyle_ prefix kept a "style<Name>" key of their own; today's
-    // are listed by public/modules/ui/style-presets.js when it builds the select
-    if (key.startsWith("style")) {
-      applyOption(stylePreset, key, key.slice(5));
-      continue;
-    }
-
-    // interface preferences keep a key of their own: push each back into the controls that show it
-    const value = stored(key);
-    if (value === null) continue;
-    for (const control of document.querySelectorAll<HTMLInputElement>(`[data-stored="${key}"]`)) {
-      control.value = value;
-    }
-  }
-
-  Emblems.setShape(ensureEl<HTMLSelectElement>("emblemShape").value);
-
-  const tooltipSize = stored("tooltipSize");
-  if (tooltipSize) changeTooltipSize(tooltipSize);
-  changeStatesNumber(options.states.limit); // state label sizes follow the number of states
+  Emblems.setShape(emblemShape);
+  changeTooltipSize(ui.tooltipSize);
+  changeStatesNumber(options.generation.states.limit); // state label sizes follow the number of states
 
   ensureEl<HTMLInputElement>("uiSize").max = String(maxUiSize());
-  const uiSize = stored("uiSize");
-  changeUiSize(uiSize ? +uiSize : minmax(rn(options.graph.width / 1280, 1), 1, 2.5));
+  changeUiSize(ui.size ?? defaultUiSize());
 
-  changeDialogsTheme(stored("themeColor"), stored("transparency") || 5);
-  setRendering(ensureEl<HTMLSelectElement>("shapeRendering").value);
+  changeDialogsTheme(ui.themeColor, ui.transparency);
+  setRendering(rendering);
+  setZoomExtent(zoomExtent.min, zoomExtent.max);
 }
 
 // Legacy seam: the classic style.js reads the culture set cap, the submap and transform tools

@@ -142,7 +142,7 @@ export async function calculateLabelSpread(): Promise<LabelSpreadResult> {
 
     await nextFrame();
     const ids = items.map(item => item.id).sort();
-    const solution = optimizeLabelPlacements(items, mapBounds(), `${options.seed}|${ids.join("|")}`);
+    const solution = optimizeLabelPlacements(items, mapBounds(), `${facts.seed}|${ids.join("|")}`);
     return {
       patches: getPatches(visibleLabels, solution.selected),
       displayedLabels: visibleLabels.length,
@@ -463,11 +463,11 @@ class LabelMeasurementSandbox {
 
   constructor(labels: LabelData[]) {
     this.root = document.createElementNS(SVG_NS, "svg");
-    this.root.setAttribute("width", String(options.graph.width));
-    this.root.setAttribute("height", String(options.graph.height));
-    this.root.setAttribute("viewBox", `0 0 ${options.graph.width} ${options.graph.height}`);
+    this.root.setAttribute("width", String(facts.graph.width));
+    this.root.setAttribute("height", String(facts.graph.height));
+    this.root.setAttribute("viewBox", `0 0 ${facts.graph.width} ${facts.graph.height}`);
     this.root.setAttribute("aria-hidden", "true");
-    this.root.style.cssText = `position:fixed;left:0;top:0;width:${options.graph.width}px;height:${options.graph.height}px;overflow:visible;opacity:0;pointer-events:none;z-index:-1`;
+    this.root.style.cssText = `position:fixed;left:0;top:0;width:${facts.graph.width}px;height:${facts.graph.height}px;overflow:visible;opacity:0;pointer-events:none;z-index:-1`;
     const renderedLabels = document.querySelector<SVGGElement>("#labels");
     const fontSize =
       renderedLabels?.getAttribute("font-size") || (renderedLabels && getComputedStyle(renderedLabels).fontSize);
@@ -540,7 +540,7 @@ class LabelMeasurementSandbox {
   }
 
   private createGroup(groupName: string): SVGGElement {
-    const groupOptions = options.labels.groups.find(group => group.name === groupName);
+    const groupOptions = facts.labels.groups.find(group => group.name === groupName);
     if (!groupOptions) throw new Error(`Label Group not found: ${groupName}`);
     const group = document.createElementNS(SVG_NS, "g");
     writeGroupStyle(group, getGroupStyle(groupOptions));
@@ -671,7 +671,7 @@ function getOutsideArea(bounds: LabelBounds, map = mapBounds()): number {
 }
 
 function mapBounds(): LabelBounds {
-  return { x1: 0, y1: 0, x2: options.graph.width, y2: options.graph.height };
+  return { x1: 0, y1: 0, x2: facts.graph.width, y2: facts.graph.height };
 }
 
 function fitsPath(measurement: Measurement, startOffset: number): boolean {

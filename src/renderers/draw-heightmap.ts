@@ -130,8 +130,8 @@ export const drawHeightmap = (): void => {
         .append("rect")
         .attr("x", 0)
         .attr("y", 0)
-        .attr("width", globalThis.options.graph.width)
-        .attr("height", globalThis.options.graph.height)
+        .attr("width", facts.graph.width)
+        .attr("height", facts.graph.height)
         .attr("fill", scheme(1));
     }
 
@@ -141,8 +141,8 @@ export const drawHeightmap = (): void => {
         .append("rect")
         .attr("x", 0)
         .attr("y", 0)
-        .attr("width", globalThis.options.graph.width)
-        .attr("height", globalThis.options.graph.height)
+        .attr("width", facts.graph.width)
+        .attr("height", facts.graph.height)
         .attr("fill", scheme(0.8));
     }
 

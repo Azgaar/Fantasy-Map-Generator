@@ -104,7 +104,7 @@ function getUsedImages(): Set<string> {
   const isExternal = (url: string) => url.startsWith("http") || url.startsWith("data:image");
   const images = new Set<string>();
 
-  for (const unit of options.military) if (isExternal(unit.icon)) images.add(unit.icon);
+  for (const unit of facts.military.units) if (isExternal(unit.icon)) images.add(unit.icon);
   for (const state of pack.states) {
     for (const regiment of state?.military || []) if (isExternal(regiment.icon)) images.add(regiment.icon);
   }

@@ -14,7 +14,7 @@ export function getFileName(dataType?: string): string {
   ].join("-");
 
   const type = dataType ? `${dataType} ` : "";
-  return `${options.lore.name} ${type}${dateString}`;
+  return `${facts.lore.name} ${type}${dateString}`;
 }
 
 /** Download data as a file */

@@ -52,8 +52,8 @@ const DEFAULT_TRANSPORTS: readonly Transport[] = [
 
 class TransportsModule {
   get all(): Transport[] {
-    if (!options.transports?.length) options.transports = this.getDefaults();
-    return options.transports;
+    if (!facts.transports?.length) facts.transports = this.getDefaults();
+    return facts.transports;
   }
 
   getDefaults(): Transport[] {
@@ -97,13 +97,16 @@ class TransportsModule {
 
   /** Replace the whole set, e.g. on removal or defaults restore */
   set(transports: Transport[]): void {
-    options.transports = transports;
+    facts.transports = transports;
     this.save();
   }
 
-  /** Remember the set: the editor changes its transports in place, then asks for them to be kept */
+  /**
+   * Remember the set: the editor changes this map's transports in place, then asks for them to be
+   * kept for the next map too. See docs/architecture/configuration.md#preservation-across-maps
+   */
   save(): void {
-    Options.persist();
+    Options.remember("transports", facts.transports, this.getDefaults());
   }
 }
 

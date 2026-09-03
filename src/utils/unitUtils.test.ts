@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { convertSpeed, convertTemperature, formatSpeed, getDistanceUnitRatio, parseSpeed } from "./unitUtils";
 
-// The default (no targetScale) path reads options.units.temperature.unit and is
+// The default (no targetScale) path reads facts.units.temperature.unit and is
 // covered end-to-end in tests/e2e/temperature-units.spec.ts
 
 describe("convertTemperature", () => {
@@ -22,9 +22,9 @@ describe("convertTemperature", () => {
   });
 });
 
-// the helpers read the distance unit off the global options object
+// the helpers read the distance unit off the global facts object
 const setDistanceUnit = (value: string) => {
-  globalThis.options = { units: { distance: { unit: value } } } as typeof options;
+  globalThis.facts = { units: { distance: { unit: value } } } as typeof facts;
 };
 
 describe("distance unit conversion", () => {

@@ -93,8 +93,8 @@ function minimapClickToPan(event: MouseEvent): void {
   if (!ctm) return;
 
   const svgPoint = point.matrixTransform(ctm.inverse());
-  const x = minmax(svgPoint.x, 0, options.graph.width);
-  const y = minmax(svgPoint.y, 0, options.graph.height);
+  const x = minmax(svgPoint.x, 0, facts.graph.width);
+  const y = minmax(svgPoint.y, 0, facts.graph.height);
   zoomTo(x, y, viewport.scale, 450);
 }
 
@@ -104,7 +104,7 @@ function updateMinimap(): void {
   const mapUse = document.getElementById("minimapMapUse") as SVGUseElement | null;
   if (!minimap || !viewportRect || !mapUse) return;
 
-  minimap.setAttribute("viewBox", `0 0 ${options.graph.width} ${options.graph.height}`);
+  minimap.setAttribute("viewBox", `0 0 ${facts.graph.width} ${facts.graph.height}`);
 
   // #viewbox already has the current transform; invert it in minimap to show the whole world map.
   const inverseScale = viewport.scale ? 1 / viewport.scale : 1;
@@ -115,8 +115,8 @@ function updateMinimap(): void {
 
   const left = Math.max(0, -viewport.x * inverseScale);
   const top = Math.max(0, -viewport.y * inverseScale);
-  const right = Math.min(options.graph.width, left + viewport.width * inverseScale);
-  const bottom = Math.min(options.graph.height, top + viewport.height * inverseScale);
+  const right = Math.min(facts.graph.width, left + viewport.width * inverseScale);
+  const bottom = Math.min(facts.graph.height, top + viewport.height * inverseScale);
 
   viewportRect.setAttribute("x", String(rn(left, 3)));
   viewportRect.setAttribute("y", String(rn(top, 3)));

@@ -13,7 +13,6 @@ export interface GridCells extends Cells {
 
 /** the initial graph: a jittered square grid of points and its Voronoi diagram. See `PackedGraph` for the repacked one */
 export interface GridGraph {
-  seed: string;
   spacing: number; // distance between points before jittering
   cellsDesired: number; // requested number of cells, the actual number is close to it
   cellsX: number; // number of cells in a row

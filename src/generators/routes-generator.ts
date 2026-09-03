@@ -206,7 +206,7 @@ class RoutesModule {
   }
 
   generate(lockedRoutes: Route[] = [], randomSeed?: number) {
-    Math.random = Alea(randomSeed ?? options.seed);
+    Math.random = Alea(randomSeed ?? facts.seed);
     this.connections = new Map();
     this.buildRiverEdges();
     lockedRoutes.forEach((route: Route) => {
@@ -547,7 +547,7 @@ class RoutesModule {
       meandering: 0.5,
       startStep: h[river.cells[0]] < 20 ? 1 : 10,
       isWaterCell: river.cells.map(c => c !== -1 && h[c] < 20),
-      bounds: { width: options.graph.width, height: options.graph.height }
+      bounds: { width: facts.graph.width, height: facts.graph.height }
     });
 
     this.riverGeometryCache.set(river.i, geometry);

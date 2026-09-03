@@ -43,7 +43,7 @@ export function raycast({ regionId, regionIds, x0, y0, dx, dy, maxLakeSize, offs
   y: number;
 } {
   const { cells, features } = pack;
-  const { width, height } = options.graph;
+  const { width, height } = facts.graph;
   let ray = { length: 0, x: x0, y: y0 };
 
   for (let length = LENGTH_START; length < LENGTH_MAX; length += LENGTH_STEP) {

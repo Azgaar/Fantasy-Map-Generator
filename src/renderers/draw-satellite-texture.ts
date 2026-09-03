@@ -542,12 +542,12 @@ export function generateSatelliteTexture(
         uGridSize: { value: new THREE.Vector2(grid.cellsX, grid.cellsY) },
         uSlopeScale: {
           value: new THREE.Vector2(
-            worldPerHeight / (options.graph.width / cols),
-            worldPerHeight / (options.graph.height / rows)
+            worldPerHeight / (facts.graph.width / cols),
+            worldPerHeight / (facts.graph.height / rows)
           )
         },
-        uAspect: { value: options.graph.height / options.graph.width },
-        uSeed: { value: (Number.parseInt(options.seed, 10) % 1e5 || 1) / 1e5 + 1 }
+        uAspect: { value: facts.graph.height / facts.graph.width },
+        uSeed: { value: (Number.parseInt(facts.seed, 10) % 1e5 || 1) / 1e5 + 1 }
       },
       depthTest: false,
       depthWrite: false
@@ -606,10 +606,10 @@ let flowTexture: THREEType.Texture | null = null;
 export function generateRiverFlowTexture(): THREEType.Texture {
   disposeRiverFlowTexture();
 
-  const scale = 1024 / Math.max(options.graph.width, options.graph.height);
+  const scale = 1024 / Math.max(facts.graph.width, facts.graph.height);
   const canvas = document.createElement("canvas");
-  canvas.width = Math.max(64, Math.round(options.graph.width * scale));
-  canvas.height = Math.max(64, Math.round(options.graph.height * scale));
+  canvas.width = Math.max(64, Math.round(facts.graph.width * scale));
+  canvas.height = Math.max(64, Math.round(facts.graph.height * scale));
   const ctx = canvas.getContext("2d")!;
   ctx.fillStyle = "#000";
   ctx.fillRect(0, 0, canvas.width, canvas.height);

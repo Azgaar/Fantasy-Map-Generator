@@ -108,7 +108,10 @@ export async function cleanupData(): Promise<void> {
   localStorage.clear();
   dialogState.clear();
   localStorage.setItem("version", VERSION);
-  localStorage.setItem("disable_click_arrow_tooltip", "true");
+
+  Options.reset(); // the stored options went with everything else: start this browser over
+  Options.set(o => (o.view.ui.clickArrowTip = false)); // the hint has been seen, this is no first visit
+  Options.persist();
   await clearCache();
 }
 

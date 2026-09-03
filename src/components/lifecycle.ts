@@ -30,7 +30,7 @@ export async function boot(): Promise<void> {
   Options.restoreStored();
   syncInputs();
   restoreUi();
-  setViewportSize(options.graph.width, options.graph.height);
+  setViewportSize(facts.graph.width, facts.graph.height);
   applyDefaultViewboxEvents();
 
   if (!warnIfServerless()) {
@@ -47,15 +47,16 @@ export type GenerationConfig = { seed?: string; graph?: GridGraph; width?: numbe
 export async function generate(config?: GenerationConfig): Promise<void> {
   try {
     const { seed: precreatedSeed, graph: precreatedGraph, width, height } = config || {};
-    setSeed(precreatedSeed);
-    Options.setGraphSize(width, height); // a new map is made at window size unless asked otherwise
-    Options.randomize();
+    Options.setNextMapSize(width, height); // a new map is made at window size unless asked otherwise
+    setSeed(precreatedSeed); // reseeds the PRNG, so every roll below repeats for the same seed
+    Options.randomize(); // resolve the requests
+    Facts.seedForNewMap(); // commit them, with the pinned values and the user's own sets
     applyGraphSize();
 
     await GenerationPipeline.run({ seed: precreatedSeed, graph: precreatedGraph });
 
     syncInputs(); // after the pipeline: it names the map, which the panel shows
-    Options.persist(); // what was generated is what the next session starts from
+    Options.persist(); // the requests this map resolved are what the next session starts from
     registerMap(); // a generated map's id is the moment it was generated
     logStats();
     invokeActiveZooming();
@@ -92,7 +93,7 @@ export const regenerateMap = debounce(async (config?: GenerationConfig | string)
   WARN && console.warn(`Generate new random map: ${reason}`);
 
   // a big grid takes long enough that the splash is worth showing
-  const shouldShowLoading = options.graph.cellsDesired > 10000;
+  const shouldShowLoading = facts.graph.points > 10000;
   shouldShowLoading && showLoading();
 
   closeDialogs("#worldConfigurator, #options3d");
@@ -150,10 +151,10 @@ globalThis.mapHistory = [];
 /** Take note of a map that is now on screen */
 export function registerMap(created: number = Date.now()): void {
   mapHistory.push({
-    seed: options.seed,
-    width: options.graph.width,
-    height: options.graph.height,
-    template: options.heightmap.template,
+    seed: facts.seed,
+    width: facts.graph.width,
+    height: facts.graph.height,
+    template: facts.heightmap.template,
     created: created
   });
 }

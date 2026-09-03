@@ -130,7 +130,7 @@ class MarkersModule {
   }
 
   private getDefaultConfig(): MarkerConfig[] {
-    const isFantasy = options.cultures.set.includes("Fantasy");
+    const isFantasy = facts.cultures.set.includes("Fantasy");
 
     /*
       Default markers config:
@@ -635,9 +635,7 @@ class MarkersModule {
     const resource = rw(resources);
     const burg = pack.burgs[cells.burg[cell]];
     const name = `${burg.name} — ${resource} mining town`;
-    const population = rn(
-      burg.population! * options.units.population.scale * options.units.population.urbanization.rate
-    );
+    const population = rn(burg.population! * facts.units.population.scale * facts.units.population.urbanization.rate);
     const legend = `${burg.name} is a mining town of ${population} people just nearby the ${resource} mine.`;
     notes.push({ id, name, legend });
   }
@@ -1004,7 +1002,7 @@ class MarkersModule {
     const campaign = ra(state.campaigns);
     const date = generateDate(campaign.start, campaign.end);
     const name = `${Names.getCulture(cells.culture[cell])} Battlefield`;
-    const legend = `A historical battle of the ${campaign.name}. \r\nDate: ${date} ${options.lore.calendar.era}.`;
+    const legend = `A historical battle of the ${campaign.name}. \r\nDate: ${date} ${facts.lore.calendar.era}.`;
     notes.push({ id, name, legend });
   }
 
@@ -1013,9 +1011,9 @@ class MarkersModule {
   }
 
   private addDungeon(id: string, cell: number) {
-    const dungeonSeed = `${options.seed}${cell}`;
+    const dungeonSeed = `${facts.seed}${cell}`;
     const name = "Dungeon";
-    const legend = `<div>Undiscovered dungeon. See <a href="https://watabou.github.io/one-page-dungeon/?options.seed=${dungeonSeed}" target="_blank">One page dungeon</a></div><iframe style="pointer-events: none;" src="https://watabou.github.io/one-page-dungeon/?options.seed=${dungeonSeed}" sandbox="allow-scripts allow-same-origin"></iframe>`;
+    const legend = `<div>Undiscovered dungeon. See <a href="https://watabou.github.io/one-page-dungeon/?facts.seed=${dungeonSeed}" target="_blank">One page dungeon</a></div><iframe style="pointer-events: none;" src="https://watabou.github.io/one-page-dungeon/?facts.seed=${dungeonSeed}" sandbox="allow-scripts allow-same-origin"></iframe>`;
     notes.push({ id, name, legend });
   }
 
@@ -1047,7 +1045,7 @@ class MarkersModule {
       "Journeying folk",
       "Tales"
     ];
-    const legend = `${ra(subjects)} say a relic monster of ${length} ${options.units.height.unit} long inhabits ${
+    const legend = `${ra(subjects)} say a relic monster of ${length} ${facts.units.height.unit} long inhabits ${
       lake.name
     } Lake. Truth or lie, folks are afraid to fish in the lake.`;
     notes.push({ id, name, legend });
@@ -1062,7 +1060,7 @@ class MarkersModule {
   private addSeaMonster(id: string, _cell: number) {
     const name = `${Names.getCultureShort(0)} Monster`;
     const length = gauss(25, 10, 10, 100);
-    const legend = `Old sailors tell stories of a gigantic sea monster inhabiting these dangerous waters. Rumors say it can be ${length} ${options.units.height.unit} long.`;
+    const legend = `Old sailors tell stories of a gigantic sea monster inhabiting these dangerous waters. Rumors say it can be ${length} ${facts.units.height.unit} long.`;
     notes.push({ id, name, legend });
   }
 

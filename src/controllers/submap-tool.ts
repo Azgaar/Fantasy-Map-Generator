@@ -35,7 +35,7 @@ function open(): void {
 function renderDialog(): void {
   destroyDialog("submapTool");
 
-  const pointsValue = String(options.graph.density);
+  const pointsValue = String(options.nextMap.density);
   const cells = CELLS_BY_DENSITY[+pointsValue];
 
   const html = /* html */ `<div id="submapTool" class="dialog">
@@ -83,7 +83,7 @@ function generateSubmap(): void {
   recalculateMapSize(x0, y0, scale);
 
   const submapPointsValue = ensureEl<HTMLInputElement>("submapPointsInput").value;
-  const globalPointsValue = String(options.graph.density);
+  const globalPointsValue = String(options.nextMap.density);
   if (submapPointsValue !== globalPointsValue) changeCellsDensity(+submapPointsValue);
 
   const projection = (x: number, y: number): [number, number] => [(x - x0) * scale, (y - y0) * scale];
@@ -105,18 +105,18 @@ function generateSubmap(): void {
 }
 
 function recalculateMapSize(x0: number, y0: number, scale: number): void {
-  options.geography.mapSize = rn(options.geography.mapSize / scale, 2);
+  facts.geography.mapSize = rn(facts.geography.mapSize / scale, 2);
 
-  const latT = options.geography.coordinates.latT / scale;
-  const latN = getLatitude(y0, options.geography.coordinates, options.graph.height);
-  options.geography.latitude = rn(((90 - latN) / (180 - latT)) * 100, 2);
+  const latT = facts.geography.coordinates.latT / scale;
+  const latN = getLatitude(y0, facts.geography.coordinates, facts.graph.height);
+  facts.geography.latitude = rn(((90 - latN) / (180 - latT)) * 100, 2);
 
-  const lotT = options.geography.coordinates.lonT / scale;
-  const lonE = getLongitude(x0 + options.graph.width / scale, options.geography.coordinates, options.graph.width);
-  options.geography.longitude = rn(((180 - lonE) / (360 - lotT)) * 100, 2);
+  const lotT = facts.geography.coordinates.lonT / scale;
+  const lonE = getLongitude(x0 + facts.graph.width / scale, facts.geography.coordinates, facts.graph.width);
+  facts.geography.longitude = rn(((180 - lonE) / (360 - lotT)) * 100, 2);
 
-  options.units.distance.scale = rn(options.units.distance.scale / scale, 2);
-  options.units.population.scale = rn(options.units.population.scale / scale, 2);
+  facts.units.distance.scale = rn(facts.units.distance.scale / scale, 2);
+  facts.units.population.scale = rn(facts.units.population.scale / scale, 2);
 }
 
 function rescaleBurgStyles(scale: number): void {

@@ -26,7 +26,7 @@ type MapSelection = Selection<SVGSVGElement, unknown, null, undefined>;
 
 // project canvas coordinates to geographic [lon, lat], rounded to 4 decimals
 const toGeoCoordinates = (x: number, y: number) =>
-  getCoordinates(x, y, options.geography.coordinates, options.graph.width, options.graph.height, 4);
+  getCoordinates(x, y, facts.geography.coordinates, facts.graph.width, facts.graph.height, 4);
 
 export interface GetMapURLOptions {
   debug?: boolean;
@@ -62,7 +62,7 @@ async function exportToPng(): Promise<void> {
   TIME && console.time("exportToPng");
   try {
     const url = await getMapURL("png");
-    const resolution = ensureEl<HTMLInputElement>("pngResolutionInput").valueAsNumber;
+    const resolution = options.view.export.pngResolution;
     const link = document.createElement("a");
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d")!;
@@ -104,7 +104,7 @@ async function exportToJpeg(): Promise<void> {
   TIME && console.time("exportToJpeg");
   try {
     const url = await getMapURL("png");
-    const resolution = ensureEl<HTMLInputElement>("pngResolutionInput").valueAsNumber;
+    const resolution = options.view.export.pngResolution;
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d")!;
     canvas.width = viewport.width * resolution;
@@ -152,8 +152,8 @@ async function exportToPngTiles(): Promise<void> {
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d")!;
-  canvas.width = options.graph.width;
-  canvas.height = options.graph.height;
+  canvas.width = facts.graph.width;
+  canvas.height = facts.graph.height;
 
   const imgSchema = new Image();
   imgSchema.src = urlSchema;
@@ -167,15 +167,13 @@ async function exportToPngTiles(): Promise<void> {
 
   // download tiles
   const url = await getMapURL("tiles", { fullMap: true });
-  const tilesX = +ensureEl<HTMLInputElement>("tileColsOutput").value || 2;
-  const tilesY = +ensureEl<HTMLInputElement>("tileRowsOutput").value || 2;
-  const scale = +ensureEl<HTMLInputElement>("tileScaleOutput").value || 1;
+  const { cols: tilesX, rows: tilesY, scale } = options.view.export.tiles;
   const tolesTotal = tilesX * tilesY;
 
-  const tileW = (options.graph.width / tilesX) | 0;
-  const tileH = (options.graph.height / tilesY) | 0;
+  const tileW = (facts.graph.width / tilesX) | 0;
+  const tileH = (facts.graph.height / tilesY) | 0;
 
-  const width = options.graph.width * scale;
+  const width = facts.graph.width * scale;
   const height = width * (tileH / tileW);
   canvas.width = width;
   canvas.height = height;
@@ -191,10 +189,10 @@ async function exportToPngTiles(): Promise<void> {
     return first + last;
   }
 
-  for (let y = 0, row = 0, id = 1; y + tileH <= options.graph.height; y += tileH, row++) {
+  for (let y = 0, row = 0, id = 1; y + tileH <= facts.graph.height; y += tileH, row++) {
     const rowName = getRowLabel(row);
 
-    for (let x = 0, cell = 1; x + tileW <= options.graph.width; x += tileW, cell++, id++) {
+    for (let x = 0, cell = 1; x + tileW <= facts.graph.width; x += tileW, cell++, id++) {
       status.innerHTML = `Rendering tile ${rowName}${cell} (${id} of ${tolesTotal})...`;
       ctx.drawImage(img, x, y, tileW, tileH, 0, 0, width, height);
       const blob = await canvasToBlob(canvas, "image/png");
@@ -268,11 +266,11 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
 
   if (fullMap) {
     // reset transform to show the whole map
-    clone.attr("width", globalThis.options.graph.width).attr("height", globalThis.options.graph.height);
+    clone.attr("width", facts.graph.width).attr("height", facts.graph.height);
     clone.select("#viewbox").attr("transform", null);
     ViewportLayers.renderTo(cloneEl);
 
-    if (!noScaleBar) drawScaleBar(cloneEl, 1, globalThis.options.graph.width, globalThis.options.graph.height);
+    if (!noScaleBar) drawScaleBar(cloneEl, 1, facts.graph.width, facts.graph.height);
   }
 
   const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;

@@ -1,3 +1,10 @@
+// The configuration globals the app installs at boot, so a unit test gets the same defaults
+import { getDefaultFacts } from "@/components/facts-schema";
+import { getDefaultOptions } from "@/components/options-schema";
+
+(globalThis as Record<string, unknown>).facts ??= getDefaultFacts();
+(globalThis as Record<string, unknown>).options ??= getDefaultOptions();
+
 // Make window === globalThis so module side-effects (window.rn = ...) work in Node
 if (typeof window === "undefined") {
   (globalThis as Record<string, unknown>).window = globalThis;

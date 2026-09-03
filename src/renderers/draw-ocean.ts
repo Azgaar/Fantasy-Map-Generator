@@ -43,8 +43,8 @@ function prepend(parent: Element, rect: SVGRectElement): SVGRectElement {
 function sizeToGraph(rect: SVGRectElement): void {
   rect.setAttribute("x", "0");
   rect.setAttribute("y", "0");
-  rect.setAttribute("width", String(options.graph.width));
-  rect.setAttribute("height", String(options.graph.height));
+  rect.setAttribute("width", String(facts.graph.width));
+  rect.setAttribute("height", String(facts.graph.height));
 }
 
 /** the ocean outline rings, stacked from the coast outwards so the overlap deepens the shade */

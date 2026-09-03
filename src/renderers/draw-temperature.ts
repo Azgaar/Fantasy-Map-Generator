@@ -65,7 +65,7 @@ const temperatureRenderer = (): void => {
   // min temp isoline covers all graph
   select("#temperature")
     .append("path")
-    .attr("d", `M0,0 h${options.graph.width} v${options.graph.height} h${-options.graph.width} Z`)
+    .attr("d", `M0,0 h${facts.graph.width} v${facts.graph.height} h${-facts.graph.width} Z`)
     .attr("fill", scheme(1 - (minTemp - tMin) / delta))
     .attr("stroke", "none");
 
@@ -80,7 +80,7 @@ const temperatureRenderer = (): void => {
     select("#temperature").append("path").attr("d", path).attr("fill", fill).attr("stroke", stroke.toString());
   }
 
-  const scale = options.units.temperature.unit as Parameters<typeof convertTemperature>[1];
+  const scale = facts.units.temperature.unit as Parameters<typeof convertTemperature>[1];
 
   const tempLabels = select("#temperature").append("g").attr("id", "tempLabels").attr("fill-opacity", 1);
   tempLabels

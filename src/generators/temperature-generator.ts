@@ -14,7 +14,7 @@ class TemperatureModule {
       equator: temperatureEquator,
       northPole: temperatureNorthPole,
       southPole: temperatureSouthPole
-    } = options.climate.temperature;
+    } = facts.climate.temperature;
     const tropics = [16, -20]; // tropics zone
     const tropicalGradient = 0.15;
 
@@ -24,7 +24,7 @@ class TemperatureModule {
     const tempSouthTropic = temperatureEquator + tropics[1] * tropicalGradient;
     const southernGradient = (tempSouthTropic - temperatureSouthPole) / (90 + tropics[1]);
 
-    const exponent = options.units.height.exponent;
+    const exponent = facts.units.height.exponent;
 
     const getSeaLevelTemperature = (latitude: number) => {
       const isTropical = latitude <= 16 && latitude >= -20;
@@ -44,7 +44,7 @@ class TemperatureModule {
     for (let rowCellId = 0; rowCellId < cells.i.length; rowCellId += cellsX) {
       const [, y] = points[rowCellId];
       const rowLatitude =
-        options.geography.coordinates.latN - (y / options.graph.height) * options.geography.coordinates.latT; // [90; -90]
+        facts.geography.coordinates.latN - (y / facts.graph.height) * facts.geography.coordinates.latT; // [90; -90]
       const seaLevelTemp = getSeaLevelTemperature(rowLatitude);
       DEBUG.temperature && console.info(`${rn(rowLatitude)}° sea temperature: ${rn(seaLevelTemp)}°C`);
 

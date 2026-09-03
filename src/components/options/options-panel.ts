@@ -4,7 +4,6 @@ import { changeViewMode } from "@/components/options/view-mode";
 import { clearMainTip } from "@/components/tooltips";
 import { resetZoom } from "@/components/zoom";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
-import { stored } from "@/utils/preferences";
 
 const TAB_CONTENT: Record<string, string> = {
   layersTab: "layersContent",
@@ -15,9 +14,9 @@ const TAB_CONTENT: Record<string, string> = {
 };
 
 export function showOptions(event?: Event): void {
-  if (!stored("disable_click_arrow_tooltip")) {
+  if (options.view.ui.clickArrowTip) {
     clearMainTip();
-    localStorage.setItem("disable_click_arrow_tooltip", "true");
+    Options.set(o => (o.view.ui.clickArrowTip = false));
     ensureEl("optionsTrigger").classList.remove("glow");
   }
 
@@ -79,7 +78,7 @@ function initialize(): void {
   $("#mapLayers").disableSelection();
 
   // the trigger glows until the user has found it once
-  if (stored("disable_click_arrow_tooltip")) {
+  if (!options.view.ui.clickArrowTip) {
     clearMainTip();
     ensureEl("optionsTrigger").classList.remove("glow");
   }

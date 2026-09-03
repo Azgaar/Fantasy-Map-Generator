@@ -85,7 +85,7 @@ export function generateStoryJourney(pathfinder: JourneyPathfinder): Omit<Journe
 }
 
 function planLegs(pathfinder: JourneyPathfinder, archetype: JourneyArchetype, burgs: Burg[]): PlannedLeg[] {
-  const diagonal = Math.hypot(options.graph.width, options.graph.height) || 1;
+  const diagonal = Math.hypot(facts.graph.width, facts.graph.height) || 1;
   const band: [number, number] = [diagonal * LEG_MIN_FACTOR, diagonal * LEG_MAX_FACTOR];
 
   const origin = pickOrigin(burgs, archetype);

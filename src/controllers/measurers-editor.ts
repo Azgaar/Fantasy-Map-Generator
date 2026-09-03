@@ -130,8 +130,8 @@ function removeAllMeasurers(): void {
 // measurer creation tools
 
 function addRuler(): void {
-  const width = Math.min(options.graph.width, viewport.width);
-  const height = Math.min(options.graph.height, viewport.height);
+  const width = Math.min(facts.graph.width, viewport.width);
+  const height = Math.min(facts.graph.height, viewport.height);
   const svgEl = ensureEl<HTMLElement>("map") as unknown as SVGSVGElement;
   const pt = svgEl.createSVGPoint();
   pt.x = width / 2;

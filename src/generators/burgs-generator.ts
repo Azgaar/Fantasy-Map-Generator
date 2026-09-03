@@ -72,7 +72,7 @@ class BurgModule {
       const sorted = populatedCells.sort((a, b) => score[b] - score[a]);
 
       const capitalsNumber = getCapitalsNumber();
-      let spacing = (options.graph.width + options.graph.height) / 2 / capitalsNumber; // min distance between capitals
+      let spacing = (facts.graph.width + facts.graph.height) / 2 / capitalsNumber; // min distance between capitals
 
       for (let i = 0; burgs.length <= capitalsNumber; i++) {
         const cell = sorted[i];
@@ -111,7 +111,7 @@ class BurgModule {
       const sorted = populatedCells.sort((a, b) => score[b] - score[a]);
 
       const burgsNumber = getTownsNumber();
-      let spacing = (options.graph.width + options.graph.height) / 150 / (burgsNumber ** 0.7 / 66); // min distance between town
+      let spacing = (facts.graph.width + facts.graph.height) / 150 / (burgsNumber ** 0.7 / 66); // min distance between town
 
       for (let added = 0; added < burgsNumber && spacing > 1; ) {
         for (let i = 0; added < burgsNumber && i < sorted.length; i++) {
@@ -152,7 +152,7 @@ class BurgModule {
     this.assignPorts();
 
     function getCapitalsNumber() {
-      let number = options.states.limit;
+      let number = options.generation.states.limit;
 
       if (populatedCells.length < number * 10) {
         number = Math.floor(populatedCells.length / 10);
@@ -163,8 +163,8 @@ class BurgModule {
     }
 
     function getTownsNumber() {
-      if (Options.isAutoBurgLimit) return rn(populatedCells.length / 5 / (grid.points.length / 10000) ** 0.8);
-      return Math.min(options.burgs.limit, populatedCells.length);
+      if (Options.isAutoBurgLimit()) return rn(populatedCells.length / 5 / (grid.points.length / 10000) ** 0.8);
+      return Math.min(options.generation.burgs.limit, populatedCells.length);
     }
   }
 
@@ -473,7 +473,7 @@ class BurgModule {
     const { burgIcons, anchors } = styles.burgIcons;
     const iconTemplate = burgIcons.groups.town || Object.values(burgIcons.groups)[0];
     const anchorTemplate = anchors.groups.town || Object.values(anchors.groups)[0];
-    for (const { name } of options.burgs.groups) {
+    for (const { name } of facts.burgs.groups) {
       if (!burgIcons.groups[name] && iconTemplate) burgIcons.groups[name] = structuredClone(iconTemplate);
       if (!anchors.groups[name] && anchorTemplate) anchors.groups[name] = structuredClone(anchorTemplate);
     }
@@ -482,11 +482,11 @@ class BurgModule {
   defineGroup(burg: Burg, populations: number[]) {
     if (burg.lock && burg.group) {
       // locked burgs: don't change group if it still exists
-      const group = options.burgs.groups.find((g: any) => g.name === burg.group);
+      const group = facts.burgs.groups.find((g: any) => g.name === burg.group);
       if (group) return;
     }
 
-    const defaultGroup = options.burgs.groups.find(g => g.isDefault);
+    const defaultGroup = facts.burgs.groups.find(g => g.isDefault);
     if (!defaultGroup) {
       ERROR && console.error("No default group defined");
       return;
@@ -494,7 +494,7 @@ class BurgModule {
     burg.group = defaultGroup.name;
     if (burg.label?.group) delete burg.label.group;
 
-    for (const group of options.burgs.groups) {
+    for (const group of facts.burgs.groups) {
       if (!group.active) continue;
 
       if (group.min) {
@@ -552,15 +552,12 @@ class BurgModule {
   private createWatabouCityLinks(burg: Burg) {
     const cells = pack.cells;
     const { i, name, population: burgPopulation, cell } = burg;
-    const burgSeed = burg.MFCG || options.seed + String(burg.i).padStart(4, "0");
+    const burgSeed = burg.MFCG || facts.seed + String(burg.i).padStart(4, "0");
 
     const sizeRaw =
-      2.13 *
-      ((burgPopulation! * options.units.population.scale) / options.units.population.urbanization.density) ** 0.385;
+      2.13 * ((burgPopulation! * facts.units.population.scale) / facts.units.population.urbanization.density) ** 0.385;
     const size = minmax(Math.ceil(sizeRaw), 6, 100);
-    const population = rn(
-      burgPopulation! * options.units.population.scale * options.units.population.urbanization.rate
-    );
+    const population = rn(burgPopulation! * facts.units.population.scale * facts.units.population.urbanization.rate);
 
     const river = cells.r[cell] ? 1 : 0;
     const coast = Number((burg.port || 0) > 0);
@@ -619,8 +616,8 @@ class BurgModule {
     const { cells, features } = pack;
     const { i, population, cell } = burg;
 
-    const burgSeed = options.seed + String(i).padStart(4, "0");
-    const pop = rn(population! * options.units.population.scale * options.units.population.urbanization.rate);
+    const burgSeed = facts.seed + String(i).padStart(4, "0");
+    const pop = rn(population! * facts.units.population.scale * facts.units.population.urbanization.rate);
     const tags = [];
 
     if (cells.r[cell] && cells.haven[cell]) tags.push("estuary");
@@ -679,8 +676,8 @@ class BurgModule {
   }
 
   private createWatabouDwellingLinks(burg: Burg) {
-    const burgSeed = options.seed + String(burg.i).padStart(4, "0");
-    const pop = rn(burg.population! * options.units.population.scale * options.units.population.urbanization.rate);
+    const burgSeed = facts.seed + String(burg.i).padStart(4, "0");
+    const pop = rn(burg.population! * facts.units.population.scale * facts.units.population.urbanization.rate);
 
     const tags = (() => {
       if (pop > 200) return ["large", "tall"];
@@ -710,7 +707,7 @@ class BurgModule {
     };
     if (burg.link) return { link: burg.link, preview: burg.link };
 
-    const group = options.burgs.groups.find((g: any) => g.name === burg.group);
+    const group = facts.burgs.groups.find((g: any) => g.name === burg.group);
     if (!group?.preview || !previewGeneratorsMap[group.preview]) return { link: null, preview: null };
 
     return previewGeneratorsMap[group.preview](burg);
@@ -817,9 +814,10 @@ class BurgModule {
     const sorted = cells.i.filter(i => score[i] > 0 && cells.culture[i]).sort((a, b) => score[b] - score[a]);
     const statesCount = states.filter(state => state.i && !state.removed).length;
     const burgsCount =
-      (Options.isAutoBurgLimit ? rn(sorted.length / 5 / (grid.points.length / 10000) ** 0.8) : options.burgs.limit) +
-      statesCount;
-    const spacing = (options.graph.width + options.graph.height) / 150 / (burgsCount ** 0.7 / 66);
+      (Options.isAutoBurgLimit()
+        ? rn(sorted.length / 5 / (grid.points.length / 10000) ** 0.8)
+        : options.generation.burgs.limit) + statesCount;
+    const spacing = (facts.graph.width + facts.graph.height) / 150 / (burgsCount ** 0.7 / 66);
 
     for (let index = 0; index < sorted.length && newBurgs.length < burgsCount; index++) {
       const id = newBurgs.length;

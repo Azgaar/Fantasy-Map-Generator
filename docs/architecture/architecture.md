@@ -527,9 +527,9 @@ Static content: lookup tables, templates, tuning constants, reference lists.
   mis-filed — it is really a generator, editor, io module, or (if it merely _presents_ state and
   is always on screen) **chrome**.
 - **App preferences are a service.** The `localStorage` scope from
-  [Two scopes of configuration](#two-scopes-of-configuration) — UI prefs, locked generation
-  options, "don't ask again" flags — lives in `services/preferences.ts`. It is per-browser
-  platform state, never part of the `.map`. Map config is not a service; it is state.
+  [Two scopes of configuration](#two-scopes-of-configuration) — UI prefs, pinned requests,
+  "don't ask again" flags — is per-browser platform state, never part of the `.map`. Map
+  config is not a service; it is state.
 - **IO is a service.** Save/load/export live in `src/services/io/`. Like controllers, each
   service/io module exports a single named object (`Save`, `Load`, `ExportMap`, …) reached
   through the `Services` registry (`Services.Save.saveMap(...)`).
@@ -555,7 +555,7 @@ two typed registries — `Controllers` (built in `src/controllers/index.ts`) and
 Generators, renderers, and components are different: they are **eager** and self-register their
 own globals (`window.Markets`, `window.drawRoutes`, `window.tip`) because classic code calls them
 directly and, in chrome's case, because there is no moment at which they would be "opened". See
-[lazy_loading.md](./lazy_loading.md) for the full pattern and how to add a module.
+[lazy-loading.md](./lazy-loading.md) for the full pattern and how to add a module.
 
 ---
 
@@ -648,7 +648,7 @@ that are never released.
 ## Load time
 
 Split rarely-used features into on-demand chunks so the initial bundle stays small — see
-[lazy_loading.md](./lazy_loading.md).
+[lazy-loading.md](./lazy-loading.md).
 
 ## Measure, don't guess
 
@@ -662,8 +662,9 @@ Profile real maps at large cell counts and optimise the measured bottleneck.
 Settings, options, and style panels are a large share of the app's surface — and a
 large share of its memory cost. The configuration _data_
 is **State**, and the panels that edit it are **Controllers** (a settings subtype beside
-editors and overviews). How the map config object is stored, persisted, locked, randomized and
-migrated today is described in [options.md](./options.md).
+editors and overviews). How configuration is split, stored, persisted, locked, preserved
+between maps, validated and migrated is described in
+[configuration.md](./configuration.md).
 
 ## Configuration is state, not the DOM
 
@@ -675,23 +676,35 @@ migrated today is described in [options.md](./options.md).
 
 ## Two scopes of configuration
 
-| Scope              | Source of truth              | Persisted to                 | Examples                                                     |
-| ------------------ | ---------------------------- | ---------------------------- | ------------------------------------------------------------ |
-| **Map config**     | the serialized map state     | the `.map` file              | generation parameters, units, resolved map style, biome data |
-| **App preference** | an app/session config object | `localStorage` (per browser) | UI prefs, panel positions, theme, "don't ask again" flags    |
+Every configurable value is either something true about **this map** or something this
+**browser** wants. Those are two objects, and nothing is both:
+
+| Scope              | Object    | Source of truth          | Persisted to                 | Examples                                                             |
+| ------------------ | --------- | ------------------------ | ---------------------------- | -------------------------------------------------------------------- |
+| **Map config**     | `facts`   | the serialized map state | the `.map` file              | seed, extent, world position, climate, units, lore, definition sets  |
+| **App preference** | `options` | an app/session object    | `localStorage` (per browser) | requests for the next map, viewer preferences, UI prefs, pinned values |
 
 - **Map config travels with the map** and must round-trip through [IO](#io-serialization); a
   map opened on another machine must look identical.
 - **App preferences never enter the `.map`** — they are this browser's choices, not the
   map's. Keep the two apart so one user's UI tweaks don't ride along inside a shared map.
+- **`options` holds requests; `facts` holds what happened.** A request and its result are
+  different values in different objects with different names, never two copies of one value.
+- **Facts are written by generation, derivation or a file load — never by an input event.**
+  An input writes `options`; a fact changes when a generator runs, a derivation re-runs, or a
+  `.map` is read. This is what keeps a saved file consistent with the map it describes.
+
+The admission test for `facts`, and the mechanics of loading, saving, preserving user-authored
+sets between maps and validating both objects, are in [configuration.md](./configuration.md).
 
 ## Generation is configuration-driven
 
-A generator reads its tunable parameters from the **map config object**, not from magic
-numbers buried in the algorithm. The goal is that every significant lever of generation —
-counts, rates, thresholds, spacing, weights — can be changed by the end user **without
-editing code**. Many advanced users treat the tool as a sandbox, so configurability is a
-feature in its own right, not just a developer convenience.
+A generator reads its tunable parameters from the **configuration objects**, not from magic
+numbers buried in the algorithm: it takes its requests from `options`, and the parameters that
+stay true of the map it produced are written into `facts`. The goal is that every significant
+lever of generation — counts, rates, thresholds, spacing, weights — can be changed by the end
+user **without editing code**. Many advanced users treat the tool as a sandbox, so
+configurability is a feature in its own right, not just a developer convenience.
 
 - **Promote meaningful constants to config.** The test is _would a user plausibly want to
   change this?_ If yes, it becomes a named field on the config object. If it is a fixed
@@ -706,7 +719,10 @@ feature in its own right, not just a developer convenience.
   alike — with no bespoke UI per setting. Keep fields self-describing so that editor stays
   simple.
 - **Defaults are part of the schema.** A new map starts from the config defaults; a loaded
-  `.map` restores its saved config, so a value the user changed reproduces exactly on reload.
+  `.map` restores its saved facts, so a value the user changed reproduces exactly on reload.
+- **A count is data, not configuration.** How many states a map has is answered by the world,
+  not by the request that produced it; only the rates, ratios and varieties that keep being
+  consulted after generation are configuration.
 
 ## The editing UI are controllers
 

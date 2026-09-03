@@ -99,8 +99,9 @@ const PRESET_ROUTES: Record<string, PresetRoute> = {
   "#ruler": { path: ["rulers"], options: { "data-size": "fontSize", "font-size": "fontSize" } },
   "#scaleBar": {
     path: ["scaleBar"],
-    options: { "data-bar-size": "barSize", "data-x": "x", "data-y": "y", "data-label": "label" },
-    strings: ["label"]
+    options: { "data-bar-size": "barSize" },
+    // the label and position are facts of the map, lifted out by the v1.151.0 migration
+    drop: ["data-x", "data-y", "data-label"]
   },
   "#scaleBarBack": {
     path: ["scaleBar", "back"],
@@ -488,7 +489,7 @@ export function presetBagFor(
 
 // v1.145-1.147 saved maps with the layer styling stripped out
 export async function restoreStrippedLayerStyles(): Promise<void> {
-  const [, preset] = await (window as any).getStylePreset(options.style.preset || "default");
+  const [, preset] = await (window as any).getStylePreset(facts.style.preset || "default");
 
   const isBareGroup = (group: Element, declared: Record<string, string> = {}): boolean => {
     const ignored = new Set(["id", "style", "data-layer", "data-group", ...Object.keys(declared)]);

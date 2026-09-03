@@ -2,6 +2,7 @@
 import { select } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
+import type { OptionsData } from "@/components/options-schema";
 import { tip } from "@/components/tooltips";
 import { Services } from "@/services";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
@@ -24,7 +25,7 @@ function showSavePane(): void {
 }
 
 function showExportPane(): void {
-  ensureEl<HTMLInputElement>("showLabels").checked = options.labels.showAll;
+  ensureEl<HTMLInputElement>("showLabels").checked = facts.labels.showAll;
 
   $("#exportMapData").dialog({
     title: "Export map data",
@@ -146,7 +147,24 @@ function onTileInput(this: HTMLInputElement): void {
   const { nextElementSibling: next, previousElementSibling: previous } = this;
   if (next instanceof HTMLInputElement) next.value = this.value;
   if (previous instanceof HTMLInputElement) previous.value = this.value;
+  storeExportPreference(this);
   updateTilesOptions();
+}
+
+/**
+ * These dialogs own their controls, so they write what the exporters read - never the other way
+ * round. See docs/architecture/configuration.md
+ */
+const EXPORT_PREFERENCES: Record<string, (options: OptionsData, value: number) => void> = {
+  pngResolution: (o, value) => (o.view.export.pngResolution = value),
+  tileCols: (o, value) => (o.view.export.tiles.cols = value),
+  tileRows: (o, value) => (o.view.export.tiles.rows = value),
+  tileScale: (o, value) => (o.view.export.tiles.scale = value)
+};
+
+function storeExportPreference(input: HTMLInputElement): void {
+  const write = EXPORT_PREFERENCES[input.dataset.stored ?? ""];
+  if (write) Options.set(o => write(o, +input.value));
 }
 
 const ROW_LABELS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -156,25 +174,23 @@ const rowLabel = (row: number) =>
 
 /** Report the total pixel size of the tile set and outline the tiles over the map */
 function updateTilesOptions(): void {
-  const columns = +ensureEl<HTMLOutputElement>("tileColsOutput").value || 2;
-  const rows = +ensureEl<HTMLOutputElement>("tileRowsOutput").value || 2;
-  const scale = +ensureEl<HTMLOutputElement>("tileScaleOutput").value || 1;
+  const { cols: columns, rows, scale } = options.view.export.tiles;
 
-  const sizeX = options.graph.width * scale * columns;
-  const sizeY = options.graph.height * scale * rows;
+  const sizeX = facts.graph.width * scale * columns;
+  const sizeY = facts.graph.height * scale * rows;
   const totalSize = sizeX * sizeY;
 
   const tileSize = ensureEl("tileSize");
   tileSize.innerHTML = `${sizeX} x ${sizeY} px`;
   tileSize.style.color = totalSize > 1e9 ? "#d00b0b" : totalSize > 1e8 ? "#9e6409" : "#1a941a";
 
-  const tileWidth = (options.graph.width / columns) | 0;
-  const tileHeight = (options.graph.height / rows) | 0;
+  const tileWidth = (facts.graph.width / columns) | 0;
+  const tileHeight = (facts.graph.height / rows) | 0;
   const rects: string[] = [];
   const labels: string[] = [];
 
-  for (let y = 0, row = 0; y + tileHeight <= options.graph.height; y += tileHeight, row++) {
-    for (let x = 0, column = 1; x + tileWidth <= options.graph.width; x += tileWidth, column++) {
+  for (let y = 0, row = 0; y + tileHeight <= facts.graph.height; y += tileHeight, row++) {
+    for (let x = 0, column = 1; x + tileWidth <= facts.graph.width; x += tileWidth, column++) {
       rects.push(`<rect x=${x} y=${y} width=${tileWidth} height=${tileHeight} />`);
       const label = `${rowLabel(row)}${column}`;
       labels.push(`<text x=${x + tileWidth / 2} y=${y + tileHeight / 2}>${label}</text>`);
@@ -186,8 +202,18 @@ function updateTilesOptions(): void {
 }
 
 function initialize(): void {
+  // the image scale lives in the export dialog, and the tile controls wire themselves when it opens
+  for (const input of document.querySelectorAll<HTMLInputElement>('[data-stored="pngResolution"]')) {
+    input.addEventListener("input", () => {
+      for (const paired of document.querySelectorAll<HTMLInputElement>('[data-stored="pngResolution"]')) {
+        paired.value = input.value;
+      }
+      storeExportPreference(input);
+    });
+  }
+
   ensureEl("showLabels").addEventListener("change", function (this: HTMLInputElement) {
-    options.labels.showAll = this.checked;
+    facts.labels.showAll = this.checked;
     Layers.draw("labels");
   });
 

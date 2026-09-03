@@ -257,7 +257,7 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
       .attr("fill", "none");
 
     // Biome colour bar
-    const hu = options.units.height.unit;
+    const hu = facts.units.height.unit;
     const biomesG = chart.append("g").attr("id", "epbiomes").attr("clip-path", "url(#epBiomesClip)");
     const tileWidth = xscale(1);
 
@@ -268,7 +268,7 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
       const burgId = chartData.burg[k];
       const pop =
         pack.cells.pop[cell] +
-        (burgId ? ((pack.burgs[burgId] as Burg).population ?? 0) * options.units.population.urbanization.rate : 0);
+        (burgId ? ((pack.burgs[burgId] as Burg).population ?? 0) * facts.units.population.urbanization.rate : 0);
       const provinceName = province ? (pack.provinces[province] as Province).name : null;
       const stateName = (pack.states[pack.cells.state[cell]] as State).name;
       const religionName = (pack.religions[pack.cells.religion[cell]] as { name: string }).name;
@@ -280,7 +280,7 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
         religionName,
         cultureName,
         `height: ${chartData.height[k]} ${hu}`,
-        `population ${rn(pop * options.units.population.scale)}`
+        `population ${rn(pop * facts.units.population.scale)}`
       ]
         .filter(Boolean)
         .join(", ");
@@ -299,7 +299,7 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
     // Axes
     const xAxis = axisBottom(xscale)
       .ticks(10)
-      .tickFormat(d => `${rn((Number(d) / (pts.length - 1)) * routeLen)} ${options.units.distance.unit}`);
+      .tickFormat(d => `${rn((Number(d) / (pts.length - 1)) * routeLen)} ${facts.units.distance.unit}`);
     const yAxis = axisLeft(yscale)
       .ticks(5)
       .tickFormat(d => `${d} ${hu}`);
@@ -412,7 +412,7 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
 
     // Stats line in the controls bar
     ensureEl("epstats").textContent =
-      `Elev: ${chartData.mi}\u2013${chartData.ma} ${options.units.height.unit}\u2002\u2191\u202f${totalAscent}\u2002\u2193\u202f${totalDescent} ${options.units.height.unit}`;
+      `Elev: ${chartData.mi}\u2013${chartData.ma} ${facts.units.height.unit}\u2002\u2191\u202f${totalAscent}\u2002\u2193\u202f${totalDescent} ${facts.units.height.unit}`;
 
     // Crosshair + FMG tooltip on hover
     const crosshairG = chart.append("g").attr("id", "epcrosshair").style("pointer-events", "none");
@@ -457,8 +457,8 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
         const burgId = chartData.burg[idx];
         tip(
           [
-            `${dist} ${options.units.distance.unit} from start`,
-            `Elevation: ${chartData.height[idx]} ${options.units.height.unit}`,
+            `${dist} ${facts.units.distance.unit} from start`,
+            `Elevation: ${chartData.height[idx]} ${facts.units.height.unit}`,
             pack.biomes[chartData.biome[idx]].name,
             burgId ? ((pack.burgs[burgId] as Burg).name ?? null) : null
           ]
@@ -484,7 +484,7 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
       const pop = pack.cells.pop[cell];
       const burg = burgId ? (pack.burgs[burgId] as Burg) : null;
       const burgPop = burg
-        ? (burg.population ?? 0) * options.units.population.scale * options.units.population.urbanization.rate
+        ? (burg.population ?? 0) * facts.units.population.scale * facts.units.population.urbanization.rate
         : 0;
       const culture = pack.cultures[pack.cells.culture[cell]] as {
         name: string;
@@ -500,12 +500,12 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
         k + 1,
         x,
         y,
-        getLatitude(y, options.geography.coordinates, options.graph.height, 2),
-        getLongitude(x, options.geography.coordinates, options.graph.width, 2),
+        getLatitude(y, facts.geography.coordinates, facts.graph.height, 2),
+        getLongitude(x, facts.geography.coordinates, facts.graph.width, 2),
         cell,
         getHeight(h),
         h,
-        rn(pop * options.units.population.scale),
+        rn(pop * facts.units.population.scale),
         burg?.name ?? "",
         burgPop,
         pack.biomes[pack.cells.biome[cell]].name,

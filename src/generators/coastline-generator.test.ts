@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { Coastline } from "./coastline-generator";
 import type { Feature } from "./features";
 
@@ -9,15 +9,23 @@ const island = {
   vertices: [0, 1, 2, 3]
 } as unknown as Feature;
 
-/** The generator reads a seed off the store and writes its settings through the model */
-const stubStore = () => ({ seed: "1", graph: { width: 100, height: 100 } }) as unknown as typeof globalThis.options;
-const stubModel = () =>
-  ({ set: (change: (o: unknown) => void) => change(globalThis.options) }) as unknown as typeof globalThis.Options;
+/** The settings are facts of the map; a user edit also remembers them for the next one */
+const stubFacts = () => ({ seed: "1", graph: { width: 100, height: 100 } }) as unknown as typeof globalThis.facts;
+const stubFactsModel = () =>
+  ({ set: (change: (f: unknown) => void) => change(globalThis.facts) }) as unknown as typeof globalThis.Facts;
+
+let remembered: [string, unknown][] = [];
+const stubOptionsModel = () =>
+  ({
+    remember: (entry: string, value: unknown) => remembered.push([entry, value])
+  }) as unknown as typeof globalThis.Options;
 
 beforeEach(() => {
   localStorage.clear();
-  globalThis.options = stubStore();
-  globalThis.Options = stubModel();
+  remembered = [];
+  globalThis.facts = stubFacts();
+  globalThis.Facts = stubFactsModel();
+  globalThis.Options = stubOptionsModel();
   globalThis.pack = {
     vertices: {
       p: [
@@ -36,21 +44,20 @@ describe("settings", () => {
     expect(Coastline.settings).toEqual(Coastline.getDefaultSettings());
   });
 
-  it("keeps them in options, so they are saved and restored with the map", () => {
+  it("keeps them in facts, so they are saved and restored with the map", () => {
     Coastline.update({ maxDepth: 2 });
-    expect(options.coastline.maxDepth).toBe(2);
+    expect(facts.coastline.maxDepth).toBe(2);
 
-    options.coastline = { ...Coastline.getDefaultSettings(), maxDepth: 5 };
+    facts.coastline = { ...Coastline.getDefaultSettings(), maxDepth: 5 };
     expect(Coastline.settings.maxDepth).toBe(5);
   });
 
-  it("goes through Options.set, so the next session starts from the values the user picked", () => {
-    const set = vi.fn((change: (o: unknown) => void) => change(globalThis.options));
-    globalThis.Options = { set } as unknown as typeof globalThis.Options;
-
+  it("remembers a user edit, so the next map starts from the values they picked", () => {
     Coastline.update({ baseAmplitude: 3, enabled: false });
-    expect(set).toHaveBeenCalled();
-    expect(options.coastline).toEqual({ ...Coastline.getDefaultSettings(), baseAmplitude: 3, enabled: false });
+
+    const expected = { ...Coastline.getDefaultSettings(), baseAmplitude: 3, enabled: false };
+    expect(facts.coastline).toEqual(expected);
+    expect(remembered).toEqual([["coastline", expected]]);
   });
 });
 
@@ -58,13 +65,13 @@ describe("getFeaturePath", () => {
   it("reproduces the same coastline for the same seed and settings", () => {
     const path = Coastline.getFeaturePath(island);
 
-    delete (options as Partial<typeof options>).coastline; // reload: settings are read from the map again
+    delete (facts as Partial<typeof facts>).coastline; // reload: settings are read from the map again
     expect(Coastline.getFeaturePath(island)).toBe(path);
 
     for (let i = 0; i < 100; i++) Math.random(); // an own rng per feature, unaffected by what was generated before
     expect(Coastline.getFeaturePath(island)).toBe(path);
 
-    globalThis.options.seed = "2";
+    facts.seed = "2";
     expect(Coastline.getFeaturePath(island)).not.toBe(path);
   });
 

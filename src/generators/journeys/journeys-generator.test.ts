@@ -24,7 +24,7 @@ describe("journey metrics", () => {
 
   beforeEach(async () => {
     await import("../transports-generator");
-    (globalThis as any).options = {
+    (globalThis as any).facts = {
       units: { distance: { scale: 1 } },
       transports: (globalThis as any).Transports.getDefaults()
     };
@@ -32,8 +32,8 @@ describe("journey metrics", () => {
     Journeys = (globalThis as any).Journeys;
   });
 
-  it("getSegmentDistance multiplies by options.units.distance.scale", () => {
-    (globalThis as any).options.units.distance.scale = 2;
+  it("getSegmentDistance multiplies by facts.units.distance.scale", () => {
+    (globalThis as any).facts.units.distance.scale = 2;
     expect(Journeys.getSegmentDistance(makeSeg(10, 5))).toBe(20);
   });
 

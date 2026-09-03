@@ -10,7 +10,7 @@ beforeEach(() => {
       <g id="icons"><g id="burgIcons"></g><g id="anchors"></g></svg>
     </svg>`;
   globalThis.pack = { burgs: [{}, { i: 1, group: "town", x: 10, y: 10 }] } as never;
-  globalThis.options = { ...globalThis.options, burgs: { groups: [{ name: "town", order: 0 }] } } as never;
+  globalThis.facts = { ...globalThis.facts, burgs: { groups: [{ name: "town", order: 0 }] } } as never;
 });
 
 test("drawBurgIcons styles groups from the store, ignoring stale DOM attrs", () => {

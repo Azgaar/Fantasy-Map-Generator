@@ -5,7 +5,6 @@ declare global {
     showElementLockTip: typeof import("../components/tooltips").showElementLockTip;
     lock: typeof import("../utils/preferences").lock;
     unlock: typeof import("../utils/preferences").unlock;
-    stored: typeof import("../utils/preferences").stored;
     fitLegendBox: typeof import("../renderers/draw-legend").fitLegendBox;
     applyOption: typeof import("../utils").applyOption;
     closeDialogs: typeof import("../components/dialog/dialog-helpers").closeDialogs;

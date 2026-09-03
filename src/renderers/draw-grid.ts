@@ -18,8 +18,8 @@ export function drawGrid(): void {
 
   gridOverlay
     .append("rect")
-    .attr("width", options.graph.width)
-    .attr("height", options.graph.height)
+    .attr("width", facts.graph.width)
+    .attr("height", facts.graph.height)
     .attr("fill", `url(${pattern})`)
     .attr("stroke", "none");
 }

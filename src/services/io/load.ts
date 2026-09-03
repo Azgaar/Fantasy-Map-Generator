@@ -256,12 +256,14 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     migrateLegacySettings(mapVersion!, data);
     const settings = data[1] ? safeParseJSON(data[1]) : null;
     if (!settings) throw new Error("Map settings are missing or malformed");
-    Options.restore(settings);
+    Facts.adopt(Facts.parse(settings)); // replaces wholesale: nothing of the previous map survives
+    Coordinates.calculate(); // a derived fact is recomputed from its inputs, never trusted from the file
+    Options.syncOnLoad(); // the small allowlist of requests a load may carry over
     syncInputs();
 
     setStylePresetSelect();
 
-    INFO && console.group(options.seed ? `Loaded Map ${options.seed}` : "Loaded Map");
+    INFO && console.group(facts.seed ? `Loaded Map ${facts.seed}` : "Loaded Map");
     isLogGroupOpen = true;
 
     ensureEl<HTMLInputElement>("shapeRendering").value =

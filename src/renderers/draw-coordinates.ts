@@ -8,7 +8,7 @@ export function drawCoordinates(): void {
   const coordinates = select(ensureEl<SVGGElement>("coordinates"));
   coordinates.selectAll("*").remove(); // redraw every time: the label size depends on the zoom level
 
-  const { lonT, lonW, lonE, latN, latS } = options.geography.coordinates;
+  const { lonT, lonW, lonE, latN, latS } = facts.geography.coordinates;
   const goal = lonT / viewport.scale / 10;
   const step = STEPS.reduce((prev, curr) => (Math.abs(curr - goal) < Math.abs(prev - goal) ? curr : prev));
 
@@ -22,7 +22,7 @@ export function drawCoordinates(): void {
     ])
     .stepMajor([400, 400])
     .stepMinor([step, step]);
-  const projection = geoEquirectangular().fitSize([options.graph.width, options.graph.height], graticule());
+  const projection = geoEquirectangular().fitSize([facts.graph.width, facts.graph.height], graticule());
 
   // labels are placed at the top left corner of the screen, in map coordinates
   const point = new DOMPoint(viewport.scale + desiredSize + 2, viewport.scale + desiredSize / 2);
