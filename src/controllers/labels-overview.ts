@@ -195,7 +195,7 @@ function populateTypeFilter(): void {
 }
 
 function populateGroupFilter(): void {
-  const groups = options.labels.groups.map(({ name }) => name);
+  const groups = facts.labels.groups.map(({ name }) => name);
 
   const select = ensureEl<HTMLSelectElement>("labelsFilterGroup");
   select.options.length = 0;
@@ -263,7 +263,7 @@ function createLine(label: LabelData): string {
 }
 
 function createGroupOptions(selected: string): string {
-  const groups = options.labels.groups.map(({ name }) => name);
+  const groups = facts.labels.groups.map(({ name }) => name);
   const names = groups.includes(selected) ? groups : [selected, ...groups];
 
   return names
@@ -333,7 +333,7 @@ function resetLabel(element: HTMLElement): void {
 }
 
 function assignGroup(labels: LabelData[], groupName: string): void {
-  const group = options.labels.groups.find(({ name }) => name === groupName);
+  const group = facts.labels.groups.find(({ name }) => name === groupName);
   if (!group) return;
 
   const apply = () => {

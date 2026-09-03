@@ -1,5 +1,5 @@
-import type { z } from "zod";
 import { type LayerId, Layers } from "@/components/layers";
+import { parseSections, type TemplateLookup } from "@/utils/schemaUtils";
 import defaultStyles from "./default-styles.json";
 import { type StyleLayerId, type Styles as StylesData, stylesSchema } from "./styles-schema";
 
@@ -7,63 +7,15 @@ const DEFAULT_STYLES: DeepReadonly<StylesData> = stylesSchema.parse(defaultStyle
 globalThis.styles = structuredClone(DEFAULT_STYLES);
 
 function parse(json: unknown): StylesData {
-  const input = typeof json === "object" && json !== null ? (json as Record<string, unknown>) : {};
-  const result = {} as Record<string, unknown>;
-  for (const [layer, schema] of Object.entries(stylesSchema.shape)) {
-    const parsed = schema.safeParse(input[layer]);
-    if (parsed.success) {
-      result[layer] = parsed.data;
-      continue;
-    }
-
-    const fallback = structuredClone(DEFAULT_STYLES[layer as keyof StylesData]);
-    const repaired = replaceInvalidValues(input[layer], fallback, parsed.error);
-    const reparsed = repaired === undefined ? undefined : schema.safeParse(repaired);
-
-    if (reparsed?.success) {
-      console.warn(`Styles.parse: invalid "${layer}" values replaced with defaults`);
-      result[layer] = reparsed.data;
-    } else {
-      console.warn(`Styles.parse: invalid or missing "${layer}", default used`);
-      result[layer] = fallback;
-    }
-  }
-  return result as StylesData;
-}
-
-// replaces the failing values alone, so one bad attribute does not cost the layer around it;
-// undefined when that cannot be done, leaving the caller its whole-layer fallback
-function replaceInvalidValues(input: unknown, fallback: unknown, error: z.ZodError): unknown {
-  if (typeof input !== "object" || input === null) return undefined;
-
-  const repaired = structuredClone(input) as Record<PropertyKey, any>;
-  for (const { path } of error.issues) {
-    if (!path.length) return undefined;
-
-    let target: any = repaired;
-    let source: any = fallback;
-    let parentKey: PropertyKey | undefined;
-    for (const key of path.slice(0, -1)) {
-      target = target?.[key];
-      source = sourceValueFor(source, key, parentKey);
-      parentKey = key;
-    }
-
-    const key = path[path.length - 1];
-    if (target === undefined || target === null || source === undefined || source === null) return undefined;
-    const sourceValue = sourceValueFor(source, key, parentKey);
-    if (sourceValue === undefined) return undefined;
-    target[key] = structuredClone(sourceValue);
-  }
-  return repaired;
+  return parseSections<StylesData>(stylesSchema, DEFAULT_STYLES, json, "Styles.parse", sourceValueFor);
 }
 
 // custom group names don't exist in the defaults, so any stock group of the same record stands in as template
-function sourceValueFor(source: any, key: PropertyKey, parentKey: PropertyKey | undefined): unknown {
+const sourceValueFor: TemplateLookup = (source, key, parentKey) => {
   const value = source?.[key];
   if (value !== undefined || parentKey !== "groups") return value;
   return Object.values(source)[0];
-}
+};
 
 function set(data: StylesData): void {
   globalThis.styles = data;
@@ -109,4 +61,14 @@ type DeepReadonly<T> = T extends (...args: any[]) => any
     : T;
 
 export const Styles = { defaults: DEFAULT_STYLES, parse, set, write, apply };
+
+type StylesApi = typeof Styles;
+
+declare global {
+  /** the live style record, read bare across every layer and replaced wholesale on load */
+  var styles: import("./styles-schema").Styles;
+  // biome-ignore lint/suspicious/noRedeclare: the bridge registered just below
+  var Styles: StylesApi;
+}
+
 globalThis.Styles = Styles;

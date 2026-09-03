@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { countMaps, waitForMap, waitForNextMap } from "./wait-for-map";
 
 declare const options: any;
 declare const regeneratePrompt: (config?: { seed?: string }) => void;
@@ -10,8 +11,6 @@ declare const regeneratePrompt: (config?: { seed?: string }) => void;
 // zoom settle. Each case drives the actual control with a real DOM event and checks: (1) the
 // immediate effect, (2) the typed store value, (3) survival across invokeActiveZooming() at a
 // changed zoom, (4) the retired attribute is gone from the element.
-
-const waitForMap = (page: Page) => page.waitForFunction(() => (window as any).mapId !== undefined, { timeout: 60000 });
 
 const rn = (v: number, d = 0): number => Math.round(v * 10 ** d) / 10 ** d;
 
@@ -668,9 +667,9 @@ test.describe("style editor events drive the store", () => {
       options.labels.groups = [{ name: "cities", type: "burg", zoom: { min: 1, max: 25 } }];
     });
 
-    const before = await page.evaluate(() => (window as any).mapId);
+    const mapsBefore = await countMaps(page);
     await page.evaluate(() => regeneratePrompt({ seed: "registry-reset-test" }));
-    await page.waitForFunction(prev => (window as any).mapId !== prev, before, { timeout: 120000 });
+    await waitForNextMap(page, mapsBefore);
     await page.waitForTimeout(500);
 
     const after = await page.evaluate(() => ({

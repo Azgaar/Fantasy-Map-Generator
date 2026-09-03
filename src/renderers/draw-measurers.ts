@@ -20,7 +20,8 @@ function getMeasurerStyle(): MeasurerStyle {
   return { strokeWidth, dasharray, fontSize: options.fontSize };
 }
 
-const getDistance = (length: number): string => `${rn(length * distanceScale)} ${distanceUnitInput.value}`;
+const getDistance = (length: number): string =>
+  `${rn(length * facts.units.distance.scale)} ${facts.units.distance.unit}`;
 
 export function drawMeasurers(): void {
   select("#ruler").selectAll("*").remove();

@@ -1,10 +1,11 @@
+import { hideOptions } from "@/components/options/options-panel";
 import { Controllers } from "@/controllers";
 import { Services } from "@/services";
 import { toggleSaveReminder } from "@/services/autosave";
 import { findEl, minmax } from "@/utils";
 import { showInfo } from "./app-info";
 import { closeDialogs } from "./dialog/dialog-helpers";
-import { getLayerByShortcut } from "./layers-tab";
+import { getLayerByShortcut } from "./options/tabs/layers-tab";
 import { changeMapZoom, panMap, setMapZoom } from "./zoom";
 
 // Hotkeys, see github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys

@@ -1,5 +1,5 @@
 import { mean, min } from "d3";
-import { ensureEl, isLand, rn, unique } from "../utils";
+import { isLand, rn, unique } from "../utils";
 import type { Feature } from "./features";
 
 declare global {
@@ -60,7 +60,7 @@ export class LakesModule {
     };
 
     const getLakeEvaporation = (lake: Feature) => {
-      const height = (lake.height - 18) ** Number(heightExponentInput.value); // height in meters
+      const height = (lake.height - 18) ** facts.units.height.exponent; // height in meters
       const evaporation = ((700 * (lake.temp + 0.006 * height)) / 50 + 75) / (80 - lake.temp); // based on Penman formula, [1-11]
       return rn(evaporation * lake.cells);
     };
@@ -86,7 +86,7 @@ export class LakesModule {
   // check if lake can be potentially open (not in deep depression)
   detectCloseLakes(h: number[] | Uint8Array) {
     const { cells } = pack;
-    const ELEVATION_LIMIT = +(ensureEl("lakeElevationLimitOutput") as HTMLInputElement)?.value;
+    const ELEVATION_LIMIT = facts.heightmap.lakeElevationLimit;
 
     pack.features.forEach(feature => {
       if (feature.type !== "lake") return;

@@ -15,7 +15,7 @@ const ONE_LINE_GAIN = 1.25;
 const SHORT_NAME_GAIN = 1.15;
 
 export function fitStateLabel(state: State, group: string): { pathPoints: Point[]; text: string; fontSize: number } {
-  const mode = options.labels.groups.find(option => option.name === group)?.mode || "auto";
+  const mode = facts.labels.groups.find(option => option.name === group)?.mode || "auto";
   const fullName = state.fullName || state.name;
   const pole = state.pole || pack.cells.p[state.center];
   const cellsNumber = state.cells;

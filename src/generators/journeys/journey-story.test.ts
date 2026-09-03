@@ -78,8 +78,6 @@ describe("generateStoryJourney", () => {
       cells.burg[cell] = i;
     });
 
-    (globalThis as any).graphWidth = GRID * STEP;
-    (globalThis as any).graphHeight = GRID * STEP;
     (globalThis as any).pack = {
       cells,
       burgs,
@@ -91,7 +89,10 @@ describe("generateStoryJourney", () => {
       features: [0, { i: 1, type: "ocean", subtype: "sea", name: "" }]
     };
 
-    (globalThis as any).options = { transports: Transports.getDefaults() };
+    (globalThis as any).options = {
+      transports: Transports.getDefaults(),
+      graph: { width: GRID * STEP, height: GRID * STEP }
+    };
   });
 
   it("returns null when the map has fewer than two burgs", () => {
@@ -206,7 +207,10 @@ const MODERN_TYPES = [
 
 describe("archetype transport preferences", () => {
   beforeEach(() => {
-    (globalThis as any).options = { transports: Transports.getDefaults() };
+    (globalThis as any).options = {
+      transports: Transports.getDefaults(),
+      graph: { width: GRID * STEP, height: GRID * STEP }
+    };
   });
 
   // A preference is matched by name against the configured types, so a renamed default

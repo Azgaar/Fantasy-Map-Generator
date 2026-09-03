@@ -11,8 +11,8 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
-import type { FillBoxElement } from "@/components/fill-box";
 import { Layers } from "@/components/layers";
+import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -31,7 +31,10 @@ let filterState: { stateId: number };
 
 const getProvinceArea = (province: Province) => getArea(province.area!);
 const getProvincePopulation = (province: Province) =>
-  rn(province.rural! * populationRate + province.urban! * populationRate * urbanization);
+  rn(
+    province.rural! * facts.units.population.scale +
+      province.urban! * facts.units.population.scale * facts.units.population.urbanization.rate
+  );
 const columns: EditorColumn<Province>[] = [
   { key: "color", width: "1.2em", permanent: true },
   {
@@ -294,8 +297,8 @@ function renderProvincesPage(view: TableView<Province>): void {
   const lines = view.rows
     .map(p => {
       const area = getProvinceArea(p);
-      const rural = p.rural! * populationRate;
-      const urban = p.urban! * populationRate * urbanization;
+      const rural = p.rural! * facts.units.population.scale;
+      const urban = p.urban! * facts.units.population.scale * facts.units.population.urbanization.rate;
       const population = getProvincePopulation(p);
       const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}`;
       const stateName = pack.states[p.state].name;
@@ -544,8 +547,8 @@ function changePopulation(province: number): void {
     tip("Province does not have any cells, cannot change population", false, "error");
     return;
   }
-  const rural = rn(p.rural! * populationRate);
-  const urban = rn(p.urban! * populationRate * urbanization);
+  const rural = rn(p.rural! * facts.units.population.scale);
+  const urban = rn(p.urban! * facts.units.population.scale * facts.units.population.urbanization.rate);
   const total = rural + urban;
   const l = (n: number): string => Number(n).toLocaleString();
 
@@ -590,7 +593,7 @@ function changePopulation(province: number): void {
       });
     }
     if (!Number.isFinite(ruralChange) && +ruralPop.value > 0) {
-      const points = +ruralPop.value / populationRate;
+      const points = +ruralPop.value / facts.units.population.scale;
       const pop = rn(points / cells.length);
       cells.forEach(i => {
         pack.cells.pop[i] = pop;
@@ -604,7 +607,7 @@ function changePopulation(province: number): void {
       });
     }
     if (!Number.isFinite(urbanChange) && +urbanPop.value > 0) {
-      const points = +urbanPop.value / populationRate / urbanization;
+      const points = +urbanPop.value / facts.units.population.scale / facts.units.population.urbanization.rate;
       const population = rn(points / p.burgs!.length, 4);
       p.burgs!.forEach(b => {
         pack.burgs[b].population = population;
@@ -926,8 +929,8 @@ function showChart(): void {
     const state = pack.states[d.data.state].fullName;
 
     const area = `${getArea(d.data.area)} ${getAreaUnit()}`;
-    const rural = rn(d.data.rural * populationRate);
-    const urban = rn(d.data.urban * populationRate * urbanization);
+    const rural = rn(d.data.rural * facts.units.population.scale);
+    const urban = rn(d.data.urban * facts.units.population.scale * facts.units.population.urbanization.rate);
 
     const typeValue = ensureEl<HTMLSelectElement>("provincesTreeType").value;
     const value =
@@ -1200,12 +1203,12 @@ function recolorProvinces(): void {
 }
 
 function downloadProvincesData(): void {
-  const unit = areaUnit.value === "square" ? `${distanceUnitInput.value}2` : areaUnit.value;
+  const unit = facts.units.area.unit === "square" ? `${facts.units.distance.unit}2` : facts.units.area.unit;
   let data = `Id,Province,Full Name,Form,State,Color,Capital,Area ${unit},Total Population,Rural Population,Urban Population,Burgs\n`; // headers
 
   for (const province of getProvincesData()) {
     const capital = province.burg ? pack.burgs[province.burg].name : "";
-    data += `${province.i},${province.name},${province.fullName},${province.formName},${pack.states[province.state].name},${province.color},${capital},${getProvinceArea(province)},${getProvincePopulation(province)},${Math.round(province.rural! * populationRate)},${Math.round(province.urban! * populationRate * urbanization)},${province.burgs!.length}\n`;
+    data += `${province.i},${province.name},${province.fullName},${province.formName},${pack.states[province.state].name},${province.color},${capital},${getProvinceArea(province)},${getProvincePopulation(province)},${Math.round(province.rural! * facts.units.population.scale)},${Math.round(province.urban! * facts.units.population.scale * facts.units.population.urbanization.rate)},${province.burgs!.length}\n`;
   }
 
   const name = `${getFileName("Provinces")}.csv`;

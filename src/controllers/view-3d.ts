@@ -1,9 +1,11 @@
+import { is3dView } from "@/components/options/view-mode";
 import { tip } from "@/components/tooltips";
+import { viewport } from "@/components/viewport";
 import { timeOfDayPresets } from "@/data/view-3d-options";
 import { ensureEl } from "@/utils";
 
 // View3d controller: enters/exits the 3D view and owns the 3D settings dialog.
-// Configuration lives on the global `options.threeD` (not in this controller);
+// Configuration lives on the global `options.view.threeD` (not in this controller);
 // the heavy WebGL renderer is loaded lazily on first use.
 
 type Renderer = typeof import("@/renderers/view-3d-renderer");
@@ -38,7 +40,7 @@ const setTimeOfDay = (presetName: string) => loadRenderer().then(m => m.setTimeO
 const saveScreenshot = () => loadRenderer().then(m => m.saveScreenshot());
 const saveOBJ = () => loadRenderer().then(m => m.saveOBJ());
 // read access to view/erosion state (used by label/icon placement and e2e tests)
-const isOn = () => options.threeD.isOn;
+const isOn = () => is3dView();
 const isCached = (key?: string) => loadRenderer().then(m => m.isCached(key));
 const heightAt = (x: number, y: number, scale: number) => loadRenderer().then(m => m.heightAt(x, y, scale));
 
@@ -72,12 +74,12 @@ async function open(type: string): Promise<void> {
 
   if (type === "heightmap3DView") {
     const preview3d = ensureEl("preview3d");
-    canvas.width = parseFloat(preview3d.style.width) || graphWidth / 3;
-    canvas.height = canvas.width / (graphWidth / graphHeight);
+    canvas.width = parseFloat(preview3d.style.width) || facts.graph.width / 3;
+    canvas.height = canvas.width / (facts.graph.width / facts.graph.height);
     canvas.style.display = "block";
   } else {
-    canvas.width = svgWidth;
-    canvas.height = svgHeight;
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
     canvas.style.position = "absolute";
     canvas.style.display = "none";
   }
@@ -362,7 +364,7 @@ function setInput(id: string, value: string | number): void {
 }
 
 function updateValues(): void {
-  const o = options.threeD;
+  const o = options.view.threeD;
   const globe = (document.getElementById("canvas3d") as HTMLElement | null)?.dataset.type === "viewGlobe";
   ensureEl("options3dMesh").style.display = globe ? "none" : "block";
   ensureEl("options3dGlobe").style.display = globe ? "block" : "none";
@@ -401,7 +403,7 @@ function updateValues(): void {
 
 function updateTimeOfDayPreset(): void {
   const presetSelect = ensureEl<HTMLSelectElement>("options3dTimeOfDay");
-  const o = options.threeD;
+  const o = options.view.threeD;
 
   let matchingPreset = "custom";
   for (const [name, preset] of Object.entries(timeOfDayPresets)) {
@@ -468,7 +470,7 @@ function onChangeRotation(this: HTMLInputElement): void {
 }
 
 function onToggleErosion(): void {
-  const enabled = !options.threeD.erosion;
+  const enabled = !options.view.threeD.erosion;
   ensureEl("options3dErosionSection").style.display = enabled ? "block" : "none";
   ensureEl<HTMLInputElement>("options3dSubdivide").disabled = enabled; // dense geometry: subdivision ignored
   if (enabled) tip("Baking eroded terrain...", false, "warn", 4000);
@@ -492,7 +494,7 @@ function onChangeErosionRiverDepth(this: HTMLInputElement): void {
 }
 
 function onToggleSatellite(): void {
-  if (!options.threeD.satellite) tip("Baking satellite texture...", false, "warn", 4000);
+  if (!options.view.threeD.satellite) tip("Baking satellite texture...", false, "warn", 4000);
   void toggleSatellite();
 }
 
@@ -501,7 +503,7 @@ function onChangeErosionOctaves(this: HTMLInputElement): void {
 }
 
 function onToggleSkyMode(): void {
-  const hide = options.threeD.extendedWater;
+  const hide = options.view.threeD.extendedWater;
   ensureEl("options3dColorSection").style.display = hide ? "none" : "block";
   void toggleSky();
 }

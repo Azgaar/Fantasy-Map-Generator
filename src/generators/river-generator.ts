@@ -165,7 +165,7 @@ class RiverModule {
   }
 
   generate(allowErosion = true) {
-    Math.random = Alea(seed);
+    Math.random = Alea(facts.seed);
     const { cells, features } = pack;
 
     const riversData: { [riverId: number]: number[] } = {};
@@ -178,7 +178,7 @@ class RiverModule {
 
     const drainWater = () => {
       const MIN_FLUX_TO_FORM_RIVER = 30;
-      const cellsNumberModifier = ((pointsInput.dataset.cells as any) / 10000) ** 0.25;
+      const cellsNumberModifier = (facts.graph.points / 10000) ** 0.25;
 
       const prec = grid.cells.prec;
       const land = cells.i.filter((i: number) => h[i] >= 20).sort((a: number, b: number) => h[b] - h[a]);
@@ -310,7 +310,7 @@ class RiverModule {
       cells.conf = new Uint16Array(cells.i.length);
       pack.rivers = [];
 
-      const defaultWidthFactor = rn(1 / ((pointsInput.dataset.cells as any) / 10000) ** 0.25, 2);
+      const defaultWidthFactor = rn(1 / (facts.graph.points / 10000) ** 0.25, 2);
       const mainStemWidthFactor = defaultWidthFactor * 1.2;
 
       for (const key in riversData) {
@@ -425,7 +425,7 @@ class RiverModule {
   // depression filling algorithm (for a correct water flux modeling)
   resolveDepressions(h: number[]) {
     const { cells, features } = pack;
-    const maxIterations = +(document.getElementById("resolveDepressionsStepsOutput") as HTMLInputElement)?.value;
+    const maxIterations = facts.heightmap.resolveDepressionsSteps;
     const checkLakeMaxIteration = maxIterations * 0.85;
     const elevateLakeMaxIteration = maxIterations * 0.75;
 
@@ -490,7 +490,7 @@ class RiverModule {
       meandering: 0.5,
       startStep: h[riverCells[0]] < 20 ? 1 : 10,
       isWaterCell: riverCells.map(c => c !== -1 && h[c] < 20),
-      bounds: { width: graphWidth, height: graphHeight }
+      bounds: { width: facts.graph.width, height: facts.graph.height }
     });
 
     const flux: number[] = new Array(points.length).fill(0);
@@ -509,7 +509,7 @@ class RiverModule {
 
     const { p } = pack.cells;
     return riverCells.map((cell, i) => {
-      if (cell === -1) return projectToNearestEdge(p[riverCells[i - 1]], graphWidth, graphHeight);
+      if (cell === -1) return projectToNearestEdge(p[riverCells[i - 1]], facts.graph.width, facts.graph.height);
       return p[cell];
     });
   }

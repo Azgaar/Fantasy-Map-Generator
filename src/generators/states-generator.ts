@@ -3,7 +3,6 @@ import { Emblems } from "@/generators/emblems-generator";
 import type { Emblem } from "@/types/emblems";
 import {
   each,
-  ensureEl,
   gauss,
   generateSeed,
   getAdjective,
@@ -101,7 +100,7 @@ class StatesModule {
 
   private recreate(): { warning?: string; error?: string; states?: State[] } {
     Math.random = aleaPRNG(generateSeed());
-    const statesCount = ensureEl<HTMLInputElement>("statesNumber").valueAsNumber;
+    const statesCount = options.generation.states.limit;
     if (!statesCount) return { error: "<i>States Number</i> option value is zero. No counties are generated" };
 
     const validBurgs = pack.burgs.filter(burg => burg.i && !burg.removed);
@@ -139,7 +138,7 @@ class StatesModule {
       .sort((a, b) => b[1] - a[1])
       .map(([burg]) => burg);
     const count = Math.min(statesCount, validBurgs.length) + 1;
-    let spacing = (graphWidth + graphHeight) / 2 / count;
+    let spacing = (facts.graph.width + facts.graph.height) / 2 / count;
     const capitalsTree = quadtree<[number, number]>();
     const newStates: State[] = [{ ...pack.states[0], i: 0, name: pack.states[0].name }];
 
@@ -183,7 +182,7 @@ class StatesModule {
         : pack.cultures[culture].type === "Nomadic"
           ? "Generic"
           : pack.cultures[culture].type;
-      const expansionism = rn(Math.random() * ensureEl<HTMLInputElement>("sizeVariety").valueAsNumber + 1, 1);
+      const expansionism = rn(Math.random() * facts.states.sizeVariety + 1, 1);
       const coa = Emblems.generate(capital.coa, 0.3, null, pack.cultures[culture].type);
       coa.shield = capital.coa?.shield;
       newStates.push({
@@ -207,7 +206,7 @@ class StatesModule {
   private createStates() {
     const states: State[] = [{ i: 0, name: "Neutrals", salesTax: 0, pollTax: 0, treasury: 0 } as State];
     const each5th = each(5);
-    const sizeVariety = (ensureEl("sizeVariety") as HTMLInputElement).valueAsNumber;
+    const sizeVariety = facts.states.sizeVariety;
 
     pack.burgs.forEach(burg => {
       if (!burg.i || !burg.capital) return;
@@ -288,10 +287,7 @@ class StatesModule {
     const queue = new FlatQueue();
     const cost: number[] = [];
 
-    const globalGrowthRate = (document.getElementById("growthRate") as HTMLInputElement | null)?.valueAsNumber || 1;
-    const statesGrowthRate =
-      (document.getElementById("statesGrowthRate") as HTMLInputElement | null)?.valueAsNumber || 1;
-    const growthRate = (cells.i.length / 2) * globalGrowthRate * statesGrowthRate; // limit cost for state growth
+    const growthRate = (cells.i.length / 2) * facts.states.growthRate; // limit cost for state growth
 
     // remove state from all cells except of locked
     for (const cellId of cells.i) {
@@ -470,8 +466,8 @@ class StatesModule {
     return neighbors
       .map((i: number) => {
         const name = i && P(0.8) ? pack.states[i].name : Names.getCultureShort(state.culture);
-        const start = gauss(options.year - 100, 150, 1, options.year - 6);
-        const end = start + gauss(4, 5, 1, options.year - start - 1);
+        const start = gauss(facts.lore.calendar.year - 100, 150, 1, facts.lore.calendar.year - 6);
+        const end = start + gauss(4, 5, 1, facts.lore.calendar.year - start - 1);
         return { name: `${getAdjective(name)} ${rw(wars)}`, start, end, attacker: state.i!, defender: i };
       })
       .sort((a, b) => a.start - b.start);
@@ -582,7 +578,7 @@ class StatesModule {
 
       // start an ongoing war
       const name = `${an}-${trimVowels(dn)}ian War`;
-      const start = options.year - gauss(2, 3, 0, 10);
+      const start = facts.lore.calendar.year - gauss(2, 3, 0, 10);
       const war = [name, `${an} declared a war on its rival ${dn}`];
       const campaign: Campaign = { name, start, attacker, defender };
       states[attacker].campaigns!.push(campaign);

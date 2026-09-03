@@ -21,7 +21,7 @@ This document outlines the expected data structure. Current data model described
     }
   },
 
-  "settings": {
+  "facts": {
     "seed": "342342342323",
     "graph": {
       "width": 1280,
@@ -31,47 +31,25 @@ This document outlines the expected data structure. Current data model described
 
     "heightmap": {
       "template": "Volcano",
-      "isRandom": false,
-      "isPrecreated": false,
-      "isCustom": false
+      "resolveDepressionsSteps": 250,
+      "lakeElevationLimit": 20
     },
 
     "cultures": {
       "set": "Oriental",
-      "limit": 11,
       "sizeVariety": 2,
       "growthRate": 1.3
     },
 
     "states": {
-      "limit": 14,
       "sizeVariety": 2,
       "growthRate": 3,
-      "labels": {
-        "mode": "auto"
-      }
-    },
-
-    "provinces": {
-      "ratio": 30
-    },
-
-    "burgs": {
-      "limit": null,
-      "showMapPreview": true
-    },
-
-    "religions": {
-      "limit": 7
     },
 
     "labels": {
-      "autoHide": true,
-      "rescaleOnZoom": true
-    },
-
-    "notes": {
-      "pinned": false
+      "resizeOnZoom": true,
+      "showAll": false,
+      "groups": []
     },
 
     "scaleBar": {
@@ -83,9 +61,7 @@ This document outlines the expected data structure. Current data model described
     },
 
     "military": {
-      "units": {
-        "0": { "name": "infantry" }
-      }
+      "units": []
     },
 
     "lore": {
@@ -109,11 +85,9 @@ This document outlines the expected data structure. Current data model described
     },
 
     "geography": {
-      "mapSize": 11,
-      "latitudeShift": 50,
-      "coordinates": {
-        "latN": 34
-      }
+      "mapSize": 100,
+      "latitude": 50,
+      "longitude": 50,
     },
 
     "units": {

@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { waitForMap } from "./wait-for-map";
 
 // The emblems layer is viewport-rendered: only the emblems the current view covers are materialized as
 // <use> elements, and their coats of arms are rendered into <defs> on demand. A full-map export therefore
@@ -19,7 +20,7 @@ test.describe("emblems viewport rendering", () => {
     });
 
     await page.goto("/?seed=emblems-viewport&width=1280&height=720");
-    await page.waitForFunction(() => (window as Win).mapId !== undefined, { timeout: 60000 });
+    await waitForMap(page);
     await page.evaluate(() => (window as Win).Layers.show("emblems"));
     await expect.poll(async () => page.evaluate(countStateUses), { timeout: 30000 }).toBeGreaterThan(0);
   });

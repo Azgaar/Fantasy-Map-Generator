@@ -5,7 +5,7 @@ describe("GoodsModule", () => {
 
   beforeEach(async () => {
     globalThis.TIME = false;
-    globalThis.seed = "seed";
+    globalThis.facts = { ...globalThis.facts, seed: "seed" } as typeof globalThis.facts;
     globalThis.window = globalThis.window || ({} as any);
     globalThis.grid = { cells: { temp: [20, 20, 20, 20] } } as any;
     globalThis.pack = {

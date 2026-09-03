@@ -1,6 +1,4 @@
 export type ThreeDOptions = {
-  isOn: boolean;
-  isGlobe: boolean;
   scale: number;
   lightness: number;
   shadow: number;
@@ -64,8 +62,6 @@ export const timeOfDayPresets: Record<string, TimeOfDayPreset> = {
 };
 
 export const defaultOptions = {
-  isOn: false,
-  isGlobe: false,
   scale: 50,
   lightness: 0.6,
   shadow: 0.5,

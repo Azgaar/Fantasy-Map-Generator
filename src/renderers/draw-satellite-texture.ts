@@ -134,7 +134,7 @@ const fragmentShader = /* glsl */ `
   uniform vec2 uFieldSize;    // baked field size in px (uField/uCoast texels)
   uniform vec2 uGridSize;     // (cellsX, cellsY), for half-texel climate alignment
   uniform vec2 uSlopeScale;   // height gradient per texel -> world-space tan(slope), per axis
-  uniform float uAspect;      // graphHeight / graphWidth
+  uniform float uAspect;      // map height / map width
   uniform float uSeed;
 
   // accents over the biome albedo
@@ -541,10 +541,13 @@ export function generateSatelliteTexture(
         uFieldSize: { value: new THREE.Vector2(cols, rows) },
         uGridSize: { value: new THREE.Vector2(grid.cellsX, grid.cellsY) },
         uSlopeScale: {
-          value: new THREE.Vector2(worldPerHeight / (graphWidth / cols), worldPerHeight / (graphHeight / rows))
+          value: new THREE.Vector2(
+            worldPerHeight / (facts.graph.width / cols),
+            worldPerHeight / (facts.graph.height / rows)
+          )
         },
-        uAspect: { value: graphHeight / graphWidth },
-        uSeed: { value: (Number.parseInt(seed, 10) % 1e5 || 1) / 1e5 + 1 }
+        uAspect: { value: facts.graph.height / facts.graph.width },
+        uSeed: { value: (Number.parseInt(facts.seed, 10) % 1e5 || 1) / 1e5 + 1 }
       },
       depthTest: false,
       depthWrite: false
@@ -603,10 +606,10 @@ let flowTexture: THREEType.Texture | null = null;
 export function generateRiverFlowTexture(): THREEType.Texture {
   disposeRiverFlowTexture();
 
-  const scale = 1024 / Math.max(graphWidth, graphHeight);
+  const scale = 1024 / Math.max(facts.graph.width, facts.graph.height);
   const canvas = document.createElement("canvas");
-  canvas.width = Math.max(64, Math.round(graphWidth * scale));
-  canvas.height = Math.max(64, Math.round(graphHeight * scale));
+  canvas.width = Math.max(64, Math.round(facts.graph.width * scale));
+  canvas.height = Math.max(64, Math.round(facts.graph.height * scale));
   const ctx = canvas.getContext("2d")!;
   ctx.fillStyle = "#000";
   ctx.fillRect(0, 0, canvas.width, canvas.height);

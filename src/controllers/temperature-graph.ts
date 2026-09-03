@@ -19,7 +19,7 @@ const MONTHS = [
 
 function open(id: number): void {
   const b = pack.burgs[id];
-  const lat = (mapCoordinates.latN ?? 0) - (b.y / graphHeight) * (mapCoordinates.latT ?? 0);
+  const lat = facts.geography.coordinates.latN - (b.y / facts.graph.height) * facts.geography.coordinates.latT;
   const burgTemp = grid.cells.temp[pack.cells.g[b.cell]];
   const prec = grid.cells.prec[pack.cells.g[b.cell]];
 

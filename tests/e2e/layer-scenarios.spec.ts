@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { countMaps, waitForMap, waitForNextMap } from "./wait-for-map";
 
 // Scenarios that exercise the registry through the paths a user actually takes — preset switching,
 // map regeneration and reordering — rather than through a single layer's content. The invariant
@@ -33,8 +34,6 @@ const PRESETS = [
   "emblems",
   "landmass"
 ];
-
-const waitForMap = (page: Page) => page.waitForFunction(() => (window as any).mapId !== undefined, { timeout: 120000 });
 
 /** console errors are the cheapest signal that a draw or teardown went wrong, so every test watches them */
 function watchErrors(page: Page): string[] {
@@ -89,22 +88,12 @@ const selectPreset = (page: Page, name: string) =>
     select.dispatchEvent(new Event("change"));
   }, name);
 
-/**
- * `regenerateMap` is a lexical global of the classic main.js script (not a window property) and is
- * debounced, so the run has to be awaited through the event the generator emits when it finishes.
- */
+/** `regenerateMap` is debounced, so the run has to be awaited through the map count it bumps */
 async function regenerate(page: Page, seed?: string): Promise<void> {
-  await page.evaluate(
-    config => {
-      (window as any).__regenerated = new Promise<void>(resolve =>
-        window.addEventListener("map:generated", () => resolve(), { once: true })
-      );
-      (0, eval)(`regenerateMap(${config})`);
-    },
-    seed ? JSON.stringify({ seed }) : ""
-  );
-  await page.evaluate(() => (window as any).__regenerated);
-  await page.waitForTimeout(1200); // the layers are drawn right after the event
+  const previous = await countMaps(page);
+  await page.evaluate(config => (window as any).regenerateMap(config), seed ? { seed } : undefined);
+  await waitForNextMap(page, previous);
+  await page.waitForTimeout(1200); // the layers are drawn right after the map is registered
 }
 
 test.describe("layer scenarios", () => {

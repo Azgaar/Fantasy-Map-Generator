@@ -37,7 +37,6 @@ const DEFAULT_SETTINGS: Readonly<CoastlineSettings> = {
   lakeSmoothThreshMult: 2.0
 };
 
-const STORAGE_KEY = "coastline-settings";
 const SIMPLIFICATION_TOLERANCE = 0.3;
 
 const PROFILE_SIZE = 256;
@@ -172,7 +171,7 @@ function fractalize(points: [number, number][], rand: () => number, settings: Co
 }
 
 function isOnBorder([x, y]: [number, number]) {
-  return x === 0 || x === graphWidth || y === 0 || y === graphHeight;
+  return x === 0 || x === facts.graph.width || y === 0 || y === facts.graph.height;
 }
 
 /**
@@ -254,14 +253,18 @@ class CoastlineGenerator {
    * brand new map) starts from the last values the user picked
    */
   get settings(): CoastlineSettings {
-    options.coastline ??= this.getStoredSettings();
-    return options.coastline;
+    facts.coastline ??= this.getDefaultSettings();
+    return facts.coastline;
   }
 
-  /** Apply a user change: it defines the coastlines of this map and the defaults for the next one */
+  /**
+   * Apply a user change. A user edit writes both: the facts of this map, and the preservation
+   * library so the next map starts from what they picked.
+   * See docs/architecture/configuration.md#preservation-across-maps
+   */
   update(change: Partial<CoastlineSettings>): void {
-    const settings = Object.assign(this.settings, change);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+    Facts.set(() => Object.assign(this.settings, change));
+    Options.remember("coastline", this.settings, this.getDefaultSettings());
   }
 
   getDefaultSettings(): CoastlineSettings {
@@ -277,7 +280,7 @@ class CoastlineGenerator {
     }
 
     const simplifiedPoints = simplify(points, SIMPLIFICATION_TOLERANCE);
-    const clippedPoints = clipPoly(simplifiedPoints, graphWidth, graphHeight, 1);
+    const clippedPoints = clipPoly(simplifiedPoints, facts.graph.width, facts.graph.height, 1);
     const shape = this.fractalizeFeature(clippedPoints, feature);
     return `${round(buildCoastlinePath(shape))}Z`;
   }
@@ -307,20 +310,7 @@ class CoastlineGenerator {
         ? { ...this.settings, smoothThreshold: Math.min(1, smoothThreshold * lakeSmoothThreshMult) }
         : this.settings;
 
-    return fractalize(points, Alea(`${seed}_c${i}`), settings);
-  }
-
-  /** The values the user picked last, falling back to the defaults for keys the stored data misses */
-  private getStoredSettings(): CoastlineSettings {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return this.getDefaultSettings();
-
-    try {
-      return { ...DEFAULT_SETTINGS, ...JSON.parse(stored) };
-    } catch (error) {
-      ERROR && console.error("Invalid stored coastline settings", error);
-      return this.getDefaultSettings();
-    }
+    return fractalize(points, Alea(`${facts.seed}_c${i}`), settings);
   }
 }
 

@@ -1,3 +1,10 @@
+// The configuration globals the app installs at boot, so a unit test gets the same defaults
+import { getDefaultFacts } from "@/components/facts-schema";
+import { getDefaultOptions } from "@/components/options-schema";
+
+(globalThis as Record<string, unknown>).facts ??= getDefaultFacts();
+(globalThis as Record<string, unknown>).options ??= getDefaultOptions();
+
 // Make window === globalThis so module side-effects (window.rn = ...) work in Node
 if (typeof window === "undefined") {
   (globalThis as Record<string, unknown>).window = globalThis;
@@ -32,7 +39,7 @@ if (typeof window.clearMainTip === "undefined") {
   window.clearMainTip = () => {};
 }
 
-// Logging flags declared in public/main.js and referenced bare by bundled modules
+// Logging flags owned by services/logging.ts and referenced bare by bundled modules
 for (const flag of ["INFO", "TIME", "ERROR", "WARN", "DEBUG"]) {
   if (typeof (globalThis as Record<string, unknown>)[flag] === "undefined") {
     (globalThis as Record<string, unknown>)[flag] = false;

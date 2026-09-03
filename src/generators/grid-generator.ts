@@ -3,7 +3,7 @@ import Alea from "alea";
 import { min } from "d3";
 import type { GridCells, GridGraph } from "@/types/GridGraph";
 import type { Point } from "@/types/global";
-import { ensureEl, rn, SEA_LEVEL } from "@/utils";
+import { rn, SEA_LEVEL } from "@/utils";
 import { calculateVoronoi } from "./voronoi";
 
 declare global {
@@ -25,7 +25,6 @@ class GridModule {
     const { cells, vertices } = calculateVoronoi(points, boundary);
 
     const graph = {
-      seed,
       spacing,
       cellsDesired,
       cellsX: this.getCellsCount(spacing, width),
@@ -42,7 +41,7 @@ class GridModule {
 
   /** check whether the graph still fits the requested seed and canvas size */
   shouldRegenerate(graph: GridGraph, expectedSeed: string | undefined, width: number, height: number): boolean {
-    if (expectedSeed && expectedSeed !== graph.seed) return true;
+    if (expectedSeed && expectedSeed !== facts.seed) return true;
 
     const cellsDesired = this.getCellsDesired();
     if (cellsDesired !== graph.cellsDesired) return true;
@@ -54,8 +53,8 @@ class GridModule {
 
   /** make the global grid fit the requested seed and canvas size, keeping the current one if it does */
   prepare(expectedSeed?: string, precreated?: GridGraph): void {
-    if (this.shouldRegenerate(grid, expectedSeed, graphWidth, graphHeight)) {
-      grid = precreated ?? this.generate(seed, graphWidth, graphHeight);
+    if (this.shouldRegenerate(grid, expectedSeed, facts.graph.width, facts.graph.height)) {
+      grid = precreated ?? this.generate(facts.seed, facts.graph.width, facts.graph.height);
     } else {
       this.resetHeights(grid);
     }
@@ -79,7 +78,7 @@ class GridModule {
 
   /** number of cells requested by the user, the generated number is close but not equal to it */
   getCellsDesired(): number {
-    return +(ensureEl<HTMLInputElement>("pointsInput").dataset.cells || 0);
+    return facts.graph.points;
   }
 
   /** cell index at the given coordinates, resolved by the regular square grid the points sit on */
@@ -169,7 +168,7 @@ class GridModule {
 
   /** turn depressions that cannot pour to water into lakes */
   addDeepDepressionLakes(): void {
-    const elevationLimit = +ensureEl<HTMLOutputElement>("lakeElevationLimitOutput").value;
+    const elevationLimit = facts.heightmap.lakeElevationLimit;
     if (elevationLimit === 80) return;
 
     const { cells, features } = grid;
@@ -224,7 +223,7 @@ class GridModule {
 
   /** near sea lakes get a lot of water inflow, most of them should break the threshold and flow out to sea (see Ancylus Lake) */
   openNearSeaLakes(): void {
-    if (ensureEl<HTMLInputElement>("templateInput").value === "Atoll") return; // no need for Atolls
+    if (facts.heightmap.template === "Atoll") return; // no need for Atolls
 
     const { cells, features } = grid;
     if (!features.find(f => f.type === "lake")) return; // no lakes

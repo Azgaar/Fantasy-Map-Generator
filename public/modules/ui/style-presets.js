@@ -29,13 +29,22 @@ const customPresetPrefix = "fmgStyle_";
 }
 
 async function applyStyleOnLoad() {
-  const desiredPreset = localStorage.getItem("presetStyle") || "default";
-  const styleData = await getStylePreset(desiredPreset);
+  const styleData = await getStylePreset(facts.style.preset || "default");
   const [appliedPreset, style] = styleData;
 
   applyStylePreset(style);
   updateMapFilter();
-  stylePreset.value = stylePreset.dataset.old = appliedPreset;
+  Facts.set(f => (f.style.preset = appliedPreset)); // the fallback preset, if the stored one is gone
+  setStylePresetSelect();
+}
+
+// the select follows facts.style.preset: a preset this browser doesn't have falls back to default
+function setStylePresetSelect() {
+  const preset = facts.style.preset || "default";
+  const isKnown = Array.from(stylePreset.options).some(option => option.value === preset);
+  if (!isKnown) Facts.set(f => (f.style.preset = "default"));
+
+  stylePreset.value = stylePreset.dataset.old = isKnown ? preset : "default";
   setPresetRemoveButtonVisibiliy();
 }
 
@@ -118,7 +127,7 @@ function registerCustomScheme() {
 function fillMissingLabelGroups() {
   // a group the preset doesn't cover takes the style of the default group of its type. It's left without a
   // style if there is none: getGroupStyle falls back to the built-in style, an empty one would win over it
-  for (const group of options.labels.groups) {
+  for (const group of facts.labels.groups) {
     if (styles.labels.groups[group.name]) continue;
     const defaultGroupStyle = styles.labels.groups[Labels.getFallbackGroup(group.type).name];
     if (defaultGroupStyle) styles.labels.groups[group.name] = structuredClone(defaultGroupStyle);
@@ -146,7 +155,7 @@ function requestStylePresetChange(preset) {
 async function changeStyle(desiredPreset) {
   const styleData = await getStylePreset(desiredPreset);
   const [presetName, style] = styleData;
-  localStorage.setItem("presetStyle", presetName);
+  Facts.set(f => (f.style.preset = presetName));
   applyStyleWithUiRefresh(style);
 }
 
@@ -154,13 +163,14 @@ function applyStyleWithUiRefresh(style) {
   applyStylePreset(style);
   selectStyleElement(); // re-select element to trigger values update
   updateMapFilter();
-  stylePreset.dataset.old = stylePreset.value;
+  setStylePresetSelect();
 
   Layers.drawAll(); // a style change can affect any layer, so redraw the active ones
 
   invokeActiveZooming();
-  setPresetRemoveButtonVisibiliy();
 }
+
+let isSaveStyleInitialized = false;
 
 function addStylePreset() {
   $("#styleSaver").dialog({ title: "Style Saver", width: "26em", position: { my: "center", at: "center", of: "svg" } });
@@ -170,8 +180,8 @@ function addStylePreset() {
   styleSaverJSON.value = JSON.stringify(styles, null, 2);
   checkName();
 
-  if (modules.saveStyle) return;
-  modules.saveStyle = true;
+  if (isSaveStyleInitialized) return;
+  isSaveStyleInitialized = true;
 
   // add listeners
   document.getElementById("styleSaverName").addEventListener("input", checkName);
@@ -206,7 +216,7 @@ function addStylePreset() {
 
     const presetName = customPresetPrefix + desiredName;
     applyOption(stylePreset, presetName, desiredName + " [custom]");
-    localStorage.setItem("presetStyle", presetName);
+    Facts.set(f => (f.style.preset = presetName));
     localStorage.setItem(presetName, styleJSON);
 
     applyStyleWithUiRefresh(JSON.parse(styleJSON));
@@ -255,7 +265,6 @@ function requestRemoveStylePreset() {
 }
 
 function removeStylePreset() {
-  localStorage.removeItem("presetStyle");
   localStorage.removeItem(stylePreset.value);
   stylePreset.selectedOptions[0].remove();
 

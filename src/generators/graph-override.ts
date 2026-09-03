@@ -85,8 +85,8 @@ function refreshDerivedData(vertexIds: number[]): void {
 
     const points = clipPoly(
       feature.vertices.map(vertexId => vertices.p[vertexId]),
-      graphWidth,
-      graphHeight
+      facts.graph.width,
+      facts.graph.height
     );
     feature.area = Math.abs(rn(polygonArea(points)));
   }

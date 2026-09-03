@@ -2,6 +2,7 @@ import { drag, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { stopMapPlacement } from "@/components/map-placement";
 import { clearMainTip } from "@/components/tooltips";
+import { viewport } from "@/components/viewport";
 import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
 import { getPin } from "@/renderers/draw-markers";
@@ -147,7 +148,7 @@ function dragMarker(this: SVGElement, event: any): void {
     this.setAttribute("y", String(rn(dy + y, 2)));
 
     const size = selectedMarker.size || 30;
-    const zoomSize = Math.max(rn(size / 5 + 24 / scale, 2), 1);
+    const zoomSize = Math.max(rn(size / 5 + 24 / viewport.scale, 2), 1);
 
     selectedMarker.x = rn(x + dx + zoomSize / 2, 1);
     selectedMarker.y = rn(y + dy + zoomSize, 1);
@@ -224,7 +225,7 @@ function changeMarkerSize(this: HTMLInputElement): void {
     const el = !hidden && document.getElementById(`marker${i}`);
     if (!el) return;
 
-    const zoomedSize = rescale ? Math.max(rn(size / 5 + 24 / scale, 2), 1) : size;
+    const zoomedSize = rescale ? Math.max(rn(size / 5 + 24 / viewport.scale, 2), 1) : size;
     el.setAttribute("width", String(zoomedSize));
     el.setAttribute("height", String(zoomedSize));
     el.setAttribute("x", String(rn(x - zoomedSize / 2, 1)));

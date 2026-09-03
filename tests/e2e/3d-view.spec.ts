@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { waitForMap } from "./wait-for-map";
 
 // software WebGL (SwiftShader) requires an explicit opt-in in recent Chromium. Overriding
 // launchOptions replaces the config's, so the CHROMIUM_PATH escape hatch has to ride along here too
@@ -18,9 +19,7 @@ test.describe("3D view with eroded terrain", () => {
     page.on("pageerror", error => errors.push(`pageerror: ${error.message}`));
 
     await page.goto("/");
-    await page.waitForFunction(() => (window as any).mapId !== undefined, {
-      timeout: 120000
-    });
+    await waitForMap(page);
 
     const hasWebGL = await page.evaluate(() => {
       const canvas = document.createElement("canvas");
@@ -46,8 +45,7 @@ test.describe("3D view with eroded terrain", () => {
 
     // labels and icons sample the baked field: heights must be finite numbers
     const centerHeight = await page.evaluate(() => {
-      const w = (window as any).graphWidth;
-      const h = (window as any).graphHeight;
+      const { width: w, height: h } = (window as any).options.graph;
       return (window as any).Controllers.View3d.heightAt(w / 2, h / 2, 50);
     });
     expect(Number.isFinite(centerHeight)).toBe(true);

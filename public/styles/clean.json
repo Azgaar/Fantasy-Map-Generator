@@ -1054,7 +1054,7 @@
     "options": {
       "size": 3,
       "fontSize": 5,
-      "icon": "⚖️"
+      "icon": "\u2696\ufe0f"
     }
   },
   "trade": {
@@ -1106,10 +1106,7 @@
       "font-size": 8
     },
     "options": {
-      "barSize": 1.5,
-      "x": 99,
-      "y": 99,
-      "label": ""
+      "barSize": 1.5
     },
     "back": {
       "attrs": {

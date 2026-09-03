@@ -90,7 +90,7 @@ The project depends on **d3 `^7.9.0`** with `@types/d3`. Migrate to it.
 - **Don't use the legacy global d3 selections.** Always create selections from the imported v7 `select` function and work with them explicitly, global selections use d3 v5 and can lead to bugs.
   - **Never attach a v7 behaviour (`drag`, `zoom`) through a v5 selection.** When
     you `.call(drag(...))` on a selection that descends from a global v5 selection
-    (e.g. `debug`, `viewbox`, `svg` created in `public/main.js`), the v5 selection
+    (e.g. a `debug`, `viewbox` or `svg` selection made through the global d3), the v5 selection
     registers the v7 handlers but dispatches them with the **v5 calling convention**
     (datum-first: `handler(d, i, nodes)`). The v7 drag internals expect the event
     first (`handler(event, d)`), so they receive the bound datum instead of the DOM
@@ -119,7 +119,8 @@ without the app), then add a thin `window` bridge at the bottom that wires those
 to the ambient globals classic callers expect. The bridge is a temporary interop
 concession — keep it to a few lines and delete it once every caller is TypeScript. Globals
 referenced bare (`pack`, `grid`, `seed`, `TIME`, `customization`, `$`, `layerIsOn`, …) come
-from `main.js`/legacy and are typed in [`src/types/global.ts`](../../src/types/global.ts) or
+from legacy `public/` code and are typed in [`src/components/globals.ts`](../../src/components/globals.ts),
+[`src/types/global.ts`](../../src/types/global.ts) or
 by the owning module — import or declare, never `as any`.
 
 ### Generator
@@ -267,13 +268,18 @@ export const Something = { init };
 
 ## The eval-order gotcha (read this)
 
-`<script type="module" src="controllers/index.ts">` evaluates **before** the
-deferred `main.js`, where `let mapId` and many globals are declared. So a
-bundled module must **not read a mutable/late global at module top level** —
-that throws `ReferenceError` and your `window.X` registration silently never
-runs. Read such globals lazily _inside_ the function, and gate run DOM
-setup. (A `import { … } from "d3"` at top level
-is safe — it's part of the module graph, not a runtime global.)
+[`src/main.ts`](../../src/main.ts) is the single module entry: it imports
+[`services/logging.ts`](../../src/services/logging.ts) and
+[`components/globals.ts`](../../src/components/globals.ts) first, then every layer, then runs
+the boot sequence on `DOMContentLoaded`. Two ordering rules follow from that:
+
+- **A bundled module must not read a _late_ global at module top level.** `pack`, `grid`, `options`
+  and friends exist from `globals.ts` (and `options-store.ts`) onwards, but they hold placeholder
+  values until the boot sequence and the first generation fill them in. Read them lazily _inside_
+  the function.
+
+(An `import { … } from "d3"` at top level is always safe — it's part of the module graph, not a
+runtime global.)
 
 ## Finish the port
 

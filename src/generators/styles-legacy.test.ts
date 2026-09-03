@@ -132,12 +132,10 @@ test("styleNodeFor returns undefined for structural parents and unknown groups",
 });
 
 test("numeric-looking string options coerce back to strings, not schema-rejected numbers", () => {
-  const styles = presetFromLegacy(
-    { "#oceanLayers": { layers: -6 }, "#scaleBar": { "data-label": 100 }, "#markets": { "data-icon": 8 } } as any,
-    { onUnknown: "skip" }
-  );
+  const styles = presetFromLegacy({ "#oceanLayers": { layers: -6 }, "#markets": { "data-icon": 8 } } as any, {
+    onUnknown: "skip"
+  });
   expect(styles.ocean.oceanLayers.options.outline).toBe("-6");
-  expect(styles.scaleBar.options.label).toBe("100");
   expect(styles.markets.options.icon).toBe("8");
 });
 

@@ -1,6 +1,6 @@
 import { tip } from "@/components/tooltips";
 import { getDefaultNameBases, type NameBase } from "@/data/name-bases";
-import { stored, unlock } from "@/utils/preferences";
+import { isLocked, unlock } from "@/utils/preferences";
 import { capitalize, isVowel, last, P, ra, rand } from "../utils";
 
 declare global {
@@ -273,8 +273,8 @@ class NamesGenerator {
 
   // generate name for the map
   getMapName(force: boolean) {
-    if (!force && stored("mapName")) return;
-    if (force && stored("mapName")) unlock("mapName");
+    if (!force && isLocked("mapName")) return;
+    if (force && isLocked("mapName")) unlock("mapName");
     const base = P(0.7) ? 2 : P(0.5) ? rand(0, 6) : rand(0, 31);
     if (!this.nameBases[base]) {
       tip("Namebase is not found", false, "error");
@@ -284,7 +284,7 @@ class NamesGenerator {
     const max = Math.max(this.nameBases[base].max - 3, min);
     const baseName = this.getBase(base, min, max, "") as string;
     const name = P(0.7) ? this.addSuffix(baseName) : baseName;
-    mapName.value = name;
+    facts.lore.name = name;
   }
 
   getNameBases(): NameBase[] {
@@ -292,4 +292,7 @@ class NamesGenerator {
   }
 }
 
-window.Names = new NamesGenerator();
+// biome-ignore lint/suspicious/noRedeclare: legacy seam
+export const Names = new NamesGenerator();
+
+window.Names = Names;

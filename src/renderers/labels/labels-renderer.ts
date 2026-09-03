@@ -53,13 +53,13 @@ export function getVisibleLabels(): LabelData[] {
   if (!scene.valid || !Layers.isOn("labels")) return [];
   const bounds = ViewportLayers.getVisibleBounds();
   const visibleGroups = new Set(
-    options.labels.groups.filter(group => isGroupVisible({ group, bounds })).map(({ name }) => name)
+    facts.labels.groups.filter(group => isGroupVisible({ group, bounds })).map(({ name }) => name)
   );
   return [...scene.values()].filter(label => visibleGroups.has(label.group) && isLabelVisible(bounds, label));
 }
 
 function materializeLabel(label: LabelData, context: ViewportRenderContext): void {
-  const groupOptions = options.labels.groups.find(({ name }) => name === label.group);
+  const groupOptions = facts.labels.groups.find(({ name }) => name === label.group);
   if (!groupOptions || !isGroupVisible({ group: groupOptions, bounds: context.bounds })) return;
   if (!isLabelVisible(context.bounds, label)) return;
 
@@ -82,12 +82,12 @@ function reconcileLabels(context: ViewportRenderContext): void {
   const textPaths = findElement(context.root, "textPaths");
   if (!labels || !textPaths) return;
 
-  for (const group of options.labels.groups) reconcileGroup(labels, textPaths, group.name, context);
+  for (const group of facts.labels.groups) reconcileGroup(labels, textPaths, group.name, context);
 }
 
 function reconcileGroup(labels: Element, textPaths: Element, groupName: string, context: ViewportRenderContext): void {
   const group = labels.querySelector<SVGGElement>(`#${CSS.escape(`labels-${groupName}`)}`);
-  const groupOptions = options.labels.groups.find(group => group.name === groupName);
+  const groupOptions = facts.labels.groups.find(group => group.name === groupName);
   if (!group || !groupOptions) return;
 
   const isVisible = isGroupVisible({ group: groupOptions, bounds: context.bounds });
@@ -109,7 +109,7 @@ function reconcileGroup(labels: Element, textPaths: Element, groupName: string, 
 
 function isGroupVisible({ group, bounds }: { group: LabelGroup; bounds: ViewportRenderContext["bounds"] }): boolean {
   if (group.active === false) return false;
-  if (!options.labels.showAll) {
+  if (!facts.labels.showAll) {
     if (group.zoom.min !== null && bounds.scale < group.zoom.min) return false;
     if (group.zoom.max !== null && bounds.scale > group.zoom.max) return false;
   }

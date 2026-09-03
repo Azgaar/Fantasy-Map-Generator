@@ -1,6 +1,6 @@
 // Where the map sits on the globe: its share of the world and the resulting lat/lon box
-import { stored } from "@/utils/preferences";
-import { ensureEl, gauss, P, rn } from "../utils";
+import { isLocked } from "@/utils/preferences";
+import { gauss, P, rn } from "../utils";
 
 declare global {
   var Coordinates: CoordinatesModule;
@@ -60,30 +60,30 @@ class CoordinatesModule {
   defineMapSize(): void {
     const [size, latitude, longitude] = this.getSizeAndPosition();
     const randomize = new URL(window.location.href).searchParams.get("options") === "default"; // ignore stored options
-    if (randomize || !stored("mapSize")) options.mapSize = size;
-    if (randomize || !stored("latitude")) options.latitude = latitude;
-    if (randomize || !stored("longitude")) options.longitude = longitude;
+    if (randomize || !isLocked("mapSize")) facts.geography.mapSize = size;
+    if (randomize || !isLocked("latitude")) facts.geography.latitude = latitude;
+    if (randomize || !isLocked("longitude")) facts.geography.longitude = longitude;
   }
 
   /** calculate the map lat/lon box from its size and position */
   calculate(): void {
-    const sizeFraction = options.mapSize / 100;
-    const latShift = options.latitude / 100;
-    const lonShift = options.longitude / 100;
+    const sizeFraction = facts.geography.mapSize / 100;
+    const latShift = facts.geography.latitude / 100;
+    const lonShift = facts.geography.longitude / 100;
 
     const latT = rn(sizeFraction * 180, 1);
     const latN = rn(90 - (180 - latT) * latShift, 1);
     const latS = rn(latN - latT, 1);
 
-    const lonT = rn(Math.min((graphWidth / graphHeight) * latT, 360), 1);
+    const lonT = rn(Math.min((facts.graph.width / facts.graph.height) * latT, 360), 1);
     const lonE = rn(180 - (360 - lonT) * lonShift, 1);
     const lonW = rn(lonE - lonT, 1);
 
-    mapCoordinates = { latT, latN, latS, lonT, lonW, lonE };
+    facts.geography.coordinates = { latT, latN, latS, lonT, lonW, lonE };
   }
 
   private getSizeAndPosition(): SizeAndPosition {
-    const template = ensureEl<HTMLInputElement>("templateInput").value; // heightmap template
+    const template = facts.heightmap.template;
     const realWorldPosition = TEMPLATE_POSITIONS[template];
     if (realWorldPosition) return realWorldPosition;
 

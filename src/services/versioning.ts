@@ -19,7 +19,7 @@ import { dialogState } from "@/components/dialog/state";
 import { tip } from "@/components/tooltips";
 import { isElectron } from "./platform";
 
-export const VERSION = "1.150.0";
+export const VERSION = "1.151.0";
 
 // new changes on top
 const latestPublicChanges = [
@@ -108,7 +108,10 @@ export async function cleanupData(): Promise<void> {
   localStorage.clear();
   dialogState.clear();
   localStorage.setItem("version", VERSION);
-  localStorage.setItem("disable_click_arrow_tooltip", "true");
+
+  Options.reset(); // the stored options went with everything else: start this browser over
+  Options.set(o => (o.view.ui.clickArrowTip = false)); // the hint has been seen, this is no first visit
+  Options.persist();
   await clearCache();
 }
 

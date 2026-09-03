@@ -14,7 +14,7 @@ rebuilds part of a map. It is now declared once, as data:
 | [`src/generators/pipeline.ts`](../../src/generators/pipeline.ts)                                              | The runner. Generic, knows nothing about generators, `pack` or `grid`                              |
 | [`src/generators/grid-generator.ts`](../../src/generators/grid-generator.ts)                                  | The `Grid` module and its siblings `Temperature`, `Precipitation` and `Pack` (see below)           |
 | [`src/generators/generation-pipeline.ts`](../../src/generators/generation-pipeline.ts)                        | The configuration: `GenerationPipeline` and `ErasePipeline` step lists                             |
-| [`public/main.js`](../../public/main.js) → `generate()`                                                       | Drives `GenerationPipeline` and owns everything around it (seed, sizing, statistics, error dialog) |
+| [`src/components/lifecycle.ts`](../../src/components/lifecycle.ts) → `generate()`                             | Drives `GenerationPipeline` and owns everything around it (seed, sizing, statistics, error dialog) |
 | [`src/controllers/heightmap-editor.ts`](../../src/controllers/heightmap-editor.ts) → `regenerateErasedData()` | Drives `ErasePipeline`                                                                             |
 
 ## The runner
@@ -50,8 +50,8 @@ anything but a straight line — so it added validation logic and API surface wi
 
 ## `GenerationPipeline` — build a world from scratch
 
-`generate(options)` in `main.js` resolves what the pipeline doesn't own (`setSeed`, `applyGraphSize`,
-`randomizeOptions`), calls `await GenerationPipeline.run({seed, graph})`, then reports (`logStats`,
+`generate(config)` in `components/lifecycle.ts` resolves what the pipeline doesn't own (`setSeed`, `applyGraphSize`,
+`Options.randomize`), calls `await GenerationPipeline.run({seed, graph})`, then reports (`logStats`,
 `TOTAL` timing) or shows the generation error dialog. The pipeline is exposed as
 `window.GenerationPipeline` because `main.js` is a classic script.
 
@@ -59,7 +59,7 @@ anything but a straight line — so it added validation logic and API surface wi
 | ------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | Grid + heightmap         | `grid`, `heightmap`                                           | `grid`, `grid.cells.h`; resets `pack`                                           |
 | Hydrology base           | `markupGrid`, `depressionLakes`, `nearSeaLakes`               | `grid.cells.f/t/b`, lake and ocean topology                                     |
-| World position & climate | `mapSize`, `mapCoordinates`, `temperatures`, `precipitation`  | `options.mapSize/latitude/longitude`, `mapCoordinates`, `grid.cells.temp/prec`  |
+| World position & climate | `mapSize`, `mapCoordinates`, `temperatures`, `precipitation`  | `options.geography.*` (incl. `coordinates`), `grid.cells.temp/prec`             |
 | Repack                   | `regraph`, `markupPack`, `defaultRuler`                       | `pack.cells.*` (**invalidates every earlier `pack` cell index**), default ruler |
 | Rivers & biomes          | `rivers`, `biomes`, `featureGroups`                           | `pack.rivers`, `cells.r/fl/conf`, `pack.biomes`, `cells.biome`                  |
 | Climate art              | `ice`                                                         | `pack.ice`                                                                      |
@@ -88,8 +88,8 @@ Two constraints are easy to break when replicating a slice of this:
 flowchart TD
     subgraph pre["generate() — inline setup"]
         seed["setSeed<br/><i>writes: seed, Math.random</i>"]
-        size["applyGraphSize<br/><i>writes: graphWidth/Height</i>"]
-        rnd["randomizeOptions<br/><i>writes: option globals</i>"]
+        size["applyGraphSize<br/><i>sizes the full-map covers to options.graph</i>"]
+        rnd["Options.randomize<br/><i>writes: options</i>"]
     end
     seed --> size --> rnd --> gg
 
@@ -97,7 +97,7 @@ flowchart TD
     hm["heightmap<br/><i>writes: grid.cells.h; resets pack</i>"]
     mg["markupGrid<br/><i>writes: grid.cells.f/t/b</i>"]
     lakes["addLakesInDeepDepressions +<br/>openNearSeaLakes<br/><i>writes: grid.cells.h/f</i>"]
-    coord["mapSize + mapCoordinates<br/><i>writes: options.mapSize/latitude/longitude, mapCoordinates</i>"]
+    coord["mapSize + mapCoordinates<br/><i>writes: options.geography.*</i>"]
     temp["temperatures<br/><i>writes: grid.cells.temp</i>"]
     prec["precipitation<br/><i>writes: grid.cells.prec</i>"]
     repack["regraph + markupPack<br/><i>writes: pack.* (new graph)</i>"]
@@ -125,7 +125,7 @@ flowchart TD
     %% cross-step (non-adjacent) global dependencies
     hm -. "grid.cells.h" .-> temp
     hm -. "grid.cells.h" .-> repack
-    coord -. "mapCoordinates" .-> prec
+    coord -. "options.geography.coordinates" .-> prec
     temp -. "grid.cells.temp" .-> biomes
     temp -. "grid.cells.temp" .-> ice
     prec -. "grid.cells.prec" .-> biomes
@@ -205,7 +205,7 @@ reaches a phase you change.
 ## Adding a new generation step
 
 1. Add a `{id, run}` entry to `pipelineSteps` in `generation-pipeline.ts`, at the correct phase
-   boundary. `generate()` in `main.js` does not sequence generator calls any more.
+   boundary. `generate()` in `components/lifecycle.ts` does not sequence generator calls any more.
 2. If the step runs **after `regraph`**, add it to `erasePipelineSteps` at the matching boundary —
    otherwise the feature is missing from every map that went through the heightmap editor.
 3. If the step's output is cell-indexed or belongs to an entity the risk path re-maps, handle it in
@@ -252,8 +252,8 @@ wind arrows whenever the layer is rendered. The generators never touch the DOM.
 `defineMapSize()` is the `mapSize` step: it picks how much of the globe the map covers and where it
 sits, from the heightmap template (real-world templates have fixed values, random ones a
 distribution) unless the option is locked. `calculate()` is the `mapCoordinates` step: it turns
-`options.mapSize/latitude/longitude` and the canvas aspect ratio into the `mapCoordinates` lat/lon
-box every latitude-dependent generator and renderer reads.
+`options.geography.mapSize/latitude/longitude` and the canvas aspect ratio into the
+`options.geography.coordinates` lat/lon box every latitude-dependent generator and renderer reads.
 
 ### `Pack` — [`pack-generator.ts`](../../src/generators/pack-generator.ts)
 

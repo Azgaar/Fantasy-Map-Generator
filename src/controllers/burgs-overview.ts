@@ -76,7 +76,7 @@ const columns: EditorColumn<Burg>[] = [
     label: "Population",
     width: "7em",
     defaultSort: "desc",
-    sortBy: b => b.population! * populationRate * urbanization
+    sortBy: b => b.population! * facts.units.population.scale * facts.units.population.urbanization.rate
   },
   {
     key: "grossproduct",
@@ -316,7 +316,7 @@ function renderBurgsPage(view: TableView<Burg>): void {
   let totalTreasury = 0;
 
   for (const b of view.all) {
-    const population = b.population! * populationRate * urbanization;
+    const population = b.population! * facts.units.population.scale * facts.units.population.urbanization.rate;
     const grossProduct = rn(b.product || 0, 2);
     const productPerCapita = rn(b.population! > 0 ? (b.product || 0) / b.population! : 0, 2);
     const treasury = rn(b.treasury || 0, 2);
@@ -327,7 +327,7 @@ function renderBurgsPage(view: TableView<Burg>): void {
   }
 
   for (const b of view.rows) {
-    const population = b.population! * populationRate * urbanization;
+    const population = b.population! * facts.units.population.scale * facts.units.population.urbanization.rate;
     const grossProduct = rn(b.product || 0, 2);
     const productPerCapita = rn(b.population! > 0 ? (b.product || 0) / b.population! : 0, 2);
     const treasury = rn(b.treasury || 0, 2);
@@ -566,7 +566,7 @@ function showBurgsChart(): void {
     select(ev.target).transition().duration(1500).attr("stroke", "#c13119");
     const name = d.data.name;
     const parent = d.parent.data.name;
-    const population = si(d.value * populationRate * urbanization);
+    const population = si(d.value * facts.units.population.scale * facts.units.population.urbanization.rate);
 
     ensureEl("burgsInfo").innerHTML = /* html */ `${name}. ${parent}. Population: ${population}`;
     burgHighlightOn(ev);
@@ -663,7 +663,7 @@ function showBurgsChart(): void {
 }
 
 function downloadBurgsData(): void {
-  let data = `Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Group,Population,X,Y,Latitude,Longitude,Elevation (${heightUnit.value}),Temperature,Temperature likeness,Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town,Emblem,Preview link\n`; // headers
+  let data = `Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Group,Population,X,Y,Latitude,Longitude,Elevation (${facts.units.height.unit}),Temperature,Temperature likeness,Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town,Emblem,Preview link\n`; // headers
   const valid = pack.burgs.filter(b => b.i && !b.removed); // all valid burgs
 
   valid.forEach(b => {
@@ -677,13 +677,13 @@ function downloadBurgsData(): void {
     data += `${pack.cultures[b.culture!].name},`;
     data += `${pack.religions[pack.cells.religion[b.cell]].name},`;
     data += `${b.group},`;
-    data += `${rn(b.population! * populationRate * urbanization)},`;
+    data += `${rn(b.population! * facts.units.population.scale * facts.units.population.urbanization.rate)},`;
 
     // add geography data
     data += `${b.x},`;
     data += `${b.y},`;
-    data += `${getLatitude(b.y, mapCoordinates, graphHeight, 2)},`;
-    data += `${getLongitude(b.x, mapCoordinates, graphWidth, 2)},`;
+    data += `${getLatitude(b.y, facts.geography.coordinates, facts.graph.height, 2)},`;
+    data += `${getLongitude(b.x, facts.geography.coordinates, facts.graph.width, 2)},`;
     data += `${parseInt(getHeight(pack.cells.h[b.cell]), 10)},`;
     const temperature = grid.cells.temp[pack.cells.g[b.cell]];
     data += `${convertTemperature(temperature)},`;

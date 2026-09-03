@@ -1,9 +1,9 @@
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { syncInputs } from "@/components/options/tabs/options-tab";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { precreatedHeightmaps } from "@/data/precreated-heightmaps";
 import { drawHeights } from "@/renderers/draw-heightmap";
 import type { GridGraph } from "@/types/GridGraph";
-import { applyOption } from "@/utils";
 import { lock } from "@/utils/preferences";
 import { ensureEl, generateSeed } from "../utils";
 
@@ -17,8 +17,7 @@ addListeners();
 function open(): void {
   closeDialogs(".stable");
 
-  const $templateInput = ensureEl<HTMLInputElement>("templateInput");
-  setSelected($templateInput.value);
+  setSelected(facts.heightmap.template);
   graph = getGraph(graph);
 
   $("#heightmapSelection").dialog({
@@ -32,7 +31,8 @@ function open(): void {
       Select: function (this: HTMLElement) {
         const id = getSelected();
         if (!id) return;
-        applyOption($templateInput, id, getName(id));
+        facts.heightmap.template = id;
+        syncInputs();
         lock("template");
 
         $(this).dialog("close");
@@ -40,7 +40,8 @@ function open(): void {
       "New Map": function (this: HTMLElement) {
         const id = getSelected();
         if (!id) return;
-        applyOption($templateInput, id, getName(id));
+        facts.heightmap.template = id;
+        syncInputs();
         lock("template");
 
         const seed = getSeed();
@@ -134,7 +135,7 @@ function appendStyleSheet(): void {
 
     .heightmap-selection article > img {
       width: 100%;
-      aspect-ratio: ${graphWidth}/${graphHeight};
+      aspect-ratio: ${facts.graph.width}/${facts.graph.height};
       border-radius: 8px;
       object-fit: fill;
     }
@@ -271,14 +272,9 @@ function getSeed(): string | undefined {
   return ensureEl("heightmapSelection").querySelector<HTMLElement>(".selected")?.dataset?.seed;
 }
 
-function getName(id: string): string {
-  const isTemplate = id in heightmapTemplates;
-  return isTemplate ? heightmapTemplates[id].name : precreatedHeightmaps[id].name;
-}
-
 function getGraph(currentGraph: GridGraph): GridGraph {
-  const newGraph = Grid.shouldRegenerate(currentGraph, seed, graphWidth, graphHeight)
-    ? Grid.generate(seed, graphWidth, graphHeight)
+  const newGraph = Grid.shouldRegenerate(currentGraph, facts.seed, facts.graph.width, facts.graph.height)
+    ? Grid.generate(facts.seed, facts.graph.width, facts.graph.height)
     : structuredClone(currentGraph);
   Grid.resetHeights(newGraph);
   return newGraph;

@@ -1,4 +1,5 @@
 import Alea from "alea";
+import { viewport } from "@/components/viewport";
 import type { LabelType } from "@/generators/labels-generator";
 import { getGroupStyle, writeGroupStyle } from "@/renderers/labels/label-groups";
 import { createLabelElements } from "@/renderers/labels/label-markup";
@@ -141,7 +142,7 @@ export async function calculateLabelSpread(): Promise<LabelSpreadResult> {
 
     await nextFrame();
     const ids = items.map(item => item.id).sort();
-    const solution = optimizeLabelPlacements(items, mapBounds(), `${seed}|${ids.join("|")}`);
+    const solution = optimizeLabelPlacements(items, mapBounds(), `${facts.seed}|${ids.join("|")}`);
     return {
       patches: getPatches(visibleLabels, solution.selected),
       displayedLabels: visibleLabels.length,
@@ -183,7 +184,7 @@ function buildBurgCandidates(
     iconBounds: iconBounds ?? pointBounds(label.anchor),
     gap: toMapUnits(BURG_ICON_GAP_SCREEN),
     changePenalty: getBurgChangePenalty(current.bounds),
-    displacementScale: scale
+    displacementScale: viewport.scale
   });
 }
 
@@ -231,7 +232,7 @@ function getBurgLabelCandidates({
 }
 
 function getBurgChangePenalty(bounds: LabelBounds): number {
-  const screenHeight = (bounds.y2 - bounds.y1) * Math.max(scale, 1);
+  const screenHeight = (bounds.y2 - bounds.y1) * Math.max(viewport.scale, 1);
   return BASE_BURG_PLACEMENT_CHANGE_PENALTY * (screenHeight / BASE_BURG_SCREEN_HEIGHT) ** 2;
 }
 
@@ -462,11 +463,11 @@ class LabelMeasurementSandbox {
 
   constructor(labels: LabelData[]) {
     this.root = document.createElementNS(SVG_NS, "svg");
-    this.root.setAttribute("width", String(graphWidth));
-    this.root.setAttribute("height", String(graphHeight));
-    this.root.setAttribute("viewBox", `0 0 ${graphWidth} ${graphHeight}`);
+    this.root.setAttribute("width", String(facts.graph.width));
+    this.root.setAttribute("height", String(facts.graph.height));
+    this.root.setAttribute("viewBox", `0 0 ${facts.graph.width} ${facts.graph.height}`);
     this.root.setAttribute("aria-hidden", "true");
-    this.root.style.cssText = `position:fixed;left:0;top:0;width:${graphWidth}px;height:${graphHeight}px;overflow:visible;opacity:0;pointer-events:none;z-index:-1`;
+    this.root.style.cssText = `position:fixed;left:0;top:0;width:${facts.graph.width}px;height:${facts.graph.height}px;overflow:visible;opacity:0;pointer-events:none;z-index:-1`;
     const renderedLabels = document.querySelector<SVGGElement>("#labels");
     const fontSize =
       renderedLabels?.getAttribute("font-size") || (renderedLabels && getComputedStyle(renderedLabels).fontSize);
@@ -539,7 +540,7 @@ class LabelMeasurementSandbox {
   }
 
   private createGroup(groupName: string): SVGGElement {
-    const groupOptions = options.labels.groups.find(group => group.name === groupName);
+    const groupOptions = facts.labels.groups.find(group => group.name === groupName);
     if (!groupOptions) throw new Error(`Label Group not found: ${groupName}`);
     const group = document.createElementNS(SVG_NS, "g");
     writeGroupStyle(group, getGroupStyle(groupOptions));
@@ -626,7 +627,7 @@ function transformRectToRootBounds(
 
 /** Screen-space distances stay constant on screen, so convert them with the current zoom */
 function toMapUnits(screenValue: number): number {
-  return screenValue / Math.max(scale, MINIMUM_SCALE);
+  return screenValue / Math.max(viewport.scale, MINIMUM_SCALE);
 }
 
 function padBounds(bounds: LabelBounds, screenPadding = LABEL_PADDING_SCREEN): LabelBounds {
@@ -670,7 +671,7 @@ function getOutsideArea(bounds: LabelBounds, map = mapBounds()): number {
 }
 
 function mapBounds(): LabelBounds {
-  return { x1: 0, y1: 0, x2: graphWidth, y2: graphHeight };
+  return { x1: 0, y1: 0, x2: facts.graph.width, y2: facts.graph.height };
 }
 
 function fitsPath(measurement: Measurement, startOffset: number): boolean {

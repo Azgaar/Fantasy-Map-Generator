@@ -3,6 +3,7 @@ import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/di
 import { Layers } from "@/components/layers";
 import { showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import { viewport } from "@/components/viewport";
 import { Controllers } from "@/controllers";
 import type { Label, LabelType } from "@/generators/labels-generator";
 import { UNNAMED_ROUTE } from "@/generators/routes-generator";
@@ -11,7 +12,7 @@ import { createLabelArc } from "@/renderers/labels/label-arc";
 import { getLabelPath } from "@/renderers/labels/label-markup";
 import type { LabelData } from "@/renderers/labels/labels";
 import { getSceneLabel, redrawLabel } from "@/renderers/labels/labels-renderer";
-import { speak } from "@/utils";
+import { rn, speak } from "@/utils";
 import { ensureEl, getPointer, round } from "../utils";
 
 let lastSelectedGroup = ""; // the default group for newly added labels
@@ -178,7 +179,7 @@ function selectLabelGroup(group: string): void {
   const groupSelect = ensureEl<HTMLSelectElement>("labelGroupSelect");
   groupSelect.options.length = 0; // remove all options
 
-  for (const groupOptions of options.labels.groups) {
+  for (const groupOptions of facts.labels.groups) {
     groupSelect.options.add(new Option(groupOptions.name, groupOptions.name, false, groupOptions.name === group));
   }
 }
@@ -255,7 +256,7 @@ function drawControlPointsAndLine(): void {
     .attr("transform", transform)
     .append("path")
     .attr("d", getLabelPath(label))
-    .style("stroke-width", Math.max(2.2 / scale, 0.2))
+    .style("stroke-width", Math.max(2.2 / viewport.scale, 0.2))
     .on("click", addInterimControlPoint);
   label.pathPoints?.forEach(drawControlPoint);
 }
@@ -266,8 +267,8 @@ function drawControlPoint(point: Point): void {
     .append("circle")
     .attr("cx", point[0])
     .attr("cy", point[1])
-    .attr("r", Math.max(3 / scale, 0.35))
-    .style("stroke-width", Math.max(1 / scale, 0.15))
+    .attr("r", Math.max(3 / viewport.scale, 0.35))
+    .style("stroke-width", Math.max(1 / viewport.scale, 0.15))
     .call(drag<SVGCircleElement, unknown>().on("drag", dragControlPoint))
     .on("click", clickControlPoint);
 }
@@ -361,7 +362,7 @@ function hideGroupSection(): void {
 
 function changeGroup(this: HTMLSelectElement): void {
   const nextGroup = this.value;
-  const targetType = options.labels.groups.find(group => group.name === nextGroup)?.type;
+  const targetType = facts.labels.groups.find(group => group.name === nextGroup)?.type;
   const apply = () => {
     lastSelectedGroup = nextGroup;
     label.group = nextGroup;

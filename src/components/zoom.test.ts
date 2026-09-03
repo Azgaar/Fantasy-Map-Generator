@@ -7,6 +7,7 @@ vi.mock("@/renderers/viewport/viewport-renderer", () => ({
 }));
 
 import "@/generators/styles";
+import { setViewportSize, setViewportTransform, viewport } from "@/components/viewport";
 import { rn } from "@/utils/numberUtils";
 import { applyZoomBehavior, setMapZoom } from "./zoom";
 
@@ -29,15 +30,12 @@ beforeEach(() => {
   });
 
   Object.assign(globalThis, {
-    scale: 1,
-    viewX: 0,
-    viewY: 0,
-    svgWidth: 1000,
-    svgHeight: 600,
     customization: 0,
     options: { labels: { resizeOnZoom: false } },
     pack: { markers: [{ i: 0, x: 200, y: 200, size: 30, hidden: false }] }
   });
+  setViewportSize(1000, 600);
+  setViewportTransform(1, 0, 0);
 
   vi.stubGlobal(
     "requestAnimationFrame",
@@ -51,7 +49,7 @@ describe("programmatic zoom", () => {
   it("updates the viewport when a hotkey sets the scale", () => {
     setMapZoom(4);
 
-    expect(scale).toBe(4);
+    expect(viewport.scale).toBe(4);
     expect(document.getElementById("viewbox")!.getAttribute("transform")).toBe("translate(-1500 -900) scale(4)");
   });
 });
@@ -63,7 +61,7 @@ describe("invokeActiveZooming", () => {
 
   it("derives statesHalo stroke-width from the store width", () => {
     styles.states.statesHalo.options.width = 8;
-    (globalThis as any).scale = 2;
+    setViewportTransform(2, viewport.x, viewport.y);
     invokeActiveZooming();
     const halo = document.getElementById("statesHalo")!;
     expect(halo.getAttribute("stroke-width")).toBe(String(rn(8 / 2 ** 0.8, 2)));
@@ -87,7 +85,7 @@ describe("invokeActiveZooming", () => {
       y: marker.getAttribute("y")
     }).toEqual(before);
 
-    (globalThis as any).scale = 2;
+    setViewportTransform(2, viewport.x, viewport.y);
     styles.markers.options.rescale = 1;
     invokeActiveZooming();
     const expectedSize = String(rn(30 / 5 + 24 / 2, 2));

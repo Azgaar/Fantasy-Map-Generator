@@ -8,10 +8,8 @@ describe("MarketsModule", () => {
     beforeEach(() => {
       marketsModule = new MarketsModule();
       globalThis.Markets = marketsModule;
-      globalThis.graphWidth = 1000;
-      globalThis.graphHeight = 800;
+      globalThis.facts = { graph: { width: 1000, height: 800 } } as unknown as typeof globalThis.facts;
       globalThis.TIME = false;
-      globalThis.rn = (v: number, _d?: number) => Math.round(v * 100) / 100;
       globalThis.States = {
         getSalesTax: (burg: { state?: number }) => {
           const stateId = burg?.state || 0;

@@ -10,8 +10,8 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
-import type { FillBoxElement } from "@/components/fill-box";
 import { Layers } from "@/components/layers";
+import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -102,7 +102,11 @@ const columns: EditorColumn<State>[] = [
     key: "population",
     label: "Population",
     width: "6em",
-    sortBy: s => rn((s.rural || 0) * populationRate + (s.urban || 0) * populationRate * urbanization)
+    sortBy: s =>
+      rn(
+        (s.rural || 0) * facts.units.population.scale +
+          (s.urban || 0) * facts.units.population.scale * facts.units.population.urbanization.rate
+      )
   },
   {
     key: "treasury",
@@ -185,9 +189,6 @@ function renderDialog(): void {
       <div id="statesRegenerateButtons" style="display: none">
         <button id="statesRegenerateBack" data-tip="Hide the regeneration menu" class="icon-cog-alt"></button>
         <button id="statesRandomize" data-tip="Randomize states Expansion value and re-calculate states and provinces" class="icon-shuffle"></button>
-        <div data-tip="Additional growth rate. Defines how many land cells remain neutral" style="display: inline-block">
-          <slider-input id="statesGrowthRate" min=".1" max="3" step=".05" value="1">Growth rate:</slider-input>
-        </div>
         <button id="statesRecalculate" data-tip="Recalculate states based on current values of growth-related attributes" class="icon-retweet"></button>
         <div data-tip="Allow states neutral distance, expansion and type changes to take an immediate effect" style="display: inline-block">
           <input id="statesAutoChange" class="checkbox" type="checkbox" />
@@ -225,7 +226,6 @@ function renderDialog(): void {
   ensureEl("statesRegenerateBack").addEventListener("click", exitRegenerationMenu);
   ensureEl("statesRecalculate").addEventListener("click", () => recalculateStates(true));
   ensureEl("statesRandomize").addEventListener("click", randomizeStatesExpansion);
-  ensureEl("statesGrowthRate").addEventListener("input", () => recalculateStates(false));
   ensureEl("statesManually").addEventListener("click", openPaintEditor);
   ensureEl("statesAdd").addEventListener("click", enterAddStateMode);
   ensureEl("statesMerge").addEventListener("click", openStateMergeDialog);
@@ -284,8 +284,8 @@ function renderStatesPage(view: TableView<State>): void {
   let totalBurgs = 0;
   for (const s of view.all) {
     totalArea += getArea(s.area || 0);
-    const rural = (s.rural || 0) * populationRate;
-    const urban = (s.urban || 0) * populationRate * urbanization;
+    const rural = (s.rural || 0) * facts.units.population.scale;
+    const urban = (s.urban || 0) * facts.units.population.scale * facts.units.population.urbanization.rate;
     totalPopulation += rn(rural + urban);
     totalBurgs += s.burgs || 0;
   }
@@ -293,8 +293,8 @@ function renderStatesPage(view: TableView<State>): void {
   let lines = "";
   for (const s of view.rows) {
     const area = getArea(s.area || 0);
-    const rural = (s.rural || 0) * populationRate;
-    const urban = (s.urban || 0) * populationRate * urbanization;
+    const rural = (s.rural || 0) * facts.units.population.scale;
+    const urban = (s.urban || 0) * facts.units.population.scale * facts.units.population.urbanization.rate;
     const population = rn(rural + urban);
     const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(
       urban
@@ -782,8 +782,8 @@ function changePopulation(stateId: number): void {
     return;
   }
 
-  const rural = rn((state.rural || 0) * populationRate);
-  const urban = rn((state.urban || 0) * populationRate * urbanization);
+  const rural = rn((state.rural || 0) * facts.units.population.scale);
+  const urban = rn((state.urban || 0) * facts.units.population.scale * facts.units.population.urbanization.rate);
   const total = rural + urban;
   const format = (n: number) => Number(n).toLocaleString();
 
@@ -838,7 +838,7 @@ function changePopulation(stateId: number): void {
       });
     }
     if (!Number.isFinite(ruralChange) && +ruralPop.value > 0) {
-      const points = +ruralPop.value / populationRate;
+      const points = +ruralPop.value / facts.units.population.scale;
       const cells = (pack.cells.i as unknown as number[]).filter(i => pack.cells.state[i] === stateId);
       const pop = points / cells.length;
       cells.forEach(i => {
@@ -854,7 +854,7 @@ function changePopulation(stateId: number): void {
       });
     }
     if (!Number.isFinite(urbanChange) && +urbanPop.value > 0) {
-      const points = +urbanPop.value / populationRate / urbanization;
+      const points = +urbanPop.value / facts.units.population.scale / facts.units.population.urbanization.rate;
       const burgs = pack.burgs.filter(b => !b.removed && b.state === stateId);
       const population = rn(points / burgs.length, 4);
       burgs.forEach(b => {
@@ -1138,8 +1138,8 @@ function showStatesChart(): void {
     const state = d.data.fullName;
 
     const area = `${getArea(d.data.area)} ${getAreaUnit()}`;
-    const rural = rn(d.data.rural * populationRate);
-    const urban = rn(d.data.urban * populationRate * urbanization);
+    const rural = rn(d.data.rural * facts.units.population.scale);
+    const urban = rn(d.data.urban * facts.units.population.scale * facts.units.population.urbanization.rate);
 
     const option = ensureEl<HTMLSelectElement>("statesTreeType").value;
     const value =
@@ -1220,6 +1220,8 @@ function recalculateStates(must?: boolean): void {
   if (!must && !ensureEl<HTMLInputElement>("statesAutoChange").checked) return;
 
   States.expandStates();
+  // opt-in regeneration ("auto-apply changes"), so it takes the current request for the province
+  // ratio rather than a fact of the map. See docs/architecture/configuration.md#the-test
   Provinces.generate();
   Provinces.getPoles();
   States.getPoles();
@@ -1776,7 +1778,10 @@ function downloadStatesCsv(): void {
   const data = statesTable.view().all.map(s => {
     const rural = s.rural || 0;
     const urban = s.urban || 0;
-    const population = rn(rural * populationRate + urban * populationRate * urbanization);
+    const population = rn(
+      rural * facts.units.population.scale +
+        urban * facts.units.population.scale * facts.units.population.urbanization.rate
+    );
     return [
       s.i,
       s.name,
@@ -1791,8 +1796,8 @@ function downloadStatesCsv(): void {
       s.burgs,
       getArea(s.area || 0),
       population,
-      Math.round(rural * populationRate),
-      Math.round(urban * populationRate * urbanization)
+      Math.round(rural * facts.units.population.scale),
+      Math.round(urban * facts.units.population.scale * facts.units.population.urbanization.rate)
     ].join(",");
   });
   const csvData = [headers].concat(data).join("\n");

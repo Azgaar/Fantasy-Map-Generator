@@ -10,8 +10,8 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
-import type { FillBoxElement } from "@/components/fill-box";
 import { Layers } from "@/components/layers";
+import type { FillBoxElement } from "@/components/shared/fill-box";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { Zone } from "@/generators/zones-generator";
@@ -171,21 +171,22 @@ function getZonesData(): ZoneRow[] {
   const zones = filterState.type === "all" ? pack.zones : pack.zones.filter(zone => zone.type === filterState.type);
   return zones.map(zone => {
     const area = getArea(sum(zone.cells.map(cell => pack.cells.area[cell])));
-    const rural = sum(zone.cells.map(cell => pack.cells.pop[cell])) * populationRate;
+    const rural = sum(zone.cells.map(cell => pack.cells.pop[cell])) * facts.units.population.scale;
     const urban =
       sum(zone.cells.map(cell => pack.cells.burg[cell]).map(burg => pack.burgs[burg]?.population ?? 0)) *
-      populationRate *
-      urbanization;
+      facts.units.population.scale *
+      facts.units.population.urbanization.rate;
     return { zone, area, rural, urban, population: rn(rural + urban) };
   });
 }
 
 function renderZonesPage(view: TableView<ZoneRow>): void {
   const body = ensureEl("zonesBodySection");
-  const totalArea = getArea(graphWidth * graphHeight);
+  const totalArea = getArea(facts.graph.width * facts.graph.height);
   const totalPopulation =
-    (sum(pack.cells.pop) + sum(pack.burgs.filter(b => !b.removed).map(b => b.population ?? 0)) * urbanization) *
-    populationRate;
+    (sum(pack.cells.pop) +
+      sum(pack.burgs.filter(b => !b.removed).map(b => b.population ?? 0)) * facts.units.population.urbanization.rate) *
+    facts.units.population.scale;
   const percentage = body.dataset.type === "percentage";
   const lines = view.rows.map(({ zone: { i, name, type, cells, color, hidden }, area, rural, urban, population }) => {
     const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}. Click to change`;
@@ -361,7 +362,7 @@ function addZonesLayer(): void {
 }
 
 function downloadZonesData(): void {
-  const unit = areaUnit.value === "square" ? `${distanceUnitInput.value}2` : areaUnit.value;
+  const unit = facts.units.area.unit === "square" ? `${facts.units.distance.unit}2` : facts.units.area.unit;
   let data = `Id,Color,Description,Type,Cells,Area ${unit},Population\n`; // headers
 
   for (const { zone, area, population } of getZonesData()) {
@@ -390,9 +391,11 @@ function changePopulation(zone: Zone): void {
   }
 
   const burgs = pack.burgs.filter(b => !b.removed && landCells.includes(b.cell));
-  const rural = rn(sum(landCells.map(i => pack.cells.pop[i])) * populationRate);
+  const rural = rn(sum(landCells.map(i => pack.cells.pop[i])) * facts.units.population.scale);
   const urban = rn(
-    sum(landCells.map(i => pack.cells.burg[i]).map(b => pack.burgs[b]?.population ?? 0)) * populationRate * urbanization
+    sum(landCells.map(i => pack.cells.burg[i]).map(b => pack.burgs[b]?.population ?? 0)) *
+      facts.units.population.scale *
+      facts.units.population.urbanization.rate
   );
   const total = rural + urban;
   const l = (n: number): string => Number(n).toLocaleString();
@@ -438,7 +441,7 @@ function changePopulation(zone: Zone): void {
       });
     }
     if (!Number.isFinite(ruralChange) && +ruralPop.value > 0) {
-      const points = +ruralPop.value / populationRate;
+      const points = +ruralPop.value / facts.units.population.scale;
       const pop = rn(points / landCells.length);
       landCells.forEach(i => {
         pack.cells.pop[i] = pop;
@@ -452,7 +455,7 @@ function changePopulation(zone: Zone): void {
       });
     }
     if (!Number.isFinite(urbanChange) && +urbanPop.value > 0) {
-      const points = +urbanPop.value / populationRate / urbanization;
+      const points = +urbanPop.value / facts.units.population.scale / facts.units.population.urbanization.rate;
       const population = rn(points / burgs.length, 4);
       burgs.forEach(b => {
         b.population = population;

@@ -1,6 +1,4 @@
-// <slider-input> — a range slider paired with a number input, kept in sync;
-// re-dispatches "input"/"change" as CustomEvents with {detail: {value}}
-
+// <slider-input> — a range slider paired with a number input
 const style = /* css */ `
   slider-input {
     display: flex;

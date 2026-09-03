@@ -52,37 +52,17 @@ function prepareMapData(): string {
   const date = new Date();
   const dateString = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
   const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
-  const params = [VERSION, license, dateString, seed, graphWidth, graphHeight, mapId].join("|");
-  const settings = [
-    distanceUnitInput.value,
-    distanceScale,
-    areaUnit.value,
-    heightUnit.value,
-    heightExponentInput.value,
-    temperatureScale.value,
-    "", // previously used for barSize.value
-    "", // previously used for barLabel.value
-    "", // previously used for barBackColor.value
-    "", // previously used for barBackColor.value
-    "", // previously used for barPosX.value
-    "", // previously used for barPosY.value
-    populationRate,
-    urbanization,
-    "", // previously used for mapSizeOutput.value, part of options now
-    "", // previously used for latitudeOutput.value, part of options now
-    "", // previously used for temperatureEquatorOutput.value
-    "", // previously used for tempNorthOutput.value
-    "", // previously used for precOutput.value, part of options now
-    JSON.stringify(options),
-    mapName.value,
-    "", // previously used for hideLabels
-    stylePreset.value,
-    "", // previously used for rescaleLabels
-    urbanDensity,
-    "", // previously used for longitudeOutput.value, part of options now
-    ensureEl<HTMLInputElement>("growthRate").value
+  const params = [
+    VERSION,
+    license,
+    dateString,
+    facts.seed,
+    facts.graph.width,
+    facts.graph.height,
+    mapHistory.at(-1)?.created ?? Date.now() // the map id: when the map on screen was created
   ].join("|");
-  const coords = JSON.stringify(mapCoordinates);
+
+  const settings = JSON.stringify(facts); // the map's facts; this browser's options stay out
   const notesData = JSON.stringify(notes);
   const measurers = JSON.stringify(pack.measurers ?? []);
   const journeys = JSON.stringify(pack.journeys ?? []);
@@ -94,8 +74,8 @@ function prepareMapData(): string {
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
 
   // reset transform values to default
-  cloneEl.setAttribute("width", String(graphWidth));
-  cloneEl.setAttribute("height", String(graphHeight));
+  cloneEl.setAttribute("width", String(facts.graph.width));
+  cloneEl.setAttribute("height", String(facts.graph.height));
   cloneEl.querySelector("#viewbox")?.removeAttribute("transform");
 
   // relief icons are stored in pack.relief, the layer holds only the currently visible ones
@@ -158,7 +138,7 @@ function prepareMapData(): string {
   const mapData = [
     params,
     settings,
-    coords,
+    "", // deprecated separate mapCoordinates, now facts.geography.coordinates
     biomes,
     notesData,
     serializedSVG,

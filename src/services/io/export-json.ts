@@ -42,7 +42,7 @@ function getFullDataJson(): string {
   return JSON.stringify({
     info,
     settings,
-    mapCoordinates,
+    mapCoordinates: facts.geography.coordinates,
     pack: packData,
     grid: gridData,
     notes,
@@ -74,7 +74,7 @@ function getMinimalDataJson(): string {
   return JSON.stringify({
     info,
     settings,
-    mapCoordinates,
+    mapCoordinates: facts.geography.coordinates,
     pack: packData,
     notes,
     nameBases: Names.nameBases
@@ -98,28 +98,28 @@ function getMapInfo() {
     version: VERSION,
     description: "Azgaar's Fantasy Map Generator output: azgaar.github.io/Fantasy-map-generator",
     exportedAt: new Date().toISOString(),
-    mapName: mapName.value,
-    width: graphWidth,
-    height: graphHeight,
-    seed,
-    mapId
+    mapName: facts.lore.name,
+    width: facts.graph.width,
+    height: facts.graph.height,
+    seed: facts.seed,
+    mapId: mapHistory.at(-1)?.created ?? Date.now()
   };
 }
 
 function getSettings() {
   return {
-    distanceUnit: distanceUnitInput.value,
-    distanceScale,
-    areaUnit: areaUnit.value,
-    heightUnit: heightUnit.value,
-    heightExponent: heightExponentInput.value,
-    temperatureScale: temperatureScale.value,
-    populationRate,
-    urbanization,
+    distanceUnit: facts.units.distance.unit,
+    distanceScale: facts.units.distance.scale,
+    areaUnit: facts.units.area.unit,
+    heightUnit: facts.units.height.unit,
+    heightExponent: facts.units.height.exponent,
+    temperatureScale: facts.units.temperature.unit,
+    populationRate: facts.units.population.scale,
+    urbanization: facts.units.population.urbanization.rate,
+    urbanDensity: facts.units.population.urbanization.density,
     options,
-    mapName: mapName.value,
-    stylePreset: stylePreset.value,
-    urbanDensity
+    mapName: facts.lore.name,
+    stylePreset: stylePreset.value
   };
 }
 
@@ -236,7 +236,7 @@ function getGridCellsData() {
     cellsX: grid.cellsX,
     points: grid.points,
     boundary: grid.boundary,
-    seed: grid.seed,
+    seed: facts.seed,
     features: pack.features
   };
   return gridData;

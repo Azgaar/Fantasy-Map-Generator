@@ -118,7 +118,7 @@ function updateRegimentData(regiment: Regiment): void {
       : regiment.icon!;
 
   const composition = ensureEl("regimentComposition");
-  composition.innerHTML = options.military
+  composition.innerHTML = facts.military.units
     .map(u => {
       return `<div data-tip="${capitalize(u.name)} number. Input to change">
         <div class="label">${capitalize(u.name)}:</div>
@@ -473,7 +473,7 @@ function attachRegimentOnClick(this: SVGGElement, event: MouseEvent): void {
   const sel = pack.states[newState].military!.find(r => r.i === +regSelected.dataset.id!);
   if (!sel) return;
 
-  for (const unit of options.military) {
+  for (const unit of facts.military.units) {
     const u = unit.name;
     if (reg.u[u]) sel.u[u] = sel.u[u] ? sel.u[u] + reg.u[u] : reg.u[u];
   }

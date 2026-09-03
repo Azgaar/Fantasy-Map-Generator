@@ -126,7 +126,8 @@ function updateRouteData(route: Route): void {
 
 function updateRouteLength(route: Route): void {
   route.length = Routes.getLength(route.i);
-  ensureEl<HTMLInputElement>("routeLength").value = `${rn(route.length * distanceScale)} ${distanceUnitInput.value}`;
+  ensureEl<HTMLInputElement>("routeLength").value =
+    `${rn(route.length * facts.units.distance.scale)} ${facts.units.distance.unit}`;
 }
 
 function drawControlPoints(points: number[][]): void {
@@ -305,14 +306,14 @@ function openJoinRoutesDialog(): void {
   });
 
   if (candidateRoutes.length) {
-    const options = candidateRoutes.map((r: Route) => {
+    const routeOptions = candidateRoutes.map((r: Route) => {
       r.name = r.name || Routes.generateName(r) || UNNAMED_ROUTE;
       r.length = r.length || Routes.getLength(r.i);
-      const length = `${rn(r.length * distanceScale)} ${distanceUnitInput.value}`;
+      const length = `${rn(r.length * facts.units.distance.scale)} ${facts.units.distance.unit}`;
       return `<option value="${r.i}">${r.name} (${length})</option>`;
     });
     alertMessage.innerHTML = /* html */ `<div>Route to join with:
-        <select>${options.join("")}</select>
+        <select>${routeOptions.join("")}</select>
       </div>`;
 
     $("#alert").dialog({
@@ -411,7 +412,7 @@ function generateName(): void {
 
 function showRouteElevationProfile(): void {
   const route = getRoute();
-  const length = rn(route.length! * distanceScale);
+  const length = rn(route.length! * facts.units.distance.scale);
   void Controllers.ElevationProfile.open(
     route.points.map(p => p[2]),
     length,

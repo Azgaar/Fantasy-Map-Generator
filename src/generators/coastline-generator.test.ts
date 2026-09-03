@@ -9,12 +9,23 @@ const island = {
   vertices: [0, 1, 2, 3]
 } as unknown as Feature;
 
+/** The settings are facts of the map; a user edit also remembers them for the next one */
+const stubFacts = () => ({ seed: "1", graph: { width: 100, height: 100 } }) as unknown as typeof globalThis.facts;
+const stubFactsModel = () =>
+  ({ set: (change: (f: unknown) => void) => change(globalThis.facts) }) as unknown as typeof globalThis.Facts;
+
+let remembered: [string, unknown][] = [];
+const stubOptionsModel = () =>
+  ({
+    remember: (entry: string, value: unknown) => remembered.push([entry, value])
+  }) as unknown as typeof globalThis.Options;
+
 beforeEach(() => {
   localStorage.clear();
-  globalThis.options = {} as typeof globalThis.options;
-  globalThis.seed = "1";
-  globalThis.graphWidth = 100;
-  globalThis.graphHeight = 100;
+  remembered = [];
+  globalThis.facts = stubFacts();
+  globalThis.Facts = stubFactsModel();
+  globalThis.Options = stubOptionsModel();
   globalThis.pack = {
     vertices: {
       p: [
@@ -33,28 +44,20 @@ describe("settings", () => {
     expect(Coastline.settings).toEqual(Coastline.getDefaultSettings());
   });
 
-  it("keeps them in options, so they are saved and restored with the map", () => {
+  it("keeps them in facts, so they are saved and restored with the map", () => {
     Coastline.update({ maxDepth: 2 });
-    expect(options.coastline.maxDepth).toBe(2);
+    expect(facts.coastline.maxDepth).toBe(2);
 
-    options.coastline = { ...Coastline.getDefaultSettings(), maxDepth: 5 };
+    facts.coastline = { ...Coastline.getDefaultSettings(), maxDepth: 5 };
     expect(Coastline.settings.maxDepth).toBe(5);
   });
 
-  it("reuses the last values the user picked on the next map", () => {
+  it("remembers a user edit, so the next map starts from the values they picked", () => {
     Coastline.update({ baseAmplitude: 3, enabled: false });
 
-    globalThis.options = {} as typeof globalThis.options; // new map
-    expect(Coastline.settings).toEqual({ ...Coastline.getDefaultSettings(), baseAmplitude: 3, enabled: false });
-  });
-
-  it("fills in the keys stored data misses and survives corrupted data", () => {
-    localStorage.setItem("coastline-settings", JSON.stringify({ minEdge: 4 }));
-    expect(Coastline.settings).toEqual({ ...Coastline.getDefaultSettings(), minEdge: 4 });
-
-    globalThis.options = {} as typeof globalThis.options;
-    localStorage.setItem("coastline-settings", "{not json");
-    expect(Coastline.settings).toEqual(Coastline.getDefaultSettings());
+    const expected = { ...Coastline.getDefaultSettings(), baseAmplitude: 3, enabled: false };
+    expect(facts.coastline).toEqual(expected);
+    expect(remembered).toEqual([["coastline", expected]]);
   });
 });
 
@@ -62,13 +65,13 @@ describe("getFeaturePath", () => {
   it("reproduces the same coastline for the same seed and settings", () => {
     const path = Coastline.getFeaturePath(island);
 
-    delete (options as Partial<typeof options>).coastline; // reload: settings are read from the map again
+    delete (facts as Partial<typeof facts>).coastline; // reload: settings are read from the map again
     expect(Coastline.getFeaturePath(island)).toBe(path);
 
     for (let i = 0; i < 100; i++) Math.random(); // an own rng per feature, unaffected by what was generated before
     expect(Coastline.getFeaturePath(island)).toBe(path);
 
-    globalThis.seed = "2";
+    facts.seed = "2";
     expect(Coastline.getFeaturePath(island)).not.toBe(path);
   });
 

@@ -1,6 +1,7 @@
 import {test, expect, type Page, type ConsoleMessage} from "@playwright/test";
 import fs from "fs";
 import path from "path";
+import { waitForMap } from "./wait-for-map";
 
 const PRESETS = [
   "default", "ancient", "gloom", "pale", "light", "watercolor",
@@ -71,7 +72,7 @@ test("every shipped preset applies through the store with no console errors", as
   page.on("pageerror", err => pageErrors.push(err.message));
 
   await page.goto("/?seed=test-seed&width=1280&height=720");
-  await page.waitForFunction(() => (window as any).mapId !== undefined, {timeout: 60000});
+  await waitForMap(page);
   await page.waitForSelector("#burgIcons > g", {state: "attached", timeout: 60000});
   await page.waitForSelector("#labels > g", {state: "attached", timeout: 60000});
   await page.waitForTimeout(500);
@@ -96,7 +97,7 @@ test("every shipped preset applies through the store with no console errors", as
 
 test("relief icon size round-trips through a preset switch and back", async ({page}) => {
   await page.goto("/?seed=test-seed&width=1280&height=720");
-  await page.waitForFunction(() => (window as any).mapId !== undefined, {timeout: 60000});
+  await waitForMap(page);
   await page.waitForSelector("#burgIcons > g", {state: "attached", timeout: 60000});
   await page.waitForSelector("#labels > g", {state: "attached", timeout: 60000});
   await page.waitForTimeout(500);
@@ -128,7 +129,7 @@ test("relief icon size round-trips through a preset switch and back", async ({pa
 
 test("a saved custom preset carries the retired sizes from the store", async ({page}) => {
   await page.goto("/?seed=test-seed&width=1280&height=720");
-  await page.waitForFunction(() => (window as any).mapId !== undefined, {timeout: 60000});
+  await waitForMap(page);
 
   await page.evaluate(() => {
     styles.coordinates.options.fontSize = 23;
@@ -198,7 +199,7 @@ test("a saved custom preset carries the retired sizes from the store", async ({p
 
 test("a non-style JSON is rejected by the saver, not applied as defaults", async ({page}) => {
   await page.goto("/?seed=test-seed&width=1280&height=720");
-  await page.waitForFunction(() => (window as any).mapId !== undefined, {timeout: 60000});
+  await waitForMap(page);
 
   const before = await page.evaluate(() => styles.rivers.attrs.fill);
   await page.evaluate(() => (window as any).addStylePreset());

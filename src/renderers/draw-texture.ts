@@ -6,5 +6,5 @@ export function drawTexture(layer: Layer): void {
   if (!href) return void element.replaceChildren();
 
   element.innerHTML = /* html */ `<image preserveAspectRatio="xMidYMid slice"
-    x="${x}" y="${y}" width="${Math.max(graphWidth - x, 0)}" height="${Math.max(graphHeight - y, 0)}" href="${href}"></image>`;
+    x="${x}" y="${y}" width="${Math.max(facts.graph.width - x, 0)}" height="${Math.max(facts.graph.height - y, 0)}" href="${href}"></image>`;
 }

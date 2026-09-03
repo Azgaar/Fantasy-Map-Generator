@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { convertSpeed, convertTemperature, formatSpeed, getDistanceUnitRatio, parseSpeed } from "./unitUtils";
 
-// The default (no targetScale) path reads the #temperatureScale select and is
+// The default (no targetScale) path reads facts.units.temperature.unit and is
 // covered end-to-end in tests/e2e/temperature-units.spec.ts
 
 describe("convertTemperature", () => {
@@ -22,15 +22,14 @@ describe("convertTemperature", () => {
   });
 });
 
-// The #distanceUnitInput select doesn't exist under Node, so stub the lookup the helpers use
+// the helpers read the distance unit off the global facts object
 const setDistanceUnit = (value: string) => {
-  document.getElementById = ((id: string) =>
-    id === "distanceUnitInput" ? { value } : null) as typeof document.getElementById;
+  globalThis.facts = { units: { distance: { unit: value } } } as typeof facts;
 };
 
 describe("distance unit conversion", () => {
   afterEach(() => {
-    document.getElementById = (() => null) as typeof document.getElementById;
+    setDistanceUnit("km");
   });
 
   it("keeps km/h speeds as they are for a kilometer map", () => {

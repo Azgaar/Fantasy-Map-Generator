@@ -10,7 +10,8 @@ import {
   scaleSequential,
   select
 } from "d3";
-import { connectVertices, convertTemperature, ensureEl, round } from "../utils";
+import { viewport } from "@/components/viewport";
+import { connectVertices, convertTemperature, round } from "../utils";
 
 const temperatureRenderer = (): void => {
   TIME && console.time("drawTemperature");
@@ -42,11 +43,11 @@ const temperatureRenderer = (): void => {
     const t = cells.temp[cellId];
     if (checkedCells[cellId] || !isolines.includes(t)) continue;
 
-    const startingVertex = findStart(cellId, t);
-    if (!startingVertex) continue;
-    checkedCells[cellId] = 1;
-
     const ofSameType = (cellId: number) => cells.temp[cellId] >= t;
+
+    const startingVertex = findStart(cellId, ofSameType);
+    if (startingVertex === undefined) continue;
+    checkedCells[cellId] = 1;
     const chain = connectVertices({
       vertices,
       startingVertex,
@@ -64,7 +65,7 @@ const temperatureRenderer = (): void => {
   // min temp isoline covers all graph
   select("#temperature")
     .append("path")
-    .attr("d", `M0,0 h${graphWidth} v${graphHeight} h${-graphWidth} Z`)
+    .attr("d", `M0,0 h${facts.graph.width} v${facts.graph.height} h${-facts.graph.width} Z`)
     .attr("fill", scheme(1 - (minTemp - tMin) / delta))
     .attr("stroke", "none");
 
@@ -79,7 +80,7 @@ const temperatureRenderer = (): void => {
     select("#temperature").append("path").attr("d", path).attr("fill", fill).attr("stroke", stroke.toString());
   }
 
-  const scale = (ensureEl("temperatureScale") as HTMLSelectElement).value as Parameters<typeof convertTemperature>[1];
+  const scale = facts.units.temperature.unit as Parameters<typeof convertTemperature>[1];
 
   const tempLabels = select("#temperature").append("g").attr("id", "tempLabels").attr("fill-opacity", 1);
   tempLabels
@@ -91,14 +92,14 @@ const temperatureRenderer = (): void => {
     .attr("y", d => d[1])
     .text(d => convertTemperature(d[2], scale));
 
-  // find cell with temp < isotherm and find vertex to start path detection
-  function findStart(i: number, t: number): number | undefined {
+  // find a vertex of the cell that lies on the isotherm, i.e. one that touches a colder cell
+  function findStart(i: number, ofSameType: (cellId: number) => boolean): number | undefined {
     if (cells.b[i]) return cells.v[i].find((v: number) => vertices.c[v].some((c: number) => c >= n)); // map border cell
-    return cells.v[i][cells.c[i].findIndex((c: number) => cells.temp[c] < t || !cells.temp[c])];
+    return cells.v[i].find((v: number) => vertices.c[v].some((c: number) => !ofSameType(c)));
   }
 
   function addLabel(points: [number, number][], t: number): void {
-    const xCenter = svgWidth / 2;
+    const xCenter = viewport.width / 2;
 
     // add label on isoline top center
     const tcIndex = leastIndex(
@@ -123,8 +124,8 @@ const temperatureRenderer = (): void => {
   }
 
   function pushLabel(x: number, y: number, t: number): void {
-    if (x < 20 || x > svgWidth - 20) return;
-    if (y < 20 || y > svgHeight - 20) return;
+    if (x < 20 || x > viewport.width - 20) return;
+    if (y < 20 || y > viewport.height - 20) return;
     labels.push([x, y, t]);
   }
 

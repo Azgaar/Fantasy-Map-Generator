@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import defaultStyles from "../../src/generators/default-styles.json";
 import { stylesSchema } from "../../src/generators/styles-schema";
+import { waitForMap } from "./wait-for-map";
 
 const DEFAULT_STYLES = stylesSchema.parse(defaultStyles);
 
@@ -24,7 +25,7 @@ const LAZY = new Set(["legend/box", "scaleBar/back"]);
 
 async function generateMap(page: import("@playwright/test").Page) {
   await page.goto("/");
-  await page.waitForFunction(() => (window as any).mapId !== undefined, { timeout: 120000 });
+  await waitForMap(page);
   await page.waitForTimeout(500);
 }
 

@@ -10,8 +10,8 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
-import type { FillBoxElement } from "@/components/fill-box";
 import { Layers } from "@/components/layers";
+import type { FillBoxElement } from "@/components/shared/fill-box";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { Biome } from "@/generators/biomes-generator";
@@ -215,8 +215,8 @@ function biomesEditorAddLines(view: TableView<Biome>, statistics: BiomeStatistic
     const { i, name, color, habitability } = biome;
     const { cells, area: rawArea, rural: rawRural, urban: rawUrban } = statistics[i];
     const area = getArea(rawArea);
-    const rural = rawRural * populationRate;
-    const urban = rawUrban * populationRate * urbanization;
+    const rural = rawRural * facts.units.population.scale;
+    const urban = rawUrban * facts.units.population.scale * facts.units.population.urbanization.rate;
     const population = rn(rural + urban);
     const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}`;
     lines += /* html */ `
@@ -255,7 +255,10 @@ function biomesEditorAddLines(view: TableView<Biome>, statistics: BiomeStatistic
   for (const biome of view.all) {
     const statistic = statistics[biome.i];
     totalArea += getArea(statistic.area);
-    totalPopulation += rn(statistic.rural * populationRate + statistic.urban * populationRate * urbanization);
+    totalPopulation += rn(
+      statistic.rural * facts.units.population.scale +
+        statistic.urban * facts.units.population.scale * facts.units.population.urbanization.rate
+    );
   }
   const totalMapArea = getArea(sum(pack.cells.area));
   ensureEl("biomesFooterBiomes").innerHTML = String(view.all.length);
@@ -445,13 +448,16 @@ function removeCustomBiomeLine(el: HTMLElement): void {
 }
 
 function downloadBiomesData(): void {
-  const unit = areaUnit.value === "square" ? `${distanceUnitInput.value}2` : areaUnit.value;
+  const unit = facts.units.area.unit === "square" ? `${facts.units.distance.unit}2` : facts.units.area.unit;
   let data = `Id,Biome,Color,Habitability,Cells,Area ${unit},Population\n`; // headers
   const statistics = biomesCollectStatistics();
   for (const biome of pack.biomes) {
     if (!biome.i || biome.removed) continue;
     const { cells, area, rural, urban } = statistics[biome.i];
-    const population = rn(rural * populationRate + urban * populationRate * urbanization);
+    const population = rn(
+      rural * facts.units.population.scale +
+        urban * facts.units.population.scale * facts.units.population.urbanization.rate
+    );
     data += `${biome.i},${biome.name},${biome.color},${biome.habitability}%,${cells},${getArea(area)},${population}\n`;
   }
 

@@ -356,7 +356,7 @@ const plotTypeMap: Record<
 };
 
 let charts: ChartOptions[] = [];
-let prevMapId: number | undefined;
+let chartedMap: number | undefined; // the map the charts were built for, by its creation stamp
 function open() {
   renderDialog();
   changeViewColumns();
@@ -364,9 +364,10 @@ function open() {
 
   closeDialogs("#chartsOverview, .stable");
 
-  if (prevMapId !== mapId) {
+  const currentMap = mapHistory.at(-1)?.created;
+  if (chartedMap !== currentMap) {
     charts = [];
-    prevMapId = mapId;
+    chartedMap = currentMap;
   }
 
   if (!charts.length) addChart();
@@ -976,11 +977,11 @@ function getUrbanPopulation(cellId: number): number {
   const burgId = pack.cells.burg[cellId];
   if (!burgId) return 0;
   const populationPoints = pack.burgs[burgId].population || 0;
-  return populationPoints * populationRate * urbanization;
+  return populationPoints * facts.units.population.scale * facts.units.population.urbanization.rate;
 }
 
 function getRuralPopulation(cellId: number): number {
-  return pack.cells.pop[cellId] * populationRate;
+  return pack.cells.pop[cellId] * facts.units.population.scale;
 }
 
 function sortData(data: ChartDatum[], sorting: string): ChartDatum[] {

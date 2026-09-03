@@ -88,7 +88,7 @@ class FeatureModule {
    * mark Grid features (ocean, lakes, islands) and calculate distance field
    */
   markupGrid() {
-    Math.random = Alea(seed); // get the same result on heightmap edit in Erase mode
+    Math.random = Alea(facts.seed); // get the same result on heightmap edit in Erase mode
 
     const { h: heights, c: neighbors, b: borderCells, i } = grid.cells;
     const cellsNumber = i.length;
@@ -206,8 +206,8 @@ class FeatureModule {
       const [startCell, featureVertices] = getCellsData(type, firstCell);
       const points = clipPoly(
         featureVertices.map((vertex: number) => vertices.p[vertex]),
-        graphWidth,
-        graphHeight
+        facts.graph.width,
+        facts.graph.height
       );
       const area = polygonArea(points); // feature perimiter area
       const absArea = Math.abs(rn(area));

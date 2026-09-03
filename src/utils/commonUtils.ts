@@ -366,8 +366,7 @@ export const speak = (text: string): void => {
 
   const voices = speechSynthesis.getVoices();
   if (voices.length) {
-    const voiceId = Number((document.getElementById("speakerVoice") as HTMLSelectElement).value);
-    speaker.voice = voices[voiceId];
+    speaker.voice = voices[Number(options.view.ui.speakerVoice)] ?? speaker.voice;
   }
 
   speechSynthesis.speak(speaker);
@@ -384,16 +383,4 @@ declare global {
     link: typeof link;
     isCtrlClick: typeof isCtrlClick;
   }
-
-  // Global variables defined in main.js
-  var mapCoordinates: {
-    latT?: number;
-    latN?: number;
-    latS?: number;
-    lonT?: number;
-    lonW?: number;
-    lonE?: number;
-  };
-  var graphWidth: number;
-  var graphHeight: number;
 }

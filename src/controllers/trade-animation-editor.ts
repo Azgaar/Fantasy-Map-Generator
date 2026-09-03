@@ -89,11 +89,11 @@ function renderDialog(): void {
   document.body.insertAdjacentHTML("beforeend", buildDialogHTML());
 
   for (const def of INPUTS) {
-    const key = def.key as keyof typeof options.trade.animation;
+    const key = def.key as keyof typeof options.view.trade.animation;
     const input = ensureEl<HTMLInputElement | HTMLSelectElement>(def.id);
     const resetBtn = ensureEl(`${def.id}Reset`);
 
-    const current = options.trade.animation[key] ?? def.default;
+    const current = options.view.trade.animation[key] ?? def.default;
     input.value = String(current);
 
     input.addEventListener("input", e => {
@@ -101,15 +101,13 @@ function renderDialog(): void {
       if (e.target !== e.currentTarget) return;
       const value =
         def.type === "slider" ? (input as HTMLInputElement).valueAsNumber : (input as HTMLSelectElement).value;
-      options.trade.animation = { ...options.trade.animation, [key]: value };
-      localStorage.setItem("trade-animation", JSON.stringify(options.trade.animation));
+      Options.set(o => (o.view.trade.animation = { ...o.view.trade.animation, [key]: value }));
       Layers.draw("trade");
     });
 
     resetBtn.addEventListener("click", () => {
-      options.trade.animation = { ...options.trade.animation, [key]: def.default };
+      Options.set(o => (o.view.trade.animation = { ...o.view.trade.animation, [key]: def.default }));
       input.value = String(def.default);
-      localStorage.setItem("trade-animation", JSON.stringify(options.trade.animation));
       Layers.draw("trade");
     });
   }
@@ -117,7 +115,7 @@ function renderDialog(): void {
 
 function buildDialogHTML(): string {
   const rows = INPUTS.map(({ id, label, type, selectOptions, tip, min, max, step, key, default: def }) => {
-    const current = options.trade.animation[key as keyof typeof options.trade.animation] ?? def;
+    const current = options.view.trade.animation[key as keyof typeof options.view.trade.animation] ?? def;
     const input =
       type === "select" && selectOptions
         ? `<select id="${id}" style="width: 100%; font-size: smaller;">${selectOptions.map((opt: string) => `<option value="${opt}" ${opt === current ? "selected" : ""}>${opt}</option>`).join("")}</select>`
