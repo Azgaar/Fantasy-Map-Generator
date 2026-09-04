@@ -1,9 +1,11 @@
 import type { z } from "zod";
+import { adoptLegacyOptions } from "@/components/options-legacy";
 import { type OptionsData, optionsSchema } from "@/components/options-schema";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { DEFAULT_THREE_D } from "@/data/view-3d-options";
 import { CULTURE_SETS } from "@/generators/cultures-generator";
 import { rn } from "@/utils/numberUtils";
+import { deepMerge } from "@/utils/objectUtils";
 import { isLocked, lockedValue } from "@/utils/preferences";
 import { gauss, rand, rw } from "@/utils/probabilityUtils";
 import { parseSections } from "@/utils/schemaUtils";
@@ -107,119 +109,25 @@ function persist(): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(globalThis.options));
 }
 
-/** Boot: adopt what this browser kept from the last session, validated and repaired */
+/**
+ * Boot: adopt what this browser kept from the last session, validated and repaired. Three layers,
+ * newest last - the defaults, whatever the pre-`fmg-options` namespace still holds, then what this
+ * browser stored. Migrating underneath rather than afterwards is what puts the old values through
+ * the schema: a definition set from an old browser is untrusted like any other stored object
+ */
 function restoreStored(): void {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  globalThis.options = stored
-    ? parseSections<OptionsData>(optionsSchema, getDefaultOptions(), safeParse(stored), "Options.restore")
-    : getDefaultOptions();
-  adoptLegacyKeys();
+  const source = deepMerge(getDefaultOptions() as Record<string, unknown>, adoptLegacyOptions() ?? {});
+  deepMerge(source, safeParse(localStorage.getItem(STORAGE_KEY) ?? ""));
+
+  globalThis.options = parseSections<OptionsData>(optionsSchema, getDefaultOptions(), source, "Options.restore");
+  persist();
   setGraphSize();
 }
 
-/**
- * Every preference used to keep a `localStorage` key of its own, named after the control that
- * showed it, and so did every pin. There is one object and one key now: take the preferences into
- * it once and drop the whole namespace, so nothing outside the schema can reach a control again.
- *
- * A migration describes a world that no longer exists, so it carries its own list of that world's
- * keys and does not lean on today's schema. See docs/architecture/configuration.md#migrations
- */
-function adoptLegacyKeys(): void {
-  const read = (key: string) => localStorage.getItem(key) || null;
-  const num = (key: string, apply: (value: number) => void) => {
-    const value = Number(read(key));
-    if (read(key) !== null && Number.isFinite(value)) apply(value);
-  };
-  const str = (key: string, apply: (value: string) => void) => {
-    const value = read(key);
-    if (value !== null) apply(value);
-  };
-  const { app } = globalThis.options;
-
-  num("uiSize", value => (app.ui.size = value));
-  num("tooltipSize", value => (app.ui.tooltipSize = value));
-  num("transparency", value => (app.ui.transparency = value));
-  str("themeColor", value => (app.ui.themeColor = value));
-  str("speakerVoice", value => (app.ui.speakerVoice = value));
-  str("azgaarAssistant", value => (app.ui.assistant = value));
-  str("shapeRendering", value => (app.rendering = value));
-  str("onloadBehavior", value => (app.onLoad = value));
-  str("emblemShape", value => (app.emblemShape = value));
-  num("autosaveInterval", value => (app.autosave.interval = value));
-  num("pngResolution", value => (app.export.pngResolution = value));
-  num("tileCols", value => (app.export.tiles.cols = value));
-  num("tileRows", value => (app.export.tiles.rows = value));
-  num("tileScale", value => (app.export.tiles.scale = value));
-  if (read("noReminder")) app.autosave.remind = false;
-  if (read("disable_click_arrow_tooltip")) app.ui.clickArrowTip = false;
-
-  for (const key of LEGACY_KEYS) localStorage.removeItem(key);
-  persist();
-}
-
-/** The `localStorage` keys of the pre-`fmg-options` world: preferences, and the pins beside them */
-const LEGACY_KEYS = [
-  // preferences, adopted above: nothing in the UI puts these back, so the user would miss them
-  "uiSize",
-  "tooltipSize",
-  "transparency",
-  "themeColor",
-  "speakerVoice",
-  "azgaarAssistant",
-  "shapeRendering",
-  "onloadBehavior",
-  "emblemShape",
-  "autosaveInterval",
-  "pngResolution",
-  "tileCols",
-  "tileRows",
-  "tileScale",
-  "noReminder",
-  "disable_click_arrow_tooltip",
-  // requests and facts. In that world these keys were the locks, holding the pinned value itself;
-  // they are dropped rather than re-typed into `fmg-locks` - a pin is one click to re-make, and a
-  // migration of them would outlive the vocabulary they were written in.
-  // See docs/architecture/configuration.md#what-localstorage-carries-forward-and-what-it-does-not
-  "mapWidth",
-  "mapHeight",
-  "points",
-  "template",
-  "resolveDepressionsSteps",
-  "lakeElevationLimit",
-  "cultures",
-  "culturesSet",
-  "statesNumber",
-  "provincesRatio",
-  "religionsNumber",
-  "manors",
-  "sizeVariety",
-  "growthRate",
-  "mapName",
-  "year",
-  "era",
-  "seed",
-  "mapSize",
-  "latitude",
-  "longitude",
-  "temperatureEquator",
-  "temperatureNorthPole",
-  "temperatureSouthPole",
-  "prec",
-  "distanceScale",
-  "distanceUnit",
-  "heightUnit",
-  "heightExponent",
-  "areaUnit",
-  "temperatureScale",
-  "populationRate",
-  "urbanization",
-  "urbanDensity"
-] as const;
-
-function safeParse(json: string): unknown {
+function safeParse(json: string): Record<string, unknown> {
   try {
-    return JSON.parse(json);
+    const parsed = JSON.parse(json);
+    return typeof parsed === "object" && parsed !== null ? parsed : {};
   } catch {
     return {};
   }

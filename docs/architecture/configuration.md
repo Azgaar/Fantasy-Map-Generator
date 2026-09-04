@@ -326,23 +326,42 @@ outlives the world it describes. So the two are migrated to different depths.
 
 #### What `localStorage` carries forward, and what it does not
 
-Before `fmg-options`, every preference and every pin had a `localStorage` key of its own, named
-after the control that showed it — and `lock(id)` wrote the pinned value _into that key_, so the
-keys **were** the locks. `adoptLegacyKeys` in `src/components/options-model.ts` takes the sixteen
-preference keys into `options.app` and then removes the whole namespace, pins included.
+Before `fmg-options`, that world kept a `localStorage` key per thing: one named after each control
+that showed a preference, one named after each definition set the user built, and — because
+`lock(id)` wrote the pinned value _into_ `localStorage[id]` — the pin keys **were** the locks.
+`adoptLegacyOptions` in `src/components/options-legacy.ts` is the whole of the migration out of it.
 
-**Dropping the old pins is deliberate.** A pin is a claim about a value's shape as well as its
-name, and the old keys carry neither: `template` held a heightmap id whose vocabulary has since
-changed, `points` a raw cell count where a density step lives now, `cultures` a number the culture
-set caps. Re-typing thirty-odd strings against `PINNABLE` to restore a preference the user can
-re-pin with one click is a migration that would then have to be kept correct forever. A returning
-user gets the defaults, generates a map, and pins again — the loss is one session's convenience,
-and the namespace is gone for good rather than half-read on every boot afterwards.
+**The line is this: a value the user would re-set without noticing is dropped, a value they would
+miss is adopted.**
 
-The sixteen preferences are adopted rather than dropped because nothing in the UI puts them back:
-a theme colour or an interface size is a setting the user chose once and would not think to look
-for. That is the line — **a value the user would re-set without noticing is dropped, a value they
-would miss is adopted.**
+Adopted, therefore: the preferences, because nothing in the UI puts them back — a theme colour or
+an interface size is chosen once and never looked for again — and the
+[preservation library](#preservation-across-maps), because a military roster, a burg group or a
+label group is built by hand over a session and cannot be re-made with a click.
+
+Dropped, therefore: the pins. A pin is a claim about a value's shape as well as its name, and the
+old keys carry neither — `template` held a heightmap id whose vocabulary has since changed,
+`points` a raw cell count where a density step lives now, `cultures` a number the culture set caps.
+Re-typing thirty-odd of those against `PINNABLE` to restore something one click re-makes is a
+migration that would then have to be kept correct forever. Dropped too are `winds` and
+`presetStyle`: both describe a map now, and `options` has nowhere to keep a browser-wide default
+for either. They are still _named_ by the migration, so that the namespace goes entirely rather
+than leaving keys behind that nothing will ever read again.
+
+**The migration runs underneath the stored object, not after it.** It returns what the old keys
+amount to in today's shape; `Options.restoreStored` layers that between the defaults and this
+browser's `fmg-options`, and validates the three together. That ordering is what makes the old
+values safe to take: a definition set out of an old browser is untrusted like any other stored
+object, and going through [validation](#validation) is what drops the one unrepairable entry
+instead of the set around it. Adopting after the parse would write straight past the schema.
+
+A migration carries its own copy of the world it describes — its key names, and any value whose
+_meaning_ has since changed. It does **not** copy defaults. Filling a field the stored value lacks
+is a claim about today's shape, not about the old one: the user never had an opinion about that
+field, so it should follow the module's default as that changes, and only today's copy is certain
+to carry every field the schema now requires. A frozen copy silently stops matching the moment the
+schema gains a field — and because the library defaults are `null`, a section that then fails to
+validate has nothing to repair from and falls back whole, losing every other set in it.
 
 ---
 
