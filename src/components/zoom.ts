@@ -58,7 +58,7 @@ function handleZoomPerFrame(): void {
 
   window.updateMinimap?.();
   redrawTracedImage();
-  ViewportLayers.schedule();
+  if (ensureEl<HTMLSelectElement>("viewportRedraw").value === "continuous") ViewportLayers.schedule();
 }
 
 /** Rewrite map content once zoom gesture settles */
