@@ -27,7 +27,7 @@ function open(id?: string, name?: string): void {
   });
 
   // update pin notes icon
-  if (options.view.notesPinned) notesPin.classList.add("pressed");
+  if (options.app.notesPinned) notesPin.classList.add("pressed");
   else notesPin.classList.remove("pressed");
 
   // select an object
@@ -258,7 +258,7 @@ function triggerNotesRemove(): void {
 }
 
 function toggleNotesPin(this: HTMLElement): void {
-  options.view.notesPinned = !options.view.notesPinned;
+  Options.set(o => (o.app.notesPinned = !o.app.notesPinned));
   this.classList.toggle("pressed");
 }
 

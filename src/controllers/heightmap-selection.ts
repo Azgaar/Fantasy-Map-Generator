@@ -17,7 +17,7 @@ addListeners();
 function open(): void {
   closeDialogs(".stable");
 
-  setSelected(facts.heightmap.template);
+  setSelected(options.generation.template);
   graph = getGraph(graph);
 
   $("#heightmapSelection").dialog({
@@ -31,7 +31,7 @@ function open(): void {
       Select: function (this: HTMLElement) {
         const id = getSelected();
         if (!id) return;
-        facts.heightmap.template = id;
+        Options.set(o => (o.generation.template = id));
         syncInputs();
         lock("template");
 
@@ -40,7 +40,7 @@ function open(): void {
       "New Map": function (this: HTMLElement) {
         const id = getSelected();
         if (!id) return;
-        facts.heightmap.template = id;
+        Options.set(o => (o.generation.template = id));
         syncInputs();
         lock("template");
 

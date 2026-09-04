@@ -110,8 +110,8 @@ function createDialogHtml(): string {
             <input id="precOutput" type="range" min="0" max="500" />
           </label>
         </div>
-        <div data-tip="Canvas size. Can be changed in general options on new map generation">
-          <i>Canvas size:</i><br />
+        <div data-tip="The coordinate extent this map was generated on. The next map's is set in Options">
+          <i>Map size:</i><br />
           <span id="mapSize"></span> px = <span id="mapSizeFriendly"></span>
         </div>
         <div>

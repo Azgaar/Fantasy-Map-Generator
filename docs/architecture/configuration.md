@@ -24,19 +24,27 @@ locations and two sets of writers:
    This single rule is what keeps a saved file consistent with the map it describes.
 3. **`options` holds requests; `facts` holds what happened.** Where a request and a result both
    exist they are different values in different objects with different names — `options` asks for
-   18 states, `facts` records the template and rates the map was built with, and the states
-   themselves are data. Never two copies of one value.
+   18 states on a graph 1600×900 at density step 4, `facts` records the graph that was built, and
+   the states themselves are data. Never two copies of one value: a field that ends up in both
+   objects means the test below was answered twice and differently. Nor two forms of one value:
+   a step and the cell count it stands for are the same request said twice, so only the step is
+   stored and the count is derived where it is used.
 4. **A value is a fact if and only if the map cannot be operated correctly without it.** See
    [The test](#the-test) — this is the only admission criterion, and it is decidable per field.
-5. **Defaults are the schema.** One function returns a fully-defaulted object and the type is
-   derived from it, so adding a field extends the type, the persisted shape and the `.map`
-   payload at once. A new map starts from the defaults; a loaded map starts from its file.
-6. **Validate at the boundary and replace, never merge.** Anything arriving from `localStorage`
+5. **The schema is the shape; the model holds the defaults.** The schema file carries the zod
+   object and the type derived from it, and nothing else. One function in the model returns a
+   fully-defaulted object, taking each value from the module that owns the concept — a coastline
+   default belongs to the coastline generator, and is imported, never copied. Adding a field
+   extends the type, the persisted shape and the `.map` payload at once. A new map starts from the
+   defaults; a loaded map starts from its file.
+6. **The model is the store.** `facts` and `options` are globals the model declares, initializes
+   and is the only writer of. There is no separate store module to keep in step with it.
+7. **Validate at the boundary and replace, never merge.** Anything arriving from `localStorage`
    or a `.map` is parsed against a schema before it is adopted, and adoption swaps the section
    wholesale. Merging lets one map inherit another's values.
-7. **The panel is a view.** Reading or writing a configuration value never requires a panel to be
+8. **The panel is a view.** Reading or writing a configuration value never requires a panel to be
    open, and the DOM is never the source of truth.
-8. **The preservation library is written only by a user edit** — never by a load, never by
+9. **The preservation library is written only by a user edit** — never by a load, never by
    generation. See [Preservation](#preservation-across-maps).
 
 ---
@@ -54,21 +62,30 @@ itself). Worked examples:
 
 | Value                  | Read by                                                | Verdict    |
 | ---------------------- | ------------------------------------------------------ | ---------- |
-| `states.growthRate`    | expanding states after an edit — a recalculation       | **fact**   |
-| `states.sizeVariety`   | adding one new state in an editor                      | **fact**   |
+| `states.growthRate`    | only the states generator, whenever it is asked to run | **option** |
+| `states.sizeVariety`   | only the states generator, whenever it is asked to run | **option** |
 | states count requested | only the states generator, only when asked             | **option** |
 | `cultures.set`         | marker generation branches on it long after generation | **fact**   |
 | `coastline`            | building a feature path at render time                 | **fact**   |
 | `graph.width/height`   | every latitude, longitude and full-map cover           | **fact**   |
 | density slider step    | positioning the slider                                 | **option** |
+| heightmap template     | the generators that raise the terrain, while they run  | **option** |
 | 3D erosion detail      | the 3D renderer, this session only                     | **option** |
 
-Two corollaries worth stating, because they are the cases people get wrong:
+Four corollaries worth stating, because they are the cases people get wrong:
 
-- **A count is rarely a fact.** Once the states exist, their number is in the data and the request
-  that produced it is inert. Rates, ratios and varieties _are_ facts, because they keep being
-  consulted whenever the world is extended or adjusted.
+- **A count, rate, ratio or variety is rarely a fact.** They are spent when the generator runs:
+  once the states exist their number, spread and growth are in the data, and the request that
+  produced them is inert. Adding one more state later is that generator running again, on the
+  request as it stands — not the map recalculating itself.
+- **What survives is what other things read.** `cultures.set` is a fact and `cultures.growthRate`
+  is not, because marker and name generation still branch on the set long after the cultures are
+  drawn, while nothing but the culture generator has ever asked about the rate.
 - **A value read at render time is always a fact**, however configuration-shaped it looks.
+- **What produced something is not what describes it.** The heightmap template raised the terrain
+  and is never consulted again; the terrain itself is the data. Storing the template would also be
+  a claim the map cannot keep, since the user can edit the heightmap until nothing of the template
+  is left.
 
 ---
 
@@ -83,19 +100,16 @@ cells that reference them.
 | ------------ | ----------------------------------------------------------- | ------------------------------------------------------------------------- |
 | —            | `seed`                                                      | reproduces the map and identifies its graph                               |
 | `graph`      | `width`, `height`, `points`                                 | the coordinate extent; not recoverable from the topology, which floors it |
-| `heightmap`  | `template`, `resolveDepressionsSteps`, `lakeElevationLimit` | the terrain's character; re-read whenever terrain is re-derived           |
 | `geography`  | `mapSize`, `latitude`, `longitude`                          | where the map sits on the globe                                           |
 | `climate`    | `temperature.*`, `precipitation`, `winds`                   | produced the per-cell temperature and precipitation; needed to re-derive  |
-| `cultures`   | `set`, `sizeVariety`, `growthRate`                          | read when expanding or adding cultures, and by unrelated generators       |
-| `states`     | `sizeVariety`, `growthRate`                                 | read when expanding states or adding one                                  |
-| `lore`       | `name`, `calendar.*`                                        | filenames, state history, battle reports                                  |
+| `cultures`   | `set`                                                       | unrelated generators branch on it long after the cultures exist           |
+| `lore`       | `name`, `description`, `calendar.*`                         | filenames, state history, battle reports, and the author's own note       |
 | `units`      | `distance`, `area`, `height`, `temperature`, `population`   | the map's scale, and the author's presentation of it                      |
 | `labels`     | `groups`, `showAll`, `resizeOnZoom`                         | label data references groups **by name**                                  |
 | `military`   | `units`                                                     | regiments resolve unit types **by name**                                  |
 | `transports` | type definitions                                            | route segments reference types **by name**                                |
 | `burgs`      | `groups`                                                    | burgs reference groups **by name**                                        |
 | `coastline`  | fractalization settings                                     | read at render time to build feature paths                                |
-| `scaleBar`   | `label`, `position`                                         | part of the map's presentation                                            |
 | `style`      | `preset`                                                    | the preset the map's styles came from, so the Style tab can show it again |
 
 **Reference by name is the strongest fact signal there is.** A definition set that entities point
@@ -106,9 +120,17 @@ and not preferences, however much they look like user settings.
 ### Derived facts
 
 `geography.coordinates` (the lat/lon box) is computed from `mapSize`, `latitude`, `longitude` and
-the extent's aspect ratio. It is a **cache, not an input**: nothing may write it except the
-derivation, and the derivation must re-run whenever any of its four inputs changes. A derived fact
-may be serialized for convenience but must be recomputable from the file without it.
+the extent's aspect ratio. Nothing may write it except that derivation, and the derivation runs
+**the moment any of its four inputs changes** — not when someone happens to need the result. That
+is what makes the stored box trustworthy: it cannot drift from the values it came from.
+
+It is serialized, and a load takes it as the file gives it. Re-deriving it there would be work that
+can only produce the same answer, and would quietly re-render an old map if the formula ever
+changed. A file that carries no box — anything old enough to predate it — gets one computed on
+load.
+
+A derived fact still has to be **recomputable**: the inputs travel in the same file, so nothing is
+lost if the cache is dropped.
 
 ---
 
@@ -116,11 +138,11 @@ may be serialized for convenience but must be recomputable from the file without
 
 Three parts with one storage location and one schema:
 
-| Part                     | Contents                                                                                                                                                                            | Notes                                                     |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| **Requests**             | requested extent, density step, entity counts and ratios, culture set and template for the next map                                                                                 | consumed by generation; committed to `facts` when it runs |
-| **Viewer preferences**   | 3D settings, animation settings, notes pinning, emblem visibility, interface size, theme, tooltip size, autosave interval, on-load behaviour, rendering mode, zoom extent, language | take effect immediately, affect nothing generated         |
-| **Preservation library** | the user's own definition sets, kept for the next map                                                                                                                               | see [Preservation](#preservation-across-maps)             |
+| Part                     | Lives in            | Contents                                                                                                                                                            | Notes                                                     |
+| ------------------------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| **Requests**             | `options.generation` | the graph to build (extent and density), entity counts, ratios, rates and varieties, culture set and template for the next map                                      | consumed by generation; what it keeps is written to `facts` |
+| **Preferences**          | `options.app`       | 3D settings, animation settings, notes pinning, emblem visibility and shape, interface size, theme, tooltip size, autosave, on-load behaviour, rendering, zoom extent | take effect immediately, affect nothing generated         |
+| **Preservation library** | `options.library`   | the user's own definition sets, kept for the next map                                                                                                               | see [Preservation](#preservation-across-maps)             |
 
 Also transient editor state that has nowhere better to live (a live "growth modifier" slider, for
 instance). Such a field is not a remembered preference — mark it as transient in the schema so
@@ -188,10 +210,9 @@ Loading a `.map` establishes a new map. It must not silently rewrite what this b
 A small, explicitly enumerated set of `options` requests that a load may update, because the user
 would expect them to continue from the map they just opened:
 
-| Option request               | Sourced from               | Why                                                          |
-| ---------------------------- | -------------------------- | ------------------------------------------------------------ |
-| requested extent             | `facts.graph.width/height` | generating from an opened map should keep that map's shape   |
-| requested heightmap template | `facts.heightmap.template` | regenerating from an opened map should keep its terrain kind |
+| Option request   | Sourced from               | Why                                                        |
+| ---------------- | -------------------------- | ---------------------------------------------------------- |
+| requested extent | `facts.graph.width/height` | generating from an opened map should keep that map's shape |
 
 Rules for this list, which exist to keep it from growing into a merge:
 
@@ -299,13 +320,15 @@ means. Migrations run at the boundary, before validation, and produce a current-
 ## Adding a configuration value
 
 1. **Apply [the test](#the-test).** Does anything other than a deliberate regeneration need it?
-2. **Add the field with its default** to the schema of the object it belongs to, in the group that
-   matches what it configures — not the panel that shows it. The type, persistence, validation and
-   round-trip follow.
+2. **Add the field to the schema** of the object it belongs to, in the group that matches what it
+   configures — not the panel that shows it — and **its default to that object's model**, taking
+   the value from the module that owns the concept if there is one. The type, persistence,
+   validation and round-trip follow.
 3. **Give it exactly one writer.** A request is written by its control. A fact is written by the
-   generator, derivation or fact-owning editor that produces it. Never both.
-4. **Bind the control** to that object's table, and give it a lock if a new map should be able to
-   keep it.
+   generator, derivation or fact-owning editor that produces it. Never both, and never one field
+   in both objects.
+4. **Bind the control** to that object's table, and give it a lock if it is a request a new map
+   should be able to keep. A preference gets no lock.
 5. **If a new map should re-roll it**, add it to the randomization step. If a new map should
    inherit the user's own version, add a library entry instead.
 6. **Read it directly** where it is used — reading never goes through a model.
@@ -337,7 +360,8 @@ These are the properties the design exists to guarantee, and the ones worth asse
 - **A count is in the data, not in the configuration.** Ask the world how many states it has.
 - **Two names beat one shared field.** When a request and a result feel like the same value, they
   are not — name them differently and let them diverge.
-- **Extent is not viewport.** The extent is the coordinate space the map's geometry lives in and is
-  fixed for the life of its graph. The viewport is the screen window onto it, is derived from the
-  extent and the browser window, and is neither a fact nor a preference — it is session state that
-  nothing persists.
+- **Extent is not viewport.** The extent is the coordinate space the map's geometry lives in, is
+  fixed for the life of its graph, and is asked for — before the map exists — by
+  `options.generation.graph`. The viewport is the screen window onto it, and is neither a fact nor
+  a preference: it is session state that nothing persists. They are two controls in two places, in
+  two different sections of the panel, and a panel that shows one as the other is a bug.

@@ -1,7 +1,9 @@
 import { hsl, select } from "d3";
+import { fitMapToScreen, setViewport } from "@/components/canvas";
 import type { FactsData } from "@/components/facts-schema";
 import { Layers } from "@/components/layers";
-import { getDefaultOptions, type OptionsData, THEME_COLOR } from "@/components/options-schema";
+import { getDefaultOptions, THEME_COLOR } from "@/components/options-model";
+import type { OptionsData } from "@/components/options-schema";
 import { PINNABLE } from "@/components/pinnable";
 import { generateMapWithSeed, showSeedHistoryDialog } from "@/components/seed";
 import { tip } from "@/components/tooltips";
@@ -11,7 +13,6 @@ import { heightmapTemplates } from "@/data/heightmap-templates";
 import { precreatedHeightmaps } from "@/data/precreated-heightmaps";
 import { CULTURE_SETS, Cultures } from "@/generators/cultures-generator";
 import { Emblems } from "@/generators/emblems-generator";
-import { Names } from "@/generators/names-generator";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { toggleAssistant } from "@/services/assistant";
 import { copyMapURL } from "@/services/url-params";
@@ -20,17 +21,17 @@ import { minmax, rn } from "@/utils/numberUtils";
 import { bindLockIcons, lock, unlock } from "@/utils/preferences";
 
 const TEMPLATE = /* html */ `
-  <p data-tip="Map generation settings. Generate a new map to apply the settings">
+  <p data-tip="What the next map is asked for. Generate a new map to apply the settings">
     Map settings (new map to apply):
   </p>
   <table>
     <tr
-      data-tip="Set original map size on generation. It cannot be changed later. Always keep canvas size equal to your screen size or less. The best option is to use the default value. For full-globe maps use aspect ratio 2:1"
+      data-tip="Coordinate extent the next map is generated on. It is fixed for the life of that map and cannot be changed later - the Viewport size below is what you see it through. For full-globe maps use aspect ratio 2:1"
     >
       <td>
-        <i data-tip="Restore default canvas size" id="restoreDefaultCanvasSize" class="icon-ccw"></i>
+        <i data-tip="Restore default map size: the window size" id="restoreDefaultMapSize" class="icon-ccw"></i>
       </td>
-      <td>Canvas size</td>
+      <td>Map size</td>
       <td>
         <input id="mapWidthInput" class="paired" type="number" min="240" value="960" />
         <span>x</span>
@@ -40,7 +41,7 @@ const TEMPLATE = /* html */ `
       <td></td>
     </tr>
     <tr
-      data-tip="Map seed number. Press 'Enter' to apply. Seed produces the same map only if canvas size and options are the same"
+      data-tip="Map seed number. Press 'Enter' to apply. A seed reproduces the same map only if the map size and the settings are the same"
     >
       <td>
         <i
@@ -81,53 +82,6 @@ const TEMPLATE = /* html */ `
       </td>
       <td>
         <output id="pointsOutputFormatted" style="color: #053305">10K</output>
-      </td>
-    </tr>
-    <tr data-tip="Define map name (will be used to name downloaded files)">
-      <td>
-        <i data-locked="0" id="lock_mapName" class="icon-lock-open"></i>
-      </td>
-      <td>Map name</td>
-      <td>
-        <input
-          id="mapName"
-          data-stored="mapName"
-          class="long"
-          autocorrect="off"
-          spellcheck="false"
-          type="text"
-        />
-      </td>
-      <td>
-        <i data-tip="Regenerate map name" id="optionsMapNameRegenerate" class="icon-arrows-cw"></i>
-      </td>
-    </tr>
-    <tr data-tip="Define current year and era name">
-      <td>
-        <i data-locked="0" id="lock_year" data-ids="year,era" class="icon-lock-open"></i>
-      </td>
-      <td>Year and era</td>
-      <td>
-        <input
-          id="yearInput"
-          data-stored="year"
-          type="number"
-          step="1"
-          class="paired"
-          style="width: 24%; float: left; font-size: smaller"
-        />
-        <input
-          id="eraInput"
-          data-stored="era"
-          autocorrect="off"
-          spellcheck="false"
-          type="text"
-          style="width: 75%; float: right"
-          class="long"
-        />
-      </td>
-      <td>
-        <i id="optionsEraRegenerate" data-tip="Regenerate era" class="icon-arrows-cw"></i>
       </td>
     </tr>
     <tr data-tip="Select template or precreated heightmap to be used on generation">
@@ -239,8 +193,8 @@ const TEMPLATE = /* html */ `
       </td>
     </tr>
   </table>
-  <p data-tip="Tool settings that don't affect maps. Changes are getting applied immediately">
-    Generator settings:
+  <p data-tip="What this browser wants. These change nothing on the map and apply immediately">
+    Interface settings:
   </p>
   <table>
     <tr
@@ -410,6 +364,21 @@ const TEMPLATE = /* html */ `
         <svg class="emblemShapePreview" viewBox="0 0 200 210"><path id="emblemShapeImage" /></svg>
       </td>
     </tr>
+    <tr
+      data-tip="Size of the map window on screen. Independent of the map size: it is how much of the map you see at once, and nothing remembers it between sessions"
+    >
+      <td>
+        <i data-tip="Fit the viewport to the browser window" id="viewportFit" class="icon-ccw"></i>
+      </td>
+      <td>Viewport size</td>
+      <td>
+        <input id="viewportWidth" class="paired" type="number" min="100" />
+        <span>x</span>
+        <input id="viewportHeight" class="paired" type="number" min="100" />
+        <span>px</span>
+      </td>
+      <td></td>
+    </tr>
     <tr data-tip="Set minimum and maximum possible zoom level">
       <td>
         <i data-tip="Restore default zoom extent: [1, 20]" id="zoomExtentDefault" class="icon-ccw"></i>
@@ -481,11 +450,18 @@ const TEMPLATE = /* html */ `
       Configure World
     </button>
     <button
+      id="setupLore"
+      data-tip="Click to name the map, date its calendar and describe the world"
+      onclick="window.Controllers.LoreEditor.open()"
+    >
+      Set Lore
+    </button>
+    <button
       id="optionsReset"
       data-tip="Click to restore default options and reload the page"
       onclick="cleanupData()"
     >
-      Reset to defaults
+      Reset Options
     </button>
   </div>
 `;
@@ -501,8 +477,8 @@ type Setting<T> = {
  * the tab says so in its own heading. See docs/architecture/configuration.md
  */
 const REQUEST_SETTINGS: Setting<OptionsData>[] = [
-  { key: "mapWidth", get: o => o.nextMap.width, set: (o, v) => (o.nextMap.width = +v) },
-  { key: "mapHeight", get: o => o.nextMap.height, set: (o, v) => (o.nextMap.height = +v) },
+  { key: "mapWidth", get: o => o.generation.graph.width, set: (o, v) => (o.generation.graph.width = +v) },
+  { key: "mapHeight", get: o => o.generation.graph.height, set: (o, v) => (o.generation.graph.height = +v) },
   { key: "template", get: o => o.generation.template, set: (o, v) => (o.generation.template = v) },
   {
     key: "resolveDepressionsSteps",
@@ -538,25 +514,25 @@ const REQUEST_SETTINGS: Setting<OptionsData>[] = [
  * owns the control; the table still gives the panel a way to show it
  */
 const PREFERENCE_SETTINGS: Setting<OptionsData>[] = [
-  { key: "uiSize", get: o => o.view.ui.size, set: (o, v) => (o.view.ui.size = +v) },
-  { key: "tooltipSize", get: o => o.view.ui.tooltipSize, set: (o, v) => (o.view.ui.tooltipSize = +v) },
-  { key: "azgaarAssistant", get: o => o.view.ui.assistant, set: (o, v) => (o.view.ui.assistant = v) },
-  { key: "speakerVoice", get: o => o.view.ui.speakerVoice, set: (o, v) => (o.view.ui.speakerVoice = v) },
-  { key: "emblemShape", get: o => o.view.emblemShape, set: (o, v) => (o.view.emblemShape = v) },
-  { key: "shapeRendering", get: o => o.view.rendering, set: (o, v) => (o.view.rendering = v) },
-  { key: "onloadBehavior", get: o => o.view.onLoad, set: (o, v) => (o.view.onLoad = v) },
-  { key: "autosaveInterval", get: o => o.view.autosave.interval, set: (o, v) => (o.view.autosave.interval = +v) },
+  { key: "uiSize", get: o => o.app.ui.size, set: (o, v) => (o.app.ui.size = +v) },
+  { key: "tooltipSize", get: o => o.app.ui.tooltipSize, set: (o, v) => (o.app.ui.tooltipSize = +v) },
+  { key: "azgaarAssistant", get: o => o.app.ui.assistant, set: (o, v) => (o.app.ui.assistant = v) },
+  { key: "speakerVoice", get: o => o.app.ui.speakerVoice, set: (o, v) => (o.app.ui.speakerVoice = v) },
+  { key: "emblemShape", get: o => o.app.emblemShape, set: (o, v) => (o.app.emblemShape = v) },
+  { key: "shapeRendering", get: o => o.app.rendering, set: (o, v) => (o.app.rendering = v) },
+  { key: "onloadBehavior", get: o => o.app.onLoad, set: (o, v) => (o.app.onLoad = v) },
+  { key: "autosaveInterval", get: o => o.app.autosave.interval, set: (o, v) => (o.app.autosave.interval = +v) },
 
   // the zoom extent is normalised as a pair, and the theme as a colour and its transparency, so
   // each group keeps a writer of its own and the table only shows what that writer settled on
-  { key: "zoomExtentMin", get: o => o.view.zoomExtent.min },
-  { key: "zoomExtentMax", get: o => o.view.zoomExtent.max },
+  { key: "zoomExtentMin", get: o => o.app.zoomExtent.min },
+  { key: "zoomExtentMax", get: o => o.app.zoomExtent.max },
 
   // the export dialogs own these controls and write them; see components/options/io-panes.ts
-  { key: "pngResolution", get: o => o.view.export.pngResolution },
-  { key: "tileCols", get: o => o.view.export.tiles.cols },
-  { key: "tileRows", get: o => o.view.export.tiles.rows },
-  { key: "tileScale", get: o => o.view.export.tiles.scale }
+  { key: "pngResolution", get: o => o.app.export.pngResolution },
+  { key: "tileCols", get: o => o.app.export.tiles.cols },
+  { key: "tileRows", get: o => o.app.export.tiles.rows },
+  { key: "tileScale", get: o => o.app.export.tiles.scale }
 ];
 
 /** Every control `options` answers for, requests and preferences alike */
@@ -567,31 +543,7 @@ const OPTION_SETTINGS: Setting<OptionsData>[] = [...REQUEST_SETTINGS, ...PREFERE
  * `facts` and never a request. The Units editor owns its own controls the same way
  */
 const FACT_SETTINGS: Setting<FactsData>[] = [
-  { key: "seed", get: f => f.seed }, // a readout: typing a seed regenerates rather than editing this map
-  // the depression settings are the one pair of controls that answer to both objects: the heightmap
-  // being customized re-derives its rivers and lakes from the fact as the slider moves, and the
-  // request is what the next map starts from. Two names, two objects, one control - see
-  // docs/architecture/configuration.md#generation-mechanics
-  {
-    key: "resolveDepressionsSteps",
-    get: f => f.heightmap.resolveDepressionsSteps,
-    set: (f, v) => (f.heightmap.resolveDepressionsSteps = +v)
-  },
-  {
-    key: "lakeElevationLimit",
-    get: f => f.heightmap.lakeElevationLimit,
-    set: (f, v) => (f.heightmap.lakeElevationLimit = +v)
-  },
-  { key: "mapName", get: f => f.lore.name, set: (f, v) => (f.lore.name = v) },
-  { key: "year", get: f => f.lore.calendar.year, set: (f, v) => (f.lore.calendar.year = +v) },
-  {
-    key: "era",
-    get: f => f.lore.calendar.era,
-    set: (f, v) => {
-      f.lore.calendar.era = v;
-      f.lore.calendar.eraShort = Facts.shortEra();
-    }
-  }
+  { key: "seed", get: f => f.seed } // a readout: typing a seed regenerates rather than editing this map
 ];
 
 ensureEl("optionsContent").innerHTML = TEMPLATE;
@@ -604,7 +556,7 @@ function addListeners(): void {
 
   content.addEventListener("input", event => {
     const { id, value } = event.target as HTMLInputElement;
-    if (id === "mapWidthInput" || id === "mapHeightInput") onCanvasSizeChange();
+    if (id === "mapWidthInput" || id === "mapHeightInput") onMapSizeChange();
     else if (id === "pointsInput") changeCellsDensity(+value);
     else if (id === "culturesSet") changeCultureSet(value);
     else if (id === "statesNumber") changeStatesNumber(+value);
@@ -621,23 +573,21 @@ function addListeners(): void {
 
   content.addEventListener("change", event => {
     const { id, value } = event.target as HTMLInputElement;
-    if (id === "zoomExtentMin" || id === "zoomExtentMax") changeZoomExtent(value);
+    if (id === "viewportWidth" || id === "viewportHeight") changeViewportSize();
+    else if (id === "zoomExtentMin" || id === "zoomExtentMax") changeZoomExtent(value);
     else if (id === "seedInput") generateMapWithSeed();
     else if (id === "uiSize") changeUiSize(+value);
     else if (id === "shapeRendering") setRendering(value);
-    else if (id === "yearInput") changeYear();
-    else if (id === "eraInput") changeEra();
     else if (id === "azgaarAssistant") toggleAssistant(value === "show");
   });
 
   content.addEventListener("click", event => {
     const target = event.target as HTMLElement;
-    if (target.id === "restoreDefaultCanvasSize") restoreDefaultCanvasSize();
+    if (target.id === "restoreDefaultMapSize") restoreDefaultMapSize();
     else if (target.id === "optionsMapHistory") showSeedHistoryDialog();
     else if (target.id === "optionsCopySeed") copyMapURL();
-    else if (target.id === "optionsEraRegenerate") regenerateEra();
-    else if (target.id === "optionsMapNameRegenerate") regenerateMapName();
     else if (target.id === "templateInputContainer") Controllers.HeightmapSelection.open();
+    else if (target.id === "viewportFit") fitMapToScreen();
     else if (target.id === "zoomExtentDefault") restoreDefaultZoomExtent();
     else if (target.id === "translateExtent") toggleTranslateExtent(target);
     else if (target.id === "speakerTest") testSpeaker();
@@ -708,31 +658,34 @@ function watchInputs(): void {
   root?.addEventListener("input", onChange);
   root?.addEventListener("change", onChange);
 
-  // the canvas size inputs are not `data-stored`: `onCanvasSizeChange` is their single writer, and
-  // it writes the request. The extent on screen belongs to the graph this map was built on
+  // the map size inputs are not `data-stored`: `onMapSizeChange` is their single writer, and it
+  // writes the request. The extent on screen belongs to the graph this map was built on, and the
+  // viewport that shows it is session state - neither is a value this table can carry
 }
 
 const inputFor = (key: string) => findEl<HTMLInputElement>(`${key}Input`) ?? findEl<HTMLInputElement>(key);
 
-function onCanvasSizeChange(): void {
+/** The extent the next map is generated on: not the window it will be looked at through */
+function onMapSizeChange(): void {
   Options.set(o => {
-    o.nextMap.width = +ensureEl<HTMLInputElement>("mapWidthInput").value;
-    o.nextMap.height = +ensureEl<HTMLInputElement>("mapHeightInput").value;
+    o.generation.graph.width = +ensureEl<HTMLInputElement>("mapWidthInput").value;
+    o.generation.graph.height = +ensureEl<HTMLInputElement>("mapHeightInput").value;
   });
   // the map on screen keeps the extent its graph was built on - this asks for the next one
   lock("mapWidth");
   lock("mapHeight");
 
-  if (options.nextMap.width > window.innerWidth || options.nextMap.height > window.innerHeight) {
+  if (options.generation.graph.width > window.innerWidth || options.generation.graph.height > window.innerHeight) {
     const size = `${window.innerWidth} x ${window.innerHeight}`;
-    tip(`Canvas size is larger than window size (${size}). It can affect performance`, false, "warn", 4000);
+    tip(`Map size is larger than the window (${size}). It can affect performance`, false, "warn", 4000);
   }
 }
 
-function restoreDefaultCanvasSize(): void {
+/** Back to the window size, which is what most maps want */
+function restoreDefaultMapSize(): void {
   Options.set(o => {
-    o.nextMap.width = window.innerWidth;
-    o.nextMap.height = window.innerHeight;
+    o.generation.graph.width = window.innerWidth;
+    o.generation.graph.height = window.innerHeight;
   });
   unlock("mapWidth");
   unlock("mapHeight");
@@ -747,7 +700,8 @@ export function changeCellsDensity(density: number): void {
 
 /** Push the density step and the cell count it resolves to into the slider and its readout */
 function syncCellsDensity(): void {
-  const { density, points: cellsDesired } = options.nextMap;
+  const { density } = options.generation.graph;
+  const cellsDesired = Options.cellsFor(density);
 
   const input = findEl<HTMLInputElement>("pointsInput");
   if (input) {
@@ -836,37 +790,6 @@ function changeEmblemShape(shape: string): void {
   }
 }
 
-function changeYear(): void {
-  const value = ensureEl<HTMLInputElement>("yearInput").value;
-  if (!value) return;
-  if (Number.isNaN(+value)) {
-    tip("Current year should be a number", false, "error");
-    return;
-  }
-  facts.lore.calendar.year = +value;
-}
-
-function changeEra(): void {
-  const value = ensureEl<HTMLInputElement>("eraInput").value;
-  if (!value) return;
-  lock("era");
-  Facts.set(f => (f.lore.calendar.era = value));
-}
-
-function regenerateMapName(): void {
-  Names.getMapName(true); // writes facts.lore.name, and unpins the name if the user had pinned it
-  syncInputs();
-}
-
-function regenerateEra(): void {
-  unlock("era");
-  Facts.set(f => {
-    f.lore.calendar.era = Facts.randomEra();
-    f.lore.calendar.eraShort = Facts.shortEra();
-  });
-  ensureEl<HTMLInputElement>("eraInput").value = facts.lore.calendar.era;
-}
-
 function changeUiSize(value: number): void {
   if (Number.isNaN(value) || value < 0.5) return;
   const size = Math.min(value, maxUiSize());
@@ -889,19 +812,19 @@ function changeTooltipSize(value: number): void {
  */
 function setTheme(themeColor: string, transparency: number): void {
   Options.set(o => {
-    o.view.ui.themeColor = themeColor;
-    o.view.ui.transparency = transparency;
+    o.app.ui.themeColor = themeColor;
+    o.app.ui.transparency = transparency;
   });
   changeDialogsTheme(themeColor, transparency);
 }
 
 function restoreDefaultThemeColor(): void {
-  setTheme(THEME_COLOR, options.view.ui.transparency);
+  setTheme(THEME_COLOR, options.app.ui.transparency);
 }
 
 function changeThemeHue(hue: string): void {
-  const { s, l } = hsl(options.view.ui.themeColor);
-  setTheme(hsl(+hue, s, l).hex(), options.view.ui.transparency);
+  const { s, l } = hsl(options.app.ui.themeColor);
+  setTheme(hsl(+hue, s, l).hex(), options.app.ui.transparency);
 }
 
 /**
@@ -949,15 +872,27 @@ function changeZoomExtent(value: string): void {
   setMapZoom(minmax(+value, 0.01, 200));
 }
 
+/**
+ * The window onto the map, not the map. It is bounded by the extent the graph was built on: asking
+ * for more shows nothing but empty canvas. See docs/architecture/configuration.md
+ */
+function changeViewportSize(): void {
+  const width = +ensureEl<HTMLInputElement>("viewportWidth").value;
+  const height = +ensureEl<HTMLInputElement>("viewportHeight").value;
+  if (!(width > 0) || !(height > 0)) return;
+
+  setViewport(Math.min(width, facts.graph.width), Math.min(height, facts.graph.height));
+}
+
 function restoreDefaultZoomExtent(): void {
-  const { min, max } = getDefaultOptions().view.zoomExtent;
+  const { min, max } = getDefaultOptions().app.zoomExtent;
   setZoomExtentPreference(min, max);
   setMapZoom(min);
 }
 
 /** The single writer of the zoom extent: one pair, normalised together and shown together */
 function setZoomExtentPreference(min: number, max: number): void {
-  Options.set(o => (o.view.zoomExtent = { min, max }));
+  Options.set(o => (o.app.zoomExtent = { min, max }));
   ensureEl<HTMLInputElement>("zoomExtentMin").value = String(min);
   ensureEl<HTMLInputElement>("zoomExtentMax").value = String(max);
   setZoomExtent(min, max);
@@ -990,7 +925,7 @@ function loadVoices(): void {
 
     clearInterval(interval);
     for (const [index, voice] of voices.entries()) select.options.add(new Option(voice.name, String(index)));
-    select.value = options.view.ui.speakerVoice || String(voices.findIndex(voice => voice.lang === "en-US"));
+    select.value = options.app.ui.speakerVoice || String(voices.findIndex(voice => voice.lang === "en-US"));
   }, 1000);
 }
 
@@ -998,7 +933,7 @@ function testSpeaker(): void {
   const { year, era } = facts.lore.calendar;
   const speech = new SpeechSynthesisUtterance(`${facts.lore.name}, ${year} ${era}`);
   const voices = speechSynthesis.getVoices();
-  if (voices.length) speech.voice = voices[+ensureEl<HTMLSelectElement>("speakerVoice").value];
+  if (voices.length) speech.voice = voices[Number(options.app.ui.speakerVoice)] ?? speech.voice;
   speechSynthesis.speak(speech);
 }
 
@@ -1047,7 +982,7 @@ function restoreLegacyStylePresets(): void {
 const defaultUiSize = (): number => minmax(rn(facts.graph.width / 1280, 1), 1, 2.5);
 
 export function restoreUi(): void {
-  const template = facts.heightmap.template;
+  const template = options.generation.template;
   if (template) {
     const name = heightmapTemplates[template]?.name || precreatedHeightmaps[template]?.name || template;
     applyOption(ensureEl("templateInput"), template, name);
@@ -1058,7 +993,7 @@ export function restoreUi(): void {
 
   // `syncInputs` has already put every preference in its control; these are the ones that also do
   // something the moment they are read back. See docs/architecture/configuration.md
-  const { ui, rendering, emblemShape, zoomExtent } = options.view;
+  const { ui, rendering, emblemShape, zoomExtent } = options.app;
 
   Emblems.setShape(emblemShape);
   changeTooltipSize(ui.tooltipSize);

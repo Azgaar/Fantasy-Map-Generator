@@ -1,10 +1,3 @@
-// The configuration globals the app installs at boot, so a unit test gets the same defaults
-import { getDefaultFacts } from "@/components/facts-schema";
-import { getDefaultOptions } from "@/components/options-schema";
-
-(globalThis as Record<string, unknown>).facts ??= getDefaultFacts();
-(globalThis as Record<string, unknown>).options ??= getDefaultOptions();
-
 // Make window === globalThis so module side-effects (window.rn = ...) work in Node
 if (typeof window === "undefined") {
   (globalThis as Record<string, unknown>).window = globalThis;
@@ -30,18 +23,23 @@ if (typeof document === "undefined") {
   };
 }
 
-// Stub the tooltip globals (registered by services/tooltips) so the registry's
-// lazy-load loading tip doesn't throw outside the browser
-if (typeof window.tip === "undefined") {
-  window.tip = () => {};
-}
-if (typeof window.clearMainTip === "undefined") {
-  window.clearMainTip = () => {};
-}
-
 // Logging flags owned by services/logging.ts and referenced bare by bundled modules
 for (const flag of ["INFO", "TIME", "ERROR", "WARN", "DEBUG"]) {
   if (typeof (globalThis as Record<string, unknown>)[flag] === "undefined") {
     (globalThis as Record<string, unknown>)[flag] = false;
   }
 }
+
+// The configuration globals the app installs at boot, so a unit test gets the same defaults. The
+// models are loaded last and dynamically: they reach the modules that own each default, and those
+// expect the stubs above to be in place
+const { getDefaultFacts } = await import("@/components/facts-model");
+const { getDefaultOptions } = await import("@/components/options-model");
+
+(globalThis as Record<string, unknown>).facts ??= getDefaultFacts();
+(globalThis as Record<string, unknown>).options ??= getDefaultOptions();
+
+// Those imports pull in the real tooltip module, which needs a DOM node no unit test renders.
+// A test that wants the real one imports it itself, and that assignment lands after this
+window.tip = () => {};
+window.clearMainTip = () => {};

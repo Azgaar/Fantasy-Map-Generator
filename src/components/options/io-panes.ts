@@ -156,10 +156,10 @@ function onTileInput(this: HTMLInputElement): void {
  * round. See docs/architecture/configuration.md
  */
 const EXPORT_PREFERENCES: Record<string, (options: OptionsData, value: number) => void> = {
-  pngResolution: (o, value) => (o.view.export.pngResolution = value),
-  tileCols: (o, value) => (o.view.export.tiles.cols = value),
-  tileRows: (o, value) => (o.view.export.tiles.rows = value),
-  tileScale: (o, value) => (o.view.export.tiles.scale = value)
+  pngResolution: (o, value) => (o.app.export.pngResolution = value),
+  tileCols: (o, value) => (o.app.export.tiles.cols = value),
+  tileRows: (o, value) => (o.app.export.tiles.rows = value),
+  tileScale: (o, value) => (o.app.export.tiles.scale = value)
 };
 
 function storeExportPreference(input: HTMLInputElement): void {
@@ -174,7 +174,7 @@ const rowLabel = (row: number) =>
 
 /** Report the total pixel size of the tile set and outline the tiles over the map */
 function updateTilesOptions(): void {
-  const { cols: columns, rows, scale } = options.view.export.tiles;
+  const { cols: columns, rows, scale } = options.app.export.tiles;
 
   const sizeX = facts.graph.width * scale * columns;
   const sizeY = facts.graph.height * scale * rows;

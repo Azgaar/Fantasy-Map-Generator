@@ -168,7 +168,7 @@ class GridModule {
 
   /** turn depressions that cannot pour to water into lakes */
   addDeepDepressionLakes(): void {
-    const elevationLimit = facts.heightmap.lakeElevationLimit;
+    const elevationLimit = options.generation.lakeElevationLimit;
     if (elevationLimit === 80) return;
 
     const { cells, features } = grid;
@@ -223,7 +223,7 @@ class GridModule {
 
   /** near sea lakes get a lot of water inflow, most of them should break the threshold and flow out to sea (see Ancylus Lake) */
   openNearSeaLakes(): void {
-    if (facts.heightmap.template === "Atoll") return; // no need for Atolls
+    if (options.generation.template === "Atoll") return; // no need for Atolls
 
     const { cells, features } = grid;
     if (!features.find(f => f.type === "lake")) return; // no lakes

@@ -50,7 +50,7 @@ export function showSeedHistoryDialog(): void {
 /** Generate a map with a seed from this session's history, restoring the size and template it used */
 export function restoreSeed(index: number): void {
   const { seed, width, height, template } = mapHistory[index];
-  facts.heightmap.template = template;
+  Options.set(o => (o.generation.template = template));
 
   if (isLocked("template")) unlock("template");
   regeneratePrompt({ seed, width, height });

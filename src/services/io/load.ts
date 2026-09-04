@@ -257,7 +257,10 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     const settings = data[1] ? safeParseJSON(data[1]) : null;
     if (!settings) throw new Error("Map settings are missing or malformed");
     Facts.adopt(Facts.parse(settings)); // replaces wholesale: nothing of the previous map survives
-    Coordinates.calculate(); // a derived fact is recomputed from its inputs, never trusted from the file
+    // the lat/lon box is stored, so it is taken as the file gives it - the panel that owns its
+    // inputs re-derives it on every edit, so a saved box always agrees with them. Only a file that
+    // carried none needs it computed. See docs/architecture/configuration.md#derived-facts
+    if (!(settings as { geography?: { coordinates?: unknown } })?.geography?.coordinates) Coordinates.calculate();
     Options.syncOnLoad(); // the small allowlist of requests a load may carry over
     syncInputs();
 

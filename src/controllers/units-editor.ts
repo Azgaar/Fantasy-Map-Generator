@@ -2,12 +2,12 @@
 // Every control here edits `facts.units` - the dialog is built and filled from the object on open,
 // and nothing outside reads its inputs
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { getDefaultFacts } from "@/components/facts-model";
 import { Layers } from "@/components/layers";
 import { applyOption, ensureEl } from "../utils";
 import type { PromptOptions } from "../utils/commonUtils";
 import { bindLockIcons, lock, unlock } from "../utils/preferences";
 
-// Custom app prompt shadows the DOM built-in (same pattern as burg-editor / route-groups-editor).
 declare const prompt: (text: string, options: PromptOptions, callback: (value: string | number) => void) => void;
 
 const DIALOG_ID = "unitsEditor";
@@ -258,20 +258,7 @@ function redrawDistances(): void {
 }
 
 function restoreDefaultUnits(): void {
-  const US = navigator.language === "en-US";
-  const UK = navigator.language === "en-GB";
-
-  Facts.set(f => {
-    f.units.distance.scale = 3;
-    f.units.distance.unit = US || UK ? "mi" : "km";
-    f.units.height.unit = US || UK ? "ft" : "m";
-    f.units.height.exponent = 1.8;
-    f.units.temperature.unit = US ? "°F" : "°C";
-    f.units.area.unit = "square";
-    f.units.population.scale = 1000;
-    f.units.population.urbanization.rate = 1;
-    f.units.population.urbanization.density = 10;
-  });
+  Facts.set(f => (f.units = getDefaultFacts().units));
 
   for (const setting of [
     "distanceScale",

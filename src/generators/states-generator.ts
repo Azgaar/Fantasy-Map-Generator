@@ -182,7 +182,7 @@ class StatesModule {
         : pack.cultures[culture].type === "Nomadic"
           ? "Generic"
           : pack.cultures[culture].type;
-      const expansionism = rn(Math.random() * facts.states.sizeVariety + 1, 1);
+      const expansionism = rn(Math.random() * options.generation.states.sizeVariety + 1, 1);
       const coa = Emblems.generate(capital.coa, 0.3, null, pack.cultures[culture].type);
       coa.shield = capital.coa?.shield;
       newStates.push({
@@ -206,7 +206,7 @@ class StatesModule {
   private createStates() {
     const states: State[] = [{ i: 0, name: "Neutrals", salesTax: 0, pollTax: 0, treasury: 0 } as State];
     const each5th = each(5);
-    const sizeVariety = facts.states.sizeVariety;
+    const sizeVariety = options.generation.states.sizeVariety;
 
     pack.burgs.forEach(burg => {
       if (!burg.i || !burg.capital) return;
@@ -287,7 +287,7 @@ class StatesModule {
     const queue = new FlatQueue();
     const cost: number[] = [];
 
-    const growthRate = (cells.i.length / 2) * facts.states.growthRate; // limit cost for state growth
+    const growthRate = (cells.i.length / 2) * options.generation.states.growthRate; // limit cost for state growth
 
     // remove state from all cells except of locked
     for (const cellId of cells.i) {

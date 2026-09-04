@@ -1,4 +1,3 @@
-// What this browser wants, and what to do next. Nothing here enters a `.map`
 import { z } from "zod";
 import { burgGroup, coastlineSettings, labelGroup, militaryUnit, transport } from "@/components/facts-schema";
 
@@ -36,16 +35,15 @@ const tradeAnimation = z.strictObject({
 });
 
 export const optionsSchema = z.strictObject({
-  /** the extent the next map is built on. A pin keeps it; otherwise it follows the window */
-  nextMap: z.strictObject({
-    width: z.number().positive(),
-    height: z.number().positive(),
-    density: z.number(), // the Points slider step
-    points: z.number().positive() // the cell count that step resolves to
-  }),
-
   /** what to ask the generators for */
   generation: z.strictObject({
+    /** the graph the next map is built on: its extent, and how finely it is divided. A pin keeps
+     * the extent; otherwise it follows the window */
+    graph: z.strictObject({
+      width: z.number().positive(),
+      height: z.number().positive(),
+      density: z.number() // the Points slider step; the cell count is derived from it, never stored
+    }),
     template: z.string(),
     resolveDepressionsSteps: z.number(),
     lakeElevationLimit: z.number(),
@@ -61,8 +59,8 @@ export const optionsSchema = z.strictObject({
     burgs: z.strictObject({ limit: z.number() }) // 1000 means "auto"
   }),
 
-  /** take effect at once, change nothing generated, and belong to the viewer rather than the map */
-  view: z.strictObject({
+  /** how the app itself behaves: applied at once, generating nothing, describing no map */
+  app: z.strictObject({
     notesPinned: z.boolean(),
     emblemsShowAll: z.boolean(),
     emblemShape: z.string(),
@@ -99,96 +97,3 @@ export const optionsSchema = z.strictObject({
 
 export type OptionsData = z.infer<typeof optionsSchema>;
 export type OptionsSection = keyof OptionsData;
-
-export const STORAGE_KEY = "fmg-options";
-
-/** pale magenta: the theme every dialog starts from */
-export const THEME_COLOR = "#997787";
-
-/** cells the grid is built from, per density step of the Points slider */
-export const CELLS_BY_DENSITY: Record<number, number> = {
-  1: 1000,
-  2: 2000,
-  3: 5000,
-  4: 10000,
-  5: 20000,
-  6: 30000,
-  7: 40000,
-  8: 50000,
-  9: 60000,
-  10: 70000,
-  11: 80000,
-  12: 90000,
-  13: 100000
-};
-export const DEFAULT_DENSITY = 4;
-
-/** A fresh browser's options. The values here are the schema's defaults: nothing else defines them */
-export function getDefaultOptions(): OptionsData {
-  return {
-    nextMap: { width: 1280, height: 800, density: DEFAULT_DENSITY, points: CELLS_BY_DENSITY[DEFAULT_DENSITY] },
-    generation: {
-      template: "",
-      resolveDepressionsSteps: 250,
-      lakeElevationLimit: 20,
-      cultures: { limit: 12, set: "world", sizeVariety: 4, growthRate: 1 },
-      states: { limit: 18, sizeVariety: 4, growthRate: 1 },
-      provinces: { ratio: 20 },
-      religions: { limit: 6 },
-      burgs: { limit: 1000 }
-    },
-    view: {
-      notesPinned: false,
-      emblemsShowAll: false,
-      emblemShape: "culture",
-      rendering: "optimizeSpeed",
-      onLoad: "random",
-      zoomExtent: { min: 1, max: 20 },
-      autosave: { interval: 15, remind: true },
-      ui: {
-        size: null,
-        tooltipSize: 14,
-        themeColor: THEME_COLOR,
-        transparency: 5,
-        assistant: "show",
-        speakerVoice: "",
-        clickArrowTip: true
-      },
-      export: { pngResolution: 1, tiles: { cols: 8, rows: 8, scale: 1 } },
-      trade: {
-        animation: {
-          displayType: "both",
-          concurrent: 30,
-          duration: 250,
-          landDurationModifier: 5,
-          segmentChangePause: 1000,
-          markerSize: 4
-        }
-      },
-      threeD: {
-        scale: 50,
-        lightness: 0.6,
-        shadow: 0.5,
-        sun: { x: 100, y: 800, z: 1000 },
-        rotateMesh: 0,
-        rotateGlobe: 0.5,
-        skyColor: "#9ecef5",
-        waterColor: "#466eab",
-        sunColor: "#cccccc",
-        extendedWater: false,
-        labels3d: false,
-        satellite: false,
-        wireframe: false,
-        resolution: 2,
-        resolutionScale: 4096,
-        subdivide: false,
-        erosion: false,
-        erosionDetail: 1024,
-        erosionStrength: 30,
-        erosionRiverDepth: 10,
-        erosionOctaves: 2
-      }
-    },
-    library: { military: null, transports: null, burgGroups: null, labelGroups: null, coastline: null }
-  };
-}

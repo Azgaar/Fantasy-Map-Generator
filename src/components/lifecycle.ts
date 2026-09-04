@@ -47,7 +47,7 @@ export type GenerationConfig = { seed?: string; graph?: GridGraph; width?: numbe
 export async function generate(config?: GenerationConfig): Promise<void> {
   try {
     const { seed: precreatedSeed, graph: precreatedGraph, width, height } = config || {};
-    Options.setNextMapSize(width, height); // a new map is made at window size unless asked otherwise
+    Options.setGraphSize(width, height); // a new map is made at window size unless asked otherwise
     setSeed(precreatedSeed); // reseeds the PRNG, so every roll below repeats for the same seed
     Options.randomize(); // resolve the requests
     Facts.seedForNewMap(); // commit them, with the pinned values and the user's own sets
@@ -154,7 +154,7 @@ export function registerMap(created: number = Date.now()): void {
     seed: facts.seed,
     width: facts.graph.width,
     height: facts.graph.height,
-    template: facts.heightmap.template,
+    template: options.generation.template,
     created: created
   });
 }

@@ -40,7 +40,7 @@ export async function checkLoadParameters(): Promise<void> {
     return;
   }
 
-  if (options.view.onLoad === "lastSaved") {
+  if (options.app.onLoad === "lastSaved") {
     try {
       const blob = await ldb.get("lastMap");
       if (blob) {

@@ -3,7 +3,7 @@ import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { registerMap, undraw } from "@/components/lifecycle";
 import { cellsDensityColor, changeCellsDensity } from "@/components/options/tabs/options-tab";
-import { CELLS_BY_DENSITY } from "@/components/options-store";
+import { CELLS_BY_DENSITY } from "@/components/options-model";
 import { viewport } from "@/components/viewport";
 import { Resample } from "@/generators/resample";
 import { logStats } from "@/services/logging";
@@ -35,7 +35,7 @@ function open(): void {
 function renderDialog(): void {
   destroyDialog("submapTool");
 
-  const pointsValue = String(options.nextMap.density);
+  const pointsValue = String(options.generation.graph.density);
   const cells = CELLS_BY_DENSITY[+pointsValue];
 
   const html = /* html */ `<div id="submapTool" class="dialog">
@@ -83,7 +83,7 @@ function generateSubmap(): void {
   recalculateMapSize(x0, y0, scale);
 
   const submapPointsValue = ensureEl<HTMLInputElement>("submapPointsInput").value;
-  const globalPointsValue = String(options.nextMap.density);
+  const globalPointsValue = String(options.generation.graph.density);
   if (submapPointsValue !== globalPointsValue) changeCellsDensity(+submapPointsValue);
 
   const projection = (x: number, y: number): [number, number] => [(x - x0) * scale, (y - y0) * scale];

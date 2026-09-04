@@ -54,14 +54,14 @@ export class TradeAnimationModule {
 
   private topUp(): void {
     if (!Layers.isOn("trade") || !this.cachedBatches) return;
-    const target = options.view.trade.animation.concurrent ?? DEFAULT_OPTIONS.concurrent;
+    const target = options.app.trade.animation.concurrent ?? DEFAULT_OPTIONS.concurrent;
     while (this.activeCount < target) {
       if (!this.spawnOne(this.cachedBatches)) break;
     }
   }
 
   private spawnOne(batches: TradeBatch[]): boolean {
-    const type = options.view.trade.animation.displayType || "both";
+    const type = options.app.trade.animation.displayType || "both";
 
     while (true) {
       const enabledBatches = type === "both" ? batches : batches.filter(batch => batch.type === type);

@@ -7,7 +7,6 @@ import "@/components/options/tabs";
 
 import "@/utils";
 import "@/data/supporters";
-import "@/data/view-3d-options";
 import "@/data/heightmap-templates";
 import "@/data/precreated-heightmaps";
 import "@/generators";

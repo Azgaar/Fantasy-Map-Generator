@@ -86,7 +86,7 @@ export class LakesModule {
   // check if lake can be potentially open (not in deep depression)
   detectCloseLakes(h: number[] | Uint8Array) {
     const { cells } = pack;
-    const ELEVATION_LIMIT = facts.heightmap.lakeElevationLimit;
+    const ELEVATION_LIMIT = options.generation.lakeElevationLimit;
 
     pack.features.forEach(feature => {
       if (feature.type !== "lake") return;

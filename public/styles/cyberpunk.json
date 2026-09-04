@@ -1106,7 +1106,10 @@
       "font-size": 11
     },
     "options": {
-      "barSize": 2
+      "barSize": 2,
+      "label": "",
+      "x": 99,
+      "y": 99
     },
     "back": {
       "attrs": {

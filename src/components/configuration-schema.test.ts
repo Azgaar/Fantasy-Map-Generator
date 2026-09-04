@@ -5,8 +5,10 @@ import type { Transport } from "@/generators/transports-generator";
 import type { BurgGroup } from "@/types/burg-groups";
 import type { MilitaryUnit } from "@/types/Military";
 import { parseSections } from "@/utils/schemaUtils";
-import { type FactsData, factsSchema, getDefaultFacts } from "./facts-schema";
-import { getDefaultOptions, type OptionsData, optionsSchema } from "./options-schema";
+import { getDefaultFacts } from "./facts-model";
+import { type FactsData, factsSchema } from "./facts-schema";
+import { getDefaultOptions } from "./options-model";
+import { type OptionsData, optionsSchema } from "./options-schema";
 
 // The schemas are the shape; the default factories are the values. These keep the two in step,
 // and keep both in step with the domain types the rest of the app is written against.
@@ -23,18 +25,26 @@ describe("facts schema", () => {
 
   it("holds no requested counts: how many exist is answered by the data", () => {
     const facts = getDefaultFacts() as unknown as Record<string, Record<string, unknown>>;
-    expect(facts.states.limit).toBeUndefined();
+    expect(facts.states).toBeUndefined();
     expect(facts.cultures.limit).toBeUndefined();
     expect(facts.religions).toBeUndefined();
     expect(facts.provinces).toBeUndefined();
   });
 
-  it("keeps the rates and varieties a recalculation reads", () => {
-    const facts = getDefaultFacts();
-    expect(facts.states.growthRate).toBeTypeOf("number");
-    expect(facts.states.sizeVariety).toBeTypeOf("number");
-    expect(facts.cultures.growthRate).toBeTypeOf("number");
-    expect(facts.cultures.set).toBeTypeOf("string");
+  it("keeps no rate or variety: those are asked for at generation and then spent", () => {
+    const facts = getDefaultFacts() as unknown as Record<string, Record<string, unknown>>;
+    expect(facts.states).toBeUndefined();
+    expect(facts.cultures.growthRate).toBeUndefined();
+    expect(facts.cultures.sizeVariety).toBeUndefined();
+    expect(facts.heightmap).toBeUndefined(); // the template produced the terrain, it does not describe it
+
+    const { generation } = getDefaultOptions();
+    expect(generation.states.growthRate).toBeTypeOf("number");
+    expect(generation.states.sizeVariety).toBeTypeOf("number");
+    expect(generation.cultures.growthRate).toBeTypeOf("number");
+    expect(generation.resolveDepressionsSteps).toBeTypeOf("number");
+
+    expect(getDefaultFacts().cultures.set).toBeTypeOf("string"); // the one culture value a fact keeps
   });
 
   it("carries the definition sets entities reference by name", () => {
@@ -83,9 +93,9 @@ describe("options schema", () => {
   });
 
   it("resolves the density step to a cell count", () => {
-    const { nextMap } = getDefaultOptions();
-    expect(nextMap.points).toBe(10000);
-    expect(nextMap.density).toBe(4);
+    const { graph } = getDefaultOptions().generation;
+    expect(graph.density).toBe(4);
+    expect(graph).not.toHaveProperty("points"); // derived from the step, never stored beside it
   });
 });
 

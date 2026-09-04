@@ -29,9 +29,7 @@ export function drawScaleBar(
   TIME && !isRendered && console.time("drawScaleBar");
 
   const unit = facts.units.distance.unit;
-  const { barSize: size } = styles.scaleBar.options;
-  const { label, position } = facts.scaleBar;
-  const { x: posX, y: posY } = position;
+  const { barSize: size, label, x: posX, y: posY } = styles.scaleBar.options;
 
   renderedContent?.remove(); // redraw content every time, but not scaleBarBack
   const content = scaleBar.append("g").attr("id", "scaleBarContent");

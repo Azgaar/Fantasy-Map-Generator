@@ -1,4 +1,3 @@
-import { isLocked } from "@/utils/preferences";
 import { safeParseJSON } from "@/utils/stringUtils";
 
 globalThis.DEBUG = safeParseJSON(localStorage.getItem("debug") ?? "") || {};
@@ -16,16 +15,9 @@ declare global {
 }
 
 export function logStats(): void {
-  const heightmap = facts.heightmap.template;
-  const isTemplate = heightmap in heightmapTemplates;
-  const heightmapType = isTemplate ? "template" : "precreated";
-  const isRandomTemplate = isTemplate && !isLocked("template") ? "random " : "";
-
   INFO &&
     console.info(` Seed: ${facts.seed}
-    Canvas size: ${facts.graph.width}x${facts.graph.height} px
-    Heightmap: ${heightmap}
-    Template: ${isRandomTemplate}${heightmapType}
+    Map size: ${facts.graph.width}x${facts.graph.height} px
     Points: ${grid.points.length}
     Cells: ${pack.cells.i.length}
     Map size: ${facts.geography.mapSize}%

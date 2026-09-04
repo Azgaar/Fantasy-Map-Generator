@@ -25,7 +25,8 @@ export interface FractalizedShape {
   origIndices: number[]; // index in points[] where original vertex i lives
 }
 
-const DEFAULT_SETTINGS: Readonly<CoastlineSettings> = {
+/** The coastline every new map starts from. The one definition of these values */
+export const DEFAULT_COASTLINE: Readonly<CoastlineSettings> = {
   enabled: true,
   maxDepth: 4,
   baseAmplitude: 1.5,
@@ -268,7 +269,7 @@ class CoastlineGenerator {
   }
 
   getDefaultSettings(): CoastlineSettings {
-    return { ...DEFAULT_SETTINGS };
+    return { ...DEFAULT_COASTLINE };
   }
 
   /** Closed SVG path of the feature outline, fractalized as configured */

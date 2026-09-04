@@ -2,7 +2,6 @@
 import { color, min, select } from "d3";
 import { type LayerId, Layers, type LayersState } from "@/components/layers";
 import { RELIEF_SETS } from "@/data/relief-icons";
-import { defaultOptions } from "@/data/view-3d-options";
 import { Emblems } from "@/generators/emblems-generator";
 import type { GraphOverrides } from "@/generators/graph-override";
 import { type Label, type LabelNameMode, Labels as LabelsGenerator } from "@/generators/labels-generator";
@@ -1194,11 +1193,6 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     if (pack.goods?.length && !pack.goods.some(good => good.visible)) pack.goods[0].visible = true;
   }
 
-  if (isOlderThan("1.132.0")) {
-    // v1.132.0 added global 3D view options
-    options.view.threeD = { ...defaultOptions };
-  }
-
   if (isOlderThan("1.138.0")) {
     // v1.138.0 migrated measurers from the global rulers string (data[33]) to pack.measurers
     const MEASURER_TYPES = ["Ruler", "Opisometer", "RouteOpisometer", "Planimeter"];
@@ -1859,7 +1853,6 @@ function legacyFactsDefaults() {
       population: { scale: 1000, urbanization: { rate: 1, density: 10 } }
     },
     labels: { resizeOnZoom: true, showAll: false, groups: [] as any[] },
-    scaleBar: { label: "", position: { x: 99, y: 99 } },
     style: { preset: "default" },
     military: { units: [] as any[] },
     transports: [] as any[],
@@ -1951,19 +1944,6 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
 
   // v1.151.0 moved the mapCoordinates from own slot into the settings object
   if (oldCoordinates) migrated.geography.coordinates = oldCoordinates;
-
-  // v1.151.0 split the scale bar: its label and position are the map's, its looks the style's
-  const oldStyles = safeParseJSON(data[48] ?? "");
-  const oldScaleBar = oldStyles?.scaleBar?.options;
-  if (oldScaleBar) {
-    if (oldScaleBar.label !== undefined) migrated.scaleBar.label = oldScaleBar.label;
-    if (oldScaleBar.x !== undefined) migrated.scaleBar.position.x = oldScaleBar.x;
-    if (oldScaleBar.y !== undefined) migrated.scaleBar.position.y = oldScaleBar.y;
-    delete oldScaleBar.label;
-    delete oldScaleBar.x;
-    delete oldScaleBar.y;
-    data[48] = JSON.stringify(oldStyles);
-  }
 
   data[1] = JSON.stringify(migrated);
 }

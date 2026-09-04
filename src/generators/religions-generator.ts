@@ -1025,7 +1025,7 @@ class ReligionsModule {
     const cost: number[] = [];
 
     // limit cost for organized religions growth
-    const maxExpansionCost = (cells.i.length / 20) * facts.cultures.growthRate;
+    const maxExpansionCost = (cells.i.length / 20) * options.generation.cultures.growthRate;
 
     religions
       .filter(r => r.i && !r.lock && r.type !== "Folk" && r.type !== "Heresy" && !r.removed)
@@ -1073,7 +1073,7 @@ class ReligionsModule {
     const { cells } = pack;
     const queue = new FlatQueue();
     const cost: number[] = [];
-    const maxExpansionCost = (cells.i.length / 20) * facts.cultures.growthRate;
+    const maxExpansionCost = (cells.i.length / 20) * options.generation.cultures.growthRate;
     const religionsMap = new Map(religions.map(religion => [religion.i, religion]));
 
     for (const heresy of heresies) {

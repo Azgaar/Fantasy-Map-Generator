@@ -19,15 +19,15 @@ const fact = pinTo("fact");
 export const PINNABLE: Record<string, Pin> = {
   // requests: what the next map asks for
   mapWidth: request(
-    () => options.nextMap.width,
-    value => (options.nextMap.width = value)
+    () => options.generation.graph.width,
+    value => (options.generation.graph.width = value)
   ),
   mapHeight: request(
-    () => options.nextMap.height,
-    value => (options.nextMap.height = value)
+    () => options.generation.graph.height,
+    value => (options.generation.graph.height = value)
   ),
   points: request(
-    () => options.nextMap.density,
+    () => options.generation.graph.density,
     value => Options.setDensity(value)
   ),
   template: request(
@@ -89,10 +89,12 @@ export const PINNABLE: Record<string, Pin> = {
   ),
   era: fact(
     () => facts.lore.calendar.era,
-    value => {
-      facts.lore.calendar.era = value;
-      facts.lore.calendar.eraShort = Facts.shortEra();
-    }
+    value => (facts.lore.calendar.era = value)
+  ),
+  // pinned beside the era rather than derived from it, so an abbreviation the user typed survives
+  eraShort: fact(
+    () => facts.lore.calendar.eraShort,
+    value => (facts.lore.calendar.eraShort = value)
   ),
   mapSize: fact(
     () => facts.geography.mapSize,

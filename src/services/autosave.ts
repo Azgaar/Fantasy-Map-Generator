@@ -10,7 +10,7 @@ export function initiateAutosave(): void {
   let lastSavedAt = Date.now();
 
   async function autosave() {
-    const timeoutMinutes = options.view.autosave.interval;
+    const timeoutMinutes = options.app.autosave.interval;
     if (!timeoutMinutes) return;
 
     const diffInMinutes = (Date.now() - lastSavedAt) / MINUTE;
@@ -37,7 +37,7 @@ let reminderInterval: ReturnType<typeof setInterval> | undefined;
 let reminderActive = false;
 
 function startSaveReminder(): void {
-  if (!options.view.autosave.remind) return;
+  if (!options.app.autosave.remind) return;
   const message = [
     "Please don't forget to save the project to desktop from time to time",
     "Please remember to save the map to your desktop",
@@ -61,11 +61,11 @@ export function toggleSaveReminder(): void {
   if (reminderActive) {
     tip("Save reminder is turned off. Press CTRL+Q again to re-initiate", true, "warn", 2000);
     clearInterval(reminderInterval);
-    Options.set(o => (o.view.autosave.remind = false));
+    Options.set(o => (o.app.autosave.remind = false));
     reminderActive = false;
   } else {
     tip("Save reminder is turned on. Press CTRL+Q to turn off", true, "warn", 2000);
-    Options.set(o => (o.view.autosave.remind = true));
+    Options.set(o => (o.app.autosave.remind = true));
     startSaveReminder();
   }
 }

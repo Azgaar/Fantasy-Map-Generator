@@ -62,7 +62,7 @@ async function exportToPng(): Promise<void> {
   TIME && console.time("exportToPng");
   try {
     const url = await getMapURL("png");
-    const resolution = options.view.export.pngResolution;
+    const resolution = options.app.export.pngResolution;
     const link = document.createElement("a");
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d")!;
@@ -104,7 +104,7 @@ async function exportToJpeg(): Promise<void> {
   TIME && console.time("exportToJpeg");
   try {
     const url = await getMapURL("png");
-    const resolution = options.view.export.pngResolution;
+    const resolution = options.app.export.pngResolution;
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d")!;
     canvas.width = viewport.width * resolution;
@@ -167,7 +167,7 @@ async function exportToPngTiles(): Promise<void> {
 
   // download tiles
   const url = await getMapURL("tiles", { fullMap: true });
-  const { cols: tilesX, rows: tilesY, scale } = options.view.export.tiles;
+  const { cols: tilesX, rows: tilesY, scale } = options.app.export.tiles;
   const tolesTotal = tilesX * tilesY;
 
   const tileW = (facts.graph.width / tilesX) | 0;

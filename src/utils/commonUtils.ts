@@ -366,7 +366,7 @@ export const speak = (text: string): void => {
 
   const voices = speechSynthesis.getVoices();
   if (voices.length) {
-    speaker.voice = voices[Number(options.view.ui.speakerVoice)] ?? speaker.voice;
+    speaker.voice = voices[Number(options.app.ui.speakerVoice)] ?? speaker.voice;
   }
 
   speechSynthesis.speak(speaker);

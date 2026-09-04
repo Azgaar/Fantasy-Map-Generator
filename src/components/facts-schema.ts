@@ -36,7 +36,7 @@ export const burgGroup = z.strictObject({
   preview: z.string().optional()
 });
 
-// regiments resolve their unit type by name, so the definitions travel with the map that uses them
+// regiments resolve their unit type by name
 export const militaryUnit = z.strictObject({
   icon: z.string(),
   name: z.string(),
@@ -52,7 +52,7 @@ export const militaryUnit = z.strictObject({
   religions: z.array(z.number()).optional()
 });
 
-// route segments reference a transport type by name, same as regiments reference military units
+// route segments reference a transport type by name
 export const transport = z.strictObject({
   i: z.number(),
   name: z.string(),
@@ -75,22 +75,12 @@ export const coastlineSettings = z.strictObject({
 });
 
 export const factsSchema = z.strictObject({
-  /** reproduces the map and identifies the graph it was built on */
   seed: z.string(),
 
-  /** the coordinate extent the geometry lives in: fixed for the life of the graph, and not
-   * recoverable from the topology, which floors it into cell counts */
   graph: z.strictObject({
     width: z.number().positive(),
     height: z.number().positive(),
-    points: z.number().positive() // cells the graph was built to, not a request
-  }),
-
-  /** the terrain's character, re-read whenever terrain is re-derived */
-  heightmap: z.strictObject({
-    template: z.string(),
-    resolveDepressionsSteps: z.number(),
-    lakeElevationLimit: z.number()
+    points: z.number().positive()
   }),
 
   /** where the map sits on the globe; `coordinates` is a cache of the three values above and the
@@ -116,21 +106,14 @@ export const factsSchema = z.strictObject({
     winds: z.array(z.number()).length(6)
   }),
 
-  /** rates and varieties are read whenever the world is extended; the count that was requested is
-   * not - how many cultures exist is answered by the data */
-  cultures: z.strictObject({
-    set: z.string(),
-    sizeVariety: z.number(),
-    growthRate: z.number()
-  }),
-  states: z.strictObject({
-    sizeVariety: z.number(),
-    growthRate: z.number()
-  }),
+  /** the name set cultures were drawn from: unrelated generators still branch on it long after the
+   * cultures exist, which no count, rate or variety does - those are asked for, then spent */
+  cultures: z.strictObject({ set: z.string() }),
 
-  /** names files, state history and battle reports */
+  /** names files, state history and battle reports; the description is the author's own note */
   lore: z.strictObject({
     name: z.string(),
+    description: z.string(),
     calendar: z.strictObject({ year: z.number(), era: z.string(), eraShort: z.string() })
   }),
 
@@ -153,12 +136,6 @@ export const factsSchema = z.strictObject({
     groups: z.array(labelGroup)
   }),
 
-  /** the scale bar's content and where the author put it. Its looks are in `styles` */
-  scaleBar: z.strictObject({
-    label: z.string(),
-    position: z.strictObject({ x: z.number(), y: z.number() })
-  }),
-
   /** the name of the preset the map's styles came from, so the Style tab can show it again */
   style: z.strictObject({ preset: z.string() }),
 
@@ -172,52 +149,3 @@ export const factsSchema = z.strictObject({
 
 export type FactsData = z.infer<typeof factsSchema>;
 export type FactsSection = keyof FactsData;
-
-const isImperial = () => typeof navigator !== "undefined" && navigator.language === "en-US";
-
-/** A blank map's facts. The values here are the schema's defaults: nothing else defines them */
-export function getDefaultFacts(): FactsData {
-  return {
-    seed: "",
-    graph: { width: 1280, height: 800, points: 10000 },
-    heightmap: { template: "", resolveDepressionsSteps: 250, lakeElevationLimit: 20 },
-    geography: {
-      mapSize: 100,
-      latitude: 50,
-      longitude: 50,
-      coordinates: { latT: 180, latN: 90, latS: -90, lonT: 320, lonW: -160, lonE: 160 }
-    },
-    climate: {
-      temperature: { equator: 27, northPole: -30, southPole: -15 },
-      precipitation: 100,
-      winds: [225, 45, 225, 315, 135, 315]
-    },
-    cultures: { set: "world", sizeVariety: 4, growthRate: 1 },
-    states: { sizeVariety: 4, growthRate: 1 },
-    lore: { name: "", calendar: { year: 1000, era: "Era", eraShort: "E" } },
-    units: {
-      distance: { unit: isImperial() ? "mi" : "km", scale: 3 },
-      area: { unit: "square" },
-      height: { unit: isImperial() ? "ft" : "m", exponent: 2 },
-      temperature: { unit: isImperial() ? "°F" : "°C" },
-      population: { scale: 1000, urbanization: { rate: 1, density: 10 } }
-    },
-    labels: { resizeOnZoom: true, showAll: false, groups: [] },
-    scaleBar: { label: "", position: { x: 99, y: 99 } },
-    style: { preset: "default" },
-    military: { units: [] },
-    transports: [],
-    burgs: { groups: [] },
-    coastline: {
-      enabled: true,
-      maxDepth: 4,
-      baseAmplitude: 1.5,
-      amplitudeDecay: 0.9,
-      minEdge: 1,
-      smoothThreshold: 0.25,
-      roughnessContrast: 1.5,
-      profileHarmonics: 4,
-      lakeSmoothThreshMult: 2.0
-    }
-  };
-}

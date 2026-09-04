@@ -3,7 +3,7 @@ import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { registerMap, undraw } from "@/components/lifecycle";
 import { cellsDensityColor, changeCellsDensity } from "@/components/options/tabs/options-tab";
-import { CELLS_BY_DENSITY } from "@/components/options-store";
+import { CELLS_BY_DENSITY } from "@/components/options-model";
 import { Resample } from "@/generators/resample";
 import { logStats } from "@/services/logging";
 import { ensureEl, rn } from "../utils";
@@ -37,7 +37,7 @@ function open(): void {
 function renderDialog(): void {
   destroyDialog("transformTool");
 
-  const pointsValue = String(options.nextMap.density);
+  const pointsValue = String(options.generation.graph.density);
   const cells = CELLS_BY_DENSITY[+pointsValue];
 
   const html = /* html */ `<div id="transformTool" class="dialog">
@@ -198,7 +198,7 @@ function transformMap(): void {
   INFO && console.group("transformMap");
 
   const transformPointsValue = ensureEl<HTMLInputElement>("transformPointsInput").value;
-  const globalPointsValue = String(options.nextMap.density);
+  const globalPointsValue = String(options.generation.graph.density);
   if (transformPointsValue !== globalPointsValue) changeCellsDensity(+transformPointsValue);
 
   const [projection, inverse] = getProjection();

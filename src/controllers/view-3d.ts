@@ -5,7 +5,7 @@ import { timeOfDayPresets } from "@/data/view-3d-options";
 import { ensureEl } from "@/utils";
 
 // View3d controller: enters/exits the 3D view and owns the 3D settings dialog.
-// Configuration lives on the global `options.view.threeD` (not in this controller);
+// Configuration lives on the global `options.app.threeD` (not in this controller);
 // the heavy WebGL renderer is loaded lazily on first use.
 
 type Renderer = typeof import("@/renderers/view-3d-renderer");
@@ -364,7 +364,7 @@ function setInput(id: string, value: string | number): void {
 }
 
 function updateValues(): void {
-  const o = options.view.threeD;
+  const o = options.app.threeD;
   const globe = (document.getElementById("canvas3d") as HTMLElement | null)?.dataset.type === "viewGlobe";
   ensureEl("options3dMesh").style.display = globe ? "none" : "block";
   ensureEl("options3dGlobe").style.display = globe ? "block" : "none";
@@ -403,7 +403,7 @@ function updateValues(): void {
 
 function updateTimeOfDayPreset(): void {
   const presetSelect = ensureEl<HTMLSelectElement>("options3dTimeOfDay");
-  const o = options.view.threeD;
+  const o = options.app.threeD;
 
   let matchingPreset = "custom";
   for (const [name, preset] of Object.entries(timeOfDayPresets)) {
@@ -470,7 +470,7 @@ function onChangeRotation(this: HTMLInputElement): void {
 }
 
 function onToggleErosion(): void {
-  const enabled = !options.view.threeD.erosion;
+  const enabled = !options.app.threeD.erosion;
   ensureEl("options3dErosionSection").style.display = enabled ? "block" : "none";
   ensureEl<HTMLInputElement>("options3dSubdivide").disabled = enabled; // dense geometry: subdivision ignored
   if (enabled) tip("Baking eroded terrain...", false, "warn", 4000);
@@ -494,7 +494,7 @@ function onChangeErosionRiverDepth(this: HTMLInputElement): void {
 }
 
 function onToggleSatellite(): void {
-  if (!options.view.threeD.satellite) tip("Baking satellite texture...", false, "warn", 4000);
+  if (!options.app.threeD.satellite) tip("Baking satellite texture...", false, "warn", 4000);
   void toggleSatellite();
 }
 
@@ -503,7 +503,7 @@ function onChangeErosionOctaves(this: HTMLInputElement): void {
 }
 
 function onToggleSkyMode(): void {
-  const hide = options.view.threeD.extendedWater;
+  const hide = options.app.threeD.extendedWater;
   ensureEl("options3dColorSection").style.display = hide ? "none" : "block";
   void toggleSky();
 }

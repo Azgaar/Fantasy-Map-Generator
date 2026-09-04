@@ -1,6 +1,4 @@
-import "./facts-store";
 import "./facts-model";
-import "./options-store";
 import "./options-model";
 import "./app-info";
 import "./tooltips";

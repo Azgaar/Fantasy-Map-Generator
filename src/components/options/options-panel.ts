@@ -14,9 +14,9 @@ const TAB_CONTENT: Record<string, string> = {
 };
 
 export function showOptions(event?: Event): void {
-  if (options.view.ui.clickArrowTip) {
+  if (options.app.ui.clickArrowTip) {
     clearMainTip();
-    Options.set(o => (o.view.ui.clickArrowTip = false));
+    Options.set(o => (o.app.ui.clickArrowTip = false));
     ensureEl("optionsTrigger").classList.remove("glow");
   }
 
@@ -78,7 +78,7 @@ function initialize(): void {
   $("#mapLayers").disableSelection();
 
   // the trigger glows until the user has found it once
-  if (!options.view.ui.clickArrowTip) {
+  if (!options.app.ui.clickArrowTip) {
     clearMainTip();
     ensureEl("optionsTrigger").classList.remove("glow");
   }

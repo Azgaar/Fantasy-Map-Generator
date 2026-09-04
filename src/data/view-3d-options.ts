@@ -61,7 +61,8 @@ export const timeOfDayPresets: Record<string, TimeOfDayPreset> = {
   }
 };
 
-export const defaultOptions = {
+/** The 3D view every browser starts from. The one definition of these values */
+export const DEFAULT_THREE_D: ThreeDOptions = {
   scale: 50,
   lightness: 0.6,
   shadow: 0.5,
@@ -84,11 +85,3 @@ export const defaultOptions = {
   erosionRiverDepth: 10,
   erosionOctaves: 2
 };
-
-window.ThreeDOptions = defaultOptions;
-
-declare global {
-  interface Window {
-    ThreeDOptions: typeof defaultOptions;
-  }
-}

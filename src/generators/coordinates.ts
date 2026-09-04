@@ -83,7 +83,7 @@ class CoordinatesModule {
   }
 
   private getSizeAndPosition(): SizeAndPosition {
-    const template = facts.heightmap.template;
+    const template = options.generation.template;
     const realWorldPosition = TEMPLATE_POSITIONS[template];
     if (realWorldPosition) return realWorldPosition;
 

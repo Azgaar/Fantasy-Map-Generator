@@ -410,9 +410,9 @@ function selectStyleElement() {
 
     styleScaleBarSize.value = opts.barSize;
     styleScaleBarFontSize.value = attrs["font-size"];
-    styleScaleBarPositionX.value = facts.scaleBar.position.x;
-    styleScaleBarPositionY.value = facts.scaleBar.position.y;
-    styleScaleBarLabel.value = facts.scaleBar.label;
+    styleScaleBarPositionX.value = styles.scaleBar.options.x;
+    styleScaleBarPositionY.value = styles.scaleBar.options.y;
+    styleScaleBarLabel.value = styles.scaleBar.options.label;
 
     styleScaleBarBackgroundOpacity.value = back.attrs.opacity ?? 1;
     styleScaleBarBackgroundFill.value = styleScaleBarBackgroundFillOutput.value = back.attrs.fill;
@@ -1223,10 +1223,9 @@ styleScaleBar.addEventListener("input", function (event) {
   else if (id === "styleScaleBarFontSize") {
     styles.scaleBar.attrs["font-size"] = +value || 10;
     d3.select("#scaleBar").attr("font-size", value);
-    // the scale bar's content and position belong to the map, its looks to the style
-  } else if (id === "styleScaleBarPositionX") Facts.set(f => (f.scaleBar.position.x = +value || 0));
-  else if (id === "styleScaleBarPositionY") Facts.set(f => (f.scaleBar.position.y = +value || 0));
-  else if (id === "styleScaleBarLabel") Facts.set(f => (f.scaleBar.label = value));
+  } else if (id === "styleScaleBarPositionX") styles.scaleBar.options.x = +value || 0;
+  else if (id === "styleScaleBarPositionY") styles.scaleBar.options.y = +value || 0;
+  else if (id === "styleScaleBarLabel") styles.scaleBar.options.label = value;
   else if (id === "styleScaleBarBackgroundOpacity") writeBackAttr("opacity", +value || 0);
   else if (id === "styleScaleBarBackgroundFill") writeBackAttr("fill", value);
   else if (id === "styleScaleBarBackgroundStroke") writeBackAttr("stroke", value);

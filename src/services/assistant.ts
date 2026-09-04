@@ -8,7 +8,7 @@ let isLoaded = false;
 const container = () => findEl("chat-widget-container");
 
 /** Show or hide the assistant. The caller says which: this owns the widget, not the preference */
-export function toggleAssistant(shouldShow = options.view.ui.assistant === "show"): void {
+export function toggleAssistant(shouldShow = options.app.ui.assistant === "show"): void {
   if (isElectron()) return;
 
   if (!shouldShow) {

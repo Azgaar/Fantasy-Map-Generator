@@ -110,7 +110,7 @@ export async function cleanupData(): Promise<void> {
   localStorage.setItem("version", VERSION);
 
   Options.reset(); // the stored options went with everything else: start this browser over
-  Options.set(o => (o.view.ui.clickArrowTip = false)); // the hint has been seen, this is no first visit
+  Options.set(o => (o.app.ui.clickArrowTip = false)); // the hint has been seen, this is no first visit
   Options.persist();
   await clearCache();
 }

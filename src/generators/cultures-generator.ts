@@ -1157,7 +1157,7 @@ class CulturesGenerator {
       else if (type === "Nomadic") base = 1.5;
       else if (type === "Hunting") base = 0.7;
       else if (type === "Highland") base = 1.2;
-      return rn(((Math.random() * facts.cultures.sizeVariety) / 2 + 1) * base, 1);
+      return rn(((Math.random() * options.generation.cultures.sizeVariety) / 2 + 1) * base, 1);
     };
 
     cultures.forEach((c: Culture, i: number) => {
@@ -1260,7 +1260,7 @@ class CulturesGenerator {
     const queue = new FlatQueue();
     const cost: number[] = [];
 
-    const growthRate = facts.cultures.growthRate;
+    const growthRate = options.generation.cultures.growthRate;
     const maxExpansionCost = cells.i.length * 0.6 * growthRate; // limit cost for culture growth
 
     // remove culture from all cells except of locked

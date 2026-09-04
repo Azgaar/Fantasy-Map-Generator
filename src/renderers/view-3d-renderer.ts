@@ -140,7 +140,7 @@ const stop = () => {
 };
 
 const setScale = (scale: number) => {
-  options.view.threeD.scale = scale;
+  Options.set(o => (o.app.threeD.scale = scale));
 
   // dense eroded mesh: vertices don't map to grid cells; redraw rebuilds the
   // geometry from the cached bake (the bake key excludes scale, so no re-bake)
@@ -162,7 +162,7 @@ const setScale = (scale: number) => {
 
 const setSunColor = (color: string) => {
   if (!spotLight) return;
-  options.view.threeD.sunColor = color;
+  Options.set(o => (o.app.threeD.sunColor = color));
   spotLight.color = new Three.Color(color);
   render();
 };
@@ -178,29 +178,29 @@ const resolutionScaleToGlobeMultiplier = (resolutionScale: number) =>
   minmax(0.5, clampTextureResolution(resolutionScale) / 1024, 8);
 
 const setResolutionScale = (scale: number) => {
-  options.view.threeD.resolutionScale = clampToRendererLimit(scale);
-  options.view.threeD.resolution = resolutionScaleToGlobeMultiplier(options.view.threeD.resolutionScale);
+  Options.set(o => (o.app.threeD.resolutionScale = clampToRendererLimit(scale)));
+  Options.set(o => (o.app.threeD.resolution = resolutionScaleToGlobeMultiplier(o.app.threeD.resolutionScale)));
   redraw();
 };
 
 const setLightness = (intensity: number) => {
   if (!ambientLight) return;
-  options.view.threeD.lightness = intensity;
+  Options.set(o => (o.app.threeD.lightness = intensity));
   ambientLight.intensity = intensity;
   render();
 };
 
-const setSun = (x: number, y: number, z: number = options.view.threeD.sun.z) => {
+const setSun = (x: number, y: number, z: number = options.app.threeD.sun.z) => {
   if (!spotLight) return;
-  options.view.threeD.sun = { x, y, z };
+  Options.set(o => (o.app.threeD.sun = { x, y, z }));
   spotLight.position.set(x, y, z);
   render();
 };
 
 const setRotation = (speed: number) => {
   if (!controls) return;
-  if (isGlobeView()) options.view.threeD.rotateGlobe = speed;
-  else options.view.threeD.rotateMesh = speed;
+  if (isGlobeView()) Options.set(o => (o.app.threeD.rotateGlobe = speed));
+  else Options.set(o => (o.app.threeD.rotateMesh = speed));
   controls.autoRotateSpeed = speed;
 
   const startAnimation = !controls.autoRotate && Boolean(speed);
@@ -213,20 +213,20 @@ const setRotation = (speed: number) => {
 };
 
 const toggleSky = () => {
-  if (options.view.threeD.extendedWater) {
+  if (options.app.threeD.extendedWater) {
     scene.background = null;
     scene.fog = null;
     scene.remove(waterMesh);
   } else extendWater(facts.graph.width, facts.graph.height);
 
-  options.view.threeD.extendedWater = !options.view.threeD.extendedWater;
+  Options.set(o => (o.app.threeD.extendedWater = !o.app.threeD.extendedWater));
   redraw();
 };
 
 const toggleLabels = () => {
-  options.view.threeD.labels3d = !options.view.threeD.labels3d;
+  Options.set(o => (o.app.threeD.labels3d = !o.app.threeD.labels3d));
 
-  if (options.view.threeD.labels3d) {
+  if (options.app.threeD.labels3d) {
     createLabels().then(() => update());
   } else {
     deleteLabels();
@@ -235,64 +235,64 @@ const toggleLabels = () => {
 };
 
 const toggle3dSubdivision = () => {
-  options.view.threeD.subdivide = !options.view.threeD.subdivide;
+  Options.set(o => (o.app.threeD.subdivide = !o.app.threeD.subdivide));
   redraw();
 };
 
 function syncErosionUI() {
   const checkbox = document.getElementById("options3dErosion") as HTMLInputElement | null;
-  if (checkbox) checkbox.checked = options.view.threeD.erosion;
+  if (checkbox) checkbox.checked = options.app.threeD.erosion;
 
   const section = document.getElementById("options3dErosionSection") as HTMLElement | null;
-  if (section) section.style.display = options.view.threeD.erosion ? "block" : "none";
+  if (section) section.style.display = options.app.threeD.erosion ? "block" : "none";
 
   const subdivide = document.getElementById("options3dSubdivide") as HTMLInputElement | null;
-  if (subdivide) subdivide.disabled = options.view.threeD.erosion;
+  if (subdivide) subdivide.disabled = options.app.threeD.erosion;
 }
 
 const toggleErosion = () => {
-  options.view.threeD.erosion = !options.view.threeD.erosion;
+  Options.set(o => (o.app.threeD.erosion = !o.app.threeD.erosion));
   redraw();
 };
 
 const setErosionStrength = (value: number) => {
-  options.view.threeD.erosionStrength = value;
+  Options.set(o => (o.app.threeD.erosionStrength = value));
   redraw();
 };
 
 const setErosionRiverDepth = (value: number) => {
-  options.view.threeD.erosionRiverDepth = value;
+  Options.set(o => (o.app.threeD.erosionRiverDepth = value));
   redraw();
 };
 
 const setErosionDetail = (value: number) => {
-  options.view.threeD.erosionDetail = value;
+  Options.set(o => (o.app.threeD.erosionDetail = value));
   redraw();
 };
 
 const setErosionOctaves = (value: number) => {
-  options.view.threeD.erosionOctaves = value;
+  Options.set(o => (o.app.threeD.erosionOctaves = value));
   redraw();
 };
 
 // satellite texture is independent of erosion: it works on both the
 // eroded and the classic mesh
 const toggleSatellite = () => {
-  options.view.threeD.satellite = !options.view.threeD.satellite;
+  Options.set(o => (o.app.threeD.satellite = !o.app.threeD.satellite));
   redraw();
 };
 
 const toggleWireframe = () => {
-  options.view.threeD.wireframe = !options.view.threeD.wireframe;
+  Options.set(o => (o.app.threeD.wireframe = !o.app.threeD.wireframe));
   redraw();
 };
 
 const setColors = (sky: string, water: string) => {
   if (!scene) return;
-  options.view.threeD.skyColor = sky;
+  Options.set(o => (o.app.threeD.skyColor = sky));
   scene.background = new Three.Color(sky);
   if (scene.fog) scene.fog.color = new Three.Color(sky);
-  options.view.threeD.waterColor = water;
+  Options.set(o => (o.app.threeD.waterColor = water));
   if (waterMaterial) waterMaterial.color = new Three.Color(water);
   render();
 };
@@ -305,13 +305,13 @@ const setTimeOfDay = (presetName: string) => {
   setSun(preset.sun.x, preset.sun.y, preset.sun.z);
   setSunColor(preset.sunColor);
   setLightness(preset.lightness);
-  if (options.view.threeD.extendedWater) setColors(preset.skyColor, preset.waterColor);
+  if (options.app.threeD.extendedWater) setColors(preset.skyColor, preset.waterColor);
 };
 
 const setResolution = (resolution: number) => {
   const nextScale = clampToRendererLimit(Number(resolution) * 1024);
-  options.view.threeD.resolutionScale = nextScale;
-  options.view.threeD.resolution = resolutionScaleToGlobeMultiplier(nextScale);
+  Options.set(o => (o.app.threeD.resolutionScale = nextScale));
+  Options.set(o => (o.app.threeD.resolution = resolutionScaleToGlobeMultiplier(nextScale)));
   redraw();
 };
 
@@ -340,10 +340,10 @@ async function newMesh(canvas: HTMLCanvasElement) {
   scene = new Three.Scene();
 
   // light
-  ambientLight = new Three.AmbientLight(0xcccccc, options.view.threeD.lightness);
+  ambientLight = new Three.AmbientLight(0xcccccc, options.app.threeD.lightness);
   scene.add(ambientLight);
-  spotLight = new Three.SpotLight(options.view.threeD.sunColor, 0.8, 2000, 0.8, 0, 0);
-  spotLight.position.set(options.view.threeD.sun.x, options.view.threeD.sun.y, options.view.threeD.sun.z);
+  spotLight = new Three.SpotLight(options.app.threeD.sunColor, 0.8, 2000, 0.8, 0, 0);
+  spotLight.position.set(options.app.threeD.sun.x, options.app.threeD.sun.y, options.app.threeD.sun.z);
   spotLight.castShadow = true;
   spotLight.shadow.mapSize.width = 2048;
   spotLight.shadow.mapSize.height = 2048;
@@ -356,10 +356,10 @@ async function newMesh(canvas: HTMLCanvasElement) {
   Renderer.shadowMap.type = Three.PCFSoftShadowMap;
 
   // texture sizes (mesh render, satellite, erosion bake) must fit the GPU's limit
-  options.view.threeD.resolutionScale = clampToRendererLimit(options.view.threeD.resolutionScale);
-  options.view.threeD.resolution = resolutionScaleToGlobeMultiplier(options.view.threeD.resolutionScale);
+  Options.set(o => (o.app.threeD.resolutionScale = clampToRendererLimit(o.app.threeD.resolutionScale)));
+  Options.set(o => (o.app.threeD.resolution = resolutionScaleToGlobeMultiplier(o.app.threeD.resolutionScale)));
 
-  if (options.view.threeD.extendedWater) extendWater(facts.graph.width, facts.graph.height);
+  if (options.app.threeD.extendedWater) extendWater(facts.graph.width, facts.graph.height);
   createMesh(facts.graph.width, facts.graph.height, grid.cellsX, grid.cellsY);
 
   camera = new Three.PerspectiveCamera(70, canvas.width / canvas.height, 0.1, 2000);
@@ -386,8 +386,8 @@ async function newMesh(canvas: HTMLCanvasElement) {
   controls.maxPolarAngle = Math.PI / 2; // Prevent camera from going below horizon
   controls.minPolarAngle = 0; // Allow full 90 degrees top-down view
 
-  controls.autoRotate = Boolean(options.view.threeD.rotateMesh);
-  controls.autoRotateSpeed = options.view.threeD.rotateMesh;
+  controls.autoRotate = Boolean(options.app.threeD.rotateMesh);
+  controls.autoRotateSpeed = options.app.threeD.rotateMesh;
   animate();
 
   controls.addEventListener("change", render);
@@ -439,7 +439,7 @@ function get3dCoords(baseX: number, baseY: number) {
   // eroded mesh is too dense to raycast per label (no BVH in three r140):
   // sample the baked height field instead
   if (erosionBakeActive) {
-    const y = ErosionBake.heightAt(baseX, baseY, options.view.threeD.scale);
+    const y = ErosionBake.heightAt(baseX, baseY, options.app.threeD.scale);
     return [x, y, z];
   }
 
@@ -497,7 +497,7 @@ async function createLabels() {
   function getIconMaterial(groupName: string, iconColor: string) {
     if (!iconMaterials[groupName]) {
       const material = new Three.MeshPhongMaterial({ color: iconColor });
-      material.wireframe = options.view.threeD.wireframe;
+      material.wireframe = options.app.threeD.wireframe;
       iconMaterials[groupName] = material;
     }
     return iconMaterials[groupName];
@@ -610,8 +610,8 @@ function deleteLabels() {
 
 async function createMeshTextureUrl(): Promise<string> {
   const url = await Services.ExportMap.getMapURL("mesh", {
-    noLabels: options.view.threeD.labels3d,
-    noWater: options.view.threeD.extendedWater,
+    noLabels: options.app.threeD.labels3d,
+    noWater: options.app.threeD.extendedWater,
     noViewbox: true,
     fullMap: true
   });
@@ -619,8 +619,8 @@ async function createMeshTextureUrl(): Promise<string> {
   return new Promise(resolve => {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d")!;
-    canvas.width = options.view.threeD.resolutionScale;
-    canvas.height = options.view.threeD.resolutionScale;
+    canvas.width = options.app.threeD.resolutionScale;
+    canvas.height = options.app.threeD.resolutionScale;
     const img = new Image();
     img.src = url;
 
@@ -677,13 +677,13 @@ async function createMesh(width: number, height: number, segmentsX: number, segm
 
   // satellite texture is independent of erosion: it replaces the SVG map
   // render entirely, so the render is only loaded when satellite is off
-  const useSatellite = Boolean(options.view.threeD.satellite && !isGlobeView() && !options.view.threeD.wireframe);
-  if (!options.view.threeD.wireframe && !useSatellite) await loadMapTexture();
+  const useSatellite = Boolean(options.app.threeD.satellite && !isGlobeView() && !options.app.threeD.wireframe);
+  if (!options.app.threeD.wireframe && !useSatellite) await loadMapTexture();
 
   if (material) material.dispose();
   material = new Three.MeshLambertMaterial();
 
-  if (options.view.threeD.wireframe) {
+  if (options.app.threeD.wireframe) {
     material.wireframe = true;
   } else if (!useSatellite) {
     material.map = texture;
@@ -694,30 +694,30 @@ async function createMesh(width: number, height: number, segmentsX: number, segm
   // vertices, the satellite texture for its slope/coast/drainage fields.
   // With erosion off the bake runs with zero strength — a clean field
   let bakeResult: ErosionBake.ErosionBakeResult | null = null;
-  if ((options.view.threeD.erosion || useSatellite) && !isGlobeView()) {
+  if ((options.app.threeD.erosion || useSatellite) && !isGlobeView()) {
     const baseBakeResolution =
-      options.view.threeD.erosionDetail >= 2048 ? 4096 : options.view.threeD.erosionDetail > 512 ? 2048 : 1024;
+      options.app.threeD.erosionDetail >= 2048 ? 4096 : options.app.threeD.erosionDetail > 512 ? 2048 : 1024;
     const satelliteBakeResolution =
-      options.view.threeD.resolutionScale >= 8192 ? 8192 : options.view.threeD.resolutionScale >= 4096 ? 2048 : 1024;
+      options.app.threeD.resolutionScale >= 8192 ? 8192 : options.app.threeD.resolutionScale >= 4096 ? 2048 : 1024;
     const desiredBakeResolution = useSatellite
       ? Math.max(baseBakeResolution, satelliteBakeResolution)
       : baseBakeResolution;
     const maxBakeResolution = Math.min(Renderer.capabilities.maxTextureSize, 8192);
 
     bakeResult = await ErosionBake.bake(Renderer, {
-      strength: options.view.threeD.erosion ? options.view.threeD.erosionStrength : 0,
-      riverDepth: options.view.threeD.erosion ? options.view.threeD.erosionRiverDepth : 0,
-      octaves: options.view.threeD.erosion ? options.view.threeD.erosionOctaves : 1,
+      strength: options.app.threeD.erosion ? options.app.threeD.erosionStrength : 0,
+      riverDepth: options.app.threeD.erosion ? options.app.threeD.erosionRiverDepth : 0,
+      octaves: options.app.threeD.erosion ? options.app.threeD.erosionOctaves : 1,
       bakeResolution: Math.min(desiredBakeResolution, maxBakeResolution)
     });
-    if (!bakeResult && options.view.threeD.erosion) {
+    if (!bakeResult && options.app.threeD.erosion) {
       console.warn("3D erosion bake failed, falling back to standard mesh");
       window.tip("Eroded terrain is not supported on this device", false, "warn", 4000);
-      options.view.threeD.erosion = false;
+      Options.set(o => (o.app.threeD.erosion = false));
       syncErosionUI();
     }
   }
-  erosionBakeActive = Boolean(bakeResult) && Boolean(options.view.threeD.erosion);
+  erosionBakeActive = Boolean(bakeResult) && Boolean(options.app.threeD.erosion);
   erosionBakeData = bakeResult;
   if (!useSatellite) {
     disposeSatelliteTexture();
@@ -729,7 +729,7 @@ async function createMesh(width: number, height: number, segmentsX: number, segm
 
   if (erosionBakeActive) {
     // dense eroded mesh built from the baked height field
-    const segLong = options.view.threeD.erosionDetail;
+    const segLong = options.app.threeD.erosionDetail;
     const segX = width >= height ? segLong : Math.max(2, Math.round((segLong * width) / height));
     const segY = width >= height ? Math.max(2, Math.round((segLong * height) / width)) : segLong;
     geometry = new Three.PlaneGeometry(width, height, segX - 1, segY - 1);
@@ -738,7 +738,7 @@ async function createMesh(width: number, height: number, segmentsX: number, segm
     for (let i = 0; i < vertices.count; i++) {
       const mapX = vertices.getX(i) + width / 2;
       const mapY = height / 2 - vertices.getY(i);
-      vertices.setZ(i, ErosionBake.heightAt(mapX, mapY, options.view.threeD.scale));
+      vertices.setZ(i, ErosionBake.heightAt(mapX, mapY, options.app.threeD.scale));
     }
     geometry.computeVertexNormals();
     mesh = new Three.Mesh(geometry, material); // geometry is dense already, subdivision is ignored
@@ -752,7 +752,7 @@ async function createMesh(width: number, height: number, segmentsX: number, segm
 
     geometry.setAttribute("position", vertices);
     geometry.computeVertexNormals();
-    if (options.view.threeD.subdivide) {
+    if (options.app.threeD.subdivide) {
       await loadLoopSubdivision();
       const subdivideParams = {
         split: true,
@@ -775,8 +775,8 @@ async function createMesh(width: number, height: number, segmentsX: number, segm
     const satelliteTexture =
       bakeResult &&
       generateSatelliteTexture(Renderer, bakeResult, {
-        scale: options.view.threeD.scale,
-        maxOutput: clampTextureResolution(options.view.threeD.resolutionScale)
+        scale: options.app.threeD.scale,
+        maxOutput: clampTextureResolution(options.app.threeD.resolutionScale)
       });
     if (satelliteTexture) {
       material.map = satelliteTexture;
@@ -794,7 +794,7 @@ async function createMesh(width: number, height: number, segmentsX: number, segm
   scene.add(mesh);
   render();
 
-  if (options.view.threeD.labels3d) {
+  if (options.app.threeD.labels3d) {
     await createLabels();
     render();
   }
@@ -822,19 +822,19 @@ function getMeshHeight(i: number) {
 
     const feature: any = pack.features[featureId];
     const waterHeight = feature.type === "lake" && feature.height ? feature.height : 20;
-    return ((waterHeight - LOWER_BY_WATER) / DIVIDER) * options.view.threeD.scale;
+    return ((waterHeight - LOWER_BY_WATER) / DIVIDER) * options.app.threeD.scale;
   }
 
   // Land vertex
-  return ((height - LOWER_BY_WATER) / DIVIDER) * options.view.threeD.scale;
+  return ((height - LOWER_BY_WATER) / DIVIDER) * options.app.threeD.scale;
 }
 
 function extendWater(width: number, height: number) {
   if (!scene) return;
-  scene.background = new Three.Color(options.view.threeD.skyColor);
+  scene.background = new Three.Color(options.app.threeD.skyColor);
 
   waterPlane = new Three.PlaneGeometry(width * 10, height * 10, 1);
-  waterMaterial = new Three.MeshBasicMaterial({ color: options.view.threeD.waterColor });
+  waterMaterial = new Three.MeshBasicMaterial({ color: options.app.threeD.waterColor });
   scene.fog = new Three.Fog(scene.background, 500, 3000);
 
   waterMesh = new Three.Mesh(waterPlane, waterMaterial);
@@ -845,10 +845,10 @@ function extendWater(width: number, height: number) {
 
 async function update3dTexture() {
   if (!material || !Renderer) return;
-  if (options.view.threeD.satellite && erosionBakeData && !isGlobeView() && !options.view.threeD.wireframe) {
+  if (options.app.threeD.satellite && erosionBakeData && !isGlobeView() && !options.app.threeD.wireframe) {
     const satelliteTexture = generateSatelliteTexture(Renderer, erosionBakeData, {
-      scale: options.view.threeD.scale,
-      maxOutput: clampTextureResolution(options.view.threeD.resolutionScale)
+      scale: options.app.threeD.scale,
+      maxOutput: clampTextureResolution(options.app.threeD.resolutionScale)
     });
     if (satelliteTexture) {
       material.map = satelliteTexture;
@@ -883,8 +883,8 @@ async function newGlobe(canvas: HTMLCanvasElement) {
   Renderer.setSize(canvas.width, canvas.height);
 
   // texture size must fit the GPU's limit
-  options.view.threeD.resolutionScale = clampToRendererLimit(options.view.threeD.resolutionScale);
-  options.view.threeD.resolution = resolutionScaleToGlobeMultiplier(options.view.threeD.resolutionScale);
+  Options.set(o => (o.app.threeD.resolutionScale = clampToRendererLimit(o.app.threeD.resolutionScale)));
+  Options.set(o => (o.app.threeD.resolution = resolutionScaleToGlobeMultiplier(o.app.threeD.resolutionScale)));
 
   // material
   if (material) material.dispose();
@@ -901,8 +901,8 @@ async function newGlobe(canvas: HTMLCanvasElement) {
   controls.zoomSpeed = 0.25;
   controls.minDistance = 1.5;
   controls.maxDistance = 10;
-  controls.autoRotate = Boolean(options.view.threeD.rotateGlobe);
-  controls.autoRotateSpeed = options.view.threeD.rotateGlobe;
+  controls.autoRotate = Boolean(options.app.threeD.rotateGlobe);
+  controls.autoRotateSpeed = options.app.threeD.rotateGlobe;
 
   // ensure OrbitControls behavior (reset potentially changed defaults by MapControls)
   controls.mouseButtons = {
@@ -949,9 +949,9 @@ async function updateGlobeTexure(addMesh?: boolean) {
   const world = facts.geography.coordinates.latT > 179; // define if map covers whole world
 
   // texture size
-  options.view.threeD.resolutionScale = clampToRendererLimit(options.view.threeD.resolutionScale);
-  const width = options.view.threeD.resolutionScale;
-  options.view.threeD.resolution = resolutionScaleToGlobeMultiplier(width);
+  Options.set(o => (o.app.threeD.resolutionScale = clampToRendererLimit(o.app.threeD.resolutionScale)));
+  const width = options.app.threeD.resolutionScale;
+  Options.set(o => (o.app.threeD.resolution = resolutionScaleToGlobeMultiplier(width)));
 
   // calculate map size and offset position
   const height = Math.max(1, Math.round(width / 2));

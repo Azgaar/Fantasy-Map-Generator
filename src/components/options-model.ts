@@ -1,17 +1,7 @@
-// The options model: the only thing that writes the options store.
-// Options hold requests and preferences; they never describe the map on screen.
-// See docs/architecture/configuration.md
 import type { z } from "zod";
-import {
-  CELLS_BY_DENSITY,
-  DEFAULT_DENSITY,
-  getDefaultOptions,
-  type OptionsData,
-  optionsSchema,
-  STORAGE_KEY
-} from "@/components/options-schema";
-import "@/components/options-store";
+import { type OptionsData, optionsSchema } from "@/components/options-schema";
 import { heightmapTemplates } from "@/data/heightmap-templates";
+import { DEFAULT_THREE_D } from "@/data/view-3d-options";
 import { CULTURE_SETS } from "@/generators/cultures-generator";
 import { rn } from "@/utils/numberUtils";
 import { isLocked, lockedValue } from "@/utils/preferences";
@@ -20,7 +10,85 @@ import { parseSections } from "@/utils/schemaUtils";
 
 declare global {
   var Options: OptionsApi;
+  /** this browser's options, read bare across the app and replaced wholesale on restore */
+  var options: OptionsData;
 }
+
+export const STORAGE_KEY = "fmg-options";
+
+/** pale magenta: the theme every dialog starts from */
+export const THEME_COLOR = "#997787";
+
+/** cells the grid is built from, per density step of the Points slider */
+export const CELLS_BY_DENSITY: Record<number, number> = {
+  1: 1000,
+  2: 2000,
+  3: 5000,
+  4: 10000,
+  5: 20000,
+  6: 30000,
+  7: 40000,
+  8: 50000,
+  9: 60000,
+  10: 70000,
+  11: 80000,
+  12: 90000,
+  13: 100000
+};
+export const DEFAULT_DENSITY = 4;
+
+/**
+ * A fresh browser's options. Every value the app starts from is defined here or by the module that
+ * owns the concept - never twice. See docs/architecture/configuration.md
+ */
+export function getDefaultOptions(): OptionsData {
+  return {
+    generation: {
+      graph: { width: 1280, height: 800, density: DEFAULT_DENSITY },
+      template: "",
+      resolveDepressionsSteps: 250,
+      lakeElevationLimit: 20,
+      cultures: { limit: 12, set: "world", sizeVariety: 4, growthRate: 1 },
+      states: { limit: 18, sizeVariety: 4, growthRate: 1 },
+      provinces: { ratio: 20 },
+      religions: { limit: 6 },
+      burgs: { limit: 1000 }
+    },
+    app: {
+      notesPinned: false,
+      emblemsShowAll: false,
+      emblemShape: "culture",
+      rendering: "optimizeSpeed",
+      onLoad: "random",
+      zoomExtent: { min: 1, max: 20 },
+      autosave: { interval: 15, remind: true },
+      ui: {
+        size: null,
+        tooltipSize: 14,
+        themeColor: THEME_COLOR,
+        transparency: 5,
+        assistant: "show",
+        speakerVoice: "",
+        clickArrowTip: true
+      },
+      export: { pngResolution: 1, tiles: { cols: 8, rows: 8, scale: 1 } },
+      trade: {
+        animation: {
+          displayType: "both",
+          concurrent: 30,
+          duration: 250,
+          landDurationModifier: 5,
+          segmentChangePause: 1000,
+          markerSize: 4
+        }
+      },
+      threeD: { ...DEFAULT_THREE_D }
+    },
+    library: { military: null, transports: null, burgGroups: null, labelGroups: null, coastline: null }
+  };
+}
+
+globalThis.options = getDefaultOptions();
 
 const SAVE_DELAY = 500;
 let saveTimer = 0;
@@ -52,7 +120,7 @@ function restoreStored(): void {
     ? parseSections<OptionsData>(optionsSchema, getDefaultOptions(), safeParse(stored), "Options.restore")
     : getDefaultOptions();
   adoptLegacyKeys();
-  setNextMapSize();
+  setGraphSize();
 }
 
 /**
@@ -73,24 +141,24 @@ function adoptLegacyKeys(): void {
     const value = read(key);
     if (value !== null) apply(value);
   };
-  const { view } = globalThis.options;
+  const { app } = globalThis.options;
 
-  num("uiSize", value => (view.ui.size = value));
-  num("tooltipSize", value => (view.ui.tooltipSize = value));
-  num("transparency", value => (view.ui.transparency = value));
-  str("themeColor", value => (view.ui.themeColor = value));
-  str("speakerVoice", value => (view.ui.speakerVoice = value));
-  str("azgaarAssistant", value => (view.ui.assistant = value));
-  str("shapeRendering", value => (view.rendering = value));
-  str("onloadBehavior", value => (view.onLoad = value));
-  str("emblemShape", value => (view.emblemShape = value));
-  num("autosaveInterval", value => (view.autosave.interval = value));
-  num("pngResolution", value => (view.export.pngResolution = value));
-  num("tileCols", value => (view.export.tiles.cols = value));
-  num("tileRows", value => (view.export.tiles.rows = value));
-  num("tileScale", value => (view.export.tiles.scale = value));
-  if (read("noReminder")) view.autosave.remind = false;
-  if (read("disable_click_arrow_tooltip")) view.ui.clickArrowTip = false;
+  num("uiSize", value => (app.ui.size = value));
+  num("tooltipSize", value => (app.ui.tooltipSize = value));
+  num("transparency", value => (app.ui.transparency = value));
+  str("themeColor", value => (app.ui.themeColor = value));
+  str("speakerVoice", value => (app.ui.speakerVoice = value));
+  str("azgaarAssistant", value => (app.ui.assistant = value));
+  str("shapeRendering", value => (app.rendering = value));
+  str("onloadBehavior", value => (app.onLoad = value));
+  str("emblemShape", value => (app.emblemShape = value));
+  num("autosaveInterval", value => (app.autosave.interval = value));
+  num("pngResolution", value => (app.export.pngResolution = value));
+  num("tileCols", value => (app.export.tiles.cols = value));
+  num("tileRows", value => (app.export.tiles.rows = value));
+  num("tileScale", value => (app.export.tiles.scale = value));
+  if (read("noReminder")) app.autosave.remind = false;
+  if (read("disable_click_arrow_tooltip")) app.ui.clickArrowTip = false;
 
   for (const key of LEGACY_KEYS) localStorage.removeItem(key);
   persist();
@@ -161,21 +229,21 @@ function safeParse(json: string): unknown {
 }
 
 /** The extent the next map is generated on: what the caller asked for, a pin, or the window */
-function setNextMapSize(width?: number, height?: number): void {
-  const { nextMap } = globalThis.options;
+function setGraphSize(width?: number, height?: number): void {
+  const { graph } = globalThis.options.generation;
   // the pinned value, not merely the absence of a roll: the locks and the options are separate
   // stores, so a repaired options object must not silently generate at a size nobody asked for
   const pinnedSize = (key: string, current: number) => lockedValue<number>(key) ?? current;
 
-  if (width) nextMap.width = width;
-  else nextMap.width = isLocked("mapWidth") ? pinnedSize("mapWidth", nextMap.width) : window.innerWidth;
+  if (width) graph.width = width;
+  else graph.width = isLocked("mapWidth") ? pinnedSize("mapWidth", graph.width) : window.innerWidth;
 
-  if (height) nextMap.height = height;
-  else nextMap.height = isLocked("mapHeight") ? pinnedSize("mapHeight", nextMap.height) : window.innerHeight;
+  if (height) graph.height = height;
+  else graph.height = isLocked("mapHeight") ? pinnedSize("mapHeight", graph.height) : window.innerHeight;
 
   // a hidden or headless tab reports no size, which would make a degenerate grid
-  if (!(nextMap.width > 0)) nextMap.width = 1280;
-  if (!(nextMap.height > 0)) nextMap.height = 800;
+  if (!(graph.width > 0)) graph.width = 1280;
+  if (!(graph.height > 0)) graph.height = 800;
 }
 
 /** Re-roll every request the user has not pinned. Runs before the pipeline, never after */
@@ -186,11 +254,12 @@ function randomize(): void {
     const value = ignorePins ? undefined : lockedValue<T>(key);
     return value === undefined ? fallback : value;
   };
-  const { generation, nextMap } = globalThis.options;
+  const { generation } = globalThis.options;
+  const { graph } = generation;
 
   // the slider holds a density step and the cell count is derived from it, so both branches go
   // through setDensity - a step without its cell count generates a map of the wrong size
-  setDensity(roll("points") ? DEFAULT_DENSITY : keep("points", nextMap.density)); // a default, not a roll
+  setDensity(roll("points") ? DEFAULT_DENSITY : keep("points", graph.density)); // a default, not a roll
 
   generation.template = roll("template") ? randomTemplate() : keep("template", generation.template);
   generation.states.limit = roll("statesNumber") ? gauss(18, 5, 2, 30) : keep("statesNumber", generation.states.limit);
@@ -214,9 +283,12 @@ function randomize(): void {
 }
 
 function setDensity(density: number): void {
-  const { nextMap } = globalThis.options;
-  nextMap.density = density;
-  nextMap.points = CELLS_BY_DENSITY[density] ?? nextMap.points;
+  globalThis.options.generation.graph.density = density;
+}
+
+/** Cells the next map's grid is built from: what the density step resolves to, derived on demand */
+export function cellsFor(density: number): number {
+  return CELLS_BY_DENSITY[density] ?? CELLS_BY_DENSITY[DEFAULT_DENSITY];
 }
 
 /** A culture set holds a fixed number of cultures: the map cannot ask for more than it has */
@@ -239,9 +311,8 @@ function setSizeVariety(variety: number): void {
  */
 function syncOnLoad(): void {
   set(options => {
-    if (!isLocked("mapWidth")) options.nextMap.width = globalThis.facts.graph.width;
-    if (!isLocked("mapHeight")) options.nextMap.height = globalThis.facts.graph.height;
-    if (!isLocked("template")) options.generation.template = globalThis.facts.heightmap.template;
+    if (!isLocked("mapWidth")) options.generation.graph.width = globalThis.facts.graph.width;
+    if (!isLocked("mapHeight")) options.generation.graph.height = globalThis.facts.graph.height;
   });
 }
 
@@ -296,10 +367,11 @@ export const Options = {
   persist,
   reset,
   restoreStored,
-  setNextMapSize,
+  setGraphSize,
   syncOnLoad,
   randomize,
   setDensity,
+  cellsFor,
   capCultures,
   setSizeVariety,
   isAutoBurgLimit,

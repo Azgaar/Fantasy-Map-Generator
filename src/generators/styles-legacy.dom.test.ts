@@ -258,7 +258,8 @@ test("save sync lets an old map's scaleBar and label-shift attrs win", () => {
     <g id="labels"><g data-group="capital" data-dx="0.7" data-dy="-0.2" font-size="6%" font-family="Almendra SC"></g></g></svg>`;
   styles.scaleBar.options.barSize = 5;
   harvestStylesFromSvg();
-  expect(styles.scaleBar.options).toEqual({ barSize: 2 });
+  // the label and where the author put the bar are part of its style, and travel with it
+  expect(styles.scaleBar.options).toEqual({ barSize: 2, x: 40, y: 41, label: "old" });
   expect(styles.scaleBar.back.options).toEqual({ top: 3, right: 4, bottom: 5, left: 6 });
   // the record-less LOAD path still harvests the label shift off an old map's attrs
   expect(stylesFromMap(document).labels.groups.capital.attrs.style).toBe("transform: translate(0.7em, -0.2em)");

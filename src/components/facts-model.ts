@@ -1,10 +1,7 @@
-// The facts model: the only thing that writes the store.
-// A fact is written by generation, by a derivation, or by loading a file - never by an input
-// event. See docs/architecture/configuration.md
-import { type FactsData, factsSchema, getDefaultFacts } from "@/components/facts-schema";
-import "@/components/facts-store";
+import { type FactsData, factsSchema } from "@/components/facts-schema";
 import { applyPin, pinnedFactKeys } from "@/components/pinnable";
 import { Burgs } from "@/generators/burgs-generator";
+import { DEFAULT_COASTLINE } from "@/generators/coastline-generator";
 import { Labels } from "@/generators/labels-generator";
 import { Names } from "@/generators/names-generator";
 import { isLocked, lockedValue } from "@/utils/preferences";
@@ -12,7 +9,57 @@ import { gauss, P, rand } from "@/utils/probabilityUtils";
 import { parseSections } from "@/utils/schemaUtils";
 
 declare global {
-  var Facts: FactsApi;
+  var Facts: FactsModel;
+  var facts: FactsData;
+}
+
+export function getDefaultFacts(): FactsData {
+  return {
+    seed: "",
+    graph: { width: 1280, height: 800, points: 10000 },
+    geography: {
+      mapSize: 100,
+      latitude: 50,
+      longitude: 50,
+      coordinates: { latT: 180, latN: 90, latS: -90, lonT: 320, lonW: -160, lonE: 160 }
+    },
+    climate: {
+      temperature: { equator: 27, northPole: -30, southPole: -15 },
+      precipitation: 100,
+      winds: [225, 45, 225, 315, 135, 315]
+    },
+    cultures: { set: "world" },
+    lore: { name: "", description: "", calendar: { year: 1000, era: "Era", eraShort: "E" } },
+    units: {
+      distance: { unit: isImperial() ? "mi" : "km", scale: 3 },
+      area: { unit: "square" },
+      height: { unit: isImperial() ? "ft" : "m", exponent: 2 },
+      temperature: { unit: isFahrenheit() ? "\u00B0F" : "\u00B0C" },
+      population: { scale: 1000, urbanization: { rate: 1, density: 10 } }
+    },
+    labels: { resizeOnZoom: true, showAll: false, groups: [] },
+    style: { preset: "default" },
+    military: { units: [] },
+    transports: [],
+    burgs: { groups: [] },
+    coastline: { ...DEFAULT_COASTLINE }
+  };
+}
+
+globalThis.facts = getDefaultFacts();
+
+// declarations, not consts: `getDefaultFacts` runs above them while this module is evaluating
+function locale(): string {
+  return typeof navigator === "undefined" ? "" : navigator.language;
+}
+
+/** the US and the UK measure distance and altitude in miles and feet; only the US reads \u00B0F */
+function isImperial(): boolean {
+  return ["en-US", "en-GB"].includes(locale());
+}
+
+function isFahrenheit(): boolean {
+  return locale() === "en-US";
 }
 
 /** Validate an untrusted settings object from a `.map`, repairing what it can */
@@ -60,21 +107,14 @@ function set(change: (facts: FactsData) => void): void {
 function seedForNewMap(): void {
   const seed = globalThis.facts.seed; // setSeed resolved it and reseeded the PRNG before the roll
   const fresh = getDefaultFacts();
-  const { generation, nextMap } = globalThis.options;
+  const { generation } = globalThis.options;
 
+  // only what the map keeps being read for: the graph it was built on, the terrain it was raised
+  // from, the name set its cultures came out of. The counts, rates and varieties stay requests
   fresh.seed = seed;
-  fresh.graph = { width: nextMap.width, height: nextMap.height, points: nextMap.points };
-  fresh.heightmap = {
-    template: generation.template,
-    resolveDepressionsSteps: generation.resolveDepressionsSteps,
-    lakeElevationLimit: generation.lakeElevationLimit
-  };
-  fresh.cultures = {
-    set: generation.cultures.set,
-    sizeVariety: generation.cultures.sizeVariety,
-    growthRate: generation.cultures.growthRate
-  };
-  fresh.states = { sizeVariety: generation.states.sizeVariety, growthRate: generation.states.growthRate };
+  const { width, height, density } = generation.graph;
+  fresh.graph = { width, height, points: Options.cellsFor(density) };
+  fresh.cultures = { set: generation.cultures.set };
 
   // the user's own sets, carried over; a generator fills in its module defaults when there is none
   const military = Options.recall("military");
@@ -137,7 +177,7 @@ function shortEra(): string {
     .join("");
 }
 
-// biome-ignore lint/suspicious/noRedeclare: legacy seam, as in styles.ts
+// biome-ignore lint/suspicious/noRedeclare: legacy seam
 export const Facts = {
   parse,
   adopt,
@@ -148,5 +188,5 @@ export const Facts = {
   getDefaults: getDefaultFacts
 };
 
-type FactsApi = typeof Facts;
+type FactsModel = typeof Facts;
 globalThis.Facts = Facts;

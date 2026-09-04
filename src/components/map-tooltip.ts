@@ -57,7 +57,7 @@ export function showNotes(event: Event): void {
     return;
   }
 
-  if (options.view.notesPinned || findEl("markerEditor") || (event as MouseEvent).shiftKey) return;
+  if (options.app.notesPinned || findEl("markerEditor") || (event as MouseEvent).shiftKey) return;
 
   const notesEl = findEl("notes");
   if (notesEl) notesEl.style.display = "none";

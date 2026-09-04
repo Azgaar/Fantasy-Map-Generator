@@ -544,7 +544,7 @@ class HeightmapModule {
 
   /** heightmap template or precreated heightmap selected in the options */
   getSelectedId(): string {
-    return facts.heightmap.template;
+    return options.generation.template;
   }
 
   /** build the heightmap from the selected template or image and store it as the graph cell heights */

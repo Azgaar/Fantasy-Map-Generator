@@ -99,9 +99,8 @@ const PRESET_ROUTES: Record<string, PresetRoute> = {
   "#ruler": { path: ["rulers"], options: { "data-size": "fontSize", "font-size": "fontSize" } },
   "#scaleBar": {
     path: ["scaleBar"],
-    options: { "data-bar-size": "barSize" },
-    // the label and position are facts of the map, lifted out by the v1.151.0 migration
-    drop: ["data-x", "data-y", "data-label"]
+    options: { "data-bar-size": "barSize", "data-x": "x", "data-y": "y", "data-label": "label" },
+    strings: ["label"]
   },
   "#scaleBarBack": {
     path: ["scaleBar", "back"],
