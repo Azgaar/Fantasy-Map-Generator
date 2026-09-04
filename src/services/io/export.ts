@@ -17,6 +17,7 @@ import {
   getCoordinates,
   getFileName,
   getFriendlyHeight,
+  loadScript,
   rn,
   unique
 } from "@/utils";
@@ -883,17 +884,6 @@ function saveGeoJsonZones(): void {
 
   const fileName = `${getFileName("Zones")}.geojson`;
   downloadFile(JSON.stringify(json), fileName, "application/json");
-}
-
-// load a classic library bundle that registers a runtime global (e.g. window.JSZip)
-function loadScript(src: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = src;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error(`Cannot load script ${src}`));
-    document.head.append(script);
-  });
 }
 
 // reached lazily via Services.ExportMap

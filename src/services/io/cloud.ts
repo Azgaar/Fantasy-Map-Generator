@@ -9,6 +9,7 @@
 
 import { tip } from "@/components/tooltips";
 import { isElectron } from "@/services/platform";
+import { loadScript } from "@/utils";
 
 export interface CloudFile {
   name: string;
@@ -49,17 +50,6 @@ const setRefreshToken = (provider: string, key: string) => localStorage.setItem(
 const getRefreshToken = (provider: string) => localStorage.getItem(`${lSKey(provider)}-refresh`);
 const setTokenExpiry = (provider: string, ts: number) => localStorage.setItem(`${lSKey(provider)}-expires`, String(ts));
 const getTokenExpiry = (provider: string) => Number(localStorage.getItem(`${lSKey(provider)}-expires`)) || undefined;
-
-// load a classic library bundle that registers a runtime global (e.g. window.Dropbox)
-function loadScript(src: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = src;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error(`Cannot load script ${src}`));
-    document.head.append(script);
-  });
-}
 
 const dropbox: DropboxProvider = {
   name: "dropbox",

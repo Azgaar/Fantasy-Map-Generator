@@ -102,3 +102,14 @@ declare global {
     findEl: typeof findEl;
   }
 }
+
+// load a classic library bundle that registers a runtime global (e.g. window.JSZip)
+export function loadScript(src: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = src;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error(`Cannot load script ${src}`));
+    document.head.append(script);
+  });
+}
