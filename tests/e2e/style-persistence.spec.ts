@@ -16,7 +16,7 @@ declare const Services: {
   Save: { saveMap: (method: string) => Promise<void>; prepareMapData: () => string | Promise<string> };
 };
 declare const styles: any;
-declare const options: any;
+declare const facts: any;
 
 function readPreset(name: string): any {
   return JSON.parse(fs.readFileSync(path.join(__dirname, `../../public/styles/${name}.json`), "utf8"));
@@ -70,7 +70,7 @@ test.describe("style persistence round trips", () => {
 
     // the name travels with the map, so the Style tab shows which preset the styles came from
     const preset = await page.evaluate(() => ({
-      option: options.style.preset,
+      option: facts.style.preset,
       select: (document.getElementById("stylePreset") as HTMLSelectElement).value
     }));
     expect(preset).toEqual({ option: "ancient", select: "ancient" });
@@ -95,7 +95,7 @@ test.describe("style persistence round trips", () => {
     await waitForNextMap(page, mapsBefore);
 
     const preset = await page.evaluate(() => ({
-      option: options.style.preset,
+      option: facts.style.preset,
       select: (document.getElementById("stylePreset") as HTMLSelectElement).value
     }));
     expect(preset).toEqual({ option: "cyberpunk", select: "cyberpunk" });

@@ -15,9 +15,9 @@ import {
 import { closeDialogs, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { dialogState } from "@/components/dialog/state";
 import { Layers } from "@/components/layers";
-import { undraw } from "@/components/lifecycle";
 import { changeViewMode } from "@/components/options/view-mode";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
+import { undraw } from "@/components/undraw";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { viewport } from "@/components/viewport";
 import { Controllers } from "@/controllers";

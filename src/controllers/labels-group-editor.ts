@@ -1,6 +1,6 @@
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
-import { LAYER_TOGGLES } from "@/components/options/tabs/layers-tab";
+import { LAYER_TOGGLES } from "@/components/options/tabs/layer-toggles";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { LABEL_TYPES, type LabelGroup, type LabelNameMode, type LabelType } from "@/generators/labels-generator";

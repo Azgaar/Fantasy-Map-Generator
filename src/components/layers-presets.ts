@@ -2,7 +2,7 @@
 import { ensureEl } from "@/utils";
 import { confirmationDialog } from "./dialog/dialog-helpers";
 import { type LayerId, Layers } from "./layers";
-import { LAYER_TOGGLES } from "./options/tabs/layers-tab";
+import { LAYER_TOGGLES } from "./options/tabs/layer-toggles";
 
 const DEFAULT_PRESETS: Record<string, LayerId[]> = {
   political: ["borders", "burgIcons", "ice", "labels", "lakes", "rivers", "routes", "scaleBar", "states", "vignette"],

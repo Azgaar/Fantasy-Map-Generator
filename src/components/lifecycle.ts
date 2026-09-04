@@ -8,12 +8,12 @@ import { is3dView } from "@/components/options/view-mode";
 import { setSeed } from "@/components/seed";
 import { initShell, warnIfServerless } from "@/components/shell";
 import { clearMainTip, tip } from "@/components/tooltips";
+import { undraw } from "@/components/undraw";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { setViewportSize } from "@/components/viewport";
 import { invokeActiveZooming, resetZoom } from "@/components/zoom";
 import { Controllers } from "@/controllers";
 import { GenerationPipeline } from "@/generators/generation-pipeline";
-import { unfog } from "@/renderers/overlays/fogging";
 import { initiateAutosave } from "@/services/autosave";
 import { logStats } from "@/services/logging";
 import { registerServiceWorker } from "@/services/platform";
@@ -161,15 +161,6 @@ export function registerMap(created: number = Date.now()): void {
 
   // the public seam test automation and external integrations wait on; the id is the creation date
   window.dispatchEvent(new CustomEvent("map:generated", { detail: { seed: facts.seed, mapId: created } }));
-}
-
-/** Clear the map: every layer, the transient defs and the notes that described what was there */
-export function undraw(): void {
-  Layers.eraseAll();
-  for (const el of ensureEl("deftemp").querySelectorAll("path, clipPath, svg")) el.remove();
-  ensureEl("coas").innerHTML = ""; // auto-generated emblems are re-created on demand
-  notes = [];
-  unfog();
 }
 
 declare global {

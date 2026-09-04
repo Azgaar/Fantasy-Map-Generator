@@ -45,7 +45,7 @@ test.describe("3D view with eroded terrain", () => {
 
     // labels and icons sample the baked field: heights must be finite numbers
     const centerHeight = await page.evaluate(() => {
-      const { width: w, height: h } = (window as any).options.graph;
+      const { width: w, height: h } = (window as any).facts.graph;
       return (window as any).Controllers.View3d.heightAt(w / 2, h / 2, 50);
     });
     expect(Number.isFinite(centerHeight)).toBe(true);

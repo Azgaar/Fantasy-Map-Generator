@@ -29,7 +29,7 @@ test.describe("emblems viewport rendering", () => {
     // `options` is a script-scoped global, not a window property, so it is reached through page script.
     // Showing all categories puts every emblem in the scene; only the <use> elements are counted here,
     // so the test does not wait on the (asynchronous) coat of arms rendering.
-    await page.evaluate("options.emblems.showAll = true; invokeActiveZooming();");
+    await page.evaluate("options.app.emblemsShowAll = true; invokeActiveZooming();");
     const full = await page.evaluate(countUses);
     expect(full).toBeGreaterThan(100);
 

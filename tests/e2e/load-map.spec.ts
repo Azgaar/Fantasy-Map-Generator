@@ -4,7 +4,7 @@ import path from "path";
 import { waitForMap } from "./wait-for-map";
 
 declare const notes: { id: string }[]; // page global, resolved inside page.evaluate
-declare const options: {
+declare const facts: {
   labels: { resizeOnZoom: boolean; showAll: boolean; groups: { type: string; mode?: string }[] };
 };
 declare const style: { relief: { set: string; size: number; density: number } };
@@ -416,7 +416,7 @@ test.describe("Map loading", () => {
     await expect(page.locator("#tooltip")).toContainText("Map is successfully loaded", { timeout: 120000 });
 
     const migrated = await page.evaluate(() => {
-      const labels = options.labels;
+      const labels = facts.labels;
       return {
         resizeOnZoom: labels.resizeOnZoom,
         showAll: labels.showAll,

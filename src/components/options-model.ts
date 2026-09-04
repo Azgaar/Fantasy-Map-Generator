@@ -175,14 +175,16 @@ function randomize(): void {
   generation.religions.limit = roll("religionsNumber")
     ? gauss(6, 3, 2, 10)
     : keep("religionsNumber", generation.religions.limit);
-  generation.cultures.limit = roll("cultures") ? gauss(12, 3, 5, 30) : keep("cultures", generation.cultures.limit);
-  generation.cultures.set = roll("culturesSet") ? randomCultureSet() : keep("culturesSet", generation.cultures.set);
-
   setSizeVariety(roll("sizeVariety") ? gauss(4, 2, 0, 10, 1) : keep("sizeVariety", generation.states.sizeVariety));
 
   const rate = roll("growthRate") ? rn(1 + Math.random(), 1) : keep("growthRate", generation.states.growthRate);
   generation.states.growthRate = rate;
   generation.cultures.growthRate = rate;
+
+  // the culture rolls come last: every roll above draws from the seeded PRNG, so reordering them
+  // hands each request a different draw and the same seed stops producing the same map
+  generation.cultures.limit = roll("cultures") ? gauss(12, 3, 5, 30) : keep("cultures", generation.cultures.limit);
+  generation.cultures.set = roll("culturesSet") ? randomCultureSet() : keep("culturesSet", generation.cultures.set);
 
   capCultures();
 }

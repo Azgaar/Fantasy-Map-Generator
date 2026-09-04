@@ -9,15 +9,15 @@ test.describe("canvas size", () => {
     await page.goto("/?seed=canvas-size-stable");
     await waitForMap(page);
 
-    const generated = await page.evaluate(() => ({ ...(window as any).options.graph }));
+    const generated = await page.evaluate(() => ({ ...(window as any).facts.graph }));
     expect(generated.width).toBe(1000);
 
     await page.setViewportSize({ width: 1400, height: 800 });
     await page.waitForTimeout(500);
 
     const afterResize = await page.evaluate(() => ({
-      width: (window as any).options.graph.width,
-      height: (window as any).options.graph.height,
+      width: (window as any).facts.graph.width,
+      height: (window as any).facts.graph.height,
       svgWidth: Number(document.getElementById("map")!.getAttribute("width"))
     }));
 
@@ -38,7 +38,7 @@ test.describe("canvas size", () => {
     await page.evaluate(() => (window as any).regenerateMap("resized window"));
     await waitForNextMap(page, previous);
 
-    const regenerated = await page.evaluate(() => ({ ...(window as any).options.graph }));
+    const regenerated = await page.evaluate(() => ({ ...(window as any).facts.graph }));
     expect(regenerated.width).toBe(1400);
     expect(regenerated.height).toBe(800);
   });
@@ -60,7 +60,7 @@ test.describe("canvas size", () => {
     await page.evaluate(() => (window as any).regenerateMap("pinned size"));
     await waitForNextMap(page, previous);
 
-    const regenerated = await page.evaluate(() => ({ ...(window as any).options.graph }));
+    const regenerated = await page.evaluate(() => ({ ...(window as any).facts.graph }));
     expect(regenerated.width).toBe(900);
     expect(regenerated.height).toBe(600);
   });

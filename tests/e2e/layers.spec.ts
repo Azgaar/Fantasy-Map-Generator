@@ -2,7 +2,7 @@ import { Browser, BrowserContext, expect, Page, test } from "@playwright/test";
 import { waitForMap } from "./wait-for-map";
 
 // map globals used inside page.evaluate
-declare const options: { labels: { groups: { name: string; active?: boolean }[] } };
+declare const facts: { labels: { groups: { name: string; active?: boolean }[] } };
 
 // All tests in this describe block only READ the DOM — they never modify state.
 // Load the map once for the entire suite instead of before every test.
@@ -207,7 +207,7 @@ test.describe("map layers", () => {
   // The only test here that changes state, it restores the group before it ends
   test("deactivated labels group is not rendered", async () => {
     const counts = await sharedPage.evaluate(async () => {
-      const stateGroup = options.labels.groups.find(group => group.name === "state")!;
+      const stateGroup = facts.labels.groups.find(group => group.name === "state")!;
       const count = () => document.querySelectorAll("#labels-state > *").length;
       const before = count();
 

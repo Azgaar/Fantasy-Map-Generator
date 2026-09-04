@@ -17,8 +17,8 @@ const STYLE_ATTRS = [
   "width", "height", "rx", "ry", "style"
 ];
 
-// the burg tiers, and the label groups, that both maps render (options.burgs.groups /
-// options.labels): styling is per group, so each one is its own snapshot target
+// the burg tiers, and the label groups, that both maps render (facts.burgs.groups /
+// facts.labels): styling is per group, so each one is its own snapshot target
 const BURG_GROUPS = [
   "capital", "city", "town", "village", "hamlet", "fort", "monastery", "caravanserai", "trading_post"
 ];

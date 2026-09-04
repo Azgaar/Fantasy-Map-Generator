@@ -64,12 +64,12 @@ test.describe("controller launchers", () => {
     await expect(page.locator("#reliefEditor")).toBeVisible();
   });
 
-  test("builds the Units Editor from the options object on open", async ({page}) => {
+  test("builds the Units Editor from the facts object on open", async ({page}) => {
     // a unit the user named themselves is not among the select's options until the editor puts it back
     await page.evaluate(() => {
-      (window as any).Options.set((options: any) => {
-        options.units.distance.unit = "leagues";
-        options.units.distance.scale = 7;
+      (window as any).Facts.set((facts: any) => {
+        facts.units.distance.unit = "leagues";
+        facts.units.distance.scale = 7;
       });
     });
 
@@ -81,9 +81,9 @@ test.describe("controller launchers", () => {
     await expect(page.locator("#distanceUnitInput")).toHaveValue("leagues");
     await expect(page.locator("#distanceScaleInput input[type=number]")).toHaveValue("7");
 
-    // and the controls write back: the scale bar and the options object follow the editor
+    // and the controls write back: the scale bar and the facts object follow the editor
     await page.locator("#distanceScaleInput input[type=number]").fill("5");
     await page.locator("#distanceScaleInput input[type=number]").dispatchEvent("change");
-    expect(await page.evaluate(() => (window as any).options.units.distance.scale)).toBe(5);
+    expect(await page.evaluate(() => (window as any).facts.units.distance.scale)).toBe(5);
   });
 });

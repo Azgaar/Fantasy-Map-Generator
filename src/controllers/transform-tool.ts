@@ -1,9 +1,10 @@
 import { applyGraphSize, fitMapToScreen } from "@/components/canvas";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
-import { registerMap, undraw } from "@/components/lifecycle";
+import { registerMap } from "@/components/lifecycle";
 import { cellsDensityColor, changeCellsDensity } from "@/components/options/tabs/options-tab";
 import { POINTS_BY_DENSITY } from "@/components/options-model";
+import { undraw } from "@/components/undraw";
 import { Resample } from "@/generators/resample";
 import { logStats } from "@/services/logging";
 import { ensureEl, rn } from "../utils";
