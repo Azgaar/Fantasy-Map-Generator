@@ -1,0 +1,21 @@
+<div class="ui-dialog-titlebar">
+  <span class="ui-dialog-title"></span>
+  <button type="button" class="ui-dialog-titlebar-collapse" data-tip="Minimize / maximize">_</button>
+  <button type="button" class="ui-dialog-titlebar-close" data-tip="Close">✕</button>
+</div>
+<div class="ui-dialog-content">
+  <slot></slot>
+</div>
+<div class="ui-dialog-buttonpane">
+  <div class="ui-dialog-buttonset">
+    <slot name="actions"></slot>
+  </div>
+</div>
+<div class="ui-resizable-handle ui-resizable-n" data-dir="n"></div>
+<div class="ui-resizable-handle ui-resizable-e" data-dir="e"></div>
+<div class="ui-resizable-handle ui-resizable-s" data-dir="s"></div>
+<div class="ui-resizable-handle ui-resizable-w" data-dir="w"></div>
+<div class="ui-resizable-handle ui-resizable-ne" data-dir="ne"></div>
+<div class="ui-resizable-handle ui-resizable-nw" data-dir="nw"></div>
+<div class="ui-resizable-handle ui-resizable-se" data-dir="se"></div>
+<div class="ui-resizable-handle ui-resizable-sw" data-dir="sw"></div>

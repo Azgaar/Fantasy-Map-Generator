@@ -57,7 +57,7 @@ export function clearMainTip(): void {
 
 /** Show the data-tip of the hovered element, appending its shortcut on desktop */
 export function showDataTip(event: Event): void {
-  const target = event.target as HTMLElement | null;
+  const target = (event.composedPath()[0] ?? event.target) as HTMLElement | null;
   if (!target) return;
 
   const parent = target.parentNode as HTMLElement | null;
