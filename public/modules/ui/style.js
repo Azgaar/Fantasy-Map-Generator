@@ -84,6 +84,27 @@ function getColor(value, scheme = getColorScheme("bright")) {
 // Toggle style sections on element select
 styleElementSelect.addEventListener("change", selectStyleElement);
 
+// label groups differ ~10x in font size, so the absolute sliders get a drag range fitted to the group;
+// values are stored unscaled and a stored value beyond the fitted range keeps the range wide enough
+const defaultRanges = {
+  strokeMax: styleStrokeWidthInput.getAttribute("max"),
+  spacingMin: styleLetterSpacingInput.getAttribute("min"),
+  spacingMax: styleLetterSpacingInput.getAttribute("max")
+};
+
+function fitLabelRanges(fontSize, attrs) {
+  const spacing = +attrs["letter-spacing"] || 0;
+  styleStrokeWidthInput.setAttribute("max", Math.max(rn(fontSize / 2, 2), +attrs["stroke-width"] || 0));
+  styleLetterSpacingInput.setAttribute("min", Math.min(-rn(fontSize / 10, 2), spacing));
+  styleLetterSpacingInput.setAttribute("max", Math.max(rn(fontSize / 2, 2), spacing));
+}
+
+function resetLabelRanges() {
+  styleStrokeWidthInput.setAttribute("max", defaultRanges.strokeMax);
+  styleLetterSpacingInput.setAttribute("min", defaultRanges.spacingMin);
+  styleLetterSpacingInput.setAttribute("max", defaultRanges.spacingMax);
+}
+
 // groups the editor addresses by name; everything else is styled as a whole
 const GROUPED_STYLE_ELEMENTS = ["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs"];
 
@@ -95,6 +116,7 @@ function selectStyleElement() {
   const el = d3.select("#" + styleElement);
 
   styleElements.querySelectorAll("tbody").forEach(e => (e.style.display = "none")); // hide all sections
+  resetLabelRanges();
 
   // show alert line if layer is not visible
   const isLayerOff = styleElement !== "ocean" && (el.style("display") === "none" || !el.selectAll("*").size());
@@ -274,13 +296,15 @@ function selectStyleElement() {
     styleSize.style.display = "block";
     styleFillInput.value = styleFillOutput.value = attrs.fill || "#3e3e4b";
     styleStrokeInput.value = styleStrokeOutput.value = attrs.stroke || "#3a3a3a";
+    const fontSize = parseFloat(attrs["font-size"]) || 18;
+    fitLabelRanges(fontSize, attrs);
     styleStrokeWidthInput.value = attrs["stroke-width"] ?? 0;
     styleLetterSpacingInput.value = attrs["letter-spacing"] ?? 0;
     styleShadowInput.value = getTextShadow(attrs.style);
 
     styleFont.style.display = "block";
     styleSelectFont.value = attrs["font-family"];
-    styleFontSize.value = parseFloat(attrs["font-size"]) || 18;
+    styleFontSize.value = fontSize;
 
     styleFontShift.style.display = "block";
     const { dx, dy } = getLabelShift(attrs.style);
@@ -973,6 +997,7 @@ function changeFontSize(el, size) {
   if (styleElementSelect.value === "labels") {
     el.attr("font-size", `${size}%`).attr("data-size", null);
     if (groupStyle) groupStyle.attrs["font-size"] = `${size}%`;
+    fitLabelRanges(size, groupStyle?.attrs || {});
     return;
   }
 
