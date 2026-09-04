@@ -29,7 +29,6 @@ import { ensureEl, findEl, getPointer, getRandomColor, isLand, P, rand, rn, si, 
 const dialogId = "provincesEditor" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 let filterState: { stateId: number };
-const dominantCultures = new Map<number, DominantCulture>();
 
 type DominantCulture = { cultureId: number; percentage: number };
 type ProvinceStatistics = {
@@ -49,7 +48,7 @@ type ProvinceStatisticsSource = {
     pop: ArrayLike<number>;
     burg: ArrayLike<number>;
   };
-  burgs: ArrayLike<Pick<Burg, "culture" | "population">>;
+  burgs: ArrayLike<Pick<Burg, "population">>;
   urbanization: number;
 };
 
@@ -63,16 +62,23 @@ export function collectProvinceStatistics({
 
   const addCulturePopulation = (provinceId: number, cultureId: number, population: number) => {
     if (!population) return;
-    const provinceCultures = culturePopulations.get(provinceId) ?? new Map<number, number>();
+    let provinceCultures = culturePopulations.get(provinceId);
+    if (!provinceCultures) {
+      provinceCultures = new Map<number, number>();
+      culturePopulations.set(provinceId, provinceCultures);
+    }
     provinceCultures.set(cultureId, (provinceCultures.get(cultureId) ?? 0) + population);
-    culturePopulations.set(provinceId, provinceCultures);
   };
 
   for (const cellId of cells.i) {
     const provinceId = cells.province[cellId];
     if (!provinceId) continue;
 
-    const provinceStatistics = statistics.get(provinceId) ?? { area: 0, rural: 0, urban: 0, burgs: [] };
+    let provinceStatistics = statistics.get(provinceId);
+    if (!provinceStatistics) {
+      provinceStatistics = { area: 0, rural: 0, urban: 0, burgs: [] };
+      statistics.set(provinceId, provinceStatistics);
+    }
     const cellCulture = cells.culture[cellId];
     const ruralPopulation = cells.pop[cellId];
     provinceStatistics.area += cells.area[cellId];
@@ -85,10 +91,8 @@ export function collectProvinceStatistics({
       const urbanPopulation = burg.population ?? 0;
       provinceStatistics.urban += urbanPopulation;
       provinceStatistics.burgs.push(burgId);
-      addCulturePopulation(provinceId, burg.culture ?? cellCulture, urbanPopulation * urbanization);
+      addCulturePopulation(provinceId, cellCulture, urbanPopulation * urbanization);
     }
-
-    statistics.set(provinceId, provinceStatistics);
   }
 
   for (const [provinceId, provinceCultures] of culturePopulations) {
@@ -144,10 +148,10 @@ const columns: EditorColumn<Province>[] = [
   {
     key: "culture",
     label: "Dominant Culture",
-    width: "9em",
+    width: "10em",
     mobileHidden: true,
     sortBy: province => {
-      const cultureId = dominantCultures.get(province.i)?.cultureId;
+      const cultureId = province.culture;
       return cultureId === undefined ? "" : pack.cultures[cultureId]?.name || "";
     },
     sortType: "alpha"
@@ -328,7 +332,6 @@ function refreshProvincesEditor(): void {
 function collectStatistics(): void {
   const { cells, provinces, burgs } = pack;
   const statistics = collectProvinceStatistics({ cells, burgs, urbanization });
-  dominantCultures.clear();
 
   provinces.forEach(p => {
     if (!p.i || p.removed) return;
@@ -337,7 +340,8 @@ function collectStatistics(): void {
     p.rural = provinceStatistics?.rural ?? 0;
     p.urban = provinceStatistics?.urban ?? 0;
     p.burgs = provinceStatistics?.burgs ?? [];
-    if (provinceStatistics?.dominantCulture) dominantCultures.set(p.i, provinceStatistics.dominantCulture);
+    p.culture = provinceStatistics?.dominantCulture?.cultureId;
+    p.cultureShare = provinceStatistics?.dominantCulture?.percentage;
     if ((p.burg && !burgs[p.burg]) || burgs[p.burg]?.removed) p.burg = 0;
     if (!p.burg && p.burgs!.length) p.burg = p.burgs![0];
   });
@@ -384,11 +388,11 @@ function renderProvincesPage(view: TableView<Province>): void {
       const population = getProvincePopulation(p);
       const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}`;
       const stateName = pack.states[p.state].name;
-      const dominantCulture = dominantCultures.get(p.i);
-      const cultureName = dominantCulture ? pack.cultures[dominantCulture.cultureId]?.name || "" : "";
-      const cultureTip = dominantCulture
-        ? `Dominant culture: ${cultureName} (${rn(dominantCulture.percentage, 1)}% of province population)`
-        : "No dominant culture: the province has no population";
+      const cultureName = p.culture === undefined ? "" : pack.cultures[p.culture]?.name || "";
+      const cultureTip =
+        p.culture === undefined
+          ? "No dominant culture: the province has no population"
+          : `Dominant culture: ${cultureName} (${rn(p.cultureShare!, 1)}% of province population)`;
       const separable = p.burg && p.burg !== pack.states[p.state].capital;
       const focused = select<SVGElement, unknown>("#deftemp").select(`#fog #focusProvince${p.i}`).size();
       EmblemRenderer.trigger(`provinceCOA${p.i}`, p.coa);
@@ -757,7 +761,7 @@ function editProvinceName(province: number): void {
   applyOption(ensureEl("provinceNameEditorSelectForm"), p.formName);
   ensureEl<HTMLInputElement>("provinceNameEditorFull").value = p.fullName;
 
-  const cultureId = pack.cells.culture[p.center];
+  const cultureId = p.culture ?? pack.cells.culture[p.center];
   ensureEl("provinceCultureDisplay").innerText = pack.cultures[cultureId].name;
 
   $("#provinceNameEditor").dialog({
@@ -895,7 +899,8 @@ function closeProvinceNameEditor(): void {
 
 function regenerateShortNameCulture(): void {
   const province = +ensureEl("provinceNameEditor").dataset.province!;
-  const culture = pack.cells.culture[pack.provinces[province].center];
+  const p = pack.provinces[province];
+  const culture = p.culture ?? pack.cells.culture[p.center];
   const name = Names.getState(Names.getCultureShort(culture), culture);
   ensureEl<HTMLInputElement>("provinceNameEditorShort").value = name;
 }
@@ -1292,11 +1297,12 @@ function recolorProvinces(): void {
 
 function downloadProvincesData(): void {
   const unit = areaUnit.value === "square" ? `${distanceUnitInput.value}2` : areaUnit.value;
-  let data = `Id,Province,Full Name,Form,State,Color,Capital,Area ${unit},Total Population,Rural Population,Urban Population,Burgs\n`; // headers
+  let data = `Id,Province,Full Name,Form,State,Color,Capital,Dominant Culture,Area ${unit},Total Population,Rural Population,Urban Population,Burgs\n`; // headers
 
   for (const province of getProvincesData()) {
     const capital = province.burg ? pack.burgs[province.burg].name : "";
-    data += `${province.i},${province.name},${province.fullName},${province.formName},${pack.states[province.state].name},${province.color},${capital},${getProvinceArea(province)},${getProvincePopulation(province)},${Math.round(province.rural! * populationRate)},${Math.round(province.urban! * populationRate * urbanization)},${province.burgs!.length}\n`;
+    const culture = province.culture === undefined ? "" : pack.cultures[province.culture]?.name || "";
+    data += `${province.i},${province.name},${province.fullName},${province.formName},${pack.states[province.state].name},${province.color},${capital},${culture},${getProvinceArea(province)},${getProvincePopulation(province)},${Math.round(province.rural! * populationRate)},${Math.round(province.urban! * populationRate * urbanization)},${province.burgs!.length}\n`;
   }
 
   const name = `${getFileName("Provinces")}.csv`;

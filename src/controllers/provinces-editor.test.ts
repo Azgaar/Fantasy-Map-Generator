@@ -12,7 +12,7 @@ describe("provinces editor statistics", () => {
         pop: Float32Array.from([60, 50, 0]),
         burg: Uint16Array.from([1, 0, 0])
       },
-      burgs: [{}, { culture: 2, population: 10 }],
+      burgs: [{}, { population: 10 }],
       urbanization: 2
     });
 
@@ -21,7 +21,7 @@ describe("provinces editor statistics", () => {
       rural: 110,
       urban: 10,
       burgs: [1],
-      dominantCulture: { cultureId: 2, percentage: (70 / 130) * 100 }
+      dominantCulture: { cultureId: 1, percentage: (80 / 130) * 100 }
     });
     expect(statistics.get(2)).toEqual({ area: 30, rural: 0, urban: 0, burgs: [] });
   });
@@ -41,5 +41,22 @@ describe("provinces editor statistics", () => {
     });
 
     expect(statistics.get(1)?.dominantCulture).toEqual({ cultureId: 1, percentage: 50 });
+  });
+
+  test("treats culture 0 as a valid dominant culture", () => {
+    const statistics = collectProvinceStatistics({
+      cells: {
+        i: [0],
+        province: Uint16Array.from([1]),
+        culture: Uint16Array.from([0]),
+        area: Uint16Array.from([1]),
+        pop: Float32Array.from([10]),
+        burg: Uint16Array.from([0])
+      },
+      burgs: [{}],
+      urbanization: 1
+    });
+
+    expect(statistics.get(1)?.dominantCulture).toEqual({ cultureId: 0, percentage: 100 });
   });
 });

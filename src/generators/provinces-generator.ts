@@ -28,6 +28,8 @@ export interface Province {
   rural?: number;
   urban?: number;
   burgs?: number[];
+  culture?: number;
+  cultureShare?: number;
 }
 
 class ProvinceModule {
