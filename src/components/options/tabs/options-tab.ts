@@ -7,6 +7,7 @@ import type { OptionsData } from "@/components/options-schema";
 import { PINNABLE } from "@/components/pinnable";
 import { generateMapWithSeed, showSeedHistoryDialog } from "@/components/seed";
 import { tip } from "@/components/tooltips";
+import { viewport } from "@/components/viewport";
 import { setMapZoom, setTranslateExtent, setZoomExtent } from "@/components/zoom";
 import { Controllers } from "@/controllers";
 import { heightmapTemplates } from "@/data/heightmap-templates";
@@ -365,7 +366,7 @@ const TEMPLATE = /* html */ `
       </td>
     </tr>
     <tr
-      data-tip="Size of the map window on screen. Independent of the map size: it is how much of the map you see at once, and nothing remembers it between sessions"
+      data-tip="Size of the map window on screen. Independent of the map size: it is how much of the map you see at once. Set by hand it is remembered, until you fit it back to the window"
     >
       <td>
         <i data-tip="Fit the viewport to the browser window" id="viewportFit" class="icon-ccw"></i>
@@ -556,8 +557,7 @@ function addListeners(): void {
 
   content.addEventListener("input", event => {
     const { id, value } = event.target as HTMLInputElement;
-    if (id === "mapWidthInput" || id === "mapHeightInput") onMapSizeChange();
-    else if (id === "pointsInput") changeCellsDensity(+value);
+    if (id === "pointsInput") changeCellsDensity(+value);
     else if (id === "culturesSet") changeCultureSet(value);
     else if (id === "statesNumber") changeStatesNumber(+value);
     else if (id === "emblemShape") changeEmblemShape(value);
@@ -573,7 +573,9 @@ function addListeners(): void {
 
   content.addEventListener("change", event => {
     const { id, value } = event.target as HTMLInputElement;
-    if (id === "viewportWidth" || id === "viewportHeight") changeViewportSize();
+    // on change, not on input: a half-typed number is not a size the user asked to pin
+    if (id === "mapWidthInput" || id === "mapHeightInput") onMapSizeChange();
+    else if (id === "viewportWidth" || id === "viewportHeight") changeViewportSize();
     else if (id === "zoomExtentMin" || id === "zoomExtentMax") changeZoomExtent(value);
     else if (id === "seedInput") generateMapWithSeed();
     else if (id === "uiSize") changeUiSize(+value);
@@ -587,7 +589,7 @@ function addListeners(): void {
     else if (target.id === "optionsMapHistory") showSeedHistoryDialog();
     else if (target.id === "optionsCopySeed") copyMapURL();
     else if (target.id === "templateInputContainer") Controllers.HeightmapSelection.open();
-    else if (target.id === "viewportFit") fitMapToScreen();
+    else if (target.id === "viewportFit") fitViewportToWindow();
     else if (target.id === "zoomExtentDefault") restoreDefaultZoomExtent();
     else if (target.id === "translateExtent") toggleTranslateExtent(target);
     else if (target.id === "speakerTest") testSpeaker();
@@ -667,9 +669,19 @@ const inputFor = (key: string) => findEl<HTMLInputElement>(`${key}Input`) ?? fin
 
 /** The extent the next map is generated on: not the window it will be looked at through */
 function onMapSizeChange(): void {
+  // a pin outlives the control, so it cannot hold what the input's own `min` would have rejected
+  const asked = (id: string) => {
+    const input = ensureEl<HTMLInputElement>(id);
+    const value = Math.max(+input.value || 0, +input.min || 1);
+    input.value = String(value);
+    return value;
+  };
+  const width = asked("mapWidthInput");
+  const height = asked("mapHeightInput");
+
   Options.set(o => {
-    o.generation.graph.width = +ensureEl<HTMLInputElement>("mapWidthInput").value;
-    o.generation.graph.height = +ensureEl<HTMLInputElement>("mapHeightInput").value;
+    o.generation.graph.width = width;
+    o.generation.graph.height = height;
   });
   // the map on screen keeps the extent its graph was built on - this asks for the next one
   lock("mapWidth");
@@ -882,6 +894,13 @@ function changeViewportSize(): void {
   if (!(width > 0) || !(height > 0)) return;
 
   setViewport(Math.min(width, facts.graph.width), Math.min(height, facts.graph.height));
+  Options.set(o => (o.app.viewport = { width: viewport.width, height: viewport.height }));
+}
+
+/** Back to following the browser window, which is what the viewport does until it is set by hand */
+function fitViewportToWindow(): void {
+  Options.set(o => (o.app.viewport = null));
+  fitMapToScreen();
 }
 
 function restoreDefaultZoomExtent(): void {
@@ -929,9 +948,11 @@ function loadVoices(): void {
   }, 1000);
 }
 
+/** A fixed line, so the test says something about the voice rather than about the map */
+const SPEAKER_TEST = "The quick brown fox jumps over the lazy dog";
+
 function testSpeaker(): void {
-  const { year, era } = facts.lore.calendar;
-  const speech = new SpeechSynthesisUtterance(`${facts.lore.name}, ${year} ${era}`);
+  const speech = new SpeechSynthesisUtterance(SPEAKER_TEST);
   const voices = speechSynthesis.getVoices();
   if (voices.length) speech.voice = voices[Number(options.app.ui.speakerVoice)] ?? speech.voice;
   speechSynthesis.speak(speech);
@@ -978,8 +999,7 @@ function restoreLegacyStylePresets(): void {
   }
 }
 
-/** The interface size a browser that has never chosen one gets: the map's own extent, scaled */
-const defaultUiSize = (): number => minmax(rn(facts.graph.width / 1280, 1), 1, 2.5);
+const defaultUiSize = (): number => minmax(rn(window.innerWidth / 1280, 1), 1, maxUiSize());
 
 export function restoreUi(): void {
   const template = options.generation.template;

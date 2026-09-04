@@ -1,3 +1,4 @@
+import { isMobile } from "@/services/platform";
 import { debounce, ensureEl, findEl } from "@/utils";
 
 type TipType = "info" | "success" | "warn" | "error";
@@ -65,7 +66,7 @@ export function showDataTip(event: Event): void {
   if (!dataTip) return;
 
   const shortcut = target.dataset.shortcut;
-  if (shortcut && !MOBILE) dataTip += `. Shortcut: ${shortcut}`;
+  if (shortcut && !isMobile()) dataTip += `. Shortcut: ${shortcut}`;
 
   tip(dataTip);
 }

@@ -1,4 +1,6 @@
 // The Desktop App dialog: what the app is and which file this visitor needs
+import { isMobile } from "./platform";
+
 const RELEASES_API = "https://api.github.com/repos/Azgaar/Fantasy-Map-Generator/releases/latest";
 const RELEASES_PAGE = "https://github.com/Azgaar/Fantasy-Map-Generator/releases/latest";
 
@@ -43,7 +45,7 @@ async function open(): Promise<void> {
 /** A narrow desktop window is not a phone: ask the device before trusting the viewport width */
 function isHandheld(): boolean {
   const mobile = (navigator as any).userAgentData?.mobile;
-  return mobile ?? (MOBILE && matchMedia("(pointer: coarse)").matches);
+  return mobile ?? (isMobile() && matchMedia("(pointer: coarse)").matches);
 }
 
 /** Which file this visitor needs, so that nobody has to know what an architecture is */

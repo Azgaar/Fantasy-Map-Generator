@@ -4,7 +4,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { isLocked, lock } from "@/utils/preferences";
 import { getDefaultFacts } from "./facts-model";
-import { CELLS_BY_DENSITY, getDefaultOptions } from "./options-model";
+import { getDefaultOptions, POINTS_BY_DENSITY } from "./options-model";
 
 const UNIT = { icon: "u", name: "cavalry", rural: 0.2, urban: 0.1, crew: 2, power: 1, type: "melee", separate: 0 };
 const DEFAULT_UNITS = [{ ...UNIT, name: "the module default" }];
@@ -229,7 +229,7 @@ describe("a lock stands for something", () => {
 
     expect(facts.graph.width).toBe(1600);
     expect(facts.graph.height).toBe(900);
-    expect(facts.graph.points).toBe(CELLS_BY_DENSITY[6]);
+    expect(facts.graph.points).toBe(POINTS_BY_DENSITY[6]);
   });
 });
 
@@ -426,5 +426,22 @@ describe("an editor's Restore asks the model, rather than keeping its own copy",
     Facts.set(f => (f.units = modelDefaults().units)); // what the editor's Restore does
     expect(facts.units).toEqual(modelDefaults().units);
     expect(facts.units.height.exponent).toBe(2);
+  });
+});
+
+describe("a preference nobody has set is null", () => {
+  it("leaves the viewport and the interface size unset until someone chooses", () => {
+    const { app } = getDefaultOptions();
+    expect(app.viewport).toBeNull();
+    expect(app.ui.size).toBeNull();
+  });
+
+  it("remembers a viewport the user set, and survives a map load like any other preference", () => {
+    Options.set(o => (o.app.viewport = { width: 900, height: 600 }));
+    Options.persist();
+
+    load(savedFile(f => (f.lore.name = "another map")));
+    expect(options.app.viewport).toEqual({ width: 900, height: 600 });
+    expect(JSON.parse(localStorage.getItem("fmg-options")!).app.viewport).toEqual({ width: 900, height: 600 });
   });
 });

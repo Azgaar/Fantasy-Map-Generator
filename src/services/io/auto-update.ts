@@ -1936,8 +1936,10 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
   if (oldOptions.era) migrated.lore.calendar.era = oldOptions.era;
   if (oldOptions.eraShort) migrated.lore.calendar.eraShort = oldOptions.eraShort;
 
-  // v1.140.0 moved the label settings into the labels options, the naming mode onto the state group
-  if (oldSettings[21]) migrated.labels.showAll = !Number(oldSettings[21]);
+  // v1.140.0 moved the label settings into the labels options, the naming mode onto the state group.
+  // Slot 21 was the "Hide small labels" checkbox, the same culling `showAll` turns off, so the two
+  // are inverses - and "0" is a value the slot carries, not an absent one
+  if (oldSettings[21] !== undefined && oldSettings[21] !== "") migrated.labels.showAll = !Number(oldSettings[21]);
   if (oldSettings[23]) migrated.labels.resizeOnZoom = Boolean(Number(oldSettings[23]));
   const stateGroup = migrated.labels.groups.find(group => group.type === "state");
   if (stateGroup && oldOptions.stateLabelsMode) stateGroup.mode = oldOptions.stateLabelsMode;

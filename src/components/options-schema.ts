@@ -67,6 +67,8 @@ export const optionsSchema = z.strictObject({
     rendering: z.string(), // the svg shape-rendering the viewbox is drawn with
     onLoad: z.string(), // what the app does with no map asked for: "random" or "lastSaved"
     zoomExtent: z.strictObject({ min: z.number(), max: z.number() }),
+    // the map window on screen. null until the user sets one: it then follows the browser window
+    viewport: z.strictObject({ width: z.number().positive(), height: z.number().positive() }).nullable(),
     autosave: z.strictObject({ interval: z.number(), remind: z.boolean() }), // interval in minutes, 0 is off
     ui: z.strictObject({
       size: z.number().nullable(), // null until the user picks one: the interface follows the extent

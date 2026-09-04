@@ -3,7 +3,7 @@ import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { registerMap, undraw } from "@/components/lifecycle";
 import { cellsDensityColor, changeCellsDensity } from "@/components/options/tabs/options-tab";
-import { CELLS_BY_DENSITY } from "@/components/options-model";
+import { POINTS_BY_DENSITY } from "@/components/options-model";
 import { Resample } from "@/generators/resample";
 import { logStats } from "@/services/logging";
 import { ensureEl, rn } from "../utils";
@@ -38,7 +38,7 @@ function renderDialog(): void {
   destroyDialog("transformTool");
 
   const pointsValue = String(options.generation.graph.density);
-  const cells = CELLS_BY_DENSITY[+pointsValue];
+  const cells = POINTS_BY_DENSITY[+pointsValue];
 
   const html = /* html */ `<div id="transformTool" class="dialog">
     <div style="padding-top: 0.5em; width: 40em; font-weight: bold">
@@ -132,7 +132,7 @@ async function loadPreview(): Promise<void> {
 }
 
 function handlePointsInput(e: Event): void {
-  const cells = CELLS_BY_DENSITY[+(e.target as HTMLInputElement).value];
+  const cells = POINTS_BY_DENSITY[+(e.target as HTMLInputElement).value];
   const output = ensureEl<HTMLOutputElement>("transformPointsFormatted");
   output.value = `${cells / 1000}K`;
   output.style.color = cellsDensityColor(cells);

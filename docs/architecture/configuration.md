@@ -141,7 +141,7 @@ Three parts with one storage location and one schema:
 | Part                     | Lives in            | Contents                                                                                                                                                            | Notes                                                     |
 | ------------------------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
 | **Requests**             | `options.generation` | the graph to build (extent and density), entity counts, ratios, rates and varieties, culture set and template for the next map                                      | consumed by generation; what it keeps is written to `facts` |
-| **Preferences**          | `options.app`       | 3D settings, animation settings, notes pinning, emblem visibility and shape, interface size, theme, tooltip size, autosave, on-load behaviour, rendering, zoom extent | take effect immediately, affect nothing generated         |
+| **Preferences**          | `options.app`       | 3D settings, animation settings, notes pinning, emblem visibility and shape, interface size, theme, tooltip size, autosave, on-load behaviour, rendering, zoom extent, viewport size | take effect immediately, affect nothing generated         |
 | **Preservation library** | `options.library`   | the user's own definition sets, kept for the next map                                                                                                               | see [Preservation](#preservation-across-maps)             |
 
 Also transient editor state that has nowhere better to live (a live "growth modifier" slider, for
@@ -156,6 +156,11 @@ the preset libraries below, which are lists rather than fields.
 **A preference has no lock.** Nothing re-rolls it, so there is nothing to pin it against — pinning
 an option the [locks](#locks) cannot answer for stores nothing and lights an icon that stands for
 nothing. Locks belong to requests, and to the facts that have no request.
+
+**A preference the user has not set is `null`, not a guess.** Interface size follows the screen
+and the viewport follows the window until someone chooses otherwise; storing the derived value
+instead would freeze today's window into a setting the user never asked for. The control's reset
+puts the field back to `null` rather than to a number.
 
 **Applying a preference is not writing it.** The function that paints the dialogs, sizes the
 interface or re-renders the map takes the value; it does not decide it. Where several controls edit
@@ -315,6 +320,30 @@ A migration describes a world that no longer exists, so it **carries its own cop
 and never leans on the live schema**. Renaming a field today must not change what an old file
 means. Migrations run at the boundary, before validation, and produce a current-shaped object.
 
+A `.map` file is a migration's job because the user cannot re-make it. This browser's stored
+settings are not: they are one panel away, and a migration that carries them forward is code that
+outlives the world it describes. So the two are migrated to different depths.
+
+#### What `localStorage` carries forward, and what it does not
+
+Before `fmg-options`, every preference and every pin had a `localStorage` key of its own, named
+after the control that showed it — and `lock(id)` wrote the pinned value _into that key_, so the
+keys **were** the locks. `adoptLegacyKeys` in `src/components/options-model.ts` takes the sixteen
+preference keys into `options.app` and then removes the whole namespace, pins included.
+
+**Dropping the old pins is deliberate.** A pin is a claim about a value's shape as well as its
+name, and the old keys carry neither: `template` held a heightmap id whose vocabulary has since
+changed, `points` a raw cell count where a density step lives now, `cultures` a number the culture
+set caps. Re-typing thirty-odd strings against `PINNABLE` to restore a preference the user can
+re-pin with one click is a migration that would then have to be kept correct forever. A returning
+user gets the defaults, generates a map, and pins again — the loss is one session's convenience,
+and the namespace is gone for good rather than half-read on every boot afterwards.
+
+The sixteen preferences are adopted rather than dropped because nothing in the UI puts them back:
+a theme colour or an interface size is a setting the user chose once and would not think to look
+for. That is the line — **a value the user would re-set without noticing is dropped, a value they
+would miss is adopted.**
+
 ---
 
 ## Adding a configuration value
@@ -362,6 +391,8 @@ These are the properties the design exists to guarantee, and the ones worth asse
   are not — name them differently and let them diverge.
 - **Extent is not viewport.** The extent is the coordinate space the map's geometry lives in, is
   fixed for the life of its graph, and is asked for — before the map exists — by
-  `options.generation.graph`. The viewport is the screen window onto it, and is neither a fact nor
-  a preference: it is session state that nothing persists. They are two controls in two places, in
-  two different sections of the panel, and a panel that shows one as the other is a bug.
+  `options.generation.graph`. The viewport is the screen window onto it: never a fact, because it
+  describes this browser rather than the map, and a preference only once the user sets one by hand
+  — `null` until then, meaning "follow the browser window". Either way the extent bounds it. They
+  are two controls in two places, in two different sections of the panel, and a panel that shows
+  one as the other is a bug.

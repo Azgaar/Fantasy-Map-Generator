@@ -15,12 +15,9 @@ declare global {
 }
 
 export const STORAGE_KEY = "fmg-options";
-
-/** pale magenta: the theme every dialog starts from */
 export const THEME_COLOR = "#997787";
-
-/** cells the grid is built from, per density step of the Points slider */
-export const CELLS_BY_DENSITY: Record<number, number> = {
+export const DEFAULT_DENSITY = 4;
+export const POINTS_BY_DENSITY: Record<number, number> = {
   1: 1000,
   2: 2000,
   3: 5000,
@@ -35,12 +32,8 @@ export const CELLS_BY_DENSITY: Record<number, number> = {
   12: 90000,
   13: 100000
 };
-export const DEFAULT_DENSITY = 4;
 
-/**
- * A fresh browser's options. Every value the app starts from is defined here or by the module that
- * owns the concept - never twice. See docs/architecture/configuration.md
- */
+/** A fresh browser's options */
 export function getDefaultOptions(): OptionsData {
   return {
     generation: {
@@ -61,6 +54,7 @@ export function getDefaultOptions(): OptionsData {
       rendering: "optimizeSpeed",
       onLoad: "random",
       zoomExtent: { min: 1, max: 20 },
+      viewport: null,
       autosave: { interval: 15, remind: true },
       ui: {
         size: null,
@@ -166,7 +160,7 @@ function adoptLegacyKeys(): void {
 
 /** The `localStorage` keys of the pre-`fmg-options` world: preferences, and the pins beside them */
 const LEGACY_KEYS = [
-  // preferences, adopted above
+  // preferences, adopted above: nothing in the UI puts these back, so the user would miss them
   "uiSize",
   "tooltipSize",
   "transparency",
@@ -183,7 +177,10 @@ const LEGACY_KEYS = [
   "tileScale",
   "noReminder",
   "disable_click_arrow_tooltip",
-  // requests and facts, which the objects answer for and a lock pins
+  // requests and facts. In that world these keys were the locks, holding the pinned value itself;
+  // they are dropped rather than re-typed into `fmg-locks` - a pin is one click to re-make, and a
+  // migration of them would outlive the vocabulary they were written in.
+  // See docs/architecture/configuration.md#what-localstorage-carries-forward-and-what-it-does-not
   "mapWidth",
   "mapHeight",
   "points",
@@ -286,9 +283,8 @@ function setDensity(density: number): void {
   globalThis.options.generation.graph.density = density;
 }
 
-/** Cells the next map's grid is built from: what the density step resolves to, derived on demand */
-export function cellsFor(density: number): number {
-  return CELLS_BY_DENSITY[density] ?? CELLS_BY_DENSITY[DEFAULT_DENSITY];
+export function getPointsNumber(density: number): number {
+  return POINTS_BY_DENSITY[density] ?? POINTS_BY_DENSITY[DEFAULT_DENSITY];
 }
 
 /** A culture set holds a fixed number of cultures: the map cannot ask for more than it has */
@@ -371,7 +367,7 @@ export const Options = {
   syncOnLoad,
   randomize,
   setDensity,
-  cellsFor,
+  cellsFor: getPointsNumber,
   capCultures,
   setSizeVariety,
   isAutoBurgLimit,

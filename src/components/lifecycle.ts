@@ -92,8 +92,9 @@ export const regenerateMap = debounce(async (config?: GenerationConfig | string)
   const reason = typeof config === "string" ? config : "user request";
   WARN && console.warn(`Generate new random map: ${reason}`);
 
-  // a big grid takes long enough that the splash is worth showing
-  const shouldShowLoading = facts.graph.points > 10000;
+  // a big grid takes long enough that the splash is worth showing. The size asked for, not the
+  // one on screen: the map being replaced says nothing about how long the next one will take
+  const shouldShowLoading = Options.cellsFor(options.generation.graph.density) > 10000;
   shouldShowLoading && showLoading();
 
   closeDialogs("#worldConfigurator, #options3d");
@@ -148,7 +149,7 @@ interface MapHistoryEntry {
 // every map this session put on screen, oldest first; the last one is what is on screen now
 globalThis.mapHistory = [];
 
-/** Take note of a map that is now on screen */
+/** Take note of a map that is now on screen, and announce it */
 export function registerMap(created: number = Date.now()): void {
   mapHistory.push({
     seed: facts.seed,
@@ -157,6 +158,9 @@ export function registerMap(created: number = Date.now()): void {
     template: options.generation.template,
     created: created
   });
+
+  // the public seam test automation and external integrations wait on; the id is the creation date
+  window.dispatchEvent(new CustomEvent("map:generated", { detail: { seed: facts.seed, mapId: created } }));
 }
 
 /** Clear the map: every layer, the transient defs and the notes that described what was there */
