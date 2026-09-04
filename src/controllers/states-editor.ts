@@ -1,4 +1,5 @@
-import { interpolateString, max, pack as packLayout, select, stratify } from "d3";
+import { max, pack as packLayout, select, stratify } from "d3";
+import { createAnnexMode } from "@/components/annex-mode";
 import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
@@ -22,7 +23,7 @@ import { redrawEmblem, redrawEmblems, removeEmblem } from "@/renderers/draw-embl
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { fog, unfog } from "@/renderers/overlays/fogging";
-import { highlightElement } from "@/renderers/overlays/highlight";
+import { highlightElement, highlightOutline } from "@/renderers/overlays/highlight";
 import { applyOption, downloadFile, getArea, getAreaUnit, getFileName, speak } from "@/utils";
 import {
   ensureEl,
@@ -203,6 +204,7 @@ function renderDialog(): void {
 
       <button id="statesAdd" data-tip="Add a new state. Hold Shift to add multiple" class="icon-plus"></button>
       <button id="statesMerge" data-tip="Merge several states into one" class="icon-layer-group"></button>
+      <button id="statesAnnex" data-tip="Annex states: click the annexing state, then the states it absorbs. Hold Shift to keep annexing" class="icon-crown"></button>
       <button id="statesExport" data-tip="Save state-related data as a text file (.csv)" class="icon-download"></button>
     </div>
   </div>`;
@@ -229,6 +231,7 @@ function renderDialog(): void {
   ensureEl("statesManually").addEventListener("click", openPaintEditor);
   ensureEl("statesAdd").addEventListener("click", enterAddStateMode);
   ensureEl("statesMerge").addEventListener("click", openStateMergeDialog);
+  ensureEl("statesAnnex").addEventListener("click", statesAnnex.toggle);
   ensureEl("statesExport").addEventListener("click", downloadStatesCsv);
 
   ensureEl("statesBodySection").addEventListener("click", event => {
@@ -267,6 +270,7 @@ function renderDialog(): void {
 
 function closeStatesEditor(): void {
   if (customization === 3) exitAddStateMode();
+  statesAnnex.exit();
   select("#debug").selectAll(".highlight").remove();
   destroyDialog(dialogId);
 }
@@ -480,25 +484,7 @@ function stateHighlightOn(event: any): void {
 
   const state = +event.target.dataset.id;
   if (customization || !state) return;
-  const d = select("#regions").select(`#state${state}`).attr("d");
-
-  const path = select("#debug")
-    .append("path")
-    .attr("class", "highlight")
-    .attr("d", d)
-    .attr("fill", "none")
-    .attr("stroke", "red")
-    .attr("stroke-width", 1)
-    .attr("opacity", 1)
-    .attr("filter", "url(#blur1)");
-
-  const totalLength = (path.node() as SVGPathElement).getTotalLength();
-  const duration = (totalLength + 5000) / 2;
-  const interpolate = interpolateString(`0, ${totalLength}`, `${totalLength}, ${totalLength}`);
-  path
-    .transition()
-    .duration(duration)
-    .attrTween("stroke-dasharray", () => interpolate);
+  highlightOutline(select("#regions").select(`#state${state}`).attr("d"));
 }
 
 function stateHighlightOff(): void {
@@ -1588,9 +1574,10 @@ function exitAddStateMode(): void {
   if (statesAdd.classList.contains("pressed")) statesAdd.classList.remove("pressed");
 }
 
+const stateEmblem = (i: number) =>
+  /* html */ `<svg class="coaIcon" viewBox="0 0 200 200"><use href="#stateCOA${i}"></use></svg>`;
+
 function openStateMergeDialog(): void {
-  const emblem = (i: number) =>
-    /* html */ `<svg class="coaIcon" viewBox="0 0 200 200"><use href="#stateCOA${i}"></use></svg>`;
   const validStates = pack.states.filter(s => s.i && !s.removed);
 
   const statesSelector = validStates
@@ -1599,7 +1586,7 @@ function openStateMergeDialog(): void {
       <div data-id="${s.i}" data-tip="${s.fullName}" style="cursor:default">
         <input type="radio" name="rulingState" value="${s.i}" />
         <input id="selectState${s.i}" class="checkbox" type="checkbox" name="statesToMerge" value="${s.i}" />
-        <label for="selectState${s.i}" class="checkbox-label"><fill-box fill="${s.color}" disabled></fill-box>${emblem(s.i)}${s.fullName}</label>
+        <label for="selectState${s.i}" class="checkbox-label"><fill-box fill="${s.color}" disabled></fill-box>${stateEmblem(s.i)}${s.fullName}</label>
       </div>
     `
     )
@@ -1634,24 +1621,7 @@ function openStateMergeDialog(): void {
     if (!d) return;
 
     stateHighlightOff();
-
-    const path = select("#debug")
-      .append("path")
-      .attr("class", "highlight")
-      .attr("d", d)
-      .attr("fill", "none")
-      .attr("stroke", "red")
-      .attr("stroke-width", 1)
-      .attr("opacity", 1)
-      .attr("filter", "url(#blur1)");
-
-    const totalLength = (path.node() as SVGPathElement).getTotalLength();
-    const duration = (totalLength + 5000) / 2;
-    const interpolate = interpolateString(`0, ${totalLength}`, `${totalLength}, ${totalLength}`);
-    path
-      .transition()
-      .duration(duration)
-      .attrTween("stroke-dasharray", () => interpolate);
+    highlightOutline(d);
   }
 
   $("#alert").dialog({
@@ -1667,7 +1637,6 @@ function openStateMergeDialog(): void {
           tip("Please select a state to merge into", false, "error");
           return;
         }
-        const rullingState = pack.states[rulingStateId];
 
         const statesToMerge = formData
           .getAll("statesToMerge")
@@ -1678,96 +1647,112 @@ function openStateMergeDialog(): void {
           return;
         }
 
-        confirmationDialog({
-          title: "Merge states",
-          // prettier-ignore
-          message: /* html */ `
-            <p>The following states will be <strong>removed</strong>: ${statesToMerge.map(stateId => `${emblem(stateId)}${(pack.states)[stateId].name}`).join(", ")}.</p>
-            <p>Removed states data (burgs, provinces, regiments) will be assigned to ${emblem(rullingState.i)}${rullingState.name}.</p>
-            <p>Are you sure you want to merge states? This action cannot be reverted.</p>`,
-          confirm: "Merge",
-          onConfirm: () => {
-            mergeStates(statesToMerge, rulingStateId);
-            $(this).dialog("close");
-          }
-        });
+        confirmStatesMerge(statesToMerge, rulingStateId, () => $(this).dialog("close"));
       },
       Cancel: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }
   });
+}
 
-  function mergeStates(statesToMerge: number[], rulingStateId: number) {
-    const rulingState = pack.states[rulingStateId];
-    const rulingStateArmy = ensureEl(`army${rulingStateId}`);
+function confirmStatesMerge(statesToMerge: number[], rulingStateId: number, onConfirm?: () => void): void {
+  const rulingState = pack.states[rulingStateId];
+  confirmationDialog({
+    title: "Merge states",
+    // prettier-ignore
+    message: /* html */ `
+      <p>The following states will be <strong>removed</strong>: ${statesToMerge.map(stateId => `${stateEmblem(stateId)}${(pack.states)[stateId].name}`).join(", ")}.</p>
+      <p>Removed states data (burgs, provinces, regiments) will be assigned to ${stateEmblem(rulingState.i)}${rulingState.name}.</p>
+      <p>Are you sure you want to merge states? This action cannot be reverted.</p>`,
+    confirm: "Merge",
+    onConfirm: () => {
+      mergeStates(statesToMerge, rulingStateId);
+      onConfirm?.();
+    }
+  });
+}
 
-    // remove states to be merged
-    statesToMerge.forEach(stateId => {
-      const state = pack.states[stateId];
-      state.removed = true;
+const statesAnnex = createAnnexMode({
+  buttonId: "statesAnnex",
+  bodySectionId: "statesBodySection",
+  mode: 17,
+  noun: "state",
+  ownerOf: cellId => pack.cells.state[cellId],
+  colorOf: stateId => pack.states[stateId].color ?? "#999999",
+  nameOf: stateId => pack.states[stateId].name,
+  commit: (rulingStateId, statesToMerge) => confirmStatesMerge(statesToMerge, rulingStateId)
+});
 
-      select("#statesBody").select(`#state${stateId}`).remove();
-      select("#statesBody").select(`#state-gap${stateId}`).remove();
-      select("#statesHalo").select(`#state-border${stateId}`).remove();
-      delete pack.states[stateId].label;
+function mergeStates(statesToMerge: number[], rulingStateId: number): void {
+  const rulingState = pack.states[rulingStateId];
+  const rulingStateArmy = ensureEl(`army${rulingStateId}`);
 
-      removeEmblem("state", stateId);
+  // remove states to be merged
+  statesToMerge.forEach(stateId => {
+    const state = pack.states[stateId];
+    state.removed = true;
 
-      // add merged state regiments to the ruling state
-      (state.military || []).forEach((regiment: any) => {
-        const oldId = `regiment${stateId}-${regiment.i}`;
-        const newIndex = (rulingState.military || []).length;
-        (rulingState.military || []).push({ ...regiment, i: newIndex });
-        const newId = `regiment${rulingStateId}-${newIndex}`;
+    select("#statesBody").select(`#state${stateId}`).remove();
+    select("#statesBody").select(`#state-gap${stateId}`).remove();
+    select("#statesHalo").select(`#state-border${stateId}`).remove();
+    delete pack.states[stateId].label;
 
-        const note = notes.find(n => n.id === oldId);
-        if (note) note.id = newId;
+    removeEmblem("state", stateId);
 
-        const element = document.getElementById(oldId);
-        if (element) {
-          element.id = newId;
-          element.dataset.state = String(rulingStateId);
-          element.dataset.id = String(newIndex);
-          rulingStateArmy.appendChild(element);
-        }
-      });
+    // add merged state regiments to the ruling state
+    (state.military || []).forEach((regiment: any) => {
+      const oldId = `regiment${stateId}-${regiment.i}`;
+      const newIndex = (rulingState.military || []).length;
+      (rulingState.military || []).push({ ...regiment, i: newIndex });
+      const newId = `regiment${rulingStateId}-${newIndex}`;
 
-      select(`#armies g#army${stateId}`).remove();
-    });
+      const note = notes.find(n => n.id === oldId);
+      if (note) note.id = newId;
 
-    // reassing burgs
-    pack.burgs.forEach(burg => {
-      if (statesToMerge.includes(burg.state ?? 0)) {
-        if (burg.capital) {
-          burg.capital = 0;
-          Burgs.changeGroup(burg, null);
-        }
-        burg.state = rulingStateId;
+      const element = document.getElementById(oldId);
+      if (element) {
+        element.id = newId;
+        element.dataset.state = String(rulingStateId);
+        element.dataset.id = String(newIndex);
+        rulingStateArmy.appendChild(element);
       }
     });
 
-    // reassign provinces
-    pack.provinces.forEach(province => {
-      if (statesToMerge.includes(province.state)) province.state = rulingStateId;
-    });
+    select(`#armies g#army${stateId}`).remove();
+  });
 
-    // reassing cells
-    pack.cells.state.forEach((s: number, i: number) => {
-      if (statesToMerge.includes(s)) pack.cells.state[i] = rulingStateId;
-    });
+  // reassing burgs
+  pack.burgs.forEach(burg => {
+    if (statesToMerge.includes(burg.state ?? 0)) {
+      if (burg.capital) {
+        burg.capital = 0;
+        Burgs.changeGroup(burg, null);
+      }
+      burg.state = rulingStateId;
+    }
+  });
 
-    unfog();
-    select("#debug").selectAll(".highlight").remove();
+  // reassign provinces
+  pack.provinces.forEach(province => {
+    if (statesToMerge.includes(province.state)) province.state = rulingStateId;
+  });
 
-    States.getPoles();
+  // reassing cells
+  pack.cells.state.forEach((s: number, i: number) => {
+    if (statesToMerge.includes(s)) pack.cells.state[i] = rulingStateId;
+  });
 
-    if (!pack.states[rulingStateId].label) delete pack.states[rulingStateId].label;
+  unfog();
+  select("#debug").selectAll(".highlight").remove();
 
-    Layers.show("states", "borders");
-    Layers.draw("burgIcons", "labels", "provinces");
-    refreshStatesEditor();
-  }
+  States.getPoles();
+
+  if (!pack.states[rulingStateId].label) delete pack.states[rulingStateId].label;
+
+  Layers.show("states", "borders");
+  Layers.draw("burgIcons", "labels", "provinces");
+  refreshStatesEditor();
 }
 
 function downloadStatesCsv(): void {
