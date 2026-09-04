@@ -23,6 +23,7 @@ export const VERSION = "1.151.1";
 
 // new changes on top
 const latestPublicChanges = [
+  "Provinces Editor: dominant culture column",
   "Brushes: smooth, gap-free painting at any screen refresh rate",
   "Journey Editor and new Journeys layer",
   "Desktop App",

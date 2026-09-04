@@ -17,6 +17,7 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 **1.151.1 - 2026-09-03**:
 
 - Brushes stamp by distance travelled: smooth, gap-free painting at any refresh rate by _[barrulus](https://github.com/barrulus)_ [1.151.1]
+- Provinces Editor: added a sortable Dominant Culture column based on rural and urban population by _[inviktos](https://github.com/inviktos)_ [1.151.1]
 
 **[1.150.0](https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/tags/v1.150.0.zip) - 2026-09-05**:
 
