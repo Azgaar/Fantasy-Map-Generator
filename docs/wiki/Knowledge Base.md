@@ -118,7 +118,7 @@ Please try to reproduce the issue on your own. If it's reproducible, please log 
 
 ### The map performance is poor, how can I improve it?
 
-Toggle off unnecessary layers. Be mindful of the Relief Icons layer in particular – it’s the most resource-demanding one. Open the Generator in a separate browser window, make it much smaller (about 900 x 560 pixels) and re-generate the map. Then, zoom in to see the map in detail. It will reduce the rending area and drastically improve the performance. When generating maps, set Points number to 10K. Points (cells) number highly affects performance. Toggle off map and element filters. Close all irrelevant browser tabs and applications. Use a leading edge browser (fresh versions on Chrome or Edge). Firefox is reported to be slower
+Toggle off unnecessary layers. Be mindful of the Relief Icons layer in particular – it’s the most resource-demanding one. Open the Generator in a separate browser window, make it much smaller (about 900 x 560 pixels) and re-generate the map. Then, zoom in to see the map in detail. It will reduce the rending area and drastically improve the performance. When generating maps, set Points number to 10K. Points (cells) number highly affects performance. Toggle off map and element filters. Close all irrelevant browser tabs and applications. Use a leading edge browser (fresh versions on Chrome or Edge). Firefox is reported to be slower. Set 'Redraw on zoom' in the Options tab to 'After zoom' to redraw labels, icons and relief once per gesture instead of on every frame
 
 ### Who owns the maps created?
 

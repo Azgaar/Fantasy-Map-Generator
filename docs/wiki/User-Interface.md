@@ -349,6 +349,8 @@ Slider that determines the width of the stroke.
 
 The lower the value, the thinner the line will be, to the point of non-existence, and conversely, the higher the value, the thicker the line will be.
 
+For label groups the slider range follows the group's font size: stroke width runs up to half of it and letter spacing from a tenth below zero to half above, so river and state labels both get a usable range. The number input still accepts any value.
+
 ### Common style controls (Font related)
 
 #### Font size
@@ -517,6 +519,7 @@ Below the map settings, the Options tab holds settings that apply immediately an
 * Emblem shape: the default coat of arms shield shape.
 * Zoom extent: minimal and maximal zoom levels, `[1, 20]` by default.
 * Rendering: SVG shape-rendering mode, trading quality for speed.
+* Redraw on zoom: when labels, icons and relief are redrawn during a zoom or pan. _After zoom_ redraws once per gesture: faster on big maps, but new content appears all at once.
 * Language: the interface language.
 
 The **Configure World** button opens a separate dialog where you set the map size relative to the world, its latitude and longitude shift on the globe, the temperature at the equator and both poles, and the global precipitation. The **Restore default options** button resets everything and reloads the page.
