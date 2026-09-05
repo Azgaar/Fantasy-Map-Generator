@@ -130,6 +130,10 @@ function panelHtml(): string {
         <button id="helpMapDelete" type="button" class="icon-trash" title="Delete this chat" aria-label="Delete this chat"></button>
       </label>
       <label>
+        <span>Provider</span>
+        <select id="helpMapProvider" title="Who runs the model. Each provider keeps its own key"></select>
+      </label>
+      <label>
         <span>Model</span>
         <select id="helpMapModel" title="Bigger models reason better and cost more"></select>
       </label>
@@ -219,13 +223,24 @@ function setInitialValues(): void {
   PROVIDERS.forEach(provider => {
     registerModels(provider.id, cachedModels(provider.id));
   });
-  buildModelSelect();
 
-  const select = ensureEl<HTMLSelectElement>("helpMapModel");
+  const providerSelect = ensureEl<HTMLSelectElement>("helpMapProvider");
+  providerSelect.replaceChildren();
+  providerSelect.append(...PROVIDERS.map(provider => new Option(provider.label, provider.id)));
+
+  // the stored model decides the provider, not the other way round: it is the only thing persisted
   const stored = localStorage.getItem(MODEL_STORAGE) ?? "";
-  select.value = isKnownModel(stored) ? stored : DEFAULT_MODEL;
+  const model = isKnownModel(stored) ? stored : DEFAULT_MODEL;
+  providerSelect.value = providerOf(model).id;
+  buildModelSelect();
+  ensureEl<HTMLSelectElement>("helpMapModel").value = model;
 
-  select.addEventListener("change", () => {
+  providerSelect.addEventListener("change", () => {
+    buildModelSelect(); // falls to the provider's first model
+    loadKeyForModel();
+    void refreshModels();
+  });
+  ensureEl("helpMapModel").addEventListener("change", () => {
     loadKeyForModel();
     void refreshModels();
   });
@@ -243,28 +258,28 @@ function isKnownModel(model: string): boolean {
   }
 }
 
+// One provider's models only: the flat list across every provider was too long to pick from
 function buildModelSelect(): void {
+  const providerId = ensureEl<HTMLSelectElement>("helpMapProvider").value;
+  const provider = PROVIDERS.find(candidate => candidate.id === providerId) ?? PROVIDERS[0];
   const select = ensureEl<HTMLSelectElement>("helpMapModel");
   const previous = select.value;
-  select.replaceChildren(); // options.length = 0 would leave the old optgroup shells behind
-  PROVIDERS.forEach(provider => {
-    const group = document.createElement("optgroup");
-    group.label = provider.label;
-    mergeModels(provider.models, cachedModels(provider.id)).forEach(model => {
-      group.append(new Option(model === LOCAL_MODEL ? "custom model…" : model, model));
-    });
-    select.append(group);
+  select.replaceChildren();
+  mergeModels(provider.models, cachedModels(provider.id)).forEach(model => {
+    select.append(new Option(model === LOCAL_MODEL ? "custom model…" : model, model));
   });
-  if (previous && isKnownModel(previous)) select.value = previous;
+  // keep the choice when the list is only being refreshed, otherwise take the first model
+  const keep = [...select.options].some(option => option.value === previous);
+  select.value = keep ? previous : (select.options[0]?.value ?? "");
 }
 
 // Ask the selected provider what its key can actually use, so new models appear without a release
 async function refreshModels(): Promise<void> {
-  const provider = providerOf(ensureEl<HTMLSelectElement>("helpMapModel").value);
+  const providerId = ensureEl<HTMLSelectElement>("helpMapProvider").value;
   const key = ensureEl<HTMLInputElement>("helpMapKey").value;
-  if (provider.id !== "local" && !key) return;
+  if (providerId !== "local" && !key) return;
   try {
-    await listModels(provider.id, key);
+    await listModels(providerId as (typeof PROVIDERS)[number]["id"], key);
     if (document.getElementById("helpMapModel")) buildModelSelect();
   } catch {
     // unreachable server or bad key: the curated list stands
