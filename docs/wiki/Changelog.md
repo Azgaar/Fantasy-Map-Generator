@@ -12,6 +12,7 @@ Check out [Dev board](https://github.com/users/Azgaar/projects/3/views/1?sumFiel
 
 Current version of the Fantasy Map Generator is the latest `master` branch. You can download it here: https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/heads/master.zip. Also see [the wiki](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#can-i-use-the-generator-offline).
 
+- Notes Editor: TinyMCE replaced with a bundled Quill 2 rich text editor by _[barrulus](https://github.com/barrulus)_ [1.151.3]
 - Help assistant: ask questions about the Generator in the app, answered from the wiki and Discord knowledge by _[barrulus](https://github.com/barrulus)_ [1.151.2]
 - Annex states and provinces by clicking on the map by _[barrulus](https://github.com/barrulus)_ [1.151.2]
 - Option to redraw labels, icons and relief only after a zoom by _[barrulus](https://github.com/barrulus)_ [1.151.2]
