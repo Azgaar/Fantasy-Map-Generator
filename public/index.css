@@ -2812,7 +2812,10 @@ body.tour-free-roam * {
   gap: 0.3em;
 }
 
-#helpAssistantMap [hidden] {
+/* the panel's own display rules would otherwise outrank the hidden attribute */
+#helpAssistantMap .helpMapDrawer[hidden],
+#helpAssistantMap .helpMapContext[hidden],
+#helpAssistantMap .helpMapHint[hidden] {
   display: none;
 }
 

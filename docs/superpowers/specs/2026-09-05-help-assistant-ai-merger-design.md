@@ -251,11 +251,11 @@ origin is unlisted anyway).
 ## Verification checklist (filled in as the build proceeds)
 
 - [x] upstream/help-assistant merged; unit tests green (96 files / 1025 tests after regenerating `context.generated.ts` for the new registry entry); tsc clean
-- [ ] mode control, open(options), entry points
-- [ ] This map panel with drawer, status line, chip, empty state
-- [ ] notes bridge (TinyMCE-era implementation)
-- [ ] write_note tool + undo + prompt sections
-- [ ] unit tests listed in §6
-- [ ] browser scenarios 1–5 on port 5199
+- [x] mode control, open(options), entry points (fe7e9377, af6969bb)
+- [x] This map panel with drawer, status line, chip, empty state (27e78684)
+- [x] notes bridge (TinyMCE-era implementation) (defa7a92)
+- [x] write_note tool + undo + prompt sections (1e3f069e, 89a8bc4b)
+- [x] unit tests listed in §6 — 102 files / 1067 tests green after Task 8
+- [x] browser scenarios 1–5 (scenario 4 is inside the third test) — 4/4 passed on port **5211** (5199 was held by the height-scale session's dev server); one CSS specificity bug found only in the browser: the drawer's `display: flex` outranked `[hidden]`, fixed with attribute-qualified selectors
 - [ ] Quill branch merged; bridge re-implemented over Quill; scenarios rerun
 - [ ] biome + stamp-assets clean
