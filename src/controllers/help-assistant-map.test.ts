@@ -69,6 +69,39 @@ describe("map panel", () => {
     expect(el("helpMapLog").querySelector(".helpAssistantMsg.user")).toBeNull();
   });
 
+  it("lists providers separately and narrows the model list to the one chosen", () => {
+    mountMapPanel(el("host"));
+    const provider = el<HTMLSelectElement>("helpMapProvider");
+    const model = el<HTMLSelectElement>("helpMapModel");
+
+    // the stored model decides which provider starts selected
+    expect(provider.value).toBe("anthropic");
+    expect([...model.options].map(option => option.value)).toEqual([
+      "claude-sonnet-5",
+      "claude-opus-4-8",
+      "claude-haiku-4-5"
+    ]);
+    expect(model.value).toBe("claude-sonnet-5");
+    expect([...provider.options].map(option => option.value)).toContain("mistral");
+
+    provider.value = "mistral";
+    provider.dispatchEvent(new Event("change"));
+    expect([...model.options].map(option => option.value)).toEqual(["mistral-small-latest", "mistral-medium-latest"]);
+    expect(model.value).toBe("mistral-small-latest");
+    expect(el("helpMapStatusModel").textContent).toContain("mistral-small-latest");
+  });
+
+  it("shows the local server fields only for the local provider", () => {
+    mountMapPanel(el("host"));
+    expect(el("helpMapLocal").hidden).toBe(true);
+
+    const provider = el<HTMLSelectElement>("helpMapProvider");
+    provider.value = "local";
+    provider.dispatchEvent(new Event("change"));
+    expect(el("helpMapLocal").hidden).toBe(false);
+    expect(el("helpMapStatusModel").textContent).toContain("local model");
+  });
+
   it("toggles the drawer from the gear and the status model button", () => {
     mountMapPanel(el("host"));
     el<HTMLButtonElement>("helpMapSettings").click();

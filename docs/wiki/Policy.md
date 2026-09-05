@@ -17,13 +17,17 @@ These are off by default. Using one means sending data to that third party under
 
 * **Dropbox** — only if you sign in from _Save/Load → Cloud_, and only the map files you choose to store there.
 * **Google Translate** — only if you switch the interface language; the page text is then processed by Google.
-* **AI text generation** (_Tools → AI generator_) — your prompt goes directly from your browser to the provider you pick (OpenAI, Anthropic, or a local Ollama instance). The API key you enter is kept in this browser's `localStorage` and is sent only to that provider. The project never sees the prompt or the key.
+* **AI text generation** (the Assistant's _This map_ tab, described below) — your messages go directly from your browser to the provider you pick. The API key you enter is kept in this browser's `localStorage` and is sent only to that provider. The project never sees the messages or the key.
 
 ## Azgaar Assistant
 
-The Assistant answers questions about using the Generator. It talks to the project's help gateway at `ask.azgaarsfmg.com`, which is the only FMG server involved anywhere in the tool.
+The Assistant panel holds two separate chats, and they are worth telling apart because only one of them ever sees your map.
 
-**What is sent.** The question you type and a conversation id. Nothing from your map, your files or your browser is sent — the Assistant cannot see the world you are working on and cannot describe it back to you.
+### Help
+
+**Help** answers questions about using the Generator. It talks to the project's help gateway at `ask.azgaarsfmg.com`, which is the only FMG server involved anywhere in the tool.
+
+**What is sent.** The question you type and a conversation id. Nothing from your map, your files or your browser is sent — Help cannot see the world you are working on and cannot describe it back to you.
 
 **How long questions are kept.** Questions and the answers given to them are retained for **90 days**, then deleted. They are read only to fix wrong answers and to find gaps in the wiki. They are not published, shared or used to identify anyone.
 
@@ -35,7 +39,21 @@ The Assistant answers questions about using the Generator. It talks to the proje
 
 **Availability.** The gateway only accepts requests from the official site. On a self-hosted copy the panel says so and offers the wiki instead.
 
-**Turning it off.** _Options → Generator settings → Azgaar assistant → Hide_ removes the button and the panel. Nothing is sent when you do not ask a question.
+### This map
+
+**This map** is the other tab, and it is the opposite arrangement: it uses **your** AI provider and **your** API key, and it does read the map you have open. The project runs no server for it and sees none of it.
+
+**What is sent, and to whom.** Your messages go from your browser straight to the provider you choose in the panel's settings drawer — Anthropic, OpenAI, Mistral, Qwen, DeepSeek, or a local server such as Ollama that you run yourself. To answer a question the assistant writes small scripts that read the open map, and **what those scripts return travels back to that provider as part of the conversation**: burg names, state statistics, the text of a note, whatever the question needed. Treat it as you would pasting that material into any AI chat. Nothing goes to FMG, and a local server keeps everything on your own machine.
+
+**Your key.** It is stored in this browser's `localStorage`, one slot per provider, and is sent only to that provider. Clearing site data removes it.
+
+**What it may change.** Notes, and only notes, through a single tool. It cannot edit anything else on the map. Every edit appears in the transcript with an **Undo** that puts the note back as it was, and the Generator's own save files are untouched until you save.
+
+**Chats.** Conversations are kept in this browser's `localStorage` so you can return to them, with the oldest dropped as the space fills. Each is tied to the map it was about. The drawer lists them and deletes them; the **New chat** button in the title bar starts a fresh one.
+
+**Cost.** You pay your provider directly for what you send. The panel shows the tokens spent on the current chat, and a fresh chat costs less than a long one because every earlier turn is re-sent with each message.
+
+**Turning it off.** _Options → Generator settings → Azgaar assistant → Hide_ removes the button and the panel. Nothing is sent from either tab when you do not ask a question, and This map sends nothing at all until you enter a key.
 
 ## Signing in with Discord
 
