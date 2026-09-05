@@ -164,6 +164,19 @@ test("labelGroupFromLegacy prefers a numeric data-size over font-size, stringifi
   expect(group.attrs["font-size"]).toBe("10");
 });
 
+// pre-1.140 zoom auto-visibility hid a burg tier with an inline display: none, and a map saved while
+// zoomed out carries it in the group's style attribute; harvested verbatim it hides the tier forever
+test("labelGroupFromLegacy drops the zoom auto-visibility display from the style", () => {
+  const legacy = { style: "text-shadow: white 0px 0px 4px; display: none;", "data-dx": 0, "data-dy": -0.4 };
+  expect(labelGroupFromLegacy(legacy).attrs.style).toBe(
+    "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)"
+  );
+  expect(labelGroupFromLegacy({ style: "display: none;" }).attrs.style).toBeNull();
+  expect(labelGroupFromLegacy({ style: "text-shadow: white 0px 0px 4px" }).attrs.style).toBe(
+    "text-shadow: white 0px 0px 4px"
+  );
+});
+
 const presetDir = path.join(__dirname, "../../public/styles");
 
 test("all 12 shipped presets parse as the new format with zero warnings", () => {

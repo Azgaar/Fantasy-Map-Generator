@@ -83,11 +83,12 @@ Generator settings:
 * _Transparency_: opacity of the control panes.
 * _Autosave interval_: number of minutes the map should be auto-saved to browser memory. Set to `0` to disable the autosave.
 * _Onload behavior_: define what should be done when Generator is opened: a new map generated or a previously saved map auto-opened.
-* _Azgaar assistant_: show or hide the in-app chat assistant.
+* _Azgaar assistant_: show or hide the help bubble in the bottom right corner, which answers questions about using the Generator.
 * _Speaker voice_: select the voice used to speak burg and other names. Voice synthesis is provided by the browser.
 * _Emblem shape_: defines shield shape used during emblems generation.
 * _Zoom extent_: minimal and maximal zoom levels. Click on the button on the right to restore the default values.
 * _Rendering_: set map rendering quality. Best quality can reduce the map performance.
+* _Redraw on zoom_: when labels, icons and relief are redrawn during a zoom or pan. _After zoom_ redraws once per gesture, which is faster on big maps but makes new content appear all at once.
 * _Language_: load Google Translate and select a language to translate the interface. Automatic translation can break some functionality — use the reset icon or refresh the page if it does.
 
 There is also the _Restore default options_ button. It cancels all user changes and refreshes the page.

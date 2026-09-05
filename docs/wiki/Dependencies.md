@@ -35,4 +35,4 @@ Loaded on demand:
 * [JSZip](https://github.com/Stuk/jszip) by Stuart Knightley, David Duponchel, Franz Buchinger and António Afonso — tile export
 * [Dropbox SDK](https://github.com/dropbox/dropbox-sdk-js) — saving to and loading from Dropbox
 * [TinyMCE](https://www.tiny.cloud) — the rich text editor in the Notes editor
-* [OpenWidget](https://openwidget.com) — the optional in-app assistant
+* Help gateway at [ask.azgaarsfmg.com](https://ask.azgaarsfmg.com) — answers the in-app help assistant; nothing is bundled, the app only calls it when a question is asked

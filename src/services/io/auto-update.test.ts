@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import indexHtml from "@/index.html?raw";
 import "@/generators/features"; // migrations call the Features module through its global
+import { Styles } from "@/generators/styles";
 import { VERSION } from "@/services/versioning";
 import { resolveVersionConflicts } from "./auto-update";
 
@@ -298,6 +299,51 @@ describe("v1.146 rendering groups", () => {
 });
 
 // the .map file carries the whole #map svg, so its defs are only what the file was saved with
+describe("v1.151.2 label group display cleanup", () => {
+  // v1.140-1.151 harvested the zoom auto-visibility display: none into the persisted label group
+  // style, and since v1.150 the store is re-applied over the saved svg, so the record has to be cleaned
+  function stylesRecord(style: string | null) {
+    const record = structuredClone(Styles.defaults) as {
+      labels: { groups: Record<string, { attrs: { style: string | null } }> };
+    };
+    record.labels.groups.hamlet = {
+      ...record.labels.groups.city,
+      attrs: { ...record.labels.groups.city.attrs, style }
+    };
+    return record;
+  }
+
+  it("strips display from stored label group styles, keeping the rest of the record", () => {
+    const data: string[] = [];
+    data[48] = JSON.stringify(
+      stylesRecord("text-shadow: white 0px 0px 4px; display: none; transform: translate(0em, -0.4em)")
+    );
+
+    resolveVersionConflicts("1.151.1", data);
+
+    const expected = stylesRecord("text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)");
+    expect(JSON.parse(data[48])).toEqual(expected);
+  });
+
+  it("stores null when display was the only declaration", () => {
+    const data: string[] = [];
+    data[48] = JSON.stringify(stylesRecord("display: none"));
+
+    resolveVersionConflicts("1.151.1", data);
+
+    expect(JSON.parse(data[48]).labels.groups.hamlet.attrs.style).toBeNull();
+  });
+
+  it("leaves current maps alone", () => {
+    const data: string[] = [];
+    data[48] = JSON.stringify(stylesRecord("display: none"));
+
+    resolveVersionConflicts(VERSION, data);
+
+    expect(JSON.parse(data[48]).labels.groups.hamlet.attrs.style).toBe("display: none");
+  });
+});
+
 describe("missing svg defs", () => {
   const getDeftempIds = () => Array.from(document.querySelectorAll("#deftemp > *"), node => node.id);
 

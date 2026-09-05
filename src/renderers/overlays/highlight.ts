@@ -1,4 +1,4 @@
-import { easeBounceOut, easeLinear, easeSinIn, select, transition } from "d3";
+import { easeBounceOut, easeLinear, easeSinIn, interpolateString, select, transition } from "d3";
 import { parseTransform } from "@/utils";
 
 const debugLayer = () => select<SVGGElement, unknown>("#debug");
@@ -102,4 +102,26 @@ export function highlightEmblemElement(type: string, element: { i: number; [key:
     .attr("stroke-dashoffset", d => d[2])
     .attr("opacity", 0)
     .remove();
+}
+
+/** Trace a path outline in red, animated along its length. Removed by the callers' highlight-off */
+export function highlightOutline(d: string | null): void {
+  if (!d) return;
+  const path = debugLayer()
+    .append("path")
+    .attr("class", "highlight")
+    .attr("d", d)
+    .attr("fill", "none")
+    .attr("stroke", "red")
+    .attr("stroke-width", 1)
+    .attr("opacity", 1)
+    .attr("filter", "url(#blur1)");
+
+  const totalLength = (path.node() as SVGPathElement).getTotalLength();
+  const duration = (totalLength + 5000) / 2;
+  const interpolate = interpolateString(`0, ${totalLength}`, `${totalLength}, ${totalLength}`);
+  path
+    .transition()
+    .duration(duration)
+    .attrTween("stroke-dasharray", () => interpolate);
 }

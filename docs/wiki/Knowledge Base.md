@@ -118,7 +118,7 @@ Please try to reproduce the issue on your own. If it's reproducible, please log 
 
 ### The map performance is poor, how can I improve it?
 
-Toggle off unnecessary layers. Be mindful of the Relief Icons layer in particular – it’s the most resource-demanding one. Open the Generator in a separate browser window, make it much smaller (about 900 x 560 pixels) and re-generate the map. Then, zoom in to see the map in detail. It will reduce the rending area and drastically improve the performance. When generating maps, set Points number to 10K. Points (cells) number highly affects performance. Toggle off map and element filters. Close all irrelevant browser tabs and applications. Use a leading edge browser (fresh versions on Chrome or Edge). Firefox is reported to be slower
+Toggle off unnecessary layers. Be mindful of the Relief Icons layer in particular – it’s the most resource-demanding one. Open the Generator in a separate browser window, make it much smaller (about 900 x 560 pixels) and re-generate the map. Then, zoom in to see the map in detail. It will reduce the rending area and drastically improve the performance. When generating maps, set Points number to 10K. Points (cells) number highly affects performance. Toggle off map and element filters. Close all irrelevant browser tabs and applications. Use a leading edge browser (fresh versions on Chrome or Edge). Firefox is reported to be slower. Set 'Redraw on zoom' in the Options tab to 'After zoom' to redraw labels, icons and relief once per gesture instead of on every frame
 
 ### Who owns the maps created?
 
@@ -338,7 +338,7 @@ Go to Tools -> Units and change the '1 map pixel' distance scale. To change how 
 
 ### How to merge provinces?
 
-Open the Provinces Editor, filter the list by the state the provinces belong to and click on the 'Merge several provinces into one' button at the dialog bottom. Provinces of different states cannot be merged, reassign them in the States Editor first. Alternatively remove a province and repaint its territory to another one with the Paint brush
+Open the Provinces Editor and click the 'Annex provinces' button (crown icon) at the dialog bottom. Click the province that absorbs the others on the map, then click the provinces to annex; hold Shift to keep annexing several. A confirmation lists what will be merged, so a mis-click can be cancelled. To pick from a list instead, filter by the state the provinces belong to and use the 'Merge several provinces into one' button. Provinces of different states cannot be merged, reassign them in the States Editor first. Alternatively remove a province and repaint its territory to another one with the Paint brush
 
 ### Can you colour in the relief icons?
 
@@ -530,11 +530,19 @@ Not really. The size mostly depends on the points number and cannot be changed f
 
 ### How to clean this chat dialog? How can I remove the chat history?
 
-You can open the website cdn.openwidget.com, then Open the Dev Console (F12) and type `localStorage.clear();` there. It will remove the chat history
+The assistant remembers the conversation for the current browser tab only, and the service forgets it two hours after the last question. Close the tab or open the Generator in a new one to start fresh; the assistant marks the boundary with a 'new conversation' line
 
 ### How can I toggle you off? How can I hide the Assistant?
 
 To hide the Assistant, go to Options -> Generator settings and set `Azgaar assistant` to Hide
+
+### The assistant says 'No questions left today'. What now?
+
+Questions are budgeted per day to keep the shared service affordable. Anonymous use gets a small allowance; click 'Sign in with Discord for more' in the assistant panel for a larger one. The wiki and the Discord server hold the same knowledge the assistant answers from
+
+### What does the assistant send, and where?
+
+Only the question you type and a conversation id go to the project's help gateway at ask.azgaarsfmg.com; nothing from your map or browser is sent. Answers are drawn from the wiki and Discord knowledge. Signing in with Discord stores a token in this browser, and 'Sign out' removes it
 
 ### How to make a river?
 
@@ -550,7 +558,7 @@ You can create a new Regiment using the Regiments Overview. In can open if you c
 
 ### How do I merge countries?
 
-To merge states (countries) open the States Editor from Tools and click on the "Merge several states into one" button at the dialog bottom. Then select states you want to merge
+To merge states (countries) open the States Editor from Tools and click the "Annex states" button (crown icon) at the dialog bottom. Click the state that annexes the others on the map, then click the states to annex; hold Shift to keep annexing several. A confirmation lists what will be removed, so a mis-click can be cancelled. To pick from a list instead, use the "Merge several states into one" button next to it and tick the states to merge
 
 ### How to start a war?
 

@@ -19,10 +19,13 @@ import { dialogState } from "@/components/dialog/state";
 import { tip } from "@/components/tooltips";
 import { isElectron } from "./platform";
 
-export const VERSION = "1.151.1";
+export const VERSION = "1.151.2";
 
 // new changes on top
 const latestPublicChanges = [
+  "Help assistant: ask questions about the Generator in the app",
+  "States and Provinces editors: annex by clicking on the map",
+  "Option to redraw labels, icons and relief only after a zoom",
   "Brushes: smooth, gap-free painting at any screen refresh rate",
   "Journey Editor and new Journeys layer",
   "Desktop App",
