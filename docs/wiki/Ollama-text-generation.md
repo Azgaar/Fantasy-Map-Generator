@@ -87,6 +87,19 @@ If you are running FMG locally, you don't need this step. But if you want Ollama
 
 That's It! You can now generate text using your local AI model.
 
+## Using Ollama with the Assistant
+
+The AI text generator writes a single block of prose. The Assistant's _This map_ tab is the other way to use a local model: it reads the map you have open, answers questions about it, and can write your notes. It talks to Ollama through the OpenAI-compatible endpoint rather than `/api/generate`.
+
+1. With `ollama serve` running, open the Assistant — the bubble in the bottom right corner, or _Tools → Assistant_ — and switch to **This map**.
+2. Open the settings with the cog under the message box and choose **Local** as the provider.
+3. Leave the model as **custom model…** and type the model name, `llama3.2` or whatever `ollama list` reports. Models Ollama already has are also offered in the list directly.
+4. Leave the API key empty. A local server needs none.
+
+The server address defaults to `http://localhost:11434/v1`, which is Ollama's OpenAI-compatible endpoint. If Ollama runs on another machine or port, put its address in the server field and allow the Generator's origin on the Ollama side with `OLLAMA_ORIGINS`.
+
+Note that the Assistant answers by writing small scripts that read the map, which asks more of a model than plain prose does. Smaller local models often cannot manage it; if answers come back empty or malformed, try a larger one.
+
 ## Troubleshooting
 
 **If it doesn't work:**
