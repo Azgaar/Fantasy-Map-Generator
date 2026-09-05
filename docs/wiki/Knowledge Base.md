@@ -338,7 +338,7 @@ Go to Tools -> Units and change the '1 map pixel' distance scale. To change how 
 
 ### How to merge provinces?
 
-Open the Provinces Editor, filter the list by the state the provinces belong to and click on the 'Merge several provinces into one' button at the dialog bottom. Provinces of different states cannot be merged, reassign them in the States Editor first. Alternatively remove a province and repaint its territory to another one with the Paint brush
+Open the Provinces Editor and click the 'Annex provinces' button (crown icon) at the dialog bottom. Click the province that absorbs the others on the map, then click the provinces to annex; hold Shift to keep annexing several. A confirmation lists what will be merged, so a mis-click can be cancelled. To pick from a list instead, filter by the state the provinces belong to and use the 'Merge several provinces into one' button. Provinces of different states cannot be merged, reassign them in the States Editor first. Alternatively remove a province and repaint its territory to another one with the Paint brush
 
 ### Can you colour in the relief icons?
 
@@ -550,7 +550,7 @@ You can create a new Regiment using the Regiments Overview. In can open if you c
 
 ### How do I merge countries?
 
-To merge states (countries) open the States Editor from Tools and click on the "Merge several states into one" button at the dialog bottom. Then select states you want to merge
+To merge states (countries) open the States Editor from Tools and click the "Annex states" button (crown icon) at the dialog bottom. Click the state that annexes the others on the map, then click the states to annex; hold Shift to keep annexing several. A confirmation lists what will be removed, so a mis-click can be cancelled. To pick from a list instead, use the "Merge several states into one" button next to it and tick the states to merge
 
 ### How to start a war?
 
