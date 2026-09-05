@@ -2499,8 +2499,8 @@ svg.button {
 
 #tourPromptButton {
   position: fixed;
-  bottom: 100px;
-  right: 36px;
+  bottom: 116px; /* stacked above the assistant bubble, sharing its column */
+  right: 18px;
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -2632,117 +2632,113 @@ body.tour-free-roam * {
   margin: 0.8em 0 0.4em 0;
 }
 
+/* Assistant call button: the flat, themed circle the OpenWidget launcher used to be — a
+   dark rounded badge with the glyph punched out of it, and the same press squish */
 #helpAssistantBubble {
   position: fixed;
   right: 16px;
   bottom: 64px; /* clear of the scale bar in the corner */
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: #35424d;
-  color: #fff;
-  font-size: 1.4em;
+  width: 40px;
+  height: 40px;
+  padding: 0;
   align-items: center;
   justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--light-solid);
   cursor: pointer;
-  box-shadow: 0 2px 6px rgb(0 0 0 / 35%);
+  user-select: none;
+  box-shadow:
+    0 1px 1px -1px rgb(0 0 0 / 13%),
+    0 2px 5px -2px rgb(0 0 0 / 18%);
+  animation: assistantBubbleIn 0.3s cubic-bezier(0.14, 0, 0, 1) backwards;
   z-index: 99;
 }
 
-/* the dialog is fixed-width; undo the global .dialog > div { width: max-content } so
-   children wrap instead of overflowing */
-#helpAssistant > div {
-  width: auto;
+#helpAssistantBubble:focus-visible {
+  outline: 2px solid var(--dark-solid);
+  outline-offset: 3px;
 }
 
-#helpAssistant .helpAssistantLinks {
+/* the badge alone squishes under the press, the circle stays put, as the launcher did */
+#helpAssistantBubble > .helpAssistantBubbleBadge {
+  position: relative;
   display: flex;
-  gap: 1.2em;
-  justify-content: center;
-  margin-top: 0.6em;
-  padding-top: 0.5em;
-  border-top: 1px solid rgb(0 0 0 / 12%);
-  font-size: 0.92em;
-}
-
-#helpAssistant .helpAssistantUnlisted {
-  max-width: 20em;
-}
-
-#helpAssistant .helpAssistantLog {
-  max-height: 40vh;
-  min-height: 8em;
-  overflow-y: auto;
-  margin-bottom: 0.5em;
-}
-
-#helpAssistant .helpAssistantDivider {
-  text-align: center;
-  opacity: 0.55;
-  font-size: 0.85em;
-  margin: 0.5em 0;
-}
-
-#helpAssistant .helpAssistantNewChat {
-  display: block;
-  text-align: right;
-  font-size: 0.85em;
-  margin-bottom: 0.2em;
-}
-
-#helpAssistant .helpAssistantAsked {
-  font-style: italic;
-  opacity: 0.8;
-}
-
-#helpAssistant .helpAssistantFeedback {
-  display: flex;
-  gap: 0.3em;
-  justify-content: flex-end;
-  margin-top: 0.2em;
-}
-
-#helpAssistant .helpAssistantFeedback button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  opacity: 0.4;
-  font-size: 1em;
-  padding: 0 0.15em;
-}
-
-#helpAssistant .helpAssistantFeedback button:hover {
-  opacity: 0.8;
-}
-
-#helpAssistant .helpAssistantFeedback button.selected {
-  opacity: 1;
-}
-
-#helpAssistant .helpAssistantFooter {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
   align-items: center;
-  gap: 0.4em 0.8em;
-  width: 100%;
-  margin-top: 0.3em;
+  justify-content: center;
+  width: 20px;
+  height: 18px;
+  border-radius: 7px;
+  background: #0d0b0c; /* fallback for browsers without color-mix */
+  background: color-mix(in srgb, var(--dark-solid) 40%, #000000);
+  color: var(--light-solid); /* the glyphs read as holes cut in the badge */
+  font-size: 13px;
+  line-height: 1;
+  transition: transform 0.25s cubic-bezier(0.14, 0, 0, 1);
 }
 
-#helpAssistant .helpAssistantFooter #helpAssistantAuth {
-  flex: 1;
-  text-align: right;
-  font-size: 0.92em;
-  white-space: nowrap;
+#helpAssistantBubble:active > .helpAssistantBubbleBadge {
+  transform: scale(0.75);
 }
 
-#helpAssistant .helpAssistantDisclosure {
-  font-size: 0.85em;
-  opacity: 0.7;
-  margin-top: 0.5em;
+/* both glyphs sit on top of each other: the question mark morphs into the rounded square
+   under the pointer, and stays there while the dialog is open */
+#helpAssistantBubble .icon-help,
+#helpAssistantBubble .helpAssistantBubbleMinimize {
+  position: absolute;
+  transition:
+    opacity 0.2s ease-out,
+    transform 0.25s cubic-bezier(0.14, 0, 0, 1);
 }
 
-#helpAssistant textarea {
-  width: 100%;
-  box-sizing: border-box;
+#helpAssistantBubble .icon-help {
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#helpAssistantBubble .helpAssistantBubbleMinimize {
+  inset: 0;
+  width: 9px;
+  height: 8px;
+  margin: auto;
+  border: 2px solid currentcolor;
+  border-radius: 3px;
+  opacity: 0;
+  transform: scale(0.6);
+}
+
+#helpAssistantBubble:hover .icon-help,
+#helpAssistantBubble.open .icon-help {
+  opacity: 0;
+  transform: scale(0.6);
+}
+
+#helpAssistantBubble:hover .helpAssistantBubbleMinimize,
+#helpAssistantBubble.open .helpAssistantBubbleMinimize {
+  opacity: 1;
+  transform: none;
+}
+
+@keyframes assistantBubbleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #helpAssistantBubble,
+  #helpAssistantBubble > .helpAssistantBubbleBadge,
+  #helpAssistantBubble .icon-help,
+  #helpAssistantBubble .helpAssistantBubbleMinimize {
+    animation: none;
+    transition: none;
+  }
 }
