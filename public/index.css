@@ -2669,6 +2669,12 @@ body.tour-free-roam * {
   width: auto;
 }
 
+/* .ui-dialog turns selection off so dialogs drag cleanly, which also made the answers
+   impossible to copy. The panel opts back in; the titlebar keeps the drag behaviour. */
+#helpAssistant {
+  user-select: text;
+}
+
 #helpAssistant .helpAssistantLinks {
   display: flex;
   gap: 1.2em;
