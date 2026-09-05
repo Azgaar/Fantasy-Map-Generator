@@ -79,11 +79,12 @@ If you are running FMG locally, you don't need this step. But if you want Ollama
 ## Step 4: Start the server
 
 1. Open Command Prompt/Terminal and type `ollama serve`. **Leave this window open** — Ollama is now running.
-2. Open Fantasy Map Generator and open the AI text generator with the robot button in the Notes editor. Select **ollama (local models)** from the model list.
-3. In the key field, type the model name: `llama3.2` (or whatever model you downloaded). This field is a model name, not an API key.
-4. Update the prompt, optionally adjust the temperature, and click **Generate**
+2. Open Fantasy Map Generator and open the Assistant: the robot button in the Notes editor, or _Tools → Assistant_. Switch to the **This map** tab.
+3. Open the settings with the cog at the bottom right of the panel and choose **Local** as the provider.
+4. Leave the model as **custom model…** and type the model name in the field beside the server address: `llama3.2`, or whatever `ollama list` reports. Installed models that Ollama reports are also offered in the model list directly.
+5. Leave the API key empty — a local server needs none — and send your message.
 
-**Important:** Fantasy Map Generator connects to Ollama at `http://localhost:11434/api/generate`. This should work automatically by default. If you need to change the connection address, modify the endpoint in `src/controllers/ai-generator.ts` in a local source build.
+**Important:** the Assistant talks to Ollama through its OpenAI-compatible endpoint at `http://localhost:11434/v1`. That is the default in the server field, so it should work as it stands. If Ollama runs on another machine or port, put its address there, and allow the Generator's origin on the Ollama side with `OLLAMA_ORIGINS`.
 
 That's It! You can now generate text using your local AI model.
 
@@ -92,7 +93,8 @@ That's It! You can now generate text using your local AI model.
 **If it doesn't work:**
 - Check that `ollama serve` is still running in your command prompt/terminal
 - Try typing `ollama list` to see if your model downloaded correctly
-- Make sure the model name you typed in the key field matches exactly what `ollama list` reports
+- Make sure the model name you typed matches exactly what `ollama list` reports
+- Smaller local models often cannot write the scripts the assistant uses to read your map. If answers come back empty or malformed, try a larger model
 - If you use the hosted version of FMG, double-check `OLLAMA_ORIGINS` includes `https://azgaar.github.io`
 
 ## Other providers
