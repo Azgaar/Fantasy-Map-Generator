@@ -10,11 +10,8 @@ afterEach(() => vi.unstubAllGlobals());
 describe("noticeFor", () => {
   // Budget-refusal text is the server's to write (it carries wiki/Discord links as live
   // markdown); the client must render it verbatim with nothing added.
-  it.each([
-    "cap_reached",
-    "quota",
-    "blocked"
-  ] as const)("renders %s server text verbatim as escaped markdown and disables asking", code => {
+  const budgetCodes = ["cap_reached", "quota", "blocked"] as const;
+  it.each(budgetCodes)("renders %s server text verbatim as escaped markdown and disables asking", code => {
     const message = "Budget used — see the [documentation](https://github.com/Azgaar/Fantasy-Map-Generator/wiki).";
     const notice = noticeFor(new HelpApiError(code, message));
     expect(notice.html).toBe(renderMarkdown(message));

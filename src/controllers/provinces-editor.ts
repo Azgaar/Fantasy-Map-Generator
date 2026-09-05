@@ -1,4 +1,5 @@
-import { color as d3Color, easeSinIn, interpolate, interpolateString, select, stratify, transition, treemap } from "d3";
+import { color as d3Color, easeSinIn, interpolate, select, stratify, transition, treemap } from "d3";
+import { createAnnexMode } from "@/components/annex-mode";
 import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
@@ -21,7 +22,7 @@ import type { Province } from "@/generators/provinces-generator";
 import { redrawEmblem, redrawEmblems, removeEmblem } from "@/renderers/draw-emblems";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { fog, unfog } from "@/renderers/overlays/fogging";
-import { highlightElement } from "@/renderers/overlays/highlight";
+import { highlightElement, highlightOutline } from "@/renderers/overlays/highlight";
 import { applyOption, downloadFile, getArea, getAreaUnit, getFileName, speak } from "@/utils";
 import { ensureEl, findEl, getPointer, getRandomColor, isLand, P, rand, rn, si, unique } from "../utils";
 
@@ -157,6 +158,11 @@ function renderDialog(): void {
         ></button>
         <button id="provincesMerge" data-tip="Merge several provinces into one" class="icon-layer-group"></button>
         <button
+          id="provincesAnnex"
+          data-tip="Annex provinces: click the annexing province, then the provinces of the same state it absorbs. Hold Shift to keep annexing"
+          class="icon-crown"
+        ></button>
+        <button
           id="provincesRemoveAll"
           data-tip="Remove all provinces. States will remain as they are"
           class="icon-trash"
@@ -189,6 +195,7 @@ function renderDialog(): void {
   ensureEl("provincesRelease").addEventListener("click", triggerProvincesRelease);
   ensureEl("provincesAdd").addEventListener("click", enterAddProvinceMode);
   ensureEl("provincesMerge").addEventListener("click", openProvinceMergeDialog);
+  ensureEl("provincesAnnex").addEventListener("click", provincesAnnex.toggle);
   ensureEl("provincesRecolor").addEventListener("click", recolorProvinces);
 
   ensureEl("provincesBodySection").addEventListener("click", (ev: Event) => {
@@ -1260,6 +1267,7 @@ function removeAllProvinces(): void {
 
 function closeProvincesEditor(): void {
   if (customization === 12) exitAddProvinceMode();
+  provincesAnnex.exit();
   $("#provincesEditor").dialog("destroy");
   ensureEl("provincesEditor").remove();
 }
@@ -1292,15 +1300,13 @@ function openProvinceMergeDialog(): void {
     return;
   }
 
-  const emblem = (i: number): string =>
-    /* html */ `<svg class="coaIcon" viewBox="0 0 200 200"><use href="#provinceCOA${i}"></use></svg>`;
   const provincesSelector = provincesToMerge
     .map(
       p => /* html */ `
     <div data-id="${p.i}" data-tip="${p.fullName || p.name}" style="cursor:default">
       <input type="radio" name="rulingProvince" value="${p.i}" />
       <input id="selectProvince${p.i}" class="checkbox" type="checkbox" name="provincesToMerge" value="${p.i}" />
-      <label for="selectProvince${p.i}" class="checkbox-label"><fill-box fill="${p.color}" disabled></fill-box>${emblem(p.i)}${p.name}</label>
+      <label for="selectProvince${p.i}" class="checkbox-label"><fill-box fill="${p.color}" disabled></fill-box>${provinceEmblem(p.i)}${p.name}</label>
     </div>
   `
     )
@@ -1348,20 +1354,7 @@ function openProvinceMergeDialog(): void {
           return;
         }
 
-        confirmationDialog({
-          title: "Merge provinces",
-          message: /* html */ `
-            <p>The following provinces will be <strong>removed</strong>: ${provincesToMergeIds
-              .map(provinceId => `${emblem(provinceId)}${pack.provinces[provinceId].name}`)
-              .join(", ")}.</p>
-            <p>Removed provinces data (burgs and cells) will be assigned to ${emblem(primaryProvinceId)}${pack.provinces[primaryProvinceId].name}.</p>
-            <p>Are you sure you want to merge provinces? This action cannot be reverted.</p>`,
-          confirm: "Merge",
-          onConfirm: () => {
-            mergeProvinces(provincesToMergeIds, primaryProvinceId);
-            $(this).dialog("close");
-          }
-        });
+        confirmProvincesMerge(provincesToMergeIds, primaryProvinceId, () => $(this).dialog("close"));
       },
       Cancel: function (this: HTMLElement) {
         $(this).dialog("close");
@@ -1369,6 +1362,40 @@ function openProvinceMergeDialog(): void {
     }
   });
 }
+
+const provinceEmblem = (i: number): string =>
+  /* html */ `<svg class="coaIcon" viewBox="0 0 200 200"><use href="#provinceCOA${i}"></use></svg>`;
+
+function confirmProvincesMerge(provincesToMerge: number[], primaryProvinceId: number, onConfirm?: () => void): void {
+  confirmationDialog({
+    title: "Merge provinces",
+    message: /* html */ `
+      <p>The following provinces will be <strong>removed</strong>: ${provincesToMerge
+        .map(provinceId => `${provinceEmblem(provinceId)}${pack.provinces[provinceId].name}`)
+        .join(", ")}.</p>
+      <p>Removed provinces data (burgs and cells) will be assigned to ${provinceEmblem(primaryProvinceId)}${pack.provinces[primaryProvinceId].name}.</p>
+      <p>Are you sure you want to merge provinces? This action cannot be reverted.</p>`,
+    confirm: "Merge",
+    onConfirm: () => {
+      mergeProvinces(provincesToMerge, primaryProvinceId);
+      onConfirm?.();
+    }
+  });
+}
+
+const provincesAnnex = createAnnexMode({
+  buttonId: "provincesAnnex",
+  bodySectionId: "provincesBodySection",
+  noun: "province",
+  ownerOf: cellId => pack.cells.province[cellId],
+  colorOf: provinceId => pack.provinces[provinceId].color,
+  nameOf: provinceId => pack.provinces[provinceId].name,
+  rejectReason: (primaryId, provinceId) =>
+    pack.provinces[provinceId].state === pack.provinces[primaryId].state
+      ? undefined
+      : `${pack.provinces[provinceId].name} belongs to another state. Merge states first, or pick a province of ${pack.states[pack.provinces[primaryId].state].name}`,
+  commit: (primaryProvinceId, provincesToMerge) => confirmProvincesMerge(provincesToMerge, primaryProvinceId)
+});
 
 function highlightProvinceOnMergeHover(event: Event): void {
   if (!Layers.isOn("provinces")) return;
@@ -1378,24 +1405,7 @@ function highlightProvinceOnMergeHover(event: Event): void {
   if (!d) return;
 
   provinceHighlightOff(event);
-
-  const path = select("#debug")
-    .append("path")
-    .attr("class", "highlight")
-    .attr("d", d)
-    .attr("fill", "none")
-    .attr("stroke", "red")
-    .attr("stroke-width", 1)
-    .attr("opacity", 1)
-    .attr("filter", "url(#blur1)");
-
-  const totalLength = (path.node() as SVGPathElement).getTotalLength();
-  const duration = (totalLength + 5000) / 2;
-  const interp = interpolateString(`0, ${totalLength}`, `${totalLength}, ${totalLength}`);
-  path
-    .transition()
-    .duration(duration)
-    .attrTween("stroke-dasharray", () => interp);
+  highlightOutline(d);
 }
 
 function cleanupMergedProvince(provinceId: number): void {

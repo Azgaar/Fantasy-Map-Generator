@@ -57,6 +57,8 @@ function handleZoomPerFrame(): void {
   }
 
   if (didPositionChange) Layers.draw("coordinates");
+
+  if (ensureEl<HTMLSelectElement>("viewportRedraw").value === "continuous") ViewportLayers.schedule();
 }
 
 /** Rewrite map content once zoom gesture settles */
@@ -77,8 +79,6 @@ function handleZoomEnd(): void {
     frameId = null;
     handleZoomPerFrame();
   }
-
-  ViewportLayers.renderNow();
 
   invokeActiveZooming();
 }

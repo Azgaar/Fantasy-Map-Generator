@@ -330,7 +330,9 @@ unordered `AddedLabel[]`:
 
 At runtime, Label Group styles are indexed in `style.labels.groups`, keyed by group id. Current `.map` files
 serialize the complete global `style` object at data index 48. Pre-1.140 migration reconstructs it from the
-legacy SVG group attributes. All label types can share a group without changing their rendering primitive:
+legacy SVG group attributes; pre-1.140 zoom auto-visibility wrote `display: none` into the group's inline style,
+which the migration strips, and an auto-update pass (1.151.2) strips it from styles records saved by
+1.150-1.151.1, so a stored group style never carries `display`. All label types can share a group without changing their rendering primitive:
 a label with `pathPoints` is rendered as a `<textPath>`, and any other label as a positioned `<text>`, which
 the Label Editor lets the user switch for any label regardless of its type. The fallback groups are `states`,
 `provinces`, the configured default Burg group, and `added` respectively.
@@ -340,6 +342,10 @@ Ordered Label Group policy is stored in `options.labels`:
 - `resizeOnZoom`: `boolean` - whether the parent `#labels` font size scales with map zoom
 - `showAll`: `boolean` - temporary override for per-group active state, zoom bounds, and layer dependencies
 - `groups`: `LabelGroupOptions[]` - ordered group definitions
+
+`options.labels` and the Burg group registry are seeded from `localStorage` for every new map, so both are
+validated on read (`Labels.parseStoredOptions`, `Burgs.parseStoredGroups`): a stored value that would leave
+nothing to draw, such as an empty `groups` list, falls back to the defaults instead of being reused.
 
 Each `LabelGroupOptions` contains:
 

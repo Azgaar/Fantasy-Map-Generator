@@ -1689,6 +1689,19 @@
               <td></td>
             </tr>
             <tr
+              data-tip="When labels, icons and relief are redrawn during a zoom or pan. 'After zoom' redraws once per gesture: faster on big maps, but new content appears all at once"
+            >
+              <td></td>
+              <td>Redraw on zoom</td>
+              <td>
+                <select id="viewportRedraw" data-stored="viewportRedraw">
+                  <option value="continuous">While zooming</option>
+                  <option value="settled" selected>After zoom</option>
+                </select>
+              </td>
+              <td></td>
+            </tr>
+            <tr
               data-tip="Load Google Translate and select language. Note that automatic translation can break some page functional. In this case reset the language back to English or refresh the page"
             >
               <td>
@@ -5203,7 +5216,7 @@
     <script defer src="modules/ui/style-presets.js?v=75cc6072"></script>
     <script defer src="modules/ui/options.js?v=ac09c6c9"></script>
     <script defer src="main.js?v=4a0a30a7"></script>
-    <script defer src="modules/ui/style.js?v=75385c7b"></script>
+    <script defer src="modules/ui/style.js?v=f3fba4a5"></script>
     <script defer src="libs/rgbquant.min.js"></script>
     <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
   </body>
