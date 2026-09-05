@@ -26,6 +26,8 @@ describe("canEditAsRichText", () => {
     expect(canEditAsRichText('<div>Dungeon</div><iframe src="about:blank"></iframe>')).toBe(false);
     expect(canEditAsRichText("<p>a</p><hr><p>b</p>")).toBe(false);
     expect(canEditAsRichText("<p>a</p><script>alert(1)</script>")).toBe(false);
+    expect(canEditAsRichText("<script>alert(1)</script>")).toBe(false);
+    expect(canEditAsRichText("<style>p { color: red }</style><p>a</p>")).toBe(false);
   });
 });
 

@@ -63,9 +63,11 @@ export const TOOLBAR_HTML = /* html */ `<div id="notesToolbar">
     </span>
   </div>`;
 
+// a <template> keeps a leading <script> or <style> in the fragment, where a text/html document would hoist it into <head>
 export function canEditAsRichText(html: string): boolean {
-  const { body } = new DOMParser().parseFromString(html, "text/html");
-  return Array.from(body.querySelectorAll("*")).every(el => RICH_TEXT_TAGS.has(el.localName));
+  const template = document.createElement("template");
+  template.innerHTML = html;
+  return Array.from(template.content.querySelectorAll("*")).every(el => RICH_TEXT_TAGS.has(el.localName));
 }
 
 export function createRichTextEditor(host: HTMLElement, toolbar: HTMLElement, onChange: () => void): Quill {
