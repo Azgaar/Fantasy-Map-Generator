@@ -14,6 +14,10 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 
 # Releases
 
+**1.151.2 - 2026-09-05**:
+
+- Fix burg label tiers hidden at every zoom on maps migrated from pre-1.140 versions by _[barrulus](https://github.com/barrulus)_ [1.151.2]
+
 **1.151.1 - 2026-09-03**:
 
 - Brushes stamp by distance travelled: smooth, gap-free painting at any refresh rate by _[barrulus](https://github.com/barrulus)_ [1.151.1]

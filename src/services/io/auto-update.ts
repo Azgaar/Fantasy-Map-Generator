@@ -8,7 +8,12 @@ import type { GraphOverrides } from "@/generators/graph-override";
 import { type Label, type LabelNameMode, Labels as LabelsGenerator } from "@/generators/labels-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
 
-import { labelGroupFromLegacy, migrateStyles, restoreStrippedLayerStyles } from "@/generators/styles-legacy";
+import {
+  labelGroupFromLegacy,
+  migrateStyles,
+  restoreStrippedLayerStyles,
+  stripDisplay
+} from "@/generators/styles-legacy";
 import type { Point } from "@/generators/voronoi";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { unfog } from "@/renderers/overlays/fogging";
@@ -1849,5 +1854,14 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     if (!isOlderThan("1.145.0") && isOlderThan("1.148.0")) await restoreStrippedLayerStyles();
     // v1.150.0 made the styles store the source of truth
     data[48] = await migrateStyles(data[48]);
+  }
+
+  if (isOlderThan("1.151.2")) {
+    // v1.140-1.151 harvested the zoom auto-visibility display: none into the persisted label group
+    // styles, and the store is applied over the saved svg, so the hidden tiers never came back
+    const record = data[48] ? safeParseJSON(data[48]) : undefined;
+    const groups: { attrs?: { style?: string | null } }[] = Object.values(record?.labels?.groups || {});
+    for (const group of groups) if (group?.attrs) group.attrs.style = stripDisplay(group.attrs.style ?? null);
+    if (record) data[48] = JSON.stringify(record);
   }
 }
