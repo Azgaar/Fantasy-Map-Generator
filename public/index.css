@@ -2600,8 +2600,8 @@ svg.button {
 
 #tourPromptButton {
   position: fixed;
-  bottom: 100px;
-  right: 36px;
+  bottom: 120px; /* stacked above the 44px help bubble at bottom: 64px, centred on it */
+  right: 20px;
   width: 36px;
   height: 36px;
   border-radius: 50%;
