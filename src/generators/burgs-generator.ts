@@ -2,6 +2,7 @@ import { quadtree } from "d3-quadtree";
 import { Emblems } from "@/generators/emblems-generator";
 import type { BurgGroup } from "@/types/burg-groups";
 import type { Emblem } from "@/types/emblems";
+import { safeParseJSON } from "@/utils/stringUtils";
 import { each, ensureEl, gauss, minmax, normalize, P, rn } from "../utils";
 import { type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
 import { NON_NAVIGABLE_LAKE_GROUPS } from "./features";
@@ -395,6 +396,19 @@ class BurgModule {
     burg.temple = Number(
       (religion && theocracy && P(0.5)) || pop > 50 || (pop > 35 && P(0.75)) || (pop > 20 && P(0.5))
     );
+  }
+
+  /** burg assignment needs a named, ordered group and a default to fall back on: a value persisted
+   * by an older build can satisfy neither and still parse */
+  parseStoredGroups(stored: string | null): BurgGroup[] {
+    const parsed = stored ? safeParseJSON(stored) : null;
+    const groups: BurgGroup[] = Array.isArray(parsed)
+      ? parsed.filter(group => typeof group?.name === "string" && typeof group?.order === "number")
+      : [];
+    if (!groups.length) return this.getDefaultGroups();
+
+    if (!groups.some(group => group.isDefault)) groups[0].isDefault = true;
+    return groups;
   }
 
   getDefaultGroups(): BurgGroup[] {

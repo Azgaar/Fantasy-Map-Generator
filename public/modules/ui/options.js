@@ -602,8 +602,8 @@ function randomizeOptions() {
 
   // a loaded map's migrated group registries are map data, not session preferences: re-seed
   // from the same source boot uses, so new maps get the user's saved groups or the defaults
-  options.burgs.groups = JSON.safeParse(localStorage.getItem("burg-groups")) || Burgs.getDefaultGroups();
-  options.labels = JSON.safeParse(localStorage.getItem("options-labels")) || Labels.getDefaultOptions();
+  options.burgs.groups = Burgs.parseStoredGroups(localStorage.getItem("burg-groups"));
+  options.labels = Labels.parseStoredOptions(localStorage.getItem("options-labels"));
 
   // 'Options' settings
   if (randomize || !stored("points")) changeCellsDensity(4); // reset to default, no need to randomize

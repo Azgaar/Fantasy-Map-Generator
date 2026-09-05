@@ -55,9 +55,9 @@ let options = {
   prec: 100, // precipitation modifier in %
   showBurgPreview: true,
   burgs: {
-    groups: JSON.safeParse(localStorage.getItem("burg-groups")) || Burgs.getDefaultGroups()
+    groups: Burgs.parseStoredGroups(localStorage.getItem("burg-groups"))
   },
-  labels: JSON.safeParse(localStorage.getItem("options-labels")) || Labels.getDefaultOptions(),
+  labels: Labels.parseStoredOptions(localStorage.getItem("options-labels")),
   emblems: { showAll: false },
   trade: {
     animation: JSON.safeParse(localStorage.getItem("trade-animation")) || TradeAnimation.getDefaultOptions()
