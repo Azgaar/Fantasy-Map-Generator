@@ -250,7 +250,7 @@ origin is unlisted anyway).
 
 ## Verification checklist (filled in as the build proceeds)
 
-- [ ] upstream/help-assistant merged; unit tests green; tsc clean
+- [x] upstream/help-assistant merged; unit tests green (96 files / 1025 tests after regenerating `context.generated.ts` for the new registry entry); tsc clean
 - [ ] mode control, open(options), entry points
 - [ ] This map panel with drawer, status line, chip, empty state
 - [ ] notes bridge (TinyMCE-era implementation)
