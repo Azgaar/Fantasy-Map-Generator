@@ -1,5 +1,6 @@
 import type { LayerId } from "@/components/layers";
 import type { Point } from "@/types/global";
+import { safeParseJSON } from "@/utils/stringUtils";
 
 export const LABEL_TYPES = ["state", "province", "burg", "river", "route", "added"] as const;
 
@@ -131,6 +132,29 @@ export class LabelsModule {
       resizeOnZoom: true,
       showAll: false,
       groups: this.getDefaultGroups()
+    };
+  }
+
+  /** a value persisted by an older build can be structurally valid and still leave the renderer with
+   * nothing to draw, so drop groups it cannot use and restore any type left without one */
+  parseStoredOptions(stored: string | null) {
+    const defaults = this.getDefaultOptions();
+    const parsed = stored ? safeParseJSON(stored) : null;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return defaults;
+
+    const isUsable = (group: LabelGroup) =>
+      Boolean(group?.name) && (LABEL_TYPES as readonly string[]).includes(group?.type) && Boolean(group?.zoom);
+    const groups: LabelGroup[] = Array.isArray(parsed.groups) ? parsed.groups.filter(isUsable) : [];
+    for (const type of LABEL_TYPES) {
+      if (groups.some(group => group.type === type)) continue;
+      groups.push(...defaults.groups.filter(group => group.type === type));
+    }
+
+    const flag = (value: unknown, fallback: boolean) => (typeof value === "boolean" ? value : fallback);
+    return {
+      resizeOnZoom: flag(parsed.resizeOnZoom, defaults.resizeOnZoom),
+      showAll: flag(parsed.showAll, defaults.showAll),
+      groups
     };
   }
 
