@@ -141,7 +141,9 @@ function renderDialog(): void {
   // its stylesheet rides along with it instead of sitting in the global sheet
   const styles = /* html */ `
     <style>
-      #helpAssistant.ui-dialog-content { display: flex; flex-direction: column; gap: .5em; overflow: hidden; padding: .6em .7em .5em; font-family: var(--sans-serif); }
+      /* .ui-dialog turns selection off so dialogs drag cleanly; an answer is there to be copied,
+         so the body opts back in and only the titlebar keeps the drag behaviour */
+      #helpAssistant.ui-dialog-content { display: flex; flex-direction: column; gap: .5em; overflow: hidden; padding: .6em .7em .5em; font-family: var(--sans-serif); user-select: text; }
       #helpAssistant > div          { width: auto; }
       .ui-dialog-titlebar .helpAssistantNewChat { font-size: .62em; }
 
