@@ -102,14 +102,14 @@ export function createSession(getConfig: () => SessionConfig, tools: AgentTool[]
 
     try {
       for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
-        const { key, model } = getConfig();
+        const { key, model, context } = getConfig();
         handlers.onStatus(iteration === 1 ? "Thinking" : `Thinking (step ${iteration})`);
         trimHistory(messages);
 
         const completion = await complete({
           key,
           model,
-          system: buildSystemPrompt(),
+          system: buildSystemPrompt(context),
           messages,
           tools: definitions,
           signal: controller.signal

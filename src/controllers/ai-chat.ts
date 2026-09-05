@@ -458,6 +458,7 @@ function renderEntry(entry: Entry): HTMLElement {
     else element.textContent = entry.text;
     return element;
   }
+  if (entry.kind === "edit") return document.createElement("div"); // rendered by the assistant panel; this dialog is retired
 
   const details = document.createElement("details");
   details.className = "aiChatStep";
