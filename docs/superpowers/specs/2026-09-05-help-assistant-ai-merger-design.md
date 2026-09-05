@@ -257,5 +257,5 @@ origin is unlisted anyway).
 - [x] write_note tool + undo + prompt sections (1e3f069e, 89a8bc4b)
 - [x] unit tests listed in §6 — 102 files / 1067 tests green after Task 8
 - [x] browser scenarios 1–5 (scenario 4 is inside the third test) — 4/4 passed on port **5211** (5199 was held by the height-scale session's dev server); one CSS specificity bug found only in the browser: the drawer's `display: flex` outranked `[hidden]`, fixed with attribute-qualified selectors
-- [ ] Quill branch merged; bridge re-implemented over Quill; scenarios rerun
-- [ ] biome + stamp-assets clean
+- [ ] Quill branch merged; bridge re-implemented over Quill; scenarios rerun — PENDING: `feat/notes-editor-quill` did not exist yet when Tasks 1–9 finished (2026-09-05 14:35); plan Task 10 has the merge recipe
+- [x] biome + stamp-assets clean (`npx biome check src public/main.js`: 0 errors; all 8 stamps current); tsc silent; 102 files / 1067 unit tests
