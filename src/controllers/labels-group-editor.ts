@@ -79,7 +79,7 @@ function renderDialog(): void {
       </div>
       <div style="display:flex; gap:1.2em; align-items:center; margin:.6em 0 0">
         <label data-tip="Automatically scale label font size as you zoom in or out"><input id="labelsResizeOnZoom" class="checkbox" type="checkbox" ${facts.labels.resizeOnZoom ? "checked" : ""}><span class="checkbox-label">Resize labels on zoom</span></label>
-        <label data-tip="Ignore zoom bounds and show all labels regardless of the current zoom level"><input id="labelsShowAll" class="checkbox" type="checkbox" ${facts.labels.showAll ? "checked" : ""}><span class="checkbox-label">Show all labels <small>[slow]</small></span></label>
+        <label data-tip="Ignore zoom bounds and show all labels regardless of the current zoom level"><input id="labelsShowAll" class="checkbox" type="checkbox" ${options.app.labels.showAll ? "checked" : ""}><span class="checkbox-label">Show all labels <small>[slow]</small></span></label>
         <div style="padding: 0.5em 0; font-style: italic;">To change Burg Groups open <a id="labelGroupsBurgGroupsLink" style="text-decoration: underline;">Burg Group Configurator</a>.</div>
       </div>
     </form>
@@ -293,11 +293,9 @@ function submitForm(event: Event): void {
     delete styles.labels.groups[group.name];
   });
 
-  Facts.set(f => {
-    f.labels.groups = rows.map(rowToGroup);
-    f.labels.resizeOnZoom = ensureEl<HTMLInputElement>("labelsResizeOnZoom").checked;
-    f.labels.showAll = ensureEl<HTMLInputElement>("labelsShowAll").checked;
-  });
+  facts.labels.groups = rows.map(rowToGroup);
+  facts.labels.resizeOnZoom = ensureEl<HTMLInputElement>("labelsResizeOnZoom").checked;
+  Options.set(o => (o.app.labels.showAll = ensureEl<HTMLInputElement>("labelsShowAll").checked));
   Options.remember("labelGroups", facts.labels.groups, Labels.getDefaultGroups()); // carried to the next map
 
   for (const group of facts.labels.groups) styles.labels.groups[group.name] ??= getGroupStyle(group);

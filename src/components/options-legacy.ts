@@ -116,7 +116,7 @@ export function adoptLegacyOptions(): Record<string, unknown> | null {
   str("azgaarAssistant", "app.ui.assistant");
   str("shapeRendering", "app.rendering");
   str("onloadBehavior", "app.onLoad");
-  str("emblemShape", "app.emblemShape");
+  str("emblemShape", "app.emblems.shape");
   num("autosaveInterval", "app.autosave.interval");
   num("pngResolution", "app.export.pngResolution");
   num("tileCols", "app.export.tiles.cols");

@@ -374,7 +374,7 @@ function selectStyleElement() {
     emblemsStateSizeInput.value = styles.emblems.stateEmblems.options.size;
     emblemsProvinceSizeInput.value = styles.emblems.provinceEmblems.options.size;
     emblemsBurgSizeInput.value = styles.emblems.burgEmblems.options.size;
-    showAllEmblems.checked = options.app.emblemsShowAll;
+    showAllEmblems.checked = options.app.emblems.showAll;
   }
 
   if (styleElement === "goodsIcons") {
@@ -1065,7 +1065,7 @@ emblemsBurgSizeInput.addEventListener("change", e => {
 });
 
 showAllEmblems.addEventListener("change", e => {
-  Options.set(options => (options.app.emblemsShowAll = e.target.checked));
+  Options.set(options => (options.app.emblems.showAll = e.target.checked));
   invokeActiveZooming();
 });
 

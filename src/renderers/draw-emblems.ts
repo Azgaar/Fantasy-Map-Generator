@@ -400,7 +400,7 @@ function isVisible({ x, y, shift }: EmblemData, { bounds }: ViewportRenderContex
 
 function isGroupHidden(type: EmblemType, scale: number): boolean {
   const screenSize = sizes[type] * scale;
-  return !options.app.emblemsShowAll && (screenSize < 25 || screenSize > 300);
+  return !options.app.emblems.showAll && (screenSize < 25 || screenSize > 300);
 }
 
 function getId(type: EmblemType, i: number): string {

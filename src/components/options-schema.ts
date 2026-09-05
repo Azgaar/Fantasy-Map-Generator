@@ -1,37 +1,39 @@
 import { z } from "zod";
 import { burgGroup, coastlineSettings, labelGroup, militaryUnit, transport } from "@/components/facts-schema";
+import { MAX_DENSITY, MIN_DENSITY } from "@/data/graph-density";
+import { count, hexColor, nonNegative, percent, positive, ratio } from "@/utils/schemaUtils";
 
 const threeD = z.strictObject({
-  scale: z.number(),
-  lightness: z.number(),
-  shadow: z.number(),
+  scale: positive,
+  lightness: ratio,
+  shadow: ratio,
   sun: z.strictObject({ x: z.number(), y: z.number(), z: z.number() }),
   rotateMesh: z.number(),
   rotateGlobe: z.number(),
-  skyColor: z.string(),
-  waterColor: z.string(),
-  sunColor: z.string(),
+  skyColor: hexColor,
+  waterColor: hexColor,
+  sunColor: hexColor,
   extendedWater: z.boolean(),
   labels3d: z.boolean(),
   satellite: z.boolean(),
   wireframe: z.boolean(),
-  resolution: z.number(),
-  resolutionScale: z.number(),
+  resolution: positive,
+  resolutionScale: positive,
   subdivide: z.boolean(),
   erosion: z.boolean(),
-  erosionDetail: z.number(),
-  erosionStrength: z.number(),
-  erosionRiverDepth: z.number(),
-  erosionOctaves: z.number()
+  erosionDetail: nonNegative,
+  erosionStrength: nonNegative,
+  erosionRiverDepth: nonNegative,
+  erosionOctaves: count
 });
 
 const tradeAnimation = z.strictObject({
-  displayType: z.string(),
-  concurrent: z.number(),
-  duration: z.number(),
-  landDurationModifier: z.number(),
-  segmentChangePause: z.number(),
-  markerSize: z.number()
+  displayType: z.enum(["local", "global", "both"]),
+  concurrent: count.positive(),
+  duration: positive,
+  landDurationModifier: nonNegative,
+  segmentChangePause: nonNegative,
+  markerSize: positive
 });
 
 export const optionsSchema = z.strictObject({
@@ -40,48 +42,53 @@ export const optionsSchema = z.strictObject({
     /** the graph the next map is built on: its extent, and how finely it is divided. A pin keeps
      * the extent; otherwise it follows the window */
     graph: z.strictObject({
-      width: z.number().positive(),
-      height: z.number().positive(),
-      density: z.number() // the Points slider step; the cell count is derived from it, never stored
+      width: positive,
+      height: positive,
+      // the Points slider step; the cell count is derived from it, never stored. A step the table
+      // has no entry for silently generates a default-sized map, so it is bounded here
+      density: count.min(MIN_DENSITY).max(MAX_DENSITY)
     }),
-    template: z.string(),
-    resolveDepressionsSteps: z.number(),
-    lakeElevationLimit: z.number(),
+    template: z.string(), // ids include the user's own precreated heightmaps, so no enum
+    resolveDepressionsSteps: count,
+    lakeElevationLimit: nonNegative,
     cultures: z.strictObject({
-      limit: z.number(),
-      set: z.string(),
-      sizeVariety: z.number(),
-      growthRate: z.number()
+      limit: count,
+      set: z.string().min(1),
+      sizeVariety: nonNegative,
+      growthRate: nonNegative
     }),
-    states: z.strictObject({ limit: z.number(), sizeVariety: z.number(), growthRate: z.number() }),
-    provinces: z.strictObject({ ratio: z.number() }),
-    religions: z.strictObject({ limit: z.number() }),
-    burgs: z.strictObject({ limit: z.number() }) // 1000 means "auto"
+    states: z.strictObject({ limit: count, sizeVariety: nonNegative, growthRate: nonNegative }),
+    provinces: z.strictObject({ ratio: percent }),
+    religions: z.strictObject({ limit: count }),
+    burgs: z.strictObject({ limit: count }) // 1000 means "auto"
   }),
 
   /** how the app itself behaves: applied at once, generating nothing, describing no map */
   app: z.strictObject({
     notesPinned: z.boolean(),
-    emblemsShowAll: z.boolean(),
-    emblemShape: z.string(),
-    rendering: z.string(), // the svg shape-rendering the viewbox is drawn with
-    onLoad: z.string(), // what the app does with no map asked for: "random" or "lastSaved"
-    zoomExtent: z.strictObject({ min: z.number(), max: z.number() }),
+    // "show everything regardless of zoom" is this browser inspecting the map, not the map itself
+    emblems: z.strictObject({ showAll: z.boolean(), shape: z.string().min(1) }),
+    labels: z.strictObject({ showAll: z.boolean() }),
+    rendering: z.enum(["geometricPrecision", "optimizeSpeed"]), // the viewbox shape-rendering
+    onLoad: z.enum(["random", "lastSaved"]), // what the app does with no map asked for
+    zoomExtent: z.strictObject({ min: positive, max: positive }).refine(({ min, max }) => min <= max, {
+      message: "zoomExtent.min must not exceed max"
+    }),
     // the map window on screen. null until the user sets one: it then follows the browser window
-    viewport: z.strictObject({ width: z.number().positive(), height: z.number().positive() }).nullable(),
-    autosave: z.strictObject({ interval: z.number(), remind: z.boolean() }), // interval in minutes, 0 is off
+    viewport: z.strictObject({ width: positive, height: positive }).nullable(),
+    autosave: z.strictObject({ interval: count, remind: z.boolean() }), // interval in minutes, 0 is off
     ui: z.strictObject({
-      size: z.number().nullable(), // null until the user picks one: the interface follows the extent
-      tooltipSize: z.number(),
-      themeColor: z.string(),
-      transparency: z.number(),
-      assistant: z.string(),
+      size: positive.nullable(), // null until the user picks one: the interface follows the extent
+      tooltipSize: positive,
+      themeColor: hexColor,
+      transparency: percent,
+      assistant: z.enum(["show", "hide"]),
       speakerVoice: z.string(), // the index into the browser's voice list, "" until one is picked
       clickArrowTip: z.boolean() // the hint on the options trigger, until the user has found it
     }),
     export: z.strictObject({
-      pngResolution: z.number(),
-      tiles: z.strictObject({ cols: z.number(), rows: z.number(), scale: z.number() })
+      pngResolution: positive,
+      tiles: z.strictObject({ cols: count.positive(), rows: count.positive(), scale: positive })
     }),
     trade: z.strictObject({ animation: tradeAnimation }),
     threeD

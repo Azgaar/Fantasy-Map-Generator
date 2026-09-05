@@ -57,7 +57,7 @@ type MarkerConfig = {
 
 class MarkersModule {
   // built on first use, never in the constructor: the module is instantiated at import time,
-  // before components/options.ts has filled in the options it reads
+  // before components/options-model.ts has filled in the options it reads
   private configuration?: MarkerConfig[];
   private occupied: boolean[] = [];
 

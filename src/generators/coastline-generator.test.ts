@@ -10,9 +10,12 @@ const island = {
 } as unknown as Feature;
 
 /** The settings are facts of the map; a user edit also remembers them for the next one */
-const stubFacts = () => ({ seed: "1", graph: { width: 100, height: 100 } }) as unknown as typeof globalThis.facts;
-const stubFactsModel = () =>
-  ({ set: (change: (f: unknown) => void) => change(globalThis.facts) }) as unknown as typeof globalThis.Facts;
+const stubFacts = () =>
+  ({
+    seed: "1",
+    graph: { width: 100, height: 100 },
+    coastline: Coastline.getDefaultSettings()
+  }) as unknown as typeof globalThis.facts;
 
 let remembered: [string, unknown][] = [];
 const stubOptionsModel = () =>
@@ -24,7 +27,6 @@ beforeEach(() => {
   localStorage.clear();
   remembered = [];
   globalThis.facts = stubFacts();
-  globalThis.Facts = stubFactsModel();
   globalThis.Options = stubOptionsModel();
   globalThis.pack = {
     vertices: {
@@ -40,10 +42,6 @@ beforeEach(() => {
 });
 
 describe("settings", () => {
-  it("defaults on a map saved before the settings existed", () => {
-    expect(Coastline.settings).toEqual(Coastline.getDefaultSettings());
-  });
-
   it("keeps them in facts, so they are saved and restored with the map", () => {
     Coastline.update({ maxDepth: 2 });
     expect(facts.coastline.maxDepth).toBe(2);
@@ -65,7 +63,7 @@ describe("getFeaturePath", () => {
   it("reproduces the same coastline for the same seed and settings", () => {
     const path = Coastline.getFeaturePath(island);
 
-    delete (facts as Partial<typeof facts>).coastline; // reload: settings are read from the map again
+    facts.coastline = Coastline.getDefaultSettings(); // a reload: the settings come from the map again
     expect(Coastline.getFeaturePath(island)).toBe(path);
 
     for (let i = 0; i < 100; i++) Math.random(); // an own rng per feature, unaffected by what was generated before

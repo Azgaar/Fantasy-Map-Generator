@@ -254,7 +254,7 @@ function convertedTemperature(temperatureCelsius: number): string {
 }
 
 function changeTemperatureEquator(this: HTMLInputElement): void {
-  Facts.set(o => (o.climate.temperature.equator = Number(this.value)));
+  facts.climate.temperature.equator = Number(this.value);
   ensureEl<HTMLInputElement>("temperatureEquatorInput").value = this.value;
   ensureEl<HTMLInputElement>("temperatureEquatorOutput").value = this.value;
   ensureEl("temperatureEquatorConverted").innerText = convertedTemperature(facts.climate.temperature.equator);
@@ -263,7 +263,7 @@ function changeTemperatureEquator(this: HTMLInputElement): void {
 }
 
 function changeTemperatureNorthPole(this: HTMLInputElement): void {
-  Facts.set(o => (o.climate.temperature.northPole = Number(this.value)));
+  facts.climate.temperature.northPole = Number(this.value);
   ensureEl<HTMLInputElement>("temperatureNorthPoleInput").value = this.value;
   ensureEl<HTMLInputElement>("temperatureNorthPoleOutput").value = this.value;
   ensureEl("temperatureNorthPoleConverted").innerText = convertedTemperature(facts.climate.temperature.northPole);
@@ -272,7 +272,7 @@ function changeTemperatureNorthPole(this: HTMLInputElement): void {
 }
 
 function changeTemperatureSouthPole(this: HTMLInputElement): void {
-  Facts.set(o => (o.climate.temperature.southPole = Number(this.value)));
+  facts.climate.temperature.southPole = Number(this.value);
   ensureEl<HTMLInputElement>("temperatureSouthPoleInput").value = this.value;
   ensureEl<HTMLInputElement>("temperatureSouthPoleOutput").value = this.value;
   ensureEl("temperatureSouthPoleConverted").innerText = convertedTemperature(facts.climate.temperature.southPole);
@@ -281,7 +281,7 @@ function changeTemperatureSouthPole(this: HTMLInputElement): void {
 }
 
 function changeMapSize(this: HTMLInputElement): void {
-  Facts.set(o => (o.geography.mapSize = Number(this.value)));
+  facts.geography.mapSize = Number(this.value);
   ensureEl<HTMLInputElement>("mapSizeInput").value = this.value;
   ensureEl<HTMLInputElement>("mapSizeOutput").value = this.value;
   lock("mapSize");
@@ -290,7 +290,7 @@ function changeMapSize(this: HTMLInputElement): void {
 }
 
 function changeLatitude(this: HTMLInputElement): void {
-  Facts.set(o => (o.geography.latitude = Number(this.value)));
+  facts.geography.latitude = Number(this.value);
   ensureEl<HTMLInputElement>("latitudeInput").value = this.value;
   ensureEl<HTMLInputElement>("latitudeOutput").value = this.value;
   lock("latitude");
@@ -299,7 +299,7 @@ function changeLatitude(this: HTMLInputElement): void {
 }
 
 function changeLongitude(this: HTMLInputElement): void {
-  Facts.set(o => (o.geography.longitude = Number(this.value)));
+  facts.geography.longitude = Number(this.value);
   ensureEl<HTMLInputElement>("longitudeInput").value = this.value;
   ensureEl<HTMLInputElement>("longitudeOutput").value = this.value;
   lock("longitude");
@@ -308,7 +308,7 @@ function changeLongitude(this: HTMLInputElement): void {
 }
 
 function changePrecipitation(this: HTMLInputElement): void {
-  Facts.set(o => (o.climate.precipitation = Number(this.value)));
+  facts.climate.precipitation = Number(this.value);
   ensureEl<HTMLInputElement>("precInput").value = this.value;
   ensureEl<HTMLInputElement>("precOutput").value = this.value;
   lock("prec");
@@ -433,7 +433,7 @@ function handleWindChange(event: Event): void {
   const arrow = (target.tagName === "path" ? target : target.nextElementSibling) as SVGPathElement | null;
   if (!arrow?.dataset.tier) return;
   const tier = +arrow.dataset.tier;
-  Facts.set(o => (o.climate.winds[tier] = (o.climate.winds[tier] + 45) % 360));
+  facts.climate.winds[tier] = (facts.climate.winds[tier] + 45) % 360;
   const tr = parseTransform(arrow.getAttribute("transform") ?? "");
   arrow.setAttribute("transform", `rotate(${facts.climate.winds[tier]} ${tr[1]} ${tr[2]})`);
 
@@ -451,16 +451,14 @@ function restoreDefaultWinds(): void {
   const shouldUpdate =
     ensureEl<HTMLInputElement>("wcAutoChange").checked &&
     mapTiers.some(t => facts.climate.winds[t] !== defaultWinds[t]);
-  Facts.set(o => (o.climate.winds = defaultWinds));
+  facts.climate.winds = defaultWinds;
   updateWindDirections();
   if (shouldUpdate) updateWorld();
 }
 
 function applyWorldPreset(size: number, latitude: number): void {
-  Facts.set(o => {
-    o.geography.mapSize = size;
-    o.geography.latitude = latitude;
-  });
+  facts.geography.mapSize = size;
+  facts.geography.latitude = latitude;
   updateInputValues();
   lock("mapSize");
   lock("latitude");

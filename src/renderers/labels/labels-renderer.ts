@@ -109,7 +109,7 @@ function reconcileGroup(labels: Element, textPaths: Element, groupName: string, 
 
 function isGroupVisible({ group, bounds }: { group: LabelGroup; bounds: ViewportRenderContext["bounds"] }): boolean {
   if (group.active === false) return false;
-  if (!facts.labels.showAll) {
+  if (!options.app.labels.showAll) {
     if (group.zoom.min !== null && bounds.scale < group.zoom.min) return false;
     if (group.zoom.max !== null && bounds.scale > group.zoom.max) return false;
   }

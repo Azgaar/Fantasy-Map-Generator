@@ -1,4 +1,5 @@
 import { Layers } from "@/components/layers";
+import { DEFAULT_TRADE_ANIMATION } from "@/data/trade-animation-options";
 import type { Burg } from "../generators/burgs-generator";
 import type { Deal } from "../generators/markets-generator";
 import type { Point } from "../generators/voronoi";
@@ -14,15 +15,6 @@ export type TradeBatch = {
 };
 
 type TradePath = { points: Point[]; segments: { type: "land" | "water"; points: Point[] }[] };
-
-const DEFAULT_OPTIONS = {
-  displayType: "both",
-  concurrent: 30,
-  duration: 250,
-  landDurationModifier: 5,
-  segmentChangePause: 1000,
-  markerSize: 4
-} as const;
 
 export class TradeAnimationModule {
   private activeCount = 0;
@@ -54,7 +46,7 @@ export class TradeAnimationModule {
 
   private topUp(): void {
     if (!Layers.isOn("trade") || !this.cachedBatches) return;
-    const target = options.app.trade.animation.concurrent ?? DEFAULT_OPTIONS.concurrent;
+    const target = options.app.trade.animation.concurrent ?? DEFAULT_TRADE_ANIMATION.concurrent;
     while (this.activeCount < target) {
       if (!this.spawnOne(this.cachedBatches)) break;
     }
@@ -366,7 +358,7 @@ export class TradeAnimationModule {
   }
 
   getDefaultOptions() {
-    return DEFAULT_OPTIONS;
+    return DEFAULT_TRADE_ANIMATION;
   }
 }
 
@@ -374,5 +366,6 @@ declare global {
   var TradeAnimation: TradeAnimationModule;
 }
 
-export const tradeAnimation = new TradeAnimationModule();
-window.TradeAnimation = tradeAnimation;
+// biome-ignore lint/suspicious/noRedeclare: legacy seam
+export const TradeAnimation = new TradeAnimationModule();
+window.TradeAnimation = TradeAnimation;

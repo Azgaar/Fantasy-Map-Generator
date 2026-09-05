@@ -2,9 +2,11 @@
 // The invariants the two-object split exists to guarantee.
 // See docs/architecture/configuration.md#invariants
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { POINTS_BY_DENSITY } from "@/data/graph-density";
 import { isLocked, lock } from "@/utils/preferences";
 import { getDefaultFacts } from "./facts-model";
-import { getDefaultOptions, POINTS_BY_DENSITY } from "./options-model";
+import { getDefaultOptions } from "./options-model";
+import { isPinnable, parseInput, read, SETTINGS, schemaFor, write } from "./settings";
 
 const UNIT = { icon: "u", name: "cavalry", rural: 0.2, urban: 0.1, crew: 2, power: 1, type: "melee", separate: 0 };
 const DEFAULT_UNITS = [{ ...UNIT, name: "the module default" }];
@@ -16,7 +18,7 @@ async function boot() {
   globalThis.options = getDefaultOptions();
   await import("./facts-model");
   await import("./options-model");
-  await import("./pinnable");
+  await import("./settings");
 }
 
 /** A `.map` file's settings field: what save.ts writes and load.ts reads back */
@@ -65,7 +67,7 @@ describe("no cross-map inheritance", () => {
     expect(facts.military.units).toHaveLength(1);
 
     load(savedFile(f => (f.lore.name = "second"))); // a map with no military of its own
-    expect(facts.military.units).toEqual([]);
+    expect(facts.military.units).toEqual(getDefaultFacts().military.units);
     expect(facts.lore.name).toBe("second");
   });
 
@@ -269,7 +271,7 @@ describe("one object, one key", () => {
     expect(options.app.ui.transparency).toBe(30);
     expect(options.app.rendering).toBe("geometricPrecision");
     expect(options.app.onLoad).toBe("lastSaved");
-    expect(options.app.emblemShape).toBe("heater");
+    expect(options.app.emblems.shape).toBe("heater");
     expect(options.app.autosave).toEqual({ interval: 5, remind: false });
     expect(options.app.export.tiles.cols).toBe(4);
 
@@ -288,14 +290,14 @@ describe("one object, one key", () => {
   it("leaves preferences alone when a map is loaded", () => {
     Options.set(o => {
       o.app.ui.size = 2;
-      o.app.emblemShape = "spanish";
+      o.app.emblems.shape = "spanish";
       o.app.zoomExtent = { min: 2, max: 30 };
     });
 
     load(savedFile(f => (f.lore.name = "someone else's map")));
 
     expect(options.app.ui.size).toBe(2);
-    expect(options.app.emblemShape).toBe("spanish");
+    expect(options.app.emblems.shape).toBe("spanish");
     expect(options.app.zoomExtent).toEqual({ min: 2, max: 30 });
   });
 
@@ -305,6 +307,46 @@ describe("one object, one key", () => {
 
     expect(options.app.ui.tooltipSize).toBe(getDefaultOptions().app.ui.tooltipSize);
     expect(JSON.parse(localStorage.getItem("fmg-options")!).app.ui.tooltipSize).toBe(14);
+  });
+
+  it("throws the pins away with the options, so nothing goes on generating a pinned value", () => {
+    lock("statesNumber", 3);
+    Options.reset();
+
+    expect(isLocked("statesNumber")).toBe(false);
+    Options.randomize();
+    expect(options.generation.states.limit).not.toBe(3);
+  });
+});
+
+describe("one table says where a value lives", () => {
+  // the panel's own key list is typed against this table, so a control it shows that nothing
+  // answers for does not compile. What a test can still catch is a path that leads nowhere
+  it("points every key at a value the schema describes", () => {
+    for (const key of Object.keys(SETTINGS)) expect(schemaFor(key), key).toBeDefined();
+  });
+
+  it("reads each key from the object its scope names", () => {
+    facts.climate.precipitation = 123;
+    options.generation.states.limit = 9;
+    expect(read("prec")).toBe(123);
+    expect(read("statesNumber")).toBe(9);
+    expect(read("noSuchOption")).toBeUndefined();
+  });
+
+  it("pins requests and facts, and never a preference", () => {
+    expect(isPinnable("statesNumber")).toBe(true); // a request
+    expect(isPinnable("prec")).toBe(true); // a fact with no request of its own
+    expect(isPinnable("tooltipSize")).toBe(false); // a preference: nothing re-rolls it
+    expect(isPinnable("noSuchOption")).toBe(false);
+  });
+
+  it("refuses a control's value the schema rejects, rather than writing it", () => {
+    expect(parseInput("statesNumber", "abc")).toBeUndefined();
+    expect(parseInput("statesNumber", "")).toBeUndefined();
+    expect(parseInput("statesNumber", "7")).toBe(7);
+    expect(parseInput("culturesSet", "highFantasy")).toBe("highFantasy");
+    expect(write("statesNumber", "7")).toBe(false); // the string a control holds is not the value
   });
 });
 
@@ -418,12 +460,10 @@ describe("presentation is the style's, not the map's", () => {
 describe("an editor's Restore asks the model, rather than keeping its own copy", () => {
   it("restores the units the model defines", async () => {
     const { getDefaultFacts: modelDefaults } = await import("./facts-model");
-    Facts.set(f => {
-      f.units.distance.scale = 99;
-      f.units.height.exponent = 1.1;
-    });
+    facts.units.distance.scale = 99;
+    facts.units.height.exponent = 1.1;
 
-    Facts.set(f => (f.units = modelDefaults().units)); // what the editor's Restore does
+    facts.units = modelDefaults().units; // what the editor's Restore does
     expect(facts.units).toEqual(modelDefaults().units);
     expect(facts.units.height.exponent).toBe(2);
   });

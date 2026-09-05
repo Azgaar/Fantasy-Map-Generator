@@ -34,7 +34,7 @@ async function applyStyleOnLoad() {
 
   applyStylePreset(style);
   updateMapFilter();
-  Facts.set(f => (f.style.preset = appliedPreset)); // the fallback preset, if the stored one is gone
+  facts.style.preset = appliedPreset; // the fallback preset, if the stored one is gone
   setStylePresetSelect();
 }
 
@@ -42,7 +42,7 @@ async function applyStyleOnLoad() {
 function setStylePresetSelect() {
   const preset = facts.style.preset || "default";
   const isKnown = Array.from(stylePreset.options).some(option => option.value === preset);
-  if (!isKnown) Facts.set(f => (f.style.preset = "default"));
+  if (!isKnown) facts.style.preset = "default";
 
   stylePreset.value = stylePreset.dataset.old = isKnown ? preset : "default";
   setPresetRemoveButtonVisibiliy();
@@ -155,7 +155,7 @@ function requestStylePresetChange(preset) {
 async function changeStyle(desiredPreset) {
   const styleData = await getStylePreset(desiredPreset);
   const [presetName, style] = styleData;
-  Facts.set(f => (f.style.preset = presetName));
+  facts.style.preset = presetName;
   applyStyleWithUiRefresh(style);
 }
 
@@ -216,7 +216,7 @@ function addStylePreset() {
 
     const presetName = customPresetPrefix + desiredName;
     applyOption(stylePreset, presetName, desiredName + " [custom]");
-    Facts.set(f => (f.style.preset = presetName));
+    facts.style.preset = presetName;
     localStorage.setItem(presetName, styleJSON);
 
     applyStyleWithUiRefresh(JSON.parse(styleJSON));

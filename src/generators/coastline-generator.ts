@@ -248,13 +248,8 @@ function buildCoastlinePath({ points, origIndices }: FractalizedShape): string {
 class CoastlineGenerator {
   readonly PROFILE_SIZE = PROFILE_SIZE;
 
-  /**
-   * Settings of the current map. Kept in options, so they are saved to the .map file and the
-   * coastlines are reproduced exactly on reload. A map saved before the settings existed (or a
-   * brand new map) starts from the last values the user picked
-   */
+  /** Settings of the map on screen: a fact, read at render time and saved with the file */
   get settings(): CoastlineSettings {
-    facts.coastline ??= this.getDefaultSettings();
     return facts.coastline;
   }
 
@@ -264,8 +259,8 @@ class CoastlineGenerator {
    * See docs/architecture/configuration.md#preservation-across-maps
    */
   update(change: Partial<CoastlineSettings>): void {
-    Facts.set(() => Object.assign(this.settings, change));
-    Options.remember("coastline", this.settings, this.getDefaultSettings());
+    Object.assign(facts.coastline, change);
+    Options.remember("coastline", facts.coastline, this.getDefaultSettings());
   }
 
   getDefaultSettings(): CoastlineSettings {

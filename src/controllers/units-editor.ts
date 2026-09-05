@@ -172,25 +172,25 @@ function addListeners(): void {
 }
 
 function changeAreaUnit(this: HTMLInputElement): void {
-  Facts.set(f => (f.units.area.unit = this.value));
+  facts.units.area.unit = this.value;
   lock("areaUnit");
 }
 
 function changePopulationRate(this: HTMLInputElement, event: Event): void {
   if (isInnerSliderEvent(event)) return;
-  Facts.set(f => (f.units.population.scale = +this.value));
+  facts.units.population.scale = +this.value;
   lock("populationRate");
 }
 
 function changeUrbanization(this: HTMLInputElement, event: Event): void {
   if (isInnerSliderEvent(event)) return;
-  Facts.set(f => (f.units.population.urbanization.rate = +this.value));
+  facts.units.population.urbanization.rate = +this.value;
   lock("urbanization");
 }
 
 function changeUrbanDensity(this: HTMLInputElement, event: Event): void {
   if (isInnerSliderEvent(event)) return;
-  Facts.set(f => (f.units.population.urbanization.density = +this.value));
+  facts.units.population.urbanization.density = +this.value;
   lock("urbanDensity");
 }
 
@@ -208,35 +208,35 @@ function changeDistanceUnit(this: HTMLSelectElement): void {
 }
 
 function setDistanceUnit(unit: string): void {
-  Facts.set(f => (f.units.distance.unit = unit));
+  facts.units.distance.unit = unit;
   lock("distanceUnit");
   redrawDistances();
 }
 
 function changeDistanceScale(this: HTMLInputElement, event: Event): void {
   if (isInnerSliderEvent(event)) return;
-  Facts.set(f => (f.units.distance.scale = +this.value));
+  facts.units.distance.scale = +this.value;
   lock("distanceScale");
   redrawDistances();
 }
 
 function changeHeightUnit(this: HTMLSelectElement): void {
   if (this.value !== "custom_name") {
-    Facts.set(f => (f.units.height.unit = this.value));
+    facts.units.height.unit = this.value;
     lock("heightUnit");
     return;
   }
 
   prompt("Provide a custom name for a height unit", { default: "" }, custom => {
     this.options.add(new Option(String(custom), String(custom), false, true));
-    Facts.set(f => (f.units.height.unit = String(custom)));
+    facts.units.height.unit = String(custom);
     lock("heightUnit");
   });
 }
 
 function changeHeightExponent(this: HTMLInputElement, event: Event): void {
   if (isInnerSliderEvent(event)) return;
-  Facts.set(f => (f.units.height.exponent = +this.value));
+  facts.units.height.exponent = +this.value;
   lock("heightExponent");
   Temperature.generate();
   Layers.draw("temperature");
@@ -246,7 +246,7 @@ function changeHeightExponent(this: HTMLInputElement, event: Event): void {
 const isInnerSliderEvent = (event: Event): boolean => event.target !== event.currentTarget;
 
 function changeTemperatureScale(this: HTMLSelectElement): void {
-  Facts.set(f => (f.units.temperature.unit = this.value));
+  facts.units.temperature.unit = this.value;
   lock("temperatureScale");
   Layers.draw("temperature");
 }
@@ -258,7 +258,7 @@ function redrawDistances(): void {
 }
 
 function restoreDefaultUnits(): void {
-  Facts.set(f => (f.units = getDefaultFacts().units));
+  facts.units = getDefaultFacts().units;
 
   for (const setting of [
     "distanceScale",

@@ -110,7 +110,7 @@ function addListeners(): void {
 }
 
 function changeMapName(this: HTMLInputElement): void {
-  Facts.set(f => (f.lore.name = this.value));
+  facts.lore.name = this.value;
   lock("mapName"); // named by hand: the next map keeps it
 }
 
@@ -118,17 +118,15 @@ function changeYear(this: HTMLInputElement): void {
   if (!this.value) return;
   if (Number.isNaN(+this.value)) return void tip("Current year should be a number", false, "error");
 
-  Facts.set(f => (f.lore.calendar.year = +this.value));
+  facts.lore.calendar.year = +this.value;
   lock("year");
 }
 
 /** Renaming the era re-derives its abbreviation, which the user can then override below */
 function changeEra(this: HTMLInputElement): void {
   if (!this.value) return;
-  Facts.set(f => {
-    f.lore.calendar.era = this.value;
-    f.lore.calendar.eraShort = Facts.shortEra();
-  });
+  facts.lore.calendar.era = this.value;
+  facts.lore.calendar.eraShort = Facts.shortEra();
   lock("era");
   lock("eraShort");
   ensureEl<HTMLInputElement>("loreEraShort").value = facts.lore.calendar.eraShort;
@@ -136,12 +134,12 @@ function changeEra(this: HTMLInputElement): void {
 
 function changeEraShort(this: HTMLInputElement): void {
   if (!this.value) return;
-  Facts.set(f => (f.lore.calendar.eraShort = this.value));
+  facts.lore.calendar.eraShort = this.value;
   lock("eraShort");
 }
 
 function changeDescription(this: HTMLTextAreaElement): void {
-  Facts.set(f => (f.lore.description = this.value));
+  facts.lore.description = this.value;
 }
 
 function regenerateMapName(): void {
@@ -152,10 +150,8 @@ function regenerateMapName(): void {
 function regenerateEra(): void {
   unlock("era");
   unlock("eraShort");
-  Facts.set(f => {
-    f.lore.calendar.era = Facts.randomEra();
-    f.lore.calendar.eraShort = Facts.shortEra();
-  });
+  facts.lore.calendar.era = Facts.randomEra();
+  facts.lore.calendar.eraShort = Facts.shortEra();
   fillInputs();
 }
 

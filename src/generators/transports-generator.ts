@@ -52,7 +52,6 @@ const DEFAULT_TRANSPORTS: readonly Transport[] = [
 
 class TransportsModule {
   get all(): Transport[] {
-    if (!facts.transports?.length) facts.transports = this.getDefaults();
     return facts.transports;
   }
 
@@ -114,4 +113,6 @@ declare global {
   var Transports: TransportsModule;
 }
 
-window.Transports = new TransportsModule();
+// biome-ignore lint/suspicious/noRedeclare: legacy seam
+export const Transports = new TransportsModule();
+window.Transports = Transports;

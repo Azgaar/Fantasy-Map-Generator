@@ -35,8 +35,8 @@ export function lockedValue<T>(optionId: string): T | undefined {
 }
 
 /**
- * What a lock stores when the caller does not pass a value: the pinnable registry resolves the
- * option's current value. Registered by components/pinnable.ts, which knows both objects
+ * What a lock stores when the caller passes no value: the settings table resolves the current
+ * one. Registered by components/settings.ts, which knows every path
  */
 let resolvePin: (optionId: string) => unknown = () => undefined;
 
@@ -45,13 +45,12 @@ export function setPinResolver(resolver: (optionId: string) => unknown): void {
 }
 
 /**
- * Pin a value so it survives map regeneration. An option the pinnable registry cannot answer for
- * has nowhere to put the value back, so pinning it would store `undefined`, drop out of the
- * serialized locks and leave a lock icon standing for nothing
+ * Pin a value so it survives map regeneration. A key the settings table cannot answer for has
+ * nowhere to put the value back, so pinning it would light an icon standing for nothing
  */
 export function lock(optionId: string, value: unknown = resolvePin(optionId)): void {
   if (value === undefined) {
-    ERROR && console.error(`lock: "${optionId}" is not a pinnable option`);
+    ERROR && console.error(`lock: "${optionId}" is not a pinnable setting`);
     return;
   }
 
@@ -69,9 +68,24 @@ export function unlock(optionId: string): void {
   setLockIcon(optionId, false);
 }
 
-/** Apply a pinned value if there is one, otherwise the value the caller rolled or defaulted to */
+/** Throw every pin away: a reset browser must not go on generating values nobody asked for */
+export function clearLocks(): void {
+  localStorage.removeItem(LOCKS_KEY);
+  syncLockIcons();
+}
+
+/**
+ * `?options=default` asks for the map a fresh browser would make, so every pin is ignored - the
+ * one place that decides it, for the requests and the facts alike
+ */
+export const ignoresPins = (): boolean => new URL(window.location.href).searchParams.get("options") === "default";
+
+/** Whether a new map re-rolls the value, rather than keeping what the user pinned */
+export const rolls = (optionId: string): boolean => ignoresPins() || !isLocked(optionId);
+
+/** The value the option is pinned at, or the one the caller rolled or defaulted to */
 export function pinned<T>(optionId: string, fallback: T): T {
-  const value = lockedValue<T>(optionId);
+  const value = ignoresPins() ? undefined : lockedValue<T>(optionId);
   return value === undefined ? fallback : value;
 }
 

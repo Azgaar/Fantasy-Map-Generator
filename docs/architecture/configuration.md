@@ -37,8 +37,11 @@ locations and two sets of writers:
    default belongs to the coastline generator, and is imported, never copied. Adding a field
    extends the type, the persisted shape and the `.map` payload at once. A new map starts from the
    defaults; a loaded map starts from its file.
-6. **The model is the store.** `facts` and `options` are globals the model declares, initializes
-   and is the only writer of. There is no separate store module to keep in step with it.
+6. **The model is the store.** `facts` and `options` are globals the model declares and
+   initializes. There is no separate store module to keep in step with it. `facts` is written
+   plainly, like the rest of the map data — `facts.units.area.unit = …` — because a fact takes
+   effect where it is written and nothing else has to happen; `options` goes through `Options.set`,
+   which is what remembers it.
 7. **Validate at the boundary and replace, never merge.** Anything arriving from `localStorage`
    or a `.map` is parsed against a schema before it is adopted, and adoption swaps the section
    wholesale. Merging lets one map inherit another's values.
@@ -81,7 +84,11 @@ Four corollaries worth stating, because they are the cases people get wrong:
 - **What survives is what other things read.** `cultures.set` is a fact and `cultures.growthRate`
   is not, because marker and name generation still branch on the set long after the cultures are
   drawn, while nothing but the culture generator has ever asked about the rate.
-- **A value read at render time is always a fact**, however configuration-shaped it looks.
+- **A value the drawing reads is a fact when the drawing would be wrong without it.** The
+  coastline settings decide the shape of every feature outline, so a file that lost them opens as a
+  different map. `rendering` and `showAll` are also read while drawing and are preferences: they
+  change how this browser looks at the map, not what the map is. The question is whether the file
+  still describes its map without the value, not when the value happens to be read.
 - **What produced something is not what describes it.** The heightmap template raised the terrain
   and is never consulted again; the terrain itself is the data. Storing the template would also be
   a claim the map cannot keep, since the user can edit the heightmap until nothing of the template
@@ -105,7 +112,7 @@ cells that reference them.
 | `cultures`   | `set`                                                       | unrelated generators branch on it long after the cultures exist           |
 | `lore`       | `name`, `description`, `calendar.*`                         | filenames, state history, battle reports, and the author's own note       |
 | `units`      | `distance`, `area`, `height`, `temperature`, `population`   | the map's scale, and the author's presentation of it                      |
-| `labels`     | `groups`, `showAll`, `resizeOnZoom`                         | label data references groups **by name**                                  |
+| `labels`     | `groups`, `resizeOnZoom`                                    | label data references groups **by name**                                  |
 | `military`   | `units`                                                     | regiments resolve unit types **by name**                                  |
 | `transports` | type definitions                                            | route segments reference types **by name**                                |
 | `burgs`      | `groups`                                                    | burgs reference groups **by name**                                        |
@@ -141,7 +148,7 @@ Three parts with one storage location and one schema:
 | Part                     | Lives in            | Contents                                                                                                                                                            | Notes                                                     |
 | ------------------------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
 | **Requests**             | `options.generation` | the graph to build (extent and density), entity counts, ratios, rates and varieties, culture set and template for the next map                                      | consumed by generation; what it keeps is written to `facts` |
-| **Preferences**          | `options.app`       | 3D settings, animation settings, notes pinning, emblem visibility and shape, interface size, theme, tooltip size, autosave, on-load behaviour, rendering, zoom extent, viewport size | take effect immediately, affect nothing generated         |
+| **Preferences**          | `options.app`       | 3D settings, animation settings, notes pinning, `emblems` and `labels` (shape, and whether all are shown regardless of zoom), interface size, theme, tooltip size, autosave, on-load behaviour, rendering, zoom extent, viewport size | take effect immediately, affect nothing generated         |
 | **Preservation library** | `options.library`   | the user's own definition sets, kept for the next map                                                                                                               | see [Preservation](#preservation-across-maps)             |
 
 Also transient editor state that has nowhere better to live (a live "growth modifier" slider, for
@@ -151,7 +158,15 @@ nobody mistakes it for one.
 **One key holds all three.** A preference does not get a `localStorage` key of its own, however
 small it is: a key beside the object is a second source of truth for a control the object already
 answers for, and the panel ends up showing one while the app reads the other. The exceptions are
-the preset libraries below, which are lists rather than fields.
+the preset libraries below, which are lists rather than fields, and the locks, which are a store of
+values keyed by a UI vocabulary of their own.
+
+**"Show all regardless of zoom" is a preference, not a fact.** Both `emblems.showAll` and
+`labels.showAll` turn off a zoom-based culling so the user can look at everything at once. Nothing
+about the map changes, and the next person to open the file has their own opinion about it — which
+is why they sit in `options.app` beside `rendering`, and why a load carries neither. `labels`'
+`resizeOnZoom` is the other way round: it decides how the map's own typography behaves, so it is a
+fact and travels with the file.
 
 **A preference has no lock.** Nothing re-rolls it, so there is nothing to pin it against — pinning
 an option the [locks](#locks) cannot answer for stores nothing and lights an icon that stands for
@@ -174,28 +189,38 @@ own: `facts` is replaced wholesale by every load, so a pin that named only a key
 one. Editing a control by hand pins it; a rolled value stays unpinned. Lock keys are a stable UI
 vocabulary independent of the object paths — renaming one invalidates a user's pins.
 
-One table says, per key, which object answers for it, because that decides **when** the pin is
-applied. A pinned **request** is applied where requests are resolved, before generation reads them;
+`components/settings.ts` says, per key, which object answers for it and where in that object the
+value sits — one table for the panel, the locks and the schema alike. The scope decides **when** a
+pin is applied. A pinned **request** is applied where requests are resolved, before generation reads them;
 a pinned **fact** is applied to the map being seeded, after the requests it has none of. Applying a
 request pin later than that writes a value nothing will read until the map after next.
 
 A lock is a boundary like any other: it is raw `localStorage`, so a key nothing answers for is
-never pinned, and a pinned value that is not the type its option holds is ignored rather than
-written into the map.
+never pinned, and a pinned value the key's own schema rejects is ignored rather than written into
+the map. A preference is never pinnable — nothing re-rolls it.
+
+**`?options=default` ignores every pin**, so the map is the one a fresh browser would make. One
+predicate decides it (`ignoresPins`), and `rolls(key)` and `pinned(key, fallback)` in
+`utils/preferences.ts` are the only way requests and facts consult a lock.
 
 ---
 
 ## Storage scopes
 
-| Scope            | Written by                   | In the `.map`? |
-| ---------------- | ---------------------------- | -------------- |
-| `facts`          | generation, derivation, load | yes            |
-| `options`        | input events, generation     | no             |
-| Locks (keys)     | pinning a control            | no             |
-| Preset libraries | an explicit user action      | no             |
+| Scope            | Key               | Written by                   | In the `.map`? |
+| ---------------- | ----------------- | ---------------------------- | -------------- |
+| `facts`          | —                 | generation, derivation, load | yes            |
+| `options`        | `fmg-options`     | input events, generation     | no             |
+| Locks            | `fmg-locks`       | pinning a control            | no             |
+| Dialog state     | `fmg-dialog-state`| a dialog the user arranged   | no             |
+| Layer presets    | `preset`/`presets`| an explicit user action      | no             |
+| Style presets    | `fmgStyle_*`      | an explicit user action      | no             |
 
-Style presets, layer presets and dialog geometry are their own libraries with the same shape and
-the same rule: user-owned, per-browser, written only on purpose.
+Style presets, layer presets and dialog state are their own libraries with the same shape and the
+same rule: user-owned, per-browser, written only on purpose, and each a list keyed by something the
+user named rather than a field a control answers for. A **preference** never joins them — it
+belongs in `options.app`. The AI generator's `fmg-ai-model` and `fmg-ai-temperature` are the
+outstanding exception, and are preferences that should move.
 
 ---
 
@@ -309,10 +334,25 @@ The defaults hold no counterpart for an entry of a definition set, so an entry t
 repaired is dropped on its own. Losing one unit type is a repair; losing the set is what makes
 every regiment that referenced it stop resolving.
 
-`Styles.parse` in `src/generators/styles.ts` is the reference implementation of this shape —
-per-section parse, per-leaf repair, whole-section fallback, warning — and its schema in
-`src/generators/styles-schema.ts` is the reference for expressing defaults as the schema. New
-schemas follow both rather than inventing a variant.
+`parseSections` in `src/utils/schemaUtils.ts` is this shape, and is what every boundary parses
+through; `Styles.parse` in `src/generators/styles.ts` is the same design for the style object.
+
+### What the schema constrains
+
+A schema that only says `z.number()` catches a corrupt object and nothing else: a density step the
+cell-count table has no entry for, an extent of zero, a rendering mode from a vocabulary that no
+longer exists — each passes the boundary and fails later, wherever the value is finally used, with
+nothing left to say where it came from.
+
+So a leaf constrains **what would break the app**: a positive extent, a whole count, a step the
+table has an entry for, one of a closed set of modes, a colour that is a colour. The shared leaf
+types are in `src/utils/schemaUtils.ts` (`positive`, `count`, `percent`, `ratio`, `hexColor`,
+`degrees`) and are used by both schemas, so one bound is written once.
+
+It constrains nothing beyond that. A bound the UI merely happens to impose is not a claim about the
+value — a slider's `max` is a convenience, and turning it into validation lets a repair quietly
+rewrite a number the user set on purpose. Where the vocabulary is open, such as a heightmap
+template id or a unit the user may name themselves, the schema says so and stays a string.
 
 ### Migrations
 
@@ -342,7 +382,7 @@ label group is built by hand over a session and cannot be re-made with a click.
 Dropped, therefore: the pins. A pin is a claim about a value's shape as well as its name, and the
 old keys carry neither — `template` held a heightmap id whose vocabulary has since changed,
 `points` a raw cell count where a density step lives now, `cultures` a number the culture set caps.
-Re-typing thirty-odd of those against `PINNABLE` to restore something one click re-makes is a
+Re-typing thirty-odd of those against the settings table to restore something one click re-makes is a
 migration that would then have to be kept correct forever. Dropped too are `winds` and
 `presetStyle`: both describe a map now, and `options` has nowhere to keep a browser-wide default
 for either. They are still _named_ by the migration, so that the namespace goes entirely rather
@@ -375,8 +415,9 @@ validate has nothing to repair from and falls back whole, losing every other set
 3. **Give it exactly one writer.** A request is written by its control. A fact is written by the
    generator, derivation or fact-owning editor that produces it. Never both, and never one field
    in both objects.
-4. **Bind the control** to that object's table, and give it a lock if it is a request a new map
-   should be able to keep. A preference gets no lock.
+4. **Give it a row in `components/settings.ts`** — its scope and the path that holds it — and name
+   that key in the `data-stored` of its control. The panel, the lock and the pin's validation all
+   read that one row; a request or a fact gets a lock from it, a preference does not.
 5. **If a new map should re-roll it**, add it to the randomization step. If a new map should
    inherit the user's own version, add a library entry instead.
 6. **Read it directly** where it is used — reading never goes through a model.

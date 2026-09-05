@@ -53,7 +53,7 @@ function selectTab(id: string): void {
   if (id === "styleTab") window.selectStyleElement?.();
 }
 
-/** Any control marked `data-stored` pins its value, and any `<x>Input` mirrors its `<x>Output` */
+/** Keep every `<x>Input` and its `<x>Output` showing the same value */
 function onPanelInput(event: Event): void {
   const target = event.target as HTMLInputElement;
   const { id, value } = target;

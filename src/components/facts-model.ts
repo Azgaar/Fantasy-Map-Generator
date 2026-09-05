@@ -1,18 +1,22 @@
 import { type FactsData, factsSchema } from "@/components/facts-schema";
-import { applyPin, pinnedFactKeys } from "@/components/pinnable";
+import { applyPin, pinnedFactKeys } from "@/components/settings";
 import { Burgs } from "@/generators/burgs-generator";
 import { DEFAULT_COASTLINE } from "@/generators/coastline-generator";
 import { Labels } from "@/generators/labels-generator";
+import { Military } from "@/generators/military-generator";
 import { Names } from "@/generators/names-generator";
-import { isLocked, lockedValue } from "@/utils/preferences";
+import { Transports } from "@/generators/transports-generator";
+import { ignoresPins, lockedValue, rolls } from "@/utils/preferences";
 import { gauss, P, rand } from "@/utils/probabilityUtils";
 import { parseSections } from "@/utils/schemaUtils";
 
 declare global {
   var Facts: FactsModel;
+  /** what is true about the map on screen, written where the map changes and saved to the file */
   var facts: FactsData;
 }
 
+/** A new map before anything has run: every value present, each from the module that owns it */
 export function getDefaultFacts(): FactsData {
   return {
     seed: "",
@@ -34,14 +38,14 @@ export function getDefaultFacts(): FactsData {
       distance: { unit: isImperial() ? "mi" : "km", scale: 3 },
       area: { unit: "square" },
       height: { unit: isImperial() ? "ft" : "m", exponent: 2 },
-      temperature: { unit: isFahrenheit() ? "\u00B0F" : "\u00B0C" },
+      temperature: { unit: isFahrenheit() ? "°F" : "°C" },
       population: { scale: 1000, urbanization: { rate: 1, density: 10 } }
     },
-    labels: { resizeOnZoom: true, showAll: false, groups: [] },
+    labels: { resizeOnZoom: true, groups: Labels.getDefaultGroups() },
     style: { preset: "default" },
-    military: { units: [] },
-    transports: [],
-    burgs: { groups: [] },
+    military: { units: Military.getDefaultOptions() },
+    transports: Transports.getDefaults(),
+    burgs: { groups: Burgs.getDefaultGroups() },
     coastline: { ...DEFAULT_COASTLINE }
   };
 }
@@ -53,7 +57,7 @@ function locale(): string {
   return typeof navigator === "undefined" ? "" : navigator.language;
 }
 
-/** the US and the UK measure distance and altitude in miles and feet; only the US reads \u00B0F */
+/** the US and the UK measure distance and altitude in miles and feet; only the US reads °F */
 function isImperial(): boolean {
   return ["en-US", "en-GB"].includes(locale());
 }
@@ -76,27 +80,13 @@ function adopt(data: FactsData): void {
   ensureDefinitionSets();
 }
 
-/**
- * A definition set entities reference by name cannot be empty, or the map draws nothing for the
- * names they point at. A file that carries none gets the module defaults - never the previous
- * map's set, and never the user's library, which seeds new maps only
- */
+/** A set entities reference by name cannot be empty, or the names they point at draw nothing */
 function ensureDefinitionSets(): void {
-  const current = globalThis.facts;
-  if (!current.burgs.groups?.length) current.burgs.groups = Burgs.getDefaultGroups();
-  if (!current.labels.groups?.length) current.labels.groups = Labels.getDefaultGroups();
-  // these two are window globals registered by eager generators, so they may not be up yet at
-  // boot; both self-heal on first read, so an early miss here costs nothing
-  if (!current.military.units?.length) current.military.units = globalThis.Military?.getDefaultOptions() ?? [];
-  if (!current.transports?.length) current.transports = globalThis.Transports?.getDefaults() ?? [];
-}
-
-/**
- * Change what is true about this map. Callers are generators, derivations and the editors that
- * own a fact - never a panel that merely stages a value for the next map
- */
-function set(change: (facts: FactsData) => void): void {
-  change(globalThis.facts);
+  const defaults = getDefaultFacts();
+  if (!facts.burgs.groups?.length) facts.burgs.groups = defaults.burgs.groups;
+  if (!facts.labels.groups?.length) facts.labels.groups = defaults.labels.groups;
+  if (!facts.military.units?.length) facts.military.units = defaults.military.units;
+  if (!facts.transports?.length) facts.transports = defaults.transports;
 }
 
 /**
@@ -105,9 +95,9 @@ function set(change: (facts: FactsData) => void): void {
  * Called after `Options.randomize`, so the requests it reads are already rolled
  */
 function seedForNewMap(): void {
-  const seed = globalThis.facts.seed; // setSeed resolved it and reseeded the PRNG before the roll
+  const seed = facts.seed; // setSeed resolved it and reseeded the PRNG before the roll
   const fresh = getDefaultFacts();
-  const { generation } = globalThis.options;
+  const { generation } = options;
 
   // only what the map keeps being read for: the graph it was built on, the terrain it was raised
   // from, the name set its cultures came out of. The counts, rates and varieties stay requests
@@ -116,37 +106,30 @@ function seedForNewMap(): void {
   fresh.graph = { width, height, points: Options.cellsFor(density) };
   fresh.cultures = { set: generation.cultures.set };
 
-  // the user's own sets, carried over; a generator fills in its module defaults when there is none
-  const military = Options.recall("military");
-  const transports = Options.recall("transports");
-  const burgGroups = Options.recall("burgGroups");
-  const labelGroups = Options.recall("labelGroups");
-  const coastline = Options.recall("coastline");
-  if (military) fresh.military.units = military;
-  if (transports) fresh.transports = transports;
-  if (burgGroups) fresh.burgs.groups = burgGroups;
-  if (labelGroups) fresh.labels.groups = labelGroups;
-  if (coastline) fresh.coastline = coastline;
+  // the user's own sets, carried over; the module defaults stand where they saved none
+  fresh.military.units = Options.recall("military") ?? fresh.military.units;
+  fresh.transports = Options.recall("transports") ?? fresh.transports;
+  fresh.burgs.groups = Options.recall("burgGroups") ?? fresh.burgs.groups;
+  fresh.labels.groups = Options.recall("labelGroups") ?? fresh.labels.groups;
+  fresh.coastline = Options.recall("coastline") ?? fresh.coastline;
 
   globalThis.facts = fresh;
-  ensureDefinitionSets(); // whatever the library did not supply falls back to the module defaults
+  ensureDefinitionSets(); // a set the user emptied falls back to the module defaults
   rollUnpinnedFacts();
   applyPinnedFacts();
 }
 
 /** Facts with no request of their own are rolled here, the way requests are rolled in Options */
 function rollUnpinnedFacts(): void {
-  const ignorePins = new URL(window.location.href).searchParams.get("options") === "default";
-  const roll = (key: string) => ignorePins || !isLocked(key);
-  const { climate, units, lore } = globalThis.facts;
+  const { climate, units, lore } = facts;
 
-  if (roll("temperatureEquator")) climate.temperature.equator = gauss(25, 7, 20, 35, 0);
-  if (roll("temperatureNorthPole")) climate.temperature.northPole = gauss(-25, 7, -40, 10, 0);
-  if (roll("temperatureSouthPole")) climate.temperature.southPole = gauss(-15, 7, -40, 10, 0);
-  if (roll("prec")) climate.precipitation = gauss(100, 40, 5, 500);
-  if (roll("distanceScale")) units.distance.scale = gauss(3, 1, 1, 5);
-  if (roll("year")) lore.calendar.year = rand(100, 2000);
-  if (roll("era")) {
+  if (rolls("temperatureEquator")) climate.temperature.equator = gauss(25, 7, 20, 35, 0);
+  if (rolls("temperatureNorthPole")) climate.temperature.northPole = gauss(-25, 7, -40, 10, 0);
+  if (rolls("temperatureSouthPole")) climate.temperature.southPole = gauss(-15, 7, -40, 10, 0);
+  if (rolls("prec")) climate.precipitation = gauss(100, 40, 5, 500);
+  if (rolls("distanceScale")) units.distance.scale = gauss(3, 1, 1, 5);
+  if (rolls("year")) lore.calendar.year = rand(100, 2000);
+  if (rolls("era")) {
     lore.calendar.era = randomEra();
     lore.calendar.eraShort = shortEra();
   }
@@ -158,7 +141,7 @@ function rollUnpinnedFacts(): void {
  * writing one here would land after the fact it feeds had been read
  */
 function applyPinnedFacts(): void {
-  if (new URL(window.location.href).searchParams.get("options") === "default") return;
+  if (ignoresPins()) return;
   for (const key of pinnedFactKeys()) {
     const value = lockedValue(key);
     if (value !== undefined) applyPin(key, value);
@@ -170,7 +153,7 @@ function randomEra(): string {
 }
 
 function shortEra(): string {
-  return globalThis.facts.lore.calendar.era
+  return facts.lore.calendar.era
     .split(" ")
     .filter(Boolean)
     .map(word => word[0].toUpperCase())
@@ -181,7 +164,6 @@ function shortEra(): string {
 export const Facts = {
   parse,
   adopt,
-  set,
   seedForNewMap,
   randomEra,
   shortEra,

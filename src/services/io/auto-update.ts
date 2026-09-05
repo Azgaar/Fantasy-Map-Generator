@@ -1852,7 +1852,7 @@ function legacyFactsDefaults() {
       temperature: { unit: "\u00B0C" },
       population: { scale: 1000, urbanization: { rate: 1, density: 10 } }
     },
-    labels: { resizeOnZoom: true, showAll: false, groups: [] as any[] },
+    labels: { resizeOnZoom: true, groups: [] as any[] },
     style: { preset: "default" },
     military: { units: [] as any[] },
     transports: [] as any[],
@@ -1936,13 +1936,17 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
   if (oldOptions.era) migrated.lore.calendar.era = oldOptions.era;
   if (oldOptions.eraShort) migrated.lore.calendar.eraShort = oldOptions.eraShort;
 
-  // v1.140.0 moved the label settings into the labels options, the naming mode onto the state group.
-  // Slot 21 was the "Hide small labels" checkbox, the same culling `showAll` turns off, so the two
-  // are inverses - and "0" is a value the slot carries, not an absent one
-  if (oldSettings[21] !== undefined && oldSettings[21] !== "") migrated.labels.showAll = !Number(oldSettings[21]);
+  // v1.140.0 moved the label settings into the labels facts and the naming mode onto the state
+  // group. Slot 21 was the "Hide small labels" checkbox, which is a browser preference now: a file
+  // carries no opinion about it, so the value is dropped rather than written into this browser
   if (oldSettings[23]) migrated.labels.resizeOnZoom = Boolean(Number(oldSettings[23]));
-  const stateGroup = migrated.labels.groups.find(group => group.type === "state");
-  if (stateGroup && oldOptions.stateLabelsMode) stateGroup.mode = oldOptions.stateLabelsMode;
+  // a pre-1.140 map carries no groups at all, so there is usually nothing here to write the mode
+  // onto: give it a state group of its own, which the DOM pass reads before it rebuilds the groups
+  if (oldOptions.stateLabelsMode) {
+    const stateGroup = migrated.labels.groups.find(group => group.type === "state");
+    if (stateGroup) stateGroup.mode = oldOptions.stateLabelsMode;
+    else migrated.labels.groups.push({ ...Labels.getFallbackGroup("state"), mode: oldOptions.stateLabelsMode });
+  }
 
   // v1.151.0 moved the mapCoordinates from own slot into the settings object
   if (oldCoordinates) migrated.geography.coordinates = oldCoordinates;

@@ -1,4 +1,12 @@
-import type { z } from "zod";
+import { z } from "zod";
+
+export const positive = z.number().positive();
+export const nonNegative = z.number().nonnegative();
+export const count = z.number().int().nonnegative();
+export const percent = z.number().min(0).max(100);
+export const ratio = z.number().min(0).max(1);
+export const hexColor = z.string().regex(/^#[0-9a-fA-F]{3,8}$/);
+export const degrees = z.number().int().min(0).max(359);
 
 /** Where a repair looks for the value to stand in for an invalid one */
 export type TemplateLookup = (source: any, key: PropertyKey, parentKey: PropertyKey | undefined) => unknown;

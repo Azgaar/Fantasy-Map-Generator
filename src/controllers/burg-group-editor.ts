@@ -412,7 +412,7 @@ function submitForm(event: Event): void {
     return;
   }
 
-  Facts.set(f => (f.burgs.groups = rows.map(rowToGroup)));
+  facts.burgs.groups = rows.map(rowToGroup);
   Options.remember("burgGroups", facts.burgs.groups, Burgs.getDefaultGroups()); // carried to the next map
 
   // put burgs to new groups

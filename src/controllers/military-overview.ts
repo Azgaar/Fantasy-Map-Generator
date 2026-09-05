@@ -620,7 +620,7 @@ function militaryCustomize(): void {
       if (religions) unit.religions = religions;
       return unit;
     });
-    Facts.set(f => (f.military.units = units));
+    facts.military.units = units;
     Options.remember("military", units, Military.getDefaultOptions()); // the user's own units, carried to the next map
     Military.generate();
     rebuildMilitaryColumns();

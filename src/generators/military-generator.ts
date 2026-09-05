@@ -52,7 +52,6 @@ class MilitaryModule {
     const { cells, states } = pack;
     const { p } = cells;
     const valid = states.filter(s => s.i && !s.removed); // valid states
-    if (!facts.military.units?.length) facts.military.units = this.getDefaultOptions();
 
     const expn = sum(valid.map(s => s.expansionism)); // total expansion
     const area = sum(valid.map(s => s.area)); // total area
@@ -584,4 +583,6 @@ class MilitaryModule {
   }
 }
 
-window.Military = new MilitaryModule();
+// biome-ignore lint/suspicious/noRedeclare: legacy seam
+export const Military = new MilitaryModule();
+window.Military = Military;

@@ -1,12 +1,14 @@
 import type { z } from "zod";
 import { adoptLegacyOptions } from "@/components/options-legacy";
 import { type OptionsData, optionsSchema } from "@/components/options-schema";
+import { DEFAULT_DENSITY, getPointsNumber } from "@/data/graph-density";
 import { heightmapTemplates } from "@/data/heightmap-templates";
+import { DEFAULT_TRADE_ANIMATION } from "@/data/trade-animation-options";
 import { DEFAULT_THREE_D } from "@/data/view-3d-options";
 import { CULTURE_SETS } from "@/generators/cultures-generator";
 import { rn } from "@/utils/numberUtils";
 import { deepMerge } from "@/utils/objectUtils";
-import { isLocked, lockedValue } from "@/utils/preferences";
+import { clearLocks, isLocked, pinned, rolls } from "@/utils/preferences";
 import { gauss, rand, rw } from "@/utils/probabilityUtils";
 import { parseSections } from "@/utils/schemaUtils";
 
@@ -18,22 +20,6 @@ declare global {
 
 export const STORAGE_KEY = "fmg-options";
 export const THEME_COLOR = "#997787";
-export const DEFAULT_DENSITY = 4;
-export const POINTS_BY_DENSITY: Record<number, number> = {
-  1: 1000,
-  2: 2000,
-  3: 5000,
-  4: 10000,
-  5: 20000,
-  6: 30000,
-  7: 40000,
-  8: 50000,
-  9: 60000,
-  10: 70000,
-  11: 80000,
-  12: 90000,
-  13: 100000
-};
 
 /** A fresh browser's options */
 export function getDefaultOptions(): OptionsData {
@@ -51,8 +37,8 @@ export function getDefaultOptions(): OptionsData {
     },
     app: {
       notesPinned: false,
-      emblemsShowAll: false,
-      emblemShape: "culture",
+      emblems: { showAll: false, shape: "culture" },
+      labels: { showAll: false },
       rendering: "optimizeSpeed",
       onLoad: "random",
       zoomExtent: { min: 1, max: 20 },
@@ -68,16 +54,7 @@ export function getDefaultOptions(): OptionsData {
         clickArrowTip: true
       },
       export: { pngResolution: 1, tiles: { cols: 8, rows: 8, scale: 1 } },
-      trade: {
-        animation: {
-          displayType: "both",
-          concurrent: 30,
-          duration: 250,
-          landDurationModifier: 5,
-          segmentChangePause: 1000,
-          markerSize: 4
-        }
-      },
+      trade: { animation: { ...DEFAULT_TRADE_ANIMATION } },
       threeD: { ...DEFAULT_THREE_D }
     },
     library: { military: null, transports: null, burgGroups: null, labelGroups: null, coastline: null }
@@ -99,6 +76,7 @@ function set(change: (options: OptionsData) => void): void {
 /** Throw this browser's options away and start from the defaults: a reset, never a repair */
 function reset(): void {
   globalThis.options = getDefaultOptions();
+  clearLocks(); // a pin is this browser's too, and would go on generating a value nobody asked for
   persist();
 }
 
@@ -138,13 +116,8 @@ function setGraphSize(width?: number, height?: number): void {
   const { graph } = globalThis.options.generation;
   // the pinned value, not merely the absence of a roll: the locks and the options are separate
   // stores, so a repaired options object must not silently generate at a size nobody asked for
-  const pinnedSize = (key: string, current: number) => lockedValue<number>(key) ?? current;
-
-  if (width) graph.width = width;
-  else graph.width = isLocked("mapWidth") ? pinnedSize("mapWidth", graph.width) : window.innerWidth;
-
-  if (height) graph.height = height;
-  else graph.height = isLocked("mapHeight") ? pinnedSize("mapHeight", graph.height) : window.innerHeight;
+  graph.width = width || (isLocked("mapWidth") ? pinned("mapWidth", graph.width) : window.innerWidth);
+  graph.height = height || (isLocked("mapHeight") ? pinned("mapHeight", graph.height) : window.innerHeight);
 
   // a hidden or headless tab reports no size, which would make a degenerate grid
   if (!(graph.width > 0)) graph.width = 1280;
@@ -153,48 +126,36 @@ function setGraphSize(width?: number, height?: number): void {
 
 /** Re-roll every request the user has not pinned. Runs before the pipeline, never after */
 function randomize(): void {
-  const ignorePins = new URL(window.location.href).searchParams.get("options") === "default";
-  const roll = (key: string) => ignorePins || !isLocked(key);
-  const keep = <T>(key: string, fallback: T): T => {
-    const value = ignorePins ? undefined : lockedValue<T>(key);
-    return value === undefined ? fallback : value;
-  };
   const { generation } = globalThis.options;
-  const { graph } = generation;
 
   // the slider holds a density step and the cell count is derived from it, so both branches go
   // through setDensity - a step without its cell count generates a map of the wrong size
-  setDensity(roll("points") ? DEFAULT_DENSITY : keep("points", graph.density)); // a default, not a roll
+  setDensity(rolls("points") ? DEFAULT_DENSITY : pinned("points", generation.graph.density)); // a default, not a roll
 
-  generation.template = roll("template") ? randomTemplate() : keep("template", generation.template);
-  generation.states.limit = roll("statesNumber") ? gauss(18, 5, 2, 30) : keep("statesNumber", generation.states.limit);
-  generation.provinces.ratio = roll("provincesRatio")
+  generation.template = rolls("template") ? randomTemplate() : pinned("template", generation.template);
+  generation.states.limit = rolls("statesNumber")
+    ? gauss(18, 5, 2, 30)
+    : pinned("statesNumber", generation.states.limit);
+  generation.provinces.ratio = rolls("provincesRatio")
     ? gauss(20, 10, 20, 100)
-    : keep("provincesRatio", generation.provinces.ratio);
-  generation.burgs.limit = roll("manors") ? 1000 : keep("manors", generation.burgs.limit); // 1000 is auto
-  generation.religions.limit = roll("religionsNumber")
+    : pinned("provincesRatio", generation.provinces.ratio);
+  generation.burgs.limit = rolls("manors") ? 1000 : pinned("manors", generation.burgs.limit); // 1000 is auto
+  generation.religions.limit = rolls("religionsNumber")
     ? gauss(6, 3, 2, 10)
-    : keep("religionsNumber", generation.religions.limit);
-  setSizeVariety(roll("sizeVariety") ? gauss(4, 2, 0, 10, 1) : keep("sizeVariety", generation.states.sizeVariety));
-
-  const rate = roll("growthRate") ? rn(1 + Math.random(), 1) : keep("growthRate", generation.states.growthRate);
-  generation.states.growthRate = rate;
-  generation.cultures.growthRate = rate;
+    : pinned("religionsNumber", generation.religions.limit);
+  setSizeVariety(rolls("sizeVariety") ? gauss(4, 2, 0, 10, 1) : pinned("sizeVariety", generation.states.sizeVariety));
+  setGrowthRate(rolls("growthRate") ? rn(1 + Math.random(), 1) : pinned("growthRate", generation.states.growthRate));
 
   // the culture rolls come last: every roll above draws from the seeded PRNG, so reordering them
   // hands each request a different draw and the same seed stops producing the same map
-  generation.cultures.limit = roll("cultures") ? gauss(12, 3, 5, 30) : keep("cultures", generation.cultures.limit);
-  generation.cultures.set = roll("culturesSet") ? randomCultureSet() : keep("culturesSet", generation.cultures.set);
+  generation.cultures.limit = rolls("cultures") ? gauss(12, 3, 5, 30) : pinned("cultures", generation.cultures.limit);
+  generation.cultures.set = rolls("culturesSet") ? randomCultureSet() : pinned("culturesSet", generation.cultures.set);
 
   capCultures();
 }
 
 function setDensity(density: number): void {
   globalThis.options.generation.graph.density = density;
-}
-
-export function getPointsNumber(density: number): number {
-  return POINTS_BY_DENSITY[density] ?? POINTS_BY_DENSITY[DEFAULT_DENSITY];
 }
 
 /** A culture set holds a fixed number of cultures: the map cannot ask for more than it has */
@@ -204,10 +165,15 @@ function capCultures(): void {
   if (max && cultures.limit > max) cultures.limit = max;
 }
 
-/** One panel slider drives both, until the UI offers them separately */
+/** One panel slider drives states and cultures alike, until the UI offers them separately */
 function setSizeVariety(variety: number): void {
   const { generation } = globalThis.options;
   generation.cultures.sizeVariety = generation.states.sizeVariety = variety;
+}
+
+function setGrowthRate(rate: number): void {
+  const { generation } = globalThis.options;
+  generation.cultures.growthRate = generation.states.growthRate = rate;
 }
 
 /**
@@ -217,8 +183,8 @@ function setSizeVariety(variety: number): void {
  */
 function syncOnLoad(): void {
   set(options => {
-    if (!isLocked("mapWidth")) options.generation.graph.width = globalThis.facts.graph.width;
-    if (!isLocked("mapHeight")) options.generation.graph.height = globalThis.facts.graph.height;
+    if (!isLocked("mapWidth")) options.generation.graph.width = facts.graph.width;
+    if (!isLocked("mapHeight")) options.generation.graph.height = facts.graph.height;
   });
 }
 
@@ -279,7 +245,6 @@ export const Options = {
   setDensity,
   cellsFor: getPointsNumber,
   capCultures,
-  setSizeVariety,
   isAutoBurgLimit,
   remember,
   recall,

@@ -47,12 +47,14 @@ describe("facts schema", () => {
     expect(getDefaultFacts().cultures.set).toBeTypeOf("string"); // the one culture value a fact keeps
   });
 
+  // the defaults are what a repair and a file with no set of its own fall back to, so a set the
+  // model leaves empty is a map whose entities resolve none of the names they point at
   it("carries the definition sets entities reference by name", () => {
     const facts = getDefaultFacts();
-    expect(facts.military.units).toEqual([]);
-    expect(facts.transports).toEqual([]);
-    expect(facts.burgs.groups).toEqual([]);
-    expect(facts.labels.groups).toEqual([]);
+    expect(facts.military.units.length).toBeGreaterThan(0);
+    expect(facts.transports.length).toBeGreaterThan(0);
+    expect(facts.burgs.groups.length).toBeGreaterThan(0);
+    expect(facts.labels.groups.length).toBeGreaterThan(0);
   });
 
   it("recovers a map whose climate section is corrupt without losing the rest", () => {
@@ -96,6 +98,50 @@ describe("options schema", () => {
     const { graph } = getDefaultOptions().generation;
     expect(graph.density).toBe(4);
     expect(graph).not.toHaveProperty("points"); // derived from the step, never stored beside it
+  });
+});
+
+// A schema that only describes the shape lets a value through that nothing can act on: the app
+// then fails where the value is used, far from the boundary that should have caught it
+describe("the schemas describe the value, not merely its type", () => {
+  const repair = (section: string, value: unknown): OptionsData => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const stored = { ...structuredClone(getDefaultOptions()), [section]: value };
+    return parseSections<OptionsData>(optionsSchema, getDefaultOptions(), stored, "test");
+  };
+
+  it("repairs a density step the cell-count table has no entry for", () => {
+    const generation = { ...getDefaultOptions().generation, graph: { width: 800, height: 600, density: 99 } };
+    const parsed = repair("generation", generation);
+
+    expect(parsed.generation.graph.density).toBe(getDefaultOptions().generation.graph.density);
+    expect(parsed.generation.graph.width).toBe(800); // the step alone was wrong
+  });
+
+  it("repairs an extent nothing could be generated on", () => {
+    const generation = { ...getDefaultOptions().generation, graph: { width: 0, height: -5, density: 4 } };
+    const parsed = repair("generation", generation);
+
+    expect(parsed.generation.graph).toEqual(getDefaultOptions().generation.graph);
+  });
+
+  it("repairs a value outside a closed vocabulary", () => {
+    const app = { ...getDefaultOptions().app, rendering: "whatever the last version called it" };
+    expect(repair("app", app).app.rendering).toBe(getDefaultOptions().app.rendering);
+  });
+
+  it("repairs a zoom extent whose ends are the wrong way round", () => {
+    const app = { ...getDefaultOptions().app, zoomExtent: { min: 30, max: 2 } };
+    expect(repair("app", app).app.zoomExtent).toEqual(getDefaultOptions().app.zoomExtent);
+  });
+
+  it("repairs a wind direction that is not one", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const climate = { ...getDefaultFacts().climate, winds: [225, 45, 225, 315, 135, 400] };
+    const file = { ...structuredClone(getDefaultFacts()), climate };
+    const parsed = parseSections<FactsData>(factsSchema, getDefaultFacts(), file, "Facts.parse");
+
+    expect(parsed.climate.winds).toEqual(getDefaultFacts().climate.winds);
   });
 });
 

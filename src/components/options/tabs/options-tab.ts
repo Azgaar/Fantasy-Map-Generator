@@ -1,11 +1,9 @@
 import { hsl, select } from "d3";
 import { fitMapToScreen, setViewport } from "@/components/canvas";
-import type { FactsData } from "@/components/facts-schema";
 import { Layers } from "@/components/layers";
 import { getDefaultOptions, THEME_COLOR } from "@/components/options-model";
-import type { OptionsData } from "@/components/options-schema";
-import { PINNABLE } from "@/components/pinnable";
 import { generateMapWithSeed, showSeedHistoryDialog } from "@/components/seed";
+import { isPinnable, parseInput, read, type SettingKey, write } from "@/components/settings";
 import { tip } from "@/components/tooltips";
 import { viewport } from "@/components/viewport";
 import { setMapZoom, setTranslateExtent, setZoomExtent } from "@/components/zoom";
@@ -467,84 +465,44 @@ const TEMPLATE = /* html */ `
   </div>
 `;
 
-type Setting<T> = {
-  key: string; // the id the input carries in `data-stored`, and the key its lock is kept under
-  get: (source: T) => string | number | null; // null: nothing chosen yet, the control keeps its own value
-  set?: (target: T, value: string) => void; // absent when the row is a readout with its own action
-};
+/** The settings this tab shows. What each one means is said once, in components/settings.ts */
+export const PANEL_KEYS: SettingKey[] = [
+  // requests: what the next map will be generated with. Editing one changes nothing on screen
+  "mapWidth",
+  "mapHeight",
+  "template",
+  "resolveDepressionsSteps",
+  "lakeElevationLimit",
+  "cultures",
+  "culturesSet",
+  "statesNumber",
+  "growthRate",
+  "sizeVariety",
+  "provincesRatio",
+  "manors",
+  "religionsNumber",
 
-/**
- * Requests: what the next map will be generated with. Editing one changes nothing on screen -
- * the tab says so in its own heading. See docs/architecture/configuration.md
- */
-const REQUEST_SETTINGS: Setting<OptionsData>[] = [
-  { key: "mapWidth", get: o => o.generation.graph.width, set: (o, v) => (o.generation.graph.width = +v) },
-  { key: "mapHeight", get: o => o.generation.graph.height, set: (o, v) => (o.generation.graph.height = +v) },
-  { key: "template", get: o => o.generation.template, set: (o, v) => (o.generation.template = v) },
-  {
-    key: "resolveDepressionsSteps",
-    get: o => o.generation.resolveDepressionsSteps,
-    set: (o, v) => (o.generation.resolveDepressionsSteps = +v)
-  },
-  {
-    key: "lakeElevationLimit",
-    get: o => o.generation.lakeElevationLimit,
-    set: (o, v) => (o.generation.lakeElevationLimit = +v)
-  },
-  { key: "cultures", get: o => o.generation.cultures.limit, set: (o, v) => (o.generation.cultures.limit = +v) },
-  { key: "culturesSet", get: o => o.generation.cultures.set, set: (o, v) => (o.generation.cultures.set = v) },
-  { key: "statesNumber", get: o => o.generation.states.limit, set: (o, v) => (o.generation.states.limit = +v) },
-  {
-    key: "growthRate",
-    get: o => o.generation.states.growthRate,
-    set: (o, v) => {
-      o.generation.states.growthRate = +v;
-      o.generation.cultures.growthRate = +v;
-    }
-  },
-  { key: "sizeVariety", get: o => o.generation.states.sizeVariety, set: (_o, v) => Options.setSizeVariety(+v) },
-  { key: "provincesRatio", get: o => o.generation.provinces.ratio, set: (o, v) => (o.generation.provinces.ratio = +v) },
-  { key: "manors", get: o => o.generation.burgs.limit, set: (o, v) => (o.generation.burgs.limit = +v) },
-  { key: "religionsNumber", get: o => o.generation.religions.limit, set: (o, v) => (o.generation.religions.limit = +v) }
-];
+  // preferences: what this browser wants, whatever map is on screen
+  "uiSize",
+  "tooltipSize",
+  "azgaarAssistant",
+  "speakerVoice",
+  "emblemShape",
+  "shapeRendering",
+  "onloadBehavior",
+  "autosaveInterval",
+  "zoomExtentMin",
+  "zoomExtentMax",
 
-/**
- * Preferences: what this browser wants, whatever map is on screen. They take effect the moment
- * they change, nothing generated depends on them, and no lock pins them - there is nothing to pin
- * a value against when it is never re-rolled. A row with no `set` is written by the dialog that
- * owns the control; the table still gives the panel a way to show it
- */
-const PREFERENCE_SETTINGS: Setting<OptionsData>[] = [
-  { key: "uiSize", get: o => o.app.ui.size, set: (o, v) => (o.app.ui.size = +v) },
-  { key: "tooltipSize", get: o => o.app.ui.tooltipSize, set: (o, v) => (o.app.ui.tooltipSize = +v) },
-  { key: "azgaarAssistant", get: o => o.app.ui.assistant, set: (o, v) => (o.app.ui.assistant = v) },
-  { key: "speakerVoice", get: o => o.app.ui.speakerVoice, set: (o, v) => (o.app.ui.speakerVoice = v) },
-  { key: "emblemShape", get: o => o.app.emblemShape, set: (o, v) => (o.app.emblemShape = v) },
-  { key: "shapeRendering", get: o => o.app.rendering, set: (o, v) => (o.app.rendering = v) },
-  { key: "onloadBehavior", get: o => o.app.onLoad, set: (o, v) => (o.app.onLoad = v) },
-  { key: "autosaveInterval", get: o => o.app.autosave.interval, set: (o, v) => (o.app.autosave.interval = +v) },
+  // shown here, written by the dialog that owns the control: the zoom extent is normalised as a
+  // pair and the export sizes belong to the export panes, see components/options/io-panes.ts
+  "pngResolution",
+  "tileCols",
+  "tileRows",
+  "tileScale",
 
-  // the zoom extent is normalised as a pair, and the theme as a colour and its transparency, so
-  // each group keeps a writer of its own and the table only shows what that writer settled on
-  { key: "zoomExtentMin", get: o => o.app.zoomExtent.min },
-  { key: "zoomExtentMax", get: o => o.app.zoomExtent.max },
-
-  // the export dialogs own these controls and write them; see components/options/io-panes.ts
-  { key: "pngResolution", get: o => o.app.export.pngResolution },
-  { key: "tileCols", get: o => o.app.export.tiles.cols },
-  { key: "tileRows", get: o => o.app.export.tiles.rows },
-  { key: "tileScale", get: o => o.app.export.tiles.scale }
-];
-
-/** Every control `options` answers for, requests and preferences alike */
-const OPTION_SETTINGS: Setting<OptionsData>[] = [...REQUEST_SETTINGS, ...PREFERENCE_SETTINGS];
-
-/**
- * Facts: what is true about the map on screen. Editing one changes the map now, so these write
- * `facts` and never a request. The Units editor owns its own controls the same way
- */
-const FACT_SETTINGS: Setting<FactsData>[] = [
-  { key: "seed", get: f => f.seed } // a readout: typing a seed regenerates rather than editing this map
+  // a readout of the map on screen: typing a seed regenerates rather than editing this map
+  "seed"
 ];
 
 ensureEl("optionsContent").innerHTML = TEMPLATE;
@@ -609,11 +567,10 @@ export function syncInputs(): void {
     if (output) output.value = String(value);
   };
 
-  for (const { key, get } of OPTION_SETTINGS) {
+  for (const key of PANEL_KEYS) {
     if (key === "template") continue; // a select whose options are added on demand, see below
-    push(key, get(options));
+    push(key, read(key) as string | number | null);
   }
-  for (const { key, get } of FACT_SETTINGS) push(key, get(facts));
 
   const id = options.generation.template;
   const template = findEl<HTMLSelectElement>("templateInput");
@@ -631,27 +588,17 @@ export function syncInputs(): void {
  * pinned under. Every control writes to the object, never the other way round
  */
 function watchInputs(): void {
-  const optionRows = new Map(OPTION_SETTINGS.map(setting => [setting.key, setting]));
-  const factRows = new Map(FACT_SETTINGS.map(setting => [setting.key, setting]));
-
   const onChange = (event: Event) => {
     const target = event.target as HTMLInputElement | null;
     const key = target?.dataset?.stored;
     if (!key) return;
 
-    // one table per object: a key in both is a control that owns two differently-named values,
-    // never one value with two writers
-    const apply = () => {
-      if (key === "points") return Options.setDensity(+target.value);
-      optionRows.get(key)?.set?.(options, target.value);
-      factRows.get(key)?.set?.(facts, target.value);
-    };
-
     // an input event is a drag in progress: apply it, but wait for the change event to keep it
-    apply();
+    const value = parseInput(key, target.value);
+    if (value !== undefined) write(key, value);
     if (event.type !== "change") return;
 
-    if (PINNABLE[key]) lock(key); // a request the user set by hand: keep the value on the next map
+    if (isPinnable(key)) lock(key); // a value the user set by hand: keep it on the next map
     Options.persist();
   };
 
@@ -987,7 +934,7 @@ function resetLanguage(): void {
 
 /**
  * Restore what the tab itself shows: the lock icons, the saved style presets and the interface
- * settings. The option *values* are restored by components/options.ts before this runs
+ * settings. The values themselves are restored by `Options.restoreStored` before this runs
  */
 /**
  * Custom style presets predating the `fmgStyle_` prefix kept a `style<Name>` key of their own;
@@ -1013,9 +960,9 @@ export function restoreUi(): void {
 
   // `syncInputs` has already put every preference in its control; these are the ones that also do
   // something the moment they are read back. See docs/architecture/configuration.md
-  const { ui, rendering, emblemShape, zoomExtent } = options.app;
+  const { ui, rendering, emblems, zoomExtent } = options.app;
 
-  Emblems.setShape(emblemShape);
+  Emblems.setShape(emblems.shape);
   changeTooltipSize(ui.tooltipSize);
   changeStatesNumber(options.generation.states.limit); // state label sizes follow the number of states
 

@@ -85,7 +85,7 @@ beforeEach(() => {
         { i: 2, center: 2, coa: { shield: "heater", t1: "azure" } }
       ]
     },
-    options: { app: { emblemsShowAll: false } },
+    options: { app: { emblems: { showAll: false } } },
     facts: { graph: { width: 1000, height: 500 } },
     EmblemRenderer: mocks.emblemRenderer
   });
@@ -139,7 +139,7 @@ describe("viewport emblem rendering", () => {
     expect(document.getElementById("stateEmblems")?.classList).toContain("hidden");
     expect(document.querySelectorAll("#stateEmblems > use")).toHaveLength(0);
 
-    options.app.emblemsShowAll = true;
+    options.app.emblems.showAll = true;
     renderViewport();
     expect(document.getElementById("stateEmblems")?.classList).not.toContain("hidden");
     expect(document.querySelectorAll("#stateEmblems > use")).toHaveLength(1);
