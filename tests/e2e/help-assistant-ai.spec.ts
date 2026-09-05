@@ -81,27 +81,39 @@ test.describe("assistant dialog", () => {
     await loadMap(page);
   });
 
-  test("the bubble opens Help first and the mode control switches", async ({ page }) => {
+  test("the bubble opens Help first, toggles shut, and the mode control switches", async ({ page }) => {
     await page.locator("#helpAssistantBubble").click();
     await expect(page.locator("#helpAssistant")).toBeVisible();
     await expect(page.locator("#helpAssistantHelp")).toBeVisible();
     await expect(page.locator("#helpAssistantMap")).toBeHidden();
+    await expect(page.locator("#helpAssistantBubble")).toHaveAttribute("aria-expanded", "true");
+
     await page.locator("#helpAssistantQuestion").fill("half typed");
     await page.locator('.helpAssistantMode[data-mode="map"]').click();
     await expect(page.locator("#helpAssistantMap")).toBeVisible();
     await expect(page.locator("#helpMapDrawer")).toBeHidden();
     await page.locator('.helpAssistantMode[data-mode="help"]').click();
     await expect(page.locator("#helpAssistantQuestion")).toHaveValue("half typed");
+
+    // the call button is also the close button — clicked through the API here because the panel
+    // deliberately parks over it, leaving the titlebar close as the pointer-reachable stand-in
+    await page.evaluate(() => (window as any).Controllers.HelpAssistant.toggle());
+    await expect(page.locator("#helpAssistant")).toHaveCount(0);
+    await expect(page.locator("#helpAssistantBubble")).toHaveAttribute("aria-expanded", "false");
   });
 
   test("help questions round-trip through the gateway", async ({ page }) => {
     await page.locator("#helpAssistantBubble").click();
     await page.locator("#helpAssistantQuestion").fill("How do I export SVG?");
     await page.locator("#helpAssistantAsk").click();
-    const answer = page.locator("#helpAssistantLog .helpAssistantAnswer");
+    // the greeting is the first bot bubble; the answer is the last
+    const answer = page.locator("#helpAssistantLog .helpAssistantMsg.bot .helpAssistantBubble").last();
     await expect(answer).toContainText("Use");
     await expect(answer.locator("strong")).toHaveText("File → Export → SVG");
-    await expect(answer.locator(".helpAssistantFeedback button")).toHaveCount(2);
+    await expect(page.locator("#helpAssistantLog .helpAssistantFeedback button")).toHaveCount(2);
+    await expect(page.locator("#helpAssistantLog .helpAssistantMsg.user .helpAssistantBubble")).toHaveText(
+      "How do I export SVG?"
+    );
     await expect(page.locator("#helpAssistantLimits")).toContainText("5 questions left today");
   });
 
@@ -115,14 +127,17 @@ test.describe("assistant dialog", () => {
 
     await expect(page.locator("#helpAssistantMap")).toBeVisible();
     await expect(page.locator("#helpMapContext")).toHaveText("Note: Kelmora");
-    await expect(page.locator("#helpMapLog button").first()).toHaveText("Write a description for this note");
+    await expect(page.locator("#helpMapLog .helpMapEmpty button").first()).toHaveText(
+      "Write a description for this note"
+    );
 
     await page.locator("#helpMapInput").fill("make it ominous");
     await page.locator("#helpMapInput").press("Enter");
 
     const edit = page.locator("#helpMapLog .helpMapEdit");
     await expect(edit).toContainText("Updated note “Kelmora”");
-    await expect(page.locator("#helpMapLog .helpMapAssistant")).toContainText("Done");
+    await expect(page.locator("#helpMapLog .helpAssistantMsg.bot .helpAssistantBubble").last()).toContainText("Done");
+    await expect(page.locator("#helpMapLog .helpAssistantMsg.user .helpAssistantBubble")).toHaveText("make it ominous");
     expect(await legendOf(page, "burg1")).toBe("<p>Kelmora broods beneath a sky of ash.</p>");
     await expect(page.locator("#notesBody")).toHaveText("Kelmora broods beneath a sky of ash.");
     await expect(page.locator("#notesLegend .ql-editor")).toHaveText("Kelmora broods beneath a sky of ash.");
@@ -136,17 +151,17 @@ test.describe("assistant dialog", () => {
   test("a missing key opens the settings drawer instead of sending", async ({ page }) => {
     await page.evaluate(() => localStorage.removeItem("fmg-ai-kl-anthropic"));
     await page.evaluate(() => (window as any).Controllers.HelpAssistant.open({ mode: "map" }));
-    await expect(page.locator("#helpMapStatusKey")).toContainText("no key");
+    await expect(page.locator("#helpMapStatusModel")).toContainText("no key");
     await page.locator("#helpMapInput").fill("hello");
     await page.locator("#helpMapInput").press("Enter");
     await expect(page.locator("#helpMapDrawer")).toBeVisible();
     await expect(page.locator("#helpMapHint")).toBeVisible();
-    await expect(page.locator("#helpMapLog .helpMapUser")).toHaveCount(0);
+    await expect(page.locator("#helpMapLog .helpAssistantMsg.user")).toHaveCount(0);
 
     await stubAnthropic(page, "<p>unused</p>");
     await page.locator("#helpMapKey").fill("sk-test");
     await page.locator("#helpMapInput").press("Enter");
-    await expect(page.locator("#helpMapLog .helpMapUser")).toHaveText("hello");
+    await expect(page.locator("#helpMapLog .helpAssistantMsg.user .helpAssistantBubble")).toHaveText("hello");
     await expect(page.locator("#helpMapDrawer")).toBeHidden();
   });
 });

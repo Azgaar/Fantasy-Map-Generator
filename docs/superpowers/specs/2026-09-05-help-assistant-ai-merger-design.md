@@ -248,6 +248,55 @@ origin is unlisted anyway).
 - Electron support for the help gateway; upstream PRs for any of this.
 - Removing the AI Text Generator controller.
 
+## Addendum: Azgaar's UI direction (2026-09-05, branch `assistant-ui`)
+
+Azgaar restyled the help widget on his own `assistant-ui` branch (`upstream/assistant-ui`, two
+commits on 1.151.2). That branch is merged here and its idiom now governs both panels, replacing
+the look described in §1–3 above.
+
+**What his design settles, and this build adopts:**
+
+- **A messenger panel, not a dialog over the map.** Bottom-right, 400 wide, up to 560 tall,
+  resizable, parked at `right-16 bottom-44` over its own call button. Title "Azgaar Assistant".
+- **The call button is a launcher, not a glyph.** A 40px circle with a dark rounded badge; the
+  question mark morphs into a minimize square on hover and while the panel is open, and the badge
+  squishes on press. `toggle()` replaces `open()` on the bubble, and `markBubble` mirrors the state.
+  Note the panel deliberately covers the bubble, so the titlebar close is the pointer-reachable
+  way out; `toggle()` still closes from a shortcut or the console.
+- **Message rows.** `.helpAssistantMsg` (`user` right / `bot` left) → `.helpAssistantStack` →
+  `.helpAssistantBubble`, the user's in `--header` with white text. Three animated dots stand in
+  for an answer in flight. A "new conversation" rule replaces the plain divider.
+- **New chat lives in the titlebar** as an icon button next to collapse and close, so the body is
+  pure transcript. Here it is mode-aware: it resets the help thread or starts a fresh map chat.
+- **One composer**: a bordered box holding a borderless auto-growing textarea and an icon send
+  button. Enter sends, Shift+Enter breaks the line.
+- **Notices** carry a left accent bar, and a rate-limit countdown sits inside the notice rather
+  than on the send button.
+- **A bottom bar** of quick links (Wiki, Discord, Reddit, Patreon, Policy) with the limits and
+  account state on the right, as plain underlined text buttons.
+- **Panel CSS travels with the panel**, in a `<style>` block inside the dialog, not in
+  `public/index.css`. My earlier panel rules moved there and were deleted from the global sheet.
+- His tour-prompt fix (`bottom: 116px; right: 18px`) supersedes mine.
+
+**How the two panels fit that shape:** both are transcripts, so the map panel simply wears the same
+furniture — same log, rows, bubbles, typing dots and composer, shared through
+`help-assistant-chat.ts` so neither controller imports the other. The mode control is a tab strip
+at the top of the body, in the same idiom as the segmented look it replaces. Map-only additions
+are a note chip above the composer, a folded `<details>` for each script the model ran, a flat
+edit row with its own Undo, and a status bar mirroring the help bar: the model name and key state
+on the left (clickable), tokens and a gear on the right. The gear opens a drawer holding the chat
+list, model, key and local-server fields — so nothing about model choice is front and centre.
+
+**Kept from this build, not in his branch:** `open(options)` with a mode, `moveToTop` on re-open
+from the notes editor, the panel wrapper elements, and geometry that always uses the chat height
+because This map is a transcript even on an unlisted origin (where Help is only a note). The
+unlisted note now says This map still works there, since it runs on the user's own key.
+
+**Trap found twice:** a panel's own `display` rule outranks the `hidden` attribute at equal or
+higher specificity, so switched-off drawers and rows stayed visible. One
+`#helpAssistant [hidden] { display: none !important; }` at the end of the block settles it. jsdom
+cannot see this; only the browser run caught it, both times.
+
 ## Verification checklist (filled in as the build proceeds)
 
 - [x] upstream/help-assistant merged; unit tests green (96 files / 1025 tests after regenerating `context.generated.ts` for the new registry entry); tsc clean

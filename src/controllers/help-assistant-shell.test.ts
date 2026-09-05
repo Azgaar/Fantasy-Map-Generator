@@ -1,7 +1,12 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const panel = vi.hoisted(() => ({ mountMapPanel: vi.fn(), refreshMapContext: vi.fn(), unmountMapPanel: vi.fn() }));
+const panel = vi.hoisted(() => ({
+  mountMapPanel: vi.fn(),
+  refreshMapContext: vi.fn(),
+  unmountMapPanel: vi.fn(),
+  newMapConversation: vi.fn()
+}));
 vi.mock("./help-assistant-map", () => panel);
 
 import { HelpAssistant } from "./help-assistant";

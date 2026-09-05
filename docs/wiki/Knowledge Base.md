@@ -538,11 +538,11 @@ To hide the Assistant, go to Options -> Generator settings and set `Azgaar assis
 
 ### The assistant says 'No questions left today'. What now?
 
-Questions are budgeted per day to keep the shared service affordable. Anonymous use gets a small allowance; click 'Sign in with Discord for more' in the assistant panel for a larger one. The wiki and the Discord server hold the same knowledge the assistant answers from
+Questions are budgeted per day to keep the shared service affordable. Anonymous use gets a small allowance; click 'Sign in' at the bottom of the assistant panel to sign in with Discord for a larger one. The wiki and the Discord server hold the same knowledge the assistant answers from
 
 ### What does the assistant send, and where?
 
-Only the question you type and a conversation id go to the project's help gateway at ask.azgaarsfmg.com; nothing from your map or browser is sent. Answers are drawn from the wiki and Discord knowledge. Signing in with Discord stores a token in this browser, and 'Sign out' removes it
+Only the question you type and a conversation id go to the project's help gateway at ask.azgaarsfmg.com; nothing from your map or browser is sent. Answers are drawn from the wiki and Discord knowledge. Signing in with Discord stores a token in this browser, and 'Sign out' removes it. Questions are kept for 90 days to improve the documentation; the 'Policy' link at the bottom of the panel opens the full details at https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Policy
 
 ### How to make a river?
 

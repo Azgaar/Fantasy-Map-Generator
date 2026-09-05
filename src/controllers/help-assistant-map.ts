@@ -1,5 +1,6 @@
 // The assistant dialog's "This map" panel: the BYOK agent over the open map (formerly the AI Chat
-// dialog), with model settings in a drawer and note editing through write_note.
+// dialog), wearing the help panel's chat furniture. Model, key and past chats live in a drawer;
+// notes are edited through write_note, and every edit carries its own undo.
 
 import { confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
@@ -10,7 +11,6 @@ import {
   forCurrentMap,
   isEmpty,
   list,
-  type MessageRole,
   remove,
   select,
   touch
@@ -32,10 +32,11 @@ import { createSession } from "@/services/agent/session";
 import { openURL } from "@/utils";
 import { renderMarkdown } from "@/utils/markdown";
 import { ensureEl } from "../utils";
+import { buildMessageRow, buildTypingRow } from "./help-assistant-chat";
 import { type EditEntry, noteChipLabel, noteContext, undoEdit, writeNoteTool } from "./help-assistant-notes";
 
 const MODEL_STORAGE = "fmg-ai-chat-model";
-const MAX_INPUT_HEIGHT = 120;
+const MAX_INPUT_HEIGHT = 108;
 
 export const MAP_SUGGESTIONS = [
   "Which states have no ports?",
@@ -78,7 +79,7 @@ export function mountMapPanel(target: HTMLElement): void {
   renderUsage();
 }
 
-// Called on every open/switch into the panel: the note chip and the suggestions follow the notes editor
+// Called on every switch into the panel: the note chip and the suggestions follow the notes editor
 export function refreshMapContext(): void {
   void noteChipLabel().then(label => {
     if (!host || !document.getElementById("helpMapContext")) return;
@@ -99,36 +100,57 @@ export function unmountMapPanel(): void {
   host = null;
 }
 
+// The titlebar's "New chat" while this panel is on screen
+export function newMapConversation(): void {
+  if (isEmpty(conversation)) {
+    tip("This chat is already empty", true, "warn", 3000);
+    return;
+  }
+  conversation = create();
+  renderConversations();
+  renderTranscript();
+  renderUsage();
+}
+
 function panelHtml(): string {
   return /* html */ `
-    <div class="helpMapTop">
-      <select id="helpMapConversation" data-tip="Switch between conversations. Each one is sent in full with every question, so a fresh one costs less"></select>
-      <button id="helpMapNew" class="icon-plus" data-tip="Start a new conversation"></button>
-      <button id="helpMapRemove" class="icon-trash" data-tip="Delete the current conversation"></button>
-    </div>
-    <div id="helpMapLog" class="helpMapLog"></div>
+    <div id="helpMapLog" class="helpAssistantLog" role="log" aria-live="polite"></div>
     <div id="helpMapContext" class="helpMapContext" hidden></div>
-    <div class="helpMapComposer">
-      <textarea id="helpMapInput" rows="2" placeholder="Ask about this map…" data-tip="Enter to send, Shift + Enter for a new line"></textarea>
-      <button id="helpMapSend" class="icon-right-open" data-tip="Send the message"></button>
-      <button id="helpMapSettings" class="icon-cog" data-tip="Model and API key" aria-expanded="false"></button>
+    <div class="helpAssistantComposer">
+      <textarea id="helpMapInput" rows="1" aria-label="Your message"
+        placeholder="Ask about this map…"></textarea>
+      <button id="helpMapSend" type="button" class="helpAssistantSend icon-right-big"
+        title="Send (Enter)" aria-label="Send"></button>
     </div>
     <div id="helpMapDrawer" class="helpMapDrawer" hidden>
       <div id="helpMapHint" class="helpMapHint" hidden>Add your API key to start. It stays in this browser and goes only to the provider.</div>
-      <label>Model <select id="helpMapModel" data-tip="Model to ask. Bigger models reason better and cost more"></select></label>
-      <label>API key
-        <input id="helpMapKey" type="password" placeholder="API key" class="icon-key" />
-        <button id="helpMapKeyHelp" class="icon-help-circled" data-tip="Where to get the key"></button>
+      <label>
+        <span>Chat</span>
+        <select id="helpMapConversation" title="Switch between chats. Each one is sent in full with every message, so a fresh one costs less"></select>
+        <button id="helpMapDelete" type="button" class="icon-trash" title="Delete this chat" aria-label="Delete this chat"></button>
       </label>
-      <div id="helpMapLocal" hidden>
-        <input id="helpMapLocalUrl" type="text" placeholder="${DEFAULT_LOCAL_URL}" data-tip="Base URL of an OpenAI-compatible local server (Ollama, llama.cpp, LM Studio). For Ollama outside localhost, allow the app origin via OLLAMA_ORIGINS" />
-        <input id="helpMapLocalModel" type="text" placeholder="model name, e.g. llama3.2" data-tip="Name of the model as your local server knows it" />
-      </div>
+      <label>
+        <span>Model</span>
+        <select id="helpMapModel" title="Bigger models reason better and cost more"></select>
+      </label>
+      <label>
+        <span>API key</span>
+        <input id="helpMapKey" type="password" placeholder="API key" />
+        <button id="helpMapKeyHelp" type="button" class="icon-help-circled" title="Where to get the key" aria-label="Where to get the key"></button>
+      </label>
+      <label id="helpMapLocal" hidden>
+        <span>Server</span>
+        <input id="helpMapLocalUrl" type="text" placeholder="${DEFAULT_LOCAL_URL}" title="Base URL of an OpenAI-compatible local server (Ollama, llama.cpp, LM Studio). For Ollama outside localhost, allow the app origin via OLLAMA_ORIGINS" />
+        <input id="helpMapLocalModel" type="text" placeholder="model name" title="Name of the model as your local server knows it" />
+      </label>
     </div>
     <div class="helpMapStatus">
-      <button id="helpMapStatusModel" type="button" data-tip="Change the model or key"></button>
-      <span id="helpMapStatusKey"></span>
-      <span id="helpMapUsage"></span>
+      <button id="helpMapStatusModel" type="button" title="Change the model or key"></button>
+      <span class="helpMapStatusEnd">
+        <span id="helpMapUsage" class="helpMapUsage"></span>
+        <button id="helpMapSettings" type="button" class="helpMapGear icon-cog" title="Model, key and chats"
+          aria-label="Model, key and chats" aria-expanded="false"></button>
+      </span>
     </div>`;
 }
 
@@ -138,8 +160,7 @@ function bind(): void {
     renderTranscript();
     renderUsage();
   });
-  ensureEl("helpMapNew").addEventListener("click", startNewConversation);
-  ensureEl("helpMapRemove").addEventListener("click", removeConversation);
+  ensureEl("helpMapDelete").addEventListener("click", removeConversation);
   ensureEl("helpMapKeyHelp").addEventListener("click", () =>
     openURL(providerOf(ensureEl<HTMLSelectElement>("helpMapModel").value).keyLink)
   );
@@ -160,15 +181,21 @@ function bind(): void {
 
   const input = ensureEl<HTMLTextAreaElement>("helpMapInput");
   input.addEventListener("input", () => {
-    input.style.height = "auto";
-    input.style.height = `${Math.min(input.scrollHeight, MAX_INPUT_HEIGHT)}px`;
+    resizeInput(input);
     updateSendButton();
   });
+  // Enter sends, Shift+Enter breaks the line — the same convention as the help chat
   input.addEventListener("keydown", event => {
-    if (!(event instanceof KeyboardEvent) || event.key !== "Enter" || event.shiftKey) return;
-    event.preventDefault();
+    const key = event as KeyboardEvent;
+    if (key.key !== "Enter" || key.shiftKey || key.isComposing) return;
+    key.preventDefault();
     void send();
   });
+}
+
+function resizeInput(input: HTMLTextAreaElement): void {
+  input.style.height = "auto";
+  input.style.height = `${Math.min(input.scrollHeight, MAX_INPUT_HEIGHT)}px`;
 }
 
 function toggleDrawer(open?: boolean): void {
@@ -181,9 +208,10 @@ function toggleDrawer(open?: boolean): void {
 function renderStatus(): void {
   const model = ensureEl<HTMLSelectElement>("helpMapModel").value;
   const provider = providerOf(model);
-  ensureEl("helpMapStatusModel").textContent = model === LOCAL_MODEL ? "local model" : `${model} · ${provider.label}`;
+  const name = model === LOCAL_MODEL ? "local model" : `${model} · ${provider.label}`;
   const key = ensureEl<HTMLInputElement>("helpMapKey").value;
-  ensureEl("helpMapStatusKey").textContent = provider.id === "local" ? "" : key ? "· key set" : "· no key";
+  ensureEl("helpMapStatusModel").textContent =
+    provider.id === "local" ? name : `${name} · ${key ? "key set" : "no key"}`;
 }
 
 function setInitialValues(): void {
@@ -250,7 +278,7 @@ function loadKeyForModel(): void {
   const key = ensureEl<HTMLInputElement>("helpMapKey");
   key.value = localStorage.getItem(keyStorageFor(model)) ?? "";
   key.placeholder = local ? "API key (optional)" : "API key";
-  key.dataset.tip = local
+  key.title = local
     ? "Optional API key — most local servers need none. Sent as a Bearer token when set"
     : `${providerOf(model).label} API key. It's stored on your machine only (browser storage) and sent directly to the provider`;
 
@@ -269,8 +297,8 @@ function loadKeyForModel(): void {
 function updateSendButton(): void {
   const button = document.getElementById("helpMapSend") as HTMLButtonElement | null;
   if (!button) return;
-  button.className = busy ? "icon-cancel" : "icon-right-open";
-  button.dataset.tip = busy ? "Stop the current request" : "Send the message";
+  button.className = `helpAssistantSend ${busy ? "icon-cancel" : "icon-right-big"}`;
+  button.title = busy ? "Stop" : "Send (Enter)";
   button.disabled = !busy && !ensureEl<HTMLTextAreaElement>("helpMapInput").value.trim();
 }
 
@@ -309,13 +337,13 @@ async function send(text?: string): Promise<void> {
   toggleDrawer(false);
 
   input.value = "";
-  input.style.height = "auto";
+  resizeInput(input);
   addEntry({ kind: "message", role: "user", text: question });
   renderConversations();
 
   busy = true;
   updateSendButton();
-  showThinking("Thinking");
+  showThinking("Thinking…");
   turnContext = (await noteContext()) ?? "";
 
   try {
@@ -325,7 +353,7 @@ async function send(text?: string): Promise<void> {
       onScriptResult: result => completeStep(result),
       onStatus: status => (status ? showThinking(status) : hideThinking()),
       onUsage: renderUsage,
-      onTool: () => showThinking("Editing the note")
+      onTool: () => showThinking("Writing the note…")
     });
   } catch (error) {
     const aborted = error instanceof DOMException && error.name === "AbortError";
@@ -343,17 +371,6 @@ async function send(text?: string): Promise<void> {
   }
 }
 
-function startNewConversation(): void {
-  if (isEmpty(conversation)) {
-    tip("This conversation is already empty", true, "warn", 3000);
-    return;
-  }
-  conversation = create();
-  renderConversations();
-  renderTranscript();
-  renderUsage();
-}
-
 function removeConversation(): void {
   const drop = (): void => {
     remove(conversation.id);
@@ -368,8 +385,8 @@ function removeConversation(): void {
     return;
   }
   confirmationDialog({
-    title: "Delete conversation",
-    message: `Delete "${conversation.title}"?<br />The conversation cannot be restored`,
+    title: "Delete chat",
+    message: `Delete "${conversation.title}"?<br />The chat cannot be restored`,
     confirm: "Delete",
     onConfirm: drop
   });
@@ -399,8 +416,8 @@ function renderUsage(): void {
     return;
   }
   const cheap = cached ? `, ${thousands(cached)} cached` : "";
-  line.textContent = `· ${thousands(input)} sent${cheap}, ${thousands(output)} received`;
-  line.dataset.tip = "Tokens spent in this conversation. Cached tokens cost a tenth of the rest";
+  line.textContent = `${thousands(input)} sent${cheap}, ${thousands(output)} back`;
+  line.title = "Tokens spent in this chat. Cached tokens cost a tenth of the rest";
 }
 
 const thousands = (value: number): string => (value < 1000 ? String(value) : `${(value / 1000).toFixed(1)}k`);
@@ -434,20 +451,7 @@ function addEntry(entry: Entry): void {
 }
 
 function renderEntry(entry: Entry): HTMLElement {
-  if (entry.kind === "message") {
-    const roles: Record<MessageRole, string> = {
-      user: "helpMapUser",
-      assistant: "helpMapAssistant",
-      system: "helpMapSystem",
-      error: "helpMapError"
-    };
-    const element = document.createElement("div");
-    element.className = `helpMapMessage ${roles[entry.role]}`;
-    // only the model writes Markdown; everything else is shown exactly as typed
-    if (entry.role === "assistant") element.innerHTML = renderMarkdown(entry.text);
-    else element.textContent = entry.text;
-    return element;
-  }
+  if (entry.kind === "message") return renderMessage(entry.role, entry.text);
   if (entry.kind === "edit") return renderEdit(entry);
 
   const details = document.createElement("details");
@@ -456,6 +460,25 @@ function renderEntry(entry: Entry): HTMLElement {
   setStepSummary(details, entry.result);
   if (entry.result) details.append(preElement(resultText(entry.result)));
   return details;
+}
+
+function renderMessage(role: "user" | "assistant" | "system" | "error", text: string): HTMLElement {
+  // a cancellation is an event in the thread, not something anyone said
+  if (role === "system") {
+    const divider = document.createElement("div");
+    divider.className = "helpAssistantDivider";
+    divider.textContent = text;
+    return divider;
+  }
+
+  const { row, stack } = buildMessageRow(role === "user" ? "user" : "bot");
+  const bubble = document.createElement("div");
+  bubble.className = role === "error" ? "helpAssistantBubble helpMapErrorBubble" : "helpAssistantBubble";
+  // only the model writes Markdown; everything else is shown exactly as typed
+  if (role === "assistant") bubble.innerHTML = renderMarkdown(text);
+  else bubble.textContent = text;
+  stack.appendChild(bubble);
+  return row;
 }
 
 function renderEdit(entry: EditEntry): HTMLElement {
@@ -468,9 +491,8 @@ function renderEdit(entry: EditEntry): HTMLElement {
   text.textContent = label();
   const undo = document.createElement("button");
   undo.type = "button";
-  undo.className = "icon-ccw";
-  undo.textContent = " Undo";
-  undo.dataset.tip = "Put the note back the way it was before this edit";
+  undo.textContent = "Undo";
+  undo.title = "Put the note back the way it was before this edit";
   undo.disabled = Boolean(entry.undone);
   undo.addEventListener("click", () => {
     undo.disabled = true;
@@ -516,11 +538,12 @@ function preElement(text: string): HTMLPreElement {
 function emptyState(): HTMLElement {
   const container = document.createElement("div");
   container.id = "helpMapEmpty";
+  container.className = "helpMapEmpty";
 
-  const hint = document.createElement("div");
+  const hint = document.createElement("p");
   hint.textContent = noteLabel
-    ? `I can read this map and rewrite the note “${noteLabel}” in the notes editor. Every edit has an Undo.`
-    : "I can read this map and answer questions about it, and edit notes when the notes editor is open.";
+    ? `I can read this map and rewrite the note “${noteLabel}”. Every edit has an undo.`
+    : "I can read the map you have open, and write your notes when the Notes Editor is open.";
   container.append(hint);
 
   (noteLabel ? NOTE_SUGGESTIONS : MAP_SUGGESTIONS).forEach(suggestion => {
@@ -540,14 +563,11 @@ function showThinking(status: string): void {
 
   let thinking = document.getElementById("helpMapThinking");
   if (!thinking) {
-    thinking = document.createElement("div");
+    thinking = buildTypingRow(status);
     thinking.id = "helpMapThinking";
-    thinking.append(document.createElement("span"), ...[0, 1, 2].map(() => document.createElement("i")));
     log.append(thinking);
   }
-
-  const label = thinking.querySelector("span");
-  if (label) label.textContent = status;
+  thinking.querySelector(".helpAssistantTyping")?.setAttribute("aria-label", status);
   log.append(thinking);
   scrollToEnd();
 }

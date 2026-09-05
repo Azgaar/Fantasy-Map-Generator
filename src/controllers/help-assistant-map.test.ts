@@ -54,7 +54,7 @@ describe("map panel", () => {
     mountMapPanel(el("host"));
     expect(el("helpMapDrawer").hidden).toBe(true);
     expect(el("helpMapStatusModel").textContent).toContain("claude-sonnet-5");
-    expect(el("helpMapStatusKey").textContent).toContain("no key");
+    expect(el("helpMapStatusModel").textContent).toContain("no key");
     expect(el("helpMapContext").hidden).toBe(true);
   });
 
@@ -66,7 +66,7 @@ describe("map panel", () => {
     expect(el("helpMapDrawer").hidden).toBe(false);
     expect(el("helpMapHint").hidden).toBe(false);
     expect(document.activeElement).toBe(el("helpMapKey"));
-    expect(el("helpMapLog").querySelector(".helpMapUser")).toBeNull();
+    expect(el("helpMapLog").querySelector(".helpAssistantMsg.user")).toBeNull();
   });
 
   it("toggles the drawer from the gear and the status model button", () => {
@@ -86,7 +86,7 @@ describe("map panel", () => {
     await flush();
     expect(el("helpMapContext").hidden).toBe(false);
     expect(el("helpMapContext").textContent).toContain("Kelmora");
-    const chips = [...el("helpMapLog").querySelectorAll("button")].map(button => button.textContent);
+    const chips = [...el("helpMapLog").querySelectorAll(".helpMapEmpty button")].map(button => button.textContent);
     expect(chips).toEqual(NOTE_SUGGESTIONS);
   });
 

@@ -2614,8 +2614,8 @@ svg.button {
 
 #tourPromptButton {
   position: fixed;
-  bottom: 120px; /* stacked above the 44px help bubble at bottom: 64px, centred on it */
-  right: 20px;
+  bottom: 116px; /* stacked above the assistant bubble, sharing its column */
+  right: 18px;
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -2747,486 +2747,113 @@ body.tour-free-roam * {
   margin: 0.8em 0 0.4em 0;
 }
 
+/* Assistant call button: the flat, themed circle the OpenWidget launcher used to be — a
+   dark rounded badge with the glyph punched out of it, and the same press squish */
 #helpAssistantBubble {
   position: fixed;
   right: 16px;
   bottom: 64px; /* clear of the scale bar in the corner */
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: #35424d;
-  color: #fff;
-  font-size: 1.4em;
+  width: 40px;
+  height: 40px;
+  padding: 0;
   align-items: center;
   justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--light-solid);
   cursor: pointer;
-  box-shadow: 0 2px 6px rgb(0 0 0 / 35%);
+  user-select: none;
+  box-shadow:
+    0 1px 1px -1px rgb(0 0 0 / 13%),
+    0 2px 5px -2px rgb(0 0 0 / 18%);
+  animation: assistantBubbleIn 0.3s cubic-bezier(0.14, 0, 0, 1) backwards;
   z-index: 99;
 }
 
-/* the dialog is fixed-width; undo the global .dialog > div { width: max-content } so
-   children wrap instead of overflowing */
-#helpAssistant > div {
-  width: auto;
+#helpAssistantBubble:focus-visible {
+  outline: 2px solid var(--dark-solid);
+  outline-offset: 3px;
 }
 
-/* Two panels — Help (the gateway widget) and This map (the BYOK agent) — behind a segmented
-   mode control. The dialog is a flex column so each panel's transcript takes the slack. */
-#helpAssistant {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4em;
-  height: 100%;
-  user-select: text;
-}
-
-#helpAssistant .helpAssistantModes {
-  display: flex;
-  gap: 0.25em;
-  padding: 0.15em;
-  border-radius: 0.5em;
-  background: rgb(0 0 0 / 6%);
-  flex: 0 0 auto;
-}
-
-#helpAssistant .helpAssistantMode {
-  flex: 1;
-  padding: 0.3em 0.6em;
-  border: none;
-  border-radius: 0.4em;
-  background: transparent;
-  cursor: pointer;
-  opacity: 0.7;
-}
-
-#helpAssistant .helpAssistantMode::before {
-  margin-right: 0.35em;
-}
-
-#helpAssistant .helpAssistantMode.selected {
-  background: #fff;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 20%);
-  opacity: 1;
-  font-weight: bold;
-}
-
-#helpAssistant .helpAssistantPanel {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 0;
-}
-
-#helpAssistant .helpAssistantPanel[hidden] {
-  display: none;
-}
-
-/* This map panel (the BYOK agent) */
-#helpAssistantMap {
-  gap: 0.3em;
-}
-
-/* the panel's own display rules would otherwise outrank the hidden attribute */
-#helpAssistantMap .helpMapDrawer[hidden],
-#helpAssistantMap .helpMapContext[hidden],
-#helpAssistantMap .helpMapHint[hidden] {
-  display: none;
-}
-
-#helpAssistantMap .helpMapTop {
+/* the badge alone squishes under the press, the circle stays put, as the launcher did */
+#helpAssistantBubble > .helpAssistantBubbleBadge {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 0.3em;
-}
-
-#helpAssistantMap .helpMapTop > select {
-  flex: 1;
-  min-width: 0;
-}
-
-#helpAssistantMap .helpMapLog {
-  flex: 1 1 auto;
-  min-height: 6em;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 0.45em;
-}
-
-#helpAssistantMap #helpMapEmpty {
-  margin: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5em;
-  text-align: center;
-}
-
-#helpAssistantMap #helpMapEmpty > div {
-  opacity: 0.7;
-  max-width: 22em;
-}
-
-#helpAssistantMap #helpMapEmpty button {
-  padding: 0.25em 0.7em;
-  border-radius: 1em;
-  cursor: pointer;
-}
-
-#helpAssistantMap .helpMapContext {
-  align-self: flex-start;
-  font-size: 0.85em;
-  padding: 0.1em 0.6em;
-  border-radius: 1em;
-  background: rgb(53 66 77 / 12%);
-}
-
-#helpAssistantMap .helpMapComposer {
-  display: flex;
-  align-items: flex-end;
-  gap: 0.3em;
-}
-
-#helpAssistantMap .helpMapComposer > textarea {
-  flex: 1;
-  min-width: 0;
-  resize: none;
-  overflow-y: auto;
-}
-
-#helpAssistantMap .helpMapDrawer {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3em;
-  padding: 0.5em;
-  border-radius: 0.4em;
-  background: rgb(0 0 0 / 5%);
-  font-size: 0.92em;
-}
-
-#helpAssistantMap .helpMapDrawer label {
-  display: flex;
-  align-items: center;
-  gap: 0.4em;
-}
-
-#helpAssistantMap .helpMapDrawer select,
-#helpAssistantMap .helpMapDrawer input {
-  flex: 1;
-  min-width: 0;
-}
-
-#helpAssistantMap #helpMapLocal {
-  display: flex;
-  gap: 0.3em;
-}
-
-#helpAssistantMap #helpMapLocal[hidden] {
-  display: none;
-}
-
-#helpAssistantMap .helpMapHint {
-  color: #b03030;
-}
-
-#helpAssistantMap .helpMapStatus {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3em 0.4em;
-  align-items: center;
-  font-size: 0.85em;
-  opacity: 0.8;
-}
-
-#helpAssistantMap .helpMapStatus > button {
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  text-decoration: underline dotted;
-}
-
-#helpAssistantMap .helpMapUser {
-  align-self: flex-end;
-  max-width: 85%;
-  padding: 0.3em 0.6em;
-  border-radius: 0.8em 0.8em 0.2em 0.8em;
-  background: rgba(128, 128, 128, 0.18);
-}
-
-#helpAssistantMap .helpMapAssistant {
-  align-self: flex-start;
-  max-width: 95%;
-  white-space: normal;
-}
-
-#helpAssistantMap .helpMapSystem {
-  align-self: center;
-  text-align: center;
-  font-style: italic;
-  opacity: 0.65;
-}
-
-#helpAssistantMap .helpMapError {
-  align-self: center;
-  text-align: center;
-  color: #b03030;
-}
-
-#helpAssistantMap .helpMapMessage {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-#helpAssistantMap .helpMapStep {
-  align-self: flex-start;
-  max-width: 100%;
-  font-size: 0.9em;
-  opacity: 0.8;
-}
-
-#helpAssistantMap .helpMapStep summary {
-  cursor: pointer;
-  user-select: none;
-}
-
-#helpAssistantMap .helpMapStep pre {
-  margin: 0.2em 0;
-  padding: 0.3em 0.4em;
-  max-height: 14em;
-  overflow: auto;
-  border-radius: 0.3em;
-  background: rgba(128, 128, 128, 0.12);
-}
-
-#helpAssistantMap .helpMapEdit {
-  align-self: flex-start;
-  display: flex;
-  align-items: center;
-  gap: 0.5em;
-  padding: 0.3em 0.6em;
-  border-radius: 0.4em;
-  background: rgb(53 66 77 / 10%);
-  font-size: 0.92em;
-}
-
-#helpAssistantMap .helpMapEdit button {
-  padding: 0.1em 0.4em;
-}
-
-#helpAssistantMap #helpMapThinking {
-  align-self: flex-start;
-  display: flex;
-  align-items: center;
-  gap: 0.4em;
-  font-style: italic;
-  opacity: 0.7;
-}
-
-#helpAssistantMap #helpMapThinking i {
-  width: 0.35em;
-  height: 0.35em;
-  border-radius: 50%;
-  background: currentColor;
-  animation: helpMapBlink 1.2s infinite ease-in-out;
-}
-
-#helpAssistantMap #helpMapThinking i:nth-child(3) {
-  animation-delay: 0.2s;
-}
-
-#helpAssistantMap #helpMapThinking i:nth-child(4) {
-  animation-delay: 0.4s;
-}
-
-@keyframes helpMapBlink {
-  0%,
-  70%,
-  100% {
-    opacity: 0.25;
-  }
-  35% {
-    opacity: 1;
-  }
-}
-
-#helpAssistantMap .helpMapAssistant > :first-child {
-  margin-top: 0;
-}
-
-#helpAssistantMap .helpMapAssistant > :last-child {
-  margin-bottom: 0;
-}
-
-#helpAssistantMap .helpMapAssistant p {
-  margin: 0 0 0.4em;
-}
-
-#helpAssistantMap .helpMapAssistant h3,
-#helpAssistantMap .helpMapAssistant h4,
-#helpAssistantMap .helpMapAssistant h5,
-#helpAssistantMap .helpMapAssistant h6 {
-  margin: 0.5em 0 0.2em;
-  font-size: 1em;
-  font-weight: bold;
-}
-
-#helpAssistantMap .helpMapAssistant ul,
-#helpAssistantMap .helpMapAssistant ol {
-  margin: 0.2em 0 0.4em;
-  padding-left: 1.3em;
-}
-
-#helpAssistantMap .helpMapAssistant li {
-  margin: 0.1em 0;
-}
-
-#helpAssistantMap .helpMapAssistant code {
-  padding: 0 0.25em;
-  border-radius: 0.25em;
-  background: rgba(128, 128, 128, 0.16);
-  font-family: monospace;
-}
-
-#helpAssistantMap .helpMapAssistant pre {
-  margin: 0.3em 0;
-  padding: 0.35em 0.45em;
-  overflow-x: auto;
-  border-radius: 0.3em;
-  background: rgba(128, 128, 128, 0.12);
-}
-
-#helpAssistantMap .helpMapAssistant pre code {
-  padding: 0;
-  background: none;
-}
-
-#helpAssistantMap .helpMapAssistant table {
-  display: block;
-  width: max-content;
-  max-width: 100%;
-  margin: 0.3em 0;
-  overflow-x: auto;
-  border-collapse: collapse;
-}
-
-#helpAssistantMap .helpMapAssistant th,
-#helpAssistantMap .helpMapAssistant td {
-  padding: 0.15em 0.45em;
-  border: 1px solid rgba(128, 128, 128, 0.35);
-}
-
-#helpAssistantMap .helpMapAssistant th {
-  background: rgba(128, 128, 128, 0.12);
-  text-align: left;
-}
-
-#helpAssistantMap .helpMapAssistant blockquote {
-  margin: 0.3em 0;
-  padding-left: 0.6em;
-  border-left: 2px solid rgba(128, 128, 128, 0.4);
-  opacity: 0.85;
-}
-
-#helpAssistantMap .helpMapAssistant hr {
-  margin: 0.4em 0;
-  border: none;
-  border-top: 1px solid rgba(128, 128, 128, 0.3);
-}
-
-#helpAssistantMap .helpMapAssistant a {
-  text-decoration: underline;
-  cursor: pointer;
-}
-
-#helpAssistant .helpAssistantLinks {
-  display: flex;
-  gap: 1.2em;
   justify-content: center;
-  margin-top: 0.6em;
-  padding-top: 0.5em;
-  border-top: 1px solid rgb(0 0 0 / 12%);
-  font-size: 0.92em;
+  width: 20px;
+  height: 18px;
+  border-radius: 7px;
+  background: #0d0b0c; /* fallback for browsers without color-mix */
+  background: color-mix(in srgb, var(--dark-solid) 40%, #000000);
+  color: var(--light-solid); /* the glyphs read as holes cut in the badge */
+  font-size: 13px;
+  line-height: 1;
+  transition: transform 0.25s cubic-bezier(0.14, 0, 0, 1);
 }
 
-#helpAssistant .helpAssistantUnlisted {
-  max-width: 20em;
+#helpAssistantBubble:active > .helpAssistantBubbleBadge {
+  transform: scale(0.75);
 }
 
-#helpAssistant .helpAssistantLog {
-  flex: 1 1 auto;
-  min-height: 8em;
-  overflow-y: auto;
-  margin-bottom: 0.5em;
+/* both glyphs sit on top of each other: the question mark morphs into the rounded square
+   under the pointer, and stays there while the dialog is open */
+#helpAssistantBubble .icon-help,
+#helpAssistantBubble .helpAssistantBubbleMinimize {
+  position: absolute;
+  transition:
+    opacity 0.2s ease-out,
+    transform 0.25s cubic-bezier(0.14, 0, 0, 1);
 }
 
-#helpAssistant .helpAssistantDivider {
-  text-align: center;
-  opacity: 0.55;
-  font-size: 0.85em;
-  margin: 0.5em 0;
-}
-
-#helpAssistant .helpAssistantNewChat {
-  display: block;
-  text-align: right;
-  font-size: 0.85em;
-  margin-bottom: 0.2em;
-}
-
-#helpAssistant .helpAssistantAsked {
-  font-style: italic;
-  opacity: 0.8;
-}
-
-#helpAssistant .helpAssistantFeedback {
+#helpAssistantBubble .icon-help {
+  inset: 0;
   display: flex;
-  gap: 0.3em;
-  justify-content: flex-end;
-  margin-top: 0.2em;
-}
-
-#helpAssistant .helpAssistantFeedback button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  opacity: 0.4;
-  font-size: 1em;
-  padding: 0 0.15em;
-}
-
-#helpAssistant .helpAssistantFeedback button:hover {
-  opacity: 0.8;
-}
-
-#helpAssistant .helpAssistantFeedback button.selected {
-  opacity: 1;
-}
-
-#helpAssistant .helpAssistantFooter {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
   align-items: center;
-  gap: 0.4em 0.8em;
-  width: 100%;
-  margin-top: 0.3em;
+  justify-content: center;
 }
 
-#helpAssistant .helpAssistantFooter #helpAssistantAuth {
-  flex: 1;
-  text-align: right;
-  font-size: 0.92em;
-  white-space: nowrap;
+#helpAssistantBubble .helpAssistantBubbleMinimize {
+  inset: 0;
+  width: 9px;
+  height: 8px;
+  margin: auto;
+  border: 2px solid currentcolor;
+  border-radius: 3px;
+  opacity: 0;
+  transform: scale(0.6);
 }
 
-#helpAssistant .helpAssistantDisclosure {
-  font-size: 0.85em;
-  opacity: 0.7;
-  margin-top: 0.5em;
+#helpAssistantBubble:hover .icon-help,
+#helpAssistantBubble.open .icon-help {
+  opacity: 0;
+  transform: scale(0.6);
 }
 
-#helpAssistant textarea {
-  width: 100%;
-  box-sizing: border-box;
+#helpAssistantBubble:hover .helpAssistantBubbleMinimize,
+#helpAssistantBubble.open .helpAssistantBubbleMinimize {
+  opacity: 1;
+  transform: none;
+}
+
+@keyframes assistantBubbleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #helpAssistantBubble,
+  #helpAssistantBubble > .helpAssistantBubbleBadge,
+  #helpAssistantBubble .icon-help,
+  #helpAssistantBubble .helpAssistantBubbleMinimize {
+    animation: none;
+    transition: none;
+  }
 }
