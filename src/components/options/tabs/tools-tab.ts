@@ -209,6 +209,9 @@ const TEMPLATE = /* html */ `
     >
       Charts
     </button>
+    <button id="openMapAssistantButton" data-tip="Ask about this map or edit its notes with your own AI key">
+      Assistant
+    </button>
     <button id="openMinimapButton" data-tip="Click to open minimap overview. Click minimap to center view">
       Minimap
     </button>
