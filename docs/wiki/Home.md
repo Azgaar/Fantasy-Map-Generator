@@ -45,7 +45,8 @@ The project is under active development. Join our [Discord server](https://disco
 [URL parameters](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/URL-parameters) ·
 [GIS data export](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export) ·
 [Ollama text generation](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Ollama-text-generation) ·
-[Dependencies](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Dependencies)
+[Dependencies](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Dependencies) ·
+[Policy](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Policy)
 
 ## How can I use the tool? 
 
