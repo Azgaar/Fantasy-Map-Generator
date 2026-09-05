@@ -25,7 +25,7 @@ import { drawCellsValue, drawPath, drawPoint, drawPolygons, drawRouteConnections
 import { downloadFile, getFileName, uploadFile } from "./fileUtils";
 import { distanceSquared, rollups } from "./functionUtils";
 import { isLand, isWater, SEA_LEVEL } from "./heightUtils";
-import { applyOption, ensureEl, findEl, getComposedPath, getNextId, getPointer } from "./nodeUtils";
+import { applyOption, ensureEl, findEl, getComposedPath, getNextId, getPointer, loadScript } from "./nodeUtils";
 import { connectVertices, findPath, getIsolines, getPolesOfInaccessibility, getVertexPath } from "./pathUtils";
 import { biased, each, gauss, generateSeed, getNumberInRange, P, Pint, ra, rand, rw } from "./probabilityUtils";
 import { findAllInQuadtree } from "./quadtree";
@@ -201,6 +201,7 @@ export {
   lim,
   link,
   list,
+  loadScript,
   minmax,
   normalize,
   nth,

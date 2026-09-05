@@ -148,9 +148,9 @@ declare global {
   var rn: (value: number, decimals?: number) => number;
   var openURL: (url: string) => void;
 
+  var tinyMCEPreInit: { base: string; suffix: string } | undefined;
   var tinymce:
     | {
-        _setBaseUrl: (url: string) => void;
         init: (config: Record<string, unknown>) => void;
         remove: () => void;
         activeEditor?: { getContent: () => string; setContent: (content: string) => void };

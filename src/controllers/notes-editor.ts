@@ -1,7 +1,7 @@
 import { confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { highlightElement } from "@/renderers/overlays/highlight";
-import { downloadFile, getFileName, speak, uploadFile } from "@/utils";
+import { downloadFile, getFileName, loadScript, speak, uploadFile } from "@/utils";
 import { ensureEl } from "../utils";
 
 interface Note {
@@ -104,26 +104,17 @@ function closeNotesEditor(): void {
   ensureEl("notesEditor").remove();
 }
 
+// A classic script, not import(): Vite reports a failed dynamic import as a missing chunk, which the
+// app shell answers with a reload prompt. The pre-init keeps TinyMCE from doubling ".min" onto its assets
 async function initEditor(): Promise<void> {
   if (!window.tinymce) {
-    const url = "https://azgaar.github.io/Fantasy-Map-Generator/libs/tinymce/tinymce.min.js";
-    try {
-      await import(/* @vite-ignore */ url);
-    } catch {
-      // error may be caused by failed request being cached, try again with random hash
-      try {
-        const hash = Math.random().toString(36).substring(2, 15);
-        await import(/* @vite-ignore */ `${url}#${hash}`);
-      } catch (error) {
-        console.error(error);
-      }
-    }
+    window.tinyMCEPreInit = { base: "libs/tinymce", suffix: "" };
+    await loadScript("libs/tinymce/tinymce.min.js").catch(console.error);
   }
 
   const tinymce = window.tinymce;
   if (!tinymce) return;
 
-  tinymce._setBaseUrl("https://azgaar.github.io/Fantasy-Map-Generator/libs/tinymce");
   tinymce.init({
     license_key: "gpl",
     selector: "#notesLegend",
