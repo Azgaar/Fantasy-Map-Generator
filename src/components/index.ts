@@ -12,3 +12,4 @@ import "./dialog/dialog-helpers";
 import "./dialog/sorting";
 import "./fill-box";
 import "./slider-input";
+import "./map-wheel";
