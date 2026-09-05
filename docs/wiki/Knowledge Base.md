@@ -530,11 +530,19 @@ Not really. The size mostly depends on the points number and cannot be changed f
 
 ### How to clean this chat dialog? How can I remove the chat history?
 
-You can open the website cdn.openwidget.com, then Open the Dev Console (F12) and type `localStorage.clear();` there. It will remove the chat history
+The assistant remembers the conversation for the current browser tab only, and the service forgets it two hours after the last question. Close the tab or open the Generator in a new one to start fresh; the assistant marks the boundary with a 'new conversation' line
 
 ### How can I toggle you off? How can I hide the Assistant?
 
 To hide the Assistant, go to Options -> Generator settings and set `Azgaar assistant` to Hide
+
+### The assistant says 'No questions left today'. What now?
+
+Questions are budgeted per day to keep the shared service affordable. Anonymous use gets a small allowance; click 'Sign in with Discord for more' in the assistant panel for a larger one. The wiki and the Discord server hold the same knowledge the assistant answers from
+
+### What does the assistant send, and where?
+
+Only the question you type and a conversation id go to the project's help gateway at ask.azgaarsfmg.com; nothing from your map or browser is sent. Answers are drawn from the wiki and Discord knowledge. Signing in with Discord stores a token in this browser, and 'Sign out' removes it
 
 ### How to make a river?
 
