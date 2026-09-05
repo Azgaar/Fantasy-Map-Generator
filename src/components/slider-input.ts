@@ -21,6 +21,8 @@ template.innerHTML = /* html */ `
 `;
 
 class SliderInput extends HTMLElement {
+  static observedAttributes = ["min", "max", "step"];
+
   constructor() {
     super();
     this.appendChild(template.content.cloneNode(true));
@@ -37,6 +39,11 @@ class SliderInput extends HTMLElement {
     number.addEventListener("input", this.handleEvent.bind(this));
     range.addEventListener("change", this.handleEvent.bind(this));
     number.addEventListener("change", this.handleEvent.bind(this));
+  }
+
+  attributeChangedCallback(name: string, _old: string | null, value: string | null) {
+    if (value === null) return;
+    for (const input of this.querySelectorAll<HTMLInputElement>("input")) input.setAttribute(name, value);
   }
 
   handleEvent(e: Event) {
