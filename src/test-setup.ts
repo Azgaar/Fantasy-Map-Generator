@@ -3,14 +3,15 @@ if (typeof window === "undefined") {
   (globalThis as Record<string, unknown>).window = globalThis;
 }
 
-// Stub DOM Node so utils/index.ts can patch its prototype without crashing
+// Stub DOM Node so utils/index.ts can patch its prototype without crashing.
+// Must be a real class: vitest matchers (e.g. toContain) do `instanceof Node`,
+// which throws "Right-hand side of 'instanceof' is not callable" on a plain object.
 if (typeof Node === "undefined") {
-  (globalThis as Record<string, unknown>).Node = {
-    prototype: {
-      addEventListener: () => {},
-      removeEventListener: () => {}
-    }
-  };
+  class NodeStub {
+    addEventListener() {}
+    removeEventListener() {}
+  }
+  (globalThis as Record<string, unknown>).Node = NodeStub;
 }
 
 // Stub document so utils/index.ts DOMContentLoaded guard doesn't crash

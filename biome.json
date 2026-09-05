@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["src/**/*.ts", "electron/**/*.ts"]
+    "includes": ["src/**/*.ts", "electron/**/*.ts", "!src/**/*.generated.ts"]
   },
   "formatter": {
     "enabled": true,
