@@ -61,7 +61,6 @@ async function stubAnthropic(page: Page, html: string): Promise<void> {
 }
 
 async function loadMap(page: Page): Promise<void> {
-  await page.route("https://azgaar.github.io/**", route => route.abort()); // no remote TinyMCE: plain contenteditable
   await page.goto("/?seed=assistant-e2e&width=1280&height=720");
   await page.waitForFunction(() => (window as any).mapId !== undefined, { timeout: 120000 });
   // `notes` is a top-level `let` in the classic main.js — a global binding, not a window property
@@ -126,7 +125,7 @@ test.describe("assistant dialog", () => {
     await expect(page.locator("#helpMapLog .helpMapAssistant")).toContainText("Done");
     expect(await legendOf(page, "burg1")).toBe("<p>Kelmora broods beneath a sky of ash.</p>");
     await expect(page.locator("#notesBody")).toHaveText("Kelmora broods beneath a sky of ash.");
-    await expect(page.locator("#notesLegend")).toHaveText("Kelmora broods beneath a sky of ash.");
+    await expect(page.locator("#notesLegend .ql-editor")).toHaveText("Kelmora broods beneath a sky of ash.");
 
     await edit.locator("button").click();
     await expect(edit).toContainText("undone");

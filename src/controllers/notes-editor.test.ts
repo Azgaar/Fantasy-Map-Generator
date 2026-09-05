@@ -9,6 +9,7 @@ import { NotesEditor } from "./notes-editor";
 const w = globalThis as unknown as Record<string, unknown>;
 const notesOf = (): { id: string; name: string; legend: string }[] =>
   w.notes as { id: string; name: string; legend: string }[];
+const editorText = (): string | undefined => document.querySelector("#notesLegend .ql-editor")?.textContent;
 
 beforeEach(() => {
   document.body.innerHTML = `<div id="dialogs"></div><div id="notesHeader"></div><div id="notesBody"></div>
@@ -17,8 +18,6 @@ beforeEach(() => {
   w.options = { pinNotes: false };
   w.svgWidth = 1000;
   w.svgHeight = 600;
-  // a present tinymce short-circuits the remote editor load; no active editor means plain contenteditable
-  w.tinymce = { remove: () => {}, init: () => {}, _setBaseUrl: () => {}, activeEditor: null };
   window.$ = vi.fn(() => ({ dialog: vi.fn() })) as unknown as typeof window.$;
 });
 
@@ -27,7 +26,7 @@ afterEach(() => {
 });
 
 describe("NotesEditor bridge", () => {
-  it("has no current note while the editor is closed", () => {
+  it("has no current note or selection while the editor is closed", () => {
     expect(NotesEditor.current()).toBeNull();
     expect(NotesEditor.getSelectionHtml()).toBeNull();
   });
@@ -48,11 +47,21 @@ describe("NotesEditor bridge", () => {
   it("reports and refreshes the note shown in the open editor", () => {
     NotesEditor.open("burg1");
     expect(NotesEditor.current()?.id).toBe("burg1");
+    expect(editorText()).toBe("old");
 
     NotesEditor.write("burg1", "<p>rewritten</p>", "Kelmora the Grim");
-    expect(document.getElementById("notesLegend")?.innerHTML).toBe("<p>rewritten</p>");
+    expect(editorText()).toBe("rewritten");
     expect(document.getElementById("notesBody")?.innerHTML).toBe("<p>rewritten</p>");
     expect((document.getElementById("notesName") as HTMLInputElement).value).toBe("Kelmora the Grim");
+    expect(NotesEditor.getSelectionHtml()).toBeNull(); // nothing selected
+  });
+
+  it("falls back to the raw editor for markup Quill cannot hold", () => {
+    NotesEditor.open("burg1");
+    NotesEditor.write("burg1", "<iframe src='x'></iframe>");
+    expect((document.getElementById("notesSource") as HTMLTextAreaElement).hidden).toBe(false);
+    expect((document.getElementById("notesSource") as HTMLTextAreaElement).value).toBe("<iframe src='x'></iframe>");
+    expect(NotesEditor.getSelectionHtml()).toBeNull();
   });
 
   it("adds a note created while another is open to the element list", () => {
@@ -61,6 +70,7 @@ describe("NotesEditor bridge", () => {
     const options = [...(document.getElementById("notesSelect") as HTMLSelectElement).options].map(o => o.value);
     expect(options).toEqual(["burg1", "burg2"]);
     expect(NotesEditor.current()?.id).toBe("burg1");
+    expect(editorText()).toBe("old");
   });
 
   it("removes a note and moves the open editor to the next one", () => {
