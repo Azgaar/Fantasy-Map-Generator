@@ -28,6 +28,7 @@ describe("canEditAsRichText", () => {
     expect(canEditAsRichText("<p>a</p><script>alert(1)</script>")).toBe(false);
     expect(canEditAsRichText("<script>alert(1)</script>")).toBe(false);
     expect(canEditAsRichText("<style>p { color: red }</style><p>a</p>")).toBe(false);
+    expect(canEditAsRichText("<table><tbody><tr><th>A</th><th>B</th></tr></tbody></table>")).toBe(false);
   });
 });
 
@@ -55,6 +56,8 @@ describe("rich text editor", () => {
     expect(html).toContain("<ul><li>one</li><li>two</li></ul>");
     expect(html.match(/<td/g)).toHaveLength(2);
     expect(html).not.toContain("ql-");
+    expect(html).toContain("Centered <strong>bold</strong> <span");
+    expect(html).not.toContain("&nbsp;");
   });
 
   it("reports an empty editor as an empty string", () => {
@@ -74,5 +77,18 @@ describe("rich text editor", () => {
     quill.setSelection(0, 0, "silent");
     runTableAction(quill, "insert");
     expect(getEditorHtml(quill).match(/<td/g)).toHaveLength(9);
+  });
+
+  it("clears the undo history when a note is loaded", () => {
+    setEditorHtml(quill, "<p>first</p>");
+    quill.insertText(0, "x", "user");
+    setEditorHtml(quill, "<p>second</p>");
+    expect(quill.history.stack.undo).toHaveLength(0);
+  });
+
+  it("ignores an unknown table action", () => {
+    setEditorHtml(quill, "<p>x</p>");
+    runTableAction(quill, "nonsense");
+    expect(getEditorHtml(quill)).toBe("<p>x</p>");
   });
 });

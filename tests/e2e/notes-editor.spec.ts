@@ -36,7 +36,7 @@ test.describe("Notes Editor", () => {
 
     // typing at the end of a bold word continues the bold run, so the new text lands inside <strong>
     const legend = await legendOf(page, "e2eNote");
-    expect(legend).toMatch(/<strong>world.*again<\/strong>/);
+    expect(legend).toMatch(/<strong>world again<\/strong>/);
     await expect(page.locator("#notesBody")).toContainText("again");
   });
 
@@ -59,5 +59,10 @@ test.describe("Notes Editor", () => {
     const html = '<p>plain</p><iframe src="about:blank"></iframe>';
     await source.fill(html);
     expect(await legendOf(page, "e2eEmbed")).toBe(html);
+
+    // leaving HTML mode is refused while the note still holds markup Quill cannot keep
+    await page.click("#notesSourceToggle");
+    await expect(source).toBeVisible();
+    await expect(page.locator("#notesEditor .ql-editor")).toBeHidden();
   });
 });

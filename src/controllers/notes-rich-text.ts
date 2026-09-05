@@ -11,7 +11,7 @@ Quill.register("formats/font", new StyleAttributor("font", "font-family", { scop
 
 // tags Quill can hold; a note with anything else (iframe, hr, script) is edited as raw HTML instead
 const RICH_TEXT_TAGS = new Set(
-  "p div br span strong b em i u s strike a img ol ul li blockquote pre h1 h2 h3 h4 h5 h6 sub sup table tbody tr td th".split(
+  "p div br span strong b em i u s strike a img ol ul li blockquote pre h1 h2 h3 h4 h5 h6 sub sup table tbody tr td".split(
     " "
   )
 );
@@ -98,8 +98,10 @@ export function setEditorHtml(quill: Quill, html: string): void {
   quill.history.clear();
 }
 
+// Quill writes every space as &nbsp;, which stops the hover box from wrapping. It escapes a real U+00A0 as the
+// character itself and a typed "&nbsp;" as &amp;nbsp;, so turning the entity back is lossless
 export function getEditorHtml(quill: Quill): string {
-  return quill.getLength() > 1 ? quill.getSemanticHTML() : "";
+  return quill.getLength() > 1 ? quill.getSemanticHTML().replaceAll("&nbsp;", " ") : "";
 }
 
 // the table module reads the live selection, which a click on a control outside the editor has just blurred
