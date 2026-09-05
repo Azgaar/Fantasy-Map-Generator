@@ -223,15 +223,6 @@ declare global {
   var rn: (value: number, decimals?: number) => number;
   var openURL: (url: string) => void;
 
-  var tinymce:
-    | {
-        _setBaseUrl: (url: string) => void;
-        init: (config: Record<string, unknown>) => void;
-        remove: () => void;
-        activeEditor?: { getContent: () => string; setContent: (content: string) => void };
-      }
-    | undefined;
-
   var aleaPRNG: (seed: string | number) => () => number;
   var heightmapColorSchemes: Record<string, unknown>;
   var regeneratePrompt: (options?: { seed?: string; graph?: any }) => void;

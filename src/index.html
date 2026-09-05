@@ -129,7 +129,7 @@
     </style>
     <link
       rel="preload"
-      href="index.css?v=5e71a3c1"
+      href="index.css?v=7d929a99"
       as="style"
       onload="
         this.onload = null;
@@ -1938,8 +1938,11 @@
             <button id="openMinimapButton" data-tip="Click to open minimap overview. Click minimap to center view">
               Minimap
             </button>
-            <button id="openAiChatButton" data-tip="Click to open AI Chat and ask questions about the map data">
-              AI Chat
+            <button
+              id="openAiChatButton"
+              data-tip="Click to open the assistant on this map: ask about the data or edit notes with your own AI key"
+            >
+              Assistant
             </button>
           </div>
           <div class="separator">Create</div>
@@ -2187,8 +2190,13 @@
         </button>
       </div>
     </div>
-    <div id="helpAssistantBubble" data-tip="Click to ask the Assistant" role="button" tabindex="0"
-      aria-label="Ask the Assistant" style="display: none">?</div>
+    <button id="helpAssistantBubble" type="button" data-tip="Click to ask the Assistant"
+      aria-label="Ask the Assistant" aria-expanded="false" style="display: none">
+      <span class="helpAssistantBubbleBadge">
+        <span class="icon-help"></span>
+        <span class="helpAssistantBubbleMinimize"></span>
+      </span>
+    </button>
     <div id="dialogs">
       <div id="unitsEditor" class="dialog stable" style="display: none">
         <div id="unitsBody" style="margin-left: 1.1em">
@@ -5212,7 +5220,7 @@
     <script defer src="libs/simplify.js?v1.105.6"></script>
     <script defer src="modules/ui/style-presets.js?v=75cc6072"></script>
     <script defer src="modules/ui/options.js?v=ac09c6c9"></script>
-    <script defer src="main.js?v=4a0a30a7"></script>
+    <script defer src="main.js?v=a26a971e"></script>
     <script defer src="modules/ui/style.js?v=f3fba4a5"></script>
     <script defer src="libs/rgbquant.min.js"></script>
     <script defer src="libs/jquery.ui.touch-punch.min.js"></script>

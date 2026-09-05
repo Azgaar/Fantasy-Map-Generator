@@ -9,11 +9,13 @@ export interface TextBlock {
   text: string;
 }
 
+export type ToolInput = Record<string, unknown>;
+
 export interface ToolUseBlock {
   type: "tool_use";
   id: string;
   name: string;
-  input: { code?: string };
+  input: ToolInput;
 }
 
 export interface ToolResultBlock {

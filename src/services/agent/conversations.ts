@@ -7,9 +7,16 @@ import type { RunResult } from "./runtime";
 
 export type MessageRole = "user" | "assistant" | "system" | "error";
 
+export interface NoteState {
+  legend: string;
+  name: string;
+}
+
 export type Entry =
   | { kind: "message"; role: MessageRole; text: string }
-  | { kind: "script"; code: string; result?: RunResult };
+  | { kind: "script"; code: string; result?: RunResult }
+  // a note written by the assistant; `previous` is null when the note was created, and is what Undo restores
+  | { kind: "edit"; id: string; name: string; chars: number; previous: NoteState | null; undone?: boolean };
 
 export interface Conversation {
   id: string;

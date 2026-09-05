@@ -1,19 +1,30 @@
+import type Quill from "quill";
 import { confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName, speak, uploadFile } from "@/utils";
 import { ensureEl } from "../utils";
+import {
+  canEditAsRichText,
+  createRichTextEditor,
+  getEditorHtml,
+  runTableAction,
+  setEditorHtml,
+  TOOLBAR_HTML
+} from "./notes-rich-text";
 
-interface Note {
+export interface Note {
   id: string;
   name: string;
   legend: string;
 }
 
+let quill: Quill | null = null;
+let windowed: { width: number; height: number; position: unknown } | null = null;
+
 function open(id?: string, name?: string): void {
   renderDialog();
 
-  const notesLegend = ensureEl("notesLegend");
   const notesName = ensureEl<HTMLInputElement>("notesName");
   const notesSelect = ensureEl<HTMLSelectElement>("notesSelect");
   const notesPin = ensureEl("notesPin");
@@ -29,6 +40,8 @@ function open(id?: string, name?: string): void {
   if (options.pinNotes) notesPin.classList.add("pressed");
   else notesPin.classList.remove("pressed");
 
+  quill = createRichTextEditor(ensureEl("notesLegend"), ensureEl("notesToolbar"), updateLegend);
+
   // select an object
   if (notesList.length || id) {
     if (!id) id = notesList[0].id;
@@ -42,13 +55,12 @@ function open(id?: string, name?: string): void {
 
     notesSelect.value = id;
     notesName.value = note.name;
-    notesLegend.innerHTML = note.legend;
-    void initEditor();
+    loadNote(note);
     updateNotesBox(note);
   } else {
-    // if notes array is empty
+    // if notes array is empty: the editor placeholder explains what to do
     notesName.value = "";
-    notesLegend.innerHTML = "No notes added. Click on an element (e.g. label or marker) and add a free text note";
+    quill.disable();
   }
 
   $("#notesEditor").dialog({
@@ -61,24 +73,43 @@ function open(id?: string, name?: string): void {
 }
 
 function renderDialog(): void {
-  window.tinymce?.remove();
   destroyDialog("notesEditor");
+  quill = null;
+  windowed = null;
+
   const editorHtml = /* html */ `<div id="notesEditor" class="dialog stable">
-    <div style="margin-bottom: 0.3em">
-      <strong>Element: </strong>
-      <select id="notesSelect" data-tip="Select element id" style="width: 12em"></select>
-      <strong>Element name: </strong>
-      <input id="notesName" data-tip="Set element name" autocorrect="off" spellcheck="false" style="width: 16em" />
-      <span id="notesNameSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
-    </div>
-    <div id="notesLegend" contenteditable="true"></div>
-    <div style="margin-top: 0.3em">
-      <button id="notesFocus" data-tip="Focus on selected object" class="icon-target"></button>
-      <button id="notesGenerateWithAi" data-tip="Generate note with AI" class="icon-robot"></button>
-      <button id="notesPin" data-tip="Toggle notes box display: hide or do not hide the box on mouse move" class="icon-pin"></button>
-      <button id="notesDownload" data-tip="Download notes to PC" class="icon-download"></button>
-      <button id="notesUpload" data-tip="Upload notes from PC" class="icon-upload"></button>
-      <button id="notesRemove" data-tip="Remove this note" class="icon-trash fastDelete"></button>
+    <div id="notesLayout">
+      <div style="margin-bottom: 0.3em">
+        <strong>Element: </strong>
+        <select id="notesSelect" data-tip="Select element id" style="width: 12em"></select>
+        <strong>Element name: </strong>
+        <input id="notesName" data-tip="Set element name" autocorrect="off" spellcheck="false" style="width: 16em" />
+        <span id="notesNameSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+      </div>
+      ${TOOLBAR_HTML}
+      <div id="notesLegend"></div>
+      <textarea id="notesSource" hidden spellcheck="false"></textarea>
+      <div style="margin-top: 0.3em">
+        <button id="notesFocus" data-tip="Focus on selected object" class="icon-target"></button>
+        <button id="notesGenerateWithAi" data-tip="Ask the assistant to write or rewrite this note" class="icon-robot"></button>
+        <button id="notesPin" data-tip="Toggle notes box display: hide or do not hide the box on mouse move" class="icon-pin"></button>
+        <select id="notesTable" data-tip="Insert a table or edit the one under the cursor">
+          <option value="">Table</option>
+          <option value="insert">Insert table</option>
+          <option value="row-above">Add row above</option>
+          <option value="row-below">Add row below</option>
+          <option value="column-left">Add column left</option>
+          <option value="column-right">Add column right</option>
+          <option value="delete-row">Delete row</option>
+          <option value="delete-column">Delete column</option>
+          <option value="delete-table">Delete table</option>
+        </select>
+        <button id="notesSourceToggle" data-tip="Edit the note as HTML" class="icon-edit"></button>
+        <button id="notesFullscreen" data-tip="Toggle fullscreen" class="icon-resize-full"></button>
+        <button id="notesDownload" data-tip="Download notes to PC" class="icon-download"></button>
+        <button id="notesUpload" data-tip="Upload notes from PC" class="icon-upload"></button>
+        <button id="notesRemove" data-tip="Remove this note" class="icon-trash fastDelete"></button>
+      </div>
     </div>`;
 
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
@@ -86,10 +117,13 @@ function renderDialog(): void {
   ensureEl<HTMLSelectElement>("notesSelect").addEventListener("change", changeElement);
   ensureEl<HTMLInputElement>("notesName").addEventListener("input", changeName);
   ensureEl("notesNameSpeak").addEventListener("click", () => speak(ensureEl<HTMLInputElement>("notesName").value));
-  ensureEl("notesLegend").addEventListener("blur", updateLegend);
+  ensureEl<HTMLTextAreaElement>("notesSource").addEventListener("input", updateLegend);
+  ensureEl<HTMLSelectElement>("notesTable").addEventListener("change", applyTableAction);
+  ensureEl("notesSourceToggle").addEventListener("click", toggleSourceMode);
+  ensureEl("notesFullscreen").addEventListener("click", toggleFullscreen);
   ensureEl("notesPin").addEventListener("click", toggleNotesPin);
   ensureEl("notesFocus").addEventListener("click", validateHighlightElement);
-  ensureEl("notesGenerateWithAi").addEventListener("click", openAiGenerator);
+  ensureEl("notesGenerateWithAi").addEventListener("click", () => void Controllers.HelpAssistant.open({ mode: "map" }));
   ensureEl("notesDownload").addEventListener("click", downloadLegends);
   ensureEl("notesUpload").addEventListener("click", () => ensureEl("legendsToLoad").click());
   ensureEl<HTMLInputElement>("legendsToLoad").addEventListener("change", function (this: HTMLInputElement) {
@@ -99,58 +133,83 @@ function renderDialog(): void {
 }
 
 function closeNotesEditor(): void {
-  window.tinymce?.remove();
+  quill = null;
   $("#notesEditor").dialog("destroy");
   ensureEl("notesEditor").remove();
 }
 
-async function initEditor(): Promise<void> {
-  if (!window.tinymce) {
-    const url = "https://azgaar.github.io/Fantasy-Map-Generator/libs/tinymce/tinymce.min.js";
-    try {
-      await import(/* @vite-ignore */ url);
-    } catch {
-      // error may be caused by failed request being cached, try again with random hash
-      try {
-        const hash = Math.random().toString(36).substring(2, 15);
-        await import(/* @vite-ignore */ `${url}#${hash}`);
-      } catch (error) {
-        console.error(error);
-      }
-    }
+function selectedNote(): Note | undefined {
+  const notesSelect = ensureEl<HTMLSelectElement>("notesSelect");
+  const note = (notes as Note[]).find(note => note.id === notesSelect.value);
+  if (!note) tip("Note element is not found", true, "error", 4000);
+  return note;
+}
+
+// a note whose markup Quill would rewrite (the dungeon marker's iframe, a legacy hr) is edited as HTML
+function loadNote(note: Note): void {
+  if (!quill) return;
+  quill.enable();
+  const rich = canEditAsRichText(note.legend);
+  if (rich) setEditorHtml(quill, note.legend);
+  else ensureEl<HTMLTextAreaElement>("notesSource").value = note.legend;
+  setSourceMode(!rich);
+}
+
+function setSourceMode(raw: boolean): void {
+  ensureEl("notesToolbar").hidden = raw;
+  ensureEl("notesLegend").hidden = raw;
+  ensureEl("notesSource").hidden = !raw;
+  ensureEl<HTMLSelectElement>("notesTable").disabled = raw;
+  ensureEl("notesSourceToggle").classList.toggle("pressed", raw);
+}
+
+function toggleSourceMode(): void {
+  const note = selectedNote();
+  if (!note || !quill) return;
+
+  const source = ensureEl<HTMLTextAreaElement>("notesSource");
+  if (source.hidden) {
+    source.value = note.legend;
+    setSourceMode(true);
+  } else if (canEditAsRichText(source.value)) {
+    setEditorHtml(quill, source.value);
+    setSourceMode(false);
+  } else {
+    tip("The note has markup the rich text editor cannot keep, so it stays in HTML mode", false, "error", 4000);
   }
+}
 
-  const tinymce = window.tinymce;
-  if (!tinymce) return;
+function applyTableAction(this: HTMLSelectElement): void {
+  if (quill && this.value) runTableAction(quill, this.value);
+  this.value = "";
+}
 
-  tinymce._setBaseUrl("https://azgaar.github.io/Fantasy-Map-Generator/libs/tinymce");
-  tinymce.init({
-    license_key: "gpl",
-    selector: "#notesLegend",
-    height: "90%",
-    menubar: false,
-    plugins: `autolink lists link charmap code fullscreen image link media table wordcount`,
-    toolbar: `code | undo redo | removeformat | bold italic strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media table | fontselect fontsizeselect | blockquote hr charmap | print fullscreen`,
-    media_alt_source: false,
-    media_poster: false,
-    browser_spellcheck: true,
-    contextmenu: false,
-    setup: (editor: { on: (event: string, cb: () => void) => void }) => {
-      editor.on("Change", updateLegend);
-    }
-  });
+function toggleFullscreen(): void {
+  const dialog = $("#notesEditor");
+  if (windowed) {
+    dialog.dialog("option", "width", windowed.width);
+    dialog.dialog("option", "height", windowed.height);
+    dialog.dialog("option", "position", windowed.position);
+    windowed = null;
+  } else {
+    windowed = {
+      width: dialog.dialog("option", "width"),
+      height: dialog.dialog("option", "height"),
+      position: dialog.dialog("option", "position")
+    };
+    dialog.dialog("option", "width", window.innerWidth);
+    dialog.dialog("option", "height", window.innerHeight);
+    dialog.dialog("option", "position", { my: "left top", at: "left top", of: window });
+  }
+  ensureEl("notesFullscreen").classList.toggle("pressed", Boolean(windowed));
 }
 
 function updateLegend(): void {
-  const notesSelect = ensureEl<HTMLSelectElement>("notesSelect");
-  const note = (notes as Note[]).find(note => note.id === notesSelect.value);
-  if (!note) {
-    tip("Note element is not found", true, "error", 4000);
-    return;
-  }
+  const note = selectedNote();
+  if (!note || !quill) return;
 
-  const activeEditor = window.tinymce?.activeEditor;
-  note.legend = activeEditor ? activeEditor.getContent() : ensureEl("notesLegend").innerHTML;
+  const source = ensureEl<HTMLTextAreaElement>("notesSource");
+  note.legend = source.hidden ? getEditorHtml(quill) : source.value;
   updateNotesBox(note);
 }
 
@@ -159,29 +218,18 @@ function updateNotesBox(note: Note): void {
   ensureEl("notesBody").innerHTML = note.legend;
 }
 
-function changeElement(this: HTMLSelectElement): void {
-  const note = (notes as Note[]).find(note => note.id === this.value);
-  if (!note) {
-    tip("Note element is not found", true, "error", 4000);
-    return;
-  }
+function changeElement(): void {
+  const note = selectedNote();
+  if (!note) return;
 
   ensureEl<HTMLInputElement>("notesName").value = note.name;
-  ensureEl("notesLegend").innerHTML = note.legend;
+  loadNote(note);
   updateNotesBox(note);
-
-  window.tinymce?.activeEditor?.setContent(note.legend);
 }
 
 function changeName(this: HTMLInputElement): void {
-  const notesSelect = ensureEl<HTMLSelectElement>("notesSelect");
-  const note = (notes as Note[]).find(note => note.id === notesSelect.value);
-  if (!note) {
-    tip("Note element is not found", true, "error", 4000);
-    return;
-  }
-
-  note.name = this.value;
+  const note = selectedNote();
+  if (note) note.name = this.value;
 }
 
 function validateHighlightElement(): void {
@@ -201,35 +249,7 @@ function validateHighlightElement(): void {
 }
 
 function removeSelectedNote(): void {
-  const notesSelect = ensureEl<HTMLSelectElement>("notesSelect");
-  notes = (notes as Note[]).filter(note => note.id !== notesSelect.value);
-
-  if (!notes.length) {
-    $("#notesEditor").dialog("close");
-    return;
-  }
-
-  open((notes as Note[])[0].id, (notes as Note[])[0].name);
-}
-
-function openAiGenerator(): void {
-  const notesSelect = ensureEl<HTMLSelectElement>("notesSelect");
-  const note = (notes as Note[]).find(note => note.id === notesSelect.value);
-
-  let prompt = `Respond with description. Use simple dry language. Invent facts, names and details. Split to paragraphs and format to HTML. Remove h tags, remove markdown.`;
-  if (note?.name) prompt += ` Name: ${note.name}.`;
-  if (note?.legend) prompt += ` Data: ${note.legend}`;
-
-  const onApply = (result: string): void => {
-    ensureEl("notesLegend").innerHTML = result;
-    if (note) {
-      note.legend = result;
-      updateNotesBox(note);
-      window.tinymce?.activeEditor?.setContent(note.legend);
-    }
-  };
-
-  void Controllers.AiGenerator.open(prompt, onApply);
+  remove(ensureEl<HTMLSelectElement>("notesSelect").value);
 }
 
 function downloadLegends(): void {
@@ -261,4 +281,54 @@ function toggleNotesPin(this: HTMLElement): void {
   this.classList.toggle("pressed");
 }
 
-export const NotesEditor = { open };
+// Bridge for the assistant (help-assistant-notes.ts): read the note on screen, write notes so an
+// open editor stays in sync, and remove what an undo has to take back
+
+const isOpen = (): boolean => document.getElementById("notesEditor") !== null;
+
+function current(): Note | null {
+  if (!isOpen()) return null;
+  const id = ensureEl<HTMLSelectElement>("notesSelect").value;
+  return (notes as Note[]).find(note => note.id === id) ?? null;
+}
+
+function write(id: string, legend: string, name?: string): Note {
+  const list = notes as Note[];
+  let note = list.find(note => note.id === id);
+  if (note) {
+    note.legend = legend;
+    if (name !== undefined) note.name = name;
+  } else {
+    note = { id, name: name ?? id, legend };
+    list.push(note);
+    if (isOpen()) ensureEl<HTMLSelectElement>("notesSelect").options.add(new Option(id, id));
+  }
+  if (current()?.id === id) {
+    ensureEl<HTMLInputElement>("notesName").value = note.name;
+    loadNote(note); // silent Quill load or the raw textarea, by representability — the AI-apply path
+    updateNotesBox(note);
+  }
+  return note;
+}
+
+function remove(id: string): void {
+  const wasCurrent = current()?.id === id;
+  notes = (notes as Note[]).filter(note => note.id !== id);
+  if (!wasCurrent) return;
+  if (!notes.length) {
+    $("#notesEditor").dialog("close");
+    return;
+  }
+  open((notes as Note[])[0].id, (notes as Note[])[0].name);
+}
+
+// The Quill selection as self-contained HTML; nothing in raw-HTML mode or when the editor is closed
+function getSelectionHtml(): string | null {
+  if (!isOpen() || !quill || !ensureEl("notesSource").hidden) return null;
+  const range = quill.getSelection();
+  if (!range?.length) return null;
+  // Quill 2.0.3 writes every space as &nbsp;; keep ordinary spaces, as getEditorHtml does for saves
+  return quill.getSemanticHTML(range.index, range.length).replaceAll("&nbsp;", " ");
+}
+
+export const NotesEditor = { open, current, write, remove, getSelectionHtml };

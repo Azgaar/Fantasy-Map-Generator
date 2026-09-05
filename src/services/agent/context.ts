@@ -24,9 +24,10 @@ running scripts — never guess at numbers or names.`;
 
 const RULES = `# Rules
 
-- **Read-only.** Do not assign to \`pack\`, \`grid\`, \`options\`, \`style\` or \`notes\`, do not call
-  generator methods that regenerate data, and do not call \`draw*\` or \`toggle*\` functions. If the
-  user asks to change the map, explain that editing is not supported yet in this build.
+- **Read-only, except notes.** Do not assign to \`pack\`, \`grid\`, \`options\`, \`style\` or \`notes\`, do not
+  call generator methods that regenerate data, and do not call \`draw*\` or \`toggle*\` functions. Notes
+  change ONLY through the \`write_note\` tool, never by assigning to \`notes\` in a script. If the user
+  asks to change anything else on the map, explain that editing is not supported yet in this build.
 - \`return\` the answer from the script. Only the returned value and console output come back to you,
   so aggregate, count and slice before returning — never return a whole entity array.
 - Results are truncated at 8000 characters. If you hit that, return less.
@@ -71,6 +72,21 @@ const GOTCHAS = `# Gotchas that the type declarations do not tell you
 - **Some globals appear only once their module has loaded.** Guard with
   \`typeof someGlobal === "function"\` before calling anything outside the core data objects.`;
 
+const NOTES = `# Notes
+
+Every map element can carry one note: \`{ id, name, legend }\` in the global \`notes\` array, where \`legend\`
+is an HTML string shown in the notes box and in hover tooltips. Ids follow the element: \`burg<i>\` for a
+burg with index \`i\` (so \`pack.burgs[12]\` → \`burg12\`), \`marker<i>\` for markers, \`state<i>\`, \`route<i>\`,
+\`river<i>\` and so on — a note may exist for an element or not. When the user names a place rather than a
+note, find the element in a script first and derive the id from it.
+
+Write notes with \`write_note({ id?, name?, html })\`. \`html\` is the WHOLE legend. Omit \`id\` to target the
+note open in the notes editor (see the "Notes editor" section of the current-map block when it is open).
+The notes editor holds a limited HTML subset: \`p\`, \`br\`, \`strong\`, \`em\`, \`u\`, \`s\`, \`a\`, \`img\`,
+\`ul\`/\`ol\`/\`li\`, \`blockquote\`, \`h1\`–\`h6\`, \`sub\`, \`sup\`, \`span\`/\`div\` and simple tables. Inline
+styles are fine; classes, scripts, iframes and Markdown are not. Keep the user's existing text and
+formatting unless they asked to change it, and tell them in one line what you changed.`;
+
 const RENDERING = `# Rendering
 
 The app redraws through global \`draw*\` functions, with \`Layers.drawAll()\` redrawing every visible layer.
@@ -79,6 +95,7 @@ You do not need them while you are read-only; they are listed for context only.`
 const staticPrompt = [
   ROLE,
   RULES,
+  NOTES,
   GOTCHAS,
   RENDERING,
   `# Global declarations\n\n\`\`\`ts\n${GLOBAL_DECLARATIONS}\n\`\`\``,
@@ -88,10 +105,13 @@ const staticPrompt = [
   `# Data model reference\n\n${DATA_MODEL}`
 ].join("\n\n");
 
-export function buildSystemPrompt(): SystemBlock[] {
+// `context` is per-turn text from the UI (the note open in the notes editor); it joins the small
+// dynamic block so the large static one stays byte-identical and cacheable
+export function buildSystemPrompt(context = ""): SystemBlock[] {
+  const dynamic = context ? `${describeCurrentMap()}\n\n${context}` : describeCurrentMap();
   return [
     { type: "text", text: staticPrompt, cache_control: { type: "ephemeral" } },
-    { type: "text", text: describeCurrentMap() }
+    { type: "text", text: dynamic }
   ];
 }
 
