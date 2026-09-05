@@ -2,7 +2,15 @@
 // spoken by OpenAI, Mistral, Qwen (DashScope compatible mode) and DeepSeek, and back.
 
 import type { SystemBlock } from "./context";
-import type { Completion, CompletionRequest, Message, TextBlock, ToolDefinition, ToolUseBlock } from "./providers";
+import type {
+  Completion,
+  CompletionRequest,
+  Message,
+  TextBlock,
+  ToolDefinition,
+  ToolInput,
+  ToolUseBlock
+} from "./providers";
 
 type ChatMessage = Record<string, unknown>;
 
@@ -82,7 +90,7 @@ export function fromChatResponse(json: {
   };
 }
 
-function parseArguments(raw: string): { code?: string } {
+function parseArguments(raw: string): ToolInput {
   try {
     return JSON.parse(raw);
   } catch {
