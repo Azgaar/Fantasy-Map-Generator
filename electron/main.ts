@@ -89,16 +89,13 @@ protocol.registerSchemesAsPrivileged([
 
 /**
  * A .map file is shared like a document, and the app builds markup out of what is inside it, so the one
- * directive that matters is `script-src`: no origin but the build itself may supply code, save for the
- * Assistant widget the user opts into. The rest stays permissive, because maps embed data/blob images and
- * fonts and the AI providers are fetched over https. `unsafe-eval` is required by the goods distribution
- * formulas, which compile to `new Function`
+ * directive that matters is `script-src`: no external origin may supply code. The rest stays permissive,
+ * because maps embed data/blob images and fonts and the AI providers are fetched over https. `unsafe-eval`
+ * is required by the goods distribution formulas, which compile to `new Function`
  */
-const ASSISTANT_ORIGINS = "https://*.openwidget.com";
-
 const CSP = [
   "default-src 'self' data: blob:",
-  `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${ASSISTANT_ORIGINS}`,
+  `script-src 'self' 'unsafe-inline' 'unsafe-eval'`,
   "style-src 'self' 'unsafe-inline' https:",
   "font-src 'self' data: https:",
   "img-src 'self' data: blob: https:",

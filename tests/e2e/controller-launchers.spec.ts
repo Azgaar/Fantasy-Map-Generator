@@ -11,7 +11,6 @@ test.describe("controller launchers", () => {
     await page.click("#toolsTab");
     await page.click("#overviewMarkersButton");
     await expect(page.locator("#markersOverview")).toBeVisible();
-    await expect(page.locator("#chat-widget-container")).toBeVisible();
 
     await page.click("#markersGenerationConfig");
 

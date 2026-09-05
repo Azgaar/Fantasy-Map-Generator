@@ -44,6 +44,14 @@ bindElementGlobals();
 d3.select("#scaleBar")
   .on("mousemove", () => tip("Click to open Units Editor"))
   .on("click", () => window.Controllers.UnitsEditor.open());
+document.getElementById("helpAssistantBubble")?.addEventListener("click", () => window.Controllers.HelpAssistant.open());
+document.getElementById("helpAssistantBubble")?.addEventListener("mouseover", showDataTip);
+document.getElementById("helpAssistantBubble")?.addEventListener("keydown", event => {
+  if (event.key === "Enter" || event.key === " ") {
+    if (event.key === " ") event.preventDefault();
+    window.Controllers.HelpAssistant.open();
+  }
+});
 d3.select("#legend")
   .on("mousemove", () => tip("Drag to change the position. Click to hide the legend"))
   .on("click", () => clearLegend());
@@ -129,6 +137,36 @@ d3.select("#oceanLayers")
   .attr("height", graphHeight);
 
 document.addEventListener("DOMContentLoaded", async () => {
+  // OAuth callback from the help gateway: stash the fragment token and scrub the URL.
+  // Storage key must match TOKEN_STORAGE in src/services/help/auth.ts. The token is taken
+  // verbatim after "#token=" (opaque token assumed; revisit if the gateway ever appends more
+  // fragment params).
+  if (location.hash.startsWith("#token=")) {
+    // Token-fixation guard: only accept the fragment token if THIS client initiated sign-in
+    // (flag set in signIn(), src/services/help/api.ts) — otherwise a third party could plant
+    // #token=<their token> in a link and silently sign the victim in as them.
+    let signInPending = false;
+    try {
+      signInPending = sessionStorage.getItem("fmg-help-signin-pending") === "1";
+    } catch {
+      // storage unavailable — treat as not pending, i.e. do not accept the token
+    }
+    try {
+      sessionStorage.removeItem("fmg-help-signin-pending");
+    } catch {
+      // nothing to clear
+    }
+    if (signInPending) {
+      try {
+        localStorage.setItem("fmg-help-token", location.hash.slice("#token=".length));
+      } catch {
+        // storage unavailable — the user simply stays signed out
+      }
+    }
+    // Always scrub the fragment, accepted or not — an unexpected token must not linger in the URL.
+    history.replaceState(null, "", location.pathname + location.search);
+  }
+
   // binds the zoom behaviour and its handlers (see src/components/viewbox-events.ts), so it has to
   // run before checkLoadParameters - deep links (MFCG, a stored view position) zoom the map on load
   applyDefaultViewboxEvents();
@@ -282,31 +320,13 @@ function focusOn() {
   }
 }
 
-let isAssistantLoaded = false;
 function toggleAssistant() {
   if (window.electron) return;
 
+  const bubble = document.getElementById("helpAssistantBubble");
+  if (!bubble) return;
   const showAssistant = document.getElementById("azgaarAssistant")?.value === "show";
-  if (showAssistant) {
-    if (isAssistantLoaded) {
-      const assistantContainer = document.getElementById("chat-widget-container");
-      if (assistantContainer) assistantContainer.style.display = "block";
-    } else {
-      import("./libs/openwidget.min.js").then(() => {
-        isAssistantLoaded = true;
-        setTimeout(() => {
-          const bubble = document.getElementById("chat-widget-minimized");
-          if (bubble) {
-            bubble.dataset.tip = "Click to open the Assistant";
-            bubble.addEventListener("mouseover", showDataTip);
-          }
-        }, 5000);
-      });
-    }
-  } else if (isAssistantLoaded) {
-    const assistantContainer = document.getElementById("chat-widget-container");
-    if (assistantContainer) assistantContainer.style.display = "none";
-  }
+  bubble.style.display = showAssistant ? "flex" : "none";
 }
 
 function initTourPromptButton() {
