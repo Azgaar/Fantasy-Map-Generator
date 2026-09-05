@@ -77,6 +77,7 @@ function open(options: OpenOptions = {}): void {
   const mode = options.mode ?? "help";
   if (isMounted()) {
     setMode(mode);
+    $("#helpAssistant").dialog("moveToTop"); // the notes editor is large and centred; a re-open must not hide behind it
     return;
   }
 
