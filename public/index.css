@@ -2807,6 +2807,321 @@ body.tour-free-roam * {
   display: none;
 }
 
+/* This map panel (the BYOK agent) */
+#helpAssistantMap {
+  gap: 0.3em;
+}
+
+#helpAssistantMap [hidden] {
+  display: none;
+}
+
+#helpAssistantMap .helpMapTop {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+}
+
+#helpAssistantMap .helpMapTop > select {
+  flex: 1;
+  min-width: 0;
+}
+
+#helpAssistantMap .helpMapLog {
+  flex: 1 1 auto;
+  min-height: 6em;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45em;
+}
+
+#helpAssistantMap #helpMapEmpty {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5em;
+  text-align: center;
+}
+
+#helpAssistantMap #helpMapEmpty > div {
+  opacity: 0.7;
+  max-width: 22em;
+}
+
+#helpAssistantMap #helpMapEmpty button {
+  padding: 0.25em 0.7em;
+  border-radius: 1em;
+  cursor: pointer;
+}
+
+#helpAssistantMap .helpMapContext {
+  align-self: flex-start;
+  font-size: 0.85em;
+  padding: 0.1em 0.6em;
+  border-radius: 1em;
+  background: rgb(53 66 77 / 12%);
+}
+
+#helpAssistantMap .helpMapComposer {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.3em;
+}
+
+#helpAssistantMap .helpMapComposer > textarea {
+  flex: 1;
+  min-width: 0;
+  resize: none;
+  overflow-y: auto;
+}
+
+#helpAssistantMap .helpMapDrawer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3em;
+  padding: 0.5em;
+  border-radius: 0.4em;
+  background: rgb(0 0 0 / 5%);
+  font-size: 0.92em;
+}
+
+#helpAssistantMap .helpMapDrawer label {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+}
+
+#helpAssistantMap .helpMapDrawer select,
+#helpAssistantMap .helpMapDrawer input {
+  flex: 1;
+  min-width: 0;
+}
+
+#helpAssistantMap #helpMapLocal {
+  display: flex;
+  gap: 0.3em;
+}
+
+#helpAssistantMap #helpMapLocal[hidden] {
+  display: none;
+}
+
+#helpAssistantMap .helpMapHint {
+  color: #b03030;
+}
+
+#helpAssistantMap .helpMapStatus {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3em 0.4em;
+  align-items: center;
+  font-size: 0.85em;
+  opacity: 0.8;
+}
+
+#helpAssistantMap .helpMapStatus > button {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline dotted;
+}
+
+#helpAssistantMap .helpMapUser {
+  align-self: flex-end;
+  max-width: 85%;
+  padding: 0.3em 0.6em;
+  border-radius: 0.8em 0.8em 0.2em 0.8em;
+  background: rgba(128, 128, 128, 0.18);
+}
+
+#helpAssistantMap .helpMapAssistant {
+  align-self: flex-start;
+  max-width: 95%;
+  white-space: normal;
+}
+
+#helpAssistantMap .helpMapSystem {
+  align-self: center;
+  text-align: center;
+  font-style: italic;
+  opacity: 0.65;
+}
+
+#helpAssistantMap .helpMapError {
+  align-self: center;
+  text-align: center;
+  color: #b03030;
+}
+
+#helpAssistantMap .helpMapMessage {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+#helpAssistantMap .helpMapStep {
+  align-self: flex-start;
+  max-width: 100%;
+  font-size: 0.9em;
+  opacity: 0.8;
+}
+
+#helpAssistantMap .helpMapStep summary {
+  cursor: pointer;
+  user-select: none;
+}
+
+#helpAssistantMap .helpMapStep pre {
+  margin: 0.2em 0;
+  padding: 0.3em 0.4em;
+  max-height: 14em;
+  overflow: auto;
+  border-radius: 0.3em;
+  background: rgba(128, 128, 128, 0.12);
+}
+
+#helpAssistantMap .helpMapEdit {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.3em 0.6em;
+  border-radius: 0.4em;
+  background: rgb(53 66 77 / 10%);
+  font-size: 0.92em;
+}
+
+#helpAssistantMap .helpMapEdit button {
+  padding: 0.1em 0.4em;
+}
+
+#helpAssistantMap #helpMapThinking {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  font-style: italic;
+  opacity: 0.7;
+}
+
+#helpAssistantMap #helpMapThinking i {
+  width: 0.35em;
+  height: 0.35em;
+  border-radius: 50%;
+  background: currentColor;
+  animation: helpMapBlink 1.2s infinite ease-in-out;
+}
+
+#helpAssistantMap #helpMapThinking i:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+#helpAssistantMap #helpMapThinking i:nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+@keyframes helpMapBlink {
+  0%,
+  70%,
+  100% {
+    opacity: 0.25;
+  }
+  35% {
+    opacity: 1;
+  }
+}
+
+#helpAssistantMap .helpMapAssistant > :first-child {
+  margin-top: 0;
+}
+
+#helpAssistantMap .helpMapAssistant > :last-child {
+  margin-bottom: 0;
+}
+
+#helpAssistantMap .helpMapAssistant p {
+  margin: 0 0 0.4em;
+}
+
+#helpAssistantMap .helpMapAssistant h3,
+#helpAssistantMap .helpMapAssistant h4,
+#helpAssistantMap .helpMapAssistant h5,
+#helpAssistantMap .helpMapAssistant h6 {
+  margin: 0.5em 0 0.2em;
+  font-size: 1em;
+  font-weight: bold;
+}
+
+#helpAssistantMap .helpMapAssistant ul,
+#helpAssistantMap .helpMapAssistant ol {
+  margin: 0.2em 0 0.4em;
+  padding-left: 1.3em;
+}
+
+#helpAssistantMap .helpMapAssistant li {
+  margin: 0.1em 0;
+}
+
+#helpAssistantMap .helpMapAssistant code {
+  padding: 0 0.25em;
+  border-radius: 0.25em;
+  background: rgba(128, 128, 128, 0.16);
+  font-family: monospace;
+}
+
+#helpAssistantMap .helpMapAssistant pre {
+  margin: 0.3em 0;
+  padding: 0.35em 0.45em;
+  overflow-x: auto;
+  border-radius: 0.3em;
+  background: rgba(128, 128, 128, 0.12);
+}
+
+#helpAssistantMap .helpMapAssistant pre code {
+  padding: 0;
+  background: none;
+}
+
+#helpAssistantMap .helpMapAssistant table {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  margin: 0.3em 0;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+
+#helpAssistantMap .helpMapAssistant th,
+#helpAssistantMap .helpMapAssistant td {
+  padding: 0.15em 0.45em;
+  border: 1px solid rgba(128, 128, 128, 0.35);
+}
+
+#helpAssistantMap .helpMapAssistant th {
+  background: rgba(128, 128, 128, 0.12);
+  text-align: left;
+}
+
+#helpAssistantMap .helpMapAssistant blockquote {
+  margin: 0.3em 0;
+  padding-left: 0.6em;
+  border-left: 2px solid rgba(128, 128, 128, 0.4);
+  opacity: 0.85;
+}
+
+#helpAssistantMap .helpMapAssistant hr {
+  margin: 0.4em 0;
+  border: none;
+  border-top: 1px solid rgba(128, 128, 128, 0.3);
+}
+
+#helpAssistantMap .helpMapAssistant a {
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 #helpAssistant .helpAssistantLinks {
   display: flex;
   gap: 1.2em;
