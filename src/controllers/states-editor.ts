@@ -1676,7 +1676,6 @@ function confirmStatesMerge(statesToMerge: number[], rulingStateId: number, onCo
 const statesAnnex = createAnnexMode({
   buttonId: "statesAnnex",
   bodySectionId: "statesBodySection",
-  mode: 17,
   noun: "state",
   ownerOf: cellId => pack.cells.state[cellId],
   colorOf: stateId => pack.states[stateId].color ?? "#999999",
@@ -1692,10 +1691,6 @@ function mergeStates(statesToMerge: number[], rulingStateId: number): void {
   statesToMerge.forEach(stateId => {
     const state = pack.states[stateId];
     state.removed = true;
-
-    select("#statesBody").select(`#state${stateId}`).remove();
-    select("#statesBody").select(`#state-gap${stateId}`).remove();
-    select("#statesHalo").select(`#state-border${stateId}`).remove();
     delete pack.states[stateId].label;
 
     removeEmblem("state", stateId);
@@ -1750,8 +1745,7 @@ function mergeStates(statesToMerge: number[], rulingStateId: number): void {
 
   if (!pack.states[rulingStateId].label) delete pack.states[rulingStateId].label;
 
-  Layers.show("states", "borders");
-  Layers.draw("burgIcons", "labels", "provinces");
+  Layers.draw("states", "borders", "burgIcons", "labels", "provinces");
   refreshStatesEditor();
 }
 

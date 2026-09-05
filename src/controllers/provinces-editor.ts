@@ -1376,7 +1376,6 @@ function confirmProvincesMerge(provincesToMerge: number[], primaryProvinceId: nu
 const provincesAnnex = createAnnexMode({
   buttonId: "provincesAnnex",
   bodySectionId: "provincesBodySection",
-  mode: 18,
   noun: "province",
   ownerOf: cellId => pack.cells.province[cellId],
   colorOf: provinceId => pack.provinces[provinceId].color,

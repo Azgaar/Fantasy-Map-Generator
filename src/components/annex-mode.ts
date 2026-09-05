@@ -7,7 +7,6 @@ import { applyDefaultViewboxEvents } from "./viewbox-events";
 interface AnnexModeOptions {
   buttonId: string;
   bodySectionId: string;
-  mode: number;
   noun: string;
   ownerOf: (cellId: number) => number;
   colorOf: (id: number) => string;
@@ -16,21 +15,25 @@ interface AnnexModeOptions {
   commit: (parentId: number, annexed: number[]) => void;
 }
 
+// any non-zero customization keeps the other editors, saving and regeneration off while annexing
+const ANNEX_MODE = 17;
+
 export function createAnnexMode(options: AnnexModeOptions) {
-  const { buttonId, bodySectionId, mode, noun, ownerOf, colorOf, nameOf, rejectReason, commit } = options;
+  const { buttonId, bodySectionId, noun, ownerOf, colorOf, nameOf, rejectReason, commit } = options;
+  let active = false;
   let parent = 0;
   const staged = new Set<number>();
 
-  const isActive = () => customization === mode;
   const preview = () => select("#debug").select("g.annex-preview");
 
   function toggle(): void {
-    if (isActive()) finish();
+    if (active) finish();
     else enter();
   }
 
   function enter(): void {
-    customization = mode;
+    active = true;
+    customization = ANNEX_MODE;
     ensureEl(buttonId).classList.add("pressed");
     select("#debug").append("g").attr("class", "annex-preview");
     tip(`Click the ${noun} that annexes, then the ${noun}s it absorbs. Hold Shift to keep annexing`, true);
@@ -112,7 +115,8 @@ export function createAnnexMode(options: AnnexModeOptions) {
   }
 
   function exit(): void {
-    if (!isActive()) return;
+    if (!active) return;
+    active = false;
     customization = 0;
     parent = 0;
     staged.clear();

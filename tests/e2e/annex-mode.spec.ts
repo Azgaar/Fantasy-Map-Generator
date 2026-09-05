@@ -69,8 +69,13 @@ test.describe("Annex by clicking on the map", () => {
 
     await page.waitForSelector(confirmButton, {state: "visible", timeout: 3000});
     await expect(page.locator(".ui-dialog:has(#alert)")).toContainText("removed");
+    const parentFill = await page.locator(`#statesBody #state${parent.i}`).getAttribute("d");
     await page.click(confirmButton);
     await page.waitForTimeout(300);
+
+    // the states layer is redrawn: the annexing state's fill now covers the annexed cells
+    expect(await page.locator(`#statesBody #state${parent.i}`).getAttribute("d")).not.toBe(parentFill);
+    expect(await page.locator(`#statesBody #state${child.i}`).count()).toBe(0);
 
     const result = await page.evaluate(
       ([p, c]) => {
