@@ -10,6 +10,7 @@ The source build uses these runtime packages:
 * [Lineclip](https://github.com/mapbox/lineclip) by Vladimir Agafonkin
 * [Three.js](https://github.com/mrdoob/three.js) by mrdoob and Three.js contributors
 * [Driver.js](https://driverjs.com) for the guided UI tour
+* [Quill 2](https://quilljs.com) — the rich text editor in the Notes editor
 * [Alea](https://github.com/coverslide/node-alea) for seeded random numbers
 
 Vite, TypeScript, Vitest, Playwright and Biome are used as development tools. Node.js 24 or newer is required to build.
@@ -34,5 +35,4 @@ Loaded on demand:
 * [Three.js](https://threejs.org) with `OrbitControls`, `mapControls`, `loopsubdivison` and `OBJExporter` — the 3D scene
 * [JSZip](https://github.com/Stuk/jszip) by Stuart Knightley, David Duponchel, Franz Buchinger and António Afonso — tile export
 * [Dropbox SDK](https://github.com/dropbox/dropbox-sdk-js) — saving to and loading from Dropbox
-* [TinyMCE](https://www.tiny.cloud) — the rich text editor in the Notes editor
 * Help gateway at [ask.azgaarsfmg.com](https://ask.azgaarsfmg.com) — answers the in-app help assistant; nothing is bundled, the app only calls it when a question is asked
