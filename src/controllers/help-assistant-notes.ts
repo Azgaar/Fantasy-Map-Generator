@@ -12,8 +12,9 @@ export type EditEntry = Extract<Entry, { kind: "edit" }>;
 
 export const MAX_CONTEXT_CHARS = 6000;
 
+// mirrors RICH_TEXT_TAGS in notes-rich-text.ts; no th — Quill has no header-cell blot
 const ALLOWED_TAGS =
-  "p, br, strong, em, u, s, a, img, ul, ol, li, blockquote, h1-h6, sub, sup, span, div, table/tbody/tr/td/th";
+  "p, br, strong, em, u, s, a, img, ul, ol, li, blockquote, h1-h6, sub, sup, span, div, table/tbody/tr/td";
 
 const WRITE_NOTE = {
   name: "write_note",

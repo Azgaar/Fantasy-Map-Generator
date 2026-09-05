@@ -11,7 +11,7 @@ Quill.register("formats/font", new StyleAttributor("font", "font-family", { scop
 
 // tags Quill can hold; a note with anything else (iframe, hr, script) is edited as raw HTML instead
 const RICH_TEXT_TAGS = new Set(
-  "p div br span strong b em i u s strike a img ol ul li blockquote pre h1 h2 h3 h4 h5 h6 sub sup table tbody tr td th".split(
+  "p div br span strong b em i u s strike a img ol ul li blockquote pre h1 h2 h3 h4 h5 h6 sub sup table tbody tr td".split(
     " "
   )
 );
@@ -63,9 +63,11 @@ export const TOOLBAR_HTML = /* html */ `<div id="notesToolbar">
     </span>
   </div>`;
 
+// a <template> keeps a leading <script> or <style> in the fragment, where a text/html document would hoist it into <head>
 export function canEditAsRichText(html: string): boolean {
-  const { body } = new DOMParser().parseFromString(html, "text/html");
-  return Array.from(body.querySelectorAll("*")).every(el => RICH_TEXT_TAGS.has(el.localName));
+  const template = document.createElement("template");
+  template.innerHTML = html;
+  return Array.from(template.content.querySelectorAll("*")).every(el => RICH_TEXT_TAGS.has(el.localName));
 }
 
 export function createRichTextEditor(host: HTMLElement, toolbar: HTMLElement, onChange: () => void): Quill {
@@ -96,8 +98,10 @@ export function setEditorHtml(quill: Quill, html: string): void {
   quill.history.clear();
 }
 
+// Quill writes every space as &nbsp;, which stops the hover box from wrapping. It escapes a real U+00A0 as the
+// character itself and a typed "&nbsp;" as &amp;nbsp;, so turning the entity back is lossless
 export function getEditorHtml(quill: Quill): string {
-  return quill.getLength() > 1 ? quill.getSemanticHTML() : "";
+  return quill.getLength() > 1 ? quill.getSemanticHTML().replaceAll("&nbsp;", " ") : "";
 }
 
 // the table module reads the live selection, which a click on a control outside the editor has just blurred

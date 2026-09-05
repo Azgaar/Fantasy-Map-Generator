@@ -327,7 +327,8 @@ function getSelectionHtml(): string | null {
   if (!isOpen() || !quill || !ensureEl("notesSource").hidden) return null;
   const range = quill.getSelection();
   if (!range?.length) return null;
-  return quill.getSemanticHTML(range.index, range.length);
+  // Quill 2.0.3 writes every space as &nbsp;; keep ordinary spaces, as getEditorHtml does for saves
+  return quill.getSemanticHTML(range.index, range.length).replaceAll("&nbsp;", " ");
 }
 
 export const NotesEditor = { open, current, write, remove, getSelectionHtml };
