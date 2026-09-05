@@ -2756,6 +2756,57 @@ body.tour-free-roam * {
   width: auto;
 }
 
+/* Two panels — Help (the gateway widget) and This map (the BYOK agent) — behind a segmented
+   mode control. The dialog is a flex column so each panel's transcript takes the slack. */
+#helpAssistant {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4em;
+  height: 100%;
+  user-select: text;
+}
+
+#helpAssistant .helpAssistantModes {
+  display: flex;
+  gap: 0.25em;
+  padding: 0.15em;
+  border-radius: 0.5em;
+  background: rgb(0 0 0 / 6%);
+  flex: 0 0 auto;
+}
+
+#helpAssistant .helpAssistantMode {
+  flex: 1;
+  padding: 0.3em 0.6em;
+  border: none;
+  border-radius: 0.4em;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+#helpAssistant .helpAssistantMode::before {
+  margin-right: 0.35em;
+}
+
+#helpAssistant .helpAssistantMode.selected {
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 20%);
+  opacity: 1;
+  font-weight: bold;
+}
+
+#helpAssistant .helpAssistantPanel {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+#helpAssistant .helpAssistantPanel[hidden] {
+  display: none;
+}
+
 #helpAssistant .helpAssistantLinks {
   display: flex;
   gap: 1.2em;
@@ -2771,7 +2822,7 @@ body.tour-free-roam * {
 }
 
 #helpAssistant .helpAssistantLog {
-  max-height: 40vh;
+  flex: 1 1 auto;
   min-height: 8em;
   overflow-y: auto;
   margin-bottom: 0.5em;
