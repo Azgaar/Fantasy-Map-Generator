@@ -514,7 +514,7 @@ Below the map settings, the Options tab holds settings that apply immediately an
 * Theme color and Transparency: the color and opacity of the dialogs.
 * Autosave interval: how often the map is saved to browser storage.
 * Onload behavior: generate a new map or load the last saved one when the page opens.
-* Azgaar assistant: show or hide the in-app chat assistant.
+* Azgaar assistant: show or hide the help bubble in the bottom right corner, which answers questions about the Generator from the wiki and Discord knowledge.
 * Speaker voice: the voice used by the speaker buttons next to names.
 * Emblem shape: the default coat of arms shield shape.
 * Zoom extent: minimal and maximal zoom levels, `[1, 20]` by default.
