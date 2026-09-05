@@ -1,6 +1,5 @@
 // PROTOTYPE — Map Wheel. Four structurally different right-click menus on the real map,
 // switchable via `?variant=` and the floating bottom bar. See README.md.
-// Mounted from src/components/index.ts behind import.meta.env.DEV — never ships.
 import { resolveContext } from "./context";
 import { closeOverlay, HOST_CSS, injectCss, isOpen, openOverlay, type Variant } from "./overlay";
 import { mountSwitcher, SWITCHER_CSS } from "./switcher";
