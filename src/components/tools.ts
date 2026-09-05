@@ -42,6 +42,7 @@ ensureEl("toolsContent").addEventListener("click", event => {
   else if (buttonId === "overviewMarketsButton") void Controllers.MarketsOverview.open();
   else if (buttonId === "overviewCellsButton") void Controllers.CellInfo.open();
   else if (buttonId === "openMinimapButton") void Controllers.Minimap.open();
+  else if (buttonId === "openMapAssistantButton") void Controllers.HelpAssistant.open({ mode: "map" });
   else if (buttonId === "configRegenerateMarkers") void Controllers.MarkersSettings.open();
   else if (buttonId === "addBurgTool") void Controllers.BurgCreator.toggle();
   else if (buttonId === "addLabel") void Controllers.LabelCreator.toggle();

@@ -542,7 +542,35 @@ Questions are budgeted per day to keep the shared service affordable. Anonymous 
 
 ### What does the assistant send, and where?
 
-Only the question you type and a conversation id go to the project's help gateway at ask.azgaarsfmg.com; nothing from your map or browser is sent. Answers are drawn from the wiki and Discord knowledge. Signing in with Discord stores a token in this browser, and 'Sign out' removes it
+Only the question you type and a conversation id go to the project's help gateway at ask.azgaarsfmg.com; nothing from your map or browser is sent. Answers are drawn from the wiki and Discord knowledge. Signing in with Discord stores a token in this browser, and 'Sign out' removes it. That is the 'Help' tab; the 'This map' tab is a different thing and is covered below
+
+### Can the assistant answer questions about my own map? What is the 'This map' tab?
+
+Yes, in the assistant panel's second tab. 'Help' explains how the Generator works and never sees your map; 'This map' reads the world you have open and answers questions about it, such as which states have no ports or how the land is split between biomes. It runs on your own AI provider and your own API key, so it works anywhere, including a self-hosted copy. You can also open it from Tools -> Assistant
+
+### Do I need an API key for the assistant?
+
+Only for the 'This map' tab. 'Help' is free and needs nothing. 'This map' talks to an AI provider of your choice, so it needs a key from that provider, or a local server such as Ollama, which needs no key at all. Open the settings with the cog under the message box, pick a provider, pick a model, and paste the key. It is stored in this browser only and is sent only to that provider
+
+### Which AI providers and models can the assistant use?
+
+Anthropic, OpenAI, Mistral, Qwen, DeepSeek, and any OpenAI-compatible local server (Ollama, llama.cpp, LM Studio). Choose the provider first and the model list narrows to that provider's models. If your key can use models newer than the built-in list, they are fetched from the provider and added automatically. Bigger models reason better and cost more; you pay the provider directly
+
+### What is sent to the AI provider by the 'This map' tab?
+
+Your messages, and whatever the assistant reads from the open map to answer them. It answers by writing small scripts that read the map, and what those scripts return goes back to the provider as part of the conversation: burg names, state statistics, the text of a note. Treat it as you would pasting that material into any AI chat. Nothing goes to the project, and a local server keeps everything on your own machine
+
+### Can the AI change my map? Can it write my notes?
+
+It can write notes, and nothing else. Open the Notes Editor on any element, then open the assistant and ask for a description, a rewrite or a change of tone. The note updates in the editor and in the notes box as soon as the assistant writes it. Every edit shows in the chat with an Undo button that restores the previous text. The rest of the map is read-only to the assistant
+
+### How do I undo something the assistant wrote?
+
+Each edit appears in the transcript as its own line with an Undo button next to it; pressing it puts the note back exactly as it was, and removes the note entirely if the assistant had created it. The button greys out once used. Undo stays available for as long as the chat is kept, so you can reverse an edit after asking further questions
+
+### How much does the 'This map' assistant cost?
+
+You pay your chosen provider for what you send; the project charges nothing and runs no server for it. The line under the message box shows the tokens spent on the current chat. Every earlier turn is re-sent with each new message, so a long chat costs more per message than a fresh one — the button beside the chat list starts a fresh one
 
 ### How to make a river?
 

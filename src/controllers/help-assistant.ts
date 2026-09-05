@@ -14,6 +14,15 @@ import {
 } from "@/services/help/conversation";
 import { renderMarkdown } from "@/utils/markdown";
 import { ensureEl } from "../utils";
+import { mountMapPanel, refreshMapContext, unmountMapPanel } from "./help-assistant-map";
+
+// The dialog opens on Help (wiki-grounded gateway answers) unless a contextual entry point — the
+// Tools menu button or the notes editor — asks for This map, the BYOK agent over the open map.
+export type AssistantMode = "help" | "map";
+
+export interface OpenOptions {
+  mode?: AssistantMode;
+}
 
 export interface WidgetNotice {
   html: string;
@@ -64,25 +73,55 @@ function isMounted(): boolean {
   return document.getElementById("helpAssistant") !== null;
 }
 
-function open(): void {
+function open(options: OpenOptions = {}): void {
+  const mode = options.mode ?? "help";
+  if (isMounted()) {
+    setMode(mode);
+    // reached from the Tools menu or the notes editor, which is large and centred: come forward
+    $("#helpAssistant").dialog("moveToTop");
+    return;
+  }
+
   renderDialog();
 
   $("#helpAssistant").dialog({
     title: "Azgaar's Assistant",
-    position: { my: "center", at: "center", of: "svg" },
-    width: Math.min(420, window.innerWidth - 20), // fixed sane width — FMG dialogs otherwise grow with content
-    resizable: false,
+    width: Math.min(460, window.innerWidth - 20), // fixed sane width — FMG dialogs otherwise grow with content
+    height: Math.min(600, window.innerHeight - 40),
+    minWidth: 360,
+    minHeight: 420,
+    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
+    resizable: true,
     close: () => {
       if (retryTimer) {
         clearInterval(retryTimer);
         retryTimer = null;
       }
       autoRetried = false;
+      unmountMapPanel();
       destroyDialog("helpAssistant");
     }
   });
 
+  setMode(mode);
   if (isOfficialOrigin()) void refreshLimits();
+}
+
+export function setMode(mode: AssistantMode): void {
+  for (const button of document.querySelectorAll<HTMLButtonElement>("#helpAssistant .helpAssistantMode")) {
+    const active = button.dataset.mode === mode;
+    button.setAttribute("aria-selected", String(active));
+    button.classList.toggle("selected", active);
+  }
+  ensureEl("helpAssistantHelp").hidden = mode !== "help";
+  const mapHost = ensureEl("helpAssistantMap");
+  mapHost.hidden = mode !== "map";
+  if (mode !== "map") return;
+  if (!mapHost.dataset.mounted) {
+    mountMapPanel(mapHost);
+    mapHost.dataset.mounted = "1";
+  }
+  refreshMapContext();
 }
 
 function renderDialog(): void {
@@ -125,11 +164,27 @@ function renderDialog(): void {
         covers most questions.</p>
     </div>`;
 
+  const modes = /* html */ `
+    <div class="helpAssistantModes" role="tablist">
+      <button type="button" class="helpAssistantMode icon-help-circled" data-mode="help" role="tab" aria-selected="true"
+        data-tip="Ask how to use the map generator — answers come from the documentation">Help</button>
+      <button type="button" class="helpAssistantMode icon-robot" data-mode="map" role="tab" aria-selected="false"
+        data-tip="Ask about, or edit, the map you have open using your own AI key">This map</button>
+    </div>`;
+
   const html = /* html */ `<div id="helpAssistant" class="dialog stable">
-    ${isOfficialOrigin() ? form : unlisted}
-    ${links}
+    ${modes}
+    <div id="helpAssistantHelp" class="helpAssistantPanel">
+      ${isOfficialOrigin() ? form : unlisted}
+      ${links}
+    </div>
+    <div id="helpAssistantMap" class="helpAssistantPanel" hidden></div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
+
+  for (const button of document.querySelectorAll<HTMLButtonElement>("#helpAssistant .helpAssistantMode")) {
+    button.addEventListener("click", () => setMode(button.dataset.mode as AssistantMode));
+  }
 
   if (!isOfficialOrigin()) return;
   ensureEl("helpAssistantAsk").addEventListener("click", () => void submit(normalizeQuestion(getQuestionInput())));
