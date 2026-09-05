@@ -1,7 +1,3 @@
-// First-party help assistant: asks the fmg-bot gateway one question at a time and renders the
-// answer as escaped markdown. Replaces the OpenWidget bubble. Client design spec:
-// docs/superpowers/specs/2026-09-01-help-box-client-design.md (fork repo).
-
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import type { Limits } from "@/services/help/api";
 import { ask, getLimits, HelpApiError, OFFICIAL_ORIGIN, sendFeedback, signIn, signOut } from "@/services/help/api";
@@ -64,11 +60,25 @@ function isMounted(): boolean {
   return document.getElementById("helpAssistant") !== null;
 }
 
+// The call button mirrors the dialog: while the panel is up it shows a close glyph, so a
+// second click on it reads as "close" rather than "open again"
+function markBubble(isOpen: boolean): void {
+  const bubble = document.getElementById("helpAssistantBubble");
+  if (!bubble) return;
+  bubble.classList.toggle("open", isOpen);
+  bubble.setAttribute("aria-expanded", String(isOpen));
+}
+
+function toggle(): void {
+  if (isMounted()) $("#helpAssistant").dialog("close");
+  else open();
+}
+
 function open(): void {
   renderDialog();
 
   $("#helpAssistant").dialog({
-    title: "Azgaar's Assistant",
+    title: "Azgaar Assistant",
     position: { my: "center", at: "center", of: "svg" },
     width: Math.min(420, window.innerWidth - 20), // fixed sane width — FMG dialogs otherwise grow with content
     resizable: false,
@@ -78,10 +88,12 @@ function open(): void {
         retryTimer = null;
       }
       autoRetried = false;
+      markBubble(false);
       destroyDialog("helpAssistant");
     }
   });
 
+  markBubble(true);
   if (isOfficialOrigin()) void refreshLimits();
 }
 
@@ -316,9 +328,6 @@ function applyNotice(notice: WidgetNotice, error: HelpApiError, question: string
   }, 1000);
 }
 
-// Sign-in is shown only on the exact official origin (or DEV, where the stub closes the
-// loop) — NOT via isOfficialOrigin(): a staging build widens that gate, and sign-in from
-// staging would land the user on production with their token (server redirect is fixed).
 const canSignIn = (): boolean => import.meta.env.DEV || location.origin === OFFICIAL_ORIGIN;
 
 function renderAuth(tier: string): void {
@@ -367,4 +376,4 @@ async function refreshLimits(): Promise<void> {
   }
 }
 
-export const HelpAssistant = { open };
+export const HelpAssistant = { open, toggle };
