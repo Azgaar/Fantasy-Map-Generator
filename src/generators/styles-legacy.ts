@@ -625,13 +625,17 @@ export function labelGroupFromLegacy(legacy: unknown): Styles["labels"]["groups"
 }
 
 function labelStyleFromLegacy(bag: Record<string, unknown>): string | null {
-  const style = strOr(bag.style, null);
   const dx = toNumber(bag["data-dx"], 0);
   const dy = toNumber(bag["data-dy"], 0);
-  const declarations = style?.trim().replace(/;+$/, "") || "";
   const transform = dx || dy ? `transform: translate(${dx}em, ${dy}em)` : "";
-  const cssText = [declarations, transform].filter(Boolean).join("; ");
-  return cssText ?? null;
+  return stripDisplay([strOr(bag.style, null), transform].filter(Boolean).join("; "));
+}
+
+// pre-1.140 zoom auto-visibility hid a group with an inline display: none, which a map saved while
+// zoomed out carries in the style attribute; it is layer state, not style, and must not be persisted
+export function stripDisplay(style: string | null): string | null {
+  const declarations = (style || "").split(";").map(declaration => declaration.trim());
+  return declarations.filter(declaration => declaration && !/^display\s*:/.test(declaration)).join("; ") || null;
 }
 
 // legacy wrote stored burg-group bags to the DOM verbatim with no per-key defaults; only
@@ -719,6 +723,7 @@ globalThis.stylesLegacy = {
   harvestAttributes,
   stylesFromMap,
   harvestStylesFromSvg,
+  stripDisplay,
   migrateStyles,
   restoreStrippedLayerStyles,
   stripMigratedAttributes
