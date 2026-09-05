@@ -4,7 +4,7 @@ import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName, speak, uploadFile } from "@/utils";
 import { ensureEl } from "../utils";
 
-interface Note {
+export interface Note {
   id: string;
   name: string;
   legend: string;
@@ -159,18 +159,21 @@ function updateNotesBox(note: Note): void {
   ensureEl("notesBody").innerHTML = note.legend;
 }
 
+// Fill the editor's fields with a note; the TinyMCE-era equivalent of the Quill controller's loadNote
+function showNote(note: Note): void {
+  ensureEl<HTMLInputElement>("notesName").value = note.name;
+  ensureEl("notesLegend").innerHTML = note.legend;
+  window.tinymce?.activeEditor?.setContent(note.legend);
+  updateNotesBox(note);
+}
+
 function changeElement(this: HTMLSelectElement): void {
   const note = (notes as Note[]).find(note => note.id === this.value);
   if (!note) {
     tip("Note element is not found", true, "error", 4000);
     return;
   }
-
-  ensureEl<HTMLInputElement>("notesName").value = note.name;
-  ensureEl("notesLegend").innerHTML = note.legend;
-  updateNotesBox(note);
-
-  window.tinymce?.activeEditor?.setContent(note.legend);
+  showNote(note);
 }
 
 function changeName(this: HTMLInputElement): void {
@@ -201,32 +204,19 @@ function validateHighlightElement(): void {
 }
 
 function removeSelectedNote(): void {
-  const notesSelect = ensureEl<HTMLSelectElement>("notesSelect");
-  notes = (notes as Note[]).filter(note => note.id !== notesSelect.value);
-
-  if (!notes.length) {
-    $("#notesEditor").dialog("close");
-    return;
-  }
-
-  open((notes as Note[])[0].id, (notes as Note[])[0].name);
+  remove(ensureEl<HTMLSelectElement>("notesSelect").value);
 }
 
 function openAiGenerator(): void {
-  const notesSelect = ensureEl<HTMLSelectElement>("notesSelect");
-  const note = (notes as Note[]).find(note => note.id === notesSelect.value);
+  const note = current();
 
   let prompt = `Respond with description. Use simple dry language. Invent facts, names and details. Split to paragraphs and format to HTML. Remove h tags, remove markdown.`;
   if (note?.name) prompt += ` Name: ${note.name}.`;
   if (note?.legend) prompt += ` Data: ${note.legend}`;
 
   const onApply = (result: string): void => {
-    ensureEl("notesLegend").innerHTML = result;
-    if (note) {
-      note.legend = result;
-      updateNotesBox(note);
-      window.tinymce?.activeEditor?.setContent(note.legend);
-    }
+    if (note) write(note.id, result);
+    else ensureEl("notesLegend").innerHTML = result;
   };
 
   void Controllers.AiGenerator.open(prompt, onApply);
@@ -261,4 +251,44 @@ function toggleNotesPin(this: HTMLElement): void {
   this.classList.toggle("pressed");
 }
 
-export const NotesEditor = { open };
+// Bridge for the assistant (help-assistant-notes.ts): read the note on screen, write notes so an
+// open editor stays in sync, and remove what an undo has to take back
+
+const isOpen = (): boolean => document.getElementById("notesEditor") !== null;
+
+function current(): Note | null {
+  if (!isOpen()) return null;
+  const id = ensureEl<HTMLSelectElement>("notesSelect").value;
+  return (notes as Note[]).find(note => note.id === id) ?? null;
+}
+
+function write(id: string, legend: string, name?: string): Note {
+  const list = notes as Note[];
+  let note = list.find(note => note.id === id);
+  if (note) {
+    note.legend = legend;
+    if (name !== undefined) note.name = name;
+  } else {
+    note = { id, name: name ?? id, legend };
+    list.push(note);
+    if (isOpen()) ensureEl<HTMLSelectElement>("notesSelect").options.add(new Option(id, id));
+  }
+  if (current()?.id === id) showNote(note);
+  return note;
+}
+
+function remove(id: string): void {
+  const wasCurrent = current()?.id === id;
+  notes = (notes as Note[]).filter(note => note.id !== id);
+  if (!wasCurrent) return;
+  if (!notes.length) {
+    $("#notesEditor").dialog("close");
+    return;
+  }
+  open((notes as Note[])[0].id, (notes as Note[])[0].name);
+}
+
+// Selection is a Quill feature; the TinyMCE-era editor reports none
+const getSelectionHtml = (): string | null => null;
+
+export const NotesEditor = { open, current, write, remove, getSelectionHtml };
