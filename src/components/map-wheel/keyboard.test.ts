@@ -14,6 +14,14 @@ const roots: WheelRoots = {
   ],
   here: () => []
 };
+const richRoots: WheelRoots = {
+  menu: () => [
+    leaf("A", { children: [leaf("A1", { run: () => {} })] }),
+    leaf("Style", { panel: { host: "styleContent", title: "Style" } }),
+    leaf("C", { run: () => {} })
+  ],
+  here: () => [leaf("Subject0", { pick: 0 }), leaf("Subject1", { pick: 1 })]
+};
 const state = (over: Partial<WheelState> = {}): WheelState => ({ mode: "menu", path: [], hot: null, ...over });
 const key = (k: string) => new KeyboardEvent("keydown", { key: k });
 
@@ -57,5 +65,26 @@ describe("handleKey", () => {
   it("reports whether it consumed the key so the caller knows to preventDefault", () => {
     expect(handleKey(key("ArrowRight"), roots, state(), spies())).toBe(true);
     expect(handleKey(key("q"), roots, state(), spies())).toBe(false);
+  });
+
+  it("opens the drawer for a panel node on Enter", () => {
+    const cb = spies();
+    handleKey(key("Enter"), richRoots, state({ hot: { level: 0, index: 1 } }), cb);
+    expect(cb.onPanel).toHaveBeenCalledWith(
+      expect.objectContaining({ host: "styleContent", title: "Style" }),
+      expect.any(Number)
+    );
+  });
+
+  it("picks the HERE subject on Enter, including index 0", () => {
+    const cb = spies();
+    handleKey(key("Enter"), richRoots, state({ mode: "here", hot: { level: 0, index: 0 } }), cb);
+    expect(cb.onPick).toHaveBeenCalledWith(0);
+  });
+
+  it("collapses an already-chosen children node on Enter instead of pushing", () => {
+    const cb = spies();
+    handleKey(key("Enter"), richRoots, state({ path: [0], hot: { level: 0, index: 0 } }), cb);
+    expect(cb.onState).toHaveBeenCalledWith(expect.objectContaining({ path: [] }));
   });
 });

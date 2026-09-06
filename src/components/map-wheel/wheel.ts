@@ -139,7 +139,7 @@ export function renderWheel(container: HTMLElement, roots: WheelRoots, state: Wh
       sector.setAttribute("stroke", isDim ? EDGE_DIM : EDGE);
       sector.addEventListener("mouseenter", () => cb.onState({ ...state, hot: { level: L, index: i } }));
       sector.addEventListener("mouseleave", () => cb.onState({ ...state, hot: null }));
-      sector.addEventListener("click", () => pick(L, i, node, mid));
+      sector.addEventListener("click", () => dispatch(levels, state, cb, L, i));
       svg.append(sector);
 
       const [x, y] = labelPoint(mid, inner, rOuter);
@@ -168,40 +168,44 @@ export function renderWheel(container: HTMLElement, roots: WheelRoots, state: Wh
 
   renderHub(container, state, cb);
   renderCrumbs(container, roots, state, cb);
+}
 
-  // The spec's click order. A layer toggle wins over everything else so the ring doubles as the
-  // layer panel's status display: it flips in place and the ring neither changes nor closes.
-  function pick(level: number, index: number, node: WheelNode, mid: number): void {
-    const kind = nodeKind(node);
-    if (kind === "toggle") {
-      cb.onToggle(node);
-      return;
-    }
-    if (kind === "pick") {
-      cb.onPick(node.pick!);
-      return;
-    }
+// The spec's click order. A layer toggle wins over everything else so the ring doubles as the
+// layer panel's status display: it flips in place and the ring neither changes nor closes.
+// Shared by mouse clicks and keyboard Enter so the two input paths cannot disagree.
+function dispatch(levels: Level[], state: WheelState, cb: WheelCallbacks, level: number, index: number): void {
+  const node = levels[level].items[index];
+  const mid = levels[level].ring[index].mid;
+  const kind = nodeKind(node);
 
-    const isChosen = levels[level].chosen === index;
-    const truncated = state.path.slice(0, level);
-
-    if (kind === "panel") {
-      if (isChosen) {
-        cb.onState({ ...state, path: truncated, hot: null });
-        return;
-      }
-      cb.onState({ ...state, path: [...truncated, index], hot: null });
-      cb.onPanel(node.panel!, mid);
-      return;
-    }
-
-    if (kind === "children") {
-      cb.onState({ ...state, path: isChosen ? truncated : [...truncated, index], hot: null });
-      return;
-    }
-
-    if (kind === "run") cb.onLeaf(node);
+  if (kind === "toggle") {
+    cb.onToggle(node);
+    return;
   }
+  if (kind === "pick") {
+    cb.onPick(node.pick!);
+    return;
+  }
+
+  const isChosen = levels[level].chosen === index;
+  const truncated = state.path.slice(0, level);
+
+  if (kind === "panel") {
+    if (isChosen) {
+      cb.onState({ ...state, path: truncated, hot: null });
+      return;
+    }
+    cb.onState({ ...state, path: [...truncated, index], hot: null });
+    cb.onPanel(node.panel!, mid);
+    return;
+  }
+
+  if (kind === "children") {
+    cb.onState({ ...state, path: isChosen ? truncated : [...truncated, index], hot: null });
+    return;
+  }
+
+  if (kind === "run") cb.onLeaf(node);
 }
 
 /** Arrow keys walk the rings; the wheel is a set of nested lists. Returns true if the key was ours. */
@@ -236,10 +240,7 @@ export function handleKey(event: KeyboardEvent, roots: WheelRoots, state: WheelS
     }
     case "Enter": {
       if (current < 0) return false;
-      const node = ring.items[current];
-      if (nodeKind(node) === "run") cb.onLeaf(node);
-      else if (nodeKind(node) === "toggle") cb.onToggle(node);
-      else cb.onState({ ...state, path: [...state.path.slice(0, level), current], hot: null });
+      dispatch(levels, state, cb, level, current);
       return true;
     }
     default:
