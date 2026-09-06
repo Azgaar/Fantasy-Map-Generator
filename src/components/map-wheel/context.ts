@@ -370,7 +370,7 @@ function burgSubject(id: number, hit: Hit): WheelSubject | null {
         label: "Compare prices",
         icon: "icon-balance-scale",
         verb: "inspect",
-        run: () => void Controllers.ComparePrices.open()
+        run: () => void Controllers.ComparePrices.open(undefined, "#map")
       },
       { label: "All burgs", icon: "icon-docs", verb: "inspect", run: () => void Controllers.BurgsOverview.open() },
       {

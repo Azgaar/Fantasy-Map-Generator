@@ -128,6 +128,7 @@ export function openMapWheel(event: MouseEvent, roots: WheelRoots, onPickSubject
       },
       onPick: index => {
         onPickSubject?.(index);
+        dropDrawer();
         state = { mode: "here", path: [], hot: null };
         draw();
       },
@@ -146,16 +147,18 @@ export function openMapWheel(event: MouseEvent, roots: WheelRoots, onPickSubject
   window.addEventListener("blur", closeMapWheel);
 }
 
+// Bubble phase, and yield to anything that already claimed the event. Handlers bound closer to the
+// target run first, so a mode that owns right-click (journey draw-undo, remove-point) keeps it by
+// calling preventDefault. Enumerating those modes here would rot: journey mode has no DOM marker.
 function onContextMenu(event: MouseEvent): void {
-  // stay out of modes that already claim right-click (heightmap customization, journey drawing)
-  if (window.customization) return;
+  if (event.defaultPrevented) return;
+  if (window.customization) return; // heightmap mode claims right-click without preventing default
   if (!(event.target as Element | null)?.closest("#map")) return;
 
   const ctx = resolveContext(event);
   if (!ctx) return; // no map loaded, or the point is off it: let the browser menu through
 
   event.preventDefault();
-  event.stopPropagation();
 
   let subject = 0;
   const roots: WheelRoots = { menu: menuRoot, here: () => hereRoot(ctx, subject) };
@@ -169,7 +172,7 @@ function mount(): void {
   style.id = "mapWheelStyle";
   style.textContent = WHEEL_CSS;
   document.head.append(style);
-  document.addEventListener("contextmenu", onContextMenu, true);
+  document.addEventListener("contextmenu", onContextMenu);
   // a hidden tab must not leave borrowed app DOM stranded in the drawer
   document.addEventListener("visibilitychange", () => closeMapWheel());
 }

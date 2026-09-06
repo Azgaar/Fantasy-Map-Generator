@@ -77,3 +77,61 @@ describe("openMapWheel", () => {
     remove.mockRestore();
   });
 });
+
+describe("onContextMenu", () => {
+  const cellId = 0;
+  const zeros = [cellId];
+
+  const stubMap = (): HTMLElement => {
+    document.body.insertAdjacentHTML("beforeend", '<svg id="map"><g id="viewbox"><g id="target"></g></g></svg>');
+    vi.stubGlobal("Pack", { findCell: () => cellId });
+    vi.stubGlobal("pack", {
+      cells: {
+        i: zeros,
+        p: [[0, 0]],
+        h: [50],
+        burg: zeros,
+        state: zeros,
+        province: zeros,
+        culture: zeros,
+        religion: zeros,
+        biome: zeros,
+        r: zeros
+      },
+      states: [{}],
+      provinces: [{}],
+      cultures: [{}],
+      religions: [{}],
+      biomes: [{ name: "temperate" }],
+      burgs: [{}],
+      rivers: [],
+      markets: []
+    });
+    return document.getElementById("target")!;
+  };
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    document.getElementById("map")?.remove();
+  });
+
+  it("opens the wheel on a right-click over the map", () => {
+    stubMap().dispatchEvent(rightClick());
+    expect(document.getElementById("mapWheel")).toBeTruthy();
+  });
+
+  it("yields to a handler that already claimed the right-click", () => {
+    const target = stubMap();
+    // journey draw-undo and remove-point bind contextmenu closer to the target and preventDefault
+    target.addEventListener("contextmenu", event => event.preventDefault());
+    target.dispatchEvent(rightClick());
+    expect(document.getElementById("mapWheel")).toBeNull();
+  });
+
+  it("stays out of heightmap customization mode", () => {
+    const target = stubMap();
+    vi.stubGlobal("customization", 1);
+    target.dispatchEvent(rightClick());
+    expect(document.getElementById("mapWheel")).toBeNull();
+  });
+});
