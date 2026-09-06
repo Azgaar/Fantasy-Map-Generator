@@ -89,7 +89,16 @@ A node has exactly one of `children`, `panel`, `run`, `toggle` or `pick`; a unit
 
 `geometry.ts` stays pure and takes the scale as an argument (`bands(scale)`,
 `sectors(level, count, parentMid, scale)`, `spineLine(level, parentMid, scale)`, `boxRadius(scale)`,
-`outerRadius(scale)`, `drawerOffset(scale)`, `markPath(mid, outer, scale)`).
+`maxOuterRadius(scale)`, `openOuterRadius(level, scale)`, `drawerOffset(level, scale)`,
+`markPath(mid, outer, scale)`).
+
+**Two different outer radii, and keeping them apart is load-bearing.** The SVG box is sized for the
+deepest drill the wheel *could* reach (`maxOuterRadius` = level 3's outer edge, 355), because a box
+that resized as rings opened would relayout the dial under the pointer. But only the rings actually
+open are drawn, so everything anchored to the *ring* — the drawer and the breadcrumb — hangs off
+`openOuterRadius(level)`, the outer edge of the outermost open ring. Anchoring chrome to the maximum
+put a two-ring wheel's drawer 156px past where the ring visibly ends (measured in the browser) and
+its breadcrumb in the corner of the screen.
 
 Four concentric bands `[innerRadius, outerRadius]`, at uiSize 1:
 
@@ -190,8 +199,8 @@ SVG `viewBox="-R -R 2R 2R"` rendered `2R` square, where `R = boxRadius(scale)` =
   Filled with the sector's ink and repainted with it on hover. This is the affordance the "▸" note
   line used to carry, at no cost in the band's depth.
 - Spine: for each level ≥ 1, a line at the parent's mid-angle from `BANDS[L-1][1]` to `BANDS[L][0]`,
-  stroke `--dark-solid` (`#4a3a22`), `stroke-width 3`, `stroke-linecap round`. The drawer's
-  connector is the same line.
+  stroke `--dark-solid` (`#4a3a22`), `stroke-width 3`, `stroke-linecap round`. Rings only: the
+  drawer has no connector (see § Side drawer).
 
 ### Derived item caps
 
@@ -264,22 +273,28 @@ is 27 setting rows; About is prose. None of that can become sectors. A third nod
 a **drawer** that fans out from the side of the dial.
 
 A `panel` node suppresses the child ring — the drawer *is* the child. Its sector stays solid dark
-like any chosen ancestor and its siblings dim, exactly as for an open child ring. A 3px `#4a3a22`
-connector runs **from the chosen sector's outer mid-point to the nearest point on the drawer's near
-edge**, in the same spine language as the rings, so the drawer reads as belonging to that sector
-rather than floating over the map. (The connector cannot simply follow the sector's mid-angle: the
-drawer is a rectangle on one side, and a sector at 10 o'clock with the drawer on the right would
-point away from it. Nearest-point keeps the tie legible for every sector position.)
+like any chosen ancestor and its siblings dim, exactly as for an open child ring.
+
+**There is no connector line.** An earlier revision ran a 3px spine from the chosen sector to the
+nearest point on the drawer's near edge. It was there to tie a drawer that floated 156px away back
+to its sector; with the drawer anchored to the open ring the drawer sits 14px off it, the line is a
+stub, and the dark ancestor plus the placement already say what it said. Removed on the user's call.
 
 ### Placement
 
-- 14px clear of the outer radius, so the near edge sits at `centre ± drawerOffset(scale)` — 309.2px
-  at scale 1. Published as `--mw-drawer-offset`.
+- 14px clear of the **outermost open ring**, so the near edge sits at
+  `centre ± drawerOffset(openLevel, scale)` — 144 / 219 / 294 / 369px at scale 1 for a wheel open to
+  levels 0..3. Published as `--mw-drawer-offset` and recomputed on every structural redraw, since
+  the open depth is what it is a function of. A `panel` node has no children, so while its drawer is
+  open the outermost open ring is the panel sector's own level — but that is derived from the
+  render, never assumed.
 - Width 340px; height `min(560px, 100vh - 32px)`; vertically centred on the wheel centre and
   clamped to the viewport. The drawer hosts the app's real forms, so unlike the ring it does **not**
   scale.
 - Side is chosen by the sector that opened it: the half the sector points into (`cos(mid) >= 0` →
-  right), so the drawer fans out the way the sector is already aiming. That choice is overridden to
+  right), so the drawer fans out the way the sector is already aiming. The room it measures is
+  measured from the **same** `drawerOffset(openLevel, scale)` the drawer is then placed at — two
+  different radii there make the side choice and the placement disagree. That choice is overridden to
   the other side when the preferred side lacks room **where the wheel already sits** — giving up the
   sector's direction is cheaper than dragging the ring across the map. When neither side has room
   the wheel has to re-clamp regardless, and the sector's direction wins after all. When the sector
@@ -337,7 +352,12 @@ Scoped to `#mapWheelDrawer`, using the wheel's tokens:
   currently hover-only.
 - `input[type=range]`: 3px `rgba(90,74,48,.22)` track, 13px `#6b5535` thumb.
 - `select`, `input[type=number]`, `input[type=text]`: parchment ground, 1px `edge` border, 3px
-  radius, 12px type, full width.
+  radius, 12px type, full width — `width: 100% !important`. FMG carries inline widths on some of
+  these controls for the top bar's wide panel (`#stylePreset` 45%, `#styleElementSelect` 42%, the
+  style form's paired number inputs 5em); an inline style beats an author rule, so in a 340px drawer
+  those selects rendered ~150px wide and clipped their own option text. `!important` is the only way
+  to beat an inline style, and `src/index.html` is not this feature's to edit — the same
+  justification the `[hidden]` rule carries.
 - `input[type=color]`: 26px swatch, `edge` border, 3px radius.
 - Checkboxes follow FMG's existing `.checkbox` convention — raw checkboxes are hidden app-wide, so
   the skin must style the label, not the input.
@@ -499,6 +519,11 @@ All in scope:
   (`journey-path-editor.ts:133,164`).
 - **Dismiss** on Escape, on outside `pointerdown`, on map pan or zoom, and on window blur. An open
   drawer is part of the wheel for hit-testing: a pointerdown inside it is not "outside".
+  The dismiss-on-zoom listener is a `wheel` listener, and it **exempts the drawer**: the drawer
+  hosts the app's real forms and scrolls, and closing on the first notch of a scroll over it
+  detached the drawer mid-gesture and handed the rest of that scroll to the map, which zoomed. The
+  exemption is the drawer only, deliberately not the whole overlay — wheeling over the *ring* means
+  reaching for the map behind it, so the dial still dismisses and the map still zooms.
   The host is `position: fixed; inset: 0` so the ring can be centred anywhere in the viewport, which
   means it **must** be `pointer-events: none`: otherwise it covers the whole application, every
   pointerdown lands inside it and "outside" is never true. The interactive parts opt back in with
@@ -548,8 +573,17 @@ drawer ground `--bg-light` (the variable `#options` itself uses), header `--bg-l
 renders black. `palette.ts` therefore resolves the variables to literal colour strings once per
 build and feeds them into the renderer's existing precomputed hover skins; the stylesheet-side
 chrome uses `var()` directly, reading the same sampled palette back off `.mw-wheel` as `--mw-*`
-properties. The palette is sampled per build rather than watched: the wheel is transient and closes
-on an outside pointerdown.
+properties.
+
+**The palette is watched, not sampled once.** A `MutationObserver` on `document.documentElement`'s
+`style` attribute repaints the dial whenever the app rewrites its theme variables — which catches
+`changeDialogsTheme`, `changeThemeHue` and the restore-defaults button without naming any of them.
+The original reasoning ("the wheel is transient, it closes on an outside pointerdown") was
+invalidated by the drawer: Options → Interface opens *inside* the wheel, so the user can sit there
+moving the hue and transparency sliders while watching the dial. The repaint recomputes each
+sector's two precomputed skins and re-wears the one it is in; it never rebuilds, because a rebuild
+on every slider step is the hover-redraw loop all over again. The observer is disconnected in
+`closeMapWheel` alongside the key handler.
 
 **Accessibility:** dimmed siblings remain full click targets ("swap branch at this level"), so their
 ink stays at ≥4.5:1 — do not fade further than the `.82`/`.82` pair. De-emphasis comes from the
@@ -573,11 +607,25 @@ theme published the handoff's colours already clear the bar and the guard is a n
   three in turn. That is safe because those three are one theme lightness plus 0.02, 0.05 and 0.06,
   so they never straddle mid-grey and the guard never has to reverse direction.
 
-Contrast is measured on the **nominal opaque pair**. `--header-active` and the `--bg-*` grounds carry
-the user's transparency (and `--header-active` an `alphaReduced` of `min(alpha + 0.3, 1)`), and what
-shows through them is the map, which has no fixed colour. Measuring the opaque colours is therefore
-the only stable reading available; at high transparency the real ratio may differ from the reported
-one in either direction.
+**The ring carries the user's transparency**, like every other panel in the app. `changeDialogsTheme`
+publishes the alpha it derives from the slider as `--bg-opacity` = `(100 - transparency) / 100`, and
+every sector fill is emitted at that alpha — mapped onto `[ALPHA_FLOOR, 1]` rather than clamped to
+it, so the whole slider is visible on the dial and full opacity still lands exactly on the design's
+own `.97` / `.82`. A fill whose nominal alpha is already lower than the result keeps its own (the
+dimmed sibling stays at `.82` until the user asks for more).
+
+`ALPHA_FLOOR` is **0.8**, and it is what makes the rest of this section still true. What shows
+through a sector is the MAP: arbitrary, and at full contrast. Measured against a pure white and a
+pure black ground, the worst pair at `.8` is the layer-on green — nominally the weakest at 5.21:1 —
+at 3.49:1, and every ink the guard holds to 4.5:1 stays at 4.25:1 or better; at `.7` that worst pair
+falls to 2.81:1. Real map ground is mid-tone, where the loss is far smaller than at either extreme.
+
+Contrast is measured on the **nominal opaque pair**, and **transparency is applied after the guard**
+— the guard's inputs are the opaque colours, and `withAlpha` only rewrites the emitted fill.
+`--header-active` and the `--bg-*` grounds carry the user's transparency of their own (and
+`--header-active` an `alphaReduced` of `min(alpha + 0.3, 1)`), and what shows through all of them is
+the map. Measuring the opaque colours is therefore the only stable reading available, and the floor
+is what preserves legibility once the alpha is applied.
 
 The unit test for this asserts a universal, so it is exercised as one: the whole pair table runs
 across four reproduced themes — the default `#997787`, `#ffffff`, the pale blue `#dfe9f5` and the
@@ -620,7 +668,12 @@ accent ink (`#6b5535`); `transition: background 120ms`. Diameter and type size f
 
 ### Breadcrumb
 
-Top-left of the overlay bounds, `left 18px / top 16px`. IBM Plex Sans 11px, `letter-spacing .04em`,
+Centred on the wheel's centre, `CRUMB_CLEAR` (10px, scaled) above the outermost **open** ring, and
+clamped into the viewport so a deep drill on a short window cannot push it off the top or the sides.
+(It used to be pinned to the top-left of the overlay *box*, which is sized for a drill to level 3 —
+so on a two-ring wheel it sat 236px left of the dial and 106px above the ring, in the corner of the
+screen.) It stays `pointer-events: auto`, since clicking crumb *n* is the only route back to depth
+*n*. IBM Plex Sans 11px, `letter-spacing .04em`,
 in the accent ink (`#6b5535`) on `--bg-lighter` (`rgba(251,247,236,.86)`), padding `6px 11px`,
 radius 3px, border `1px solid` the themed edge (`rgba(90,74,48,.25)`). Clickable
 (`pointer-events: auto`). Last crumb `--dark-solid` (`#3b3226`)/600, earlier the accent
@@ -668,6 +721,9 @@ needed — the hub in this concept carries tab type only, not entity names.
   Plus: every radius scales uniformly with uiSize and by nothing else, `sectors(…, 1)` is identity,
   a 3px gap stays 3px as the dial grows, every ring at its cap has more arc per label than the label
   is wide, and `wheelScale` clamps to `[0.8, 2]` and then again to the viewport.
+  Plus the open-ring/max-ring split: `openOuterRadius` is the band it names and never the deepest,
+  `boxRadius` still clears the deepest, `drawerOffset` keeps one clearance at every level, and an
+  out-of-range level clamps rather than reading off the end of the table.
   Plus the label-fit guard, which is the regression test for the overflow bug: for **every ink box**
   `labelRects(level)` can produce — the icon, each text line at the full label width, the note at its
   width cap — `2 · hypot(a, reach)` is inside the band's depth. That is the maximum over all sector
@@ -683,6 +739,10 @@ needed — the hub in this concept carries tab type only, not entity names.
   runs the full ten-pair table (including light ink on the danger red, and the accent on the
   breadcrumb and drawer grounds) **across four reproduced themes** spanning the lightness range, and
   dimming stops at `.82`/`.82` in every one of them.
+  Transparency: the fills are byte-identical to the design at full opacity, follow `--bg-opacity`
+  monotonically, never go below `ALPHA_FLOOR` however far the slider is pushed, keep the danger red
+  and layer-on green themselves (only veiled), and ignore an unreadable `--bg-opacity` rather than
+  veiling for nothing.
 - `menu-tree.test.ts` — every ring within its level's item cap; no branch deeper than 4; every node
   has exactly one of `children`/`panel`/`run`/`toggle`/`pick`; every leaf resolves to a real
   `Controllers` key or an id present in `src/index.html`; every `toggle` names a real,
@@ -695,16 +755,42 @@ needed — the hub in this concept carries tab type only, not entity names.
 - `drawer.test.ts` — open reparents the host into the drawer; `only` hides exactly the complementary
   rows; close clears every `hidden` it set and reinserts the host at its original `nextSibling`;
   restore is idempotent; restore still works when the recorded `nextSibling` has been removed;
-  opening a second drawer restores the first host before hosting the next.
+  opening a second drawer restores the first host before hosting the next. `pickSide` measures room
+  against the ring that is OPEN, not the deepest one possible — the same centre and sector chooses
+  differently at level 1 and level 3.
+- `wheel.test.ts` — the breadcrumb is anchored above the outermost open ring and scales with the
+  dial; the handle reports that open level (a `panel` node's own level, since it opens no ring);
+  `repaint` follows a theme change without replacing a single element, and leaves a hovered sector
+  in its hot skin.
+- `index.test.ts` — the published `--mw-drawer-offset` is the open ring's, not the box's; a deeper
+  wheel reserves more viewport room for its drawer; a theme change on `<html>` repaints the live
+  wheel and a closed wheel stops watching; a `wheel` event inside the drawer scrolls it instead of
+  dismissing, while one anywhere else still dismisses.
 
-**Browser (Playwright, own server on :5199 per the fork's convention — never 5173):**
+**Browser (Playwright, `playwright.local.config.ts`, which starts its own vite on :5211 — never 5173,
+and never the port a user session is browsing):**
 
 - Right-click on the map opens the wheel at the pointer; Escape closes it; outside click closes it;
-  a zoom closes it.
+  a zoom closes it — but a scroll inside the drawer scrolls the drawer, leaves the wheel open and
+  leaves `#viewbox`'s transform untouched (the map-transform assertion is what catches the bug: the
+  overlay closing mid-gesture handed the rest of the scroll to the map).
+- The drawer sits 14px clear of the ring **actually open**, measured at level 0 and level 1 as the
+  real distance from the last ring's painted edge to the drawer's near edge.
+- The breadcrumb is centred on the wheel centre and 10px above the outermost open ring at depths 0,
+  1 and 2, stays inside the viewport for a depth-3 drill opened near the top edge, and keeps
+  `pointer-events: auto`.
+- A hosted `select` fills the block it sits in (`#stylePreset`, `#styleElementSelect`), which is
+  what the inline 45% / 42% widths broke.
+- Moving the app's own theme while the wheel is open repaints the ring: the sector fills follow the
+  colour, and their alpha is `.97` at transparency 0 and the `.8` floor at transparency 100.
 - `MENU → Layers → Political → Borders` flips the real layer: `Layers.isOn("borders")` changes and
   the sector's fill becomes `#8a9c6c` without the ring closing.
 - Drilling to depth 4 renders 4 rings with 3 spines; clicking a faded sibling swaps branch and
   leaves the deeper ring's parent chain consistent; clicking the dark ancestor collapses.
+- The drawer survives a hover: hovering a sector while a drawer is open leaves the drawer attached
+  and its borrowed controls live, and the ring visible (one bug closed the drawer on any hover;
+  another rebuilt the ring on hover, which restarted the entry animation every frame and killed the
+  whole mouse path).
 - `MENU → Options → Realms` opens the drawer showing exactly the five Realms rows; changing
   `statesNumber` in the drawer updates the same value the top-bar Options tab shows after close.
 - Closing the wheel with a drawer open leaves `#optionsContent` back inside `#options` in its

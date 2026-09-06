@@ -115,8 +115,10 @@ export const HOVER_GROW = 5;
 
 /** Room inside the SVG box for the hover growth; the shadow is drawn outside it (overflow: visible) */
 const BOX_PAD = 6;
-/** Gap between the ring's outer edge and the drawer's near edge */
+/** Gap between the OUTERMOST OPEN ring's outer edge and the drawer's near edge */
 const DRAWER_CLEAR = 14;
+/** Gap between the outermost open ring and the breadcrumb sitting above it */
+export const CRUMB_CLEAR = 10;
 
 export const UI_SCALE_MIN = 0.8;
 export const UI_SCALE_MAX = 2;
@@ -134,13 +136,26 @@ export function bands(scale = 1): [number, number][] {
   return BANDS.map(([inner, outer]): [number, number] => [inner * scale, outer * scale]);
 }
 
-export const outerRadius = (scale = 1): number => BANDS[MAX_DEPTH - 1][1] * scale;
+/**
+ * The outer edge of the deepest ring that COULD be drawn. Only the box uses this: it has to hold a
+ * drill to level 3 without relaying out, so it is sized once at open and never moves.
+ */
+export const maxOuterRadius = (scale = 1): number => BANDS[MAX_DEPTH - 1][1] * scale;
 
-/** Half the rendered SVG box */
-export const boxRadius = (scale = 1): number => outerRadius(scale) + BOX_PAD * scale;
+/**
+ * The outer edge of the deepest ring actually OPEN, which is where the ring visibly ends. Everything
+ * anchored to the ring - the drawer, the breadcrumb - hangs off this rather than off the maximum
+ * above, or a two-ring wheel gets its drawer 164px out in empty space and its breadcrumb in the
+ * corner of the screen.
+ */
+export const openOuterRadius = (level: number, scale = 1): number =>
+  BANDS[Math.min(Math.max(Math.trunc(level), 0), MAX_DEPTH - 1)][1] * scale;
 
-/** Distance from the wheel centre to the drawer's near edge */
-export const drawerOffset = (scale = 1): number => outerRadius(scale) + DRAWER_CLEAR * scale;
+/** Half the rendered SVG box: the maximum, so opening a ring never resizes the box */
+export const boxRadius = (scale = 1): number => maxOuterRadius(scale) + BOX_PAD * scale;
+
+/** Distance from the wheel centre to the drawer's near edge, for a wheel open to `level` */
+export const drawerOffset = (level: number, scale = 1): number => openOuterRadius(level, scale) + DRAWER_CLEAR * scale;
 
 /**
  * Follow the app's own sizing control, then refuse to grow past the viewport. Two clamps: uiSize

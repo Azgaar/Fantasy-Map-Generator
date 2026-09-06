@@ -18,7 +18,8 @@ afterEach(() => closeMapWheel());
 
 // derived from the geometry, never hardcoded: the bands move whenever the labels are re-tuned
 const EDGE = boxRadius(1) + VIEWPORT_MARGIN;
-const DRAWER_RESERVE = drawerOffset(1) + DRAWER_WIDTH - boxRadius(1);
+/** what a drawer beside a single open ring needs beyond the box, which is where the panels here sit */
+const DRAWER_RESERVE = drawerOffset(0, 1) + DRAWER_WIDTH - boxRadius(1);
 
 // a window that can hold the scale-1 box; on a shorter one the wheel is scaled down first, so
 // clampCentre never sees a box bigger than the viewport in the app
@@ -42,6 +43,14 @@ describe("clampCentre", () => {
   it("reserves room for an open drawer on the side it opens", () => {
     const [x] = clampCentre(1000, 400, 1920, 1080, "right");
     expect(x).toBeLessThanOrEqual(1920 - EDGE - DRAWER_RESERVE);
+  });
+
+  // the drawer hangs off the outermost OPEN ring, so a deeper wheel needs more room beside it
+  it("reserves more room for a drawer beside a deeper wheel", () => {
+    const shallow = clampCentre(1500, 400, 1920, 1080, "right", 1, 0)[0];
+    const deep = clampCentre(1500, 400, 1920, 1080, "right", 1, 3)[0];
+    expect(deep).toBeLessThan(shallow);
+    expect(shallow - deep).toBeCloseTo(drawerOffset(3, 1) - drawerOffset(0, 1), 6);
   });
 
   it("clamps against the scaled box, not a fixed radius", () => {
@@ -93,7 +102,8 @@ describe("openMapWheel", () => {
     expect(boxRadius(scale) * 2).toBeCloseTo(768 - 32, 6);
     expect(scale).toBeLessThan(1.5);
     expect(wheel.style.getPropertyValue("--mw-box")).toBe(`${boxRadius(scale) * 2}px`);
-    expect(wheel.style.getPropertyValue("--mw-drawer-offset")).toBe(`${drawerOffset(scale)}px`);
+    // one ring open, so the drawer sits just outside level 0 - not outside the box
+    expect(wheel.style.getPropertyValue("--mw-drawer-offset")).toBe(`${drawerOffset(0, scale)}px`);
 
     const svg = document.querySelector("#mapWheel svg.mw-svg")!;
     expect(svg.getAttribute("width")).toBe(String(boxRadius(scale) * 2));
@@ -131,6 +141,43 @@ describe("openMapWheel", () => {
     openMapWheel(rightClick(), roots);
     document.querySelector("path.mw-sector")!.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
     expect(document.getElementById("mapWheel")).toBeTruthy();
+  });
+
+  // The user's bug: the first notch of a scroll inside the drawer closed the whole wheel, which
+  // detached the drawer mid-gesture and handed the rest of that scroll to the map, zooming it.
+  // The ring is deliberately NOT exempt - wheeling over the dial is reaching for the map behind it.
+  describe("a wheel event", () => {
+    const panelRoots: WheelRoots = {
+      menu: () => [{ label: "About", icon: "icon-info-circled", panel: { host: "panelHost", title: "About" } }],
+      here: () => []
+    };
+
+    const openWithDrawer = (): void => {
+      document.body.insertAdjacentHTML("beforeend", '<div id="panelHost"><p>long</p></div>');
+      openMapWheel(rightClick(), panelRoots);
+      document.querySelector("path.mw-sector")!.dispatchEvent(new MouseEvent("click"));
+    };
+
+    // close first: the drawer is holding the host, and removing it under the drawer would leave the
+    // restore re-attaching a stray copy for the next test to find
+    afterEach(() => {
+      closeMapWheel();
+      document.getElementById("panelHost")?.remove();
+    });
+
+    it("scrolls the drawer instead of dismissing the wheel", () => {
+      openWithDrawer();
+      const inside = document.querySelector("#mapWheelDrawer p")!;
+      inside.dispatchEvent(new WheelEvent("wheel", { bubbles: true }));
+      expect(document.getElementById("mapWheel")).toBeTruthy();
+      expect(document.getElementById("panelHost")!.closest("#mapWheelDrawer")).toBeTruthy();
+    });
+
+    it("still dismisses the wheel when it lands anywhere else", () => {
+      openWithDrawer();
+      document.querySelector("path.mw-sector")!.dispatchEvent(new WheelEvent("wheel", { bubbles: true }));
+      expect(document.getElementById("mapWheel")).toBeNull();
+    });
   });
 
   // The regression guard for the hover redraw loop. Through the real wiring: hovering a sector used
@@ -173,18 +220,20 @@ describe("openMapWheel", () => {
       here: () => []
     };
 
-    // 500 in a 1024-wide window: the ring fits where it was clicked, the ring plus a drawer does not
-    openMapWheel(rightClick(500, 300), panelRoots);
+    // 540 in a 1024-wide window: the ring fits where it was clicked (its box needs 369 either side),
+    // and there is just enough room on the right for the drawer to open there - but not without the
+    // ring giving some of it back, since 369 + 144 + 340 is wider than what is left of the window.
+    openMapWheel(rightClick(540, 300), panelRoots);
     const wheel = document.querySelector<HTMLElement>("#mapWheel .mw-wheel")!;
-    expect(wheel.style.left).toBe("500px");
+    expect(wheel.style.left).toBe("540px");
 
     document.querySelector("path.mw-sector")!.dispatchEvent(new MouseEvent("click"));
     expect(document.getElementById("mapWheelDrawer")).toBeTruthy();
-    expect(Number.parseFloat(wheel.style.left)).toBeLessThan(500);
+    expect(Number.parseFloat(wheel.style.left)).toBeLessThan(540);
 
     // and the room is handed back the moment the drawer goes
     (document.querySelector(".mw-drawer-close") as HTMLElement).click();
-    expect(wheel.style.left).toBe("500px");
+    expect(wheel.style.left).toBe("540px");
     document.getElementById("panelHost")!.remove();
   });
 
@@ -205,6 +254,37 @@ describe("openMapWheel", () => {
     closeMapWheel();
     expect(document.getElementById("panelHost")!.parentElement).toBe(document.body);
     document.getElementById("panelHost")!.remove();
+  });
+
+  // The wheel used to sample the theme once per structural redraw, which was defensible while it
+  // was a transient ring. The drawer hosts Options → Interface: the user can now sit inside the
+  // wheel moving the hue and transparency sliders, watching a stale dial.
+  it("repaints when the app rewrites its theme variables", async () => {
+    openMapWheel(rightClick(), roots);
+    const sector = document.querySelector("path.mw-sector")!;
+    const before = sector.getAttribute("fill");
+
+    document.documentElement.style.setProperty("--light-solid", "rgb(255, 255, 255)");
+    await new Promise(resolve => setTimeout(resolve, 0)); // MutationObserver delivers on a microtask
+
+    expect(sector.getAttribute("fill")).toBe("rgba(255,255,255,0.97)");
+    expect(sector.getAttribute("fill")).not.toBe(before);
+    // repainted, not rebuilt: a rebuild would have replaced this element
+    expect(document.querySelector("path.mw-sector")).toBe(sector);
+    document.documentElement.style.removeProperty("--light-solid");
+  });
+
+  // a closed wheel's observer would hold its handle and its borrowed DOM for the life of the page
+  it("stops watching the theme when it closes", async () => {
+    openMapWheel(rightClick(), roots);
+    const sector = document.querySelector("path.mw-sector")!;
+    closeMapWheel();
+
+    document.documentElement.style.setProperty("--light-solid", "rgb(255, 255, 255)");
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(sector.getAttribute("fill")).toBe("rgba(251,247,236,.97)"); // the fallback it was drawn in
+    document.documentElement.style.removeProperty("--light-solid");
   });
 
   it("removes its window listeners on close so a stale wheel cannot swallow Escape", () => {

@@ -3,7 +3,7 @@
 import { Layers } from "@/components/layers";
 import { findEl } from "@/utils/nodeUtils";
 import { resolveContext } from "./context";
-import { closeDrawer, connectorLine, DRAWER_WIDTH, openDrawer, pickSide } from "./drawer";
+import { closeDrawer, DRAWER_ID, DRAWER_WIDTH, openDrawer, pickSide } from "./drawer";
 import { boxRadius, drawerOffset, VIEWPORT_MARGIN, wheelScale } from "./geometry";
 import { hereRoot } from "./here";
 import { menuRoot } from "./menu-tree";
@@ -21,7 +21,8 @@ const HOST_ID = "mapWheel";
 const MARGIN = VIEWPORT_MARGIN;
 
 /** Room an open drawer needs beyond the wheel's own box on the side it fans out to */
-const drawerReserve = (scale: number): number => drawerOffset(scale) + DRAWER_WIDTH - boxRadius(scale);
+const drawerReserve = (openLevel: number, scale: number): number =>
+  drawerOffset(openLevel, scale) + DRAWER_WIDTH - boxRadius(scale);
 
 /** The dial follows the app's own sizing control; absent or unreadable is 1 */
 function readUiSize(): number {
@@ -31,8 +32,8 @@ function readUiSize(): number {
 
 let host: HTMLElement | null = null;
 
-/** The sector the open drawer belongs to. The renderer clears the SVG, so the connector is redrawn. */
-let openPanel: { path: number[]; mid: number; side: "left" | "right" } | null = null;
+/** The path of the sector the open drawer belongs to; the drawer closes when it stops being chosen */
+let openPanel: number[] | null = null;
 
 // set by openMapWheel, cleared by closeMapWheel; a stale wheel must never keep answering keys
 let keyHandler: ((event: KeyboardEvent) => boolean) | null = null;
@@ -40,17 +41,34 @@ let keyHandler: ((event: KeyboardEvent) => boolean) | null = null;
 /** Re-clamps and moves the live wheel. Set by openMapWheel so any exit path can undo a drawer shift. */
 let recentre: ((drawerSide: "left" | "right" | null) => void) | null = null;
 
-/** Offset the centre so the wheel (and its drawer, if any) stays fully on screen. Never rotates. */
+/**
+ * Watches <html> for the app rewriting its theme variables. The wheel used to sample the palette
+ * once per structural redraw, which was defensible while it was a transient ring - but the drawer
+ * hosts Options → Interface, so the user can sit inside the wheel moving the hue and transparency
+ * sliders. Attribute-level, so it catches changeDialogsTheme, changeThemeHue and the restore-defaults
+ * button alike without knowing about any of them. Disconnected in closeMapWheel: an observer holding
+ * a closed wheel's handle is the same leak the keyHandler teardown guards against.
+ */
+let themeWatch: MutationObserver | null = null;
+
+/**
+ * Offset the centre so the wheel (and its drawer, if any) stays fully on screen. Never rotates.
+ *
+ * `openLevel` is the outermost open ring, which is what the drawer hangs off: a drawer beside a
+ * two-ring wheel needs 164px less room than one beside a four-ring wheel, and reserving the
+ * four-ring figure would shove the whole dial across the map for no reason.
+ */
 export function clampCentre(
   x: number,
   y: number,
   width: number,
   height: number,
   drawerSide: "left" | "right" | null = null,
-  scale = 1
+  scale = 1,
+  openLevel = 0
 ): [number, number] {
   const radius = boxRadius(scale);
-  const reserve = drawerReserve(scale);
+  const reserve = drawerReserve(openLevel, scale);
   const left = radius + MARGIN + (drawerSide === "left" ? reserve : 0);
   const right = width - radius - MARGIN - (drawerSide === "right" ? reserve : 0);
   const top = radius + MARGIN;
@@ -71,13 +89,15 @@ const stillUnder = (path: number[], anchor: number[]): boolean => anchor.every((
 
 export function closeMapWheel(): void {
   dropDrawer();
+  themeWatch?.disconnect();
+  themeWatch = null;
   if (!host) return;
   host.remove();
   host = null;
   keyHandler = null;
   recentre = null;
   window.removeEventListener("keydown", onKeyDown, true);
-  window.removeEventListener("wheel", closeMapWheel, true);
+  window.removeEventListener("wheel", onWheel, true);
   window.removeEventListener("pointerdown", onPointerDown, true);
   window.removeEventListener("blur", closeMapWheel);
 }
@@ -99,15 +119,17 @@ function onPointerDown(event: Event): void {
   closeMapWheel();
 }
 
-/** Tie the drawer back to the sector that opened it, in the same language as a ring spine */
-function drawConnector(wheel: HTMLElement, sectorMid: number, side: "left" | "right", scale: number): void {
-  const svg = wheel.querySelector("svg.mw-svg");
-  if (!svg) return;
-  const { x1, y1, x2, y2 } = connectorLine(sectorMid, side, scale);
-  const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-  line.setAttribute("class", "mw-spine mw-connector");
-  for (const [key, value] of Object.entries({ x1, y1, x2, y2 })) line.setAttribute(key, value.toFixed(2));
-  svg.append(line);
+/**
+ * The wheel dismisses on a map zoom, and a wheel event is how a zoom begins - but the drawer holds
+ * the app's real forms and scrolls. Dismissing on the first notch of a scroll over it detached the
+ * drawer mid-gesture, and the rest of that scroll landed on the map and zoomed it.
+ *
+ * The exemption is the DRAWER only, deliberately not the whole overlay: wheeling over the ring means
+ * reaching for the map behind it, and the dismiss-on-zoom rule should stand there.
+ */
+function onWheel(event: Event): void {
+  if ((event.target as Element | null)?.closest(`#${DRAWER_ID}`)) return;
+  closeMapWheel();
 }
 
 export function openMapWheel(event: MouseEvent, roots: WheelRoots, onPickSubject?: (index: number) => void): void {
@@ -134,14 +156,18 @@ export function openMapWheel(event: MouseEvent, roots: WheelRoots, onPickSubject
   const scale = wheelScale(readUiSize(), window.innerWidth, window.innerHeight);
   wheel.style.setProperty("--mw-ui", String(scale));
   wheel.style.setProperty("--mw-box", `${boxRadius(scale) * 2}px`);
-  wheel.style.setProperty("--mw-drawer-offset", `${drawerOffset(scale)}px`);
+
+  // The box is sized for the deepest possible drill, but only the OPEN rings are drawn - so the
+  // drawer hangs off the outermost open ring, not off the box. Kept current by draw().
+  let openLevel = 0;
 
   // The wheel and an open drawer clamp as one bounding box, so opening a panel can push the ring
   // off the drawer's side and closing it has to give that room back.
   let cx = 0;
   let cy = 0;
   const moveCentre = (drawerSide: "left" | "right" | null): void => {
-    [cx, cy] = clampCentre(event.clientX, event.clientY, window.innerWidth, window.innerHeight, drawerSide, scale);
+    const { innerWidth: w, innerHeight: h } = window;
+    [cx, cy] = clampCentre(event.clientX, event.clientY, w, h, drawerSide, scale, openLevel);
     wheel.style.left = `${cx}px`;
     wheel.style.top = `${cy}px`;
   };
@@ -155,7 +181,7 @@ export function openMapWheel(event: MouseEvent, roots: WheelRoots, onPickSubject
   let handle: WheelHandle | null = null;
   const callbacks: WheelCallbacks = {
     onState: next => {
-      if (openPanel && !stillUnder(next.path, openPanel.path)) dropDrawer();
+      if (openPanel && !stillUnder(next.path, openPanel)) dropDrawer();
       state = next;
       draw();
     },
@@ -165,8 +191,11 @@ export function openMapWheel(event: MouseEvent, roots: WheelRoots, onPickSubject
       state = { ...state, hot };
       handle?.applyHot(hot);
     },
+    // dispatch() re-issues the state before it opens a panel, so `openLevel` is already the panel
+    // sector's own level here - which is what pickSide must measure room against, or the side it
+    // picks and the offset the stylesheet places the drawer at are computed from different radii.
     onPanel: (spec, mid) => {
-      const side = pickSide(mid, cx, window.innerWidth, scale);
+      const side = pickSide(mid, cx, window.innerWidth, openLevel, scale);
       moveCentre(side);
       // the drawer is a child of .mw-wheel: its left/top percentages resolve against the wheel box,
       // so it tracks the ring instead of the middle of the viewport
@@ -175,8 +204,7 @@ export function openMapWheel(event: MouseEvent, roots: WheelRoots, onPickSubject
         state = { ...state, path: state.path.slice(0, -1) };
         draw();
       });
-      openPanel = { path: state.path, mid, side };
-      drawConnector(wheel, mid, side, scale);
+      openPanel = state.path;
     },
     onLeaf: node => {
       closeMapWheel();
@@ -199,15 +227,25 @@ export function openMapWheel(event: MouseEvent, roots: WheelRoots, onPickSubject
   };
   const draw = (): void => {
     handle = renderWheel(wheel, roots, state, callbacks, scale);
-    if (openPanel) drawConnector(wheel, openPanel.mid, openPanel.side, scale);
+    openLevel = handle.openLevel;
+    // the drawer's offset is a function of how deep the wheel is open, so it moves with every drill
+    wheel.style.setProperty("--mw-drawer-offset", `${drawerOffset(openLevel, scale)}px`);
   };
   draw();
 
   window.addEventListener("keydown", onKeyDown, true);
-  window.addEventListener("wheel", closeMapWheel, true);
+  window.addEventListener("wheel", onWheel, true);
   window.addEventListener("pointerdown", onPointerDown, true);
   window.addEventListener("blur", closeMapWheel);
   keyHandler = event => handleKey(event, roots, state, callbacks, scale);
+
+  // The theme is the app's to change while the wheel is open - Options → Interface is one of the
+  // drawers. Repaint in place rather than redraw: a rebuild on every slider step is the hover loop
+  // all over again, and it would tear the drawer's borrowed DOM out from under the pointer.
+  if (typeof MutationObserver !== "undefined") {
+    themeWatch = new MutationObserver(() => handle?.repaint());
+    themeWatch.observe(document.documentElement, { attributes: true, attributeFilter: ["style"] });
+  }
 }
 
 // Bubble phase, and yield to anything that already claimed the event. Handlers bound closer to the

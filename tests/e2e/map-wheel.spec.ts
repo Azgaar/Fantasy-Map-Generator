@@ -208,7 +208,6 @@ test.describe("map wheel", () => {
     await activate(byLabel("Realms"));
 
     await expect(page.locator("#mapWheelDrawer #optionsContent")).toBeAttached();
-    await expect(page.locator("#mapWheel line.mw-connector")).toHaveCount(1);
 
     // Exactly the Realms theme's rows, in order - every other options row is hidden while borrowed.
     // Asserted on RENDERED state, not on `row.hidden`: the drawer's `display: block` overrides are
@@ -252,7 +251,7 @@ test.describe("map wheel", () => {
 
   // The drawer used to be a child of #mapWheel, which is `position: fixed; inset: 0`, so its
   // `left: calc(50% + 260px)` resolved against the VIEWPORT: with the ring at x=300 in a 1280px
-  // window the drawer landed at 900 instead of 560, connector dangling into empty space. Every
+  // window the drawer landed at 900 instead of 560, hanging in empty space. Every
   // other drawer test opens at the viewport centre, where the bug cancels out - so this one does not.
   test("hangs the drawer off the ring when the wheel is well off-centre", async () => {
     await openWheel(300, 380);
@@ -274,8 +273,11 @@ test.describe("map wheel", () => {
         Number.parseFloat(style.getPropertyValue("--mw-ui"))
       ];
     });
-    // clear of the outer ring at the scale actually rendered, not of some old constant
-    expect(offset).toBeGreaterThan(BANDS[3][1] * ui);
+    // The bug: the offset was BANDS[3][1] + 14 whatever was open, so a wheel showing one ring put
+    // its drawer 239px past where that ring visibly ends. It hangs off the OPEN ring now - "About"
+    // is a root sector, so that is level 0 - and the clearance is the same 14px at any depth.
+    expect(offset).toBeCloseTo(BANDS[0][1] * ui + 14 * ui, 1);
+    expect(offset).toBeLessThan(BANDS[3][1] * ui);
     const side = await page.locator("#mapWheelDrawer").getAttribute("data-side");
     const gap = side === "right" ? drawer.x - centre.x : centre.x - (drawer.x + drawer.width);
     expect(gap).toBeCloseTo(offset, -1);
@@ -292,15 +294,17 @@ test.describe("map wheel", () => {
     await expect(page.locator("#options > #aboutContent")).toBeAttached();
   });
 
-  test("keeps the drawer and its connector open across a hover", async () => {
+  test("keeps the drawer open across a hover", async () => {
     await openWheel();
     await menuTab();
     await activate(byLabel("Options"));
     await activate(byLabel("Realms"));
     await expect(page.locator("#mapWheelDrawer #optionsContent")).toBeAttached();
 
-    // hovering repaints sectors in place and must not disturb the structure: the drawer, its
-    // connector and the entry animation's finished state all have to survive the pointer resting
+    // Hovering repaints sectors in place and must not disturb the structure: the drawer and the
+    // entry animation's finished state both have to survive the pointer resting. One earlier bug
+    // closed the drawer on any hover; another rebuilt the ring on hover, which killed the whole
+    // mouse path. This is the guard for both.
     const sectors = await readSectors();
     const peoples = sectors.find(byLabel("Peoples"))!;
     expect(peoples.level).toBe(1);
@@ -315,7 +319,8 @@ test.describe("map wheel", () => {
     await expect.poll(async () => (await readSectors()).find(byLabel("Peoples"))?.hot, { timeout: 2000 }).toBe(true);
 
     await expect(page.locator("#mapWheelDrawer #optionsContent")).toBeAttached();
-    await expect(page.locator("#mapWheel line.mw-connector")).toHaveCount(1);
+    // and the borrowed host is still the live one, not a corpse left behind by a rebuild
+    await expect(page.locator("#mapWheelDrawer #statesNumber")).toBeVisible();
 
     // the ring must be VISIBLE while hovered. A hover rebuild restarts the mw-fan entry animation
     // on a fresh <svg> every frame, which pins the whole ring near scale(.86)/opacity 0.
@@ -597,6 +602,202 @@ test.describe("map wheel", () => {
   test("closes on an outside click", async () => {
     await openWheel();
     await page.mouse.click(20, 700);
+    await expect(page.locator("#mapWheel")).toHaveCount(0);
+  });
+
+  // FIX: the drawer used to be placed against the deepest ring the box could ever hold, so with two
+  // rings open it sat ~164px out in empty space - the gap the user photographed. Measured here as
+  // the real distance from the outermost drawn ring's edge to the drawer's near edge.
+  test("puts the drawer against the ring that is open, at every depth", async () => {
+    for (const [drill, level] of [
+      [["About"], 0],
+      [["Options", "Realms"], 1]
+    ] as [string[], number][]) {
+      await openWheel();
+      await menuTab();
+      for (const step of drill) await activate(byLabel(step));
+      await expect(page.locator("#mapWheelDrawer")).toBeAttached();
+      await page.waitForTimeout(300); // let the 140ms slide-in settle before measuring
+
+      const wheel = (await page.locator("#mapWheel .mw-wheel").boundingBox())!;
+      const drawer = (await page.locator("#mapWheelDrawer").boundingBox())!;
+      const centre = wheel.x + wheel.width / 2;
+      const ui = await page
+        .locator("#mapWheel .mw-wheel")
+        .evaluate(el => Number.parseFloat(getComputedStyle(el).getPropertyValue("--mw-ui")));
+      const side = await page.locator("#mapWheelDrawer").getAttribute("data-side");
+      const near = side === "right" ? drawer.x - centre : centre - (drawer.x + drawer.width);
+
+      // 14px of clearance beyond the outermost ring actually drawn, and nothing more
+      const gap = near - BANDS[level][1] * ui;
+      expect(gap, `${drill.join(" > ")}: ${gap}px of dead space beside a level-${level} ring`).toBeCloseTo(
+        14 * ui,
+        0
+      );
+      await page.keyboard.press("Escape");
+    }
+  });
+
+  // FIX: the breadcrumb was pinned to the top-left of the BOX, which is sized for a drill to level 3
+  // - so on a wheel showing one or two rings it landed in the corner of the screen, yards from the
+  // dial it describes, and clicking crumb N is the only route back to depth N.
+  test("sits the breadcrumb just above the ring it describes", async () => {
+    for (const drill of [[], ["Tools"], ["Tools", "Regenerate"]]) {
+      await openWheel();
+      await menuTab();
+      for (const step of drill) await activate(byLabel(step));
+
+      const wheel = (await page.locator("#mapWheel .mw-wheel").boundingBox())!;
+      const crumbs = (await page.locator("#mapWheel .mw-crumbs").boundingBox())!;
+      const ui = await page
+        .locator("#mapWheel .mw-wheel")
+        .evaluate(el => Number.parseFloat(getComputedStyle(el).getPropertyValue("--mw-ui")));
+      const centre = { x: wheel.x + wheel.width / 2, y: wheel.y + wheel.height / 2 };
+
+      expect(crumbs.x + crumbs.width / 2).toBeCloseTo(centre.x, 0);
+      expect(centre.y - crumbs.y - crumbs.height, `depth ${drill.length}`).toBeCloseTo(
+        BANDS[drill.length][1] * ui + 10 * ui,
+        0
+      );
+
+      // on screen, and still a click target
+      const viewport = page.viewportSize()!;
+      expect(crumbs.y).toBeGreaterThanOrEqual(0);
+      expect(crumbs.x).toBeGreaterThanOrEqual(0);
+      expect(crumbs.x + crumbs.width).toBeLessThanOrEqual(viewport.width);
+      const events = await page
+        .locator("#mapWheel .mw-crumb")
+        .first()
+        .evaluate(el => getComputedStyle(el).pointerEvents);
+      expect(events).toBe("auto");
+      await page.keyboard.press("Escape");
+    }
+  });
+
+  // the bar is anchored to the ring and the ring to the click point, so a deep drill near the top of
+  // a short window would otherwise push it off the screen
+  test("keeps the breadcrumb on screen for a deep drill near the top edge", async () => {
+    await openWheel(640, 40);
+    await menuTab();
+    await activate(byLabel("Tools"));
+    await activate(byLabel("Regenerate"));
+    await activate(byLabel("Society"));
+
+    const crumbs = (await page.locator("#mapWheel .mw-crumbs").boundingBox())!;
+    expect(crumbs.y).toBeGreaterThanOrEqual(0);
+    expect(crumbs.y + crumbs.height).toBeLessThanOrEqual(page.viewportSize()!.height);
+  });
+
+  // FMG carries inline widths on some of its controls (#stylePreset 45%, #styleElementSelect 42%)
+  // for the top bar's wide panel. In a 340px drawer that clipped their option text - the user
+  // photographed it on "Style preset" and "Select element" - and only !important beats an inline
+  // style, since src/index.html is not this feature's to edit.
+  test("gives a hosted select the drawer's full width", async () => {
+    await openWheel();
+    await menuTab();
+    await activate(byLabel("Style"));
+    await activate(byLabel("Style editor"));
+    await expect(page.locator("#mapWheelDrawer #styleContent")).toBeAttached();
+
+    const body = (await page.locator("#mapWheelDrawer .mw-drawer-body").boundingBox())!;
+
+    for (const id of ["stylePreset", "styleElementSelect"]) {
+      // measured against the block the control actually sits in, since the hosts carry padding of
+      // their own; the inline 45% / 42% is what it must no longer be
+      const fit = await page.locator(`#mapWheelDrawer #${id}`).evaluate(el => {
+        const parent = el.parentElement!;
+        const style = getComputedStyle(parent);
+        const inner =
+          parent.getBoundingClientRect().width -
+          Number.parseFloat(style.paddingLeft) -
+          Number.parseFloat(style.paddingRight);
+        return { width: el.getBoundingClientRect().width, inner };
+      });
+      expect(fit.width, `#${id} is ${fit.width}px in a ${fit.inner}px block`).toBeGreaterThanOrEqual(fit.inner - 1);
+      // and that block is most of the drawer, so the option text has real room
+      expect(fit.width).toBeGreaterThan(body.width * 0.8);
+    }
+
+    await page.keyboard.press("Escape");
+    await expect(page.locator("#options > #styleContent")).toBeAttached();
+  });
+
+  // The wheel sampled the theme once per structural redraw, which was defensible while it was a
+  // transient ring - but the drawer hosts Options -> Interface, so the user can sit inside the wheel
+  // moving these very sliders. The ring follows them in place; a rebuild would be the hover loop.
+  test("follows a live theme change, transparency included", async () => {
+    const alphaOf = (fill: string): number => Number(/,\s*([\d.]+)\)$/.exec(fill)?.[1] ?? 1);
+    const rootFill = (): Promise<string> =>
+      page
+        .locator("#mapWheel path.mw-sector")
+        .first()
+        .evaluate(el => el.getAttribute("fill") ?? "");
+    // the app's own function, the one all three sliders and the restore-defaults button call
+    const theme = (transparency: number, color?: string): Promise<void> =>
+      page.evaluate(([t, c]: [number, string | undefined]) => {
+        const input = document.getElementById("themeColorInput") as HTMLInputElement;
+        (window as any).changeDialogsTheme(c || input.value, t);
+      }, [transparency, color] as [number, string | undefined]);
+
+    const before = await page.evaluate(
+      () => (document.getElementById("transparencyInput") as HTMLInputElement).value
+    );
+
+    await openWheel();
+    await menuTab();
+
+    await theme(0);
+    await page.waitForTimeout(150);
+    const opaque = await rootFill();
+    expect(alphaOf(opaque)).toBeCloseTo(0.97, 2);
+
+    // ...and at the other end of the slider the ring takes the user's transparency, down to the floor
+    await theme(100);
+    await page.waitForTimeout(150);
+    const veiled = await rootFill();
+    expect(alphaOf(veiled)).toBeCloseTo(0.8, 2);
+    expect(veiled).not.toBe(opaque);
+
+    // a colour change reaches it too, and none of it rebuilt the ring or closed the wheel
+    await theme(0, "#3355aa");
+    await page.waitForTimeout(150);
+    expect(await rootFill()).not.toBe(opaque);
+    await expect(page.locator("#mapWheel")).toBeAttached();
+    expect((await readSectors()).length).toBeGreaterThan(1);
+
+    await page.evaluate(t => (window as any).changeDialogsTheme("#997787", t), Number(before));
+  });
+
+  // The user's bug: the first notch of a scroll inside the drawer closed the whole wheel (the
+  // dismiss-on-zoom listener was unconditional), which detached the drawer mid-gesture and handed
+  // the rest of that scroll to the map, which zoomed. The map transform is what proves it.
+  test("scrolls the drawer on a wheel event instead of zooming the map", async () => {
+    await openWheel();
+    await menuTab();
+    await activate(byLabel("About"));
+    await expect(page.locator("#mapWheelDrawer #aboutContent")).toBeAttached();
+    await page.waitForTimeout(300);
+
+    const body = page.locator("#mapWheelDrawer .mw-drawer-body");
+    expect(await body.evaluate(el => el.scrollHeight - el.clientHeight)).toBeGreaterThan(10);
+    const transform = await page.locator("#viewbox").getAttribute("transform");
+
+    const box = (await body.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.wheel(0, 200);
+    await page.waitForTimeout(200);
+
+    expect(await body.evaluate(el => el.scrollTop)).toBeGreaterThan(0);
+    await expect(page.locator("#mapWheel")).toBeAttached();
+    await expect(page.locator("#mapWheelDrawer #aboutContent")).toBeAttached();
+    expect(await page.locator("#viewbox").getAttribute("transform")).toBe(transform);
+
+    // and the ring is deliberately NOT exempt: wheeling over the dial is reaching for the map
+    await page.mouse.move(2, 2);
+    await page.keyboard.press("Escape");
+    await openWheel();
+    await page.mouse.move(640, 380);
+    await page.mouse.wheel(0, 200);
     await expect(page.locator("#mapWheel")).toHaveCount(0);
   });
 

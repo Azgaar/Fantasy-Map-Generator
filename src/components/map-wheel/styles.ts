@@ -142,10 +142,12 @@ export const WHEEL_CSS = `
 
 #mapWheel .mw-tab.is-active { background: var(--mw-fill-hot, #6b5535); color: var(--mw-ink-light, #fffdf7); }
 
+/* left/top are set by the renderer: the bar sits just above the OUTERMOST OPEN ring, centred on the
+   wheel's centre, and is nudged back into the viewport if a deep drill would push it off the top. */
 #mapWheel .mw-crumbs {
   position: absolute;
-  left: 18px;
-  top: 16px;
+  transform: translate(-50%, -100%);
+  white-space: nowrap;
   display: flex;
   align-items: center;
   font-size: 11px;
@@ -276,6 +278,14 @@ export const WHEEL_CSS = `
   border: 1px solid var(--mw-edge, rgba(90,74,48,.32));
   border-radius: 3px;
 }
+/* FMG sizes some of these controls with an INLINE width for the top bar's wide panel - #stylePreset
+   at 45%, #styleElementSelect at 42%, the style form's paired number inputs at 5em. An inline style
+   beats the rule above, so in a 340px drawer those controls render ~150px wide and clip their own
+   option text. !important is the only thing that can beat an inline style, the same justification
+   the [hidden] rule above carries; src/index.html is not this feature's to edit. */
+#mapWheelDrawer select,
+#mapWheelDrawer input[type="number"],
+#mapWheelDrawer input[type="text"] { width: 100% !important; }
 #mapWheelDrawer input[type="color"] {
   width: 26px;
   height: 26px;

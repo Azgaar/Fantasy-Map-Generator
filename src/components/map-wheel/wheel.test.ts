@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { BANDS, CRUMB_CLEAR } from "./geometry";
 import { FILLS } from "./palette";
 import type { WheelNode } from "./types";
 import { type HotRef, renderWheel, resolveLevels, type WheelRoots, type WheelState } from "./wheel";
@@ -145,6 +146,34 @@ describe("renderWheel", () => {
     expect(container.querySelectorAll(".mw-crumb").length).toBe(2);
   });
 
+  // The bug: the bar was pinned to the corner of the BOX, which is sized for a drill to level 3.
+  // With two rings open that put it ~150px from the ring, in a large window in the screen's corner.
+  it("anchors the breadcrumb above the outermost ring that is open", () => {
+    const topOf = (path: number[]): string => {
+      renderWheel(container, roots, state({ path }), cb());
+      return container.querySelector<HTMLElement>(".mw-crumbs")!.style.top;
+    };
+    expect(topOf([])).toBe(`calc(50% - ${BANDS[0][1] + CRUMB_CLEAR}px)`);
+    expect(topOf([0])).toBe(`calc(50% - ${BANDS[1][1] + CRUMB_CLEAR}px)`);
+    expect(container.querySelector<HTMLElement>(".mw-crumbs")!.style.left).toBe("50%");
+  });
+
+  it("scales the breadcrumb's offset with the dial", () => {
+    renderWheel(container, roots, state(), cb(), 2);
+    expect(container.querySelector<HTMLElement>(".mw-crumbs")!.style.top).toBe(
+      `calc(50% - ${(BANDS[0][1] + CRUMB_CLEAR) * 2}px)`
+    );
+  });
+
+  // what index.ts hangs the drawer off, and what it reserves viewport room for
+  it("reports the outermost open level with the handle", () => {
+    expect(renderWheel(container, roots, state(), cb()).openLevel).toBe(0);
+    expect(renderWheel(container, roots, state({ path: [0] }), cb()).openLevel).toBe(1);
+    expect(renderWheel(container, roots, state({ path: [0, 0] }), cb()).openLevel).toBe(2);
+    // a panel node has no child ring, so the drawer's own sector is the outermost open level
+    expect(renderWheel(container, roots, state({ path: [1] }), cb()).openLevel).toBe(0);
+  });
+
   it("truncates the path when an earlier crumb is clicked", () => {
     const spies = cb();
     renderWheel(container, roots, state({ path: [0, 0] }), spies);
@@ -255,5 +284,54 @@ describe("hover", () => {
     const sector = container.querySelector("path.mw-sector")!;
     sector.dispatchEvent(new MouseEvent("mouseenter"));
     expect(sector.getAttribute("fill")).toBe(FILLS.chosen);
+  });
+});
+
+// The theme is the app's to change while the wheel is open: Options → Interface is one of the
+// drawers, so the user can sit inside the wheel moving the hue and transparency sliders. The
+// palette used to be sampled per structural redraw only, which left the dial stale for as long as
+// they stayed there. Repainting must not rebuild: that is the hover loop above all over again.
+describe("repaint", () => {
+  const THEME = {
+    "--light-solid": "rgb(255, 255, 255)",
+    "--dark-solid": "rgb(0, 0, 0)",
+    "--header-active": "rgb(232, 232, 232)"
+  };
+
+  afterEach(() => {
+    for (const name of Object.keys(THEME)) document.documentElement.style.removeProperty(name);
+  });
+
+  it("follows a theme change without replacing a single element", () => {
+    const handle = renderWheel(container, roots, state(), cb());
+    const sector = container.querySelector("path.mw-sector")!;
+    const label = container.querySelector<HTMLElement>(".mw-label")!;
+    expect(sector.getAttribute("fill")).toBe(FILLS.base);
+
+    for (const [name, value] of Object.entries(THEME)) document.documentElement.style.setProperty(name, value);
+    handle.repaint();
+
+    expect(sector.getAttribute("fill")).toBe("rgba(255,255,255,0.97)");
+    expect(container.querySelector("path.mw-sector")).toBe(sector);
+    expect(container.querySelector(".mw-label")).toBe(label);
+    expect(container.style.getPropertyValue("--mw-fill-base")).toBe("rgba(255,255,255,0.97)");
+  });
+
+  // the hovered sector is mid-skin when the theme moves, and it has to stay in that skin
+  it("keeps a hovered sector hot through a theme change", () => {
+    const spies = cb();
+    const handle = renderWheel(container, roots, state(), spies);
+    spies.onHot.mockImplementation((hot: HotRef | null) => handle.applyHot(hot));
+    const sector = container.querySelector("path.mw-sector")!;
+    sector.dispatchEvent(new MouseEvent("mouseenter"));
+    const grown = sector.getAttribute("d");
+
+    for (const [name, value] of Object.entries(THEME)) document.documentElement.style.setProperty(name, value);
+    handle.repaint();
+
+    expect(sector.getAttribute("d")).toBe(grown);
+    expect(sector.getAttribute("fill")).toBe("rgb(232, 232, 232)"); // the themed hover fill
+    sector.dispatchEvent(new MouseEvent("mouseleave"));
+    expect(sector.getAttribute("fill")).toBe("rgba(255,255,255,0.97)");
   });
 });

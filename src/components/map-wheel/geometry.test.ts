@@ -17,7 +17,8 @@ import {
   MARK_SIZE,
   MAX_DEPTH,
   markPath,
-  outerRadius,
+  maxOuterRadius,
+  openOuterRadius,
   ringSpan,
   sectors,
   spineLine,
@@ -143,9 +144,37 @@ describe("bands", () => {
   it("scales every radius uniformly and by nothing else", () => {
     expect(bands()).toEqual(BANDS.map(([inner, outer]) => [inner, outer]));
     expect(bands(2)).toEqual(bands().map(([inner, outer]) => [inner * 2, outer * 2]));
-    expect(outerRadius(2)).toBeCloseTo(outerRadius() * 2, 10);
+    expect(maxOuterRadius(2)).toBeCloseTo(maxOuterRadius() * 2, 10);
     expect(boxRadius(2)).toBeCloseTo(boxRadius() * 2, 10);
-    expect(drawerOffset(2)).toBeCloseTo(drawerOffset() * 2, 10);
+    for (const level of [0, 1, 2, 3]) {
+      expect(openOuterRadius(level, 2)).toBeCloseTo(openOuterRadius(level) * 2, 10);
+      expect(drawerOffset(level, 2)).toBeCloseTo(drawerOffset(level) * 2, 10);
+    }
+  });
+
+  // The bug both of these guard: the chrome hung off the deepest POSSIBLE ring, so a two-ring wheel
+  // put its drawer 164px past where the ring visibly ends and its breadcrumb in the screen's corner.
+  // The BOX is the one thing that must keep using the maximum - it cannot resize as rings open.
+  it("separates the ring that is open from the deepest one the box has to hold", () => {
+    expect(openOuterRadius(MAX_DEPTH - 1)).toBe(maxOuterRadius());
+    for (const level of [0, 1, 2]) {
+      expect(openOuterRadius(level)).toBe(BANDS[level][1]);
+      expect(openOuterRadius(level)).toBeLessThan(maxOuterRadius());
+      expect(drawerOffset(level)).toBeLessThan(drawerOffset(MAX_DEPTH - 1));
+    }
+    // and the box still accommodates a drill to the deepest level from the moment it is opened
+    expect(boxRadius()).toBeGreaterThan(maxOuterRadius());
+  });
+
+  it("clamps an open level outside the band table rather than reading off the end", () => {
+    expect(openOuterRadius(-1)).toBe(BANDS[0][1]);
+    expect(openOuterRadius(MAX_DEPTH + 2)).toBe(maxOuterRadius());
+  });
+
+  it("keeps the drawer a constant clearance beyond whichever ring is open", () => {
+    const clear = drawerOffset(0) - openOuterRadius(0);
+    expect(clear).toBeGreaterThan(0);
+    for (const level of [1, 2, 3]) expect(drawerOffset(level) - openOuterRadius(level)).toBeCloseTo(clear, 10);
   });
 
   it("gives every ring at its cap more arc per label than the label is wide", () => {

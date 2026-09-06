@@ -1,12 +1,23 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { applyPalette, contrast, EDGE, EDGE_DIM, FILLS, INKS, readable, readPalette, withAlpha } from "./palette";
+import {
+  ALPHA_FLOOR,
+  applyPalette,
+  contrast,
+  EDGE,
+  EDGE_DIM,
+  FILLS,
+  INKS,
+  readable,
+  readPalette,
+  withAlpha
+} from "./palette";
 
 /**
  * changeDialogsTheme() derives the whole palette from one colour through d3.hsl, so a fixture is a
  * theme colour plus the offsets that function applies: --light-solid is l+0.05, --dark-solid l-0.2,
  * --header-active l-0.09, --bg-lighter l+0.02, --bg-light l+0.06 (with s-0.02).
  */
-const THEME_VARS = ["--light-solid", "--dark-solid", "--header-active", "--bg-lighter", "--bg-light"];
+const THEME_VARS = ["--light-solid", "--dark-solid", "--header-active", "--bg-lighter", "--bg-light", "--bg-opacity"];
 
 /**
  * Values reproduced from changeDialogsTheme across the lightness range, at the default transparency
@@ -132,7 +143,69 @@ describe("readPalette", () => {
     expect(pal.fills.layerOn).toBe(FILLS.layerOn);
     expect(pal.inks.layerOn).toBe(INKS.layerOn);
   });
+});
 
+// The user decided the dial should carry their transparency like every other panel in the app. What
+// shows through it is the MAP, though, which is arbitrary and at full contrast - so the alpha stops
+// at ALPHA_FLOOR, and the contrast guard above (which reads the nominal opaque pair, since the map
+// has no fixed colour) stays a true statement about what is on screen.
+describe("transparency", () => {
+  const alphaOf = (fill: string): number => Number(/,\s*([\d.]+)\)$/.exec(fill)?.[1] ?? 1);
+
+  it("leaves every fill exactly as designed when the user asked for none", () => {
+    applyTheme({ ...THEMES.default, "--bg-opacity": "1" });
+    const opaque = readPalette().fills;
+    applyTheme({ ...THEMES.default });
+    expect(opaque).toEqual(readPalette().fills);
+  });
+
+  // the slider's whole range is mapped onto [ALPHA_FLOOR, 1]: clamping instead made everything past
+  // 20% transparency identical, so most of the control did nothing to the dial
+  it("carries the user's transparency onto every sector fill", () => {
+    applyTheme({ ...THEMES.default, "--bg-opacity": "0.5" });
+    const { fills } = readPalette();
+    expect(alphaOf(fills.chosen)).toBeCloseTo(0.9, 6);
+    expect(alphaOf(fills.hot)).toBeCloseTo(0.9, 6);
+    expect(alphaOf(fills.base)).toBeCloseTo(0.9, 6);
+    // .82 is already more transparent than the user asked for, so it stays where the design put it
+    expect(alphaOf(fills.dim)).toBeCloseTo(0.82, 6);
+  });
+
+  it("moves monotonically with the slider", () => {
+    const baseAt = (opacity: string): number => {
+      applyTheme({ ...THEMES.default, "--bg-opacity": opacity });
+      return alphaOf(readPalette().fills.chosen);
+    };
+    expect(baseAt("1")).toBeGreaterThan(baseAt("0.75"));
+    expect(baseAt("0.75")).toBeGreaterThan(baseAt("0.25"));
+    expect(baseAt("0.25")).toBeGreaterThan(baseAt("0"));
+  });
+
+  it("stops at the legibility floor however far the slider is pushed", () => {
+    applyTheme({ ...THEMES.default, "--bg-opacity": "0" });
+    const { fills } = readPalette();
+    for (const [name, fill] of Object.entries(fills)) {
+      expect(alphaOf(fill), `${name}: ${fill}`).toBeCloseTo(ALPHA_FLOOR, 6);
+    }
+  });
+
+  it("keeps the danger red and the layer-on green themselves, only veiled", () => {
+    applyTheme({ ...THEMES.default, "--bg-opacity": "0" });
+    const { fills } = readPalette();
+    expect(fills.hotDanger).toBe(withAlpha(FILLS.hotDanger, ALPHA_FLOOR));
+    expect(fills.layerOn).toBe(withAlpha(FILLS.layerOn, ALPHA_FLOOR));
+  });
+
+  it("ignores an unpublished or unreadable opacity rather than veiling for nothing", () => {
+    applyTheme({ ...THEMES.default, "--bg-opacity": "wat" });
+    expect(readPalette().fills.chosen).toBe(THEMES.default["--dark-solid"]);
+  });
+});
+
+// The contrast guard reads the NOMINAL opaque pair, per the spec: the fills carry the user transparency
+// and what shows through them is the map, which has no fixed colour. ALPHA_FLOOR is what keeps the
+// verdict below true of what is actually rendered.
+describe("contrast", () => {
   // The universal this test names has to be exercised as a universal. A single ink shared across
   // the chosen fill, the hover fill and the danger red passed at the default theme and failed badly
   // at either end of the lightness range - 1.18:1 for light ink on the danger red at a white theme.

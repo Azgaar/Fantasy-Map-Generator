@@ -12,13 +12,16 @@ import {
   arcPath,
   bands,
   boxRadius,
+  CRUMB_CLEAR,
   HOVER_GROW,
   labelPoint,
   MAX_DEPTH,
   markPath,
+  openOuterRadius,
   type Sector,
   sectors,
-  spineLine
+  spineLine,
+  VIEWPORT_MARGIN
 } from "./geometry";
 import { applyPalette, type Palette, readPalette } from "./palette";
 import { childrenOf, type DrawerSpec, nodeKind, type WheelNode } from "./types";
@@ -53,9 +56,17 @@ export interface WheelCallbacks {
   onToggle: (node: WheelNode) => void;
 }
 
-/** What renderWheel hands back so hover can be applied without touching the structure */
+/** What renderWheel hands back so hover and theme changes can be applied without touching the structure */
 export interface WheelHandle {
   applyHot: (hot: HotRef | null) => void;
+  /**
+   * Re-sample the app's theme and recolour what is already on screen. Structure is untouched: the
+   * user can sit in Options → Interface INSIDE the drawer moving the hue and transparency sliders,
+   * and rebuilding the ring on every one of those mutations would resurrect the hover-redraw loop.
+   */
+  repaint: () => void;
+  /** The outermost ring actually open. The drawer and the breadcrumb hang off this ring's edge. */
+  openLevel: number;
 }
 
 /** The two skins of one sector, computed once at build time so hovering is an attribute write */
@@ -68,6 +79,10 @@ interface Painted {
   d: [string, string];
   fill: [string, string];
   ink: [string, string];
+  /** what the two skins above were computed from, so a theme change can recompute them in place */
+  node: WheelNode;
+  isChosen: boolean;
+  isDim: boolean;
 }
 
 interface Level {
@@ -225,23 +240,30 @@ export function renderWheel(
         mark,
         d: skin,
         fill: [fillFor(pal, node, isChosen, false, isDim), fillFor(pal, node, isChosen, true, isDim)],
-        ink: [inkFor(pal, node, isChosen, false, isDim), inkFor(pal, node, isChosen, true, isDim)]
+        ink: [inkFor(pal, node, isChosen, false, isDim), inkFor(pal, node, isChosen, true, isDim)],
+        node,
+        isChosen,
+        isDim
       });
     });
   });
 
+  const openLevel = levels.length - 1;
   renderHub(container, state, cb);
-  renderCrumbs(container, roots, state, cb);
+  renderCrumbs(container, roots, state, cb, openLevel, scale);
 
   let hot: HotRef | null = null;
-  const paint = (ref: HotRef | null, on: boolean): void => {
-    const item = ref && painted.get(`${ref.level}:${ref.index}`);
-    if (!item) return;
+  const wear = (item: Painted, on: boolean): void => {
     const skin = on ? 1 : 0;
     item.sector.setAttribute("d", item.d[skin]);
     item.sector.setAttribute("fill", item.fill[skin]);
     item.label.style.color = item.ink[skin];
     item.mark?.setAttribute("fill", item.ink[skin]);
+  };
+
+  const paint = (ref: HotRef | null, on: boolean): void => {
+    const item = ref && painted.get(`${ref.level}:${ref.index}`);
+    if (item) wear(item, on);
   };
 
   const applyHot = (next: HotRef | null): void => {
@@ -250,8 +272,24 @@ export function renderWheel(
     paint(hot, true);
   };
 
+  // A theme change recomputes the two precomputed skins of every sector and re-wears the one each
+  // sector is currently in. No node is removed, so the element under the pointer stays the element
+  // the next mousedown lands on.
+  const repaint = (): void => {
+    const next = readPalette();
+    applyPalette(container, next);
+    const hotKey = hot && `${hot.level}:${hot.index}`;
+    for (const [key, item] of painted) {
+      const { node, isChosen, isDim } = item;
+      item.fill = [fillFor(next, node, isChosen, false, isDim), fillFor(next, node, isChosen, true, isDim)];
+      item.ink = [inkFor(next, node, isChosen, false, isDim), inkFor(next, node, isChosen, true, isDim)];
+      item.sector.setAttribute("stroke", isDim ? next.edgeDim : next.edge);
+      wear(item, key === hotKey);
+    }
+  };
+
   applyHot(state.hot);
-  return { applyHot };
+  return { applyHot, repaint, openLevel };
 }
 
 // The spec's click order. A layer toggle wins over everything else so the ring doubles as the
@@ -355,7 +393,29 @@ function renderHub(container: HTMLElement, state: WheelState, cb: WheelCallbacks
   container.append(hub);
 }
 
-function renderCrumbs(container: HTMLElement, roots: WheelRoots, state: WheelState, cb: WheelCallbacks): void {
+/**
+ * Nudge the breadcrumb back inside the viewport. The bar is anchored to the ring, and the ring is
+ * anchored to the click point, so a deep drill on a short window can put the crumb off the top of
+ * the screen - where it is neither readable nor clickable, and clicking crumb N is the only way
+ * back to depth N.
+ */
+function clampToViewport(bar: HTMLElement): void {
+  const rect = bar.getBoundingClientRect();
+  if (!rect.width || !rect.height) return; // detached, or jsdom, which lays nothing out
+  const dx = Math.max(0, VIEWPORT_MARGIN - rect.left) - Math.max(0, rect.right - (window.innerWidth - VIEWPORT_MARGIN));
+  const dy =
+    Math.max(0, VIEWPORT_MARGIN - rect.top) - Math.max(0, rect.bottom - (window.innerHeight - VIEWPORT_MARGIN));
+  if (dx || dy) bar.style.transform = `translate(-50%, -100%) translate(${dx}px, ${dy}px)`;
+}
+
+function renderCrumbs(
+  container: HTMLElement,
+  roots: WheelRoots,
+  state: WheelState,
+  cb: WheelCallbacks,
+  openLevel: number,
+  scale: number
+): void {
   const bar = document.createElement("div");
   bar.className = "mw-crumbs";
 
@@ -382,5 +442,11 @@ function renderCrumbs(container: HTMLElement, roots: WheelRoots, state: WheelSta
     bar.append(crumb);
   });
 
+  // Above the ring that is actually drawn and centred on the wheel's centre, not in the corner of
+  // the box: the box is sized for a drill to level 3, so a two-ring wheel pinned to its corner puts
+  // the crumb hundreds of px from the ring - in a large window, in the corner of the screen.
+  bar.style.left = "50%";
+  bar.style.top = `calc(50% - ${(openOuterRadius(openLevel, scale) + CRUMB_CLEAR * scale).toFixed(2)}px)`;
   container.append(bar);
+  clampToViewport(bar);
 }

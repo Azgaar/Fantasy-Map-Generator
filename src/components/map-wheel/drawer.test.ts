@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { closeDrawer, connectorLine, isDrawerOpen, openDrawer, pickSide } from "./drawer";
+import { closeDrawer, isDrawerOpen, openDrawer, pickSide } from "./drawer";
 
 let overlay: HTMLElement;
 
@@ -28,36 +28,43 @@ beforeEach(() => {
 afterEach(() => closeDrawer());
 
 describe("pickSide", () => {
-  // centres with real room on the side the sector points into: at 640 in a 1280px window neither
-  // side has room at the current radii, which is the last-resort case below, not this one
   it("opens on the side the sector points into", () => {
-    expect(pickSide(0, 400, 1280)).toBe("right");
-    expect(pickSide(Math.PI, 880, 1280)).toBe("left");
+    expect(pickSide(0, 400, 1280, 1)).toBe("right");
+    expect(pickSide(Math.PI, 880, 1280, 1)).toBe("left");
   });
 
   // giving up the sector's direction is cheaper than dragging the ring across the map
   it("overrides to the other side when the preferred one lacks room", () => {
-    expect(pickSide(0, 1200, 1280)).toBe("left");
-    expect(pickSide(Math.PI, 80, 1280)).toBe("right");
+    expect(pickSide(0, 1200, 1280, 1)).toBe("left");
+    expect(pickSide(Math.PI, 80, 1280, 1)).toBe("right");
   });
 
-  // near the middle of a narrow window neither side has room, the wheel re-clamps either way, and
-  // the sector's direction is then the only thing left to go on
+  // near the middle of a narrow window a four-ring wheel has room on neither side, it re-clamps
+  // either way, and the sector's direction is then the only thing left to go on
   it("follows the sector when neither side has room where the wheel sits", () => {
-    expect(pickSide(0, 640, 1280)).toBe("right");
-    expect(pickSide(Math.PI, 640, 1280)).toBe("left");
+    expect(pickSide(0, 640, 1280, 3)).toBe("right");
+    expect(pickSide(Math.PI, 640, 1280, 3)).toBe("left");
+  });
+
+  // The bug: room was measured from the deepest POSSIBLE ring while the drawer was placed against
+  // the ring actually open, so the side chosen and the offset it was placed at disagreed by 164px.
+  it("measures room against the ring that is open, not the deepest one possible", () => {
+    // same right-pointing sector, same centre: two rings leave room on the right for the drawer the
+    // sector points into, four rings do not and it has to go left
+    expect(pickSide(0, 715, 1280, 1)).toBe("right");
+    expect(pickSide(0, 715, 1280, 3)).toBe("left");
   });
 
   it("measures room against the scaled ring, not a fixed radius", () => {
     // the same left-pointing sector at the same centre: a small dial still has room on the right to
     // override into, a large one has room on neither side and keeps the sector's own direction
-    expect(pickSide(Math.PI, 560, 1280, 0.8)).toBe("right");
-    expect(pickSide(Math.PI, 560, 1280, 1.4)).toBe("left");
+    expect(pickSide(Math.PI, 560, 1280, 3, 0.8)).toBe("right");
+    expect(pickSide(Math.PI, 560, 1280, 3, 1.4)).toBe("left");
   });
 
   it("decides by viewport room when the sector points near-vertically", () => {
-    expect(pickSide(-Math.PI / 2, 300, 1280)).toBe("right");
-    expect(pickSide(-Math.PI / 2, 1000, 1280)).toBe("left");
+    expect(pickSide(-Math.PI / 2, 300, 1280, 1)).toBe("right");
+    expect(pickSide(-Math.PI / 2, 1000, 1280, 1)).toBe("left");
   });
 });
 
@@ -144,26 +151,6 @@ describe("closeDrawer", () => {
     openDrawer(overlay, { host: "before", title: "Other" }, "right", () => {});
     expect(document.getElementById("optionsContent")!.parentElement!.id).toBe("options");
     expect(document.getElementById("before")!.closest("#mapWheelDrawer")).toBeTruthy();
-  });
-
-  it("aims the connector at the drawer's near edge, not along the sector angle", () => {
-    const line = connectorLine(-Math.PI / 2, "right");
-    expect(line.x1).toBeCloseTo(0, 6); // the sector points straight up
-    expect(line.x2).toBeGreaterThan(0); // the line still runs out to the drawer on the right
-    // a sector the drawer's near edge can actually reach keeps its own height
-    const level = connectorLine(-Math.PI / 4, "right");
-    expect(level.y2).toBeCloseTo(level.y1, 6);
-  });
-
-  it("scales the connector with the dial", () => {
-    const line = connectorLine(0, "right", 1.5);
-    expect(line.x1).toBeCloseTo(connectorLine(0, "right").x1 * 1.5, 6);
-    expect(line.x2).toBeCloseTo(connectorLine(0, "right").x2 * 1.5, 6);
-  });
-
-  it("keeps the connector inside the drawer's height for a sector pointing far off it", () => {
-    const line = connectorLine(-Math.PI / 2, "right");
-    expect(Math.abs(line.y2)).toBeLessThanOrEqual(Math.min(532, window.innerHeight - 32) / 2);
   });
 
   it("notifies the caller when the close button is used", () => {

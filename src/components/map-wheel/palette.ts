@@ -32,6 +32,16 @@ export const INKS = {
 export const EDGE = "rgba(90,74,48,.32)";
 export const EDGE_DIM = "rgba(90,74,48,.16)";
 
+/**
+ * The ring carries the user's transparency, like every other panel in the app - but never below
+ * this. FMG's slider runs all the way to alpha 0, and what shows through a sector is the MAP:
+ * arbitrary, and at full contrast. Measured against a pure white and a pure black ground, the worst
+ * pair at .8 is the layer-on green (nominally the weakest at 5.21:1) at 3.49:1, and every ink the
+ * guard below holds to 4.5:1 stays at 4.25:1 or better; at .7 that worst pair falls to 2.81:1. Real
+ * map ground is mid-tone, where the loss is far smaller than at either extreme.
+ */
+export const ALPHA_FLOOR = 0.8;
+
 export interface Palette {
   fills: { chosen: string; hot: string; hotDanger: string; layerOn: string; dim: string; base: string };
   /**
@@ -133,8 +143,26 @@ const cssVar = (name: string): string => {
 };
 
 /**
- * Sampled once per wheel build. The wheel is transient and closes on an outside pointerdown, so a
- * palette that is live only from one open to the next is enough.
+ * The user's transparency, as a function that applies it to a fill. `changeDialogsTheme` publishes
+ * it as `--bg-opacity` = (100 - transparency) / 100; absent (no theme yet) is fully opaque.
+ *
+ * `nominal` is the alpha the design already paints that fill at, so a fill that is nominally .82
+ * never gets *more* opaque because the user turned transparency down.
+ */
+function veiler(): (color: string, nominal: number) => string {
+  const published = cssVar("--bg-opacity");
+  const value = Number(published);
+  // mapped onto [ALPHA_FLOOR, 1] rather than clamped to it: clamping made everything past 20% on the
+  // slider identical, so most of the control did nothing to the dial. Mapping keeps the whole slider
+  // visible on the ring, and full opacity still lands exactly on the design's own alphas.
+  const alpha =
+    published && Number.isFinite(value) ? ALPHA_FLOOR + (1 - ALPHA_FLOOR) * Math.min(1, Math.max(0, value)) : 1;
+  return (color, nominal) => (alpha < nominal ? withAlpha(color, alpha) : color);
+}
+
+/**
+ * Sampled per wheel build, and again whenever the app rewrites its theme variables (index.ts watches
+ * <html> for that, and the renderer's handle repaints in place).
  *
  * The danger red and the layer-on green stay literal on purpose: they carry meaning, not style, and
  * a hue slider must not be able to turn "this deletes things" into the same colour as everything else.
@@ -153,8 +181,21 @@ export function readPalette(): Palette {
   const hot = header || FILLS.hot;
   const inkLight = light || INKS.light;
 
+  // Transparency is applied LAST, to the fills only. Every ink below is guarded against the nominal
+  // opaque colour - what shows through a translucent sector is the map, which has no fixed colour,
+  // so the opaque pair is the only stable reading there is; ALPHA_FLOOR is what keeps the guard's
+  // verdict true of what the user actually sees.
+  const veil = veiler();
+
   return {
-    fills: { chosen, hot, hotDanger: FILLS.hotDanger, layerOn: FILLS.layerOn, dim, base },
+    fills: {
+      chosen: veil(chosen, 1),
+      hot: veil(hot, 1),
+      hotDanger: veil(FILLS.hotDanger, 1),
+      layerOn: veil(FILLS.layerOn, 1),
+      dim: veil(dim, 0.82),
+      base: veil(base, 0.97)
+    },
     inks: {
       onChosen: readable(inkLight, chosen),
       onHot: readable(inkLight, hot),
