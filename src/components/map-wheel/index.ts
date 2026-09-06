@@ -52,6 +52,45 @@ let recentre: ((drawerSide: "left" | "right" | null) => void) | null = null;
 let themeWatch: MutationObserver | null = null;
 
 /**
+ * The app's own dialog layer: the two static panes FMG toggles by `display` (`#prompt` is the
+ * confirmation a style change raises, `#alert` the shared jQuery UI pane behind `confirmationDialog`
+ * and `alertDialog`), and every `.ui-dialog` wrapper jQuery UI builds around one.
+ */
+const APP_DIALOGS = "#prompt, #alert, .ui-dialog";
+
+/**
+ * Shown, in a way both the browser and jsdom can answer. `getClientRects()` is the browser's answer
+ * and returns nothing under jsdom; a computed `display` alone misses the case that actually matters,
+ * since jQuery UI hides a closed dialog by hiding the WRAPPER and leaves `#alert` itself at
+ * `display: block` inside it. So: this element and every ancestor.
+ */
+function isShown(el: Element): boolean {
+  for (let node: Element | null = el; node; node = node.parentElement) {
+    if (getComputedStyle(node).display === "none") return false;
+  }
+  return true;
+}
+
+const shownDialogs = (): Element[] => [...document.querySelectorAll(APP_DIALOGS)].filter(isShown);
+
+/**
+ * Closes the wheel when the APP raises a dialog, which is the deterministic half of keeping the two
+ * apart. A style changed inside the drawer raises a confirmation, and that confirmation used to
+ * render underneath the wheel; lowering the z-index alone cannot settle it, because a jQuery UI
+ * dialog's z-index is assigned at runtime from a band the wheel would have to sit below anyway.
+ *
+ * It also returns the drawer's borrowed application DOM before the dialog can touch it: while a
+ * drawer is open `#styleContent` is physically out of `#options`, and a dialog that reaches into it
+ * there would be reaching into the wheel.
+ *
+ * Conservative by construction: it closes only for a dialog that was NOT already shown when this
+ * batch of mutations began, so a dialog the user already had open, a tooltip, a `tip()` message or
+ * any transient node leaves the wheel alone. Anything the wheel itself opens is a leaf action, and
+ * those call `closeMapWheel()` before running.
+ */
+let dialogWatch: MutationObserver | null = null;
+
+/**
  * Offset the centre so the wheel (and its drawer, if any) stays fully on screen. Never rotates.
  *
  * `openLevel` is the outermost open ring, which is what the drawer hangs off: a drawer beside a
@@ -88,6 +127,10 @@ function dropDrawer(): void {
 const stillUnder = (path: number[], anchor: number[]): boolean => anchor.every((index, i) => path[i] === index);
 
 export function closeMapWheel(): void {
+  // before dropDrawer, or handing the borrowed DOM back would itself be a mutation this observer
+  // then reacts to
+  dialogWatch?.disconnect();
+  dialogWatch = null;
   dropDrawer();
   themeWatch?.disconnect();
   themeWatch = null;
@@ -245,6 +288,26 @@ export function openMapWheel(event: MouseEvent, roots: WheelRoots, onPickSubject
   if (typeof MutationObserver !== "undefined") {
     themeWatch = new MutationObserver(() => handle?.repaint());
     themeWatch.observe(document.documentElement, { attributes: true, attributeFilter: ["style"] });
+
+    // The app's dialogs are opened by a `display` flip on a static pane or by jQuery UI appending a
+    // wrapper, so both a childList and a style/class change have to be watched; `seen` is what makes
+    // the answer "a dialog OPENED", not "a dialog exists".
+    let seen = new Set(shownDialogs());
+    dialogWatch = new MutationObserver(records => {
+      // the wheel's own churn - a hover repaint, a drill, the drawer borrowing its host - is not
+      // the app raising anything
+      if (records.every(record => (record.target as Element).closest?.(`#${HOST_ID}`))) return;
+      const shown = shownDialogs();
+      const opened = shown.some(dialog => !seen.has(dialog));
+      seen = new Set(shown);
+      if (opened) closeMapWheel();
+    });
+    dialogWatch.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["style", "class"]
+    });
   }
 }
 

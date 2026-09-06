@@ -288,6 +288,66 @@ describe("openMapWheel", () => {
     document.documentElement.style.removeProperty("--light-solid");
   });
 
+  // A style changed inside the drawer raises FMG's own confirmation, and that confirmation used to
+  // render UNDERNEATH the wheel: #prompt carries z-index 1000, the wheel carried 1000 too, and the
+  // wheel's host is appended to <body> after #dialogs, so it won the tie. The z-index is now below
+  // the app's dialog band, but the deterministic half is this: the wheel gets out of the way.
+  describe("an app dialog opening", () => {
+    const withPrompt = async (act: () => void): Promise<void> => {
+      document.body.insertAdjacentHTML("beforeend", '<div id="prompt" style="display: none"></div>');
+      document.body.insertAdjacentHTML("beforeend", '<div id="panelHost"></div>');
+      const panelRoots: WheelRoots = {
+        menu: () => [{ label: "About", icon: "icon-info-circled", panel: { host: "panelHost", title: "About" } }],
+        here: () => []
+      };
+      openMapWheel(rightClick(), panelRoots);
+      document.querySelector("path.mw-sector")!.dispatchEvent(new MouseEvent("click"));
+      expect(document.getElementById("panelHost")!.closest("#mapWheelDrawer")).toBeTruthy();
+
+      act();
+      await new Promise(resolve => setTimeout(resolve, 0)); // MutationObserver delivers on a microtask
+    };
+
+    afterEach(() => {
+      document.getElementById("prompt")?.remove();
+      document.getElementById("panelHost")?.remove();
+    });
+
+    // the borrowed host is the assertion that matters: while the drawer is open the app's own DOM
+    // is out of #options, and a dialog is exactly the thing likely to reach for it
+    it("closes the wheel and gives the drawer's borrowed host back", async () => {
+      await withPrompt(() => {
+        document.getElementById("prompt")!.style.display = "block";
+      });
+
+      expect(document.getElementById("mapWheel")).toBeNull();
+      expect(document.getElementById("panelHost")!.parentElement).toBe(document.body);
+    });
+
+    // a spurious close on a tooltip or a transient node would be worse than the bug
+    it("stays open for a DOM change that is not a dialog", async () => {
+      await withPrompt(() => {
+        document.body.insertAdjacentHTML("beforeend", '<div id="someTooltip" style="display: block">tip</div>');
+        document.getElementById("panelHost")!.setAttribute("style", "color: red");
+      });
+
+      expect(document.getElementById("mapWheel")).toBeTruthy();
+      expect(document.getElementById("panelHost")!.closest("#mapWheelDrawer")).toBeTruthy();
+      document.getElementById("someTooltip")!.remove();
+    });
+
+    // a dialog the user already had open is not this wheel's business
+    it("stays open for a dialog that was already showing when it opened", async () => {
+      document.body.insertAdjacentHTML("beforeend", '<div id="prompt" style="display: block"></div>');
+      openMapWheel(rightClick(), roots);
+
+      document.getElementById("prompt")!.setAttribute("style", "display: block; color: red");
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(document.getElementById("mapWheel")).toBeTruthy();
+    });
+  });
+
   it("removes its window listeners on close so a stale wheel cannot swallow Escape", () => {
     const remove = vi.spyOn(window, "removeEventListener");
     openMapWheel(rightClick(), roots);
