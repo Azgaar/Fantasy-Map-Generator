@@ -110,4 +110,121 @@ export const WHEEL_CSS = `
 #mapWheel .mw-crumb { cursor: pointer; pointer-events: auto; color: #8a7248; }
 #mapWheel .mw-crumb.is-last { color: #3b3226; font-weight: 600; }
 #mapWheel .mw-crumb-sep { opacity: .45; margin: 0 5px; }
+
+#mapWheelDrawer {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 340px;
+  max-height: min(560px, calc(100vh - 32px));
+  display: flex;
+  flex-direction: column;
+  background: rgba(251,247,236,.97);
+  border: 1px solid rgba(90,74,48,.32);
+  border-radius: 4px;
+  box-shadow: 0 10px 26px rgba(38,28,12,.35);
+  overflow: hidden;
+}
+
+#mapWheelDrawer[data-side="right"] { left: calc(50% + 260px); }
+#mapWheelDrawer[data-side="left"] { right: calc(50% + 260px); }
+
+#mapWheelDrawer .mw-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  background: rgba(251,247,236,.86);
+  border-bottom: 1px solid rgba(90,74,48,.16);
+}
+
+#mapWheelDrawer .mw-drawer-title {
+  font: 600 12px "IBM Plex Sans", system-ui, sans-serif;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: #6b5535;
+}
+
+#mapWheelDrawer .mw-drawer-close {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: #6b5535;
+  font-size: 13px;
+  line-height: 1;
+}
+
+#mapWheelDrawer .mw-drawer-body { overflow-y: auto; scrollbar-width: thin; padding: 4px 14px 14px; }
+
+/* --- the skin: FMG's real controls, restyled in place ------------------------------------- */
+#mapWheelDrawer .tabcontent { display: block; }
+#mapWheelDrawer table, #mapWheelDrawer tbody, #mapWheelDrawer tr, #mapWheelDrawer td {
+  display: block;
+  width: 100%;
+}
+#mapWheelDrawer tr {
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(90,74,48,.16);
+}
+#mapWheelDrawer tr:last-child { border-bottom: 0; }
+#mapWheelDrawer td { padding: 0; }
+#mapWheelDrawer > .mw-drawer-body p {
+  font: 600 11px "IBM Plex Sans", system-ui, sans-serif;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: #8a7248;
+  margin: 14px 0 4px;
+}
+#mapWheelDrawer tr::after {
+  content: attr(data-tip);
+  display: block;
+  font-size: 10.5px;
+  line-height: 1.35;
+  opacity: .68;
+  color: #3b3226;
+  margin-top: 3px;
+}
+#mapWheelDrawer input[type="range"] {
+  width: 100%;
+  appearance: none;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(90,74,48,.22);
+}
+#mapWheelDrawer input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #6b5535;
+  cursor: pointer;
+}
+#mapWheelDrawer input[type="range"]::-moz-range-thumb {
+  width: 13px;
+  height: 13px;
+  border: 0;
+  border-radius: 50%;
+  background: #6b5535;
+  cursor: pointer;
+}
+#mapWheelDrawer select,
+#mapWheelDrawer input[type="number"],
+#mapWheelDrawer input[type="text"] {
+  width: 100%;
+  font-size: 12px;
+  padding: 4px 6px;
+  color: #3b3226;
+  background: rgba(251,247,236,.97);
+  border: 1px solid rgba(90,74,48,.32);
+  border-radius: 3px;
+}
+#mapWheelDrawer input[type="color"] {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid rgba(90,74,48,.32);
+  border-radius: 3px;
+}
+/* FMG hides raw checkboxes app-wide and styles the label instead - do not un-hide them here */
+#mapWheelDrawer .checkbox-label { font-size: 12px; color: #3b3226; cursor: pointer; }
 `;
