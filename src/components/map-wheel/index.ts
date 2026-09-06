@@ -129,7 +129,9 @@ export function openMapWheel(event: MouseEvent, roots: WheelRoots, onPickSubject
   recentre = moveCentre;
   moveCentre(null);
 
-  let state: WheelState = { mode: "here", path: [], hot: null };
+  // Opens on MENU: the global menus are what most right-clicks are after, and HERE - which is
+  // fully resolved either way - is one hub click in.
+  let state: WheelState = { mode: "menu", path: [], hot: null };
   // the live ring's hover handle; replaced by every structural redraw
   let handle: WheelHandle | null = null;
   const callbacks: WheelCallbacks = {

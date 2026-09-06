@@ -45,6 +45,25 @@ describe("openMapWheel", () => {
     expect(host.querySelectorAll("path.mw-sector").length).toBe(1);
   });
 
+  // The hub opens on MENU: the five global menus are what most right-clicks want, and the subject
+  // stack is resolved on open either way, so HERE is fully populated the moment it is chosen.
+  it("opens on the MENU channel with HERE one hub click away", () => {
+    const channels: WheelRoots = {
+      menu: () => [{ label: "Layers", icon: "icon-eye", run: () => {} }],
+      here: () => [
+        { label: "Edit burg", icon: "icon-star", run: () => {} },
+        { label: "What's here", icon: "icon-search", run: () => {} }
+      ]
+    };
+    openMapWheel(rightClick(), channels);
+    const tabs = document.querySelectorAll("#mapWheel .mw-tab");
+    expect(tabs[1].classList.contains("is-active")).toBe(true);
+    expect(document.querySelectorAll("#mapWheel path.mw-sector").length).toBe(1);
+
+    (tabs[0] as HTMLElement).click();
+    expect(document.querySelectorAll("#mapWheel path.mw-sector").length).toBe(2);
+  });
+
   it("replaces an existing wheel rather than stacking a second one", () => {
     openMapWheel(rightClick(), roots);
     openMapWheel(rightClick(), roots);
@@ -105,8 +124,8 @@ describe("openMapWheel", () => {
   it("re-clamps the centre when a drawer opens with no room for it beside the ring", () => {
     document.body.insertAdjacentHTML("beforeend", '<div id="panelHost"></div>');
     const panelRoots: WheelRoots = {
-      menu: () => [],
-      here: () => [{ label: "About", icon: "icon-info-circled", panel: { host: "panelHost", title: "About" } }]
+      menu: () => [{ label: "About", icon: "icon-info-circled", panel: { host: "panelHost", title: "About" } }],
+      here: () => []
     };
 
     // 500 in a 1024-wide window: the ring fits where it was clicked, the ring plus a drawer does not
@@ -127,8 +146,8 @@ describe("openMapWheel", () => {
   it("keeps the drawer through a redraw that leaves it open", () => {
     document.body.insertAdjacentHTML("beforeend", '<div id="panelHost"></div>');
     const panelRoots: WheelRoots = {
-      menu: () => [],
-      here: () => [{ label: "About", icon: "icon-info-circled", panel: { host: "panelHost", title: "About" } }]
+      menu: () => [{ label: "About", icon: "icon-info-circled", panel: { host: "panelHost", title: "About" } }],
+      here: () => []
     };
 
     openMapWheel(rightClick(), panelRoots);

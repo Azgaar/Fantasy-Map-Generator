@@ -88,8 +88,14 @@ const openWheel = async (x = 640, y = 380): Promise<void> => {
   await page.mouse.move(2, 2);
 };
 
+// The wheel opens on MENU, so the HERE channel is one hub click in
 const menuTab = async (): Promise<void> => {
   await page.locator("#mapWheel .mw-tab", { hasText: "menu" }).click();
+  await page.mouse.move(2, 2);
+};
+
+const hereTab = async (): Promise<void> => {
+  await page.locator("#mapWheel .mw-tab", { hasText: "here" }).click();
   await page.mouse.move(2, 2);
 };
 
@@ -342,6 +348,7 @@ test.describe("map wheel", () => {
       await expect(page.locator("#emblemEditor")).toHaveCount(0);
 
       await openWheel(spot!.x, spot!.y);
+      await hereTab();
       // the top-ranked subject may be any of them, so walk "What's here" to the one under test
       await activate(byLabel("What's here"));
       const picked = await activate(sector => sector.level === 1 && sector.note === kind);
