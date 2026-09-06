@@ -488,7 +488,7 @@ export function presetBagFor(
 
 // v1.145-1.147 saved maps with the layer styling stripped out
 export async function restoreStrippedLayerStyles(): Promise<void> {
-  const [, preset] = await (window as any).getStylePreset(facts.style.preset || "default");
+  const [, preset] = await (window as any).getStylePreset(options.map.style.preset || "default");
 
   const isBareGroup = (group: Element, declared: Record<string, string> = {}): boolean => {
     const ignored = new Set(["id", "style", "data-layer", "data-group", ...Object.keys(declared)]);

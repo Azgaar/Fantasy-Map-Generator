@@ -56,13 +56,13 @@ function prepareMapData(): string {
     VERSION,
     license,
     dateString,
-    facts.seed,
-    facts.graph.width,
-    facts.graph.height,
+    options.map.seed,
+    options.map.graph.width,
+    options.map.graph.height,
     mapHistory.at(-1)?.created ?? Date.now() // the map id: when the map on screen was created
   ].join("|");
 
-  const settings = JSON.stringify(facts); // the map's facts; this browser's options stay out
+  const settings = JSON.stringify(options.map); // what the map is; the requests and preferences stay out
   const notesData = JSON.stringify(notes);
   const measurers = JSON.stringify(pack.measurers ?? []);
   const journeys = JSON.stringify(pack.journeys ?? []);
@@ -74,8 +74,8 @@ function prepareMapData(): string {
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
 
   // reset transform values to default
-  cloneEl.setAttribute("width", String(facts.graph.width));
-  cloneEl.setAttribute("height", String(facts.graph.height));
+  cloneEl.setAttribute("width", String(options.map.graph.width));
+  cloneEl.setAttribute("height", String(options.map.graph.height));
   cloneEl.querySelector("#viewbox")?.removeAttribute("transform");
 
   // relief icons are stored in pack.relief, the layer holds only the currently visible ones
@@ -93,8 +93,8 @@ function prepareMapData(): string {
 
   const serializedSVG = new XMLSerializer().serializeToString(cloneEl);
 
-  const { spacing, cellsX, cellsY, boundary, points, features, cellsDesired } = grid;
-  const gridGeneral = JSON.stringify({ spacing, cellsX, cellsY, boundary, points, features, cellsDesired });
+  const { spacing, cellsX, cellsY, boundary, points, features } = grid;
+  const gridGeneral = JSON.stringify({ spacing, cellsX, cellsY, boundary, points, features });
   const packFeatures = JSON.stringify(pack.features);
   const biomes = JSON.stringify(pack.biomes);
   const cultures = JSON.stringify(pack.cultures);
@@ -138,7 +138,7 @@ function prepareMapData(): string {
   const mapData = [
     params,
     settings,
-    "", // deprecated separate mapCoordinates, now facts.geography.coordinates
+    "", // deprecated separate mapCoordinates, now options.map.geography.coordinates
     biomes,
     notesData,
     serializedSVG,

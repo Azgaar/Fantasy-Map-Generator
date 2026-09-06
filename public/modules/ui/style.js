@@ -473,7 +473,7 @@ function updateGroupOptions(styleElement, layerEl) {
     // count from the label data: the culled DOM only holds labels rendered at this zoom
     const labelCounts = {};
     for (const label of window.getLabelsData()) labelCounts[label.group] = (labelCounts[label.group] || 0) + 1;
-    const groups = facts.labels.groups.map(({ name }) => name);
+    const groups = options.map.labels.groups.map(({ name }) => name);
     groups.forEach(name => styleGroupSelect.options.add(new Option(`${name} (${labelCounts[name] || 0})`, name)));
     styleGroupSelect.value = groups.includes(selected) ? selected : groups[0] || "";
     return;
@@ -622,7 +622,7 @@ styleGridScale.addEventListener("input", function () {
 });
 
 function calculateFriendlyGridSize() {
-  const { scale, unit } = facts.units.distance;
+  const { scale, unit } = options.map.units.distance;
   const size = styleGridScale.value * 25;
   styleGridSizeFriendly.value = `${rn(size * scale, 2)} ${unit}`;
 }

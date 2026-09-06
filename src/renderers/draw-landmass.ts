@@ -32,7 +32,7 @@ export function drawLandmass(layer: Layer): void {
   ensureEl("land").innerHTML = landMask.join("");
   ensureEl("water").innerHTML = waterMask.join("");
 
-  layer.getEl().innerHTML = /* html */ `<rect x="0" y="0" width="${facts.graph.width}" height="${facts.graph.height}" />`;
+  layer.getEl().innerHTML = /* html */ `<rect x="0" y="0" width="${options.map.graph.width}" height="${options.map.graph.height}" />`;
 
   TIME && console.timeEnd("drawLandmass");
 }

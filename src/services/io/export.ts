@@ -26,7 +26,7 @@ type MapSelection = Selection<SVGSVGElement, unknown, null, undefined>;
 
 // project canvas coordinates to geographic [lon, lat], rounded to 4 decimals
 const toGeoCoordinates = (x: number, y: number) =>
-  getCoordinates(x, y, facts.geography.coordinates, facts.graph.width, facts.graph.height, 4);
+  getCoordinates(x, y, options.map.geography.coordinates, options.map.graph.width, options.map.graph.height, 4);
 
 export interface GetMapURLOptions {
   debug?: boolean;
@@ -152,8 +152,8 @@ async function exportToPngTiles(): Promise<void> {
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d")!;
-  canvas.width = facts.graph.width;
-  canvas.height = facts.graph.height;
+  canvas.width = options.map.graph.width;
+  canvas.height = options.map.graph.height;
 
   const imgSchema = new Image();
   imgSchema.src = urlSchema;
@@ -170,10 +170,10 @@ async function exportToPngTiles(): Promise<void> {
   const { cols: tilesX, rows: tilesY, scale } = options.app.export.tiles;
   const tolesTotal = tilesX * tilesY;
 
-  const tileW = (facts.graph.width / tilesX) | 0;
-  const tileH = (facts.graph.height / tilesY) | 0;
+  const tileW = (options.map.graph.width / tilesX) | 0;
+  const tileH = (options.map.graph.height / tilesY) | 0;
 
-  const width = facts.graph.width * scale;
+  const width = options.map.graph.width * scale;
   const height = width * (tileH / tileW);
   canvas.width = width;
   canvas.height = height;
@@ -189,10 +189,10 @@ async function exportToPngTiles(): Promise<void> {
     return first + last;
   }
 
-  for (let y = 0, row = 0, id = 1; y + tileH <= facts.graph.height; y += tileH, row++) {
+  for (let y = 0, row = 0, id = 1; y + tileH <= options.map.graph.height; y += tileH, row++) {
     const rowName = getRowLabel(row);
 
-    for (let x = 0, cell = 1; x + tileW <= facts.graph.width; x += tileW, cell++, id++) {
+    for (let x = 0, cell = 1; x + tileW <= options.map.graph.width; x += tileW, cell++, id++) {
       status.innerHTML = `Rendering tile ${rowName}${cell} (${id} of ${tolesTotal})...`;
       ctx.drawImage(img, x, y, tileW, tileH, 0, 0, width, height);
       const blob = await canvasToBlob(canvas, "image/png");
@@ -245,7 +245,7 @@ async function exportToPngTiles(): Promise<void> {
 }
 
 // parse map svg to object url
-async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<string> {
+async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<string> {
   const {
     debug = false,
     noLabels = false,
@@ -254,7 +254,7 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
     noIce = false,
     noVignette = false,
     fullMap = false
-  } = options;
+  } = config;
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
   cloneEl.id = "fantasyMap";
   document.body.appendChild(cloneEl);
@@ -266,11 +266,11 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
 
   if (fullMap) {
     // reset transform to show the whole map
-    clone.attr("width", facts.graph.width).attr("height", facts.graph.height);
+    clone.attr("width", options.map.graph.width).attr("height", options.map.graph.height);
     clone.select("#viewbox").attr("transform", null);
     ViewportLayers.renderTo(cloneEl);
 
-    if (!noScaleBar) drawScaleBar(cloneEl, 1, facts.graph.width, facts.graph.height);
+    if (!noScaleBar) drawScaleBar(cloneEl, 1, options.map.graph.width, options.map.graph.height);
   }
 
   const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;

@@ -77,7 +77,7 @@ class ProvinceModule {
   }
 
   generate(regenerate = false, regenerateLockedStates = false) {
-    const localSeed = regenerate ? generateSeed() : facts.seed;
+    const localSeed = regenerate ? generateSeed() : options.map.seed;
     Math.random = Alea(localSeed);
 
     const { cells, states, burgs } = pack;

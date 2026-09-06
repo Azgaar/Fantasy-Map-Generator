@@ -284,11 +284,25 @@ class NamesGenerator {
     const max = Math.max(this.nameBases[base].max - 3, min);
     const baseName = this.getBase(base, min, max, "") as string;
     const name = P(0.7) ? this.addSuffix(baseName) : baseName;
-    facts.lore.name = name;
+    options.map.lore.name = name;
   }
 
   getNameBases(): NameBase[] {
     return getDefaultNameBases();
+  }
+
+  /** The calendar era: a name base plus "Era", weighted to the base most eras are built on */
+  getEra(): string {
+    return `${this.getBaseShort(P(0.7) ? 1 : rand(this.nameBases.length))} Era`;
+  }
+
+  /** The abbreviation an era name suggests, which the user may override */
+  getEraShort(era: string): string {
+    return era
+      .split(" ")
+      .filter(Boolean)
+      .map(word => word[0].toUpperCase())
+      .join("");
   }
 }
 

@@ -21,7 +21,7 @@ function getMeasurerStyle(): MeasurerStyle {
 }
 
 const getDistance = (length: number): string =>
-  `${rn(length * facts.units.distance.scale)} ${facts.units.distance.unit}`;
+  `${rn(length * options.map.units.distance.scale)} ${options.map.units.distance.unit}`;
 
 export function drawMeasurers(): void {
   select("#ruler").selectAll("*").remove();

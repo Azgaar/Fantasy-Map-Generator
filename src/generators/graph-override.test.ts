@@ -37,7 +37,7 @@ const createGraph = () => ({
 
 beforeEach(() => {
   globalThis.pack = createGraph() as unknown as typeof globalThis.pack;
-  globalThis.facts = { graph: { width: 100, height: 100 } } as unknown as typeof globalThis.facts;
+  options.map.graph = { width: 100, height: 100, points: 100 };
   GraphOverride.clear();
 });
 

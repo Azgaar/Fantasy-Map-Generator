@@ -1,16 +1,8 @@
-// The values the user pinned so a new map does not re-roll them, and the lock icons that show it.
-// A pin stores the value and not just the key: `facts` is replaced by every load, so a pin that
-// named only a key would not survive one. Nothing else is kept here - every preference and every
-// request lives in `options`, one object under one key.
-// See docs/architecture/configuration.md#locks
+// The values the user pinned so a new map does not re-roll them
 import { tip } from "@/components/tooltips";
 import { safeParseJSON } from "@/utils/stringUtils";
 
 const STORAGE_KEY = "fmg-locks";
-
-/** What a dialog's lock icon pins: the dialog answers for the values it shows */
-type PinnedValue = (key: string) => unknown;
-
 const LOCKED_TIP = "Click to lock the option and always use the current value on new map generation";
 const UNLOCKED_TIP = "Click to unlock the option and allow it to be randomized on new map generation";
 
@@ -81,7 +73,7 @@ class PinStore {
    * "lock_" prefix, or `data-ids` names several at once - the temperature icon pins both poles.
    * `pinnedValue` is how this dialog reads the value the icon stands for.
    */
-  bindIcons(root: Element, pinnedValue: PinnedValue): void {
+  bindIcons(root: Element, pinnedValue: (key: string) => unknown): void {
     for (const icon of root.querySelectorAll<HTMLElement>("[data-locked]")) {
       const keys = icon.dataset.ids ? icon.dataset.ids.split(",") : [icon.id.slice(5)];
 

@@ -42,7 +42,7 @@ function getFullDataJson(): string {
   return JSON.stringify({
     info,
     settings,
-    mapCoordinates: facts.geography.coordinates,
+    mapCoordinates: options.map.geography.coordinates,
     pack: packData,
     grid: gridData,
     notes,
@@ -74,7 +74,7 @@ function getMinimalDataJson(): string {
   return JSON.stringify({
     info,
     settings,
-    mapCoordinates: facts.geography.coordinates,
+    mapCoordinates: options.map.geography.coordinates,
     pack: packData,
     notes,
     nameBases: Names.nameBases
@@ -98,27 +98,27 @@ function getMapInfo() {
     version: VERSION,
     description: "Azgaar's Fantasy Map Generator output: azgaar.github.io/Fantasy-map-generator",
     exportedAt: new Date().toISOString(),
-    mapName: facts.lore.name,
-    width: facts.graph.width,
-    height: facts.graph.height,
-    seed: facts.seed,
+    mapName: options.map.lore.name,
+    width: options.map.graph.width,
+    height: options.map.graph.height,
+    seed: options.map.seed,
     mapId: mapHistory.at(-1)?.created ?? Date.now()
   };
 }
 
 function getSettings() {
   return {
-    distanceUnit: facts.units.distance.unit,
-    distanceScale: facts.units.distance.scale,
-    areaUnit: facts.units.area.unit,
-    heightUnit: facts.units.height.unit,
-    heightExponent: facts.units.height.exponent,
-    temperatureScale: facts.units.temperature.unit,
-    populationRate: facts.units.population.scale,
-    urbanization: facts.units.population.urbanization.rate,
-    urbanDensity: facts.units.population.urbanization.density,
+    distanceUnit: options.map.units.distance.unit,
+    distanceScale: options.map.units.distance.scale,
+    areaUnit: options.map.units.area.unit,
+    heightUnit: options.map.units.height.unit,
+    heightExponent: options.map.units.height.exponent,
+    temperatureScale: options.map.units.temperature.unit,
+    populationRate: options.map.units.population.scale,
+    urbanization: options.map.units.population.urbanization.rate,
+    urbanDensity: options.map.units.population.urbanization.density,
     options,
-    mapName: facts.lore.name,
+    mapName: options.map.lore.name,
     stylePreset: stylePreset.value
   };
 }
@@ -230,13 +230,12 @@ function getGridCellsData() {
       v: grid.vertices.v[vertexId],
       c: grid.vertices.c[vertexId]
     })),
-    cellsDesired: grid.cellsDesired,
     spacing: grid.spacing,
     cellsY: grid.cellsY,
     cellsX: grid.cellsX,
     points: grid.points,
     boundary: grid.boundary,
-    seed: facts.seed,
+    seed: options.map.seed,
     features: pack.features
   };
   return gridData;

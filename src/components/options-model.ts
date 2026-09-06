@@ -1,130 +1,153 @@
-import type { z } from "zod";
+// All app configuration options, options.map saved to `.map` file as settings; docs/architecture/configuration.md
 import { adoptLegacyOptions } from "@/components/options-legacy";
-import { AUTO_BURG_LIMIT, type OptionsData, optionsSchema } from "@/components/options-schema";
+import { AUTO_BURG_LIMIT, type MapData, mapSchema, type OptionsData, optionsSchema } from "@/components/options-schema";
 import { Pins } from "@/components/pins";
-import { DEFAULT_DENSITY } from "@/data/graph-density";
+import { DEFAULT_DENSITY, getPointsNumber } from "@/data/graph-density";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { DEFAULT_TRADE_ANIMATION } from "@/data/trade-animation-options";
 import { DEFAULT_THREE_D } from "@/data/view-3d-options";
+import { Burgs } from "@/generators/burgs-generator";
 import { Coastline } from "@/generators/coastline-generator";
 import { CULTURE_SETS } from "@/generators/cultures-generator";
+import { Labels } from "@/generators/labels-generator";
+import { Military } from "@/generators/military-generator";
+import { Names } from "@/generators/names-generator";
+import { Transports } from "@/generators/transports-generator";
+import { safeParseJSON } from "@/utils";
 import { rn } from "@/utils/numberUtils";
 import { deepMerge } from "@/utils/objectUtils";
-import { gauss, rw } from "@/utils/probabilityUtils";
+import { gauss, rand, rw } from "@/utils/probabilityUtils";
 import { parseSections } from "@/utils/schemaUtils";
 
 declare global {
   var Options: OptionsModel;
-  /** this browser's options, read bare across the app and replaced wholesale on restore */
+  /** what this browser wants, read bare across the app and replaced wholesale on restore */
   var options: OptionsData;
 }
 
 export const STORAGE_KEY = "fmg-options";
-export const THEME_COLOR = "#997787";
-
-/** A fresh browser's options */
-export function getDefaultOptions(): OptionsData {
-  return {
-    generation: {
-      graph: { width: 1280, height: 800, density: DEFAULT_DENSITY },
-      template: "",
-      resolveDepressionsSteps: 250,
-      lakeElevationLimit: 20,
-      cultures: { limit: 12, set: "world", sizeVariety: 4, growthRate: 1 },
-      states: { limit: 18, sizeVariety: 4, growthRate: 1 },
-      provinces: { ratio: 20 },
-      religions: { limit: 6 },
-      burgs: { limit: 1000 }
-    },
-    app: {
-      notesPinned: false,
-      emblems: { showAll: false, shape: "culture" },
-      labels: { showAll: false },
-      rendering: "optimizeSpeed",
-      viewportRedraw: "continuous",
-      onLoad: "random",
-      zoomExtent: { min: 1, max: 20 },
-      viewport: null,
-      autosave: { interval: 15, remind: true },
-      ui: {
-        size: null,
-        tooltipSize: 14,
-        themeColor: THEME_COLOR,
-        transparency: 5,
-        assistant: "show",
-        speakerVoice: "",
-        clickArrowTip: true
-      },
-      export: { pngResolution: 1, tiles: { cols: 8, rows: 8, scale: 1 } },
-      trade: { animation: { ...DEFAULT_TRADE_ANIMATION } },
-      threeD: { ...DEFAULT_THREE_D }
-    },
-    library: {
-      burgGroups: Burgs.getDefaultGroups(),
-      labelGroups: Labels.getDefaultGroups(),
-      military: Military.getDefaultOptions(),
-      transports: Transports.getDefaults(),
-      coastline: Coastline.getDefaultSettings()
-    }
-  };
-}
-
-globalThis.options = getDefaultOptions();
-
+export const DEFAULT_THEME_COLOR = "#997787";
 const SAVE_DELAY = 500;
+
+const locale = () => (typeof navigator === "undefined" ? "" : navigator.language);
+const isImperial = () => ["en-US", "en-GB"].includes(locale());
 
 class OptionsModel {
   private saveTimer = 0;
 
+  /** A fresh browser's options: every value present, each from the module that owns it */
+  getDefaultOptions(): OptionsData {
+    return {
+      map: {
+        seed: "",
+        graph: { width: 1280, height: 800, points: 10000 },
+        geography: {
+          mapSize: 100,
+          latitude: 50,
+          longitude: 50,
+          coordinates: { latT: 180, latN: 90, latS: -90, lonT: 320, lonW: -160, lonE: 160 }
+        },
+        climate: {
+          temperature: { equator: 27, northPole: -30, southPole: -15 },
+          precipitation: 100,
+          winds: [225, 45, 225, 315, 135, 315]
+        },
+        cultures: { set: "world" },
+        lore: { name: "", description: "", calendar: { year: 1000, era: "Era", eraShort: "E" } },
+        units: {
+          distance: { unit: isImperial() ? "mi" : "km", scale: 3 },
+          area: { unit: "square" },
+          height: { unit: isImperial() ? "ft" : "m", exponent: 2 },
+          temperature: { unit: locale() === "en-US" ? "°F" : "°C" },
+          population: { scale: 1000, urbanization: { rate: 1, density: 10 } }
+        },
+        style: { preset: "default" },
+        burgs: { groups: Burgs.getDefaultGroups() },
+        labels: { resizeOnZoom: true, groups: Labels.getDefaultGroups() },
+        military: { units: Military.getDefaultOptions() },
+        transports: Transports.getDefaults(),
+        coastline: Coastline.getDefaultSettings()
+      },
+      generation: {
+        graph: { width: 1280, height: 800, density: DEFAULT_DENSITY },
+        template: "",
+        resolveDepressionsSteps: 250,
+        lakeElevationLimit: 20,
+        cultures: { limit: 12, set: "world", sizeVariety: 4, growthRate: 1 },
+        states: { limit: 18, sizeVariety: 4, growthRate: 1 },
+        provinces: { ratio: 20 },
+        religions: { limit: 6 },
+        burgs: { limit: 1000 }
+      },
+      app: {
+        notesPinned: false,
+        emblems: { showAll: false, shape: "culture" },
+        labels: { showAll: false },
+        rendering: "optimizeSpeed",
+        viewportRedraw: "continuous",
+        onLoad: "random",
+        zoomExtent: { min: 1, max: 20 },
+        viewport: null,
+        autosave: { interval: 15, remind: true },
+        ui: {
+          size: null,
+          tooltipSize: 14,
+          themeColor: DEFAULT_THEME_COLOR,
+          transparency: 5,
+          assistant: "show",
+          speakerVoice: ""
+        },
+        export: { pngResolution: 1, tiles: { cols: 8, rows: 8, scale: 1 } },
+        trade: { animation: { ...DEFAULT_TRADE_ANIMATION } },
+        threeD: { ...DEFAULT_THREE_D }
+      }
+    };
+  }
+
   /** Change the options and remember them */
   set(change: (options: OptionsData) => void): void {
-    change(globalThis.options);
+    change(options);
+    this.save();
+  }
+
+  /** Remember options changed in place, once the changes stop coming */
+  save(): void {
     clearTimeout(this.saveTimer);
     this.saveTimer = window.setTimeout(() => this.persist(), SAVE_DELAY);
   }
 
-  /** Write the options to localStorage */
+  /** Write the options to localStorage immediately */
   persist(): void {
     clearTimeout(this.saveTimer);
     this.saveTimer = 0;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(globalThis.options));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(options));
   }
 
   /** Throw this browser's options away and start from the defaults: a reset, never a repair */
   reset(): void {
-    globalThis.options = getDefaultOptions();
-    Pins.clearAll(); // a pin is this browser's too, and would go on generating a value nobody asked for
+    options = this.getDefaultOptions();
     this.persist();
   }
 
-  /**
-   * Boot: adopt what this browser kept from the last session, validated and repaired. Three layers,
-   * newest last - the defaults, whatever the pre-`fmg-options` namespace still holds, then what this
-   * browser stored. Migrating underneath rather than afterwards is what puts the old values through
-   * the schema: a definition set from an old browser is untrusted like any other stored object
-   */
-  restoreStored(): void {
+  /** Boot: adopt what this browser kept from the last session, validated and repaired */
+  restore(): void {
     let stored: Record<string, unknown> = {};
-    try {
-      const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "");
-      if (typeof parsed === "object" && parsed !== null) stored = parsed;
-    } catch {
-      // an unreadable object is no object: this browser starts from the defaults
-    }
+    const parsed = safeParseJSON(localStorage.getItem(STORAGE_KEY) ?? "");
+    if (typeof parsed === "object" && parsed !== null) stored = parsed;
 
-    const source = deepMerge(getDefaultOptions() as Record<string, unknown>, adoptLegacyOptions() ?? {});
+    const source = deepMerge(this.getDefaultOptions(), adoptLegacyOptions() ?? {});
     deepMerge(source, stored);
 
-    globalThis.options = parseSections<OptionsData>(optionsSchema, getDefaultOptions(), source, "Options.restore");
+    options = parseSections<OptionsData>(optionsSchema, this.getDefaultOptions(), source, "Options.restore");
+    this.repairSets();
     this.persist();
     this.setGraphSize();
   }
 
   /** The extent the next map is generated on: what the caller asked for, a pin, or the window */
   setGraphSize(width?: number, height?: number): void {
-    const { graph } = globalThis.options.generation;
-    // the pinned value, not merely the absence of a roll: the pins and the options are separate
-    // stores, so a repaired options object must not silently generate at a size nobody asked for
+    const { graph } = options.generation;
+
     graph.width = width || (Pins.has("mapWidth") ? Pins.valueOr("mapWidth", graph.width) : window.innerWidth);
     graph.height = height || (Pins.has("mapHeight") ? Pins.valueOr("mapHeight", graph.height) : window.innerHeight);
 
@@ -133,18 +156,17 @@ class OptionsModel {
     if (!(graph.height > 0)) graph.height = 800;
   }
 
-  /**
-   * Re-roll every request the user has not pinned. Runs before the pipeline, never after.
-   * One line per request, the roll and the pin side by side
-   */
+  /** Establish new map settings */
   randomize(): void {
-    const { generation } = globalThis.options;
+    const { generation } = options;
     const { graph, cultures, states, provinces, religions, burgs } = generation;
 
     // the slider holds a density step; the cell count it stands for is derived where it is used
     graph.density = Pins.rolls("points") ? DEFAULT_DENSITY : Pins.valueOr("points", graph.density);
 
-    generation.template = Pins.rolls("template") ? randomTemplate() : Pins.valueOr("template", generation.template);
+    generation.template = Pins.rolls("template")
+      ? this.randomTemplate()
+      : Pins.valueOr("template", generation.template);
     states.limit = Pins.rolls("statesNumber") ? gauss(18, 5, 2, 30) : Pins.valueOr("statesNumber", states.limit);
     provinces.ratio = Pins.rolls("provincesRatio")
       ? gauss(20, 10, 20, 100)
@@ -161,68 +183,107 @@ class OptionsModel {
     states.growthRate = cultures.growthRate = growth;
 
     cultures.limit = Pins.rolls("cultures") ? gauss(12, 3, 5, 30) : Pins.valueOr("cultures", cultures.limit);
-    cultures.set = Pins.rolls("culturesSet") ? randomCultureSet() : Pins.valueOr("culturesSet", cultures.set);
+    cultures.set = Pins.rolls("culturesSet") ? this.randomCultureSet() : Pins.valueOr("culturesSet", cultures.set);
     this.capCultures();
+
+    // a new map keeps nothing of the one it replaces but its seed, which setSeed resolved and
+    // reseeded the PRNG with before this ran, and the definition sets, which are the user's own
+    const previous = options.map;
+    const map = this.getDefaultOptions().map;
+    map.seed = previous.seed;
+    map.burgs.groups = previous.burgs.groups;
+    map.labels.groups = previous.labels.groups;
+    map.military.units = previous.military.units;
+    map.transports = previous.transports;
+    map.coastline = previous.coastline;
+
+    // and the requests it consumes
+    map.graph = { width: graph.width, height: graph.height, points: getPointsNumber(graph.density) };
+    map.cultures.set = cultures.set;
+    options.map = map;
+
+    const { geography, climate, units, lore } = map;
+    const { temperature } = climate;
+
+    temperature.equator = Pins.rolls("temperatureEquator")
+      ? gauss(25, 7, 20, 35, 0)
+      : Pins.valueOr("temperatureEquator", temperature.equator);
+    temperature.northPole = Pins.rolls("temperatureNorthPole")
+      ? gauss(-25, 7, -40, 10, 0)
+      : Pins.valueOr("temperatureNorthPole", temperature.northPole);
+    temperature.southPole = Pins.rolls("temperatureSouthPole")
+      ? gauss(-15, 7, -40, 10, 0)
+      : Pins.valueOr("temperatureSouthPole", temperature.southPole);
+    climate.precipitation = Pins.rolls("prec") ? gauss(100, 40, 5, 500) : Pins.valueOr("prec", climate.precipitation);
+    units.distance.scale = Pins.rolls("distanceScale")
+      ? gauss(3, 1, 1, 5)
+      : Pins.valueOr("distanceScale", units.distance.scale);
+    lore.calendar.year = Pins.rolls("year") ? rand(100, 2000) : Pins.valueOr("year", lore.calendar.year);
+
+    if (Pins.rolls("era")) {
+      lore.calendar.era = Names.getEra();
+      lore.calendar.eraShort = Names.getEraShort(lore.calendar.era);
+    } else {
+      lore.calendar.era = Pins.valueOr("era", lore.calendar.era);
+      lore.calendar.eraShort = Pins.valueOr("eraShort", lore.calendar.eraShort);
+    }
+
+    lore.name = Pins.valueOr("mapName", lore.name);
+    geography.mapSize = Pins.valueOr("mapSize", geography.mapSize);
+    geography.latitude = Pins.valueOr("latitude", geography.latitude);
+    geography.longitude = Pins.valueOr("longitude", geography.longitude);
+    units.distance.unit = Pins.valueOr("distanceUnit", units.distance.unit);
+    units.area.unit = Pins.valueOr("areaUnit", units.area.unit);
+    units.height.unit = Pins.valueOr("heightUnit", units.height.unit);
+    units.height.exponent = Pins.valueOr("heightExponent", units.height.exponent);
+    units.temperature.unit = Pins.valueOr("temperatureScale", units.temperature.unit);
+    units.population.scale = Pins.valueOr("populationRate", units.population.scale);
+    units.population.urbanization.rate = Pins.valueOr("urbanization", units.population.urbanization.rate);
+    units.population.urbanization.density = Pins.valueOr("urbanDensity", units.population.urbanization.density);
   }
 
   /** A culture set holds a fixed number of cultures: the map cannot ask for more than it has */
   capCultures(): void {
-    const { cultures } = globalThis.options.generation;
+    const { cultures } = options.generation;
     const max = CULTURE_SETS[cultures.set]?.max;
     if (max && cultures.limit > max) cultures.limit = max;
   }
 
-  /**
-   * The one thing a `.map` load may carry into options: a request the user would expect to continue
-   * from the map they just opened. A pinned request is never overridden.
-   * See docs/architecture/configuration.md#the-sync-allowlist
-   */
-  syncOnLoad(): void {
-    this.set(options => {
-      if (!Pins.has("mapWidth")) options.generation.graph.width = facts.graph.width;
-      if (!Pins.has("mapHeight")) options.generation.graph.height = facts.graph.height;
-    });
+  /** weighted by how good each template looks, so the common ones come up more often */
+  private randomTemplate(): string {
+    const probabilities: Record<string, number> = {};
+    for (const [id, template] of Object.entries(heightmapTemplates)) probabilities[id] = template.probability || 0;
+    return rw(probabilities);
   }
 
-  /**
-   * The preservation library: a definition set the user built by hand, kept for the next map.
-   * Written only by a user edit - never by a load and never by generation. The caller passes the
-   * module defaults, because the module that owns the set is the one that answers for them.
-   * See docs/architecture/configuration.md#preservation-across-maps
-   */
-  remember<K extends keyof Library>(entry: K, value: NonNullable<Library[K]>, defaults: NonNullable<Library[K]>): void {
-    // both sides through the same schema, so a difference in key order is not a difference in value
-    const schema = optionsSchema.shape.library.shape[entry] as z.ZodType;
-    const canonical = (candidate: unknown) => JSON.stringify(schema.safeParse(candidate).data ?? null);
-
-    this.set(options => {
-      // a set the user reset to the module defaults is not one of their own: clearing the entry
-      // lets the next map follow those defaults as they change, not freeze today's copy of them
-      const isOwn = canonical(value) !== canonical(defaults);
-      options.library[entry] = isOwn ? (structuredClone(value) as Library[K]) : null;
-    });
+  private randomCultureSet(): string {
+    return rw(Object.fromEntries(Object.entries(CULTURE_SETS).map(([id, set]) => [id, set.probability])));
   }
 
-  /** The user's own set for the next map, or undefined when they have not saved one */
-  recall<K extends keyof Library>(entry: K): NonNullable<Library[K]> | undefined {
-    const value = globalThis.options.library[entry];
-    return (value === null ? undefined : structuredClone(value)) as NonNullable<Library[K]> | undefined;
+  /** Take the settings of a `.map` being opened */
+  applyLoaded(json: unknown): void {
+    options.map = parseSections<MapData>(mapSchema, this.getDefaultOptions().map, json, "Options.applyLoaded");
+    this.repairSets();
+
+    if (!Pins.has("mapWidth")) options.generation.graph.width = options.map.graph.width;
+    if (!Pins.has("mapHeight")) options.generation.graph.height = options.map.graph.height;
   }
-}
 
-type Library = OptionsData["library"];
+  /** A set the map's entities name by must never be empty: the module that owns it answers for it */
+  private repairSets(): void {
+    const { map } = options;
+    const defaults = this.getDefaultOptions().map;
+    if (!map.burgs.groups.length) map.burgs.groups = defaults.burgs.groups;
+    if (!map.labels.groups.length) map.labels.groups = defaults.labels.groups;
+    if (!map.military.units.length) map.military.units = defaults.military.units;
+    if (!map.transports.length) map.transports = defaults.transports;
 
-/** weighted by how good each template looks, so the common ones come up more often */
-function randomTemplate(): string {
-  const probabilities: Record<string, number> = {};
-  for (const [id, template] of Object.entries(heightmapTemplates)) probabilities[id] = template.probability || 0;
-  return rw(probabilities);
-}
-
-function randomCultureSet(): string {
-  return rw(Object.fromEntries(Object.entries(CULTURE_SETS).map(([id, set]) => [id, set.probability])));
+    Burgs.ensureDefaultGroup(map.burgs.groups);
+    Labels.restoreMissingTypes(map.labels.groups);
+  }
 }
 
 // biome-ignore lint/suspicious/noRedeclare: legacy seam, as in styles.ts
 export const Options = new OptionsModel();
 globalThis.Options = Options;
+globalThis.options = Options.getDefaultOptions();

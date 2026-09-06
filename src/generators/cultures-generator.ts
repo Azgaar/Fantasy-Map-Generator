@@ -71,7 +71,7 @@ class CulturesGenerator {
     const sf = (cell: number, fee = 4) =>
       cells.haven[cell] && pack.features[cells.f[cells.haven[cell]]].type !== "lake" ? 1 : fee; // not on sea coast fee
 
-    if (facts.cultures.set === "european") {
+    if (options.map.cultures.set === "european") {
       return [
         {
           name: "Shwazen",
@@ -181,7 +181,7 @@ class CulturesGenerator {
       ];
     }
 
-    if (facts.cultures.set === "oriental") {
+    if (options.map.cultures.set === "oriental") {
       return [
         {
           name: "Koryo",
@@ -277,7 +277,7 @@ class CulturesGenerator {
       ];
     }
 
-    if (facts.cultures.set === "english") {
+    if (options.map.cultures.set === "english") {
       const getName = () => Names.getBase(1, 5, 9, "");
       return [
         { name: getName(), base: 1, odd: 1, shield: "heater" },
@@ -293,7 +293,7 @@ class CulturesGenerator {
       ];
     }
 
-    if (facts.cultures.set === "antique") {
+    if (options.map.cultures.set === "antique") {
       return [
         {
           name: "Roman",
@@ -410,7 +410,7 @@ class CulturesGenerator {
       ];
     }
 
-    if (facts.cultures.set === "highFantasy") {
+    if (options.map.cultures.set === "highFantasy") {
       return [
         // fantasy races
         {
@@ -536,7 +536,7 @@ class CulturesGenerator {
       ];
     }
 
-    if (facts.cultures.set === "darkFantasy") {
+    if (options.map.cultures.set === "darkFantasy") {
       return [
         // common real-world English
         {
@@ -783,7 +783,7 @@ class CulturesGenerator {
       ];
     }
 
-    if (facts.cultures.set === "random") {
+    if (options.map.cultures.set === "random") {
       return range(count).map(() => {
         const rnd = rand(Names.nameBases.length - 1);
         const name = Names.getBaseShort(rnd);
@@ -1032,7 +1032,7 @@ class CulturesGenerator {
     const cultureIds = new Uint16Array(this.cells.i.length); // cell cultures
 
     const culturesInputNumber = options.generation.cultures.limit;
-    const culturesInSetNumber = CULTURE_SETS[facts.cultures.set]?.max ?? 0;
+    const culturesInSetNumber = CULTURE_SETS[options.map.cultures.set]?.max ?? 0;
     let count = Math.min(culturesInputNumber, culturesInSetNumber);
     const populated = this.cells.i.filter((i: number) => this.cells.s[i]); // populated cells
 
@@ -1116,7 +1116,7 @@ class CulturesGenerator {
     const codes: string[] = [];
 
     const placeCenter = (sortingFn: (i: number) => number) => {
-      let spacing = (facts.graph.width + facts.graph.height) / 2 / count;
+      let spacing = (options.map.graph.width + options.map.graph.height) / 2 / count;
       const MAX_ATTEMPTS = 100;
 
       const sorted = [...populated].sort((a, b) => sortingFn(b) - sortingFn(a));

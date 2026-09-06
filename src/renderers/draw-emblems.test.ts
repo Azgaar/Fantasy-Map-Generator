@@ -85,8 +85,7 @@ beforeEach(() => {
         { i: 2, center: 2, coa: { shield: "heater", t1: "azure" } }
       ]
     },
-    options: { app: { emblems: { showAll: false } } },
-    facts: { graph: { width: 1000, height: 500 } },
+    options: { app: { emblems: { showAll: false } }, map: { graph: { width: 1000, height: 500 } } },
     EmblemRenderer: mocks.emblemRenderer
   });
   Object.assign(mocks.bounds, { scale: 2, x0: 0, y0: 0, x1: 100, y1: 100 });

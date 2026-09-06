@@ -1,7 +1,7 @@
 import { hsl, select } from "d3";
 import { fitMapToScreen, setViewport } from "@/components/canvas";
 import { Layers } from "@/components/layers";
-import { getDefaultOptions, THEME_COLOR } from "@/components/options-model";
+import { DEFAULT_THEME_COLOR } from "@/components/options-model";
 import { Pins } from "@/components/pins";
 import { generateMapWithSeed, showSeedHistoryDialog } from "@/components/seed";
 import { tip } from "@/components/tooltips";
@@ -569,7 +569,7 @@ export function syncInputs(): void {
   // shown here, written by the dialog that owns the control - see components/options/io-panes.ts
   set("pngResolutionOutput", app.export.pngResolution);
 
-  set("seedInput", facts.seed); // a readout of the map on screen
+  set("seedInput", options.map.seed); // a readout of the map on screen
 
   // a select whose options are added on demand, so the current one is put back first
   const template = findEl<HTMLSelectElement>("templateInput");
@@ -903,7 +903,7 @@ function setTheme(themeColor: string, transparency: number): void {
 }
 
 function restoreDefaultThemeColor(): void {
-  setTheme(THEME_COLOR, options.app.ui.transparency);
+  setTheme(DEFAULT_THEME_COLOR, options.app.ui.transparency);
 }
 
 function changeThemeHue(hue: string): void {
@@ -965,7 +965,7 @@ function changeViewportSize(): void {
   const height = +ensureEl<HTMLInputElement>("viewportHeight").value;
   if (!(width > 0) || !(height > 0)) return;
 
-  setViewport(Math.min(width, facts.graph.width), Math.min(height, facts.graph.height));
+  setViewport(Math.min(width, options.map.graph.width), Math.min(height, options.map.graph.height));
   Options.set(o => (o.app.viewport = { width: viewport.width, height: viewport.height }));
 }
 
@@ -976,7 +976,7 @@ function fitViewportToWindow(): void {
 }
 
 function restoreDefaultZoomExtent(): void {
-  const { min, max } = getDefaultOptions().app.zoomExtent;
+  const { min, max } = Options.getDefaultOptions().app.zoomExtent;
   setZoomExtentPreference(min, max);
   setMapZoom(min);
 }
@@ -994,7 +994,7 @@ function toggleTranslateExtent(el: HTMLElement): void {
   const isOn = !+(el.dataset.on ?? 0);
   el.dataset.on = String(+isOn);
 
-  const { width, height } = facts.graph;
+  const { width, height } = options.map.graph;
   if (isOn) setTranslateExtent(-width / 2, -height / 2, width * 1.5, height * 1.5);
   else setTranslateExtent(0, 0, width, height);
 }
@@ -1059,7 +1059,7 @@ function resetLanguage(): void {
 
 /**
  * Restore what the tab itself shows: the lock icons, the saved style presets and the interface
- * settings. The values themselves are restored by `Options.restoreStored` before this runs
+ * settings. The values themselves are restored by `Options.restore` before this runs
  */
 /**
  * Custom style presets predating the `fmgStyle_` prefix kept a `style<Name>` key of their own;

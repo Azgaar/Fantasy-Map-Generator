@@ -6,24 +6,24 @@ import { ensureEl } from "@/utils/nodeUtils";
 import { generateSeed } from "@/utils/probabilityUtils";
 
 export function setSeed(precreatedSeed?: string): void {
-  if (precreatedSeed) facts.seed = precreatedSeed;
+  if (precreatedSeed) options.map.seed = precreatedSeed;
   else {
     const isFirstMap = !mapHistory.length;
     const urlSeed = new URL(window.location.href).searchParams.get("seed");
 
     if (isFirstMap && urlSeed) {
       const isMfcgSeed = new URL(window.location.href).searchParams.get("from") === "MFCG" && urlSeed.length === 13;
-      facts.seed = isMfcgSeed ? urlSeed.slice(0, -4) : urlSeed;
-    } else facts.seed = generateSeed();
+      options.map.seed = isMfcgSeed ? urlSeed.slice(0, -4) : urlSeed;
+    } else options.map.seed = generateSeed();
   }
 
-  Math.random = aleaPRNG(facts.seed);
+  Math.random = aleaPRNG(options.map.seed);
 }
 
 /** Regenerate with the seed the user typed into the options panel */
 export function generateMapWithSeed(): void {
   const requested = ensureEl<HTMLInputElement>("seedInput").value;
-  if (requested === facts.seed) {
+  if (requested === options.map.seed) {
     tip("The current map already has this seed", false, "error");
     return;
   }

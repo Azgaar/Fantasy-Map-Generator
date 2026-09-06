@@ -19,9 +19,8 @@ const ADOPTED_KEYS = [
   "tileRows",
   "tileScale",
   "noReminder",
-  "disable_click_arrow_tooltip",
   "trade-animation",
-  // library: the user's own sets, which seed every new map
+  // the user's own definition sets, which seed every new map
   "military",
   "burg-groups",
   "options-labels",
@@ -125,13 +124,12 @@ export function adoptLegacyOptions(): Record<string, unknown> | null {
   num("tileRows", "app.export.tiles.rows");
   num("tileScale", "app.export.tiles.scale");
   if (read("noReminder")) put("app.autosave.remind", false);
-  if (read("disable_click_arrow_tooltip")) put("app.ui.clickArrowTip", false);
   json("trade-animation", parsed => put("app.trade.animation", parsed));
-  json("military", parsed => put("library.military", parsed));
-  json("burg-groups", parsed => put("library.burgGroups", parsed));
-  json("options-labels", parsed => put("library.labelGroups", (parsed as { groups?: unknown })?.groups));
+  json("military", parsed => put("map.military.units", parsed));
+  json("burg-groups", parsed => put("map.burgs.groups", parsed));
+  json("options-labels", parsed => put("map.labels.groups", (parsed as { groups?: unknown })?.groups));
   json("coastline-settings", parsed =>
-    put("library.coastline", { ...Coastline.getDefaultSettings(), ...(parsed as object) })
+    put("map.coastline", { ...Coastline.getDefaultSettings(), ...(parsed as object) })
   );
 
   for (const key of LEGACY_KEYS) localStorage.removeItem(key);

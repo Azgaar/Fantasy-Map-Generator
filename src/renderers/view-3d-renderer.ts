@@ -100,7 +100,7 @@ const redraw = () => {
   scene.remove(mesh);
   Renderer.setSize(Renderer.domElement.width, Renderer.domElement.height);
   if (isGlobeView()) updateGlobeTexure(true);
-  else createMesh(facts.graph.width, facts.graph.height, grid.cellsX, grid.cellsY);
+  else createMesh(options.map.graph.width, options.map.graph.height, grid.cellsX, grid.cellsY);
   render();
 };
 
@@ -211,7 +211,7 @@ const toggleSky = () => {
     scene.background = null;
     scene.fog = null;
     scene.remove(waterMesh);
-  } else extendWater(facts.graph.width, facts.graph.height);
+  } else extendWater(options.map.graph.width, options.map.graph.height);
 
   Options.set(o => (o.app.threeD.extendedWater = !o.app.threeD.extendedWater));
   redraw();
@@ -351,8 +351,8 @@ async function newMesh(canvas: HTMLCanvasElement) {
   // texture sizes (mesh render, satellite, erosion bake) must fit the GPU's limit
   Options.set(o => (o.app.threeD.resolutionScale = clampToRendererLimit(o.app.threeD.resolutionScale)));
 
-  if (options.app.threeD.extendedWater) extendWater(facts.graph.width, facts.graph.height);
-  createMesh(facts.graph.width, facts.graph.height, grid.cellsX, grid.cellsY);
+  if (options.app.threeD.extendedWater) extendWater(options.map.graph.width, options.map.graph.height);
+  createMesh(options.map.graph.width, options.map.graph.height, grid.cellsX, grid.cellsY);
 
   camera = new Three.PerspectiveCamera(70, canvas.width / canvas.height, 0.1, 2000);
   camera.position.set(0, 400, 500); // Set initial camera position for isometric view
@@ -425,8 +425,8 @@ async function createTextLabel({ text, font, size, color, quality, letterSpacing
 }
 
 function get3dCoords(baseX: number, baseY: number) {
-  const x = baseX - facts.graph.width / 2;
-  const z = baseY - facts.graph.height / 2;
+  const x = baseX - options.map.graph.width / 2;
+  const z = baseY - options.map.graph.height / 2;
 
   // eroded mesh is too dense to raycast per label (no BVH in three r140):
   // sample the baked height field instead
@@ -937,7 +937,7 @@ async function MapControls(camera: THREE.Camera, domElement: HTMLElement): Promi
 }
 
 async function updateGlobeTexure(addMesh?: boolean) {
-  const world = facts.geography.coordinates.latT > 179; // define if map covers whole world
+  const world = options.map.geography.coordinates.latT > 179; // define if map covers whole world
 
   // texture size
   Options.set(o => (o.app.threeD.resolutionScale = clampToRendererLimit(o.app.threeD.resolutionScale)));
@@ -945,9 +945,9 @@ async function updateGlobeTexure(addMesh?: boolean) {
 
   // calculate map size and offset position
   const height = Math.max(1, Math.round(width / 2));
-  const mapHeight = rn((facts.geography.coordinates.latT / 180) * height);
-  const mapWidth = world ? mapHeight * 2 : rn((facts.graph.width / facts.graph.height) * mapHeight);
-  const dy = world ? 0 : ((90 - facts.geography.coordinates.latN) / 180) * height;
+  const mapHeight = rn((options.map.geography.coordinates.latT / 180) * height);
+  const mapWidth = world ? mapHeight * 2 : rn((options.map.graph.width / options.map.graph.height) * mapHeight);
+  const dy = world ? 0 : ((90 - options.map.geography.coordinates.latN) / 180) * height;
   const dx = world ? 0 : mapWidth / 4;
 
   // draw map on canvas

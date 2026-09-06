@@ -685,31 +685,32 @@ between maps, validated and migrated is described in
 ## Two scopes of configuration
 
 Every configurable value is either something true about **this map** or something this
-**browser** wants. Those are two objects, and nothing is both:
+**browser** wants. One object holds both, in sections of different lifetimes:
 
-| Scope              | Object    | Source of truth          | Persisted to                 | Examples                                                             |
-| ------------------ | --------- | ------------------------ | ---------------------------- | -------------------------------------------------------------------- |
-| **Map config**     | `facts`   | the serialized map state | the `.map` file              | seed, extent, world position, climate, units, lore, definition sets  |
-| **App preference** | `options` | an app/session object    | `localStorage` (per browser) | requests for the next map, viewer preferences, UI prefs, pinned values |
+| Scope              | Section                             | Persisted to                 | Examples                                                            |
+| ------------------ | ----------------------------------- | ---------------------------- | -------------------------------------------------------------------- |
+| **Map config**     | `options.map`                       | `localStorage` + the `.map`  | seed, extent, world position, climate, units, lore, definition sets |
+| **App preference** | `options.generation`, `options.app` | `localStorage` (per browser) | requests for the next map, viewer preferences, UI prefs             |
 
 - **Map config travels with the map** and must round-trip through [IO](#io-serialization); a
-  map opened on another machine must look identical.
+  map opened on another machine must look identical. `options.map` *is* the file's settings
+  block — saving writes it and loading replaces it, so there is no second object to keep in step.
 - **App preferences never enter the `.map`** — they are this browser's choices, not the
-  map's. Keep the two apart so one user's UI tweaks don't ride along inside a shared map.
-- **`options` holds requests; `facts` holds what happened.** A request and its result are
-  different values in different objects with different names, never two copies of one value.
-- **Facts are written by generation, derivation or a file load — never by an input event.**
-  An input writes `options`; a fact changes when a generator runs, a derivation re-runs, or a
-  `.map` is read. This is what keeps a saved file consistent with the map it describes.
+  map's. Keep the sections apart so one user's UI tweaks don't ride along inside a shared map.
+- **`options.generation` holds requests; `options.map` holds what happened.** A request and its
+  result are different values in different sections with different names, never two copies of one.
+- **`options.map` is written by generation, derivation or a file load — and by the editors that
+  own its values.** The sliders that ask for the next map write `generation` and change nothing on
+  screen. This is what keeps a saved file consistent with the map it describes.
 
-The admission test for `facts`, and the mechanics of loading, saving, preserving user-authored
-sets between maps and validating both objects, are in [configuration.md](./configuration.md).
+The admission test for each section, and the mechanics of loading, saving, carrying user-authored
+sets between maps and validating the object, are in [configuration.md](./configuration.md).
 
 ## Generation is configuration-driven
 
 A generator reads its tunable parameters from the **configuration objects**, not from magic
-numbers buried in the algorithm: it takes its requests from `options`, and the parameters that
-stay true of the map it produced are written into `facts`. The goal is that every significant
+numbers buried in the algorithm: it takes its requests from `options.generation`, and the
+parameters that stay true of the map it produced are written into `options.map`. The goal is that every significant
 lever of generation — counts, rates, thresholds, spacing, weights — can be changed by the end
 user **without editing code**. Many advanced users treat the tool as a sandbox, so
 configurability is a feature in its own right, not just a developer convenience.
@@ -727,7 +728,7 @@ configurability is a feature in its own right, not just a developer convenience.
   alike — with no bespoke UI per setting. Keep fields self-describing so that editor stays
   simple.
 - **Defaults are part of the schema.** A new map starts from the config defaults; a loaded
-  `.map` restores its saved facts, so a value the user changed reproduces exactly on reload.
+  `.map` restores its saved settings, so a value the user changed reproduces exactly on reload.
 - **A count is data, not configuration.** How many states a map has is answered by the world,
   not by the request that produced it; only the rates, ratios and varieties that keep being
   consulted after generation are configuration.

@@ -431,14 +431,14 @@ function moveCursor(this: SVGElement, event: any): void {
 
 // get user-friendly (real-world) height value from map data
 function getFriendlyHeight(h: number): string {
-  const unit = facts.units.height.unit;
+  const unit = options.map.units.height.unit;
   let unitRatio = 3.281; // default calculations are in feet
   if (unit === "m") unitRatio = 1;
   // if meter
   else if (unit === "f") unitRatio = 0.5468; // if fathom
 
   let height = -990;
-  if (h >= 20) height = (h - 18) ** facts.units.height.exponent;
+  if (h >= 20) height = (h - 18) ** options.map.units.height.exponent;
   else if (h < 20 && h > 0) height = ((h - 20) / h) * 50;
 
   return `${rn(height * unitRatio)} ${unit}`;
@@ -1775,8 +1775,8 @@ function openImageConverter(): void {
   // create canvas for image
   const canvas = document.createElement("canvas");
   canvas.id = "canvas";
-  canvas.width = facts.graph.width;
-  canvas.height = facts.graph.height;
+  canvas.width = options.map.graph.width;
+  canvas.height = options.map.graph.height;
   document.body.insertBefore(canvas, ensureEl("optionsContainer"));
 
   setOverlayOpacity(0);
@@ -1810,7 +1810,7 @@ function loadImage(this: HTMLInputElement): void {
 
   img.onload = () => {
     const ctx = ensureEl<HTMLCanvasElement>("canvas").getContext("2d")!;
-    ctx.drawImage(img, 0, 0, facts.graph.width, facts.graph.height);
+    ctx.drawImage(img, 0, 0, options.map.graph.width, options.map.graph.height);
     heightsFromImage(+ensureEl<HTMLInputElement>("convertColors").value);
     resetZoom();
   };
@@ -2130,10 +2130,10 @@ function downloadPreview(): void {
   img.onload = () => {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d")!;
-    canvas.width = facts.graph.width;
-    canvas.height = facts.graph.height;
+    canvas.width = options.map.graph.width;
+    canvas.height = options.map.graph.height;
     document.body.insertBefore(canvas, ensureEl("optionsContainer"));
-    ctx.drawImage(img, 0, 0, facts.graph.width, facts.graph.height);
+    ctx.drawImage(img, 0, 0, options.map.graph.width, options.map.graph.height);
     const imgBig = canvas.toDataURL("image/png");
     const link = document.createElement("a");
     link.download = `${getFileName("Heightmap")}.png`;

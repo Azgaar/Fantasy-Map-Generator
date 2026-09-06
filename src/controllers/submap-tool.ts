@@ -106,18 +106,21 @@ function generateSubmap(): void {
 }
 
 function recalculateMapSize(x0: number, y0: number, scale: number): void {
-  facts.geography.mapSize = rn(facts.geography.mapSize / scale, 2);
+  const { geography, graph, units } = options.map;
+  const { coordinates } = geography;
+  geography.mapSize = rn(geography.mapSize / scale, 2);
 
-  const latT = facts.geography.coordinates.latT / scale;
-  const latN = getLatitude(y0, facts.geography.coordinates, facts.graph.height);
-  facts.geography.latitude = rn(((90 - latN) / (180 - latT)) * 100, 2);
+  const latT = coordinates.latT / scale;
+  const latN = getLatitude(y0, coordinates, graph.height);
+  geography.latitude = rn(((90 - latN) / (180 - latT)) * 100, 2);
 
-  const lotT = facts.geography.coordinates.lonT / scale;
-  const lonE = getLongitude(x0 + facts.graph.width / scale, facts.geography.coordinates, facts.graph.width);
-  facts.geography.longitude = rn(((180 - lonE) / (360 - lotT)) * 100, 2);
+  const lotT = coordinates.lonT / scale;
+  const lonE = getLongitude(x0 + graph.width / scale, coordinates, graph.width);
+  geography.longitude = rn(((180 - lonE) / (360 - lotT)) * 100, 2);
 
-  facts.units.distance.scale = rn(facts.units.distance.scale / scale, 2);
-  facts.units.population.scale = rn(facts.units.population.scale / scale, 2);
+  units.distance.scale = rn(units.distance.scale / scale, 2);
+  units.population.scale = rn(units.population.scale / scale, 2);
+  Options.save();
 }
 
 function rescaleBurgStyles(scale: number): void {

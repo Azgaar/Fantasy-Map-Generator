@@ -59,26 +59,26 @@ class CoordinatesModule {
   /** define map size and position on the globe based on the heightmap template and a random factor */
   defineMapSize(): void {
     const [size, latitude, longitude] = this.getSizeAndPosition();
-    if (Pins.rolls("mapSize")) facts.geography.mapSize = size;
-    if (Pins.rolls("latitude")) facts.geography.latitude = latitude;
-    if (Pins.rolls("longitude")) facts.geography.longitude = longitude;
+    if (Pins.rolls("mapSize")) options.map.geography.mapSize = size;
+    if (Pins.rolls("latitude")) options.map.geography.latitude = latitude;
+    if (Pins.rolls("longitude")) options.map.geography.longitude = longitude;
   }
 
   /** calculate the map lat/lon box from its size and position */
   calculate(): void {
-    const sizeFraction = facts.geography.mapSize / 100;
-    const latShift = facts.geography.latitude / 100;
-    const lonShift = facts.geography.longitude / 100;
+    const sizeFraction = options.map.geography.mapSize / 100;
+    const latShift = options.map.geography.latitude / 100;
+    const lonShift = options.map.geography.longitude / 100;
 
     const latT = rn(sizeFraction * 180, 1);
     const latN = rn(90 - (180 - latT) * latShift, 1);
     const latS = rn(latN - latT, 1);
 
-    const lonT = rn(Math.min((facts.graph.width / facts.graph.height) * latT, 360), 1);
+    const lonT = rn(Math.min((options.map.graph.width / options.map.graph.height) * latT, 360), 1);
     const lonE = rn(180 - (360 - lonT) * lonShift, 1);
     const lonW = rn(lonE - lonT, 1);
 
-    facts.geography.coordinates = { latT, latN, latS, lonT, lonW, lonE };
+    options.map.geography.coordinates = { latT, latN, latS, lonT, lonW, lonE };
   }
 
   private getSizeAndPosition(): SizeAndPosition {

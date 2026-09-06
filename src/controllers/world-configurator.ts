@@ -205,7 +205,7 @@ function addListeners(): void {
     .select("#globeGraticule")
     .attr("d", round(path(geoGraticule()()) ?? "")); // globe graticule
 
-  // every control here is a <key>Input / <key>Output pair over one value in `facts`
+  // every control here is a <key>Input / <key>Output pair over one value in `options.map`
   ensureEl("worldConfigurator").addEventListener("input", onWorldInput);
 
   ensureEl("restoreWinds").addEventListener("click", restoreDefaultWinds);
@@ -219,19 +219,19 @@ function addListeners(): void {
 
 /** What each lock icon in this dialog pins */
 function currentValue(key: string): number | undefined {
-  const { temperature } = facts.climate;
+  const { temperature } = options.map.climate;
   if (key === "temperatureEquator") return temperature.equator;
   if (key === "temperatureNorthPole") return temperature.northPole;
   if (key === "temperatureSouthPole") return temperature.southPole;
-  if (key === "prec") return facts.climate.precipitation;
-  if (key === "mapSize") return facts.geography.mapSize;
-  if (key === "latitude") return facts.geography.latitude;
-  if (key === "longitude") return facts.geography.longitude;
+  if (key === "prec") return options.map.climate.precipitation;
+  if (key === "mapSize") return options.map.geography.mapSize;
+  if (key === "latitude") return options.map.geography.latitude;
+  if (key === "longitude") return options.map.geography.longitude;
   return undefined;
 }
 
 /**
- * Every control writes its value straight into `facts`, pins it, and previews the world it
+ * Every control writes its value straight into `options.map`, pins it, and previews the world it
  * describes. The two halves of a pair carry the same value, so the other half follows the edited
  * one and the value is written once
  */
@@ -247,7 +247,7 @@ function onWorldInput(event: Event): void {
   const other = findEl<HTMLInputElement>(`${key}${half === "Input" ? "Output" : "Input"}`);
   if (other) other.value = input.value;
 
-  const { geography, climate } = facts;
+  const { geography, climate } = options.map;
   if (key === "temperatureEquator") climate.temperature.equator = value;
   else if (key === "temperatureNorthPole") climate.temperature.northPole = value;
   else if (key === "temperatureSouthPole") climate.temperature.southPole = value;
@@ -258,19 +258,20 @@ function onWorldInput(event: Event): void {
   } else return;
 
   Pins.set(key, value); // set by hand: the next map keeps it
+  Options.save();
   updateConvertedTemperatures();
   if (findEl<HTMLInputElement>("wcAutoChange")?.checked) updateWorld();
 }
 
 // inputs are always in °C; show " = <value>" in user units if user units are not °C
 function convertedTemperature(temperatureCelsius: number): string {
-  const userUnits = facts.units.temperature.unit;
+  const userUnits = options.map.units.temperature.unit;
   if (userUnits === "°C") return "";
   return ` = ${convertTemperature(temperatureCelsius)}`;
 }
 
 function updateConvertedTemperatures(): void {
-  const { equator, northPole, southPole } = facts.climate.temperature;
+  const { equator, northPole, southPole } = options.map.climate.temperature;
   ensureEl("temperatureEquatorConverted").innerText = convertedTemperature(equator);
   ensureEl("temperatureNorthPoleConverted").innerText = convertedTemperature(northPole);
   ensureEl("temperatureSouthPoleConverted").innerText = convertedTemperature(southPole);
@@ -278,8 +279,8 @@ function updateConvertedTemperatures(): void {
 
 /** The object is the source: push what it holds into both halves of every control that shows it */
 function updateInputValues(): void {
-  const { temperature, precipitation } = facts.climate;
-  const { mapSize, latitude, longitude } = facts.geography;
+  const { temperature, precipitation } = options.map.climate;
+  const { mapSize, latitude, longitude } = options.map.geography;
 
   for (const [key, value] of Object.entries({
     temperatureEquator: temperature.equator,
@@ -318,17 +319,17 @@ function updateWorld(): void {
 }
 
 function updateGlobePosition(): void {
-  const eqD = ((facts.graph.height / 2) * 100) / facts.geography.mapSize;
+  const eqD = ((options.map.graph.height / 2) * 100) / options.map.geography.mapSize;
 
   Coordinates.calculate();
-  const mc = facts.geography.coordinates;
-  const unit = facts.units.distance.unit;
-  const meridian = eqD * 2 * facts.units.distance.scale * getKmInDistanceUnit(); // 0 for a custom unit
-  ensureEl("mapSize").innerHTML = `${facts.graph.width}x${facts.graph.height}`;
+  const mc = options.map.geography.coordinates;
+  const unit = options.map.units.distance.unit;
+  const meridian = eqD * 2 * options.map.units.distance.scale * getKmInDistanceUnit(); // 0 for a custom unit
+  ensureEl("mapSize").innerHTML = `${options.map.graph.width}x${options.map.graph.height}`;
   ensureEl("mapSizeFriendly").innerHTML =
-    `${rn(facts.graph.width * facts.units.distance.scale)}x${rn(facts.graph.height * facts.units.distance.scale)} ${unit}`;
+    `${rn(options.map.graph.width * options.map.units.distance.scale)}x${rn(options.map.graph.height * options.map.units.distance.scale)} ${unit}`;
   ensureEl("meridianLength").innerHTML = String(rn(eqD * 2));
-  ensureEl("meridianLengthFriendly").innerHTML = `${rn(eqD * 2 * facts.units.distance.scale)} ${unit}`;
+  ensureEl("meridianLengthFriendly").innerHTML = `${rn(eqD * 2 * options.map.units.distance.scale)} ${unit}`;
   ensureEl("meridianLengthEarth").innerHTML = meridian ? ` = ${rn(meridian / 200)}%🌏` : "";
   ensureEl("mapCoordinates").innerHTML = `${lat(mc.latN)} ${Math.abs(rn(mc.lonW))}°W; ${lat(mc.latS)} ${rn(mc.lonE)}°E`;
 
@@ -349,9 +350,9 @@ function updateGlobePosition(): void {
 
 // update temperatures on globe (visual-only)
 function updateGlobeTemperature(): void {
-  const tEq = facts.climate.temperature.equator;
-  const tNP = facts.climate.temperature.northPole;
-  const tSP = facts.climate.temperature.southPole;
+  const tEq = options.map.climate.temperature.equator;
+  const tNP = options.map.climate.temperature.northPole;
+  const tSP = options.map.climate.temperature.southPole;
 
   const scale = scaleSequential(interpolateSpectral);
   const getColor = (value: number): string => scale(1 - value);
@@ -387,7 +388,7 @@ function updateWindDirections(): void {
     .selectAll<SVGPathElement, unknown>("path")
     .each(function (_d, i) {
       const tr = parseTransform(this.getAttribute("transform") ?? "");
-      this.setAttribute("transform", `rotate(${facts.climate.winds[i]} ${tr[1]} ${tr[2]})`);
+      this.setAttribute("transform", `rotate(${options.map.climate.winds[i]} ${tr[1]} ${tr[2]})`);
     });
 }
 
@@ -397,11 +398,12 @@ function handleWindChange(event: Event): void {
   const arrow = (target.tagName === "path" ? target : target.nextElementSibling) as SVGPathElement | null;
   if (!arrow?.dataset.tier) return;
   const tier = +arrow.dataset.tier;
-  facts.climate.winds[tier] = (facts.climate.winds[tier] + 45) % 360;
+  options.map.climate.winds[tier] = (options.map.climate.winds[tier] + 45) % 360;
+  Options.save();
   const tr = parseTransform(arrow.getAttribute("transform") ?? "");
-  arrow.setAttribute("transform", `rotate(${facts.climate.winds[tier]} ${tr[1]} ${tr[2]})`);
+  arrow.setAttribute("transform", `rotate(${options.map.climate.winds[tier]} ${tr[1]} ${tr[2]})`);
 
-  const mapTiers = range(facts.geography.coordinates.latN, facts.geography.coordinates.latS, -30).map(
+  const mapTiers = range(options.map.geography.coordinates.latN, options.map.geography.coordinates.latS, -30).map(
     c => ((90 - c) / 30) | 0
   );
   if (ensureEl<HTMLInputElement>("wcAutoChange").checked && mapTiers.includes(tier)) updateWorld();
@@ -409,21 +411,23 @@ function handleWindChange(event: Event): void {
 
 function restoreDefaultWinds(): void {
   const defaultWinds = [225, 45, 225, 315, 135, 315];
-  const mapTiers = range(facts.geography.coordinates.latN, facts.geography.coordinates.latS, -30).map(
+  const mapTiers = range(options.map.geography.coordinates.latN, options.map.geography.coordinates.latS, -30).map(
     c => ((90 - c) / 30) | 0
   );
   const shouldUpdate =
     ensureEl<HTMLInputElement>("wcAutoChange").checked &&
-    mapTiers.some(t => facts.climate.winds[t] !== defaultWinds[t]);
-  facts.climate.winds = defaultWinds;
+    mapTiers.some(t => options.map.climate.winds[t] !== defaultWinds[t]);
+  options.map.climate.winds = defaultWinds;
+  Options.save();
   updateWindDirections();
   if (shouldUpdate) updateWorld();
 }
 
 function applyWorldPreset(size: number, latitude: number): void {
-  facts.geography.mapSize = size;
-  facts.geography.latitude = latitude;
+  options.map.geography.mapSize = size;
+  options.map.geography.latitude = latitude;
   Coordinates.calculate();
+  Options.save();
   Pins.set("mapSize", size);
   Pins.set("latitude", latitude);
   updateInputValues();

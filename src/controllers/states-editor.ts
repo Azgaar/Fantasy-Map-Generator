@@ -105,8 +105,8 @@ const columns: EditorColumn<State>[] = [
     width: "6em",
     sortBy: s =>
       rn(
-        (s.rural || 0) * facts.units.population.scale +
-          (s.urban || 0) * facts.units.population.scale * facts.units.population.urbanization.rate
+        (s.rural || 0) * options.map.units.population.scale +
+          (s.urban || 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate
       )
   },
   {
@@ -288,8 +288,8 @@ function renderStatesPage(view: TableView<State>): void {
   let totalBurgs = 0;
   for (const s of view.all) {
     totalArea += getArea(s.area || 0);
-    const rural = (s.rural || 0) * facts.units.population.scale;
-    const urban = (s.urban || 0) * facts.units.population.scale * facts.units.population.urbanization.rate;
+    const rural = (s.rural || 0) * options.map.units.population.scale;
+    const urban = (s.urban || 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate;
     totalPopulation += rn(rural + urban);
     totalBurgs += s.burgs || 0;
   }
@@ -297,8 +297,8 @@ function renderStatesPage(view: TableView<State>): void {
   let lines = "";
   for (const s of view.rows) {
     const area = getArea(s.area || 0);
-    const rural = (s.rural || 0) * facts.units.population.scale;
-    const urban = (s.urban || 0) * facts.units.population.scale * facts.units.population.urbanization.rate;
+    const rural = (s.rural || 0) * options.map.units.population.scale;
+    const urban = (s.urban || 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate;
     const population = rn(rural + urban);
     const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(
       urban
@@ -768,8 +768,10 @@ function changePopulation(stateId: number): void {
     return;
   }
 
-  const rural = rn((state.rural || 0) * facts.units.population.scale);
-  const urban = rn((state.urban || 0) * facts.units.population.scale * facts.units.population.urbanization.rate);
+  const rural = rn((state.rural || 0) * options.map.units.population.scale);
+  const urban = rn(
+    (state.urban || 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate
+  );
   const total = rural + urban;
   const format = (n: number) => Number(n).toLocaleString();
 
@@ -824,7 +826,7 @@ function changePopulation(stateId: number): void {
       });
     }
     if (!Number.isFinite(ruralChange) && +ruralPop.value > 0) {
-      const points = +ruralPop.value / facts.units.population.scale;
+      const points = +ruralPop.value / options.map.units.population.scale;
       const cells = (pack.cells.i as unknown as number[]).filter(i => pack.cells.state[i] === stateId);
       const pop = points / cells.length;
       cells.forEach(i => {
@@ -840,7 +842,8 @@ function changePopulation(stateId: number): void {
       });
     }
     if (!Number.isFinite(urbanChange) && +urbanPop.value > 0) {
-      const points = +urbanPop.value / facts.units.population.scale / facts.units.population.urbanization.rate;
+      const points =
+        +urbanPop.value / options.map.units.population.scale / options.map.units.population.urbanization.rate;
       const burgs = pack.burgs.filter(b => !b.removed && b.state === stateId);
       const population = rn(points / burgs.length, 4);
       burgs.forEach(b => {
@@ -1124,8 +1127,10 @@ function showStatesChart(): void {
     const state = d.data.fullName;
 
     const area = `${getArea(d.data.area)} ${getAreaUnit()}`;
-    const rural = rn(d.data.rural * facts.units.population.scale);
-    const urban = rn(d.data.urban * facts.units.population.scale * facts.units.population.urbanization.rate);
+    const rural = rn(d.data.rural * options.map.units.population.scale);
+    const urban = rn(
+      d.data.urban * options.map.units.population.scale * options.map.units.population.urbanization.rate
+    );
 
     const option = ensureEl<HTMLSelectElement>("statesTreeType").value;
     const value =
@@ -1758,8 +1763,8 @@ function downloadStatesCsv(): void {
     const rural = s.rural || 0;
     const urban = s.urban || 0;
     const population = rn(
-      rural * facts.units.population.scale +
-        urban * facts.units.population.scale * facts.units.population.urbanization.rate
+      rural * options.map.units.population.scale +
+        urban * options.map.units.population.scale * options.map.units.population.urbanization.rate
     );
     return [
       s.i,
@@ -1775,8 +1780,8 @@ function downloadStatesCsv(): void {
       s.burgs,
       getArea(s.area || 0),
       population,
-      Math.round(rural * facts.units.population.scale),
-      Math.round(urban * facts.units.population.scale * facts.units.population.urbanization.rate)
+      Math.round(rural * options.map.units.population.scale),
+      Math.round(urban * options.map.units.population.scale * options.map.units.population.urbanization.rate)
     ].join(",");
   });
   const csvData = [headers].concat(data).join("\n");

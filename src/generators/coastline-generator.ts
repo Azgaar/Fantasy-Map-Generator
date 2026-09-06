@@ -172,7 +172,7 @@ function fractalize(points: [number, number][], rand: () => number, settings: Co
 }
 
 function isOnBorder([x, y]: [number, number]) {
-  return x === 0 || x === facts.graph.width || y === 0 || y === facts.graph.height;
+  return x === 0 || x === options.map.graph.width || y === 0 || y === options.map.graph.height;
 }
 
 /**
@@ -250,17 +250,13 @@ class CoastlineGenerator {
 
   /** Settings of the map on screen: a fact, read at render time and saved with the file */
   get settings(): CoastlineSettings {
-    return facts.coastline;
+    return options.map.coastline;
   }
 
-  /**
-   * Apply a user change. A user edit writes both: the facts of this map, and the preservation
-   * library so the next map starts from what they picked.
-   * See docs/architecture/configuration.md#preservation-across-maps
-   */
+  /** Apply a user change: it shapes this map, and the next map starts from it */
   update(change: Partial<CoastlineSettings>): void {
-    Object.assign(facts.coastline, change);
-    Options.remember("coastline", facts.coastline, this.getDefaultSettings());
+    Object.assign(options.map.coastline, change);
+    Options.save();
   }
 
   getDefaultSettings(): CoastlineSettings {
@@ -276,7 +272,7 @@ class CoastlineGenerator {
     }
 
     const simplifiedPoints = simplify(points, SIMPLIFICATION_TOLERANCE);
-    const clippedPoints = clipPoly(simplifiedPoints, facts.graph.width, facts.graph.height, 1);
+    const clippedPoints = clipPoly(simplifiedPoints, options.map.graph.width, options.map.graph.height, 1);
     const shape = this.fractalizeFeature(clippedPoints, feature);
     return `${round(buildCoastlinePath(shape))}Z`;
   }
@@ -306,7 +302,7 @@ class CoastlineGenerator {
         ? { ...this.settings, smoothThreshold: Math.min(1, smoothThreshold * lakeSmoothThreshMult) }
         : this.settings;
 
-    return fractalize(points, Alea(`${facts.seed}_c${i}`), settings);
+    return fractalize(points, Alea(`${options.map.seed}_c${i}`), settings);
   }
 }
 

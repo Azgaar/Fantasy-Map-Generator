@@ -29,20 +29,20 @@ const customPresetPrefix = "fmgStyle_";
 }
 
 async function applyStyleOnLoad() {
-  const styleData = await getStylePreset(facts.style.preset || "default");
+  const styleData = await getStylePreset(options.map.style.preset || "default");
   const [appliedPreset, style] = styleData;
 
   applyStylePreset(style);
   updateMapFilter();
-  facts.style.preset = appliedPreset; // the fallback preset, if the stored one is gone
+  options.map.style.preset = appliedPreset; // the fallback preset, if the stored one is gone
   setStylePresetSelect();
 }
 
-// the select follows facts.style.preset: a preset this browser doesn't have falls back to default
+// the select follows options.map.style.preset: a preset this browser doesn't have falls back to default
 function setStylePresetSelect() {
-  const preset = facts.style.preset || "default";
+  const preset = options.map.style.preset || "default";
   const isKnown = Array.from(stylePreset.options).some(option => option.value === preset);
-  if (!isKnown) facts.style.preset = "default";
+  if (!isKnown) options.map.style.preset = "default";
 
   stylePreset.value = stylePreset.dataset.old = isKnown ? preset : "default";
   setPresetRemoveButtonVisibiliy();
@@ -127,7 +127,7 @@ function registerCustomScheme() {
 function fillMissingLabelGroups() {
   // a group the preset doesn't cover takes the style of the default group of its type. It's left without a
   // style if there is none: getGroupStyle falls back to the built-in style, an empty one would win over it
-  for (const group of facts.labels.groups) {
+  for (const group of options.map.labels.groups) {
     if (styles.labels.groups[group.name]) continue;
     const defaultGroupStyle = styles.labels.groups[Labels.getFallbackGroup(group.type).name];
     if (defaultGroupStyle) styles.labels.groups[group.name] = structuredClone(defaultGroupStyle);
@@ -155,7 +155,8 @@ function requestStylePresetChange(preset) {
 async function changeStyle(desiredPreset) {
   const styleData = await getStylePreset(desiredPreset);
   const [presetName, style] = styleData;
-  facts.style.preset = presetName;
+  options.map.style.preset = presetName;
+  Options.save();
   applyStyleWithUiRefresh(style);
 }
 
@@ -216,7 +217,8 @@ function addStylePreset() {
 
     const presetName = customPresetPrefix + desiredName;
     applyOption(stylePreset, presetName, desiredName + " [custom]");
-    facts.style.preset = presetName;
+    options.map.style.preset = presetName;
+    Options.save();
     localStorage.setItem(presetName, styleJSON);
 
     applyStyleWithUiRefresh(JSON.parse(styleJSON));

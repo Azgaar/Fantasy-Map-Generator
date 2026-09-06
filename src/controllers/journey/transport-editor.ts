@@ -137,14 +137,14 @@ function onNameChange(this: HTMLInputElement): void {
     for (const segment of journey.segments) if (segment.transport === type.name) segment.transport = newName;
   }
   type.name = newName;
-  Transports.save();
+  Options.save();
 }
 
 function onSpeedInput(this: HTMLInputElement): void {
   const type = getLineType(this);
   if (!type) return;
   type.speed = parseSpeed(+this.value || 0); // stored in km/h, typed in the user distance unit
-  Transports.save();
+  Options.save();
 }
 
 function onHoursChange(this: HTMLInputElement): void {
@@ -160,7 +160,7 @@ function onHoursChange(this: HTMLInputElement): void {
 
   type.hoursPerDay = hours;
   this.value = String(hours);
-  Transports.save();
+  Options.save();
 }
 
 function onDomainChange(this: HTMLSelectElement): void {
@@ -168,7 +168,7 @@ function onDomainChange(this: HTMLSelectElement): void {
   if (!type) return;
   type.domain = this.value as TransportDomain;
   if (type.domain === "stay") type.speed = 0; // stay types have no speed
-  Transports.save();
+  Options.save();
   typesTable.refresh();
 }
 
@@ -179,7 +179,7 @@ function addType(): void {
 
   // hoursPerDay is left out on purpose: the domain fallback defines the default travel day
   Transports.all.push({ i: nextId, name, speed: 5, domain: "land" });
-  Transports.save();
+  Options.save();
   typesTable.refresh();
 
   const input = document.querySelector<HTMLInputElement>(`#transportBody [data-id="${nextId}"] .ttName`);

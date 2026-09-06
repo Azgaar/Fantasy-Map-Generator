@@ -138,7 +138,7 @@ class StatesModule {
       .sort((a, b) => b[1] - a[1])
       .map(([burg]) => burg);
     const count = Math.min(statesCount, validBurgs.length) + 1;
-    let spacing = (facts.graph.width + facts.graph.height) / 2 / count;
+    let spacing = (options.map.graph.width + options.map.graph.height) / 2 / count;
     const capitalsTree = quadtree<[number, number]>();
     const newStates: State[] = [{ ...pack.states[0], i: 0, name: pack.states[0].name }];
 
@@ -466,8 +466,8 @@ class StatesModule {
     return neighbors
       .map((i: number) => {
         const name = i && P(0.8) ? pack.states[i].name : Names.getCultureShort(state.culture);
-        const start = gauss(facts.lore.calendar.year - 100, 150, 1, facts.lore.calendar.year - 6);
-        const end = start + gauss(4, 5, 1, facts.lore.calendar.year - start - 1);
+        const start = gauss(options.map.lore.calendar.year - 100, 150, 1, options.map.lore.calendar.year - 6);
+        const end = start + gauss(4, 5, 1, options.map.lore.calendar.year - start - 1);
         return { name: `${getAdjective(name)} ${rw(wars)}`, start, end, attacker: state.i!, defender: i };
       })
       .sort((a, b) => a.start - b.start);
@@ -578,7 +578,7 @@ class StatesModule {
 
       // start an ongoing war
       const name = `${an}-${trimVowels(dn)}ian War`;
-      const start = facts.lore.calendar.year - gauss(2, 3, 0, 10);
+      const start = options.map.lore.calendar.year - gauss(2, 3, 0, 10);
       const war = [name, `${an} declared a war on its rival ${dn}`];
       const campaign: Campaign = { name, start, attacker, defender };
       states[attacker].campaigns!.push(campaign);

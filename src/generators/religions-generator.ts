@@ -684,7 +684,7 @@ class ReligionsModule {
       }
 
       // min distance between religion inceptions
-      const spacing = (facts.graph.width + facts.graph.height) / 2 / desiredReligionNumber;
+      const spacing = (options.map.graph.width + options.map.graph.height) / 2 / desiredReligionNumber;
 
       for (const cellId of candidateCells) {
         const [x, y] = cells.p[cellId];

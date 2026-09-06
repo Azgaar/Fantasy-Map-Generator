@@ -1,5 +1,5 @@
 // The Lore Editor: what the map is called, when it is set, and what the author has to say about
-// it. Every control here edits `facts.lore` - the dialog is built and filled from the object on
+// it. Every control here edits `options.map.lore` - the dialog is built and filled from the object on
 // open, and nothing outside reads its inputs. See docs/architecture/configuration.md
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Pins } from "@/components/pins";
@@ -90,7 +90,7 @@ function renderDialog(): void {
 
 /** What each lock icon in this dialog pins; the era icon pins its abbreviation alongside */
 function loreValue(key: string): string | number | undefined {
-  const { name, calendar } = facts.lore;
+  const { name, calendar } = options.map.lore;
   if (key === "mapName") return name;
   if (key === "year") return calendar.year;
   if (key === "era") return calendar.era;
@@ -100,7 +100,7 @@ function loreValue(key: string): string | number | undefined {
 
 /** The object is the source: push what it holds into the control that shows it */
 function fillInputs(): void {
-  const { name, description, calendar } = facts.lore;
+  const { name, description, calendar } = options.map.lore;
   ensureEl<HTMLInputElement>("loreMapName").value = name;
   ensureEl<HTMLInputElement>("loreYear").value = String(calendar.year);
   ensureEl<HTMLInputElement>("loreEra").value = calendar.era;
@@ -114,57 +114,65 @@ function addListeners(): void {
   ensureEl("loreEraRegenerate").addEventListener("click", regenerateEra);
 }
 
-/** Every control edits `facts.lore` directly, and pins what the user typed */
+/** Every control edits `options.map.lore` directly, and pins what the user typed */
 function onLoreChange(event: Event): void {
   const input = event.target as HTMLInputElement;
   const value = input.value;
-  const { lore } = facts;
+  const { lore } = options.map;
 
   switch (input.id) {
     case "loreMapName":
       lore.name = value;
       Pins.set("mapName", value); // named by hand: the next map keeps it
-      return;
+      break;
 
     case "loreYear":
       if (!value || Number.isNaN(+value)) return;
       lore.calendar.year = +value;
       Pins.set("year", +value);
-      return;
+      break;
 
     case "loreEra":
       // renaming the era suggests an abbreviation, which the user can override in the field beside it
       if (!value) return;
       lore.calendar.era = value;
-      lore.calendar.eraShort = Facts.shortEra();
+      lore.calendar.eraShort = Names.getEraShort(value);
       Pins.set("era", value);
       Pins.set("eraShort", lore.calendar.eraShort);
       ensureEl<HTMLInputElement>("loreEraShort").value = lore.calendar.eraShort;
-      return;
+      break;
 
     case "loreEraShort":
       if (!value) return;
       lore.calendar.eraShort = value;
       Pins.set("eraShort", value);
-      return;
+      break;
 
     // the description is the one lore value with no pin: nothing ever re-rolls an author's note
     case "loreDescription":
       lore.description = value;
+      break;
+
+    default:
       return;
   }
+
+  Options.save();
 }
 
 function regenerateMapName(): void {
-  Names.getMapName(true); // writes facts.lore.name, and unpins the name if the user had pinned it
+  Names.getMapName(true); // writes options.map.lore.name, and unpins the name if the user had pinned it
+  Options.save();
   fillInputs();
 }
 
 function regenerateEra(): void {
   Pins.clear("era");
   Pins.clear("eraShort");
-  facts.lore.calendar.era = Facts.randomEra();
-  facts.lore.calendar.eraShort = Facts.shortEra();
+  const { calendar } = options.map.lore;
+  calendar.era = Names.getEra();
+  calendar.eraShort = Names.getEraShort(calendar.era);
+  Options.save();
   fillInputs();
 }
 

@@ -1,11 +1,9 @@
 // @vitest-environment jsdom
-// The invariants the two-object split exists to guarantee.
+// The invariants `options` exists to guarantee, and what a `.map` file carries of it.
 // See docs/architecture/configuration.md#invariants
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getPointsNumber, POINTS_BY_DENSITY } from "@/data/graph-density";
-import { Military } from "@/generators/military-generator";
-import { getDefaultFacts } from "./facts-model";
-import { getDefaultOptions } from "./options-model";
+import type { MapData } from "./options-schema";
 import { Pins } from "./pins";
 
 const UNIT = { icon: "u", name: "cavalry", rural: 0.2, urban: 0.1, crew: 2, power: 1, type: "melee", separate: 0 };
@@ -13,106 +11,98 @@ const UNIT = { icon: "u", name: "cavalry", rural: 0.2, urban: 0.1, crew: 2, powe
 async function boot() {
   vi.resetModules();
   localStorage.clear();
-  globalThis.facts = getDefaultFacts();
-  globalThis.options = getDefaultOptions();
-  await import("./facts-model");
-  await import("./options-model");
+  await import("./options-model"); // re-evaluating it installs a fresh `options` and `Options`
 }
 
-/** A `.map` file's settings field: what save.ts writes and load.ts reads back */
-const savedFile = (change: (facts: ReturnType<typeof getDefaultFacts>) => void): string => {
-  const written = getDefaultFacts();
+/** A `.map` file's settings block as a fresh browser would write it: what load.ts reads back */
+const savedFile = (change: (map: MapData) => void): string => {
+  const written = Options.getDefaultOptions().map;
   change(written);
   return JSON.stringify(written);
 };
 
-const load = (file: string) => Facts.adopt(Facts.parse(JSON.parse(file)));
+const defaults = (): MapData => Options.getDefaultOptions().map;
+const load = (file: string) => Options.applyLoaded(JSON.parse(file));
 
 beforeEach(boot);
 
 describe("a file describes its map", () => {
   it("round-trips: load, save, load again is a fixed point", () => {
-    const file = savedFile(f => {
-      f.seed = "12345";
-      f.graph = { width: 1600, height: 900, points: 20000 };
-      f.lore.name = "Narnia";
-      f.military.units = [UNIT];
-      f.units.distance = { unit: "leagues", scale: 5 };
+    const file = savedFile(map => {
+      map.seed = "12345";
+      map.graph = { width: 1600, height: 900, points: 20000 };
+      map.lore.name = "Narnia";
+      map.military.units = [UNIT];
+      map.units.distance = { unit: "leagues", scale: 5 };
     });
 
     load(file);
-    const first = JSON.stringify(facts);
+    const first = JSON.stringify(options.map);
     load(first);
-    const second = JSON.stringify(facts);
+    const second = JSON.stringify(options.map);
     load(second);
 
     // values survive every pass, and the bytes settle once the schema has normalised key order
     expect(JSON.parse(second)).toEqual(JSON.parse(first));
-    expect(JSON.stringify(facts)).toBe(second);
-    expect(facts.lore.name).toBe("Narnia");
-    expect(facts.units.distance).toEqual({ unit: "leagues", scale: 5 });
+    expect(JSON.stringify(options.map)).toBe(second);
+    expect(options.map.lore.name).toBe("Narnia");
+    expect(options.map.units.distance).toEqual({ unit: "leagues", scale: 5 });
   });
 
-  it("carries no options into the file", () => {
-    const written = JSON.parse(JSON.stringify(facts));
-    for (const key of Object.keys(getDefaultOptions())) expect(written[key]).toBeUndefined();
+  it("carries nothing of this browser into the file", () => {
+    const written = JSON.parse(JSON.stringify(options.map));
+    expect(written.generation).toBeUndefined();
+    expect(written.app).toBeUndefined();
   });
 });
 
 describe("no cross-map inheritance", () => {
   it("drops the previous map's definition sets when the next one has none", () => {
-    load(savedFile(f => (f.military.units = [UNIT])));
-    expect(facts.military.units).toHaveLength(1);
+    load(savedFile(map => (map.military.units = [UNIT])));
+    expect(options.map.military.units).toHaveLength(1);
 
-    load(savedFile(f => (f.lore.name = "second"))); // a map with no military of its own
-    expect(facts.military.units).toEqual(getDefaultFacts().military.units);
-    expect(facts.lore.name).toBe("second");
+    load(savedFile(map => (map.lore.name = "second"))); // a map with no military of its own
+    expect(options.map.military.units).toEqual(defaults().military.units);
+    expect(options.map.lore.name).toBe("second");
   });
 
   it("leaves a section absent from an older file at its default, not at map A's value", () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
-    load(savedFile(f => (f.climate.precipitation = 400)));
+    load(savedFile(map => (map.climate.precipitation = 400)));
 
-    const older: Record<string, unknown> = JSON.parse(savedFile(f => (f.seed = "old")));
+    const older: Record<string, unknown> = JSON.parse(savedFile(map => (map.seed = "old")));
     delete older.climate;
     load(JSON.stringify(older));
 
-    expect(facts.climate.precipitation).toBe(getDefaultFacts().climate.precipitation);
+    expect(options.map.climate.precipitation).toBe(defaults().climate.precipitation);
   });
 });
 
-describe("options survive maps", () => {
+describe("a load establishes a map, and leaves the rest of this browser alone", () => {
   it("keeps preferences and requests when a map is loaded", () => {
     Options.set(o => {
       o.app.threeD.erosion = true;
       o.generation.states.limit = 30;
     });
 
-    load(savedFile(f => (f.lore.name = "someone else's map")));
+    load(savedFile(map => (map.lore.name = "someone else's map")));
 
     expect(options.app.threeD.erosion).toBe(true);
     expect(options.generation.states.limit).toBe(30);
   });
 
-  it("never adopts the loaded map's definition sets as this browser's defaults", () => {
-    load(savedFile(f => (f.military.units = [UNIT])));
-    expect(options.library.military).toBeNull();
-  });
-
   it("carries the extent over, since the next map should continue the one just opened", () => {
-    load(savedFile(f => (f.graph = { width: 1600, height: 900, points: 20000 })));
-    Options.syncOnLoad();
+    load(savedFile(map => (map.graph = { width: 1600, height: 900, points: 20000 })));
 
     expect(options.generation.graph.width).toBe(1600);
     expect(options.generation.graph.height).toBe(900);
   });
 
-  it("never lets the allowlist override a pin", () => {
+  it("never lets the extent override a pin", () => {
     Options.set(o => (o.generation.graph.width = 800));
     Pins.set("mapWidth", 800);
 
-    load(savedFile(f => (f.graph.width = 1600)));
-    Options.syncOnLoad();
+    load(savedFile(map => (map.graph.width = 1600)));
 
     expect(options.generation.graph.width).toBe(800);
   });
@@ -121,85 +111,92 @@ describe("options survive maps", () => {
 describe("a pin outlives the map it was made on", () => {
   it("survives loading a map that disagrees with it", () => {
     Pins.set("statesNumber", 30);
-    load(savedFile(f => (f.lore.name = "a 12-state map")));
+    load(savedFile(map => (map.lore.name = "a 12-state map")));
 
     Options.randomize();
     expect(options.generation.states.limit).toBe(30);
   });
 
-  it("restores a pinned fact onto a newly seeded map", () => {
+  it("restores a pinned map value onto a newly seeded map", () => {
     Pins.set("prec", 350);
     Pins.set("year", 777);
 
-    Facts.apply();
+    Options.randomize();
 
-    expect(facts.climate.precipitation).toBe(350);
-    expect(facts.lore.calendar.year).toBe(777);
+    expect(options.map.climate.precipitation).toBe(350);
+    expect(options.map.lore.calendar.year).toBe(777);
   });
 });
 
-describe("the preservation library", () => {
-  it("seeds a new map from the user's own set", () => {
-    Options.remember("military", [UNIT], Military.getDefaultOptions());
-    Facts.apply();
-    expect(facts.military.units).toEqual([UNIT]);
+describe("the definition sets carry to the next map", () => {
+  it("starts a new map from the set this browser holds", () => {
+    options.map.military.units = [UNIT];
+    Options.randomize();
+    expect(options.map.military.units).toEqual([UNIT]);
   });
 
-  it("is not disturbed by loading a map, so the next map still starts from the user's set", () => {
-    Options.remember("military", [UNIT], Military.getDefaultOptions());
-    load(savedFile(f => (f.military.units = [{ ...UNIT, name: "theirs" }])));
+  it("starts it from the set of the map last opened, since that is the one this browser holds", () => {
+    options.map.military.units = [UNIT];
+    load(savedFile(map => (map.military.units = [{ ...UNIT, name: "theirs" }])));
 
-    expect(facts.military.units[0].name).toBe("theirs"); // the loaded map governs itself
-    expect(options.library.military).toEqual([UNIT]); // the library is untouched
+    expect(options.map.military.units[0].name).toBe("theirs");
 
-    Facts.apply();
-    expect(facts.military.units).toEqual([UNIT]); // and still seeds the next map
+    Options.randomize();
+    expect(options.map.military.units[0].name).toBe("theirs");
+  });
+
+  it("never leaves a set empty: the module that owns it answers for what it must hold", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    load(savedFile(map => (map.transports = [])));
+
+    expect(options.map.transports).toEqual(defaults().transports);
   });
 });
 
 describe("validation repairs rather than rejects", () => {
-  const parse = (change: (file: any) => void) => {
+  const adopt = (change: (file: any) => void) => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
     const file: any = JSON.parse(savedFile(() => {}));
     change(file);
-    return Facts.parse(file);
+    Options.applyLoaded(file);
+    return options.map;
   };
 
   it("strips a key from a newer schema instead of losing the section it sits in", () => {
-    const parsed = parse(file => {
+    const map = adopt(file => {
       file.climate.precipitation = 400;
       file.climate.humidity = 7; // a field this version does not know
     });
 
-    expect(parsed.climate.precipitation).toBe(400);
-    expect(parsed.climate).not.toHaveProperty("humidity");
+    expect(map.climate.precipitation).toBe(400);
+    expect(map.climate).not.toHaveProperty("humidity");
   });
 
   it("strips an unknown key nested inside a section", () => {
-    const parsed = parse(file => {
+    const map = adopt(file => {
       file.climate.temperature.equator = 33;
       file.climate.temperature.tropics = 20;
     });
 
-    expect(parsed.climate.temperature.equator).toBe(33);
+    expect(map.climate.temperature.equator).toBe(33);
   });
 
   it("drops the one unusable entry of a definition set, not the set around it", () => {
-    const parsed = parse(file => {
+    const map = adopt(file => {
       file.military.units = [UNIT, { ...UNIT, name: "broken", rural: "not a number" }, { ...UNIT, name: "third" }];
     });
 
-    expect(parsed.military.units.map(unit => unit.name)).toEqual(["cavalry", "third"]);
+    expect(map.military.units.map(unit => unit.name)).toEqual(["cavalry", "third"]);
   });
 
   it("keeps repairing a leaf from the defaults where the defaults have one", () => {
-    const parsed = parse(file => {
+    const map = adopt(file => {
       file.lore.name = "Narnia";
       file.lore.calendar.year = "not a number";
     });
 
-    expect(parsed.lore.name).toBe("Narnia");
-    expect(parsed.lore.calendar.year).toBe(getDefaultFacts().lore.calendar.year);
+    expect(map.lore.name).toBe("Narnia");
+    expect(map.lore.calendar.year).toBe(defaults().lore.calendar.year);
   });
 });
 
@@ -213,8 +210,8 @@ describe("a pin stands for something", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     Pins.set("prec", "corrupt");
 
-    Facts.apply();
-    expect(facts.climate.precipitation).toBeTypeOf("number");
+    Options.randomize();
+    expect(options.map.climate.precipitation).toBeTypeOf("number");
   });
 
   it("applies a pinned extent to the map being generated, not to the one after it", () => {
@@ -224,27 +221,36 @@ describe("a pin stands for something", () => {
 
     Options.setGraphSize(); // boot or a new map: the request is resolved here
     Options.randomize();
-    Facts.apply();
 
-    expect(facts.graph.width).toBe(1600);
-    expect(facts.graph.height).toBe(900);
-    expect(facts.graph.points).toBe(POINTS_BY_DENSITY[6]);
+    expect(options.map.graph.width).toBe(1600);
+    expect(options.map.graph.height).toBe(900);
+    expect(options.map.graph.points).toBe(POINTS_BY_DENSITY[6]);
   });
 });
 
 describe("a new map keeps what the user pinned", () => {
-  it("puts every pinned fact back, including the ones nothing rolls", () => {
+  it("puts every pinned value back, including the ones nothing rolls", () => {
     Pins.set("mapName", "Kept Name");
     Pins.set("mapSize", 70);
     Pins.set("distanceUnit", "leagues");
     Pins.set("urbanDensity", 42);
 
-    Facts.apply();
+    Options.randomize();
 
-    expect(facts.lore.name).toBe("Kept Name");
-    expect(facts.geography.mapSize).toBe(70);
-    expect(facts.units.distance.unit).toBe("leagues");
-    expect(facts.units.population.urbanization.density).toBe(42);
+    expect(options.map.lore.name).toBe("Kept Name");
+    expect(options.map.geography.mapSize).toBe(70);
+    expect(options.map.units.distance.unit).toBe("leagues");
+    expect(options.map.units.population.urbanization.density).toBe(42);
+  });
+
+  it("keeps nothing else of the map it replaces", () => {
+    options.map.lore.description = "the previous author's note";
+    options.map.climate.winds = [0, 0, 0, 0, 0, 0];
+
+    Options.randomize();
+
+    expect(options.map.lore.description).toBe("");
+    expect(options.map.climate.winds).toEqual(defaults().climate.winds);
   });
 
   it("caps the cultures request at what the chosen set can give", () => {
@@ -255,16 +261,6 @@ describe("a new map keeps what the user pinned", () => {
     Options.capCultures();
 
     expect(options.generation.cultures.limit).toBe(10);
-  });
-});
-
-describe("the preservation library holds what the user typed", () => {
-  it("clears the entry when the user resets a set to the module defaults", () => {
-    Options.remember("military", [UNIT], Military.getDefaultOptions());
-    expect(options.library.military).toEqual([UNIT]);
-
-    Options.remember("military", Military.getDefaultOptions(), Military.getDefaultOptions());
-    expect(options.library.military).toBeNull();
   });
 });
 
@@ -280,13 +276,13 @@ describe("one object, one key", () => {
     autosaveInterval: "5",
     tileCols: "4",
     noReminder: "true",
-    statesNumber: "99" // a pin from the same scheme, which the objects answer for now
+    statesNumber: "99" // a pin from the same scheme, which the object answers for now
   };
 
   it("adopts the preferences that used to keep a key of their own, then drops the namespace", () => {
     for (const [key, value] of Object.entries(LEGACY)) localStorage.setItem(key, value);
 
-    Options.restoreStored();
+    Options.restore();
 
     expect(options.app.ui.size).toBe(1.4);
     expect(options.app.ui.tooltipSize).toBe(20);
@@ -317,7 +313,7 @@ describe("one object, one key", () => {
       o.app.zoomExtent = { min: 2, max: 30 };
     });
 
-    load(savedFile(f => (f.lore.name = "someone else's map")));
+    load(savedFile(map => (map.lore.name = "someone else's map")));
 
     expect(options.app.ui.size).toBe(2);
     expect(options.app.emblems.shape).toBe("spanish");
@@ -328,15 +324,18 @@ describe("one object, one key", () => {
     Options.set(o => (o.app.ui.tooltipSize = 30));
     Options.reset();
 
-    expect(options.app.ui.tooltipSize).toBe(getDefaultOptions().app.ui.tooltipSize);
+    expect(options.app.ui.tooltipSize).toBe(Options.getDefaultOptions().app.ui.tooltipSize);
     expect(JSON.parse(localStorage.getItem("fmg-options")!).app.ui.tooltipSize).toBe(14);
   });
 
-  it("throws the pins away with the options, so nothing goes on generating a pinned value", () => {
+  it("resets the options alone: the pins are a store of their own, cleared by whoever wipes them", () => {
     Pins.set("statesNumber", 3);
     Options.reset();
 
-    expect(Pins.has("statesNumber")).toBe(false);
+    expect(options.generation.states.limit).toBe(Options.getDefaultOptions().generation.states.limit);
+    expect(Pins.has("statesNumber")).toBe(true); // cleanupData clears the pin store itself
+
+    Pins.clearAll();
     Options.randomize();
     expect(options.generation.states.limit).not.toBe(3);
   });
@@ -345,9 +344,9 @@ describe("one object, one key", () => {
 describe("the pin store", () => {
   it("keeps the value and not just the key, so a load cannot take it away", () => {
     Pins.set("prec", 350);
-    Facts.adopt(Facts.parse(JSON.parse(savedFile(f => (f.climate.precipitation = 12)))));
+    load(savedFile(map => (map.climate.precipitation = 12)));
 
-    expect(facts.climate.precipitation).toBe(12); // the loaded map governs itself
+    expect(options.map.climate.precipitation).toBe(12); // the loaded map governs itself
     expect(Pins.valueOr("prec", 0)).toBe(350); // and the pin still stands for the next one
   });
 
@@ -362,84 +361,83 @@ describe("the pin store", () => {
   });
 });
 
-describe("the two objects hold no field twice", () => {
+describe("a request and what it produced are not the same field", () => {
   it("keeps every count, rate and variety on the request side alone", () => {
-    const factFields = new Set(Object.keys(JSON.parse(JSON.stringify(getDefaultFacts()))));
-    expect(factFields.has("states")).toBe(false);
+    const map = defaults() as unknown as Record<string, unknown>;
+    expect(map.states).toBeUndefined();
 
-    const asked = getDefaultOptions().generation;
+    const asked = Options.getDefaultOptions().generation;
     expect(asked.states.growthRate).toBeTypeOf("number");
     expect(asked.cultures.sizeVariety).toBeTypeOf("number");
     expect(asked.resolveDepressionsSteps).toBeTypeOf("number");
     expect(asked.lakeElevationLimit).toBeTypeOf("number");
 
-    const recorded = getDefaultFacts() as unknown as Record<string, Record<string, unknown>>;
-    expect(recorded.cultures).toEqual({ set: "world" }); // the set, not the rate it expanded at
+    expect(map.cultures).toEqual({ set: "world" }); // the set, not the rate it expanded at
   });
 
   it("asks for the graph in one place and records it in another", () => {
     // the request holds a density step; the cell count it stands for is derived, never stored
-    const asked = getDefaultOptions().generation.graph;
+    const asked = Options.getDefaultOptions().generation.graph;
     expect(asked).toEqual({ width: 1280, height: 800, density: 4 });
     expect(getPointsNumber(asked.density)).toBe(10000);
 
     // the record has no density: a step is how the request was phrased, not what was built
-    expect(getDefaultFacts().graph).toEqual({ width: 1280, height: 800, points: 10000 });
+    expect(defaults().graph).toEqual({ width: 1280, height: 800, points: 10000 });
   });
 });
 
 describe("the map carries its own lore", () => {
   it("round-trips a description through a file", () => {
-    const file = savedFile(f => {
-      f.lore.name = "Narnia";
-      f.lore.description = "A world of talking beasts, under a long winter.";
-      f.lore.calendar = { year: 1300, era: "Winter Era", eraShort: "WE" };
+    const file = savedFile(map => {
+      map.lore.name = "Narnia";
+      map.lore.description = "A world of talking beasts, under a long winter.";
+      map.lore.calendar = { year: 1300, era: "Winter Era", eraShort: "WE" };
     });
 
     load(file);
-    expect(facts.lore.description).toBe("A world of talking beasts, under a long winter.");
-    expect(facts.lore.calendar.eraShort).toBe("WE");
+    expect(options.map.lore.description).toBe("A world of talking beasts, under a long winter.");
+    expect(options.map.lore.calendar.eraShort).toBe("WE");
 
     load(savedFile(() => {})); // another map: nothing of the first one's lore survives
-    expect(facts.lore.description).toBe("");
+    expect(options.map.lore.description).toBe("");
   });
 
   it("leaves a description absent from an older file empty, not undefined", () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
-    const older: any = JSON.parse(savedFile(f => (f.lore.name = "old")));
+    const older: any = JSON.parse(savedFile(map => (map.lore.name = "old")));
     delete older.lore.description;
 
     load(JSON.stringify(older));
-    expect(facts.lore).toEqual({ name: "old", description: "", calendar: getDefaultFacts().lore.calendar });
+    expect(options.map.lore).toEqual({ name: "old", description: "", calendar: defaults().lore.calendar });
   });
 });
 
-describe("a derived fact is stored, not recomputed", () => {
+describe("a derived value is stored, not recomputed", () => {
   it("takes the lat/lon box the file carries", () => {
     const box = { latT: 60, latN: 40, latS: -20, lonT: 96, lonW: -48, lonE: 48 };
     load(
-      savedFile(f => {
-        f.geography.mapSize = 33;
-        f.geography.coordinates = box;
+      savedFile(map => {
+        map.geography.mapSize = 33;
+        map.geography.coordinates = box;
       })
     );
 
     // parsing does not touch it, and the load has nothing to recompute: the panel that owns the
     // three inputs re-derives it on every edit, so what a file carries always agrees with them
-    expect(facts.geography.coordinates).toEqual(box);
+    expect(options.map.geography.coordinates).toEqual(box);
   });
 
   it("keeps it recomputable: the inputs travel in the same file", () => {
-    const written = JSON.parse(savedFile(f => (f.geography.mapSize = 33)));
+    const written = JSON.parse(savedFile(map => (map.geography.mapSize = 33)));
     expect(written.geography).toMatchObject({ mapSize: 33, latitude: 50, longitude: 50 });
     expect(written.graph).toMatchObject({ width: 1280, height: 800 });
   });
 });
 
-describe("neither object writes the other", () => {
+describe("the defaults come from the module that owns them", () => {
   it("takes the 3D defaults from the module that owns them", async () => {
     const { DEFAULT_THREE_D } = await import("@/data/view-3d-options");
-    expect(getDefaultOptions().app.threeD).toEqual(DEFAULT_THREE_D);
+    expect(Options.getDefaultOptions().app.threeD).toEqual(DEFAULT_THREE_D);
   });
 
   it("leaves this browser's preferences alone however old the map it opens", () => {
@@ -449,36 +447,32 @@ describe("neither object writes the other", () => {
       o.app.notesPinned = true;
     });
 
-    load(savedFile(f => (f.lore.name = "a map from an older version")));
+    load(savedFile(map => (map.lore.name = "a map from an older version")));
 
     expect(options.app.threeD.erosion).toBe(true);
     expect(options.app.threeD.skyColor).toBe("#000000");
     expect(options.app.notesPinned).toBe(true);
   });
-});
 
-describe("presentation is the style's, not the map's", () => {
-  it("keeps the scale bar's label and placement out of the facts", () => {
-    const written = JSON.parse(JSON.stringify(getDefaultFacts()));
-    expect(written).not.toHaveProperty("scaleBar");
+  it("restores the units the model defines, rather than an editor's own copy", () => {
+    options.map.units.distance.scale = 99;
+    options.map.units.height.exponent = 1.1;
+
+    options.map.units = defaults().units; // what the editor's Restore does
+    expect(options.map.units).toEqual(defaults().units);
+    expect(options.map.units.height.exponent).toBe(2);
   });
 });
 
-describe("an editor's Restore asks the model, rather than keeping its own copy", () => {
-  it("restores the units the model defines", async () => {
-    const { getDefaultFacts: modelDefaults } = await import("./facts-model");
-    facts.units.distance.scale = 99;
-    facts.units.height.exponent = 1.1;
-
-    facts.units = modelDefaults().units; // what the editor's Restore does
-    expect(facts.units).toEqual(modelDefaults().units);
-    expect(facts.units.height.exponent).toBe(2);
+describe("presentation is the style's, not the map's", () => {
+  it("keeps the scale bar's label and placement out of the file", () => {
+    expect(defaults()).not.toHaveProperty("scaleBar");
   });
 });
 
 describe("a preference nobody has set is null", () => {
   it("leaves the viewport and the interface size unset until someone chooses", () => {
-    const { app } = getDefaultOptions();
+    const { app } = Options.getDefaultOptions();
     expect(app.viewport).toBeNull();
     expect(app.ui.size).toBeNull();
   });
@@ -487,7 +481,7 @@ describe("a preference nobody has set is null", () => {
     Options.set(o => (o.app.viewport = { width: 900, height: 600 }));
     Options.persist();
 
-    load(savedFile(f => (f.lore.name = "another map")));
+    load(savedFile(map => (map.lore.name = "another map")));
     expect(options.app.viewport).toEqual({ width: 900, height: 600 });
     expect(JSON.parse(localStorage.getItem("fmg-options")!).app.viewport).toEqual({ width: 900, height: 600 });
   });

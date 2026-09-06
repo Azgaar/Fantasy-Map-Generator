@@ -221,7 +221,7 @@ class MilitaryModule {
       s.temp.platoons = [];
 
       // apply overall state modifiers for unit types based on state features
-      for (const unit of facts.military.units) {
+      for (const unit of options.map.military.units) {
         if (!stateModifier[unit.type as keyof typeof stateModifier]) continue;
 
         let modifier =
@@ -269,7 +269,7 @@ class MilitaryModule {
         modifier = stateObj.type === "Naval" ? modifier / 1.2 : modifier / 1.8; // different landmass
       const type = getType(i);
 
-      for (const unit of facts.military.units) {
+      for (const unit of options.map.military.units) {
         const perc = +unit.rural;
         if (Number.isNaN(perc) || perc <= 0 || !stateObj.temp[unit.name]) continue;
         if (!passUnitLimits(unit, biome, state, culture, religion)) continue;
@@ -282,7 +282,7 @@ class MilitaryModule {
                 unit.type as keyof (typeof cellTypeModifier)[keyof typeof cellTypeModifier]
               ]; // cell specific modifier
         const army = modifier * perc * cellTypeMod; // rural cell army
-        const total = rn(army * stateObj.temp[unit.name] * facts.units.population.scale); // total troops
+        const total = rn(army * stateObj.temp[unit.name] * options.map.units.population.scale); // total troops
         if (!total) continue;
 
         let [x, y] = p[i];
@@ -319,14 +319,14 @@ class MilitaryModule {
       const religion = cells.religion[b.cell];
 
       const stateObj = states[state];
-      let m = (b.population * facts.units.population.urbanization.rate) / 100; // basic urban army in percentages
+      let m = (b.population * options.map.units.population.urbanization.rate) / 100; // basic urban army in percentages
       if (b.capital) m *= 1.2; // capital has household troops
       if (culture !== stateObj.culture) m = stateObj.form === "Union" ? m / 1.2 : m / 2; // non-dominant culture
       if (religion !== cells.religion[stateObj.center]) m = stateObj.form === "Theocracy" ? m / 2.2 : m / 1.4; // non-dominant religion
       if (cells.f[b.cell] !== cells.f[stateObj.center]) m = stateObj.type === "Naval" ? m / 1.2 : m / 1.8; // different landmass
       const type = getType(b.cell);
 
-      for (const unit of facts.military.units) {
+      for (const unit of options.map.military.units) {
         const perc = +unit.urban;
         if (Number.isNaN(perc) || perc <= 0 || !stateObj.temp[unit.name]) continue;
         if (!passUnitLimits(unit, biome, state, culture!, religion)) continue;
@@ -339,7 +339,7 @@ class MilitaryModule {
                 unit.type as keyof (typeof burgTypeModifier)[keyof typeof burgTypeModifier]
               ]; // cell specific modifier
         const army = m * perc * mod; // urban cell army
-        const total = rn(army * stateObj.temp[unit.name] * facts.units.population.scale); // total troops
+        const total = rn(army * stateObj.temp[unit.name] * options.map.units.population.scale); // total troops
         if (!total) continue;
 
         let [x, y] = p[b.cell];
@@ -366,7 +366,7 @@ class MilitaryModule {
       }
     }
 
-    const expected = 3 * facts.units.population.scale; // expected regiment size
+    const expected = 3 * options.map.units.population.scale; // expected regiment size
     const mergeable = (n0: { s: number; u: string }, n1: { s: number; u: string }) => (!n0.s && !n1.s) || n0.u === n1.u; // check if regiments can be merged
     const createRegiments = (nodes: Platoon[], s: State): Regiment[] => {
       if (!nodes.length) return [];
@@ -548,15 +548,15 @@ class MilitaryModule {
           .join("\r\n")
       : null;
     const troops = composition
-      ? `\r\n\r\nRegiment composition in ${facts.lore.calendar.year} ${facts.lore.calendar.eraShort}:\r\n${composition}.`
+      ? `\r\n\r\nRegiment composition in ${options.map.lore.calendar.year} ${options.map.lore.calendar.eraShort}:\r\n${composition}.`
       : "";
 
     const campaign = s.campaigns ? ra(s.campaigns) : null;
     const year = campaign
-      ? rand(campaign.start, campaign.end || facts.lore.calendar.year)
-      : gauss(facts.lore.calendar.year - 100, 150, 1, facts.lore.calendar.year - 6);
+      ? rand(campaign.start, campaign.end || options.map.lore.calendar.year)
+      : gauss(options.map.lore.calendar.year - 100, 150, 1, options.map.lore.calendar.year - 6);
     const conflict = campaign ? ` during the ${campaign.name}` : "";
-    const legend = `Regiment was formed in ${year} ${facts.lore.calendar.era}${conflict}. ${station}${troops}`;
+    const legend = `Regiment was formed in ${year} ${options.map.lore.calendar.era}${conflict}. ${station}${troops}`;
     const id = `regiment${s.i}-${r.i}`;
     const existing = notes.find(n => n.id === id);
     if (existing) {
@@ -578,7 +578,7 @@ class MilitaryModule {
     )
       return "👑"; // "Royal" regiment based in capital
     const mainUnit = Object.entries(r.u).sort((a, b) => b[1] - a[1])[0][0]; // unit with more troops in regiment
-    const unit = facts.military.units.find((u: { name: string; icon: string }) => u.name === mainUnit);
+    const unit = options.map.military.units.find((u: { name: string; icon: string }) => u.name === mainUnit);
     return unit ? unit.icon : "⚔️";
   }
 }

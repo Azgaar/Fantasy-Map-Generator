@@ -7,7 +7,7 @@ describe("restoreJourneys", () => {
   beforeEach(async () => {
     globalThis.window = globalThis.window || ({} as any);
     (globalThis as any).WARN = false;
-    (globalThis as any).options = { graph: { width: 100, height: 100 } };
+    options.map.graph = { width: 100, height: 100, points: 100 };
     (globalThis as any).Pack = { findCell: (x: number, _y: number) => Math.round(x) };
     (globalThis as any).pack = {};
 

@@ -19,7 +19,7 @@ describe("MarkersModule.addEncounter", () => {
     originalNavigatorDescriptor = Object.getOwnPropertyDescriptor(globalThis, NAV_KEY);
 
     globalThis.TIME = false;
-    globalThis.facts = { cultures: { set: "world" } } as typeof facts;
+    options.map.cultures.set = "world";
     globalThis.window = globalThis.window || ({} as any);
 
     globalThis.pack = {

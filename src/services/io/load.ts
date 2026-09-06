@@ -256,17 +256,12 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     migrateLegacySettings(mapVersion!, data);
     const settings = data[1] ? safeParseJSON(data[1]) : null;
     if (!settings) throw new Error("Map settings are missing or malformed");
-    Facts.adopt(Facts.parse(settings)); // replaces wholesale: nothing of the previous map survives
-    // the lat/lon box is stored, so it is taken as the file gives it - the panel that owns its
-    // inputs re-derives it on every edit, so a saved box always agrees with them. Only a file that
-    // carried none needs it computed. See docs/architecture/configuration.md#derived-facts
-    if (!(settings as { geography?: { coordinates?: unknown } })?.geography?.coordinates) Coordinates.calculate();
-    Options.syncOnLoad(); // the small allowlist of requests a load may carry over
+    Options.applyLoaded(settings);
     syncInputs();
 
     setStylePresetSelect();
 
-    INFO && console.group(facts.seed ? `Loaded Map ${facts.seed}` : "Loaded Map");
+    INFO && console.group(options.map.seed ? `Loaded Map ${options.map.seed}` : "Loaded Map");
     isLogGroupOpen = true;
 
     ensureEl<HTMLInputElement>("shapeRendering").value =
@@ -681,6 +676,8 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     fitMapToScreen();
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - uploadTimeStart) / 1000, 2)}s`);
+
+    Options.persist(); // the migrations run after the adoption, and they change the map too
 
     const mapCreatedAt = +data[0].split("|")[6] || Date.now();
     registerMap(mapCreatedAt);

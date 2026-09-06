@@ -351,7 +351,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       .attr("filter", "url(#dropShadow05)");
 
     // v1.4 added icon and power attributes for units
-    for (const unit of facts.military.units) {
+    for (const unit of options.map.military.units) {
       if (!unit.icon) unit.icon = getUnitIcon(unit.type);
       if (!unit.power) unit.power = unit.crew;
     }
@@ -442,7 +442,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       f.temp = grid.cells.temp[pack.cells.g[f.firstCell]];
       const heights = pack.cells.c[f.firstCell].map(c => pack.cells.h[c]).filter(h => h >= 20);
       f.height = f.height || min(heights) || 0;
-      const height = (f.height - 18) ** facts.units.height.exponent;
+      const height = (f.height - 18) ** options.map.units.height.exponent;
       const evaporation = ((700 * (f.temp + 0.006 * height)) / 50 + 75) / (80 - f.temp);
       f.evaporation = rn(evaporation * f.cells);
       if (!f.shoreline) f.shoreline = Lakes.defineShoreline(f);
@@ -536,7 +536,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     // v1.65 changed rivers data
     select("#rivers").attr("style", null); // remove style to unhide layer
     const { cells, rivers } = pack;
-    const defaultWidthFactor = rn(1 / (facts.graph.points / 10000) ** 0.25, 2);
+    const defaultWidthFactor = rn(1 / (options.map.graph.points / 10000) ** 0.25, 2);
 
     for (const river of rivers) {
       const node = document.getElementById(`river${river.i}`) as unknown as SVGPathElement | null;
@@ -648,11 +648,6 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     zones.forEach(zone => {
       if (!zone.dataset.type) zone.dataset.type = "Unknown";
     });
-  }
-
-  if (isOlderThan("1.84.0")) {
-    // v1.84.0 added grid.cellsDesired to stored data
-    if (!grid.cellsDesired) grid.cellsDesired = rn((facts.graph.width * facts.graph.height) / grid.spacing ** 2, -3);
   }
 
   if (isOlderThan("1.85.0")) {
@@ -1013,7 +1008,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   if (isOlderThan("1.109.0")) {
     // v1.109.0 added customizable burg groups and icons
-    facts.burgs.groups = [];
+    options.map.burgs.groups = [];
 
     select("#burgIcons")
       .selectAll<SVGElement, unknown>("circle, use")
@@ -1029,7 +1024,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       .each(function (_el, index) {
         const name = this.id;
         const isDefault = name === "towns";
-        facts.burgs.groups.push({ name, active: true, order: index + 1, isDefault, preview: "watabou-city" });
+        options.map.burgs.groups.push({ name, active: true, order: index + 1, isDefault, preview: "watabou-city" });
         if (!this.dataset.icon) this.dataset.icon = "#icon-circle";
 
         const size = Number(this.getAttribute("size") || 2) * 2;
@@ -1039,8 +1034,8 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         this.setAttribute("stroke-width", "1");
       });
 
-    if (facts.burgs.groups.filter(g => g.isDefault).length === 0) {
-      facts.burgs.groups[0].isDefault = true;
+    if (options.map.burgs.groups.filter(g => g.isDefault).length === 0) {
+      options.map.burgs.groups[0].isDefault = true;
     }
 
     select("#anchors")
@@ -1251,12 +1246,12 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     labels.style.removeProperty("display");
 
     // the labels options are already migrated, only the groups are rebuilt from the map
-    const stateMode: LabelNameMode = facts.labels.groups.find(group => group.type === "state")?.mode ?? "auto";
-    facts.labels.groups = [];
+    const stateMode: LabelNameMode = options.map.labels.groups.find(group => group.type === "state")?.mode ?? "auto";
+    options.map.labels.groups = [];
     styles.labels.groups = {};
 
     for (const type of ["river", "route"] as const) {
-      facts.labels.groups.push(Labels.getFallbackGroup(type));
+      options.map.labels.groups.push(Labels.getFallbackGroup(type));
       styles.labels.groups[type] = getGroupStyle({ name: type, type });
     }
 
@@ -1288,24 +1283,24 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       const oldStyle = deriveLabelsStyle(burgGroup);
       const zoom = legacyBurgGroupZoom(name, Number.parseFloat(oldStyle["font-size"] as string));
 
-      facts.labels.groups.push({ name, type: "burg", isDefault: name === "towns", zoom });
+      options.map.labels.groups.push({ name, type: "burg", isDefault: name === "towns", zoom });
       styles.labels.groups[name] = labelGroupFromLegacy(oldStyle);
     }
 
     const migratedBurgStyle = burgGroups.length ? styles.labels.groups[burgGroups[0].id] : undefined;
-    for (const { name } of facts.burgs.groups) {
-      if (facts.labels.groups.some(group => group.name === name)) continue;
+    for (const { name } of options.map.burgs.groups) {
+      if (options.map.labels.groups.some(group => group.name === name)) continue;
 
       const defaultGroup = Labels.getDefaultGroups().find(group => group.type === "burg" && group.name === name);
       const { zoom } = defaultGroup ?? Labels.getFallbackGroup("burg");
-      facts.labels.groups.push({ name, type: "burg", zoom });
+      options.map.labels.groups.push({ name, type: "burg", zoom });
       styles.labels.groups[name] = migratedBurgStyle
         ? structuredClone(migratedBurgStyle)
         : getGroupStyle({ name, type: "burg" });
     }
 
-    if (facts.labels.groups.every(group => !group.isDefault) && facts.labels.groups[0])
-      facts.labels.groups[0].isDefault = true;
+    if (options.map.labels.groups.every(group => !group.isDefault) && options.map.labels.groups[0])
+      options.map.labels.groups[0].isDefault = true;
 
     // migrate manually shifted burg labels to pack.burgs[burgId].label
     for (const textEl of document.querySelectorAll<SVGTextElement>("#burgLabels > g > text")) {
@@ -1327,7 +1322,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       const oldStyle = deriveLabelsStyle(provs);
       const fontSize = Number.parseFloat(oldStyle["font-size"] as string);
 
-      facts.labels.groups.push({
+      options.map.labels.groups.push({
         name: "province",
         type: "province",
         isDefault: true,
@@ -1337,7 +1332,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       });
       styles.labels.groups.province = labelGroupFromLegacy(oldStyle);
     } else {
-      facts.labels.groups.push(Labels.getFallbackGroup("province"));
+      options.map.labels.groups.push(Labels.getFallbackGroup("province"));
       styles.labels.groups.province = getGroupStyle({ name: "province", type: "province" });
     }
 
@@ -1345,13 +1340,13 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     const addedGroups = Array.from(labels.querySelectorAll<SVGGElement>(":scope > g:not(#states):not(#burgLabels)"));
     for (const addedGroup of addedGroups) {
       let name = addedGroup.id === "addedLabels" ? "added" : addedGroup.id;
-      const isExisting = facts.labels.groups.find(group => group.name === name);
-      if (isExisting) name += facts.labels.groups.length;
+      const isExisting = options.map.labels.groups.find(group => group.name === name);
+      if (isExisting) name += options.map.labels.groups.length;
 
       const oldStyle = deriveLabelsStyle(addedGroup);
       const fontSize = Number.parseFloat(oldStyle["font-size"] as string);
 
-      facts.labels.groups.push({
+      options.map.labels.groups.push({
         name,
         type: "added",
         isDefault: name === "added",
@@ -1381,7 +1376,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       const oldStyle = deriveLabelsStyle(stateGroup);
       const fontSize = Number.parseFloat(oldStyle["font-size"] as string);
 
-      facts.labels.groups.push({
+      options.map.labels.groups.push({
         name: "state",
         type: "state",
         isDefault: true,
@@ -1390,7 +1385,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       });
       styles.labels.groups.state = labelGroupFromLegacy(oldStyle);
     } else {
-      facts.labels.groups.push({ ...Labels.getFallbackGroup("state"), mode: stateMode });
+      options.map.labels.groups.push({ ...Labels.getFallbackGroup("state"), mode: stateMode });
       styles.labels.groups.state = getGroupStyle({ name: "state", type: "state" });
     }
 
@@ -1541,7 +1536,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       toggleScaleBar: "scaleBar",
       toggleVignette: "vignette"
     };
-    for (const group of facts.labels?.groups ?? []) {
+    for (const group of options.map.labels.groups ?? []) {
       const layer = group.layerDependency && LAYER_ID_MAP[group.layerDependency];
       if (layer) group.layerDependency = layer;
     }
@@ -1835,7 +1830,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 }
 
 /**
- * The facts of a blank map as v1.151.0 shaped them, frozen. A migration describes a world that no
+ * The settings of a blank map as v1.151.0 shaped them, frozen. A migration describes a world that no
  * longer exists, so it carries its own copy of it: renaming or redefaulting a field today must not
  * change what a pre-1.151 file means. Validation fits the result to the current schema afterwards.
  * See docs/architecture/configuration.md#migrations
@@ -1888,9 +1883,9 @@ function legacyFactsDefaults() {
 export function migrateLegacySettings(mapVersion: string, data: string[]): void {
   if (!compareVersions(mapVersion, "1.151.0").isOlder) return;
 
-  // v1.151.0 replaced the legacy pipe-delimited settings string with the map's `facts` object.
+  // v1.151.0 replaced the legacy pipe-delimited settings string with the map's settings object.
   // A migration describes a world that no longer exists, so it reads the old slots by number and
-  // writes only facts: the viewer preferences the old format carried (3D settings, trade
+  // writes only map settings: the viewer preferences the old format carried (3D settings, trade
   // animation, note pinning, emblem visibility) are this browser's, not the map's, and are
   // deliberately not carried over. See docs/architecture/configuration.md
   const oldHeader = data[0].split("|");
@@ -1950,7 +1945,7 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
   if (oldOptions.era) migrated.lore.calendar.era = oldOptions.era;
   if (oldOptions.eraShort) migrated.lore.calendar.eraShort = oldOptions.eraShort;
 
-  // v1.140.0 moved the label settings into the labels facts and the naming mode onto the state
+  // v1.140.0 moved the label settings into the labels section and the naming mode onto the state
   // group. Slot 21 was the "Hide small labels" checkbox, which is a browser preference now: a file
   // carries no opinion about it, so the value is dropped rather than written into this browser
   if (oldSettings[23]) migrated.labels.resizeOnZoom = Boolean(Number(oldSettings[23]));

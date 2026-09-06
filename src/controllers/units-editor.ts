@@ -1,6 +1,4 @@
-// The Units Editor: the distance, altitude, temperature and population scales a map is read in.
-// Every control here edits `facts.units` - the dialog is built and filled from the object on open,
-// and nothing outside reads its inputs
+// The Units Editor: the distance, altitude, temperature and population scales a map is read in
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { Pins } from "@/components/pins";
@@ -138,7 +136,7 @@ function renderDialog(): void {
   Pins.bindIcons(ensureEl(DIALOG_ID), unitValue);
 }
 
-/** Every unit this dialog edits: the control that shows it, and where it lives in `facts` */
+/** Every unit this dialog edits: the control that shows it, and where it lives in `options.map` */
 const UNIT_KEYS = [
   "distanceUnit",
   "distanceScale",
@@ -153,7 +151,7 @@ const UNIT_KEYS = [
 
 /** The control each unit is shown in, and the value it holds now */
 function unitValue(key: string): string | number | undefined {
-  const { distance, area, height, temperature, population } = facts.units;
+  const { distance, area, height, temperature, population } = options.map.units;
   if (key === "distanceUnit") return distance.unit;
   if (key === "distanceScale") return distance.scale;
   if (key === "areaUnit") return area.unit;
@@ -173,15 +171,15 @@ const inputFor = (key: string) => ensureEl<HTMLInputElement>(BARE_IDS.includes(k
 /** The object is the source: push every unit it holds into the control that shows it */
 function fillInputs(): void {
   // a unit the user named themselves is not among the options of its select until it is put back there
-  applyOption(ensureEl("distanceUnitInput"), facts.units.distance.unit);
-  applyOption(ensureEl("heightUnit"), facts.units.height.unit);
+  applyOption(ensureEl("distanceUnitInput"), options.map.units.distance.unit);
+  applyOption(ensureEl("heightUnit"), options.map.units.height.unit);
 
   for (const key of UNIT_KEYS) inputFor(key).value = String(unitValue(key));
 }
 
 /**
- * Units are facts of the map and this dialog is their only writer: it owns every control it shows,
- * writes the value into `facts`, pins what the user set by hand, and redraws whatever reads it.
+ * Units describe the map and this dialog is their only writer: it owns every control it shows,
+ * writes the value into `options.map`, pins what the user set by hand, and redraws what reads it.
  * The <slider-input> controls re-dispatch their inner events, so only the outer id ever matches
  */
 function addListeners(): void {
@@ -192,7 +190,7 @@ function addListeners(): void {
 function onUnitChange(event: Event): void {
   const input = event.target as HTMLInputElement;
   const value = input.value;
-  const { units } = facts;
+  const { units } = options.map;
 
   switch (input.id) {
     case "distanceUnitInput":
@@ -204,18 +202,18 @@ function onUnitChange(event: Event): void {
       units.distance.unit = value;
       Pins.set("distanceUnit", value);
       redrawDistances();
-      return;
+      break;
 
     case "distanceScaleInput":
       units.distance.scale = +value;
       Pins.set("distanceScale", +value);
       redrawDistances();
-      return;
+      break;
 
     case "areaUnit":
       units.area.unit = value;
       Pins.set("areaUnit", value);
-      return;
+      break;
 
     case "heightUnit":
       if (value === "custom_name") {
@@ -224,36 +222,41 @@ function onUnitChange(event: Event): void {
       }
       units.height.unit = value;
       Pins.set("heightUnit", value);
-      return;
+      break;
 
     case "heightExponentInput":
       units.height.exponent = +value;
       Pins.set("heightExponent", +value);
       Temperature.generate();
       Layers.draw("temperature");
-      return;
+      break;
 
     case "temperatureScale":
       units.temperature.unit = value;
       Pins.set("temperatureScale", value);
       Layers.draw("temperature");
-      return;
+      break;
 
     case "populationRateInput":
       units.population.scale = +value;
       Pins.set("populationRate", +value);
-      return;
+      break;
 
     case "urbanizationInput":
       units.population.urbanization.rate = +value;
       Pins.set("urbanization", +value);
-      return;
+      break;
 
     case "urbanDensityInput":
       units.population.urbanization.density = +value;
       Pins.set("urbanDensity", +value);
+      break;
+
+    default:
       return;
   }
+
+  Options.save();
 }
 
 /** "custom_name" is not a unit: it asks for one, and puts the answer where the value belongs */
@@ -265,13 +268,14 @@ function askForCustomUnit(select: HTMLInputElement, kind: "distance" | "height")
 
     (select as unknown as HTMLSelectElement).options.add(new Option(name, name, false, true));
     if (kind === "distance") {
-      facts.units.distance.unit = name;
+      options.map.units.distance.unit = name;
       Pins.set("distanceUnit", name);
       redrawDistances();
     } else {
-      facts.units.height.unit = name;
+      options.map.units.height.unit = name;
       Pins.set("heightUnit", name);
     }
+    Options.save();
   });
 }
 
@@ -282,8 +286,9 @@ function redrawDistances(): void {
 }
 
 function restoreDefaultUnits(): void {
-  facts.units = Facts.getDefault().units;
+  options.map.units = Options.getDefaultOptions().map.units;
   for (const key of UNIT_KEYS) Pins.clear(key);
+  Options.save();
 
   fillInputs();
   Temperature.generate();

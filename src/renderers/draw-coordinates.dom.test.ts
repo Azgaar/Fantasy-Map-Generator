@@ -10,10 +10,8 @@ beforeEach(() => {
       <g id="viewbox"><g id="coordinates"></g></g>
     </svg>`;
   setViewportTransform(4, 0, 0);
-  globalThis.facts = {
-    graph: { width: 800, height: 600 },
-    geography: { coordinates: { lonT: 100, lonW: -50, lonE: 50, latN: 40, latS: -40, latT: 80 } }
-  } as unknown as typeof globalThis.facts;
+  options.map.graph = { width: 800, height: 600, points: 10000 };
+  options.map.geography.coordinates = { lonT: 100, lonW: -50, lonE: 50, latN: 40, latS: -40, latT: 80 };
 });
 
 test("drawCoordinates sizes labels from the store, ignoring data-size", () => {

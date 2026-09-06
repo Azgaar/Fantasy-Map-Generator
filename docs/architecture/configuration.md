@@ -1,54 +1,53 @@
 # Configuration
 
-Everything the user can set is one of exactly two things: something true about **this map**, or
-something true about **this browser**. Those are two objects with two lifetimes, two storage
-locations and two sets of writers:
+There is **one configuration object**. `options` holds everything the user can set, in three
+sections with one storage location, one schema and one model:
 
-| Object    | Answers                              | Lives in       | In the `.map`? |
-| --------- | ------------------------------------ | -------------- | -------------- |
-| `facts`   | what is true about the map on screen | the map object | yes            |
-| `options` | what this browser wants              | `localStorage` | never          |
+| Section              | Answers                                  | In the `.map`?                          |
+| -------------------- | ---------------------------------------- | --------------------------------------- |
+| `options.map`        | what is true about the map on screen     | yes — it _is_ the file's settings block |
+| `options.generation` | what to ask the generators for next time | never                                   |
+| `options.app`        | how this browser behaves                 | never                                   |
 
-`facts` is [map config](./architecture.md#two-scopes-of-configuration) and sits at
+The whole object lives in `localStorage` under `fmg-options`. `options.map` is also, byte for
+byte, what a `.map` file stores in its settings block: saving writes that object and loading
+replaces it, so the two cannot drift apart. There is no second object and no conversion —
+`Options.applyLoaded(json)` validates a file's settings and puts them in place, and `save.ts` writes
+`JSON.stringify(options.map)`.
+
+`options.map` is [map config](./architecture.md#two-scopes-of-configuration) and is serialized to
 `map.facts` beside `meta`, `layers`, `style` and `data` — see
-[future-data-model.md](./future-data-model.md). `options` is the app preference scope.
+[future-data-model.md](./future-data-model.md).
 
 ---
 
 ## Principles
 
-1. **Two scopes, two objects.** A configuration value belongs to the map or to the browser. There
-   is no third place and no value that is both.
-2. **Facts are written by generation, derivation, or a file load.** An input writes `options`.
-   A fact changes when a generator runs, when a derivation re-runs, or when a `.map` is read.
-   This single rule is what keeps a saved file consistent with the map it describes.
-3. **`options` holds requests; `facts` holds what happened.** Where a request and a result both
-   exist they are different values in different objects with different names — `options` asks for
-   18 states on a graph 1600×900 at density step 4, `facts` records the graph that was built, and
-   the states themselves are data. Never two copies of one value: a field that ends up in both
-   objects means the test below was answered twice and differently. Nor two forms of one value:
-   a step and the cell count it stands for are the same request said twice, so only the step is
-   stored and the count is derived where it is used.
-4. **A value is a fact if and only if the map cannot be operated correctly without it.** See
-   [The test](#the-test) — this is the only admission criterion, and it is decidable per field.
-5. **The schema is the shape; the model holds the defaults.** The schema file carries the zod
-   object and the type derived from it, and nothing else. One function in the model returns a
-   fully-defaulted object, taking each value from the module that owns the concept — a coastline
-   default belongs to the coastline generator, and is imported, never copied. Adding a field
-   extends the type, the persisted shape and the `.map` payload at once. A new map starts from the
-   defaults; a loaded map starts from its file.
-6. **The model is the store.** `facts` and `options` are globals the model declares and
-   initializes. There is no separate store module to keep in step with it. `facts` is written
-   plainly, like the rest of the map data — `facts.units.area.unit = …` — because a fact takes
-   effect where it is written and nothing else has to happen; `options` goes through `Options.set`,
-   which is what remembers it.
-7. **Validate at the boundary and replace, never merge.** Anything arriving from `localStorage`
-   or a `.map` is parsed against a schema before it is adopted, and adoption swaps the section
+1. **Options are primary.** Every value the UI shows and every value the app reads is in
+   `options`. A `.map` file is where one of its sections is written down, not a second store the
+   app keeps in step.
+2. **A section decides a lifetime, not a panel.** `map` is replaced by every load and
+   re-established by every generation; `generation` and `app` outlive both.
+3. **`generation` holds requests; `map` holds what happened.** Where a request and a result both
+   exist they are different values in different sections with different names — `generation` asks
+   for 18 states on a graph 1600×900 at density step 4, `map` records the graph that was built, and
+   the states themselves are data. Never two copies of one value: a field in both sections means
+   the test below was answered twice and differently. Nor two forms of one value: a step and the
+   cell count it stands for are the same request said twice, so only the step is stored and the
+   count is derived where it is used.
+4. **A value belongs in `map` if and only if the map cannot be operated correctly without it.**
+   See [the test](#the-test).
+5. **The model is the store.** `options` is a global the model declares and initializes. There is
+   no separate store module to keep in step with it. It is written plainly —
+   `options.map.units.area.unit = …` — because a value takes effect where it is written; what
+   remembers it is `Options.save()` (debounced) or `Options.set(change)`, which is the same thing
+   with the change inlined. `Options.persist()` writes immediately, for the few places that must
+   not wait: boot, reset, and the end of a generation or a load.
+6. **Validate at the boundary and replace, never merge.** Anything arriving from `localStorage` or
+   a `.map` is parsed against the schema before it is adopted, and adoption swaps the section
    wholesale. Merging lets one map inherit another's values.
-8. **The panel is a view.** Reading or writing a configuration value never requires a panel to be
+7. **The panel is a view.** Reading or writing a configuration value never requires a panel to be
    open, and the DOM is never the source of truth.
-9. **The preservation library is written only by a user edit** — never by a load, never by
-   generation. See [Preservation](#preservation-across-maps).
 
 ---
 
@@ -56,35 +55,37 @@ locations and two sets of writers:
 
 > Does anything other than a deliberate regeneration of that element need this value?
 
-If yes, it is a fact. If the only reader is the generator that produces the element, and that
-generator only runs when the user asks for it, it is an option.
+If yes, it belongs in `map`. If the only reader is the generator that produces the element, and
+that generator only runs when the user asks for it, it is a **request** and belongs in
+`generation`.
 
 The distinction that matters is **regeneration** (the user asks for a new version of something and
 accepts current settings) versus **recalculation and rendering** (the map must keep behaving like
 itself). Worked examples:
 
-| Value                  | Read by                                                | Verdict    |
-| ---------------------- | ------------------------------------------------------ | ---------- |
-| `states.growthRate`    | only the states generator, whenever it is asked to run | **option** |
-| `states.sizeVariety`   | only the states generator, whenever it is asked to run | **option** |
-| states count requested | only the states generator, only when asked             | **option** |
-| `cultures.set`         | marker generation branches on it long after generation | **fact**   |
-| `coastline`            | building a feature path at render time                 | **fact**   |
-| `graph.width/height`   | every latitude, longitude and full-map cover           | **fact**   |
-| density slider step    | positioning the slider                                 | **option** |
-| heightmap template     | the generators that raise the terrain, while they run  | **option** |
-| 3D erosion detail      | the 3D renderer, this session only                     | **option** |
+| Value                  | Read by                                                | Section      |
+| ---------------------- | ------------------------------------------------------ | ------------ |
+| `states.growthRate`    | only the states generator, whenever it is asked to run | `generation` |
+| `states.sizeVariety`   | only the states generator, whenever it is asked to run | `generation` |
+| states count requested | only the states generator, only when asked             | `generation` |
+| `cultures.set`         | marker generation branches on it long after generation | `map`        |
+| `coastline`            | building a feature path at render time                 | `map`        |
+| `graph.width/height`   | every latitude, longitude and full-map cover           | `map`        |
+| density slider step    | positioning the slider                                 | `generation` |
+| heightmap template     | the generators that raise the terrain, while they run  | `generation` |
+| 3D erosion detail      | the 3D renderer, this session only                     | `app`        |
 
 Four corollaries worth stating, because they are the cases people get wrong:
 
-- **A count, rate, ratio or variety is rarely a fact.** They are spent when the generator runs:
-  once the states exist their number, spread and growth are in the data, and the request that
+- **A count, rate, ratio or variety is rarely a map value.** They are spent when the generator
+  runs: once the states exist their number, spread and growth are in the data, and the request that
   produced them is inert. Adding one more state later is that generator running again, on the
   request as it stands — not the map recalculating itself.
-- **What survives is what other things read.** `cultures.set` is a fact and `cultures.growthRate`
-  is not, because marker and name generation still branch on the set long after the cultures are
-  drawn, while nothing but the culture generator has ever asked about the rate.
-- **A value the drawing reads is a fact when the drawing would be wrong without it.** The
+- **What survives is what other things read.** `cultures.set` is in `map` and
+  `cultures.growthRate` is not, because marker and name generation still branch on the set long
+  after the cultures are drawn, while nothing but the culture generator has ever asked about the
+  rate.
+- **A value the drawing reads is a map value when the drawing would be wrong without it.** The
   coastline settings decide the shape of every feature outline, so a file that lost them opens as a
   different map. `rendering` and `showAll` are also read while drawing and are preferences: they
   change how this browser looks at the map, not what the map is. The question is whether the file
@@ -96,35 +97,28 @@ Four corollaries worth stating, because they are the cases people get wrong:
 
 ---
 
-## `facts` — the map's own configuration
+## `options.map` — the map's own configuration
 
-Cell-independent map data. `facts` is where map data goes when it does not depend on a graph:
-the topology and everything keyed by cell live under `data`, and `facts` holds what is true about
-the map as a whole. This is also what makes definition sets belong here rather than beside the
-cells that reference them.
+Cell-independent map data: what is true about the map as a whole, where the topology and everything
+keyed by cell live under `data`.
 
-| Group        | Fields                                                      | Why it is a fact                                                          |
-| ------------ | ----------------------------------------------------------- | ------------------------------------------------------------------------- |
-| —            | `seed`                                                      | reproduces the map and identifies its graph                               |
-| `graph`      | `width`, `height`, `points`                                 | the coordinate extent; not recoverable from the topology, which floors it |
-| `geography`  | `mapSize`, `latitude`, `longitude`                          | where the map sits on the globe                                           |
-| `climate`    | `temperature.*`, `precipitation`, `winds`                   | produced the per-cell temperature and precipitation; needed to re-derive  |
-| `cultures`   | `set`                                                       | unrelated generators branch on it long after the cultures exist           |
-| `lore`       | `name`, `description`, `calendar.*`                         | filenames, state history, battle reports, and the author's own note       |
-| `units`      | `distance`, `area`, `height`, `temperature`, `population`   | the map's scale, and the author's presentation of it                      |
-| `labels`     | `groups`, `resizeOnZoom`                                    | label data references groups **by name**                                  |
-| `military`   | `units`                                                     | regiments resolve unit types **by name**                                  |
-| `transports` | type definitions                                            | route segments reference types **by name**                                |
-| `burgs`      | `groups`                                                    | burgs reference groups **by name**                                        |
-| `coastline`  | fractalization settings                                     | read at render time to build feature paths                                |
-| `style`      | `preset`                                                    | the preset the map's styles came from, so the Style tab can show it again |
+| Group        | Fields                                                    | Why it is a map value                                                     |
+| ------------ | --------------------------------------------------------- | ------------------------------------------------------------------------- |
+| —            | `seed`                                                    | reproduces the map and identifies its graph                               |
+| `graph`      | `width`, `height`, `points`                               | the coordinate extent; not recoverable from the topology, which floors it |
+| `geography`  | `mapSize`, `latitude`, `longitude`, `coordinates`         | where the map sits on the globe                                           |
+| `climate`    | `temperature.*`, `precipitation`, `winds`                 | produced the per-cell temperature and precipitation; needed to re-derive  |
+| `cultures`   | `set`                                                     | unrelated generators branch on it long after the cultures exist           |
+| `lore`       | `name`, `description`, `calendar.*`                       | filenames, state history, battle reports, and the author's own note       |
+| `units`      | `distance`, `area`, `height`, `temperature`, `population` | the map's scale, and the author's presentation of it                      |
+| `style`      | `preset`                                                  | the preset the map's styles came from, so the Style tab can show it again |
+| `labels`     | `resizeOnZoom`, `groups`                                  | typography under zoom; label data references groups **by name**           |
+| `burgs`      | `groups`                                                  | burgs reference groups **by name**                                        |
+| `military`   | `units`                                                   | regiments resolve unit types **by name**                                  |
+| `transports` | type definitions                                          | route segments reference types **by name**                                |
+| `coastline`  | fractalization settings                                   | read at render time to build every feature outline                        |
 
-**Reference by name is the strongest fact signal there is.** A definition set that entities point
-at by name must travel in the same file as those entities, or the map opens with unresolved
-references — which is why `military`, `transports`, `burgs.groups` and `labels.groups` are facts
-and not preferences, however much they look like user settings.
-
-### Derived facts
+### Derived values
 
 `geography.coordinates` (the lat/lon box) is computed from `mapSize`, `latitude`, `longitude` and
 the extent's aspect ratio. Nothing may write it except that derivation, and the derivation runs
@@ -136,46 +130,77 @@ can only produce the same answer, and would quietly re-render an old map if the 
 changed. A file that carries no box — anything old enough to predate it — gets one computed on
 load.
 
-A derived fact still has to be **recomputable**: the inputs travel in the same file, so nothing is
+A derived value still has to be **recomputable**: the inputs travel in the same file, so nothing is
 lost if the cache is dropped.
 
 ---
 
-## `options` — this browser's configuration
+## The definition sets
 
-Three parts with one storage location and one schema:
+Military unit types, transport types, burg groups, label groups and the coastline settings sit in
+`options.map` beside the rest.
 
-| Part                     | Lives in            | Contents                                                                                                                                                            | Notes                                                     |
-| ------------------------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| **Requests**             | `options.generation` | the graph to build (extent and density), entity counts, ratios, rates and varieties, culture set and template for the next map                                      | consumed by generation; what it keeps is written to `facts` |
-| **Preferences**          | `options.app`       | 3D settings, animation settings, notes pinning, `emblems` and `labels` (shape, and whether all are shown regardless of zoom), interface size, theme, tooltip size, autosave, on-load behaviour, rendering, zoom extent, viewport size | take effect immediately, affect nothing generated         |
-| **Preservation library** | `options.library`   | the user's own definition sets, kept for the next map                                                                                                               | see [Preservation](#preservation-across-maps)             |
+**Reference by name is the strongest signal there is.** A set that entities point at by name must
+travel in the same file as those entities, or the map opens with unresolved references — which is
+why these are saved with the map however much they look like user settings.
+
+They are also the set the **next** map starts from, which is the whole of the preservation
+mechanism: because they are in `options`, they survive a refresh, and `Options.randomize()` carries
+them across explicitly while resetting everything else in `options.map`.
+
+- **A user edit writes them**, and the map changes at once — the editors are their only writers,
+  beside a load.
+- **A load replaces them** with the opened map's sets: what this browser holds is what the map on
+  screen holds, and the next map starts from there too.
+- **A set is never empty.** `Options.applyLoaded` and `Options.restore` repair one that arrives
+  empty from the modules that own it, because a label type with no group draws no labels and a
+  burg group set with no default assigns no burgs.
+
+---
+
+## `options.generation` — the requests
+
+The graph to build (extent and density), entity counts, ratios, rates and varieties, culture set
+and template for the next map. Consumed by generation; what it keeps is written into `options.map`.
+
+Note the deliberate pair: `generation.graph.{width,height,density}` is the graph asked for, and
+`map.graph.{width,height,points}` is the one that was built. Changing the request does not touch
+the map on screen — that is what makes the sections separate.
+
+---
+
+## `options.app` — the preferences
+
+3D settings, animation settings, notes pinning, `emblems` and `labels` (shape, and whether all are
+shown regardless of zoom), interface size, theme, tooltip size, autosave, on-load behaviour,
+rendering, zoom extent, viewport size. They take effect immediately and generate nothing.
 
 Also transient editor state that has nowhere better to live (a live "growth modifier" slider, for
 instance). Such a field is not a remembered preference — mark it as transient in the schema so
 nobody mistakes it for one.
 
-**One key holds all three.** A preference does not get a `localStorage` key of its own, however
-small it is: a key beside the object is a second source of truth for a control the object already
-answers for, and the panel ends up showing one while the app reads the other. The exceptions are
-the preset libraries below, which are lists rather than fields, and the locks, which are a store of
-values keyed by a UI vocabulary of their own.
+**One key holds all three sections.** A preference does not get a `localStorage` key of its own,
+however small it is: a key beside the object is a second source of truth for a control the object
+already answers for, and the panel ends up showing one while the app reads the other. The
+exceptions are the preset libraries below, which are lists rather than fields, the locks, which are
+a store of values keyed by a UI vocabulary of their own, and the app flags, which no control shows
+at all.
 
-**"Show all regardless of zoom" is a preference, not a fact.** Both `emblems.showAll` and
-`labels.showAll` turn off a zoom-based culling so the user can look at everything at once. Nothing
-about the map changes, and the next person to open the file has their own opinion about it — which
-is why they sit in `options.app` beside `rendering`, and why a load carries neither. `labels`'
-`resizeOnZoom` is the other way round: it decides how the map's own typography behaves, so it is a
-fact and travels with the file.
+**"Show all regardless of zoom" is a preference.** Both `emblems.showAll` and `labels.showAll` turn
+off a zoom-based culling so the user can look at everything at once. Nothing about the map changes,
+and the next person to open the file has their own opinion about it — which is why they sit in
+`options.app` beside `rendering`, and why a load carries neither. `labels.resizeOnZoom` is the
+other way round: it decides how the map's own typography behaves, so it is in `options.map` and
+travels with the file.
 
 **A preference has no lock.** Nothing re-rolls it, so there is nothing to pin it against — pinning
-an option the [locks](#locks) cannot answer for stores nothing and lights an icon that stands for
-nothing. Locks belong to requests, and to the facts that have no request.
+something the [locks](#locks) cannot answer for stores nothing and lights an icon that stands for
+nothing. Locks belong to requests, and to the map values that have no request.
 
-**A preference the user has not set is `null`, not a guess.** Interface size follows the screen
-and the viewport follows the window until someone chooses otherwise; storing the derived value
-instead would freeze today's window into a setting the user never asked for. The control's reset
-puts the field back to `null` rather than to a number.
+**A preference the user has not set is `null`, not a guess.** Interface size follows the screen and
+the viewport follows the window until someone chooses otherwise; storing the derived value instead
+would freeze today's window into a setting the user never asked for. The control's reset puts the
+field back to `null` rather than to a number.
 
 **Applying a preference is not writing it.** The function that paints the dialogs, sizes the
 interface or re-renders the map takes the value; it does not decide it. Where several controls edit
@@ -184,18 +209,20 @@ writer, so the object always holds what the screen is actually showing.
 
 ### Locks
 
-A lock pins a value so a new map does not re-roll it. A lock stores **the value**, in a store of its
-own: `facts` is replaced wholesale by every load, so a pin that named only a key would not survive
-one. Editing a control by hand pins it; a rolled value stays unpinned. Lock keys are a stable UI
-vocabulary independent of the object paths — renaming one invalidates a user's pins.
+A lock pins a value so a new map does not re-roll it. A lock stores **the value**, in a store of
+its own: `options.map` is replaced wholesale by every load and every generation, so a pin that
+named only a key would not survive one. Editing a control by hand pins it; a rolled value stays
+unpinned. Lock keys are a stable UI vocabulary independent of the object paths — renaming one
+invalidates a user's pins.
 
 `components/pins.ts` is the whole of the mechanism: `Pins` holds the store and the lock icons
-alike. A dialog calls `Pins.bindIcons(dialog, pinnedValue)` and answers, in one function of its own,
-for the value each icon stands for — there is no central table of keys, because the dialog that
-shows a control is the one that knows where its value lives. The scope decides **when** a pin is
-applied. A pinned **request** is applied where requests are resolved, before generation reads them;
-a pinned **fact** is applied to the map being seeded, after the requests it has none of. Applying a
-request pin later than that writes a value nothing will read until the map after next.
+alike. A dialog calls `Pins.bindIcons(dialog, pinnedValue)` and answers, in one function of its
+own, for the value each icon stands for — there is no central table of keys, because the dialog
+that shows a control is the one that knows where its value lives.
+
+Everything a pin can restore is applied in one place, `Options.randomize()`: the requests first,
+then the map values the requests resolve into, then the map values nothing rolls. Applying a pin
+anywhere later writes a value nothing will read until the map after next.
 
 A lock is a boundary like any other: it is raw `localStorage`, so a key nothing answers for is
 never pinned, and a pinned value the key's own schema rejects is ignored rather than written into
@@ -203,21 +230,26 @@ the map. A preference is never pinnable — nothing re-rolls it.
 
 **`?options=default` ignores every pin**, so the map is the one a fresh browser would make. One
 predicate decides it (`Pins.ignored`), and `Pins.rolls(key)` and `Pins.valueOr(key, fallback)` are
-the only way requests and facts consult a pin. `valueOr` also drops a pin whose type no longer
-matches the value it stands for, so a corrupt store cannot write a string into a number.
+the only way anything consults a pin. `valueOr` also drops a pin whose type no longer matches the
+value it stands for, so a corrupt store cannot write a string into a number.
 
 ---
 
 ## Storage scopes
 
-| Scope            | Key               | Written by                   | In the `.map`? |
-| ---------------- | ----------------- | ---------------------------- | -------------- |
-| `facts`          | —                 | generation, derivation, load | yes            |
-| `options`        | `fmg-options`     | input events, generation     | no             |
-| Locks            | `fmg-locks`       | pinning a control            | no             |
-| Dialog state     | `fmg-dialog-state`| a dialog the user arranged   | no             |
-| Layer presets    | `preset`/`presets`| an explicit user action      | no             |
-| Style presets    | `fmgStyle_*`      | an explicit user action      | no             |
+| Scope         | Key                 | Written by                       | In the `.map`? |
+| ------------- | ------------------- | -------------------------------- | -------------- |
+| `options`     | `fmg-options`       | input events, generation, a load | `map` only     |
+| Locks         | `fmg-locks`         | pinning a control                | no             |
+| Dialog state  | `fmg-dialog-state`  | a dialog the user arranged       | no             |
+| Layer presets | `preset`/`presets`  | an explicit user action          | no             |
+| Style presets | `fmgStyle_*`        | an explicit user action          | no             |
+| App flags     | `version`, and the one below | the app itself, never the user | no  |
+
+**A flag the user cannot set is not a preference.** `options` holds what the user can change; a
+value the app records about itself gets a bare key instead. There are two: `version`, and
+`disable_click_arrow_tooltip`, which says the user has found the options trigger so it stops
+glowing. Neither is shown by any control, neither is pinnable, and neither belongs in `options`.
 
 Style presets, layer presets and dialog state are their own libraries with the same shape and the
 same rule: user-owned, per-browser, written only on purpose, and each a list keyed by something the
@@ -229,65 +261,54 @@ outstanding exception, and are preferences that should move.
 
 ## Load mechanics
 
-Loading a `.map` establishes a new map. It must not silently rewrite what this browser wants.
+Loading a `.map` establishes a new map. It must not silently rewrite what this browser wants of the
+app itself.
 
-1. **Parse and adopt facts.** Validate the file's `facts` against the schema and **replace**
-   `facts` wholesale. A section the file lacks becomes the schema default — never the previous
-   map's value.
-2. **Re-derive derived facts** from their inputs rather than trusting the file's cache.
-3. **Leave `options` alone**, except for the sync allowlist below.
-4. **Refresh the panels** so every control shows its object again.
+1. **Parse the file's settings** against `mapSchema` and **replace** `options.map` wholesale. A
+   section the file lacks becomes the schema default — never the previous map's value.
+2. **Re-derive derived values** their file did not carry.
+3. **Leave `options.app` alone**, and `options.generation` too, except for the extent below.
+4. **Refresh the panels** so every control shows the object again.
 
-### The sync allowlist
-
-A small, explicitly enumerated set of `options` requests that a load may update, because the user
-would expect them to continue from the map they just opened:
-
-| Option request   | Sourced from               | Why                                                        |
-| ---------------- | -------------------------- | ---------------------------------------------------------- |
-| requested extent | `facts.graph.width/height` | generating from an opened map should keep that map's shape |
-
-Rules for this list, which exist to keep it from growing into a merge:
-
-- An entry must be a **request**, never a preference and never a library entry.
-- An entry **never overrides a lock.** A pinned request stays pinned.
-- Adding an entry requires a stated reason in this table. The default answer is no.
-
-Everything else the panel needs from the loaded map it reads from `facts` directly.
+The extent is the one request a load updates: `generation.graph.width/height` follow the map just
+opened, because generating from it should keep its shape. A pinned extent is never overridden.
+Adding anything else to that rule needs a reason stated here, and the default answer is no.
 
 ---
 
 ## Save mechanics
 
-`facts` is serialized into the map file. `options` never is — not the requests, not the
-preferences, not the library. The file records what the map is; a request that was never generated
-is not part of the map.
+`options.map` is written into the map file, as it stands. `options.generation` and `options.app`
+never are. The file records what the map is; a request that was never generated is not part of the map.
 
-Facts that duplicate data are written once. Where a request and a result both exist, only the
-result is a fact, and where a fact is derived it may be written for convenience but must remain
+Values that duplicate data are written once. Where a request and a result both exist, only the
+result is saved, and where a value is derived it may be written for convenience but must remain
 recomputable without it.
 
 ---
 
 ## Generation mechanics
 
-Generation is the commit point from requests to facts.
+Generation is the commit point from requests to map values, and `Options.randomize()` is the whole
+of it: it re-rolls every unpinned request, resolves the ones the map keeps into `options.map`, and
+re-rolls the map values that have no request of their own. It runs before the pipeline, never
+after, and one line covers each value — the roll and the pin side by side.
 
-- **A new map** resolves its requests (rolling those the user has not pinned, applying pinned
-  values from the locks), seeds definition sets from the preservation library, runs the pipeline,
-  and writes the resulting parameters into `facts`. After generation, `facts` describes the map
-  that exists.
+- **A new map** starts `options.map` from the defaults and keeps only the seed, which `setSeed`
+  resolved and reseeded the PRNG with beforehand, and the definition sets, which are the user's
+  own and are the next map's starting point.
 - **Regenerating one element** reads the current request for that element, runs its generator, and
-  writes that element's parameters into `facts`. Nothing else in `facts` changes.
+  writes that element's parameters into `options.map`. Nothing else changes.
 - **A recalculation is not a regeneration.** Expanding states after an edit, re-deriving climate
-  after a world-position change, rebuilding a coastline path — these read `facts`, because they
-  must keep the map behaving like itself. They never read requests.
-- **Editing a fact directly** is legitimate for the panels that own facts — world position and
-  climate, units, lore, the definition sets. Such a panel writes `facts`, pins the value, and
-  immediately runs whatever derivation and redraw depend on it. It does not write requests.
+  after a world-position change, rebuilding a coastline path — these read `options.map`, because
+  they must keep the map behaving like itself. They never read `options.generation`.
+- **Editing a map value directly** is what the panels that own them do — world position and
+  climate, units, lore, the definition sets. Such a panel writes `options.map` or
+  pins the value, saves, and immediately runs whatever derivation and redraw depend on it. It does
+  not write requests.
 
-Consequently the panel that shows requests and the panel that edits facts are different panels,
-and each writes exactly one object.
+Consequently the panel that shows requests and the panel that edits map values are different
+panels, and each writes exactly one section.
 
 A dialog owns every control it shows: it writes the value, pins it, and runs whatever redraw the
 change asks for. Nothing delegates writing into another panel's controls, so no control has two
@@ -295,44 +316,19 @@ writers and no value is written twice.
 
 ---
 
-## Preservation across maps
-
-Some facts are user-authored policy the user expects to keep: military unit types, transport
-types, burg groups, label groups, coastline settings. They are facts of whatever map they are on
-_and_ the starting point for the next one.
-
-The mechanism is a **preservation library** in `options`, one entry per definition set.
-`Facts.apply` seeds them and `Facts` repairs them, and `Options.remember(entry, value, defaults)`
-keeps one: the module that owns a set passes its own defaults, because it is the one that answers
-for them.
-
-- **A user edit writes both.** Editing a set on a map updates `facts` (the map changes now) and
-  mirrors the result into the library (the next map starts there).
-- **A load writes neither library entry.** Opening a map replaces `facts` and leaves the library
-  untouched, so a map's own sets govern that map without becoming this browser's defaults.
-- **Generation seeds facts from the library**, falling back to the module's defaults when the
-  library has no entry.
-- **Reset clears the library entry**, returning the next map to the module defaults.
-
-The result is the behaviour users ask for — customization survives a refresh and a new map — with
-none of the leakage that comes from letting a loaded map define the defaults. Because the library
-is only ever written by a deliberate edit, its contents are always something this user typed.
-
----
-
 ## Validation
 
-Both objects are validated at every boundary they cross: `options` when read from
-`localStorage`, `facts` when read from a `.map`. Validation must **repair rather than reject** —
-one stale field cannot cost the user their map or their settings:
+`options` is validated when read from `localStorage`, and the settings block when read from a
+`.map`. Validation must **repair rather than reject** — one stale field cannot cost the user their
+map or their settings:
 
 1. Validate each section independently.
 2. On failure, replace only the failing values with their defaults and re-validate the section.
 3. If that still fails, fall back to the whole section's default.
 4. Warn to the console at each fallback, naming the section.
 
-Unknown keys are stripped, which is how values from a newer or abandoned schema stop travelling.
-A field that must be _read_ before it disappears needs a migration; silent stripping is only for
+Unknown keys are stripped, which is how values from a newer or abandoned schema stop travelling. A
+field that must be _read_ before it disappears needs a migration; silent stripping is only for
 fields nothing needs any more.
 
 The defaults hold no counterpart for an entry of a definition set, so an entry that cannot be
@@ -340,7 +336,10 @@ repaired is dropped on its own. Losing one unit type is a repair; losing the set
 every regiment that referenced it stop resolving.
 
 `parseSections` in `src/utils/schemaUtils.ts` is this shape, and is what every boundary parses
-through; `Styles.parse` in `src/generators/styles.ts` is the same design for the style object.
+through; `Styles.parse` in `src/generators/styles.ts` is the same design for the style object. A
+file is always repaired from the **defaults**, never from what is on screen: `Options.applyLoaded`
+passes `getDefaultOptions().map`, so a section the file lacks cannot come back as the previous
+map's value.
 
 ### What the schema constrains
 
@@ -352,18 +351,22 @@ nothing left to say where it came from.
 So a leaf constrains **what would break the app**: a positive extent, a whole count, a step the
 table has an entry for, one of a closed set of modes, a colour that is a colour. The shared leaf
 types are in `src/utils/schemaUtils.ts` (`positive`, `count`, `percent`, `ratio`, `hexColor`,
-`degrees`) and are used by both schemas, so one bound is written once.
+`degrees`), so one bound is written once.
 
 It constrains nothing beyond that. A bound the UI merely happens to impose is not a claim about the
 value — a slider's `max` is a convenience, and turning it into validation lets a repair quietly
 rewrite a number the user set on purpose. Where the vocabulary is open, such as a heightmap
 template id or a unit the user may name themselves, the schema says so and stays a string.
 
+A predicate that consults something outside the schema must survive that thing being absent: a
+label group's `layerDependency` is checked against the layer registry, and an unloaded registry
+accepts rather than throwing or dropping every group.
+
 ### Migrations
 
-A migration describes a world that no longer exists, so it **carries its own copy of that world
-and never leans on the live schema**. Renaming a field today must not change what an old file
-means. Migrations run at the boundary, before validation, and produce a current-shaped object.
+A migration describes a world that no longer exists, so it **carries its own copy of that world and
+never leans on the live schema**. Renaming a field today must not change what an old file means.
+Migrations run at the boundary, before validation, and produce a current-shaped object.
 
 A `.map` file is a migration's job because the user cannot re-make it. This browser's stored
 settings are not: they are one panel away, and a migration that carries them forward is code that
@@ -380,53 +383,43 @@ that showed a preference, one named after each definition set the user built, an
 miss is adopted.**
 
 Adopted, therefore: the preferences, because nothing in the UI puts them back — a theme colour or
-an interface size is chosen once and never looked for again — and the
-[preservation library](#preservation-across-maps), because a military roster, a burg group or a
-label group is built by hand over a session and cannot be re-made with a click.
+an interface size is chosen once and never looked for again — and the definition sets, because a
+military roster, a burg group or a label group is built by hand over a session and cannot be
+re-made with a click.
 
 Dropped, therefore: the pins. A pin is a claim about a value's shape as well as its name, and the
 old keys carry neither — `template` held a heightmap id whose vocabulary has since changed,
 `points` a raw cell count where a density step lives now, `cultures` a number the culture set caps.
-Re-typing thirty-odd of those against the settings table to restore something one click re-makes is a
-migration that would then have to be kept correct forever. Dropped too are `winds` and
-`presetStyle`: both describe a map now, and `options` has nowhere to keep a browser-wide default
-for either. They are still _named_ by the migration, so that the namespace goes entirely rather
-than leaving keys behind that nothing will ever read again.
+Re-typing thirty-odd of those against the settings table to restore something one click re-makes is
+a migration that would then have to be kept correct forever. Dropped too are `winds` and
+`presetStyle`: both describe a map, and a browser-wide default for either is not a thing this app
+keeps. They are still _named_ by the migration, so that the namespace goes entirely rather than
+leaving keys behind that nothing will ever read again.
 
 **The migration runs underneath the stored object, not after it.** It returns what the old keys
-amount to in today's shape; `Options.restoreStored` layers that between the defaults and this
+amount to in today's shape; `Options.restore` layers that between the defaults and this
 browser's `fmg-options`, and validates the three together. That ordering is what makes the old
 values safe to take: a definition set out of an old browser is untrusted like any other stored
-object, and going through [validation](#validation) is what drops the one unrepairable entry
-instead of the set around it. Adopting after the parse would write straight past the schema.
-
-A migration carries its own copy of the world it describes — its key names, and any value whose
-_meaning_ has since changed. It does **not** copy defaults. Filling a field the stored value lacks
-is a claim about today's shape, not about the old one: the user never had an opinion about that
-field, so it should follow the module's default as that changes, and only today's copy is certain
-to carry every field the schema now requires. A frozen copy silently stops matching the moment the
-schema gains a field — and because the library defaults are `null`, a section that then fails to
-validate has nothing to repair from and falls back whole, losing every other set in it.
+object, and going through [validation](#validation) is what drops the one unrepairable entry.
 
 ---
 
 ## Adding a configuration value
 
 1. **Apply [the test](#the-test).** Does anything other than a deliberate regeneration need it?
-2. **Add the field to the schema** of the object it belongs to, in the group that matches what it
-   configures — not the panel that shows it — and **its default to that object's model**, taking
-   the value from the module that owns the concept if there is one. The type, persistence,
-   validation and round-trip follow.
-3. **Give it exactly one writer.** A request is written by its control. A fact is written by the
-   generator, derivation or fact-owning editor that produces it. Never both, and never one field
-   in both objects.
-4. **Write it from the dialog that shows it.** The control's handler writes the value into its
-   object, pins it with `Pins.set(key, value)` where a pin means anything, and runs whatever redraw
-   the change asks for. Add the key to that dialog's own `pinnedValue` function so its lock icon can
-   read it. A request or a fact gets a pin, a preference does not — nothing re-rolls one.
-5. **If a new map should re-roll it**, add it to the randomization step. If a new map should
-   inherit the user's own version, add a library entry and call `Options.remember` from the module
-   that owns the set instead.
+2. **Add the field to the section it belongs to** in `options-schema.ts`, in the group that matches
+   what it configures — not the panel that shows it — and **its default to `getDefaultOptions`**,
+   taking the value from the module that owns the concept if there is one. The type, persistence,
+   validation and round-trip follow. A field added to `map` is in the `.map` file by that fact
+   alone — `mapSchema` is the file format.
+3. **Give it exactly one writer.** A request is written by its control. A map value is written by
+   the generator, derivation or editor that produces it. Never both, and never one field twice.
+4. **Write it from the dialog that shows it.** The control's handler writes the value, pins it with
+   `Pins.set(key, value)` where a pin means anything, calls `Options.save()`, and runs whatever
+   redraw the change asks for. Add the key to that dialog's own `pinnedValue` function so its lock
+   icon can read it. A request or a map value gets a pin, a preference does not.
+5. **If a new map should re-roll it**, add a line to `Options.randomize()`. If a new map should
+   keep the user's own version, carry it across in `randomize` as the definition sets are.
 6. **Read it directly** where it is used — reading never goes through a model.
 7. **No migration is needed for a new field**: validation leaves it at its default for every
    existing browser and every existing file.
@@ -437,29 +430,31 @@ validate has nothing to repair from and falls back whole, losing every other set
 
 These are the properties the design exists to guarantee, and the ones worth asserting in tests:
 
-- **Round trip.** Load a file, save it, load it again: `facts` is identical. Extend it across a
-  corpus of real files from every supported version.
-- **No cross-map inheritance.** Load map A, then map B: no value from A survives in `facts`.
-- **A file describes its map.** Every fact in a saved file was written by something that actually
+- **Round trip.** Load a file, save it, load it again: the settings block is identical. Extend it
+  across a corpus of real files from every supported version.
+- **No cross-map inheritance.** Load map A, then map B: no value from A survives in `options.map`.
+- **A file describes its map.** Every value in a saved file was written by something that actually
   ran. Changing a request without generating changes no file.
-- **Options survive maps.** Loading any map leaves preferences, pins and the library unchanged,
-  save for the allowlist, which never overrides a pin.
-- **Facts survive a reload.** Anything needed to render or operate the map is in the file, so a
+- **The app survives maps.** Loading any map leaves `options.app`, `options.generation` and the
+  pins unchanged, save for the extent, which never overrides a pin.
+- **The map survives a reload.** Anything needed to render or operate the map is in the file, so a
   fresh browser opens it identically.
-- **Derivation is idempotent.** Re-deriving a derived fact from a saved file reproduces the saved
+- **Derivation is idempotent.** Re-deriving a derived value from a saved file reproduces the saved
   value.
 
 ## Gotchas
 
-- **Never read either object at module top level.** Modules evaluate before boot resolves stored
+- **Never read `options` at module top level.** Modules evaluate before boot resolves stored
   values, so a top-level read captures a placeholder. Read inside the function that uses it.
 - **A count is in the data, not in the configuration.** Ask the world how many states it has.
 - **Two names beat one shared field.** When a request and a result feel like the same value, they
   are not — name them differently and let them diverge.
 - **Extent is not viewport.** The extent is the coordinate space the map's geometry lives in, is
   fixed for the life of its graph, and is asked for — before the map exists — by
-  `options.generation.graph`. The viewport is the screen window onto it: never a fact, because it
-  describes this browser rather than the map, and a preference only once the user sets one by hand
-  — `null` until then, meaning "follow the browser window". Either way the extent bounds it. They
-  are two controls in two places, in two different sections of the panel, and a panel that shows
-  one as the other is a bug.
+  `options.generation.graph`. The viewport is the screen window onto it: never part of the map,
+  because it describes this browser, and a preference only once the user sets one by hand — `null`
+  until then, meaning "follow the browser window". Either way the extent bounds it. They are two
+  controls in two places, in two different sections of the panel, and a panel that shows one as the
+  other is a bug.
+- **A local named `options` shadows the global.** A function parameter or destructured local called
+  `options` silently hides the configuration object; name it `config` instead.

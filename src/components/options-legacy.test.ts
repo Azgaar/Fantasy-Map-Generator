@@ -25,9 +25,9 @@ const seed = (entries: Record<string, string>) => {
 /** The whole boot path, so a migrated value is asserted after the schema has seen it */
 const restore = async () => {
   vi.resetModules();
-  const { Options, getDefaultOptions } = await import("./options-model");
-  Options.restoreStored();
-  return { options: globalThis.options, defaults: getDefaultOptions() };
+  const { Options } = await import("./options-model");
+  Options.restore();
+  return { options: globalThis.options, defaults: Options.getDefaultOptions() };
 };
 
 const A_UNIT = { icon: "x", name: "legion", rural: 0.2, urban: 0.1, crew: 1, power: 1, type: "melee", separate: 0 };
@@ -55,32 +55,32 @@ describe("adoptLegacyOptions", () => {
 
   it("drops a set that is not valid JSON without losing the sets beside it", () => {
     seed({ military: JSON.stringify([A_UNIT]), "burg-groups": "{not json" });
-    const migrated = adoptLegacyOptions() as { library: Record<string, unknown> };
-    expect(migrated.library.military).toEqual([A_UNIT]);
-    expect(migrated.library.burgGroups).toBeUndefined();
+    const migrated = adoptLegacyOptions() as { map: Record<string, any> };
+    expect(migrated.map.military.units).toEqual([A_UNIT]);
+    expect(migrated.map.burgs).toBeUndefined();
   });
 
   it("takes only the groups out of the labels wrapper", () => {
     seed({ "options-labels": JSON.stringify({ resizeOnZoom: false, showAll: true, groups: [A_LABEL_GROUP] }) });
-    const migrated = adoptLegacyOptions() as { library: Record<string, unknown> };
-    expect(migrated.library.labelGroups).toEqual([A_LABEL_GROUP]);
+    const migrated = adoptLegacyOptions() as { map: Record<string, any> };
+    expect(migrated.map.labels.groups).toEqual([A_LABEL_GROUP]);
   });
 
   it("survives a labels wrapper with no groups in it", () => {
     seed({ "options-labels": JSON.stringify({ resizeOnZoom: false }) });
-    const migrated = adoptLegacyOptions() as { library: Record<string, unknown> };
-    expect(migrated.library.labelGroups).toBeUndefined();
+    const migrated = adoptLegacyOptions() as { map: Record<string, any> };
+    expect(migrated.map.labels.groups).toBeUndefined();
   });
 
   it("rounds a truncated coastline out from today's defaults", () => {
     seed({ "coastline-settings": JSON.stringify({ minEdge: 4 }) });
-    const migrated = adoptLegacyOptions() as { library: { coastline: Record<string, number> } };
-    expect(migrated.library.coastline).toEqual({ ...Coastline.getDefaultSettings(), minEdge: 4 });
+    const migrated = adoptLegacyOptions() as { map: { coastline: Record<string, number> } };
+    expect(migrated.map.coastline).toEqual({ ...Coastline.getDefaultSettings(), minEdge: 4 });
   });
 });
 
-describe("Options.restoreStored, migrating", () => {
-  it("adopts the preferences and the library sets", async () => {
+describe("Options.restore, migrating", () => {
+  it("adopts the preferences and the definition sets", async () => {
     seed({
       themeColor: "#3366aa",
       uiSize: "1.7",
@@ -108,10 +108,15 @@ describe("Options.restoreStored, migrating", () => {
     expect(options.app.onLoad).toBe("lastSaved");
     expect(options.app.autosave.remind).toBe(false);
     expect(options.app.trade.animation.concurrent).toBe(99);
-    expect(options.library.military).toEqual([A_UNIT]);
-    expect(options.library.burgGroups).toEqual([A_BURG_GROUP]);
-    expect(options.library.labelGroups).toEqual([A_LABEL_GROUP]);
-    expect(options.library.coastline).toEqual({ ...Coastline.getDefaultSettings(), minEdge: 4 });
+    expect(options.map.military.units).toEqual([A_UNIT]);
+    // a set with no default burg group gets one, since `defineGroup` assigns no burg without it
+    expect(options.map.burgs.groups).toEqual([{ ...A_BURG_GROUP, isDefault: true }]);
+    // a type left with no group of its own draws no labels, so the missing ones come back
+    expect(options.map.labels.groups[0]).toEqual(A_LABEL_GROUP);
+    expect(new Set(options.map.labels.groups.map(group => group.type))).toEqual(
+      new Set(["state", "province", "burg", "river", "route", "added"])
+    );
+    expect(options.map.coastline).toEqual({ ...Coastline.getDefaultSettings(), minEdge: 4 });
   });
 
   it("leaves the pins, winds and the style preset behind", async () => {
@@ -127,8 +132,8 @@ describe("Options.restoreStored, migrating", () => {
       "burg-groups": JSON.stringify([A_BURG_GROUP])
     });
     const { options } = await restore();
-    expect(options.library.military).toEqual([A_UNIT]);
-    expect(options.library.burgGroups).toEqual([A_BURG_GROUP]);
+    expect(options.map.military.units).toEqual([A_UNIT]);
+    expect(options.map.burgs.groups).toEqual([{ ...A_BURG_GROUP, isDefault: true }]);
   });
 
   it("refuses a set of the wrong type without costing the sets or the preferences beside it", async () => {
@@ -138,8 +143,8 @@ describe("Options.restoreStored, migrating", () => {
       themeColor: "#3366aa"
     });
     const { options, defaults } = await restore();
-    expect(options.library.burgGroups).toBe(defaults.library.burgGroups);
-    expect(options.library.military).toEqual([A_UNIT]);
+    expect(options.map.burgs.groups).toEqual(defaults.map.burgs.groups);
+    expect(options.map.military.units).toEqual([A_UNIT]);
     expect(options.app.ui.themeColor).toBe("#3366aa");
   });
 
@@ -180,6 +185,6 @@ describe("Options.restoreStored, migrating", () => {
     await restore();
     const persisted = JSON.parse(store.get("fmg-options") as string);
     expect(persisted.app.ui.themeColor).toBe("#3366aa");
-    expect(persisted.library.military).toEqual([A_UNIT]);
+    expect(persisted.map.military.units).toEqual([A_UNIT]);
   });
 });

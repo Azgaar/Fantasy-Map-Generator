@@ -165,7 +165,7 @@ class RiverModule {
   }
 
   generate(allowErosion = true) {
-    Math.random = Alea(facts.seed);
+    Math.random = Alea(options.map.seed);
     const { cells, features } = pack;
 
     const riversData: { [riverId: number]: number[] } = {};
@@ -178,7 +178,7 @@ class RiverModule {
 
     const drainWater = () => {
       const MIN_FLUX_TO_FORM_RIVER = 30;
-      const cellsNumberModifier = (facts.graph.points / 10000) ** 0.25;
+      const cellsNumberModifier = (options.map.graph.points / 10000) ** 0.25;
 
       const prec = grid.cells.prec;
       const land = cells.i.filter((i: number) => h[i] >= 20).sort((a: number, b: number) => h[b] - h[a]);
@@ -310,7 +310,7 @@ class RiverModule {
       cells.conf = new Uint16Array(cells.i.length);
       pack.rivers = [];
 
-      const defaultWidthFactor = rn(1 / (facts.graph.points / 10000) ** 0.25, 2);
+      const defaultWidthFactor = rn(1 / (options.map.graph.points / 10000) ** 0.25, 2);
       const mainStemWidthFactor = defaultWidthFactor * 1.2;
 
       for (const key in riversData) {
@@ -490,7 +490,7 @@ class RiverModule {
       meandering: 0.5,
       startStep: h[riverCells[0]] < 20 ? 1 : 10,
       isWaterCell: riverCells.map(c => c !== -1 && h[c] < 20),
-      bounds: { width: facts.graph.width, height: facts.graph.height }
+      bounds: { width: options.map.graph.width, height: options.map.graph.height }
     });
 
     const flux: number[] = new Array(points.length).fill(0);
@@ -509,7 +509,8 @@ class RiverModule {
 
     const { p } = pack.cells;
     return riverCells.map((cell, i) => {
-      if (cell === -1) return projectToNearestEdge(p[riverCells[i - 1]], facts.graph.width, facts.graph.height);
+      if (cell === -1)
+        return projectToNearestEdge(p[riverCells[i - 1]], options.map.graph.width, options.map.graph.height);
       return p[cell];
     });
   }

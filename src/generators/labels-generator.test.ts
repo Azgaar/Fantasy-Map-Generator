@@ -51,35 +51,28 @@ describe("LabelsModule", () => {
 
 describe("ensureBurgLabelGroups", () => {
   beforeEach(() => {
-    globalThis.facts = {
-      ...globalThis.facts,
-      burgs: { groups: [{ name: "city" }, { name: "town" }, { name: "customgroup" }] },
-      labels: {
-        resizeOnZoom: true,
-        showAll: false,
-        groups: [{ name: "cities", type: "burg", zoom: { min: 1, max: 25 } }]
-      }
-    } as never;
+    options.map.burgs.groups = [{ name: "city" }, { name: "town" }, { name: "customgroup" }] as never;
+    options.map.labels.groups = [{ name: "cities", type: "burg", zoom: { min: 1, max: 25 } }] as never;
   });
 
   it("adds registry entries for burg groups the label registry lacks", () => {
     labels.ensureBurgLabelGroups();
-    const names = facts.labels.groups.filter(g => g.type === "burg").map(g => g.name);
+    const names = options.map.labels.groups.filter(g => g.type === "burg").map(g => g.name);
     expect(names.includes("city")).toBe(true);
     expect(names.includes("town")).toBe(true);
     expect(names.includes("customgroup")).toBe(true);
     // known modern names take their default bounds; unknown names get the fallback
-    expect(facts.labels.groups.find(g => g.name === "city")?.zoom).toEqual({ min: 1.4, max: 25 });
-    expect(facts.labels.groups.find(g => g.name === "customgroup")?.zoom).toEqual({ min: 2, max: 30 });
+    expect(options.map.labels.groups.find(g => g.name === "city")?.zoom).toEqual({ min: 1.4, max: 25 });
+    expect(options.map.labels.groups.find(g => g.name === "customgroup")?.zoom).toEqual({ min: 2, max: 30 });
     // existing entries are left alone
-    expect(facts.labels.groups.find(g => g.name === "cities")?.zoom).toEqual({ min: 1, max: 25 });
+    expect(options.map.labels.groups.find(g => g.name === "cities")?.zoom).toEqual({ min: 1, max: 25 });
   });
 
   it("is idempotent", () => {
     labels.ensureBurgLabelGroups();
-    const count = facts.labels.groups.length;
+    const count = options.map.labels.groups.length;
     labels.ensureBurgLabelGroups();
-    expect(facts.labels.groups.length).toBe(count);
+    expect(options.map.labels.groups.length).toBe(count);
   });
 });
 

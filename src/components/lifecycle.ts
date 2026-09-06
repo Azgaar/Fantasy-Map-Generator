@@ -30,10 +30,10 @@ export async function boot(): Promise<void> {
   registerServiceWorker();
   initShell();
 
-  Options.restoreStored();
+  Options.restore();
   syncInputs();
   restoreUi();
-  setViewportSize(facts.graph.width, facts.graph.height);
+  setViewportSize(options.map.graph.width, options.map.graph.height);
   applyDefaultViewboxEvents();
 
   if (!warnIfServerless()) {
@@ -54,7 +54,6 @@ export async function generate(config?: GenerationConfig): Promise<void> {
     Options.setGraphSize(width, height);
     setSeed(precreatedSeed);
     Options.randomize();
-    Facts.apply();
     applyGraphSize(); // TODO: DOM change, not part of generation
 
     await GenerationPipeline.run({ seed: precreatedSeed, graph: precreatedGraph });
@@ -156,15 +155,15 @@ globalThis.mapHistory = [];
 /** Take note of a map that is now on screen, and announce it */
 export function registerMap(created: number = Date.now()): void {
   mapHistory.push({
-    seed: facts.seed,
-    width: facts.graph.width,
-    height: facts.graph.height,
+    seed: options.map.seed,
+    width: options.map.graph.width,
+    height: options.map.graph.height,
     template: options.generation.template,
     created: created
   });
 
   // the public seam test automation and external integrations wait on; the id is the creation date
-  window.dispatchEvent(new CustomEvent("map:generated", { detail: { seed: facts.seed, mapId: created } }));
+  window.dispatchEvent(new CustomEvent("map:generated", { detail: { seed: options.map.seed, mapId: created } }));
 }
 
 declare global {

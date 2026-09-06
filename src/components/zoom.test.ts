@@ -32,7 +32,7 @@ beforeEach(() => {
 
   Object.assign(globalThis, {
     customization: 0,
-    options: { labels: { resizeOnZoom: false }, app: { viewportRedraw: "continuous" } },
+    options: { map: { labels: { resizeOnZoom: false } }, app: { viewportRedraw: "continuous" } },
     pack: { markers: [{ i: 0, x: 200, y: 200, size: 30, hidden: false }] }
   });
   setViewportSize(1000, 600);

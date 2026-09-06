@@ -63,7 +63,7 @@ let needsFullRedraw = false;
 // emblems shrink as their number grows, so that a crowded map does not turn into a wall of shields
 function getEmblemSize(type: EmblemType, count: number): number {
   const { extent, min, max, expected, countDivisor, deficitDivisor } = SIZING[type];
-  const startSize = minmax((facts.graph.height + facts.graph.width) / extent, min, max);
+  const startSize = minmax((options.map.graph.height + options.map.graph.width) / extent, min, max);
   const countMod = 1 + count / countDivisor - (expected - count) / deficitDivisor;
   const sizeMod = styles.emblems[`${type}Emblems`].options.size || 1;
   return rn((startSize / countMod) * sizeMod);

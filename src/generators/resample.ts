@@ -74,7 +74,7 @@ class Resampler {
   }
 
   private isInMap(x: number, y: number) {
-    return x >= 0 && x <= facts.graph.width && y >= 0 && y <= facts.graph.height;
+    return x >= 0 && x <= options.map.graph.width && y >= 0 && y <= options.map.graph.height;
   }
 
   private restoreCellData(
@@ -235,7 +235,7 @@ class Resampler {
 
     pack.burgs = parentMap.pack.burgs.map(burg => {
       if (!burg.i || burg.removed) return burg;
-      burg.population! *= scale; // adjust for facts.units.population.scale change
+      burg.population! *= scale; // adjust for options.map.units.population.scale change
 
       const [xp, yp] = projection(burg.x, burg.y);
       if (!this.isInMap(xp, yp)) return { ...burg, removed: true, lock: false };
@@ -316,7 +316,7 @@ class Resampler {
         });
         if (points.length < 2) return null;
 
-        const bbox: [number, number, number, number] = [0, 0, facts.graph.width, facts.graph.height];
+        const bbox: [number, number, number, number] = [0, 0, options.map.graph.width, options.map.graph.height];
         // @types/lineclip is incorrect - lineclip returns Point[][] (array of line segments), not Point[]
         const clippedSegments = clipPolyline(points, bbox) as unknown as Point[][];
         if (!clippedSegments[0]?.length) return null;
@@ -447,8 +447,8 @@ class Resampler {
     if (dropped) WARN && console.warn(`Resample: dropped ${dropped} journey segment(s) outside the new map`);
   }
 
-  process(options: ResamplerProcessOptions): void {
-    const { projection, inverse, scale } = options;
+  process(config: ResamplerProcessOptions): void {
+    const { projection, inverse, scale } = config;
     const parentMap = {
       grid: structuredClone(grid),
       pack: structuredClone(pack),
@@ -456,8 +456,8 @@ class Resampler {
     };
     const riversData = this.saveRiversData(pack.rivers);
 
-    const { width, height } = facts.graph;
-    grid = Grid.generate(facts.seed, width, height);
+    const { width, height } = options.map.graph;
+    grid = Grid.generate(options.map.seed, width, height);
     pack = {} as PackedGraph;
     notes = parentMap.notes;
 

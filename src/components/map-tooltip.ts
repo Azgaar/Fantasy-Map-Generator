@@ -115,7 +115,7 @@ function getElementTip({ group, subgroup, target, event, path, cellId }: TipCont
     const burg = pack.burgs[burgId];
     if (!burg) return "Click to edit the Burg";
     const population = si(
-      (burg.population || 0) * facts.units.population.scale * facts.units.population.urbanization.rate
+      (burg.population || 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate
     );
     return `${burg.name} ${burg.group}. Population: ${population}. Click to edit`;
   }
