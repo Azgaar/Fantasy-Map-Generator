@@ -24,10 +24,16 @@ interface SectorInfo {
 
 // One ring per level, so a sector's level can be read back off its own arc: `d` starts at the
 // band's inner radius. Labels live in a sibling layer, appended in the same order as the paths.
+//
+// The hot fill is not a constant any more: the wheel follows the app's theme, and publishes the
+// sampled palette on .mw-wheel - so the probe reads it back rather than hardcoding colours a hue
+// slider can move.
 const readSectors = (): Promise<SectorInfo[]> =>
   page.evaluate(() => {
+    const wheel = document.querySelector<HTMLElement>("#mapWheel .mw-wheel")!;
+    const style = getComputedStyle(wheel);
     const INNER = [58, 112, 162, 208];
-    const HOT = ["#6b5535", "#a33a2e"]; // FILLS.hot / FILLS.hotDanger
+    const HOT = ["--mw-fill-hot", "--mw-fill-danger"].map(name => style.getPropertyValue(name).trim());
     const paths = [...document.querySelectorAll<SVGPathElement>("#mapWheel path.mw-sector")];
     const labels = [...document.querySelectorAll<HTMLElement>("#mapWheel .mw-labels > .mw-label")];
     const counts = [0, 0, 0, 0];

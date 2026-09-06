@@ -9,29 +9,10 @@
 import { Layers } from "@/components/layers";
 import { DRAWER_ID } from "./drawer";
 import { arcPath, BANDS, HOVER_GROW, labelPoint, MAX_DEPTH, type Sector, sectors, spineLine } from "./geometry";
+import { applyPalette, type Palette, readPalette } from "./palette";
 import { childrenOf, type DrawerSpec, nodeKind, type WheelNode } from "./types";
 
 const SVG = "http://www.w3.org/2000/svg";
-
-export const FILLS = {
-  chosen: "#4a3a22",
-  hot: "#6b5535",
-  hotDanger: "#a33a2e",
-  layerOn: "#8a9c6c",
-  dim: "rgba(251,247,236,.82)",
-  base: "rgba(251,247,236,.97)"
-} as const;
-
-export const INKS = {
-  light: "#fffdf7",
-  layerOn: "#20261a",
-  danger: "#8d2f24",
-  dim: "rgba(59,50,38,.82)",
-  base: "#3b3226"
-} as const;
-
-const EDGE = "rgba(90,74,48,.32)";
-const EDGE_DIM = "rgba(90,74,48,.16)";
 
 export interface HotRef {
   level: number;
@@ -104,20 +85,20 @@ export function resolveLevels(roots: WheelRoots, state: WheelState): Level[] {
   return levels;
 }
 
-function fillFor(node: WheelNode, isChosen: boolean, isHot: boolean, isDim: boolean): string {
-  if (isChosen) return FILLS.chosen;
-  if (isHot) return node.danger ? FILLS.hotDanger : FILLS.hot;
-  if (node.toggle && Layers.isOn(node.toggle)) return FILLS.layerOn;
-  if (isDim) return FILLS.dim;
-  return FILLS.base;
+function fillFor(pal: Palette, node: WheelNode, isChosen: boolean, isHot: boolean, isDim: boolean): string {
+  if (isChosen) return pal.fills.chosen;
+  if (isHot) return node.danger ? pal.fills.hotDanger : pal.fills.hot;
+  if (node.toggle && Layers.isOn(node.toggle)) return pal.fills.layerOn;
+  if (isDim) return pal.fills.dim;
+  return pal.fills.base;
 }
 
-function inkFor(node: WheelNode, isChosen: boolean, isHot: boolean, isDim: boolean): string {
-  if (isChosen || isHot) return INKS.light;
-  if (node.toggle && Layers.isOn(node.toggle)) return INKS.layerOn;
-  if (isDim) return INKS.dim;
-  if (node.danger) return INKS.danger;
-  return INKS.base;
+function inkFor(pal: Palette, node: WheelNode, isChosen: boolean, isHot: boolean, isDim: boolean): string {
+  if (isChosen || isHot) return pal.inks.light;
+  if (node.toggle && Layers.isOn(node.toggle)) return pal.inks.layerOn;
+  if (isDim) return pal.inks.dim;
+  if (node.danger) return pal.inks.danger;
+  return pal.inks.base;
 }
 
 function noteFor(node: WheelNode): string | null {
@@ -136,6 +117,8 @@ export function renderWheel(
   // borrowed out of #options, which a redraw must never carry off.
   for (const child of [...container.children]) if (child.id !== DRAWER_ID) child.remove();
   const levels = resolveLevels(roots, state);
+  const pal = readPalette();
+  applyPalette(container, pal);
 
   const svg = document.createElementNS(SVG, "svg");
   svg.setAttribute("viewBox", "-258 -258 516 516");
@@ -172,8 +155,8 @@ export function renderWheel(
       const sector = document.createElementNS(SVG, "path");
       sector.setAttribute("class", "mw-sector");
       sector.setAttribute("d", skin[0]);
-      sector.setAttribute("fill", fillFor(node, isChosen, false, isDim));
-      sector.setAttribute("stroke", isDim ? EDGE_DIM : EDGE);
+      sector.setAttribute("fill", fillFor(pal, node, isChosen, false, isDim));
+      sector.setAttribute("stroke", isDim ? pal.edgeDim : pal.edge);
       sector.addEventListener("mouseenter", () => cb.onHot({ level: L, index: i }));
       sector.addEventListener("mouseleave", () => cb.onHot(null));
       sector.addEventListener("click", () => dispatch(levels, state, cb, L, i));
@@ -185,14 +168,14 @@ export function renderWheel(
       label.className = `mw-label ${L === 0 ? "mw-label--root" : ""}`;
       label.style.left = `calc(50% + ${x.toFixed(2)}px)`;
       label.style.top = `calc(50% + ${y.toFixed(2)}px)`;
-      label.style.color = inkFor(node, isChosen, false, isDim);
+      label.style.color = inkFor(pal, node, isChosen, false, isDim);
 
       painted.set(`${L}:${i}`, {
         sector,
         label,
         d: skin,
-        fill: [fillFor(node, isChosen, false, isDim), fillFor(node, isChosen, true, isDim)],
-        ink: [inkFor(node, isChosen, false, isDim), inkFor(node, isChosen, true, isDim)]
+        fill: [fillFor(pal, node, isChosen, false, isDim), fillFor(pal, node, isChosen, true, isDim)],
+        ink: [inkFor(pal, node, isChosen, false, isDim), inkFor(pal, node, isChosen, true, isDim)]
       });
 
       const icon = document.createElement("i");

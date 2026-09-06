@@ -1,4 +1,8 @@
 export const WHEEL_CSS = `
+/* Colours follow the app's live theme. \`--bg-light\` / \`--bg-lighter\` / \`--light-solid\` /
+   \`--dark-solid\` are written onto <html> by changeDialogsTheme(); the \`--mw-*\` properties are the
+   same theme after palette.ts has held every ink to 4.5:1 over its own fill, and are set on
+   .mw-wheel by the renderer. Both carry the design handoff's parchment as their fallback. */
 /* The host spans the viewport so the ring can be centred anywhere in it, so it must be transparent
    to pointers: the parts that are actually interactive opt back in below. Without this every click
    in the app lands on the overlay, and index.ts's "outside pointerdown" dismissal can never fire. */
@@ -16,7 +20,7 @@ export const WHEEL_CSS = `
   height: 6px;
   margin: -3px 0 0 -3px;
   border-radius: 50%;
-  background: #4a3a22;
+  background: var(--dark-solid, #4a3a22);
   opacity: .5;
 }
 
@@ -41,7 +45,7 @@ export const WHEEL_CSS = `
 }
 
 #mapWheel .mw-spine {
-  stroke: #4a3a22;
+  stroke: var(--mw-fill-chosen, #4a3a22);
   stroke-width: 3;
   stroke-linecap: round;
 }
@@ -90,12 +94,12 @@ export const WHEEL_CSS = `
   font: 600 10px "IBM Plex Sans", system-ui, sans-serif;
   letter-spacing: .1em;
   text-transform: uppercase;
-  background: rgba(251,247,236,.94);
-  color: #6b5535;
+  background: var(--mw-fill-base, rgba(251,247,236,.94));
+  color: var(--mw-ink-accent, #6b5535);
   transition: background 120ms;
 }
 
-#mapWheel .mw-tab.is-active { background: #6b5535; color: #fffdf7; }
+#mapWheel .mw-tab.is-active { background: var(--mw-fill-hot, #6b5535); color: var(--mw-ink-light, #fffdf7); }
 
 #mapWheel .mw-crumbs {
   position: absolute;
@@ -105,15 +109,15 @@ export const WHEEL_CSS = `
   align-items: center;
   font-size: 11px;
   letter-spacing: .04em;
-  color: #6b5535;
-  background: rgba(251,247,236,.86);
+  color: var(--mw-ink-accent, #6b5535);
+  background: var(--bg-lighter, rgba(251,247,236,.86));
   padding: 6px 11px;
   border-radius: 3px;
-  border: 1px solid rgba(90,74,48,.25);
+  border: 1px solid var(--mw-edge, rgba(90,74,48,.25));
 }
 
-#mapWheel .mw-crumb { cursor: pointer; pointer-events: auto; color: #8a7248; }
-#mapWheel .mw-crumb.is-last { color: #3b3226; font-weight: 600; }
+#mapWheel .mw-crumb { cursor: pointer; pointer-events: auto; color: var(--mw-ink-accent, #8a7248); }
+#mapWheel .mw-crumb.is-last { color: var(--mw-ink-base, #3b3226); font-weight: 600; }
 #mapWheel .mw-crumb-sep { opacity: .45; margin: 0 5px; }
 
 /* Child of .mw-wheel, not of the host: the percentages below have to resolve against the 516px
@@ -128,8 +132,8 @@ export const WHEEL_CSS = `
   max-height: min(532px, calc(100vh - 32px));
   display: flex;
   flex-direction: column;
-  background: rgba(251,247,236,.97);
-  border: 1px solid rgba(90,74,48,.32);
+  background: var(--bg-light, rgba(251,247,236,.97));
+  border: 1px solid var(--dark-solid, rgba(90,74,48,.32));
   border-radius: 4px;
   box-shadow: 0 10px 26px rgba(38,28,12,.35);
   overflow: hidden;
@@ -143,22 +147,22 @@ export const WHEEL_CSS = `
   align-items: center;
   justify-content: space-between;
   padding: 9px 12px;
-  background: rgba(251,247,236,.86);
-  border-bottom: 1px solid rgba(90,74,48,.16);
+  background: var(--bg-lighter, rgba(251,247,236,.86));
+  border-bottom: 1px solid var(--mw-edge-dim, rgba(90,74,48,.16));
 }
 
 #mapWheelDrawer .mw-drawer-title {
   font: 600 12px "IBM Plex Sans", system-ui, sans-serif;
   letter-spacing: .09em;
   text-transform: uppercase;
-  color: #6b5535;
+  color: var(--mw-ink-accent, #6b5535);
 }
 
 #mapWheelDrawer .mw-drawer-close {
   border: 0;
   background: none;
   cursor: pointer;
-  color: #6b5535;
+  color: var(--mw-ink-accent, #6b5535);
   font-size: 13px;
   line-height: 1;
 }
@@ -173,7 +177,7 @@ export const WHEEL_CSS = `
 }
 #mapWheelDrawer tr {
   padding: 9px 0;
-  border-bottom: 1px solid rgba(90,74,48,.16);
+  border-bottom: 1px solid var(--mw-edge-dim, rgba(90,74,48,.16));
 }
 #mapWheelDrawer tr:last-child { border-bottom: 0; }
 #mapWheelDrawer td { padding: 0; }
@@ -185,7 +189,7 @@ export const WHEEL_CSS = `
   font: 600 11px "IBM Plex Sans", system-ui, sans-serif;
   letter-spacing: .09em;
   text-transform: uppercase;
-  color: #8a7248;
+  color: var(--mw-ink-accent, #8a7248);
   margin: 14px 0 4px;
 }
 #mapWheelDrawer tr::after {
@@ -194,7 +198,7 @@ export const WHEEL_CSS = `
   font-size: 10.5px;
   line-height: 1.35;
   opacity: .68;
-  color: #3b3226;
+  color: var(--mw-ink-base, #3b3226);
   margin-top: 3px;
 }
 #mapWheelDrawer input[type="range"] {
@@ -202,14 +206,14 @@ export const WHEEL_CSS = `
   appearance: none;
   height: 3px;
   border-radius: 2px;
-  background: rgba(90,74,48,.22);
+  background: var(--mw-edge, rgba(90,74,48,.22));
 }
 #mapWheelDrawer input[type="range"]::-webkit-slider-thumb {
   appearance: none;
   width: 13px;
   height: 13px;
   border-radius: 50%;
-  background: #6b5535;
+  background: var(--mw-fill-hot, #6b5535);
   cursor: pointer;
 }
 #mapWheelDrawer input[type="range"]::-moz-range-thumb {
@@ -217,7 +221,7 @@ export const WHEEL_CSS = `
   height: 13px;
   border: 0;
   border-radius: 50%;
-  background: #6b5535;
+  background: var(--mw-fill-hot, #6b5535);
   cursor: pointer;
 }
 #mapWheelDrawer select,
@@ -226,20 +230,20 @@ export const WHEEL_CSS = `
   width: 100%;
   font-size: 12px;
   padding: 4px 6px;
-  color: #3b3226;
-  background: rgba(251,247,236,.97);
-  border: 1px solid rgba(90,74,48,.32);
+  color: var(--mw-ink-base, #3b3226);
+  background: var(--light-solid, rgba(251,247,236,.97));
+  border: 1px solid var(--mw-edge, rgba(90,74,48,.32));
   border-radius: 3px;
 }
 #mapWheelDrawer input[type="color"] {
   width: 26px;
   height: 26px;
   padding: 0;
-  border: 1px solid rgba(90,74,48,.32);
+  border: 1px solid var(--mw-edge, rgba(90,74,48,.32));
   border-radius: 3px;
 }
 /* FMG hides raw checkboxes app-wide and styles the label instead - do not un-hide them here */
-#mapWheelDrawer .checkbox-label { font-size: 12px; color: #3b3226; cursor: pointer; }
+#mapWheelDrawer .checkbox-label { font-size: 12px; color: var(--mw-ink-base, #3b3226); cursor: pointer; }
 
 @keyframes mw-fan {
   from { opacity: 0; transform: scale(.86); }

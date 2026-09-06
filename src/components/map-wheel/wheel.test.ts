@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { FILLS } from "./palette";
 import type { WheelNode } from "./types";
-import { FILLS, type HotRef, renderWheel, resolveLevels, type WheelRoots, type WheelState } from "./wheel";
+import { type HotRef, renderWheel, resolveLevels, type WheelRoots, type WheelState } from "./wheel";
 
 const leaf = (label: string, extra: Partial<WheelNode> = {}): WheelNode => ({ label, icon: "icon-star", ...extra });
 
