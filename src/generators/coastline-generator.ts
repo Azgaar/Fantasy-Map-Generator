@@ -1,5 +1,4 @@
 import Alea from "alea";
-import { remember } from "@/components/definition-sets";
 import type { Point } from "@/types/global";
 import { clipPoly, round } from "../utils";
 import type { Feature } from "./features";
@@ -27,7 +26,7 @@ export interface FractalizedShape {
 }
 
 /** The coastline every new map starts from. The one definition of these values */
-export const DEFAULT_COASTLINE: Readonly<CoastlineSettings> = {
+const DEFAULT_COASTLINE: Readonly<CoastlineSettings> = {
   enabled: true,
   maxDepth: 4,
   baseAmplitude: 1.5,
@@ -261,7 +260,7 @@ class CoastlineGenerator {
    */
   update(change: Partial<CoastlineSettings>): void {
     Object.assign(facts.coastline, change);
-    remember("coastline", facts.coastline);
+    Options.remember("coastline", facts.coastline, this.getDefaultSettings());
   }
 
   getDefaultSettings(): CoastlineSettings {

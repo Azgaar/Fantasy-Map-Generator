@@ -1,8 +1,8 @@
 // The map seed: where it comes from, and the UI to revisit or share it
 import { alertDialog } from "@/components/dialog/dialog-helpers";
+import { Pins } from "@/components/pins";
 import { tip } from "@/components/tooltips";
 import { ensureEl } from "@/utils/nodeUtils";
-import { isLocked, unlock } from "@/utils/preferences";
 import { generateSeed } from "@/utils/probabilityUtils";
 
 export function setSeed(precreatedSeed?: string): void {
@@ -48,7 +48,7 @@ export function restoreSeed(index: number): void {
   const { seed, width, height, template } = mapHistory[index];
   Options.set(o => (o.generation.template = template));
 
-  if (isLocked("template")) unlock("template");
+  if (Pins.has("template")) Pins.clear("template");
   regeneratePrompt({ seed, width, height });
 }
 

@@ -2,7 +2,6 @@
 import { select } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
-import { write } from "@/components/settings";
 import { tip } from "@/components/tooltips";
 import { Services } from "@/services";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
@@ -153,11 +152,19 @@ function onTileInput(this: HTMLInputElement): void {
 
 /**
  * These dialogs own their controls, so they write what the exporters read - never the other way
- * round. Where each value lives is said once, in components/settings.ts
+ * round. See docs/architecture/configuration.md
  */
 function storeExportPreference(input: HTMLInputElement): void {
-  const key = input.dataset.stored;
-  if (key) write(key, +input.value);
+  const value = +input.value;
+  if (!(value > 0)) return;
+
+  Options.set(o => {
+    const { tiles } = o.app.export;
+    if (input.dataset.stored === "pngResolution") o.app.export.pngResolution = value;
+    else if (input.dataset.stored === "tileCols") tiles.cols = value;
+    else if (input.dataset.stored === "tileRows") tiles.rows = value;
+    else if (input.dataset.stored === "tileScale") tiles.scale = value;
+  });
 }
 
 const ROW_LABELS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";

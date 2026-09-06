@@ -1,5 +1,4 @@
 import { interpolateString, select, sum } from "d3";
-import { remember } from "@/components/definition-sets";
 import { closeDialogs, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
@@ -622,7 +621,7 @@ function militaryCustomize(): void {
       return unit;
     });
     facts.military.units = units;
-    remember("military", units); // the user's own units, carried to the next map
+    Options.remember("military", units, Military.getDefaultOptions()); // the user's own units, carried to the next map
     Military.generate();
     rebuildMilitaryColumns();
   }

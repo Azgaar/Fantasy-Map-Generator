@@ -1,4 +1,3 @@
-import { remember } from "@/components/definition-sets";
 import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
@@ -414,7 +413,7 @@ function submitForm(event: Event): void {
   }
 
   facts.burgs.groups = rows.map(rowToGroup);
-  remember("burgGroups", facts.burgs.groups); // carried to the next map
+  Options.remember("burgGroups", facts.burgs.groups, Burgs.getDefaultGroups()); // carried to the next map
 
   // put burgs to new groups
   const validBurgs = pack.burgs.filter(b => b.i && !b.removed);

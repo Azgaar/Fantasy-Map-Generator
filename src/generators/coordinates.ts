@@ -1,5 +1,5 @@
 // Where the map sits on the globe: its share of the world and the resulting lat/lon box
-import { rolls } from "@/utils/preferences";
+import { Pins } from "@/components/pins";
 import { gauss, P, rn } from "../utils";
 
 declare global {
@@ -59,9 +59,9 @@ class CoordinatesModule {
   /** define map size and position on the globe based on the heightmap template and a random factor */
   defineMapSize(): void {
     const [size, latitude, longitude] = this.getSizeAndPosition();
-    if (rolls("mapSize")) facts.geography.mapSize = size;
-    if (rolls("latitude")) facts.geography.latitude = latitude;
-    if (rolls("longitude")) facts.geography.longitude = longitude;
+    if (Pins.rolls("mapSize")) facts.geography.mapSize = size;
+    if (Pins.rolls("latitude")) facts.geography.latitude = latitude;
+    if (Pins.rolls("longitude")) facts.geography.longitude = longitude;
   }
 
   /** calculate the map lat/lon box from its size and position */

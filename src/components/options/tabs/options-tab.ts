@@ -2,9 +2,8 @@ import { hsl, select } from "d3";
 import { fitMapToScreen, setViewport } from "@/components/canvas";
 import { Layers } from "@/components/layers";
 import { getDefaultOptions, THEME_COLOR } from "@/components/options-model";
+import { Pins } from "@/components/pins";
 import { generateMapWithSeed, showSeedHistoryDialog } from "@/components/seed";
-import { type SettingKey, write } from "@/components/settings";
-import { bindSettings, syncSettings } from "@/components/settings-binding";
 import { tip } from "@/components/tooltips";
 import { viewport } from "@/components/viewport";
 import { setMapZoom, setTranslateExtent, setZoomExtent } from "@/components/zoom";
@@ -20,7 +19,6 @@ import { toggleAssistant } from "@/services/assistant";
 import { copyMapURL } from "@/services/url-params";
 import { applyOption, ensureEl, findEl } from "@/utils/nodeUtils";
 import { minmax, rn } from "@/utils/numberUtils";
-import { bindLockIcons, lock, unlock } from "@/utils/preferences";
 
 const TEMPLATE = /* html */ `
   <p data-tip="What the next map is asked for. Generate a new map to apply the settings">
@@ -481,47 +479,6 @@ const TEMPLATE = /* html */ `
   </div>
 `;
 
-/** The settings this tab shows. What each one means is said once, in components/settings.ts */
-export const PANEL_KEYS: SettingKey[] = [
-  // requests: what the next map will be generated with. Editing one changes nothing on screen
-  "mapWidth",
-  "mapHeight",
-  "template",
-  "resolveDepressionsSteps",
-  "lakeElevationLimit",
-  "cultures",
-  "culturesSet",
-  "statesNumber",
-  "growthRate",
-  "sizeVariety",
-  "provincesRatio",
-  "manors",
-  "religionsNumber",
-
-  // preferences: what this browser wants, whatever map is on screen
-  "uiSize",
-  "tooltipSize",
-  "azgaarAssistant",
-  "speakerVoice",
-  "emblemShape",
-  "shapeRendering",
-  "viewportRedraw",
-  "onloadBehavior",
-  "autosaveInterval",
-  "zoomExtentMin",
-  "zoomExtentMax",
-
-  // shown here, written by the dialog that owns the control: the zoom extent is normalised as a
-  // pair and the export sizes belong to the export panes, see components/options/io-panes.ts
-  "pngResolution",
-  "tileCols",
-  "tileRows",
-  "tileScale",
-
-  // a readout of the map on screen: typing a seed regenerates rather than editing this map
-  "seed"
-];
-
 ensureEl("optionsContent").innerHTML = TEMPLATE;
 addListeners();
 watchInputs();
@@ -572,12 +529,51 @@ function addListeners(): void {
   });
 }
 
-/** Push every setting the tab shows into its input, so the DOM reflects the objects behind it */
+/** Push every value this tab shows into its control, so the DOM reflects the objects behind it */
 export function syncInputs(): void {
-  syncSettings(PANEL_KEYS.filter(key => key !== "template")); // a select filled on demand, see below
+  const { generation, app } = options;
+  const set = (id: string, value: string | number | null) => {
+    const input = findEl<HTMLInputElement>(id);
+    if (input && value !== null) input.value = String(value); // null: nothing chosen, keep the derived value
+  };
 
-  const id = options.generation.template;
+  // requests: what the next map will be generated with. Editing one changes nothing on screen
+  set("mapWidthInput", generation.graph.width);
+  set("mapHeightInput", generation.graph.height);
+  set("resolveDepressionsStepsInput", generation.resolveDepressionsSteps);
+  set("resolveDepressionsStepsOutput", generation.resolveDepressionsSteps);
+  set("lakeElevationLimitInput", generation.lakeElevationLimit);
+  set("lakeElevationLimitOutput", generation.lakeElevationLimit);
+  set("culturesSet", generation.cultures.set);
+  set("statesNumber", generation.states.limit);
+  set("growthRate", generation.states.growthRate);
+  set("sizeVariety", generation.states.sizeVariety);
+  set("provincesRatio", generation.provinces.ratio);
+  set("religionsNumber", generation.religions.limit);
+  set("manorsInput", generation.burgs.limit);
+
+  // preferences: what this browser wants, whatever map is on screen
+  set("uiSize", app.ui.size);
+  set("tooltipSize", app.ui.tooltipSize);
+  set("azgaarAssistant", app.ui.assistant);
+  set("speakerVoice", app.ui.speakerVoice);
+  set("emblemShape", app.emblems.shape);
+  set("shapeRendering", app.rendering);
+  set("viewportRedraw", app.viewportRedraw);
+  set("onloadBehavior", app.onLoad);
+  set("autosaveIntervalInput", app.autosave.interval);
+  set("autosaveIntervalOutput", app.autosave.interval);
+  set("zoomExtentMin", app.zoomExtent.min);
+  set("zoomExtentMax", app.zoomExtent.max);
+
+  // shown here, written by the dialog that owns the control - see components/options/io-panes.ts
+  set("pngResolutionOutput", app.export.pngResolution);
+
+  set("seedInput", facts.seed); // a readout of the map on screen
+
+  // a select whose options are added on demand, so the current one is put back first
   const template = findEl<HTMLSelectElement>("templateInput");
+  const id = generation.template;
   if (template && id) applyOption(template, id, heightmapTemplates[id]?.name || precreatedHeightmaps[id]?.name || id);
 
   syncManors(); // the burg limit reads "auto" at its maximum rather than as a number
@@ -590,25 +586,166 @@ function syncManors(): void {
   if (manors) manors.value = isAutoBurgLimit() ? "auto" : String(options.generation.burgs.limit);
 }
 
+/** What each lock icon on this tab pins */
+function currentValue(key: string): string | number | undefined {
+  const { generation } = options;
+  if (key === "mapWidth") return generation.graph.width;
+  if (key === "mapHeight") return generation.graph.height;
+  if (key === "points") return generation.graph.density;
+  if (key === "template") return generation.template;
+  if (key === "resolveDepressionsSteps") return generation.resolveDepressionsSteps;
+  if (key === "lakeElevationLimit") return generation.lakeElevationLimit;
+  if (key === "cultures") return generation.cultures.limit;
+  if (key === "culturesSet") return generation.cultures.set;
+  if (key === "statesNumber") return generation.states.limit;
+  if (key === "provincesRatio") return generation.provinces.ratio;
+  if (key === "religionsNumber") return generation.religions.limit;
+  if (key === "manors") return generation.burgs.limit;
+  if (key === "sizeVariety") return generation.states.sizeVariety;
+  if (key === "growthRate") return generation.states.growthRate;
+  return undefined;
+}
+
 /**
- * Keep the object in step with the panel: `data-stored` names the setting, the same key it is
- * pinned under. Only this tab's own controls - every dialog wires the controls it owns.
+ * Every request and preference this tab owns, written straight into `options` and pinned where a
+ * pin means anything - a preference is never re-rolled, so it never gets one. Only this tab's own
+ * controls: every dialog wires the ones it shows.
  *
- * The map size inputs are not `data-stored`: `onMapSizeChange` is their single writer, and it
- * writes the request. The extent on screen belongs to the graph this map was built on, and the
- * viewport that shows it is session state - neither is a value this table can carry
+ * The map size, viewport and zoom extent inputs are not here: each is a pair with one writer of
+ * its own further down, and the extent the map is looked at through is not the one it was built on
  */
 function watchInputs(): void {
   const root = findEl("options");
-  if (!root) return;
-
-  bindSettings(root, key => {
-    if (key === "manors")
-      syncManors(); // the burg limit reads "auto" at its maximum
-    else if (key === "points")
-      syncCellsDensity(); // the slider holds a step, the readout the cells
-    else if (key === "culturesSet") syncCultures(); // a set caps how many cultures can be asked for
+  root?.addEventListener("input", onOptionInput);
+  root?.addEventListener("change", event => {
+    onOptionInput(event);
+    Options.persist(); // the drag has ended: keep what it settled on
   });
+}
+
+function onOptionInput(event: Event): void {
+  const input = event.target as HTMLInputElement;
+  const value = input.value;
+
+  switch (input.id) {
+    case "pointsInput":
+      Options.set(o => (o.generation.graph.density = +value));
+      Pins.set("points", +value);
+      syncCellsDensity(); // the slider holds a step, the readout the cell count it stands for
+      return;
+
+    case "templateInput":
+      Options.set(o => (o.generation.template = value));
+      Pins.set("template", value);
+      return;
+
+    case "resolveDepressionsStepsInput":
+    case "resolveDepressionsStepsOutput":
+      Options.set(o => (o.generation.resolveDepressionsSteps = +value));
+      Pins.set("resolveDepressionsSteps", +value);
+      syncInputs();
+      return;
+
+    case "lakeElevationLimitInput":
+    case "lakeElevationLimitOutput":
+      Options.set(o => (o.generation.lakeElevationLimit = +value));
+      Pins.set("lakeElevationLimit", +value);
+      syncInputs();
+      return;
+
+    case "culturesInput":
+    case "culturesOutput":
+      Options.set(o => (o.generation.cultures.limit = +value));
+      Pins.set("cultures", +value);
+      syncCultures();
+      return;
+
+    case "culturesSet":
+      Options.set(o => {
+        o.generation.cultures.set = value;
+        Options.capCultures(); // a set holds a fixed number: the map cannot ask for more
+      });
+      Pins.set("culturesSet", value);
+      syncCultures();
+      return;
+
+    case "statesNumber":
+      Options.set(o => (o.generation.states.limit = +value));
+      Pins.set("statesNumber", +value);
+      changeStatesNumber(+value);
+      return;
+
+    case "provincesRatio":
+      Options.set(o => (o.generation.provinces.ratio = +value));
+      Pins.set("provincesRatio", +value);
+      return;
+
+    case "religionsNumber":
+      Options.set(o => (o.generation.religions.limit = +value));
+      Pins.set("religionsNumber", +value);
+      return;
+
+    case "manorsInput":
+      Options.set(o => (o.generation.burgs.limit = +value));
+      Pins.set("manors", +value);
+      syncManors();
+      return;
+
+    // one panel slider drives states and cultures alike, until the UI offers them separately
+    case "sizeVariety":
+      Options.set(o => (o.generation.states.sizeVariety = o.generation.cultures.sizeVariety = +value));
+      Pins.set("sizeVariety", +value);
+      return;
+
+    case "growthRate":
+      Options.set(o => (o.generation.states.growthRate = o.generation.cultures.growthRate = +value));
+      Pins.set("growthRate", +value);
+      return;
+
+    // preferences: applied at once, generating nothing, and never pinned
+    case "uiSize":
+      Options.set(o => (o.app.ui.size = +value));
+      changeUiSize(+value);
+      return;
+
+    case "tooltipSize":
+      Options.set(o => (o.app.ui.tooltipSize = +value));
+      changeTooltipSize(+value);
+      return;
+
+    case "azgaarAssistant":
+      Options.set(o => (o.app.ui.assistant = value === "hide" ? "hide" : "show"));
+      toggleAssistant(value === "show");
+      return;
+
+    case "speakerVoice":
+      Options.set(o => (o.app.ui.speakerVoice = value));
+      return;
+
+    case "emblemShape":
+      Options.set(o => (o.app.emblems.shape = value));
+      changeEmblemShape(value);
+      return;
+
+    case "shapeRendering":
+      Options.set(o => (o.app.rendering = value === "geometricPrecision" ? "geometricPrecision" : "optimizeSpeed"));
+      setRendering(value);
+      return;
+
+    case "viewportRedraw":
+      Options.set(o => (o.app.viewportRedraw = value === "settled" ? "settled" : "continuous"));
+      return;
+
+    case "onloadBehavior":
+      Options.set(o => (o.app.onLoad = value === "lastSaved" ? "lastSaved" : "random"));
+      return;
+
+    case "autosaveIntervalInput":
+    case "autosaveIntervalOutput":
+      Options.set(o => (o.app.autosave.interval = +value));
+      syncInputs();
+      return;
+  }
 }
 
 /** The extent the next map is generated on: not the window it will be looked at through */
@@ -628,8 +765,8 @@ function onMapSizeChange(): void {
     o.generation.graph.height = height;
   });
   // the map on screen keeps the extent its graph was built on - this asks for the next one
-  lock("mapWidth");
-  lock("mapHeight");
+  Pins.set("mapWidth", width);
+  Pins.set("mapHeight", height);
 
   if (options.generation.graph.width > window.innerWidth || options.generation.graph.height > window.innerHeight) {
     const size = `${window.innerWidth} x ${window.innerHeight}`;
@@ -643,14 +780,14 @@ function restoreDefaultMapSize(): void {
     o.generation.graph.width = window.innerWidth;
     o.generation.graph.height = window.innerHeight;
   });
-  unlock("mapWidth");
-  unlock("mapHeight");
+  Pins.clear("mapWidth");
+  Pins.clear("mapHeight");
   syncInputs();
 }
 
 /** The Points slider picks a density step; the readout shows the cell count it resolves to */
 export function changeCellsDensity(density: number): void {
-  write("points", density);
+  Options.set(o => (o.generation.graph.density = density));
   syncCellsDensity();
 }
 
@@ -943,7 +1080,7 @@ export function restoreUi(): void {
     applyOption(ensureEl("templateInput"), template, name);
   }
 
-  bindLockIcons(ensureEl("options"));
+  Pins.bindIcons(ensureEl("options"), currentValue);
   restoreLegacyStylePresets();
 
   // `syncInputs` has already put every preference in its control; these are the ones that also do

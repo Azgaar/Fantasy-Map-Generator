@@ -7,6 +7,7 @@ export const percent = z.number().min(0).max(100);
 export const ratio = z.number().min(0).max(1);
 export const hexColor = z.string().regex(/^#[0-9a-fA-F]{3,8}$/);
 export const degrees = z.number().int().min(0).max(359);
+export const ids = z.array(count).optional();
 
 /** Where a repair looks for the value to stand in for an invalid one */
 export type TemplateLookup = (source: any, key: PropertyKey, parentKey: PropertyKey | undefined) => unknown;

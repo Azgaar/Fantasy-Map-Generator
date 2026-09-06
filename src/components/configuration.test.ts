@@ -4,11 +4,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getPointsNumber, POINTS_BY_DENSITY } from "@/data/graph-density";
 import { Military } from "@/generators/military-generator";
-import { isLocked, lock } from "@/utils/preferences";
-import { remember } from "./definition-sets";
 import { getDefaultFacts } from "./facts-model";
 import { getDefaultOptions } from "./options-model";
-import { isPinnable, parseInput, read, SETTINGS, schemaFor, write } from "./settings";
+import { Pins } from "./pins";
 
 const UNIT = { icon: "u", name: "cavalry", rural: 0.2, urban: 0.1, crew: 2, power: 1, type: "melee", separate: 0 };
 
@@ -19,7 +17,6 @@ async function boot() {
   globalThis.options = getDefaultOptions();
   await import("./facts-model");
   await import("./options-model");
-  await import("./settings");
 }
 
 /** A `.map` file's settings field: what save.ts writes and load.ts reads back */
@@ -112,7 +109,7 @@ describe("options survive maps", () => {
 
   it("never lets the allowlist override a pin", () => {
     Options.set(o => (o.generation.graph.width = 800));
-    lock("mapWidth", 800);
+    Pins.set("mapWidth", 800);
 
     load(savedFile(f => (f.graph.width = 1600)));
     Options.syncOnLoad();
@@ -123,7 +120,7 @@ describe("options survive maps", () => {
 
 describe("a pin outlives the map it was made on", () => {
   it("survives loading a map that disagrees with it", () => {
-    lock("statesNumber", 30);
+    Pins.set("statesNumber", 30);
     load(savedFile(f => (f.lore.name = "a 12-state map")));
 
     Options.randomize();
@@ -131,8 +128,8 @@ describe("a pin outlives the map it was made on", () => {
   });
 
   it("restores a pinned fact onto a newly seeded map", () => {
-    lock("prec", 350);
-    lock("year", 777);
+    Pins.set("prec", 350);
+    Pins.set("year", 777);
 
     Facts.apply();
 
@@ -143,13 +140,13 @@ describe("a pin outlives the map it was made on", () => {
 
 describe("the preservation library", () => {
   it("seeds a new map from the user's own set", () => {
-    remember("military", [UNIT]);
+    Options.remember("military", [UNIT], Military.getDefaultOptions());
     Facts.apply();
     expect(facts.military.units).toEqual([UNIT]);
   });
 
   it("is not disturbed by loading a map, so the next map still starts from the user's set", () => {
-    remember("military", [UNIT]);
+    Options.remember("military", [UNIT], Military.getDefaultOptions());
     load(savedFile(f => (f.military.units = [{ ...UNIT, name: "theirs" }])));
 
     expect(facts.military.units[0].name).toBe("theirs"); // the loaded map governs itself
@@ -206,25 +203,24 @@ describe("validation repairs rather than rejects", () => {
   });
 });
 
-describe("a lock stands for something", () => {
-  it("refuses to pin an option nothing answers for", () => {
-    vi.spyOn(console, "error").mockImplementation(() => {});
-    lock("noSuchOption");
-    expect(isLocked("noSuchOption")).toBe(false);
+describe("a pin stands for something", () => {
+  it("pins nothing when the dialog has no value for the key", () => {
+    Pins.set("noSuchOption", undefined);
+    expect(Pins.has("noSuchOption")).toBe(false);
   });
 
   it("ignores a pinned value of the wrong type rather than writing it into the map", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
-    lock("prec", "corrupt");
+    Pins.set("prec", "corrupt");
 
     Facts.apply();
     expect(facts.climate.precipitation).toBeTypeOf("number");
   });
 
   it("applies a pinned extent to the map being generated, not to the one after it", () => {
-    lock("mapWidth", 1600);
-    lock("mapHeight", 900);
-    lock("points", 6);
+    Pins.set("mapWidth", 1600);
+    Pins.set("mapHeight", 900);
+    Pins.set("points", 6);
 
     Options.setGraphSize(); // boot or a new map: the request is resolved here
     Options.randomize();
@@ -236,35 +232,38 @@ describe("a lock stands for something", () => {
   });
 });
 
-describe("a write runs whatever is derived from the value", () => {
-  it("re-derives the lat/lon box from the panel and from a pin alike", () => {
-    globalThis.Coordinates = { calculate: () => (facts.geography.coordinates.latT = facts.geography.mapSize) } as never;
+describe("a new map keeps what the user pinned", () => {
+  it("puts every pinned fact back, including the ones nothing rolls", () => {
+    Pins.set("mapName", "Kept Name");
+    Pins.set("mapSize", 70);
+    Pins.set("distanceUnit", "leagues");
+    Pins.set("urbanDensity", 42);
 
-    write("mapSize", 40);
-    expect(facts.geography.coordinates.latT).toBe(40);
-
-    // the same seam a pinned fact is restored through, so it cannot land undervied
-    lock("mapSize", 70);
     Facts.apply();
+
+    expect(facts.lore.name).toBe("Kept Name");
     expect(facts.geography.mapSize).toBe(70);
-    expect(facts.geography.coordinates.latT).toBe(70);
+    expect(facts.units.distance.unit).toBe("leagues");
+    expect(facts.units.population.urbanization.density).toBe(42);
   });
 
   it("caps the cultures request at what the chosen set can give", () => {
-    Options.set(o => (o.generation.cultures.limit = 30));
+    Options.set(o => {
+      o.generation.cultures.limit = 30;
+      o.generation.cultures.set = "english"; // a set of 10
+    });
+    Options.capCultures();
 
-    write("culturesSet", "english"); // a set of 10
-    expect(options.generation.cultures.set).toBe("english");
     expect(options.generation.cultures.limit).toBe(10);
   });
 });
 
 describe("the preservation library holds what the user typed", () => {
   it("clears the entry when the user resets a set to the module defaults", () => {
-    remember("military", [UNIT]);
+    Options.remember("military", [UNIT], Military.getDefaultOptions());
     expect(options.library.military).toEqual([UNIT]);
 
-    remember("military", Military.getDefaultOptions());
+    Options.remember("military", Military.getDefaultOptions(), Military.getDefaultOptions());
     expect(options.library.military).toBeNull();
   });
 });
@@ -334,43 +333,32 @@ describe("one object, one key", () => {
   });
 
   it("throws the pins away with the options, so nothing goes on generating a pinned value", () => {
-    lock("statesNumber", 3);
+    Pins.set("statesNumber", 3);
     Options.reset();
 
-    expect(isLocked("statesNumber")).toBe(false);
+    expect(Pins.has("statesNumber")).toBe(false);
     Options.randomize();
     expect(options.generation.states.limit).not.toBe(3);
   });
 });
 
-describe("one table says where a value lives", () => {
-  // the panel's own key list is typed against this table, so a control it shows that nothing
-  // answers for does not compile. What a test can still catch is a path that leads nowhere
-  it("points every key at a value the schema describes", () => {
-    for (const key of Object.keys(SETTINGS)) expect(schemaFor(key), key).toBeDefined();
+describe("the pin store", () => {
+  it("keeps the value and not just the key, so a load cannot take it away", () => {
+    Pins.set("prec", 350);
+    Facts.adopt(Facts.parse(JSON.parse(savedFile(f => (f.climate.precipitation = 12)))));
+
+    expect(facts.climate.precipitation).toBe(12); // the loaded map governs itself
+    expect(Pins.valueOr("prec", 0)).toBe(350); // and the pin still stands for the next one
   });
 
-  it("reads each key from the object its scope names", () => {
-    facts.climate.precipitation = 123;
-    options.generation.states.limit = 9;
-    expect(read("prec")).toBe(123);
-    expect(read("statesNumber")).toBe(9);
-    expect(read("noSuchOption")).toBeUndefined();
-  });
+  it("reads a pin only where one was made", () => {
+    Pins.set("statesNumber", 7);
+    expect(Pins.rolls("statesNumber")).toBe(false);
+    expect(Pins.rolls("provincesRatio")).toBe(true);
+    expect(Pins.valueOr("provincesRatio", 20)).toBe(20);
 
-  it("pins requests and facts, and never a preference", () => {
-    expect(isPinnable("statesNumber")).toBe(true); // a request
-    expect(isPinnable("prec")).toBe(true); // a fact with no request of its own
-    expect(isPinnable("tooltipSize")).toBe(false); // a preference: nothing re-rolls it
-    expect(isPinnable("noSuchOption")).toBe(false);
-  });
-
-  it("refuses a control's value the schema rejects, rather than writing it", () => {
-    expect(parseInput("statesNumber", "abc")).toBeUndefined();
-    expect(parseInput("statesNumber", "")).toBeUndefined();
-    expect(parseInput("statesNumber", "7")).toBe(7);
-    expect(parseInput("culturesSet", "highFantasy")).toBe("highFantasy");
-    expect(write("statesNumber", "7")).toBe(false); // the string a control holds is not the value
+    Pins.clear("statesNumber");
+    expect(Pins.rolls("statesNumber")).toBe(true);
   });
 });
 
@@ -397,11 +385,6 @@ describe("the two objects hold no field twice", () => {
 
     // the record has no density: a step is how the request was phrased, not what was built
     expect(getDefaultFacts().graph).toEqual({ width: 1280, height: 800, points: 10000 });
-  });
-
-  it("takes each default from the module that owns it, rather than copying it", async () => {
-    const { DEFAULT_COASTLINE } = await import("@/generators/coastline-generator");
-    expect(getDefaultFacts().coastline).toEqual(DEFAULT_COASTLINE);
   });
 });
 

@@ -2,13 +2,10 @@
 // Every control here edits `facts.units` - the dialog is built and filled from the object on open,
 // and nothing outside reads its inputs
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
-import { getDefaultFacts } from "@/components/facts-model";
 import { Layers } from "@/components/layers";
-import { keysUnder, type SettingKey, write } from "@/components/settings";
-import { bindSettings, syncSetting, syncSettings } from "@/components/settings-binding";
+import { Pins } from "@/components/pins";
 import { applyOption, ensureEl } from "../utils";
 import type { PromptOptions } from "../utils/commonUtils";
-import { bindLockIcons, lock, unlock } from "../utils/preferences";
 
 declare const prompt: (text: string, options: PromptOptions, callback: (value: string | number) => void) => void;
 
@@ -22,7 +19,7 @@ const TEMPLATE = /* html */ `
       </div>
       <div data-tip="Select a distance unit or provide a custom name">
         <label>Distance unit:</label>
-        <select id="distanceUnitInput" data-stored="distanceUnit">
+        <select id="distanceUnitInput">
           <option value="mi" selected>Mile (mi)</option>
           <option value="km">Kilometer (km)</option>
           <option value="lg">League (lg)</option>
@@ -34,13 +31,13 @@ const TEMPLATE = /* html */ `
       </div>
       <div data-tip="Select how many distance units are in one pixel">
         <i data-locked="0" id="lock_distanceScale" class="icon-lock-open"></i>
-        <slider-input id="distanceScaleInput" data-stored="distanceScale" min=".01" max="20" step=".1" value="3">
+        <slider-input id="distanceScaleInput" min=".01" max="20" step=".1" value="3">
           <label>1 map pixel:</label>
         </slider-input>
       </div>
       <div data-tip='Area unit name, type "square" to add ² to the distance unit'>
         <label>Area unit:</label>
-        <input id="areaUnit" data-stored="areaUnit" type="text" value="square" />
+        <input id="areaUnit" type="text" value="square" />
       </div>
       <div class="unitsHeader">
         <span class="icon-signal"></span>
@@ -48,7 +45,7 @@ const TEMPLATE = /* html */ `
       </div>
       <div data-tip="Select an altitude unit or provide a custom name">
         <label>Height unit:</label>
-        <select id="heightUnit" data-stored="heightUnit">
+        <select id="heightUnit">
           <option value="ft" selected>Feet (ft)</option>
           <option value="m">Meters (m)</option>
           <option value="f">Fathoms (f)</option>
@@ -60,7 +57,7 @@ const TEMPLATE = /* html */ `
       >
         <slider-input
           id="heightExponentInput"
-          data-stored="heightExponent"
+         
           min="1.5"
           max="2.2"
           step=".01"
@@ -75,7 +72,7 @@ const TEMPLATE = /* html */ `
       </div>
       <div>
         <label>Temperature scale:</label>
-        <select id="temperatureScale" data-stored="temperatureScale">
+        <select id="temperatureScale">
           <option value="°C" selected>degree Celsius (°C)</option>
           <option value="°F">degree Fahrenheit (°F)</option>
           <option value="K">Kelvin (K)</option>
@@ -93,7 +90,7 @@ const TEMPLATE = /* html */ `
       <div data-tip="Set how many people are in one population point">
         <slider-input
           id="populationRateInput"
-          data-stored="populationRate"
+         
           min="10"
           max="10000"
           step="10"
@@ -103,12 +100,12 @@ const TEMPLATE = /* html */ `
         </slider-input>
       </div>
       <div data-tip="Set urban population modifier. Change to increase or descrese burgs population">
-        <slider-input id="urbanizationInput" data-stored="urbanization" min=".01" max="5" step=".01" value="1">
+        <slider-input id="urbanizationInput" min=".01" max="5" step=".01" value="1">
           <label>Urbanization rate:</label>
         </slider-input>
       </div>
       <div data-tip="Set urban density: average population per building in Medieval Fantasy City Generator">
-        <slider-input id="urbanDensityInput" data-stored="urbanDensity" min="1" max="200" step="1" value="10">
+        <slider-input id="urbanDensityInput" min="1" max="200" step="1" value="10">
           <label>Urban density:</label>
         </slider-input>
       </div>
@@ -138,11 +135,40 @@ function renderDialog(): void {
 
   fillInputs();
   addListeners();
-  bindLockIcons(ensureEl(DIALOG_ID));
+  Pins.bindIcons(ensureEl(DIALOG_ID), unitValue);
 }
 
-/** Every setting kept under `facts.units`: the whole of what this dialog edits */
-const UNIT_KEYS = keysUnder("units.");
+/** Every unit this dialog edits: the control that shows it, and where it lives in `facts` */
+const UNIT_KEYS = [
+  "distanceUnit",
+  "distanceScale",
+  "areaUnit",
+  "heightUnit",
+  "heightExponent",
+  "temperatureScale",
+  "populationRate",
+  "urbanization",
+  "urbanDensity"
+] as const;
+
+/** The control each unit is shown in, and the value it holds now */
+function unitValue(key: string): string | number | undefined {
+  const { distance, area, height, temperature, population } = facts.units;
+  if (key === "distanceUnit") return distance.unit;
+  if (key === "distanceScale") return distance.scale;
+  if (key === "areaUnit") return area.unit;
+  if (key === "heightUnit") return height.unit;
+  if (key === "heightExponent") return height.exponent;
+  if (key === "temperatureScale") return temperature.unit;
+  if (key === "populationRate") return population.scale;
+  if (key === "urbanization") return population.urbanization.rate;
+  if (key === "urbanDensity") return population.urbanization.density;
+  return undefined;
+}
+
+/** three controls are named after the setting itself, the rest carry the "Input" suffix */
+const BARE_IDS = ["areaUnit", "heightUnit", "temperatureScale"];
+const inputFor = (key: string) => ensureEl<HTMLInputElement>(BARE_IDS.includes(key) ? key : `${key}Input`);
 
 /** The object is the source: push every unit it holds into the control that shows it */
 function fillInputs(): void {
@@ -150,43 +176,102 @@ function fillInputs(): void {
   applyOption(ensureEl("distanceUnitInput"), facts.units.distance.unit);
   applyOption(ensureEl("heightUnit"), facts.units.height.unit);
 
-  syncSettings(UNIT_KEYS);
+  for (const key of UNIT_KEYS) inputFor(key).value = String(unitValue(key));
 }
 
-// Units are facts of the map, and this dialog is the only writer of them: it owns every control
-// it shows, writes the value it redraws from, and pins what the user set by hand
+/**
+ * Units are facts of the map and this dialog is their only writer: it owns every control it shows,
+ * writes the value into `facts`, pins what the user set by hand, and redraws whatever reads it.
+ * The <slider-input> controls re-dispatch their inner events, so only the outer id ever matches
+ */
 function addListeners(): void {
-  // the redraws here are heavy, so they wait for the drag to end rather than run per frame
-  bindSettings(ensureEl(DIALOG_ID), (key, settled) => settled && redraw(key));
-
-  // both unit selects offer a sentinel that stands for a name the user has yet to give
-  ensureEl("distanceUnitInput").addEventListener("change", promptForCustomUnit);
-  ensureEl("heightUnit").addEventListener("change", promptForCustomUnit);
+  ensureEl(DIALOG_ID).addEventListener("change", onUnitChange);
   ensureEl("unitsRestore").addEventListener("click", restoreDefaultUnits);
 }
 
-/** What each unit is read by: a value written from anywhere else redraws the same way */
-function redraw(key: SettingKey): void {
-  if (key === "distanceUnit" || key === "distanceScale") redrawDistances();
-  else if (key === "heightExponent") {
-    Temperature.generate();
-    Layers.draw("temperature");
-  } else if (key === "temperatureScale") Layers.draw("temperature");
+function onUnitChange(event: Event): void {
+  const input = event.target as HTMLInputElement;
+  const value = input.value;
+  const { units } = facts;
+
+  switch (input.id) {
+    case "distanceUnitInput":
+      // the select offers a sentinel that stands for a name the user has yet to give
+      if (value === "custom_name") {
+        askForCustomUnit(input, "distance");
+        return;
+      }
+      units.distance.unit = value;
+      Pins.set("distanceUnit", value);
+      redrawDistances();
+      return;
+
+    case "distanceScaleInput":
+      units.distance.scale = +value;
+      Pins.set("distanceScale", +value);
+      redrawDistances();
+      return;
+
+    case "areaUnit":
+      units.area.unit = value;
+      Pins.set("areaUnit", value);
+      return;
+
+    case "heightUnit":
+      if (value === "custom_name") {
+        askForCustomUnit(input, "height");
+        return;
+      }
+      units.height.unit = value;
+      Pins.set("heightUnit", value);
+      return;
+
+    case "heightExponentInput":
+      units.height.exponent = +value;
+      Pins.set("heightExponent", +value);
+      Temperature.generate();
+      Layers.draw("temperature");
+      return;
+
+    case "temperatureScale":
+      units.temperature.unit = value;
+      Pins.set("temperatureScale", value);
+      Layers.draw("temperature");
+      return;
+
+    case "populationRateInput":
+      units.population.scale = +value;
+      Pins.set("populationRate", +value);
+      return;
+
+    case "urbanizationInput":
+      units.population.urbanization.rate = +value;
+      Pins.set("urbanization", +value);
+      return;
+
+    case "urbanDensityInput":
+      units.population.urbanization.density = +value;
+      Pins.set("urbanDensity", +value);
+      return;
+  }
 }
 
-/** "custom_name" is not a unit: it asks for one, and the answer goes where the value belongs */
-function promptForCustomUnit(this: HTMLSelectElement, event: Event): void {
-  if (this.value !== "custom_name") return;
-  event.stopPropagation(); // the sentinel must never reach the object
-
-  const key = this.dataset.stored as SettingKey;
-  const kind = key === "heightUnit" ? "height" : "distance";
+/** "custom_name" is not a unit: it asks for one, and puts the answer where the value belongs */
+function askForCustomUnit(select: HTMLInputElement, kind: "distance" | "height"): void {
+  fillInputs(); // the sentinel is not a unit, so the select goes back to the one in use right away
   prompt(`Provide a custom name for a ${kind} unit`, { default: "" }, custom => {
-    this.options.add(new Option(String(custom), String(custom), false, true));
-    if (!write(key, String(custom))) return;
-    lock(key);
-    syncSetting(key);
-    redraw(key);
+    const name = String(custom);
+    if (!name) return;
+
+    (select as unknown as HTMLSelectElement).options.add(new Option(name, name, false, true));
+    if (kind === "distance") {
+      facts.units.distance.unit = name;
+      Pins.set("distanceUnit", name);
+      redrawDistances();
+    } else {
+      facts.units.height.unit = name;
+      Pins.set("heightUnit", name);
+    }
   });
 }
 
@@ -197,8 +282,8 @@ function redrawDistances(): void {
 }
 
 function restoreDefaultUnits(): void {
-  facts.units = getDefaultFacts().units;
-  for (const key of UNIT_KEYS) unlock(key);
+  facts.units = Facts.getDefault().units;
+  for (const key of UNIT_KEYS) Pins.clear(key);
 
   fillInputs();
   Temperature.generate();

@@ -2,11 +2,9 @@
 // it. Every control here edits `facts.lore` - the dialog is built and filled from the object on
 // open, and nothing outside reads its inputs. See docs/architecture/configuration.md
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
-import type { SettingKey } from "@/components/settings";
-import { bindSettings, syncSetting, syncSettings } from "@/components/settings-binding";
+import { Pins } from "@/components/pins";
 import { Names } from "@/generators/names-generator";
 import { ensureEl } from "../utils";
-import { bindLockIcons, lock, unlock } from "../utils/preferences";
 
 const DIALOG_ID = "loreEditor";
 
@@ -28,7 +26,6 @@ const TEMPLATE = /* html */ `
     <label for="loreMapName">Map name:</label>
     <input
       id="loreMapName"
-      data-stored="mapName"
       data-tip="Name of the map. Used to name the files it is downloaded as"
       autocorrect="off"
       spellcheck="false"
@@ -40,7 +37,6 @@ const TEMPLATE = /* html */ `
     <label for="loreYear">Year:</label>
     <input
       id="loreYear"
-      data-stored="year"
       data-tip="Current year. Dates state history and battle reports"
       type="number"
       step="1"
@@ -50,8 +46,8 @@ const TEMPLATE = /* html */ `
     <i data-locked="0" id="lock_era" data-ids="era,eraShort" class="icon-lock-open"></i>
     <label for="loreEra">Era:</label>
     <span class="le-era" data-tip="Name of the era the current year belongs to, and its abbreviation">
-      <input id="loreEra" data-stored="era" autocorrect="off" spellcheck="false" type="text" placeholder="Winter Era" />
-      <input id="loreEraShort" data-stored="eraShort" autocorrect="off" spellcheck="false" type="text" placeholder="WE" />
+      <input id="loreEra" autocorrect="off" spellcheck="false" type="text" placeholder="Winter Era" />
+      <input id="loreEraShort" autocorrect="off" spellcheck="false" type="text" placeholder="WE" />
     </span>
     <i data-tip="Generate a new era" id="loreEraRegenerate" class="icon-arrows-cw"></i>
 
@@ -89,39 +85,74 @@ function renderDialog(): void {
 
   fillInputs();
   addListeners();
-  bindLockIcons(ensureEl(DIALOG_ID));
+  Pins.bindIcons(ensureEl(DIALOG_ID), loreValue);
 }
 
-const LORE_KEYS: SettingKey[] = ["mapName", "year", "era", "eraShort"];
+/** What each lock icon in this dialog pins; the era icon pins its abbreviation alongside */
+function loreValue(key: string): string | number | undefined {
+  const { name, calendar } = facts.lore;
+  if (key === "mapName") return name;
+  if (key === "year") return calendar.year;
+  if (key === "era") return calendar.era;
+  if (key === "eraShort") return calendar.eraShort;
+  return undefined;
+}
 
 /** The object is the source: push what it holds into the control that shows it */
 function fillInputs(): void {
-  syncSettings(LORE_KEYS);
-  ensureEl<HTMLTextAreaElement>("loreDescription").value = facts.lore.description;
+  const { name, description, calendar } = facts.lore;
+  ensureEl<HTMLInputElement>("loreMapName").value = name;
+  ensureEl<HTMLInputElement>("loreYear").value = String(calendar.year);
+  ensureEl<HTMLInputElement>("loreEra").value = calendar.era;
+  ensureEl<HTMLInputElement>("loreEraShort").value = calendar.eraShort;
+  ensureEl<HTMLTextAreaElement>("loreDescription").value = description;
 }
 
 function addListeners(): void {
-  bindSettings(ensureEl(DIALOG_ID), abbreviateEra);
-
-  // the description is the one lore value with no pin: nothing ever re-rolls an author's note
-  ensureEl("loreDescription").addEventListener("change", changeDescription);
+  ensureEl(DIALOG_ID).addEventListener("change", onLoreChange);
   ensureEl("loreMapNameRegenerate").addEventListener("click", regenerateMapName);
   ensureEl("loreEraRegenerate").addEventListener("click", regenerateEra);
 }
 
-/**
- * Renaming the era suggests an abbreviation, which the user can then override in the field beside
- * it. Not a derived fact - a short form the user typed outlives the era it was made for
- */
-function abbreviateEra(key: SettingKey): void {
-  if (key !== "era") return;
-  facts.lore.calendar.eraShort = Facts.shortEra();
-  lock("eraShort");
-  syncSetting("eraShort");
-}
+/** Every control edits `facts.lore` directly, and pins what the user typed */
+function onLoreChange(event: Event): void {
+  const input = event.target as HTMLInputElement;
+  const value = input.value;
+  const { lore } = facts;
 
-function changeDescription(this: HTMLTextAreaElement): void {
-  facts.lore.description = this.value;
+  switch (input.id) {
+    case "loreMapName":
+      lore.name = value;
+      Pins.set("mapName", value); // named by hand: the next map keeps it
+      return;
+
+    case "loreYear":
+      if (!value || Number.isNaN(+value)) return;
+      lore.calendar.year = +value;
+      Pins.set("year", +value);
+      return;
+
+    case "loreEra":
+      // renaming the era suggests an abbreviation, which the user can override in the field beside it
+      if (!value) return;
+      lore.calendar.era = value;
+      lore.calendar.eraShort = Facts.shortEra();
+      Pins.set("era", value);
+      Pins.set("eraShort", lore.calendar.eraShort);
+      ensureEl<HTMLInputElement>("loreEraShort").value = lore.calendar.eraShort;
+      return;
+
+    case "loreEraShort":
+      if (!value) return;
+      lore.calendar.eraShort = value;
+      Pins.set("eraShort", value);
+      return;
+
+    // the description is the one lore value with no pin: nothing ever re-rolls an author's note
+    case "loreDescription":
+      lore.description = value;
+      return;
+  }
 }
 
 function regenerateMapName(): void {
@@ -130,8 +161,8 @@ function regenerateMapName(): void {
 }
 
 function regenerateEra(): void {
-  unlock("era");
-  unlock("eraShort");
+  Pins.clear("era");
+  Pins.clear("eraShort");
   facts.lore.calendar.era = Facts.randomEra();
   facts.lore.calendar.eraShort = Facts.shortEra();
   fillInputs();

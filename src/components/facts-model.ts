@@ -1,14 +1,13 @@
-import { applyStoredLibrary, ensureDefinitionSets } from "@/components/definition-sets";
+// What is true about the map: saved into .map; docs/architecture/configuration.md
 import { type FactsData, factsSchema } from "@/components/facts-schema";
-import { applyPin, pinnedFactKeys } from "@/components/settings";
+import { Pins } from "@/components/pins";
 import { getPointsNumber } from "@/data/graph-density";
 import { Burgs } from "@/generators/burgs-generator";
-import { DEFAULT_COASTLINE } from "@/generators/coastline-generator";
+import { Coastline } from "@/generators/coastline-generator";
 import { Labels } from "@/generators/labels-generator";
 import { Military } from "@/generators/military-generator";
 import { Names } from "@/generators/names-generator";
 import { Transports } from "@/generators/transports-generator";
-import { ignoresPins, lockedValue, rolls } from "@/utils/preferences";
 import { gauss, P, rand } from "@/utils/probabilityUtils";
 import { parseSections } from "@/utils/schemaUtils";
 
@@ -18,131 +17,156 @@ declare global {
   var facts: FactsData;
 }
 
-/** A new map before anything has run: every value present, each from the module that owns it */
-export function getDefaultFacts(): FactsData {
-  return {
-    seed: "",
-    graph: { width: 1280, height: 800, points: 10000 },
-    geography: {
-      mapSize: 100,
-      latitude: 50,
-      longitude: 50,
-      coordinates: { latT: 180, latN: 90, latS: -90, lonT: 320, lonW: -160, lonE: 160 }
-    },
-    climate: {
-      temperature: { equator: 27, northPole: -30, southPole: -15 },
-      precipitation: 100,
-      winds: [225, 45, 225, 315, 135, 315]
-    },
-    cultures: { set: "world" },
-    lore: { name: "", description: "", calendar: { year: 1000, era: "Era", eraShort: "E" } },
-    units: {
-      distance: { unit: isImperial() ? "mi" : "km", scale: 3 },
-      area: { unit: "square" },
-      height: { unit: isImperial() ? "ft" : "m", exponent: 2 },
-      temperature: { unit: isFahrenheit() ? "°F" : "°C" },
-      population: { scale: 1000, urbanization: { rate: 1, density: 10 } }
-    },
-    labels: { resizeOnZoom: true, groups: Labels.getDefaultGroups() },
-    style: { preset: "default" },
-    military: { units: Military.getDefaultOptions() },
-    transports: Transports.getDefaults(),
-    burgs: { groups: Burgs.getDefaultGroups() },
-    coastline: { ...DEFAULT_COASTLINE }
-  };
-}
-
-globalThis.facts = getDefaultFacts();
-
-function apply(): void {
-  const newFacts = getDefaultFacts();
-  newFacts.seed = facts.seed; // set by setSeed before
-  const { width, height, density } = options.generation.graph;
-  newFacts.graph = { width, height, points: getPointsNumber(density) };
-  newFacts.cultures = { set: options.generation.cultures.set };
-
-  globalThis.facts = newFacts;
-  applyStoredLibrary();
-  ensureDefinitionSets();
-
-  rollUnpinnedFacts();
-  applyPinnedFacts();
-}
-
-/** Facts with no request of their own are rolled here, the way requests are rolled in Options */
-function rollUnpinnedFacts(): void {
-  const { climate, units, lore } = facts;
-
-  if (rolls("temperatureEquator")) climate.temperature.equator = gauss(25, 7, 20, 35, 0);
-  if (rolls("temperatureNorthPole")) climate.temperature.northPole = gauss(-25, 7, -40, 10, 0);
-  if (rolls("temperatureSouthPole")) climate.temperature.southPole = gauss(-15, 7, -40, 10, 0);
-  if (rolls("prec")) climate.precipitation = gauss(100, 40, 5, 500);
-  if (rolls("distanceScale")) units.distance.scale = gauss(3, 1, 1, 5);
-  if (rolls("year")) lore.calendar.year = rand(100, 2000);
-  if (rolls("era")) {
-    lore.calendar.era = randomEra();
-    lore.calendar.eraShort = shortEra();
+class FactsModel {
+  /** A new map before anything has run: every value present, each from the module that owns it */
+  getDefault(): FactsData {
+    return {
+      seed: "",
+      graph: { width: 1280, height: 800, points: 10000 },
+      geography: {
+        mapSize: 100,
+        latitude: 50,
+        longitude: 50,
+        coordinates: { latT: 180, latN: 90, latS: -90, lonT: 320, lonW: -160, lonE: 160 }
+      },
+      climate: {
+        temperature: { equator: 27, northPole: -30, southPole: -15 },
+        precipitation: 100,
+        winds: [225, 45, 225, 315, 135, 315]
+      },
+      cultures: { set: "world" },
+      lore: { name: "", description: "", calendar: { year: 1000, era: "Era", eraShort: "E" } },
+      units: {
+        distance: { unit: this.isImperial() ? "mi" : "km", scale: 3 },
+        area: { unit: "square" },
+        height: { unit: this.isImperial() ? "ft" : "m", exponent: 2 },
+        temperature: { unit: this.isFahrenheit() ? "°F" : "°C" },
+        population: { scale: 1000, urbanization: { rate: 1, density: 10 } }
+      },
+      style: { preset: "default" },
+      burgs: { groups: Burgs.getDefaultGroups() },
+      labels: { resizeOnZoom: true, groups: Labels.getDefaultGroups() },
+      military: { units: Military.getDefaultOptions() },
+      transports: Transports.getDefaults(),
+      coastline: Coastline.getDefaultSettings()
+    };
   }
-}
 
-// declarations, not consts: `getDefaultFacts` runs above them while this module is evaluating
-function locale(): string {
-  return typeof navigator === "undefined" ? "" : navigator.language;
-}
+  /** Establish the facts a new map starts from */
+  apply(): void {
+    const fresh = this.getDefault();
+    fresh.seed = facts.seed; // setSeed resolved it and reseeded the PRNG before the roll
 
-/** the US and the UK measure distance and altitude in miles and feet; only the US reads °F */
-function isImperial(): boolean {
-  return ["en-US", "en-GB"].includes(locale());
-}
+    const { graph, cultures } = options.generation;
+    fresh.graph = { width: graph.width, height: graph.height, points: getPointsNumber(graph.density) };
+    fresh.cultures = { set: cultures.set };
 
-function isFahrenheit(): boolean {
-  return locale() === "en-US";
-}
+    // the user's own sets or defaults
+    fresh.military.units = Options.recall("military") ?? fresh.military.units;
+    fresh.transports = Options.recall("transports") ?? fresh.transports;
+    fresh.burgs.groups = Options.recall("burgGroups") ?? fresh.burgs.groups;
+    fresh.labels.groups = Options.recall("labelGroups") ?? fresh.labels.groups;
+    fresh.coastline = Options.recall("coastline") ?? fresh.coastline;
 
-/** Validate an untrusted settings object from a `.map`, repairing what it can */
-function parse(json: unknown): FactsData {
-  return parseSections<FactsData>(factsSchema, getDefaultFacts(), json, "Facts.parse");
-}
-
-/**
- * Take a parsed object as the facts of the map now on screen. Replaces wholesale: a section the
- * file lacked comes back as its default, never as the previous map's value
- */
-function adopt(data: FactsData): void {
-  globalThis.facts = data;
-  ensureDefinitionSets();
-}
-
-/** Put every pinned fact back, so a pin outlives both a new map and a loaded one */
-function applyPinnedFacts(): void {
-  if (ignoresPins()) return;
-  for (const key of pinnedFactKeys()) {
-    const value = lockedValue(key);
-    if (value !== undefined) applyPin(key, value);
+    globalThis.facts = fresh;
+    this.rollUnpinned();
   }
-}
 
-function randomEra(): string {
-  return `${Names.getBaseShort(P(0.7) ? 1 : rand(Names.nameBases.length))} Era`;
-}
+  /**
+   * Take a parsed object as the facts of the map now on screen. Replaces wholesale: a section the
+   * file lacked comes back as its default, never as the previous map's value
+   */
+  adopt(data: FactsData): void {
+    globalThis.facts = data;
+    const defaults = this.getDefault();
+    if (!facts.burgs.groups?.length) facts.burgs.groups = defaults.burgs.groups;
+    if (!facts.labels.groups?.length) facts.labels.groups = defaults.labels.groups;
+    if (!facts.military.units?.length) facts.military.units = defaults.military.units;
+    if (!facts.transports?.length) facts.transports = defaults.transports;
 
-function shortEra(): string {
-  return facts.lore.calendar.era
-    .split(" ")
-    .filter(Boolean)
-    .map(word => word[0].toUpperCase())
-    .join("");
+    Burgs.ensureDefaultGroup(facts.burgs.groups);
+    Labels.restoreMissingTypes(facts.labels.groups);
+  }
+
+  /**
+   * Every fact with no request of its own, in one place: rolled unless the user pinned it, and put
+   * back at the pinned value where they did. The block below it has no roll at all - the pipeline
+   * or a fact-owning editor writes those, and a pin is the whole of what carries them to a new map.
+   * The lat/lon box is not touched here: the pipeline re-derives it right after this runs
+   */
+  private rollUnpinned(): void {
+    const { geography, climate, units, lore } = facts;
+    const { temperature } = climate;
+
+    temperature.equator = Pins.rolls("temperatureEquator")
+      ? gauss(25, 7, 20, 35, 0)
+      : Pins.valueOr("temperatureEquator", temperature.equator);
+    temperature.northPole = Pins.rolls("temperatureNorthPole")
+      ? gauss(-25, 7, -40, 10, 0)
+      : Pins.valueOr("temperatureNorthPole", temperature.northPole);
+    temperature.southPole = Pins.rolls("temperatureSouthPole")
+      ? gauss(-15, 7, -40, 10, 0)
+      : Pins.valueOr("temperatureSouthPole", temperature.southPole);
+    climate.precipitation = Pins.rolls("prec") ? gauss(100, 40, 5, 500) : Pins.valueOr("prec", climate.precipitation);
+    units.distance.scale = Pins.rolls("distanceScale")
+      ? gauss(3, 1, 1, 5)
+      : Pins.valueOr("distanceScale", units.distance.scale);
+    lore.calendar.year = Pins.rolls("year") ? rand(100, 2000) : Pins.valueOr("year", lore.calendar.year);
+
+    if (Pins.rolls("era")) {
+      lore.calendar.era = this.randomEra();
+      lore.calendar.eraShort = this.shortEra();
+    } else {
+      lore.calendar.era = Pins.valueOr("era", lore.calendar.era);
+      lore.calendar.eraShort = Pins.valueOr("eraShort", lore.calendar.eraShort);
+    }
+
+    lore.name = Pins.valueOr("mapName", lore.name);
+    geography.mapSize = Pins.valueOr("mapSize", geography.mapSize);
+    geography.latitude = Pins.valueOr("latitude", geography.latitude);
+    geography.longitude = Pins.valueOr("longitude", geography.longitude);
+    units.distance.unit = Pins.valueOr("distanceUnit", units.distance.unit);
+    units.area.unit = Pins.valueOr("areaUnit", units.area.unit);
+    units.height.unit = Pins.valueOr("heightUnit", units.height.unit);
+    units.height.exponent = Pins.valueOr("heightExponent", units.height.exponent);
+    units.temperature.unit = Pins.valueOr("temperatureScale", units.temperature.unit);
+    units.population.scale = Pins.valueOr("populationRate", units.population.scale);
+    units.population.urbanization.rate = Pins.valueOr("urbanization", units.population.urbanization.rate);
+    units.population.urbanization.density = Pins.valueOr("urbanDensity", units.population.urbanization.density);
+  }
+
+  private locale(): string {
+    return typeof navigator === "undefined" ? "" : navigator.language;
+  }
+
+  private isImperial(): boolean {
+    return ["en-US", "en-GB"].includes(this.locale());
+  }
+
+  private isFahrenheit(): boolean {
+    return this.locale() === "en-US";
+  }
+
+  /** Validate an untrusted settings object from a `.map`, repairing what it can */
+  parse(json: unknown): FactsData {
+    return parseSections<FactsData>(factsSchema, this.getDefault(), json, "Facts.parse");
+  }
+
+  randomEra(): string {
+    return `${Names.getBaseShort(P(0.7) ? 1 : rand(Names.nameBases.length))} Era`;
+  }
+
+  shortEra(): string {
+    return facts.lore.calendar.era
+      .split(" ")
+      .filter(Boolean)
+      .map(word => word[0].toUpperCase())
+      .join("");
+  }
 }
 
 // biome-ignore lint/suspicious/noRedeclare: legacy seam
-export const Facts = {
-  parse,
-  adopt,
-  apply,
-  randomEra,
-  shortEra,
-  getDefaults: getDefaultFacts
-};
+export const Facts = new FactsModel();
 
-type FactsModel = typeof Facts;
+globalThis.facts = Facts.getDefault();
 globalThis.Facts = Facts;

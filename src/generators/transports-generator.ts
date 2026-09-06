@@ -1,5 +1,3 @@
-import { remember } from "@/components/definition-sets";
-
 /**
  * The travel domain of a transport type: determines both pathfinding strategy and endpoint validation.
  *   land: walks, wheels, hooves: land-only (endpoints must be on land or coastal). Uses road network if possible.
@@ -107,7 +105,7 @@ class TransportsModule {
    * kept for the next map too. See docs/architecture/configuration.md#preservation-across-maps
    */
   save(): void {
-    remember("transports", facts.transports);
+    Options.remember("transports", facts.transports, this.getDefaults());
   }
 }
 

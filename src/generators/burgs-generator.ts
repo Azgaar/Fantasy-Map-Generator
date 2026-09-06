@@ -1,4 +1,5 @@
 import { quadtree } from "d3-quadtree";
+import { AUTO_BURG_LIMIT } from "@/components/options-schema";
 import { Emblems } from "@/generators/emblems-generator";
 import type { BurgGroup } from "@/types/burg-groups";
 import type { Emblem } from "@/types/emblems";
@@ -12,7 +13,7 @@ import type { ProductionRecord } from "./production-generator";
 import type { River } from "./river-generator";
 import type { Point } from "./voronoi";
 
-export const isAutoBurgLimit = (): boolean => options.generation.burgs.limit === 1000;
+export const isAutoBurgLimit = (): boolean => options.generation.burgs.limit === AUTO_BURG_LIMIT;
 
 export interface Burg {
   cell: number;

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
-import { getDefaultOptions } from "@/components/options-model";
+import { getDefaultOptions, Options } from "@/components/options-model";
 import { Coastline } from "./coastline-generator";
 import type { Feature } from "./features";
 
@@ -18,17 +18,11 @@ const stubFacts = () =>
     coastline: Coastline.getDefaultSettings()
   }) as unknown as typeof globalThis.facts;
 
-/** the store, without its timers: what the preservation library writes through */
-const stubOptionsModel = () =>
-  ({
-    set: (change: (options: typeof globalThis.options) => void) => change(globalThis.options)
-  }) as unknown as typeof globalThis.Options;
-
 beforeEach(() => {
   localStorage.clear();
   globalThis.facts = stubFacts();
   globalThis.options = getDefaultOptions();
-  globalThis.Options = stubOptionsModel();
+  globalThis.Options = Options;
   globalThis.pack = {
     vertices: {
       p: [

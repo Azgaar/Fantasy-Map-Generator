@@ -189,11 +189,11 @@ own: `facts` is replaced wholesale by every load, so a pin that named only a key
 one. Editing a control by hand pins it; a rolled value stays unpinned. Lock keys are a stable UI
 vocabulary independent of the object paths — renaming one invalidates a user's pins.
 
-`components/settings.ts` says, per key, which object answers for it, where in that object the
-value sits, and what derivation the value feeds — one table for the panel, the locks and the schema
-alike. `components/settings-binding.ts` is its DOM adapter: a control names its setting in
-`data-stored`, and `bindSettings` writes it, echoes it to the control's twin and pins what the user
-set by hand. The scope decides **when** a pin is applied. A pinned **request** is applied where requests are resolved, before generation reads them;
+`components/pins.ts` is the whole of the mechanism: `Pins` holds the store and the lock icons
+alike. A dialog calls `Pins.bindIcons(dialog, pinnedValue)` and answers, in one function of its own,
+for the value each icon stands for — there is no central table of keys, because the dialog that
+shows a control is the one that knows where its value lives. The scope decides **when** a pin is
+applied. A pinned **request** is applied where requests are resolved, before generation reads them;
 a pinned **fact** is applied to the map being seeded, after the requests it has none of. Applying a
 request pin later than that writes a value nothing will read until the map after next.
 
@@ -202,8 +202,9 @@ never pinned, and a pinned value the key's own schema rejects is ignored rather 
 the map. A preference is never pinnable — nothing re-rolls it.
 
 **`?options=default` ignores every pin**, so the map is the one a fresh browser would make. One
-predicate decides it (`ignoresPins`), and `rolls(key)` and `pinned(key, fallback)` in
-`utils/preferences.ts` are the only way requests and facts consult a lock.
+predicate decides it (`Pins.ignored`), and `Pins.rolls(key)` and `Pins.valueOr(key, fallback)` are
+the only way requests and facts consult a pin. `valueOr` also drops a pin whose type no longer
+matches the value it stands for, so a corrupt store cannot write a string into a number.
 
 ---
 
@@ -282,14 +283,11 @@ Generation is the commit point from requests to facts.
   after a world-position change, rebuilding a coastline path — these read `facts`, because they
   must keep the map behaving like itself. They never read requests.
 - **Editing a fact directly** is legitimate for the panels that own facts — world position and
-  climate, units, lore, the definition sets. Such a panel writes through the settings table, which
-  runs whatever derivation depends on the value; the panel's own redraw is its business alone. It
-  does not write requests. A derivation is state and runs wherever the value is written, a pin's
-  restoration included; a redraw would fire against a map that has not been drawn yet.
+  climate, units, lore, the definition sets. Such a panel writes `facts`, pins the value, and
+  immediately runs whatever derivation and redraw depend on it. It does not write requests.
 
 Consequently the panel that shows requests and the panel that edits facts are different panels,
-and each binds to exactly one object. A binding table serves one object; a table that needs a
-per-row scope column is two tables.
+and each writes exactly one object.
 
 A dialog owns every control it shows: it writes the value, pins it, and runs whatever redraw the
 change asks for. Nothing delegates writing into another panel's controls, so no control has two
@@ -304,9 +302,9 @@ types, burg groups, label groups, coastline settings. They are facts of whatever
 _and_ the starting point for the next one.
 
 The mechanism is a **preservation library** in `options`, one entry per definition set.
-`components/definition-sets.ts` is the one place each set is described — where it lives in `facts`,
-which module answers for its defaults, and what an accepted set still needs before the renderer can
-use it — so seeding, repair and `remember` all read the same row:
+`Facts.apply` seeds them and `Facts` repairs them, and `Options.remember(entry, value, defaults)`
+keeps one: the module that owns a set passes its own defaults, because it is the one that answers
+for them.
 
 - **A user edit writes both.** Editing a set on a map updates `facts` (the map changes now) and
   mirrors the result into the library (the next map starts there).
@@ -422,11 +420,13 @@ validate has nothing to repair from and falls back whole, losing every other set
 3. **Give it exactly one writer.** A request is written by its control. A fact is written by the
    generator, derivation or fact-owning editor that produces it. Never both, and never one field
    in both objects.
-4. **Give it a row in `components/settings.ts`** — its scope and the path that holds it — and name
-   that key in the `data-stored` of its control. The panel, the lock and the pin's validation all
-   read that one row; a request or a fact gets a lock from it, a preference does not.
+4. **Write it from the dialog that shows it.** The control's handler writes the value into its
+   object, pins it with `Pins.set(key, value)` where a pin means anything, and runs whatever redraw
+   the change asks for. Add the key to that dialog's own `pinnedValue` function so its lock icon can
+   read it. A request or a fact gets a pin, a preference does not — nothing re-rolls one.
 5. **If a new map should re-roll it**, add it to the randomization step. If a new map should
-   inherit the user's own version, add a row to `components/definition-sets.ts` instead.
+   inherit the user's own version, add a library entry and call `Options.remember` from the module
+   that owns the set instead.
 6. **Read it directly** where it is used — reading never goes through a model.
 7. **No migration is needed for a new field**: validation leaves it at its default for every
    existing browser and every existing file.

@@ -1,10 +1,10 @@
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { syncInputs } from "@/components/options/tabs/options-tab";
+import { Pins } from "@/components/pins";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { precreatedHeightmaps } from "@/data/precreated-heightmaps";
 import { drawHeights } from "@/renderers/draw-heightmap";
 import type { GridGraph } from "@/types/GridGraph";
-import { lock } from "@/utils/preferences";
 import { ensureEl, generateSeed } from "../utils";
 
 const initialSeed = generateSeed();
@@ -33,7 +33,7 @@ function open(): void {
         if (!id) return;
         Options.set(o => (o.generation.template = id));
         syncInputs();
-        lock("template");
+        Pins.set("template", options.generation.template);
 
         $(this).dialog("close");
       },
@@ -42,7 +42,7 @@ function open(): void {
         if (!id) return;
         Options.set(o => (o.generation.template = id));
         syncInputs();
-        lock("template");
+        Pins.set("template", options.generation.template);
 
         const seed = getSeed();
         regeneratePrompt({ seed, graph });

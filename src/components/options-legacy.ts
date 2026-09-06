@@ -1,5 +1,5 @@
 // The one-time migration out of the pre-`fmg-options` world
-import { DEFAULT_COASTLINE } from "@/generators/coastline-generator";
+import { Coastline } from "@/generators/coastline-generator";
 
 const ADOPTED_KEYS = [
   // preferences, one key per control
@@ -130,11 +130,9 @@ export function adoptLegacyOptions(): Record<string, unknown> | null {
   json("military", parsed => put("library.military", parsed));
   json("burg-groups", parsed => put("library.burgGroups", parsed));
   json("options-labels", parsed => put("library.labelGroups", (parsed as { groups?: unknown })?.groups));
-  // the old reader merged over its defaults, so a truncated value was tolerated then; keep
-  // tolerating it, and from today's defaults - a field the user never had an opinion about should
-  // follow the module as it changes, and only today's copy is certain to have every field the
-  // schema now requires. A coastline that fails to validate costs the whole library section
-  json("coastline-settings", parsed => put("library.coastline", { ...DEFAULT_COASTLINE, ...(parsed as object) }));
+  json("coastline-settings", parsed =>
+    put("library.coastline", { ...Coastline.getDefaultSettings(), ...(parsed as object) })
+  );
 
   for (const key of LEGACY_KEYS) localStorage.removeItem(key);
   return migrated;

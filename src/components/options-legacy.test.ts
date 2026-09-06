@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { DEFAULT_COASTLINE } from "@/generators/coastline-generator";
+import { Coastline } from "@/generators/coastline-generator";
 import { adoptLegacyOptions } from "./options-legacy";
 
 const store = new Map<string, string>();
@@ -75,7 +75,7 @@ describe("adoptLegacyOptions", () => {
   it("rounds a truncated coastline out from today's defaults", () => {
     seed({ "coastline-settings": JSON.stringify({ minEdge: 4 }) });
     const migrated = adoptLegacyOptions() as { library: { coastline: Record<string, number> } };
-    expect(migrated.library.coastline).toEqual({ ...DEFAULT_COASTLINE, minEdge: 4 });
+    expect(migrated.library.coastline).toEqual({ ...Coastline.getDefaultSettings(), minEdge: 4 });
   });
 });
 
@@ -90,7 +90,7 @@ describe("Options.restoreStored, migrating", () => {
       military: JSON.stringify([A_UNIT]),
       "burg-groups": JSON.stringify([A_BURG_GROUP]),
       "options-labels": JSON.stringify({ groups: [A_LABEL_GROUP] }),
-      "coastline-settings": JSON.stringify({ ...DEFAULT_COASTLINE, minEdge: 4 }),
+      "coastline-settings": JSON.stringify({ ...Coastline.getDefaultSettings(), minEdge: 4 }),
       "trade-animation": JSON.stringify({
         displayType: "land",
         concurrent: 99,
@@ -111,7 +111,7 @@ describe("Options.restoreStored, migrating", () => {
     expect(options.library.military).toEqual([A_UNIT]);
     expect(options.library.burgGroups).toEqual([A_BURG_GROUP]);
     expect(options.library.labelGroups).toEqual([A_LABEL_GROUP]);
-    expect(options.library.coastline).toEqual({ ...DEFAULT_COASTLINE, minEdge: 4 });
+    expect(options.library.coastline).toEqual({ ...Coastline.getDefaultSettings(), minEdge: 4 });
   });
 
   it("leaves the pins, winds and the style preset behind", async () => {

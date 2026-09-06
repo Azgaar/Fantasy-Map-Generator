@@ -55,7 +55,7 @@ export async function generate(config?: GenerationConfig): Promise<void> {
     setSeed(precreatedSeed);
     Options.randomize();
     Facts.apply();
-    applyGraphSize();
+    applyGraphSize(); // TODO: DOM change, not part of generation
 
     await GenerationPipeline.run({ seed: precreatedSeed, graph: precreatedGraph });
 

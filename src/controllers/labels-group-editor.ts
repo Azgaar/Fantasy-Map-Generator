@@ -1,4 +1,3 @@
-import { remember } from "@/components/definition-sets";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { LAYER_TOGGLES } from "@/components/options/tabs/layer-toggles";
@@ -297,7 +296,7 @@ function submitForm(event: Event): void {
   facts.labels.groups = rows.map(rowToGroup);
   facts.labels.resizeOnZoom = ensureEl<HTMLInputElement>("labelsResizeOnZoom").checked;
   Options.set(o => (o.app.labels.showAll = ensureEl<HTMLInputElement>("labelsShowAll").checked));
-  remember("labelGroups", facts.labels.groups); // carried to the next map
+  Options.remember("labelGroups", facts.labels.groups, Labels.getDefaultGroups()); // carried to the next map
 
   for (const group of facts.labels.groups) styles.labels.groups[group.name] ??= getGroupStyle(group);
 

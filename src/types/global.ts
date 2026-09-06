@@ -3,8 +3,6 @@ declare global {
     tip: typeof import("../components/tooltips").tip;
     clearMainTip: typeof import("../components/tooltips").clearMainTip;
     showElementLockTip: typeof import("../components/tooltips").showElementLockTip;
-    lock: typeof import("../utils/preferences").lock;
-    unlock: typeof import("../utils/preferences").unlock;
     fitLegendBox: typeof import("../renderers/draw-legend").fitLegendBox;
     applyOption: typeof import("../utils").applyOption;
     closeDialogs: typeof import("../components/dialog/dialog-helpers").closeDialogs;

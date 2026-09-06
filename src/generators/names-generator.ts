@@ -1,6 +1,6 @@
+import { Pins } from "@/components/pins";
 import { tip } from "@/components/tooltips";
 import { getDefaultNameBases, type NameBase } from "@/data/name-bases";
-import { isLocked, unlock } from "@/utils/preferences";
 import { capitalize, isVowel, last, P, ra, rand } from "../utils";
 
 declare global {
@@ -273,8 +273,8 @@ class NamesGenerator {
 
   // generate name for the map
   getMapName(force: boolean) {
-    if (!force && isLocked("mapName")) return;
-    if (force && isLocked("mapName")) unlock("mapName");
+    if (!force && Pins.has("mapName")) return;
+    if (force && Pins.has("mapName")) Pins.clear("mapName");
     const base = P(0.7) ? 2 : P(0.5) ? rand(0, 6) : rand(0, 31);
     if (!this.nameBases[base]) {
       tip("Namebase is not found", false, "error");

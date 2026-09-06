@@ -33,10 +33,10 @@ for (const flag of ["INFO", "TIME", "ERROR", "WARN", "DEBUG"]) {
 // The configuration globals the app installs at boot, so a unit test gets the same defaults. The
 // models are loaded last and dynamically: they reach the modules that own each default, and those
 // expect the stubs above to be in place
-const { getDefaultFacts } = await import("@/components/facts-model");
+const { Facts } = await import("@/components/facts-model");
 const { getDefaultOptions } = await import("@/components/options-model");
 
-(globalThis as Record<string, unknown>).facts ??= getDefaultFacts();
+(globalThis as Record<string, unknown>).facts ??= Facts.getDefault();
 (globalThis as Record<string, unknown>).options ??= getDefaultOptions();
 
 // Those imports pull in the real tooltip module, which needs a DOM node no unit test renders.

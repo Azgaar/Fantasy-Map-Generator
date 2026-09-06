@@ -3,50 +3,17 @@ import { burgGroup, coastlineSettings, labelGroup, militaryUnit, transport } fro
 import { MAX_DENSITY, MIN_DENSITY } from "@/data/graph-density";
 import { count, hexColor, nonNegative, percent, positive, ratio } from "@/utils/schemaUtils";
 
-const threeD = z.strictObject({
-  scale: positive,
-  lightness: ratio,
-  shadow: ratio,
-  sun: z.strictObject({ x: z.number(), y: z.number(), z: z.number() }),
-  rotateMesh: z.number(),
-  rotateGlobe: z.number(),
-  skyColor: hexColor,
-  waterColor: hexColor,
-  sunColor: hexColor,
-  extendedWater: z.boolean(),
-  labels3d: z.boolean(),
-  satellite: z.boolean(),
-  wireframe: z.boolean(),
-  // the globe texture multiplier is derived from the scale where it is read, never stored
-  resolutionScale: positive,
-  subdivide: z.boolean(),
-  erosion: z.boolean(),
-  erosionDetail: nonNegative,
-  erosionStrength: nonNegative,
-  erosionRiverDepth: nonNegative,
-  erosionOctaves: count
-});
-
-const tradeAnimation = z.strictObject({
-  displayType: z.enum(["local", "global", "both"]),
-  concurrent: count.positive(),
-  duration: positive,
-  landDurationModifier: nonNegative,
-  segmentChangePause: nonNegative,
-  markerSize: positive
-});
+/** the burg request at its maximum stands for "as many burgs as the land supports" */
+export const AUTO_BURG_LIMIT = 1000;
 
 export const optionsSchema = z.strictObject({
   /** what to ask the generators for */
   generation: z.strictObject({
-    /** the graph the next map is built on: its extent, and how finely it is divided. A pin keeps
-     * the extent; otherwise it follows the window */
+    /** the graph the next map is built on: its extent, and how finely it is divided */
     graph: z.strictObject({
       width: positive,
       height: positive,
-      // the Points slider step; the cell count is derived from it, never stored. A step the table
-      // has no entry for silently generates a default-sized map, so it is bounded here
-      density: count.min(MIN_DENSITY).max(MAX_DENSITY)
+      density: count.min(MIN_DENSITY).max(MAX_DENSITY) // the Points slider step
     }),
     template: z.string(), // ids include the user's own precreated heightmaps, so no enum
     resolveDepressionsSteps: count,
@@ -60,7 +27,7 @@ export const optionsSchema = z.strictObject({
     states: z.strictObject({ limit: count, sizeVariety: nonNegative, growthRate: nonNegative }),
     provinces: z.strictObject({ ratio: percent }),
     religions: z.strictObject({ limit: count }),
-    burgs: z.strictObject({ limit: count }) // 1000 means "auto"
+    burgs: z.strictObject({ limit: count }) // AUTO_BURG_LIMIT means "as many as the land supports"
   }),
 
   /** how the app itself behaves: applied at once, generating nothing, describing no map */
@@ -92,8 +59,39 @@ export const optionsSchema = z.strictObject({
       pngResolution: positive,
       tiles: z.strictObject({ cols: count.positive(), rows: count.positive(), scale: positive })
     }),
-    trade: z.strictObject({ animation: tradeAnimation }),
-    threeD
+    trade: z.strictObject({
+      animation: z.strictObject({
+        displayType: z.enum(["local", "global", "both"]),
+        concurrent: count.positive(),
+        duration: positive,
+        landDurationModifier: nonNegative,
+        segmentChangePause: nonNegative,
+        markerSize: positive
+      })
+    }),
+    threeD: z.strictObject({
+      scale: positive,
+      lightness: ratio,
+      shadow: ratio,
+      sun: z.strictObject({ x: z.number(), y: z.number(), z: z.number() }),
+      rotateMesh: z.number(),
+      rotateGlobe: z.number(),
+      skyColor: hexColor,
+      waterColor: hexColor,
+      sunColor: hexColor,
+      extendedWater: z.boolean(),
+      labels3d: z.boolean(),
+      satellite: z.boolean(),
+      wireframe: z.boolean(),
+      // the globe texture multiplier is derived from the scale where it is read, never stored
+      resolutionScale: positive,
+      subdivide: z.boolean(),
+      erosion: z.boolean(),
+      erosionDetail: nonNegative,
+      erosionStrength: nonNegative,
+      erosionRiverDepth: nonNegative,
+      erosionOctaves: count
+    })
   }),
 
   /** the user's own definition sets, carried to the next map */

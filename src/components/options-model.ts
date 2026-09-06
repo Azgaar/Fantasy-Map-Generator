@@ -1,18 +1,20 @@
+import type { z } from "zod";
 import { adoptLegacyOptions } from "@/components/options-legacy";
-import { type OptionsData, optionsSchema } from "@/components/options-schema";
+import { AUTO_BURG_LIMIT, type OptionsData, optionsSchema } from "@/components/options-schema";
+import { Pins } from "@/components/pins";
 import { DEFAULT_DENSITY } from "@/data/graph-density";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { DEFAULT_TRADE_ANIMATION } from "@/data/trade-animation-options";
 import { DEFAULT_THREE_D } from "@/data/view-3d-options";
+import { Coastline } from "@/generators/coastline-generator";
 import { CULTURE_SETS } from "@/generators/cultures-generator";
 import { rn } from "@/utils/numberUtils";
 import { deepMerge } from "@/utils/objectUtils";
-import { clearLocks, isLocked, pinned, rolls } from "@/utils/preferences";
 import { gauss, rw } from "@/utils/probabilityUtils";
 import { parseSections } from "@/utils/schemaUtils";
 
 declare global {
-  var Options: OptionsApi;
+  var Options: OptionsModel;
   /** this browser's options, read bare across the app and replaced wholesale on restore */
   var options: OptionsData;
 }
@@ -57,126 +59,158 @@ export function getDefaultOptions(): OptionsData {
       trade: { animation: { ...DEFAULT_TRADE_ANIMATION } },
       threeD: { ...DEFAULT_THREE_D }
     },
-    library: { military: null, transports: null, burgGroups: null, labelGroups: null, coastline: null }
+    library: {
+      burgGroups: Burgs.getDefaultGroups(),
+      labelGroups: Labels.getDefaultGroups(),
+      military: Military.getDefaultOptions(),
+      transports: Transports.getDefaults(),
+      coastline: Coastline.getDefaultSettings()
+    }
   };
 }
 
 globalThis.options = getDefaultOptions();
 
 const SAVE_DELAY = 500;
-let saveTimer = 0;
 
-/** Change the options and remember them */
-function set(change: (options: OptionsData) => void): void {
-  change(globalThis.options);
-  clearTimeout(saveTimer);
-  saveTimer = window.setTimeout(persist, SAVE_DELAY);
-}
+class OptionsModel {
+  private saveTimer = 0;
 
-/** Throw this browser's options away and start from the defaults: a reset, never a repair */
-function reset(): void {
-  globalThis.options = getDefaultOptions();
-  clearLocks(); // a pin is this browser's too, and would go on generating a value nobody asked for
-  persist();
-}
+  /** Change the options and remember them */
+  set(change: (options: OptionsData) => void): void {
+    change(globalThis.options);
+    clearTimeout(this.saveTimer);
+    this.saveTimer = window.setTimeout(() => this.persist(), SAVE_DELAY);
+  }
 
-/** Write the options to localStorage */
-function persist(): void {
-  clearTimeout(saveTimer);
-  saveTimer = 0;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(globalThis.options));
-}
+  /** Write the options to localStorage */
+  persist(): void {
+    clearTimeout(this.saveTimer);
+    this.saveTimer = 0;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(globalThis.options));
+  }
 
-/**
- * Boot: adopt what this browser kept from the last session, validated and repaired. Three layers,
- * newest last - the defaults, whatever the pre-`fmg-options` namespace still holds, then what this
- * browser stored. Migrating underneath rather than afterwards is what puts the old values through
- * the schema: a definition set from an old browser is untrusted like any other stored object
- */
-function restoreStored(): void {
-  const source = deepMerge(getDefaultOptions() as Record<string, unknown>, adoptLegacyOptions() ?? {});
-  deepMerge(source, safeParse(localStorage.getItem(STORAGE_KEY) ?? ""));
+  /** Throw this browser's options away and start from the defaults: a reset, never a repair */
+  reset(): void {
+    globalThis.options = getDefaultOptions();
+    Pins.clearAll(); // a pin is this browser's too, and would go on generating a value nobody asked for
+    this.persist();
+  }
 
-  globalThis.options = parseSections<OptionsData>(optionsSchema, getDefaultOptions(), source, "Options.restore");
-  persist();
-  setGraphSize();
-}
+  /**
+   * Boot: adopt what this browser kept from the last session, validated and repaired. Three layers,
+   * newest last - the defaults, whatever the pre-`fmg-options` namespace still holds, then what this
+   * browser stored. Migrating underneath rather than afterwards is what puts the old values through
+   * the schema: a definition set from an old browser is untrusted like any other stored object
+   */
+  restoreStored(): void {
+    let stored: Record<string, unknown> = {};
+    try {
+      const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "");
+      if (typeof parsed === "object" && parsed !== null) stored = parsed;
+    } catch {
+      // an unreadable object is no object: this browser starts from the defaults
+    }
 
-function safeParse(json: string): Record<string, unknown> {
-  try {
-    const parsed = JSON.parse(json);
-    return typeof parsed === "object" && parsed !== null ? parsed : {};
-  } catch {
-    return {};
+    const source = deepMerge(getDefaultOptions() as Record<string, unknown>, adoptLegacyOptions() ?? {});
+    deepMerge(source, stored);
+
+    globalThis.options = parseSections<OptionsData>(optionsSchema, getDefaultOptions(), source, "Options.restore");
+    this.persist();
+    this.setGraphSize();
+  }
+
+  /** The extent the next map is generated on: what the caller asked for, a pin, or the window */
+  setGraphSize(width?: number, height?: number): void {
+    const { graph } = globalThis.options.generation;
+    // the pinned value, not merely the absence of a roll: the pins and the options are separate
+    // stores, so a repaired options object must not silently generate at a size nobody asked for
+    graph.width = width || (Pins.has("mapWidth") ? Pins.valueOr("mapWidth", graph.width) : window.innerWidth);
+    graph.height = height || (Pins.has("mapHeight") ? Pins.valueOr("mapHeight", graph.height) : window.innerHeight);
+
+    // a hidden or headless tab reports no size, which would make a degenerate grid
+    if (!(graph.width > 0)) graph.width = 1280;
+    if (!(graph.height > 0)) graph.height = 800;
+  }
+
+  /**
+   * Re-roll every request the user has not pinned. Runs before the pipeline, never after.
+   * One line per request, the roll and the pin side by side
+   */
+  randomize(): void {
+    const { generation } = globalThis.options;
+    const { graph, cultures, states, provinces, religions, burgs } = generation;
+
+    // the slider holds a density step; the cell count it stands for is derived where it is used
+    graph.density = Pins.rolls("points") ? DEFAULT_DENSITY : Pins.valueOr("points", graph.density);
+
+    generation.template = Pins.rolls("template") ? randomTemplate() : Pins.valueOr("template", generation.template);
+    states.limit = Pins.rolls("statesNumber") ? gauss(18, 5, 2, 30) : Pins.valueOr("statesNumber", states.limit);
+    provinces.ratio = Pins.rolls("provincesRatio")
+      ? gauss(20, 10, 20, 100)
+      : Pins.valueOr("provincesRatio", provinces.ratio);
+    burgs.limit = Pins.rolls("manors") ? AUTO_BURG_LIMIT : Pins.valueOr("manors", burgs.limit);
+    religions.limit = Pins.rolls("religionsNumber")
+      ? gauss(6, 3, 2, 10)
+      : Pins.valueOr("religionsNumber", religions.limit);
+
+    // one panel slider drives states and cultures alike, until the UI offers them separately
+    const variety = Pins.rolls("sizeVariety") ? gauss(4, 2, 0, 10, 1) : Pins.valueOr("sizeVariety", states.sizeVariety);
+    const growth = Pins.rolls("growthRate") ? rn(1 + Math.random(), 1) : Pins.valueOr("growthRate", states.growthRate);
+    states.sizeVariety = cultures.sizeVariety = variety;
+    states.growthRate = cultures.growthRate = growth;
+
+    cultures.limit = Pins.rolls("cultures") ? gauss(12, 3, 5, 30) : Pins.valueOr("cultures", cultures.limit);
+    cultures.set = Pins.rolls("culturesSet") ? randomCultureSet() : Pins.valueOr("culturesSet", cultures.set);
+    this.capCultures();
+  }
+
+  /** A culture set holds a fixed number of cultures: the map cannot ask for more than it has */
+  capCultures(): void {
+    const { cultures } = globalThis.options.generation;
+    const max = CULTURE_SETS[cultures.set]?.max;
+    if (max && cultures.limit > max) cultures.limit = max;
+  }
+
+  /**
+   * The one thing a `.map` load may carry into options: a request the user would expect to continue
+   * from the map they just opened. A pinned request is never overridden.
+   * See docs/architecture/configuration.md#the-sync-allowlist
+   */
+  syncOnLoad(): void {
+    this.set(options => {
+      if (!Pins.has("mapWidth")) options.generation.graph.width = facts.graph.width;
+      if (!Pins.has("mapHeight")) options.generation.graph.height = facts.graph.height;
+    });
+  }
+
+  /**
+   * The preservation library: a definition set the user built by hand, kept for the next map.
+   * Written only by a user edit - never by a load and never by generation. The caller passes the
+   * module defaults, because the module that owns the set is the one that answers for them.
+   * See docs/architecture/configuration.md#preservation-across-maps
+   */
+  remember<K extends keyof Library>(entry: K, value: NonNullable<Library[K]>, defaults: NonNullable<Library[K]>): void {
+    // both sides through the same schema, so a difference in key order is not a difference in value
+    const schema = optionsSchema.shape.library.shape[entry] as z.ZodType;
+    const canonical = (candidate: unknown) => JSON.stringify(schema.safeParse(candidate).data ?? null);
+
+    this.set(options => {
+      // a set the user reset to the module defaults is not one of their own: clearing the entry
+      // lets the next map follow those defaults as they change, not freeze today's copy of them
+      const isOwn = canonical(value) !== canonical(defaults);
+      options.library[entry] = isOwn ? (structuredClone(value) as Library[K]) : null;
+    });
+  }
+
+  /** The user's own set for the next map, or undefined when they have not saved one */
+  recall<K extends keyof Library>(entry: K): NonNullable<Library[K]> | undefined {
+    const value = globalThis.options.library[entry];
+    return (value === null ? undefined : structuredClone(value)) as NonNullable<Library[K]> | undefined;
   }
 }
 
-/** The extent the next map is generated on: what the caller asked for, a pin, or the window */
-function setGraphSize(width?: number, height?: number): void {
-  const { graph } = globalThis.options.generation;
-  // the pinned value, not merely the absence of a roll: the locks and the options are separate
-  // stores, so a repaired options object must not silently generate at a size nobody asked for
-  graph.width = width || (isLocked("mapWidth") ? pinned("mapWidth", graph.width) : window.innerWidth);
-  graph.height = height || (isLocked("mapHeight") ? pinned("mapHeight", graph.height) : window.innerHeight);
-
-  // a hidden or headless tab reports no size, which would make a degenerate grid
-  if (!(graph.width > 0)) graph.width = 1280;
-  if (!(graph.height > 0)) graph.height = 800;
-}
-
-/** Re-roll every request the user has not pinned. Runs before the pipeline, never after */
-function randomize(): void {
-  const { generation } = options;
-
-  generation.graph.density = rolls("points") ? DEFAULT_DENSITY : pinned("points", generation.graph.density);
-  generation.template = rolls("template") ? randomTemplate() : pinned("template", generation.template);
-  generation.states.limit = rolls("statesNumber")
-    ? gauss(18, 5, 2, 30)
-    : pinned("statesNumber", generation.states.limit);
-  generation.provinces.ratio = rolls("provincesRatio")
-    ? gauss(20, 10, 20, 100)
-    : pinned("provincesRatio", generation.provinces.ratio);
-  generation.burgs.limit = rolls("manors") ? 1000 : pinned("manors", generation.burgs.limit); // 1000 is auto
-  generation.religions.limit = rolls("religionsNumber")
-    ? gauss(6, 3, 2, 10)
-    : pinned("religionsNumber", generation.religions.limit);
-  setSizeVariety(rolls("sizeVariety") ? gauss(4, 2, 0, 10, 1) : pinned("sizeVariety", generation.states.sizeVariety));
-  setGrowthRate(rolls("growthRate") ? rn(1 + Math.random(), 1) : pinned("growthRate", generation.states.growthRate));
-  generation.cultures.limit = rolls("cultures") ? gauss(12, 3, 5, 30) : pinned("cultures", generation.cultures.limit);
-  generation.cultures.set = rolls("culturesSet") ? randomCultureSet() : pinned("culturesSet", generation.cultures.set);
-
-  capCultures();
-}
-
-/** A culture set holds a fixed number of cultures: the map cannot ask for more than it has */
-export function capCultures(): void {
-  const { cultures } = globalThis.options.generation;
-  const max = CULTURE_SETS[cultures.set]?.max;
-  if (max && cultures.limit > max) cultures.limit = max;
-}
-
-/** One panel slider drives states and cultures alike, until the UI offers them separately */
-function setSizeVariety(variety: number): void {
-  const { generation } = globalThis.options;
-  generation.cultures.sizeVariety = generation.states.sizeVariety = variety;
-}
-
-function setGrowthRate(rate: number): void {
-  const { generation } = globalThis.options;
-  generation.cultures.growthRate = generation.states.growthRate = rate;
-}
-
-/**
- * The one thing a `.map` load may carry into options: a request the user would expect to continue
- * from the map they just opened. A pinned request is never overridden.
- * See docs/architecture/configuration.md#the-sync-allowlist
- */
-function syncOnLoad(): void {
-  set(options => {
-    if (!isLocked("mapWidth")) options.generation.graph.width = facts.graph.width;
-    if (!isLocked("mapHeight")) options.generation.graph.height = facts.graph.height;
-  });
-}
+type Library = OptionsData["library"];
 
 /** weighted by how good each template looks, so the common ones come up more often */
 function randomTemplate(): string {
@@ -190,15 +224,5 @@ function randomCultureSet(): string {
 }
 
 // biome-ignore lint/suspicious/noRedeclare: legacy seam, as in styles.ts
-export const Options = {
-  set,
-  persist,
-  reset,
-  restoreStored,
-  setGraphSize,
-  syncOnLoad,
-  randomize
-};
-
-type OptionsApi = typeof Options;
+export const Options = new OptionsModel();
 globalThis.Options = Options;
