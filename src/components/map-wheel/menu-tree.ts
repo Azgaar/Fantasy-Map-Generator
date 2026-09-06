@@ -98,12 +98,127 @@ const layersBranch = (): WheelNode =>
     ]
   });
 
+// -- options -----------------------------------------------------------------------------------
+// #optionsContent is flat: two headings over two tables of one-setting rows, with no section
+// containers. So a theme is just a set of control ids; the drawer hides the rows outside it.
+// Every row is claimed exactly once - a test enforces the partition, so it cannot silently rot.
+
+export const OPTION_GROUPS = [
+  { label: "World", icon: "icon-globe", rows: ["mapWidthInput", "pointsInput", "templateInput", "optionsSeed"] },
+  {
+    label: "Realms",
+    icon: "icon-flag",
+    rows: ["statesNumber", "provincesRatio", "sizeVariety", "growthRate", "manorsInput"]
+  },
+  { label: "Peoples", icon: "icon-users", rows: ["culturesInput", "culturesSet", "religionsNumber"] },
+  { label: "Identity", icon: "icon-tag", rows: ["mapName", "yearInput", "emblemShape"] },
+  {
+    label: "Interface",
+    icon: "icon-sliders",
+    rows: ["uiSize", "tooltipSize", "themeHueInput", "transparencyInput", "azgaarAssistant"]
+  },
+  {
+    label: "Behaviour",
+    icon: "icon-cog-alt",
+    rows: [
+      "autosaveIntervalInput",
+      "onloadBehavior",
+      "speakerVoice",
+      "zoomExtentMin",
+      "shapeRendering",
+      "viewportRedraw",
+      "resetLanguage"
+    ]
+  }
+] as const;
+
+const FILE_ACTIONS: Array<[string, string, string]> = [
+  ["New map", "icon-cw", "newMapButton"],
+  ["Save", "icon-download", "saveButton"],
+  ["Load", "icon-upload", "loadButton"],
+  ["Export", "icon-export", "exportButton"]
+];
+
+/** Every top-bar button this tree clicks. Exported so a test can prove they all still exist. */
+export const BOUND_BUTTON_IDS: string[] = [
+  "layersPreset",
+  "layersTab",
+  "styleTab",
+  "optionsTab",
+  "toolsTab",
+  "aboutTab",
+  "optionsTrigger",
+  "addStyleButton",
+  "removeStyleButton",
+  "stylePreset",
+  "editUnitsButton",
+  "configureWorld",
+  "optionsReset",
+  ...FILE_ACTIONS.map(([, , id]) => id)
+];
+
+const optionsBranch = (): WheelNode =>
+  node("Options", "icon-cog", {
+    children: [
+      ...OPTION_GROUPS.map(group =>
+        node(group.label, group.icon, {
+          panel: { host: "optionsContent", title: group.label, only: [...group.rows] }
+        })
+      ),
+      node("Units", "icon-ruler", { run: click("editUnitsButton") }),
+      node("World configuration", "icon-globe-africa", { run: click("configureWorld") }),
+      node("File", "icon-doc", {
+        children: FILE_ACTIONS.map(([label, icon, id]) => node(label, icon, { run: click(id) }))
+      }),
+      node("Reset options", "icon-ccw", { danger: true, run: click("optionsReset") })
+    ]
+  });
+
+// -- style -------------------------------------------------------------------------------------
+// The prototype's Fonts / Colours / Filters do not exist as menus here: the Style tab is a live
+// form over #styleElementSelect. So the form goes in the drawer and only the presets are sectors.
+
+export const STYLE_PRESETS = [
+  "ancient",
+  "atlas",
+  "clean",
+  "cyberpunk",
+  "darkSeas",
+  "gloom",
+  "light",
+  "monochrome",
+  "night",
+  "pale",
+  "watercolor"
+];
+
+const applyStylePreset = (value: string) => () => {
+  const select = findEl<HTMLSelectElement>("stylePreset");
+  if (!select) return;
+  select.value = value;
+  select.dispatchEvent(new Event("change", { bubbles: true }));
+};
+
+const title = (value: string): string => value.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, c => c.toUpperCase());
+
+const styleBranch = (): WheelNode =>
+  node("Style", "icon-brush", {
+    children: [
+      node("Presets", "icon-paint-roller", {
+        children: STYLE_PRESETS.map(preset => node(title(preset), "icon-adjust", { run: applyStylePreset(preset) }))
+      }),
+      node("Style editor", "icon-sliders", { panel: { host: "styleContent", title: "Style" } }),
+      node("Save as preset", "icon-plus", { run: click("addStyleButton") }),
+      node("Remove preset", "icon-trash-empty", { danger: true, run: click("removeStyleButton") })
+    ]
+  });
+
 export function menuRoot(): WheelNode[] {
   return [
     layersBranch(),
-    node("Style", "icon-brush", { run: openTab("styleTab") }),
-    node("Options", "icon-cog", { run: openTab("optionsTab") }),
+    styleBranch(),
+    optionsBranch(),
     node("Tools", "icon-wrench", { run: openTab("toolsTab") }),
-    node("About", "icon-info-circled", { run: openTab("aboutTab") })
+    node("About", "icon-info-circled", { panel: { host: "aboutContent", title: "About" } })
   ];
 }
