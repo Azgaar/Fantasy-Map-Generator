@@ -204,6 +204,49 @@ export function renderWheel(container: HTMLElement, roots: WheelRoots, state: Wh
   }
 }
 
+/** Arrow keys walk the rings; the wheel is a set of nested lists. Returns true if the key was ours. */
+export function handleKey(event: KeyboardEvent, roots: WheelRoots, state: WheelState, cb: WheelCallbacks): boolean {
+  const levels = resolveLevels(roots, state);
+  const level = state.hot?.level ?? 0;
+  const ring = levels[level];
+  if (!ring) return false;
+
+  const move = (index: number) => cb.onState({ ...state, hot: { level, index } });
+  const current = state.hot?.index ?? -1;
+
+  switch (event.key) {
+    case "ArrowRight": {
+      move(current < 0 ? 0 : (current + 1) % ring.items.length);
+      return true;
+    }
+    case "ArrowLeft": {
+      move(current < 0 ? 0 : (current - 1 + ring.items.length) % ring.items.length);
+      return true;
+    }
+    case "ArrowDown": {
+      const next = levels[level + 1];
+      if (!next) return false;
+      cb.onState({ ...state, hot: { level: level + 1, index: 0 } });
+      return true;
+    }
+    case "ArrowUp": {
+      if (level === 0) return false;
+      cb.onState({ ...state, hot: { level: level - 1, index: state.path[level - 1] ?? 0 } });
+      return true;
+    }
+    case "Enter": {
+      if (current < 0) return false;
+      const node = ring.items[current];
+      if (nodeKind(node) === "run") cb.onLeaf(node);
+      else if (nodeKind(node) === "toggle") cb.onToggle(node);
+      else cb.onState({ ...state, path: [...state.path.slice(0, level), current], hot: null });
+      return true;
+    }
+    default:
+      return false;
+  }
+}
+
 function renderHub(container: HTMLElement, state: WheelState, cb: WheelCallbacks): void {
   const hub = document.createElement("div");
   hub.className = "mw-hub";

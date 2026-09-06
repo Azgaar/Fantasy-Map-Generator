@@ -227,4 +227,27 @@ export const WHEEL_CSS = `
 }
 /* FMG hides raw checkboxes app-wide and styles the label instead - do not un-hide them here */
 #mapWheelDrawer .checkbox-label { font-size: 12px; color: #3b3226; cursor: pointer; }
+
+@keyframes mw-fan {
+  from { opacity: 0; transform: scale(.86); }
+  to   { opacity: 1; transform: none; }
+}
+
+#mapWheel .mw-svg { animation: mw-fan 140ms ease-out both; transform-origin: center; }
+
+@keyframes mw-slide-right {
+  from { opacity: 0; transform: translateY(-50%) translateX(-16px); }
+  to   { opacity: 1; transform: translateY(-50%); }
+}
+@keyframes mw-slide-left {
+  from { opacity: 0; transform: translateY(-50%) translateX(16px); }
+  to   { opacity: 1; transform: translateY(-50%); }
+}
+#mapWheelDrawer[data-side="right"] { animation: mw-slide-right 140ms ease-out both; }
+#mapWheelDrawer[data-side="left"] { animation: mw-slide-left 140ms ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  #mapWheel .mw-svg,
+  #mapWheelDrawer { animation: none; }
+}
 `;
