@@ -3,7 +3,17 @@ import { fileURLToPath, URL as NodeURL } from "node:url";
 import { describe, expect, it } from "vitest";
 import { Layers } from "@/components/layers";
 import { ITEM_CAPS, MAX_DEPTH } from "./geometry";
-import { BOUND_BUTTON_IDS, LAYER_GROUPS, menuRoot, OPTION_GROUPS, STYLE_PRESETS } from "./menu-tree";
+import {
+  BOUND_BUTTON_IDS,
+  LAYER_GROUPS,
+  menuRoot,
+  OPTION_GROUPS,
+  STYLE_PRESETS,
+  TOOL_EDITORS,
+  TOOL_MORE,
+  TOOL_OVERVIEWS,
+  TOOL_REGENERATE
+} from "./menu-tree";
 import { childrenOf, nodeKind, type WheelNode } from "./types";
 
 // node:url's URL (not the jsdom-patched global, which resolves file:// bases against
@@ -172,5 +182,70 @@ describe("about", () => {
 describe("bindings", () => {
   it("resolves every button-backed leaf to an id present in index.html", () => {
     for (const id of BOUND_BUTTON_IDS) expect(hasId(id), `#${id}`).toBe(true);
+  });
+});
+
+describe("tools branch", () => {
+  const tools = () => menuRoot().find(n => n.label === "Tools")!;
+
+  it("splits into five branches", () => {
+    expect(childrenOf(tools()).map(n => n.label)).toEqual(["Edit", "Overview", "Add", "Regenerate", "More"]);
+  });
+
+  it("keeps the editor ring at the level-2 cap, not over it", () => {
+    expect(TOOL_EDITORS.length).toBe(15);
+    expect(TOOL_EDITORS.length).toBeLessThanOrEqual(ITEM_CAPS[2]);
+  });
+
+  it("keeps the heightmap editor under Edit, where the heightmap is actually edited", () => {
+    expect(TOOL_EDITORS.some(([label]) => label === "Heightmap")).toBe(true);
+  });
+
+  it("holds every regenerate command, grouped so no single ring overflows", () => {
+    // count DERIVED from the real markup, never hardcoded: a hardcoded number passes silently
+    // when an upstream sync adds a command, leaving it unreachable from the wheel
+    const block = INDEX_HTML.slice(INDEX_HTML.indexOf('id="regenerateFeature"'), INDEX_HTML.indexOf('id="addFeature"'));
+    const inMarkup = [...block.matchAll(/<button[^>]*id="(regenerate[A-Za-z]+)"/g)].map(m => m[1]);
+    const claimed = TOOL_REGENERATE.flatMap(g => g.items).map(([, , id]) => id);
+
+    expect([...claimed].sort()).toEqual([...inMarkup].sort());
+    for (const group of TOOL_REGENERATE) expect(group.items.length).toBeLessThanOrEqual(ITEM_CAPS[3]);
+  });
+
+  it("leaves no tool button unreachable from the wheel", () => {
+    // Any edit*/overview*/open* button in the Tools tab must be claimed by the tree, or listed
+    // here as deliberately reached from somewhere else. An upstream sync that adds a tool then
+    // fails this test instead of quietly shipping a tool the wheel cannot open.
+    const block = INDEX_HTML.slice(
+      INDEX_HTML.indexOf('id="toolsContent"'),
+      INDEX_HTML.indexOf('id="customizationMenu"')
+    );
+    const inMarkup = [...block.matchAll(/<button[^>]*id="((?:edit|overview|open)[A-Za-z]+)"/g)].map(m => m[1]);
+
+    const ELSEWHERE = ["editUnitsButton"]; // moved to Options, where units belong
+    const claimed = new Set([
+      ...[...TOOL_EDITORS, ...TOOL_OVERVIEWS, ...TOOL_MORE].map(([, , id]) => id),
+      ...ELSEWHERE
+    ]);
+
+    expect(inMarkup.filter(id => !claimed.has(id))).toEqual([]);
+  });
+
+  it("marks every regenerate command destructive", () => {
+    const regenerate = childrenOf(tools()).find(n => n.label === "Regenerate")!;
+    for (const group of childrenOf(regenerate)) {
+      for (const item of childrenOf(group)) expect(item.danger, item.label).toBe(true);
+    }
+  });
+
+  it("does not list Units, which now lives under Options", () => {
+    expect(TOOL_EDITORS.some(([label]) => label === "Units")).toBe(false);
+  });
+
+  it("binds every tool to a button that exists", () => {
+    for (const [, , id] of [...TOOL_EDITORS, ...TOOL_OVERVIEWS]) expect(hasId(id), `#${id}`).toBe(true);
+    for (const group of TOOL_REGENERATE) {
+      for (const [, , id] of group.items) expect(hasId(id), `#${id}`).toBe(true);
+    }
   });
 });

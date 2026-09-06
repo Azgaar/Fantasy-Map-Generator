@@ -213,12 +213,131 @@ const styleBranch = (): WheelNode =>
     ]
   });
 
+// -- tools -------------------------------------------------------------------------------------
+// [label, icon, button id]. Only Units moves out of the flat Tools grid (to Options), which puts
+// Edit at exactly the 15-item cap for level 2.
+
+type Tool = [string, string, string];
+
+export const TOOL_EDITORS: Tool[] = [
+  ["Biomes", "icon-tree", "editBiomesButton"],
+  ["Coastlines", "icon-anchor", "editCoastlineSettings"],
+  ["Cultures", "icon-users", "editCulturesButton"],
+  ["Diplomacy", "icon-user-friends", "editDiplomacyButton"],
+  ["Emblems", "icon-coa", "editEmblemButton"],
+  ["Goods", "icon-store", "editGoods"],
+  ["Heightmap", "icon-mountain", "editHeightmapButton"],
+  ["Measurers", "icon-drafting-compass", "editMeasurersButton"],
+  ["Namesbase", "icon-font", "editNamesBaseButton"],
+  ["Notes", "icon-doc", "editNotesButton"],
+  ["Provinces", "icon-map-o", "editProvincesButton"],
+  ["Religions", "icon-book", "editReligions"],
+  ["States", "icon-flag", "editStatesButton"],
+  ["Trade", "icon-exchange", "editTradeAnimationButton"],
+  ["Zones", "icon-map-signs", "editZonesButton"]
+];
+
+export const TOOL_OVERVIEWS: Tool[] = [
+  ["Burgs", "icon-star", "overviewBurgsButton"],
+  ["Markers", "icon-map-pin", "overviewMarkersButton"],
+  ["Markets", "icon-store", "overviewMarketsButton"],
+  ["Labels", "icon-font", "overviewLabelsButton"],
+  ["Military", "icon-shield-alt", "overviewMilitaryButton"],
+  ["Rivers", "icon-bezier-curve", "overviewRiversButton"],
+  ["Routes", "icon-map-signs", "overviewRoutesButton"],
+  ["Journeys", "icon-drafting-compass", "overviewJourneysButton"],
+  ["Cells", "icon-target", "overviewCellsButton"],
+  ["Charts", "icon-chart-pie", "overviewChartsButton"]
+];
+
+export const TOOL_ADD: Tool[] = [
+  ["Burg", "icon-star", "addBurgTool"],
+  ["Label", "icon-font", "addLabel"],
+  ["Marker", "icon-map-pin", "addMarker"],
+  ["River", "icon-bezier-curve", "addRiver"],
+  ["Route", "icon-map-signs", "addRoute"]
+];
+
+export const TOOL_MORE: Tool[] = [
+  ["Minimap", "icon-map", "openMinimapButton"],
+  ["AI Chat", "icon-robot", "openAiChatButton"],
+  ["Submap", "icon-resize-small", "openSubmapTool"],
+  ["Transform", "icon-move", "openTransformTool"],
+  ["Reset zoom", "icon-search", "zoomReset"]
+];
+
+// Regenerate sits a level deeper than its siblings. That is geometrically necessary at 19 items,
+// and right on its own terms: these are the destructive commands, and depth is the cost.
+export const TOOL_REGENERATE: Array<{ label: string; icon: string; items: Tool[] }> = [
+  {
+    label: "Terrain",
+    icon: "icon-mountain",
+    items: [
+      ["Rivers", "icon-bezier-curve", "regenerateRivers"],
+      ["Relief", "icon-tree", "regenerateReliefIcons"],
+      ["Ice", "icon-temperature-low", "regenerateIce"],
+      ["Zones", "icon-map-signs", "regenerateZones"]
+    ]
+  },
+  {
+    label: "Society",
+    icon: "icon-users",
+    items: [
+      ["Cultures", "icon-users", "regenerateCultures"],
+      ["Religions", "icon-book", "regenerateReligions"],
+      ["States", "icon-flag", "regenerateStates"],
+      ["Provinces", "icon-map-o", "regenerateProvinces"],
+      ["Burgs", "icon-star", "regenerateBurgs"],
+      ["State labels", "icon-font", "regenerateStateLabels"],
+      ["Population", "icon-user-friends", "regeneratePopulation"],
+      ["Military", "icon-shield-alt", "regenerateMilitary"],
+      ["Emblems", "icon-coa", "regenerateEmblems"]
+    ]
+  },
+  {
+    label: "Economy",
+    icon: "icon-exchange",
+    items: [
+      ["Economy", "icon-exchange", "regenerateEconomy"],
+      ["Goods", "icon-store", "regenerateGoods"],
+      ["Markets", "icon-bank", "regenerateMarkets"],
+      ["Production", "icon-hammer", "regenerateProduction"],
+      ["Routes", "icon-map-signs", "regenerateRoutes"],
+      ["Markers", "icon-map-pin", "regenerateMarkers"]
+    ]
+  }
+];
+
+const toolNodes = (tools: Tool[], danger = false): WheelNode[] =>
+  tools.map(([label, icon, id]) => node(label, icon, { danger: danger || undefined, run: click(id) }));
+
+const toolsBranch = (): WheelNode =>
+  node("Tools", "icon-wrench", {
+    children: [
+      node("Edit", "icon-edit", { children: toolNodes(TOOL_EDITORS) }),
+      node("Overview", "icon-docs", { children: toolNodes(TOOL_OVERVIEWS) }),
+      node("Add", "icon-plus", { children: toolNodes(TOOL_ADD) }),
+      node("Regenerate", "icon-ccw", {
+        danger: true,
+        children: TOOL_REGENERATE.map(group =>
+          node(group.label, group.icon, { danger: true, children: toolNodes(group.items, true) })
+        )
+      }),
+      node("More", "icon-asterisk", { children: toolNodes(TOOL_MORE) })
+    ]
+  });
+
+BOUND_BUTTON_IDS.push(
+  ...[...TOOL_EDITORS, ...TOOL_OVERVIEWS, ...TOOL_ADD, ...TOOL_MORE].map(([, , id]) => id),
+  ...TOOL_REGENERATE.flatMap(group => group.items.map(([, , id]) => id))
+);
+
 export function menuRoot(): WheelNode[] {
   return [
     layersBranch(),
     styleBranch(),
     optionsBranch(),
-    node("Tools", "icon-wrench", { run: openTab("toolsTab") }),
+    toolsBranch(),
     node("About", "icon-info-circled", { panel: { host: "aboutContent", title: "About" } })
   ];
 }

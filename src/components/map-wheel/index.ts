@@ -1,5 +1,6 @@
 // Map Wheel: a radial context controller on right-click. Additive — the top bar and left-click
 // editing are untouched; this is a second route in.
+import { menuRoot } from "./menu-tree";
 import { WHEEL_CSS } from "./styles";
 import { renderWheel, type WheelRoots, type WheelState } from "./wheel";
 
@@ -104,7 +105,7 @@ function onContextMenu(event: MouseEvent): void {
 
   event.preventDefault();
   event.stopPropagation();
-  openMapWheel(event, { menu: () => [], here: () => [] });
+  openMapWheel(event, { menu: menuRoot, here: () => [] });
 }
 
 function mount(): void {
