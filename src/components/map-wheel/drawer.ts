@@ -6,13 +6,13 @@
 // restore the load-bearing part of this file: while a drawer is open the element is out of
 // #options, and every exit path has to return it.
 import { findEl } from "@/utils/nodeUtils";
+import { drawerOffset, outerRadius } from "./geometry";
 import type { DrawerSpec } from "./types";
 
 /** Exported so the renderer knows which child of .mw-wheel it must not clear on a redraw */
 export const DRAWER_ID = "mapWheelDrawer";
-const WIDTH = 340;
-const CLEAR = 14; // gap between the ring's outer edge and the drawer
-const RADIUS = 246;
+/** The drawer hosts the app's real forms, so its width is the forms' width and does not scale */
+export const DRAWER_WIDTH = 340;
 const MAX_HEIGHT = 532; // must track the drawer's CSS max-height
 
 interface Borrowed {
@@ -29,24 +29,30 @@ export const isDrawerOpen = (): boolean => borrowed !== null;
 
 /**
  * Which side to fan out on. Prefer the half the sector points into so the drawer follows the
- * gesture; fall back to viewport room when that side has none, or when the sector points
+ * gesture; take the other side when the preferred one has no room, or when the sector points
  * near-vertically and has no meaningful horizontal intent.
+ *
+ * "Room" is measured where the wheel already sits, because giving up the sector's direction is
+ * cheaper than dragging the ring across the map. When neither side has room the wheel has to move
+ * regardless, and then the sector's direction wins after all - which is the common case for a ring
+ * opened near the middle of a narrow window.
  */
-export function pickSide(sectorMid: number, centreX: number, viewportWidth: number): "left" | "right" {
-  const roomRight = viewportWidth - centreX - RADIUS - CLEAR >= WIDTH;
-  const roomLeft = centreX - RADIUS - CLEAR >= WIDTH;
+export function pickSide(sectorMid: number, centreX: number, viewportWidth: number, scale = 1): "left" | "right" {
+  const offset = drawerOffset(scale);
+  const roomRight = viewportWidth - centreX - offset >= DRAWER_WIDTH;
+  const roomLeft = centreX - offset >= DRAWER_WIDTH;
   const horizontal = Math.cos(sectorMid);
 
-  if (Math.abs(horizontal) >= 0.2) {
-    const preferred = horizontal >= 0 ? "right" : "left";
-    if (preferred === "right" && roomRight) return "right";
-    if (preferred === "left" && roomLeft) return "left";
-    return preferred === "right" ? "left" : "right";
+  if (Math.abs(horizontal) < 0.2) {
+    if (roomRight) return "right";
+    if (roomLeft) return "left";
+    return centreX <= viewportWidth / 2 ? "right" : "left";
   }
 
-  if (roomRight) return "right";
-  if (roomLeft) return "left";
-  return "right";
+  const preferred = horizontal >= 0 ? "right" : "left";
+  if (preferred === "right" ? roomRight : roomLeft) return preferred;
+  if (preferred === "right" ? roomLeft : roomRight) return preferred === "right" ? "left" : "right";
+  return preferred;
 }
 
 export function closeDrawer(): void {
@@ -105,11 +111,13 @@ export function openDrawer(overlay: HTMLElement, spec: DrawerSpec, side: "left" 
  */
 export function connectorLine(
   sectorMid: number,
-  side: "left" | "right"
+  side: "left" | "right",
+  scale = 1
 ): { x1: number; y1: number; x2: number; y2: number } {
-  const x1 = Math.cos(sectorMid) * RADIUS;
-  const y1 = Math.sin(sectorMid) * RADIUS;
-  const x2 = side === "right" ? RADIUS + CLEAR : -(RADIUS + CLEAR);
+  const radius = outerRadius(scale);
+  const x1 = Math.cos(sectorMid) * radius;
+  const y1 = Math.sin(sectorMid) * radius;
+  const x2 = side === "right" ? drawerOffset(scale) : -drawerOffset(scale);
   // clamp to the drawer's own height so the line always lands on its near edge
   const half = Math.min(MAX_HEIGHT, window.innerHeight - 32) / 2;
   return { x1, y1, x2, y2: Math.min(Math.max(y1, -half), half) };

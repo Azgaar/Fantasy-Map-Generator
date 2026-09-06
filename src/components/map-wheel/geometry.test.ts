@@ -1,5 +1,23 @@
 import { describe, expect, it } from "vitest";
-import { arcPath, BANDS, GAP_PX, ITEM_CAPS, labelPoint, MAX_DEPTH, ringSpan, sectors, spineLine } from "./geometry";
+import {
+  arcPath,
+  BANDS,
+  BASE_RADIUS_SCALE,
+  bands,
+  boxRadius,
+  drawerOffset,
+  GAP_PX,
+  ITEM_CAPS,
+  labelPoint,
+  MAX_DEPTH,
+  outerRadius,
+  ringSpan,
+  sectors,
+  spineLine,
+  UI_SCALE_MAX,
+  UI_SCALE_MIN,
+  wheelScale
+} from "./geometry";
 
 const TAU = Math.PI * 2;
 
@@ -52,10 +70,23 @@ describe("sectors", () => {
   });
 
   it("trims gap/outerRadius radians from each end of every sector", () => {
-    const gap = GAP_PX / BANDS[1][1];
+    const gap = GAP_PX / bands()[1][1];
     const ring = sectors(1, 4, 0);
     const step = ringSpan(1, 4) / 4;
     expect(ring[0].to - ring[0].from).toBeCloseTo(step - gap * 2, 10);
+  });
+
+  it("keeps the 3px gap a 3px gap as the dial grows", () => {
+    const wide = sectors(1, 4, 0, 2);
+    const gap = GAP_PX / bands(2)[1][1];
+    const step = ringSpan(1, 4) / 4;
+    expect(wide[0].to - wide[0].from).toBeCloseTo(step - gap * 2, 10);
+    // a wider ring needs fewer radians for the same gap, so its sectors are angularly larger
+    expect(wide[0].to - wide[0].from).toBeGreaterThan(sectors(1, 4, 0)[0].to - sectors(1, 4, 0)[0].from);
+  });
+
+  it("is unchanged by a scale of 1", () => {
+    expect(sectors(2, 6, 0.4, 1)).toEqual(sectors(2, 6, 0.4));
   });
 
   it("leaves sectors non-overlapping and in order", () => {
@@ -93,8 +124,65 @@ describe("labelPoint", () => {
 describe("spineLine", () => {
   it("bridges the gap between the parent band's outer edge and the child band's inner edge", () => {
     const line = spineLine(1, 0);
-    expect(line.x1).toBeCloseTo(BANDS[0][1], 10);
-    expect(line.x2).toBeCloseTo(BANDS[1][0], 10);
+    expect(line.x1).toBeCloseTo(bands()[0][1], 10);
+    expect(line.x2).toBeCloseTo(bands()[1][0], 10);
     expect(line.y1).toBeCloseTo(0, 10);
+  });
+
+  it("scales with the dial", () => {
+    const line = spineLine(1, 0, 1.5);
+    expect(line.x1).toBeCloseTo(spineLine(1, 0).x1 * 1.5, 10);
+    expect(line.x2).toBeCloseTo(spineLine(1, 0).x2 * 1.5, 10);
+  });
+});
+
+// The labels are the reason the radii carry a multiplier of their own. A root label is 74px wide,
+// and at the base table 7 of them get 2pi*83/7 = 74.5px of arc each - the label is the sector.
+// Scaling the whole dial cannot help, because the label scales with it; only the radii may move.
+describe("bands", () => {
+  it("applies the base radius multiplier and nothing else at scale 1", () => {
+    expect(bands()).toEqual(BANDS.map(([inner, outer]) => [inner * BASE_RADIUS_SCALE, outer * BASE_RADIUS_SCALE]));
+    expect(bands(1)).toEqual(bands());
+  });
+
+  it("scales every radius uniformly", () => {
+    expect(bands(2)).toEqual(bands().map(([inner, outer]) => [inner * 2, outer * 2]));
+    expect(outerRadius(2)).toBeCloseTo(outerRadius() * 2, 10);
+    expect(boxRadius(2)).toBeCloseTo(boxRadius() * 2, 10);
+    expect(drawerOffset(2)).toBeCloseTo(drawerOffset() * 2, 10);
+  });
+
+  it("buys every ring more arc per label than the label is wide", () => {
+    const widths = [74, 66, 66, 66];
+    const table = bands();
+    ITEM_CAPS.forEach((cap, level) => {
+      const mid = (table[level][0] + table[level][1]) / 2;
+      const arc = (ringSpan(level, cap) * mid) / cap;
+      expect(arc).toBeGreaterThan(widths[level]);
+    });
+  });
+});
+
+describe("wheelScale", () => {
+  it("follows uiSize inside its own clamp", () => {
+    expect(wheelScale(1, 1920, 1200)).toBe(1);
+    expect(wheelScale(1.4, 1920, 1200)).toBeCloseTo(1.4, 10);
+  });
+
+  it("clamps uiSize to the 0.8..2 the dial can absorb", () => {
+    expect(wheelScale(0.3, 2560, 1600)).toBeCloseTo(UI_SCALE_MIN, 10);
+    expect(wheelScale(3, 2560, 1600)).toBeCloseTo(UI_SCALE_MAX, 10);
+  });
+
+  it("defaults to 1 when uiSize is missing or unreadable", () => {
+    expect(wheelScale(Number.NaN, 1920, 1200)).toBe(1);
+    expect(wheelScale(0, 1920, 1200)).toBe(1);
+  });
+
+  it("clamps again so the box never outgrows the viewport", () => {
+    const scale = wheelScale(2, 1280, 720);
+    expect(boxRadius(scale) * 2).toBeLessThanOrEqual(720 - 32);
+    expect(scale).toBeLessThan(UI_SCALE_MAX);
+    expect(boxRadius(wheelScale(2, 400, 400)) * 2).toBeLessThanOrEqual(400 - 32);
   });
 });

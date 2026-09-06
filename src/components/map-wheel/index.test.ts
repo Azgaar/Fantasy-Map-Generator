@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { boxRadius, drawerOffset } from "./geometry";
 import { clampCentre, closeMapWheel, openMapWheel } from "./index";
 import type { WheelRoots } from "./wheel";
 
@@ -35,6 +36,13 @@ describe("clampCentre", () => {
     const [x] = clampCentre(1000, 400, 1280, 720, "right");
     expect(x).toBeLessThanOrEqual(1280 - 258 - 354);
   });
+
+  it("clamps against the scaled box, not a fixed radius", () => {
+    const [x, y] = clampCentre(5, 5, 1920, 1200, null, 1.6);
+    expect(x).toBeCloseTo(boxRadius(1.6) + 8, 6);
+    expect(y).toBeCloseTo(boxRadius(1.6) + 8, 6);
+    expect(x).toBeGreaterThan(clampCentre(5, 5, 1920, 1200)[0]);
+  });
 });
 
 describe("openMapWheel", () => {
@@ -62,6 +70,32 @@ describe("openMapWheel", () => {
 
     (tabs[0] as HTMLElement).click();
     expect(document.querySelectorAll("#mapWheel path.mw-sector").length).toBe(2);
+  });
+
+  // The dial follows the app's own sizing control, so the box, the drawer offset and every label
+  // size are published on .mw-wheel for the stylesheet to pick up.
+  it("sizes itself from uiSize, clamped", () => {
+    document.body.insertAdjacentHTML("beforeend", '<input id="uiSize" value="1.5">');
+    openMapWheel(rightClick(), roots);
+    const wheel = document.querySelector<HTMLElement>("#mapWheel .mw-wheel")!;
+    const scale = Number(wheel.style.getPropertyValue("--mw-ui"));
+
+    expect(scale).toBeCloseTo(1.198, 2); // 1.5 wanted, but a 768px-high jsdom window cannot hold it
+    expect(wheel.style.getPropertyValue("--mw-box")).toBe(`${boxRadius(scale) * 2}px`);
+    expect(wheel.style.getPropertyValue("--mw-drawer-offset")).toBe(`${drawerOffset(scale)}px`);
+
+    const svg = document.querySelector("#mapWheel svg.mw-svg")!;
+    expect(svg.getAttribute("width")).toBe(String(boxRadius(scale) * 2));
+    expect(svg.getAttribute("viewBox")).toContain(String(-boxRadius(scale)));
+
+    closeMapWheel();
+    document.getElementById("uiSize")!.remove();
+  });
+
+  it("falls back to a scale of 1 when uiSize is absent", () => {
+    openMapWheel(rightClick(), roots);
+    const wheel = document.querySelector<HTMLElement>("#mapWheel .mw-wheel")!;
+    expect(Number(wheel.style.getPropertyValue("--mw-ui"))).toBe(1);
   });
 
   it("replaces an existing wheel rather than stacking a second one", () => {

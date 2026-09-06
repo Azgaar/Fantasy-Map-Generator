@@ -24,11 +24,13 @@ export const WHEEL_CSS = `
   opacity: .5;
 }
 
+/* --mw-ui (the clamped uiSize), --mw-box and --mw-drawer-offset are set on this element by
+   index.ts: the dial follows the app's sizing control, so its box is no longer a constant. */
 #mapWheel .mw-wheel {
   position: absolute;
   transform: translate(-50%, -50%);
-  width: 516px;
-  height: 516px;
+  width: var(--mw-box, 516px);
+  height: var(--mw-box, 516px);
 }
 
 #mapWheel .mw-svg {
@@ -55,29 +57,29 @@ export const WHEEL_CSS = `
 #mapWheel .mw-label {
   position: absolute;
   transform: translate(-50%, -50%);
-  width: 66px;
+  width: calc(66px * var(--mw-ui, 1));
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  font-size: 9.5px;
+  gap: calc(2px * var(--mw-ui, 1));
+  font-size: calc(9.5px * var(--mw-ui, 1));
   line-height: 1.15;
   text-align: center;
   pointer-events: none;
 }
 
-#mapWheel .mw-label--root { width: 74px; font-size: 10.5px; }
-#mapWheel .mw-label i { font-size: 16px; line-height: 1; }
-#mapWheel .mw-label--root i { font-size: 19px; }
-#mapWheel .mw-note { font-size: 8.5px; opacity: .68; letter-spacing: .05em; }
+#mapWheel .mw-label--root { width: calc(74px * var(--mw-ui, 1)); font-size: calc(10.5px * var(--mw-ui, 1)); }
+#mapWheel .mw-label i { font-size: calc(16px * var(--mw-ui, 1)); line-height: 1; }
+#mapWheel .mw-label--root i { font-size: calc(19px * var(--mw-ui, 1)); }
+#mapWheel .mw-note { font-size: calc(8.5px * var(--mw-ui, 1)); opacity: .68; letter-spacing: .05em; }
 
 #mapWheel .mw-hub {
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: 104px;
-  height: 104px;
+  width: calc(104px * var(--mw-ui, 1));
+  height: calc(104px * var(--mw-ui, 1));
   border-radius: 50%;
   overflow: hidden;
   display: flex;
@@ -91,7 +93,7 @@ export const WHEEL_CSS = `
   border: 0;
   cursor: pointer;
   pointer-events: auto;
-  font: 600 10px "IBM Plex Sans", system-ui, sans-serif;
+  font: 600 calc(10px * var(--mw-ui, 1)) "IBM Plex Sans", system-ui, sans-serif;
   letter-spacing: .1em;
   text-transform: uppercase;
   background: var(--mw-fill-base, rgba(251,247,236,.94));
@@ -120,9 +122,9 @@ export const WHEEL_CSS = `
 #mapWheel .mw-crumb.is-last { color: var(--mw-ink-base, #3b3226); font-weight: 600; }
 #mapWheel .mw-crumb-sep { opacity: .45; margin: 0 5px; }
 
-/* Child of .mw-wheel, not of the host: the percentages below have to resolve against the 516px
-   wheel box, or the drawer lands beside the middle of the viewport instead of beside the ring.
-   532px is 2 x clampCentre's smallest centre offset, so a drawer this tall still fits on screen. */
+/* Child of .mw-wheel, not of the host: the percentages below have to resolve against the wheel
+   box, or the drawer lands beside the middle of the viewport instead of beside the ring. The
+   drawer hosts the app's real forms, so unlike the ring it keeps a fixed width and height. */
 #mapWheelDrawer {
   position: absolute;
   pointer-events: auto;
@@ -139,8 +141,8 @@ export const WHEEL_CSS = `
   overflow: hidden;
 }
 
-#mapWheelDrawer[data-side="right"] { left: calc(50% + 260px); }
-#mapWheelDrawer[data-side="left"] { right: calc(50% + 260px); }
+#mapWheelDrawer[data-side="right"] { left: calc(50% + var(--mw-drawer-offset, 260px)); }
+#mapWheelDrawer[data-side="left"] { right: calc(50% + var(--mw-drawer-offset, 260px)); }
 
 #mapWheelDrawer .mw-drawer-head {
   display: flex;

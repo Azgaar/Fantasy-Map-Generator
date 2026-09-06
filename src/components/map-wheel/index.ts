@@ -1,8 +1,10 @@
 // Map Wheel: a radial context controller on right-click. Additive — the top bar and left-click
 // editing are untouched; this is a second route in.
 import { Layers } from "@/components/layers";
+import { findEl } from "@/utils/nodeUtils";
 import { resolveContext } from "./context";
-import { closeDrawer, connectorLine, openDrawer, pickSide } from "./drawer";
+import { closeDrawer, connectorLine, DRAWER_WIDTH, openDrawer, pickSide } from "./drawer";
+import { boxRadius, drawerOffset, VIEWPORT_MARGIN, wheelScale } from "./geometry";
 import { hereRoot } from "./here";
 import { menuRoot } from "./menu-tree";
 import { WHEEL_CSS } from "./styles";
@@ -16,9 +18,20 @@ import {
 } from "./wheel";
 
 const HOST_ID = "mapWheel";
-const RADIUS = 258; // half the 516px box
-const MARGIN = 8;
-const DRAWER_RESERVE = 354; // drawer width 340 + 14 clear of the ring
+const MARGIN = VIEWPORT_MARGIN;
+
+/** Room an open drawer needs beyond the wheel's own box on the side it fans out to */
+const drawerReserve = (scale: number): number => drawerOffset(scale) + DRAWER_WIDTH - boxRadius(scale);
+
+/**
+ * The dial follows the app's own sizing control. `uiSize` is a <slider-input>, which is why this
+ * reads `.value` rather than `.valueAsNumber` - the same way burgs-overview.ts and
+ * provinces-editor.ts read it.
+ */
+function readUiSize(): number {
+  const raw = Number(findEl<HTMLInputElement>("uiSize")?.value);
+  return Number.isFinite(raw) && raw > 0 ? raw : 1;
+}
 
 let host: HTMLElement | null = null;
 
@@ -37,12 +50,15 @@ export function clampCentre(
   y: number,
   width: number,
   height: number,
-  drawerSide: "left" | "right" | null = null
+  drawerSide: "left" | "right" | null = null,
+  scale = 1
 ): [number, number] {
-  const left = RADIUS + MARGIN + (drawerSide === "left" ? DRAWER_RESERVE : 0);
-  const right = width - RADIUS - MARGIN - (drawerSide === "right" ? DRAWER_RESERVE : 0);
-  const top = RADIUS + MARGIN;
-  const bottom = height - RADIUS - MARGIN;
+  const radius = boxRadius(scale);
+  const reserve = drawerReserve(scale);
+  const left = radius + MARGIN + (drawerSide === "left" ? reserve : 0);
+  const right = width - radius - MARGIN - (drawerSide === "right" ? reserve : 0);
+  const top = radius + MARGIN;
+  const bottom = height - radius - MARGIN;
 
   return [Math.min(Math.max(x, left), Math.max(left, right)), Math.min(Math.max(y, top), Math.max(top, bottom))];
 }
@@ -88,10 +104,10 @@ function onPointerDown(event: Event): void {
 }
 
 /** Tie the drawer back to the sector that opened it, in the same language as a ring spine */
-function drawConnector(wheel: HTMLElement, sectorMid: number, side: "left" | "right"): void {
+function drawConnector(wheel: HTMLElement, sectorMid: number, side: "left" | "right", scale: number): void {
   const svg = wheel.querySelector("svg.mw-svg");
   if (!svg) return;
-  const { x1, y1, x2, y2 } = connectorLine(sectorMid, side);
+  const { x1, y1, x2, y2 } = connectorLine(sectorMid, side, scale);
   const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
   line.setAttribute("class", "mw-spine mw-connector");
   for (const [key, value] of Object.entries({ x1, y1, x2, y2 })) line.setAttribute(key, value.toFixed(2));
@@ -117,12 +133,19 @@ export function openMapWheel(event: MouseEvent, roots: WheelRoots, onPickSubject
   wheel.className = "mw-wheel";
   overlay.append(wheel);
 
+  // The box, the drawer's offset and every label size follow the app's uiSize, so they are no
+  // longer constants the stylesheet can hold: it reads them back off these properties.
+  const scale = wheelScale(readUiSize(), window.innerWidth, window.innerHeight);
+  wheel.style.setProperty("--mw-ui", String(scale));
+  wheel.style.setProperty("--mw-box", `${boxRadius(scale) * 2}px`);
+  wheel.style.setProperty("--mw-drawer-offset", `${drawerOffset(scale)}px`);
+
   // The wheel and an open drawer clamp as one bounding box, so opening a panel can push the ring
   // off the drawer's side and closing it has to give that room back.
   let cx = 0;
   let cy = 0;
   const moveCentre = (drawerSide: "left" | "right" | null): void => {
-    [cx, cy] = clampCentre(event.clientX, event.clientY, window.innerWidth, window.innerHeight, drawerSide);
+    [cx, cy] = clampCentre(event.clientX, event.clientY, window.innerWidth, window.innerHeight, drawerSide, scale);
     wheel.style.left = `${cx}px`;
     wheel.style.top = `${cy}px`;
   };
@@ -147,17 +170,17 @@ export function openMapWheel(event: MouseEvent, roots: WheelRoots, onPickSubject
       handle?.applyHot(hot);
     },
     onPanel: (spec, mid) => {
-      const side = pickSide(mid, cx, window.innerWidth);
+      const side = pickSide(mid, cx, window.innerWidth, scale);
       moveCentre(side);
-      // the drawer is a child of .mw-wheel: its left/top percentages resolve against the 516px wheel
-      // box, so it tracks the ring instead of the middle of the viewport
+      // the drawer is a child of .mw-wheel: its left/top percentages resolve against the wheel box,
+      // so it tracks the ring instead of the middle of the viewport
       openDrawer(wheel, spec, side, () => {
         dropDrawer();
         state = { ...state, path: state.path.slice(0, -1) };
         draw();
       });
       openPanel = { path: state.path, mid, side };
-      drawConnector(wheel, mid, side);
+      drawConnector(wheel, mid, side, scale);
     },
     onLeaf: node => {
       closeMapWheel();
@@ -179,8 +202,8 @@ export function openMapWheel(event: MouseEvent, roots: WheelRoots, onPickSubject
     }
   };
   const draw = (): void => {
-    handle = renderWheel(wheel, roots, state, callbacks);
-    if (openPanel) drawConnector(wheel, openPanel.mid, openPanel.side);
+    handle = renderWheel(wheel, roots, state, callbacks, scale);
+    if (openPanel) drawConnector(wheel, openPanel.mid, openPanel.side, scale);
   };
   draw();
 
@@ -188,7 +211,7 @@ export function openMapWheel(event: MouseEvent, roots: WheelRoots, onPickSubject
   window.addEventListener("wheel", closeMapWheel, true);
   window.addEventListener("pointerdown", onPointerDown, true);
   window.addEventListener("blur", closeMapWheel);
-  keyHandler = event => handleKey(event, roots, state, callbacks);
+  keyHandler = event => handleKey(event, roots, state, callbacks, scale);
 }
 
 // Bubble phase, and yield to anything that already claimed the event. Handlers bound closer to the

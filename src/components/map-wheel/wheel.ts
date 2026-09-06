@@ -8,7 +8,17 @@
 // makes both restarts the entry animation and swallows every mouse press.
 import { Layers } from "@/components/layers";
 import { DRAWER_ID } from "./drawer";
-import { arcPath, BANDS, HOVER_GROW, labelPoint, MAX_DEPTH, type Sector, sectors, spineLine } from "./geometry";
+import {
+  arcPath,
+  bands,
+  boxRadius,
+  HOVER_GROW,
+  labelPoint,
+  MAX_DEPTH,
+  type Sector,
+  sectors,
+  spineLine
+} from "./geometry";
 import { applyPalette, type Palette, readPalette } from "./palette";
 import { childrenOf, type DrawerSpec, nodeKind, type WheelNode } from "./types";
 
@@ -65,14 +75,14 @@ interface Level {
 }
 
 /** The fold: root list plus `path` in, one level per open ring out */
-export function resolveLevels(roots: WheelRoots, state: WheelState): Level[] {
+export function resolveLevels(roots: WheelRoots, state: WheelState, scale = 1): Level[] {
   const levels: Level[] = [];
   let items = roots[state.mode]();
   let parentMid = 0;
 
   for (let level = 0; level < MAX_DEPTH && items.length; level++) {
     const chosen = level < state.path.length ? state.path[level] : null;
-    const ring = sectors(level, items.length, parentMid);
+    const ring = sectors(level, items.length, parentMid, scale);
     levels.push({ items, ring, chosen, parentMid });
 
     if (chosen === null || !items[chosen]) break;
@@ -111,19 +121,22 @@ export function renderWheel(
   container: HTMLElement,
   roots: WheelRoots,
   state: WheelState,
-  cb: WheelCallbacks
+  cb: WheelCallbacks,
+  scale = 1
 ): WheelHandle {
   // Everything the ring owns goes, but not the drawer: it is a sibling here and holds live app DOM
   // borrowed out of #options, which a redraw must never carry off.
   for (const child of [...container.children]) if (child.id !== DRAWER_ID) child.remove();
-  const levels = resolveLevels(roots, state);
+  const levels = resolveLevels(roots, state, scale);
   const pal = readPalette();
   applyPalette(container, pal);
 
+  const radius = boxRadius(scale);
+  const box = radius * 2;
   const svg = document.createElementNS(SVG, "svg");
-  svg.setAttribute("viewBox", "-258 -258 516 516");
-  svg.setAttribute("width", "516");
-  svg.setAttribute("height", "516");
+  svg.setAttribute("viewBox", `${-radius} ${-radius} ${box} ${box}`);
+  svg.setAttribute("width", String(box));
+  svg.setAttribute("height", String(box));
   svg.setAttribute("class", "mw-svg");
   container.append(svg);
 
@@ -132,17 +145,19 @@ export function renderWheel(
   container.append(labelLayer);
 
   const painted = new Map<string, Painted>();
+  const table = bands(scale);
+  const grow = HOVER_GROW * scale;
 
   levels.forEach((level, L) => {
     if (L > 0) {
-      const { x1, y1, x2, y2 } = spineLine(L, level.parentMid);
+      const { x1, y1, x2, y2 } = spineLine(L, level.parentMid, scale);
       const spine = document.createElementNS(SVG, "line");
       spine.setAttribute("class", "mw-spine");
       for (const [k, v] of Object.entries({ x1, y1, x2, y2 })) spine.setAttribute(k, v.toFixed(2));
       svg.append(spine);
     }
 
-    const [inner, outer] = BANDS[L];
+    const [inner, outer] = table[L];
     const deeper = level.chosen !== null;
 
     level.items.forEach((node, i) => {
@@ -150,7 +165,7 @@ export function renderWheel(
       const isDim = deeper && !isChosen;
       const { from, to, mid } = level.ring[i];
       // the hovered skin, per the spec: the outer radius grows, the inner radius never moves
-      const skin: Painted["d"] = [arcPath(inner, outer, from, to), arcPath(inner, outer + HOVER_GROW, from, to)];
+      const skin: Painted["d"] = [arcPath(inner, outer, from, to), arcPath(inner, outer + grow, from, to)];
 
       const sector = document.createElementNS(SVG, "path");
       sector.setAttribute("class", "mw-sector");
@@ -257,8 +272,14 @@ function dispatch(levels: Level[], state: WheelState, cb: WheelCallbacks, level:
 }
 
 /** Arrow keys walk the rings; the wheel is a set of nested lists. Returns true if the key was ours. */
-export function handleKey(event: KeyboardEvent, roots: WheelRoots, state: WheelState, cb: WheelCallbacks): boolean {
-  const levels = resolveLevels(roots, state);
+export function handleKey(
+  event: KeyboardEvent,
+  roots: WheelRoots,
+  state: WheelState,
+  cb: WheelCallbacks,
+  scale = 1
+): boolean {
+  const levels = resolveLevels(roots, state, scale);
   const level = state.hot?.level ?? 0;
   const ring = levels[level];
   if (!ring) return false;

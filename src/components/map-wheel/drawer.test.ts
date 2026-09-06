@@ -33,8 +33,24 @@ describe("pickSide", () => {
     expect(pickSide(Math.PI, 640, 1280)).toBe("left");
   });
 
+  // giving up the sector's direction is cheaper than dragging the ring across the map
   it("overrides to the other side when the preferred one lacks room", () => {
     expect(pickSide(0, 1200, 1280)).toBe("left");
+    expect(pickSide(Math.PI, 80, 1280)).toBe("right");
+  });
+
+  // near the middle of a narrow window neither side has room, the wheel re-clamps either way, and
+  // the sector's direction is then the only thing left to go on
+  it("follows the sector when neither side has room where the wheel sits", () => {
+    expect(pickSide(0, 640, 1280)).toBe("right");
+    expect(pickSide(Math.PI, 640, 1280)).toBe("left");
+  });
+
+  it("measures room against the scaled ring, not a fixed radius", () => {
+    // the same left-pointing sector at the same centre: a small dial still has room on the right to
+    // override into, a large one has room on neither side and keeps the sector's own direction
+    expect(pickSide(Math.PI, 560, 1280, 0.8)).toBe("right");
+    expect(pickSide(Math.PI, 560, 1280, 1.4)).toBe("left");
   });
 
   it("decides by viewport room when the sector points near-vertically", () => {
@@ -130,9 +146,17 @@ describe("closeDrawer", () => {
 
   it("aims the connector at the drawer's near edge, not along the sector angle", () => {
     const line = connectorLine(-Math.PI / 2, "right");
-    expect(line.x1).toBeCloseTo(0, 6);
-    expect(line.x2).toBeGreaterThan(0);
-    expect(line.y2).toBeCloseTo(line.y1, 6);
+    expect(line.x1).toBeCloseTo(0, 6); // the sector points straight up
+    expect(line.x2).toBeGreaterThan(0); // the line still runs out to the drawer on the right
+    // a sector the drawer's near edge can actually reach keeps its own height
+    const level = connectorLine(-Math.PI / 4, "right");
+    expect(level.y2).toBeCloseTo(level.y1, 6);
+  });
+
+  it("scales the connector with the dial", () => {
+    const line = connectorLine(0, "right", 1.5);
+    expect(line.x1).toBeCloseTo(connectorLine(0, "right").x1 * 1.5, 6);
+    expect(line.x2).toBeCloseTo(connectorLine(0, "right").x2 * 1.5, 6);
   });
 
   it("keeps the connector inside the drawer's height for a sector pointing far off it", () => {

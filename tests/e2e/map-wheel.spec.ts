@@ -25,14 +25,15 @@ interface SectorInfo {
 // One ring per level, so a sector's level can be read back off its own arc: `d` starts at the
 // band's inner radius. Labels live in a sibling layer, appended in the same order as the paths.
 //
-// The hot fill is not a constant any more: the wheel follows the app's theme, and publishes the
-// sampled palette on .mw-wheel - so the probe reads it back rather than hardcoding colours a hue
-// slider can move.
+// Neither the radii nor the hot fill are constants any more: the bands carry a 1.2 base multiplier
+// times the clamped uiSize, and the fills follow the app's theme. Both are published on .mw-wheel,
+// so the probe reads them back rather than hardcoding numbers the app can move.
 const readSectors = (): Promise<SectorInfo[]> =>
   page.evaluate(() => {
     const wheel = document.querySelector<HTMLElement>("#mapWheel .mw-wheel")!;
     const style = getComputedStyle(wheel);
-    const INNER = [58, 112, 162, 208];
+    const ui = Number.parseFloat(style.getPropertyValue("--mw-ui")) || 1;
+    const INNER = [58, 112, 162, 208].map(r => r * 1.2 * ui);
     const HOT = ["--mw-fill-hot", "--mw-fill-danger"].map(name => style.getPropertyValue(name).trim());
     const paths = [...document.querySelectorAll<SVGPathElement>("#mapWheel path.mw-sector")];
     const labels = [...document.querySelectorAll<HTMLElement>("#mapWheel .mw-labels > .mw-label")];
@@ -264,10 +265,14 @@ test.describe("map wheel", () => {
     const centre = { x: wheel.x + wheel.width / 2, y: wheel.y + wheel.height / 2 };
     expect(centre.x).toBeLessThan(page.viewportSize()!.width / 2 - 200); // really off-centre
 
-    // 260px clear of the ring's centre on whichever side it fanned out to: 246 outer radius + 14
+    // clear of the ring's centre by exactly the --mw-drawer-offset the wheel published
+    const offset = await page
+      .locator("#mapWheel .mw-wheel")
+      .evaluate(el => Number.parseFloat(getComputedStyle(el).getPropertyValue("--mw-drawer-offset")));
+    expect(offset).toBeGreaterThan(260); // the 1.2 base multiplier moved the ring's edge outward
     const side = await page.locator("#mapWheelDrawer").getAttribute("data-side");
     const gap = side === "right" ? drawer.x - centre.x : centre.x - (drawer.x + drawer.width);
-    expect(gap).toBeCloseTo(260, -1);
+    expect(gap).toBeCloseTo(offset, -1);
     expect(drawer.y + drawer.height / 2).toBeCloseTo(centre.y, -1);
 
     // and the whole of it is still on screen, which is what clampCentre's drawer reservation buys
@@ -367,6 +372,62 @@ test.describe("map wheel", () => {
       await expect(page.locator("#mapWheel")).toHaveCount(0);
     }
     await closeDialogs();
+  });
+
+  // The root ring at 7 items is the worst case for label overflow: at the base radii a 74px label
+  // gets 2pi*83/7 = 74.5px of arc. The 1.2 radius multiplier is what fixes that, and only a browser
+  // can measure the labels as they are actually laid out.
+  test("gives every root label more arc than it is wide", async () => {
+    await openWheel();
+    const measured = await page.evaluate(() => {
+      const wheel = document.querySelector<HTMLElement>("#mapWheel .mw-wheel")!;
+      const ui = Number.parseFloat(getComputedStyle(wheel).getPropertyValue("--mw-ui")) || 1;
+      const rMid = ((58 + 108) / 2) * 1.2 * ui;
+      const labels = [...document.querySelectorAll<HTMLElement>("#mapWheel .mw-label--root")];
+      const boxes = labels.map(el => el.getBoundingClientRect());
+
+      let worstOverlap = Number.NEGATIVE_INFINITY;
+      for (let i = 0; i < boxes.length; i++) {
+        for (let j = i + 1; j < boxes.length; j++) {
+          const [a, b] = [boxes[i], boxes[j]];
+          const x = (a.width + b.width) / 2 - Math.abs(a.x + a.width / 2 - (b.x + b.width / 2));
+          const y = (a.height + b.height) / 2 - Math.abs(a.y + a.height / 2 - (b.y + b.height / 2));
+          worstOverlap = Math.max(worstOverlap, Math.min(x, y));
+        }
+      }
+      return { count: labels.length, arc: (2 * Math.PI * rMid) / labels.length, width: boxes[0].width, worstOverlap };
+    });
+
+    expect(measured.arc).toBeGreaterThan(measured.width);
+    expect(measured.worstOverlap).toBeLessThan(0); // no two root labels touch
+  });
+
+  // uiSize is the app's own sizing control; the wheel follows it, then refuses to outgrow the window
+  test("grows with uiSize and clamps at the viewport", async () => {
+    const boxAt = async (uiSize: string): Promise<number> => {
+      await page.evaluate(v => {
+        (document.getElementById("uiSize") as HTMLInputElement).value = v;
+      }, uiSize);
+      await openWheel();
+      const box = (await page.locator("#mapWheel .mw-wheel").boundingBox())!;
+      const viewport = page.viewportSize()!;
+      expect(box.x).toBeGreaterThanOrEqual(0);
+      expect(box.y).toBeGreaterThanOrEqual(0);
+      expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
+      expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
+      await page.keyboard.press("Escape");
+      return box.height;
+    };
+
+    const [small, normal, extreme] = [await boxAt("0.8"), await boxAt("1"), await boxAt("3")];
+    expect(normal).toBeGreaterThan(small);
+    expect(extreme).toBeGreaterThan(normal);
+    // 720px tall viewport: the second clamp caps the box at min(w, h) - 32 however large uiSize gets
+    expect(extreme).toBeCloseTo(720 - 32, 0);
+
+    await page.evaluate(() => {
+      (document.getElementById("uiSize") as HTMLInputElement).value = "1";
+    });
   });
 
   test("keeps the whole wheel on screen when opened in a corner", async () => {

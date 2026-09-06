@@ -52,14 +52,15 @@ New directory `src/components/map-wheel/`. Registered by adding `import "./map-w
 | --- | --- | --- |
 | `context.ts` | ported from `upstream/map-wheel-concept` | Right-click → ranked `WheelSubject[]` with real action lists. |
 | `menu-tree.ts` | new | The MENU channel tree, reconciled against real FMG (§ Menu tree). Pure data + `run()` thunks. |
-| `geometry.ts` | new | Pure math: bands, span/start-angle, sector path, label position, spine endpoints. No DOM. |
+| `geometry.ts` | new | Pure math: bands, span/start-angle, sector path, label position, spine endpoints, the two scale factors. No DOM. |
+| `palette.ts` | new | Samples the app's theme variables into resolved colour strings, with the handoff as fallback and a 4.5:1 guard. No ring knowledge. |
 | `wheel.ts` | new | The spin-out renderer: fold `path` → rings, spines, HTML label layer, hub, breadcrumb. |
 | `drawer.ts` | new | The side drawer: host reparenting, row filtering, restore (§ Side drawer). |
 | `styles.ts` | new | The handoff's token table, plus the drawer's scoped skin, as one CSS string. |
 | `index.ts` | ported + extended | contextmenu binding, open/close, dismissal, viewport clamping. |
 
-Boundaries: `geometry.ts` knows nothing about menus; `menu-tree.ts` and `context.ts` know nothing
-about geometry; `wheel.ts` renders any `WheelNode[]` fold and is the only file that touches the DOM
+Boundaries: `geometry.ts` knows nothing about menus or colour; `palette.ts` knows nothing about
+geometry; `menu-tree.ts` and `context.ts` know nothing about either; `wheel.ts` renders any `WheelNode[]` fold and is the only file that touches the DOM
 for the ring; `drawer.ts` is the only file that moves existing app DOM, and owns its own restore.
 This is what makes the geometry, the tree and the drawer independently testable.
 
@@ -86,12 +87,12 @@ A node has exactly one of `children`, `panel`, `run`, `toggle` or `pick`; a unit
 
 ## Geometry
 
-All values from the handoff are authoritative and reproduced exactly.
+The handoff's table is the base, and two independent factors sit on top of it. Neither is a module
+variable: `geometry.ts` stays pure and takes the scale as an argument (`bands(scale)`,
+`sectors(level, count, parentMid, scale)`, `spineLine(level, parentMid, scale)`, `boxRadius(scale)`,
+`outerRadius(scale)`, `drawerOffset(scale)`).
 
-SVG `viewBox="-258 -258 516 516"`, rendered 516×516,
-`filter: drop-shadow(0 10px 26px rgba(38,28,12,.35))`.
-
-Four concentric bands `[innerRadius, outerRadius]`:
+Four concentric base bands `[innerRadius, outerRadius]`:
 
 | Level | Band | rMid |
 | --- | --- | --- |
@@ -99,6 +100,40 @@ Four concentric bands `[innerRadius, outerRadius]`:
 | 1 | `[112, 158]` | 135 |
 | 2 | `[162, 204]` | 183 |
 | 3 | `[208, 246]` | 227 |
+
+### Factor 1: the base radius multiplier (×1.2, radii only)
+
+**A label is almost as wide as the arc it occupies.** At the base radii the worst case is the root
+ring at 7 items: `2π·83/7` = 74.5px of arc for a 74px label. Scaling the whole dial does not help —
+arc and label grow together and the ratio never moves. The fix is a **×1.2 multiplier on the band
+radii alone**, with label widths, font sizes and icon sizes untouched:
+
+| Level | items at cap | arc per label | label width |
+| --- | --- | --- | --- |
+| 0 | 7 | 89px | 74px |
+| 1 | 11 | 87px | 66px |
+| 2 | 15 | 86px | 66px |
+| 3 | 19 | 85px | 66px |
+
+`ITEM_CAPS` are unchanged: the caps are about how many labels fit, and the multiplier only adds
+headroom. Measured in the browser on the 7-item HERE root: before, the worst pair of root labels
+overlapped by 7.7px; after, they clear by 3.9px.
+
+### Factor 2: uiSize (uniform)
+
+The dial follows the app's own sizing control, read at open from `#uiSize` (a `<slider-input>`, so
+`.value`), applied **uniformly** to radii, label widths, font sizes and icon sizes. Two clamps:
+
+1. the raw uiSize (0.6..3) to `[0.8, 2]` — more than that is not a dial anchored at a click point;
+2. again, so the rendered box never exceeds `min(innerWidth, innerHeight) - 32`.
+
+Missing or unreadable uiSize is 1. The values that were constants elsewhere are published on
+`.mw-wheel` as `--mw-ui`, `--mw-box` and `--mw-drawer-offset` so the stylesheet can size labels, the
+hub and the drawer's offset from them.
+
+SVG `viewBox="-R -R 2R 2R"` rendered `2R` square, where `R = boxRadius(scale)` = 307.2 at scale 1
+(295.2 outer radius + 12 clearance for the hover growth and the shadow).
+`filter: drop-shadow(0 10px 26px rgba(38,28,12,.35))`.
 
 - **Depth is capped at 4 rings.** Deeper trees are restructured, never allowed to overflow.
 - Level 0 spans the full circle: `span = 2π`, `startAngle = -π/2 - (span/n)/2`, so item 0 is centred
@@ -127,7 +162,8 @@ one without collision. Therefore:
 | 3 | `5.906 · 227` = 1341px | **19** |
 
 These caps are enforced by a unit test over the menu tree, not merely documented. They are also why
-the menu tree below is grouped the way it is.
+the menu tree below is grouped the way it is. The base radius multiplier above turns each of these
+into real headroom rather than a dead heat.
 
 ### Root overflow rule
 
@@ -193,14 +229,18 @@ point away from it. Nearest-point keeps the tie legible for every sector positio
 
 ### Placement
 
-- 14px clear of the outer radius (246), so the near edge sits at `centre ± 260`.
+- 14px clear of the outer radius, so the near edge sits at `centre ± drawerOffset(scale)` — 309.2px
+  at scale 1. Published as `--mw-drawer-offset`.
 - Width 340px; height `min(560px, 100vh - 32px)`; vertically centred on the wheel centre and
-  clamped to the viewport.
+  clamped to the viewport. The drawer hosts the app's real forms, so unlike the ring it does **not**
+  scale.
 - Side is chosen by the sector that opened it: the half the sector points into (`cos(mid) >= 0` →
   right), so the drawer fans out the way the sector is already aiming. That choice is overridden to
-  the other side when the preferred side lacks room; when the sector points near-vertically
-  (`|cos(mid)|` below 0.2) side is decided by viewport room alone, ties going right. Chosen once per
-  drawer open and never flipped while open.
+  the other side when the preferred side lacks room **where the wheel already sits** — giving up the
+  sector's direction is cheaper than dragging the ring across the map. When neither side has room
+  the wheel has to re-clamp regardless, and the sector's direction wins after all. When the sector
+  points near-vertically (`|cos(mid)|` below 0.2) side is decided by room alone, ties going right.
+  Chosen once per drawer open and never flipped while open.
 - The wheel's own viewport clamping accounts for the drawer, so wheel + drawer are clamped as one
   bounding box.
 - Animation: 140ms slide-and-fade outward from the wheel edge, matching the ring stagger. Respects
@@ -208,10 +248,11 @@ point away from it. Nearest-point keeps the tie legible for every sector positio
 
 ### Chrome
 
-Parchment ground `rgba(251,247,236,.97)`, 1px `rgba(90,74,48,.32)` border, 4px radius,
+Ground `--bg-light` — the same variable `#options` uses, so the drawer reads as the app's own panel —
+with a `--dark-solid` border, 4px radius,
 `box-shadow: 0 10px 26px rgba(38,28,12,.35)` — the same shadow as the wheel, so they read as one
-object. Header bar on `rgba(251,247,236,.86)`: title in IBM Plex Sans 12px/600, uppercase,
-`letter-spacing .09em`, colour `#6b5535`, with a `✕` at the right. Body scrolls (`overflow-y: auto`,
+object. Header bar on `--bg-lighter`: title in IBM Plex Sans 12px/600, uppercase,
+`letter-spacing .09em`, in the accent ink, with a `✕` at the right. Body scrolls (`overflow-y: auto`,
 `scrollbar-width: thin`).
 
 ### Content mechanism: reparent, filter, restore
@@ -425,22 +466,49 @@ All in scope:
 
 ## Visual specification
 
+**The wheel follows the app's live theme.** `changeDialogsTheme()` (public/modules/ui/options.js)
+writes the user's palette onto `document.documentElement` as custom properties whenever the theme
+hue, colour or transparency sliders move, and runs once at startup from `applyStoredOptions`. The
+wheel samples those; the handoff's parchment is the fallback for every one of them, so a build that
+has published no theme is pixel-identical to the original design.
+
 Fills and ink, in priority order:
 
 | Condition | Fill | Ink |
 | --- | --- | --- |
-| Chosen ancestor (its child ring or drawer is open) | `#4a3a22` | `#fffdf7` |
-| Hovered | `#6b5535` (`#a33a2e` if destructive) | `#fffdf7` |
-| Layer toggle that is ON | `#8a9c6c` | `#20261a` |
-| Dimmed sibling | `rgba(251,247,236,.82)` | `rgba(59,50,38,.82)` |
-| Default | `rgba(251,247,236,.97)` | `#3b3226` |
-| Destructive, not hovered | default fill | `#8d2f24` |
+| Chosen ancestor (its child ring or drawer is open) | `--dark-solid` (`#4a3a22`) | `--light-solid` (`#fffdf7`) |
+| Hovered | `--header-active` (`#6b5535`); **`#a33a2e` if destructive** | `--light-solid` (`#fffdf7`) |
+| Layer toggle that is ON | **`#8a9c6c`** | **`#20261a`** |
+| Dimmed sibling | `--light-solid` at .82 (`rgba(251,247,236,.82)`) | `--dark-solid` at .82 (`rgba(59,50,38,.82)`) |
+| Default | `--light-solid` at .97 (`rgba(251,247,236,.97)`) | `--dark-solid` (`#3b3226`) |
+| Destructive, not hovered | default fill | **`#8d2f24`** |
 
-Stroke `rgba(90,74,48,.32)`; dimmed `rgba(90,74,48,.16)`. `transition: fill 120ms`.
+Stroke `--dark-solid` at .32; dimmed at .16. `transition: fill 120ms`.
+
+The bold entries are **deliberately not themed**: the danger red and the layer-on green carry
+meaning rather than style, and a hue slider must not be able to turn "this deletes things" into the
+same colour as everything else.
+
+Hub, breadcrumb and drawer follow the same theme through the stylesheet: hub active tab
+`--header-active`, inactive `--light-solid`; breadcrumb on `--bg-lighter` with `--dark-solid` ink;
+drawer ground `--bg-light` (the variable `#options` itself uses), header `--bg-lighter`, border
+`--dark-solid`.
+
+**How, and why not `var()` everywhere.** Sector fills are SVG *presentation attributes* written with
+`setAttribute("fill", …)`, and a presentation attribute does not accept `var()` — it silently
+renders black. `palette.ts` therefore resolves the variables to literal colour strings once per
+build and feeds them into the renderer's existing precomputed hover skins; the stylesheet-side
+chrome uses `var()` directly, reading the same sampled palette back off `.mw-wheel` as `--mw-*`
+properties. The palette is sampled per build rather than watched: the wheel is transient and closes
+on an outside pointerdown.
 
 **Accessibility:** dimmed siblings remain full click targets ("swap branch at this level"), so their
 ink stays at ≥4.5:1 — do not fade further than the `.82`/`.82` pair. De-emphasis comes from the
-solid dark ancestor, not from making siblings unreadable.
+solid dark ancestor, not from making siblings unreadable. Following the theme cannot be allowed to
+break that: FMG's own `--dark-solid` on `--light-solid` is **2.5:1** at the default theme colour
+(#997787). Every ink the wheel computes is therefore held to 4.5:1 over the fill it sits on, moving
+only its lightness toward black or white and keeping the theme's hue. With no theme published the
+handoff's colours already clear the bar and the guard is a no-op.
 
 ### Labels
 
@@ -452,7 +520,9 @@ done by the SVG `<path>` underneath.
 - Width 74px at level 0, 66px at levels 1+. Column flex, centred, `gap: 2px`, `line-height: 1.15`.
 - Font: IBM Plex Sans, 10.5px at level 0, 9.5px at levels 1+.
 - Icon above the label: **FMG's own `icon-*` set from `public/icons.css`**, 19px at level 0, 16px at
-  levels 1+. (The prototype uses Material Symbols; substituted per the handoff's own instruction, to
+  levels 1+.
+- Every one of those lengths is `calc(<base> * var(--mw-ui, 1))`, so they follow uiSize with the
+  radii. They do **not** carry the ×1.2 base multiplier — that is the whole point of it. (The prototype uses Material Symbols; substituted per the handoff's own instruction, to
   avoid a Google Fonts dependency in the desktop build and a second icon vocabulary.)
 - Optional third line: 8.5px, `opacity .68`, `letter-spacing .05em` — `on`/`off` for layer toggles,
   the subject kind under an entity name, the subject count, and `▸` on any sector with children.
@@ -474,7 +544,7 @@ earlier `#8a7248`/400, separator `›` at `opacity .45`, margin `0 5px`.
 
 ### Tokens
 
-Colours: parchment `rgba(251,247,236,.97)` · parchment-dim `rgba(251,247,236,.82)` · ink `#3b3226` ·
+The fallbacks, used verbatim when the app has published no theme. Colours: parchment `rgba(251,247,236,.97)` · parchment-dim `rgba(251,247,236,.82)` · ink `#3b3226` ·
 ink-dim `rgba(59,50,38,.82)` · brown `#6b5535` · brown-deep `#4a3a22` · brown-mid `#8a7248` ·
 danger `#a33a2e` · danger-ink `#8d2f24` · layer-on `#8a9c6c` · layer-on-ink `#20261a` ·
 ink-light `#fffdf7` · shell `#2b2519` · shell-ink `#f3ead6` · edge `rgba(90,74,48,.32)` ·
@@ -511,6 +581,13 @@ needed — the hub in this concept carries tab type only, not entity names.
 - `geometry.test.ts` — sector path shape; large-arc flag set exactly when the sweep exceeds π; root
   start angle centres item 0 on 12 o'clock; child span clamp at both ends (`n·0.55`, floor 1.4,
   ceiling `π·1.88`); gap converted to radians per level; spine endpoints; band table; depth cap.
+  Plus the two scale factors: `bands()` applies ×1.2 and nothing else, every radius scales
+  uniformly, `sectors(…, 1)` is identity, a 3px gap stays 3px as the dial grows, every ring at its
+  cap has more arc per label than the label is wide, and `wheelScale` clamps to `[0.8, 2]` and then
+  again to the viewport.
+- `palette.test.ts` — the fallback palette is byte-identical to the handoff when no theme is
+  published; the app's variables are followed when they are; danger and layer-on stay literal; every
+  ink clears 4.5:1 over its own fill, dimmed siblings included, and dimming stops at `.82`/`.82`.
 - `menu-tree.test.ts` — every ring within its level's item cap; no branch deeper than 4; every node
   has exactly one of `children`/`panel`/`run`/`toggle`/`pick`; every leaf resolves to a real
   `Controllers` key or an id present in `src/index.html`; every `toggle` names a real,
@@ -539,6 +616,10 @@ needed — the hub in this concept carries tab type only, not entity names.
   original position, and the top-bar Options tab renders normally.
 - Right-click near a viewport corner keeps wheel and drawer on screen together.
 - Right-click while `customization` is active does not open the wheel.
+- Every root label on the 7-item HERE root gets more arc than it is wide, and no two of them
+  overlap — measured on the laid-out labels, which is the only place that can be settled.
+- The box grows with uiSize and is capped at `min(innerWidth, innerHeight) - 32` at the extreme,
+  staying wholly on screen at every size.
 
 ## Out of scope
 
