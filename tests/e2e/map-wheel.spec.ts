@@ -121,6 +121,25 @@ const hereTab = async (): Promise<void> => {
   await page.mouse.move(2, 2);
 };
 
+/**
+ * The app's own sizing control, set the way the app sets it. `changeUiSize` (public/modules/ui/
+ * options.js) does two things with the value, and only one of them is the wheel's: it scales the
+ * dial through `#uiSize`, AND it writes `body.style.fontSize = uiSize * 10 + "px"`.
+ *
+ * The drawer hosts the app's REAL forms, so that body font is the size its labels, notes and
+ * buttons are set in - while the drawer itself stays a fixed 340px. Moving `#uiSize.value` alone
+ * therefore grew the ring and left the form at 10px, which is why three width defects ("Grays...",
+ * a crammed halo warning, a wrapped "Halo opacity") were invisible to every uiSize sweep here: at
+ * 10px none of them happen. `changeUiSize` itself is not called, because it clamps the value to
+ * what fits the window (min(innerHeight/465, innerWidth/302) = 1.5 in this 1280x720 viewport) and
+ * the sweeps below are meant to reach 2.
+ */
+const setUiSize = (uiSize: string): Promise<void> =>
+  page.evaluate(v => {
+    (document.getElementById("uiSize") as HTMLInputElement).value = v;
+    document.body.style.fontSize = `${Number(v) * 10}px`;
+  }, uiSize);
+
 const closeDialogs = (): Promise<void> =>
   page.evaluate(() => {
     for (const close of document.querySelectorAll<HTMLElement>(".ui-dialog .ui-dialog-titlebar-close")) close.click();
@@ -131,6 +150,13 @@ test.describe.configure({ mode: "serial" });
 test.describe("map wheel", () => {
   test.beforeAll(async ({ browser }: { browser: Browser }) => {
     context = await browser.newContext();
+    // The app raises its "updated to version ..." dialog 6 seconds after a load with no stored
+    // version (services/versioning.ts), which lands in the middle of this suite - and the wheel now
+    // stands aside for any app dialog, so an unrelated one-shot announcement would close a wheel a
+    // test was in the middle of driving. Told it has already been seen, before the app loads.
+    // "99.99.99" rather than the real VERSION so this cannot drift: the announcement fires only for
+    // a stored version OLDER than the build's, and nothing here is older than that.
+    await context.addInitScript(() => localStorage.setItem("version", "99.99.99"));
     page = await context.newPage();
     await page.goto("/?seed=test-seed&width=1280&height=720");
     await page.waitForFunction(() => (window as any).mapId !== undefined, { timeout: 60000 });
@@ -474,9 +500,7 @@ test.describe("map wheel", () => {
 
   test("keeps every label's ink inside its own sector", async () => {
     for (const uiSize of ["0.8", "1", "2"]) {
-      await page.evaluate(v => {
-        (document.getElementById("uiSize") as HTMLInputElement).value = v;
-      }, uiSize);
+      await setUiSize(uiSize);
 
       // the rings that hold the tree's hardest labels: the layer toggles carry a note line, Edit is
       // the 15-item ring, and the HERE root is the one with the longest action names
@@ -502,9 +526,7 @@ test.describe("map wheel", () => {
       await page.keyboard.press("Escape");
     }
 
-    await page.evaluate(() => {
-      (document.getElementById("uiSize") as HTMLInputElement).value = "1";
-    });
+    await setUiSize("1");
   });
 
   test("marks a parent sector with a tick instead of a line of label text", async () => {
@@ -531,9 +553,7 @@ test.describe("map wheel", () => {
   // uiSize is the app's own sizing control; the wheel follows it, then refuses to outgrow the window
   test("grows with uiSize and clamps at the viewport", async () => {
     const boxAt = async (uiSize: string): Promise<number> => {
-      await page.evaluate(v => {
-        (document.getElementById("uiSize") as HTMLInputElement).value = v;
-      }, uiSize);
+      await setUiSize(uiSize);
       await openWheel();
       const box = (await page.locator("#mapWheel .mw-wheel").boundingBox())!;
       const viewport = page.viewportSize()!;
@@ -558,9 +578,7 @@ test.describe("map wheel", () => {
     expect(normal).toBeCloseTo(720 - 32, 0);
     expect(extreme).toBeGreaterThanOrEqual(normal);
 
-    await page.evaluate(() => {
-      (document.getElementById("uiSize") as HTMLInputElement).value = "1";
-    });
+    await setUiSize("1");
   });
 
   test("keeps the whole wheel on screen when opened in a corner", async () => {
@@ -784,9 +802,7 @@ test.describe("map wheel", () => {
     ] as [string[], string][]) {
       // the em-based height interacts with the scaled font size, so check both ends of uiSize
       for (const uiSize of ["0.8", "1", "2"]) {
-        await page.evaluate(v => {
-          (document.getElementById("uiSize") as HTMLInputElement).value = v;
-        }, uiSize);
+        await setUiSize(uiSize);
         await openWheel();
         await menuTab();
         for (const step of drill) await activate(byLabel(step));
@@ -797,9 +813,7 @@ test.describe("map wheel", () => {
       }
     }
 
-    await page.evaluate(() => {
-      (document.getElementById("uiSize") as HTMLInputElement).value = "1";
-    });
+    await setUiSize("1");
     await expect(page.locator("#options > #optionsContent")).toBeAttached();
   });
 
@@ -876,9 +890,7 @@ test.describe("map wheel", () => {
     ];
 
     for (const uiSize of ["0.8", "1", "2"]) {
-      await page.evaluate(v => {
-        (document.getElementById("uiSize") as HTMLInputElement).value = v;
-      }, uiSize);
+      await setUiSize(uiSize);
       let optionPairs = 0;
 
       for (const drill of drills) {
@@ -915,9 +927,129 @@ test.describe("map wheel", () => {
       expect(optionPairs, `uiSize ${uiSize}: range/number rows swept`).toBe(10);
     }
 
-    await page.evaluate(() => {
-      (document.getElementById("uiSize") as HTMLInputElement).value = "1";
+    await setUiSize("1");
+    await expect(page.locator("#options > #optionsContent")).toBeAttached();
+  });
+
+  // The HORIZONTAL twin of `clippedControls()`, and the two shapes it cannot see. `clippedControls`
+  // has asked "does this control's text fit VERTICALLY" since the third width fix; nothing ever
+  // asked the same question sideways, which is exactly why "Grayscale" shipped as "Grays..." -
+  // `#mapFilters > button { width: 23% }` is a quarter of FMG's own options panel, 66px here, and
+  // `.tabcontent button` carries `text-overflow: ellipsis`.
+  //
+  // All three properties are collected across the whole sweep and asserted together, so one run
+  // reports every kind of failure rather than the first one:
+  //
+  //   truncated - no element's own text runs wider than the box painted around it;
+  //   notes     - a row of ONE cell is a full-width note, not a label-sized column (the halo
+  //               warning set as five lines in 98.5px of a 288px line);
+  //   labels    - a label cell is at least as wide as its own text, up to the line it sits on
+  //               ("Halo opacity" wrapping while "Halo width" and "Halo blur" beside it did not).
+  //
+  // All three need the app's real font to bite (see `setUiSize`): at 10px nothing overflows a
+  // percentage tuned for a 300px panel, and every one of these defects was reported at a larger UI.
+  interface TextFit {
+    truncated: string[];
+    notes: string[];
+    labels: string[];
+  }
+
+  const textFit = (): Promise<TextFit> =>
+    page.locator("#mapWheelDrawer").evaluate(root => {
+      const truncated: string[] = [];
+      const notes: string[] = [];
+      const labels: string[] = [];
+      const shown = (el: HTMLElement) => el.offsetParent !== null;
+      const owns = (el: HTMLElement) => !!el.querySelector("input, select, textarea, button, slider-input");
+      const says = (el: Element) => (el.textContent ?? "").trim().replace(/\s+/g, " ");
+
+      // Only elements with text of their OWN: a container's scrollWidth is about its children, and
+      // the drawer body is a scroller by design.
+      for (const el of root.querySelectorAll<HTMLElement>("*")) {
+        if (!shown(el) || el.clientWidth === 0) continue;
+        if (![...el.childNodes].some(node => node.nodeType === 3 && (node.textContent ?? "").trim())) continue;
+        if (el.scrollWidth > el.clientWidth)
+          truncated.push(
+            `${el.tagName}#${el.id || "-"}: ${el.clientWidth}px box for ${el.scrollWidth}px of text ("${says(el).slice(0, 30)}")`
+          );
+      }
+
+      // A cell's own text at its natural width, measured by a clone that is allowed neither to wrap
+      // nor to be a flex item. Reading the cell's `width` would only report the basis under test.
+      const maxContent = (cell: HTMLTableCellElement): number => {
+        const clone = cell.cloneNode(true) as HTMLElement;
+        clone.style.cssText = "position:absolute;visibility:hidden;width:max-content;white-space:nowrap";
+        cell.parentElement!.append(clone);
+        const width = clone.getBoundingClientRect().width;
+        clone.remove();
+        return width;
+      };
+
+      for (const row of root.querySelectorAll<HTMLTableRowElement>("tr")) {
+        if (!shown(row)) continue;
+        const style = getComputedStyle(row);
+        const line =
+          row.getBoundingClientRect().width -
+          Number.parseFloat(style.paddingLeft) -
+          Number.parseFloat(style.paddingRight);
+        const cells = [...row.cells];
+
+        if (cells.length === 1) {
+          const width = cells[0].getBoundingClientRect().width;
+          if (width < line - 1) notes.push(`"${says(row).slice(0, 34)}": ${width.toFixed(1)}px of a ${line.toFixed(1)}px line`);
+          continue;
+        }
+
+        // A label cell is the one that NAMES a control: no control of its own, and a control cell
+        // immediately after it. That is the same role the stylesheet sizes it by.
+        for (const [i, cell] of cells.entries()) {
+          const next = cells[i + 1];
+          if (owns(cell) || !next || !owns(next)) continue;
+          const want = Math.min(maxContent(cell), line);
+          const got = cell.getBoundingClientRect().width;
+          if (got < want - 1) labels.push(`"${says(cell).slice(0, 26)}": ${got.toFixed(1)}px for ${want.toFixed(1)}px of text`);
+        }
+      }
+
+      return { truncated, notes, labels };
     });
+
+  test("keeps every hosted line of text inside the box it is painted in", async () => {
+    const drills = [
+      ["Options", "World"],
+      ["Options", "Realms"],
+      ["Options", "People"],
+      ["Options", "Identity"],
+      ["Options", "Interface"],
+      ["Options", "Behaviour"],
+      // the Style editor opens on States, which is the section carrying the halo warning and the
+      // three halo rows; #mapFilters sits below the table whatever element is selected
+      ["Style", "Style editor"],
+      ["About"]
+    ];
+    const found: TextFit = { truncated: [], notes: [], labels: [] };
+
+    for (const uiSize of ["0.8", "1", "2"]) {
+      await setUiSize(uiSize);
+
+      for (const drill of drills) {
+        await openWheel();
+        await menuTab();
+        for (const step of drill) await activate(byLabel(step));
+        await expect(page.locator("#mapWheelDrawer .mw-drawer-body")).toBeVisible();
+
+        const where = `uiSize ${uiSize}, ${drill.join(" > ")}`;
+        const fit = await textFit();
+        for (const key of ["truncated", "notes", "labels"] as const) {
+          found[key].push(...fit[key].map(line => `${where}: ${line}`));
+        }
+
+        await page.keyboard.press("Escape");
+      }
+    }
+
+    await setUiSize("1");
+    expect(found).toEqual({ truncated: [], notes: [], labels: [] });
     await expect(page.locator("#options > #optionsContent")).toBeAttached();
   });
 
@@ -1135,5 +1267,33 @@ test.describe("map wheel", () => {
 
     await page.keyboard.press("Escape");
     await expect(page.locator("#options > #optionsContent")).toBeAttached();
+  });
+
+  // Changing the style preset inside the drawer raises FMG's own confirmation ("All unsaved style
+  // changes will be lost", style-presets.js -> confirmationDialog -> $("#alert").dialog()). It used
+  // to open UNDERNEATH the wheel: #prompt carries z-index 1000 and the wheel carried 1000 too, and
+  // the wheel's host is appended to <body> after #dialogs, so it won the tie; jQuery UI's own
+  // dialogs, whose z-index is assigned at runtime around 100, lost by a wider margin.
+  //
+  // The wheel gets out of the way instead, which also hands #styleContent back to #options before
+  // the dialog can reach for it - it is physically out of the panel while the drawer is open.
+  test("stands aside when the app raises a dialog over the drawer", async () => {
+    await page.evaluate(() => sessionStorage.removeItem("styleChangeConfirmed"));
+    await openWheel();
+    await menuTab();
+    await activate(byLabel("Style"));
+    await activate(byLabel("Style editor"));
+    await expect(page.locator("#mapWheelDrawer #stylePreset")).toBeVisible();
+
+    await page.locator("#mapWheelDrawer #stylePreset").selectOption("ancient");
+
+    const alert = page.locator(".ui-dialog:visible", { has: page.locator("#alert") });
+    await expect(alert).toBeVisible();
+    await expect(page.locator("#mapWheel")).toHaveCount(0);
+    // the assertion that matters: the borrowed form is back where the app expects it
+    await expect(page.locator("#options > #styleContent")).toBeAttached();
+
+    await page.locator(".ui-dialog:visible button", { hasText: "Cancel" }).click();
+    await closeDialogs();
   });
 });

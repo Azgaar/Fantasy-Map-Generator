@@ -16,7 +16,16 @@ export const WHEEL_CSS = `
 #mapWheel {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  /* ABOVE THE MAP, BELOW THE APP'S DIALOG LAYER. The wheel used to sit at 1000, which is exactly
+     "#prompt"'s own z-index (public/index.css) - a tie the wheel won on document order, since its
+     host is appended to <body> after #dialogs, so a confirmation raised from inside the drawer
+     rendered underneath it. The landscape it has to fit between is: the map and its overlays
+     (1, 2, #mapOverlay 10), then the dialog layer - #helpAssistantBubble 99, #pickerContainer 100
+     (the colour picker the drawer's own colour inputs raise), the jQuery UI dialogs jQuery seeds at
+     100 and raises from, #prompt and #alert at 1000, and the two banners at 9999 / 99999.
+     50 is the middle of the only gap there is. The wheel closing on a dialog (below) is the robust
+     half of this; the z-index is what makes anything that slips through still paint correctly. */
+  z-index: 50;
   pointer-events: none;
   font-family: "IBM Plex Sans", system-ui, sans-serif;
 }
@@ -222,6 +231,13 @@ export const WHEEL_CSS = `
   display: block;
   width: 100%;
 }
+/* The Style editor shows one element's sections and hides the rest, and it does that with
+   "#styleElements tbody { display: none }" (1,0,1) plus an inline display on whatever is current.
+   The blanket rule above is (1,0,1) too and is injected later, so it won the tie and the drawer
+   showed EVERY section at once until the user first touched the element select (which is when
+   selectStyleElement() writes an inline display onto all of them). Restated here at (2,0,2) so the
+   skin cannot out-order FMG's own hiding; the inline display on the current sections still wins. */
+#mapWheelDrawer #styleElements tbody { display: none; }
 /* The rows are FMG's own <tr>s of three or four <td>s - an affordance (a lock, a restore arrow, or
    nothing), a label, the control, and sometimes a numeric readout - laid out for a wide top-bar
    panel with COLUMN widths: "#optionsContent table td:nth-of-type(1) {width: 3%}", nth-of-type(2)
@@ -231,10 +247,16 @@ export const WHEEL_CSS = `
    lock mark came to float above each label and how "Cultures number" ended up with its slider on one
    line and its readout on the next, rendered 17px wide - 6% of a 340px drawer, a column width
    applied to a whole line. So the row is a flex line-box instead, and the cells are placed by WHAT
-   THEY CONTAIN, never by id: the rules below need no width of their own, because a flex-basis beats
-   the "width" an author gave a flex item and a min-width raises the used size whatever the
-   percentage says. "#styleContent table tr" (1,0,2, with "display: table") is why this selector
-   carries a tbody: it has to match at equal specificity and win on document order. */
+   THEY CONTAIN, never by id. "#styleContent table tr" (1,0,2, with "display: table") is why this
+   selector carries a tbody: it has to match at equal specificity and win on document order.
+
+   THOSE PERCENTAGES ARE NEUTRALISED, not out-argued one at a time. Three separate defects came out
+   of them - a 17px readout, a five-line halo warning in a third of the drawer, a wrapped "Halo
+   opacity" - because "flex: 0 1 auto" resolves its basis FROM the width property, so every cell the
+   role rules did not give an explicit basis to was still being sized by a column percentage tuned
+   for a panel this drawer is not. Every role rule below therefore states a flex-basis of its own,
+   and the "td" rule states no width at all: an inherited "width: N%" can no longer reach the layout
+   through any path. What a cell gets is decided by its ROLE - what it holds, and what follows it. */
 #mapWheelDrawer tbody tr {
   display: flex;
   flex-wrap: wrap;
@@ -245,28 +267,47 @@ export const WHEEL_CSS = `
   border-bottom: 1px solid var(--mw-edge-dim, rgb(186,177,162));
 }
 #mapWheelDrawer tr:last-child { border-bottom: 0; }
-#mapWheelDrawer td { display: block; padding: 0; width: 100%; }
-/* A cell with no form control is the lock affordance or the label, and those share the first line.
-   The floor is a hit target: the lock cell's own 3% is 8.6px in this drawer, narrower than the glyph
-   it holds. */
+/* No width here, deliberately. Every role rule below states its OWN flex-basis, so nothing in this
+   drawer is ever sized by a percentage FMG tuned for a panel this drawer is not. */
+#mapWheelDrawer td { display: block; padding: 0; }
+/* ROLE 1 - the affordance cell: a lock, a restore arrow, or nothing at all. Sized by its content,
+   with a hit-target floor; the lock cell's own 3% is 8.6px here, narrower than the glyph it holds.
+   This is also the fallback role for any cell holding no control, the one-cell note row included -
+   ROLE 2 and ROLE 5 below take the cells that are something more particular than "not a control". */
 #mapWheelDrawer td:not(:has(input, select, textarea, button, slider-input)) {
-  flex: 0 1 auto;
+  flex: 0 1 max-content;
   min-width: 18px;
+  max-width: 100%;
 }
-/* A cell holding only compact controls is a readout for the control beside it: it keeps its natural
-   size and gains a floor wide enough to read a number in. */
+/* ROLE 2 - the label cell: the one that NAMES the control, which is exactly the cell a control cell
+   follows. Its basis is its own text (ROLE 1's max-content), so "Halo opacity" cannot be made to
+   wrap while "Halo width" beside it does not - the app's uiSize is a body font-size
+   (changeUiSize: body.style.fontSize = uiSize * 10), so a label outgrows a fixed column as soon as
+   the user scales the UI, which is exactly what 34.2% did.
+
+   The floor is what keeps the control on a line of its own: 0.33W + 8 + 0.70W > W at every W, so a
+   short label cannot pull the control (ROLE 4, basis 70%) up beside it and strand its readout on a
+   third line. A percentage floor, not a pixel one, so the invariant is a ratio the drawer's width
+   cannot break. */
+#mapWheelDrawer td:not(:has(input, select, textarea, button, slider-input)):has(+ td:has(input, select, textarea, button, slider-input)) {
+  min-width: 33%;
+}
+/* ROLE 3 - a cell holding only compact controls is a readout for the control beside it: a basis
+   wide enough to read a number in, and the same value as a floor so an over-full line cannot shrink
+   it back toward the 17px box the user photographed. */
 #mapWheelDrawer td:has(input[type="number"], input[type="color"], output) {
-  flex: 0 1 auto;
+  flex: 0 1 64px;
   min-width: 64px;
 }
 /* an <output> is a readout too, and inline, so it would not take the cell the rule above sized */
 #mapWheelDrawer td > output { display: block; text-align: right; font-size: 12px; }
-/* The control itself. 70% is what forces the wrap and what holds the pair together: 3% + 40% + 70%
-   is over a line, so the control always starts a new one, and 70% + 6% is under one, so its readout
-   follows it onto THAT line rather than onto a third. The percentages make the first half hold at
-   any width; the second half needs the readout's 64px floor to fit too, so it holds while the
-   content box is at least 240px (0.7W + 8 + 64 <= W). The drawer is a fixed 340px wide by design -
-   it hosts the app's real forms and does not scale - which leaves a 288px content box.
+/* ROLE 4 - the control itself. 70% is what forces the wrap and what holds the pair together: with
+   the label's 33% floor above, 33% + 70% is over a line, so the control always starts a new one,
+   and 70% + 6% is under one, so its readout follows it onto THAT line rather than onto a third. The
+   ratios make the first half hold at any width; the second half needs the readout's 64px floor to
+   fit too, so it holds while the content box is at least 240px (0.7W + 8 + 64 <= W). The drawer is
+   a fixed 340px wide by design - it hosts the app's real forms and does not scale - which leaves a
+   288px content box.
 
    ORDER IS LOAD-BEARING HERE. A slider-input cell and a .paired cell match this selector AND the
    compact-readout selector above at the same (1,1,2), because slider-input's light DOM holds a
@@ -275,6 +316,16 @@ export const WHEEL_CSS = `
 #mapWheelDrawer td:has(input[type="range"], input[type="text"], input.paired, input[type="checkbox"], select, textarea, button, slider-input) {
   flex: 1 1 70%;
   min-width: 0;
+}
+/* ROLE 5 - a row of ONE cell is one full line, whatever it holds: the halo warning ("Halo is only
+   rendered if ..."), the relief-density note, and the four colspan=2 checkbox rows. A note is not a
+   label, so it must not take a label's basis - at 34.2% the halo warning set as five lines in a
+   third of the drawer, which is what the user reported. (1,1,2), so it must stay AFTER ROLES 3 and
+   4 to win on order; ROLE 2 cannot match here, since an only child has no sibling to follow. */
+#mapWheelDrawer tbody td:only-child {
+  flex: 1 1 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 /* FMG puts two number boxes in one cell and marks them .paired - the canvas width and height, the
    year and its era, the zoom extent's min and max. They are one control, so they share one line;
@@ -297,6 +348,32 @@ export const WHEEL_CSS = `
   line-height: 1;
   text-align: center;
   cursor: pointer;
+}
+/* The global filter buttons are the same class of bug as the cells above, one level out of the
+   table: "#mapFilters > button { width: 23% }" is a quarter of the 300px-ish options panel, which in
+   a 288px content box is 66px - and ".tabcontent button" carries
+   "overflow: hidden; white-space: nowrap; text-overflow: ellipsis", so "Grayscale" set as "Grays...".
+   Sized by their own words instead, wrapping to a second line when the app's font grows rather than
+   losing letters. (2,0,1) beats FMG's (1,0,1), so no !important is needed. */
+#mapWheelDrawer #mapFilters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 5px 6px;
+}
+#mapWheelDrawer #mapFilters > p { flex: 0 0 100%; }
+/* About's two action buttons are FMG's own flex row, and each carries an INLINE "flex: 1" - basis
+   ZERO, so neither ever asks for the width of its own words and the pair always splits the line,
+   giving "Interactive Tou..." / "Desktop Ap..." as soon as the app's font grows. Only !important
+   beats an inline style (the same justification the select rule below carries), and the basis has
+   to become the content for the wrap to have anything to measure. */
+#mapWheelDrawer .aboutActions { flex-wrap: wrap; }
+#mapWheelDrawer .aboutActions > button { flex: 1 1 auto !important; }
+#mapWheelDrawer #mapFilters > button {
+  width: auto;
+  max-width: 100%;
+  margin: 0;
+  padding: 4px 8px;
 }
 /* The block overrides above are author rules, so they beat the UA stylesheet's [hidden]{display:none}
    and the drawer's row filter would render every row it had just hidden. !important is the only way

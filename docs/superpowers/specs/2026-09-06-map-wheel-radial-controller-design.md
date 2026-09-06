@@ -397,29 +397,65 @@ slider rows are found by the same query and were broken the same way. The Style 
 varying with the element selected. The count is asserted in the browser test rather than described,
 so it cannot rot into an understatement.
 
-The rows are therefore laid out by **what each cell contains**, never by id:
+The rows are therefore laid out by **ROLE** — what a cell holds, and what follows it — never by id.
+Each rule states its own `flex-basis`, and the `td` rule states **no width at all**:
 
-| Cell contains | rule |
-| --- | --- |
-| no form control (affordance, label) | `flex: 0 1 auto; min-width: 18px` |
-| only compact controls (`number`, `color`, `output`) | `flex: 0 1 auto; min-width: 64px` |
-| a `range`, `text`, `.paired`, `checkbox`, `select`, `textarea`, `button` or `slider-input` | `flex: 1 1 70%; min-width: 0` |
-| `tr::after` (the tip line) | `flex: 0 0 100%` |
+| Role | how it is recognised | rule |
+| --- | --- | --- |
+| 1. affordance | no form control (a lock, a restore arrow, or nothing) | `flex: 0 1 max-content; min-width: 18px; max-width: 100%` |
+| 2. label | no form control, **and a control cell immediately after it** | + `min-width: 33%` |
+| 3. readout | only compact controls (`number`, `color`, `output`) | `flex: 0 1 64px; min-width: 64px` |
+| 4. control | a `range`, `text`, `.paired`, `checkbox`, `select`, `textarea`, `button` or `slider-input` | `flex: 1 1 70%; min-width: 0` |
+| 5. note / whole line | the row's **only** cell | `flex: 1 1 100%; min-width: 0; max-width: 100%` |
+| — | `tr::after` (the tip line) | `flex: 0 0 100%` |
 
-Neither the second nor the third rule states a width, because for a flex item a `flex-basis` beats
-the `width` its author gave it and a `min-width` raises the used size whatever the percentage says —
-so the cascade fight against `td:nth-of-type(n)` (1,1,2) never has to be fought. The one selector
-that does have to win on order is `#mapWheelDrawer tbody tr`, at (1,0,2) against
-`#styleContent table tr { display: table }`; a browser assertion covers it, because dropping the
-`tbody` leaves the style rows laid out as tables and breaks nothing else that is measured.
+**FMG's percentages are neutralised, not out-argued one at a time.** Three separate defects came out
+of them after the first pass, and all three were the same defect: `flex: 0 1 auto` resolves its basis
+*from* the `width` property, so every cell a role rule did not give an explicit basis to was still
+being sized by a column percentage tuned for FMG's own ~300px panel — inside a 288px content box,
+`#styleContent table td:nth-of-type(1) { width: 34.2% }` is 98.5px and
+`#optionsContent table td:nth-of-type(4) { width: 6% }` is 17.3px. Patching each symptom with a
+`min-width` left the mechanism intact and the next cell to overflow was the next bug. With a basis on
+every role and no `width` on `td`, an inherited `width: N%` can no longer reach the layout by any
+path, and the cascade fight against `td:nth-of-type(n)` (1,1,2) never has to be fought at all.
 
-**Rule order between the last two is load-bearing.** A `slider-input` cell and a `.paired` cell match
+**Why a label is sized by `max-content`.** The app's uiSize is a *body font size* — `changeUiSize`
+writes `body.style.fontSize = uiSize * 10 + "px"` and widens `#options` to `uiSize * 300` — but the
+drawer hosts the app's real forms at a **fixed** 340px. So the form's text grows while its columns do
+not, and a fixed column is guaranteed to be outgrown: at uiSize 2, "Halo opacity" is 124.9px of text
+in a 98.5px column and wrapped onto two lines while "Halo width" (106.6) and "Halo blur" (90.6)
+beside it did not. A label sized by its own text cannot do that, and when it genuinely will not fit
+it wraps against `max-width: 100%` rather than being clipped.
+
+**Why the label still carries a 33% floor.** It is not a column width; it is what keeps the control
+on a line of its own. `0.33W + 8 + 0.70W > W` at every W, so a *short* label cannot pull a 70% control
+up beside it and strand that control's readout on a third line. Expressed as a ratio, so the drawer's
+width cannot break it. The floor is on role 2 only: an affordance cell must stay a hit target, not a
+column, which is what tells the two apart — and "the cell a control follows" is the same role the
+label plays in the row.
+
+**Why the one-cell row is its own role.** A row of one cell is a full line, whatever it holds: the
+halo warning (`Halo is only rendered if "Rendering" option is set to "Best quality"!`), the
+relief-density note, and the four `colspan="2"` checkbox rows. A note is not a label and must not
+take a label's basis — at 34.2% the halo warning set as five lines in a third of the drawer. Role 5
+is (1,1,2), the same as roles 3 and 4, so it has to stay after them to win on document order; role 2
+cannot match here, since an only child has no sibling to follow.
+
+**Rule order between roles 3 and 4 is load-bearing.** A `slider-input` cell and a `.paired` cell match
 *both* the compact-readout selector and the control selector, at the same (1,1,2), so only document
 order picks the control rule. Reordering those two blocks re-breaks the layout, which is why the
 stylesheet says so at the point of the rule.
 
-70% is what makes the control wrap and what holds the pair together. The wrap holds at **any** width,
-because every width it competes with is a percentage too: 3% + 40% + 70% is over a line. Keeping the
+The one selector that has to win on order for a different reason is `#mapWheelDrawer tbody tr`, at
+(1,0,2) against `#styleContent table tr { display: table }`; a browser assertion covers it, because
+dropping the `tbody` leaves the style rows laid out as tables and breaks nothing else that is
+measured. `#mapWheelDrawer #styleElements tbody { display: none }` is there for the same class of
+tie: FMG hides the Style editor's inactive sections with `#styleElements tbody { display: none }`
+(1,0,1) plus an inline display on the current ones, and the skin's own `tbody { display: block }` is
+(1,0,1) too and is injected later — so it won, and the drawer showed **every** element's section at
+once until the user first touched the element select.
+
+70% is what makes the control wrap and what holds the pair together. Keeping the
 readout on that same line is **not** unconditional — it needs the readout's 64px floor and the 8px
 gap to fit beside 70%, i.e. `0.7W + 8 + 64 ≤ W`, so a content box of at least **240px**. The drawer
 is a fixed 340px by design (it hosts the app's real forms and does not scale with uiSize), leaving a
@@ -436,15 +472,40 @@ Two content-driven riders:
   in a row is a click target (lock, restore, regenerate), and at the form's inherited size its glyph
   box is 8px across, which is not a target.
 
+### The same class outside the table
+
+Two of the hosted blocks put controls outside a `<tr>`, and they were broken the same way:
+
+- `#mapFilters > button { width: 23% }` is a quarter of FMG's panel — 66px here — and
+  `.tabcontent button` carries `overflow: hidden; white-space: nowrap; text-overflow: ellipsis`, so
+  "Grayscale" rendered as "Grays…". The row is a wrapping flex line and the buttons are sized by
+  their own words; a second line costs nothing, a lost word costs the button's meaning.
+  `#mapWheelDrawer #mapFilters > button` is (2,0,1) against FMG's (1,0,1), so no `!important`.
+- About's two action buttons each carry an **inline** `flex: 1` — basis *zero*, so neither ever asks
+  for the width of its own words and the pair always splits the line ("Interactive Tou…" /
+  "Desktop Ap…"). `flex: 1 1 auto !important` on the pair plus `flex-wrap: wrap` on the row; only
+  `!important` beats an inline style, which is the same justification the `select` rule carries.
+
+`#viewMode > button { width: 30.7%; float: left }` is the third rule of this shape in
+`public/index.css`, but it lives in `#layersContent`, which the drawer does not host. Nothing to fix,
+and it is named here so the next reader does not have to check.
+
+### What was NOT changed
+
+The halo warning's italic is FMG's own inline `style="font-style: italic"`, and the drawer renders
+hosted content in the wheel's IBM Plex Sans where the app's panel uses `var(--monospace)`. Both are
+deliberate; the note read as "wrong font" because it was crammed into 98.5px, and the width is what
+was wrong with it.
+
 Measured on Options → People, "Cultures number", at uiSize 1 in a 288px content box:
 
-| | before | after |
-| --- | --- | --- |
-| lock cell | x 0, y 0, w 8.6 | x 0, y 0, w 18 |
-| label cell | x 0, y 12, w 115.2 | x 26, y 0, w 115.2 |
-| range cell | x 0, y 24, w 288 | x 0, y 24, w 216 |
-| readout cell | x 0, y 36, **w 17.3** | x 224, y 18, **w 64** |
-| row height | 96.2 | 82.2 |
+| | before the row layout | after it | after role sizing |
+| --- | --- | --- | --- |
+| lock cell | x 0, y 0, w 8.6 | w 18 | w 18 |
+| label cell | x 0, y 12, w 115.2 | w 115.2 (40%) | w 83.8 (its own text) |
+| range cell | x 0, y 24, w 288 | w 216 | w 216 |
+| readout cell | x 0, y 36, **w 17.3** | w 64 | w 64 |
+| row height | 96.2 | 82.2 | 82.2 |
 
 ### Consumers
 
@@ -639,6 +700,29 @@ All in scope:
   pointerdown lands inside it and "outside" is never true. The interactive parts opt back in with
   `pointer-events: auto` — `.mw-sector`, `.mw-tab`, `.mw-crumb` and the whole of `#mapWheelDrawer`,
   so the real controls it borrows stay usable. Labels (`.mw-label`) stay `none` by design.
+- **Stand aside for the app's own dialogs.** A style changed inside the drawer raises FMG's
+  confirmation, and that confirmation rendered UNDERNEATH the wheel: `#prompt` carries `z-index:
+  1000` and the wheel carried 1000 too, so the tie went to document order and the wheel's host is
+  appended to `<body>` after `#dialogs`; jQuery UI dialogs, whose z-index is assigned at runtime
+  around 100, lost by a wider margin. Two halves, and the second alone cannot settle it:
+  1. the wheel **closes** when the app raises a dialog. A `MutationObserver` on `<body>` (childList
+     and `style`/`class`, since a static pane opens by a `display` flip and a jQuery dialog by an
+     appended `.ui-dialog` wrapper) closes the wheel the moment an element matching
+     `#prompt, #alert, .ui-dialog` is shown that was **not** already shown. Conservative by
+     construction: a dialog the user already had open, a tooltip, a `tip()` message and any
+     transient node leave the wheel alone, and mutations wholly inside `#mapWheel` are ignored so the
+     hover repaint and the drawer's own borrowing cannot trigger it. That also returns the drawer's
+     borrowed application DOM before the dialog can reach for it — `#styleContent` is physically out
+     of `#options` while the drawer is open, which makes this a data hazard and not only a paint
+     order one. Disconnected in `closeMapWheel` alongside the theme observer, and **before**
+     `dropDrawer`, since handing the host back is itself a mutation. A leaf action needs no special
+     case: it already calls `closeMapWheel()` before it runs.
+  2. `#mapWheel` moves from `z-index: 1000` to **50**, so anything that does slip through still
+     paints correctly. The band is chosen against the real landscape in `public/index.css`: the map
+     and its overlays at 1, 2 and 10, then the dialog layer — `#helpAssistantBubble` 99,
+     `#pickerContainer` 100 (the colour picker the drawer's own colour inputs raise), the jQuery UI
+     dialogs jQuery seeds at 100, `#prompt` and `#alert` at 1000, and two banners at 9999 / 99999.
+     50 is the middle of the only gap there is.
 - **Viewport clamping**: a wheel opened near an edge is offset so it stays fully visible; with a
   drawer open, wheel and drawer clamp as one box. The centre moves; the ring is never rotated. A
   marker at the true click point keeps the anchor visible when the wheel is offset.
@@ -940,6 +1024,11 @@ needed — the hub in this concept carries tab type only, not entity names.
   wheel reserves more viewport room for its drawer; a theme change on `<html>` repaints the live
   wheel and a closed wheel stops watching; a `wheel` event inside the drawer scrolls it instead of
   dismissing, while one anywhere else still dismisses.
+  Plus the dialog guard, asserted as BEHAVIOUR and not as mechanism: showing `#prompt` over an open
+  drawer closes the wheel **and puts the borrowed host back in its original parent** (that second
+  assertion is the one that matters); an unrelated DOM change — a node appended, an attribute
+  written on the borrowed host — leaves the wheel open; and a dialog that was already showing when
+  the wheel opened never closes it.
 
 **Browser (Playwright, `playwright.local.config.ts`, which starts its own vite on :5211 — never 5173,
 and never the port a user session is browsing):**
@@ -973,6 +1062,28 @@ and never the port a user session is browsing):**
   `td { display: block; width: 100% }` skin.
   The same test asserts a `#styleContent` row computes `display: flex`, which is the only thing that
   covers the `tbody` in the row selector.
+- **No hosted line of text is wider than the box it is painted in** — the HORIZONTAL twin of the
+  `clippedControls()` sweep, which had asked the same question vertically since the third width fix
+  while nothing ever asked it sideways. That is exactly why "Grayscale" shipped as "Grays…". Three
+  properties, collected across all three hosted blocks at uiSize 0.8, 1 and 2 and asserted together
+  so one run reports every kind of failure: (a) no element with text of its own has
+  `scrollWidth > clientWidth`; (b) a row of one cell spans the row's full content width; (c) a label
+  cell — no control of its own, and a control cell immediately after it — renders at least its own
+  `max-content` width, capped at the line it sits on. Verified to fail against the code before the
+  role rules, with 6 truncations (including `BUTTON#grayscale: 66px box for 90px of text`), 6 crammed
+  notes and 54 squeezed labels (including `"Halo opacity": 98.5px for 124.9px of text`).
+- **uiSize is set the way the app sets it.** `changeUiSize` writes `body.style.fontSize = uiSize *
+  10 + "px"`, and the drawer hosts the app's real forms at a fixed width, so the body font is what
+  its labels and buttons are set in. Every uiSize sweep here used to move `#uiSize.value` alone,
+  which grew the ring and left the form at 10px — where none of the three width defects above
+  happens. The helper now moves both, which is what makes the sweeps able to see them.
+- The wheel **stands aside for an app dialog**: changing `#stylePreset` inside the Style drawer
+  raises FMG's own confirmation, and the assertions are that the dialog is visible, `#mapWheel` is
+  gone, and `#styleContent` is back inside `#options`. Verified to fail before the fix — the wheel
+  stayed open and `document.elementFromPoint` at the dialog's centre returned the wheel's hub tab.
+  The suite also stores a version in `localStorage` before the app loads, because FMG announces an
+  update six seconds after a load with none, and an unrelated one-shot dialog would otherwise close
+  a wheel a test was in the middle of driving.
 - The row locks stay usable: `#lock_cultures` is at least 14px wide, inside the drawer body, and two
   clicks toggle its class and put it back.
 - Moving the app's own theme while the wheel is open repaints the ring: the sector fills follow the
