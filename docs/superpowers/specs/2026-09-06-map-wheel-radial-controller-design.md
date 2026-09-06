@@ -93,50 +93,70 @@ A node has exactly one of `children`, `panel`, `run`, `toggle` or `pick`; a unit
 
 Four concentric bands `[innerRadius, outerRadius]`, at uiSize 1:
 
-| Level | Band | depth | rMid |
-| --- | --- | --- | --- |
-| 0 | `[58, 125]` | 67 | 91.5 |
-| 1 | `[130, 196]` | 66 | 163 |
-| 2 | `[201, 266]` | 65 | 233.5 |
-| 3 | `[271, 335]` | 64 | 303 |
+| Level | Band | depth | rMid | fit it must clear |
+| --- | --- | --- | --- | --- |
+| 0 | `[58, 130]` | 72 | 94 | 70.41 |
+| 1 | `[135, 205]` | 70 | 170 | 68.06 |
+| 2 | `[210, 280]` | 70 | 245 | 68.06 |
+| 3 | `[285, 355]` | 70 | 320 | 68.06 |
 
-### The band depths are sized to the labels, and that is the whole of it
+### The band depths are solved for the labels, and that is the whole of it
 
 The handoff's `[58,108] … [208,246]` table (depths 50/46/42/38) came with no statement of what a
 band had to hold, and the first sizing pass measured only label WIDTH against the sector's ARC.
-That is half the problem. **A label is an upright box on a ring, so which of its dimensions eats the
-band's radial depth depends on where the sector points**: a sector at 3 o'clock spends the depth on
-the widest text LINE, one at 12 o'clock on the whole STACK (icon, up to two text lines, an optional
-note). Nothing checked the radial direction, and a ×1.2 multiplier on the radii could not fix it —
-it grew the arc, which was never the binding constraint.
+**A label is an upright box centred on the band's mid-radius, so how much of the band's RADIAL depth
+it eats depends on where the sector points**: the widest text LINE at 3 o'clock, the whole STACK
+(icon, up to two text lines, an optional note) at 12 o'clock, and a mix of the two in between.
+Nothing checked the radial direction, and a ×1.2 multiplier on the radii could not fix it — it grew
+the arc, which was never the binding constraint. Measured over every label placement in the tree,
+**157 of 882 had ink outside their own sector**, worst 9.5px on `World configuration`.
 
-Measured in the browser over every label placement in the whole tree (both channels, every ring,
-every level, at uiSize 0.8/1/2): **141 of 882 placements had ink outside their own sector**, worst
-9.5px on `World configuration`, 8px on `Reset options`, 7.7px on `State labels`. The four levers, in
-the order they were applied:
+The maximum over all angles has a closed form, and it is what the band table is solved against. For
+an ink box of half-width `a` whose furthest edge is `reach` from the label's centre, the radial
+half-extent at sector angle `t` is `a·|cos t| + reach·|sin t|`, whose maximum over `t` is
+`hypot(a, reach)` — larger than either axis alone, and reached at an angle in between. The label's
+centre sits on the mid-radius, so that maximum *is* the distance from the mid-radius to the furthest
+ink, and the requirement is exactly
+
+    for every ink box in the stack:  2 · hypot(a, reach)  ≤  bandDepth(level)
+
+`labelRects(level)` enumerates those boxes — the icon, each text line, the note — and `labelFit`
+takes the maximum; a unit test holds every band to it. Both sides scale with uiSize, so asserting it
+once at scale 1 settles every size. Four levers made the numbers work:
 
 1. **The "▸" note came out of the text stack** and became a tick drawn in the SVG at the sector's
    outer edge (`markPath`, `MARK_SIZE`/`MARK_CLEAR`). Every parent sector used to spend a whole line
    of the band's depth saying it had children. Notes still render as text where they say something:
-   a layer's `on`/`off`, a subject's kind, the subject count.
-2. **The label is bounded structurally**, so the worst case is a fact rather than a hope: the text is
-   clamped to `LABEL.lines` (2) with an ellipsis, a word longer than the label breaks
-   (`overflow-wrap: anywhere`, `hyphens: auto`) instead of spilling, and the note line is capped at
-   `LABEL.noteWidth` (75%) of the label with an ellipsis. Without these an entity name of any length
-   could put ink outside the band whatever the radii.
+   a layer's `on`/`off`, a subject's kind, the subject count — and a sector with both gets both,
+   since the tick says "this opens a ring" and the note says what the sector is.
+2. **The label is bounded structurally**, which is what lets the bound be stated over ink boxes at
+   all rather than over the strings the tree happens to hold today: the text is clamped to
+   `LABEL.lines` (2) with an ellipsis, a word longer than the label breaks
+   (`overflow-wrap: anywhere`, `hyphens: auto`) instead of spilling, and the note is capped at
+   `LABEL.noteWidth` (65%) of the label with an ellipsis. The bound then takes every text line at
+   the FULL label width, because a broken word is exactly that wide — and the HERE channel labels
+   sectors with generated names (`Confederation of …`) that do break.
 3. **One label width for every level** — `LABEL.width` = 62, replacing 74/66. The root keeps its
    larger font and icon; only the width is shared. 62 is not free choice either: it is the width at
    which the longest word in the tree (`Monochrome`, 61.7px at the deep font) still sets on one line,
    and a label narrower than its longest word breaks that word across two lines with a letter
    stranded on the second.
-4. **The band depths were re-derived by measurement**, not arithmetic: the depths above are the
-   smallest at which no ink escapes any sector anywhere in the tree, plus a pixel. Two labels were
-   shortened rather than paid for in radius: `World configuration` → `Configure world` (the button's
-   own words) and the market action `Trade animation` → `Animate trade`.
+4. **The band depths satisfy the bound**, with the note's width cap (lever 2) trimming what they had
+   to be: the note sits at the end of the stack, so its `reach` is the largest in the label and its
+   width is what the depth pays for. Two labels were shortened rather than paid for in radius:
+   `World configuration` → `Configure world` (the button's own words) and the market action
+   `Trade animation` → `Animate trade`.
 
 `LABEL` lives in `geometry.ts` beside the band table, and `styles.ts` writes those very numbers into
-the stylesheet, so the two cannot drift. The result is **zero ink outside any sector across all 885
-label placements at uiSize 0.8, 1 and 2**, tightest clearance 0.9px, and no word broken mid-word.
+the stylesheet, so the two cannot drift. Every band clears its `labelFit` by at least 1.59px (the
+root's second text line is the binding box), and a browser measurement over the whole tree agrees:
+**zero ink outside any sector at uiSize 0.8, 1 and 2**, tightest measured clearance 2.75px, and no
+word broken mid-word.
+
+The cost is size: the box is 722px at uiSize 1, so on a viewport shorter than ~754px the second
+clamp scales the dial down rather than growing it with uiSize. That is the right trade — the clamp
+scales radii and labels together, so the fit above is a ratio it cannot break, whereas a shallower
+band breaks it outright.
 
 ### uiSize (uniform)
 
@@ -151,8 +171,8 @@ Missing or unreadable uiSize is 1. The values that were constants elsewhere are 
 `.mw-wheel` as `--mw-ui`, `--mw-box` and `--mw-drawer-offset` so the stylesheet can size labels, the
 hub and the drawer's offset from them.
 
-SVG `viewBox="-R -R 2R 2R"` rendered `2R` square, where `R = boxRadius(scale)` = 341 at scale 1
-(335 outer radius + 6 clearance for the hover growth; the shadow is drawn outside the box, which is
+SVG `viewBox="-R -R 2R 2R"` rendered `2R` square, where `R = boxRadius(scale)` = 361 at scale 1
+(355 outer radius + 6 clearance for the hover growth; the shadow is drawn outside the box, which is
 `overflow: visible`). `filter: drop-shadow(0 10px 26px rgba(38,28,12,.35))`.
 
 - **Depth is capped at 4 rings.** Deeper trees are restructured, never allowed to overflow.
@@ -165,9 +185,10 @@ SVG `viewBox="-R -R 2R 2R"` rendered `2R` square, where `R = boxRadius(scale)` =
 - Sector path is an annular wedge: `M innerStart → L outerStart → A(outer) → L innerEnd →
   A(inner, reversed) → Z`, large-arc flag set when the sweep exceeds π.
 - Hover expansion: hovered sector's **outer** radius +5px. Inner radius never moves.
-- Parent tick: a 4px triangle pointing outward, 2px inside the band's outer arc, on any sector that
-  opens a child ring and does not already carry a note line. Filled with the sector's ink, and
-  repainted with it on hover. This is the affordance the "▸" note line used to carry.
+- Parent tick: a 4px triangle pointing outward, 2px inside the band's outer arc, on **any** sector
+  that opens a child ring — a note line does not replace it, since the two say different things.
+  Filled with the sector's ink and repainted with it on hover. This is the affordance the "▸" note
+  line used to carry, at no cost in the band's depth.
 - Spine: for each level ≥ 1, a line at the parent's mid-angle from `BANDS[L-1][1]` to `BANDS[L][0]`,
   stroke `--dark-solid` (`#4a3a22`), `stroke-width 3`, `stroke-linecap round`. The drawer's
   connector is the same line.
@@ -179,10 +200,10 @@ more arc at its mid-radius than the label is wide (`LABEL.width` = 62). Therefor
 
 | Level | arc per label at the cap | max items |
 | --- | --- | --- |
-| 0 | `2π · 91.5 / 7` = 82px | **7** |
-| 1 | `5.906 · 163 / 11` = 88px | **11** |
-| 2 | `5.906 · 233.5 / 15` = 92px | **15** |
-| 3 | `5.906 · 303 / 19` = 94px | **19** |
+| 0 | `2π · 94 / 7` = 84px | **7** |
+| 1 | `5.906 · 170 / 11` = 91px | **11** |
+| 2 | `5.906 · 245 / 15` = 96px | **15** |
+| 3 | `5.906 · 320 / 19` = 99px | **19** |
 
 These caps are enforced by a unit test over the menu tree, not merely documented. They are also why
 the menu tree below is grouped the way it is. Arc was never the binding constraint — the band's
@@ -579,9 +600,10 @@ done by the SVG `<path>` underneath.
   avoid a Google Fonts dependency in the desktop build and a second icon vocabulary.)
 - The text is clamped to `LABEL.lines` = 2 lines with an ellipsis, and a word wider than the label
   breaks rather than spilling (`overflow-wrap: anywhere`, `hyphens: auto`). This is what bounds an
-  entity name of arbitrary length, and it is why the fit can be asserted rather than hoped for.
-- Optional third line: 8.5px, `opacity .68`, `letter-spacing .05em`, ellipsised at 75% of the label
-  width — `on`/`off` for layer toggles, the subject kind under an entity name, the subject count.
+  entity name of arbitrary length to a known set of ink boxes, which is what the band depths are
+  solved against (§ Geometry) — the fit is a property of those bounds, not of today's strings.
+- Optional third line: 8.5px, `opacity .68`, `letter-spacing .05em`, ellipsised at 65% of the label
+  width (it is the ink furthest from the mid-radius, so its width is what the band depth pays for) — `on`/`off` for layer toggles, the subject kind under an entity name, the subject count.
   "This has children" is **not** one of them: it is the SVG tick at the sector's outer edge, because
   a line of text costs the band's depth and a tick costs none.
 - Every one of these lengths comes from `LABEL` in `geometry.ts`, which `styles.ts` interpolates into
@@ -646,11 +668,14 @@ needed — the hub in this concept carries tab type only, not entity names.
   Plus: every radius scales uniformly with uiSize and by nothing else, `sectors(…, 1)` is identity,
   a 3px gap stays 3px as the dial grows, every ring at its cap has more arc per label than the label
   is wide, and `wheelScale` clamps to `[0.8, 2]` and then again to the viewport.
-  Plus the label-fit guard, which is the regression test for the overflow bug: every band is deeper
-  than `LABEL.width` (the sideways case) and deeper than `labelStack(level)` (the upright case), at
-  0.8/1/2; the parent tick has room outside the tallest label that carries one; and the stylesheet
-  really is written from those metrics. Geometry on one side, typography on the other — neither
-  side is a copy of the number it is checked against.
+  Plus the label-fit guard, which is the regression test for the overflow bug: for **every ink box**
+  `labelRects(level)` can produce — the icon, each text line at the full label width, the note at its
+  width cap — `2 · hypot(a, reach)` is inside the band's depth. That is the maximum over all sector
+  angles, not the two axes; asserting only `width` and `stack` passed while angles in between still
+  spilled. It needs asserting once because both sides scale with uiSize together, which is itself
+  asserted. Also: the parent tick has room outside the tallest label that carries one, and `LABEL`
+  equals the literal metrics the band table was solved for (an assertion against `LABEL` itself would
+  pass for any value, since `styles.ts` interpolates it).
   `markPath` is tested for shape and for staying inside its band at every angle and scale.
 - `palette.test.ts` — the fallback palette is byte-identical to the handoff when no theme is
   published; the app's variables are followed when they are; danger and layer-on stay literal;
@@ -689,8 +714,9 @@ needed — the hub in this concept carries tab type only, not entity names.
 - **No label's ink leaves its own sector.** Measured on what is actually painted — each text LINE's
   rect, clipped by the box that clamps it — against the band's inner and outer arcs and the wedge's
   radial edges, over the rings that hold the tree's hardest labels (the layer toggles, which carry a
-  note; the 15-item Edit ring; the Options ring; the HERE subject list) at uiSize 0.8, 1 and 2. This
-  is the regression test for the overflow bug and the only place it can be settled.
+  note; the 15-item Edit ring; the Options ring; the HERE subject list) at uiSize 0.8, 1 and 2. The
+  unit bound above is what makes the guarantee; this samples the real thing and would catch a
+  rendering that does not match the model it is solved against.
 - A parent sector is marked with a tick and not with a line of label text, and the tick is drawn
   inside its band.
 - The box grows with uiSize and is capped at `min(innerWidth, innerHeight) - 32` at the extreme,

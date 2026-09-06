@@ -208,10 +208,10 @@ export function renderWheel(
       }
       labelLayer.append(label);
 
-      // The tick is skipped where a note already takes the third line: that stack is tall enough to
-      // reach the band's outer edge, which is where the tick lives.
+      // The tick and the note are independent: the tick says "this opens a child ring", the note
+      // says what the sector is. A node with both (the HERE channel's "What's here") gets both.
       let mark: SVGPathElement | null = null;
-      if (nodeKind(node) === "children" && !note) {
+      if (nodeKind(node) === "children") {
         mark = document.createElementNS(SVG, "path");
         mark.setAttribute("class", "mw-mark");
         mark.setAttribute("d", markPath(mid, outer, scale));

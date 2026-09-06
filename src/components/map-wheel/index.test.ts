@@ -20,21 +20,23 @@ afterEach(() => closeMapWheel());
 const EDGE = boxRadius(1) + VIEWPORT_MARGIN;
 const DRAWER_RESERVE = drawerOffset(1) + DRAWER_WIDTH - boxRadius(1);
 
+// a window that can hold the scale-1 box; on a shorter one the wheel is scaled down first, so
+// clampCentre never sees a box bigger than the viewport in the app
 describe("clampCentre", () => {
   it("leaves a wheel that already fits where it is", () => {
-    expect(clampCentre(640, 360, 1280, 720)).toEqual([640, 360]);
+    expect(clampCentre(960, 540, 1920, 1080)).toEqual([960, 540]);
   });
 
   it("pushes a wheel opened at the top-left corner fully into view", () => {
-    const [x, y] = clampCentre(5, 5, 1280, 720);
+    const [x, y] = clampCentre(5, 5, 1920, 1080);
     expect(x).toBeGreaterThanOrEqual(EDGE);
     expect(y).toBeGreaterThanOrEqual(EDGE);
   });
 
   it("pushes a wheel opened at the bottom-right corner fully into view", () => {
-    const [x, y] = clampCentre(1275, 715, 1280, 720);
-    expect(x).toBeLessThanOrEqual(1280 - EDGE);
-    expect(y).toBeLessThanOrEqual(720 - EDGE);
+    const [x, y] = clampCentre(1915, 1075, 1920, 1080);
+    expect(x).toBeLessThanOrEqual(1920 - EDGE);
+    expect(y).toBeLessThanOrEqual(1080 - EDGE);
   });
 
   it("reserves room for an open drawer on the side it opens", () => {
@@ -85,8 +87,10 @@ describe("openMapWheel", () => {
     const wheel = document.querySelector<HTMLElement>("#mapWheel .mw-wheel")!;
     const scale = Number(wheel.style.getPropertyValue("--mw-ui"));
 
-    // 1.5 was asked for; a 768px-high jsdom window holds only as much of the box as fits in it
-    expect(scale).toBeCloseTo((768 - 32) / (boxRadius(1) * 2), 6);
+    // 1.5 was asked for, and a 768px-high jsdom window cannot hold that. Asserted on the OBSERVABLE
+    // - the rendered box fills the window bar the 32px margin - rather than by recomputing
+    // wheelScale's own arithmetic, which would pass whatever that arithmetic said.
+    expect(boxRadius(scale) * 2).toBeCloseTo(768 - 32, 6);
     expect(scale).toBeLessThan(1.5);
     expect(wheel.style.getPropertyValue("--mw-box")).toBe(`${boxRadius(scale) * 2}px`);
     expect(wheel.style.getPropertyValue("--mw-drawer-offset")).toBe(`${drawerOffset(scale)}px`);

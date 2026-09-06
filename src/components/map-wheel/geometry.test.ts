@@ -9,7 +9,9 @@ import {
   GAP_PX,
   ITEM_CAPS,
   LABEL,
+  labelFit,
   labelPoint,
+  labelRects,
   labelStack,
   MARK_CLEAR,
   MARK_SIZE,
@@ -156,51 +158,79 @@ describe("bands", () => {
   });
 });
 
-// The bug this guards: a label is an upright box, so which of its two dimensions eats the band's
-// RADIAL depth depends on where the sector points. At 3 o'clock the depth has to cover the widest
-// TEXT LINE; at 12 o'clock it has to cover the whole STACK. Sizing labels against the arc alone
-// left ink outside 141 of 882 measured placements. Both sides below are derived - the band table
-// from BANDS, the label from LABEL - and the stylesheet is written from that same LABEL, so no
-// third number can drift in between.
-describe("a label fits the band it sits in", () => {
+// The bug this guards: a label is an upright box centred on the band's mid-radius, so the share of
+// the band's RADIAL depth it eats depends on where the sector points - the widest text LINE at
+// 3 o'clock, the whole STACK at 12 o'clock, a mix in between. Asserting those two angles is not the
+// same as asserting the maximum, and it was the angles in between that still spilled: for an ink box
+// of half-width `a` reaching `reach` from the label's centre, the radial half-extent at angle t is
+// `a*|cos t| + reach*|sin t|`, whose maximum over t is `hypot(a, reach)` - larger than either.
+//
+// The assertion below is that maximum, per ink box, and it is deliberately blind to the strings the
+// tree happens to hold today: text lines are taken at the FULL label width, because
+// `overflow-wrap: anywhere` makes a broken long word exactly that wide, and the HERE channel labels
+// sectors with generated names ("Confederation of …") that do break.
+describe("every ink box a label can produce fits its band, at every sector angle", () => {
   const levels = [0, 1, 2, 3];
 
-  it("holds the widest text line a label can produce, at a sector pointing sideways", () => {
-    for (const level of levels) expect(bandDepth(level), `level ${level}`).toBeGreaterThan(LABEL.width);
-  });
-
-  it("holds the tallest stack a label can produce, at a sector pointing up", () => {
+  it("holds the furthest-reaching ink box at each level", () => {
     for (const level of levels) {
-      expect(bandDepth(level), `level ${level}`).toBeGreaterThan(labelStack(level));
+      for (const rect of labelRects(level)) {
+        const needs = 2 * Math.hypot(rect.half, rect.reach);
+        expect(bandDepth(level), `level ${level}, ${rect.name}`).toBeGreaterThan(needs);
+      }
+      expect(bandDepth(level), `level ${level}`).toBeGreaterThan(labelFit(level));
     }
   });
 
-  it("leaves the parent tick room outside the label it marks", () => {
-    // the tick is only drawn where no note line is, so that is the stack it has to clear
+  it("covers the two axes the earlier, weaker bound checked", () => {
+    // sideways is `hypot(width/2, 0) * 2` and upright is `hypot(0, stack/2) * 2`, so both are
+    // corollaries of the bound above rather than assertions of their own
     for (const level of levels) {
-      const clearance = (bandDepth(level) - labelStack(level, LABEL.lines, false)) / 2;
+      expect(labelFit(level)).toBeGreaterThanOrEqual(LABEL.width);
+      expect(labelFit(level)).toBeGreaterThanOrEqual(labelStack(level));
+    }
+  });
+
+  it("needs asserting only once, because both sides scale with uiSize together", () => {
+    for (const scale of [0.8, 1, 2]) {
+      for (const level of levels) {
+        expect(bandDepth(level, scale) / scale).toBeCloseTo(bandDepth(level), 10);
+        expect(bandDepth(level, scale)).toBeGreaterThan(labelFit(level) * scale);
+      }
+    }
+  });
+
+  it("leaves the parent tick room outside the tallest label that carries one", () => {
+    // the tick sits at the band's outer edge on any sector with children, note line or not
+    for (const level of levels) {
+      const clearance = (bandDepth(level) - labelStack(level)) / 2;
       expect(clearance, `level ${level}`).toBeGreaterThan(MARK_SIZE + MARK_CLEAR);
     }
   });
 
-  it("writes those very metrics into the stylesheet", () => {
-    expect(WHEEL_CSS).toContain(`width: calc(${LABEL.width}px * var(--mw-ui, 1))`);
-    expect(WHEEL_CSS).toContain(`font-size: calc(${LABEL.deep.font}px * var(--mw-ui, 1))`);
-    expect(WHEEL_CSS).toContain(`font-size: calc(${LABEL.root.font}px * var(--mw-ui, 1))`);
-    expect(WHEEL_CSS).toContain(`line-height: ${LABEL.lineHeight}`);
-    expect(WHEEL_CSS).toContain(`-webkit-line-clamp: ${LABEL.lines}`);
-    expect(WHEEL_CSS).toContain(`max-width: ${Math.round(LABEL.noteWidth * 100)}%`);
-    // a word longer than the label must break rather than reach outside the band
+  // Expected values are literals on purpose: styles.ts interpolates LABEL, so comparing the CSS
+  // back against LABEL would pass for any value at all. These numbers are the ones the band table
+  // above was solved for, so changing a metric has to change this test too.
+  it("is the same label the stylesheet paints", () => {
+    expect(LABEL).toEqual({
+      width: 62,
+      lines: 2,
+      gap: 2,
+      lineHeight: 1.15,
+      note: 8.5,
+      noteWidth: 0.65,
+      root: { font: 10.5, icon: 19 },
+      deep: { font: 9.5, icon: 16 }
+    });
+    expect(WHEEL_CSS).toContain("width: calc(62px * var(--mw-ui, 1))");
+    expect(WHEEL_CSS).toContain("font-size: calc(9.5px * var(--mw-ui, 1))");
+    expect(WHEEL_CSS).toContain("font-size: calc(10.5px * var(--mw-ui, 1))");
+    expect(WHEEL_CSS).toContain("line-height: 1.15");
+    expect(WHEEL_CSS).toContain("-webkit-line-clamp: 2");
+    expect(WHEEL_CSS).toContain("max-width: 65%");
+    // and the two rules that bound the ink to that label however long a name is
     expect(WHEEL_CSS).toContain("overflow-wrap: anywhere");
-  });
-
-  it("scales the whole fit with uiSize, so no size can break it", () => {
-    for (const scale of [0.8, 1, 2]) {
-      for (const level of levels) {
-        expect(bandDepth(level, scale)).toBeGreaterThan(LABEL.width * scale);
-        expect(bandDepth(level, scale)).toBeGreaterThan(labelStack(level) * scale);
-      }
-    }
+    expect(WHEEL_CSS).toContain("text-overflow: ellipsis");
   });
 });
 

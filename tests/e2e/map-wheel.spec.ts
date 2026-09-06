@@ -1,5 +1,5 @@
 import { type Browser, type BrowserContext, expect, type Page, test } from "@playwright/test";
-import { BANDS } from "../../src/components/map-wheel/geometry";
+import { BANDS, boxRadius } from "../../src/components/map-wheel/geometry";
 
 // The map wheel is a radial context controller opened by right-clicking the map. Unit tests cover
 // the geometry, the menu tree and the drawer's borrow/restore in isolation; only a browser can
@@ -267,10 +267,15 @@ test.describe("map wheel", () => {
     expect(centre.x).toBeLessThan(page.viewportSize()!.width / 2 - 200); // really off-centre
 
     // clear of the ring's centre by exactly the --mw-drawer-offset the wheel published
-    const offset = await page
-      .locator("#mapWheel .mw-wheel")
-      .evaluate(el => Number.parseFloat(getComputedStyle(el).getPropertyValue("--mw-drawer-offset")));
-    expect(offset).toBeGreaterThan(BANDS[3][1]); // clear of the outer ring, not of some old constant
+    const [offset, ui] = await page.locator("#mapWheel .mw-wheel").evaluate(el => {
+      const style = getComputedStyle(el);
+      return [
+        Number.parseFloat(style.getPropertyValue("--mw-drawer-offset")),
+        Number.parseFloat(style.getPropertyValue("--mw-ui"))
+      ];
+    });
+    // clear of the outer ring at the scale actually rendered, not of some old constant
+    expect(offset).toBeGreaterThan(BANDS[3][1] * ui);
     const side = await page.locator("#mapWheelDrawer").getAttribute("data-side");
     const gap = side === "right" ? drawer.x - centre.x : centre.x - (drawer.x + drawer.width);
     expect(gap).toBeCloseTo(offset, -1);
@@ -522,10 +527,17 @@ test.describe("map wheel", () => {
     };
 
     const [small, normal, extreme] = [await boxAt("0.8"), await boxAt("1"), await boxAt("3")];
+    // uiSize is followed while there is room for it...
     expect(normal).toBeGreaterThan(small);
-    expect(extreme).toBeGreaterThan(normal);
-    // 720px tall viewport: the second clamp caps the box at min(w, h) - 32 however large uiSize gets
+    // 0.8 is under the cap, so the rendered box is exactly the geometry's box at that scale
+    expect(small).toBeCloseTo(boxRadius(0.8) * 2, 0);
+    // ...and the second clamp caps the box at min(w, h) - 32 however large uiSize gets. In this
+    // 720px-tall viewport the cap binds at uiSize 1 already: the labels the bands are sized to hold
+    // need a box wider than the window is tall, so the dial is scaled down to fit, uniformly, and
+    // the fit inside each band is a ratio that scaling cannot break.
     expect(extreme).toBeCloseTo(720 - 32, 0);
+    expect(normal).toBeCloseTo(720 - 32, 0);
+    expect(extreme).toBeGreaterThanOrEqual(normal);
 
     await page.evaluate(() => {
       (document.getElementById("uiSize") as HTMLInputElement).value = "1";

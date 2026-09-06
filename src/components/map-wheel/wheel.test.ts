@@ -86,6 +86,18 @@ describe("renderWheel", () => {
     expect(container.querySelectorAll("path.mw-mark").length).toBe(2);
   });
 
+  // The tick and the note are independent - "What's here" in the HERE channel has children AND a
+  // count to show, and suppressing the tick left the one sector that always opens a ring unmarked.
+  it("gives a node with both children and a note the tick and the note", () => {
+    const noted: WheelRoots = {
+      menu: () => [leaf("What's here", { note: "9 here", children: [leaf("Burg", { pick: 0 })] })],
+      here: () => []
+    };
+    renderWheel(container, noted, state(), cb());
+    expect(container.querySelector(".mw-note")?.textContent).toBe("9 here");
+    expect(container.querySelectorAll("path.mw-mark").length).toBe(1);
+  });
+
   it("gives a note line only to a node that has something to say in it", () => {
     renderWheel(container, roots, state({ path: [0, 0] }), cb());
     const notes = [...container.querySelectorAll(".mw-note")].map(n => n.textContent);
