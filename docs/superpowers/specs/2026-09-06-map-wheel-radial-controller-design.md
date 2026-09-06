@@ -386,9 +386,15 @@ Those cells carry **column** widths from `public/index.css` —
 `#optionsContent table td:nth-of-type(1) {width: 3%}`, `nth-of-type(2)` 40%, `nth-of-type(4)` 6%,
 `#styleContent table td:nth-of-type(1) {width: 34.2%}`. Declaring the cells `display: block` turned
 each of those into a whole line's width, so every row stacked all of its cells: a lock mark floated
-above each label, and the two rows pairing an `input[type=range]` with an `input[type=number]`
-readout put the pair on two lines with the readout at 6% of the drawer — 17px, which reads as a tiny
-empty box. That is what the user photographed on Options → People.
+above each label, and every row pairing an `input[type=range]` with an `input[type=number]` readout
+put the pair on two lines with the readout at 6% of the drawer — 17px, which reads as a tiny empty
+box. That is what the user photographed on Options → People.
+
+**Ten** `#optionsContent` rows carry that pair, not the two the markup spells out: `<slider-input>`
+builds its range and its number in **light DOM** (`src/components/slider-input.ts`), so the eight
+slider rows are found by the same query and were broken the same way. The Style editor adds more,
+varying with the element selected. The count is asserted in the browser test rather than described,
+so it cannot rot into an understatement.
 
 The rows are therefore laid out by **what each cell contains**, never by id:
 
@@ -403,11 +409,21 @@ Neither the second nor the third rule states a width, because for a flex item a 
 the `width` its author gave it and a `min-width` raises the used size whatever the percentage says —
 so the cascade fight against `td:nth-of-type(n)` (1,1,2) never has to be fought. The one selector
 that does have to win on order is `#mapWheelDrawer tbody tr`, at (1,0,2) against
-`#styleContent table tr { display: table }`.
+`#styleContent table tr { display: table }`; a browser assertion covers it, because dropping the
+`tbody` leaves the style rows laid out as tables and breaks nothing else that is measured.
 
-70% is what makes the layout hold at any drawer width, because every width it competes with is a
-percentage too: 3% + 40% + 70% is over a line, so the control always starts a new one, and
-70% + 6% is under one, so its readout always follows it onto *that* line rather than onto a third.
+**Rule order between the last two is load-bearing.** A `slider-input` cell and a `.paired` cell match
+*both* the compact-readout selector and the control selector, at the same (1,1,2), so only document
+order picks the control rule. Reordering those two blocks re-breaks the layout, which is why the
+stylesheet says so at the point of the rule.
+
+70% is what makes the control wrap and what holds the pair together. The wrap holds at **any** width,
+because every width it competes with is a percentage too: 3% + 40% + 70% is over a line. Keeping the
+readout on that same line is **not** unconditional — it needs the readout's 64px floor and the 8px
+gap to fit beside 70%, i.e. `0.7W + 8 + 64 ≤ W`, so a content box of at least **240px**. The drawer
+is a fixed 340px by design (it hosts the app's real forms and does not scale with uiSize), leaving a
+288px content box, comfortably over the floor. If the drawer width ever becomes variable, 240px is
+the number that has to be respected.
 
 Two content-driven riders:
 
@@ -903,11 +919,16 @@ and never the port a user session is browsing):**
 - **Every hosted ROW lays out**, over all three hosted blocks (`#optionsContent` in six themes,
   `#styleContent`, `#aboutContent`) at uiSize 0.8, 1 and 2. Three properties, because the two
   assertions above both passed while every cell of every row was stacked on a line of its own:
-  (a) no visible form control renders narrower than 40px — `#culturesOutput` was 17.3px, the
-  apparently empty box the user photographed; (b) where a row holds both an `input[type=range]` and
-  an `input[type=number]`, their bounding boxes overlap vertically, i.e. the slider and its readout
-  are on one line; (c) the `clippedControls()` sweep still returns empty. (a) and (b) were both
-  verified to fail against the previous `td { display: block; width: 100% }` skin.
+  (a) no visible `input`, `select`, `textarea` or **`output`** renders narrower than 40px —
+  `#culturesOutput` was 17.3px, the apparently empty box the user photographed, and `#manorsOutput`
+  is the `<output>` in the same 6% column; (b) where a row holds both an `input[type=range]` and an
+  `input[type=number]`, their bounding boxes overlap vertically, i.e. the slider and its readout are
+  on one line — **ten** option rows per pass, since `slider-input`'s light DOM is found by the same
+  query, and the count itself is asserted; (c) the `clippedControls()` sweep still returns empty.
+  (a) and (b) were both verified to fail against the previous
+  `td { display: block; width: 100% }` skin.
+  The same test asserts a `#styleContent` row computes `display: flex`, which is the only thing that
+  covers the `tbody` in the row selector.
 - The row locks stay usable: `#lock_cultures` is at least 14px wide, inside the drawer body, and two
   clicks toggle its class and put it back.
 - Moving the app's own theme while the wheel is open repaints the ring: the sector fills follow the

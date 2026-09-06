@@ -791,11 +791,16 @@ test.describe("map wheel", () => {
 
   // Does a hosted ROW lay out, as opposed to a hosted CONTROL fitting its own text? Nothing had ever
   // asked. The skin used to declare `table, tbody, tr, td { display: block; width: 100% }`, so every
-  // cell of every row went on a line of its own: the lock affordance floated above its label, and on
-  // the two rows where a `type="range"` is paired with a `type="number"` readout the pair was split
-  // across two lines - with the readout landing at 6% of the drawer (17px, an apparently empty box)
-  // because `#optionsContent table td:nth-of-type(4) { width: 6% }` is a column width, meaningless
-  // once the cell is a block. The user photographed it on Options -> People.
+  // cell of every row went on a line of its own: the lock affordance floated above its label, and
+  // every row pairing a `type="range"` with a `type="number"` readout was split across two lines -
+  // with the readout landing at 6% of the drawer (17px, an apparently empty box) because
+  // `#optionsContent table td:nth-of-type(4) { width: 6% }` is a column width, meaningless once the
+  // cell is a block. The user photographed it on Options -> People.
+  //
+  // Ten rows of `#optionsContent` carry that pair, not the two the markup spells out: `<slider-input>`
+  // builds its range and its number in LIGHT DOM (src/components/slider-input.ts), so the eight
+  // slider rows are found by the same query. The Style editor adds more, varying with the element
+  // selected. `paired` below is returned so the count can be asserted rather than described.
   //
   // Three properties, measured rather than assumed:
   //   (a) no visible form control is rendered too narrow to use;
@@ -803,17 +808,27 @@ test.describe("map wheel", () => {
   //   (c) nothing is clipped, which is the sweep the earlier fixes left behind.
   const MIN_CONTROL_WIDTH = 40;
 
-  const rowLayout = (): Promise<{ narrow: string[]; split: string[] }> =>
+  interface RowLayout {
+    narrow: string[];
+    split: string[];
+    paired: number;
+  }
+
+  const rowLayout = (): Promise<RowLayout> =>
     page.locator("#mapWheelDrawer").evaluate((root, min) => {
       const narrow: string[] = [];
       const split: string[] = [];
+      let paired = 0;
       const shown = (el: HTMLElement) => el.offsetParent !== null;
 
       for (const row of root.querySelectorAll<HTMLTableRowElement>("tr")) {
         if (!shown(row)) continue;
 
-        // a colour swatch and the app-wide hidden checkboxes are meant to be small or absent
-        for (const el of row.querySelectorAll<HTMLInputElement | HTMLSelectElement>("input, select, textarea")) {
+        // <output> is a readout like any other and is measured with them; a colour swatch and the
+        // app-wide hidden checkboxes are meant to be small or absent
+        for (const el of row.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLOutputElement>(
+          "input, select, textarea, output"
+        )) {
           if (!shown(el) || ["color", "checkbox", "radio", "hidden"].includes(el.type)) continue;
           const width = el.getBoundingClientRect().width;
           if (width < min) narrow.push(`#${el.id || el.type}: ${width.toFixed(1)}px wide`);
@@ -822,13 +837,14 @@ test.describe("map wheel", () => {
         const range = row.querySelector<HTMLInputElement>('input[type="range"]');
         const readout = row.querySelector<HTMLInputElement>('input[type="number"]');
         if (!range || !readout || !shown(range) || !shown(readout)) continue;
+        paired++;
         const a = range.getBoundingClientRect();
         const b = readout.getBoundingClientRect();
         const overlap = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
         if (overlap <= 0) split.push(`#${range.id} at y${a.top.toFixed(0)}, #${readout.id} at y${b.top.toFixed(0)}`);
       }
 
-      return { narrow, split };
+      return { narrow, split, paired };
     }, MIN_CONTROL_WIDTH);
 
   test("lays every hosted row out instead of stacking its cells", async () => {
@@ -849,6 +865,7 @@ test.describe("map wheel", () => {
       await page.evaluate(v => {
         (document.getElementById("uiSize") as HTMLInputElement).value = v;
       }, uiSize);
+      let optionPairs = 0;
 
       for (const drill of drills) {
         await openWheel();
@@ -861,9 +878,27 @@ test.describe("map wheel", () => {
         expect(layout.narrow, `${where}: unusably narrow`).toEqual([]);
         expect(layout.split, `${where}: slider split from its readout`).toEqual([]);
         expect(await clippedControls(), `${where}: clipped`).toEqual([]);
+        if (drill[0] === "Options") optionPairs += layout.paired;
+
+        // FIX: the row selector is `tbody tr` so that it matches `#styleContent table tr
+        // { display: table }` at equal specificity (1,0,2) and wins on document order. Drop the
+        // tbody and the style rows silently keep FMG's table layout - which no other assertion here
+        // catches, since those rows stay wide enough and hold no range/number pair.
+        if (drill[0] === "Style") {
+          const rowDisplay = await page
+            .locator("#mapWheelDrawer #styleContent tr")
+            .first()
+            .evaluate(el => getComputedStyle(el).display);
+          expect(rowDisplay, `${where}: style rows are not laid out by the skin`).toBe("flex");
+        }
 
         await page.keyboard.press("Escape");
       }
+
+      // the pair assertion above guards TEN option rows, not the two the markup spells out:
+      // <slider-input> builds its range and number in light DOM, so the eight slider rows are found
+      // by the same query. Asserted, so the claim cannot rot into an understatement.
+      expect(optionPairs, `uiSize ${uiSize}: range/number rows swept`).toBe(10);
     }
 
     await page.evaluate(() => {

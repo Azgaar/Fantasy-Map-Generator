@@ -255,10 +255,19 @@ export const WHEEL_CSS = `
   flex: 0 1 auto;
   min-width: 64px;
 }
-/* The control itself. 70% is what forces the wrap and what holds the pair together, and it holds at
-   any drawer width because every width it competes with is a percentage too: 3% + 40% + 70% is over
-   a line, so the control always starts a new one, and 70% + 6% is under one, so its readout always
-   follows it onto that line rather than onto a third. */
+/* an <output> is a readout too, and inline, so it would not take the cell the rule above sized */
+#mapWheelDrawer td > output { display: block; text-align: right; font-size: 12px; }
+/* The control itself. 70% is what forces the wrap and what holds the pair together: 3% + 40% + 70%
+   is over a line, so the control always starts a new one, and 70% + 6% is under one, so its readout
+   follows it onto THAT line rather than onto a third. The percentages make the first half hold at
+   any width; the second half needs the readout's 64px floor to fit too, so it holds while the
+   content box is at least 240px (0.7W + 8 + 64 <= W). The drawer is a fixed 340px wide by design -
+   it hosts the app's real forms and does not scale - which leaves a 288px content box.
+
+   ORDER IS LOAD-BEARING HERE. A slider-input cell and a .paired cell match this selector AND the
+   compact-readout selector above at the same (1,1,2), because slider-input's light DOM holds a
+   number input and .paired cells are number inputs; only document order picks the control rule.
+   Moving these two blocks past each other re-breaks the layout, and no test names the order. */
 #mapWheelDrawer td:has(input[type="range"], input[type="text"], input.paired, input[type="checkbox"], select, textarea, button, slider-input) {
   flex: 1 1 70%;
   min-width: 0;
