@@ -14,6 +14,10 @@ beforeEach(() => {
           <tr><td><input id="beta"></td></tr>
           <tr><td><input id="gamma"></td></tr>
         </tbody></table>
+        <p>Interface settings</p>
+        <table><tbody>
+          <tr><td><input id="delta"></td></tr>
+        </tbody></table>
       </div>
       <div id="after"></div>
     </div>`;
@@ -54,7 +58,22 @@ describe("openDrawer", () => {
   it("hides exactly the rows outside the filter", () => {
     openDrawer(overlay, { host: "optionsContent", title: "Options", only: ["beta"] }, "right", () => {});
     const rows = [...document.querySelectorAll("#optionsContent tr")] as HTMLElement[];
-    expect(rows.map(r => r.hidden)).toEqual([true, false, true]);
+    expect(rows.map(r => r.hidden)).toEqual([true, false, true, true]);
+  });
+
+  it("hides a table whose every row was filtered away, and the heading above it", () => {
+    openDrawer(overlay, { host: "optionsContent", title: "Options", only: ["beta"] }, "right", () => {});
+    const tables = [...document.querySelectorAll("#optionsContent table")] as HTMLElement[];
+    const headings = [...document.querySelectorAll("#optionsContent p")] as HTMLElement[];
+    // the first table keeps a row, so it and its heading stay; the second is emptied and both go
+    expect([tables[0].hidden, headings[0].hidden]).toEqual([false, false]);
+    expect([tables[1].hidden, headings[1].hidden]).toEqual([true, true]);
+  });
+
+  it("keeps every heading when the filter leaves a row in each table", () => {
+    openDrawer(overlay, { host: "optionsContent", title: "Options", only: ["beta", "delta"] }, "right", () => {});
+    const kept = [...document.querySelectorAll("#optionsContent table, #optionsContent p")] as HTMLElement[];
+    expect(kept.map(el => el.hidden)).toEqual([false, false, false, false]);
   });
 
   it("does nothing when the host id does not exist", () => {
@@ -73,11 +92,11 @@ describe("closeDrawer", () => {
     expect(host.nextElementSibling!.id).toBe("after");
   });
 
-  it("clears every hidden flag it set", () => {
+  it("clears every hidden flag it set, on rows, tables and headings alike", () => {
     openDrawer(overlay, { host: "optionsContent", title: "Options", only: ["beta"] }, "right", () => {});
     closeDrawer();
-    const rows = [...document.querySelectorAll("#optionsContent tr")] as HTMLElement[];
-    expect(rows.every(r => !r.hidden)).toBe(true);
+    const all = [...document.querySelectorAll("#optionsContent tr, #optionsContent table, #optionsContent p")];
+    expect((all as HTMLElement[]).filter(el => el.hidden)).toEqual([]);
   });
 
   it("leaves a row alone that was already hidden before the drawer opened", () => {

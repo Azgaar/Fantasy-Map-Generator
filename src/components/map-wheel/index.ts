@@ -28,6 +28,9 @@ let openPanel: { path: number[]; mid: number; side: "left" | "right" } | null = 
 // set by openMapWheel, cleared by closeMapWheel; a stale wheel must never keep answering keys
 let keyHandler: ((event: KeyboardEvent) => boolean) | null = null;
 
+/** Re-clamps and moves the live wheel. Set by openMapWheel so any exit path can undo a drawer shift. */
+let recentre: ((drawerSide: "left" | "right" | null) => void) | null = null;
+
 /** Offset the centre so the wheel (and its drawer, if any) stays fully on screen. Never rotates. */
 export function clampCentre(
   x: number,
@@ -48,6 +51,7 @@ export function clampCentre(
 function dropDrawer(): void {
   openPanel = null;
   closeDrawer();
+  recentre?.(null); // the wheel gave up room for the drawer; take it back
 }
 
 /** A drawer survives a state change only while its own sector is still the chosen one */
@@ -59,6 +63,7 @@ export function closeMapWheel(): void {
   host.remove();
   host = null;
   keyHandler = null;
+  recentre = null;
   window.removeEventListener("keydown", onKeyDown, true);
   window.removeEventListener("wheel", closeMapWheel, true);
   window.removeEventListener("pointerdown", onPointerDown, true);
@@ -112,9 +117,17 @@ export function openMapWheel(event: MouseEvent, roots: WheelRoots, onPickSubject
   wheel.className = "mw-wheel";
   overlay.append(wheel);
 
-  const [cx, cy] = clampCentre(event.clientX, event.clientY, window.innerWidth, window.innerHeight);
-  wheel.style.left = `${cx}px`;
-  wheel.style.top = `${cy}px`;
+  // The wheel and an open drawer clamp as one bounding box, so opening a panel can push the ring
+  // off the drawer's side and closing it has to give that room back.
+  let cx = 0;
+  let cy = 0;
+  const moveCentre = (drawerSide: "left" | "right" | null): void => {
+    [cx, cy] = clampCentre(event.clientX, event.clientY, window.innerWidth, window.innerHeight, drawerSide);
+    wheel.style.left = `${cx}px`;
+    wheel.style.top = `${cy}px`;
+  };
+  recentre = moveCentre;
+  moveCentre(null);
 
   let state: WheelState = { mode: "here", path: [], hot: null };
   // the live ring's hover handle; replaced by every structural redraw
@@ -133,7 +146,10 @@ export function openMapWheel(event: MouseEvent, roots: WheelRoots, onPickSubject
     },
     onPanel: (spec, mid) => {
       const side = pickSide(mid, cx, window.innerWidth);
-      openDrawer(overlay, spec, side, () => {
+      moveCentre(side);
+      // the drawer is a child of .mw-wheel: its left/top percentages resolve against the 516px wheel
+      // box, so it tracks the ring instead of the middle of the viewport
+      openDrawer(wheel, spec, side, () => {
         dropDrawer();
         state = { ...state, path: state.path.slice(0, -1) };
         draw();

@@ -7,6 +7,7 @@
 // node under the pointer; the mouseleave/mouseenter that follows rebuilds again, and the loop that
 // makes both restarts the entry animation and swallows every mouse press.
 import { Layers } from "@/components/layers";
+import { DRAWER_ID } from "./drawer";
 import { arcPath, BANDS, HOVER_GROW, labelPoint, MAX_DEPTH, type Sector, sectors, spineLine } from "./geometry";
 import { childrenOf, type DrawerSpec, nodeKind, type WheelNode } from "./types";
 
@@ -131,7 +132,9 @@ export function renderWheel(
   state: WheelState,
   cb: WheelCallbacks
 ): WheelHandle {
-  container.textContent = "";
+  // Everything the ring owns goes, but not the drawer: it is a sibling here and holds live app DOM
+  // borrowed out of #options, which a redraw must never carry off.
+  for (const child of [...container.children]) if (child.id !== DRAWER_ID) child.remove();
   const levels = resolveLevels(roots, state);
 
   const svg = document.createElementNS(SVG, "svg");

@@ -116,13 +116,16 @@ export const WHEEL_CSS = `
 #mapWheel .mw-crumb.is-last { color: #3b3226; font-weight: 600; }
 #mapWheel .mw-crumb-sep { opacity: .45; margin: 0 5px; }
 
+/* Child of .mw-wheel, not of the host: the percentages below have to resolve against the 516px
+   wheel box, or the drawer lands beside the middle of the viewport instead of beside the ring.
+   532px is 2 x clampCentre's smallest centre offset, so a drawer this tall still fits on screen. */
 #mapWheelDrawer {
   position: absolute;
   pointer-events: auto;
   top: 50%;
   transform: translateY(-50%);
   width: 340px;
-  max-height: min(560px, calc(100vh - 32px));
+  max-height: min(532px, calc(100vh - 32px));
   display: flex;
   flex-direction: column;
   background: rgba(251,247,236,.97);
@@ -174,6 +177,10 @@ export const WHEEL_CSS = `
 }
 #mapWheelDrawer tr:last-child { border-bottom: 0; }
 #mapWheelDrawer td { padding: 0; }
+/* The block overrides above are author rules, so they beat the UA stylesheet's [hidden]{display:none}
+   and the drawer's row filter would render every row it had just hidden. !important is the only way
+   a single rule can restore hiding for all of them; it must stay after the overrides. */
+#mapWheelDrawer [hidden] { display: none !important; }
 #mapWheelDrawer > .mw-drawer-body p {
   font: 600 11px "IBM Plex Sans", system-ui, sans-serif;
   letter-spacing: .09em;

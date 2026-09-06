@@ -100,6 +100,49 @@ describe("openMapWheel", () => {
     expect(document.getElementById("mapWheel")).toBeNull();
   });
 
+  // clampCentre's drawerSide argument used to be passed by nothing but a unit test, so the design's
+  // "wheel and drawer clamp as one bounding box" was never actually true on screen.
+  it("re-clamps the centre when a drawer opens with no room for it beside the ring", () => {
+    document.body.insertAdjacentHTML("beforeend", '<div id="panelHost"></div>');
+    const panelRoots: WheelRoots = {
+      menu: () => [],
+      here: () => [{ label: "About", icon: "icon-info-circled", panel: { host: "panelHost", title: "About" } }]
+    };
+
+    // 500 in a 1024-wide window: the ring fits where it was clicked, the ring plus a drawer does not
+    openMapWheel(rightClick(500, 300), panelRoots);
+    const wheel = document.querySelector<HTMLElement>("#mapWheel .mw-wheel")!;
+    expect(wheel.style.left).toBe("500px");
+
+    document.querySelector("path.mw-sector")!.dispatchEvent(new MouseEvent("click"));
+    expect(document.getElementById("mapWheelDrawer")).toBeTruthy();
+    expect(Number.parseFloat(wheel.style.left)).toBeLessThan(500);
+
+    // and the room is handed back the moment the drawer goes
+    (document.querySelector(".mw-drawer-close") as HTMLElement).click();
+    expect(wheel.style.left).toBe("500px");
+    document.getElementById("panelHost")!.remove();
+  });
+
+  it("keeps the drawer through a redraw that leaves it open", () => {
+    document.body.insertAdjacentHTML("beforeend", '<div id="panelHost"></div>');
+    const panelRoots: WheelRoots = {
+      menu: () => [],
+      here: () => [{ label: "About", icon: "icon-info-circled", panel: { host: "panelHost", title: "About" } }]
+    };
+
+    openMapWheel(rightClick(), panelRoots);
+    document.querySelector("path.mw-sector")!.dispatchEvent(new MouseEvent("click"));
+    // the last breadcrumb re-issues the same path, which redraws with the panel still chosen
+    const crumbs = document.querySelectorAll<HTMLElement>("#mapWheel .mw-crumb");
+    crumbs[crumbs.length - 1].click();
+
+    expect(document.getElementById("panelHost")!.closest("#mapWheelDrawer")).toBeTruthy();
+    closeMapWheel();
+    expect(document.getElementById("panelHost")!.parentElement).toBe(document.body);
+    document.getElementById("panelHost")!.remove();
+  });
+
   it("removes its window listeners on close so a stale wheel cannot swallow Escape", () => {
     const remove = vi.spyOn(window, "removeEventListener");
     openMapWheel(rightClick(), roots);

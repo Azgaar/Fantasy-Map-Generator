@@ -112,7 +112,10 @@ function measureExtents(): Extents {
     market: new Uint32Array(markets?.length || 0)
   };
 
-  for (const i of cells.i) {
+  // indexed, not for..of: this runs on every right-click and a Hesiod import can carry ~3M cells,
+  // where the iterator protocol costs several times a plain index read
+  for (let n = 0; n < cells.i.length; n++) {
+    const i = cells.i[n];
     if (cells.h[i] < 20) continue;
     extents.land++;
     extents.state[cells.state[i]]++;

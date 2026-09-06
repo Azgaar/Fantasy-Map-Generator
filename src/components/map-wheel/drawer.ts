@@ -1,4 +1,4 @@
-// The side drawer. Some of FMG is not a menu — the Style tab is a live form, Options is 26 setting
+// The side drawer. Some of FMG is not a menu — the Style tab is a live form, Options is 27 setting
 // rows, About is prose — so the drawer hosts the REAL elements rather than rebuilding them.
 //
 // FMG's wiring is getElementById lookups with listeners bound at init, so a clone would be dead DOM
@@ -8,10 +8,12 @@
 import { findEl } from "@/utils/nodeUtils";
 import type { DrawerSpec } from "./types";
 
-const DRAWER_ID = "mapWheelDrawer";
+/** Exported so the renderer knows which child of .mw-wheel it must not clear on a redraw */
+export const DRAWER_ID = "mapWheelDrawer";
 const WIDTH = 340;
 const CLEAR = 14; // gap between the ring's outer edge and the drawer
 const RADIUS = 246;
+const MAX_HEIGHT = 532; // must track the drawer's CSS max-height
 
 interface Borrowed {
   element: HTMLElement;
@@ -109,7 +111,7 @@ export function connectorLine(
   const y1 = Math.sin(sectorMid) * RADIUS;
   const x2 = side === "right" ? RADIUS + CLEAR : -(RADIUS + CLEAR);
   // clamp to the drawer's own height so the line always lands on its near edge
-  const half = Math.min(560, window.innerHeight - 32) / 2;
+  const half = Math.min(MAX_HEIGHT, window.innerHeight - 32) / 2;
   return { x1, y1, x2, y2: Math.min(Math.max(y1, -half), half) };
 }
 

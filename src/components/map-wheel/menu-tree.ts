@@ -139,24 +139,6 @@ const FILE_ACTIONS: Array<[string, string, string]> = [
   ["Export", "icon-export", "exportButton"]
 ];
 
-/** Every top-bar button this tree clicks. Exported so a test can prove they all still exist. */
-export const BOUND_BUTTON_IDS: string[] = [
-  "layersPreset",
-  "layersTab",
-  "styleTab",
-  "optionsTab",
-  "toolsTab",
-  "aboutTab",
-  "optionsTrigger",
-  "addStyleButton",
-  "removeStyleButton",
-  "stylePreset",
-  "editUnitsButton",
-  "configureWorld",
-  "optionsReset",
-  ...FILE_ACTIONS.map(([, , id]) => id)
-];
-
 const optionsBranch = (): WheelNode =>
   node("Options", "icon-cog", {
     children: [
@@ -327,10 +309,25 @@ const toolsBranch = (): WheelNode =>
     ]
   });
 
-BOUND_BUTTON_IDS.push(
+/** Every top-bar button this tree clicks. Exported so a test can prove they all still exist. */
+export const BOUND_BUTTON_IDS: string[] = [
+  "layersPreset",
+  "layersTab",
+  "styleTab",
+  "optionsTab",
+  "toolsTab",
+  "aboutTab",
+  "optionsTrigger",
+  "addStyleButton",
+  "removeStyleButton",
+  "stylePreset",
+  "editUnitsButton",
+  "configureWorld",
+  "optionsReset",
+  ...FILE_ACTIONS.map(([, , id]) => id),
   ...[...TOOL_EDITORS, ...TOOL_OVERVIEWS, ...TOOL_ADD, ...TOOL_MORE].map(([, , id]) => id),
   ...TOOL_REGENERATE.flatMap(group => group.items.map(([, , id]) => id))
-);
+];
 
 export function menuRoot(): WheelNode[] {
   return [

@@ -196,21 +196,35 @@ test.describe("map wheel", () => {
     await expect(page.locator("#mapWheelDrawer #optionsContent")).toBeAttached();
     await expect(page.locator("#mapWheel line.mw-connector")).toHaveCount(1);
 
-    // exactly the Realms theme's rows, in order - every other options row is hidden while borrowed
+    // Exactly the Realms theme's rows, in order - every other options row is hidden while borrowed.
+    // Asserted on RENDERED state, not on `row.hidden`: the drawer's `display: block` overrides are
+    // author rules and used to beat the UA stylesheet's [hidden]{display:none}, so the property was
+    // set on all 22 other rows and every one of them still drew.
     const wanted = ["statesNumber", "provincesRatio", "sizeVariety", "growthRate", "manorsInput"];
     const shown = await page
       .locator("#optionsContent tr")
       .evaluateAll(rows =>
-        rows.filter(row => !(row as HTMLElement).hidden).map(row => [...row.querySelectorAll("[id]")].map(el => el.id))
+        rows
+          .filter(row => getComputedStyle(row).display !== "none")
+          .map(row => [...row.querySelectorAll("[id]")].map(el => el.id))
       );
     expect(shown.map(ids => wanted.find(id => ids.includes(id)) ?? ids.join("+"))).toEqual(wanted);
 
+    // a row from another theme, and the table plus heading the filter emptied, are really gone
+    await expect(page.locator("#mapWheelDrawer #culturesInput")).toBeHidden();
+    const emptied = await page
+      .locator("#optionsContent table, #optionsContent > p")
+      .evaluateAll(nodes => nodes.map(node => getComputedStyle(node).display === "none"));
+    expect(emptied).toContain(true);
+    expect(emptied).toContain(false);
+
     await page.keyboard.press("Escape");
     await expect(page.locator("#options > #optionsContent")).toBeAttached();
-    const stillHidden = await page
-      .locator("#optionsContent tr")
-      .evaluateAll(rows => rows.filter(row => (row as HTMLElement).hidden).length);
-    expect(stillHidden).toBe(0);
+    // and nothing keeps a `hidden` the drawer set - on rows, on tables or on the headings
+    const leaked = await page
+      .locator("#optionsContent tr, #optionsContent table, #optionsContent p")
+      .evaluateAll(nodes => nodes.filter(node => (node as HTMLElement).hidden).map(node => node.tagName));
+    expect(leaked).toEqual([]);
   });
 
   test("opens a drawer from a keyboard Enter on a panel node", async () => {
@@ -220,6 +234,39 @@ test.describe("map wheel", () => {
 
     await expect(page.locator("#mapWheelDrawer #aboutContent")).toBeAttached();
     await expect(page.locator("#mapWheelDrawer .mw-drawer-title")).toHaveText("About");
+  });
+
+  // The drawer used to be a child of #mapWheel, which is `position: fixed; inset: 0`, so its
+  // `left: calc(50% + 260px)` resolved against the VIEWPORT: with the ring at x=300 in a 1280px
+  // window the drawer landed at 900 instead of 560, connector dangling into empty space. Every
+  // other drawer test opens at the viewport centre, where the bug cancels out - so this one does not.
+  test("hangs the drawer off the ring when the wheel is well off-centre", async () => {
+    await openWheel(300, 380);
+    await menuTab();
+    await activate(byLabel("About"));
+    await expect(page.locator("#mapWheelDrawer #aboutContent")).toBeAttached();
+    await page.waitForTimeout(300); // let the 140ms slide-in settle before measuring
+
+    const wheel = (await page.locator("#mapWheel .mw-wheel").boundingBox())!;
+    const drawer = (await page.locator("#mapWheelDrawer").boundingBox())!;
+    const centre = { x: wheel.x + wheel.width / 2, y: wheel.y + wheel.height / 2 };
+    expect(centre.x).toBeLessThan(page.viewportSize()!.width / 2 - 200); // really off-centre
+
+    // 260px clear of the ring's centre on whichever side it fanned out to: 246 outer radius + 14
+    const side = await page.locator("#mapWheelDrawer").getAttribute("data-side");
+    const gap = side === "right" ? drawer.x - centre.x : centre.x - (drawer.x + drawer.width);
+    expect(gap).toBeCloseTo(260, -1);
+    expect(drawer.y + drawer.height / 2).toBeCloseTo(centre.y, -1);
+
+    // and the whole of it is still on screen, which is what clampCentre's drawer reservation buys
+    const viewport = page.viewportSize()!;
+    expect(drawer.x).toBeGreaterThanOrEqual(0);
+    expect(drawer.x + drawer.width).toBeLessThanOrEqual(viewport.width);
+    expect(drawer.y).toBeGreaterThanOrEqual(0);
+    expect(drawer.y + drawer.height).toBeLessThanOrEqual(viewport.height);
+
+    await page.keyboard.press("Escape");
+    await expect(page.locator("#options > #aboutContent")).toBeAttached();
   });
 
   test("keeps the drawer and its connector open across a hover", async () => {

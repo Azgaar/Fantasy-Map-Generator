@@ -10,6 +10,8 @@ describe("nodeKind", () => {
 
   it("identifies each remaining kind", () => {
     expect(nodeKind(node({ pick: 2 }))).toBe("pick");
+    // pick 0 is the top-ranked subject: a truthiness test here would swallow the whole HERE channel
+    expect(nodeKind(node({ pick: 0 }))).toBe("pick");
     expect(nodeKind(node({ panel: { host: "aboutContent", title: "About" } }))).toBe("panel");
     expect(nodeKind(node({ children: [] }))).toBe("children");
     expect(nodeKind(node({ run: () => {} }))).toBe("run");
