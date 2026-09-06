@@ -688,11 +688,13 @@ test.describe("map wheel", () => {
     expect(crumbs.y + crumbs.height).toBeLessThanOrEqual(page.viewportSize()!.height);
   });
 
-  // FMG carries inline widths on some of its controls (#stylePreset 45%, #styleElementSelect 42%)
-  // for the top bar's wide panel. In a 340px drawer that clipped their option text - the user
-  // photographed it on "Style preset" and "Select element" - and only !important beats an inline
-  // style, since src/index.html is not this feature's to edit.
-  test("gives a hosted select the drawer's full width", async () => {
+  // FMG carries inline widths on several of its SELECTS (#stylePreset 45%, #styleElementSelect 42%,
+  // #styleHeightmapScheme and #styleTextureInput 86%, #styleSelectFont 85%) for the top bar's wide
+  // panel. In a 340px drawer that clipped their option text - the user photographed it on "Style
+  // preset" and "Select element" - and only !important beats an inline style, since src/index.html
+  // is not this feature's to edit. Inputs are deliberately NOT in that rule: their inline widths are
+  // pairs meant to sit side by side, and nothing in them is clipped.
+  test("gives every hosted select the width of the block it sits in", async () => {
     await openWheel();
     await menuTab();
     await activate(byLabel("Style"));
@@ -700,11 +702,10 @@ test.describe("map wheel", () => {
     await expect(page.locator("#mapWheelDrawer #styleContent")).toBeAttached();
 
     const body = (await page.locator("#mapWheelDrawer .mw-drawer-body").boundingBox())!;
-
-    for (const id of ["stylePreset", "styleElementSelect"]) {
-      // measured against the block the control actually sits in, since the hosts carry padding of
-      // their own; the inline 45% / 42% is what it must no longer be
-      const fit = await page.locator(`#mapWheelDrawer #${id}`).evaluate(el => {
+    // measured against the block the control actually sits in, since the hosts carry padding of
+    // their own; the inline 45% / 42% / 86% / 85% is what it must no longer be
+    const fits = (id: string) =>
+      page.locator(`#mapWheelDrawer #${id}`).evaluate(el => {
         const parent = el.parentElement!;
         const style = getComputedStyle(parent);
         const inner =
@@ -713,10 +714,27 @@ test.describe("map wheel", () => {
           Number.parseFloat(style.paddingRight);
         return { width: el.getBoundingClientRect().width, inner };
       });
+
+    for (const id of ["stylePreset", "styleElementSelect"]) {
+      const fit = await fits(id);
       expect(fit.width, `#${id} is ${fit.width}px in a ${fit.inner}px block`).toBeGreaterThanOrEqual(fit.inner - 1);
       // and that block is most of the drawer, so the option text has real room
       expect(fit.width).toBeGreaterThan(body.width * 0.8);
     }
+
+    // the rest of the inventory only renders for the element that owns it, so pick that element
+    // first - selecting one changes which section of the form is shown, nothing on the map
+    for (const [element, id] of [
+      ["terrs", "styleHeightmapScheme"],
+      ["texture", "styleTextureInput"],
+      ["labels", "styleSelectFont"]
+    ]) {
+      await page.locator("#mapWheelDrawer #styleElementSelect").selectOption(element);
+      await expect(page.locator(`#mapWheelDrawer #${id}`)).toBeVisible();
+      const fit = await fits(id);
+      expect(fit.width, `#${id} is ${fit.width}px in a ${fit.inner}px block`).toBeGreaterThanOrEqual(fit.inner - 1);
+    }
+    await page.locator("#mapWheelDrawer #styleElementSelect").selectOption("biomes");
 
     await page.keyboard.press("Escape");
     await expect(page.locator("#options > #styleContent")).toBeAttached();

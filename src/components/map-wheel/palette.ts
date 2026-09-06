@@ -33,12 +33,12 @@ export const EDGE = "rgba(90,74,48,.32)";
 export const EDGE_DIM = "rgba(90,74,48,.16)";
 
 /**
- * The ring carries the user's transparency, like every other panel in the app - but never below
- * this. FMG's slider runs all the way to alpha 0, and what shows through a sector is the MAP:
- * arbitrary, and at full contrast. Measured against a pure white and a pure black ground, the worst
- * pair at .8 is the layer-on green (nominally the weakest at 5.21:1) at 3.49:1, and every ink the
- * guard below holds to 4.5:1 stays at 4.25:1 or better; at .7 that worst pair falls to 2.81:1. Real
- * map ground is mid-tone, where the loss is far smaller than at either extreme.
+ * The neutral fills carry the user's transparency, like every other panel in the app - but never
+ * below this. FMG's slider runs all the way to alpha 0, and what shows through a sector is the MAP:
+ * arbitrary, and at full contrast. Blended against a pure white and a pure black ground - the two
+ * worst there are - the weakest veiled pair at .8 is the light ink on the hover fill, at 4.25:1;
+ * every other veiled pair holds 4.78:1 or better. At .75 that pair falls to 3.79:1 and at .7 to
+ * 3.39:1. Real map ground is mid-tone, where the loss is far smaller than at either extreme.
  */
 export const ALPHA_FLOOR = 0.8;
 
@@ -181,18 +181,24 @@ export function readPalette(): Palette {
   const hot = header || FILLS.hot;
   const inkLight = light || INKS.light;
 
-  // Transparency is applied LAST, to the fills only. Every ink below is guarded against the nominal
-  // opaque colour - what shows through a translucent sector is the map, which has no fixed colour,
-  // so the opaque pair is the only stable reading there is; ALPHA_FLOOR is what keeps the guard's
-  // verdict true of what the user actually sees.
+  // Transparency is applied LAST, and to the NEUTRAL fills only. Every ink below is guarded against
+  // the nominal opaque colour - what shows through a translucent sector is the map, which has no
+  // fixed colour, so the opaque pair is the only stable reading there is; ALPHA_FLOOR is what keeps
+  // the guard's verdict true of what the user actually sees.
+  //
+  // The danger red and the layer-on green are exempt for the same reason they are exempt from the
+  // hue: they carry MEANING, not style. The green in particular is the one pair the veil could push
+  // under 4:1 (3.49:1 over a black map at the floor), and saying "this layer is ON" at a glance is
+  // its whole job. Keeping the two semantic fills opaque costs nothing visible - the ring still goes
+  // translucent around them - and removes the exposure outright.
   const veil = veiler();
 
   return {
     fills: {
       chosen: veil(chosen, 1),
       hot: veil(hot, 1),
-      hotDanger: veil(FILLS.hotDanger, 1),
-      layerOn: veil(FILLS.layerOn, 1),
+      hotDanger: FILLS.hotDanger,
+      layerOn: FILLS.layerOn,
       dim: veil(dim, 0.82),
       base: veil(base, 0.97)
     },

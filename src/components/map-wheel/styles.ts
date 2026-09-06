@@ -278,14 +278,17 @@ export const WHEEL_CSS = `
   border: 1px solid var(--mw-edge, rgba(90,74,48,.32));
   border-radius: 3px;
 }
-/* FMG sizes some of these controls with an INLINE width for the top bar's wide panel - #stylePreset
-   at 45%, #styleElementSelect at 42%, the style form's paired number inputs at 5em. An inline style
-   beats the rule above, so in a 340px drawer those controls render ~150px wide and clip their own
-   option text. !important is the only thing that can beat an inline style, the same justification
-   the [hidden] rule above carries; src/index.html is not this feature's to edit. */
-#mapWheelDrawer select,
-#mapWheelDrawer input[type="number"],
-#mapWheelDrawer input[type="text"] { width: 100% !important; }
+/* FMG sizes several SELECTS with an INLINE width for the top bar's wide panel - #stylePreset 45%,
+   #styleElementSelect 42%, #styleHeightmapScheme and #styleTextureInput 86%, #styleSelectFont 85%.
+   An inline style beats the rule above, so in a 340px drawer they render short and clip their own
+   option text, which is the one thing a select cannot afford. !important is the only thing that can
+   beat an inline style, the same justification the [hidden] rule above carries; src/index.html is
+   not this feature's to edit.
+
+   Selects only. The inline widths on INPUTS are pairs meant to sit side by side - #yearInput with
+   #eraInput, the vignette and scale-bar x/y boxes - and nothing in them is clipped, so they keep
+   the width their author gave them and the pair keeps reading as a pair. */
+#mapWheelDrawer select { width: 100% !important; }
 #mapWheelDrawer input[type="color"] {
   width: 26px;
   height: 26px;

@@ -184,16 +184,20 @@ describe("transparency", () => {
   it("stops at the legibility floor however far the slider is pushed", () => {
     applyTheme({ ...THEMES.default, "--bg-opacity": "0" });
     const { fills } = readPalette();
-    for (const [name, fill] of Object.entries(fills)) {
-      expect(alphaOf(fill), `${name}: ${fill}`).toBeCloseTo(ALPHA_FLOOR, 6);
+    for (const name of ["chosen", "hot", "dim", "base"] as const) {
+      expect(alphaOf(fills[name]), `${name}: ${fills[name]}`).toBeCloseTo(ALPHA_FLOOR, 6);
     }
   });
 
-  it("keeps the danger red and the layer-on green themselves, only veiled", () => {
-    applyTheme({ ...THEMES.default, "--bg-opacity": "0" });
-    const { fills } = readPalette();
-    expect(fills.hotDanger).toBe(withAlpha(FILLS.hotDanger, ALPHA_FLOOR));
-    expect(fills.layerOn).toBe(withAlpha(FILLS.layerOn, ALPHA_FLOOR));
+  // exempt for the same reason they are exempt from the hue: they carry meaning, not style - and the
+  // green is the one pair the veil could push under 4:1 over a dark map
+  it("leaves the danger red and the layer-on green opaque at any transparency", () => {
+    for (const opacity of ["1", "0.5", "0"]) {
+      applyTheme({ ...THEMES.default, "--bg-opacity": opacity });
+      const { fills } = readPalette();
+      expect(fills.hotDanger).toBe(FILLS.hotDanger);
+      expect(fills.layerOn).toBe(FILLS.layerOn);
+    }
   });
 
   it("ignores an unpublished or unreadable opacity rather than veiling for nothing", () => {

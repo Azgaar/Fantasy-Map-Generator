@@ -288,7 +288,9 @@ stub, and the dark ancestor plus the placement already say what it said. Removed
   the open depth is what it is a function of. A `panel` node has no children, so while its drawer is
   open the outermost open ring is the panel sector's own level — but that is derived from the
   render, never assumed.
-- Width 340px; height `min(560px, 100vh - 32px)`; vertically centred on the wheel centre and
+- Width 340px; height `min(532px, 100vh - 32px)` — the figure in `styles.ts`, and now the only
+  copy of it, since `drawer.ts` no longer needs one for the connector. Vertically centred on the
+  wheel centre and
   clamped to the viewport. The drawer hosts the app's real forms, so unlike the ring it does **not**
   scale.
 - Side is chosen by the sector that opened it: the half the sector points into (`cos(mid) >= 0` →
@@ -352,12 +354,16 @@ Scoped to `#mapWheelDrawer`, using the wheel's tokens:
   currently hover-only.
 - `input[type=range]`: 3px `rgba(90,74,48,.22)` track, 13px `#6b5535` thumb.
 - `select`, `input[type=number]`, `input[type=text]`: parchment ground, 1px `edge` border, 3px
-  radius, 12px type, full width — `width: 100% !important`. FMG carries inline widths on some of
-  these controls for the top bar's wide panel (`#stylePreset` 45%, `#styleElementSelect` 42%, the
-  style form's paired number inputs 5em); an inline style beats an author rule, so in a 340px drawer
-  those selects rendered ~150px wide and clipped their own option text. `!important` is the only way
-  to beat an inline style, and `src/index.html` is not this feature's to edit — the same
-  justification the `[hidden]` rule carries.
+  radius, 12px type, full width.
+- **`select { width: 100% !important }`**, selects only. FMG carries inline widths on five of them
+  for the top bar's wide panel — `#stylePreset` 45%, `#styleElementSelect` 42%,
+  `#styleHeightmapScheme` and `#styleTextureInput` 86%, `#styleSelectFont` 85% — and an inline style
+  beats an author rule, so in a 340px drawer they rendered short and clipped their own option text,
+  which is the one thing a select cannot afford. `!important` is the only way to beat an inline
+  style, and `src/index.html` is not this feature's to edit — the same justification the `[hidden]`
+  rule carries. **Inputs are deliberately excluded**: their inline widths are pairs meant to sit
+  side by side (`#yearInput` with `#eraInput`, the vignette and scale-bar x/y boxes), nothing in
+  them is clipped, and forcing them full width stacks each pair onto two lines for no gain.
 - `input[type=color]`: 26px swatch, `edge` border, 3px radius.
 - Checkboxes follow FMG's existing `.checkbox` convention — raw checkboxes are hidden app-wide, so
   the skin must style the label, not the input.
@@ -561,7 +567,8 @@ Stroke `--dark-solid` at .32; dimmed at .16. `transition: fill 120ms`.
 
 The bold entries are **deliberately not themed**: the danger red and the layer-on green carry
 meaning rather than style, and a hue slider must not be able to turn "this deletes things" into the
-same colour as everything else.
+same colour as everything else. For the same reason they are the two fills that never take the
+user's transparency either — see the transparency paragraph below.
 
 Hub, breadcrumb and drawer follow the same theme through the stylesheet: hub active tab
 `--header-active`, inactive `--light-solid`; breadcrumb on `--bg-lighter` with `--dark-solid` ink;
@@ -589,11 +596,18 @@ on every slider step is the hover-redraw loop all over again. The observer is di
 ink stays at ≥4.5:1 — do not fade further than the `.82`/`.82` pair. De-emphasis comes from the
 solid dark ancestor, not from making siblings unreadable. Following the theme cannot be allowed to
 break that: FMG's own `--dark-solid` on `--light-solid` is **2.5:1** at the default theme colour
-(#997787). Every ink the wheel computes is therefore held to 4.5:1 over the ground it is *actually
-painted on*, moving only its lightness toward black or white and keeping the theme's hue. With no
-theme published the handoff's colours already clear the bar and the guard is a no-op.
+(#997787). Every ink the wheel computes is therefore held to 4.5:1 against **the fill it is paired
+with, at that fill's nominal opaque colour**, moving only its lightness toward black or white and
+keeping the theme's hue. With no theme published the handoff's colours already clear the bar and the
+guard is a no-op.
 
-"Actually painted on" is the load-bearing half of that sentence, and one ink per rule is not enough:
+That is a promise about the PAIR, not about the pixels: a fill the user has made translucent is
+composited over the map, and what the ink is then painted on is part map. The transparency paragraph
+below is where that is bounded — the alpha floor, and the two semantic fills that never take alpha at
+all — and it carries the measured worst case. Read the two together; neither is complete alone.
+
+Pairing each ink with the fill it actually sits on is the load-bearing half, and one ink per rule is
+not enough:
 
 - The **light ink** appears on three different fills — the chosen ancestor (`--dark-solid`), the
   hover fill (`--header-active`) and the unthemed danger red. It is resolved once per fill
@@ -609,16 +623,25 @@ theme published the handoff's colours already clear the bar and the guard is a n
 
 **The ring carries the user's transparency**, like every other panel in the app. `changeDialogsTheme`
 publishes the alpha it derives from the slider as `--bg-opacity` = `(100 - transparency) / 100`, and
-every sector fill is emitted at that alpha — mapped onto `[ALPHA_FLOOR, 1]` rather than clamped to
-it, so the whole slider is visible on the dial and full opacity still lands exactly on the design's
-own `.97` / `.82`. A fill whose nominal alpha is already lower than the result keeps its own (the
-dimmed sibling stays at `.82` until the user asks for more).
+the **neutral** sector fills — base, dimmed, the chosen ancestor and the hover fill — are emitted at
+that alpha, mapped onto `[ALPHA_FLOOR, 1]` rather than clamped to it, so the whole slider is visible
+on the dial and full opacity still lands exactly on the design's own `.97` / `.82`. A fill whose
+nominal alpha is already lower than the result keeps its own (the dimmed sibling stays at `.82`
+until the user asks for more).
 
-`ALPHA_FLOOR` is **0.8**, and it is what makes the rest of this section still true. What shows
-through a sector is the MAP: arbitrary, and at full contrast. Measured against a pure white and a
-pure black ground, the worst pair at `.8` is the layer-on green — nominally the weakest at 5.21:1 —
-at 3.49:1, and every ink the guard holds to 4.5:1 stays at 4.25:1 or better; at `.7` that worst pair
-falls to 2.81:1. Real map ground is mid-tone, where the loss is far smaller than at either extreme.
+**The danger red and the layer-on green never take alpha**, for exactly the reason they never take
+the theme's hue: they carry meaning rather than style. The green is also the pair the veil could
+hurt most — it is the weakest in the design at 5.21:1 nominal, and saying "this layer is ON" at a
+glance is its whole job — so leaving the two semantic fills opaque removes the worst exposure at no
+visible cost: the ring around them still goes translucent.
+
+`ALPHA_FLOOR` is **0.8**, and it is what makes the accessibility promise above still true of the
+pixels. What shows through a veiled sector is the MAP: arbitrary, and at full contrast. Blended
+against a pure white and a pure black ground — the two worst there are — the weakest *veiled* pair
+at `.8` is the light ink on the hover fill at **4.25:1**, and every other veiled pair holds 4.78:1
+or better; at `.75` that pair falls to 3.79:1 and at `.7` to 3.39:1. The two exempt pairs stay at
+their nominal 6.45:1 and 5.21:1 whatever the slider says. Real map ground is mid-tone, where the
+loss is far smaller than at either extreme.
 
 Contrast is measured on the **nominal opaque pair**, and **transparency is applied after the guard**
 — the guard's inputs are the opaque colours, and `withAlpha` only rewrites the emitted fill.
