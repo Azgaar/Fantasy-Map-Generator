@@ -1,8 +1,11 @@
 // The spin-out renderer. Rendering is a pure fold: walk `path` from the root node list, emit one
 // ring per level, carrying the parent's mid-angle forward as the next ring's centre.
 //
-// Redraws in full on every state change. At most ~50 sectors are on screen, so diffing would buy
-// nothing and cost the clarity of "the DOM is a function of the state".
+// Structural changes (`mode`, `path`) redraw in full: at most ~50 sectors are on screen, so diffing
+// would buy nothing and costs the clarity of "the DOM is a function of the state". Hover is the one
+// exception - it mutates the two elements involved and nothing else. A rebuild would delete the very
+// node under the pointer; the mouseleave/mouseenter that follows rebuilds again, and the loop that
+// makes both restarts the entry animation and swallows every mouse press.
 import { Layers } from "@/components/layers";
 import { arcPath, BANDS, HOVER_GROW, labelPoint, MAX_DEPTH, type Sector, sectors, spineLine } from "./geometry";
 import { childrenOf, type DrawerSpec, nodeKind, type WheelNode } from "./types";
@@ -29,10 +32,16 @@ export const INKS = {
 const EDGE = "rgba(90,74,48,.32)";
 const EDGE_DIM = "rgba(90,74,48,.16)";
 
+export interface HotRef {
+  level: number;
+  index: number;
+}
+
 export interface WheelState {
   mode: "here" | "menu";
   path: number[];
-  hot: { level: number; index: number } | null;
+  /** kept in the state so the keyboard knows where the cursor is; changing it never redraws */
+  hot: HotRef | null;
 }
 
 export interface WheelRoots {
@@ -41,11 +50,29 @@ export interface WheelRoots {
 }
 
 export interface WheelCallbacks {
+  /** structural change: mode or path. The caller redraws. */
   onState: (next: WheelState) => void;
+  /** hover change only. The caller records it and calls the handle's applyHot - it must not redraw. */
+  onHot: (hot: HotRef | null) => void;
   onPanel: (spec: DrawerSpec, sectorMid: number) => void;
   onLeaf: (node: WheelNode) => void;
   onPick: (index: number) => void;
   onToggle: (node: WheelNode) => void;
+}
+
+/** What renderWheel hands back so hover can be applied without touching the structure */
+export interface WheelHandle {
+  applyHot: (hot: HotRef | null) => void;
+}
+
+/** The two skins of one sector, computed once at build time so hovering is an attribute write */
+interface Painted {
+  sector: SVGPathElement;
+  label: HTMLElement;
+  /** [normal, hovered] */
+  d: [string, string];
+  fill: [string, string];
+  ink: [string, string];
 }
 
 interface Level {
@@ -98,7 +125,12 @@ function noteFor(node: WheelNode): string | null {
   return node.children ? "▸" : null;
 }
 
-export function renderWheel(container: HTMLElement, roots: WheelRoots, state: WheelState, cb: WheelCallbacks): void {
+export function renderWheel(
+  container: HTMLElement,
+  roots: WheelRoots,
+  state: WheelState,
+  cb: WheelCallbacks
+): WheelHandle {
   container.textContent = "";
   const levels = resolveLevels(roots, state);
 
@@ -112,6 +144,8 @@ export function renderWheel(container: HTMLElement, roots: WheelRoots, state: Wh
   const labelLayer = document.createElement("div");
   labelLayer.className = "mw-labels";
   container.append(labelLayer);
+
+  const painted = new Map<string, Painted>();
 
   levels.forEach((level, L) => {
     if (L > 0) {
@@ -127,27 +161,36 @@ export function renderWheel(container: HTMLElement, roots: WheelRoots, state: Wh
 
     level.items.forEach((node, i) => {
       const isChosen = level.chosen === i;
-      const isHot = state.hot?.level === L && state.hot.index === i;
       const isDim = deeper && !isChosen;
       const { from, to, mid } = level.ring[i];
-      const rOuter = isHot ? outer + HOVER_GROW : outer;
+      // the hovered skin, per the spec: the outer radius grows, the inner radius never moves
+      const skin: Painted["d"] = [arcPath(inner, outer, from, to), arcPath(inner, outer + HOVER_GROW, from, to)];
 
       const sector = document.createElementNS(SVG, "path");
       sector.setAttribute("class", "mw-sector");
-      sector.setAttribute("d", arcPath(inner, rOuter, from, to));
-      sector.setAttribute("fill", fillFor(node, isChosen, isHot, isDim));
+      sector.setAttribute("d", skin[0]);
+      sector.setAttribute("fill", fillFor(node, isChosen, false, isDim));
       sector.setAttribute("stroke", isDim ? EDGE_DIM : EDGE);
-      sector.addEventListener("mouseenter", () => cb.onState({ ...state, hot: { level: L, index: i } }));
-      sector.addEventListener("mouseleave", () => cb.onState({ ...state, hot: null }));
+      sector.addEventListener("mouseenter", () => cb.onHot({ level: L, index: i }));
+      sector.addEventListener("mouseleave", () => cb.onHot(null));
       sector.addEventListener("click", () => dispatch(levels, state, cb, L, i));
       svg.append(sector);
 
-      const [x, y] = labelPoint(mid, inner, rOuter);
+      // the label sits at the band's mid-radius and stays put under the pointer; only its ink moves
+      const [x, y] = labelPoint(mid, inner, outer);
       const label = document.createElement("div");
       label.className = `mw-label ${L === 0 ? "mw-label--root" : ""}`;
       label.style.left = `calc(50% + ${x.toFixed(2)}px)`;
       label.style.top = `calc(50% + ${y.toFixed(2)}px)`;
-      label.style.color = inkFor(node, isChosen, isHot, isDim);
+      label.style.color = inkFor(node, isChosen, false, isDim);
+
+      painted.set(`${L}:${i}`, {
+        sector,
+        label,
+        d: skin,
+        fill: [fillFor(node, isChosen, false, isDim), fillFor(node, isChosen, true, isDim)],
+        ink: [inkFor(node, isChosen, false, isDim), inkFor(node, isChosen, true, isDim)]
+      });
 
       const icon = document.createElement("i");
       icon.className = node.toggle && !Layers.isOn(node.toggle) ? "icon-eye-off" : node.icon;
@@ -168,6 +211,25 @@ export function renderWheel(container: HTMLElement, roots: WheelRoots, state: Wh
 
   renderHub(container, state, cb);
   renderCrumbs(container, roots, state, cb);
+
+  let hot: HotRef | null = null;
+  const paint = (ref: HotRef | null, on: boolean): void => {
+    const item = ref && painted.get(`${ref.level}:${ref.index}`);
+    if (!item) return;
+    const skin = on ? 1 : 0;
+    item.sector.setAttribute("d", item.d[skin]);
+    item.sector.setAttribute("fill", item.fill[skin]);
+    item.label.style.color = item.ink[skin];
+  };
+
+  const applyHot = (next: HotRef | null): void => {
+    paint(hot, false);
+    hot = next;
+    paint(hot, true);
+  };
+
+  applyHot(state.hot);
+  return { applyHot };
 }
 
 // The spec's click order. A layer toggle wins over everything else so the ring doubles as the
@@ -215,7 +277,8 @@ export function handleKey(event: KeyboardEvent, roots: WheelRoots, state: WheelS
   const ring = levels[level];
   if (!ring) return false;
 
-  const move = (index: number) => cb.onState({ ...state, hot: { level, index } });
+  // hover moves go through onHot, exactly like the mouse: moving the cursor must not rebuild the DOM
+  const move = (index: number) => cb.onHot({ level, index });
   const current = state.hot?.index ?? -1;
 
   switch (event.key) {
@@ -230,12 +293,12 @@ export function handleKey(event: KeyboardEvent, roots: WheelRoots, state: WheelS
     case "ArrowDown": {
       const next = levels[level + 1];
       if (!next) return false;
-      cb.onState({ ...state, hot: { level: level + 1, index: 0 } });
+      cb.onHot({ level: level + 1, index: 0 });
       return true;
     }
     case "ArrowUp": {
       if (level === 0) return false;
-      cb.onState({ ...state, hot: { level: level - 1, index: state.path[level - 1] ?? 0 } });
+      cb.onHot({ level: level - 1, index: state.path[level - 1] ?? 0 });
       return true;
     }
     case "Enter": {

@@ -1,8 +1,12 @@
 export const WHEEL_CSS = `
+/* The host spans the viewport so the ring can be centred anywhere in it, so it must be transparent
+   to pointers: the parts that are actually interactive opt back in below. Without this every click
+   in the app lands on the overlay, and index.ts's "outside pointerdown" dismissal can never fire. */
 #mapWheel {
   position: fixed;
   inset: 0;
   z-index: 1000;
+  pointer-events: none;
   font-family: "IBM Plex Sans", system-ui, sans-serif;
 }
 
@@ -30,6 +34,7 @@ export const WHEEL_CSS = `
 }
 
 #mapWheel .mw-sector {
+  pointer-events: auto;
   cursor: pointer;
   stroke-width: 1;
   transition: fill 120ms;
@@ -113,6 +118,7 @@ export const WHEEL_CSS = `
 
 #mapWheelDrawer {
   position: absolute;
+  pointer-events: auto;
   top: 50%;
   transform: translateY(-50%);
   width: 340px;

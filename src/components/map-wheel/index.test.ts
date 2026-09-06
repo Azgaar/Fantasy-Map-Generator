@@ -69,6 +69,37 @@ describe("openMapWheel", () => {
     expect(document.getElementById("mapWheel")).toBeTruthy();
   });
 
+  // The regression guard for the hover redraw loop. Through the real wiring: hovering a sector used
+  // to go through onState, which redraws, which removes the node under the pointer - so the browser
+  // fired mouseleave, which redrew again. ~62 events/second with the pointer still, and no click
+  // ever landed. If hover ever redraws again, the captured element is no longer the one in the DOM.
+  it("repaints a hovered sector in place instead of rebuilding the ring", () => {
+    openMapWheel(rightClick(), roots);
+    const sector = document.querySelector("path.mw-sector")!;
+    const label = document.querySelector<HTMLElement>("#mapWheel .mw-label")!;
+    const cold = sector.getAttribute("d");
+
+    sector.dispatchEvent(new MouseEvent("mouseenter"));
+
+    expect(document.querySelector("path.mw-sector")).toBe(sector);
+    expect(document.querySelector("#mapWheel .mw-label")).toBe(label);
+    expect(sector.isConnected).toBe(true);
+    expect(sector.getAttribute("d")).not.toBe(cold);
+
+    sector.dispatchEvent(new MouseEvent("mouseleave"));
+    expect(document.querySelector("path.mw-sector")).toBe(sector);
+    expect(sector.getAttribute("d")).toBe(cold);
+  });
+
+  it("keeps the hover in state so the keyboard picks up where the pointer left off", () => {
+    openMapWheel(rightClick(), roots);
+    const sector = document.querySelector("path.mw-sector")!;
+    sector.dispatchEvent(new MouseEvent("mouseenter"));
+    // Enter commits whatever the pointer made hot - the leaf closes the wheel
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
+    expect(document.getElementById("mapWheel")).toBeNull();
+  });
+
   it("removes its window listeners on close so a stale wheel cannot swallow Escape", () => {
     const remove = vi.spyOn(window, "removeEventListener");
     openMapWheel(rightClick(), roots);

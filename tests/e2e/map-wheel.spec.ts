@@ -5,11 +5,11 @@ import { type Browser, type BrowserContext, expect, type Page, test } from "@pla
 // prove that a sector actually flips a layer, opens a real editor, and hands the borrowed
 // #optionsContent back to #options afterwards.
 //
-// Sectors are activated with the KEYBOARD here, not the mouse. Mouse and keyboard share one
-// dispatcher (`dispatch` in wheel.ts), so the coverage is the same for everything downstream of
-// the click - but a mouse press on a sector currently never lands (see the last test in this file
-// for the pinned bug and the evidence). Hover, right-click, Escape and the hub tabs are still
-// driven with the real mouse.
+// Most sectors are activated with the KEYBOARD here, not the mouse: arrowing to a named label is
+// deterministic where hitting a wedge by coordinates is not. Mouse and keyboard share one dispatcher
+// (`dispatch` in wheel.ts), so the coverage is the same for everything downstream of the click, and
+// "activates a sector from a mouse click" below covers the mouse path itself. Hover, right-click,
+// outside click, Escape and the hub tabs are all driven with the real mouse.
 
 let context: BrowserContext;
 let page: Page;
@@ -83,8 +83,8 @@ const byLabel = (label: string) => (sector: SectorInfo) => sector.text === label
 const openWheel = async (x = 640, y = 380): Promise<void> => {
   await page.mouse.click(x, y, { button: "right" });
   await expect(page.locator("#mapWheel")).toBeAttached();
-  // park the pointer clear of the ring: resting it on a sector starts a redraw loop (see the
-  // pinned bug at the end of this file) that would fight the keyboard's hot-sector state
+  // park the pointer clear of the ring: a sector under the pointer is hot, and that is the same
+  // `hot` the arrow keys move, so a resting pointer would decide where the keyboard starts from
   await page.mouse.move(2, 2);
 };
 
@@ -229,8 +229,8 @@ test.describe("map wheel", () => {
     await activate(byLabel("Realms"));
     await expect(page.locator("#mapWheelDrawer #optionsContent")).toBeAttached();
 
-    // hovering a different sector redraws the whole SVG; the drawer belongs to a sector that is
-    // still chosen, so it must survive - and the connector must be redrawn with the ring
+    // hovering repaints sectors in place and must not disturb the structure: the drawer, its
+    // connector and the entry animation's finished state all have to survive the pointer resting
     const sectors = await readSectors();
     const peoples = sectors.find(byLabel("Peoples"))!;
     expect(peoples.level).toBe(1);
@@ -246,6 +246,16 @@ test.describe("map wheel", () => {
 
     await expect(page.locator("#mapWheelDrawer #optionsContent")).toBeAttached();
     await expect(page.locator("#mapWheel line.mw-connector")).toHaveCount(1);
+
+    // the ring must be VISIBLE while hovered. A hover rebuild restarts the mw-fan entry animation
+    // on a fresh <svg> every frame, which pins the whole ring near scale(.86)/opacity 0.
+    await page.waitForTimeout(400);
+    const painted = await page.locator("#mapWheel .mw-svg").evaluate(el => {
+      const style = getComputedStyle(el);
+      return { opacity: Number(style.opacity), scale: new DOMMatrix(style.transform).a };
+    });
+    expect(painted.opacity).toBe(1);
+    expect(painted.scale).toBeCloseTo(1, 2);
 
     await page.mouse.move(2, 2);
     await page.keyboard.press("Escape");
@@ -323,18 +333,12 @@ test.describe("map wheel", () => {
     await expect(page.locator("#mapWheel")).toBeAttached();
   });
 
-  // ---------------------------------------------------------------------------------------------
-  // Known-broken behaviour. Both tests below assert what the design calls for; `test.fail()` says
-  // the current build does not do it. When the product is fixed these turn red and the annotation
-  // comes off - they are not weakened assertions.
-  // ---------------------------------------------------------------------------------------------
-
-  // BUG: a mouse press over a sector never reaches it. `mouseenter` calls onState, onState always
-  // redraws, the redraw replaces the node under the pointer, which fires `mouseenter`/`mouseleave`
-  // again - a self-sustaining redraw loop (~30 rebuilds/second with the pointer held still). The
-  // ring is also invisible while hovered, because the mw-fan entry animation restarts every frame.
+  // A mouse press over a sector used to reach nothing at all: `mouseenter` called onState, onState
+  // redrew, the redraw replaced the node under the pointer, and that fired mouseenter/mouseleave
+  // again - a self-sustaining loop at ~62 events/second with the pointer held still. Hover now
+  // mutates the hovered sector in place, so the element the press lands on is still the element
+  // that was there when the pointer arrived.
   test("activates a sector from a mouse click", async () => {
-    test.fail(true, "sector clicks are swallowed by the hover redraw loop");
     await openWheel();
     await menuTab();
 
@@ -352,14 +356,35 @@ test.describe("map wheel", () => {
     expect((await readSectors()).some(s => s.level === 1)).toBe(true);
   });
 
-  // BUG: #mapWheel is `position: fixed; inset: 0` with no `pointer-events: none`, so it covers the
-  // whole viewport. Every pointerdown therefore lands inside it and index.ts's onPointerDown
-  // "outside" test can never be true - the wheel cannot be dismissed by clicking away from it, and
-  // it swallows the click.
+  // #mapWheel is `position: fixed; inset: 0`, so without `pointer-events: none` on the host every
+  // pointerdown in the app landed inside it: index.ts's onPointerDown "outside" test could never be
+  // true and the overlay swallowed every click on the map. Only the interactive parts opt back in.
   test("closes on an outside click", async () => {
-    test.fail(true, "the full-viewport overlay makes every pointerdown an inside click");
     await openWheel();
     await page.mouse.click(20, 700);
     await expect(page.locator("#mapWheel")).toHaveCount(0);
+  });
+
+  test("stays open when its own sectors, tabs, crumbs and drawer are pressed", async () => {
+    await openWheel();
+    await menuTab(); // a hub tab press is inside the wheel
+    await expect(page.locator("#mapWheel")).toBeAttached();
+
+    await activate(byLabel("Options"));
+    await activate(byLabel("Realms"));
+    await expect(page.locator("#mapWheelDrawer #optionsContent")).toBeAttached();
+
+    // a real form control in the drawer: using it must not dismiss the wheel
+    await page.locator("#mapWheelDrawer #statesNumber").click();
+    await expect(page.locator("#mapWheel")).toBeAttached();
+
+    // and the breadcrumb is clickable by design - crumb 0 truncates the path back to the root
+    await page.locator("#mapWheel .mw-crumb").first().click();
+    await expect(page.locator("#mapWheel")).toBeAttached();
+    await expect(page.locator("#mapWheelDrawer")).toHaveCount(0);
+    expect((await readSectors()).every(s => s.level === 0)).toBe(true);
+
+    await page.keyboard.press("Escape");
+    await expect(page.locator("#options > #optionsContent")).toBeAttached();
   });
 });

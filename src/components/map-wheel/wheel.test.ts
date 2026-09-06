@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { WheelNode } from "./types";
-import { renderWheel, resolveLevels, type WheelRoots, type WheelState } from "./wheel";
+import { FILLS, type HotRef, renderWheel, resolveLevels, type WheelRoots, type WheelState } from "./wheel";
 
 const leaf = (label: string, extra: Partial<WheelNode> = {}): WheelNode => ({ label, icon: "icon-star", ...extra });
 
@@ -17,6 +17,7 @@ const state = (over: Partial<WheelState> = {}): WheelState => ({ mode: "menu", p
 let container: HTMLElement;
 const cb = () => ({
   onState: vi.fn(),
+  onHot: vi.fn(),
   onPanel: vi.fn(),
   onLeaf: vi.fn(),
   onPick: vi.fn(),
@@ -124,5 +125,110 @@ describe("renderWheel", () => {
     renderWheel(container, roots, state({ path: [0, 0] }), spies);
     container.querySelectorAll(".mw-crumb")[0].dispatchEvent(new MouseEvent("click", { bubbles: true }));
     expect(spies.onState).toHaveBeenCalledWith(expect.objectContaining({ path: [] }));
+  });
+
+  it("paints the hot sector of the state it is given", () => {
+    renderWheel(container, roots, state({ hot: { level: 0, index: 2 } }), cb());
+    const sectors = [...container.querySelectorAll("path.mw-sector")];
+    expect(sectors[2].getAttribute("fill")).toBe(FILLS.hot);
+    expect(sectors[0].getAttribute("fill")).toBe(FILLS.base);
+  });
+});
+
+// The whole class of bug this guards: hover used to go through onState, onState redraws, and the
+// redraw deleted the node under the pointer - which fires mouseleave/mouseenter and redraws again.
+// ~62 events/second with the pointer held still, the entry animation restarting each time (so the
+// ring was invisible) and no mousedown/mouseup/click ever landing on a sector.
+describe("hover", () => {
+  /** wire the spies the way index.ts does: onHot repaints through the handle, never redraws */
+  const hovering = (over: Partial<WheelState> = {}) => {
+    const spies = cb();
+    const handle = renderWheel(container, roots, state(over), spies);
+    spies.onHot.mockImplementation((hot: HotRef | null) => handle.applyHot(hot));
+    return spies;
+  };
+
+  it("reports hover through onHot and never through onState", () => {
+    const spies = hovering();
+    container.querySelector("path.mw-sector")!.dispatchEvent(new MouseEvent("mouseenter"));
+    expect(spies.onHot).toHaveBeenCalledWith({ level: 0, index: 0 });
+    expect(spies.onState).not.toHaveBeenCalled();
+  });
+
+  it("clears the hover on mouseleave", () => {
+    const spies = hovering();
+    container.querySelector("path.mw-sector")!.dispatchEvent(new MouseEvent("mouseleave"));
+    expect(spies.onHot).toHaveBeenCalledWith(null);
+    expect(spies.onState).not.toHaveBeenCalled();
+  });
+
+  it("mutates the hovered sector in place instead of rebuilding the ring", () => {
+    hovering();
+    const sector = container.querySelector("path.mw-sector")!;
+    const label = container.querySelector<HTMLElement>(".mw-label")!;
+    const cold = { d: sector.getAttribute("d"), fill: sector.getAttribute("fill"), ink: label.style.color };
+
+    sector.dispatchEvent(new MouseEvent("mouseenter"));
+
+    // the guard: the very element under the pointer is still the one in the DOM
+    expect(container.querySelectorAll("path.mw-sector")[0]).toBe(sector);
+    expect(container.querySelectorAll(".mw-label")[0]).toBe(label);
+    expect(sector.isConnected).toBe(true);
+    expect(sector.getAttribute("fill")).toBe(FILLS.hot);
+    expect(sector.getAttribute("d")).not.toBe(cold.d);
+    expect(label.style.color).not.toBe(cold.ink);
+
+    sector.dispatchEvent(new MouseEvent("mouseleave"));
+    expect(container.querySelectorAll("path.mw-sector")[0]).toBe(sector);
+    expect(sector.getAttribute("d")).toBe(cold.d);
+    expect(sector.getAttribute("fill")).toBe(cold.fill);
+    expect(label.style.color).toBe(cold.ink);
+  });
+
+  it("grows the outer radius only, leaving the inner edge where it was", () => {
+    hovering();
+    const sector = container.querySelector("path.mw-sector")!;
+    const start = (d: string) => d.slice(2).split(" L ")[0];
+    const cold = sector.getAttribute("d")!;
+    sector.dispatchEvent(new MouseEvent("mouseenter"));
+    const hot = sector.getAttribute("d")!;
+
+    expect(start(hot)).toBe(start(cold)); // the arc still opens on the inner radius
+    const radius = (d: string) =>
+      Math.hypot(...(d.split(" L ")[1].split(" ").slice(0, 2).map(Number) as [number, number]));
+    expect(radius(hot) - radius(cold)).toBeCloseTo(5, 1); // HOVER_GROW
+  });
+
+  it("moves the hover from one sector to another without touching the rest", () => {
+    const spies = hovering();
+    const [first, second] = [...container.querySelectorAll("path.mw-sector")];
+    first.dispatchEvent(new MouseEvent("mouseenter"));
+    first.dispatchEvent(new MouseEvent("mouseleave"));
+    second.dispatchEvent(new MouseEvent("mouseenter"));
+
+    expect(first.getAttribute("fill")).toBe(FILLS.base);
+    expect(second.getAttribute("fill")).toBe(FILLS.hot);
+    expect(spies.onState).not.toHaveBeenCalled();
+  });
+
+  it("lights a destructive sector in the danger fill", () => {
+    const danger: WheelRoots = { menu: () => [leaf("Erase", { danger: true, run: () => {} })], here: () => [] };
+    const spies = cb();
+    const handle = renderWheel(container, danger, state(), spies);
+    spies.onHot.mockImplementation((hot: HotRef | null) => handle.applyHot(hot));
+
+    const sector = container.querySelector("path.mw-sector")!;
+    sector.dispatchEvent(new MouseEvent("mouseenter"));
+    expect(sector.getAttribute("fill")).toBe(FILLS.hotDanger);
+  });
+
+  it("leaves a chosen ancestor dark when the pointer rests on it", () => {
+    const spies = cb();
+    const handle = renderWheel(container, roots, state({ path: [0] }), spies);
+    spies.onHot.mockImplementation((hot: HotRef | null) => handle.applyHot(hot));
+
+    const sector = container.querySelector("path.mw-sector")!;
+    sector.dispatchEvent(new MouseEvent("mouseenter"));
+    expect(sector.getAttribute("fill")).toBe(FILLS.chosen);
   });
 });

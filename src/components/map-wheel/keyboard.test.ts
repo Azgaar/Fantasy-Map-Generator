@@ -25,35 +25,48 @@ const richRoots: WheelRoots = {
 const state = (over: Partial<WheelState> = {}): WheelState => ({ mode: "menu", path: [], hot: null, ...over });
 const key = (k: string) => new KeyboardEvent("keydown", { key: k });
 
-const spies = () => ({ onState: vi.fn(), onPanel: vi.fn(), onLeaf: vi.fn(), onPick: vi.fn(), onToggle: vi.fn() });
+const spies = () => ({
+  onState: vi.fn(),
+  onHot: vi.fn(),
+  onPanel: vi.fn(),
+  onLeaf: vi.fn(),
+  onPick: vi.fn(),
+  onToggle: vi.fn()
+});
 
 describe("handleKey", () => {
+  // arrows only move the cursor, so they take the same non-destructive path as the mouse: onHot,
+  // never onState. Routing them through onState would redraw the ring under the pointer.
   it("starts at the first sector when nothing is hot", () => {
     const cb = spies();
     handleKey(key("ArrowRight"), roots, state(), cb);
-    expect(cb.onState).toHaveBeenCalledWith(expect.objectContaining({ hot: { level: 0, index: 0 } }));
+    expect(cb.onHot).toHaveBeenCalledWith({ level: 0, index: 0 });
+    expect(cb.onState).not.toHaveBeenCalled();
   });
 
   it("steps around the ring and wraps", () => {
     const cb = spies();
     handleKey(key("ArrowRight"), roots, state({ hot: { level: 0, index: 2 } }), cb);
-    expect(cb.onState).toHaveBeenCalledWith(expect.objectContaining({ hot: { level: 0, index: 0 } }));
+    expect(cb.onHot).toHaveBeenCalledWith({ level: 0, index: 0 });
 
     const back = spies();
     handleKey(key("ArrowLeft"), roots, state({ hot: { level: 0, index: 0 } }), back);
-    expect(back.onState).toHaveBeenCalledWith(expect.objectContaining({ hot: { level: 0, index: 2 } }));
+    expect(back.onHot).toHaveBeenCalledWith({ level: 0, index: 2 });
+    expect(back.onState).not.toHaveBeenCalled();
   });
 
   it("drills outward into an open child ring", () => {
     const cb = spies();
     handleKey(key("ArrowDown"), roots, state({ path: [0], hot: { level: 0, index: 0 } }), cb);
-    expect(cb.onState).toHaveBeenCalledWith(expect.objectContaining({ hot: { level: 1, index: 0 } }));
+    expect(cb.onHot).toHaveBeenCalledWith({ level: 1, index: 0 });
+    expect(cb.onState).not.toHaveBeenCalled();
   });
 
   it("moves back inward toward the hub", () => {
     const cb = spies();
     handleKey(key("ArrowUp"), roots, state({ path: [0], hot: { level: 1, index: 0 } }), cb);
-    expect(cb.onState).toHaveBeenCalledWith(expect.objectContaining({ hot: { level: 0, index: 0 } }));
+    expect(cb.onHot).toHaveBeenCalledWith({ level: 0, index: 0 });
+    expect(cb.onState).not.toHaveBeenCalled();
   });
 
   it("commits the hot sector on Enter", () => {

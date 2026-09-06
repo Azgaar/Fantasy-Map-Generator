@@ -6,7 +6,14 @@ import { closeDrawer, connectorLine, openDrawer, pickSide } from "./drawer";
 import { hereRoot } from "./here";
 import { menuRoot } from "./menu-tree";
 import { WHEEL_CSS } from "./styles";
-import { handleKey, renderWheel, type WheelCallbacks, type WheelRoots, type WheelState } from "./wheel";
+import {
+  handleKey,
+  renderWheel,
+  type WheelCallbacks,
+  type WheelHandle,
+  type WheelRoots,
+  type WheelState
+} from "./wheel";
 
 const HOST_ID = "mapWheel";
 const RADIUS = 258; // half the 516px box
@@ -110,11 +117,19 @@ export function openMapWheel(event: MouseEvent, roots: WheelRoots, onPickSubject
   wheel.style.top = `${cy}px`;
 
   let state: WheelState = { mode: "here", path: [], hot: null };
+  // the live ring's hover handle; replaced by every structural redraw
+  let handle: WheelHandle | null = null;
   const callbacks: WheelCallbacks = {
     onState: next => {
       if (openPanel && !stillUnder(next.path, openPanel.path)) dropDrawer();
       state = next;
       draw();
+    },
+    // Hover never redraws: it repaints the two elements involved. A redraw would remove the node
+    // under the pointer, and the mouseleave/mouseenter that follows would redraw again.
+    onHot: hot => {
+      state = { ...state, hot };
+      handle?.applyHot(hot);
     },
     onPanel: (spec, mid) => {
       const side = pickSide(mid, cx, window.innerWidth);
@@ -146,7 +161,7 @@ export function openMapWheel(event: MouseEvent, roots: WheelRoots, onPickSubject
     }
   };
   const draw = (): void => {
-    renderWheel(wheel, roots, state, callbacks);
+    handle = renderWheel(wheel, roots, state, callbacks);
     if (openPanel) drawConnector(wheel, openPanel.mid, openPanel.side);
   };
   draw();
