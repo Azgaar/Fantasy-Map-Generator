@@ -2,14 +2,19 @@ import { describe, expect, it } from "vitest";
 import {
   arcPath,
   BANDS,
-  BASE_RADIUS_SCALE,
+  bandDepth,
   bands,
   boxRadius,
   drawerOffset,
   GAP_PX,
   ITEM_CAPS,
+  LABEL,
   labelPoint,
+  labelStack,
+  MARK_CLEAR,
+  MARK_SIZE,
   MAX_DEPTH,
+  markPath,
   outerRadius,
   ringSpan,
   sectors,
@@ -18,6 +23,7 @@ import {
   UI_SCALE_MIN,
   wheelScale
 } from "./geometry";
+import { WHEEL_CSS } from "./styles";
 
 const TAU = Math.PI * 2;
 
@@ -123,41 +129,106 @@ describe("spineLine", () => {
   });
 });
 
-// The labels are the reason the radii carry a multiplier of their own. A root label is 74px wide,
-// and at the base table 7 of them get 2pi*83/7 = 74.5px of arc each - the label is the sector.
-// Scaling the whole dial cannot help, because the label scales with it; only the radii may move.
 describe("bands", () => {
-  it("has four base bands matching the design spec", () => {
-    expect(BANDS).toEqual([
-      [58, 108],
-      [112, 158],
-      [162, 204],
-      [208, 246]
-    ]);
+  it("has four bands, each starting clear of the one inside it", () => {
     expect(MAX_DEPTH).toBe(4);
     expect(ITEM_CAPS).toEqual([7, 11, 15, 19]);
+    for (let level = 1; level < MAX_DEPTH; level++) {
+      expect(BANDS[level][0]).toBeGreaterThan(BANDS[level - 1][1]);
+    }
   });
 
-  it("applies the base radius multiplier and nothing else at scale 1", () => {
-    expect(bands()).toEqual(BANDS.map(([inner, outer]) => [inner * BASE_RADIUS_SCALE, outer * BASE_RADIUS_SCALE]));
-    expect(bands(1)).toEqual(bands());
-  });
-
-  it("scales every radius uniformly", () => {
+  it("scales every radius uniformly and by nothing else", () => {
+    expect(bands()).toEqual(BANDS.map(([inner, outer]) => [inner, outer]));
     expect(bands(2)).toEqual(bands().map(([inner, outer]) => [inner * 2, outer * 2]));
     expect(outerRadius(2)).toBeCloseTo(outerRadius() * 2, 10);
     expect(boxRadius(2)).toBeCloseTo(boxRadius() * 2, 10);
     expect(drawerOffset(2)).toBeCloseTo(drawerOffset() * 2, 10);
   });
 
-  it("buys every ring more arc per label than the label is wide", () => {
-    const widths = [74, 66, 66, 66];
+  it("gives every ring at its cap more arc per label than the label is wide", () => {
     const table = bands();
     ITEM_CAPS.forEach((cap, level) => {
       const mid = (table[level][0] + table[level][1]) / 2;
       const arc = (ringSpan(level, cap) * mid) / cap;
-      expect(arc).toBeGreaterThan(widths[level]);
+      expect(arc).toBeGreaterThan(LABEL.width);
     });
+  });
+});
+
+// The bug this guards: a label is an upright box, so which of its two dimensions eats the band's
+// RADIAL depth depends on where the sector points. At 3 o'clock the depth has to cover the widest
+// TEXT LINE; at 12 o'clock it has to cover the whole STACK. Sizing labels against the arc alone
+// left ink outside 141 of 882 measured placements. Both sides below are derived - the band table
+// from BANDS, the label from LABEL - and the stylesheet is written from that same LABEL, so no
+// third number can drift in between.
+describe("a label fits the band it sits in", () => {
+  const levels = [0, 1, 2, 3];
+
+  it("holds the widest text line a label can produce, at a sector pointing sideways", () => {
+    for (const level of levels) expect(bandDepth(level), `level ${level}`).toBeGreaterThan(LABEL.width);
+  });
+
+  it("holds the tallest stack a label can produce, at a sector pointing up", () => {
+    for (const level of levels) {
+      expect(bandDepth(level), `level ${level}`).toBeGreaterThan(labelStack(level));
+    }
+  });
+
+  it("leaves the parent tick room outside the label it marks", () => {
+    // the tick is only drawn where no note line is, so that is the stack it has to clear
+    for (const level of levels) {
+      const clearance = (bandDepth(level) - labelStack(level, LABEL.lines, false)) / 2;
+      expect(clearance, `level ${level}`).toBeGreaterThan(MARK_SIZE + MARK_CLEAR);
+    }
+  });
+
+  it("writes those very metrics into the stylesheet", () => {
+    expect(WHEEL_CSS).toContain(`width: calc(${LABEL.width}px * var(--mw-ui, 1))`);
+    expect(WHEEL_CSS).toContain(`font-size: calc(${LABEL.deep.font}px * var(--mw-ui, 1))`);
+    expect(WHEEL_CSS).toContain(`font-size: calc(${LABEL.root.font}px * var(--mw-ui, 1))`);
+    expect(WHEEL_CSS).toContain(`line-height: ${LABEL.lineHeight}`);
+    expect(WHEEL_CSS).toContain(`-webkit-line-clamp: ${LABEL.lines}`);
+    expect(WHEEL_CSS).toContain(`max-width: ${Math.round(LABEL.noteWidth * 100)}%`);
+    // a word longer than the label must break rather than reach outside the band
+    expect(WHEEL_CSS).toContain("overflow-wrap: anywhere");
+  });
+
+  it("scales the whole fit with uiSize, so no size can break it", () => {
+    for (const scale of [0.8, 1, 2]) {
+      for (const level of levels) {
+        expect(bandDepth(level, scale)).toBeGreaterThan(LABEL.width * scale);
+        expect(bandDepth(level, scale)).toBeGreaterThan(labelStack(level) * scale);
+      }
+    }
+  });
+});
+
+describe("markPath", () => {
+  it("points outward from just inside the band's outer arc", () => {
+    const outer = BANDS[1][1];
+    const points = [...markPath(0, outer).matchAll(/(-?\d+\.\d+) (-?\d+\.\d+)/g)].map(m => [+m[1], +m[2]]);
+    expect(points).toHaveLength(3);
+    const tip = points[1];
+    expect(tip[0]).toBeCloseTo(outer - MARK_CLEAR, 10);
+    expect(tip[1]).toBeCloseTo(0, 10);
+    // the two base corners sit MARK_SIZE further in, either side of the mid-angle
+    expect(points[0][0]).toBeCloseTo(outer - MARK_CLEAR - MARK_SIZE, 10);
+    expect(points[0][1]).toBeCloseTo(-points[2][1], 10);
+  });
+
+  it("stays inside the band at every angle and scale", () => {
+    for (const scale of [0.8, 1, 2]) {
+      const [inner, outer] = bands(scale)[2];
+      for (const mid of [0, 1.1, -2.4, Math.PI]) {
+        const points = [...markPath(mid, outer, scale).matchAll(/(-?\d+\.\d+) (-?\d+\.\d+)/g)];
+        for (const [, x, y] of points) {
+          const r = Math.hypot(+x, +y);
+          expect(r).toBeLessThanOrEqual(outer);
+          expect(r).toBeGreaterThan(inner);
+        }
+      }
+    }
   });
 });
 
@@ -178,9 +249,11 @@ describe("wheelScale", () => {
   });
 
   it("clamps again so the box never outgrows the viewport", () => {
+    // the box divides back out to the room it was fitted into, so allow float dust and nothing more
+    const fits = (box: number, room: number) => expect(box).toBeLessThanOrEqual(room + 1e-9);
     const scale = wheelScale(2, 1280, 720);
-    expect(boxRadius(scale) * 2).toBeLessThanOrEqual(720 - 32);
+    fits(boxRadius(scale) * 2, 720 - 32);
     expect(scale).toBeLessThan(UI_SCALE_MAX);
-    expect(boxRadius(wheelScale(2, 400, 400)) * 2).toBeLessThanOrEqual(400 - 32);
+    fits(boxRadius(wheelScale(2, 400, 400)) * 2, 400 - 32);
   });
 });

@@ -15,6 +15,7 @@ import {
   HOVER_GROW,
   labelPoint,
   MAX_DEPTH,
+  markPath,
   type Sector,
   sectors,
   spineLine
@@ -61,6 +62,8 @@ export interface WheelHandle {
 interface Painted {
   sector: SVGPathElement;
   label: HTMLElement;
+  /** the parent tick, on sectors that open a child ring */
+  mark: SVGPathElement | null;
   /** [normal, hovered] */
   d: [string, string];
   fill: [string, string];
@@ -114,10 +117,12 @@ function inkFor(pal: Palette, node: WheelNode, isChosen: boolean, isHot: boolean
   return pal.inks.base;
 }
 
+// Only a note that says something gets a line: a layer's on/off, a subject's kind, the subject
+// count. "This has children" is drawn as a tick on the sector's outer edge instead, because a line
+// of text costs the band's depth and every parent sector used to spend one on a "▸".
 function noteFor(node: WheelNode): string | null {
   if (node.toggle) return Layers.isOn(node.toggle) ? "on" : "off";
-  if (node.note) return node.note;
-  return node.children ? "▸" : null;
+  return node.note ?? null;
 }
 
 export function renderWheel(
@@ -188,14 +193,6 @@ export function renderWheel(
       label.style.top = `calc(50% + ${y.toFixed(2)}px)`;
       label.style.color = inkFor(pal, node, isChosen, false, isDim);
 
-      painted.set(`${L}:${i}`, {
-        sector,
-        label,
-        d: skin,
-        fill: [fillFor(pal, node, isChosen, false, isDim), fillFor(pal, node, isChosen, true, isDim)],
-        ink: [inkFor(pal, node, isChosen, false, isDim), inkFor(pal, node, isChosen, true, isDim)]
-      });
-
       const icon = document.createElement("i");
       icon.className = node.toggle && !Layers.isOn(node.toggle) ? "icon-eye-off" : node.icon;
       const text = document.createElement("span");
@@ -210,6 +207,26 @@ export function renderWheel(
         label.append(noteEl);
       }
       labelLayer.append(label);
+
+      // The tick is skipped where a note already takes the third line: that stack is tall enough to
+      // reach the band's outer edge, which is where the tick lives.
+      let mark: SVGPathElement | null = null;
+      if (nodeKind(node) === "children" && !note) {
+        mark = document.createElementNS(SVG, "path");
+        mark.setAttribute("class", "mw-mark");
+        mark.setAttribute("d", markPath(mid, outer, scale));
+        mark.setAttribute("fill", inkFor(pal, node, isChosen, false, isDim));
+        svg.append(mark);
+      }
+
+      painted.set(`${L}:${i}`, {
+        sector,
+        label,
+        mark,
+        d: skin,
+        fill: [fillFor(pal, node, isChosen, false, isDim), fillFor(pal, node, isChosen, true, isDim)],
+        ink: [inkFor(pal, node, isChosen, false, isDim), inkFor(pal, node, isChosen, true, isDim)]
+      });
     });
   });
 
@@ -224,6 +241,7 @@ export function renderWheel(
     item.sector.setAttribute("d", item.d[skin]);
     item.sector.setAttribute("fill", item.fill[skin]);
     item.label.style.color = item.ink[skin];
+    item.mark?.setAttribute("fill", item.ink[skin]);
   };
 
   const applyHot = (next: HotRef | null): void => {

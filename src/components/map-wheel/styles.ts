@@ -1,3 +1,8 @@
+import { LABEL } from "./geometry";
+
+/** every label length follows the app's uiSize, which the renderer publishes as --mw-ui */
+const ui = (px: number): string => `calc(${px}px * var(--mw-ui, 1))`;
+
 export const WHEEL_CSS = `
 /* Colours follow the app's live theme. \`--bg-light\` / \`--bg-lighter\` / \`--light-solid\` /
    \`--dark-solid\` are written onto <html> by changeDialogsTheme(); the \`--mw-*\` properties are the
@@ -54,24 +59,58 @@ export const WHEEL_CSS = `
 
 #mapWheel .mw-labels { position: absolute; inset: 0; pointer-events: none; }
 
+/* Every length here comes from LABEL in geometry.ts, which is also what the band table is sized
+   against - the label's widest text line has to fit the band's DEPTH at a sector pointing sideways,
+   and the whole stack has to fit it at a sector pointing up. Editing a size here without moving
+   LABEL is exactly the drift that put ink outside the sectors, so there is nothing to edit here. */
 #mapWheel .mw-label {
   position: absolute;
   transform: translate(-50%, -50%);
-  width: calc(66px * var(--mw-ui, 1));
+  width: ${ui(LABEL.width)};
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: calc(2px * var(--mw-ui, 1));
-  font-size: calc(9.5px * var(--mw-ui, 1));
-  line-height: 1.15;
+  gap: ${ui(LABEL.gap)};
+  font-size: ${ui(LABEL.deep.font)};
+  line-height: ${LABEL.lineHeight};
   text-align: center;
   pointer-events: none;
 }
 
-#mapWheel .mw-label--root { width: calc(74px * var(--mw-ui, 1)); font-size: calc(10.5px * var(--mw-ui, 1)); }
-#mapWheel .mw-label i { font-size: calc(16px * var(--mw-ui, 1)); line-height: 1; }
-#mapWheel .mw-label--root i { font-size: calc(19px * var(--mw-ui, 1)); }
-#mapWheel .mw-note { font-size: calc(8.5px * var(--mw-ui, 1)); opacity: .68; letter-spacing: .05em; }
+#mapWheel .mw-label--root { font-size: ${ui(LABEL.root.font)}; }
+#mapWheel .mw-label i { font-size: ${ui(LABEL.deep.icon)}; line-height: 1; }
+#mapWheel .mw-label--root i { font-size: ${ui(LABEL.root.icon)}; }
+/* The note is the ink furthest from the band's mid-radius, so its WIDTH is what decides how far a
+   label's bottom corner reaches at a diagonal sector. Bounded here, and by the same fraction the
+   band table was sized against. */
+#mapWheel .mw-note {
+  font-size: ${ui(LABEL.note)};
+  opacity: .68;
+  letter-spacing: .05em;
+  max-width: ${Math.round(LABEL.noteWidth * 100)}%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The bound on the ink, and the reason the fit can be asserted rather than hoped for: a word longer
+   than the label breaks instead of spilling out of the sector, and the text stops at LABEL.lines
+   however long an entity's name turns out to be. Without both, a single long name would put ink
+   outside its band no matter how the radii are tuned. */
+#mapWheel .mw-label span:not(.mw-note) {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: ${LABEL.lines};
+  line-clamp: ${LABEL.lines};
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+  max-width: 100%;
+}
+
+/* Marks a sector as a parent. It used to be a "▸" note line, which cost every parent label a whole
+   line of the band's depth; in the SVG it costs none. */
+#mapWheel .mw-mark { pointer-events: none; }
 
 #mapWheel .mw-hub {
   position: absolute;

@@ -52,7 +52,7 @@ New directory `src/components/map-wheel/`. Registered by adding `import "./map-w
 | --- | --- | --- |
 | `context.ts` | ported from `upstream/map-wheel-concept` | Right-click → ranked `WheelSubject[]` with real action lists. |
 | `menu-tree.ts` | new | The MENU channel tree, reconciled against real FMG (§ Menu tree). Pure data + `run()` thunks. |
-| `geometry.ts` | new | Pure math: bands, span/start-angle, sector path, label position, spine endpoints, the two scale factors. No DOM. |
+| `geometry.ts` | new | Pure math: bands, the label metrics they are sized to, span/start-angle, sector path, label position, spine endpoints, the parent tick, uiSize scaling. No DOM. |
 | `palette.ts` | new | Samples the app's theme variables into resolved colour strings, with the handoff as fallback and a 4.5:1 guard. No ring knowledge. |
 | `wheel.ts` | new | The spin-out renderer: fold `path` → rings, spines, HTML label layer, hub, breadcrumb. |
 | `drawer.ts` | new | The side drawer: host reparenting, row filtering, restore (§ Side drawer). |
@@ -72,7 +72,7 @@ Both channels produce the same node shape, so the renderer has one code path:
 interface WheelNode {
   label: string;
   icon: string;            // icon-* class from public/icons.css
-  note?: string;           // third label line; also auto-filled with "▸" when children exist
+  note?: string;           // third label line, for a note that says something (see § Labels)
   danger?: boolean;        // destructive: danger ink, danger hover fill
   toggle?: LayerId;        // layer toggle: green when on, note flips on/off, ring does not close
   pick?: number;           // HERE: index into ctx.subjects
@@ -87,39 +87,58 @@ A node has exactly one of `children`, `panel`, `run`, `toggle` or `pick`; a unit
 
 ## Geometry
 
-The handoff's table is the base, and two independent factors sit on top of it. Neither is a module
-variable: `geometry.ts` stays pure and takes the scale as an argument (`bands(scale)`,
+`geometry.ts` stays pure and takes the scale as an argument (`bands(scale)`,
 `sectors(level, count, parentMid, scale)`, `spineLine(level, parentMid, scale)`, `boxRadius(scale)`,
-`outerRadius(scale)`, `drawerOffset(scale)`).
+`outerRadius(scale)`, `drawerOffset(scale)`, `markPath(mid, outer, scale)`).
 
-Four concentric base bands `[innerRadius, outerRadius]`:
+Four concentric bands `[innerRadius, outerRadius]`, at uiSize 1:
 
-| Level | Band | rMid |
-| --- | --- | --- |
-| 0 | `[58, 108]` | 83 |
-| 1 | `[112, 158]` | 135 |
-| 2 | `[162, 204]` | 183 |
-| 3 | `[208, 246]` | 227 |
-
-### Factor 1: the base radius multiplier (×1.2, radii only)
-
-**A label is almost as wide as the arc it occupies.** At the base radii the worst case is the root
-ring at 7 items: `2π·83/7` = 74.5px of arc for a 74px label. Scaling the whole dial does not help —
-arc and label grow together and the ratio never moves. The fix is a **×1.2 multiplier on the band
-radii alone**, with label widths, font sizes and icon sizes untouched:
-
-| Level | items at cap | arc per label | label width |
+| Level | Band | depth | rMid |
 | --- | --- | --- | --- |
-| 0 | 7 | 89px | 74px |
-| 1 | 11 | 87px | 66px |
-| 2 | 15 | 86px | 66px |
-| 3 | 19 | 85px | 66px |
+| 0 | `[58, 125]` | 67 | 91.5 |
+| 1 | `[130, 196]` | 66 | 163 |
+| 2 | `[201, 266]` | 65 | 233.5 |
+| 3 | `[271, 335]` | 64 | 303 |
 
-`ITEM_CAPS` are unchanged: the caps are about how many labels fit, and the multiplier only adds
-headroom. Measured in the browser on the 7-item HERE root: before, the worst pair of root labels
-overlapped by 7.7px; after, they clear by 3.9px.
+### The band depths are sized to the labels, and that is the whole of it
 
-### Factor 2: uiSize (uniform)
+The handoff's `[58,108] … [208,246]` table (depths 50/46/42/38) came with no statement of what a
+band had to hold, and the first sizing pass measured only label WIDTH against the sector's ARC.
+That is half the problem. **A label is an upright box on a ring, so which of its dimensions eats the
+band's radial depth depends on where the sector points**: a sector at 3 o'clock spends the depth on
+the widest text LINE, one at 12 o'clock on the whole STACK (icon, up to two text lines, an optional
+note). Nothing checked the radial direction, and a ×1.2 multiplier on the radii could not fix it —
+it grew the arc, which was never the binding constraint.
+
+Measured in the browser over every label placement in the whole tree (both channels, every ring,
+every level, at uiSize 0.8/1/2): **141 of 882 placements had ink outside their own sector**, worst
+9.5px on `World configuration`, 8px on `Reset options`, 7.7px on `State labels`. The four levers, in
+the order they were applied:
+
+1. **The "▸" note came out of the text stack** and became a tick drawn in the SVG at the sector's
+   outer edge (`markPath`, `MARK_SIZE`/`MARK_CLEAR`). Every parent sector used to spend a whole line
+   of the band's depth saying it had children. Notes still render as text where they say something:
+   a layer's `on`/`off`, a subject's kind, the subject count.
+2. **The label is bounded structurally**, so the worst case is a fact rather than a hope: the text is
+   clamped to `LABEL.lines` (2) with an ellipsis, a word longer than the label breaks
+   (`overflow-wrap: anywhere`, `hyphens: auto`) instead of spilling, and the note line is capped at
+   `LABEL.noteWidth` (75%) of the label with an ellipsis. Without these an entity name of any length
+   could put ink outside the band whatever the radii.
+3. **One label width for every level** — `LABEL.width` = 62, replacing 74/66. The root keeps its
+   larger font and icon; only the width is shared. 62 is not free choice either: it is the width at
+   which the longest word in the tree (`Monochrome`, 61.7px at the deep font) still sets on one line,
+   and a label narrower than its longest word breaks that word across two lines with a letter
+   stranded on the second.
+4. **The band depths were re-derived by measurement**, not arithmetic: the depths above are the
+   smallest at which no ink escapes any sector anywhere in the tree, plus a pixel. Two labels were
+   shortened rather than paid for in radius: `World configuration` → `Configure world` (the button's
+   own words) and the market action `Trade animation` → `Animate trade`.
+
+`LABEL` lives in `geometry.ts` beside the band table, and `styles.ts` writes those very numbers into
+the stylesheet, so the two cannot drift. The result is **zero ink outside any sector across all 885
+label placements at uiSize 0.8, 1 and 2**, tightest clearance 0.9px, and no word broken mid-word.
+
+### uiSize (uniform)
 
 The dial follows the app's own sizing control, read at open from `#uiSize` (a `<slider-input>`;
 either `.value` or `.valueAsNumber` works, both are implemented and both are used elsewhere in the
@@ -132,9 +151,9 @@ Missing or unreadable uiSize is 1. The values that were constants elsewhere are 
 `.mw-wheel` as `--mw-ui`, `--mw-box` and `--mw-drawer-offset` so the stylesheet can size labels, the
 hub and the drawer's offset from them.
 
-SVG `viewBox="-R -R 2R 2R"` rendered `2R` square, where `R = boxRadius(scale)` = 307.2 at scale 1
-(295.2 outer radius + 12 clearance for the hover growth and the shadow).
-`filter: drop-shadow(0 10px 26px rgba(38,28,12,.35))`.
+SVG `viewBox="-R -R 2R 2R"` rendered `2R` square, where `R = boxRadius(scale)` = 341 at scale 1
+(335 outer radius + 6 clearance for the hover growth; the shadow is drawn outside the box, which is
+`overflow: visible`). `filter: drop-shadow(0 10px 26px rgba(38,28,12,.35))`.
 
 - **Depth is capped at 4 rings.** Deeper trees are restructured, never allowed to overflow.
 - Level 0 spans the full circle: `span = 2π`, `startAngle = -π/2 - (span/n)/2`, so item 0 is centred
@@ -146,26 +165,28 @@ SVG `viewBox="-R -R 2R 2R"` rendered `2R` square, where `R = boxRadius(scale)` =
 - Sector path is an annular wedge: `M innerStart → L outerStart → A(outer) → L innerEnd →
   A(inner, reversed) → Z`, large-arc flag set when the sweep exceeds π.
 - Hover expansion: hovered sector's **outer** radius +5px. Inner radius never moves.
+- Parent tick: a 4px triangle pointing outward, 2px inside the band's outer arc, on any sector that
+  opens a child ring and does not already carry a note line. Filled with the sector's ink, and
+  repainted with it on hover. This is the affordance the "▸" note line used to carry.
 - Spine: for each level ≥ 1, a line at the parent's mid-angle from `BANDS[L-1][1]` to `BANDS[L][0]`,
   stroke `--dark-solid` (`#4a3a22`), `stroke-width 3`, `stroke-linecap round`. The drawer's
   connector is the same line.
 
 ### Derived item caps
 
-The handoff does not state a per-ring item cap, but its own geometry implies one. A label is 74px
-wide at level 0 and 66px at levels 1+; a sector needs roughly 70px of arc at its mid-radius to hold
-one without collision. Therefore:
+The handoff does not state a per-ring item cap, but its own geometry implies one: a sector needs
+more arc at its mid-radius than the label is wide (`LABEL.width` = 62). Therefore:
 
-| Level | arc available at rMid | max items |
+| Level | arc per label at the cap | max items |
 | --- | --- | --- |
-| 0 | `2π · 83` = 521px | **7** |
-| 1 | `5.906 · 135` = 797px | **11** |
-| 2 | `5.906 · 183` = 1081px | **15** |
-| 3 | `5.906 · 227` = 1341px | **19** |
+| 0 | `2π · 91.5 / 7` = 82px | **7** |
+| 1 | `5.906 · 163 / 11` = 88px | **11** |
+| 2 | `5.906 · 233.5 / 15` = 92px | **15** |
+| 3 | `5.906 · 303 / 19` = 94px | **19** |
 
 These caps are enforced by a unit test over the menu tree, not merely documented. They are also why
-the menu tree below is grouped the way it is. The base radius multiplier above turns each of these
-into real headroom rather than a dead heat.
+the menu tree below is grouped the way it is. Arc was never the binding constraint — the band's
+radial depth was — so the caps have comfortable headroom rather than a dead heat.
 
 ### Root overflow rule
 
@@ -321,20 +342,24 @@ actual codebase. Every ring is within its level's cap and no branch exceeds dept
 
 `Layers` · `Style` · `Options` · `Tools` · `About`
 
-### Layers (8 at L1)
+### Layers (9 at L1)
 
 33 toggleable layers (39 registered minus the 6 `permanent` ones), plus presets and an ordering
-escape hatch:
+escape hatch. Grouped by **what each layer depicts**. The first grouping was invented to fit the ring item caps
+and put Labels under "Cultural", which is not what a label is about; the caps constrain the answer,
+they are not the question. The distinction that decides the last two: **Annotations** are things the
+user places on the map, **Decoration** is the map's own furniture and presentation.
 
 | Group | Members |
 | --- | --- |
 | Presets | the 13 `#layersPreset` options: political, cultural, religions, provinces, biomes, heightmap, physical, poi, goods, trade, military, emblems, landmass |
-| Terrain | heightmap, relief, biomes, rivers, lakes, ice, texture |
-| Political | states, provinces, borders, burgIcons, emblems, military, zones |
-| Cultural | cultures, religions, labels, markers |
-| Economy | routes, goods, markets, trade, population, journeys |
+| Terrain | heightmap, relief, biomes, rivers, lakes, ice |
 | Climate | temperature, precipitation |
-| Overlay | grid, coordinates, compass, scaleBar, vignette, cells, rulers |
+| Political | states, provinces, borders, zones, military, emblems |
+| People | cultures, religions, population, burgIcons |
+| Economy | routes, goods, markets, trade, journeys |
+| Annotations | labels, markers, rulers |
+| Decoration | texture, grid, coordinates, compass, scaleBar, vignette, cells |
 | **Reorder layers…** | leaf — opens the Layers tab |
 
 Toggle sectors are the design's live-status case: clicking flips the layer, the sector turns
@@ -370,7 +395,8 @@ assigned exactly once — a unit test asserts the partition is total and disjoin
 | Interface | `uiSize`, `tooltipSize`, `themeHueInput`, `transparencyInput`, `azgaarAssistant` |
 | Behaviour | `autosaveIntervalInput`, `onloadBehavior`, `speakerVoice`, `zoomExtentMin`, `shapeRendering`, `viewportRedraw`, `resetLanguage` |
 
-Plus: `Units` (`#editUnitsButton`) · `World configuration` (`#configureWorld`) ·
+Plus: `Units` (`#editUnitsButton`) · `Configure world` (`#configureWorld`, the button's own words —
+"World configuration" put a 13-character word in a 56px label) ·
 `File` → `New map` / `Save` / `Load` / `Export` · `Reset options` (`#optionsReset`, destructive).
 
 Hotkeys are a wiki page in FMG, not a dialog, so the prototype's `Hotkeys` entry is dropped rather
@@ -544,15 +570,22 @@ Labels are **HTML**, not SVG text — absolutely positioned divs in a sibling la
 done by the SVG `<path>` underneath.
 
 - Position `(cos(mid) · rMid, sin(mid) · rMid)`, `translate(-50%,-50%)`.
-- Width 74px at level 0, 66px at levels 1+. Column flex, centred, `gap: 2px`, `line-height: 1.15`.
+- Width `LABEL.width` = 62px at every level. Column flex, centred, `gap: 2px`, `line-height: 1.15`.
 - Font: IBM Plex Sans, 10.5px at level 0, 9.5px at levels 1+.
 - Icon above the label: **FMG's own `icon-*` set from `public/icons.css`**, 19px at level 0, 16px at
   levels 1+.
 - Every one of those lengths is `calc(<base> * var(--mw-ui, 1))`, so they follow uiSize with the
-  radii. They do **not** carry the ×1.2 base multiplier — that is the whole point of it. (The prototype uses Material Symbols; substituted per the handoff's own instruction, to
+  radii. (The prototype uses Material Symbols; substituted per the handoff's own instruction, to
   avoid a Google Fonts dependency in the desktop build and a second icon vocabulary.)
-- Optional third line: 8.5px, `opacity .68`, `letter-spacing .05em` — `on`/`off` for layer toggles,
-  the subject kind under an entity name, the subject count, and `▸` on any sector with children.
+- The text is clamped to `LABEL.lines` = 2 lines with an ellipsis, and a word wider than the label
+  breaks rather than spilling (`overflow-wrap: anywhere`, `hyphens: auto`). This is what bounds an
+  entity name of arbitrary length, and it is why the fit can be asserted rather than hoped for.
+- Optional third line: 8.5px, `opacity .68`, `letter-spacing .05em`, ellipsised at 75% of the label
+  width — `on`/`off` for layer toggles, the subject kind under an entity name, the subject count.
+  "This has children" is **not** one of them: it is the SVG tick at the sector's outer edge, because
+  a line of text costs the band's depth and a tick costs none.
+- Every one of these lengths comes from `LABEL` in `geometry.ts`, which `styles.ts` interpolates into
+  the stylesheet, so the band table and the labels it must hold cannot drift apart.
 
 ### Hub
 
@@ -610,10 +643,15 @@ needed — the hub in this concept carries tab type only, not entity names.
 - `geometry.test.ts` — sector path shape; large-arc flag set exactly when the sweep exceeds π; root
   start angle centres item 0 on 12 o'clock; child span clamp at both ends (`n·0.55`, floor 1.4,
   ceiling `π·1.88`); gap converted to radians per level; spine endpoints; band table; depth cap.
-  Plus the two scale factors: `bands()` applies ×1.2 and nothing else, every radius scales
-  uniformly, `sectors(…, 1)` is identity, a 3px gap stays 3px as the dial grows, every ring at its
-  cap has more arc per label than the label is wide, and `wheelScale` clamps to `[0.8, 2]` and then
-  again to the viewport.
+  Plus: every radius scales uniformly with uiSize and by nothing else, `sectors(…, 1)` is identity,
+  a 3px gap stays 3px as the dial grows, every ring at its cap has more arc per label than the label
+  is wide, and `wheelScale` clamps to `[0.8, 2]` and then again to the viewport.
+  Plus the label-fit guard, which is the regression test for the overflow bug: every band is deeper
+  than `LABEL.width` (the sideways case) and deeper than `labelStack(level)` (the upright case), at
+  0.8/1/2; the parent tick has room outside the tallest label that carries one; and the stylesheet
+  really is written from those metrics. Geometry on one side, typography on the other — neither
+  side is a copy of the number it is checked against.
+  `markPath` is tested for shape and for staying inside its band at every angle and scale.
 - `palette.test.ts` — the fallback palette is byte-identical to the handoff when no theme is
   published; the app's variables are followed when they are; danger and layer-on stay literal;
   `readable` moves the same ink opposite ways for a light and a dark ground. The contrast assertion
@@ -648,8 +686,13 @@ needed — the hub in this concept carries tab type only, not entity names.
   original position, and the top-bar Options tab renders normally.
 - Right-click near a viewport corner keeps wheel and drawer on screen together.
 - Right-click while `customization` is active does not open the wheel.
-- Every root label on the 7-item HERE root gets more arc than it is wide, and no two of them
-  overlap — measured on the laid-out labels, which is the only place that can be settled.
+- **No label's ink leaves its own sector.** Measured on what is actually painted — each text LINE's
+  rect, clipped by the box that clamps it — against the band's inner and outer arcs and the wedge's
+  radial edges, over the rings that hold the tree's hardest labels (the layer toggles, which carry a
+  note; the 15-item Edit ring; the Options ring; the HERE subject list) at uiSize 0.8, 1 and 2. This
+  is the regression test for the overflow bug and the only place it can be settled.
+- A parent sector is marked with a tick and not with a line of label text, and the tick is drawn
+  inside its band.
 - The box grows with uiSize and is capped at `min(innerWidth, innerHeight) - 32` at the extreme,
   staying wholly on screen at every size.
 

@@ -1,5 +1,5 @@
 import { type Browser, type BrowserContext, expect, type Page, test } from "@playwright/test";
-import { BASE_RADIUS_SCALE } from "../../src/components/map-wheel/geometry";
+import { BANDS } from "../../src/components/map-wheel/geometry";
 
 // The map wheel is a radial context controller opened by right-clicking the map. Unit tests cover
 // the geometry, the menu tree and the drawer's borrow/restore in isolation; only a browser can
@@ -26,15 +26,15 @@ interface SectorInfo {
 // One ring per level, so a sector's level can be read back off its own arc: `d` starts at the
 // band's inner radius. Labels live in a sibling layer, appended in the same order as the paths.
 //
-// Neither the radii nor the hot fill are constants any more: the bands carry the base radius
-// multiplier times the clamped uiSize, and the fills follow the app's theme. The scale is published
-// on .mw-wheel and the multiplier is imported, rather than hardcoding numbers the app can move.
+// Neither the radii nor the hot fill are constants any more: the bands carry the clamped uiSize and
+// the fills follow the app's theme. The scale is published on .mw-wheel and the band table is
+// imported, rather than hardcoding numbers the app can move.
 const readSectors = (): Promise<SectorInfo[]> =>
   page.evaluate(base => {
     const wheel = document.querySelector<HTMLElement>("#mapWheel .mw-wheel")!;
     const style = getComputedStyle(wheel);
     const ui = Number.parseFloat(style.getPropertyValue("--mw-ui")) || 1;
-    const INNER = [58, 112, 162, 208].map(r => r * base * ui);
+    const INNER = base.map(band => band[0] * ui);
     const HOT = ["--mw-fill-hot", "--mw-fill-danger"].map(name => style.getPropertyValue(name).trim());
     const paths = [...document.querySelectorAll<SVGPathElement>("#mapWheel path.mw-sector")];
     const labels = [...document.querySelectorAll<HTMLElement>("#mapWheel .mw-labels > .mw-label")];
@@ -56,7 +56,7 @@ const readSectors = (): Promise<SectorInfo[]> =>
         hot: HOT.includes(path.getAttribute("fill")!)
       };
     });
-  }, BASE_RADIUS_SCALE);
+  }, BANDS as unknown as number[][]);
 
 const press = async (key: string, times: number): Promise<void> => {
   for (let i = 0; i < times; i++) await page.keyboard.press(key);
@@ -270,7 +270,7 @@ test.describe("map wheel", () => {
     const offset = await page
       .locator("#mapWheel .mw-wheel")
       .evaluate(el => Number.parseFloat(getComputedStyle(el).getPropertyValue("--mw-drawer-offset")));
-    expect(offset).toBeGreaterThan(260); // the 1.2 base multiplier moved the ring's edge outward
+    expect(offset).toBeGreaterThan(BANDS[3][1]); // clear of the outer ring, not of some old constant
     const side = await page.locator("#mapWheelDrawer").getAttribute("data-side");
     const gap = side === "right" ? drawer.x - centre.x : centre.x - (drawer.x + drawer.width);
     expect(gap).toBeCloseTo(offset, -1);
@@ -375,32 +375,133 @@ test.describe("map wheel", () => {
     await closeDialogs();
   });
 
-  // The root ring at 7 items is the worst case for label overflow: at the base radii a 74px label
-  // gets 2pi*83/7 = 74.5px of arc. The 1.2 radius multiplier is what fixes that, and only a browser
-  // can measure the labels as they are actually laid out.
-  test("gives every root label more arc than it is wide", async () => {
-    await openWheel();
-    const measured = await page.evaluate(base => {
+  // The overflow bug this guards, and the only place it can be settled: a label is an upright box,
+  // so a sector at 3 o'clock spends the band's radial DEPTH on the label's widest text line while
+  // one at 12 o'clock spends it on the whole stack. Sizing labels against the arc alone left ink
+  // outside the sector on 141 of 882 placements, worst 9.5px on "World configuration".
+  //
+  // Measured on the ink actually painted - each text LINE's rect, clipped by the box that clamps it -
+  // against the sector the label belongs to, at both ends of the uiSize range.
+  const measureInk = (): Promise<{ worst: number; where: string; placements: number }> =>
+    page.evaluate(base => {
       const wheel = document.querySelector<HTMLElement>("#mapWheel .mw-wheel")!;
       const ui = Number.parseFloat(getComputedStyle(wheel).getPropertyValue("--mw-ui")) || 1;
-      const rMid = ((58 + 108) / 2) * base * ui;
-      const labels = [...document.querySelectorAll<HTMLElement>("#mapWheel .mw-label--root")];
-      const boxes = labels.map(el => el.getBoundingClientRect());
+      const box = wheel.getBoundingClientRect();
+      const [ox, oy] = [box.x + box.width / 2, box.y + box.height / 2];
+      const paths = [...wheel.querySelectorAll<SVGPathElement>("path.mw-sector")];
+      const labels = [...wheel.querySelectorAll<HTMLElement>(".mw-labels > .mw-label")];
+      const norm = (a: number) => {
+        let v = a;
+        while (v > Math.PI) v -= Math.PI * 2;
+        while (v < -Math.PI) v += Math.PI * 2;
+        return v;
+      };
 
-      let worstOverlap = Number.NEGATIVE_INFINITY;
-      for (let i = 0; i < boxes.length; i++) {
-        for (let j = i + 1; j < boxes.length; j++) {
-          const [a, b] = [boxes[i], boxes[j]];
-          const x = (a.width + b.width) / 2 - Math.abs(a.x + a.width / 2 - (b.x + b.width / 2));
-          const y = (a.height + b.height) / 2 - Math.abs(a.y + a.height / 2 - (b.y + b.height / 2));
-          worstOverlap = Math.max(worstOverlap, Math.min(x, y));
+      let worst = Number.NEGATIVE_INFINITY;
+      let where = "";
+      paths.forEach((path, i) => {
+        const d = path.getAttribute("d")!.split(/ +/);
+        const from = Math.atan2(Number(d[2]), Number(d[1]));
+        const to = Math.atan2(Number(d[16]), Number(d[15]));
+        let wedge = to - from;
+        while (wedge <= 0) wedge += Math.PI * 2;
+        const mid = from + wedge / 2;
+        // the ring this sector belongs to, from the radius its arc starts at
+        const radius = Math.hypot(Number(d[1]), Number(d[2]));
+        const level = base
+          .map((band, l) => [Math.abs(radius - band[0] * ui), l])
+          .sort((a, b) => a[0] - b[0])[0][1];
+        const [inner, outer] = [base[level][0] * ui, base[level][1] * ui];
+
+        for (const child of [...labels[i].children] as HTMLElement[]) {
+          const clip = child.getBoundingClientRect();
+          const rects: DOMRect[] = [];
+          if (child.tagName === "I") rects.push(clip);
+          else {
+            const range = document.createRange();
+            range.selectNodeContents(child);
+            for (const line of [...range.getClientRects()]) {
+              const [l, r] = [Math.max(line.left, clip.left), Math.min(line.right, clip.right)];
+              const [t, b] = [Math.max(line.top, clip.top), Math.min(line.bottom, clip.bottom)];
+              if (r > l && b > t) rects.push(new DOMRect(l, t, r - l, b - t));
+            }
+          }
+          for (const rect of rects) {
+            for (const [cx, cy] of [
+              [rect.left, rect.top],
+              [rect.right, rect.top],
+              [rect.left, rect.bottom],
+              [rect.right, rect.bottom]
+            ]) {
+              const [x, y] = [cx - ox, cy - oy];
+              const r = Math.hypot(x, y);
+              const off = Math.abs(norm(Math.atan2(y, x) - mid));
+              const bad = Math.max(r - outer, inner - r, (off - wedge / 2) * r);
+              if (bad > worst) {
+                worst = bad;
+                where = `"${labels[i].textContent}" (level ${level}, ${Math.round((mid * 180) / Math.PI)}deg)`;
+              }
+            }
+          }
         }
-      }
-      return { count: labels.length, arc: (2 * Math.PI * rMid) / labels.length, width: boxes[0].width, worstOverlap };
-    }, BASE_RADIUS_SCALE);
+      });
+      return { worst, where, placements: paths.length };
+    }, BANDS as unknown as number[][]);
 
-    expect(measured.arc).toBeGreaterThan(measured.width);
-    expect(measured.worstOverlap).toBeLessThan(0); // no two root labels touch
+  test("keeps every label's ink inside its own sector", async () => {
+    for (const uiSize of ["0.8", "1", "2"]) {
+      await page.evaluate(v => {
+        (document.getElementById("uiSize") as HTMLInputElement).value = v;
+      }, uiSize);
+
+      // the rings that hold the tree's hardest labels: the layer toggles carry a note line, Edit is
+      // the 15-item ring, and the HERE root is the one with the longest action names
+      for (const drill of [
+        ["Layers", "Decoration"],
+        ["Tools", "Edit"],
+        ["Options"]
+      ]) {
+        await openWheel();
+        await menuTab();
+        for (const step of drill) await activate(byLabel(step));
+        const ink = await measureInk();
+        expect(ink.placements).toBeGreaterThan(4);
+        expect(ink.worst, `uiSize ${uiSize}, ${drill.join(" > ")}: ${ink.where} spills`).toBeLessThanOrEqual(0);
+        await page.keyboard.press("Escape");
+      }
+
+      await openWheel();
+      await hereTab();
+      await activate(byLabel("What's here"));
+      const here = await measureInk();
+      expect(here.worst, `uiSize ${uiSize}, HERE: ${here.where} spills`).toBeLessThanOrEqual(0);
+      await page.keyboard.press("Escape");
+    }
+
+    await page.evaluate(() => {
+      (document.getElementById("uiSize") as HTMLInputElement).value = "1";
+    });
+  });
+
+  test("marks a parent sector with a tick instead of a line of label text", async () => {
+    await openWheel();
+    await menuTab();
+    // five root sectors, four of which open a child ring; About opens the drawer instead
+    expect(await page.locator("#mapWheel path.mw-mark").count()).toBe(4);
+    expect(await page.locator("#mapWheel .mw-label .mw-note").count()).toBe(0);
+
+    // and the tick is drawn inside the band it belongs to, not over the map
+    const outside = await page.locator("#mapWheel path.mw-mark").evaluateAll((marks, band) => {
+      const wheel = document.querySelector<HTMLElement>("#mapWheel .mw-wheel")!;
+      const ui = Number.parseFloat(getComputedStyle(wheel).getPropertyValue("--mw-ui")) || 1;
+      return marks.filter(mark =>
+        [...mark.getAttribute("d")!.matchAll(/(-?\d+\.\d+) (-?\d+\.\d+)/g)].some(m => {
+          const r = Math.hypot(Number(m[1]), Number(m[2]));
+          return r > band[1] * ui || r < band[0] * ui;
+        })
+      ).length;
+    }, BANDS[0] as unknown as number[]);
+    expect(outside).toBe(0);
   });
 
   // uiSize is the app's own sizing control; the wheel follows it, then refuses to outgrow the window

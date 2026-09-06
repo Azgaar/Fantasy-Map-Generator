@@ -17,9 +17,14 @@ const node = (label: string, icon: string, extra: Partial<WheelNode> = {}): Whee
 });
 
 // -- layers ------------------------------------------------------------------------------------
-// Toggleable layers, grouped so no ring exceeds its cap. Order inside a group follows the
-// registry's z-order, which is the order the Layers list shows. Permanent layers (ocean,
-// landmass, coastline, fogging, debug, legend) have no off state and never appear here.
+// Toggleable layers, grouped by WHAT EACH ONE DEPICTS. The earlier grouping was invented to fit the
+// ring item caps and filed Labels under "Cultural", which is not what a label is about; the caps
+// are a constraint on the answer, never the question. Order inside a group follows the registry's
+// z-order, which is the order the Layers list shows. Permanent layers (ocean, landmass, coastline,
+// fogging, debug, legend) have no off state and never appear here.
+//
+// Annotations vs Decoration is the distinction that fixes the misfiling: annotations are things the
+// user puts ON the map, decoration is the map's own furniture and presentation.
 
 export interface LayerGroup {
   label: string;
@@ -28,27 +33,20 @@ export interface LayerGroup {
 }
 
 export const LAYER_GROUPS: LayerGroup[] = [
-  {
-    label: "Terrain",
-    icon: "icon-mountain",
-    layers: ["heightmap", "relief", "biomes", "rivers", "lakes", "ice", "texture"]
-  },
+  { label: "Terrain", icon: "icon-mountain", layers: ["heightmap", "relief", "biomes", "rivers", "lakes", "ice"] },
+  { label: "Climate", icon: "icon-temperature-high", layers: ["temperature", "precipitation"] },
   {
     label: "Political",
     icon: "icon-flag",
-    layers: ["states", "provinces", "borders", "burgIcons", "emblems", "military", "zones"]
+    layers: ["states", "provinces", "borders", "zones", "military", "emblems"]
   },
-  { label: "Cultural", icon: "icon-users", layers: ["cultures", "religions", "labels", "markers"] },
+  { label: "People", icon: "icon-users", layers: ["cultures", "religions", "population", "burgIcons"] },
+  { label: "Economy", icon: "icon-exchange", layers: ["routes", "goods", "markets", "trade", "journeys"] },
+  { label: "Annotations", icon: "icon-pencil", layers: ["labels", "markers", "rulers"] },
   {
-    label: "Economy",
-    icon: "icon-exchange",
-    layers: ["routes", "goods", "markets", "trade", "population", "journeys"]
-  },
-  { label: "Climate", icon: "icon-temperature-high", layers: ["temperature", "precipitation"] },
-  {
-    label: "Overlay",
-    icon: "icon-sitemap",
-    layers: ["grid", "coordinates", "compass", "scaleBar", "vignette", "cells", "rulers"]
+    label: "Decoration",
+    icon: "icon-paint-roller",
+    layers: ["texture", "grid", "coordinates", "compass", "scaleBar", "vignette", "cells"]
   }
 ];
 
@@ -148,7 +146,8 @@ const optionsBranch = (): WheelNode =>
         })
       ),
       node("Units", "icon-ruler", { run: click("editUnitsButton") }),
-      node("World configuration", "icon-globe-africa", { run: click("configureWorld") }),
+      // the button's own words: "World configuration" put a 13-character word in a label 56px wide
+      node("Configure world", "icon-globe-africa", { run: click("configureWorld") }),
       node("File", "icon-doc", {
         children: FILE_ACTIONS.map(([label, icon, id]) => node(label, icon, { run: click(id) }))
       }),

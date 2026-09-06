@@ -106,7 +106,7 @@ describe("options branch", () => {
       "Interface",
       "Behaviour",
       "Units",
-      "World configuration",
+      "Configure world",
       "File",
       "Reset options"
     ]);

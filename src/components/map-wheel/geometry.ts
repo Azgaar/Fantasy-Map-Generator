@@ -1,30 +1,66 @@
 // Pure ring math for the map wheel. No DOM, no menu knowledge.
-// The base table is fixed by the design spec; see docs/superpowers/specs/2026-09-06-map-wheel-radial-controller-design.md
+// See docs/superpowers/specs/2026-09-06-map-wheel-radial-controller-design.md
 //
-// Two independent factors sit on top of that table:
+// A label is an upright box on a ring, so BOTH of its dimensions have to fit the band it sits in,
+// and which dimension eats the band's RADIAL DEPTH depends on where the sector points: a sector at
+// 3 o'clock spends the depth on the label's text-line WIDTH, one at 12 o'clock on the stack's
+// HEIGHT. Measured in the browser, sizing the labels against the arc alone left 144 of 882 label
+// placements with ink outside their own sector - up to 8px on "World configuration" - because
+// nothing checked the radial direction. So the bands below are sized to hold the widest text line
+// AND the tallest stack (LABEL, next), and `labelStack` / `LABEL.width` are what the tests hold
+// them to.
 //
-// 1. BASE_RADIUS_SCALE grows the radii and NOTHING else. That is what stops labels overflowing
-//    their sectors: at the base radii the worst case is the root ring at 7 items, 2pi*83/7 = 74.5px
-//    of arc for a 74px label. Scaling the whole dial cannot fix it - arc and label grow together
-//    and the ratio never moves. Growing the radii alone buys 89px of arc for the same 74px label.
-// 2. The `scale` argument is the app's own uiSize, applied uniformly to everything (radii, label
-//    widths, font sizes, icon sizes) so the dial grows for legibility rather than for fit.
-//
-// The scale is threaded explicitly rather than held in module state: these functions are pure, and
-// the tests depend on that.
+// The `scale` argument is the app's own uiSize, applied uniformly to everything (radii, label
+// widths, font sizes, icon sizes) so the dial grows for legibility rather than for fit. It is
+// threaded explicitly rather than held in module state: these functions are pure, and the tests
+// depend on that.
 
-/** [innerRadius, outerRadius] per level, before either scale factor */
+/** [innerRadius, outerRadius] per level, at uiSize 1 */
 export const BANDS = [
-  [58, 108],
-  [112, 158],
-  [162, 204],
-  [208, 246]
+  [58, 125],
+  [130, 196],
+  [201, 266],
+  [271, 335]
 ] as const;
 
-/** Radius-only headroom, so a label is comfortably narrower than the arc it sits on */
-export const BASE_RADIUS_SCALE = 1.2;
-
 export const MAX_DEPTH = BANDS.length;
+
+/**
+ * The label's own metrics, in px at uiSize 1. styles.ts writes exactly these numbers into the
+ * stylesheet, so the band table above and the labels it has to hold cannot drift apart.
+ */
+export const LABEL = {
+  /** one width for every level: it is what the band depth must cover at a horizontal sector */
+  width: 62,
+  /** the text is clamped to this many lines, so a long name is bounded rather than unbounded */
+  lines: 2,
+  /** flex gap between icon, text and note */
+  gap: 2,
+  lineHeight: 1.15,
+  /** the optional third line: a layer's on/off, a subject's kind, the subject count */
+  note: 8.5,
+  /** and how much of the label's width that line may use before it ellipsises */
+  noteWidth: 0.75,
+  root: { font: 10.5, icon: 19 },
+  deep: { font: 9.5, icon: 16 }
+} as const;
+
+/** How much of the band's depth a label can take up: icon + wrapped text + the note line */
+export function labelStack(level: number, lines: number = LABEL.lines, note = true): number {
+  const { font, icon } = level === 0 ? LABEL.root : LABEL.deep;
+  const text = lines * font * LABEL.lineHeight;
+  return icon + LABEL.gap + text + (note ? LABEL.gap + LABEL.note * LABEL.lineHeight : 0);
+}
+
+export const bandDepth = (level: number, scale = 1): number => (BANDS[level][1] - BANDS[level][0]) * scale;
+
+/**
+ * The tick marking a sector as a parent. It replaces the "▸" that used to cost a whole text line in
+ * every parent label; drawn in the SVG it costs only this much of the band's outer edge.
+ */
+export const MARK_SIZE = 4;
+/** Clearance between the tick's outer point and the band's outer arc */
+export const MARK_CLEAR = 2;
 
 /** How many sectors a level can hold before labels collide: roughly arc-at-mid-radius / 70px */
 export const ITEM_CAPS = [7, 11, 15, 19] as const;
@@ -32,8 +68,8 @@ export const ITEM_CAPS = [7, 11, 15, 19] as const;
 export const GAP_PX = 3;
 export const HOVER_GROW = 5;
 
-/** Room inside the SVG box for the hover growth and the drop shadow */
-const BOX_PAD = 12;
+/** Room inside the SVG box for the hover growth; the shadow is drawn outside it (overflow: visible) */
+const BOX_PAD = 6;
 /** Gap between the ring's outer edge and the drawer's near edge */
 const DRAWER_CLEAR = 14;
 
@@ -50,11 +86,10 @@ export interface Sector {
 }
 
 export function bands(scale = 1): [number, number][] {
-  const k = BASE_RADIUS_SCALE * scale;
-  return BANDS.map(([inner, outer]): [number, number] => [inner * k, outer * k]);
+  return BANDS.map(([inner, outer]): [number, number] => [inner * scale, outer * scale]);
 }
 
-export const outerRadius = (scale = 1): number => BANDS[MAX_DEPTH - 1][1] * BASE_RADIUS_SCALE * scale;
+export const outerRadius = (scale = 1): number => BANDS[MAX_DEPTH - 1][1] * scale;
 
 /** Half the rendered SVG box */
 export const boxRadius = (scale = 1): number => outerRadius(scale) + BOX_PAD * scale;
@@ -109,6 +144,18 @@ export function arcPath(inner: number, outer: number, from: number, to: number):
     ` L ${point(inner, to)}` +
     ` A ${inner} ${inner} 0 ${large} 0 ${point(inner, from)} Z`
   );
+}
+
+/** The parent tick: a small triangle pointing outward, just inside the band's outer arc */
+export function markPath(mid: number, outer: number, scale = 1): string {
+  const size = MARK_SIZE * scale;
+  const tip = outer - MARK_CLEAR * scale;
+  const base = tip - size;
+  const half = size * 0.6;
+  const [cx, cy] = [Math.cos(mid), Math.sin(mid)];
+  const at = (r: number, offset: number): string =>
+    `${(cx * r - cy * offset).toFixed(2)} ${(cy * r + cx * offset).toFixed(2)}`;
+  return `M ${at(base, -half)} L ${at(tip, 0)} L ${at(base, half)} Z`;
 }
 
 export function labelPoint(mid: number, inner: number, outer: number): [number, number] {

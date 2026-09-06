@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { boxRadius, drawerOffset } from "./geometry";
+import { DRAWER_WIDTH } from "./drawer";
+import { boxRadius, drawerOffset, VIEWPORT_MARGIN } from "./geometry";
 import { clampCentre, closeMapWheel, openMapWheel } from "./index";
 import type { WheelRoots } from "./wheel";
 
@@ -15,26 +16,30 @@ const rightClick = (x = 400, y = 300) =>
 
 afterEach(() => closeMapWheel());
 
+// derived from the geometry, never hardcoded: the bands move whenever the labels are re-tuned
+const EDGE = boxRadius(1) + VIEWPORT_MARGIN;
+const DRAWER_RESERVE = drawerOffset(1) + DRAWER_WIDTH - boxRadius(1);
+
 describe("clampCentre", () => {
-  it("leaves a centred wheel alone", () => {
-    expect(clampCentre(600, 400, 1280, 720)).toEqual([600, 400]);
+  it("leaves a wheel that already fits where it is", () => {
+    expect(clampCentre(640, 360, 1280, 720)).toEqual([640, 360]);
   });
 
   it("pushes a wheel opened at the top-left corner fully into view", () => {
     const [x, y] = clampCentre(5, 5, 1280, 720);
-    expect(x).toBeGreaterThanOrEqual(258);
-    expect(y).toBeGreaterThanOrEqual(258);
+    expect(x).toBeGreaterThanOrEqual(EDGE);
+    expect(y).toBeGreaterThanOrEqual(EDGE);
   });
 
   it("pushes a wheel opened at the bottom-right corner fully into view", () => {
     const [x, y] = clampCentre(1275, 715, 1280, 720);
-    expect(x).toBeLessThanOrEqual(1280 - 258);
-    expect(y).toBeLessThanOrEqual(720 - 258);
+    expect(x).toBeLessThanOrEqual(1280 - EDGE);
+    expect(y).toBeLessThanOrEqual(720 - EDGE);
   });
 
   it("reserves room for an open drawer on the side it opens", () => {
-    const [x] = clampCentre(1000, 400, 1280, 720, "right");
-    expect(x).toBeLessThanOrEqual(1280 - 258 - 354);
+    const [x] = clampCentre(1000, 400, 1920, 1080, "right");
+    expect(x).toBeLessThanOrEqual(1920 - EDGE - DRAWER_RESERVE);
   });
 
   it("clamps against the scaled box, not a fixed radius", () => {
@@ -80,7 +85,9 @@ describe("openMapWheel", () => {
     const wheel = document.querySelector<HTMLElement>("#mapWheel .mw-wheel")!;
     const scale = Number(wheel.style.getPropertyValue("--mw-ui"));
 
-    expect(scale).toBeCloseTo(1.198, 2); // 1.5 wanted, but a 768px-high jsdom window cannot hold it
+    // 1.5 was asked for; a 768px-high jsdom window holds only as much of the box as fits in it
+    expect(scale).toBeCloseTo((768 - 32) / (boxRadius(1) * 2), 6);
+    expect(scale).toBeLessThan(1.5);
     expect(wheel.style.getPropertyValue("--mw-box")).toBe(`${boxRadius(scale) * 2}px`);
     expect(wheel.style.getPropertyValue("--mw-drawer-offset")).toBe(`${drawerOffset(scale)}px`);
 

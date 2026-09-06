@@ -75,9 +75,21 @@ describe("renderWheel", () => {
     expect(sibling.getAttribute("fill")).toBe("rgba(251,247,236,.82)");
   });
 
-  it("marks a node with children so the user can see there is more", () => {
+  // The mark used to be a "▸" note line, which cost every parent label a whole line of the band's
+  // radial depth. It is a tick in the SVG now, so it costs the label nothing.
+  it("marks a node with children with a tick rather than a line of text", () => {
     renderWheel(container, roots, state(), cb());
-    expect(container.querySelector(".mw-label")!.textContent).toContain("▸");
+    const labels = [...container.querySelectorAll(".mw-label")];
+    expect(labels[0].textContent).toBe("Layers");
+    expect(labels[0].querySelector(".mw-note")).toBeNull();
+    // one per parent in TREE: Layers and Tools
+    expect(container.querySelectorAll("path.mw-mark").length).toBe(2);
+  });
+
+  it("gives a note line only to a node that has something to say in it", () => {
+    renderWheel(container, roots, state({ path: [0, 0] }), cb());
+    const notes = [...container.querySelectorAll(".mw-note")].map(n => n.textContent);
+    expect(notes).toEqual(["off"]); // the rivers toggle; nothing else carries a note
   });
 
   it("opens a child ring when a parent sector is clicked", () => {

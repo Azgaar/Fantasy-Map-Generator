@@ -502,7 +502,9 @@ function areaSubjects(cellId: number, extents: Extents): WheelSubject[] {
           run: () => void Controllers.MarketsOverview.open()
         },
         {
-          label: "Trade animation",
+          // verb first, like its neighbours: "animation" alone is 53px of a 56px label, and a word
+          // that wide reaches out of the band at a diagonal sector
+          label: "Animate trade",
           icon: "icon-play",
           verb: "modify",
           run: () => void Controllers.TradeAnimationEditor.open()
