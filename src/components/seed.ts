@@ -5,10 +5,6 @@ import { ensureEl } from "@/utils/nodeUtils";
 import { isLocked, unlock } from "@/utils/preferences";
 import { generateSeed } from "@/utils/probabilityUtils";
 
-/**
- * Resolve the seed for the map about to be generated and reseed the PRNG. The first map of a session
- * honours a `seed` search param (MFCG appends a 4-digit burg id to its 13-char seeds); later ones don't
- */
 export function setSeed(precreatedSeed?: string): void {
   if (precreatedSeed) facts.seed = precreatedSeed;
   else {

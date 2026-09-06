@@ -1,4 +1,5 @@
 import Alea from "alea";
+import { remember } from "@/components/definition-sets";
 import type { Point } from "@/types/global";
 import { clipPoly, round } from "../utils";
 import type { Feature } from "./features";
@@ -260,7 +261,7 @@ class CoastlineGenerator {
    */
   update(change: Partial<CoastlineSettings>): void {
     Object.assign(facts.coastline, change);
-    Options.remember("coastline", facts.coastline, this.getDefaultSettings());
+    remember("coastline", facts.coastline);
   }
 
   getDefaultSettings(): CoastlineSettings {

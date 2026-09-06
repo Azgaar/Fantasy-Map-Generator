@@ -2,7 +2,8 @@
 // it. Every control here edits `facts.lore` - the dialog is built and filled from the object on
 // open, and nothing outside reads its inputs. See docs/architecture/configuration.md
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
-import { tip } from "@/components/tooltips";
+import type { SettingKey } from "@/components/settings";
+import { bindSettings, syncSetting, syncSettings } from "@/components/settings-binding";
 import { Names } from "@/generators/names-generator";
 import { ensureEl } from "../utils";
 import { bindLockIcons, lock, unlock } from "../utils/preferences";
@@ -27,6 +28,7 @@ const TEMPLATE = /* html */ `
     <label for="loreMapName">Map name:</label>
     <input
       id="loreMapName"
+      data-stored="mapName"
       data-tip="Name of the map. Used to name the files it is downloaded as"
       autocorrect="off"
       spellcheck="false"
@@ -38,6 +40,7 @@ const TEMPLATE = /* html */ `
     <label for="loreYear">Year:</label>
     <input
       id="loreYear"
+      data-stored="year"
       data-tip="Current year. Dates state history and battle reports"
       type="number"
       step="1"
@@ -47,8 +50,8 @@ const TEMPLATE = /* html */ `
     <i data-locked="0" id="lock_era" data-ids="era,eraShort" class="icon-lock-open"></i>
     <label for="loreEra">Era:</label>
     <span class="le-era" data-tip="Name of the era the current year belongs to, and its abbreviation">
-      <input id="loreEra" autocorrect="off" spellcheck="false" type="text" placeholder="Winter Era" />
-      <input id="loreEraShort" autocorrect="off" spellcheck="false" type="text" placeholder="WE" />
+      <input id="loreEra" data-stored="era" autocorrect="off" spellcheck="false" type="text" placeholder="Winter Era" />
+      <input id="loreEraShort" data-stored="eraShort" autocorrect="off" spellcheck="false" type="text" placeholder="WE" />
     </span>
     <i data-tip="Generate a new era" id="loreEraRegenerate" class="icon-arrows-cw"></i>
 
@@ -89,53 +92,32 @@ function renderDialog(): void {
   bindLockIcons(ensureEl(DIALOG_ID));
 }
 
+const LORE_KEYS: SettingKey[] = ["mapName", "year", "era", "eraShort"];
+
 /** The object is the source: push what it holds into the control that shows it */
 function fillInputs(): void {
-  const { name, description, calendar } = facts.lore;
-  ensureEl<HTMLInputElement>("loreMapName").value = name;
-  ensureEl<HTMLInputElement>("loreYear").value = String(calendar.year);
-  ensureEl<HTMLInputElement>("loreEra").value = calendar.era;
-  ensureEl<HTMLInputElement>("loreEraShort").value = calendar.eraShort;
-  ensureEl<HTMLTextAreaElement>("loreDescription").value = description;
+  syncSettings(LORE_KEYS);
+  ensureEl<HTMLTextAreaElement>("loreDescription").value = facts.lore.description;
 }
 
 function addListeners(): void {
-  ensureEl("loreMapName").addEventListener("change", changeMapName);
-  ensureEl("loreYear").addEventListener("change", changeYear);
-  ensureEl("loreEra").addEventListener("change", changeEra);
-  ensureEl("loreEraShort").addEventListener("change", changeEraShort);
+  bindSettings(ensureEl(DIALOG_ID), abbreviateEra);
+
+  // the description is the one lore value with no pin: nothing ever re-rolls an author's note
   ensureEl("loreDescription").addEventListener("change", changeDescription);
   ensureEl("loreMapNameRegenerate").addEventListener("click", regenerateMapName);
   ensureEl("loreEraRegenerate").addEventListener("click", regenerateEra);
 }
 
-function changeMapName(this: HTMLInputElement): void {
-  facts.lore.name = this.value;
-  lock("mapName"); // named by hand: the next map keeps it
-}
-
-function changeYear(this: HTMLInputElement): void {
-  if (!this.value) return;
-  if (Number.isNaN(+this.value)) return void tip("Current year should be a number", false, "error");
-
-  facts.lore.calendar.year = +this.value;
-  lock("year");
-}
-
-/** Renaming the era re-derives its abbreviation, which the user can then override below */
-function changeEra(this: HTMLInputElement): void {
-  if (!this.value) return;
-  facts.lore.calendar.era = this.value;
+/**
+ * Renaming the era suggests an abbreviation, which the user can then override in the field beside
+ * it. Not a derived fact - a short form the user typed outlives the era it was made for
+ */
+function abbreviateEra(key: SettingKey): void {
+  if (key !== "era") return;
   facts.lore.calendar.eraShort = Facts.shortEra();
-  lock("era");
   lock("eraShort");
-  ensureEl<HTMLInputElement>("loreEraShort").value = facts.lore.calendar.eraShort;
-}
-
-function changeEraShort(this: HTMLInputElement): void {
-  if (!this.value) return;
-  facts.lore.calendar.eraShort = this.value;
-  lock("eraShort");
+  syncSetting("eraShort");
 }
 
 function changeDescription(this: HTMLTextAreaElement): void {

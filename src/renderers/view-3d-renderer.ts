@@ -6,8 +6,8 @@ import type { State } from "@/generators/states-generator";
 import { Services } from "@/services";
 import { savedMessage } from "@/services/platform";
 import { downloadFile, getFileName } from "@/utils";
-import { timeOfDayPresets } from "../data/view-3d-options";
-import { minmax, rn, throttle } from "../utils";
+import { clampTextureResolution, timeOfDayPresets } from "../data/view-3d-options";
+import { rn, throttle } from "../utils";
 import {
   disposeRiverFlowTexture,
   disposeSatelliteTexture,
@@ -167,19 +167,13 @@ const setSunColor = (color: string) => {
   render();
 };
 
-const clampTextureResolution = (value: number) => minmax(value, 512, 8192);
-
 const clampToRendererLimit = (value: number) => {
   const maxTextureSize = Renderer?.capabilities?.maxTextureSize;
   return maxTextureSize ? Math.min(clampTextureResolution(value), maxTextureSize) : clampTextureResolution(value);
 };
 
-const resolutionScaleToGlobeMultiplier = (resolutionScale: number) =>
-  minmax(0.5, clampTextureResolution(resolutionScale) / 1024, 8);
-
 const setResolutionScale = (scale: number) => {
   Options.set(o => (o.app.threeD.resolutionScale = clampToRendererLimit(scale)));
-  Options.set(o => (o.app.threeD.resolution = resolutionScaleToGlobeMultiplier(o.app.threeD.resolutionScale)));
   redraw();
 };
 
@@ -311,7 +305,6 @@ const setTimeOfDay = (presetName: string) => {
 const setResolution = (resolution: number) => {
   const nextScale = clampToRendererLimit(Number(resolution) * 1024);
   Options.set(o => (o.app.threeD.resolutionScale = nextScale));
-  Options.set(o => (o.app.threeD.resolution = resolutionScaleToGlobeMultiplier(nextScale)));
   redraw();
 };
 
@@ -357,7 +350,6 @@ async function newMesh(canvas: HTMLCanvasElement) {
 
   // texture sizes (mesh render, satellite, erosion bake) must fit the GPU's limit
   Options.set(o => (o.app.threeD.resolutionScale = clampToRendererLimit(o.app.threeD.resolutionScale)));
-  Options.set(o => (o.app.threeD.resolution = resolutionScaleToGlobeMultiplier(o.app.threeD.resolutionScale)));
 
   if (options.app.threeD.extendedWater) extendWater(facts.graph.width, facts.graph.height);
   createMesh(facts.graph.width, facts.graph.height, grid.cellsX, grid.cellsY);
@@ -884,7 +876,6 @@ async function newGlobe(canvas: HTMLCanvasElement) {
 
   // texture size must fit the GPU's limit
   Options.set(o => (o.app.threeD.resolutionScale = clampToRendererLimit(o.app.threeD.resolutionScale)));
-  Options.set(o => (o.app.threeD.resolution = resolutionScaleToGlobeMultiplier(o.app.threeD.resolutionScale)));
 
   // material
   if (material) material.dispose();
@@ -951,7 +942,6 @@ async function updateGlobeTexure(addMesh?: boolean) {
   // texture size
   Options.set(o => (o.app.threeD.resolutionScale = clampToRendererLimit(o.app.threeD.resolutionScale)));
   const width = options.app.threeD.resolutionScale;
-  Options.set(o => (o.app.threeD.resolution = resolutionScaleToGlobeMultiplier(width)));
 
   // calculate map size and offset position
   const height = Math.max(1, Math.round(width / 2));

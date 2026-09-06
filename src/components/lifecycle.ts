@@ -13,6 +13,7 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { setViewportSize } from "@/components/viewport";
 import { invokeActiveZooming, resetZoom } from "@/components/zoom";
 import { Controllers } from "@/controllers";
+import { getPointsNumber } from "@/data/graph-density";
 import { GenerationPipeline } from "@/generators/generation-pipeline";
 import { initiateAutosave } from "@/services/autosave";
 import { stashCallbackToken } from "@/services/help/auth";
@@ -45,14 +46,15 @@ export async function boot(): Promise<void> {
 
 export type GenerationConfig = { seed?: string; graph?: GridGraph; width?: number; height?: number };
 
-/** Generate a whole new world. The pipeline owns the sequence, this owns everything around it */
+/** Generate a whole new world */
 export async function generate(config?: GenerationConfig): Promise<void> {
   try {
+    // TODO: investigate the precreatedSeed path and simplify it
     const { seed: precreatedSeed, graph: precreatedGraph, width, height } = config || {};
-    Options.setGraphSize(width, height); // a new map is made at window size unless asked otherwise
-    setSeed(precreatedSeed); // reseeds the PRNG, so every roll below repeats for the same seed
-    Options.randomize(); // resolve the requests
-    Facts.seedForNewMap(); // commit them, with the pinned values and the user's own sets
+    Options.setGraphSize(width, height);
+    setSeed(precreatedSeed);
+    Options.randomize();
+    Facts.apply();
     applyGraphSize();
 
     await GenerationPipeline.run({ seed: precreatedSeed, graph: precreatedGraph });
@@ -96,7 +98,7 @@ export const regenerateMap = debounce(async (config?: GenerationConfig | string)
 
   // a big grid takes long enough that the splash is worth showing. The size asked for, not the
   // one on screen: the map being replaced says nothing about how long the next one will take
-  const shouldShowLoading = Options.cellsFor(options.generation.graph.density) > 10000;
+  const shouldShowLoading = getPointsNumber(options.generation.graph.density) > 10000;
   shouldShowLoading && showLoading();
 
   closeDialogs("#worldConfigurator, #options3d");

@@ -3,13 +3,16 @@ import { fitMapToScreen, setViewport } from "@/components/canvas";
 import { Layers } from "@/components/layers";
 import { getDefaultOptions, THEME_COLOR } from "@/components/options-model";
 import { generateMapWithSeed, showSeedHistoryDialog } from "@/components/seed";
-import { isPinnable, parseInput, read, type SettingKey, write } from "@/components/settings";
+import { type SettingKey, write } from "@/components/settings";
+import { bindSettings, syncSettings } from "@/components/settings-binding";
 import { tip } from "@/components/tooltips";
 import { viewport } from "@/components/viewport";
 import { setMapZoom, setTranslateExtent, setZoomExtent } from "@/components/zoom";
 import { Controllers } from "@/controllers";
+import { getPointsNumber } from "@/data/graph-density";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { precreatedHeightmaps } from "@/data/precreated-heightmaps";
+import { isAutoBurgLimit } from "@/generators/burgs-generator";
 import { CULTURE_SETS, Cultures } from "@/generators/cultures-generator";
 import { Emblems } from "@/generators/emblems-generator";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
@@ -529,9 +532,7 @@ function addListeners(): void {
 
   content.addEventListener("input", event => {
     const { id, value } = event.target as HTMLInputElement;
-    if (id === "pointsInput") changeCellsDensity(+value);
-    else if (id === "culturesSet") changeCultureSet(value);
-    else if (id === "statesNumber") changeStatesNumber(+value);
+    if (id === "statesNumber") changeStatesNumber(+value);
     else if (id === "emblemShape") changeEmblemShape(value);
     else if (id === "tooltipSize") changeTooltipSize(+value);
     else if (id === "themeHueInput") changeThemeHue(value);
@@ -573,60 +574,42 @@ function addListeners(): void {
 
 /** Push every setting the tab shows into its input, so the DOM reflects the objects behind it */
 export function syncInputs(): void {
-  const push = (key: string, value: string | number | null) => {
-    if (value === null) return; // nothing chosen yet: the control keeps the value it derived
-    const input = inputFor(key);
-    if (input) input.value = String(value);
-    const output = findEl<HTMLOutputElement>(`${key}Output`);
-    if (output) output.value = String(value);
-  };
-
-  for (const key of PANEL_KEYS) {
-    if (key === "template") continue; // a select whose options are added on demand, see below
-    push(key, read(key) as string | number | null);
-  }
+  syncSettings(PANEL_KEYS.filter(key => key !== "template")); // a select filled on demand, see below
 
   const id = options.generation.template;
   const template = findEl<HTMLSelectElement>("templateInput");
   if (template && id) applyOption(template, id, heightmapTemplates[id]?.name || precreatedHeightmaps[id]?.name || id);
 
-  const manors = findEl<HTMLOutputElement>("manorsOutput");
-  if (manors) manors.value = Options.isAutoBurgLimit() ? "auto" : String(options.generation.burgs.limit);
-
+  syncManors(); // the burg limit reads "auto" at its maximum rather than as a number
   syncCellsDensity(); // the Points slider shows a step, the object holds the cell count it resolves to
   syncCultures(); // the cultures slider is capped by the selected set
 }
 
-/**
- * Keep the object in step with the panel: `data-stored` names the setting, the same key it is
- * pinned under. Every control writes to the object, never the other way round
- */
-function watchInputs(): void {
-  const onChange = (event: Event) => {
-    const target = event.target as HTMLInputElement | null;
-    const key = target?.dataset?.stored;
-    if (!key) return;
-
-    // an input event is a drag in progress: apply it, but wait for the change event to keep it
-    const value = parseInput(key, target.value);
-    if (value !== undefined) write(key, value);
-    if (event.type !== "change") return;
-
-    if (isPinnable(key)) lock(key); // a value the user set by hand: keep it on the next map
-    Options.persist();
-  };
-
-  // only this tab's own controls: every dialog wires the controls it owns
-  const root = findEl("options");
-  root?.addEventListener("input", onChange);
-  root?.addEventListener("change", onChange);
-
-  // the map size inputs are not `data-stored`: `onMapSizeChange` is their single writer, and it
-  // writes the request. The extent on screen belongs to the graph this map was built on, and the
-  // viewport that shows it is session state - neither is a value this table can carry
+function syncManors(): void {
+  const manors = findEl<HTMLOutputElement>("manorsOutput");
+  if (manors) manors.value = isAutoBurgLimit() ? "auto" : String(options.generation.burgs.limit);
 }
 
-const inputFor = (key: string) => findEl<HTMLInputElement>(`${key}Input`) ?? findEl<HTMLInputElement>(key);
+/**
+ * Keep the object in step with the panel: `data-stored` names the setting, the same key it is
+ * pinned under. Only this tab's own controls - every dialog wires the controls it owns.
+ *
+ * The map size inputs are not `data-stored`: `onMapSizeChange` is their single writer, and it
+ * writes the request. The extent on screen belongs to the graph this map was built on, and the
+ * viewport that shows it is session state - neither is a value this table can carry
+ */
+function watchInputs(): void {
+  const root = findEl("options");
+  if (!root) return;
+
+  bindSettings(root, key => {
+    if (key === "manors")
+      syncManors(); // the burg limit reads "auto" at its maximum
+    else if (key === "points")
+      syncCellsDensity(); // the slider holds a step, the readout the cells
+    else if (key === "culturesSet") syncCultures(); // a set caps how many cultures can be asked for
+  });
+}
 
 /** The extent the next map is generated on: not the window it will be looked at through */
 function onMapSizeChange(): void {
@@ -667,14 +650,14 @@ function restoreDefaultMapSize(): void {
 
 /** The Points slider picks a density step; the readout shows the cell count it resolves to */
 export function changeCellsDensity(density: number): void {
-  Options.setDensity(density);
+  write("points", density);
   syncCellsDensity();
 }
 
 /** Push the density step and the cell count it resolves to into the slider and its readout */
 function syncCellsDensity(): void {
   const { density } = options.generation.graph;
-  const cellsDesired = Options.cellsFor(density);
+  const cellsDesired = getPointsNumber(density);
 
   const input = findEl<HTMLInputElement>("pointsInput");
   if (input) {
@@ -691,15 +674,6 @@ function syncCellsDensity(): void {
 /** green at the default density, amber above it, red where performance starts to suffer */
 export const cellsDensityColor = (cells: number): string =>
   cells > 50000 ? "#b12117" : cells === 10000 ? "#053305" : "#dfdf12";
-
-/** Each culture set holds a different number of cultures, and the number asked for cannot exceed it */
-function changeCultureSet(set: string): void {
-  Options.set(o => {
-    o.generation.cultures.set = set;
-    Options.capCultures();
-  });
-  syncCultures();
-}
 
 /** Cap the cultures slider at what the selected set can give, and show the number that survived it */
 function syncCultures(): void {

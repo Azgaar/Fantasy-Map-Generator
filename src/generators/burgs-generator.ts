@@ -12,6 +12,8 @@ import type { ProductionRecord } from "./production-generator";
 import type { River } from "./river-generator";
 import type { Point } from "./voronoi";
 
+export const isAutoBurgLimit = (): boolean => options.generation.burgs.limit === 1000;
+
 export interface Burg {
   cell: number;
   x: number;
@@ -164,7 +166,7 @@ class BurgModule {
     }
 
     function getTownsNumber() {
-      if (Options.isAutoBurgLimit()) return rn(populatedCells.length / 5 / (grid.points.length / 10000) ** 0.8);
+      if (isAutoBurgLimit()) return rn(populatedCells.length / 5 / (grid.points.length / 10000) ** 0.8);
       return Math.min(options.generation.burgs.limit, populatedCells.length);
     }
   }
@@ -833,7 +835,7 @@ class BurgModule {
     const sorted = cells.i.filter(i => score[i] > 0 && cells.culture[i]).sort((a, b) => score[b] - score[a]);
     const statesCount = states.filter(state => state.i && !state.removed).length;
     const burgsCount =
-      (Options.isAutoBurgLimit()
+      (isAutoBurgLimit()
         ? rn(sorted.length / 5 / (grid.points.length / 10000) ** 0.8)
         : options.generation.burgs.limit) + statesCount;
     const spacing = (facts.graph.width + facts.graph.height) / 150 / (burgsCount ** 0.7 / 66);

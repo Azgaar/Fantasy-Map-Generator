@@ -1,7 +1,6 @@
-import type { z } from "zod";
 import { adoptLegacyOptions } from "@/components/options-legacy";
 import { type OptionsData, optionsSchema } from "@/components/options-schema";
-import { DEFAULT_DENSITY, getPointsNumber } from "@/data/graph-density";
+import { DEFAULT_DENSITY } from "@/data/graph-density";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { DEFAULT_TRADE_ANIMATION } from "@/data/trade-animation-options";
 import { DEFAULT_THREE_D } from "@/data/view-3d-options";
@@ -9,7 +8,7 @@ import { CULTURE_SETS } from "@/generators/cultures-generator";
 import { rn } from "@/utils/numberUtils";
 import { deepMerge } from "@/utils/objectUtils";
 import { clearLocks, isLocked, pinned, rolls } from "@/utils/preferences";
-import { gauss, rand, rw } from "@/utils/probabilityUtils";
+import { gauss, rw } from "@/utils/probabilityUtils";
 import { parseSections } from "@/utils/schemaUtils";
 
 declare global {
@@ -127,12 +126,9 @@ function setGraphSize(width?: number, height?: number): void {
 
 /** Re-roll every request the user has not pinned. Runs before the pipeline, never after */
 function randomize(): void {
-  const { generation } = globalThis.options;
+  const { generation } = options;
 
-  // the slider holds a density step and the cell count is derived from it, so both branches go
-  // through setDensity - a step without its cell count generates a map of the wrong size
-  setDensity(rolls("points") ? DEFAULT_DENSITY : pinned("points", generation.graph.density)); // a default, not a roll
-
+  generation.graph.density = rolls("points") ? DEFAULT_DENSITY : pinned("points", generation.graph.density);
   generation.template = rolls("template") ? randomTemplate() : pinned("template", generation.template);
   generation.states.limit = rolls("statesNumber")
     ? gauss(18, 5, 2, 30)
@@ -146,21 +142,14 @@ function randomize(): void {
     : pinned("religionsNumber", generation.religions.limit);
   setSizeVariety(rolls("sizeVariety") ? gauss(4, 2, 0, 10, 1) : pinned("sizeVariety", generation.states.sizeVariety));
   setGrowthRate(rolls("growthRate") ? rn(1 + Math.random(), 1) : pinned("growthRate", generation.states.growthRate));
-
-  // the culture rolls come last: every roll above draws from the seeded PRNG, so reordering them
-  // hands each request a different draw and the same seed stops producing the same map
   generation.cultures.limit = rolls("cultures") ? gauss(12, 3, 5, 30) : pinned("cultures", generation.cultures.limit);
   generation.cultures.set = rolls("culturesSet") ? randomCultureSet() : pinned("culturesSet", generation.cultures.set);
 
   capCultures();
 }
 
-function setDensity(density: number): void {
-  globalThis.options.generation.graph.density = density;
-}
-
 /** A culture set holds a fixed number of cultures: the map cannot ask for more than it has */
-function capCultures(): void {
+export function capCultures(): void {
   const { cultures } = globalThis.options.generation;
   const max = CULTURE_SETS[cultures.set]?.max;
   if (max && cultures.limit > max) cultures.limit = max;
@@ -189,40 +178,6 @@ function syncOnLoad(): void {
   });
 }
 
-const isAutoBurgLimit = (): boolean => globalThis.options.generation.burgs.limit === 1000;
-
-/**
- * The preservation library: the user's own definition sets, carried to the next map. Written only
- * by a user edit - never by a load and never by generation.
- * See docs/architecture/configuration.md#preservation-across-maps
- */
-type Library = OptionsData["library"];
-
-function remember<K extends keyof Library>(
-  entry: K,
-  value: NonNullable<Library[K]>,
-  defaults: NonNullable<Library[K]>
-): void {
-  set(options => {
-    // a set the user reset to the module defaults is not one of their own: clearing the entry lets
-    // the next map follow the defaults as they change, instead of freezing today's copy of them
-    const isOwn = canonical(entry, value) !== canonical(entry, defaults);
-    options.library[entry] = isOwn ? (structuredClone(value) as Library[K]) : null;
-  });
-}
-
-/** Both sides through the same schema, so a difference in key order is not a difference in value */
-function canonical<K extends keyof Library>(entry: K, value: unknown): string {
-  const schema = optionsSchema.shape.library.shape[entry] as z.ZodType;
-  return JSON.stringify(schema.safeParse(value).data ?? null);
-}
-
-/** The user's own set for the next map, or undefined when they have not saved one */
-function recall<K extends keyof Library>(entry: K): NonNullable<Library[K]> | undefined {
-  const value = globalThis.options.library[entry];
-  return (value === null ? undefined : structuredClone(value)) as NonNullable<Library[K]> | undefined;
-}
-
 /** weighted by how good each template looks, so the common ones come up more often */
 function randomTemplate(): string {
   const probabilities: Record<string, number> = {};
@@ -242,14 +197,7 @@ export const Options = {
   restoreStored,
   setGraphSize,
   syncOnLoad,
-  randomize,
-  setDensity,
-  cellsFor: getPointsNumber,
-  capCultures,
-  isAutoBurgLimit,
-  remember,
-  recall,
-  randomYear: () => rand(100, 2000)
+  randomize
 };
 
 type OptionsApi = typeof Options;

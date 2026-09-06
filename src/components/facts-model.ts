@@ -1,5 +1,7 @@
+import { applyStoredLibrary, ensureDefinitionSets } from "@/components/definition-sets";
 import { type FactsData, factsSchema } from "@/components/facts-schema";
 import { applyPin, pinnedFactKeys } from "@/components/settings";
+import { getPointsNumber } from "@/data/graph-density";
 import { Burgs } from "@/generators/burgs-generator";
 import { DEFAULT_COASTLINE } from "@/generators/coastline-generator";
 import { Labels } from "@/generators/labels-generator";
@@ -52,6 +54,37 @@ export function getDefaultFacts(): FactsData {
 
 globalThis.facts = getDefaultFacts();
 
+function apply(): void {
+  const newFacts = getDefaultFacts();
+  newFacts.seed = facts.seed; // set by setSeed before
+  const { width, height, density } = options.generation.graph;
+  newFacts.graph = { width, height, points: getPointsNumber(density) };
+  newFacts.cultures = { set: options.generation.cultures.set };
+
+  globalThis.facts = newFacts;
+  applyStoredLibrary();
+  ensureDefinitionSets();
+
+  rollUnpinnedFacts();
+  applyPinnedFacts();
+}
+
+/** Facts with no request of their own are rolled here, the way requests are rolled in Options */
+function rollUnpinnedFacts(): void {
+  const { climate, units, lore } = facts;
+
+  if (rolls("temperatureEquator")) climate.temperature.equator = gauss(25, 7, 20, 35, 0);
+  if (rolls("temperatureNorthPole")) climate.temperature.northPole = gauss(-25, 7, -40, 10, 0);
+  if (rolls("temperatureSouthPole")) climate.temperature.southPole = gauss(-15, 7, -40, 10, 0);
+  if (rolls("prec")) climate.precipitation = gauss(100, 40, 5, 500);
+  if (rolls("distanceScale")) units.distance.scale = gauss(3, 1, 1, 5);
+  if (rolls("year")) lore.calendar.year = rand(100, 2000);
+  if (rolls("era")) {
+    lore.calendar.era = randomEra();
+    lore.calendar.eraShort = shortEra();
+  }
+}
+
 // declarations, not consts: `getDefaultFacts` runs above them while this module is evaluating
 function locale(): string {
   return typeof navigator === "undefined" ? "" : navigator.language;
@@ -80,73 +113,7 @@ function adopt(data: FactsData): void {
   ensureDefinitionSets();
 }
 
-/**
- * A set entities reference by name cannot be empty, or the names they point at draw nothing. Being
- * non-empty is not enough either: burg assignment needs a group flagged default, and each label
- * type needs a group of its own, so a set the schema accepted can still leave the renderer idle
- */
-function ensureDefinitionSets(): void {
-  const defaults = getDefaultFacts();
-  if (!facts.burgs.groups?.length) facts.burgs.groups = defaults.burgs.groups;
-  if (!facts.labels.groups?.length) facts.labels.groups = defaults.labels.groups;
-  if (!facts.military.units?.length) facts.military.units = defaults.military.units;
-  if (!facts.transports?.length) facts.transports = defaults.transports;
-
-  Burgs.ensureDefaultGroup(facts.burgs.groups);
-  Labels.restoreMissingTypes(facts.labels.groups);
-}
-
-/**
- * Establish the facts a new map starts from: the defaults, the requests the user resolved, the
- * values they pinned, and their own definition sets. The pipeline overwrites the rest as it runs.
- * Called after `Options.randomize`, so the requests it reads are already rolled
- */
-function seedForNewMap(): void {
-  const seed = facts.seed; // setSeed resolved it and reseeded the PRNG before the roll
-  const fresh = getDefaultFacts();
-  const { generation } = options;
-
-  // only what the map keeps being read for: the graph it was built on, the terrain it was raised
-  // from, the name set its cultures came out of. The counts, rates and varieties stay requests
-  fresh.seed = seed;
-  const { width, height, density } = generation.graph;
-  fresh.graph = { width, height, points: Options.cellsFor(density) };
-  fresh.cultures = { set: generation.cultures.set };
-
-  // the user's own sets, carried over; the module defaults stand where they saved none
-  fresh.military.units = Options.recall("military") ?? fresh.military.units;
-  fresh.transports = Options.recall("transports") ?? fresh.transports;
-  fresh.burgs.groups = Options.recall("burgGroups") ?? fresh.burgs.groups;
-  fresh.labels.groups = Options.recall("labelGroups") ?? fresh.labels.groups;
-  fresh.coastline = Options.recall("coastline") ?? fresh.coastline;
-
-  globalThis.facts = fresh;
-  ensureDefinitionSets(); // a set the user emptied falls back to the module defaults
-  rollUnpinnedFacts();
-  applyPinnedFacts();
-}
-
-/** Facts with no request of their own are rolled here, the way requests are rolled in Options */
-function rollUnpinnedFacts(): void {
-  const { climate, units, lore } = facts;
-
-  if (rolls("temperatureEquator")) climate.temperature.equator = gauss(25, 7, 20, 35, 0);
-  if (rolls("temperatureNorthPole")) climate.temperature.northPole = gauss(-25, 7, -40, 10, 0);
-  if (rolls("temperatureSouthPole")) climate.temperature.southPole = gauss(-15, 7, -40, 10, 0);
-  if (rolls("prec")) climate.precipitation = gauss(100, 40, 5, 500);
-  if (rolls("distanceScale")) units.distance.scale = gauss(3, 1, 1, 5);
-  if (rolls("year")) lore.calendar.year = rand(100, 2000);
-  if (rolls("era")) {
-    lore.calendar.era = randomEra();
-    lore.calendar.eraShort = shortEra();
-  }
-}
-
-/**
- * Put every pinned fact back, so a pin outlives both a new map and a loaded one. Only facts: a
- * pinned request was already resolved into `options` before this map was seeded from it, and
- * writing one here would land after the fact it feeds had been read
- */
+/** Put every pinned fact back, so a pin outlives both a new map and a loaded one */
 function applyPinnedFacts(): void {
   if (ignoresPins()) return;
   for (const key of pinnedFactKeys()) {
@@ -171,7 +138,7 @@ function shortEra(): string {
 export const Facts = {
   parse,
   adopt,
-  seedForNewMap,
+  apply,
   randomEra,
   shortEra,
   getDefaults: getDefaultFacts

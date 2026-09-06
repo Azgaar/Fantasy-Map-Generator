@@ -1,7 +1,7 @@
 import { is3dView } from "@/components/options/view-mode";
 import { tip } from "@/components/tooltips";
 import { viewport } from "@/components/viewport";
-import { timeOfDayPresets } from "@/data/view-3d-options";
+import { globeResolutionFor, timeOfDayPresets } from "@/data/view-3d-options";
 import { ensureEl } from "@/utils";
 
 // View3d controller: enters/exits the 3D view and owns the 3D settings dialog.
@@ -385,7 +385,7 @@ function updateValues(): void {
   ensureEl("options3dColorSection").style.display = o.extendedWater ? "block" : "none";
   setInput("options3dMeshSky", o.skyColor);
   setInput("options3dMeshWater", o.waterColor);
-  setInput("options3dGlobeResolution", o.resolution);
+  setInput("options3dGlobeResolution", globeResolutionFor(o.resolutionScale));
   setInput("options3dSunColor", o.sunColor);
   setInput("options3dSubdivide", String(o.subdivide));
   ensureEl<HTMLInputElement>("options3dSubdivide").disabled = Boolean(o.erosion);

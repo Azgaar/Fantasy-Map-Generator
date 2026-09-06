@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
+import { getDefaultOptions } from "@/components/options-model";
 import { Coastline } from "./coastline-generator";
 import type { Feature } from "./features";
 
@@ -17,16 +18,16 @@ const stubFacts = () =>
     coastline: Coastline.getDefaultSettings()
   }) as unknown as typeof globalThis.facts;
 
-let remembered: [string, unknown][] = [];
+/** the store, without its timers: what the preservation library writes through */
 const stubOptionsModel = () =>
   ({
-    remember: (entry: string, value: unknown) => remembered.push([entry, value])
+    set: (change: (options: typeof globalThis.options) => void) => change(globalThis.options)
   }) as unknown as typeof globalThis.Options;
 
 beforeEach(() => {
   localStorage.clear();
-  remembered = [];
   globalThis.facts = stubFacts();
+  globalThis.options = getDefaultOptions();
   globalThis.Options = stubOptionsModel();
   globalThis.pack = {
     vertices: {
@@ -55,7 +56,7 @@ describe("settings", () => {
 
     const expected = { ...Coastline.getDefaultSettings(), baseAmplitude: 3, enabled: false };
     expect(facts.coastline).toEqual(expected);
-    expect(remembered).toEqual([["coastline", expected]]);
+    expect(options.library.coastline).toEqual(expected);
   });
 });
 

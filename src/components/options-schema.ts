@@ -17,7 +17,7 @@ const threeD = z.strictObject({
   labels3d: z.boolean(),
   satellite: z.boolean(),
   wireframe: z.boolean(),
-  resolution: positive,
+  // the globe texture multiplier is derived from the scale where it is read, never stored
   resolutionScale: positive,
   subdivide: z.boolean(),
   erosion: z.boolean(),

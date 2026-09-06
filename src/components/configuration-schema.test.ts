@@ -5,6 +5,7 @@ import type { Transport } from "@/generators/transports-generator";
 import type { BurgGroup } from "@/types/burg-groups";
 import type { MilitaryUnit } from "@/types/Military";
 import { parseSections } from "@/utils/schemaUtils";
+import { DEFINITION_SETS } from "./definition-sets";
 import { getDefaultFacts } from "./facts-model";
 import { type FactsData, factsSchema } from "./facts-schema";
 import { getDefaultOptions } from "./options-model";
@@ -152,17 +153,25 @@ describe("the two objects stay disjoint", () => {
     expect(factsKeys.filter(key => optionsKeys.includes(key))).toEqual([]);
   });
 
+  // the registry is the one place a definition set is described; the library must answer for the
+  // same sets, and each entry must hold what its module's defaults produce
   it("keeps the library shaped like the facts it seeds", () => {
     const library = optionsSchema.shape.library;
-    expect(() =>
-      library.parse({
-        military: getDefaultFacts().military.units,
-        transports: getDefaultFacts().transports,
-        burgGroups: getDefaultFacts().burgs.groups,
-        labelGroups: getDefaultFacts().labels.groups,
-        coastline: getDefaultFacts().coastline
-      })
-    ).not.toThrow();
+    expect(Object.keys(DEFINITION_SETS).sort()).toEqual(Object.keys(library.shape).sort());
+
+    const seeded = Object.fromEntries(
+      Object.entries(DEFINITION_SETS).map(([key, definition]) => [key, definition.defaults()])
+    );
+    expect(() => library.parse(seeded)).not.toThrow();
+  });
+
+  it("puts every set where the facts schema keeps it", () => {
+    globalThis.facts = getDefaultFacts();
+    for (const [key, definition] of Object.entries(DEFINITION_SETS)) {
+      definition.put(definition.defaults() as never);
+      expect(definition.get(), key).toEqual(definition.defaults());
+    }
+    expect(() => factsSchema.parse(facts)).not.toThrow();
   });
 });
 

@@ -74,10 +74,6 @@ export function clearLocks(): void {
   syncLockIcons();
 }
 
-/**
- * `?options=default` asks for the map a fresh browser would make, so every pin is ignored - the
- * one place that decides it, for the requests and the facts alike
- */
 export const ignoresPins = (): boolean => new URL(window.location.href).searchParams.get("options") === "default";
 
 /** Whether a new map re-rolls the value, rather than keeping what the user pinned */
@@ -130,8 +126,9 @@ export function bindLockIcons(root: ParentNode = document): void {
     });
 
     lockEl.addEventListener("click", () => {
+      // one argument, never forEach's: `lock`'s second parameter is the value, and an index is not one
       const toggle = lockEl.className === "icon-lock" ? unlock : lock;
-      lockedIds(lockEl).forEach(toggle);
+      for (const id of lockedIds(lockEl)) toggle(id);
     });
   }
 

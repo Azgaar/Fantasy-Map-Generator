@@ -2,13 +2,19 @@
 // See docs/architecture/configuration.md#locks
 import type { z } from "zod";
 import { factsSchema } from "@/components/facts-schema";
+import { capCultures } from "@/components/options-model";
 import { optionsSchema } from "@/components/options-schema";
 import { readLocks, setPinResolver } from "@/utils/preferences";
 
 type Scope = "request" | "fact" | "preference";
 
-/** `paths` beyond the first receive the same value: one control, one value, several homes */
-type Setting = { scope: Scope; paths: string[] };
+/**
+ * `paths` beyond the first receive the same value: one control, one value, several homes.
+ * `derive` re-runs whatever is computed from the value, wherever the value was written from - so
+ * it must be state only, never a redraw: a pin is applied to a map that has not been drawn yet.
+ * A panel's own redraw belongs to the panel, see components/settings-binding.ts
+ */
+type Setting = { scope: Scope; paths: string[]; derive?: () => void };
 
 const at =
   (scope: Scope) =>
@@ -17,6 +23,9 @@ const at =
 const request = at("request"); // asked for; generation reads it when it resolves the requests
 const fact = at("fact"); // true of the map; a pin is all that carries it to the next one
 const preference = at("preference"); // this browser's; applied at once and never pinned
+
+/** the derived fact this value feeds, re-run the moment the value changes */
+const feeds = (setting: Setting, derive: () => void): Setting => ({ ...setting, derive });
 
 export const SETTINGS = {
   // requests: what the next map asks for
@@ -27,7 +36,8 @@ export const SETTINGS = {
   resolveDepressionsSteps: request("generation.resolveDepressionsSteps"),
   lakeElevationLimit: request("generation.lakeElevationLimit"),
   cultures: request("generation.cultures.limit"),
-  culturesSet: request("generation.cultures.set"),
+  // a set holds a fixed number of cultures: the map cannot ask for more than it has
+  culturesSet: feeds(request("generation.cultures.set"), capCultures),
   statesNumber: request("generation.states.limit"),
   provincesRatio: request("generation.provinces.ratio"),
   religionsNumber: request("generation.religions.limit"),
@@ -43,9 +53,10 @@ export const SETTINGS = {
   era: fact("lore.calendar.era"),
   // pinned beside the era rather than derived from it, so an abbreviation the user typed survives
   eraShort: fact("lore.calendar.eraShort"),
-  mapSize: fact("geography.mapSize"),
-  latitude: fact("geography.latitude"),
-  longitude: fact("geography.longitude"),
+  // the lat/lon box is derived from these three and the extent, and re-derives with each of them
+  mapSize: feeds(fact("geography.mapSize"), () => Coordinates.calculate()),
+  latitude: feeds(fact("geography.latitude"), () => Coordinates.calculate()),
+  longitude: feeds(fact("geography.longitude"), () => Coordinates.calculate()),
   temperatureEquator: fact("climate.temperature.equator"),
   temperatureNorthPole: fact("climate.temperature.northPole"),
   temperatureSouthPole: fact("climate.temperature.southPole"),
@@ -109,7 +120,14 @@ export function write(key: string, value: unknown): boolean {
   // a fact changes the map now; an option is this browser's and is remembered
   if (setting.scope === "fact") apply();
   else Options.set(apply);
+  setting.derive?.();
   return true;
+}
+
+/** Every setting kept under this path, e.g. what a panel that resets a whole section unpins */
+export function keysUnder(prefix: string): SettingKey[] {
+  const entries = Object.entries(SETTINGS as Record<string, Setting>);
+  return entries.filter(([, setting]) => setting.paths[0].startsWith(prefix)).map(([key]) => key as SettingKey);
 }
 
 /** The value a control's string stands for, or undefined when it stands for nothing valid */

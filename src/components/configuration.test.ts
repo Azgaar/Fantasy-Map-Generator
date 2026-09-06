@@ -2,14 +2,15 @@
 // The invariants the two-object split exists to guarantee.
 // See docs/architecture/configuration.md#invariants
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { POINTS_BY_DENSITY } from "@/data/graph-density";
+import { getPointsNumber, POINTS_BY_DENSITY } from "@/data/graph-density";
+import { Military } from "@/generators/military-generator";
 import { isLocked, lock } from "@/utils/preferences";
+import { remember } from "./definition-sets";
 import { getDefaultFacts } from "./facts-model";
 import { getDefaultOptions } from "./options-model";
 import { isPinnable, parseInput, read, SETTINGS, schemaFor, write } from "./settings";
 
 const UNIT = { icon: "u", name: "cavalry", rural: 0.2, urban: 0.1, crew: 2, power: 1, type: "melee", separate: 0 };
-const DEFAULT_UNITS = [{ ...UNIT, name: "the module default" }];
 
 async function boot() {
   vi.resetModules();
@@ -133,7 +134,7 @@ describe("a pin outlives the map it was made on", () => {
     lock("prec", 350);
     lock("year", 777);
 
-    Facts.seedForNewMap();
+    Facts.apply();
 
     expect(facts.climate.precipitation).toBe(350);
     expect(facts.lore.calendar.year).toBe(777);
@@ -142,19 +143,19 @@ describe("a pin outlives the map it was made on", () => {
 
 describe("the preservation library", () => {
   it("seeds a new map from the user's own set", () => {
-    Options.remember("military", [UNIT], DEFAULT_UNITS);
-    Facts.seedForNewMap();
+    remember("military", [UNIT]);
+    Facts.apply();
     expect(facts.military.units).toEqual([UNIT]);
   });
 
   it("is not disturbed by loading a map, so the next map still starts from the user's set", () => {
-    Options.remember("military", [UNIT], DEFAULT_UNITS);
+    remember("military", [UNIT]);
     load(savedFile(f => (f.military.units = [{ ...UNIT, name: "theirs" }])));
 
     expect(facts.military.units[0].name).toBe("theirs"); // the loaded map governs itself
     expect(options.library.military).toEqual([UNIT]); // the library is untouched
 
-    Facts.seedForNewMap();
+    Facts.apply();
     expect(facts.military.units).toEqual([UNIT]); // and still seeds the next map
   });
 });
@@ -216,7 +217,7 @@ describe("a lock stands for something", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     lock("prec", "corrupt");
 
-    Facts.seedForNewMap();
+    Facts.apply();
     expect(facts.climate.precipitation).toBeTypeOf("number");
   });
 
@@ -227,7 +228,7 @@ describe("a lock stands for something", () => {
 
     Options.setGraphSize(); // boot or a new map: the request is resolved here
     Options.randomize();
-    Facts.seedForNewMap();
+    Facts.apply();
 
     expect(facts.graph.width).toBe(1600);
     expect(facts.graph.height).toBe(900);
@@ -235,12 +236,35 @@ describe("a lock stands for something", () => {
   });
 });
 
+describe("a write runs whatever is derived from the value", () => {
+  it("re-derives the lat/lon box from the panel and from a pin alike", () => {
+    globalThis.Coordinates = { calculate: () => (facts.geography.coordinates.latT = facts.geography.mapSize) } as never;
+
+    write("mapSize", 40);
+    expect(facts.geography.coordinates.latT).toBe(40);
+
+    // the same seam a pinned fact is restored through, so it cannot land undervied
+    lock("mapSize", 70);
+    Facts.apply();
+    expect(facts.geography.mapSize).toBe(70);
+    expect(facts.geography.coordinates.latT).toBe(70);
+  });
+
+  it("caps the cultures request at what the chosen set can give", () => {
+    Options.set(o => (o.generation.cultures.limit = 30));
+
+    write("culturesSet", "english"); // a set of 10
+    expect(options.generation.cultures.set).toBe("english");
+    expect(options.generation.cultures.limit).toBe(10);
+  });
+});
+
 describe("the preservation library holds what the user typed", () => {
   it("clears the entry when the user resets a set to the module defaults", () => {
-    Options.remember("military", [UNIT], DEFAULT_UNITS);
+    remember("military", [UNIT]);
     expect(options.library.military).toEqual([UNIT]);
 
-    Options.remember("military", DEFAULT_UNITS, DEFAULT_UNITS);
+    remember("military", Military.getDefaultOptions());
     expect(options.library.military).toBeNull();
   });
 });
@@ -369,7 +393,7 @@ describe("the two objects hold no field twice", () => {
     // the request holds a density step; the cell count it stands for is derived, never stored
     const asked = getDefaultOptions().generation.graph;
     expect(asked).toEqual({ width: 1280, height: 800, density: 4 });
-    expect(Options.cellsFor(asked.density)).toBe(10000);
+    expect(getPointsNumber(asked.density)).toBe(10000);
 
     // the record has no density: a step is how the request was phrased, not what was built
     expect(getDefaultFacts().graph).toEqual({ width: 1280, height: 800, points: 10000 });
