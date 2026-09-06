@@ -427,6 +427,19 @@ const TEMPLATE = /* html */ `
       <td></td>
     </tr>
     <tr
+      data-tip="When labels, icons and relief are redrawn during a zoom or pan. 'After zoom' redraws once per gesture: faster on big maps, but new content appears all at once"
+    >
+      <td></td>
+      <td>Redraw on zoom</td>
+      <td>
+        <select id="viewportRedraw" data-stored="viewportRedraw">
+          <option value="continuous" selected>While zooming</option>
+          <option value="settled">After zoom</option>
+        </select>
+      </td>
+      <td></td>
+    </tr>
+    <tr
       data-tip="Load Google Translate and select language. Note that automatic translation can break some page functional. In this case reset the language back to English or refresh the page"
     >
       <td>
@@ -489,6 +502,7 @@ export const PANEL_KEYS: SettingKey[] = [
   "speakerVoice",
   "emblemShape",
   "shapeRendering",
+  "viewportRedraw",
   "onloadBehavior",
   "autosaveInterval",
   "zoomExtentMin",

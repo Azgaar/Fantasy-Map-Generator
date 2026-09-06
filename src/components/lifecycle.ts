@@ -15,6 +15,7 @@ import { invokeActiveZooming, resetZoom } from "@/components/zoom";
 import { Controllers } from "@/controllers";
 import { GenerationPipeline } from "@/generators/generation-pipeline";
 import { initiateAutosave } from "@/services/autosave";
+import { stashCallbackToken } from "@/services/help/auth";
 import { logStats } from "@/services/logging";
 import { registerServiceWorker } from "@/services/platform";
 import { checkLoadParameters } from "@/services/url-params";
@@ -24,6 +25,7 @@ import { debounce, ensureEl, findEl, parseError } from "@/utils";
 
 /** Bring the app up */
 export async function boot(): Promise<void> {
+  stashCallbackToken(); // before anything reads the URL: the OAuth fragment is not a load parameter
   registerServiceWorker();
   initShell();
 

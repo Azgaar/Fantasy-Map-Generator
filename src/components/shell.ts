@@ -1,6 +1,8 @@
 // The app window itself: the SVG layer scaffold, browser-level behaviours
 import { alertDialog, closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
+import { showDataTip } from "@/components/tooltips";
+import { Controllers } from "@/controllers";
 import { Services } from "@/services";
 import { isElectron, isLocalhost } from "@/services/platform";
 import { ensureEl, findEl } from "@/utils";
@@ -15,9 +17,19 @@ export function initShell(): void {
   document.addEventListener("touchstart", onTitlebarButtonTouch, { capture: true, passive: true });
   addDragToUpload();
   initTourPromptButton();
+  initHelpAssistantBubble();
 
   if (!isLocalhost() && !isElectron()) window.onbeforeunload = () => "Are you sure you want to navigate away?";
   if (isElectron()) removeWebOnlyControls();
+}
+
+/** The assistant's call button: always in the markup, shown only when the preference says so */
+function initHelpAssistantBubble(): void {
+  const bubble = findEl("helpAssistantBubble");
+  if (!bubble) return;
+
+  bubble.addEventListener("click", () => Controllers.HelpAssistant.toggle());
+  bubble.addEventListener("mouseover", showDataTip);
 }
 
 /**

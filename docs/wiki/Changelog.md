@@ -12,6 +12,11 @@ Check out [Dev board](https://github.com/users/Azgaar/projects/3/views/1?sumFiel
 
 Current version of the Fantasy Map Generator is the latest `master` branch. You can download it here: https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/heads/master.zip. Also see [the wiki](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#can-i-use-the-generator-offline).
 
+- Help assistant: ask questions about FMG by _[barrulus](https://github.com/barrulus)_ [1.151.2]
+- Annex states and provinces by clicking on the map by _[barrulus](https://github.com/barrulus)_ [1.151.2]
+- Option to redraw labels, icons and relief only after a zoom by _[barrulus](https://github.com/barrulus)_ [1.151.2]
+- Brushes stamp by distance travelled by _[barrulus](https://github.com/barrulus)_ [1.151.1]
+
 # Releases
 
 **[1.150.0](https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/tags/v1.150.0.zip) - 2026-09-05**:

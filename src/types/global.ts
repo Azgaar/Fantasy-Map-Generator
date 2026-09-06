@@ -23,8 +23,6 @@ declare global {
   var alertMessage: HTMLElement;
   var stylePreset: HTMLSelectElement;
 
-  // Still defined in public/modules/ui/options.js
-
   // Still defined in public/modules/ui/style.js
   var editStyle: (layer: string, group?: string) => void;
   var getColorScheme: (scheme: string | null) => (t: number) => string;

@@ -13,6 +13,7 @@ import {
   updatePaintOverlay
 } from "@/renderers/overlays/paint-overlay";
 import { ensureEl, getPointer } from "@/utils";
+import { createBrushStroke } from "@/utils/brushUtils";
 
 export interface PaintEditorItem {
   id: number;
@@ -188,12 +189,7 @@ function handleDragStart(this: SVGElement, event: D3DragEvent<SVGElement, unknow
   const historyEntry: PaintHistoryEntry = new Map();
   let recorded = false;
 
-  event.on("drag", (dragEvent: D3DragEvent<SVGElement, unknown, unknown>) => {
-    if (!dragEvent.dx && !dragEvent.dy) return;
-
-    const [x, y] = getPointer(dragEvent, this);
-    moveCircle(x, y, radius);
-
+  const stroke = createBrushStroke(radius / 2, (x, y) => {
     const found = radius > 5 ? Pack.findAll(x, y, radius) : [Pack.findCell(x, y)];
     const cells = found.filter((cell): cell is number => cell !== undefined);
     const selectedId = getState().selectedId;
@@ -201,6 +197,22 @@ function handleDragStart(this: SVGElement, event: D3DragEvent<SVGElement, unknow
 
     recordHistory(historyEntry);
     recorded = true;
+  });
+  const [startX, startY] = getPointer(event, this);
+  let started = false;
+
+  event.on("drag", (dragEvent: D3DragEvent<SVGElement, unknown, unknown>) => {
+    if (!dragEvent.dx && !dragEvent.dy) return;
+
+    const [x, y] = getPointer(dragEvent, this);
+    moveCircle(x, y, radius);
+
+    // start only on real movement: a plain click selects instead (handleMapClick)
+    if (!started) {
+      started = true;
+      stroke.moveTo(startX, startY);
+    }
+    stroke.moveTo(x, y);
   });
 }
 

@@ -1,0 +1,38 @@
+body:
+  - type: markdown
+    attributes:
+      value: Before posting, please search existing ideas and upvote instead of duplicating — votes drive prioritization.
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What should the generator do?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: What problem does it solve, or what does it make possible?
+  - type: dropdown
+    id: theme
+    attributes:
+      label: Theme
+      description: Which part of the generator is this about?
+      options:
+        - Not sure
+        - States / Provinces / Diplomacy
+        - Import / Export / Save
+        - UI / Editors
+        - Cultures / Religions / Society
+        - Burgs & Population
+        - Labels & Styling
+        - Climate / Biomes / Terrain
+        - Markers / Notes / Zones
+        - Military
+        - Rivers / Lakes / Coast
+        - Integrations & External
+        - Architecture / Performance
+        - Routes & Roads
+    validations:
+      required: true

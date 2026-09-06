@@ -67,6 +67,7 @@ export const SETTINGS = {
   speakerVoice: preference("app.ui.speakerVoice"),
   emblemShape: preference("app.emblems.shape"),
   shapeRendering: preference("app.rendering"),
+  viewportRedraw: preference("app.viewportRedraw"),
   onloadBehavior: preference("app.onLoad"),
   autosaveInterval: preference("app.autosave.interval"),
   zoomExtentMin: preference("app.zoomExtent.min"),

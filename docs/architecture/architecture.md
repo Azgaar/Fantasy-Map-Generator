@@ -356,6 +356,9 @@ state**._ A controller does **not** hold pure static data, services, or serializ
 - **App-level UI** — dialogs and widgets that are opened over the map but say nothing about it:
   the About dialog (`app-info`). They have a controller's lifecycle but not a controller's
   subject, so they live here and load with the shell.
+- **Shared editor behaviour** — interaction helpers several editors call rather than copy:
+  dialog helpers, tooltips, the default map events (`viewbox-events`), and map modes such as
+  `annex-mode`, which the States and Provinces editors both drive with their own merge logic.
 
 Widgets like `hierarchy-tree` and `minimap` may move to `components/` if they generalize.
 
@@ -401,6 +404,7 @@ classic needs it.
 - Generates or simulates world data → `generators/`
 - Serializes, saves, loads, or exports state → `services/io/`
 - Manages browser/app lifecycle, a platform asset, or app preferences → `services/`
+- Talks to the project's help gateway on the user's behalf → `services/help/`
 - A constant list or template, no behavior → `data/`
 - A helper that reads no ambient state and has ≥2 consumers → `utils/`
 - A shared type / interface → `types/`
@@ -533,6 +537,10 @@ Static content: lookup tables, templates, tuning constants, reference lists.
 - **IO is a service.** Save/load/export live in `src/services/io/`. Like controllers, each
   service/io module exports a single named object (`Save`, `Load`, `ExportMap`, …) reached
   through the `Services` registry (`Services.Save.saveMap(...)`).
+- **The help gateway client is a service.** `src/services/help/` (api, auth, conversation) is the
+  only code that talks to ask.azgaarsfmg.com; `controllers/help-assistant.ts` is the UI over it. The
+  client keeps the Discord sign-in token in `localStorage` and only the server-issued conversation id
+  in `sessionStorage`, never conversation content.
 
 ## Lazy module registry
 

@@ -8,6 +8,7 @@ vi.mock("@/renderers/viewport/viewport-renderer", () => ({
 
 import "@/generators/styles";
 import { setViewportSize, setViewportTransform, viewport } from "@/components/viewport";
+import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { rn } from "@/utils/numberUtils";
 import { applyZoomBehavior, setMapZoom } from "./zoom";
 
@@ -31,7 +32,7 @@ beforeEach(() => {
 
   Object.assign(globalThis, {
     customization: 0,
-    options: { labels: { resizeOnZoom: false } },
+    options: { labels: { resizeOnZoom: false }, app: { viewportRedraw: "continuous" } },
     pack: { markers: [{ i: 0, x: 200, y: 200, size: 30, hidden: false }] }
   });
   setViewportSize(1000, 600);
@@ -42,6 +43,8 @@ beforeEach(() => {
     vi.fn(() => 1)
   );
   vi.stubGlobal("cancelAnimationFrame", vi.fn());
+  vi.mocked(ViewportLayers.schedule).mockClear();
+  vi.mocked(ViewportLayers.renderNow).mockClear();
   applyZoomBehavior();
 });
 
@@ -51,6 +54,23 @@ describe("programmatic zoom", () => {
 
     expect(viewport.scale).toBe(4);
     expect(document.getElementById("viewbox")!.getAttribute("transform")).toBe("translate(-1500 -900) scale(4)");
+  });
+});
+
+describe("viewport redraw during zoom", () => {
+  it("redraws viewport layers per frame and again when the gesture settles", () => {
+    setMapZoom(4);
+
+    expect(ViewportLayers.schedule).toHaveBeenCalledTimes(1);
+    expect(ViewportLayers.renderNow).toHaveBeenCalledTimes(1);
+  });
+
+  it("skips the per-frame redraw when set to redraw after the zoom only", () => {
+    options.app.viewportRedraw = "settled";
+    setMapZoom(4);
+
+    expect(ViewportLayers.schedule).not.toHaveBeenCalled();
+    expect(ViewportLayers.renderNow).toHaveBeenCalledTimes(1);
   });
 });
 

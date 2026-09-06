@@ -446,3 +446,34 @@ describe("ensureBurgGroupStyles", () => {
     expect(anchors.groups.fortresses).toEqual(townAnchor);
   });
 });
+
+describe("BurgsModule.parseStoredGroups", () => {
+  let Burgs: any;
+
+  beforeEach(async () => {
+    globalThis.TIME = false;
+    globalThis.window = globalThis.window || ({} as any);
+    await import("./burgs-generator");
+    Burgs = (globalThis as any).Burgs;
+  });
+
+  it("falls back to the defaults when the stored value holds no usable group", () => {
+    const defaults = Burgs.getDefaultGroups();
+    expect(Burgs.parseStoredGroups(null)).toEqual(defaults);
+    expect(Burgs.parseStoredGroups("[]")).toEqual(defaults);
+    expect(Burgs.parseStoredGroups("not json")).toEqual(defaults);
+    expect(Burgs.parseStoredGroups(JSON.stringify([{ order: 1 }]))).toEqual(defaults);
+  });
+
+  it("keeps usable stored groups and drops the rest", () => {
+    const usable = { name: "outpost", order: 3 };
+    const stored = JSON.stringify([usable, { order: 4 }, { name: "noOrder" }]);
+    const groups = Burgs.parseStoredGroups(stored);
+    expect(groups.map((group: any) => group.name)).toEqual(["outpost"]);
+  });
+
+  it("always leaves a default group for burg assignment to fall back on", () => {
+    const groups = Burgs.parseStoredGroups(JSON.stringify([{ name: "outpost", order: 3 }]));
+    expect(groups.filter((group: any) => group.isDefault).length).toBe(1);
+  });
+});

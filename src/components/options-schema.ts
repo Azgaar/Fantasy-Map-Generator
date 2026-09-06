@@ -70,6 +70,8 @@ export const optionsSchema = z.strictObject({
     emblems: z.strictObject({ showAll: z.boolean(), shape: z.string().min(1) }),
     labels: z.strictObject({ showAll: z.boolean() }),
     rendering: z.enum(["geometricPrecision", "optimizeSpeed"]), // the viewbox shape-rendering
+    // when the viewport layers are rewritten during a zoom: every frame, or once the gesture settles
+    viewportRedraw: z.enum(["continuous", "settled"]),
     onLoad: z.enum(["random", "lastSaved"]), // what the app does with no map asked for
     zoomExtent: z.strictObject({ min: positive, max: positive }).refine(({ min, max }) => min <= max, {
       message: "zoomExtent.min must not exceed max"

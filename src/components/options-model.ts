@@ -40,6 +40,7 @@ export function getDefaultOptions(): OptionsData {
       emblems: { showAll: false, shape: "culture" },
       labels: { showAll: false },
       rendering: "optimizeSpeed",
+      viewportRedraw: "continuous",
       onLoad: "random",
       zoomExtent: { min: 1, max: 20 },
       viewport: null,

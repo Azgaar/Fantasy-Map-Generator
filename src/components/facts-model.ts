@@ -80,13 +80,20 @@ function adopt(data: FactsData): void {
   ensureDefinitionSets();
 }
 
-/** A set entities reference by name cannot be empty, or the names they point at draw nothing */
+/**
+ * A set entities reference by name cannot be empty, or the names they point at draw nothing. Being
+ * non-empty is not enough either: burg assignment needs a group flagged default, and each label
+ * type needs a group of its own, so a set the schema accepted can still leave the renderer idle
+ */
 function ensureDefinitionSets(): void {
   const defaults = getDefaultFacts();
   if (!facts.burgs.groups?.length) facts.burgs.groups = defaults.burgs.groups;
   if (!facts.labels.groups?.length) facts.labels.groups = defaults.labels.groups;
   if (!facts.military.units?.length) facts.military.units = defaults.military.units;
   if (!facts.transports?.length) facts.transports = defaults.transports;
+
+  Burgs.ensureDefaultGroup(facts.burgs.groups);
+  Labels.restoreMissingTypes(facts.labels.groups);
 }
 
 /**
