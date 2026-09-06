@@ -267,10 +267,17 @@ export const WHEEL_CSS = `
   background: var(--mw-fill-hot, #6b5535);
   cursor: pointer;
 }
+/* The height below is load-bearing, not tidiness. public/index.css gives every select
+   "height: 1.6em; padding: 0" under "box-sizing: border-box"; at the 12px type below, that is a
+   19.2px box which has to contain our 8px of padding, 1px of border AND the 12px line, leaving about
+   10px of content box - so the glyphs were cut across the bottom ("Show" in #azgaarAssistant, which
+   is how the user found it). Letting padding and line-height size the control fixes it. No
+   !important needed: "#mapWheelDrawer select" is (1,0,1) against FMG's bare "select" (0,0,1). */
 #mapWheelDrawer select,
 #mapWheelDrawer input[type="number"],
 #mapWheelDrawer input[type="text"] {
   width: 100%;
+  height: auto;
   font-size: 12px;
   padding: 4px 6px;
   color: var(--mw-ink-base, #3b3226);

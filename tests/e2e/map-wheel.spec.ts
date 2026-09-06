@@ -688,6 +688,20 @@ test.describe("map wheel", () => {
     expect(crumbs.y + crumbs.height).toBeLessThanOrEqual(page.viewportSize()!.height);
   });
 
+  // Every text-bearing control in the drawer, and whether its own text fits inside it. `scrollHeight
+  // > clientHeight` is the direct expression of "the glyphs are cut off"; the width assertions below
+  // passed for a select whose descenders were being clipped, because nothing measured the text.
+  const clippedControls = (): Promise<string[]> =>
+    page.locator("#mapWheelDrawer").evaluate(root =>
+      [...root.querySelectorAll<HTMLInputElement | HTMLSelectElement>("select, input, textarea")]
+        .filter(el => el.offsetParent !== null && !["range", "color", "checkbox", "radio"].includes(el.type))
+        .filter(el => el.scrollHeight > el.clientHeight)
+        .map(el => {
+          const style = getComputedStyle(el);
+          return `#${el.id || el.tagName}: ${el.clientHeight}px content box for ${el.scrollHeight}px of text (height: ${style.height}, font-size: ${style.fontSize})`;
+        })
+    );
+
   // FMG carries inline widths on several of its SELECTS (#stylePreset 45%, #styleElementSelect 42%,
   // #styleHeightmapScheme and #styleTextureInput 86%, #styleSelectFont 85%) for the top bar's wide
   // panel. In a 340px drawer that clipped their option text - the user photographed it on "Style
@@ -733,11 +747,46 @@ test.describe("map wheel", () => {
       await expect(page.locator(`#mapWheelDrawer #${id}`)).toBeVisible();
       const fit = await fits(id);
       expect(fit.width, `#${id} is ${fit.width}px in a ${fit.inner}px block`).toBeGreaterThanOrEqual(fit.inner - 1);
+      expect(await clippedControls()).toEqual([]);
     }
     await page.locator("#mapWheelDrawer #styleElementSelect").selectOption("biomes");
 
     await page.keyboard.press("Escape");
     await expect(page.locator("#options > #styleContent")).toBeAttached();
+  });
+
+  // The user photographed "Show" in #azgaarAssistant with its glyphs cut off across the bottom.
+  // FMG gives every select `height: 1.6em; padding: 0` with `box-sizing: border-box`; the skin sets
+  // 12px type and 4px of vertical padding but no height, so 1.6 x 12 = 19.2px had to contain 8px of
+  // padding, 1px of border and a 12px line - about 10px of content box for 12px of text.
+  //
+  // This is the assertion the width test should have carried from the start: the width was right and
+  // the text was still clipped, because nothing ever measured the text.
+  test("fits every hosted control's own text inside it", async () => {
+    for (const [drill, sample] of [
+      [["Options", "Interface"], "azgaarAssistant"],
+      [["Options", "Behaviour"], "onloadBehavior"],
+      [["Style", "Style editor"], "stylePreset"]
+    ] as [string[], string][]) {
+      // the em-based height interacts with the scaled font size, so check both ends of uiSize
+      for (const uiSize of ["0.8", "1", "2"]) {
+        await page.evaluate(v => {
+          (document.getElementById("uiSize") as HTMLInputElement).value = v;
+        }, uiSize);
+        await openWheel();
+        await menuTab();
+        for (const step of drill) await activate(byLabel(step));
+        await expect(page.locator(`#mapWheelDrawer #${sample}`)).toBeVisible();
+
+        expect(await clippedControls(), `uiSize ${uiSize}, ${drill.join(" > ")}`).toEqual([]);
+        await page.keyboard.press("Escape");
+      }
+    }
+
+    await page.evaluate(() => {
+      (document.getElementById("uiSize") as HTMLInputElement).value = "1";
+    });
+    await expect(page.locator("#options > #optionsContent")).toBeAttached();
   });
 
   // The wheel sampled the theme once per structural redraw, which was defensible while it was a

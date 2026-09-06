@@ -354,7 +354,12 @@ Scoped to `#mapWheelDrawer`, using the wheel's tokens:
   currently hover-only.
 - `input[type=range]`: 3px `rgba(90,74,48,.22)` track, 13px `#6b5535` thumb.
 - `select`, `input[type=number]`, `input[type=text]`: parchment ground, 1px `edge` border, 3px
-  radius, 12px type, full width.
+  radius, 12px type, full width, and **`height: auto`**. That last one is not tidiness:
+  `public/index.css` gives every select `height: 1.6em; padding: 0` under `box-sizing: border-box`,
+  so at 12px type the control is a 19.2px box that has to contain the skin's 8px of vertical padding,
+  1px of border *and* the 12px line — about 10px of content box, which cut the glyphs off across the
+  bottom. It needs no `!important` (`#mapWheelDrawer select` is (1,0,1) against a bare `select`), and
+  `select` is the only hosted control FMG gives a fixed height to.
 - **`select { width: 100% !important }`**, selects only. FMG carries inline widths on five of them
   for the top bar's wide panel — `#stylePreset` 45%, `#styleElementSelect` 42%,
   `#styleHeightmapScheme` and `#styleTextureInput` 86%, `#styleSelectFont` 85% — and an inline style
@@ -802,8 +807,13 @@ and never the port a user session is browsing):**
 - The breadcrumb is centred on the wheel centre and 10px above the outermost open ring at depths 0,
   1 and 2, stays inside the viewport for a depth-3 drill opened near the top edge, and keeps
   `pointer-events: auto`.
-- A hosted `select` fills the block it sits in (`#stylePreset`, `#styleElementSelect`), which is
-  what the inline 45% / 42% widths broke.
+- A hosted `select` fills the block it sits in (`#stylePreset`, `#styleElementSelect`,
+  `#styleHeightmapScheme`, `#styleTextureInput`, `#styleSelectFont`), which is what the inline
+  45% / 42% / 86% / 85% widths broke.
+- **Every hosted control's own text fits inside it** — `scrollHeight <= clientHeight` over every
+  visible `select`, `input` and `textarea` in the Interface, Behaviour and Style drawers, at uiSize
+  0.8, 1 and 2. The width assertion above passed while `#azgaarAssistant` was clipping "Show" across
+  the bottom, because nothing measured the text; this is the assertion that catches it.
 - Moving the app's own theme while the wheel is open repaints the ring: the sector fills follow the
   colour, and their alpha is `.97` at transparency 0 and the `.8` floor at transparency 100.
 - `MENU → Layers → Political → Borders` flips the real layer: `Layers.isOn("borders")` changes and
