@@ -8,7 +8,8 @@
 // Why sample into strings instead of writing `var(--dark-solid)` everywhere: the sector fills are
 // SVG *presentation attributes* (`setAttribute("fill", …)`), and a presentation attribute does not
 // accept `var()` - it silently renders black. The stylesheet-side chrome (drawer, breadcrumb, hub)
-// does use `var()` directly; only what JavaScript writes onto SVG has to be resolved to a literal.
+// does use `var()` directly, reading these same values back off `.mw-wheel`. Label ink is resolved
+// here too, though it is an ordinary inline style: it has to agree with the fill under it.
 
 /** The design handoff's colours, kept as the fallback when the app has published no theme */
 export const FILLS = {
@@ -33,7 +34,21 @@ export const EDGE_DIM = "rgba(90,74,48,.16)";
 
 export interface Palette {
   fills: { chosen: string; hot: string; hotDanger: string; layerOn: string; dim: string; base: string };
-  inks: { light: string; layerOn: string; danger: string; dim: string; base: string; accent: string };
+  /**
+   * The light ink is painted on three different dark fills, so it is resolved three times - once
+   * per background. One shared value cannot work: `readable` moves the ink toward whichever end its
+   * background is furthest from, so a value made safe over one fill is not safe over another.
+   */
+  inks: {
+    onChosen: string;
+    onHot: string;
+    onDanger: string;
+    layerOn: string;
+    danger: string;
+    dim: string;
+    base: string;
+    accent: string;
+  };
   edge: string;
   edgeDim: string;
 }
@@ -128,24 +143,33 @@ export function readPalette(): Palette {
   const light = cssVar("--light-solid");
   const dark = cssVar("--dark-solid");
   const header = cssVar("--header-active");
+  // the two grounds the accent ink is painted on besides the ring's own fill
+  const lighter = cssVar("--bg-lighter");
+  const panel = cssVar("--bg-light");
 
   const base = light ? withAlpha(light, 0.97) : FILLS.base;
   const dim = light ? withAlpha(light, 0.82) : FILLS.dim;
   const chosen = dark || FILLS.chosen;
   const hot = header || FILLS.hot;
+  const inkLight = light || INKS.light;
 
   return {
     fills: { chosen, hot, hotDanger: FILLS.hotDanger, layerOn: FILLS.layerOn, dim, base },
     inks: {
-      // one ink covers both dark fills, so it is checked against the lighter of the two
-      light: readable(light || INKS.light, hot),
+      onChosen: readable(inkLight, chosen),
+      onHot: readable(inkLight, hot),
+      onDanger: readable(inkLight, FILLS.hotDanger),
       layerOn: INKS.layerOn,
       danger: readable(INKS.danger, base),
       // dimmed siblings are still full click targets, so they are dimmed no further than .82 and
       // their ink is held to the same 4.5:1 as every other sector
       dim: readable(dark ? withAlpha(dark, 0.82) : INKS.dim, dim),
       base: readable(dark || INKS.base, base),
-      accent: readable(hot, base)
+      // The accent is the hub's inactive tab (on the base fill), the breadcrumb (on --bg-lighter)
+      // and the drawer's headings (on --bg-light), so it has to clear all three. Guarding against
+      // them in turn only ever moves the ink further the same way: all three are one theme
+      // lightness plus 0.02, 0.05 and 0.06, so they never straddle mid-grey.
+      accent: [base, lighter || base, panel || base].reduce((ink, ground) => readable(ink, ground), hot)
     },
     edge: dark ? withAlpha(dark, 0.32) : EDGE,
     edgeDim: dark ? withAlpha(dark, 0.16) : EDGE_DIM
@@ -162,7 +186,8 @@ export function applyPalette(element: HTMLElement, palette: Palette): void {
     "--mw-fill-danger": palette.fills.hotDanger,
     "--mw-fill-layer-on": palette.fills.layerOn,
     "--mw-ink-base": palette.inks.base,
-    "--mw-ink-light": palette.inks.light,
+    // the only light ink the stylesheet paints is the hub's active tab, which sits on the hot fill
+    "--mw-ink-light": palette.inks.onHot,
     "--mw-ink-accent": palette.inks.accent,
     "--mw-edge": palette.edge,
     "--mw-edge-dim": palette.edgeDim

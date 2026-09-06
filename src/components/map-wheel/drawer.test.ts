@@ -28,9 +28,11 @@ beforeEach(() => {
 afterEach(() => closeDrawer());
 
 describe("pickSide", () => {
+  // centres with real room on the side the sector points into: at 640 in a 1280px window neither
+  // side has room at the current radii, which is the last-resort case below, not this one
   it("opens on the side the sector points into", () => {
-    expect(pickSide(0, 640, 1280)).toBe("right");
-    expect(pickSide(Math.PI, 640, 1280)).toBe("left");
+    expect(pickSide(0, 400, 1280)).toBe("right");
+    expect(pickSide(Math.PI, 880, 1280)).toBe("left");
   });
 
   // giving up the sector's direction is cheaper than dragging the ring across the map
@@ -161,7 +163,7 @@ describe("closeDrawer", () => {
 
   it("keeps the connector inside the drawer's height for a sector pointing far off it", () => {
     const line = connectorLine(-Math.PI / 2, "right");
-    expect(Math.abs(line.y2)).toBeLessThanOrEqual(Math.min(560, window.innerHeight - 32) / 2);
+    expect(Math.abs(line.y2)).toBeLessThanOrEqual(Math.min(532, window.innerHeight - 32) / 2);
   });
 
   it("notifies the caller when the close button is used", () => {

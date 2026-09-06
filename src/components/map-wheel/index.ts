@@ -23,11 +23,7 @@ const MARGIN = VIEWPORT_MARGIN;
 /** Room an open drawer needs beyond the wheel's own box on the side it fans out to */
 const drawerReserve = (scale: number): number => drawerOffset(scale) + DRAWER_WIDTH - boxRadius(scale);
 
-/**
- * The dial follows the app's own sizing control. `uiSize` is a <slider-input>, which is why this
- * reads `.value` rather than `.valueAsNumber` - the same way burgs-overview.ts and
- * provinces-editor.ts read it.
- */
+/** The dial follows the app's own sizing control; absent or unreadable is 1 */
 function readUiSize(): number {
   const raw = Number(findEl<HTMLInputElement>("uiSize")?.value);
   return Number.isFinite(raw) && raw > 0 ? raw : 1;

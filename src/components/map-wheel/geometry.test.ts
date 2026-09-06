@@ -21,19 +21,6 @@ import {
 
 const TAU = Math.PI * 2;
 
-describe("bands", () => {
-  it("has four bands matching the design spec", () => {
-    expect(BANDS).toEqual([
-      [58, 108],
-      [112, 158],
-      [162, 204],
-      [208, 246]
-    ]);
-    expect(MAX_DEPTH).toBe(4);
-    expect(ITEM_CAPS).toEqual([7, 11, 15, 19]);
-  });
-});
-
 describe("ringSpan", () => {
   it("spans the full circle at the root", () => {
     expect(ringSpan(0, 5)).toBeCloseTo(TAU, 10);
@@ -140,6 +127,17 @@ describe("spineLine", () => {
 // and at the base table 7 of them get 2pi*83/7 = 74.5px of arc each - the label is the sector.
 // Scaling the whole dial cannot help, because the label scales with it; only the radii may move.
 describe("bands", () => {
+  it("has four base bands matching the design spec", () => {
+    expect(BANDS).toEqual([
+      [58, 108],
+      [112, 158],
+      [162, 204],
+      [208, 246]
+    ]);
+    expect(MAX_DEPTH).toBe(4);
+    expect(ITEM_CAPS).toEqual([7, 11, 15, 19]);
+  });
+
   it("applies the base radius multiplier and nothing else at scale 1", () => {
     expect(bands()).toEqual(BANDS.map(([inner, outer]) => [inner * BASE_RADIUS_SCALE, outer * BASE_RADIUS_SCALE]));
     expect(bands(1)).toEqual(bands());

@@ -121,8 +121,9 @@ overlapped by 7.7px; after, they clear by 3.9px.
 
 ### Factor 2: uiSize (uniform)
 
-The dial follows the app's own sizing control, read at open from `#uiSize` (a `<slider-input>`, so
-`.value`), applied **uniformly** to radii, label widths, font sizes and icon sizes. Two clamps:
+The dial follows the app's own sizing control, read at open from `#uiSize` (a `<slider-input>`;
+either `.value` or `.valueAsNumber` works, both are implemented and both are used elsewhere in the
+app), applied **uniformly** to radii, label widths, font sizes and icon sizes. Two clamps:
 
 1. the raw uiSize (0.6..3) to `[0.8, 2]` — more than that is not a dial anchored at a click point;
 2. again, so the rendered box never exceeds `min(innerWidth, innerHeight) - 32`.
@@ -146,7 +147,8 @@ SVG `viewBox="-R -R 2R 2R"` rendered `2R` square, where `R = boxRadius(scale)` =
   A(inner, reversed) → Z`, large-arc flag set when the sweep exceeds π.
 - Hover expansion: hovered sector's **outer** radius +5px. Inner radius never moves.
 - Spine: for each level ≥ 1, a line at the parent's mid-angle from `BANDS[L-1][1]` to `BANDS[L][0]`,
-  `stroke #4a3a22`, `stroke-width 3`, `stroke-linecap round`.
+  stroke `--dark-solid` (`#4a3a22`), `stroke-width 3`, `stroke-linecap round`. The drawer's
+  connector is the same line.
 
 ### Derived item caps
 
@@ -476,8 +478,8 @@ Fills and ink, in priority order:
 
 | Condition | Fill | Ink |
 | --- | --- | --- |
-| Chosen ancestor (its child ring or drawer is open) | `--dark-solid` (`#4a3a22`) | `--light-solid` (`#fffdf7`) |
-| Hovered | `--header-active` (`#6b5535`); **`#a33a2e` if destructive** | `--light-solid` (`#fffdf7`) |
+| Chosen ancestor (its child ring or drawer is open) | `--dark-solid` (`#4a3a22`) | `--light-solid` (`#fffdf7`), resolved for this fill |
+| Hovered | `--header-active` (`#6b5535`); **`#a33a2e` if destructive** | `--light-solid` (`#fffdf7`), resolved for whichever of the two it is |
 | Layer toggle that is ON | **`#8a9c6c`** | **`#20261a`** |
 | Dimmed sibling | `--light-solid` at .82 (`rgba(251,247,236,.82)`) | `--dark-solid` at .82 (`rgba(59,50,38,.82)`) |
 | Default | `--light-solid` at .97 (`rgba(251,247,236,.97)`) | `--dark-solid` (`#3b3226`) |
@@ -506,9 +508,34 @@ on an outside pointerdown.
 ink stays at ≥4.5:1 — do not fade further than the `.82`/`.82` pair. De-emphasis comes from the
 solid dark ancestor, not from making siblings unreadable. Following the theme cannot be allowed to
 break that: FMG's own `--dark-solid` on `--light-solid` is **2.5:1** at the default theme colour
-(#997787). Every ink the wheel computes is therefore held to 4.5:1 over the fill it sits on, moving
-only its lightness toward black or white and keeping the theme's hue. With no theme published the
-handoff's colours already clear the bar and the guard is a no-op.
+(#997787). Every ink the wheel computes is therefore held to 4.5:1 over the ground it is *actually
+painted on*, moving only its lightness toward black or white and keeping the theme's hue. With no
+theme published the handoff's colours already clear the bar and the guard is a no-op.
+
+"Actually painted on" is the load-bearing half of that sentence, and one ink per rule is not enough:
+
+- The **light ink** appears on three different fills — the chosen ancestor (`--dark-solid`), the
+  hover fill (`--header-active`) and the unthemed danger red. It is resolved once per fill
+  (`inks.onChosen` / `onHot` / `onDanger`) and the renderer picks the one matching the fill it just
+  chose. Guarding a single shared value against one of the three is worse than not guarding at all:
+  the guard moves the ink *away* from the other two. Measured with a shared ink guarded against the
+  hover fill, light ink on the danger red fell to **1.18:1** at a white theme colour and 1.46:1 at a
+  near-black one.
+- The **accent ink** appears on three grounds — the hub's inactive tab (`--light-solid`), the
+  breadcrumb (`--bg-lighter`) and the drawer's headings (`--bg-light`) — and is guarded against all
+  three in turn. That is safe because those three are one theme lightness plus 0.02, 0.05 and 0.06,
+  so they never straddle mid-grey and the guard never has to reverse direction.
+
+Contrast is measured on the **nominal opaque pair**. `--header-active` and the `--bg-*` grounds carry
+the user's transparency (and `--header-active` an `alphaReduced` of `min(alpha + 0.3, 1)`), and what
+shows through them is the map, which has no fixed colour. Measuring the opaque colours is therefore
+the only stable reading available; at high transparency the real ratio may differ from the reported
+one in either direction.
+
+The unit test for this asserts a universal, so it is exercised as one: the whole pair table runs
+across four reproduced themes — the default `#997787`, `#ffffff`, the pale blue `#dfe9f5` and the
+near-black `#221a20` — not against the default alone. Only mid-lightness themes hid the bug above,
+and the hue slider preserves lightness, so the default look never showed it.
 
 ### Labels
 
@@ -532,15 +559,17 @@ done by the SVG `<path>` underneath.
 104×104 circle, `overflow: hidden`, `border-radius: 50%`, `pointer-events: none` on the wrapper with
 `auto` on the two tabs. `box-shadow: 0 0 0 1px rgba(90,74,48,.4), 0 6px 16px rgba(20,14,4,.35)`.
 Split into two equal stacked tabs, **HERE** over **MENU**. Tab type IBM Plex Sans 10px/600,
-`letter-spacing .1em`, uppercase, centred. Active tab `#6b5535` on `#fffdf7`; inactive
-`rgba(251,247,236,.94)` on `#6b5535`; `transition: background 120ms`.
+`letter-spacing .1em`, uppercase, centred. Active tab `--header-active` (`#6b5535`) with the light
+ink resolved for that fill (`#fffdf7`); inactive `--light-solid` (`rgba(251,247,236,.94)`) with the
+accent ink (`#6b5535`); `transition: background 120ms`. Diameter and type size follow `--mw-ui`.
 
 ### Breadcrumb
 
 Top-left of the overlay bounds, `left 18px / top 16px`. IBM Plex Sans 11px, `letter-spacing .04em`,
-colour `#6b5535`, background `rgba(251,247,236,.86)`, padding `6px 11px`, radius 3px, border
-`1px solid rgba(90,74,48,.25)`. Clickable (`pointer-events: auto`). Last crumb `#3b3226`/600,
-earlier `#8a7248`/400, separator `›` at `opacity .45`, margin `0 5px`.
+in the accent ink (`#6b5535`) on `--bg-lighter` (`rgba(251,247,236,.86)`), padding `6px 11px`,
+radius 3px, border `1px solid` the themed edge (`rgba(90,74,48,.25)`). Clickable
+(`pointer-events: auto`). Last crumb `--dark-solid` (`#3b3226`)/600, earlier the accent
+(`#8a7248`)/400, separator `›` at `opacity .45`, margin `0 5px`.
 
 ### Tokens
 
@@ -586,8 +615,11 @@ needed — the hub in this concept carries tab type only, not entity names.
   cap has more arc per label than the label is wide, and `wheelScale` clamps to `[0.8, 2]` and then
   again to the viewport.
 - `palette.test.ts` — the fallback palette is byte-identical to the handoff when no theme is
-  published; the app's variables are followed when they are; danger and layer-on stay literal; every
-  ink clears 4.5:1 over its own fill, dimmed siblings included, and dimming stops at `.82`/`.82`.
+  published; the app's variables are followed when they are; danger and layer-on stay literal;
+  `readable` moves the same ink opposite ways for a light and a dark ground. The contrast assertion
+  runs the full ten-pair table (including light ink on the danger red, and the accent on the
+  breadcrumb and drawer grounds) **across four reproduced themes** spanning the lightness range, and
+  dimming stops at `.82`/`.82` in every one of them.
 - `menu-tree.test.ts` — every ring within its level's item cap; no branch deeper than 4; every node
   has exactly one of `children`/`panel`/`run`/`toggle`/`pick`; every leaf resolves to a real
   `Controllers` key or an id present in `src/index.html`; every `toggle` names a real,

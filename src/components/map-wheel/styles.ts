@@ -1,7 +1,7 @@
 export const WHEEL_CSS = `
 /* Colours follow the app's live theme. \`--bg-light\` / \`--bg-lighter\` / \`--light-solid\` /
    \`--dark-solid\` are written onto <html> by changeDialogsTheme(); the \`--mw-*\` properties are the
-   same theme after palette.ts has held every ink to 4.5:1 over its own fill, and are set on
+   same theme after palette.ts has held every ink to 4.5:1 over the ground it is painted on, set on
    .mw-wheel by the renderer. Both carry the design handoff's parchment as their fallback. */
 /* The host spans the viewport so the ring can be centred anywhere in it, so it must be transparent
    to pointers: the parts that are actually interactive opt back in below. Without this every click

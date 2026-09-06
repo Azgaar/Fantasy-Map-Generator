@@ -1,4 +1,5 @@
 import { type Browser, type BrowserContext, expect, type Page, test } from "@playwright/test";
+import { BASE_RADIUS_SCALE } from "../../src/components/map-wheel/geometry";
 
 // The map wheel is a radial context controller opened by right-clicking the map. Unit tests cover
 // the geometry, the menu tree and the drawer's borrow/restore in isolation; only a browser can
@@ -25,15 +26,15 @@ interface SectorInfo {
 // One ring per level, so a sector's level can be read back off its own arc: `d` starts at the
 // band's inner radius. Labels live in a sibling layer, appended in the same order as the paths.
 //
-// Neither the radii nor the hot fill are constants any more: the bands carry a 1.2 base multiplier
-// times the clamped uiSize, and the fills follow the app's theme. Both are published on .mw-wheel,
-// so the probe reads them back rather than hardcoding numbers the app can move.
+// Neither the radii nor the hot fill are constants any more: the bands carry the base radius
+// multiplier times the clamped uiSize, and the fills follow the app's theme. The scale is published
+// on .mw-wheel and the multiplier is imported, rather than hardcoding numbers the app can move.
 const readSectors = (): Promise<SectorInfo[]> =>
-  page.evaluate(() => {
+  page.evaluate(base => {
     const wheel = document.querySelector<HTMLElement>("#mapWheel .mw-wheel")!;
     const style = getComputedStyle(wheel);
     const ui = Number.parseFloat(style.getPropertyValue("--mw-ui")) || 1;
-    const INNER = [58, 112, 162, 208].map(r => r * 1.2 * ui);
+    const INNER = [58, 112, 162, 208].map(r => r * base * ui);
     const HOT = ["--mw-fill-hot", "--mw-fill-danger"].map(name => style.getPropertyValue(name).trim());
     const paths = [...document.querySelectorAll<SVGPathElement>("#mapWheel path.mw-sector")];
     const labels = [...document.querySelectorAll<HTMLElement>("#mapWheel .mw-labels > .mw-label")];
@@ -55,7 +56,7 @@ const readSectors = (): Promise<SectorInfo[]> =>
         hot: HOT.includes(path.getAttribute("fill")!)
       };
     });
-  });
+  }, BASE_RADIUS_SCALE);
 
 const press = async (key: string, times: number): Promise<void> => {
   for (let i = 0; i < times; i++) await page.keyboard.press(key);
@@ -379,10 +380,10 @@ test.describe("map wheel", () => {
   // can measure the labels as they are actually laid out.
   test("gives every root label more arc than it is wide", async () => {
     await openWheel();
-    const measured = await page.evaluate(() => {
+    const measured = await page.evaluate(base => {
       const wheel = document.querySelector<HTMLElement>("#mapWheel .mw-wheel")!;
       const ui = Number.parseFloat(getComputedStyle(wheel).getPropertyValue("--mw-ui")) || 1;
-      const rMid = ((58 + 108) / 2) * 1.2 * ui;
+      const rMid = ((58 + 108) / 2) * base * ui;
       const labels = [...document.querySelectorAll<HTMLElement>("#mapWheel .mw-label--root")];
       const boxes = labels.map(el => el.getBoundingClientRect());
 
@@ -396,7 +397,7 @@ test.describe("map wheel", () => {
         }
       }
       return { count: labels.length, arc: (2 * Math.PI * rMid) / labels.length, width: boxes[0].width, worstOverlap };
-    });
+    }, BASE_RADIUS_SCALE);
 
     expect(measured.arc).toBeGreaterThan(measured.width);
     expect(measured.worstOverlap).toBeLessThan(0); // no two root labels touch

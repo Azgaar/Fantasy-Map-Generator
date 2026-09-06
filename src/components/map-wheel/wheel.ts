@@ -103,8 +103,11 @@ function fillFor(pal: Palette, node: WheelNode, isChosen: boolean, isHot: boolea
   return pal.fills.base;
 }
 
+// the light ink is resolved per background, so it has to be picked by the same test that picked the
+// fill: a value legible on the chosen fill is not necessarily legible on the danger red
 function inkFor(pal: Palette, node: WheelNode, isChosen: boolean, isHot: boolean, isDim: boolean): string {
-  if (isChosen || isHot) return pal.inks.light;
+  if (isChosen) return pal.inks.onChosen;
+  if (isHot) return node.danger ? pal.inks.onDanger : pal.inks.onHot;
   if (node.toggle && Layers.isOn(node.toggle)) return pal.inks.layerOn;
   if (isDim) return pal.inks.dim;
   if (node.danger) return pal.inks.danger;
