@@ -28,11 +28,7 @@ class PinStore {
     return this.ignored || !this.has(key);
   }
 
-  /**
-   * The value pinned, or the caller's own where nothing is pinned. The one way a pin is read.
-   * `localStorage` is untrusted, so a pin of a different type than the value it stands for is a
-   * corrupt store rather than a choice, and is ignored instead of written into the map
-   */
+  /** The value pinned, or the caller's own where nothing is pinned */
   valueOr<T>(key: string, fallback: T): T {
     if (this.ignored) return fallback;
 
@@ -68,11 +64,7 @@ class PinStore {
     this.paintIcons();
   }
 
-  /**
-   * Wire the lock icons of a dialog and paint them: an icon's id names its setting after the
-   * "lock_" prefix, or `data-ids` names several at once - the temperature icon pins both poles.
-   * `pinnedValue` is how this dialog reads the value the icon stands for.
-   */
+  /** Wire the lock icons of a dialog and paint them */
   bindIcons(root: Element, pinnedValue: (key: string) => unknown): void {
     for (const icon of root.querySelectorAll<HTMLElement>("[data-locked]")) {
       const keys = icon.dataset.ids ? icon.dataset.ids.split(",") : [icon.id.slice(5)];

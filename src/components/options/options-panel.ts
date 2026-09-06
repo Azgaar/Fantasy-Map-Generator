@@ -63,12 +63,8 @@ function selectTab(id: string): void {
 /** Keep every `<x>Input` and its `<x>Output` showing the same value */
 function onPanelInput(event: Event): void {
   const target = event.target as HTMLInputElement;
+  if (target.closest("[data-option]")) return;
   const { id, value } = target;
-
-  if (id === "manorsInput") {
-    ensureEl<HTMLOutputElement>("manorsOutput").value = value === "1000" ? "auto" : value;
-    return;
-  }
 
   if (id.endsWith("Input")) {
     const output = findEl<HTMLOutputElement>(`${id.slice(0, -5)}Output`);

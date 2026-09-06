@@ -258,7 +258,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     if (!settings) throw new Error("Map settings are missing or malformed");
     Options.applyLoaded(settings);
     syncInputs();
-
     setStylePresetSelect();
 
     INFO && console.group(options.map.seed ? `Loaded Map ${options.map.seed}` : "Loaded Map");

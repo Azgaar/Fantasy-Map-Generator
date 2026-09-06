@@ -1,5 +1,4 @@
 // About tab: credits, links and the supporters list
-
 import { alertDialog } from "@/components/dialog/dialog-helpers";
 import { ensureEl } from "@/utils/nodeUtils";
 

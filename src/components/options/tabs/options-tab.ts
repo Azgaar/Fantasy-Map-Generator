@@ -2,6 +2,7 @@ import { hsl, select } from "d3";
 import { fitMapToScreen, setViewport } from "@/components/canvas";
 import { Layers } from "@/components/layers";
 import { DEFAULT_THEME_COLOR } from "@/components/options-model";
+import type { OptionsData } from "@/components/options-schema";
 import { Pins } from "@/components/pins";
 import { generateMapWithSeed, showSeedHistoryDialog } from "@/components/seed";
 import { tip } from "@/components/tooltips";
@@ -20,9 +21,181 @@ import { copyMapURL } from "@/services/url-params";
 import { applyOption, ensureEl, findEl } from "@/utils/nodeUtils";
 import { minmax, rn } from "@/utils/numberUtils";
 
+interface OptionBinding {
+  read: (options: OptionsData) => string | number | null;
+  update: (value: string) => void;
+  pin?: string;
+  event?: "change";
+}
+
+interface OptionDefinition<T extends string | number> {
+  read: (options: OptionsData) => T | null;
+  write: (options: OptionsData, value: T) => void;
+  parse: (value: string) => T;
+  pin?: string;
+  effect?: (value: T) => void;
+}
+
+const OPTION_BINDINGS: Record<string, OptionBinding> = {
+  mapWidth: { read: o => o.generation.graph.width, update: onMapSizeChange, pin: "mapWidth", event: "change" },
+  mapHeight: { read: o => o.generation.graph.height, update: onMapSizeChange, pin: "mapHeight", event: "change" },
+  seed: { read: o => o.map.seed, update: generateMapWithSeed, event: "change" },
+  points: option({
+    read: o => o.generation.graph.density,
+    write: (o, value) => (o.generation.graph.density = value),
+    parse: Number,
+    pin: "points",
+    effect: syncCellsDensity
+  }),
+  template: option({
+    read: o => o.generation.template,
+    write: (o, value) => (o.generation.template = value),
+    parse: String,
+    pin: "template"
+  }),
+  resolveDepressionsSteps: option({
+    read: o => o.generation.resolveDepressionsSteps,
+    write: (o, value) => (o.generation.resolveDepressionsSteps = value),
+    parse: Number,
+    pin: "resolveDepressionsSteps"
+  }),
+  lakeElevationLimit: option({
+    read: o => o.generation.lakeElevationLimit,
+    write: (o, value) => (o.generation.lakeElevationLimit = value),
+    parse: Number,
+    pin: "lakeElevationLimit"
+  }),
+  cultures: option({
+    read: o => o.generation.cultures.limit,
+    write: (o, value) => (o.generation.cultures.limit = value),
+    parse: Number,
+    pin: "cultures",
+    effect: syncCultures
+  }),
+  culturesSet: option({
+    read: o => o.generation.cultures.set,
+    write: (o, value) => {
+      o.generation.cultures.set = value;
+      Options.capCultures();
+    },
+    parse: String,
+    pin: "culturesSet",
+    effect: syncCultures
+  }),
+  statesNumber: option({
+    read: o => o.generation.states.limit,
+    write: (o, value) => (o.generation.states.limit = value),
+    parse: Number,
+    pin: "statesNumber",
+    effect: changeStatesNumber
+  }),
+  provincesRatio: option({
+    read: o => o.generation.provinces.ratio,
+    write: (o, value) => (o.generation.provinces.ratio = value),
+    parse: Number,
+    pin: "provincesRatio"
+  }),
+  religionsNumber: option({
+    read: o => o.generation.religions.limit,
+    write: (o, value) => (o.generation.religions.limit = value),
+    parse: Number,
+    pin: "religionsNumber"
+  }),
+  manors: option({
+    read: o => o.generation.burgs.limit,
+    write: (o, value) => (o.generation.burgs.limit = value),
+    parse: Number,
+    pin: "manors",
+    effect: syncManors
+  }),
+  sizeVariety: option({
+    read: o => o.generation.states.sizeVariety,
+    write: (o, value) => (o.generation.states.sizeVariety = o.generation.cultures.sizeVariety = value),
+    parse: Number,
+    pin: "sizeVariety"
+  }),
+  growthRate: option({
+    read: o => o.generation.states.growthRate,
+    write: (o, value) => (o.generation.states.growthRate = o.generation.cultures.growthRate = value),
+    parse: Number,
+    pin: "growthRate"
+  }),
+  uiSize: option({
+    read: o => o.app.ui.size,
+    write: (o, value) => (o.app.ui.size = value),
+    parse: Number,
+    effect: changeUiSize
+  }),
+  tooltipSize: option({
+    read: o => o.app.ui.tooltipSize,
+    write: (o, value) => (o.app.ui.tooltipSize = value),
+    parse: Number,
+    effect: changeTooltipSize
+  }),
+  azgaarAssistant: option({
+    read: o => o.app.ui.assistant,
+    write: (o, value) => (o.app.ui.assistant = value),
+    parse: value => (value === "hide" ? "hide" : "show"),
+    effect: value => toggleAssistant(value === "show")
+  }),
+  speakerVoice: option({
+    read: o => o.app.ui.speakerVoice,
+    write: (o, value) => (o.app.ui.speakerVoice = value),
+    parse: String
+  }),
+  emblemShape: option({
+    read: o => o.app.emblems.shape,
+    write: (o, value) => (o.app.emblems.shape = value),
+    parse: String,
+    effect: changeEmblemShape
+  }),
+  shapeRendering: option({
+    read: o => o.app.rendering,
+    write: (o, value) => (o.app.rendering = value),
+    parse: value => (value === "geometricPrecision" ? "geometricPrecision" : "optimizeSpeed"),
+    effect: setRendering
+  }),
+  viewportRedraw: option({
+    read: o => o.app.viewportRedraw,
+    write: (o, value) => (o.app.viewportRedraw = value),
+    parse: value => (value === "settled" ? "settled" : "continuous")
+  }),
+  onloadBehavior: option({
+    read: o => o.app.onLoad,
+    write: (o, value) => (o.app.onLoad = value),
+    parse: value => (value === "lastSaved" ? "lastSaved" : "random")
+  }),
+  autosaveInterval: option({
+    read: o => o.app.autosave.interval,
+    write: (o, value) => (o.app.autosave.interval = value),
+    parse: Number
+  }),
+  viewportWidth: { read: () => viewport.width, update: changeViewportSize, event: "change" },
+  viewportHeight: { read: () => viewport.height, update: changeViewportSize, event: "change" },
+  zoomExtentMin: { read: o => o.app.zoomExtent.min, update: changeZoomExtent, event: "change" },
+  zoomExtentMax: { read: o => o.app.zoomExtent.max, update: changeZoomExtent, event: "change" },
+  themeHue: { read: o => hsl(o.app.ui.themeColor).h, update: changeThemeHue },
+  themeColor: { read: o => o.app.ui.themeColor, update: value => setTheme(value, options.app.ui.transparency) },
+  transparency: { read: o => o.app.ui.transparency, update: value => setTheme(options.app.ui.themeColor, +value) }
+};
+
+function option<T extends string | number>(definition: OptionDefinition<T>): OptionBinding {
+  const { read, write, parse, pin, effect } = definition;
+  return {
+    read,
+    pin,
+    update(raw) {
+      const value = parse(raw);
+      Options.set(o => write(o, value));
+      if (pin) Pins.set(pin, value);
+      effect?.(value);
+    }
+  };
+}
+
 const TEMPLATE = /* html */ `
-  <p data-tip="What the next map is asked for. Generate a new map to apply the settings">
-    Map settings (new map to apply):
+  <p data-tip="Settings for the next map. Generate a new map to apply them">
+    Map settings (apply to new maps):
   </p>
   <table>
     <tr
@@ -33,9 +206,9 @@ const TEMPLATE = /* html */ `
       </td>
       <td>Map size</td>
       <td>
-        <input id="mapWidthInput" class="paired" type="number" min="240" value="960" />
+        <input id="mapWidthInput" data-option="mapWidth" class="paired" type="number" min="240" value="960" />
         <span>x</span>
-        <input id="mapHeightInput" class="paired" type="number" min="135" value="540" />
+        <input id="mapHeightInput" data-option="mapHeight" class="paired" type="number" min="135" value="540" />
         <span>px</span>
       </td>
       <td></td>
@@ -52,7 +225,7 @@ const TEMPLATE = /* html */ `
       </td>
       <td>Map seed</td>
       <td>
-        <input id="seedInput" class="long" type="number" min="1" max="999999999" step="1" />
+        <input id="seedInput" data-option="seed" class="long" type="number" min="1" max="999999999" step="1" />
       </td>
       <td>
         <i
@@ -72,7 +245,7 @@ const TEMPLATE = /* html */ `
       <td>
         <input
           id="pointsInput"
-          data-stored="points"
+          data-option="points"
           type="range"
           min="1"
           max="13"
@@ -81,7 +254,7 @@ const TEMPLATE = /* html */ `
         />
       </td>
       <td>
-        <output id="pointsOutputFormatted" style="color: #053305">10K</output>
+        <output id="pointsOutputFormatted" data-option-output="points" style="color: #053305">10K</output>
       </td>
     </tr>
     <tr data-tip="Select template or precreated heightmap to be used on generation">
@@ -90,7 +263,7 @@ const TEMPLATE = /* html */ `
       </td>
       <td>Heightmap</td>
       <td id="templateInputContainer" class="pointer">
-        <select id="templateInput" data-stored="template" style="pointer-events: none"></select>
+        <select id="templateInput" data-option="template" style="pointer-events: none"></select>
       </td>
       <td></td>
     </tr>
@@ -100,10 +273,10 @@ const TEMPLATE = /* html */ `
       </td>
       <td>Cultures number</td>
       <td>
-        <input id="culturesInput" data-stored="cultures" type="range" min="1" />
+        <input id="culturesInput" data-option="cultures" type="range" min="1" />
       </td>
       <td>
-        <input id="culturesOutput" data-stored="cultures" type="number" min="1" />
+        <input id="culturesOutput" data-option="cultures" type="number" min="1" />
       </td>
     </tr>
     <tr data-tip="Select a set of cultures to be used for names and cultures generation">
@@ -112,7 +285,7 @@ const TEMPLATE = /* html */ `
       </td>
       <td>Cultures set</td>
       <td>
-        <select id="culturesSet" data-stored="culturesSet">
+        <select id="culturesSet" data-option="culturesSet">
           <option value="world" data-max="32" selected>All-world</option>
           <option value="european" data-max="15">European</option>
           <option value="oriental" data-max="13">Oriental</option>
@@ -131,7 +304,7 @@ const TEMPLATE = /* html */ `
       </td>
       <td>States number</td>
       <td colspan="2">
-        <slider-input id="statesNumber" data-stored="statesNumber" min="0" max="100"></slider-input>
+        <slider-input id="statesNumber" data-option="statesNumber" min="0" max="100"></slider-input>
       </td>
     </tr>
     <tr
@@ -142,7 +315,7 @@ const TEMPLATE = /* html */ `
       </td>
       <td>Provinces ratio</td>
       <td colspan="2">
-        <slider-input id="provincesRatio" data-stored="provincesRatio" min="0" max="100"></slider-input>
+        <slider-input id="provincesRatio" data-option="provincesRatio" min="0" max="100"></slider-input>
       </td>
     </tr>
     <tr data-tip="Define how much states and cultures can vary in size. Defines expansionism value">
@@ -151,16 +324,16 @@ const TEMPLATE = /* html */ `
       </td>
       <td>Size variety</td>
       <td colspan="2">
-        <slider-input id="sizeVariety" data-stored="sizeVariety" min="0" max="10" step=".1"></slider-input>
+        <slider-input id="sizeVariety" data-option="sizeVariety" min="0" max="10" step=".1"></slider-input>
       </td>
     </tr>
-    <tr data-tip="Set state and cultures growth rate. Defines how many lands will stay neutral">
+    <tr data-tip="Set the growth rate of states and cultures. Determines how much land stays neutral">
       <td>
         <i data-locked="0" id="lock_growthRate" class="icon-lock-open"></i>
       </td>
       <td>Growth rate</td>
       <td colspan="2">
-        <slider-input id="growthRate" data-stored="growthRate" min=".1" max="2" step=".1"></slider-input>
+        <slider-input id="growthRate" data-option="growthRate" min=".1" max="2" step=".1"></slider-input>
       </td>
     </tr>
     <tr data-tip="Define a number of non-capital settlements to be placed (if enough suitable land exists)">
@@ -169,10 +342,10 @@ const TEMPLATE = /* html */ `
       </td>
       <td>Burgs number</td>
       <td>
-        <input id="manorsInput" data-stored="manors" type="range" min="0" max="1000" step="1" value="1000" />
+        <input id="manorsInput" data-option="manors" type="range" min="0" max="1000" step="1" value="1000" />
       </td>
       <td>
-        <output id="manorsOutput" data-stored="manors" value="auto"></output>
+        <output id="manorsOutput" data-option-output="manors" value="auto"></output>
       </td>
     </tr>
     <tr
@@ -185,7 +358,7 @@ const TEMPLATE = /* html */ `
       <td colspan="2">
         <slider-input
           id="religionsNumber"
-          data-stored="religionsNumber"
+          data-option="religionsNumber"
           min="0"
           max="50"
           step="1"
@@ -193,7 +366,7 @@ const TEMPLATE = /* html */ `
       </td>
     </tr>
   </table>
-  <p data-tip="What this browser wants. These change nothing on the map and apply immediately">
+  <p data-tip="Interface preferences saved in this browser. Changes apply immediately">
     Interface settings:
   </p>
   <table>
@@ -203,14 +376,14 @@ const TEMPLATE = /* html */ `
       <td></td>
       <td>Interface size</td>
       <td colspan="2">
-        <slider-input id="uiSize" data-stored="uiSize" min=".6" max="3" step=".1"></slider-input>
+        <slider-input id="uiSize" data-option="uiSize" min=".6" max="3" step=".1"></slider-input>
       </td>
     </tr>
     <tr data-tip="Set tooltip size">
       <td></td>
       <td>Tooltip size</td>
       <td colspan="2">
-        <slider-input id="tooltipSize" data-stored="tooltipSize" min="1" max="32" value="14"></slider-input>
+        <slider-input id="tooltipSize" data-option="tooltipSize" min="1" max="32" value="14"></slider-input>
       </td>
     </tr>
     <tr data-tip="Set theme hue for dialogs and tool windows">
@@ -219,17 +392,17 @@ const TEMPLATE = /* html */ `
       </td>
       <td>Theme color</td>
       <td>
-        <input id="themeHueInput" type="range" min="0" max="359" />
+        <input id="themeHueInput" data-option="themeHue" type="range" min="0" max="359" />
       </td>
       <td>
-        <input id="themeColorInput" type="color" />
+        <input id="themeColorInput" data-option="themeColor" type="color" />
       </td>
     </tr>
     <tr data-tip="Set dialog and tool windows transparency">
       <td></td>
       <td>Transparency</td>
       <td colspan="2">
-        <slider-input id="transparencyInput" min="0" max="100"></slider-input>
+        <slider-input id="transparencyInput" data-option="transparency" min="0" max="100"></slider-input>
       </td>
     </tr>
     <tr data-tip="Set autosave interval in minutes. Set 0 to disable autosave. Map is saved to browser memory">
@@ -238,7 +411,7 @@ const TEMPLATE = /* html */ `
       <td>
         <input
           id="autosaveIntervalInput"
-          data-stored="autosaveInterval"
+          data-option="autosaveInterval"
           type="range"
           min="0"
           max="60"
@@ -249,7 +422,7 @@ const TEMPLATE = /* html */ `
       <td>
         <input
           id="autosaveIntervalOutput"
-          data-stored="autosaveInterval"
+          data-option="autosaveInterval"
           type="number"
           min="0"
           max="60"
@@ -260,9 +433,9 @@ const TEMPLATE = /* html */ `
     </tr>
     <tr data-tip="Set what Generator should do on load">
       <td></td>
-      <td>Onload behavior</td>
+      <td>On load</td>
       <td>
-        <select id="onloadBehavior" data-stored="onloadBehavior">
+        <select id="onloadBehavior" data-option="onloadBehavior">
           <option value="random" selected>Generate random map</option>
           <option value="lastSaved">Open last saved map</option>
         </select>
@@ -273,7 +446,7 @@ const TEMPLATE = /* html */ `
       <td></td>
       <td>Azgaar assistant</td>
       <td>
-        <select id="azgaarAssistant" data-stored="azgaarAssistant">
+        <select id="azgaarAssistant" data-option="azgaarAssistant">
           <option value="show" selected>Show</option>
           <option value="hide">Hide</option>
         </select>
@@ -283,18 +456,18 @@ const TEMPLATE = /* html */ `
       <td></td>
       <td>Speaker voice</td>
       <td>
-        <select id="speakerVoice" data-stored="speakerVoice"></select>
+        <select id="speakerVoice" data-option="speakerVoice"></select>
       </td>
       <td>
         <span id="speakerTest" data-tip="Click to test the voice" style="cursor: pointer">🔊</span>
       </td>
     </tr>
-    <tr data-tip="Select emblem shape. Can be changed indivudually in Emblem editor">
+    <tr data-tip="Select emblem shape. Can be changed individually in the Emblem Editor">
       <td></td>
       <!-- no lock: the shape is an interface preference, kept by this browser whatever map is on screen -->
       <td>Emblem shape</td>
       <td>
-        <select id="emblemShape" data-stored="emblemShape">
+        <select id="emblemShape" data-option="emblemShape">
           <optgroup label="Diversiform">
             <option value="culture" selected>Culture-specific</option>
             <option value="random">Culture-random</option>
@@ -372,9 +545,9 @@ const TEMPLATE = /* html */ `
       </td>
       <td>Viewport size</td>
       <td>
-        <input id="viewportWidth" class="paired" type="number" min="100" />
+        <input id="viewportWidth" data-option="viewportWidth" class="paired" type="number" min="100" />
         <span>x</span>
-        <input id="viewportHeight" class="paired" type="number" min="100" />
+        <input id="viewportHeight" data-option="viewportHeight" class="paired" type="number" min="100" />
         <span>px</span>
       </td>
       <td></td>
@@ -385,10 +558,10 @@ const TEMPLATE = /* html */ `
       </td>
       <td>Zoom extent</td>
       <td>
-        <span data-tip="Mimimal possible zoom level (should be > 0)">min</span>
+        <span data-tip="Minimum possible zoom level (should be > 0)">min</span>
         <input
-          data-tip="Mimimal possible zoom level (should be > 0)"
-          id="zoomExtentMin"
+          data-tip="Minimum possible zoom level (should be > 0)"
+          id="zoomExtentMin" data-option="zoomExtentMin"
           class="paired"
           type="number"
           min=".2"
@@ -396,10 +569,10 @@ const TEMPLATE = /* html */ `
           max="20"
           value="1"
         />
-        <span data-tip="Maximal possible zoom level (should be > 1)">max</span>
+        <span data-tip="Maximum possible zoom level (should be > 1)">max</span>
         <input
-          data-tip="Maximal possible zoom level (should be > 1)"
-          id="zoomExtentMax"
+          data-tip="Maximum possible zoom level (should be > 1)"
+          id="zoomExtentMax" data-option="zoomExtentMax"
           class="paired"
           type="number"
           min="1"
@@ -409,18 +582,18 @@ const TEMPLATE = /* html */ `
       </td>
       <td>
         <i
-          data-tip="Allow to drag map beyond canvas borders"
+          data-tip="Allow dragging the map beyond the canvas borders"
           id="translateExtent"
           data-on="0"
           class="icon-hand-paper-o"
         ></i>
       </td>
     </tr>
-    <tr data-tip="Select rendering model. Try to set to 'optimized' if you face performance issues">
+    <tr data-tip="Select a rendering mode. Choose 'Best performance' if the map feels slow">
       <td></td>
       <td>Rendering</td>
       <td>
-        <select id="shapeRendering" data-stored="shapeRendering">
+        <select id="shapeRendering" data-option="shapeRendering">
           <option value="geometricPrecision">Best quality</option>
           <option value="optimizeSpeed" selected>Best performance</option>
         </select>
@@ -433,7 +606,7 @@ const TEMPLATE = /* html */ `
       <td></td>
       <td>Redraw on zoom</td>
       <td>
-        <select id="viewportRedraw" data-stored="viewportRedraw">
+        <select id="viewportRedraw" data-option="viewportRedraw">
           <option value="continuous" selected>While zooming</option>
           <option value="settled">After zoom</option>
         </select>
@@ -441,14 +614,14 @@ const TEMPLATE = /* html */ `
       <td></td>
     </tr>
     <tr
-      data-tip="Load Google Translate and select language. Note that automatic translation can break some page functional. In this case reset the language back to English or refresh the page"
+      data-tip="Load Google Translate and select a language. Automatic translation can break some page functions. If this happens, reset the language to English or refresh the page"
     >
       <td>
         <i data-tip="Reset language to English" id="resetLanguage" class="icon-ccw"></i>
       </td>
       <td>Language</td>
       <td>
-        <button id="loadGoogleTranslateButton">Init Google Translate</button>
+        <button id="loadGoogleTranslateButton">Load Google Translate</button>
         <div id="google_translate_element"></div>
       </td>
       <td></td>
@@ -457,7 +630,7 @@ const TEMPLATE = /* html */ `
   <div>
     <button
       id="configureWorld"
-      data-tip="Click to open world configurator to setup map position on Globe and World climate"
+      data-tip="Open the World Configurator to set the map position on the globe and the world climate"
       onclick="window.Controllers.WorldConfigurator.open()"
     >
       Configure World
@@ -479,39 +652,18 @@ const TEMPLATE = /* html */ `
   </div>
 `;
 
+const pendingInputs = new WeakMap<HTMLElement, string>();
+
 ensureEl("optionsContent").innerHTML = TEMPLATE;
 addListeners();
-watchInputs();
 loadVoices();
 
 function addListeners(): void {
   const content = ensureEl("optionsContent");
 
-  content.addEventListener("input", event => {
-    const { id, value } = event.target as HTMLInputElement;
-    if (id === "statesNumber") changeStatesNumber(+value);
-    else if (id === "emblemShape") changeEmblemShape(value);
-    else if (id === "tooltipSize") changeTooltipSize(+value);
-    else if (id === "themeHueInput") changeThemeHue(value);
-    else if (id === "themeColorInput" || id === "transparencyInput") {
-      setTheme(
-        ensureEl<HTMLInputElement>("themeColorInput").value,
-        +ensureEl<HTMLInputElement>("transparencyInput").value
-      );
-    }
-  });
-
-  content.addEventListener("change", event => {
-    const { id, value } = event.target as HTMLInputElement;
-    // on change, not on input: a half-typed number is not a size the user asked to pin
-    if (id === "mapWidthInput" || id === "mapHeightInput") onMapSizeChange();
-    else if (id === "viewportWidth" || id === "viewportHeight") changeViewportSize();
-    else if (id === "zoomExtentMin" || id === "zoomExtentMax") changeZoomExtent(value);
-    else if (id === "seedInput") generateMapWithSeed();
-    else if (id === "uiSize") changeUiSize(+value);
-    else if (id === "shapeRendering") setRendering(value);
-    else if (id === "azgaarAssistant") toggleAssistant(value === "show");
-  });
+  const root = ensureEl("options");
+  root.addEventListener("input", onOptionInput);
+  root.addEventListener("change", onOptionInput);
 
   content.addEventListener("click", event => {
     const target = event.target as HTMLElement;
@@ -529,236 +681,85 @@ function addListeners(): void {
   });
 }
 
-/** Push every value this tab shows into its control, so the DOM reflects the objects behind it */
+function optionInputs<T extends HTMLElement = HTMLInputElement>(key: string): NodeListOf<T> {
+  return ensureEl("options").querySelectorAll<T>(`[data-option="${key}"]`);
+}
+
+function optionInput<T extends HTMLElement = HTMLInputElement>(key: string): T {
+  const input = optionInputs<T>(key)[0];
+  if (!input) throw new Error(`Missing option control: ${key}`);
+  return input;
+}
+
+function syncOption(key: string, source?: HTMLElement): void {
+  const value = OPTION_BINDINGS[key].read(options);
+  if (value === null) return;
+  for (const input of optionInputs(key)) {
+    if (input === source) continue;
+    input.value = String(value);
+    pendingInputs.delete(input);
+  }
+}
+
 export function syncInputs(): void {
-  const { generation, app } = options;
-  const set = (id: string, value: string | number | null) => {
-    const input = findEl<HTMLInputElement>(id);
-    if (input && value !== null) input.value = String(value); // null: nothing chosen, keep the derived value
-  };
-
-  // requests: what the next map will be generated with. Editing one changes nothing on screen
-  set("mapWidthInput", generation.graph.width);
-  set("mapHeightInput", generation.graph.height);
-  set("resolveDepressionsStepsInput", generation.resolveDepressionsSteps);
-  set("resolveDepressionsStepsOutput", generation.resolveDepressionsSteps);
-  set("lakeElevationLimitInput", generation.lakeElevationLimit);
-  set("lakeElevationLimitOutput", generation.lakeElevationLimit);
-  set("culturesSet", generation.cultures.set);
-  set("statesNumber", generation.states.limit);
-  set("growthRate", generation.states.growthRate);
-  set("sizeVariety", generation.states.sizeVariety);
-  set("provincesRatio", generation.provinces.ratio);
-  set("religionsNumber", generation.religions.limit);
-  set("manorsInput", generation.burgs.limit);
-
-  // preferences: what this browser wants, whatever map is on screen
-  set("uiSize", app.ui.size);
-  set("tooltipSize", app.ui.tooltipSize);
-  set("azgaarAssistant", app.ui.assistant);
-  set("speakerVoice", app.ui.speakerVoice);
-  set("emblemShape", app.emblems.shape);
-  set("shapeRendering", app.rendering);
-  set("viewportRedraw", app.viewportRedraw);
-  set("onloadBehavior", app.onLoad);
-  set("autosaveIntervalInput", app.autosave.interval);
-  set("autosaveIntervalOutput", app.autosave.interval);
-  set("zoomExtentMin", app.zoomExtent.min);
-  set("zoomExtentMax", app.zoomExtent.max);
-
-  // shown here, written by the dialog that owns the control - see components/options/io-panes.ts
-  set("pngResolutionOutput", app.export.pngResolution);
-
-  set("seedInput", options.map.seed); // a readout of the map on screen
-
-  // a select whose options are added on demand, so the current one is put back first
-  const template = findEl<HTMLSelectElement>("templateInput");
-  const id = generation.template;
+  const template = optionInputs<HTMLSelectElement>("template")[0];
+  const id = options.generation.template;
   if (template && id) applyOption(template, id, heightmapTemplates[id]?.name || precreatedHeightmaps[id]?.name || id);
 
-  syncManors(); // the burg limit reads "auto" at its maximum rather than as a number
-  syncCellsDensity(); // the Points slider shows a step, the object holds the cell count it resolves to
-  syncCultures(); // the cultures slider is capped by the selected set
+  for (const key of Object.keys(OPTION_BINDINGS)) syncOption(key);
+  syncManors();
+  syncCellsDensity();
+  syncCultures();
+
+  // The export pane owns writes to this control.
+  const pngResolution = findEl<HTMLInputElement>("pngResolutionOutput");
+  if (pngResolution) pngResolution.value = String(options.app.export.pngResolution);
 }
 
 function syncManors(): void {
-  const manors = findEl<HTMLOutputElement>("manorsOutput");
-  if (manors) manors.value = isAutoBurgLimit() ? "auto" : String(options.generation.burgs.limit);
+  const output = ensureEl("options").querySelector<HTMLOutputElement>('[data-option-output="manors"]');
+  if (output) output.value = isAutoBurgLimit() ? "auto" : String(options.generation.burgs.limit);
 }
 
-/** What each lock icon on this tab pins */
 function currentValue(key: string): string | number | undefined {
-  const { generation } = options;
-  if (key === "mapWidth") return generation.graph.width;
-  if (key === "mapHeight") return generation.graph.height;
-  if (key === "points") return generation.graph.density;
-  if (key === "template") return generation.template;
-  if (key === "resolveDepressionsSteps") return generation.resolveDepressionsSteps;
-  if (key === "lakeElevationLimit") return generation.lakeElevationLimit;
-  if (key === "cultures") return generation.cultures.limit;
-  if (key === "culturesSet") return generation.cultures.set;
-  if (key === "statesNumber") return generation.states.limit;
-  if (key === "provincesRatio") return generation.provinces.ratio;
-  if (key === "religionsNumber") return generation.religions.limit;
-  if (key === "manors") return generation.burgs.limit;
-  if (key === "sizeVariety") return generation.states.sizeVariety;
-  if (key === "growthRate") return generation.states.growthRate;
-  return undefined;
-}
-
-/**
- * Every request and preference this tab owns, written straight into `options` and pinned where a
- * pin means anything - a preference is never re-rolled, so it never gets one. Only this tab's own
- * controls: every dialog wires the ones it shows.
- *
- * The map size, viewport and zoom extent inputs are not here: each is a pair with one writer of
- * its own further down, and the extent the map is looked at through is not the one it was built on
- */
-function watchInputs(): void {
-  const root = findEl("options");
-  root?.addEventListener("input", onOptionInput);
-  root?.addEventListener("change", event => {
-    onOptionInput(event);
-    Options.persist(); // the drag has ended: keep what it settled on
-  });
+  return (
+    Object.values(OPTION_BINDINGS)
+      .find(binding => binding.pin === key)
+      ?.read(options) ?? undefined
+  );
 }
 
 function onOptionInput(event: Event): void {
   const input = event.target as HTMLInputElement;
-  const value = input.value;
+  const key = input.dataset.option;
+  if (!key || !Object.hasOwn(OPTION_BINDINGS, key)) return;
+  const binding = OPTION_BINDINGS[key];
+  if (binding.event === "change" && event.type !== "change") return;
 
-  switch (input.id) {
-    case "pointsInput":
-      Options.set(o => (o.generation.graph.density = +value));
-      Pins.set("points", +value);
-      syncCellsDensity(); // the slider holds a step, the readout the cell count it stands for
-      return;
+  // A native change commits the last input; it must not repeat its effects.
+  if (event.type !== "change" || pendingInputs.get(input) !== input.value) {
+    binding.update(input.value);
+    syncOption(key, input);
+  }
 
-    case "templateInput":
-      Options.set(o => (o.generation.template = value));
-      Pins.set("template", value);
-      return;
-
-    case "resolveDepressionsStepsInput":
-    case "resolveDepressionsStepsOutput":
-      Options.set(o => (o.generation.resolveDepressionsSteps = +value));
-      Pins.set("resolveDepressionsSteps", +value);
-      syncInputs();
-      return;
-
-    case "lakeElevationLimitInput":
-    case "lakeElevationLimitOutput":
-      Options.set(o => (o.generation.lakeElevationLimit = +value));
-      Pins.set("lakeElevationLimit", +value);
-      syncInputs();
-      return;
-
-    case "culturesInput":
-    case "culturesOutput":
-      Options.set(o => (o.generation.cultures.limit = +value));
-      Pins.set("cultures", +value);
-      syncCultures();
-      return;
-
-    case "culturesSet":
-      Options.set(o => {
-        o.generation.cultures.set = value;
-        Options.capCultures(); // a set holds a fixed number: the map cannot ask for more
-      });
-      Pins.set("culturesSet", value);
-      syncCultures();
-      return;
-
-    case "statesNumber":
-      Options.set(o => (o.generation.states.limit = +value));
-      Pins.set("statesNumber", +value);
-      changeStatesNumber(+value);
-      return;
-
-    case "provincesRatio":
-      Options.set(o => (o.generation.provinces.ratio = +value));
-      Pins.set("provincesRatio", +value);
-      return;
-
-    case "religionsNumber":
-      Options.set(o => (o.generation.religions.limit = +value));
-      Pins.set("religionsNumber", +value);
-      return;
-
-    case "manorsInput":
-      Options.set(o => (o.generation.burgs.limit = +value));
-      Pins.set("manors", +value);
-      syncManors();
-      return;
-
-    // one panel slider drives states and cultures alike, until the UI offers them separately
-    case "sizeVariety":
-      Options.set(o => (o.generation.states.sizeVariety = o.generation.cultures.sizeVariety = +value));
-      Pins.set("sizeVariety", +value);
-      return;
-
-    case "growthRate":
-      Options.set(o => (o.generation.states.growthRate = o.generation.cultures.growthRate = +value));
-      Pins.set("growthRate", +value);
-      return;
-
-    // preferences: applied at once, generating nothing, and never pinned
-    case "uiSize":
-      Options.set(o => (o.app.ui.size = +value));
-      changeUiSize(+value);
-      return;
-
-    case "tooltipSize":
-      Options.set(o => (o.app.ui.tooltipSize = +value));
-      changeTooltipSize(+value);
-      return;
-
-    case "azgaarAssistant":
-      Options.set(o => (o.app.ui.assistant = value === "hide" ? "hide" : "show"));
-      toggleAssistant(value === "show");
-      return;
-
-    case "speakerVoice":
-      Options.set(o => (o.app.ui.speakerVoice = value));
-      return;
-
-    case "emblemShape":
-      Options.set(o => (o.app.emblems.shape = value));
-      changeEmblemShape(value);
-      return;
-
-    case "shapeRendering":
-      Options.set(o => (o.app.rendering = value === "geometricPrecision" ? "geometricPrecision" : "optimizeSpeed"));
-      setRendering(value);
-      return;
-
-    case "viewportRedraw":
-      Options.set(o => (o.app.viewportRedraw = value === "settled" ? "settled" : "continuous"));
-      return;
-
-    case "onloadBehavior":
-      Options.set(o => (o.app.onLoad = value === "lastSaved" ? "lastSaved" : "random"));
-      return;
-
-    case "autosaveIntervalInput":
-    case "autosaveIntervalOutput":
-      Options.set(o => (o.app.autosave.interval = +value));
-      syncInputs();
-      return;
+  if (event.type === "input") pendingInputs.set(input, input.value);
+  else {
+    pendingInputs.delete(input);
+    Options.persist();
   }
 }
 
 /** The extent the next map is generated on: not the window it will be looked at through */
 function onMapSizeChange(): void {
   // a pin outlives the control, so it cannot hold what the input's own `min` would have rejected
-  const asked = (id: string) => {
-    const input = ensureEl<HTMLInputElement>(id);
+  const asked = (key: string) => {
+    const input = optionInput(key);
     const value = Math.max(+input.value || 0, +input.min || 1);
     input.value = String(value);
     return value;
   };
-  const width = asked("mapWidthInput");
-  const height = asked("mapHeightInput");
+  const width = asked("mapWidth");
+  const height = asked("mapHeight");
 
   Options.set(o => {
     o.generation.graph.width = width;
@@ -796,13 +797,13 @@ function syncCellsDensity(): void {
   const { density } = options.generation.graph;
   const cellsDesired = getPointsNumber(density);
 
-  const input = findEl<HTMLInputElement>("pointsInput");
+  const input = optionInputs("points")[0];
   if (input) {
     input.value = String(density);
     input.dataset.cells = String(cellsDesired);
   }
 
-  const readout = findEl<HTMLOutputElement>("pointsOutputFormatted");
+  const readout = ensureEl("options").querySelector<HTMLOutputElement>('[data-option-output="points"]');
   if (!readout) return;
   readout.value = `${cellsDesired / 1000}K`;
   readout.style.color = cellsDensityColor(cellsDesired);
@@ -815,17 +816,15 @@ export const cellsDensityColor = (cells: number): string =>
 /** Cap the cultures slider at what the selected set can give, and show the number that survived it */
 function syncCultures(): void {
   const max = String(CULTURE_SETS[options.generation.cultures.set]?.max ?? 0);
-  const input = findEl<HTMLInputElement>("culturesInput");
-  const output = findEl<HTMLInputElement>("culturesOutput");
-  if (!input || !output) return;
-
-  input.max = output.max = max;
-  input.value = output.value = String(options.generation.cultures.limit);
+  for (const input of optionInputs("cultures")) {
+    input.max = max;
+    input.value = String(options.generation.cultures.limit);
+  }
 }
 
 /** More states means smaller labels, so they keep fitting the shrinking territories */
 function changeStatesNumber(count: number): void {
-  ensureEl("statesNumber").style.color = count ? "" : "#b12117";
+  optionInput("statesNumber").style.color = count ? "" : "#b12117";
 
   const capitalSize = Math.max(rn(6 - count / 20), 3);
   const stateSize = Math.max(rn(18 - count / 6), 4);
@@ -878,7 +877,7 @@ function changeUiSize(value: number): void {
   if (Number.isNaN(value) || value < 0.5) return;
   const size = Math.min(value, maxUiSize());
 
-  ensureEl<HTMLInputElement>("uiSize").value = String(size);
+  optionInput("uiSize").value = String(size);
   document.body.style.fontSize = `${rn(size * 10, 2)}px`;
   ensureEl("options").style.width = `${size * 300}px`;
 }
@@ -916,13 +915,13 @@ function changeThemeHue(hue: string): void {
  * object holds; `setTheme` is what puts it there
  */
 function changeDialogsTheme(themeColor: string, transparency: number): void {
-  ensureEl<HTMLInputElement>("transparencyInput").value = String(transparency);
+  optionInput("transparency").value = String(transparency);
   const alpha = (100 - transparency) / 100;
   const alphaReduced = Math.min(alpha + 0.3, 1);
 
   const { h, s, l } = hsl(themeColor);
-  ensureEl<HTMLInputElement>("themeColorInput").value = themeColor;
-  ensureEl<HTMLInputElement>("themeHueInput").value = String(h);
+  optionInput("themeColor").value = themeColor;
+  optionInput("themeHue").value = String(h);
 
   const variables: [name: string, value: string][] = [
     ["--bg-opacity", String(alpha)],
@@ -948,8 +947,8 @@ function setRendering(value: string): void {
 }
 
 function changeZoomExtent(value: string): void {
-  const minInput = ensureEl<HTMLInputElement>("zoomExtentMin");
-  const maxInput = ensureEl<HTMLInputElement>("zoomExtentMax");
+  const minInput = optionInput("zoomExtentMin");
+  const maxInput = optionInput("zoomExtentMax");
   if (+minInput.value > +maxInput.value) [minInput.value, maxInput.value] = [maxInput.value, minInput.value];
 
   setZoomExtentPreference(Math.max(+minInput.value, 0.01), Math.min(+maxInput.value, 200));
@@ -961,8 +960,8 @@ function changeZoomExtent(value: string): void {
  * for more shows nothing but empty canvas. See docs/architecture/configuration.md
  */
 function changeViewportSize(): void {
-  const width = +ensureEl<HTMLInputElement>("viewportWidth").value;
-  const height = +ensureEl<HTMLInputElement>("viewportHeight").value;
+  const width = +optionInput("viewportWidth").value;
+  const height = +optionInput("viewportHeight").value;
   if (!(width > 0) || !(height > 0)) return;
 
   setViewport(Math.min(width, options.map.graph.width), Math.min(height, options.map.graph.height));
@@ -984,8 +983,8 @@ function restoreDefaultZoomExtent(): void {
 /** The single writer of the zoom extent: one pair, normalised together and shown together */
 function setZoomExtentPreference(min: number, max: number): void {
   Options.set(o => (o.app.zoomExtent = { min, max }));
-  ensureEl<HTMLInputElement>("zoomExtentMin").value = String(min);
-  ensureEl<HTMLInputElement>("zoomExtentMax").value = String(max);
+  optionInput("zoomExtentMin").value = String(min);
+  optionInput("zoomExtentMax").value = String(max);
   setZoomExtent(min, max);
 }
 
@@ -1002,7 +1001,7 @@ function toggleTranslateExtent(el: HTMLElement): void {
 /** Voices arrive asynchronously and some browsers report none at all, so poll briefly then give up */
 function loadVoices(): void {
   let attempts = 0;
-  const select = ensureEl<HTMLSelectElement>("speakerVoice");
+  const select = optionInput<HTMLSelectElement>("speakerVoice");
 
   const interval = setInterval(() => {
     const voices = speechSynthesis.getVoices();
@@ -1077,7 +1076,7 @@ export function restoreUi(): void {
   const template = options.generation.template;
   if (template) {
     const name = heightmapTemplates[template]?.name || precreatedHeightmaps[template]?.name || template;
-    applyOption(ensureEl("templateInput"), template, name);
+    applyOption(optionInput("template"), template, name);
   }
 
   Pins.bindIcons(ensureEl("options"), currentValue);
@@ -1091,7 +1090,7 @@ export function restoreUi(): void {
   changeTooltipSize(ui.tooltipSize);
   changeStatesNumber(options.generation.states.limit); // state label sizes follow the number of states
 
-  ensureEl<HTMLInputElement>("uiSize").max = String(maxUiSize());
+  optionInput("uiSize").max = String(maxUiSize());
   changeUiSize(ui.size ?? defaultUiSize());
 
   changeDialogsTheme(ui.themeColor, ui.transparency);

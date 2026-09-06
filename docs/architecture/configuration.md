@@ -314,6 +314,13 @@ A dialog owns every control it shows: it writes the value, pins it, and runs wha
 change asks for. Nothing delegates writing into another panel's controls, so no control has two
 writers and no value is written twice.
 
+The options tab declares its bindings in `OPTION_BINDINGS`, using typed readers and writers,
+parsers, optional pin keys and effects. Controls select a binding with `data-option`; paired
+controls share the same binding. IDs remain for existing callers, but do not choose the option
+or its paired control. Formatted readouts use `data-option-output`. Map size, viewport and zoom
+commit through their grouped writers on `change`; theme controls share the theme writer.
+The parent panel's legacy `Input`/`Output` pairing skips bound controls.
+
 ---
 
 ## Validation
