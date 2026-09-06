@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { DRAWER_WIDTH } from "./drawer";
 import { boxRadius, drawerOffset, VIEWPORT_MARGIN } from "./geometry";
 import { clampCentre, closeMapWheel, openMapWheel } from "./index";
+import { FILLS } from "./palette";
 import type { WheelRoots } from "./wheel";
 
 vi.mock("@/components/layers", () => ({ Layers: { isOn: () => false } }));
@@ -267,7 +268,7 @@ describe("openMapWheel", () => {
     document.documentElement.style.setProperty("--light-solid", "rgb(255, 255, 255)");
     await new Promise(resolve => setTimeout(resolve, 0)); // MutationObserver delivers on a microtask
 
-    expect(sector.getAttribute("fill")).toBe("rgba(255,255,255,0.97)");
+    expect(sector.getAttribute("fill")).toBe("rgb(255, 255, 255)");
     expect(sector.getAttribute("fill")).not.toBe(before);
     // repainted, not rebuilt: a rebuild would have replaced this element
     expect(document.querySelector("path.mw-sector")).toBe(sector);
@@ -283,7 +284,7 @@ describe("openMapWheel", () => {
     document.documentElement.style.setProperty("--light-solid", "rgb(255, 255, 255)");
     await new Promise(resolve => setTimeout(resolve, 0));
 
-    expect(sector.getAttribute("fill")).toBe("rgba(251,247,236,.97)"); // the fallback it was drawn in
+    expect(sector.getAttribute("fill")).toBe(FILLS.base); // the fallback it was drawn in
     document.documentElement.style.removeProperty("--light-solid");
   });
 

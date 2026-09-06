@@ -4,10 +4,12 @@ import { LABEL } from "./geometry";
 const ui = (px: number): string => `calc(${px}px * var(--mw-ui, 1))`;
 
 export const WHEEL_CSS = `
-/* Colours follow the app's live theme. \`--bg-light\` / \`--bg-lighter\` / \`--light-solid\` /
-   \`--dark-solid\` are written onto <html> by changeDialogsTheme(); the \`--mw-*\` properties are the
-   same theme after palette.ts has held every ink to 4.5:1 over the ground it is painted on, set on
-   .mw-wheel by the renderer. Both carry the design handoff's parchment as their fallback. */
+/* Colours follow the app's live theme, but ONLY through the \`--mw-*\` properties palette.ts sets on
+   .mw-wheel: the app's own \`--bg-light\` / \`--bg-lighter\` carry FMG's alpha already, and while the
+   ring computed an alpha of its own, half the wheel followed the transparency slider and half of it
+   did not. Every surface below is opaque at transparency 0 and takes ONE alpha, applied in
+   palette.ts, after it. The fallbacks are the design handoff's parchment, opaque for the same
+   reason. */
 /* The host spans the viewport so the ring can be centred anywhere in it, so it must be transparent
    to pointers: the parts that are actually interactive opt back in below. Without this every click
    in the app lands on the overlay, and index.ts's "outside pointerdown" dismissal can never fire. */
@@ -25,8 +27,9 @@ export const WHEEL_CSS = `
   height: 6px;
   margin: -3px 0 0 -3px;
   border-radius: 50%;
-  background: var(--dark-solid, #4a3a22);
-  opacity: .5;
+  /* the chosen fill rather than a half-transparent --dark-solid: this dot sits on the map like
+     every other part of the wheel, so it takes the user's alpha and no other */
+  background: var(--mw-fill-chosen, #4a3a22);
 }
 
 /* --mw-ui (the clamped uiSize), --mw-box and --mw-drawer-offset are set on this element by
@@ -135,7 +138,7 @@ export const WHEEL_CSS = `
   font: 600 calc(10px * var(--mw-ui, 1)) "IBM Plex Sans", system-ui, sans-serif;
   letter-spacing: .1em;
   text-transform: uppercase;
-  background: var(--mw-fill-base, rgba(251,247,236,.94));
+  background: var(--mw-fill-base, #fbf7ec);
   color: var(--mw-ink-accent, #6b5535);
   transition: background 120ms;
 }
@@ -153,10 +156,10 @@ export const WHEEL_CSS = `
   font-size: 11px;
   letter-spacing: .04em;
   color: var(--mw-ink-accent, #6b5535);
-  background: var(--bg-lighter, rgba(251,247,236,.86));
+  background: var(--mw-fill-base, #fbf7ec);
   padding: 6px 11px;
   border-radius: 3px;
-  border: 1px solid var(--mw-edge, rgba(90,74,48,.25));
+  border: 1px solid var(--mw-edge, rgb(194,187,171));
 }
 
 #mapWheel .mw-crumb { cursor: pointer; pointer-events: auto; color: var(--mw-ink-accent, #8a7248); }
@@ -175,8 +178,8 @@ export const WHEEL_CSS = `
   max-height: min(532px, calc(100vh - 32px));
   display: flex;
   flex-direction: column;
-  background: var(--bg-light, rgba(251,247,236,.97));
-  border: 1px solid var(--dark-solid, rgba(90,74,48,.32));
+  background: var(--mw-fill-base, #fbf7ec);
+  border: 1px solid var(--mw-fill-chosen, #4a3a22);
   border-radius: 4px;
   box-shadow: 0 10px 26px rgba(38,28,12,.35);
   overflow: hidden;
@@ -190,8 +193,9 @@ export const WHEEL_CSS = `
   align-items: center;
   justify-content: space-between;
   padding: 9px 12px;
-  background: var(--bg-lighter, rgba(251,247,236,.86));
-  border-bottom: 1px solid var(--mw-edge-dim, rgba(90,74,48,.16));
+  /* the dimmed fill: the head is a recessed band, and recession is a colour here, not an alpha */
+  background: var(--mw-fill-dim, rgb(207,200,186));
+  border-bottom: 1px solid var(--mw-edge-dim, rgb(186,177,162));
 }
 
 #mapWheelDrawer .mw-drawer-title {
@@ -238,7 +242,7 @@ export const WHEEL_CSS = `
   column-gap: 8px;
   row-gap: 4px;
   padding: 9px 0;
-  border-bottom: 1px solid var(--mw-edge-dim, rgba(90,74,48,.16));
+  border-bottom: 1px solid var(--mw-edge-dim, rgb(186,177,162));
 }
 #mapWheelDrawer tr:last-child { border-bottom: 0; }
 #mapWheelDrawer td { display: block; padding: 0; width: 100%; }
@@ -319,7 +323,7 @@ export const WHEEL_CSS = `
   appearance: none;
   height: 3px;
   border-radius: 2px;
-  background: var(--mw-edge, rgba(90,74,48,.22));
+  background: var(--mw-edge, rgb(194,187,171));
 }
 #mapWheelDrawer input[type="range"]::-webkit-slider-thumb {
   appearance: none;
@@ -351,8 +355,8 @@ export const WHEEL_CSS = `
   font-size: 12px;
   padding: 4px 6px;
   color: var(--mw-ink-base, #3b3226);
-  background: var(--light-solid, rgba(251,247,236,.97));
-  border: 1px solid var(--mw-edge, rgba(90,74,48,.32));
+  background: var(--mw-fill-base, #fbf7ec);
+  border: 1px solid var(--mw-edge, rgb(194,187,171));
   border-radius: 3px;
 }
 /* FMG sizes several SELECTS with an INLINE width for the top bar's wide panel - #stylePreset 45%,
@@ -370,7 +374,7 @@ export const WHEEL_CSS = `
   width: 26px;
   height: 26px;
   padding: 0;
-  border: 1px solid var(--mw-edge, rgba(90,74,48,.32));
+  border: 1px solid var(--mw-edge, rgb(194,187,171));
   border-radius: 3px;
 }
 /* FMG hides raw checkboxes app-wide and styles the label instead - do not un-hide them here */

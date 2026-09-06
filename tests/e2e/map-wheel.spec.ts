@@ -88,6 +88,20 @@ const activate = async (match: (sector: SectorInfo) => boolean): Promise<SectorI
 
 const byLabel = (label: string) => (sector: SectorInfo) => sector.text === label;
 
+/**
+ * The alpha of a painted colour. Only an `rgba()` with four components can carry anything but 1 -
+ * a hex, an `rgb()` and `getComputedStyle`'s opaque form are all fully opaque by definition.
+ *
+ * Naive "last number before the paren" parsing reads the BLUE channel of `rgb(165, 133, 148)` as an
+ * alpha of 148, which is exactly how an opacity bug hides from a test.
+ */
+const alphaOf = (color: string): number => {
+  const rgba = /^rgba\(([^)]+)\)$/i.exec(color.trim());
+  if (!rgba) return 1;
+  const parts = rgba[1].split(/[\s,/]+/).filter(Boolean);
+  return parts.length > 3 ? Number(parts[3]) : 1;
+};
+
 const openWheel = async (x = 640, y = 380): Promise<void> => {
   await page.mouse.click(x, y, { button: "right" });
   await expect(page.locator("#mapWheel")).toBeAttached();
@@ -934,7 +948,6 @@ test.describe("map wheel", () => {
   // transient ring - but the drawer hosts Options -> Interface, so the user can sit inside the wheel
   // moving these very sliders. The ring follows them in place; a rebuild would be the hover loop.
   test("follows a live theme change, transparency included", async () => {
-    const alphaOf = (fill: string): number => Number(/,\s*([\d.]+)\)$/.exec(fill)?.[1] ?? 1);
     const rootFill = (): Promise<string> =>
       page
         .locator("#mapWheel path.mw-sector")
@@ -957,7 +970,7 @@ test.describe("map wheel", () => {
     await theme(0);
     await page.waitForTimeout(150);
     const opaque = await rootFill();
-    expect(alphaOf(opaque)).toBeCloseTo(0.97, 2);
+    expect(alphaOf(opaque)).toBe(1);
 
     // ...and at the other end of the slider the ring takes the user's transparency, down to the floor
     await theme(100);
@@ -974,6 +987,98 @@ test.describe("map wheel", () => {
     expect((await readSectors()).length).toBeGreaterThan(1);
 
     await page.evaluate(t => (window as any).changeDialogsTheme("#997787", t), Number(before));
+  });
+
+  /**
+   * The user set FMG's Transparency slider to 0 and the dial was STILL see-through - map labels read
+   * straight through the sectors - while moving the slider made SOME of the wheel opaque and left
+   * the rest alone. Two causes, one principle. The ring carried absolute baked-in alphas (.97 on the
+   * default fill, .82 on a dimmed sibling, .32/.16 on the strokes) that the transparency veil could
+   * only ever LOWER, so no setting reached the top; meanwhile the hub, breadcrumb and drawer read
+   * FMG's own --bg-light / --bg-lighter, which carry the app's alpha, so those DID follow the slider.
+   *
+   * Nothing in this suite had ever asserted an opacity, which is how it survived. Every wheel
+   * surface is measured here, in the browser, as the user sees it.
+   */
+  test("paints every surface opaque at transparency 0 and veils them all together", async () => {
+    const theme = (transparency: number): Promise<void> =>
+      page.evaluate((t: number) => {
+        const input = document.getElementById("themeColorInput") as HTMLInputElement;
+        (window as any).changeDialogsTheme(input.value, t);
+      }, transparency);
+
+    /** Every painted surface of the open wheel, by name, as the browser resolved it */
+    const surfaces = (): Promise<Record<string, string>> =>
+      page.evaluate(() => {
+        const bg = (selector: string): string => {
+          const el = document.querySelector(selector);
+          return el ? getComputedStyle(el).backgroundColor : "MISSING";
+        };
+        const wheel = getComputedStyle(document.querySelector("#mapWheel .mw-wheel")!);
+        // the two semantic fills are exempt by design, so they must not be counted as veiled
+        const exempt = ["--mw-fill-danger", "--mw-fill-layer-on"].map(n => wheel.getPropertyValue(n).trim());
+        const found: Record<string, string> = {};
+        for (const path of document.querySelectorAll<SVGPathElement>("#mapWheel path.mw-sector")) {
+          const fill = path.getAttribute("fill")!;
+          if (!exempt.includes(fill)) found[`sector fill ${Object.keys(found).length}`] = fill;
+        }
+        // distinct fills only: which sector is which does not matter, how many colours does
+        const fills = [...new Set(Object.values(found))];
+        return {
+          ...Object.fromEntries(fills.map((f, i) => [`sector fill ${i}`, f])),
+          // read off the wheel as well as off the paths: with a ring drilled, every sector on
+          // screen is chosen or dimmed, and the DEFAULT fill - the .97 the user first noticed -
+          // would go unmeasured
+          "default fill": wheel.getPropertyValue("--mw-fill-base").trim(),
+          "dimmed fill": wheel.getPropertyValue("--mw-fill-dim").trim(),
+          "edge stroke": wheel.getPropertyValue("--mw-edge").trim(),
+          "dimmed edge": wheel.getPropertyValue("--mw-edge-dim").trim(),
+          "sector stroke": document.querySelector("#mapWheel path.mw-sector")!.getAttribute("stroke")!,
+          "hub tab": bg("#mapWheel .mw-tab"),
+          breadcrumb: bg("#mapWheel .mw-crumbs"),
+          drawer: bg("#mapWheelDrawer"),
+          "drawer head": bg("#mapWheelDrawer .mw-drawer-head"),
+          "drawer field": bg("#mapWheelDrawer select, #mapWheelDrawer input[type='number']"),
+          "origin dot": bg("#mapWheel .mw-origin")
+        };
+      });
+
+    const was = await page.evaluate(() => (document.getElementById("transparencyInput") as HTMLInputElement).value);
+
+    await theme(0);
+    await openWheel();
+    await menuTab();
+    // drilled to a drawer that hosts real form controls: the breadcrumb and drawer are up, the
+    // siblings on both open rings are dimmed, and one reading covers every surface the wheel has
+    await activate(byLabel("Options"));
+    await activate(byLabel("Realms"));
+    await expect(page.locator("#mapWheelDrawer #optionsContent")).toBeAttached();
+    await page.waitForTimeout(200);
+
+    const opaque = await surfaces();
+    for (const [what, color] of Object.entries(opaque)) {
+      expect(color, `${what} is missing`).not.toBe("MISSING");
+      expect(alphaOf(color), `at transparency 0, ${what}: ${color}`).toBe(1);
+    }
+
+    // and the dimmed sibling is still recessed - a DIFFERENT colour, since it can no longer be a
+    // fainter one. Collapsing it back onto the default fill would be the same bug wearing a hat.
+    expect(opaque["dimmed fill"]).not.toBe(opaque["default fill"]);
+    expect(await page.locator("#mapWheel path.mw-sector").first().getAttribute("fill")).toBe(opaque["dimmed fill"]);
+
+    // ...and every one of them moves together, which is the half the user could see going wrong
+    for (const transparency of [50, 100]) {
+      await theme(transparency);
+      await page.waitForTimeout(200);
+      const veiled = Object.entries(await surfaces());
+      const [, first] = veiled[0];
+      for (const [what, color] of veiled) {
+        expect(alphaOf(color), `at transparency ${transparency}, ${what}: ${color}`).toBeCloseTo(alphaOf(first), 2);
+      }
+      expect(alphaOf(first), `at transparency ${transparency}`).toBeLessThan(1);
+    }
+
+    await page.evaluate(t => (window as any).changeDialogsTheme("#997787", t), Number(was));
   });
 
   // The user's bug: the first notch of a scroll inside the drawer closed the whole wheel (the

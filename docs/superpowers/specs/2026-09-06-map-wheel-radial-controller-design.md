@@ -309,10 +309,11 @@ stub, and the dark ancestor plus the placement already say what it said. Removed
 
 ### Chrome
 
-Ground `--bg-light` — the same variable `#options` uses, so the drawer reads as the app's own panel —
-with a `--dark-solid` border, 4px radius,
+Ground the wheel's own default fill — the theme's `--light-solid`, so the drawer reads as the app's
+own panel while taking the wheel's single alpha rather than FMG's — with a border in the chosen
+fill, 4px radius,
 `box-shadow: 0 10px 26px rgba(38,28,12,.35)` — the same shadow as the wheel, so they read as one
-object. Header bar on `--bg-lighter`: title in IBM Plex Sans 12px/600, uppercase,
+object. Header bar on the dimmed fill: title in IBM Plex Sans 12px/600, uppercase,
 `letter-spacing .09em`, in the accent ink, with a `✕` at the right. Body scrolls (`overflow-y: auto`,
 `scrollbar-width: thin`).
 
@@ -349,12 +350,12 @@ Scoped to `#mapWheelDrawer`, using the wheel's tokens:
 - `.tabcontent { display: block }` — the host is hidden by the tab system in its normal home.
 - `table, tbody { display: block; width: 100% }`, and **each `tr` is a wrapping flex line-box**
   (`column-gap: 8px`, `row-gap: 4px`, `align-items: center`, `padding: 9px 0`, hairline
-  `rgba(90,74,48,.16)` separator). See *Row layout* below — the rows are FMG's own `<td>` columns and
+  `rgb(186,177,162)` separator). See *Row layout* below — the rows are FMG's own `<td>` columns and
   making them all `display: block` is what put every cell on a line of its own.
 - Labels 12px/1.4, ink `#3b3226`. **Each row's `data-tip` is surfaced as a permanent hint line**
   beneath the control at 10.5px, `opacity .68` — the information already exists on every row and is
   currently hover-only.
-- `input[type=range]`: 3px `rgba(90,74,48,.22)` track, 13px `#6b5535` thumb.
+- `input[type=range]`: 3px edge-coloured track (`rgb(194,187,171)`), 13px `#6b5535` thumb.
 - `select`, `input[type=number]`, `input[type=text]`: parchment ground, 1px `edge` border, 3px
   radius, 12px type, full width, and **`height: auto`**. That last one is not tidiness:
   `public/index.css` gives every select `height: 1.6em; padding: 0` under `box-sizing: border-box`,
@@ -662,28 +663,45 @@ Fills and ink, in priority order:
 | Chosen ancestor (its child ring or drawer is open) | `--dark-solid` (`#4a3a22`) | `--light-solid` (`#fffdf7`), resolved for this fill |
 | Hovered | `--header-active` (`#6b5535`); **`#a33a2e` if destructive** | `--light-solid` (`#fffdf7`), resolved for whichever of the two it is |
 | Layer toggle that is ON | **`#8a9c6c`** | **`#20261a`** |
-| Dimmed sibling | `--light-solid` at .82 (`rgba(251,247,236,.82)`) | `--dark-solid` at .82 (`rgba(59,50,38,.82)`) |
-| Default | `--light-solid` at .97 (`rgba(251,247,236,.97)`) | `--dark-solid` (`#3b3226`) |
+| Dimmed sibling | `--light-solid` mixed 25% toward `--dark-solid` (`rgb(207,200,186)`) | `--dark-solid` mixed 18% toward that fill (`rgb(86,77,65)`) |
+| Default | `--light-solid` (`#fbf7ec`) | `--dark-solid` (`#3b3226`) |
 | Destructive, not hovered | default fill | **`#8d2f24`** |
 
-Stroke `--dark-solid` at .32; dimmed at .16. `transition: fill 120ms`.
+Stroke: the default fill mixed 32% toward `--dark-solid`; on a dimmed sector, the dimmed fill mixed
+16% toward it. `transition: fill 120ms`.
+
+**Every colour in that table is opaque**, and the mixes are what the handoff's alphas composite to.
+The handoff drew a dimmed sibling at `rgba(251,247,236,.82)` and the strokes at `.32`/`.16`, but
+that mock sat on a static parchment backdrop, where a reduced alpha reads as *faded*; over a live
+map it reads as *see-through*, which is a different thing and was reported as a bug — the dial was
+still translucent with the app's Transparency slider at 0, because a veil can only ever lower an
+alpha, never raise `.97` or `.82` to 1. `mix(a, b, t)` is exactly what `rgba(b, t)` over an opaque
+`a` renders as, so the intent survives literally while the map no longer shows through. **The user's
+transparency is the only source of translucency the wheel has** — see the transparency paragraph.
 
 The bold entries are **deliberately not themed**: the danger red and the layer-on green carry
 meaning rather than style, and a hue slider must not be able to turn "this deletes things" into the
 same colour as everything else. For the same reason they are the two fills that never take the
 user's transparency either — see the transparency paragraph below.
 
-Hub, breadcrumb and drawer follow the same theme through the stylesheet: hub active tab
-`--header-active`, inactive `--light-solid`; breadcrumb on `--bg-lighter` with `--dark-solid` ink;
-drawer ground `--bg-light` (the variable `#options` itself uses), header `--bg-lighter`, border
-`--dark-solid`.
+Hub, breadcrumb and drawer follow the same theme through the stylesheet, and — this matters — through
+the **same six `--mw-*` fills**, never through FMG's `--bg-light` / `--bg-lighter` directly. Hub
+active tab the hover fill, inactive the default fill; breadcrumb the default fill with the accent
+ink; drawer ground the default fill, its head the *dimmed* fill (a recessed band, by colour), its
+border the chosen fill, its hosted form fields the default fill. The origin dot is the chosen fill.
+
+Binding half the wheel to FMG's `--bg-*` variables is what made the reported bug legible: those
+carry the app's own alpha, so the drawer and breadcrumb *did* go opaque at transparency 0 while the
+ring did not, and the user saw the slider "make some dial controls opaque and not the rest". One
+source for the colour, one source for the alpha.
 
 **How, and why not `var()` everywhere.** Sector fills are SVG *presentation attributes* written with
 `setAttribute("fill", …)`, and a presentation attribute does not accept `var()` — it silently
 renders black. `palette.ts` therefore resolves the variables to literal colour strings once per
 build and feeds them into the renderer's existing precomputed hover skins; the stylesheet-side
-chrome uses `var()` directly, reading the same sampled palette back off `.mw-wheel` as `--mw-*`
-properties.
+chrome uses `var()` directly, reading the same sampled palette back off the wheel's **host**
+(`#mapWheel`) as `--mw-*` properties. The host, not the ring: a custom property only reaches what
+sits under the element it was set on, and the origin dot is the ring's sibling.
 
 **The palette is watched, not sampled once.** A `MutationObserver` on `document.documentElement`'s
 `style` attribute repaints the dial whenever the app rewrites its theme variables — which catches
@@ -696,8 +714,13 @@ on every slider step is the hover-redraw loop all over again. The observer is di
 `closeMapWheel` alongside the key handler.
 
 **Accessibility:** dimmed siblings remain full click targets ("swap branch at this level"), so their
-ink stays at ≥4.5:1 — do not fade further than the `.82`/`.82` pair. De-emphasis comes from the
-solid dark ancestor, not from making siblings unreadable. Following the theme cannot be allowed to
+ink stays at ≥4.5:1. **De-emphasis is a colour difference, never a lower alpha** — an alpha promised
+nothing about contrast, because what shows through a translucent sector is the map: arbitrary, and
+at full contrast. The dimmed fill is opaque, so for the first time the 4.5:1 the guard reports is a
+statement about the pixels rather than about a pair the user may never actually see. Recession comes
+from the colour step (the dimmed fill must stay a measurably different colour from the default one —
+asserted, so a later "simplification" cannot collapse the two) and from the solid dark ancestor
+beside it, not from making siblings unreadable. Following the theme cannot be allowed to
 break that: FMG's own `--dark-solid` on `--light-solid` is **2.5:1** at the default theme colour
 (#997787). Every ink the wheel computes is therefore held to 4.5:1 against **the fill it is paired
 with, at that fill's nominal opaque colour**, moving only its lightness toward black or white and
@@ -719,18 +742,22 @@ not enough:
   the guard moves the ink *away* from the other two. Measured with a shared ink guarded against the
   hover fill, light ink on the danger red fell to **1.18:1** at a white theme colour and 1.46:1 at a
   near-black one.
-- The **accent ink** appears on three grounds — the hub's inactive tab (`--light-solid`), the
-  breadcrumb (`--bg-lighter`) and the drawer's headings (`--bg-light`) — and is guarded against all
-  three in turn. That is safe because those three are one theme lightness plus 0.02, 0.05 and 0.06,
-  so they never straddle mid-grey and the guard never has to reverse direction.
+- The **accent ink** appears on the hub's inactive tab, the breadcrumb and the drawer's headings (all
+  the default fill) and on the drawer's head (the dimmed fill), and is guarded against both in turn.
+  That is safe because the two are one theme lightness plus 0.05 and minus 0.01, so they never
+  straddle mid-grey and the guard never has to reverse direction.
 
-**The ring carries the user's transparency**, like every other panel in the app. `changeDialogsTheme`
-publishes the alpha it derives from the slider as `--bg-opacity` = `(100 - transparency) / 100`, and
-the **neutral** sector fills — base, dimmed, the chosen ancestor and the hover fill — are emitted at
-that alpha, mapped onto `[ALPHA_FLOOR, 1]` rather than clamped to it, so the whole slider is visible
-on the dial and full opacity still lands exactly on the design's own `.97` / `.82`. A fill whose
-nominal alpha is already lower than the result keeps its own (the dimmed sibling stays at `.82`
-until the user asks for more).
+**The whole wheel carries the user's transparency**, like every other panel in the app, and nothing
+else about it is translucent. `changeDialogsTheme` publishes the alpha it derives from the slider as
+`--bg-opacity` = `(100 - transparency) / 100`, and **every** surface the wheel paints — the neutral
+sector fills, both strokes, and through the `--mw-*` properties the hub, breadcrumb, drawer, drawer
+head, hosted fields and origin dot — is emitted at that one alpha, mapped onto `[ALPHA_FLOOR, 1]`
+rather than clamped to it, so the whole slider is visible on the dial. At transparency 0 the entire
+dial is opaque; every notch moves all of it together.
+
+One alpha, applied once, is load-bearing rather than tidy. `--header-active` carries an
+`alphaReduced` of its own, so the hover fill is re-emitted at alpha 1 *before* the veil — otherwise
+it is veiled twice — and nothing in the wheel is bound to a variable that arrives pre-veiled.
 
 **The danger red and the layer-on green never take alpha**, for exactly the reason they never take
 the theme's hue: they carry meaning rather than style. The green is also the pair the veil could
@@ -747,16 +774,27 @@ their nominal 6.45:1 and 5.21:1 whatever the slider says. Real map ground is mid
 loss is far smaller than at either extreme.
 
 Contrast is measured on the **nominal opaque pair**, and **transparency is applied after the guard**
-— the guard's inputs are the opaque colours, and `withAlpha` only rewrites the emitted fill.
-`--header-active` and the `--bg-*` grounds carry the user's transparency of their own (and
-`--header-active` an `alphaReduced` of `min(alpha + 0.3, 1)`), and what shows through all of them is
-the map. Measuring the opaque colours is therefore the only stable reading available, and the floor
-is what preserves legibility once the alpha is applied.
+— the guard's inputs are the opaque colours, and `withAlpha` only rewrites the emitted colour. At
+transparency 0 the nominal pair *is* what is on screen; past that, what shows through is the map, so
+measuring the opaque colours is the only stable reading available and the floor is what preserves
+legibility once the alpha is applied.
 
 The unit test for this asserts a universal, so it is exercised as one: the whole pair table runs
 across four reproduced themes — the default `#997787`, `#ffffff`, the pale blue `#dfe9f5` and the
 near-black `#221a20` — not against the default alone. Only mid-lightness themes hid the bug above,
 and the hue slider preserves lightness, so the default look never showed it.
+
+**Opacity is asserted, at both levels.** Eight defects on this branch survived a test suite by
+measuring the wrong property, and no test had ever parsed an alpha. Three now do, per theme and in
+the browser: every fill and stroke the palette emits is *exactly* alpha 1 at `--bg-opacity: 1`
+(the two exempt semantic fills are opaque anyway); every veiled surface carries the *same* alpha at
+a mid and a maximum transparency — the "some but not all" complaint written as an assertion; and an
+end-to-end test opens the wheel at transparency 0 and reads the computed alpha of a sector fill, a
+dimmed sector fill, both strokes, the hub tab, the breadcrumb, the drawer, its head, a hosted field
+and the origin dot, then does it again at 50 and 100 to prove they move as one. Measured in
+Chromium at the default theme: **1 / 1 / 1** at transparency 0 for every surface, `0.9` for every
+surface at 50, `0.8` at 100. Before the fix the same reading was `0.97` on the default fill, `0.82`
+dimmed, `0.32`/`0.16` on the strokes and `1` on the drawer and breadcrumb.
 
 ### Labels
 
@@ -789,7 +827,7 @@ done by the SVG `<path>` underneath.
 `auto` on the two tabs. `box-shadow: 0 0 0 1px rgba(90,74,48,.4), 0 6px 16px rgba(20,14,4,.35)`.
 Split into two equal stacked tabs, **HERE** over **MENU**. Tab type IBM Plex Sans 10px/600,
 `letter-spacing .1em`, uppercase, centred. Active tab `--header-active` (`#6b5535`) with the light
-ink resolved for that fill (`#fffdf7`); inactive `--light-solid` (`rgba(251,247,236,.94)`) with the
+ink resolved for that fill (`#fffdf7`); inactive `--light-solid` (`#fbf7ec`) with the
 accent ink (`#6b5535`); `transition: background 120ms`. Diameter and type size follow `--mw-ui`.
 
 ### Breadcrumb
@@ -800,18 +838,20 @@ clamped into the viewport so a deep drill on a short window cannot push it off t
 so on a two-ring wheel it sat 236px left of the dial and 106px above the ring, in the corner of the
 screen.) It stays `pointer-events: auto`, since clicking crumb *n* is the only route back to depth
 *n*. IBM Plex Sans 11px, `letter-spacing .04em`,
-in the accent ink (`#6b5535`) on `--bg-lighter` (`rgba(251,247,236,.86)`), padding `6px 11px`,
-radius 3px, border `1px solid` the themed edge (`rgba(90,74,48,.25)`). Clickable
+in the accent ink (`#6b5535`) on the default fill (`#fbf7ec`), padding `6px 11px`,
+radius 3px, border `1px solid` the themed edge (`rgb(194,187,171)`). Clickable
 (`pointer-events: auto`). Last crumb `--dark-solid` (`#3b3226`)/600, earlier the accent
 (`#8a7248`)/400, separator `›` at `opacity .45`, margin `0 5px`.
 
 ### Tokens
 
-The fallbacks, used verbatim when the app has published no theme. Colours: parchment `rgba(251,247,236,.97)` · parchment-dim `rgba(251,247,236,.82)` · ink `#3b3226` ·
-ink-dim `rgba(59,50,38,.82)` · brown `#6b5535` · brown-deep `#4a3a22` · brown-mid `#8a7248` ·
+The fallbacks, used verbatim when the app has published no theme — all opaque, the dim and edge
+tokens being the composites the handoff's alphas made over parchment. Colours: parchment `#fbf7ec` ·
+parchment-dim `rgb(207,200,186)` · ink `#3b3226` ·
+ink-dim `rgb(86,77,65)` · brown `#6b5535` · brown-deep `#4a3a22` · brown-mid `#8a7248` ·
 danger `#a33a2e` · danger-ink `#8d2f24` · layer-on `#8a9c6c` · layer-on-ink `#20261a` ·
-ink-light `#fffdf7` · shell `#2b2519` · shell-ink `#f3ead6` · edge `rgba(90,74,48,.32)` ·
-edge-dim `rgba(90,74,48,.16)`.
+ink-light `#fffdf7` · shell `#2b2519` · shell-ink `#f3ead6` · edge `rgb(194,187,171)` ·
+edge-dim `rgb(186,177,162)`.
 
 Typography: IBM Plex Sans at 8.5 / 9.5 / 10 / 10.5 / 11 / 12px. The display face (Spectral) is not
 needed — the hub in this concept carries tab type only, not entity names.
@@ -862,13 +902,17 @@ needed — the hub in this concept carries tab type only, not entity names.
 - `palette.test.ts` — the fallback palette is byte-identical to the handoff when no theme is
   published; the app's variables are followed when they are; danger and layer-on stay literal;
   `readable` moves the same ink opposite ways for a light and a dark ground. The contrast assertion
-  runs the full ten-pair table (including light ink on the danger red, and the accent on the
-  breadcrumb and drawer grounds) **across four reproduced themes** spanning the lightness range, and
-  dimming stops at `.82`/`.82` in every one of them.
+  runs the full nine-pair table (including light ink on the danger red, and the accent on the hub
+  tab and the drawer head) **across four reproduced themes** spanning the lightness range, and in
+  every one of them the dimmed sibling stays a visibly different colour from the default fill.
   Transparency: the fills are byte-identical to the design at full opacity, follow `--bg-opacity`
   monotonically, never go below `ALPHA_FLOOR` however far the slider is pushed, keep the danger red
   and layer-on green themselves (only veiled), and ignore an unreadable `--bg-opacity` rather than
   veiling for nothing.
+  Opacity, per theme *and* for the no-theme fallback: every fill and both strokes parse to an alpha
+  of exactly 1 at `--bg-opacity: 1`; all six veiled surfaces carry the *same* alpha at `0.5` and at
+  `0`; and the dimmed fill differs from the default fill in its RGB, at equal alpha — de-emphasis is
+  a colour, and it cannot quietly become an alpha again.
 - `menu-tree.test.ts` — every ring within its level's item cap; no branch deeper than 4; every node
   has exactly one of `children`/`panel`/`run`/`toggle`/`pick`; every leaf resolves to a real
   `Controllers` key or an id present in `src/index.html`; every `toggle` names a real,
@@ -932,7 +976,12 @@ and never the port a user session is browsing):**
 - The row locks stay usable: `#lock_cultures` is at least 14px wide, inside the drawer body, and two
   clicks toggle its class and put it back.
 - Moving the app's own theme while the wheel is open repaints the ring: the sector fills follow the
-  colour, and their alpha is `.97` at transparency 0 and the `.8` floor at transparency 100.
+  colour, and their alpha is `1` at transparency 0 and the `.8` floor at transparency 100.
+- At transparency 0 every painted surface of a drilled, drawer-open wheel — both sector fills, the
+  stroke, the default and dimmed fill properties, the hub tab, the breadcrumb, the drawer, its head,
+  a hosted form field and the origin dot — computes to an alpha of exactly 1; the dimmed fill is a
+  different colour from the default one and is what a dimmed sector is actually painted with; and at
+  transparency 50 and 100 every one of those surfaces carries the same alpha as every other.
 - `MENU → Layers → Political → Borders` flips the real layer: `Layers.isOn("borders")` changes and
   the sector's fill becomes `#8a9c6c` without the ring closing.
 - Drilling to depth 4 renders 4 rings with 3 spines; clicking a faded sibling swaps branch and

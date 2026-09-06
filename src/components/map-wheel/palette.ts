@@ -7,9 +7,27 @@
 //
 // Why sample into strings instead of writing `var(--dark-solid)` everywhere: the sector fills are
 // SVG *presentation attributes* (`setAttribute("fill", …)`), and a presentation attribute does not
-// accept `var()` - it silently renders black. The stylesheet-side chrome (drawer, breadcrumb, hub)
-// does use `var()` directly, reading these same values back off `.mw-wheel`. Label ink is resolved
-// here too, though it is an ordinary inline style: it has to agree with the fill under it.
+// accept `var()` - it silently renders black. The stylesheet-side chrome (drawer, breadcrumb, hub,
+// origin dot) does use `var()` directly, reading these same values back off the wheel's host. Label
+// ink is resolved here too, though it is an ordinary inline style: it has to agree with the fill
+// under it.
+//
+// The wheel's colours are OPAQUE. The only alpha in here is the user's transparency, applied once,
+// to all of them - see `veiler` and the DIM note below.
+
+/**
+ * How far a surface is carried toward the theme's dark tone to say something about it. These are
+ * MIXES, not alphas. The design handoff drew a dimmed sibling at `rgba(251,247,236,.82)` and the
+ * strokes at `.32`/`.16`, but that mock sat on a static parchment backdrop, where a reduced alpha
+ * reads as "faded". Over a live map it reads as "see-through" - and no transparency setting could
+ * lift it, because the veil below can only ever lower an alpha. So de-emphasis is a COLOUR here,
+ * and the user's transparency is the only source of translucency the wheel has.
+ */
+const DIM = 0.25;
+/** the ink the handoff drew at .82 over the dimmed fill, as the opaque colour that composite makes */
+const DIM_INK = 0.18;
+const EDGE_MIX = 0.32;
+const EDGE_DIM_MIX = 0.16;
 
 /** The design handoff's colours, kept as the fallback when the app has published no theme */
 export const FILLS = {
@@ -17,20 +35,20 @@ export const FILLS = {
   hot: "#6b5535",
   hotDanger: "#a33a2e",
   layerOn: "#8a9c6c",
-  dim: "rgba(251,247,236,.82)",
-  base: "rgba(251,247,236,.97)"
+  dim: mix("#fbf7ec", "#4a3a22", DIM),
+  base: "#fbf7ec"
 } as const;
 
 export const INKS = {
   light: "#fffdf7",
   layerOn: "#20261a",
   danger: "#8d2f24",
-  dim: "rgba(59,50,38,.82)",
+  dim: mix("#3b3226", FILLS.dim, DIM_INK),
   base: "#3b3226"
 } as const;
 
-export const EDGE = "rgba(90,74,48,.32)";
-export const EDGE_DIM = "rgba(90,74,48,.16)";
+export const EDGE = mix(FILLS.base, FILLS.chosen, EDGE_MIX);
+export const EDGE_DIM = mix(FILLS.dim, FILLS.chosen, EDGE_DIM_MIX);
 
 /**
  * The neutral fills carry the user's transparency, like every other panel in the app - but never
@@ -85,11 +103,28 @@ function parse(color: string): Rgba | null {
 }
 
 const format = (rgb: number[], alpha: number): string => `rgba(${rgb.map(v => Math.round(v)).join(",")},${alpha})`;
+// a declaration, not a const: FILLS above is built with mix(), which runs at module init
+function solid(rgb: number[]): string {
+  return `rgb(${rgb.map(v => Math.round(v)).join(",")})`;
+}
 
 /** Re-emit a colour at a different alpha, leaving anything we cannot parse alone */
 export function withAlpha(color: string, alpha: number): string {
   const parsed = parse(color);
   return parsed ? format(parsed.slice(0, 3), alpha) : color;
+}
+
+/**
+ * Blend two colours into a third, OPAQUE one - `t` of `toward`, the rest of `color`.
+ *
+ * This is what replaced every de-emphasising alpha in the wheel: `mix(a, b, t)` is exactly what
+ * `rgba(b, t)` painted over an opaque `a` renders as, so the handoff's intent survives literally
+ * while the result no longer lets the map through.
+ */
+export function mix(color: string, toward: string, t: number): string {
+  const [a, b] = [parse(color), parse(toward)];
+  if (!a || !b) return color;
+  return solid(a.slice(0, 3).map((v, i) => v + (b[i] - v) * t));
 }
 
 const channel = (value: number): number => {
@@ -143,21 +178,23 @@ const cssVar = (name: string): string => {
 };
 
 /**
- * The user's transparency, as a function that applies it to a fill. `changeDialogsTheme` publishes
- * it as `--bg-opacity` = (100 - transparency) / 100; absent (no theme yet) is fully opaque.
+ * The user's transparency, as a function that applies it to a surface. `changeDialogsTheme`
+ * publishes it as `--bg-opacity` = (100 - transparency) / 100; absent (no theme yet) is opaque.
  *
- * `nominal` is the alpha the design already paints that fill at, so a fill that is nominally .82
- * never gets *more* opaque because the user turned transparency down.
+ * ONE alpha, and every surface takes it. There is no per-surface "nominal" alpha to be lowered
+ * toward any more: the wheel's own colours are opaque, so at transparency 0 the whole dial is, and
+ * every notch of the slider moves all of it together. That is the fix - the veil used to sit under
+ * baked-in alphas of .97 and .82 it could only ever lower, so no setting reached the top.
  */
-function veiler(): (color: string, nominal: number) => string {
+function veiler(): (color: string) => string {
   const published = cssVar("--bg-opacity");
   const value = Number(published);
   // mapped onto [ALPHA_FLOOR, 1] rather than clamped to it: clamping made everything past 20% on the
   // slider identical, so most of the control did nothing to the dial. Mapping keeps the whole slider
-  // visible on the ring, and full opacity still lands exactly on the design's own alphas.
+  // visible on the ring, and full opacity now lands on a genuinely opaque dial.
   const alpha =
     published && Number.isFinite(value) ? ALPHA_FLOOR + (1 - ALPHA_FLOOR) * Math.min(1, Math.max(0, value)) : 1;
-  return (color, nominal) => (alpha < nominal ? withAlpha(color, alpha) : color);
+  return color => (alpha >= 1 ? color : withAlpha(color, alpha));
 }
 
 /**
@@ -171,20 +208,27 @@ export function readPalette(): Palette {
   const light = cssVar("--light-solid");
   const dark = cssVar("--dark-solid");
   const header = cssVar("--header-active");
-  // the two grounds the accent ink is painted on besides the ring's own fill
-  const lighter = cssVar("--bg-lighter");
-  const panel = cssVar("--bg-light");
 
-  const base = light ? withAlpha(light, 0.97) : FILLS.base;
-  const dim = light ? withAlpha(light, 0.82) : FILLS.dim;
+  const base = light || FILLS.base;
   const chosen = dark || FILLS.chosen;
-  const hot = header || FILLS.hot;
+  // `--header-active` carries an alphaReduced of the app's own. The wheel applies the user's
+  // transparency itself, once, so the nominal colour has to be the opaque one - keeping the app's
+  // alpha here would veil the hover fill twice, which is half of what the user reported.
+  const hot = header ? withAlpha(header, 1) : FILLS.hot;
+  // recessed by COLOUR, not by alpha - see the DIM note at the top of the file
+  const dim = light && dark ? mix(base, chosen, DIM) : FILLS.dim;
   const inkLight = light || INKS.light;
+  const inkBase = dark || INKS.base;
+  // the strokes are the same story: an opaque mix of the fill they border, not an alpha over it
+  const edge = mix(base, chosen, EDGE_MIX);
+  const edgeDim = mix(dim, chosen, EDGE_DIM_MIX);
 
-  // Transparency is applied LAST, and to the NEUTRAL fills only. Every ink below is guarded against
-  // the nominal opaque colour - what shows through a translucent sector is the map, which has no
-  // fixed colour, so the opaque pair is the only stable reading there is; ALPHA_FLOOR is what keeps
-  // the guard's verdict true of what the user actually sees.
+  // Transparency is applied LAST, through this one function, to every surface the wheel paints -
+  // the fills, the strokes, and (via applyPalette) the hub, breadcrumb and drawer, which no longer
+  // read FMG's already-veiled `--bg-*` vars. Every ink below is guarded against the nominal opaque
+  // colour: what shows through a translucent sector is the map, which has no fixed colour, so the
+  // opaque pair is the only stable reading there is, and ALPHA_FLOOR is what keeps that verdict
+  // true of what the user actually sees.
   //
   // The danger red and the layer-on green are exempt for the same reason they are exempt from the
   // hue: they carry MEANING, not style. The green in particular is the one pair the veil could push
@@ -195,12 +239,12 @@ export function readPalette(): Palette {
 
   return {
     fills: {
-      chosen: veil(chosen, 1),
-      hot: veil(hot, 1),
+      chosen: veil(chosen),
+      hot: veil(hot),
       hotDanger: FILLS.hotDanger,
       layerOn: FILLS.layerOn,
-      dim: veil(dim, 0.82),
-      base: veil(base, 0.97)
+      dim: veil(dim),
+      base: veil(base)
     },
     inks: {
       onChosen: readable(inkLight, chosen),
@@ -208,23 +252,32 @@ export function readPalette(): Palette {
       onDanger: readable(inkLight, FILLS.hotDanger),
       layerOn: INKS.layerOn,
       danger: readable(INKS.danger, base),
-      // dimmed siblings are still full click targets, so they are dimmed no further than .82 and
-      // their ink is held to the same 4.5:1 as every other sector
-      dim: readable(dark ? withAlpha(dark, 0.82) : INKS.dim, dim),
-      base: readable(dark || INKS.base, base),
-      // The accent is the hub's inactive tab (on the base fill), the breadcrumb (on --bg-lighter)
-      // and the drawer's headings (on --bg-light), so it has to clear all three. Guarding against
-      // them in turn only ever moves the ink further the same way: all three are one theme
-      // lightness plus 0.02, 0.05 and 0.06, so they never straddle mid-grey.
-      accent: [base, lighter || base, panel || base].reduce((ink, ground) => readable(ink, ground), hot)
+      // dimmed siblings are still full click targets, so their ink is softened toward their own
+      // fill rather than faded, and held to the same 4.5:1 as every other sector - which is now a
+      // literal statement about the pixels, since the fill under it is opaque
+      dim: readable(mix(inkBase, dim, DIM_INK), dim),
+      base: readable(inkBase, base),
+      // The accent is the hub's inactive tab, the breadcrumb and the drawer's headings (all on the
+      // base fill) and the drawer's head (on the dimmed fill), so it has to clear both. Guarding
+      // against them in turn only ever moves the ink further the same way: the two are one theme
+      // lightness plus 0.05 and minus 0.01, so they never straddle mid-grey.
+      accent: [base, dim].reduce((ink, ground) => readable(ink, ground), hot)
     },
-    edge: dark ? withAlpha(dark, 0.32) : EDGE,
-    edgeDim: dark ? withAlpha(dark, 0.16) : EDGE_DIM
+    edge: veil(edge),
+    edgeDim: veil(edgeDim)
   };
 }
 
-/** Hand the sampled palette to the stylesheet, which skins the hub, breadcrumb and drawer */
+/**
+ * Hand the sampled palette to the stylesheet, which skins the hub, breadcrumb, drawer and origin.
+ *
+ * Published on the wheel's HOST when there is one, not on the ring the renderer hands us: a custom
+ * property only reaches what sits under the element it was set on, and the origin dot is the ring's
+ * SIBLING. Set on the ring, the dot fell back to the handoff's brown and stopped following both the
+ * theme and the user's transparency - the same split this whole change exists to remove.
+ */
 export function applyPalette(element: HTMLElement, palette: Palette): void {
+  const host = element.closest<HTMLElement>("#mapWheel") ?? element;
   const vars: Record<string, string> = {
     "--mw-fill-base": palette.fills.base,
     "--mw-fill-dim": palette.fills.dim,
@@ -239,5 +292,5 @@ export function applyPalette(element: HTMLElement, palette: Palette): void {
     "--mw-edge": palette.edge,
     "--mw-edge-dim": palette.edgeDim
   };
-  for (const [name, value] of Object.entries(vars)) element.style.setProperty(name, value);
+  for (const [name, value] of Object.entries(vars)) host.style.setProperty(name, value);
 }

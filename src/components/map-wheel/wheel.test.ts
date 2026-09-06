@@ -72,8 +72,10 @@ describe("renderWheel", () => {
   it("paints the chosen ancestor dark and dims its siblings", () => {
     renderWheel(container, roots, state({ path: [0] }), cb());
     const [chosen, sibling] = [...container.querySelectorAll("path.mw-sector")];
-    expect(chosen.getAttribute("fill")).toBe("#4a3a22");
-    expect(sibling.getAttribute("fill")).toBe("rgba(251,247,236,.82)");
+    expect(chosen.getAttribute("fill")).toBe(FILLS.chosen);
+    // a dimmed sibling is an opaque colour of its own, not a lower alpha of the default fill
+    expect(sibling.getAttribute("fill")).toBe(FILLS.dim);
+    expect(sibling.getAttribute("fill")).not.toBe(FILLS.base);
   });
 
   // The mark used to be a "▸" note line, which cost every parent label a whole line of the band's
@@ -311,10 +313,10 @@ describe("repaint", () => {
     for (const [name, value] of Object.entries(THEME)) document.documentElement.style.setProperty(name, value);
     handle.repaint();
 
-    expect(sector.getAttribute("fill")).toBe("rgba(255,255,255,0.97)");
+    expect(sector.getAttribute("fill")).toBe("rgb(255, 255, 255)");
     expect(container.querySelector("path.mw-sector")).toBe(sector);
     expect(container.querySelector(".mw-label")).toBe(label);
-    expect(container.style.getPropertyValue("--mw-fill-base")).toBe("rgba(255,255,255,0.97)");
+    expect(container.style.getPropertyValue("--mw-fill-base")).toBe("rgb(255, 255, 255)");
   });
 
   // the hovered sector is mid-skin when the theme moves, and it has to stay in that skin
@@ -330,8 +332,8 @@ describe("repaint", () => {
     handle.repaint();
 
     expect(sector.getAttribute("d")).toBe(grown);
-    expect(sector.getAttribute("fill")).toBe("rgb(232, 232, 232)"); // the themed hover fill
+    expect(sector.getAttribute("fill")).toBe("rgba(232,232,232,1)"); // the themed hover fill, its alphaReduced stripped
     sector.dispatchEvent(new MouseEvent("mouseleave"));
-    expect(sector.getAttribute("fill")).toBe("rgba(255,255,255,0.97)");
+    expect(sector.getAttribute("fill")).toBe("rgb(255, 255, 255)");
   });
 });
