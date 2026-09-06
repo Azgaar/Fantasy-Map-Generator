@@ -1,7 +1,6 @@
 import { select, sum } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
-import { dialogState } from "@/components/dialog/state";
 import {
   type EditorColumn,
   initColumnVisibility,
@@ -16,13 +15,13 @@ import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { Zone } from "@/generators/zones-generator";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
+import { zonesFilter } from "@/renderers/draw-zones";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";
 import { ensureEl, rn, si, unique } from "../utils";
 
 const dialogId = "zonesEditor" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
-let filterState: { type: string };
 
 type ZoneRow = { zone: Zone; area: number; rural: number; urban: number; population: number };
 const columns: EditorColumn<ZoneRow>[] = [
@@ -36,7 +35,6 @@ const columns: EditorColumn<ZoneRow>[] = [
 const zonesTable = initEditorTable<ZoneRow>({ getData: getZonesData, onUpdate: renderZonesPage });
 
 function open(): void {
-  filterState = dialogState.get(dialogId, "filters", () => ({ type: "all" }));
   closeDialogs("#zonesEditor, .stable");
   Layers.show("zones");
 
@@ -157,18 +155,21 @@ function closeZonesEditor(): void {
 function updateFilters(): void {
   const filterSelect = ensureEl<HTMLSelectElement>("zonesFilterType");
   const types = unique(pack.zones.map(zone => zone.type));
-  if (!types.includes(filterState.type)) filterState.type = "all";
+  if (!types.includes(zonesFilter.type)) {
+    zonesFilter.type = "all";
+    Layers.draw("zones"); // the filtered-out type is gone, the map must stop hiding zones
+  }
 
   filterSelect.innerHTML = `<option value='all'>all</option>${types
     .map(type => `<option value="${type}">${type}</option>`)
     .join("")}`;
-  filterSelect.value = filterState.type;
-  dialogState.set(dialogId, "filters", filterState);
+  filterSelect.value = zonesFilter.type;
 }
 
 // add line for each zone
 function getZonesData(): ZoneRow[] {
-  const zones = filterState.type === "all" ? pack.zones : pack.zones.filter(zone => zone.type === filterState.type);
+  const filterBy = zonesFilter.type;
+  const zones = filterBy === "all" ? pack.zones : pack.zones.filter(zone => zone.type === filterBy);
   return zones.map(zone => {
     const area = getArea(sum(zone.cells.map(cell => pack.cells.area[cell])));
     const rural = sum(zone.cells.map(cell => pack.cells.pop[cell])) * populationRate;
@@ -234,8 +235,7 @@ function zoneHighlightOff(this: HTMLElement): void {
 }
 
 function filterZonesByType(): void {
-  filterState.type = ensureEl<HTMLSelectElement>("zonesFilterType").value;
-  dialogState.set(dialogId, "filters", filterState);
+  zonesFilter.type = ensureEl<HTMLSelectElement>("zonesFilterType").value;
   Layers.draw("zones");
   zonesTable.reset();
 }
@@ -336,8 +336,8 @@ function toggleLegend(): void {
     return;
   } // hide legend
 
-  const filterBy = filterState.type;
-  const isFiltered = filterBy && filterBy !== "all";
+  const filterBy = zonesFilter.type;
+  const isFiltered = filterBy !== "all";
   const visibleZones = pack.zones.filter(zone => !zone.hidden && (!isFiltered || zone.type === filterBy));
   const data = visibleZones.map(({ i, name, color }) => [`zone${i}`, color, name]);
   drawLegend("Zones", data);

@@ -6,6 +6,7 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { GraphOverride } from "@/generators/graph-override";
 import { invalidateEmblems } from "@/renderers/draw-emblems";
 import { clearLegend } from "@/renderers/draw-legend";
+import { zonesFilter } from "@/renderers/draw-zones";
 import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
 import { clearCache, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
@@ -332,6 +333,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     select("#map").remove();
     document.body.insertAdjacentHTML("afterbegin", data[5]);
     invalidateEmblems(); // the viewport scene belongs to the map that was just dropped
+    zonesFilter.type = "all"; // the dropped map's zone types say nothing about the loaded one
 
     // TODO: check if we need it or if LayersRegistry resolves it automatically?
     const viewbox = select("#viewbox");
