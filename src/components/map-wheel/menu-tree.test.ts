@@ -10,9 +10,10 @@ import {
   OPTION_GROUPS,
   STYLE_PRESETS,
   TOOL_EDITORS,
-  TOOL_MORE,
   TOOL_OVERVIEWS,
-  TOOL_REGENERATE
+  TOOL_REGENERATE,
+  TOOL_SINGLES,
+  TOOL_VIEW
 } from "./menu-tree";
 import { childrenOf, nodeKind, type WheelNode } from "./types";
 
@@ -101,7 +102,7 @@ describe("options branch", () => {
     expect(childrenOf(options()).map(n => n.label)).toEqual([
       "World",
       "Realms",
-      "Peoples",
+      "People",
       "Identity",
       "Interface",
       "Behaviour",
@@ -142,6 +143,22 @@ describe("options branch", () => {
       expect(child.panel?.host).toBe("optionsContent");
       expect(child.panel?.only?.length).toBeGreaterThan(0);
     }
+  });
+
+  it("files voice and language with the rest of how the app presents itself", () => {
+    const themes = Object.fromEntries(OPTION_GROUPS.map(g => [g.label, g.rows as readonly string[]]));
+    expect(themes.Interface).toContain("speakerVoice");
+    expect(themes.Interface).toContain("resetLanguage");
+    expect(themes.Behaviour).not.toContain("speakerVoice");
+    expect(themes.Behaviour).not.toContain("resetLanguage");
+  });
+
+  // manorsInput is defined relative to states, which place the capitals, so with statesNumber it is
+  // what sets the settlement fabric. It stays in Realms.
+  it("keeps the burgs count with the states it is defined against", () => {
+    const realms = OPTION_GROUPS.find(g => g.label === "Realms")!.rows as readonly string[];
+    expect(realms).toContain("manorsInput");
+    expect(realms).toContain("statesNumber");
   });
 
   it("marks resetting options as destructive", () => {
@@ -188,13 +205,34 @@ describe("bindings", () => {
 describe("tools branch", () => {
   const tools = () => menuRoot().find(n => n.label === "Tools")!;
 
-  it("splits into five branches", () => {
-    expect(childrenOf(tools()).map(n => n.label)).toEqual(["Edit", "Overview", "Add", "Regenerate", "More"]);
+  it("splits into five groups and three standalone whole-map operations", () => {
+    expect(childrenOf(tools()).map(n => n.label)).toEqual([
+      "Edit",
+      "Overview",
+      "Add",
+      "Regenerate",
+      "View",
+      "Submap",
+      "Transform",
+      "AI Chat"
+    ]);
   });
 
-  it("keeps the editor ring at the level-2 cap, not over it", () => {
-    expect(TOOL_EDITORS.length).toBe(15);
-    expect(TOOL_EDITORS.length).toBeLessThanOrEqual(ITEM_CAPS[2]);
+  it("keeps the editor ring inside the level-2 cap, with headroom", () => {
+    expect(TOOL_EDITORS.length).toBe(14);
+    expect(TOOL_EDITORS.length).toBeLessThan(ITEM_CAPS[2]);
+  });
+
+  // the button opens the Trade ANIMATION editor - a visualisation control, not an editor of trade
+  // data - and the HERE channel already calls it "Animate trade"
+  it("files the trade animation under View, in the words HERE uses for it", () => {
+    expect(TOOL_EDITORS.some(([, , id]) => id === "editTradeAnimationButton")).toBe(false);
+    expect(TOOL_VIEW).toContainEqual(["Animate trade", "icon-play", "editTradeAnimationButton"]);
+  });
+
+  // the Layers tab's view modes had no route through the wheel at all; Standard is the way back
+  it("reaches every view mode, Standard included", () => {
+    expect(TOOL_VIEW.map(([, , id]) => id)).toEqual(expect.arrayContaining(["viewStandard", "viewMesh", "viewGlobe"]));
   });
 
   it("keeps the heightmap editor under Edit, where the heightmap is actually edited", () => {
@@ -224,7 +262,7 @@ describe("tools branch", () => {
 
     const ELSEWHERE = ["editUnitsButton"]; // moved to Options, where units belong
     const claimed = new Set([
-      ...[...TOOL_EDITORS, ...TOOL_OVERVIEWS, ...TOOL_MORE].map(([, , id]) => id),
+      ...[...TOOL_EDITORS, ...TOOL_OVERVIEWS, ...TOOL_VIEW, ...TOOL_SINGLES].map(([, , id]) => id),
       ...ELSEWHERE
     ]);
 

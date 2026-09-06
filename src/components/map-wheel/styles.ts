@@ -214,16 +214,77 @@ export const WHEEL_CSS = `
 
 /* --- the skin: FMG's real controls, restyled in place ------------------------------------- */
 #mapWheelDrawer .tabcontent { display: block; }
-#mapWheelDrawer table, #mapWheelDrawer tbody, #mapWheelDrawer tr, #mapWheelDrawer td {
+#mapWheelDrawer table, #mapWheelDrawer tbody {
   display: block;
   width: 100%;
 }
-#mapWheelDrawer tr {
+/* The rows are FMG's own <tr>s of three or four <td>s - an affordance (a lock, a restore arrow, or
+   nothing), a label, the control, and sometimes a numeric readout - laid out for a wide top-bar
+   panel with COLUMN widths: "#optionsContent table td:nth-of-type(1) {width: 3%}", nth-of-type(2)
+   40%, nth-of-type(4) 6%, "#styleContent table td:nth-of-type(1) {width: 34.2%}".
+
+   Declaring the cells "display: block" put every one of them on a line of its own, which is how a
+   lock mark came to float above each label and how "Cultures number" ended up with its slider on one
+   line and its readout on the next, rendered 17px wide - 6% of a 340px drawer, a column width
+   applied to a whole line. So the row is a flex line-box instead, and the cells are placed by WHAT
+   THEY CONTAIN, never by id: the rules below need no width of their own, because a flex-basis beats
+   the "width" an author gave a flex item and a min-width raises the used size whatever the
+   percentage says. "#styleContent table tr" (1,0,2, with "display: table") is why this selector
+   carries a tbody: it has to match at equal specificity and win on document order. */
+#mapWheelDrawer tbody tr {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 4px;
   padding: 9px 0;
   border-bottom: 1px solid var(--mw-edge-dim, rgba(90,74,48,.16));
 }
 #mapWheelDrawer tr:last-child { border-bottom: 0; }
-#mapWheelDrawer td { padding: 0; }
+#mapWheelDrawer td { display: block; padding: 0; width: 100%; }
+/* A cell with no form control is the lock affordance or the label, and those share the first line.
+   The floor is a hit target: the lock cell's own 3% is 8.6px in this drawer, narrower than the glyph
+   it holds. */
+#mapWheelDrawer td:not(:has(input, select, textarea, button, slider-input)) {
+  flex: 0 1 auto;
+  min-width: 18px;
+}
+/* A cell holding only compact controls is a readout for the control beside it: it keeps its natural
+   size and gains a floor wide enough to read a number in. */
+#mapWheelDrawer td:has(input[type="number"], input[type="color"], output) {
+  flex: 0 1 auto;
+  min-width: 64px;
+}
+/* The control itself. 70% is what forces the wrap and what holds the pair together, and it holds at
+   any drawer width because every width it competes with is a percentage too: 3% + 40% + 70% is over
+   a line, so the control always starts a new one, and 70% + 6% is under one, so its readout always
+   follows it onto that line rather than onto a third. */
+#mapWheelDrawer td:has(input[type="range"], input[type="text"], input.paired, input[type="checkbox"], select, textarea, button, slider-input) {
+  flex: 1 1 70%;
+  min-width: 0;
+}
+/* FMG puts two number boxes in one cell and marks them .paired - the canvas width and height, the
+   year and its era, the zoom extent's min and max. They are one control, so they share one line;
+   stacked, each one reads as a setting of its own. The basis beats the inline widths two of them
+   carry for the top bar's much wider panel. */
+#mapWheelDrawer td:has(input.paired) {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+#mapWheelDrawer input.paired { flex: 1 1 0; min-width: 0; }
+/* the tip is the row's last line, never the tail of the control's */
+#mapWheelDrawer tr::after { flex: 0 0 100%; }
+/* Every <i> in a row is a click target - the lock, the restore arrow, the regenerate arrow - and at
+   the form's inherited size its glyph box is 8px across, which is not a target. */
+#mapWheelDrawer td > i[class*="icon-"] {
+  display: inline-block;
+  min-width: 16px;
+  font-size: 13px;
+  line-height: 1;
+  text-align: center;
+  cursor: pointer;
+}
 /* The block overrides above are author rules, so they beat the UA stylesheet's [hidden]{display:none}
    and the drawer's row filter would render every row it had just hidden. !important is the only way
    a single rule can restore hiding for all of them; it must stay after the overrides. */

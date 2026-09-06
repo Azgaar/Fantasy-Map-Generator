@@ -108,25 +108,29 @@ export const OPTION_GROUPS = [
     icon: "icon-flag",
     rows: ["statesNumber", "provincesRatio", "sizeVariety", "growthRate", "manorsInput"]
   },
-  { label: "Peoples", icon: "icon-users", rows: ["culturesInput", "culturesSet", "religionsNumber"] },
+  // "People", not "Peoples" - the Layers group of the same rows is called People, and one word has
+  // to mean one thing in both branches
+  { label: "People", icon: "icon-users", rows: ["culturesInput", "culturesSet", "religionsNumber"] },
   { label: "Identity", icon: "icon-tag", rows: ["mapName", "yearInput", "emblemShape"] },
+  // Voice and UI language are how the app PRESENTS itself, so they sit with the rest of the
+  // presentation; Behaviour is what the app does on its own.
   {
     label: "Interface",
     icon: "icon-sliders",
-    rows: ["uiSize", "tooltipSize", "themeHueInput", "transparencyInput", "azgaarAssistant"]
+    rows: [
+      "uiSize",
+      "tooltipSize",
+      "themeHueInput",
+      "transparencyInput",
+      "azgaarAssistant",
+      "speakerVoice",
+      "resetLanguage"
+    ]
   },
   {
     label: "Behaviour",
     icon: "icon-cog-alt",
-    rows: [
-      "autosaveIntervalInput",
-      "onloadBehavior",
-      "speakerVoice",
-      "zoomExtentMin",
-      "shapeRendering",
-      "viewportRedraw",
-      "resetLanguage"
-    ]
+    rows: ["autosaveIntervalInput", "onloadBehavior", "zoomExtentMin", "shapeRendering", "viewportRedraw"]
   }
 ] as const;
 
@@ -195,8 +199,8 @@ const styleBranch = (): WheelNode =>
   });
 
 // -- tools -------------------------------------------------------------------------------------
-// [label, icon, button id]. Only Units moves out of the flat Tools grid (to Options), which puts
-// Edit at exactly the 15-item cap for level 2.
+// [label, icon, button id]. Units moves out of the flat Tools grid (to Options) and the Trade
+// Animation Editor moves to View, where a visualisation control belongs.
 
 type Tool = [string, string, string];
 
@@ -214,7 +218,6 @@ export const TOOL_EDITORS: Tool[] = [
   ["Provinces", "icon-map-o", "editProvincesButton"],
   ["Religions", "icon-book", "editReligions"],
   ["States", "icon-flag", "editStatesButton"],
-  ["Trade", "icon-exchange", "editTradeAnimationButton"],
   ["Zones", "icon-map-signs", "editZonesButton"]
 ];
 
@@ -239,12 +242,25 @@ export const TOOL_ADD: Tool[] = [
   ["Route", "icon-map-signs", "addRoute"]
 ];
 
-export const TOOL_MORE: Tool[] = [
+// How the map is LOOKED AT rather than what it contains. The Layers tab's three view modes had no
+// route through the wheel at all before this branch; Standard is in the list deliberately, because
+// without it a user who enters 3D or Globe from the wheel has no way back through the wheel.
+export const TOOL_VIEW: Tool[] = [
+  ["Standard", "icon-map-o", "viewStandard"],
+  ["3D scene", "icon-box", "viewMesh"],
+  ["Globe", "icon-globe", "viewGlobe"],
   ["Minimap", "icon-map", "openMinimapButton"],
-  ["AI Chat", "icon-robot", "openAiChatButton"],
+  ["Reset zoom", "icon-search", "zoomReset"],
+  // the same words the HERE channel uses for the same editor
+  ["Animate trade", "icon-play", "editTradeAnimationButton"]
+];
+
+// Whole-map operations, unrelated to each other and to anything else. They were behind a "More"
+// catch-all, which is a label that says only "the author ran out of groups".
+export const TOOL_SINGLES: Tool[] = [
   ["Submap", "icon-resize-small", "openSubmapTool"],
   ["Transform", "icon-move", "openTransformTool"],
-  ["Reset zoom", "icon-search", "zoomReset"]
+  ["AI Chat", "icon-robot", "openAiChatButton"]
 ];
 
 // Regenerate sits a level deeper than its siblings. That is geometrically necessary at 19 items,
@@ -304,7 +320,8 @@ const toolsBranch = (): WheelNode =>
           node(group.label, group.icon, { danger: true, children: toolNodes(group.items, true) })
         )
       }),
-      node("More", "icon-asterisk", { children: toolNodes(TOOL_MORE) })
+      node("View", "icon-eye", { children: toolNodes(TOOL_VIEW) }),
+      ...toolNodes(TOOL_SINGLES)
     ]
   });
 
@@ -324,7 +341,7 @@ export const BOUND_BUTTON_IDS: string[] = [
   "configureWorld",
   "optionsReset",
   ...FILE_ACTIONS.map(([, , id]) => id),
-  ...[...TOOL_EDITORS, ...TOOL_OVERVIEWS, ...TOOL_ADD, ...TOOL_MORE].map(([, , id]) => id),
+  ...[...TOOL_EDITORS, ...TOOL_OVERVIEWS, ...TOOL_ADD, ...TOOL_VIEW, ...TOOL_SINGLES].map(([, , id]) => id),
   ...TOOL_REGENERATE.flatMap(group => group.items.map(([, , id]) => id))
 ];
 

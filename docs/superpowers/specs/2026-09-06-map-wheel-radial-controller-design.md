@@ -347,8 +347,10 @@ guarantees behavioural parity; "modern" is then delivered by the skin, over the 
 Scoped to `#mapWheelDrawer`, using the wheel's tokens:
 
 - `.tabcontent { display: block }` — the host is hidden by the tab system in its normal home.
-- `table, tbody, tr, td { display: block }`; each `tr` becomes a stacked field: label over control,
-  `padding: 9px 0`, hairline `rgba(90,74,48,.16)` separator.
+- `table, tbody { display: block; width: 100% }`, and **each `tr` is a wrapping flex line-box**
+  (`column-gap: 8px`, `row-gap: 4px`, `align-items: center`, `padding: 9px 0`, hairline
+  `rgba(90,74,48,.16)` separator). See *Row layout* below — the rows are FMG's own `<td>` columns and
+  making them all `display: block` is what put every cell on a line of its own.
 - Labels 12px/1.4, ink `#3b3226`. **Each row's `data-tip` is surfaced as a permanent hint line**
   beneath the control at 10.5px, `opacity .68` — the information already exists on every row and is
   currently hover-only.
@@ -373,12 +375,66 @@ Scoped to `#mapWheelDrawer`, using the wheel's tokens:
 - Checkboxes follow FMG's existing `.checkbox` convention — raw checkboxes are hidden app-wide, so
   the skin must style the label, not the input.
 
+### Row layout
+
+A hosted row is not a label over a control; it is FMG's own `<tr>` of three or four `<td>`s —
+an affordance (a lock, a restore arrow, or nothing), a label, the control, and sometimes a numeric
+readout. `#optionsContent` has 9 three-cell rows and 18 four-cell rows; `#styleContent` has 6
+one-cell and 72 two-cell rows; `#aboutContent` has no table at all.
+
+Those cells carry **column** widths from `public/index.css` —
+`#optionsContent table td:nth-of-type(1) {width: 3%}`, `nth-of-type(2)` 40%, `nth-of-type(4)` 6%,
+`#styleContent table td:nth-of-type(1) {width: 34.2%}`. Declaring the cells `display: block` turned
+each of those into a whole line's width, so every row stacked all of its cells: a lock mark floated
+above each label, and the two rows pairing an `input[type=range]` with an `input[type=number]`
+readout put the pair on two lines with the readout at 6% of the drawer — 17px, which reads as a tiny
+empty box. That is what the user photographed on Options → People.
+
+The rows are therefore laid out by **what each cell contains**, never by id:
+
+| Cell contains | rule |
+| --- | --- |
+| no form control (affordance, label) | `flex: 0 1 auto; min-width: 18px` |
+| only compact controls (`number`, `color`, `output`) | `flex: 0 1 auto; min-width: 64px` |
+| a `range`, `text`, `.paired`, `checkbox`, `select`, `textarea`, `button` or `slider-input` | `flex: 1 1 70%; min-width: 0` |
+| `tr::after` (the tip line) | `flex: 0 0 100%` |
+
+Neither the second nor the third rule states a width, because for a flex item a `flex-basis` beats
+the `width` its author gave it and a `min-width` raises the used size whatever the percentage says —
+so the cascade fight against `td:nth-of-type(n)` (1,1,2) never has to be fought. The one selector
+that does have to win on order is `#mapWheelDrawer tbody tr`, at (1,0,2) against
+`#styleContent table tr { display: table }`.
+
+70% is what makes the layout hold at any drawer width, because every width it competes with is a
+percentage too: 3% + 40% + 70% is over a line, so the control always starts a new one, and
+70% + 6% is under one, so its readout always follows it onto *that* line rather than onto a third.
+
+Two content-driven riders:
+
+- `td:has(input.paired)` is a flex row of its own and `input.paired { flex: 1 1 0 }` — FMG puts two
+  number boxes in one cell and marks them `.paired` (canvas width × height, the year and its era,
+  the zoom extent's min and max). They are one control and read as one line; stacked, each half
+  reads as a setting of its own. The basis beats the inline widths two of them carry.
+- `td > i[class*="icon-"] { display: inline-block; min-width: 16px; font-size: 13px }` — every `<i>`
+  in a row is a click target (lock, restore, regenerate), and at the form's inherited size its glyph
+  box is 8px across, which is not a target.
+
+Measured on Options → People, "Cultures number", at uiSize 1 in a 288px content box:
+
+| | before | after |
+| --- | --- | --- |
+| lock cell | x 0, y 0, w 8.6 | x 0, y 0, w 18 |
+| label cell | x 0, y 12, w 115.2 | x 26, y 0, w 115.2 |
+| range cell | x 0, y 24, w 288 | x 0, y 24, w 216 |
+| readout cell | x 0, y 36, **w 17.3** | x 224, y 18, **w 64** |
+| row height | 96.2 | 82.2 |
+
 ### Consumers
 
 | Node | host | filter |
 | --- | --- | --- |
 | Style → Style editor | `styleContent` | none |
-| Options → World / Realms / Peoples / Identity / Interface / Behaviour | `optionsContent` | per group, below |
+| Options → World / Realms / People / Identity / Interface / Behaviour | `optionsContent` | per group, below |
 | About | `aboutContent` | none |
 
 Only one drawer is open at a time; opening a second closes the first (restoring its host) before
@@ -442,10 +498,21 @@ assigned exactly once — a unit test asserts the partition is total and disjoin
 | --- | --- |
 | World | `mapWidthInput`, `pointsInput`, `templateInput`, `optionsSeed` |
 | Realms | `statesNumber`, `provincesRatio`, `sizeVariety`, `growthRate`, `manorsInput` |
-| Peoples | `culturesInput`, `culturesSet`, `religionsNumber` |
+| People | `culturesInput`, `culturesSet`, `religionsNumber` |
 | Identity | `mapName`, `yearInput`, `emblemShape` |
-| Interface | `uiSize`, `tooltipSize`, `themeHueInput`, `transparencyInput`, `azgaarAssistant` |
-| Behaviour | `autosaveIntervalInput`, `onloadBehavior`, `speakerVoice`, `zoomExtentMin`, `shapeRendering`, `viewportRedraw`, `resetLanguage` |
+| Interface | `uiSize`, `tooltipSize`, `themeHueInput`, `transparencyInput`, `azgaarAssistant`, `speakerVoice`, `resetLanguage` |
+| Behaviour | `autosaveIntervalInput`, `onloadBehavior`, `zoomExtentMin`, `shapeRendering`, `viewportRedraw` |
+
+The theme is called **People**, not "Peoples": the Layers group over the same subject is called
+People, and one word has to mean one thing in both branches.
+
+Voice and UI language are **Interface**, not Behaviour: they are how the app presents itself, not
+what it does on its own. Behaviour keeps the five settings that act without being asked.
+
+`manorsInput` stays in **Realms**. It is defined relative to states — which place the capitals — and
+with `statesNumber` it is what sets the settlement fabric; filing it under People would separate it
+from the number it is defined against, and a one-row "Settlements" theme would push Options to its
+level-1 cap for no gain.
 
 Plus: `Units` (`#editUnitsButton`) · `Configure world` (`#configureWorld`, the button's own words —
 "World configuration" put a 13-character word in a 56px label) ·
@@ -454,19 +521,34 @@ Plus: `Units` (`#editUnitsButton`) · `Configure world` (`#configureWorld`, the 
 Hotkeys are a wiki page in FMG, not a dialog, so the prototype's `Hotkeys` entry is dropped rather
 than faked.
 
-### Tools (5 at L1)
+### Tools (8 at L1)
 
 | Branch | Contents |
 | --- | --- |
-| `Edit` (15 at L2) | Biomes, Coastlines, Cultures, Diplomacy, Emblems, Goods, **Heightmap**, Measurers, Namesbase, Notes, Provinces, Religions, States, Trade, Zones |
+| `Edit` (14 at L2) | Biomes, Coastlines, Cultures, Diplomacy, Emblems, Goods, **Heightmap**, Measurers, Namesbase, Notes, Provinces, Religions, States, Zones |
 | `Overview` (10 at L2) | Burgs, Markers, Markets, Labels, Military, Rivers, Routes, Journeys, Cells, Charts |
 | `Add` (5 at L2) | Burg, Label, Marker, River, Route |
 | `Regenerate` (3 groups at L2, 19 commands split 4/9/6 at L3) | *Terrain*: Rivers, Relief, Ice, Zones · *Society*: Cultures, Religions, States, Provinces, Burgs, State Labels, Population, Military, Emblems · *Economy*: Economy, Goods, Markets, Production, Routes, Markers |
-| `More` (5 at L2) | Minimap, AI Chat, Submap, Transform, Reset zoom |
+| `View` (6 at L2) | Standard, 3D scene, Globe, Minimap, Reset zoom, Animate trade |
+| `Submap` (leaf) | `#openSubmapTool` |
+| `Transform` (leaf) | `#openTransformTool` |
+| `AI Chat` (leaf) | `#openAiChatButton` |
 
 Heightmap stays under `Edit`: it is where the heightmap is edited and adjusted, not a mode toggle
-filed under miscellany. Only `Units` moves out of the flat Tools grid, to Options where it belongs,
-which puts `Edit` at 15 — exactly the level-2 cap.
+filed under miscellany. `Units` moves out of the flat Tools grid, to Options where it belongs, and
+the Trade Animation Editor moves to `View` — it is a visualisation control, not an editor of trade
+data, and it takes the HERE channel's words for it, "Animate trade". `Edit` therefore holds 14, one
+under the level-2 cap.
+
+`More` is dissolved. It was a catch-all, and a label that says only "the author ran out of groups"
+teaches a user nothing about what is behind it. Its five entries split: two view controls
+(`Minimap`, `Reset zoom`) join the new `View` branch, and the three whole-map operations
+(`Submap`, `Transform`, `AI Chat`) become direct children — they are unrelated to each other and
+powerful enough not to hide behind a shrug.
+
+`View` also closes a real gap: the Layers tab's three view modes (`#viewStandard`, `#viewMesh`,
+`#viewGlobe`) had no route through the wheel at all. `Standard` is in the list deliberately —
+without it, a user who enters 3D or Globe from the wheel has no way back through the wheel.
 
 Regenerate sits one level deeper than the other branches. That is intentional as well as
 geometrically necessary: these are the destructive commands, and depth is the right cost for them.
@@ -776,6 +858,10 @@ needed — the hub in this concept carries tab type only, not entity names.
   `Controllers` key or an id present in `src/index.html`; every `toggle` names a real,
   non-`permanent` `LayerId`; the 33 toggleable layers each appear exactly once; the six Options
   theme groups partition all 27 rows exactly once, with the expected row count DERIVED from src/index.html rather than hardcoded, and every anchor id present there.
+  Plus the placement decisions this tree makes, so a later edit has to argue with a test: voice and
+  language sit in Interface and not Behaviour; `manorsInput` sits with `statesNumber` in Realms; the
+  trade animation is out of `Edit` and in `View` under the HERE channel's own words; and `View`
+  reaches all three view modes, `viewStandard` included.
 - Root overflow rule: a 7-action subject produces 5 actions + `More…` + `What's here`.
 
 **Integration (vitest + jsdom):**
@@ -814,6 +900,16 @@ and never the port a user session is browsing):**
   visible `select`, `input` and `textarea` in the Interface, Behaviour and Style drawers, at uiSize
   0.8, 1 and 2. The width assertion above passed while `#azgaarAssistant` was clipping "Show" across
   the bottom, because nothing measured the text; this is the assertion that catches it.
+- **Every hosted ROW lays out**, over all three hosted blocks (`#optionsContent` in six themes,
+  `#styleContent`, `#aboutContent`) at uiSize 0.8, 1 and 2. Three properties, because the two
+  assertions above both passed while every cell of every row was stacked on a line of its own:
+  (a) no visible form control renders narrower than 40px — `#culturesOutput` was 17.3px, the
+  apparently empty box the user photographed; (b) where a row holds both an `input[type=range]` and
+  an `input[type=number]`, their bounding boxes overlap vertically, i.e. the slider and its readout
+  are on one line; (c) the `clippedControls()` sweep still returns empty. (a) and (b) were both
+  verified to fail against the previous `td { display: block; width: 100% }` skin.
+- The row locks stay usable: `#lock_cultures` is at least 14px wide, inside the drawer body, and two
+  clicks toggle its class and put it back.
 - Moving the app's own theme while the wheel is open repaints the ring: the sector fills follow the
   colour, and their alpha is `.97` at transparency 0 and the `.8` floor at transparency 100.
 - `MENU → Layers → Political → Borders` flips the real layer: `Layers.isOn("borders")` changes and

@@ -306,17 +306,17 @@ test.describe("map wheel", () => {
     // closed the drawer on any hover; another rebuilt the ring on hover, which killed the whole
     // mouse path. This is the guard for both.
     const sectors = await readSectors();
-    const peoples = sectors.find(byLabel("Peoples"))!;
-    expect(peoples.level).toBe(1);
+    const people = sectors.find(byLabel("People"))!;
+    expect(people.level).toBe(1);
     const point = await page
       .locator("#mapWheel .mw-labels > .mw-label")
-      .nth(sectors.findIndex(byLabel("Peoples")))
+      .nth(sectors.findIndex(byLabel("People")))
       .evaluate(el => {
         const box = el.getBoundingClientRect();
         return [box.x + box.width / 2, box.y + box.height / 2];
       });
     await page.mouse.move(point[0], point[1]);
-    await expect.poll(async () => (await readSectors()).find(byLabel("Peoples"))?.hot, { timeout: 2000 }).toBe(true);
+    await expect.poll(async () => (await readSectors()).find(byLabel("People"))?.hot, { timeout: 2000 }).toBe(true);
 
     await expect(page.locator("#mapWheelDrawer #optionsContent")).toBeAttached();
     // and the borrowed host is still the live one, not a corpse left behind by a rebuild
@@ -787,6 +787,112 @@ test.describe("map wheel", () => {
       (document.getElementById("uiSize") as HTMLInputElement).value = "1";
     });
     await expect(page.locator("#options > #optionsContent")).toBeAttached();
+  });
+
+  // Does a hosted ROW lay out, as opposed to a hosted CONTROL fitting its own text? Nothing had ever
+  // asked. The skin used to declare `table, tbody, tr, td { display: block; width: 100% }`, so every
+  // cell of every row went on a line of its own: the lock affordance floated above its label, and on
+  // the two rows where a `type="range"` is paired with a `type="number"` readout the pair was split
+  // across two lines - with the readout landing at 6% of the drawer (17px, an apparently empty box)
+  // because `#optionsContent table td:nth-of-type(4) { width: 6% }` is a column width, meaningless
+  // once the cell is a block. The user photographed it on Options -> People.
+  //
+  // Three properties, measured rather than assumed:
+  //   (a) no visible form control is rendered too narrow to use;
+  //   (b) a range and the number that reads it out share a line;
+  //   (c) nothing is clipped, which is the sweep the earlier fixes left behind.
+  const MIN_CONTROL_WIDTH = 40;
+
+  const rowLayout = (): Promise<{ narrow: string[]; split: string[] }> =>
+    page.locator("#mapWheelDrawer").evaluate((root, min) => {
+      const narrow: string[] = [];
+      const split: string[] = [];
+      const shown = (el: HTMLElement) => el.offsetParent !== null;
+
+      for (const row of root.querySelectorAll<HTMLTableRowElement>("tr")) {
+        if (!shown(row)) continue;
+
+        // a colour swatch and the app-wide hidden checkboxes are meant to be small or absent
+        for (const el of row.querySelectorAll<HTMLInputElement | HTMLSelectElement>("input, select, textarea")) {
+          if (!shown(el) || ["color", "checkbox", "radio", "hidden"].includes(el.type)) continue;
+          const width = el.getBoundingClientRect().width;
+          if (width < min) narrow.push(`#${el.id || el.type}: ${width.toFixed(1)}px wide`);
+        }
+
+        const range = row.querySelector<HTMLInputElement>('input[type="range"]');
+        const readout = row.querySelector<HTMLInputElement>('input[type="number"]');
+        if (!range || !readout || !shown(range) || !shown(readout)) continue;
+        const a = range.getBoundingClientRect();
+        const b = readout.getBoundingClientRect();
+        const overlap = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+        if (overlap <= 0) split.push(`#${range.id} at y${a.top.toFixed(0)}, #${readout.id} at y${b.top.toFixed(0)}`);
+      }
+
+      return { narrow, split };
+    }, MIN_CONTROL_WIDTH);
+
+  test("lays every hosted row out instead of stacking its cells", async () => {
+    // every drawer the wheel can host, and every row shape the three of them contain: 3-cell and
+    // 4-cell option rows, the two-column style form, and About, which has no table at all
+    const drills = [
+      ["Options", "World"],
+      ["Options", "Realms"],
+      ["Options", "People"],
+      ["Options", "Identity"],
+      ["Options", "Interface"],
+      ["Options", "Behaviour"],
+      ["Style", "Style editor"],
+      ["About"]
+    ];
+
+    for (const uiSize of ["0.8", "1", "2"]) {
+      await page.evaluate(v => {
+        (document.getElementById("uiSize") as HTMLInputElement).value = v;
+      }, uiSize);
+
+      for (const drill of drills) {
+        await openWheel();
+        await menuTab();
+        for (const step of drill) await activate(byLabel(step));
+        await expect(page.locator("#mapWheelDrawer .mw-drawer-body")).toBeVisible();
+
+        const where = `uiSize ${uiSize}, ${drill.join(" > ")}`;
+        const layout = await rowLayout();
+        expect(layout.narrow, `${where}: unusably narrow`).toEqual([]);
+        expect(layout.split, `${where}: slider split from its readout`).toEqual([]);
+        expect(await clippedControls(), `${where}: clipped`).toEqual([]);
+
+        await page.keyboard.press("Escape");
+      }
+    }
+
+    await page.evaluate(() => {
+      (document.getElementById("uiSize") as HTMLInputElement).value = "1";
+    });
+    await expect(page.locator("#options > #optionsContent")).toBeAttached();
+  });
+
+  // The lock icons are the row's only affordance and they are click targets, so a row layout that
+  // squeezes them to a few pixels or pushes them off the drawer has broken them.
+  test("keeps the row locks reachable and clickable", async () => {
+    await openWheel();
+    await menuTab();
+    await activate(byLabel("Options"));
+    await activate(byLabel("People"));
+
+    const lock = page.locator("#mapWheelDrawer #lock_cultures");
+    await expect(lock).toBeVisible();
+    const body = (await page.locator("#mapWheelDrawer .mw-drawer-body").boundingBox())!;
+    const box = (await lock.boundingBox())!;
+    expect(box.width, `lock is ${box.width}px wide`).toBeGreaterThanOrEqual(14);
+    expect(box.x).toBeGreaterThanOrEqual(body.x - 1);
+    expect(box.x + box.width).toBeLessThanOrEqual(body.x + body.width + 1);
+
+    const before = await lock.getAttribute("class");
+    await lock.click();
+    await expect(lock).not.toHaveClass(before!);
+    await lock.click();
+    await expect(lock).toHaveClass(before!);
   });
 
   // The wheel sampled the theme once per structural redraw, which was defensible while it was a
