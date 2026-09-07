@@ -21,10 +21,7 @@ import type { ReliefSet } from "@/types/relief";
 import { ensureEl, findEl, minmax, parseTransform, rn, rw, safeParseJSON, unique } from "@/utils";
 import { parsePathPoints } from "@/utils/pathUtils";
 
-type LegacyBurgGroup = Omit<
-  MapData["burgs"]["groups"][number],
-  "biomes" | "states" | "cultures" | "religions"
-> & {
+type LegacyBurgGroup = Omit<MapData["burgs"]["groups"][number], "biomes" | "states" | "cultures" | "religions"> & {
   biomes?: number[] | string;
   states?: number[] | string;
   cultures?: number[] | string;

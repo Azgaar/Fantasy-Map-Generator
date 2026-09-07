@@ -13,9 +13,7 @@ export const ids = z.array(count).optional();
 export type TemplateLookup = (source: unknown, key: PropertyKey, parentKey: PropertyKey | undefined) => unknown;
 
 const valueAt = (source: unknown, key: PropertyKey): unknown =>
-  typeof source === "object" && source !== null
-    ? (source as Record<PropertyKey, unknown>)[key]
-    : undefined;
+  typeof source === "object" && source !== null ? (source as Record<PropertyKey, unknown>)[key] : undefined;
 
 const plainLookup: TemplateLookup = valueAt;
 
