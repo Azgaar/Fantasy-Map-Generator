@@ -161,7 +161,8 @@ function onLoreChange(event: Event): void {
 }
 
 function regenerateMapName(): void {
-  Names.getMapName(true); // writes options.map.lore.name, and unpins the name if the user had pinned it
+  Pins.clear("mapName");
+  options.map.lore.name = Names.getMapName();
   Options.save();
   fillInputs();
 }

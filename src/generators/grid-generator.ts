@@ -11,6 +11,11 @@ declare global {
 }
 
 class GridModule {
+  prepare(graph?: GridGraph): void {
+    if (graph) this.resetHeights(graph);
+    grid = graph ?? this.generate(options.map.seed, options.map.graph.width, options.map.graph.height);
+  }
+
   generate(seed: string, width: number, height: number): GridGraph {
     Math.random = Alea(seed); // reset PRNG
 
@@ -36,25 +41,6 @@ class GridModule {
     this.resetHeights(graph);
 
     return graph;
-  }
-
-  /** check whether the graph still fits the requested seed and canvas size */
-  shouldRegenerate(graph: GridGraph, expectedSeed: string | undefined, width: number, height: number): boolean {
-    if (expectedSeed && expectedSeed !== options.map.seed) return true;
-
-    // the spacing is derived from the requested cell count and the extent, so it answers for both
-    const spacing = this.getSpacing(this.getCellsDesired(), width, height);
-    if (graph.spacing !== spacing) return true;
-    return graph.cellsX !== this.getCellsCount(spacing, width) || graph.cellsY !== this.getCellsCount(spacing, height);
-  }
-
-  /** make the global grid fit the requested seed and canvas size, keeping the current one if it does */
-  prepare(expectedSeed?: string, precreated?: GridGraph): void {
-    if (this.shouldRegenerate(grid, expectedSeed, options.map.graph.width, options.map.graph.height)) {
-      grid = precreated ?? this.generate(options.map.seed, options.map.graph.width, options.map.graph.height);
-    } else {
-      this.resetHeights(grid);
-    }
   }
 
   /**

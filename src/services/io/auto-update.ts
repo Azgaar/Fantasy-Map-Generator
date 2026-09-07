@@ -1,6 +1,6 @@
 // Update an old map file to the current version
 import { color, min, select } from "d3";
-import { type LayerId, Layers, type LayersState } from "@/components/layers";
+import { Layers, type LayersState } from "@/components/layers";
 import { RELIEF_SETS } from "@/data/relief-icons";
 import { Emblems } from "@/generators/emblems-generator";
 import type { GraphOverrides } from "@/generators/graph-override";
@@ -349,23 +349,6 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       .attr("stroke", "#e8f0f6")
       .attr("stroke-width", 1)
       .attr("filter", "url(#dropShadow05)");
-
-    // v1.4 added icon and power attributes for units
-    for (const unit of options.map.military.units) {
-      if (!unit.icon) unit.icon = getUnitIcon(unit.type);
-      if (!unit.power) unit.power = unit.crew;
-    }
-
-    function getUnitIcon(type: string) {
-      if (type === "naval") return "🌊";
-      if (type === "ranged") return "🏹";
-      if (type === "mounted") return "🐴";
-      if (type === "machinery") return "💣";
-      if (type === "armored") return "🐢";
-      if (type === "aviation") return "🦅";
-      if (type === "magical") return "🔮";
-      else return "⚔️";
-    }
 
     // v1.4 added state reference for regiments
     pack.states
@@ -1502,50 +1485,11 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   if (isOlderThan("1.144.0")) {
     // v1.144.0 replaced the toggleLayer ids with layer ids
-    const LAYER_ID_MAP: Record<string, LayerId> = {
-      toggleTexture: "texture",
-      toggleHeight: "heightmap",
-      toggleLakes: "lakes",
-      toggleBiomes: "biomes",
-      toggleCells: "cells",
-      toggleGrid: "grid",
-      toggleCoordinates: "coordinates",
-      toggleCompass: "compass",
-      toggleRivers: "rivers",
-      toggleRelief: "relief",
-      toggleReligions: "religions",
-      toggleCultures: "cultures",
-      toggleStates: "states",
-      toggleProvinces: "provinces",
-      toggleZones: "zones",
-      toggleBorders: "borders",
-      toggleRoutes: "routes",
-      toggleTemperature: "temperature",
-      toggleIce: "ice",
-      toggleGoods: "goods",
-      toggleMarketsLayer: "markets",
-      toggleTrade: "trade",
-      togglePrecipitation: "precipitation",
-      togglePopulation: "population",
-      toggleEmblems: "emblems",
-      toggleBurgIcons: "burgIcons",
-      toggleLabels: "labels",
-      toggleMilitary: "military",
-      toggleMarkers: "markers",
-      toggleRulers: "rulers",
-      toggleScaleBar: "scaleBar",
-      toggleVignette: "vignette"
-    };
-    for (const group of options.map.labels.groups ?? []) {
-      const layer = group.layerDependency && LAYER_ID_MAP[group.layerDependency];
-      if (layer) group.layerDependency = layer;
-    }
-
     const storedPresets: Record<string, string[]> | null = safeParseJSON(localStorage.getItem("presets") ?? "");
     if (storedPresets) {
       const remapped = Object.entries(storedPresets).map(([name, ids]) => [
         name,
-        Array.isArray(ids) ? ids.map(id => LAYER_ID_MAP[id] ?? id) : ids
+        Array.isArray(ids) ? ids.map(id => LEGACY_LAYER_IDS[id] ?? id) : ids
       ]);
       localStorage.setItem("presets", JSON.stringify(Object.fromEntries(remapped)));
     }
@@ -1829,17 +1773,46 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
   }
 }
 
-/**
- * The settings of a blank map as v1.151.0 shaped them, frozen. A migration describes a world that no
- * longer exists, so it carries its own copy of it: renaming or redefaulting a field today must not
- * change what a pre-1.151 file means. Validation fits the result to the current schema afterwards.
- * See docs/architecture/configuration.md#migrations
- */
+const LEGACY_LAYER_IDS: Record<string, string> = {
+  toggleTexture: "texture",
+  toggleHeight: "heightmap",
+  toggleLakes: "lakes",
+  toggleBiomes: "biomes",
+  toggleCells: "cells",
+  toggleGrid: "grid",
+  toggleCoordinates: "coordinates",
+  toggleCompass: "compass",
+  toggleRivers: "rivers",
+  toggleRelief: "relief",
+  toggleReligions: "religions",
+  toggleCultures: "cultures",
+  toggleStates: "states",
+  toggleProvinces: "provinces",
+  toggleZones: "zones",
+  toggleBorders: "borders",
+  toggleRoutes: "routes",
+  toggleTemperature: "temperature",
+  toggleIce: "ice",
+  toggleGoods: "goods",
+  toggleMarketsLayer: "markets",
+  toggleTrade: "trade",
+  togglePrecipitation: "precipitation",
+  togglePopulation: "population",
+  toggleEmblems: "emblems",
+  toggleBurgIcons: "burgIcons",
+  toggleLabels: "labels",
+  toggleMilitary: "military",
+  toggleMarkers: "markers",
+  toggleRulers: "rulers",
+  toggleScaleBar: "scaleBar",
+  toggleVignette: "vignette"
+};
+
+/** Frozen defaults for fields absent from pipe-delimited saves, expressed in the map settings format. */
 function legacyFactsDefaults() {
   return {
     seed: "",
     graph: { width: 1280, height: 800, points: 10000 },
-    heightmap: { template: "", resolveDepressionsSteps: 250, lakeElevationLimit: 20 },
     geography: {
       mapSize: 100,
       latitude: 50,
@@ -1851,9 +1824,8 @@ function legacyFactsDefaults() {
       precipitation: 100,
       winds: [225, 45, 225, 315, 135, 315]
     },
-    cultures: { set: "world", sizeVariety: 4, growthRate: 1 },
-    states: { sizeVariety: 4, growthRate: 1 },
-    lore: { name: "", calendar: { year: 1000, era: "Era", eraShort: "E" } },
+    cultures: { set: "world" },
+    lore: { name: "", description: "", calendar: { year: 1000, era: "Era", eraShort: "E" } },
     units: {
       distance: { unit: "km", scale: 3 },
       area: { unit: "square" },
@@ -1881,9 +1853,9 @@ function legacyFactsDefaults() {
 }
 
 export function migrateLegacySettings(mapVersion: string, data: string[]): void {
-  if (!compareVersions(mapVersion, "1.151.0").isOlder) return;
+  if (!compareVersions(mapVersion, "1.152.0").isOlder || data[1]?.trimStart().startsWith("{")) return;
 
-  // v1.151.0 replaced the legacy pipe-delimited settings string with the map's settings object.
+  // v1.152.0 replaced the legacy pipe-delimited settings string with the map's settings object.
   // A migration describes a world that no longer exists, so it reads the old slots by number and
   // writes only map settings: the viewer preferences the old format carried (3D settings, trade
   // animation, note pinning, emblem visibility) are this browser's, not the map's, and are
@@ -1896,6 +1868,7 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
   if (oldHeader[3]) migrated.seed = oldHeader[3];
   if (oldHeader[4]) migrated.graph.width = +oldHeader[4];
   if (oldHeader[5]) migrated.graph.height = +oldHeader[5];
+  migrated.graph.points = getLegacyPoints(data[6], migrated.graph.width, migrated.graph.height);
 
   if (oldSettings[0]) migrated.units.distance.unit = oldSettings[0];
   if (oldSettings[1]) migrated.units.distance.scale = +oldSettings[1];
@@ -1908,8 +1881,6 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
   if (oldSettings[20]) migrated.lore.name = oldSettings[20];
   if (oldSettings[22]) migrated.style.preset = oldSettings[22];
   if (oldSettings[24]) migrated.units.population.urbanization.density = +oldSettings[24];
-  if (oldSettings[26]) migrated.cultures.growthRate = +oldSettings[26];
-  if (oldSettings[26]) migrated.states.growthRate = +oldSettings[26];
 
   // very old maps kept the world configuration in the pipe string, and it wins over the object
   if (oldSettings[14]) migrated.geography.mapSize = +oldSettings[14];
@@ -1957,8 +1928,48 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
     else migrated.labels.groups.push({ ...Labels.getFallbackGroup("state"), mode: oldOptions.stateLabelsMode });
   }
 
-  // v1.151.0 moved the mapCoordinates from own slot into the settings object
+  // v1.152.0 moved the mapCoordinates from own slot into the settings object
   if (oldCoordinates) migrated.geography.coordinates = oldCoordinates;
+  else delete (migrated.geography as { coordinates?: unknown }).coordinates;
+
+  if (compareVersions(mapVersion, "1.144.0").isOlder && Array.isArray(migrated.labels?.groups)) {
+    for (const group of migrated.labels.groups) {
+      if (
+        group &&
+        typeof group.layerDependency === "string" &&
+        Object.hasOwn(LEGACY_LAYER_IDS, group.layerDependency)
+      ) {
+        group.layerDependency = LEGACY_LAYER_IDS[group.layerDependency];
+      }
+    }
+  }
+
+  if (compareVersions(mapVersion, "1.4.0").isOlder && Array.isArray(migrated.military.units)) {
+    const icons: Record<string, string> = {
+      naval: "🌊",
+      ranged: "🏹",
+      mounted: "🐴",
+      machinery: "💣",
+      armored: "🐢",
+      aviation: "🦅",
+      magical: "🔮"
+    };
+    for (const unit of migrated.military.units) {
+      if (!unit || typeof unit !== "object") continue;
+      if (!unit.icon) unit.icon = icons[unit.type] ?? "⚔️";
+      if (unit.power === undefined) unit.power = unit.crew;
+    }
+  }
 
   data[1] = JSON.stringify(migrated);
+}
+
+function getLegacyPoints(serialized: string, width: number, height: number): number {
+  const graph = safeParseJSON(serialized ?? "");
+  if (typeof graph?.cellsDesired === "number" && graph.cellsDesired > 0) return graph.cellsDesired;
+
+  // Frozen legacy density choices; spacing was rounded to two decimals when the grid was built.
+  const counts = [1000, 2000, 5000, 10000, 20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000, 100000];
+  const count = counts.find(count => rn(Math.sqrt((width * height) / count), 2) === graph?.spacing);
+  return count ?? (Array.isArray(graph?.points) && graph.points.length ? graph.points.length : 10000);
 }

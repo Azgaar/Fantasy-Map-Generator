@@ -4,7 +4,7 @@ import indexHtml from "@/index.html?raw";
 import "@/generators/features"; // migrations call the Features module through its global
 import { Styles } from "@/generators/styles";
 import { VERSION } from "@/services/versioning";
-import { resolveVersionConflicts } from "./auto-update";
+import { migrateLegacySettings, resolveVersionConflicts } from "./auto-update";
 
 beforeEach(() => {
   document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox"></g></svg>`;
@@ -32,23 +32,23 @@ describe("v1.144 layer id migration", () => {
   });
 
   it("maps exceptional legacy toggle ids and preserves unknown dependencies", () => {
-    options.map.labels.groups = [
-      "toggleHeight",
-      "toggleMarketsLayer",
-      "toggleBurgIcons",
-      "toggleScaleBar",
-      "customLayer"
-    ].map((layerDependency, index) => ({
-      name: `group-${index}`,
-      type: "added",
-      layerDependency,
-      zoom: { min: null, max: null }
-    })) as never;
-    const data: string[] = [];
+    const groups = ["toggleHeight", "toggleMarketsLayer", "toggleBurgIcons", "toggleScaleBar", "customLayer"].map(
+      (layerDependency, index) => ({
+        name: `group-${index}`,
+        type: "added",
+        layerDependency,
+        zoom: { min: null, max: null }
+      })
+    );
+    const settings = Array<string>(20).fill("");
+    settings[19] = JSON.stringify({ labels: { groups } });
+    const data = ["1.143.0||||1280|800", settings.join("|")];
 
+    migrateLegacySettings("1.143.0", data);
     resolveVersionConflicts("1.143.0", data);
 
-    expect(options.map.labels.groups.map(group => group.layerDependency)).toEqual([
+    const migratedGroups: { layerDependency: string }[] = JSON.parse(data[1]).labels.groups;
+    expect(migratedGroups.map(group => group.layerDependency)).toEqual([
       "heightmap",
       "markets",
       "burgIcons",

@@ -52,7 +52,7 @@ beforeAll(async () => {
 beforeEach(() => {
   localStorage.clear();
   options = Options.getDefaultOptions();
-  tab.syncInputs();
+  tab.syncOptionInputs();
   vi.clearAllMocks();
 });
 
@@ -73,7 +73,7 @@ describe("options tab bindings", () => {
     options.generation.cultures.limit = 7;
     options.generation.template = "volcano";
     options.app.autosave.interval = 27;
-    tab.syncInputs();
+    tab.syncOptionInputs();
 
     expect(control("points").value).toBe("5");
     expect(output("points").value).toBe("20K");

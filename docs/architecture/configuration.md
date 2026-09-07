@@ -163,6 +163,11 @@ them across explicitly while resetting everything else in `options.map`.
 The graph to build (extent and density), entity counts, ratios, rates and varieties, culture set
 and template for the next map. Consumed by generation; what it keeps is written into `options.map`.
 
+`generation.geography` holds optional world-position requests. `null` means automatic; a number
+fixes that input. The resulting `map.geography` always holds numbers, including the coordinates
+needed to operate the map. The request is resolved from pins before generation and never saved
+with the map. This keeps lock handling out of terrain generation.
+
 Note the deliberate pair: `generation.graph.{width,height,density}` is the graph asked for, and
 `map.graph.{width,height,points}` is the one that was built. Changing the request does not touch
 the map on screen — that is what makes the sections separate.
@@ -217,12 +222,14 @@ invalidates a user's pins.
 
 `components/pins.ts` is the whole of the mechanism: `Pins` holds the store and the lock icons
 alike. A dialog calls `Pins.bindIcons(dialog, pinnedValue)` and answers, in one function of its
-own, for the value each icon stands for — there is no central table of keys, because the dialog
-that shows a control is the one that knows where its value lives.
+own, for the value each icon stands for. `pinSchemas` in `options-schema.ts` maps the stable lock
+ids to the same schema nodes that validate those options.
 
-Everything a pin can restore is applied in one place, `Options.randomize()`: the requests first,
-then the map values the requests resolve into, then the map values nothing rolls. Applying a pin
-anywhere later writes a value nothing will read until the map after next.
+The options model resolves every pin: `setGraphSize` resolves the extent, `randomize` resolves
+the generation requests, map name and other map values. Geography pins become requests in
+`generation.geography`: a number fixes that value, and `null` asks for an automatic choice.
+`Coordinates.generate()` reads those requests after feature markup and before climate generation.
+It owns the terrain-dependent choice and the resulting map geography. Generators never read pins.
 
 A lock is a boundary like any other: it is raw `localStorage`, so a key nothing answers for is
 never pinned, and a pinned value the key's own schema rejects is ignored rather than written into
@@ -230,8 +237,9 @@ the map. A preference is never pinnable — nothing re-rolls it.
 
 **`?options=default` ignores every pin**, so the map is the one a fresh browser would make. One
 predicate decides it (`Pins.ignored`), and `Pins.rolls(key)` and `Pins.valueOr(key, fallback)` are
-the only way anything consults a pin. `valueOr` also drops a pin whose type no longer matches the
-value it stands for, so a corrupt store cannot write a string into a number.
+the only way generation consults a pin. The store validates every pin against `pinSchemas`,
+including numeric ranges and integer constraints, before exposing it to callers or lighting its icon. Unknown keys and invalid values
+are ignored independently so valid pins survive.
 
 ---
 
@@ -272,6 +280,8 @@ app itself.
 
 The extent is the one request a load updates: `generation.graph.width/height` follow the map just
 opened, because generating from it should keep its shape. A pinned extent is never overridden.
+Generation preserves that request until the user changes it or resets the extent to the window.
+Boot initializes an unpinned extent from the window; each subsequent generation does not.
 Adding anything else to that rule needs a reason stated here, and the default answer is no.
 
 ---
@@ -289,10 +299,13 @@ recomputable without it.
 
 ## Generation mechanics
 
-Generation is the commit point from requests to map values, and `Options.randomize()` is the whole
-of it: it re-rolls every unpinned request, resolves the ones the map keeps into `options.map`, and
-re-rolls the map values that have no request of their own. It runs before the pipeline, never
-after, and one line covers each value — the roll and the pin side by side.
+Generation is the commit point from requests to map values. `Options.randomize()` re-rolls the
+unpinned requests, resolves the ones the map keeps into `options.map`, and re-rolls the map values
+that have no request of their own. It runs before the pipeline and also names the map; the name
+needs no generated world data.
+Geography requests are prepared here, but their results need terrain: `Coordinates.generate()`
+resolves automatic values after feature markup and writes the map geography and coordinate box.
+This is a normal generator step, with no callback into the options model.
 
 - **A new map** starts `options.map` from the defaults and keeps only the seed, which `setSeed`
   resolved and reseeded the PRNG with beforehand, and the definition sets, which are the user's
@@ -374,6 +387,11 @@ accepts rather than throwing or dropping every group.
 A migration describes a world that no longer exists, so it **carries its own copy of that world and
 never leans on the live schema**. Renaming a field today must not change what an old file means.
 Migrations run at the boundary, before validation, and produce a current-shaped object.
+`migrateLegacySettings` converts pre-1.152 pipe-delimited settings, including legacy label dependency
+ids and military unit fields, before `Options.applyLoaded` validates them. SVG and entity migrations
+run later; they must not own conversions needed to keep settings valid. Already-JSON settings are
+left intact, so repeated migration is harmless. Density comes from the saved grid's `cellsDesired`,
+or from its rounded spacing and historical density choices when that field is absent.
 
 A `.map` file is a migration's job because the user cannot re-make it. This browser's stored
 settings are not: they are one panel away, and a migration that carries them forward is code that
@@ -391,7 +409,7 @@ miss is adopted.**
 
 Adopted, therefore: the preferences, because nothing in the UI puts them back — a theme colour or
 an interface size is chosen once and never looked for again — and the definition sets, because a
-military roster, a burg group or a label group is built by hand over a session and cannot be
+military roster, transport library, burg group or label group is built by hand over a session and cannot be
 re-made with a click.
 
 Dropped, therefore: the pins. A pin is a claim about a value's shape as well as its name, and the
@@ -424,7 +442,7 @@ object, and going through [validation](#validation) is what drops the one unrepa
 4. **Write it from the dialog that shows it.** The control's handler writes the value, pins it with
    `Pins.set(key, value)` where a pin means anything, calls `Options.save()`, and runs whatever
    redraw the change asks for. Add the key to that dialog's own `pinnedValue` function so its lock
-   icon can read it. A request or a map value gets a pin, a preference does not.
+   icon can read it, and map the lock id to its existing schema node in `pinSchemas`. A request or a map value gets a pin, a preference does not.
 5. **If a new map should re-roll it**, add a line to `Options.randomize()`. If a new map should
    keep the user's own version, carry it across in `randomize` as the definition sets are.
 6. **Read it directly** where it is used — reading never goes through a model.

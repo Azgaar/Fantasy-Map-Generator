@@ -3,7 +3,7 @@ import { fitMapToScreen } from "@/components/canvas";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { registerMap } from "@/components/lifecycle";
-import { syncInputs } from "@/components/options/tabs/options-tab";
+import { syncOptionInputs } from "@/components/options/tabs/options-tab";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { GraphOverride } from "@/generators/graph-override";
@@ -257,7 +257,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     const settings = data[1] ? safeParseJSON(data[1]) : null;
     if (!settings) throw new Error("Map settings are missing or malformed");
     Options.applyLoaded(settings);
-    syncInputs();
+    syncOptionInputs();
     setStylePresetSelect();
 
     INFO && console.group(options.map.seed ? `Loaded Map ${options.map.seed}` : "Loaded Map");

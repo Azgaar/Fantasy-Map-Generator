@@ -701,7 +701,7 @@ function syncOption(key: string, source?: HTMLElement): void {
   }
 }
 
-export function syncInputs(): void {
+export function syncOptionInputs(): void {
   const template = optionInputs<HTMLSelectElement>("template")[0];
   const id = options.generation.template;
   if (template && id) applyOption(template, id, heightmapTemplates[id]?.name || precreatedHeightmaps[id]?.name || id);
@@ -783,7 +783,7 @@ function restoreDefaultMapSize(): void {
   });
   Pins.clear("mapWidth");
   Pins.clear("mapHeight");
-  syncInputs();
+  syncOptionInputs();
 }
 
 /** The Points slider picks a density step; the readout shows the cell count it resolves to */

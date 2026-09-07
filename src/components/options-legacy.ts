@@ -24,6 +24,7 @@ const ADOPTED_KEYS = [
   "military",
   "burg-groups",
   "options-labels",
+  "options-transports",
   "coastline-settings"
 ] as const;
 
@@ -128,6 +129,7 @@ export function adoptLegacyOptions(): Record<string, unknown> | null {
   json("military", parsed => put("map.military.units", parsed));
   json("burg-groups", parsed => put("map.burgs.groups", parsed));
   json("options-labels", parsed => put("map.labels.groups", (parsed as { groups?: unknown })?.groups));
+  json("options-transports", parsed => put("map.transports", parsed));
   json("coastline-settings", parsed =>
     put("map.coastline", { ...Coastline.getDefaultSettings(), ...(parsed as object) })
   );

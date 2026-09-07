@@ -1,4 +1,6 @@
 // The values the user pinned so a new map does not re-roll them
+
+import { pinSchemas } from "@/components/options-schema";
 import { tip } from "@/components/tooltips";
 import { safeParseJSON } from "@/utils/stringUtils";
 
@@ -16,7 +18,13 @@ class PinStore {
   all(): Record<string, unknown> {
     const parsed = safeParseJSON(localStorage.getItem(STORAGE_KEY) ?? "");
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
-    return parsed as Record<string, unknown>;
+    const pins: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(parsed)) {
+      if (!Object.hasOwn(pinSchemas, key)) continue;
+      const result = pinSchemas[key].safeParse(value);
+      if (result.success) pins[key] = result.data;
+    }
+    return pins;
   }
 
   has(key: string): boolean {
@@ -33,19 +41,16 @@ class PinStore {
     if (this.ignored) return fallback;
 
     const pinned = this.all()[key] as T | undefined;
-    if (pinned === undefined) return fallback;
-    if (typeof pinned !== typeof fallback || Array.isArray(pinned) !== Array.isArray(fallback)) {
-      ERROR && console.error(`Pins: "${key}" is pinned to a ${typeof pinned}, ignored`);
-      return fallback;
-    }
-    return pinned;
+    return pinned === undefined ? fallback : pinned;
   }
 
   /** Pin a value the user set by hand, so the next map keeps it */
   set(key: string, value: unknown): void {
-    if (value === undefined) return;
+    if (!Object.hasOwn(pinSchemas, key)) return;
+    const parsed = pinSchemas[key].safeParse(value);
+    if (!parsed.success) return;
     const pins = this.all();
-    pins[key] = value;
+    pins[key] = parsed.data;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(pins));
     this.paintIcons();
   }

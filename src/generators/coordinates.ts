@@ -1,5 +1,4 @@
 // Where the map sits on the globe: its share of the world and the resulting lat/lon box
-import { Pins } from "@/components/pins";
 import { gauss, P, rn } from "../utils";
 
 declare global {
@@ -56,12 +55,15 @@ const RANDOM_SIZE: Record<string, [number, number, number, number]> = {
 };
 
 class CoordinatesModule {
-  /** define map size and position on the globe based on the heightmap template and a random factor */
-  defineMapSize(): void {
-    const [size, latitude, longitude] = this.getSizeAndPosition();
-    if (Pins.rolls("mapSize")) options.map.geography.mapSize = size;
-    if (Pins.rolls("latitude")) options.map.geography.latitude = latitude;
-    if (Pins.rolls("longitude")) options.map.geography.longitude = longitude;
+  generate(): void {
+    const partial = grid.features.some(feature => feature.land && feature.border);
+    const [mapSize, latitude, longitude] = this.getSizeAndPosition(options.generation.template, partial);
+    const requested = options.generation.geography;
+    const geography = options.map.geography;
+    geography.mapSize = requested.mapSize ?? mapSize;
+    geography.latitude = requested.latitude ?? latitude;
+    geography.longitude = requested.longitude ?? longitude;
+    this.calculate();
   }
 
   /** calculate the map lat/lon box from its size and position */
@@ -81,12 +83,10 @@ class CoordinatesModule {
     options.map.geography.coordinates = { latT, latN, latS, lonT, lonW, lonE };
   }
 
-  private getSizeAndPosition(): SizeAndPosition {
-    const template = options.generation.template;
+  private getSizeAndPosition(template: string, isPartial: boolean): SizeAndPosition {
     const realWorldPosition = TEMPLATE_POSITIONS[template];
     if (realWorldPosition) return realWorldPosition;
 
-    const isPartial = grid.features.some(f => f.land && f.border); // land goes over the map borders
     if (!isPartial && P(WHOLE_WORLD_CHANCE[template] ?? 0)) return [100, 50, 50];
 
     const maxSize = isPartial ? 80 : 100;
@@ -100,4 +100,6 @@ class CoordinatesModule {
   }
 }
 
-window.Coordinates = new CoordinatesModule();
+// biome-ignore lint/suspicious/noRedeclare: legacy global and module export
+export const Coordinates = new CoordinatesModule();
+window.Coordinates = Coordinates;

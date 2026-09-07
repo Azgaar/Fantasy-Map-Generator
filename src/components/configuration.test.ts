@@ -238,7 +238,7 @@ describe("a new map keeps what the user pinned", () => {
     Options.randomize();
 
     expect(options.map.lore.name).toBe("Kept Name");
-    expect(options.map.geography.mapSize).toBe(70);
+    expect(options.generation.geography.mapSize).toBe(70);
     expect(options.map.units.distance.unit).toBe("leagues");
     expect(options.map.units.population.urbanization.density).toBe(42);
   });

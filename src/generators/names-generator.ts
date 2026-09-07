@@ -1,4 +1,3 @@
-import { Pins } from "@/components/pins";
 import { tip } from "@/components/tooltips";
 import { getDefaultNameBases, type NameBase } from "@/data/name-bases";
 import { capitalize, isVowel, last, P, ra, rand } from "../utils";
@@ -272,9 +271,7 @@ class NamesGenerator {
   }
 
   // generate name for the map
-  getMapName(force: boolean) {
-    if (!force && Pins.has("mapName")) return;
-    if (force && Pins.has("mapName")) Pins.clear("mapName");
+  getMapName(): string {
     const base = P(0.7) ? 2 : P(0.5) ? rand(0, 6) : rand(0, 31);
     if (!this.nameBases[base]) {
       tip("Namebase is not found", false, "error");
@@ -284,7 +281,7 @@ class NamesGenerator {
     const max = Math.max(this.nameBases[base].max - 3, min);
     const baseName = this.getBase(base, min, max, "") as string;
     const name = P(0.7) ? this.addSuffix(baseName) : baseName;
-    options.map.lore.name = name;
+    return name;
   }
 
   getNameBases(): NameBase[] {

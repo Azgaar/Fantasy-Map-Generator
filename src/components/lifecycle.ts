@@ -3,7 +3,7 @@ import { applyGraphSize, fitMapToScreen } from "@/components/canvas";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { hideLoading, showLoading } from "@/components/loading";
-import { restoreUi, syncInputs } from "@/components/options/tabs/options-tab";
+import { restoreUi, syncOptionInputs } from "@/components/options/tabs/options-tab";
 import { is3dView } from "@/components/options/view-mode";
 import { setSeed } from "@/components/seed";
 import { initShell, warnIfServerless } from "@/components/shell";
@@ -31,7 +31,7 @@ export async function boot(): Promise<void> {
   initShell();
 
   Options.restore();
-  syncInputs();
+  syncOptionInputs();
   restoreUi();
   setViewportSize(options.map.graph.width, options.map.graph.height);
   applyDefaultViewboxEvents();
@@ -49,18 +49,16 @@ export type GenerationConfig = { seed?: string; graph?: GridGraph; width?: numbe
 /** Generate a whole new world */
 export async function generate(config?: GenerationConfig): Promise<void> {
   try {
-    // TODO: investigate the precreatedSeed path and simplify it
     const { seed: precreatedSeed, graph: precreatedGraph, width, height } = config || {};
     Options.setGraphSize(width, height);
     setSeed(precreatedSeed);
     Options.randomize();
     applyGraphSize(); // TODO: DOM change, not part of generation
 
-    await GenerationPipeline.run({ seed: precreatedSeed, graph: precreatedGraph });
+    await GenerationPipeline.run({ graph: precreatedGraph });
 
-    syncInputs(); // after the pipeline: it names the map, which the panel shows
-    Options.persist(); // the requests this map resolved are what the next session starts from
-    registerMap(); // a generated map's id is the moment it was generated
+    syncOptionInputs();
+    registerMap();
     logStats();
     invokeActiveZooming();
   } catch (error) {

@@ -6,6 +6,7 @@ const store = new Map<string, string>();
 
 beforeEach(() => {
   store.clear();
+  vi.stubGlobal("location", new URL("http://localhost/"));
   (globalThis as Record<string, unknown>).localStorage = {
     clear: () => store.clear(),
     getItem: (key: string) => store.get(key) ?? null,

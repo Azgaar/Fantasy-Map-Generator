@@ -157,6 +157,11 @@ export const optionsSchema = z.strictObject({
       height: positive,
       density: count.min(MIN_DENSITY).max(MAX_DENSITY) // the Points slider step
     }),
+    geography: z.strictObject({
+      mapSize: geography.shape.mapSize.nullable(),
+      latitude: geography.shape.latitude.nullable(),
+      longitude: geography.shape.longitude.nullable()
+    }), // null asks the generator to choose from the terrain and template
     template: z.string(), // ids include the user's own precreated heightmaps, so no enum
     resolveDepressionsSteps: count,
     lakeElevationLimit: nonNegative,
@@ -241,3 +246,42 @@ export type OptionsSection = keyof OptionsData;
 
 /** What a `.map` file stores, and what every generator, renderer and editor reads */
 export type MapData = z.infer<typeof mapSchema>;
+
+// Stable lock ids use the same validators as the options they pin.
+const generation = optionsSchema.shape.generation.shape;
+export const pinSchemas: Record<string, z.ZodType> = {
+  mapWidth: generation.graph.shape.width,
+  mapHeight: generation.graph.shape.height,
+  points: generation.graph.shape.density,
+  template: generation.template,
+  resolveDepressionsSteps: generation.resolveDepressionsSteps,
+  lakeElevationLimit: generation.lakeElevationLimit,
+  statesNumber: generation.states.shape.limit,
+  provincesRatio: generation.provinces.shape.ratio,
+  manors: generation.burgs.shape.limit,
+  religionsNumber: generation.religions.shape.limit,
+  cultures: generation.cultures.shape.limit,
+  culturesSet: generation.cultures.shape.set,
+  sizeVariety: generation.states.shape.sizeVariety,
+  growthRate: generation.states.shape.growthRate,
+  mapName: lore.shape.name,
+  year: lore.shape.calendar.shape.year,
+  era: lore.shape.calendar.shape.era,
+  eraShort: lore.shape.calendar.shape.eraShort,
+  mapSize: geography.shape.mapSize,
+  latitude: geography.shape.latitude,
+  longitude: geography.shape.longitude,
+  temperatureEquator: climate.shape.temperature.shape.equator,
+  temperatureNorthPole: climate.shape.temperature.shape.northPole,
+  temperatureSouthPole: climate.shape.temperature.shape.southPole,
+  prec: climate.shape.precipitation,
+  distanceUnit: units.shape.distance.shape.unit,
+  distanceScale: units.shape.distance.shape.scale,
+  areaUnit: units.shape.area.shape.unit,
+  heightUnit: units.shape.height.shape.unit,
+  heightExponent: units.shape.height.shape.exponent,
+  temperatureScale: units.shape.temperature.shape.unit,
+  populationRate: units.shape.population.shape.scale,
+  urbanization: units.shape.population.shape.urbanization.shape.rate,
+  urbanDensity: units.shape.population.shape.urbanization.shape.density
+};

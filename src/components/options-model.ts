@@ -8,6 +8,7 @@ import { DEFAULT_TRADE_ANIMATION } from "@/data/trade-animation-options";
 import { DEFAULT_THREE_D } from "@/data/view-3d-options";
 import { Burgs } from "@/generators/burgs-generator";
 import { Coastline } from "@/generators/coastline-generator";
+import { Coordinates } from "@/generators/coordinates";
 import { CULTURE_SETS } from "@/generators/cultures-generator";
 import { Labels } from "@/generators/labels-generator";
 import { Military } from "@/generators/military-generator";
@@ -70,6 +71,7 @@ class OptionsModel {
       },
       generation: {
         graph: { width: 1280, height: 800, density: DEFAULT_DENSITY },
+        geography: { mapSize: null, latitude: null, longitude: null },
         template: "",
         resolveDepressionsSteps: 250,
         lakeElevationLimit: 20,
@@ -140,16 +142,16 @@ class OptionsModel {
 
     options = parseSections<OptionsData>(optionsSchema, this.getDefaultOptions(), source, "Options.restore");
     this.repairSets();
+    this.setGraphSize(Pins.valueOr("mapWidth", window.innerWidth), Pins.valueOr("mapHeight", window.innerHeight));
     this.persist();
-    this.setGraphSize();
   }
 
-  /** The extent the next map is generated on: what the caller asked for, a pin, or the window */
+  /** Resolve the next extent; an omitted size keeps the current request, including a loaded map's */
   setGraphSize(width?: number, height?: number): void {
     const { graph } = options.generation;
 
-    graph.width = width || (Pins.has("mapWidth") ? Pins.valueOr("mapWidth", graph.width) : window.innerWidth);
-    graph.height = height || (Pins.has("mapHeight") ? Pins.valueOr("mapHeight", graph.height) : window.innerHeight);
+    graph.width = width ?? Pins.valueOr("mapWidth", graph.width);
+    graph.height = height ?? Pins.valueOr("mapHeight", graph.height);
 
     // a hidden or headless tab reports no size, which would make a degenerate grid
     if (!(graph.width > 0)) graph.width = 1280;
@@ -163,6 +165,13 @@ class OptionsModel {
 
     // the slider holds a density step; the cell count it stands for is derived where it is used
     graph.density = Pins.rolls("points") ? DEFAULT_DENSITY : Pins.valueOr("points", graph.density);
+    generation.resolveDepressionsSteps = Pins.valueOr("resolveDepressionsSteps", generation.resolveDepressionsSteps);
+    generation.lakeElevationLimit = Pins.valueOr("lakeElevationLimit", generation.lakeElevationLimit);
+    generation.geography = {
+      mapSize: Pins.valueOr<number | null>("mapSize", null),
+      latitude: Pins.valueOr<number | null>("latitude", null),
+      longitude: Pins.valueOr<number | null>("longitude", null)
+    };
 
     generation.template = Pins.rolls("template")
       ? this.randomTemplate()
@@ -202,7 +211,7 @@ class OptionsModel {
     map.cultures.set = cultures.set;
     options.map = map;
 
-    const { geography, climate, units, lore } = map;
+    const { climate, units, lore } = map;
     const { temperature } = climate;
 
     temperature.equator = Pins.rolls("temperatureEquator")
@@ -228,10 +237,7 @@ class OptionsModel {
       lore.calendar.eraShort = Pins.valueOr("eraShort", lore.calendar.eraShort);
     }
 
-    lore.name = Pins.valueOr("mapName", lore.name);
-    geography.mapSize = Pins.valueOr("mapSize", geography.mapSize);
-    geography.latitude = Pins.valueOr("latitude", geography.latitude);
-    geography.longitude = Pins.valueOr("longitude", geography.longitude);
+    lore.name = Pins.rolls("mapName") ? Names.getMapName() : Pins.valueOr("mapName", lore.name);
     units.distance.unit = Pins.valueOr("distanceUnit", units.distance.unit);
     units.area.unit = Pins.valueOr("areaUnit", units.area.unit);
     units.height.unit = Pins.valueOr("heightUnit", units.height.unit);
@@ -262,11 +268,13 @@ class OptionsModel {
 
   /** Take the settings of a `.map` being opened */
   applyLoaded(json: unknown): void {
+    const coordinates = (json as Partial<MapData> | null)?.geography?.coordinates;
     options.map = parseSections<MapData>(mapSchema, this.getDefaultOptions().map, json, "Options.applyLoaded");
+    if (!mapSchema.shape.geography.shape.coordinates.safeParse(coordinates).success) Coordinates.calculate();
     this.repairSets();
 
-    if (!Pins.has("mapWidth")) options.generation.graph.width = options.map.graph.width;
-    if (!Pins.has("mapHeight")) options.generation.graph.height = options.map.graph.height;
+    if (Pins.rolls("mapWidth")) options.generation.graph.width = options.map.graph.width;
+    if (Pins.rolls("mapHeight")) options.generation.graph.height = options.map.graph.height;
   }
 
   /** A set the map's entities name by must never be empty: the module that owns it answers for it */

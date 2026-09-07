@@ -1,5 +1,5 @@
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
-import { syncInputs } from "@/components/options/tabs/options-tab";
+import { syncOptionInputs } from "@/components/options/tabs/options-tab";
 import { Pins } from "@/components/pins";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { precreatedHeightmaps } from "@/data/precreated-heightmaps";
@@ -18,7 +18,8 @@ function open(): void {
   closeDialogs(".stable");
 
   setSelected(options.generation.template);
-  graph = getGraph(graph);
+  graph = getGraph(grid);
+  redrawAll();
 
   $("#heightmapSelection").dialog({
     title: "Select Heightmap",
@@ -32,7 +33,7 @@ function open(): void {
         const id = getSelected();
         if (!id) return;
         Options.set(o => (o.generation.template = id));
-        syncInputs();
+        syncOptionInputs();
         Pins.set("template", options.generation.template);
 
         $(this).dialog("close");
@@ -41,7 +42,7 @@ function open(): void {
         const id = getSelected();
         if (!id) return;
         Options.set(o => (o.generation.template = id));
-        syncInputs();
+        syncOptionInputs();
         Pins.set("template", options.generation.template);
 
         const seed = getSeed();
@@ -273,14 +274,7 @@ function getSeed(): string | undefined {
 }
 
 function getGraph(currentGraph: GridGraph): GridGraph {
-  const newGraph = Grid.shouldRegenerate(
-    currentGraph,
-    options.map.seed,
-    options.map.graph.width,
-    options.map.graph.height
-  )
-    ? Grid.generate(options.map.seed, options.map.graph.width, options.map.graph.height)
-    : structuredClone(currentGraph);
+  const newGraph = structuredClone(currentGraph);
   Grid.resetHeights(newGraph);
   return newGraph;
 }
