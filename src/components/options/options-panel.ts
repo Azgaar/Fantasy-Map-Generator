@@ -3,14 +3,8 @@ import { showExportPane, showLoadPane, showSavePane } from "@/components/options
 import { changeViewMode } from "@/components/options/view-mode";
 import { clearMainTip } from "@/components/tooltips";
 import { resetZoom } from "@/components/zoom";
+import { ARROW_TIP_KEY } from "@/services/versioning";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
-
-/**
- * The options trigger glows until the user has found it once. Not a preference and not part of
- * `options`: no control shows it and the user cannot set it, so it is a bare `localStorage` flag
- * like `version`. See docs/architecture/configuration.md#storage-scopes
- */
-export const ARROW_TIP_KEY = "disable_click_arrow_tooltip";
 
 const TAB_CONTENT: Record<string, string> = {
   layersTab: "layersContent",

@@ -101,6 +101,24 @@ test.describe("style persistence round trips", () => {
     expect(preset).toEqual({ option: "cyberpunk", select: "cyberpunk" });
   });
 
+  test("an unavailable custom preset name survives a load", async ({ page, context }) => {
+    await context.clearCookies();
+    await page.goto("/?seed=missing-style-preset&width=1280&height=720");
+    await waitForMap(page);
+
+    await page.evaluate(() => {
+      options.map.style.preset = "custom-from-another-browser";
+    });
+    const buffer = await saveAsDownload(page);
+    await reload(page, buffer, "missing-style-preset-reloaded");
+
+    const preset = await page.evaluate(() => ({
+      option: options.map.style.preset,
+      select: (document.getElementById("stylePreset") as HTMLSelectElement).value
+    }));
+    expect(preset).toEqual({ option: "custom-from-another-browser", select: "default" });
+  });
+
   test("a DOM-only style write does not survive a save and load: the store is the authority", async ({
     page,
     context

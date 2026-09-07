@@ -17,8 +17,6 @@ export const labelGroup = z.strictObject({
   name: z.string(),
   type: z.enum(LABEL_TYPES),
   active: z.boolean().optional(),
-  // the id of a layer the registry still has. Nothing to check it against until the registry is
-  // loaded, and dropping every group would be the worse answer, so an unloaded registry accepts
   layerDependency: z
     .custom<LayerId>(value => typeof value === "string" && (globalThis.Layers?.has(value) ?? true))
     .nullable()
@@ -142,10 +140,6 @@ export const mapSchema = z.strictObject({
   transports: z.array(transport),
   coastline: coastlineSettings
 });
-
-// ---------------------------------------------------------------------------------------------
-// The whole of what this browser holds
-// ---------------------------------------------------------------------------------------------
 
 export const optionsSchema = z.strictObject({
   /** what is true about the map on screen, and what a `.map` file stores */
