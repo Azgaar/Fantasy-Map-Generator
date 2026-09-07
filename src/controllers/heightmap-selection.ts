@@ -1,6 +1,7 @@
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { syncOptionInputs } from "@/components/options/tabs/options-tab";
 import { Pins } from "@/components/pins";
+import { getPointsNumber } from "@/data/graph-density";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { precreatedHeightmaps } from "@/data/precreated-heightmaps";
 import { drawHeights } from "@/renderers/draw-heightmap";
@@ -8,7 +9,8 @@ import type { GridGraph } from "@/types/GridGraph";
 import { ensureEl, generateSeed } from "../utils";
 
 const initialSeed = generateSeed();
-let graph = getGraph(grid);
+let graphConfig = getGraphConfig();
+let graph = getGraph();
 
 appendStyleSheet();
 insertHtml();
@@ -18,7 +20,12 @@ function open(): void {
   closeDialogs(".stable");
 
   setSelected(options.generation.template);
-  graph = getGraph(grid);
+  graphConfig = getGraphConfig();
+  graph = getGraph();
+  ensureEl("heightmapSelection").style.setProperty(
+    "--preview-aspect-ratio",
+    `${graphConfig.width}/${graphConfig.height}`
+  );
   redrawAll();
 
   $("#heightmapSelection").dialog({
@@ -46,7 +53,7 @@ function open(): void {
         Pins.set("template", options.generation.template);
 
         const seed = getSeed();
-        regeneratePrompt({ seed, graph });
+        regeneratePrompt({ seed, graph, ...graphConfig });
 
         $(this).dialog("close");
       }
@@ -136,7 +143,7 @@ function appendStyleSheet(): void {
 
     .heightmap-selection article > img {
       width: 100%;
-      aspect-ratio: ${options.map.graph.width}/${options.map.graph.height};
+      aspect-ratio: var(--preview-aspect-ratio);
       border-radius: 8px;
       object-fit: fill;
     }
@@ -211,7 +218,7 @@ function insertHtml(): void {
     .map(key => {
       const name = heightmapTemplates[key].name;
       Math.random = aleaPRNG(initialSeed);
-      const heights = HeightmapGenerator.fromTemplate(graph, key);
+      const heights = HeightmapGenerator.fromTemplate(graph, key, graphConfig);
 
       return /* html */ `<article data-id="${key}" data-seed="${initialSeed}">
         <img src="${getHeightmapPreview(heights)}" alt="${name}" />
@@ -273,28 +280,40 @@ function getSeed(): string | undefined {
   return ensureEl("heightmapSelection").querySelector<HTMLElement>(".selected")?.dataset?.seed;
 }
 
-function getGraph(currentGraph: GridGraph): GridGraph {
-  const newGraph = structuredClone(currentGraph);
-  Grid.resetHeights(newGraph);
-  return newGraph;
+function getGraphConfig() {
+  const { width, height, density } = options.generation.graph;
+  return { width, height, points: getPointsNumber(density) };
+}
+
+function getGraph(): GridGraph {
+  const { width, height, points } = graphConfig;
+  const current = options.map.graph;
+  if (current.width !== width || current.height !== height || current.points !== points) {
+    return Grid.generate(initialSeed, width, height, points);
+  }
+  const preview = structuredClone(grid);
+  Grid.resetHeights(preview);
+  return preview;
 }
 
 function drawTemplatePreview(id: string): void {
-  const heights = HeightmapGenerator.fromTemplate(graph, id);
+  const heights = HeightmapGenerator.fromTemplate(graph, id, graphConfig);
   const dataUrl = getHeightmapPreview(heights);
   const article = ensureEl("heightmapSelection").querySelector(`[data-id="${id}"]`);
   article?.querySelector("img")?.setAttribute("src", dataUrl);
 }
 
 async function drawPrecreatedHeightmap(id: string): Promise<void> {
-  const heights = await HeightmapGenerator.fromPrecreated(graph, id);
+  const previewGraph = graph;
+  const heights = await HeightmapGenerator.fromPrecreated(previewGraph, id, graphConfig);
+  if (previewGraph !== graph) return;
   const dataUrl = getHeightmapPreview(heights);
   const article = ensureEl("heightmapSelection").querySelector(`[data-id="${id}"]`);
   article?.querySelector("img")?.setAttribute("src", dataUrl);
 }
 
 function regeneratePreview(article: HTMLElement, id: string): void {
-  graph = getGraph(graph);
+  Grid.resetHeights(graph);
   const seed = generateSeed();
   article.dataset.seed = seed;
   Math.random = aleaPRNG(seed);
@@ -302,7 +321,7 @@ function regeneratePreview(article: HTMLElement, id: string): void {
 }
 
 function redrawAll(): void {
-  graph = getGraph(graph);
+  Grid.resetHeights(graph);
   const articles = ensureEl("heightmapSelection").querySelectorAll<HTMLElement>("article");
   for (const article of articles) {
     const { id, seed } = article.dataset;

@@ -311,10 +311,11 @@ This is a normal generator step, with no callback into the options model.
   resolved and reseeded the PRNG with beforehand, and the definition sets, which are the user's
   own and are the next map's starting point.
 - **Regenerating one element** reads the current request for that element, runs its generator, and
-  writes that element's parameters into `options.map`. Nothing else changes.
-- **A recalculation is not a regeneration.** Expanding states after an edit, re-deriving climate
-  after a world-position change, rebuilding a coastline path — these read `options.map`, because
-  they must keep the map behaving like itself. They never read `options.generation`.
+  writes the parameters the map needs afterwards into `options.map`, such as its culture set.
+  Growth rates remain generation requests, including when expanding states or cultures after an edit.
+- **A recalculation is not a regeneration.** Re-deriving climate after a world-position change or
+  rebuilding a coastline path reads `options.map`, because these must keep the map behaving like
+  itself. They never read `options.generation`.
 - **Editing a map value directly** is what the panels that own them do — world position and
   climate, units, lore, the definition sets. Such a panel writes `options.map` or
   pins the value, saves, and immediately runs whatever derivation and redraw depend on it. It does

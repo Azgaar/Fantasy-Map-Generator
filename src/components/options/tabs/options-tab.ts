@@ -1020,11 +1020,8 @@ function loadVoices(): void {
   }, 1000);
 }
 
-/** A fixed line, so the test says something about the voice rather than about the map */
-const SPEAKER_TEST = "The quick brown fox jumps over the lazy dog";
-
 function testSpeaker(): void {
-  const speech = new SpeechSynthesisUtterance(SPEAKER_TEST);
+  const speech = new SpeechSynthesisUtterance("The quick brown fox jumps over the lazy dog");
   const voices = speechSynthesis.getVoices();
   if (voices.length) speech.voice = voices[Number(options.app.ui.speakerVoice)] ?? speech.voice;
   speechSynthesis.speak(speech);

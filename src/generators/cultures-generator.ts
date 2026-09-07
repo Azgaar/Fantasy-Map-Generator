@@ -1028,6 +1028,7 @@ class CulturesGenerator {
   }
 
   generate() {
+    options.map.cultures.set = options.generation.cultures.set;
     this.cells = pack.cells;
     const cultureIds = new Uint16Array(this.cells.i.length); // cell cultures
 

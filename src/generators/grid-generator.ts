@@ -16,10 +16,9 @@ class GridModule {
     grid = graph ?? this.generate(options.map.seed, options.map.graph.width, options.map.graph.height);
   }
 
-  generate(seed: string, width: number, height: number): GridGraph {
+  generate(seed: string, width: number, height: number, cellsDesired = this.getCellsDesired()): GridGraph {
     Math.random = Alea(seed); // reset PRNG
 
-    const cellsDesired = this.getCellsDesired();
     const spacing = this.getSpacing(cellsDesired, width, height);
     const boundary = this.getBoundaryPoints(width, height, spacing);
 

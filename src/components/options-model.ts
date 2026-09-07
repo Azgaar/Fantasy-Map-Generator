@@ -100,8 +100,8 @@ class OptionsModel {
           speakerVoice: ""
         },
         export: { pngResolution: 1, tiles: { cols: 8, rows: 8, scale: 1 } },
-        trade: { animation: { ...DEFAULT_TRADE_ANIMATION } },
-        threeD: { ...DEFAULT_THREE_D }
+        trade: { animation: structuredClone(DEFAULT_TRADE_ANIMATION) },
+        threeD: structuredClone(DEFAULT_THREE_D)
       }
     };
   }

@@ -44,15 +44,16 @@ export async function boot(): Promise<void> {
   initiateAutosave();
 }
 
-export type GenerationConfig = { seed?: string; graph?: GridGraph; width?: number; height?: number };
+export type GenerationConfig = { seed?: string; graph?: GridGraph; width?: number; height?: number; points?: number };
 
 /** Generate a whole new world */
 export async function generate(config?: GenerationConfig): Promise<void> {
   try {
-    const { seed: precreatedSeed, graph: precreatedGraph, width, height } = config || {};
+    const { seed: precreatedSeed, graph: precreatedGraph, width, height, points } = config || {};
     Options.setGraphSize(width, height);
     setSeed(precreatedSeed);
     Options.randomize();
+    if (precreatedGraph && points !== undefined) options.map.graph.points = points;
     applyGraphSize(); // TODO: DOM change, not part of generation
 
     await GenerationPipeline.run({ graph: precreatedGraph });

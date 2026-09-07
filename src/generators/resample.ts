@@ -1,5 +1,6 @@
 import { mean, quadtree } from "d3";
 import { clipPolyline } from "lineclip";
+import { getPointsNumber } from "@/data/graph-density";
 import { Measurers } from "@/generators/measurers-generator";
 import type { GridGraph } from "../types/GridGraph";
 import type { JourneyPoint } from "../types/Journey";
@@ -456,6 +457,7 @@ class Resampler {
     };
     const riversData = this.saveRiversData(pack.rivers);
 
+    options.map.graph.points = getPointsNumber(options.generation.graph.density);
     const { width, height } = options.map.graph;
     grid = Grid.generate(options.map.seed, width, height);
     pack = {} as PackedGraph;

@@ -89,7 +89,7 @@ function replaceInvalidValues(
 
     // an entry of a definition set has no counterpart in the defaults to be repaired from, so the
     // entry alone is dropped and the rest of the user's set survives
-    const entry = arrayEntryOn(repaired, path);
+    const entry = arrayEntryOn(repaired, fallback, path);
     if (entry) {
       const indices = dropped.get(entry.list) ?? new Set<number>();
       indices.add(entry.index);
@@ -129,12 +129,22 @@ function resolve(root: Record<PropertyKey, any>, path: readonly PropertyKey[]): 
 /** The array element a path passes through, when it passes through one */
 function arrayEntryOn(
   root: Record<PropertyKey, any>,
+  fallback: unknown,
   path: readonly PropertyKey[]
 ): { list: unknown[]; index: number } | undefined {
   let node: any = root;
+  let template = fallback;
   for (const key of path) {
-    if (Array.isArray(node) && typeof key === "number") return { list: node, index: key };
+    if (Array.isArray(node) && typeof key === "number") {
+      // Scalar arrays have positional defaults; definition records cannot be matched by index.
+      if (Array.isArray(template) && template.length && template.every(value => typeof value !== "object")) {
+        return undefined;
+      }
+      return { list: node, index: key };
+    }
     node = node?.[key];
+    template =
+      typeof template === "object" && template !== null ? (template as Record<PropertyKey, unknown>)[key] : undefined;
     if (node === undefined || node === null) return undefined;
   }
   return undefined;

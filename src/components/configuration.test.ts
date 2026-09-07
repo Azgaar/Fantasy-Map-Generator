@@ -26,6 +26,36 @@ const load = (file: string) => Options.applyLoaded(JSON.parse(file));
 
 beforeEach(boot);
 
+it.each(["load", "restore"])("repairs one wind without losing other settings during %s", boundary => {
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+  const stored = Options.getDefaultOptions();
+  stored.map.lore.name = "Kept world";
+  stored.map.military.units = [UNIT];
+  stored.map.climate.precipitation = 321;
+  stored.map.climate.temperature.equator = 31;
+  stored.map.climate.winds = [90, 45, 999, 315, 135, 315];
+
+  if (boundary === "load") Options.applyLoaded(stored.map);
+  else {
+    localStorage.setItem("fmg-options", JSON.stringify(stored));
+    Options.restore();
+  }
+
+  expect(options.map.climate.winds).toEqual([90, 45, 225, 315, 135, 315]);
+  expect(options.map.climate.precipitation).toBe(321);
+  expect(options.map.climate.temperature.equator).toBe(31);
+  expect(options.map.lore.name).toBe("Kept world");
+  expect(options.map.military.units).toEqual([UNIT]);
+});
+
+it("keeps reset defaults independent from edited 3D settings", () => {
+  const initial = Options.getDefaultOptions().app.threeD.sun.x;
+  Options.reset();
+  options.app.threeD.sun.x = initial + 100;
+  Options.reset();
+  expect(options.app.threeD.sun.x).toBe(initial);
+});
+
 describe("a file describes its map", () => {
   it("round-trips: load, save, load again is a fixed point", () => {
     const file = savedFile(map => {

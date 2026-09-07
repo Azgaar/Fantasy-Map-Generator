@@ -20,6 +20,41 @@ import type { ReliefSet } from "@/types/relief";
 import { ensureEl, findEl, minmax, parseTransform, rn, rw, safeParseJSON, unique } from "@/utils";
 import { parsePathPoints } from "@/utils/pathUtils";
 
+const LEGACY_LAYER_IDS: Record<string, string> = {
+  toggleTexture: "texture",
+  toggleHeight: "heightmap",
+  toggleLakes: "lakes",
+  toggleBiomes: "biomes",
+  toggleCells: "cells",
+  toggleGrid: "grid",
+  toggleCoordinates: "coordinates",
+  toggleCompass: "compass",
+  toggleRivers: "rivers",
+  toggleRelief: "relief",
+  toggleReligions: "religions",
+  toggleCultures: "cultures",
+  toggleStates: "states",
+  toggleProvinces: "provinces",
+  toggleZones: "zones",
+  toggleBorders: "borders",
+  toggleRoutes: "routes",
+  toggleTemperature: "temperature",
+  toggleIce: "ice",
+  toggleGoods: "goods",
+  toggleMarketsLayer: "markets",
+  toggleTrade: "trade",
+  togglePrecipitation: "precipitation",
+  togglePopulation: "population",
+  toggleEmblems: "emblems",
+  toggleBurgIcons: "burgIcons",
+  toggleLabels: "labels",
+  toggleMilitary: "military",
+  toggleMarkers: "markers",
+  toggleRulers: "rulers",
+  toggleScaleBar: "scaleBar",
+  toggleVignette: "vignette"
+};
+
 export async function resolveVersionConflicts(mapVersion: string, data: string[]): Promise<void> {
   const isOlderThan = (tagVersion: string) => compareVersions(mapVersion, tagVersion).isOlder;
 
@@ -1816,40 +1851,6 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
       profileHarmonics: 4,
       lakeSmoothThreshMult: 2.0
     }
-  };
-  const LEGACY_LAYER_IDS: Record<string, string> = {
-    toggleTexture: "texture",
-    toggleHeight: "heightmap",
-    toggleLakes: "lakes",
-    toggleBiomes: "biomes",
-    toggleCells: "cells",
-    toggleGrid: "grid",
-    toggleCoordinates: "coordinates",
-    toggleCompass: "compass",
-    toggleRivers: "rivers",
-    toggleRelief: "relief",
-    toggleReligions: "religions",
-    toggleCultures: "cultures",
-    toggleStates: "states",
-    toggleProvinces: "provinces",
-    toggleZones: "zones",
-    toggleBorders: "borders",
-    toggleRoutes: "routes",
-    toggleTemperature: "temperature",
-    toggleIce: "ice",
-    toggleGoods: "goods",
-    toggleMarketsLayer: "markets",
-    toggleTrade: "trade",
-    togglePrecipitation: "precipitation",
-    togglePopulation: "population",
-    toggleEmblems: "emblems",
-    toggleBurgIcons: "burgIcons",
-    toggleLabels: "labels",
-    toggleMilitary: "military",
-    toggleMarkers: "markers",
-    toggleRulers: "rulers",
-    toggleScaleBar: "scaleBar",
-    toggleVignette: "vignette"
   };
 
   const oldHeader = data[0].split("|");
