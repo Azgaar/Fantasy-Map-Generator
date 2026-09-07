@@ -35,7 +35,16 @@ const heights = z.strictObject({
     skip: z.number(),
     relax: z.number(),
     curve: z.string(),
-    render: z.boolean()
+    render: z.boolean(),
+    contours: z
+      .strictObject({
+        mode: z.enum(["off", "overlay", "only"]),
+        interval: z.number().int().min(1).max(20),
+        color: z.string(),
+        width: z.number().min(0.1).max(2),
+        opacity: z.number().min(0).max(1)
+      })
+      .default({ mode: "off", interval: 5, color: "#5c513e", width: 0.35, opacity: 0.5 })
   })
 });
 const burgGroup = z.strictObject({

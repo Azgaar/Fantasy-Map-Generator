@@ -235,6 +235,12 @@ function selectStyleElement() {
     styleHeightmapSkip.value = opts.skip;
     styleHeightmapSimplification.value = opts.relax;
     styleHeightmapCurve.value = opts.curve;
+    ensureEl("styleHeightmapContours").value = opts.contours.mode;
+    ensureEl("styleHeightmapContourInterval").value = opts.contours.interval;
+    ensureEl("styleHeightmapContourColor").value = opts.contours.color;
+    ensureEl("styleHeightmapContourWidth").value = opts.contours.width;
+    ensureEl("styleHeightmapContourOpacity").value = opts.contours.opacity;
+    updateContourControls();
   }
 
   if (styleElement === "markers") {
@@ -673,6 +679,46 @@ outlineLayers.addEventListener("change", function () {
 
 const heightsOptions = () => styles.heightmap[styleGroupSelect.value].options;
 
+function updateContourControls() {
+  const opts = heightsOptions();
+  const oceanBlocked = styleGroupSelect.value === "oceanHeights" && !opts.render;
+  const contoursSelect = ensureEl("styleHeightmapContours");
+  contoursSelect.disabled = oceanBlocked;
+  contoursSelect.title = oceanBlocked ? "Enable Render ocean heights to show ocean contours" : "";
+
+  const enabled = opts.contours.mode !== "off" && !oceanBlocked;
+  styleHeightmap.querySelectorAll("[data-contour-style]").forEach(row => {
+    row.style.display = enabled ? "" : "none";
+  });
+}
+
+ensureEl("styleHeightmapContours").addEventListener("change", e => {
+  heightsOptions().contours.mode = e.target.value;
+  updateContourControls();
+  Layers.draw("heightmap");
+});
+
+for (const [id, key] of [
+  ["styleHeightmapContourInterval", "interval"],
+  ["styleHeightmapContourWidth", "width"],
+  ["styleHeightmapContourOpacity", "opacity"],
+  ["styleHeightmapContourColor", "color"]
+]) {
+  ensureEl(id).addEventListener("input", e => {
+    if (e.target !== e.currentTarget) return; // slider-input also bubbles its inner input event
+    const control = e.currentTarget;
+    let value = control.value;
+    if (key !== "color") {
+      if (value === "" || !Number.isFinite(+value)) return;
+      value = Math.max(+control.getAttribute("min"), Math.min(+control.getAttribute("max"), +value));
+      if (key === "interval") value = Math.round(value);
+      control.value = value;
+    }
+    heightsOptions().contours[key] = value;
+    Layers.draw("heightmap");
+  });
+}
+
 styleHeightmapScheme.addEventListener("change", function () {
   heightsOptions().scheme = this.value;
   Layers.draw("heightmap");
@@ -799,6 +845,7 @@ openCreateHeightmapSchemeButton.addEventListener("click", function () {
 
 styleHeightmapRenderOcean.addEventListener("change", e => {
   heightsOptions().render = e.target.checked;
+  updateContourControls();
   Layers.draw("heightmap");
 });
 
