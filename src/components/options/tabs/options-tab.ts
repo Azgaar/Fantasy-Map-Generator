@@ -710,15 +710,42 @@ export function syncOptionInputs(): void {
   syncManors();
   syncCellsDensity();
   syncCultures();
-
-  // The export pane owns writes to this control.
-  const pngResolution = findEl<HTMLInputElement>("pngResolutionOutput");
-  if (pngResolution) pngResolution.value = String(options.app.export.pngResolution);
+  syncPngResolution();
 }
 
 function syncManors(): void {
   const output = ensureEl("options").querySelector<HTMLOutputElement>('[data-option-output="manors"]');
   if (output) output.value = isAutoBurgLimit() ? "auto" : String(options.generation.burgs.limit);
+}
+
+function syncCellsDensity(): void {
+  const { density } = options.generation.graph;
+  const cellsDesired = getPointsNumber(density);
+
+  const input = optionInputs("points")[0];
+  if (input) {
+    input.value = String(density);
+    input.dataset.cells = String(cellsDesired);
+  }
+
+  const readout = ensureEl("options").querySelector<HTMLOutputElement>('[data-option-output="points"]');
+  if (!readout) return;
+  readout.value = `${cellsDesired / 1000}K`;
+  readout.style.color = cellsDensityColor(cellsDesired);
+}
+
+/** Cap the cultures slider at what the selected set can give, and show the number that survived it */
+function syncCultures(): void {
+  const max = String(CULTURE_SETS[options.generation.cultures.set]?.max ?? 0);
+  for (const input of optionInputs("cultures")) {
+    input.max = max;
+    input.value = String(options.generation.cultures.limit);
+  }
+}
+
+function syncPngResolution(): void {
+  const input = ensureEl("options").querySelector<HTMLInputElement>('[data-option="pngResolution"]');
+  if (input) input.value = String(options.app.export.pngResolution);
 }
 
 function currentValue(key: string): string | number | undefined {
@@ -792,35 +819,9 @@ export function changeCellsDensity(density: number): void {
   syncCellsDensity();
 }
 
-/** Push the density step and the cell count it resolves to into the slider and its readout */
-function syncCellsDensity(): void {
-  const { density } = options.generation.graph;
-  const cellsDesired = getPointsNumber(density);
-
-  const input = optionInputs("points")[0];
-  if (input) {
-    input.value = String(density);
-    input.dataset.cells = String(cellsDesired);
-  }
-
-  const readout = ensureEl("options").querySelector<HTMLOutputElement>('[data-option-output="points"]');
-  if (!readout) return;
-  readout.value = `${cellsDesired / 1000}K`;
-  readout.style.color = cellsDensityColor(cellsDesired);
-}
-
 /** green at the default density, amber above it, red where performance starts to suffer */
 export const cellsDensityColor = (cells: number): string =>
   cells > 50000 ? "#b12117" : cells === 10000 ? "#053305" : "#dfdf12";
-
-/** Cap the cultures slider at what the selected set can give, and show the number that survived it */
-function syncCultures(): void {
-  const max = String(CULTURE_SETS[options.generation.cultures.set]?.max ?? 0);
-  for (const input of optionInputs("cultures")) {
-    input.max = max;
-    input.value = String(options.generation.cultures.limit);
-  }
-}
 
 /** More states means smaller labels, so they keep fitting the shrinking territories */
 function changeStatesNumber(count: number): void {

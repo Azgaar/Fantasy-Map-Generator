@@ -26,10 +26,12 @@ test.describe("emblems viewport rendering", () => {
   });
 
   test("zooming in drops off-screen emblems and zooming out brings them back", async ({ page }) => {
-    // `options` is a script-scoped global, not a window property, so it is reached through page script.
     // Showing all categories puts every emblem in the scene; only the <use> elements are counted here,
     // so the test does not wait on the (asynchronous) coat of arms rendering.
-    await page.evaluate("options.app.emblemsShowAll = true; invokeActiveZooming();");
+    await page.evaluate(() => {
+      options.app.emblems.showAll = true;
+      invokeActiveZooming();
+    });
     const full = await page.evaluate(countUses);
     expect(full).toBeGreaterThan(100);
 

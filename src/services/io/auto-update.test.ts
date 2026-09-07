@@ -1,8 +1,11 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import indexHtml from "@/index.html?raw";
+import "@/generators/added-labels";
 import "@/generators/features"; // migrations call the Features module through its global
 import { Styles } from "@/generators/styles";
+import * as versioning from "@/services/versioning";
 import { VERSION } from "@/services/versioning";
 import { migrateLegacySettings, resolveVersionConflicts } from "./auto-update";
 
@@ -16,6 +19,36 @@ beforeEach(() => {
     "default",
     {}
   ];
+});
+
+it.each([18, 180])("keeps legacy custom labels after saving and reloading a font size of %s", async fontSize => {
+  const data = readFileSync("tests/fixtures/1.139.4.map", "utf8").split("\r\n");
+  migrateLegacySettings("1.139.4", data);
+  Options.applyLoaded(JSON.parse(data[1]));
+  document.body.innerHTML = data[5];
+  document.getElementById("forests")!.dataset.size = String(fontSize);
+  globalThis.pack = {
+    states: JSON.parse(data[14]),
+    burgs: JSON.parse(data[15]),
+    addedLabels: []
+  } as unknown as typeof pack;
+  globalThis.notes = JSON.parse(data[4]);
+
+  // Exercise the label migration without unrelated versions' graph and DOM setup.
+  const compare = vi.spyOn(versioning, "compareVersions");
+  compare.mockImplementation((_a, b) => ({ isOlder: b === "1.140.0", isNewer: false, isEqual: false }));
+  try {
+    await resolveVersionConflicts("1.139.4", data);
+  } finally {
+    compare.mockRestore();
+  }
+
+  const group = structuredClone(options.map.labels.groups.find(group => group.name === "forests"));
+  expect(group?.zoom.min).toBe(0);
+  expect(group?.zoom.max).toBeGreaterThanOrEqual(0);
+  expect(pack.addedLabels.some(label => label.label.group === "forests")).toBe(true);
+  Options.applyLoaded(JSON.parse(JSON.stringify(options.map)));
+  expect(options.map.labels.groups.find(group => group.name === "forests")).toEqual(group);
 });
 
 describe("v1.144 layer id migration", () => {

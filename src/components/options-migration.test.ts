@@ -72,6 +72,37 @@ it("migrates definition sets before validating them", () => {
   expect(options.map.military.units).toMatchObject([{ name: "Cavalry", icon: "🐴", power: 3 }]);
 });
 
+it("preserves legacy burg groups with comma-separated biome filters through a reload", () => {
+  const data = readFileSync("tests/fixtures/1.139.4.map", "utf8").split("\r\n");
+  migrateLegacySettings("1.139.4", data);
+  Options.applyLoaded(JSON.parse(data[1]));
+  const groups = structuredClone(options.map.burgs.groups);
+
+  expect(groups).toHaveLength(9);
+  expect(groups.find(group => group.name === "caravanserai")?.biomes).toEqual([1, 2, 3]);
+  expect(groups.find(group => group.name === "trading_post")?.biomes).toEqual([5, 6, 7, 8, 9, 10, 11, 12]);
+  Options.applyLoaded(JSON.parse(JSON.stringify(options.map)));
+  expect(options.map.burgs.groups).toEqual(groups);
+  expect(console.warn).not.toHaveBeenCalled();
+});
+
+it.each(["biomes", "states", "cultures", "religions"] as const)("normalizes legacy %s filters", key => {
+  const data = legacyFile();
+  const parts = data[1].split("|");
+  const legacy = JSON.parse(parts[19]);
+  legacy.burgs.groups = [
+    { name: "custom", order: 0, isDefault: true, [key]: "1, 2,3" },
+    { name: "empty", order: 1, [key]: "" },
+    { name: "array", order: 2, [key]: [4, 5] }
+  ];
+  parts[19] = JSON.stringify(legacy);
+  data[1] = parts.join("|");
+  migrateLegacySettings("1.143.1", data);
+  Options.applyLoaded(JSON.parse(data[1]));
+
+  expect(options.map.burgs.groups.map(group => group[key])).toEqual([[1, 2, 3], [], [4, 5]]);
+});
+
 it("keeps the loaded extent through preparation for the next map", () => {
   const map = Options.getDefaultOptions().map;
   map.graph = { width: 1600, height: 900, points: 20000 };
@@ -79,6 +110,20 @@ it("keeps the loaded extent through preparation for the next map", () => {
   Options.setGraphSize();
   Options.randomize();
   expect(options.map.graph).toMatchObject({ width: 1600, height: 900 });
+});
+
+it("repairs negative label zoom bounds already saved by legacy migrations", () => {
+  const data = legacyFile();
+  const parts = data[1].split("|");
+  const legacy = JSON.parse(parts[19]);
+  legacy.labels.groups.push({ name: "forests", type: "added", zoom: { min: -0.3, max: -0.1 } });
+  parts[19] = JSON.stringify(legacy);
+  data[1] = parts.join("|");
+
+  migrateLegacySettings("1.143.1", data);
+  Options.applyLoaded(JSON.parse(data[1]));
+  expect(options.map.labels.groups.find(group => group.name === "forests")?.zoom).toEqual({ min: 0, max: 0 });
+  expect(console.warn).not.toHaveBeenCalledWith('Options.applyLoaded: invalid "labels" values replaced with defaults');
 });
 
 it("derives a missing coordinate cache from the loaded geography", () => {

@@ -1400,7 +1400,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     }
 
     function deriveZoomExtent(fontSize: number) {
-      return { min: rn(12 / fontSize - 1, 1), max: rn(120 / fontSize - 1, 1) };
+      return { min: Math.max(0, rn(12 / fontSize - 1, 1)), max: Math.max(0, rn(120 / fontSize - 1, 1)) };
     }
 
     function getPathLabel({
@@ -1773,44 +1773,11 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
   }
 }
 
-const LEGACY_LAYER_IDS: Record<string, string> = {
-  toggleTexture: "texture",
-  toggleHeight: "heightmap",
-  toggleLakes: "lakes",
-  toggleBiomes: "biomes",
-  toggleCells: "cells",
-  toggleGrid: "grid",
-  toggleCoordinates: "coordinates",
-  toggleCompass: "compass",
-  toggleRivers: "rivers",
-  toggleRelief: "relief",
-  toggleReligions: "religions",
-  toggleCultures: "cultures",
-  toggleStates: "states",
-  toggleProvinces: "provinces",
-  toggleZones: "zones",
-  toggleBorders: "borders",
-  toggleRoutes: "routes",
-  toggleTemperature: "temperature",
-  toggleIce: "ice",
-  toggleGoods: "goods",
-  toggleMarketsLayer: "markets",
-  toggleTrade: "trade",
-  togglePrecipitation: "precipitation",
-  togglePopulation: "population",
-  toggleEmblems: "emblems",
-  toggleBurgIcons: "burgIcons",
-  toggleLabels: "labels",
-  toggleMilitary: "military",
-  toggleMarkers: "markers",
-  toggleRulers: "rulers",
-  toggleScaleBar: "scaleBar",
-  toggleVignette: "vignette"
-};
+export function migrateLegacySettings(mapVersion: string, data: string[]): void {
+  if (!compareVersions(mapVersion, "1.152.0").isOlder || data[1]?.trimStart().startsWith("{")) return;
 
-/** Frozen defaults for fields absent from pipe-delimited saves, expressed in the map settings format. */
-function legacyFactsDefaults() {
-  return {
+  // v1.152.0 replaced the legacy pipe-delimited settings string with the map's settings object
+  const migrated = {
     seed: "",
     graph: { width: 1280, height: 800, points: 10000 },
     geography: {
@@ -1850,20 +1817,44 @@ function legacyFactsDefaults() {
       lakeSmoothThreshMult: 2.0
     }
   };
-}
+  const LEGACY_LAYER_IDS: Record<string, string> = {
+    toggleTexture: "texture",
+    toggleHeight: "heightmap",
+    toggleLakes: "lakes",
+    toggleBiomes: "biomes",
+    toggleCells: "cells",
+    toggleGrid: "grid",
+    toggleCoordinates: "coordinates",
+    toggleCompass: "compass",
+    toggleRivers: "rivers",
+    toggleRelief: "relief",
+    toggleReligions: "religions",
+    toggleCultures: "cultures",
+    toggleStates: "states",
+    toggleProvinces: "provinces",
+    toggleZones: "zones",
+    toggleBorders: "borders",
+    toggleRoutes: "routes",
+    toggleTemperature: "temperature",
+    toggleIce: "ice",
+    toggleGoods: "goods",
+    toggleMarketsLayer: "markets",
+    toggleTrade: "trade",
+    togglePrecipitation: "precipitation",
+    togglePopulation: "population",
+    toggleEmblems: "emblems",
+    toggleBurgIcons: "burgIcons",
+    toggleLabels: "labels",
+    toggleMilitary: "military",
+    toggleMarkers: "markers",
+    toggleRulers: "rulers",
+    toggleScaleBar: "scaleBar",
+    toggleVignette: "vignette"
+  };
 
-export function migrateLegacySettings(mapVersion: string, data: string[]): void {
-  if (!compareVersions(mapVersion, "1.152.0").isOlder || data[1]?.trimStart().startsWith("{")) return;
-
-  // v1.152.0 replaced the legacy pipe-delimited settings string with the map's settings object.
-  // A migration describes a world that no longer exists, so it reads the old slots by number and
-  // writes only map settings: the viewer preferences the old format carried (3D settings, trade
-  // animation, note pinning, emblem visibility) are this browser's, not the map's, and are
-  // deliberately not carried over. See docs/architecture/configuration.md
   const oldHeader = data[0].split("|");
   const oldSettings = (data[1] || "").split("|");
   const oldCoordinates = safeParseJSON(data[2] ?? "");
-  const migrated = legacyFactsDefaults();
 
   if (oldHeader[3]) migrated.seed = oldHeader[3];
   if (oldHeader[4]) migrated.graph.width = +oldHeader[4];
@@ -1902,6 +1893,29 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
   if (oldOptions.coastline) migrated.coastline = oldOptions.coastline;
   if (oldOptions.burgs?.groups) migrated.burgs.groups = oldOptions.burgs.groups;
 
+  // Older editors stored ID filters as comma-separated strings.
+  if (Array.isArray(migrated.burgs.groups)) {
+    for (const group of migrated.burgs.groups) {
+      if (!group || typeof group !== "object") continue;
+      for (const key of ["biomes", "states", "cultures", "religions"]) {
+        if (typeof group[key] !== "string") continue;
+        group[key] = group[key]
+          .split(",")
+          .filter((id: string) => id.trim())
+          .map(Number);
+      }
+    }
+  }
+
+  // The legacy font-size formula could save negative visibility bounds.
+  if (Array.isArray(migrated.labels?.groups)) {
+    for (const group of migrated.labels.groups) {
+      for (const key of ["min", "max"]) {
+        if (typeof group?.zoom?.[key] === "number" && group.zoom[key] < 0) group.zoom[key] = 0;
+      }
+    }
+  }
+
   if (oldOptions.mapSize !== undefined) migrated.geography.mapSize = oldOptions.mapSize;
   if (oldOptions.latitude !== undefined) migrated.geography.latitude = oldOptions.latitude;
   if (oldOptions.longitude !== undefined) migrated.geography.longitude = oldOptions.longitude;
@@ -1916,12 +1930,9 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
   if (oldOptions.era) migrated.lore.calendar.era = oldOptions.era;
   if (oldOptions.eraShort) migrated.lore.calendar.eraShort = oldOptions.eraShort;
 
-  // v1.140.0 moved the label settings into the labels section and the naming mode onto the state
-  // group. Slot 21 was the "Hide small labels" checkbox, which is a browser preference now: a file
-  // carries no opinion about it, so the value is dropped rather than written into this browser
+  // v1.140.0 moved the label settings into the labels section and the naming mode onto the state group
   if (oldSettings[23]) migrated.labels.resizeOnZoom = Boolean(Number(oldSettings[23]));
-  // a pre-1.140 map carries no groups at all, so there is usually nothing here to write the mode
-  // onto: give it a state group of its own, which the DOM pass reads before it rebuilds the groups
+  // a pre-1.140 map carries no groups at all, so there is usually nothing here to write the mode onto
   if (oldOptions.stateLabelsMode) {
     const stateGroup = migrated.labels.groups.find(group => group.type === "state");
     if (stateGroup) stateGroup.mode = oldOptions.stateLabelsMode;
@@ -1962,14 +1973,14 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
   }
 
   data[1] = JSON.stringify(migrated);
-}
 
-function getLegacyPoints(serialized: string, width: number, height: number): number {
-  const graph = safeParseJSON(serialized ?? "");
-  if (typeof graph?.cellsDesired === "number" && graph.cellsDesired > 0) return graph.cellsDesired;
+  function getLegacyPoints(serialized: string, width: number, height: number): number {
+    const graph = safeParseJSON(serialized ?? "");
+    if (typeof graph?.cellsDesired === "number" && graph.cellsDesired > 0) return graph.cellsDesired;
 
-  // Frozen legacy density choices; spacing was rounded to two decimals when the grid was built.
-  const counts = [1000, 2000, 5000, 10000, 20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000, 100000];
-  const count = counts.find(count => rn(Math.sqrt((width * height) / count), 2) === graph?.spacing);
-  return count ?? (Array.isArray(graph?.points) && graph.points.length ? graph.points.length : 10000);
+    // Frozen legacy density choices; spacing was rounded to two decimals when the grid was built.
+    const counts = [1000, 2000, 5000, 10000, 20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000, 100000];
+    const count = counts.find(count => rn(Math.sqrt((width * height) / count), 2) === graph?.spacing);
+    return count ?? (Array.isArray(graph?.points) && graph.points.length ? graph.points.length : 10000);
+  }
 }
