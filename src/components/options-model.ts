@@ -107,7 +107,7 @@ class OptionsModel {
   }
 
   /** Change the options and remember them */
-  set(change: (options: OptionsData) => void): void {
+  set(change: (config: OptionsData) => void): void {
     change(options);
     this.save();
   }

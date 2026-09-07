@@ -1,6 +1,7 @@
 // The app window itself: the SVG layer scaffold, browser-level behaviours
 import { alertDialog, closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
+import { Pins } from "@/components/pins";
 import { showDataTip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { Services } from "@/services";
@@ -12,7 +13,7 @@ import { fitMapToScreen } from "./canvas";
 export function initShell(): void {
   Layers.init(); // create the svg layer groups the renderers draw into
 
-  window.addEventListener("resize", fitMapToScreen);
+  window.addEventListener("resize", onResize);
   window.addEventListener("vite:preloadError", onChunkLoadError);
   document.addEventListener("touchstart", onTitlebarButtonTouch, { capture: true, passive: true });
   addDragToUpload();
@@ -21,6 +22,15 @@ export function initShell(): void {
 
   if (!isLocalhost() && !isElectron()) window.onbeforeunload = () => "Are you sure you want to navigate away?";
   if (isElectron()) removeWebOnlyControls();
+}
+
+/** Keep the next unpinned map request in step with the browser window. */
+function onResize(): void {
+  Options.set(config => {
+    if (Pins.rolls("mapWidth") && window.innerWidth > 0) config.generation.graph.width = window.innerWidth;
+    if (Pins.rolls("mapHeight") && window.innerHeight > 0) config.generation.graph.height = window.innerHeight;
+  });
+  fitMapToScreen();
 }
 
 /** The assistant's call button: always in the markup, shown only when the preference says so */

@@ -25,7 +25,7 @@ describe("journey metrics", () => {
   beforeEach(async () => {
     await import("../transports-generator");
     options.map.units.distance = { unit: "km", scale: 1 };
-    options.map.transports = (globalThis as any).Transports.getDefaults();
+    options.map.transports = Transports.getDefaults();
     await import("./journeys-generator");
     Journeys = (globalThis as any).Journeys;
   });
@@ -399,7 +399,7 @@ describe("land pathfinding respects terrain", () => {
     (globalThis as any).pack = makeTerrainPack();
     await import("../transports-generator");
     options.map.units.distance = { unit: "km", scale: 1 };
-    options.map.transports = (globalThis as any).Transports.getDefaults();
+    options.map.transports = Transports.getDefaults();
     await import("./journeys-generator");
     Journeys = (globalThis as any).Journeys;
   });

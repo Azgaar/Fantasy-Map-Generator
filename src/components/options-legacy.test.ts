@@ -56,20 +56,20 @@ describe("adoptLegacyOptions", () => {
 
   it("drops a set that is not valid JSON without losing the sets beside it", () => {
     seed({ military: JSON.stringify([A_UNIT]), "burg-groups": "{not json" });
-    const migrated = adoptLegacyOptions() as { map: Record<string, any> };
+    const migrated = adoptLegacyOptions() as { map: Record<string, Record<string, unknown>> };
     expect(migrated.map.military.units).toEqual([A_UNIT]);
     expect(migrated.map.burgs).toBeUndefined();
   });
 
   it("takes only the groups out of the labels wrapper", () => {
     seed({ "options-labels": JSON.stringify({ resizeOnZoom: false, showAll: true, groups: [A_LABEL_GROUP] }) });
-    const migrated = adoptLegacyOptions() as { map: Record<string, any> };
+    const migrated = adoptLegacyOptions() as { map: Record<string, Record<string, unknown>> };
     expect(migrated.map.labels.groups).toEqual([A_LABEL_GROUP]);
   });
 
   it("survives a labels wrapper with no groups in it", () => {
     seed({ "options-labels": JSON.stringify({ resizeOnZoom: false }) });
-    const migrated = adoptLegacyOptions() as { map: Record<string, any> };
+    const migrated = adoptLegacyOptions() as { map: Record<string, Record<string, unknown>> };
     expect(migrated.map.labels.groups).toBeUndefined();
   });
 

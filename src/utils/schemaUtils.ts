@@ -10,9 +10,14 @@ export const degrees = z.number().int().min(0).max(359);
 export const ids = z.array(count).optional();
 
 /** Where a repair looks for the value to stand in for an invalid one */
-export type TemplateLookup = (source: any, key: PropertyKey, parentKey: PropertyKey | undefined) => unknown;
+export type TemplateLookup = (source: unknown, key: PropertyKey, parentKey: PropertyKey | undefined) => unknown;
 
-const plainLookup: TemplateLookup = (source, key) => source?.[key];
+const valueAt = (source: unknown, key: PropertyKey): unknown =>
+  typeof source === "object" && source !== null
+    ? (source as Record<PropertyKey, unknown>)[key]
+    : undefined;
+
+const plainLookup: TemplateLookup = valueAt;
 
 /**
  * Adopt an untrusted object one section at a time: a section that validates is taken as is, a
@@ -25,7 +30,7 @@ const plainLookup: TemplateLookup = (source, key) => source?.[key];
  * the set around it. See docs/architecture/configuration.md#validation
  */
 export function parseSections<T extends Record<string, unknown>>(
-  schema: z.ZodObject<any>,
+  schema: z.ZodObject,
   defaults: Readonly<Record<string, unknown>>,
   input: unknown,
   label: string,
@@ -72,7 +77,7 @@ function replaceInvalidValues(
 ): unknown {
   if (typeof input !== "object" || input === null) return undefined;
 
-  const repaired = structuredClone(input) as Record<PropertyKey, any>;
+  const repaired = structuredClone(input) as Record<PropertyKey, unknown>;
   const dropped = new Map<unknown[], Set<number>>();
 
   for (const issue of error.issues) {
@@ -97,20 +102,20 @@ function replaceInvalidValues(
       continue;
     }
 
-    let target: any = repaired;
-    let source: any = fallback;
+    let target: unknown = repaired;
+    let source: unknown = fallback;
     let parentKey: PropertyKey | undefined;
     for (const key of path.slice(0, -1)) {
-      target = target?.[key];
+      target = valueAt(target, key);
       source = templateFor(source, key, parentKey);
       parentKey = key;
     }
 
     const key = path[path.length - 1];
-    if (target === undefined || target === null || source === undefined || source === null) return undefined;
+    if (typeof target !== "object" || target === null || source === undefined || source === null) return undefined;
     const sourceValue = templateFor(source, key, parentKey);
     if (sourceValue === undefined) return undefined;
-    target[key] = structuredClone(sourceValue);
+    (target as Record<PropertyKey, unknown>)[key] = structuredClone(sourceValue);
   }
 
   for (const [list, indices] of dropped) {
@@ -120,20 +125,20 @@ function replaceInvalidValues(
 }
 
 /** The object a path points at, or undefined when the path does not lead to one */
-function resolve(root: Record<PropertyKey, any>, path: readonly PropertyKey[]): Record<PropertyKey, any> | undefined {
-  let node: any = root;
-  for (const key of path) node = node?.[key];
-  return typeof node === "object" && node !== null ? node : undefined;
+function resolve(root: unknown, path: readonly PropertyKey[]): Record<PropertyKey, unknown> | undefined {
+  let node: unknown = root;
+  for (const key of path) node = valueAt(node, key);
+  return typeof node === "object" && node !== null ? (node as Record<PropertyKey, unknown>) : undefined;
 }
 
 /** The array element a path passes through, when it passes through one */
 function arrayEntryOn(
-  root: Record<PropertyKey, any>,
+  root: unknown,
   fallback: unknown,
   path: readonly PropertyKey[]
 ): { list: unknown[]; index: number } | undefined {
-  let node: any = root;
-  let template = fallback;
+  let node: unknown = root;
+  let template: unknown = fallback;
   for (const key of path) {
     if (Array.isArray(node) && typeof key === "number") {
       // Scalar arrays have positional defaults; definition records cannot be matched by index.
@@ -142,9 +147,8 @@ function arrayEntryOn(
       }
       return { list: node, index: key };
     }
-    node = node?.[key];
-    template =
-      typeof template === "object" && template !== null ? (template as Record<PropertyKey, unknown>)[key] : undefined;
+    node = valueAt(node, key);
+    template = valueAt(template, key);
     if (node === undefined || node === null) return undefined;
   }
   return undefined;

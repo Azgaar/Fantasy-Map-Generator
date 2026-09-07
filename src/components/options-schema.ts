@@ -2,6 +2,7 @@
 import { z } from "zod";
 import type { LayerId } from "@/components/layers";
 import { MAX_DENSITY, MIN_DENSITY } from "@/data/graph-density";
+import { CULTURE_SETS } from "@/generators/cultures-generator";
 import { count, degrees, hexColor, ids, nonNegative, percent, positive, ratio } from "@/utils/schemaUtils";
 
 /** the burg request at its maximum stands for "as many burgs as the land supports" */
@@ -10,6 +11,7 @@ export const AUTO_BURG_LIMIT = 1000;
 const LABEL_TYPES = ["state", "province", "burg", "river", "route", "added"] as const;
 const LABEL_MODES = ["auto", "short", "full"] as const;
 const TRANSPORT_DOMAINS = ["land", "water", "air", "stay"] as const;
+const cultureSetId = z.enum(Object.keys(CULTURE_SETS) as [string, ...string[]]);
 
 export const labelGroup = z.strictObject({
   name: z.string(),
@@ -130,7 +132,7 @@ export const mapSchema = z.strictObject({
   graph: z.strictObject({ width: positive, height: positive, points: positive }),
   geography,
   climate,
-  cultures: z.strictObject({ set: z.string().min(1) }),
+  cultures: z.strictObject({ set: cultureSetId }),
   lore,
   units,
   style: z.strictObject({ preset: z.string().min(1) }),
@@ -167,7 +169,7 @@ export const optionsSchema = z.strictObject({
     lakeElevationLimit: nonNegative,
     cultures: z.strictObject({
       limit: count,
-      set: z.string().min(1),
+      set: cultureSetId,
       sizeVariety: nonNegative,
       growthRate: nonNegative
     }),

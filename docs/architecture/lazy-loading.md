@@ -87,7 +87,7 @@ site changes. (All controllers are currently lazy; `eager` exists for future tun
 - If a lazy module needs another not-yet-declared global, add it to `src/types/global.ts` under the
   existing ambient-global convention (see `src/components/globals.ts`) — don't `as any` around it.
 - Use **d3 v7 via named imports** (`import { select } from "d3"`), not the `window.d3` global. See
-  [migration_guide.md](./migration_guide.md#d3-v7-named-imports-only).
+  [migration-guide.md](./migration-guide.md#d3-v7-named-imports-only).
 
 ## Verifying a module is actually lazy
 

@@ -1,4 +1,4 @@
-This document outlines the expected data structure. Current data model described in [data_model.md](data_model.md) is inconsistent and not well-documented, so it is not a reliable reference for the future model. The future model is designed to be more consistent, modular, and maintainable, with clear separation of concerns and better encapsulation.
+This document outlines the expected data structure. Current data model described in [data-model.md](data-model.md) is inconsistent and not well-documented, so it is not a reliable reference for the future model. The future model is designed to be more consistent, modular, and maintainable, with clear separation of concerns and better encapsulation.
 
 `.map` file is a valid JSON capturing all data required to render and operate the map, including UI and style settings. Once loaded, it a single gigantic object `map`, parsed from the json.
 

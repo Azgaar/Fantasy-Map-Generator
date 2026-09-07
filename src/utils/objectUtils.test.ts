@@ -22,9 +22,9 @@ describe("deepMerge", () => {
 
   it("copies nested objects rather than sharing them with the source", () => {
     const source = { calendar: { year: 500 } };
-    const target: Record<string, any> = {};
+    const target: { calendar?: { year: number } } = {};
     deepMerge(target, source);
-    target.calendar.year = 600;
+    target.calendar!.year = 600;
     expect(source.calendar.year).toBe(500);
   });
 
@@ -37,7 +37,7 @@ describe("deepMerge", () => {
   });
 
   it("ignores keys that would reach the prototype chain", () => {
-    const target: Record<string, any> = { safe: 1 };
+    const target: Record<string, unknown> = { safe: 1 };
     deepMerge(target, JSON.parse('{"__proto__": {"polluted": true}, "constructor": {"x": 1}, "safe": 2}'));
     expect(target.safe).toBe(2);
     expect(Object.getPrototypeOf(target)).toBe(Object.prototype);

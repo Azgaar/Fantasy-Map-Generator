@@ -57,6 +57,7 @@ export async function generate(config?: GenerationConfig): Promise<void> {
     applyGraphSize(); // TODO: DOM change, not part of generation
 
     await GenerationPipeline.run({ graph: precreatedGraph });
+    Options.persist();
 
     syncOptionInputs();
     registerMap();

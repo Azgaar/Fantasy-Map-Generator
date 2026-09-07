@@ -132,7 +132,7 @@ test("styleNodeFor returns undefined for structural parents and unknown groups",
 });
 
 test("numeric-looking string options coerce back to strings, not schema-rejected numbers", () => {
-  const styles = presetFromLegacy({ "#oceanLayers": { layers: -6 }, "#markets": { "data-icon": 8 } } as any, {
+  const styles = presetFromLegacy({ "#oceanLayers": { layers: -6 }, "#markets": { "data-icon": 8 } }, {
     onUnknown: "skip"
   });
   expect(styles.ocean.oceanLayers.options.outline).toBe("-6");

@@ -42,8 +42,6 @@ async function applyStyleOnLoad() {
 function setStylePresetSelect() {
   const preset = options.map.style.preset || "default";
   const isKnown = Array.from(stylePreset.options).some(option => option.value === preset);
-  if (!isKnown) options.map.style.preset = "default";
-
   stylePreset.value = stylePreset.dataset.old = isKnown ? preset : "default";
   setPresetRemoveButtonVisibiliy();
 }

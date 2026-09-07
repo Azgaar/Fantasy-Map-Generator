@@ -455,7 +455,7 @@ async function finalizeHeightmap(): Promise<void> {
     return;
   }
 
-  window.edits = undefined; // remove global variable
+  Reflect.deleteProperty(window, "edits");
   setHistoryButtonsDisabled(true, true);
 
   customization = 0;
@@ -770,7 +770,7 @@ function restoreRiskedData(): void {
 
 // trigger heightmap redraw and history update if at least 1 cell is changed
 function updateHeightmap(): void {
-  const prev = last(edits) as number[];
+  const prev = last(edits);
   const changed = grid.cells.h.reduce((s: number, h: number, i: number) => (h !== prev[i] ? s + 1 : s), 0);
   tip(`Cells changed: ${changed}`);
   if (!changed) return;
@@ -856,9 +856,8 @@ function setHistoryButtonsDisabled(undo: boolean, redo: boolean): void {
 
 function updateHistory(noStat?: string): void {
   const step = edits.n;
-  edits = edits.slice(0, step);
+  edits = Object.assign(edits.slice(0, step), { n: step + 1 });
   edits[step] = grid.cells.h.slice();
-  edits.n = step + 1;
 
   setHistoryButtonsDisabled(edits.n <= 1, true);
   if (!noStat) {
@@ -883,8 +882,7 @@ function restoreHistory(step: number): void {
 
 // restart edits from 1st step
 function restartHistory(): void {
-  window.edits = []; // declare temp global variable
-  edits.n = 0;
+  window.edits = Object.assign([], { n: 0 });
   setHistoryButtonsDisabled(true, true);
   updateHistory();
 }
@@ -2146,5 +2144,5 @@ function downloadPreview(): void {
 export const HeightmapEditor = { open };
 
 declare global {
-  var edits: any; // heightmap edit history: Uint8Array[] with an extra .n cursor
+  var edits: Uint8Array[] & { n: number };
 }

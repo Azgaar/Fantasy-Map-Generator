@@ -504,7 +504,7 @@ class BurgModule {
   defineGroup(burg: Burg, populations: number[]) {
     if (burg.lock && burg.group) {
       // locked burgs: don't change group if it still exists
-      const group = options.map.burgs.groups.find((g: any) => g.name === burg.group);
+      const group = options.map.burgs.groups.find(group => group.name === burg.group);
       if (group) return;
     }
 
@@ -735,7 +735,7 @@ class BurgModule {
     };
     if (burg.link) return { link: burg.link, preview: burg.link };
 
-    const group = options.map.burgs.groups.find((g: any) => g.name === burg.group);
+    const group = options.map.burgs.groups.find(group => group.name === burg.group);
     if (!group?.preview || !previewGeneratorsMap[group.preview]) return { link: null, preview: null };
 
     return previewGeneratorsMap[group.preview](burg);

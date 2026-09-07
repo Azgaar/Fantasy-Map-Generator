@@ -10,6 +10,7 @@ import { zoomTo } from "@/components/zoom";
 import type { Burg } from "@/generators/burgs-generator";
 import { Services } from "@/services";
 import { toggleAssistant } from "@/services/assistant";
+import { getRequestedMapSize } from "@/services/map-size";
 import { ensureEl } from "@/utils/nodeUtils";
 
 const MAP_LINK_PATTERN = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-/]))?/;
@@ -21,7 +22,7 @@ export async function checkLoadParameters(): Promise<void> {
   const params = searchParams();
 
   // a linked map is generated at the size the link asks for, whatever the window measures
-  const size = { width: +(params.get("width") ?? 0), height: +(params.get("height") ?? 0) };
+  const size = getRequestedMapSize(params);
 
   const maplink = params.get("maplink");
   if (maplink) {

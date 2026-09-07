@@ -22,15 +22,15 @@ import { applyOption, ensureEl, findEl } from "@/utils/nodeUtils";
 import { minmax, rn } from "@/utils/numberUtils";
 
 interface OptionBinding {
-  read: (options: OptionsData) => string | number | null;
+  read: (config: OptionsData) => string | number | null;
   update: (value: string) => void;
   pin?: string;
   event?: "change";
 }
 
 interface OptionDefinition<T extends string | number> {
-  read: (options: OptionsData) => T | null;
-  write: (options: OptionsData, value: T) => void;
+  read: (config: OptionsData) => T | null;
+  write: (config: OptionsData, value: T) => void;
   parse: (value: string) => T;
   pin?: string;
   effect?: (value: T) => void;
@@ -1102,7 +1102,14 @@ declare global {
   // biome-ignore lint/suspicious/noRedeclare: legacy seam
   var changeCellsDensity: (density: number) => void;
   var initGoogleTranslate: () => void;
-  var google: any;
+  var google: {
+    translate: {
+      TranslateElement: {
+        new (config: { pageLanguage: string; layout: unknown }, elementId: string): unknown;
+        InlineLayout: { VERTICAL: unknown };
+      };
+    };
+  };
 }
 
 window.changeCellsDensity = changeCellsDensity;

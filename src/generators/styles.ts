@@ -12,9 +12,11 @@ function parse(json: unknown): StylesData {
 
 // custom group names don't exist in the defaults, so any stock group of the same record stands in as template
 const sourceValueFor: TemplateLookup = (source, key, parentKey) => {
-  const value = source?.[key];
+  if (typeof source !== "object" || source === null) return undefined;
+  const record = source as Record<PropertyKey, unknown>;
+  const value = record[key];
   if (value !== undefined || parentKey !== "groups") return value;
-  return Object.values(source)[0];
+  return Object.values(record)[0];
 };
 
 function set(data: StylesData): void {

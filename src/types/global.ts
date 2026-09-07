@@ -35,7 +35,8 @@ declare global {
   // Still defined in public/modules/ui/style-presets.js
   var applyStyleOnLoad: () => Promise<void>;
   var setStylePresetSelect: () => void;
-  var applyStoredStyles: any;
+  var applyStoredStyles: () => void;
+  var getStylePreset: (desiredPreset: string) => Promise<[string, Record<string, unknown>]>;
 
   // Vendored libraries, each loaded by its own <script> tag in index.html
   var $: (selector: any) => any; // jQuery + jQuery UI

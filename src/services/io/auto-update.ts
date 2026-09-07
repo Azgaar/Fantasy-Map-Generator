@@ -1,6 +1,7 @@
 // Update an old map file to the current version
 import { color, min, select } from "d3";
-import { Layers, type LayersState } from "@/components/layers";
+import { type LayerId, Layers, type LayersState } from "@/components/layers";
+import type { MapData } from "@/components/options-schema";
 import { RELIEF_SETS } from "@/data/relief-icons";
 import { Emblems } from "@/generators/emblems-generator";
 import type { GraphOverrides } from "@/generators/graph-override";
@@ -20,7 +21,17 @@ import type { ReliefSet } from "@/types/relief";
 import { ensureEl, findEl, minmax, parseTransform, rn, rw, safeParseJSON, unique } from "@/utils";
 import { parsePathPoints } from "@/utils/pathUtils";
 
-const LEGACY_LAYER_IDS: Record<string, string> = {
+type LegacyBurgGroup = Omit<
+  MapData["burgs"]["groups"][number],
+  "biomes" | "states" | "cultures" | "religions"
+> & {
+  biomes?: number[] | string;
+  states?: number[] | string;
+  cultures?: number[] | string;
+  religions?: number[] | string;
+};
+
+const LEGACY_LAYER_IDS: Record<string, LayerId> = {
   toggleTexture: "texture",
   toggleHeight: "heightmap",
   toggleLakes: "lakes",
@@ -1835,11 +1846,11 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
       temperature: { unit: "\u00B0C" },
       population: { scale: 1000, urbanization: { rate: 1, density: 10 } }
     },
-    labels: { resizeOnZoom: true, groups: [] as any[] },
+    labels: { resizeOnZoom: true, groups: [] as MapData["labels"]["groups"] },
     style: { preset: "default" },
-    military: { units: [] as any[] },
-    transports: [] as any[],
-    burgs: { groups: [] as any[] },
+    military: { units: [] as MapData["military"]["units"] },
+    transports: [] as MapData["transports"],
+    burgs: { groups: [] as LegacyBurgGroup[] },
     coastline: {
       enabled: true,
       maxDepth: 4,
@@ -1898,7 +1909,7 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
   if (Array.isArray(migrated.burgs.groups)) {
     for (const group of migrated.burgs.groups) {
       if (!group || typeof group !== "object") continue;
-      for (const key of ["biomes", "states", "cultures", "religions"]) {
+      for (const key of ["biomes", "states", "cultures", "religions"] as const) {
         if (typeof group[key] !== "string") continue;
         group[key] = group[key]
           .split(",")
@@ -1911,7 +1922,7 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
   // The legacy font-size formula could save negative visibility bounds.
   if (Array.isArray(migrated.labels?.groups)) {
     for (const group of migrated.labels.groups) {
-      for (const key of ["min", "max"]) {
+      for (const key of ["min", "max"] as const) {
         if (typeof group?.zoom?.[key] === "number" && group.zoom[key] < 0) group.zoom[key] = 0;
       }
     }

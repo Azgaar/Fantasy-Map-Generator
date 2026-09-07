@@ -22,7 +22,7 @@ const FORBIDDEN_KEYS = new Set(["__proto__", "constructor", "prototype"]);
  * Lodash's `merge` is the closest library equivalent, but it merges arrays by index, which is the
  * one behaviour this must not have
  */
-export function deepMerge<T extends Record<string, any>>(target: T, source: Record<string, unknown>): T {
+export function deepMerge<T extends object>(target: T, source: Record<string, unknown>): T {
   const writable = target as Record<string, unknown>;
 
   for (const key of Object.keys(source)) {

@@ -1,7 +1,12 @@
 import { test, expect, type Page } from "@playwright/test";
 import { countMaps, waitForMap, waitForNextMap } from "./wait-for-map";
 
-declare const facts: any;
+declare const options: {
+  map: {
+    burgs: { groups: { name: string; isDefault?: boolean; active?: boolean; features?: Record<string, boolean>; preview?: string }[] };
+    labels: { groups: { name: string; type: string; zoom: { min: number; max: number | null } }[] };
+  };
+};
 declare const regeneratePrompt: (config?: { seed?: string }) => void;
 
 // Real-control regression for the two zoom-family editor handlers: the styleRescaleMarkers change
@@ -663,8 +668,8 @@ test.describe("style editor events drive the store", () => {
   test("a new map resets migrated group registries to saved-or-default groups", async ({ page }) => {
     // simulate what loading an old map's migration leaves behind in the session registries
     await page.evaluate(() => {
-      facts.burgs.groups = [{ name: "cities", isDefault: true, active: true, features: {}, preview: "" }];
-      facts.labels.groups = [{ name: "cities", type: "burg", zoom: { min: 1, max: 25 } }];
+      options.map.burgs.groups = [{ name: "cities", isDefault: true, active: true, features: {}, preview: "" }];
+      options.map.labels.groups = [{ name: "cities", type: "burg", zoom: { min: 1, max: 25 } }];
     });
 
     const mapsBefore = await countMaps(page);
@@ -673,8 +678,8 @@ test.describe("style editor events drive the store", () => {
     await page.waitForTimeout(500);
 
     const after = await page.evaluate(() => ({
-      burgGroupNames: facts.burgs.groups.map((g: any) => g.name),
-      labelGroupNames: facts.labels.groups.map((g: any) => g.name),
+      burgGroupNames: options.map.burgs.groups.map(group => group.name),
+      labelGroupNames: options.map.labels.groups.map(group => group.name),
       burgsInLegacyGroup: (window as any).pack.burgs.filter((b: any) => b?.i && b.group === "cities").length
     }));
     expect(after.burgGroupNames).not.toContain("cities");

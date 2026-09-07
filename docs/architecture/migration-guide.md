@@ -1,8 +1,8 @@
 # Migration Guide: legacy `public/**/*.js` → bundled `src/**/*.ts`
 
 How to port a classic, un-bundled module served as-is from `public/`, leaning on
-runtime globals, into a typed module inside Vite's graph. See also [lazy_loading.md](./lazy_loading.md),
-[architecture.md](./architecture.md), and [data_model.md](./data_model.md).
+runtime globals, into a typed module inside Vite's graph. See also [lazy-loading.md](./lazy-loading.md),
+[architecture.md](./architecture.md), and [data-model.md](./data-model.md).
 
 ## Where the file goes
 

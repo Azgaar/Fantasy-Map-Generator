@@ -20,8 +20,8 @@ async function generateMap(page: import("@playwright/test").Page) {
     return {
       groups: labels?.children.length ?? 0,
       labelTexts: labels?.querySelectorAll("text").length ?? 0,
-      labelGroups: (window as any).facts.labels.groups.length,
-      burgGroups: (window as any).facts.burgs.groups.length
+      labelGroups: (window as any).options.map.labels.groups.length,
+      burgGroups: (window as any).options.map.burgs.groups.length
     };
   });
 }

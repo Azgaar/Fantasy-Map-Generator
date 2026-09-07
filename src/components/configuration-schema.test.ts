@@ -85,6 +85,18 @@ describe("the schema describes the value, not merely its type", () => {
     expect(repair("app", app).app.rendering).toBe(Options.getDefaultOptions().app.rendering);
   });
 
+  it("repairs culture-set ids the generator does not know", () => {
+    const defaults = Options.getDefaultOptions();
+    const generation = {
+      ...defaults.generation,
+      cultures: { ...defaults.generation.cultures, set: "missing-culture-set" }
+    };
+    const map = { ...defaults.map, cultures: { set: "missing-culture-set" } };
+
+    expect(repair("generation", generation).generation.cultures.set).toBe(defaults.generation.cultures.set);
+    expect(repair("map", map).map.cultures.set).toBe(defaults.map.cultures.set);
+  });
+
   it("repairs a zoom extent whose ends are the wrong way round", () => {
     const app = { ...Options.getDefaultOptions().app, zoomExtent: { min: 30, max: 2 } };
     expect(repair("app", app).app.zoomExtent).toEqual(Options.getDefaultOptions().app.zoomExtent);

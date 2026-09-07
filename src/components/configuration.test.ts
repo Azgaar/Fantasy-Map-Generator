@@ -184,9 +184,9 @@ describe("the definition sets carry to the next map", () => {
 });
 
 describe("validation repairs rather than rejects", () => {
-  const adopt = (change: (file: any) => void) => {
+  const adopt = (change: (file: MapData) => void) => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
-    const file: any = JSON.parse(savedFile(() => {}));
+    const file = JSON.parse(savedFile(() => {})) as MapData;
     change(file);
     Options.applyLoaded(file);
     return options.map;
@@ -195,7 +195,7 @@ describe("validation repairs rather than rejects", () => {
   it("strips a key from a newer schema instead of losing the section it sits in", () => {
     const map = adopt(file => {
       file.climate.precipitation = 400;
-      file.climate.humidity = 7; // a field this version does not know
+      (file.climate as MapData["climate"] & { humidity?: number }).humidity = 7;
     });
 
     expect(map.climate.precipitation).toBe(400);
@@ -205,7 +205,7 @@ describe("validation repairs rather than rejects", () => {
   it("strips an unknown key nested inside a section", () => {
     const map = adopt(file => {
       file.climate.temperature.equator = 33;
-      file.climate.temperature.tropics = 20;
+      (file.climate.temperature as MapData["climate"]["temperature"] & { tropics?: number }).tropics = 20;
     });
 
     expect(map.climate.temperature.equator).toBe(33);
@@ -213,7 +213,11 @@ describe("validation repairs rather than rejects", () => {
 
   it("drops the one unusable entry of a definition set, not the set around it", () => {
     const map = adopt(file => {
-      file.military.units = [UNIT, { ...UNIT, name: "broken", rural: "not a number" }, { ...UNIT, name: "third" }];
+      file.military.units = [
+        UNIT,
+        { ...UNIT, name: "broken", rural: "not a number" },
+        { ...UNIT, name: "third" }
+      ] as unknown as MapData["military"]["units"];
     });
 
     expect(map.military.units.map(unit => unit.name)).toEqual(["cavalry", "third"]);
@@ -222,7 +226,7 @@ describe("validation repairs rather than rejects", () => {
   it("keeps repairing a leaf from the defaults where the defaults have one", () => {
     const map = adopt(file => {
       file.lore.name = "Narnia";
-      file.lore.calendar.year = "not a number";
+      file.lore.calendar.year = "not a number" as unknown as number;
     });
 
     expect(map.lore.name).toBe("Narnia");
@@ -434,8 +438,8 @@ describe("the map carries its own lore", () => {
 
   it("leaves a description absent from an older file empty, not undefined", () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
-    const older: any = JSON.parse(savedFile(map => (map.lore.name = "old")));
-    delete older.lore.description;
+    const older = JSON.parse(savedFile(map => (map.lore.name = "old"))) as MapData;
+    delete (older.lore as Partial<MapData["lore"]>).description;
 
     load(JSON.stringify(older));
     expect(options.map.lore).toEqual({ name: "old", description: "", calendar: defaults().lore.calendar });
