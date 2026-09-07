@@ -31,6 +31,7 @@ export const ARROW_TIP_KEY = "disable_click_arrow_tooltip";
 
 // new changes on top
 const latestPublicChanges = [
+  "Heightmap: option to render contour lines",
   "Help assistant: ask questions about the Generator in the app",
   "States and Provinces editors: annex by clicking on the map",
   "Option to redraw labels, icons and relief only after a zoom",

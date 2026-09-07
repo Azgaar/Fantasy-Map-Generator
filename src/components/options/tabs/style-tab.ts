@@ -98,6 +98,35 @@ const TEMPLATE = /* html */ `
           <label for="styleHeightmapRenderOcean" class="checkbox-label">Render ocean heights</label>
         </td>
       </tr>
+      <tr data-tip="Draw smooth elevation contours over the heightmap colors, or show only contour lines">
+        <td><label for="styleHeightmapContours">Contours</label></td>
+        <td>
+          <select id="styleHeightmapContours">
+            <option value="off">Off</option>
+            <option value="overlay">Over colors</option>
+            <option value="only">Lines only</option>
+          </select>
+        </td>
+      </tr>
+      <tr
+        data-contour-style
+        data-tip="Elevation spacing between contours. Lower values show more detail; every fifth contour is heavier"
+      >
+        <td>Contour spacing</td>
+        <td><slider-input id="styleHeightmapContourInterval" min="1" max="20" step="1"></slider-input></td>
+      </tr>
+      <tr data-contour-style data-tip="Color of the contour lines">
+        <td><label for="styleHeightmapContourColor">Contour color</label></td>
+        <td><input id="styleHeightmapContourColor" type="color" /></td>
+      </tr>
+      <tr data-contour-style data-tip="Width of minor contours. Every fifth contour is twice as wide">
+        <td>Contour width</td>
+        <td><slider-input id="styleHeightmapContourWidth" min="0.1" max="2" step="0.05"></slider-input></td>
+      </tr>
+      <tr data-contour-style data-tip="Opacity of the contour lines">
+        <td>Contour opacity</td>
+        <td><slider-input id="styleHeightmapContourOpacity" min="0" max="1" step="0.05"></slider-input></td>
+      </tr>
       <tr data-tip="Terracing power. Set to 0 to toggle off">
         <td>Terracing</td>
         <td>

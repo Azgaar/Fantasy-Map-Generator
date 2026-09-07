@@ -32,6 +32,10 @@ To get a blank map go Tools -> Heightmap -> Erase and use the brushes on the top
 
 Labels are shown and hidden based on zoom bounds defined per label group. Open Tools -> Labels and click on the groups configuration button. There you can check 'Show all labels' to ignore zoom bounds completely, or raise the max zoom value for a specific group
 
+### How do I force state labels to show the full state name?
+
+The name form is set per label group and no longer in Options, where it used to be the 'stateLabelsMode' setting. Open Tools -> Labels, click on the groups configuration button and set the state group's 'Mode' to 'full'. The default 'auto' uses the full name when it fits the state's area well enough and switches to the short name when it does not, while 'short' always uses the short name. Mode applies to state and province groups only
+
 ### How do I import an image? Can I put an image to create world based on it?
 
 Yes, it can be done via the Image Converter. Go to Tools -> Heightmap -> Erase -> Image converter
