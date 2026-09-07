@@ -913,12 +913,12 @@ styleLegendColItems.addEventListener("input", e => {
 styleLegendBack.addEventListener("input", e => {
   styleLegendBackOutput.value = e.target.value;
   styles.legend.box.attrs.fill = e.target.value;
-  d3.select("#legend").select("#legendBox").attr("fill", e.target.value);
+  d3.select("#legend").selectAll(".legendBox").attr("fill", e.target.value);
 });
 
 styleLegendOpacity.addEventListener("input", e => {
   styles.legend.box.attrs["fill-opacity"] = +e.target.value;
-  d3.select("#legend").select("#legendBox").attr("fill-opacity", e.target.value);
+  d3.select("#legend").selectAll(".legendBox").attr("fill-opacity", e.target.value);
 });
 
 styleSelectFont.addEventListener("change", changeFont);

@@ -14,13 +14,14 @@ import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { Zone } from "@/generators/zones-generator";
-import { clearLegend, drawLegend } from "@/renderers/draw-legend";
+import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { zonesFilter } from "@/renderers/draw-zones";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";
 import { ensureEl, rn, si, unique } from "../utils";
 
 const dialogId = "zonesEditor" as const;
+const LEGEND_NAME = "Zones"; // the legend box this editor toggles
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 
 type ZoneRow = { zone: Zone; area: number; rural: number; urban: number; population: number };
@@ -331,16 +332,16 @@ function toggleFog(zone: Zone, cl: DOMTokenList): void {
 }
 
 function toggleLegend(): void {
-  if (select("#legend").selectAll("*").size()) {
-    clearLegend();
+  if (hasLegend(LEGEND_NAME)) {
+    clearLegend(LEGEND_NAME); // hide this box alone, keeping the other legends
     return;
-  } // hide legend
+  }
 
   const filterBy = zonesFilter.type;
   const isFiltered = filterBy !== "all";
   const visibleZones = pack.zones.filter(zone => !zone.hidden && (!isFiltered || zone.type === filterBy));
   const data = visibleZones.map(({ i, name, color }) => [`zone${i}`, color, name]);
-  drawLegend("Zones", data);
+  drawLegend(LEGEND_NAME, data);
 }
 
 function togglePercentageMode(): void {

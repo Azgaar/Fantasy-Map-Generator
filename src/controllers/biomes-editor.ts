@@ -16,12 +16,13 @@ import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { Biome } from "@/generators/biomes-generator";
 import { Population } from "@/generators/population-generator";
-import { clearLegend, drawLegend } from "@/renderers/draw-legend";
+import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import type { PackedGraph } from "@/types/PackedGraph";
 import { downloadFile, getArea, getAreaUnit, getFileName, openURL } from "@/utils";
 import { ensureEl, getRandomColor, isLand, rn, si } from "../utils";
 
 const dialogId = "biomesEditor" as const;
+const LEGEND_NAME = "Biomes"; // the legend box this editor toggles
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 let currentBiomeStatistics: BiomeStatistics[] = [];
 const columns: EditorColumn<Biome>[] = [
@@ -360,16 +361,16 @@ function openWiki(el: HTMLElement): void {
 }
 
 function toggleLegend(): void {
-  if (select("#legend").selectAll("*").size()) {
-    clearLegend();
+  if (hasLegend(LEGEND_NAME)) {
+    clearLegend(LEGEND_NAME); // hide this box alone, keeping the other legends
     return;
-  } // hide legend
+  }
   const statistics = biomesCollectStatistics();
   const data = pack.biomes
     .filter(({ i }) => statistics[i].cells)
     .sort((a, b) => statistics[b.i].area - statistics[a.i].area)
     .map(({ i, color, name }) => [i, color, name]);
-  drawLegend("Biomes", data);
+  drawLegend(LEGEND_NAME, data);
 }
 
 function togglePercentageMode(): void {

@@ -219,7 +219,15 @@ export const stylesSchema = z.strictObject({
   }),
   legend: z.strictObject({
     attrs: z.strictObject({ ...strokeAttrs, "font-family": fontFamily }),
-    options: z.strictObject({ fontSize: z.number(), x: z.number(), y: z.number(), columns: z.number() }),
+    // x/y anchor the bottom-right corner of a legend box; positions holds the per-box override,
+    // keyed by the box title, so several boxes can be shown and dragged apart
+    options: z.strictObject({
+      fontSize: z.number(),
+      x: z.number(),
+      y: z.number(),
+      columns: z.number(),
+      positions: z.record(z.string(), z.strictObject({ x: z.number(), y: z.number() })).default({})
+    }),
     box: z.strictObject({ attrs: z.strictObject({ ...fillAttrs }) })
   }),
   fogging: z.strictObject({ attrs: z.strictObject({ opacity, fill: color, mask, filter }) }),

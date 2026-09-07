@@ -32,8 +32,8 @@ const helpAssistantBubble = document.getElementById("helpAssistantBubble");
 helpAssistantBubble?.addEventListener("click", () => window.Controllers.HelpAssistant.toggle());
 helpAssistantBubble?.addEventListener("mouseover", showDataTip);
 d3.select("#legend")
-  .on("mousemove", () => tip("Drag to change the position. Click to hide the legend"))
-  .on("click", () => clearLegend());
+  .on("mousemove", () => tip("Drag to change the position. Click to hide the legend box"))
+  .on("click", () => onLegendClick(d3.event)); // the vendored global d3 is v5: the event is not passed in
 
 // main data variables
 var grid = {}; // initial graph based on jittered square grid and data

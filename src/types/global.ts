@@ -29,6 +29,7 @@ declare global {
     applyDefaultViewboxEvents: typeof import("../components/viewbox-events").applyDefaultViewboxEvents;
     fitLegendBox: typeof import("../renderers/draw-legend").fitLegendBox;
     clearLegend: typeof import("../renderers/draw-legend").clearLegend;
+    onLegendClick: typeof import("../renderers/draw-legend").onLegendClick;
     unfog: typeof import("../renderers/overlays/fogging").unfog;
     showInfo: typeof import("../components/app-info").showInfo;
     applyOption: typeof import("../utils").applyOption;

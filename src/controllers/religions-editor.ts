@@ -16,12 +16,13 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Religion } from "@/generators/religions-generator";
-import { clearLegend, drawLegend } from "@/renderers/draw-legend";
+import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";
 import { abbreviate, debounce, ensureEl, getPointer, isLand, parseTransform, rn, si } from "../utils";
 
 const dialogId = "religionsEditor" as const;
+const LEGEND_NAME = "Religions"; // the legend box this editor toggles
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 let filterState: { showExtinct: boolean };
 
@@ -738,8 +739,8 @@ function religionCenterDrag(this: any, event: any): void {
 }
 
 function toggleLegend(): void {
-  if (select("#legend").selectAll("*").size()) {
-    clearLegend(); // hide legend
+  if (hasLegend(LEGEND_NAME)) {
+    clearLegend(LEGEND_NAME); // hide this box alone, keeping the other legends
     return;
   }
 
@@ -747,7 +748,7 @@ function toggleLegend(): void {
     .filter(r => r.i && !r.removed && r.area)
     .sort((a, b) => (b.area ?? 0) - (a.area ?? 0))
     .map(r => [r.i, r.color, r.name]);
-  drawLegend("Religions", data);
+  drawLegend(LEGEND_NAME, data);
 }
 
 function togglePercentageMode(): void {
