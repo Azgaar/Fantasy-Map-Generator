@@ -665,8 +665,8 @@ test.describe("style editor events drive the store", () => {
     expect(await page.locator(`#anchors > g#${anchorGroup}`).getAttribute("data-size")).toBeNull();
   });
 
-  test("a new map resets migrated group registries to saved-or-default groups", async ({ page }) => {
-    // simulate what loading an old map's migration leaves behind in the session registries
+  test("a new map starts from the previous definition sets, repaired so nothing is undrawable", async ({ page }) => {
+    // what an old map's migration leaves behind: one burg group, and a label registry with only that type
     await page.evaluate(() => {
       options.map.burgs.groups = [{ name: "cities", isDefault: true, active: true, features: {}, preview: "" }];
       options.map.labels.groups = [{ name: "cities", type: "burg", zoom: { min: 1, max: 25 } }];
@@ -679,14 +679,21 @@ test.describe("style editor events drive the store", () => {
 
     const after = await page.evaluate(() => ({
       burgGroupNames: options.map.burgs.groups.map(group => group.name),
+      labelTypes: [...new Set(options.map.labels.groups.map(group => group.type))],
       labelGroupNames: options.map.labels.groups.map(group => group.name),
-      burgsInLegacyGroup: (window as any).pack.burgs.filter((b: any) => b?.i && b.group === "cities").length
+      defaultBurgGroups: options.map.burgs.groups.filter(group => group.isDefault).length,
+      unassignedBurgs: (window as any).pack.burgs.filter((b: any) => b?.i && !b.group).length
     }));
-    expect(after.burgGroupNames).not.toContain("cities");
-    expect(after.burgGroupNames).toContain("town");
-    expect(after.labelGroupNames).not.toContain("cities");
-    expect(after.labelGroupNames).toContain("river");
-    expect(after.burgsInLegacyGroup).toBe(0);
+
+    // the sets are the user's own: the next map starts from them rather than resetting to defaults
+    expect(after.burgGroupNames).toEqual(["cities"]);
+    expect(after.labelGroupNames).toContain("cities");
+
+    // but a repair keeps them usable: every label type has a group and burgs still have a default
+    for (const type of ["river", "route", "state", "province", "added"])
+      expect(after.labelTypes).toContain(type);
+    expect(after.defaultBurgGroups).toBe(1);
+    expect(after.unassignedBurgs).toBe(0);
   });
 
   test("ocean pattern controls write the store and the applier derives from it", async ({ page }) => {

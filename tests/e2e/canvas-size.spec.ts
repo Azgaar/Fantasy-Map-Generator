@@ -48,9 +48,10 @@ test.describe("canvas size", () => {
     await page.goto("/?seed=canvas-size-pinned&width=900&height=600");
     await waitForMap(page);
 
+    // pin the current extent the way the lock icons do: through the pin store
     await page.evaluate(() => {
-      (window as any).lock("mapWidth");
-      (window as any).lock("mapHeight");
+      const { width, height } = (window as any).options.map.graph;
+      localStorage.setItem("fmg-locks", JSON.stringify({ mapWidth: width, mapHeight: height }));
     });
 
     await page.setViewportSize({ width: 1400, height: 800 });

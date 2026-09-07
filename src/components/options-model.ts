@@ -210,6 +210,7 @@ class OptionsModel {
     map.graph = { width: graph.width, height: graph.height, points: getPointsNumber(graph.density) };
     map.cultures.set = cultures.set;
     options.map = map;
+    this.repairSets();
 
     const { climate, units, lore } = map;
     const { temperature } = climate;

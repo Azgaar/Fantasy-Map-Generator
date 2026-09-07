@@ -343,8 +343,8 @@ Ordered Label Group policy is stored in `options.labels`:
 - `showAll`: `boolean` - temporary override for per-group active state, zoom bounds, and layer dependencies
 - `groups`: `LabelGroupOptions[]` - ordered group definitions
 
-The Label and Burg group registries are the user's own sets, carried from `options.library` into every new
-map, so a value stored by an older build is repaired rather than trusted: `Facts.ensureDefinitionSets` runs on
+The Label and Burg group registries are the user's own sets, carried through `options.map` into every new
+map, so a value stored by an older build is repaired rather than trusted: `Options.repairSets` runs on
 both map load and new map, and restores the defaults for anything that would leave nothing to draw - an empty
 set, a label type with no group of its own (`Labels.restoreMissingTypes`), or a Burg registry with no group
 flagged default for assignment to fall back on (`Burgs.ensureDefaultGroup`).
