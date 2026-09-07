@@ -31,6 +31,7 @@ export const ARROW_TIP_KEY = "disable_click_arrow_tooltip";
 
 // new changes on top
 const latestPublicChanges = [
+  "Ability to override a burg's treasury",
   "Heightmap: option to render contour lines",
   "Help assistant: ask questions about the Generator in the app",
   "States and Provinces editors: annex by clicking on the map",
@@ -40,12 +41,7 @@ const latestPublicChanges = [
   "Desktop App",
   "URL params to open specific layers or preset",
   "Emblems rendering optimization",
-  "Dialogs state preserved between sessions",
-  "Paint Area dialogs rework",
-  "Relief icons: improved performance",
-  "Configurable table columns",
-  "Labels: improved performance",
-  "Labels Overview"
+  "Dialogs state preserved between sessions"
 ];
 
 export function parseMapVersion(version: string): string {

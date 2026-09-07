@@ -16,6 +16,8 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 
 **[1.152.0](https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/tags/v1.152.0.zip) - 2026-09-TBD**:
 
+- Options rework [1.152.0]
+- Ability to override a burg's treasury [1.152.0]
 - Heightmap: option to render contour lines [1.152.0]
 - Help assistant: ask questions about FMG by _[barrulus](https://github.com/barrulus)_ [1.151.2]
 - Annex states and provinces by clicking on the map by _[barrulus](https://github.com/barrulus)_ [1.151.2]

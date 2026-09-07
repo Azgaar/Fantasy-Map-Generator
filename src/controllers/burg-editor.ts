@@ -177,9 +177,9 @@ function renderDialog(): void {
               <div class="label">Wealth</div>
               <span id="burgWealth"></span>
             </div>
-            <div data-tip="Treasury balance after production, purchases, and sales">
-              <div class="label">Treasury</div>
-              <span id="burgTreasury"></span>
+            <div data-tip="Set treasury balance. Production won't be changed automatically">
+              <div class="label"><label for="burgTreasury">Treasury:</label></div>
+              <input id="burgTreasury" type="number" step="0.01" style="width: 9em" /> 🟡
             </div>
           </div>
         </div>
@@ -252,6 +252,7 @@ function renderDialog(): void {
   ensureEl("burgCulture").addEventListener("change", changeCulture);
   ensureEl("burgNameReCulture").addEventListener("click", generateNameCulture);
   ensureEl("burgPopulation").addEventListener("change", changePopulation);
+  ensureEl("burgTreasury").addEventListener("change", changeTreasury);
   ensureEl("burgBody")
     .querySelectorAll<HTMLElement>(".burgFeature")
     .forEach(el => void el.addEventListener("click", toggleFeature));
@@ -307,7 +308,7 @@ function updateBurgValues(): void {
     rn(b.population! * options.map.units.population.scale * options.map.units.population.urbanization.rate)
   );
   ensureEl("burgWealth").innerHTML = `🟡 ${rn(b.population! > 0 ? (b.product || 0) / b.population! : 0, 2)}`;
-  ensureEl("burgTreasury").innerHTML = `🟡 ${rn(b.treasury || 0, 2)}`;
+  ensureEl<HTMLInputElement>("burgTreasury").value = String(rn(b.treasury || 0, 2));
   ensureEl("burgEditAnchorStyle").style.display = +b.port! ? "inline-block" : "none";
 
   // update list and select culture
@@ -392,6 +393,14 @@ function changePopulation(): void {
     4
   );
   updateBurgPreview(burg);
+}
+
+function changeTreasury(this: HTMLInputElement): void {
+  const burg = pack.burgs[getSelectedId()];
+  const treasury = this.valueAsNumber;
+  if (Number.isFinite(treasury)) burg.treasury = rn(treasury, 2);
+  else tip("Enter a valid treasury amount", false, "error");
+  this.value = String(rn(burg.treasury || 0, 2));
 }
 
 function toggleFeature(this: HTMLElement): void {
