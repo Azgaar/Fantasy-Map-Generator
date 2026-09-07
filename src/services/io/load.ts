@@ -54,7 +54,7 @@ async function createSharableDropboxLink(): Promise<void> {
 
 function loadMapPrompt(blob: Blob): void {
   const current = mapHistory.at(-1);
-  const workingTime = current ? (Date.now() - current.created) / 60000 : 0; // minutes
+  const workingTime = current ? (Date.now() - current.registeredAt) / 60000 : 0; // minutes
   if (workingTime < 5) {
     loadLastSavedMap();
     return;

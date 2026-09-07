@@ -123,7 +123,7 @@ export function regeneratePrompt(config?: GenerationConfig): void {
   }
 
   const current = mapHistory.at(-1);
-  const workingMinutes = current ? (Date.now() - current.created) / 60000 : 0;
+  const workingMinutes = current ? (Date.now() - current.registeredAt) / 60000 : 0;
   if (workingMinutes < 1) {
     regenerateMap(config);
     return;
@@ -147,6 +147,8 @@ interface MapHistoryEntry {
   height: number;
   template: string;
   created: number;
+  /** when this entry was put on screen in this session, unlike `created` never backdated to a loaded file's own timestamp */
+  registeredAt: number;
 }
 
 // every map this session put on screen, oldest first; the last one is what is on screen now
@@ -159,7 +161,8 @@ export function registerMap(created: number = Date.now()): void {
     width: options.map.graph.width,
     height: options.map.graph.height,
     template: options.generation.template,
-    created: created
+    created: created,
+    registeredAt: Date.now()
   });
 
   // the public seam test automation and external integrations wait on; the id is the creation date

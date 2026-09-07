@@ -127,7 +127,10 @@ export function adoptLegacyOptions(): Record<string, unknown> | null {
   if (read("noReminder")) put("app.autosave.remind", false);
   json("trade-animation", parsed => put("app.trade.animation", parsed));
   json("military", parsed => put("map.military.units", parsed));
-  json("burg-groups", parsed => put("map.burgs.groups", parsed));
+  json("burg-groups", parsed => {
+    normalizeLegacyBurgGroupFilters(parsed);
+    put("map.burgs.groups", parsed);
+  });
   json("options-labels", parsed => put("map.labels.groups", (parsed as { groups?: unknown })?.groups));
   json("options-transports", parsed => put("map.transports", parsed));
   json("coastline-settings", parsed =>
@@ -136,4 +139,20 @@ export function adoptLegacyOptions(): Record<string, unknown> | null {
 
   for (const key of LEGACY_KEYS) localStorage.removeItem(key);
   return migrated;
+}
+
+/** older editors stored these burg group ID filters as comma-separated strings instead of number arrays */
+export function normalizeLegacyBurgGroupFilters(groups: unknown): void {
+  if (!Array.isArray(groups)) return;
+  for (const group of groups) {
+    if (!group || typeof group !== "object") continue;
+    for (const key of ["biomes", "states", "cultures", "religions"] as const) {
+      const value = (group as Record<string, unknown>)[key];
+      if (typeof value !== "string") continue;
+      (group as Record<string, unknown>)[key] = value
+        .split(",")
+        .filter((id: string) => id.trim())
+        .map(Number);
+    }
+  }
 }

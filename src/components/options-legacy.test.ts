@@ -137,6 +137,13 @@ describe("Options.restore, migrating", () => {
     expect(options.map.burgs.groups).toEqual([{ ...A_BURG_GROUP, isDefault: true }]);
   });
 
+  it("converts a legacy comma-separated ID filter instead of dropping the whole set", async () => {
+    seed({ "burg-groups": JSON.stringify([{ ...A_BURG_GROUP, biomes: "1,2,3" }]) });
+    const { options, defaults } = await restore();
+    expect(options.map.burgs.groups).toEqual([{ ...A_BURG_GROUP, isDefault: true, biomes: [1, 2, 3] }]);
+    expect(options.map.burgs.groups).not.toEqual(defaults.map.burgs.groups);
+  });
+
   it("refuses a set of the wrong type without costing the sets or the preferences beside it", async () => {
     seed({
       "burg-groups": JSON.stringify({ not: "an array" }),

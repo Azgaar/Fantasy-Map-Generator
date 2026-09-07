@@ -1,6 +1,7 @@
 // Update an old map file to the current version
 import { color, min, select } from "d3";
 import { type LayerId, Layers, type LayersState } from "@/components/layers";
+import { normalizeLegacyBurgGroupFilters } from "@/components/options-legacy";
 import type { MapData } from "@/components/options-schema";
 import { RELIEF_SETS } from "@/data/relief-icons";
 import { Emblems } from "@/generators/emblems-generator";
@@ -1902,19 +1903,7 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
   if (oldOptions.coastline) migrated.coastline = oldOptions.coastline;
   if (oldOptions.burgs?.groups) migrated.burgs.groups = oldOptions.burgs.groups;
 
-  // Older editors stored ID filters as comma-separated strings.
-  if (Array.isArray(migrated.burgs.groups)) {
-    for (const group of migrated.burgs.groups) {
-      if (!group || typeof group !== "object") continue;
-      for (const key of ["biomes", "states", "cultures", "religions"] as const) {
-        if (typeof group[key] !== "string") continue;
-        group[key] = group[key]
-          .split(",")
-          .filter((id: string) => id.trim())
-          .map(Number);
-      }
-    }
-  }
+  normalizeLegacyBurgGroupFilters(migrated.burgs.groups);
 
   // The legacy font-size formula could save negative visibility bounds.
   if (Array.isArray(migrated.labels?.groups)) {
