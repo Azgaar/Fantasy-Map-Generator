@@ -16,10 +16,18 @@
  */
 
 import { dialogState } from "@/components/dialog/state";
+import { Pins } from "@/components/pins";
 import { tip } from "@/components/tooltips";
 import { isElectron } from "./platform";
 
 export const VERSION = "1.152.0";
+
+/**
+ * The options trigger glows until the user has found it once. Not a preference and not part of
+ * `options`: no control shows it and the user cannot set it, so it is a bare `localStorage` flag
+ * like `version`. See docs/architecture/configuration.md#storage-scopes
+ */
+export const ARROW_TIP_KEY = "disable_click_arrow_tooltip";
 
 // new changes on top
 const latestPublicChanges = [
@@ -103,7 +111,10 @@ export async function cleanupData(): Promise<void> {
   localStorage.clear();
   dialogState.clear();
   localStorage.setItem("version", VERSION);
-  localStorage.setItem("disable_click_arrow_tooltip", "true");
+
+  Options.reset();
+  Pins.clearAll();
+  localStorage.setItem(ARROW_TIP_KEY, "true");
   await clearCache();
 }
 

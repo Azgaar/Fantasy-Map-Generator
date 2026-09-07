@@ -1,4 +1,5 @@
 import {expect, test, type Page} from "@playwright/test";
+import { waitForMap } from "./wait-for-map";
 
 // real wheel input on purpose: programmatic setMapZoom dispatches "end" with the frame still
 // pending, so it cannot catch a reconcile that never runs after human-paced gestures
@@ -16,7 +17,7 @@ async function wheelZoomIn(page: Page) {
 test.describe("Redraw on zoom option", () => {
   test.beforeEach(async ({page}) => {
     await page.goto("/?seed=zoom-redraw&width=1280&height=720");
-    await page.waitForFunction(() => (window as any).mapId !== undefined, {timeout: 120000});
+    await waitForMap(page);
     await page.waitForTimeout(500);
   });
 
@@ -38,9 +39,9 @@ test.describe("Redraw on zoom option", () => {
     await wheelZoomIn(page);
     expect(await materialized(page)).not.toBe(before);
 
-    expect(await page.evaluate(() => localStorage.getItem("viewportRedraw"))).toBe("settled");
+    expect(await page.evaluate(() => (window as any).options.app.viewportRedraw)).toBe("settled");
     await page.reload();
-    await page.waitForFunction(() => (window as any).mapId !== undefined, {timeout: 120000});
+    await waitForMap(page);
     expect(await page.locator("#viewportRedraw").inputValue()).toBe("settled");
   });
 });

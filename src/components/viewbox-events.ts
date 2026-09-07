@@ -78,5 +78,3 @@ function onClick(event: MouseEvent): void {
   const open = PARENT_EDITORS[parent.id] || GRAND_EDITORS[grand.id] || GREAT_EDITORS[great.id];
   open?.(target, parent);
 }
-
-window.applyDefaultViewboxEvents = applyDefaultViewboxEvents;

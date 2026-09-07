@@ -145,10 +145,7 @@ export class LabelsModule {
     const isUsable = (group: LabelGroup) =>
       Boolean(group?.name) && (LABEL_TYPES as readonly string[]).includes(group?.type) && Boolean(group?.zoom);
     const groups: LabelGroup[] = Array.isArray(parsed.groups) ? parsed.groups.filter(isUsable) : [];
-    for (const type of LABEL_TYPES) {
-      if (groups.some(group => group.type === type)) continue;
-      groups.push(...defaults.groups.filter(group => group.type === type));
-    }
+    this.restoreMissingTypes(groups);
 
     const flag = (value: unknown, fallback: boolean) => (typeof value === "boolean" ? value : fallback);
     return {
@@ -158,13 +155,22 @@ export class LabelsModule {
     };
   }
 
+  /** a type left without any group draws no labels at all, so give it the module defaults back */
+  restoreMissingTypes(groups: LabelGroup[]): void {
+    const defaults = this.getDefaultGroups();
+    for (const type of LABEL_TYPES) {
+      if (groups.some(group => group.type === type)) continue;
+      groups.push(...defaults.filter(group => group.type === type));
+    }
+  }
+
   /** burgs can be assigned to groups the label registry has never seen (old maps, the Burg
    * Groups editor) - without an entry the renderer draws no label at all */
   ensureBurgLabelGroups(): void {
-    for (const { name } of options.burgs.groups) {
-      if (options.labels.groups.some(group => group.type === "burg" && group.name === name)) continue;
+    for (const { name } of options.map.burgs.groups) {
+      if (options.map.labels.groups.some(group => group.type === "burg" && group.name === name)) continue;
       const defaultGroup = this.getDefaultGroups().find(group => group.type === "burg" && group.name === name);
-      options.labels.groups.push(
+      options.map.labels.groups.push(
         defaultGroup ?? { ...structuredClone(this.getFallbackGroup("burg")), name, isDefault: false }
       );
     }
@@ -176,7 +182,7 @@ export class LabelsModule {
   }
 
   findGroup(groupName: string, type: LabelType): LabelGroup {
-    const group = options.labels.groups.find(group => group.name === groupName && group.type === type);
+    const group = options.map.labels.groups.find(group => group.name === groupName && group.type === type);
     return group ?? this.getFallbackGroup(type);
   }
 
@@ -218,7 +224,7 @@ export class LabelsModule {
   }
 }
 
-const labelsInstance = new LabelsModule();
-window.Labels = labelsInstance;
+// biome-ignore lint/suspicious/noRedeclare: legacy seam
+export const Labels = new LabelsModule();
 
-export { labelsInstance as Labels };
+window.Labels = Labels;

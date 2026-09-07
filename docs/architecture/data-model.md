@@ -1,4 +1,4 @@
-**FMG data model** is poorly defined, inconsistent and not well-documented. This page is an attempt to document it. Once everything is documented, it can be used for building a new consistent model. Please note the current document reflect the object model **as is**, so with all its quirks. The model we want to get is covered in the [future_data_model.md](future_data_model.md) page.
+**FMG data model** is poorly defined, inconsistent and not well-documented. This page is an attempt to document it. Once everything is documented, it can be used for building a new consistent model. Please note the current document reflect the object model **as is**, so with all its quirks. The model we want to get is covered in the [future-data-model.md](future-data-model.md) page.
 
 FMG exposes most of its data into the global namespace.
 
@@ -343,9 +343,11 @@ Ordered Label Group policy is stored in `options.labels`:
 - `showAll`: `boolean` - temporary override for per-group active state, zoom bounds, and layer dependencies
 - `groups`: `LabelGroupOptions[]` - ordered group definitions
 
-`options.labels` and the Burg group registry are seeded from `localStorage` for every new map, so both are
-validated on read (`Labels.parseStoredOptions`, `Burgs.parseStoredGroups`): a stored value that would leave
-nothing to draw, such as an empty `groups` list, falls back to the defaults instead of being reused.
+The Label and Burg group registries are the user's own sets, carried through `options.map` into every new
+map, so a value stored by an older build is repaired rather than trusted: `Options.repairSets` runs on
+both map load and new map, and restores the defaults for anything that would leave nothing to draw - an empty
+set, a label type with no group of its own (`Labels.restoreMissingTypes`), or a Burg registry with no group
+flagged default for assignment to fall back on (`Burgs.ensureDefaultGroup`).
 
 Each `LabelGroupOptions` contains:
 
@@ -503,7 +505,7 @@ A journey segment is one leg: a stretch of travel, or a halt:
 
 ## Transports
 
-Transport types are configuration, not map state: they live in `options.transports: Transport[]` (serialized with the rest of `options` at data index 19) and are mirrored to `localStorage` under `options-transports`, so the set the user configured carries over to the next map. Loading a map replaces `options` wholesale, so a map brings its own transports; a map saved before transports existed has none and falls back to `localStorage`, then to the defaults. Object structure:
+Transport types are configuration, not map state: they live in `options.transports: Transport[]`. Object structure:
 
 - `i`: `number` - transport type id
 - `name`: `string` - transport type name. This is the key segments reference, so it must stay unique

@@ -486,12 +486,9 @@ export function presetBagFor(
   return undefined;
 }
 
-// v1.145-1.147 saved maps with the layer styling stripped out. Seed the groups that carry none
-// at all from the preset the user has applied, so the harvest in migrateStyles reads real styling
-// instead of recording bare groups; the caller gates this to the affected version range, because
-// in older maps a bare group is normal and would wrongly take on the preset's attrs
+// v1.145-1.147 saved maps with the layer styling stripped out
 export async function restoreStrippedLayerStyles(): Promise<void> {
-  const [, preset] = await (window as any).getStylePreset(localStorage.getItem("presetStyle") || "default");
+  const [, preset] = await getStylePreset(options.map.style.preset || "default");
 
   const isBareGroup = (group: Element, declared: Record<string, string> = {}): boolean => {
     const ignored = new Set(["id", "style", "data-layer", "data-group", ...Object.keys(declared)]);
@@ -712,7 +709,8 @@ function coerceLegacyAttr(key: string, value: unknown): unknown {
 }
 
 // the legacy preset pipeline (public/modules/ui/style-presets.js) converts through these
-globalThis.stylesLegacy = {
+// only the classic public/modules/ui/style*.js scripts read this bridge
+const stylesLegacyBridge = {
   styleNodeFor,
   presetBagFor,
   labelGroupFromLegacy,
@@ -728,3 +726,9 @@ globalThis.stylesLegacy = {
   restoreStrippedLayerStyles,
   stripMigratedAttributes
 };
+
+globalThis.stylesLegacy = stylesLegacyBridge;
+
+declare global {
+  var stylesLegacy: typeof stylesLegacyBridge;
+}

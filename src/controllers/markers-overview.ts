@@ -431,8 +431,8 @@ function exportMarkers(): void {
     const stateName = state ? quote(state.fullName || state.name) : "";
     const cultureName = culture ? quote(culture.name) : "";
 
-    const lat = getLatitude(y, mapCoordinates, graphHeight, 2);
-    const lon = getLongitude(x, mapCoordinates, graphWidth, 2);
+    const lat = getLatitude(y, options.map.geography.coordinates, options.map.graph.height, 2);
+    const lon = getLongitude(x, options.map.geography.coordinates, options.map.graph.width, 2);
 
     return [i, type, icon, name, legend, stateName, cultureName, x, y, lat, lon].join(",");
   });

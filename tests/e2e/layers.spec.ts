@@ -1,7 +1,8 @@
 import { Browser, BrowserContext, expect, Page, test } from "@playwright/test";
+import { waitForMap } from "./wait-for-map";
 
 // map globals used inside page.evaluate
-declare const options: { labels: { groups: { name: string; active?: boolean }[] } };
+declare const options: { map: { labels: { groups: { name: string; active?: boolean }[] } } };
 
 // All tests in this describe block only READ the DOM — they never modify state.
 // Load the map once for the entire suite instead of before every test.
@@ -26,8 +27,8 @@ test.describe("map layers", () => {
     // - Snapshots are OS-independent (configured in playwright.config.ts).
     await sharedPage.goto("/?seed=test-seed&&width=1280&height=720");
 
-    // Wait for map generation to complete by checking window.mapId
-    await sharedPage.waitForFunction(() => (window as any).mapId !== undefined, { timeout: 60000 });
+    // Wait for map generation to complete
+    await waitForMap(sharedPage);
 
     // Additional wait for any rendering/animations to settle
     await sharedPage.waitForTimeout(500);
@@ -206,7 +207,7 @@ test.describe("map layers", () => {
   // The only test here that changes state, it restores the group before it ends
   test("deactivated labels group is not rendered", async () => {
     const counts = await sharedPage.evaluate(async () => {
-      const stateGroup = options.labels.groups.find(group => group.name === "state")!;
+      const stateGroup = options.map.labels.groups.find(group => group.name === "state")!;
       const count = () => document.querySelectorAll("#labels-state > *").length;
       const before = count();
 

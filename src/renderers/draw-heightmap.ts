@@ -124,10 +124,10 @@ export const drawHeightmap = (): void => {
   // render paths
   for (const height of range(0, 101)) {
     const group = height < 20 ? ocean : land;
-    const options = height < 20 ? oceanOptions : landOptions;
+    const heightOptions = height < 20 ? oceanOptions : landOptions;
     const fillsVisible = height < 20 ? oceanFillsVisible : landFillsVisible;
     if (!fillsVisible) continue;
-    const scheme = getColorScheme(options.scheme);
+    const scheme = getColorScheme(heightOptions.scheme);
 
     if (height === 0 && renderOceanCells) {
       // draw base ocean layer
@@ -135,8 +135,8 @@ export const drawHeightmap = (): void => {
         .append("rect")
         .attr("x", 0)
         .attr("y", 0)
-        .attr("width", graphWidth)
-        .attr("height", graphHeight)
+        .attr("width", options.map.graph.width)
+        .attr("height", options.map.graph.height)
         .attr("fill", scheme(1));
     }
 
@@ -146,13 +146,13 @@ export const drawHeightmap = (): void => {
         .append("rect")
         .attr("x", 0)
         .attr("y", 0)
-        .attr("width", graphWidth)
-        .attr("height", graphHeight)
+        .attr("width", options.map.graph.width)
+        .attr("height", options.map.graph.height)
         .attr("fill", scheme(0.8));
     }
 
     if (paths[height] && paths[height]!.length >= 10) {
-      const terracing = options.terracing / 10 || 0;
+      const terracing = heightOptions.terracing / 10 || 0;
       const fillColor = getColor(height, scheme);
 
       if (terracing) {
@@ -226,6 +226,11 @@ export const drawHeightmap = (): void => {
       if (v[0] !== prev && c0 !== c1) current = v[0];
       else if (v[1] !== prev && c1 !== c2) current = v[1];
       else if (v[2] !== prev && c0 !== c2) current = v[2];
+      // a hull half-edge has no opposite triangle, so `vertices.v` holds -1 for it
+      if (current < 0 || current >= vertices.c.length) {
+        ERROR && console.error("Next vertex is out of bounds");
+        break;
+      }
       if (current === chain[chain.length - 1]) {
         ERROR && console.error("Next vertex is not found");
         break;

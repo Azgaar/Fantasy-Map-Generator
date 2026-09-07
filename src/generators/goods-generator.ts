@@ -963,8 +963,8 @@ export class GoodsModule {
   }
 
   // Place a bonus good on every eligible cell based on the current catalogue
-  generate(options: { randomSeed?: number } = {}) {
-    Math.random = Alea(options.randomSeed ?? seed);
+  generate(config: { randomSeed?: number } = {}) {
+    Math.random = Alea(config.randomSeed ?? options.map.seed);
     const shuffle = shuffler(() => Math.random());
 
     if (!pack.goods?.length) this.restoreDefaults();

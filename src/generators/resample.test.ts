@@ -1,4 +1,32 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import "./grid-generator";
+import { Resample as Resampler } from "./resample";
+
+it("resamples at the requested density and records it in the map", () => {
+  options = Options.getDefaultOptions();
+  options.map.graph = { width: 800, height: 600, points: 1000 };
+  options.generation.graph.density = 2;
+  vi.stubGlobal("grid", Grid.generate("old", 800, 600));
+  vi.stubGlobal("pack", { cells: { p: [], g: [] }, rivers: [] });
+  vi.stubGlobal("notes", []);
+  vi.stubGlobal("Features", {
+    markupGrid: () => {
+      throw new Error("stop after resampling");
+    }
+  });
+  const identity = (x: number, y: number): [number, number] => [x, y];
+
+  try {
+    expect(() => Resampler.process({ projection: identity, inverse: identity, scale: 1 })).toThrow(
+      "stop after resampling"
+    );
+    expect(options.map.graph.points).toBe(2000);
+    expect(grid.points.length).toBeGreaterThan(1800);
+    expect(grid.points.length).toBeLessThan(2200);
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
 
 describe("restoreJourneys", () => {
   let Resample: any;
@@ -7,8 +35,7 @@ describe("restoreJourneys", () => {
   beforeEach(async () => {
     globalThis.window = globalThis.window || ({} as any);
     (globalThis as any).WARN = false;
-    (globalThis as any).graphWidth = 100;
-    (globalThis as any).graphHeight = 100;
+    options.map.graph = { width: 100, height: 100, points: 100 };
     (globalThis as any).Pack = { findCell: (x: number, _y: number) => Math.round(x) };
     (globalThis as any).pack = {};
 

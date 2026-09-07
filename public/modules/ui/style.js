@@ -17,14 +17,6 @@
   ensureEl("styleScaleBarBackgroundFilter").innerHTML = allOptions;
 }
 
-// store some style inputs as options
-styleElements.addEventListener("input", storeStyleOption);
-styleElements.addEventListener("change", storeStyleOption);
-
-function storeStyleOption(ev) {
-  if (ev.target.dataset.stored) lock(ev.target.dataset.stored);
-}
-
 // #icons and #goods hold no styling of their own
 const STYLE_ELEMENT_ALIASES = { icons: "burgIcons", goods: "goodsCells" };
 
@@ -412,7 +404,7 @@ function selectStyleElement() {
     emblemsStateSizeInput.value = styles.emblems.stateEmblems.options.size;
     emblemsProvinceSizeInput.value = styles.emblems.provinceEmblems.options.size;
     emblemsBurgSizeInput.value = styles.emblems.burgEmblems.options.size;
-    showAllEmblems.checked = options.emblems.showAll;
+    showAllEmblems.checked = options.app.emblems.showAll;
   }
 
   if (styleElement === "goodsIcons") {
@@ -448,9 +440,9 @@ function selectStyleElement() {
 
     styleScaleBarSize.value = opts.barSize;
     styleScaleBarFontSize.value = attrs["font-size"];
-    styleScaleBarPositionX.value = opts.x;
-    styleScaleBarPositionY.value = opts.y;
-    styleScaleBarLabel.value = opts.label;
+    styleScaleBarPositionX.value = styles.scaleBar.options.x;
+    styleScaleBarPositionY.value = styles.scaleBar.options.y;
+    styleScaleBarLabel.value = styles.scaleBar.options.label;
 
     styleScaleBarBackgroundOpacity.value = back.attrs.opacity ?? 1;
     styleScaleBarBackgroundFill.value = styleScaleBarBackgroundFillOutput.value = back.attrs.fill;
@@ -487,7 +479,7 @@ function updateGroupOptions(styleElement, layerEl) {
     // count from the label data: the culled DOM only holds labels rendered at this zoom
     const labelCounts = {};
     for (const label of window.getLabelsData()) labelCounts[label.group] = (labelCounts[label.group] || 0) + 1;
-    const groups = options.labels.groups.map(({ name }) => name);
+    const groups = options.map.labels.groups.map(({ name }) => name);
     groups.forEach(name => styleGroupSelect.options.add(new Option(`${name} (${labelCounts[name] || 0})`, name)));
     styleGroupSelect.value = groups.includes(selected) ? selected : groups[0] || "";
     return;
@@ -636,9 +628,9 @@ styleGridScale.addEventListener("input", function () {
 });
 
 function calculateFriendlyGridSize() {
+  const { scale, unit } = options.map.units.distance;
   const size = styleGridScale.value * 25;
-  const friendly = `${rn(size * distanceScale, 2)} ${distanceUnitInput.value}`;
-  styleGridSizeFriendly.value = friendly;
+  styleGridSizeFriendly.value = `${rn(size * scale, 2)} ${unit}`;
 }
 
 styleGridShiftX.addEventListener("input", function () {
@@ -1145,7 +1137,7 @@ emblemsBurgSizeInput.addEventListener("change", e => {
 });
 
 showAllEmblems.addEventListener("change", e => {
-  options.emblems.showAll = e.target.checked;
+  Options.set(options => (options.app.emblems.showAll = e.target.checked));
   invokeActiveZooming();
 });
 

@@ -273,8 +273,7 @@ describe("RoutesModule.addMeandering", () => {
   beforeEach(async () => {
     globalThis.TIME = false;
     globalThis.window = globalThis.window || ({} as any);
-    globalThis.graphWidth = 1000;
-    globalThis.graphHeight = 1000;
+    options.map.graph = { width: 1000, height: 1000, points: 10000 };
     globalThis.pack = {
       cells: {
         h: [] as number[],

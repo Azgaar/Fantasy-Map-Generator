@@ -25,7 +25,8 @@ export interface FractalizedShape {
   origIndices: number[]; // index in points[] where original vertex i lives
 }
 
-const DEFAULT_SETTINGS: Readonly<CoastlineSettings> = {
+/** The coastline every new map starts from. The one definition of these values */
+const DEFAULT_COASTLINE: Readonly<CoastlineSettings> = {
   enabled: true,
   maxDepth: 4,
   baseAmplitude: 1.5,
@@ -37,7 +38,6 @@ const DEFAULT_SETTINGS: Readonly<CoastlineSettings> = {
   lakeSmoothThreshMult: 2.0
 };
 
-const STORAGE_KEY = "coastline-settings";
 const SIMPLIFICATION_TOLERANCE = 0.3;
 
 const PROFILE_SIZE = 256;
@@ -172,7 +172,7 @@ function fractalize(points: [number, number][], rand: () => number, settings: Co
 }
 
 function isOnBorder([x, y]: [number, number]) {
-  return x === 0 || x === graphWidth || y === 0 || y === graphHeight;
+  return x === 0 || x === options.map.graph.width || y === 0 || y === options.map.graph.height;
 }
 
 /**
@@ -248,24 +248,19 @@ function buildCoastlinePath({ points, origIndices }: FractalizedShape): string {
 class CoastlineGenerator {
   readonly PROFILE_SIZE = PROFILE_SIZE;
 
-  /**
-   * Settings of the current map. Kept in options, so they are saved to the .map file and the
-   * coastlines are reproduced exactly on reload. A map saved before the settings existed (or a
-   * brand new map) starts from the last values the user picked
-   */
+  /** Settings of the map on screen: a fact, read at render time and saved with the file */
   get settings(): CoastlineSettings {
-    options.coastline ??= this.getStoredSettings();
-    return options.coastline;
+    return options.map.coastline;
   }
 
-  /** Apply a user change: it defines the coastlines of this map and the defaults for the next one */
+  /** Apply a user change: it shapes this map, and the next map starts from it */
   update(change: Partial<CoastlineSettings>): void {
-    const settings = Object.assign(this.settings, change);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+    Object.assign(options.map.coastline, change);
+    Options.save();
   }
 
   getDefaultSettings(): CoastlineSettings {
-    return { ...DEFAULT_SETTINGS };
+    return { ...DEFAULT_COASTLINE };
   }
 
   /** Closed SVG path of the feature outline, fractalized as configured */
@@ -277,7 +272,7 @@ class CoastlineGenerator {
     }
 
     const simplifiedPoints = simplify(points, SIMPLIFICATION_TOLERANCE);
-    const clippedPoints = clipPoly(simplifiedPoints, graphWidth, graphHeight, 1);
+    const clippedPoints = clipPoly(simplifiedPoints, options.map.graph.width, options.map.graph.height, 1);
     const shape = this.fractalizeFeature(clippedPoints, feature);
     return `${round(buildCoastlinePath(shape))}Z`;
   }
@@ -307,20 +302,7 @@ class CoastlineGenerator {
         ? { ...this.settings, smoothThreshold: Math.min(1, smoothThreshold * lakeSmoothThreshMult) }
         : this.settings;
 
-    return fractalize(points, Alea(`${seed}_c${i}`), settings);
-  }
-
-  /** The values the user picked last, falling back to the defaults for keys the stored data misses */
-  private getStoredSettings(): CoastlineSettings {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return this.getDefaultSettings();
-
-    try {
-      return { ...DEFAULT_SETTINGS, ...JSON.parse(stored) };
-    } catch (error) {
-      ERROR && console.error("Invalid stored coastline settings", error);
-      return this.getDefaultSettings();
-    }
+    return fractalize(points, Alea(`${options.map.seed}_c${i}`), settings);
   }
 }
 
