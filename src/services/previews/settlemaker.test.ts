@@ -102,7 +102,7 @@ describe("toSettlemakerInput", () => {
     const input = toSettlemakerInput(
       ctx({
         approaches: [
-          { routeId: 1, group: "roads", type: "highway", bearingDeg: 90, through: true },
+          { routeId: 1, group: "roads", type: "royal", bearingDeg: 90, through: true },
           { routeId: 2, group: "searoutes", type: "sea route", bearingDeg: 180, through: false },
           { routeId: 3, group: "airroutes", bearingDeg: 270, through: false },
           { routeId: 4, group: "trails", type: "trail", bearingDeg: 0, through: false },
@@ -114,8 +114,8 @@ describe("toSettlemakerInput", () => {
     // traderoutes are port-to-port sea lanes; drawing them as roads would send
     // approaches out into open water.
     expect(input.roadBearings).toEqual([
-      { bearing_deg: 90, route_id: "1", kind: "roads" },
-      { bearing_deg: 0, route_id: "4", kind: "trails" }
+      { bearing_deg: 90, route_id: "1", kind: "royal", group: "roads", through: true },
+      { bearing_deg: 0, route_id: "4", kind: "trail", group: "trails", through: false }
     ]);
   });
 
@@ -221,7 +221,7 @@ describe("buildSettlemakerUrl", () => {
       }),
       { urbanDensity: 8, trade: true }
     );
-    // Should not have i= param; should have flat tier params instead (roadBearings can't be encoded in flat tier)
+    // Should not have i= param; should have flat tier params instead
     expect(new URL(link).searchParams.get("i")).toBeNull();
     expect(new URL(link).searchParams.get("name")).toBe("Toprak");
     expect(new URL(link).searchParams.get("pop")).not.toBeNull();
@@ -268,5 +268,29 @@ describe("buildFlatTierUrl", () => {
   it("omits trade entirely when false", () => {
     const url = buildFlatTierUrl(toSettlemakerInput(ctx(), {}), 42);
     expect(new URL(url).searchParams.get("trade")).toBeNull();
+  });
+
+  it("carries land approaches as roads=, with class and through, at packed-tier precision", () => {
+    const approaches = [
+      { routeId: 1, group: "roads", type: "market", bearingDeg: 89.6, through: true },
+      { routeId: 2, group: "searoutes", bearingDeg: 180, through: false },
+      { routeId: 3, group: "trails", type: "footpath", bearingDeg: 0, through: false }
+    ] as BurgContext["approaches"];
+    const url = buildFlatTierUrl(toSettlemakerInput(ctx({ approaches }), {}), 42);
+    expect(new URL(url).searchParams.get("roads")).toBe("89.6:market:through,0:footpath");
+  });
+
+  it("falls back to the group's class for a route with no type or a custom one", () => {
+    const approaches = [
+      { routeId: 1, group: "roads", bearingDeg: 10, through: false },
+      { routeId: 2, group: "trails", type: "goat track", bearingDeg: 20, through: false }
+    ] as BurgContext["approaches"];
+    const url = buildFlatTierUrl(toSettlemakerInput(ctx({ approaches }), {}), 42);
+    expect(new URL(url).searchParams.get("roads")).toBe("10:main,20:trail");
+  });
+
+  it("omits roads entirely for a routeless burg", () => {
+    const url = buildFlatTierUrl(toSettlemakerInput(ctx({ approaches: [] }), {}), 42);
+    expect(new URL(url).searchParams.get("roads")).toBeNull();
   });
 });
