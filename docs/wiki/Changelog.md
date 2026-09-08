@@ -20,6 +20,7 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Preserve dialog positions between sessions [1.152.0]
 - Ability to override a burg's treasury [1.152.0]
 - Heightmap: option to render contour lines [1.152.0]
+- Notes Editor: TinyMCE replaced with Quill 2 by _[barrulus](https://github.com/barrulus)_ [1.152.0]
 - Help assistant: ask questions about FMG by _[barrulus](https://github.com/barrulus)_ [1.151.2]
 - Annex states and provinces by clicking on the map by _[barrulus](https://github.com/barrulus)_ [1.151.2]
 - Option to redraw labels, icons and relief only after a zoom by _[barrulus](https://github.com/barrulus)_ [1.151.2]

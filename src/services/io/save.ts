@@ -66,7 +66,12 @@ function prepareMapData(): string {
   const notesData = JSON.stringify(notes);
   const measurers = JSON.stringify(pack.measurers ?? []);
   const journeys = JSON.stringify(pack.journeys ?? []);
-  const fonts = JSON.stringify(getUsedFonts(ensureEl("map") as Element as SVGSVGElement));
+  const fonts = JSON.stringify(
+    getUsedFonts(
+      ensureEl("map") as Element as SVGSVGElement,
+      notes.map(note => note.legend)
+    )
+  );
   const layers = JSON.stringify(Layers.state);
   const graphOverride = JSON.stringify(GraphOverride.state);
 

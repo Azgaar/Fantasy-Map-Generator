@@ -49,14 +49,6 @@ declare global {
     get: (key: string) => Promise<Blob | undefined>;
     set: (key: string, value: Blob) => Promise<void>;
   };
-  var tinymce:
-    | {
-        _setBaseUrl: (url: string) => void;
-        init: (config: Record<string, unknown>) => void;
-        remove: () => void;
-        activeEditor?: { getContent: () => string; setContent: (content: string) => void };
-      }
-    | undefined;
 }
 
 export type Point = [number, number];
