@@ -536,6 +536,36 @@ describe("v1.152.0 notes moved onto entities", () => {
     expect(pack.markers[1].note).toBeUndefined();
   });
 
+  it("drops an empty legacy note rather than turning its title into a heading", async () => {
+    await migrate([
+      { id: "river1", name: "river1", legend: "" }, // old maps title an untitled note with its element id
+      { id: "burg1", name: "Vaeltown", legend: "" }
+    ]);
+
+    expect(pack.rivers[1].note).toBeUndefined();
+    expect(pack.burgs[1].note).toBeUndefined();
+    expect(confirmationDialog).not.toHaveBeenCalled();
+  });
+
+  it("does not turn an untitled note's element id into a heading", async () => {
+    await migrate([{ id: "river1", name: "river1", legend: "<p>Fed by three lakes</p>" }]);
+
+    expect(pack.rivers[1].note).toBe("<p>Fed by three lakes</p>");
+  });
+
+  it("keeps the marker name of an empty note", async () => {
+    await migrate([{ id: "marker4", name: "Steaming Pools", legend: "" }]);
+
+    expect(pack.markers[0].name).toBe("Steaming Pools");
+    expect(pack.markers[0].note).toBeUndefined();
+  });
+
+  it("does not offer an empty note whose element is gone", async () => {
+    await migrate([{ id: "burg99", name: "Lost Town", legend: "" }]);
+
+    expect(confirmationDialog).not.toHaveBeenCalled();
+  });
+
   it("attaches a regiment note through its state", async () => {
     await migrate([{ id: "regiment1-0", name: "1st Cavalry", legend: "Formed in 900 AD" }]);
 

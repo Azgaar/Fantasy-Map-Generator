@@ -296,7 +296,7 @@ class NotesStore {
 
   /** The same button as a table row action */
   getIcon(subject: string): string {
-    return `<span data-tip="${this.getTip(subject)}" class="icon-edit"></span>`;
+    return `<span data-tip="${this.getTip(subject)}" class="icon-edit pointer"></span>`;
   }
 
   private getTip(subject: string): string {

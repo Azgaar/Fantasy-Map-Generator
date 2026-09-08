@@ -1839,16 +1839,19 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     // an element note (river12) comes before its label note (riverLabel12), so the two collide in that order
     legacyNotes.sort((a, b) => Number(a.id.includes("Label")) - Number(b.id.includes("Label")));
 
+    // an empty legacy note holds no text to keep, so it is never carried over and never reported
+    const orphan = (note: LegacyNote) => void (note.legend && unattachedNotes.push(note));
+
     for (const note of legacyNotes) {
       const ref = Notes.resolveElement(noteRenames.get(note.id) ?? note.id);
       if (!ref) {
-        unattachedNotes.push(note);
+        orphan(note);
         continue;
       }
 
       if (ref.type === "marker") {
         const marker = pack.markers?.find(({ i }) => i === ref.id);
-        if (!marker) unattachedNotes.push(note);
+        if (!marker) orphan(note);
         else {
           if (note.name) marker.name = note.name; // the note title was the only name a marker had
           Notes.append(ref, note.legend);
@@ -1856,9 +1859,11 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         continue;
       }
 
-      // a note titled differently from its entity keeps that title as a heading, so nothing is lost
-      const heading = note.name && note.name !== Notes.getEntityName(ref) ? `<h3>${note.name}</h3>` : "";
-      if (!Notes.set(ref, `${Notes.get(ref) || ""}${heading}${note.legend}`)) unattachedNotes.push(note);
+      // a note titled differently from its entity keeps that title as a heading, so nothing is lost.
+      // an untitled note was titled with its own element id, which is no title at all
+      const titled = note.name && note.name !== note.id && note.name !== Notes.getEntityName(ref);
+      const heading = titled ? `<h3>${note.name}</h3>` : "";
+      if (!Notes.append(ref, note.legend && `${heading}${note.legend}`)) orphan(note);
     }
 
     for (const marker of pack.markers || []) marker.name ||= getDefaultMarkerName(marker.type);
