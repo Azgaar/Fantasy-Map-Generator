@@ -4,11 +4,10 @@ import { Layers } from "@/components/layers";
 import { unfog } from "@/renderers/overlays/fogging";
 import { ensureEl } from "@/utils/nodeUtils";
 
-/** Clear the map: every layer, the transient defs and the notes that described what was there */
+/** Clear the map: every layer and the transient defs */
 export function undraw(): void {
   Layers.eraseAll();
   for (const el of ensureEl("deftemp").querySelectorAll("path, clipPath, svg")) el.remove();
   ensureEl("coas").innerHTML = ""; // auto-generated emblems are re-created on demand
-  notes = [];
   unfog();
 }

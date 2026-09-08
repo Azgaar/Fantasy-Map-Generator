@@ -32,7 +32,6 @@ it.each([18, 180])("keeps legacy custom labels after saving and reloading a font
     burgs: JSON.parse(data[15]),
     addedLabels: []
   } as unknown as typeof pack;
-  globalThis.notes = JSON.parse(data[4]);
 
   // Exercise the label migration without unrelated versions' graph and DOM setup.
   const compare = vi.spyOn(versioning, "compareVersions");

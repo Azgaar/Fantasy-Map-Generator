@@ -3,7 +3,6 @@ import fs from "fs";
 import path from "path";
 import { waitForMap } from "./wait-for-map";
 
-declare const notes: { id: string }[]; // page global, resolved inside page.evaluate
 declare const style: { relief: { set: string; size: number; density: number } };
 
 const LEGACY_RELIEF_ICONS = [
@@ -306,12 +305,8 @@ test.describe("Map loading", () => {
         rendered: addedLabels.map(
           (added: any) => document.getElementById(`addedLabel${added.i}`)?.dataset.labelShape ?? "missing"
         ),
-        // legacy notes are re-pointed at the new entity ids. `notes` is script-scoped,
-        // so it has to be read off the lexical global rather than off window
-        orphanNotes: notes.filter(
-          (note: any) =>
-            note.id.startsWith("addedLabel") && !addedLabels.some((added: any) => `addedLabel${added.i}` === note.id)
-        ).length
+        // a legacy note now rides on the added label itself, so none can be left behind
+        notedLabels: addedLabels.filter((added: any) => added.note).length
       };
     });
 
@@ -327,7 +322,7 @@ test.describe("Map loading", () => {
       });
     }
     expect(migrated.rendered).toEqual(["path", "path", "path", "path"]);
-    expect(migrated.orphanNotes).toBe(0);
+    expect(migrated.notedLabels).toBeGreaterThan(0);
   });
 
   test("legacy lakes without shoreline data should get it on load", async ({ page }) => {

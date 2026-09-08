@@ -1,5 +1,6 @@
 // Update an old map file to the current version
 import { color, min, select } from "d3";
+import { appendNote, getEntityName, getNote, resolveElementId, setNote } from "@/components/entity-notes";
 import { type LayerId, Layers, type LayersState } from "@/components/layers";
 import { normalizeLegacyBurgGroupFilters } from "@/components/options-legacy";
 import type { MapData } from "@/components/options-schema";
@@ -7,6 +8,7 @@ import { RELIEF_SETS } from "@/data/relief-icons";
 import { Emblems } from "@/generators/emblems-generator";
 import type { GraphOverrides } from "@/generators/graph-override";
 import { type Label, type LabelNameMode, Labels as LabelsGenerator } from "@/generators/labels-generator";
+import { getDefaultMarkerName } from "@/generators/markers-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
 import {
   labelGroupFromLegacy,
@@ -64,8 +66,32 @@ const LEGACY_LAYER_IDS: Record<string, LayerId> = {
   toggleVignette: "vignette"
 };
 
+type LegacyNote = { id: string; name: string; legend: string };
+
+// v1.152.0 moved notes onto the entity they describe. Older migrations still rewrite note ids, so the
+// legacy array is parsed once here, kept for them, and distributed at the end of the chain
+let legacyNotes: LegacyNote[] = [];
+let unattachedNotes: LegacyNote[] = [];
+
+function parseLegacyNotes(data: string | undefined): LegacyNote[] {
+  if (!data) return [];
+  const parsed: unknown = safeParseJSON(data);
+  if (!Array.isArray(parsed)) return [];
+  return parsed.filter(
+    (note): note is LegacyNote => Boolean(note) && typeof note.id === "string" && typeof note.legend === "string"
+  );
+}
+
+/** Notes from a loaded map that no entity claimed. Read once by the loader, then dropped */
+export function takeUnattachedNotes(): LegacyNote[] {
+  const notes = unattachedNotes;
+  unattachedNotes = [];
+  return notes;
+}
+
 export async function resolveVersionConflicts(mapVersion: string, data: string[]): Promise<void> {
   const isOlderThan = (tagVersion: string) => compareVersions(mapVersion, tagVersion).isOlder;
+  legacyNotes = parseLegacyNotes(data[4]);
 
   if (isOlderThan("1.139.0")) {
     // v1.139.0 moved biomes data from the legacy pipe-delimited format to pack.biomes.
@@ -618,7 +644,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
       pack.markers = Array.from(markerElements).map((el, i) => {
         const id = el.getAttribute("id");
-        const note = notes.find(note => note.id === id);
+        const note = legacyNotes.find(note => note.id === id);
         if (note) note.id = `marker${i}`;
 
         let x = +el.dataset.x!;
@@ -1382,7 +1408,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       styles.labels.groups[name] = labelGroupFromLegacy(oldStyle);
 
       for (const textEl of addedGroup.querySelectorAll<SVGTextElement>(":scope > text")) {
-        const note = notes.find(note => note.id === textEl.id);
+        const note = legacyNotes.find(note => note.id === textEl.id);
 
         const pathEl = document.getElementById(`textPath_${textEl.id}`) as SVGPathElement | null;
         if (!pathEl) continue;
@@ -1393,7 +1419,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
           const addedLabel = AddedLabels.add({ x, y, label: { ...label, group: name } });
           if (note) note.id = `addedLabel${addedLabel.i}`;
         } else {
-          if (note) notes = notes.filter(n => n.id !== note.id); // remove note
+          if (note) legacyNotes = legacyNotes.filter(n => n.id !== note.id); // remove note
         }
       }
     }
@@ -1815,6 +1841,44 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     for (const group of groups) if (group?.attrs) group.attrs.style = stripDisplay(group.attrs.style ?? null);
     if (record) data[48] = JSON.stringify(record);
   }
+
+  if (isOlderThan("1.152.0")) distributeLegacyNotes(data);
+}
+
+/** v1.152.0: move every note from the flat array onto its entity; what no entity claims is handed back */
+function distributeLegacyNotes(data: string[]): void {
+  // an element note (river12) comes before its label note (riverLabel12), so the two collide in that order
+  const sorted = [...legacyNotes].sort((a, b) => Number(a.id.includes("Label")) - Number(b.id.includes("Label")));
+
+  for (const note of sorted) {
+    const ref = resolveElementId(note.id);
+    if (!ref) {
+      unattachedNotes.push(note);
+      continue;
+    }
+
+    if (ref.type === "marker") {
+      const marker = pack.markers?.find(({ i }) => i === ref.id);
+      if (!marker) {
+        unattachedNotes.push(note);
+        continue;
+      }
+      if (note.name) marker.name = note.name;
+      appendNote(ref, note.legend);
+      continue;
+    }
+
+    // a note titled differently from its entity keeps that title as a heading, so nothing is lost
+    const heading = note.name && note.name !== getEntityName(ref) ? `<h3>${note.name}</h3>` : "";
+    if (!setNote(ref, `${getNote(ref) || ""}${heading}${note.legend}`)) unattachedNotes.push(note);
+  }
+
+  for (const marker of pack.markers || []) marker.name ||= getDefaultMarkerName(marker.type);
+
+  legacyNotes = [];
+  data[4] = ""; // the slot is positional, so it stays, empty
+  if (unattachedNotes.length)
+    WARN && console.warn(`[Auto-update] ${unattachedNotes.length} note(s) belong to no map element`);
 }
 
 export function migrateLegacySettings(mapVersion: string, data: string[]): void {

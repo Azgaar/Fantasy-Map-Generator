@@ -315,9 +315,7 @@ function showRiverElevationProfile(): void {
 }
 
 function editRiverLegend(): void {
-  const id = selectedRiver.attr("id");
-  const river = getRiver();
-  void Controllers.NotesEditor.open(id, `${river.name} ${river.type}`);
+  void Controllers.NotesEditor.open({ type: "river", id: getRiver().i });
 }
 
 function removeRiver(): void {

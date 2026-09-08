@@ -1,6 +1,7 @@
 // Save the whole .map project to storage, machine or cloud
 
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { getNoteTexts } from "@/components/entity-notes";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { GraphOverride } from "@/generators/graph-override";
@@ -63,15 +64,9 @@ function prepareMapData(): string {
   ].join("|");
 
   const settings = JSON.stringify(options.map); // what the map is; the requests and preferences stay out
-  const notesData = JSON.stringify(notes);
   const measurers = JSON.stringify(pack.measurers ?? []);
   const journeys = JSON.stringify(pack.journeys ?? []);
-  const fonts = JSON.stringify(
-    getUsedFonts(
-      ensureEl("map") as Element as SVGSVGElement,
-      notes.map(note => note.legend)
-    )
-  );
+  const fonts = JSON.stringify(getUsedFonts(ensureEl("map") as Element as SVGSVGElement, getNoteTexts()));
   const layers = JSON.stringify(Layers.state);
   const graphOverride = JSON.stringify(GraphOverride.state);
 
@@ -145,7 +140,7 @@ function prepareMapData(): string {
     settings,
     "", // deprecated separate mapCoordinates, now options.map.geography.coordinates
     biomes,
-    notesData,
+    "", // deprecated notes array, now a note field on the entity it describes
     serializedSVG,
     gridGeneral,
     grid.cells.h,

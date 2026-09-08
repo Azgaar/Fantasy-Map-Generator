@@ -19,6 +19,7 @@ export type Market = {
   color: string;
   name?: string;
   goods: Record<number, { stock: number; price: number }>;
+  note?: string;
 };
 
 export type Deal = {

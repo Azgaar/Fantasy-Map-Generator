@@ -1,6 +1,6 @@
 import { select } from "d3";
 import { fitMapToScreen } from "@/components/canvas";
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { registerMap } from "@/components/lifecycle";
 import { syncOptionInputs } from "@/components/options/tabs/options-tab";
@@ -14,7 +14,7 @@ import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
 import { logStats } from "@/services/logging";
 import { clearCache, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
-import { ensureEl, escapeHtml, last, link, parseError, rn, safeParseJSON } from "@/utils";
+import { downloadFile, ensureEl, escapeHtml, getFileName, last, link, parseError, rn, safeParseJSON } from "@/utils";
 
 async function quickLoad(): Promise<void> {
   const blob = await ldb.get("lastMap");
@@ -248,7 +248,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
   let isLogGroupOpen = false;
 
   try {
-    const { migrateLegacySettings, resolveVersionConflicts } = await import("./auto-update"); // TODO: don't load if not required
+    const { migrateLegacySettings, resolveVersionConflicts, takeUnattachedNotes } = await import("./auto-update"); // TODO: don't load if not required
 
     closeDialogs();
     customization = 0;
@@ -266,7 +266,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
 
     ensureEl<HTMLInputElement>("shapeRendering").value =
       select("#viewbox").attr("shape-rendering") || "geometricPrecision";
-    if (data[4]) notes = JSON.parse(data[4]);
     if (data[34]) {
       const usedFonts = JSON.parse(data[34]);
       usedFonts.forEach((usedFont: (typeof fonts)[number]) => {
@@ -638,9 +637,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
             const domElements = document.querySelectorAll<HTMLElement>(`#marker${marker.i}`);
             if (domElements[1]) domElements[1].id = `marker${nextId}`; // rename 2nd dom element
 
-            const noteElements = notes.filter(note => note.id === `marker${marker.i}`);
-            if (noteElements[1]) noteElements[1].id = `marker${nextId}`; // rename 2nd note
-
             marker.i = nextId;
             nextId += 1;
           } else {
@@ -684,6 +680,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     registerMap(mapCreatedAt);
     logStats();
     tip("Map is successfully loaded", true, "success", 7000);
+    offerUnattachedNotes(takeUnattachedNotes());
   } catch (error) {
     ERROR && console.error(error);
     clearMainTip();
@@ -724,3 +721,22 @@ export const Load = {
   showUploadErrorMessage,
   uploadMap
 };
+
+/** Notes from an old map that belong to no element: the user gets them as a csv or loses them */
+function offerUnattachedNotes(orphans: { id: string; name: string; legend: string }[]): void {
+  if (!orphans.length) return;
+
+  const quote = (value: string) => `"${(value || "").replaceAll('"', '""')}"`;
+  const csv = [
+    "id,name,note",
+    ...orphans.map(note => [quote(note.id), quote(note.name), quote(note.legend)].join(","))
+  ];
+
+  confirmationDialog({
+    title: "Notes without an element",
+    message: `${orphans.length} note(s) in this map describe an element that no longer exists, so they cannot be kept.<br>Download them to keep the text outside the generator.`,
+    confirm: "Download",
+    cancel: "Discard",
+    onConfirm: () => downloadFile(csv.join("\n"), `${getFileName("Unattached notes")}.csv`)
+  });
+}

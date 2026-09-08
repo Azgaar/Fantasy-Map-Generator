@@ -421,9 +421,7 @@ function showRouteElevationProfile(): void {
 }
 
 function editRouteLegend(): void {
-  const id = selectedRoute.attr("id");
-  const route = getRoute();
-  void Controllers.NotesEditor.open(id, route.name!);
+  void Controllers.NotesEditor.open({ type: "route", id: getRoute().i });
 }
 
 function editRouteGroupStyle(): void {

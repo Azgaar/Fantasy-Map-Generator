@@ -34,6 +34,8 @@ export interface Feature {
   enteringFlux?: number;
   closed?: boolean;
   outCell?: number;
+
+  note?: string;
 }
 
 export interface GridFeature {

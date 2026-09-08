@@ -52,4 +52,3 @@ declare global {
 }
 
 export type Point = [number, number];
-export type Note = { id: string; name: string; legend: string };

@@ -25,7 +25,7 @@ function open(markerI?: number, target?: Element): void {
     .classed("draggable", true);
 
   if (findEl("notesEditor")) {
-    void Controllers.NotesEditor.open(selectedElement.id, selectedElement.id);
+    void Controllers.NotesEditor.open({ type: "marker", id: selectedMarker.i });
   }
 
   renderDialog();
@@ -284,8 +284,7 @@ function redrawPin({ i, hidden, pin = "bubble", fill = "#fff", stroke = "#000" }
 }
 
 function editMarkerLegend(): void {
-  const id = selectedElement.id;
-  void Controllers.NotesEditor.open(id, id);
+  void Controllers.NotesEditor.open({ type: "marker", id: selectedMarker.i });
 }
 
 function openMarkersInRadius(): void {

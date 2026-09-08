@@ -1282,8 +1282,7 @@ function applyResults(): void {
     const id = `regiment${r.state}-${r.i}`;
 
     // add result to regiment note
-    const note = notes.find(n => n.id === id);
-    if (note) {
+    if (r.note) {
       const status = side === "attackers" ? battleStatus[0] : battleStatus[1];
       const losses = r.a ? Math.abs(sum(Object.values(r.casualties!))) / r.a : 1;
       const regStatus = getRegimentStatus(losses);
@@ -1295,8 +1294,7 @@ function applyResults(): void {
         .map(t => (r.casualties![t] ? `${Math.abs(r.casualties![t])} ${t}` : null))
         .filter((c): c is string => Boolean(c));
       const casualtiesText = casualtiesList.length ? ` Casualties: ${list(casualtiesList)}.` : "";
-      const legend = `<br><br>${battleName} (${options.map.lore.calendar.year} ${options.map.lore.calendar.eraShort}): ${status}. The regiment ${regStatus}.${initialText}${casualtiesText}`;
-      note.legend += legend;
+      r.note += `<br><br>${battleName} (${options.map.lore.calendar.year} ${options.map.lore.calendar.eraShort}): ${status}. The regiment ${regStatus}.${initialText}${casualtiesText}`;
     }
 
     r.u = { ...r.survivors };
@@ -1307,12 +1305,9 @@ function applyResults(): void {
   }
 
   const i = (last(pack.markers)?.i ?? -1) + 1;
-  {
-    // append battlefield marker
-    const marker: Marker = { i, x: b.x, y: b.y, cell: b.cell, icon: "⚔️", type: "battlefields", dy: 52 };
-    pack.markers.push(marker);
-    Layers.draw("markers");
-  }
+  const marker: Marker = { i, x: b.x, y: b.y, cell: b.cell, icon: "⚔️", type: "battlefields", dy: 52, name: b.name };
+  pack.markers.push(marker);
+  Layers.draw("markers");
 
   const getSide = (regs: Regiment[], n: number): string =>
     regs.length > 1
@@ -1360,7 +1355,7 @@ function applyResults(): void {
     legend += `<br><br>Engagement progression:<br>${phasesText}`;
   }
 
-  notes.push({ id: `marker${i}`, name: b.name, legend });
+  marker.note = legend;
 
   tip(`${b.name} is over. ${result}`, true, "success", 4000);
 

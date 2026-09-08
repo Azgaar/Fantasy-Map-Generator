@@ -799,8 +799,7 @@ function relocateBurgOnClick(this: SVGGElement, event: any): void {
 }
 
 function editBurgLegend(): void {
-  const id = getSelectedId();
-  void Controllers.NotesEditor.open(`burg${id}`, pack.burgs[id].name);
+  void Controllers.NotesEditor.open({ type: "burg", id: getSelectedId() });
 }
 
 function showTemperatureGraph(): void {

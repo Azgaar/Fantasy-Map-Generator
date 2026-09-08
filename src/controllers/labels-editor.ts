@@ -1,5 +1,6 @@
 import { curveNatural, type D3DragEvent, drag, line, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { resolveElementId } from "@/components/entity-notes";
 import { Layers } from "@/components/layers";
 import { showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -512,8 +513,8 @@ function toggleLabelVisibility(): void {
 }
 
 function editLabelLegend(): void {
-  const noteId = label.type === "burg" ? `burg${label.entityId}` : label.id;
-  void Controllers.NotesEditor.open(noteId, label.text);
+  const ref = resolveElementId(label.id); // burgLabel3 -> the burg, stateLabel1 -> the state, and so on
+  if (ref) void Controllers.NotesEditor.open(ref);
 }
 
 function removeSelectedLabel(): void {

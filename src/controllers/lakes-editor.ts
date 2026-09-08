@@ -340,8 +340,7 @@ function editGroupStyle(): void {
 }
 
 function editLakeLegend(): void {
-  const id = selectedLake.attr("id");
-  void Controllers.NotesEditor.open(id, `${getLake().name} ${ensureEl<HTMLSelectElement>("lakeGroup").value} lake`);
+  void Controllers.NotesEditor.open({ type: "feature", id: getLake().i });
 }
 
 function closeLakesEditor(): void {

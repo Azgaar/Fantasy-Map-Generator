@@ -44,6 +44,7 @@ export interface Burg {
   treasury?: number; // accumulated cash balance
   market?: number;
   label?: Label;
+  note?: string;
 }
 
 // A burg that could become a port on a given water body.
@@ -784,11 +785,6 @@ class BurgModule {
     const { cells, burgs, states, provinces } = pack;
     Population.rankCells();
 
-    notes = notes.filter(note => {
-      if (!note.id.startsWith("burg")) return true;
-      return burgs[+note.id.slice(4)]?.lock;
-    });
-
     const newBurgs: Burg[] = [0 as unknown as Burg];
     const burgsTree = quadtree<[number, number]>();
     cells.burg = new Uint16Array(cells.i.length);
@@ -806,9 +802,6 @@ class BurgModule {
     const lockedBurgs = burgs.filter(burg => burg.i && !burg.removed && burg.lock);
     for (const lockedBurg of lockedBurgs) {
       const newId = newBurgs.length;
-      const noteIndex = notes.findIndex(note => note.id === `burg${lockedBurg.i}`);
-      if (noteIndex !== -1) notes[noteIndex].id = `burg${newId}`;
-
       lockedBurg.i = newId;
       newBurgs.push(lockedBurg);
       burgsTree.add([lockedBurg.x, lockedBurg.y]);
@@ -827,8 +820,6 @@ class BurgModule {
     for (const centerBurg of unlockedMarketCenters) {
       const oldId = centerBurg.i;
       const newId = newBurgs.length;
-      const noteIndex = notes.findIndex(note => note.id === `burg${oldId}`);
-      if (noteIndex !== -1) notes[noteIndex].id = `burg${newId}`;
       const market = pack.markets.find(market => market.centerBurgId === oldId);
       if (market) market.centerBurgId = newId;
 
@@ -904,9 +895,7 @@ class BurgModule {
 
     pack.cells.burg[burg.cell] = 0;
     burg.removed = true;
-
-    const noteId = notes.findIndex(note => note.id === `burg${burgId}`);
-    if (noteId !== -1) notes.splice(noteId, 1);
+    delete burg.note;
 
     if (burg.coa) {
       delete burg.coa;

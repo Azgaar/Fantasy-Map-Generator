@@ -40,6 +40,7 @@ export interface Culture {
   area?: number;
   rural?: number;
   urban?: number;
+  note?: string;
 }
 
 export const CULTURE_TYPES = ["Generic", "Hunting", "Highland", "River", "Lake", "Naval", "Nomadic"] as const;

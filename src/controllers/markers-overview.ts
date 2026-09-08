@@ -387,7 +387,6 @@ function changeMarkerType(): void {
 }
 
 function removeMarker(i: number): void {
-  notes = notes.filter(note => note.id !== `marker${i}`);
   pack.markers = pack.markers.filter(marker => marker.i !== i);
   document.getElementById(`marker${i}`)?.remove();
   markersTable.refresh();
@@ -406,9 +405,7 @@ function removeAllMarkers(): void {
   pack.markers = pack.markers.filter(({ i, lock }) => {
     if (lock) return true;
 
-    const id = `marker${i}`;
-    document.getElementById(id)?.remove();
-    notes = notes.filter(note => note.id !== id);
+    document.getElementById(`marker${i}`)?.remove();
     return false;
   });
 
@@ -422,9 +419,8 @@ function exportMarkers(): void {
   const body = pack.markers.map(marker => {
     const { i, type, icon, x, y, cell } = marker;
 
-    const note = notes.find(note => note.id === `marker${i}`);
-    const name = note ? quote(note.name) : "Unknown";
-    const legend = note ? quote(note.legend) : "";
+    const name = quote(marker.name);
+    const legend = quote(marker.note || "");
 
     const state = pack.states[pack.cells.state[cell]];
     const culture = pack.cultures[pack.cells.culture[cell]];

@@ -979,13 +979,6 @@ function stateRemove(stateId: number): void {
     removeEmblem("province", p);
   });
 
-  // remove military
-  (pack.states[stateId].military || []).forEach(m => {
-    const id = `regiment${stateId}-${m.i}`;
-    const index = notes.findIndex(n => n.id === id);
-    if (index !== -1) notes.splice(index, 1);
-  });
-
   // clean up neighbors references from other states
   pack.states.forEach(state => {
     if (!state.i || state.removed || !state.neighbors) return;
@@ -1694,9 +1687,6 @@ function mergeStates(statesToMerge: number[], rulingStateId: number): void {
       const newIndex = (rulingState.military || []).length;
       (rulingState.military || []).push({ ...regiment, i: newIndex });
       const newId = `regiment${rulingStateId}-${newIndex}`;
-
-      const note = notes.find(n => n.id === oldId);
-      if (note) note.id = newId;
 
       const element = document.getElementById(oldId);
       if (element) {
