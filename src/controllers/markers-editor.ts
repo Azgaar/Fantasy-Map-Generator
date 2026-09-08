@@ -1,11 +1,11 @@
 import { drag, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
-import { Notes } from "@/components/entity-notes";
 import { stopMapPlacement } from "@/components/map-placement";
 import { clearMainTip } from "@/components/tooltips";
 import { viewport } from "@/components/viewport";
 import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
+import { Notes } from "@/generators/notes";
 import { getPin } from "@/renderers/draw-markers";
 import { ensureEl, findEl, rn } from "../utils";
 

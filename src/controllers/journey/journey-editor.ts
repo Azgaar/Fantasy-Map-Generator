@@ -15,7 +15,6 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
-import { Notes } from "@/components/entity-notes";
 import { Layers } from "@/components/layers";
 import type { FillBoxElement } from "@/components/shared/fill-box";
 import { tip } from "@/components/tooltips";
@@ -26,6 +25,7 @@ import {
   getCellPoint,
   resolveCellPlace
 } from "@/generators/journeys/journey-places";
+import { Notes } from "@/generators/notes";
 import { startJourneyTravel, stopJourneyTravel } from "@/renderers/journey-travel";
 import type { Journey, JourneySegment } from "@/types/Journey";
 import {

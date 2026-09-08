@@ -1,5 +1,6 @@
-// Notes (legends) live on the entity they describe, as an optional `note` field holding html.
-// This module is the only place that maps between an entity, its svg element id and the string key
+// Notes (legends) live on the entity they describe, as an optional `note` field holding html. This
+// module is the only place that maps between an entity, the svg element that carries its note on
+// hover, and the key the editors and the csv exchange use. See docs/prd/entity-notes.md
 
 export const NOTE_ENTITY_TYPES = [
   "state",

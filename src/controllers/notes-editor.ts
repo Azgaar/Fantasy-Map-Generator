@@ -1,9 +1,9 @@
 import type Quill from "quill";
 import { confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
-import { NOTE_ENTITY_TYPES, type NoteEntry, type NoteRef, Notes } from "@/components/entity-notes";
 import { tip } from "@/components/tooltips";
 import { viewport } from "@/components/viewport";
 import { Controllers } from "@/controllers";
+import { NOTE_ENTITY_TYPES, type NoteEntry, type NoteRef, Notes } from "@/generators/notes";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName, speak, uploadFile } from "@/utils";
 import { ensureEl } from "../utils";

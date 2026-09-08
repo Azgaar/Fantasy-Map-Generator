@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { Notes } from "@/components/entity-notes";
+import { Notes } from "./notes";
 
 beforeEach(() => {
   globalThis.pack = {

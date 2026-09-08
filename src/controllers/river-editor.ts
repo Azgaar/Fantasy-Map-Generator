@@ -1,9 +1,9 @@
 import { drag, type Selection, select } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
-import { Notes } from "@/components/entity-notes";
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
+import { Notes } from "@/generators/notes";
 import type { River } from "@/generators/river-generator";
 import type { Point } from "@/generators/voronoi";
 import { speak } from "@/utils";

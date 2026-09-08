@@ -1,6 +1,6 @@
 import { select } from "d3";
 import { fitMapToScreen } from "@/components/canvas";
-import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { registerMap } from "@/components/lifecycle";
 import { syncOptionInputs } from "@/components/options/tabs/options-tab";
@@ -14,8 +14,7 @@ import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
 import { logStats } from "@/services/logging";
 import { clearCache, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
-import { downloadFile, ensureEl, escapeHtml, getFileName, last, link, parseError, rn, safeParseJSON } from "@/utils";
-import type { UnattachedNote } from "./auto-update";
+import { ensureEl, escapeHtml, last, link, parseError, rn, safeParseJSON } from "@/utils";
 
 async function quickLoad(): Promise<void> {
   const blob = await ldb.get("lastMap");
@@ -376,7 +375,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       if (goodIconsDefs) goodIconsDefs.insertAdjacentHTML("beforeend", data[45]);
     }
 
-    const { unattachedNotes } = await resolveVersionConflicts(mapVersion!, data);
+    await resolveVersionConflicts(mapVersion!, data);
 
     const styleRecord = data[48] ? safeParseJSON(data[48]) : undefined; // data[48] should be already migrated by auto-update
     Styles.set(Styles.parse(styleRecord));
@@ -681,7 +680,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     registerMap(mapCreatedAt);
     logStats();
     tip("Map is successfully loaded", true, "success", 7000);
-    offerUnattachedNotes(unattachedNotes);
   } catch (error) {
     ERROR && console.error(error);
     clearMainTip();
@@ -722,22 +720,3 @@ export const Load = {
   showUploadErrorMessage,
   uploadMap
 };
-
-/** Notes from an old map that belong to no element: the user gets them as a csv or loses them */
-function offerUnattachedNotes(orphans: UnattachedNote[]): void {
-  if (!orphans.length) return;
-
-  const quote = (value: string) => `"${(value || "").replaceAll('"', '""')}"`;
-  const csv = [
-    "id,name,note",
-    ...orphans.map(note => [quote(note.id), quote(note.name), quote(note.legend)].join(","))
-  ];
-
-  confirmationDialog({
-    title: "Notes without an element",
-    message: `${orphans.length} note(s) in this map describe an element that no longer exists, so they cannot be kept.<br>Download them to keep the text outside the generator.`,
-    confirm: "Download",
-    cancel: "Discard",
-    onConfirm: () => downloadFile(csv.join("\n"), `${getFileName("Unattached notes")}.csv`)
-  });
-}

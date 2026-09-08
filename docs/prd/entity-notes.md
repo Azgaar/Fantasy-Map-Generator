@@ -249,7 +249,7 @@ cover `name` alongside `note` — it is the same lookup. Serves `heightmap-edito
 
 ### New
 
-- `src/components/entity-notes.ts` — resolution table, `getEntityLabel`, note get/set/clear,
+- `src/generators/notes.ts` — resolution table, `getEntityLabel`, note get/set/clear,
   aggregate walk for the editor and the font scan.
 
 ### Docs

@@ -4,10 +4,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import indexHtml from "@/index.html?raw";
 import "@/generators/added-labels";
 import "@/generators/features"; // migrations call the Features module through its global
+import { confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { Styles } from "@/generators/styles";
 import * as versioning from "@/services/versioning";
 import { VERSION } from "@/services/versioning";
-import { migrateLegacySettings, resolveVersionConflicts, type UnattachedNote } from "./auto-update";
+import { downloadFile } from "@/utils";
+import { migrateLegacySettings, resolveVersionConflicts } from "./auto-update";
 
 beforeEach(() => {
   document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox"></g></svg>`;
@@ -454,9 +456,13 @@ describe("missing svg defs", () => {
   });
 });
 
-describe("v1.152.0 notes moved onto entities", () => {
-  let unattached: UnattachedNote[] = [];
+vi.mock("@/components/dialog/dialog-helpers", () => ({ confirmationDialog: vi.fn(), destroyDialog: vi.fn() }));
+vi.mock("@/utils", async importOriginal => ({
+  ...(await importOriginal<typeof import("@/utils")>()),
+  downloadFile: vi.fn()
+}));
 
+describe("v1.152.0 notes moved onto entities", () => {
   async function migrate(notes: object[]) {
     const data = Array<string>(52).fill("");
     data[4] = JSON.stringify(notes);
@@ -464,7 +470,7 @@ describe("v1.152.0 notes moved onto entities", () => {
     const compare = vi.spyOn(versioning, "compareVersions");
     compare.mockImplementation((_a, b) => ({ isOlder: b === "1.152.0", isNewer: false, isEqual: false }));
     try {
-      ({ unattachedNotes: unattached } = await resolveVersionConflicts("1.151.2", data));
+      await resolveVersionConflicts("1.151.2", data);
     } finally {
       compare.mockRestore();
     }
@@ -472,6 +478,8 @@ describe("v1.152.0 notes moved onto entities", () => {
   }
 
   beforeEach(() => {
+    vi.mocked(confirmationDialog).mockClear();
+    vi.mocked(downloadFile).mockClear();
     globalThis.pack = {
       burgs: [0, { i: 1, name: "Vaeltown" }],
       states: [
@@ -502,7 +510,7 @@ describe("v1.152.0 notes moved onto entities", () => {
 
     expect(pack.burgs[1].note).toBe("A river port");
     expect(data[4]).toBe("");
-    expect(unattached).toHaveLength(0);
+    expect(confirmationDialog).not.toHaveBeenCalled();
   });
 
   it("collides the two notes of a river, the element note first", async () => {
@@ -534,13 +542,26 @@ describe("v1.152.0 notes moved onto entities", () => {
     expect(pack.states[1].military![0].note).toBe("Formed in 900 AD");
   });
 
-  it("hands back notes whose element is gone", async () => {
+  it("offers notes whose element is gone as a csv, and keeps the rest", async () => {
     await migrate([
       { id: "burg1", name: "Vaeltown", legend: "kept" },
-      { id: "burg99", name: "Lost Town", legend: "dropped" },
+      { id: "burg99", name: "Lost Town", legend: 'dropped, with a "quote"' },
       { id: "someLegacyThing", name: "Older still", legend: "dropped too" }
     ]);
 
-    expect(unattached.map(note => note.id)).toEqual(["burg99", "someLegacyThing"]);
+    expect(pack.burgs[1].note).toBe("kept");
+    expect(confirmationDialog).toHaveBeenCalledOnce();
+
+    const [dialog] = vi.mocked(confirmationDialog).mock.calls[0];
+    expect(dialog.message).toContain("2 note(s)");
+
+    dialog.onConfirm?.();
+    const [csv, fileName] = vi.mocked(downloadFile).mock.calls[0];
+    expect(fileName).toContain(".csv");
+    expect(String(csv).split("\n")).toEqual([
+      "id,name,note",
+      '"burg99","Lost Town","dropped, with a ""quote"""',
+      '"someLegacyThing","Older still","dropped too"'
+    ]);
   });
 });

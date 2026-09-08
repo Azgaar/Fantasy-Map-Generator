@@ -1,12 +1,12 @@
 import { curveNatural, type D3DragEvent, drag, line, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
-import { Notes } from "@/components/entity-notes";
 import { Layers } from "@/components/layers";
 import { showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { viewport } from "@/components/viewport";
 import { Controllers } from "@/controllers";
 import type { Label, LabelType } from "@/generators/labels-generator";
+import { Notes } from "@/generators/notes";
 import { UNNAMED_ROUTE } from "@/generators/routes-generator";
 import type { Point } from "@/generators/voronoi";
 import { createLabelArc } from "@/renderers/labels/label-arc";

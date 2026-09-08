@@ -523,7 +523,7 @@ These entities carry a note: `burgs`, `markers`, `states`, `provinces`, `rivers`
 `states[].military[]`, `addedLabels`, `features`, `zones`, `journeys`, `markets`, `cultures`,
 `religions`, `biomes` and `goods`.
 
-`src/components/entity-notes.ts` owns the mapping between an entity and the svg element that carries
+`src/generators/notes.ts` owns the mapping between an entity and the svg element that carries
 its note on hover (`burg7`, `stateLabel3`, `regiment3-1`, `feature_9`, ...), plus the note lookup,
 the aggregate walk the Notes Editor lists, and the `type:id` key the csv exchange format uses.
 Cultures, religions, biomes and goods have no element of their own, so their notes are reachable only

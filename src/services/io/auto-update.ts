@@ -1,6 +1,6 @@
 // Update an old map file to the current version
 import { color, min, select } from "d3";
-import { Notes } from "@/components/entity-notes";
+import { confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { type LayerId, Layers, type LayersState } from "@/components/layers";
 import { normalizeLegacyBurgGroupFilters } from "@/components/options-legacy";
 import type { MapData } from "@/components/options-schema";
@@ -10,6 +10,7 @@ import type { GraphOverrides } from "@/generators/graph-override";
 import { type Label, type LabelNameMode, Labels as LabelsGenerator } from "@/generators/labels-generator";
 import { getDefaultMarkerName } from "@/generators/markers-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
+import { Notes } from "@/generators/notes";
 import {
   labelGroupFromLegacy,
   migrateStyles,
@@ -21,7 +22,18 @@ import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { unfog } from "@/renderers/overlays/fogging";
 import { compareVersions } from "@/services/versioning";
 import type { ReliefSet } from "@/types/relief";
-import { ensureEl, findEl, minmax, parseTransform, rn, rw, safeParseJSON, unique } from "@/utils";
+import {
+  downloadFile,
+  ensureEl,
+  findEl,
+  getFileName,
+  minmax,
+  parseTransform,
+  rn,
+  rw,
+  safeParseJSON,
+  unique
+} from "@/utils";
 import { parsePathPoints } from "@/utils/pathUtils";
 
 type LegacyBurgGroup = Omit<MapData["burgs"]["groups"][number], "biomes" | "states" | "cultures" | "religions"> & {
@@ -66,14 +78,7 @@ const LEGACY_LAYER_IDS: Record<string, LayerId> = {
   toggleVignette: "vignette"
 };
 
-export type UnattachedNote = { id: string; name: string; legend: string };
-
-export interface VersionMigrationResult {
-  /** Notes from a pre-1.152.0 map that describe an element no longer on the map */
-  unattachedNotes: UnattachedNote[];
-}
-
-export async function resolveVersionConflicts(mapVersion: string, data: string[]): Promise<VersionMigrationResult> {
+export async function resolveVersionConflicts(mapVersion: string, data: string[]): Promise<void> {
   const isOlderThan = (tagVersion: string) => compareVersions(mapVersion, tagVersion).isOlder;
   const noteRenames = new Map<string, string>(); // legacy element id -> the id the element has now
 
@@ -1821,12 +1826,13 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     if (record) data[48] = JSON.stringify(record);
   }
 
-  const unattachedNotes: UnattachedNote[] = [];
-
   if (isOlderThan("1.152.0")) {
     // v1.152.0 moved notes off the flat array in data[4] and onto the entity each one describes
+    type LegacyNote = { id: string; name: string; legend: string };
+    const unattachedNotes: LegacyNote[] = [];
+
     const parsed: unknown = data[4] ? safeParseJSON(data[4]) : [];
-    const legacyNotes: UnattachedNote[] = Array.isArray(parsed)
+    const legacyNotes: LegacyNote[] = Array.isArray(parsed)
       ? parsed.filter(note => Boolean(note) && typeof note.id === "string" && typeof note.legend === "string")
       : [];
 
@@ -1858,11 +1864,26 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     for (const marker of pack.markers || []) marker.name ||= getDefaultMarkerName(marker.type);
 
     data[4] = ""; // the slot is positional, so it stays, empty
-    if (unattachedNotes.length)
-      WARN && console.warn(`[Auto-update] ${unattachedNotes.length} note(s) belong to no map element`);
-  }
 
-  return { unattachedNotes };
+    // a note with nothing left to describe cannot be kept, so the text is offered back to the user
+    if (unattachedNotes.length) {
+      WARN && console.warn(`[Auto-update] ${unattachedNotes.length} note(s) belong to no map element`);
+
+      const quote = (value: string) => `"${(value || "").replaceAll('"', '""')}"`;
+      const csv = [
+        "id,name,note",
+        ...unattachedNotes.map(note => [quote(note.id), quote(note.name), quote(note.legend)].join(","))
+      ].join("\n");
+
+      confirmationDialog({
+        title: "Notes without an element",
+        message: `${unattachedNotes.length} note(s) in this map describe an element that no longer exists, so they cannot be kept.<br>Download them to keep the text outside the generator.`,
+        confirm: "Download",
+        cancel: "Discard",
+        onConfirm: () => downloadFile(csv, `${getFileName("Unattached notes")}.csv`)
+      });
+    }
+  }
 }
 
 export function migrateLegacySettings(mapVersion: string, data: string[]): void {

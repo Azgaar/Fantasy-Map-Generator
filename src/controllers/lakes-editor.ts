@@ -1,6 +1,5 @@
 import { drag, mean, min, polygonLength, type Selection, select } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
-import { Notes } from "@/components/entity-notes";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -8,6 +7,7 @@ import { Controllers } from "@/controllers";
 import { Coastline } from "@/generators/coastline-generator";
 import type { Feature } from "@/generators/features";
 import { GraphOverride } from "@/generators/graph-override";
+import { Notes } from "@/generators/notes";
 import { getArea, getAreaUnit, speak } from "@/utils";
 import { ensureEl, findEl, rand, rn, si, unique } from "../utils";
 import { getHeight } from "../utils/unitUtils";
