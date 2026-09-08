@@ -2148,32 +2148,6 @@ div.textual span,
   margin: 4px;
 }
 
-/* jQuery UI sets the dialog content height inline; the layout column fills it, the editor takes the rest */
-#notesLayout {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  width: auto;
-}
-
-#notesLegend,
-#notesSource {
-  flex: 1;
-  min-height: 0;
-  background-color: #fff;
-}
-
-#notesSource {
-  font-family: var(--monospace);
-  resize: none;
-}
-
-#notesBody td,
-#notesBody th {
-  border: 1px solid #000;
-  padding: 2px 5px;
-}
-
 svg.button {
   position: relative;
   background-color: transparent;

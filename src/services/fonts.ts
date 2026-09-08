@@ -344,8 +344,8 @@ export async function loadFontsAsDataURI(fonts: FontDefinition[]): Promise<FontD
   return await Promise.all(promises);
 }
 
-/** Collect the fonts actually referenced by the map's SVG */
-export function getUsedFonts(svg: SVGSVGElement): FontDefinition[] {
+/** Collect fonts referenced by the map and, when saving, its notes. */
+export function getUsedFonts(svg: SVGSVGElement, legends: string[] = []): FontDefinition[] {
   const usedFontFamilies = new Set();
 
   const labelGroups = svg.querySelectorAll("#labels g");
@@ -360,6 +360,17 @@ export function getUsedFonts(svg: SVGSVGElement): FontDefinition[] {
   const legend = svg.querySelector("#legend");
   const legendFont = legend?.getAttribute("font-family");
   if (legendFont) usedFontFamilies.add(legendFont);
+
+  for (const legend of legends) {
+    const template = document.createElement("template");
+    template.innerHTML = legend;
+    for (const el of template.content.querySelectorAll<HTMLElement>("[style], font[face]")) {
+      const family = el.style.fontFamily || el.getAttribute("face") || "";
+      for (const match of family.matchAll(/"([^"]+)"|'([^']+)'|([^,]+)/g)) {
+        usedFontFamilies.add((match[1] || match[2] || match[3]).trim());
+      }
+    }
+  }
 
   const usedFonts = fonts.filter(font => usedFontFamilies.has(font.family));
   return usedFonts;

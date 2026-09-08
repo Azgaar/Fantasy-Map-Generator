@@ -20,14 +20,14 @@ import { Pins } from "@/components/pins";
 import { tip } from "@/components/tooltips";
 import { isElectron } from "./platform";
 
-export const VERSION = "1.152.1";
+export const VERSION = "1.152.0";
 
 // new changes on top
 const latestPublicChanges = [
-  "Notes Editor: new bundled rich text editor, works offline and in the Desktop App",
   "Heightmap: option to render contour lines",
   "Ability to override a burg's treasury",
   "Dialogs: preserve position sessions",
+  "Notes Editor: new rich text editor",
   "Help assistant: ask questions about the Generator in the app",
   "States and Provinces editors: annex by clicking on the map",
   "Option to redraw labels, icons and relief only after a zoom",
