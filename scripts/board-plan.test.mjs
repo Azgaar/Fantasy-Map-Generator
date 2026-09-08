@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { parseTriage, planFieldWrites } from "./board-plan.mjs";
+import { itemsFromGraphql, parseTriage, planFieldWrites, planLabelWrites } from "./board-plan.mjs";
 
 test("parses an exact block", () => {
   const body = "### Triage\nPriority: P2 – Medium\nSize: M\n";
@@ -75,11 +75,28 @@ test("refuses to choose between two theme labels", () => {
   );
   assert.deepEqual(writes, []);
   assert.equal(drift.length, 1);
-  assert.match(drift[0], /two theme labels/);
+  assert.match(drift[0], /2 theme labels/);
+});
+
+test("surfaces an unmapped theme label as drift instead of silently ignoring it", () => {
+  const { writes, drift } = planFieldWrites(item({ labels: ["theme: performance"] }));
+  assert.deepEqual(writes, []);
+  assert.equal(drift.length, 1);
+  assert.match(drift[0], /unmapped theme label/);
+  assert.match(drift[0], /theme: performance/);
+});
+
+test("counts an unmapped theme label toward the conflict guard", () => {
+  const { writes, drift } = planFieldWrites(
+    item({ labels: ["theme: ui-editors", "theme: performance"] })
+  );
+  assert.deepEqual(writes, []);
+  assert.equal(drift.length, 1);
+  assert.match(drift[0], /2 theme labels/);
 });
 
 test("fills Priority and Size from a triage block", () => {
-  const { writes } = planFieldWrites(item({ body: "### Triage\nPriority: P3 – Low\nSize: S\n" }));
+  const { writes, drift } = planFieldWrites(item({ body: "### Triage\nPriority: P3 – Low\nSize: S\n" }));
   assert.deepEqual(
     writes.map(w => [w.field, w.optionName]),
     [
@@ -87,6 +104,7 @@ test("fills Priority and Size from a triage block", () => {
       ["size", "S"]
     ]
   );
+  assert.deepEqual(drift, []);
 });
 
 test("never overwrites a Priority a human already set", () => {
@@ -114,7 +132,15 @@ test("writes nothing for an item with no labels and no block", () => {
   assert.deepEqual(planFieldWrites(item({})), { writes: [], drift: [] });
 });
 
-import { itemsFromGraphql } from "./board-plan.mjs";
+test("surfaces a triage block missing a value as drift instead of staying silent", () => {
+  const { writes, drift } = planFieldWrites(item({ body: "### Triage\nPriority: P2 – Medium\n" }));
+  assert.deepEqual(
+    writes.map(w => w.field),
+    ["priority"]
+  );
+  assert.equal(drift.length, 1);
+  assert.match(drift[0], /no Size value/);
+});
 
 const node = {
   id: "PVTI_abc",
@@ -158,24 +184,45 @@ test("drops draft items that have no content number", () => {
   assert.deepEqual(itemsFromGraphql([{ id: "PVTI_x", fieldValues: { nodes: [] }, content: {} }]), []);
 });
 
-import { planLabelWrites } from "./board-plan.mjs";
-
 test("labels a pull request that has no theme label", () => {
   const got = planLabelWrites(
     item({ number: 1666, type: "PullRequest", labels: [], title: "Regiment icons overlap" })
   );
-  assert.deepEqual(got, [{ number: 1666, label: "theme: military" }]);
+  assert.deepEqual(got, { writes: [{ number: 1666, label: "theme: military" }], drift: [] });
 });
 
 test("leaves an item that already has a theme label alone", () => {
-  assert.deepEqual(planLabelWrites(item({ labels: ["theme: routes"], title: "Regiments" })), []);
+  assert.deepEqual(planLabelWrites(item({ labels: ["theme: routes"], title: "Regiments" })), {
+    writes: [],
+    drift: []
+  });
 });
 
 test("leaves an item already marked needs-theme alone", () => {
-  assert.deepEqual(planLabelWrites(item({ labels: ["needs-theme"], title: "Regiments" })), []);
+  assert.deepEqual(planLabelWrites(item({ labels: ["needs-theme"], title: "Regiments" })), {
+    writes: [],
+    drift: []
+  });
 });
 
-test("marks an unclassifiable item needs-theme", () => {
+// Old intent (pre-fix): an unclassifiable item got a permanent "needs-theme" label, which fought
+// a maintainer who deliberately removed it. New intent: surface it as drift, write nothing, and
+// let theme-label.yml's creation-time needs-theme label (untouched by this script) stand.
+test("surfaces an unclassifiable item as drift instead of writing needs-theme", () => {
   const got = planLabelWrites(item({ number: 9, title: "Something odd", body: "please help" }));
-  assert.deepEqual(got, [{ number: 9, label: "needs-theme" }]);
+  assert.deepEqual(got.writes, []);
+  assert.equal(got.drift.length, 1);
+  assert.match(got.drift[0], /#9/);
+});
+
+test("derives the label from a human-set Theme field instead of guessing", () => {
+  const got = planLabelWrites(
+    item({
+      number: 1780,
+      title: "Editor dialogs snap back",
+      body: "unrelated text with no theme keywords",
+      fields: { theme: "UI/Editors", priority: null, size: null }
+    })
+  );
+  assert.deepEqual(got, { writes: [{ number: 1780, label: "theme: ui-editors" }], drift: [] });
 });

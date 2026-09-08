@@ -1,11 +1,9 @@
-import {
-  FIELD_IDS,
-  PRIORITY_OPTIONS,
-  SIZE_OPTIONS,
-  THEME_LABEL_TO_OPTION,
-  THEME_OPTIONS
-} from "./board-fields.mjs";
+import { PRIORITY_OPTIONS, SIZE_OPTIONS, THEME_LABEL_TO_OPTION, THEME_OPTIONS } from "./board-fields.mjs";
 import { classifyTheme } from "./theme-classify.mjs";
+
+const THEME_OPTION_TO_LABEL = Object.fromEntries(
+  Object.entries(THEME_LABEL_TO_OPTION).map(([label, option]) => [option, label])
+);
 
 const PRIORITY_BY_CODE = new Map(
   Object.keys(PRIORITY_OPTIONS).map(name => [name.slice(0, 2).toUpperCase(), name])
@@ -44,15 +42,17 @@ export function parseTriage(body) {
   const size = rawSize ? resolveSize(rawSize) : null;
 
   if (rawPriority && !priority) errors.push(`unknown Priority value: ${rawPriority}`);
+  else if (!priority) errors.push("Triage block present but no Priority value found");
   if (rawSize && !size) errors.push(`unknown Size value: ${rawSize}`);
+  else if (!size) errors.push("Triage block present but no Size value found");
 
   return { priority, size, errors };
 }
 
 const FIELDS = {
-  theme: { id: FIELD_IDS.theme, label: "Theme", options: THEME_OPTIONS },
-  priority: { id: FIELD_IDS.priority, label: "Priority", options: PRIORITY_OPTIONS },
-  size: { id: FIELD_IDS.size, label: "Size", options: SIZE_OPTIONS }
+  theme: { label: "Theme", options: THEME_OPTIONS },
+  priority: { label: "Priority", options: PRIORITY_OPTIONS },
+  size: { label: "Size", options: SIZE_OPTIONS }
 };
 
 export function planFieldWrites(item) {
@@ -77,9 +77,14 @@ export function planFieldWrites(item) {
     });
   };
 
-  const themeLabels = item.labels.filter(l => Object.hasOwn(THEME_LABEL_TO_OPTION, l));
-  if (themeLabels.length > 1) drift.push(`#${item.number}: two theme labels, ${themeLabels.join(", ")}`);
-  else if (themeLabels.length === 1) consider("theme", THEME_LABEL_TO_OPTION[themeLabels[0]]);
+  const allThemeLabels = item.labels.filter(l => l.startsWith("theme:"));
+  const unmappedThemeLabels = allThemeLabels.filter(l => !Object.hasOwn(THEME_LABEL_TO_OPTION, l));
+
+  if (allThemeLabels.length > 1)
+    drift.push(`#${item.number}: ${allThemeLabels.length} theme labels, ${allThemeLabels.join(", ")}`);
+  else if (unmappedThemeLabels.length === 1)
+    drift.push(`#${item.number}: unmapped theme label "${unmappedThemeLabels[0]}"`);
+  else if (allThemeLabels.length === 1) consider("theme", THEME_LABEL_TO_OPTION[allThemeLabels[0]]);
 
   const triage = parseTriage(item.body);
   for (const error of triage.errors) drift.push(`#${item.number}: ${error}`);
@@ -116,6 +121,13 @@ export function itemsFromGraphql(nodes) {
 }
 
 export function planLabelWrites(item) {
-  if (item.labels.some(l => l.startsWith("theme:") || l === "needs-theme")) return [];
-  return [{ number: item.number, label: classifyTheme(item.title, item.body) }];
+  if (item.labels.some(l => l.startsWith("theme:") || l === "needs-theme")) return { writes: [], drift: [] };
+
+  const fromField = item.fields.theme ? THEME_OPTION_TO_LABEL[item.fields.theme] : null;
+  const label = fromField || classifyTheme(item.title, item.body);
+
+  if (label === "needs-theme")
+    return { writes: [], drift: [`#${item.number}: no theme label and the title/body do not classify`] };
+
+  return { writes: [{ number: item.number, label }], drift: [] };
 }

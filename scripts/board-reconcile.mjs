@@ -45,14 +45,14 @@ query($owner: String!, $number: Int!, $cursor: String) {
               number
               title
               body
-              labels(first: 20) { nodes { name } }
+              labels(first: 100) { nodes { name } }
               repository { nameWithOwner }
             }
             ... on PullRequest {
               number
               title
               body
-              labels(first: 20) { nodes { name } }
+              labels(first: 100) { nodes { name } }
               repository { nameWithOwner }
             }
           }
@@ -126,7 +126,10 @@ async function reportTokenFailure(message) {
     `https://api.github.com/search/issues?q=${encodeURIComponent(`repo:${REPO} is:issue is:open in:title "${title}"`)}`,
     { headers: { authorization: `bearer ${process.env.GITHUB_TOKEN}` } }
   );
-  if (!search.ok) return;
+  if (!search.ok) {
+    console.error(`failed to search for existing token-failure issue: ${search.status} ${await search.text()}`);
+    return;
+  }
   const found = (await search.json()).items || [];
   const body = `The board reconciler could not write to the project.\n\n\`\`\`\n${message}\n\`\`\`\n\nRenew the classic PAT (\`project\` scope only) and update the \`PROJECT_TOKEN\` repository secret. Label writes are unaffected and keep working meanwhile.`;
   if (found.length) return;
@@ -173,7 +176,9 @@ async function main() {
     const planned = planFieldWrites(item);
     fieldWrites.push(...planned.writes.map(write => ({ ...write, itemId: item.id })));
     drift.push(...planned.drift);
-    labelWrites.push(...planLabelWrites(item));
+    const plannedLabels = planLabelWrites(item);
+    labelWrites.push(...plannedLabels.writes);
+    drift.push(...plannedLabels.drift);
   }
 
   const lines = [
@@ -218,10 +223,9 @@ async function main() {
     try {
       await addLabel(write.number, write.label);
     } catch (error) {
-      if (isAuthFailure(error) && !authFailureReported) {
-        await reportTokenFailure(String(error));
-        authFailureReported = true;
-      }
+      // addLabel authenticates with GITHUB_TOKEN, not PROJECT_TOKEN — never route its
+      // failures (locked issue, abuse detection, a missing pull-requests scope) through
+      // reportTokenFailure, which would misdiagnose a healthy PAT on Azgaar's tracker.
       labelFailures.push(`#${write.number} ${write.label}: ${error.message ?? error}`);
     }
   }
