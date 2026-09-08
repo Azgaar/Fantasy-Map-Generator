@@ -48,7 +48,9 @@ const columns: EditorColumn<LabelData>[] = [
     sortBy: label => label.group,
     sortType: "alpha"
   },
-  { key: "actions", width: "3.4em", permanent: true, align: "right" }
+  { key: "visibility", width: "1.1em" },
+  { key: "reset", width: "1.1em" },
+  { key: "locate", width: "1.4em", permanent: true }
 ];
 
 const listedLabels = new Map<string, LabelData>(); // currently listed labels, keyed by line id
@@ -254,11 +256,9 @@ function createLine(label: LabelData): string {
       <select data-col="group" class="labelsGroup" data-tip="Label group, select to reassign the label">
         ${createGroupOptions(group)}
       </select>
-      <div data-col="actions">
-        <span data-tip="${hidden ? "Show" : "Hide"} the label" aria-label="${hidden ? "Show" : "Hide"} the label" class="icon-eye${hidden ? "-off" : ""} labelsVisibility"></span>
-        <span data-tip="Restore the default label" aria-label="Restore the default label" class="icon-arrows-cw labelsReset ${hasOverride ? "" : " inactive"}"></span>
-        <span data-tip="Locate the label" aria-label="Locate the label" class="icon-target"></span>
-      </div>
+      <span data-col="visibility" data-tip="${hidden ? "Show" : "Hide"} the label" aria-label="${hidden ? "Show" : "Hide"} the label" class="icon-eye${hidden ? "-off" : ""} labelsVisibility"></span>
+      <span data-col="reset" data-tip="Restore the default label" aria-label="Restore the default label" class="icon-arrows-cw labelsReset ${hasOverride ? "" : " inactive"}"></span>
+      <span data-col="locate" data-tip="Locate the label" aria-label="Locate the label" class="icon-target"></span>
     </div>`;
 }
 

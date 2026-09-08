@@ -182,7 +182,7 @@ function getMilitaryColumns(): EditorColumn<MilitaryRow>[] {
       sortBy: row => row.alert,
       tip: "War Alert. Modifier to military forces number, depends on political situation. Click to sort"
     },
-    { key: "actions", width: "1.4em", permanent: true, align: "right" }
+    { key: "regiments", width: "1.4em", permanent: true }
   ];
 }
 
@@ -263,7 +263,7 @@ function renderMilitaryPage(view: TableView<MilitaryRow>): void {
         <div data-col="population" data-tip="State population">${percentage ? percent(row.population, totals.population) : si(row.population)}</div>
         <div data-col="rate" data-tip="Military personnel rate (% of state population). Depends on war alert">${rn(row.rate, 2)}%</div>
         <input data-col="alert" data-tip="War Alert. Editable modifier to military forces number, depends on political situation" type="number" min="0" step=".01" value="${rn(row.alert, 2)}" />
-        <div data-col="actions"><span data-tip="Show regiments list" class="icon-list-bullet pointer"></span></div>
+        <span data-col="regiments" data-tip="Show regiments list" class="icon-list-bullet pointer"></span>
       </div>`;
     })
     .join("");

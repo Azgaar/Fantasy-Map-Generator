@@ -53,7 +53,8 @@ const columns: EditorColumn<MarketRow>[] = [
     defaultSort: "desc",
     tip: "Market value: net trading flow plus unsold inventory value minus tax. Click to sort"
   },
-  { key: "actions", width: "1.4em", permanent: true, align: "right" }
+  { key: "note", width: "1.1em" },
+  { key: "remove", width: "1.4em", permanent: true }
 ];
 
 const marketsTable = initEditorTable<MarketRow>({ getData: getMarketsData, onUpdate: renderMarketsPage });
@@ -128,7 +129,7 @@ function renderDialog(): void {
       return;
     }
 
-    if (target.classList.contains("icon-edit")) {
+    if (target.classList.contains("icon-book")) {
       const row = target.closest<HTMLElement>(".states.market");
       if (row) void Controllers.NotesEditor.open({ type: "market", id: +row.dataset.id! });
       return;
@@ -229,7 +230,8 @@ function renderMarketRow(
     <div data-col="sales" data-tip="Total gross sales revenue" class="marketSales">${format("sales", sales, true)}</div>
     <div data-col="buys" data-tip="Total purchase spending" class="marketBuysCol">${format("buys", buys, true)}</div>
     <div data-col="value" data-tip="Market value: net trading flow plus unsold inventory value minus tax" class="marketValue">${format("value", value, true)}</div>
-    <div data-col="actions">${Notes.getIcon("this market")}<span data-tip="Remove this market" class="icon-trash-empty hiddenIcon" style="visibility:hidden"></span></div>
+    ${Notes.getIcon("this market")}
+    <span data-col="remove" data-tip="Remove this market" class="icon-trash-empty hiddenIcon" style="visibility:hidden"></span>
   </div>`;
 }
 
@@ -269,7 +271,8 @@ function renderNoMarketRow(
     <div data-col="sales" class="marketSales">—</div>
     <div data-col="buys" class="marketBuysCol">—</div>
     <div data-col="value" class="marketValue">—</div>
-    <div data-col="actions"></div>
+        <div data-col="note"></div>
+        <div data-col="remove"></div>
   </div>`;
 }
 

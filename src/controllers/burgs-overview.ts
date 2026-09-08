@@ -109,7 +109,9 @@ const columns: EditorColumn<Burg>[] = [
     sortType: "alpha",
     sortBy: b => (b.capital && b.port ? "a-capital-port" : b.capital ? "c-capital" : b.port ? "p-port" : "z-burg")
   },
-  { key: "actions", width: "3.2em", permanent: true, align: "right" }
+  { key: "edit", width: "1.1em" },
+  { key: "lock", width: "1.1em" },
+  { key: "remove", width: "1.4em", permanent: true }
 ];
 
 const burgsTable = initEditorTable<Burg>({
@@ -382,13 +384,11 @@ function renderBurgsPage(view: TableView<Burg>): void {
           <span data-tip="${b.port ? " This burg is a port" : "This burg is NOT a port"}"
           class="icon-anchor${b.port ? "" : " inactive"}" style="font-size: .9em; padding: 0 1px;"></span>
         </div>
-        <div data-col="actions">
-          <span data-tip="Edit burg" class="icon-pencil"></span>
-          <span class="locks pointer ${
-            b.lock ? "icon-lock" : "icon-lock-open inactive"
-          }" onmouseover="showElementLockTip(event)"></span>
-          <span data-tip="Remove burg" class="icon-trash-empty"></span>
-        </div>
+        <span data-col="edit" data-tip="Edit burg" class="icon-pencil"></span>
+        <span data-col="lock" class="locks pointer ${
+          b.lock ? "icon-lock" : "icon-lock-open inactive"
+        }" onmouseover="showElementLockTip(event)"></span>
+        <span data-col="remove" data-tip="Remove burg" class="icon-trash-empty"></span>
       </div>`;
   }
   body.insertAdjacentHTML("beforeend", lines);

@@ -76,7 +76,9 @@ const columns: EditorColumn<Good>[] = [
     sortBy: good => good.value,
     tip: "Base (initial) price. Click to sort"
   },
-  { key: "actions", width: "2em", permanent: true, align: "right" }
+  { key: "note", width: "1.1em" },
+  { key: "edit", width: "1.1em" },
+  { key: "remove", width: "1.4em", permanent: true }
 ];
 const goodsTable = initEditorTable<Good>({ getData: getGoodsData, onUpdate: renderGoodsPage });
 
@@ -168,7 +170,7 @@ function renderDialog(): void {
     if (!line) return;
     const good = Goods.get(+line.dataset.id!);
     if (!good) return;
-    if (cl.contains("icon-edit")) return void Controllers.NotesEditor.open({ type: "good", id: good.i });
+    if (cl.contains("icon-book")) return void Controllers.NotesEditor.open({ type: "good", id: good.i });
     if (cl.contains("goodEdit")) return Controllers.GoodEditor.open(good, refreshEditor);
     if (cl.contains("goodDisplayed")) return toggleDisplayedGood(good, el as HTMLInputElement);
     if (cl.contains("icon-trash-empty")) return removeGood(good);
@@ -225,7 +227,9 @@ function renderGoodsPage(view: TableView<Good>) {
           <div style="display: inline-block; width: 0.4em; font-size: 1.2em;">⛁</div>
         </div>
         <div data-col="price" data-tip="Base (initial) price. Click to compare prices across markets" class="goodBasePrice pointer">🟡 ${good.value}</div>
-        <div data-col="actions">${Notes.getIcon("this good")}<span data-tip="Edit good" class="icon-pencil goodEdit"></span><span data-tip="Remove good" class="icon-trash-empty goodRemove"></span></div>
+        ${Notes.getIcon("this good")}
+        <span data-col="edit" data-tip="Edit good" class="icon-pencil goodEdit"></span>
+        <span data-col="remove" data-tip="Remove good" class="icon-trash-empty goodRemove"></span>
       </div>`;
     })
     .join("");
@@ -526,7 +530,7 @@ function enterResourceAssignMode(this: HTMLElement) {
     isCellsLayerForced = true;
   }
 
-  setModeHiddenColumns(dialogId, ["display", "unit", "produced", "stock", "price", "actions"]);
+  setModeHiddenColumns(dialogId, ["display", "unit", "produced", "stock", "price", "note", "edit", "remove"]);
   ensureEl("goodsFooter").style.display = "none";
 
   updateDialog(dialogId, { position });

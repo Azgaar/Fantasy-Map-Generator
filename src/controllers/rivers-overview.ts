@@ -69,7 +69,8 @@ const columns: EditorColumn<River>[] = [
     sortBy: river => pack.rivers.find(({ i }) => i === river.basin)?.name || "",
     sortType: "alpha"
   },
-  { key: "actions", width: "2.2em", permanent: true, align: "right" }
+  { key: "edit", width: "1.1em" },
+  { key: "remove", width: "1.4em", permanent: true }
 ];
 
 function getRiversById(): Map<number, River> {
@@ -207,10 +208,8 @@ function renderRiversPage(view: TableView<River>): void {
         <div data-tip="River length from source to mouth" data-col="length">${length}</div>
         <div data-tip="River mouth width" data-col="width">${width}</div>
         <input data-tip="River basin (name of the main stem)" class="stateName" value="${basin}" disabled data-col="basin" />
-        <div data-col="actions">
-          <span data-tip="Edit river" class="icon-pencil"></span>
-          <span data-tip="Remove river" class="icon-trash-empty"></span>
-        </div>
+        <span data-col="edit" data-tip="Edit river" class="icon-pencil"></span>
+        <span data-col="remove" data-tip="Remove river" class="icon-trash-empty"></span>
       </div>`;
   }
   body.insertAdjacentHTML("beforeend", lines);

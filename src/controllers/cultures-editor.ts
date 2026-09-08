@@ -93,7 +93,10 @@ const columns: EditorColumn<Culture>[] = [
     sortBy: culture => culture.shield || "",
     sortType: "alpha"
   },
-  { key: "actions", width: "3.2em", permanent: true, align: "right" }
+  { key: "note", width: "1.1em" },
+  { key: "locate", width: "1.1em" },
+  { key: "lock", width: "1.1em" },
+  { key: "remove", width: "1.4em", permanent: true }
 ];
 
 const culturesTable = initEditorTable<Culture>({
@@ -276,7 +279,10 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
             <div data-tip="${populationTip}" class="culturePopulation pointer">${si(population)}</div>
           </div>
           <div data-col="emblems">${getShapeOptions(Emblems.isDiversiform, c.shield)}</div>
-          <div data-col="actions"></div>
+          <div data-col="note"></div>
+          <div data-col="locate"></div>
+          <div data-col="lock"></div>
+          <div data-col="remove"></div>
         </div>`;
       continue;
     }
@@ -332,12 +338,10 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
           <div data-tip="${populationTip}" class="culturePopulation pointer">${si(population)}</div>
         </div>
         <div data-col="emblems">${getShapeOptions(Emblems.isDiversiform, c.shield)}</div>
-        <div data-col="actions">
-          ${Notes.getIcon("this culture")}
-          <span data-tip="Locate the culture" class="icon-target"></span>
-          <span data-tip="Lock culture" class="icon-lock${c.lock ? "" : "-open"}"></span>
-          <span data-tip="Remove culture" class="icon-trash-empty"></span>
-        </div>
+        ${Notes.getIcon("this culture")}
+        <span data-col="locate" data-tip="Locate the culture" class="icon-target"></span>
+        <span data-col="lock" data-tip="Lock culture" class="icon-lock${c.lock ? "" : "-open"}"></span>
+        <span data-col="remove" data-tip="Remove culture" class="icon-trash-empty"></span>
       </div>`;
   }
   const body = ensureEl("culturesBody");
@@ -390,7 +394,7 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
     .querySelectorAll("div > span.icon-arrows-cw")
     .forEach($el => void $el.addEventListener("click", cultureRegenerateBurgs));
   ensureEl("culturesBody")
-    .querySelectorAll("div > span.icon-edit")
+    .querySelectorAll("div > span.icon-book")
     .forEach($el => void $el.addEventListener("click", editCultureNote));
   ensureEl("culturesBody")
     .querySelectorAll("div > span.icon-target")

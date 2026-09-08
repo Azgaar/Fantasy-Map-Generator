@@ -45,9 +45,9 @@ const columns: EditorColumn<MarketGoodRow>[] = [
     key: "price",
     label: "Price",
     width: "5em",
+    permanent: true,
     sortBy: item => item.price
-  },
-  { key: "actions", width: "1.2em", permanent: true }
+  }
 ];
 
 const marketOverviewTable = initEditorTable<MarketGoodRow>({

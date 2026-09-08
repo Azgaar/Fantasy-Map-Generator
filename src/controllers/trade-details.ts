@@ -47,9 +47,9 @@ const columns: EditorColumn<TradeDetailRow>[] = [
     key: "value",
     label: "Value",
     width: "3.6em",
+    permanent: true,
     sortBy: item => item.value
-  },
-  { key: "actions", width: "1.2em", permanent: true }
+  }
 ];
 
 const tradeDetailsTable = initEditorTable<TradeDetailRow>({

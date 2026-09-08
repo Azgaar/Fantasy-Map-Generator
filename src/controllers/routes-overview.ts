@@ -46,7 +46,9 @@ const columns: EditorColumn<Route>[] = [
     sortBy: route => route.length || 0,
     defaultSort: "desc"
   },
-  { key: "actions", width: "3.2em", permanent: true, align: "right" }
+  { key: "edit", width: "1.1em" },
+  { key: "lock", width: "1.1em" },
+  { key: "remove", width: "1.4em", permanent: true }
 ];
 
 function getFilteredRoutes(): Route[] {
@@ -162,13 +164,11 @@ function renderRoutesPage(view: TableView<Route>): void {
         <div data-tip="Route name" data-col="name">${route.name}</div>
         <div data-tip="Route group" data-col="group">${route.group}</div>
         <div data-tip="Route length" data-col="length">${length}</div>
-        <div data-col="actions">
-          <span data-tip="Edit route" class="icon-pencil"></span>
-          <span class="locks pointer ${
-            route.lock ? "icon-lock" : "icon-lock-open inactive"
-          }" onmouseover="showElementLockTip(event)"></span>
-          <span data-tip="Remove route" class="icon-trash-empty"></span>
-        </div>
+        <span data-col="edit" data-tip="Edit route" class="icon-pencil"></span>
+        <span data-col="lock" class="locks pointer ${
+          route.lock ? "icon-lock" : "icon-lock-open inactive"
+        }" onmouseover="showElementLockTip(event)"></span>
+        <span data-col="remove" data-tip="Remove route" class="icon-trash-empty"></span>
       </div>`;
   }
   body.insertAdjacentHTML("beforeend", lines);

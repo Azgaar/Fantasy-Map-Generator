@@ -291,12 +291,12 @@ class NotesStore {
 
   /** The note button every entity dialog puts in its toolbar. `subject` completes "notes (legend) for ..." */
   getButton(id: string, subject: string): string {
-    return `<button id="${id}" data-tip="${this.getTip(subject)}" class="icon-edit"></button>`;
+    return `<button id="${id}" data-tip="${this.getTip(subject)}" class="icon-book"></button>`;
   }
 
-  /** The same button as a table row action */
+  /** The same button as a table row action, in the `note` column every editor table gives it */
   getIcon(subject: string): string {
-    return `<span data-tip="${this.getTip(subject)}" class="icon-edit pointer"></span>`;
+    return `<span data-col="note" data-tip="${this.getTip(subject)}" class="icon-book pointer"></span>`;
   }
 
   private getTip(subject: string): string {

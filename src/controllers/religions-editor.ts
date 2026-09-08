@@ -92,7 +92,10 @@ const columns: EditorColumn<Religion>[] = [
     mobileHidden: true,
     sortBy: religion => religion.expansionism || 0
   },
-  { key: "actions", width: "3.2em", permanent: true, align: "right" }
+  { key: "note", width: "1.1em" },
+  { key: "locate", width: "1.1em" },
+  { key: "lock", width: "1.1em" },
+  { key: "remove", width: "1.4em", permanent: true }
 ];
 
 function getFilteredReligions(): Religion[] {
@@ -285,7 +288,10 @@ function religionsEditorAddLines(view: TableView<Religion>): void {
           <span class="icon-resize-full placeholder"></span>
           <input class="religionExpantion placeholder" disabled type="number" value="0" />
         </div>
-        <div data-col="actions"></div>
+        <div data-col="note"></div>
+        <div data-col="locate"></div>
+        <div data-col="lock"></div>
+        <div data-col="remove"></div>
       </div>`;
       continue;
     }
@@ -325,12 +331,10 @@ function religionsEditorAddLines(view: TableView<Religion>): void {
         <div data-tip="${populationTip}" class="religionPopulation pointer">${si(population)}</div>
       </div>
       ${getExpansionColumns(r)}
-      <div data-col="actions">
-        ${Notes.getIcon("this religion")}
-        <span data-tip="Locate the religion" class="icon-target"></span>
-        <span data-tip="Lock this religion" class="icon-lock${r.lock ? "" : "-open"}"></span>
-        <span data-tip="Remove religion" class="icon-trash-empty"></span>
-      </div>
+      ${Notes.getIcon("this religion")}
+      <span data-col="locate" data-tip="Locate the religion" class="icon-target"></span>
+      <span data-col="lock" data-tip="Lock this religion" class="icon-lock${r.lock ? "" : "-open"}"></span>
+      <span data-col="remove" data-tip="Remove religion" class="icon-trash-empty"></span>
     </div>`;
   }
   const body = ensureEl("religionsBody");
@@ -390,7 +394,7 @@ function religionsEditorAddLines(view: TableView<Religion>): void {
     .querySelectorAll("div > span.icon-trash-empty")
     .forEach(el => void el.addEventListener("click", religionRemovePrompt));
   ensureEl("religionsBody")
-    .querySelectorAll("div > span.icon-edit")
+    .querySelectorAll("div > span.icon-book")
     .forEach($el => void $el.addEventListener("click", editReligionNote));
   ensureEl("religionsBody")
     .querySelectorAll("div > span.icon-target")
