@@ -22,20 +22,23 @@ export function applyDefaultViewboxEvents(): void {
   select<SVGGElement, unknown>("#legend").call(drag<SVGGElement, unknown>().on("start", dragLegendBox));
 }
 
-// map group id -> editor to open. The click target is resolved by walking up its ancestors
+// layer group id -> editor to open, resolved from the nearest matching ancestor of the click
+// target. Depth varies by layer and by content — routes nest a type sub-group, megalopolis burgs
+// an extra wrapper — so nothing here may count levels.
 type Opener = (target: SVGElement, parent: SVGElement) => void;
 
-const PARENT_EDITORS: Record<string, Opener> = {
+const openBurgEditor: Opener = target => {
+  const burgEl = target.closest<SVGElement>("[data-id]");
+  if (burgEl) Controllers.BurgEditor.open(Number(burgEl.dataset.id));
+};
+
+const EDITORS: Record<string, Opener> = {
   rivers: target => Controllers.RiverEditor.open(target.id),
   ice: target => Controllers.IceEditor.open(target),
   terrain: target => Controllers.ReliefEditor.open(target),
-  goodsCells: () => Controllers.GoodsEditor.open()
-};
-
-const GRAND_EDITORS: Record<string, Opener> = {
+  goodsCells: () => Controllers.GoodsEditor.open(),
   emblems: target => Controllers.EmblemsEditor.open(undefined, undefined, undefined, target),
   routes: target => Controllers.RouteEditor.open(target.id),
-  burgIcons: target => Controllers.BurgEditor.open(Number(target.dataset.id)),
   journeys: (_target, parent) => Controllers.JourneyEditor.open(Number(parent.id.replace("journey", ""))),
   markers: target => Controllers.MarkersEditor.open(undefined, target),
   ruler: () => Controllers.MeasurersEditor.open(),
@@ -45,24 +48,15 @@ const GRAND_EDITORS: Record<string, Opener> = {
   lakes: target => Controllers.LakesEditor.open(target),
   markets: (target, parent) => {
     if (target.tagName !== "path") Controllers.MarketOverview.open(Number(parent.dataset.id));
-  }
+  },
+  armies: (_target, parent) => Controllers.RegimentEditor.open(`#${parent.id}`),
+  burgLabels: openBurgEditor,
+  burgIcons: openBurgEditor
 };
 
-const GREAT_EDITORS: Record<string, Opener> = {
-  markers: target => Controllers.MarkersEditor.open(undefined, target),
-  ruler: () => Controllers.MeasurersEditor.open(),
-  armies: (_target, parent) => Controllers.RegimentEditor.open(`#${parent.id}`),
-  // Megalopolis composite icons/labels sit one <g> wrapper deeper than plain burgs, so the
-  // GRAND_EDITORS burgLabels/burgIcons entries miss them — walk up to the nearest [data-id].
-  burgLabels: target => {
-    const burgEl = target.closest<SVGElement>("[data-id]");
-    if (burgEl) Controllers.BurgEditor.open(Number(burgEl.dataset.id));
-  },
-  burgIcons: target => {
-    const burgEl = target.closest<SVGElement>("[data-id]");
-    if (burgEl) Controllers.BurgEditor.open(Number(burgEl.dataset.id));
-  }
-};
+const EDITOR_SELECTOR = Object.keys(EDITORS)
+  .map(id => `#${id}`)
+  .join(",");
 
 /** Handle a click on the map: open the editor for the clicked element */
 function onClick(event: MouseEvent): void {
@@ -75,10 +69,7 @@ function onClick(event: MouseEvent): void {
 
   const target = event?.target as SVGElement | null;
   const parent = target?.parentElement as SVGElement | null;
-  const grand = parent?.parentElement as SVGElement | null;
-  const great = grand?.parentElement as SVGElement | null;
-  const ancestor = great?.parentElement as SVGElement | null;
-  if (!target || !parent || !grand || !great || !ancestor) return;
+  if (!target || !parent) return;
 
   const label = target.closest<SVGTextElement>("#labels text[data-label-type]");
   if (label) {
@@ -93,8 +84,8 @@ function onClick(event: MouseEvent): void {
     return;
   }
 
-  const open = PARENT_EDITORS[parent.id] || GRAND_EDITORS[grand.id] || GREAT_EDITORS[great.id];
-  open?.(target, parent);
+  const layer = parent.closest<SVGElement>(EDITOR_SELECTOR);
+  if (layer) EDITORS[layer.id](target, parent);
 }
 
 window.applyDefaultViewboxEvents = applyDefaultViewboxEvents;
