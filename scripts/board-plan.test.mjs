@@ -130,7 +130,8 @@ const node = {
     number: 1780,
     title: "Editor dialogs snap back",
     body: "### Theme\n\nUI / Editors",
-    labels: { nodes: [{ name: "bug" }, { name: "theme: ui-editors" }] }
+    labels: { nodes: [{ name: "bug" }, { name: "theme: ui-editors" }] },
+    repository: { nameWithOwner: "Azgaar/Fantasy-Map-Generator" }
   }
 };
 
@@ -140,9 +141,17 @@ test("maps a graphql node onto the planner's item shape", () => {
   assert.equal(got.number, 1780);
   assert.equal(got.type, "Issue");
   assert.deepEqual(got.labels, ["bug", "theme: ui-editors"]);
+  assert.equal(got.repository, "Azgaar/Fantasy-Map-Generator");
   assert.equal(got.fields.theme, "UI/Editors");
   assert.equal(got.fields.priority, null);
   assert.equal(got.fields.size, null);
+});
+
+test("reports a missing repository as null rather than guessing", () => {
+  const [got] = itemsFromGraphql([
+    { id: "PVTI_y", fieldValues: { nodes: [] }, content: { __typename: "Issue", number: 42, labels: { nodes: [] } } }
+  ]);
+  assert.equal(got.repository, null);
 });
 
 test("drops draft items that have no content number", () => {

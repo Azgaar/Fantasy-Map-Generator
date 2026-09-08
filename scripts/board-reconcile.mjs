@@ -2,7 +2,7 @@ import { appendFileSync } from "node:fs";
 import { FIELD_IDS, PROJECT_ID } from "./board-fields.mjs";
 import { itemsFromGraphql, planFieldWrites, planLabelWrites } from "./board-plan.mjs";
 
-const DRY_RUN = process.env.DRY_RUN === "1";
+const DRY_RUN = Boolean(process.env.DRY_RUN);
 const REPO = process.env.GITHUB_REPOSITORY || "Azgaar/Fantasy-Map-Generator";
 const PROJECT_NUMBER = 3;
 const OWNER = REPO.split("/")[0];
@@ -14,8 +14,12 @@ async function graphql(token, query, variables) {
     body: JSON.stringify({ query, variables })
   });
   const payload = await response.json();
-  if (!response.ok || payload.errors)
-    throw new Error(`graphql ${response.status}: ${JSON.stringify(payload.errors || payload)}`);
+  if (!response.ok || payload.errors) {
+    const error = new Error(`graphql ${response.status}: ${JSON.stringify(payload.errors || payload)}`);
+    error.status = response.status;
+    error.errors = payload.errors;
+    throw error;
+  }
   return payload.data;
 }
 
@@ -27,7 +31,7 @@ query($owner: String!, $number: Int!, $cursor: String) {
         pageInfo { hasNextPage endCursor }
         nodes {
           id
-          fieldValues(first: 20) {
+          fieldValues(first: 50) {
             nodes {
               ... on ProjectV2ItemFieldSingleSelectValue {
                 name
@@ -37,8 +41,20 @@ query($owner: String!, $number: Int!, $cursor: String) {
           }
           content {
             __typename
-            ... on Issue { number title body labels(first: 20) { nodes { name } } }
-            ... on PullRequest { number title body labels(first: 20) { nodes { name } } }
+            ... on Issue {
+              number
+              title
+              body
+              labels(first: 20) { nodes { name } }
+              repository { nameWithOwner }
+            }
+            ... on PullRequest {
+              number
+              title
+              body
+              labels(first: 20) { nodes { name } }
+              repository { nameWithOwner }
+            }
           }
         }
       }
@@ -53,11 +69,21 @@ mutation($project: ID!, $item: ID!, $field: ID!, $option: String!) {
   ) { projectV2Item { id } }
 }`;
 
-// Only an auth failure warrants opening the "renew your token" issue on Azgaar's tracker.
-// A transient 502, rate limit, or network blip must rethrow and let the next hourly run retry.
+// Only a genuine auth failure warrants opening the "renew your token" issue on Azgaar's tracker.
+// A transient 502, a secondary rate limit, or a network blip must rethrow and let the next hourly
+// run retry. A token that authenticates but lacks project scope comes back as HTTP 200 with a
+// GraphQL error of type INSUFFICIENT_SCOPES/FORBIDDEN (or a SAML-enforcement message) — that is
+// as much an auth failure as a 401, so it is checked separately from the HTTP status.
 function isAuthFailure(error) {
-  const message = String(error?.message ?? error);
-  return /\b401\b|\b403\b|bad credentials/i.test(message);
+  const status = error?.status;
+  if (status === 401) return true;
+  if (status === 403) return !/rate limit/i.test(String(error?.message ?? error));
+
+  const graphqlErrors = Array.isArray(error?.errors) ? error.errors : [];
+  if (graphqlErrors.some(e => /INSUFFICIENT_SCOPES|FORBIDDEN/i.test(e?.type || "") || /SAML/i.test(e?.message || "")))
+    return true;
+
+  return /bad credentials/i.test(String(error?.message ?? error));
 }
 
 async function readBoard(token) {
@@ -87,7 +113,11 @@ async function addLabel(number, label) {
     },
     body: JSON.stringify({ labels: [label] })
   });
-  if (!response.ok) throw new Error(`label ${number} ${response.status}: ${await response.text()}`);
+  if (!response.ok) {
+    const error = new Error(`label ${number} ${response.status}: ${await response.text()}`);
+    error.status = response.status;
+    throw error;
+  }
 }
 
 async function reportTokenFailure(message) {
@@ -96,10 +126,11 @@ async function reportTokenFailure(message) {
     `https://api.github.com/search/issues?q=${encodeURIComponent(`repo:${REPO} is:issue is:open in:title "${title}"`)}`,
     { headers: { authorization: `bearer ${process.env.GITHUB_TOKEN}` } }
   );
+  if (!search.ok) return;
   const found = (await search.json()).items || [];
   const body = `The board reconciler could not write to the project.\n\n\`\`\`\n${message}\n\`\`\`\n\nRenew the classic PAT (\`project\` scope only) and update the \`PROJECT_TOKEN\` repository secret. Label writes are unaffected and keep working meanwhile.`;
   if (found.length) return;
-  await fetch(`https://api.github.com/repos/${REPO}/issues`, {
+  const response = await fetch(`https://api.github.com/repos/${REPO}/issues`, {
     method: "POST",
     headers: {
       authorization: `bearer ${process.env.GITHUB_TOKEN}`,
@@ -108,6 +139,7 @@ async function reportTokenFailure(message) {
     },
     body: JSON.stringify({ title, body })
   });
+  if (!response.ok) console.error(`failed to file token-failure issue: ${response.status} ${await response.text()}`);
 }
 
 function summarise(lines) {
@@ -120,17 +152,23 @@ async function main() {
   const token = process.env.PROJECT_TOKEN;
   if (!token) throw new Error("PROJECT_TOKEN is not set");
 
-  let items;
+  let allItems;
   try {
-    items = await readBoard(token);
+    allItems = await readBoard(token);
   } catch (error) {
     if (isAuthFailure(error)) await reportTokenFailure(String(error));
     throw error;
   }
 
+  const drift = [];
+  const items = allItems.filter(item => {
+    if (item.repository === REPO) return true;
+    drift.push(`#${item.number}: skipped, repository ${item.repository ?? "unknown"} does not match ${REPO}`);
+    return false;
+  });
+
   const fieldWrites = [];
   const labelWrites = [];
-  const drift = [];
   for (const item of items) {
     const planned = planFieldWrites(item);
     fieldWrites.push(...planned.writes.map(write => ({ ...write, itemId: item.id })));
@@ -153,6 +191,13 @@ async function main() {
     return;
   }
 
+  // Per-item isolation: one un-writable item (transferred, locked, archived, or otherwise
+  // rejected) must not block every write queued behind it. Failures are collected, reported in
+  // the summary, and turn the run red — but the loop always runs to completion.
+  const fieldFailures = [];
+  const labelFailures = [];
+  let authFailureReported = false;
+
   for (const write of fieldWrites) {
     try {
       await graphql(token, SET_FIELD, {
@@ -162,13 +207,36 @@ async function main() {
         option: write.optionId
       });
     } catch (error) {
-      if (isAuthFailure(error)) await reportTokenFailure(String(error));
-      throw error;
+      if (isAuthFailure(error) && !authFailureReported) {
+        await reportTokenFailure(String(error));
+        authFailureReported = true;
+      }
+      fieldFailures.push(`#${write.number} ${write.field}: ${error.message ?? error}`);
     }
   }
-  for (const write of labelWrites) await addLabel(write.number, write.label);
+  for (const write of labelWrites) {
+    try {
+      await addLabel(write.number, write.label);
+    } catch (error) {
+      if (isAuthFailure(error) && !authFailureReported) {
+        await reportTokenFailure(String(error));
+        authFailureReported = true;
+      }
+      labelFailures.push(`#${write.number} ${write.label}: ${error.message ?? error}`);
+    }
+  }
+
+  if (fieldFailures.length || labelFailures.length) {
+    lines.push(
+      "",
+      "### Write failures",
+      ...fieldFailures.map(f => `- field ${f}`),
+      ...labelFailures.map(f => `- label ${f}`)
+    );
+  }
 
   summarise(lines);
+  if (fieldFailures.length || labelFailures.length) process.exitCode = 1;
 }
 
 main().catch(error => {

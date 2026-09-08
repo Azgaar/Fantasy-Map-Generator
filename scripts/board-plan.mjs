@@ -108,6 +108,7 @@ export function itemsFromGraphql(nodes) {
       title: content.title || "",
       body: content.body || "",
       labels: (content.labels?.nodes || []).map(l => l.name),
+      repository: content.repository?.nameWithOwner ?? null,
       fields
     });
   }
