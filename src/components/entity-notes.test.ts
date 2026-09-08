@@ -1,15 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import {
-  getElementId,
-  getEntityName,
-  getNote,
-  listNotes,
-  parseRefKey,
-  refKey,
-  removeNote,
-  resolveElementId,
-  setNote
-} from "./entity-notes";
+import { Notes } from "@/components/entity-notes";
 
 beforeEach(() => {
   globalThis.pack = {
@@ -56,51 +46,51 @@ describe("resolveElementId", () => {
     ["addedLabel6", { type: "addedLabel", id: 6 }],
     ["regiment3-1", { type: "regiment", id: 3, sub: 1 }]
   ])("maps %s to its entity", (elementId, expected) => {
-    expect(resolveElementId(elementId)).toEqual(expected);
+    expect(Notes.resolveElement(elementId)).toEqual(expected);
   });
 
   it.each(["freshwater", "viewbox", "", null, undefined, "burg", "notAnId12"])("ignores %s", elementId => {
-    expect(resolveElementId(elementId)).toBeUndefined();
+    expect(Notes.resolveElement(elementId)).toBeUndefined();
   });
 
   it("round-trips a reference through its element id", () => {
-    expect(getElementId({ type: "regiment", id: 3, sub: 1 })).toBe("regiment3-1");
-    expect(resolveElementId(getElementId({ type: "feature", id: 9 })!)).toEqual({ type: "feature", id: 9 });
+    expect(Notes.getElementId({ type: "regiment", id: 3, sub: 1 })).toBe("regiment3-1");
+    expect(Notes.resolveElement(Notes.getElementId({ type: "feature", id: 9 })!)).toEqual({ type: "feature", id: 9 });
   });
 
   it("has no element for an entity that is not drawn on its own", () => {
-    expect(getElementId({ type: "culture", id: 1 })).toBeUndefined();
+    expect(Notes.getElementId({ type: "culture", id: 1 })).toBeUndefined();
   });
 });
 
 describe("note access", () => {
   it("reads and writes the note on the entity", () => {
     const ref = { type: "burg", id: 1 } as const;
-    expect(getNote(ref)).toBe("A river port");
+    expect(Notes.get(ref)).toBe("A river port");
 
-    setNote(ref, "Rebuilt after the flood");
+    Notes.set(ref, "Rebuilt after the flood");
     expect(pack.burgs[1].note).toBe("Rebuilt after the flood");
   });
 
   it("removes the field rather than storing an empty note", () => {
-    removeNote({ type: "burg", id: 1 });
+    Notes.remove({ type: "burg", id: 1 });
     expect("note" in pack.burgs[1]).toBe(false);
   });
 
   it("reports a missing entity instead of creating one", () => {
-    expect(setNote({ type: "burg", id: 99 }, "ghost")).toBe(false);
+    expect(Notes.set({ type: "burg", id: 99 }, "ghost")).toBe(false);
     expect(pack.burgs).toHaveLength(2);
   });
 
   it("addresses a regiment through its state", () => {
     const ref = { type: "regiment", id: 1, sub: 0 } as const;
-    expect(getNote(ref)).toBe("Elite");
-    expect(getEntityName(ref)).toBe("1st Cavalry");
+    expect(Notes.get(ref)).toBe("Elite");
+    expect(Notes.getEntityName(ref)).toBe("1st Cavalry");
   });
 
   it("names a state by its full name and a river by name and type", () => {
-    expect(getEntityName({ type: "state", id: 1 })).toBe("Duchy of Ardenia");
-    expect(getEntityName({ type: "river", id: 1 })).toBe("Ald River");
+    expect(Notes.getEntityName({ type: "state", id: 1 })).toBe("Duchy of Ardenia");
+    expect(Notes.getEntityName({ type: "river", id: 1 })).toBe("Ald River");
   });
 });
 
@@ -109,19 +99,19 @@ describe("keys", () => {
     [{ type: "burg", id: 1 } as const, "burg:1"],
     [{ type: "regiment", id: 3, sub: 2 } as const, "regiment:3-2"]
   ])("round-trips %o", (ref, key) => {
-    expect(refKey(ref)).toBe(key);
-    expect(parseRefKey(key)).toEqual(ref);
+    expect(Notes.key(ref)).toBe(key);
+    expect(Notes.parseKey(key)).toEqual(ref);
   });
 
   it("rejects a key of an unknown type", () => {
-    expect(parseRefKey("dragon:1")).toBeUndefined();
-    expect(parseRefKey("burg")).toBeUndefined();
+    expect(Notes.parseKey("dragon:1")).toBeUndefined();
+    expect(Notes.parseKey("burg")).toBeUndefined();
   });
 });
 
 describe("listNotes", () => {
   it("collects notes from every collection, grouped by entity type", () => {
-    expect(listNotes().map(entry => entry.key)).toEqual([
+    expect(Notes.list().map(entry => entry.key)).toEqual([
       "burg:1",
       "marker:4",
       "feature:1",
@@ -131,10 +121,10 @@ describe("listNotes", () => {
   });
 
   it("skips entities without a note", () => {
-    expect(listNotes().some(entry => entry.key === "zone:1")).toBe(false);
+    expect(Notes.list().some(entry => entry.key === "zone:1")).toBe(false);
   });
 
   it("labels each entry with the entity name", () => {
-    expect(listNotes().find(entry => entry.key === "marker:4")?.label).toBe("Mount Doom");
+    expect(Notes.list().find(entry => entry.key === "marker:4")?.label).toBe("Mount Doom");
   });
 });

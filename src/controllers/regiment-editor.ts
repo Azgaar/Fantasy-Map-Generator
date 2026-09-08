@@ -1,6 +1,6 @@
 import { type D3DragEvent, drag, easeSinInOut, select, sum, transition } from "d3";
 import { closeDialogs, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
-import { hasNote } from "@/components/entity-notes";
+import { Notes } from "@/components/entity-notes";
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -77,7 +77,7 @@ function renderDialog(): void {
         class="icon-attach"
       ></button>
       <button id="regimentRegenerateLegend" data-tip="Regenerate legend for this regiment" class="icon-retweet"></button>
-      <button id="regimentLegend" data-tip="Edit free text notes (legend) for this regiment" class="icon-edit"></button>
+      ${Notes.getButton("regimentLegend", "this regiment")}
       <button
         id="regimentRemove"
         data-tip="Remove regiment"
@@ -111,10 +111,6 @@ function getRegiment(): Regiment | undefined {
 }
 
 function updateRegimentData(regiment: Regiment): void {
-  ensureEl("regimentLegend").classList.toggle(
-    "inactive",
-    !hasNote({ type: "regiment", id: regiment.state, sub: regiment.i })
-  );
   ensureEl("regimentType").className = regiment.n ? "icon-anchor" : "icon-users";
   ensureEl<HTMLInputElement>("regimentName").value = regiment.name;
   ensureEl("regimentEmblem").innerHTML =

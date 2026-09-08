@@ -315,9 +315,6 @@ class FeatureModule {
     pack.features = [0 as unknown as Feature, ...features];
   }
 
-  /**
-   * define feature groups (ocean, sea, gulf, continent, island, isle, freshwater lake, salt lake, etc.)
-   */
   /** Grid cells a feature covered, plus the data the user owns, so a re-markup can hand it back */
   captureUserData(): CapturedFeature[] {
     const gridCellsByFeature = this.mapGridCellsByFeature();

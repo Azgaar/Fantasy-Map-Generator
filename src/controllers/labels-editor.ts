@@ -1,6 +1,6 @@
 import { curveNatural, type D3DragEvent, drag, line, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
-import { hasNote, resolveElementId } from "@/components/entity-notes";
+import { Notes } from "@/components/entity-notes";
 import { Layers } from "@/components/layers";
 import { showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -130,7 +130,7 @@ function renderDialog(): void {
         ></slider-input>
       </div>
       <button id="labelVisibility"></button>
-      <button id="labelLegend" data-tip="Edit free text notes (legend) for this label" class="icon-edit"></button>
+      ${Notes.getButton("labelLegend", "this label")}
       <button id="labelReset" data-tip="Restore the default label" class="icon-arrows-cw"></button>
       <button
         id="labelRemoveSingle"
@@ -211,8 +211,6 @@ function hasLabelPath(): boolean {
 }
 
 function updateValues(): void {
-  const noteRef = resolveElementId(label.id);
-  ensureEl("labelLegend").classList.toggle("inactive", !noteRef || !hasNote(noteRef));
   const startOffset = label.startOffset || 50;
   ensureEl<HTMLInputElement>("labelText").value = label.text || "";
   ensureEl<HTMLInputElement>("labelStartOffset").value = String(startOffset);
@@ -515,7 +513,7 @@ function toggleLabelVisibility(): void {
 }
 
 function editLabelLegend(): void {
-  const ref = resolveElementId(label.id); // burgLabel3 -> the burg, stateLabel1 -> the state, and so on
+  const ref = Notes.resolveElement(label.id); // burgLabel3 -> the burg, stateLabel1 -> the state, and so on
   if (ref) void Controllers.NotesEditor.open(ref);
 }
 

@@ -9,7 +9,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
-import { hasNote } from "@/components/entity-notes";
+import { Notes } from "@/components/entity-notes";
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -105,7 +105,7 @@ function renderDialog(): void {
       <div id="marketOverviewBottom">
         <button id="marketOverviewRefresh" data-tip="Refresh the Overview screen" class="icon-cw"></button>
         <button id="marketOverviewOpenDeals" data-tip="View market deals" class="icon-list-bullet"></button>
-        <button id="marketOverviewLegend" data-tip="Edit free text notes (legend) for this market" class="icon-edit"></button>
+        ${Notes.getButton("marketOverviewLegend", "this market")}
         <button
           id="marketOverviewRelocate"
           data-tip="Relocate market. Click on a burg on the map to move the market center"
@@ -138,7 +138,6 @@ function refreshNameInput(market: Market): void {
   const input = ensureEl<HTMLInputElement>("marketOverviewName");
   input.value = market.name || "";
   input.placeholder = pack.burgs[market.centerBurgId]?.name || `Market ${market.i}`;
-  ensureEl("marketOverviewLegend").classList.toggle("inactive", !hasNote({ type: "market", id: market.i }));
 }
 
 function editMarketNote(): void {

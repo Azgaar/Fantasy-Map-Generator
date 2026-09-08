@@ -9,7 +9,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
-import { noteButtonHtml } from "@/components/entity-notes";
+import { Notes } from "@/components/entity-notes";
 import { Layers } from "@/components/layers";
 import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
@@ -229,7 +229,7 @@ function renderMarketRow(
     <div data-col="sales" data-tip="Total gross sales revenue" class="marketSales">${format("sales", sales, true)}</div>
     <div data-col="buys" data-tip="Total purchase spending" class="marketBuysCol">${format("buys", buys, true)}</div>
     <div data-col="value" data-tip="Market value: net trading flow plus unsold inventory value minus tax" class="marketValue">${format("value", value, true)}</div>
-    <div data-col="actions">${noteButtonHtml({ type: "market", id: market.i }, "Edit free text notes (legend) for this market")}<span data-tip="Remove this market" class="icon-trash-empty hiddenIcon" style="visibility:hidden"></span></div>
+    <div data-col="actions">${Notes.getIcon("this market")}<span data-tip="Remove this market" class="icon-trash-empty hiddenIcon" style="visibility:hidden"></span></div>
   </div>`;
 }
 

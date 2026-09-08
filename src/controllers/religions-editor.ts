@@ -11,7 +11,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
-import { noteButtonHtml } from "@/components/entity-notes";
+import { Notes } from "@/components/entity-notes";
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -326,7 +326,7 @@ function religionsEditorAddLines(view: TableView<Religion>): void {
       </div>
       ${getExpansionColumns(r)}
       <div data-col="actions">
-        ${noteButtonHtml({ type: "religion", id: r.i }, "Edit free text notes (legend) for this religion")}
+        ${Notes.getIcon("this religion")}
         <span data-tip="Locate the religion" class="icon-target"></span>
         <span data-tip="Lock this religion" class="icon-lock${r.lock ? "" : "-open"}"></span>
         <span data-tip="Remove religion" class="icon-trash-empty"></span>

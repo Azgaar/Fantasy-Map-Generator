@@ -11,7 +11,7 @@ import {
   setModeHiddenColumns,
   type TableView
 } from "@/components/dialog/table";
-import { noteButtonHtml } from "@/components/entity-notes";
+import { Notes } from "@/components/entity-notes";
 import { Layers } from "@/components/layers";
 import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
@@ -333,7 +333,7 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
         </div>
         <div data-col="emblems">${getShapeOptions(Emblems.isDiversiform, c.shield)}</div>
         <div data-col="actions">
-          ${noteButtonHtml({ type: "culture", id: c.i }, "Edit free text notes (legend) for this culture")}
+          ${Notes.getIcon("this culture")}
           <span data-tip="Locate the culture" class="icon-target"></span>
           <span data-tip="Lock culture" class="icon-lock${c.lock ? "" : "-open"}"></span>
           <span data-tip="Remove culture" class="icon-trash-empty"></span>

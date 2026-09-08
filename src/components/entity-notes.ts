@@ -1,6 +1,5 @@
 // Notes (legends) live on the entity they describe, as an optional `note` field holding html.
 // This module is the only place that maps between an entity, its svg element id and the string key
-// the editors and the csv exchange format use. See docs/prd/entity-notes.md
 
 export const NOTE_ENTITY_TYPES = [
   "state",
@@ -197,109 +196,111 @@ const ELEMENT_PATTERNS: [RegExp, NoteEntityType][] = [
 const REGIMENT_PATTERN = /^regiment(\d+)-(\d+)$/;
 const SEGMENT_PATTERN = /^segment(\d+)_\d+$/; // a journey segment carries its journey's note
 
-/** Map an svg element id to the entity it belongs to. Types with no element of their own never match */
-export function resolveElementId(elementId: string | null | undefined): NoteRef | undefined {
-  if (!elementId) return undefined;
+class NotesStore {
+  /** Map an svg element id to the entity it belongs to. Types with no element of their own never match */
+  resolveElement(elementId: string | null | undefined): NoteRef | undefined {
+    if (!elementId) return undefined;
 
-  const regiment = REGIMENT_PATTERN.exec(elementId);
-  if (regiment) return { type: "regiment", id: +regiment[1], sub: +regiment[2] };
+    const regiment = REGIMENT_PATTERN.exec(elementId);
+    if (regiment) return { type: "regiment", id: +regiment[1], sub: +regiment[2] };
 
-  const segment = SEGMENT_PATTERN.exec(elementId);
-  if (segment) return { type: "journey", id: +segment[1] };
+    const segment = SEGMENT_PATTERN.exec(elementId);
+    if (segment) return { type: "journey", id: +segment[1] };
 
-  for (const [pattern, type] of ELEMENT_PATTERNS) {
-    const match = pattern.exec(elementId);
-    if (match) return { type, id: +match[1] };
-  }
-
-  return undefined;
-}
-
-/** The svg element to highlight for a note. Undefined for entities that are not drawn on their own */
-export function getElementId(ref: NoteRef): string | undefined {
-  return TYPES[ref.type].element?.(ref.id, ref.sub);
-}
-
-export function getTypeLabel(type: NoteEntityType): string {
-  return TYPES[type].label;
-}
-
-export function getEntityName(ref: NoteRef): string {
-  return TYPES[ref.type].name(ref.id, ref.sub);
-}
-
-export function getNote(ref: NoteRef): string | undefined {
-  return TYPES[ref.type].entity(ref.id, ref.sub)?.note;
-}
-
-export function hasNote(ref: NoteRef): boolean {
-  return Boolean(getNote(ref));
-}
-
-/** Set the note, or remove the field when the html is empty. Returns false if the entity is gone */
-export function setNote(ref: NoteRef, note: string): boolean {
-  const entity = TYPES[ref.type].entity(ref.id, ref.sub);
-  if (!entity) return false;
-
-  if (note) entity.note = note;
-  else delete entity.note;
-  return true;
-}
-
-/** Append to an existing note, used by the migration to collide duplicates */
-export function appendNote(ref: NoteRef, note: string): boolean {
-  if (!note) return true;
-  const existing = getNote(ref);
-  return setNote(ref, existing ? `${existing}${note}` : note);
-}
-
-export function removeNote(ref: NoteRef): void {
-  setNote(ref, "");
-}
-
-export function refKey(ref: NoteRef): string {
-  return ref.type === "regiment" ? `regiment:${ref.id}-${ref.sub}` : `${ref.type}:${ref.id}`;
-}
-
-export function parseRefKey(key: string): NoteRef | undefined {
-  const [type, id] = key.split(":");
-  if (!(NOTE_ENTITY_TYPES as readonly string[]).includes(type) || !id) return undefined;
-
-  if (type === "regiment") {
-    const [stateId, regimentId] = id.split("-");
-    if (!regimentId) return undefined;
-    return { type: "regiment", id: +stateId, sub: +regimentId };
-  }
-
-  return { type: type as NoteEntityType, id: +id };
-}
-
-/** Every note on the map, grouped by entity type in NOTE_ENTITY_TYPES order */
-export function listNotes(): NoteEntry[] {
-  const entries: NoteEntry[] = [];
-
-  for (const type of NOTE_ENTITY_TYPES) {
-    for (const ref of TYPES[type].refs()) {
-      const note = getNote(ref);
-      if (note) entries.push({ ref, key: refKey(ref), label: getEntityName(ref) || refKey(ref), note });
+    for (const [pattern, type] of ELEMENT_PATTERNS) {
+      const match = pattern.exec(elementId);
+      if (match) return { type, id: +match[1] };
     }
+
+    return undefined;
   }
 
-  return entries;
+  /** The svg element to highlight for a note. Undefined for entities that are not drawn on their own */
+  getElementId(ref: NoteRef): string | undefined {
+    return TYPES[ref.type].element?.(ref.id, ref.sub);
+  }
+
+  getTypeLabel(type: NoteEntityType): string {
+    return TYPES[type].label;
+  }
+
+  getEntityName(ref: NoteRef): string {
+    return TYPES[ref.type].name(ref.id, ref.sub);
+  }
+
+  get(ref: NoteRef): string | undefined {
+    return TYPES[ref.type].entity(ref.id, ref.sub)?.note;
+  }
+
+  /** Set the note, or remove the field when the html is empty. Returns false if the entity is gone */
+  set(ref: NoteRef, note: string): boolean {
+    const entity = TYPES[ref.type].entity(ref.id, ref.sub);
+    if (!entity) return false;
+
+    if (note) entity.note = note;
+    else delete entity.note;
+    return true;
+  }
+
+  /** Append to an existing note, used by the migration to collide duplicates */
+  append(ref: NoteRef, note: string): boolean {
+    if (!note) return true;
+    const existing = this.get(ref);
+    return this.set(ref, existing ? `${existing}${note}` : note);
+  }
+
+  remove(ref: NoteRef): void {
+    this.set(ref, "");
+  }
+
+  key(ref: NoteRef): string {
+    return ref.type === "regiment" ? `regiment:${ref.id}-${ref.sub}` : `${ref.type}:${ref.id}`;
+  }
+
+  parseKey(key: string): NoteRef | undefined {
+    const [type, id] = key.split(":");
+    if (!(NOTE_ENTITY_TYPES as readonly string[]).includes(type) || !id) return undefined;
+
+    if (type === "regiment") {
+      const [stateId, regimentId] = id.split("-");
+      if (!regimentId) return undefined;
+      return { type: "regiment", id: +stateId, sub: +regimentId };
+    }
+
+    return { type: type as NoteEntityType, id: +id };
+  }
+
+  /** Every note on the map, grouped by entity type in NOTE_ENTITY_TYPES order */
+  list(): NoteEntry[] {
+    const entries: NoteEntry[] = [];
+
+    for (const type of NOTE_ENTITY_TYPES) {
+      for (const ref of TYPES[type].refs()) {
+        const note = this.get(ref);
+        if (note) entries.push({ ref, key: this.key(ref), label: this.getEntityName(ref) || this.key(ref), note });
+      }
+    }
+
+    return entries;
+  }
+
+  getTexts(): string[] {
+    return this.list().map(entry => entry.note);
+  }
+
+  /** The note button every entity dialog puts in its toolbar. `subject` completes "notes (legend) for ..." */
+  getButton(id: string, subject: string): string {
+    return `<button id="${id}" data-tip="${this.getTip(subject)}" class="icon-edit"></button>`;
+  }
+
+  /** The same button as a table row action */
+  getIcon(subject: string): string {
+    return `<span data-tip="${this.getTip(subject)}" class="icon-edit"></span>`;
+  }
+
+  private getTip(subject: string): string {
+    return `Edit free text notes (legend) for ${subject}`;
+  }
 }
 
-const NOTE_BUTTON_TIP = "Edit free text notes (legend) for this element";
-
-/** Row action markup for the note button, dimmed until the entity has a note */
-export function noteButtonHtml(ref: NoteRef, tipText = NOTE_BUTTON_TIP): string {
-  return `<span data-tip="${tipText}" class="icon-edit${hasNote(ref) ? "" : " inactive"}"></span>`;
-}
-
-/** Toolbar button markup for an entity dialog's note button */
-export function noteButtonElement(id: string, ref: NoteRef, tipText = NOTE_BUTTON_TIP): string {
-  return `<button id="${id}" data-tip="${tipText}" class="icon-edit${hasNote(ref) ? "" : " inactive"}"></button>`;
-}
-
-export function getNoteTexts(): string[] {
-  return listNotes().map(entry => entry.note);
-}
+export const Notes = new NotesStore();

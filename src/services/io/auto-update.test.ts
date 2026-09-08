@@ -7,7 +7,7 @@ import "@/generators/features"; // migrations call the Features module through i
 import { Styles } from "@/generators/styles";
 import * as versioning from "@/services/versioning";
 import { VERSION } from "@/services/versioning";
-import { migrateLegacySettings, resolveVersionConflicts, takeUnattachedNotes } from "./auto-update";
+import { migrateLegacySettings, resolveVersionConflicts, type UnattachedNote } from "./auto-update";
 
 beforeEach(() => {
   document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox"></g></svg>`;
@@ -455,6 +455,8 @@ describe("missing svg defs", () => {
 });
 
 describe("v1.152.0 notes moved onto entities", () => {
+  let unattached: UnattachedNote[] = [];
+
   async function migrate(notes: object[]) {
     const data = Array<string>(52).fill("");
     data[4] = JSON.stringify(notes);
@@ -462,7 +464,7 @@ describe("v1.152.0 notes moved onto entities", () => {
     const compare = vi.spyOn(versioning, "compareVersions");
     compare.mockImplementation((_a, b) => ({ isOlder: b === "1.152.0", isNewer: false, isEqual: false }));
     try {
-      await resolveVersionConflicts("1.151.2", data);
+      ({ unattachedNotes: unattached } = await resolveVersionConflicts("1.151.2", data));
     } finally {
       compare.mockRestore();
     }
@@ -500,7 +502,7 @@ describe("v1.152.0 notes moved onto entities", () => {
 
     expect(pack.burgs[1].note).toBe("A river port");
     expect(data[4]).toBe("");
-    expect(takeUnattachedNotes()).toHaveLength(0);
+    expect(unattached).toHaveLength(0);
   });
 
   it("collides the two notes of a river, the element note first", async () => {
@@ -532,15 +534,13 @@ describe("v1.152.0 notes moved onto entities", () => {
     expect(pack.states[1].military![0].note).toBe("Formed in 900 AD");
   });
 
-  it("hands back notes whose element is gone, once", async () => {
+  it("hands back notes whose element is gone", async () => {
     await migrate([
       { id: "burg1", name: "Vaeltown", legend: "kept" },
       { id: "burg99", name: "Lost Town", legend: "dropped" },
       { id: "someLegacyThing", name: "Older still", legend: "dropped too" }
     ]);
 
-    const orphans = takeUnattachedNotes();
-    expect(orphans.map(note => note.id)).toEqual(["burg99", "someLegacyThing"]);
-    expect(takeUnattachedNotes()).toHaveLength(0);
+    expect(unattached.map(note => note.id)).toEqual(["burg99", "someLegacyThing"]);
   });
 });

@@ -17,7 +17,7 @@ import {
   setModeHiddenColumns,
   type TableView
 } from "@/components/dialog/table";
-import { noteButtonHtml } from "@/components/entity-notes";
+import { Notes } from "@/components/entity-notes";
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -225,7 +225,7 @@ function renderGoodsPage(view: TableView<Good>) {
           <div style="display: inline-block; width: 0.4em; font-size: 1.2em;">⛁</div>
         </div>
         <div data-col="price" data-tip="Base (initial) price. Click to compare prices across markets" class="goodBasePrice pointer">🟡 ${good.value}</div>
-        <div data-col="actions">${noteButtonHtml({ type: "good", id: good.i }, "Edit free text notes (legend) for this good")}<span data-tip="Edit good" class="icon-pencil goodEdit"></span><span data-tip="Remove good" class="icon-trash-empty goodRemove"></span></div>
+        <div data-col="actions">${Notes.getIcon("this good")}<span data-tip="Edit good" class="icon-pencil goodEdit"></span><span data-tip="Remove good" class="icon-trash-empty goodRemove"></span></div>
       </div>`;
     })
     .join("");

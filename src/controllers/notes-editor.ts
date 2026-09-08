@@ -1,18 +1,6 @@
 import type Quill from "quill";
 import { confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
-import {
-  getElementId,
-  getEntityName,
-  getNote,
-  getTypeLabel,
-  listNotes,
-  NOTE_ENTITY_TYPES,
-  type NoteRef,
-  parseRefKey,
-  refKey,
-  removeNote,
-  setNote
-} from "@/components/entity-notes";
+import { NOTE_ENTITY_TYPES, type NoteEntry, type NoteRef, Notes } from "@/components/entity-notes";
 import { tip } from "@/components/tooltips";
 import { viewport } from "@/components/viewport";
 import { Controllers } from "@/controllers";
@@ -39,7 +27,7 @@ function open(ref?: NoteRef): void {
   const notesSelect = ensureEl<HTMLSelectElement>("notesSelect");
   const notesPin = ensureEl("notesPin");
 
-  const entries = listNotes();
+  const entries = Notes.list();
   fillSelect(notesSelect, entries, ref);
 
   if (options.app.notesPinned) notesPin.classList.add("pressed");
@@ -54,7 +42,7 @@ function open(ref?: NoteRef): void {
 
   const selected = ref || entries[0]?.ref;
   if (selected) {
-    notesSelect.value = refKey(selected);
+    notesSelect.value = Notes.key(selected);
     showNote(selected);
   } else {
     ensureEl("notesName").textContent = "";
@@ -73,20 +61,20 @@ function open(ref?: NoteRef): void {
 }
 
 /** Notes grouped by entity type, plus the requested entity when it has no note yet */
-function fillSelect(select: HTMLSelectElement, entries: ReturnType<typeof listNotes>, ref?: NoteRef): void {
+function fillSelect(select: HTMLSelectElement, entries: NoteEntry[], ref?: NoteRef): void {
   select.innerHTML = "";
 
-  const requestedKey = ref && refKey(ref);
+  const requestedKey = ref && Notes.key(ref);
   const listed = new Set(entries.map(entry => entry.key));
 
   for (const type of NOTE_ENTITY_TYPES) {
     const typeEntries = entries.filter(entry => entry.ref.type === type);
     if (ref?.type === type && requestedKey && !listed.has(requestedKey))
-      typeEntries.unshift({ ref, key: requestedKey, label: getEntityName(ref) || requestedKey, note: "" });
+      typeEntries.unshift({ ref, key: requestedKey, label: Notes.getEntityName(ref) || requestedKey, note: "" });
     if (!typeEntries.length) continue;
 
     const group = document.createElement("optgroup");
-    group.label = getTypeLabel(type);
+    group.label = Notes.getTypeLabel(type);
     for (const entry of typeEntries) group.append(new Option(entry.label, entry.key));
     select.append(group);
   }
@@ -218,14 +206,14 @@ function closeNotesEditor(): void {
 }
 
 function selectedRef(): NoteRef | undefined {
-  const ref = parseRefKey(ensureEl<HTMLSelectElement>("notesSelect").value);
+  const ref = Notes.parseKey(ensureEl<HTMLSelectElement>("notesSelect").value);
   if (!ref) tip("Note element is not found", true, "error", 4000);
   return ref;
 }
 
 function showNote(ref: NoteRef): void {
-  ensureEl("notesName").textContent = getEntityName(ref);
-  loadNote(getNote(ref) || "");
+  ensureEl("notesName").textContent = Notes.getEntityName(ref);
+  loadNote(Notes.get(ref) || "");
   updateNotesBox(ref);
 }
 
@@ -252,7 +240,7 @@ function toggleSourceMode(): void {
 
   const source = ensureEl<HTMLTextAreaElement>("notesSource");
   if (source.hidden) {
-    source.value = getNote(ref) || "";
+    source.value = Notes.get(ref) || "";
     setSourceMode(true);
   } else if (canEditAsRichText(source.value)) {
     setEditorHtml(quill, source.value);
@@ -301,13 +289,13 @@ function updateLegend(): void {
   if (!ref || !quill) return;
 
   const source = ensureEl<HTMLTextAreaElement>("notesSource");
-  setNote(ref, source.hidden ? getEditorHtml(quill) : source.value);
+  Notes.set(ref, source.hidden ? getEditorHtml(quill) : source.value);
   updateNotesBox(ref);
 }
 
 function updateNotesBox(ref: NoteRef): void {
-  ensureEl("notesHeader").textContent = getEntityName(ref); // plain text: an & in a name is not an entity
-  ensureEl("notesBody").innerHTML = getNote(ref) || "";
+  ensureEl("notesHeader").textContent = Notes.getEntityName(ref); // plain text: an & in a name is not an entity
+  ensureEl("notesBody").innerHTML = Notes.get(ref) || "";
 }
 
 function changeElement(): void {
@@ -319,7 +307,7 @@ function validateHighlightElement(): void {
   const ref = selectedRef();
   if (!ref) return;
 
-  const elementId = getElementId(ref);
+  const elementId = Notes.getElementId(ref);
   const element = elementId && document.getElementById(elementId);
   if (element) {
     highlightElement(element, 3);
@@ -343,9 +331,9 @@ function removeSelectedNote(): void {
   const ref = selectedRef();
   if (!ref) return;
 
-  removeNote(ref);
+  Notes.remove(ref);
 
-  const [first] = listNotes();
+  const [first] = Notes.list();
   if (!first) {
     $("#notesEditor").dialog("close");
     return;
@@ -358,15 +346,15 @@ function openAiGenerator(): void {
   const ref = selectedRef();
   if (!ref) return;
 
-  const name = getEntityName(ref);
-  const note = getNote(ref);
+  const name = Notes.getEntityName(ref);
+  const note = Notes.get(ref);
 
   let prompt = `Respond with description. Use simple dry language. Invent facts, names and details. Split to paragraphs and format to HTML. Remove h tags, remove markdown.`;
   if (name) prompt += ` Name: ${name}.`;
   if (note) prompt += ` Data: ${note}`;
 
   const onApply = (result: string): void => {
-    setNote(ref, result);
+    Notes.set(ref, result);
     loadNote(result);
     updateNotesBox(ref);
   };
@@ -382,7 +370,7 @@ function csvCell(value: string): string {
 
 /** Notes are exchanged as csv addressed by entity, so an uploaded note always has an owner */
 function downloadLegends(): void {
-  const rows = listNotes().map(entry => {
+  const rows = Notes.list().map(entry => {
     const id = entry.ref.sub === undefined ? String(entry.ref.id) : `${entry.ref.id}-${entry.ref.sub}`;
     return [entry.ref.type, id, csvCell(entry.note)].join(",");
   });
@@ -400,8 +388,8 @@ function uploadLegends(dataLoaded: string): void {
   let applied = 0;
   let rejected = 0;
   for (const [type, id, note] of rows) {
-    const ref = parseRefKey(`${type}:${id}`);
-    if (ref && setNote(ref, note)) applied++;
+    const ref = Notes.parseKey(`${type}:${id}`);
+    if (ref && Notes.set(ref, note)) applied++;
     else rejected++;
   }
 
@@ -413,7 +401,7 @@ function uploadLegends(dataLoaded: string): void {
   const rejectedText = rejected ? `, ${rejected} skipped as their element is not on the map` : "";
   tip(`Loaded ${applied} note(s)${rejectedText}`, true, "success", 6000);
 
-  const [first] = listNotes();
+  const [first] = Notes.list();
   if (first) open(first.ref);
 }
 

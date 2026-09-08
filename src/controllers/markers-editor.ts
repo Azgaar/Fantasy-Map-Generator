@@ -1,6 +1,6 @@
 import { drag, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
-import { hasNote } from "@/components/entity-notes";
+import { Notes } from "@/components/entity-notes";
 import { stopMapPlacement } from "@/components/map-placement";
 import { clearMainTip } from "@/components/tooltips";
 import { viewport } from "@/components/viewport";
@@ -89,7 +89,7 @@ function renderDialog(): void {
       </div>
     </div>
     <div id="markerBottom">
-      <button id="markerNotes" data-tip="Edit place legend (notes)" class="icon-edit"></button>
+      ${Notes.getButton("markerNotes", "this marker")}
       <button id="markerRadius" data-tip="Show markers within a radius of this one" class="icon-dot-circled"></button>
       <button id="markerLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
       <button id="markerAdd" data-tip="Add additional marker of that type" class="icon-plus"></button>
@@ -158,7 +158,6 @@ function dragMarker(this: SVGElement, event: any): void {
 }
 
 function updateInputs(): void {
-  ensureEl("markerNotes").classList.toggle("inactive", !hasNote({ type: "marker", id: selectedMarker.i }));
   const marker = selectedMarker;
   ensureEl("markerIcon").innerHTML =
     marker.icon.startsWith("http") || marker.icon.startsWith("data:image")

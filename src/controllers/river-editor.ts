@@ -1,6 +1,6 @@
 import { drag, type Selection, select } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
-import { hasNote } from "@/components/entity-notes";
+import { Notes } from "@/components/entity-notes";
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
@@ -97,7 +97,7 @@ function renderDialog(): void {
       <button id="riverCreateSelectingCells" data-tip="Create a new river selecting river cells" class="icon-map-pin"></button>
       <button id="riverEditStyle" data-tip="Edit style for all rivers in Style Editor" class="icon-brush"></button>
       <button id="riverElevationProfile" data-tip="Show the elevation profile for the river" class="icon-chart-area"></button>
-      <button id="riverLegend" data-tip="Edit free text notes (legend) for the river" class="icon-edit"></button>
+      ${Notes.getButton("riverLegend", "this river")}
       <button id="riverRemove" data-tip="Remove river" data-shortcut="Delete" class="icon-trash fastDelete"></button>
     </div>
   </div>`;
@@ -133,7 +133,6 @@ function getRiver(): River {
 }
 
 function updateRiverData(): void {
-  ensureEl("riverLegend").classList.toggle("inactive", !hasNote({ type: "river", id: getRiver().i }));
   const r = getRiver();
 
   ensureEl<HTMLInputElement>("riverName").value = r.name;

@@ -1,5 +1,5 @@
 import { select } from "d3";
-import { getEntityName, getNote, resolveElementId } from "@/components/entity-notes";
+import { Notes } from "@/components/entity-notes";
 import { Layers } from "@/components/layers";
 import { highlightEmblemElement } from "@/renderers/overlays/highlight";
 import type { Point } from "@/types/global";
@@ -43,8 +43,8 @@ export function showNotes(event: Event): void {
   const burg = target.closest<HTMLElement>("[data-label-type='burg'][data-id], #burgIcons [data-id]");
   const id = burg ? `burg${burg.dataset.id}` : target.id || parent?.id || grand?.id;
 
-  const ref = resolveElementId(id);
-  const note = ref && getNote(ref);
+  const ref = Notes.resolveElement(id);
+  const note = ref && Notes.get(ref);
 
   if (ref && note) {
     if (currentNoteId === id) return;
@@ -53,7 +53,7 @@ export function showNotes(event: Event): void {
     const notesEl = findEl("notes");
     if (notesEl) notesEl.style.display = "block";
     const header = findEl("notesHeader");
-    if (header) header.textContent = getEntityName(ref);
+    if (header) header.textContent = Notes.getEntityName(ref);
     const body = findEl("notesBody");
     if (body) body.innerHTML = note;
     return;

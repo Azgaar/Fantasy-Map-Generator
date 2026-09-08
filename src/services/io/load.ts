@@ -15,6 +15,7 @@ import { declareFont } from "@/services/fonts";
 import { logStats } from "@/services/logging";
 import { clearCache, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
 import { downloadFile, ensureEl, escapeHtml, getFileName, last, link, parseError, rn, safeParseJSON } from "@/utils";
+import type { UnattachedNote } from "./auto-update";
 
 async function quickLoad(): Promise<void> {
   const blob = await ldb.get("lastMap");
@@ -248,7 +249,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
   let isLogGroupOpen = false;
 
   try {
-    const { migrateLegacySettings, resolveVersionConflicts, takeUnattachedNotes } = await import("./auto-update"); // TODO: don't load if not required
+    const { migrateLegacySettings, resolveVersionConflicts } = await import("./auto-update"); // TODO: don't load if not required
 
     closeDialogs();
     customization = 0;
@@ -375,7 +376,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       if (goodIconsDefs) goodIconsDefs.insertAdjacentHTML("beforeend", data[45]);
     }
 
-    await resolveVersionConflicts(mapVersion!, data);
+    const { unattachedNotes } = await resolveVersionConflicts(mapVersion!, data);
 
     const styleRecord = data[48] ? safeParseJSON(data[48]) : undefined; // data[48] should be already migrated by auto-update
     Styles.set(Styles.parse(styleRecord));
@@ -680,7 +681,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     registerMap(mapCreatedAt);
     logStats();
     tip("Map is successfully loaded", true, "success", 7000);
-    offerUnattachedNotes(takeUnattachedNotes());
+    offerUnattachedNotes(unattachedNotes);
   } catch (error) {
     ERROR && console.error(error);
     clearMainTip();
@@ -723,7 +724,7 @@ export const Load = {
 };
 
 /** Notes from an old map that belong to no element: the user gets them as a csv or loses them */
-function offerUnattachedNotes(orphans: { id: string; name: string; legend: string }[]): void {
+function offerUnattachedNotes(orphans: UnattachedNote[]): void {
   if (!orphans.length) return;
 
   const quote = (value: string) => `"${(value || "").replaceAll('"', '""')}"`;

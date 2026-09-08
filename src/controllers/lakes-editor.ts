@@ -1,6 +1,6 @@
 import { drag, mean, min, polygonLength, type Selection, select } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
-import { hasNote } from "@/components/entity-notes";
+import { Notes } from "@/components/entity-notes";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -94,7 +94,7 @@ function renderDialog(): void {
       </div>
     </div>
     <div id="lakeBottom">
-      <button id="lakeLegend" data-tip="Edit free text notes (legend) for the lake" class="icon-edit"></button>
+      ${Notes.getButton("lakeLegend", "this lake")}
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -118,7 +118,6 @@ function getLake(): Feature {
 }
 
 function updateLakeValues(): void {
-  ensureEl("lakeLegend").classList.toggle("inactive", !hasNote({ type: "feature", id: getLake().i }));
   const { cells, vertices, rivers } = pack;
 
   const l = getLake();

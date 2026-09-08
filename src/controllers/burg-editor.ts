@@ -1,6 +1,6 @@
 import { type Selection, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
-import { hasNote } from "@/components/entity-notes";
+import { Notes } from "@/components/entity-notes";
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -232,7 +232,7 @@ function renderDialog(): void {
           data-tip="Relocate burg. Click on map to move the burg"
           class="icon-map-pin"
         ></button>
-        <button id="burglLegend" data-tip="Edit free text notes (legend) for this burg" class="icon-edit"></button>
+        ${Notes.getButton("burglLegend", "this burg")}
         <button id="burgLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
         <button
           id="burgRemove"
@@ -295,8 +295,6 @@ function updateGroupsList(): void {
 }
 
 function updateBurgValues(): void {
-  const burgId = getSelectedId();
-  ensureEl("burglLegend").classList.toggle("inactive", !hasNote({ type: "burg", id: burgId }));
   const id = getSelectedId();
   const b = pack.burgs[id];
   const province = pack.cells.province[b.cell];
@@ -326,13 +324,6 @@ function updateBurgValues(): void {
     `Average yearly temperature is like in ${getTemperatureLikeness(temperature)}`;
   ensureEl("burgElevation").innerHTML = getHeight(pack.cells.h[b.cell]);
 
-  ensureEl("burgCapital").classList.toggle("inactive", !b.capital);
-  ensureEl("burgPort").classList.toggle("inactive", !b.port);
-  ensureEl("burgCitadel").classList.toggle("inactive", !b.citadel);
-  ensureEl("burgWalls").classList.toggle("inactive", !b.walls);
-  ensureEl("burgPlaza").classList.toggle("inactive", !b.plaza);
-  ensureEl("burgTemple").classList.toggle("inactive", !b.temple);
-  ensureEl("burgShanty").classList.toggle("inactive", !b.shanty);
   ensureEl("burgProduction").innerHTML = getProduction(Production.getBurgProduction(b));
 
   updateBurgLockIcon();

@@ -1,6 +1,6 @@
 import { drag, type Selection, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
-import { hasNote } from "@/components/entity-notes";
+import { Notes } from "@/components/entity-notes";
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
@@ -75,7 +75,7 @@ function renderDialog(): void {
       <button id="routeJoin" data-tip="Click to join the route to another route that starts or ends at the same cell" class="icon-link"></button>
       <button id="routeSplit" data-tip="Click on a control point to split the route there" class="icon-unlink"></button>
       <button id="routeElevationProfile" data-tip="Show the elevation profile for the route" class="icon-chart-area"></button>
-      <button id="routeLegend" data-tip="Edit free text notes (legend) for the route" class="icon-edit"></button>
+      ${Notes.getButton("routeLegend", "this route")}
       <button id="routeLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
       <button id="routeRemove" data-tip="Remove route" data-shortcut="Delete" class="icon-trash fastDelete"></button>
     </div>
@@ -108,7 +108,6 @@ function getRoute(): Route {
 }
 
 function updateRouteData(route: Route): void {
-  ensureEl("routeLegend").classList.toggle("inactive", !hasNote({ type: "route", id: route.i }));
   route.name = route.name || Routes.generateName(route) || UNNAMED_ROUTE;
   ensureEl<HTMLInputElement>("routeName").value = route.name;
 
