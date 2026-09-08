@@ -45,6 +45,7 @@ const item = over => ({
   number: 1812,
   type: "Issue",
   labels: [],
+  title: "",
   body: "",
   fields: { theme: null, priority: null, size: null },
   ...over
@@ -146,4 +147,26 @@ test("maps a graphql node onto the planner's item shape", () => {
 
 test("drops draft items that have no content number", () => {
   assert.deepEqual(itemsFromGraphql([{ id: "PVTI_x", fieldValues: { nodes: [] }, content: {} }]), []);
+});
+
+import { planLabelWrites } from "./board-plan.mjs";
+
+test("labels a pull request that has no theme label", () => {
+  const got = planLabelWrites(
+    item({ number: 1666, type: "PullRequest", labels: [], title: "Regiment icons overlap" })
+  );
+  assert.deepEqual(got, [{ number: 1666, label: "theme: military" }]);
+});
+
+test("leaves an item that already has a theme label alone", () => {
+  assert.deepEqual(planLabelWrites(item({ labels: ["theme: routes"], title: "Regiments" })), []);
+});
+
+test("leaves an item already marked needs-theme alone", () => {
+  assert.deepEqual(planLabelWrites(item({ labels: ["needs-theme"], title: "Regiments" })), []);
+});
+
+test("marks an unclassifiable item needs-theme", () => {
+  const got = planLabelWrites(item({ number: 9, title: "Something odd", body: "please help" }));
+  assert.deepEqual(got, [{ number: 9, label: "needs-theme" }]);
 });

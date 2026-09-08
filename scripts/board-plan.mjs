@@ -5,6 +5,7 @@ import {
   THEME_LABEL_TO_OPTION,
   THEME_OPTIONS
 } from "./board-fields.mjs";
+import { classifyTheme } from "./theme-classify.mjs";
 
 const PRIORITY_BY_CODE = new Map(
   Object.keys(PRIORITY_OPTIONS).map(name => [name.slice(0, 2).toUpperCase(), name])
@@ -111,4 +112,9 @@ export function itemsFromGraphql(nodes) {
     });
   }
   return items;
+}
+
+export function planLabelWrites(item) {
+  if (item.labels.some(l => l.startsWith("theme:") || l === "needs-theme")) return [];
+  return [{ number: item.number, label: classifyTheme(item.title, item.body) }];
 }
