@@ -523,15 +523,6 @@ These entities carry a note: `burgs`, `markers`, `states`, `provinces`, `rivers`
 `states[].military[]`, `addedLabels`, `features`, `zones`, `journeys`, `markets`, `cultures`,
 `religions`, `biomes` and `goods`.
 
-`src/generators/notes.ts` owns the mapping between an entity and the svg element that carries
-its note on hover (`burg7`, `stateLabel3`, `regiment3-1`, `feature_9`, ...), plus the note lookup,
-the aggregate walk the Notes Editor lists, and the `type:id` key the csv exchange format uses.
-Cultures, religions, biomes and goods have no element of their own, so their notes are reachable only
-from the editors.
-
-Maps saved before v1.152.0 carry a flat `notes` array in `.map` field 4; auto-update distributes it
-onto the entities and hands back what no entity claims. The field is written empty from v1.152.0 on.
-
 ## Name bases
 
 Name generator consumes training sets of real-world town names (with the exception of fantasy name bases) stored in `nameBases` array, that is available globally. Each array element represent a separate base. Base structure is:
