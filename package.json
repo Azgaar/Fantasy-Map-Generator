@@ -21,6 +21,7 @@
     "electron": "node scripts/electron.mjs",
     "test": "vitest",
     "test:e2e": "playwright test",
+    "test:scripts": "node --test scripts/*.test.mjs",
     "lint": "biome check --write",
     "sync-version": "node scripts/sync-version.js",
     "stamp-assets": "node scripts/stamp-assets.js",
