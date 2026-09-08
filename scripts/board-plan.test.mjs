@@ -112,3 +112,38 @@ test("surfaces an unparseable triage value as drift and writes nothing", () => {
 test("writes nothing for an item with no labels and no block", () => {
   assert.deepEqual(planFieldWrites(item({})), { writes: [], drift: [] });
 });
+
+import { itemsFromGraphql } from "./board-plan.mjs";
+
+const node = {
+  id: "PVTI_abc",
+  fieldValues: {
+    nodes: [
+      {},
+      { name: "Backlog", field: { name: "Status" } },
+      { name: "UI/Editors", field: { name: "Theme" } }
+    ]
+  },
+  content: {
+    __typename: "Issue",
+    number: 1780,
+    title: "Editor dialogs snap back",
+    body: "### Theme\n\nUI / Editors",
+    labels: { nodes: [{ name: "bug" }, { name: "theme: ui-editors" }] }
+  }
+};
+
+test("maps a graphql node onto the planner's item shape", () => {
+  const [got] = itemsFromGraphql([node]);
+  assert.equal(got.id, "PVTI_abc");
+  assert.equal(got.number, 1780);
+  assert.equal(got.type, "Issue");
+  assert.deepEqual(got.labels, ["bug", "theme: ui-editors"]);
+  assert.equal(got.fields.theme, "UI/Editors");
+  assert.equal(got.fields.priority, null);
+  assert.equal(got.fields.size, null);
+});
+
+test("drops draft items that have no content number", () => {
+  assert.deepEqual(itemsFromGraphql([{ id: "PVTI_x", fieldValues: { nodes: [] }, content: {} }]), []);
+});

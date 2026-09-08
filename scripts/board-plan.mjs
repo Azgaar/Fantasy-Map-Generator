@@ -87,3 +87,28 @@ export function planFieldWrites(item) {
 
   return { writes, drift };
 }
+
+const FIELD_BY_NAME = { Theme: "theme", Priority: "priority", Size: "size" };
+
+export function itemsFromGraphql(nodes) {
+  const items = [];
+  for (const node of nodes) {
+    const content = node.content || {};
+    if (!content.number) continue;
+    const fields = { theme: null, priority: null, size: null };
+    for (const value of node.fieldValues.nodes) {
+      const key = FIELD_BY_NAME[value?.field?.name];
+      if (key) fields[key] = value.name;
+    }
+    items.push({
+      id: node.id,
+      number: content.number,
+      type: content.__typename,
+      title: content.title || "",
+      body: content.body || "",
+      labels: (content.labels?.nodes || []).map(l => l.name),
+      fields
+    });
+  }
+  return items;
+}
