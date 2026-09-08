@@ -9,6 +9,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
+import { noteButtonHtml } from "@/components/entity-notes";
 import { Layers } from "@/components/layers";
 import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
@@ -127,6 +128,12 @@ function renderDialog(): void {
       return;
     }
 
+    if (target.classList.contains("icon-edit")) {
+      const row = target.closest<HTMLElement>(".states.market");
+      if (row) void Controllers.NotesEditor.open({ type: "market", id: +row.dataset.id! });
+      return;
+    }
+
     if (target.classList.contains("icon-trash-empty")) {
       const line = target.closest<HTMLElement>(".states.market");
       if (!line) return;
@@ -222,7 +229,7 @@ function renderMarketRow(
     <div data-col="sales" data-tip="Total gross sales revenue" class="marketSales">${format("sales", sales, true)}</div>
     <div data-col="buys" data-tip="Total purchase spending" class="marketBuysCol">${format("buys", buys, true)}</div>
     <div data-col="value" data-tip="Market value: net trading flow plus unsold inventory value minus tax" class="marketValue">${format("value", value, true)}</div>
-    <div data-col="actions"><span data-tip="Remove this market" class="icon-trash-empty hiddenIcon" style="visibility:hidden"></span></div>
+    <div data-col="actions">${noteButtonHtml({ type: "market", id: market.i }, "Edit free text notes (legend) for this market")}<span data-tip="Remove this market" class="icon-trash-empty hiddenIcon" style="visibility:hidden"></span></div>
   </div>`;
 }
 

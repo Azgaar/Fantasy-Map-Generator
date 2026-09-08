@@ -592,6 +592,9 @@ function restoreRiskedData(): void {
     c.y = p[1];
   }
 
+  // the graph is rebuilt below, so what the user owns on a feature is matched back by grid cells
+  const capturedFeatures = Features.captureUserData();
+
   // save zone grid cells to restore them later
   const zoneGridCellsMap = new Map<number, number[]>();
   for (const zone of pack.zones) {
@@ -612,6 +615,8 @@ function restoreRiskedData(): void {
     Rivers.generate(true);
     Features.defineGroups();
   }
+
+  Features.restoreUserData(capturedFeatures); // after the lakes are renamed, so the kept names win
 
   // assign saved pack data from grid back to pack
   const n = pack.cells.i.length;

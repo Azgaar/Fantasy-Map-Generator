@@ -288,6 +288,18 @@ export function listNotes(): NoteEntry[] {
   return entries;
 }
 
+const NOTE_BUTTON_TIP = "Edit free text notes (legend) for this element";
+
+/** Row action markup for the note button, dimmed until the entity has a note */
+export function noteButtonHtml(ref: NoteRef, tipText = NOTE_BUTTON_TIP): string {
+  return `<span data-tip="${tipText}" class="icon-edit${hasNote(ref) ? "" : " inactive"}"></span>`;
+}
+
+/** Toolbar button markup for an entity dialog's note button */
+export function noteButtonElement(id: string, ref: NoteRef, tipText = NOTE_BUTTON_TIP): string {
+  return `<button id="${id}" data-tip="${tipText}" class="icon-edit${hasNote(ref) ? "" : " inactive"}"></button>`;
+}
+
 export function getNoteTexts(): string[] {
   return listNotes().map(entry => entry.note);
 }

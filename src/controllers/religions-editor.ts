@@ -11,6 +11,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
+import { noteButtonHtml } from "@/components/entity-notes";
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -325,6 +326,7 @@ function religionsEditorAddLines(view: TableView<Religion>): void {
       </div>
       ${getExpansionColumns(r)}
       <div data-col="actions">
+        ${noteButtonHtml({ type: "religion", id: r.i }, "Edit free text notes (legend) for this religion")}
         <span data-tip="Locate the religion" class="icon-target"></span>
         <span data-tip="Lock this religion" class="icon-lock${r.lock ? "" : "-open"}"></span>
         <span data-tip="Remove religion" class="icon-trash-empty"></span>
@@ -387,6 +389,9 @@ function religionsEditorAddLines(view: TableView<Religion>): void {
   ensureEl("religionsBody")
     .querySelectorAll("div > span.icon-trash-empty")
     .forEach(el => void el.addEventListener("click", religionRemovePrompt));
+  ensureEl("religionsBody")
+    .querySelectorAll("div > span.icon-edit")
+    .forEach($el => void $el.addEventListener("click", editReligionNote));
   ensureEl("religionsBody")
     .querySelectorAll("div > span.icon-target")
     .forEach($el => void $el.addEventListener("click", highlightReligion));
@@ -941,6 +946,11 @@ function downloadReligionsCsv(): void {
 
   const name = `${getFileName("Religions")}.csv`;
   downloadFile(csvData, name);
+}
+
+function editReligionNote(this: HTMLElement): void {
+  const id = +(this.closest(".states") as HTMLElement).dataset.id!;
+  void Controllers.NotesEditor.open({ type: "religion", id });
 }
 
 function highlightReligion(this: HTMLElement): void {

@@ -1733,6 +1733,14 @@ div.states span.inactive:hover {
   color: #abaaaa;
 }
 
+button.inactive {
+  opacity: 0.45;
+}
+
+button.inactive:hover {
+  opacity: 1;
+}
+
 .placeholder {
   opacity: 0;
   cursor: default;

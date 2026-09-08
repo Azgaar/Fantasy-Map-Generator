@@ -376,6 +376,7 @@ class Resampler {
       if (parentFeature.subtype) feature.subtype = parentFeature.subtype;
       if (parentFeature.group) feature.group = parentFeature.group;
       if (parentFeature.name) feature.name = parentFeature.name;
+      if (parentFeature.note) feature.note = parentFeature.note;
       if (parentFeature.height) feature.height = parentFeature.height;
     });
   }

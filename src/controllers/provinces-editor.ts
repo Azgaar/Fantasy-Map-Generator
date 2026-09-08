@@ -12,6 +12,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
+import { noteButtonHtml } from "@/components/entity-notes";
 import { Layers } from "@/components/layers";
 import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
@@ -221,6 +222,7 @@ function renderDialog(): void {
     else if (cl.contains("icon-target"))
       highlightElement(select<SVGGElement, unknown>("#provs").select(`#province${p}`).node() as Element, 8);
     else if (cl.contains("icon-pin")) toggleFog(p, cl);
+    else if (cl.contains("icon-edit")) void Controllers.NotesEditor.open({ type: "province", id: p });
     else if (cl.contains("icon-trash-empty")) removeProvince(p);
     else if (cl.contains("icon-lock") || cl.contains("icon-lock-open")) updateLockStatus(p, cl);
   });
@@ -334,7 +336,7 @@ function renderProvincesPage(view: TableView<Province>): void {
         <span data-tip="${populationTip}" class="icon-male"></span>
         <span data-tip="${populationTip}" class="culturePopulation">${percentage ? `${rn(totals.population ? (population / totals.population) * 100 : 0)}%` : si(population)}</span>
       </div>
-      <div data-col="actions"><span data-tip="Declare province independence (turn non-capital province with burgs into a new state)" class="icon-flag-empty ${separable ? "" : "placeholder"}"></span><span data-tip="Locate the province" class="icon-target"></span><span data-tip="Toggle province focus" class="icon-pin ${focused ? "" : " inactive"}"></span><span data-tip="Lock the province" class="icon-lock${p.lock ? "" : "-open"}"></span><span data-tip="Remove the province" class="icon-trash-empty"></span></div>
+      <div data-col="actions">${noteButtonHtml({ type: "province", id: p.i }, "Edit free text notes (legend) for this province")}<span data-tip="Declare province independence (turn non-capital province with burgs into a new state)" class="icon-flag-empty ${separable ? "" : "placeholder"}"></span><span data-tip="Locate the province" class="icon-target"></span><span data-tip="Toggle province focus" class="icon-pin ${focused ? "" : " inactive"}"></span><span data-tip="Lock the province" class="icon-lock${p.lock ? "" : "-open"}"></span><span data-tip="Remove the province" class="icon-trash-empty"></span></div>
     </div>`;
     })
     .join("");

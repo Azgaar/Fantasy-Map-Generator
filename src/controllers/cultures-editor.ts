@@ -11,6 +11,7 @@ import {
   setModeHiddenColumns,
   type TableView
 } from "@/components/dialog/table";
+import { noteButtonHtml } from "@/components/entity-notes";
 import { Layers } from "@/components/layers";
 import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
@@ -332,6 +333,7 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
         </div>
         <div data-col="emblems">${getShapeOptions(Emblems.isDiversiform, c.shield)}</div>
         <div data-col="actions">
+          ${noteButtonHtml({ type: "culture", id: c.i }, "Edit free text notes (legend) for this culture")}
           <span data-tip="Locate the culture" class="icon-target"></span>
           <span data-tip="Lock culture" class="icon-lock${c.lock ? "" : "-open"}"></span>
           <span data-tip="Remove culture" class="icon-trash-empty"></span>
@@ -387,6 +389,9 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
   ensureEl("culturesBody")
     .querySelectorAll("div > span.icon-arrows-cw")
     .forEach($el => void $el.addEventListener("click", cultureRegenerateBurgs));
+  ensureEl("culturesBody")
+    .querySelectorAll("div > span.icon-edit")
+    .forEach($el => void $el.addEventListener("click", editCultureNote));
   ensureEl("culturesBody")
     .querySelectorAll("div > span.icon-target")
     .forEach($el => void $el.addEventListener("click", cultureHighlightElement));
@@ -716,6 +721,11 @@ function removeCulture(cultureId: number): void {
       if (!c.origins.length) c.origins = [0];
     });
   refreshCulturesEditor();
+}
+
+function editCultureNote(this: HTMLElement): void {
+  const id = +(this.closest(".states") as HTMLElement).dataset.id!;
+  void Controllers.NotesEditor.open({ type: "culture", id });
 }
 
 function cultureHighlightElement(this: HTMLElement): void {

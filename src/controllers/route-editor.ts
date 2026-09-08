@@ -1,5 +1,6 @@
 import { drag, type Selection, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { hasNote } from "@/components/entity-notes";
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
@@ -107,6 +108,7 @@ function getRoute(): Route {
 }
 
 function updateRouteData(route: Route): void {
+  ensureEl("routeLegend").classList.toggle("inactive", !hasNote({ type: "route", id: route.i }));
   route.name = route.name || Routes.generateName(route) || UNNAMED_ROUTE;
   ensureEl<HTMLInputElement>("routeName").value = route.name;
 

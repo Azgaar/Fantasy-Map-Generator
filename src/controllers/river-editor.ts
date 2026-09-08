@@ -1,5 +1,6 @@
 import { drag, type Selection, select } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { hasNote } from "@/components/entity-notes";
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
@@ -132,6 +133,7 @@ function getRiver(): River {
 }
 
 function updateRiverData(): void {
+  ensureEl("riverLegend").classList.toggle("inactive", !hasNote({ type: "river", id: getRiver().i }));
   const r = getRiver();
 
   ensureEl<HTMLInputElement>("riverName").value = r.name;

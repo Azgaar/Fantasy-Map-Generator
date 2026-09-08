@@ -58,7 +58,7 @@ Not on an already generated map directly, but you can rebuild the map with a dif
 
 ### Can I export map data as a text file?
 
-Map data can be exported, but only a little of it can be imported back. Overview editors (Burgs, Rivers, Routes, Markers, States, Military and others) have a download button that saves their table as a .csv file, and the Export menu offers GeoJSON (cells, routes, rivers, markers, zones) and JSON (full, minimal, pack cells, grid cells). The text data you can upload back is burg names (.txt or .csv), namesbases, notes (legends) and heightmap templates
+Map data can be exported, but only a little of it can be imported back. Overview editors (Burgs, Rivers, Routes, Markers, States, Military and others) have a download button that saves their table as a .csv file, and the Export menu offers GeoJSON (cells, routes, rivers, markers, zones) and JSON (full, minimal, pack cells, grid cells). The text data you can upload back is burg names (.txt or .csv), namesbases, notes (legends, as a .csv of `type,id,note` rows addressing map objects that exist) and heightmap templates
 
 ### Can I add new relief icons?
 
@@ -742,7 +742,7 @@ Yes, route groups are configurable. Open a route (or the Routes Overview) and go
 
 ### How do I add my own description to a state, burg or marker?
 
-Every map object can have a note (legend). Click on the object and use its notes button, or open Tools -> Notes to browse all notes. The notes editor is a rich text editor, so you can add formatting, links, images, and raw HTML through the source code button
+Most map objects can have a note (legend): burgs, markers, states, provinces, rivers, routes, regiments, labels, lakes and landmasses, zones, journeys, markets, cultures, religions, biomes and goods. Click on the object and use its notes button, or open Tools -> Notes to browse all notes. The notes editor is a rich text editor, so you can add formatting, links, images, and raw HTML through the source code button. A note belongs to its object: it is removed with it, and there is no way to keep a note that describes nothing
 
 ### Can AI generate descriptions for my world?
 

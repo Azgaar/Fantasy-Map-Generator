@@ -1,5 +1,6 @@
 import { type Selection, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { hasNote } from "@/components/entity-notes";
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -294,6 +295,8 @@ function updateGroupsList(): void {
 }
 
 function updateBurgValues(): void {
+  const burgId = getSelectedId();
+  ensureEl("burglLegend").classList.toggle("inactive", !hasNote({ type: "burg", id: burgId }));
   const id = getSelectedId();
   const b = pack.burgs[id];
   const province = pack.cells.province[b.cell];

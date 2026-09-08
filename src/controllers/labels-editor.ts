@@ -1,6 +1,6 @@
 import { curveNatural, type D3DragEvent, drag, line, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
-import { resolveElementId } from "@/components/entity-notes";
+import { hasNote, resolveElementId } from "@/components/entity-notes";
 import { Layers } from "@/components/layers";
 import { showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -211,6 +211,8 @@ function hasLabelPath(): boolean {
 }
 
 function updateValues(): void {
+  const noteRef = resolveElementId(label.id);
+  ensureEl("labelLegend").classList.toggle("inactive", !noteRef || !hasNote(noteRef));
   const startOffset = label.startOffset || 50;
   ensureEl<HTMLInputElement>("labelText").value = label.text || "";
   ensureEl<HTMLInputElement>("labelStartOffset").value = String(startOffset);

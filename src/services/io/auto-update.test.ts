@@ -7,7 +7,7 @@ import "@/generators/features"; // migrations call the Features module through i
 import { Styles } from "@/generators/styles";
 import * as versioning from "@/services/versioning";
 import { VERSION } from "@/services/versioning";
-import { migrateLegacySettings, resolveVersionConflicts } from "./auto-update";
+import { migrateLegacySettings, resolveVersionConflicts, takeUnattachedNotes } from "./auto-update";
 
 beforeEach(() => {
   document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox"></g></svg>`;
@@ -451,5 +451,96 @@ describe("missing svg defs", () => {
 
     const restored = Array.from(document.querySelectorAll("#map defs [id]"), node => node.id);
     expect(restored).toEqual(declared.map(([, id]) => id));
+  });
+});
+
+describe("v1.152.0 notes moved onto entities", () => {
+  async function migrate(notes: object[]) {
+    const data = Array<string>(52).fill("");
+    data[4] = JSON.stringify(notes);
+
+    const compare = vi.spyOn(versioning, "compareVersions");
+    compare.mockImplementation((_a, b) => ({ isOlder: b === "1.152.0", isNewer: false, isEqual: false }));
+    try {
+      await resolveVersionConflicts("1.151.2", data);
+    } finally {
+      compare.mockRestore();
+    }
+    return data;
+  }
+
+  beforeEach(() => {
+    globalThis.pack = {
+      burgs: [0, { i: 1, name: "Vaeltown" }],
+      states: [
+        { i: 0, name: "Neutrals" },
+        { i: 1, name: "Ardenia", military: [{ i: 0, name: "1st Cavalry" }] }
+      ],
+      markers: [
+        { i: 4, type: "hot-springs" },
+        { i: 5, type: "volcanoes" }
+      ],
+      rivers: [0, { i: 1, name: "Ald", type: "River" }],
+      features: [],
+      routes: [],
+      provinces: [],
+      zones: [],
+      journeys: [],
+      markets: [],
+      addedLabels: [],
+      cultures: [],
+      religions: [],
+      biomes: [],
+      goods: []
+    } as unknown as typeof pack;
+  });
+
+  it("attaches a note to its entity and empties the legacy slot", async () => {
+    const data = await migrate([{ id: "burg1", name: "Vaeltown", legend: "A river port" }]);
+
+    expect(pack.burgs[1].note).toBe("A river port");
+    expect(data[4]).toBe("");
+    expect(takeUnattachedNotes()).toHaveLength(0);
+  });
+
+  it("collides the two notes of a river, the element note first", async () => {
+    await migrate([
+      { id: "riverLabel1", name: "Ald River", legend: "<p>Named for the elder trees</p>" },
+      { id: "river1", name: "Ald River", legend: "<p>Fed by three lakes</p>" }
+    ]);
+
+    expect(pack.rivers[1].note).toBe("<p>Fed by three lakes</p><p>Named for the elder trees</p>");
+  });
+
+  it("keeps a note title that differs from the entity name as a heading", async () => {
+    await migrate([{ id: "burg1", name: "The Siege of Vaeltown", legend: "<p>It held.</p>" }]);
+
+    expect(pack.burgs[1].note).toBe("<h3>The Siege of Vaeltown</h3><p>It held.</p>");
+  });
+
+  it("moves a marker note title onto the marker and names the rest from their type", async () => {
+    await migrate([{ id: "marker4", name: "Steaming Pools", legend: "Warm all year" }]);
+
+    expect(pack.markers[0]).toMatchObject({ name: "Steaming Pools", note: "Warm all year" });
+    expect(pack.markers[1].name).toBe("Volcanoes"); // no note to take a name from
+    expect(pack.markers[1].note).toBeUndefined();
+  });
+
+  it("attaches a regiment note through its state", async () => {
+    await migrate([{ id: "regiment1-0", name: "1st Cavalry", legend: "Formed in 900 AD" }]);
+
+    expect(pack.states[1].military![0].note).toBe("Formed in 900 AD");
+  });
+
+  it("hands back notes whose element is gone, once", async () => {
+    await migrate([
+      { id: "burg1", name: "Vaeltown", legend: "kept" },
+      { id: "burg99", name: "Lost Town", legend: "dropped" },
+      { id: "someLegacyThing", name: "Older still", legend: "dropped too" }
+    ]);
+
+    const orphans = takeUnattachedNotes();
+    expect(orphans.map(note => note.id)).toEqual(["burg99", "someLegacyThing"]);
+    expect(takeUnattachedNotes()).toHaveLength(0);
   });
 });

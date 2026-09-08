@@ -1,5 +1,6 @@
 import { drag, mean, min, polygonLength, type Selection, select } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { hasNote } from "@/components/entity-notes";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -117,6 +118,7 @@ function getLake(): Feature {
 }
 
 function updateLakeValues(): void {
+  ensureEl("lakeLegend").classList.toggle("inactive", !hasNote({ type: "feature", id: getLake().i }));
   const { cells, vertices, rivers } = pack;
 
   const l = getLake();

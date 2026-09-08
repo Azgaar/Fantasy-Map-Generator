@@ -10,6 +10,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
+import { noteButtonHtml } from "@/components/entity-notes";
 import { Layers } from "@/components/layers";
 import type { FillBoxElement } from "@/components/shared/fill-box";
 import { tip } from "@/components/tooltips";
@@ -159,6 +160,7 @@ function renderDialog(): void {
     const el = ev.target as HTMLElement;
     const cl = el.classList;
     if (el.tagName === "FILL-BOX") biomeChangeColor(el as FillBoxElement);
+    else if (cl.contains("icon-edit")) editBiomeNote(el);
     else if (cl.contains("icon-info-circled")) openWiki(el);
     else if (cl.contains("icon-trash-empty")) removeCustomBiomeLine(el);
   });
@@ -242,6 +244,7 @@ function biomesEditorAddLines(view: TableView<Biome>, statistics: BiomeStatistic
         <div data-col="area" class="hide"><span data-tip="Biome area" class="icon-map-o" style="padding-right: 2px"></span><span data-tip="Biome area" class="biomeArea">${si(area) + unit}</span></div>
         <div data-col="population" class="hide"><span data-tip="${populationTip}" class="icon-male"></span><span data-tip="${populationTip}" class="biomePopulation">${si(population)}</span></div>
         <div data-col="actions" class="hide">
+          ${noteButtonHtml({ type: "biome", id: i }, "Edit free text notes (legend) for this biome")}
           <span data-tip="Open Wikipedia article about the biome" class="icon-info-circled pointer"></span>
           ${i > 12 && !cells ? '<span data-tip="Remove the custom biome" class="icon-trash-empty"></span>' : ""}
         </div>
@@ -333,6 +336,11 @@ function biomeChangeHabitability(el: HTMLInputElement): void {
   line.dataset.habitability = el.value;
   regeneratePopulation();
   refreshBiomesEditor();
+}
+
+function editBiomeNote(el: HTMLElement): void {
+  const id = +(el.closest<HTMLElement>(".biomes")?.dataset.id || 0);
+  void Controllers.NotesEditor.open({ type: "biome", id });
 }
 
 function openWiki(el: HTMLElement): void {

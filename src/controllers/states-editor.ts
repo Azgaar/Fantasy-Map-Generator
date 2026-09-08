@@ -11,6 +11,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
+import { noteButtonHtml } from "@/components/entity-notes";
 import { Layers } from "@/components/layers";
 import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
@@ -247,6 +248,7 @@ function renderDialog(): void {
     else if (classList.contains("icon-dot-circled")) Controllers.BurgsOverview.open({ stateId });
     else if (classList.contains("statePopulation")) changePopulation(stateId);
     else if (classList.contains("stateTreasury")) openTreasuryDialog(stateId);
+    else if (classList.contains("icon-edit")) void Controllers.NotesEditor.open({ type: "state", id: stateId });
     else if (classList.contains("icon-pin")) toggleFog(stateId, classList);
     else if (classList.contains("icon-target"))
       highlightElement(select("#regions").select(`#state${stateId}`).node() as Element, 4);
@@ -418,6 +420,7 @@ function renderStatesPage(view: TableView<State>): void {
           class="statePower" type="number" min="0" max="99" step=".1" value=${s.expansionism} />
       </div>
       <div data-col="actions">
+        ${noteButtonHtml({ type: "state", id: s.i }, "Edit free text notes (legend) for this state")}
         <span data-tip="Locate the state" class="icon-target"></span>
         <span data-tip="Toggle state focus" class="icon-pin ${focused ? "" : " inactive"}"></span>
         <span data-tip="Lock the state to protect it from re-generation" class="icon-lock${

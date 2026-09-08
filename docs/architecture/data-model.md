@@ -284,7 +284,8 @@ Rivers data is stored as an unordered array of objects (so element id is _not_ t
 
 Markers data is stored as an unordered array of objects (so element id is _not_ the array index). Object structure:
 
-- `i`: `number` - marker id. `'marker' + i` is used as svg element id and marker reference in `notes` object
+- `i`: `number` - marker id. `'marker' + i` is used as svg element id
+- `name`: `string` - marker name, shown in the notes box header and the markers overview
 - `icon`: `number` - Unicode character (usually an [emoji](https://emojipedia.org/)) to serve as an icon
 - `x`: `number` - marker x coordinate
 - `y`: `number` - marker y coordinate
@@ -515,11 +516,21 @@ Transport types are configuration, not map state: they live in `options.transpor
 
 ## Notes
 
-Notes (legends) data is stored in unordered array of objects: `notes`. Object structure is as simple as:
+A note (legend) is free text the user writes about a map object. It is stored on the object itself as
+`note?: string` (html), so it is created, cloned and removed with its owner and cannot outlive it.
 
-- `i`: `string` - note id
-- `name`: `string` - note name, visible in Legend box
-- `legend`: `string` - note text in html
+These entities carry a note: `burgs`, `markers`, `states`, `provinces`, `rivers`, `routes`,
+`states[].military[]`, `addedLabels`, `features`, `zones`, `journeys`, `markets`, `cultures`,
+`religions`, `biomes` and `goods`.
+
+`src/components/entity-notes.ts` owns the mapping between an entity and the svg element that carries
+its note on hover (`burg7`, `stateLabel3`, `regiment3-1`, `feature_9`, ...), plus the note lookup,
+the aggregate walk the Notes Editor lists, and the `type:id` key the csv exchange format uses.
+Cultures, religions, biomes and goods have no element of their own, so their notes are reachable only
+from the editors.
+
+Maps saved before v1.152.0 carry a flat `notes` array in `.map` field 4; auto-update distributes it
+onto the entities and hands back what no entity claims. The field is written empty from v1.152.0 on.
 
 ## Name bases
 

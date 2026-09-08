@@ -1,5 +1,6 @@
 import { drag, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
+import { hasNote } from "@/components/entity-notes";
 import { stopMapPlacement } from "@/components/map-placement";
 import { clearMainTip } from "@/components/tooltips";
 import { viewport } from "@/components/viewport";
@@ -157,6 +158,7 @@ function dragMarker(this: SVGElement, event: any): void {
 }
 
 function updateInputs(): void {
+  ensureEl("markerNotes").classList.toggle("inactive", !hasNote({ type: "marker", id: selectedMarker.i }));
   const marker = selectedMarker;
   ensureEl("markerIcon").innerHTML =
     marker.icon.startsWith("http") || marker.icon.startsWith("data:image")
