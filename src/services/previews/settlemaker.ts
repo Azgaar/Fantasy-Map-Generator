@@ -5,6 +5,8 @@ export interface SettlemakerRoadBearing {
   bearing_deg: number;
   route_id: string;
   kind: string;
+  group: "roads" | "trails";
+  through: boolean;
 }
 
 /** Mirrors AzgaarBurgInput in settlemaker's src/input/azgaar-input.ts (url-api.md §3). */
@@ -29,8 +31,20 @@ export interface AzgaarBurgInput {
   trade?: boolean;
 }
 
-/** traderoutes are maritime lanes in this fork, not land roads — see SEA_TRADE_GROUPS. */
-export const LAND_ROUTE_GROUPS = new Set<string>(["roads", "trails"]);
+/**
+ * routes-generator emits exactly settlemaker's RouteType vocabulary, so a route's type is its
+ * settlemaker class verbatim. Legacy "road"/"foot" are deliberately not used: they take a
+ * different path through the engine than the seven classes, which made the two tiers disagree.
+ */
+const ROUTE_CLASSES = new Set(["royal", "main", "market", "town", "local", "trail", "footpath"]);
+
+/**
+ * Land groups, and the class to assume for a route carrying no type or a custom one. Anything
+ * outside this map is dropped: settlemaker's classRank returns -1 for an unknown class and
+ * -1 <= classRank("local"), so an unrecognised value is silently drawn as a road, never rejected.
+ * traderoutes are maritime lanes in this fork, not land roads — see SEA_TRADE_GROUPS.
+ */
+export const LAND_ROUTE_KINDS: Record<string, "main" | "trail"> = { roads: "main", trails: "trail" };
 
 /**
  * The narrow projection: everything settlemaker declares today, nothing else.
@@ -55,9 +69,19 @@ export function toSettlemakerInput(
     shanty: burg.shanty,
     capital: burg.capital,
     // [] means "genuinely no roads"; omitting would make settlemaker invent gates.
-    roadBearings: ctx.approaches
-      .filter(a => LAND_ROUTE_GROUPS.has(a.group))
-      .map(a => ({ bearing_deg: a.bearingDeg, route_id: String(a.routeId), kind: a.group }))
+    roadBearings: ctx.approaches.flatMap(a => {
+      const fallback = LAND_ROUTE_KINDS[a.group];
+      if (!fallback) return [];
+      return [
+        {
+          bearing_deg: a.bearingDeg,
+          route_id: String(a.routeId),
+          kind: a.type && ROUTE_CLASSES.has(a.type) ? a.type : fallback,
+          group: a.group as "roads" | "trails",
+          through: a.through
+        }
+      ];
+    })
   };
 
   if (hydrology.oceanBearingDeg !== undefined) input.oceanBearing = hydrology.oceanBearingDeg;
@@ -87,7 +111,7 @@ export async function encodeJsonParam(value: unknown): Promise<string> {
   return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-/** url-api.md §4. Used when CompressionStream is unavailable; cannot express roadBearings. */
+/** url-api.md §4. Used when CompressionStream is unavailable. */
 export function buildFlatTierUrl(input: AzgaarBurgInput, seed: number): string {
   const params = new URLSearchParams({
     name: input.name,
@@ -106,6 +130,12 @@ export function buildFlatTierUrl(input: AzgaarBurgInput, seed: number): string {
   if (input.biome) params.set("biome", input.biome);
   if (input.urbanDensity !== undefined) params.set("urbanDensity", String(input.urbanDensity));
   if (input.trade) params.set("trade", "1"); // only present at all when true
+  // Since settlemaker 2.0.4 the flat tier takes bearings too; without them the village engine
+  // builds no main roads and the burg arrives unconnected.
+  const roads = (input.roadBearings ?? []).map(r =>
+    r.through ? `${r.bearing_deg}:${r.kind}:through` : `${r.bearing_deg}:${r.kind}`
+  );
+  if (roads.length) params.set("roads", roads.join(","));
   return `${SETTLEMAKER_BASE_URL}?${params.toString()}`;
 }
 
