@@ -1,4 +1,6 @@
 // Building blocks shared by every editor dialog
+
+import { dialogState } from "@/components/dialog/state";
 import { ensureEl, findEl } from "@/utils";
 
 /** Close all open dialogs except the stated one */
@@ -107,6 +109,18 @@ export function refreshEditors(): void {
   for (const buttonId of REFRESHABLE_EDITORS) findEl(buttonId)?.click();
 }
 
+type DialogPosition = { top: number; left: number };
+
+// #alert is a single shared dialog reused for unrelated messages, each setting its own position; excluded here
+const POSITION_EXCLUDED_IDS = new Set(["alert"]);
+
+// Pin a dialog to where the user last dragged it, overriding whatever hard-coded position was just applied
+function applySavedPosition(el: HTMLElement): void {
+  if (POSITION_EXCLUDED_IDS.has(el.id)) return;
+  const position = dialogState.get<DialogPosition | null>(el.id, "position", () => null);
+  if (position) $(el).dialog("widget").css(position);
+}
+
 type DialogParams = {
   title?: string;
   resizable?: boolean;
@@ -117,7 +131,9 @@ type DialogParams = {
 export const updateDialog = (id: string, params: DialogParams) => {
   const el = findEl(id);
   if (!el) return;
-  if (el.classList.contains("ui-dialog-content")) window.$(el).dialog(params);
+  if (!el.classList.contains("ui-dialog-content")) return;
+  window.$(el).dialog(params);
+  if (params.position) applySavedPosition(el);
 };
 
 // Remove an element, destroying its jQuery UI dialog widget first
@@ -127,6 +143,22 @@ export const destroyDialog = (id: string): void => {
   if (el.classList.contains("ui-dialog-content")) window.$(el).dialog("destroy");
   el.remove();
 };
+
+/** Restore each dialog to where the user last dragged it, and remember new drags. Called once by boot() */
+export function initDialogPositionPersistence(): void {
+  $(document).on("dialogopen", ".dialog", function (this: HTMLElement) {
+    applySavedPosition(this);
+  });
+
+  $(document).on(
+    "dialogdragstop",
+    ".dialog",
+    function (this: HTMLElement, _event: unknown, ui: { position: DialogPosition }) {
+      if (POSITION_EXCLUDED_IDS.has(this.id)) return;
+      dialogState.set(this.id, "position", ui.position);
+    }
+  );
+}
 
 window.closeDialogs = closeDialogs;
 window.confirmationDialog = confirmationDialog;

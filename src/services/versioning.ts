@@ -22,17 +22,11 @@ import { isElectron } from "./platform";
 
 export const VERSION = "1.152.0";
 
-/**
- * The options trigger glows until the user has found it once. Not a preference and not part of
- * `options`: no control shows it and the user cannot set it, so it is a bare `localStorage` flag
- * like `version`. See docs/architecture/configuration.md#storage-scopes
- */
-export const ARROW_TIP_KEY = "disable_click_arrow_tooltip";
-
 // new changes on top
 const latestPublicChanges = [
-  "Ability to override a burg's treasury",
   "Heightmap: option to render contour lines",
+  "Ability to override a burg's treasury",
+  "Dialogs: preserve position sessions",
   "Help assistant: ask questions about the Generator in the app",
   "States and Provinces editors: annex by clicking on the map",
   "Option to redraw labels, icons and relief only after a zoom",
@@ -102,6 +96,8 @@ export async function clearCache(): Promise<void> {
 
   location.reload();
 }
+
+export const ARROW_TIP_KEY = "disable_click_arrow_tooltip";
 
 export async function cleanupData(): Promise<void> {
   localStorage.clear();

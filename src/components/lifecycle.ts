@@ -1,6 +1,6 @@
 // The app and map lifecycle: start the app, erase what is on screen, generate a new world, put it back
 import { applyGraphSize, fitMapToScreen } from "@/components/canvas";
-import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, initDialogPositionPersistence } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { hideLoading, showLoading } from "@/components/loading";
 import { restoreUi, syncOptionInputs } from "@/components/options/tabs/options-tab";
@@ -29,6 +29,7 @@ export async function boot(): Promise<void> {
   stashCallbackToken(); // before anything reads the URL: the OAuth fragment is not a load parameter
   registerServiceWorker();
   initShell();
+  initDialogPositionPersistence();
 
   Options.restore();
   syncOptionInputs();

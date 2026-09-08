@@ -159,7 +159,6 @@ function open(): void {
   $(`#${dialogId}`).dialog({
     title: "States Editor",
     resizable: false,
-    width: "fit-content",
     position,
     close: closeStatesEditor
   });
@@ -952,11 +951,6 @@ function stateRemovePrompt(state: number): void {
 }
 
 function stateRemove(stateId: number): void {
-  select("#statesBody").select(`#state${stateId}`).remove();
-  select("#statesBody").select(`#state-gap${stateId}`).remove();
-  select("#statesHalo").select(`#state-border${stateId}`).remove();
-  delete pack.states[stateId].label;
-
   unfog(`focusState${stateId}`);
 
   pack.burgs.forEach(burg => {
@@ -968,35 +962,29 @@ function stateRemove(stateId: number): void {
       }
     }
   });
-  Layers.draw("burgIcons", "labels");
 
-  pack.cells.state.forEach((s: number, i: number) => {
+  pack.cells.state.forEach((s, i) => {
     if (s === stateId) pack.cells.state[i] = 0;
   });
 
-  // remove emblem
   removeEmblem("state", stateId);
 
   // remove provinces
-  (pack.states[stateId].provinces || []).forEach((p: number) => {
+  (pack.states[stateId].provinces || []).forEach(p => {
     pack.provinces[p] = { i: p, removed: true } as Province;
-    pack.cells.province.forEach((pr: number, i: number) => {
+    pack.cells.province.forEach((pr, i) => {
       if (pr === p) pack.cells.province[i] = 0;
     });
 
     removeEmblem("province", p);
-    const g = select("#provs").select("#provincesBody");
-    g.select(`#province${p}`).remove();
-    g.select(`#province-gap${p}`).remove();
   });
 
   // remove military
-  (pack.states[stateId].military || []).forEach((m: any) => {
+  (pack.states[stateId].military || []).forEach(m => {
     const id = `regiment${stateId}-${m.i}`;
     const index = notes.findIndex(n => n.id === id);
     if (index !== -1) notes.splice(index, 1);
   });
-  select(`#armies g#army${stateId}`).remove();
 
   // clean up neighbors references from other states
   pack.states.forEach(state => {
@@ -1004,12 +992,12 @@ function stateRemove(stateId: number): void {
     state.neighbors = state.neighbors.filter((n: number) => n !== stateId);
   });
 
+  delete pack.states[stateId].label;
   pack.states[stateId] = { i: stateId, removed: true } as State;
 
   select("#debug").selectAll(".highlight").remove();
 
-  Layers.draw("states", "borders", "provinces");
-
+  Layers.draw("burgIcons", "labels", "military", "borders", "provinces", "states");
   refreshStatesEditor();
 }
 
@@ -1204,7 +1192,6 @@ function openRegenerationMenu(): void {
       el.style.display = "none";
     });
   ensureEl("statesRegenerateButtons").style.display = "block";
-  $("#statesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
 }
 
 function recalculateStates(must?: boolean): void {
@@ -1245,7 +1232,6 @@ function exitRegenerationMenu(): void {
       el.style.display = "inline-block";
     });
   ensureEl("statesRegenerateButtons").style.display = "none";
-  $("#statesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
 }
 
 function openPaintEditor(): void {

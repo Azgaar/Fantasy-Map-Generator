@@ -17,7 +17,7 @@ import {
   stackOrderNone,
   sum
 } from "d3";
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, updateDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { downloadFile, getArea, getAreaUnit, getFileName, getHeight, getPrecipitation } from "@/utils";
 import { capitalize, convertTemperature, ensureEl, formatPrice, isWater, rn, si } from "../utils";
@@ -897,7 +897,7 @@ function changeViewColumns() {
 }
 
 function updateDialogPosition() {
-  $("#chartsOverview").dialog({ position: { my: "center", at: "center", of: "svg" } });
+  updateDialog("chartsOverview", { position: { my: "center", at: "center", of: "svg", collision: "fit" } });
 }
 
 function handleClose() {
