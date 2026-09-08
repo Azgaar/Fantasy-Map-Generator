@@ -527,7 +527,7 @@ function enterResourceAssignMode(this: HTMLElement) {
   setModeHiddenColumns(dialogId, ["display", "unit", "produced", "stock", "price", "actions"]);
   ensureEl("goodsFooter").style.display = "none";
 
-  $("#goodsEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
+  updateDialog(dialogId, { position });
 
   tip("Select good line in editor, click on cells to remove or add a bonus resource", true);
   select<SVGElement, unknown>("#viewbox").on("click", changeResourceOnCellClick);

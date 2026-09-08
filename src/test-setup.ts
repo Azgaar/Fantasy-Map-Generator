@@ -56,9 +56,21 @@ if (typeof Range !== "undefined" && typeof Range.prototype.getBoundingClientRect
     }) as unknown as DOMRectList;
 }
 
-// Logging flags declared in public/main.js and referenced bare by bundled modules
+// Logging flags owned by services/logging.ts and referenced bare by bundled modules
 for (const flag of ["INFO", "TIME", "ERROR", "WARN", "DEBUG"]) {
   if (typeof (globalThis as Record<string, unknown>)[flag] === "undefined") {
     (globalThis as Record<string, unknown>)[flag] = false;
   }
 }
+
+// The configuration global the app installs at boot, so a unit test gets the same defaults. The
+// model is loaded last and dynamically: it reaches the modules that own each default, and those
+// expect the stubs above to be in place
+const { Options } = await import("@/components/options-model");
+
+(globalThis as Record<string, unknown>).options ??= Options.getDefaultOptions();
+
+// Those imports pull in the real tooltip module, which needs a DOM node no unit test renders.
+// A test that wants the real one imports it itself, and that assignment lands after this
+window.tip = () => {};
+window.clearMainTip = () => {};

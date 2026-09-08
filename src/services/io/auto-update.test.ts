@@ -1,20 +1,54 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import indexHtml from "@/index.html?raw";
+import "@/generators/added-labels";
 import "@/generators/features"; // migrations call the Features module through its global
 import { Styles } from "@/generators/styles";
+import * as versioning from "@/services/versioning";
 import { VERSION } from "@/services/versioning";
-import { resolveVersionConflicts } from "./auto-update";
+import { migrateLegacySettings, resolveVersionConflicts } from "./auto-update";
 
 beforeEach(() => {
   document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox"></g></svg>`;
   localStorage.clear();
-  globalThis.options = { labels: { groups: [] } } as unknown as typeof globalThis.options;
+  options.map.labels.groups = [];
+  options.map.style.preset = "default";
   globalThis.pack = { features: [] } as unknown as typeof globalThis.pack; // migrations run against a loaded map
   (globalThis as typeof globalThis & { getStylePreset: () => Promise<[string, object]> }).getStylePreset = async () => [
     "default",
     {}
   ];
+});
+
+it.each([18, 180])("keeps legacy custom labels after saving and reloading a font size of %s", async fontSize => {
+  const data = readFileSync("tests/fixtures/1.139.4.map", "utf8").split("\r\n");
+  migrateLegacySettings("1.139.4", data);
+  Options.applyLoaded(JSON.parse(data[1]));
+  document.body.innerHTML = data[5];
+  document.getElementById("forests")!.dataset.size = String(fontSize);
+  globalThis.pack = {
+    states: JSON.parse(data[14]),
+    burgs: JSON.parse(data[15]),
+    addedLabels: []
+  } as unknown as typeof pack;
+  globalThis.notes = JSON.parse(data[4]);
+
+  // Exercise the label migration without unrelated versions' graph and DOM setup.
+  const compare = vi.spyOn(versioning, "compareVersions");
+  compare.mockImplementation((_a, b) => ({ isOlder: b === "1.140.0", isNewer: false, isEqual: false }));
+  try {
+    await resolveVersionConflicts("1.139.4", data);
+  } finally {
+    compare.mockRestore();
+  }
+
+  const group = structuredClone(options.map.labels.groups.find(group => group.name === "forests"));
+  expect(group?.zoom.min).toBe(0);
+  expect(group?.zoom.max).toBeGreaterThanOrEqual(0);
+  expect(pack.addedLabels.some(label => label.label.group === "forests")).toBe(true);
+  Options.applyLoaded(JSON.parse(JSON.stringify(options.map)));
+  expect(options.map.labels.groups.find(group => group.name === "forests")).toEqual(group);
 });
 
 describe("v1.144 layer id migration", () => {
@@ -31,23 +65,23 @@ describe("v1.144 layer id migration", () => {
   });
 
   it("maps exceptional legacy toggle ids and preserves unknown dependencies", () => {
-    globalThis.options = {
-      labels: {
-        groups: ["toggleHeight", "toggleMarketsLayer", "toggleBurgIcons", "toggleScaleBar", "customLayer"].map(
-          (layerDependency, index) => ({
-            name: `group-${index}`,
-            type: "added",
-            layerDependency,
-            zoom: { min: null, max: null }
-          })
-        )
-      }
-    } as typeof globalThis.options;
-    const data: string[] = [];
+    const groups = ["toggleHeight", "toggleMarketsLayer", "toggleBurgIcons", "toggleScaleBar", "customLayer"].map(
+      (layerDependency, index) => ({
+        name: `group-${index}`,
+        type: "added",
+        layerDependency,
+        zoom: { min: null, max: null }
+      })
+    );
+    const settings = Array<string>(20).fill("");
+    settings[19] = JSON.stringify({ labels: { groups } });
+    const data = ["1.143.0||||1280|800", settings.join("|")];
 
+    migrateLegacySettings("1.143.0", data);
     resolveVersionConflicts("1.143.0", data);
 
-    expect(options.labels?.groups.map(group => group.layerDependency)).toEqual([
+    const migratedGroups: { layerDependency: string }[] = JSON.parse(data[1]).labels.groups;
+    expect(migratedGroups.map(group => group.layerDependency)).toEqual([
       "heightmap",
       "markets",
       "burgIcons",

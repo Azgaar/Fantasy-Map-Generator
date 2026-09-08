@@ -1,7 +1,7 @@
 import { type D3DragEvent, drag, select } from "d3";
-import "@/components/fill-box";
+import "@/components/shared/fill-box";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
-import type { FillBoxElement } from "@/components/fill-box";
+import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";

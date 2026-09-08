@@ -1,11 +1,9 @@
 import { test, expect, type Page } from "@playwright/test";
 import fs from "fs";
 import path from "path";
+import { waitForMap } from "./wait-for-map";
 
 declare const notes: { id: string }[]; // page global, resolved inside page.evaluate
-declare const options: {
-  labels: { resizeOnZoom: boolean; showAll: boolean; groups: { type: string; mode?: string }[] };
-};
 declare const style: { relief: { set: string; size: number; density: number } };
 
 const LEGACY_RELIEF_ICONS = [
@@ -98,9 +96,7 @@ test.describe("Map loading", () => {
     await fileInput.setInputFiles(mapFilePath);
 
     // Wait for map to be fully loaded
-    await page.waitForFunction(() => (window as any).mapId !== undefined, {
-      timeout: 120000
-    });
+    await waitForMap(page);
 
     // Additional wait for rendering to settle
     await page.waitForTimeout(500);
@@ -113,7 +109,7 @@ test.describe("Map loading", () => {
         hasBurgs: pack.burgs && pack.burgs.length > 1,
         hasCells: pack.cells && pack.cells.i && pack.cells.i.length > 0,
         hasRivers: pack.rivers && pack.rivers.length > 0,
-        mapId: (window as any).mapId
+        mapsGenerated: (window as any).mapHistory.length
       };
     });
 
@@ -121,7 +117,7 @@ test.describe("Map loading", () => {
     expect(mapData.hasBurgs).toBe(true);
     expect(mapData.hasCells).toBe(true);
     expect(mapData.hasRivers).toBe(true);
-    expect(mapData.mapId).toBeDefined();
+    expect(mapData.mapsGenerated).toBeGreaterThan(0);
 
     // Ensure no JavaScript errors occurred during loading
     // Filter out expected errors (external resources like Google Analytics, fonts)
@@ -151,9 +147,7 @@ test.describe("Map loading", () => {
     const mapFilePath = path.join(__dirname, "../fixtures/1.112.1.map");
     await fileInput.setInputFiles(mapFilePath);
 
-    await page.waitForFunction(() => (window as any).mapId !== undefined, {
-      timeout: 120000
-    });
+    await waitForMap(page);
     await page.waitForTimeout(500);
 
     // Check essential SVG layers exist
@@ -203,9 +197,7 @@ test.describe("Map loading", () => {
     const mapFilePath = path.join(__dirname, "../fixtures/1.112.1.map");
     await fileInput.setInputFiles(mapFilePath);
 
-    await page.waitForFunction(() => (window as any).mapId !== undefined, {
-      timeout: 120000
-    });
+    await waitForMap(page);
     await page.waitForTimeout(500);
 
     // Verify states have proper structure
@@ -402,7 +394,7 @@ test.describe("Map loading", () => {
     });
   });
 
-  test("legacy label settings should migrate without changing behavior", async ({ page }) => {
+  test("legacy label settings should migrate while preserving browser visibility preferences", async ({ page }) => {
     const mapFilePath = path.join(__dirname, "../fixtures/1.139.4.map");
     const mapData = fs.readFileSync(mapFilePath, "utf8").split(/\r?\n/);
     const settings = mapData[1].split("|");
@@ -413,6 +405,10 @@ test.describe("Map loading", () => {
     settings[23] = "0"; // resize on zoom disabled
     mapData[1] = settings.join("|");
 
+    await page.evaluate(() => {
+      options.app.labels.showAll = false;
+    });
+
     await page.locator("#mapToLoad").setInputFiles({
       name: "legacy-label-settings.map",
       mimeType: "text/plain",
@@ -421,15 +417,15 @@ test.describe("Map loading", () => {
     await expect(page.locator("#tooltip")).toContainText("Map is successfully loaded", { timeout: 120000 });
 
     const migrated = await page.evaluate(() => {
-      const labels = options.labels;
+      const labels = options.map.labels;
       return {
         resizeOnZoom: labels.resizeOnZoom,
-        showAll: labels.showAll,
-        stateMode: labels.groups.find((group: any) => group.type === "state")?.mode
+        showAll: options.app.labels.showAll,
+        stateMode: labels.groups.find(group => group.type === "state")?.mode
       };
     });
 
-    expect(migrated).toEqual({ resizeOnZoom: false, showAll: true, stateMode: "full" });
+    expect(migrated).toEqual({ resizeOnZoom: false, showAll: false, stateMode: "full" });
   });
 
   // v1.142.0 moved relief icons from the #terrain group to pack.relief and renders only the ones
@@ -531,9 +527,7 @@ test.describe("Map loading", () => {
     const mapFilePath = path.join(__dirname, "../fixtures/1.112.1.map");
     await fileInput.setInputFiles(mapFilePath);
 
-    await page.waitForFunction(() => (window as any).mapId !== undefined, {
-      timeout: 120000
-    });
+    await waitForMap(page);
     await page.waitForTimeout(500);
 
     // Verify burgs have proper structure

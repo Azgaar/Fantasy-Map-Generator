@@ -1,4 +1,5 @@
 import {test, expect, type Page} from "@playwright/test";
+import { waitForMap } from "./wait-for-map";
 
 // Map click at a pack coordinate; callers filter out points hidden under a dialog or the options panel
 async function clickMapAt(page: Page, point: [number, number]) {
@@ -38,7 +39,7 @@ test.describe("Annex by clicking on the map", () => {
       sessionStorage.clear();
     });
     await page.goto("/?seed=test-annex&width=1280&height=720");
-    await page.waitForFunction(() => (window as any).mapId !== undefined, {timeout: 60000});
+    await waitForMap(page);
     await page.waitForTimeout(500);
   });
 

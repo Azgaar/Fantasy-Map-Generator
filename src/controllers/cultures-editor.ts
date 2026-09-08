@@ -11,8 +11,8 @@ import {
   setModeHiddenColumns,
   type TableView
 } from "@/components/dialog/table";
-import type { FillBoxElement } from "@/components/fill-box";
 import { Layers } from "@/components/layers";
+import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -79,7 +79,9 @@ const columns: EditorColumn<Culture>[] = [
     label: "Population",
     width: "6em",
     defaultSort: "desc",
-    sortBy: culture => (culture.rural || 0) * populationRate + (culture.urban || 0) * populationRate * urbanization
+    sortBy: culture =>
+      (culture.rural || 0) * options.map.units.population.scale +
+      (culture.urban || 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate
   },
   {
     key: "emblems",
@@ -214,13 +216,16 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
   // totals span the full filtered set, not just the current page
   for (const c of view.all) {
     totalArea += getArea(c.area ?? 0);
-    totalPopulation += rn((c.rural ?? 0) * populationRate + (c.urban ?? 0) * populationRate * urbanization);
+    totalPopulation += rn(
+      (c.rural ?? 0) * options.map.units.population.scale +
+        (c.urban ?? 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate
+    );
   }
 
   for (const c of view.rows) {
     const area = getArea(c.area ?? 0);
-    const rural = (c.rural ?? 0) * populationRate;
-    const urban = (c.urban ?? 0) * populationRate * urbanization;
+    const rural = (c.rural ?? 0) * options.map.units.population.scale;
+    const urban = (c.urban ?? 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate;
     const population = rn(rural + urban);
     const populationTip = `Total population: ${si(population)}. Rural population: ${si(rural)}. Urban population: ${si(
       urban
@@ -573,8 +578,10 @@ function changePopulation(this: HTMLElement): void {
     return;
   }
 
-  const rural = rn((culture.rural ?? 0) * populationRate);
-  const urban = rn((culture.urban ?? 0) * populationRate * urbanization);
+  const rural = rn((culture.rural ?? 0) * options.map.units.population.scale);
+  const urban = rn(
+    (culture.urban ?? 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate
+  );
   const total = rural + urban;
   const format = (n: number) => Number(n).toLocaleString();
   const burgs = pack.burgs.filter(b => !b.removed && b.culture === cultureId);
@@ -638,7 +645,7 @@ function applyPopulationChange(
     });
   }
   if (!Number.isFinite(ruralChange) && +newRural > 0) {
-    const points = newRural / populationRate;
+    const points = newRural / options.map.units.population.scale;
     const cells = (pack.cells.i as unknown as number[]).filter(i => pack.cells.culture[i] === culture);
     const pop = rn(points / cells.length);
     cells.forEach(i => {
@@ -654,7 +661,7 @@ function applyPopulationChange(
     });
   }
   if (!Number.isFinite(urbanChange) && +newUrban > 0) {
-    const points = newUrban / populationRate / urbanization;
+    const points = newUrban / options.map.units.population.scale / options.map.units.population.urbanization.rate;
     const population = rn(points / burgs.length, 4);
     burgs.forEach(b => {
       b.population = population;
@@ -825,7 +832,9 @@ async function showHierarchy(): Promise<void> {
   const getDescription = (culture: any) => {
     const { name, type, rural, urban } = culture;
 
-    const population = rural * populationRate + urban * populationRate * urbanization;
+    const population =
+      rural * options.map.units.population.scale +
+      urban * options.map.units.population.scale * options.map.units.population.urbanization.rate;
     const populationText = population > 0 ? `${si(rn(population))} people` : "Extinct";
     return `${name} culture. ${type}. ${populationText}`;
   };
@@ -948,7 +957,10 @@ function downloadCulturesCsv(): void {
   // export the full filtered set (all pages), not just the visible page
   const data = culturesTable.view().all.map(c => {
     const area = getArea(c.area ?? 0);
-    const population = rn((c.rural ?? 0) * populationRate + (c.urban ?? 0) * populationRate * urbanization);
+    const population = rn(
+      (c.rural ?? 0) * options.map.units.population.scale +
+        (c.urban ?? 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate
+    );
     const namesbase = Names.nameBases[c.base].name;
     const originList = (c.origins ?? [])
       .filter((origin): origin is number => Boolean(origin))

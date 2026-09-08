@@ -1,19 +1,9 @@
-// Client for the fmg-bot help gateway (server spec: azgaar/fmg-bot
-// docs/superpowers/specs/2026-09-01-web-help-endpoint-design.md). Everything is server-pinned;
-// the request body is exactly {question} by contract — unknown fields are a 400.
-
-import { clearToken, getToken } from "./auth";
+import { clearToken, getToken, SIGNIN_PENDING } from "./auth";
 import { clearConversationId } from "./conversation";
 
 export const GATEWAY_URL = "https://ask.azgaarsfmg.com";
-
-// Scheme + host only — the origin the gateway allows, NOT where requests go
 export const OFFICIAL_ORIGIN = "https://azgaar.github.io";
 
-// On a 200 only `answer` is reliable (always a non-empty string); the other fields are
-// nullable, though in practice requestId is always a number — refusals are ledgered and
-// rateable. A refusal or empty reply is a normal 200, never an error state. requestId is
-// slice 3's feedback handle; hide feedback only when it is actually null.
 export interface AskResponse {
   // always present on a 200, refusals included — always adopt the returned id
   conversationId: string;
@@ -137,11 +127,10 @@ export const getLimits = (): Promise<Limits> => request<Limits>("/v1/limits", { 
 // Sign-in is a full-page redirect; the gateway lands the user back on the app URL with
 // #token=… in the fragment (server-configured target — the client passes nothing).
 export function signIn(): void {
-  // Marks that THIS client initiated sign-in, so the fragment-token stash in public/main.js
-  // can refuse a #token= planted by a third party (token-fixation guard) — see the matching
-  // comment there.
+  // Marks that THIS client initiated sign-in, so `stashCallbackToken` can refuse a #token=
+  // planted by a third party (token-fixation guard) — see the matching comment there.
   try {
-    sessionStorage.setItem("fmg-help-signin-pending", "1");
+    sessionStorage.setItem(SIGNIN_PENDING, "1");
   } catch {
     // storage unavailable — the stash falls back to treating this as an unsolicited token
   }

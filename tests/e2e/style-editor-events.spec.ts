@@ -1,6 +1,12 @@
 import { test, expect, type Page } from "@playwright/test";
+import { countMaps, waitForMap, waitForNextMap } from "./wait-for-map";
 
-declare const options: any;
+declare const options: {
+  map: {
+    burgs: { groups: { name: string; isDefault?: boolean; active?: boolean; features?: Record<string, boolean>; preview?: string }[] };
+    labels: { groups: { name: string; type: string; zoom: { min: number; max: number | null } }[] };
+  };
+};
 declare const regeneratePrompt: (config?: { seed?: string }) => void;
 
 // Real-control regression for the two zoom-family editor handlers: the styleRescaleMarkers change
@@ -10,8 +16,6 @@ declare const regeneratePrompt: (config?: { seed?: string }) => void;
 // zoom settle. Each case drives the actual control with a real DOM event and checks: (1) the
 // immediate effect, (2) the typed store value, (3) survival across invokeActiveZooming() at a
 // changed zoom, (4) the retired attribute is gone from the element.
-
-const waitForMap = (page: Page) => page.waitForFunction(() => (window as any).mapId !== undefined, { timeout: 60000 });
 
 const rn = (v: number, d = 0): number => Math.round(v * 10 ** d) / 10 ** d;
 
@@ -661,28 +665,35 @@ test.describe("style editor events drive the store", () => {
     expect(await page.locator(`#anchors > g#${anchorGroup}`).getAttribute("data-size")).toBeNull();
   });
 
-  test("a new map resets migrated group registries to saved-or-default groups", async ({ page }) => {
-    // simulate what loading an old map's migration leaves behind in the session registries
+  test("a new map starts from the previous definition sets, repaired so nothing is undrawable", async ({ page }) => {
+    // what an old map's migration leaves behind: one burg group, and a label registry with only that type
     await page.evaluate(() => {
-      options.burgs.groups = [{ name: "cities", isDefault: true, active: true, features: {}, preview: "" }];
-      options.labels.groups = [{ name: "cities", type: "burg", zoom: { min: 1, max: 25 } }];
+      options.map.burgs.groups = [{ name: "cities", isDefault: true, active: true, features: {}, preview: "" }];
+      options.map.labels.groups = [{ name: "cities", type: "burg", zoom: { min: 1, max: 25 } }];
     });
 
-    const before = await page.evaluate(() => (window as any).mapId);
+    const mapsBefore = await countMaps(page);
     await page.evaluate(() => regeneratePrompt({ seed: "registry-reset-test" }));
-    await page.waitForFunction(prev => (window as any).mapId !== prev, before, { timeout: 120000 });
+    await waitForNextMap(page, mapsBefore);
     await page.waitForTimeout(500);
 
     const after = await page.evaluate(() => ({
-      burgGroupNames: options.burgs.groups.map((g: any) => g.name),
-      labelGroupNames: options.labels.groups.map((g: any) => g.name),
-      burgsInLegacyGroup: (window as any).pack.burgs.filter((b: any) => b?.i && b.group === "cities").length
+      burgGroupNames: options.map.burgs.groups.map(group => group.name),
+      labelTypes: [...new Set(options.map.labels.groups.map(group => group.type))],
+      labelGroupNames: options.map.labels.groups.map(group => group.name),
+      defaultBurgGroups: options.map.burgs.groups.filter(group => group.isDefault).length,
+      unassignedBurgs: (window as any).pack.burgs.filter((b: any) => b?.i && !b.group).length
     }));
-    expect(after.burgGroupNames).not.toContain("cities");
-    expect(after.burgGroupNames).toContain("town");
-    expect(after.labelGroupNames).not.toContain("cities");
-    expect(after.labelGroupNames).toContain("river");
-    expect(after.burgsInLegacyGroup).toBe(0);
+
+    // the sets are the user's own: the next map starts from them rather than resetting to defaults
+    expect(after.burgGroupNames).toEqual(["cities"]);
+    expect(after.labelGroupNames).toContain("cities");
+
+    // but a repair keeps them usable: every label type has a group and burgs still have a default
+    for (const type of ["river", "route", "state", "province", "added"])
+      expect(after.labelTypes).toContain(type);
+    expect(after.defaultBurgGroups).toBe(1);
+    expect(after.unassignedBurgs).toBe(0);
   });
 
   test("ocean pattern controls write the store and the applier derives from it", async ({ page }) => {

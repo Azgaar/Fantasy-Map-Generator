@@ -1,6 +1,7 @@
 import type Quill from "quill";
 import { confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
+import { viewport } from "@/components/viewport";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName, speak, uploadFile } from "@/utils";
 import { ensureEl } from "../utils";
@@ -37,7 +38,7 @@ function open(id?: string, name?: string): void {
   });
 
   // update pin notes icon
-  if (options.pinNotes) notesPin.classList.add("pressed");
+  if (options.app.notesPinned) notesPin.classList.add("pressed");
   else notesPin.classList.remove("pressed");
 
   quill = createRichTextEditor(ensureEl("notesLegend"), ensureEl("notesToolbar"), updateLegend);
@@ -65,8 +66,8 @@ function open(id?: string, name?: string): void {
 
   $("#notesEditor").dialog({
     title: "Notes Editor",
-    width: svgWidth * 0.8,
-    height: svgHeight * 0.75,
+    width: viewport.width * 0.8,
+    height: viewport.height * 0.75,
     position: { my: "center", at: "center", of: "svg" },
     close: closeNotesEditor
   });
@@ -303,7 +304,7 @@ function triggerNotesRemove(): void {
 }
 
 function toggleNotesPin(this: HTMLElement): void {
-  options.pinNotes = !options.pinNotes;
+  Options.set(o => (o.app.notesPinned = !o.app.notesPinned));
   this.classList.toggle("pressed");
 }
 

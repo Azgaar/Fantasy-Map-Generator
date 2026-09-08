@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { waitForMap } from "./wait-for-map";
 
 // The emblems layer is viewport-rendered: only the emblems the current view covers are materialized as
 // <use> elements, and their coats of arms are rendered into <defs> on demand. A full-map export therefore
@@ -19,16 +20,18 @@ test.describe("emblems viewport rendering", () => {
     });
 
     await page.goto("/?seed=emblems-viewport&width=1280&height=720");
-    await page.waitForFunction(() => (window as Win).mapId !== undefined, { timeout: 60000 });
+    await waitForMap(page);
     await page.evaluate(() => (window as Win).Layers.show("emblems"));
     await expect.poll(async () => page.evaluate(countStateUses), { timeout: 30000 }).toBeGreaterThan(0);
   });
 
   test("zooming in drops off-screen emblems and zooming out brings them back", async ({ page }) => {
-    // `options` is a script-scoped global, not a window property, so it is reached through page script.
     // Showing all categories puts every emblem in the scene; only the <use> elements are counted here,
     // so the test does not wait on the (asynchronous) coat of arms rendering.
-    await page.evaluate("options.emblems.showAll = true; invokeActiveZooming();");
+    await page.evaluate(() => {
+      options.app.emblems.showAll = true;
+      invokeActiveZooming();
+    });
     const full = await page.evaluate(countUses);
     expect(full).toBeGreaterThan(100);
 

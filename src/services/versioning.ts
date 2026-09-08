@@ -16,14 +16,18 @@
  */
 
 import { dialogState } from "@/components/dialog/state";
+import { Pins } from "@/components/pins";
 import { tip } from "@/components/tooltips";
 import { isElectron } from "./platform";
 
-export const VERSION = "1.151.3";
+export const VERSION = "1.152.1";
 
 // new changes on top
 const latestPublicChanges = [
   "Notes Editor: new bundled rich text editor, works offline and in the Desktop App",
+  "Heightmap: option to render contour lines",
+  "Ability to override a burg's treasury",
+  "Dialogs: preserve position sessions",
   "Help assistant: ask questions about the Generator in the app",
   "States and Provinces editors: annex by clicking on the map",
   "Option to redraw labels, icons and relief only after a zoom",
@@ -32,22 +36,7 @@ const latestPublicChanges = [
   "Desktop App",
   "URL params to open specific layers or preset",
   "Emblems rendering optimization",
-  "Dialogs state preserved between sessions",
-  "Paint Area dialogs rework",
-  "Relief icons: improved performance",
-  "Configurable table columns",
-  "Labels: improved performance",
-  "Labels Overview",
-  "Route and river labels",
-  "Economic simulation",
-  "Trade animation",
-  "Navigable rivers",
-  "3D view: eroded terrain",
-  "3D view: satellite texture",
-  "Jagged coastlines",
-  "Heightmap Editor: Fill brush",
-  "Editors: undo button",
-  "Minimap"
+  "Dialogs state preserved between sessions"
 ];
 
 export function parseMapVersion(version: string): string {
@@ -109,11 +98,16 @@ export async function clearCache(): Promise<void> {
   location.reload();
 }
 
+export const ARROW_TIP_KEY = "disable_click_arrow_tooltip";
+
 export async function cleanupData(): Promise<void> {
   localStorage.clear();
   dialogState.clear();
   localStorage.setItem("version", VERSION);
-  localStorage.setItem("disable_click_arrow_tooltip", "true");
+
+  Options.reset();
+  Pins.clearAll();
+  localStorage.setItem(ARROW_TIP_KEY, "true");
   await clearCache();
 }
 

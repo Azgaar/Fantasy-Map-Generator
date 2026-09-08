@@ -32,6 +32,10 @@ To get a blank map go Tools -> Heightmap -> Erase and use the brushes on the top
 
 Labels are shown and hidden based on zoom bounds defined per label group. Open Tools -> Labels and click on the groups configuration button. There you can check 'Show all labels' to ignore zoom bounds completely, or raise the max zoom value for a specific group
 
+### How do I force state labels to show the full state name?
+
+The name form is set per label group and no longer in Options, where it used to be the 'stateLabelsMode' setting. Open Tools -> Labels, click on the groups configuration button and set the state group's 'Mode' to 'full'. The default 'auto' uses the full name when it fits the state's area well enough and switches to the short name when it does not, while 'short' always uses the short name. Mode applies to state and province groups only
+
 ### How do I import an image? Can I put an image to create world based on it?
 
 Yes, it can be done via the Image Converter. Go to Tools -> Heightmap -> Erase -> Image converter
@@ -538,11 +542,11 @@ To hide the Assistant, go to Options -> Generator settings and set `Azgaar assis
 
 ### The assistant says 'No questions left today'. What now?
 
-Questions are budgeted per day to keep the shared service affordable. Anonymous use gets a small allowance; click 'Sign in with Discord for more' in the assistant panel for a larger one. The wiki and the Discord server hold the same knowledge the assistant answers from
+Questions are budgeted per day to keep the shared service affordable. Anonymous use gets a small allowance; click 'Sign in' at the bottom of the assistant panel to sign in with Discord for a larger one. The wiki and the Discord server hold the same knowledge the assistant answers from
 
 ### What does the assistant send, and where?
 
-Only the question you type and a conversation id go to the project's help gateway at ask.azgaarsfmg.com; nothing from your map or browser is sent. Answers are drawn from the wiki and Discord knowledge. Signing in with Discord stores a token in this browser, and 'Sign out' removes it
+Only the question you type and a conversation id go to the project's help gateway at ask.azgaarsfmg.com; nothing from your map or browser is sent. Answers are drawn from the wiki and Discord knowledge. Signing in with Discord stores a token in this browser, and 'Sign out' removes it. Questions are kept for 90 days to improve the documentation; the 'Policy' link at the bottom of the panel opens the full details at https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Policy
 
 ### How to make a river?
 

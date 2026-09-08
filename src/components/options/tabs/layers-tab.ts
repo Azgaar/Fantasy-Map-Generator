@@ -1,10 +1,11 @@
-// Layers tab: a projection of the Layers registry. Holds the only mapping between a layer and its button.
-import { type LayerId, Layers } from "@/components/layers";
+// Layers tab: a projection of the Layers registry. Renders the layer buttons and wires them up.
+import type { LayerId } from "@/components/layers";
+import { Layers } from "@/components/layers";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { isCtrlClick } from "@/utils";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
 
-interface LayerButton {
+export interface LayerButton {
   label: string; // button text, may contain markup marking the shortcut letter
   shortcut?: string; // KeyboardEvent.code
   hint?: string; // shortcut as shown in the tip, defaults to the code without the "Key" prefix
@@ -49,6 +50,65 @@ export const LAYER_TOGGLES = new Map<LayerId, LayerButton>([
 
 export const getLayerByShortcut = (code: string): LayerId | undefined =>
   [...LAYER_TOGGLES].find(([, button]) => button.shortcut === code)?.[0];
+
+const TEMPLATE = /* html */ `
+  <p data-tip="Select a map layers preset" style="display: inline-block">Layers preset:</p>
+  <select
+    data-tip="Select a map layers preset"
+    id="layersPreset"
+    style="width: 45%"
+  >
+    <option value="political" selected>Political map</option>
+    <option value="cultural">Cultural map</option>
+    <option value="religions">Religions map</option>
+    <option value="provinces">Provinces map</option>
+    <option value="biomes">Biomes map</option>
+    <option value="heightmap">Heightmap</option>
+    <option value="physical">Physical map</option>
+    <option value="poi">Places of interest</option>
+    <option value="goods">Goods map</option>
+    <option value="trade">Trade animation</option>
+    <option value="military">Military map</option>
+    <option value="emblems">Emblems</option>
+    <option value="landmass">Pure landmass</option>
+    <option hidden value="custom">Custom (not saved)</option>
+  </select>
+  <button
+    id="savePresetButton"
+    data-tip="Click to save displayed layers as a new preset"
+    class="icon-plus sideButton"
+    style="display: none"
+  ></button>
+  <button
+    id="removePresetButton"
+    data-tip="Click to remove current custom preset"
+    class="icon-minus sideButton"
+    style="display: none"
+  ></button>
+  <p>Displayed layers and layer order:</p>
+  <ul
+    data-tip="Click to toggle a layer, drag to raise or lower a layer. Ctrl + click to edit layer style"
+    id="mapLayers"
+  >
+  </ul>
+  <div class="tip">Click to toggle, drag to raise or lower the layer</div>
+  <div class="tip">Ctrl + click to edit layer style</div>
+  <div id="viewMode" data-tip="Set view mode">
+    <p>View mode:</p>
+    <button data-tip="Standard view mode for editing the map" id="viewStandard" class="pressed">
+      Standard
+    </button>
+    <button
+      data-tip="Map presentation in 3D scene. Works best for heightmap. Cannot be used for editing"
+      id="viewMesh"
+    >
+      3D scene
+    </button>
+    <button data-tip="Project map on globe. Cannot be used for editing" id="viewGlobe">Globe</button>
+  </div>
+`;
+
+ensureEl("layersContent").innerHTML = TEMPLATE;
 
 function render(): void {
   ensureEl("mapLayers").replaceChildren(

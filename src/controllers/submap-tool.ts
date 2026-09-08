@@ -1,6 +1,13 @@
+import { applyGraphSize, fitMapToScreen } from "@/components/canvas";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
+import { registerMap } from "@/components/lifecycle";
+import { cellsDensityColor, changeCellsDensity } from "@/components/options/tabs/options-tab";
+import { undraw } from "@/components/undraw";
+import { viewport } from "@/components/viewport";
+import { POINTS_BY_DENSITY } from "@/data/graph-density";
 import { Resample } from "@/generators/resample";
+import { logStats } from "@/services/logging";
 import { getLatitude, getLongitude } from "@/utils";
 import { ensureEl, minmax, rn } from "../utils";
 
@@ -29,8 +36,8 @@ function open(): void {
 function renderDialog(): void {
   destroyDialog("submapTool");
 
-  const pointsValue = ensureEl<HTMLInputElement>("pointsInput").value;
-  const cells = cellsDensityMap[+pointsValue];
+  const pointsValue = String(options.generation.graph.density);
+  const cells = POINTS_BY_DENSITY[+pointsValue];
 
   const html = /* html */ `<div id="submapTool" class="dialog">
     <p style="font-weight: bold">
@@ -42,7 +49,7 @@ function renderDialog(): void {
         <div>Points number</div>
         <div>
           <input id="submapPointsInput" type="range" min="1" max="13" value="${pointsValue}" />
-          <output id="submapPointsFormatted" style="color: ${getCellsDensityColor(cells)}">${cells / 1000}K</output>
+          <output id="submapPointsFormatted" style="color: ${cellsDensityColor(cells)}">${cells / 1000}K</output>
         </div>
       </div>
       <div data-tip="Check to fit burg styles (icon and label size) to the submap scale">
@@ -63,21 +70,22 @@ function cleanup(): void {
 }
 
 function handlePointsInput(e: Event): void {
-  const cells = cellsDensityMap[+(e.target as HTMLInputElement).value];
+  const cells = POINTS_BY_DENSITY[+(e.target as HTMLInputElement).value];
   const output = ensureEl<HTMLOutputElement>("submapPointsFormatted");
   output.value = `${cells / 1000}K`;
-  output.style.color = getCellsDensityColor(cells);
+  output.style.color = cellsDensityColor(cells);
 }
 
 function generateSubmap(): void {
   INFO && console.group("generateSubmap");
 
+  const { scale, x: viewX, y: viewY } = viewport;
   const [x0, y0] = [Math.abs(viewX / scale), Math.abs(viewY / scale)]; // top-left corner
-  recalculateMapSize(x0, y0);
+  recalculateMapSize(x0, y0, scale);
 
   const submapPointsValue = ensureEl<HTMLInputElement>("submapPointsInput").value;
-  const globalPointsValue = ensureEl<HTMLInputElement>("pointsInput").value;
-  if (submapPointsValue !== globalPointsValue) changeCellsDensity(submapPointsValue);
+  const globalPointsValue = String(options.generation.graph.density);
+  if (submapPointsValue !== globalPointsValue) changeCellsDensity(+submapPointsValue);
 
   const projection = (x: number, y: number): [number, number] => [(x - x0) * scale, (y - y0) * scale];
   const inverse = (x: number, y: number): [number, number] => [x / scale + x0, y / scale + y0];
@@ -91,24 +99,28 @@ function generateSubmap(): void {
   if (ensureEl<HTMLInputElement>("submapRescaleBurgStyles").checked) rescaleBurgStyles(scale);
   Layers.drawAll();
 
+  registerMap(); // a submap is a new map: it gets its own id and history entry
+  logStats();
+
   INFO && console.groupEnd();
 }
 
-function recalculateMapSize(x0: number, y0: number): void {
-  options.mapSize = rn(options.mapSize / scale, 2);
+function recalculateMapSize(x0: number, y0: number, scale: number): void {
+  const { geography, graph, units } = options.map;
+  const { coordinates } = geography;
+  geography.mapSize = rn(geography.mapSize / scale, 2);
 
-  const latT = (mapCoordinates.latT ?? 0) / scale;
-  const latN = getLatitude(y0, mapCoordinates, graphHeight);
-  options.latitude = rn(((90 - latN) / (180 - latT)) * 100, 2);
+  const latT = coordinates.latT / scale;
+  const latN = getLatitude(y0, coordinates, graph.height);
+  geography.latitude = rn(((90 - latN) / (180 - latT)) * 100, 2);
 
-  const lotT = (mapCoordinates.lonT ?? 0) / scale;
-  const lonE = getLongitude(x0 + graphWidth / scale, mapCoordinates, graphWidth);
-  options.longitude = rn(((180 - lonE) / (360 - lotT)) * 100, 2);
+  const lotT = coordinates.lonT / scale;
+  const lonE = getLongitude(x0 + graph.width / scale, coordinates, graph.width);
+  geography.longitude = rn(((180 - lonE) / (360 - lotT)) * 100, 2);
 
-  distanceScale = rn(distanceScale / scale, 2);
-  ensureEl<HTMLInputElement>("distanceScaleInput").value = String(distanceScale);
-  populationRate = rn(populationRate / scale, 2);
-  ensureEl<HTMLInputElement>("populationRateInput").value = String(populationRate);
+  units.distance.scale = rn(units.distance.scale / scale, 2);
+  units.population.scale = rn(units.population.scale / scale, 2);
+  Options.save();
 }
 
 function rescaleBurgStyles(scale: number): void {

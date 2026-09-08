@@ -35,7 +35,7 @@ import { drawVignette } from "@/renderers/draw-vignette";
 import { drawZones } from "@/renderers/draw-zones";
 import { drawLabels, removeLabels } from "@/renderers/labels/labels-renderer";
 import { drawFogging } from "@/renderers/overlays/fogging";
-import { tradeAnimation } from "@/renderers/trade-animation";
+import { TradeAnimation } from "@/renderers/trade-animation";
 import { createEl, ensureEl, findEl } from "@/utils/nodeUtils";
 
 interface LayerParams<Id extends string = string> {
@@ -352,8 +352,8 @@ const mapLayers = [
     element: "tradeAnimation",
     parent: "viewbox",
     keepContent: true,
-    draw: () => tradeAnimation.start(),
-    erase: () => tradeAnimation.stop()
+    draw: () => TradeAnimation.start(),
+    erase: () => TradeAnimation.stop()
   }),
   new Layer({
     id: "precipitation",

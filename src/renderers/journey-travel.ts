@@ -1,5 +1,6 @@
 // Traveler marker tweened along a hovered journey (or one of its segments), drawn on #debug
 import { easeLinear, easeSinInOut, select } from "d3";
+import { viewport } from "@/components/viewport";
 import type { Journey, JourneyPoint, JourneySegment } from "@/types/Journey";
 import { getSegmentPathData } from "./draw-journeys";
 
@@ -74,7 +75,7 @@ function play(steps: Step[], id: number): void {
   const group = select("#debug").append("g").attr("id", GROUP_ID).attr("pointer-events", "none");
 
   const width = Number(styles.journeys.attrs["stroke-width"]) || 1.8;
-  const radius = Math.max(width * 1.5, 4 / scale); // stays legible when the map is zoomed out
+  const radius = Math.max(width * 1.5, 4 / viewport.scale); // stays legible when the map is zoomed out
   const traveler = group.append("g");
   const halo = traveler
     .append("circle")
