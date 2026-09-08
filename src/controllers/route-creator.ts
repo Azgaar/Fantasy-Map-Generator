@@ -31,7 +31,7 @@ function open(defaultGroup?: string): void {
 
   // update route groups
   ensureEl("routeCreatorGroupSelect").innerHTML = select("#routes")
-    .selectAll<SVGGElement, unknown>("g")
+    .selectAll<SVGGElement, unknown>(":scope > g")
     .nodes()
     .map(el => {
       const selected = defaultGroup || "roads";

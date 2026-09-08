@@ -4,6 +4,7 @@ import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
+import { drawRoute } from "@/renderers/draw-routes";
 import { speak } from "@/utils";
 import { ensureEl, findEl, getPointer, getSegmentId, rn } from "../utils";
 
@@ -113,7 +114,7 @@ function updateRouteData(route: Route): void {
   const routeGroup = ensureEl<HTMLSelectElement>("routeGroup");
   routeGroup.options.length = 0;
   select("#routes")
-    .selectAll<HTMLElement, unknown>("g")
+    .selectAll<HTMLElement, unknown>(":scope > g")
     .each(function () {
       routeGroup.options.add(new Option(this.id, this.id, false, this.id === route.group));
     });
@@ -250,6 +251,7 @@ function handleControlPointClick(this: any): void {
     const newRoute = {
       i: Routes.getNextId(),
       group: route.group,
+      type: route.type,
       feature: route.feature,
       name: route.name,
       points: newRoutePoints
@@ -262,11 +264,7 @@ function handleControlPointClick(this: any): void {
       if (nextPoint) addConnection(cellId, nextPoint[2], newRoute.i);
     }
 
-    select("#routes")
-      .select(`#${newRoute.group}`)
-      .append("path")
-      .attr("d", Routes.getPath(newRoute))
-      .attr("id", `route${newRoute.i}`);
+    drawRoute(newRoute);
 
     ensureEl("routeSplit").classList.remove("pressed");
   }

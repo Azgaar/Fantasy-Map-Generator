@@ -56,7 +56,7 @@ function addLines(): void {
   ensureEl("routeGroupsEditorBody").innerHTML = "";
 
   const lines = select("#routes")
-    .selectAll<SVGGElement, unknown>("g")
+    .selectAll<SVGGElement, unknown>(":scope > g")
     .nodes()
     .map(el => {
       const count = el.children.length;
