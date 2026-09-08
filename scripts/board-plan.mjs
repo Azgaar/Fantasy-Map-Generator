@@ -1,4 +1,10 @@
-import { PRIORITY_OPTIONS, SIZE_OPTIONS } from "./board-fields.mjs";
+import {
+  FIELD_IDS,
+  PRIORITY_OPTIONS,
+  SIZE_OPTIONS,
+  THEME_LABEL_TO_OPTION,
+  THEME_OPTIONS
+} from "./board-fields.mjs";
 
 const PRIORITY_BY_CODE = new Map(
   Object.keys(PRIORITY_OPTIONS).map(name => [name.slice(0, 2).toUpperCase(), name])
@@ -40,4 +46,44 @@ export function parseTriage(body) {
   if (rawSize && !size) errors.push(`unknown Size value: ${rawSize}`);
 
   return { priority, size, errors };
+}
+
+const FIELDS = {
+  theme: { id: FIELD_IDS.theme, label: "Theme", options: THEME_OPTIONS },
+  priority: { id: FIELD_IDS.priority, label: "Priority", options: PRIORITY_OPTIONS },
+  size: { id: FIELD_IDS.size, label: "Size", options: SIZE_OPTIONS }
+};
+
+export function planFieldWrites(item) {
+  const writes = [];
+  const drift = [];
+
+  const consider = (field, optionName) => {
+    if (!optionName) return;
+    const current = item.fields[field];
+    if (current === optionName) return;
+    if (current) {
+      drift.push(
+        `#${item.number}: ${FIELDS[field].label} is "${current}" but its source says "${optionName}"`
+      );
+      return;
+    }
+    writes.push({
+      number: item.number,
+      field,
+      optionName,
+      optionId: FIELDS[field].options[optionName]
+    });
+  };
+
+  const themeLabels = item.labels.filter(l => Object.hasOwn(THEME_LABEL_TO_OPTION, l));
+  if (themeLabels.length > 1) drift.push(`#${item.number}: two theme labels, ${themeLabels.join(", ")}`);
+  else if (themeLabels.length === 1) consider("theme", THEME_LABEL_TO_OPTION[themeLabels[0]]);
+
+  const triage = parseTriage(item.body);
+  for (const error of triage.errors) drift.push(`#${item.number}: ${error}`);
+  consider("priority", triage.priority);
+  consider("size", triage.size);
+
+  return { writes, drift };
 }

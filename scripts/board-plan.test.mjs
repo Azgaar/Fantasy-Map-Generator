@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { parseTriage } from "./board-plan.mjs";
+import { parseTriage, planFieldWrites } from "./board-plan.mjs";
 
 test("parses an exact block", () => {
   const body = "### Triage\nPriority: P2 – Medium\nSize: M\n";
@@ -39,4 +39,76 @@ test("ignores other blocks around it", () => {
   const got = parseTriage(body);
   assert.equal(got.priority, "P0 – Urgent");
   assert.equal(got.size, "XXL");
+});
+
+const item = over => ({
+  number: 1812,
+  type: "Issue",
+  labels: [],
+  body: "",
+  fields: { theme: null, priority: null, size: null },
+  ...over
+});
+
+test("fills an empty Theme from a single theme label", () => {
+  const { writes, drift } = planFieldWrites(item({ labels: ["bug", "theme: burgs-population"] }));
+  assert.deepEqual(drift, []);
+  assert.equal(writes.length, 1);
+  assert.equal(writes[0].field, "theme");
+  assert.equal(writes[0].optionName, "Burgs/Population");
+  assert.equal(writes[0].optionId, "10011b09");
+});
+
+test("never overwrites a Theme a human already set", () => {
+  const { writes, drift } = planFieldWrites(
+    item({ labels: ["theme: military"], fields: { theme: "Routes", priority: null, size: null } })
+  );
+  assert.deepEqual(writes, []);
+  assert.equal(drift.length, 1);
+  assert.match(drift[0], /Theme/);
+});
+
+test("refuses to choose between two theme labels", () => {
+  const { writes, drift } = planFieldWrites(
+    item({ labels: ["theme: ui-editors", "theme: markers-zones"] })
+  );
+  assert.deepEqual(writes, []);
+  assert.equal(drift.length, 1);
+  assert.match(drift[0], /two theme labels/);
+});
+
+test("fills Priority and Size from a triage block", () => {
+  const { writes } = planFieldWrites(item({ body: "### Triage\nPriority: P3 – Low\nSize: S\n" }));
+  assert.deepEqual(
+    writes.map(w => [w.field, w.optionName]),
+    [
+      ["priority", "P3 – Low"],
+      ["size", "S"]
+    ]
+  );
+});
+
+test("never overwrites a Priority a human already set", () => {
+  const { writes, drift } = planFieldWrites(
+    item({
+      body: "### Triage\nPriority: P3 – Low\nSize: S\n",
+      fields: { theme: null, priority: "P1 – High", size: null }
+    })
+  );
+  assert.deepEqual(
+    writes.map(w => w.field),
+    ["size"]
+  );
+  assert.equal(drift.length, 1);
+  assert.match(drift[0], /Priority/);
+});
+
+test("surfaces an unparseable triage value as drift and writes nothing", () => {
+  const { writes, drift } = planFieldWrites(item({ body: "### Triage\nPriority: soon\nSize: big\n" }));
+  assert.deepEqual(writes, []);
+  assert.equal(drift.length, 2);
+});
+
+test("writes nothing for an item with no labels and no block", () => {
+  assert.deepEqual(planFieldWrites(item({})), { writes: [], drift: [] });
 });
