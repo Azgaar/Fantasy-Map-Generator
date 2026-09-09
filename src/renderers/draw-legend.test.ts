@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import "@/generators/styles";
 import { clearLegend, dragLegendBox, drawLegend, fitLegendBox, hasLegend, redrawLegend } from "./draw-legend";
+import { legendPositions } from "./legend-positions";
 
 beforeEach(() => {
   document.body.innerHTML = /* html */ `<svg id="map" width="800" height="600">
@@ -20,7 +21,7 @@ beforeEach(() => {
   });
   globalThis.svgWidth = 800;
   globalThis.svgHeight = 600;
-  styles.legend.options.positions = {};
+  legendPositions.clear();
 });
 
 const items = [
@@ -99,7 +100,7 @@ describe("drawLegend", () => {
     } as never);
 
     // (100+60+60)/800*100 = 27.5 ; (100+20+40)/600*100 = 26.67
-    expect(styles.legend.options.positions.States).toEqual({ x: 27.5, y: 26.67 });
+    expect(legendPositions.get("States")).toEqual({ x: 27.5, y: 26.67, dragged: true });
     expect(styles.legend.options.x).toBe(99); // the anchor stays where the preset put it
   });
 });
@@ -121,7 +122,7 @@ describe("several legend boxes", () => {
 
     // the states box sits at y 518 (600 * 0.93 - 40), so the zones box's bottom goes 10px above it
     expect(boxOf("States")!.getAttribute("transform")).toBe("translate(732,518)");
-    expect(styles.legend.options.positions.Zones).toEqual({ x: 99, y: 84.67 });
+    expect(legendPositions.get("Zones")).toEqual({ x: 99, y: 84.67 });
     expect(boxOf("Zones")!.getAttribute("transform")).toBe("translate(732,468)");
   });
 
@@ -133,9 +134,9 @@ describe("several legend boxes", () => {
     drawLegend("Zones", zones);
 
     // states box bottom sits at 600 * 0.08 = 48, so the zones box goes below it, not on top of it
-    expect(styles.legend.options.positions.States).toEqual({ x: 10, y: 8 });
-    expect(styles.legend.options.positions.Zones).not.toEqual(styles.legend.options.positions.States);
-    expect(styles.legend.options.positions.Zones).toEqual({ x: 10, y: 16.33 }); // (48 + 10 + 40) / 600
+    expect(legendPositions.get("States")).toEqual({ x: 10, y: 8 });
+    expect(legendPositions.get("Zones")).not.toEqual(legendPositions.get("States"));
+    expect(legendPositions.get("Zones")).toEqual({ x: 10, y: 16.33 }); // (48 + 10 + 40) / 600
     styles.legend.options.x = 99;
     styles.legend.options.y = 93;
   });
@@ -146,7 +147,7 @@ describe("several legend boxes", () => {
     drawLegend("States", items);
     drawLegend("Zones", zones);
 
-    const { x, y } = styles.legend.options.positions.Zones;
+    const { x, y } = legendPositions.get("Zones")!;
     expect(svgWidth * (x / 100) - 60).toBeGreaterThanOrEqual(0); // left edge on canvas
     expect(svgHeight * (y / 100) - 40).toBeGreaterThanOrEqual(0); // top edge on canvas
     styles.legend.options.x = 99;
@@ -156,12 +157,12 @@ describe("several legend boxes", () => {
   it("redraws every shown box and leaves the placement alone", () => {
     drawLegend("States", items);
     drawLegend("Zones", zones);
-    const placement = structuredClone(styles.legend.options.positions);
+    const placement = structuredClone({ States: legendPositions.get("States"), Zones: legendPositions.get("Zones") });
 
     redrawLegend();
 
     expect(document.querySelectorAll("#legend > g[data-legend]")).toHaveLength(2);
-    expect(styles.legend.options.positions).toEqual(placement);
+    expect({ States: legendPositions.get("States"), Zones: legendPositions.get("Zones") }).toEqual(placement);
   });
 
   it("clears one box by name and every box when no name is given", () => {
@@ -174,6 +175,40 @@ describe("several legend boxes", () => {
 
     clearLegend();
     expect(document.querySelectorAll("#legend > g[data-legend]")).toHaveLength(0);
+  });
+
+  it("gives an auto-placed slot back when the box is hidden, but keeps a dragged one", () => {
+    drawLegend("States", items);
+    drawLegend("Zones", zones);
+    expect(legendPositions.get("States")).toEqual({ x: 99, y: 93 });
+
+    clearLegend("States"); // auto-placed: the slot is released so the next box can use it
+    expect(legendPositions.get("States")).toBeUndefined();
+
+    // and the freed anchor slot is reused rather than leaving a gap under the remaining box
+    drawLegend("States", items);
+    expect(legendPositions.get("States")).toEqual({ x: 99, y: 93 });
+    const dragged = { x: 40, y: 40, dragged: true } as const;
+    legendPositions.set("States", { ...dragged });
+
+    clearLegend("States"); // the user chose this spot, so it survives the box being hidden
+    expect(legendPositions.get("States")).toEqual(dragged);
+  });
+
+  it("places against the remembered positions, not the transforms left in the dom", () => {
+    drawLegend("States", items);
+    drawLegend("Zones", zones);
+
+    // a stale layout in the dom, as a style preset re-render would leave behind
+    boxOf("States")!.setAttribute("transform", "translate(0,0)");
+    boxOf("Zones")!.setAttribute("transform", "translate(0,0)");
+    legendPositions.clear();
+
+    redrawLegend();
+
+    // the stack is rebuilt from the anchor, not from the zeroed transforms
+    expect(legendPositions.get("States")).toEqual({ x: 99, y: 93 });
+    expect(legendPositions.get("Zones")).toEqual({ x: 99, y: 84.67 });
   });
 
   it("adopts the single box of a map saved before the legend could hold several", () => {

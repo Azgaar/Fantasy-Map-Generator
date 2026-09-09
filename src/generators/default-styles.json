@@ -1140,8 +1140,7 @@
       "fontSize": 13,
       "x": 99,
       "y": 93,
-      "columns": 8,
-      "positions": {}
+      "columns": 8
     },
     "box": {
       "attrs": {

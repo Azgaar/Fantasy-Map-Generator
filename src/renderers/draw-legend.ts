@@ -4,6 +4,7 @@
 
 import { type D3DragEvent, select } from "d3";
 import { minmax, parseTransform, rn } from "@/utils";
+import { type LegendPosition, legendPositions } from "./legend-positions";
 
 // [id, color, label] as stored in the legend `data` attribute
 export type LegendItem = (string | number | undefined)[];
@@ -92,7 +93,7 @@ export function drawLegend(name: string, data: LegendItem[]): void {
     .attr("fill-opacity", opacity);
 
   // a box keeps the spot it is given until dragged, so a redraw never reshuffles the shown ones
-  if (!styles.legend.options.positions[name]) styles.legend.options.positions[name] = placeNewBox(node);
+  if (!legendPositions.get(name)) legendPositions.set(name, placeNewBox(node));
 
   fitLegendBox();
 }
@@ -134,7 +135,7 @@ export function dragLegendBox(event: D3DragEvent<SVGGElement, unknown, unknown>)
     const px = rn(((x + dragEvent.x + bbox.width) / svgWidth) * 100, 2);
     const py = rn(((y + dragEvent.y + bbox.height) / svgHeight) * 100, 2);
     node.setAttribute("transform", `translate(${x + dragEvent.x},${y + dragEvent.y})`);
-    styles.legend.options.positions[name] = { x: px, y: py };
+    legendPositions.set(name, { x: px, y: py, dragged: true });
   });
 }
 
@@ -152,50 +153,65 @@ export function clearLegend(name?: string): void {
   }
 
   getBox(name)?.remove();
+  legendPositions.release(name); // an auto-placed box gives its slot back, a dragged one keeps it
 }
 
-// the stored spot of a box, falling back to the anchor the style preset defines
+// the remembered spot of a box, falling back to the anchor the style preset defines
 function positionOf(name: string): { x: number; y: number } {
-  const { x, y, positions } = styles.legend.options;
-  return positions[name] ?? { x, y };
+  const { x, y } = styles.legend.options;
+  return legendPositions.get(name) ?? { x, y };
 }
 
 // options.x/y anchors the bottom-right corner of a box in % of the canvas, so a new box is placed by
 // that corner alone. It is tried against the shown boxes on all four sides - a legend dragged into a
-// corner leaves room on only some of them - and aligned with the box it is placed against
-function placeNewBox(node: SVGGElement): { x: number; y: number } {
+// corner leaves room on only some of them - and aligned with the box it is placed against.
+// Only boxes whose spot is already settled count: during a redraw the DOM still holds the previous
+// pass's transforms, so the rectangles are derived from the remembered positions, never read back
+function placeNewBox(node: SVGGElement): LegendPosition {
   const { x: anchorX, y: anchorY } = styles.legend.options;
-  const shown = getBoxes().filter(other => other !== node);
-  if (!shown.length) return { x: anchorX, y: anchorY };
-
-  const { width, height } = getBBox(node);
-  const boxes = shown.map(other => {
-    const [left, top] = parseTransform(other.getAttribute("transform") || "");
+  const boxes = getBoxes().flatMap(other => {
+    if (other === node) return [];
+    const position = legendPositions.get(other.dataset.legend ?? "");
+    if (!position) return [];
     const bbox = getBBox(other);
-    return { left, top, right: left + bbox.width, bottom: top + bbox.height };
+    const right = svgWidth * (position.x / 100);
+    const bottom = svgHeight * (position.y / 100);
+    return [{ left: right - bbox.width, top: bottom - bbox.height, right, bottom }];
   });
+  const { width, height } = getBBox(node);
+  const rect = (right: number, bottom: number) => ({ left: right - width, top: bottom - height, right, bottom });
+  const free = (spot: ReturnType<typeof rect>) =>
+    boxes.every(
+      box => spot.left >= box.right || box.left >= spot.right || spot.top >= box.bottom || box.top >= spot.bottom
+    );
+
+  // the anchor comes first, so a box that leaves the stack gives its slot back to the next one
+  const anchor = rect(svgWidth * (anchorX / 100), svgHeight * (anchorY / 100));
+  if (!boxes.length || free(anchor)) return { x: anchorX, y: anchorY };
+
   const furthest = (side: "top" | "bottom" | "left" | "right") =>
     boxes.reduce((a, b) =>
       side === "bottom" || side === "right" ? (b[side] > a[side] ? b : a) : b[side] < a[side] ? b : a
     );
 
-  // the corner is clamped so an auto-placed box never lands partly outside the canvas
-  const spot = (right: number, bottom: number) => ({
-    x: rn((minmax(right, width, svgWidth) / svgWidth) * 100, 2),
-    y: rn((minmax(bottom, height, svgHeight) / svgHeight) * 100, 2)
-  });
+  // each corner is clamped so an auto-placed box never lands partly outside the canvas
+  const clamped = (right: number, bottom: number) =>
+    rect(minmax(right, width, svgWidth), minmax(bottom, height, svgHeight));
 
   const above = furthest("top");
-  if (above.top - STACK_GAP - height >= 0) return spot(above.right, above.top - STACK_GAP);
-
   const below = furthest("bottom");
-  if (below.bottom + STACK_GAP + height <= svgHeight) return spot(below.right, below.bottom + STACK_GAP + height);
-
   const leftOf = furthest("left");
-  if (leftOf.left - STACK_GAP - width >= 0) return spot(leftOf.left - STACK_GAP, leftOf.bottom);
-
   const rightOf = furthest("right");
-  if (rightOf.right + STACK_GAP + width <= svgWidth) return spot(rightOf.right + STACK_GAP + width, rightOf.bottom);
+  const candidates = [
+    clamped(above.right, above.top - STACK_GAP),
+    clamped(below.right, below.bottom + STACK_GAP + height),
+    clamped(leftOf.left - STACK_GAP, leftOf.bottom),
+    clamped(rightOf.right + STACK_GAP + width, rightOf.bottom)
+  ];
+
+  for (const spot of candidates) {
+    if (free(spot)) return { x: rn((spot.right / svgWidth) * 100, 2), y: rn((spot.bottom / svgHeight) * 100, 2) };
+  }
 
   return { x: anchorX, y: anchorY }; // canvas is full: overlap and let the user drag it away
 }
