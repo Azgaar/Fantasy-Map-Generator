@@ -778,7 +778,7 @@ Yes. In the Style editor, next to a font select there is a plus button that open
 
 ### What is the Legend box and how do I use it?
 
-A Legend box is a titled list of colored elements drawn on the map. The States, Cultures, Religions, Biomes and Zones editors have a 'Toggle Legend box' button that shows or hides the box for that editor. The boxes are independent: you can have as many of them on the map at once as you like, which is handy when exporting the map as an image. A new box is placed above the ones already shown, or in a new column when the stack no longer fits. Each box can be dragged around the map on its own, is hidden by clicking it, and they all share the styling in Style -> Legend
+A Legend box is a titled list of colored elements drawn on the map. The States, Cultures, Religions, Biomes and Zones editors have a 'Toggle Legend box' button that shows or hides the box for that editor. The boxes are independent: you can have as many of them on the map at once as you like, which is handy when exporting the map as an image. A new box is placed next to the ones already shown, on whichever side has room. Each box can be dragged around the map on its own, is hidden by clicking it, and they all share the styling in Style -> Legend. Where you drag a box is remembered by your browser rather than saved into the map, the same way editor dialog positions are
 
 ### Can I highlight one state and dim the rest?
 
