@@ -240,9 +240,9 @@ const ELEMENT_PATTERNS: [RegExp, NoteEntityType][] = [
   [/^stateLabel(\d+)$/, "state"],
   [/^provinceLabel(\d+)$/, "province"],
   [/^river(?:Label)?(\d+)$/, "river"],
-  [/^route(?:Label)?(\d+)$/, "route"],
+  [/^(?:route(?:Label)?|road)(\d+)$/, "route"],
   [/^addedLabel(\d+)$/, "addedLabel"],
-  [/^feature_(\d+)$/, "feature"],
+  [/^(?:feature|lake)_(\d+)$/, "feature"],
   [/^zone(\d+)$/, "zone"],
   [/^journey(\d+)$/, "journey"],
   [/^market(\d+)$/, "market"]

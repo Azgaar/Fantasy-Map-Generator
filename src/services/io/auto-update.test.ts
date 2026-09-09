@@ -5,6 +5,7 @@ import indexHtml from "@/index.html?raw";
 import "@/generators/added-labels";
 import "@/generators/features"; // migrations call the Features module through its global
 import { confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { Layers } from "@/components/layers";
 import { Styles } from "@/generators/styles";
 import * as versioning from "@/services/versioning";
 import { VERSION } from "@/services/versioning";
@@ -53,6 +54,35 @@ it.each([18, 180])("keeps legacy custom labels after saving and reloading a font
 });
 
 describe("v1.144 layer id migration", () => {
+  it.each(["1.143.0", VERSION])(
+    "repairs nested duplicate fogging groups in %s saves across reload",
+    async mapVersion => {
+      document.body.innerHTML = /* html */ `<svg id="map">
+      <defs id="deftemp"><mask id="fog"><rect></rect><path id="focusState1"></path></mask></defs>
+      <g id="viewbox"><g id="fogging-cont" mask="url(#fog)">
+        <g id="fogging" opacity="0.7"><rect></rect></g>
+      </g><g id="fogging-cont"><g id="fogging"><rect></rect></g></g></g>
+    </svg>`;
+      const data: string[] = [];
+      await resolveVersionConflicts(mapVersion, data);
+      Layers.restore(data[50] ? JSON.parse(data[50]) : { order: [], active: [] });
+
+      const clone = document.getElementById("map")!.cloneNode(true);
+      const savedSvg = new XMLSerializer().serializeToString(clone);
+      const savedLayers = JSON.stringify(Layers.state);
+      document.getElementById("map")!.remove();
+      document.body.insertAdjacentHTML("afterbegin", savedSvg);
+      await resolveVersionConflicts(VERSION, data);
+      Layers.restore(JSON.parse(savedLayers));
+
+      expect(document.querySelectorAll("#fogging")).toHaveLength(1);
+      expect(document.querySelectorAll("#viewbox > #fogging")).toHaveLength(1);
+      expect(document.getElementById("fogging-cont")).toBeNull();
+      expect(document.getElementById("fogging")?.getAttribute("opacity")).toBe("0.7");
+      expect(document.querySelectorAll("#fog path, #fogging rect")).toHaveLength(mapVersion === VERSION ? 2 : 0);
+    }
+  );
+
   it("clears legacy fogging state", () => {
     document.body.innerHTML = /* html */ `<svg id="map">
       <defs id="deftemp"><mask id="fog"><rect></rect><path id="focusState1"></path></mask></defs>
@@ -463,12 +493,12 @@ vi.mock("@/utils", async importOriginal => ({
 }));
 
 describe("v1.152.0 notes moved onto entities", () => {
-  async function migrate(notes: object[]) {
+  async function migrate(notes: object[], versions = ["1.152.0"]) {
     const data = Array<string>(52).fill("");
     data[4] = JSON.stringify(notes);
 
     const compare = vi.spyOn(versioning, "compareVersions");
-    compare.mockImplementation((_a, b) => ({ isOlder: b === "1.152.0", isNewer: false, isEqual: false }));
+    compare.mockImplementation((_a, b) => ({ isOlder: versions.includes(b ?? ""), isNewer: false, isEqual: false }));
     try {
       await resolveVersionConflicts("1.151.2", data);
     } finally {
@@ -520,6 +550,58 @@ describe("v1.152.0 notes moved onto entities", () => {
     ]);
 
     expect(pack.rivers[1].note).toBe("<p>Fed by three lakes</p><p>Named for the elder trees</p>");
+  });
+
+  it("preserves lore attached to legacy lake and road ids", async () => {
+    pack.features = [{ i: 9, name: "Mirror Lake" }] as typeof pack.features;
+    pack.routes = [{ i: 5, name: "Old Road" }] as typeof pack.routes;
+
+    const data = await migrate([
+      { id: "lake_9", name: "Mirror Lake", legend: "<p>The drowned city lies below.</p>" },
+      { id: "road5", name: "The King's March", legend: "<p>The king never returned.</p>" }
+    ]);
+
+    expect(pack.features[0].note).toBe("<p>The drowned city lies below.</p>");
+    expect(pack.routes[0].note).toBe("<h3>The King's March</h3><p>The king never returned.</p>");
+    expect(data[4]).toBe("");
+    expect(confirmationDialog).not.toHaveBeenCalled();
+  });
+
+  it("follows renumbered roads and offers lore from a road that cannot be migrated", async () => {
+    document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox"><g id="routes"><g id="roads">
+      <path id="road0"></path><path id="road7"></path><path id="road1"></path>
+    </g></g></g></svg>`;
+    for (const node of document.querySelectorAll("path")) {
+      Object.assign(node, {
+        getTotalLength: () => (node.id === "road0" ? 0 : 10),
+        getPointAtLength: (length: number) => ({ x: length, y: 0 })
+      });
+    }
+    pack.cells = { f: new Uint16Array([1, 1]) } as typeof pack.cells;
+    vi.stubGlobal("grid", { spacing: 10 });
+    vi.stubGlobal("Pack", { findCell: (x: number) => (x < 5 ? 0 : 1) });
+    try {
+      await migrate(
+        [
+          { id: "road0", name: "Lost Road", legend: "Lost lore" },
+          { id: "road7", name: "road7", legend: "First road lore" },
+          { id: "road1", name: "road1", legend: "Second road lore" }
+        ],
+        ["1.99.0", "1.152.0"]
+      );
+    } finally {
+      vi.unstubAllGlobals();
+    }
+
+    expect(pack.routes.map(({ i, note }) => ({ i, note }))).toEqual([
+      { i: 0, note: "First road lore" },
+      { i: 1, note: "Second road lore" }
+    ]);
+    expect(confirmationDialog).toHaveBeenCalledOnce();
+    const [dialog] = vi.mocked(confirmationDialog).mock.calls[0];
+    expect(dialog.message).toContain("1 note(s)");
+    dialog.onConfirm?.();
+    expect(vi.mocked(downloadFile).mock.calls[0][0]).toBe('id,name,note\n"road0","Lost Road","Lost lore"');
   });
 
   it("keeps a note title that differs from the entity name as a heading", async () => {
@@ -599,14 +681,30 @@ describe("v1.152.0 notes moved onto entities", () => {
     expect(pack.states[1].military![0].note).toBe("Formed in 900 AD");
   });
 
+  it.each(["regiment1-99", "regiment99-0", "regiment0-0", "regiment2-0"])(
+    "silently drops an unmatched regiment note (%s)",
+    async id => {
+      pack.states.push({ i: 2, name: "Unarmed State" } as (typeof pack.states)[number]);
+      const data = await migrate([{ id, name: "Old Regiment", legend: "Formed in 900 AD" }]);
+
+      expect(data[4]).toBe("");
+      expect(confirmationDialog).not.toHaveBeenCalled();
+      expect(downloadFile).not.toHaveBeenCalled();
+      expect(pack.states[1].military![0].note).toBeUndefined();
+    }
+  );
+
   it("offers notes whose element is gone as a csv, and keeps the rest", async () => {
     await migrate([
       { id: "burg1", name: "Vaeltown", legend: "kept" },
+      { id: "regiment1-0", name: "1st Cavalry", legend: "Formed in 900 AD" },
+      { id: "regiment1-99", name: "Old Regiment", legend: "stale generated description" },
       { id: "burg99", name: "Lost Town", legend: 'dropped, with a "quote"' },
       { id: "someLegacyThing", name: "Older still", legend: "dropped too" }
     ]);
 
     expect(pack.burgs[1].note).toBe("kept");
+    expect(pack.states[1].military![0].note).toBe("Formed in 900 AD");
     expect(confirmationDialog).toHaveBeenCalledOnce();
 
     const [dialog] = vi.mocked(confirmationDialog).mock.calls[0];

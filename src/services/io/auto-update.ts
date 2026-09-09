@@ -937,6 +937,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       if (!group) continue;
 
       for (const node of g.querySelectorAll<SVGPathElement>("path")) {
+        if (node.id) noteRenames.set(node.id, ""); // a skipped road must not match a reused route id
         const totalLength = node.getTotalLength();
         if (!totalLength) {
           ERROR && console.error("Route path has zero length", node);
@@ -962,6 +963,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         const secondCellId = points[1][2];
         const feature = secondCellId === undefined ? undefined : pack.cells.f[secondCellId];
 
+        if (node.id) noteRenames.set(node.id, `route${pack.routes.length}`);
         pack.routes.push({ i: pack.routes.length, group, feature, points } as unknown as (typeof pack.routes)[number]);
       }
     }
@@ -1537,6 +1539,13 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     }
   }
 
+  // Legacy fog wrappers and duplicates can survive in maps resaved with a current version.
+  for (const container of document.querySelectorAll("#map g#fogging-cont")) {
+    container.replaceWith(...container.querySelectorAll("g#fogging"));
+  }
+  const [, ...duplicateFogging] = document.querySelectorAll("#map g#fogging");
+  for (const group of duplicateFogging) group.remove();
+
   if (isOlderThan("1.144.0")) {
     // v1.144.0 replaced the toggleLayer ids with layer ids
     const storedPresets: Record<string, string[]> | null = safeParseJSON(localStorage.getItem("presets") ?? "");
@@ -1556,10 +1565,6 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     if (findEl("fog") && findEl("fogging")) unfog();
 
     function recoverLayersState(): LayersState {
-      const foggingContainer = findEl("fogging-cont");
-      const fogging = findEl("fogging");
-      if (foggingContainer) foggingContainer.replaceWith(...(fogging ? [fogging] : []));
-
       // legacy maps can hide layers with the `display` presentation attribute
       for (const layer of Layers.all) {
         const el = findEl<SVGGElement>(layer.elementId);
@@ -1878,7 +1883,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       // an untitled note was titled with its own element id, which is no title at all
       const named = note.name === note.id || note.name === Notes.getEntityName(ref) || note.name === shortName(ref);
       const heading = note.name && !named ? `<h3>${note.name}</h3>` : "";
-      if (!Notes.append(ref, note.legend && `${heading}${note.legend}`)) orphan(note);
+      if (!Notes.append(ref, note.legend && `${heading}${note.legend}`) && ref.type !== "regiment") orphan(note);
     }
 
     for (const marker of pack.markers || []) marker.name ||= getDefaultMarkerName(marker.type);
