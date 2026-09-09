@@ -484,7 +484,7 @@ describe("v1.152.0 notes moved onto entities", () => {
       burgs: [0, { i: 1, name: "Vaeltown" }],
       states: [
         { i: 0, name: "Neutrals" },
-        { i: 1, name: "Ardenia", military: [{ i: 0, name: "1st Cavalry" }] }
+        { i: 1, name: "Ardenia", fullName: "Duchy of Ardenia", military: [{ i: 0, name: "1st Cavalry" }] }
       ],
       markers: [
         { i: 4, type: "hot-springs" },
@@ -564,6 +564,49 @@ describe("v1.152.0 notes moved onto entities", () => {
     await migrate([{ id: "burg99", name: "Lost Town", legend: "" }]);
 
     expect(confirmationDialog).not.toHaveBeenCalled();
+  });
+
+  it("migrates a map that claims the version but still holds the legacy array", async () => {
+    const data = Array<string>(52).fill("");
+    data[4] = JSON.stringify([{ id: "burg1", name: "Vaeltown", legend: "A river port" }]);
+
+    const compare = vi.spyOn(versioning, "compareVersions");
+    compare.mockImplementation(() => ({ isOlder: false, isNewer: false, isEqual: true }));
+    try {
+      await resolveVersionConflicts("1.152.0", data);
+    } finally {
+      compare.mockRestore();
+    }
+
+    expect(pack.burgs[1].note).toBe("A river port");
+    expect(data[4]).toBe("");
+  });
+
+  it("does not repeat the short name the labels editor titled a state note with", async () => {
+    await migrate([{ id: "stateLabel1", name: "Ardenia", legend: "<p>Founded in 500</p>" }]);
+
+    expect(pack.states[1].note).toBe("<p>Founded in 500</p>");
+  });
+
+  it("gives the second note of a duplicated marker id to the second marker", async () => {
+    pack.markers = [
+      { i: 4, type: "hot-springs" },
+      { i: 4, type: "volcanoes" }
+    ] as unknown as typeof pack.markers;
+
+    await migrate([
+      { id: "marker4", name: "Steaming Pools", legend: "Warm all year" },
+      { id: "marker4", name: "Ash Cone", legend: "Last erupted a century ago" }
+    ]);
+
+    expect(pack.markers[0]).toMatchObject({ name: "Steaming Pools", note: "Warm all year" });
+    expect(pack.markers[1]).toMatchObject({ name: "Ash Cone", note: "Last erupted a century ago" });
+  });
+
+  it("does not name a marker after its own element id", async () => {
+    await migrate([{ id: "marker4", name: "marker4", legend: "Warm all year" }]);
+
+    expect(pack.markers[0]).toMatchObject({ name: "Hot springs", note: "Warm all year" });
   });
 
   it("attaches a regiment note through its state", async () => {

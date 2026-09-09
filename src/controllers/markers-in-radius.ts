@@ -143,16 +143,10 @@ function onMarkerListClick(event: MouseEvent): void {
 }
 
 function togglePin(marker: Marker, el: HTMLElement): void {
-  const markerGroup = ensureEl("markers");
-  if (marker.pinned) {
-    delete marker.pinned;
-    if (!pack.markers.some(m => m.pinned)) markerGroup.removeAttribute("pinned");
-  } else {
-    marker.pinned = true;
-    markerGroup.setAttribute("pinned", "1");
-  }
+  if (marker.pinned) delete marker.pinned;
+  else marker.pinned = true;
   el.classList.toggle("inactive");
-  Layers.draw("markers");
+  Layers.draw("markers"); // the renderer reads the flag off the markers themselves
 }
 
 function toggleLock(marker: Marker, el: HTMLElement): void {

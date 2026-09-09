@@ -1,7 +1,7 @@
 // Building blocks shared by every editor dialog
 
 import { dialogState } from "@/components/dialog/state";
-import { ensureEl, findEl } from "@/utils";
+import { ensureEl, findEl, minmax } from "@/utils";
 
 /** Close all open dialogs except the stated one */
 export function closeDialogs(except = "#except"): void {
@@ -118,7 +118,17 @@ const POSITION_EXCLUDED_IDS = new Set(["alert"]);
 function applySavedPosition(el: HTMLElement): void {
   if (POSITION_EXCLUDED_IDS.has(el.id)) return;
   const position = dialogState.get<DialogPosition | null>(el.id, "position", () => null);
-  if (position) $(el).dialog("widget").css(position);
+  if (!position) return;
+
+  const widget = $(el).dialog("widget");
+  widget.css(clampPosition(position, widget[0] as HTMLElement));
+}
+
+/** A position saved on a wider screen would put the dialog out of reach, so keep it on screen */
+function clampPosition({ top, left }: DialogPosition, widget: HTMLElement | undefined): DialogPosition {
+  const maxLeft = Math.max(window.innerWidth - (widget?.offsetWidth || 0), 0);
+  const maxTop = Math.max(window.innerHeight - (widget?.offsetHeight || 0), 0);
+  return { left: minmax(left, 0, maxLeft), top: minmax(top, 0, maxTop) };
 }
 
 type DialogParams = {

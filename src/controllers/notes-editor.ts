@@ -6,7 +6,7 @@ import { Controllers } from "@/controllers";
 import { NOTE_ENTITY_TYPES, type NoteEntry, type NoteRef, Notes } from "@/generators/notes";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName, speak, uploadFile } from "@/utils";
-import { ensureEl } from "../utils";
+import { ensureEl, findEl } from "../utils";
 import {
   canEditAsRichText,
   createRichTextEditor,
@@ -307,24 +307,25 @@ function validateHighlightElement(): void {
   const ref = selectedRef();
   if (!ref) return;
 
+  if (!Notes.exists(ref)) {
+    confirmationDialog({
+      title: "Element not found",
+      message: "Note element is not found. Would you like to remove the note?",
+      confirm: "Remove",
+      onConfirm: removeSelectedNote
+    });
+    return;
+  }
+
+  // the viewport renderers hold only what is on screen, so an off-screen element is not in the dom
   const elementId = Notes.getElementId(ref);
-  const element = elementId && document.getElementById(elementId);
-  if (element) {
-    highlightElement(element, 3);
-    return;
-  }
+  const element = elementId ? findEl(elementId) : null;
+  if (element) return void highlightElement(element, 3);
 
-  if (!elementId) {
-    tip("This element is not drawn on the map on its own", false, "warn", 4000);
-    return;
-  }
+  const position = Notes.getPosition(ref);
+  if (position) return void zoomTo(position[0], position[1], 8, 1600);
 
-  confirmationDialog({
-    title: "Element not found",
-    message: "Note element is not found. Would you like to remove the note?",
-    confirm: "Remove",
-    onConfirm: removeSelectedNote
-  });
+  tip("This element is not drawn on the map on its own", false, "warn", 4000);
 }
 
 function removeSelectedNote(): void {

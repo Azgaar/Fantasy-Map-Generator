@@ -70,21 +70,17 @@ function reconcileMarkets({ root, bounds }: ViewportRenderContext): void {
     const fill = market.color || "#dababf";
     const stroke = color(fill)?.darker().hex() || "#000";
 
-    const marker = /*html*/ `<g id="market${market.i}" data-id="${market.i}">
-      ${
-        showTerritory &&
-        /*html*/ `
-        <clipPath id="market-clip-${market.i}"><path d="${territory.path}"/></clipPath>
+    const territoryMarkup = showTerritory
+      ? /*html*/ `<clipPath id="market-clip-${market.i}"><path d="${territory.path}"/></clipPath>
         <path class="fill" d="${territory.path}" fill="${fill}" stroke="none"/>
-        <path class="border" d="${territory.path}" fill="none" stroke="${stroke}" stroke-width="0.7" clip-path="url(#market-clip-${market.i})"/>
-      `
-      }
-      ${
-        showCenter &&
-        /*html*/ `<circle cx="${center.x}" cy="${center.y}" r="${radius}" fill="${fill}" fill-opacity="1" stroke="${stroke}" stroke-width="${strokeWidth}"/>
+        <path class="border" d="${territory.path}" fill="none" stroke="${stroke}" stroke-width="0.7" clip-path="url(#market-clip-${market.i})"/>`
+      : "";
+    const centerMarkup = showCenter
+      ? /*html*/ `<circle cx="${center.x}" cy="${center.y}" r="${radius}" fill="${fill}" fill-opacity="1" stroke="${stroke}" stroke-width="${strokeWidth}"/>
         <text x="${center.x}" y="${center.y}" text-anchor="middle" dominant-baseline="central" font-size="${fontSize}px" fill-opacity="1">${icon}</text>`
-      }
-    </g>`;
+      : "";
+
+    const marker = /*html*/ `<g id="market${market.i}" data-id="${market.i}">${territoryMarkup}${centerMarkup}</g>`;
     markup.push(marker);
   }
 

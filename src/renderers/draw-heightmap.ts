@@ -199,7 +199,7 @@ export const drawHeightmap = (): void => {
       for (const contour of getHeightContours(points, elevations, vertices.c, thresholds, contours.interval)) {
         contourGroup
           .append("path")
-          .attr("d", contour.path)
+          .attr("d", round(contour.path)) // full-precision coordinates bloat the saved map
           .attr("data-height", contour.height)
           .attr("stroke-width", contours.width * (contour.major ? 2 : 1));
       }

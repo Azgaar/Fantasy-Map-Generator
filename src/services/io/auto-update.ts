@@ -8,9 +8,9 @@ import { RELIEF_SETS } from "@/data/relief-icons";
 import { Emblems } from "@/generators/emblems-generator";
 import type { GraphOverrides } from "@/generators/graph-override";
 import { type Label, type LabelNameMode, Labels as LabelsGenerator } from "@/generators/labels-generator";
-import { getDefaultMarkerName } from "@/generators/markers-generator";
+import { getDefaultMarkerName, type Marker } from "@/generators/markers-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
-import { Notes } from "@/generators/notes";
+import { type NoteRef, Notes } from "@/generators/notes";
 import {
   labelGroupFromLegacy,
   migrateStyles,
@@ -1831,7 +1831,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     type LegacyNote = { id: string; name: string; legend: string };
     const unattachedNotes: LegacyNote[] = [];
 
-    const parsed: unknown = data[4] ? safeParseJSON(data[4]) : [];
+    const parsed: unknown = safeParseJSON(data[4]);
     const legacyNotes: LegacyNote[] = Array.isArray(parsed)
       ? parsed.filter(note => Boolean(note) && typeof note.id === "string" && typeof note.legend === "string")
       : [];
@@ -1842,6 +1842,16 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     // an empty legacy note holds no text to keep, so it is never carried over and never reported
     const orphan = (note: LegacyNote) => void (note.legend && unattachedNotes.push(note));
 
+    // the labels editor titled a state or province note with the short name, the entity name is the full one
+    const shortName = (ref: NoteRef): string | undefined =>
+      ref.type === "state"
+        ? pack.states?.find(({ i }) => i === ref.id)?.name
+        : ref.type === "province"
+          ? pack.provinces?.find(({ i }) => i === ref.id)?.name
+          : undefined;
+
+    const notedMarkers = new Set<Marker>();
+
     for (const note of legacyNotes) {
       const ref = Notes.resolveElement(noteRenames.get(note.id) ?? note.id);
       if (!ref) {
@@ -1850,19 +1860,24 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       }
 
       if (ref.type === "marker") {
-        const marker = pack.markers?.find(({ i }) => i === ref.id);
+        // duplicate marker ids are repaired after this, so the second note for an id goes to the second
+        // marker: the note is on the object the repair renumbers, and no longer addressed by the id
+        const markers = (pack.markers || []).filter(({ i }) => i === ref.id);
+        const marker = markers.find(candidate => !notedMarkers.has(candidate)) ?? markers[0];
         if (!marker) orphan(note);
         else {
-          if (note.name) marker.name = note.name; // the note title was the only name a marker had
-          Notes.append(ref, note.legend);
+          notedMarkers.add(marker);
+          // the note title was the only name a marker had, unless it is the element id, which is no name
+          if (note.name && note.name !== note.id) marker.name = note.name;
+          if (note.legend) marker.note = marker.note ? `${marker.note}${note.legend}` : note.legend;
         }
         continue;
       }
 
       // a note titled differently from its entity keeps that title as a heading, so nothing is lost.
       // an untitled note was titled with its own element id, which is no title at all
-      const titled = note.name && note.name !== note.id && note.name !== Notes.getEntityName(ref);
-      const heading = titled ? `<h3>${note.name}</h3>` : "";
+      const named = note.name === note.id || note.name === Notes.getEntityName(ref) || note.name === shortName(ref);
+      const heading = note.name && !named ? `<h3>${note.name}</h3>` : "";
       if (!Notes.append(ref, note.legend && `${heading}${note.legend}`)) orphan(note);
     }
 

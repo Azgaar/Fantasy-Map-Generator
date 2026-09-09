@@ -12,6 +12,7 @@ type FeatureType = "ocean" | "lake" | "island";
 export interface CapturedFeature {
   name: string;
   note?: string;
+  type: FeatureType;
   gridCells: Set<number>;
 }
 
@@ -324,7 +325,7 @@ class FeatureModule {
     for (const feature of pack.features) {
       if (!feature?.i || (!feature.name && !feature.note)) continue;
       const gridCells = gridCellsByFeature.get(feature.i);
-      if (gridCells?.size) captured.push({ name: feature.name, note: feature.note, gridCells });
+      if (gridCells?.size) captured.push({ name: feature.name, note: feature.note, type: feature.type, gridCells });
     }
 
     return captured;
@@ -364,6 +365,7 @@ class FeatureModule {
 
       const feature = features[featureId];
       if (!feature) continue;
+      if (feature.type !== captured[index].type) continue; // a lake raised to land is not the island covering it
 
       takenFeatures.add(featureId);
       takenCaptures.add(index);

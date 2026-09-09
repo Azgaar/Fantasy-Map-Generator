@@ -68,7 +68,8 @@ test.describe("style editor events drive the store", () => {
   test("markers rescale checkbox writes the store and stops zoom rescaling", async ({ page }) => {
     // deterministic marker: don't depend on the generator having placed one for this seed. The
     // markers layer is off by default, so turn it on through the real registry API (the same
-    // path the layer-toggle button drives) to get it drawn.
+    // path the layer-toggle button drives) to get it drawn. It sits at the map centre, which the
+    // viewport renderer keeps drawn at every zoom level this test uses.
     const markerId = await page.evaluate(() => {
       const pack = (window as any).pack;
       pack.markers = pack.markers || [];
@@ -77,8 +78,8 @@ test.describe("style editor events drive the store", () => {
         i,
         type: "custom",
         icon: "♨",
-        x: 200,
-        y: 200,
+        x: 640,
+        y: 360,
         dx: 50,
         dy: 50,
         px: 12,

@@ -63,6 +63,27 @@ describe("resolveElementId", () => {
   });
 });
 
+describe("entity on the map", () => {
+  it("knows whether the entity is still there", () => {
+    expect(Notes.exists({ type: "burg", id: 1 })).toBe(true);
+    expect(Notes.exists({ type: "burg", id: 99 })).toBe(false);
+    expect(Notes.exists({ type: "regiment", id: 1, sub: 0 })).toBe(true);
+  });
+
+  it("gives the position to zoom to, for entities placed on the map", () => {
+    globalThis.pack.burgs[1] = { i: 1, name: "Vaeltown", x: 120, y: 340 } as unknown as (typeof pack.burgs)[number];
+    expect(Notes.getPosition({ type: "burg", id: 1 })).toEqual([120, 340]);
+  });
+
+  it("has no position for an entity that is not placed on the map", () => {
+    expect(Notes.getPosition({ type: "culture", id: 1 })).toBeUndefined();
+  });
+
+  it("has no position for an entity that is gone", () => {
+    expect(Notes.getPosition({ type: "burg", id: 99 })).toBeUndefined();
+  });
+});
+
 describe("note access", () => {
   it("reads and writes the note on the entity", () => {
     const ref = { type: "burg", id: 1 } as const;

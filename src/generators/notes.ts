@@ -2,6 +2,8 @@
 // module is the only place that maps between an entity, the svg element that carries its note on
 // hover, and the key the editors and the csv exchange use. See docs/prd/entity-notes.md
 
+import type { Point } from "@/types/global";
+
 export const NOTE_ENTITY_TYPES = [
   "state",
   "province",
@@ -47,6 +49,7 @@ interface NoteTypeDef {
   name: (id: number, sub?: number) => string;
   refs: () => NoteRef[];
   element?: (id: number, sub?: number) => string;
+  position?: (id: number, sub?: number) => Point | undefined; // where to zoom, for types placed on the map
 }
 
 function byId<T extends { i: number }>(collection: T[] | undefined, id: number): T | undefined {
@@ -54,6 +57,16 @@ function byId<T extends { i: number }>(collection: T[] | undefined, id: number):
   const direct = collection[id];
   if (direct?.i === id) return direct;
   return collection.find(entity => entity?.i === id);
+}
+
+function cellPoint(cellId: number | undefined): Point | undefined {
+  return cellId === undefined ? undefined : pack.cells?.p?.[cellId];
+}
+
+/** The middle of a cell chain: a river, a route or a zone is zoomed to its center, not to its start */
+function chainPoint(cells: number[] | undefined): Point | undefined {
+  if (!cells?.length) return undefined;
+  return cellPoint(cells[Math.floor(cells.length / 2)]);
 }
 
 function refsOf(type: NoteEntityType, collection: { i: number; removed?: boolean }[] | undefined): NoteRef[] {
@@ -67,28 +80,44 @@ const TYPES: Record<NoteEntityType, NoteTypeDef> = {
     entity: id => byId(pack.states, id),
     name: id => byId(pack.states, id)?.fullName || byId(pack.states, id)?.name || "",
     refs: () => refsOf("state", pack.states),
-    element: id => `stateLabel${id}`
+    element: id => `stateLabel${id}`,
+    position: id => {
+      const state = byId(pack.states, id);
+      return state?.pole || cellPoint(state?.center);
+    }
   },
   province: {
     label: "Provinces",
     entity: id => byId(pack.provinces, id),
     name: id => byId(pack.provinces, id)?.fullName || byId(pack.provinces, id)?.name || "",
     refs: () => refsOf("province", pack.provinces),
-    element: id => `provinceLabel${id}`
+    element: id => `provinceLabel${id}`,
+    position: id => {
+      const province = byId(pack.provinces, id);
+      return province?.pole || cellPoint(province?.center);
+    }
   },
   burg: {
     label: "Burgs",
     entity: id => byId(pack.burgs, id),
     name: id => byId(pack.burgs, id)?.name || "",
     refs: () => refsOf("burg", pack.burgs),
-    element: id => `burg${id}`
+    element: id => `burg${id}`,
+    position: id => {
+      const burg = byId(pack.burgs, id);
+      return burg && [burg.x, burg.y];
+    }
   },
   marker: {
     label: "Markers",
     entity: id => byId(pack.markers, id),
     name: id => byId(pack.markers, id)?.name || "",
     refs: () => (pack.markers || []).map(marker => ({ type: "marker" as const, id: marker.i })),
-    element: id => `marker${id}`
+    element: id => `marker${id}`,
+    position: id => {
+      const marker = byId(pack.markers, id);
+      return marker && [marker.x, marker.y];
+    }
   },
   river: {
     label: "Rivers",
@@ -98,42 +127,59 @@ const TYPES: Record<NoteEntityType, NoteTypeDef> = {
       return river ? `${river.name} ${river.type}` : "";
     },
     refs: () => refsOf("river", pack.rivers),
-    element: id => `river${id}`
+    element: id => `river${id}`,
+    position: id => chainPoint(byId(pack.rivers, id)?.cells)
   },
   route: {
     label: "Routes",
     entity: id => byId(pack.routes, id),
     name: id => byId(pack.routes, id)?.name || "",
     refs: () => refsOf("route", pack.routes),
-    element: id => `route${id}`
+    element: id => `route${id}`,
+    position: id => {
+      const points = byId(pack.routes, id)?.points;
+      const point = points?.[Math.floor(points.length / 2)];
+      return point && [point[0], point[1]];
+    }
   },
   feature: {
     label: "Lakes and landmasses",
     entity: id => byId(pack.features, id),
     name: id => byId(pack.features, id)?.name || "",
     refs: () => refsOf("feature", pack.features),
-    element: id => `feature_${id}`
+    element: id => `feature_${id}`,
+    position: id => cellPoint(byId(pack.features, id)?.firstCell)
   },
   zone: {
     label: "Zones",
     entity: id => byId(pack.zones, id),
     name: id => byId(pack.zones, id)?.name || "",
     refs: () => refsOf("zone", pack.zones),
-    element: id => `zone${id}`
+    element: id => `zone${id}`,
+    position: id => chainPoint(byId(pack.zones, id)?.cells)
   },
   journey: {
     label: "Journeys",
     entity: id => byId(pack.journeys, id),
     name: id => byId(pack.journeys, id)?.name || "",
     refs: () => refsOf("journey", pack.journeys),
-    element: id => `journey${id}`
+    element: id => `journey${id}`,
+    position: id => {
+      const points = byId(pack.journeys, id)?.segments?.flatMap(segment => segment.points) || [];
+      const point = points[Math.floor(points.length / 2)];
+      return point && [point[0], point[1]];
+    }
   },
   market: {
     label: "Markets",
     entity: id => byId(pack.markets, id),
     name: id => byId(pack.markets, id)?.name || "",
     refs: () => refsOf("market", pack.markets),
-    element: id => `market${id}`
+    element: id => `market${id}`,
+    position: id => {
+      const center = byId(pack.burgs, byId(pack.markets, id)?.centerBurgId ?? -1);
+      return center && [center.x, center.y];
+    }
   },
   regiment: {
     label: "Regiments",
@@ -145,14 +191,22 @@ const TYPES: Record<NoteEntityType, NoteTypeDef> = {
           ? (state.military || []).map(regiment => ({ type: "regiment" as const, id: state.i, sub: regiment.i }))
           : []
       ),
-    element: (id, sub) => `regiment${id}-${sub}`
+    element: (id, sub) => `regiment${id}-${sub}`,
+    position: (id, sub) => {
+      const regiment = byId(byId(pack.states, id)?.military, sub ?? -1);
+      return regiment && [regiment.x, regiment.y];
+    }
   },
   addedLabel: {
     label: "Labels",
     entity: id => byId(pack.addedLabels, id),
     name: id => byId(pack.addedLabels, id)?.label?.text || "",
     refs: () => refsOf("addedLabel", pack.addedLabels),
-    element: id => `addedLabel${id}`
+    element: id => `addedLabel${id}`,
+    position: id => {
+      const label = byId(pack.addedLabels, id);
+      return label && [label.x, label.y];
+    }
   },
   culture: {
     label: "Cultures",
@@ -219,6 +273,16 @@ class NotesStore {
   /** The svg element to highlight for a note. Undefined for entities that are not drawn on their own */
   getElementId(ref: NoteRef): string | undefined {
     return TYPES[ref.type].element?.(ref.id, ref.sub);
+  }
+
+  /** Where on the map the entity sits. Undefined for entities that are not placed on the map */
+  getPosition(ref: NoteRef): Point | undefined {
+    return TYPES[ref.type].position?.(ref.id, ref.sub);
+  }
+
+  /** Whether the entity the note belongs to is still on the map */
+  exists(ref: NoteRef): boolean {
+    return Boolean(TYPES[ref.type].entity(ref.id, ref.sub));
   }
 
   getTypeLabel(type: NoteEntityType): string {

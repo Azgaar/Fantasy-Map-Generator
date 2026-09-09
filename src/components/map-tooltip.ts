@@ -41,7 +41,13 @@ export function showNotes(event: Event): void {
   const grand = parent?.parentNode as HTMLElement;
 
   const burg = target.closest<HTMLElement>("[data-label-type='burg'][data-id], #burgIcons [data-id]");
-  const id = burg ? `burg${burg.dataset.id}` : target.id || parent?.id || grand?.id;
+  // lakes and coastlines are drawn as <use> of a shared path, so they carry the feature in a data attribute
+  const feature = target.closest<HTMLElement>("#lakes [data-f], #coastline [data-f]");
+  const id = burg
+    ? `burg${burg.dataset.id}`
+    : feature
+      ? `feature_${feature.dataset.f}`
+      : target.id || parent?.id || grand?.id;
 
   const ref = Notes.resolveElement(id);
   const note = ref && Notes.get(ref);

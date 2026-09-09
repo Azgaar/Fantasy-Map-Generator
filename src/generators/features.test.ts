@@ -68,6 +68,29 @@ describe("feature user data across a re-markup", () => {
     expect(pack.features[3].note).toBe("Deep and cold");
   });
 
+  it("does not hand a lake's data to the island that replaced it", () => {
+    setPack(
+      [1, 1, 1, 2, 2, 2],
+      [
+        EMPTY,
+        { i: 1, name: "Mirror Lake", note: "Deep and cold", type: "lake" },
+        { i: 2, name: "Ald Sea", type: "ocean" }
+      ]
+    );
+    const captured = capture();
+
+    // the lake bed was raised, so the same ground is now part of an island
+    setPack(
+      [3, 3, 3, 4, 4, 4],
+      [EMPTY, EMPTY, EMPTY, { i: 3, name: "Generated", type: "island" }, { i: 4, name: "Renamed", type: "ocean" }]
+    );
+    Features.restoreUserData(captured);
+
+    expect(pack.features[3]).toMatchObject({ name: "Generated" });
+    expect(pack.features[3].note).toBeUndefined();
+    expect(pack.features[4].name).toBe("Ald Sea");
+  });
+
   it("does nothing without a capture", () => {
     expect(() => Features.restoreUserData([])).not.toThrow();
   });
