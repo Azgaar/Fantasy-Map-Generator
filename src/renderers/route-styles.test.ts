@@ -19,12 +19,14 @@ const defaultStyles = JSON.parse(
 ) as { routes: { groups: Record<string, { attrs: Record<string, unknown> }> } };
 
 // Every overland type the generator can emit (routes-generator.ts assigns these).
-const EMITTED_TYPES = ["royal", "main", "market", "town", "local", "trail", "footpath"];
+const EMITTED_TYPES = ["royal", "main", "market", "town", "trail", "footpath"];
+// Sea-trade tiers; the generator tags every sea route with one of them.
+const SEA_TYPES = ["feeder", "coastal"];
 const GROUPS = ["roads", "trails", "searoutes", "airroutes", "traderoutes"];
 
 describe("ROUTE_TYPE_DEFAULTS", () => {
   it("styles every type the generator can emit, so none renders unstyled", () => {
-    for (const t of EMITTED_TYPES) {
+    for (const t of [...EMITTED_TYPES, ...SEA_TYPES]) {
       const s = routeTypeStyle(t);
       expect(s, t).toBeDefined();
       expect(s!["stroke-width"], t).toBeGreaterThan(0);
@@ -32,7 +34,7 @@ describe("ROUTE_TYPE_DEFAULTS", () => {
     }
   });
 
-  it("orders width by importance: royal > main > market > town > local > trail > footpath", () => {
+  it("orders width by importance: royal > main > market > town > trail > footpath", () => {
     const w = EMITTED_TYPES.map(t => ROUTE_TYPE_DEFAULTS[t]["stroke-width"]);
     for (let i = 1; i < w.length; i++) expect(w[i]).toBeLessThan(w[i - 1]);
   });
@@ -47,9 +49,21 @@ describe("ROUTE_TYPE_DEFAULTS", () => {
     }
   });
 
-  it("gives market/town/local distinct dashes, not one shared pattern", () => {
-    const dashes = ["market", "town", "local"].map(t => ROUTE_TYPE_DEFAULTS[t]["stroke-dasharray"]);
+  it("gives market/town/trail distinct dashes, not one shared pattern", () => {
+    const dashes = ["market", "town", "trail"].map(t => ROUTE_TYPE_DEFAULTS[t]["stroke-dasharray"]);
     expect(new Set(dashes).size).toBe(3);
+  });
+
+  it("draws the sea tiers with the sea lane dash, not an overland one", () => {
+    for (const t of SEA_TYPES) {
+      expect(ROUTE_TYPE_DEFAULTS[t]["stroke-dasharray"], t).toBe(ROUTE_GROUP_DEFAULTS.searoutes["stroke-dasharray"]);
+      expect(ROUTE_TYPE_DEFAULTS[t]["stroke-linecap"], t).toBe(ROUTE_GROUP_DEFAULTS.searoutes["stroke-linecap"]);
+    }
+    expect(ROUTE_TYPE_DEFAULTS.feeder["stroke-width"]).toBeGreaterThan(ROUTE_TYPE_DEFAULTS.coastal["stroke-width"]);
+  });
+
+  it("leaves a legacy sea route type unstyled so it inherits its group", () => {
+    expect(routeTypeStyle("local")).toBeUndefined();
   });
 });
 

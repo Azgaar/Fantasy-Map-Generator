@@ -32,15 +32,20 @@ const dotted = (width: number, dash: string): RouteLineStyle => ({
   "stroke-linecap": "round"
 });
 
-/** Overland route types, most-important first. Solid trunk roads → dashed secondary → dotted paths. */
+/**
+ * Route types, most-important first. Overland: solid trunk roads → dashed secondary → dotted
+ * paths. The sea-trade tiers keep the searoutes dash and differ only in weight, so a long-haul
+ * feeder reads as the heavier lane without ever looking like a road.
+ */
 export const ROUTE_TYPE_DEFAULTS: Record<string, RouteLineStyle> = {
   royal: solid(2.0),
   main: solid(1.4),
   market: dashed(1.1, "6 4"),
   town: dashed(0.9, "4 3"),
-  local: dashed(0.7, "2.5 2.5"),
   trail: dotted(0.6, "0.5 3"),
-  footpath: dotted(0.5, "0.5 2")
+  footpath: dotted(0.5, "0.5 2"),
+  feeder: dotted(1.0, "1 4"),
+  coastal: dotted(0.7, "1 4")
 };
 
 /** Route groups: overland catch-alls (for routes with no type) plus the special sea/air/trade lanes. */

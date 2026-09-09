@@ -1132,7 +1132,7 @@ class RoutesModule {
   }
 
   // Build the full sea-trade network for all navigable components.
-  // Returns feeder+coastal routes ("local").
+  // Returns the feeder and coastal routes, each tagged with the tier that laid it.
   private generateSeaTradeNetwork(
     connections: Set<number>,
     burgIndex: RouteBurgIndex,
@@ -1179,7 +1179,7 @@ class RoutesModule {
         const route = {
           feature: featureId,
           cells: segment,
-          type: "local"
+          type: tier
         } as Route;
         localRoutes.push(route);
       }

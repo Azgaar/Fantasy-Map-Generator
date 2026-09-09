@@ -1,6 +1,6 @@
 import FlatQueue from "flatqueue";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { isWrapEnabled, portImportance, wrapDeltaX, wrapDistanceSquared } from "./routes-generator";
+import { isWrapEnabled, portImportance, type Route, wrapDeltaX, wrapDistanceSquared } from "./routes-generator";
 
 // ---------------------------------------------------------------------------
 // Fork tests
@@ -608,6 +608,18 @@ describe("generateSeaTradeNetwork feeder multi-target", () => {
     expect(visited.has(PL)).toBe(true);
     expect(visited.has(PR)).toBe(true);
     expect([...cellsByEdge.values()].filter(count => count > 1)).toEqual([]);
+  });
+
+  it("tags each sea route with the tier that laid it", () => {
+    const connections = new Set<number>();
+    const burgIndex = { portsByFeature: { 1: [port(1, SOURCE), port(2, PL), port(3, PR)] } } as any;
+    const components = new Map<number, number>([[1, 0]]);
+
+    const { localRoutes } = (Routes as any).generateSeaTradeNetwork(connections, burgIndex, components, undefined);
+
+    const types = localRoutes.map((route: Route) => route.type);
+    expect(types).toContain("feeder");
+    expect(types.every((type: string) => type === "feeder" || type === "coastal")).toBe(true);
   });
 });
 
