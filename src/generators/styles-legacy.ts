@@ -528,7 +528,7 @@ export function stripMigratedAttributes(): void {
 
   // layer-level opacity the style groups took over on harvest: left here it composites over them
   for (const layer of STRANDED_OPACITY_LAYERS) strip(layer, "opacity");
-  strip("markers", "rescale");
+  strip("markers", "rescale", "pinned");
   strip("statesHalo", "data-width");
   strip("coordinates", "data-size");
   strip("ruler", "data-size", "font-size");

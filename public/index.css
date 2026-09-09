@@ -2409,14 +2409,6 @@ svg.button {
   opacity: 0.8;
 }
 
-#markerTypeSelector {
-  font-size: 0.85em;
-}
-
-#markerTypeSelectorWrapper {
-  position: relative;
-}
-
 #markerTypeSelectMenu {
   display: none;
 }

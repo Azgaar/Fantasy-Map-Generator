@@ -26,6 +26,7 @@ export const VERSION = "1.152.0";
 const latestPublicChanges = [
   "Heightmap: option to render contour lines",
   "Ability to override a burg's treasury",
+  "Markers and Burg icons rendering optimization",
   "Dialogs: preserve position between sessions",
   "Map name and era moved to Set Lore dialog",
   "Notes Editor: new rich text editor Quill2",

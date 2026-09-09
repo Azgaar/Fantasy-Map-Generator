@@ -19,7 +19,6 @@ beforeEach(() => {
       <g id="labels"></g>
       <g id="emblems" style="display: none"></g>
       <g id="statesHalo"></g>
-      <g id="markers"><image id="marker0" width="30" height="30" x="185" y="170"></image></g>
     </svg>
     <select id="shapeRendering"><option value="optimizeSpeed" selected></option></select>
   `;
@@ -32,8 +31,7 @@ beforeEach(() => {
 
   Object.assign(globalThis, {
     customization: 0,
-    options: { map: { labels: { resizeOnZoom: false } }, app: { viewportRedraw: "continuous" } },
-    pack: { markers: [{ i: 0, x: 200, y: 200, size: 30, hidden: false }] }
+    options: { map: { labels: { resizeOnZoom: false } }, app: { viewportRedraw: "continuous" } }
   });
   setViewportSize(1000, 600);
   setViewportTransform(1, 0, 0);
@@ -85,33 +83,5 @@ describe("invokeActiveZooming", () => {
     invokeActiveZooming();
     const halo = document.getElementById("statesHalo")!;
     expect(halo.getAttribute("stroke-width")).toBe(String(rn(8 / 2 ** 0.8, 2)));
-  });
-
-  it("resizes markers only when the store rescale option is on", () => {
-    const marker = document.getElementById("marker0")!;
-    const before = {
-      width: marker.getAttribute("width"),
-      height: marker.getAttribute("height"),
-      x: marker.getAttribute("x"),
-      y: marker.getAttribute("y")
-    };
-
-    styles.markers.options.rescale = 0;
-    invokeActiveZooming();
-    expect({
-      width: marker.getAttribute("width"),
-      height: marker.getAttribute("height"),
-      x: marker.getAttribute("x"),
-      y: marker.getAttribute("y")
-    }).toEqual(before);
-
-    setViewportTransform(2, viewport.x, viewport.y);
-    styles.markers.options.rescale = 1;
-    invokeActiveZooming();
-    const expectedSize = String(rn(30 / 5 + 24 / 2, 2));
-    expect(marker.getAttribute("width")).toBe(expectedSize);
-    expect(marker.getAttribute("height")).toBe(expectedSize);
-    expect(marker.getAttribute("x")).toBe(String(rn(200 - Number(expectedSize) / 2, 1)));
-    expect(marker.getAttribute("y")).toBe(String(rn(200 - Number(expectedSize), 1)));
   });
 });

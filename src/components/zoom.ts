@@ -108,20 +108,6 @@ export function invokeActiveZooming(): void {
     const haloSize = rn(desired / viewport.scale ** 0.8, 2);
     statesHalo.attr("stroke-width", haloSize).style("display", haloSize > 0.1 ? "block" : "none");
   }
-
-  if (styles.markers.options.rescale) {
-    for (const marker of pack.markers ?? []) {
-      const { i, x, y, size = 30, hidden } = marker;
-      const element = hidden ? null : document.getElementById(`marker${i}`);
-      if (!element) continue;
-
-      const zoomedSize = Math.max(rn(size / 5 + 24 / viewport.scale, 2), 1);
-      element.setAttribute("width", String(zoomedSize));
-      element.setAttribute("height", String(zoomedSize));
-      element.setAttribute("x", String(rn(x - zoomedSize / 2, 1)));
-      element.setAttribute("y", String(rn(y - zoomedSize, 1)));
-    }
-  }
 }
 
 /** Zoom to a specific point */
