@@ -12,6 +12,8 @@ Check out [Dev board](https://github.com/users/Azgaar/projects/3/views/1?sumFiel
 
 Current version of the Fantasy Map Generator is the latest `master` branch. You can download it here: https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/heads/master.zip. Also see [the wiki](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#can-i-use-the-generator-offline).
 
+- Legend boxes for States, Cultures, Religions, Biomes and Zones can be shown at the same time by _[esullivan9](https://github.com/esullivan9)_
+
 # Releases
 
 **[1.152.0](https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/tags/v1.152.0.zip) - 2026-09-TBD**:
