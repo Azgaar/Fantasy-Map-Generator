@@ -1,6 +1,6 @@
 import { color, curveBasisClosed, line } from "d3";
 import { Layers } from "@/components/layers";
-import { ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
+import { boundsIntersect, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import type { PackedGraph } from "@/types/PackedGraph";
 import { rn } from "@/utils/numberUtils";
 import { getIsolines } from "@/utils/pathUtils";
@@ -58,10 +58,10 @@ function reconcileMarkets({ root, bounds }: ViewportRenderContext): void {
   for (const market of pack.markets) {
     const territory = territories.get(market.i);
     const center = pack.burgs[market.centerBurgId];
-    const showTerritory = territory && intersects(territory, bounds);
+    const showTerritory = territory && boundsIntersect(territory, bounds);
     const showCenter =
       center &&
-      intersects(
+      boundsIntersect(
         { x0: center.x - padding, y0: center.y - padding, x1: center.x + padding, y1: center.y + padding },
         bounds
       );
@@ -93,10 +93,6 @@ function reconcileMarkets({ root, bounds }: ViewportRenderContext): void {
     container.onmouseover = onMarketHover;
     container.onmouseout = onMarketHover;
   }
-}
-
-function intersects(a: Bounds, b: Bounds): boolean {
-  return a.x0 <= b.x1 && a.y0 <= b.y1 && a.x1 >= b.x0 && a.y1 >= b.y0;
 }
 
 function onMarketHover(event: MouseEvent): void {

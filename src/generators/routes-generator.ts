@@ -1,5 +1,5 @@
 import Alea from "alea";
-import { curveCatmullRom, line, select } from "d3";
+import { curveCatmullRom, line } from "d3";
 import Delaunator from "delaunator";
 import { distanceSquared, findPath, getAdjective, isLand, ra, rn, round, rw } from "../utils";
 import { meander } from "../utils/pathUtils";
@@ -863,7 +863,6 @@ class RoutesModule {
     }
 
     pack.routes = pack.routes.filter(r => r.i !== route.i);
-    select("#viewbox").select(`#route${route.i}`).remove();
   }
 
   getConnectivityRate(cellId: number): number {
@@ -927,7 +926,12 @@ class RoutesModule {
   }
 
   getLength(routeId: number): number {
-    const path = select("#routes").select(`#route${routeId}`).node() as SVGPathElement;
+    const route = pack.routes.find(route => route.i === routeId);
+    if (!route) return 0;
+
+    // measured off-DOM: the rendered layer only holds the routes currently in the viewport
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", this.getPath(route));
     return path.getTotalLength();
   }
 

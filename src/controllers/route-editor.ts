@@ -5,6 +5,7 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { Notes } from "@/generators/notes";
 import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
+import { redrawRoute as redrawRouteShape, setEditedRoute } from "@/renderers/draw-routes";
 import { speak } from "@/utils";
 import { ensureEl, findEl, getPointer, getSegmentId, rn } from "../utils";
 
@@ -21,6 +22,7 @@ function open(id: string): void {
   isCellsLayerForced = !Layers.isOn("cells");
   Layers.show("cells");
 
+  setEditedRoute(Number(id.slice(5))); // keep the route rendered while it is edited
   selectedRoute = select<SVGElement, unknown>(`#${id}`).on("click", addControlPoint);
 
   tip(
@@ -189,7 +191,7 @@ function dragControlPoint(event: any): void {
 }
 
 function redrawRoute(route: Route): void {
-  selectedRoute.attr("d", Routes.getPath(route));
+  redrawRouteShape(route);
   updateRouteLength(route);
   if (findEl("elevationProfile")) showRouteElevationProfile();
   Layers.draw("labels");
@@ -264,12 +266,7 @@ function handleControlPointClick(this: any): void {
       if (nextPoint) addConnection(cellId, nextPoint[2], newRoute.i);
     }
 
-    select("#routes")
-      .select(`#${newRoute.group}`)
-      .append("path")
-      .attr("d", Routes.getPath(newRoute))
-      .attr("id", `route${newRoute.i}`);
-
+    redrawRouteShape(newRoute);
     ensureEl("routeSplit").classList.remove("pressed");
   }
 
@@ -351,6 +348,7 @@ function joinRoutes(route: Route, joinedRoute: Route): void {
   }
 
   Routes.remove(joinedRoute);
+  Layers.draw("routes");
   drawControlPoints(route.points);
   redrawRoute(route);
   drawCells(route.points);
@@ -401,9 +399,10 @@ function changeName(this: HTMLInputElement): void {
 }
 
 function changeGroup(this: HTMLInputElement): void {
-  const group = this.value;
-  ensureEl(group).appendChild(selectedRoute.node()!);
-  getRoute().group = group;
+  const route = getRoute();
+  route.group = this.value;
+  redrawRouteShape(route); // the path is re-created under the new group, so re-bind the editor to it
+  selectedRoute = select<SVGElement, unknown>(`#route${route.i}`).on("click", addControlPoint);
 }
 
 function generateName(): void {
@@ -454,8 +453,8 @@ function removeRoute(): void {
     confirm: "Remove",
     onConfirm: () => {
       Routes.remove(getRoute());
-      Layers.draw("labels");
       $("#routeEditor").dialog("close");
+      Layers.draw("routes", "labels");
     }
   });
 }
@@ -465,6 +464,7 @@ function closeRouteEditor(): void {
   select("#controlCells").remove();
 
   selectedRoute.on("click", null);
+  setEditedRoute(null);
   clearMainTip();
 
   if (isCellsLayerForced) Layers.hide("cells");

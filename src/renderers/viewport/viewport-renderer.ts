@@ -15,12 +15,20 @@ interface ViewportLayer {
   render: (context: ViewportRenderContext) => void;
 }
 
-interface ViewportBounds {
-  scale: number;
+export interface Box {
   x0: number;
   y0: number;
   x1: number;
   y1: number;
+}
+
+interface ViewportBounds extends Box {
+  scale: number;
+}
+
+/** Axis-aligned overlap test between a cached shape box and the rendered viewport bounds */
+export function boundsIntersect(box: Box, bounds: Box): boolean {
+  return box.x0 <= bounds.x1 && box.y0 <= bounds.y1 && box.x1 >= bounds.x0 && box.y1 >= bounds.y0;
 }
 
 export class Scene<T extends { id: string }> {

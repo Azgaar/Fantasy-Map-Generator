@@ -485,7 +485,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         invalidCells.forEach(i => {
           cells.r[i] = 0;
         });
-        select("#rivers").select(`river${r}`).remove();
         ERROR && console.error("[Data integrity] Invalid river", r, "is assigned to cells", invalidCells);
       });
 

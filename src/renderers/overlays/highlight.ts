@@ -13,11 +13,15 @@ function getBBox(element: Element): DOMRect {
 export function highlightElement(target: Element | null, zoom?: number): void {
   const element = target as SVGGraphicsElement | null;
   if (!element) return;
+  const box = element.tagName === "svg" ? getBBox(element) : element.getBBox();
+  highlightArea(box, zoom, element.getAttribute("transform"));
+}
+
+/** Draw a temporary outline around a map-space box: for content the viewport renderer may have culled */
+export function highlightArea(box: DOMRect, zoom?: number, transformAttr: string | null = null): void {
   const layer = debugLayer();
   if (layer.select(".highlighted").size()) return; // allow only 1 highlighted element simultaneously
 
-  const box = element.tagName === "svg" ? getBBox(element) : element.getBBox();
-  const transformAttr = element.getAttribute("transform");
   const enter = transition().duration(1000).ease(easeBounceOut);
 
   layer

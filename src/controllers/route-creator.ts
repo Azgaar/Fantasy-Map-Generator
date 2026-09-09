@@ -6,6 +6,7 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Route } from "@/generators/routes-generator";
+import { setTempRoute } from "@/renderers/draw-routes";
 import { ensureEl, getPointer, rn } from "../utils";
 
 let creatorPoints: number[][] = [];
@@ -122,13 +123,7 @@ function drawRoute(points: number[][]): void {
     .attr("r", 0.6);
 
   const group = ensureEl<HTMLSelectElement>("routeCreatorGroupSelect").value;
-
-  select("#routes").select("#routeTemp").remove();
-  select("#routes")
-    .select(`#${group}`)
-    .append("path")
-    .attr("d", Routes.getPath({ group, points }))
-    .attr("id", "routeTemp");
+  setTempRoute({ group, points });
 }
 
 function completeCreation(): void {
@@ -161,14 +156,15 @@ function completeCreation(): void {
     }
   }
 
-  select("#routes").select("#routeTemp").attr("id", `route${routeId}`);
+  setTempRoute(null);
+  Layers.draw("routes");
   void Controllers.RouteEditor.open(`route${routeId}`);
 }
 
 function closeRouteCreator(): void {
   select("#debug").select("#controlCells").remove();
   select("#debug").select("#controlPoints").remove();
-  select("#routes").select("#routeTemp").remove();
+  setTempRoute(null);
 
   applyDefaultViewboxEvents();
   clearMainTip();

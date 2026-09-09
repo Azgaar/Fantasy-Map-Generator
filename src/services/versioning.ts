@@ -26,10 +26,10 @@ export const VERSION = "1.152.0";
 const latestPublicChanges = [
   "Heightmap: option to render contour lines",
   "Ability to override a burg's treasury",
-  "Markers and Burg icons rendering optimization",
   "Dialogs: preserve position between sessions",
   "Map name and era moved to Set Lore dialog",
   "Notes Editor: new rich text editor Quill2",
+  "Goods, Rivers, Routes, Markers and Burg icons rendering optimization",
   "Help assistant: ask questions about the Generator in the app",
   "States and Provinces editors: annex by clicking on the map",
   "Option to redraw labels, icons and relief only after a zoom",

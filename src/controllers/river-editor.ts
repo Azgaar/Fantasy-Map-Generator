@@ -6,6 +6,7 @@ import { Controllers } from "@/controllers";
 import { Notes } from "@/generators/notes";
 import type { River } from "@/generators/river-generator";
 import type { Point } from "@/generators/voronoi";
+import { redrawRiver as redrawRiverShape, setEditedRiver } from "@/renderers/draw-rivers";
 import { speak } from "@/utils";
 import { ensureEl, findEl, getPointer, getSegmentId, rand, rn } from "../utils";
 
@@ -22,6 +23,7 @@ function open(id: string): void {
   isCellsLayerForced = !Layers.isOn("cells");
   Layers.show("cells");
 
+  setEditedRiver(Number(id.slice(5))); // keep the river rendered while it is edited
   selectedRiver = select<SVGElement, unknown>(`#${id}`).on("click", addControlPoint);
 
   tip(
@@ -239,9 +241,7 @@ function redrawRiver(): void {
   river.points = select("#controlPoints").selectAll("*").data() as Point[];
   river.cells = river.points.map(([x, y]) => Pack.findCell(x, y)!);
 
-  const meanderedPoints = Rivers.addMeandering(river.cells, river.points);
-  const path = Rivers.getRiverPath(meanderedPoints, river.widthFactor, river.sourceWidth);
-  selectedRiver.attr("d", path);
+  redrawRiverShape(river);
 
   updateRiverLength(river);
   Layers.draw("labels");
@@ -330,9 +330,8 @@ function removeRiver(): void {
         $(this).dialog("close");
         const river = +selectedRiver.attr("id").slice(5);
         Rivers.remove(river);
-        selectedRiver.remove();
-        Layers.draw("labels");
         $("#riverEditor").dialog("close");
+        Layers.draw("rivers", "labels");
       },
       Cancel: function (this: any) {
         $(this).dialog("close");
@@ -346,6 +345,7 @@ function closeRiverEditor(): void {
   select("#controlCells").remove();
 
   selectedRiver.on("click", null);
+  setEditedRiver(null);
   clearMainTip();
 
   if (isCellsLayerForced) Layers.hide("cells");

@@ -14,7 +14,8 @@ import {
 import { Layers } from "@/components/layers";
 import { Controllers } from "@/controllers";
 import type { River } from "@/generators/river-generator";
-import { highlightElement } from "@/renderers/overlays/highlight";
+import { getRiverBox, toggleBasinHighlight } from "@/renderers/draw-rivers";
+import { highlightArea } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName } from "@/utils";
 import { ensureEl, rn } from "../utils";
 
@@ -158,7 +159,7 @@ function renderDialog(): void {
   });
   ensureEl("addNewRiver").addEventListener("click", () => void Controllers.RiverAutoCreator.toggle());
   ensureEl("riverCreateNew").addEventListener("click", createNewRiver);
-  ensureEl("riversBasinHighlight").addEventListener("click", toggleBasinsHightlight);
+  ensureEl("riversBasinHighlight").addEventListener("click", () => void toggleBasinHighlight());
   ensureEl("riversExport").addEventListener("click", downloadRiversData);
   ensureEl("riversRemoveAll").addEventListener("click", triggerAllRiversRemove);
   ensureEl("riversSearch").addEventListener("input", event => {
@@ -251,39 +252,8 @@ function riverHighlightOff(e: Event): void {
 
 function zoomToRiver(this: HTMLElement): void {
   const r = +(this.closest(".states") as HTMLElement).dataset.id!;
-  const river = select("#rivers").select(`#river${r}`).node() as Element;
-  highlightElement(river, 3);
-}
-
-function toggleBasinsHightlight(): void {
-  if (select("#rivers").attr("data-basin") === "hightlighted") {
-    select("#rivers").selectAll("*").attr("fill", null);
-    select("#rivers").attr("data-basin", null);
-  } else {
-    select("#rivers").attr("data-basin", "hightlighted");
-    const basins = [...new Set(pack.rivers.map((r: River) => r.basin))];
-    const colors = [
-      "#1f77b4",
-      "#ff7f0e",
-      "#2ca02c",
-      "#d62728",
-      "#9467bd",
-      "#8c564b",
-      "#e377c2",
-      "#7f7f7f",
-      "#bcbd22",
-      "#17becf"
-    ];
-
-    basins.forEach((b, i) => {
-      const color = colors[i % colors.length];
-      pack.rivers
-        .filter((r: River) => r.basin === b)
-        .forEach((r: River) => {
-          select("#rivers").select(`#river${r.i}`).attr("fill", color);
-        });
-    });
-  }
+  const box = getRiverBox(r);
+  if (box) highlightArea(box, 3);
 }
 
 function downloadRiversData(): void {
@@ -320,7 +290,7 @@ function triggerRiverRemove(this: HTMLElement): void {
     buttons: {
       Remove: function (this: any) {
         Rivers.remove(river);
-        Layers.draw("labels");
+        Layers.draw("rivers", "labels");
         riversTable.refresh();
         $(this).dialog("close");
       },
@@ -351,8 +321,7 @@ function triggerAllRiversRemove(): void {
 function removeAllRivers(): void {
   pack.rivers = [];
   pack.cells.r = new Uint16Array(pack.cells.i.length);
-  select("#rivers").selectAll("*").remove();
-  Layers.draw("labels");
+  Layers.draw("rivers", "labels");
   riversTable.refresh();
 }
 

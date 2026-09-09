@@ -14,7 +14,8 @@ import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
-import { highlightElement } from "@/renderers/overlays/highlight";
+import { getRouteBox } from "@/renderers/draw-routes";
+import { highlightArea } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName } from "@/utils";
 import { ensureEl, rn } from "../utils";
 
@@ -212,8 +213,8 @@ function routeHighlightOff(e: Event): void {
 
 function zoomToRoute(this: HTMLElement): void {
   const routeId = +(this.closest(".states") as HTMLElement).dataset.id!;
-  const route = select("#routes").select(`#route${routeId}`).node() as Element;
-  highlightElement(route, 3);
+  const box = getRouteBox(routeId);
+  if (box) highlightArea(box, 3);
 }
 
 function downloadRoutesData(): void {
@@ -272,7 +273,7 @@ function triggerRouteRemove(this: HTMLElement): void {
     onConfirm: () => {
       const route = pack.routes.find((r: Route) => r.i === routeId) as Route;
       Routes.remove(route);
-      Layers.draw("labels");
+      Layers.draw("routes", "labels");
       routesTable.refresh();
     }
   });
@@ -314,7 +315,7 @@ function triggerAllRoutesRemove(): void {
           Routes.remove(route);
         }
         pack.cells.routes = Routes.buildLinks(pack.routes);
-        Layers.draw("labels");
+        Layers.draw("routes", "labels");
         routesTable.refresh();
         $(this).dialog("close");
       },

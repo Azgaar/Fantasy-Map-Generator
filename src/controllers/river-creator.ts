@@ -152,15 +152,8 @@ function addRiver(): void {
     name,
     type: "River"
   });
-  const id = `river${riverId}`;
-
-  select("#viewbox")
-    .select("#rivers")
-    .append("path")
-    .attr("id", id)
-    .attr("d", Rivers.getRiverPath(meanderedPoints, widthFactor, sourceWidth));
-
-  void Controllers.RiverEditor.open(id);
+  Layers.draw("rivers");
+  void Controllers.RiverEditor.open(`river${riverId}`);
 }
 
 function closeRiverCreator(): void {
