@@ -1432,17 +1432,22 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       if (!state) continue;
 
       const pathEl = document.getElementById(`textPath_${textEl.id}`) as SVGPathElement | null;
-      if (pathEl) state.label = getPathLabel({ textEl, pathEl, names: [state.name, state.fullName] });
+      // the renderer reproduces only one of the two names; a label showing the other must be pinned
+      const renderedName = stateMode === "short" ? state.name : state.fullName || state.name;
+      if (pathEl) state.label = getPathLabel({ textEl, pathEl, names: [renderedName] });
     }
 
     delete (options as any).stateLabelsMode; // migrated to group settings
 
     function deriveLabelsStyle(groupEl: SVGGElement): Record<string, string | number | null> {
+      // strokes inherit and default to none: a width with no stroke above it was never stroked
+      const stroke = groupEl.closest("[stroke]")?.getAttribute("stroke") || null;
+      const isStroked = stroke !== null && stroke !== "none";
       return {
         opacity: groupEl.hasAttribute("opacity") ? Number(groupEl.getAttribute("opacity")) : 1,
         fill: groupEl.getAttribute("fill") || "#000000",
-        stroke: groupEl.getAttribute("stroke") || "#000000",
-        "stroke-width": Number(groupEl.getAttribute("stroke-width")) || 0,
+        stroke: isStroked ? stroke : "#000000",
+        "stroke-width": isStroked ? Number(groupEl.getAttribute("stroke-width")) || 0 : 0,
         style: groupEl.getAttribute("style") || null,
         "letter-spacing": Number(groupEl.getAttribute("letter-spacing")) || 0,
         "font-size": `${Number(groupEl.dataset.size) || Number(groupEl.getAttribute("font-size")) || 18}%`,
