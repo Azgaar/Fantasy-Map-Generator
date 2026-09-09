@@ -51,7 +51,7 @@ export function sanitizeSvgIcon(svgText: string): SVGElement | null {
 
 /** Whether an icon value is an image URL rather than an emoji or text glyph */
 export function isImageIcon(icon: string): boolean {
-  return icon.startsWith("http") || icon.startsWith("data:image");
+  return /^(https?:\/\/|data:image\/)/.test(icon);
 }
 
 /** Encode SVG markup as a base64 data URI (UTF-8 safe) */

@@ -16,7 +16,7 @@ import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
 import { setMarkersFilter } from "@/renderers/draw-markers";
 import { highlightElement } from "@/renderers/overlays/highlight";
-import { downloadFile, getFileName, getLatitude, getLongitude, isImageIcon } from "@/utils";
+import { downloadFile, escapeHtml, getFileName, getLatitude, getLongitude, isImageIcon } from "@/utils";
 import { ensureEl } from "../utils";
 
 const dialogId = "markersOverview" as const;
@@ -198,7 +198,9 @@ function populateMarkerTypeMenu(): void {
 }
 
 function iconHtml(icon: string): string {
-  return isImageIcon(icon) ? `<img src="${icon}" style="width:1.2em; height:1.2em; vertical-align: middle;">` : icon;
+  return isImageIcon(icon)
+    ? `<img src="${escapeHtml(icon)}" style="width:1.2em; height:1.2em; vertical-align: middle;">`
+    : escapeHtml(icon);
 }
 
 function handleLineClick(ev: MouseEvent): void {
@@ -261,8 +263,8 @@ function renderMarkersPage(view: TableView<Marker>): void {
           <div data-col="type">
             ${
               isImageIcon(icon)
-                ? `<img src="${icon}" data-tip="Marker icon" style="width:1.2em; height:1.2em; vertical-align: middle;">`
-                : `<span data-tip="Marker icon" style="width:1.2em">${icon}</span>`
+                ? `<img src="${escapeHtml(icon)}" data-tip="Marker icon" style="width:1.2em; height:1.2em; vertical-align: middle;">`
+                : `<span data-tip="Marker icon" style="width:1.2em">${escapeHtml(icon)}</span>`
             }
             <span data-tip="Marker type">${type}</span>
           </div>
