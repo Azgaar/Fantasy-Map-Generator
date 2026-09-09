@@ -2,7 +2,7 @@
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { ICONS, ICONS_PER_ROW } from "@/data/icons-list";
-import { ensureEl } from "@/utils";
+import { ensureEl, escapeHtml, isImageIcon } from "@/utils";
 
 function open(initial: string, callback: (value: string) => void): void {
   const dialog = renderDialog();
@@ -34,7 +34,7 @@ function open(initial: string, callback: (value: string) => void): void {
     const urlInput = addImageButton.previousElementSibling as HTMLInputElement;
     const url = urlInput.value;
     if (!url) return tip("Enter image URL to add", false, "error", 4000);
-    if (!url.match(/^((http|https):\/\/)|data:image\//)) return tip("Enter valid URL", false, "error", 4000);
+    if (!isImageIcon(url)) return tip("Enter valid URL", false, "error", 4000);
 
     addImage(url, callback);
     callback(url);
@@ -101,12 +101,11 @@ function renderIcons(table: HTMLTableElement): void {
 
 /** Collect the external images already used as icons on this map */
 function getUsedImages(): Set<string> {
-  const isExternal = (url: string) => url.startsWith("http") || url.startsWith("data:image");
   const images = new Set<string>();
 
-  for (const unit of options.map.military.units) if (isExternal(unit.icon)) images.add(unit.icon);
+  for (const unit of options.map.military.units) if (isImageIcon(unit.icon)) images.add(unit.icon);
   for (const state of pack.states) {
-    for (const regiment of state?.military || []) if (isExternal(regiment.icon)) images.add(regiment.icon);
+    for (const regiment of state?.military || []) if (isImageIcon(regiment.icon)) images.add(regiment.icon);
   }
 
   return images;
@@ -114,8 +113,11 @@ function getUsedImages(): Set<string> {
 
 function addImage(url: string, callback: (value: string) => void): void {
   const image = document.createElement("div");
-  image.style.cssText = `width: 2.2em; height: 2.2em; background-size: cover; background-image: url(${url})`;
+  image.style.cssText = "width: 2.2em; height: 2.2em; background-size: cover";
+  image.style.backgroundImage = `url("${url.replace(/["\\]/g, "\\$&")}")`;
   image.onclick = () => callback(url);
+  image.onmouseover = () =>
+    tip(`Click to select <img src="${escapeHtml(url)}" style="width: 1em; height: 1em; vertical-align: middle"> icon`);
   ensureEl("addedIcons").appendChild(image);
 }
 
