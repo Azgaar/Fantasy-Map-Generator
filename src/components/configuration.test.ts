@@ -26,6 +26,21 @@ const load = (file: string) => Options.applyLoaded(JSON.parse(file));
 
 beforeEach(boot);
 
+it.each(["ancient", "fmgStyle_custom"])("keeps the %s style preset across generation and session reloads", preset => {
+  options.map.style.preset = preset;
+  Options.persist();
+
+  for (let session = 0; session < 2; session++) {
+    options = Options.getDefaultOptions();
+    Options.restore();
+    expect(options.map.style.preset).toBe(preset);
+
+    Options.randomize();
+    expect(options.map.style.preset).toBe(preset);
+    Options.persist();
+  }
+});
+
 it.each(["load", "restore"])("repairs one wind without losing other settings during %s", boundary => {
   vi.spyOn(console, "warn").mockImplementation(() => {});
   const stored = Options.getDefaultOptions();

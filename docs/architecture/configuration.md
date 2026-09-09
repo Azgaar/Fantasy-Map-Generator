@@ -178,8 +178,8 @@ the unpinned requests, resolves the ones the map keeps into `options.map`, and r
 values that have no request. Values needing terrain are resolved by their own pipeline step
 instead, with no callback into the options model.
 
-- **A new map** starts `options.map` from the defaults and keeps only the seed and the definition
-  sets.
+- **A new map** starts `options.map` from the defaults and keeps the seed, the active style preset
+  and the definition sets. Generation keeps the current style, so its preset must carry over too.
 - **Regenerating one element** reads the current request for that element and writes afterwards the
   parameters the map needs, such as its culture set.
 - **A recalculation is not a regeneration.** Re-deriving climate or rebuilding a coastline path

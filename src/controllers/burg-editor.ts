@@ -16,9 +16,6 @@ import type { PromptOptions } from "../utils/commonUtils";
 declare const prompt: (text: string, options: PromptOptions, callback: (value: string | number) => void) => void;
 
 let selected: Selection<any, any, any, any> | null = null;
-// The burg being edited. `selected` is only a handle on its rendered node, and there may not be
-// one: the GPU icon layer puts no <use> in #burgIcons, and a label outside the viewport or below
-// its group's zoom gate is never materialized. Identity must not depend on the DOM.
 let selectedId: number | null = null;
 let previewTransform: PanZoom = { ...PAN_ZOOM_IDENTITY };
 let previewMaxZoom = MAX_ZOOM;
@@ -425,9 +422,6 @@ function togglePort(burgId: number): void {
   const burg = pack.burgs[burgId];
   if (burg.port) {
     burg.port = 0;
-
-    const anchor = document.querySelector(`#anchors [data-id='${burgId}']`);
-    if (anchor) anchor.remove();
   } else {
     const { cells, features } = pack;
     const haven = cells.haven[burg.cell];
@@ -449,16 +443,8 @@ function togglePort(burgId: number): void {
     }
 
     burg.port = portFeatureId;
-
-    select("#anchors")
-      .select(`#${burg.group}`)
-      .append("use")
-      .attr("href", "#icon-anchor")
-      .attr("id", `anchor${burg.i}`)
-      .attr("data-id", burg.i)
-      .attr("x", burg.x)
-      .attr("y", burg.y);
   }
+  Layers.draw("burgIcons");
 }
 
 function toggleCapital(burgId: number): void {
@@ -769,19 +755,8 @@ function relocateBurgOnClick(this: SVGGElement, event: any): void {
     return;
   }
 
-  // change UI
   const x = rn(point[0], 2);
   const y = rn(point[1], 2);
-
-  select("#burgIcons").select(`#burg${id}`).attr("x", x).attr("y", y);
-
-  const anchor = select("#anchors").select(`use[data-id='${id}']`);
-  if (anchor.size()) {
-    const size = +anchor.attr("width");
-    const xa = rn(x - size * 0.47, 2);
-    const ya = rn(y - size * 0.47, 2);
-    anchor.attr("transform", null).attr("x", xa).attr("y", ya);
-  }
 
   // change data
   cells.burg[burg.cell] = 0;
@@ -794,7 +769,7 @@ function relocateBurgOnClick(this: SVGGElement, event: any): void {
 
   // the label snaps back to the relocated burg, so its custom path is no longer valid
   if (burg.label) Object.assign(burg.label, { dx: 0, dy: 0, pathPoints: undefined });
-  Layers.draw("labels");
+  Layers.draw("burgIcons", "labels");
 
   if (event.shiftKey === false) toggleRelocateBurg();
 }

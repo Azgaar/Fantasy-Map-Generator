@@ -485,6 +485,18 @@ function updateGroupOptions(styleElement, layerEl) {
     return;
   }
 
+  if (["burgIcons", "anchors"].includes(styleElement)) {
+    const counts = new Map();
+    for (const burg of pack.burgs) {
+      if (!burg.i || burg.removed || (styleElement === "anchors" && !burg.port)) continue;
+      counts.set(burg.group, (counts.get(burg.group) || 0) + 1);
+    }
+    const groups = [...options.map.burgs.groups].sort((a, b) => a.order - b.order).map(({ name }) => name);
+    groups.forEach(name => styleGroupSelect.options.add(new Option(`${name} (${counts.get(name) || 0})`, name)));
+    styleGroupSelect.value = groups.includes(selected) ? selected : groups[0] || "";
+    return;
+  }
+
   // custom route groups exist only in the svg, so the group list is read from it
   const groups = Array.from(layerEl.node()?.querySelectorAll(":scope > g") || []);
   groups.forEach(g => styleGroupSelect.options.add(new Option(`${g.id} (${g.childElementCount})`, g.id)));
@@ -533,7 +545,8 @@ function writeSelectedAttr(attr, value) {
         `Style editor: "${attr}" is not in the styles schema for ${styleElementSelect.value} > ${styleGroupSelect.value}. The change is applied to the map but is not stored in the style`
       );
   }
-  getEl().attr(attr, value ?? null);
+  if (["burgIcons", "anchors"].includes(styleElementSelect.value)) Layers.draw("burgIcons");
+  else getEl().attr(attr, value ?? null);
 }
 
 styleFillInput.addEventListener("input", function () {
@@ -917,13 +930,13 @@ const burgIconsGroup = () => styles.burgIcons.burgIcons.groups[styleGroupSelect.
 styleBurgIconsIcon.addEventListener("change", e => {
   const group = burgIconsGroup();
   if (group) group.options.icon = e.target.value;
-  getEl().attr("data-icon", e.target.value).selectAll("use").attr("href", e.target.value);
+  Layers.draw("burgIcons");
 });
 
 styleBurgIconsIconSize.addEventListener("input", e => {
   const group = burgIconsGroup();
   if (group) group.options.size = +e.target.value || 1;
-  getEl().attr("font-size", e.target.value);
+  Layers.draw("burgIcons");
 });
 
 styleBurgIconsStrokeLinejoin.addEventListener("change", e => {
@@ -1059,7 +1072,7 @@ function changeFontSize(el, size) {
   if (styleElementSelect.value === "anchors") {
     const group = styles.burgIcons.anchors.groups[styleGroupSelect.value];
     if (group) group.options.size = size;
-    el.attr("font-size", size);
+    Layers.draw("burgIcons");
     return;
   }
 
