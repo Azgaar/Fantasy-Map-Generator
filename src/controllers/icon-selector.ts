@@ -2,7 +2,7 @@
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { ICONS, ICONS_PER_ROW } from "@/data/icons-list";
-import { ensureEl, isImageIcon, sanitizeSvgIcon, svgToDataUri } from "@/utils";
+import { ensureEl, escapeHtml, isImageIcon, sanitizeSvgIcon, svgToDataUri } from "@/utils";
 
 function open(initial: string, callback: (value: string) => void): void {
   const dialog = renderDialog();
@@ -34,7 +34,7 @@ function open(initial: string, callback: (value: string) => void): void {
     const urlInput = addImageButton.previousElementSibling as HTMLInputElement;
     const url = urlInput.value;
     if (!url) return tip("Enter image URL to add", false, "error", 4000);
-    if (!url.match(/^((http|https):\/\/)|data:image\//)) return tip("Enter valid URL", false, "error", 4000);
+    if (!isImageIcon(url)) return tip("Enter valid URL", false, "error", 4000);
 
     addImage(url, callback);
     callback(url);
@@ -158,8 +158,11 @@ function uploadIcon(input: HTMLInputElement, onLoaded: (dataUri: string) => void
 
 function addImage(url: string, callback: (value: string) => void): void {
   const image = document.createElement("div");
-  image.style.cssText = `width: 2.2em; height: 2.2em; background-size: cover; background-image: url(${url})`;
+  image.style.cssText = "width: 2.2em; height: 2.2em; background-size: cover";
+  image.style.backgroundImage = `url("${url.replace(/["\\]/g, "\\$&")}")`;
   image.onclick = () => callback(url);
+  image.onmouseover = () =>
+    tip(`Click to select <img src="${escapeHtml(url)}" style="width: 1em; height: 1em; vertical-align: middle"> icon`);
   ensureEl("addedIcons").appendChild(image);
 }
 

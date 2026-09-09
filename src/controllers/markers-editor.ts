@@ -5,7 +5,7 @@ import { clearMainTip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
 import { getPin } from "@/renderers/draw-markers";
-import { ensureEl, findEl, isImageIcon, rn } from "../utils";
+import { ensureEl, escapeHtml, findEl, isImageIcon, rn } from "../utils";
 
 let selectedElement: SVGSVGElement;
 let selectedMarker: Marker;
@@ -158,8 +158,8 @@ function dragMarker(this: SVGElement, event: any): void {
 function updateInputs(): void {
   const marker = selectedMarker;
   ensureEl("markerIcon").innerHTML = isImageIcon(marker.icon)
-    ? `<img src="${marker.icon}" style="width: 1em; height: 1em;">`
-    : marker.icon;
+    ? `<img src="${escapeHtml(marker.icon)}" style="width: 1em; height: 1em;">`
+    : escapeHtml(marker.icon);
 
   ensureEl<HTMLInputElement>("markerType").value = marker.type || "";
   ensureEl<HTMLInputElement>("markerIconSize").value = String(marker.px || 12);
@@ -180,7 +180,9 @@ function changeMarkerType(this: HTMLInputElement): void {
 function changeMarkerIcon(): void {
   Controllers.IconSelector.open(selectedMarker.icon, value => {
     const isExternal = isImageIcon(value);
-    ensureEl("markerIcon").innerHTML = isExternal ? `<img src="${value}" style="width: 1em; height: 1em;">` : value;
+    ensureEl("markerIcon").innerHTML = isExternal
+      ? `<img src="${escapeHtml(value)}" style="width: 1em; height: 1em;">`
+      : escapeHtml(value);
 
     getSameTypeMarkers().forEach(marker => {
       marker.icon = value;

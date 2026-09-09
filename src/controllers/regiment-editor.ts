@@ -5,7 +5,7 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { drawRegiment, moveRegiment } from "@/renderers/draw-military";
-import { isImageIcon, speak } from "@/utils";
+import { escapeHtml, isImageIcon, speak } from "@/utils";
 import type { Regiment } from "../generators/military-generator";
 import { capitalize, ensureEl, getPointer, last, rn } from "../utils";
 
@@ -113,8 +113,8 @@ function updateRegimentData(regiment: Regiment): void {
   ensureEl("regimentType").className = regiment.n ? "icon-anchor" : "icon-users";
   ensureEl<HTMLInputElement>("regimentName").value = regiment.name;
   ensureEl("regimentEmblem").innerHTML = isImageIcon(regiment.icon!)
-    ? `<img src="${regiment.icon}" style="width: 1em; height: 1em;">`
-    : regiment.icon!;
+    ? `<img src="${escapeHtml(regiment.icon!)}" style="width: 1em; height: 1em;">`
+    : escapeHtml(regiment.icon!);
 
   const composition = ensureEl("regimentComposition");
   composition.innerHTML = options.military

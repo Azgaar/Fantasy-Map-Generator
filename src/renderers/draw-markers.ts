@@ -1,6 +1,6 @@
 import { select } from "d3";
 import type { Marker } from "@/generators/markers-generator";
-import { isImageIcon, rn } from "../utils";
+import { escapeHtml, isImageIcon, rn } from "../utils";
 
 type PinShapeFunction = (fill: string, stroke: string) => string;
 type PinShapes = { [key: string]: PinShapeFunction };
@@ -49,8 +49,8 @@ export function drawMarker(marker: Marker, rescale = 1): string {
   return /* html */ `
     <svg id="${id}" viewbox="0 0 30 30" width="${zoomSize}" height="${zoomSize}" x="${viewX}" y="${viewY}">
       <g>${getPin(pin, fill, stroke)}</g>
-      <text x="${dx}%" y="${dy}%" font-size="${px}px" >${isExternal ? "" : icon}</text>
-      <image x="${dx / 2}%" y="${dy / 2}%" width="${px}px" height="${px}px" href="${isExternal ? icon : ""}" />
+      <text x="${dx}%" y="${dy}%" font-size="${px}px" >${isExternal ? "" : escapeHtml(icon)}</text>
+      <image x="${dx / 2}%" y="${dy / 2}%" width="${px}px" height="${px}px" href="${isExternal ? escapeHtml(icon) : ""}" />
     </svg>`;
 }
 
