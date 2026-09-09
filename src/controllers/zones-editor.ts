@@ -9,10 +9,11 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
-import type { FillBoxElement } from "@/components/fill-box";
 import { Layers } from "@/components/layers";
+import type { FillBoxElement } from "@/components/shared/fill-box";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
+import { Notes } from "@/generators/notes";
 import type { Zone } from "@/generators/zones-generator";
 import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { zonesFilter } from "@/renderers/draw-zones";
@@ -31,7 +32,11 @@ const columns: EditorColumn<ZoneRow>[] = [
   { key: "cells", label: "Cells", width: "5em" },
   { key: "area", label: "Area", width: "7em" },
   { key: "population", label: "Population", width: "6em" },
-  { key: "actions", width: "4.2em", permanent: true, align: "right" }
+  { key: "note", width: "1.1em" },
+  { key: "reorder", width: "1.1em" },
+  { key: "focus", width: "1.1em" },
+  { key: "visibility", width: "1.1em" },
+  { key: "remove", width: "1.4em", permanent: true }
 ];
 const zonesTable = initEditorTable<ZoneRow>({ getData: getZonesData, onUpdate: renderZonesPage });
 
@@ -122,6 +127,7 @@ function renderDialog(): void {
     const fillBox = target.closest("fill-box");
     if (fillBox) changeFill(fillBox as FillBoxElement, zone);
     else if (target.classList.contains("zonePopulation")) changePopulation(zone);
+    else if (target.classList.contains("icon-book")) void Controllers.NotesEditor.open({ type: "zone", id: zone.i });
     else if (target.classList.contains("zoneRemove")) zoneRemove(zone);
     else if (target.classList.contains("zoneHide")) toggleVisibility(zone);
     else if (target.classList.contains("zoneFog")) toggleFog(zone, target.classList);
@@ -173,21 +179,23 @@ function getZonesData(): ZoneRow[] {
   const zones = filterBy === "all" ? pack.zones : pack.zones.filter(zone => zone.type === filterBy);
   return zones.map(zone => {
     const area = getArea(sum(zone.cells.map(cell => pack.cells.area[cell])));
-    const rural = sum(zone.cells.map(cell => pack.cells.pop[cell])) * populationRate;
+    const rural = sum(zone.cells.map(cell => pack.cells.pop[cell])) * options.map.units.population.scale;
     const urban =
       sum(zone.cells.map(cell => pack.cells.burg[cell]).map(burg => pack.burgs[burg]?.population ?? 0)) *
-      populationRate *
-      urbanization;
+      options.map.units.population.scale *
+      options.map.units.population.urbanization.rate;
     return { zone, area, rural, urban, population: rn(rural + urban) };
   });
 }
 
 function renderZonesPage(view: TableView<ZoneRow>): void {
   const body = ensureEl("zonesBodySection");
-  const totalArea = getArea(graphWidth * graphHeight);
+  const totalArea = getArea(options.map.graph.width * options.map.graph.height);
   const totalPopulation =
-    (sum(pack.cells.pop) + sum(pack.burgs.filter(b => !b.removed).map(b => b.population ?? 0)) * urbanization) *
-    populationRate;
+    (sum(pack.cells.pop) +
+      sum(pack.burgs.filter(b => !b.removed).map(b => b.population ?? 0)) *
+        options.map.units.population.urbanization.rate) *
+    options.map.units.population.scale;
   const percentage = body.dataset.type === "percentage";
   const lines = view.rows.map(({ zone: { i, name, type, cells, color, hidden }, area, rural, urban, population }) => {
     const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}. Click to change`;
@@ -199,7 +207,11 @@ function renderZonesPage(view: TableView<ZoneRow>): void {
       <div data-col="cells"><span data-tip="Cells count" class="icon-check-empty"></span><span data-tip="Cells count" class="stateCells">${percentage ? `${rn((cells.length / pack.cells.i.length) * 100, 2)}%` : cells.length}</span></div>
       <div data-col="area"><span data-tip="Zone area" class="icon-map-o" style="padding-right: 2px"></span><span data-tip="Zone area" class="biomeArea">${percentage ? `${rn((area / totalArea) * 100, 2)}%` : `${si(area)} ${getAreaUnit()}`}</span></div>
       <div data-col="population"><span data-tip="${populationTip}" class="icon-male"></span><span data-tip="${populationTip}" class="zonePopulation pointer">${percentage ? `${rn((population / totalPopulation) * 100, 2)}%` : si(population)}</span></div>
-      <div data-col="actions"><span data-tip="Drag to raise or lower the zone" class="icon-resize-vertical"></span><span data-tip="Toggle zone focus" class="zoneFog icon-pin ${focused ? "" : "inactive"} ${cells.length ? "" : "placeholder"}"></span><span data-tip="Toggle zone visibility" class="zoneHide icon-eye ${cells.length ? "" : " placeholder"}"></span><span data-tip="Remove zone" class="zoneRemove icon-trash-empty"></span></div>
+      ${Notes.getIcon("this zone")}
+      <span data-col="reorder" data-tip="Drag to raise or lower the zone" class="icon-resize-vertical"></span>
+      <span data-col="focus" data-tip="Toggle zone focus" class="zoneFog icon-pin ${focused ? "" : "inactive"} ${cells.length ? "" : "placeholder"}"></span>
+      <span data-col="visibility" data-tip="Toggle zone visibility" class="zoneHide icon-eye ${cells.length ? "" : " placeholder"}"></span>
+      <span data-col="remove" data-tip="Remove zone" class="zoneRemove icon-trash-empty"></span>
     </div>`;
   });
 
@@ -362,7 +374,8 @@ function addZonesLayer(): void {
 }
 
 function downloadZonesData(): void {
-  const unit = areaUnit.value === "square" ? `${distanceUnitInput.value}2` : areaUnit.value;
+  const unit =
+    options.map.units.area.unit === "square" ? `${options.map.units.distance.unit}2` : options.map.units.area.unit;
   let data = `Id,Color,Description,Type,Cells,Area ${unit},Population\n`; // headers
 
   for (const { zone, area, population } of getZonesData()) {
@@ -391,9 +404,11 @@ function changePopulation(zone: Zone): void {
   }
 
   const burgs = pack.burgs.filter(b => !b.removed && landCells.includes(b.cell));
-  const rural = rn(sum(landCells.map(i => pack.cells.pop[i])) * populationRate);
+  const rural = rn(sum(landCells.map(i => pack.cells.pop[i])) * options.map.units.population.scale);
   const urban = rn(
-    sum(landCells.map(i => pack.cells.burg[i]).map(b => pack.burgs[b]?.population ?? 0)) * populationRate * urbanization
+    sum(landCells.map(i => pack.cells.burg[i]).map(b => pack.burgs[b]?.population ?? 0)) *
+      options.map.units.population.scale *
+      options.map.units.population.urbanization.rate
   );
   const total = rural + urban;
   const l = (n: number): string => Number(n).toLocaleString();
@@ -439,7 +454,7 @@ function changePopulation(zone: Zone): void {
       });
     }
     if (!Number.isFinite(ruralChange) && +ruralPop.value > 0) {
-      const points = +ruralPop.value / populationRate;
+      const points = +ruralPop.value / options.map.units.population.scale;
       const pop = rn(points / landCells.length);
       landCells.forEach(i => {
         pack.cells.pop[i] = pop;
@@ -453,7 +468,8 @@ function changePopulation(zone: Zone): void {
       });
     }
     if (!Number.isFinite(urbanChange) && +urbanPop.value > 0) {
-      const points = +urbanPop.value / populationRate / urbanization;
+      const points =
+        +urbanPop.value / options.map.units.population.scale / options.map.units.population.urbanization.rate;
       const population = rn(points / burgs.length, 4);
       burgs.forEach(b => {
         b.population = population;

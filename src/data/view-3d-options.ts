@@ -1,6 +1,6 @@
+import { minmax } from "@/utils/numberUtils";
+
 export type ThreeDOptions = {
-  isOn: boolean;
-  isGlobe: boolean;
   scale: number;
   lightness: number;
   shadow: number;
@@ -13,7 +13,6 @@ export type ThreeDOptions = {
   extendedWater: boolean;
   labels3d: boolean;
   wireframe: boolean;
-  resolution: number;
   resolutionScale: number;
   subdivide: boolean;
   erosion: boolean;
@@ -63,9 +62,8 @@ export const timeOfDayPresets: Record<string, TimeOfDayPreset> = {
   }
 };
 
-export const defaultOptions = {
-  isOn: false,
-  isGlobe: false,
+/** The 3D view every browser starts from. The one definition of these values */
+export const DEFAULT_THREE_D: ThreeDOptions = {
   scale: 50,
   lightness: 0.6,
   shadow: 0.5,
@@ -79,7 +77,6 @@ export const defaultOptions = {
   labels3d: false,
   satellite: false,
   wireframe: false,
-  resolution: 2,
   resolutionScale: 4096,
   subdivide: false,
   erosion: false,
@@ -89,10 +86,12 @@ export const defaultOptions = {
   erosionOctaves: 2
 };
 
-window.ThreeDOptions = defaultOptions;
+/** every texture the 3D view bakes must sit inside what a GPU will accept */
+export const clampTextureResolution = (value: number) => minmax(value, 512, 8192);
 
-declare global {
-  interface Window {
-    ThreeDOptions: typeof defaultOptions;
-  }
-}
+/**
+ * The globe texture multiplier the panel shows: `resolutionScale` said the other way round.
+ * Derived where it is read, never stored - the scale is the one form of the value that is
+ */
+export const globeResolutionFor = (resolutionScale: number) =>
+  minmax(0.5, clampTextureResolution(resolutionScale) / 1024, 8);

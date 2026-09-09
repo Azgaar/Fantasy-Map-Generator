@@ -3,6 +3,8 @@
 // group inside the #legend layer, is keyed by its title and carries its own position in the store
 
 import { type D3DragEvent, select } from "d3";
+import { tip } from "@/components/tooltips";
+import { viewport } from "@/components/viewport";
 import { minmax, parseTransform, rn } from "@/utils";
 import { type LegendPosition, legendPositions } from "./legend-positions";
 
@@ -28,6 +30,11 @@ export function drawLegend(name: string, data: LegendItem[]): void {
   const backColor = styles.legend.box.attrs.fill;
   const opacity = Number(styles.legend.box.attrs["fill-opacity"]);
   const fontSize = styles.legend.options.fontSize;
+
+  // TODO: a renderer should not own controls. Move this to a proper legend component once one exists
+  layer
+    .on("mousemove", () => tip("Drag to change the position. Click to hide the legend box"))
+    .on("click", event => onLegendClick(event));
 
   layer.attr("font-size", fontSize); // the drawn texts size by inheritance
 
@@ -114,8 +121,8 @@ export function fitLegendBox(): void {
   for (const node of getBoxes()) {
     const { x: px, y: py } = positionOf(node.dataset.legend ?? "");
     const bbox = getBBox(node);
-    const x = rn(svgWidth * (px / 100) - bbox.width);
-    const y = rn(svgHeight * (py / 100) - bbox.height);
+    const x = rn(viewport.width * (px / 100) - bbox.width);
+    const y = rn(viewport.height * (py / 100) - bbox.height);
     node.setAttribute("transform", `translate(${x},${y})`);
   }
 }
@@ -132,8 +139,8 @@ export function dragLegendBox(event: D3DragEvent<SVGGElement, unknown, unknown>)
   const bbox = getBBox(node);
 
   event.on("drag", dragEvent => {
-    const px = rn(((x + dragEvent.x + bbox.width) / svgWidth) * 100, 2);
-    const py = rn(((y + dragEvent.y + bbox.height) / svgHeight) * 100, 2);
+    const px = rn(((x + dragEvent.x + bbox.width) / viewport.width) * 100, 2);
+    const py = rn(((y + dragEvent.y + bbox.height) / viewport.height) * 100, 2);
     node.setAttribute("transform", `translate(${x + dragEvent.x},${y + dragEvent.y})`);
     legendPositions.set(name, { x: px, y: py, dragged: true });
   });
@@ -174,8 +181,8 @@ function placeNewBox(node: SVGGElement): LegendPosition {
     const position = legendPositions.get(other.dataset.legend ?? "");
     if (!position) return [];
     const bbox = getBBox(other);
-    const right = svgWidth * (position.x / 100);
-    const bottom = svgHeight * (position.y / 100);
+    const right = viewport.width * (position.x / 100);
+    const bottom = viewport.height * (position.y / 100);
     return [{ left: right - bbox.width, top: bottom - bbox.height, right, bottom }];
   });
   const { width, height } = getBBox(node);
@@ -186,7 +193,7 @@ function placeNewBox(node: SVGGElement): LegendPosition {
     );
 
   // the anchor comes first, so a box that leaves the stack gives its slot back to the next one
-  const anchor = rect(svgWidth * (anchorX / 100), svgHeight * (anchorY / 100));
+  const anchor = rect(viewport.width * (anchorX / 100), viewport.height * (anchorY / 100));
   if (!boxes.length || free(anchor)) return { x: anchorX, y: anchorY };
 
   const furthest = (side: "top" | "bottom" | "left" | "right") =>
@@ -196,7 +203,7 @@ function placeNewBox(node: SVGGElement): LegendPosition {
 
   // each corner is clamped so an auto-placed box never lands partly outside the canvas
   const clamped = (right: number, bottom: number) =>
-    rect(minmax(right, width, svgWidth), minmax(bottom, height, svgHeight));
+    rect(minmax(right, width, viewport.width), minmax(bottom, height, viewport.height));
 
   const above = furthest("top");
   const below = furthest("bottom");
@@ -210,7 +217,8 @@ function placeNewBox(node: SVGGElement): LegendPosition {
   ];
 
   for (const spot of candidates) {
-    if (free(spot)) return { x: rn((spot.right / svgWidth) * 100, 2), y: rn((spot.bottom / svgHeight) * 100, 2) };
+    if (free(spot))
+      return { x: rn((spot.right / viewport.width) * 100, 2), y: rn((spot.bottom / viewport.height) * 100, 2) };
   }
 
   return { x: anchorX, y: anchorY }; // canvas is full: overlap and let the user drag it away
@@ -238,5 +246,3 @@ function legendBoxFromEvent(event: Event | undefined): SVGGElement | null {
 export const Legend = { draw: drawLegend, redraw: redrawLegend, fit: fitLegendBox, clear: clearLegend, has: hasLegend };
 
 window.fitLegendBox = fitLegendBox;
-window.clearLegend = clearLegend;
-window.onLegendClick = onLegendClick;

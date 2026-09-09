@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
 import "@/generators/styles";
+import { setViewportSize } from "@/components/viewport";
 import { clearLegend, dragLegendBox, drawLegend, fitLegendBox, hasLegend, redrawLegend } from "./draw-legend";
 import { legendPositions } from "./legend-positions";
 
@@ -19,8 +20,7 @@ beforeEach(() => {
     width: 60,
     height: 40
   });
-  globalThis.svgWidth = 800;
-  globalThis.svgHeight = 600;
+  setViewportSize(800, 600);
   legendPositions.clear();
 });
 
@@ -81,7 +81,7 @@ describe("drawLegend", () => {
     fitLegendBox();
 
     const transform = boxOf("States")!.getAttribute("transform");
-    // svgWidth 800 * 0.5 - bbox width 60 = 340; svgHeight 600 * 0.5 - bbox height 40 = 260
+    // viewport 800 * 0.5 - bbox width 60 = 340; 600 * 0.5 - bbox height 40 = 260
     expect(transform).toBe("translate(340,260)");
     styles.legend.options.x = 99;
     styles.legend.options.y = 93;
@@ -148,8 +148,8 @@ describe("several legend boxes", () => {
     drawLegend("Zones", zones);
 
     const { x, y } = legendPositions.get("Zones")!;
-    expect(svgWidth * (x / 100) - 60).toBeGreaterThanOrEqual(0); // left edge on canvas
-    expect(svgHeight * (y / 100) - 40).toBeGreaterThanOrEqual(0); // top edge on canvas
+    expect(800 * (x / 100) - 60).toBeGreaterThanOrEqual(0); // left edge on canvas
+    expect(600 * (y / 100) - 40).toBeGreaterThanOrEqual(0); // top edge on canvas
     styles.legend.options.x = 99;
     styles.legend.options.y = 93;
   });

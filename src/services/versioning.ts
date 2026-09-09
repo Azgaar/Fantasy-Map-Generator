@@ -16,13 +16,22 @@
  */
 
 import { dialogState } from "@/components/dialog/state";
+import { Pins } from "@/components/pins";
 import { tip } from "@/components/tooltips";
 import { isElectron } from "./platform";
 
-export const VERSION = "1.151.2";
+export const VERSION = "1.152.0";
 
 // new changes on top
 const latestPublicChanges = [
+  "Heightmap: option to render contour lines",
+  "Ability to override a burg's treasury",
+  "Dialogs: preserve position between sessions",
+  "Options rework: map settings are stored with the map, preferences with the browser",
+  "Map name and era moved to Set Lore dialog",
+  "Notes: kept on the element they describe, and available for more element types",
+  "Notes Editor: new rich text editor Quill2",
+  "Goods, Rivers, Routes, Markers, Markets and Burg icons rendering optimization",
   "Help assistant: ask questions about the Generator in the app",
   "States and Provinces editors: annex by clicking on the map",
   "Option to redraw labels, icons and relief only after a zoom",
@@ -31,12 +40,7 @@ const latestPublicChanges = [
   "Desktop App",
   "URL params to open specific layers or preset",
   "Emblems rendering optimization",
-  "Dialogs state preserved between sessions",
-  "Paint Area dialogs rework",
-  "Relief icons: improved performance",
-  "Configurable table columns",
-  "Labels: improved performance",
-  "Labels Overview"
+  "Dialogs state preserved between sessions"
 ];
 
 export function parseMapVersion(version: string): string {
@@ -98,11 +102,16 @@ export async function clearCache(): Promise<void> {
   location.reload();
 }
 
+export const ARROW_TIP_KEY = "disable_click_arrow_tooltip";
+
 export async function cleanupData(): Promise<void> {
   localStorage.clear();
   dialogState.clear();
   localStorage.setItem("version", VERSION);
-  localStorage.setItem("disable_click_arrow_tooltip", "true");
+
+  Options.reset();
+  Pins.clearAll();
+  localStorage.setItem(ARROW_TIP_KEY, "true");
   await clearCache();
 }
 

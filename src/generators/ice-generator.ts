@@ -36,7 +36,7 @@ class IceModule {
     this.clear();
     const { cells, features } = grid;
     const { temp, h } = cells;
-    Math.random = Alea(seed);
+    Math.random = Alea(options.map.seed);
 
     const ICEBERG_MAX_TEMP = 0;
     const GLACIER_MAX_TEMP = -8;
@@ -50,7 +50,7 @@ class IceModule {
 
       if (isolines[type]?.polygons) {
         isolines[type].polygons.forEach((points: Point[]) => {
-          const clipped = clipPoly(points, graphWidth, graphHeight);
+          const clipped = clipPoly(points, options.map.graph.width, options.map.graph.height);
           const ice: Glacier = { i: this.getNextId(), points: clipped, type: "glacier" };
           pack.ice.push(ice);
         });
@@ -119,7 +119,7 @@ class IceModule {
 
   randomizeIcebergShape(id: number) {
     const iceberg = pack.ice.find(ice => ice.i === id);
-    if (!iceberg || iceberg.type !== "iceberg") return;
+    if (iceberg?.type !== "iceberg") return;
 
     const cellId = iceberg.cellId;
     const size = iceberg.size;
@@ -136,7 +136,7 @@ class IceModule {
 
   changeIcebergSize(id: number, newSize: number) {
     const iceberg = pack.ice.find(ice => ice.i === id);
-    if (!iceberg || iceberg.type !== "iceberg") return;
+    if (iceberg?.type !== "iceberg") return;
 
     const cellId = iceberg.cellId;
     const [cx, cy] = grid.points[cellId];

@@ -33,7 +33,7 @@ function addOnClick(event: MouseEvent, baseMarker?: Marker): void {
   const selectedConfig = Markers.getConfig().find(({ type }) => type === selectedType);
   const template = baseMarker || selectedConfig || { icon: "❓", type: "custom" };
   const marker = Markers.add({ ...template, x: rn(point[0], 2), y: rn(point[1], 2), cell } as Marker);
-  selectedConfig?.add(`marker${marker.i}`, cell);
+  selectedConfig?.add(marker, cell);
 
   Layers.draw("markers");
   refreshEditors();

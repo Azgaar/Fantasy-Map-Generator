@@ -10,6 +10,7 @@ export interface AddedLabel {
   x: number;
   y: number;
   label: Label;
+  note?: string;
 }
 
 export class AddedLabelsModule {
@@ -30,7 +31,6 @@ export class AddedLabelsModule {
 
   remove(i: number): void {
     pack.addedLabels = pack.addedLabels.filter(addedLabel => addedLabel.i !== i);
-    notes = notes.filter(note => note.id !== `addedLabel${i}`);
   }
 }
 

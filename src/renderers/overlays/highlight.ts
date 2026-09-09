@@ -1,4 +1,5 @@
 import { easeBounceOut, easeLinear, easeSinIn, interpolateString, select, transition } from "d3";
+import { viewport } from "@/components/viewport";
 import { parseTransform } from "@/utils";
 
 const debugLayer = () => select<SVGGElement, unknown>("#debug");
@@ -12,11 +13,15 @@ function getBBox(element: Element): DOMRect {
 export function highlightElement(target: Element | null, zoom?: number): void {
   const element = target as SVGGraphicsElement | null;
   if (!element) return;
+  const box = element.tagName === "svg" ? getBBox(element) : element.getBBox();
+  highlightArea(box, zoom, element.getAttribute("transform"));
+}
+
+/** Draw a temporary outline around a map-space box: for content the viewport renderer may have culled */
+export function highlightArea(box: DOMRect, zoom?: number, transformAttr: string | null = null): void {
   const layer = debugLayer();
   if (layer.select(".highlighted").size()) return; // allow only 1 highlighted element simultaneously
 
-  const box = element.tagName === "svg" ? getBBox(element) : element.getBBox();
-  const transformAttr = element.getAttribute("transform");
   const enter = transition().duration(1000).ease(easeBounceOut);
 
   layer
@@ -41,7 +46,7 @@ export function highlightElement(target: Element | null, zoom?: number): void {
   const [shiftX, shiftY] = parseTransform(transformAttr || "");
   const x = box.x + box.width / 2 + (Number(shiftX) || 0);
   const y = box.y + box.height / 2 + (Number(shiftY) || 0);
-  zoomTo(x, y, scale > 2 ? scale : zoom, 1600);
+  zoomTo(x, y, viewport.scale > 2 ? viewport.scale : zoom, 1600);
 }
 
 /** Animate the area or place an emblem belongs to */

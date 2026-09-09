@@ -37,8 +37,9 @@
 - **Language**: TypeScript is mandatory for all new files.
 - **Linting and formatting**: Enforced via Biome (`biome.json`).
 - **Style**: Double quotes, no trailing commas, 120 line width, semicolons required.
-- **Typing**: Use explicit TypeScript interfaces for all shared domain objects. `any` should be avoided.
-- **Imports**: `@/*` aliases `src/*` (set in `vite.config.ts` + `tsconfig.json`). Prefer it over deep `../../` relative paths; keep sibling imports relative.
+- **Typing**: Use explicit TypeScript interfaces for all shared domain objects, `any` is prohibited.
+- **Comments**: Reduced. Don't repeat information that is in docs. Prefer one-liners or no comments.
+- **Imports**: Mandatory `@/*` aliases `src/*` over deep `../../` relative paths; keep sibling imports relative.
 
 # Workflow Rules
 
@@ -64,7 +65,6 @@
 - **Cell**: The smallest indivisible unit of the map.
 - **Burg**: A settlement. Grouped into `States`.
 - **Label**: Text attached to a State, Burg, or user-defined path. Labels select typography from a shared Label Group.
-- **Treasury & Taxes**: States hold `state.treasury` accumulated by `States.collectTaxes()` from per-deal `deal.tax` (sales tax) plus `state.pollTax × (rural + urban)`. Rates are seeded from `state.form` and jittered per state. Neutrals collect nothing. Details in `docs/domain/taxes.md`.
 - **Invariants**: Saving a `.map` file MUST preserve the exact world state so it can be reloaded identically.
 
 # Known Sharp Edges
@@ -79,6 +79,7 @@
 
 # Code Style Rules
 
+- Files MUST be readable from top to bottom.
 - Use concise and descriptive variable names, don't use unusual abbreviations.
 - Prefer laconic but clear code.
 - Save space, I like my code to be compact.

@@ -1,11 +1,11 @@
+import { isMobile } from "@/services/platform";
 import { capitalize, findEl } from "@/utils";
 import { dialogState } from "./state";
 
 const EDITOR_PAGE_SIZE = 100;
 const EDITOR_PAGE_SIZE_MOBILE = 20;
 
-// MOBILE is a bare global set by main.js after ES modules evaluate, so it must be read lazily here, never at module scope
-const defaultPageSize = () => (typeof MOBILE !== "undefined" && MOBILE ? EDITOR_PAGE_SIZE_MOBILE : EDITOR_PAGE_SIZE);
+const defaultPageSize = () => (isMobile() ? EDITOR_PAGE_SIZE_MOBILE : EDITOR_PAGE_SIZE);
 
 export type TableView<T> = { rows: T[]; all: T[]; page: number; totalPages: number; total: number };
 
@@ -163,8 +163,7 @@ export function loadHiddenColumns(dialogId: string, columns: EditorColumn[]): Se
   const defaults = columns.filter(column => column.hidden).map(column => column.key);
   const saved = dialogState.get<ColumnVisibilityState | null>(dialogId, "columns", () => null);
   if (saved === null) {
-    const mobile = typeof MOBILE !== "undefined" && MOBILE;
-    if (mobile) defaults.push(...columns.filter(column => column.mobileHidden).map(column => column.key));
+    if (isMobile()) defaults.push(...columns.filter(column => column.mobileHidden).map(column => column.key));
   }
 
   const hidden = new Set(defaults.filter(key => configurable.has(key)));

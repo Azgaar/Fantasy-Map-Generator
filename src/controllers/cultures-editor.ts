@@ -11,13 +11,14 @@ import {
   setModeHiddenColumns,
   type TableView
 } from "@/components/dialog/table";
-import type { FillBoxElement } from "@/components/fill-box";
 import { Layers } from "@/components/layers";
+import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { CULTURE_TYPES, type Culture } from "@/generators/cultures-generator";
 import { Emblems } from "@/generators/emblems-generator";
+import { Notes } from "@/generators/notes";
 import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { highlightElement } from "@/renderers/overlays/highlight";
@@ -80,7 +81,9 @@ const columns: EditorColumn<Culture>[] = [
     label: "Population",
     width: "6em",
     defaultSort: "desc",
-    sortBy: culture => (culture.rural || 0) * populationRate + (culture.urban || 0) * populationRate * urbanization
+    sortBy: culture =>
+      (culture.rural || 0) * options.map.units.population.scale +
+      (culture.urban || 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate
   },
   {
     key: "emblems",
@@ -91,7 +94,10 @@ const columns: EditorColumn<Culture>[] = [
     sortBy: culture => culture.shield || "",
     sortType: "alpha"
   },
-  { key: "actions", width: "3.2em", permanent: true, align: "right" }
+  { key: "note", width: "1.1em" },
+  { key: "locate", width: "1.1em" },
+  { key: "lock", width: "1.1em" },
+  { key: "remove", width: "1.4em", permanent: true }
 ];
 
 const culturesTable = initEditorTable<Culture>({
@@ -215,13 +221,16 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
   // totals span the full filtered set, not just the current page
   for (const c of view.all) {
     totalArea += getArea(c.area ?? 0);
-    totalPopulation += rn((c.rural ?? 0) * populationRate + (c.urban ?? 0) * populationRate * urbanization);
+    totalPopulation += rn(
+      (c.rural ?? 0) * options.map.units.population.scale +
+        (c.urban ?? 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate
+    );
   }
 
   for (const c of view.rows) {
     const area = getArea(c.area ?? 0);
-    const rural = (c.rural ?? 0) * populationRate;
-    const urban = (c.urban ?? 0) * populationRate * urbanization;
+    const rural = (c.rural ?? 0) * options.map.units.population.scale;
+    const urban = (c.urban ?? 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate;
     const population = rn(rural + urban);
     const populationTip = `Total population: ${si(population)}. Rural population: ${si(rural)}. Urban population: ${si(
       urban
@@ -271,7 +280,10 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
             <div data-tip="${populationTip}" class="culturePopulation pointer">${si(population)}</div>
           </div>
           <div data-col="emblems">${getShapeOptions(Emblems.isDiversiform, c.shield)}</div>
-          <div data-col="actions"></div>
+          <div data-col="note"></div>
+          <div data-col="locate"></div>
+          <div data-col="lock"></div>
+          <div data-col="remove"></div>
         </div>`;
       continue;
     }
@@ -327,11 +339,10 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
           <div data-tip="${populationTip}" class="culturePopulation pointer">${si(population)}</div>
         </div>
         <div data-col="emblems">${getShapeOptions(Emblems.isDiversiform, c.shield)}</div>
-        <div data-col="actions">
-          <span data-tip="Locate the culture" class="icon-target"></span>
-          <span data-tip="Lock culture" class="icon-lock${c.lock ? "" : "-open"}"></span>
-          <span data-tip="Remove culture" class="icon-trash-empty"></span>
-        </div>
+        ${Notes.getIcon("this culture")}
+        <span data-col="locate" data-tip="Locate the culture" class="icon-target"></span>
+        <span data-col="lock" data-tip="Lock culture" class="icon-lock${c.lock ? "" : "-open"}"></span>
+        <span data-col="remove" data-tip="Remove culture" class="icon-trash-empty"></span>
       </div>`;
   }
   const body = ensureEl("culturesBody");
@@ -383,6 +394,9 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
   ensureEl("culturesBody")
     .querySelectorAll("div > span.icon-arrows-cw")
     .forEach($el => void $el.addEventListener("click", cultureRegenerateBurgs));
+  ensureEl("culturesBody")
+    .querySelectorAll("div > span.icon-book")
+    .forEach($el => void $el.addEventListener("click", editCultureNote));
   ensureEl("culturesBody")
     .querySelectorAll("div > span.icon-target")
     .forEach($el => void $el.addEventListener("click", cultureHighlightElement));
@@ -574,8 +588,10 @@ function changePopulation(this: HTMLElement): void {
     return;
   }
 
-  const rural = rn((culture.rural ?? 0) * populationRate);
-  const urban = rn((culture.urban ?? 0) * populationRate * urbanization);
+  const rural = rn((culture.rural ?? 0) * options.map.units.population.scale);
+  const urban = rn(
+    (culture.urban ?? 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate
+  );
   const total = rural + urban;
   const format = (n: number) => Number(n).toLocaleString();
   const burgs = pack.burgs.filter(b => !b.removed && b.culture === cultureId);
@@ -639,7 +655,7 @@ function applyPopulationChange(
     });
   }
   if (!Number.isFinite(ruralChange) && +newRural > 0) {
-    const points = newRural / populationRate;
+    const points = newRural / options.map.units.population.scale;
     const cells = (pack.cells.i as unknown as number[]).filter(i => pack.cells.culture[i] === culture);
     const pop = rn(points / cells.length);
     cells.forEach(i => {
@@ -655,7 +671,7 @@ function applyPopulationChange(
     });
   }
   if (!Number.isFinite(urbanChange) && +newUrban > 0) {
-    const points = newUrban / populationRate / urbanization;
+    const points = newUrban / options.map.units.population.scale / options.map.units.population.urbanization.rate;
     const population = rn(points / burgs.length, 4);
     burgs.forEach(b => {
       b.population = population;
@@ -710,6 +726,11 @@ function removeCulture(cultureId: number): void {
       if (!c.origins.length) c.origins = [0];
     });
   refreshCulturesEditor();
+}
+
+function editCultureNote(this: HTMLElement): void {
+  const id = +(this.closest(".states") as HTMLElement).dataset.id!;
+  void Controllers.NotesEditor.open({ type: "culture", id });
 }
 
 function cultureHighlightElement(this: HTMLElement): void {
@@ -826,7 +847,9 @@ async function showHierarchy(): Promise<void> {
   const getDescription = (culture: any) => {
     const { name, type, rural, urban } = culture;
 
-    const population = rural * populationRate + urban * populationRate * urbanization;
+    const population =
+      rural * options.map.units.population.scale +
+      urban * options.map.units.population.scale * options.map.units.population.urbanization.rate;
     const populationText = population > 0 ? `${si(rn(population))} people` : "Extinct";
     return `${name} culture. ${type}. ${populationText}`;
   };
@@ -949,7 +972,10 @@ function downloadCulturesCsv(): void {
   // export the full filtered set (all pages), not just the visible page
   const data = culturesTable.view().all.map(c => {
     const area = getArea(c.area ?? 0);
-    const population = rn((c.rural ?? 0) * populationRate + (c.urban ?? 0) * populationRate * urbanization);
+    const population = rn(
+      (c.rural ?? 0) * options.map.units.population.scale +
+        (c.urban ?? 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate
+    );
     const namesbase = Names.nameBases[c.base].name;
     const originList = (c.origins ?? [])
       .filter((origin): origin is number => Boolean(origin))

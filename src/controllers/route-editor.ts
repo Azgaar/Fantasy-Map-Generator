@@ -3,7 +3,9 @@ import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/di
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
+import { Notes } from "@/generators/notes";
 import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
+import { redrawRoute as redrawRouteShape, setEditedRoute } from "@/renderers/draw-routes";
 import { speak } from "@/utils";
 import { ensureEl, findEl, getPointer, getSegmentId, rn } from "../utils";
 
@@ -20,6 +22,7 @@ function open(id: string): void {
   isCellsLayerForced = !Layers.isOn("cells");
   Layers.show("cells");
 
+  setEditedRoute(Number(id.slice(5))); // keep the route rendered while it is edited
   selectedRoute = select<SVGElement, unknown>(`#${id}`).on("click", addControlPoint);
 
   tip(
@@ -74,7 +77,7 @@ function renderDialog(): void {
       <button id="routeJoin" data-tip="Click to join the route to another route that starts or ends at the same cell" class="icon-link"></button>
       <button id="routeSplit" data-tip="Click on a control point to split the route there" class="icon-unlink"></button>
       <button id="routeElevationProfile" data-tip="Show the elevation profile for the route" class="icon-chart-area"></button>
-      <button id="routeLegend" data-tip="Edit free text notes (legend) for the route" class="icon-edit"></button>
+      ${Notes.getButton("routeLegend", "this route")}
       <button id="routeLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
       <button id="routeRemove" data-tip="Remove route" data-shortcut="Delete" class="icon-trash fastDelete"></button>
     </div>
@@ -126,7 +129,8 @@ function updateRouteData(route: Route): void {
 
 function updateRouteLength(route: Route): void {
   route.length = Routes.getLength(route.i);
-  ensureEl<HTMLInputElement>("routeLength").value = `${rn(route.length * distanceScale)} ${distanceUnitInput.value}`;
+  ensureEl<HTMLInputElement>("routeLength").value =
+    `${rn(route.length * options.map.units.distance.scale)} ${options.map.units.distance.unit}`;
 }
 
 function drawControlPoints(points: number[][]): void {
@@ -187,7 +191,7 @@ function dragControlPoint(event: any): void {
 }
 
 function redrawRoute(route: Route): void {
-  selectedRoute.attr("d", Routes.getPath(route));
+  redrawRouteShape(route);
   updateRouteLength(route);
   if (findEl("elevationProfile")) showRouteElevationProfile();
   Layers.draw("labels");
@@ -262,12 +266,7 @@ function handleControlPointClick(this: any): void {
       if (nextPoint) addConnection(cellId, nextPoint[2], newRoute.i);
     }
 
-    select("#routes")
-      .select(`#${newRoute.group}`)
-      .append("path")
-      .attr("d", Routes.getPath(newRoute))
-      .attr("id", `route${newRoute.i}`);
-
+    redrawRouteShape(newRoute);
     ensureEl("routeSplit").classList.remove("pressed");
   }
 
@@ -305,14 +304,14 @@ function openJoinRoutesDialog(): void {
   });
 
   if (candidateRoutes.length) {
-    const options = candidateRoutes.map((r: Route) => {
+    const routeOptions = candidateRoutes.map((r: Route) => {
       r.name = r.name || Routes.generateName(r) || UNNAMED_ROUTE;
       r.length = r.length || Routes.getLength(r.i);
-      const length = `${rn(r.length * distanceScale)} ${distanceUnitInput.value}`;
+      const length = `${rn(r.length * options.map.units.distance.scale)} ${options.map.units.distance.unit}`;
       return `<option value="${r.i}">${r.name} (${length})</option>`;
     });
     alertMessage.innerHTML = /* html */ `<div>Route to join with:
-        <select>${options.join("")}</select>
+        <select>${routeOptions.join("")}</select>
       </div>`;
 
     $("#alert").dialog({
@@ -349,6 +348,7 @@ function joinRoutes(route: Route, joinedRoute: Route): void {
   }
 
   Routes.remove(joinedRoute);
+  Layers.draw("routes");
   drawControlPoints(route.points);
   redrawRoute(route);
   drawCells(route.points);
@@ -399,9 +399,10 @@ function changeName(this: HTMLInputElement): void {
 }
 
 function changeGroup(this: HTMLInputElement): void {
-  const group = this.value;
-  ensureEl(group).appendChild(selectedRoute.node()!);
-  getRoute().group = group;
+  const route = getRoute();
+  route.group = this.value;
+  redrawRouteShape(route); // the path is re-created under the new group, so re-bind the editor to it
+  selectedRoute = select<SVGElement, unknown>(`#route${route.i}`).on("click", addControlPoint);
 }
 
 function generateName(): void {
@@ -411,7 +412,7 @@ function generateName(): void {
 
 function showRouteElevationProfile(): void {
   const route = getRoute();
-  const length = rn(route.length! * distanceScale);
+  const length = rn(route.length! * options.map.units.distance.scale);
   void Controllers.ElevationProfile.open(
     route.points.map(p => p[2]),
     length,
@@ -420,9 +421,7 @@ function showRouteElevationProfile(): void {
 }
 
 function editRouteLegend(): void {
-  const id = selectedRoute.attr("id");
-  const route = getRoute();
-  void Controllers.NotesEditor.open(id, route.name!);
+  void Controllers.NotesEditor.open({ type: "route", id: getRoute().i });
 }
 
 function editRouteGroupStyle(): void {
@@ -454,8 +453,8 @@ function removeRoute(): void {
     confirm: "Remove",
     onConfirm: () => {
       Routes.remove(getRoute());
-      Layers.draw("labels");
       $("#routeEditor").dialog("close");
+      Layers.draw("routes", "labels");
     }
   });
 }
@@ -465,6 +464,7 @@ function closeRouteEditor(): void {
   select("#controlCells").remove();
 
   selectedRoute.on("click", null);
+  setEditedRoute(null);
   clearMainTip();
 
   if (isCellsLayerForced) Layers.hide("cells");

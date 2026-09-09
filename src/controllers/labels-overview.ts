@@ -48,7 +48,9 @@ const columns: EditorColumn<LabelData>[] = [
     sortBy: label => label.group,
     sortType: "alpha"
   },
-  { key: "actions", width: "3.4em", permanent: true, align: "right" }
+  { key: "visibility", width: "1.1em" },
+  { key: "reset", width: "1.1em" },
+  { key: "locate", width: "1.4em", permanent: true }
 ];
 
 const listedLabels = new Map<string, LabelData>(); // currently listed labels, keyed by line id
@@ -195,7 +197,7 @@ function populateTypeFilter(): void {
 }
 
 function populateGroupFilter(): void {
-  const groups = options.labels.groups.map(({ name }) => name);
+  const groups = options.map.labels.groups.map(({ name }) => name);
 
   const select = ensureEl<HTMLSelectElement>("labelsFilterGroup");
   select.options.length = 0;
@@ -254,16 +256,14 @@ function createLine(label: LabelData): string {
       <select data-col="group" class="labelsGroup" data-tip="Label group, select to reassign the label">
         ${createGroupOptions(group)}
       </select>
-      <div data-col="actions">
-        <span data-tip="${hidden ? "Show" : "Hide"} the label" aria-label="${hidden ? "Show" : "Hide"} the label" class="icon-eye${hidden ? "-off" : ""} labelsVisibility"></span>
-        <span data-tip="Restore the default label" aria-label="Restore the default label" class="icon-arrows-cw labelsReset ${hasOverride ? "" : " inactive"}"></span>
-        <span data-tip="Locate the label" aria-label="Locate the label" class="icon-target"></span>
-      </div>
+      <span data-col="visibility" data-tip="${hidden ? "Show" : "Hide"} the label" aria-label="${hidden ? "Show" : "Hide"} the label" class="icon-eye${hidden ? "-off" : ""} labelsVisibility"></span>
+      <span data-col="reset" data-tip="Restore the default label" aria-label="Restore the default label" class="icon-arrows-cw labelsReset ${hasOverride ? "" : " inactive"}"></span>
+      <span data-col="locate" data-tip="Locate the label" aria-label="Locate the label" class="icon-target"></span>
     </div>`;
 }
 
 function createGroupOptions(selected: string): string {
-  const groups = options.labels.groups.map(({ name }) => name);
+  const groups = options.map.labels.groups.map(({ name }) => name);
   const names = groups.includes(selected) ? groups : [selected, ...groups];
 
   return names
@@ -333,7 +333,7 @@ function resetLabel(element: HTMLElement): void {
 }
 
 function assignGroup(labels: LabelData[], groupName: string): void {
-  const group = options.labels.groups.find(({ name }) => name === groupName);
+  const group = options.map.labels.groups.find(({ name }) => name === groupName);
   if (!group) return;
 
   const apply = () => {

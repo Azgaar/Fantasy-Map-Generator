@@ -14,7 +14,8 @@ import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
-import { highlightElement } from "@/renderers/overlays/highlight";
+import { getRouteBox } from "@/renderers/draw-routes";
+import { highlightArea } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName } from "@/utils";
 import { ensureEl, rn } from "../utils";
 
@@ -46,7 +47,9 @@ const columns: EditorColumn<Route>[] = [
     sortBy: route => route.length || 0,
     defaultSort: "desc"
   },
-  { key: "actions", width: "3.2em", permanent: true, align: "right" }
+  { key: "edit", width: "1.1em" },
+  { key: "lock", width: "1.1em" },
+  { key: "remove", width: "1.4em", permanent: true }
 ];
 
 function getFilteredRoutes(): Route[] {
@@ -149,7 +152,7 @@ function renderRoutesPage(view: TableView<Route>): void {
   let lines = "";
 
   for (const route of view.rows) {
-    const length = `${rn((route.length || 0) * distanceScale)} ${distanceUnitInput.value}`;
+    const length = `${rn((route.length || 0) * options.map.units.distance.scale)} ${options.map.units.distance.unit}`;
 
     lines += /* html */ `<div
         class="states"
@@ -162,20 +165,19 @@ function renderRoutesPage(view: TableView<Route>): void {
         <div data-tip="Route name" data-col="name">${route.name}</div>
         <div data-tip="Route group" data-col="group">${route.group}</div>
         <div data-tip="Route length" data-col="length">${length}</div>
-        <div data-col="actions">
-          <span data-tip="Edit route" class="icon-pencil"></span>
-          <span class="locks pointer ${
-            route.lock ? "icon-lock" : "icon-lock-open inactive"
-          }" onmouseover="showElementLockTip(event)"></span>
-          <span data-tip="Remove route" class="icon-trash-empty"></span>
-        </div>
+        <span data-col="edit" data-tip="Edit route" class="icon-pencil"></span>
+        <span data-col="lock" class="locks pointer ${
+          route.lock ? "icon-lock" : "icon-lock-open inactive"
+        }" onmouseover="showElementLockTip(event)"></span>
+        <span data-col="remove" data-tip="Remove route" class="icon-trash-empty"></span>
       </div>`;
   }
   body.insertAdjacentHTML("beforeend", lines);
 
   ensureEl("routesFooterNumber").innerHTML = `${view.all.length} of ${pack.routes.length}`;
   const averageLength = rn(mean(view.all.map(r => r.length)) || 0) || 0;
-  ensureEl("routesFooterLength").innerHTML = `${averageLength * distanceScale} ${distanceUnitInput.value}`;
+  ensureEl("routesFooterLength").innerHTML =
+    `${averageLength * options.map.units.distance.scale} ${options.map.units.distance.unit}`;
 
   // add listeners
   body.querySelectorAll("div.states").forEach(el => void el.addEventListener("mouseenter", routeHighlightOn));
@@ -211,8 +213,8 @@ function routeHighlightOff(e: Event): void {
 
 function zoomToRoute(this: HTMLElement): void {
   const routeId = +(this.closest(".states") as HTMLElement).dataset.id!;
-  const route = select("#routes").select(`#route${routeId}`).node() as Element;
-  highlightElement(route, 3);
+  const box = getRouteBox(routeId);
+  if (box) highlightArea(box, 3);
 }
 
 function downloadRoutesData(): void {
@@ -221,7 +223,7 @@ function downloadRoutesData(): void {
   // export the full sorted+filtered set (all pages), not the DOM (which only holds the current page)
   const exported = routesTable.view().all;
   exported.forEach((route: Route) => {
-    const length = `${rn((route.length || 0) * distanceScale)} ${distanceUnitInput.value}`;
+    const length = `${rn((route.length || 0) * options.map.units.distance.scale)} ${options.map.units.distance.unit}`;
     data += `${[route.i, route.name, route.group, length].join(",")}\n`;
   });
 
@@ -271,7 +273,7 @@ function triggerRouteRemove(this: HTMLElement): void {
     onConfirm: () => {
       const route = pack.routes.find((r: Route) => r.i === routeId) as Route;
       Routes.remove(route);
-      Layers.draw("labels");
+      Layers.draw("routes", "labels");
       routesTable.refresh();
     }
   });
@@ -313,7 +315,7 @@ function triggerAllRoutesRemove(): void {
           Routes.remove(route);
         }
         pack.cells.routes = Routes.buildLinks(pack.routes);
-        Layers.draw("labels");
+        Layers.draw("routes", "labels");
         routesTable.refresh();
         $(this).dialog("close");
       },

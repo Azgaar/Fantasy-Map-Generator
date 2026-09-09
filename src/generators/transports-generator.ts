@@ -17,8 +17,6 @@ export interface Transport {
   icon?: string;
 }
 
-const STORAGE_KEY = "options-transports";
-
 export const MAX_HOURS_PER_DAY = 24;
 
 /** Fallback travel hours per day, by domain: used for transports saved before the setting existed */
@@ -54,8 +52,7 @@ const DEFAULT_TRANSPORTS: readonly Transport[] = [
 
 class TransportsModule {
   get all(): Transport[] {
-    options.transports ??= this.getStored();
-    return options.transports;
+    return options.map.transports;
   }
 
   getDefaults(): Transport[] {
@@ -99,27 +96,8 @@ class TransportsModule {
 
   /** Replace the whole set, e.g. on removal or defaults restore */
   set(transports: Transport[]): void {
-    options.transports = transports;
-    this.save();
-  }
-
-  /** Keep the current set as the starting point for the next map */
-  save(): void {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(this.all));
-  }
-
-  /** The set the user configured last, falling back to the defaults if there is none or it is unreadable */
-  private getStored(): Transport[] {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (!stored) return this.getDefaults();
-
-      const parsed = JSON.parse(stored) as Transport[];
-      return parsed.length ? parsed : this.getDefaults();
-    } catch (error) {
-      ERROR && console.error("Invalid stored transports", error);
-      return this.getDefaults();
-    }
+    options.map.transports = transports;
+    Options.save();
   }
 }
 
@@ -127,4 +105,6 @@ declare global {
   var Transports: TransportsModule;
 }
 
-window.Transports = new TransportsModule();
+// biome-ignore lint/suspicious/noRedeclare: legacy seam
+export const Transports = new TransportsModule();
+window.Transports = Transports;

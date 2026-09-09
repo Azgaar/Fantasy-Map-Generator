@@ -6,8 +6,7 @@ import { drawTexture } from "./draw-texture";
 
 beforeEach(() => {
   document.body.innerHTML = `<svg id="map"><g id="texture"></g></svg>`;
-  globalThis.graphWidth = 800;
-  globalThis.graphHeight = 600;
+  options.map.graph = { width: 800, height: 600, points: 10000 };
 });
 
 const layer = { getEl: () => document.getElementById("texture") } as never;

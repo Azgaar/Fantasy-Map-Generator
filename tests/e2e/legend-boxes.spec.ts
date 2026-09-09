@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { waitForMap } from "./wait-for-map";
 
 // The legend can hold one box per source at a time: turning on a second box must not drop the first,
 // and each box is toggled, positioned and hidden on its own.
@@ -13,7 +14,7 @@ test.describe("legend boxes", () => {
     });
 
     await page.goto("/?seed=test-seed&width=1280&height=720");
-    await page.waitForFunction(() => (window as any).mapId !== undefined, { timeout: 60000 });
+    await waitForMap(page);
     await page.waitForTimeout(500);
   });
 
