@@ -34,6 +34,19 @@ test("reports an unknown value instead of guessing", () => {
   assert.equal(got.errors.length, 2);
 });
 
+test("reads nothing from an empty block followed by another section", () => {
+  const body = "### Triage\n\n### Additional context\nPriority: P0 – Urgent\nSize: XS\n";
+  const got = parseTriage(body);
+  assert.equal(got.priority, null);
+  assert.equal(got.size, null);
+  assert.equal(got.errors.length, 2);
+});
+
+test("parses a block with CRLF line endings", () => {
+  const body = "### Describe the bug\r\n\r\nit broke\r\n\r\n### Triage\r\nPriority: P1 – High\r\nSize: L\r\n";
+  assert.deepEqual(parseTriage(body), { priority: "P1 – High", size: "L", errors: [] });
+});
+
 test("ignores other blocks around it", () => {
   const body = "### Theme\n\nMilitary\n\n### Triage\nPriority: P0 – Urgent\nSize: XXL\n\n### Notes\nblah";
   const got = parseTriage(body);
@@ -48,7 +61,60 @@ const item = over => ({
   title: "",
   body: "",
   fields: { theme: null, priority: null, size: null },
+  authorAssociation: "COLLABORATOR",
   ...over
+});
+
+const TRIAGE = "### Triage\nPriority: P2 – Medium\nSize: M\n";
+
+test("ignores a triage block from an author who is not a collaborator", () => {
+  for (const authorAssociation of ["NONE", "CONTRIBUTOR", "FIRST_TIME_CONTRIBUTOR", undefined]) {
+    const { writes, drift } = planFieldWrites(item({ body: TRIAGE, authorAssociation }));
+    assert.deepEqual(writes, [], `wrote for ${authorAssociation}`);
+    assert.equal(drift.length, 1);
+    assert.match(drift[0], /Triage block ignored/);
+  }
+});
+
+test("honours a triage block from an owner, member or collaborator", () => {
+  for (const authorAssociation of ["OWNER", "MEMBER", "COLLABORATOR"]) {
+    const { writes, drift } = planFieldWrites(item({ body: TRIAGE, authorAssociation }));
+    assert.deepEqual(
+      writes.map(w => w.field),
+      ["priority", "size"],
+      `did not write for ${authorAssociation}`
+    );
+    assert.deepEqual(drift, []);
+  }
+});
+
+test("stays silent for an untrusted author with no triage block", () => {
+  assert.deepEqual(planFieldWrites(item({ authorAssociation: "NONE" })), { writes: [], drift: [] });
+});
+
+test("honours a triage block from an allowlisted login regardless of association", () => {
+  const trusted = new Set(["fmg-bot[bot]"]);
+  const bot = item({ body: TRIAGE, authorAssociation: "NONE", author: "fmg-bot[bot]" });
+  assert.deepEqual(
+    planFieldWrites(bot, trusted).writes.map(w => w.field),
+    ["priority", "size"]
+  );
+  const stranger = item({ body: TRIAGE, authorAssociation: "NONE", author: "someone-else" });
+  assert.deepEqual(planFieldWrites(stranger, trusted).writes, []);
+});
+
+test("ignores attribution lines that follow the triage block without a heading", () => {
+  const body =
+    "### Triage\nPriority: P2 – Medium\nSize: M\n\n---\n\nReported via Discord by `@someone` — https://discord.com/channels/1/2/3\n";
+  const { writes, drift } = planFieldWrites(item({ body }));
+  assert.deepEqual(
+    writes.map(w => [w.field, w.optionName]),
+    [
+      ["priority", "P2 – Medium"],
+      ["size", "M"]
+    ]
+  );
+  assert.deepEqual(drift, []);
 });
 
 test("fills an empty Theme from a single theme label", () => {
@@ -157,9 +223,22 @@ const node = {
     title: "Editor dialogs snap back",
     body: "### Theme\n\nUI / Editors",
     labels: { nodes: [{ name: "bug" }, { name: "theme: ui-editors" }] },
-    repository: { nameWithOwner: "Azgaar/Fantasy-Map-Generator" }
+    repository: { nameWithOwner: "Azgaar/Fantasy-Map-Generator" },
+    authorAssociation: "NONE",
+    author: { login: "reporter" }
   }
 };
+
+test("carries the author association and login through, and null when absent", () => {
+  const [got] = itemsFromGraphql([node]);
+  assert.equal(got.authorAssociation, "NONE");
+  assert.equal(got.author, "reporter");
+  const [bare] = itemsFromGraphql([
+    { id: "PVTI_z", fieldValues: { nodes: [] }, content: { __typename: "Issue", number: 7, labels: { nodes: [] } } }
+  ]);
+  assert.equal(bare.authorAssociation, null);
+  assert.equal(bare.author, null);
+});
 
 test("maps a graphql node onto the planner's item shape", () => {
   const [got] = itemsFromGraphql([node]);

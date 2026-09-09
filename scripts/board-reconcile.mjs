@@ -4,6 +4,12 @@ import { itemsFromGraphql, planFieldWrites, planLabelWrites } from "./board-plan
 
 const DRY_RUN = Boolean(process.env.DRY_RUN);
 const REPO = process.env.GITHUB_REPOSITORY || "Azgaar/Fantasy-Map-Generator";
+const TRUSTED_LOGINS = new Set(
+  (process.env.TRUSTED_TRIAGE_LOGINS || "")
+    .split(",")
+    .map(s => s.trim())
+    .filter(Boolean)
+);
 const PROJECT_NUMBER = 3;
 const OWNER = REPO.split("/")[0];
 
@@ -47,6 +53,8 @@ query($owner: String!, $number: Int!, $cursor: String) {
               body
               labels(first: 100) { nodes { name } }
               repository { nameWithOwner }
+              authorAssociation
+              author { login }
             }
             ... on PullRequest {
               number
@@ -54,6 +62,8 @@ query($owner: String!, $number: Int!, $cursor: String) {
               body
               labels(first: 100) { nodes { name } }
               repository { nameWithOwner }
+              authorAssociation
+              author { login }
             }
           }
         }
@@ -173,7 +183,7 @@ async function main() {
   const fieldWrites = [];
   const labelWrites = [];
   for (const item of items) {
-    const planned = planFieldWrites(item);
+    const planned = planFieldWrites(item, TRUSTED_LOGINS);
     fieldWrites.push(...planned.writes.map(write => ({ ...write, itemId: item.id })));
     drift.push(...planned.drift);
     const plannedLabels = planLabelWrites(item);

@@ -28,7 +28,7 @@ function resolveSize(raw) {
 
 export function parseTriage(body) {
   const errors = [];
-  const block = (body || "").match(/###\s*Triage\s*\n([\s\S]*?)(?=\n###\s|\s*$)/i);
+  const block = (body || "").match(/###\s*Triage[ \t\r]*\n([\s\S]*?)(?=\n###\s|\s*$)/i);
   if (!block) return { priority: null, size: null, errors };
 
   const read = key => {
@@ -55,7 +55,15 @@ const FIELDS = {
   size: { label: "Size", options: SIZE_OPTIONS }
 };
 
-export function planFieldWrites(item) {
+// Anyone can edit the body of an issue they filed, so a Triage block is only a moderator's decision
+// when the author is one. Collaborators qualify by association; the intake bot, which writes under
+// its own login, qualifies by allowlist.
+const TRUSTED_ASSOCIATIONS = new Set(["OWNER", "MEMBER", "COLLABORATOR"]);
+
+const isTrustedAuthor = (item, trustedLogins) =>
+  TRUSTED_ASSOCIATIONS.has(item.authorAssociation) || trustedLogins.has(item.author);
+
+export function planFieldWrites(item, trustedLogins = new Set()) {
   const writes = [];
   const drift = [];
 
@@ -86,10 +94,16 @@ export function planFieldWrites(item) {
     drift.push(`#${item.number}: unmapped theme label "${unmappedThemeLabels[0]}"`);
   else if (allThemeLabels.length === 1) consider("theme", THEME_LABEL_TO_OPTION[allThemeLabels[0]]);
 
-  const triage = parseTriage(item.body);
-  for (const error of triage.errors) drift.push(`#${item.number}: ${error}`);
-  consider("priority", triage.priority);
-  consider("size", triage.size);
+  if (isTrustedAuthor(item, trustedLogins)) {
+    const triage = parseTriage(item.body);
+    for (const error of triage.errors) drift.push(`#${item.number}: ${error}`);
+    consider("priority", triage.priority);
+    consider("size", triage.size);
+  } else if (/###\s*Triage/i.test(item.body)) {
+    drift.push(
+      `#${item.number}: Triage block ignored, author ${item.author ?? "unknown"} is ${item.authorAssociation ?? "unknown"}, not a collaborator`
+    );
+  }
 
   return { writes, drift };
 }
@@ -114,6 +128,8 @@ export function itemsFromGraphql(nodes) {
       body: content.body || "",
       labels: (content.labels?.nodes || []).map(l => l.name),
       repository: content.repository?.nameWithOwner ?? null,
+      authorAssociation: content.authorAssociation ?? null,
+      author: content.author?.login ?? null,
       fields
     });
   }
