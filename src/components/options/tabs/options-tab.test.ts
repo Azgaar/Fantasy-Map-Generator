@@ -8,11 +8,16 @@ import { toggleAssistant } from "@/services/assistant";
 
 vi.mock("@/components/layers", () => ({ Layers: { draw: vi.fn() } }));
 vi.mock("@/components/zoom", () => ({
+  constrainZoom: vi.fn(),
   setMapZoom: vi.fn(),
   setTranslateExtent: vi.fn(),
   setZoomExtent: vi.fn()
 }));
-vi.mock("@/components/canvas", () => ({ fitMapToScreen: vi.fn(), setViewport: vi.fn() }));
+vi.mock("@/components/canvas", () => ({
+  applyZoomExtent: vi.fn(),
+  fitMapToScreen: vi.fn(),
+  setViewport: vi.fn()
+}));
 vi.mock("@/components/options/io-panes", () => ({
   showExportPane: vi.fn(),
   showLoadPane: vi.fn(),

@@ -1,5 +1,5 @@
 import { hsl, select } from "d3";
-import { fitMapToScreen, setViewport } from "@/components/canvas";
+import { applyZoomExtent, fitMapToScreen, setViewport } from "@/components/canvas";
 import { Layers } from "@/components/layers";
 import { DEFAULT_THEME_COLOR } from "@/components/options-model";
 import type { OptionsData } from "@/components/options-schema";
@@ -7,7 +7,7 @@ import { Pins } from "@/components/pins";
 import { generateMapWithSeed, showSeedHistoryDialog } from "@/components/seed";
 import { tip } from "@/components/tooltips";
 import { viewport } from "@/components/viewport";
-import { setMapZoom, setTranslateExtent, setZoomExtent } from "@/components/zoom";
+import { constrainZoom, setMapZoom, setTranslateExtent, setZoomExtent } from "@/components/zoom";
 import { Controllers } from "@/controllers";
 import { getPointsNumber } from "@/data/graph-density";
 import { heightmapTemplates } from "@/data/heightmap-templates";
@@ -554,7 +554,7 @@ const TEMPLATE = /* html */ `
     </tr>
     <tr data-tip="Set minimum and maximum possible zoom level">
       <td>
-        <i data-tip="Restore default zoom extent: [1, 20]" id="zoomExtentDefault" class="icon-ccw"></i>
+        <i data-tip="Restore the default zoom extent" id="zoomExtentDefault" class="icon-ccw"></i>
       </td>
       <td>Zoom extent</td>
       <td>
@@ -957,15 +957,15 @@ function changeZoomExtent(value: string): void {
 }
 
 /**
- * The window onto the map, not the map. It is bounded by the extent the graph was built on: asking
- * for more shows nothing but empty canvas. See docs/architecture/configuration.md
+ * The window onto the map, not the map. It is free of the extent the graph was built on: a viewport
+ * larger than the extent scales the map up to cover it. See docs/architecture/configuration.md
  */
 function changeViewportSize(): void {
   const width = +optionInput("viewportWidth").value;
   const height = +optionInput("viewportHeight").value;
   if (!(width > 0) || !(height > 0)) return;
 
-  setViewport(Math.min(width, options.map.graph.width), Math.min(height, options.map.graph.height));
+  setViewport(width, height);
   Options.set(o => (o.app.viewport = { width: viewport.width, height: viewport.height }));
 }
 
@@ -975,10 +975,12 @@ function fitViewportToWindow(): void {
   fitMapToScreen();
 }
 
+/** The default is the fitted view: the ceiling is the app's, the floor is the map's and the window's */
 function restoreDefaultZoomExtent(): void {
-  const { min, max } = Options.getDefaultOptions().app.zoomExtent;
-  setZoomExtentPreference(min, max);
-  setMapZoom(min);
+  Options.set(o => (o.app.zoomExtent.max = Options.getDefaultOptions().app.zoomExtent.max));
+  optionInput("zoomExtentMax").value = String(options.app.zoomExtent.max);
+  applyZoomExtent();
+  setMapZoom(options.app.zoomExtent.min);
 }
 
 /** The single writer of the zoom extent: one pair, normalised together and shown together */
@@ -986,7 +988,8 @@ function setZoomExtentPreference(min: number, max: number): void {
   Options.set(o => (o.app.zoomExtent = { min, max }));
   optionInput("zoomExtentMin").value = String(min);
   optionInput("zoomExtentMax").value = String(max);
-  setZoomExtent(min, max);
+  setZoomExtent(min, max); // a hand-set floor stands until the next fit re-derives it
+  constrainZoom();
 }
 
 /** Let the user pan beyond the canvas edges, so a map can be inspected off-centre */
@@ -1082,7 +1085,7 @@ export function restoreUi(): void {
 
   // `syncInputs` has already put every preference in its control; these are the ones that also do
   // something the moment they are read back. See docs/architecture/configuration.md
-  const { ui, rendering, emblems, zoomExtent } = options.app;
+  const { ui, rendering, emblems } = options.app;
 
   Emblems.setShape(emblems.shape);
   changeTooltipSize(ui.tooltipSize);
@@ -1093,7 +1096,7 @@ export function restoreUi(): void {
 
   changeDialogsTheme(ui.themeColor, ui.transparency);
   setRendering(rendering);
-  setZoomExtent(zoomExtent.min, zoomExtent.max);
+  applyZoomExtent();
 }
 
 // Legacy seam: the classic style.js reads the culture set cap, the submap and transform tools

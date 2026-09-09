@@ -1,4 +1,4 @@
-import { type D3ZoomEvent, select, zoom, zoomIdentity } from "d3";
+import { type D3ZoomEvent, select, zoom, zoomIdentity, zoomTransform } from "d3";
 import { Layers } from "@/components/layers";
 import { setViewportTransform, viewport } from "@/components/viewport";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
@@ -116,9 +116,14 @@ export function zoomTo(x: number, y: number, z = 8, duration = 2000): void {
   select<SVGSVGElement, unknown>("#map").transition().duration(duration).call(zoomBehavior.transform, transform);
 }
 
-/** Reset zoom to initial */
+/** Reset zoom to the initial view: the map origin at the smallest scale the extents allow */
 export function resetZoom(duration = 1000): void {
-  select<SVGSVGElement, unknown>("#map").transition().duration(duration).call(zoomBehavior.transform, zoomIdentity);
+  const [min] = zoomBehavior.scaleExtent();
+  const transform = zoomIdentity.scale(min);
+  const selection = select<SVGSVGElement, unknown>("#map");
+
+  if (duration) selection.transition().duration(duration).call(zoomBehavior.transform, transform);
+  else zoomBehavior.transform(selection, transform); // no transition: the caller redraws right after
 }
 
 export function panMap(x: number, y: number): void {
@@ -135,6 +140,16 @@ export function changeMapZoom(factor: number): void {
 
 export function setZoomExtent(min: number, max: number): void {
   zoomBehavior.scaleExtent([min, max]);
+}
+
+/**
+ * Pull the current view back inside the extents. d3 applies them to gestures only, so a scale or a
+ * translate that a new viewport or a new map has put out of bounds stays there until asked
+ */
+export function constrainZoom(): void {
+  const node = findEl<SVGSVGElement>("map");
+  if (!node || !("__zoom" in node)) return; // no zoom behavior on the element yet
+  zoomBehavior.scaleTo(select<SVGSVGElement, unknown>(node), zoomTransform(node).k);
 }
 
 export function setTranslateExtent(x0: number, y0: number, x1: number, y1: number): void {
