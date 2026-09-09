@@ -1,0 +1,41 @@
+name: Dev board reconcile
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Plan only, write nothing"
+        type: boolean
+        default: true
+  issues:
+    types: [opened, edited, labeled, unlabeled, reopened]
+
+permissions:
+  issues: write
+  pull-requests: write
+  contents: read
+
+concurrency:
+  group: board-reconcile
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    # The board and its field ids belong to this repository's owner. A fork carrying this file
+    # would read a different (or no) board and has no PROJECT_TOKEN, so it must not run here.
+    if: github.repository == 'Azgaar/Fantasy-Map-Generator'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+      - name: Reconcile
+        env:
+          PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TRUSTED_TRIAGE_LOGINS: ${{ vars.TRUSTED_TRIAGE_LOGINS }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
+        run: node scripts/board-reconcile.mjs

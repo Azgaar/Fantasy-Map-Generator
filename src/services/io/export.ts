@@ -427,7 +427,7 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
 
   // add grid pattern
   if (cloneEl.getElementById("gridOverlay")?.hasChildNodes()) {
-    const type = cloneEl.getElementById("gridOverlay")!.getAttribute("type");
+    const type = styles.grid.options.type || "pointyHex";
     const pattern = svgDefs.getElementById(`pattern_${type}`);
     if (pattern) cloneDefs.appendChild(pattern.cloneNode(true));
   }

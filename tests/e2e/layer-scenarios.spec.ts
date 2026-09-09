@@ -283,6 +283,24 @@ test.describe("layer scenarios", () => {
     expect(svg).toMatch(/<g[^>]*id="biomes"/);
   });
 
+  test("a visible grid keeps its pattern in the exported svg", async ({ page }) => {
+    await page.goto("/?seed=export-grid&width=1280&height=720");
+    await waitForMap(page);
+
+    await page.evaluate(() => Layers.show("grid"));
+    await page.waitForTimeout(500);
+
+    const svg = await page.evaluate(async () => {
+      const url = await (window as any).Services.ExportMap.getMapURL("svg", { fullMap: true });
+      return await (await fetch(url)).text();
+    });
+
+    // the grid rect fills with a pattern from #defElements, which the export has to copy into its own defs
+    const type = await page.evaluate(() => (window as any).styles.grid.options.type);
+    expect(svg).toMatch(new RegExp(`<g[^>]*id="gridOverlay"[^>]*>\\s*<rect[^>]*fill="url\\(#pattern_${type}\\)"`));
+    expect(svg).toMatch(new RegExp(`<pattern[^>]*id="pattern_${type}"`));
+  });
+
   test("a preset URL param applies that preset on load", async ({ page }) => {
     const errors = watchErrors(page);
     await page.goto("/?seed=url-preset&width=1280&height=720&preset=religions");
