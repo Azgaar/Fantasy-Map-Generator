@@ -63,7 +63,7 @@ the pipeline, since it depends only on name bases and the seeded random source.
 | ------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | Grid + heightmap         | `grid`, `heightmap`                                           | `grid`, `grid.cells.h`; resets `pack`                                           |
 | Hydrology base           | `markupGrid`, `depressionLakes`, `nearSeaLakes`               | `grid.cells.f/t/b`, lake and ocean topology                                     |
-| World position & climate | `mapSize`, `temperatures`, `precipitation`  | `options.geography.*` (incl. `coordinates`), `grid.cells.temp/prec`             |
+| World position & climate | `mapSize`, `temperatures`, `precipitation`  | `options.map.geography.*` (incl. `coordinates`), `grid.cells.temp/prec`             |
 | Repack                   | `regraph`, `markupPack`, `defaultRuler`                       | `pack.cells.*` (**invalidates every earlier `pack` cell index**), default ruler |
 | Rivers & biomes          | `rivers`, `biomes`, `featureGroups`                           | `pack.rivers`, `cells.r/fl/conf`, `pack.biomes`, `cells.biome`                  |
 | Climate art              | `ice`                                                         | `pack.ice`                                                                      |
@@ -92,7 +92,7 @@ Two constraints are easy to break when replicating a slice of this:
 flowchart TD
     subgraph pre["generate() — inline setup"]
         seed["setSeed<br/><i>writes: seed, Math.random</i>"]
-        size["applyGraphSize<br/><i>sizes the full-map covers to options.graph</i>"]
+        size["applyGraphSize<br/><i>sizes the full-map covers to options.generation.graph</i>"]
         rnd["Options.randomize<br/><i>writes: options</i>"]
     end
     seed --> size --> rnd --> gg
@@ -129,7 +129,7 @@ flowchart TD
     %% cross-step (non-adjacent) global dependencies
     hm -. "grid.cells.h" .-> temp
     hm -. "grid.cells.h" .-> repack
-    coord -. "options.geography.coordinates" .-> prec
+    coord -. "options.map.geography.coordinates" .-> prec
     temp -. "grid.cells.temp" .-> biomes
     temp -. "grid.cells.temp" .-> ice
     prec -. "grid.cells.prec" .-> biomes
@@ -246,7 +246,7 @@ global the same way `Features`, `Rivers` and the other generators are:
 ### `Precipitation` — [`precipitation-generator.ts`](../../src/generators/precipitation-generator.ts)
 
 `generate()` passes the winds over the cells, filling `grid.cells.prec`. `getWinds()` returns the
-bands they enter through; it is free of randomness — derived from `options.winds` and the map
+bands they enter through; it is free of randomness — derived from `options.map.climate.winds` and the map
 position — so [`drawPrecipitation`](../../src/renderers/draw-precipitation.ts) calls it to draw the
 wind arrows whenever the layer is rendered. The generators never touch the DOM.
 

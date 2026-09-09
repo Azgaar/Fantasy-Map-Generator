@@ -228,7 +228,7 @@ declare global {
 window.ModuleEditor = { open };
 ```
 
-All controllers must be [`lazy-loaded`](../../src/lazy-loaders.ts), unless they are needed immediately on app start.
+All controllers must be [`lazy-loaded`](../../src/controllers/index.ts), unless they are needed immediately on app start.
 
 ### Own your HTML — create it on open, remove it on close
 
@@ -238,7 +238,7 @@ left them in the document forever, relying on `display:none` and re-use. When
 porting, **do not carry that pattern over.** A migrated module must:
 
 - **Create its own markup.** Don't rely on a node hand-authored in
-  [`index.html`](../../index.html) being present. If the module needs a dialog,
+  [`index.html`](../../src/index.html) being present. If the module needs a dialog,
   panel, overlay, or SVG layer, build it (via `innerHTML`, `createElement`, or a
   `Dialog` helper) when `open()` runs — and guard against duplicating it if
   `open()` is called twice.

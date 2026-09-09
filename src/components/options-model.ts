@@ -195,11 +195,11 @@ class OptionsModel {
     cultures.set = Pins.rolls("culturesSet") ? this.randomCultureSet() : Pins.valueOr("culturesSet", cultures.set);
     this.capCultures();
 
-    // a new map keeps nothing of the one it replaces but its seed, which setSeed resolved and
-    // reseeded the PRNG with before this ran, and the definition sets, which are the user's own
+    // keep the resolved seed, the active style preset and the user's definition sets
     const previous = options.map;
     const map = this.getDefaultOptions().map;
     map.seed = previous.seed;
+    map.style = previous.style;
     map.burgs.groups = previous.burgs.groups;
     map.labels.groups = previous.labels.groups;
     map.military.units = previous.military.units;

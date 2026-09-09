@@ -71,6 +71,7 @@ export class ViewportRenderer {
       };
       overscanPixels: number;
       guardPixels: number;
+      zoomInRatio: number;
     }
   ) {}
 
@@ -130,7 +131,7 @@ export class ViewportRenderer {
     const bounds = this.getBounds(0);
     const guard = this.options.guardPixels / bounds.scale;
     return (
-      bounds.scale - this.materializedBounds.scale > 1 ||
+      bounds.scale / this.materializedBounds.scale > this.options.zoomInRatio ||
       bounds.x0 < this.materializedBounds.x0 + guard ||
       bounds.y0 < this.materializedBounds.y0 + guard ||
       bounds.x1 > this.materializedBounds.x1 - guard ||
@@ -168,9 +169,11 @@ export class ViewportRenderer {
 
 const OVERSCAN_PIXELS = 80;
 const GUARD_PIXELS = OVERSCAN_PIXELS / 2;
+const ZOOM_IN_RATIO = 1.2;
 
 export const ViewportLayers = new ViewportRenderer({
   getViewport: () => viewport,
   overscanPixels: OVERSCAN_PIXELS,
-  guardPixels: GUARD_PIXELS
+  guardPixels: GUARD_PIXELS,
+  zoomInRatio: ZOOM_IN_RATIO
 });

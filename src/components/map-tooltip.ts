@@ -122,8 +122,8 @@ function getElementTip({ group, subgroup, target, event, path, cellId }: TipCont
     return `${burg.name} ${burg.group}. Population: ${population}. Click to edit`;
   }
 
-  const text = target.textContent.replaceAll("|", "");
-  if (target.closest("#labels [data-label-type]")) return `${text}. Click to edit the label`;
+  const labelElement = target.closest<SVGElement>("#labels [data-label-type]");
+  if (labelElement) return `${getLabelText(labelElement)}. Click to edit the label`;
 
   if (group === "armies") return `${(parent as SVGElement & { dataset: DOMStringMap }).dataset.name}. Click to edit`;
 
@@ -171,6 +171,15 @@ function getElementTip({ group, subgroup, target, event, path, cellId }: TipCont
   if (group === "ice") return "Click to edit the Ice";
 
   return undefined;
+}
+
+/** Get the full label text, joining lines of multi-line labels rendered as tspans */
+function getLabelText(labelElement: SVGElement): string {
+  const tspans = labelElement.querySelectorAll("tspan");
+  const text = tspans.length
+    ? Array.from(tspans, tspan => tspan.textContent ?? "").join(" ")
+    : (labelElement.textContent ?? "");
+  return text.replaceAll("|", " ").trim();
 }
 
 function getEmblemTip(target: SVGElement, parent: SVGElement, event: Event): string {

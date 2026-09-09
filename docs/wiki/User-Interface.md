@@ -8,17 +8,21 @@ The first time the software is activated, the layers shown on the map are of the
 The following times what will be active is the predefined group of layers that you selected last time.
 
 # Controls
+
 Understanding the different types of controls that make up the user interface can contribute to a general understanding of fmg.
 
 For example, the paint brush button appears in many windows, and in all of them it has a similar meaning - opening the element in the design tab. Instead of explaining every time what this button does, in each separate window, you can describe the operation of the button once, for all the places where it appears.
 
 ## General controls
+
 These elements appear in many places in the UI, for example in the various windows.
 
 ### Windows
+
 Such as the various editors.
 
-### Legends 
+### Legends
+
 A panel that displays a description of a certain element.
 
 This is a non-closeable window. Instead, it closes automatically when the mouse cursor leaves the element to which the legend belongs.
@@ -26,10 +30,13 @@ This is a non-closeable window. Instead, it closes automatically when the mouse 
 For example, when going over a regiment, it will be displayed for example:
 
 ### Tables
+
 Such as the tables that appear in the overview windows.
 
 #### Features
+
 ##### Sorting
+
 If the element has a numerical value, it will be possible to sort in ascending or descending order.
 
 If the element has an alphabetical value, it will be possible to sort alphabetically, in ascending or descending order.
@@ -41,34 +48,47 @@ The sorting criterion will appear next to the column of the table, for example:
 Here the biome column in the biomes table is shown, with the table sorted by biome names, in alphabetical order.
 
 ### Buttons
+
 #### Adding an element
+
 ![image](https://github.com/user-attachments/assets/2ccbfb57-d902-436e-810f-c61acd5883d6)
 
 #### Deleting an element
+
 ![image](https://github.com/user-attachments/assets/493af060-3d18-420a-9d07-2c32d26cb032)
 
 #### Play an element name
+
 ![image](https://github.com/user-attachments/assets/5786f119-11dc-4024-9db8-8bcd65f580d4)
 
 #### Opening a style editor for an element
+
 ![image](https://github.com/user-attachments/assets/3aa4cb9f-ae2e-47cd-866f-1e7763d6a9b3)
 
 #### Focus on an element
+
 ![image](https://github.com/user-attachments/assets/f0e2a635-cfaf-46d9-b3f7-a5f830910091)
 
 #### Opening a wiki guide for an element
+
 ![image](https://github.com/user-attachments/assets/7ef572ad-d0c6-42f5-b658-0bc8b6b8295e)
 
 #### Lock buttons
+
 ![image](https://github.com/user-attachments/assets/8dc84a92-a4fb-4d86-a95e-936530493261)
 
 If you want the next map to have a fixed value, and not regenerated, you can lock a certain value using a lock button. The button is found, for example, in the options tab, but also in some editors.
 
 In general, whoever wants to generate a map with fixed characteristics, he should lock everything possible.
+
 ## Unique controls
+
 ### Map
+
 The map, that can be presented in several view mode.
+
 ### Bottom label tooltip
+
 When moving over a certain element (on the map or in the windows), a description of it will appear below.
 
 In addition, if it is relevant, a description of what can be done with the control will appear.
@@ -80,6 +100,7 @@ For example, when going over the layer control of the rivers:
 ![image](https://github.com/user-attachments/assets/edc9e00f-70a0-4e6a-89cd-f8bf0545a0c3)
 
 ### Opening the tab menu
+
 By clicking on the upper left triangle.
 
 Or by the keyboard shortcut Tab.
@@ -127,7 +148,7 @@ For example, if you click on the rivers layer with ctrl pressed, you will naviga
 
 ![image](https://github.com/user-attachments/assets/87cff977-2385-4626-a97c-6ec5dc59db6c)
 
-## Lower section 
+## Lower section
 
 The buttons on the Lower Menu Section is in any of the menu tabs.
 
@@ -240,19 +261,20 @@ This layer shows the division of the land into biomes.
 When this layer is on, when hovering a cell, its biome will be displayed in the tooltip. Biome is a term from the field of ecology that describes a large-scale ecosystem that is characterized by environmental conditions such as climate, the type of soil, and the flora and fauna that characterize it. For example, tropical rainforests, deserts, tundra, savannas, etc. Each of the biomes is characterized by a unique ecosystem of living species found in it naturally and in the environmental conditions that prevail there.
 
 Default biomes, in generator order:
-* Marine (id 0, water cells)
-* Hot desert
-* Cold desert
-* Savanna
-* Grassland
-* Tropical seasonal forest
-* Temperate deciduous forest
-* Tropical rainforest
-* Temperate rainforest
-* Taiga
-* Tundra
-* Glacier
-* Wetland
+
+- Marine (id 0, water cells)
+- Hot desert
+- Cold desert
+- Savanna
+- Grassland
+- Tropical seasonal forest
+- Temperate deciduous forest
+- Tropical rainforest
+- Temperate rainforest
+- Taiga
+- Tundra
+- Glacier
+- Wetland
 
 Biomes, their colors, habitability and movement cost can be edited in the Biomes Editor (<kbd>Shift</kbd> + <kbd>B</kbd>).
 
@@ -286,8 +308,7 @@ You can customize the display of each of the groups separately, for example, a f
 
 Note that next to the group, there is a number that records how many elements there are from the group.
 
-
-### Opacity 
+### Opacity
 
 ![image](https://github.com/user-attachments/assets/df451f6d-70f1-4ee7-9599-31f5f4839d23)
 
@@ -299,7 +320,7 @@ If equal to 0, the color of the element will (mostly) be the color of what is be
 
 Allows you to shift the layer on the x-axis and the y-axis.
 
-### Filter 
+### Filter
 
 ![image](https://github.com/user-attachments/assets/9ae43d89-f729-4ef2-b554-653d295afd5a)
 
@@ -311,16 +332,22 @@ This is known as a filter, because you put a "lens" over the object that makes a
 
 Filters: none, Blur 0.2, Blur 1, Blur 3, Blur 5, Blur 7, Blur 10, Splotch, Blurred Splotch, Shadow 2, Shadow 0.1, Shadow 0.5, Outline, Pencil, Turbulence, Paper, Crumpled, Grayscale, Sepia, Dingy and Tint.
 
-### Clipping 
+### Clipping
 
 ![image](https://github.com/user-attachments/assets/333f4c01-e7b6-4282-9518-b7f2da6433a2)
 
 Dropdown that allows you to choose whether the layer will apply to the land, the sea, or both.
-#### No clipping 
+
+#### No clipping
+
 The layer will apply to the entire map, including the sea and including the land.
-#### Clip water 
+
+#### Clip water
+
 The layer will only apply to the land.
-#### Clip land 
+
+#### Clip land
+
 The layer will only apply to the sea.
 
 ### Common style controls (Fill related)
@@ -341,7 +368,7 @@ Stroke is the line that surrounds the element.
 
 Sets the fill color of the stroke.
 
-#### Stroke width 
+#### Stroke width
 
 ![image](https://github.com/user-attachments/assets/9b3cf590-42ec-4f4b-adce-952aae223698)
 
@@ -394,6 +421,7 @@ Available presets: default, ancient, gloom, pale, light, watercolor, clean, atla
 **+ button** Allows you to add your own set of settings.
 
 ## Global filters
+
 ![image](https://github.com/user-attachments/assets/15994c62-1bed-4068-a99d-7d32008892a2)
 
 Allows global filters to be applied to all map elements: Grayscale, Sepia, Dingy, Tint.
@@ -402,7 +430,7 @@ Allows global filters to be applied to all map elements: Grayscale, Sepia, Dingy
 
 Contains some common style controls and the following controls:
 
-### Terracing  slider
+### Terracing slider
 
 ![image](https://github.com/user-attachments/assets/1f09d100-1fa4-484a-b00b-ee9d2f066720)
 
@@ -452,19 +480,19 @@ Dropdown that allows you to choose the line style of the "height cells". In this
 
 To understand what the slider does, you should turn on the cell layer.
 
-#### Curved 
+#### Curved
 
 In this view, the "elevation cells" extend approximately next to the map cells, so instead of extending exactly over the cell lines, the lines are rounded, to create a more natural look.
 
-#### Linear  
+#### Linear
 
 In this view, the "elevation cells" span just above the map cells.
 
-#### Rectangular  
+#### Rectangular
 
 In this view, the "elevation cells" extend approximately next to the map cells, so that instead of extending exactly over the cell lines, the lines are "squared", to create a more pixelated look.
 
-### Color scheme 
+### Color scheme
 
 ![image](https://github.com/user-attachments/assets/f727305e-9d04-4314-a84d-d8ad292b8f96)
 
@@ -478,48 +506,49 @@ Available color schemes: bright, light, natural, green, olive, livid and monochr
 
 These settings are applied when you generate a new map.
 
-* Canvas size: Map size in pixels. The button on the left resets the default size. Note: There is no way to change the map size after the map is created and it is always recommended to use the default value.
+- Map size: The coordinate extent the next map is generated on, in pixels. The button on the left resets it to the browser window size. Note: There is no way to change the map size after the map is created, and it is always recommended to use the default value. This is not the same as the Viewport size below, which is only how much of that extent you see at once.
 
-* Map seed: A number that defines the generation of random values. Every time you generate a new map, a new seed number is set here, which together with the size of the map and the options in the map settings menu, creates a random map. Please note – for 2 maps that have the same map size and the same options and the same number of seed, the maps will be identical. The button on the left side allows you to browse between seed values ​​of previous generators.
+- Map seed: A number that defines the generation of random values. Every time you generate a new map, a new seed number is set here, which together with the size of the map and the options in the map settings menu, creates a random map. Please note – for 2 maps that have the same map size and the same options and the same number of seed, the maps will be identical. The button on the left side allows you to browse between seed values ​​of previous generators.
 
-* Points number: A slider that defines the number of points (cells), from 1K up to the largest step on the slider. The higher the number of points, the more detailed the map and the smaller each cell, but the worse the performance. The default is 10K. If your computer is powerful and you do not experience performance issues, choose a higher value.
+- Points number: A slider that defines the number of points (cells), from 1K up to the largest step on the slider. The higher the number of points, the more detailed the map and the smaller each cell, but the worse the performance. The default is 10K. If your computer is powerful and you do not experience performance issues, choose a higher value.
 
-* Map name: This will be the name under which the map will be saved. On the right, there is a button that allows you to replace with a new generator name.
+- Heightmap: Opens the topographic map selector, which is intended for selecting a template intended for creating a topographic map. For example an archipelago, a group of continents, etc. You can create your own template, or modify the existing templates.
 
-* Year and era: The current year and the name of the current era. They are used by some generated names and text, but FMG does not run a time simulation.
+- Cultures number: a slider that determines the number of cultures.
 
-* Heightmap: Opens the topographic map selector, which is intended for selecting a template intended for creating a topographic map. For example an archipelago, a group of continents, etc. You can create your own template, or modify the existing templates.
+- Cultures set: Dropdown that contains the group of cultures that will be thrown into the map.
 
-* Cultures: a slider that determines the number of cultures.
+- States number: A slider that determines the number of countries.
 
-* Cultures set: Dropdown that contains the group of cultures that will be thrown into the map.
+- Provinces ratio: A slider that determines the percentage of burgs who have their own districts. A province is a sub-unit of a country, and can be edited in the province editor.
 
-* States number: A slider that determines the number of countries.
+- Size variety: A slider that determines the degree of variation in the territory of the countries. The lower the value, the more uniform the country regions.
 
-* Provinces ratio: A slider that determines the percentage of burgs who have their own districts. A province is a sub-unit of a country, and can be edited in the province editor.
+- Growth rate: A slider that defines how far countries and civilizations will expand into neutral lands after a generation. The lower its value, the more land will remain politically neutral.
 
-* Size variety: A slider that determines the degree of variation in the territory of the countries. The lower the value, the more uniform the country regions.
+- Burgs number: A slider that determines the number of burgs (settlements). Set it to `auto` to let the generator decide.
 
-* Growth rate: A slider that defines how far countries and civilizations will expand into neutral lands after a generation. The lower its value, the more land will remain politically neutral.
-
-* Burgs number: A slider that determines the number of burgs (settlements). Set it to `auto` to let the generator decide.
-
-* Religions number: A slider that determines the number of religions and sects.
+- Religions number: A slider that determines the number of religions and sects.
 
 # UI settings
 
 Below the map settings, the Options tab holds settings that apply immediately and are not tied to map generation:
 
-* Interface size and Tooltip size: scale the menu and the bottom tooltip.
-* Theme color and Transparency: the color and opacity of the dialogs.
-* Autosave interval: how often the map is saved to browser storage.
-* Onload behavior: generate a new map or load the last saved one when the page opens.
-* Azgaar assistant: show or hide the help bubble in the bottom right corner, which answers questions about the Generator from the wiki and Discord knowledge.
-* Speaker voice: the voice used by the speaker buttons next to names.
-* Emblem shape: the default coat of arms shield shape.
-* Zoom extent: minimal and maximal zoom levels, `[1, 20]` by default.
-* Rendering: SVG shape-rendering mode, trading quality for speed.
-* Redraw on zoom: when labels, icons and relief are redrawn during a zoom or pan. _After zoom_ redraws once per gesture: faster on big maps, but new content appears all at once.
-* Language: the interface language.
+- Interface size and Tooltip size: scale the menu and the bottom tooltip.
+- Theme color and Transparency: the color and opacity of the dialogs.
+- Autosave interval: how often the map is saved to browser storage.
+- Onload behavior: generate a new map or load the last saved one when the page opens.
+- Azgaar assistant: show or hide the help bubble in the bottom right corner, which answers questions about the Generator from the wiki and Discord knowledge.
+- Speaker voice: the voice used by the speaker buttons next to names.
+- Emblem shape: the default coat of arms shield shape.
+- Viewport size: the size of the map window on screen, in pixels. It is independent of the map size above: it is how much of the map you see at once. The button on the left fits it back to the browser window, which is what it follows until you set a size by hand.
+- Zoom extent: minimal and maximal zoom levels, `[1, 20]` by default.
+- Rendering: SVG shape-rendering mode, trading quality for speed.
+- Redraw on zoom: when labels, icons and relief are redrawn during a zoom or pan. _After zoom_ redraws once per gesture: faster on big maps, but new content appears all at once.
+- Language: the interface language.
 
-The **Configure World** button opens a separate dialog where you set the map size relative to the world, its latitude and longitude shift on the globe, the temperature at the equator and both poles, and the global precipitation. The **Restore default options** button resets everything and reloads the page.
+The **Configure World** button opens a separate dialog where you set the map size relative to the world, its latitude and longitude shift on the globe, the temperature at the equator and both poles, and the global precipitation.
+
+The **Set Lore** button opens the Lore Editor, where you name the map, set the current year, era and era abbreviation, and write a description of the world — the year and era date state history and battle reports, and FMG does not run a time simulation.
+
+The **Reset Options** button restores the default options and reloads the page.

@@ -623,6 +623,7 @@ function militaryCustomize(): void {
     options.map.military.units = units;
     Options.save(); // the roster is this map's, and what the next map starts from
     Military.generate();
+    Layers.draw("military");
     rebuildMilitaryColumns();
   }
 }

@@ -47,14 +47,14 @@ export class LabelsModule {
         name: "river",
         type: "river",
         layerDependency: "rivers",
-        zoom: { min: 6, max: 40 },
+        zoom: { min: 9, max: 40 },
         isDefault: true
       },
       {
         name: "route",
         type: "route",
         layerDependency: "routes",
-        zoom: { min: 6, max: 40 },
+        zoom: { min: 9, max: 40 },
         isDefault: true
       },
       // burg groups from Burgs.getDefaultGroups()

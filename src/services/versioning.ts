@@ -26,8 +26,9 @@ export const VERSION = "1.152.0";
 const latestPublicChanges = [
   "Heightmap: option to render contour lines",
   "Ability to override a burg's treasury",
-  "Dialogs: preserve position sessions",
-  "Notes Editor: new rich text editor",
+  "Dialogs: preserve position between sessions",
+  "Map name and era moved to Set Lore dialog",
+  "Notes Editor: new rich text editor Quill2",
   "Help assistant: ask questions about the Generator in the app",
   "States and Provinces editors: annex by clicking on the map",
   "Option to redraw labels, icons and relief only after a zoom",

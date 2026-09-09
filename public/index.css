@@ -2500,7 +2500,7 @@ svg.button {
   user-select: none;
   opacity: 0;
   animation: fadeIn 1s ease-in 1s forwards;
-  z-index: 9999;
+  z-index: 99;
 }
 
 #tourPromptButton button {

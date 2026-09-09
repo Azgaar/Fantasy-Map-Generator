@@ -73,7 +73,8 @@ Features represent separate locked areas like islands, lakes and oceans.
 - - `cells`: `number` - number of cells in feature
 - - `firstCell`: `number` - index of the first (top left) cell in feature
 - - `vertices`: `number[]` - indexes of vertices around the feature (perimetric vertices)
-    \*\* `name`: `string` - name, available for `lake` type only
+- - `name`: `string` - name, available for `lake` type only
+- - `note`: `string` - optional. The user's note (legend) about the feature, as html. Removed with it
 
 ## Specific cells data
 
@@ -134,6 +135,7 @@ Cultures (races, language zones) data is stored as an array of objects with stri
 - `urban`: `number` - urban (burg) population of cells assigned to culture. In population points
 - `lock`: `boolean` - `true` if culture is locked (not affected by regeneration)
 - `removed`: `boolean` - `true` if culture is removed
+- `note`: `string` - optional. The user's note (legend) about the culture, as html. Removed with it
 
 ## Burgs
 
@@ -159,7 +161,7 @@ Burgs (settlements) data is stored as an array of objects with strict element or
 - `market`: `number` - id of the market this burg belongs to (`0` if none). Derived from `cells.market[burg.cell]` during market territory expansion
 - `production`: `object[]` - per-burg production/trade records from the last production run. Each record is one of: a local-bonus record `{good, units}`, a manufacture record `{good, units, recipe, cultureModifier?}`, or a deal reference `{dealId}` pointing into `pack.deals`. Used by the Production Overview and Production Chains UI
 - `product`: `number` - net product (gross sell revenue minus ingredient costs) from the last production run
-- `treasury`: `number` - accumulated cash balance, updated by ingredient purchases, post-tax sale revenue, and demand-fill purchases
+- `treasury`: `number` - accumulated cash balance, updated by ingredient purchases, post-tax sale revenue, and demand-fill purchases. The Burg Editor can also set it by hand; production is not recalculated to match
 - `citadel`: `number` - `1` if burg has a castle, `0` if not. Used for MFCG
 - `plaza`: `number` - `1` if burg has a marketplace, `0` if not. Used for MFCG
 - `shanty`: `number` - `1` if burg has a shanty town, `0` if not. Used for MFCG
@@ -167,6 +169,7 @@ Burgs (settlements) data is stored as an array of objects with strict element or
 - `walls`: `number` - `1` if burg has walls, `0` if not. Used for MFCG
 - `lock`: `boolean` - `true` if burg is locked (not affected by regeneration)
 - `removed`: `boolean` - `true` if burg is removed
+- `note`: `string` - optional. The user's note (legend) about the burg, as html. Removed with it
 
 ## States
 
@@ -201,6 +204,7 @@ States (countries) data is stored as an array of objects with strict element ord
 - `treasury`: `number` - accumulated state currency balance. Reset and refilled by `States.collectTaxes()` from `deal.tax` (sales tax) plus `pollTax × (rural + urban)`. Always `0` for neutrals
 - `lock`: `boolean` - `true` if state is locked (not affected by regeneration)
 - `removed`: `boolean` - `true` if state is removed
+- `note`: `string` - optional. The user's note (legend) about the state, as html. Removed with it
 
 ### Regiment
 
@@ -216,6 +220,7 @@ States (countries) data is stored as an array of objects with strict element ord
 - `name`: `string` - regiment name
 - `n`: `number` - `1` if regiment is a separate unit (like naval units), `0` is not
 - `u`: `Record<unitName, number>` - regiment content object
+- `note`: `string` - optional. The user's note (legend) about the regiment, as html. Removed with it
 
 ## Provinces
 
@@ -238,6 +243,7 @@ Provinces data is stored as an array of objects with strict element order. Eleme
 - `label`: `Label` - optional Province-label overrides. If absent, the renderer derives the text and path from Province data
 - `lock`: `boolean` - `true` if province is locked (not affected by regeneration)
 - `removed`: `boolean` - `true` if province is removed
+- `note`: `string` - optional. The user's note (legend) about the province, as html. Removed with it
 
 ## Religions
 
@@ -261,6 +267,7 @@ Religions data is stored as an array of objects with strict element order. Eleme
 - `urban`: `number` - urban (burg) population of state religion. In population points
 - `lock`: `boolean` - `true` if religion is locked (not affected by regeneration)
 - `removed`: `boolean` - `true` if religion is removed
+- `note`: `string` - optional. The user's note (legend) about the religion, as html. Removed with it
 
 ## Rivers
 
@@ -279,6 +286,7 @@ Rivers data is stored as an unordered array of objects (so element id is _not_ t
 - `length`: `number` - river length in km
 - `width`: `number` - river mouth width in km
 - `sourceWidth`: `number` - additional width added to river source on rendering. Used to make lake outlets start with some width depending on flux. Can be also used to manually create channels
+- `note`: `string` - optional. The user's note (legend) about the river, as html. Removed with it
 
 ## Markers
 
@@ -300,6 +308,7 @@ Markers data is stored as an unordered array of objects (so element id is _not_ 
 - `dy`: `number` - icon y shift percent. Optional, default s `50` (50%, center)
 - `px`: `number` - icon font-size in pixels. Optional, default is `12` (12px)
 - `lock`: `boolean` - `true` if marker is locked (not affected by regeneration). Optional
+- `note`: `string` - optional. The user's note (legend) about the marker, as html. Removed with it
 
 ## Labels
 
@@ -328,6 +337,7 @@ unordered `AddedLabel[]`:
 - `x`, `y`: `number` - label position in map coordinates, before the `dx`/`dy` shift
 - `label`: `Label` - the label record, as on any other entity. Always present, since carrying a label is the
   entity's only purpose; unlike other entities it has no name to fall back on, so its text lives in `label.text`
+- `note`: `string` - optional. The user's note (legend) about the added label, as html. Removed with it
 
 At runtime, Label Group styles are indexed in `style.labels.groups`, keyed by group id. Current `.map` files
 serialize the complete global `style` object at data index 48. Pre-1.140 migration reconstructs it from the
@@ -338,11 +348,14 @@ a label with `pathPoints` is rendered as a `<textPath>`, and any other label as 
 the Label Editor lets the user switch for any label regardless of its type. The fallback groups are `states`,
 `provinces`, the configured default Burg group, and `added` respectively.
 
-Ordered Label Group policy is stored in `options.labels`:
+Ordered Label Group policy is stored in `options.map.labels`, so it travels with the `.map` file:
 
 - `resizeOnZoom`: `boolean` - whether the parent `#labels` font size scales with map zoom
-- `showAll`: `boolean` - temporary override for per-group active state, zoom bounds, and layer dependencies
 - `groups`: `LabelGroupOptions[]` - ordered group definitions
+
+`showAll`, the override for per-group active state, zoom bounds and layer dependencies, is a
+per-browser preference rather than a map value, so it lives in `options.app.labels.showAll` and is
+never saved with the map
 
 The Label and Burg group registries are the user's own sets, carried through `options.map` into every new
 map, so a value stored by an older build is repaired rather than trusted: `Options.repairSets` runs on
@@ -376,6 +389,7 @@ Routes data is stored as an unordered array of objects (so element id is _not_ t
 - `length`: `number` - route length in km. Optional
 - `name`: `string` - route name. Optional
 - `lock`: `boolean` - `true` if route is locked (not affected by regeneration). Optional
+- `note`: `string` - optional. The user's note (legend) about the route, as html. Removed with it
 
 ## Zones
 
@@ -388,6 +402,7 @@ Zones data is stored as an array of objects with `i` not necessary equal to the 
 - `cells`: `number[]` - array of zone cells
 - `lock`: `boolean` - `true` if zone is locked (not affected by regeneration). Optional
 - `hidden`: `boolean` - `true` if zone is hidden (not displayed). Optional
+- `note`: `string` - optional. The user's note (legend) about the zone, as html. Removed with it
 
 ## Ice
 
@@ -437,6 +452,7 @@ Goods (tradable resources and products) are stored in `pack.goods: Good[]`, wher
 - `recipes`: `Record<goodId, number>[]` - array of alternative recipes; each maps input good id → units consumed per 1 unit of output. Optional
 - `multipliers`: `object` - per-dimension production scalars, each an optional `Record<id, number>`: `cultureType`, `culture`, `state`, `religion`, `biome`, `zone`. Absent or `1` = no effect, `0` = fully suppressed; active factors combine multiplicatively. Only the map-independent `cultureType` is present in `GOODS_DATA`; the rest are set per map via the editor. Optional
 - `demandCoverage`: `Record<category, number>` - how much one unit of the good covers each demand category (`food`, `utilities`, `construction`, `military`, `luxury`). Optional
+- `note`: `string` - optional. The user's note (legend) about the good, as html. Removed with it
 
 ## Markets
 
@@ -447,6 +463,7 @@ Markets (regional economic hubs) are stored in `pack.markets: Market[]`. Note th
 - `color`: `string` - market color in hex, used for territory rendering
 - `goods`: `Record<goodId, {stock: number; price: number}>` - per-good state. A single midpoint `price` is stored; customer-facing `buyPrice` / `sellPrice` are derived on demand via `MARKET_MARGIN`
 - `name`: `string` - optional market name, derived from the center burg's name
+- `note`: `string` - optional. The user's note (legend) about the market, as html. Removed with it
 
 ## Biomes
 
@@ -460,6 +477,7 @@ Biome definitions are stored in `pack.biomes: Biome[]`, where `i` equals the arr
 - `icons`: `string[]` - non-weighted relief icon pool; repeated values increase an icon's selection weight
 - `iconsDensity`: `number` - defines how packed icons can be for the biome. An integer from `0` to `150`
 - `removed`: `boolean` - optional marker for a removed custom biome
+- `note`: `string` - optional. The user's note (legend) about the biome, as html. Removed with it
 
 The temperature and moisture lookup matrix used to assign default biome ids is generator configuration, not map state. Cell count, area and population statistics are calculated on demand and are not stored on biome objects.
 
@@ -488,6 +506,7 @@ Journeys are stored in `pack.journeys: Journey[]`. One journey is generated per 
 - `segments`: `JourneySegment[]` - the legs of the journey, in travel order
 - `visible`: `boolean` - optional. `false` hides the journey on the map. Absent means visible
 - `lock`: `boolean` - optional. Locked journeys survive "remove all"
+- `note`: `string` - optional. The user's note (legend) about the journey, as html. Removed with it
 
 A journey segment is one leg: a stretch of travel, or a halt:
 
@@ -495,7 +514,7 @@ A journey segment is one leg: a stretch of travel, or a halt:
 - `name`: `string` - segment name
 - `color`: `string` - optional. Overrides the journey color
 - `from` / `to`: `number` - optional. Endpoint cell ids. Absent until the user picks them
-- `transport`: `string` - transport type **name** (not id): segments reference `options.transports` by name, so renaming a type updates every segment, and removing one leaves the segment unresolved
+- `transport`: `string` - transport type **name** (not id): segments reference `options.map.transports` by name, so renaming a type updates every segment, and removing one leaves the segment unresolved
 - `speed`: `number` - travel speed in km/h, always, regardless of the user's distance unit. Defaults to the transport's speed; the user may override it per segment
 - `distance`: `number` - path length in px. Multiply by `distanceScale` for the user distance unit
 - `points`: `[x, y, cellId][]` - the drawn path, from pathfinding or hand-drawn
@@ -506,22 +525,13 @@ A journey segment is one leg: a stretch of travel, or a halt:
 
 ## Transports
 
-Transport types are configuration, not map state: they live in `options.transports: Transport[]`. Object structure:
+Transport types are configuration, not map state: they live in `options.map.transports: Transport[]`. Object structure:
 
 - `i`: `number` - transport type id
 - `name`: `string` - transport type name. This is the key segments reference, so it must stay unique
 - `speed`: `number` - travel speed in km/h
 - `domain`: `"land" | "water" | "air" | "stay"` - decides both the pathfinding strategy and which endpoints are valid. `stay` means no movement at all
 - `hoursPerDay`: `number` - optional. Hours of travel a day sustains with this transport, used to convert travel hours into days. Absent in maps saved before it became configurable, which fall back to a per-domain default
-
-## Notes
-
-A note (legend) is free text the user writes about a map object. It is stored on the object itself as
-`note?: string` (html), so it is created, cloned and removed with its owner and cannot outlive it.
-
-These entities carry a note: `burgs`, `markers`, `states`, `provinces`, `rivers`, `routes`,
-`states[].military[]`, `addedLabels`, `features`, `zones`, `journeys`, `markets`, `cultures`,
-`religions`, `biomes` and `goods`.
 
 ## Name bases
 
