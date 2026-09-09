@@ -28,6 +28,7 @@ export interface Regiment {
   survivors?: Record<string, number>; // battle-screen: per-unit survivors while a battle is in progress
   px?: number; // battle-screen: position before being moved into a battle, restored afterward
   py?: number;
+  note?: string;
 }
 
 interface Platoon {
@@ -446,11 +447,6 @@ class MilitaryModule {
       return regiments as Regiment[];
     };
 
-    // remove all existing regiment notes before regenerating
-    for (let i = notes.length - 1; i >= 0; i--) {
-      if (notes[i].id.startsWith("regiment")) notes.splice(i, 1);
-    }
-
     // get regiments for each state
     valid.forEach(s => {
       s.military = createRegiments(s.temp.platoons, s);
@@ -556,15 +552,7 @@ class MilitaryModule {
       ? rand(campaign.start, campaign.end || options.map.lore.calendar.year)
       : gauss(options.map.lore.calendar.year - 100, 150, 1, options.map.lore.calendar.year - 6);
     const conflict = campaign ? ` during the ${campaign.name}` : "";
-    const legend = `Regiment was formed in ${year} ${options.map.lore.calendar.era}${conflict}. ${station}${troops}`;
-    const id = `regiment${s.i}-${r.i}`;
-    const existing = notes.find(n => n.id === id);
-    if (existing) {
-      existing.name = r.name;
-      existing.legend = legend;
-    } else {
-      notes.push({ id, name: r.name, legend });
-    }
+    r.note = `Regiment was formed in ${year} ${options.map.lore.calendar.era}${conflict}. ${station}${troops}`;
   }
 
   // get default regiment emblem

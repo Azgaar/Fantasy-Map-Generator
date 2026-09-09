@@ -1,5 +1,6 @@
 // Update an old map file to the current version
 import { color, min, select } from "d3";
+import { confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { type LayerId, Layers, type LayersState } from "@/components/layers";
 import { normalizeLegacyBurgGroupFilters } from "@/components/options-legacy";
 import type { MapData } from "@/components/options-schema";
@@ -7,7 +8,9 @@ import { RELIEF_SETS } from "@/data/relief-icons";
 import { Emblems } from "@/generators/emblems-generator";
 import type { GraphOverrides } from "@/generators/graph-override";
 import { type Label, type LabelNameMode, Labels as LabelsGenerator } from "@/generators/labels-generator";
+import { getDefaultMarkerName } from "@/generators/markers-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
+import { Notes } from "@/generators/notes";
 import {
   labelGroupFromLegacy,
   migrateStyles,
@@ -19,7 +22,18 @@ import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { unfog } from "@/renderers/overlays/fogging";
 import { compareVersions } from "@/services/versioning";
 import type { ReliefSet } from "@/types/relief";
-import { ensureEl, findEl, minmax, parseTransform, rn, rw, safeParseJSON, unique } from "@/utils";
+import {
+  downloadFile,
+  ensureEl,
+  findEl,
+  getFileName,
+  minmax,
+  parseTransform,
+  rn,
+  rw,
+  safeParseJSON,
+  unique
+} from "@/utils";
 import { parsePathPoints } from "@/utils/pathUtils";
 
 type LegacyBurgGroup = Omit<MapData["burgs"]["groups"][number], "biomes" | "states" | "cultures" | "religions"> & {
@@ -66,6 +80,7 @@ const LEGACY_LAYER_IDS: Record<string, LayerId> = {
 
 export async function resolveVersionConflicts(mapVersion: string, data: string[]): Promise<void> {
   const isOlderThan = (tagVersion: string) => compareVersions(mapVersion, tagVersion).isOlder;
+  const noteRenames = new Map<string, string>(); // legacy element id -> the id the element has now
 
   if (isOlderThan("1.139.0")) {
     // v1.139.0 moved biomes data from the legacy pipe-delimited format to pack.biomes.
@@ -618,8 +633,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
       pack.markers = Array.from(markerElements).map((el, i) => {
         const id = el.getAttribute("id");
-        const note = notes.find(note => note.id === id);
-        if (note) note.id = `marker${i}`;
+        if (id) noteRenames.set(id, `marker${i}`);
 
         let x = +el.dataset.x!;
         let y = +el.dataset.y!;
@@ -1382,8 +1396,6 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       styles.labels.groups[name] = labelGroupFromLegacy(oldStyle);
 
       for (const textEl of addedGroup.querySelectorAll<SVGTextElement>(":scope > text")) {
-        const note = notes.find(note => note.id === textEl.id);
-
         const pathEl = document.getElementById(`textPath_${textEl.id}`) as SVGPathElement | null;
         if (!pathEl) continue;
 
@@ -1391,9 +1403,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         if (label?.text && label.pathPoints?.length) {
           const [x, y] = label.pathPoints[Math.floor(label.pathPoints.length / 2)];
           const addedLabel = AddedLabels.add({ x, y, label: { ...label, group: name } });
-          if (note) note.id = `addedLabel${addedLabel.i}`;
-        } else {
-          if (note) notes = notes.filter(n => n.id !== note.id); // remove note
+          noteRenames.set(textEl.id, `addedLabel${addedLabel.i}`);
         }
       }
     }
@@ -1814,6 +1824,70 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     const groups: { attrs?: { style?: string | null } }[] = Object.values(record?.labels?.groups || {});
     for (const group of groups) if (group?.attrs) group.attrs.style = stripDisplay(group.attrs.style ?? null);
     if (record) data[48] = JSON.stringify(record);
+  }
+
+  if (isOlderThan("1.152.0")) {
+    // v1.152.0 moved notes off the flat array in data[4] and onto the entity each one describes
+    type LegacyNote = { id: string; name: string; legend: string };
+    const unattachedNotes: LegacyNote[] = [];
+
+    const parsed: unknown = data[4] ? safeParseJSON(data[4]) : [];
+    const legacyNotes: LegacyNote[] = Array.isArray(parsed)
+      ? parsed.filter(note => Boolean(note) && typeof note.id === "string" && typeof note.legend === "string")
+      : [];
+
+    // an element note (river12) comes before its label note (riverLabel12), so the two collide in that order
+    legacyNotes.sort((a, b) => Number(a.id.includes("Label")) - Number(b.id.includes("Label")));
+
+    // an empty legacy note holds no text to keep, so it is never carried over and never reported
+    const orphan = (note: LegacyNote) => void (note.legend && unattachedNotes.push(note));
+
+    for (const note of legacyNotes) {
+      const ref = Notes.resolveElement(noteRenames.get(note.id) ?? note.id);
+      if (!ref) {
+        orphan(note);
+        continue;
+      }
+
+      if (ref.type === "marker") {
+        const marker = pack.markers?.find(({ i }) => i === ref.id);
+        if (!marker) orphan(note);
+        else {
+          if (note.name) marker.name = note.name; // the note title was the only name a marker had
+          Notes.append(ref, note.legend);
+        }
+        continue;
+      }
+
+      // a note titled differently from its entity keeps that title as a heading, so nothing is lost.
+      // an untitled note was titled with its own element id, which is no title at all
+      const titled = note.name && note.name !== note.id && note.name !== Notes.getEntityName(ref);
+      const heading = titled ? `<h3>${note.name}</h3>` : "";
+      if (!Notes.append(ref, note.legend && `${heading}${note.legend}`)) orphan(note);
+    }
+
+    for (const marker of pack.markers || []) marker.name ||= getDefaultMarkerName(marker.type);
+
+    data[4] = ""; // the slot is positional, so it stays, empty
+
+    // a note with nothing left to describe cannot be kept, so the text is offered back to the user
+    if (unattachedNotes.length) {
+      WARN && console.warn(`[Auto-update] ${unattachedNotes.length} note(s) belong to no map element`);
+
+      const quote = (value: string) => `"${(value || "").replaceAll('"', '""')}"`;
+      const csv = [
+        "id,name,note",
+        ...unattachedNotes.map(note => [quote(note.id), quote(note.name), quote(note.legend)].join(","))
+      ].join("\n");
+
+      confirmationDialog({
+        title: "Notes without an element",
+        message: `${unattachedNotes.length} note(s) in this map describe an element that no longer exists, so they cannot be kept.<br>Download them to keep the text outside the generator.`,
+        confirm: "Download",
+        cancel: "Discard",
+        onConfirm: () => downloadFile(csv, `${getFileName("Unattached notes")}.csv`)
+      });
+    }
   }
 }
 

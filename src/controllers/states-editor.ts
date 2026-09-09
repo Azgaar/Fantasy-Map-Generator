@@ -17,6 +17,7 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { Emblems } from "@/generators/emblems-generator";
+import { Notes } from "@/generators/notes";
 import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
 import { redrawEmblem, redrawEmblems, removeEmblem } from "@/renderers/draw-emblems";
@@ -132,7 +133,11 @@ const columns: EditorColumn<State>[] = [
     hidden: true,
     sortBy: s => (s.i ? s.expansionism || 0 : 0)
   },
-  { key: "actions", width: "4.2em", permanent: true, align: "right" }
+  { key: "note", width: "1.1em" },
+  { key: "locate", width: "1.1em" },
+  { key: "focus", width: "1.1em" },
+  { key: "lock", width: "1.1em" },
+  { key: "remove", width: "1.4em", permanent: true }
 ];
 
 const statesTable = initEditorTable<State>({
@@ -247,6 +252,7 @@ function renderDialog(): void {
     else if (classList.contains("icon-dot-circled")) Controllers.BurgsOverview.open({ stateId });
     else if (classList.contains("statePopulation")) changePopulation(stateId);
     else if (classList.contains("stateTreasury")) openTreasuryDialog(stateId);
+    else if (classList.contains("icon-book")) void Controllers.NotesEditor.open({ type: "state", id: stateId });
     else if (classList.contains("icon-pin")) toggleFog(stateId, classList);
     else if (classList.contains("icon-target"))
       highlightElement(select("#regions").select(`#state${stateId}`).node() as Element, 4);
@@ -356,7 +362,11 @@ function renderStatesPage(view: TableView<State>): void {
           <span class="icon-resize-full placeholder"></span>
           <input class="statePower placeholder" type="number" value="0" />
         </div>
-        <div data-col="actions"></div>
+        <div data-col="note"></div>
+        <div data-col="locate"></div>
+        <div data-col="focus"></div>
+        <div data-col="lock"></div>
+        <div data-col="remove"></div>
       </div>`;
       continue;
     }
@@ -417,14 +427,13 @@ function renderStatesPage(view: TableView<State>): void {
         <input data-tip="Expansionism (defines competitive size). Change to re-calculate states based on new value"
           class="statePower" type="number" min="0" max="99" step=".1" value=${s.expansionism} />
       </div>
-      <div data-col="actions">
-        <span data-tip="Locate the state" class="icon-target"></span>
-        <span data-tip="Toggle state focus" class="icon-pin ${focused ? "" : " inactive"}"></span>
-        <span data-tip="Lock the state to protect it from re-generation" class="icon-lock${
-          s.lock ? "" : "-open"
-        }"></span>
-        <span data-tip="Remove the state" class="icon-trash-empty"></span>
-      </div>
+      ${Notes.getIcon("this state")}
+      <span data-col="locate" data-tip="Locate the state" class="icon-target"></span>
+      <span data-col="focus" data-tip="Toggle state focus" class="icon-pin ${focused ? "" : " inactive"}"></span>
+      <span data-col="lock" data-tip="Lock the state to protect it from re-generation" class="icon-lock${
+        s.lock ? "" : "-open"
+      }"></span>
+      <span data-col="remove" data-tip="Remove the state" class="icon-trash-empty"></span>
     </div>`;
   }
   const body = ensureEl("statesBodySection");
@@ -977,13 +986,6 @@ function stateRemove(stateId: number): void {
     });
 
     removeEmblem("province", p);
-  });
-
-  // remove military
-  (pack.states[stateId].military || []).forEach(m => {
-    const id = `regiment${stateId}-${m.i}`;
-    const index = notes.findIndex(n => n.id === id);
-    if (index !== -1) notes.splice(index, 1);
   });
 
   // clean up neighbors references from other states
@@ -1694,9 +1696,6 @@ function mergeStates(statesToMerge: number[], rulingStateId: number): void {
       const newIndex = (rulingState.military || []).length;
       (rulingState.military || []).push({ ...regiment, i: newIndex });
       const newId = `regiment${rulingStateId}-${newIndex}`;
-
-      const note = notes.find(n => n.id === oldId);
-      if (note) note.id = newId;
 
       const element = document.getElementById(oldId);
       if (element) {

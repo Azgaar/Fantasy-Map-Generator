@@ -20,7 +20,6 @@ interface ResamplerProcessOptions {
 type ParentMapDefinition = {
   grid: GridGraph;
   pack: PackedGraph;
-  notes: any[];
 };
 
 class Resampler {
@@ -276,11 +275,7 @@ class Resampler {
         (acc, regiment) => {
           const [xPos, yPos] = projection(regiment.x, regiment.y);
 
-          if (!this.isInMap(xPos, yPos)) {
-            const noteIndex = notes.findIndex(n => n.id === `regiment${state.i}-${regiment.i}`);
-            if (noteIndex !== -1) notes.splice(noteIndex, 1);
-            return acc;
-          }
+          if (!this.isInMap(xPos, yPos)) return acc;
 
           const cellCoords = projection(...parentMap.pack.cells.p[regiment.cell]);
           const cell = this.isInMap(...cellCoords) ? Pack.findCell(...cellCoords, Infinity)! : state.center;
@@ -381,6 +376,7 @@ class Resampler {
       if (parentFeature.subtype) feature.subtype = parentFeature.subtype;
       if (parentFeature.group) feature.group = parentFeature.group;
       if (parentFeature.name) feature.name = parentFeature.name;
+      if (parentFeature.note) feature.note = parentFeature.note;
       if (parentFeature.height) feature.height = parentFeature.height;
     });
   }
@@ -452,8 +448,7 @@ class Resampler {
     const { projection, inverse, scale } = config;
     const parentMap = {
       grid: structuredClone(grid),
-      pack: structuredClone(pack),
-      notes: structuredClone(notes)
+      pack: structuredClone(pack)
     };
     const riversData = this.saveRiversData(pack.rivers);
 
@@ -461,7 +456,6 @@ class Resampler {
     const { width, height } = options.map.graph;
     grid = Grid.generate(options.map.seed, width, height);
     pack = {} as PackedGraph;
-    notes = parentMap.notes;
 
     this.resamplePrimaryGridData(parentMap, inverse, scale);
 

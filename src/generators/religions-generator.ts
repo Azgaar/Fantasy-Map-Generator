@@ -27,6 +27,7 @@ export interface Religion extends NamedReligion {
   area?: number;
   rural?: number;
   urban?: number;
+  note?: string;
 }
 
 interface ReligionBase {

@@ -182,6 +182,7 @@ export interface Route {
   length?: number;
   lock?: boolean;
   label?: Label;
+  note?: string;
 }
 
 type RiverEdge = { riverId: number; fromIndex: number };

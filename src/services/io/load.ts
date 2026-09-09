@@ -266,7 +266,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
 
     ensureEl<HTMLInputElement>("shapeRendering").value =
       select("#viewbox").attr("shape-rendering") || "geometricPrecision";
-    if (data[4]) notes = JSON.parse(data[4]);
     if (data[34]) {
       const usedFonts = JSON.parse(data[34]);
       usedFonts.forEach((usedFont: (typeof fonts)[number]) => {
@@ -637,9 +636,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
 
             const domElements = document.querySelectorAll<HTMLElement>(`#marker${marker.i}`);
             if (domElements[1]) domElements[1].id = `marker${nextId}`; // rename 2nd dom element
-
-            const noteElements = notes.filter(note => note.id === `marker${marker.i}`);
-            if (noteElements[1]) noteElements[1].id = `marker${nextId}`; // rename 2nd note
 
             marker.i = nextId;
             nextId += 1;

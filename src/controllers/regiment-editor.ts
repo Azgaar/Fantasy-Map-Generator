@@ -4,6 +4,7 @@ import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { Notes } from "@/generators/notes";
 import { drawRegiment, moveRegiment } from "@/renderers/draw-military";
 import { speak } from "@/utils";
 import type { Regiment } from "../generators/military-generator";
@@ -76,7 +77,7 @@ function renderDialog(): void {
         class="icon-attach"
       ></button>
       <button id="regimentRegenerateLegend" data-tip="Regenerate legend for this regiment" class="icon-retweet"></button>
-      <button id="regimentLegend" data-tip="Edit free text notes (legend) for this regiment" class="icon-edit"></button>
+      ${Notes.getButton("regimentLegend", "this regiment")}
       <button
         id="regimentRemove"
         data-tip="Remove regiment"
@@ -484,8 +485,6 @@ function attachRegimentOnClick(this: SVGGElement, event: MouseEvent): void {
   const oldState = +selectedRegiment.dataset.state!;
   const military = pack.states[oldState].military!;
   military.splice(military.indexOf(reg), 1);
-  const index = notes.findIndex(n => n.id === selectedRegiment!.id);
-  if (index !== -1) notes.splice(index, 1);
   selectedRegiment.remove();
 
   refreshEditors();
@@ -495,9 +494,6 @@ function attachRegimentOnClick(this: SVGGElement, event: MouseEvent): void {
 
 function regenerateLegend(): void {
   if (!selectedRegiment) return;
-  const index = notes.findIndex(n => n.id === selectedRegiment!.id);
-  if (index !== -1) notes.splice(index, 1);
-
   const s = pack.states[+selectedRegiment.dataset.state!];
   const reg = getRegiment();
   if (reg) Military.generateNote(reg, s);
@@ -506,7 +502,7 @@ function regenerateLegend(): void {
 function editLegend(): void {
   const reg = getRegiment();
   if (!reg || !selectedRegiment) return;
-  void Controllers.NotesEditor.open(selectedRegiment.id, reg.name);
+  void Controllers.NotesEditor.open({ type: "regiment", id: reg.state, sub: reg.i });
 }
 
 function removeRegiment(): void {
@@ -523,9 +519,6 @@ function removeRegiment(): void {
         const regIndex = reg ? military.indexOf(reg) : -1;
         if (regIndex === -1) return;
         military.splice(regIndex, 1);
-
-        const index = notes.findIndex(n => n.id === selectedRegiment!.id);
-        if (index !== -1) notes.splice(index, 1);
         selectedRegiment.remove();
 
         refreshEditors();

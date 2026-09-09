@@ -1,5 +1,6 @@
 import { select } from "d3";
 import { Layers } from "@/components/layers";
+import { Notes } from "@/generators/notes";
 import { highlightEmblemElement } from "@/renderers/overlays/highlight";
 import type { Point } from "@/types/global";
 import {
@@ -42,18 +43,19 @@ export function showNotes(event: Event): void {
   const burg = target.closest<HTMLElement>("[data-label-type='burg'][data-id], #burgIcons [data-id]");
   const id = burg ? `burg${burg.dataset.id}` : target.id || parent?.id || grand?.id;
 
-  const note = notes.find(note => note.id === id);
+  const ref = Notes.resolveElement(id);
+  const note = ref && Notes.get(ref);
 
-  if (note?.legend) {
+  if (ref && note) {
     if (currentNoteId === id) return;
-    currentNoteId = id;
+    currentNoteId = id ?? null;
 
     const notesEl = findEl("notes");
     if (notesEl) notesEl.style.display = "block";
     const header = findEl("notesHeader");
-    if (header) header.innerHTML = note.name;
+    if (header) header.textContent = Notes.getEntityName(ref);
     const body = findEl("notesBody");
-    if (body) body.innerHTML = note.legend;
+    if (body) body.innerHTML = note;
     return;
   }
 

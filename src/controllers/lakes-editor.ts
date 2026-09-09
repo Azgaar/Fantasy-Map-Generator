@@ -7,6 +7,7 @@ import { Controllers } from "@/controllers";
 import { Coastline } from "@/generators/coastline-generator";
 import type { Feature } from "@/generators/features";
 import { GraphOverride } from "@/generators/graph-override";
+import { Notes } from "@/generators/notes";
 import { getArea, getAreaUnit, speak } from "@/utils";
 import { ensureEl, findEl, rand, rn, si, unique } from "../utils";
 import { getHeight } from "../utils/unitUtils";
@@ -93,7 +94,7 @@ function renderDialog(): void {
       </div>
     </div>
     <div id="lakeBottom">
-      <button id="lakeLegend" data-tip="Edit free text notes (legend) for the lake" class="icon-edit"></button>
+      ${Notes.getButton("lakeLegend", "this lake")}
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -340,8 +341,7 @@ function editGroupStyle(): void {
 }
 
 function editLakeLegend(): void {
-  const id = selectedLake.attr("id");
-  void Controllers.NotesEditor.open(id, `${getLake().name} ${ensureEl<HTMLSelectElement>("lakeGroup").value} lake`);
+  void Controllers.NotesEditor.open({ type: "feature", id: getLake().i });
 }
 
 function closeLakesEditor(): void {

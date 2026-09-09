@@ -13,6 +13,7 @@ import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { Notes } from "@/generators/notes";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { downloadFile, getFileName } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
@@ -44,9 +45,9 @@ const columns: EditorColumn<MarketGoodRow>[] = [
     key: "price",
     label: "Price",
     width: "5em",
+    permanent: true,
     sortBy: item => item.price
-  },
-  { key: "actions", width: "1.2em", permanent: true }
+  }
 ];
 
 const marketOverviewTable = initEditorTable<MarketGoodRow>({
@@ -104,6 +105,7 @@ function renderDialog(): void {
       <div id="marketOverviewBottom">
         <button id="marketOverviewRefresh" data-tip="Refresh the Overview screen" class="icon-cw"></button>
         <button id="marketOverviewOpenDeals" data-tip="View market deals" class="icon-list-bullet"></button>
+        ${Notes.getButton("marketOverviewLegend", "this market")}
         <button
           id="marketOverviewRelocate"
           data-tip="Relocate market. Click on a burg on the map to move the market center"
@@ -126,6 +128,7 @@ function renderDialog(): void {
     Controllers.MarketDealsOverview.open(activeMarketId)
   );
   ensureEl("marketOverviewRelocate").addEventListener("click", toggleRelocateMarket);
+  ensureEl("marketOverviewLegend").addEventListener("click", editMarketNote);
   ensureEl("marketOverviewName").addEventListener("input", onRenameInput);
   ensureEl("marketOverviewNameReset").addEventListener("click", resetMarketName);
 }
@@ -135,6 +138,10 @@ function refreshNameInput(market: Market): void {
   const input = ensureEl<HTMLInputElement>("marketOverviewName");
   input.value = market.name || "";
   input.placeholder = pack.burgs[market.centerBurgId]?.name || `Market ${market.i}`;
+}
+
+function editMarketNote(): void {
+  void Controllers.NotesEditor.open({ type: "market", id: activeMarketId });
 }
 
 function onRenameInput(this: HTMLInputElement): void {

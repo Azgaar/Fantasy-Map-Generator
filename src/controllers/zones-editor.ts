@@ -13,6 +13,7 @@ import { Layers } from "@/components/layers";
 import type { FillBoxElement } from "@/components/shared/fill-box";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
+import { Notes } from "@/generators/notes";
 import type { Zone } from "@/generators/zones-generator";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
 import { zonesFilter } from "@/renderers/draw-zones";
@@ -30,7 +31,11 @@ const columns: EditorColumn<ZoneRow>[] = [
   { key: "cells", label: "Cells", width: "5em" },
   { key: "area", label: "Area", width: "7em" },
   { key: "population", label: "Population", width: "6em" },
-  { key: "actions", width: "4.2em", permanent: true, align: "right" }
+  { key: "note", width: "1.1em" },
+  { key: "reorder", width: "1.1em" },
+  { key: "focus", width: "1.1em" },
+  { key: "visibility", width: "1.1em" },
+  { key: "remove", width: "1.4em", permanent: true }
 ];
 const zonesTable = initEditorTable<ZoneRow>({ getData: getZonesData, onUpdate: renderZonesPage });
 
@@ -121,6 +126,7 @@ function renderDialog(): void {
     const fillBox = target.closest("fill-box");
     if (fillBox) changeFill(fillBox as FillBoxElement, zone);
     else if (target.classList.contains("zonePopulation")) changePopulation(zone);
+    else if (target.classList.contains("icon-book")) void Controllers.NotesEditor.open({ type: "zone", id: zone.i });
     else if (target.classList.contains("zoneRemove")) zoneRemove(zone);
     else if (target.classList.contains("zoneHide")) toggleVisibility(zone);
     else if (target.classList.contains("zoneFog")) toggleFog(zone, target.classList);
@@ -200,7 +206,11 @@ function renderZonesPage(view: TableView<ZoneRow>): void {
       <div data-col="cells"><span data-tip="Cells count" class="icon-check-empty"></span><span data-tip="Cells count" class="stateCells">${percentage ? `${rn((cells.length / pack.cells.i.length) * 100, 2)}%` : cells.length}</span></div>
       <div data-col="area"><span data-tip="Zone area" class="icon-map-o" style="padding-right: 2px"></span><span data-tip="Zone area" class="biomeArea">${percentage ? `${rn((area / totalArea) * 100, 2)}%` : `${si(area)} ${getAreaUnit()}`}</span></div>
       <div data-col="population"><span data-tip="${populationTip}" class="icon-male"></span><span data-tip="${populationTip}" class="zonePopulation pointer">${percentage ? `${rn((population / totalPopulation) * 100, 2)}%` : si(population)}</span></div>
-      <div data-col="actions"><span data-tip="Drag to raise or lower the zone" class="icon-resize-vertical"></span><span data-tip="Toggle zone focus" class="zoneFog icon-pin ${focused ? "" : "inactive"} ${cells.length ? "" : "placeholder"}"></span><span data-tip="Toggle zone visibility" class="zoneHide icon-eye ${cells.length ? "" : " placeholder"}"></span><span data-tip="Remove zone" class="zoneRemove icon-trash-empty"></span></div>
+      ${Notes.getIcon("this zone")}
+      <span data-col="reorder" data-tip="Drag to raise or lower the zone" class="icon-resize-vertical"></span>
+      <span data-col="focus" data-tip="Toggle zone focus" class="zoneFog icon-pin ${focused ? "" : "inactive"} ${cells.length ? "" : "placeholder"}"></span>
+      <span data-col="visibility" data-tip="Toggle zone visibility" class="zoneHide icon-eye ${cells.length ? "" : " placeholder"}"></span>
+      <span data-col="remove" data-tip="Remove zone" class="zoneRemove icon-trash-empty"></span>
     </div>`;
   });
 

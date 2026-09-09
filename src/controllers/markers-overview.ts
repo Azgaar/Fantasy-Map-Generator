@@ -27,7 +27,9 @@ const columns: EditorColumn<Marker>[] = [
   { key: "type", label: "Type", width: "12em", permanent: true, sortBy: marker => marker.type, sortType: "alpha" },
   { key: "pin", label: "Pin", width: "1.5em" },
   { key: "lock", label: "Lock", width: "1.5em" },
-  { key: "actions", width: "3em", permanent: true, align: "right" }
+  { key: "edit", width: "1.1em" },
+  { key: "locate", width: "1.1em" },
+  { key: "remove", width: "1.4em", permanent: true }
 ];
 const markersTable = initEditorTable<Marker>({ getData: getFilteredMarkers, onUpdate: renderMarkersPage });
 
@@ -268,11 +270,9 @@ function renderMarkersPage(view: TableView<Marker>): void {
           <span data-col="lock" class="locks pointer ${
             lock ? "icon-lock" : "icon-lock-open inactive"
           }" onmouseover="showElementLockTip(event)"></span>
-          <div data-col="actions">
-            <span data-tip="Edit marker" class="icon-pencil"></span>
-            <span data-tip="Locate the marker" class="icon-target"></span>
-            <span data-tip="Remove marker" class="icon-trash-empty"></span>
-          </div>
+          <span data-col="edit" data-tip="Edit marker" class="icon-pencil"></span>
+          <span data-col="locate" data-tip="Locate the marker" class="icon-target"></span>
+          <span data-col="remove" data-tip="Remove marker" class="icon-trash-empty"></span>
         </div>`;
     })
     .join("");
@@ -387,7 +387,6 @@ function changeMarkerType(): void {
 }
 
 function removeMarker(i: number): void {
-  notes = notes.filter(note => note.id !== `marker${i}`);
   pack.markers = pack.markers.filter(marker => marker.i !== i);
   document.getElementById(`marker${i}`)?.remove();
   markersTable.refresh();
@@ -406,9 +405,7 @@ function removeAllMarkers(): void {
   pack.markers = pack.markers.filter(({ i, lock }) => {
     if (lock) return true;
 
-    const id = `marker${i}`;
-    document.getElementById(id)?.remove();
-    notes = notes.filter(note => note.id !== id);
+    document.getElementById(`marker${i}`)?.remove();
     return false;
   });
 
@@ -422,9 +419,8 @@ function exportMarkers(): void {
   const body = pack.markers.map(marker => {
     const { i, type, icon, x, y, cell } = marker;
 
-    const note = notes.find(note => note.id === `marker${i}`);
-    const name = note ? quote(note.name) : "Unknown";
-    const legend = note ? quote(note.legend) : "";
+    const name = quote(marker.name);
+    const legend = quote(marker.note || "");
 
     const state = pack.states[pack.cells.state[cell]];
     const culture = pack.cultures[pack.cells.culture[cell]];

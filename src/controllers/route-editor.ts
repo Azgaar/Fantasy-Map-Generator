@@ -3,6 +3,7 @@ import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/di
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
+import { Notes } from "@/generators/notes";
 import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
 import { speak } from "@/utils";
 import { ensureEl, findEl, getPointer, getSegmentId, rn } from "../utils";
@@ -74,7 +75,7 @@ function renderDialog(): void {
       <button id="routeJoin" data-tip="Click to join the route to another route that starts or ends at the same cell" class="icon-link"></button>
       <button id="routeSplit" data-tip="Click on a control point to split the route there" class="icon-unlink"></button>
       <button id="routeElevationProfile" data-tip="Show the elevation profile for the route" class="icon-chart-area"></button>
-      <button id="routeLegend" data-tip="Edit free text notes (legend) for the route" class="icon-edit"></button>
+      ${Notes.getButton("routeLegend", "this route")}
       <button id="routeLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
       <button id="routeRemove" data-tip="Remove route" data-shortcut="Delete" class="icon-trash fastDelete"></button>
     </div>
@@ -421,9 +422,7 @@ function showRouteElevationProfile(): void {
 }
 
 function editRouteLegend(): void {
-  const id = selectedRoute.attr("id");
-  const route = getRoute();
-  void Controllers.NotesEditor.open(id, route.name!);
+  void Controllers.NotesEditor.open({ type: "route", id: getRoute().i });
 }
 
 function editRouteGroupStyle(): void {

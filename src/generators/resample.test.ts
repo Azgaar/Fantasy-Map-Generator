@@ -8,7 +8,6 @@ it("resamples at the requested density and records it in the map", () => {
   options.generation.graph.density = 2;
   vi.stubGlobal("grid", Grid.generate("old", 800, 600));
   vi.stubGlobal("pack", { cells: { p: [], g: [] }, rivers: [] });
-  vi.stubGlobal("notes", []);
   vi.stubGlobal("Features", {
     markupGrid: () => {
       throw new Error("stop after resampling");

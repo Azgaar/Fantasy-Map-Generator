@@ -55,9 +55,9 @@ const columns: EditorColumn<Deal>[] = [
     key: "income",
     label: "Income",
     width: "5em",
+    permanent: true,
     sortBy: deal => getDealNet(deal, activeMarketId)
-  },
-  { key: "actions", width: "1.2em", permanent: true }
+  }
 ];
 
 const marketDealsTable = initEditorTable<Deal>({

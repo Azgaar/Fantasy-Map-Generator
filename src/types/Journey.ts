@@ -24,4 +24,5 @@ export interface Journey {
   segments: JourneySegment[];
   visible?: boolean;
   lock?: boolean;
+  note?: string;
 }

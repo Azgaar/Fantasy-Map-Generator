@@ -25,7 +25,7 @@ function getRadius(): number {
 }
 
 function markerName(marker: Marker): string {
-  return notes.find(note => note.id === `marker${marker.i}`)?.name || marker.type || "Marker";
+  return marker.name || marker.type || "Marker";
 }
 
 function open(marker: Marker): void {
@@ -100,8 +100,8 @@ function renderMarkersList(inRange: Marker[]): void {
   ensureEl("markersRadiusCount").textContent = String(inRangeMarkers.length);
 
   ensureEl("markersRadiusList").innerHTML = inRangeMarkers
-    .map(({ i, type, icon, pinned, lock }) => {
-      const name = notes.find(note => note.id === `marker${i}`)?.name || type;
+    .map(({ i, type, icon, pinned, lock, name: markerName }) => {
+      const name = markerName || type;
       const iconHtml =
         icon.startsWith("http") || icon.startsWith("data:image")
           ? `<img src="${icon}" style="width:1.2em; height:1.2em; vertical-align:middle">`
@@ -185,10 +185,9 @@ function exportInRange(): void {
   const headers = "Id,Type,Icon,Name,Note,State,Culture,X,Y,Latitude,Longitude\n";
   const quote = (s: string) => `"${s.replaceAll('"', '""')}"`;
 
-  const body = inRangeMarkers.map(({ i, type, icon, x, y, cell }) => {
-    const note = notes.find(note => note.id === `marker${i}`);
-    const name = note ? quote(note.name) : "Unknown";
-    const legend = note ? quote(note.legend) : "";
+  const body = inRangeMarkers.map(({ i, type, icon, x, y, cell, name: markerName, note }) => {
+    const name = quote(markerName);
+    const legend = quote(note || "");
     const state = pack.states[pack.cells.state[cell]];
     const culture = pack.cultures[pack.cells.culture[cell]];
     const stateName = state ? quote(state.fullName || state.name) : "";

@@ -45,7 +45,6 @@ function getFullDataJson(): string {
     mapCoordinates: options.map.geography.coordinates,
     pack: packData,
     grid: gridData,
-    notes,
     nameBases: Names.nameBases
   });
 }
@@ -76,7 +75,6 @@ function getMinimalDataJson(): string {
     settings,
     mapCoordinates: options.map.geography.coordinates,
     pack: packData,
-    notes,
     nameBases: Names.nameBases
   });
 }

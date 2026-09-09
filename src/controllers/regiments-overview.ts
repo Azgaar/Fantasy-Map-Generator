@@ -148,7 +148,7 @@ function getRegimentColumns(): EditorColumn<RegimentRow>[] {
       sortBy: row => row.regiment.a,
       tip: "Total military personnel (not considering crew). Click to sort"
     },
-    { key: "actions", width: "1.4em", permanent: true, align: "right" }
+    { key: "edit", width: "1.4em", permanent: true }
   ];
 }
 
@@ -196,7 +196,7 @@ function renderRegimentsPage(view: TableView<RegimentRow>): void {
         <input data-col="name" data-tip="Regiment's name" value="${regiment.name}" readonly />
         ${unitCells}
         <div data-col="total" data-tip="Total military personnel (not considering crew)" style="font-weight:bold">${percentage ? percent(regiment.a, total) : regiment.a}</div>
-        <div data-col="actions"><span data-tip="Edit regiment" data-edit-regiment="regiment${state.i}-${regiment.i}" class="icon-pencil pointer"></span></div>
+        <span data-col="edit" data-tip="Edit regiment" data-edit-regiment="regiment${state.i}-${regiment.i}" class="icon-pencil pointer"></span>
       </div>`;
     })
     .join("");

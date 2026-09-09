@@ -35,6 +35,8 @@ export interface Good {
   icon: string;
   color: string;
   visible?: boolean; // whether the good is shown on the Goods layer
+
+  note?: string;
 }
 
 export const DEMAND_PRIORITY = ["food", "utilities", "construction", "military", "luxury"] as const;

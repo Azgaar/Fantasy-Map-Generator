@@ -4,9 +4,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import indexHtml from "@/index.html?raw";
 import "@/generators/added-labels";
 import "@/generators/features"; // migrations call the Features module through its global
+import { confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { Styles } from "@/generators/styles";
 import * as versioning from "@/services/versioning";
 import { VERSION } from "@/services/versioning";
+import { downloadFile } from "@/utils";
 import { migrateLegacySettings, resolveVersionConflicts } from "./auto-update";
 
 beforeEach(() => {
@@ -32,7 +34,6 @@ it.each([18, 180])("keeps legacy custom labels after saving and reloading a font
     burgs: JSON.parse(data[15]),
     addedLabels: []
   } as unknown as typeof pack;
-  globalThis.notes = JSON.parse(data[4]);
 
   // Exercise the label migration without unrelated versions' graph and DOM setup.
   const compare = vi.spyOn(versioning, "compareVersions");
@@ -452,5 +453,145 @@ describe("missing svg defs", () => {
 
     const restored = Array.from(document.querySelectorAll("#map defs [id]"), node => node.id);
     expect(restored).toEqual(declared.map(([, id]) => id));
+  });
+});
+
+vi.mock("@/components/dialog/dialog-helpers", () => ({ confirmationDialog: vi.fn(), destroyDialog: vi.fn() }));
+vi.mock("@/utils", async importOriginal => ({
+  ...(await importOriginal<typeof import("@/utils")>()),
+  downloadFile: vi.fn()
+}));
+
+describe("v1.152.0 notes moved onto entities", () => {
+  async function migrate(notes: object[]) {
+    const data = Array<string>(52).fill("");
+    data[4] = JSON.stringify(notes);
+
+    const compare = vi.spyOn(versioning, "compareVersions");
+    compare.mockImplementation((_a, b) => ({ isOlder: b === "1.152.0", isNewer: false, isEqual: false }));
+    try {
+      await resolveVersionConflicts("1.151.2", data);
+    } finally {
+      compare.mockRestore();
+    }
+    return data;
+  }
+
+  beforeEach(() => {
+    vi.mocked(confirmationDialog).mockClear();
+    vi.mocked(downloadFile).mockClear();
+    globalThis.pack = {
+      burgs: [0, { i: 1, name: "Vaeltown" }],
+      states: [
+        { i: 0, name: "Neutrals" },
+        { i: 1, name: "Ardenia", military: [{ i: 0, name: "1st Cavalry" }] }
+      ],
+      markers: [
+        { i: 4, type: "hot-springs" },
+        { i: 5, type: "volcanoes" }
+      ],
+      rivers: [0, { i: 1, name: "Ald", type: "River" }],
+      features: [],
+      routes: [],
+      provinces: [],
+      zones: [],
+      journeys: [],
+      markets: [],
+      addedLabels: [],
+      cultures: [],
+      religions: [],
+      biomes: [],
+      goods: []
+    } as unknown as typeof pack;
+  });
+
+  it("attaches a note to its entity and empties the legacy slot", async () => {
+    const data = await migrate([{ id: "burg1", name: "Vaeltown", legend: "A river port" }]);
+
+    expect(pack.burgs[1].note).toBe("A river port");
+    expect(data[4]).toBe("");
+    expect(confirmationDialog).not.toHaveBeenCalled();
+  });
+
+  it("collides the two notes of a river, the element note first", async () => {
+    await migrate([
+      { id: "riverLabel1", name: "Ald River", legend: "<p>Named for the elder trees</p>" },
+      { id: "river1", name: "Ald River", legend: "<p>Fed by three lakes</p>" }
+    ]);
+
+    expect(pack.rivers[1].note).toBe("<p>Fed by three lakes</p><p>Named for the elder trees</p>");
+  });
+
+  it("keeps a note title that differs from the entity name as a heading", async () => {
+    await migrate([{ id: "burg1", name: "The Siege of Vaeltown", legend: "<p>It held.</p>" }]);
+
+    expect(pack.burgs[1].note).toBe("<h3>The Siege of Vaeltown</h3><p>It held.</p>");
+  });
+
+  it("moves a marker note title onto the marker and names the rest from their type", async () => {
+    await migrate([{ id: "marker4", name: "Steaming Pools", legend: "Warm all year" }]);
+
+    expect(pack.markers[0]).toMatchObject({ name: "Steaming Pools", note: "Warm all year" });
+    expect(pack.markers[1].name).toBe("Volcanoes"); // no note to take a name from
+    expect(pack.markers[1].note).toBeUndefined();
+  });
+
+  it("drops an empty legacy note rather than turning its title into a heading", async () => {
+    await migrate([
+      { id: "river1", name: "river1", legend: "" }, // old maps title an untitled note with its element id
+      { id: "burg1", name: "Vaeltown", legend: "" }
+    ]);
+
+    expect(pack.rivers[1].note).toBeUndefined();
+    expect(pack.burgs[1].note).toBeUndefined();
+    expect(confirmationDialog).not.toHaveBeenCalled();
+  });
+
+  it("does not turn an untitled note's element id into a heading", async () => {
+    await migrate([{ id: "river1", name: "river1", legend: "<p>Fed by three lakes</p>" }]);
+
+    expect(pack.rivers[1].note).toBe("<p>Fed by three lakes</p>");
+  });
+
+  it("keeps the marker name of an empty note", async () => {
+    await migrate([{ id: "marker4", name: "Steaming Pools", legend: "" }]);
+
+    expect(pack.markers[0].name).toBe("Steaming Pools");
+    expect(pack.markers[0].note).toBeUndefined();
+  });
+
+  it("does not offer an empty note whose element is gone", async () => {
+    await migrate([{ id: "burg99", name: "Lost Town", legend: "" }]);
+
+    expect(confirmationDialog).not.toHaveBeenCalled();
+  });
+
+  it("attaches a regiment note through its state", async () => {
+    await migrate([{ id: "regiment1-0", name: "1st Cavalry", legend: "Formed in 900 AD" }]);
+
+    expect(pack.states[1].military![0].note).toBe("Formed in 900 AD");
+  });
+
+  it("offers notes whose element is gone as a csv, and keeps the rest", async () => {
+    await migrate([
+      { id: "burg1", name: "Vaeltown", legend: "kept" },
+      { id: "burg99", name: "Lost Town", legend: 'dropped, with a "quote"' },
+      { id: "someLegacyThing", name: "Older still", legend: "dropped too" }
+    ]);
+
+    expect(pack.burgs[1].note).toBe("kept");
+    expect(confirmationDialog).toHaveBeenCalledOnce();
+
+    const [dialog] = vi.mocked(confirmationDialog).mock.calls[0];
+    expect(dialog.message).toContain("2 note(s)");
+
+    dialog.onConfirm?.();
+    const [csv, fileName] = vi.mocked(downloadFile).mock.calls[0];
+    expect(fileName).toContain(".csv");
+    expect(String(csv).split("\n")).toEqual([
+      "id,name,note",
+      '"burg99","Lost Town","dropped, with a ""quote"""',
+      '"someLegacyThing","Older still","dropped too"'
+    ]);
   });
 });

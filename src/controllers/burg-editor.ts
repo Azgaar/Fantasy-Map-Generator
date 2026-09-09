@@ -4,6 +4,7 @@ import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { Notes } from "@/generators/notes";
 import { removeEmblem } from "@/renderers/draw-emblems";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { getHeight, openURL, speak } from "@/utils";
@@ -231,7 +232,7 @@ function renderDialog(): void {
           data-tip="Relocate burg. Click on map to move the burg"
           class="icon-map-pin"
         ></button>
-        <button id="burglLegend" data-tip="Edit free text notes (legend) for this burg" class="icon-edit"></button>
+        ${Notes.getButton("burglLegend", "this burg")}
         <button id="burgLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
         <button
           id="burgRemove"
@@ -799,8 +800,7 @@ function relocateBurgOnClick(this: SVGGElement, event: any): void {
 }
 
 function editBurgLegend(): void {
-  const id = getSelectedId();
-  void Controllers.NotesEditor.open(`burg${id}`, pack.burgs[id].name);
+  void Controllers.NotesEditor.open({ type: "burg", id: getSelectedId() });
 }
 
 function showTemperatureGraph(): void {

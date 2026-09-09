@@ -284,7 +284,8 @@ Rivers data is stored as an unordered array of objects (so element id is _not_ t
 
 Markers data is stored as an unordered array of objects (so element id is _not_ the array index). Object structure:
 
-- `i`: `number` - marker id. `'marker' + i` is used as svg element id and marker reference in `notes` object
+- `i`: `number` - marker id. `'marker' + i` is used as svg element id
+- `name`: `string` - marker name, shown in the notes box header and the markers overview
 - `icon`: `number` - Unicode character (usually an [emoji](https://emojipedia.org/)) to serve as an icon
 - `x`: `number` - marker x coordinate
 - `y`: `number` - marker y coordinate
@@ -515,11 +516,12 @@ Transport types are configuration, not map state: they live in `options.transpor
 
 ## Notes
 
-Notes (legends) data is stored in unordered array of objects: `notes`. Object structure is as simple as:
+A note (legend) is free text the user writes about a map object. It is stored on the object itself as
+`note?: string` (html), so it is created, cloned and removed with its owner and cannot outlive it.
 
-- `i`: `string` - note id
-- `name`: `string` - note name, visible in Legend box
-- `legend`: `string` - note text in html
+These entities carry a note: `burgs`, `markers`, `states`, `provinces`, `rivers`, `routes`,
+`states[].military[]`, `addedLabels`, `features`, `zones`, `journeys`, `markets`, `cultures`,
+`religions`, `biomes` and `goods`.
 
 ## Name bases
 

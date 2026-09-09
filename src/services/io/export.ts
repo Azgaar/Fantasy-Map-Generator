@@ -750,14 +750,13 @@ function saveGeoJsonRivers(): void {
 
 function saveGeoJsonMarkers(): void {
   const features = pack.markers.map(marker => {
-    const { i, type, icon, x, y, size, fill, stroke } = marker as typeof marker & {
+    const { i, type, icon, x, y, size, fill, stroke, name, note } = marker as typeof marker & {
       size?: number;
       fill?: string;
       stroke?: string;
     };
     const coordinates = toGeoCoordinates(x, y);
-    const note = notes.find(note => note.id === `marker${i}`);
-    const properties = { id: i, type, icon, x, y, ...note, size, fill, stroke };
+    const properties = { id: i, type, icon, x, y, name, note, size, fill, stroke };
     return { type: "Feature", geometry: { type: "Point", coordinates }, properties };
   });
 

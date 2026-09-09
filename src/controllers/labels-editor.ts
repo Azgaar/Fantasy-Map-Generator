@@ -6,6 +6,7 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { viewport } from "@/components/viewport";
 import { Controllers } from "@/controllers";
 import type { Label, LabelType } from "@/generators/labels-generator";
+import { Notes } from "@/generators/notes";
 import { UNNAMED_ROUTE } from "@/generators/routes-generator";
 import type { Point } from "@/generators/voronoi";
 import { createLabelArc } from "@/renderers/labels/label-arc";
@@ -129,7 +130,7 @@ function renderDialog(): void {
         ></slider-input>
       </div>
       <button id="labelVisibility"></button>
-      <button id="labelLegend" data-tip="Edit free text notes (legend) for this label" class="icon-edit"></button>
+      ${Notes.getButton("labelLegend", "this label")}
       <button id="labelReset" data-tip="Restore the default label" class="icon-arrows-cw"></button>
       <button
         id="labelRemoveSingle"
@@ -512,8 +513,8 @@ function toggleLabelVisibility(): void {
 }
 
 function editLabelLegend(): void {
-  const noteId = label.type === "burg" ? `burg${label.entityId}` : label.id;
-  void Controllers.NotesEditor.open(noteId, label.text);
+  const ref = Notes.resolveElement(label.id); // burgLabel3 -> the burg, stateLabel1 -> the state, and so on
+  if (ref) void Controllers.NotesEditor.open(ref);
 }
 
 function removeSelectedLabel(): void {

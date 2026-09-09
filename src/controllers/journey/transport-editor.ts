@@ -20,7 +20,7 @@ const columns: EditorColumn<Transport>[] = [
   { key: "speed", label: "Speed", width: "5em" },
   { key: "hoursPerDay", label: "h/day", width: "4em", tip: "Hours of travel a day sustains with this transport" },
   { key: "domain", label: "Domain", width: "5em" },
-  { key: "actions", width: "1.4em", permanent: true, align: "right" }
+  { key: "remove", width: "1.4em", permanent: true }
 ];
 
 const typesTable = initEditorTable<Transport>({
@@ -98,7 +98,7 @@ function renderTypesPage(view: TableView<Transport>): void {
       <div data-col="hoursPerDay"><input class="ttHours" type="number" min="1" max="${MAX_HOURS_PER_DAY}" step="1" value="${Transports.resolveHoursPerDay(type)}"
         data-tip="${isStay ? "Hours a day of waiting covers: 24 means a full day passes" : "Hours of travel a day sustains: a caravan walks ~8 h/day, a ship sails 24"}" /></div>
       <div data-col="domain"><select class="ttDomain" data-tip="${DOMAIN_LABEL[type.domain]}">${options}</select></div>
-      <div data-col="actions"><span data-tip="Remove the transport type" class="ttDelete pointer icon-trash-empty"></span></div>
+      <span data-col="remove" data-tip="Remove the transport type" class="ttDelete pointer icon-trash-empty"></span>
     </div>`;
   }
   body.insertAdjacentHTML("beforeend", lines);

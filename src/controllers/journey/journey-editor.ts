@@ -25,6 +25,7 @@ import {
   getCellPoint,
   resolveCellPlace
 } from "@/generators/journeys/journey-places";
+import { Notes } from "@/generators/notes";
 import { startJourneyTravel, stopJourneyTravel } from "@/renderers/journey-travel";
 import type { Journey, JourneySegment } from "@/types/Journey";
 import {
@@ -155,6 +156,7 @@ function renderDialog(journey: Journey): void {
       <button id="journeyEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
       <button id="journeyAddSegment" data-tip="Add a segment to the journey" class="icon-plus"></button>
       <button id="journeyEditTransport" data-tip="Edit transport types" class="icon-cog"></button>
+      ${Notes.getButton("journeyLegend", "this journey")}
       <button id="journeyExport" data-tip="Save journey segments as a text file (.csv)" class="icon-download"></button>
       <button id="journeyRemove" data-tip="Remove the journey" class="icon-trash"></button>
     </div>
@@ -183,8 +185,14 @@ function renderDialog(journey: Journey): void {
   ensureEl("journeyColor").addEventListener("click", onColorPick);
   ensureEl("journeyAddSegment").addEventListener("click", addSegment);
   ensureEl("journeyEditTransport").addEventListener("click", () => void Controllers.TransportEditor.open());
+  ensureEl("journeyLegend").addEventListener("click", editJourneyNote);
   ensureEl("journeyExport").addEventListener("click", downloadSegmentsData);
   ensureEl("journeyRemove").addEventListener("click", triggerJourneyRemove);
+}
+
+function editJourneyNote(): void {
+  const journey = getJourney();
+  if (journey) void Controllers.NotesEditor.open({ type: "journey", id: journey.i });
 }
 
 function renderSegmentsPage(view: TableView<JourneySegment>): void {

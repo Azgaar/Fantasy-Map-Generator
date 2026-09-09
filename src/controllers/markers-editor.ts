@@ -5,6 +5,7 @@ import { clearMainTip } from "@/components/tooltips";
 import { viewport } from "@/components/viewport";
 import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
+import { Notes } from "@/generators/notes";
 import { getPin } from "@/renderers/draw-markers";
 import { ensureEl, findEl, rn } from "../utils";
 
@@ -25,7 +26,7 @@ function open(markerI?: number, target?: Element): void {
     .classed("draggable", true);
 
   if (findEl("notesEditor")) {
-    void Controllers.NotesEditor.open(selectedElement.id, selectedElement.id);
+    void Controllers.NotesEditor.open({ type: "marker", id: selectedMarker.i });
   }
 
   renderDialog();
@@ -88,7 +89,7 @@ function renderDialog(): void {
       </div>
     </div>
     <div id="markerBottom">
-      <button id="markerNotes" data-tip="Edit place legend (notes)" class="icon-edit"></button>
+      ${Notes.getButton("markerNotes", "this marker")}
       <button id="markerRadius" data-tip="Show markers within a radius of this one" class="icon-dot-circled"></button>
       <button id="markerLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
       <button id="markerAdd" data-tip="Add additional marker of that type" class="icon-plus"></button>
@@ -284,8 +285,7 @@ function redrawPin({ i, hidden, pin = "bubble", fill = "#fff", stroke = "#000" }
 }
 
 function editMarkerLegend(): void {
-  const id = selectedElement.id;
-  void Controllers.NotesEditor.open(id, id);
+  void Controllers.NotesEditor.open({ type: "marker", id: selectedMarker.i });
 }
 
 function openMarkersInRadius(): void {

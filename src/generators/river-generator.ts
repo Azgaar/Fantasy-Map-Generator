@@ -23,6 +23,7 @@ export interface River {
   cells: number[]; // cells forming the river path
   points?: Point[]; // river points (for meandering)
   label?: Label;
+  note?: string;
 }
 
 class RiverModule {

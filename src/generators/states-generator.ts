@@ -56,6 +56,7 @@ export interface State {
   pollTax: number;
   treasury: number;
   label?: Label;
+  note?: string;
 }
 
 interface Campaign {
