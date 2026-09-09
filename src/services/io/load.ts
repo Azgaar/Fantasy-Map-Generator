@@ -6,6 +6,7 @@ import { registerMap } from "@/components/lifecycle";
 import { syncOptionInputs } from "@/components/options/tabs/options-tab";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import { resetZoom } from "@/components/zoom";
 import { GraphOverride } from "@/generators/graph-override";
 import { invalidateEmblems } from "@/renderers/draw-emblems";
 import { clearLegend } from "@/renderers/draw-legend";
@@ -667,9 +668,10 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     Layers.drawAll();
     applyStoredStyles();
     applyDefaultViewboxEvents();
+    fitMapToScreen();
+    resetZoom(0); // an opened map is shown fitted, whatever window size it was made on
     focusOn();
     invokeActiveZooming();
-    fitMapToScreen();
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - uploadTimeStart) / 1000, 2)}s`);
 
