@@ -54,7 +54,9 @@ test.describe("legend boxes", () => {
     await expect(page.locator("#legend > g[data-legend]")).toHaveCount(2);
 
     await page.evaluate(() => (window as any).closeDialogs());
-    await page.locator('#legend > g[data-legend="Cultures"] .legendBox').click();
+    // the item and title texts are siblings of the background rect and paint over it, so clicking
+    // the rect's centre can land on a glyph and fail the hit-target check; the group owns them all
+    await page.locator('#legend > g[data-legend="Cultures"]').click();
     await expect(page.locator("#legend > g[data-legend]")).toHaveCount(1);
     await expect(page.locator('#legend > g[data-legend="States"]')).toBeAttached();
   });
