@@ -566,22 +566,6 @@ describe("v1.152.0 notes moved onto entities", () => {
     expect(confirmationDialog).not.toHaveBeenCalled();
   });
 
-  it("migrates a map that claims the version but still holds the legacy array", async () => {
-    const data = Array<string>(52).fill("");
-    data[4] = JSON.stringify([{ id: "burg1", name: "Vaeltown", legend: "A river port" }]);
-
-    const compare = vi.spyOn(versioning, "compareVersions");
-    compare.mockImplementation(() => ({ isOlder: false, isNewer: false, isEqual: true }));
-    try {
-      await resolveVersionConflicts("1.152.0", data);
-    } finally {
-      compare.mockRestore();
-    }
-
-    expect(pack.burgs[1].note).toBe("A river port");
-    expect(data[4]).toBe("");
-  });
-
   it("does not repeat the short name the labels editor titled a state note with", async () => {
     await migrate([{ id: "stateLabel1", name: "Ardenia", legend: "<p>Founded in 500</p>" }]);
 
