@@ -1,6 +1,6 @@
 import { select } from "d3";
 import type { Marker } from "@/generators/markers-generator";
-import { rn } from "../utils";
+import { isImageIcon, rn } from "../utils";
 
 type PinShapeFunction = (fill: string, stroke: string) => string;
 type PinShapes = { [key: string]: PinShapeFunction };
@@ -44,7 +44,7 @@ export function drawMarker(marker: Marker, rescale = 1): string {
   const viewX = rn(x - zoomSize / 2, 1);
   const viewY = rn(y - zoomSize, 1);
 
-  const isExternal = icon.startsWith("http") || icon.startsWith("data:image");
+  const isExternal = isImageIcon(icon);
 
   return /* html */ `
     <svg id="${id}" viewbox="0 0 30 30" width="${zoomSize}" height="${zoomSize}" x="${viewX}" y="${viewY}">

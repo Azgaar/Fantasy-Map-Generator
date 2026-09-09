@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sanitizeSvgIcon, svgToDataUri } from "./fileUtils";
+import { isImageIcon, sanitizeSvgIcon, svgToDataUri } from "./fileUtils";
 
 describe("sanitizeSvgIcon", () => {
   it("returns the svg element from the file markup", () => {
@@ -48,5 +48,17 @@ describe("svgToDataUri", () => {
     const markup = '<svg xmlns="http://www.w3.org/2000/svg"><text>Привет 城市</text></svg>';
     const decoded = Buffer.from(svgToDataUri(markup).split(",")[1], "base64").toString("utf8");
     expect(decoded).toBe(markup);
+  });
+});
+
+describe("isImageIcon", () => {
+  it("recognises http and data image URLs", () => {
+    expect(isImageIcon("https://example.com/icon.png")).toBe(true);
+    expect(isImageIcon("data:image/svg+xml;base64,PHN2Zy8+")).toBe(true);
+  });
+
+  it("rejects emoji and plain text", () => {
+    expect(isImageIcon("⛏️")).toBe(false);
+    expect(isImageIcon("")).toBe(false);
   });
 });

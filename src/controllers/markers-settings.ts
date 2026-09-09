@@ -2,7 +2,7 @@ import { destroyDialog, refreshEditors } from "@/components/dialog/dialog-helper
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
-import { ensureEl } from "@/utils";
+import { ensureEl, isImageIcon } from "@/utils";
 
 const DIALOG_ID = "markersSettings";
 
@@ -66,7 +66,7 @@ function drawConfigTable(): void {
   </tr></thead>`;
 
   const lines = Markers.getConfig().map(({ type, icon, multiplier }) => {
-    const isExternal = icon.startsWith("http") || icon.startsWith("data:image");
+    const isExternal = isImageIcon(icon);
     return /* html */ `<tr>
       <td><input class="type" value="${type}" /></td>
       <td style="position: relative">
@@ -91,7 +91,7 @@ function drawConfigTable(): void {
       if (!image || !emoji) return;
 
       Controllers.IconSelector.open(image.getAttribute("src") || emoji.textContent || "", value => {
-        const isExternal = value.startsWith("http") || value.startsWith("data:image");
+        const isExternal = isImageIcon(value);
         image.setAttribute("src", isExternal ? value : "");
         image.hidden = !isExternal;
         emoji.textContent = isExternal ? "" : value;

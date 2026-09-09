@@ -5,7 +5,7 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { drawRegiment, moveRegiment } from "@/renderers/draw-military";
-import { speak } from "@/utils";
+import { isImageIcon, speak } from "@/utils";
 import type { Regiment } from "../generators/military-generator";
 import { capitalize, ensureEl, getPointer, last, rn } from "../utils";
 
@@ -112,10 +112,9 @@ function getRegiment(): Regiment | undefined {
 function updateRegimentData(regiment: Regiment): void {
   ensureEl("regimentType").className = regiment.n ? "icon-anchor" : "icon-users";
   ensureEl<HTMLInputElement>("regimentName").value = regiment.name;
-  ensureEl("regimentEmblem").innerHTML =
-    regiment.icon!.startsWith("http") || regiment.icon!.startsWith("data:image")
-      ? `<img src="${regiment.icon}" style="width: 1em; height: 1em;">`
-      : regiment.icon!;
+  ensureEl("regimentEmblem").innerHTML = isImageIcon(regiment.icon!)
+    ? `<img src="${regiment.icon}" style="width: 1em; height: 1em;">`
+    : regiment.icon!;
 
   const composition = ensureEl("regimentComposition");
   composition.innerHTML = options.military
@@ -235,7 +234,7 @@ function changeEmblem(): void {
 
   Controllers.IconSelector.open(regiment.icon ?? "", value => {
     regiment.icon = value;
-    const isExternal = value.startsWith("http") || value.startsWith("data:image");
+    const isExternal = isImageIcon(value);
     ensureEl("regimentEmblem").innerHTML = isExternal ? `<img src="${value}" style="width: 1em; height: 1em;">` : value;
     selectedRegiment!.querySelector(".regimentIcon")!.textContent = isExternal ? "" : value;
     selectedRegiment!.querySelector(".regimentImage")!.setAttribute("href", isExternal ? value : "");

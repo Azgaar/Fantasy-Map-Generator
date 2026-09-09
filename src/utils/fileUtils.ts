@@ -49,6 +49,11 @@ export function sanitizeSvgIcon(svgText: string): SVGElement | null {
   return container.querySelector("svg");
 }
 
+/** Whether an icon value is an image URL rather than an emoji or text glyph */
+export function isImageIcon(icon: string): boolean {
+  return icon.startsWith("http") || icon.startsWith("data:image");
+}
+
 /** Encode SVG markup as a base64 data URI (UTF-8 safe) */
 export function svgToDataUri(svgText: string): string {
   const bytes = new TextEncoder().encode(svgText);

@@ -6,7 +6,7 @@ import { tip } from "@/components/tooltips";
 import { moveRegiment } from "@/renderers/draw-military";
 import type { Marker } from "../generators/markers-generator";
 import type { Regiment } from "../generators/military-generator";
-import { capitalize, ensureEl, getAdjective, last, list, minmax, P, Pint, rand, rn, wiki } from "../utils";
+import { capitalize, ensureEl, getAdjective, isImageIcon, last, list, minmax, P, Pint, rand, rn, wiki } from "../utils";
 
 type Side = "attackers" | "defenders";
 
@@ -527,7 +527,7 @@ function addHeaders(): void {
 
   for (const u of options.military) {
     const label = capitalize(u.name.replace(/_/g, " "));
-    const isExternal = u.icon.startsWith("http") || u.icon.startsWith("data:image");
+    const isExternal = isImageIcon(u.icon);
     const iconHTML = isExternal ? `<img src="${u.icon}" width="15" height="15">` : u.icon;
     headers += `<th data-tip="${label}">${iconHTML}</th>`;
   }
@@ -549,7 +549,7 @@ function addRegimentToSide(side: Side, regiment: Regiment): void {
   const distance = (Math.hypot(b.y - regiment.by, b.x - regiment.bx) * distanceScale) | 0; // distance between regiment and its base
   const color = state.color?.[0] === "#" ? state.color : "#999";
 
-  const isExternal = regiment.icon!.startsWith("http") || regiment.icon!.startsWith("data:image");
+  const isExternal = isImageIcon(regiment.icon!);
   const iconHtml = isExternal
     ? `<image href="${regiment.icon}" x="0.1em" y="0.1em" width="1.2em" height="1.2em"></image>`
     : `<text x="50%" y="1em" style="text-anchor: middle">${regiment.icon}</text>`;

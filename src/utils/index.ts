@@ -22,7 +22,7 @@ import {
   wiki
 } from "./commonUtils";
 import { drawCellsValue, drawPath, drawPoint, drawPolygons, drawRouteConnections } from "./debugUtils";
-import { downloadFile, getFileName, sanitizeSvgIcon, svgToDataUri, uploadFile } from "./fileUtils";
+import { downloadFile, getFileName, isImageIcon, sanitizeSvgIcon, svgToDataUri, uploadFile } from "./fileUtils";
 import { distanceSquared, rollups } from "./functionUtils";
 import { isLand, isWater, SEA_LEVEL } from "./heightUtils";
 import { applyOption, ensureEl, findEl, getComposedPath, getNextId, getPointer } from "./nodeUtils";
@@ -214,6 +214,7 @@ export {
   getVertexPath,
   initializePrompt,
   isCtrlClick,
+  isImageIcon,
   isLand,
   isValidJSON,
   isVowel,
