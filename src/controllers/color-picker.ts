@@ -1,6 +1,7 @@
 // The fill picker: an SVG overlay to pick a color or a hatching pattern.
 import { type D3DragEvent, drag, hsl, rgb, select } from "d3";
 import { tip } from "@/components/tooltips";
+import { viewport } from "@/components/viewport";
 import { parseTransform, rn } from "@/utils";
 
 type ColorSpace = "hsl" | "rgb" | "hex";
@@ -37,8 +38,8 @@ function renderPicker(): SVGSVGElement {
   const colorsBottom = 36 + rows * SWATCH_STEP_Y;
   const hatchesBottom = 16 + number * 2 + rows * SWATCH_STEP_Y;
   const height = Math.max(40, colorsBottom, hatchesBottom) + 9;
-  const x = (svgWidth - PICKER_WIDTH) / 2;
-  const y = (svgHeight - height) / 2;
+  const x = (viewport.width - PICKER_WIDTH) / 2;
+  const y = (viewport.height - height) / 2;
   const zIndex =
     Array.from(document.querySelectorAll<HTMLElement>(".ui-front")).reduce(
       (max, element) => Math.max(max, Number(getComputedStyle(element).zIndex) || 0),
@@ -325,8 +326,8 @@ function onPickerDrag(this: SVGGElement, event: D3DragEvent<SVGGElement, unknown
   const bbox = this.getBBox();
 
   event.on("drag", dragEvent => {
-    const px = rn(((x + dragEvent.x + bbox.width) / svgWidth) * 100, 2);
-    const py = rn(((y + dragEvent.y + bbox.height) / svgHeight) * 100, 2);
+    const px = rn(((x + dragEvent.x + bbox.width) / viewport.width) * 100, 2);
+    const py = rn(((y + dragEvent.y + bbox.height) / viewport.height) * 100, 2);
     this.setAttribute("transform", `translate(${x + dragEvent.x},${y + dragEvent.y})`);
     this.dataset.x = String(px);
     this.dataset.y = String(py);

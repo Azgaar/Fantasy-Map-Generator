@@ -1,0 +1,181 @@
+// The app and map lifecycle: start the app, erase what is on screen, generate a new world, put it back
+import { applyGraphSize, fitMapToScreen } from "@/components/canvas";
+import { closeDialogs, confirmationDialog, initDialogPositionPersistence } from "@/components/dialog/dialog-helpers";
+import { Layers } from "@/components/layers";
+import { hideLoading, showLoading } from "@/components/loading";
+import { restoreUi, syncOptionInputs } from "@/components/options/tabs/options-tab";
+import { is3dView } from "@/components/options/view-mode";
+import { setSeed } from "@/components/seed";
+import { initShell, warnIfServerless } from "@/components/shell";
+import { clearMainTip, tip } from "@/components/tooltips";
+import { undraw } from "@/components/undraw";
+import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import { setViewportSize } from "@/components/viewport";
+import { invokeActiveZooming, resetZoom } from "@/components/zoom";
+import { Controllers } from "@/controllers";
+import { getPointsNumber } from "@/data/graph-density";
+import { GenerationPipeline } from "@/generators/generation-pipeline";
+import { initiateAutosave } from "@/services/autosave";
+import { stashCallbackToken } from "@/services/help/auth";
+import { logStats } from "@/services/logging";
+import { registerServiceWorker } from "@/services/platform";
+import { checkLoadParameters } from "@/services/url-params";
+import { cleanupData } from "@/services/versioning";
+import type { GridGraph } from "@/types/GridGraph";
+import { debounce, ensureEl, findEl, parseError } from "@/utils";
+
+/** Bring the app up */
+export async function boot(): Promise<void> {
+  stashCallbackToken(); // before anything reads the URL: the OAuth fragment is not a load parameter
+  registerServiceWorker();
+  initShell();
+  initDialogPositionPersistence();
+
+  Options.restore();
+  syncOptionInputs();
+  restoreUi();
+  setViewportSize(options.map.graph.width, options.map.graph.height);
+  applyDefaultViewboxEvents();
+
+  if (!warnIfServerless()) {
+    hideLoading();
+    await checkLoadParameters();
+  }
+
+  initiateAutosave();
+}
+
+export type GenerationConfig = { seed?: string; graph?: GridGraph; width?: number; height?: number; points?: number };
+
+/** Generate a whole new world */
+export async function generate(config?: GenerationConfig): Promise<void> {
+  try {
+    const { seed: precreatedSeed, graph: precreatedGraph, width, height, points } = config || {};
+    Options.setGraphSize(width, height);
+    setSeed(precreatedSeed);
+    Options.randomize();
+    if (precreatedGraph && points !== undefined) options.map.graph.points = points;
+    applyGraphSize(); // TODO: DOM change, not part of generation
+
+    await GenerationPipeline.run({ graph: precreatedGraph });
+    Options.persist();
+
+    syncOptionInputs();
+    registerMap();
+    logStats();
+    invokeActiveZooming();
+  } catch (error) {
+    ERROR && console.error(error);
+    clearMainTip();
+
+    ensureEl("alertMessage").innerHTML = /* html */ `An error has occurred on map generation. Please retry.
+      <br />If error is critical, clear the stored data and try again.
+      <p id="errorBox">${parseError(error as Error)}</p>`;
+
+    $("#alert").dialog({
+      resizable: false,
+      title: "Generation error",
+      width: "32em",
+      buttons: {
+        "Cleanup data": () => cleanupData(),
+        Regenerate: function (this: HTMLElement) {
+          regenerateMap("generation error");
+          $(this).dialog("close");
+        },
+        Ignore: function (this: HTMLElement) {
+          $(this).dialog("close");
+        }
+      },
+      position: { my: "center", at: "center", of: "svg" }
+    });
+  }
+}
+
+/** Replace the current map with a new one. Debounced: the hotkey and the button both fire it */
+export const regenerateMap = debounce(async (config?: GenerationConfig | string) => {
+  const reason = typeof config === "string" ? config : "user request";
+  WARN && console.warn(`Generate new random map: ${reason}`);
+
+  // a big grid takes long enough that the splash is worth showing. The size asked for, not the
+  // one on screen: the map being replaced says nothing about how long the next one will take
+  const shouldShowLoading = getPointsNumber(options.generation.graph.density) > 10000;
+  shouldShowLoading && showLoading();
+
+  closeDialogs("#worldConfigurator, #options3d");
+  customization = 0;
+  resetZoom(1000);
+  undraw();
+  await generate(typeof config === "string" ? undefined : config);
+  Layers.drawAll();
+
+  if (is3dView()) Controllers.View3d.redraw();
+  if (findEl("worldConfigurator")?.offsetParent) Controllers.WorldConfigurator.open();
+
+  fitMapToScreen();
+  shouldShowLoading && hideLoading();
+  clearMainTip();
+}, 250);
+
+/** Ask before throwing away a map the user has been working on for a while */
+export function regeneratePrompt(config?: GenerationConfig): void {
+  if (customization) {
+    tip("New map cannot be generated when edit mode is active, please exit the mode and retry", false, "error");
+    return;
+  }
+
+  const current = mapHistory.at(-1);
+  const workingMinutes = current ? (Date.now() - current.registeredAt) / 60000 : 0;
+  if (workingMinutes < 1) {
+    regenerateMap(config);
+    return;
+  }
+
+  confirmationDialog({
+    title: "Generate new map",
+    message:
+      "Are you sure you want to generate a new map?<br />All unsaved changes made to the current map will be lost",
+    confirm: "Generate",
+    onConfirm: () => {
+      closeDialogs();
+      regenerateMap(config);
+    }
+  });
+}
+
+interface MapHistoryEntry {
+  seed: string;
+  width: number;
+  height: number;
+  template: string;
+  created: number;
+  /** when this entry was put on screen in this session, unlike `created` never backdated to a loaded file's own timestamp */
+  registeredAt: number;
+}
+
+// every map this session put on screen, oldest first; the last one is what is on screen now
+globalThis.mapHistory = [];
+
+/** Take note of a map that is now on screen, and announce it */
+export function registerMap(created: number = Date.now()): void {
+  mapHistory.push({
+    seed: options.map.seed,
+    width: options.map.graph.width,
+    height: options.map.graph.height,
+    template: options.generation.template,
+    created: created,
+    registeredAt: Date.now()
+  });
+
+  // the public seam test automation and external integrations wait on; the id is the creation date
+  window.dispatchEvent(new CustomEvent("map:generated", { detail: { seed: options.map.seed, mapId: created } }));
+}
+
+declare global {
+  var mapHistory: MapHistoryEntry[];
+  // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy JS
+  var regeneratePrompt: (config?: GenerationConfig) => void;
+  // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy JS
+  var regenerateMap: (config?: GenerationConfig | string) => void;
+}
+window.regeneratePrompt = regeneratePrompt;
+window.regenerateMap = regenerateMap;

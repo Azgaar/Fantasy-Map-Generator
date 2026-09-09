@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Options } from "@/components/options-model";
 import "@/generators/added-labels";
 import "@/generators/features";
-import "@/generators/labels-generator";
+import { Labels } from "@/generators/labels-generator";
 import "@/generators/styles";
+import * as versioning from "@/services/versioning";
 import { resolveVersionConflicts } from "./auto-update";
 
 // a pre-1.140 map: label styling lives on the svg groups, state labels are saved text
@@ -27,8 +29,7 @@ const label = (id: number, text: string) =>
 describe("v1.140 label group migration", () => {
   beforeEach(() => {
     localStorage.clear();
-    globalThis.notes = [];
-    globalThis.options = { labels: { groups: [] }, burgs: { groups: [] } } as unknown as typeof globalThis.options;
+    globalThis.options = Options.getDefaultOptions();
     globalThis.pack = {
       features: [],
       burgs: [],
@@ -38,13 +39,19 @@ describe("v1.140 label group migration", () => {
         { i: 2, name: "Kept", fullName: "Duchy of Kept" }
       ]
     } as unknown as typeof globalThis.pack;
-    (globalThis as typeof globalThis & { getStylePreset: () => Promise<[string, object]> }).getStylePreset =
-      async () => ["default", {}];
+    // Isolate the label migration from later migrations that need a complete map.
+    vi.spyOn(versioning, "compareVersions").mockImplementation((_a, b) => ({
+      isOlder: b === "1.140.0",
+      isNewer: false,
+      isEqual: false
+    }));
   });
 
-  it("does not invent a stroke for a label group that never had one", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("does not invent a stroke for a label group that never had one", async () => {
     document.body.innerHTML = fixture("");
-    resolveVersionConflicts("1.139.9", []);
+    await resolveVersionConflicts("1.139.9", []);
 
     // #towns carried a stroke-width with no stroke, so nothing was ever stroked
     expect(styles.labels.groups.towns.attrs["stroke-width"]).toBe(0);
@@ -52,27 +59,27 @@ describe("v1.140 label group migration", () => {
     expect(styles.labels.groups.cities.attrs["stroke-width"]).toBe(0.57);
   });
 
-  it("keeps the stroke width when the stroke is inherited from an ancestor", () => {
+  it("keeps the stroke width when the stroke is inherited from an ancestor", async () => {
     document.body.innerHTML = fixture("", 'stroke="#123456"');
-    resolveVersionConflicts("1.139.9", []);
+    await resolveVersionConflicts("1.139.9", []);
 
     expect(styles.labels.groups.towns.attrs.stroke).toBe("#123456");
     expect(styles.labels.groups.towns.attrs["stroke-width"]).toBe(3.02);
   });
 
-  it("pins a state label whose saved text the renderer would not reproduce", () => {
+  it("pins a state label whose saved text the renderer would not reproduce", async () => {
     document.body.innerHTML = fixture(label(1, "Liga Schwarzwaldzka") + label(2, "Duchy of Kept"));
-    resolveVersionConflicts("1.139.9", []);
+    await resolveVersionConflicts("1.139.9", []);
 
     // auto mode renders fullName, so a label that showed the short name must be pinned
     expect(pack.states[1].label?.text).toBe("Liga Schwarzwaldzka");
     expect(pack.states[2].label?.text).toBeUndefined();
   });
 
-  it("does not pin a short-name label when the map's state label mode is short", () => {
-    (globalThis.options as unknown as { stateLabelsMode: string }).stateLabelsMode = "short";
+  it("does not pin a short-name label when the map's state label mode is short", async () => {
+    options.map.labels.groups = [{ ...Labels.getFallbackGroup("state"), mode: "short" }];
     document.body.innerHTML = fixture(label(1, "Liga Schwarzwaldzka"));
-    resolveVersionConflicts("1.139.9", []);
+    await resolveVersionConflicts("1.139.9", []);
 
     expect(pack.states[1].label?.text).toBeUndefined();
   });

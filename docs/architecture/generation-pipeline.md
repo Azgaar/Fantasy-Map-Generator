@@ -14,7 +14,7 @@ rebuilds part of a map. It is now declared once, as data:
 | [`src/generators/pipeline.ts`](../../src/generators/pipeline.ts)                                              | The runner. Generic, knows nothing about generators, `pack` or `grid`                              |
 | [`src/generators/grid-generator.ts`](../../src/generators/grid-generator.ts)                                  | The `Grid` module and its siblings `Temperature`, `Precipitation` and `Pack` (see below)           |
 | [`src/generators/generation-pipeline.ts`](../../src/generators/generation-pipeline.ts)                        | The configuration: `GenerationPipeline` and `ErasePipeline` step lists                             |
-| [`public/main.js`](../../public/main.js) → `generate()`                                                       | Drives `GenerationPipeline` and owns everything around it (seed, sizing, statistics, error dialog) |
+| [`src/components/lifecycle.ts`](../../src/components/lifecycle.ts) → `generate()`                             | Drives `GenerationPipeline` and owns everything around it (seed, sizing, statistics, error dialog) |
 | [`src/controllers/heightmap-editor.ts`](../../src/controllers/heightmap-editor.ts) → `regenerateErasedData()` | Drives `ErasePipeline`                                                                             |
 
 ## The runner
@@ -50,8 +50,12 @@ anything but a straight line — so it added validation logic and API surface wi
 
 ## `GenerationPipeline` — build a world from scratch
 
-`generate(options)` in `main.js` resolves what the pipeline doesn't own (`setSeed`, `applyGraphSize`,
-`randomizeOptions`), calls `await GenerationPipeline.run({seed, graph})`, then reports (`logStats`,
+Full generation builds a fresh grid from the resolved seed and extent; it never reuses the previous
+map implicitly. A grid explicitly selected in the heightmap gallery is used as supplied, with its
+heights cleared before terrain generation. Map naming belongs to `Options.randomize()` before
+the pipeline, since it depends only on name bases and the seeded random source.
+
+`generate(config)` in `components/lifecycle.ts` resolves what the pipeline doesn't own (`setSeed`, `Options.randomize`, `applyGraphSize`), calls `await GenerationPipeline.run({graph})`, then reports (`logStats`,
 `TOTAL` timing) or shows the generation error dialog. The pipeline is exposed as
 `window.GenerationPipeline` because `main.js` is a classic script.
 
@@ -59,7 +63,7 @@ anything but a straight line — so it added validation logic and API surface wi
 | ------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | Grid + heightmap         | `grid`, `heightmap`                                           | `grid`, `grid.cells.h`; resets `pack`                                           |
 | Hydrology base           | `markupGrid`, `depressionLakes`, `nearSeaLakes`               | `grid.cells.f/t/b`, lake and ocean topology                                     |
-| World position & climate | `mapSize`, `mapCoordinates`, `temperatures`, `precipitation`  | `options.mapSize/latitude/longitude`, `mapCoordinates`, `grid.cells.temp/prec`  |
+| World position & climate | `mapSize`, `temperatures`, `precipitation`  | `options.map.geography.*` (incl. `coordinates`), `grid.cells.temp/prec`             |
 | Repack                   | `regraph`, `markupPack`, `defaultRuler`                       | `pack.cells.*` (**invalidates every earlier `pack` cell index**), default ruler |
 | Rivers & biomes          | `rivers`, `biomes`, `featureGroups`                           | `pack.rivers`, `cells.r/fl/conf`, `pack.biomes`, `cells.biome`                  |
 | Climate art              | `ice`                                                         | `pack.ice`                                                                      |
@@ -71,7 +75,7 @@ anything but a straight line — so it added validation logic and API surface wi
 | Naming polish            | `riversSpecify`, `lakeNames`                                  | river and lake names                                                            |
 | Economy                  | `markets`, `production`, `taxes`                              | `pack.markets`, `cells.market`, `pack.deals`, burg/state treasuries             |
 | Overlays                 | `military`, `markers`, `zones`, `addedLabels`                 | regiments, markers, zones, labels                                               |
-| Finalise                 | `mapName`                                                     | map name                                                                        |
+| Finalise                 | `journeys`                                                    | journeys                                                                        |
 
 Two constraints are easy to break when replicating a slice of this:
 
@@ -88,16 +92,16 @@ Two constraints are easy to break when replicating a slice of this:
 flowchart TD
     subgraph pre["generate() — inline setup"]
         seed["setSeed<br/><i>writes: seed, Math.random</i>"]
-        size["applyGraphSize<br/><i>writes: graphWidth/Height</i>"]
-        rnd["randomizeOptions<br/><i>writes: option globals</i>"]
+        size["applyGraphSize<br/><i>sizes the full-map covers to options.generation.graph</i>"]
+        rnd["Options.randomize<br/><i>writes: options</i>"]
     end
     seed --> size --> rnd --> gg
 
-    gg["grid<br/><i>Grid.prepare: regenerates only if size/seed changed</i>"]
+    gg["grid<br/><i>Grid.prepare: fresh grid, or explicit preview grid</i>"]
     hm["heightmap<br/><i>writes: grid.cells.h; resets pack</i>"]
     mg["markupGrid<br/><i>writes: grid.cells.f/t/b</i>"]
     lakes["addLakesInDeepDepressions +<br/>openNearSeaLakes<br/><i>writes: grid.cells.h/f</i>"]
-    coord["mapSize + mapCoordinates<br/><i>writes: options.mapSize/latitude/longitude, mapCoordinates</i>"]
+    coord["Coordinates.generate<br/><i>writes: options.map.geography.*</i>"]
     temp["temperatures<br/><i>writes: grid.cells.temp</i>"]
     prec["precipitation<br/><i>writes: grid.cells.prec</i>"]
     repack["regraph + markupPack<br/><i>writes: pack.* (new graph)</i>"]
@@ -118,14 +122,14 @@ flowchart TD
     names["riversSpecify + lakeNames"]
     econ["markets + production + taxes<br/><i>writes: pack.markets, deals, cells.market</i>"]
     mil["military + markers + zones + addedLabels"]
-    mapname["mapName"]
+    journeys["journeys"]
 
-    gg --> hm --> mg --> lakes --> coord --> temp --> prec --> repack --> ruler --> rivers --> biomes --> fg --> ice --> goods --> rank --> cult --> burgs --> states --> routes --> relig --> spec --> prov --> names --> econ --> mil --> mapname
+    gg --> hm --> mg --> lakes --> coord --> temp --> prec --> repack --> ruler --> rivers --> biomes --> fg --> ice --> goods --> rank --> cult --> burgs --> states --> routes --> relig --> spec --> prov --> names --> econ --> mil --> journeys
 
     %% cross-step (non-adjacent) global dependencies
     hm -. "grid.cells.h" .-> temp
     hm -. "grid.cells.h" .-> repack
-    coord -. "mapCoordinates" .-> prec
+    coord -. "options.map.geography.coordinates" .-> prec
     temp -. "grid.cells.temp" .-> biomes
     temp -. "grid.cells.temp" .-> ice
     prec -. "grid.cells.prec" .-> biomes
@@ -157,8 +161,8 @@ It is a separate list, not a slice of `GenerationPipeline` — the ids are typed
 a step id that does not exist in the canonical list is a compile error, but the two lists are kept in
 sync by hand. Differences, all deliberate:
 
-- **Dropped:** `grid`, `heightmap` (the user just edited the heights), `mapSize`, `mapCoordinates`
-  and `defaultRuler` (map bounds don't change on an edit), `addedLabels` and `mapName` (not touched).
+- **Dropped:** `grid`, `heightmap` (the user just edited the heights), `mapSize`
+  and `defaultRuler` (map bounds don't change on an edit), `addedLabels` and `journeys` (not touched).
 - **`erosion` context:** `addLakesInDeepDepressions` and `openNearSeaLakes` run only when erosion is
   allowed; `rivers` calls `Rivers.generate(erosion)` and, when it isn't, snaps `pack.cells.h` back to
   the grid heights wherever the land/water side didn't flip.
@@ -205,7 +209,7 @@ reaches a phase you change.
 ## Adding a new generation step
 
 1. Add a `{id, run}` entry to `pipelineSteps` in `generation-pipeline.ts`, at the correct phase
-   boundary. `generate()` in `main.js` does not sequence generator calls any more.
+   boundary. `generate()` in `components/lifecycle.ts` does not sequence generator calls any more.
 2. If the step runs **after `regraph`**, add it to `erasePipelineSteps` at the matching boundary —
    otherwise the feature is missing from every map that went through the heightmap editor.
 3. If the step's output is cell-indexed or belongs to an entity the risk path re-maps, handle it in
@@ -227,9 +231,8 @@ global the same way `Features`, `Rivers` and the other generators are:
 
 | Method                                                       | Role                                                                 |
 | ------------------------------------------------------------ | -------------------------------------------------------------------- |
+| `prepare(graph?)`                                            | set the generation grid, creating a fresh graph or clearing a supplied preview's heights |
 | `generate(seed, width, height)`                              | jittered points, boundary and Voronoi diagram for a fresh graph      |
-| `shouldRegenerate(graph, expectedSeed, width, height)`       | does the graph still fit the requested seed and canvas size?         |
-| `prepare(expectedSeed?, precreated?)`                        | the `grid` pipeline step: reuse the current graph or build a new one |
 | `rebuildGraph(graph)`                                        | restore cells and vertices of a saved graph from its points          |
 | `resetHeights(graph)`                                        | blank the heightmap, keeping the graph                               |
 | `getCellsDesired()`                                          | the cell count requested in the options                              |
@@ -243,17 +246,18 @@ global the same way `Features`, `Rivers` and the other generators are:
 ### `Precipitation` — [`precipitation-generator.ts`](../../src/generators/precipitation-generator.ts)
 
 `generate()` passes the winds over the cells, filling `grid.cells.prec`. `getWinds()` returns the
-bands they enter through; it is free of randomness — derived from `options.winds` and the map
+bands they enter through; it is free of randomness — derived from `options.map.climate.winds` and the map
 position — so [`drawPrecipitation`](../../src/renderers/draw-precipitation.ts) calls it to draw the
 wind arrows whenever the layer is rendered. The generators never touch the DOM.
 
 ### `Coordinates` — [`coordinates.ts`](../../src/generators/coordinates.ts)
 
-`defineMapSize()` is the `mapSize` step: it picks how much of the globe the map covers and where it
-sits, from the heightmap template (real-world templates have fixed values, random ones a
-distribution) unless the option is locked. `calculate()` is the `mapCoordinates` step: it turns
-`options.mapSize/latitude/longitude` and the canvas aspect ratio into the `mapCoordinates` lat/lon
-box every latitude-dependent generator and renderer reads.
+`generate()` is the `mapSize` pipeline step. It combines `options.generation.geography` with
+the template and terrain, writes `options.map.geography`, then calls `calculate()` to derive
+the latitude/longitude box before climate generation. A nullable request means automatic selection;
+a numeric request fixes the value. Pins have already been resolved by `Options.randomize()`, so
+the generator depends only on generation inputs and world data. `calculate()` also serves map
+edits and loading a file that has no coordinate box.
 
 ### `Pack` — [`pack-generator.ts`](../../src/generators/pack-generator.ts)
 

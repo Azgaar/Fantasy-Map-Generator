@@ -25,9 +25,11 @@ let filterState: { search: string; state: string; culture: string; type: string 
 
 const columns: EditorColumn<Marker>[] = [
   { key: "type", label: "Type", width: "12em", permanent: true, sortBy: marker => marker.type, sortType: "alpha" },
-  { key: "pin", label: "Pin", width: "1.5em" },
-  { key: "lock", label: "Lock", width: "1.5em" },
-  { key: "actions", width: "3em", permanent: true, align: "right" }
+  { key: "pin", label: "Pin", width: "1.4em" },
+  { key: "lock", label: "Lock", width: "1.4em" },
+  { key: "edit", width: "1.4em" },
+  { key: "locate", width: "1.4em" },
+  { key: "remove", width: "1.4em", permanent: true }
 ];
 const markersTable = initEditorTable<Marker>({ getData: getFilteredMarkers, onUpdate: renderMarkersPage });
 
@@ -43,7 +45,6 @@ function open(): void {
   $(`#${dialogId}`).dialog({
     title: "Markers Overview",
     resizable: false,
-    width: "fit-content",
     close: closeMarkersOverview,
     position
   });
@@ -56,7 +57,7 @@ function renderDialog(): void {
     <div id="${dialogId}" class="dialog stable editorDialog">
       ${renderEditorHeader({ dialogId, columns })}
       <div id="markersBody" class="table"></div>
-      <div id="markersFilters" style="display:flex; gap:.2em; padding:0.5em 0; flex-direction:column; font-size:smaller">
+      <div id="markersFilters" style="width: 100%; display:flex; gap:.2em; padding:0.5em 0; flex-direction:column; font-size:smaller">
         <select id="markersFilterState" data-tip="Show only markers located in the selected state"></select>
         <select id="markersFilterCulture" data-tip="Show only markers located in the selected culture"></select>
         <select id="markersFilterType" data-tip="Show only markers of the selected type"></select>
@@ -71,7 +72,7 @@ function renderDialog(): void {
         <button id="markersOverviewRefresh" data-tip="Refresh the Overview screen" class="icon-cw"></button>
         <button id="markersRegenerate" data-tip="Regenerate unlocked markers" class="icon-shuffle"></button>
         <span id="markerTypeSelectorWrapper">
-          <button id="markerTypeSelector" data-tip="Select marker type for newly added markers.">❓</button>
+          <button id="markerTypeSelector" data-tip="Select marker type for newly added markers." style="font-size: 0.7em">❓</button>
           <div id="markerTypeSelectMenu"></div>
         </span>
         <button
@@ -93,7 +94,7 @@ function renderDialog(): void {
   initColumnVisibility({
     dialogId,
     columns,
-    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
+    onUpdate: () => updateDialog(dialogId, { position })
   });
 
   ensureEl("markersBody").addEventListener("click", handleLineClick);
@@ -268,11 +269,9 @@ function renderMarkersPage(view: TableView<Marker>): void {
           <span data-col="lock" class="locks pointer ${
             lock ? "icon-lock" : "icon-lock-open inactive"
           }" onmouseover="showElementLockTip(event)"></span>
-          <div data-col="actions">
-            <span data-tip="Edit marker" class="icon-pencil"></span>
-            <span data-tip="Locate the marker" class="icon-target"></span>
-            <span data-tip="Remove marker" class="icon-trash-empty"></span>
-          </div>
+          <span data-col="edit" data-tip="Edit marker" class="icon-pencil"></span>
+          <span data-col="locate" data-tip="Locate the marker" class="icon-target"></span>
+          <span data-col="remove" data-tip="Remove marker" class="icon-trash-empty"></span>
         </div>`;
     })
     .join("");
@@ -282,7 +281,7 @@ function renderMarkersPage(view: TableView<Marker>): void {
   ensureEl("markersFooterNumber").innerText = String(view.all.length);
   ensureEl("markersFooterTotal").innerText = String(pack.markers.length);
   renderEditorPagination(ensureEl("markersFooter"), view, markersTable.goto);
-  updateDialog(dialogId, { width: "fit-content", position });
+  updateDialog(dialogId, { position });
 }
 
 // last filter set pushed to the renderer, so we only redraw the map when the visible set actually changes
@@ -300,17 +299,13 @@ function syncMapToFilter(filteredMarkers: Marker[], anyFilterActive: boolean): v
 }
 
 function invertPin(): void {
-  let anyPinned = false;
-
   pack.markers.forEach(marker => {
     const pinned = !marker.pinned;
     if (pinned) {
       marker.pinned = true;
-      anyPinned = true;
     } else delete marker.pinned;
   });
 
-  ensureEl("markers").setAttribute("pinned", anyPinned ? "1" : "");
   Layers.draw("markers");
   markersTable.refresh();
 }
@@ -339,14 +334,10 @@ function pinMarker(el: HTMLElement, i: number): void {
   const marker = pack.markers.find(marker => marker.i === i);
   if (!marker) return;
 
-  const markerGroup = ensureEl("markers");
   if (marker.pinned) {
     delete marker.pinned;
-    const anyPinned = pack.markers.some(marker => marker.pinned);
-    if (!anyPinned) markerGroup.removeAttribute("pinned");
   } else {
     marker.pinned = true;
-    markerGroup.setAttribute("pinned", "1");
   }
   el.classList.toggle("inactive");
   Layers.draw("markers");
@@ -387,7 +378,6 @@ function changeMarkerType(): void {
 }
 
 function removeMarker(i: number): void {
-  notes = notes.filter(note => note.id !== `marker${i}`);
   pack.markers = pack.markers.filter(marker => marker.i !== i);
   document.getElementById(`marker${i}`)?.remove();
   markersTable.refresh();
@@ -406,9 +396,7 @@ function removeAllMarkers(): void {
   pack.markers = pack.markers.filter(({ i, lock }) => {
     if (lock) return true;
 
-    const id = `marker${i}`;
-    document.getElementById(id)?.remove();
-    notes = notes.filter(note => note.id !== id);
+    document.getElementById(`marker${i}`)?.remove();
     return false;
   });
 
@@ -422,17 +410,16 @@ function exportMarkers(): void {
   const body = pack.markers.map(marker => {
     const { i, type, icon, x, y, cell } = marker;
 
-    const note = notes.find(note => note.id === `marker${i}`);
-    const name = note ? quote(note.name) : "Unknown";
-    const legend = note ? quote(note.legend) : "";
+    const name = quote(marker.name);
+    const legend = quote(marker.note || "");
 
     const state = pack.states[pack.cells.state[cell]];
     const culture = pack.cultures[pack.cells.culture[cell]];
     const stateName = state ? quote(state.fullName || state.name) : "";
     const cultureName = culture ? quote(culture.name) : "";
 
-    const lat = getLatitude(y, mapCoordinates, graphHeight, 2);
-    const lon = getLongitude(x, mapCoordinates, graphWidth, 2);
+    const lat = getLatitude(y, options.map.geography.coordinates, options.map.graph.height, 2);
+    const lon = getLongitude(x, options.map.geography.coordinates, options.map.graph.width, 2);
 
     return [i, type, icon, name, legend, stateName, cultureName, x, y, lat, lon].join(",");
   });

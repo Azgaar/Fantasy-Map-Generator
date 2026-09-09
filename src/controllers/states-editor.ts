@@ -11,12 +11,13 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
-import type { FillBoxElement } from "@/components/fill-box";
 import { Layers } from "@/components/layers";
+import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { Emblems } from "@/generators/emblems-generator";
+import { Notes } from "@/generators/notes";
 import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
 import { redrawEmblem, redrawEmblems, removeEmblem } from "@/renderers/draw-emblems";
@@ -103,7 +104,11 @@ const columns: EditorColumn<State>[] = [
     key: "population",
     label: "Population",
     width: "6em",
-    sortBy: s => rn((s.rural || 0) * populationRate + (s.urban || 0) * populationRate * urbanization)
+    sortBy: s =>
+      rn(
+        (s.rural || 0) * options.map.units.population.scale +
+          (s.urban || 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate
+      )
   },
   {
     key: "treasury",
@@ -128,7 +133,11 @@ const columns: EditorColumn<State>[] = [
     hidden: true,
     sortBy: s => (s.i ? s.expansionism || 0 : 0)
   },
-  { key: "actions", width: "4.2em", permanent: true, align: "right" }
+  { key: "note", width: "1.1em" },
+  { key: "locate", width: "1.1em" },
+  { key: "focus", width: "1.1em" },
+  { key: "lock", width: "1.1em" },
+  { key: "remove", width: "1.4em", permanent: true }
 ];
 
 const statesTable = initEditorTable<State>({
@@ -155,7 +164,6 @@ function open(): void {
   $(`#${dialogId}`).dialog({
     title: "States Editor",
     resizable: false,
-    width: "fit-content",
     position,
     close: closeStatesEditor
   });
@@ -186,9 +194,6 @@ function renderDialog(): void {
       <div id="statesRegenerateButtons" style="display: none">
         <button id="statesRegenerateBack" data-tip="Hide the regeneration menu" class="icon-cog-alt"></button>
         <button id="statesRandomize" data-tip="Randomize states Expansion value and re-calculate states and provinces" class="icon-shuffle"></button>
-        <div data-tip="Additional growth rate. Defines how many land cells remain neutral" style="display: inline-block">
-          <slider-input id="statesGrowthRate" min=".1" max="3" step=".05" value="1">Growth rate:</slider-input>
-        </div>
         <button id="statesRecalculate" data-tip="Recalculate states based on current values of growth-related attributes" class="icon-retweet"></button>
         <div data-tip="Allow states neutral distance, expansion and type changes to take an immediate effect" style="display: inline-block">
           <input id="statesAutoChange" class="checkbox" type="checkbox" />
@@ -227,7 +232,6 @@ function renderDialog(): void {
   ensureEl("statesRegenerateBack").addEventListener("click", exitRegenerationMenu);
   ensureEl("statesRecalculate").addEventListener("click", () => recalculateStates(true));
   ensureEl("statesRandomize").addEventListener("click", randomizeStatesExpansion);
-  ensureEl("statesGrowthRate").addEventListener("input", () => recalculateStates(false));
   ensureEl("statesManually").addEventListener("click", openPaintEditor);
   ensureEl("statesAdd").addEventListener("click", enterAddStateMode);
   ensureEl("statesMerge").addEventListener("click", openStateMergeDialog);
@@ -248,6 +252,7 @@ function renderDialog(): void {
     else if (classList.contains("icon-dot-circled")) Controllers.BurgsOverview.open({ stateId });
     else if (classList.contains("statePopulation")) changePopulation(stateId);
     else if (classList.contains("stateTreasury")) openTreasuryDialog(stateId);
+    else if (classList.contains("icon-book")) void Controllers.NotesEditor.open({ type: "state", id: stateId });
     else if (classList.contains("icon-pin")) toggleFog(stateId, classList);
     else if (classList.contains("icon-target"))
       highlightElement(select("#regions").select(`#state${stateId}`).node() as Element, 4);
@@ -288,8 +293,8 @@ function renderStatesPage(view: TableView<State>): void {
   let totalBurgs = 0;
   for (const s of view.all) {
     totalArea += getArea(s.area || 0);
-    const rural = (s.rural || 0) * populationRate;
-    const urban = (s.urban || 0) * populationRate * urbanization;
+    const rural = (s.rural || 0) * options.map.units.population.scale;
+    const urban = (s.urban || 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate;
     totalPopulation += rn(rural + urban);
     totalBurgs += s.burgs || 0;
   }
@@ -297,8 +302,8 @@ function renderStatesPage(view: TableView<State>): void {
   let lines = "";
   for (const s of view.rows) {
     const area = getArea(s.area || 0);
-    const rural = (s.rural || 0) * populationRate;
-    const urban = (s.urban || 0) * populationRate * urbanization;
+    const rural = (s.rural || 0) * options.map.units.population.scale;
+    const urban = (s.urban || 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate;
     const population = rn(rural + urban);
     const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(
       urban
@@ -357,7 +362,11 @@ function renderStatesPage(view: TableView<State>): void {
           <span class="icon-resize-full placeholder"></span>
           <input class="statePower placeholder" type="number" value="0" />
         </div>
-        <div data-col="actions"></div>
+        <div data-col="note"></div>
+        <div data-col="locate"></div>
+        <div data-col="focus"></div>
+        <div data-col="lock"></div>
+        <div data-col="remove"></div>
       </div>`;
       continue;
     }
@@ -418,14 +427,13 @@ function renderStatesPage(view: TableView<State>): void {
         <input data-tip="Expansionism (defines competitive size). Change to re-calculate states based on new value"
           class="statePower" type="number" min="0" max="99" step=".1" value=${s.expansionism} />
       </div>
-      <div data-col="actions">
-        <span data-tip="Locate the state" class="icon-target"></span>
-        <span data-tip="Toggle state focus" class="icon-pin ${focused ? "" : " inactive"}"></span>
-        <span data-tip="Lock the state to protect it from re-generation" class="icon-lock${
-          s.lock ? "" : "-open"
-        }"></span>
-        <span data-tip="Remove the state" class="icon-trash-empty"></span>
-      </div>
+      ${Notes.getIcon("this state")}
+      <span data-col="locate" data-tip="Locate the state" class="icon-target"></span>
+      <span data-col="focus" data-tip="Toggle state focus" class="icon-pin ${focused ? "" : " inactive"}"></span>
+      <span data-col="lock" data-tip="Lock the state to protect it from re-generation" class="icon-lock${
+        s.lock ? "" : "-open"
+      }"></span>
+      <span data-col="remove" data-tip="Remove the state" class="icon-trash-empty"></span>
     </div>`;
   }
   const body = ensureEl("statesBodySection");
@@ -768,8 +776,10 @@ function changePopulation(stateId: number): void {
     return;
   }
 
-  const rural = rn((state.rural || 0) * populationRate);
-  const urban = rn((state.urban || 0) * populationRate * urbanization);
+  const rural = rn((state.rural || 0) * options.map.units.population.scale);
+  const urban = rn(
+    (state.urban || 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate
+  );
   const total = rural + urban;
   const format = (n: number) => Number(n).toLocaleString();
 
@@ -824,7 +834,7 @@ function changePopulation(stateId: number): void {
       });
     }
     if (!Number.isFinite(ruralChange) && +ruralPop.value > 0) {
-      const points = +ruralPop.value / populationRate;
+      const points = +ruralPop.value / options.map.units.population.scale;
       const cells = (pack.cells.i as unknown as number[]).filter(i => pack.cells.state[i] === stateId);
       const pop = points / cells.length;
       cells.forEach(i => {
@@ -840,7 +850,8 @@ function changePopulation(stateId: number): void {
       });
     }
     if (!Number.isFinite(urbanChange) && +urbanPop.value > 0) {
-      const points = +urbanPop.value / populationRate / urbanization;
+      const points =
+        +urbanPop.value / options.map.units.population.scale / options.map.units.population.urbanization.rate;
       const burgs = pack.burgs.filter(b => !b.removed && b.state === stateId);
       const population = rn(points / burgs.length, 4);
       burgs.forEach(b => {
@@ -949,11 +960,6 @@ function stateRemovePrompt(state: number): void {
 }
 
 function stateRemove(stateId: number): void {
-  select("#statesBody").select(`#state${stateId}`).remove();
-  select("#statesBody").select(`#state-gap${stateId}`).remove();
-  select("#statesHalo").select(`#state-border${stateId}`).remove();
-  delete pack.states[stateId].label;
-
   unfog(`focusState${stateId}`);
 
   pack.burgs.forEach(burg => {
@@ -965,35 +971,22 @@ function stateRemove(stateId: number): void {
       }
     }
   });
-  Layers.draw("burgIcons", "labels");
 
-  pack.cells.state.forEach((s: number, i: number) => {
+  pack.cells.state.forEach((s, i) => {
     if (s === stateId) pack.cells.state[i] = 0;
   });
 
-  // remove emblem
   removeEmblem("state", stateId);
 
   // remove provinces
-  (pack.states[stateId].provinces || []).forEach((p: number) => {
+  (pack.states[stateId].provinces || []).forEach(p => {
     pack.provinces[p] = { i: p, removed: true } as Province;
-    pack.cells.province.forEach((pr: number, i: number) => {
+    pack.cells.province.forEach((pr, i) => {
       if (pr === p) pack.cells.province[i] = 0;
     });
 
     removeEmblem("province", p);
-    const g = select("#provs").select("#provincesBody");
-    g.select(`#province${p}`).remove();
-    g.select(`#province-gap${p}`).remove();
   });
-
-  // remove military
-  (pack.states[stateId].military || []).forEach((m: any) => {
-    const id = `regiment${stateId}-${m.i}`;
-    const index = notes.findIndex(n => n.id === id);
-    if (index !== -1) notes.splice(index, 1);
-  });
-  select(`#armies g#army${stateId}`).remove();
 
   // clean up neighbors references from other states
   pack.states.forEach(state => {
@@ -1001,12 +994,12 @@ function stateRemove(stateId: number): void {
     state.neighbors = state.neighbors.filter((n: number) => n !== stateId);
   });
 
+  delete pack.states[stateId].label;
   pack.states[stateId] = { i: stateId, removed: true } as State;
 
   select("#debug").selectAll(".highlight").remove();
 
-  Layers.draw("states", "borders", "provinces");
-
+  Layers.draw("burgIcons", "labels", "military", "borders", "provinces", "states");
   refreshStatesEditor();
 }
 
@@ -1124,8 +1117,10 @@ function showStatesChart(): void {
     const state = d.data.fullName;
 
     const area = `${getArea(d.data.area)} ${getAreaUnit()}`;
-    const rural = rn(d.data.rural * populationRate);
-    const urban = rn(d.data.urban * populationRate * urbanization);
+    const rural = rn(d.data.rural * options.map.units.population.scale);
+    const urban = rn(
+      d.data.urban * options.map.units.population.scale * options.map.units.population.urbanization.rate
+    );
 
     const option = ensureEl<HTMLSelectElement>("statesTreeType").value;
     const value =
@@ -1199,13 +1194,14 @@ function openRegenerationMenu(): void {
       el.style.display = "none";
     });
   ensureEl("statesRegenerateButtons").style.display = "block";
-  $("#statesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
 }
 
 function recalculateStates(must?: boolean): void {
   if (!must && !ensureEl<HTMLInputElement>("statesAutoChange").checked) return;
 
   States.expandStates();
+  // opt-in regeneration ("auto-apply changes"), so it takes the current request for the province
+  // ratio rather than a fact of the map. See docs/architecture/configuration.md#the-test
   Provinces.generate();
   Provinces.getPoles();
   States.getPoles();
@@ -1238,7 +1234,6 @@ function exitRegenerationMenu(): void {
       el.style.display = "inline-block";
     });
   ensureEl("statesRegenerateButtons").style.display = "none";
-  $("#statesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
 }
 
 function openPaintEditor(): void {
@@ -1702,9 +1697,6 @@ function mergeStates(statesToMerge: number[], rulingStateId: number): void {
       (rulingState.military || []).push({ ...regiment, i: newIndex });
       const newId = `regiment${rulingStateId}-${newIndex}`;
 
-      const note = notes.find(n => n.id === oldId);
-      if (note) note.id = newId;
-
       const element = document.getElementById(oldId);
       if (element) {
         element.id = newId;
@@ -1755,7 +1747,10 @@ function downloadStatesCsv(): void {
   const data = statesTable.view().all.map(s => {
     const rural = s.rural || 0;
     const urban = s.urban || 0;
-    const population = rn(rural * populationRate + urban * populationRate * urbanization);
+    const population = rn(
+      rural * options.map.units.population.scale +
+        urban * options.map.units.population.scale * options.map.units.population.urbanization.rate
+    );
     return [
       s.i,
       s.name,
@@ -1770,8 +1765,8 @@ function downloadStatesCsv(): void {
       s.burgs,
       getArea(s.area || 0),
       population,
-      Math.round(rural * populationRate),
-      Math.round(urban * populationRate * urbanization)
+      Math.round(rural * options.map.units.population.scale),
+      Math.round(urban * options.map.units.population.scale * options.map.units.population.urbanization.rate)
     ].join(",");
   });
   const csvData = [headers].concat(data).join("\n");

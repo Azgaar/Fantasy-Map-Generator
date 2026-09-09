@@ -12,12 +12,25 @@ Check out [Dev board](https://github.com/users/Azgaar/projects/3/views/1?sumFiel
 
 Current version of the Fantasy Map Generator is the latest `master` branch. You can download it here: https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/heads/master.zip. Also see [the wiki](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#can-i-use-the-generator-offline).
 
+# Releases
+
+**[1.152.0](https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/tags/v1.152.0.zip) - 2026-09-TBD**:
+
+- Options full rework [1.152.0]
+- Map name and era moved to the Set Lore dialog [1.152.0]
+- Notes rework: notes as entities param [1.152.0]
+- Preserve dialog positions between sessions [1.152.0]
+- Ability to override a burg's treasury [1.152.0]
+- Goods: moved to viewport renderer [1.152.0]
+- Burg icons: moved to viewport renderer [1.152.0]
+- Markers and markets: moved to viewport renderer [1.152.0]
+- Rivers and Routes: moved to viewport renderer [1.152.0]
+- Heightmap: option to render contour lines [1.152.0]
+- Notes Editor: TinyMCE replaced with Quill 2 by _[barrulus](https://github.com/barrulus)_ [1.152.0]
 - Help assistant: ask questions about FMG by _[barrulus](https://github.com/barrulus)_ [1.151.2]
 - Annex states and provinces by clicking on the map by _[barrulus](https://github.com/barrulus)_ [1.151.2]
 - Option to redraw labels, icons and relief only after a zoom by _[barrulus](https://github.com/barrulus)_ [1.151.2]
 - Brushes stamp by distance travelled by _[barrulus](https://github.com/barrulus)_ [1.151.1]
-
-# Releases
 
 **[1.150.0](https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/tags/v1.150.0.zip) - 2026-09-05**:
 

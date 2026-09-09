@@ -10,6 +10,7 @@ export interface Biome {
   icons: string[];
   cost: number;
   removed?: boolean;
+  note?: string;
 }
 
 function getDefaultBiomes(): Biome[] {

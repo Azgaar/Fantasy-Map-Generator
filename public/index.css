@@ -2148,18 +2148,6 @@ div.textual span,
   margin: 4px;
 }
 
-#notesLegend {
-  width: auto;
-  height: 87%;
-  outline: 0;
-  overflow-y: auto;
-  padding: 0.6em;
-  font-family: var(--monospace);
-  background-color: #fff;
-  border: 1px solid #dedede;
-  color: #000;
-}
-
 svg.button {
   position: relative;
   background-color: transparent;
@@ -2421,14 +2409,6 @@ svg.button {
   opacity: 0.8;
 }
 
-#markerTypeSelector {
-  font-size: 0.85em;
-}
-
-#markerTypeSelectorWrapper {
-  position: relative;
-}
-
 #markerTypeSelectMenu {
   display: none;
 }
@@ -2512,7 +2492,7 @@ svg.button {
   user-select: none;
   opacity: 0;
   animation: fadeIn 1s ease-in 1s forwards;
-  z-index: 9999;
+  z-index: 99;
 }
 
 #tourPromptButton button {
@@ -2658,6 +2638,12 @@ body.tour-free-roam * {
 #helpAssistantBubble:focus-visible {
   outline: 2px solid var(--dark-solid);
   outline-offset: 3px;
+}
+
+/* .ui-dialog turns selection off so dialogs drag cleanly, which also made the answers
+   impossible to copy. The panel opts back in; the titlebar keeps the drag behaviour. */
+#helpAssistant {
+  user-select: text;
 }
 
 /* the badge alone squishes under the press, the circle stays put, as the launcher did */

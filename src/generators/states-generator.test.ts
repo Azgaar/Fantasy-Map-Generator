@@ -5,10 +5,6 @@ describe("StatesModule.collectTaxes", () => {
 
   beforeEach(async () => {
     globalThis.TIME = false;
-    globalThis.rn = (v: number, d = 0) => {
-      const m = 10 ** d;
-      return Math.round(v * m) / m;
-    };
     globalThis.window = globalThis.window || ({} as any);
     globalThis.pack = {
       states: [],

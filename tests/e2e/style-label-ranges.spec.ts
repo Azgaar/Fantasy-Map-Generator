@@ -1,4 +1,5 @@
 import {expect, test, type Page} from "@playwright/test";
+import { waitForMap } from "./wait-for-map";
 
 // Slider ranges as the editor shows them for a label group; values stay absolute, only the drag range follows the group
 async function openLabelGroup(page: Page, group: string) {
@@ -19,7 +20,7 @@ async function openLabelGroup(page: Page, group: string) {
 test.describe("Style editor label slider ranges", () => {
   test.beforeEach(async ({page}) => {
     await page.goto("/?seed=test-style-ranges&width=1280&height=720");
-    await page.waitForFunction(() => (window as any).mapId !== undefined, {timeout: 60000});
+    await waitForMap(page);
   });
 
   test("stroke width and letter spacing ranges follow the group font size", async ({page}) => {

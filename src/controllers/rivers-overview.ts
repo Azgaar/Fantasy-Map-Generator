@@ -14,7 +14,8 @@ import {
 import { Layers } from "@/components/layers";
 import { Controllers } from "@/controllers";
 import type { River } from "@/generators/river-generator";
-import { highlightElement } from "@/renderers/overlays/highlight";
+import { getRiverBox, toggleBasinHighlight } from "@/renderers/draw-rivers";
+import { highlightArea } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName } from "@/utils";
 import { ensureEl, rn } from "../utils";
 
@@ -69,7 +70,8 @@ const columns: EditorColumn<River>[] = [
     sortBy: river => pack.rivers.find(({ i }) => i === river.basin)?.name || "",
     sortType: "alpha"
   },
-  { key: "actions", width: "2.2em", permanent: true, align: "right" }
+  { key: "edit", width: "1.1em" },
+  { key: "remove", width: "1.4em", permanent: true }
 ];
 
 function getRiversById(): Map<number, River> {
@@ -157,7 +159,7 @@ function renderDialog(): void {
   });
   ensureEl("addNewRiver").addEventListener("click", () => void Controllers.RiverAutoCreator.toggle());
   ensureEl("riverCreateNew").addEventListener("click", createNewRiver);
-  ensureEl("riversBasinHighlight").addEventListener("click", toggleBasinsHightlight);
+  ensureEl("riversBasinHighlight").addEventListener("click", () => void toggleBasinHighlight());
   ensureEl("riversExport").addEventListener("click", downloadRiversData);
   ensureEl("riversRemoveAll").addEventListener("click", triggerAllRiversRemove);
   ensureEl("riversSearch").addEventListener("input", event => {
@@ -181,13 +183,13 @@ function renderRiversPage(view: TableView<River>): void {
     row.remove();
   });
   let lines = "";
-  const unit = distanceUnitInput.value;
+  const unit = options.map.units.distance.unit;
   const riversById = getRiversById();
 
   for (const r of view.rows) {
     const discharge = `${r.discharge} m³/s`;
-    const length = `${rn(r.length * distanceScale)} ${unit}`;
-    const width = `${rn(r.width * distanceScale, 3)} ${unit}`;
+    const length = `${rn(r.length * options.map.units.distance.scale)} ${unit}`;
+    const width = `${rn(r.width * options.map.units.distance.scale, 3)} ${unit}`;
     const basin = riversById.get(r.basin)?.name;
 
     lines += /* html */ `<div
@@ -207,10 +209,8 @@ function renderRiversPage(view: TableView<River>): void {
         <div data-tip="River length from source to mouth" data-col="length">${length}</div>
         <div data-tip="River mouth width" data-col="width">${width}</div>
         <input data-tip="River basin (name of the main stem)" class="stateName" value="${basin}" disabled data-col="basin" />
-        <div data-col="actions">
-          <span data-tip="Edit river" class="icon-pencil"></span>
-          <span data-tip="Remove river" class="icon-trash-empty"></span>
-        </div>
+        <span data-col="edit" data-tip="Edit river" class="icon-pencil"></span>
+        <span data-col="remove" data-tip="Remove river" class="icon-trash-empty"></span>
       </div>`;
   }
   body.insertAdjacentHTML("beforeend", lines);
@@ -219,9 +219,9 @@ function renderRiversPage(view: TableView<River>): void {
   const averageDischarge = rn(mean(view.all.map(r => r.discharge))!) || 0;
   ensureEl("riversFooterDischarge").innerHTML = `${averageDischarge} m³/s`;
   const averageLength = rn(mean(view.all.map(r => r.length))!) || 0;
-  ensureEl("riversFooterLength").innerHTML = `${averageLength * distanceScale} ${unit}`;
+  ensureEl("riversFooterLength").innerHTML = `${averageLength * options.map.units.distance.scale} ${unit}`;
   const averageWidth = rn(mean(view.all.map(r => r.width))!, 3) || 0;
-  ensureEl("riversFooterWidth").innerHTML = `${rn(averageWidth * distanceScale, 3)} ${unit}`;
+  ensureEl("riversFooterWidth").innerHTML = `${rn(averageWidth * options.map.units.distance.scale, 3)} ${unit}`;
 
   // add listeners
   body
@@ -252,39 +252,8 @@ function riverHighlightOff(e: Event): void {
 
 function zoomToRiver(this: HTMLElement): void {
   const r = +(this.closest(".states") as HTMLElement).dataset.id!;
-  const river = select("#rivers").select(`#river${r}`).node() as Element;
-  highlightElement(river, 3);
-}
-
-function toggleBasinsHightlight(): void {
-  if (select("#rivers").attr("data-basin") === "hightlighted") {
-    select("#rivers").selectAll("*").attr("fill", null);
-    select("#rivers").attr("data-basin", null);
-  } else {
-    select("#rivers").attr("data-basin", "hightlighted");
-    const basins = [...new Set(pack.rivers.map((r: River) => r.basin))];
-    const colors = [
-      "#1f77b4",
-      "#ff7f0e",
-      "#2ca02c",
-      "#d62728",
-      "#9467bd",
-      "#8c564b",
-      "#e377c2",
-      "#7f7f7f",
-      "#bcbd22",
-      "#17becf"
-    ];
-
-    basins.forEach((b, i) => {
-      const color = colors[i % colors.length];
-      pack.rivers
-        .filter((r: River) => r.basin === b)
-        .forEach((r: River) => {
-          select("#rivers").select(`#river${r.i}`).attr("fill", color);
-        });
-    });
-  }
+  const box = getRiverBox(r);
+  if (box) highlightArea(box, 3);
 }
 
 function downloadRiversData(): void {
@@ -295,8 +264,8 @@ function downloadRiversData(): void {
 
   exported.forEach((r: River) => {
     const discharge = `${r.discharge} m³/s`;
-    const length = `${rn(r.length * distanceScale)} ${distanceUnitInput.value}`;
-    const width = `${rn(r.width * distanceScale, 3)} ${distanceUnitInput.value}`;
+    const length = `${rn(r.length * options.map.units.distance.scale)} ${options.map.units.distance.unit}`;
+    const width = `${rn(r.width * options.map.units.distance.scale, 3)} ${options.map.units.distance.unit}`;
     const basin = riversById.get(r.basin)?.name || "";
     data += `${[r.i, r.name, r.type, discharge, length, width, basin].join(",")}\n`;
   });
@@ -321,7 +290,7 @@ function triggerRiverRemove(this: HTMLElement): void {
     buttons: {
       Remove: function (this: any) {
         Rivers.remove(river);
-        Layers.draw("labels");
+        Layers.draw("rivers", "labels");
         riversTable.refresh();
         $(this).dialog("close");
       },
@@ -352,8 +321,7 @@ function triggerAllRiversRemove(): void {
 function removeAllRivers(): void {
   pack.rivers = [];
   pack.cells.r = new Uint16Array(pack.cells.i.length);
-  select("#rivers").selectAll("*").remove();
-  Layers.draw("labels");
+  Layers.draw("rivers", "labels");
   riversTable.refresh();
 }
 

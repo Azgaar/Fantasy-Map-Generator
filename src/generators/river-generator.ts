@@ -1,5 +1,5 @@
 import Alea from "alea";
-import { curveBasis, curveCatmullRom, line, mean, min, select, sum } from "d3";
+import { curveBasis, curveCatmullRom, line, mean, min, sum } from "d3";
 import { each, rn, round, rw } from "../utils";
 import { meander, projectToNearestEdge } from "../utils/pathUtils";
 import type { Label } from "./labels-generator";
@@ -23,6 +23,7 @@ export interface River {
   cells: number[]; // cells forming the river path
   points?: Point[]; // river points (for meandering)
   label?: Label;
+  note?: string;
 }
 
 class RiverModule {
@@ -165,7 +166,7 @@ class RiverModule {
   }
 
   generate(allowErosion = true) {
-    Math.random = Alea(seed);
+    Math.random = Alea(options.map.seed);
     const { cells, features } = pack;
 
     const riversData: { [riverId: number]: number[] } = {};
@@ -178,7 +179,7 @@ class RiverModule {
 
     const drainWater = () => {
       const MIN_FLUX_TO_FORM_RIVER = 30;
-      const cellsNumberModifier = ((pointsInput.dataset.cells as any) / 10000) ** 0.25;
+      const cellsNumberModifier = (options.map.graph.points / 10000) ** 0.25;
 
       const prec = grid.cells.prec;
       const land = cells.i.filter((i: number) => h[i] >= 20).sort((a: number, b: number) => h[b] - h[a]);
@@ -310,7 +311,7 @@ class RiverModule {
       cells.conf = new Uint16Array(cells.i.length);
       pack.rivers = [];
 
-      const defaultWidthFactor = rn(1 / ((pointsInput.dataset.cells as any) / 10000) ** 0.25, 2);
+      const defaultWidthFactor = rn(1 / (options.map.graph.points / 10000) ** 0.25, 2);
       const mainStemWidthFactor = defaultWidthFactor * 1.2;
 
       for (const key in riversData) {
@@ -425,7 +426,7 @@ class RiverModule {
   // depression filling algorithm (for a correct water flux modeling)
   resolveDepressions(h: number[]) {
     const { cells, features } = pack;
-    const maxIterations = +(document.getElementById("resolveDepressionsStepsOutput") as HTMLInputElement)?.value;
+    const maxIterations = options.generation.resolveDepressionsSteps;
     const checkLakeMaxIteration = maxIterations * 0.85;
     const elevateLakeMaxIteration = maxIterations * 0.75;
 
@@ -490,7 +491,7 @@ class RiverModule {
       meandering: 0.5,
       startStep: h[riverCells[0]] < 20 ? 1 : 10,
       isWaterCell: riverCells.map(c => c !== -1 && h[c] < 20),
-      bounds: { width: graphWidth, height: graphHeight }
+      bounds: { width: options.map.graph.width, height: options.map.graph.height }
     });
 
     const flux: number[] = new Array(points.length).fill(0);
@@ -509,7 +510,8 @@ class RiverModule {
 
     const { p } = pack.cells;
     return riverCells.map((cell, i) => {
-      if (cell === -1) return projectToNearestEdge(p[riverCells[i - 1]], graphWidth, graphHeight);
+      if (cell === -1)
+        return projectToNearestEdge(p[riverCells[i - 1]], options.map.graph.width, options.map.graph.height);
       return p[cell];
     });
   }
@@ -614,9 +616,6 @@ class RiverModule {
   remove(id: number) {
     const cells = pack.cells;
     const riversToRemove = pack.rivers.filter(r => r.i === id || r.parent === id || r.basin === id).map(r => r.i);
-    riversToRemove.forEach(r => {
-      select("#rivers").select(`#river${r}`).remove();
-    });
     cells.r.forEach((r, i) => {
       if (!r || !riversToRemove.includes(r)) return;
       cells.r[i] = 0;
@@ -652,7 +651,7 @@ class RiverModule {
   resolveLakeDrainFeature(lakeFeatureId: number): number | null {
     const { features, rivers, cells } = pack;
     const lake = features[lakeFeatureId];
-    if (!lake || lake.type !== "lake") return null;
+    if (lake?.type !== "lake") return null;
     if (!lake.outlet) return lakeFeatureId; // closed lake: return itself
 
     const riverById = new Map(rivers.map(r => [r.i, r]));

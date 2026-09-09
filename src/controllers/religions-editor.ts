@@ -15,6 +15,7 @@ import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { Notes } from "@/generators/notes";
 import type { Religion } from "@/generators/religions-generator";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
 import { highlightElement } from "@/renderers/overlays/highlight";
@@ -70,7 +71,9 @@ const columns: EditorColumn<Religion>[] = [
     key: "population",
     label: "Population",
     width: "6em",
-    sortBy: religion => (religion.rural || 0) * populationRate + (religion.urban || 0) * populationRate * urbanization
+    sortBy: religion =>
+      (religion.rural || 0) * options.map.units.population.scale +
+      (religion.urban || 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate
   },
   {
     key: "expansion",
@@ -89,7 +92,10 @@ const columns: EditorColumn<Religion>[] = [
     mobileHidden: true,
     sortBy: religion => religion.expansionism || 0
   },
-  { key: "actions", width: "3.2em", permanent: true, align: "right" }
+  { key: "note", width: "1.1em" },
+  { key: "locate", width: "1.1em" },
+  { key: "lock", width: "1.1em" },
+  { key: "remove", width: "1.4em", permanent: true }
 ];
 
 function getFilteredReligions(): Religion[] {
@@ -225,13 +231,16 @@ function religionsEditorAddLines(view: TableView<Religion>): void {
   // totals span the full filtered set, not just the current page
   for (const r of view.all) {
     totalArea += getArea(r.area ?? 0);
-    totalPopulation += rn((r.rural ?? 0) * populationRate + (r.urban ?? 0) * populationRate * urbanization);
+    totalPopulation += rn(
+      (r.rural ?? 0) * options.map.units.population.scale +
+        (r.urban ?? 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate
+    );
   }
 
   for (const r of view.rows) {
     const area = getArea(r.area ?? 0);
-    const rural = (r.rural ?? 0) * populationRate;
-    const urban = (r.urban ?? 0) * populationRate * urbanization;
+    const rural = (r.rural ?? 0) * options.map.units.population.scale;
+    const urban = (r.urban ?? 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate;
     const population = rn(rural + urban);
     const populationTip = `Believers: ${si(population)}; Rural areas: ${si(rural)}; Urban areas: ${si(
       urban
@@ -279,7 +288,10 @@ function religionsEditorAddLines(view: TableView<Religion>): void {
           <span class="icon-resize-full placeholder"></span>
           <input class="religionExpantion placeholder" disabled type="number" value="0" />
         </div>
-        <div data-col="actions"></div>
+        <div data-col="note"></div>
+        <div data-col="locate"></div>
+        <div data-col="lock"></div>
+        <div data-col="remove"></div>
       </div>`;
       continue;
     }
@@ -319,11 +331,10 @@ function religionsEditorAddLines(view: TableView<Religion>): void {
         <div data-tip="${populationTip}" class="religionPopulation pointer">${si(population)}</div>
       </div>
       ${getExpansionColumns(r)}
-      <div data-col="actions">
-        <span data-tip="Locate the religion" class="icon-target"></span>
-        <span data-tip="Lock this religion" class="icon-lock${r.lock ? "" : "-open"}"></span>
-        <span data-tip="Remove religion" class="icon-trash-empty"></span>
-      </div>
+      ${Notes.getIcon("this religion")}
+      <span data-col="locate" data-tip="Locate the religion" class="icon-target"></span>
+      <span data-col="lock" data-tip="Lock this religion" class="icon-lock${r.lock ? "" : "-open"}"></span>
+      <span data-col="remove" data-tip="Remove religion" class="icon-trash-empty"></span>
     </div>`;
   }
   const body = ensureEl("religionsBody");
@@ -382,6 +393,9 @@ function religionsEditorAddLines(view: TableView<Religion>): void {
   ensureEl("religionsBody")
     .querySelectorAll("div > span.icon-trash-empty")
     .forEach(el => void el.addEventListener("click", religionRemovePrompt));
+  ensureEl("religionsBody")
+    .querySelectorAll("div > span.icon-book")
+    .forEach($el => void $el.addEventListener("click", editReligionNote));
   ensureEl("religionsBody")
     .querySelectorAll("div > span.icon-target")
     .forEach($el => void $el.addEventListener("click", highlightReligion));
@@ -549,8 +563,10 @@ function changePopulation(this: HTMLElement): void {
     return;
   }
 
-  const rural = rn((religion.rural ?? 0) * populationRate);
-  const urban = rn((religion.urban ?? 0) * populationRate * urbanization);
+  const rural = rn((religion.rural ?? 0) * options.map.units.population.scale);
+  const urban = rn(
+    (religion.urban ?? 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate
+  );
   const total = rural + urban;
   const format = (n: number) => Number(n).toLocaleString();
   const burgs = pack.burgs.filter(b => !b.removed && pack.cells.religion[b.cell] === religionId);
@@ -607,7 +623,7 @@ function changePopulation(this: HTMLElement): void {
       });
     }
     if (!Number.isFinite(ruralChange) && +ruralPop.value > 0) {
-      const points = +ruralPop.value / populationRate;
+      const points = +ruralPop.value / options.map.units.population.scale;
       const cells = (pack.cells.i as unknown as number[]).filter(i => pack.cells.religion[i] === religionId);
       const pop = rn(points / cells.length);
       cells.forEach(i => {
@@ -622,7 +638,8 @@ function changePopulation(this: HTMLElement): void {
       });
     }
     if (!Number.isFinite(urbanChange) && +urbanPop.value > 0) {
-      const points = +urbanPop.value / populationRate / urbanization;
+      const points =
+        +urbanPop.value / options.map.units.population.scale / options.map.units.population.urbanization.rate;
       const population = rn(points / burgs.length, 4);
       burgs.forEach(b => {
         b.population = population;
@@ -784,7 +801,9 @@ async function showHierarchy(): Promise<void> {
     };
 
     const formText = form === type ? "" : `. ${form}`;
-    const population = rural * populationRate + urban * populationRate * urbanization;
+    const population =
+      rural * options.map.units.population.scale +
+      urban * options.map.units.population.scale * options.map.units.population.urbanization.rate;
     const populationText = population > 0 ? `${si(rn(population))} people` : "Extinct";
 
     return `${name}${getTypeText()}${formText}. ${populationText}`;
@@ -904,7 +923,10 @@ function downloadReligionsCsv(): void {
   // export the full filtered set (all pages), not just the visible page
   const data = religionsTable.view().all.map(r => {
     const area = getArea(r.area ?? 0);
-    const population = rn((r.rural ?? 0) * populationRate + (r.urban ?? 0) * populationRate * urbanization);
+    const population = rn(
+      (r.rural ?? 0) * options.map.units.population.scale +
+        (r.urban ?? 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate
+    );
     const deityText = `"${r.deity || ""}"`;
     const originList = (r.origins ?? [])
       .filter((origin): origin is number => Boolean(origin))
@@ -928,6 +950,11 @@ function downloadReligionsCsv(): void {
 
   const name = `${getFileName("Religions")}.csv`;
   downloadFile(csvData, name);
+}
+
+function editReligionNote(this: HTMLElement): void {
+  const id = +(this.closest(".states") as HTMLElement).dataset.id!;
+  void Controllers.NotesEditor.open({ type: "religion", id });
 }
 
 function highlightReligion(this: HTMLElement): void {
