@@ -10,6 +10,7 @@ vi.mock("@/utils/pathUtils", async importOriginal => ({
   ...(await importOriginal<typeof import("@/utils/pathUtils")>()),
   getIsolines: vi.fn()
 }));
+
 import "@/generators/styles";
 import { drawMarkets, highlightMarketOff, highlightMarketOn } from "./draw-markets";
 

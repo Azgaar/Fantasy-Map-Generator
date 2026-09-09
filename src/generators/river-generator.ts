@@ -651,7 +651,7 @@ class RiverModule {
   resolveLakeDrainFeature(lakeFeatureId: number): number | null {
     const { features, rivers, cells } = pack;
     const lake = features[lakeFeatureId];
-    if (!lake || lake.type !== "lake") return null;
+    if (lake?.type !== "lake") return null;
     if (!lake.outlet) return lakeFeatureId; // closed lake: return itself
 
     const riverById = new Map(rivers.map(r => [r.i, r]));

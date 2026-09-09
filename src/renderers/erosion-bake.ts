@@ -143,7 +143,7 @@ function buildCoastTexture(bakeW: number, bakeH: number) {
   }
   maskCtx.fillStyle = "#000";
   for (const feature of pack.features) {
-    if (!feature || feature.type !== "lake") continue;
+    if (feature?.type !== "lake") continue;
     maskCtx.fill(new Path2D(Coastline.getFeaturePath(feature)));
   }
   maskCtx.restore();
@@ -263,7 +263,7 @@ function buildCoastTexture(bakeW: number, bakeH: number) {
   surfaceCtx.scale(scaleX, scaleY);
   surfaceCtx.lineJoin = "round";
   for (const feature of pack.features) {
-    if (!feature || feature.type !== "lake") continue;
+    if (feature?.type !== "lake") continue;
     const surface = Math.round(Math.max(feature.height || SEA_LEVEL, SEA_LEVEL));
     const path = new Path2D(Coastline.getFeaturePath(feature));
     surfaceCtx.fillStyle = surfaceCtx.strokeStyle = `rgb(${surface},${surface},${surface})`;
@@ -295,7 +295,7 @@ function buildCoastTexture(bakeW: number, bakeH: number) {
   groupCtx.lineJoin = "round";
   groupCtx.lineWidth = (taperPx * 6) / scaleX;
   for (const feature of pack.features) {
-    if (!feature || feature.type !== "lake") continue;
+    if (feature?.type !== "lake") continue;
     const code = LAKE_SUBTYPE_CODES[feature.subtype] ?? 1;
     const gray = code * 40;
     const path = new Path2D(Coastline.getFeaturePath(feature));

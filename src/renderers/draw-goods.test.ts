@@ -5,6 +5,7 @@ import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 
 const mocks = vi.hoisted(() => ({ layerOn: true }));
 vi.mock("@/components/layers", () => ({ Layers: { isOn: () => mocks.layerOn } }));
+
 import "@/generators/styles";
 import { drawGoods } from "./draw-goods";
 

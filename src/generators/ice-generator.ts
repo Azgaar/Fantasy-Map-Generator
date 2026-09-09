@@ -119,7 +119,7 @@ class IceModule {
 
   randomizeIcebergShape(id: number) {
     const iceberg = pack.ice.find(ice => ice.i === id);
-    if (!iceberg || iceberg.type !== "iceberg") return;
+    if (iceberg?.type !== "iceberg") return;
 
     const cellId = iceberg.cellId;
     const size = iceberg.size;
@@ -136,7 +136,7 @@ class IceModule {
 
   changeIcebergSize(id: number, newSize: number) {
     const iceberg = pack.ice.find(ice => ice.i === id);
-    if (!iceberg || iceberg.type !== "iceberg") return;
+    if (iceberg?.type !== "iceberg") return;
 
     const cellId = iceberg.cellId;
     const [cx, cy] = grid.points[cellId];

@@ -92,7 +92,7 @@ function addDragToUpload(): void {
     mapOverlay.style.display = "none";
 
     const items = event.dataTransfer?.items;
-    if (!items || items.length !== 1) return; // no files, or more than one
+    if (items?.length !== 1) return; // no files, or more than one
     const file = items[0].getAsFile();
     if (!file) return;
 
