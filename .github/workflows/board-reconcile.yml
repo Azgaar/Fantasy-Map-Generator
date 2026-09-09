@@ -23,6 +23,9 @@ concurrency:
 
 jobs:
   reconcile:
+    # The board and its field ids belong to this repository's owner. A fork carrying this file
+    # would read a different (or no) board and has no PROJECT_TOKEN, so it must not run here.
+    if: github.repository == 'Azgaar/Fantasy-Map-Generator'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -33,5 +36,6 @@ jobs:
         env:
           PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TRUSTED_TRIAGE_LOGINS: ${{ vars.TRUSTED_TRIAGE_LOGINS }}
           DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
         run: node scripts/board-reconcile.mjs
