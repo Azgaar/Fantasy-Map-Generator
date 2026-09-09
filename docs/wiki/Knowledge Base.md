@@ -78,7 +78,7 @@ You may have abused the coastline editor in which case regenerate the layer and 
 
 ### Does time exists?
 
-There is no a thing as time at the moment on the generator. The era and year thing in Options is just to define time messages on legends of military regiments, battles and similar things with a date on the notes
+There is no a thing as time at the moment on the generator. The era and year thing in Options -> Set Lore is just to define time messages on legends of military regiments, battles and similar things with a date on the notes
 
 ### I have made the menu too big. How to put it normal again?
 
@@ -674,7 +674,7 @@ After production every market compares its prices with other markets and buys wh
 
 ### Where can I see how rich a state is? What are the taxes?
 
-Open Tools -> States: there is a Treasury column, and clicking on a value opens the taxes dialog for that state. Each state has a Sales tax, applied to deals where the state is the seller, and a Poll tax, a flat fee per population point. Base rates depend on the state form (a Theocracy taxes sales heavily, a Monarchy taxes people more, an Anarchy collects nothing) and are randomized a bit per state. Neutral lands collect nothing
+Open Tools -> States: there is a Treasury column, and clicking on a value opens the taxes dialog for that state. Each state has a Sales tax, applied to deals where the state is the seller, and a Poll tax, a flat fee per population point. Base rates depend on the state form (a Theocracy taxes sales heavily, a Monarchy taxes people more, an Anarchy collects nothing) and are randomized a bit per state. Neutral lands collect nothing. A burg has a treasury of its own, shown in the Burg Editor: it is what the burg has left after buying ingredients and selling its production, and you can type any value there if you want a rich or a broke burg. Production is not recalculated to match, and the next economy regeneration overwrites it
 
 ### How do I regenerate the economy?
 

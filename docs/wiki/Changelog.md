@@ -17,6 +17,7 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 **[1.152.0](https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/tags/v1.152.0.zip) - 2026-09-TBD**:
 
 - Options full rework [1.152.0]
+- Notes rework: notes as entities param [1.152.0]
 - Preserve dialog positions between sessions [1.152.0]
 - Ability to override a burg's treasury [1.152.0]
 - Heightmap: option to render contour lines [1.152.0]

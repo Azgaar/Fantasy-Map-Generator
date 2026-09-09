@@ -2,6 +2,8 @@ This document outlines the expected data structure. Current data model described
 
 `.map` file is a valid JSON capturing all data required to render and operate the map, including UI and style settings. Once loaded, it a single gigantic object `map`, parsed from the json.
 
+`facts` is `options.map` and nothing else: the requests the generators consume (`options.generation`) and this browser's preferences (`options.app`) never enter the file. The admission test is in [configuration.md](./configuration.md#the-test) — that is why the heightmap template, the size varieties and growth rates, and `labels.showAll` are absent below.
+
 ```json
 {
   "meta": {
@@ -29,49 +31,11 @@ This document outlines the expected data structure. Current data model described
       "points": 50000
     },
 
-    "heightmap": {
-      "template": "Volcano",
-      "resolveDepressionsSteps": 250,
-      "lakeElevationLimit": 20
-    },
-
-    "cultures": {
-      "set": "Oriental",
-      "sizeVariety": 2,
-      "growthRate": 1.3
-    },
-
-    "states": {
-      "sizeVariety": 2,
-      "growthRate": 3,
-    },
-
-    "labels": {
-      "resizeOnZoom": true,
-      "showAll": false,
-      "groups": []
-    },
-
-    "scaleBar": {
-      "label": "",
-      "position": {
-        "x": 99,
-        "y": 99
-      }
-    },
-
-    "military": {
-      "units": []
-    },
-
-    "lore": {
-      "name": "Narnia",
-
-      "calendar": {
-        "year": 2026,
-        "era": "Triffids Era",
-        "eraShort": "TE"
-      },
+    "geography": {
+      "mapSize": 100,
+      "latitude": 50,
+      "longitude": 50,
+      "coordinates": { "latT": 180, "latN": 90, "latS": -90, "lonT": 320, "lonW": -160, "lonE": 160 }
     },
 
     "climate": {
@@ -84,17 +48,26 @@ This document outlines the expected data structure. Current data model described
       "precipitation": 100
     },
 
-    "geography": {
-      "mapSize": 100,
-      "latitude": 50,
-      "longitude": 50,
+    "cultures": {
+      "set": "oriental"
+    },
+
+    "lore": {
+      "name": "Narnia",
+      "description": "",
+
+      "calendar": {
+        "year": 2026,
+        "era": "Triffids Era",
+        "eraShort": "TE"
+      }
     },
 
     "units": {
       "distance": { "unit": "m", "scale": 3 },
-      "area": { "unit": "square", "scale": 1 },
+      "area": { "unit": "square" },
       "height": { "unit": "ft", "exponent": 2 },
-      "temperature": { "unit": "°C", "scale": 1 },
+      "temperature": { "unit": "°C" },
       "population": {
         "scale": 1000,
         "urbanization": {
@@ -102,6 +75,35 @@ This document outlines the expected data structure. Current data model described
           "density": 10
         }
       }
+    },
+
+    "style": { "preset": "default" },
+
+    "burgs": {
+      "groups": []
+    },
+
+    "labels": {
+      "resizeOnZoom": true,
+      "groups": []
+    },
+
+    "military": {
+      "units": []
+    },
+
+    "transports": [],
+
+    "coastline": {
+      "enabled": true,
+      "maxDepth": 4,
+      "baseAmplitude": 1.5,
+      "amplitudeDecay": 0.9,
+      "minEdge": 1,
+      "smoothThreshold": 0.25,
+      "roughnessContrast": 1.5,
+      "profileHarmonics": 4,
+      "lakeSmoothThreshMult": 2
     }
   },
 
@@ -113,6 +115,9 @@ This document outlines the expected data structure. Current data model described
   "style": {
     "scaleBar": {
       "size": 2,
+      "label": "",
+      "x": 99,
+      "y": 99,
       "backOpacity": 0.2,
       "backColor": "#ffffff"
     },
