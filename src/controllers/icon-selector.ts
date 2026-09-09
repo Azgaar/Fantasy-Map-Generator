@@ -2,7 +2,7 @@
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { ICONS, ICONS_PER_ROW } from "@/data/icons-list";
-import { ensureEl, sanitizeSvgIcon, svgToDataUri } from "@/utils";
+import { ensureEl, isImageIcon, sanitizeSvgIcon, svgToDataUri } from "@/utils";
 
 function open(initial: string, callback: (value: string) => void): void {
   const dialog = renderDialog();
@@ -112,14 +112,13 @@ function renderIcons(table: HTMLTableElement): void {
 
 /** Collect the external images already used as icons on this map */
 function getUsedImages(): Set<string> {
-  const isExternal = (url: string) => url.startsWith("http") || url.startsWith("data:image");
   const images = new Set<string>();
 
-  for (const unit of options.military) if (isExternal(unit.icon)) images.add(unit.icon);
+  for (const unit of options.military) if (isImageIcon(unit.icon)) images.add(unit.icon);
   for (const state of pack.states) {
-    for (const regiment of state?.military || []) if (isExternal(regiment.icon)) images.add(regiment.icon);
+    for (const regiment of state?.military || []) if (isImageIcon(regiment.icon)) images.add(regiment.icon);
   }
-  for (const marker of pack.markers || []) if (isExternal(marker.icon)) images.add(marker.icon);
+  for (const marker of pack.markers || []) if (isImageIcon(marker.icon)) images.add(marker.icon);
 
   return images;
 }

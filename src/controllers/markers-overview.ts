@@ -16,7 +16,7 @@ import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
 import { setMarkersFilter } from "@/renderers/draw-markers";
 import { highlightElement } from "@/renderers/overlays/highlight";
-import { downloadFile, getFileName, getLatitude, getLongitude } from "@/utils";
+import { downloadFile, getFileName, getLatitude, getLongitude, isImageIcon } from "@/utils";
 import { ensureEl } from "../utils";
 
 const dialogId = "markersOverview" as const;
@@ -185,16 +185,20 @@ function populateMarkerTypeMenu(): void {
   const types = [{ type: "empty", icon: "❓" }, ...Markers.getConfig()];
   types.forEach(({ icon, type }) => {
     const option = document.createElement("button");
-    option.textContent = `${icon} ${type}`;
+    option.innerHTML = `${iconHtml(icon)} ${type}`;
     menu.appendChild(option);
 
     option.addEventListener("click", () => {
-      ensureEl("markerTypeSelector").textContent = icon;
+      ensureEl("markerTypeSelector").innerHTML = iconHtml(icon);
       ensureEl<HTMLInputElement>("addedMarkerType").value = type;
       changeMarkerType();
       toggleMarkerTypeMenu();
     });
   });
+}
+
+function iconHtml(icon: string): string {
+  return isImageIcon(icon) ? `<img src="${icon}" style="width:1.2em; height:1.2em; vertical-align: middle;">` : icon;
 }
 
 function handleLineClick(ev: MouseEvent): void {
@@ -256,7 +260,7 @@ function renderMarkersPage(view: TableView<Marker>): void {
         <div class="states" data-id=${i} data-type="${type}">
           <div data-col="type">
             ${
-              icon.startsWith("http") || icon.startsWith("data:image")
+              isImageIcon(icon)
                 ? `<img src="${icon}" data-tip="Marker icon" style="width:1.2em; height:1.2em; vertical-align: middle;">`
                 : `<span data-tip="Marker icon" style="width:1.2em">${icon}</span>`
             }

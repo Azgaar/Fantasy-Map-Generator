@@ -14,7 +14,7 @@ import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { State } from "@/generators/states-generator";
-import { downloadFile, getFileName } from "@/utils";
+import { downloadFile, getFileName, isImageIcon } from "@/utils";
 import { capitalize, ensureEl, rn, sanitizeId, si, wiki } from "../utils";
 
 const dialogId = "militaryOverview" as const;
@@ -486,7 +486,7 @@ function militaryCustomize(): void {
     button.dataset.icon = icon;
     button.textContent = "";
 
-    if (icon.startsWith("http") || icon.startsWith("data:image")) {
+    if (isImageIcon(icon)) {
       const image = document.createElement("img");
       image.src = icon;
       image.style.cssText = "width: 1.2em; height: 1.2em; pointer-events: none";
