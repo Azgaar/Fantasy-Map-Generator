@@ -1,4 +1,6 @@
 // Building blocks shared by every editor dialog
+
+import type { UiDialogElement } from "@/components/ui-dialog/ui-dialog";
 import { ensureEl, findEl } from "@/utils";
 
 /** Close all open dialogs except the stated one */
@@ -12,6 +14,11 @@ export function closeDialogs(except = "#except"): void {
         // uninitialized or mid-teardown dialog; skip it so the rest still close
       }
     });
+
+  document.querySelectorAll<UiDialogElement>("ui-dialog[open]").forEach(dialog => {
+    if (dialog.closest(except)) return;
+    dialog.close();
+  });
 }
 
 interface ConfirmationOptions {
@@ -120,10 +127,16 @@ export const updateDialog = (id: string, params: DialogParams) => {
   if (el.classList.contains("ui-dialog-content")) window.$(el).dialog(params);
 };
 
-// Remove an element, destroying its jQuery UI dialog widget first
+// Remove an element, destroying its jQuery UI dialog widget or <ui-dialog> first
 export const destroyDialog = (id: string): void => {
   const el = findEl(id);
   if (!el) return;
+
+  if (el.tagName === "UI-DIALOG") {
+    (el as unknown as UiDialogElement).destroy();
+    return;
+  }
+
   if (el.classList.contains("ui-dialog-content")) window.$(el).dialog("destroy");
   el.remove();
 };
