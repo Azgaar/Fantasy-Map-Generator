@@ -21,7 +21,7 @@ export default ({ mode }: { mode: string }) => ({
   build: {
     outDir: mode === "electron" ? "../dist-electron/renderer" : "../dist",
     assetsDir: "./",
-    emptyOutDir: mode === "electron"
+    emptyOutDir: true // outDir sits outside root, so Vite would otherwise keep every past build's chunks
   },
   publicDir: "../public",
   resolve: {
