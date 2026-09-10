@@ -10,7 +10,9 @@ on:
         type: boolean
         default: true
   issues:
-    types: [opened, edited, labeled, unlabeled, reopened]
+    types: [opened, edited, labeled, unlabeled, closed, reopened]
+  pull_request_target:
+    types: [closed, reopened]
 
 permissions:
   issues: write
@@ -29,6 +31,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          # Metadata only: never execute a pull request's code with the project token.
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
       - uses: actions/setup-node@v5
         with:
           node-version: "24"
