@@ -106,6 +106,7 @@ export interface Approach {
   type?: string;
   name?: string;
   bearingDeg: number;
+  neighbourCell?: number;
   through: boolean;
   corridor?: Corridor;
 }
@@ -120,7 +121,7 @@ export function readApproaches(
   cellsRoutes: Record<number, Record<number, number>>,
   cellsP: ArrayLike<[number, number]>,
   // group is a plain string upstream (custom route groups); RouteGroup names the ones we branch on
-  routeById: Map<number, { group: string; type?: string; name?: string }>
+  routeById: Map<number, { group: string; type?: string; name?: string; points?: number[][] }>
 ): Approach[] {
   const connections = cellsRoutes[center];
   if (!connections) return [];
@@ -135,14 +136,19 @@ export function readApproaches(
   for (const [neighbourKey, routeId] of Object.entries(connections)) {
     const route = routeById.get(routeId);
     if (!route) continue;
-    const p = cellsP[Number(neighbourKey)];
+    const neighbourCell = Number(neighbourKey);
+    const points = route.points;
+    const at = points?.findIndex(point => point[2] === center) ?? -1;
+    const origin = at >= 0 ? points![at] : [cx, cy];
+    const p = points?.find(point => point[2] === neighbourCell) ?? cellsP[neighbourCell];
     if (!p) continue;
     approaches.push({
       routeId,
       group: route.group,
       type: route.type,
       name: route.name,
-      bearingDeg: compassBearing(p[0] - cx, p[1] - cy),
+      bearingDeg: compassBearing(p[0] - origin[0], p[1] - origin[1]),
+      neighbourCell,
       through: (sidesByRoute.get(routeId) ?? 0) > 1
     });
   }
@@ -557,14 +563,19 @@ export function readCorridor(input: {
 
 /**
  * A route's cells run end to end, so a through-route has two arms at the burg. Sample the
- * longer one — it carries more of the corridor's character.
+ * requested side; without a side, use the longer arm for existing callers.
  */
-export function orderRouteCellsOutward(routeCells: number[], center: number): number[] {
+export function orderRouteCellsOutward(routeCells: number[], center: number, neighbour?: number): number[] {
   const at = routeCells.indexOf(center);
   if (at === -1) return [center];
 
   const backward = routeCells.slice(0, at + 1).reverse();
   const forward = routeCells.slice(at);
+  if (neighbour !== undefined) {
+    if (backward[1] === neighbour) return backward;
+    if (forward[1] === neighbour) return forward;
+    return [center, neighbour];
+  }
   return backward.length >= forward.length ? backward : forward;
 }
 
@@ -605,7 +616,9 @@ export function buildBurgContext(burg: Burg): BurgContext {
   const windowCells = new Set(win.cellIds);
   const heightExponent = options.map.units.height.exponent;
   for (const approach of approaches) {
-    const outward = orderRouteCellsOutward(routeById.get(approach.routeId)?.cells ?? [], cell);
+    const route = routeById.get(approach.routeId);
+    const routeCells = route?.points?.map(point => point[2]) ?? route?.cells ?? [];
+    const outward = orderRouteCellsOutward(routeCells, cell, approach.neighbourCell);
     // Clip to the window: the readings must stay traceable to the window that produced them.
     const clipped: number[] = [];
     for (const id of outward) {

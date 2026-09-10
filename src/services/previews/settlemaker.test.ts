@@ -2,7 +2,6 @@
 import { describe, expect, it } from "vitest";
 import type { BurgContext } from "@/generators/burg-context";
 import {
-  buildFlatTierUrl,
   buildSettlemakerUrl,
   MAX_ENCODED_PAYLOAD_BYTES,
   SETTLEMAKER_BASE_URL,
@@ -119,6 +118,90 @@ describe("toSettlemakerInput", () => {
     ]);
   });
 
+  it.each(["royal", "main", "market", "town", "local", "trail", "footpath"])(
+    "preserves the %s road class separately from its group",
+    type => {
+      const group = type === "trail" || type === "footpath" ? "trails" : "roads";
+      const input = toSettlemakerInput(
+        ctx({ approaches: [{ routeId: 17, group, type, bearingDeg: 36, through: false }] }),
+        {}
+      );
+      expect(input.roadBearings).toEqual([{ route_id: "17", bearing_deg: 36, kind: type, group, through: false }]);
+    }
+  );
+
+  it("uses the group default when a route has no recognized class", () => {
+    const input = toSettlemakerInput(
+      ctx({
+        approaches: [
+          { routeId: 1, group: "roads", bearingDeg: 36, through: false },
+          { routeId: 2, group: "trails", type: "custom path", bearingDeg: 209, through: false }
+        ]
+      }),
+      {}
+    );
+    expect(input.roadBearings?.map(a => a.kind)).toEqual(["main", "trail"]);
+  });
+
+  it("keeps each measured side, shared IDs, coincident approaches and route character", async () => {
+    const corridor = {
+      sampledKm: 12,
+      elevationDeltaM: -80,
+      maxGradient: 0.1,
+      relief: "descent" as const,
+      followsRiver: true,
+      biomes: [],
+      minTempC: 8
+    };
+    const { link } = await buildSettlemakerUrl(
+      ctx({
+        approaches: [
+          { routeId: 17, group: "roads", type: "royal", bearingDeg: 36, through: true, corridor },
+          {
+            routeId: 17,
+            group: "roads",
+            type: "royal",
+            bearingDeg: 209,
+            through: true,
+            corridor: { ...corridor, relief: "ascent", followsRiver: false }
+          },
+          { routeId: 23, group: "trails", type: "footpath", bearingDeg: 36, through: false }
+        ]
+      }),
+      {}
+    );
+    const { burg } = await decodeIParam(link);
+    expect(burg.roadBearings).toEqual([
+      {
+        route_id: "17",
+        bearing_deg: 36,
+        kind: "royal",
+        group: "roads",
+        through: true,
+        relief: "descent",
+        followsRiver: true
+      },
+      {
+        route_id: "17",
+        bearing_deg: 209,
+        kind: "royal",
+        group: "roads",
+        through: true,
+        relief: "ascent",
+        followsRiver: false
+      },
+      { route_id: "23", bearing_deg: 36, kind: "footpath", group: "trails", through: false }
+    ]);
+  });
+
+  it("keeps water for non-ports but only requests harbour size for ports", () => {
+    const input = toSettlemakerInput(ctx({ burg: { ...ctx().burg, port: false } }), {});
+    expect(input.oceanBearing).toBe(200);
+    expect(input.harbourSize).toBeUndefined();
+    // The context has water summaries, not filled polygons in settlement-local units.
+    expect(input.coastlineGeometry).toBeUndefined();
+  });
+
   it("sends an empty roadBearings array for a genuinely routeless burg, never omits it", () => {
     const input = toSettlemakerInput(ctx({ approaches: [] }), {});
     expect(input.roadBearings).toEqual([]);
@@ -133,6 +216,9 @@ describe("toSettlemakerInput", () => {
     const off = toSettlemakerInput(ctx(), { urbanDensity: 0, trade: false });
     expect("urbanDensity" in off).toBe(false);
     expect("trade" in off).toBe(false);
+  });
+  it.each([NaN, Infinity, -Infinity, -1, 0])("omits invalid household density %s", urbanDensity => {
+    expect(toSettlemakerInput(ctx(), { urbanDensity }).urbanDensity).toBeUndefined();
   });
 });
 
@@ -192,7 +278,7 @@ describe("buildSettlemakerUrl", () => {
     expect(encoded.length).toBeLessThan(MAX_ENCODED_PAYLOAD_BYTES);
   });
 
-  it("falls back to flat tier when encoded payload exceeds budget", async () => {
+  it("preserves the compressed contract when a payload exceeds the advisory budget", async () => {
     // Craft a burg with massive data that exceeds the 8KB budget even after compression:
     // - 5000+ approaches with high-entropy types to resist DEFLATE
     // - Large culture string with low compressibility
@@ -221,76 +307,20 @@ describe("buildSettlemakerUrl", () => {
       }),
       { urbanDensity: 8, trade: true }
     );
-    // Should not have i= param; should have flat tier params instead
-    expect(new URL(link).searchParams.get("i")).toBeNull();
-    expect(new URL(link).searchParams.get("name")).toBe("Toprak");
-    expect(new URL(link).searchParams.get("pop")).not.toBeNull();
+    expect(new URL(link).searchParams.get("i")!.length).toBeGreaterThan(MAX_ENCODED_PAYLOAD_BYTES);
+    const { burg } = await decodeIParam(link);
+    expect(burg.culture).toBe(culture);
+    expect(burg.roadBearings).toHaveLength(approaches.filter(a => a.group !== "traderoutes").length);
+    expect(burg.roadBearings[0].route_id).toBe("0");
   });
 
-  it("falls back to flat tier when CompressionStream is unavailable", async () => {
-    const originalCompressionStream = globalThis.CompressionStream;
+  it("fails explicitly if compression is unavailable instead of silently losing route data", async () => {
+    const original = globalThis.CompressionStream;
     try {
-      // Temporarily hide CompressionStream
       (globalThis as Record<string, unknown>).CompressionStream = undefined;
-
-      const { link, preview } = await buildSettlemakerUrl(ctx(), {});
-
-      // Should return same flat-tier URL for both link and preview
-      expect(preview).toBe(link);
-      // Should not have i= param
-      expect(new URL(link).searchParams.get("i")).toBeNull();
-      // Should have flat tier params
-      expect(new URL(link).searchParams.get("name")).toBe("Toprak");
-      expect(new URL(link).searchParams.get("pop")).toBe("13");
+      await expect(buildSettlemakerUrl(ctx(), {})).rejects.toThrow();
     } finally {
-      // Restore CompressionStream
-      (globalThis as Record<string, unknown>).CompressionStream = originalCompressionStream;
+      globalThis.CompressionStream = original;
     }
-  });
-});
-
-describe("buildFlatTierUrl", () => {
-  it("emits the documented flat params and no i=", () => {
-    const url = buildFlatTierUrl(toSettlemakerInput(ctx(), { urbanDensity: 8, trade: true }), 42);
-    const params = new URL(url).searchParams;
-    expect(params.get("i")).toBeNull();
-    expect(params.get("name")).toBe("Toprak");
-    expect(params.get("pop")).toBe("13");
-    expect(params.get("seed")).toBe("42");
-    expect(params.get("port")).toBe("1");
-    expect(params.get("capital")).toBe("0");
-    expect(params.get("oceanBearing")).toBe("200");
-    expect(params.get("harbourSize")).toBe("small");
-    expect(params.get("urbanDensity")).toBe("8");
-    expect(params.get("trade")).toBe("1");
-  });
-
-  it("omits trade entirely when false", () => {
-    const url = buildFlatTierUrl(toSettlemakerInput(ctx(), {}), 42);
-    expect(new URL(url).searchParams.get("trade")).toBeNull();
-  });
-
-  it("carries land approaches as roads=, with class and through, at packed-tier precision", () => {
-    const approaches = [
-      { routeId: 1, group: "roads", type: "market", bearingDeg: 89.6, through: true },
-      { routeId: 2, group: "searoutes", bearingDeg: 180, through: false },
-      { routeId: 3, group: "trails", type: "footpath", bearingDeg: 0, through: false }
-    ] as BurgContext["approaches"];
-    const url = buildFlatTierUrl(toSettlemakerInput(ctx({ approaches }), {}), 42);
-    expect(new URL(url).searchParams.get("roads")).toBe("89.6:market:through,0:footpath");
-  });
-
-  it("falls back to the group's class for a route with no type or a custom one", () => {
-    const approaches = [
-      { routeId: 1, group: "roads", bearingDeg: 10, through: false },
-      { routeId: 2, group: "trails", type: "goat track", bearingDeg: 20, through: false }
-    ] as BurgContext["approaches"];
-    const url = buildFlatTierUrl(toSettlemakerInput(ctx({ approaches }), {}), 42);
-    expect(new URL(url).searchParams.get("roads")).toBe("10:main,20:trail");
-  });
-
-  it("omits roads entirely for a routeless burg", () => {
-    const url = buildFlatTierUrl(toSettlemakerInput(ctx({ approaches: [] }), {}), 42);
-    expect(new URL(url).searchParams.get("roads")).toBeNull();
   });
 });
