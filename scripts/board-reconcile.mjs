@@ -1,6 +1,6 @@
 import { appendFileSync } from "node:fs";
 import { FIELD_IDS, PROJECT_ID } from "./board-fields.mjs";
-import { itemsFromGraphql, planFieldWrites, planLabelWrites } from "./board-plan.mjs";
+import { itemsFromGraphql, planFieldWrites, planLabelWrites, planStatusWrites } from "./board-plan.mjs";
 
 const DRY_RUN = Boolean(process.env.DRY_RUN);
 const REPO = process.env.GITHUB_REPOSITORY || "Azgaar/Fantasy-Map-Generator";
@@ -37,6 +37,7 @@ query($owner: String!, $number: Int!, $cursor: String) {
         pageInfo { hasNextPage endCursor }
         nodes {
           id
+          isArchived
           fieldValues(first: 50) {
             nodes {
               ... on ProjectV2ItemFieldSingleSelectValue {
@@ -49,6 +50,8 @@ query($owner: String!, $number: Int!, $cursor: String) {
             __typename
             ... on Issue {
               number
+              state
+              stateReason
               title
               body
               labels(first: 100) { nodes { name } }
@@ -58,6 +61,7 @@ query($owner: String!, $number: Int!, $cursor: String) {
             }
             ... on PullRequest {
               number
+              state
               title
               body
               labels(first: 100) { nodes { name } }
@@ -131,6 +135,10 @@ async function addLabel(number, label) {
 }
 
 async function reportTokenFailure(message) {
+  if (DRY_RUN) {
+    console.error(`Dry run: would report PROJECT_TOKEN authentication failure: ${message}`);
+    return;
+  }
   const title = "Dev board automation: PROJECT_TOKEN needs renewing";
   const search = await fetch(
     `https://api.github.com/search/issues?q=${encodeURIComponent(`repo:${REPO} is:issue is:open in:title "${title}"`)}`,
@@ -183,6 +191,9 @@ async function main() {
   const fieldWrites = [];
   const labelWrites = [];
   for (const item of items) {
+    const completion = planStatusWrites(item);
+    fieldWrites.push(...completion.writes.map(write => ({ ...write, itemId: item.id })));
+    drift.push(...completion.drift);
     const planned = planFieldWrites(item, TRUSTED_LOGINS);
     fieldWrites.push(...planned.writes.map(write => ({ ...write, itemId: item.id })));
     drift.push(...planned.drift);

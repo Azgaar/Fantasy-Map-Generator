@@ -1,3 +1,5 @@
 # Description
 
-<!-- Please include a summary of the change, motivation and context. It it's a but fix, add a reference in format #issue_number -->
+<!-- Describe the problem, resulting behavior, and validation. Use "Fixes #123" only if this PR completes that issue; use "Refs #123" for partial work. Link the originating idea discussion when applicable. -->
+
+<!-- Before closing a request: check its acceptance criteria, split remaining work into linked issues, and record implementation/release evidence. Merged does not mean released. See docs/board-completion.md. -->

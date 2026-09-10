@@ -1,4 +1,4 @@
-import { PRIORITY_OPTIONS, SIZE_OPTIONS, THEME_LABEL_TO_OPTION, THEME_OPTIONS } from "./board-fields.mjs";
+import { PRIORITY_OPTIONS, SIZE_OPTIONS, STATUS_OPTIONS, THEME_LABEL_TO_OPTION, THEME_OPTIONS } from "./board-fields.mjs";
 import { classifyTheme } from "./theme-classify.mjs";
 
 const THEME_OPTION_TO_LABEL = Object.fromEntries(
@@ -108,14 +108,37 @@ export function planFieldWrites(item, trustedLogins = new Set()) {
   return { writes, drift };
 }
 
-const FIELD_BY_NAME = { Theme: "theme", Priority: "priority", Size: "size" };
+export function planStatusWrites(item) {
+  const writes = [];
+  const drift = [];
+  if (item.isArchived) return { writes, drift };
+
+  let status = null;
+  if (item.state === "OPEN") {
+    if (item.fields.status === "Done") status = "Backlog";
+  } else if (item.type === "PullRequest") {
+    if (item.state === "MERGED") status = "Done";
+    else if (item.state === "CLOSED") status = "Archive";
+  } else if (item.type === "Issue" && item.state === "CLOSED") {
+    if (item.stateReason === "COMPLETED") status = "Done";
+    else if (["NOT_PLANNED", "DUPLICATE"].includes(item.stateReason)) status = "Archive";
+    else drift.push(`#${item.number}: closed issue has no recognized completion reason; review its resolution`);
+  }
+
+  if (status && item.fields.status !== status) {
+    writes.push({ number: item.number, field: "status", optionName: status, optionId: STATUS_OPTIONS[status] });
+  }
+  return { writes, drift };
+}
+
+const FIELD_BY_NAME = { Theme: "theme", Priority: "priority", Size: "size", Status: "status" };
 
 export function itemsFromGraphql(nodes) {
   const items = [];
   for (const node of nodes) {
     const content = node.content || {};
     if (!content.number) continue;
-    const fields = { theme: null, priority: null, size: null };
+    const fields = { theme: null, priority: null, size: null, status: null };
     for (const value of node.fieldValues.nodes) {
       const key = FIELD_BY_NAME[value?.field?.name];
       if (key) fields[key] = value.name;
@@ -124,6 +147,9 @@ export function itemsFromGraphql(nodes) {
       id: node.id,
       number: content.number,
       type: content.__typename,
+      state: content.state ?? null,
+      stateReason: content.stateReason ?? null,
+      isArchived: node.isArchived === true,
       title: content.title || "",
       body: content.body || "",
       labels: (content.labels?.nodes || []).map(l => l.name),
