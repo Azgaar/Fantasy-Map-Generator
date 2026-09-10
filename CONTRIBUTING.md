@@ -4,6 +4,8 @@ Thank you for your interest in contributing to Azgaar's Fantasy Map Generator! W
 
 To keep the project healthy, maintainable, and manageable for maintainers, all contributions must follow the guidelines below.
 
+For bug reports, feature suggestions, and questions, see [Reporting bugs and suggesting ideas](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Reporting-bugs-and-ideas). Bugs go to Issues, ideas start in Discussions, and development is tracked on the [FMG dev board](https://github.com/users/Azgaar/projects/3).
+
 The short version: **a PR should do one thing, be manually tested, not break existing maps, and be understood by its author.** How you wrote it – by hand or with an AI agent — is your business.
 
 ## 1. Before You Begin
