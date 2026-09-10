@@ -2,7 +2,7 @@
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { ICONS, ICONS_PER_ROW } from "@/data/icons-list";
-import { ensureEl } from "@/utils";
+import { ensureEl, escapeHtml, isImageIcon, sanitizeSvgIcon, svgToDataUri } from "@/utils";
 
 function open(initial: string, callback: (value: string) => void): void {
   const dialog = renderDialog();
@@ -34,12 +34,20 @@ function open(initial: string, callback: (value: string) => void): void {
     const urlInput = addImageButton.previousElementSibling as HTMLInputElement;
     const url = urlInput.value;
     if (!url) return tip("Enter image URL to add", false, "error", 4000);
-    if (!url.match(/^((http|https):\/\/)|data:image\//)) return tip("Enter valid URL", false, "error", 4000);
+    if (!isImageIcon(url)) return tip("Enter valid URL", false, "error", 4000);
 
     addImage(url, callback);
     callback(url);
     urlInput.value = "";
   };
+
+  const fileInput = ensureEl<HTMLInputElement>("iconFileToLoad");
+  ensureEl("uploadIconImage").onclick = () => fileInput.click();
+  fileInput.onchange = () =>
+    uploadIcon(fileInput, url => {
+      addImage(url, callback);
+      callback(url);
+    });
 
   for (const image of Array.from(ensureEl("addedIcons").querySelectorAll<HTMLElement>("div"))) {
     image.onclick = () => callback(image.style.backgroundImage.slice(5, -2));
@@ -83,6 +91,9 @@ function renderDialog(): HTMLElement {
         <span>Paste link to the image here: </span>
         <input id="imageInput" style="width: 20em" />
         <button id="addImage" type="button">Add</button>
+        <span> or </span>
+        <button id="uploadIconImage" type="button" data-tip="Upload a local SVG or raster image, up to 200kB. It is stored inside the map file">Upload file</button>
+        <input id="iconFileToLoad" type="file" accept="image/*,.svg" style="display: none" />
       </div>
       <div id="addedIcons" class="pointer" style="display: flex; flex-wrap: wrap; max-width: 420px"></div>
     </div>`;
@@ -101,21 +112,56 @@ function renderIcons(table: HTMLTableElement): void {
 
 /** Collect the external images already used as icons on this map */
 function getUsedImages(): Set<string> {
-  const isExternal = (url: string) => url.startsWith("http") || url.startsWith("data:image");
   const images = new Set<string>();
 
-  for (const unit of options.map.military.units) if (isExternal(unit.icon)) images.add(unit.icon);
+  for (const unit of options.map.military.units) if (isImageIcon(unit.icon)) images.add(unit.icon);
   for (const state of pack.states) {
-    for (const regiment of state?.military || []) if (isExternal(regiment.icon)) images.add(regiment.icon);
+    for (const regiment of state?.military || []) if (isImageIcon(regiment.icon)) images.add(regiment.icon);
   }
+  for (const marker of pack.markers || []) if (isImageIcon(marker.icon)) images.add(marker.icon);
 
   return images;
 }
 
+function uploadIcon(input: HTMLInputElement, onLoaded: (dataUri: string) => void): void {
+  const file = input.files?.[0];
+  input.value = "";
+  if (!file) return;
+
+  if (file.size > 200000) {
+    return void tip(
+      "File is too big, please optimize it to below 200kB. Recommended size is up to 10kB",
+      true,
+      "error",
+      5000
+    );
+  }
+
+  const isSvg = file.type === "image/svg+xml" || file.name.toLowerCase().endsWith(".svg");
+  const reader = new FileReader();
+  reader.onload = () => {
+    const result = reader.result as string;
+    if (!isSvg) {
+      if (!isImageIcon(result)) return void tip("The file is not a supported image", false, "error", 4000);
+      return onLoaded(result);
+    }
+
+    const svg = sanitizeSvgIcon(result);
+    if (!svg) return void tip("The file is not a valid SVG image", false, "error", 4000);
+    onLoaded(svgToDataUri(svg.outerHTML));
+  };
+
+  if (isSvg) reader.readAsText(file);
+  else reader.readAsDataURL(file);
+}
+
 function addImage(url: string, callback: (value: string) => void): void {
   const image = document.createElement("div");
-  image.style.cssText = `width: 2.2em; height: 2.2em; background-size: cover; background-image: url(${url})`;
+  image.style.cssText = "width: 2.2em; height: 2.2em; background-size: cover";
+  image.style.backgroundImage = `url("${url.replace(/["\\]/g, "\\$&")}")`;
   image.onclick = () => callback(url);
+  image.onmouseover = () =>
+    tip(`Click to select <img src="${escapeHtml(url)}" style="width: 1em; height: 1em; vertical-align: middle"> icon`);
   ensureEl("addedIcons").appendChild(image);
 }
 

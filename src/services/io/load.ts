@@ -6,9 +6,10 @@ import { registerMap } from "@/components/lifecycle";
 import { syncOptionInputs } from "@/components/options/tabs/options-tab";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import { resetZoom } from "@/components/zoom";
 import { GraphOverride } from "@/generators/graph-override";
 import { invalidateEmblems } from "@/renderers/draw-emblems";
-import { clearLegend } from "@/renderers/draw-legend";
+import { onLegendClick } from "@/renderers/draw-legend";
 import { zonesFilter } from "@/renderers/draw-zones";
 import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
@@ -393,8 +394,8 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       .on("mousemove", () => tip("Click to open Units Editor"))
       .on("click", () => window.Controllers.UnitsEditor.open());
     select("#legend")
-      .on("mousemove", () => tip("Drag to change the position. Click to hide the legend"))
-      .on("click", () => clearLegend());
+      .on("mousemove", () => tip("Drag to change the position. Click to hide the legend box"))
+      .on("click", onLegendClick);
 
     // add custom heightmap color scheme if any
     if (heightmapColorSchemes) {
@@ -667,9 +668,10 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     Layers.drawAll();
     applyStoredStyles();
     applyDefaultViewboxEvents();
+    fitMapToScreen();
+    resetZoom(0); // an opened map is shown fitted, whatever window size it was made on
     focusOn();
     invokeActiveZooming();
-    fitMapToScreen();
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - uploadTimeStart) / 1000, 2)}s`);
 

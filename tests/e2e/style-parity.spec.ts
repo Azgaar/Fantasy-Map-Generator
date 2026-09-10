@@ -68,10 +68,15 @@ function collectStyleSnapshot(page: Page) {
 // derives #scaleBar's transform from that width. Both are content-derived layout rather than
 // preset style, and neither is stable enough to baseline: the width tracks text metrics, which
 // differ between platforms, and on a generated map it also tracks the "nice" round distance the
-// bar picks for that map's scale. Excluded from both comparisons below.
+// bar picks for that map's scale.
+//
+// #labels font-size is the same kind of value: applyLabelsZoomSize derives it from the current
+// zoom, and a map opens at the scale that fits it to the window, so it tracks the window size
+// against the map's extent rather than any style. Excluded from both comparisons below.
 function stripContentDerivedLayout(snapshot: Record<string, Record<string, string>>) {
   delete snapshot["#scaleBar"]?.transform;
   delete snapshot["#scaleBarBack"]?.width;
+  delete snapshot["#labels"]?.["font-size"];
 }
 
 test("styled attributes match the pre-migration baseline", async ({page}) => {

@@ -105,6 +105,17 @@ The **viewport** is the clearest case of the last rule, and the one most often c
 extent: the extent is the coordinate space the map's geometry lives in, fixed for the life of its
 graph and asked for before the map exists; the viewport is the screen window onto it.
 
+Neither bounds the other; the **zoom floor** is what reconciles them, and it is derived from the
+two rather than configured: `max(viewport.width / extent.width, viewport.height / extent.height)`,
+rounded up. A map opened on a screen bigger than the one it was made on is scaled up until it
+covers the window; a map bigger than the window zooms out below 1 until it fits. Either way there
+is never canvas beside the map, and a map opens at that floor - the fitted view - whatever window
+size it was saved on.
+
+`app.zoomExtent.min` is therefore a derived value the canvas writes and the panel displays, not a
+request the user makes: it is recomputed whenever the viewport or the extent changes. Typing a
+value into the control still applies it, and it stands until the next fit re-derives it.
+
 ### The definition sets
 
 Military unit types, transport types, burg groups, label groups and the coastline settings sit in

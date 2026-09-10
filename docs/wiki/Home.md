@@ -12,7 +12,9 @@ The project is under active development. Join our [Discord server](https://disco
 [Current Generator version](https://azgaar.github.io/Fantasy-Map-Generator/) |
 [Changelog](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog) |
 [Blog](https://azgaar.wordpress.com/) |
-[Development board](https://trello.com/b/7x832DG4/fantasy-map-generator)
+[Development board](https://github.com/users/Azgaar/projects/3)
+
+To report a problem or propose a feature, see [Reporting bugs and suggesting ideas](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Reporting-bugs-and-ideas), including GitHub forms, Discord reporting, and examples.
 
 ## Wiki pages
 
@@ -20,7 +22,8 @@ The project is under active development. Join our [Discord server](https://disco
 [Quick Start Tutorial](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Quick-Start-Tutorial) ·
 [User Interface](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/User-Interface) ·
 [Hotkeys](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys) ·
-[Q&A](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A)
+[Q&A](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A) ·
+[Report a bug or suggest an idea](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Reporting-bugs-and-ideas)
 
 **Terrain**
 [Heightmap customization](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-customization) ·

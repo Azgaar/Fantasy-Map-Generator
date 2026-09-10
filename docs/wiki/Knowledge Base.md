@@ -126,7 +126,15 @@ Burg is an internal name used for all settlements in the Fantasy Map Generator. 
 
 ### I have issues with the Generator, what should I do?
 
-Please try to reproduce the issue on your own. If it's reproducible, please log an issue on GitHub or Discord. A lot of issues are caused by browsers, please also try to use incognito mode and/or another browser. We recommend Chrome as the fastest browser in terms of svg rendering
+Search existing issues, then report bugs at https://github.com/Azgaar/Fantasy-Map-Generator/issues/new?template=bug_report.yml. Include the FMG version, browser/OS, steps, expected and actual results, and the affected .map file in a ZIP archive when relevant. In Discord, use /bug when available or ask for help in #fmg-bugs. Bot reports need moderator approval before GitHub submission; ordinary chat and /ask do not file reports. Examples: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Reporting-bugs-and-ideas
+
+### What should a useful bug report look like?
+
+Example wording, not a known current bug: "A burg name reverts after saving and loading. FMG [version], [browser/version], [OS]. Load the attached map, rename Northport to Southport, save to machine, reload and load the saved file. Expected: Southport. Actual: Northport, on every attempt." Include the affected .map file in a ZIP archive, screenshots/error text where relevant, and the closest Theme or Not sure. If practical, mention whether a private window or another browser changes the result
+
+### Does telling the assistant about a bug submit it to GitHub?
+
+No. /ask, mentions, in-app help and ordinary chat only ask for advice. If available, /bug or /idea opens a reporting form; the message menu may also offer Apps -> Report this as a bug or Report this as an idea. A moderator reviews the report before it creates a GitHub issue/discussion or adds details to an existing item. Pending review is not confirmation of submission. Follow the resulting GitHub link. If reporting is unavailable, use the GitHub forms or ask a Discord moderator for help
 
 ### The map performance is poor, how can I improve it?
 
@@ -138,7 +146,7 @@ You. The Generator is licensed under MIT license and derivative works such as ma
 
 ### My saved map is not working properly. What should I do?
 
-If there is no version conflict, please raise a defect on GitHub. Compatible maps from v0.70.0 onward are checked and auto-updated when loaded. Older maps are considered ancient and require the matching old version of the Generator, there is no way to update them. The tool is under development and version conflicts are inevitable
+If there is no version conflict, use https://github.com/Azgaar/Fantasy-Map-Generator/issues/new?template=bug_report.yml and attach the affected .map file in a ZIP archive, the exact error, and the versions used to save and load it. Compatible maps from v0.70.0 onward are checked and auto-updated when loaded. Older maps are considered ancient and require the matching old version of the Generator, there is no way to update them. See https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Reporting-bugs-and-ideas for reporting help
 
 ### Can I export a created map?
 
@@ -178,7 +186,7 @@ It's a nickname of the Generator creator, it has no meaning. The full name of th
 
 ### How can I help to improve the Generator?
 
-Just use it, log defects and suggest enhancements. Share the Generator link within your community! Post on FB, Twitter etc. We also accept donations on Patreon (https://www.patreon.com/azgaar)
+Use it, report bugs through https://github.com/Azgaar/Fantasy-Map-Generator/issues/new?template=bug_report.yml, and suggest or upvote ideas at https://github.com/Azgaar/Fantasy-Map-Generator/discussions/categories/ideas. Reporting examples and Discord options: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Reporting-bugs-and-ideas. Share the Generator link within your community. We also accept donations on Patreon (https://www.patreon.com/azgaar)
 
 ### What is the team behind the project?
 
@@ -366,11 +374,15 @@ You need to change the namesbase of the culture where you're spawning states and
 
 ### Hi, where is the right place to suggest new features?
 
-Suggest new featured on our Discord server on #fmg-suggestions channel
+Search and upvote existing ideas at https://github.com/Azgaar/Fantasy-Map-Generator/discussions/categories/ideas, or submit one at https://github.com/Azgaar/Fantasy-Map-Generator/discussions/new?category=ideas. Describe the problem, proposed behavior and an example use case. In Discord, use /idea when available or discuss it in #fmg-suggestions; bot reports need moderator approval before GitHub submission. Development is tracked at https://github.com/users/Azgaar/projects/3
+
+### What should a useful feature suggestion look like?
+
+Example: "Group journeys by campaign in the Journeys Overview. I run two campaigns on one map and currently prefix journey names; selecting Northern campaign would show only that group's journeys." Search existing ideas and issues first, choose a Theme or Not sure, and explain your use case. Votes help maintainers understand demand but do not guarantee implementation or a release date. If an idea already links to an issue, follow that issue rather than filing a duplicate
 
 ### Can I speak with a real human?
 
-You can speak with meatbags on Discord
+Ask the community or a moderator in the FMG Discord server: https://discord.com/invite/X7E84HU. Use #fmg-bugs for problems and #fmg-suggestions for ideas. You can also ask usage questions at https://github.com/Azgaar/Fantasy-Map-Generator/discussions/new?category=q-a
 
 ### Who are you?
 
@@ -518,7 +530,7 @@ Each state must have a capital. So to remove the capital burg, you need to reass
 
 ### Do you take suggestions?
 
-Yes, please suggest new features or changes on our Discord server
+Yes. Search and upvote Ideas discussions or submit a new suggestion at https://github.com/Azgaar/Fantasy-Map-Generator/discussions/new?category=ideas. In Discord, use /idea when available or #fmg-suggestions for discussion. Bot reports wait for moderator approval; a chat message alone does not create a GitHub item. See https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Reporting-bugs-and-ideas for examples
 
 ### Where can I set population settings?
 
@@ -786,7 +798,7 @@ Yes. In the Style editor, next to a font select there is a plus button that open
 
 ### What is the Legend box and how do I use it?
 
-The Legend box is a text box drawn on the map. The States, Cultures, Religions, Biomes and Zones editors have a 'Toggle Legend box' button that fills it with the list of the corresponding elements. The box can be dragged around the map and restyled in Style -> Legend
+A Legend box is a titled list of colored elements drawn on the map. The States, Cultures, Religions, Biomes and Zones editors have a 'Toggle Legend box' button that shows or hides the box for that editor. The boxes are independent: you can have as many of them on the map at once as you like, which is handy when exporting the map as an image. A new box is placed next to the ones already shown, on whichever side has room. Each box can be dragged around the map on its own, is hidden by clicking it, and they all share the styling in Style -> Legend. Where you drag a box is remembered by your browser rather than saved into the map, the same way editor dialog positions are
 
 ### Can I highlight one state and dim the rest?
 

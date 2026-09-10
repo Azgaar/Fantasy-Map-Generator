@@ -2409,6 +2409,10 @@ svg.button {
   opacity: 0.8;
 }
 
+#markerTypeSelectorWrapper {
+  position: relative;
+}
+
 #markerTypeSelectMenu {
   display: none;
 }

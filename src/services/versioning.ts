@@ -24,7 +24,7 @@ export const VERSION = "1.153.0";
 
 // new changes on top
 const latestPublicChanges = [
-  "Wrap Tool: Wrap Tool: reshape cells with a brush",
+  "Wrap Tool: reshape cells with a brush",
   "Coastlines: roughness is now localized to coastline section",
   "Heightmap: option to render contour lines",
   "Ability to override a burg's treasury",

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { test } from "node:test";
-import { itemsFromGraphql, parseTriage, planFieldWrites, planLabelWrites } from "./board-plan.mjs";
+import { itemsFromGraphql, parseTriage, planFieldWrites, planLabelWrites, planStatusWrites } from "./board-plan.mjs";
 
 test("parses an exact block", () => {
   const body = "### Triage\nPriority: P2 – Medium\nSize: M\n";
@@ -304,4 +305,135 @@ test("derives the label from a human-set Theme field instead of guessing", () =>
     })
   );
   assert.deepEqual(got, { writes: [{ number: 1780, label: "theme: ui-editors" }], drift: [] });
+});
+
+test("repairs completed, declined, merged and unmerged cards and converges after one pass", () => {
+  for (const [type, state, stateReason, before, after] of [
+    ["Issue", "CLOSED", "COMPLETED", "Backlog", "Done"],
+    ["Issue", "CLOSED", "NOT_PLANNED", "Done", "Archive"],
+    ["Issue", "CLOSED", "DUPLICATE", "Done", "Archive"],
+    ["PullRequest", "MERGED", null, "In review", "Done"],
+    ["PullRequest", "CLOSED", null, "Done", "Archive"],
+    ["Issue", "OPEN", "REOPENED", "Done", "Backlog"],
+    ["PullRequest", "OPEN", null, "Done", "Backlog"]
+  ]) {
+    const input = item({ type, state, stateReason, fields: { status: before } });
+    const { writes, drift } = planStatusWrites(input);
+    assert.deepEqual(drift, []);
+    assert.equal(writes.length, 1);
+    assert.equal(writes[0].optionName, after);
+    assert.equal(writes[0].field, "status");
+    assert.ok(writes[0].optionId);
+    assert.deepEqual(planStatusWrites({ ...input, fields: { status: after } }), { writes: [], drift: [] });
+  }
+});
+
+test("preserves active triage, intentionally parked proposals and actually archived history", () => {
+  for (const status of [null, "Backlog", "Approved", "In progress", "In review", "Archive"]) {
+    assert.deepEqual(planStatusWrites(item({ state: "OPEN", fields: { status } })), { writes: [], drift: [] });
+  }
+  assert.deepEqual(
+    planStatusWrites(item({ type: "PullRequest", state: "CLOSED", isArchived: true, fields: { status: "Done" } })),
+    { writes: [], drift: [] }
+  );
+});
+
+test("unknown issue closure reasons require review instead of being marked complete", () => {
+  for (const stateReason of [null, undefined, "UNRECOGNIZED"]) {
+    const result = planStatusWrites(item({ state: "CLOSED", stateReason }));
+    assert.deepEqual(result.writes, []);
+    assert.match(result.drift[0], /review its resolution/);
+  }
+});
+
+test("carries completion metadata and archived state from GraphQL into the planner", () => {
+  const [got] = itemsFromGraphql([{
+    ...node,
+    isArchived: true,
+    content: { ...node.content, state: "CLOSED", stateReason: "NOT_PLANNED" }
+  }]);
+  assert.equal(got.state, "CLOSED");
+  assert.equal(got.stateReason, "NOT_PLANNED");
+  assert.equal(got.isArchived, true);
+  assert.equal(got.fields.status, "Backlog");
+});
+
+const completionNode = (number, type, state, stateReason, status) => ({
+  id: `item-${number}`,
+  fieldValues: { nodes: [
+    { name: status, field: { name: "Status" } },
+    { name: "Military", field: { name: "Theme" } }
+  ] },
+  content: {
+    __typename: type, number, state, stateReason, title: "Regiment issue", body: "",
+    labels: { nodes: [{ name: "theme: military" }] },
+    repository: { nameWithOwner: "Azgaar/Fantasy-Map-Generator" }
+  }
+});
+
+function runCompletionFixture({ dryRun = false, authFailure = false, writeFailure = false } = {}) {
+  const env = { ...process.env };
+  delete env.NODE_TEST_CONTEXT;
+  const pages = [
+    [completionNode(1, "PullRequest", "CLOSED", null, "Done")],
+    [completionNode(2, "Issue", "CLOSED", "COMPLETED", "Backlog")]
+  ];
+  const script = `
+    const pages = ${JSON.stringify(pages)};
+    let page = 0;
+    let writes = 0;
+    globalThis.fetch = async (url, options) => {
+      if (url !== "https://api.github.com/graphql") throw new Error("Unexpected external write: " + url);
+      const {query, variables} = JSON.parse(options.body);
+      if (query.includes("updateProjectV2ItemFieldValue")) {
+        console.log("WRITE", variables.item, variables.option);
+        if (${writeFailure} && ++writes === 1) return {ok:false,status:502,json:async()=>({message:"fixture write failure"})};
+        return {ok:true,status:200,json:async()=>({data:{updateProjectV2ItemFieldValue:{}}})};
+      }
+      if (${authFailure}) return {ok:false,status:401,json:async()=>({message:"Bad credentials"})};
+      if (variables.cursor !== (page === 0 ? null : "next-page")) throw new Error("Wrong pagination cursor");
+      const nodes = pages[page++];
+      return {ok:true,status:200,json:async()=>({data:{user:{projectV2:{items:{nodes,pageInfo:{hasNextPage:page < 2,endCursor:"next-page"}}}}}})};
+    };
+    await import(${JSON.stringify(new URL("./board-reconcile.mjs", import.meta.url).href)});
+  `;
+  return spawnSync(process.execPath, ["--input-type=module", "-e", script], {
+    encoding: "utf8",
+    env: {
+      ...env, PROJECT_TOKEN: "fixture-token", GITHUB_TOKEN: "fixture-token",
+      GITHUB_REPOSITORY: "Azgaar/Fantasy-Map-Generator", GITHUB_STEP_SUMMARY: "",
+      DRY_RUN: dryRun ? "1" : "", TRUSTED_TRIAGE_LOGINS: ""
+    }
+  });
+}
+
+test("runner repairs completion across all board pages", () => {
+  const result = runCompletionFixture();
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /2 items · 2 field writes/);
+  assert.match(result.stdout, /WRITE item-1 6e3c9f61/);
+  assert.match(result.stdout, /WRITE item-2 98236657/);
+});
+
+test("runner preview prints completion repairs without writing", () => {
+  const result = runCompletionFixture({ dryRun: true });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /set #1 status = Archive/);
+  assert.match(result.stdout, /set #2 status = Done/);
+  assert.doesNotMatch(result.stdout, /WRITE/);
+});
+
+test("runner dry run cannot file an issue when project authentication fails", () => {
+  const result = runCompletionFixture({ dryRun: true, authFailure: true });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Dry run: would report PROJECT_TOKEN authentication failure/);
+  assert.doesNotMatch(result.stderr, /Unexpected external write/);
+});
+
+test("runner continues completion repairs after one write fails and reports failure", () => {
+  const result = runCompletionFixture({ writeFailure: true });
+  assert.equal(result.status, 1);
+  assert.match(result.stdout, /WRITE item-2 98236657/);
+  assert.match(result.stdout, /Write failures/);
+  assert.match(result.stdout, /#1 status: graphql 502/);
 });

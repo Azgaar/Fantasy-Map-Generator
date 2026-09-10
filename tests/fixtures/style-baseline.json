@@ -111,9 +111,7 @@
     "stroke-width": "0",
     "filter": "url(#dropShadow05)"
   },
-  "#labels": {
-    "font-size": "100px"
-  },
+  "#labels": {},
   "#lakes": {},
   "#freshwater": {
     "opacity": "0.9",

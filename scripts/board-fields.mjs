@@ -7,6 +7,15 @@ export const FIELD_IDS = {
   theme: "PVTSSF_lAHOAZPlEs4Bh_N6zhhNn90"
 };
 
+export const STATUS_OPTIONS = {
+  Backlog: "f75ad846",
+  Approved: "61e4505c",
+  "In progress": "47fc9ee4",
+  "In review": "df73e18b",
+  Done: "98236657",
+  Archive: "6e3c9f61"
+};
+
 export const PRIORITY_OPTIONS = {
   "P0 – Urgent": "79628723",
   "P1 – High": "0a877460",

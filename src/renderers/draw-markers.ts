@@ -1,7 +1,9 @@
 import { Layers } from "@/components/layers";
 import type { Marker } from "@/generators/markers-generator";
 import { ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
+import { isImageIcon } from "@/utils/fileUtils";
 import { rn } from "@/utils/numberUtils";
+import { escapeHtml } from "@/utils/stringUtils";
 
 const layer = ViewportLayers.register({ id: "markers", render: reconcileMarkers });
 let editedMarker: Marker | null = null;
@@ -92,9 +94,9 @@ function getMarkerGeometry({ x, y, size = 30 }: Marker, rescale: number, scale: 
 }
 
 function getMarkerContent({ icon, dx = 50, dy = 50, px = 12, pin, fill, stroke }: Marker): string {
-  const isExternal = icon.startsWith("http") || icon.startsWith("data:image");
+  const isExternal = isImageIcon(icon);
   return /* html */ `
       <g>${getPin(pin, fill, stroke)}</g>
-      <text x="${dx}%" y="${dy}%" font-size="${px}px" >${isExternal ? "" : icon}</text>
-      <image x="${dx / 2}%" y="${dy / 2}%" width="${px}px" height="${px}px" href="${isExternal ? icon : ""}" />`;
+      <text x="${dx}%" y="${dy}%" font-size="${px}px" >${isExternal ? "" : escapeHtml(icon)}</text>
+      <image x="${dx / 2}%" y="${dy / 2}%" width="${px}px" height="${px}px" href="${isExternal ? escapeHtml(icon) : ""}" />`;
 }
