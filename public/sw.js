@@ -32,11 +32,13 @@ precacheAndRoute(self.__WB_MANIFEST || [], {ignoreURLParametersMatching: [/.*/]}
 
 setCatchHandler(({request}) => (request.mode === "navigate" ? matchPrecache("index.html") : Response.error()));
 
+// Google-hosted scripts (analytics) are left to the browser: with a blocker installed the
+// request never gets a response, and a worker strategy would surface that as an uncaught error
 registerRoute(
   ({request, url}) =>
     request.destination === "script" &&
     !url.pathname.endsWith("min.js") &&
-    !url.pathname.includes("google"),
+    !url.hostname.includes("google"),
   new StaleWhileRevalidate({
     cacheName: "fmg-scripts",
     plugins: [
