@@ -29,6 +29,11 @@ export function downloadFile(data: BlobPart, name: string, type = "text/plain"):
   window.setTimeout(() => window.URL.revokeObjectURL(url), 2000);
 }
 
+/** Whether an icon value is an image URL rather than an emoji or text glyph */
+export function isImageIcon(icon: string): boolean {
+  return /^(https?:\/\/|data:image\/)/.test(icon);
+}
+
 /** Read the selected file as text and pass its content to the callback */
 export function uploadFile(input: HTMLInputElement, callback: (data: string) => void): void {
   const file = input.files?.[0];
