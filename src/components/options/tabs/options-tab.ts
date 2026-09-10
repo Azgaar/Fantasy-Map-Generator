@@ -715,7 +715,7 @@ export function syncOptionInputs(): void {
 }
 
 function syncManors(): void {
-  const output = ensureEl("options").querySelector<HTMLOutputElement>('[data-option-output="manors"]');
+  const output = document.querySelector<HTMLOutputElement>('[data-option-output="manors"]');
   if (output) output.value = isAutoBurgLimit() ? "auto" : String(options.generation.burgs.limit);
 }
 
@@ -729,7 +729,7 @@ function syncCellsDensity(): void {
     input.dataset.cells = String(cellsDesired);
   }
 
-  const readout = ensureEl("options").querySelector<HTMLOutputElement>('[data-option-output="points"]');
+  const readout = document.querySelector<HTMLOutputElement>('[data-option-output="points"]');
   if (!readout) return;
   readout.value = `${cellsDesired / 1000}K`;
   readout.style.color = cellsDensityColor(cellsDesired);
@@ -745,7 +745,7 @@ function syncCultures(): void {
 }
 
 function syncPngResolution(): void {
-  const input = ensureEl("options").querySelector<HTMLInputElement>('[data-option="pngResolution"]');
+  const input = document.querySelector<HTMLInputElement>('[data-option="pngResolution"]');
   if (input) input.value = String(options.app.export.pngResolution);
 }
 
