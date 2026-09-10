@@ -517,4 +517,4 @@ function regeneratePopulation(): void {
   Layers.draw("population", "goods");
 }
 
-export const BiomesEditor = { open };
+export const BiomesEditor = { open, exportCsv: downloadBiomesData };

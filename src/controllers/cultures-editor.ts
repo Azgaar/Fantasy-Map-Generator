@@ -1108,4 +1108,4 @@ function updateLockStatus(this: HTMLElement): void {
   classList.toggle("icon-lock");
 }
 
-export const CulturesEditor = { open };
+export const CulturesEditor = { open, showHierarchy };

@@ -710,4 +710,4 @@ function closeGoodsEditor() {
   ensureEl("goodsEditor").remove();
 }
 
-export const GoodsEditor = { open };
+export const GoodsEditor = { open, exportCsv: downloadGoodsData };

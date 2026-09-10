@@ -191,6 +191,42 @@ export const MAP_COMMANDS: MapCommand[] = [
     aliases: "statistics graphs",
     run: () => Controllers.ChartsOverview.open()
   },
+  {
+    id: "showStatesChart",
+    name: "Show States Chart",
+    aliases: "countries kingdoms area population bubble",
+    run: () => Controllers.StatesEditor.showChart()
+  },
+  {
+    id: "showProvincesChart",
+    name: "Show Provinces Chart",
+    aliases: "territories area population treemap",
+    run: () => Controllers.ProvincesEditor.showChart()
+  },
+  {
+    id: "showBurgsChart",
+    name: "Show Burgs Chart",
+    aliases: "settlements cities population bubble",
+    run: () => Controllers.BurgsOverview.showChart()
+  },
+  {
+    id: "showCulturesHierarchy",
+    name: "Show Cultures Hierarchy",
+    aliases: "people origins tree",
+    run: () => Controllers.CulturesEditor.showHierarchy()
+  },
+  {
+    id: "showReligionsHierarchy",
+    name: "Show Religions Hierarchy",
+    aliases: "faith beliefs origins tree",
+    run: () => Controllers.ReligionsEditor.showHierarchy()
+  },
+  {
+    id: "showRelationsHistory",
+    name: "Show Relations History",
+    aliases: "diplomacy chronicle wars",
+    run: () => Controllers.DiplomacyEditor.showHistory()
+  },
   { id: "openMinimapButton", name: "Open Minimap", aliases: "navigation", run: () => Controllers.Minimap.open() },
   { id: "openSubmapTool", name: "Create Submap", aliases: "generate region", run: () => Controllers.SubmapTool.open() },
   {
@@ -473,6 +509,66 @@ export const MAP_COMMANDS: MapCommand[] = [
     name: "Export Grid Cells JSON",
     aliases: "download data",
     run: () => Services.ExportJson.exportToJson("GridCells")
+  },
+  {
+    id: "exportCsvBiomes",
+    name: "Export Biomes as CSV",
+    aliases: "download table environment terrain",
+    run: () => Controllers.BiomesEditor.exportCsv()
+  },
+  {
+    id: "exportCsvBurgs",
+    name: "Export Burgs as CSV",
+    aliases: "download table settlements cities towns",
+    run: () => Controllers.BurgsOverview.exportCsv()
+  },
+  {
+    id: "exportCsvRelations",
+    name: "Export Relations as CSV",
+    aliases: "download table diplomacy matrix",
+    run: () => Controllers.DiplomacyEditor.exportCsv()
+  },
+  {
+    id: "exportCsvGoods",
+    name: "Export Goods as CSV",
+    aliases: "download table resources economy",
+    run: () => Controllers.GoodsEditor.exportCsv()
+  },
+  {
+    id: "exportCsvMarkers",
+    name: "Export Markers as CSV",
+    aliases: "download table points of interest",
+    run: () => Controllers.MarkersOverview.exportCsv()
+  },
+  {
+    id: "exportCsvMarkets",
+    name: "Export Markets as CSV",
+    aliases: "download table economy trade",
+    run: () => Controllers.MarketsOverview.exportCsv()
+  },
+  {
+    id: "exportCsvMilitary",
+    name: "Export Military as CSV",
+    aliases: "download table armies forces",
+    run: () => Controllers.MilitaryOverview.exportCsv()
+  },
+  {
+    id: "exportCsvNotes",
+    name: "Export Notes as CSV",
+    aliases: "download table lore legends descriptions",
+    run: () => Controllers.NotesEditor.exportCsv()
+  },
+  {
+    id: "exportCsvRegiments",
+    name: "Export Regiments as CSV",
+    aliases: "download table military armies",
+    run: () => Controllers.RegimentsOverview.exportCsv()
+  },
+  {
+    id: "exportCsvZones",
+    name: "Export Zones as CSV",
+    aliases: "download table areas regions",
+    run: () => Controllers.ZonesEditor.exportCsv()
   },
   { id: "toggleOptions", name: "Toggle Menu", aliases: "options panel show hide", run: () => toggleOptions() },
   { id: "layersTab", name: "Open Layers Tab", aliases: "menu panel", run: () => openTab("layersTab") },

@@ -821,4 +821,4 @@ function updateLockAllIcon(): void {
   ensureEl("burgsLockAll").className = allLocked ? "icon-lock-open" : "icon-lock";
 }
 
-export const BurgsOverview = { open };
+export const BurgsOverview = { open, showChart: showBurgsChart, exportCsv: downloadBurgsData };

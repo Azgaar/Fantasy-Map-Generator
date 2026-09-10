@@ -481,4 +481,4 @@ function closeMarketsOverview(): void {
   ensureEl("marketsOverview").remove();
 }
 
-export const MarketsOverview = { open };
+export const MarketsOverview = { open, exportCsv: downloadMarketsCsv };

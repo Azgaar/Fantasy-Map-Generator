@@ -464,4 +464,4 @@ function toggleNotesPin(this: HTMLElement): void {
   this.classList.toggle("pressed");
 }
 
-export const NotesEditor = { open };
+export const NotesEditor = { open, exportCsv: downloadLegends };

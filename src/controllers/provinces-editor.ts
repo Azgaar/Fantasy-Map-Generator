@@ -1486,4 +1486,4 @@ function updateLockStatus(provinceId: number, classList: DOMTokenList): void {
   classList.toggle("icon-lock");
 }
 
-export const ProvincesEditor = { open };
+export const ProvincesEditor = { open, showChart };

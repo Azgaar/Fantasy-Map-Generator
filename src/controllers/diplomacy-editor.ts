@@ -633,4 +633,4 @@ function closeDiplomacyEditor(): void {
   ensureEl(dialogId).remove();
 }
 
-export const DiplomacyEditor = { open };
+export const DiplomacyEditor = { open, showHistory: showRelationsHistory, exportCsv: downloadDiplomacyData };

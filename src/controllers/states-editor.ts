@@ -1783,4 +1783,4 @@ function updateLockStatus(stateId: number, classList: DOMTokenList): void {
   classList.toggle("icon-lock");
 }
 
-export const StatesEditor = { open };
+export const StatesEditor = { open, showChart: showStatesChart };

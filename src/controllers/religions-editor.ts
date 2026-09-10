@@ -992,4 +992,4 @@ function closeReligionsEditor(): void {
   ensureEl("religionsEditor").remove();
 }
 
-export const ReligionsEditor = { open };
+export const ReligionsEditor = { open, showHierarchy };

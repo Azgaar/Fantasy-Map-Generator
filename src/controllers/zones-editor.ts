@@ -494,4 +494,4 @@ function zoneRemove(zone: Zone): void {
   });
 }
 
-export const ZonesEditor = { open };
+export const ZonesEditor = { open, exportCsv: downloadZonesData };

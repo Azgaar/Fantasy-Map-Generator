@@ -111,13 +111,9 @@ export function invokeActiveZooming(): void {
 }
 
 /** Zoom to a specific point */
-export function zoomTo(x: number, y: number, z = 8, duration = 2000, onEnd?: () => void): void {
+export function zoomTo(x: number, y: number, z = 8, duration = 2000): void {
   const transform = zoomIdentity.translate(x * -z + viewport.width / 2, y * -z + viewport.height / 2).scale(z);
-  select<SVGSVGElement, unknown>("#map")
-    .transition()
-    .duration(duration)
-    .call(zoomBehavior.transform, transform)
-    .on("end", () => onEnd?.());
+  select<SVGSVGElement, unknown>("#map").transition().duration(duration).call(zoomBehavior.transform, transform);
 }
 
 /** Reset zoom to initial */

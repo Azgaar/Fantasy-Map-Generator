@@ -138,13 +138,14 @@ class OmnibarController {
     let scale = Math.max(1, fit);
     if (group) scale = Math.max(group.zoom.min ?? 1, Math.min(group.zoom.max ?? 20, scale));
 
-    zoomTo((x0 + x1) / 2, (y0 + y1) / 2, scale, 1500, () => {
+    zoomTo((x0 + x1) / 2, (y0 + y1) / 2, scale, 1500);
+    setTimeout(() => {
       const elementId = MapEntities.getElementId(ref);
       const element = label
         ? findEl(label.id)
         : (display?.highlight && document.querySelector(display.highlight)) || (elementId ? findEl(elementId) : null);
       if (element) highlightElement(element);
-    });
+    }, 750);
   }
 
   private plainText(html: string): string {
@@ -205,39 +206,39 @@ class OmnibarController {
     root.innerHTML = /* html */ `
       <style>
         #omnibar {
+          --line: color-mix(in srgb, var(--bg-main) 22%, transparent);
+          --muted: color-mix(in srgb, currentColor 55%, transparent);
           position: fixed;
-          top: 10px;
+          top: 0.8em;
           left: 50%;
           transform: translateX(-50%);
-          width: min(620px, calc(100vw - 24px));
+          width: min(50em, calc(100vw - 2em));
           z-index: 100000;
           box-sizing: border-box;
           overflow: hidden;
-          background: rgb(255 255 255 / 97%);
+          background: var(--bg-dialogs, rgb(250 250 250 / 97%));
           color: #30343b;
-          border: 1px solid #00000014;
-          border-radius: 6px;
-          box-shadow: 0 4px 18px #00000014;
-          font: 14px var(--sans-serif);
+          box-shadow: 0 0.5em 1.5em #00000030;
+          font: 1.2em/1.3 var(--sans-serif);
         }
 
         #omnibar .omnibar-search {
           display: flex;
           align-items: center;
-          gap: 10px;
-          padding: 0 12px;
+          gap: 0.7em;
+          padding: 0 0.9em;
         }
 
         #omnibar .omnibar-search > .icon-search {
-          color: #858a91;
-          font-size: 14px;
+          color: var(--dark-solid);
+          font-size: 1em;
         }
 
         #omnibar input {
           box-sizing: border-box;
           flex: 1;
           min-width: 0;
-          height: 42px;
+          height: 2.7em;
           margin: 0;
           padding: 0;
           border: 0;
@@ -246,65 +247,63 @@ class OmnibarController {
           box-shadow: none;
           background: transparent;
           color: inherit;
-          caret-color: var(--dark-solid, #555);
+          caret-color: var(--dark-solid);
           font: inherit;
         }
 
         #omnibar input::placeholder {
-          color: #7b8087;
+          color: var(--muted);
         }
 
         #omnibar .omnibar-escape {
-          color: #858a91;
-          font-size: 10px;
+          color: var(--muted);
+          font-size: 0.75em;
         }
 
         #omnibar-list {
-          max-height: min(360px, 50vh);
+          max-height: min(26em, 50vh);
           overflow-y: auto;
           overscroll-behavior: contain;
           scrollbar-width: thin;
-          scrollbar-color: #00000026 transparent;
+          scrollbar-color: var(--line) transparent;
         }
 
         #omnibar-list:not(:empty) {
-          padding: 4px;
-          border-top: 1px solid #0000000c;
+          padding: 0.25em;
+          border-top: 1px solid var(--line);
         }
 
         #omnibar [role="option"] {
           display: flex;
           align-items: center;
-          gap: 9px;
+          gap: 0.6em;
           min-width: 0;
-          padding: 6px 8px;
-          border-radius: 3px;
-          line-height: 1.4;
+          padding: 0.3em 0.6em;
           cursor: pointer;
         }
 
         #omnibar [role="option"]:hover {
-          background: #00000004;
+          background: color-mix(in srgb, var(--dark-solid) 5%, transparent);
         }
 
         #omnibar [role="option"][aria-selected="true"] {
-          background: color-mix(in srgb, var(--dark-solid, #555) 9%, transparent);
+          background: color-mix(in srgb, var(--dark-solid) 12%, transparent);
         }
 
         #omnibar [aria-disabled="true"] {
-          color: #858a91;
+          color: var(--muted);
           cursor: default;
         }
 
         #omnibar .omnibar-icon {
-          flex: 0 0 18px;
-          color: #858a91;
-          font-size: 13px;
+          flex: 0 0 1.3em;
+          color: var(--muted);
+          font-size: 0.95em;
           text-align: center;
         }
 
         #omnibar [aria-selected="true"] .omnibar-icon {
-          color: var(--dark-solid, #555);
+          color: var(--dark-solid);
         }
 
         #omnibar .omnibar-name {
@@ -320,8 +319,8 @@ class OmnibarController {
           max-width: 50%;
           margin-left: auto;
           overflow: hidden;
-          color: #737982;
-          font-size: 11px;
+          color: var(--muted);
+          font-size: 0.85em;
           text-align: right;
           text-overflow: ellipsis;
           white-space: nowrap;
@@ -329,15 +328,15 @@ class OmnibarController {
 
         #omnibar mark {
           background: transparent;
-          color: inherit;
+          color: var(--dark-solid);
           font-weight: 600;
         }
 
         #omnibar-status {
-          padding: 6px 12px;
-          border-top: 1px solid #00000008;
-          color: #737982;
-          font-size: 10px;
+          padding: 0.35em 1.2em;
+          border-top: 1px solid var(--line);
+          color: var(--muted);
+          font-size: 0.75em;
         }
 
         #omnibar-status:empty {
