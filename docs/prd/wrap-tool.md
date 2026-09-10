@@ -1,282 +1,367 @@
-# PRD: Wrap Tool
+# PRD — Wrap Tool
 
-Status: Draft for implementation review  
-Date: 2026-09-10
+Updated: 2026-09-10. This replaces the earlier, overly broad deformation proposal: the tool moves
+packed-cell **vertices** only and leaves every other map object where it is.
 
 ## Problem Statement
 
-Map authors can currently drag individual coastline vertices, but cannot make the same local shape
-adjustments elsewhere through one consistent tool. Editing one vertex at a time is cumbersome when
-reshaping a stretch of coastline, a lake shore, or an inland boundary. The existing editor also lacks
-brush controls and stroke history.
+Local shape adjustments were only possible on coastlines, one point at a time. The coastline vertex
+editor opened on a coastline click, showed a handle per vertex, and moved a single vertex per drag
+through `GraphOverride.movePackVertex`. That has three consequences:
 
-Moving map geometry has consequences beyond its visible outline. Shared cell boundaries, rivers,
-routes, settlements, labels, cell selection, and saved maps must remain consistent. A tool that permits
-large or invalid distortions can make a map difficult to use even when the initial edit looks acceptable.
+- **Lake shores and inland cell boundaries could not be adjusted at all**, although they are the same
+  packed-graph vertices behind a different renderer.
+- **Reshaping a stretch of coast is dozens of individual drags**, each one a separate override record,
+  a separate derived-area refresh, and a separate redraw.
+- **There is no stroke-level history.** Undo granularity is whatever the surrounding editor offered,
+  so experimenting is expensive.
+
+The obvious answer — a general deformation tool that carries rivers, routes, burgs, labels, markers
+and grid-derived overlays along with the geometry — is a much larger piece of work: FMG keeps graph
+geometry and entity coordinates in separate representations, so "move everything coherently" means
+touching every coordinate-owning module, cell picking, and the IO format. That proposal is shelved.
 
 ## Solution
 
-Introduce a global **Wrap Tool** as a new Controller, available from the Tools tab. Authors drag a
-circular brush to push nearby map geometry, with smooth falloff toward the edge. The mouse wheel changes
-brush size. A compact dialog provides brush size, strength, undo, redo, reset, help, and close controls.
+A **Wrap Tool** Controller, opened from Tools → Create, that drags packed-cell vertices under a
+circular brush with smooth falloff. The cell structure under the brush is drawn on the map and follows
+the pointer while the map layers hold still; they redraw once the drag ends. It reuses the existing
+graph override mechanism, so persistence, derived areas, and graph-rebuild compatibility come for free.
 
-The tool adjusts existing shapes while preserving cell identities, adjacency, and land/water
-classification. It works inland as well as on coastlines and lakes. Attached map content follows the
-accepted deformation. Significant terrain changes remain the responsibility of the Heightmap Editor.
+The tool is deliberately narrow: vertices move, nothing else does. Each vertex is capped relative to
+its original position and local edge lengths, no cell may fold over itself or collapse, and the map
+frame does not move. The dialog says as much:
 
-Remove the coastline editor completely, including its standalone dialogs, Controller registrations,
-entry points, and vertex handles. Preserve existing coastline appearance settings and saved groups;
-their controls belong in Style, outside the Wrap Tool.
+> Use for small shape adjustments. Use the Heightmap Editor for significant changes. Other map
+> objects stay in place.
 
-Display this non-blocking guidance in the dialog:
+The coastline **vertex** editor is removed with its coastline click handler and registry entry. The
+coastline settings editor (`coastline-editor`) and the Style coastline controls are untouched.
 
-> Use Wrap for small shape adjustments. For major terrain changes, such as creating islands or changing
-> land into water, use the Heightmap Editor. Movement is limited to keep the map geometry valid.
-
-The agreed product name is **Wrap Tool**. Watabou's reference calls the interaction “Warp”; this PRD
-uses the user's requested name consistently.
+The agreed product name is **Wrap Tool**. Watabou's reference calls the interaction "Warp".
 
 ## User Stories
 
-1. As a map author, I want to open Wrap from Tools without selecting a coastline, so that I can adjust any part of the map.
-2. As a map author, I want to drag a brush across several vertices, so that reshaping an area takes fewer actions.
-3. As a map author, I want movement to fade toward the brush edge, so that adjustments blend into the surrounding map.
-4. As a map author, I want to resize the brush with the mouse wheel, so that I can change the affected area without leaving the canvas.
-5. As a map author, I want a visible brush outline, so that I know which area will be affected before dragging.
-6. As a map author, I want a labelled size control, so that I can discover and adjust brush size without a wheel.
-7. As a map author, I want a strength control, so that I can make delicate corrections with a large brush.
-8. As a map author, I want familiar keyboard controls and tooltips, so that I can work without learning a complex interface.
-9. As a map author, I want to pan and zoom while using Wrap, so that I can reach and inspect the area I am editing.
-10. As a map author, I want a coastline, lake shore, or inland boundary to respond to the same brush, so that I do not switch geometry editors.
-11. As a map author, I want shared boundaries to move together, so that adjacent regions do not develop gaps or overlaps.
-12. As a map author, I want rivers, roads, and settlements to follow the terrain adjustment, so that their relationships remain believable.
-13. As a map author, I want labels and other map annotations to stay with the features they describe, so that the map remains readable.
-14. As a map author, I want hidden layers to reflect my edits when shown, so that layer visibility does not change the result.
-15. As a map author, I want to undo or redo a whole stroke, so that experimenting is easy.
-16. As a map author, I want to reset the current editing session, so that I can abandon an experiment without losing earlier work.
-17. As a map author, I want to cancel an unfinished stroke, so that an interrupted drag does not leave a partial edit.
-18. As a map author, I want the brush to stop before geometry becomes invalid, so that I cannot accidentally break the map.
-19. As a map author, I want feedback when movement reaches a limit, so that I understand why the brush stops responding.
-20. As a map author, I want clear guidance about heightmap editing, so that I choose the right tool for major terrain changes.
-21. As a map author, I want clicks and hover information to match the edited cells, so that subsequent editing remains accurate.
-22. As a map author, I want areas and geometric distances to refresh, so that map information reflects the new shapes.
-23. As a map author, I want saved and exported maps to preserve the result, so that editing work survives sharing and reopening.
-24. As an existing user, I want maps with earlier coastline edits and custom styles to remain usable, so that replacing the editor does not discard my work.
-25. As a map author, I want closing the tool to restore normal map interaction, so that scrolling and clicking behave normally afterward.
-26. As a map author working on a large map, I want responsive previews and bounded history, so that the tool remains practical throughout a session.
+1. As a map author, I want to open Wrap from Tools without selecting a coastline, so that I can adjust
+   any part of the map.
+2. As a map author, I want one drag to move every vertex under the brush, so that reshaping a stretch
+   of coast takes one gesture instead of twenty.
+3. As a map author, I want the same brush to work on a coastline, a lake shore, and an inland cell
+   boundary, so that I do not switch tools by geometry type.
+4. As a map author, I want displacement to fade toward the brush edge, so that the adjustment blends
+   into the surrounding cells.
+5. As a map author, I want to resize the brush with the wheel or `+`/`-`, and to see the size in the
+   dialog, so that I can change the affected area without leaving the canvas.
+6. As a map author, I want a brush outline and the cell structure under it, so that I see what a drag will
+   affect before I commit to it.
+7. As a map author, I want the structure to follow the pointer while I drag and the map to redraw when I let
+   go, so that dragging stays responsive on a large map.
+8. As a map author, I want undo and redo per stroke, so that experimenting is cheap.
+9. As a map author, I want to reset the session, so that I can abandon an experiment and still keep
+   edits made before the tool was opened.
+10. As a map author, I want Escape to cancel an unfinished drag, so that an interrupted stroke leaves
+    no partial edit.
+11. As a map author, I want to zoom and pan exactly as I do outside the tool, so that I can reach and
+    inspect the area I am editing without learning new gestures.
+12. As a map author, I want the brush to stop rather than fold cells over themselves, so that I cannot
+    accidentally produce broken polygons.
+13. As a map author, I want to be told upfront that other map objects stay in place, so that I pick the
+    Heightmap Editor for anything larger.
+14. As a map author, I want hidden layers to reflect my edits when I show them, so that layer
+    visibility does not change the result.
+15. As a map author, I want closing the tool to keep my edits and restore normal interaction, so that the
+    map is usable again immediately.
+16. As a map author, I want edits to survive save, load, and export, so that the work is not throwaway.
 
 ## Implementation Decisions
 
-The product scope above incorporates the conversation. The engineering choices below are proposed
-implementation requirements, rather than a claim that the implementation already exists.
+Four files carry the feature: `src/controllers/wrap-tool.ts` (dialog, lifecycle, history, redraw),
+`src/controllers/vertex-brush.ts` (vertex lookup, falloff, limits, geometric validation),
+`src/renderers/overlays/vertex-mesh.ts` (the structure overlay), and `movePackVertices` / `revert` on
+`src/generators/graph-override.ts`. The gestures are not the tool's own: they come from
+`src/components/map-brush.ts`, the brush instrument shared with the paint editor (see below). Two
+shared modules gain an entry: the Tools tab button and the `Shift + W` hotkey. No new dependency.
+
+The controller follows [migration-guide.md](../architecture/migration-guide.md): a named export over
+module-scoped `let` state, `open()` → `render()` → `addListeners()`, and a `cleanup()` wired through
+the dialog's `close` so every node, listener and overlay it introduced is removed again. It owns its
+markup — nothing for it exists in `index.html` — and is lazy-loaded through the Controllers registry.
 
 ### Controller and lifecycle
 
-- Register one lazy-loaded Wrap Tool Controller through the existing Controllers registry. Opening it
-  requires no selected feature and reuses the existing instance if already open.
-- Build the dialog and brush overlay on demand. Opening the tool enters an exclusive editing mode;
-  normal click-to-edit actions must not open other editors beneath a stroke.
-- Do not allow concurrent heightmap editing or another geometry editor. Follow existing editor lifecycle
-  conventions when switching tools, and cancel an unfinished stroke before switching.
-- Close keeps completed changes, removes overlays and listeners, releases session history, and restores
-  normal pan, zoom, hover, and click behavior. Opening again begins a new history session.
-- Tool preferences are browser preferences. Geometry changes are map state. Brush overlays and history
-  are transient and must not appear in exports or saved map geometry.
+- Registered lazily as `WrapTool` in `src/controllers/index.ts`; the Tools tab opens it from
+  the `openWrapTool` button in the Create group (`src/components/options/tabs/tools-tab.ts`), and
+  `Shift + W` opens it from `src/components/hotkeys.ts`.
+- `open()` is a no-op while `customization` is active (heightmap editing owns the graph) or while the
+  tool is already open, and closes other dialogs first. It then **takes customization itself**
+  (`CUSTOMIZATION_MODE = 18`, released in `cleanup()`), so for as long as the tool is open no other
+  editor opens over it — neither by a map click nor by a shortcut, since every editor's `open()`
+  guards on the flag.
+- `render()` injects the dialog into `#dialogs` and `cleanup()` destroys it, per the dialog markup
+  ownership convention. All listeners `addListeners()` attaches hang off one `AbortController`, aborted
+  in `cleanup()`; the d3 drag behaviour and the cursor are dropped by `applyDefaultViewboxEvents()`.
+- Opening pins a main tip — "Wrap tool: drag to reshape cells, Shift + drag to resize the brush" —
+  and `cleanup()` clears it.
+- The session is identified by the `pack.vertices` object captured at open (`source`). Every stroke,
+  apply, and redraw path re-checks `source === pack.vertices`, so if a map is generated or loaded while
+  the tool is open the session goes inert instead of writing into the new graph.
+- Close keeps completed edits (they live in `GraphOverride`), drops session history and baseline,
+  removes both overlays, and calls `applyDefaultViewboxEvents()` to restore the cursor and drop the
+  drag behaviour. Reopening starts a fresh session.
 
-### Brush and standard controls
+### The shared brush instrument
 
-| Control | Required behavior |
-| --- | --- |
-| Primary drag | Push affected geometry in the direction of pointer travel. A click without movement makes no edit. |
-| Brush size | Labelled slider and numeric value; wheel over the canvas changes size while Wrap is active. |
-| Strength | Labelled slider controlling the proportion of drag movement applied at the brush centre. |
-| Brush outline | Show the affected radius; distinguish a constrained stroke with more than colour alone. |
-| Undo / Redo | One entry per completed stroke, with disabled states when unavailable. |
-| Reset session | Restore geometry and dependent state to tool-opening values; record reset as one undoable action. |
-| Help | Explain dragging, wheel resizing, navigation, history scope, and movement limits. |
-| Close | Keep completed strokes and leave editing mode. |
+`MapBrush` (`src/components/map-brush.ts`) is the brush every tool over the map should use: it owns the
+size control's markup and id, the radius, the radius circle, and the gestures — drag, `Shift` + drag to
+resize, `Space` + drag to pan, `+`/`-` through the hotkey module, and the crosshair — plus `attach()` /
+`detach()`, which restores the default map events. A tool supplies only what a stroke does: `onStart`
+returns the stamp for that stroke, so per-stroke state lives in a closure rather than in module scope.
 
-- Use smooth radial falloff with zero displacement at the outer edge. Resolve pointer movement in map
-  coordinates and make the result independent of pointer-event frequency within a documented tolerance.
-- Keep the brush radius in map units; its outline scales with zoom. Wheel direction and slider values
-  must agree. Clamp radius and strength to valid ranges and handle trackpad wheel deltas smoothly.
-- While the tool is active, wheel events over the canvas resize the brush without also zooming the map
-  or scrolling the page. Do not intercept wheel events over dialog controls.
-- Provide `+` and `-` for size, Ctrl/Cmd+Z for undo, Ctrl/Cmd+Shift+Z and Ctrl+Y for redo. Shortcuts must
-  not intercept typing or native undo in inputs.
-- Space+drag temporarily pans. Existing zoom buttons remain usable. Navigation must not create a stroke.
-- Escape cancels an active stroke; otherwise it closes the tool. Pointer cancellation rolls back the
-  unfinished stroke. Capture the pointer so release outside the canvas still ends the stroke cleanly.
-- Freeze size and strength for the duration of a stroke; changes made during dragging apply to the next
-  stroke. Finalize or cancel the stroke before save, export, reset, or other map mutations.
+Strokes come in two shapes. A **stamped** brush (paint, and the heightmap and relief brushes when they
+follow) stamps every `spacing(radius)` units of pointer travel through `createBrushStroke`, so it paints
+evenly regardless of pointer-event rate. A **continuous** brush (`spacing: () => 0`, which is Wrap) is
+handed every pointer event instead. `onMove` and the circle are coalesced into one animation frame.
 
-### Safe deformation
+The wrap tool and the paint editor are both on it; `relief-editor` and `heightmap-editor` still carry
+their own copies of this wiring and are the next candidates.
 
-- Deform the shared packed-cell mesh, preserving vertex and cell identities, adjacency, feature
-  membership, and land/water classification. Do not regenerate the Voronoi graph after each stroke.
-- Do not implement the original-polygon suggestion as containment in every incident cell: a vertex is
-  shared by multiple cells and begins on their boundaries. Use a local displacement budget together
-  with geometric validation.
-- Measure the budget from the original graph position, scaled to original local edge lengths. Keep that
-  baseline stable across repeated strokes, closing/reopening, and save/load. Exact limits are tuning
-  parameters to establish against representative maps; users cannot disable validity checks.
-- Validate affected cells and neighboring geometry as a batch. Prevent edge crossings, self-intersecting
-  polygons, inverted or collapsed cells, and overlaps between previously separate features. Respect map
-  bounds and keep the map frame fixed.
-- Scale down a proposed drag to a valid displacement; if none is available, keep the previous valid
-  state. Avoid independently clamping vertices in ways that introduce tears or abrupt spikes.
-- Show brief inline feedback such as “Movement limit reached. Use the Heightmap Editor for larger
-  changes.” A no-op or fully blocked stroke creates no history entry.
-- Rendered smoothing and coastline roughness must also be checked against representative narrow straits,
-  small lakes, and sharp bends; a valid base polygon alone does not guarantee a usable displayed outline.
-- Existing saved edits outside the new limits must load without being silently clamped. Further Wrap
-  edits must not worsen invalid geometry or exceed an already exceeded budget; permit corrective
-  movement where it is valid, otherwise explain the restriction.
+### Brush and controls
 
-### Consistent map content
+The dialog is a warning line, a radius slider, and a bottom row of icon buttons — the shape other
+controllers use, with the standard history icons (`icon-ccw` undo, `icon-cw` redo).
 
-Global describes one coherent deformation, independent of visible layers. Merely moving coastline or
-SVG path points is insufficient.
+| Control       | Behaviour                                                                                      |
+| ------------- | ---------------------------------------------------------------------------------------------- |
+| Primary drag  | Moves vertices under the brush by pointer displacement × falloff. A click without movement is a no-op |
+| Brush size    | `Shift` + drag on the map, the `+`/`-` keys, or `slider-input#wrapRadius` (1–200 map units)     |
+| Brush outline | The shared `brush-circle` overlay on `#debug`, following the pointer                            |
+| Structure     | The affected vertices and the cells they shape, drawn on `#debug` under the brush               |
+| Undo / Redo   | One entry per stroke, `Ctrl/Cmd+Z` / `Ctrl/Cmd+Shift+Z` / `Ctrl+Y`, disabled when unavailable   |
+| Reset session | Restores the positions vertices had when the session started and clears its history; the tool stays open, customization included |
+| Apply         | Commits the session and starts a fresh one without closing, so editing can continue             |
+| Revert all    | `GraphOverride.revert()` behind a confirmation: drops every vertex edit on the map, undoable by nothing |
 
-| Content | Required treatment |
-| --- | --- |
-| Cell-based layers | Redraw coastlines, lakes, elevation, states, provinces, borders, cultures, religions, biomes, zones, markets, and other cell-based geometry from the accepted state. |
-| Cell anchor positions | Keep anchors inside their cells and update derived spatial indexes without changing cell identity or adjacency. |
-| Rivers, routes, journeys | Transform stored control points and shared junctions consistently; regenerate derived geometry from updated anchors. Preserve connectivity and cell references. |
-| Burgs and ports | Move geographic positions with their cells and preserve road endpoints, river connections, and shore relationships. |
-| Labels and emblems | Move geographic anchors and custom label paths with their owner or location; retain typography, icon size, and intentional label offsets. |
-| Other geographic objects | Move markers, relief placements, ice geometry, regiment positions, and measurer points through the same accepted deformation. Retain symbol dimensions and style. |
-| Screen furniture | Keep the legend, scale bar placement, dialogs, and other screen-positioned controls fixed. |
-| Grid-derived views | Maintain a consistent mapping between edited geography and grid-derived overlays or samples. Height values and source-grid topology remain unchanged. |
+- Falloff is smoothstep on the normalised distance: `t = 1 - distance / radius`, weight `t²(3 - 2t)`,
+  zero at the brush edge.
+- **The map's own events are left alone.** The wheel still zooms, panning, hover tips, and click-to-edit
+  behave exactly as outside the tool; opening an editor by clicking the map closes the Wrap Tool the way
+  it closes any other dialog. The tool adds only a d3 drag behaviour on `#viewbox` (which stops the
+  mousedown from reaching the zoom behaviour, so a stroke never pans the map), a crosshair cursor, and
+  its own `mousemove` listener registered *alongside* the default one rather than replacing it.
+- `Shift` + drag is a resize gesture (in `MapBrush`, so every brush tool has it): the brush grows by the
+  pointer's travel in map units on both axes — right and up grow it, left and down shrink it — and
+  nothing is painted, so it records no history. Shift is read once, at drag start, so a stroke never
+  changes meaning halfway through.
+- Space+drag pans; `keyup` and `window.blur` clear the Space state and cancel an in-flight stroke.
+- **The tool is built for local edits.** The radius starts at 10 and goes down to 1 — well under a
+  cell — so a small brush over one corner moves that corner alone. `data-key-step="1"` on the slider
+  makes `+`/`-` step by one unit instead of the default five, and `Shift` + drag stays the fast way to
+  cross the whole range.
+- **`+`/`-` belong to the hotkey module, not the tool.** `hotkeys.ts` resolves the visible brush size
+  input through one `getVisibleBrush()` helper (`wrapRadius` alongside the heightmap and paint brush
+  inputs) and, when one is on screen, keeps the `Equal` family away from the rulers layer and the
+  Measurers editor — `+` is `Shift`+`=` on a US layout, so it used to open Measurers mid-stroke. The
+  helper also drives the `[`/`]` path, the step comes from the input's optional `data-key-step`, and
+  setting a size dispatches an `input` event so the owning tool picks the new value up.
+- The `keydown` handler is capture-phase and calls `stopImmediatePropagation`, so global hotkeys do not
+  fire underneath it; it bails out early when the event target is an input, textarea, select, or
+  contenteditable, keeping native text editing and native undo intact.
+- The dialog is created with `closeOnEscape: false`: Escape cancels an active stroke, and closes the
+  tool only when no stroke is running.
+- Radius and falloff weights are frozen for the duration of a stroke — a `VertexBrush` captures the
+  affected vertices, weights, and limits in its constructor.
 
-- Apply the accepted deformation once to each position. In particular, do not move an owner and then
-  independently apply the same displacement a second time to an owner-derived label or route endpoint.
-- Cell picking must select the polygon under the pointer. The existing nearest-anchor lookup is not
-  sufficient by itself once cells cease to form an exact Voronoi diagram; use polygon-aware lookup for
-  containment-dependent interactions while preserving explicit nearest-point query behavior.
-- Recompute or invalidate affected areas, path lengths, measurer values, and geometric caches. Do not
-  rerun climate, hydrology, population generation, political assignment, or economic simulation.
-- Preserve explicit user overrides such as a manually entered journey duration; update derived values
-  according to the owning module's existing rules.
-- Inventory coordinate-owning modules and grid-dependent consumers before implementation. Each must
-  use the common deformation or have an explicit fixed-placement rule; hidden layers cannot be skipped.
+### The structure overlay
 
-### History and persistence
+`drawMesh(vertexIds)` renders the affected vertices as dots and the cells they shape as polygon
+outlines into `#debug > #vertices`, reusing the styling the old coastline vertex editor left behind.
+Stroke width and dot radius are divided by `viewport.scale`, so the structure reads the same at any
+zoom. It is shown on hover for the vertices the brush would take (`findVertices`), and during a drag
+for the stroke's frozen set, so the author watches the structure deform under the pointer.
 
-- Each stroke stores before/after changes for all affected geometry, entity coordinates, and override
-  records. Undo, redo, reset, and cancellation restore the whole change atomically.
-- Starting a new stroke after undo discards the redo branch. Reset affects only the current session,
-  preserving edits loaded from disk or completed before the tool was opened.
-- Keep history bounded and store changed records rather than full-world snapshots per pointer event.
-  Retain the tool-opening baseline needed by Reset even when older undo entries are evicted. Indicate
-  when the oldest retained history point has been reached.
-- Loading or generating another map clears history and exits the tool. Unrelated map edits end the
-  current session rather than leaving undo records that refer to changed or deleted entities.
-- Extend existing graph override persistence for coordinates regenerated on load, including moved cell
-  anchors. Persist entity coordinates through their owning map records. Preserve original positions
-  needed for displacement limits and avoid applying saved entity movement twice.
-- Existing vertex-only graph overrides remain readable. New files must reproduce the same edited world
-  after load and redraw, including coordinates, derived measurements, feature associations, and style.
-- A graph rebuild must restore compatible edits as one consistent set. If a terrain change makes a set
-  incompatible, discard that set consistently and report it rather than restoring only its coastline
-  or leaving displaced attachments behind. Do not reuse an ID without validating its original geometry.
+The brush circle keeps up with a single-cell radius: its stroke is `non-scaling-stroke`, so it stays
+one crisp screen width at any zoom, and its dash pattern is derived from the radius, so a radius-1
+circle still reads as a dashed ring instead of one long arc.
 
-### Complete coastline editor removal
+Both overlays are painted in a `requestAnimationFrame` callback that coalesces pointer events, and
+`#debug` is stripped from exports by `src/services/io/export.ts`.
 
-- Remove the coastline vertex editor and its coastline-click opener, vertex handles, dialog, registry
-  entry, and obsolete listeners. Clicking a coastline must no longer open a dedicated editor.
-- Remove the separate Coastline Settings Editor dialog and Tools entry as well. Preserve roughness
-  presets, coastline generation settings, group styling, and feature-to-group assignments through the
-  coastline section of Style. Do not delete the coastline generator or renderer.
-- Provide coastline group management and feature assignment in Style, including selection of the
-  coastline to assign. Preserve existing saved group IDs and appearance.
-- Update help, tooltips, and domain documentation to point shape editing to Wrap and appearance editing
-  to Style. Remove dead imports, selectors, and Controller registrations.
-- Lake property editing remains available for lake-specific data and appearance. Its geometry editing
-  must use the shared safeguards and synchronization; it must not bypass Wrap's validity guarantees.
+### Geometry and displacement limits
 
-### Module boundaries and performance
+`VertexBrush` owns all geometry. `findVertices` collects the movable vertices under the brush through
+the cell quadtree (`Pack.findAll`) rather than scanning the whole graph; the constructor freezes their
+weights and limits; `move(point)` proposes a displacement and commits what is valid.
 
-- **Wrap Controller:** owns the dialog, gestures, editing lifecycle, and renderer updates.
-- **Deformation module:** accepts world geometry and brush movement, validates the proposed deformation,
-  and returns one accepted change with affected IDs and limit feedback. Encapsulate falloff, geometry
-  constraints, and position mapping behind a small interface independent of the DOM.
-- **Edit transaction/history module:** applies, commits, cancels, and restores complete changes. Keep
-  graph override recording and derived-data refresh batched rather than repeated for every moved vertex.
-- **Existing domain modules and IO:** own entity-specific geometry, derived values, compatibility, and
-  persistence. Use the common position mapping rather than separate brush algorithms per layer.
-- **Existing renderers and layer registry:** render accepted state and refresh affected visible layers;
-  hidden layers render correctly when next shown. Rendering must not become the source of geometry.
-- Reuse brush overlays, sliders, dialog helpers, and existing interaction conventions where appropriate.
-  New implementation modules use TypeScript and require no new production dependency.
-- Query nearby geometry spatially and schedule previews at most once per animation frame. Avoid full
-  map serialization or redraw on every pointer event. Update dependent content coherently in the preview
-  and finalize expensive derived work once per stroke where safe.
-- Validate responsiveness at ordinary map density and the supported 100k-cell configuration. Record the
-  test machine, brush sizes, frame times, stroke completion times, and history memory; tune limits from
-  that evidence before release.
+- **Frame is fixed.** Vertices on or outside the map frame are never collected, and every proposed
+  position is clamped to stay `FRAME` units inside it, so the map border cannot be dragged.
+- **Per-vertex budget, clamped rather than rejected.** Each vertex may sit at most
+  `max(BUDGET × its average original edge, its current distance from origin)` from its origin — the
+  *original* position from the override record when one exists, so the baseline is stable across
+  repeated strokes, reopening the tool, and save/load, and edits already loaded from disk are never
+  silently clamped. A proposed position outside the budget is pulled back onto that circle. It is
+  deliberately not a batch rejection: a single sliver-edged vertex used to hold the entire brush back,
+  which capped a 130-unit drag at 0.6 units of movement.
+- **Cells may not fold or vanish.** A proposal is rejected if any affected cell's signed polygon area
+  flips sign or drops below `AREA_MARGIN` of the area it had when the stroke started. Cells are free to
+  drift off their (fixed) centres — the earlier per-edge centre test is what made the brush feel stuck,
+  and its only real benefit was keeping nearest-centre cell picking exact.
+- **Binary backoff.** A proposed displacement is validated as one batch; if invalid it is halved, down
+  to 1/1024, and the first valid fraction is committed. Successive pointer events keep pushing toward
+  the same clamped target, so a stroke converges on the budget instead of stalling.
+- These checks are intentionally local to the cells under the brush. There is no global deformation
+  system, no re-triangulation, and no attempt to validate rendered smoothing or coastline roughness.
+
+### Batched overrides
+
+`GraphOverride.movePackVertices(points)` is the batch form of `movePackVertex`, which now delegates to
+it. `revert()` replaces the unused `clear()`: it puts every moved vertex back at its generated position,
+refreshes the derived areas and drops the records — the map-wide escape hatch behind the dialog's
+confirmation, covering edits from earlier sessions and from the loaded file that session history cannot
+reach. It records `[original, current]` per vertex, deletes the record when a vertex returns exactly to
+its original position (so undo and reset leave no residue), and calls `refreshDerivedData` **once** for
+the whole batch instead of once per vertex — a brush event touching 40 vertices refreshes each affected
+cell area and feature area a single time. Nothing else about the override representation changes, so
+serialization and `restore()` on a rebuilt graph keep working unchanged.
+
+### Rendering
+
+**Map layers are not redrawn while dragging.** During a stroke only the structure overlay follows the
+pointer; the layers are redrawn once, at drag end — and on undo, redo, reset, and cancel, which are not
+drags. `Layers.draw` is called with the layers built from packed-cell polygons: `landmass`, `coastline`,
+`lakes`, `heightmap`, `cells`, `states`, `provinces`, `borders`, `biomes`, `cultures`, `religions`,
+`zones`, `markets`, `goods`, `fogging`. Hidden layers are unaffected by the call and render from the
+edited vertices when next shown.
+
+Nothing else is redrawn, and the omissions are deliberate: `temperature` and `precipitation` are drawn
+from the source grid, `population` bars stand on unmoved cell centres, `ocean` is pattern and texture
+rather than geometry, and the entity layers (rivers, routes, burgs, labels, relief, markers, military,
+journeys, ice, rulers) own coordinates the tool does not touch. `goods` is redrawn for its cell shading
+only; resource icons and burg plates keep their positions.
+
+### Applying and cancelling
+
+Closing the dialog is cancelling, as in the paint editor: `cleanup()` moves every vertex still recorded
+in `baseline` back. Apply does not close the tool — it empties `baseline` and the history, which commits
+what is done and begins a fresh session, so the author can keep editing and still discard only what
+comes next. There is no Cancel button: the dialog's own close button and `Escape` are the cancel path,
+and no button should duplicate them. Committed edits are ordinary graph overrides, so Reset never
+reaches past its own session — only Revert all does.
+
+### History
+
+- Session-only, in memory: an array of `{before, after}` vertex maps plus an index, capped at 50 entries
+  with the oldest evicted. A new stroke after undo discards the redo branch.
+- One drag is one entry, computed at drag end from the vertices that actually differ from their
+  pre-stroke positions.
+- `baseline` records the first pre-stroke position seen for each vertex in the session; Reset diffs the
+  current graph against it, applies the difference and empties the history — the session starts over
+  with the tool and its customization mode still in place. Apply clears the baseline instead, which is
+  what makes the edits permanent.
+- Cancelling a stroke (Escape, blur, or the start of undo/redo/reset) restores its `before` map.
+- Close clears history, index, and baseline, after discarding the session unless it was applied.
+  History is never persisted.
+
+### Coastline vertex editor removal
+
+`src/controllers/coastline-vertex-editor.ts` is deleted, along with its `CoastlineVertexEditor` registry
+entry and the `coastline` entry in the `GRAND_EDITORS` map in
+`src/components/viewbox-events.ts` — clicking a coastline no longer opens an editor.
+The coastline settings editor, the coastline generator and renderer, Style's coastline controls, saved
+coastline groups and their appearance are all untouched; no style schema is migrated and no group
+management is rewritten as part of this story.
 
 ## Testing Decisions
 
-Test externally observable behavior and map invariants rather than internal helper calls or snapshots
-of dialog markup. The following test coverage is proposed for implementation:
-
-- **Deformation:** known small meshes covering falloff, unaffected points outside the radius, equivalent
-  pointer paths sampled at different rates, repeated-stroke limits, narrow cells, crossed edges,
-  collapsed cells, map borders, and safe rejection of invalid input. Validate the accepted batch as a
-  whole, including interactions between simultaneously moved vertices.
-- **Attachment consistency:** fixtures with a port, connected route, river junction, custom label path,
-  marker, and grid-derived overlay. Verify shared endpoints remain coincident and hidden-layer redraw
-  agrees with edits made while visible.
-- **History:** exact state restoration after stroke, cancellation, undo, redo, branching, reset, history
-  eviction, and session termination. Include entity positions, original baselines, and graph overrides.
-- **Persistence:** save/load/redraw round trips, legacy vertex-only edits, repeated load without double
-  displacement, compatible graph rebuilds, and consistent invalidation of incompatible edit sets.
-- **Spatial queries and measurements:** clicks on both sides of a moved boundary select the correct
-  cells; affected areas and lengths change and return to their original values after undo.
-- **Controller integration:** wheel resizes without zoom, inputs retain native editing behavior,
-  navigation creates no edits, closing restores default events, and opening repeatedly does not duplicate
-  listeners. Cover removal of both coastline dialogs and access to migrated Style controls.
-- **Prior art:** existing graph override tests cover original/custom positions, derived areas, and
-  restoration against rebuilt graphs. Packed-graph query tests cover spatial lookup behavior. Existing
-  brush utilities and heightmap history provide interaction conventions to reuse.
-- Run relevant Vitest tests, lint, and build during implementation. Perform a manual interaction and
-  performance pass; follow the repository rule against automatically running Playwright during
-  development. This PRD alone does not require application tests.
+- **`VertexBrush` geometry** — new focused tests on small synthetic graphs: `findVertices` returning the
+  vertices inside the radius and excluding frame ones; falloff weight at centre, mid-radius, and edge;
+  a tight-budget vertex clamped to its own limit while its neighbours move on; the budget holding across
+  repeated strokes and after a simulated save/load (override record present); a fold rejected; the
+  backoff committing a reduced displacement; non-finite pointer input rejected.
+- **`GraphOverride` batching** — extend `src/generators/graph-override.test.ts`:
+  `movePackVertices` records originals for a batch, drops the record when a vertex returns to its
+  original position, and refreshes each affected cell/feature area once per batch. The existing cases
+  for original/custom values, derived areas, and restoration against a rebuilt graph stay green.
+- **History** — stroke, cancel, undo, redo, branch, reset, and eviction restore exact vertex positions
+  and leave no override records behind after a full undo.
+- **Manual browser pass** (done for this change): opening sets `customization` and `Shift + B` no longer
+  opens the Biomes editor; a radius-2 brush at 12× zoom marks exactly one vertex and three cells and
+  the dashed outline stays legible; a stroke closed with the dialog's close button or `Escape` leaves
+  the graph untouched while Apply keeps it; `Shift` + drag up 60px takes the radius 20 → 80 and down
+  40px takes it back to 40, moving nothing; Reset drops 17 moved vertices and disables undo, redo and
+  itself while the tool and `customization` stay in place; Apply commits a stroke, leaves the tool open
+  and resets the buttons, and a later stroke is discarded on close while the applied one survives; the
+  paint editor on the shared brush still selects on click, paints 14 cells along a drag, commits them on
+  Apply, and gains `Shift` + drag resizing; `Shift + W` opens the tool and pins the hint; `+`/`-`
+  move the radius 40 → 45 → 35 with the rulers layer untouched and no Measurers editor; `Shift` + drag
+  takes the radius 40 → 70 and moves no vertex; Revert all shows its confirmation and restores all 247
+  vertices a stroke had moved; the structure appears under the brush on hover; the
+  map layers are byte-identical mid-drag and change at drag end; a 130-unit drag at radius 40 moves the
+  worst-limited vertex to its full budget (~20 units on an 11-unit-spacing map, against 0.6 before);
+  undo, redo, and reset each restore the vertex set exactly; the wheel zooms and leaves the radius at
+  40; closing removes both overlays and restores the default cursor, click, and drag handlers.
+- Run the focused Vitest tests, lint, and build. Do not run Playwright automatically.
 
 ## Acceptance Criteria
 
-1. Tools opens a single Wrap Tool dialog with working brush size, strength, undo, redo, reset, help, and
-   close controls, plus the heightmap guidance message.
-2. The same brush edits a coastline, lake shore, and inland boundary; wheel sizing and navigation work
-   without conflicting gestures.
-3. Nearby geographic content follows the accepted deformation, including content on hidden layers;
-   displayed boundaries, cell selection, and dependent measurements agree.
-4. Invalid movement is limited with feedback, and repeated strokes or save/load cannot bypass limits.
-5. Undo, redo, cancellation, and session reset restore complete state without detached features.
-6. Save/load and supported exports preserve the edited result. Legacy coastline edits and styles survive.
-7. Both standalone coastline dialogs and their entry points are gone. Coastline appearance and group
-   controls remain accessible through Style.
-8. Closing or switching maps restores normal interaction and leaves no brush overlays, stale listeners,
-   or history referencing the previous world.
-9. Focused correctness tests pass and the recorded large-map performance check demonstrates usable
-   continuous dragging without work accumulating behind the pointer.
+1. Tools → Wrap Tool opens one dialog with a radius slider, an icon row of undo, redo, reset, and revert, and
+   the small-adjustments guidance.
+2. Hovering shows the vertices and cells the brush would affect; dragging deforms that structure live.
+3. The brush moves vertices on coastlines, lake shores, and inland cell boundaries alike, and a drag
+   moves them far enough to reshape a coast in one stroke.
+4. Map layers do not redraw during a drag and are redrawn once when it ends.
+5. Zoom, pan, hover tips, and click behave exactly as they do with the tool closed; the wheel zooms and
+   never resizes the brush, `Shift` + drag resizes it and moves nothing, and `+`/`-` resize it without
+   toggling the rulers layer or opening the Measurers editor.
+6. `Shift + W` opens the tool, a pinned tip states how to drag and how to resize, and while it is open
+   no other editor can be opened by click or shortcut.
+7. Revert all asks for confirmation and, once confirmed, restores every vertex on the map and empties
+   the session history.
+8. Undo, redo, and reset restore vertex positions exactly; edits present before the session survive
+   Reset, which clears the history and leaves the tool open; Apply commits and keeps the tool open; the
+   close button and `Escape` discard whatever followed the last Apply.
+9. A brush of radius 1–3 affects a single vertex, `+`/`-` step it by one, and the brush outline stays
+   legible at that size.
+10. Limits hold across repeated strokes, reopening the tool, and save/load: no cell folds over itself or
+   collapses, and no vertex leaves the map frame.
+11. Only packed vertices, the derived cell/feature areas, and the override records change. Every other
+    map record is byte-identical after a stroke and after undo.
+12. The coastline vertex editor, its registry entry, and the coastline click handler are gone; coastline
+    settings and Style controls remain available; no references to the removed module remain.
+13. Focused geometry, override, and history tests pass, along with lint and build.
+
+## Documentation
+
+`docs/wiki/Wrap-Tool.md` is the user-facing guide (what the tool moves and what stays put, the brush
+gestures, the buttons, and when to reach for the Heightmap editor instead), linked from `Home.md`.
+`Hotkeys.md` gains `Shift + W` and the tool's in-session keys. The Knowledge Base drops both Coastline
+Editor answers — one becomes "How do I fine-tune the shape of a coastline, lake shore or border?" — and
+gains "How do I change the heightmap on a small scale?" and "How do I change borders on a small scale?",
+each pointing at the right tool for the scale of the change.
 
 ## Out of Scope
 
-- Creating or deleting land, water, islands, lakes, cells, routes, or rivers through the brush.
-- Changing elevation values, cell adjacency, region membership, or procedural simulation results.
-- Unrestricted continental-scale deformation or a mode that bypasses geometry validation.
-- Additional brush modes such as rotate, inflate, pinch, smooth, or regional restore in the first release.
-- A general application-wide history system or history persisted across saved files.
-- A redesign of all editors, a full rewrite of map state, or broad restructuring of the main HTML template.
+- Moving anything but packed vertices: cell centres, burgs, rivers, routes, labels, markers, relief,
+  military units, journeys, ice, measurers.
+- Creating or removing land, water, cells, or features; changing heights, adjacency, feature membership,
+  or any generated attribute.
+- Changing the source grid, the map schema, IO, or the override representation beyond the batch method.
+- Polygon-aware cell picking. `Pack.findCell` remains nearest-centre, and since cells may now drift off
+  their centres, a click near a heavily moved boundary can resolve to the neighbouring cell.
+- A strength control, wheel-driven brush resizing, additional brush modes (smooth, inflate, pinch,
+  rotate), a global deformation system, an application-wide history system, or history in the map file.
+- Style/coastline group management changes, and any redraw or validation of rendered smoothing and
+  coastline roughness.
 
 ## Further Notes
 
-- The supplied screenshot is a visual interaction reference. It does not introduce requirements beyond
-  the user's request and the decisions documented here.
-- Watabou's [Warp tool introduction](https://watabou.itch.io/medieval-fantasy-city-generator/devlog/22794/052-warp-tool)
-  describes deformation of an existing mesh while preserving its connections. FMG has separate graph
-  and entity coordinate representations, so consistent propagation is a core implementation requirement.
-- This document supersedes the earlier suggestion to retain a separate coastline grouping/style dialog:
-  the user's latest direction is complete removal of the coastline editor.
+- Known accepted limitation: because entity coordinates stay put, a large stroke can visibly separate a
+  coastline from a port, a river mouth, or a relief icon. The dialog warns about it and the displacement
+  budget keeps it small; carrying entities along is the shelved broader proposal.
+- Watabou's [Warp tool devlog](https://watabou.itch.io/medieval-fantasy-city-generator/devlog/22794/052-warp-tool)
+  is the interaction reference. FMG's separate graph and entity coordinate representations are exactly
+  why the equivalent "everything follows" behaviour is not in this story.
+- `BUDGET` (3 average original edges), `AREA_MARGIN` (25% of the stroke-start cell area), `FRAME`, the
+  1/1024 backoff floor, and the 50-entry history cap are tuning constants in `vertex-brush.ts` and
+  `wrap-tool.ts`; they can be adjusted against representative maps without changing the design.
+- The structure overlay reuses the `#vertices` group and its `public/index.css` rules, which the removed
+  coastline vertex editor left behind — no new CSS, so no cache-busting bump.

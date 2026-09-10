@@ -10,7 +10,7 @@ General:
 * <kbd>Tab</kbd> - toggle options pane
 * <kbd>Escape</kbd> - close dialogs and hide the options pane
 * <kbd>Delete</kbd> - remove selected element
-* <kbd>+</kbd>, <kbd>=</kbd>, or <kbd>-</kbd> - change the active heightmap/paint brush size; otherwise zoom the map
+* <kbd>+</kbd>, <kbd>=</kbd>, or <kbd>-</kbd> - change the active brush size (heightmap, paint or Wrap); otherwise zoom the map
 * <kbd>[</kbd> or <kbd>]</kbd> - change the active brush size. With no active brush, <kbd>[</kbd> toggles the Vignette layer
 * <kbd>Ctrl</kbd> + <kbd>S</kbd> - download .map file
 * <kbd>Ctrl</kbd> + <kbd>C</kbd> - save .map file to Dropbox
@@ -90,6 +90,7 @@ Tools (<kbd>Alt</kbd> + <kbd>Shift</kbd> works as an alternative to <kbd>Shift</
 * <kbd>Shift</kbd> + <kbd>E</kbd> - open Cells Details view
 * <kbd>Shift</kbd> + <kbd>G</kbd> - open Goods editor
 * <kbd>Shift</kbd> + <kbd>J</kbd> - open Journeys Overview
+* <kbd>Shift</kbd> + <kbd>W</kbd> - open the Wrap Tool
 * <kbd>Shift</kbd> + <kbd>=</kbd> - open Measurers editor
 
 These creation modes are bound to the produced characters, so they work on layouts where <kbd>Shift</kbd> + digit gives <kbd>!@#$%</kbd>:
@@ -102,5 +103,11 @@ These creation modes are bound to the produced characters, so they work on layou
 Heightmap editor:
 * <kbd>Ctrl</kbd> + <kbd>Z</kbd> - undo an action
 * <kbd>Ctrl</kbd> + <kbd>Y</kbd> - redo an action
+
+Wrap Tool:
+* <kbd>Shift</kbd> + drag - resize the brush
+* <kbd>Space</kbd> + drag - pan the map
+* <kbd>Ctrl</kbd> + <kbd>Z</kbd> / <kbd>Ctrl</kbd> + <kbd>Y</kbd> - undo / redo a stroke
+* <kbd>Escape</kbd> - cancel the current stroke, or close the tool
 
 While the Heightmap editor is open, the map double click zoom is disabled so that clicks reach the brush.

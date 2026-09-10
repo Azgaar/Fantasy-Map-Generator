@@ -68,13 +68,21 @@ You can add and remove relief icons on the map with the Relief Editor: turn the 
 
 Rulers are managed by the Measurers Editor: Tools -> Measurers (Shift + =). There you can place a linear ruler, an opisometer (curve length), a route opisometer (a curve that sticks to routes) and a planimeter (polygon area). Remove a single measurer from the list in the editor or use the trash button to remove them all
 
-### Can I use the Coastline Editor (red dots that appear on the coast) to make changes to the land?
+### How do I change the heightmap on a small scale?
 
-You should use the Heightmap tool to do 99.9% of the changes of the map, but you can later finesse the shape with this tool
+Open Tools -> Heightmap and pick an edit mode, then use the brushes on the top right with a small radius. If the elevation is already right and you only dislike the outline, reshape the cells themselves with the Wrap Tool (Tools -> Create -> Wrap, or Shift + W)
+
+### How do I change borders on a small scale?
+
+Borders follow cells, so there are two ways to move one. To hand a piece of land to another state, province, culture, religion, biome or zone, open its editor, click the brush button at the bottom and paint over the cells. To keep the same cells but make the border line itself bend differently, use the Wrap Tool (Tools -> Create -> Wrap, or Shift + W)
+
+### How do I fine-tune the shape of a coastline, lake shore or border?
+
+Use the Wrap Tool: Tools -> Create -> Wrap (Shift + W). Drag on the map and the cell corners under the brush move with the pointer, so coastlines, lake shores and all cell-based borders bend with them. It is meant for small adjustments only — do 99.9% of the shaping with the Heightmap tool and finesse the result with Wrap
 
 ### I have white bits on the map why they are?
 
-You may have abused the coastline editor in which case regenerate the layer and do the changes of land with the Heightmap tool or you may have a way too complex shape for the generator
+You may have pushed cell shapes too far with the Wrap Tool, in which case use its Revert all button and do the changes of land with the Heightmap tool, or you may have a way too complex shape for the generator
 
 ### Does time exists?
 

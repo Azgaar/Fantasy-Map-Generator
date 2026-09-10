@@ -38,7 +38,7 @@ const createGraph = () => ({
 beforeEach(() => {
   globalThis.pack = createGraph() as unknown as typeof globalThis.pack;
   options.map.graph = { width: 100, height: 100, points: 100 };
-  GraphOverride.clear();
+  GraphOverride.revert();
 });
 
 describe("GraphOverride", () => {
@@ -83,6 +83,19 @@ describe("GraphOverride", () => {
 
     expect(pack.features[1].area).toBeGreaterThan(400);
     expect(pack.cells.area[1]).toBeGreaterThan(0);
+  });
+
+  it("reverts every moved vertex and forgets the overrides", () => {
+    GraphOverride.movePackVertex(0, [12, 13]);
+    const movedArea = pack.cells.area[0];
+    GraphOverride.movePackVertex(2, [22, 2]);
+
+    GraphOverride.revert();
+
+    expect(pack.vertices.p[0]).toEqual([10, 10]);
+    expect(pack.vertices.p[2]).toEqual([20, 0]);
+    expect(GraphOverride.state).toEqual({});
+    expect(pack.cells.area[0]).not.toBe(movedArea); // derived areas follow the restored vertices
   });
 
   it("re-applies the state to a rebuilt graph", () => {

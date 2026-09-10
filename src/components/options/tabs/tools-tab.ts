@@ -219,6 +219,7 @@ const TEMPLATE = /* html */ `
   <div class="grid">
     <button id="openSubmapTool" data-tip="Click to generate a submap from the current viewport">Submap</button>
     <button id="openTransformTool" data-tip="Click to transform the map">Transform</button>
+    <button id="openWrapTool" data-tip="Adjust cell shapes with a brush">Wrap</button>
   </div>
 `;
 
@@ -266,6 +267,7 @@ ensureEl("toolsContent").addEventListener("click", event => {
   else if (buttonId === "addRoute") void Controllers.RouteCreator.open();
   else if (buttonId === "addMarker") void Controllers.MarkerCreator.toggle();
   else if (buttonId === "openSubmapTool") void Controllers.SubmapTool.open();
+  else if (buttonId === "openWrapTool") void Controllers.WrapTool.open();
   else if (buttonId === "openTransformTool") void Controllers.TransformTool.open();
 });
 

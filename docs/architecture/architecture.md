@@ -357,8 +357,10 @@ state**._ A controller does **not** hold pure static data, services, or serializ
   the About dialog (`app-info`). They have a controller's lifecycle but not a controller's
   subject, so they live here and load with the shell.
 - **Shared editor behaviour** — interaction helpers several editors call rather than copy:
-  dialog helpers, tooltips, the default map events (`viewbox-events`), and map modes such as
-  `annex-mode`, which the States and Provinces editors both drive with their own merge logic.
+  dialog helpers, tooltips, the default map events (`viewbox-events`), the brush over the map
+  (`map-brush`, which owns the size control, radius circle and gestures while each tool supplies
+  what a stroke does), and map modes such as `annex-mode`, which the States and Provinces editors
+  both drive with their own merge logic.
 
 Widgets like `hierarchy-tree` and `minimap` may move to `components/` if they generalize.
 
