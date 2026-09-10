@@ -62,3 +62,20 @@ describe("river labels with off-map cells", () => {
     expect(getLabelsData().find(label => label.type === "river")).toBeUndefined();
   });
 });
+
+it("includes the first route, whose valid ID is zero", () => {
+  stubPack([]);
+  pack.routes = [
+    {
+      i: 0,
+      name: "Old Road",
+      points: [
+        [10, 10, 1],
+        [20, 20, 2]
+      ]
+    }
+  ] as typeof pack.routes;
+  const label = getLabelsData().find(label => label.type === "route");
+  expect(label?.entityId).toBe(0);
+  expect(label?.text).toBe("Old Road");
+});

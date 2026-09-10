@@ -23,21 +23,25 @@ export function highlightArea(box: DOMRect, zoom?: number, transformAttr: string
   if (layer.select(".highlighted").size()) return; // allow only 1 highlighted element simultaneously
 
   const enter = transition().duration(1000).ease(easeBounceOut);
+  const padding = 100 / viewport.scale;
 
   layer
     .append("rect")
+    .attr("x", box.x - padding)
+    .attr("y", box.y - padding)
+    .attr("width", box.width + padding * 2)
+    .attr("height", box.height + padding * 2)
+    .classed("highlighted", true)
+    .attr("transform", transformAttr)
+    .transition(enter)
     .attr("x", box.x)
     .attr("y", box.y)
     .attr("width", box.width)
     .attr("height", box.height)
-    .classed("highlighted", true)
-    .attr("transform", transformAttr)
-    .transition(enter)
-    .style("outline-offset", "0px")
     .transition()
     .duration(500)
     .ease(easeLinear)
-    .style("outline-color", "transparent")
+    .style("stroke-opacity", 0)
     .delay(1000)
     .remove();
 

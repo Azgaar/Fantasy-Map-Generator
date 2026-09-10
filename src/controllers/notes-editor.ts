@@ -1,9 +1,10 @@
 import type Quill from "quill";
 import { confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { ENTITY_TYPES, type EntityRef, MapEntities } from "@/components/map-entities";
 import { tip } from "@/components/tooltips";
 import { viewport } from "@/components/viewport";
 import { Controllers } from "@/controllers";
-import { NOTE_ENTITY_TYPES, type NoteEntry, type NoteRef, Notes } from "@/generators/notes";
+import { type NoteEntry, Notes } from "@/generators/notes";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName, speak, uploadFile } from "@/utils";
 import { ensureEl, findEl } from "../utils";
@@ -21,7 +22,7 @@ let windowed: { width: number; height: number; top: string; left: string } | nul
 let uploadBound = false;
 
 /** Open the editor on the given entity, or on the first note when called with no reference */
-function open(ref?: NoteRef): void {
+function open(ref?: EntityRef): void {
   renderDialog();
 
   const notesSelect = ensureEl<HTMLSelectElement>("notesSelect");
@@ -42,7 +43,7 @@ function open(ref?: NoteRef): void {
 
   const selected = ref || entries[0]?.ref;
   if (selected) {
-    notesSelect.value = Notes.key(selected);
+    notesSelect.value = MapEntities.key(selected);
     showNote(selected);
   } else {
     ensureEl("notesName").textContent = "";
@@ -61,20 +62,20 @@ function open(ref?: NoteRef): void {
 }
 
 /** Notes grouped by entity type, plus the requested entity when it has no note yet */
-function fillSelect(select: HTMLSelectElement, entries: NoteEntry[], ref?: NoteRef): void {
+function fillSelect(select: HTMLSelectElement, entries: NoteEntry[], ref?: EntityRef): void {
   select.innerHTML = "";
 
-  const requestedKey = ref && Notes.key(ref);
+  const requestedKey = ref && MapEntities.key(ref);
   const listed = new Set(entries.map(entry => entry.key));
 
-  for (const type of NOTE_ENTITY_TYPES) {
+  for (const type of ENTITY_TYPES) {
     const typeEntries = entries.filter(entry => entry.ref.type === type);
     if (ref?.type === type && requestedKey && !listed.has(requestedKey))
-      typeEntries.unshift({ ref, key: requestedKey, label: Notes.getEntityName(ref) || requestedKey, note: "" });
+      typeEntries.unshift({ ref, key: requestedKey, label: MapEntities.getName(ref) || requestedKey, note: "" });
     if (!typeEntries.length) continue;
 
     const group = document.createElement("optgroup");
-    group.label = Notes.getTypeLabel(type);
+    group.label = MapEntities.getTypeLabel(type);
     for (const entry of typeEntries) group.append(new Option(entry.label, entry.key));
     select.append(group);
   }
@@ -205,14 +206,14 @@ function closeNotesEditor(): void {
   ensureEl("notesEditor").remove();
 }
 
-function selectedRef(): NoteRef | undefined {
-  const ref = Notes.parseKey(ensureEl<HTMLSelectElement>("notesSelect").value);
+function selectedRef(): EntityRef | undefined {
+  const ref = MapEntities.parseKey(ensureEl<HTMLSelectElement>("notesSelect").value);
   if (!ref) tip("Note element is not found", true, "error", 4000);
   return ref;
 }
 
-function showNote(ref: NoteRef): void {
-  ensureEl("notesName").textContent = Notes.getEntityName(ref);
+function showNote(ref: EntityRef): void {
+  ensureEl("notesName").textContent = MapEntities.getName(ref);
   loadNote(Notes.get(ref) || "");
   updateNotesBox(ref);
 }
@@ -293,8 +294,8 @@ function updateLegend(): void {
   updateNotesBox(ref);
 }
 
-function updateNotesBox(ref: NoteRef): void {
-  ensureEl("notesHeader").textContent = Notes.getEntityName(ref); // plain text: an & in a name is not an entity
+function updateNotesBox(ref: EntityRef): void {
+  ensureEl("notesHeader").textContent = MapEntities.getName(ref); // plain text: an & in a name is not an entity
   ensureEl("notesBody").innerHTML = Notes.get(ref) || "";
 }
 
@@ -307,7 +308,7 @@ function validateHighlightElement(): void {
   const ref = selectedRef();
   if (!ref) return;
 
-  if (!Notes.exists(ref)) {
+  if (!MapEntities.get(ref)) {
     confirmationDialog({
       title: "Element not found",
       message: "Note element is not found. Would you like to remove the note?",
@@ -318,11 +319,11 @@ function validateHighlightElement(): void {
   }
 
   // the viewport renderers hold only what is on screen, so an off-screen element is not in the dom
-  const elementId = Notes.getElementId(ref);
+  const elementId = MapEntities.getElementId(ref);
   const element = elementId ? findEl(elementId) : null;
   if (element) return void highlightElement(element, 3);
 
-  const position = Notes.getPosition(ref);
+  const position = MapEntities.getPosition(ref);
   if (position) return void zoomTo(position[0], position[1], 8, 1600);
 
   tip("This element is not drawn on the map on its own", false, "warn", 4000);
@@ -347,7 +348,7 @@ function openAiGenerator(): void {
   const ref = selectedRef();
   if (!ref) return;
 
-  const name = Notes.getEntityName(ref);
+  const name = MapEntities.getName(ref);
   const note = Notes.get(ref);
 
   let prompt = `Respond with description. Use simple dry language. Invent facts, names and details. Split to paragraphs and format to HTML. Remove h tags, remove markdown.`;
@@ -389,7 +390,7 @@ function uploadLegends(dataLoaded: string): void {
   let applied = 0;
   let rejected = 0;
   for (const [type, id, note] of rows) {
-    const ref = Notes.parseKey(`${type}:${id}`);
+    const ref = MapEntities.parseKey(`${type}:${id}`);
     if (ref && Notes.set(ref, note)) applied++;
     else rejected++;
   }

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { MapEntities } from "@/components/map-entities";
 import { Notes } from "./notes";
 
 beforeEach(() => {
@@ -27,65 +28,6 @@ beforeEach(() => {
   } as unknown as typeof pack;
 });
 
-describe("resolveElementId", () => {
-  it.each([
-    ["burg7", { type: "burg", id: 7 }],
-    ["burgLabel7", { type: "burg", id: 7 }],
-    ["stateLabel3", { type: "state", id: 3 }],
-    ["provinceLabel2", { type: "province", id: 2 }],
-    ["river12", { type: "river", id: 12 }],
-    ["riverLabel12", { type: "river", id: 12 }],
-    ["route5", { type: "route", id: 5 }],
-    ["road5", { type: "route", id: 5 }],
-    ["routeLabel5", { type: "route", id: 5 }],
-    ["feature_9", { type: "feature", id: 9 }],
-    ["lake_9", { type: "feature", id: 9 }],
-    ["marker4", { type: "marker", id: 4 }],
-    ["zone1", { type: "zone", id: 1 }],
-    ["journey2", { type: "journey", id: 2 }],
-    ["segment2_5", { type: "journey", id: 2 }],
-    ["market8", { type: "market", id: 8 }],
-    ["addedLabel6", { type: "addedLabel", id: 6 }],
-    ["regiment3-1", { type: "regiment", id: 3, sub: 1 }]
-  ])("maps %s to its entity", (elementId, expected) => {
-    expect(Notes.resolveElement(elementId)).toEqual(expected);
-  });
-
-  it.each(["freshwater", "viewbox", "", null, undefined, "burg", "notAnId12"])("ignores %s", elementId => {
-    expect(Notes.resolveElement(elementId)).toBeUndefined();
-  });
-
-  it("round-trips a reference through its element id", () => {
-    expect(Notes.getElementId({ type: "regiment", id: 3, sub: 1 })).toBe("regiment3-1");
-    expect(Notes.resolveElement(Notes.getElementId({ type: "feature", id: 9 })!)).toEqual({ type: "feature", id: 9 });
-  });
-
-  it("has no element for an entity that is not drawn on its own", () => {
-    expect(Notes.getElementId({ type: "culture", id: 1 })).toBeUndefined();
-  });
-});
-
-describe("entity on the map", () => {
-  it("knows whether the entity is still there", () => {
-    expect(Notes.exists({ type: "burg", id: 1 })).toBe(true);
-    expect(Notes.exists({ type: "burg", id: 99 })).toBe(false);
-    expect(Notes.exists({ type: "regiment", id: 1, sub: 0 })).toBe(true);
-  });
-
-  it("gives the position to zoom to, for entities placed on the map", () => {
-    globalThis.pack.burgs[1] = { i: 1, name: "Vaeltown", x: 120, y: 340 } as unknown as (typeof pack.burgs)[number];
-    expect(Notes.getPosition({ type: "burg", id: 1 })).toEqual([120, 340]);
-  });
-
-  it("has no position for an entity that is not placed on the map", () => {
-    expect(Notes.getPosition({ type: "culture", id: 1 })).toBeUndefined();
-  });
-
-  it("has no position for an entity that is gone", () => {
-    expect(Notes.getPosition({ type: "burg", id: 99 })).toBeUndefined();
-  });
-});
-
 describe("note access", () => {
   it("reads and writes the note on the entity", () => {
     const ref = { type: "burg", id: 1 } as const;
@@ -108,27 +50,12 @@ describe("note access", () => {
   it("addresses a regiment through its state", () => {
     const ref = { type: "regiment", id: 1, sub: 0 } as const;
     expect(Notes.get(ref)).toBe("Elite");
-    expect(Notes.getEntityName(ref)).toBe("1st Cavalry");
+    expect(MapEntities.getName(ref)).toBe("1st Cavalry");
   });
 
   it("names a state by its full name and a river by name and type", () => {
-    expect(Notes.getEntityName({ type: "state", id: 1 })).toBe("Duchy of Ardenia");
-    expect(Notes.getEntityName({ type: "river", id: 1 })).toBe("Ald River");
-  });
-});
-
-describe("keys", () => {
-  it.each([
-    [{ type: "burg", id: 1 } as const, "burg:1"],
-    [{ type: "regiment", id: 3, sub: 2 } as const, "regiment:3-2"]
-  ])("round-trips %o", (ref, key) => {
-    expect(Notes.key(ref)).toBe(key);
-    expect(Notes.parseKey(key)).toEqual(ref);
-  });
-
-  it("rejects a key of an unknown type", () => {
-    expect(Notes.parseKey("dragon:1")).toBeUndefined();
-    expect(Notes.parseKey("burg")).toBeUndefined();
+    expect(MapEntities.getName({ type: "state", id: 1 })).toBe("Duchy of Ardenia");
+    expect(MapEntities.getName({ type: "river", id: 1 })).toBe("Ald River");
   });
 });
 
@@ -150,4 +77,11 @@ describe("listNotes", () => {
   it("labels each entry with the entity name", () => {
     expect(Notes.list().find(entry => entry.key === "marker:4")?.label).toBe("Mount Doom");
   });
+});
+
+it("collects notes on route zero and omits removed entities", () => {
+  pack.routes = [{ i: 0, name: "First road", note: "Oldest trade route" }] as typeof pack.routes;
+  pack.burgs[1].removed = true;
+  expect(Notes.list().some(entry => entry.key === "route:0")).toBe(true);
+  expect(Notes.list().some(entry => entry.key === "burg:1")).toBe(false);
 });

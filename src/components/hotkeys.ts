@@ -30,10 +30,10 @@ function handleKeyup(event: KeyboardEvent): void {
   const ctrl = ctrlKey || metaKey || key === "Control";
   const shift = (shiftKey || key === "Shift") && !altKey;
   const altShift = altKey && (shiftKey || key === "Shift") && !ctrl;
-
   const layer = getLayerByShortcut(code);
 
-  if (code === "F1") showInfo();
+  if (code === "Space") openOmnibar();
+  else if (code === "F1") showInfo();
   else if (code === "F2") regeneratePrompt();
   else if (code === "F6") Services.Save.saveMap("storage");
   else if (code === "F9") Services.Load.quickLoad();
@@ -94,6 +94,12 @@ function handleKeyup(event: KeyboardEvent): void {
   else if (key === "7") setMapZoom(7);
   else if (key === "8") setMapZoom(8);
   else if (key === "9") setMapZoom(9);
+}
+
+function openOmnibar() {
+  if (document.getSelection()?.toString()) return;
+  if (findEl("wrapTool")) return;
+  Controllers.Omnibar.open();
 }
 
 function allowHotkeys(): boolean {

@@ -1,6 +1,7 @@
 import { curveNatural, type D3DragEvent, drag, line, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
+import { MapEntities } from "@/components/map-entities";
 import { showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { viewport } from "@/components/viewport";
@@ -513,7 +514,7 @@ function toggleLabelVisibility(): void {
 }
 
 function editLabelLegend(): void {
-  const ref = Notes.resolveElement(label.id); // burgLabel3 -> the burg, stateLabel1 -> the state, and so on
+  const ref = MapEntities.resolveElement(label.id); // burgLabel3 -> the burg, stateLabel1 -> the state, and so on
   if (ref) void Controllers.NotesEditor.open(ref);
 }
 

@@ -11,20 +11,24 @@ import { fitStateLabel } from "./fit-state-label";
 
 export function getLabelsData(): LabelData[] {
   const byType: Record<LabelType, LabelData[]> = {
-    state: collect(pack.states, buildStateLabel),
-    province: collect(pack.provinces, buildProvinceLabel),
-    added: collect(pack.addedLabels, buildAddedLabel),
-    burg: collect(pack.burgs, buildBurgLabel),
-    river: collect(pack.rivers, buildRiverLabel),
+    state: collect(pack.states, buildStateLabel, true),
+    province: collect(pack.provinces, buildProvinceLabel, true),
+    added: collect(pack.addedLabels, buildAddedLabel, true),
+    burg: collect(pack.burgs, buildBurgLabel, true),
+    river: collect(pack.rivers, buildRiverLabel, true),
     route: collect(pack.routes, buildRouteLabel)
   };
   return Object.values(byType).flat();
 }
 
-function collect<T extends { i: number }>(entities: T[], build: (entity: T) => LabelData | undefined): LabelData[] {
+function collect<T extends { i: number }>(
+  entities: T[],
+  build: (entity: T) => LabelData | undefined,
+  excudeZero = false
+): LabelData[] {
   const labels: LabelData[] = [];
   for (const entity of entities) {
-    if (!entity.i) continue; // index 0 is a placeholder in every entity array
+    if (excudeZero && !entity.i) continue;
     const label = build(entity);
     if (label) labels.push(label);
   }
