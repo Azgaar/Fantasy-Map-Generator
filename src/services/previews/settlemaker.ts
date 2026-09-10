@@ -1,12 +1,16 @@
-import type { BurgContext } from "@/generators/burg-context";
+import type { BurgContext, Corridor } from "@/generators/burg-context";
 import { hashSeedToInt } from "@/generators/burg-context";
+
+type LandRouteClass = "royal" | "main" | "market" | "town" | "local" | "trail" | "footpath";
 
 export interface SettlemakerRoadBearing {
   bearing_deg: number;
   route_id: string;
-  kind: string;
+  kind: LandRouteClass;
   group: "roads" | "trails";
   through: boolean;
+  relief?: Corridor["relief"];
+  followsRiver?: boolean;
 }
 
 /** Mirrors AzgaarBurgInput in settlemaker's src/input/azgaar-input.ts (url-api.md §3). */
@@ -27,6 +31,8 @@ export interface AzgaarBurgInput {
   oceanBearing?: number;
   harbourSize?: "large" | "small";
   urbanDensity?: number;
+  coreCapacity?: number;
+  coastlineGeometry?: Array<Array<{ x: number; y: number }>>;
   biome?: string;
   trade?: boolean;
 }
@@ -47,8 +53,8 @@ const ROUTE_CLASSES = new Set(["royal", "main", "market", "town", "local", "trai
 export const LAND_ROUTE_KINDS: Record<string, "main" | "trail"> = { roads: "main", trails: "trail" };
 
 /**
- * The narrow projection: everything settlemaker declares today, nothing else.
- * When settlemaker adds a field, this is the only function that changes.
+ * Project the available burg context onto the URL API 2.4.0 contract.
+ * Context has no filled water polygons, so use the supported oceanBearing fallback.
  */
 export function toSettlemakerInput(
   ctx: BurgContext,
@@ -76,21 +82,22 @@ export function toSettlemakerInput(
         {
           bearing_deg: a.bearingDeg,
           route_id: String(a.routeId),
-          kind: a.type && ROUTE_CLASSES.has(a.type) ? a.type : fallback,
+          kind: a.type && ROUTE_CLASSES.has(a.type) ? (a.type as LandRouteClass) : fallback,
           group: a.group as "roads" | "trails",
-          through: a.through
+          through: a.through,
+          ...(a.corridor && { relief: a.corridor.relief, followsRiver: a.corridor.followsRiver })
         }
       ];
     })
   };
 
   if (hydrology.oceanBearingDeg !== undefined) input.oceanBearing = hydrology.oceanBearingDeg;
-  if (hydrology.harbourSize) input.harbourSize = hydrology.harbourSize;
+  if (burg.port && hydrology.harbourSize) input.harbourSize = hydrology.harbourSize;
   if (climate.biome) input.biome = climate.biome;
   if (burg.culture) input.culture = burg.culture;
   input.elevation = terrain.elevationM;
   input.temperature = climate.temperatureC;
-  if (opts.urbanDensity && opts.urbanDensity > 0) input.urbanDensity = opts.urbanDensity;
+  if (Number.isFinite(opts.urbanDensity) && opts.urbanDensity! > 0) input.urbanDensity = opts.urbanDensity;
   if (opts.trade) input.trade = true;
 
   return input;
@@ -111,34 +118,6 @@ export async function encodeJsonParam(value: unknown): Promise<string> {
   return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-/** url-api.md §4. Used when CompressionStream is unavailable. */
-export function buildFlatTierUrl(input: AzgaarBurgInput, seed: number): string {
-  const params = new URLSearchParams({
-    name: input.name,
-    pop: String(input.population),
-    seed: String(seed),
-    port: input.port ? "1" : "0",
-    citadel: input.citadel ? "1" : "0",
-    walls: input.walls ? "1" : "0",
-    plaza: input.plaza ? "1" : "0",
-    temple: input.temple ? "1" : "0",
-    shanty: input.shanty ? "1" : "0",
-    capital: input.capital ? "1" : "0"
-  });
-  if (input.oceanBearing !== undefined) params.set("oceanBearing", String(input.oceanBearing));
-  if (input.harbourSize) params.set("harbourSize", input.harbourSize);
-  if (input.biome) params.set("biome", input.biome);
-  if (input.urbanDensity !== undefined) params.set("urbanDensity", String(input.urbanDensity));
-  if (input.trade) params.set("trade", "1"); // only present at all when true
-  // Since settlemaker 2.0.4 the flat tier takes bearings too; without them the village engine
-  // builds no main roads and the burg arrives unconnected.
-  const roads = (input.roadBearings ?? []).map(r =>
-    r.through ? `${r.bearing_deg}:${r.kind}:through` : `${r.bearing_deg}:${r.kind}`
-  );
-  if (roads.length) params.set("roads", roads.join(","));
-  return `${SETTLEMAKER_BASE_URL}?${params.toString()}`;
-}
-
 export async function buildSettlemakerUrl(
   ctx: BurgContext,
   opts: { urbanDensity?: number; trade?: boolean }
@@ -146,16 +125,10 @@ export async function buildSettlemakerUrl(
   const input = toSettlemakerInput(ctx, opts);
   const seed = hashSeedToInt(ctx.burg.seedKey);
 
-  if (typeof CompressionStream === "undefined") {
-    const link = buildFlatTierUrl(input, seed);
-    return { link, preview: link };
-  }
-
   const encoded = await encodeJsonParam({ v: URL_PAYLOAD_VERSION, burg: input, seed });
   if (encoded.length > MAX_ENCODED_PAYLOAD_BYTES) {
-    WARN && console.warn(`settlemaker payload ${encoded.length}B exceeds budget; falling back to flat tier`);
-    const link = buildFlatTierUrl(input, seed);
-    return { link, preview: link };
+    // The bound is advisory, not a renderer limit. Flat URLs lose route IDs and hints.
+    WARN && console.warn(`settlemaker payload ${encoded.length}B exceeds the recommended URL budget`);
   }
 
   // /fmg is already chrome-free, so there is no separate preview variant.

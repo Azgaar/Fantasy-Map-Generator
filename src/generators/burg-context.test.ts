@@ -210,6 +210,28 @@ describe("readApproaches", () => {
     expect(approaches[0]).toMatchObject({ group: "roads", type: "highway", name: "Kings Road" });
   });
 
+  it("measures the two sides from edited route points rather than cell centres", () => {
+    const routes = new Map([
+      [
+        1,
+        {
+          group: "roads",
+          type: "royal",
+          points: [
+            [-2, 1, 4],
+            [0.5, 0.5, 5],
+            [1, -2, 6]
+          ]
+        }
+      ]
+    ]);
+    const approaches = readApproaches(5, { 5: { 4: 1, 6: 1 } }, cellsP, routes);
+    expect(approaches).toHaveLength(2);
+    expect(approaches.map(a => a.bearingDeg)).toEqual([compassBearing(0.5, -2.5), compassBearing(-2.5, 0.5)]);
+    expect(approaches.map(a => a.neighbourCell)).toEqual([6, 4]);
+    expect(approaches.every(a => a.through && a.routeId === 1)).toBe(true);
+  });
+
   it("returns an empty array for a burg with no routes — never undefined", () => {
     expect(readApproaches(5, {}, cellsP, routeById)).toEqual([]);
     expect(readApproaches(5, { 5: {} }, cellsP, routeById)).toEqual([]);
@@ -519,6 +541,12 @@ describe("orderRouteCellsOutward", () => {
   it("splits a through-route at the burg and returns the longer arm", () => {
     // burg at index 2; arms are [5,1,0] backwards and [5,9] forwards
     expect(orderRouteCellsOutward([0, 1, 5, 9], 5)).toEqual([5, 1, 0]);
+  });
+
+  it("samples each approach's own side even when the opposite arm is longer", () => {
+    expect(orderRouteCellsOutward([0, 1, 5, 9], 5, 1)).toEqual([5, 1, 0]);
+    expect(orderRouteCellsOutward([0, 1, 5, 9], 5, 9)).toEqual([5, 9]);
+    expect(orderRouteCellsOutward([0, 1, 5, 9], 5, 7)).toEqual([5, 7]);
   });
 
   it("returns just the burg cell when the route does not contain it", () => {
