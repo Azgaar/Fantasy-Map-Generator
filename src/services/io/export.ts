@@ -288,10 +288,8 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
   if (noVignette) clone.select("#vignette").remove();
   if (noScaleBar) clone.select("#scaleBar").remove();
 
-  if (type === "svg") {
-    removeUnusedElements(clone);
-    relocateRootFilter(cloneEl);
-  }
+  if (type === "svg") removeUnusedElements(clone);
+  relocateRootFilter(cloneEl); // Firefox drops a root-svg filter when the svg is rasterized via an image
   if (customization && type === "mesh") updateMeshCells(clone);
   inlineStyle(clone);
 
@@ -590,13 +588,14 @@ export function flattenSymbolReferences(svg: SVGSVGElement): void {
 }
 
 // Inkscape can't render filters on the root svg element and miscomposites default filter regions on large groups,
-// so move the global filter to #viewbox and give all filters an explicit full-viewport region
+// so move the global filter to the drawn groups and give all filters an explicit full-viewport region
 export function relocateRootFilter(svg: SVGSVGElement): void {
   const filter = svg.getAttribute("filter");
   const viewbox = svg.querySelector("#viewbox");
   if (!filter || !viewbox) return;
   svg.removeAttribute("filter");
   viewbox.setAttribute("filter", filter);
+  svg.querySelector("#scaleBar")?.setAttribute("filter", filter);
 
   svg.querySelectorAll("filter").forEach(filterEl => {
     filterEl.setAttribute("filterUnits", "userSpaceOnUse");
