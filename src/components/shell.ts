@@ -54,9 +54,18 @@ function onTitlebarButtonTouch(event: TouchEvent): void {
 /**
  * Each release replaces the content-hashed chunk files on the server, so a page opened before
  * the release 404s when it lazy-loads a chunk it has not requested yet ("Failed to fetch
- * dynamically imported module"). Offer a reload to pick up the new build
+ * dynamically imported module"). Offer a reload to pick up the new build. Offline the same error
+ * means the chunk was never precached (it was not in the build the worker installed), so say that
  */
 function onChunkLoadError(): void {
+  if (!navigator.onLine) {
+    alertDialog({
+      title: "You are offline",
+      message: "This part of the app was not downloaded before the connection was lost. Reconnect and try again"
+    });
+    return;
+  }
+
   confirmationDialog({
     title: "New version released",
     message:

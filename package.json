@@ -16,7 +16,7 @@
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && node scripts/pwa-precache.mjs",
     "preview": "vite preview",
     "electron": "node scripts/electron.mjs",
     "test": "vitest",
