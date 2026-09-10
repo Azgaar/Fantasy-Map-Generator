@@ -26,7 +26,7 @@ const columns: EditorColumn<Transport>[] = [
     width: "5em",
     tip: "Rotor only: distance it can fly before it must be back at a skyport"
   },
-  { key: "actions", width: "1.4em", permanent: true, align: "right" }
+  { key: "remove", width: "1.4em", permanent: true }
 ];
 
 const typesTable = initEditorTable<Transport>({
@@ -108,7 +108,7 @@ function renderTypesPage(view: TableView<Transport>): void {
       <div data-col="domain"><select class="ttDomain" data-tip="${DOMAIN_LABEL[type.domain]}">${options}</select></div>
       <div data-col="range"><input class="ttRange" type="number" min="1" step="10" value="${convertSpeed(Transports.getRange(type.name))}" ${type.domain === "rotor" ? "" : "disabled"}
         data-tip="${type.domain === "rotor" ? `Range in ${unit}: the leg stays within half of it from a skyport` : "Only rotor transports have a range"}" /></div>
-      <div data-col="actions"><span data-tip="Remove the transport type" class="ttDelete pointer icon-trash-empty"></span></div>
+      <span data-col="remove" data-tip="Remove the transport type" class="ttDelete pointer icon-trash-empty"></span>
     </div>`;
   }
   body.insertAdjacentHTML("beforeend", lines);
@@ -148,14 +148,14 @@ function onNameChange(this: HTMLInputElement): void {
     for (const segment of journey.segments) if (segment.transport === type.name) segment.transport = newName;
   }
   type.name = newName;
-  Transports.save();
+  Options.save();
 }
 
 function onSpeedInput(this: HTMLInputElement): void {
   const type = getLineType(this);
   if (!type) return;
   type.speed = parseSpeed(+this.value || 0); // stored in km/h, typed in the user distance unit
-  Transports.save();
+  Options.save();
 }
 
 function onHoursChange(this: HTMLInputElement): void {
@@ -171,7 +171,7 @@ function onHoursChange(this: HTMLInputElement): void {
 
   type.hoursPerDay = hours;
   this.value = String(hours);
-  Transports.save();
+  Options.save();
 }
 
 function onRangeInput(this: HTMLInputElement): void {
@@ -179,7 +179,7 @@ function onRangeInput(this: HTMLInputElement): void {
   if (!type) return;
   const range = parseSpeed(+this.value || 0); // km, typed in the user distance unit
   if (range > 0) type.range = range;
-  Transports.save();
+  Options.save();
 }
 
 function onDomainChange(this: HTMLSelectElement): void {
@@ -187,7 +187,7 @@ function onDomainChange(this: HTMLSelectElement): void {
   if (!type) return;
   type.domain = this.value as TransportDomain;
   if (type.domain === "stay") type.speed = 0; // stay types have no speed
-  Transports.save();
+  Options.save();
   typesTable.refresh();
 }
 
@@ -198,7 +198,7 @@ function addType(): void {
 
   // hoursPerDay is left out on purpose: the domain fallback defines the default travel day
   Transports.all.push({ i: nextId, name, speed: 5, domain: "land" });
-  Transports.save();
+  Options.save();
   typesTable.refresh();
 
   const input = document.querySelector<HTMLInputElement>(`#transportBody [data-id="${nextId}"] .ttName`);

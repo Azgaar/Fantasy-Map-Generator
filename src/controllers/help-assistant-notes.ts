@@ -2,6 +2,7 @@
 // in the notes editor, the write_note tool, and its undo. Writes go through the notes editor bridge
 // (Controllers.NotesEditor, lazy) so an open editor stays in sync.
 
+import { Notes } from "@/generators/notes";
 import type { Entry, NoteState } from "@/services/agent/conversations";
 import type { ToolInput } from "@/services/agent/providers";
 import type { AgentTool, ToolOutcome } from "@/services/agent/session";
@@ -26,16 +27,25 @@ Inline styles are kept, classes and scripts are not. Notes cannot be changed any
     properties: {
       id: {
         type: "string",
-        description: "Note id, e.g. burg12 or marker3. Defaults to the note open in the editor."
+        description:
+          "Note key: the entity type and index, e.g. burg:12 or marker:3 (the svg element id burg12 is accepted too). Defaults to the note open in the editor."
       },
-      name: { type: "string", description: "New display name for the note. Omit to keep the current one." },
+      name: {
+        type: "string",
+        description: "Ignored: a note is named by the entity it sits on, so rename the entity instead."
+      },
       html: { type: "string", description: "The complete legend as HTML." }
     },
     required: ["html"]
   }
 };
 
-const noteById = (id: string): Note | undefined => (notes as Note[]).find(note => note.id === id);
+// Notes live on their entity (pack.burgs[12].note), so a note is read through the store by key or element id
+function noteById(id: string): Note | undefined {
+  const ref = Notes.parseKey(id) ?? Notes.resolveElement(id);
+  if (!ref || !Notes.exists(ref)) return undefined;
+  return { id: Notes.key(ref), name: Notes.getEntityName(ref), legend: Notes.get(ref) || "" };
+}
 
 export async function noteContext(): Promise<string | null> {
   const note = await Controllers.NotesEditor.current();
@@ -59,7 +69,7 @@ function clipLegend(note: Note): string {
   if (!note.legend) return "(empty)";
   if (note.legend.length <= MAX_CONTEXT_CHARS) return note.legend;
   const rest = note.legend.length - MAX_CONTEXT_CHARS;
-  const hint = `read notes.find(n => n.id === "${note.id}").legend in a script for the rest`;
+  const hint = `read the note field of the entity ${note.id} in a script (pack.<type>s[<i>].note) for the rest`;
   return `${note.legend.slice(0, MAX_CONTEXT_CHARS)}\n… ${rest} more characters — ${hint}`;
 }
 
@@ -84,16 +94,19 @@ export async function writeNote(input: ToolInput, onEdit: (entry: EditEntry) => 
   const id = typeof input.id === "string" && input.id ? input.id : (await Controllers.NotesEditor.current())?.id;
   if (!id) {
     return failure(
-      "No note is open in the notes editor and no id was given. Find the element in a script first and pass its note id (burg<i> for burgs, marker<i> for markers)."
+      "No note is open in the notes editor and no id was given. Find the entity in a script first and pass its note key (burg:<i> for burgs, marker:<i> for markers; the element id burg<i> works too)."
     );
   }
   const name = typeof input.name === "string" ? input.name : undefined;
 
   const existing = noteById(id);
-  const previous: NoteState | null = existing ? { legend: existing.legend, name: existing.name } : null;
+  const previous: NoteState | null = existing?.legend ? { legend: existing.legend, name: existing.name } : null;
   const note = await Controllers.NotesEditor.write(id, html, name);
-  onEdit({ kind: "edit", id, name: note.name, chars: html.length, previous });
-  return { content: `${previous ? "updated" : "created"} note ${id} "${note.name}" — ${html.length} chars of HTML` };
+  if (!note) return failure(`No entity on this map answers to "${id}", so there is nothing to attach the note to.`);
+  onEdit({ kind: "edit", id: note.id, name: note.name, chars: html.length, previous });
+  return {
+    content: `${previous ? "updated" : "created"} note ${note.id} "${note.name}" — ${html.length} chars of HTML`
+  };
 }
 
 export async function undoEdit(entry: EditEntry): Promise<void> {

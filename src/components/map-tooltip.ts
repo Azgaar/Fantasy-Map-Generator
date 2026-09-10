@@ -1,5 +1,6 @@
 import { select } from "d3";
 import { Layers } from "@/components/layers";
+import { Notes } from "@/generators/notes";
 import { highlightEmblemElement } from "@/renderers/overlays/highlight";
 import type { Point } from "@/types/global";
 import {
@@ -50,24 +51,31 @@ export function showNotes(event: Event): void {
   const grand = parent?.parentNode as HTMLElement;
 
   const burg = target.closest<HTMLElement>("[data-label-type='burg'][data-id], #burgIcons [data-id]");
-  const id = burg ? `burg${burg.dataset.id}` : target.id || parent?.id || grand?.id;
+  // lakes and coastlines are drawn as <use> of a shared path, so they carry the feature in a data attribute
+  const feature = target.closest<HTMLElement>("#lakes [data-f], #coastline [data-f]");
+  const id = burg
+    ? `burg${burg.dataset.id}`
+    : feature
+      ? `feature_${feature.dataset.f}`
+      : target.id || parent?.id || grand?.id;
 
-  const note = notes.find(note => note.id === id);
+  const ref = Notes.resolveElement(id);
+  const note = ref && Notes.get(ref);
 
-  if (note?.legend) {
+  if (ref && note) {
     if (currentNoteId === id) return;
-    currentNoteId = id;
+    currentNoteId = id ?? null;
 
     const notesEl = findEl("notes");
     if (notesEl) notesEl.style.display = "block";
     const header = findEl("notesHeader");
-    if (header) header.innerHTML = note.name;
+    if (header) header.textContent = Notes.getEntityName(ref);
     const body = findEl("notesBody");
-    if (body) body.innerHTML = note.legend;
+    if (body) body.innerHTML = note;
     return;
   }
 
-  if (options.pinNotes || findEl("markerEditor") || (event as MouseEvent).shiftKey) return;
+  if (options.app.notesPinned || findEl("markerEditor") || (event as MouseEvent).shiftKey) return;
 
   const notesEl = findEl("notes");
   if (notesEl) notesEl.style.display = "none";
@@ -124,12 +132,14 @@ function getElementTip({ group, subgroup, target, event, path, cellId }: TipCont
     const burgId = Number(burgElement.dataset.id);
     const burg = pack.burgs[burgId];
     if (!burg) return "Click to edit the Burg";
-    const population = si((burg.population || 0) * populationRate * urbanization);
+    const population = si(
+      (burg.population || 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate
+    );
     return `${burg.name} ${burg.group}. Population: ${population}. Click to edit`;
   }
 
-  const text = target.textContent.replaceAll("|", "");
-  if (target.closest("#labels [data-label-type]")) return `${text}. Click to edit the label`;
+  const labelElement = target.closest<SVGElement>("#labels [data-label-type]");
+  if (labelElement) return `${getLabelText(labelElement)}. Click to edit the label`;
 
   if (group === "armies") return `${(parent as SVGElement & { dataset: DOMStringMap }).dataset.name}. Click to edit`;
 
@@ -177,6 +187,15 @@ function getElementTip({ group, subgroup, target, event, path, cellId }: TipCont
   if (group === "ice") return "Click to edit the Ice";
 
   return undefined;
+}
+
+/** Get the full label text, joining lines of multi-line labels rendered as tspans */
+function getLabelText(labelElement: SVGElement): string {
+  const tspans = labelElement.querySelectorAll("tspan");
+  const text = tspans.length
+    ? Array.from(tspans, tspan => tspan.textContent ?? "").join(" ")
+    : (labelElement.textContent ?? "");
+  return text.replaceAll("|", " ").trim();
 }
 
 function getEmblemTip(target: SVGElement, parent: SVGElement, event: Event): string {

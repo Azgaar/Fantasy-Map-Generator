@@ -10,8 +10,6 @@ import type { LabelData } from "@/renderers/labels/labels";
 import type { Point } from "@/types/global";
 import { fitStateLabel } from "./fit-state-label";
 
-window.getLabelsData = getLabelsData;
-
 export function getLabelsData(): LabelData[] {
   const megalopolises = getMegalopolisLabels();
   const byType: Record<LabelType, LabelData[]> = {
@@ -179,7 +177,7 @@ function isPlainText(label?: Label): boolean {
 
 // name mode is resolved by group name, the same way fitStateLabel resolves it
 function getStateName(state: State, group: string): string {
-  const mode = options.labels.groups.find(option => option.name === group)?.mode || "auto";
+  const mode = options.map.labels.groups.find(option => option.name === group)?.mode || "auto";
   return mode === "short" ? state.name : state.fullName || state.name;
 }
 
@@ -211,3 +209,4 @@ function getMiddleCellPoint(cells: number[]): Point | undefined {
   const point = pack.cells.p[onMap[Math.floor(onMap.length / 2)]];
   return point && [point[0], point[1]];
 }
+window.getLabelsData = getLabelsData;

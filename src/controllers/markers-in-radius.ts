@@ -1,6 +1,7 @@
 import { closeDialogs, confirmationDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
+import { viewport } from "@/components/viewport";
 import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
 import { clearMarkerRadius, drawMarkerRadius } from "@/renderers/draw-marker-radius";
@@ -13,7 +14,7 @@ let lastRadius = 0;
 let inRangeMarkers: Marker[] = [];
 
 function defaultRadius(): number {
-  const distance = (Math.min(svgWidth, svgHeight) / 4) * distanceScale;
+  const distance = (Math.min(viewport.width, viewport.height) / 4) * options.map.units.distance.scale;
   const magnitude = 10 ** Math.floor(Math.log10(distance || 1));
   return Math.max(1, Math.round(distance / magnitude) * magnitude);
 }
@@ -24,7 +25,7 @@ function getRadius(): number {
 }
 
 function markerName(marker: Marker): string {
-  return notes.find(note => note.id === `marker${marker.i}`)?.name || marker.type || "Marker";
+  return marker.name || marker.type || "Marker";
 }
 
 function open(marker: Marker): void {
@@ -56,7 +57,7 @@ function renderDialog(): void {
       <div data-tip="Radius around the marker, in the map's distance unit — markers inside it are listed and shown on the map">
         <span class="label" style="display:inline">Radius:</span>
         <input id="markersRadiusValue" type="number" min="1" step="1" value="${getRadius()}" style="width:6em" />
-        <span>${distanceUnitInput.value}</span>
+        <span>${options.map.units.distance.unit}</span>
       </div>
 
       <div class="label" style="margin-top:.4em">In range: <span id="markersRadiusCount">0</span></div>
@@ -85,7 +86,7 @@ function onRadiusChange(this: HTMLInputElement): void {
 function applyRadius(distance: number): void {
   if (!center) return;
 
-  const radiusPx = distance / distanceScale;
+  const radiusPx = distance / options.map.units.distance.scale;
   drawMarkerRadius(center.x, center.y, radiusPx);
 
   const inRange = pack.markers.filter(marker => Math.hypot(marker.x - center!.x, marker.y - center!.y) <= radiusPx);
@@ -99,8 +100,8 @@ function renderMarkersList(inRange: Marker[]): void {
   ensureEl("markersRadiusCount").textContent = String(inRangeMarkers.length);
 
   ensureEl("markersRadiusList").innerHTML = inRangeMarkers
-    .map(({ i, type, icon, pinned, lock }) => {
-      const name = notes.find(note => note.id === `marker${i}`)?.name || type;
+    .map(({ i, type, icon, pinned, lock, name: markerName }) => {
+      const name = markerName || type;
       const iconHtml = isImageIcon(icon)
         ? `<img src="${escapeHtml(icon)}" style="width:1.2em; height:1.2em; vertical-align:middle">`
         : `<span style="width:1.3em">${escapeHtml(icon)}</span>`;
@@ -141,16 +142,10 @@ function onMarkerListClick(event: MouseEvent): void {
 }
 
 function togglePin(marker: Marker, el: HTMLElement): void {
-  const markerGroup = ensureEl("markers");
-  if (marker.pinned) {
-    delete marker.pinned;
-    if (!pack.markers.some(m => m.pinned)) markerGroup.removeAttribute("pinned");
-  } else {
-    marker.pinned = true;
-    markerGroup.setAttribute("pinned", "1");
-  }
+  if (marker.pinned) delete marker.pinned;
+  else marker.pinned = true;
   el.classList.toggle("inactive");
-  Layers.draw("markers");
+  Layers.draw("markers"); // the renderer reads the flag off the markers themselves
 }
 
 function toggleLock(marker: Marker, el: HTMLElement): void {
@@ -183,16 +178,15 @@ function exportInRange(): void {
   const headers = "Id,Type,Icon,Name,Note,State,Culture,X,Y,Latitude,Longitude\n";
   const quote = (s: string) => `"${s.replaceAll('"', '""')}"`;
 
-  const body = inRangeMarkers.map(({ i, type, icon, x, y, cell }) => {
-    const note = notes.find(note => note.id === `marker${i}`);
-    const name = note ? quote(note.name) : "Unknown";
-    const legend = note ? quote(note.legend) : "";
+  const body = inRangeMarkers.map(({ i, type, icon, x, y, cell, name: markerName, note }) => {
+    const name = quote(markerName);
+    const legend = quote(note || "");
     const state = pack.states[pack.cells.state[cell]];
     const culture = pack.cultures[pack.cells.culture[cell]];
     const stateName = state ? quote(state.fullName || state.name) : "";
     const cultureName = culture ? quote(culture.name) : "";
-    const lat = getLatitude(y, mapCoordinates, graphHeight, 2);
-    const lon = getLongitude(x, mapCoordinates, graphWidth, 2);
+    const lat = getLatitude(y, options.map.geography.coordinates, options.map.graph.height, 2);
+    const lon = getLongitude(x, options.map.geography.coordinates, options.map.graph.width, 2);
     return [i, type, icon, name, legend, stateName, cultureName, x, y, lat, lon].join(",");
   });
 

@@ -32,6 +32,10 @@ To get a blank map go Tools -> Heightmap -> Erase and use the brushes on the top
 
 Labels are shown and hidden based on zoom bounds defined per label group. Open Tools -> Labels and click on the groups configuration button. There you can check 'Show all labels' to ignore zoom bounds completely, or raise the max zoom value for a specific group
 
+### How do I force state labels to show the full state name?
+
+The name form is set per label group and no longer in Options, where it used to be the 'stateLabelsMode' setting. Open Tools -> Labels, click on the groups configuration button and set the state group's 'Mode' to 'full'. The default 'auto' uses the full name when it fits the state's area well enough and switches to the short name when it does not, while 'short' always uses the short name. Mode applies to state and province groups only
+
 ### How do I import an image? Can I put an image to create world based on it?
 
 Yes, it can be done via the Image Converter. Go to Tools -> Heightmap -> Erase -> Image converter
@@ -54,7 +58,7 @@ Not on an already generated map directly, but you can rebuild the map with a dif
 
 ### Can I export map data as a text file?
 
-Map data can be exported, but only a little of it can be imported back. Overview editors (Burgs, Rivers, Routes, Markers, States, Military and others) have a download button that saves their table as a .csv file, and the Export menu offers GeoJSON (cells, routes, rivers, markers, zones) and JSON (full, minimal, pack cells, grid cells). The text data you can upload back is burg names (.txt or .csv), namesbases, notes (legends) and heightmap templates
+Map data can be exported, but only a little of it can be imported back. Overview editors (Burgs, Rivers, Routes, Markers, States, Military and others) have a download button that saves their table as a .csv file, and the Export menu offers GeoJSON (cells, routes, rivers, markers, zones) and JSON (full, minimal, pack cells, grid cells). The text data you can upload back is burg names (.txt or .csv), namesbases, notes (legends, as a .csv of `type,id,note` rows addressing map objects that exist) and heightmap templates
 
 ### Can I add new relief icons?
 
@@ -74,7 +78,7 @@ You may have abused the coastline editor in which case regenerate the layer and 
 
 ### Does time exists?
 
-There is no a thing as time at the moment on the generator. The era and year thing in Options is just to define time messages on legends of military regiments, battles and similar things with a date on the notes
+There is no a thing as time at the moment on the generator. The era and year thing in Options -> Set Lore is just to define time messages on legends of military regiments, battles and similar things with a date on the notes
 
 ### I have made the menu too big. How to put it normal again?
 
@@ -694,7 +698,7 @@ After production every market compares its prices with other markets and buys wh
 
 ### Where can I see how rich a state is? What are the taxes?
 
-Open Tools -> States: there is a Treasury column, and clicking on a value opens the taxes dialog for that state. Each state has a Sales tax, applied to deals where the state is the seller, and a Poll tax, a flat fee per population point. Base rates depend on the state form (a Theocracy taxes sales heavily, a Monarchy taxes people more, an Anarchy collects nothing) and are randomized a bit per state. Neutral lands collect nothing
+Open Tools -> States: there is a Treasury column, and clicking on a value opens the taxes dialog for that state. Each state has a Sales tax, applied to deals where the state is the seller, and a Poll tax, a flat fee per population point. Base rates depend on the state form (a Theocracy taxes sales heavily, a Monarchy taxes people more, an Anarchy collects nothing) and are randomized a bit per state. Neutral lands collect nothing. A burg has a treasury of its own, shown in the Burg Editor: it is what the burg has left after buying ingredients and selling its production, and you can type any value there if you want a rich or a broke burg. Production is not recalculated to match, and the next economy regeneration overwrites it
 
 ### How do I regenerate the economy?
 
@@ -762,7 +766,7 @@ Yes, route groups are configurable. Open a route (or the Routes Overview) and go
 
 ### How do I add my own description to a state, burg or marker?
 
-Every map object can have a note (legend). Click on the object and use its notes button, or open Tools -> Notes to browse all notes. The notes editor is a rich text editor, so you can add formatting, links, images, and raw HTML through the source code button
+Most map objects can have a note (legend): burgs, markers, states, provinces, rivers, routes, regiments, labels, lakes and landmasses, zones, journeys, markets, cultures, religions, biomes and goods. Click on the object and use its notes button, or open Tools -> Notes to browse all notes. The notes editor is a rich text editor, so you can add formatting, links, images, and raw HTML through the source code button. A note belongs to its object: it is removed with it, and there is no way to keep a note that describes nothing
 
 ### Can AI generate descriptions for my world?
 
@@ -798,7 +802,7 @@ Yes. In the Style editor, next to a font select there is a plus button that open
 
 ### What is the Legend box and how do I use it?
 
-The Legend box is a text box drawn on the map. The States, Cultures, Religions, Biomes and Zones editors have a 'Toggle Legend box' button that fills it with the list of the corresponding elements. The box can be dragged around the map and restyled in Style -> Legend
+A Legend box is a titled list of colored elements drawn on the map. The States, Cultures, Religions, Biomes and Zones editors have a 'Toggle Legend box' button that shows or hides the box for that editor. The boxes are independent: you can have as many of them on the map at once as you like, which is handy when exporting the map as an image. A new box is placed next to the ones already shown, on whichever side has room. Each box can be dragged around the map on its own, is hidden by clicking it, and they all share the styling in Style -> Legend. Where you drag a box is remembered by your browser rather than saved into the map, the same way editor dialog positions are
 
 ### Can I highlight one state and dim the rest?
 

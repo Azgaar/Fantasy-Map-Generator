@@ -4,5 +4,3 @@
 export function fitContent(): string {
   return !("chrome" in window) ? "-moz-max-content" : "fit-content";
 }
-
-window.fitContent = fitContent;

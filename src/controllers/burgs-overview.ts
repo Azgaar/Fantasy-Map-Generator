@@ -77,7 +77,7 @@ const columns: EditorColumn<Burg>[] = [
     label: "Population",
     width: "7em",
     defaultSort: "desc",
-    sortBy: b => b.population! * populationRate * urbanization
+    sortBy: b => b.population! * options.map.units.population.scale * options.map.units.population.urbanization.rate
   },
   {
     key: "grossproduct",
@@ -110,7 +110,9 @@ const columns: EditorColumn<Burg>[] = [
     sortType: "alpha",
     sortBy: b => (b.capital && b.port ? "a-capital-port" : b.capital ? "c-capital" : b.port ? "p-port" : "z-burg")
   },
-  { key: "actions", width: "3.2em", permanent: true, align: "right" }
+  { key: "edit", width: "1.1em" },
+  { key: "lock", width: "1.1em" },
+  { key: "remove", width: "1.4em", permanent: true }
 ];
 
 const burgsTable = initEditorTable<Burg>({
@@ -319,7 +321,8 @@ function renderBurgsPage(view: TableView<Burg>): void {
   let totalTreasury = 0;
 
   for (const b of view.all) {
-    const population = b.population! * populationRate * urbanization;
+    const population =
+      b.population! * options.map.units.population.scale * options.map.units.population.urbanization.rate;
     const grossProduct = rn(b.product || 0, 2);
     const productPerCapita = rn(b.population! > 0 ? (b.product || 0) / b.population! : 0, 2);
     const treasury = rn(b.treasury || 0, 2);
@@ -333,7 +336,8 @@ function renderBurgsPage(view: TableView<Burg>): void {
   const memberIds = groupedMemberIds(megas);
 
   for (const b of view.rows) {
-    const population = b.population! * populationRate * urbanization;
+    const population =
+      b.population! * options.map.units.population.scale * options.map.units.population.urbanization.rate;
     const grossProduct = rn(b.product || 0, 2);
     const productPerCapita = rn(b.population! > 0 ? (b.product || 0) / b.population! : 0, 2);
     const treasury = rn(b.treasury || 0, 2);
@@ -398,13 +402,11 @@ function renderBurgsPage(view: TableView<Burg>): void {
           class="icon-anchor${b.port ? "" : " inactive"}" style="font-size: .9em; padding: 0 1px;"></span>
           ${megaBadge}
         </div>
-        <div data-col="actions">
-          <span data-tip="Edit burg" class="icon-pencil"></span>
-          <span class="locks pointer ${
-            b.lock ? "icon-lock" : "icon-lock-open inactive"
-          }" onmouseover="showElementLockTip(event)"></span>
-          <span data-tip="Remove burg" class="icon-trash-empty"></span>
-        </div>
+        <span data-col="edit" data-tip="Edit burg" class="icon-pencil"></span>
+        <span data-col="lock" class="locks pointer ${
+          b.lock ? "icon-lock" : "icon-lock-open inactive"
+        }" onmouseover="showElementLockTip(event)"></span>
+        <span data-col="remove" data-tip="Remove burg" class="icon-trash-empty"></span>
       </div>`;
   }
   body.insertAdjacentHTML("beforeend", lines);
@@ -584,7 +586,9 @@ function showBurgsChart(): void {
     select(ev.target).transition().duration(1500).attr("stroke", "#c13119");
     const name = d.data.name;
     const parent = d.parent.data.name;
-    const population = si(d.value * populationRate * urbanization);
+    const population = si(
+      d.value * options.map.units.population.scale * options.map.units.population.urbanization.rate
+    );
 
     ensureEl("burgsInfo").innerHTML = /* html */ `${name}. ${parent}. Population: ${population}`;
     burgHighlightOn(ev);
@@ -681,7 +685,7 @@ function showBurgsChart(): void {
 }
 
 async function downloadBurgsData(): Promise<void> {
-  let data = `Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Group,Population,X,Y,Latitude,Longitude,Elevation (${heightUnit.value}),Altitude (ft),Temperature,Temperature likeness,Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town,Emblem,Preview link\n`; // headers
+  let data = `Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Group,Population,X,Y,Latitude,Longitude,Elevation (${options.map.units.height.unit}),Altitude (ft),Temperature,Temperature likeness,Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town,Emblem,Preview link\n`; // headers
   const valid = pack.burgs.filter(b => b.i && !b.removed); // all valid burgs
 
   for (const b of valid) {
@@ -695,13 +699,13 @@ async function downloadBurgsData(): Promise<void> {
     data += `${pack.cultures[b.culture!].name},`;
     data += `${pack.religions[pack.cells.religion[b.cell]].name},`;
     data += `${b.group},`;
-    data += `${rn(b.population! * populationRate * urbanization)},`;
+    data += `${rn(b.population! * options.map.units.population.scale * options.map.units.population.urbanization.rate)},`;
 
     // add geography data
     data += `${b.x},`;
     data += `${b.y},`;
-    data += `${getLatitude(b.y, mapCoordinates, graphHeight, 2)},`;
-    data += `${getLongitude(b.x, mapCoordinates, graphWidth, 2)},`;
+    data += `${getLatitude(b.y, options.map.geography.coordinates, options.map.graph.height, 2)},`;
+    data += `${getLongitude(b.x, options.map.geography.coordinates, options.map.graph.width, 2)},`;
     data += `${parseInt(getHeight(pack.cells.h[b.cell]), 10)},`;
     data += `${b.flying ? (b.altitude ?? "") : ""},`;
     const temperature = grid.cells.temp[pack.cells.g[b.cell]];

@@ -171,7 +171,7 @@ describe("Routes lookup performance", () => {
 describe("buildSeaAdjacency", () => {
   it("links west-edge water cells to the nearest east-edge water cell by latitude", () => {
     const g = globalThis as any;
-    g.graphWidth = 100;
+    options.map.graph.width = 100;
     g.grid = { spacing: 20 };
     // cells: 0 west-water(y10), 1 east-water(y12), 2 interior-water, 3 west-LAND, 4 east-water(y82), 5 west-water(y78)
     g.pack = {
@@ -218,12 +218,14 @@ describe("wrap helpers", () => {
 
   it("isWrapEnabled is true only at lonT === 360", () => {
     const g = globalThis as any;
-    g.mapCoordinates = { lonT: 360 };
+    options.map.geography.coordinates.lonT = 360;
     expect(isWrapEnabled()).toBe(true);
-    g.mapCoordinates = { lonT: 359.9 };
+    options.map.geography.coordinates.lonT = 359.9;
     expect(isWrapEnabled()).toBe(false);
-    g.mapCoordinates = undefined;
+    const saved = g.options;
+    g.options = undefined;
     expect(isWrapEnabled()).toBe(false);
+    g.options = saved;
   });
 });
 
@@ -250,9 +252,8 @@ describe("calculateUrquhartEdges wrap", () => {
 
 describe("getPath seam split", () => {
   beforeAll(() => {
-    const g = globalThis as any;
-    g.graphWidth = 1000;
-    g.mapCoordinates = { lonT: 360 };
+    options.map.graph.width = 1000;
+    options.map.geography.coordinates.lonT = 360;
   });
 
   const countMoves = (d: string) => (d.match(/M/g) || []).length;
@@ -285,8 +286,8 @@ describe("getPath seam split", () => {
 describe("getLength wrapped", () => {
   it("measures a seam route by wrapped distance, not the screen gap", () => {
     const g = globalThis as any;
-    g.graphWidth = 1000;
-    g.mapCoordinates = { lonT: 360 };
+    options.map.graph.width = 1000;
+    options.map.geography.coordinates.lonT = 360;
     g.pack = {
       routes: [
         {
@@ -341,7 +342,7 @@ describe("portImportance", () => {
 describe("collectSeamLinks", () => {
   it("pairs each west-edge water cell with the nearest east-edge water cell by latitude", () => {
     const g = globalThis as any;
-    g.graphWidth = 100;
+    options.map.graph.width = 100;
     g.grid = { spacing: 20 };
     g.pack = {
       cells: {
@@ -368,7 +369,7 @@ describe("collectSeamLinks", () => {
 
   it("returns no links when an edge has no water", () => {
     const g = globalThis as any;
-    g.graphWidth = 100;
+    options.map.graph.width = 100;
     g.grid = { spacing: 20 };
     g.pack = {
       cells: {
@@ -389,9 +390,9 @@ describe("buildNavigableComponents", () => {
   // Two edge water cells (feature 1 west, feature 2 east) + ports on each feature.
   const setup = (lonT: number) => {
     const g = globalThis as any;
-    g.graphWidth = 100;
+    options.map.graph.width = 100;
     g.grid = { spacing: 20 };
-    g.mapCoordinates = { lonT };
+    options.map.geography.coordinates.lonT = lonT;
     g.pack = {
       cells: {
         i: new Uint32Array([0, 1]),
@@ -475,9 +476,9 @@ describe("generateSeaTradeNetwork hub dedup", () => {
     const g = globalThis as any;
     g.window = g.window ?? {};
     g.window.FlatQueue = FlatQueue;
-    g.graphWidth = 1000;
-    g.graphHeight = 1000; // mapScale = 1
-    g.mapCoordinates = { lonT: 180 }; // wrap off
+    options.map.graph.width = 1000;
+    options.map.graph.height = 1000; // mapScale = 1
+    options.map.geography.coordinates.lonT = 180; // wrap off
     const cells = makeWaterGrid();
     for (const [cell, lm] of Object.entries(landmassOf)) {
       cells.f[Number(cell)] = lm;
@@ -577,9 +578,9 @@ describe("generateSeaTradeNetwork feeder multi-target", () => {
     const g = globalThis as any;
     g.window = g.window ?? {};
     g.window.FlatQueue = FlatQueue;
-    g.graphWidth = 1000;
-    g.graphHeight = 1000;
-    g.mapCoordinates = { lonT: 180 };
+    options.map.graph.width = 1000;
+    options.map.graph.height = 1000;
+    options.map.geography.coordinates.lonT = 180;
     g.pack = { cells: buildChannelGrid() };
     g.grid = { cells: { temp: [20] } };
   });
@@ -631,9 +632,9 @@ describe("selectSeaTradeEdges", () => {
 
   beforeAll(() => {
     const g = globalThis as any;
-    g.graphWidth = 1000;
-    g.graphHeight = 1000; // mapScale = 1 -> km == pixel distance
-    g.mapCoordinates = { lonT: 180 }; // wrap off
+    options.map.graph.width = 1000;
+    options.map.graph.height = 1000; // mapScale = 1 -> km == pixel distance
+    options.map.geography.coordinates.lonT = 180; // wrap off
     g.pack = { cells: { f: landmass } };
   });
 
@@ -720,9 +721,9 @@ describe("generateTradeNetwork", () => {
     const g = globalThis as any;
     g.window = g.window ?? {};
     g.window.FlatQueue = FlatQueue; // needed if any leg uses the water-path fallback
-    g.graphWidth = 1000;
-    g.graphHeight = 1000;
-    g.mapCoordinates = { lonT: 180 };
+    options.map.graph.width = 1000;
+    options.map.graph.height = 1000;
+    options.map.geography.coordinates.lonT = 180;
 
     // Legs must be <= TRADE_LEG_RANGE_KM (300px at mapScale 1) = 3.6 cells. Hubs at
     // cells 1 and 7 are 500px apart (one leg too far), so they only connect via the
@@ -814,9 +815,9 @@ describe("rebuildTradeRoutes", () => {
     const g = globalThis as any;
     g.window = g.window ?? {};
     g.window.FlatQueue = FlatQueue;
-    g.graphWidth = 1000;
-    g.graphHeight = 1000;
-    g.mapCoordinates = { lonT: 180 };
+    options.map.graph.width = 1000;
+    options.map.graph.height = 1000;
+    options.map.geography.coordinates.lonT = 180;
     g.Layers = { isOn: () => false }; // rebuild must not try to draw in the test env
 
     const cap1 = {
@@ -950,9 +951,23 @@ describe("RoutesModule.remove", () => {
   beforeEach(async () => {
     globalThis.TIME = false;
     globalThis.window = globalThis.window || ({} as any);
-    // d3 select() needs a document in the node env
-    globalThis.document = { querySelector: () => null, documentElement: {} } as any;
-    globalThis.pack = { cells: {}, routes: [] } as any;
+    options.map.graph = { width: 1000, height: 1000, points: 10000 };
+    globalThis.pack = {
+      cells: {
+        h: [] as number[],
+        r: [] as number[],
+        fl: [] as number[],
+        p: [] as [number, number][],
+        t: [] as number[],
+        g: [] as number[],
+        burg: [] as number[]
+      },
+      burgs: [],
+      rivers: [],
+      routes: []
+    } as any;
+    globalThis.grid = { cells: { temp: [20, 20, 20, 20, 20, 20, 20, 20] } } as any;
+
     await import("./routes-generator");
     Routes = (globalThis as any).Routes;
   });

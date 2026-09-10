@@ -2,15 +2,15 @@
 import { Pipeline, type PipelineStep } from "@/generators/pipeline";
 import { Population } from "@/generators/population-generator";
 import type { GridGraph } from "@/types/GridGraph";
+import { Coordinates } from "./coordinates";
 
 const generationPipelineSteps = [
-  { id: "grid", run: ({ seed: expectedSeed, graph }) => Grid.prepare(expectedSeed, graph) },
+  { id: "grid", run: ({ graph }) => Grid.prepare(graph) },
   { id: "heightmap", run: () => HeightmapGenerator.generate() },
   { id: "markupGrid", run: () => Features.markupGrid() },
   { id: "depressionLakes", run: () => Grid.addDeepDepressionLakes() },
   { id: "nearSeaLakes", run: () => Grid.openNearSeaLakes() },
-  { id: "mapSize", run: () => Coordinates.defineMapSize() },
-  { id: "mapCoordinates", run: () => Coordinates.calculate() },
+  { id: "mapSize", run: () => Coordinates.generate() },
   { id: "temperatures", run: () => Temperature.generate() },
   { id: "precipitation", run: () => Precipitation.generate() },
   { id: "clearPack", run: () => Pack.clear() },
@@ -43,14 +43,12 @@ const generationPipelineSteps = [
   { id: "markers", run: () => Markers.generate() },
   { id: "zones", run: () => Zones.generate() },
   { id: "addedLabels", run: () => AddedLabels.initiate() },
-  { id: "mapName", run: () => Names.getMapName(false) },
   { id: "journeys", run: () => Journeys.generate() } // last: it draws from the PRNG, so it must not shift the steps above
 ] as const satisfies PipelineStep<string, GenerationContext>[];
 
 type GenerationPipelineStepId = (typeof generationPipelineSteps)[number]["id"];
 
 type GenerationContext = {
-  seed?: string; // seed if the caller wants a specific one
   graph?: GridGraph; // pre-created grid to use instead of generating one
 };
 export const GenerationPipeline = new Pipeline<GenerationPipelineStepId, GenerationContext>(

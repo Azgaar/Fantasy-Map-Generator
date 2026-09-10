@@ -27,12 +27,12 @@ function createDefaultRuler(): void {
   const featureVertices = features[largestLand]?.vertices || []; // no land on all-water maps
 
   const MIN_X = 100;
-  const MAX_X = graphWidth - 100;
+  const MAX_X = options.map.graph.width - 100;
   const MIN_Y = 100;
-  const MAX_Y = graphHeight - 100;
+  const MAX_Y = options.map.graph.height - 100;
 
-  let leftmostVertex: Point = [graphWidth - MIN_X, graphHeight / 2];
-  let rightmostVertex: Point = [MIN_X, graphHeight / 2];
+  let leftmostVertex: Point = [options.map.graph.width - MIN_X, options.map.graph.height / 2];
+  let rightmostVertex: Point = [MIN_X, options.map.graph.height / 2];
 
   for (const vertex of featureVertices) {
     const [x, y] = vertices.p[vertex];

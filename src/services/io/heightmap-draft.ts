@@ -33,7 +33,7 @@ export function parseHeightmapDraft(text: string): HeightmapDraft {
     throw new Error("File is not a valid heightmap draft");
   }
 
-  if (!data || data.type !== "fmgHeightmapDraft") throw new Error("File is not a valid heightmap draft");
+  if (data?.type !== "fmgHeightmapDraft") throw new Error("File is not a valid heightmap draft");
   if (data.version !== DRAFT_VERSION) throw new Error(`Unsupported heightmap draft version: ${data.version}`);
 
   const { seed, graphWidth, graphHeight, cellsDesired, heights } = data;

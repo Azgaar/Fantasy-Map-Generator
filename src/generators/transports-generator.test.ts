@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-describe("transport defaults and stored-set upgrade", () => {
+describe("transport defaults and saved-set upgrade", () => {
   let Transports: any;
 
   beforeEach(async () => {
-    localStorage.clear();
-    (globalThis as any).options = {};
+    (globalThis as any).options = { map: {} };
     await import("./transports-generator");
     Transports = (globalThis as any).Transports;
+    options.map.transports = Transports.getDefaults();
   });
 
   it("ships aviation bound to skyports: airplanes fly, the helicopter hops within range", () => {
@@ -21,15 +21,12 @@ describe("transport defaults and stored-set upgrade", () => {
   });
 
   it("upgrades a stored set from before the domains existed, leaving custom types alone", () => {
-    localStorage.setItem(
-      "options-transports",
-      JSON.stringify([
-        { i: 15, name: "Aircraft", speed: 120, domain: "air", hoursPerDay: 4 },
-        { i: 17, name: "Helicopter", speed: 220, domain: "air", hoursPerDay: 6 },
-        { i: 16, name: "Dirigible", speed: 20, domain: "air", hoursPerDay: 24 },
-        { i: 21, name: "Giant eagle", speed: 90, domain: "air", hoursPerDay: 10 }
-      ])
-    );
+    options.map.transports = [
+      { i: 15, name: "Aircraft", speed: 120, domain: "air", hoursPerDay: 4 },
+      { i: 17, name: "Helicopter", speed: 220, domain: "air", hoursPerDay: 6 },
+      { i: 16, name: "Dirigible", speed: 20, domain: "air", hoursPerDay: 24 },
+      { i: 21, name: "Giant eagle", speed: 90, domain: "air", hoursPerDay: 10 }
+    ] as never;
     const byName = Object.fromEntries(Transports.all.map((t: any) => [t.name, t]));
     expect(byName.Aircraft.domain).toBe("flight");
     expect(byName.Helicopter.domain).toBe("rotor");

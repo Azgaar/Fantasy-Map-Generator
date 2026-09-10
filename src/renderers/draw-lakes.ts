@@ -6,7 +6,7 @@ export function drawLakes(layer: Layer): void {
   const uses: Record<string, string[]> = {};
 
   for (const feature of pack.features) {
-    if (!feature || feature.type !== "lake") continue;
+    if (feature?.type !== "lake") continue;
     const group = groupIds.has(feature.group) ? feature.group : "freshwater"; // the group may have been removed
 
     if (!uses[group]) uses[group] = [];

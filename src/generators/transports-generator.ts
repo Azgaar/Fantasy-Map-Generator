@@ -21,8 +21,6 @@ export interface Transport {
   icon?: string;
 }
 
-const STORAGE_KEY = "options-transports";
-
 export const MAX_HOURS_PER_DAY = 24;
 export const DEFAULT_ROTOR_RANGE = 600; // km
 
@@ -61,8 +59,9 @@ const DEFAULT_TRANSPORTS: readonly Transport[] = [
 
 class TransportsModule {
   get all(): Transport[] {
-    options.transports ??= this.getStored();
-    return options.transports;
+    const transports = options.map.transports;
+    for (let i = 0; i < transports.length; i++) transports[i] = this.upgrade(transports[i]);
+    return transports;
   }
 
   getDefaults(): Transport[] {
@@ -112,13 +111,8 @@ class TransportsModule {
 
   /** Replace the whole set, e.g. on removal or defaults restore */
   set(transports: Transport[]): void {
-    options.transports = transports;
-    this.save();
-  }
-
-  /** Keep the current set as the starting point for the next map */
-  save(): void {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(this.all));
+    options.map.transports = transports;
+    Options.save();
   }
 
   /** Sets stored before aviation was bound to skyports carry the default airplanes and helicopter as plain air */
@@ -128,24 +122,12 @@ class TransportsModule {
     if (!current) return transport;
     return { ...transport, domain: current.domain, range: transport.range ?? current.range };
   }
-
-  /** The set the user configured last, falling back to the defaults if there is none or it is unreadable */
-  private getStored(): Transport[] {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (!stored) return this.getDefaults();
-
-      const parsed = JSON.parse(stored) as Transport[];
-      return parsed.length ? parsed.map(transport => this.upgrade(transport)) : this.getDefaults();
-    } catch (error) {
-      ERROR && console.error("Invalid stored transports", error);
-      return this.getDefaults();
-    }
-  }
 }
 
 declare global {
   var Transports: TransportsModule;
 }
 
-window.Transports = new TransportsModule();
+// biome-ignore lint/suspicious/noRedeclare: legacy seam
+export const Transports = new TransportsModule();
+window.Transports = Transports;

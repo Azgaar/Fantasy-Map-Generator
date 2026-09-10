@@ -58,7 +58,14 @@
         "skip": 5,
         "relax": 0,
         "curve": "curveBasisClosed",
-        "render": false
+        "render": false,
+        "contours": {
+          "mode": "off",
+          "interval": 5,
+          "color": "#5c513e",
+          "width": 0.35,
+          "opacity": 0.5
+        }
       }
     },
     "oceanHeights": {
@@ -73,7 +80,14 @@
         "skip": 0,
         "relax": 1,
         "curve": "curveBasisClosed",
-        "render": false
+        "render": false,
+        "contours": {
+          "mode": "off",
+          "interval": 5,
+          "color": "#345968",
+          "width": 0.35,
+          "opacity": 0.5
+        }
       }
     }
   },
@@ -1129,9 +1143,9 @@
     },
     "options": {
       "barSize": 2,
+      "label": "",
       "x": 99,
-      "y": 99,
-      "label": ""
+      "y": 99
     },
     "back": {
       "attrs": {

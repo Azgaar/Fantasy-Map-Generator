@@ -15,6 +15,40 @@ describe("stylesSchema", () => {
 });
 
 describe("parseStyles", () => {
+  test("older heightmap styles gain disabled contours without changing their existing appearance", () => {
+    const doc = structuredClone(Styles.defaults) as any;
+    delete doc.heightmap.landHeights.options.contours;
+    delete doc.heightmap.oceanHeights.options.contours;
+    doc.heightmap.landHeights.options.scheme = "monochrome";
+    doc.heightmap.landHeights.attrs.opacity = 0.7;
+    const parsed = Styles.parse(doc);
+    expect(parsed.heightmap.landHeights.options.contours.mode).toBe("off");
+    expect(parsed.heightmap.oceanHeights.options.contours.mode).toBe("off");
+    expect(parsed.heightmap.landHeights.options.scheme).toBe("monochrome");
+    expect(parsed.heightmap.landHeights.attrs.opacity).toBe(0.7);
+  });
+
+  test("custom contour settings round-trip through serialized styles", () => {
+    const doc = Styles.parse(Styles.defaults);
+    doc.heightmap.landHeights.options.contours = {
+      mode: "only",
+      interval: 3,
+      color: "#654321",
+      width: 0.6,
+      opacity: 0.8
+    };
+    expect(Styles.parse(JSON.parse(JSON.stringify(doc)))).toEqual(doc);
+  });
+
+  test("invalid contour spacing is repaired without resetting the other contour settings", () => {
+    const doc = Styles.parse(Styles.defaults);
+    doc.heightmap.landHeights.options.contours.mode = "overlay";
+    doc.heightmap.landHeights.options.contours.interval = 0;
+    const parsed = Styles.parse(doc);
+    expect(parsed.heightmap.landHeights.options.contours.interval).toBe(5);
+    expect(parsed.heightmap.landHeights.options.contours.mode).toBe("overlay");
+  });
+
   test("a valid document round-trips unchanged", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     expect(Styles.parse(structuredClone(Styles.defaults))).toEqual(Styles.defaults);

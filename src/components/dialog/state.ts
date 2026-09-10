@@ -5,7 +5,7 @@ export type DialogSort = {
 };
 
 type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
-type DialogStateKey = "filters" | "sorting" | "columns";
+type DialogStateKey = "filters" | "sorting" | "columns" | "position" | "legend";
 type DialogEntry = Partial<Record<DialogStateKey, JsonValue>>;
 
 const STORAGE_KEY = "fmg-dialog-state";

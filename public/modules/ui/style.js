@@ -17,14 +17,6 @@
   ensureEl("styleScaleBarBackgroundFilter").innerHTML = allOptions;
 }
 
-// store some style inputs as options
-styleElements.addEventListener("input", storeStyleOption);
-styleElements.addEventListener("change", storeStyleOption);
-
-function storeStyleOption(ev) {
-  if (ev.target.dataset.stored) lock(ev.target.dataset.stored);
-}
-
 // #icons and #goods hold no styling of their own
 const STYLE_ELEMENT_ALIASES = { icons: "burgIcons", goods: "goodsCells" };
 
@@ -235,6 +227,12 @@ function selectStyleElement() {
     styleHeightmapSkip.value = opts.skip;
     styleHeightmapSimplification.value = opts.relax;
     styleHeightmapCurve.value = opts.curve;
+    ensureEl("styleHeightmapContours").value = opts.contours.mode;
+    ensureEl("styleHeightmapContourInterval").value = opts.contours.interval;
+    ensureEl("styleHeightmapContourColor").value = opts.contours.color;
+    ensureEl("styleHeightmapContourWidth").value = opts.contours.width;
+    ensureEl("styleHeightmapContourOpacity").value = opts.contours.opacity;
+    updateContourControls();
   }
 
   if (styleElement === "markers") {
@@ -406,7 +404,7 @@ function selectStyleElement() {
     emblemsStateSizeInput.value = styles.emblems.stateEmblems.options.size;
     emblemsProvinceSizeInput.value = styles.emblems.provinceEmblems.options.size;
     emblemsBurgSizeInput.value = styles.emblems.burgEmblems.options.size;
-    showAllEmblems.checked = options.emblems.showAll;
+    showAllEmblems.checked = options.app.emblems.showAll;
   }
 
   if (styleElement === "goodsIcons") {
@@ -442,9 +440,9 @@ function selectStyleElement() {
 
     styleScaleBarSize.value = opts.barSize;
     styleScaleBarFontSize.value = attrs["font-size"];
-    styleScaleBarPositionX.value = opts.x;
-    styleScaleBarPositionY.value = opts.y;
-    styleScaleBarLabel.value = opts.label;
+    styleScaleBarPositionX.value = styles.scaleBar.options.x;
+    styleScaleBarPositionY.value = styles.scaleBar.options.y;
+    styleScaleBarLabel.value = styles.scaleBar.options.label;
 
     styleScaleBarBackgroundOpacity.value = back.attrs.opacity ?? 1;
     styleScaleBarBackgroundFill.value = styleScaleBarBackgroundFillOutput.value = back.attrs.fill;
@@ -481,8 +479,20 @@ function updateGroupOptions(styleElement, layerEl) {
     // count from the label data: the culled DOM only holds labels rendered at this zoom
     const labelCounts = {};
     for (const label of window.getLabelsData()) labelCounts[label.group] = (labelCounts[label.group] || 0) + 1;
-    const groups = options.labels.groups.map(({ name }) => name);
+    const groups = options.map.labels.groups.map(({ name }) => name);
     groups.forEach(name => styleGroupSelect.options.add(new Option(`${name} (${labelCounts[name] || 0})`, name)));
+    styleGroupSelect.value = groups.includes(selected) ? selected : groups[0] || "";
+    return;
+  }
+
+  if (["burgIcons", "anchors"].includes(styleElement)) {
+    const counts = new Map();
+    for (const burg of pack.burgs) {
+      if (!burg.i || burg.removed || (styleElement === "anchors" && !burg.port)) continue;
+      counts.set(burg.group, (counts.get(burg.group) || 0) + 1);
+    }
+    const groups = [...options.map.burgs.groups].sort((a, b) => a.order - b.order).map(({ name }) => name);
+    groups.forEach(name => styleGroupSelect.options.add(new Option(`${name} (${counts.get(name) || 0})`, name)));
     styleGroupSelect.value = groups.includes(selected) ? selected : groups[0] || "";
     return;
   }
@@ -535,7 +545,8 @@ function writeSelectedAttr(attr, value) {
         `Style editor: "${attr}" is not in the styles schema for ${styleElementSelect.value} > ${styleGroupSelect.value}. The change is applied to the map but is not stored in the style`
       );
   }
-  getEl().attr(attr, value ?? null);
+  if (["burgIcons", "anchors"].includes(styleElementSelect.value)) Layers.draw("burgIcons");
+  else getEl().attr(attr, value ?? null);
 }
 
 styleFillInput.addEventListener("input", function () {
@@ -630,9 +641,9 @@ styleGridScale.addEventListener("input", function () {
 });
 
 function calculateFriendlyGridSize() {
+  const { scale, unit } = options.map.units.distance;
   const size = styleGridScale.value * 25;
-  const friendly = `${rn(size * distanceScale, 2)} ${distanceUnitInput.value}`;
-  styleGridSizeFriendly.value = friendly;
+  styleGridSizeFriendly.value = `${rn(size * scale, 2)} ${unit}`;
 }
 
 styleGridShiftX.addEventListener("input", function () {
@@ -672,6 +683,46 @@ outlineLayers.addEventListener("change", function () {
 });
 
 const heightsOptions = () => styles.heightmap[styleGroupSelect.value].options;
+
+function updateContourControls() {
+  const opts = heightsOptions();
+  const oceanBlocked = styleGroupSelect.value === "oceanHeights" && !opts.render;
+  const contoursSelect = ensureEl("styleHeightmapContours");
+  contoursSelect.disabled = oceanBlocked;
+  contoursSelect.title = oceanBlocked ? "Enable Render ocean heights to show ocean contours" : "";
+
+  const enabled = opts.contours.mode !== "off" && !oceanBlocked;
+  styleHeightmap.querySelectorAll("[data-contour-style]").forEach(row => {
+    row.style.display = enabled ? "" : "none";
+  });
+}
+
+ensureEl("styleHeightmapContours").addEventListener("change", e => {
+  heightsOptions().contours.mode = e.target.value;
+  updateContourControls();
+  Layers.draw("heightmap");
+});
+
+for (const [id, key] of [
+  ["styleHeightmapContourInterval", "interval"],
+  ["styleHeightmapContourWidth", "width"],
+  ["styleHeightmapContourOpacity", "opacity"],
+  ["styleHeightmapContourColor", "color"]
+]) {
+  ensureEl(id).addEventListener("input", e => {
+    if (e.target !== e.currentTarget) return; // slider-input also bubbles its inner input event
+    const control = e.currentTarget;
+    let value = control.value;
+    if (key !== "color") {
+      if (value === "" || !Number.isFinite(+value)) return;
+      value = Math.max(+control.getAttribute("min"), Math.min(+control.getAttribute("max"), +value));
+      if (key === "interval") value = Math.round(value);
+      control.value = value;
+    }
+    heightsOptions().contours[key] = value;
+    Layers.draw("heightmap");
+  });
+}
 
 styleHeightmapScheme.addEventListener("change", function () {
   heightsOptions().scheme = this.value;
@@ -799,6 +850,7 @@ openCreateHeightmapSchemeButton.addEventListener("click", function () {
 
 styleHeightmapRenderOcean.addEventListener("change", e => {
   heightsOptions().render = e.target.checked;
+  updateContourControls();
   Layers.draw("heightmap");
 });
 
@@ -878,13 +930,13 @@ const burgIconsGroup = () => styles.burgIcons.burgIcons.groups[styleGroupSelect.
 styleBurgIconsIcon.addEventListener("change", e => {
   const group = burgIconsGroup();
   if (group) group.options.icon = e.target.value;
-  getEl().attr("data-icon", e.target.value).selectAll("use").attr("href", e.target.value);
+  Layers.draw("burgIcons");
 });
 
 styleBurgIconsIconSize.addEventListener("input", e => {
   const group = burgIconsGroup();
   if (group) group.options.size = +e.target.value || 1;
-  getEl().attr("font-size", e.target.value);
+  Layers.draw("burgIcons");
 });
 
 styleBurgIconsStrokeLinejoin.addEventListener("change", e => {
@@ -913,12 +965,12 @@ styleLegendColItems.addEventListener("input", e => {
 styleLegendBack.addEventListener("input", e => {
   styleLegendBackOutput.value = e.target.value;
   styles.legend.box.attrs.fill = e.target.value;
-  d3.select("#legend").select("#legendBox").attr("fill", e.target.value);
+  d3.select("#legend").selectAll(".legendBox").attr("fill", e.target.value);
 });
 
 styleLegendOpacity.addEventListener("input", e => {
   styles.legend.box.attrs["fill-opacity"] = +e.target.value;
-  d3.select("#legend").select("#legendBox").attr("fill-opacity", e.target.value);
+  d3.select("#legend").selectAll(".legendBox").attr("fill-opacity", e.target.value);
 });
 
 styleSelectFont.addEventListener("change", changeFont);
@@ -1020,7 +1072,7 @@ function changeFontSize(el, size) {
   if (styleElementSelect.value === "anchors") {
     const group = styles.burgIcons.anchors.groups[styleGroupSelect.value];
     if (group) group.options.size = size;
-    el.attr("font-size", size);
+    Layers.draw("burgIcons");
     return;
   }
 
@@ -1098,7 +1150,7 @@ emblemsBurgSizeInput.addEventListener("change", e => {
 });
 
 showAllEmblems.addEventListener("change", e => {
-  options.emblems.showAll = e.target.checked;
+  Options.set(options => (options.app.emblems.showAll = e.target.checked));
   invokeActiveZooming();
 });
 

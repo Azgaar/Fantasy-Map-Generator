@@ -48,11 +48,14 @@ export function select(id: string): Conversation {
   return current();
 }
 
+/** The map on screen is the last one registered; its id is its creation time */
+export const currentMapId = (): number => globalThis.mapHistory?.at(-1)?.created ?? 0;
+
 export function create(): Conversation {
   const conversation: Conversation = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     title: NEW_TITLE,
-    mapId,
+    mapId: currentMapId(),
     updated: Date.now(),
     entries: [],
     messages: [],
@@ -85,6 +88,7 @@ export function touch(conversation: Conversation): void {
 // stale, so an untouched conversation follows the new map and a used one is left behind.
 export function forCurrentMap(): Conversation {
   const conversation = current();
+  const mapId = currentMapId();
   if (conversation.mapId === mapId) return conversation;
   if (!conversation.entries.length) {
     conversation.mapId = mapId;

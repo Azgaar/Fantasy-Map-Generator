@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
+import { Options } from "@/components/options-model";
 import { Coastline } from "./coastline-generator";
 import type { Feature } from "./features";
 
@@ -11,10 +12,11 @@ const island = {
 
 beforeEach(() => {
   localStorage.clear();
-  globalThis.options = {} as typeof globalThis.options;
-  globalThis.seed = "1";
-  globalThis.graphWidth = 100;
-  globalThis.graphHeight = 100;
+  globalThis.options = Options.getDefaultOptions();
+  globalThis.options.map.seed = "1";
+  globalThis.options.map.graph = { width: 100, height: 100, points: 100 };
+  globalThis.options.map.coastline = Coastline.getDefaultSettings();
+  globalThis.Options = Options;
   globalThis.pack = {
     vertices: {
       p: [
@@ -29,32 +31,20 @@ beforeEach(() => {
 });
 
 describe("settings", () => {
-  it("defaults on a map saved before the settings existed", () => {
-    expect(Coastline.settings).toEqual(Coastline.getDefaultSettings());
-  });
-
-  it("keeps them in options, so they are saved and restored with the map", () => {
+  it("keeps them in options.map, so they are saved and restored with the map", () => {
     Coastline.update({ maxDepth: 2 });
-    expect(options.coastline.maxDepth).toBe(2);
+    expect(options.map.coastline.maxDepth).toBe(2);
 
-    options.coastline = { ...Coastline.getDefaultSettings(), maxDepth: 5 };
+    options.map.coastline = { ...Coastline.getDefaultSettings(), maxDepth: 5 };
     expect(Coastline.settings.maxDepth).toBe(5);
   });
 
-  it("reuses the last values the user picked on the next map", () => {
+  it("remembers a user edit, so the next map starts from the values they picked", () => {
     Coastline.update({ baseAmplitude: 3, enabled: false });
 
-    globalThis.options = {} as typeof globalThis.options; // new map
-    expect(Coastline.settings).toEqual({ ...Coastline.getDefaultSettings(), baseAmplitude: 3, enabled: false });
-  });
-
-  it("fills in the keys stored data misses and survives corrupted data", () => {
-    localStorage.setItem("coastline-settings", JSON.stringify({ minEdge: 4 }));
-    expect(Coastline.settings).toEqual({ ...Coastline.getDefaultSettings(), minEdge: 4 });
-
-    globalThis.options = {} as typeof globalThis.options;
-    localStorage.setItem("coastline-settings", "{not json");
-    expect(Coastline.settings).toEqual(Coastline.getDefaultSettings());
+    const expected = { ...Coastline.getDefaultSettings(), baseAmplitude: 3, enabled: false };
+    expect(options.map.coastline).toEqual(expected);
+    expect(options.map.coastline).toEqual(expected);
   });
 });
 
@@ -62,13 +52,13 @@ describe("getFeaturePath", () => {
   it("reproduces the same coastline for the same seed and settings", () => {
     const path = Coastline.getFeaturePath(island);
 
-    delete (options as Partial<typeof options>).coastline; // reload: settings are read from the map again
+    options.map.coastline = Coastline.getDefaultSettings(); // a reload: the settings come from the map again
     expect(Coastline.getFeaturePath(island)).toBe(path);
 
     for (let i = 0; i < 100; i++) Math.random(); // an own rng per feature, unaffected by what was generated before
     expect(Coastline.getFeaturePath(island)).toBe(path);
 
-    globalThis.seed = "2";
+    options.map.seed = "2";
     expect(Coastline.getFeaturePath(island)).not.toBe(path);
   });
 

@@ -15,12 +15,14 @@ interface GroupSpec {
 
 function setGroups(specs: GroupSpec[]): void {
   (globalThis as any).options = {
-    labels: {
-      groups: specs.map(spec => ({
-        name: spec.name,
-        type: "burg",
-        zoom: { min: spec.minZoom ?? null, max: null }
-      }))
+    map: {
+      labels: {
+        groups: specs.map(spec => ({
+          name: spec.name,
+          type: "burg",
+          zoom: { min: spec.minZoom ?? null, max: null }
+        }))
+      }
     }
   };
   (globalThis as any).styles = {
@@ -147,7 +149,7 @@ describe("readBurgLabelStyles", () => {
 
   it("ignores non-burg label groups", () => {
     setGroups([{ name: "capital", fontSize: "4%" }]);
-    (globalThis as any).options.labels.groups.push({ name: "river", type: "river", zoom: { min: 6, max: 40 } });
+    (globalThis as any).options.map.labels.groups.push({ name: "river", type: "river", zoom: { min: 6, max: 40 } });
     expect(Object.keys(readBurgLabelStyles())).toEqual(["capital"]);
   });
 

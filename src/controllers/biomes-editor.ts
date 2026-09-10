@@ -10,18 +10,20 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
-import type { FillBoxElement } from "@/components/fill-box";
 import { Layers } from "@/components/layers";
+import type { FillBoxElement } from "@/components/shared/fill-box";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { Biome } from "@/generators/biomes-generator";
+import { Notes } from "@/generators/notes";
 import { Population } from "@/generators/population-generator";
-import { clearLegend, drawLegend } from "@/renderers/draw-legend";
+import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import type { PackedGraph } from "@/types/PackedGraph";
 import { downloadFile, getArea, getAreaUnit, getFileName, openURL } from "@/utils";
 import { ensureEl, getRandomColor, isLand, rn, si } from "../utils";
 
 const dialogId = "biomesEditor" as const;
+const LEGEND_NAME = "Biomes"; // the legend box this editor toggles
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 let currentBiomeStatistics: BiomeStatistics[] = [];
 const columns: EditorColumn<Biome>[] = [
@@ -63,7 +65,9 @@ const columns: EditorColumn<Biome>[] = [
       return statistics ? statistics.rural + statistics.urban : 0;
     }
   },
-  { key: "actions", width: "2em", permanent: true }
+  { key: "note", width: "1.1em" },
+  { key: "wiki", width: "1.1em" },
+  { key: "remove", width: "1.4em", permanent: true }
 ];
 
 const biomesTable = initEditorTable<Biome>({
@@ -159,6 +163,7 @@ function renderDialog(): void {
     const el = ev.target as HTMLElement;
     const cl = el.classList;
     if (el.tagName === "FILL-BOX") biomeChangeColor(el as FillBoxElement);
+    else if (cl.contains("icon-book")) editBiomeNote(el);
     else if (cl.contains("icon-info-circled")) openWiki(el);
     else if (cl.contains("icon-trash-empty")) removeCustomBiomeLine(el);
   });
@@ -215,8 +220,8 @@ function biomesEditorAddLines(view: TableView<Biome>, statistics: BiomeStatistic
     const { i, name, color, habitability } = biome;
     const { cells, area: rawArea, rural: rawRural, urban: rawUrban } = statistics[i];
     const area = getArea(rawArea);
-    const rural = rawRural * populationRate;
-    const urban = rawUrban * populationRate * urbanization;
+    const rural = rawRural * options.map.units.population.scale;
+    const urban = rawUrban * options.map.units.population.scale * options.map.units.population.urbanization.rate;
     const population = rn(rural + urban);
     const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}`;
     lines += /* html */ `
@@ -241,10 +246,11 @@ function biomesEditorAddLines(view: TableView<Biome>, statistics: BiomeStatistic
         <div data-col="cells" class="hide"><span data-tip="Cells count" class="icon-check-empty"></span><span data-tip="Cells count" class="biomeCells">${cells}</span></div>
         <div data-col="area" class="hide"><span data-tip="Biome area" class="icon-map-o" style="padding-right: 2px"></span><span data-tip="Biome area" class="biomeArea">${si(area) + unit}</span></div>
         <div data-col="population" class="hide"><span data-tip="${populationTip}" class="icon-male"></span><span data-tip="${populationTip}" class="biomePopulation">${si(population)}</span></div>
-        <div data-col="actions" class="hide">
-          <span data-tip="Open Wikipedia article about the biome" class="icon-info-circled pointer"></span>
-          ${i > 12 && !cells ? '<span data-tip="Remove the custom biome" class="icon-trash-empty"></span>' : ""}
-        </div>
+        ${Notes.getIcon("this biome")}
+        <span data-col="wiki" data-tip="Open Wikipedia article about the biome" class="icon-info-circled pointer"></span>
+        <span data-col="remove" ${
+          i > 12 && !cells ? 'data-tip="Remove the custom biome" class="icon-trash-empty"' : ""
+        }></span>
       </div>
     `;
   }
@@ -255,7 +261,10 @@ function biomesEditorAddLines(view: TableView<Biome>, statistics: BiomeStatistic
   for (const biome of view.all) {
     const statistic = statistics[biome.i];
     totalArea += getArea(statistic.area);
-    totalPopulation += rn(statistic.rural * populationRate + statistic.urban * populationRate * urbanization);
+    totalPopulation += rn(
+      statistic.rural * options.map.units.population.scale +
+        statistic.urban * options.map.units.population.scale * options.map.units.population.urbanization.rate
+    );
   }
   const totalMapArea = getArea(sum(pack.cells.area));
   ensureEl("biomesFooterBiomes").innerHTML = String(view.all.length);
@@ -332,6 +341,11 @@ function biomeChangeHabitability(el: HTMLInputElement): void {
   refreshBiomesEditor();
 }
 
+function editBiomeNote(el: HTMLElement): void {
+  const id = +(el.closest<HTMLElement>(".biomes")?.dataset.id || 0);
+  void Controllers.NotesEditor.open({ type: "biome", id });
+}
+
 function openWiki(el: HTMLElement): void {
   const biomeName = el.closest<HTMLElement>(".biomes")?.dataset.name;
   if (biomeName === "Custom" || !biomeName) {
@@ -360,16 +374,16 @@ function openWiki(el: HTMLElement): void {
 }
 
 function toggleLegend(): void {
-  if (select("#legend").selectAll("*").size()) {
-    clearLegend();
+  if (hasLegend(LEGEND_NAME)) {
+    clearLegend(LEGEND_NAME); // hide this box alone, keeping the other legends
     return;
-  } // hide legend
+  }
   const statistics = biomesCollectStatistics();
   const data = pack.biomes
     .filter(({ i }) => statistics[i].cells)
     .sort((a, b) => statistics[b.i].area - statistics[a.i].area)
     .map(({ i, color, name }) => [i, color, name]);
-  drawLegend("Biomes", data);
+  drawLegend(LEGEND_NAME, data);
 }
 
 function togglePercentageMode(): void {
@@ -445,13 +459,17 @@ function removeCustomBiomeLine(el: HTMLElement): void {
 }
 
 function downloadBiomesData(): void {
-  const unit = areaUnit.value === "square" ? `${distanceUnitInput.value}2` : areaUnit.value;
+  const unit =
+    options.map.units.area.unit === "square" ? `${options.map.units.distance.unit}2` : options.map.units.area.unit;
   let data = `Id,Biome,Color,Habitability,Cells,Area ${unit},Population\n`; // headers
   const statistics = biomesCollectStatistics();
   for (const biome of pack.biomes) {
     if (!biome.i || biome.removed) continue;
     const { cells, area, rural, urban } = statistics[biome.i];
-    const population = rn(rural * populationRate + urban * populationRate * urbanization);
+    const population = rn(
+      rural * options.map.units.population.scale +
+        urban * options.map.units.population.scale * options.map.units.population.urbanization.rate
+    );
     data += `${biome.i},${biome.name},${biome.color},${biome.habitability}%,${cells},${getArea(area)},${population}\n`;
   }
 

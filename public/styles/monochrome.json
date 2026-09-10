@@ -1129,9 +1129,9 @@
     },
     "options": {
       "barSize": 1.5,
+      "label": "",
       "x": 99,
-      "y": 99,
-      "label": ""
+      "y": 99
     },
     "back": {
       "attrs": {

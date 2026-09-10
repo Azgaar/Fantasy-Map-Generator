@@ -1,10 +1,11 @@
-import { drag, select } from "d3";
+import { type D3DragEvent, drag, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { stopMapPlacement } from "@/components/map-placement";
 import { clearMainTip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
-import { getPin } from "@/renderers/draw-markers";
+import { Notes } from "@/generators/notes";
+import { drawMarkers, setEditedMarker } from "@/renderers/draw-markers";
 import { ensureEl, escapeHtml, findEl, isImageIcon, rn } from "../utils";
 
 let selectedElement: SVGSVGElement;
@@ -24,7 +25,7 @@ function open(markerI?: number, target?: Element): void {
     .classed("draggable", true);
 
   if (findEl("notesEditor")) {
-    void Controllers.NotesEditor.open(selectedElement.id, selectedElement.id);
+    void Controllers.NotesEditor.open({ type: "marker", id: selectedMarker.i });
   }
 
   renderDialog();
@@ -87,7 +88,7 @@ function renderDialog(): void {
       </div>
     </div>
     <div id="markerBottom">
-      <button id="markerNotes" data-tip="Edit place legend (notes)" class="icon-edit"></button>
+      ${Notes.getButton("markerNotes", "this marker")}
       <button id="markerRadius" data-tip="Show markers within a radius of this one" class="icon-dot-circled"></button>
       <button id="markerLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
       <button id="markerAdd" data-tip="Add additional marker of that type" class="icon-plus"></button>
@@ -114,16 +115,13 @@ function renderDialog(): void {
 }
 
 function getElement(markerI?: number, target?: Element): [SVGSVGElement, Marker] | null {
-  if (target) {
-    const element = target.closest("svg") as SVGSVGElement | null;
-    if (!element) return null;
-    const marker = pack.markers.find(({ i }) => Number(element.id.slice(6)) === i);
-    return marker ? [element, marker] : null;
-  }
-
-  const element = ensureEl<HTMLElement>(`marker${markerI}`) as unknown as SVGSVGElement;
-  const marker = pack.markers.find(({ i }) => i === markerI);
-  return element && marker ? [element, marker] : null;
+  const id = target ? Number(target.closest("svg")?.id.slice(6)) : markerI;
+  const marker = pack.markers.find(({ i }) => i === id);
+  if (!marker) return null;
+  setEditedMarker(marker);
+  const element = findEl<SVGSVGElement>(`marker${id}`);
+  if (!element) setEditedMarker(null);
+  return element ? [element, marker] : null;
 }
 
 function getSameTypeMarkers(): Marker[] {
@@ -132,26 +130,26 @@ function getSameTypeMarkers(): Marker[] {
   return pack.markers.filter(({ type }) => type === currentType);
 }
 
-function dragMarker(this: SVGElement, event: any): void {
+function dragMarker(this: SVGElement, event: D3DragEvent<SVGElement, unknown, unknown>): void {
   const dx = +this.getAttribute("x")! - event.x;
   const dy = +this.getAttribute("y")! - event.y;
 
-  event.on("drag", function (this: SVGElement, dragEvent: any) {
+  event.on("drag", function (this: SVGElement, dragEvent: D3DragEvent<SVGElement, unknown, unknown>) {
     this.setAttribute("x", String(dx + dragEvent.x));
     this.setAttribute("y", String(dy + dragEvent.y));
   });
 
-  event.on("end", function (this: SVGElement, dragEvent: any) {
+  event.on("end", function (this: SVGElement, dragEvent: D3DragEvent<SVGElement, unknown, unknown>) {
     const { x, y } = dragEvent;
     this.setAttribute("x", String(rn(dx + x, 2)));
     this.setAttribute("y", String(rn(dy + y, 2)));
 
-    const size = selectedMarker.size || 30;
-    const zoomSize = Math.max(rn(size / 5 + 24 / scale, 2), 1);
+    const zoomSize = Number(this.getAttribute("width"));
 
     selectedMarker.x = rn(x + dx + zoomSize / 2, 1);
     selectedMarker.y = rn(y + dy + zoomSize, 1);
     selectedMarker.cell = Pack.findCell(selectedMarker.x, selectedMarker.y)!;
+    drawMarkers();
   });
 }
 
@@ -186,8 +184,8 @@ function changeMarkerIcon(): void {
 
     getSameTypeMarkers().forEach(marker => {
       marker.icon = value;
-      redrawIcon(marker);
     });
+    drawMarkers();
   });
 }
 
@@ -195,97 +193,60 @@ function changeIconSize(this: HTMLInputElement): void {
   const px = +this.value;
   getSameTypeMarkers().forEach(marker => {
     marker.px = px;
-    redrawIcon(marker);
   });
+  drawMarkers();
 }
 
 function changeIconShiftX(this: HTMLInputElement): void {
   const dx = +this.value;
   getSameTypeMarkers().forEach(marker => {
     marker.dx = dx;
-    redrawIcon(marker);
   });
+  drawMarkers();
 }
 
 function changeIconShiftY(this: HTMLInputElement): void {
   const dy = +this.value;
   getSameTypeMarkers().forEach(marker => {
     marker.dy = dy;
-    redrawIcon(marker);
   });
+  drawMarkers();
 }
 
 function changeMarkerSize(this: HTMLInputElement): void {
   const size = +this.value;
-  const rescale = styles.markers.options.rescale;
-
   getSameTypeMarkers().forEach(marker => {
     marker.size = size;
-    const { i, x, y, hidden } = marker;
-    const el = !hidden && document.getElementById(`marker${i}`);
-    if (!el) return;
-
-    const zoomedSize = rescale ? Math.max(rn(size / 5 + 24 / scale, 2), 1) : size;
-    el.setAttribute("width", String(zoomedSize));
-    el.setAttribute("height", String(zoomedSize));
-    el.setAttribute("x", String(rn(x - zoomedSize / 2, 1)));
-    el.setAttribute("y", String(rn(y - zoomedSize, 1)));
   });
+  drawMarkers();
 }
 
 function changeMarkerPin(this: HTMLSelectElement): void {
   const pin = this.value;
   getSameTypeMarkers().forEach(marker => {
     marker.pin = pin;
-    redrawPin(marker);
   });
+  drawMarkers();
 }
 
 function changePinFill(this: HTMLInputElement): void {
   const fill = this.value;
   getSameTypeMarkers().forEach(marker => {
     marker.fill = fill;
-    redrawPin(marker);
   });
+  drawMarkers();
 }
 
 function changePinStroke(this: HTMLInputElement): void {
   const stroke = this.value;
   getSameTypeMarkers().forEach(marker => {
     marker.stroke = stroke;
-    redrawPin(marker);
   });
-}
-
-function redrawIcon({ i, hidden, icon, dx = 50, dy = 50, px = 12 }: Marker): void {
-  const isExternal = isImageIcon(icon);
-
-  const iconText = !hidden && document.querySelector(`#marker${i} > text`);
-  if (iconText) {
-    iconText.innerHTML = isExternal ? "" : icon;
-    iconText.setAttribute("x", `${dx}%`);
-    iconText.setAttribute("y", `${dy}%`);
-    iconText.setAttribute("font-size", `${px}px`);
-  }
-
-  const iconImage = !hidden && document.querySelector(`#marker${i} > image`);
-  if (iconImage) {
-    iconImage.setAttribute("x", `${dx / 2}%`);
-    iconImage.setAttribute("y", `${dy / 2}%`);
-    iconImage.setAttribute("width", `${px}px`);
-    iconImage.setAttribute("height", `${px}px`);
-    iconImage.setAttribute("href", isExternal ? icon : "");
-  }
-}
-
-function redrawPin({ i, hidden, pin = "bubble", fill = "#fff", stroke = "#000" }: Marker): void {
-  const pinGroup = !hidden && document.querySelector(`#marker${i} > g`);
-  if (pinGroup) pinGroup.innerHTML = getPin(pin, fill, stroke);
+  drawMarkers();
 }
 
 function editMarkerLegend(): void {
-  const id = selectedElement.id;
-  void Controllers.NotesEditor.open(id, id);
+  void Controllers.NotesEditor.open({ type: "marker", id: selectedMarker.i });
 }
 
 function openMarkersInRadius(): void {
@@ -314,13 +275,14 @@ function confirmMarkerDeletion(): void {
 
 function deleteMarker(): void {
   Markers.deleteMarker(selectedMarker.i);
-  selectedElement.remove();
+  drawMarkers();
   $("#markerEditor").dialog("close");
   refreshEditors();
 }
 
 function closeMarkerEditor(): void {
   select(selectedElement).on(".drag", null).classed("draggable", false);
+  setEditedMarker(null);
   if (ensureEl("addMarker").classList.contains("pressed")) stopMapPlacement();
   clearMainTip();
   destroyDialog("markerEditor");

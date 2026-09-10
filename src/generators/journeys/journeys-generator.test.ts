@@ -23,15 +23,15 @@ describe("journey metrics", () => {
   let Journeys: any;
 
   beforeEach(async () => {
-    (globalThis as any).distanceScale = 1;
     await import("../transports-generator");
-    (globalThis as any).options = { transports: (globalThis as any).Transports.getDefaults() };
+    options.map.units.distance = { unit: "km", scale: 1 };
+    options.map.transports = Transports.getDefaults();
     await import("./journeys-generator");
     Journeys = (globalThis as any).Journeys;
   });
 
-  it("getSegmentDistance multiplies by distanceScale", () => {
-    (globalThis as any).distanceScale = 2;
+  it("getSegmentDistance multiplies by options.map.units.distance.scale", () => {
+    options.map.units.distance.scale = 2;
     expect(Journeys.getSegmentDistance(makeSeg(10, 5))).toBe(20);
   });
 
@@ -395,10 +395,11 @@ describe("land pathfinding respects terrain", () => {
 
   beforeEach(async () => {
     (globalThis as any).FlatQueue = TestFlatQueue;
-    (globalThis as any).distanceScale = 1;
+
     (globalThis as any).pack = makeTerrainPack();
     await import("../transports-generator");
-    (globalThis as any).options = { transports: (globalThis as any).Transports.getDefaults() };
+    options.map.units.distance = { unit: "km", scale: 1 };
+    options.map.transports = Transports.getDefaults();
     await import("./journeys-generator");
     Journeys = (globalThis as any).Journeys;
   });
@@ -458,7 +459,6 @@ describe("skyport-bound flight and rotor domains", () => {
    * distanceScale = 10, so 1 px is 10 km and the Helicopter's 600 km range is 60 px.
    */
   beforeEach(async () => {
-    (globalThis as any).distanceScale = 10;
     (globalThis as any).pack = {
       cells: {
         h: [30, 30, 30, 30, 30, 30],
@@ -495,7 +495,9 @@ describe("skyport-bound flight and rotor domains", () => {
     };
     (globalThis as any).grid = { cells: { temp: [20, 20, 20, 20, 20, 20] } };
     await import("../transports-generator");
-    (globalThis as any).options = { transports: (globalThis as any).Transports.getDefaults() };
+    (globalThis as any).options = {
+      map: { transports: (globalThis as any).Transports.getDefaults(), units: { distance: { unit: "km", scale: 10 } } }
+    };
     await import("./journeys-generator");
     Journeys = (globalThis as any).Journeys;
   });
@@ -566,7 +568,7 @@ describe("skyport-bound flight and rotor domains", () => {
     p.burgs[2].x = 0;
     p.burgs[2].y = 120;
     p.cells.burg = [1, 0, 0, 2, 3, 0];
-    (globalThis as any).options.transports.find((t: any) => t.name === "Helicopter").range = 2200; // 220 px, radius 110
+    (globalThis as any).options.map.transports.find((t: any) => t.name === "Helicopter").range = 2200; // 220 px, radius 110
     expect(Journeys.isValidEndpoint(1, "rotor", "Helicopter")).toBe(true);
     expect(Journeys.isValidEndpoint(2, "rotor", "Helicopter")).toBe(true);
     expect(Journeys.findPath(1, 2, "rotor", { transport: "Helicopter" }).errorCode).toBe("rotor-corridor");

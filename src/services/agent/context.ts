@@ -74,11 +74,11 @@ const GOTCHAS = `# Gotchas that the type declarations do not tell you
 
 const NOTES = `# Notes
 
-Every map element can carry one note: \`{ id, name, legend }\` in the global \`notes\` array, where \`legend\`
-is an HTML string shown in the notes box and in hover tooltips. Ids follow the element: \`burg<i>\` for a
-burg with index \`i\` (so \`pack.burgs[12]\` → \`burg12\`), \`marker<i>\` for markers, \`state<i>\`, \`route<i>\`,
-\`river<i>\` and so on — a note may exist for an element or not. When the user names a place rather than a
-note, find the element in a script first and derive the id from it.
+A note is an optional \`note\` field on the entity it describes — \`pack.burgs[12].note\`, a marker, state,
+province, route, river, feature, zone, journey, market, culture, religion, biome, good or regiment — holding
+the HTML shown in the notes box and in hover tooltips. A note is addressed by key: \`<type>:<i>\`, so
+\`burg:12\`, \`marker:3\`, \`state:2\` (\`regiment:<state>-<i>\` for regiments). When the user names a place
+rather than a note, find the entity in a script first and build the key from its type and index.
 
 Write notes with \`write_note({ id?, name?, html })\`. \`html\` is the WHOLE legend. Omit \`id\` to target the
 note open in the notes editor (see the "Notes editor" section of the current-map block when it is open).
@@ -122,9 +122,9 @@ function describeCurrentMap(): string {
     entities ? entities.filter(entity => entity.i && !entity.removed).length : 0;
 
   const facts = [
-    `name: ${mapName?.value ?? "unnamed"}`,
-    `seed: ${seed}`,
-    `size: ${graphWidth} × ${graphHeight} map units`,
+    `name: ${options.map.lore.name || "unnamed"}`,
+    `seed: ${options.map.seed}`,
+    `size: ${options.map.graph.width} × ${options.map.graph.height} map units`,
     `cells: ${pack.cells.i.length}`,
     `states: ${live(pack.states)}`,
     `burgs: ${live(pack.burgs)}`,
@@ -133,7 +133,7 @@ function describeCurrentMap(): string {
     `religions: ${live(pack.religions)}`,
     `rivers: ${pack.rivers?.length ?? 0}`,
     `markers: ${pack.markers?.length ?? 0}`,
-    `year: ${options?.year} ${options?.era ?? ""}`.trim()
+    `year: ${options.map.lore.calendar.year} ${options.map.lore.calendar.era}`.trim()
   ];
 
   return `# Current map\n\n${facts.map(fact => `- ${fact}`).join("\n")}`;

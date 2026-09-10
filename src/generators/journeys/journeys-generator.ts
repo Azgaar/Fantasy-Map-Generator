@@ -112,7 +112,7 @@ class JourneysModule {
 
   /** Segment length in the current distance unit; a stay covers no ground. */
   getSegmentDistance(seg: JourneySegment): number {
-    return this.isStaySegment(seg) ? 0 : seg.distance * distanceScale;
+    return this.isStaySegment(seg) ? 0 : seg.distance * options.map.units.distance.scale;
   }
 
   /** Speed in km/h, after the off-road penalty. The UI converts it to the user distance unit */
@@ -331,7 +331,7 @@ class JourneysModule {
 
     const routeId = pack.cells.routes?.[from]?.[to];
     const route = routeId === undefined ? undefined : pack.routes.find((r: Route) => r.i === routeId);
-    if (!route || route.group !== "airroutes") {
+    if (route?.group !== "airroutes") {
       return {
         points: [],
         distance: 0,
@@ -416,9 +416,9 @@ class JourneysModule {
     return this.distanceToSkyport(point, skyports) <= this.getRotorRadius(transport);
   }
 
-  /** transport range in px: ranges are km, the map is distanceScale km per px */
+  /** transport range in px: ranges are km, the map is options.map.units.distance.scale km per px */
   private getRotorRange(transport?: string): number {
-    return Transports.getRange(transport ?? "") / distanceScale;
+    return Transports.getRange(transport ?? "") / options.map.units.distance.scale;
   }
 
   private getRotorRadius(transport?: string): number {
@@ -426,7 +426,7 @@ class JourneysModule {
   }
 
   private formatPx(px: number): string {
-    return `${rn(px * distanceScale * getDistanceUnitRatio())} ${getDistanceUnit()}`;
+    return `${rn(px * options.map.units.distance.scale * getDistanceUnitRatio())} ${getDistanceUnit()}`;
   }
 
   private findLandPath(from: number, to: number, avoidRoads = false): PathfindingResult {

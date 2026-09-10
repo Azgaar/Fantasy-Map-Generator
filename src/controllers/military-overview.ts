@@ -1,5 +1,6 @@
 import { interpolateString, select, sum } from "d3";
 import { closeDialogs, updateDialog } from "@/components/dialog/dialog-helpers";
+import { fitContent } from "@/components/dialog/fit-content";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
@@ -14,6 +15,7 @@ import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { State } from "@/generators/states-generator";
+import type { MilitaryUnit } from "@/types/Military";
 import { downloadFile, getFileName, isImageIcon } from "@/utils";
 import { capitalize, ensureEl, rn, sanitizeId, si, wiki } from "../utils";
 
@@ -138,7 +140,7 @@ async function openRegimentsOverview(state: number): Promise<void> {
 }
 
 function getMilitaryColumns(): EditorColumn<MilitaryRow>[] {
-  const unitColumns: EditorColumn<MilitaryRow>[] = options.military.map(unit => ({
+  const unitColumns: EditorColumn<MilitaryRow>[] = options.map.military.units.map(unit => ({
     key: `unit:${unit.name}`,
     label: capitalize(unit.name.replace(/_/g, " ")),
     width: "5em",
@@ -181,7 +183,7 @@ function getMilitaryColumns(): EditorColumn<MilitaryRow>[] {
       sortBy: row => row.alert,
       tip: "War Alert. Modifier to military forces number, depends on political situation. Click to sort"
     },
-    { key: "actions", width: "1.4em", permanent: true, align: "right" }
+    { key: "regiments", width: "1.4em", permanent: true }
   ];
 }
 
@@ -206,13 +208,16 @@ function getMilitaryData(): MilitaryRow[] {
     .filter(state => state.i && !state.removed)
     .map(state => {
       const forces = Object.fromEntries(
-        options.military.map(unit => [
+        options.map.military.units.map(unit => [
           unit.name,
           (state.military || []).reduce((total, regiment) => total + (regiment.u[unit.name] || 0), 0)
         ])
       );
-      const population = rn(((state.rural || 0) + (state.urban || 0) * urbanization) * populationRate);
-      const total = options.military.reduce((sum, unit) => sum + (forces[unit.name] || 0) * unit.crew, 0);
+      const population = rn(
+        ((state.rural || 0) + (state.urban || 0) * options.map.units.population.urbanization.rate) *
+          options.map.units.population.scale
+      );
+      const total = options.map.military.units.reduce((sum, unit) => sum + (forces[unit.name] || 0) * unit.crew, 0);
       return {
         state,
         forces,
@@ -236,7 +241,7 @@ function renderMilitaryPage(view: TableView<MilitaryRow>): void {
     (result, row) => {
       result.total += row.total;
       result.population += row.population;
-      for (const unit of options.military)
+      for (const unit of options.map.military.units)
         result.units[unit.name] = (result.units[unit.name] || 0) + row.forces[unit.name];
       return result;
     },
@@ -245,7 +250,7 @@ function renderMilitaryPage(view: TableView<MilitaryRow>): void {
   const percent = (value: number, total: number) => `${rn(total ? (value / total) * 100 : 0)}%`;
   const lines = view.rows
     .map(row => {
-      const unitCells = options.military
+      const unitCells = options.map.military.units
         .map(unit => {
           const value = row.forces[unit.name] || 0;
           return `<div data-col="${`unit:${unit.name}`}" data-tip="State ${unit.name} units number">${percentage ? percent(value, totals.units[unit.name] || 0) : value}</div>`;
@@ -259,7 +264,7 @@ function renderMilitaryPage(view: TableView<MilitaryRow>): void {
         <div data-col="population" data-tip="State population">${percentage ? percent(row.population, totals.population) : si(row.population)}</div>
         <div data-col="rate" data-tip="Military personnel rate (% of state population). Depends on war alert">${rn(row.rate, 2)}%</div>
         <input data-col="alert" data-tip="War Alert. Editable modifier to military forces number, depends on political situation" type="number" min="0" step=".01" value="${rn(row.alert, 2)}" />
-        <div data-col="actions"><span data-tip="Show regiments list" class="icon-list-bullet pointer"></span></div>
+        <span data-col="regiments" data-tip="Show regiments list" class="icon-list-bullet pointer"></span>
       </div>`;
     })
     .join("");
@@ -358,7 +363,7 @@ function militaryCustomize(): void {
   const types = ["melee", "ranged", "mounted", "machinery", "naval", "armored", "aviation", "magical"];
   const tableBody = ensureEl("militaryOptions").querySelector("tbody")!;
   removeUnitLines();
-  options.military.map(unit => addUnitLine(unit));
+  options.map.military.units.map(unit => addUnitLine(unit));
 
   $("#militaryOptions").dialog({
     title: "Edit Military Units",
@@ -573,7 +578,7 @@ function militaryCustomize(): void {
 
     $("#militaryOptions").dialog("close");
 
-    options.military = unitLines.map((r, i) => {
+    const units = unitLines.map((r, i) => {
       const elements = Array.from(
         r.querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>("input, button, select")
       );
@@ -616,8 +621,10 @@ function militaryCustomize(): void {
       if (religions) unit.religions = religions;
       return unit;
     });
-    localStorage.setItem("military", JSON.stringify(options.military));
+    options.map.military.units = units;
+    Options.save(); // the roster is this map's, and what the next map starts from
     Military.generate();
+    Layers.draw("military");
     rebuildMilitaryColumns();
   }
 }
@@ -678,7 +685,7 @@ function militaryRecalculate(): void {
 }
 
 function downloadMilitaryData(): void {
-  const units = options.military.map(u => u.name);
+  const units = options.map.military.units.map(u => u.name);
   let data = `Id,State,${units.map(u => capitalize(u)).join(",")},Total,Population,Rate,War Alert\n`; // headers
 
   for (const row of getMilitaryData()) {

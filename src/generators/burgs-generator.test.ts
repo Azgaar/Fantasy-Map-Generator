@@ -126,9 +126,8 @@ describe("definePopulation for flying burgs", () => {
   const makeFlying = (over: any = {}) => ({ i: 7, cell: 13, flying: 1, ...over }) as any;
 
   it("never drops below 100 people at default rates", () => {
-    const g = globalThis as any;
-    g.populationRate = 1000;
-    g.urbanization = 1;
+    options.map.units.population.scale = 1000;
+    options.map.units.population.urbanization.rate = 1;
     for (let n = 0; n < 200; n++) {
       const burg = makeFlying({ i: n + 1, cell: (n * 37) % 100 });
       (Burgs as any).definePopulation(burg);
@@ -137,21 +136,19 @@ describe("definePopulation for flying burgs", () => {
   });
 
   it("holds the 100-person floor when urbanization shrinks people-per-unit", () => {
-    const g = globalThis as any;
-    g.populationRate = 1000;
-    g.urbanization = 0.2; // people = units * 200 — old 0.1-unit floor would mean 20 people
+    options.map.units.population.scale = 1000;
+    options.map.units.population.urbanization.rate = 0.2; // people = units * 200 — old 0.1-unit floor would mean 20 people
     for (let n = 0; n < 200; n++) {
       const burg = makeFlying({ i: n + 1, cell: (n * 37) % 100 });
       (Burgs as any).definePopulation(burg);
       expect(burg.population * 1000 * 0.2).toBeGreaterThanOrEqual(100 - 0.5); // rn() rounds to 3 decimals
     }
-    g.urbanization = 1;
+    options.map.units.population.urbanization.rate = 1;
   });
 
   it("gives the sky capital 2-6 units (~2k-6k people)", () => {
-    const g = globalThis as any;
-    g.populationRate = 1000;
-    g.urbanization = 1;
+    options.map.units.population.scale = 1000;
+    options.map.units.population.urbanization.rate = 1;
     for (let n = 0; n < 50; n++) {
       const burg = makeFlying({ i: n + 1, cell: (n * 37) % 100, capital: 1 });
       (Burgs as any).definePopulation(burg);
@@ -685,7 +682,7 @@ describe("ensureBurgGroupStyles", () => {
     await import("./burgs-generator");
     const Burgs = (globalThis as any).Burgs;
 
-    (globalThis as any).options = { burgs: { groups: [{ name: "town" }, { name: "fortresses" }] } };
+    options.map.burgs.groups = [{ name: "town" }, { name: "fortresses" }] as never;
     const town = { attrs: { fill: "#aaa" }, options: { size: 1, icon: "#icon-burg" } };
     const townAnchor = { attrs: { fill: "#bbb" }, options: { size: 2 } };
     (globalThis as any).styles = {

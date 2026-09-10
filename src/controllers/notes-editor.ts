@@ -1,9 +1,12 @@
 import type Quill from "quill";
 import { confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
+import { viewport } from "@/components/viewport";
+import { Controllers } from "@/controllers";
+import { NOTE_ENTITY_TYPES, type NoteEntry, type NoteRef, Notes } from "@/generators/notes";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName, speak, uploadFile } from "@/utils";
-import { ensureEl } from "../utils";
+import { ensureEl, findEl } from "../utils";
 import {
   canEditAsRichText,
   createRichTextEditor,
@@ -13,6 +16,7 @@ import {
   TOOLBAR_HTML
 } from "./notes-rich-text";
 
+/** A note as the assistant bridge sees it: the note key, the entity name and the html */
 export interface Note {
   id: string;
   name: string;
@@ -20,57 +24,133 @@ export interface Note {
 }
 
 let quill: Quill | null = null;
-let windowed: { width: number; height: number; position: unknown } | null = null;
+let windowed: { width: number; height: number; top: string; left: string } | null = null;
+let uploadBound = false;
 
-function open(id?: string, name?: string): void {
+/** Open the editor on the given entity, or on the first note when called with no reference */
+function open(ref?: NoteRef): void {
   renderDialog();
 
-  const notesName = ensureEl<HTMLInputElement>("notesName");
   const notesSelect = ensureEl<HTMLSelectElement>("notesSelect");
   const notesPin = ensureEl("notesPin");
 
-  const notesList = notes as Note[];
+  const entries = Notes.list();
+  fillSelect(notesSelect, entries, ref);
 
-  // update list of objects
-  notesList.forEach(note => {
-    notesSelect.options.add(new Option(note.id, note.id));
-  });
-
-  // update pin notes icon
-  if (options.pinNotes) notesPin.classList.add("pressed");
+  if (options.app.notesPinned) notesPin.classList.add("pressed");
   else notesPin.classList.remove("pressed");
 
-  quill = createRichTextEditor(ensureEl("notesLegend"), ensureEl("notesToolbar"), updateLegend);
+  quill = createRichTextEditor(
+    ensureEl("notesLegend"),
+    ensureEl("notesToolbar"),
+    updateLegend,
+    fonts.map(font => font.family)
+  );
 
-  // select an object
-  if (notesList.length || id) {
-    if (!id) id = notesList[0].id;
-    let note = notesList.find(note => note.id === id);
-    if (!note) {
-      if (!name) name = id;
-      note = { id, name, legend: "" };
-      notesList.push(note);
-      notesSelect.options.add(new Option(id, id));
-    }
-
-    notesSelect.value = id;
-    notesName.value = note.name;
-    loadNote(note);
-    updateNotesBox(note);
+  const selected = ref || entries[0]?.ref;
+  if (selected) {
+    notesSelect.value = Notes.key(selected);
+    showNote(selected);
   } else {
-    // if notes array is empty: the editor placeholder explains what to do
-    notesName.value = "";
+    ensureEl("notesName").textContent = "";
+    quill.root.dataset.placeholder =
+      "No notes yet. Click a burg, marker, state or other element on the map and add a note from its editor";
     quill.disable();
   }
 
   $("#notesEditor").dialog({
     title: "Notes Editor",
-    width: svgWidth * 0.8,
-    height: svgHeight * 0.75,
+    width: viewport.width * 0.8,
+    height: viewport.height * 0.75,
     position: { my: "center", at: "center", of: "svg" },
     close: closeNotesEditor
   });
 }
+
+/** Notes grouped by entity type, plus the requested entity when it has no note yet */
+function fillSelect(select: HTMLSelectElement, entries: NoteEntry[], ref?: NoteRef): void {
+  select.innerHTML = "";
+
+  const requestedKey = ref && Notes.key(ref);
+  const listed = new Set(entries.map(entry => entry.key));
+
+  for (const type of NOTE_ENTITY_TYPES) {
+    const typeEntries = entries.filter(entry => entry.ref.type === type);
+    if (ref?.type === type && requestedKey && !listed.has(requestedKey))
+      typeEntries.unshift({ ref, key: requestedKey, label: Notes.getEntityName(ref) || requestedKey, note: "" });
+    if (!typeEntries.length) continue;
+
+    const group = document.createElement("optgroup");
+    group.label = Notes.getTypeLabel(type);
+    for (const entry of typeEntries) group.append(new Option(entry.label, entry.key));
+    select.append(group);
+  }
+}
+
+const STYLES = /* html */ `
+    <style>
+      /* jQuery UI sets the dialog content height inline; the layout column fills it, the editor takes the rest */
+      #notesLayout { display: flex; flex-direction: column; height: 100%; width: auto; }
+      #notesHead { display: flex; align-items: center; gap: 0.4em; flex-shrink: 0; margin-bottom: 5px; }
+      #notesHead select { flex: 0 1 12em; min-width: 5em; }
+      #notesHead input { flex: 0 1 18em; min-width: 5em; }
+      #notesFooter { display: flex; gap: 3px; flex-shrink: 0; margin-top: 5px; }
+      #notesToolbar { display: flex; flex-wrap: wrap; align-items: center; flex-shrink: 0; gap: 2px 9px; padding: 4px 6px; background: #f6f5f8; border-radius: 3px 3px 0 0; }
+      #notesToolbar[hidden] { display: none; }
+      /* nothing to format while no note is selected */
+      #notesToolbar:has(+ #notesLegend.ql-disabled) { opacity: 0.45; pointer-events: none; }
+      #notesToolbar .ql-formats { display: flex; align-items: center; flex-shrink: 0; margin: 0; }
+      #notesToolbar button, #notesToolbar .ql-color-picker, #notesToolbar .ql-icon-picker { width: 26px; height: 26px; }
+      #notesToolbar button { padding: 4px; border-radius: 4px; transition: background-color 0.1s; }
+      #notesToolbar .ql-picker { height: 26px; color: #333; }
+      #notesToolbar .ql-picker-label { border-radius: 4px; }
+      #notesToolbar button:hover, #notesToolbar .ql-picker-label:hover, #notesToolbar .ql-expanded .ql-picker-label { background: #ece9f3; }
+      #notesToolbar button.ql-active, #notesToolbar .ql-picker-label.ql-active { background: #e0d9f0; box-shadow: inset 0 0 0 1px #c4b8e0; }
+      /* Quill tints hover and active blue, which fights the app's violet accent */
+      #notesToolbar :is(button:hover, button.ql-active, .ql-picker-label:hover, .ql-active) .ql-stroke { stroke: #5e4fa2; }
+      #notesToolbar :is(button:hover, button.ql-active, .ql-picker-label:hover, .ql-active) .ql-fill { fill: #5e4fa2; }
+      #notesToolbar button:focus-visible, #notesToolbar .ql-picker-label:focus-visible { outline: 2px solid #5e4fa2; outline-offset: -2px; }
+      #notesToolbar .ql-symbol, #notesToolbar .ql-divider { font-size: 17px; line-height: 17px; color: #444; }
+      #notesToolbar :is(.ql-symbol, .ql-divider):hover { color: #5e4fa2; }
+      #notesToolbar .ql-font { width: 112px; margin-right: 3px; }
+      #notesToolbar .ql-size { width: 76px; }
+      /* Quill previews each size by its own name, which the inline-style values are not */
+      #notesToolbar .ql-size .ql-picker-item[data-value="10px"]::before { font-size: 10px; }
+      #notesToolbar .ql-size .ql-picker-item[data-value="18px"]::before { font-size: 18px; }
+      #notesToolbar .ql-size .ql-picker-item[data-value="32px"]::before { font-size: 32px; }
+      #notesToolbar .notes-table { width: 68px; }
+      #notesToolbar :is(.ql-font, .ql-size, .notes-table) .ql-picker-label { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding-right: 18px; font-weight: 400; background: white; border: 1px solid #dedbe2; }
+      #notesToolbar .ql-font .ql-picker-label::before, #notesToolbar .ql-font .ql-picker-item::before, #notesToolbar .notes-table .ql-picker-label::before, #notesToolbar .notes-table .ql-picker-item::before { content: attr(data-label); }
+      /* Fixed menus escape the dialog's own scroll box */
+      #notesToolbar .ql-picker-options { position: fixed; /* Quill sizes the menu with min-width: 100%, which once fixed is 100% of the viewport */
+        min-width: 0; z-index: 2000; max-height: 45vh; overflow-y: auto; margin-top: 3px; padding: 4px; border-radius: 4px; box-shadow: 0 4px 14px #00000026; }
+      #notesToolbar .ql-picker-item { border-radius: 3px; }
+      #notesToolbar .ql-picker-item:hover { background: #ece9f3; }
+      #notesToolbar .ql-font .ql-picker-options, #notesToolbar .notes-table .ql-picker-options { min-width: 180px; }
+      .notes-symbols { margin: 0; padding: 6px; width: 340px; max-width: calc(100vw - 24px); max-height: 40vh; overflow: auto; background: white; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 4px 14px #00000026; }
+      .notes-symbols:popover-open { display: grid; grid-template-columns: repeat(auto-fill, minmax(28px, 1fr)); gap: 2px; }
+      #notesLayout .notes-symbols button { margin: 0; min-height: 28px; padding: 2px; font-size: 18px; background: white; border: 0; border-radius: 3px; }
+      .notes-symbols button:hover, .notes-symbols button:focus-visible { background: #ece9f3; }
+      #notesLegend, #notesSource { flex: 1; min-height: 0; background-color: #fff; }
+      #notesLegend { border-radius: 0 0 3px 3px; }
+      /* the editing surface should read like the note itself, not like a form field */
+      #notesLegend .ql-editor { padding: 12px 16px; font-family: var(--sans-serif); font-size: 14px; line-height: 1.55; color: #1c1c1c; }
+      #notesLegend .ql-editor p { margin-bottom: 0.35em; }
+      #notesLegend .ql-editor hr { margin: 0.8em 0; border: 0; border-top: 1px solid #c9c5d0; }
+      #notesLegend .ql-editor blockquote { color: #444; }
+      #notesLegend .ql-editor.ql-blank::before { left: 16px; right: 16px; color: #9a96a3; font-style: italic; }
+      /* the link box: Quill's is a bare white strip with blue text links for Edit and Remove */
+      #notesLegend .ql-tooltip { z-index: 3; padding: 6px 10px; color: #333; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 4px 14px #00000026; }
+      #notesLegend .ql-tooltip::before { content: "Link:"; margin-right: 8px; color: #77737f; }
+      #notesLegend .ql-tooltip[data-mode="link"]::before { content: "Enter link:"; }
+      #notesLegend .ql-tooltip input[type="text"] { width: 17em; max-width: 50vw; height: 26px; padding: 3px 6px; border: 1px solid #dedbe2; border-radius: 3px; }
+      #notesLegend .ql-tooltip input[type="text"]:focus { outline: 2px solid #5e4fa2; outline-offset: -2px; }
+      #notesLegend .ql-tooltip a { color: #5e4fa2; }
+      #notesLegend .ql-tooltip a.ql-preview { max-width: 22em; }
+      #notesLegend .ql-tooltip a.ql-action::after, #notesLegend .ql-tooltip a.ql-remove::before { margin-left: 8px; padding: 2px 6px; border: 0; border-radius: 3px; }
+      #notesLegend .ql-tooltip a:hover::after, #notesLegend .ql-tooltip a:hover::before { background: #ece9f3; }
+      #notesSource { padding: 10px 12px; font-family: var(--monospace); font-size: 13px; line-height: 1.5; border: 1px solid #ccc; border-radius: 3px; resize: none; }
+    </style>`;
 
 function renderDialog(): void {
   destroyDialog("notesEditor");
@@ -78,45 +158,34 @@ function renderDialog(): void {
   windowed = null;
 
   const editorHtml = /* html */ `<div id="notesEditor" class="dialog stable">
+    ${STYLES}
     <div id="notesLayout">
-      <div style="margin-bottom: 0.3em">
-        <strong>Element: </strong>
-        <select id="notesSelect" data-tip="Select element id" style="width: 12em"></select>
-        <strong>Element name: </strong>
-        <input id="notesName" data-tip="Set element name" autocorrect="off" spellcheck="false" style="width: 16em" />
+      <div id="notesHead">
+        <strong>Element:</strong>
+        <select id="notesSelect" data-tip="Select the element the note belongs to"></select>
+        <strong id="notesName" data-tip="The element name, edited in the element's own editor"></strong>
         <span id="notesNameSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
       </div>
       ${TOOLBAR_HTML}
       <div id="notesLegend"></div>
       <textarea id="notesSource" hidden spellcheck="false"></textarea>
-      <div style="margin-top: 0.3em">
+      <div id="notesFooter">
         <button id="notesFocus" data-tip="Focus on selected object" class="icon-target"></button>
         <button id="notesGenerateWithAi" data-tip="Ask the assistant to write or rewrite this note" class="icon-robot"></button>
         <button id="notesPin" data-tip="Toggle notes box display: hide or do not hide the box on mouse move" class="icon-pin"></button>
-        <select id="notesTable" data-tip="Insert a table or edit the one under the cursor">
-          <option value="">Table</option>
-          <option value="insert">Insert table</option>
-          <option value="row-above">Add row above</option>
-          <option value="row-below">Add row below</option>
-          <option value="column-left">Add column left</option>
-          <option value="column-right">Add column right</option>
-          <option value="delete-row">Delete row</option>
-          <option value="delete-column">Delete column</option>
-          <option value="delete-table">Delete table</option>
-        </select>
         <button id="notesSourceToggle" data-tip="Edit the note as HTML" class="icon-edit"></button>
         <button id="notesFullscreen" data-tip="Toggle fullscreen" class="icon-resize-full"></button>
         <button id="notesDownload" data-tip="Download notes to PC" class="icon-download"></button>
         <button id="notesUpload" data-tip="Upload notes from PC" class="icon-upload"></button>
         <button id="notesRemove" data-tip="Remove this note" class="icon-trash fastDelete"></button>
       </div>
-    </div>`;
+    </div>
+  </div>`;
 
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
 
   ensureEl<HTMLSelectElement>("notesSelect").addEventListener("change", changeElement);
-  ensureEl<HTMLInputElement>("notesName").addEventListener("input", changeName);
-  ensureEl("notesNameSpeak").addEventListener("click", () => speak(ensureEl<HTMLInputElement>("notesName").value));
+  ensureEl("notesNameSpeak").addEventListener("click", () => speak(ensureEl("notesName").textContent || ""));
   ensureEl<HTMLTextAreaElement>("notesSource").addEventListener("input", updateLegend);
   ensureEl<HTMLSelectElement>("notesTable").addEventListener("change", applyTableAction);
   ensureEl("notesSourceToggle").addEventListener("click", toggleSourceMode);
@@ -126,10 +195,15 @@ function renderDialog(): void {
   ensureEl("notesGenerateWithAi").addEventListener("click", () => void Controllers.HelpAssistant.open({ mode: "map" }));
   ensureEl("notesDownload").addEventListener("click", downloadLegends);
   ensureEl("notesUpload").addEventListener("click", () => ensureEl("legendsToLoad").click());
-  ensureEl<HTMLInputElement>("legendsToLoad").addEventListener("change", function (this: HTMLInputElement) {
-    uploadFile(this, uploadLegends);
-  });
   ensureEl("notesRemove").addEventListener("click", triggerNotesRemove);
+
+  // the file input lives in the page, not in the dialog, so it outlives every render and is bound once
+  if (!uploadBound) {
+    uploadBound = true;
+    ensureEl<HTMLInputElement>("legendsToLoad").addEventListener("change", function (this: HTMLInputElement) {
+      uploadFile(this, uploadLegends);
+    });
+  }
 }
 
 function closeNotesEditor(): void {
@@ -138,20 +212,25 @@ function closeNotesEditor(): void {
   ensureEl("notesEditor").remove();
 }
 
-function selectedNote(): Note | undefined {
-  const notesSelect = ensureEl<HTMLSelectElement>("notesSelect");
-  const note = (notes as Note[]).find(note => note.id === notesSelect.value);
-  if (!note) tip("Note element is not found", true, "error", 4000);
-  return note;
+function selectedRef(): NoteRef | undefined {
+  const ref = Notes.parseKey(ensureEl<HTMLSelectElement>("notesSelect").value);
+  if (!ref) tip("Note element is not found", true, "error", 4000);
+  return ref;
 }
 
-// a note whose markup Quill would rewrite (the dungeon marker's iframe, a legacy hr) is edited as HTML
-function loadNote(note: Note): void {
+function showNote(ref: NoteRef): void {
+  ensureEl("notesName").textContent = Notes.getEntityName(ref);
+  loadNote(Notes.get(ref) || "");
+  updateNotesBox(ref);
+}
+
+// A note whose markup Quill would rewrite (such as a dungeon iframe) is edited as HTML.
+function loadNote(note: string): void {
   if (!quill) return;
   quill.enable();
-  const rich = canEditAsRichText(note.legend);
-  if (rich) setEditorHtml(quill, note.legend);
-  else ensureEl<HTMLTextAreaElement>("notesSource").value = note.legend;
+  const rich = canEditAsRichText(note);
+  if (rich) setEditorHtml(quill, note);
+  else ensureEl<HTMLTextAreaElement>("notesSource").value = note;
   setSourceMode(!rich);
 }
 
@@ -159,17 +238,16 @@ function setSourceMode(raw: boolean): void {
   ensureEl("notesToolbar").hidden = raw;
   ensureEl("notesLegend").hidden = raw;
   ensureEl("notesSource").hidden = !raw;
-  ensureEl<HTMLSelectElement>("notesTable").disabled = raw;
   ensureEl("notesSourceToggle").classList.toggle("pressed", raw);
 }
 
 function toggleSourceMode(): void {
-  const note = selectedNote();
-  if (!note || !quill) return;
+  const ref = selectedRef();
+  if (!ref || !quill) return;
 
   const source = ensureEl<HTMLTextAreaElement>("notesSource");
   if (source.hidden) {
-    source.value = note.legend;
+    source.value = Notes.get(ref) || "";
     setSourceMode(true);
   } else if (canEditAsRichText(source.value)) {
     setEditorHtml(quill, source.value);
@@ -180,91 +258,172 @@ function toggleSourceMode(): void {
 }
 
 function applyTableAction(this: HTMLSelectElement): void {
-  if (quill && this.value) runTableAction(quill, this.value);
+  const action = this.value;
+  if (!action) return; // the reset below re-enters through the event Quill's picker listens for
+
+  if (quill) runTableAction(quill, action);
   this.value = "";
+  this.dispatchEvent(new Event("change")); // Quill's picker only syncs its label from a change event
 }
 
+// the restored position is read off the widget: a position saved between sessions is applied as css and
+// never reaches the dialog's own position option, which still holds the hard-coded one from open()
 function toggleFullscreen(): void {
   const dialog = $("#notesEditor");
+  const widget = dialog.dialog("widget");
+
   if (windowed) {
     dialog.dialog("option", "width", windowed.width);
     dialog.dialog("option", "height", windowed.height);
-    dialog.dialog("option", "position", windowed.position);
+    widget.css({ top: windowed.top, left: windowed.left });
     windowed = null;
   } else {
     windowed = {
       width: dialog.dialog("option", "width"),
       height: dialog.dialog("option", "height"),
-      position: dialog.dialog("option", "position")
+      top: widget.css("top"),
+      left: widget.css("left")
     };
     dialog.dialog("option", "width", window.innerWidth);
     dialog.dialog("option", "height", window.innerHeight);
-    dialog.dialog("option", "position", { my: "left top", at: "left top", of: window });
+    widget.css({ top: 0, left: 0 });
   }
   ensureEl("notesFullscreen").classList.toggle("pressed", Boolean(windowed));
 }
 
 function updateLegend(): void {
-  const note = selectedNote();
-  if (!note || !quill) return;
+  const ref = selectedRef();
+  if (!ref || !quill) return;
 
   const source = ensureEl<HTMLTextAreaElement>("notesSource");
-  note.legend = source.hidden ? getEditorHtml(quill) : source.value;
-  updateNotesBox(note);
+  Notes.set(ref, source.hidden ? getEditorHtml(quill) : source.value);
+  updateNotesBox(ref);
 }
 
-function updateNotesBox(note: Note): void {
-  ensureEl("notesHeader").innerHTML = note.name;
-  ensureEl("notesBody").innerHTML = note.legend;
+function updateNotesBox(ref: NoteRef): void {
+  ensureEl("notesHeader").textContent = Notes.getEntityName(ref); // plain text: an & in a name is not an entity
+  ensureEl("notesBody").innerHTML = Notes.get(ref) || "";
 }
 
 function changeElement(): void {
-  const note = selectedNote();
-  if (!note) return;
-
-  ensureEl<HTMLInputElement>("notesName").value = note.name;
-  loadNote(note);
-  updateNotesBox(note);
-}
-
-function changeName(this: HTMLInputElement): void {
-  const note = selectedNote();
-  if (note) note.name = this.value;
+  const ref = selectedRef();
+  if (ref) showNote(ref);
 }
 
 function validateHighlightElement(): void {
-  const notesSelect = ensureEl<HTMLSelectElement>("notesSelect");
-  const element = document.getElementById(notesSelect.value);
-  if (element) {
-    highlightElement(element, 3);
+  const ref = selectedRef();
+  if (!ref) return;
+
+  if (!Notes.exists(ref)) {
+    confirmationDialog({
+      title: "Element not found",
+      message: "Note element is not found. Would you like to remove the note?",
+      confirm: "Remove",
+      onConfirm: removeSelectedNote
+    });
     return;
   }
 
-  confirmationDialog({
-    title: "Element not found",
-    message: "Note element is not found. Would you like to remove the note?",
-    confirm: "Remove",
-    onConfirm: removeSelectedNote
-  });
+  // the viewport renderers hold only what is on screen, so an off-screen element is not in the dom
+  const elementId = Notes.getElementId(ref);
+  const element = elementId ? findEl(elementId) : null;
+  if (element) return void highlightElement(element, 3);
+
+  const position = Notes.getPosition(ref);
+  if (position) return void zoomTo(position[0], position[1], 8, 1600);
+
+  tip("This element is not drawn on the map on its own", false, "warn", 4000);
 }
 
 function removeSelectedNote(): void {
-  remove(ensureEl<HTMLSelectElement>("notesSelect").value);
+  const ref = selectedRef();
+  if (ref) remove(Notes.key(ref));
 }
 
+const CSV_HEADER = "type,id,note";
+
+function csvCell(value: string): string {
+  return `"${value.replaceAll('"', '""')}"`;
+}
+
+/** Notes are exchanged as csv addressed by entity, so an uploaded note always has an owner */
 function downloadLegends(): void {
-  const notesData = JSON.stringify(notes);
-  const name = `${getFileName("Notes")}.txt`;
-  downloadFile(notesData, name);
+  const rows = Notes.list().map(entry => {
+    const id = entry.ref.sub === undefined ? String(entry.ref.id) : `${entry.ref.id}-${entry.ref.sub}`;
+    return [entry.ref.type, id, csvCell(entry.note)].join(",");
+  });
+
+  downloadFile([CSV_HEADER, ...rows].join("\n"), `${getFileName("Notes")}.csv`);
 }
 
 function uploadLegends(dataLoaded: string): void {
-  if (!dataLoaded) {
+  const rows = parseCsv(dataLoaded);
+  if (!rows) {
     tip("Cannot load the file. Please check the data format", false, "error");
     return;
   }
-  notes = JSON.parse(dataLoaded);
-  open((notes as Note[])[0].id, (notes as Note[])[0].name);
+
+  let applied = 0;
+  let rejected = 0;
+  for (const [type, id, note] of rows) {
+    const ref = Notes.parseKey(`${type}:${id}`);
+    if (ref && Notes.set(ref, note)) applied++;
+    else rejected++;
+  }
+
+  if (!applied) {
+    tip("No note matched an element on this map. Nothing was loaded", false, "error", 6000);
+    return;
+  }
+
+  const rejectedText = rejected ? `, ${rejected} skipped as their element is not on the map` : "";
+  tip(`Loaded ${applied} note(s)${rejectedText}`, true, "success", 6000);
+
+  const [first] = Notes.list();
+  if (first) open(first.ref);
+}
+
+/** Minimal csv reader: three columns, the last one quoted and free to contain commas and newlines */
+function parseCsv(data: string): [string, string, string][] | null {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let cell = "";
+  let quoted = false;
+
+  for (let i = 0; i < data.length; i++) {
+    const char = data[i];
+
+    if (quoted) {
+      if (char !== '"') cell += char;
+      else if (data[i + 1] === '"') {
+        cell += '"';
+        i++;
+      } else quoted = false;
+      continue;
+    }
+
+    if (char === '"') quoted = true;
+    else if (char === ",") {
+      row.push(cell);
+      cell = "";
+    } else if (char === "\n" || char === "\r") {
+      if (char === "\r" && data[i + 1] === "\n") i++;
+      row.push(cell);
+      rows.push(row);
+      row = [];
+      cell = "";
+    } else cell += char;
+  }
+  row.push(cell);
+  if (row.length > 1 || row[0]) rows.push(row);
+
+  const parsed = rows
+    .filter(parsedRow => parsedRow.length >= 3 && parsedRow[0] !== "type")
+    .map(
+      parsedRow => [parsedRow[0].trim(), parsedRow[1].trim(), parsedRow.slice(2).join(",")] as [string, string, string]
+    );
+
+  return parsed.length ? parsed : null;
 }
 
 function triggerNotesRemove(): void {
@@ -277,49 +436,63 @@ function triggerNotesRemove(): void {
 }
 
 function toggleNotesPin(this: HTMLElement): void {
-  options.pinNotes = !options.pinNotes;
+  Options.set(o => (o.app.notesPinned = !o.app.notesPinned));
   this.classList.toggle("pressed");
 }
 
 // Bridge for the assistant (help-assistant-notes.ts): read the note on screen, write notes so an
-// open editor stays in sync, and remove what an undo has to take back
+// open editor stays in sync, and remove what an undo has to take back. An id is a note key
+// ("burg:12") or the svg element id the assistant knows an entity by ("burg12", "marker3")
 
 const isOpen = (): boolean => document.getElementById("notesEditor") !== null;
 
+const resolveId = (id: string): NoteRef | undefined => Notes.parseKey(id) ?? Notes.resolveElement(id);
+
+const toNote = (ref: NoteRef): Note => ({
+  id: Notes.key(ref),
+  name: Notes.getEntityName(ref),
+  legend: Notes.get(ref) || ""
+});
+
 function current(): Note | null {
   if (!isOpen()) return null;
-  const id = ensureEl<HTMLSelectElement>("notesSelect").value;
-  return (notes as Note[]).find(note => note.id === id) ?? null;
+  const ref = Notes.parseKey(ensureEl<HTMLSelectElement>("notesSelect").value);
+  return ref ? toNote(ref) : null;
 }
 
-function write(id: string, legend: string, name?: string): Note {
-  const list = notes as Note[];
-  let note = list.find(note => note.id === id);
-  if (note) {
-    note.legend = legend;
-    if (name !== undefined) note.name = name;
-  } else {
-    note = { id, name: name ?? id, legend };
-    list.push(note);
-    if (isOpen()) ensureEl<HTMLSelectElement>("notesSelect").options.add(new Option(id, id));
+// The entity owns its name, so the name argument of the old contract is accepted and ignored.
+// Null when the entity is not on the map: a note has nothing to live on then
+function write(id: string, legend: string, _name?: string): Note | null {
+  const ref = resolveId(id);
+  if (!ref || !Notes.set(ref, legend)) return null;
+
+  if (isOpen()) {
+    const select = ensureEl<HTMLSelectElement>("notesSelect");
+    const selected = select.value;
+    fillSelect(select, Notes.list(), Notes.parseKey(selected));
+    select.value = selected;
+    if (selected === Notes.key(ref)) {
+      loadNote(legend); // silent Quill load or the raw textarea, by representability — the AI-apply path
+      updateNotesBox(ref);
+    }
   }
-  if (current()?.id === id) {
-    ensureEl<HTMLInputElement>("notesName").value = note.name;
-    loadNote(note); // silent Quill load or the raw textarea, by representability — the AI-apply path
-    updateNotesBox(note);
-  }
-  return note;
+  return toNote(ref);
 }
 
 function remove(id: string): void {
-  const wasCurrent = current()?.id === id;
-  notes = (notes as Note[]).filter(note => note.id !== id);
+  const ref = resolveId(id);
+  if (!ref) return;
+
+  const wasCurrent = current()?.id === Notes.key(ref);
+  Notes.remove(ref);
   if (!wasCurrent) return;
-  if (!notes.length) {
+
+  const [first] = Notes.list();
+  if (!first) {
     $("#notesEditor").dialog("close");
     return;
   }
-  open((notes as Note[])[0].id, (notes as Note[])[0].name);
+  open(first.ref);
 }
 
 // The Quill selection as self-contained HTML; nothing in raw-HTML mode or when the editor is closed

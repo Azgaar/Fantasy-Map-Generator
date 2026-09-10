@@ -17,7 +17,7 @@ import {
   stackOrderNone,
   sum
 } from "d3";
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, updateDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { downloadFile, getArea, getAreaUnit, getFileName, getHeight, getPrecipitation } from "@/utils";
 import { capitalize, convertTemperature, ensureEl, formatPrice, isWater, rn, si } from "../utils";
@@ -356,7 +356,7 @@ const plotTypeMap: Record<
 };
 
 let charts: ChartOptions[] = [];
-let prevMapId: number | undefined;
+let chartedMap: number | undefined; // the map the charts were built for, by its creation stamp
 function open() {
   renderDialog();
   changeViewColumns();
@@ -364,9 +364,10 @@ function open() {
 
   closeDialogs("#chartsOverview, .stable");
 
-  if (prevMapId !== mapId) {
+  const currentMap = mapHistory.at(-1)?.created;
+  if (chartedMap !== currentMap) {
     charts = [];
-    prevMapId = mapId;
+    chartedMap = currentMap;
   }
 
   if (!charts.length) addChart();
@@ -896,7 +897,7 @@ function changeViewColumns() {
 }
 
 function updateDialogPosition() {
-  $("#chartsOverview").dialog({ position: { my: "center", at: "center", of: "svg" } });
+  updateDialog("chartsOverview", { position: { my: "center", at: "center", of: "svg", collision: "fit" } });
 }
 
 function handleClose() {
@@ -976,11 +977,11 @@ function getUrbanPopulation(cellId: number): number {
   const burgId = pack.cells.burg[cellId];
   if (!burgId) return 0;
   const populationPoints = pack.burgs[burgId].population || 0;
-  return populationPoints * populationRate * urbanization;
+  return populationPoints * options.map.units.population.scale * options.map.units.population.urbanization.rate;
 }
 
 function getRuralPopulation(cellId: number): number {
-  return pack.cells.pop[cellId] * populationRate;
+  return pack.cells.pop[cellId] * options.map.units.population.scale;
 }
 
 function sortData(data: ChartDatum[], sorting: string): ChartDatum[] {

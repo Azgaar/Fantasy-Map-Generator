@@ -102,7 +102,7 @@ const layersBranch = (): WheelNode =>
 // Every row is claimed exactly once - a test enforces the partition, so it cannot silently rot.
 
 export const OPTION_GROUPS = [
-  { label: "World", icon: "icon-globe", rows: ["mapWidthInput", "pointsInput", "templateInput", "optionsSeed"] },
+  { label: "World", icon: "icon-globe", rows: ["mapWidthInput", "pointsInput", "templateInput", "seedInput"] },
   {
     label: "Realms",
     icon: "icon-flag",
@@ -111,7 +111,8 @@ export const OPTION_GROUPS = [
   // "People", not "Peoples" - the Layers group of the same rows is called People, and one word has
   // to mean one thing in both branches
   { label: "People", icon: "icon-users", rows: ["culturesInput", "culturesSet", "religionsNumber"] },
-  { label: "Identity", icon: "icon-tag", rows: ["mapName", "yearInput", "emblemShape"] },
+  // the map name and era moved to the Set Lore dialog, so Identity is the emblem shape alone
+  { label: "Identity", icon: "icon-tag", rows: ["emblemShape"] },
   // Voice and UI language are how the app PRESENTS itself, so they sit with the rest of the
   // presentation; Behaviour is what the app does on its own.
   {
@@ -130,7 +131,14 @@ export const OPTION_GROUPS = [
   {
     label: "Behaviour",
     icon: "icon-cog-alt",
-    rows: ["autosaveIntervalInput", "onloadBehavior", "zoomExtentMin", "shapeRendering", "viewportRedraw"]
+    rows: [
+      "autosaveIntervalInput",
+      "onloadBehavior",
+      "viewportFit",
+      "zoomExtentMin",
+      "shapeRendering",
+      "viewportRedraw"
+    ]
   }
 ] as const;
 

@@ -1,6 +1,7 @@
 import { select } from "d3";
 import { Layers } from "@/components/layers";
-import type { Good } from "../generators/goods-generator";
+import type { Good } from "@/generators/goods-generator";
+import type { PackedGraph } from "../types/PackedGraph";
 import { getIsolines, normalize, rn } from "../utils";
 import { buildFillPaths } from "./isoline-fills";
 import { ViewportLayers, type ViewportRenderContext } from "./viewport/viewport-renderer";
@@ -35,19 +36,23 @@ interface CullBounds {
 
 let iconItems: SceneItem[] = [];
 let plateItems: SceneItem[] = [];
+let sourcePack: PackedGraph | null = null;
 
 const layer = ViewportLayers.register({ id: "goods", render: reconcileGoods });
 
 export function drawGoods() {
   TIME && console.time("drawGoods");
+  buildScene();
+  layer.render();
+  TIME && console.timeEnd("drawGoods");
+}
 
+function buildScene(): void {
   const visible = new Set(pack.goods.filter(good => good.visible).map(good => good.i));
   select("#goods").select("#goodsCells").html(buildGoodsCellsContent(visible));
   iconItems = buildIconItems(visible);
   plateItems = buildPlateItems(visible);
-  layer.render();
-
-  TIME && console.timeEnd("drawGoods");
+  sourcePack = pack;
 }
 
 export function encodeCellFill(goodId: number, normalized: number): number {
@@ -98,6 +103,7 @@ export function strideVisible<T extends { x: number; y: number }>(
 
 function reconcileGoods(context: ViewportRenderContext): void {
   if (!Layers.isOn("goods")) return;
+  if (sourcePack !== pack) buildScene(); // a loaded or regenerated map replaces the production
   const iconsGroup = context.root.querySelector("#goodsIcons");
   const burgsGroup = context.root.querySelector("#goodsBurgs");
   if (!iconsGroup || !burgsGroup) return;

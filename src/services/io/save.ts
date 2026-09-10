@@ -3,6 +3,7 @@ import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { GraphOverride } from "@/generators/graph-override";
+import { Notes } from "@/generators/notes";
 import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
 import { savedMessage } from "@/services/platform";
@@ -51,41 +52,20 @@ function prepareMapData(): string {
   const date = new Date();
   const dateString = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
   const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
-  const params = [VERSION, license, dateString, seed, graphWidth, graphHeight, mapId].join("|");
-  const settings = [
-    distanceUnitInput.value,
-    distanceScale,
-    areaUnit.value,
-    heightUnit.value,
-    heightExponentInput.value,
-    temperatureScale.value,
-    "", // previously used for barSize.value
-    "", // previously used for barLabel.value
-    "", // previously used for barBackColor.value
-    "", // previously used for barBackColor.value
-    "", // previously used for barPosX.value
-    "", // previously used for barPosY.value
-    populationRate,
-    urbanization,
-    "", // previously used for mapSizeOutput.value, part of options now
-    "", // previously used for latitudeOutput.value, part of options now
-    "", // previously used for temperatureEquatorOutput.value
-    "", // previously used for tempNorthOutput.value
-    "", // previously used for precOutput.value, part of options now
-    JSON.stringify(options),
-    mapName.value,
-    "", // previously used for hideLabels
-    stylePreset.value,
-    "", // previously used for rescaleLabels
-    urbanDensity,
-    "", // previously used for longitudeOutput.value, part of options now
-    ensureEl<HTMLInputElement>("growthRate").value
+  const params = [
+    VERSION,
+    license,
+    dateString,
+    options.map.seed,
+    options.map.graph.width,
+    options.map.graph.height,
+    mapHistory.at(-1)?.created ?? Date.now() // the map id: when the map on screen was created
   ].join("|");
-  const coords = JSON.stringify(mapCoordinates);
-  const notesData = JSON.stringify(notes);
+
+  const settings = JSON.stringify(options.map); // what the map is; the requests and preferences stay out
   const measurers = JSON.stringify(pack.measurers ?? []);
   const journeys = JSON.stringify(pack.journeys ?? []);
-  const fonts = JSON.stringify(getUsedFonts(ensureEl("map") as Element as SVGSVGElement));
+  const fonts = JSON.stringify(getUsedFonts(ensureEl("map") as Element as SVGSVGElement, Notes.getTexts()));
   const layers = JSON.stringify(Layers.state);
   const graphOverride = JSON.stringify(GraphOverride.state);
 
@@ -93,8 +73,8 @@ function prepareMapData(): string {
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
 
   // reset transform values to default
-  cloneEl.setAttribute("width", String(graphWidth));
-  cloneEl.setAttribute("height", String(graphHeight));
+  cloneEl.setAttribute("width", String(options.map.graph.width));
+  cloneEl.setAttribute("height", String(options.map.graph.height));
   cloneEl.querySelector("#viewbox")?.removeAttribute("transform");
 
   // relief icons are stored in pack.relief, the layer holds only the currently visible ones
@@ -115,8 +95,8 @@ function prepareMapData(): string {
 
   const serializedSVG = new XMLSerializer().serializeToString(cloneEl);
 
-  const { spacing, cellsX, cellsY, boundary, points, features, cellsDesired } = grid;
-  const gridGeneral = JSON.stringify({ spacing, cellsX, cellsY, boundary, points, features, cellsDesired });
+  const { spacing, cellsX, cellsY, boundary, points, features } = grid;
+  const gridGeneral = JSON.stringify({ spacing, cellsX, cellsY, boundary, points, features });
   const packFeatures = JSON.stringify(pack.features);
   const biomes = JSON.stringify(pack.biomes);
   const cultures = JSON.stringify(pack.cultures);
@@ -160,9 +140,9 @@ function prepareMapData(): string {
   const mapData = [
     params,
     settings,
-    coords,
+    "", // deprecated separate mapCoordinates, now options.map.geography.coordinates
     biomes,
-    notesData,
+    "", // deprecated notes array, now a note field on the entity it describes
     serializedSVG,
     gridGeneral,
     grid.cells.h,

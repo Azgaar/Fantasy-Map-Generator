@@ -50,11 +50,11 @@ This glossary covers core terminology, data structures, and concepts used throug
 - **Demand Category**: One of `food | utilities | construction | military | luxury`, evaluated in `DEMAND_PRIORITY` order during production and demand fill.
 - **Namesbase**: A collection of linguistic rules, prefixes, and suffixes used to procedurally generate names for map entities.
 - **Emblem**: A heraldic shield or flag representing a State, Province, or Burg.
-- **Note**: User-defined text attached to a specific map entity (cell, burg, state) containing custom lore or description.
+- **Note**: User-defined html text describing a map entity, stored on the entity as `note?: string`. Shown in the notes box when the entity's element is hovered, and edited from that entity's editor or from the Notes Editor. A note cannot exist without an entity to own it.
 - **Icon**: A small graphic representing a good, biome, or feature.
 - **Label**: Display text owned by a map entity — a State, Province, Burg, River, Route, or Added Label. Every label is anchored at its entity's position and drawn as positioned text there, unless it has path points — then the text is curved along them. Any label can be switched between the two in the Label Editor.
 - **Added Label**: A free-standing map entity created by the user, whose only purpose is to carry a Label. It supplies the position that other label owners get from their own geometry.
-- **Label Group**: An ordered, reusable label policy and visual style. Policy fields live in `options.labels.groups`; typography and offsets live in `style.labels.groups`. Any label type can use any Label Group without changing how that entity is rendered.
+- **Label Group**: An ordered, reusable label policy and visual style. Policy fields live in `options.map.labels.groups`; typography and offsets live in `style.labels.groups`. Any label type can use any Label Group without changing how that entity is rendered.
 - **Label Group type**: The Label Group's organizational category (`states`, `burgs`, `provinces`, or `added`). It controls defaults and UI grouping, not rendering compatibility.
 - **Label Group layer dependency**: An optional layer-toggle id that makes a Label Group visible only while that layer is on.
 - **Label name mode**: A Label Group policy selecting automatic, short, or full names for generated State and Province labels.
