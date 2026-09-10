@@ -244,7 +244,12 @@ test.describe("State and province refresh", () => {
           expect(changed.every(p => p.state === state)).toBe(true);
           expect(provinces.some(p => p.state !== state)).toBe(true);
         }
-        expect(await page.evaluate(() => Layers.isOn("provinces"))).toBe(true);
+        expect(await page.evaluate(() => Layers.isOn("provinces"))).toBe(visible);
+        if (!visible) {
+          await expect(page.locator("#provs")).toBeHidden();
+          await expect(page.locator("#provs path")).toHaveCount(0);
+          await page.evaluate(() => Layers.show("provinces"));
+        }
         const mismatches = await page.evaluate(() => {
           const map = pack.provinces
             .filter(
@@ -296,6 +301,13 @@ test.describe("State and province refresh", () => {
       await clickMapAt(page, target!.point);
 
       expect(await page.evaluate(i => pack.cells.state[i], target!.i)).toBe(newState);
+      expect(await page.evaluate(() => [Layers.isOn("states"), Layers.isOn("borders")])).toEqual([visible, visible]);
+      if (!visible) {
+        await expect(page.locator("#regions")).toBeHidden();
+        await expect(page.locator("#borders")).toBeHidden();
+        await expect(page.locator("#statesBody path, #borders path")).toHaveCount(0);
+        await page.evaluate(() => Layers.show("states", "borders"));
+      }
       await expect(page.locator(`#statesBody #state${newState}`)).toHaveAttribute("d", /\S/);
       expect(await page.locator("#borders").innerHTML()).not.toBe(oldBorders);
       const rendered = await page.evaluate(() =>

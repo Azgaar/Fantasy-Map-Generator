@@ -1222,7 +1222,6 @@ function recolorProvinces(): void {
   });
 
   Layers.draw("provinces");
-  Layers.show("provinces");
   provincesTable.refresh();
 }
 
