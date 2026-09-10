@@ -1,6 +1,6 @@
-import Alea from "alea";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Coastline, type CoastlineSettings } from "@/generators/coastline-generator";
+import type { Point } from "@/types/global";
 import { ensureEl } from "../utils";
 
 interface SliderDef {
@@ -53,7 +53,7 @@ const SLIDER_DEFS: SliderDef[] = [
   {
     id: "coastSmoothThreshold",
     label: "Smooth threshold",
-    tip: "Profile values below this receive zero displacement → glassy arc. Controls calm-coast coverage.",
+    tip: "Places where the roughness field is below this receive zero displacement → glassy arc.",
     min: 0.01,
     max: 0.5,
     step: 0.01,
@@ -62,20 +62,29 @@ const SLIDER_DEFS: SliderDef[] = [
   {
     id: "coastRoughnessContrast",
     label: "Roughness contrast",
-    tip: "Power applied to the roughness profile. Higher = sharper calm/rough transition.",
+    tip: "Power applied to the roughness field. Higher = sharper calm/rough transition.",
     min: 0.5,
     max: 10,
     step: 0.1,
     key: "roughnessContrast"
   },
   {
-    id: "coastProfileHarmonics",
-    label: "Roughness zones",
-    tip: "Number of cosine harmonics shaping the roughness envelope. 1 = one large concentrated patch; 8 = many small scattered zones.",
-    min: 1,
-    max: 8,
+    id: "coastRoughnessScale",
+    label: "Roughness zone size",
+    tip: "Size of a calm or rough stretch of coast, in map units. Small = many short zones; large = few long ones.",
+    min: 10,
+    max: 300,
+    step: 5,
+    key: "roughnessScale"
+  },
+  {
+    id: "coastVariant",
+    label: "Variant",
+    tip: "Reshuffles every coastline on the map. Each value is a different set of coasts, with the same character.",
+    min: 0,
+    max: 99,
     step: 1,
-    key: "profileHarmonics"
+    key: "variant"
   },
   {
     id: "coastLakeSmoothThreshMult",
@@ -88,7 +97,7 @@ const SLIDER_DEFS: SliderDef[] = [
   }
 ];
 
-const COAST_PRESETS: Record<string, Omit<CoastlineSettings, "enabled">> = {
+const COAST_PRESETS: Record<string, Omit<CoastlineSettings, "enabled" | "variant">> = {
   Default: Coastline.getDefaultSettings(),
   Smooth: {
     maxDepth: 3,
@@ -97,7 +106,7 @@ const COAST_PRESETS: Record<string, Omit<CoastlineSettings, "enabled">> = {
     minEdge: 1,
     smoothThreshold: 0.3,
     roughnessContrast: 2.0,
-    profileHarmonics: 1,
+    roughnessScale: 240,
     lakeSmoothThreshMult: 3.0
   },
   Rocky: {
@@ -107,7 +116,7 @@ const COAST_PRESETS: Record<string, Omit<CoastlineSettings, "enabled">> = {
     minEdge: 0.5,
     smoothThreshold: 0.05,
     roughnessContrast: 0.8,
-    profileHarmonics: 7,
+    roughnessScale: 35,
     lakeSmoothThreshMult: 1.2
   },
   Fjords: {
@@ -117,7 +126,7 @@ const COAST_PRESETS: Record<string, Omit<CoastlineSettings, "enabled">> = {
     minEdge: 0.3,
     smoothThreshold: 0.25,
     roughnessContrast: 5.0,
-    profileHarmonics: 2,
+    roughnessScale: 120,
     lakeSmoothThreshMult: 2.5
   },
   Archipelago: {
@@ -127,12 +136,15 @@ const COAST_PRESETS: Record<string, Omit<CoastlineSettings, "enabled">> = {
     minEdge: 0.5,
     smoothThreshold: 0.18,
     roughnessContrast: 1.0,
-    profileHarmonics: 8,
+    roughnessScale: 30,
     lakeSmoothThreshMult: 1.5
   }
 };
 
-const PREVIEW_SEED = "preview_coastline";
+const previewSeed = () => Coastline.seedFrom(`preview_coastline_${Coastline.settings.variant}`);
+const PROFILE_SAMPLES = 256; // points sampled around the preview island for the roughness graph
+const PREVIEW_CENTER: Point = [700, 450]; // the previews sit on an island of map size, so the
+const PREVIEW_RADIUS = 200; // settings read the same here as they do on the map
 
 function open(): void {
   if (customization) return;
@@ -144,7 +156,7 @@ function open(): void {
     title: "Coastline Settings Editor",
     resizable: false,
     width: "auto",
-    position: { my: "right top", at: "right-10 top+10", of: "svg" },
+    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
     close: () => {
       destroyDialog("coastlineSettingsDialog");
     }
@@ -220,20 +232,20 @@ function applyChange(change: Partial<CoastlineSettings>): void {
 function buildDialogHTML(): string {
   const settings = Coastline.settings;
   const presetButtons = Object.keys(COAST_PRESETS)
-    .map(name => `<button id="coastPreset_${name}" style="font-size:.78em;padding:2px 8px">${name}</button>`)
+    .map(name => `<button id="coastPreset_${name}" style="font-size:.85em; padding:2px 8px">${name}</button>`)
     .join("");
 
   const rows = SLIDER_DEFS.map(({ id, label, tip, min, max, step, key }) => {
     const value = settings[key];
     return /* html */ `
       <tr data-tip="${tip}">
-        <td style="padding:2px 0;white-space:nowrap">${label}</td>
+        <td style="padding:2px 0; white-space:nowrap">${label}</td>
         <td style="padding:2px 4px">
           <slider-input id="${id}" min="${min}" max="${max}" step="${step}" value="${value}"></slider-input>
         </td>
         <td style="padding:2px 0">
           <button id="${id}Reset" title="Reset to default"
-            style="font-size:.75em;padding:1px 5px;cursor:pointer">↺</button>
+            style="font-size:.8em; padding:1px 5px; cursor:pointer">↺</button>
         </td>
       </tr>`;
   }).join("");
@@ -243,16 +255,16 @@ function buildDialogHTML(): string {
       <style>
         #coastlineSettingsDialog slider-input input[type=range] { width:100%; }
       </style>
-      <div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #ddd">
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none" data-tip="Enable or disable coastline fractalization. When disabled, coastlines are simple arcs between feature vertices. Enabling adds naturalistic roughness but can increase rendering time, especially at high detail levels.">
+      <div style="display:flex; justify-content:space-between; gap:0.5em; margin-bottom:0.5em; padding-bottom:0.5em; border-bottom:1px solid #ddd">
+        <label style="display:flex; align-items:center; gap:0.5em; cursor:pointer; user-select:none" data-tip="Enable or disable coastline fractalization. When disabled, coastlines are simple arcs between feature vertices. Enabling adds naturalistic roughness but can increase rendering time, especially at high detail levels.">
           <input id="coastEnabled" type="checkbox" ${settings.enabled ? "checked" : ""}
-            style="position:absolute;opacity:0;pointer-events:none;width:0;height:0"/>
-          <span id="coastEnabledTrack" style="position:relative;display:inline-block;width:36px;height:20px;border-radius:10px;background:${settings.enabled ? "#33bb88" : "#bbb"};cursor:pointer;flex-shrink:0">
-            <span id="coastEnabledThumb" style="position:absolute;top:2px;left:${settings.enabled ? "18px" : "2px"};width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3)"></span>
+            style="position:absolute; opacity:0; pointer-events:none; width:0; height:0"/>
+          <span id="coastEnabledTrack" style="position:relative; display:inline-block; width:36px; height:20px; border-radius:10px; background:${settings.enabled ? "#33bb88" : "#bbb"}; cursor:pointer; flex-shrink:0">
+            <span id="coastEnabledThumb" style="position:absolute; top:2px; left:${settings.enabled ? "18px" : "2px"};width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3)"></span>
           </span>
         </label>
         <div style="display:flex;align-items:center;gap:4px">
-          <span style="color:#999;font-size:.85em">Preset</span>
+          <span style="color:#999; font-size:.9em">Preset</span>
           ${presetButtons}
         </div>
       </div>
@@ -266,13 +278,13 @@ function buildDialogHTML(): string {
           <tbody>${rows}</tbody>
         </table>
       </div>
-      <div style="display:flex;gap:6px;margin-top:10px;align-items:flex-start">
+      <div style="display:flex; gap:0.5em; margin-top:0.5em; align-items:flex-start">
         <div style="flex:1;min-width:0">
-          <div style="color:#999;font-size:.85em;margin-bottom:3px">Roughness profile</div>
+          <div style="color:#999; font-size:.85em; margin-bottom:3px">Roughness profile</div>
           <canvas id="coastRoughnessGraph" width="auto" height="100" style="display:block"></canvas>
         </div>
         <div>
-          <div style="color:#999;font-size:.85em;margin-bottom:3px">Shape preview</div>
+          <div style="color:#999; font-size:.85em; margin-bottom:3px">Shape preview</div>
           <canvas id="coastShapePreview" width="100" height="100" style="display:block"></canvas>
         </div>
       </div>
@@ -290,9 +302,17 @@ function drawRoughnessGraph(canvas: HTMLCanvasElement): void {
   const ctx = canvas.getContext("2d")!;
   ctx.clearRect(0, 0, W, H);
 
+  /** the ring the previews share: the graph shows the roughness the shape below is built from */
+  function previewRing(samples: number): Point[] {
+    const [cx, cy] = PREVIEW_CENTER;
+    return Array.from({ length: samples }, (_, i) => {
+      const angle = (2 * Math.PI * i) / samples - Math.PI / 2;
+      return [cx + PREVIEW_RADIUS * Math.cos(angle), cy + PREVIEW_RADIUS * Math.sin(angle)] as Point;
+    });
+  }
+
   const settings = Coastline.settings;
-  const rand = Alea(PREVIEW_SEED);
-  const profile = Coastline.getRoughnessProfile(rand, settings.roughnessContrast, settings.profileHarmonics);
+  const profile = Coastline.sampleRoughness(previewSeed(), previewRing(PROFILE_SAMPLES), settings);
 
   const thresh = Math.min(Math.max(settings.smoothThreshold, 0), 1);
   const threshY = H * (1 - thresh);
@@ -301,9 +321,9 @@ function drawRoughnessGraph(canvas: HTMLCanvasElement): void {
   // Pre-compute curve points
   const xs: number[] = [];
   const ys: number[] = [];
-  for (let i = 0; i <= Coastline.PROFILE_SIZE; i++) {
-    xs.push((i / Coastline.PROFILE_SIZE) * W);
-    ys.push(H * (1 - profile[i % Coastline.PROFILE_SIZE]));
+  for (let i = 0; i <= PROFILE_SAMPLES; i++) {
+    xs.push((i / PROFILE_SAMPLES) * W);
+    ys.push(H * (1 - profile[i % PROFILE_SAMPLES]));
   }
 
   // Helper: fill area under curve clipped to a horizontal band
@@ -391,19 +411,24 @@ function drawShapePreview(canvas: HTMLCanvasElement): void {
   const cy = H / 2;
   const r = Math.min(W, H) * 0.34;
 
-  // Generate at canvas scale so all setting changes are immediately visible.
-  const basePts: [number, number][] = [
-    [cx, cy - r], // top
-    [cx + r, cy], // right
-    [cx, cy + r], // bottom
-    [cx - r, cy] // left
+  // Built in map units around a real-sized island, then scaled into the canvas
+  const [wx, wy] = PREVIEW_CENTER;
+  const scale = r / PREVIEW_RADIUS;
+  const basePts: Point[] = [
+    [wx, wy - PREVIEW_RADIUS], // top
+    [wx + PREVIEW_RADIUS, wy], // right
+    [wx, wy + PREVIEW_RADIUS], // bottom
+    [wx - PREVIEW_RADIUS, wy] // left
   ];
 
   const settings = Coastline.settings;
   const shape = settings.enabled
-    ? Coastline.fractalize(basePts, Alea(PREVIEW_SEED), settings)
+    ? Coastline.fractalize(basePts, previewSeed(), settings)
     : { points: basePts, origIndices: [0, 1, 2, 3] };
-  const path = new Path2D(`${Coastline.buildPath(shape)}Z`);
+
+  const toCanvas = ([x, y]: Point): Point => [cx + (x - wx) * scale, cy + (y - wy) * scale];
+  const canvasShape = { points: shape.points.map(toCanvas), origIndices: shape.origIndices };
+  const path = new Path2D(`${Coastline.buildPath(canvasShape)}Z`);
 
   // Ocean background — radial gradient, lighter at centre
   const bgGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(W, H) * 0.85);
@@ -433,7 +458,7 @@ function drawShapePreview(canvas: HTMLCanvasElement): void {
   ctx.stroke(path);
 
   // Original polygon skeleton — shows the raw 4-vertex input before fractalization
-  const origPts = shape.origIndices.map(i => shape.points[i]);
+  const origPts = canvasShape.origIndices.map(i => canvasShape.points[i]);
   ctx.beginPath();
   for (let j = 0; j < origPts.length; j++) {
     const [x, y] = origPts[j];

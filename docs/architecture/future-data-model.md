@@ -102,10 +102,16 @@ This document outlines the expected data structure. Current data model described
       "minEdge": 1,
       "smoothThreshold": 0.25,
       "roughnessContrast": 1.5,
-      "profileHarmonics": 4,
-      "lakeSmoothThreshMult": 2
+      "roughnessScale": 60,
+      "lakeSmoothThreshMult": 2,
+      "variant": 0
     }
   },
+
+  // planned: a feature may carry its own `coastline` block of the same shape, overriding the map-level
+  // one for that island or lake alone. The generator already takes its settings per call
+  // (`Coastline.fractalize(points, seed, settings)`), so the work is the feature record, the IO round
+  // trip and an editor entry point — not the fractalization itself
 
   "layers": {
     "order": ["ocean", "landmass", "heightmap", "lakes", "rivers", "states", "borders", "labels", "scaleBar"],

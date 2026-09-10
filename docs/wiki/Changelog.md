@@ -16,6 +16,8 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 
 **[1.152.0](https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/tags/v1.152.0.zip) - 2026-09-TBD**:
 
+- Wrap Tool: reshape cells with a brush [1.153.0]
+- Coastlines: local roughness instead on global [1.153.0]
 - Options full rework [1.152.0]
 - Map name and era moved to the Set Lore dialog [1.152.0]
 - Notes rework: notes as entities param [1.152.0]

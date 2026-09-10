@@ -6,6 +6,10 @@ Open it from _Tools_ → _Create_ → _Wrap_, or press <kbd>Shift</kbd> + <kbd>W
 
 The tool moves the **corners of map cells** — the shared points that every cell-based layer is drawn from. Coastlines, lake shores, state, province, culture, religion and biome borders, zones and the heightmap all follow, because they are all drawn from the same cells.
 
+The coastline detail follows the cells too, and only where you edit: the fractal outline is generated
+from the shape of each stretch of coast, so nudging one corner leaves the rest of the island exactly as
+it was.
+
 Nothing else moves. Burgs, rivers, routes, labels, relief icons, markers, military units and journeys stay exactly where they are, so a large pull can leave a port sitting away from its new coastline. Cell heights, populations, cultures and every other generated value are untouched too: the shapes change, the world data does not.
 
 For anything bigger than a nudge — creating an island, turning land into water, raising a mountain range — use _Tools_ → _Heightmap_ instead.

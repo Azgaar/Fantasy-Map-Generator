@@ -211,6 +211,45 @@ weights and limits; `move(point)` proposes a displacement and commits what is va
 - These checks are intentionally local to the cells under the brush. There is no global deformation
   system, no re-triangulation, and no attempt to validate rendered smoothing or coastline roughness.
 
+### Coastline stability
+
+A brush is only usable if the coast reacts locally, and it did not: coastline fractalization drew its
+displacements from one sequential Alea stream per feature and sampled the roughness envelope at
+normalised perimeter position, so moving a single vertex re-rolled the whole island. Measured on a
+60-vertex ring, one moved vertex changed 88% of the outline and the change reached the far side.
+
+`coastline-generator.ts` now indexes the noise by geometry instead of by position in a sequence:
+
+- **displacement** is `noise(seed, quantised endpoints, depth)` — a pure function of the segment, so an
+  untouched segment keeps its shape whatever happened elsewhere. Coordinates are keyed to 1/64 of a map
+  unit, below which a vertex move changes nothing at all;
+- **roughness** is a two-octave value-noise field sampled at the segment midpoint, so it is a property
+  of the place rather than of the distance travelled along the perimeter — there is no global
+  parameterisation left to shift. Interpolated noise clusters around ½ where the harmonic profile it
+  replaces was normalised over its whole range, so the field is spread by `FIELD_STRETCH` before the
+  unchanged `** roughnessContrast` curve; that constant is what keeps the settings meaning what they
+  did.
+
+In the running app, a wrap stroke on one coastal vertex now changes 28 of 5587 path commands on the
+feature it touches and leaves every other feature byte-identical.
+
+The settings behave as before: measured over 24 islands of assorted sizes and positions, the length a
+preset adds to an outline is within about 10% of the old algorithm — Default 6.3% → 6.5%, Rocky 17.1% →
+16.9%, Fjords 12.3% → 13.0%, Archipelago 11.3% → 12.7%, Smooth 0.8% → 0.5%. Every threshold, amplitude
+and preset value is unchanged; only `profileHarmonics` (zone count) became `roughnessScale` (zone size
+in map units), which the load path fills from defaults for maps saved earlier — no migration needed,
+since `parseSections` strips a setting the shape no longer has and repairs the missing one.
+
+Every existing map's coast detail is still redrawn, since the noise itself is different — accepted
+deliberately, in exchange for not carrying two fractalization paths forever.
+
+A `variant` setting (0 by default) goes into the per-feature seed, so an author can reshuffle every
+coastline on a map without touching the heightmap or the character of the coasts. Per-feature control
+is the next step: a feature carrying its own `coastline` block would let one island or lake be tuned on
+its own, and the generator is already shaped for it — `fractalize(points, seed, settings)` takes the
+settings per call. What is missing is the feature record, the IO round trip and an editor entry point.
+See [future-data-model.md](../architecture/future-data-model.md).
+
 ### Batched overrides
 
 `GraphOverride.movePackVertices(points)` is the batch form of `movePackVertex`, which now delegates to
