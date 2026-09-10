@@ -58,15 +58,25 @@ function addLines(): void {
   const lines = select("#routes")
     .selectAll<SVGGElement, unknown>(":scope > g")
     .nodes()
-    .map(el => {
+    .flatMap(el => {
       const count = el.children.length;
-      return /* html */ `<div data-id="${el.id}" class="states" style="display: flex; justify-content: space-between;">
+      const group = /* html */ `<div data-id="${el.id}" class="states" style="display: flex; justify-content: space-between;">
           <span>${el.id} (${count})</span>
           <div style="width: auto; display: flex; gap: 0.4em;">
             <span data-tip="Edit style" class="editStyle icon-brush pointer" style="font-size: smaller;"></span>
             <span data-tip="Remove group" class="removeGroup icon-trash pointer"></span>
           </div>
         </div>`;
+      // route types (royal, footpath, ...) belong to the generator, so they can be styled but not removed
+      const types = Array.from(el.querySelectorAll<SVGGElement>(":scope > g")).map(
+        type => /* html */ `<div data-id="${el.id}/${type.id}" class="states" style="display: flex; justify-content: space-between; padding-left: 1.2em;">
+          <span>${type.id} (${type.children.length})</span>
+          <div style="width: auto; display: flex; gap: 0.4em;">
+            <span data-tip="Edit style" class="editStyle icon-brush pointer" style="font-size: smaller;"></span>
+          </div>
+        </div>`
+      );
+      return [group, ...types];
     });
 
   ensureEl("routeGroupsEditorBody").innerHTML = lines.join("");

@@ -5,9 +5,11 @@ import { ensureEl } from "@/utils";
 
 // Group line style is the style store's (Styles.write("routes") sets it on the group). The fork
 // splits each group by route type into a sub-group so trunk roads, market roads and footpaths
-// keep their own width and dash; types have no place in the store, so they use the built-in table.
+// keep their own width and dash, styled from styles.routes.types; the built-in table only covers
+// a type no preset knows.
 function applyRouteTypeStyle(el: Element, type: string): void {
-  applyRouteLineStyle(el, routeTypeStyle(type), undefined);
+  el.setAttribute("data-type", type);
+  applyRouteLineStyle(el, routeTypeStyle(type), styles.routes.types[type]?.attrs);
 }
 
 function removeTypeGroups(): void {

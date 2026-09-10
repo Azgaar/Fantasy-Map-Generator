@@ -92,10 +92,12 @@ function writeNode(el: Element, node: object): void {
         else el.setAttribute(name, String(v));
       }
     } else {
-      // a named subgroup (roads, statesHalo, ...) or a groups record of them
-      const entries = key === "groups" ? Object.entries(value as object) : [[key, value] as const];
+      // a named subgroup (roads, statesHalo, ...), a groups record of them, or the route type sub-groups
+      const isRecord = key === "groups" || key === "types";
+      const entries = isRecord ? Object.entries(value as object) : [[key, value] as const];
+      const dataAttr = key === "types" ? "data-type" : "data-group";
       for (const [group, groupNode] of entries) {
-        const child = el.querySelector(`[data-group="${CSS.escape(group)}"]`);
+        const child = el.querySelector(`[${dataAttr}="${CSS.escape(group)}"]`);
         if (child) writeNode(child, groupNode as object);
       }
     }
