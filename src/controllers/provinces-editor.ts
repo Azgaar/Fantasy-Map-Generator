@@ -1221,7 +1221,9 @@ function recolorProvinces(): void {
     p.color = stateColor[0] === "#" ? d3Color(interpolate(stateColor, rndColor)(0.2))!.hex() : rndColor;
   });
 
+  Layers.draw("provinces");
   Layers.show("provinces");
+  provincesTable.refresh();
 }
 
 function downloadProvincesData(): void {

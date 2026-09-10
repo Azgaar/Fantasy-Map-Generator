@@ -77,6 +77,9 @@ test.describe("Annex by clicking on the map", () => {
     // the states layer is redrawn: the annexing state's fill now covers the annexed cells
     expect(await page.locator(`#statesBody #state${parent.i}`).getAttribute("d")).not.toBe(parentFill);
     expect(await page.locator(`#statesBody #state${child.i}`).count()).toBe(0);
+    const borders = await page.locator("#borders").innerHTML();
+    await page.evaluate(() => Layers.draw("borders"));
+    expect(await page.locator("#borders").innerHTML()).toBe(borders);
 
     const result = await page.evaluate(
       ([p, c]) => {
@@ -204,5 +207,133 @@ test.describe("Annex by clicking on the map", () => {
     expect(await page.locator("#debug .annex-preview .annex-child").count()).toBe(0);
     const removed = await page.evaluate(c => Boolean((window as any).pack.provinces[c].removed), foreign.i);
     expect(removed).toBe(false);
+  });
+});
+
+declare const pack: import("@/types/PackedGraph").PackedGraph;
+
+test.describe("State and province refresh", () => {
+  let errors: string[];
+
+  test.beforeEach(async ({ page }) => {
+    errors = [];
+    page.on("pageerror", error => errors.push(error.message));
+    await page.addInitScript(() => localStorage.setItem("preset", "landmass"));
+    await page.goto("/?seed=state-refresh&width=1600&height=1000");
+    await waitForMap(page);
+  });
+
+  test.afterEach(() => expect(errors).toEqual([]));
+
+  for (const visible of [true, false]) {
+    for (const filtered of [true, false]) {
+      test(`recolour updates the map and list with layer ${visible ? "on" : "off"} and ${filtered ? "one state" : "all states"}`, async ({
+        page
+      }) => {
+        await openEditor(page, "editProvincesButton", "provincesEditor");
+        const provinces = await page.evaluate(() => pack.provinces.filter(p => p.i && !p.removed));
+        const state = filtered ? provinces[0].state : -1;
+        await page.selectOption("#provincesFilterState", String(state));
+        if (!visible) await page.evaluate(() => Layers.hide("provinces"));
+        await page.click("#provincesRecolor");
+
+        const after = await page.evaluate(() => pack.provinces.filter(p => p.i && !p.removed));
+        const changed = after.filter(p => provinces.find(old => old.i === p.i)!.color !== p.color);
+        expect(changed.length).toBeGreaterThan(0);
+        if (filtered) {
+          expect(changed.every(p => p.state === state)).toBe(true);
+          expect(provinces.some(p => p.state !== state)).toBe(true);
+        }
+        expect(await page.evaluate(() => Layers.isOn("provinces"))).toBe(true);
+        const mismatches = await page.evaluate(() => {
+          const map = pack.provinces
+            .filter(
+              p => p.i && !p.removed && document.getElementById(`province${p.i}`)?.getAttribute("fill") !== p.color
+            )
+            .map(p => p.i);
+          const rows = Array.from(document.querySelectorAll<HTMLElement>("#provincesBodySection [data-id]"));
+          const table = rows
+            .filter(
+              row =>
+                row.querySelector("fill-box")?.getAttribute("fill") !== pack.provinces[Number(row.dataset.id)].color
+            )
+            .map(row => row.dataset.id);
+          return { map, table, rows: rows.length };
+        });
+        expect(mismatches.rows).toBeGreaterThan(0);
+        expect(mismatches.map).toEqual([]);
+        expect(mismatches.table).toEqual([]);
+        await expect(page.locator("#provincesFilterState")).toHaveValue(String(state));
+      });
+    }
+
+    test(`creating a state refreshes fills and borders with layers ${visible ? "on" : "off"}`, async ({ page }) => {
+      await openEditor(page, "editStatesButton", "statesEditor");
+      if (!visible) await page.evaluate(() => Layers.hide("states", "borders"));
+      const candidates = await page.evaluate(() => {
+        const { cells, burgs } = pack;
+        return Array.from(cells.i)
+          .filter(
+            i =>
+              cells.h[i] >= 20 &&
+              cells.state[i] &&
+              !burgs[cells.burg[i]]?.capital &&
+              cells.c[i].every(c => cells.state[c] === cells.state[i])
+          )
+          .map(i => ({ i, point: cells.p[i] }));
+      });
+      let target: (typeof candidates)[number] | undefined;
+      for (const candidate of candidates) {
+        if (await isMapVisibleAt(page, candidate.point)) {
+          target = candidate;
+          break;
+        }
+      }
+      expect(target).toBeDefined();
+      const newState = await page.evaluate(() => pack.states.length);
+      const oldBorders = await page.locator("#borders").innerHTML();
+      await page.click("#statesAdd");
+      await clickMapAt(page, target!.point);
+
+      expect(await page.evaluate(i => pack.cells.state[i], target!.i)).toBe(newState);
+      await expect(page.locator(`#statesBody #state${newState}`)).toHaveAttribute("d", /\S/);
+      expect(await page.locator("#borders").innerHTML()).not.toBe(oldBorders);
+      const rendered = await page.evaluate(() =>
+        ["statesBody", "borders"].map(id => document.getElementById(id)!.innerHTML)
+      );
+      await page.evaluate(() => Layers.draw("states", "borders"));
+      expect(
+        await page.evaluate(() => ["statesBody", "borders"].map(id => document.getElementById(id)!.innerHTML))
+      ).toEqual(rendered);
+      expect(await page.evaluate(() => [Layers.isOn("states"), Layers.isOn("borders")])).toEqual([true, true]);
+    });
+  }
+
+  test("locating a province capital works before labels have been enabled", async ({ page }) => {
+    expect(await page.evaluate(() => Layers.isOn("labels"))).toBe(false);
+    await expect(page.locator("#labels text")).toHaveCount(0);
+    await openEditor(page, "editProvincesButton", "provincesEditor");
+    await page.selectOption("#provincesFilterState", "-1");
+    const capital = page.locator("#provincesBodySection .icon-star-empty:not(.placeholder)").first();
+    const burg = await capital.evaluate(element => {
+      const id = Number(element.closest<HTMLElement>("[data-id]")!.dataset.id);
+      return pack.burgs[pack.provinces[id].burg];
+    });
+    await capital.click();
+    await expect
+      .poll(() =>
+        page.evaluate(({ x, y }) => {
+          const matrix = (document.getElementById("viewbox") as unknown as SVGGraphicsElement).getScreenCTM()!;
+          const point = new DOMPoint(x, y).matrixTransform(matrix);
+          return (
+            Math.abs(matrix.a - 8) < 0.01 &&
+            Math.abs(point.x - innerWidth / 2) < 1 &&
+            Math.abs(point.y - innerHeight / 2) < 1
+          );
+        }, burg)
+      )
+      .toBe(true);
+    expect(await page.evaluate(() => Layers.isOn("labels"))).toBe(false);
+    await expect(page.locator("#labels text")).toHaveCount(0);
   });
 });

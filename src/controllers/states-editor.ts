@@ -1552,6 +1552,7 @@ function addState(this: SVGElement, event: MouseEvent): void {
   redrawEmblem("state", newState);
 
   Layers.hide("provinces");
+  Layers.draw("states", "borders");
   Layers.show("states", "borders");
 
   statesTable.refresh();
