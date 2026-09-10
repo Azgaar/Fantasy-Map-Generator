@@ -1,3 +1,4 @@
+import { waitForMap } from "./wait-for-map";
 import { test, expect } from "@playwright/test";
 
 // Burg icons are a viewport pass: only icons inside the (overscanned) bounds whose group passes
@@ -5,7 +6,7 @@ import { test, expect } from "@playwright/test";
 // 100K-burg maps unpannable, so this locks the ceiling, not exact counts.
 test("burg icons materialize only in-viewport and past their zoom gates", async ({ page }) => {
   await page.goto("/?seed=icon-viewport&width=1280&height=720");
-  await page.waitForFunction(() => (window as any).mapId !== undefined, { timeout: 120000 });
+  await waitForMap(page);
   await page.waitForTimeout(500);
 
   const at = (zoom: number) =>

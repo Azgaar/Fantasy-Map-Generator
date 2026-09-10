@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath, URL as NodeURL } from "node:url";
 import { describe, expect, it } from "vitest";
 import { Layers } from "@/components/layers";
@@ -19,8 +20,17 @@ import { childrenOf, nodeKind, type WheelNode } from "./types";
 
 // node:url's URL (not the jsdom-patched global, which resolves file:// bases against
 // window.location instead of the given base) - see src/renderers/route-styles.test.ts
-const INDEX_HTML = readFileSync(fileURLToPath(new NodeURL("../../index.html", import.meta.url)), "utf8");
+// the option panels render from component templates, so their ids live in those sources, not index.html
+const COMPONENTS_DIR = fileURLToPath(new NodeURL("../", import.meta.url));
+const INDEX_HTML = [
+  readFileSync(fileURLToPath(new NodeURL("../../index.html", import.meta.url)), "utf8"),
+  ...readdirSync(COMPONENTS_DIR, { recursive: true, encoding: "utf8" })
+    .filter(file => file.endsWith(".ts") && !file.includes(".test."))
+    .map(file => readFileSync(join(COMPONENTS_DIR, file), "utf8"))
+].join("\n");
 const hasId = (id: string) => INDEX_HTML.includes(`id="${id}"`);
+// the options form rows live in the options tab template
+const OPTIONS_ROWS = readFileSync(join(COMPONENTS_DIR, "options/tabs/options-tab.ts"), "utf8");
 
 const walk = (nodes: WheelNode[], level = 0, out: Array<{ node: WheelNode; level: number }> = []) => {
   for (const node of nodes) {
@@ -116,7 +126,7 @@ describe("options branch", () => {
   it("assigns every setting row exactly once across the six themes", () => {
     // the expected count is DERIVED from the real markup, never hardcoded: a hardcoded number
     // silently passes when an upstream sync adds a row, leaving that setting unreachable
-    const block = INDEX_HTML.slice(INDEX_HTML.indexOf('id="optionsContent"'), INDEX_HTML.indexOf('id="toolsContent"'));
+    const block = OPTIONS_ROWS;
     const rowCount = block.split(/<tr\b/).length - 1;
 
     const rows = OPTION_GROUPS.flatMap(g => g.rows);
@@ -125,7 +135,7 @@ describe("options branch", () => {
   });
 
   it("puts each anchor in a distinct row, so no theme silently swallows two settings", () => {
-    const block = INDEX_HTML.slice(INDEX_HTML.indexOf('id="optionsContent"'), INDEX_HTML.indexOf('id="toolsContent"'));
+    const block = OPTIONS_ROWS;
     const rows = block.split(/<tr\b/).slice(1);
     const claimed = OPTION_GROUPS.flatMap(g => g.rows).map(id => rows.findIndex(row => row.includes(`id="${id}"`)));
     expect(claimed).not.toContain(-1);

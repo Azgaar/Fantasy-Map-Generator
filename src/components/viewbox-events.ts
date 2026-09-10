@@ -87,5 +87,3 @@ function onClick(event: MouseEvent): void {
   const layer = parent.closest<SVGElement>(EDITOR_SELECTOR);
   if (layer) EDITORS[layer.id](target, parent);
 }
-
-window.applyDefaultViewboxEvents = applyDefaultViewboxEvents;

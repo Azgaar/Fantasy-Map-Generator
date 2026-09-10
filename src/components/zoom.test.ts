@@ -7,6 +7,7 @@ vi.mock("@/renderers/viewport/viewport-renderer", () => ({
 }));
 
 import "@/generators/styles";
+import { setViewportSize, setViewportTransform, viewport } from "@/components/viewport";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { rn } from "@/utils/numberUtils";
 import { applyZoomBehavior, setMapZoom } from "./zoom";
@@ -18,10 +19,8 @@ beforeEach(() => {
       <g id="labels"></g>
       <g id="emblems" style="display: none"></g>
       <g id="statesHalo"></g>
-      <g id="markers"><image id="marker0" width="30" height="30" x="185" y="170"></image></g>
     </svg>
     <select id="shapeRendering"><option value="optimizeSpeed" selected></option></select>
-    <select id="viewportRedraw"><option value="continuous" selected></option><option value="settled"></option></select>
   `;
 
   const map = document.getElementById("map")!;
@@ -31,15 +30,11 @@ beforeEach(() => {
   });
 
   Object.assign(globalThis, {
-    scale: 1,
-    viewX: 0,
-    viewY: 0,
-    svgWidth: 1000,
-    svgHeight: 600,
     customization: 0,
-    options: { labels: { resizeOnZoom: false } },
-    pack: { markers: [{ i: 0, x: 200, y: 200, size: 30, hidden: false }] }
+    options: { map: { labels: { resizeOnZoom: false } }, app: { viewportRedraw: "continuous" } }
   });
+  setViewportSize(1000, 600);
+  setViewportTransform(1, 0, 0);
 
   vi.stubGlobal(
     "requestAnimationFrame",
@@ -55,7 +50,7 @@ describe("programmatic zoom", () => {
   it("updates the viewport when a hotkey sets the scale", () => {
     setMapZoom(4);
 
-    expect(scale).toBe(4);
+    expect(viewport.scale).toBe(4);
     expect(document.getElementById("viewbox")!.getAttribute("transform")).toBe("translate(-1500 -900) scale(4)");
   });
 });
@@ -69,7 +64,7 @@ describe("viewport redraw during zoom", () => {
   });
 
   it("skips the per-frame redraw when set to redraw after the zoom only", () => {
-    (document.getElementById("viewportRedraw") as HTMLSelectElement).value = "settled";
+    options.app.viewportRedraw = "settled";
     setMapZoom(4);
 
     expect(ViewportLayers.schedule).not.toHaveBeenCalled();
@@ -84,37 +79,9 @@ describe("invokeActiveZooming", () => {
 
   it("derives statesHalo stroke-width from the store width", () => {
     styles.states.statesHalo.options.width = 8;
-    (globalThis as any).scale = 2;
+    setViewportTransform(2, viewport.x, viewport.y);
     invokeActiveZooming();
     const halo = document.getElementById("statesHalo")!;
     expect(halo.getAttribute("stroke-width")).toBe(String(rn(8 / 2 ** 0.8, 2)));
-  });
-
-  it("resizes markers only when the store rescale option is on", () => {
-    const marker = document.getElementById("marker0")!;
-    const before = {
-      width: marker.getAttribute("width"),
-      height: marker.getAttribute("height"),
-      x: marker.getAttribute("x"),
-      y: marker.getAttribute("y")
-    };
-
-    styles.markers.options.rescale = 0;
-    invokeActiveZooming();
-    expect({
-      width: marker.getAttribute("width"),
-      height: marker.getAttribute("height"),
-      x: marker.getAttribute("x"),
-      y: marker.getAttribute("y")
-    }).toEqual(before);
-
-    (globalThis as any).scale = 2;
-    styles.markers.options.rescale = 1;
-    invokeActiveZooming();
-    const expectedSize = String(rn(30 / 5 + 24 / 2, 2));
-    expect(marker.getAttribute("width")).toBe(expectedSize);
-    expect(marker.getAttribute("height")).toBe(expectedSize);
-    expect(marker.getAttribute("x")).toBe(String(rn(200 - Number(expectedSize) / 2, 1)));
-    expect(marker.getAttribute("y")).toBe(String(rn(200 - Number(expectedSize), 1)));
   });
 });

@@ -1,5 +1,6 @@
 import { select, sum } from "d3";
 import { closeDialogs, updateDialog } from "@/components/dialog/dialog-helpers";
+import { fitContent } from "@/components/dialog/fit-content";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import { dialogState } from "@/components/dialog/state";
 import {
@@ -111,7 +112,7 @@ function closeRegimentsOverview(): void {
 const unitColumnKey = (name: string) => `unit:${name}`;
 
 function getRegimentColumns(): EditorColumn<RegimentRow>[] {
-  const unitColumns: EditorColumn<RegimentRow>[] = options.military.map(unit => ({
+  const unitColumns: EditorColumn<RegimentRow>[] = options.map.military.units.map(unit => ({
     key: unitColumnKey(unit.name),
     label: capitalize(unit.name.replace(/_/g, " ")),
     width: "5em",
@@ -148,7 +149,7 @@ function getRegimentColumns(): EditorColumn<RegimentRow>[] {
       sortBy: row => row.regiment.a,
       tip: "Total military personnel (not considering crew). Click to sort"
     },
-    { key: "actions", width: "1.4em", permanent: true, align: "right" }
+    { key: "edit", width: "1.4em", permanent: true }
   ];
 }
 
@@ -171,14 +172,14 @@ function renderRegimentsPage(view: TableView<RegimentRow>): void {
   const body = ensureEl("regimentsBody");
   const percentage = body.dataset.type === "percentage";
   const unitTotals = Object.fromEntries(
-    options.military.map(unit => [unit.name, sum(view.all.map(row => row.regiment.u[unit.name] || 0))])
+    options.map.military.units.map(unit => [unit.name, sum(view.all.map(row => row.regiment.u[unit.name] || 0))])
   );
   const total = sum(view.all.map(row => row.regiment.a));
   const percent = (value: number, all: number) => `${Math.round(all ? (value / all) * 100 : 0)}%`;
 
   const lines = view.rows
     .map(({ state, regiment }) => {
-      const unitCells = options.military
+      const unitCells = options.map.military.units
         .map(unit => {
           const value = regiment.u[unit.name] || 0;
           return `<div data-col="${unitColumnKey(unit.name)}" data-tip="${capitalize(unit.name)} units number">${percentage ? percent(value, unitTotals[unit.name]) : value}</div>`;
@@ -195,7 +196,7 @@ function renderRegimentsPage(view: TableView<RegimentRow>): void {
         <input data-col="name" data-tip="Regiment's name" value="${regiment.name}" readonly />
         ${unitCells}
         <div data-col="total" data-tip="Total military personnel (not considering crew)" style="font-weight:bold">${percentage ? percent(regiment.a, total) : regiment.a}</div>
-        <div data-col="actions"><span data-tip="Edit regiment" data-edit-regiment="regiment${state.i}-${regiment.i}" class="icon-pencil pointer"></span></div>
+        <span data-col="edit" data-tip="Edit regiment" data-edit-regiment="regiment${state.i}-${regiment.i}" class="icon-pencil pointer"></span>
       </div>`;
     })
     .join("");
@@ -207,7 +208,7 @@ function renderRegimentsPage(view: TableView<RegimentRow>): void {
 
   const footer = ensureEl("regimentsFooter");
   footer.innerHTML = /* html */ `<div style="margin-left:4px">Regiments:&nbsp;${view.all.length}</div>
-    ${options.military.map(unit => `<div data-col="${unitColumnKey(unit.name)}" style="margin-left:12px">${capitalize(unit.name)}:&nbsp;${si(unitTotals[unit.name])}</div>`).join("")}
+    ${options.map.military.units.map(unit => `<div data-col="${unitColumnKey(unit.name)}" style="margin-left:12px">${capitalize(unit.name)}:&nbsp;${si(unitTotals[unit.name])}</div>`).join("")}
     <div data-col="total" style="margin-left:12px">Total:&nbsp;${si(total)}</div>`;
   renderEditorPagination(footer, view, regimentsTable.goto);
 
@@ -314,7 +315,7 @@ function addRegimentOnClick(this: SVGGElement, event: MouseEvent): void {
 }
 
 function downloadRegimentsData(): void {
-  const units = options.military.map(u => u.name);
+  const units = options.map.military.units.map(u => u.name);
   let data = `State,Id,Icon,Name,${units.map(u => capitalize(u)).join(",")},X,Y,Latitude,Longitude,Base X,Base Y,Base Latitude,Base Longitude\n`; // headers
 
   for (const s of pack.states) {
@@ -329,13 +330,13 @@ function downloadRegimentsData(): void {
 
       data += `${r.x},`;
       data += `${r.y},`;
-      data += `${getLatitude(r.y, mapCoordinates, graphHeight, 2)},`;
-      data += `${getLongitude(r.x, mapCoordinates, graphWidth, 2)},`;
+      data += `${getLatitude(r.y, options.map.geography.coordinates, options.map.graph.height, 2)},`;
+      data += `${getLongitude(r.x, options.map.geography.coordinates, options.map.graph.width, 2)},`;
 
       data += `${r.bx},`;
       data += `${r.by},`;
-      data += `${getLatitude(r.by, mapCoordinates, graphHeight, 2)},`;
-      data += `${getLongitude(r.bx, mapCoordinates, graphWidth, 2)}\n`;
+      data += `${getLatitude(r.by, options.map.geography.coordinates, options.map.graph.height, 2)},`;
+      data += `${getLongitude(r.bx, options.map.geography.coordinates, options.map.graph.width, 2)}\n`;
     }
   }
 

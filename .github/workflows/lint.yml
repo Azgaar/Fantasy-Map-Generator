@@ -20,6 +20,6 @@ jobs:
         with:
           # match the repo's devDependency: a floating "latest" starts enforcing rules the
           # local toolchain doesn't have yet, failing PRs on files they never touched
-          version: 2.4.15
+          version: 2.5.12
       - name: Run Biome
         run: biome ci .

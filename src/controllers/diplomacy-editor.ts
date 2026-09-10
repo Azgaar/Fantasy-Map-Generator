@@ -1,5 +1,6 @@
 import { color as d3Color, interpolateString, select } from "d3";
 import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
+import { fitContent } from "@/components/dialog/fit-content";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
@@ -80,10 +81,10 @@ const columns: EditorColumn<State>[] = [
     key: "relations",
     label: "Relations",
     width: "7em",
+    permanent: true,
     sortBy: state => state.diplomacy?.[selectedDiplomacyId] ?? "",
     sortType: "alpha"
-  },
-  { key: "actions", width: "1.4em", permanent: true }
+  }
 ];
 
 const diplomacyTable = initEditorTable<State>({
@@ -209,7 +210,6 @@ function renderDiplomacyPage(view: TableView<State>): void {
   let lines = /* html */ `<div class="states Self" data-id=${selectedId} data-tip="List below shows relations to ${selectedName}">
     <div data-col="name"><svg class="coaIcon" viewBox="0 0 200 200"><use href="#stateCOA${selectedId}"></use></svg><span>${states[selectedId].fullName}</span></div>
     <div data-col="relations"></div>
-    <div data-col="actions"></div>
   </div>`;
 
   for (const state of view.rows) {
@@ -229,7 +229,6 @@ function renderDiplomacyPage(view: TableView<State>): void {
         <fill-box fill="${color}" size=".9em"></fill-box>
         ${relation}
       </div>
-      <div data-col="actions"></div>
     </div>`;
   }
   body.innerHTML = lines;

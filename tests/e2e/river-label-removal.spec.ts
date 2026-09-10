@@ -1,16 +1,18 @@
 import { expect, test } from "@playwright/test";
+import { waitForMap } from "./wait-for-map";
 
 test.describe("removing a river removes its label", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/?seed=123456789&width=1280&height=720");
-    await page.waitForFunction(() => (window as any).mapId !== undefined, { timeout: 120000 });
+    await waitForMap(page);
 
-    // river labels are zoom-gated, so bring one into view
+    // river labels are zoom-gated, so zoom past the group's own tier to bring one into view
     await page.evaluate(() => {
       const w = window as any;
       const river = w.pack.rivers.find((r: any) => r.cells?.length && r.name);
       const [x, y] = w.pack.cells.p[river.cells[Math.floor(river.cells.length / 2)]];
-      w.zoomTo(x, y, 8, 0);
+      const group = w.options.map.labels.groups.find((g: any) => g.name === "river");
+      w.zoomTo(x, y, (group?.zoom?.min ?? 9) + 1, 0);
     });
     await page.waitForFunction(() => document.querySelector("#labels [id^=riverLabel]") !== null, { timeout: 10000 });
   });

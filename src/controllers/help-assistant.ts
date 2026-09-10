@@ -210,7 +210,6 @@ function renderDialog(): void {
       #helpAssistant .helpAssistantBar     { flex: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .2em .8em; padding-top: .4em; border-top: 1px solid rgb(0 0 0 / 10%); font-size: .9em; }
       #helpAssistant .helpAssistantLinks   { display: flex; gap: .8em; }
       #helpAssistant .helpAssistantAccount { display: flex; align-items: center; gap: .5em; opacity: .85; }
-      #helpAssistant .helpAssistantTier    { opacity: .8; }
       #helpAssistant .helpAssistantLink        { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; }
       #helpAssistant .helpAssistantLink:hover  { color: var(--header-active); }
 
@@ -272,12 +271,7 @@ function renderDialog(): void {
       <div class="helpAssistantMsg bot">
         <div class="helpAssistantStack">
           <div class="helpAssistantBubble">
-            <p>The free assistant is only available on the official site:
-              <a href="https://azgaar.github.io/Fantasy-Map-Generator/" target="_blank" rel="noopener noreferrer">
-                azgaar.github.io/Fantasy-Map-Generator</a>.</p>
-            <p>On a self-hosted copy, the
-              <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki" target="_blank" rel="noopener noreferrer">documentation</a>
-              covers most questions. <b>This map</b> still works here: it runs on your own AI key.</p>
+            <p>The free assistant is only available on the official site: <a href="https://azgaar.github.io/Fantasy-Map-Generator/" target="_blank" rel="noopener noreferrer"> azgaar.github.io/Fantasy-Map-Generator</a>. On a self-hosted copy, the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki" target="_blank" rel="noopener noreferrer">documentation</a> covers most questions. <b>This map</b> still works here: it runs on your own AI key.</p>
           </div>
         </div>
       </div>
@@ -558,9 +552,6 @@ function renderAuth(tier: string): void {
     return;
   }
 
-  const label = document.createElement("span");
-  label.className = "helpAssistantTier";
-  label.textContent = `Signed in (${tier})`;
   const out = document.createElement("button");
   out.type = "button";
   out.className = "helpAssistantLink";
@@ -571,7 +562,6 @@ function renderAuth(tier: string): void {
       void refreshLimits();
     });
   });
-  host.appendChild(label);
   host.appendChild(out);
 }
 

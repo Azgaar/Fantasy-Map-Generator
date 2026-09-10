@@ -1,3 +1,4 @@
+import { waitForMap } from "./wait-for-map";
 import { expect, type Page, test } from "@playwright/test";
 
 // The merged assistant dialog: Help (gateway) first, This map (BYOK agent) behind a click, note
@@ -62,13 +63,17 @@ async function stubAnthropic(page: Page, html: string): Promise<void> {
 
 async function loadMap(page: Page): Promise<void> {
   await page.goto("/?seed=assistant-e2e&width=1280&height=720");
-  await page.waitForFunction(() => (window as any).mapId !== undefined, { timeout: 120000 });
-  // `notes` is a top-level `let` in the classic main.js — a global binding, not a window property
-  await page.evaluate('notes.push({ id: "burg1", name: "Kelmora", legend: "<p>Old text.</p>" })');
+  await waitForMap(page);
+  // notes live on the entity they describe; the assistant addresses them by element id (burg1)
+  await page.evaluate(() => {
+    const burg = (window as any).pack.burgs[1];
+    burg.name = "Kelmora";
+    burg.note = "<p>Old text.</p>";
+  });
 }
 
 const legendOf = (page: Page, id: string): Promise<string> =>
-  page.evaluate(`notes.find(n => n.id === ${JSON.stringify(id)}).legend`);
+  page.evaluate(`(window.pack.burgs[Number(${JSON.stringify(id)}.replace("burg", ""))] || {}).note`);
 
 test.describe("assistant dialog", () => {
   test.beforeEach(async ({ page }) => {

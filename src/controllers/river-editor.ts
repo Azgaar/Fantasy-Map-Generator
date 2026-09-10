@@ -3,8 +3,10 @@ import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers"
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
+import { Notes } from "@/generators/notes";
 import type { River } from "@/generators/river-generator";
 import type { Point } from "@/generators/voronoi";
+import { redrawRiver as redrawRiverShape, setEditedRiver } from "@/renderers/draw-rivers";
 import { speak } from "@/utils";
 import { ensureEl, findEl, getPointer, getSegmentId, rand, rn } from "../utils";
 
@@ -21,6 +23,7 @@ function open(id: string): void {
   isCellsLayerForced = !Layers.isOn("cells");
   Layers.show("cells");
 
+  setEditedRiver(Number(id.slice(5))); // keep the river rendered while it is edited
   selectedRiver = select<SVGElement, unknown>(`#${id}`).on("click", addControlPoint);
 
   tip(
@@ -96,7 +99,7 @@ function renderDialog(): void {
       <button id="riverCreateSelectingCells" data-tip="Create a new river selecting river cells" class="icon-map-pin"></button>
       <button id="riverEditStyle" data-tip="Edit style for all rivers in Style Editor" class="icon-brush"></button>
       <button id="riverElevationProfile" data-tip="Show the elevation profile for the river" class="icon-chart-area"></button>
-      <button id="riverLegend" data-tip="Edit free text notes (legend) for the river" class="icon-edit"></button>
+      ${Notes.getButton("riverLegend", "this river")}
       <button id="riverRemove" data-tip="Remove river" data-shortcut="Delete" class="icon-trash fastDelete"></button>
     </div>
   </div>`;
@@ -157,7 +160,7 @@ function updateRiverData(): void {
 
 function updateRiverLength(river: River): void {
   river.length = rn((selectedRiver.node() as SVGGeometryElement).getTotalLength() / 2, 2);
-  const lengthUI = `${rn(river.length * distanceScale)} ${distanceUnitInput.value}`;
+  const lengthUI = `${rn(river.length * options.map.units.distance.scale)} ${options.map.units.distance.unit}`;
   ensureEl<HTMLInputElement>("riverLength").value = lengthUI;
 }
 
@@ -173,7 +176,7 @@ function updateRiverWidth(river: River): void {
     })
   );
 
-  const width = `${rn(river.width * distanceScale, 3)} ${distanceUnitInput.value}`;
+  const width = `${rn(river.width * options.map.units.distance.scale, 3)} ${options.map.units.distance.unit}`;
   ensureEl<HTMLInputElement>("riverWidth").value = width;
 }
 
@@ -238,9 +241,7 @@ function redrawRiver(): void {
   river.points = select("#controlPoints").selectAll("*").data() as Point[];
   river.cells = river.points.map(([x, y]) => Pack.findCell(x, y)!);
 
-  const meanderedPoints = Rivers.addMeandering(river.cells, river.points);
-  const path = Rivers.getRiverPath(meanderedPoints, river.widthFactor, river.sourceWidth);
-  selectedRiver.attr("d", path);
+  redrawRiverShape(river);
 
   updateRiverLength(river);
   Layers.draw("labels");
@@ -310,14 +311,12 @@ function changeWidthFactor(this: HTMLInputElement): void {
 function showRiverElevationProfile(): void {
   const points = (select("#controlPoints").selectAll("*").data() as Point[]).map(([x, y]) => Pack.findCell(x, y)!);
   const river = getRiver();
-  const riverLen = rn(river.length * distanceScale);
+  const riverLen = rn(river.length * options.map.units.distance.scale);
   void Controllers.ElevationProfile.open(points, riverLen, true);
 }
 
 function editRiverLegend(): void {
-  const id = selectedRiver.attr("id");
-  const river = getRiver();
-  void Controllers.NotesEditor.open(id, `${river.name} ${river.type}`);
+  void Controllers.NotesEditor.open({ type: "river", id: getRiver().i });
 }
 
 function removeRiver(): void {
@@ -331,9 +330,8 @@ function removeRiver(): void {
         $(this).dialog("close");
         const river = +selectedRiver.attr("id").slice(5);
         Rivers.remove(river);
-        selectedRiver.remove();
-        Layers.draw("labels");
         $("#riverEditor").dialog("close");
+        Layers.draw("rivers", "labels");
       },
       Cancel: function (this: any) {
         $(this).dialog("close");
@@ -347,6 +345,7 @@ function closeRiverEditor(): void {
   select("#controlCells").remove();
 
   selectedRiver.on("click", null);
+  setEditedRiver(null);
   clearMainTip();
 
   if (isCellsLayerForced) Layers.hide("cells");

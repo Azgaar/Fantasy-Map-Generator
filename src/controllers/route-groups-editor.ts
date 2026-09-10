@@ -55,28 +55,30 @@ function onBodyClick(ev: Event): void {
 function addLines(): void {
   ensureEl("routeGroupsEditorBody").innerHTML = "";
 
+  // counts come from the data: the viewport renderer materializes only the routes on screen
   const lines = select("#routes")
     .selectAll<SVGGElement, unknown>(":scope > g")
     .nodes()
     .flatMap(el => {
-      const count = el.children.length;
+      const routes = pack.routes.filter((route: Route) => route.group === el.id);
       const group = /* html */ `<div data-id="${el.id}" class="states" style="display: flex; justify-content: space-between;">
-          <span>${el.id} (${count})</span>
+          <span>${el.id} (${routes.length})</span>
           <div style="width: auto; display: flex; gap: 0.4em;">
             <span data-tip="Edit style" class="editStyle icon-brush pointer" style="font-size: smaller;"></span>
             <span data-tip="Remove group" class="removeGroup icon-trash pointer"></span>
           </div>
         </div>`;
       // route types (royal, footpath, ...) belong to the generator, so they can be styled but not removed
-      const types = Array.from(el.querySelectorAll<SVGGElement>(":scope > g")).map(
-        type => /* html */ `<div data-id="${el.id}/${type.id}" class="states" style="display: flex; justify-content: space-between; padding-left: 1.2em;">
-          <span>${type.id} (${type.children.length})</span>
+      const types = [...new Set(routes.map((route: Route) => route.type).filter(Boolean))] as string[];
+      const typeLines = types.map(
+        type => /* html */ `<div data-id="${el.id}/${type}" class="states" style="display: flex; justify-content: space-between; padding-left: 1.2em;">
+          <span>${type} (${routes.filter((route: Route) => route.type === type).length})</span>
           <div style="width: auto; display: flex; gap: 0.4em;">
             <span data-tip="Edit style" class="editStyle icon-brush pointer" style="font-size: smaller;"></span>
           </div>
         </div>`
       );
-      return [group, ...types];
+      return [group, ...typeLines];
     });
 
   ensureEl("routeGroupsEditorBody").innerHTML = lines.join("");
@@ -126,7 +128,7 @@ function removeGroup(group: string): void {
     onConfirm: () => {
       pack.routes.filter((r: Route) => r.group === group).forEach(Routes.remove);
       if (!DEFAULT_GROUPS.includes(group)) select("#routes").select(`#${group}`).remove();
-      Layers.draw("labels");
+      Layers.draw("routes", "labels");
       addLines();
     }
   });

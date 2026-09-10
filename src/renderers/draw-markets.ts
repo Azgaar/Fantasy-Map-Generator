@@ -1,88 +1,137 @@
-import { color, curveBasisClosed, line, select } from "d3";
-import { rn } from "../utils";
-import { getIsolines } from "../utils/pathUtils";
+import { color, curveBasisClosed, line } from "d3";
+import { Layers } from "@/components/layers";
+import { boundsIntersect, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
+import type { PackedGraph } from "@/types/PackedGraph";
+import { rn } from "@/utils/numberUtils";
+import { getIsolines } from "@/utils/pathUtils";
 
-export function drawMarkets() {
+type Bounds = Omit<ViewportRenderContext["bounds"], "scale">;
+
+const layer = ViewportLayers.register({ id: "markets", render: reconcileMarkets });
+const territories = new Map<number, Bounds & { path: string }>();
+let sourcePack: PackedGraph | null = null;
+let sourceMarkets: Uint16Array | null = null;
+
+export function drawMarkets(): void {
   TIME && console.time("drawMarkets");
-  select("#markets").html(buildMarketsContent());
-  highlightMarketsOnHover();
+  buildTerritories();
+  layer.render();
   TIME && console.timeEnd("drawMarkets");
 }
 
-function buildMarketsContent(): string {
+function buildTerritories(): void {
   const linegen = line().curve(curveBasisClosed);
-  const getType = (cellId: number) => pack.cells.market[cellId];
-  const isolines = getIsolines(pack, getType, { polygons: true });
+  const isolines = getIsolines(pack, cellId => pack.cells.market[cellId], { polygons: true });
+  territories.clear();
 
-  // marker circle size, emoji size and emoji icon are independently user-configurable
-  const baseRadius = styles.markets.options.size;
-  const baseFont = styles.markets.options.fontSize;
-  const icon = styles.markets.options.icon;
-
-  return pack.markets
-    .map(market => {
-      let content = "";
-      const fillColor = market.color || "#dababf";
-      const strokeColor = color(fillColor)?.darker().hex() || "#000";
-
-      const polygons = isolines[market.i]?.polygons;
-      if (polygons) {
-        const path = polygons.map(p => linegen(p) ?? "").join("");
-        const clipId = `market-clip-${market.i}`;
-        content += `<clipPath id="${clipId}"><path d="${path}"/></clipPath>`;
-        content += `<path class="fill" d="${path}" fill="${fillColor}" stroke="none"/>`;
-        content += `<path class="border" d="${path}" fill="none" stroke="${strokeColor}" stroke-width="0.7" clip-path="url(#${clipId})"/>`;
+  for (const [id, { polygons }] of Object.entries(isolines)) {
+    if (!polygons?.length) continue;
+    const territory = { path: "", x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
+    territory.path = polygons.map(polygon => linegen(polygon) ?? "").join("");
+    for (const polygon of polygons) {
+      for (const [x, y] of polygon) {
+        territory.x0 = Math.min(territory.x0, x);
+        territory.y0 = Math.min(territory.y0, y);
+        territory.x1 = Math.max(territory.x1, x);
+        territory.y1 = Math.max(territory.y1, y);
       }
+    }
+    territories.set(Number(id), territory);
+  }
 
-      const centerBurg = pack.burgs[market.centerBurgId];
-      if (centerBurg) {
-        const { x, y } = centerBurg;
-        const radius = Math.max(rn(baseRadius + 1 / scale, 2), 2);
-        const fontSize = Math.max(rn(baseFont + 1 / scale, 2), 2);
-        const strokeWidth = rn(radius / 8, 2);
-
-        content += `<circle cx="${x}" cy="${y}" r="${radius}" fill="${fillColor}" fill-opacity="1" stroke="${strokeColor}" stroke-width="${strokeWidth}" />`;
-        content += `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-size="${fontSize}px" fill-opacity="1">${icon}</text>`;
-      }
-
-      return `<g id="market${market.i}" data-id="${market.i}">${content}</g>`;
-    })
-    .join("");
+  sourcePack = pack;
+  sourceMarkets = pack.cells.market;
 }
 
-function highlightMarketsOnHover(): void {
-  select("#markets")
-    .selectAll("g")
-    .on("mouseover", e => highlightMarketOn((e.currentTarget as SVGGElement).dataset.id!))
-    .on("mouseout", e => highlightMarketOff((e.currentTarget as SVGGElement).dataset.id!));
+function reconcileMarkets({ root, bounds }: ViewportRenderContext): void {
+  const container = root.querySelector<SVGGElement>("#markets");
+  if (!container || !Layers.isOn("markets")) return;
+  if (sourcePack !== pack || sourceMarkets !== pack.cells.market) buildTerritories();
+
+  const { size, fontSize: baseFont, icon } = styles.markets.options;
+  const radius = Math.max(rn(size + 1 / bounds.scale, 2), 2);
+  const fontSize = Math.max(rn(baseFont + 1 / bounds.scale, 2), 2);
+  const strokeWidth = rn(radius / 8, 2);
+  const padding = Math.max(radius + strokeWidth / 2, fontSize);
+  const markup: string[] = [];
+
+  for (const market of pack.markets) {
+    const territory = territories.get(market.i);
+    const center = pack.burgs[market.centerBurgId];
+    const showTerritory = territory && boundsIntersect(territory, bounds);
+    const showCenter =
+      center &&
+      boundsIntersect(
+        { x0: center.x - padding, y0: center.y - padding, x1: center.x + padding, y1: center.y + padding },
+        bounds
+      );
+    if (!showTerritory && !showCenter) continue;
+
+    const fill = market.color || "#dababf";
+    const stroke = color(fill)?.darker().hex() || "#000";
+
+    const territoryMarkup = showTerritory
+      ? /*html*/ `<clipPath id="market-clip-${market.i}"><path d="${territory.path}"/></clipPath>
+        <path class="fill" d="${territory.path}" fill="${fill}" stroke="none"/>
+        <path class="border" d="${territory.path}" fill="none" stroke="${stroke}" stroke-width="0.7" clip-path="url(#market-clip-${market.i})"/>`
+      : "";
+    const centerMarkup = showCenter
+      ? /*html*/ `<circle cx="${center.x}" cy="${center.y}" r="${radius}" fill="${fill}" fill-opacity="1" stroke="${stroke}" stroke-width="${strokeWidth}"/>
+        <text x="${center.x}" y="${center.y}" text-anchor="middle" dominant-baseline="central" font-size="${fontSize}px" fill-opacity="1">${icon}</text>`
+      : "";
+
+    const marker = /*html*/ `<g id="market${market.i}" data-id="${market.i}">${territoryMarkup}${centerMarkup}</g>`;
+    markup.push(marker);
+  }
+
+  container.innerHTML = markup.join("");
+  if (root === document) {
+    container.onmouseover = onMarketHover;
+    container.onmouseout = onMarketHover;
+  }
+}
+
+function onMarketHover(event: MouseEvent): void {
+  const group = event.target instanceof Element ? event.target.closest<SVGGElement>("g[data-id]") : null;
+  if (!group || group.parentNode !== event.currentTarget) return;
+  if (event.relatedTarget instanceof Node && group.contains(event.relatedTarget)) return;
+  if (event.type === "mouseover") highlightMarketOn(group.dataset.id!);
+  else highlightMarketOff(group.dataset.id!);
 }
 
 export function highlightMarketOn(marketId: number | string): void {
-  const group = select(`#markets #market${marketId}`);
-  const path = group.select<SVGPathElement>("path.fill").node();
+  const group = document.querySelector(`#markets #market${marketId}`);
+  const path = group?.querySelector<SVGPathElement>("path.fill");
   if (!path) return;
-
-  group.select(".highlight").remove();
+  group!.querySelector(".highlight")?.remove();
 
   const twin = path.cloneNode() as SVGPathElement;
+  twin.setAttribute("class", "highlight");
+  twin.setAttribute("fill-opacity", "0.7");
+  twin.setAttribute("stroke", "#d0240f");
+  twin.setAttribute("stroke-width", "1");
+  twin.setAttribute("pointer-events", "none");
   path.after(twin);
-  select(twin)
-    .attr("class", "highlight")
-    .attr("fill-opacity", 0)
-    .attr("stroke", "#d0240f")
-    .attr("stroke-width", 0)
-    .attr("pointer-events", "none")
-    .transition()
-    .duration(1000)
-    .attr("fill-opacity", 0.7)
-    .attr("stroke-width", 1);
+  twin.animate(
+    [
+      { fillOpacity: 0, strokeWidth: 0 },
+      { fillOpacity: 0.7, strokeWidth: 1 }
+    ],
+    { duration: 1000 }
+  );
 }
 
 export function highlightMarketOff(marketId: number | string): void {
-  select(`#markets #market${marketId} .highlight`)
-    .transition()
-    .duration(600)
-    .attr("fill-opacity", 0)
-    .attr("stroke-width", 0)
-    .remove();
+  const path = document.querySelector<SVGPathElement>(`#markets #market${marketId} .highlight`);
+  if (!path) return;
+  const { fillOpacity, strokeWidth } = getComputedStyle(path);
+  for (const animation of path.getAnimations()) animation.cancel();
+  const animation = path.animate(
+    [
+      { fillOpacity, strokeWidth },
+      { fillOpacity: 0, strokeWidth: 0 }
+    ],
+    { duration: 600, fill: "forwards" }
+  );
+  animation.onfinish = () => path.remove();
 }

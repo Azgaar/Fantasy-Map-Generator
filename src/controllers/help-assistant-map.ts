@@ -7,6 +7,7 @@ import { tip } from "@/components/tooltips";
 import {
   type Conversation,
   create,
+  currentMapId,
   type Entry,
   forCurrentMap,
   isEmpty,
@@ -415,7 +416,7 @@ function renderConversations(): void {
 
   select.options.length = 0;
   list().forEach(item => {
-    const label = item.mapId === mapId ? item.title : `${item.title} (other map)`;
+    const label = item.mapId === currentMapId() ? item.title : `${item.title} (other map)`;
     select.options.add(new Option(label, item.id));
   });
   select.value = conversation.id;

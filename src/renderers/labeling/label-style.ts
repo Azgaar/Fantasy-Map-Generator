@@ -58,7 +58,7 @@ function authoredSizeFromStyle(fontSize: unknown): number {
  * flag and the sibling icon size; everything else is style data. */
 export function readBurgLabelStyles(root: ParentNode = document): Record<string, GroupStyle> {
   const out: Record<string, GroupStyle> = {};
-  const burgGroups = options.labels.groups.filter(group => group.type === "burg");
+  const burgGroups = options.map.labels.groups.filter(group => group.type === "burg");
 
   // matched by id, so user-supplied group names need no selector escaping
   const shells = new Map<string, SVGGElement>();

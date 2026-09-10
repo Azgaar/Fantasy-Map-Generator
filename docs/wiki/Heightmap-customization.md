@@ -11,6 +11,17 @@ To access the Heightmap Editor, you can either:
 
 </details>
 
+### Contour display
+
+To show contour lines on a finished map, enable the **Heightmap** layer, then open **Style → Heightmap**.
+Choose the **landHeights** or **oceanHeights** group and set **Contours** to **Over colors** or **Lines only**.
+Ocean contours also require **Render ocean heights** to be enabled.
+
+Adjust **Contour spacing**, **color**, **width**, and **opacity** independently for each group. Lower spacing
+shows more detail; every fifth contour is twice as thick. Spacing uses the map's elevation scale, not meters
+or feet. The lines interpolate a gently smoothed surface without changing the terrain. These settings are
+saved with maps and custom style presets; contours are off by default.
+
 ### Modes
 The heightmap editor offers three different modes to choose from. Its recommended to save your map beforehand.
 1. **Erase**:

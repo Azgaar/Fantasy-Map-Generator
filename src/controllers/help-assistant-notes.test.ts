@@ -42,6 +42,24 @@ beforeEach(() => {
   });
   w.Controllers = { NotesEditor: editor };
   w.notes = [{ id: "burg1", name: "Kelmora", legend: "<p>old</p>" }];
+  // the previous state is read off the entity through the Notes store
+  w.pack = {
+    burgs: [0, { i: 1, name: "Kelmora", note: "<p>old</p>" }],
+    markers: [{ i: 2, name: "Old Well" }],
+    states: [],
+    provinces: [],
+    rivers: [],
+    routes: [],
+    features: [],
+    zones: [],
+    journeys: [],
+    markets: [],
+    addedLabels: [],
+    cultures: [],
+    religions: [],
+    biomes: [],
+    goods: []
+  };
 });
 
 describe("noteContext", () => {
@@ -68,7 +86,7 @@ describe("noteContext", () => {
     const text = (await noteContext()) ?? "";
     expect(text).not.toContain("x".repeat(MAX_CONTEXT_CHARS + 1));
     expect(text).toContain("500 more characters");
-    expect(text).toContain('n.id === "burg1"');
+    expect(text).toContain("pack.<type>s[<i>].note");
   });
 });
 

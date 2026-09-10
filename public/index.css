@@ -2249,32 +2249,6 @@ div.textual span,
   margin: 4px;
 }
 
-/* jQuery UI sets the dialog content height inline; the layout column fills it, the editor takes the rest */
-#notesLayout {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  width: auto;
-}
-
-#notesLegend,
-#notesSource {
-  flex: 1;
-  min-height: 0;
-  background-color: #fff;
-}
-
-#notesSource {
-  font-family: var(--monospace);
-  resize: none;
-}
-
-#notesBody td,
-#notesBody th {
-  border: 1px solid #000;
-  padding: 2px 5px;
-}
-
 svg.button {
   position: relative;
   background-color: transparent;
@@ -2536,10 +2510,6 @@ svg.button {
   opacity: 0.8;
 }
 
-#markerTypeSelector {
-  font-size: 0.85em;
-}
-
 #markerTypeSelectorWrapper {
   position: relative;
 }
@@ -2627,7 +2597,7 @@ svg.button {
   user-select: none;
   opacity: 0;
   animation: fadeIn 1s ease-in 1s forwards;
-  z-index: 9999;
+  z-index: 99;
 }
 
 #tourPromptButton button {
@@ -2773,6 +2743,12 @@ body.tour-free-roam * {
 #helpAssistantBubble:focus-visible {
   outline: 2px solid var(--dark-solid);
   outline-offset: 3px;
+}
+
+/* .ui-dialog turns selection off so dialogs drag cleanly, which also made the answers
+   impossible to copy. The panel opts back in; the titlebar keeps the drag behaviour. */
+#helpAssistant {
+  user-select: text;
 }
 
 /* the badge alone squishes under the press, the circle stays put, as the launcher did */

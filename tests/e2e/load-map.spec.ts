@@ -1,17 +1,26 @@
 import { test, expect, type Page } from "@playwright/test";
 import fs from "fs";
 import path from "path";
+import { waitForMap } from "./wait-for-map";
 
-declare const notes: { id: string }[]; // page global, resolved inside page.evaluate
-declare const options: {
-  labels: { resizeOnZoom: boolean; showAll: boolean; groups: { type: string; mode?: string }[] };
-};
 declare const style: { relief: { set: string; size: number; density: number } };
 
 const LEGACY_RELIEF_ICONS = [
   { icon: "relief-mount-1", x: 100, y: 100, s: 20 },
   { icon: "relief-hill-1", x: 200, y: 150, s: 10 }
 ];
+
+// The legacy added labels in 1.139.4.map are the text elements label1..label4. No fixture carries a
+// note on one, and their ids resolve to an entity only through the rename map the label migration
+// fills in, so the note has to be injected to exercise that path
+function buildLegacyMapWithLabelNotes(): Buffer {
+  const mapData = fs.readFileSync(path.join(__dirname, "../fixtures/1.139.4.map"), "utf8").split("\r\n");
+  const notes = JSON.parse(mapData[4]);
+  notes.push({ id: "label1", name: "The Reach", legend: "<p>Named on an old chart</p>" });
+  notes.push({ id: "label3", name: "label3", legend: "<p>No title of its own</p>" });
+  mapData[4] = JSON.stringify(notes);
+  return Buffer.from(mapData.join("\r\n"), "utf8");
+}
 
 // 1.139.4.map has an empty #terrain group, so the legacy layout (icons in the svg, relief style
 // in the group attributes, layer hidden by display) has to be re-created to test the migration
@@ -98,9 +107,7 @@ test.describe("Map loading", () => {
     await fileInput.setInputFiles(mapFilePath);
 
     // Wait for map to be fully loaded
-    await page.waitForFunction(() => (window as any).mapId !== undefined, {
-      timeout: 120000
-    });
+    await waitForMap(page);
 
     // Additional wait for rendering to settle
     await page.waitForTimeout(500);
@@ -113,7 +120,7 @@ test.describe("Map loading", () => {
         hasBurgs: pack.burgs && pack.burgs.length > 1,
         hasCells: pack.cells && pack.cells.i && pack.cells.i.length > 0,
         hasRivers: pack.rivers && pack.rivers.length > 0,
-        mapId: (window as any).mapId
+        mapsGenerated: (window as any).mapHistory.length
       };
     });
 
@@ -121,7 +128,7 @@ test.describe("Map loading", () => {
     expect(mapData.hasBurgs).toBe(true);
     expect(mapData.hasCells).toBe(true);
     expect(mapData.hasRivers).toBe(true);
-    expect(mapData.mapId).toBeDefined();
+    expect(mapData.mapsGenerated).toBeGreaterThan(0);
 
     // Ensure no JavaScript errors occurred during loading
     // Filter out expected errors (external resources like Google Analytics, fonts)
@@ -151,9 +158,7 @@ test.describe("Map loading", () => {
     const mapFilePath = path.join(__dirname, "../fixtures/1.112.1.map");
     await fileInput.setInputFiles(mapFilePath);
 
-    await page.waitForFunction(() => (window as any).mapId !== undefined, {
-      timeout: 120000
-    });
+    await waitForMap(page);
     await page.waitForTimeout(500);
 
     // Check essential SVG layers exist
@@ -203,9 +208,7 @@ test.describe("Map loading", () => {
     const mapFilePath = path.join(__dirname, "../fixtures/1.112.1.map");
     await fileInput.setInputFiles(mapFilePath);
 
-    await page.waitForFunction(() => (window as any).mapId !== undefined, {
-      timeout: 120000
-    });
+    await waitForMap(page);
     await page.waitForTimeout(500);
 
     // Verify states have proper structure
@@ -314,12 +317,12 @@ test.describe("Map loading", () => {
         rendered: addedLabels.map(
           (added: any) => document.getElementById(`addedLabel${added.i}`)?.dataset.labelShape ?? "missing"
         ),
-        // legacy notes are re-pointed at the new entity ids. `notes` is script-scoped,
-        // so it has to be read off the lexical global rather than off window
-        orphanNotes: notes.filter(
-          (note: any) =>
-            note.id.startsWith("addedLabel") && !addedLabels.some((added: any) => `addedLabel${added.i}` === note.id)
-        ).length
+        // legacy notes ride on the entity now: this fixture's are all on markers and regiments,
+        // and nothing may be left over to raise the "notes without an element" prompt
+        notedMarkers: (window as any).pack.markers.filter((marker: any) => marker.note).length,
+        notedRegiments: (window as any).pack.states.flatMap((state: any) => state.military || [])
+          .filter((regiment: any) => regiment.note).length,
+        unattachedPrompt: document.getElementById("alert")?.offsetParent !== null
       };
     });
 
@@ -335,7 +338,31 @@ test.describe("Map loading", () => {
       });
     }
     expect(migrated.rendered).toEqual(["path", "path", "path", "path"]);
-    expect(migrated.orphanNotes).toBe(0);
+    expect(migrated.notedMarkers).toBe(86);
+    expect(migrated.notedRegiments).toBe(143);
+    expect(migrated.unattachedPrompt).toBe(false);
+  });
+
+  test("a legacy note on an added label follows it onto pack.addedLabels", async ({ page }) => {
+    await page.locator("#mapToLoad").setInputFiles({
+      name: "legacy-added-label-notes.map",
+      mimeType: "text/plain",
+      buffer: buildLegacyMapWithLabelNotes()
+    });
+    await expect(page.locator("#tooltip")).toContainText("Map is successfully loaded", { timeout: 120000 });
+
+    const migrated = await page.evaluate(() => ({
+      notes: (window as any).pack.addedLabels.map((added: any) => added.note).filter(Boolean),
+      // an id the rename map failed to translate would be reported as belonging to no element
+      unattachedPrompt: document.getElementById("alert")?.offsetParent !== null
+    }));
+
+    expect(migrated.unattachedPrompt).toBe(false);
+    // the first note is titled differently from the label, so its title is kept as a heading; the
+    // second is titled with its own element id, which is no title and must not become one
+    expect(migrated.notes).toEqual(
+      expect.arrayContaining(["<h3>The Reach</h3><p>Named on an old chart</p>", "<p>No title of its own</p>"])
+    );
   });
 
   test("legacy lakes without shoreline data should get it on load", async ({ page }) => {
@@ -402,7 +429,7 @@ test.describe("Map loading", () => {
     });
   });
 
-  test("legacy label settings should migrate without changing behavior", async ({ page }) => {
+  test("legacy label settings should migrate while preserving browser visibility preferences", async ({ page }) => {
     const mapFilePath = path.join(__dirname, "../fixtures/1.139.4.map");
     const mapData = fs.readFileSync(mapFilePath, "utf8").split(/\r?\n/);
     const settings = mapData[1].split("|");
@@ -413,6 +440,10 @@ test.describe("Map loading", () => {
     settings[23] = "0"; // resize on zoom disabled
     mapData[1] = settings.join("|");
 
+    await page.evaluate(() => {
+      options.app.labels.showAll = false;
+    });
+
     await page.locator("#mapToLoad").setInputFiles({
       name: "legacy-label-settings.map",
       mimeType: "text/plain",
@@ -421,15 +452,15 @@ test.describe("Map loading", () => {
     await expect(page.locator("#tooltip")).toContainText("Map is successfully loaded", { timeout: 120000 });
 
     const migrated = await page.evaluate(() => {
-      const labels = options.labels;
+      const labels = options.map.labels;
       return {
         resizeOnZoom: labels.resizeOnZoom,
-        showAll: labels.showAll,
-        stateMode: labels.groups.find((group: any) => group.type === "state")?.mode
+        showAll: options.app.labels.showAll,
+        stateMode: labels.groups.find(group => group.type === "state")?.mode
       };
     });
 
-    expect(migrated).toEqual({ resizeOnZoom: false, showAll: true, stateMode: "full" });
+    expect(migrated).toEqual({ resizeOnZoom: false, showAll: false, stateMode: "full" });
   });
 
   // v1.142.0 moved relief icons from the #terrain group to pack.relief and renders only the ones
@@ -531,9 +562,7 @@ test.describe("Map loading", () => {
     const mapFilePath = path.join(__dirname, "../fixtures/1.112.1.map");
     await fileInput.setInputFiles(mapFilePath);
 
-    await page.waitForFunction(() => (window as any).mapId !== undefined, {
-      timeout: 120000
-    });
+    await waitForMap(page);
     await page.waitForTimeout(500);
 
     // Verify burgs have proper structure

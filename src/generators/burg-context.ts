@@ -589,6 +589,11 @@ function indexById<T extends { i: number }>(source: readonly T[] | undefined): M
 export function buildBurgContext(burg: Burg): BurgContext {
   const { cells, features, routes, biomes, cultures } = pack;
   const cell = burg.cell;
+  const {
+    scale: populationRate,
+    urbanization: { rate: urbanization }
+  } = options.map.units.population;
+  const distanceScale = options.map.units.distance.scale;
 
   const population = scaledPopulation(burg.population ?? 0, populationRate, urbanization);
   const radiusKm = effectiveWindowRadiusKm(DEFAULT_WINDOW_RADIUS_KM, distanceScale, Number(grid?.spacing ?? 0));
@@ -598,7 +603,7 @@ export function buildBurgContext(burg: Burg): BurgContext {
   // Flying burgs are not on the ground route network.
   const approaches = burg.flying ? [] : readApproaches(cell, cells.routes, cells.p, routeById);
   const windowCells = new Set(win.cellIds);
-  const heightExponent = Number(heightExponentInput?.value ?? 1.8);
+  const heightExponent = options.map.units.height.exponent;
   for (const approach of approaches) {
     const outward = orderRouteCellsOutward(routeById.get(approach.routeId)?.cells ?? [], cell);
     // Clip to the window: the readings must stay traceable to the window that produced them.
@@ -673,7 +678,7 @@ export function buildBurgContext(burg: Burg): BurgContext {
       i: burg.i,
       name: burg.name ?? "",
       population,
-      seedKey: `${seed}${String(burg.i).padStart(4, "0")}`,
+      seedKey: `${options.map.seed}${String(burg.i).padStart(4, "0")}`,
       capital: Boolean(burg.capital),
       port: Boolean(burg.port),
       citadel: Boolean(burg.citadel),

@@ -2,6 +2,7 @@ import type { Selection } from "d3";
 import { select } from "d3";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
+import { viewport } from "@/components/viewport";
 import { renderEmblemDefinitions } from "@/renderers/draw-emblems";
 import { drawScaleBar } from "@/renderers/draw-scalebar";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
@@ -24,7 +25,8 @@ import {
 type MapSelection = Selection<SVGSVGElement, unknown, null, undefined>;
 
 // project canvas coordinates to geographic [lon, lat], rounded to 4 decimals
-const toGeoCoordinates = (x: number, y: number) => getCoordinates(x, y, mapCoordinates, graphWidth, graphHeight, 4);
+const toGeoCoordinates = (x: number, y: number) =>
+  getCoordinates(x, y, options.map.geography.coordinates, options.map.graph.width, options.map.graph.height, 4);
 
 export interface GetMapURLOptions {
   debug?: boolean;
@@ -60,12 +62,12 @@ async function exportToPng(): Promise<void> {
   TIME && console.time("exportToPng");
   try {
     const url = await getMapURL("png");
-    const resolution = ensureEl<HTMLInputElement>("pngResolutionInput").valueAsNumber;
+    const resolution = options.app.export.pngResolution;
     const link = document.createElement("a");
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d")!;
-    canvas.width = svgWidth * resolution;
-    canvas.height = svgHeight * resolution;
+    canvas.width = viewport.width * resolution;
+    canvas.height = viewport.height * resolution;
 
     const blob = await new Promise<Blob>((resolve, reject) => {
       const img = new Image();
@@ -102,11 +104,11 @@ async function exportToJpeg(): Promise<void> {
   TIME && console.time("exportToJpeg");
   try {
     const url = await getMapURL("png");
-    const resolution = ensureEl<HTMLInputElement>("pngResolutionInput").valueAsNumber;
+    const resolution = options.app.export.pngResolution;
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d")!;
-    canvas.width = svgWidth * resolution;
-    canvas.height = svgHeight * resolution;
+    canvas.width = viewport.width * resolution;
+    canvas.height = viewport.height * resolution;
 
     const quality = Math.min(rn(1 - resolution / 20, 2), 0.92);
     const blob = await new Promise<Blob>((resolve, reject) => {
@@ -150,8 +152,8 @@ async function exportToPngTiles(): Promise<void> {
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d")!;
-  canvas.width = graphWidth;
-  canvas.height = graphHeight;
+  canvas.width = options.map.graph.width;
+  canvas.height = options.map.graph.height;
 
   const imgSchema = new Image();
   imgSchema.src = urlSchema;
@@ -165,15 +167,13 @@ async function exportToPngTiles(): Promise<void> {
 
   // download tiles
   const url = await getMapURL("tiles", { fullMap: true });
-  const tilesX = +ensureEl<HTMLInputElement>("tileColsOutput").value || 2;
-  const tilesY = +ensureEl<HTMLInputElement>("tileRowsOutput").value || 2;
-  const scale = +ensureEl<HTMLInputElement>("tileScaleOutput").value || 1;
+  const { cols: tilesX, rows: tilesY, scale } = options.app.export.tiles;
   const tolesTotal = tilesX * tilesY;
 
-  const tileW = (graphWidth / tilesX) | 0;
-  const tileH = (graphHeight / tilesY) | 0;
+  const tileW = (options.map.graph.width / tilesX) | 0;
+  const tileH = (options.map.graph.height / tilesY) | 0;
 
-  const width = graphWidth * scale;
+  const width = options.map.graph.width * scale;
   const height = width * (tileH / tileW);
   canvas.width = width;
   canvas.height = height;
@@ -189,10 +189,10 @@ async function exportToPngTiles(): Promise<void> {
     return first + last;
   }
 
-  for (let y = 0, row = 0, id = 1; y + tileH <= graphHeight; y += tileH, row++) {
+  for (let y = 0, row = 0, id = 1; y + tileH <= options.map.graph.height; y += tileH, row++) {
     const rowName = getRowLabel(row);
 
-    for (let x = 0, cell = 1; x + tileW <= graphWidth; x += tileW, cell++, id++) {
+    for (let x = 0, cell = 1; x + tileW <= options.map.graph.width; x += tileW, cell++, id++) {
       status.innerHTML = `Rendering tile ${rowName}${cell} (${id} of ${tolesTotal})...`;
       ctx.drawImage(img, x, y, tileW, tileH, 0, 0, width, height);
       const blob = await canvasToBlob(canvas, "image/png");
@@ -245,7 +245,7 @@ async function exportToPngTiles(): Promise<void> {
 }
 
 // parse map svg to object url
-async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<string> {
+async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<string> {
   const {
     debug = false,
     noLabels = false,
@@ -254,7 +254,7 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
     noIce = false,
     noVignette = false,
     fullMap = false
-  } = options;
+  } = config;
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
   cloneEl.id = "fantasyMap";
   document.body.appendChild(cloneEl);
@@ -266,11 +266,11 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
 
   if (fullMap) {
     // reset transform to show the whole map
-    clone.attr("width", graphWidth).attr("height", graphHeight);
+    clone.attr("width", options.map.graph.width).attr("height", options.map.graph.height);
     clone.select("#viewbox").attr("transform", null);
     ViewportLayers.renderTo(cloneEl);
 
-    if (!noScaleBar) drawScaleBar(cloneEl, 1, graphWidth, graphHeight);
+    if (!noScaleBar) drawScaleBar(cloneEl, 1, options.map.graph.width, options.map.graph.height);
   }
 
   const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
@@ -288,10 +288,8 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
   if (noVignette) clone.select("#vignette").remove();
   if (noScaleBar) clone.select("#scaleBar").remove();
 
-  if (type === "svg") {
-    removeUnusedElements(clone);
-    relocateRootFilter(cloneEl);
-  }
+  if (type === "svg") removeUnusedElements(clone);
+  relocateRootFilter(cloneEl); // Firefox drops a root-svg filter when the svg is rasterized via an image
   if (customization && type === "mesh") updateMeshCells(clone);
   inlineStyle(clone);
 
@@ -427,7 +425,7 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
 
   // add grid pattern
   if (cloneEl.getElementById("gridOverlay")?.hasChildNodes()) {
-    const type = cloneEl.getElementById("gridOverlay")!.getAttribute("type");
+    const type = styles.grid.options.type || "pointyHex";
     const pattern = svgDefs.getElementById(`pattern_${type}`);
     if (pattern) cloneDefs.appendChild(pattern.cloneNode(true));
   }
@@ -590,13 +588,14 @@ export function flattenSymbolReferences(svg: SVGSVGElement): void {
 }
 
 // Inkscape can't render filters on the root svg element and miscomposites default filter regions on large groups,
-// so move the global filter to #viewbox and give all filters an explicit full-viewport region
+// so move the global filter to the drawn groups and give all filters an explicit full-viewport region
 export function relocateRootFilter(svg: SVGSVGElement): void {
   const filter = svg.getAttribute("filter");
   const viewbox = svg.querySelector("#viewbox");
   if (!filter || !viewbox) return;
   svg.removeAttribute("filter");
   viewbox.setAttribute("filter", filter);
+  svg.querySelector("#scaleBar")?.setAttribute("filter", filter);
 
   svg.querySelectorAll("filter").forEach(filterEl => {
     filterEl.setAttribute("filterUnits", "userSpaceOnUse");
@@ -750,14 +749,13 @@ function saveGeoJsonRivers(): void {
 
 function saveGeoJsonMarkers(): void {
   const features = pack.markers.map(marker => {
-    const { i, type, icon, x, y, size, fill, stroke } = marker as typeof marker & {
+    const { i, type, icon, x, y, size, fill, stroke, name, note } = marker as typeof marker & {
       size?: number;
       fill?: string;
       stroke?: string;
     };
     const coordinates = toGeoCoordinates(x, y);
-    const note = notes.find(note => note.id === `marker${i}`);
-    const properties = { id: i, type, icon, x, y, ...note, size, fill, stroke };
+    const properties = { id: i, type, icon, x, y, name, note, size, fill, stroke };
     return { type: "Feature", geometry: { type: "Point", coordinates }, properties };
   });
 

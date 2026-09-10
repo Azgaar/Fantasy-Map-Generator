@@ -48,7 +48,7 @@ function buildGeneratedContext() {
     GENERATOR_GLOBALS: generatorGlobals(),
     REGISTRY_KEYS: [registryKeys("src/controllers/index.ts", "Controllers"), registryKeys("src/services/index.ts", "Services")].join("\n"),
     PACKED_GRAPH_TYPES: read("src/types/PackedGraph.ts").replace(/^import .*\n/gm, "").trim(),
-    DATA_MODEL: read("docs/architecture/data_model.md").trim()
+    DATA_MODEL: read("docs/architecture/data-model.md").trim()
   };
 
   const header = `// GENERATED FILE — do not edit by hand.\n// Run \`npm run generate:agent-context\` to rebuild it from the sources it mirrors.\n`;

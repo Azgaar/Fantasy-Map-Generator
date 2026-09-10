@@ -1,3 +1,5 @@
+import { viewport } from "@/components/viewport";
+
 interface ViewportLayerHandle {
   render: () => void;
   unregister: () => void;
@@ -13,12 +15,20 @@ interface ViewportLayer {
   render: (context: ViewportRenderContext) => void;
 }
 
-interface ViewportBounds {
-  scale: number;
+export interface Box {
   x0: number;
   y0: number;
   x1: number;
   y1: number;
+}
+
+interface ViewportBounds extends Box {
+  scale: number;
+}
+
+/** Axis-aligned overlap test between a cached shape box and the rendered viewport bounds */
+export function boundsIntersect(box: Box, bounds: Box): boolean {
+  return box.x0 <= bounds.x1 && box.y0 <= bounds.y1 && box.x1 >= bounds.x0 && box.y1 >= bounds.y0;
 }
 
 export class Scene<T extends { id: string }> {
@@ -69,6 +79,7 @@ export class ViewportRenderer {
       };
       overscanPixels: number;
       guardPixels: number;
+      zoomInRatio: number;
     }
   ) {}
 
@@ -128,7 +139,7 @@ export class ViewportRenderer {
     const bounds = this.getBounds(0);
     const guard = this.options.guardPixels / bounds.scale;
     return (
-      bounds.scale - this.materializedBounds.scale > 1 ||
+      bounds.scale / this.materializedBounds.scale > this.options.zoomInRatio ||
       bounds.x0 < this.materializedBounds.x0 + guard ||
       bounds.y0 < this.materializedBounds.y0 + guard ||
       bounds.x1 > this.materializedBounds.x1 - guard ||
@@ -166,9 +177,11 @@ export class ViewportRenderer {
 
 const OVERSCAN_PIXELS = 80;
 const GUARD_PIXELS = OVERSCAN_PIXELS / 2;
+const ZOOM_IN_RATIO = 1.2;
 
 export const ViewportLayers = new ViewportRenderer({
-  getViewport: () => ({ scale, x: viewX, y: viewY, width: svgWidth, height: svgHeight }),
+  getViewport: () => viewport,
   overscanPixels: OVERSCAN_PIXELS,
-  guardPixels: GUARD_PIXELS
+  guardPixels: GUARD_PIXELS,
+  zoomInRatio: ZOOM_IN_RATIO
 });

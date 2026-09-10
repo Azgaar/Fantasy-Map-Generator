@@ -9,6 +9,13 @@ declare global {
 type FeatureType = "ocean" | "lake" | "island";
 
 /* Pack features interface */
+export interface CapturedFeature {
+  name: string;
+  note?: string;
+  type: FeatureType;
+  gridCells: Set<number>;
+}
+
 export interface Feature {
   i: number;
   type: FeatureType;
@@ -34,6 +41,8 @@ export interface Feature {
   enteringFlux?: number;
   closed?: boolean;
   outCell?: number;
+
+  note?: string;
 }
 
 export interface GridFeature {
@@ -88,7 +97,7 @@ class FeatureModule {
    * mark Grid features (ocean, lakes, islands) and calculate distance field
    */
   markupGrid() {
-    Math.random = Alea(seed); // get the same result on heightmap edit in Erase mode
+    Math.random = Alea(options.map.seed); // get the same result on heightmap edit in Erase mode
 
     const { h: heights, c: neighbors, b: borderCells, i } = grid.cells;
     const cellsNumber = i.length;
@@ -206,8 +215,8 @@ class FeatureModule {
       const [startCell, featureVertices] = getCellsData(type, firstCell);
       const points = clipPoly(
         featureVertices.map((vertex: number) => vertices.p[vertex]),
-        graphWidth,
-        graphHeight
+        options.map.graph.width,
+        options.map.graph.height
       );
       const area = polygonArea(points); // feature perimiter area
       const absArea = Math.abs(rn(area));
@@ -319,9 +328,81 @@ class FeatureModule {
     pack.features = [0 as unknown as Feature, ...features];
   }
 
-  /**
-   * define feature groups (ocean, sea, gulf, continent, island, isle, freshwater lake, salt lake, etc.)
-   */
+  /** Grid cells a feature covered, plus the data the user owns, so a re-markup can hand it back */
+  captureUserData(): CapturedFeature[] {
+    const gridCellsByFeature = this.mapGridCellsByFeature();
+    if (!gridCellsByFeature) return [];
+
+    const captured: CapturedFeature[] = [];
+    for (const feature of pack.features) {
+      if (!feature?.i || (!feature.name && !feature.note)) continue;
+      const gridCells = gridCellsByFeature.get(feature.i);
+      if (gridCells?.size) captured.push({ name: feature.name, note: feature.note, type: feature.type, gridCells });
+    }
+
+    return captured;
+  }
+
+  /** Hand the captured data to whichever new feature covers most of the old one, dropping the rest */
+  restoreUserData(captured: CapturedFeature[]): void {
+    const { cells, features } = pack;
+    if (!captured.length || !cells?.f) return;
+
+    const capturedByGridCell = new Map<number, number>();
+    captured.forEach((item, index) => {
+      for (const gridCell of item.gridCells) capturedByGridCell.set(gridCell, index);
+    });
+
+    const overlaps = new Map<string, number>(); // `${featureId}:${capturedIndex}` -> shared grid cells
+    for (let i = 0; i < cells.f.length; i++) {
+      const featureId = cells.f[i];
+      if (!featureId) continue;
+      const index = capturedByGridCell.get(cells.g[i]);
+      if (index === undefined) continue;
+      const key = `${featureId}:${index}`;
+      overlaps.set(key, (overlaps.get(key) || 0) + 1);
+    }
+
+    const matches = Array.from(overlaps, ([key, overlap]) => {
+      const [featureId, index] = key.split(":").map(Number);
+      return { featureId, index, overlap };
+    }).sort((a, b) => b.overlap - a.overlap);
+
+    const takenFeatures = new Set<number>();
+    const takenCaptures = new Set<number>();
+
+    for (const { featureId, index, overlap } of matches) {
+      if (takenFeatures.has(featureId) || takenCaptures.has(index)) continue;
+      if (overlap * 2 < captured[index].gridCells.size) continue; // the old feature is mostly gone
+
+      const feature = features[featureId];
+      if (!feature) continue;
+      if (feature.type !== captured[index].type) continue; // a lake raised to land is not the island covering it
+
+      takenFeatures.add(featureId);
+      takenCaptures.add(index);
+      if (captured[index].name) feature.name = captured[index].name;
+      if (captured[index].note) feature.note = captured[index].note;
+    }
+  }
+
+  private mapGridCellsByFeature(): Map<number, Set<number>> | undefined {
+    const { cells } = pack;
+    if (!cells?.f || !cells.g || !pack.features) return undefined;
+
+    const gridCellsByFeature = new Map<number, Set<number>>();
+    for (let i = 0; i < cells.f.length; i++) {
+      const featureId = cells.f[i];
+      if (!featureId) continue;
+
+      const gridCells = gridCellsByFeature.get(featureId) ?? new Set<number>();
+      gridCells.add(cells.g[i]);
+      gridCellsByFeature.set(featureId, gridCells);
+    }
+
+    return gridCellsByFeature;
+  }
+
   defineGroups() {
     const gridCellsNumber = grid.cells.i.length;
     const OCEAN_MIN_SIZE = gridCellsNumber / 25;

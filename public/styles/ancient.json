@@ -739,7 +739,7 @@
           "font-size": "22%",
           "font-family": "Great Vibes",
           "style": "text-shadow: white 0px 0px 4px;",
-          "filter": "url(#filter-sepia)"
+          "filter": null
         }
       },
       "province": {
@@ -755,7 +755,7 @@
           "font-size": "6%",
           "font-family": "Great Vibes",
           "style": "text-shadow: white 0px 0px 4px;",
-          "filter": "url(#filter-sepia)"
+          "filter": null
         }
       },
       "route": {
@@ -767,11 +767,11 @@
           "stroke-width": 0,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "2%",
-          "font-family": "Great Vibes",
+          "letter-spacing": 0.1,
+          "font-size": "1.6%",
+          "font-family": "Pirata One",
           "style": "text-shadow: white 0px 0px 4px;",
-          "filter": "url(#filter-sepia)"
+          "filter": null
         }
       },
       "river": {
@@ -783,11 +783,11 @@
           "stroke-width": 0,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "2%",
-          "font-family": "Great Vibes",
+          "letter-spacing": 0.1,
+          "font-size": "1.6%",
+          "font-family": "Pirata One",
           "style": "text-shadow: white 0px 0px 4px;",
-          "filter": "url(#filter-sepia)"
+          "filter": null
         }
       },
       "added": {
@@ -803,7 +803,7 @@
           "font-size": "18%",
           "font-family": "Times New Roman",
           "style": "text-shadow: white 0px 0px 4px;",
-          "filter": "url(#filter-sepia)"
+          "filter": null
         }
       }
     }
@@ -1219,9 +1219,9 @@
     },
     "options": {
       "barSize": 2,
+      "label": "",
       "x": 99,
-      "y": 99,
-      "label": ""
+      "y": 99
     },
     "back": {
       "attrs": {

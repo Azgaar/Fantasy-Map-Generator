@@ -1,4 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+// the options tab drags the jQuery-backed layers tab in with it; the editor only needs the input sync
+vi.mock("@/components/options/tabs/options-tab", () => ({ syncOptionInputs: vi.fn() }));
 
 (globalThis as Record<string, unknown>).ERROR = false;
 (globalThis as Record<string, unknown>).changeViewMode = () => {};

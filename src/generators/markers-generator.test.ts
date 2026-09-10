@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import type { Marker } from "./markers-generator";
 
 const NAV_KEY = "navigator";
 
@@ -19,6 +20,7 @@ describe("MarkersModule.addEncounter", () => {
     originalNavigatorDescriptor = Object.getOwnPropertyDescriptor(globalThis, NAV_KEY);
 
     globalThis.TIME = false;
+    options.map.cultures.set = "world";
     globalThis.window = globalThis.window || ({} as any);
 
     globalThis.pack = {
@@ -32,8 +34,6 @@ describe("MarkersModule.addEncounter", () => {
     globalThis.Names = {
       getCulture: () => "Aeloran"
     } as any;
-
-    globalThis.notes = [];
 
     await import("./markers-generator");
     markers = globalThis.Markers;
@@ -50,34 +50,32 @@ describe("MarkersModule.addEncounter", () => {
   it("uses the Deorum iframe legend when the browser is online", () => {
     setNavigator({ onLine: true });
 
-    markers.addEncounter("marker42", CELL);
+    const marker = { i: 42, cell: CELL } as Marker;
+    markers.addEncounter(marker, CELL);
 
-    const note = globalThis.notes[0];
-    expect(note.id).toBe("marker42");
-    expect(note.name).toBe("Random encounter");
-    expect(String(note.legend).includes(`https://deorum.vercel.app/encounter/${CELL}`)).toBe(true);
-    expect(String(note.legend).includes("<iframe")).toBe(true);
+    expect(marker.name).toBe("Random encounter");
+    expect(String(marker.note).includes(`https://deorum.vercel.app/encounter/${CELL}`)).toBe(true);
+    expect(String(marker.note).includes("<iframe")).toBe(true);
   });
 
   it("falls back to a procedural culture/biome legend when offline", () => {
     setNavigator({ onLine: false });
 
-    markers.addEncounter("marker7", CELL);
+    const marker = { i: 7, cell: CELL } as Marker;
+    markers.addEncounter(marker, CELL);
 
-    const note = globalThis.notes[0];
-    expect(note.id).toBe("marker7");
-    expect(String(note.legend).includes("iframe")).toBe(false);
-    expect(String(note.legend).includes("deorum")).toBe(false);
-    expect(String(note.legend).includes("Aeloran")).toBe(true);
-    expect(String(note.legend).includes("forest")).toBe(true);
+    expect(String(marker.note).includes("iframe")).toBe(false);
+    expect(String(marker.note).includes("deorum")).toBe(false);
+    expect(String(marker.note).includes("Aeloran")).toBe(true);
+    expect(String(marker.note).includes("forest")).toBe(true);
   });
 
   it("treats a missing navigator (SSR / Node) as online", () => {
     setNavigator(undefined);
 
-    markers.addEncounter("marker9", CELL);
+    const marker = { i: 9, cell: CELL } as Marker;
+    markers.addEncounter(marker, CELL);
 
-    const note = globalThis.notes[0];
-    expect(String(note.legend).includes("deorum.vercel.app")).toBe(true);
+    expect(String(marker.note).includes("deorum.vercel.app")).toBe(true);
   });
 });

@@ -1,9 +1,10 @@
 import {expect, test} from "@playwright/test";
+import { waitForMap } from "./wait-for-map";
 
 test.describe("controller launchers", () => {
   test.beforeEach(async ({page}) => {
     await page.goto("/?seed=test-controller-launchers&width=1280&height=720");
-    await page.waitForFunction(() => (window as any).mapId !== undefined, {timeout: 60000});
+    await waitForMap(page);
   });
 
   test("opens Markers generation settings from Markers Overview", async ({page}) => {
@@ -60,5 +61,28 @@ test.describe("controller launchers", () => {
     await reliefIcon.dispatchEvent("click");
 
     await expect(page.locator("#reliefEditor")).toBeVisible();
+  });
+
+  test("builds the Units Editor from the map options on open", async ({page}) => {
+    // a unit the user named themselves is not among the select's options until the editor puts it back
+    await page.evaluate(() => {
+      Options.set(options => {
+        options.map.units.distance.unit = "leagues";
+        options.map.units.distance.scale = 7;
+      });
+    });
+
+    await page.click("#optionsTrigger");
+    await page.click("#toolsTab");
+    await page.click("#editUnitsButton");
+
+    await expect(page.locator("#unitsEditor")).toBeVisible();
+    await expect(page.locator("#distanceUnitInput")).toHaveValue("leagues");
+    await expect(page.locator("#distanceScaleInput input[type=number]")).toHaveValue("7");
+
+    // The controls write back to the map options.
+    await page.locator("#distanceScaleInput input[type=number]").fill("5");
+    await page.locator("#distanceScaleInput input[type=number]").dispatchEvent("change");
+    expect(await page.evaluate(() => options.map.units.distance.scale)).toBe(5);
   });
 });

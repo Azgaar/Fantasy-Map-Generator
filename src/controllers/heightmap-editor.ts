@@ -1,10 +1,29 @@
-import { drag, easeSinInOut, hsl, interpolateRound, lab, max, mean, quadtree, range, select } from "d3";
+import {
+  drag,
+  easeSinInOut,
+  hsl,
+  interpolateRound,
+  interpolateSpectral,
+  lab,
+  max,
+  mean,
+  quadtree,
+  range,
+  scaleSequential,
+  select
+} from "d3";
+import { applyGraphSize, fitMapToScreen } from "@/components/canvas";
 import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { dialogState } from "@/components/dialog/state";
 import { Layers } from "@/components/layers";
+import { syncOptionInputs } from "@/components/options/tabs/options-tab";
+import { changeViewMode } from "@/components/options/view-mode";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
+import { undraw } from "@/components/undraw";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import { viewport } from "@/components/viewport";
 import { Controllers } from "@/controllers";
+import { DENSITY_STEPS, POINTS_BY_DENSITY } from "@/data/graph-density";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { ErasePipeline } from "@/generators/generation-pipeline";
 import { GraphOverride } from "@/generators/graph-override";
@@ -16,6 +35,9 @@ import { downloadFile, getFileName, uploadFile } from "@/utils";
 import { ensureEl, findEl, generateSeed, getPointer, last, lim, link, minmax, rn, unique } from "../utils";
 import { createBrushStroke } from "../utils/brushUtils";
 import type { PromptOptions } from "../utils/commonUtils";
+
+// the palette the image converter paints heights with: spectral, blue-low to red-high
+const heightColor = scaleSequential(interpolateSpectral);
 
 // Legacy app prompt shadows the DOM built-in (same pattern as burg-editor / route-groups-editor). TODO: replace with dialog
 declare const prompt: (text: string, options: PromptOptions, callback: (value: string | number) => void) => void;
@@ -248,7 +270,7 @@ function renderImageConverter(): void {
     .enter()
     .append("div")
     .attr("data-color", (i: number) => i)
-    .style("background-color", (i: number) => color(1 - (i < 20 ? i - 5 : i) / 100))
+    .style("background-color", (i: number) => heightColor(1 - (i < 20 ? i - 5 : i) / 100))
     .style("width", (i: number) => (i < 40 || i > 68 ? ".2em" : ".1em"))
     .on("touchmove mousemove", showPalleteHeight)
     .on("click", assignHeight);
@@ -290,10 +312,10 @@ function addToolbarListeners(): void {
 
 function saveDraft(): void {
   const data = serializeHeightmapDraft({
-    seed: String(seed),
-    graphWidth,
-    graphHeight,
-    cellsDesired: grid.cellsDesired,
+    seed: options.map.seed,
+    graphWidth: options.map.graph.width,
+    graphHeight: options.map.graph.height,
+    cellsDesired: options.map.graph.points,
     heights: Uint8Array.from(grid.cells.h)
   });
   downloadFile(data, `${getFileName("Draft")}.heightmap`, "application/json");
@@ -324,33 +346,24 @@ function loadDraft(text: string): void {
 }
 
 function applyDraft(draft: HeightmapDraft): void {
-  const $points = ensureEl<HTMLInputElement>("pointsInput");
-  const storedCells = $points.dataset.cells;
-  $points.dataset.cells = String(draft.cellsDesired);
-
-  let newGrid: GridGraph;
-  try {
-    newGrid = Grid.generate(draft.seed, draft.graphWidth, draft.graphHeight);
-  } finally {
-    $points.dataset.cells = storedCells;
-  }
+  const newGrid: GridGraph = Grid.generate(draft.seed, draft.graphWidth, draft.graphHeight, draft.cellsDesired);
 
   if (newGrid.points.length !== draft.heights.length) {
     tip("Heightmap draft does not match its grid and cannot be loaded", false, "error", 6000);
     return;
   }
 
-  seed = draft.seed;
-  ensureEl<HTMLInputElement>("optionsSeed").value = draft.seed;
-  ensureEl<HTMLInputElement>("mapWidthInput").value = String(draft.graphWidth);
-  ensureEl<HTMLInputElement>("mapHeightInput").value = String(draft.graphHeight);
+  // the draft's grid becomes the map's, and the next generation asks for the same one
+  Options.set(o => {
+    o.map.seed = draft.seed;
+    o.map.graph = { width: draft.graphWidth, height: draft.graphHeight, points: draft.cellsDesired };
+    o.generation.graph.width = draft.graphWidth;
+    o.generation.graph.height = draft.graphHeight;
+    const density = DENSITY_STEPS.find(step => POINTS_BY_DENSITY[step] === draft.cellsDesired);
+    if (density) o.generation.graph.density = density;
+  });
+  syncOptionInputs();
   applyGraphSize();
-  const densityValue = Object.keys(cellsDensityMap).find(key => cellsDensityMap[+key] === draft.cellsDesired);
-  if (densityValue) changeCellsDensity(densityValue);
-  else {
-    $points.dataset.cells = String(draft.cellsDesired);
-    ensureEl<HTMLOutputElement>("pointsOutputFormatted").value = `${draft.cellsDesired / 1000}K`;
-  }
 
   newGrid.cells.h = Uint8Array.from(draft.heights);
   grid = newGrid;
@@ -437,8 +450,8 @@ function enterHeightmapEditMode(mode: string, tool?: string): void {
     sessionStorage.setItem("noExitButtonAnimation", "true");
     exitCustomization.style.opacity = "0";
     const width = 12 * +ensureEl<HTMLInputElement>("uiSize").value * 11;
-    exitCustomization.style.right = `${(svgWidth - width) / 2}px`;
-    exitCustomization.style.bottom = `${svgHeight / 2}px`;
+    exitCustomization.style.right = `${(viewport.width - width) / 2}px`;
+    exitCustomization.style.bottom = `${viewport.height / 2}px`;
     exitCustomization.style.transform = "scale(2)";
     exitCustomization.style.display = "block";
     select("#exitCustomization")
@@ -494,14 +507,14 @@ function moveCursor(this: SVGElement, event: any): void {
 
 // get user-friendly (real-world) height value from map data
 function getFriendlyHeight(h: number): string {
-  const unit = heightUnit.value;
+  const unit = options.map.units.height.unit;
   let unitRatio = 3.281; // default calculations are in feet
   if (unit === "m") unitRatio = 1;
   // if meter
   else if (unit === "f") unitRatio = 0.5468; // if fathom
 
   let height = -990;
-  if (h >= 20) height = (h - 18) ** +heightExponentInput.value;
+  if (h >= 20) height = (h - 18) ** options.map.units.height.exponent;
   else if (h < 20 && h > 0) height = ((h - 20) / h) * 50;
 
   return `${rn(height * unitRatio)} ${unit}`;
@@ -518,7 +531,7 @@ async function finalizeHeightmap(): Promise<void> {
     return;
   }
 
-  window.edits = undefined; // remove global variable
+  Reflect.deleteProperty(window, "edits");
   setHistoryButtonsDisabled(true, true);
 
   customization = 0;
@@ -655,6 +668,9 @@ function restoreRiskedData(): void {
     c.y = p[1];
   }
 
+  // the graph is rebuilt below, so what the user owns on a feature is matched back by grid cells
+  const capturedFeatures = Features.captureUserData();
+
   // save zone grid cells to restore them later
   const zoneGridCellsMap = new Map<number, number[]>();
   for (const zone of pack.zones) {
@@ -675,6 +691,8 @@ function restoreRiskedData(): void {
     Rivers.generate(true);
     Features.defineGroups();
   }
+
+  Features.restoreUserData(capturedFeatures); // after the lakes are renamed, so the kept names win
 
   // assign saved pack data from grid back to pack
   const n = pack.cells.i.length;
@@ -833,7 +851,7 @@ function restoreRiskedData(): void {
 
 // trigger heightmap redraw and history update if at least 1 cell is changed
 function updateHeightmap(): void {
-  const prev = last(edits) as number[];
+  const prev = last(edits);
   const changed = grid.cells.h.reduce((s: number, h: number, i: number) => (h !== prev[i] ? s + 1 : s), 0);
   tip(`Cells changed: ${changed}`);
   if (!changed) return;
@@ -919,9 +937,8 @@ function setHistoryButtonsDisabled(undo: boolean, redo: boolean): void {
 
 function updateHistory(noStat?: string): void {
   const step = edits.n;
-  edits = edits.slice(0, step);
+  edits = Object.assign(edits.slice(0, step), { n: step + 1 });
   edits[step] = grid.cells.h.slice();
-  edits.n = step + 1;
 
   setHistoryButtonsDisabled(edits.n <= 1, true);
   if (!noStat) {
@@ -946,8 +963,7 @@ function restoreHistory(step: number): void {
 
 // restart edits from 1st step
 function restartHistory(): void {
-  window.edits = []; // declare temp global variable
-  edits.n = 0;
+  window.edits = Object.assign([], { n: 0 });
   setHistoryButtonsDisabled(true, true);
   updateHistory();
 }
@@ -1828,7 +1844,7 @@ function openImageConverter(): void {
 
   $("#imageConverter").dialog({
     title: "Image Converter",
-    maxHeight: svgHeight * 0.8,
+    maxHeight: viewport.height * 0.8,
     minHeight: "auto",
     width: "20em",
     position: { my: "right top", at: "right-10 top+10", of: "svg" },
@@ -1838,8 +1854,8 @@ function openImageConverter(): void {
   // create canvas for image
   const canvas = document.createElement("canvas");
   canvas.id = "canvas";
-  canvas.width = graphWidth;
-  canvas.height = graphHeight;
+  canvas.width = options.map.graph.width;
+  canvas.height = options.map.graph.height;
   document.body.insertBefore(canvas, ensureEl("optionsContainer"));
 
   setOverlayOpacity(0);
@@ -1873,7 +1889,7 @@ function loadImage(this: HTMLInputElement): void {
 
   img.onload = () => {
     const ctx = ensureEl<HTMLCanvasElement>("canvas").getContext("2d")!;
-    ctx.drawImage(img, 0, 0, graphWidth, graphHeight);
+    ctx.drawImage(img, 0, 0, options.map.graph.width, options.map.graph.height);
     heightsFromImage(+ensureEl<HTMLInputElement>("convertColors").value);
     resetZoom();
   };
@@ -1966,7 +1982,7 @@ function colorClicked(this: HTMLElement): void {
 
 function assignHeight(this: HTMLElement): void {
   const height = +this.dataset.color!;
-  const rgb = color(1 - (height < 20 ? height - 5 : height) / 100);
+  const rgb = heightColor(1 - (height < 20 ? height - 5 : height) / 100);
   const selectedColor = ensureEl("imageConverter").querySelector<HTMLElement>("div.selectedColor")!;
   selectedColor.style.backgroundColor = rgb;
   selectedColor.setAttribute("data-color", rgb);
@@ -2030,7 +2046,7 @@ function autoAssing(type: string): void {
   unassigned.forEach(el => {
     const clr = el.dataset.color!;
     const height = type === "hue" ? getHeightByHue(clr) : type === "lum" ? getHeightByLum(clr) : getHeightByScheme(clr);
-    const colorTo = color(1 - (height < 20 ? (height - 5) / 100 : height / 100));
+    const colorTo = heightColor(1 - (height < 20 ? (height - 5) / 100 : height / 100));
     select<SVGElement, unknown>("#viewbox")
       .select("#heights")
       .selectAll(`polygon[fill='${clr}']`)
@@ -2193,10 +2209,10 @@ function downloadPreview(): void {
   img.onload = () => {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d")!;
-    canvas.width = graphWidth;
-    canvas.height = graphHeight;
+    canvas.width = options.map.graph.width;
+    canvas.height = options.map.graph.height;
     document.body.insertBefore(canvas, ensureEl("optionsContainer"));
-    ctx.drawImage(img, 0, 0, graphWidth, graphHeight);
+    ctx.drawImage(img, 0, 0, options.map.graph.width, options.map.graph.height);
     const imgBig = canvas.toDataURL("image/png");
     const link = document.createElement("a");
     link.download = `${getFileName("Heightmap")}.png`;
@@ -2207,3 +2223,7 @@ function downloadPreview(): void {
 }
 
 export const HeightmapEditor = { open };
+
+declare global {
+  var edits: Uint8Array[] & { n: number };
+}

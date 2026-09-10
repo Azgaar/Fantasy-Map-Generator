@@ -1,16 +1,19 @@
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { syncOptionInputs } from "@/components/options/tabs/options-tab";
+import { Pins } from "@/components/pins";
+import { getPointsNumber } from "@/data/graph-density";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { precreatedHeightmaps } from "@/data/precreated-heightmaps";
 import { drawHeights } from "@/renderers/draw-heightmap";
 import type { GridGraph } from "@/types/GridGraph";
-import { applyOption } from "@/utils";
-import { lock } from "@/utils/preferences";
 import { ensureEl, generateSeed } from "../utils";
 
 const PREVIEW_CELLS_DESIRED = 10000;
 
 const initialSeed = generateSeed();
-let graph = getGraph(grid);
+let graphConfig = getGraphConfig();
+let previewConfig = getPreviewConfig();
+let graph = getGraph();
 
 appendStyleSheet();
 insertHtml();
@@ -19,9 +22,15 @@ addListeners();
 function open(): void {
   closeDialogs(".stable");
 
-  const $templateInput = ensureEl<HTMLInputElement>("templateInput");
-  setSelected($templateInput.value);
-  graph = getGraph(graph);
+  setSelected(options.generation.template);
+  graphConfig = getGraphConfig();
+  previewConfig = getPreviewConfig();
+  graph = getGraph();
+  ensureEl("heightmapSelection").style.setProperty(
+    "--preview-aspect-ratio",
+    `${graphConfig.width}/${graphConfig.height}`
+  );
+  redrawAll();
 
   $("#heightmapSelection").dialog({
     title: "Select Heightmap",
@@ -34,19 +43,23 @@ function open(): void {
       Select: function (this: HTMLElement) {
         const id = getSelected();
         if (!id) return;
-        applyOption($templateInput, id, getName(id));
-        lock("template");
+        Options.set(o => (o.generation.template = id));
+        syncOptionInputs();
+        Pins.set("template", options.generation.template);
 
         $(this).dialog("close");
       },
       "New Map": function (this: HTMLElement) {
         const id = getSelected();
         if (!id) return;
-        applyOption($templateInput, id, getName(id));
-        lock("template");
+        Options.set(o => (o.generation.template = id));
+        syncOptionInputs();
+        Pins.set("template", options.generation.template);
 
         const seed = getSeed();
-        regeneratePrompt({ seed, graph });
+        // a capped preview grid is not the map's grid: let the pipeline build the full one from the same seed
+        const isPreviewGrid = previewConfig.points !== graphConfig.points;
+        regeneratePrompt({ seed, ...(isPreviewGrid ? {} : { graph }), ...graphConfig });
 
         $(this).dialog("close");
       }
@@ -136,7 +149,7 @@ function appendStyleSheet(): void {
 
     .heightmap-selection article > img {
       width: 100%;
-      aspect-ratio: ${graphWidth}/${graphHeight};
+      aspect-ratio: var(--preview-aspect-ratio);
       border-radius: 8px;
       object-fit: fill;
     }
@@ -211,7 +224,7 @@ function insertHtml(): void {
     .map(key => {
       const name = heightmapTemplates[key].name;
       Math.random = aleaPRNG(initialSeed);
-      const heights = HeightmapGenerator.fromTemplate(graph, key);
+      const heights = HeightmapGenerator.fromTemplate(graph, key, previewConfig);
 
       return /* html */ `<article data-id="${key}" data-seed="${initialSeed}">
         <img src="${getHeightmapPreview(heights)}" alt="${name}" />
@@ -273,44 +286,45 @@ function getSeed(): string | undefined {
   return ensureEl("heightmapSelection").querySelector<HTMLElement>(".selected")?.dataset?.seed;
 }
 
-function getName(id: string): string {
-  const isTemplate = id in heightmapTemplates;
-  return isTemplate ? heightmapTemplates[id].name : precreatedHeightmaps[id].name;
+function getGraphConfig() {
+  const { width, height, density } = options.generation.graph;
+  return { width, height, points: getPointsNumber(density) };
 }
 
-function getGraph(currentGraph: GridGraph): GridGraph {
-  // Force preview-sized grid regardless of user-selected production density,
-  // so heightmap thumbnails stay snappy at 500k+ cells.
-  const $pointsInput = ensureEl("pointsInput");
-  const originalCells = $pointsInput.dataset.cells;
-  $pointsInput.dataset.cells = String(PREVIEW_CELLS_DESIRED);
-  try {
-    const newGraph = Grid.shouldRegenerate(currentGraph, seed, graphWidth, graphHeight)
-      ? Grid.generate(seed, graphWidth, graphHeight)
-      : structuredClone(currentGraph);
-    Grid.resetHeights(newGraph);
-    return newGraph;
-  } finally {
-    $pointsInput.dataset.cells = originalCells;
+// thumbnails stay at the preview density however dense the map is, so they remain snappy at 500K+ cells
+function getPreviewConfig() {
+  return { ...graphConfig, points: Math.min(graphConfig.points, PREVIEW_CELLS_DESIRED) };
+}
+
+function getGraph(): GridGraph {
+  const { width, height, points } = previewConfig;
+  const current = options.map.graph;
+  if (current.width !== width || current.height !== height || current.points !== points) {
+    return Grid.generate(initialSeed, width, height, points);
   }
+  const preview = structuredClone(grid);
+  Grid.resetHeights(preview);
+  return preview;
 }
 
 function drawTemplatePreview(id: string): void {
-  const heights = HeightmapGenerator.fromTemplate(graph, id);
+  const heights = HeightmapGenerator.fromTemplate(graph, id, previewConfig);
   const dataUrl = getHeightmapPreview(heights);
   const article = ensureEl("heightmapSelection").querySelector(`[data-id="${id}"]`);
   article?.querySelector("img")?.setAttribute("src", dataUrl);
 }
 
 async function drawPrecreatedHeightmap(id: string): Promise<void> {
-  const heights = await HeightmapGenerator.fromPrecreated(graph, id);
+  const previewGraph = graph;
+  const heights = await HeightmapGenerator.fromPrecreated(previewGraph, id, previewConfig);
+  if (previewGraph !== graph) return;
   const dataUrl = getHeightmapPreview(heights);
   const article = ensureEl("heightmapSelection").querySelector(`[data-id="${id}"]`);
   article?.querySelector("img")?.setAttribute("src", dataUrl);
 }
 
 function regeneratePreview(article: HTMLElement, id: string): void {
-  graph = getGraph(graph);
+  Grid.resetHeights(graph);
   const seed = generateSeed();
   article.dataset.seed = seed;
   Math.random = aleaPRNG(seed);
@@ -318,7 +332,7 @@ function regeneratePreview(article: HTMLElement, id: string): void {
 }
 
 function redrawAll(): void {
-  graph = getGraph(graph);
+  Grid.resetHeights(graph);
   const articles = ensureEl("heightmapSelection").querySelectorAll<HTMLElement>("article");
   for (const article of articles) {
     const { id, seed } = article.dataset;

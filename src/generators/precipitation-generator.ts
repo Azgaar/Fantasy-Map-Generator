@@ -31,7 +31,7 @@ class PrecipitationModule {
     // Wind crosses sqrt(N) cells and loses at least 1 unit per land cell, so both the humidity it
     // carries and the loss divisor scale with sqrt(N); the fourth root left interiors dry past ~500K
     const cellsNumberModifier = (Grid.getCellsDesired() / 10000) ** 0.5;
-    const modifier = cellsNumberModifier * (options.prec / 100);
+    const modifier = cellsNumberModifier * (options.map.climate.precipitation / 100);
 
     const getPrecipitation = (humidity: number, i: number, n: number) => {
       const normalLoss = Math.max(humidity / (10 * modifier), 1); // precipitation in normal conditions
@@ -84,15 +84,17 @@ class PrecipitationModule {
 
     const vertT = southerly + northerly;
     if (northerly) {
-      const bandN = ((Math.abs(mapCoordinates.latN!) - 1) / 5) | 0;
-      const latModN = mapCoordinates.latT! > 60 ? (mean(LATITUDE_MODIFIER) as number) : LATITUDE_MODIFIER[bandN];
+      const bandN = ((Math.abs(options.map.geography.coordinates.latN) - 1) / 5) | 0;
+      const latModN =
+        options.map.geography.coordinates.latT > 60 ? (mean(LATITUDE_MODIFIER) as number) : LATITUDE_MODIFIER[bandN];
       const maxPrecN = (northerly / vertT) * 60 * modifier * latModN;
       passWind(range(0, cellsX, 1), maxPrecN, cellsX, cellsY);
     }
 
     if (southerly) {
-      const bandS = ((Math.abs(mapCoordinates.latS!) - 1) / 5) | 0;
-      const latModS = mapCoordinates.latT! > 60 ? (mean(LATITUDE_MODIFIER) as number) : LATITUDE_MODIFIER[bandS];
+      const bandS = ((Math.abs(options.map.geography.coordinates.latS) - 1) / 5) | 0;
+      const latModS =
+        options.map.geography.coordinates.latT > 60 ? (mean(LATITUDE_MODIFIER) as number) : LATITUDE_MODIFIER[bandS];
       const maxPrecS = (southerly / vertT) * 60 * modifier * latModS;
       passWind(range(cells.i.length - cellsX, cells.i.length, 1), maxPrecS, -cellsX, cellsY);
     }
@@ -110,10 +112,10 @@ class PrecipitationModule {
     let southerly = 0;
 
     range(0, cells.i.length, cellsX).forEach((cellId, rowId) => {
-      const lat = mapCoordinates.latN! - (rowId / cellsY) * mapCoordinates.latT!;
+      const lat = options.map.geography.coordinates.latN - (rowId / cellsY) * options.map.geography.coordinates.latT;
       const latMod = LATITUDE_MODIFIER[((Math.abs(lat) - 1) / 5) | 0];
       const tier = (Math.abs(lat - 89) / 30) | 0; // 30° tiers from 0 to 5, north to south
-      const angle = options.winds[tier];
+      const angle = options.map.climate.winds[tier];
 
       if (angle > 40 && angle < 140) westerly.push([cellId, latMod, tier]);
       if (angle > 220 && angle < 320) easterly.push([cellId + cellsX - 1, latMod, tier]);

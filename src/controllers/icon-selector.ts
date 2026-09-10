@@ -114,7 +114,7 @@ function renderIcons(table: HTMLTableElement): void {
 function getUsedImages(): Set<string> {
   const images = new Set<string>();
 
-  for (const unit of options.military) if (isImageIcon(unit.icon)) images.add(unit.icon);
+  for (const unit of options.map.military.units) if (isImageIcon(unit.icon)) images.add(unit.icon);
   for (const state of pack.states) {
     for (const regiment of state?.military || []) if (isImageIcon(regiment.icon)) images.add(regiment.icon);
   }
@@ -143,7 +143,7 @@ function uploadIcon(input: HTMLInputElement, onLoaded: (dataUri: string) => void
   reader.onload = () => {
     const result = reader.result as string;
     if (!isSvg) {
-      if (!result.startsWith("data:image")) return void tip("The file is not a supported image", false, "error", 4000);
+      if (!isImageIcon(result)) return void tip("The file is not a supported image", false, "error", 4000);
       return onLoaded(result);
     }
 

@@ -2,8 +2,8 @@ import { fileURLToPath, URL } from "node:url";
 
 /**
  * The desktop app ships the same renderer, minus the parts that only make sense on the web:
- * analytics (a program that phones home on launch is a different bargain than a web page),
- * and the PWA plumbing, which `public/main.js` already skips under Electron
+ * Google Analytics (a program that phones home on launch is a different bargain than a web page),
+ * and the PWA plumbing, which `services/platform.ts` already skips under Electron
  */
 const ANALYTICS_HOSTS = ["www.googletagmanager.com", "stats.barrulus.com"];
 

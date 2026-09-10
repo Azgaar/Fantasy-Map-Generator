@@ -1,3 +1,4 @@
+import { waitForMap } from "./wait-for-map";
 import { test, expect } from "@playwright/test";
 
 // Viewport layers reconcile once per gesture, at its end. A real wheel gesture ends on d3's
@@ -6,7 +7,7 @@ import { test, expect } from "@playwright/test";
 // pending frame therefore froze labels and icons for every human-paced gesture.
 test("wheel zoom reconciles viewport layers at gesture end", async ({ page }) => {
   await page.goto("/?seed=icon-viewport&width=1280&height=720");
-  await page.waitForFunction(() => (window as any).mapId !== undefined, { timeout: 120000 });
+  await waitForMap(page);
   await page.waitForTimeout(500);
 
   const materialized = () =>

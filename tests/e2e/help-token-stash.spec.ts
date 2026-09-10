@@ -1,9 +1,9 @@
 import {expect, test} from "@playwright/test";
+import { waitForMap } from "./wait-for-map";
 
-// Covers public/main.js's fragment-token stash (OAuth callback from the help gateway) and its
-// token-fixation guard: the token is only accepted when this client set the signin-pending flag
-// (src/services/help/api.ts signIn()) before redirecting. See docs/superpowers/specs for the
-// slice 2a design.
+// Covers stashCallbackToken (src/services/help/auth.ts), run first thing in boot(): the OAuth
+// callback's fragment token and its token-fixation guard — the token is only accepted when this
+// client set the signin-pending flag (src/services/help/api.ts signIn()) before redirecting.
 
 test.describe("help gateway fragment token stash", () => {
   test("stores the token and scrubs the hash when sign-in was pending", async ({page}) => {
@@ -12,7 +12,7 @@ test.describe("help gateway fragment token stash", () => {
     });
 
     await page.goto("/?seed=e2e-help-token-stash#token=e2e-test-token");
-    await page.waitForFunction(() => (window as any).mapId !== undefined, {timeout: 60000});
+    await waitForMap(page);
 
     const token = await page.evaluate(() => localStorage.getItem("fmg-help-token"));
     expect(token).toBe("e2e-test-token");
@@ -29,7 +29,7 @@ test.describe("help gateway fragment token stash", () => {
 
   test("ignores an unsolicited token but still scrubs the hash", async ({page}) => {
     await page.goto("/?seed=e2e-help-token-stash-unsolicited#token=e2e-test-token");
-    await page.waitForFunction(() => (window as any).mapId !== undefined, {timeout: 60000});
+    await waitForMap(page);
 
     const token = await page.evaluate(() => localStorage.getItem("fmg-help-token"));
     expect(token).toBeNull();

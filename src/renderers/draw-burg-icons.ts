@@ -1,4 +1,5 @@
 import { select } from "d3";
+import { Layers } from "@/components/layers";
 import type { Burg } from "../generators/burgs-generator";
 import { COMPOSITE_ICON_SCALE, findMegalopolises, type Megalopolis, RING_ICON_SCALE } from "../generators/megalopolis";
 import { groupMinZoom } from "./labeling/tier-table";
@@ -21,7 +22,7 @@ const burgIconsRenderer = (): void => {
 
   // Composites are few and zoom-toggled by CSS display (zoom-extras), so they materialize once
   // per draw; the per-burg member icons materialize per viewport in renderVisibleIcons.
-  for (const { name } of options.burgs.groups) {
+  for (const { name } of options.map.burgs.groups) {
     const iconsGroup = document.querySelector<SVGGElement>(`#burgIcons > g#${name}`);
     if (!iconsGroup) continue;
 
@@ -64,12 +65,12 @@ function renderVisibleIcons(context: ViewportRenderContext): void {
   // ViewportLayers.renderTo (save/export clones) passes unbounded bounds: keep every icon there
   const unbounded = bounds.x0 === -Infinity;
 
-  for (const { name } of options.burgs.groups) {
+  for (const { name } of options.map.burgs.groups) {
     const iconsGroup = root.querySelector<SVGGElement>(`#burgIcons > g#${CSS.escape(name)}`);
     if (!iconsGroup) continue;
 
-    const minZoom = options.labels.groups.find(group => group.name === name)?.zoom?.min ?? groupMinZoom(name);
-    const gatePassed = unbounded || options.labels.showAll || bounds.scale >= minZoom;
+    const minZoom = options.map.labels.groups.find(group => group.name === name)?.zoom?.min ?? groupMinZoom(name);
+    const gatePassed = unbounded || options.app.labels.showAll || bounds.scale >= minZoom;
     const visible = gatePassed
       ? pack.burgs.filter(
           b =>
@@ -173,7 +174,7 @@ function createIconGroups(): void {
   // create groups for each burg group and apply stored or default style
   const defaultIconStyle = burgIcons.groups.town || Object.values(burgIcons.groups)[0];
   const defaultAnchorStyle = anchors.groups.town || Object.values(anchors.groups)[0];
-  const sortedGroups = [...options.burgs.groups].sort((a, b) => a.order - b.order);
+  const sortedGroups = [...options.map.burgs.groups].sort((a, b) => a.order - b.order);
   for (const { name } of sortedGroups) {
     const burgGroup = select("#burgIcons").append("g");
     const iconStyle = burgIcons.groups[name] || defaultIconStyle;

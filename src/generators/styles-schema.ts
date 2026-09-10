@@ -35,7 +35,16 @@ const heights = z.strictObject({
     skip: z.number(),
     relax: z.number(),
     curve: z.string(),
-    render: z.boolean()
+    render: z.boolean(),
+    contours: z
+      .strictObject({
+        mode: z.enum(["off", "overlay", "only"]),
+        interval: z.number().int().min(1).max(20),
+        color: z.string(),
+        width: z.number().min(0.1).max(2),
+        opacity: z.number().min(0).max(1)
+      })
+      .default({ mode: "off", interval: 5, color: "#5c513e", width: 0.35, opacity: 0.5 })
   })
 });
 const burgGroup = z.strictObject({
@@ -213,7 +222,8 @@ export const stylesSchema = z.strictObject({
   }),
   scaleBar: z.strictObject({
     attrs: z.strictObject({ opacity, fill: color, "font-size": z.number().nullable() }),
-    options: z.strictObject({ barSize: z.number(), x: z.number(), y: z.number(), label: z.string() }),
+    // `label` names the unit under the bar; `x`/`y` place it, as percentages of the map extent
+    options: z.strictObject({ barSize: z.number(), label: z.string(), x: z.number(), y: z.number() }),
     back: z.strictObject({
       attrs: z.strictObject({ opacity, ...fillAttrs, stroke: color, "stroke-width": strokeWidth, filter }),
       options: z.strictObject({ top: z.number(), right: z.number(), bottom: z.number(), left: z.number() })

@@ -1,5 +1,5 @@
 import Alea from "alea";
-import { curveCatmullRom, line, select } from "d3";
+import { curveCatmullRom, line } from "d3";
 import Delaunator from "delaunator";
 import { distanceSquared, findPath, findPathTree, getAdjective, isLand, ra, rn, round, rw } from "../utils";
 import { buildAirRoutes } from "./air-routes-generator";
@@ -16,7 +16,7 @@ import type { Point } from "./voronoi";
 // map spans a full 360° of longitude.
 
 export function isWrapEnabled(): boolean {
-  return typeof mapCoordinates !== "undefined" && !!mapCoordinates && mapCoordinates.lonT === 360;
+  return options?.map?.geography?.coordinates?.lonT === 360;
 }
 
 // Horizontal gap on a cylinder of the given width: the shorter of going
@@ -291,6 +291,7 @@ export interface Route {
   length?: number;
   lock?: boolean;
   label?: Label;
+  note?: string;
 }
 
 type SeaTradeTier = "feeder" | "coastal";
@@ -548,7 +549,7 @@ class RoutesModule {
       if (pack.cells.h[next] >= 20) return Infinity;
       if (grid.cells.temp[pack.cells.g[next]] < MIN_PASSABLE_SEA_TEMP) return Infinity;
 
-      const distanceSq = wrapDistanceSquared(pack.cells.p[current], pack.cells.p[next], wrap, graphWidth);
+      const distanceSq = wrapDistanceSquared(pack.cells.p[current], pack.cells.p[next], wrap, options.map.graph.width);
       const connectionModifier = connections.has(encodeConnection(current, next)) ? 0.5 : 1;
 
       // Deep-water trade routes (feeder) minimise TRUE distance so they cut
@@ -609,7 +610,7 @@ class RoutesModule {
   // (to add neighbour links) and buildNavigableComponents (to union features).
   private collectSeamLinks(): Array<[number, number]> {
     const { cells } = pack;
-    const width = graphWidth;
+    const width = options.map.graph.width;
     const isWater = (c: number) => cells.h[c] < 20;
     // Packing culls open-ocean border cells, so water often stops well short of
     // x=0 / x=width — an absolute-edge band finds nothing. Instead, per latitude
@@ -754,7 +755,14 @@ class RoutesModule {
     const getCost = this.createCostEvaluator({ isWater, connections, routeType });
     const wrap = isWater && isWrapEnabled() && !!seaAdjacency;
     const graph = wrap ? { ...pack, cells: { ...pack.cells, c: seaAdjacency } } : pack;
-    const pathCells = findPath(start, current => current === exit, getCost, graph, exit, wrap ? graphWidth : undefined);
+    const pathCells = findPath(
+      start,
+      current => current === exit,
+      getCost,
+      graph,
+      exit,
+      wrap ? options.map.graph.width : undefined
+    );
     if (!pathCells) return [];
     const segments = this.getRouteSegments(pathCells, connections);
     return segments;
@@ -766,7 +774,14 @@ class RoutesModule {
     const wrap = isWrapEnabled();
     const seaAdjacency = wrap ? this.buildSeaAdjacency() : undefined;
     const graph = seaAdjacency ? { ...pack, cells: { ...pack.cells, c: seaAdjacency } } : pack;
-    return findPath(start, current => current === exit, getCost, graph, exit, wrap ? graphWidth : undefined);
+    return findPath(
+      start,
+      current => current === exit,
+      getCost,
+      graph,
+      exit,
+      wrap ? options.map.graph.width : undefined
+    );
   }
 
   /** Sea route geometry for a cell chain: burg positions at ports, cell centres elsewhere */
@@ -846,7 +861,7 @@ class RoutesModule {
     TIME && console.time("generateMarketRoads");
     const { marketTownsByFeature } = burgIndex;
     const marketRoads: Route[] = [];
-    const mapScale = Math.sqrt((graphWidth * graphHeight) / 1_000_000);
+    const mapScale = Math.sqrt((options.map.graph.width * options.map.graph.height) / 1_000_000);
 
     for (const [key, featureMarketTowns] of Object.entries(marketTownsByFeature)) {
       if (featureMarketTowns.length < 2) continue;
@@ -931,7 +946,7 @@ class RoutesModule {
     TIME && console.time("generateTrails");
     const { villagesByFeature } = burgIndex;
     const trails: Route[] = [];
-    const mapScale = Math.sqrt((graphWidth * graphHeight) / 1_000_000);
+    const mapScale = Math.sqrt((options.map.graph.width * options.map.graph.height) / 1_000_000);
 
     for (const [key, featureVillages] of Object.entries(villagesByFeature)) {
       if (featureVillages.length < 2) continue;
@@ -972,7 +987,7 @@ class RoutesModule {
     TIME && console.time("generateTownRoads");
     const { regionalCentersByFeature } = burgIndex;
     const townRoads: Route[] = [];
-    const mapScale = Math.sqrt((graphWidth * graphHeight) / 1_000_000);
+    const mapScale = Math.sqrt((options.map.graph.width * options.map.graph.height) / 1_000_000);
 
     for (const [key, featureCenters] of Object.entries(regionalCentersByFeature)) {
       if (featureCenters.length < 2) continue;
@@ -1013,7 +1028,7 @@ class RoutesModule {
     TIME && console.time("generateFootpaths");
     const { hamletsByFeature } = burgIndex;
     const footpaths: Route[] = [];
-    const mapScale = Math.sqrt((graphWidth * graphHeight) / 1_000_000);
+    const mapScale = Math.sqrt((options.map.graph.width * options.map.graph.height) / 1_000_000);
 
     for (const [key, featureHamlets] of Object.entries(hamletsByFeature)) {
       if (featureHamlets.length < 2) continue;
@@ -1055,11 +1070,11 @@ class RoutesModule {
   private selectSeaTradeEdges(ports: Burg[]): SeaTradeEdge[] {
     const n = ports.length;
     const wrap = isWrapEnabled();
-    const mapScale = Math.sqrt((graphWidth * graphHeight) / 1_000_000);
+    const mapScale = Math.sqrt((options.map.graph.width * options.map.graph.height) / 1_000_000);
 
     const imp = ports.map(portImportance);
     const d2 = (i: number, j: number) =>
-      wrapDistanceSquared([ports[i].x, ports[i].y], [ports[j].x, ports[j].y], wrap, graphWidth);
+      wrapDistanceSquared([ports[i].x, ports[i].y], [ports[j].x, ports[j].y], wrap, options.map.graph.width);
     const gravity = (i: number, j: number) => (imp[i] * imp[j]) / Math.max(d2(i, j), 1e-9);
     const km = (i: number, j: number) => Math.sqrt(d2(i, j)) / mapScale;
 
@@ -1104,7 +1119,7 @@ class RoutesModule {
 
     // coastal: existing Urquhart short pairs, capped at SEA_COASTAL_CAP_KM
     const points = ports.map(p => [p.x, p.y] as Point);
-    const urquhartEdges = this.calculateUrquhartEdges(points, wrap, graphWidth);
+    const urquhartEdges = this.calculateUrquhartEdges(points, wrap, options.map.graph.width);
     for (const [a, b] of urquhartEdges) {
       if (km(a, b) <= SEA_COASTAL_CAP_KM) addEdge(a, b, "coastal");
     }
@@ -1161,7 +1176,7 @@ class RoutesModule {
     // pathological trees (far-by-water targets) dominate?
     const diagTrees: { ms: number; expanded: number; targets: number; settled: number }[] = [];
     let diagSeamRoutes = 0;
-    const seamThreshold = graphWidth / 2;
+    const seamThreshold = options.map.graph.width / 2;
     const crossesSeam = (cells: number[]) => {
       for (let i = 1; i < cells.length; i++) {
         if (Math.abs(pack.cells.p[cells[i]][0] - pack.cells.p[cells[i - 1]][0]) > seamThreshold) return true;
@@ -1226,7 +1241,7 @@ class RoutesModule {
       // Feeder cost is linear pixel distance (with reuse discounts), so the
       // exploration bound converts km -> pixels via the same mapScale used to
       // pick the partners in selectSeaTradeEdges.
-      const mapScale = Math.sqrt((graphWidth * graphHeight) / 1_000_000);
+      const mapScale = Math.sqrt((options.map.graph.width * options.map.graph.height) / 1_000_000);
       const feederMaxCost = SEA_FEEDER_CAP_KM * SEA_FEEDER_DETOUR_FACTOR * mapScale;
 
       // Feeder before coastal so feeders claim shared corridors first.
@@ -1301,9 +1316,9 @@ class RoutesModule {
   private generateTradeNetwork(components: Map<number, number>, seaAdjacency?: number[][]): Route[] {
     TIME && console.time("generateTradeNetwork");
     const wrap = isWrapEnabled();
-    const mapScale = Math.sqrt((graphWidth * graphHeight) / 1_000_000);
+    const mapScale = Math.sqrt((options.map.graph.width * options.map.graph.height) / 1_000_000);
     const dist2 = (ax: number, ay: number, bx: number, by: number) =>
-      wrapDistanceSquared([ax, ay], [bx, by], wrap, graphWidth);
+      wrapDistanceSquared([ax, ay], [bx, by], wrap, options.map.graph.width);
 
     // capital burg per state
     const capitalByState = new Map<number, Burg>();
@@ -1506,7 +1521,7 @@ class RoutesModule {
     const components = this.buildNavigableComponents();
     const { localRoutes: seaRoutes } = this.generateSeaTradeNetwork(connections, burgIndex, components, seaAdjacency);
     const airPoints = burgIndex.skyPorts.map(b => [b.x, b.y] as Point);
-    const airUrquhart = this.calculateUrquhartEdges(airPoints, isWrapEnabled(), graphWidth);
+    const airUrquhart = this.calculateUrquhartEdges(airPoints, isWrapEnabled(), options.map.graph.width);
     const airRoutes = buildAirRoutes(burgIndex.skyPorts, airUrquhart);
     const pointsArray = this.preparePointsArray();
 
@@ -1594,7 +1609,7 @@ class RoutesModule {
   }
 
   generate(lockedRoutes: Route[] = [], randomSeed?: number) {
-    Math.random = Alea(randomSeed ?? seed);
+    Math.random = Alea(randomSeed ?? options.map.seed);
     const connections = new Set<number>();
     lockedRoutes.forEach((route: Route) => {
       this.addConnections(
@@ -1633,7 +1648,7 @@ class RoutesModule {
     }
 
     const points = skyPorts.map(b => [b.x, b.y] as Point);
-    const urquhartEdges = this.calculateUrquhartEdges(points, isWrapEnabled(), graphWidth);
+    const urquhartEdges = this.calculateUrquhartEdges(points, isWrapEnabled(), options.map.graph.width);
 
     let nextId = this.getNextId();
     for (const [fromIdx, toIdx] of urquhartEdges) {
@@ -1657,7 +1672,7 @@ class RoutesModule {
       cellRoutes[to.cell][from.cell] = route.i;
     }
 
-    if (Layers.isOn("routes")) drawRoutes();
+    if (Layers.isOn("routes")) Layers.draw("routes");
 
     TIME && console.timeEnd("rebuildAirroutes");
   }
@@ -1683,7 +1698,7 @@ class RoutesModule {
 
     pack.cells.routes = this.buildLinks(pack.routes);
 
-    if (Layers.isOn("routes")) drawRoutes();
+    if (Layers.isOn("routes")) Layers.draw("routes");
 
     TIME && console.timeEnd("rebuildTradeRoutes");
   }
@@ -1790,7 +1805,6 @@ class RoutesModule {
     }
 
     pack.routes = pack.routes.filter(r => r.i !== route.i);
-    select("#viewbox").select(`#route${route.i}`).remove();
   }
 
   getConnectivityRate(cellId: number): number {
@@ -1836,7 +1850,7 @@ class RoutesModule {
 
   private hasSeamCrossing(points: number[][]): boolean {
     if (!isWrapEnabled()) return false;
-    const half = graphWidth / 2;
+    const half = options.map.graph.width / 2;
     for (let i = 1; i < points.length; i++) {
       if (Math.abs(points[i][0] - points[i - 1][0]) > half) return true;
     }
@@ -1848,7 +1862,7 @@ class RoutesModule {
   // interpolated crossing latitude) to the current run and start the next run
   // at the opposite frame edge. Returns one or more [x, y] runs.
   private splitAtSeam(points: number[][]): number[][][] {
-    const width = graphWidth;
+    const width = options.map.graph.width;
     const half = width / 2;
     const runs: number[][][] = [];
     let run: number[][] = [[points[0][0], points[0][1]]];
@@ -1906,7 +1920,12 @@ class RoutesModule {
     let len = 0;
     for (let i = 1; i < points.length; i++) {
       len += Math.sqrt(
-        wrapDistanceSquared([points[i - 1][0], points[i - 1][1]], [points[i][0], points[i][1]], true, graphWidth)
+        wrapDistanceSquared(
+          [points[i - 1][0], points[i - 1][1]],
+          [points[i][0], points[i][1]],
+          true,
+          options.map.graph.width
+        )
       );
     }
     return len;
@@ -1914,10 +1933,12 @@ class RoutesModule {
 
   getLength(routeId: number): number {
     const route = this.getRoutesIndex().get(routeId);
-    if (route && this.hasSeamCrossing(route.points)) {
-      return this.getWrappedLength(route.points);
-    }
-    const path = select("#routes").select(`#route${routeId}`).node() as SVGPathElement;
+    if (!route) return 0;
+    if (this.hasSeamCrossing(route.points)) return this.getWrappedLength(route.points);
+
+    // measured off-DOM: the rendered layer only holds the routes currently in the viewport
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", this.getPath(route));
     return path.getTotalLength();
   }
 }

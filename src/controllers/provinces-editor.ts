@@ -1,6 +1,7 @@
 import { color as d3Color, easeSinIn, interpolate, select, stratify, transition, treemap } from "d3";
 import { createAnnexMode } from "@/components/annex-mode";
 import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
+import { fitContent } from "@/components/dialog/fit-content";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import { dialogState } from "@/components/dialog/state";
@@ -12,12 +13,13 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
-import type { FillBoxElement } from "@/components/fill-box";
 import { Layers } from "@/components/layers";
+import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { Emblems } from "@/generators/emblems-generator";
+import { Notes } from "@/generators/notes";
 import type { Province } from "@/generators/provinces-generator";
 import { redrawEmblem, redrawEmblems, removeEmblem } from "@/renderers/draw-emblems";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
@@ -32,7 +34,10 @@ let filterState: { stateId: number };
 
 const getProvinceArea = (province: Province) => getArea(province.area!);
 const getProvincePopulation = (province: Province) =>
-  rn(province.rural! * populationRate + province.urban! * populationRate * urbanization);
+  rn(
+    province.rural! * options.map.units.population.scale +
+      province.urban! * options.map.units.population.scale * options.map.units.population.urbanization.rate
+  );
 const columns: EditorColumn<Province>[] = [
   { key: "color", width: "1.2em", permanent: true },
   {
@@ -83,7 +88,12 @@ const columns: EditorColumn<Province>[] = [
     sortBy: getProvinceArea
   },
   { key: "population", label: "Population", width: "6em", sortBy: getProvincePopulation },
-  { key: "actions", width: "5.4em", permanent: true, align: "right" }
+  { key: "note", width: "1.1em" },
+  { key: "independence", width: "1.1em" },
+  { key: "locate", width: "1.1em" },
+  { key: "focus", width: "1.1em" },
+  { key: "lock", width: "1.1em" },
+  { key: "remove", width: "1.4em", permanent: true }
 ];
 const provincesTable = initEditorTable<Province>({ getData: getProvincesData, onUpdate: renderProvincesPage });
 
@@ -218,6 +228,7 @@ function renderDialog(): void {
     else if (cl.contains("icon-target"))
       highlightElement(select<SVGGElement, unknown>("#provs").select(`#province${p}`).node() as Element, 8);
     else if (cl.contains("icon-pin")) toggleFog(p, cl);
+    else if (cl.contains("icon-book")) void Controllers.NotesEditor.open({ type: "province", id: p });
     else if (cl.contains("icon-trash-empty")) removeProvince(p);
     else if (cl.contains("icon-lock") || cl.contains("icon-lock-open")) updateLockStatus(p, cl);
   });
@@ -307,8 +318,8 @@ function renderProvincesPage(view: TableView<Province>): void {
   const lines = view.rows
     .map(p => {
       const area = getProvinceArea(p);
-      const rural = p.rural! * populationRate;
-      const urban = p.urban! * populationRate * urbanization;
+      const rural = p.rural! * options.map.units.population.scale;
+      const urban = p.urban! * options.map.units.population.scale * options.map.units.population.urbanization.rate;
       const population = getProvincePopulation(p);
       const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}`;
       const stateName = pack.states[p.state].name;
@@ -337,7 +348,12 @@ function renderProvincesPage(view: TableView<Province>): void {
         <span data-tip="${populationTip}" class="icon-male"></span>
         <span data-tip="${populationTip}" class="culturePopulation">${percentage ? `${rn(totals.population ? (population / totals.population) * 100 : 0)}%` : si(population)}</span>
       </div>
-      <div data-col="actions"><span data-tip="Declare province independence (turn non-capital province with burgs into a new state)" class="icon-flag-empty ${separable ? "" : "placeholder"}"></span><span data-tip="Locate the province" class="icon-target"></span><span data-tip="Toggle province focus" class="icon-pin ${focused ? "" : " inactive"}"></span><span data-tip="Lock the province" class="icon-lock${p.lock ? "" : "-open"}"></span><span data-tip="Remove the province" class="icon-trash-empty"></span></div>
+      ${Notes.getIcon("this province")}
+      <span data-col="independence" data-tip="Declare province independence (turn non-capital province with burgs into a new state)" class="icon-flag-empty ${separable ? "" : "placeholder"}"></span>
+      <span data-col="locate" data-tip="Locate the province" class="icon-target"></span>
+      <span data-col="focus" data-tip="Toggle province focus" class="icon-pin ${focused ? "" : " inactive"}"></span>
+      <span data-col="lock" data-tip="Lock the province" class="icon-lock${p.lock ? "" : "-open"}"></span>
+      <span data-col="remove" data-tip="Remove the province" class="icon-trash-empty"></span>
     </div>`;
     })
     .join("");
@@ -561,8 +577,8 @@ function changePopulation(province: number): void {
     tip("Province does not have any cells, cannot change population", false, "error");
     return;
   }
-  const rural = rn(p.rural! * populationRate);
-  const urban = rn(p.urban! * populationRate * urbanization);
+  const rural = rn(p.rural! * options.map.units.population.scale);
+  const urban = rn(p.urban! * options.map.units.population.scale * options.map.units.population.urbanization.rate);
   const total = rural + urban;
   const l = (n: number): string => Number(n).toLocaleString();
 
@@ -607,7 +623,7 @@ function changePopulation(province: number): void {
       });
     }
     if (!Number.isFinite(ruralChange) && +ruralPop.value > 0) {
-      const points = +ruralPop.value / populationRate;
+      const points = +ruralPop.value / options.map.units.population.scale;
       const pop = rn(points / cells.length);
       cells.forEach(i => {
         pack.cells.pop[i] = pop;
@@ -621,7 +637,8 @@ function changePopulation(province: number): void {
       });
     }
     if (!Number.isFinite(urbanChange) && +urbanPop.value > 0) {
-      const points = +urbanPop.value / populationRate / urbanization;
+      const points =
+        +urbanPop.value / options.map.units.population.scale / options.map.units.population.urbanization.rate;
       const population = rn(points / p.burgs!.length, 4);
       p.burgs!.forEach(b => {
         pack.burgs[b].population = population;
@@ -943,8 +960,10 @@ function showChart(): void {
     const state = pack.states[d.data.state].fullName;
 
     const area = `${getArea(d.data.area)} ${getAreaUnit()}`;
-    const rural = rn(d.data.rural * populationRate);
-    const urban = rn(d.data.urban * populationRate * urbanization);
+    const rural = rn(d.data.rural * options.map.units.population.scale);
+    const urban = rn(
+      d.data.urban * options.map.units.population.scale * options.map.units.population.urbanization.rate
+    );
 
     const typeValue = ensureEl<HTMLSelectElement>("provincesTreeType").value;
     const value =
@@ -1217,12 +1236,13 @@ function recolorProvinces(): void {
 }
 
 function downloadProvincesData(): void {
-  const unit = areaUnit.value === "square" ? `${distanceUnitInput.value}2` : areaUnit.value;
+  const unit =
+    options.map.units.area.unit === "square" ? `${options.map.units.distance.unit}2` : options.map.units.area.unit;
   let data = `Id,Province,Full Name,Form,State,Color,Capital,Area ${unit},Total Population,Rural Population,Urban Population,Burgs\n`; // headers
 
   for (const province of getProvincesData()) {
     const capital = province.burg ? pack.burgs[province.burg].name : "";
-    data += `${province.i},${province.name},${province.fullName},${province.formName},${pack.states[province.state].name},${province.color},${capital},${getProvinceArea(province)},${getProvincePopulation(province)},${Math.round(province.rural! * populationRate)},${Math.round(province.urban! * populationRate * urbanization)},${province.burgs!.length}\n`;
+    data += `${province.i},${province.name},${province.fullName},${province.formName},${pack.states[province.state].name},${province.color},${capital},${getProvinceArea(province)},${getProvincePopulation(province)},${Math.round(province.rural! * options.map.units.population.scale)},${Math.round(province.urban! * options.map.units.population.scale * options.map.units.population.urbanization.rate)},${province.burgs!.length}\n`;
   }
 
   const name = `${getFileName("Provinces")}.csv`;
