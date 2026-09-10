@@ -396,6 +396,96 @@
           "mask": null
         }
       }
+    },
+    "types": {
+      "royal": {
+        "attrs": {
+          "opacity": null,
+          "stroke": null,
+          "stroke-width": 2,
+          "stroke-dasharray": null,
+          "stroke-linecap": "butt",
+          "filter": null,
+          "mask": null
+        }
+      },
+      "main": {
+        "attrs": {
+          "opacity": null,
+          "stroke": null,
+          "stroke-width": 1.4,
+          "stroke-dasharray": null,
+          "stroke-linecap": "butt",
+          "filter": null,
+          "mask": null
+        }
+      },
+      "market": {
+        "attrs": {
+          "opacity": null,
+          "stroke": null,
+          "stroke-width": 1.1,
+          "stroke-dasharray": "6 4",
+          "stroke-linecap": "butt",
+          "filter": null,
+          "mask": null
+        }
+      },
+      "town": {
+        "attrs": {
+          "opacity": null,
+          "stroke": null,
+          "stroke-width": 0.9,
+          "stroke-dasharray": "4 3",
+          "stroke-linecap": "butt",
+          "filter": null,
+          "mask": null
+        }
+      },
+      "trail": {
+        "attrs": {
+          "opacity": null,
+          "stroke": null,
+          "stroke-width": 0.6,
+          "stroke-dasharray": "0.5 3",
+          "stroke-linecap": "round",
+          "filter": null,
+          "mask": null
+        }
+      },
+      "footpath": {
+        "attrs": {
+          "opacity": null,
+          "stroke": null,
+          "stroke-width": 0.5,
+          "stroke-dasharray": "0.5 2",
+          "stroke-linecap": "round",
+          "filter": null,
+          "mask": null
+        }
+      },
+      "feeder": {
+        "attrs": {
+          "opacity": null,
+          "stroke": null,
+          "stroke-width": 1.0,
+          "stroke-dasharray": "1 4",
+          "stroke-linecap": "round",
+          "filter": null,
+          "mask": null
+        }
+      },
+      "coastal": {
+        "attrs": {
+          "opacity": null,
+          "stroke": null,
+          "stroke-width": 0.7,
+          "stroke-dasharray": "1 4",
+          "stroke-linecap": "round",
+          "filter": null,
+          "mask": null
+        }
+      }
     }
   },
   "journeys": {

@@ -230,3 +230,21 @@ test("presetBagFor tries selectors in order and returns undefined when none reso
   expect(presetBagFor(preset, "#roads", "#routes > #roads")).toEqual({ opacity: 0.9 });
   expect(presetBagFor(preset, "#nonexistent")).toBeUndefined();
 });
+
+// route types (royal, footpath, feeder, ...) are styled per type under their group; the editor
+// addresses one as "group/type" and legacy presets carried them as "#routes #type"
+test("route types resolve, convert from legacy presets and ship in every preset", () => {
+  expect(styleNodeFor("routes", "trails/footpath")).toEqual({ node: styles.routes.types.footpath, layer: "routes" });
+  expect(styleNodeFor("routes", "roads/nonsense")).toBeUndefined();
+
+  const converted = presetFromLegacy({ "#routes #royal": { "stroke-width": 2.5, "stroke-linecap": "butt" } } as any);
+  expect(converted.routes.types.royal.attrs["stroke-width"]).toBe(2.5);
+  expect(converted.routes.types.royal.attrs.stroke).toBeNull(); // the group's colour shows through
+
+  const typeNames = Object.keys(Styles.defaults.routes.types).sort();
+  expect(typeNames).toEqual(["coastal", "feeder", "footpath", "main", "market", "royal", "town", "trail"]);
+  for (const file of fs.readdirSync(presetDir).filter(f => f.endsWith(".json"))) {
+    const preset = JSON.parse(fs.readFileSync(path.join(presetDir, file), "utf8"));
+    expect(Object.keys(preset.routes.types).sort(), file).toEqual(typeNames);
+  }
+});

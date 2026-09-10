@@ -1,3 +1,4 @@
+import { waitForMap } from "./wait-for-map";
 import { type Browser, type BrowserContext, expect, type Page, test } from "@playwright/test";
 import { BANDS, boxRadius } from "../../src/components/map-wheel/geometry";
 
@@ -159,7 +160,7 @@ test.describe("map wheel", () => {
     await context.addInitScript(() => localStorage.setItem("version", "99.99.99"));
     page = await context.newPage();
     await page.goto("/?seed=test-seed&width=1280&height=720");
-    await page.waitForFunction(() => (window as any).mapId !== undefined, { timeout: 60000 });
+    await waitForMap(page);
     await page.waitForTimeout(500);
   });
 

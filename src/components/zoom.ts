@@ -188,3 +188,4 @@ window.setTranslateExtent = setTranslateExtent;
 window.resetZoom = resetZoom;
 window.invokeActiveZooming = invokeActiveZooming;
 window.setMapZoom = setMapZoom;
+window.panMap = panMap; // e2e drives panning through it

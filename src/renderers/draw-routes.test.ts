@@ -140,3 +140,36 @@ test("viewport rendering leaves a disabled layer empty", () => {
   ViewportLayers.renderNow();
   expect(document.getElementById("route1")).not.toBeNull();
 });
+
+// route types (royal, footpath, ...) draw as a sub-group per type inside the group, styled from styles.routes.types
+test("type sub-groups take their line style from the store, marked for Styles.write", () => {
+  (globalThis as { CSS?: unknown }).CSS ??= { escape: (value: string) => value }; // jsdom has no CSS.escape
+  document.getElementById("routes")!.setAttribute("data-layer", "routes");
+  pack.routes = [
+    { ...route(1, 0), type: "royal" },
+    { ...route(3, 0, "trails"), type: "footpath" }
+  ];
+  styles.routes.types.royal.attrs["stroke-width"] = 3.5;
+  styles.routes.types.royal.attrs["stroke-dasharray"] = "9 1";
+  drawRoutes();
+
+  const royal = document.querySelector<SVGGElement>("#routes > #roads > g#royal")!;
+  expect(royal.dataset.type).toBe("royal");
+  expect(royal.getAttribute("stroke-width")).toBe("3.5");
+  expect(royal.getAttribute("stroke-dasharray")).toBe("9 1");
+  expect(royal.hasAttribute("stroke")).toBe(false); // inherits the group's colour
+  expect(royal.querySelector("#route1")).not.toBeNull();
+  expect(document.querySelector("#routes > #trails > g#footpath")?.getAttribute("stroke-linecap")).toBe("round");
+
+  styles.routes.types.royal.attrs["stroke-width"] = 1;
+  Styles.write("routes");
+  expect(royal.getAttribute("stroke-width")).toBe("1");
+});
+
+test("a type the store does not know falls back to the built-in table, then the group", () => {
+  pack.routes = [{ ...route(1, 0), type: "mystery" }];
+  drawRoutes();
+  const mystery = document.querySelector<SVGGElement>("#routes > #roads > g#mystery")!;
+  expect(mystery.dataset.type).toBe("mystery");
+  expect(mystery.hasAttribute("stroke-width")).toBe(false);
+});

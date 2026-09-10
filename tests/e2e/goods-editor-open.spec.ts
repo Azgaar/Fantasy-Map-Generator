@@ -1,3 +1,4 @@
+import { waitForMap } from "./wait-for-map";
 import { expect, test } from "@playwright/test";
 
 // renderGoodsPage ran applyTagVisibilityFilter, whose goodsTable.reset() re-invoked
@@ -9,7 +10,7 @@ test("goods editor opens without runaway re-rendering", async ({ page }) => {
   page.on("pageerror", err => errors.push(String(err)));
 
   await page.goto("/?seed=test-controller-launchers&width=1280&height=720");
-  await page.waitForFunction(() => (window as any).mapId !== undefined, { timeout: 60000 });
+  await waitForMap(page);
 
   await page.click("#optionsTrigger");
   await page.click("#toolsTab");

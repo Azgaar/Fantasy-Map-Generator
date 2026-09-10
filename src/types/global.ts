@@ -12,6 +12,8 @@ declare global {
     downloadFile: typeof import("../utils").downloadFile;
     uploadFile: typeof import("../utils").uploadFile;
     setMapZoom: typeof import("../components/zoom").setMapZoom;
+    panMap: typeof import("../components/zoom").panMap;
+    changeDialogsTheme: typeof import("../components/options/tabs/options-tab").changeDialogsTheme;
     setZoomExtent: typeof import("../components/zoom").setZoomExtent;
     setTranslateExtent: typeof import("../components/zoom").setTranslateExtent;
     getLabelsData: typeof import("../renderers/labels/label-data").getLabelsData;

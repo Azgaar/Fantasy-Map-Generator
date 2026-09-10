@@ -27,8 +27,9 @@ let quill: Quill | null = null;
 let windowed: { width: number; height: number; top: string; left: string } | null = null;
 let uploadBound = false;
 
-/** Open the editor on the given entity, or on the first note when called with no reference */
-function open(ref?: NoteRef): void {
+/** Open the editor on the given entity (a ref, a note key or a legacy element id), or on the first note */
+function open(target?: NoteRef | string): void {
+  const ref = typeof target === "string" ? resolveId(target) : target;
   renderDialog();
 
   const notesSelect = ensureEl<HTMLSelectElement>("notesSelect");

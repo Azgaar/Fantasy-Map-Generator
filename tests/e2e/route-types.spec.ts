@@ -79,3 +79,25 @@ test.describe("route types", () => {
     expect(split).toEqual({ type: "footpath", parent: "footpath" });
   });
 });
+
+test.describe("route type styles", () => {
+  test("the style tab lists each type under its group and edits its line style", async ({ page }) => {
+    await generatedMap(page);
+
+    await page.evaluate(() => (window as any).editStyle("routes", "trails/footpath"));
+    const options = await page.locator("#styleGroupSelect option").evaluateAll(els =>
+      els.map(el => (el as HTMLOptionElement).value)
+    );
+    expect(options).toEqual(expect.arrayContaining(["roads", "roads/royal", "trails/footpath", "searoutes/feeder"]));
+    expect(await page.locator("#styleGroupSelect").inputValue()).toBe("trails/footpath");
+
+    // <slider-input> re-dispatches its inner input as its own "input" event, which the tab reads from e.target.value
+    await page.evaluate(() => {
+      const slider = document.getElementById("styleStrokeWidthInput") as HTMLInputElement;
+      slider.value = "2.5";
+      slider.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(await page.locator("#routes #trails > #footpath").getAttribute("stroke-width")).toBe("2.5");
+    expect(await page.evaluate(() => (window as any).styles.routes.types.footpath.attrs["stroke-width"])).toBe(2.5);
+  });
+});

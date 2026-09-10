@@ -127,7 +127,9 @@ export const stylesSchema = z.strictObject({
     provinceBorders: z.strictObject({ attrs: z.strictObject({ opacity, ...strokeAttrs, filter }) })
   }),
   routes: z.strictObject({
-    groups: z.record(z.string(), z.strictObject({ attrs: z.strictObject({ opacity, ...strokeAttrs, filter, mask }) }))
+    groups: z.record(z.string(), z.strictObject({ attrs: z.strictObject({ opacity, ...strokeAttrs, filter, mask }) })),
+    // per-type line style inside a group (royal roads, footpaths, sea feeders); a null stroke inherits the group's
+    types: z.record(z.string(), z.strictObject({ attrs: z.strictObject({ opacity, ...strokeAttrs, filter, mask }) }))
   }),
   journeys: z.strictObject({
     attrs: z.strictObject({

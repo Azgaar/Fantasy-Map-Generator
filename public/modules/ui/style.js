@@ -501,6 +501,16 @@ function updateGroupOptions(styleElement, layerEl) {
   const groups = Array.from(layerEl.node()?.querySelectorAll(":scope > g") || []);
   groups.forEach(g => styleGroupSelect.options.add(new Option(`${g.id} (${g.childElementCount})`, g.id)));
   const ids = groups.map(g => g.id);
+  if (styleElement === "routes") {
+    // route types (royal, footpath, ...) sit under their group and carry their own line style
+    for (const g of groups) {
+      for (const type of g.querySelectorAll(":scope > g")) {
+        const value = `${g.id}/${type.id}`;
+        styleGroupSelect.options.add(new Option(`${g.id} / ${type.id} (${type.childElementCount})`, value));
+        ids.push(value);
+      }
+    }
+  }
   const fallback = styleElement === "terrs" ? "landHeights" : ids[0];
   styleGroupSelect.value = ids.includes(selected) ? selected : fallback || "";
 }
@@ -532,7 +542,8 @@ function getEl() {
   const map = d3.select("#map");
   if (g === el || g === "") return map.select("#" + el);
   if (el === "labels") return map.select("#labels").select(`[data-group="${CSS.escape(g)}"]`);
-  else return map.select("#" + el).select("#" + g);
+  if (el === "routes" && g.includes("/")) return map.select("#routes").select(`#${g.replace("/", " > #")}`);
+  return map.select("#" + el).select("#" + g);
 }
 
 function writeSelectedAttr(attr, value) {

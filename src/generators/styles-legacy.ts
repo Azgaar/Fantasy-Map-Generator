@@ -215,10 +215,14 @@ export function stylesFromMap(root: ParentNode = document): Styles {
       );
   }
 
+  const routeAttrs = Object.keys(Object.values(Styles.defaults.routes.groups)[0].attrs);
   for (const el of root.querySelectorAll<SVGGElement>("#routes > g")) {
     if (el.id) el.dataset.group = el.id;
-    if (el.id && !DEFAULT_ROUTE_GROUPS.includes(el.id)) {
-      bags[`#routes > g#${el.id}`] = harvestBag(el, Object.keys(Object.values(Styles.defaults.routes.groups)[0].attrs));
+    if (el.id && !DEFAULT_ROUTE_GROUPS.includes(el.id)) bags[`#routes > g#${el.id}`] = harvestBag(el, routeAttrs);
+    for (const typeEl of el.querySelectorAll<SVGGElement>(":scope > g")) {
+      if (!typeEl.id) continue;
+      typeEl.dataset.type = typeEl.id;
+      bags[`#routes > g#${el.id} > g#${typeEl.id}`] = harvestBag(typeEl, routeAttrs);
     }
   }
 
@@ -354,7 +358,9 @@ export function styleNodeFor(element: string, group: string): { node: object; la
         : element === "burgIcons" || element === "anchors"
           ? `#${element} > g#${group}`
           : element === "routes"
-            ? `#routes > g#${group}`
+            ? group.includes("/")
+              ? `#routes > g#${group.replace("/", " > g#")}`
+              : `#routes > g#${group}`
             : element === "terrs"
               ? `#terrs > #${group}`
               : `#${group}`;
@@ -372,6 +378,8 @@ function routeFor(selector: string): PresetRoute | undefined {
   if (burg) return { path: ["burgIcons", "burgIcons", "groups", burg[1]], kind: "burg" };
   const anchor = selector.match(/^#anchors > g#(.+)$/);
   if (anchor) return { path: ["burgIcons", "anchors", "groups", anchor[1]], kind: "burg" };
+  const routeType = selector.match(/^#routes > g#[^ ]+ > g#(.+)$/) ?? selector.match(/^#routes #(.+)$/);
+  if (routeType) return { path: ["routes", "types", routeType[1]], kind: "route" };
   const routeGroup = selector.match(/^#routes > g#(.+)$/);
   if (routeGroup) return { path: ["routes", "groups", routeGroup[1]], kind: "route" };
   const emblem = selector.match(/^#emblems > #(.+)$/);

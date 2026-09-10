@@ -260,7 +260,6 @@ function renderDialog(): void {
   ensureEl("statesRegenerateBack").addEventListener("click", exitRegenerationMenu);
   ensureEl("statesRecalculate").addEventListener("click", () => recalculateStates(true));
   ensureEl("statesRandomize").addEventListener("click", randomizeStatesExpansion);
-  ensureEl("statesGrowthRate").addEventListener("input", () => recalculateStates(false));
   ensureEl("statesManually").addEventListener("click", enterStatesManualAssignent);
   ensureEl("statesManuallyState").addEventListener("change", highlightBrushRow);
   ensureEl("statesManuallyDemote").addEventListener("change", updateDemotePickerLabel);

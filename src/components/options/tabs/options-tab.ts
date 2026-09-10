@@ -681,8 +681,9 @@ function addListeners(): void {
   });
 }
 
+// document-wide: the map wheel hosts option rows in its drawer while it is open
 function optionInputs<T extends HTMLElement = HTMLInputElement>(key: string): NodeListOf<T> {
-  return ensureEl("options").querySelectorAll<T>(`[data-option="${key}"]`);
+  return document.querySelectorAll<T>(`[data-option="${key}"]`);
 }
 
 function optionInput<T extends HTMLElement = HTMLInputElement>(key: string): T {
@@ -915,7 +916,7 @@ function changeThemeHue(hue: string): void {
  * Derive the whole dialog palette from one colour and one transparency. This applies what the
  * object holds; `setTheme` is what puts it there
  */
-function changeDialogsTheme(themeColor: string, transparency: number): void {
+export function changeDialogsTheme(themeColor: string, transparency: number): void {
   optionInput("transparency").value = String(transparency);
   const alpha = (100 - transparency) / 100;
   const alphaReduced = Math.min(alpha + 0.3, 1);
@@ -1116,6 +1117,7 @@ declare global {
 }
 
 window.changeCellsDensity = changeCellsDensity;
+window.changeDialogsTheme = changeDialogsTheme; // e2e drives theme changes
 window.initGoogleTranslate = () => {
   new google.translate.TranslateElement(
     { pageLanguage: "en", layout: google.translate.TranslateElement.InlineLayout.VERTICAL },
