@@ -567,7 +567,7 @@ class OmnibarController {
       if (result.command) {
         await result.command.run();
         this.remember(result.id);
-      } else this.navigate(result);
+      } else if (result.label || !MapEntities.open(result.target!.ref)) this.navigate(result);
     } catch {
       tip("Could not open the search result. Please try again.", false, "error");
     } finally {

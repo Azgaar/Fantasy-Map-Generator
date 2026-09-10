@@ -1,4 +1,5 @@
 import type { LayerId } from "@/components/layers";
+import { Controllers } from "@/controllers";
 import type { Point } from "@/types/global";
 
 export const ENTITY_TYPES = [
@@ -66,6 +67,7 @@ interface EntityDefinition {
   position?: (id: number, sub?: number) => Point | undefined;
   points?: (ref: EntityRef) => Point[];
   context?: (ref: EntityRef) => string;
+  open?: (ref: EntityRef) => unknown; // opens the entity's editor instead of zooming to it
 }
 
 const ELEMENT_PATTERNS: [RegExp, EntityType][] = [
@@ -376,7 +378,8 @@ class EntityLookup {
         return points[Math.floor(points.length / 2)];
       },
       points: ref => this.goodPoints(ref.id),
-      context: ref => this.byId(pack.goods, ref.id)?.tags?.join(", ") || ""
+      context: ref => this.byId(pack.goods, ref.id)?.tags?.join(", ") || "",
+      open: ref => Controllers.GoodsEditor.open(ref.id)
     }
   };
 
@@ -402,6 +405,14 @@ class EntityLookup {
 
   getContext(ref: EntityRef): string {
     return this.types[ref.type].context?.(ref) || "";
+  }
+
+  /** Opens the entity's editor; false when the type has none and should be revealed on the map instead */
+  open(ref: EntityRef): boolean {
+    const open = this.types[ref.type].open;
+    if (!open) return false;
+    open(ref);
+    return true;
   }
 
   getPosition(ref: EntityRef): Point | undefined {

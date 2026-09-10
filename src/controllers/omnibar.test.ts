@@ -336,14 +336,14 @@ describe("Omnibar public behavior", () => {
     expect(mocks.open).not.toHaveBeenCalled();
   });
 
-  it("reports non-spatial definitions without opening an editor", () => {
+  it("opens the Goods editor filtered to the chosen good instead of zooming", () => {
     pack.goods = [{ i: 1, name: "Copper" }] as typeof pack.goods;
     Omnibar.open();
     search("Copper");
     key("Enter");
-    expect(mocks.tip).toHaveBeenCalledWith("This element has no map location", false, "warn", 4000);
+    expect(mocks.open).toHaveBeenCalledWith(1);
     expect(mocks.zoom).not.toHaveBeenCalled();
-    expect(mocks.open).not.toHaveBeenCalled();
+    expect(mocks.tip).not.toHaveBeenCalled();
   });
 
   it("rejects stale targets after map replacement or regeneration", () => {
