@@ -6,7 +6,7 @@ import { capitalize, rn } from "@/utils";
 import { CULTURE_TYPES } from "../generators/cultures-generator";
 import type { DemandCategory, Good } from "../generators/goods-generator";
 import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY } from "../generators/goods-generator";
-import { ensureEl, getRandomColor, unique } from "../utils";
+import { ensureEl, getRandomColor, sanitizeSvgIcon, unique } from "../utils";
 
 function open(editedGood?: Good, onUpdate?: () => void) {
   const icons = Array.from(ensureEl("good-icons").querySelectorAll("symbol")).map(el => el.id);
@@ -527,19 +527,7 @@ function uploadImage(type: "image" | "svg", callback: (type: string, id: string)
       const svg = /*html*/ `<svg id="${id}" xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><image x="0" y="0" width="200" height="200" href="${result}"/></svg>`;
       goodIcons.insertAdjacentHTML("beforeend", svg);
     } else {
-      const el = document.createElement("html");
-      el.innerHTML = result;
-
-      el.querySelectorAll("*").forEach(el => {
-        const attributes = el.getAttributeNames();
-        attributes.forEach(attr => {
-          if (attr.includes("inkscape") || attr.includes("sodipodi")) el.removeAttribute(attr);
-        });
-      });
-
-      if (result.includes("from the Noun Project")) el.querySelectorAll("text").forEach(textEl => void textEl.remove());
-
-      const svg = el.querySelector("svg");
+      const svg = sanitizeSvgIcon(result);
       if (!svg)
         return void tip(
           "The file should be prepared for load to FMG. If you don't know why it's happening, try to upload raster image",
