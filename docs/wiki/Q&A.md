@@ -1,7 +1,10 @@
-Here I want to answer the most common questions _Fantasy Map Generator_ (FMG) users may have. Please feel free to raise a new [issue](https://github.com/Azgaar/Fantasy-Map-Generator/issues) in order to request additional answers.
+Here I want to answer the most common questions _Fantasy Map Generator_ (FMG) users may have. Ask additional questions in [Q&A discussions](https://github.com/Azgaar/Fantasy-Map-Generator/discussions/new?category=q-a).
 
 ### I have issues with the Generator, what should I do?
-Please try to reproduce the issue on your own. If it's reproducible, please log [an issue](https://github.com/Azgaar/Fantasy-Map-Generator/issues). A lot of issues are caused by browsers, please also try to use incognito mode and/or another browser. I recommend Chrome as the fastest browser in terms of svg rendering.
+Search existing issues, then use the [bug report form](https://github.com/Azgaar/Fantasy-Map-Generator/issues/new?template=bug_report.yml). Include the FMG version, browser/OS, steps, expected and actual results, and the affected `.map` file in a ZIP archive when relevant. If practical, try a private window or another browser and mention the result. You can also use the Discord assistant's `/bug` command when available; a moderator reviews the report before GitHub submission. See [reporting instructions and examples](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Reporting-bugs-and-ideas).
+
+### How do I suggest a feature or follow development?
+Search [Ideas discussions](https://github.com/Azgaar/Fantasy-Map-Generator/discussions/categories/ideas) and the [FMG dev board](https://github.com/users/Azgaar/projects/3). Upvote an existing idea or [submit a new one](https://github.com/Azgaar/Fantasy-Map-Generator/discussions/new?category=ideas), explaining the problem and your use case. In Discord, `/idea` opens a report form when available; moderators review it before submission. Votes help maintainers assess demand but do not promise a release date. Ordinary chat and assistant questions do not file reports automatically.
 
 ### The map performance is poor, how can I improve it?
 The performance mainly depends on the number of visible elements and visible map area. The optimization strategies are: 
@@ -17,7 +20,7 @@ The performance mainly depends on the number of visible elements and visible map
 You. The Generator is licensed under [MIT license](https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE) and derivative works such as maps are free of charge. You can sell them or make them available for free.
 
 ### My saved map is not working properly. What should I do?
-If there is no version conflict, please [raise a defect](https://github.com/Azgaar/Fantasy-Map-Generator/issues/new). Compatible older maps are auto-updated when loaded. Maps older than `0.70.0`, maps from a newer version, and invalid files require the matching Generator version or a repair/recreation. The tool is under development and version conflicts are inevitable.
+If there is no version conflict, please [report the problem](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Reporting-bugs-and-ideas#report-a-bug) with the affected file and the versions used to save and load it. Compatible older maps are auto-updated when loaded. Maps older than `0.70.0`, maps from a newer version, and invalid files require the matching Generator version or a repair/recreation. The tool is under development and version conflicts are inevitable.
 
 ### Can I export a created map?
 Sure, there are a number of available options: 
@@ -68,7 +71,7 @@ It's my nickname, it has no meaning. The name of the tool is _Azgaar's Fantasy M
 It's my meta-project. A CK2-style genealogical game focused on genetics. Generally a wedding/dynasty breeding simulator (see the [screenshot](https://i2.wp.com/azgaar.files.wordpress.com/2018/02/screenshot-2018-2-9-dynasty-v0-11.png)). It's in pre-alpha and currently on hold, so no demo is available. 
 
 ### How can I help to improve the Generator?
-Just use it, log defects and suggest enhancements (please use the [issues](https://github.com/Azgaar/Fantasy-Map-Generator/issues) page for both cases). Share the Generator link within your community! Post on FB, Twitter etc. 
+Use it, [report bugs](https://github.com/Azgaar/Fantasy-Map-Generator/issues/new?template=bug_report.yml), and [suggest or upvote ideas](https://github.com/Azgaar/Fantasy-Map-Generator/discussions/categories/ideas). See [examples and Discord reporting options](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Reporting-bugs-and-ideas). Share the Generator link within your community!
 
 We need a good video-tutorial. Please contact me if you have a video-blog and want to help.
 

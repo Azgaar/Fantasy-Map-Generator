@@ -1,7 +1,7 @@
 body:
   - type: markdown
     attributes:
-      value: Before posting, please search existing ideas and upvote instead of duplicating — votes drive prioritization.
+      value: Before posting, search existing ideas and issues and upvote an existing idea instead of duplicating it. Votes help maintainers assess demand; they do not guarantee implementation. See the [reporting guide](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Reporting-bugs-and-ideas) for examples.
   - type: textarea
     id: idea
     attributes:
