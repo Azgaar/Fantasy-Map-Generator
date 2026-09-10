@@ -211,6 +211,17 @@ describe("several legend boxes", () => {
     expect(legendPositions.get("Zones")).toEqual({ x: 99, y: 84.67 });
   });
 
+  it("redraws a box with no items as empty, not as one blank row", () => {
+    drawLegend("Zones", []); // every zone filtered out
+    expect(boxOf("Zones")!.getAttribute("data")).toBe("");
+
+    redrawLegend();
+
+    const swatches = boxOf("Zones")!.querySelectorAll("rect:not(.legendBox)");
+    expect(swatches).toHaveLength(0);
+    expect(boxOf("Zones")!.textContent).toBe("Zones"); // the title alone, no "undefined" row
+  });
+
   it("adopts the single box of a map saved before the legend could hold several", () => {
     const legend = document.getElementById("legend")!;
     legend.setAttribute("data", "state1,#ff0000,Alpha|state2,#00ff00,Beta");
