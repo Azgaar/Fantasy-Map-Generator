@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { waitForMap } from "./wait-for-map";
 
 // Each row action has a column of its own, so the icons line up down the table. That makes the cells
@@ -173,4 +173,130 @@ test("the note icon opens the Notes Editor on the row's entity", async ({ page }
     expect(opened.glyph, dialogId).toBeTruthy();
     expect(opened.selected, dialogId).toContain(`${noteType}:`);
   }
+});
+
+declare const pack: import("@/types/PackedGraph").PackedGraph;
+declare const Controllers: { GoodsEditor: { open: () => Promise<void> } };
+
+test.describe("Goods display filter", () => {
+  let initial: { i: number; visible: boolean; matches: boolean }[];
+  let errors: string[];
+
+  async function filterGoods(page: Page) {
+    await page.click("#goodsTagsFilter");
+    await page.locator('#alert input[value="batch-a"]').check();
+    await page.locator('#alert input[value="batch-b"]').check();
+    await page.locator(".ui-dialog:has(#alert)").getByRole("button", { name: "Apply", exact: true }).click();
+  }
+
+  async function expectFilteredVisibility(page: Page, visible: boolean) {
+    const expected = initial.map(good => ({ i: good.i, visible: good.matches ? visible : good.visible }));
+    expect(await page.evaluate(() => pack.goods.map(({ i, visible }) => ({ i, visible })))).toEqual(expected);
+    await expect(page.locator("#goodsDisplayed")).toHaveText(String(expected.filter(good => good.visible).length));
+    await expect(page.locator("#goodsNumber")).toHaveText(String(initial.length));
+    await expect(page.locator("#goodsDisplayAll")).toHaveJSProperty("checked", visible);
+    await expect(page.locator("#goodsDisplayAll")).toHaveJSProperty("indeterminate", false);
+    const rows = page.locator("#goodsBody .goodDisplayed");
+    expect(
+      await rows.evaluateAll(
+        (inputs, value) => inputs.every(input => (input as HTMLInputElement).checked === value),
+        visible
+      )
+    ).toBe(true);
+  }
+
+  test.beforeEach(async ({ page }) => {
+    errors = [];
+    page.on("pageerror", error => errors.push(error.message));
+    await page.addInitScript(() => localStorage.setItem("version", "99.0.0"));
+    await page.goto("/?seed=goods-filter&width=1600&height=1000");
+    await waitForMap(page);
+    initial = await page.evaluate(() => {
+      pack.goods.forEach((good, index) => {
+        good.tags = index === 0 ? ["batch-a"] : ["unrelated"];
+        good.visible = index > 0 && index % 2 === 0;
+      });
+      const firstId = Math.max(...pack.goods.map(good => good.i)) + 1;
+      for (let index = 0; index < 104; index++) {
+        pack.goods.push({
+          ...structuredClone(pack.goods[0]),
+          i: firstId + index,
+          name: `Filter test ${index}`,
+          tags: [index % 2 ? "batch-a" : "batch-b"],
+          visible: false
+        });
+      }
+      const cell = pack.cells.i.find(i => pack.cells.h[i] >= 20)!;
+      pack.cells.good[cell] = pack.goods[0].i;
+      return pack.goods.map(good => ({
+        i: good.i,
+        visible: Boolean(good.visible),
+        matches: good.tags[0] !== "unrelated"
+      }));
+    });
+    await page.evaluate(() => Controllers.GoodsEditor.open());
+    await expect(page.locator("#goodsEditor")).toBeVisible();
+  });
+
+  test.afterEach(() => expect(errors).toEqual([]));
+
+  test("bulk show and hide affect every matching page and preserve unrelated goods", async ({ page }) => {
+    await filterGoods(page);
+    await page.locator("#goodsFooter .editorPageNext").click();
+    await expect(page.locator("#goodsBody .goodDisplayed")).toHaveCount(5);
+    await page.locator("#goodsDisplayAll").check();
+    await expectFilteredVisibility(page, true);
+    await expect(page.locator("#goodsFooter .editorPageInput")).toHaveValue("2");
+    expect(await page.locator(`#goodsIcons [data-i="${initial[0].i}"]`).count()).toBeGreaterThan(0);
+
+    await page.locator("#goodsDisplayAll").uncheck();
+    await expectFilteredVisibility(page, false);
+    await expect(page.locator(`#goodsIcons [data-i="${initial[0].i}"]`)).toHaveCount(0);
+    await expect(page.locator("#goodsFooter .editorPageInput")).toHaveValue("2");
+  });
+
+  test("master checkbox follows filtered goods and individual row changes", async ({ page }) => {
+    await page.evaluate(() => {
+      for (const good of pack.goods) if (good.tags[0] !== "unrelated") good.visible = true;
+    });
+    await filterGoods(page);
+    await expectFilteredVisibility(page, true);
+    await page.locator("#goodsBody .goodDisplayed").first().uncheck();
+    await expect(page.locator("#goodsDisplayAll")).not.toBeChecked();
+    await expect(page.locator("#goodsDisplayAll")).toHaveJSProperty("indeterminate", true);
+    const count = initial.filter(good => good.matches || good.visible).length - 1;
+    await expect(page.locator("#goodsDisplayed")).toHaveText(String(count));
+    await page.locator("#goodsDisplayAll").check();
+    await expectFilteredVisibility(page, true);
+  });
+
+  test("clearing the filter restores bulk actions and counts for the whole catalogue", async ({ page }) => {
+    await filterGoods(page);
+    await page.click("#goodsTagsFilter");
+    await page.locator(".ui-dialog:has(#alert)").getByRole("button", { name: "Clear filter", exact: true }).click();
+    await page.locator("#goodsDisplayAll").check();
+    expect(await page.evaluate(() => pack.goods.every(good => good.visible))).toBe(true);
+    await expect(page.locator("#goodsDisplayed")).toHaveText(String(initial.length));
+    await expect(page.locator("#goodsDisplayAll")).toHaveJSProperty("indeterminate", false);
+    await page.locator("#goodsDisplayAll").uncheck();
+    expect(await page.evaluate(() => pack.goods.every(good => !good.visible))).toBe(true);
+    await expect(page.locator("#goodsDisplayed")).toHaveText("0");
+    await expect(page.locator("#goodsIcons > *")).toHaveCount(0);
+  });
+
+  test("a filter with no matching goods disables the bulk checkbox", async ({ page }) => {
+    await filterGoods(page);
+    await page.evaluate(() => {
+      for (const good of pack.goods) good.tags = ["unrelated"];
+    });
+    await page.click("#goodsEditorRefresh");
+    await expect(page.locator("#goodsBody .goodDisplayed")).toHaveCount(0);
+    await expect(page.locator("#goodsDisplayAll")).toBeDisabled();
+    await expect(page.locator("#goodsDisplayAll")).not.toBeChecked();
+    await expect(page.locator("#goodsDisplayAll")).toHaveJSProperty("indeterminate", false);
+    expect(await page.evaluate(() => pack.goods.map(({ i, visible }) => ({ i, visible })))).toEqual(
+      initial.map(({ i, visible }) => ({ i, visible }))
+    );
+    await expect(page.locator("#goodsDisplayed")).toHaveText(String(initial.filter(good => good.visible).length));
+  });
 });
