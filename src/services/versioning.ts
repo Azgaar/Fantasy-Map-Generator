@@ -25,7 +25,8 @@ export const VERSION = "1.153.0";
 // new changes on top
 const latestPublicChanges = [
   "Wrap Tool: reshape cells with a brush",
-  "Coastlines: roughness is now localized to coastline section",
+  "Coastlines: roughness localized to coastline section",
+  "Diplomacy: repair invalid relations",
   "Heightmap: option to render contour lines",
   "Ability to override a burg's treasury",
   "Dialogs: preserve position between sessions",
