@@ -345,3 +345,13 @@ test("opacity stranded on a layer group moves to the style groups the store keep
   expect(document.getElementById("routes")?.getAttribute("fill")).toBe("none"); // not opacity, left alone
   Styles.set(structuredClone(Styles.defaults));
 });
+
+test("stylesFromMap harvests route type sub-groups saved in the svg", () => {
+  document.body.innerHTML = `<svg id="map">
+    <g id="routes"><g id="trails" data-group="trails"><g id="footpath" data-type="footpath" stroke-width="0.9" stroke-dasharray="1 1"></g></g></g>
+  </svg>`;
+  const styles = stylesFromMap(document);
+  expect(styles.routes.types.footpath.attrs["stroke-width"]).toBe(0.9);
+  expect(styles.routes.types.footpath.attrs["stroke-dasharray"]).toBe("1 1");
+  expect(styles.routes.types.royal.attrs["stroke-width"]).toBe(2); // untouched types keep the defaults
+});
