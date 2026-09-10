@@ -38,6 +38,12 @@ export function toggleOptions(event?: Event): void {
   else hideOptions(event);
 }
 
+/** Open the panel on the given tab */
+export function openTab(id: string): void {
+  showOptions();
+  selectTab(id);
+}
+
 /** Show the clicked tab, hiding whichever was open. Tools swaps in the customization menu instead */
 function selectTab(id: string): void {
   const active = ensureEl("options").querySelector(".tab > button.active");

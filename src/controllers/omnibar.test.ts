@@ -14,8 +14,19 @@ vi.mock("@/components/layers", () => ({
   Layers: { draw: vi.fn(), show: mocks.show, toggle: mocks.toggle, has: () => true, isOn: () => false }
 }));
 vi.mock("@/components/options/tabs/layers-tab", () => ({
-  LAYER_TOGGLES: new Map([["rivers", { label: "Ri<u>v</u>ers" }]])
+  LAYER_TOGGLES: new Map([["rivers", { label: "Ri<u>v</u>ers" }]]),
+  LAYER_PRESETS: {}
 }));
+vi.mock("@/components/app-info", () => ({ showInfo: vi.fn() }));
+vi.mock("@/components/layers-presets", () => ({ applyPreset: vi.fn(), savePreset: vi.fn() }));
+vi.mock("@/components/lifecycle", () => ({ regeneratePrompt: vi.fn() }));
+vi.mock("@/components/options/io-panes", () => ({}));
+vi.mock("@/components/options/options-panel", () => ({ openTab: vi.fn(), toggleOptions: vi.fn() }));
+vi.mock("@/components/seed", () => ({ showSeedHistoryDialog: vi.fn() }));
+vi.mock("@/services", () => ({ Services: {} }));
+vi.mock("@/services/autosave", () => ({ toggleSaveReminder: vi.fn() }));
+vi.mock("@/services/url-params", () => ({ copyMapURL: vi.fn() }));
+vi.mock("@/services/versioning", () => ({ cleanupData: vi.fn() }));
 vi.mock("@/renderers/overlays/highlight", () => ({ highlightElement: mocks.highlight }));
 vi.mock("@/components/zoom", () => ({ zoomTo: mocks.zoom }));
 vi.mock("@/components/viewport", () => ({ viewport: { width: 1000, height: 800, scale: 1 } }));

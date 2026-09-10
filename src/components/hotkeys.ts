@@ -35,7 +35,7 @@ function handleKeyup(event: KeyboardEvent): void {
   if (code === "Space") openOmnibar();
   else if (code === "F1") showInfo();
   else if (code === "F2") regeneratePrompt();
-  else if (code === "F6") Services.Save.saveMap("storage");
+  else if (code === "F6") Services.Save.toStorage();
   else if (code === "F9") Services.Load.quickLoad();
   else if (code === "Tab") toggleOptions(event);
   else if (code === "Escape") {
@@ -44,8 +44,8 @@ function handleKeyup(event: KeyboardEvent): void {
   } else if (code === "Delete") removeElementOnKey();
   else if (code === "KeyO" && findEl("canvas3d")) Controllers.View3d.toggleOptions();
   else if (ctrl && code === "KeyQ") toggleSaveReminder();
-  else if (ctrl && code === "KeyS") Services.Save.saveMap("machine");
-  else if (ctrl && code === "KeyC") Services.Save.saveMap("dropbox");
+  else if (ctrl && code === "KeyS") Services.Save.toMachine();
+  else if (ctrl && code === "KeyC") Services.Save.toDropbox();
   else if (ctrl && code === "KeyZ") findEl("undo")?.click();
   else if (ctrl && code === "KeyY") findEl("redo")?.click();
   else if ((shift || altShift) && code === "KeyH") Controllers.HeightmapEditor.open();

@@ -84,10 +84,8 @@ class OmnibarController {
         const name = MapEntities.getName(ref) || entity.name || display.kind;
         const context = [display.kind, MapEntities.getContext(ref)].filter(Boolean).join(" · ");
         const alias = entity.name || name;
-        entities.set(
-          key,
-          this.entityResult({ id: `entity:${key}`, name, context, icon: display.icon, target, display }, alias)
-        );
+        const result = { id: `entity:${key}`, name, context, icon: display.icon, target, display };
+        entities.set(key, this.entityResult(result, alias));
       }
     }
 
@@ -104,10 +102,8 @@ class OmnibarController {
       const id = `label:${label.id}`;
       const name = label.text.replaceAll("|", " ");
       const { context, target } = owner;
-      entities.set(
-        id,
-        this.entityResult({ id, name, context: `Label · ${context}`, icon: "icon-font", target, label })
-      );
+      const result = { id, name, context: `Label · ${context}`, icon: "icon-font", target, label };
+      entities.set(id, this.entityResult(result));
     }
     return [...records, ...entities.values()];
   }

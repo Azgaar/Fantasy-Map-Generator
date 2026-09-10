@@ -21,7 +21,7 @@ loading strategy when they just want to open a dialog or save a map.
 ## Solution
 
 A single, typed module **registry** that lets any caller invoke a module's method uniformly —
-`Controllers.MarketOverview.open(id)` or `Services.Save.saveMap("machine")` — without ever writing
+`Controllers.MarketOverview.open(id)` or `Services.Save.toMachine()` — without ever writing
 a dynamic `import()` or knowing the export name. The registry resolves the module on first use,
 caches it, and calls the method, returning a Promise.
 
@@ -73,7 +73,7 @@ Controllers it primarily serves and is exposed on `window` for legacy JavaScript
 - **Symbol / unknown-key guard.** Both Proxy levels must return `undefined` for symbol keys and unknown names — in particular the inner proxy must not return a function for `then`, so that a registry entry is never accidentally thenable (awaiting or promise-inspecting it must be a no-op, not a method dispatch). This is an explicit correctness requirement, not an optimization.
 - **Uniform async contract.** Every registry method returns a Promise, including for eager modules. All Controller dialogs are fire-and-forget, so the change from `void` to `Promise<void>` is acceptable; callers that ignore the return value are unaffected.
 - **Lazy/eager transparency via an `eager` adapter.** An `eager(value)` helper produces `() => Promise.resolve(value)` so an already-imported module can be registered without consumers knowing. Switching a module between lazy and eager is a one-line registry edit; no call site changes.
-- **Two buckets, one mechanism.** `Controllers` and `Services` are separate typed objects built from `createRegistry`. Controllers entries resolve to the module's `ModuleType` export (the object with `open`/`refresh`); Services entries resolve to the module namespace (free functions like `saveMap`, `getMapURL`).
+- **Two buckets, one mechanism.** `Controllers` and `Services` are separate typed objects built from `createRegistry`. Controllers entries resolve to the module's `ModuleType` export (the object with `open`/`refresh`); Services entries resolve to the module namespace (free functions like `toMachine`, `getMapURL`).
 - **Controllers bucket scope.** All Controllers, including the three currently statically-imported sub-dialogs (good editor, production chains, distribution editor), which become lazy as a result. The 3D view module is excluded: it has no dialog `open`, it installs `ThreeD` globals, and it shares mutable state synchronously with its renderer — it stays statically imported.
 - **Services bucket scope.** The non-Controller modules previously in the loader file: save, load, map export, JSON export, cloud, installation, supporters, and the UI tour.
 - **Location & bootstrap.** The registry is defined in `controllers/index.ts`, which is already loaded eagerly as an entry module script, so `window.Controllers` and `window.Services` are set at startup with no new wiring. The standalone loader file and its dedicated entry script are removed.

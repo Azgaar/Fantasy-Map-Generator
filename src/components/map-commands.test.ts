@@ -1,11 +1,31 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ draw: vi.fn(), refresh: vi.fn(), regenerate: vi.fn(), dialog: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  draw: vi.fn(),
+  refresh: vi.fn(),
+  regenerate: vi.fn(),
+  dialog: vi.fn(),
+  applyPreset: vi.fn()
+}));
 vi.mock("@/components/layers", () => ({ Layers: { draw: mocks.draw, toggle: vi.fn() } }));
 vi.mock("@/components/dialog/dialog-helpers", () => ({ refreshEditors: mocks.refresh }));
-vi.mock("@/components/options/tabs/layers-tab", () => ({ LAYER_TOGGLES: new Map() }));
+vi.mock("@/components/options/tabs/layers-tab", () => ({
+  LAYER_TOGGLES: new Map(),
+  LAYER_PRESETS: { political: "Political map" }
+}));
+vi.mock("@/components/zoom", () => ({ changeMapZoom: vi.fn(), resetZoom: vi.fn() }));
 vi.mock("@/controllers", () => ({ Controllers: {} }));
+vi.mock("@/components/app-info", () => ({ showInfo: vi.fn() }));
+vi.mock("@/components/layers-presets", () => ({ applyPreset: mocks.applyPreset, savePreset: vi.fn() }));
+vi.mock("@/components/lifecycle", () => ({ regeneratePrompt: vi.fn() }));
+vi.mock("@/components/options/io-panes", () => ({}));
+vi.mock("@/components/options/options-panel", () => ({ openTab: vi.fn(), toggleOptions: vi.fn() }));
+vi.mock("@/components/seed", () => ({ showSeedHistoryDialog: vi.fn() }));
+vi.mock("@/services", () => ({ Services: {} }));
+vi.mock("@/services/autosave", () => ({ toggleSaveReminder: vi.fn() }));
+vi.mock("@/services/url-params", () => ({ copyMapURL: vi.fn() }));
+vi.mock("@/services/versioning", () => ({ cleanupData: vi.fn() }));
 
 import { MAP_COMMANDS } from "./map-commands";
 
@@ -43,6 +63,13 @@ describe("shared regeneration commands", () => {
     MAP_COMMANDS.find(command => command.id === "regenerateRivers")!.run();
     expect(mocks.regenerate).toHaveBeenCalledOnce();
     expect(mocks.dialog).not.toHaveBeenCalled();
+  });
+
+  it("offers every built-in layers preset as a command", () => {
+    const command = MAP_COMMANDS.find(command => command.id === "preset:political")!;
+    expect(command.name).toBe("Apply Layers Preset: Political map");
+    command.run();
+    expect(mocks.applyPreset).toHaveBeenCalledWith("political");
   });
 
   it("has unique persistent command IDs", () => {

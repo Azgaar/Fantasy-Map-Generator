@@ -367,10 +367,15 @@ class EntityLookup {
       kind: "Good",
       icon: "icon-tags",
       scale: 6,
-      layers: [],
+      layers: ["goods"],
       entity: id => this.byId(pack.goods, id),
       name: id => this.byId(pack.goods, id)?.name || "",
       refs: () => this.refsOf("good", pack.goods, true),
+      position: id => {
+        const points = this.goodPoints(id);
+        return points[Math.floor(points.length / 2)];
+      },
+      points: ref => this.goodPoints(ref.id),
       context: ref => this.byId(pack.goods, ref.id)?.tags?.join(", ") || ""
     }
   };
@@ -512,6 +517,15 @@ class EntityLookup {
   private chainPoint(cells: number[] | undefined): Point | undefined {
     if (!cells?.length) return undefined;
     return this.cellPoint(cells[Math.floor(cells.length / 2)]);
+  }
+
+  /** Raw goods sit on their resource cells; manufactured-only goods live at the burgs producing them */
+  private goodPoints(id: number): Point[] {
+    const cells = pack.cells.good ? this.cellPoints(pack.cells.good, id) : [];
+    if (cells.length) return cells;
+    return (pack.burgs || [])
+      .filter(burg => burg?.i && !burg.removed && burg.production?.some(r => "goodId" in r && r.goodId === id))
+      .map(burg => [burg.x, burg.y]);
   }
 
   private cellPoints(assignments: ArrayLike<number>, id: number): Point[] {

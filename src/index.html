@@ -589,7 +589,7 @@
         <div style="margin-top: 0.3em">
           <strong>Save map to</strong>
           <button
-            onclick="window.Services.Save.saveMap('machine')"
+            onclick="window.Services.Save.toMachine()"
             data-tip="Download map file to your local disk"
             data-shortcut="Ctrl + S"
             style="font-weight: 600"
@@ -598,13 +598,13 @@
           </button>
           <button
             id="saveToDropboxButton"
-            onclick="window.Services.Save.saveMap('dropbox')"
+            onclick="window.Services.Save.toDropbox()"
             data-tip="Save map file to your Dropbox"
             data-shortcut="Ctrl + C"
           >
             dropbox
           </button>
-          <button onclick="window.Services.Save.saveMap('storage')" data-tip="Save the project to browser storage only" data-shortcut="F6">
+          <button onclick="window.Services.Save.toStorage()" data-tip="Save the project to browser storage only" data-shortcut="F6">
             browser
           </button>
         </div>

@@ -1,12 +1,29 @@
+import { showInfo } from "@/components/app-info";
 import { refreshEditors } from "@/components/dialog/dialog-helpers";
 import type { LayerId } from "@/components/layers";
 import { Layers } from "@/components/layers";
-import { LAYER_TOGGLES } from "@/components/options/tabs/layers-tab";
+import { applyPreset, savePreset } from "@/components/layers-presets";
+import { regeneratePrompt } from "@/components/lifecycle";
+import {
+  loadURL,
+  openExportToPngTiles,
+  showExportPane,
+  showLoadPane,
+  showSavePane
+} from "@/components/options/io-panes";
+import { openTab, toggleOptions } from "@/components/options/options-panel";
+import { LAYER_PRESETS, LAYER_TOGGLES } from "@/components/options/tabs/layers-tab";
+import { showSeedHistoryDialog } from "@/components/seed";
 import { tip } from "@/components/tooltips";
+import { changeMapZoom, resetZoom } from "@/components/zoom";
 import { Controllers } from "@/controllers";
 import { Emblems } from "@/generators/emblems-generator";
 import { Population } from "@/generators/population-generator";
 import { unfog } from "@/renderers/overlays/fogging";
+import { Services } from "@/services";
+import { toggleSaveReminder } from "@/services/autosave";
+import { copyMapURL } from "@/services/url-params";
+import { cleanupData } from "@/services/versioning";
 import { ensureEl, gauss, isCtrlClick } from "@/utils";
 
 export interface MapCommand {
@@ -331,7 +348,181 @@ export const MAP_COMMANDS: MapCommand[] = [
     aliases: "goods recipes economy",
     run: () => Controllers.ProductionChains.open()
   },
-  // missing: burg and label groups, other???
+  {
+    id: "burgGroups",
+    name: "Open Burg Groups Editor",
+    aliases: "settlements cities towns villages types",
+    run: () => Controllers.BurgGroupEditor.open()
+  },
+  {
+    id: "labelGroups",
+    name: "Open Label Groups Editor",
+    aliases: "labels text typography fonts",
+    run: () => Controllers.LabelGroupsConfigurator.open()
+  },
+  {
+    id: "routeGroups",
+    name: "Open Route Groups Editor",
+    aliases: "roads paths trails types",
+    run: () => Controllers.RouteGroupsEditor.open()
+  },
+  {
+    id: "transports",
+    name: "Open Transports Editor",
+    aliases: "journeys travel speed",
+    run: () => Controllers.TransportEditor.open()
+  },
+  { id: "drawRiver", name: "Draw River", aliases: "add waterway manually", run: () => Controllers.RiverCreator.open() },
+  {
+    id: "selectHeightmap",
+    name: "Select Heightmap Template",
+    aliases: "precreated generation options",
+    run: () => Controllers.HeightmapSelection.open()
+  },
+  { id: "newMap", name: "Generate New Map", aliases: "regenerate random create", run: () => regeneratePrompt() },
+  {
+    id: "seedHistory",
+    name: "Show Seed History",
+    aliases: "previous maps restore",
+    run: () => showSeedHistoryDialog()
+  },
+  { id: "copyMapURL", name: "Copy Map URL", aliases: "seed link share clipboard", run: () => copyMapURL() },
+  { id: "saveButton", name: "Show Save Panel", aliases: "store dialog", run: () => showSavePane() },
+  {
+    id: "saveToMachine",
+    name: "Save Map File",
+    aliases: "save .map disk",
+    run: () => Services.Save.toMachine()
+  },
+  { id: "saveToDropbox", name: "Save Map to Dropbox", aliases: "cloud", run: () => Services.Save.toDropbox() },
+  {
+    id: "saveToStorage",
+    name: "Save Map to browser storage",
+    aliases: "browser storage",
+    run: () => Services.Save.toStorage()
+  },
+  { id: "loadButton", name: "Load Map", aliases: "open dialog", run: () => showLoadPane() },
+  {
+    id: "loadFromFile",
+    name: "Load Map from File",
+    aliases: "open upload disk",
+    run: () => ensureEl("mapToLoad").click()
+  },
+  { id: "loadFromURL", name: "Load Map from URL", aliases: "open link", run: () => loadURL() },
+  { id: "quickLoad", name: "Quick Load Map", aliases: "browser storage restore", run: () => Services.Load.quickLoad() },
+  { id: "exportButton", name: "Export Map", aliases: "download image data dialog", run: () => showExportPane() },
+  {
+    id: "exportSvg",
+    name: "Export as SVG",
+    aliases: "download vector image",
+    run: () => Services.ExportMap.exportToSvg()
+  },
+  { id: "exportPng", name: "Export as PNG", aliases: "download image", run: () => Services.ExportMap.exportToPng() },
+  { id: "exportJpeg", name: "Export as JPEG", aliases: "download image", run: () => Services.ExportMap.exportToJpeg() },
+  { id: "exportTiles", name: "Export as PNG Tiles", aliases: "download zip", run: () => openExportToPngTiles() },
+  {
+    id: "exportGeoJsonCells",
+    name: "Export Cells as GeoJSON",
+    aliases: "download gis",
+    run: () => Services.ExportMap.saveGeoJsonCells()
+  },
+  {
+    id: "exportGeoJsonRoutes",
+    name: "Export Routes as GeoJSON",
+    aliases: "download gis",
+    run: () => Services.ExportMap.saveGeoJsonRoutes()
+  },
+  {
+    id: "exportGeoJsonRivers",
+    name: "Export Rivers as GeoJSON",
+    aliases: "download gis",
+    run: () => Services.ExportMap.saveGeoJsonRivers()
+  },
+  {
+    id: "exportGeoJsonMarkers",
+    name: "Export Markers as GeoJSON",
+    aliases: "download gis",
+    run: () => Services.ExportMap.saveGeoJsonMarkers()
+  },
+  {
+    id: "exportGeoJsonZones",
+    name: "Export Zones as GeoJSON",
+    aliases: "download gis",
+    run: () => Services.ExportMap.saveGeoJsonZones()
+  },
+  {
+    id: "exportJsonFull",
+    name: "Export Full JSON",
+    aliases: "download data",
+    run: () => Services.ExportJson.exportToJson("Full")
+  },
+  {
+    id: "exportJsonMinimal",
+    name: "Export Minimal JSON",
+    aliases: "download data",
+    run: () => Services.ExportJson.exportToJson("Minimal")
+  },
+  {
+    id: "exportJsonPackCells",
+    name: "Export Pack Cells JSON",
+    aliases: "download data",
+    run: () => Services.ExportJson.exportToJson("PackCells")
+  },
+  {
+    id: "exportJsonGridCells",
+    name: "Export Grid Cells JSON",
+    aliases: "download data",
+    run: () => Services.ExportJson.exportToJson("GridCells")
+  },
+  { id: "toggleOptions", name: "Toggle Menu", aliases: "options panel show hide", run: () => toggleOptions() },
+  { id: "layersTab", name: "Open Layers Tab", aliases: "menu panel", run: () => openTab("layersTab") },
+  { id: "styleTab", name: "Open Style Tab", aliases: "menu panel editor", run: () => openTab("styleTab") },
+  { id: "optionsTab", name: "Open Options Tab", aliases: "menu panel settings", run: () => openTab("optionsTab") },
+  { id: "toolsTab", name: "Open Tools Tab", aliases: "menu panel", run: () => openTab("toolsTab") },
+  { id: "aboutTab", name: "Open About Tab", aliases: "menu panel info credits", run: () => openTab("aboutTab") },
+  { id: "zoomReset", name: "Reset Zoom", aliases: "fit view", run: () => resetZoom(1000) },
+  { id: "zoomIn", name: "Zoom In", aliases: "view closer", run: () => changeMapZoom(1.2) },
+  { id: "zoomOut", name: "Zoom Out", aliases: "view farther", run: () => changeMapZoom(0.8) },
+  { id: "viewMesh", name: "Open 3D Scene", aliases: "view mode mesh", run: () => Controllers.View3d.open("viewMesh") },
+  {
+    id: "viewGlobe",
+    name: "Open Globe View",
+    aliases: "view mode planet",
+    run: () => Controllers.View3d.open("viewGlobe")
+  },
+  { id: "savePresetButton", name: "Save Layers Preset", aliases: "displayed layers", run: () => savePreset() },
+  { id: "showInfo", name: "Show App Info", aliases: "about version help", run: () => showInfo() },
+  {
+    id: "toggleSaveReminder",
+    name: "Toggle Save Reminder",
+    aliases: "autosave notification",
+    run: () => toggleSaveReminder()
+  },
+  {
+    id: "startTour",
+    name: "Start Interactive Tour",
+    aliases: "help guide tutorial",
+    run: () => Services.UiTour.start()
+  },
+  {
+    id: "helpAssistant",
+    name: "Ask the Assistant",
+    aliases: "help chat question",
+    run: () => Controllers.HelpAssistant.open()
+  },
+  { id: "getApp", name: "Get Desktop App", aliases: "install download electron", run: () => Services.AppOffer.open() },
+  {
+    id: "optionsReset",
+    name: "Reset Options",
+    aliases: "restore defaults clear cache reload",
+    run: () => cleanupData()
+  },
+  ...Object.entries(LAYER_PRESETS).map(([id, label]) => ({
+    id: `preset:${id}`,
+    name: `Apply Layers Preset: ${label}`,
+    aliases: "layers preset show",
+    run: () => applyPreset(id)
+  })),
   ...[...LAYER_TOGGLES].map(([id, layer]) => ({
     id: `layer:${id}`,
     name: `Toggle ${layer.label.replace(/<\/?u>/g, "")}`,
