@@ -60,15 +60,15 @@ function renderDialog(): void {
         >
         <i id="regimentNameRestore" data-tip="Click to restore regiment's default name" class="icon-ccw pointer"></i>
       </div>
-      <div data-tip="Regiment emblem" style="display: flex; align-items: center">
-        <div class="label">Emblem:</div>
-        <div id="regimentEmblem" translate="no" style="font-size: 1.5em; width: 3.7em"></div>
-        <button id="regimentEmblemChange" style="padding: 0; width: 4.5em">change</button>
+      <div data-tip="Regiment icon" style="display: flex; align-items: center">
+        <div class="label">Icon:</div>
+        <div id="regimentIcon" translate="no" style="font-size: 1.5em; width: 3.7em"></div>
+        <button id="regimentIconChange" style="padding: 0; width: 4.5em">change</button>
       </div>
       <div id="regimentComposition" class="table"></div>
     </div>
     <div id="regimentBottom">
-      <button id="regimentAttack" data-tip="Attack foreign regiment" class="icon-target"></button>
+      <button id="regimentAttack" data-tip="Attack foreign regiment" class="icon-button-melee"></button>
       <button id="regimentAdd" data-tip="Create a new regiment or fleet" class="icon-user-plus"></button>
       <button id="regimentSplit" data-tip="Split regiment into 2 separate ones" class="icon-half"></button>
       <button
@@ -95,7 +95,7 @@ function renderDialog(): void {
   );
   ensureEl("regimentType").addEventListener("click", changeType);
   ensureEl("regimentName").addEventListener("change", changeName);
-  ensureEl("regimentEmblemChange").addEventListener("click", changeEmblem);
+  ensureEl("regimentIconChange").addEventListener("click", changeIcon);
   ensureEl("regimentAttack").addEventListener("click", toggleAttack);
   ensureEl("regimentRegenerateLegend").addEventListener("click", regenerateLegend);
   ensureEl("regimentLegend").addEventListener("click", editLegend);
@@ -113,7 +113,7 @@ function getRegiment(): Regiment | undefined {
 function updateRegimentData(regiment: Regiment): void {
   ensureEl("regimentType").className = regiment.n ? "icon-anchor" : "icon-users";
   ensureEl<HTMLInputElement>("regimentName").value = regiment.name;
-  ensureEl("regimentEmblem").innerHTML = isImageIcon(regiment.icon!)
+  ensureEl("regimentIcon").innerHTML = isImageIcon(regiment.icon!)
     ? `<img src="${escapeHtml(regiment.icon!)}" style="width: 1em; height: 1em;">`
     : escapeHtml(regiment.icon!);
 
@@ -229,14 +229,14 @@ function restoreName(): void {
   selectedRegiment.dataset.name = reg.name = ensureEl<HTMLInputElement>("regimentName").value = name;
 }
 
-function changeEmblem(): void {
+function changeIcon(): void {
   const regiment = getRegiment();
   if (!regiment || !selectedRegiment) return;
 
   Controllers.IconSelector.open(regiment.icon ?? "", value => {
     regiment.icon = value;
     const isExternal = isImageIcon(value);
-    ensureEl("regimentEmblem").innerHTML = isExternal ? `<img src="${value}" style="width: 1em; height: 1em;">` : value;
+    ensureEl("regimentIcon").innerHTML = isExternal ? `<img src="${value}" style="width: 1em; height: 1em;">` : value;
     selectedRegiment!.querySelector(".regimentIcon")!.textContent = isExternal ? "" : value;
     selectedRegiment!.querySelector(".regimentImage")!.setAttribute("href", isExternal ? value : "");
   });
