@@ -22,6 +22,17 @@ export class LakesModule {
     });
   }
 
+  // presets are applied before any map exists; custom groups live on the features, stock ones in the defaults
+  ensureLakeGroupStyles(): void {
+    const { groups } = styles.lakes;
+    const template = groups.freshwater || Object.values(groups)[0];
+    if (!template) return;
+    for (const feature of pack.features ?? []) {
+      if (feature?.type === "lake" && feature.group && !groups[feature.group])
+        groups[feature.group] = structuredClone(template);
+    }
+  }
+
   getName(feature: Feature): string {
     const landCell = feature.shoreline[0];
     const culture = pack.cells.culture[landCell];

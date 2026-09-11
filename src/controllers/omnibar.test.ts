@@ -419,12 +419,18 @@ describe("Omnibar public behavior", () => {
 
   it("lists entities only when they have a place on the map", () => {
     pack.rivers = [{ i: 1, name: "Waterless", type: "River", cells: [] }] as unknown as typeof pack.rivers;
-    pack.features = [0, { i: 1, type: "ocean", firstCell: 0 }] as unknown as typeof pack.features;
+    pack.features = [
+      0,
+      { i: 1, type: "ocean", firstCell: 0 },
+      { i: 2, type: "lake" }
+    ] as unknown as typeof pack.features;
     Omnibar.open();
     search("waterless");
     expect(rows()).toHaveLength(0);
-    search("ocean");
+    search("lake 2"); // no firstCell, so nowhere to jump to
     expect(rows().every(row => row.textContent?.startsWith(">"))).toBe(true);
+    search("ocean 1"); // oceans are features like any other, placed at their first cell
+    expect(rows()[0].textContent).toContain("ocean 1");
   });
 
   it("keeps accented letters whole in note excerpts and highlights them", () => {

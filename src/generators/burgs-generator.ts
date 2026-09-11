@@ -6,7 +6,7 @@ import type { Emblem } from "@/types/emblems";
 import { safeParseJSON } from "@/utils/stringUtils";
 import { each, gauss, minmax, normalize, P, rn } from "../utils";
 import { type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
-import { NON_NAVIGABLE_LAKE_GROUPS } from "./features";
+import { NON_NAVIGABLE_LAKE_SUBTYPES } from "./features";
 import type { Label } from "./labels-generator";
 import { Population } from "./population-generator";
 import type { ProductionRecord } from "./production-generator";
@@ -243,7 +243,7 @@ class BurgModule {
         const featureId = cells.f[haven];
         const feature = pack.features[featureId];
         if (!feature || feature.cells <= 1) continue; // no navigable water body
-        if (NON_NAVIGABLE_LAKE_GROUPS.has(feature.group)) continue;
+        if (NON_NAVIGABLE_LAKE_SUBTYPES.has(feature.subtype)) continue;
         if (temp[cells.g[burg.cell]] <= 0) continue; // frozen
 
         const portFeatureId =

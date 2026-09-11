@@ -98,6 +98,7 @@ function applyStylePreset(presetJson) {
   fillMissingLabelGroups();
   Burgs.ensureBurgGroupStyles();
   Routes.ensureRouteGroupStyles();
+  Lakes.ensureLakeGroupStyles();
   applyStoredStyles();
   applyReliefOptions(previousReliefSize);
   registerCustomScheme();

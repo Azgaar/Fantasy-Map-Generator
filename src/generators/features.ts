@@ -6,7 +6,7 @@ declare global {
   var Features: FeatureModule;
 }
 
-type FeatureType = "ocean" | "lake" | "island";
+export type FeatureType = "ocean" | "lake" | "island";
 
 /* Pack features interface */
 export interface CapturedFeature {
@@ -52,7 +52,11 @@ export interface GridFeature {
   type: FeatureType;
 }
 
-export const NON_NAVIGABLE_LAKE_GROUPS = new Set(["dry", "frozen", "lava"]);
+// the fixed subtype sets: users pick within them, but cannot invent new subtypes
+export const LAKE_SUBTYPES = ["freshwater", "salt", "dry", "sinkhole", "frozen", "lava"] as const;
+export const ISLAND_SUBTYPES = ["continent", "island", "isle", "lake_island"] as const;
+
+export const NON_NAVIGABLE_LAKE_SUBTYPES = new Set<string>(["dry", "frozen", "lava"]);
 
 class FeatureModule {
   private DEEPER_LAND = 3;

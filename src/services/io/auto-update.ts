@@ -1915,6 +1915,11 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       });
     }
   }
+
+  if (isOlderThan("1.152.0")) {
+    // v1.153.0 changed style for lake groups
+    // TODO: put isolated data[45] styles migration for lake groups here
+  }
 }
 
 export function migrateLegacySettings(mapVersion: string, data: string[]): void {

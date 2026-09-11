@@ -131,6 +131,12 @@ export const MAP_COMMANDS: MapCommand[] = [
     run: () => Controllers.DiplomacyEditor.open()
   },
   {
+    id: "overviewFeaturesButton",
+    name: "Open Geographical Features Overview",
+    aliases: "islands lakes oceans landmasses water bodies continents",
+    run: () => Controllers.FeaturesOverview.open()
+  },
+  {
     id: "overviewRiversButton",
     name: "Open Rivers Overview",
     aliases: "waterways",

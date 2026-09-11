@@ -12,6 +12,7 @@ Check out [Dev board](https://github.com/users/Azgaar/projects/3/views/1?sumFiel
 
 Current version of the Fantasy Map Generator is the latest `master` branch. You can download it here: https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/heads/master.zip. Also see [the wiki](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#can-i-use-the-generator-offline).
 
+- Geographical Features Overview [1.153.0]
 - Wrap Tool: reshape cells with a brush [1.153.0]
 - Coastlines: local roughness instead of global [1.153.0]
 - Legend boxes for States, Cultures, Religions, Biomes and Zones can be shown at the same time by _[esullivan9](https://github.com/esullivan9)_
