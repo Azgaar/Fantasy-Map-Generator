@@ -55,10 +55,6 @@ const HISTORY_KEY = "fmg-omnibar-history";
 const HISTORY_LIMIT = 10;
 const RESULT_LIMIT = 50;
 
-/** Identifies the map the current records were collected from: a replacement recycles ids and entities */
-let mapGeneration = 0;
-window.addEventListener("map:generated", () => mapGeneration++);
-
 const textTemplate = document.createElement("template");
 
 class OmnibarController {
@@ -73,7 +69,6 @@ class OmnibarController {
   private results: Result[] = [];
   private history: string[] = [];
   private selected = -1;
-  private generation = mapGeneration;
   private busy = false;
 
   open(): void {
@@ -81,7 +76,6 @@ class OmnibarController {
     if (this.busy) return;
 
     this.previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
-    this.generation = mapGeneration;
     this.records = this.collect();
     this.history = this.readHistory();
 
@@ -91,13 +85,18 @@ class OmnibarController {
     this.input?.focus();
   }
 
+  /** Close the palette, restoring the focus it took when asked to */
+  close(): void {
+    this.dismiss(true);
+  }
+
   private collect(): Result[] {
     const commands: CommandResult[] = MAP_COMMANDS.map(command => ({
       kind: "command",
       id: command.id,
       name: command.name,
       context: "Command",
-      fields: { names: [this.normalize(command.name), this.normalize(command.aliases)] },
+      fields: { names: [normalize(command.name), normalize(command.aliases)] },
       command
     }));
     if (typeof pack === "undefined" || !pack.cells?.i?.length) return commands;
@@ -123,13 +122,12 @@ class OmnibarController {
       }
     }
 
-    // labels are listed apart from their owners; an added label is its own entity, so it just gets the label data
+    // entity labels are listed apart from their owners
     for (const label of getLabelsData()) {
       if (!label.text) continue;
       const type = label.type === "added" ? "addedLabel" : label.type;
       const owner = entities.get(MapEntities.key({ type, id: label.entityId }));
-      if (!owner || owner.kind !== "entity") continue;
-      if (label.type === "added") continue; // an added label is its own entity, so its own result already carries the text
+      if (owner?.kind !== "entity" || label.type === "added") continue; // an added label is its own entity
       const name = label.text.replaceAll("|", " ");
       entities.set(`label:${label.id}`, {
         kind: "label",
@@ -145,110 +143,27 @@ class OmnibarController {
   }
 
   private fields({ name, alias, note }: { name: string; alias: string; note?: string }): SearchFields {
-    const text = this.plainText(note || "");
+    const text = plainText(note || "");
     return {
-      names: [this.normalize(name), this.normalize(alias)],
+      names: [normalize(name), normalize(alias)],
       note: text,
-      normalizedNote: text ? this.normalize(text) : undefined
+      normalizedNote: text ? normalize(text) : undefined
     };
   }
 
-  private navigate(
-    target: EntityTarget,
-    { label, display }: { label?: LabelData; display?: EntityDisplay } = {}
-  ): void {
-    const layers: LayerId[] = label ? ["labels"] : display?.layers || [];
-    const points = label
-      ? [[label.anchor[0] + (label.dx || 0), label.anchor[1] + (label.dy || 0)] as Point]
-      : MapEntities.getPoints(target.ref);
-    if (!points.length) {
-      this.report("This element has no map location", "warn");
-      return;
+  private readHistory(): string[] {
+    try {
+      const stored: unknown = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+      const commands = new Set(this.records.filter(result => result.kind === "command").map(result => result.id));
+      return Array.isArray(stored)
+        ? [...new Set(stored.filter((id): id is string => typeof id === "string" && commands.has(id)))].slice(
+            0,
+            HISTORY_LIMIT
+          )
+        : [];
+    } catch {
+      return [];
     }
-
-    Layers.show(...layers);
-    const group = label && options.map.labels.groups.find(group => group.name === label.group);
-    if (group?.layerDependency && Layers.has(group.layerDependency)) Layers.show(group.layerDependency);
-
-    let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity]; // a loop: a territory can have too many cells to spread
-    for (const [x, y] of points)
-      [x0, y0, x1, y1] = [Math.min(x0, x), Math.min(y0, y), Math.max(x1, x), Math.max(y1, y)];
-    const cap = label ? 8 : (display?.scale ?? 8);
-    const fit = Math.min(
-      cap,
-      (viewport.width * 0.65) / Math.max(1, x1 - x0),
-      (viewport.height * 0.65) / Math.max(1, y1 - y0)
-    );
-    let scale = Math.max(1, fit);
-    if (group) scale = Math.max(group.zoom.min ?? 1, Math.min(group.zoom.max ?? 20, scale));
-
-    zoomTo((x0 + x1) / 2, (y0 + y1) / 2, scale, 1500);
-    // the outline animates in while the view is still moving: the target element may not be drawn yet, so a miss is fine
-    setTimeout(() => {
-      const elementId = label ? label.id : MapEntities.getElementId(target.ref);
-      const element = label
-        ? findEl(label.id)
-        : (display?.highlight && document.querySelector(display.highlight)) || (elementId ? findEl(elementId) : null);
-      if (element) highlightElement(element);
-    }, 750);
-  }
-
-  private plainText(html: string): string {
-    if (!html) return ""; // most entities carry no note, and parsing each of them is the expensive part
-    textTemplate.innerHTML = html;
-    for (const node of textTemplate.content.querySelectorAll("script, style")) node.remove();
-    for (const node of textTemplate.content.querySelectorAll("br, p, div, li")) node.append(" ");
-    const text = textTemplate.content.textContent || "";
-    textTemplate.innerHTML = "";
-    return text.replace(/\s+/g, " ").trim();
-  }
-
-  private normalize(text: string): string {
-    return text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/\s+/g, " ").trim();
-  }
-
-  private match(text: string, query: string): number {
-    if (text === query) return 1000;
-    if (text.startsWith(query)) return 850;
-    if (text.includes(query)) return 700;
-
-    const words = query.split(" ");
-    return words.length > 1 && words.every(word => text.includes(word)) ? 600 : 0;
-  }
-
-  private score(result: Result, query: string, commandsOnly: boolean, recent: number): number {
-    if (query) {
-      const name = Math.max(0, ...result.fields.names.map(name => this.match(name, query)));
-      const note = result.fields.normalizedNote?.includes(query) ? 100 : 0;
-      return Math.max(name && name + 200, note);
-    }
-    if (commandsOnly) return 1000 - Math.max(recent, 0); // every command, with the recent ones first
-    if (result.kind !== "command" || recent < 0) return 0;
-    return 1000 - recent;
-  }
-
-  private search(): void {
-    const value = this.input?.value.trim() || "";
-    const commandsOnly = value.startsWith(">");
-    const query = this.normalize(commandsOnly ? value.slice(1) : value);
-    const searchable = !query || /[\p{L}\p{N}]/u.test(query); // a punctuation-only query matches nothing
-
-    this.results = this.records
-      .filter(result => !commandsOnly || result.kind === "command")
-      .map(
-        (result, order): Scored => ({
-          result,
-          order,
-          score: searchable ? this.score(result, query, commandsOnly, this.history.indexOf(result.id)) : 0
-        })
-      )
-      .filter(row => row.score > 0)
-      .sort((a, b) => b.score - a.score || a.order - b.order)
-      .slice(0, RESULT_LIMIT)
-      .map(row => row.result);
-
-    this.selected = 0;
-    this.renderResults(query);
   }
 
   private render(): void {
@@ -432,10 +347,118 @@ class OmnibarController {
     });
   }
 
+  private listen(): void {
+    if (this.events) return;
+
+    this.events = new AbortController();
+    const options = { capture: true, signal: this.events.signal };
+
+    window.addEventListener(
+      "keydown",
+      event => {
+        if (!this.root) return;
+        if (event.code === "Space" && !this.input?.value) {
+          // a leading space is meaningless; also keeps a still-held opening Space out of the input
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          return;
+        }
+        this.keys.add(event.code);
+        event.stopImmediatePropagation();
+        if (event.isComposing) return;
+        if (["Escape", "Enter", "ArrowDown", "ArrowUp", "Tab"].includes(event.key)) event.preventDefault();
+        if (event.key === "Escape") this.close();
+        else if (event.key === "Enter" && !event.repeat) void this.activate(this.selected);
+        else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+          const count = this.results.length;
+          if (count) this.select((this.selected + (event.key === "ArrowDown" ? 1 : -1) + count) % count);
+        } else if (event.key === "Tab") this.input?.focus();
+      },
+      options
+    );
+
+    window.addEventListener(
+      "keyup",
+      event => {
+        if (this.root || this.keys.has(event.code)) {
+          event.stopImmediatePropagation();
+          event.preventDefault();
+        }
+        this.keys.delete(event.code);
+        this.cleanup();
+      },
+      options
+    );
+
+    window.addEventListener(
+      "pointerdown",
+      event => {
+        if (this.root && !this.root.contains(event.target as Node)) this.close();
+      },
+      options
+    );
+
+    window.addEventListener(
+      "blur",
+      () => {
+        this.keys.clear();
+        this.close();
+      },
+      { signal: this.events.signal }
+    );
+
+    // a new map (generated, loaded or transformed) recycles ids, so recollect from the map on screen
+    window.addEventListener(
+      "map:generated",
+      () => {
+        if (!this.root) return;
+        this.records = this.collect();
+        this.search();
+        this.report("The map changed. Select a current result.");
+      },
+      { signal: this.events.signal }
+    );
+  }
+
+  private search(): void {
+    const value = this.input?.value.trim() || "";
+    const commandsOnly = value.startsWith(">");
+    const query = normalize(commandsOnly ? value.slice(1) : value);
+    const searchable = !query || /[\p{L}\p{N}]/u.test(query); // a punctuation-only query matches nothing
+
+    this.results = this.records
+      .filter(result => !commandsOnly || result.kind === "command")
+      .map(
+        (result, order): Scored => ({
+          result,
+          order,
+          score: searchable ? this.score(result, query, commandsOnly, this.history.indexOf(result.id)) : 0
+        })
+      )
+      .filter(row => row.score > 0)
+      .sort((a, b) => b.score - a.score || a.order - b.order)
+      .slice(0, RESULT_LIMIT)
+      .map(row => row.result);
+
+    this.selected = 0;
+    this.renderResults(query);
+  }
+
+  private score(result: Result, query: string, commandsOnly: boolean, recent: number): number {
+    if (query) {
+      const name = Math.max(0, ...result.fields.names.map(name => match(name, query)));
+      const note = result.fields.normalizedNote?.includes(query) ? 100 : 0;
+      return Math.max(name && name + 200, note);
+    }
+    if (commandsOnly) return 1000 - Math.max(recent, 0); // every command, with the recent ones first
+    if (result.kind !== "command" || recent < 0) return 0;
+    return 1000 - recent;
+  }
+
   private renderResults(query: string): void {
     if (!this.list || !this.status) return;
 
-    const unavailable = this.getMapActionUnavailable();
+    const unavailable = getMapActionUnavailable();
     this.list.replaceChildren();
     this.results.forEach((result, index) => {
       const row = document.createElement("div");
@@ -521,101 +544,6 @@ class OmnibarController {
     } else this.input?.removeAttribute("aria-activedescendant");
   }
 
-  private listen(): void {
-    if (this.events) return;
-
-    this.events = new AbortController();
-    const options = { capture: true, signal: this.events.signal };
-
-    window.addEventListener(
-      "keydown",
-      event => {
-        if (!this.root) return;
-        if (event.code === "Space" && !this.input?.value) {
-          // a leading space is meaningless; also keeps a still-held opening Space out of the input
-          event.preventDefault();
-          event.stopImmediatePropagation();
-          return;
-        }
-        this.keys.add(event.code);
-        event.stopImmediatePropagation();
-        if (event.isComposing) return;
-        if (["Escape", "Enter", "ArrowDown", "ArrowUp", "Tab"].includes(event.key)) event.preventDefault();
-        if (event.key === "Escape") this.close();
-        else if (event.key === "Enter" && !event.repeat) void this.activate(this.selected);
-        else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-          const count = this.results.length;
-          if (count) this.select((this.selected + (event.key === "ArrowDown" ? 1 : -1) + count) % count);
-        } else if (event.key === "Tab") this.input?.focus();
-      },
-      options
-    );
-
-    window.addEventListener(
-      "keyup",
-      event => {
-        if (this.root || this.keys.has(event.code)) {
-          event.stopImmediatePropagation();
-          event.preventDefault();
-        }
-        this.keys.delete(event.code);
-        this.cleanup();
-      },
-      options
-    );
-
-    window.addEventListener(
-      "pointerdown",
-      event => {
-        if (this.root && !this.root.contains(event.target as Node)) this.close();
-      },
-      options
-    );
-
-    window.addEventListener(
-      "blur",
-      () => {
-        this.keys.clear();
-        this.close();
-      },
-      { signal: this.events.signal }
-    );
-
-    // a generated, loaded or transformed map recycles ids, so the records must come from the map on screen now
-    window.addEventListener(
-      "map:generated",
-      () => {
-        console.log("map:generated");
-        if (!this.root) return;
-        this.generation = mapGeneration;
-        this.records = this.collect();
-        this.search();
-        this.report("The map changed. Select a current result.");
-      },
-      { signal: this.events.signal }
-    );
-  }
-
-  /** Close the palette, restoring the focus it took when asked to */
-  close(): void {
-    this.dismiss(true);
-  }
-
-  private dismiss(restore: boolean): void {
-    this.root?.remove();
-    this.root = this.input = this.list = this.status = undefined;
-    this.records = this.results = [];
-    if (restore && this.previousFocus?.isConnected) this.previousFocus.focus();
-    this.previousFocus = undefined;
-    this.cleanup();
-  }
-
-  private cleanup(): void {
-    if (this.root || this.keys.size) return;
-    this.events?.abort();
-    this.events = undefined;
-  }
-
   private async activate(index: number): Promise<void> {
     const result = this.results[index];
     if (!result || this.busy) return;
@@ -647,37 +575,49 @@ class OmnibarController {
     }
   }
 
+  /** A new map builds fresh entity objects, so identity tells a live record from a stale one */
   private current(result: EntityResult | LabelResult): boolean {
-    if (this.generation !== mapGeneration) return false;
     return MapEntities.get(result.target.ref) === result.target.entity;
   }
 
-  private report(message: string, type?: "warn" | "error"): void {
-    if (type) tip(message, false, type, 4000);
-    else if (this.status) this.status.textContent = message;
-  }
-
-  /** Report why the current map cannot run a search action; true while it cannot */
-  private unavailable(): boolean {
-    const reason = this.getMapActionUnavailable();
-    if (!reason) return false;
-    this.report(reason);
-    return true;
-  }
-
-  private readHistory(): string[] {
-    try {
-      const stored: unknown = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
-      const commands = new Set(this.records.filter(result => result.kind === "command").map(result => result.id));
-      return Array.isArray(stored)
-        ? [...new Set(stored.filter((id): id is string => typeof id === "string" && commands.has(id)))].slice(
-            0,
-            HISTORY_LIMIT
-          )
-        : [];
-    } catch {
-      return [];
+  private navigate(
+    target: EntityTarget,
+    { label, display }: { label?: LabelData; display?: EntityDisplay } = {}
+  ): void {
+    const layers: LayerId[] = label ? ["labels"] : display?.layers || [];
+    const points = label
+      ? [[label.anchor[0] + (label.dx || 0), label.anchor[1] + (label.dy || 0)] as Point]
+      : MapEntities.getPoints(target.ref);
+    if (!points.length) {
+      this.report("This element has no map location", "warn");
+      return;
     }
+
+    Layers.show(...layers);
+    const group = label && options.map.labels.groups.find(group => group.name === label.group);
+    if (group?.layerDependency && Layers.has(group.layerDependency)) Layers.show(group.layerDependency);
+
+    let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity]; // a loop: a territory can have too many cells to spread
+    for (const [x, y] of points)
+      [x0, y0, x1, y1] = [Math.min(x0, x), Math.min(y0, y), Math.max(x1, x), Math.max(y1, y)];
+    const cap = label ? 8 : (display?.scale ?? 8);
+    const fit = Math.min(
+      cap,
+      (viewport.width * 0.65) / Math.max(1, x1 - x0),
+      (viewport.height * 0.65) / Math.max(1, y1 - y0)
+    );
+    let scale = Math.max(1, fit);
+    if (group) scale = Math.max(group.zoom.min ?? 1, Math.min(group.zoom.max ?? 20, scale));
+
+    zoomTo((x0 + x1) / 2, (y0 + y1) / 2, scale, 1500);
+    // the outline animates in while the view is still moving: the target element may not be drawn yet, so a miss is fine
+    setTimeout(() => {
+      const elementId = label ? label.id : MapEntities.getElementId(target.ref);
+      const element = label
+        ? findEl(label.id)
+        : (display?.highlight && document.querySelector(display.highlight)) || (elementId ? findEl(elementId) : null);
+      if (element) highlightElement(element);
+    }, 750);
   }
 
   private remember(id: string): void {
@@ -689,12 +629,63 @@ class OmnibarController {
     }
   }
 
-  private getMapActionUnavailable(): string {
-    if (typeof pack === "undefined" || !pack.cells?.i?.length) return "Generate or load a map first";
-    if (typeof customization !== "undefined" && customization) return "Exit customization mode first";
-    if (document.getElementById("canvas3d")) return "Switch to the 2D map first";
-    return "";
+  private report(message: string, type?: "warn" | "error"): void {
+    if (type) tip(message, false, type, 4000);
+    else if (this.status) this.status.textContent = message;
   }
+
+  /** Report why the current map cannot run a search action; true while it cannot */
+  private unavailable(): boolean {
+    const reason = getMapActionUnavailable();
+    if (!reason) return false;
+    this.report(reason);
+    return true;
+  }
+
+  private dismiss(restore: boolean): void {
+    this.root?.remove();
+    this.root = this.input = this.list = this.status = undefined;
+    this.records = this.results = [];
+    if (restore && this.previousFocus?.isConnected) this.previousFocus.focus();
+    this.previousFocus = undefined;
+    this.cleanup();
+  }
+
+  private cleanup(): void {
+    if (this.root || this.keys.size) return;
+    this.events?.abort();
+    this.events = undefined;
+  }
+}
+
+function normalize(text: string): string {
+  return text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function plainText(html: string): string {
+  if (!html) return ""; // most entities carry no note, and parsing each of them is the expensive part
+  textTemplate.innerHTML = html;
+  for (const node of textTemplate.content.querySelectorAll("script, style")) node.remove();
+  for (const node of textTemplate.content.querySelectorAll("br, p, div, li")) node.append(" ");
+  const text = textTemplate.content.textContent || "";
+  textTemplate.innerHTML = "";
+  return text.replace(/\s+/g, " ").trim();
+}
+
+function match(text: string, query: string): number {
+  if (text === query) return 1000;
+  if (text.startsWith(query)) return 850;
+  if (text.includes(query)) return 700;
+
+  const words = query.split(" ");
+  return words.length > 1 && words.every(word => text.includes(word)) ? 600 : 0;
+}
+
+function getMapActionUnavailable(): string {
+  if (typeof pack === "undefined" || !pack.cells?.i?.length) return "Generate or load a map first";
+  if (typeof customization !== "undefined" && customization) return "Exit customization mode first";
+  if (document.getElementById("canvas3d")) return "Switch to the 2D map first";
+  return "";
 }
 
 export const Omnibar = new OmnibarController();
