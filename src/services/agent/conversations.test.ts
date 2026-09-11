@@ -86,6 +86,35 @@ describe("conversation store", () => {
     expect(reloaded.current().entries.length).toBe(1);
   });
 
+  it("keeps old chat text as an archive without restoring executable actions", async () => {
+    localStorage.setItem(
+      "fmg-ai-chat-conversations",
+      JSON.stringify([
+        {
+          id: "old",
+          title: "Old",
+          mapId: 1,
+          updated: Date.now(),
+          entries: [
+            { kind: "message", role: "user", text: "Previous question" },
+            { kind: "edit", id: "burg:1" }
+          ],
+          messages: []
+        }
+      ])
+    );
+    const store = await freshStore();
+    expect(store.list()[0].archived).toBe(true);
+    expect(store.list()[0].entries).toHaveLength(1);
+    expect(store.forCurrentMap().id).not.toBe("old");
+  });
+  it("expires a conversation after 90 days even when recently used", async () => {
+    localStorage.setItem(
+      "fmg-unified-conversations-v1",
+      JSON.stringify([{ id: "old", createdAt: Date.now() - 91 * 86400000, updated: Date.now(), entries: [] }])
+    );
+    expect((await freshStore()).list()).toEqual([]);
+  });
   it("survives unreadable storage", async () => {
     globals.localStorage = memoryStorage();
     (globals.localStorage as Storage).setItem("fmg-ai-chat-conversations", "{not json");

@@ -245,6 +245,23 @@ export function getEditorHtml(quill: Quill): string {
   return template.innerHTML;
 }
 
+/** Build a selection preview in a detached editor; the live editor is never changed. */
+export function previewSelectionReplacement(quill: Quill, range: Range, html: string): string {
+  if (range.index < 0 || range.length < 1 || range.index + range.length > quill.getLength())
+    throw new Error("The note selection changed");
+  const replacement = quill.clipboard.convert({ html });
+  const lastInsert = replacement.ops.at(-1)?.insert;
+  if (
+    quill.getText(range.index, range.length).endsWith("\n") &&
+    !(typeof lastInsert === "string" && lastInsert.endsWith("\n"))
+  )
+    replacement.insert("\n", quill.getFormat(range.index + range.length - 1, 1));
+  const change = new Delta().retain(range.index).delete(range.length).concat(replacement);
+  const scratch = new Quill(document.createElement("div"), { modules: { toolbar: false, table: true } });
+  scratch.setContents(quill.getContents().compose(change), "silent");
+  return getEditorHtml(scratch);
+}
+
 function linkTooltip(quill: Quill): LinkTooltip {
   return (quill.theme as unknown as { tooltip: LinkTooltip }).tooltip;
 }

@@ -2,6 +2,7 @@
 // next question, so the cheapest control is starting a fresh conversation. Conversations are kept in
 // localStorage, newest first, with the oldest dropped when the budget runs out.
 
+import type { NoteProposal } from "./map-tools";
 import type { Message, Usage } from "./providers";
 import type { RunResult } from "./runtime";
 
@@ -13,12 +14,18 @@ export interface NoteState {
 }
 
 export type Entry =
+  | { kind: "proposal"; proposal: NoteProposal }
+  | { kind: "report"; requestId: string; draft: Record<string, unknown>; receipt?: string }
   | { kind: "message"; role: MessageRole; text: string }
   | { kind: "script"; code: string; result?: RunResult }
   // a note written by the assistant; `previous` is null when the note was created, and is what Undo restores
   | { kind: "edit"; id: string; name: string; chars: number; previous: NoteState | null; undone?: boolean };
 
 export interface Conversation {
+  createdAt?: number;
+  archived?: boolean;
+  hostedSession?: string;
+  connection?: string;
   id: string;
   title: string;
   mapId: number;
@@ -28,7 +35,7 @@ export interface Conversation {
   usage: Usage;
 }
 
-const STORAGE_KEY = "fmg-ai-chat-conversations";
+const STORAGE_KEY = "fmg-unified-conversations-v1";
 const MAX_CONVERSATIONS = 20;
 const MAX_STORED_CHARS = 2_000_000;
 const TITLE_LENGTH = 42;
@@ -57,6 +64,7 @@ export function create(): Conversation {
     title: NEW_TITLE,
     mapId: currentMapId(),
     updated: Date.now(),
+    createdAt: Date.now(),
     entries: [],
     messages: [],
     usage: { input: 0, output: 0, cached: 0 }
@@ -89,6 +97,7 @@ export function touch(conversation: Conversation): void {
 export function forCurrentMap(): Conversation {
   const conversation = current();
   const mapId = currentMapId();
+  if (conversation.archived) return create();
   if (conversation.mapId === mapId) return conversation;
   if (!conversation.entries.length) {
     conversation.mapId = mapId;
@@ -104,8 +113,25 @@ const shorten = (text: string): string =>
 
 function load(): Conversation[] {
   try {
-    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]");
-    return Array.isArray(stored) ? stored.filter(item => item?.id && Array.isArray(item.entries)) : [];
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const legacy = raw === null;
+    const stored = JSON.parse(raw ?? localStorage.getItem("fmg-ai-chat-conversations") ?? "[]");
+    if (!Array.isArray(stored)) return [];
+    return (stored as Conversation[])
+      .filter(
+        item => item?.id && Array.isArray(item.entries) && (item.createdAt ?? item.updated) > Date.now() - 90 * 86400000
+      )
+      .map(item =>
+        legacy
+          ? {
+              ...item,
+              archived: true,
+              connection: "legacy",
+              messages: [],
+              entries: item.entries.filter(entry => entry.kind === "message")
+            }
+          : item
+      );
   } catch {
     return [];
   }
@@ -113,7 +139,9 @@ function load(): Conversation[] {
 
 function save(): void {
   try {
-    let stored = conversations.slice(0, MAX_CONVERSATIONS);
+    let stored = conversations
+      .filter(item => (item.createdAt ?? item.updated) > Date.now() - 90 * 86400000)
+      .slice(0, MAX_CONVERSATIONS);
     let json = JSON.stringify(stored);
     while (json.length > MAX_STORED_CHARS && stored.length > 1) {
       stored = stored.slice(0, -1);

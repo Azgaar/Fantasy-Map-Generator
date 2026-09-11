@@ -30,24 +30,21 @@ afterEach(() => {
 });
 
 const visible = (id: string): boolean => !(document.getElementById(id) as HTMLElement).hidden;
-const selectedMode = (): string | null =>
-  document.querySelector('#helpAssistant .helpAssistantMode[aria-selected="true"]')?.getAttribute("data-mode") ?? null;
-
 describe("HelpAssistant shell", () => {
-  it("opens on the Help panel by default", () => {
+  it("opens the unified panel by default without mode buttons", () => {
     HelpAssistant.open();
     expect(document.getElementById("helpAssistant")).not.toBeNull();
-    expect(visible("helpAssistantHelp")).toBe(true);
-    expect(visible("helpAssistantMap")).toBe(false);
-    expect(selectedMode()).toBe("help");
-    expect(panel.mountMapPanel).not.toHaveBeenCalled();
+    expect(visible("helpAssistantHelp")).toBe(false);
+    expect(visible("helpAssistantMap")).toBe(true);
+    expect(document.querySelector(".helpAssistantMode")).toBeNull();
+    expect(panel.mountMapPanel).toHaveBeenCalledOnce();
   });
 
   it("opens on This map when asked and mounts the panel once", () => {
     HelpAssistant.open({ mode: "map" });
     expect(visible("helpAssistantMap")).toBe(true);
     expect(visible("helpAssistantHelp")).toBe(false);
-    expect(selectedMode()).toBe("map");
+    expect(document.querySelector(".helpAssistantMode")).toBeNull();
     expect(panel.mountMapPanel).toHaveBeenCalledTimes(1);
     expect(panel.mountMapPanel.mock.calls[0][0]).toBe(document.getElementById("helpAssistantMap"));
 
@@ -66,13 +63,10 @@ describe("HelpAssistant shell", () => {
     expect(document.getElementById("helpAssistantQuestion")).toBe(question);
   });
 
-  it("switches with the mode buttons", () => {
-    HelpAssistant.open();
-    (document.querySelector('.helpAssistantMode[data-mode="map"]') as HTMLButtonElement).click();
-    expect(selectedMode()).toBe("map");
+  it("routes legacy help entry points to the same conversation", () => {
+    HelpAssistant.open({ mode: "map" });
+    HelpAssistant.open({ mode: "help" });
+    expect(panel.mountMapPanel).toHaveBeenCalledOnce();
     expect(visible("helpAssistantMap")).toBe(true);
-    (document.querySelector('.helpAssistantMode[data-mode="help"]') as HTMLButtonElement).click();
-    expect(selectedMode()).toBe("help");
-    expect(visible("helpAssistantHelp")).toBe(true);
   });
 });

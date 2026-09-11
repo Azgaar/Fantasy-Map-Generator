@@ -1,108 +1,81 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Conversation } from "./conversations";
-import type { Completion, Message } from "./providers";
 
-const { complete } = vi.hoisted(() => ({ complete: vi.fn() }));
-vi.mock("./providers", () => ({ complete }));
-vi.mock("./snapshot", () => ({ capture: () => {} }));
-vi.mock("./context", () => ({ buildSystemPrompt: () => [] }));
-vi.mock("./runtime", () => ({
-  runScript: async (code: string) => ({ ok: true, value: `ran:${code}`, logs: [], ms: 1 })
+const mocks = vi.hoisted(() => ({ complete: vi.fn(), request: vi.fn(), execute: vi.fn() }));
+vi.mock("./providers", () => ({ complete: mocks.complete }));
+vi.mock("@/services/help/api", () => ({ request: mocks.request }));
+vi.mock("./map-tools", () => ({
+  mapId: () => "map",
+  getSelection: () => ({ target: "burg:1" }),
+  executeMapTool: mocks.execute
 }));
 
-import { type AgentTool, createSession, type SessionHandlers } from "./session";
+import { createSession, type SessionHandlers } from "./session";
 
 const usage = { input: 1, output: 1, cached: 0 };
-const text = (value: string): Completion => ({
-  content: [{ type: "text", text: value }],
-  stopReason: "end_turn",
-  usage
-});
-const toolUse = (name: string, input: Record<string, unknown>): Completion => ({
-  content: [{ type: "tool_use", id: `id-${name}`, name, input }],
-  stopReason: "tool_use",
-  usage
-});
-
-const conversation = (): Conversation => ({
-  id: "c1",
+const chat = (): Conversation => ({
+  id: "c",
   title: "t",
   mapId: 0,
   updated: 0,
   entries: [],
   messages: [],
-  usage: { input: 0, output: 0, cached: 0 }
+  usage: { ...usage }
 });
-
-const handlers = (): SessionHandlers & { texts: string[]; tools: string[] } => {
-  const texts: string[] = [];
-  const tools: string[] = [];
-  return {
-    texts,
-    tools,
-    onText: value => texts.push(value),
-    onScript: () => {},
-    onScriptResult: () => {},
-    onStatus: () => {},
-    onUsage: () => {},
-    onTool: name => tools.push(name)
-  };
-};
-
-const toolResults = (messages: Message[]) =>
-  messages.flatMap(message => message.content.filter(block => block.type === "tool_result"));
-
-beforeEach(() => complete.mockReset());
-
-describe("createSession tool dispatch", () => {
-  it("routes a registered tool and feeds its content back to the model", async () => {
-    const handle = vi.fn(async (input: Record<string, unknown>) => ({ content: `wrote ${input.html}` }));
-    const tool: AgentTool = {
-      definition: { name: "write_note", description: "d", input_schema: { type: "object" } },
-      handle
-    };
-    complete.mockResolvedValueOnce(toolUse("write_note", { html: "<p>x</p>" })).mockResolvedValueOnce(text("done"));
-
-    const session = createSession(() => ({ key: "k", model: "claude-sonnet-5" }), [tool]);
-    const chat = conversation();
-    const h = handlers();
-    await session.ask(chat, "edit it", h);
-
-    expect(handle).toHaveBeenCalledWith({ html: "<p>x</p>" });
-    expect(h.tools).toEqual(["write_note"]);
-    expect(toolResults(chat.messages)).toEqual([
-      { type: "tool_result", tool_use_id: "id-write_note", content: "wrote <p>x</p>", is_error: false }
-    ]);
-    expect(h.texts).toEqual(["done"]);
-    // both tools are offered to the model
-    expect(complete.mock.calls[0][0].tools.map((t: { name: string }) => t.name)).toEqual(["run", "write_note"]);
+const handlers = (): SessionHandlers => ({
+  onText: vi.fn(),
+  onStatus: vi.fn(),
+  onUsage: vi.fn(),
+  onScript: vi.fn(),
+  onScriptResult: vi.fn()
+});
+beforeEach(() => {
+  vi.resetAllMocks();
+  mocks.execute.mockResolvedValue('{"name":"Town"}');
+});
+describe("unified session", () => {
+  it("uses identical bounded tools for personal providers and never offers run", async () => {
+    mocks.complete
+      .mockResolvedValueOnce({
+        content: [{ type: "tool_use", id: "r", name: "place_context", input: { target: "burg:1" } }],
+        usage,
+        stopReason: "tool_use"
+      })
+      .mockResolvedValueOnce({ content: [{ type: "text", text: "Town" }], usage, stopReason: "end_turn" });
+    await createSession(() => ({ model: "personal", key: "k" })).ask(chat(), "Describe here", handlers());
+    expect(mocks.execute).toHaveBeenCalledOnce();
+    expect(mocks.complete.mock.calls[0][0].tools.map((t: { name: string }) => t.name)).not.toContain("run");
   });
-
-  it("marks a tool's error outcome as an error result", async () => {
-    const tool: AgentTool = {
-      definition: { name: "write_note", description: "d", input_schema: { type: "object" } },
-      handle: async () => ({ content: "no note open", isError: true })
-    };
-    complete.mockResolvedValueOnce(toolUse("write_note", {})).mockResolvedValueOnce(text("sorry"));
-    const chat = conversation();
-    await createSession(() => ({ key: "k", model: "m" }), [tool]).ask(chat, "q", handlers());
-    expect(toolResults(chat.messages)[0]).toMatchObject({ content: "no note open", is_error: true });
+  it("uses the hosted session receipt for tool continuations without sending keys or system prompts", async () => {
+    mocks.request
+      .mockResolvedValueOnce({
+        sessionId: "secret",
+        text: "",
+        toolCalls: [{ id: "r", name: "place_context", input: { target: "burg:1" } }]
+      })
+      .mockResolvedValueOnce({ sessionId: "secret", text: "Town", toolCalls: [] });
+    await createSession(() => ({ model: "hosted", key: "never-send" })).ask(chat(), "Describe here", handlers());
+    const first = JSON.parse(mocks.request.mock.calls[0][1].body);
+    expect(first).not.toHaveProperty("key");
+    expect(first).not.toHaveProperty("system");
+    const next = JSON.parse(mocks.request.mock.calls[1][1].body);
+    expect(next.sessionId).toBe("secret");
+    expect(next.results[0].id).toBe("r");
   });
-
-  it("reports an unknown tool name back to the model as an error", async () => {
-    complete.mockResolvedValueOnce(toolUse("delete_everything", {})).mockResolvedValueOnce(text("ok"));
-    const chat = conversation();
-    await createSession(() => ({ key: "k", model: "m" })).ask(chat, "q", handlers());
-    const [result] = toolResults(chat.messages);
-    expect(result.is_error).toBe(true);
-    expect(result.content).toContain('Unknown tool "delete_everything"');
-    expect(result.content).toContain("run");
+  it("rejects model requests for arbitrary script execution", async () => {
+    mocks.complete.mockResolvedValue({
+      content: [{ type: "tool_use", id: "r", name: "run", input: { code: "bad" } }],
+      usage
+    });
+    await expect(createSession(() => ({ model: "personal", key: "k" })).ask(chat(), "q", handlers())).rejects.toThrow(
+      "Unsupported"
+    );
+    expect(mocks.execute).not.toHaveBeenCalled();
   });
-
-  it("still runs scripts through the built-in run tool", async () => {
-    complete.mockResolvedValueOnce(toolUse("run", { code: "return 1" })).mockResolvedValueOnce(text("one"));
-    const chat = conversation();
-    await createSession(() => ({ key: "k", model: "m" })).ask(chat, "q", handlers());
-    expect(toolResults(chat.messages)[0].content).toContain("ran:return 1");
+  it("does not transfer a conversation to another provider implicitly", async () => {
+    const c = chat();
+    c.connection = "old";
+    await expect(createSession(() => ({ model: "new", key: "k" })).ask(c, "q", handlers())).rejects.toThrow("fresh");
+    expect(mocks.complete).not.toHaveBeenCalled();
   });
 });

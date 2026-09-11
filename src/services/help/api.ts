@@ -54,7 +54,7 @@ function gatewayBase(): string {
   return GATEWAY_URL;
 }
 
-async function request<T>(path: string, init: RequestInit): Promise<T> {
+export async function request<T>(path: string, init: RequestInit): Promise<T> {
   const token = getToken();
   const headers: Record<string, string> = {
     ...(init.headers as Record<string, string> | undefined),
@@ -65,6 +65,7 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
   try {
     response = await fetch(`${gatewayBase()}${path}`, { ...init, headers });
   } catch {
+    init.signal?.throwIfAborted();
     throw new HelpApiError("unreachable", "The assistant is unreachable. Check your connection and try again.");
   }
 

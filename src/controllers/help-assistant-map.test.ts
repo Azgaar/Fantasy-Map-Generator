@@ -53,12 +53,12 @@ describe("map panel", () => {
   it("mounts with the drawer closed and the model named in the status line", () => {
     mountMapPanel(el("host"));
     expect(el("helpMapDrawer").hidden).toBe(true);
-    expect(el("helpMapStatusModel").textContent).toContain("claude-sonnet-5");
-    expect(el("helpMapStatusModel").textContent).toContain("no key");
+    expect(el("helpMapStatusModel").textContent).toBe("FMG provided");
     expect(el("helpMapContext").hidden).toBe(true);
   });
 
-  it("opens the drawer with a hint instead of sending when the key is missing", () => {
+  it("opens the drawer with a hint instead of sending when a personal key is missing", () => {
+    localStorage.setItem("fmg-ai-chat-model", "claude-sonnet-5");
     mountMapPanel(el("host"));
     el<HTMLTextAreaElement>("helpMapInput").value = "hello";
     el<HTMLTextAreaElement>("helpMapInput").dispatchEvent(new Event("input"));
@@ -70,6 +70,7 @@ describe("map panel", () => {
   });
 
   it("lists providers separately and narrows the model list to the one chosen", () => {
+    localStorage.setItem("fmg-ai-chat-model", "claude-sonnet-5");
     mountMapPanel(el("host"));
     const provider = el<HTMLSelectElement>("helpMapProvider");
     const model = el<HTMLSelectElement>("helpMapModel");

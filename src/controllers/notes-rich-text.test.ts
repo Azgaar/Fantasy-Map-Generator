@@ -9,6 +9,7 @@ import {
   insertSymbol,
   linkFromSelection,
   normalizeUrl,
+  previewSelectionReplacement,
   runTableAction,
   setEditorHtml,
   TOOLBAR_HTML
@@ -69,6 +70,20 @@ describe("rich text editor", () => {
     expect(html).not.toContain("&nbsp;");
   });
 
+  it("previews a selected passage without changing the original or surrounding formatting", () => {
+    setEditorHtml(quill, "<p>Before <strong>old</strong> after</p><p><em>Untouched</em></p>");
+    const before = getEditorHtml(quill);
+    const result = previewSelectionReplacement(quill, { index: 7, length: 3 }, "<strong>new</strong>");
+    expect(getEditorHtml(quill)).toBe(before);
+    expect(result).toContain("Before <strong>new</strong> after");
+    expect(result).toContain("<em>Untouched</em>");
+  });
+
+  it("keeps the next paragraph separate when replacing a selection ending in a line break", () => {
+    setEditorHtml(quill, "<p>Old</p><p><em>Untouched</em></p>");
+    const result = previewSelectionReplacement(quill, { index: 0, length: 4 }, "<p>New</p>");
+    expect(result).toContain("<p>New</p><p><em>Untouched</em></p>");
+  });
   it("reports an empty editor as an empty string", () => {
     setEditorHtml(quill, "<p><br></p>");
     expect(getEditorHtml(quill)).toBe("");

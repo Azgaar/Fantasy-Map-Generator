@@ -23,8 +23,8 @@ describe("trimHistory", () => {
     const messages = ["a", "b", "c", "d", "e", "f", "g", "h"].map(toolResult);
     trimHistory(messages);
     expect(contents(messages)).toEqual([
-      "[earlier script output trimmed to save tokens]",
-      "[earlier script output trimmed to save tokens]",
+      "[Earlier tool result omitted]",
+      "[Earlier tool result omitted]",
       "c",
       "d",
       "e",

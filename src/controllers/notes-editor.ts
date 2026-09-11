@@ -1,4 +1,5 @@
 import type Quill from "quill";
+import type { Range } from "quill";
 import { confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { viewport } from "@/components/viewport";
@@ -11,6 +12,7 @@ import {
   canEditAsRichText,
   createRichTextEditor,
   getEditorHtml,
+  previewSelectionReplacement,
   runTableAction,
   setEditorHtml,
   TOOLBAR_HTML
@@ -24,6 +26,7 @@ export interface Note {
 }
 
 let quill: Quill | null = null;
+let assistantRange: Range | null = null;
 let windowed: { width: number; height: number; top: string; left: string } | null = null;
 let uploadBound = false;
 
@@ -47,6 +50,13 @@ function open(target?: NoteRef | string): void {
     updateLegend,
     fonts.map(font => font.family)
   );
+
+  quill.on("selection-change", range => {
+    if (range) assistantRange = range.length ? range : null;
+  });
+  quill.on("text-change", (_delta, _old, source) => {
+    if (source === "user") assistantRange = null;
+  });
 
   const selected = ref || entries[0]?.ref;
   if (selected) {
@@ -227,6 +237,7 @@ function showNote(ref: NoteRef): void {
 
 // A note whose markup Quill would rewrite (such as a dungeon iframe) is edited as HTML.
 function loadNote(note: string): void {
+  assistantRange = null;
   if (!quill) return;
   quill.enable();
   const rich = canEditAsRichText(note);
@@ -505,4 +516,15 @@ function getSelectionHtml(): string | null {
   return quill.getSemanticHTML(range.index, range.length).replaceAll("&nbsp;", " ");
 }
 
-export const NotesEditor = { open, current, write, remove, getSelectionHtml };
+function assistantSelection(): { target: string; index: number; length: number; html: string } | null {
+  const note = current();
+  if (!note || !quill || !assistantRange || !ensureEl("notesSource").hidden) return null;
+  const { index, length } = assistantRange;
+  return { target: note.id, index, length, html: quill.getSemanticHTML(index, length).replaceAll("&nbsp;", " ") };
+}
+function previewSelection(target: string, index: number, length: number, before: string, html: string): string {
+  if (!quill || current()?.id !== target || current()?.legend !== before || !ensureEl("notesSource").hidden)
+    throw new Error("Reopen the original note to prepare this selection edit");
+  return previewSelectionReplacement(quill, { index, length }, html);
+}
+export const NotesEditor = { open, current, write, remove, getSelectionHtml, assistantSelection, previewSelection };

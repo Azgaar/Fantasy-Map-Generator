@@ -13,10 +13,7 @@ import { ensureEl } from "../utils";
 import { buildMessageRow, buildTypingRow } from "./help-assistant-chat";
 import { mountMapPanel, newMapConversation, refreshMapContext, unmountMapPanel } from "./help-assistant-map";
 
-// The panel holds two chats. Help asks the gateway, which answers from the wiki and cannot touch the
-// map. This map is the user's own model working on the map that is open. Help is what the call
-// button opens; the map assistant is one click away, or straight from the Tools menu and the notes
-// editor, where the user has already asked for it.
+// Legacy entry-point modes converge on the unified assistant.
 export type AssistantMode = "help" | "map";
 
 export interface OpenOptions {
@@ -57,8 +54,8 @@ function toggle(): void {
 
 // A chat panel is a companion to the map, not a modal over it: it takes the bottom-right
 // corner — over its own call button, which the title bar's close then stands in for.
-function open(options: OpenOptions = {}): void {
-  const mode = options.mode ?? "help";
+function open(_options: OpenOptions = {}): void {
+  const mode = "map";
   if (isMounted()) {
     // an entry point that names a mode reaches in: switch, and come out from under the notes editor
     setMode(mode);
@@ -89,7 +86,6 @@ function open(options: OpenOptions = {}): void {
   markBubble(true);
   addTitlebarNewChat();
   setMode(mode);
-  if (isOfficialOrigin()) void refreshLimits();
 }
 
 // "New chat" belongs with close and minimize — a window action, not chat content. Putting it
@@ -112,16 +108,17 @@ function addTitlebarNewChat(): void {
   titlebar.insertBefore(button, titlebar.querySelector(".ui-dialog-titlebar-collapse"));
 }
 
-let currentMode: AssistantMode = "help";
+let currentMode: AssistantMode = "map";
 
-export function setMode(mode: AssistantMode): void {
+export function setMode(_mode: AssistantMode): void {
+  const mode: AssistantMode = "map";
   currentMode = mode;
   for (const button of document.querySelectorAll<HTMLButtonElement>("#helpAssistant .helpAssistantMode")) {
     const active = button.dataset.mode === mode;
     button.setAttribute("aria-selected", String(active));
     button.classList.toggle("selected", active);
   }
-  ensureEl("helpAssistantHelp").hidden = mode !== "help";
+  ensureEl("helpAssistantHelp").hidden = true;
   const mapHost = ensureEl("helpAssistantMap");
   mapHost.hidden = mode !== "map";
   if (mode !== "map") return;
@@ -147,6 +144,7 @@ function renderDialog(): void {
       #helpAssistant > div          { width: auto; }
       .ui-dialog-titlebar .helpAssistantNewChat { font-size: .62em; }
 
+      #helpAssistant .helpAssistantModes { display: none !important; }
       /* two chats in one panel: the switch is a tab strip, not a pair of buttons */
       #helpAssistant .helpAssistantModes { flex: none; display: flex; gap: .15em; padding: .15em; border-radius: .45em; background: rgb(0 0 0 / 6%); }
       #helpAssistant .helpAssistantMode  { flex: 1; padding: .25em .5em; border: 0; border-radius: .35em; background: none; color: inherit; font: inherit; font-size: .92em; opacity: .65; transition: .15s; }
@@ -293,13 +291,7 @@ function renderDialog(): void {
       </div>
     </div>`;
 
-  const modes = /* html */ `
-    <div class="helpAssistantModes" role="tablist">
-      <button type="button" class="helpAssistantMode icon-help" data-mode="help" role="tab" aria-selected="true"
-        title="Ask how to use the Generator — answered from the documentation">Help</button>
-      <button type="button" class="helpAssistantMode icon-robot" data-mode="map" role="tab" aria-selected="false"
-        title="Ask about the map you have open, or have it write your notes, with your own AI key">This map</button>
-    </div>`;
+  const modes = "";
 
   const html = /* html */ `<div id="helpAssistant" class="dialog stable">
     ${styles}

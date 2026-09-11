@@ -1,6 +1,4 @@
-// The assistant dialog's "This map" panel: the BYOK agent over the open map (formerly the AI Chat
-// dialog), wearing the help panel's chat furniture. Model, key and past chats live in a drawer;
-// notes are edited through write_note, and every edit carries its own undo.
+// One assistant for hosted and personal connections, with bounded tools and explicit note Apply.
 
 import { confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
@@ -16,9 +14,9 @@ import {
   select,
   touch
 } from "@/services/agent/conversations";
+import { applyProposal, getSelection, safeNoteHtml, setSelection } from "@/services/agent/map-tools";
 import {
   DEFAULT_LOCAL_URL,
-  DEFAULT_MODEL,
   keyStorageFor,
   LOCAL_MODEL,
   LOCAL_MODEL_STORAGE,
@@ -30,11 +28,13 @@ import {
 import { cachedModels, listModels, mergeModels } from "@/services/agent/providers-models";
 import type { RunResult } from "@/services/agent/runtime";
 import { createSession } from "@/services/agent/session";
+import { request, signIn, signOut } from "@/services/help/api";
+import { getToken } from "@/services/help/auth";
 import { openURL } from "@/utils";
 import { renderMarkdown } from "@/utils/markdown";
 import { ensureEl } from "../utils";
 import { buildMessageRow, buildTypingRow } from "./help-assistant-chat";
-import { type EditEntry, noteChipLabel, noteContext, undoEdit, writeNoteTool } from "./help-assistant-notes";
+import { type EditEntry, noteChipLabel, undoEdit } from "./help-assistant-notes";
 
 const MODEL_STORAGE = "fmg-ai-chat-model";
 const MAX_INPUT_HEIGHT = 108;
@@ -42,7 +42,7 @@ const MAX_INPUT_HEIGHT = 108;
 export const MAP_SUGGESTIONS = [
   "Which states have no ports?",
   "List the five largest burgs and their states",
-  "How is the land split between biomes?"
+  "Describe the place selected with Here"
 ];
 
 export const NOTE_SUGGESTIONS = [
@@ -51,7 +51,8 @@ export const NOTE_SUGGESTIONS = [
   "Tighten the wording, keep the facts"
 ];
 
-export const needsKey = (model: string, key: string): boolean => providerOf(model).id !== "local" && !key.trim();
+export const needsKey = (model: string, key: string): boolean =>
+  model !== "hosted" && providerOf(model).id !== "local" && !key.trim();
 
 let host: HTMLElement | null = null;
 let conversation: Conversation;
@@ -60,20 +61,18 @@ let busy = false;
 let turnContext = "";
 let noteLabel: string | null = null;
 
-const session = createSession(
-  () => ({
-    key: ensureEl<HTMLInputElement>("helpMapKey").value,
-    model: ensureEl<HTMLSelectElement>("helpMapModel").value,
-    context: turnContext
-  }),
-  [writeNoteTool(entry => addEntry(entry))]
-);
+const session = createSession(() => ({
+  key: ensureEl<HTMLInputElement>("helpMapKey").value,
+  model: ensureEl<HTMLSelectElement>("helpMapModel").value,
+  context: turnContext
+}));
 
 export function mountMapPanel(target: HTMLElement): void {
   host = target;
   conversation = forCurrentMap();
   target.innerHTML = panelHtml();
   bind();
+  window.addEventListener("assistant-context", refreshMapContext);
   setInitialValues();
   renderConversations();
   renderTranscript();
@@ -84,16 +83,18 @@ export function mountMapPanel(target: HTMLElement): void {
 export function refreshMapContext(): void {
   void noteChipLabel().then(label => {
     if (!host || !document.getElementById("helpMapContext")) return;
+    label = getSelection()?.label ?? label;
     noteLabel = label;
     const chip = ensureEl("helpMapContext");
     chip.hidden = label === null;
-    chip.textContent = label === null ? "" : `Note: ${label}`;
+    chip.textContent = label === null ? "" : `Here: ${label} ×`;
     if (isEmpty(conversation)) renderTranscript();
     ensureEl("helpMapInput").focus();
   });
 }
 
 export function unmountMapPanel(): void {
+  window.removeEventListener("assistant-context", refreshMapContext);
   session.cancel();
   busy = false;
   currentStep = null;
@@ -103,6 +104,7 @@ export function unmountMapPanel(): void {
 
 // The titlebar's "New chat" while this panel is on screen
 export function newMapConversation(): void {
+  if (busy) return;
   if (isEmpty(conversation)) {
     tip("This chat is already empty", true, "warn", 3000);
     return;
@@ -116,18 +118,22 @@ export function newMapConversation(): void {
 function panelHtml(): string {
   return /* html */ `
     <div id="helpMapLog" class="helpAssistantLog" role="log" aria-live="polite"></div>
+    <div id="helpMapAllowance" class="helpMapUsage" aria-live="polite"></div>
     <div id="helpMapContext" class="helpMapContext" hidden></div>
     <div class="helpAssistantComposer">
       <textarea id="helpMapInput" rows="1" aria-label="Your message"
-        placeholder="Ask about this map…"></textarea>
+        placeholder="Ask about FMG, explore this map, or edit notes…"></textarea>
       <button id="helpMapSend" type="button" class="helpAssistantSend icon-right-big"
         title="Send (Enter)" aria-label="Send"></button>
     </div>
     <div id="helpMapDrawer" class="helpMapDrawer" hidden>
+      <p>Messages and relevant map excerpts go to the selected provider. Hosted records are retained for up to 90 days.</p>
+      <button id="helpMapSignIn" type="button">${getToken() ? "Sign out" : "Sign in with Discord (optional)"}</button>
+      <p>Changing provider starts a fresh conversation. Your previous chat stays in history.</p>
       <div id="helpMapHint" class="helpMapHint" hidden>Add your API key to start. It stays in this browser and goes only to the provider.</div>
       <label>
         <span>Chat</span>
-        <select id="helpMapConversation" title="Switch between chats. Each one is sent in full with every message, so a fresh one costs less"></select>
+        <select id="helpMapConversation" title="Switch between saved chats"></select>
         <button id="helpMapDelete" type="button" class="icon-trash" title="Delete this chat" aria-label="Delete this chat"></button>
       </label>
       <label>
@@ -160,6 +166,14 @@ function panelHtml(): string {
 }
 
 function bind(): void {
+  ensureEl("helpMapSignIn").onclick = () => {
+    if (getToken())
+      void signOut().then(() => {
+        ensureEl("helpMapSignIn").textContent = "Sign in with Discord (optional)";
+      });
+    else signIn();
+  };
+  ensureEl("helpMapContext").addEventListener("click", () => setSelection());
   ensureEl("helpMapConversation").addEventListener("change", event => {
     conversation = select((event.target as HTMLSelectElement).value);
     renderTranscript();
@@ -212,6 +226,10 @@ function toggleDrawer(open?: boolean): void {
 
 function renderStatus(): void {
   const model = ensureEl<HTMLSelectElement>("helpMapModel").value;
+  if (model === "hosted") {
+    ensureEl("helpMapStatusModel").textContent = "FMG provided";
+    return;
+  }
   const provider = providerOf(model);
   const name = model === LOCAL_MODEL ? "local model" : `${model} · ${provider.label}`;
   const key = ensureEl<HTMLInputElement>("helpMapKey").value;
@@ -227,21 +245,32 @@ function setInitialValues(): void {
 
   const providerSelect = ensureEl<HTMLSelectElement>("helpMapProvider");
   providerSelect.replaceChildren();
-  providerSelect.append(...PROVIDERS.map(provider => new Option(provider.label, provider.id)));
+  providerSelect.append(
+    new Option("FMG provided (default)", "hosted"),
+    ...PROVIDERS.map(provider => new Option(provider.label, provider.id))
+  );
 
   // the stored model decides the provider, not the other way round: it is the only thing persisted
   const stored = localStorage.getItem(MODEL_STORAGE) ?? "";
-  const model = isKnownModel(stored) ? stored : DEFAULT_MODEL;
-  providerSelect.value = providerOf(model).id;
+  const model = stored === "hosted" || !stored ? "hosted" : isKnownModel(stored) ? stored : "hosted";
+  providerSelect.value = model === "hosted" ? "hosted" : providerOf(model).id;
   buildModelSelect();
   ensureEl<HTMLSelectElement>("helpMapModel").value = model;
 
   providerSelect.addEventListener("change", () => {
-    buildModelSelect(); // falls to the provider's first model
+    if (busy) return;
+    conversation = create();
+    renderConversations();
+    renderTranscript();
+    buildModelSelect(); // fresh conversation on provider switch
     loadKeyForModel();
     void refreshModels();
   });
   ensureEl("helpMapModel").addEventListener("change", () => {
+    if (busy) return;
+    conversation = create();
+    renderConversations();
+    renderTranscript();
     loadKeyForModel();
     void refreshModels();
   });
@@ -262,6 +291,10 @@ function isKnownModel(model: string): boolean {
 // One provider's models only: the flat list across every provider was too long to pick from
 function buildModelSelect(): void {
   const providerId = ensureEl<HTMLSelectElement>("helpMapProvider").value;
+  if (providerId === "hosted") {
+    ensureEl<HTMLSelectElement>("helpMapModel").replaceChildren(new Option("FMG provided", "hosted"));
+    return;
+  }
   const provider = PROVIDERS.find(candidate => candidate.id === providerId) ?? PROVIDERS[0];
   const select = ensureEl<HTMLSelectElement>("helpMapModel");
   const previous = select.value;
@@ -277,6 +310,7 @@ function buildModelSelect(): void {
 // Ask the selected provider what its key can actually use, so new models appear without a release
 async function refreshModels(): Promise<void> {
   const providerId = ensureEl<HTMLSelectElement>("helpMapProvider").value;
+  if (providerId === "hosted") return;
   const key = ensureEl<HTMLInputElement>("helpMapKey").value;
   if (providerId !== "local" && !key) return;
   try {
@@ -290,6 +324,13 @@ async function refreshModels(): Promise<void> {
 // Each provider has its own key slot, so switching models swaps the key field with it
 function loadKeyForModel(): void {
   const model = ensureEl<HTMLSelectElement>("helpMapModel").value;
+  for (const id of ["helpMapModel", "helpMapKey"]) ensureEl(id).closest("label")!.hidden = model === "hosted";
+  if (model === "hosted") {
+    ensureEl("helpMapLocal").hidden = true;
+    renderStatus();
+    updateSendButton();
+    return;
+  }
   const local = providerOf(model).id === "local";
   const key = ensureEl<HTMLInputElement>("helpMapKey");
   key.value = localStorage.getItem(keyStorageFor(model)) ?? "";
@@ -311,6 +352,10 @@ function loadKeyForModel(): void {
 // The request outlives the panel when the dialog is closed mid-run, so every DOM touch below
 // tolerates a missing element — the conversation keeps the content either way
 function updateSendButton(): void {
+  for (const id of ["helpMapProvider", "helpMapModel", "helpMapConversation", "helpMapDelete"]) {
+    const el = document.getElementById(id) as HTMLSelectElement | HTMLButtonElement | null;
+    if (el) el.disabled = busy;
+  }
   const button = document.getElementById("helpMapSend") as HTMLButtonElement | null;
   if (!button) return;
   button.className = `helpAssistantSend ${busy ? "icon-cancel" : "icon-right-big"}`;
@@ -325,6 +370,10 @@ async function send(text?: string): Promise<void> {
     return;
   }
 
+  if (conversation.archived) {
+    tip("This is an archived chat. Start a new conversation to ask a question.", true, "warn", 4000);
+    return;
+  }
   const input = ensureEl<HTMLTextAreaElement>("helpMapInput");
   const question = (text ?? input.value).trim();
   if (!question) return;
@@ -348,7 +397,7 @@ async function send(text?: string): Promise<void> {
     localStorage.setItem(LOCAL_URL_STORAGE, ensureEl<HTMLInputElement>("helpMapLocalUrl").value.trim());
     localStorage.setItem(LOCAL_MODEL_STORAGE, localModel);
   }
-  localStorage.setItem(keyStorageFor(model), key);
+  if (model !== "hosted") localStorage.setItem(keyStorageFor(model), key);
   localStorage.setItem(MODEL_STORAGE, model);
   toggleDrawer(false);
 
@@ -360,21 +409,38 @@ async function send(text?: string): Promise<void> {
   busy = true;
   updateSendButton();
   showThinking("Thinking…");
-  turnContext = (await noteContext()) ?? "";
-
+  const thread = conversation;
+  const record = (entry: Entry) => {
+    if (conversation === thread) addEntry(entry);
+    else {
+      thread.entries.push(entry);
+      touch(thread);
+    }
+  };
   try {
-    await session.ask(conversation, question, {
-      onText: answer => addEntry({ kind: "message", role: "assistant", text: answer }),
+    const openNote = await Controllers.NotesEditor.current();
+    const passage = openNote ? await Controllers.NotesEditor.assistantSelection() : null;
+    turnContext = openNote
+      ? `Open note target: ${openNote.id}. ${passage ? "A passage is selected: use read_note and propose_note with scope selection." : "Read it with read_note before editing."}`
+      : "";
+    await session.ask(thread, question, {
+      onText: answer => record({ kind: "message", role: "assistant", text: answer }),
       onScript: code => addEntry({ kind: "script", code }),
       onScriptResult: result => completeStep(result),
       onStatus: status => (status ? showThinking(status) : hideThinking()),
       onUsage: renderUsage,
-      onTool: () => showThinking("Writing the note…")
+      onAllowance: remaining => {
+        const status = document.getElementById("helpMapAllowance");
+        if (status) status.textContent = `${remaining} tasks left today · resets 00:00 UTC`;
+      },
+      onTool: name => showThinking(name === "propose_note" ? "Preparing a note preview…" : "Collecting context…"),
+      onProposal: proposal => record({ kind: "proposal", proposal }),
+      onReport: draft => record({ kind: "report", draft, requestId: crypto.randomUUID() })
     });
   } catch (error) {
     const aborted = error instanceof DOMException && error.name === "AbortError";
     const message = (error instanceof Error && error.message) || String(error);
-    addEntry({ kind: "message", role: aborted ? "system" : "error", text: aborted ? "Stopped." : message });
+    record({ kind: "message", role: aborted ? "system" : "error", text: aborted ? "Stopped." : message });
   } finally {
     busy = false;
     currentStep = null;
@@ -467,6 +533,123 @@ function addEntry(entry: Entry): void {
 }
 
 function renderEntry(entry: Entry): HTMLElement {
+  if (entry.kind === "proposal") {
+    const p = entry.proposal;
+    const panel = document.createElement("div");
+    panel.className = "helpAssistantBubble";
+    const title = document.createElement("strong");
+    title.textContent = `${p.selection ? "Selected passage" : "Notes"}: ${p.label}`;
+    const preview = document.createElement("div");
+    try {
+      preview.innerHTML = safeNoteHtml(p.selection?.html ?? p.html);
+    } catch {
+      preview.textContent = "Unsupported note content";
+    }
+    const status = document.createElement("p");
+    status.textContent = p.status;
+    const apply = document.createElement("button");
+    apply.textContent = p.status === "applied" ? "Undo" : "Apply";
+    apply.disabled = !["proposed", "applied"].includes(p.status);
+    apply.onclick = async () => {
+      apply.disabled = true;
+      try {
+        await applyProposal(p, p.status === "applied");
+        touch(conversation);
+        renderTranscript();
+      } catch (e) {
+        status.textContent = e instanceof Error ? e.message : String(e);
+        apply.disabled = false;
+      }
+    };
+    const discard = document.createElement("button");
+    discard.textContent = "Discard";
+    discard.hidden = p.status !== "proposed";
+    discard.onclick = () => {
+      p.status = "discarded";
+      touch(conversation);
+      renderTranscript();
+    };
+    panel.append(title, preview, status, apply, discard);
+    return panel;
+  }
+  if (entry.kind === "report") {
+    const panel = document.createElement("div");
+    panel.className = "helpAssistantBubble";
+    const title = document.createElement("strong");
+    title.textContent = entry.draft.kind === "bug" ? "Bug report" : "Idea";
+    panel.append(title);
+    const controls: Record<string, HTMLInputElement | HTMLTextAreaElement> = {};
+    for (const [key, label] of [
+      ["title", "Title"],
+      ["description", "Description"],
+      ...(entry.draft.kind === "bug"
+        ? [
+            ["steps", "Steps to reproduce"],
+            ["expected", "Expected behaviour"]
+          ]
+        : [])
+    ]) {
+      const row = document.createElement("label");
+      row.style.display = "block";
+      row.textContent = label;
+      const field = key === "title" ? document.createElement("input") : document.createElement("textarea");
+      field.value = String(entry.draft[key] ?? "");
+      field.style.width = "100%";
+      field.disabled = Boolean(entry.receipt);
+      controls[key] = field;
+      row.append(field);
+      panel.append(row);
+    }
+    const send = document.createElement("button");
+    send.textContent = entry.receipt ? "Submitted" : "Submit report";
+    send.disabled = Boolean(entry.receipt);
+    const status = document.createElement("p");
+    status.textContent = entry.receipt
+      ? "Submitted for review"
+      : "Review what will be shared with moderators. Approved reports may be published on GitHub.";
+    send.onclick = async () => {
+      send.disabled = true;
+      try {
+        const draft = {
+          kind: entry.draft.kind,
+          ...Object.fromEntries(Object.entries(controls).map(([k, v]) => [k, v.value]))
+        };
+        const result = await request<{ receipt: string }>("/v2/reports", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ draft, requestId: entry.requestId })
+        });
+        entry.draft = draft;
+        entry.receipt = result.receipt;
+        touch(conversation);
+        renderTranscript();
+      } catch (e) {
+        status.textContent = e instanceof Error ? e.message : String(e);
+        send.disabled = false;
+      }
+    };
+    const check = document.createElement("button");
+    check.textContent = "Check status";
+    check.hidden = !entry.receipt;
+    check.onclick = async () => {
+      try {
+        const result = await request<{ state: string; url: string | null }>(`/v2/reports/${entry.receipt}`, {
+          method: "GET"
+        });
+        status.textContent = result.state.replaceAll("_", " ");
+        if (result.url && /^https:\/\/github\.com\//.test(result.url)) {
+          const a = document.createElement("a");
+          a.href = result.url;
+          a.textContent = " View on GitHub";
+          status.append(a);
+        }
+      } catch (e) {
+        status.textContent = e instanceof Error ? e.message : String(e);
+      }
+    };
+    panel.append(status, send, check);
+    return panel;
+  }
   if (entry.kind === "message") return renderMessage(entry.role, entry.text);
   if (entry.kind === "edit") return renderEdit(entry);
 
@@ -558,8 +741,8 @@ function emptyState(): HTMLElement {
 
   const hint = document.createElement("p");
   hint.textContent = noteLabel
-    ? `I can read this map and rewrite the note “${noteLabel}”. Every edit has an undo.`
-    : "I can read the map you have open, and write your notes when the Notes Editor is open.";
+    ? `I can explain FMG, explore this map and prepare changes to the note “${noteLabel}”. Changes are previewed before Apply.`
+    : "Ask about FMG, explore the current map, or draft and edit notes. Right-click the map to attach a place.";
   container.append(hint);
 
   (noteLabel ? NOTE_SUGGESTIONS : MAP_SUGGESTIONS).forEach(suggestion => {
