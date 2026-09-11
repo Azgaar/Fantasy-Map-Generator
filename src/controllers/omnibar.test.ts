@@ -1,5 +1,8 @@
 // @vitest-environment jsdom
 import { webcrypto } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { runInNewContext } from "node:vm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const panel = vi.hoisted(() => ({
@@ -568,6 +571,39 @@ describe("Omnibar public behavior", () => {
 });
 
 describe("assistant in the omnibar", () => {
+  it("places a modal preview and its overlay above the assistant with FMG's actual dialog library", () => {
+    const dialogs = document.createElement("div");
+    dialogs.id = "dialogs";
+    document.body.append(dialogs);
+    for (const file of ["jquery-3.1.1.min.js", "jquery-ui.min.js"]) {
+      runInNewContext(readFileSync(resolve("public/libs", file), "utf8"), {
+        window,
+        document,
+        navigator: window.navigator,
+        jQuery: window.$,
+        setTimeout,
+        clearTimeout
+      });
+    }
+    Omnibar.open();
+    const preview = document.createElement("div");
+    preview.id = "helpMapNotePreview";
+    dialogs.append(preview);
+    window.$(preview).dialog({ modal: true });
+    try {
+      const wrapper = preview.closest(".ui-dialog")!;
+      // FMG customises jQuery UI's default appendTo to #dialogs, not body.
+      expect(wrapper.parentElement).toBe(dialogs);
+      const overlay = dialogs.querySelector(".ui-widget-overlay")!;
+      const barZ = Number(getComputedStyle(document.getElementById("omnibar")!).zIndex);
+      const overlayZ = Number(getComputedStyle(overlay).zIndex);
+      expect(overlayZ).toBeGreaterThan(barZ);
+      expect(Number(getComputedStyle(wrapper).zIndex)).toBeGreaterThan(overlayZ);
+    } finally {
+      window.$(preview).dialog("destroy");
+    }
+  });
+
   it("keeps typing local and submits the original question only when the assistant result is activated", async () => {
     const fetch = vi.fn();
     vi.stubGlobal("fetch", fetch);

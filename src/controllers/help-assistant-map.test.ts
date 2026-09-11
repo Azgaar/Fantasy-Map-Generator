@@ -121,7 +121,7 @@ describe("map panel", () => {
 
   it("opens a sanitized, read-only draft when Preview is clicked and returns focus on Close", () => {
     vi.stubGlobal("pack", { cells: {}, burgs: [{ i: 0 }, { i: 1, name: "Kimelea", note: "<p>Original</p>" }] });
-    let options: { close: () => void; buttons: { Close: () => void } } | undefined;
+    let options: { open: () => void; close: () => void; buttons: { Close: () => void } } | undefined;
     const dialog = vi.fn((command: string | NonNullable<typeof options>) => {
       if (typeof command !== "string") options = command;
       else if (command === "close") options?.close();
@@ -145,12 +145,21 @@ describe("map panel", () => {
     )!;
     button.click();
     const preview = el("helpMapNotePreview");
-    expect(dialog).toHaveBeenCalledWith(expect.objectContaining({ title: "Note preview", modal: true }));
+    expect(dialog).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "Note preview", modal: true, appendTo: document.body })
+    );
     expect(preview.textContent).toContain("The capital.");
     expect(preview.querySelector("h2")?.textContent).toBe("Notes: Kimelea <img src=x>");
     expect(preview.querySelector("script, img, [onclick], [contenteditable]")).toBeNull();
     expect(preview.lastElementChild?.innerHTML).toBe("<h2>Kimelea</h2><p>The capital.</p>");
     expect(preview.textContent).toContain("choose Apply to update the map");
+    const wrapper = document.createElement("div");
+    wrapper.className = "ui-dialog";
+    wrapper.innerHTML = '<div class="ui-dialog-buttonpane"><button>Close</button></div>';
+    document.body.append(wrapper);
+    wrapper.prepend(preview);
+    options!.open();
+    expect(document.activeElement).toBe(wrapper.querySelector("button"));
     options!.buttons.Close();
     expect(document.getElementById("helpMapNotePreview")).toBeNull();
     expect(document.activeElement).toBe(button);

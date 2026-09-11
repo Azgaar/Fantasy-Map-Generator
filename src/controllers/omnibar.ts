@@ -304,8 +304,8 @@ class OmnibarController {
         #omnibar .omnibar-chat-header button, #omnibar .omnibar-actions button { font: inherit; min-height: 36px; padding: 4px 10px; }
         #omnibar-loading { padding: 20px; }
         #omnibar .omnibar-actions { border-top: 1px solid #ddd; }
-        body:has(#omnibar:not([hidden])) > .ui-dialog:has(> #helpMapNotePreview, > #alert) { z-index: 100002 !important; }
-        body:has(#omnibar:not([hidden])) > .ui-widget-overlay { z-index: 100001 !important; }
+        body:has(#omnibar:not([hidden])) .ui-dialog:has(> #helpMapNotePreview, > #alert) { z-index: 100002 !important; }
+        body:has(#omnibar:not([hidden])) .ui-widget-overlay { z-index: 100001 !important; }
 
         #omnibar {
           --line: color-mix(in srgb, var(--bg-main) 22%, transparent);

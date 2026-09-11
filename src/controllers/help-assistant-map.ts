@@ -617,12 +617,16 @@ function openNotePreview(label: string, content: HTMLElement, opener: HTMLButton
   (document.getElementById("dialogs") ?? document.body).append(dialog);
   window.$(dialog).dialog({
     title: "Note preview",
+    appendTo: document.body,
     modal: true,
     resizable: true,
     width: Math.min(720, window.innerWidth - 24),
     height: Math.min(640, window.innerHeight - 80),
     position: { my: "center", at: "center", of: window },
     buttons: { Close: () => window.$(dialog).dialog("close") },
+    open: () => {
+      dialog.closest(".ui-dialog")?.querySelector<HTMLButtonElement>(".ui-dialog-buttonpane button")?.focus();
+    },
     close: () => {
       destroyDialog(dialog.id);
       if (opener.isConnected) opener.focus({ preventScroll: true });
