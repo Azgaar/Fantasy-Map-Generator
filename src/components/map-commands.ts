@@ -37,7 +37,6 @@ export interface MapCommand {
 
 /** Ordered by priority: the omnibar breaks score ties by definition order */
 export const MAP_COMMANDS: MapCommand[] = [
-  // assistant
   {
     id: "helpAssistant",
     name: "Ask AI: Azgaar Assistant",
@@ -45,7 +44,12 @@ export const MAP_COMMANDS: MapCommand[] = [
     matches: isQuestion,
     run: () => Controllers.HelpAssistant.open()
   },
-  // map lifecycle
+  {
+    id: "startTour",
+    name: "Start Interactive Tour",
+    aliases: "help guide tutorial",
+    run: () => Services.UiTour.start()
+  },
   { id: "newMap", name: "Generate New Map", aliases: "regenerate random create", run: () => regeneratePrompt() },
   {
     id: "saveToMachine",
@@ -78,7 +82,6 @@ export const MAP_COMMANDS: MapCommand[] = [
     aliases: "previous maps restore",
     run: () => showSeedHistoryDialog()
   },
-  // editors and overviews
   {
     id: "editStatesButton",
     name: "Open States Editor",
@@ -278,7 +281,6 @@ export const MAP_COMMANDS: MapCommand[] = [
     aliases: "statistics graphs",
     run: () => Controllers.ChartsOverview.open()
   },
-  // adding elements
   {
     id: "addBurgTool",
     name: "Add Burg",
@@ -290,7 +292,6 @@ export const MAP_COMMANDS: MapCommand[] = [
   { id: "addRiver", name: "Add River", aliases: "waterway", run: () => Controllers.RiverAutoCreator.toggle() },
   { id: "drawRiver", name: "Draw River", aliases: "add waterway manually", run: () => Controllers.RiverCreator.open() },
   { id: "addRoute", name: "Add Route", aliases: "road trail path", run: () => Controllers.RouteCreator.open() },
-  // map tools
   {
     id: "selectHeightmap",
     name: "Select Heightmap Template",
@@ -312,7 +313,6 @@ export const MAP_COMMANDS: MapCommand[] = [
     aliases: "view mode planet",
     run: () => Controllers.View3d.open("viewGlobe")
   },
-  // charts
   {
     id: "showStatesChart",
     name: "Show States Chart",
@@ -349,7 +349,6 @@ export const MAP_COMMANDS: MapCommand[] = [
     aliases: "diplomacy chronicle wars",
     run: () => Controllers.DiplomacyEditor.showHistory()
   },
-  // regeneration
   {
     id: "regenerateStates",
     name: "Regenerate States",
@@ -470,7 +469,6 @@ export const MAP_COMMANDS: MapCommand[] = [
     aliases: "markers settings",
     run: () => Controllers.MarkersSettings.open()
   },
-  // view and menu
   { id: "zoomReset", name: "Reset Zoom", aliases: "fit view whole map", run: () => resetZoom(1000) },
   { id: "zoomIn", name: "Zoom In", aliases: "view closer", run: () => changeMapZoom(1.2) },
   { id: "zoomOut", name: "Zoom Out", aliases: "view farther", run: () => changeMapZoom(0.8) },
@@ -480,7 +478,6 @@ export const MAP_COMMANDS: MapCommand[] = [
   { id: "optionsTab", name: "Open Options Tab", aliases: "menu panel settings", run: () => openTab("optionsTab") },
   { id: "toolsTab", name: "Open Tools Tab", aliases: "menu panel", run: () => openTab("toolsTab") },
   { id: "aboutTab", name: "Open About Tab", aliases: "menu panel info credits", run: () => openTab("aboutTab") },
-  // export
   {
     id: "exportSvg",
     name: "Export as SVG",
@@ -604,13 +601,6 @@ export const MAP_COMMANDS: MapCommand[] = [
     aliases: "download table areas regions",
     run: () => Controllers.ZonesEditor.exportCsv()
   },
-  // help and app
-  {
-    id: "startTour",
-    name: "Start Interactive Tour",
-    aliases: "help guide tutorial",
-    run: () => Services.UiTour.start()
-  },
   { id: "showInfo", name: "Show App Info", aliases: "about version help", run: () => showInfo() },
   { id: "getApp", name: "Get Desktop App", aliases: "install download electron", run: () => Services.AppOffer.open() },
   {
@@ -625,7 +615,6 @@ export const MAP_COMMANDS: MapCommand[] = [
     aliases: "restore defaults clear cache reload",
     run: () => cleanupData()
   },
-  // layers
   { id: "savePresetButton", name: "Save Layers Preset", aliases: "displayed layers", run: () => savePreset() },
   ...Object.entries(LAYER_PRESETS).map(([id, label]) => ({
     id: `preset:${id}`,
