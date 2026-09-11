@@ -17,7 +17,17 @@ import { Notes } from "@/components/notes";
 import { Controllers } from "@/controllers";
 import { type Feature, type FeatureType, ISLAND_SUBTYPES, LAKE_SUBTYPES } from "@/generators/features";
 import { highlightArea, highlightOutline } from "@/renderers/overlays/highlight";
-import { capitalize, downloadFile, ensureEl, findEl, getArea, getAreaUnit, getFileName, si } from "@/utils";
+import {
+  capitalize,
+  downloadFile,
+  ensureEl,
+  findEl,
+  getArea,
+  getAreaUnit,
+  getFileName,
+  getVertexPath,
+  si
+} from "@/utils";
 
 const dialogId = "featuresOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
@@ -296,10 +306,16 @@ function renderFeaturesPage(view: TableView<Feature>): void {
 
 const getFeature = (element: HTMLElement): Feature => pack.features[getRowId(element)];
 const getFeaturePath = (featureId: number) => findEl(`feature_${featureId}`)?.getAttribute("d") ?? null;
+// oceans are not drawn, so outline their cells instead
+const getOceanPath = (featureId: number) => {
+  const cellIds = Array.from(pack.cells.i).filter(cellId => pack.cells.f[cellId] === featureId);
+  return getVertexPath(cellIds, pack);
+};
 
 function featureHighlightOn(this: HTMLElement): void {
   const feature = getFeature(this);
-  if (feature?.type !== "ocean") highlightOutline(getFeaturePath(feature.i)); // oceans are not drawn
+  if (!feature) return;
+  highlightOutline(feature.type === "ocean" ? getOceanPath(feature.i) : getFeaturePath(feature.i));
 }
 
 function featureHighlightOff(): void {

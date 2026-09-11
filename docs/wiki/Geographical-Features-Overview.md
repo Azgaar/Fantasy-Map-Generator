@@ -43,7 +43,7 @@ Turning a freshwater lake into a dry one relabels it. It does not remove the por
 
 ## Highlighting
 
-Hover a row to trace the feature's outline on the map. Hover the map to highlight the row for the feature under the pointer. Oceans are not drawn as a shape, so an ocean row does not trace an outline, but hovering the sea still highlights its row.
+Hover a row to trace the feature's outline on the map. Hover the map to highlight the row for the feature under the pointer. Oceans are not drawn as a shape, so an ocean row traces the edge of its cells instead — coastlines plus the map border it touches — which tells the oceans apart when a map has several.
 
 ## Filters
 

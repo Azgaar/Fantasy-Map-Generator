@@ -100,7 +100,7 @@ Filter state persists through `dialogState` like the other overviews.
 
 ### Highlight
 
-- Row hover → `highlightOutline(#feature_N d)`; nothing for oceans (no path).
+- Row hover → `highlightOutline(#feature_N d)`; oceans have no path, so their cells are outlined via `getVertexPath`.
 - Map hover → `applyLineHighlighting(dialogId, ({cellId}) => pack.cells.f[cellId])`; works for
   oceans too.
 
