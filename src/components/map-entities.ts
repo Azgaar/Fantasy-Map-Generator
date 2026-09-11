@@ -66,8 +66,9 @@ interface EntityDefinition {
   highlight?: (id: number, sub?: number) => string; // defaults to the element
   position?: (id: number, sub?: number) => Point | undefined;
   points?: (ref: EntityRef) => Point[];
+  cells?: () => ArrayLike<number> | undefined; // per-cell assignment, the geometry of a territory
   context?: (ref: EntityRef) => string;
-  open?: (ref: EntityRef) => unknown; // opens the entity's editor instead of zooming to it
+  open?: (ref: EntityRef) => Promise<unknown>; // opens the entity's editor instead of zooming to it
 }
 
 const ELEMENT_PATTERNS: [RegExp, EntityType][] = [
@@ -107,7 +108,7 @@ class EntityLookup {
         const state = this.byId(pack.states, id);
         return state?.pole || this.cellPoint(state?.center);
       },
-      points: ref => this.cellPoints(pack.cells.state, ref.id),
+      cells: () => pack.cells.state,
       context: ref => {
         const capital = this.byId(pack.states, ref.id)?.capital;
         const name = this.byId(pack.burgs, capital)?.name;
@@ -129,7 +130,7 @@ class EntityLookup {
         const province = this.byId(pack.provinces, id);
         return province?.pole || this.cellPoint(province?.center);
       },
-      points: ref => this.cellPoints(pack.cells.province, ref.id),
+      cells: () => pack.cells.province,
       context: ref => this.stateName(this.byId(pack.provinces, ref.id)?.state)
     },
     burg: {
@@ -223,7 +224,8 @@ class EntityLookup {
         const feature = this.byId(pack.features, id);
         return feature ? feature.name || `${feature.subtype || feature.type} ${id}` : "";
       },
-      refs: () => this.refsOf("feature", pack.features, true),
+      refs: () =>
+        this.refsOf("feature", pack.features, true).filter(ref => this.byId(pack.features, ref.id)?.type !== "ocean"),
       element: id => `feature_${id}`,
       highlight: id => `#map use[data-f='${id}']`,
       position: id => this.cellPoint(this.byId(pack.features, id)?.firstCell),
@@ -335,7 +337,7 @@ class EntityLookup {
       name: id => this.byId(pack.cultures, id)?.name || "",
       refs: () => this.refsOf("culture", pack.cultures, true),
       highlight: id => `#culture${id}`,
-      points: ref => this.cellPoints(pack.cells.culture, ref.id),
+      cells: () => pack.cells.culture,
       context: ref => this.byId(pack.cultures, ref.id)?.type || ""
     },
     religion: {
@@ -348,7 +350,7 @@ class EntityLookup {
       name: id => this.byId(pack.religions, id)?.name || "",
       refs: () => this.refsOf("religion", pack.religions, true),
       highlight: id => `#religion${id}`,
-      points: ref => this.cellPoints(pack.cells.religion, ref.id),
+      cells: () => pack.cells.religion,
       context: ref => {
         const religion = this.byId(pack.religions, ref.id);
         const culture = this.byId(pack.cultures, religion?.culture)?.name;
@@ -365,7 +367,7 @@ class EntityLookup {
       name: id => this.byId(pack.biomes, id)?.name || "",
       refs: () => this.refsOf("biome", pack.biomes),
       highlight: id => `#biome${id}`,
-      points: ref => this.cellPoints(pack.cells.biome, ref.id)
+      cells: () => pack.cells.biome
     },
     good: {
       label: "Goods",
@@ -391,10 +393,18 @@ class EntityLookup {
     return entity && !entity.removed ? entity : undefined;
   }
 
-  collect(type: EntityType): EntityTarget[] {
-    return this.types[type].refs().flatMap(ref => {
+  /** Every live entity of the type; `located` keeps only those with a place on the map or an editor to open */
+  collect(type: EntityType, { located = false } = {}): EntityTarget[] {
+    const { refs, cells, open } = this.types[type];
+    const assigned = located && cells ? new Set(Array.from(cells() ?? [])) : undefined; // one pass, not one per territory
+    const isLocated = (ref: EntityRef): boolean => {
+      if (open) return true;
+      if (assigned) return assigned.has(ref.id) || Boolean(this.getPosition(ref));
+      return this.getPoints(ref).length > 0;
+    };
+    return refs().flatMap(ref => {
       const entity = this.get(ref);
-      return entity ? [{ ref, entity }] : [];
+      return entity && (!located || isLocated(ref)) ? [{ ref, entity }] : [];
     });
   }
 
@@ -410,12 +420,9 @@ class EntityLookup {
     return this.types[ref.type].context?.(ref) || "";
   }
 
-  /** Opens the entity's editor; false when the type has none and should be revealed on the map instead */
-  open(ref: EntityRef): boolean {
-    const open = this.types[ref.type].open;
-    if (!open) return false;
-    open(ref);
-    return true;
+  /** The pending editor open, or undefined when the type has none and should be revealed on the map instead */
+  open(ref: EntityRef): Promise<unknown> | undefined {
+    return this.types[ref.type].open?.(ref);
   }
 
   getPosition(ref: EntityRef): Point | undefined {
@@ -424,9 +431,10 @@ class EntityLookup {
 
   /** Full geometry when the type has one, otherwise its anchor point */
   getPoints(ref: EntityRef): Point[] {
-    const position = this.getPosition(ref);
-    const points = this.types[ref.type].points?.(ref) || (position ? [position] : []);
-    return points.filter(point => point?.every(Number.isFinite));
+    const { points, cells } = this.types[ref.type];
+    const geometry = points?.(ref) ?? (cells ? this.cellPoints(cells() ?? [], ref.id) : []);
+    const position = geometry.length ? undefined : this.getPosition(ref);
+    return (position ? [position] : geometry).filter(point => point?.every(Number.isFinite));
   }
 
   getElementId(ref: EntityRef): string | undefined {

@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   open: vi.fn(),
   highlight: vi.fn(),
+  highlightArea: vi.fn(),
   show: vi.fn(),
   toggle: vi.fn(),
   zoom: vi.fn((_x: number, _y: number, _scale: number, _duration: number, onEnd?: () => void) => onEnd?.()),
@@ -27,7 +28,10 @@ vi.mock("@/services", () => ({ Services: {} }));
 vi.mock("@/services/autosave", () => ({ toggleSaveReminder: vi.fn() }));
 vi.mock("@/services/url-params", () => ({ copyMapURL: vi.fn() }));
 vi.mock("@/services/versioning", () => ({ cleanupData: vi.fn() }));
-vi.mock("@/renderers/overlays/highlight", () => ({ highlightElement: mocks.highlight }));
+vi.mock("@/renderers/overlays/highlight", () => ({
+  highlightElement: mocks.highlight,
+  highlightArea: mocks.highlightArea
+}));
 vi.mock("@/components/zoom", () => ({ zoomTo: mocks.zoom }));
 vi.mock("@/components/viewport", () => ({ viewport: { width: 1000, height: 800, scale: 1 } }));
 vi.mock("@/renderers/labels/label-data", () => ({ getLabelsIndex: mocks.labels }));
@@ -64,6 +68,7 @@ beforeEach(() => {
   localStorage.clear();
   sessionStorage.clear();
   vi.clearAllMocks();
+  mocks.open.mockResolvedValue(undefined);
   mocks.labels.mockReturnValue([]);
   globalThis.customization = 0;
   globalThis.pack = {
@@ -159,7 +164,7 @@ describe("Omnibar public behavior", () => {
 
   it("rejects scattered-letter and punctuation-only matches", () => {
     pack.routes = [
-      { i: 1, name: "The Misty Serran pass", group: "roads", feature: 1, points: [] }
+      { i: 1, name: "The Misty Serran pass", group: "roads", feature: 1, points: [[10, 20, 0]] }
     ] as typeof pack.routes;
     Omnibar.open();
     for (const query of ["test", "."]) {
@@ -180,8 +185,8 @@ describe("Omnibar public behavior", () => {
 
   it("shows the river basin name instead of an internal ID", () => {
     pack.rivers = [
-      { i: 1, name: "Lora", type: "River", basin: 1 },
-      { i: 2, name: "Rill", type: "Stream", basin: 1 }
+      { i: 1, name: "Lora", type: "River", basin: 1, cells: [0] },
+      { i: 2, name: "Rill", type: "Stream", basin: 1, cells: [1] }
     ] as typeof pack.rivers;
     Omnibar.open();
     search("Rill");
@@ -193,6 +198,8 @@ describe("Omnibar public behavior", () => {
       {
         i: 0,
         name: "Hot Springs",
+        x: 10,
+        y: 20,
         note: `<p>A peaceful spring. ${"Warm water and woodland. ".repeat(12)}Ancient temple.</p>`
       }
     ] as typeof pack.markers;
@@ -335,8 +342,19 @@ describe("Omnibar public behavior", () => {
     label.click();
     expect(mocks.zoom).toHaveBeenCalledWith(50, 60, 8, 1500);
     await vi.advanceTimersByTimeAsync(750);
-    expect(mocks.highlight).not.toHaveBeenCalled();
+    expect(mocks.highlight).not.toHaveBeenCalled(); // not drawn yet: the viewport renders labels after the zoom
+    expect(mocks.highlightArea).toHaveBeenCalledWith({ x: 50, y: 60, width: 0, height: 0 });
     expect(mocks.open).not.toHaveBeenCalled();
+  });
+
+  it("outlines a culled river by its own geometry when its path is not in the DOM yet", async () => {
+    pack.rivers = [{ i: 1, name: "Lora", type: "River", cells: [0, 1] }] as unknown as typeof pack.rivers;
+    Omnibar.open();
+    search("Lora");
+    key("Enter");
+    await vi.advanceTimersByTimeAsync(750);
+    expect(mocks.highlight).not.toHaveBeenCalled();
+    expect(mocks.highlightArea).toHaveBeenCalledWith({ x: 10, y: 20, width: 20, height: 20 });
   });
 
   it("uses a wider scale for territories than settlements", () => {
@@ -355,6 +373,90 @@ describe("Omnibar public behavior", () => {
     expect(mocks.open).toHaveBeenCalledWith(1);
     expect(mocks.zoom).not.toHaveBeenCalled();
     expect(mocks.tip).not.toHaveBeenCalled();
+  });
+
+  it("reports an editor that fails to load instead of failing silently", async () => {
+    pack.goods = [{ i: 1, name: "Copper" }] as typeof pack.goods;
+    mocks.open.mockRejectedValueOnce(new Error("chunk failed"));
+    Omnibar.open();
+    search("Copper");
+    key("Enter");
+    await vi.waitFor(() =>
+      expect(mocks.tip).toHaveBeenCalledWith(expect.stringContaining("Could not open"), false, "error")
+    );
+  });
+
+  it("ranks unnamed entities below every named match and titles them by their kind", () => {
+    pack.routes = Array.from({ length: 3 }, (_, index) => ({
+      i: index,
+      group: "trails",
+      points: [[10, 20, 0]]
+    })) as unknown as typeof pack.routes;
+    Omnibar.open();
+    search("route");
+    const names = rows().map(row => row.querySelector(".omnibar-name")?.textContent);
+    expect(names.at(-1)).toBe("Route");
+    expect(names.indexOf("Route")).toBeGreaterThan(names.lastIndexOf("Open Routes Overview")); // commands come first
+    expect(names.filter(name => name === "Route")).toHaveLength(3);
+  });
+
+  it("lists entities only when they have a place on the map", () => {
+    pack.rivers = [{ i: 1, name: "Waterless", type: "River", cells: [] }] as unknown as typeof pack.rivers;
+    pack.features = [0, { i: 1, type: "ocean", firstCell: 0 }] as unknown as typeof pack.features;
+    Omnibar.open();
+    search("waterless");
+    expect(rows()).toHaveLength(0);
+    search("ocean");
+    expect(rows().every(row => row.textContent?.startsWith(">"))).toBe(true);
+  });
+
+  it("keeps accented letters whole in note excerpts and highlights them", () => {
+    pack.burgs[2].note = `<p>${"Long ago. ".repeat(6)}Une très vieille église sur la colline.</p>`;
+    Omnibar.open();
+    search("tres vieille eglise");
+    const detail = rows()[0].querySelector(".omnibar-detail")!;
+    expect(detail.textContent).toContain("très vieille église");
+    expect(
+      Array.from(detail.querySelectorAll("mark"))
+        .map(mark => mark.textContent)
+        .join("")
+    ).toBe("trèsvieilleéglise");
+  });
+
+  it("counts the matches the cap hides", () => {
+    pack.burgs = [
+      { i: 0 },
+      ...Array.from({ length: 60 }, (_, index) => ({ i: index + 1, name: `Burg ${index + 1}`, x: 1, y: 1, state: 1 }))
+    ] as typeof pack.burgs;
+    Omnibar.open();
+    search("burg");
+    expect(rows()).toHaveLength(50);
+    expect(document.getElementById("omnibar-status")?.textContent).toMatch(/^50 of \d+ results/);
+  });
+
+  it("keeps the browser's save dialog and help keys out while it is open", () => {
+    Omnibar.open();
+    const save = new KeyboardEvent("keydown", {
+      code: "KeyS",
+      key: "s",
+      ctrlKey: true,
+      bubbles: true,
+      cancelable: true
+    });
+    input().dispatchEvent(save);
+    expect(save.defaultPrevented).toBe(true);
+    const help = new KeyboardEvent("keydown", { code: "F1", key: "F1", bubbles: true, cancelable: true });
+    input().dispatchEvent(help);
+    expect(help.defaultPrevented).toBe(true);
+    const copy = new KeyboardEvent("keydown", {
+      code: "KeyC",
+      key: "c",
+      ctrlKey: true,
+      bubbles: true,
+      cancelable: true
+    });
+    input().dispatchEvent(copy);
+    expect(copy.defaultPrevented).toBe(false); // copying the query stays possible
   });
 
   it("refuses a target the current map no longer holds", () => {

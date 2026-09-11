@@ -80,10 +80,10 @@ function buildStateLabel(state: State, geometry: boolean): LabelData | undefined
   const group = state.label?.group || "state";
   const customPath = getCustomPath(state.label);
 
+  // the one reason a state has no label, shared by the index and the full build: no cells to fit it into
   const fits = !customPath && !isPlainText(state.label);
-  if (fits && !state.cells) return undefined; // state has no cells to fit the label into
+  if (fits && !state.cells) return undefined;
   const fitted = fits && geometry ? fitStateLabel(state, group) : null;
-  if (fitted && !fitted.pathPoints.length) return undefined;
 
   const text = state.label?.text ?? fitted?.text ?? getStateName(state, group);
   if (!text) return undefined;

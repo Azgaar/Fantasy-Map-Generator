@@ -112,6 +112,19 @@ describe("labels index", () => {
     expect(fitStateLabel).not.toHaveBeenCalled();
   });
 
+  it("lists exactly the labels the full build renders", () => {
+    pack.states.push(
+      ...([
+        { i: 2, name: "Void", cells: 0, center: 1 },
+        { i: 3, name: "Plain", cells: 0, center: 1, label: { text: "Plain", pathPoints: [] } }
+      ] as typeof pack.states)
+    );
+    const ids = (labels: { id: string }[]) => labels.map(label => label.id);
+    expect(ids(getLabelsIndex())).toEqual(ids(getLabelsData()));
+    expect(ids(getLabelsIndex()).includes("stateLabel3")).toBe(true); // plain text needs no cells to fit into
+    expect(ids(getLabelsIndex()).includes("stateLabel2")).toBe(false);
+  });
+
   it("still fits state labels for the full build", () => {
     expect(getLabelsData().find(label => label.type === "state")?.text).toBe("West");
     expect(fitStateLabel).toHaveBeenCalledTimes(1);

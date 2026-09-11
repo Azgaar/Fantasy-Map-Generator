@@ -142,7 +142,7 @@ describe("shared entity geometry and context", () => {
     expect(MapEntities.get({ type: "burg", id: 1 })).toBeUndefined();
   });
 
-  it("titles an unnamed feature by its subtype and id, so islands stay distinct", () => {
+  it("titles an unnamed feature by its subtype and id, so islands stay distinct; oceans are no feature", () => {
     pack.features = [
       0,
       { i: 1, type: "island", subtype: "isle" },
@@ -153,9 +153,31 @@ describe("shared entity geometry and context", () => {
     expect(MapEntities.collect("feature").map(({ ref }) => MapEntities.getName(ref))).toEqual([
       "isle 1",
       "isle 2",
-      "ocean 3",
       "Mirror Lake"
     ]);
+  });
+
+  it("keeps only entities with a place on the map or an editor when asked for located ones", () => {
+    pack.cells = {
+      i: [0, 1],
+      p: [
+        [10, 20],
+        [30, 40]
+      ],
+      state: new Uint16Array([1, 1])
+    } as unknown as typeof pack.cells;
+    pack.states = [{ i: 0 }, { i: 1, name: "Placed" }, { i: 2, name: "Landless" }] as typeof pack.states;
+    pack.rivers = [
+      { i: 1, name: "Flowing", type: "River", cells: [0] },
+      { i: 2, name: "Dry", type: "River", cells: [] }
+    ] as unknown as typeof pack.rivers;
+    pack.goods = [{ i: 1, name: "Salt" }] as typeof pack.goods;
+    const ids = (type: Parameters<typeof MapEntities.collect>[0]) =>
+      MapEntities.collect(type, { located: true }).map(({ ref }) => ref.id);
+    expect(ids("state")).toEqual([1]);
+    expect(ids("river")).toEqual([1]);
+    expect(ids("good")).toEqual([1]); // a good has an editor to open instead of a place
+    expect(MapEntities.collect("river").map(({ ref }) => ref.id)).toEqual([1, 2]); // notes still list everything
   });
 
   it("resolves sparse IDs and regiment zero without relying on array positions", () => {

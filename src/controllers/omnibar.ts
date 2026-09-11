@@ -6,7 +6,7 @@ import { tip } from "@/components/tooltips";
 import { viewport } from "@/components/viewport";
 import { zoomTo } from "@/components/zoom";
 import { getLabelsIndex, type LabelIndexEntry } from "@/renderers/labels/label-data";
-import { highlightElement } from "@/renderers/overlays/highlight";
+import { highlightArea, highlightElement } from "@/renderers/overlays/highlight";
 import type { Point } from "@/types/global";
 import { findEl } from "@/utils";
 
@@ -15,6 +15,7 @@ interface SearchFields {
   alias: string; // the name with its context, an ordering tier below the name itself
   note?: string;
   normalizedNote?: string;
+  unnamed?: boolean; // titled by its kind only: found through its context and note, ranked last
 }
 
 interface BaseResult {
@@ -54,6 +55,8 @@ interface Scored {
 const HISTORY_KEY = "fmg-omnibar-history";
 const HISTORY_LIMIT = 10;
 const RESULT_LIMIT = 50;
+const SNIPPET_LENGTH = 60;
+const NOTE_SCORE = 100; // the tier below any name or context match; an unnamed entity never scores above it
 
 const textTemplate = document.createElement("template");
 
@@ -67,6 +70,7 @@ class OmnibarController {
   private keys = new Set<string>();
   private records: Result[] = [];
   private results: Result[] = [];
+  private matched = 0; // results found by the query, before the cap
   private history: string[] = [];
   private selected = -1;
   private busy = false;
@@ -103,19 +107,19 @@ class OmnibarController {
 
     const entities = new Map<string, Result>();
     for (const type of ENTITY_TYPES) {
-      for (const target of MapEntities.collect(type)) {
+      for (const target of MapEntities.collect(type, { located: true })) {
         const { ref, entity } = target;
         const key = MapEntities.key(ref);
         const display = MapEntities.getDisplay(ref);
-        const name = MapEntities.getName(ref) || entity.name || display.kind;
+        const name = MapEntities.getName(ref) || entity.name || "";
         const context = [display.kind, MapEntities.getContext(ref)].filter(Boolean).join(" · ");
-        const alias = entity.name || name;
+        const alias = name ? `${entity.name || name} ${context}` : context;
         entities.set(key, {
           kind: "entity",
           id: `entity:${key}`,
-          name,
+          name: name || display.kind,
           context,
-          fields: this.fields({ name, alias: `${alias} ${context}`, note: entity.note }),
+          fields: { ...this.fields({ name, alias, note: entity.note }), unnamed: !name },
           target,
           display
         });
@@ -368,6 +372,8 @@ class OmnibarController {
         event.stopImmediatePropagation();
         if (event.isComposing) return;
         if (["Escape", "Enter", "ArrowDown", "ArrowUp", "Tab"].includes(event.key)) event.preventDefault();
+        if (((event.ctrlKey || event.metaKey) && event.code === "KeyS") || /^F\d+$/.test(event.code))
+          event.preventDefault(); // no browser save dialog or help page from behind the palette
         if (event.key === "Escape") this.close();
         else if (event.key === "Enter" && !event.repeat) void this.activate(this.selected);
         else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
@@ -428,7 +434,7 @@ class OmnibarController {
     const query = normalize(commandsOnly ? value.slice(1) : value);
     const searchable = !query || /[\p{L}\p{N}]/u.test(query); // a punctuation-only query matches nothing
 
-    this.results = this.records
+    const scored = this.records
       .filter(result => !commandsOnly || result.kind === "command")
       .map(
         (result, order): Scored => ({
@@ -438,9 +444,9 @@ class OmnibarController {
         })
       )
       .filter(row => row.score > 0)
-      .sort((a, b) => b.score - a.score || a.order - b.order)
-      .slice(0, commandsOnly ? Infinity : RESULT_LIMIT) // a bare > lists every command
-      .map(row => row.result);
+      .sort((a, b) => b.score - a.score || a.order - b.order);
+    this.matched = scored.length;
+    this.results = scored.slice(0, commandsOnly ? Infinity : RESULT_LIMIT).map(row => row.result); // a bare > lists every command
 
     this.selected = 0;
     this.renderResults(query);
@@ -449,10 +455,12 @@ class OmnibarController {
   /** Name matches, then alias and context matches, then note matches; recent commands lead an empty query */
   private score(result: Result, query: string, commandsOnly: boolean, recent: number): number {
     if (query) {
-      const name = match(result.fields.name, query);
-      const alias = match(result.fields.alias, query);
-      const note = result.fields.normalizedNote?.includes(query) ? 100 : 0;
-      return Math.max(name && name + 400, alias && alias + 200, note);
+      const { fields } = result;
+      const name = match(fields.name, query);
+      const alias = match(fields.alias, query);
+      const note = fields.normalizedNote?.includes(query) ? NOTE_SCORE : 0;
+      const score = Math.max(name && name + 400, alias && alias + 200, note);
+      return fields.unnamed ? Math.min(score, NOTE_SCORE) : score;
     }
     if (result.kind !== "command") return 0;
     if (recent >= 0) return 1000 - recent;
@@ -493,8 +501,7 @@ class OmnibarController {
       const previewNote = result.kind === "entity" && result.display.previewNote;
       if (note?.note && (previewNote || (query && note.normalizedNote?.includes(query)))) {
         const snippet = document.createElement("span");
-        const start = previewNote ? 0 : Math.max(0, (note.normalizedNote || "").indexOf(query) - 35);
-        this.highlight(snippet, `${start ? "…" : ""}${note.note.slice(start, start + 60)}`, query);
+        this.highlight(snippet, excerpt(note.note, previewNote ? "" : query), query);
         detail.append(" · ", snippet);
       }
 
@@ -502,8 +509,10 @@ class OmnibarController {
       this.list!.append(row);
     });
 
+    const count =
+      this.matched > this.results.length ? `${this.results.length} of ${this.matched}` : this.results.length;
     this.status.textContent = this.results.length
-      ? `${this.results.length} results · ↑↓ navigate · ↵ select`
+      ? `${count} results · ↑↓ navigate · ↵ select`
       : query
         ? "No matches"
         : "";
@@ -511,10 +520,7 @@ class OmnibarController {
   }
 
   private highlight(element: HTMLElement, text: string, query: string): void {
-    const letters = Array.from(text);
-    const normalized = letters.map(letter => letter.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase());
-    const owners = normalized.flatMap((letter, index) => Array(letter.length).fill(index) as number[]);
-    const haystack = normalized.join("");
+    const { letters, haystack, owners } = letterIndex(text);
     const matches = new Set<number>();
 
     for (const word of query.split(" ").filter(Boolean)) {
@@ -569,8 +575,10 @@ class OmnibarController {
         this.remember(result.id);
       } else if (result.kind === "label") {
         this.navigate(result.target, { label: result.label });
-      } else if (!MapEntities.open(result.target.ref)) {
-        this.navigate(result.target, { display: result.display }); // the entity has no editor, so reveal it instead
+      } else {
+        const opened = MapEntities.open(result.target.ref);
+        if (opened) await opened;
+        else this.navigate(result.target, { display: result.display }); // the entity has no editor, so reveal it instead
       }
     } catch {
       tip("Could not open the search result. Please try again.", false, "error");
@@ -614,13 +622,15 @@ class OmnibarController {
     if (group) scale = Math.max(group.zoom.min ?? 1, Math.min(group.zoom.max ?? 20, scale));
 
     zoomTo((x0 + x1) / 2, (y0 + y1) / 2, scale, 1500);
-    // the outline animates in while the view is still moving: the target element may not be drawn yet, so a miss is fine
+    // the outline animates in while the view is still moving; a culled element (a river, a label) is not drawn yet,
+    // so its own geometry stands in for it
     setTimeout(() => {
       const elementId = label ? label.id : MapEntities.getElementId(target.ref);
       const element = label
         ? findEl(label.id)
         : (display?.highlight && document.querySelector(display.highlight)) || (elementId ? findEl(elementId) : null);
       if (element) highlightElement(element);
+      else highlightArea({ x: x0, y: y0, width: x1 - x0, height: y1 - y0 });
     }, 750);
   }
 
@@ -664,6 +674,22 @@ class OmnibarController {
 
 function normalize(text: string): string {
   return text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+/** Letters of a text with their normalized, searchable form and which letter each normalized character came from */
+function letterIndex(text: string): { letters: string[]; haystack: string; owners: number[] } {
+  const letters = Array.from(text);
+  const normalized = letters.map(letter => letter.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase());
+  const owners = normalized.flatMap((letter, index) => Array(letter.length).fill(index) as number[]);
+  return { letters, haystack: normalized.join(""), owners };
+}
+
+/** A short run of the note around the first match, or its beginning: sliced by letter, so accents stay whole */
+function excerpt(note: string, query: string): string {
+  const { letters, haystack, owners } = letterIndex(note);
+  const at = query ? haystack.indexOf(query) : -1;
+  const start = at === -1 ? 0 : Math.max(0, owners[at] - 35);
+  return `${start ? "…" : ""}${letters.slice(start, start + SNIPPET_LENGTH).join("")}`;
 }
 
 function plainText(html: string): string {

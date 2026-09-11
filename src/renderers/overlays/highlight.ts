@@ -17,8 +17,10 @@ export function highlightElement(target: Element | null, zoom?: number): void {
   highlightArea(box, zoom, element.getAttribute("transform"));
 }
 
+type Box = Pick<DOMRect, "x" | "y" | "width" | "height">;
+
 /** Draw a temporary outline around a map-space box: for content the viewport renderer may have culled */
-export function highlightArea(box: DOMRect, zoom?: number, transformAttr: string | null = null): void {
+export function highlightArea(box: Box, zoom?: number, transformAttr: string | null = null): void {
   const layer = debugLayer();
   if (layer.select(".highlighted").size()) return; // allow only 1 highlighted element simultaneously
 

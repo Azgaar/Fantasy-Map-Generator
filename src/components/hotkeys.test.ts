@@ -13,8 +13,13 @@ vi.mock("./zoom", () => ({ changeMapZoom: vi.fn(), panMap: vi.fn(), setMapZoom: 
 
 import "./hotkeys";
 
-function press(target: Element, code: string, key = code): { keydown: KeyboardEvent; keyup: KeyboardEvent } {
-  const init = { code, key, bubbles: true, cancelable: true };
+function press(
+  target: Element,
+  code: string,
+  key = code,
+  modifiers: KeyboardEventInit = {}
+): { keydown: KeyboardEvent; keyup: KeyboardEvent } {
+  const init = { code, key, bubbles: true, cancelable: true, ...modifiers };
   const keydown = new KeyboardEvent("keydown", init);
   const keyup = new KeyboardEvent("keyup", init);
   target.dispatchEvent(keydown);
@@ -33,14 +38,19 @@ describe("Space opens the search", () => {
     expect(mocks.open).toHaveBeenCalledTimes(1);
   });
 
-  it("takes the Space away from a button that still holds the focus, instead of re-firing it", () => {
+  it("leaves the Space to a focused button, whose activation it is", () => {
     const button = document.getElementById("regenerateRivers")!;
     button.focus();
     const { keydown, keyup } = press(button, "Space", " ");
-    expect(keydown.defaultPrevented).toBe(true); // the native activation is the keyup's default
-    expect(keyup.defaultPrevented).toBe(true);
-    expect(document.activeElement).toBe(document.body);
-    expect(mocks.open).toHaveBeenCalledTimes(1);
+    expect(keydown.defaultPrevented).toBe(false);
+    expect(keyup.defaultPrevented).toBe(false);
+    expect(document.activeElement).toBe(button);
+    expect(mocks.open).not.toHaveBeenCalled();
+  });
+
+  it.each(["ctrlKey", "metaKey", "altKey", "shiftKey"])("ignores Space held with %s", modifier => {
+    press(document.body, "Space", " ", { [modifier]: true });
+    expect(mocks.open).not.toHaveBeenCalled();
   });
 
   it("leaves a text field alone", () => {
