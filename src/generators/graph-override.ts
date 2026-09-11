@@ -71,6 +71,12 @@ class GraphOverrideModule {
     refreshDerivedData(moved.map(([id]) => Number(id)));
   }
 
+  /** drop the reference to the world being replaced; the next move/restore starts a fresh baseline */
+  clear(): void {
+    this.vertices = null;
+    this.overrides = {};
+  }
+
   private reset(): void {
     this.vertices = pack.vertices;
     this.overrides = {};

@@ -26,7 +26,8 @@ export const VERSION = "1.153.0";
 const latestPublicChanges = [
   "Wrap Tool: reshape cells with a brush",
   "Coastlines: roughness localized to coastline section",
-  "Diplomacy: repair invalid relations",
+  "Global map search (press Space to open)",
+  "Diplomacy: select relation targets on the map and repair invalid relations",
   "Heightmap: option to render contour lines",
   "Ability to override a burg's treasury",
   "Dialogs: preserve position between sessions",

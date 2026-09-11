@@ -13,7 +13,7 @@ import {
   scaleLinear,
   select
 } from "d3";
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { downloadFile, getFileName, getHeight, getLatitude, getLongitude } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
@@ -568,7 +568,7 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
 }
 
 function renderDialog(): void {
-  document.getElementById("elevationProfile")?.remove();
+  destroyDialog("elevationProfile");
   const editorHtml = /* html */ `<div id="elevationProfile" class="dialog" width="100%">
       <div id="elevationGraph" data-tip="Elevation profile"></div>
       <div style="text-align: center">

@@ -252,16 +252,25 @@ function bindColumnsPicker({
   onChange: (hidden: Set<string>) => void;
 }): void {
   const popupId = `${dialogId}ColumnsPicker`;
-  let closePopup: (() => void) | null = null;
+  const dialog = document.getElementById(dialogId);
+  let detachPopup: (() => void) | null = null;
+
+  const cleanup = () => {
+    detachPopup?.();
+    detachPopup = null;
+  };
 
   const button = findEl(`${dialogId}ColumnsButton`);
   if (!button) return;
+  // a destroyDialog() close does not fire dialogclose, so the mousedown handler below also cleans up
+  if (dialog) $(dialog).one("dialogclose", cleanup);
   button.addEventListener("click", () => {
     const existing = document.getElementById(popupId);
     if (existing) {
-      closePopup?.();
+      cleanup();
       return;
     }
+    cleanup();
     const hidden = loadHiddenColumns(dialogId, columns);
     const popup = document.createElement("div");
     popup.id = popupId;
@@ -335,15 +344,14 @@ function bindColumnsPicker({
     };
     positionPopup();
 
-    closePopup = () => {
+    detachPopup = () => {
       popup.remove();
       document.removeEventListener("mousedown", close);
     };
 
     const close = (event: MouseEvent) => {
-      if (!popup.contains(event.target as Node) && event.target !== button) {
-        closePopup?.();
-      }
+      // the owning dialog may be gone (destroyDialog does not fire dialogclose); drop the stale handler
+      if (!button.isConnected || (!popup.contains(event.target as Node) && event.target !== button)) cleanup();
     };
     document.addEventListener("mousedown", close);
   });

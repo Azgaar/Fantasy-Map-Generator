@@ -47,6 +47,7 @@ export const Controllers = createRegistry({
   Minimap: () => import("@/controllers/minimap").then(m => m.Minimap),
   NamesbaseEditor: () => import("@/controllers/namesbase-editor").then(m => m.NamesbaseEditor),
   NotesEditor: () => import("@/controllers/notes-editor").then(m => m.NotesEditor),
+  Omnibar: () => import("@/controllers/omnibar").then(m => m.Omnibar),
   PaintEditor: () => import("@/controllers/paint-editor").then(m => m.PaintEditor),
   ProductionChains: () => import("@/controllers/production-chains").then(m => m.ProductionChains),
   ProductionOverview: () => import("@/controllers/production-overview").then(m => m.ProductionOverview),

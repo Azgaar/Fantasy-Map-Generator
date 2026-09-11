@@ -7,7 +7,7 @@ import { drawCoastline } from "@/renderers/draw-coastline";
 import { drawCoordinates } from "@/renderers/draw-coordinates";
 import { drawCultures } from "@/renderers/draw-cultures";
 import { drawEmblems, removeEmblems } from "@/renderers/draw-emblems";
-import { drawGoods } from "@/renderers/draw-goods";
+import { drawGoods, removeGoods } from "@/renderers/draw-goods";
 import { drawGrid } from "@/renderers/draw-grid";
 import { drawHeightmap } from "@/renderers/draw-heightmap";
 import { drawIce } from "@/renderers/draw-ice";
@@ -16,7 +16,7 @@ import { drawLakes } from "@/renderers/draw-lakes";
 import { drawLandmass } from "@/renderers/draw-landmass";
 import { redrawLegend } from "@/renderers/draw-legend";
 import { drawMarkers } from "@/renderers/draw-markers";
-import { drawMarkets } from "@/renderers/draw-markets";
+import { drawMarkets, removeMarkets } from "@/renderers/draw-markets";
 import { drawMeasurers } from "@/renderers/draw-measurers";
 import { drawMilitary } from "@/renderers/draw-military";
 import { drawOcean, removeOcean } from "@/renderers/draw-ocean";
@@ -25,7 +25,7 @@ import { drawPrecipitation, removePrecipitation } from "@/renderers/draw-precipi
 import { drawProvinces } from "@/renderers/draw-provinces";
 import { drawRelief, removeRelief } from "@/renderers/draw-relief-icons";
 import { drawReligions } from "@/renderers/draw-religions";
-import { drawRivers } from "@/renderers/draw-rivers";
+import { drawRivers, removeRivers } from "@/renderers/draw-rivers";
 import { drawRoutes, removeRoutes } from "@/renderers/draw-routes";
 import { drawScaleBar, removeScaleBar } from "@/renderers/draw-scalebar";
 import { drawStates } from "@/renderers/draw-states";
@@ -304,7 +304,7 @@ const mapLayers = [
     parent: "viewbox",
     children: [{ id: "compassRose", tag: "use", attrs: { href: "#defs-compass-rose" } }]
   }),
-  new Layer({ id: "rivers", parent: "viewbox", draw: drawRivers }),
+  new Layer({ id: "rivers", parent: "viewbox", draw: drawRivers, erase: removeRivers }),
   new Layer({ id: "relief", element: "terrain", parent: "viewbox", draw: drawRelief, erase: removeRelief }),
   new Layer({ id: "religions", element: "relig", parent: "viewbox", draw: drawReligions }),
   new Layer({ id: "cultures", element: "cults", parent: "viewbox", draw: drawCultures }),
@@ -344,9 +344,15 @@ const mapLayers = [
     id: "goods",
     parent: "viewbox",
     children: ["goodsCells", "goodsIcons", "goodsBurgs"].map(id => ({ id, tag: "g" })),
-    draw: drawGoods
+    draw: drawGoods,
+    erase: removeGoods
   }),
-  new Layer({ id: "markets", parent: "viewbox", draw: drawMarkets }),
+  new Layer({
+    id: "markets",
+    parent: "viewbox",
+    draw: drawMarkets,
+    erase: removeMarkets
+  }),
   new Layer({
     id: "trade",
     element: "tradeAnimation",

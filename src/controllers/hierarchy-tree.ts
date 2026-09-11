@@ -60,6 +60,7 @@ function open(props: OpenProps): void {
   validElements = cleanupOrigins(dataElements);
   if (validElements.length < 3) {
     tip(`Not enough ${props.type} to show hierarchy`, false, "error");
+    clearTreeState();
     return;
   }
 
@@ -69,7 +70,10 @@ function open(props: OpenProps): void {
   getShape = props.getShape;
 
   const root = getRoot();
-  if (!root) return;
+  if (!root) {
+    clearTreeState();
+    return;
+  }
 
   const treeWidth = root.leaves().length * 50;
   const treeHeight = root.height * 50;
@@ -90,10 +94,22 @@ function open(props: OpenProps): void {
   $("#hierarchyTree").dialog({
     title: `${capitalize(props.type)} tree`,
     position: { my: "left center", at: "left+10 center", of: "svg" },
-    width
+    width,
+    close: clearTreeState
   });
 
   renderTree(root, treeLayout);
+}
+
+/** Release the last-viewed entities and callbacks when the tree closes */
+function clearTreeState(): void {
+  oldRoot = null;
+  dataElements = null!;
+  validElements = null!;
+  onNodeEnter = null!;
+  onNodeLeave = null!;
+  getDescription = null!;
+  getShape = null!;
 }
 
 function appendStyleSheet(): void {

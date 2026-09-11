@@ -12,10 +12,10 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
+import { Notes } from "@/components/notes";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { Notes } from "@/generators/notes";
 import type { Religion } from "@/generators/religions-generator";
 import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { highlightElement } from "@/renderers/overlays/highlight";
@@ -989,8 +989,12 @@ function recalculateReligions(must?: boolean): void {
 function closeReligionsEditor(): void {
   select("#debug").select("#religionCenters").remove();
   if (customization === 8) exitAddReligionMode();
+  Controllers.ColorPicker.close();
+  const view = religionsTable.view();
+  view.rows = [];
+  view.all = [];
   $("#religionsEditor").dialog("destroy");
   ensureEl("religionsEditor").remove();
 }
 
-export const ReligionsEditor = { open };
+export const ReligionsEditor = { open, showHierarchy };
