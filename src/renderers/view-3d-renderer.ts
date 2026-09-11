@@ -80,6 +80,8 @@ let gridToPackCellMap = new Map<number, number>(); // grid cell index -> pack ce
 let erosionBakeActive = false; // dense eroded mesh is displayed
 let erosionBakeData: ErosionBake.ErosionBakeResult | null = null; // last bake, kept to re-generate the satellite texture
 let waterAnimationFrame: number | null = null; // render loop for the satellite water shimmer
+let isAnimating = false; // one animation chain at a time
+let active = false; // the scene is alive between create() and stop()
 const waterTime = { value: 0 }; // uTime uniform shared with the mesh material
 
 const context2d = document.createElement("canvas").getContext("2d")!;
@@ -88,9 +90,13 @@ const context2d = document.createElement("canvas").getContext("2d")!;
 const create = async (canvas: HTMLCanvasElement, type = "viewMesh") => {
   const isGlobe = type === "viewGlobe";
   setViewMode(isGlobe ? "globe" : "mesh"); // the builders below read the mode they are building for
+  active = true;
 
   const started = await (isGlobe ? newGlobe(canvas) : newMesh(canvas));
-  if (!started) setViewMode("standard"); // the scene never came up, so the flat map is what is on screen
+  if (!started) {
+    active = false;
+    setViewMode("standard"); // the scene never came up, so the flat map is what is on screen
+  }
   return started;
 };
 
@@ -112,13 +118,16 @@ const update = () => {
 
 // try to clean the memory as much as possible
 const stop = () => {
+  active = false;
   if (controls) controls.dispose();
-  cancelAnimationFrame(animationFrame);
+  stopAnimation();
   if (texture) texture.dispose();
   if (geometry) geometry.dispose();
   if (material) material.dispose();
   if (waterPlane) waterPlane.dispose();
   if (waterMaterial) waterMaterial.dispose();
+  if (spotLight?.shadow?.map) spotLight.shadow.map.dispose(); // three keeps the shadow render target on the light
+  if (scene.background instanceof Three.Texture) scene.background.dispose();
   ErosionBake.dispose();
   disposeSatelliteTexture();
   disposeRiverFlowTexture();
@@ -126,9 +135,13 @@ const stop = () => {
   erosionBakeActive = false;
   erosionBakeData = null;
   deleteLabels();
+  gridToPackCellMap.clear();
+  context2d.canvas.width = 0; // release the label-measuring backing store
+  context2d.canvas.height = 0;
 
   Renderer.renderLists.dispose();
   Renderer.dispose();
+  Renderer.forceContextLoss(); // dispose() only drops three's bookkeeping, the GL context survives it
   scene.remove(mesh);
   scene.remove(spotLight);
   scene.remove(ambientLight);
@@ -203,7 +216,7 @@ const setRotation = (speed: number) => {
   controls.autoRotate = Boolean(speed);
 
   if (startAnimation) animate();
-  if (endAnimation) cancelAnimationFrame(animationFrame);
+  if (endAnimation) stopAnimation();
 };
 
 const toggleSky = () => {
@@ -978,7 +991,9 @@ async function updateGlobeTexure(addMesh?: boolean) {
 }
 
 function addGlobe3dMesh() {
-  if (!scene || !material) return;
+  if (!active || !scene || !material) return;
+  if (mesh) scene.remove(mesh);
+  if (geometry) geometry.dispose(); // three frees the GL buffers only on the geometry's dispose event
   geometry = new Three.SphereGeometry(1, 64, 64);
   mesh = new Three.Mesh(geometry, material);
   scene.add(mesh);
@@ -989,7 +1004,7 @@ function addGlobe3dMesh() {
 // render 3d scene and camera, do only on controls change
 const renderThrottled = throttle(doWorkOnRender, 200);
 function render() {
-  if (!Renderer || !scene || !camera) return;
+  if (!active || !Renderer || !scene || !camera) return;
   Renderer.render(scene, camera);
   renderThrottled();
 }
@@ -1004,10 +1019,21 @@ function doWorkOnRender() {
   }
 }
 
-// animate 3d scene and camera
+// animate 3d scene and camera; idempotent so its several callers cannot stack chains
 function animate() {
-  animationFrame = requestAnimationFrame(animate);
-  if (controls?.update) controls.update();
+  if (!active || isAnimating) return;
+  isAnimating = true;
+  const frame = () => {
+    animationFrame = requestAnimationFrame(frame);
+    if (controls?.update) controls.update();
+  };
+  animationFrame = requestAnimationFrame(frame);
+}
+
+function stopAnimation() {
+  isAnimating = false;
+  cancelAnimationFrame(animationFrame);
+  animationFrame = 0;
 }
 
 // continuous render loop driving the satellite water shimmer; runs only

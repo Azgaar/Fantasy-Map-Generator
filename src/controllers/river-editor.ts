@@ -352,6 +352,7 @@ function closeRiverEditor(): void {
   isCellsLayerForced = false;
 
   destroyDialog("riverEditor");
+  selectedRiver = null!;
 }
 
 export const RiverEditor = { open };

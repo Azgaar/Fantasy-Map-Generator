@@ -658,6 +658,46 @@ that are never released.
 - **Cancel async on teardown.** An in-flight animation or timer checks a generation token
   (or is cleared) so it stops touching the DOM after the user has moved on.
 
+## Memory management
+
+The app is a long-lived SPA and the world (`grid` / `pack`) is replaced wholesale on every
+generation, load, transform and heightmap edit. Almost every leak is one of a few shapes and new code must not add another.
+
+- **A cache must not outlive its world.** Any module-level reference to `pack`, `grid` or a large
+  derived copy must be released when the world is replaced. An identity check
+  (`sourcePack !== pack`) only rebuilds on the next draw — until then it keeps the whole previous
+  world alive. Pair it with a teardown.
+- **`clear()` drops.** A module that tracks "the current graph" must null
+  that reference on clear; pointing it at the new object while caches still describe the old one
+  keeps the old graph reachable.
+- **The Layers registry is the teardown seam.** A layer that caches derived data or starts work
+  declares an `erase(layer)` that drops both its SVG content and its module state — the registry
+  must not know about scenes, and callers must not call per-feature cleanup. At a
+  world-replacement point call `Layers.eraseAll()` (or `undraw()`) and let the registry run every
+  teardown. Erase **before** the new map is adopted, or you erase what was just loaded.
+- **Guard self-perpetuating loops.** A `requestAnimationFrame` / `setTimeout` chain is idempotent
+  (a running flag) with a single cancellation point; teardown resets the flag, cancels the handle
+  and releases what the loop touched. Async work that can resolve after teardown checks an
+  `active` flag before touching the scene.
+- **Destroy dialogs, don't remove them.** Close a jQuery-UI dialog with `destroyDialog(id)` /
+  `.dialog("destroy")` so the widget, its `.ui-dialog` wrapper and the detached subtree go
+  together; a raw `element.remove()` on live dialog content orphans the wrapper.
+- **One listener per element, owned by the module.** Bind with property assignment, `.on(...)` or
+  an `AbortController` — never `addEventListener` on a page-lifetime element from code that runs
+  per open. Create transient inputs in the module that uses them (`createFileInput`) instead of
+  parking them in `index.html`.
+- **Cap unbounded history.** Undo stacks, session logs and caches store deltas or a fixed-length
+  window; nothing on a hot path grows one entry per action, load or map.
+- **Release on close.** Editors null their last-viewed entity / detached SVG slots and clear their
+  timers when the dialog closes; populated `<select>`s and `document.fonts` are diffed before
+  appending, not appended blindly.
+- **Dispose resources with a lifetime.** `<script>` tags, object URLs, `FontFace`s, `<defs>` copies,
+  and three.js geometry / material / texture / render targets are released by the code that created
+  them; a WebGL context is freed with `forceContextLoss()` after `dispose()`.
+
+Review a change against this list: name the owner of every long-lived reference it adds, and the
+hook that releases it.
+
 ## Load time
 
 Split rarely-used features into on-demand chunks so the initial bundle stays small — see
@@ -693,12 +733,12 @@ Every configurable value is either something true about **this map** or somethin
 **browser** wants. One object holds both, in sections of different lifetimes:
 
 | Scope              | Section                             | Persisted to                 | Examples                                                            |
-| ------------------ | ----------------------------------- | ---------------------------- | -------------------------------------------------------------------- |
+| ------------------ | ----------------------------------- | ---------------------------- | ------------------------------------------------------------------- |
 | **Map config**     | `options.map`                       | `localStorage` + the `.map`  | seed, extent, world position, climate, units, lore, definition sets |
 | **App preference** | `options.generation`, `options.app` | `localStorage` (per browser) | requests for the next map, viewer preferences, UI prefs             |
 
 - **Map config travels with the map** and must round-trip through [IO](#io-serialization); a
-  map opened on another machine must look identical. `options.map` *is* the file's settings
+  map opened on another machine must look identical. `options.map` _is_ the file's settings
   block — saving writes it and loading replaces it, so there is no second object to keep in step.
 - **App preferences never enter the `.map`** — they are this browser's choices, not the
   map's. Keep the sections apart so one user's UI tweaks don't ride along inside a shared map.

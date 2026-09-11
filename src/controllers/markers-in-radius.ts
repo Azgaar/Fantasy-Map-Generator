@@ -7,7 +7,7 @@ import type { Marker } from "@/generators/markers-generator";
 import { clearMarkerRadius, drawMarkerRadius } from "@/renderers/draw-marker-radius";
 import { setMarkersFilter } from "@/renderers/draw-markers";
 import { highlightElement } from "@/renderers/overlays/highlight";
-import { downloadFile, ensureEl, getFileName, getLatitude, getLongitude } from "@/utils";
+import { downloadFile, ensureEl, escapeHtml, getFileName, getLatitude, getLongitude, isImageIcon } from "@/utils";
 
 let center: Marker | null = null;
 let lastRadius = 0;
@@ -102,10 +102,9 @@ function renderMarkersList(inRange: Marker[]): void {
   ensureEl("markersRadiusList").innerHTML = inRangeMarkers
     .map(({ i, type, icon, pinned, lock, name: markerName }) => {
       const name = markerName || type;
-      const iconHtml =
-        icon.startsWith("http") || icon.startsWith("data:image")
-          ? `<img src="${icon}" style="width:1.2em; height:1.2em; vertical-align:middle">`
-          : `<span style="width:1.3em">${icon}</span>`;
+      const iconHtml = isImageIcon(icon)
+        ? `<img src="${escapeHtml(icon)}" style="width:1.2em; height:1.2em; vertical-align:middle">`
+        : `<span style="width:1.3em">${escapeHtml(icon)}</span>`;
       return /* html */ `
         <div class="states" data-id="${i}" style="display:flex; align-items:center; gap:.15em">
           ${iconHtml}

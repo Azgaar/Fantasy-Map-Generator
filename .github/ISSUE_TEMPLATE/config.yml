@@ -2,7 +2,10 @@ blank_issues_enabled: true
 contact_links:
   - name: 💡 Feature ideas and suggestions
     url: https://github.com/Azgaar/Fantasy-Map-Generator/discussions/new?category=ideas
-    about: New ideas start as discussions where the community can upvote them. The most-wanted ideas get promoted to issues.
+    about: Search and upvote existing ideas, or explain a new proposal and use case. Maintainers decide which ideas become implementation issues.
   - name: ❓ Questions and help
     url: https://github.com/Azgaar/Fantasy-Map-Generator/discussions/new?category=q-a
     about: Ask in the Q&A discussions.
+  - name: Reporting guide and Discord options
+    url: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Reporting-bugs-and-ideas
+    about: What to include in a bug or idea, with examples and Discord assistant reporting instructions.

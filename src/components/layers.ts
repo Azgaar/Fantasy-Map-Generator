@@ -7,7 +7,7 @@ import { drawCoastline } from "@/renderers/draw-coastline";
 import { drawCoordinates } from "@/renderers/draw-coordinates";
 import { drawCultures } from "@/renderers/draw-cultures";
 import { drawEmblems, removeEmblems } from "@/renderers/draw-emblems";
-import { drawGoods } from "@/renderers/draw-goods";
+import { drawGoods, removeGoods } from "@/renderers/draw-goods";
 import { drawGrid } from "@/renderers/draw-grid";
 import { drawHeightmap } from "@/renderers/draw-heightmap";
 import { drawIce } from "@/renderers/draw-ice";
@@ -16,7 +16,7 @@ import { drawLakes } from "@/renderers/draw-lakes";
 import { drawLandmass } from "@/renderers/draw-landmass";
 import { redrawLegend } from "@/renderers/draw-legend";
 import { drawMarkers } from "@/renderers/draw-markers";
-import { drawMarkets } from "@/renderers/draw-markets";
+import { drawMarkets, removeMarkets } from "@/renderers/draw-markets";
 import { drawMeasurers } from "@/renderers/draw-measurers";
 import { drawMilitary } from "@/renderers/draw-military";
 import { drawOcean, removeOcean } from "@/renderers/draw-ocean";
@@ -344,9 +344,15 @@ const mapLayers = [
     id: "goods",
     parent: "viewbox",
     children: ["goodsCells", "goodsIcons", "goodsBurgs"].map(id => ({ id, tag: "g" })),
-    draw: drawGoods
+    draw: drawGoods,
+    erase: removeGoods
   }),
-  new Layer({ id: "markets", parent: "viewbox", draw: drawMarkets }),
+  new Layer({
+    id: "markets",
+    parent: "viewbox",
+    draw: drawMarkets,
+    erase: removeMarkets
+  }),
   new Layer({
     id: "trade",
     element: "tradeAnimation",

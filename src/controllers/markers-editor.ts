@@ -6,7 +6,7 @@ import { clearMainTip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
 import { drawMarkers, setEditedMarker } from "@/renderers/draw-markers";
-import { ensureEl, findEl, rn } from "../utils";
+import { ensureEl, escapeHtml, findEl, isImageIcon, rn } from "../utils";
 
 let selectedElement: SVGSVGElement;
 let selectedMarker: Marker;
@@ -44,6 +44,10 @@ function renderDialog(): void {
 
   const html = /* html */ `<div id="markerEditor" class="dialog">
     <div id="markerBody" style="padding-bottom: 0.3em">
+      <div data-tip="Marker name, shown in the notes editor and overviews">
+        <div class="label">Name:</div>
+        <input id="markerName" style="width: 10.3em" />
+      </div>
       <div data-tip="Marker type. Style changes will apply to all markers of the same type. Leave blank if the marker is unique">
         <div class="label">Type:</div>
         <input id="markerType" style="width: 10.3em" />
@@ -98,6 +102,7 @@ function renderDialog(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
   // add listeners — dropped together with the dialog HTML on close
+  ensureEl("markerName").addEventListener("change", changeMarkerName);
   ensureEl("markerType").addEventListener("change", changeMarkerType);
   ensureEl("markerIconSelect").addEventListener("click", changeMarkerIcon);
   ensureEl("markerIconSize").addEventListener("input", changeIconSize);
@@ -155,11 +160,11 @@ function dragMarker(this: SVGElement, event: D3DragEvent<SVGElement, unknown, un
 
 function updateInputs(): void {
   const marker = selectedMarker;
-  ensureEl("markerIcon").innerHTML =
-    marker.icon.startsWith("http") || marker.icon.startsWith("data:image")
-      ? `<img src="${marker.icon}" style="width: 1em; height: 1em;">`
-      : marker.icon;
+  ensureEl("markerIcon").innerHTML = isImageIcon(marker.icon)
+    ? `<img src="${escapeHtml(marker.icon)}" style="width: 1em; height: 1em;">`
+    : escapeHtml(marker.icon);
 
+  ensureEl<HTMLInputElement>("markerName").value = marker.name || "";
   ensureEl<HTMLInputElement>("markerType").value = marker.type || "";
   ensureEl<HTMLInputElement>("markerIconSize").value = String(marker.px || 12);
   ensureEl<HTMLInputElement>("markerIconShiftX").value = String(marker.dx || 50);
@@ -172,14 +177,21 @@ function updateInputs(): void {
   ensureEl("markerLock").className = marker.lock ? "icon-lock" : "icon-lock-open";
 }
 
+function changeMarkerName(this: HTMLInputElement): void {
+  selectedMarker.name = this.value;
+  if (findEl("notesEditor")) void Controllers.NotesEditor.open({ type: "marker", id: selectedMarker.i });
+}
+
 function changeMarkerType(this: HTMLInputElement): void {
   selectedMarker.type = this.value;
 }
 
 function changeMarkerIcon(): void {
   Controllers.IconSelector.open(selectedMarker.icon, value => {
-    const isExternal = value.startsWith("http") || value.startsWith("data:image");
-    ensureEl("markerIcon").innerHTML = isExternal ? `<img src="${value}" style="width: 1em; height: 1em;">` : value;
+    const isExternal = isImageIcon(value);
+    ensureEl("markerIcon").innerHTML = isExternal
+      ? `<img src="${escapeHtml(value)}" style="width: 1em; height: 1em;">`
+      : escapeHtml(value);
 
     getSameTypeMarkers().forEach(marker => {
       marker.icon = value;
@@ -285,6 +297,8 @@ function closeMarkerEditor(): void {
   if (ensureEl("addMarker").classList.contains("pressed")) stopMapPlacement();
   clearMainTip();
   destroyDialog("markerEditor");
+  selectedElement = null!;
+  selectedMarker = null!;
 }
 
 export const MarkersEditor = { open };

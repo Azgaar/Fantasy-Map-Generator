@@ -471,6 +471,7 @@ function closeRouteEditor(): void {
   isCellsLayerForced = false;
 
   destroyDialog("routeEditor");
+  selectedRoute = null!;
 }
 
 export const RouteEditor = { open };

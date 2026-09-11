@@ -133,7 +133,7 @@
     </style>
     <link
       rel="preload"
-      href="index.css?v=c8527a5d"
+      href="index.css?v=01f5cf79"
       as="style"
       onload="
         this.onload = null;
@@ -617,7 +617,7 @@
       <div id="loadMapData" style="display: none" class="dialog">
         <div>
           <strong>Load map from</strong>
-          <button onclick="mapToLoad.click()" data-tip="Load map file (.map or .gz) from your local disk">
+          <button id="loadMapFromMachine" data-tip="Load map file (.map or .gz) from your local disk">
             machine
           </button>
           <button
@@ -727,19 +727,6 @@
       data-main="Сlick the arrow button for options. Zoom in to see the map in details"
     ></div>
     <div id="mapOverlay" style="display: none">Drop a map file to open</div>
-    <div id="fileInputs" style="display: none">
-      <input type="file" accept=".map,.gz" id="mapToLoad" />
-      <input type="file" accept=".txt,.csv" id="burgsListToLoad" />
-      <input type="file" accept=".txt" id="legendsToLoad" />
-      <input type="file" accept="image/*" id="imageToLoad" />
-      <input type="file" accept=".svg" id="svgToLoad" />
-      <input type="file" accept="image/*" id="emblemImageToLoad" />
-      <input type="file" accept=".svg" id="emblemSVGToLoad" />
-      <input type="file" accept=".txt" id="templateToLoad" />
-      <input type="file" accept=".txt" id="namesbaseToLoad" />
-      <input type="file" accept=".json" id="styleToLoad" />
-      <input type="file" accept=".csv" id="culturesCSVToLoad" />
-    </div>
     <div id="tourPromptButton" style="display: none" data-tip="Take an interactive tour of the map generator">
       <button type="button" aria-label="Launch UI Tour">
         <svg preserveAspectRatio="xMidYMid" viewBox="0 0 58 52" height="30px" width="30px">
@@ -3325,8 +3312,8 @@
     <script defer src="libs/alea.min.js?v1.105.0"></script>
     <script defer src="libs/polylabel.min.js?v1.105.0"></script>
     <script defer src="libs/simplify.js?v1.105.6"></script>
-    <script defer src="modules/ui/style-presets.js?v=04932477"></script>
-    <script defer src="modules/ui/style.js?v=c1e5f20d"></script>
+    <script defer src="modules/ui/style-presets.js?v=c21d423c"></script>
+    <script defer src="modules/ui/style.js?v=c867dccf"></script>
     <script defer src="libs/rgbquant.min.js"></script>
     <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
   </body>

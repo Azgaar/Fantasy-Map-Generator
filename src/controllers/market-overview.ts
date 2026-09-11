@@ -1,5 +1,5 @@
 import { select } from "d3";
-import { closeDialogs, updateDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
   type EditorColumn,
@@ -80,7 +80,7 @@ function open(marketId: number): void {
 }
 
 function renderDialog(): void {
-  document.getElementById(dialogId)?.remove();
+  destroyDialog(dialogId);
   const html = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
       ${renderEditorHeader({ dialogId, columns })}
       <div id="marketOverviewGoodsBody" class="table" style="max-height:40em"></div>

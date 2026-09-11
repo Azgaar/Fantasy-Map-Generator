@@ -50,8 +50,10 @@ class GraphOverrideModule {
     refreshDerivedData(restored);
   }
 
+  /** drop the reference to the world being replaced; the next move/restore starts a fresh baseline */
   clear(): void {
-    this.reset();
+    this.vertices = null;
+    this.overrides = {};
   }
 
   private reset(): void {

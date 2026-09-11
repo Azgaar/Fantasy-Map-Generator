@@ -275,6 +275,7 @@ function closeCoastlineEditor(): void {
   select("#debug").select("#vertices").remove();
   applyDefaultViewboxEvents();
   destroyDialog("coastlineEditor");
+  selectedCoastline = null!;
 }
 
 export const CoastlineVertexEditor = { open };

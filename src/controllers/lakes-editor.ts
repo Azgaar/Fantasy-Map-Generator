@@ -348,6 +348,7 @@ function closeLakesEditor(): void {
   select("#debug").select("#vertices").remove();
   applyDefaultViewboxEvents();
   destroyDialog("lakeEditor");
+  selectedLake = null!;
 }
 
 export const LakesEditor = { open };

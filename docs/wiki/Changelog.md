@@ -12,6 +12,12 @@ Check out [Dev board](https://github.com/users/Azgaar/projects/3/views/1?sumFiel
 
 Current version of the Fantasy Map Generator is the latest `master` branch. You can download it here: https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/heads/master.zip. Also see [the wiki](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#can-i-use-the-generator-offline).
 
+- Legend boxes for States, Cultures, Religions, Biomes and Zones can be shown at the same time by _[esullivan9](https://github.com/esullivan9)_
+- Diplomacy: click states on the map to select relation targets, repair invalid pairs in the editor or matrix, and record only actual changes in bulk edits
+- States and Provinces: state creation and province recolouring refresh visible map layers immediately; province recolouring also updates the editor list
+- Goods editor: Show all respects the tag filter across pages, with consistent checkbox state and displayed counts
+- Diplomacy: regenerating relations no longer fails midway (leaving "Invalid" relations) when a state has been removed and another is a vassal
+
 # Releases
 
 **[1.152.0](https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/tags/v1.152.0.zip) - 2026-09-TBD**:

@@ -4,6 +4,7 @@ import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Services } from "@/services";
+import { createFileInput } from "@/utils/fileUtils";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
 import { rn } from "@/utils/numberUtils";
 
@@ -201,6 +202,21 @@ function updateTilesOptions(): void {
     <g fill="#000" stroke="none" text-anchor="middle" dominant-baseline="central" font-size="18px">${labels.join("")}</g>`);
 }
 
+// the map-file input is owned here, but keeps its id: automation and external tools drive it directly
+const mapInput = createFileInput(".map,.gz");
+mapInput.id = "mapToLoad";
+mapInput.onchange = () => {
+  const file = mapInput.files?.[0];
+  mapInput.value = "";
+  closeDialogs();
+  if (file) void Services.Load.uploadMap(file);
+};
+
+/** Ask for a map file; the input and its single listener live for the page */
+export function pickMapFile(): void {
+  mapInput.click();
+}
+
 function initialize(): void {
   // the image scale lives in the export dialog, and the tile controls wire themselves when it opens
   for (const input of document.querySelectorAll<HTMLInputElement>('[data-stored="pngResolution"]')) {
@@ -217,12 +233,7 @@ function initialize(): void {
     Layers.draw("labels");
   });
 
-  ensureEl("mapToLoad").addEventListener("change", function (this: HTMLInputElement) {
-    const file = this.files?.[0];
-    this.value = "";
-    closeDialogs();
-    if (file) void Services.Load.uploadMap(file);
-  });
+  ensureEl("loadMapFromMachine").addEventListener("click", pickMapFile);
 }
 
 initialize();

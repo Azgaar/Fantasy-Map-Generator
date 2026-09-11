@@ -77,6 +77,11 @@ function getReliefState(page: Page) {
 test.describe("Map loading", () => {
   test.beforeEach(async ({ context, page }) => {
     await context.clearCookies();
+    // With no stored version the app raises its "updated to version ..." dialog 6 seconds after the
+    // page loads (services/versioning.ts), which on a slow runner lands inside a test and trips the
+    // "no #alert is open" guards below. "99.99.99" rather than the real VERSION so this cannot drift:
+    // the announcement fires only for a stored version older than the build's.
+    await context.addInitScript(() => localStorage.setItem("version", "99.99.99"));
 
     await page.goto("/");
     await page.evaluate(() => {

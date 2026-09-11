@@ -1,12 +1,20 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/6.2.0/workbox-sw.js");
 
-const {Route, registerRoute} = workbox.routing;
+const {registerRoute, setCatchHandler} = workbox.routing;
 const {CacheFirst, NetworkFirst, StaleWhileRevalidate} = workbox.strategies;
 const {CacheableResponsePlugin} = workbox.cacheableResponse;
 const {ExpirationPlugin} = workbox.expiration;
+const {precacheAndRoute, cleanupOutdatedCaches, matchPrecache} = workbox.precaching;
+
+// A new build ships a new precache list, so take over open pages at once rather than
+// waiting for every tab to close: otherwise the old worker keeps serving the old build
+self.skipWaiting();
+workbox.core.clientsClaim();
 
 const DAY = 24 * 60 * 60; // in seconds
 
+// The html is always fetched fresh, so a reload picks up a release the moment it is deployed.
+// It has to come before the precache route, which would otherwise answer navigations itself
 registerRoute(
   ({request}) => request.mode === "navigate",
   new NetworkFirst({
@@ -16,11 +24,21 @@ registerRoute(
   })
 );
 
+// Every file the build produced, listed by scripts/pwa-precache.mjs after `vite build`, so the
+// app works offline in full and not only for the parts a user happened to open while online.
+// The ?v= stamps on index.html's assets are not part of the precached urls, hence ignored here
+cleanupOutdatedCaches();
+precacheAndRoute(self.__WB_MANIFEST || [], {ignoreURLParametersMatching: [/.*/]});
+
+setCatchHandler(({request}) => (request.mode === "navigate" ? matchPrecache("index.html") : Response.error()));
+
+// Google-hosted scripts (analytics) are left to the browser: with a blocker installed the
+// request never gets a response, and a worker strategy would surface that as an uncaught error
 registerRoute(
   ({request, url}) =>
     request.destination === "script" &&
     !url.pathname.endsWith("min.js") &&
-    !url.pathname.includes("google"),
+    !url.hostname.includes("google"),
   new StaleWhileRevalidate({
     cacheName: "fmg-scripts",
     plugins: [

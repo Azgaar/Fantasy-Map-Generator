@@ -19,15 +19,30 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { CULTURE_TYPES, type Culture } from "@/generators/cultures-generator";
 import { Emblems } from "@/generators/emblems-generator";
-import { clearLegend, drawLegend } from "@/renderers/draw-legend";
+import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import type { Emblem } from "@/types/emblems";
 import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";
-import { abbreviate, capitalize, debounce, ensureEl, getPointer, isLand, parseTransform, ra, rn, si } from "../utils";
+import {
+  abbreviate,
+  capitalize,
+  createFileInput,
+  debounce,
+  ensureEl,
+  getPointer,
+  isLand,
+  parseTransform,
+  ra,
+  rn,
+  si
+} from "../utils";
 
 const dialogId = "culturesEditor" as const;
+const LEGEND_NAME = "Cultures"; // the legend box this editor toggles
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+let culturesInput: HTMLInputElement | null = null;
+
 const columns: EditorColumn<Culture>[] = [
   { key: "color", width: "1.2em", permanent: true },
   {
@@ -184,8 +199,7 @@ function renderDialog(): void {
   ensureEl("culturesEditNamesBase").addEventListener("click", () => Controllers.NamesbaseEditor.open());
   ensureEl("culturesAdd").addEventListener("click", enterAddCulturesMode);
   ensureEl("culturesExport").addEventListener("click", downloadCulturesCsv);
-  ensureEl("culturesImport").addEventListener("click", () => ensureEl("culturesCSVToLoad").click());
-  ensureEl("culturesCSVToLoad").addEventListener("change", uploadCulturesData);
+  ensureEl("culturesImport").addEventListener("click", pickCulturesCsv);
 }
 
 function refreshCulturesEditor(): void {
@@ -806,8 +820,8 @@ function cultureCenterDrag(this: any, event: any): void {
 }
 
 function toggleLegend(): void {
-  if (select("#legend").selectAll("*").size()) {
-    clearLegend();
+  if (hasLegend(LEGEND_NAME)) {
+    clearLegend(LEGEND_NAME); // hide this box alone, keeping the other legends
     return;
   }
 
@@ -815,7 +829,7 @@ function toggleLegend(): void {
     .filter(c => c.i && !c.removed && c.cells)
     .sort((a, b) => (b.area ?? 0) - (a.area ?? 0))
     .map(c => [c.i, c.color, c.name]);
-  drawLegend("Cultures", data);
+  drawLegend(LEGEND_NAME, data);
 }
 
 function togglePercentageMode(): void {
@@ -1005,6 +1019,13 @@ function closeCulturesEditor(): void {
   if (customization === 9) exitAddCultureMode();
   $("#culturesEditor").dialog("destroy");
   ensureEl("culturesEditor").remove();
+}
+
+/** Own the cultures CSV input here so repeat opens cannot stack listeners on a shared element */
+function pickCulturesCsv(): void {
+  culturesInput ??= createFileInput(".csv");
+  culturesInput.onchange = () => void uploadCulturesData.call(culturesInput!);
+  culturesInput.click();
 }
 
 async function uploadCulturesData(this: HTMLInputElement): Promise<void> {

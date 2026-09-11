@@ -108,8 +108,8 @@ function open(goodId?: number) {
   });
 }
 
-function getVisibleCount(): number {
-  return pack.goods.reduce((count, good) => count + (good.visible ? 1 : 0), 0);
+function getVisibleCount(goods = pack.goods): number {
+  return goods.reduce((count, good) => count + (good.visible ? 1 : 0), 0);
 }
 
 function refreshEditor() {
@@ -151,7 +151,7 @@ function renderDialog(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
   ensureEl("goodsTagsFilter").classList.toggle("active", filterState.visibleTags.length > 0);
   ensureEl(`${dialogId}Header`).querySelector<HTMLElement>('[data-col="display"]')!.innerHTML = /* html */ `<input
-    type="checkbox" data-tip="Show or hide all goods on the Goods map" class="native" id="goodsDisplayAll"
+    type="checkbox" data-tip="Show or hide all goods matching the current filter" class="native" id="goodsDisplayAll"
     style="margin: 0; width: 1.2em;" />`;
   bindColumnSorting(dialogId, goodsTable.reset);
   initColumnVisibility({
@@ -244,7 +244,6 @@ function renderGoodsPage(view: TableView<Good>) {
     .join("");
   body.innerHTML = lines || "No goods available";
 
-  ensureEl("goodsDisplayed").innerHTML = String(getVisibleCount());
   ensureEl("goodsNumber").innerHTML = String(pack.goods.length);
   ensureEl("goodsProduced").innerHTML = String(rn(totalProduced));
   ensureEl("goodsStock").innerHTML = String(rn(totalStock));
@@ -638,7 +637,7 @@ function toggleDisplayedGood(good: Good, el: HTMLInputElement) {
 
 function toggleAllDisplayed(this: HTMLInputElement) {
   const checked = this.checked;
-  for (const good of pack.goods) good.visible = checked;
+  for (const good of goodsTable.view().all) good.visible = checked;
 
   ensureEl("goodsBody")
     .querySelectorAll<HTMLInputElement>(".goodDisplayed")
@@ -646,16 +645,19 @@ function toggleAllDisplayed(this: HTMLInputElement) {
       checkbox.checked = checked;
     });
 
+  updateDisplayAllCheckbox();
   Layers.draw("goods");
 }
 
 function updateDisplayAllCheckbox() {
   const master = ensureEl<HTMLInputElement>("goodsDisplayAll");
-  const total = pack.goods.length;
-  const visibleCount = getVisibleCount();
+  const goods = goodsTable.view().all;
+  const total = goods.length;
+  const visibleCount = getVisibleCount(goods);
+  master.disabled = total === 0;
   master.checked = total > 0 && visibleCount === total;
   master.indeterminate = visibleCount > 0 && visibleCount < total;
-  ensureEl("goodsDisplayed").innerHTML = String(visibleCount);
+  ensureEl("goodsDisplayed").innerHTML = String(getVisibleCount());
 }
 
 function requestGoodsRegeneration() {
@@ -697,6 +699,10 @@ function removeGood(good: Good) {
     }
 
     pack.goods = pack.goods.filter(g => g.i !== good.i);
+    // custom icons live outside the map svg and are never saved with the pack, drop the orphan
+    if (good.icon.startsWith("good-custom-") && !pack.goods.some(g => g.icon === good.icon)) {
+      document.getElementById(good.icon)?.remove();
+    }
     Goods.sync();
     goodsTable.refresh();
     Layers.draw("goods");

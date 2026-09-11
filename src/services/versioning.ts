@@ -25,6 +25,7 @@ export const VERSION = "1.153.0";
 // new changes on top
 const latestPublicChanges = [
   "Global map search (press Space to open)",
+  "Diplomacy: select relation targets on the map and repair invalid relations",
   "Heightmap: option to render contour lines",
   "Ability to override a burg's treasury",
   "Dialogs: preserve position between sessions",

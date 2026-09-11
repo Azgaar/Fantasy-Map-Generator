@@ -21,7 +21,7 @@ import { Emblems } from "@/generators/emblems-generator";
 import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
 import { redrawEmblem, redrawEmblems, removeEmblem } from "@/renderers/draw-emblems";
-import { clearLegend, drawLegend } from "@/renderers/draw-legend";
+import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement, highlightOutline } from "@/renderers/overlays/highlight";
@@ -42,6 +42,7 @@ import {
 } from "../utils";
 
 const dialogId = "statesEditor" as const;
+const LEGEND_NAME = "States"; // the legend box this editor toggles
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 const columns: EditorColumn<State>[] = [
   { key: "color", width: "1.2em", permanent: true },
@@ -276,7 +277,11 @@ function renderDialog(): void {
 function closeStatesEditor(): void {
   if (customization === 3) exitAddStateMode();
   statesAnnex.exit();
+  Controllers.ColorPicker.close();
   select("#debug").selectAll(".highlight").remove();
+  const view = statesTable.view();
+  view.rows = [];
+  view.all = [];
   destroyDialog(dialogId);
 }
 
@@ -1004,8 +1009,8 @@ function stateRemove(stateId: number): void {
 }
 
 function toggleLegend(): void {
-  if (select("#legend").selectAll("*").size()) {
-    clearLegend(); // hide legend
+  if (hasLegend(LEGEND_NAME)) {
+    clearLegend(LEGEND_NAME); // hide the states legend, keeping the other boxes
     return;
   }
 
@@ -1013,7 +1018,7 @@ function toggleLegend(): void {
     .filter(s => s.i && !s.removed && s.cells)
     .sort((a, b) => (b.area ?? 0) - (a.area ?? 0))
     .map(s => [s.i, s.color, s.name]);
-  drawLegend("States", data);
+  drawLegend(LEGEND_NAME, data);
 }
 
 function togglePercentageMode(): void {
@@ -1551,7 +1556,7 @@ function addState(this: SVGElement, event: MouseEvent): void {
   redrawEmblem("state", newState);
 
   Layers.hide("provinces");
-  Layers.show("states", "borders");
+  Layers.draw("states", "borders");
 
   statesTable.refresh();
 }
@@ -1606,7 +1611,7 @@ function openStateMergeDialog(): void {
       el.addEventListener("mouseenter", highlightStateOnMergeHover);
       el.addEventListener("mouseleave", stateHighlightOff);
     });
-  applyLineHighlighting("mergeStatesForm", ({ cellId }) => pack.cells.state[cellId]);
+  applyLineHighlighting("alert", ({ cellId }) => pack.cells.state[cellId]);
 
   function highlightStateOnMergeHover(event: any) {
     if (!Layers.isOn("states")) return;

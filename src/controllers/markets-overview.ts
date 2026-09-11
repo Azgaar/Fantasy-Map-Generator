@@ -1,5 +1,11 @@
 import { select } from "d3";
-import { closeDialogs, confirmationDialog, refreshEditors, updateDialog } from "@/components/dialog/dialog-helpers";
+import {
+  closeDialogs,
+  confirmationDialog,
+  destroyDialog,
+  refreshEditors,
+  updateDialog
+} from "@/components/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
   type EditorColumn,
@@ -15,6 +21,7 @@ import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { ColorPicker } from "@/controllers/color-picker";
 import { downloadFile, getFileName } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
 import type { Deal, Market } from "../generators/markets-generator";
@@ -77,7 +84,7 @@ function open(): void {
 }
 
 function renderDialog(): void {
-  document.getElementById("marketsOverview")?.remove();
+  destroyDialog("marketsOverview");
   const editorHtml = /* html */ `<div id="marketsOverview" class="dialog stable editorDialog">
       ${renderEditorHeader({ dialogId, columns })}
       <div id="marketsOverviewBody" class="table" data-type="absolute" style="max-height:40em; cursor:pointer"></div>
@@ -477,6 +484,7 @@ function downloadMarketsCsv(): void {
 
 function closeMarketsOverview(): void {
   if (customization === 16) exitAddMarketMode();
+  ColorPicker.close();
   $("#marketsOverview").dialog("destroy");
   ensureEl("marketsOverview").remove();
 }

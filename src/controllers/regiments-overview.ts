@@ -1,5 +1,5 @@
 import { select, sum } from "d3";
-import { closeDialogs, updateDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import { dialogState } from "@/components/dialog/state";
 import {
@@ -16,7 +16,7 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { State } from "@/generators/states-generator";
 import { drawRegiment } from "@/renderers/draw-military";
-import { downloadFile, getFileName, getLatitude, getLongitude } from "@/utils";
+import { downloadFile, escapeHtml, getFileName, getLatitude, getLongitude, isImageIcon } from "@/utils";
 import type { Regiment } from "../generators/military-generator";
 import { capitalize, ensureEl, findEl, getPointer, last, si } from "../utils";
 
@@ -50,7 +50,7 @@ function open(state?: number): void {
 
 function renderDialog(): void {
   columns = getRegimentColumns();
-  document.getElementById("regimentsOverview")?.remove();
+  destroyDialog("regimentsOverview");
   const editorHtml = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
       <div id="regimentsBody" class="table" data-type="absolute">
         ${renderEditorHeader({ dialogId, columns })}
@@ -184,10 +184,9 @@ function renderRegimentsPage(view: TableView<RegimentRow>): void {
           return `<div data-col="${unitColumnKey(unit.name)}" data-tip="${capitalize(unit.name)} units number">${percentage ? percent(value, unitTotals[unit.name]) : value}</div>`;
         })
         .join("");
-      const emblem =
-        regiment.icon!.startsWith("http") || regiment.icon!.startsWith("data:image")
-          ? `<img data-col="emblem" src="${regiment.icon}" data-tip="Regiment's emblem">`
-          : `<span data-col="emblem" data-tip="Regiment's emblem">${regiment.icon}</span>`;
+      const emblem = isImageIcon(regiment.icon!)
+        ? `<img data-col="emblem" src="${escapeHtml(regiment.icon!)}" data-tip="Regiment's emblem">`
+        : `<span data-col="emblem" data-tip="Regiment's emblem">${escapeHtml(regiment.icon!)}</span>`;
 
       return /* html */ `<div class="states" data-id="${regiment.i}" data-s="${state.i}">
         <fill-box data-col="color" data-tip="${state.fullName}" fill="${state.color}" disabled></fill-box>
