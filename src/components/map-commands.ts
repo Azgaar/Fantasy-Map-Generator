@@ -32,9 +32,24 @@ export interface MapCommand {
   aliases: string;
   run: (event?: MouseEvent) => unknown;
   layer?: LayerId;
+  matches?: (query: string) => boolean; // queries the command answers beyond its name and aliases
 }
 
 export const MAP_COMMANDS: MapCommand[] = [
+  {
+    id: "helpAssistant",
+    name: "Ask AI: Azgaar Assistant",
+    aliases: "help chat question ask faq support how why what ?",
+    matches: isQuestion,
+    run: () => Controllers.HelpAssistant.open()
+  },
+  {
+    id: "startTour",
+    name: "Start Interactive Tour",
+    aliases: "help guide tutorial",
+    run: () => Services.UiTour.start()
+  },
+  { id: "getApp", name: "Get Desktop App", aliases: "install download electron", run: () => Services.AppOffer.open() },
   {
     id: "editBiomesButton",
     name: "Open Biomes Editor",
@@ -595,19 +610,6 @@ export const MAP_COMMANDS: MapCommand[] = [
     run: () => toggleSaveReminder()
   },
   {
-    id: "startTour",
-    name: "Start Interactive Tour",
-    aliases: "help guide tutorial",
-    run: () => Services.UiTour.start()
-  },
-  {
-    id: "helpAssistant",
-    name: "Ask the Assistant",
-    aliases: "help chat question",
-    run: () => Controllers.HelpAssistant.open()
-  },
-  { id: "getApp", name: "Get Desktop App", aliases: "install download electron", run: () => Services.AppOffer.open() },
-  {
     id: "optionsReset",
     name: "Reset Options",
     aliases: "restore defaults clear cache reload",
@@ -627,6 +629,13 @@ export const MAP_COMMANDS: MapCommand[] = [
     run: () => Layers.toggle(id)
   }))
 ];
+
+/** A typed question: ends with a question mark or opens with a question word */
+function isQuestion(text: string): boolean {
+  const query = text.trim();
+  const QUESTION_START = /^(how|what|why|where|when|which|who|can|could|should|is|are|do|does|did|will|would)\s+\S/i;
+  return query.includes("?") || QUESTION_START.test(query);
+}
 
 function confirmRegeneration(action: () => void): void {
   const apply = () => {

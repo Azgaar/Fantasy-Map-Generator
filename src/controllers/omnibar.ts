@@ -57,6 +57,7 @@ const HISTORY_LIMIT = 10;
 const RESULT_LIMIT = 50;
 const SNIPPET_LENGTH = 60;
 const NOTE_SCORE = 100; // the tier below any name or context match; an unnamed entity never scores above it
+const MATCHER_SCORE = 800; // a command's own matcher ranks with an alias match, beneath any name match
 
 const textTemplate = document.createElement("template");
 
@@ -432,7 +433,7 @@ class OmnibarController {
     const value = this.input?.value.trim() || "";
     const commandsOnly = value.startsWith(">");
     const query = normalize(commandsOnly ? value.slice(1) : value);
-    const searchable = !query || /[\p{L}\p{N}]/u.test(query); // a punctuation-only query matches nothing
+    const searchable = !query || /[\p{L}\p{N}?]/u.test(query); // a punctuation-only query matches nothing, but ? asks
 
     const scored = this.records
       .filter(result => !commandsOnly || result.kind === "command")
@@ -459,7 +460,8 @@ class OmnibarController {
       const name = match(fields.name, query);
       const alias = match(fields.alias, query);
       const note = fields.normalizedNote?.includes(query) ? NOTE_SCORE : 0;
-      const score = Math.max(name && name + 400, alias && alias + 200, note);
+      const matcher = result.kind === "command" && result.command.matches?.(query) ? MATCHER_SCORE : 0;
+      const score = Math.max(name && name + 400, alias && alias + 200, matcher, note);
       return fields.unnamed ? Math.min(score, NOTE_SCORE) : score;
     }
     if (result.kind !== "command") return 0;

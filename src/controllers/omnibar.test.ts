@@ -183,6 +183,23 @@ describe("Omnibar public behavior", () => {
     ).toBe("MistySerran");
   });
 
+  it("routes questions and ? to the assistant", async () => {
+    Omnibar.open();
+    const assistant = () => rows().find(row => row.querySelector(".omnibar-name")?.textContent?.includes("Assistant"));
+    for (const query of ["?", "help", "how", "assistant", "How do I add a river", "add a river?"]) {
+      search(query);
+      expect(assistant(), query).toBeDefined();
+    }
+    search("river");
+    expect(assistant()).toBeUndefined();
+
+    search("How do I add a river?");
+    expect(rows()).toHaveLength(1);
+    key("Enter");
+    await vi.runAllTimersAsync();
+    expect(mocks.open).toHaveBeenCalledOnce();
+  });
+
   it("shows the river basin name instead of an internal ID", () => {
     pack.rivers = [
       { i: 1, name: "Lora", type: "River", basin: 1, cells: [0] },
