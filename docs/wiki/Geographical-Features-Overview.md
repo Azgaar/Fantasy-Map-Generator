@@ -28,11 +28,10 @@ The subtype list is fixed: you can pick a different one, but you cannot invent y
 ## Columns
 
 * **Locate** (the target icon) — zoom to the feature. Oceans have no outline to zoom to
-* **Feature** — the name. Unnamed features show a placeholder built from their subtype and id, such as _isle 34_. Type a name to set one; clear the field to go back to the placeholder. Only lakes are named by the generator, so most islands start with a placeholder
-* **Type** — read-only
-* **Subtype** — editable for islands and lakes. `lake_island` is shown as plain text: an island is inside a lake or it is not, and that is decided by geography
+* **Feature** — the name. Only lakes are named by the generator, so most islands and every ocean start out as _Unnamed_. Type a name to set one; clear the field to make it _Unnamed_ again
+* **Type** — the subtype, shown as _Freshwater lake_ or _Isle_. Editable for islands and lakes; the type itself (island, lake, ocean) comes from the heightmap and cannot be changed. _Lake island_ is shown as plain text: an island is inside a lake or it is not, and that is decided by geography
 * **Group** — editable for lakes only. Islands show their group as text, since `sea_island` and `lake_island` follow from where the island sits
-* **Area** — the area in the selected units
+* **Area** — the area in the selected units. A feature that reaches the map border (every ocean, and islands cut by the edge) continues beyond the map, so its area is an estimate marked with `~`: the feature is assumed to keep its share of the map over the whole globe. Hover the value to see the area inside the map
 * **Note** (the book icon) — edit free text notes (legend) for the feature
 * **Edit** (the pencil) — open the _Lake Editor_. Lakes only; islands and oceans have no editor of their own
 
@@ -48,7 +47,7 @@ Hover a row to trace the feature's outline on the map. Hover the map to highligh
 
 ## Filters
 
-* **Search** — matches the name (or the placeholder), the type and the subtype
+* **Search** — matches the name (_Unnamed_ included), the type and the subtype
 * **Type** — narrow to islands, lakes or oceans
 * **Subtype** — the options follow the selected type; with the type set to _all_, every subtype is offered
 

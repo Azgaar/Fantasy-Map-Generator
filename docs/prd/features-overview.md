@@ -50,8 +50,8 @@ No new fields. Rules made explicit:
   Lake: `freshwater | salt | dry | sinkhole | frozen | lava`. Ocean: unset.
 - `feature.group` — lake: any `#lakes > g` id (stock or custom); island: `sea_island` or
   `lake_island`, derived; ocean: unset.
-- `feature.name` — optional; deleted when renamed to empty. Display name falls back to
-  `MapEntities.getName` → `"{subtype || type} {id}"`.
+- `feature.name` — optional, empty when unnamed. The Overview shows an unnamed feature as _Unnamed_;
+  `MapEntities.getName` (notes, search) falls back to `"{subtype || type} {id}"` where a title is required.
 - Changing subtype has **no cascade**: ports, goods, markers stay as they are until the user
   regenerates them, like every other editor.
 
@@ -81,21 +81,20 @@ hotkey `Shift + F`. Dialog title "Geographical Features Overview".
 | Column | Content | Editable |
 | --- | --- | --- |
 | locate | zoom to the feature's vertex bbox (`highlightArea`) | islands, lakes |
-| name | text input, placeholder `{subtype \|\| type} {id}` | all |
-| type | `island` / `lake` / `ocean` | no |
-| subtype | select from the fixed set | islands (except `lake_island`, shown as text), lakes |
+| name | text input, empty shows _Unnamed_ | all |
+| type | one column for type and subtype: `"{Subtype} lake"` for lakes, `Subtype \|\| type` otherwise, capitalized; select from the fixed subtype set | islands (except `lake_island`, shown as text), lakes; oceans show text |
 | group | select of existing `#lakes > g` ids | lakes only; islands show text, oceans blank |
-| area | `getArea(feature.area)` + unit | no |
+| area | estimated area + unit; a feature cut by the map border (`feature.border`) is extrapolated as map area / (map size / 100) and prefixed with `~`, the tooltip gives the on-map area | no |
 | note | `Notes.getIcon` → Notes Editor `{type:"feature", id}` | all |
 | edit | opens the Lakes Editor on the lake's `<use>` | lakes only |
 
-Default sort: area desc. Footer: `n of total`, total area of the filtered set.
+Default sort: area desc. Footer: `n of total`, total estimated area of the filtered set. The CSV export adds the on-map area and the border flag.
 
 ### Filters
 
 - Type select: `all | island | lake | ocean`.
 - Subtype select: options depend on the chosen type; `all` when type is `all`.
-- Search: matches name (or placeholder), type and subtype.
+- Search: matches name (_Unnamed_ included), type and subtype.
 
 Filter state persists through `dialogState` like the other overviews.
 

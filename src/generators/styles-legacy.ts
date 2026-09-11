@@ -689,12 +689,20 @@ function routeGroupFromLegacy(legacy: object): Styles["routes"]["groups"][string
   };
 }
 
-// a custom lake group: freshwater's defaults under whatever the map's svg carries
-function lakeGroupFromLegacy(legacy: object): Styles["lakes"]["groups"][string] {
-  const group = structuredClone(Styles.defaults.lakes.groups.freshwater) as Styles["lakes"]["groups"][string];
+type LakeGroupStyle = Styles["lakes"]["groups"][string];
+
+// a custom lake group: the template's attrs under whatever the legacy bag carries
+function lakeGroupFromLegacy(legacy: object, template: LakeGroupStyle = Styles.defaults.lakes.groups.freshwater) {
+  const group = structuredClone(template) as LakeGroupStyle;
   const attrs = group.attrs as Record<string, unknown>;
   for (const [key, value] of Object.entries(legacy)) if (key in attrs) attrs[key] = coerceLegacyAttr(key, value);
   return group;
+}
+
+/** A custom lake group that lived only in the svg: its element attrs over the template (freshwater by default) */
+export function lakeGroupFromSvg(el: Element, template?: LakeGroupStyle): LakeGroupStyle {
+  const attrs = Object.keys((template ?? Styles.defaults.lakes.groups.freshwater).attrs);
+  return lakeGroupFromLegacy(harvestBag(el, attrs, []), template); // no nullables: an attr never carried keeps the template's
 }
 
 // the attrs at a store path that accept null, i.e. may be harvested as "attribute not set"

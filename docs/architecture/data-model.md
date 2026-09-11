@@ -73,7 +73,7 @@ Features represent separate locked areas like islands, lakes and oceans.
 - - `cells`: `number` - number of cells in feature
 - - `firstCell`: `number` - index of the first (top left) cell in feature
 - - `vertices`: `number[]` - indexes of vertices around the feature (perimetric vertices)
-- - `name`: `string` - name, generated for lakes only; any feature can be renamed in the Features Overview. Empty means the placeholder `{subtype} {id}` is shown
+- - `name`: `string` - name, generated for lakes only; any feature can be renamed in the Features Overview. Empty shows as _Unnamed_ in the Features Overview; where a title is required (notes, search) `{subtype} {id}` stands in
 - - `note`: `string` - optional. The user's note (legend) about the feature, as html. Removed with it
 
 ## Specific cells data

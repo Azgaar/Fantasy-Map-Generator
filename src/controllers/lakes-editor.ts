@@ -49,7 +49,7 @@ function renderDialog(): void {
         <span id="lakeNameSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
       </div>
       <div data-tip="Lake subtype. Generators read it: burgs cannot port on dry, frozen or lava lakes">
-        <div class="label" style="width: 4.8em">Subtype:</div>
+        <div class="label" style="width: 7em">Subtype:</div>
         <select id="lakeSubtype" data-tip="Select lake subtype">
           ${LAKE_SUBTYPES.map(subtype => `<option value="${subtype}">${subtype}</option>`).join("")}
         </select>

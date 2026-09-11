@@ -842,7 +842,7 @@ Yes, open Tools -> Features (Shift + F). The Geographical Features Overview list
 
 ### How do I rename an island or a landmass?
 
-Open Tools -> Features (Shift + F) and type into the name field of its row. Islands are not named by the generator, so they show a placeholder like 'isle 34' until you name one; clearing the field brings the placeholder back. The name is used in tooltips, notes, search and the export - to draw it on the map add a label with Tools -> Add -> Label (Shift + 2)
+Open Tools -> Features (Shift + F) and type into the name field of its row. Islands are not named by the generator, so they show as Unnamed until you name one; clearing the field makes it Unnamed again. The name is used in tooltips, notes, search and the export - to draw it on the map add a label with Tools -> Add -> Label (Shift + 2)
 
 ### Why can't I add or delete a feature in the Features Overview?
 

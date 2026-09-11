@@ -8,16 +8,19 @@ import { normalizeLegacyBurgGroupFilters } from "@/components/options-legacy";
 import type { MapData } from "@/components/options-schema";
 import { RELIEF_SETS } from "@/data/relief-icons";
 import { Emblems } from "@/generators/emblems-generator";
+import { type Feature, LAKE_SUBTYPES } from "@/generators/features";
 import type { GraphOverrides } from "@/generators/graph-override";
 import { type Label, type LabelNameMode, Labels as LabelsGenerator } from "@/generators/labels-generator";
 import { getDefaultMarkerName, type Marker } from "@/generators/markers-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
 import {
   labelGroupFromLegacy,
+  lakeGroupFromSvg,
   migrateStyles,
   restoreStrippedLayerStyles,
   stripDisplay
 } from "@/generators/styles-legacy";
+import type { Styles } from "@/generators/styles-schema";
 import type { Point } from "@/generators/voronoi";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { unfog } from "@/renderers/overlays/fogging";
@@ -1916,9 +1919,33 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     }
   }
 
-  if (isOlderThan("1.152.0")) {
-    // v1.153.0 changed style for lake groups
-    // TODO: put isolated data[45] styles migration for lake groups here
+  if (isOlderThan("1.153.0")) {
+    // v1.153.0 made the feature group a pure rendering choice, separate from the subtype generators read
+    const lakeSubtypes = new Set<string>(LAKE_SUBTYPES);
+    for (const feature of pack.features) {
+      if (!feature) continue;
+      if (feature.type === "ocean") {
+        // v1.146 gave oceans a landmass group and whatever the old group field held; they have neither
+        delete (feature as Partial<Feature>).subtype;
+        delete (feature as Partial<Feature>).group;
+      } else if (feature.type === "lake" && !lakeSubtypes.has(feature.subtype)) {
+        feature.subtype = "freshwater"; // the old lake editor wrote custom group names into the subtype
+      }
+    }
+
+    // custom lake groups lived only in the svg; the styles record now keeps them under lakes.groups
+    const record = data[48] ? safeParseJSON(data[48]) : undefined;
+    if (record?.lakes) {
+      if (!record.lakes.groups) record.lakes = { groups: record.lakes };
+      const groups: Styles["lakes"]["groups"] = record.lakes.groups;
+      const template = groups.freshwater || Object.values(groups)[0];
+      for (const el of Array.from(document.querySelectorAll<SVGGElement>("#lakes > g"))) {
+        if (!el.id) continue;
+        el.dataset.group = el.id; // the registry stamps only its declared groups
+        if (!groups[el.id] && template) groups[el.id] = lakeGroupFromSvg(el, template);
+      }
+      data[48] = JSON.stringify(record);
+    }
   }
 }
 

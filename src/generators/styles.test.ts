@@ -15,15 +15,6 @@ describe("stylesSchema", () => {
 });
 
 describe("parseStyles", () => {
-  test("pre-groups lake styles are nested under groups, keeping their values", () => {
-    const doc = structuredClone(Styles.defaults) as any;
-    doc.lakes = doc.lakes.groups;
-    doc.lakes.salt.attrs.fill = "#abcdef";
-    const parsed = Styles.parse(doc);
-    expect(parsed.lakes.groups.salt.attrs.fill).toBe("#abcdef");
-    expect(Object.keys(parsed.lakes.groups)).toEqual(Object.keys(Styles.defaults.lakes.groups));
-  });
-
   test("older heightmap styles gain disabled contours without changing their existing appearance", () => {
     const doc = structuredClone(Styles.defaults) as any;
     delete doc.heightmap.landHeights.options.contours;

@@ -409,6 +409,83 @@ describe("v1.151.2 label group display cleanup", () => {
   });
 });
 
+describe("v1.153.0 feature subtype and lake group styles", () => {
+  function stylesRecord() {
+    const record = structuredClone(Styles.defaults) as unknown as { lakes: Record<string, unknown> };
+    const groups = record.lakes.groups as Record<string, { attrs: { fill: string } }>;
+    groups.freshwater.attrs.fill = "#0000ff";
+    record.lakes = groups; // v1.150-1.152 kept the stock groups directly under lakes
+    return record;
+  }
+
+  beforeEach(() => {
+    globalThis.pack = {
+      features: [
+        0,
+        { i: 1, type: "ocean", subtype: "ocean", group: "sea_island" }, // v1.146 gave oceans both
+        { i: 2, type: "island", subtype: "isle", group: "sea_island" },
+        { i: 3, type: "lake", subtype: "my_lakes", group: "my_lakes" }, // the old lake editor copied the group name
+        { i: 4, type: "lake", subtype: "salt", group: "freshwater" }
+      ]
+    } as unknown as typeof globalThis.pack;
+
+    document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox">
+      <g id="lakes">
+        <g id="freshwater" data-group="freshwater"><use data-f="4"></use></g>
+        <g id="my_lakes" fill="#123456" opacity="0.3"><use data-f="3"></use></g>
+      </g>
+    </g></svg>`;
+  });
+
+  it("keeps stock subtypes, resets invented ones and clears the ocean", () => {
+    resolveVersionConflicts("1.152.0", []);
+
+    expect(pack.features.slice(1).map(feature => feature.subtype)).toEqual([undefined, "isle", "freshwater", "salt"]);
+    expect(pack.features.slice(1).map(feature => feature.group)).toEqual([
+      undefined,
+      "sea_island",
+      "my_lakes", // the rendering group is untouched
+      "freshwater"
+    ]);
+  });
+
+  it("nests the stock lake styles under groups and harvests custom groups from the svg", () => {
+    const data: string[] = [];
+    data[48] = JSON.stringify(stylesRecord());
+
+    resolveVersionConflicts("1.152.0", data);
+
+    const { groups } = JSON.parse(data[48]).lakes;
+    expect(Object.keys(groups)).toEqual([...Object.keys(Styles.defaults.lakes.groups), "my_lakes"]);
+    expect(groups.freshwater.attrs.fill).toBe("#0000ff");
+    expect(groups.my_lakes.attrs.fill).toBe("#123456");
+    expect(groups.my_lakes.attrs.opacity).toBe(0.3);
+    expect(groups.my_lakes.attrs.stroke).toBe(groups.freshwater.attrs.stroke); // the rest follows freshwater
+    expect(document.getElementById("my_lakes")?.dataset.group).toBe("my_lakes");
+  });
+
+  it("is harmless on a record already in the new shape", () => {
+    const data: string[] = [];
+    data[48] = JSON.stringify(Styles.defaults);
+
+    resolveVersionConflicts("1.152.0", data);
+
+    const { lakes } = JSON.parse(data[48]);
+    expect(Object.keys(lakes)).toEqual(["groups"]);
+    expect(lakes.groups.freshwater).toEqual(Styles.defaults.lakes.groups.freshwater);
+  });
+
+  it("leaves current maps alone", () => {
+    const data: string[] = [];
+    data[48] = JSON.stringify(stylesRecord());
+
+    resolveVersionConflicts(VERSION, data);
+
+    expect(pack.features[3].subtype).toBe("my_lakes");
+    expect(JSON.parse(data[48]).lakes.groups).toBeUndefined();
+  });
+});
+
 describe("missing svg defs", () => {
   const getDeftempIds = () => Array.from(document.querySelectorAll("#deftemp > *"), node => node.id);
 

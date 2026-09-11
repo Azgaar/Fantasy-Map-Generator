@@ -17,20 +17,32 @@ import { Notes } from "@/components/notes";
 import { Controllers } from "@/controllers";
 import { type Feature, type FeatureType, ISLAND_SUBTYPES, LAKE_SUBTYPES } from "@/generators/features";
 import { highlightArea, highlightOutline } from "@/renderers/overlays/highlight";
-import { downloadFile, ensureEl, findEl, getArea, getAreaUnit, getFileName, si } from "@/utils";
+import { capitalize, downloadFile, ensureEl, findEl, getArea, getAreaUnit, getFileName, si } from "@/utils";
 
 const dialogId = "featuresOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 let filterState: { search: string; type: string; subtype: string };
 
-const TYPES: FeatureType[] = ["island", "lake", "ocean"];
-const SUBTYPES: Record<FeatureType, readonly string[]> = {
-  island: ISLAND_SUBTYPES,
-  lake: LAKE_SUBTYPES,
-  ocean: []
-};
+const columns: EditorColumn<Feature>[] = [
+  { key: "locate", width: "1.4em", permanent: true },
+  { key: "name", label: "Feature", width: "9em", permanent: true, sortBy: getName, sortType: "alpha" },
+  { key: "type", label: "Type", width: "9em", sortBy: getTypeLabel, sortType: "alpha" },
+  {
+    key: "group",
+    label: "Group",
+    width: "8em",
+    mobileHidden: true,
+    tip: "Click to sort by rendering group (the group the feature is drawn in)",
+    sortBy: feature => feature.group || "",
+    sortType: "alpha"
+  },
+  { key: "area", label: "Area", width: "6em", sortBy: getCalculatedArea, defaultSort: "desc" },
+  { key: "edit", width: "1.4em" },
+  { key: "note", width: "1.4em", permanent: true }
+];
 
-const getName = (feature: Feature) => feature.name || `${feature.subtype || feature.type} ${feature.i}`;
+const TYPES: FeatureType[] = ["island", "lake", "ocean"];
+const SUBTYPES: Record<FeatureType, readonly string[]> = { island: ISLAND_SUBTYPES, lake: LAKE_SUBTYPES, ocean: [] };
 
 // an ocean's perimeter ring is open at the map border, so its polygon area collapses to 0
 let oceanAreas = new Map<number, number>();
@@ -45,27 +57,37 @@ function measureOceans(): void {
   }
 }
 
-const getFeatureArea = (feature: Feature) => feature.area || oceanAreas.get(feature.i) || 0;
-const getLakeGroups = () => Array.from(Layers.get("lakes").getEl().children).map(group => group.id);
+const UNNAMED = "Unnamed";
+function getName(feature: Feature) {
+  return feature.name || UNNAMED;
+}
 
-const columns: EditorColumn<Feature>[] = [
-  { key: "locate", width: "1.4em", permanent: true },
-  { key: "name", label: "Feature", width: "9em", permanent: true, sortBy: getName, sortType: "alpha" },
-  { key: "type", label: "Type", width: "5em", sortBy: feature => feature.type, sortType: "alpha" },
-  { key: "subtype", label: "Subtype", width: "8em", sortBy: feature => feature.subtype || "", sortType: "alpha" },
-  {
-    key: "group",
-    label: "Group",
-    width: "8em",
-    mobileHidden: true,
-    tip: "Click to sort by rendering group (the svg group the feature is drawn in)",
-    sortBy: feature => feature.group || "",
-    sortType: "alpha"
-  },
-  { key: "area", label: "Area", width: "7em", sortBy: getFeatureArea, defaultSort: "desc" },
-  { key: "note", width: "1.1em" },
-  { key: "edit", width: "1.1em" }
-];
+/** area inside the map borders */
+function getMapArea(feature: Feature) {
+  return feature.area || oceanAreas.get(feature.i) || 0;
+}
+
+// a feature cut by the map border continues beyond it: assume it keeps its share of the map over the whole globe
+function getCalculatedArea(feature: Feature) {
+  const mapArea = getMapArea(feature);
+  return feature.border ? mapArea / getGlobeCoverage() : mapArea;
+}
+
+const getGlobeCoverage = () => options.map.geography.mapSize / 100;
+
+function renderAreaCell(feature: Feature, unit: string): string {
+  const area = `${si(getArea(getCalculatedArea(feature)))} ${unit}`;
+  const estimated = feature.border && getGlobeCoverage() < 1;
+  if (!estimated) return `<div data-tip="Feature area" data-col="area">${area}</div>`;
+
+  const mapArea = `${si(getArea(getMapArea(feature)))} ${unit}`;
+  const tip = `Estimated area: the feature goes beyond the map border, its area on the map is ${mapArea}`;
+  return `<div data-tip="${tip}" data-col="area">~${area}</div>`;
+}
+
+function getLakeGroups() {
+  return Array.from(Layers.get("lakes").getEl().children).map(group => group.id);
+}
 
 function getFilteredFeatures(): Feature[] {
   const search = filterState.search.toLowerCase().trim();
@@ -192,26 +214,41 @@ function onFilterChange(): void {
 
 // islands are moved between groups by geography alone, oceans are not rendered at all
 function renderGroupCell(feature: Feature, lakeGroups: string[]): string {
-  if (feature.type !== "lake") return `<div data-tip="Rendering group" data-col="group">${feature.group || "—"}</div>`;
+  const brush = feature.group
+    ? `<span data-tip="Edit group style in Style Editor" class="icon-brush pointer featureGroupStyle"></span>`
+    : "";
+  if (feature.type !== "lake")
+    return `<div data-tip="Rendering group" data-col="group">${brush}<span>${feature.group || ""}</span></div>`;
 
   const groups = lakeGroups.includes(feature.group) ? lakeGroups : [...lakeGroups, feature.group]; // a removed group is still the feature's
   const options = groups
     .map(group => `<option value="${group}" ${group === feature.group ? "selected" : ""}>${group}</option>`)
     .join("");
-  return `<select data-tip="Rendering group: the svg group the lake is drawn in. Create groups in the Lake Editor" class="featureGroup" data-col="group">${options}</select>`;
+  return `<div data-col="group">${brush}<select data-tip="Rendering group: the svg group the lake is drawn in. Create groups in the Lake Editor" class="featureGroup">${options}</select></div>`;
+}
+
+// "Freshwater lake", "Isle", "Lake island", "Ocean"
+function getTypeLabel(feature: Pick<Feature, "type" | "subtype">): string {
+  const subtype = feature.subtype?.replace("_", " ");
+  if (feature.type === "lake") return capitalize(`${subtype} ${feature.type}`);
+  return capitalize(subtype || feature.type);
 }
 
 // the subtype set is fixed per type; lake_island is geographic, so it stays put
-function renderSubtypeCell(feature: Feature): string {
+function renderTypeCell(feature: Feature): string {
   const subtypes = SUBTYPES[feature.type];
   const fixed = !subtypes.length || feature.subtype === "lake_island";
-  if (fixed) return `<div data-tip="Feature subtype" data-col="subtype">${feature.subtype || "—"}</div>`;
+  if (fixed)
+    return `<div data-tip="Feature type, defined by the heightmap" data-col="type">${getTypeLabel(feature)}</div>`;
 
   const options = subtypes
     .filter(subtype => subtype !== "lake_island")
-    .map(subtype => `<option value="${subtype}" ${subtype === feature.subtype ? "selected" : ""}>${subtype}</option>`)
+    .map(subtype => {
+      const label = getTypeLabel({ type: feature.type, subtype });
+      return `<option value="${subtype}" ${subtype === feature.subtype ? "selected" : ""}>${label}</option>`;
+    })
     .join("");
-  return `<select data-tip="Feature subtype. Generators read it, changing it does not regenerate them" class="featureSubtype" data-col="subtype">${options}</select>`;
+  return `<select data-tip="Feature type. Generators read it, changing it does not regenerate them" class="featureSubtype" data-col="type">${options}</select>`;
 }
 
 function renderFeaturesPage(view: TableView<Feature>): void {
@@ -228,19 +265,18 @@ function renderFeaturesPage(view: TableView<Feature>): void {
     const locatable = feature.type !== "ocean";
     lines += /* html */ `<div class="states" data-id="${feature.i}">
       <span data-tip="Locate the feature" data-col="locate" class="${locatable ? "icon-target" : "placeholder"}"></span>
-      <input data-tip="Feature name. Clear it to fall back to the placeholder name" class="featureName stateName" value="${getName(feature)}" data-col="name" />
-      <div data-tip="Feature type, defined by the heightmap" data-col="type">${feature.type}</div>
-      ${renderSubtypeCell(feature)}
+      <input data-tip="Feature name" class="featureName stateName" value="${feature.name || ""}" placeholder="${UNNAMED}" data-col="name" />
+      ${renderTypeCell(feature)}
       ${renderGroupCell(feature, lakeGroups)}
-      <div data-tip="Feature area" data-col="area">${si(getArea(getFeatureArea(feature)))} ${unit}</div>
+      ${renderAreaCell(feature, unit)}
+      <span data-tip="${feature.type === "lake" && "Edit the lake"}" data-col="edit" class="${feature.type === "lake" ? "icon-pencil" : "placeholder"}"></span>
       ${Notes.getIcon("this feature")}
-      <span data-tip="${feature.type === "lake" ? "Edit the lake" : "Only lakes have their own editor"}" data-col="edit" class="${feature.type === "lake" ? "icon-pencil" : "placeholder"}"></span>
     </div>`;
   }
   body.insertAdjacentHTML("beforeend", lines);
 
   ensureEl("featuresFooterNumber").innerHTML = `${view.all.length} of ${pack.features.length - 1}`;
-  const totalArea = view.all.reduce((sum, feature) => sum + getFeatureArea(feature), 0);
+  const totalArea = view.all.reduce((sum, feature) => sum + getCalculatedArea(feature), 0);
   ensureEl("featuresFooterArea").innerHTML = `${si(getArea(totalArea))} ${unit}`;
 
   for (const line of Array.from(body.querySelectorAll<HTMLElement>(":scope > div.states"))) {
@@ -250,7 +286,8 @@ function renderFeaturesPage(view: TableView<Feature>): void {
   body.querySelectorAll("div > span.icon-target").forEach(el => void el.addEventListener("click", zoomToFeature));
   body.querySelectorAll("div > input.featureName").forEach(el => void el.addEventListener("input", changeName));
   body.querySelectorAll("div > select.featureSubtype").forEach(el => void el.addEventListener("change", changeSubtype));
-  body.querySelectorAll("div > select.featureGroup").forEach(el => void el.addEventListener("change", changeGroup));
+  body.querySelectorAll("div select.featureGroup").forEach(el => void el.addEventListener("change", changeGroup));
+  body.querySelectorAll("div span.featureGroupStyle").forEach(el => void el.addEventListener("click", editGroupStyle));
   body.querySelectorAll("div > span.icon-book").forEach(el => void el.addEventListener("click", editNote));
   body.querySelectorAll("div > span.icon-pencil").forEach(el => void el.addEventListener("click", openLakeEditor));
 
@@ -286,9 +323,7 @@ function zoomToFeature(this: HTMLElement): void {
 }
 
 function changeName(this: HTMLInputElement): void {
-  const feature = getFeature(this);
-  const name = this.value.trim();
-  feature.name = name === `${feature.subtype || feature.type} ${feature.i}` ? "" : name; // keep the placeholder as a placeholder
+  getFeature(this).name = this.value.trim();
 }
 
 function changeSubtype(this: HTMLSelectElement): void {
@@ -298,6 +333,12 @@ function changeSubtype(this: HTMLSelectElement): void {
 function changeGroup(this: HTMLSelectElement): void {
   getFeature(this).group = this.value;
   Layers.draw("lakes");
+}
+
+// lakes are styled by #lakes > g, islands by #coastline > g
+function editGroupStyle(this: HTMLElement): void {
+  const feature = getFeature(this);
+  editStyle(feature.type === "lake" ? "lakes" : "coastline", feature.group);
 }
 
 function editNote(this: HTMLElement): void {
@@ -311,7 +352,7 @@ function openLakeEditor(this: HTMLElement): void {
 
 function downloadFeaturesData(): void {
   const unit = getAreaUnit();
-  let data = `Id,Name,Type,Subtype,Group,Area (${unit})\n`;
+  let data = `Id,Name,Type,Subtype,Group,Area (${unit}),Map area (${unit}),Cut by border\n`;
 
   for (const feature of featuresTable.view().all) {
     const cells = [
@@ -320,7 +361,9 @@ function downloadFeaturesData(): void {
       feature.type,
       feature.subtype,
       feature.group,
-      getArea(getFeatureArea(feature))
+      getArea(getCalculatedArea(feature)),
+      getArea(getMapArea(feature)),
+      feature.border
     ];
     data += `${cells.join(",")}\n`;
   }
