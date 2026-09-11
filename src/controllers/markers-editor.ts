@@ -44,6 +44,10 @@ function renderDialog(): void {
 
   const html = /* html */ `<div id="markerEditor" class="dialog">
     <div id="markerBody" style="padding-bottom: 0.3em">
+      <div data-tip="Marker name, shown in the notes editor and overviews">
+        <div class="label">Name:</div>
+        <input id="markerName" style="width: 10.3em" />
+      </div>
       <div data-tip="Marker type. Style changes will apply to all markers of the same type. Leave blank if the marker is unique">
         <div class="label">Type:</div>
         <input id="markerType" style="width: 10.3em" />
@@ -98,6 +102,7 @@ function renderDialog(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
   // add listeners — dropped together with the dialog HTML on close
+  ensureEl("markerName").addEventListener("change", changeMarkerName);
   ensureEl("markerType").addEventListener("change", changeMarkerType);
   ensureEl("markerIconSelect").addEventListener("click", changeMarkerIcon);
   ensureEl("markerIconSize").addEventListener("input", changeIconSize);
@@ -159,6 +164,7 @@ function updateInputs(): void {
     ? `<img src="${escapeHtml(marker.icon)}" style="width: 1em; height: 1em;">`
     : escapeHtml(marker.icon);
 
+  ensureEl<HTMLInputElement>("markerName").value = marker.name || "";
   ensureEl<HTMLInputElement>("markerType").value = marker.type || "";
   ensureEl<HTMLInputElement>("markerIconSize").value = String(marker.px || 12);
   ensureEl<HTMLInputElement>("markerIconShiftX").value = String(marker.dx || 50);
@@ -169,6 +175,11 @@ function updateInputs(): void {
   ensureEl<HTMLInputElement>("markerStroke").value = marker.stroke || "#000000";
 
   ensureEl("markerLock").className = marker.lock ? "icon-lock" : "icon-lock-open";
+}
+
+function changeMarkerName(this: HTMLInputElement): void {
+  selectedMarker.name = this.value;
+  if (findEl("notesEditor")) void Controllers.NotesEditor.open({ type: "marker", id: selectedMarker.i });
 }
 
 function changeMarkerType(this: HTMLInputElement): void {
