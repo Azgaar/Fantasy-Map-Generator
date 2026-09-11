@@ -247,6 +247,12 @@ function renderDialog(): void {
       #helpAssistant .helpMapNoteActions button { min-height: 36px; padding: 6px 14px; border: 1px solid #606770; border-radius: 6px; background: #fff; color: #242a32; font-weight: 600; }
       #helpAssistant .helpMapNoteDetail { margin: 8px 0 0; font-size: 14px; }
       #helpAssistant .helpMapNoteError { color: #872020; background: #fff0f0; padding: 8px; border-radius: 6px; }
+      #helpMapNotePreview.ui-dialog-content { padding: 20px; overflow: auto; background: #fff; color: #242a32; font-family: var(--sans-serif); font-size: 16px; line-height: 1.6; user-select: text; overflow-wrap: anywhere; }
+      #helpMapNotePreview > h2 { margin-top: 0; font-size: 20px; }
+      #helpMapNotePreview > p { padding-bottom: 12px; border-bottom: 1px solid #ccc; }
+      .ui-dialog:has(> #helpMapNotePreview) { font-size: 16px; }
+      .ui-dialog:has(> #helpMapNotePreview) button { min-width: 28px; min-height: 28px; font-size: 16px; }
+      .ui-dialog:has(> #helpMapNotePreview) .ui-dialog-buttonpane button { min-height: 36px; padding: 6px 14px; }
       #helpAssistant .helpMapContext { flex: none; align-self: flex-start; max-width: 100%; padding: .1em .6em; border-radius: 1em; background: rgb(0 0 0 / 8%); font-size: 14px; }
 
       /* model and key: reachable in a click, never in the way of the conversation */

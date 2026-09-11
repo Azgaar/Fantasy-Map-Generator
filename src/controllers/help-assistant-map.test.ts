@@ -68,6 +68,50 @@ describe("needsKey", () => {
 });
 
 describe("map panel", () => {
+  it("opens a sanitized, read-only draft when Preview is clicked and returns focus on Close", () => {
+    vi.stubGlobal("pack", { cells: {}, burgs: [{ i: 0 }, { i: 1, name: "Kimelea", note: "<p>Original</p>" }] });
+    let options: { close: () => void; buttons: { Close: () => void } } | undefined;
+    const dialog = vi.fn((command: string | NonNullable<typeof options>) => {
+      if (typeof command !== "string") options = command;
+      else if (command === "close") options?.close();
+    });
+    window.$ = vi.fn(() => ({ dialog })) as unknown as typeof window.$;
+    mountMapPanel(el("host"));
+    const proposal: NoteProposal = {
+      id: "preview-test",
+      target: "burg:1",
+      label: "Kimelea <img src=x>",
+      mapId: mapId(),
+      before: "<p>Original</p>",
+      html: '"<h2>Kimelea</h2><p onclick="bad()">The capital.</p>"',
+      status: "proposed"
+    };
+    current().entries.push({ kind: "proposal", proposal });
+    unmountMapPanel();
+    mountMapPanel(el("host"));
+    const button = el("helpMapLog").querySelector<HTMLButtonElement>(
+      '[data-proposal-id="preview-test"] button[data-action="preview"]'
+    )!;
+    button.click();
+    const preview = el("helpMapNotePreview");
+    expect(dialog).toHaveBeenCalledWith(expect.objectContaining({ title: "Note preview", modal: true }));
+    expect(preview.textContent).toContain("The capital.");
+    expect(preview.querySelector("h2")?.textContent).toBe("Notes: Kimelea <img src=x>");
+    expect(preview.querySelector("script, img, [onclick], [contenteditable]")).toBeNull();
+    expect(preview.lastElementChild?.innerHTML).toBe("<h2>Kimelea</h2><p>The capital.</p>");
+    expect(preview.textContent).toContain("choose Apply to update the map");
+    options!.buttons.Close();
+    expect(document.getElementById("helpMapNotePreview")).toBeNull();
+    expect(document.activeElement).toBe(button);
+    expect(proposal.status).toBe("proposed");
+    expect(Notes.get({ type: "burg", id: 1 })).toBe("<p>Original</p>");
+    button.click();
+    button.click();
+    expect(document.querySelectorAll("#helpMapNotePreview")).toHaveLength(1);
+    unmountMapPanel();
+    expect(document.getElementById("helpMapNotePreview")).toBeNull();
+  });
+
   it("keeps Apply and Undo outcomes visible and writes the same cleaned content as the preview", async () => {
     vi.stubGlobal("crypto", webcrypto);
     vi.stubGlobal("pack", { cells: {}, burgs: [{ i: 0 }, { i: 1, name: "Aukiz", note: "<p>Original</p>" }] });

@@ -1,6 +1,6 @@
 // One assistant for hosted and personal connections, with bounded tools and explicit note Apply.
 
-import { confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import {
   type Conversation,
@@ -101,6 +101,7 @@ export function refreshMapContext(): void {
 }
 
 export function unmountMapPanel(): void {
+  destroyDialog("helpMapNotePreview");
   window.removeEventListener("assistant-context", refreshMapContext);
   session.cancel();
   busy = false;
@@ -578,6 +579,39 @@ function addEntry(entry: Entry): void {
   scrollToEnd();
 }
 
+function openNotePreview(label: string, content: HTMLElement, opener: HTMLButtonElement): void {
+  destroyDialog("helpMapNotePreview");
+  const dialog = document.createElement("div");
+  dialog.id = "helpMapNotePreview";
+  dialog.className = "dialog stable";
+  const title = document.createElement("h2");
+  title.textContent = label;
+  const hint = document.createElement("p");
+  hint.textContent = "Draft preview. Close this window and choose Apply to update the map.";
+  // Reuse the sanitized content shown in the proposal card.
+  dialog.append(title, hint, content.cloneNode(true));
+  dialog.addEventListener("click", event => {
+    const link = (event.target as Element).closest("a[href]");
+    if (!link) return;
+    event.preventDefault();
+    openURL(link.getAttribute("href") ?? "");
+  });
+  (document.getElementById("dialogs") ?? document.body).append(dialog);
+  window.$(dialog).dialog({
+    title: "Note preview",
+    modal: true,
+    resizable: true,
+    width: Math.min(720, window.innerWidth - 24),
+    height: Math.min(640, window.innerHeight - 80),
+    position: { my: "center", at: "center", of: window },
+    buttons: { Close: () => window.$(dialog).dialog("close") },
+    close: () => {
+      destroyDialog(dialog.id);
+      if (opener.isConnected) opener.focus({ preventScroll: true });
+    }
+  });
+}
+
 function renderEntry(entry: Entry): HTMLElement {
   if (entry.kind === "proposal") {
     const p = entry.proposal;
@@ -595,14 +629,23 @@ function renderEntry(entry: Entry): HTMLElement {
     }
     const actions = document.createElement("div");
     actions.className = "helpMapNoteActions";
-    const status = document.createElement("span");
-    status.className = "helpMapNoteStatus";
-    status.dataset.state = p.status;
-    status.setAttribute("role", "status");
-    status.tabIndex = -1;
-    status.textContent = { proposed: "Preview", applied: "✓ Applied", undone: "↶ Undone", discarded: "Discarded" }[
-      p.status
-    ];
+    if (p.status === "proposed") {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.action = "preview";
+      button.textContent = "Preview";
+      button.setAttribute("aria-haspopup", "dialog");
+      button.onclick = () => openNotePreview(title.textContent ?? p.label, preview, button);
+      actions.append(button);
+    } else {
+      const status = document.createElement("span");
+      status.className = "helpMapNoteStatus";
+      status.dataset.state = p.status;
+      status.setAttribute("role", "status");
+      status.tabIndex = -1;
+      status.textContent = { applied: "✓ Applied", undone: "↶ Undone", discarded: "Discarded" }[p.status];
+      actions.append(status);
+    }
     const detail = document.createElement("p");
     detail.className = "helpMapNoteDetail";
     detail.textContent = {
@@ -623,7 +666,6 @@ function renderEntry(entry: Entry): HTMLElement {
       );
       card?.querySelector<HTMLElement>(".helpMapNoteStatus")?.focus({ preventScroll: true });
     };
-    actions.append(status);
     if (p.status === "proposed" || p.status === "applied") {
       const apply = document.createElement("button");
       apply.type = "button";
