@@ -202,7 +202,7 @@ Loading a previously saved map.
 
 The buttons correspond to those of the save window.
 
-## Reset Zoom
+## Zoom out
 
 Reset zoom to its initial position.
 

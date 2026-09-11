@@ -3,6 +3,7 @@ import { showExportPane, showLoadPane, showSavePane } from "@/components/options
 import { changeViewMode } from "@/components/options/view-mode";
 import { clearMainTip } from "@/components/tooltips";
 import { resetZoom } from "@/components/zoom";
+import { Controllers } from "@/controllers";
 import { ARROW_TIP_KEY } from "@/services/versioning";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
 
@@ -112,6 +113,7 @@ function initialize(): void {
     else if (id === "exportButton") showExportPane();
     else if (id === "loadButton") void showLoadPane();
     else if (id === "zoomReset") resetZoom(1000);
+    else if (id === "searchButton") Controllers.Omnibar.open();
   });
 
   ensureEl("viewMode").addEventListener("click", changeViewMode);
