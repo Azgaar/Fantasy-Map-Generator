@@ -61,4 +61,19 @@ test.describe("legend boxes", () => {
     await expect(page.locator("#legend > g[data-legend]")).toHaveCount(1);
     await expect(page.locator('#legend > g[data-legend="States"]')).toBeAttached();
   });
+
+  test("toggling a legend with nothing to list reports it instead of drawing an empty box", async ({ page }) => {
+    await openEditor(page, "ZonesEditor");
+
+    // hide every zone through the editor, so the legend has nothing to list
+    const hide = page.locator("#zonesBodySection .zoneHide");
+    const count = await hide.count();
+    expect(count).toBeGreaterThan(0);
+    for (let i = 0; i < count; i++) await hide.nth(i).click();
+
+    await page.locator("#zonesLegend").click();
+
+    await expect(page.locator("#tooltip")).toHaveText("No zones to show");
+    await expect(page.locator("#legend > g[data-legend]")).toHaveCount(0);
+  });
 });

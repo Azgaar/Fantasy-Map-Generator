@@ -829,6 +829,7 @@ function toggleLegend(): void {
     .filter(c => c.i && !c.removed && c.cells)
     .sort((a, b) => (b.area ?? 0) - (a.area ?? 0))
     .map(c => [c.i, c.color, c.name]);
+  if (!data.length) return void tip("No cultures to show", false, "error");
   drawLegend(LEGEND_NAME, data);
 }
 

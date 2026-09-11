@@ -1018,6 +1018,7 @@ function toggleLegend(): void {
     .filter(s => s.i && !s.removed && s.cells)
     .sort((a, b) => (b.area ?? 0) - (a.area ?? 0))
     .map(s => [s.i, s.color, s.name]);
+  if (!data.length) return void tip("No states to show", false, "error");
   drawLegend(LEGEND_NAME, data);
 }
 
