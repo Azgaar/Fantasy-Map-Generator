@@ -54,6 +54,12 @@ function gatewayBase(): string {
   return GATEWAY_URL;
 }
 
+export function canUseHostedAssistant(origin = location.origin): boolean {
+  return origin === OFFICIAL_ORIGIN || (import.meta.env.DEV && gatewayBase() !== GATEWAY_URL);
+}
+export const PROVIDER_SETUP_MESSAGE =
+  "The FMG-provided assistant is not available on this copy. Open Settings and choose your own AI provider and API key, or a local model. No Discord sign-in is needed.";
+
 export async function request<T>(path: string, init: RequestInit): Promise<T> {
   const token = getToken();
   const headers: Record<string, string> = {

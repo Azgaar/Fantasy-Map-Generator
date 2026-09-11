@@ -61,6 +61,31 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 describe("bounded map tools", () => {
+  it("finds states with no active ports using either supported filter", async () => {
+    const base = fixture();
+    vi.stubGlobal("pack", {
+      ...base,
+      states: [{ i: 0 }, { i: 1, name: "Inland" }, { i: 2, name: "Coastal" }, { i: 3, name: "Removed", removed: true }],
+      burgs: [
+        0,
+        { i: 1, state: 1, name: "Town" },
+        { i: 2, state: 2, port: 8, name: "Harbour" },
+        { i: 3, state: 1, port: 8, removed: true }
+      ]
+    });
+    for (const filter of [{ port: false }, { withoutPorts: true }]) {
+      const result = JSON.parse(
+        await executeMapTool({ id: "s", name: "search_map", input: { kind: "state", ...filter } }, () => {})
+      );
+      expect(result.results).toEqual([{ target: "state:1", name: "Inland", hasPorts: false }]);
+      expect(result.matches).toBe(1);
+      expect(result.limited).toBe(false);
+    }
+    const result = JSON.parse(
+      await executeMapTool({ id: "b", name: "search_map", input: { kind: "burg", port: false } }, () => {})
+    );
+    expect(result.results.map((b: { name: string }) => b.name)).toEqual(["Town"]);
+  });
   it("resolves stable subjects without copying actions or map arrays", () => {
     const choices = selectionsAt(0, 0);
     expect(choices[0].target).toBe("burg:1");

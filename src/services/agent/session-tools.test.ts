@@ -1,9 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Conversation } from "./conversations";
 
-const mocks = vi.hoisted(() => ({ complete: vi.fn(), request: vi.fn(), execute: vi.fn() }));
+const mocks = vi.hoisted(() => ({ complete: vi.fn(), request: vi.fn(), execute: vi.fn(), available: vi.fn() }));
 vi.mock("./providers", () => ({ complete: mocks.complete }));
-vi.mock("@/services/help/api", () => ({ request: mocks.request }));
+vi.mock("@/services/help/api", () => ({
+  request: mocks.request,
+  canUseHostedAssistant: mocks.available,
+  PROVIDER_SETUP_MESSAGE: "Choose your own provider in Settings"
+}));
 vi.mock("./map-tools", () => ({
   mapId: () => "map",
   getSelection: () => ({ target: "burg:1" }),
@@ -31,9 +35,37 @@ const handlers = (): SessionHandlers => ({
 });
 beforeEach(() => {
   vi.resetAllMocks();
+  mocks.available.mockReturnValue(true);
   mocks.execute.mockResolvedValue('{"name":"Town"}');
 });
 describe("unified session", () => {
+  it("answers after a repeated read instead of spending all eight model steps", async () => {
+    mocks.complete
+      .mockResolvedValueOnce({
+        content: [{ type: "tool_use", id: "a", name: "search_map", input: { kind: "state", port: false } }],
+        usage
+      })
+      .mockResolvedValueOnce({
+        content: [{ type: "tool_use", id: "b", name: "search_map", input: { port: false, kind: "state" } }],
+        usage
+      })
+      .mockResolvedValueOnce({ content: [{ type: "text", text: "Eldan has no ports." }], usage });
+    await createSession(() => ({ model: "personal", key: "k" })).ask(chat(), "Which states have no ports?", handlers());
+    expect(mocks.execute).toHaveBeenCalledOnce();
+    expect(mocks.complete).toHaveBeenCalledTimes(3);
+    expect(mocks.complete.mock.calls[2][0].toolChoice).toBe("none");
+    expect(mocks.complete.mock.calls[2][0].tools.length).toBeGreaterThan(0);
+  });
+  it("omits unavailable documentation from personal tools and prevents hosted attempts on an unsupported copy", async () => {
+    mocks.available.mockReturnValue(false);
+    await expect(createSession(() => ({ model: "hosted", key: "" })).ask(chat(), "q", handlers())).rejects.toThrow(
+      "own provider"
+    );
+    expect(mocks.request).not.toHaveBeenCalled();
+    mocks.complete.mockResolvedValue({ content: [{ type: "text", text: "Town" }], usage });
+    await createSession(() => ({ model: "personal", key: "k" })).ask(chat(), "q", handlers());
+    expect(mocks.complete.mock.calls[0][0].tools.map((t: { name: string }) => t.name)).not.toContain("documentation");
+  });
   it("uses identical bounded tools for personal providers and never offers run", async () => {
     mocks.complete
       .mockResolvedValueOnce({

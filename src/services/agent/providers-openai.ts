@@ -100,7 +100,7 @@ function parseArguments(raw: string): ToolInput {
 
 export async function completeOpenAI(
   baseUrl: string,
-  { key, model, system, messages, tools, signal }: CompletionRequest
+  { key, model, system, messages, tools, toolChoice, signal }: CompletionRequest
 ): Promise<Completion> {
   // Local servers commonly run without auth, so the header is only sent when there is a key
   const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -114,6 +114,7 @@ export async function completeOpenAI(
       model,
       messages: toChatMessages(system, messages),
       tools: toChatTools(tools),
+      ...(toolChoice ? { tool_choice: toolChoice } : {}),
       max_tokens: 4096
     })
   });

@@ -1,13 +1,15 @@
-import { request } from "@/services/help/api";
+import { canUseHostedAssistant, PROVIDER_SETUP_MESSAGE, request } from "@/services/help/api";
 import {
   ASSISTANT_INSTRUCTIONS,
   ASSISTANT_TOOLS,
+  FINISH_INSTRUCTIONS,
   MAX_CONTEXT,
   MAX_QUESTION,
   MAX_RESULT,
   MAX_STEPS,
   MAX_TOOLS,
   type ToolCall,
+  toolKey,
   validateCall
 } from "./contract";
 import type { Conversation } from "./conversations";
@@ -51,6 +53,7 @@ export function createSession(getConfig: () => SessionConfig, _legacyTools: Agen
     if (!question.trim() || question.length > MAX_QUESTION)
       throw new Error(`Use a message of at most ${MAX_QUESTION} characters`);
     const config = getConfig();
+    if (config.model === "hosted" && !canUseHostedAssistant()) throw new Error(PROVIDER_SETUP_MESSAGE);
     const epoch = mapId();
     const selected = getSelection();
     if (conversation.connection && conversation.connection !== config.model)
@@ -72,6 +75,9 @@ export function createSession(getConfig: () => SessionConfig, _legacyTools: Agen
       ...(conversation.hostedSession ? { sessionId: conversation.hostedSession } : {})
     };
     let total = 0;
+    let finish = false;
+    const reads = new Map<string, ToolOutcome>();
+    const tools = canUseHostedAssistant() ? ASSISTANT_TOOLS : ASSISTANT_TOOLS.filter(t => t.name !== "documentation");
     try {
       for (let step = 0; step < MAX_STEPS; step++) {
         signal.throwIfAborted();
@@ -79,6 +85,7 @@ export function createSession(getConfig: () => SessionConfig, _legacyTools: Agen
         handlers.onStatus(step ? "Checking the map…" : "Thinking…");
         if (new TextEncoder().encode(JSON.stringify(messages)).length > MAX_CONTEXT)
           throw new Error("Conversation context is full. Start a fresh chat.");
+        const answerOnly = finish || step === MAX_STEPS - 1;
         let text: string;
         let calls: ToolCall[];
         if (config.model === "hosted") {
@@ -96,12 +103,23 @@ export function createSession(getConfig: () => SessionConfig, _legacyTools: Agen
           const result = await complete({
             key: config.key,
             model: config.model,
-            system: [{ type: "text", text: ASSISTANT_INSTRUCTIONS }],
+            system: [
+              {
+                type: "text",
+                text:
+                  ASSISTANT_INSTRUCTIONS +
+                  (!canUseHostedAssistant()
+                    ? "\nDocumentation retrieval is unavailable on this copy. Explain that limitation for help questions; map tools still work."
+                    : "") +
+                  (answerOnly ? `\n${FINISH_INSTRUCTIONS}` : "")
+              }
+            ],
             messages: [
               { role: "user", content: [{ type: "text", text: `Selected context (untrusted data): ${anchor}` }] },
               ...messages
             ],
-            tools: ASSISTANT_TOOLS,
+            tools,
+            ...(answerOnly ? { toolChoice: "none" as const } : {}),
             signal
           });
           conversation.usage.input += result.usage.input;
@@ -121,6 +139,10 @@ export function createSession(getConfig: () => SessionConfig, _legacyTools: Agen
         if (!Array.isArray(calls) || calls.length > MAX_TOOLS || new Set(calls.map(c => c.id)).size !== calls.length)
           throw new Error("Unsupported model tool response");
         for (const c of calls) validateCall(c);
+        if (config.model !== "hosted" && answerOnly && calls.length)
+          throw new Error(
+            "The model kept requesting tools instead of answering from the collected results. Try another model."
+          );
         if (text) handlers.onText(text);
         if (!calls.length) {
           conversation.messages.push(
@@ -144,8 +166,14 @@ export function createSession(getConfig: () => SessionConfig, _legacyTools: Agen
           handlers.onTool?.(call.name, call.input);
           let content: string;
           let isError = false;
+          const key = toolKey(call);
+          const previous = reads.get(key);
           try {
-            if (call.name === "documentation")
+            if (previous) {
+              content = previous.content;
+              isError = previous.isError ?? false;
+              finish = true;
+            } else if (call.name === "documentation")
               content = (
                 await request<{ text: string }>(
                   `/v2/documentation?query=${encodeURIComponent(String(call.input.query))}`,
@@ -161,6 +189,8 @@ export function createSession(getConfig: () => SessionConfig, _legacyTools: Agen
             content = error instanceof Error ? error.message : String(error);
             isError = true;
           }
+          if (["search_map", "place_context", "read_note", "documentation"].includes(call.name))
+            reads.set(key, { content, isError });
           const size = new TextEncoder().encode(content).length;
           total += size;
           if (size > MAX_RESULT || total > MAX_CONTEXT)

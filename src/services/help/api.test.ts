@@ -1,5 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ask, GATEWAY_URL, getLimits, HelpApiError, OFFICIAL_ORIGIN, sendFeedback, signOut } from "./api";
+import {
+  ask,
+  canUseHostedAssistant,
+  GATEWAY_URL,
+  getLimits,
+  HelpApiError,
+  OFFICIAL_ORIGIN,
+  sendFeedback,
+  signOut
+} from "./api";
 
 const jsonResponse = (status: number, body: unknown): Response =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -7,6 +16,14 @@ const jsonResponse = (status: number, body: unknown): Response =>
 afterEach(() => vi.unstubAllGlobals());
 
 describe("constants", () => {
+  it("only enables hosted access for the official site or an explicitly configured development gateway", () => {
+    vi.stubGlobal("localStorage", { getItem: () => null });
+    expect(canUseHostedAssistant("https://azgaar.github.io")).toBe(true);
+    expect(canUseHostedAssistant("https://my-fmg.example")).toBe(false);
+    expect(canUseHostedAssistant("http://127.0.0.1:5202")).toBe(false);
+    vi.stubGlobal("localStorage", { getItem: () => "http://127.0.0.1:8090" });
+    expect(canUseHostedAssistant("http://127.0.0.1:5202")).toBe(import.meta.env.DEV);
+  });
   it("pins the gateway base URL with no trailing slash", () => {
     expect(GATEWAY_URL).toBe("https://ask.azgaarsfmg.com");
     expect(GATEWAY_URL.endsWith("/")).toBe(false);

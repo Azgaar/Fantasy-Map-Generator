@@ -68,9 +68,9 @@ function open(_options: OpenOptions = {}): void {
   $("#helpAssistant").dialog({
     title: "Azgaar Assistant",
     position: { my: "right bottom", at: "right-16 bottom-44", of: window },
-    width: Math.min(400, window.innerWidth - 24),
+    width: Math.min(560, window.innerWidth - 24),
     // both modes are transcripts, so the panel always takes the messenger height
-    height: Math.min(560, window.innerHeight - 140),
+    height: Math.min(680, window.innerHeight - 96),
     minWidth: 300,
     minHeight: 320,
     resizable: true,
@@ -140,9 +140,18 @@ function renderDialog(): void {
     <style>
       /* .ui-dialog turns selection off so dialogs drag cleanly; an answer is there to be copied,
          so the body opts back in and only the titlebar keeps the drag behaviour */
-      #helpAssistant.ui-dialog-content { display: flex; flex-direction: column; gap: .5em; overflow: hidden; padding: .6em .7em .5em; font-family: var(--sans-serif); user-select: text; }
+      #helpAssistant.ui-dialog-content { display: flex; flex-direction: column; gap: .5em; overflow: hidden; padding: .6em .7em .5em; font-family: var(--sans-serif); font-size: 16px; line-height: 1.5; user-select: text; background: var(--light-solid, #fff); }
       #helpAssistant > div          { width: auto; }
-      .ui-dialog-titlebar .helpAssistantNewChat { font-size: .62em; }
+      .ui-dialog:has(> #helpAssistant) { font-size: 16px; }
+      .ui-dialog:has(> #helpAssistant) .ui-dialog-titlebar { font-size: 16px; }
+      .ui-dialog:has(> #helpAssistant) .ui-dialog-titlebar button { min-width: 28px; min-height: 28px; font-size: 16px; }
+      #helpAssistant :is(button, input, select, textarea) { font-family: inherit; font-size: inherit; }
+      #helpAssistant :is(button, select, input) { min-height: 32px; }
+      #helpAssistant .helpMapSetup { flex: none; padding: 12px; border: 1px solid #bbb; border-radius: 6px; background: var(--light-solid, #fff); }
+      #helpAssistant .helpMapSetup p { margin: 0 0 8px; }
+      #helpAssistant .helpMapSetup[hidden] { display: none; }
+      #helpAssistant .helpMapSetup button { font-size: 15px; }
+      .ui-dialog-titlebar .helpAssistantNewChat { font-size: 16px; }
 
       #helpAssistant .helpAssistantModes { display: none !important; }
       /* two chats in one panel: the switch is a tab strip, not a pair of buttons */
@@ -230,7 +239,7 @@ function renderDialog(): void {
       #helpAssistant .helpMapEdit button { flex: none; padding: .1em .5em; border: 1px solid rgb(0 0 0 / 15%); border-radius: .3em; background: none; color: inherit; font: inherit; font-size: .92em; }
       #helpAssistant .helpMapEdit button:disabled { opacity: .45; cursor: default; }
 
-      #helpAssistant .helpMapContext { flex: none; align-self: flex-start; max-width: 100%; padding: .1em .6em; border-radius: 1em; background: rgb(0 0 0 / 8%); font-size: .85em; }
+      #helpAssistant .helpMapContext { flex: none; align-self: flex-start; max-width: 100%; padding: .1em .6em; border-radius: 1em; background: rgb(0 0 0 / 8%); font-size: 14px; }
 
       /* model and key: reachable in a click, never in the way of the conversation */
       #helpAssistant .helpMapDrawer       { flex: none; display: flex; flex-direction: column; gap: .35em; max-height: 45%; overflow-y: auto; padding: .5em; border-radius: .4em; background: rgb(0 0 0 / 5%); font-size: .9em; }
@@ -243,8 +252,8 @@ function renderDialog(): void {
       #helpAssistant .helpMapStatus button       { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline dotted; }
       #helpAssistant .helpMapStatus button:hover { color: var(--header-active); }
       #helpAssistant .helpMapStatusEnd { display: flex; align-items: center; gap: .5em; }
-      #helpAssistant .helpMapGear   { text-decoration: none; opacity: .7; font-size: 1.05em; }
-      #helpAssistant .helpMapUsage  { opacity: .7; }
+      #helpAssistant .helpMapGear   { text-decoration: none; font-size: 20px; min-width: 36px; min-height: 36px; }
+      #helpAssistant .helpMapUsage  { font-size: 14px; }
       #helpAssistant .helpMapErrorBubble { background: rgb(176 48 48 / 12%); }
 
       /* last word: the display rules above are more specific than the hidden attribute, and a

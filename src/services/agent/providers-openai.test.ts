@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { SystemBlock } from "./context";
 import type { Message, ToolDefinition } from "./providers";
-import { keyStorageFor, providerOf } from "./providers";
-import { fromChatResponse, toChatMessages, toChatTools } from "./providers-openai";
+import { complete, keyStorageFor, providerOf } from "./providers";
+import { completeOpenAI, fromChatResponse, toChatMessages, toChatTools } from "./providers-openai";
 
 const system: SystemBlock[] = [
   { type: "text", text: "static prefix", cache_control: { type: "ephemeral" } },
@@ -145,5 +145,31 @@ describe("provider routing", () => {
 
   it("throws a clear error for an unknown model", () => {
     expect(() => providerOf("gpt-2")).toThrow(/unknown model/i);
+  });
+});
+
+describe("final answer transport", () => {
+  it("disables further tools for both personal-provider transports", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify({ content: [], choices: [{ message: { content: "Done" } }] })));
+    vi.stubGlobal("fetch", fetchMock);
+    const input = {
+      key: "test",
+      model: "claude-sonnet-5",
+      system,
+      messages: [] as Message[],
+      tools: [],
+      toolChoice: "none" as const
+    };
+    try {
+      await complete(input);
+      expect(JSON.parse(fetchMock.mock.calls[0][1].body).tool_choice).toEqual({ type: "none" });
+      fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ choices: [{ message: { content: "Done" } }] })));
+      await completeOpenAI("http://localhost:11434/v1", input);
+      expect(JSON.parse(fetchMock.mock.calls[1][1].body).tool_choice).toBe("none");
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

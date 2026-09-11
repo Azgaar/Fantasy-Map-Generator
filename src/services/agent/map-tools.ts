@@ -124,7 +124,10 @@ export function searchMap(input: Record<string, unknown>): unknown {
   for (const entity of collection(kind)) {
     if (!entity || (!entity.i && kind !== "marker") || ("removed" in entity && entity.removed)) continue;
     if (input.state !== undefined && (!("state" in entity) || entity.state !== input.state)) continue;
-    if (input.port !== undefined && (!("port" in entity) || Boolean(entity.port) !== input.port)) continue;
+    if (input.port !== undefined) {
+      const hasPort = kind === "state" ? portStates.has(entity.i) : "port" in entity && Boolean(entity.port);
+      if (hasPort !== input.port) continue;
+    }
     if (kind === "state" && input.withoutPorts === true && portStates.has(entity.i)) continue;
     if (!String(entity.name).toLowerCase().includes(q)) continue;
     matches++;
@@ -149,7 +152,12 @@ export function searchMap(input: Record<string, unknown>): unknown {
     );
     if (candidates.length > limit) candidates.pop();
   }
-  return { results: candidates, matches, limited: matches > limit };
+  return {
+    results: candidates,
+    matches,
+    limited: matches > limit,
+    coverage: "All active entities were checked locally. Results are capped; repeat queries return the same records."
+  };
 }
 export async function placeContext(target: string, signal?: AbortSignal): Promise<unknown> {
   const epoch = mapId();

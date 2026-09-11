@@ -7,6 +7,11 @@ vi.mock("@/services/agent/providers-models", () => ({
   listModels: vi.fn().mockRejectedValue(new Error("offline")),
   mergeModels: (curated: string[]) => curated
 }));
+const availability = vi.hoisted(() => ({ allowed: true }));
+vi.mock("@/services/help/api", async importOriginal => ({
+  ...(await importOriginal<typeof import("@/services/help/api")>()),
+  canUseHostedAssistant: () => availability.allowed
+}));
 const notesApi = vi.hoisted(() => ({ label: null as string | null }));
 vi.mock("./help-assistant-notes", () => ({
   noteChipLabel: async () => notesApi.label,
@@ -28,6 +33,7 @@ const flush = (): Promise<void> => new Promise(resolve => setTimeout(resolve, 0)
 
 beforeEach(() => {
   localStorage.clear();
+  availability.allowed = true;
   document.body.innerHTML = `<div id="host"></div>`;
   w.mapId = 1;
   w.customization = 0;
@@ -50,6 +56,17 @@ describe("needsKey", () => {
 });
 
 describe("map panel", () => {
+  it("explains setup on an unsupported origin before the user tries to send", () => {
+    availability.allowed = false;
+    mountMapPanel(el("host"));
+    expect(el("helpMapSetup").hidden).toBe(false);
+    expect(el("helpMapSetupText").textContent).toContain("your own AI provider");
+    expect(el("helpMapDrawer").hidden).toBe(false);
+    expect(el<HTMLSelectElement>("helpMapProvider").value).toBe("anthropic");
+    expect(
+      el<HTMLSelectElement>("helpMapProvider").querySelector<HTMLOptionElement>('option[value="hosted"]')!.disabled
+    ).toBe(true);
+  });
   it("mounts with the drawer closed and the model named in the status line", () => {
     mountMapPanel(el("host"));
     expect(el("helpMapDrawer").hidden).toBe(true);

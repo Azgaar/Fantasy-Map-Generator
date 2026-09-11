@@ -28,7 +28,14 @@ import {
 import { cachedModels, listModels, mergeModels } from "@/services/agent/providers-models";
 import type { RunResult } from "@/services/agent/runtime";
 import { createSession } from "@/services/agent/session";
-import { request, signIn, signOut } from "@/services/help/api";
+import {
+  canUseHostedAssistant,
+  HelpApiError,
+  PROVIDER_SETUP_MESSAGE,
+  request,
+  signIn,
+  signOut
+} from "@/services/help/api";
 import { getToken } from "@/services/help/auth";
 import { openURL } from "@/utils";
 import { renderMarkdown } from "@/utils/markdown";
@@ -117,6 +124,9 @@ export function newMapConversation(): void {
 
 function panelHtml(): string {
   return /* html */ `
+    <div id="helpMapSetup" class="helpMapSetup" hidden>
+      <p id="helpMapSetupText"></p><button id="helpMapChooseProvider" type="button">Use your own provider</button>
+    </div>
     <div id="helpMapLog" class="helpAssistantLog" role="log" aria-live="polite"></div>
     <div id="helpMapAllowance" class="helpMapUsage" aria-live="polite"></div>
     <div id="helpMapContext" class="helpMapContext" hidden></div>
@@ -165,7 +175,15 @@ function panelHtml(): string {
     </div>`;
 }
 
+function showProviderSetup(message = PROVIDER_SETUP_MESSAGE): void {
+  ensureEl("helpMapSetupText").textContent = message;
+  ensureEl("helpMapSetup").hidden = false;
+}
 function bind(): void {
+  ensureEl("helpMapChooseProvider").onclick = () => {
+    toggleDrawer(true);
+    ensureEl("helpMapProvider").focus();
+  };
   ensureEl("helpMapSignIn").onclick = () => {
     if (getToken())
       void signOut().then(() => {
@@ -245,14 +263,18 @@ function setInitialValues(): void {
 
   const providerSelect = ensureEl<HTMLSelectElement>("helpMapProvider");
   providerSelect.replaceChildren();
-  providerSelect.append(
-    new Option("FMG provided (default)", "hosted"),
-    ...PROVIDERS.map(provider => new Option(provider.label, provider.id))
+  const hosted = new Option(
+    canUseHostedAssistant() ? "FMG provided (default)" : "FMG provided (official site only)",
+    "hosted"
   );
+  hosted.disabled = !canUseHostedAssistant();
+  providerSelect.append(hosted, ...PROVIDERS.map(provider => new Option(provider.label, provider.id)));
 
   // the stored model decides the provider, not the other way round: it is the only thing persisted
   const stored = localStorage.getItem(MODEL_STORAGE) ?? "";
-  const model = stored === "hosted" || !stored ? "hosted" : isKnownModel(stored) ? stored : "hosted";
+  const fallback = canUseHostedAssistant() ? "hosted" : PROVIDERS[0].models[0];
+  const model = stored === "hosted" || !stored ? fallback : isKnownModel(stored) ? stored : fallback;
+  if (conversation.connection && conversation.connection !== model) conversation = create();
   providerSelect.value = model === "hosted" ? "hosted" : providerOf(model).id;
   buildModelSelect();
   ensureEl<HTMLSelectElement>("helpMapModel").value = model;
@@ -277,6 +299,11 @@ function setInitialValues(): void {
   loadKeyForModel();
   updateSendButton();
   void refreshModels();
+  if (!canUseHostedAssistant()) {
+    showProviderSetup();
+    ensureEl("helpMapSignIn").hidden = true;
+    if (needsKey(model, ensureEl<HTMLInputElement>("helpMapKey").value)) toggleDrawer(true);
+  }
 }
 
 function isKnownModel(model: string): boolean {
@@ -380,6 +407,11 @@ async function send(text?: string): Promise<void> {
 
   const model = ensureEl<HTMLSelectElement>("helpMapModel").value;
   const key = ensureEl<HTMLInputElement>("helpMapKey").value;
+  if (model === "hosted" && !canUseHostedAssistant()) {
+    showProviderSetup();
+    toggleDrawer(true);
+    return;
+  }
   if (needsKey(model, key)) {
     toggleDrawer(true);
     ensureEl("helpMapHint").hidden = false;
@@ -401,6 +433,7 @@ async function send(text?: string): Promise<void> {
   localStorage.setItem(MODEL_STORAGE, model);
   toggleDrawer(false);
 
+  ensureEl("helpMapSetup").hidden = true;
   input.value = "";
   resizeInput(input);
   addEntry({ kind: "message", role: "user", text: question });
@@ -440,6 +473,14 @@ async function send(text?: string): Promise<void> {
   } catch (error) {
     const aborted = error instanceof DOMException && error.name === "AbortError";
     const message = (error instanceof Error && error.message) || String(error);
+    if (model === "hosted" && !aborted && error instanceof HelpApiError) {
+      showProviderSetup(
+        "The FMG-provided connection could not complete your request. You can retry later, or choose your own provider in Settings."
+      );
+      toggleDrawer(true);
+      const composer = document.getElementById("helpMapInput") as HTMLTextAreaElement | null;
+      if (composer && !composer.value) composer.value = question;
+    }
     record({ kind: "message", role: aborted ? "system" : "error", text: aborted ? "Stopped." : message });
   } finally {
     busy = false;

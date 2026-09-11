@@ -44,6 +44,7 @@ export interface CompletionRequest {
   system: SystemBlock[];
   messages: Message[];
   tools: ToolDefinition[];
+  toolChoice?: "none";
   signal?: AbortSignal;
 }
 
@@ -157,6 +158,7 @@ async function completeAnthropic({
   system,
   messages,
   tools,
+  toolChoice,
   signal
 }: CompletionRequest): Promise<Completion> {
   const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -168,7 +170,14 @@ async function completeAnthropic({
       "anthropic-version": "2023-06-01",
       "anthropic-dangerous-direct-browser-access": "true"
     },
-    body: JSON.stringify({ model, system, messages, tools, max_tokens: 4096 })
+    body: JSON.stringify({
+      model,
+      system,
+      messages,
+      tools,
+      ...(toolChoice ? { tool_choice: { type: toolChoice } } : {}),
+      max_tokens: 4096
+    })
   });
 
   if (!response.ok) throw new Error(await readError(response));

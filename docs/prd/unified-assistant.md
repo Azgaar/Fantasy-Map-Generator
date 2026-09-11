@@ -20,6 +20,12 @@ Generated HTML uses a conservative formatting allowlist. Whole-note reads and se
 
 Bug/idea drafts appear as editable fields. Only **Submit report** sends them to the moderated backend queue. Check status can expose an approved public GitHub link, not a private Discord review link.
 
+Unsupported origins now show provider setup before sending. Hosted access is available on the official origin, or through the existing explicit development gateway override. A self-hosted copy defaults to personal-provider setup; unavailable documentation retrieval is not offered to the model.
+
+Search supports `port: false` for states and burgs, including burgs without a port field. Repeated identical reads are reused within a task, and the next model call is restricted to producing an answer. The last permitted step is also reserved for an answer, rather than another tool request. These controls do not increase the step or context budgets.
+
+The assistant uses an independent 16px body font, larger controls, and a wider default panel.
+
 ## Limits and history
 
 Both connection types use at most eight model steps per task, four tools per response, 12,000 bytes per result and a 48,000-byte task context budget. The hosted allowance is provisionally 30 tasks per UTC day, configurable on the server; every model call still receives separate budget accounting. This counting/reset interpretation needs confirmation before release.
