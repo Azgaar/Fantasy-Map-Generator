@@ -69,7 +69,7 @@ export const ASSISTANT_TOOLS: ToolDefinition[] = [
   ),
   tool(
     "propose_note",
-    "Propose safe Quill HTML replacing the whole note or selected passage. Match the scope and revision returned by read_note. Does not apply it: the user must press Apply.",
+    "Propose safe Quill HTML replacing the whole note or selected passage. Pass the HTML itself, without surrounding quotation marks, JSON string encoding, or Markdown fences. Match the scope and revision returned by read_note. Does not apply it: the user must press Apply.",
     {
       target: string(80),
       revision: string(80),

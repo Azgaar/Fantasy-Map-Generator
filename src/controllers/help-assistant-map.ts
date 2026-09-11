@@ -14,7 +14,7 @@ import {
   select,
   touch
 } from "@/services/agent/conversations";
-import { applyProposal, getSelection, safeNoteHtml, setSelection } from "@/services/agent/map-tools";
+import { applyProposal, getSelection, proposedNoteHtml, safeNoteHtml, setSelection } from "@/services/agent/map-tools";
 import {
   DEFAULT_LOCAL_URL,
   keyStorageFor,
@@ -300,9 +300,14 @@ function setInitialValues(): void {
   updateSendButton();
   void refreshModels();
   if (!canUseHostedAssistant()) {
-    showProviderSetup();
     ensureEl("helpMapSignIn").hidden = true;
-    if (needsKey(model, ensureEl<HTMLInputElement>("helpMapKey").value)) toggleDrawer(true);
+    if (
+      needsKey(model, ensureEl<HTMLInputElement>("helpMapKey").value) ||
+      (model === LOCAL_MODEL && !ensureEl<HTMLInputElement>("helpMapLocalModel").value.trim())
+    ) {
+      showProviderSetup();
+      toggleDrawer(true);
+    }
   }
 }
 
@@ -577,40 +582,78 @@ function renderEntry(entry: Entry): HTMLElement {
   if (entry.kind === "proposal") {
     const p = entry.proposal;
     const panel = document.createElement("div");
-    panel.className = "helpAssistantBubble";
+    panel.className = "helpAssistantBubble helpMapNoteProposal";
+    panel.dataset.proposalId = p.id;
     const title = document.createElement("strong");
     title.textContent = `${p.selection ? "Selected passage" : "Notes"}: ${p.label}`;
     const preview = document.createElement("div");
     try {
-      preview.innerHTML = safeNoteHtml(p.selection?.html ?? p.html);
+      preview.innerHTML =
+        p.status === "proposed" && !p.selection ? proposedNoteHtml(p.html) : safeNoteHtml(p.selection?.html ?? p.html);
     } catch {
       preview.textContent = "Unsupported note content";
     }
-    const status = document.createElement("p");
-    status.textContent = p.status;
-    const apply = document.createElement("button");
-    apply.textContent = p.status === "applied" ? "Undo" : "Apply";
-    apply.disabled = !["proposed", "applied"].includes(p.status);
-    apply.onclick = async () => {
-      apply.disabled = true;
-      try {
-        await applyProposal(p, p.status === "applied");
-        touch(conversation);
-        renderTranscript();
-      } catch (e) {
-        status.textContent = e instanceof Error ? e.message : String(e);
-        apply.disabled = false;
-      }
-    };
-    const discard = document.createElement("button");
-    discard.textContent = "Discard";
-    discard.hidden = p.status !== "proposed";
-    discard.onclick = () => {
-      p.status = "discarded";
+    const actions = document.createElement("div");
+    actions.className = "helpMapNoteActions";
+    const status = document.createElement("span");
+    status.className = "helpMapNoteStatus";
+    status.dataset.state = p.status;
+    status.setAttribute("role", "status");
+    status.tabIndex = -1;
+    status.textContent = { proposed: "Preview", applied: "✓ Applied", undone: "↶ Undone", discarded: "Discarded" }[
+      p.status
+    ];
+    const detail = document.createElement("p");
+    detail.className = "helpMapNoteDetail";
+    detail.textContent = {
+      proposed: "Review the note, then Apply to update the map.",
+      applied: "Note updated on this map. Save the map file to keep the change.",
+      undone: "Original note restored.",
+      discarded: "No changes made."
+    }[p.status];
+    const error = document.createElement("p");
+    error.className = "helpMapNoteError";
+    error.setAttribute("role", "alert");
+    error.hidden = true;
+    const redraw = () => {
       touch(conversation);
       renderTranscript();
+      const card = [...document.querySelectorAll<HTMLElement>(".helpMapNoteProposal")].find(
+        el => el.dataset.proposalId === p.id
+      );
+      card?.querySelector<HTMLElement>(".helpMapNoteStatus")?.focus({ preventScroll: true });
     };
-    panel.append(title, preview, status, apply, discard);
+    actions.append(status);
+    if (p.status === "proposed" || p.status === "applied") {
+      const apply = document.createElement("button");
+      apply.type = "button";
+      apply.dataset.action = p.status === "applied" ? "undo" : "apply";
+      apply.textContent = p.status === "applied" ? "Undo" : "Apply";
+      apply.onclick = async () => {
+        apply.disabled = true;
+        error.hidden = true;
+        try {
+          await applyProposal(p, p.status === "applied");
+          redraw();
+        } catch (e) {
+          error.textContent = e instanceof Error ? e.message : String(e);
+          error.hidden = false;
+          apply.disabled = false;
+        }
+      };
+      actions.append(apply);
+    }
+    if (p.status === "proposed") {
+      const discard = document.createElement("button");
+      discard.type = "button";
+      discard.textContent = "Discard";
+      discard.onclick = () => {
+        p.status = "discarded";
+        redraw();
+      };
+      actions.append(discard);
+    }
+    panel.append(title, preview, actions, detail, error);
     return panel;
   }
   if (entry.kind === "report") {

@@ -269,6 +269,21 @@ export function safeNoteHtml(html: string): string {
   }
   return doc.body.innerHTML;
 }
+// Remove serialization quotes around generated HTML, keeping quotations inside the note intact.
+export function proposedNoteHtml(html: string): string {
+  const trimmed = html.trim();
+  if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
+    let inner = trimmed.slice(1, -1);
+    try {
+      const decoded: unknown = JSON.parse(trimmed);
+      if (typeof decoded === "string") inner = decoded;
+    } catch {
+      /* Raw HTML may contain unescaped attribute quotes. */
+    }
+    if (/<[a-z][a-z0-9]*\b[^>]*>/i.test(inner)) html = inner.trim();
+  }
+  return safeNoteHtml(html);
+}
 export async function executeMapTool(
   call: ToolCall,
   onProposal: (p: NoteProposal) => void,
@@ -305,7 +320,7 @@ export async function executeMapTool(
         name: clip(Notes.getEntityName(ref))
       });
     if (version !== call.input.revision) throw new Error("Read the current note before proposing changes");
-    const fragment = safeNoteHtml(String(call.input.html));
+    const fragment = proposedNoteHtml(String(call.input.html));
     const html = selection
       ? (await import("@/controllers/notes-editor")).NotesEditor.previewSelection(
           target,
@@ -333,7 +348,7 @@ export async function executeMapTool(
 export async function applyProposal(proposal: NoteProposal, undo = false): Promise<void> {
   if (mapId() !== proposal.mapId) throw new Error("This proposal belongs to another map");
   if (proposal.status !== (undo ? "applied" : "proposed")) throw new Error("This operation has already been handled");
-  if (!undo && !proposal.selection) proposal.html = safeNoteHtml(proposal.html);
+  if (!undo && !proposal.selection) proposal.html = proposedNoteHtml(proposal.html);
   const ref = noteRef(proposal.target);
   const expected = undo ? proposal.html : proposal.before;
   if ((Notes.get(ref) ?? "") !== expected) throw new Error("The note changed. Prepare a fresh proposal.");

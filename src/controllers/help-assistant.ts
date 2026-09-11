@@ -239,6 +239,14 @@ function renderDialog(): void {
       #helpAssistant .helpMapEdit button { flex: none; padding: .1em .5em; border: 1px solid rgb(0 0 0 / 15%); border-radius: .3em; background: none; color: inherit; font: inherit; font-size: .92em; }
       #helpAssistant .helpMapEdit button:disabled { opacity: .45; cursor: default; }
 
+      #helpAssistant .helpMapNoteProposal { margin-bottom: 12px; }
+      #helpAssistant .helpMapNoteActions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+      #helpAssistant .helpMapNoteStatus { display: inline-flex; align-items: center; min-height: 36px; padding: 6px 12px; box-sizing: border-box; border: 1px solid #606770; border-radius: 6px; background: #f3f4f6; color: #242a32; font-size: 16px; font-weight: 700; }
+      #helpAssistant .helpMapNoteStatus[data-state="applied"] { background: #e1f4e7; color: #17532d; border-color: #38734c; }
+      #helpAssistant .helpMapNoteStatus[data-state="undone"] { background: #e4edfb; color: #163f78; border-color: #41679c; }
+      #helpAssistant .helpMapNoteActions button { min-height: 36px; padding: 6px 14px; border: 1px solid #606770; border-radius: 6px; background: #fff; color: #242a32; font-weight: 600; }
+      #helpAssistant .helpMapNoteDetail { margin: 8px 0 0; font-size: 14px; }
+      #helpAssistant .helpMapNoteError { color: #872020; background: #fff0f0; padding: 8px; border-radius: 6px; }
       #helpAssistant .helpMapContext { flex: none; align-self: flex-start; max-width: 100%; padding: .1em .6em; border-radius: 1em; background: rgb(0 0 0 / 8%); font-size: 14px; }
 
       /* model and key: reachable in a click, never in the way of the conversation */

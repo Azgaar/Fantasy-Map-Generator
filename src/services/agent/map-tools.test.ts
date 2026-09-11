@@ -7,6 +7,7 @@ import {
   mapId,
   type NoteProposal,
   placeContext,
+  proposedNoteHtml,
   safeNoteHtml,
   selectionsAt
 } from "./map-tools";
@@ -61,6 +62,15 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 describe("bounded map tools", () => {
+  it("removes generated HTML string wrappers without changing quotations in the note", () => {
+    const html = '<h2>Aukiz</h2><p>They call it "the crown".</p>';
+    expect(proposedNoteHtml(`"${html}"`)).toBe(html);
+    expect(proposedNoteHtml(JSON.stringify(html))).toBe(html);
+    expect(proposedNoteHtml('<p>"A quotation."</p>')).toBe('<p>"A quotation."</p>');
+    expect(proposedNoteHtml('"A quotation."')).toBe('"A quotation."');
+    expect(proposedNoteHtml('"<em>A phrase</em>"')).toBe("<em>A phrase</em>");
+    expect(() => proposedNoteHtml('"<script>bad()</script><p>Text</p>"')).toThrow("Unsupported");
+  });
   it("finds states with no active ports using either supported filter", async () => {
     const base = fixture();
     vi.stubGlobal("pack", {

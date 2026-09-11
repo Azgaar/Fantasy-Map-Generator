@@ -1,6 +1,17 @@
 // @vitest-environment jsdom
+import { webcrypto } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Notes } from "@/generators/notes";
+import { mapId, type NoteProposal } from "@/services/agent/map-tools";
 
+vi.mock("@/controllers/notes-editor", () => ({
+  NotesEditor: {
+    write: (target: string, html: string) => {
+      Notes.set(Notes.parseKey(target)!, html);
+      return { id: target, legend: html };
+    }
+  }
+}));
 vi.mock("@/components/tooltips", () => ({ tip: vi.fn() }));
 vi.mock("@/services/agent/providers-models", () => ({
   cachedModels: () => [],
@@ -43,6 +54,7 @@ beforeEach(() => {
 
 afterEach(() => {
   unmountMapPanel();
+  vi.unstubAllGlobals();
   document.body.innerHTML = "";
 });
 
@@ -56,6 +68,44 @@ describe("needsKey", () => {
 });
 
 describe("map panel", () => {
+  it("keeps Apply and Undo outcomes visible and writes the same cleaned content as the preview", async () => {
+    vi.stubGlobal("crypto", webcrypto);
+    vi.stubGlobal("pack", { cells: {}, burgs: [{ i: 0 }, { i: 1, name: "Aukiz", note: "<p>Original</p>" }] });
+    mountMapPanel(el("host"));
+    const proposal: NoteProposal = {
+      id: "status-test",
+      target: "burg:1",
+      label: "Aukiz",
+      mapId: mapId(),
+      before: "<p>Original</p>",
+      html: '"<h2>Aukiz</h2><p>The capital.</p>"',
+      status: "proposed"
+    };
+    current().entries.push({ kind: "proposal", proposal });
+    unmountMapPanel();
+    mountMapPanel(el("host"));
+    const card = () => el("helpMapLog").querySelector<HTMLElement>('[data-proposal-id="status-test"]')!;
+    expect(card().textContent).not.toContain('"');
+    card().querySelector<HTMLButtonElement>('[data-action="apply"]')!.click();
+    await flush();
+    expect(Notes.get({ type: "burg", id: 1 })).toBe("<h2>Aukiz</h2><p>The capital.</p>");
+    expect(card().querySelector('[role="status"]')?.textContent).toBe("✓ Applied");
+    const undo = card().querySelector<HTMLButtonElement>('[data-action="undo"]')!;
+    expect(undo.disabled).toBe(false);
+    undo.click();
+    await flush();
+    expect(card().querySelector('[role="status"]')?.textContent).toBe("↶ Undone");
+    expect(card().textContent).toContain("Original note restored");
+    expect(card().querySelector("button")).toBeNull();
+    expect(Notes.get({ type: "burg", id: 1 })).toBe("<p>Original</p>");
+  });
+  it("does not show the setup notice for an already configured personal provider", () => {
+    availability.allowed = false;
+    localStorage.setItem("fmg-ai-chat-model", "claude-sonnet-5");
+    localStorage.setItem("fmg-ai-kl-anthropic", "test-key");
+    mountMapPanel(el("host"));
+    expect(el("helpMapSetup").hidden).toBe(true);
+  });
   it("explains setup on an unsupported origin before the user tries to send", () => {
     availability.allowed = false;
     mountMapPanel(el("host"));
