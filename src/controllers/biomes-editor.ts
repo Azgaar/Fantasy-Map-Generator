@@ -383,6 +383,7 @@ function toggleLegend(): void {
     .filter(({ i }) => statistics[i].cells)
     .sort((a, b) => statistics[b.i].area - statistics[a.i].area)
     .map(({ i, color, name }) => [i, color, name]);
+  if (!data.length) return void tip("No biomes to show", false, "error");
   drawLegend(LEGEND_NAME, data);
 }
 
