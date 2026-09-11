@@ -16,6 +16,7 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Diplomacy: click states on the map to select relation targets, repair invalid pairs in the editor or matrix, and record only actual changes in bulk edits
 - States and Provinces: state creation and province recolouring refresh visible map layers immediately; province recolouring also updates the editor list
 - Goods editor: Show all respects the tag filter across pages, with consistent checkbox state and displayed counts
+- Diplomacy: regenerating relations no longer fails midway (leaving "Invalid" relations) when a state has been removed and another is a vassal
 
 # Releases
 
