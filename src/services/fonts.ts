@@ -268,9 +268,19 @@ window.fonts = [
 ];
 
 /** Register a font so the app can use and export it */
+const declaredFonts = new Set<string>(); // font definitions already declared to the document
+const declaredFamilies = new Set<string>(); // families already present in the font select
+
 export function declareFont(font: FontDefinition): void {
   const { family, src, ...rest } = font;
-  addFontOption(family);
+  const key = JSON.stringify(font);
+  if (declaredFonts.has(key)) return; // a repeated load must not stack options or FontFace records
+  declaredFonts.add(key);
+
+  if (!declaredFamilies.has(family)) {
+    declaredFamilies.add(family);
+    addFontOption(family);
+  }
 
   if (!src) return;
   const fontFace = new FontFace(family, src, { ...rest, display: "block" });

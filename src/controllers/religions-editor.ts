@@ -989,6 +989,10 @@ function recalculateReligions(must?: boolean): void {
 function closeReligionsEditor(): void {
   select("#debug").select("#religionCenters").remove();
   if (customization === 8) exitAddReligionMode();
+  Controllers.ColorPicker.close();
+  const view = religionsTable.view();
+  view.rows = [];
+  view.all = [];
   $("#religionsEditor").dialog("destroy");
   ensureEl("religionsEditor").remove();
 }

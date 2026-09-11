@@ -834,6 +834,7 @@ function editBurgGroups(): void {
 }
 
 function closeBurgEditor(): void {
+  clearTimeout(previewSettleTimer);
   if (ensureEl("burgRelocate").classList.contains("pressed")) toggleRelocateBurg();
   selected = null;
   $("#burgEditor").dialog("destroy");

@@ -259,271 +259,275 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
   cloneEl.id = "fantasyMap";
   document.body.appendChild(cloneEl);
   const clone: MapSelection = select(cloneEl);
-  if (!debug) clone.select("#debug").remove();
+  try {
+    if (!debug) clone.select("#debug").remove();
 
-  const cloneDefs = cloneEl.getElementsByTagName("defs")[0];
-  const svgDefs = ensureEl<SVGSVGElement>("defElements");
+    const cloneDefs = cloneEl.getElementsByTagName("defs")[0];
+    const svgDefs = ensureEl<SVGSVGElement>("defElements");
 
-  if (fullMap) {
-    // reset transform to show the whole map
-    clone.attr("width", options.map.graph.width).attr("height", options.map.graph.height);
-    clone.select("#viewbox").attr("transform", null);
-    ViewportLayers.renderTo(cloneEl);
+    if (fullMap) {
+      // reset transform to show the whole map
+      clone.attr("width", options.map.graph.width).attr("height", options.map.graph.height);
+      clone.select("#viewbox").attr("transform", null);
+      ViewportLayers.renderTo(cloneEl);
 
-    if (!noScaleBar) drawScaleBar(cloneEl, 1, options.map.graph.width, options.map.graph.height);
-  }
+      if (!noScaleBar) drawScaleBar(cloneEl, 1, options.map.graph.width, options.map.graph.height);
+    }
 
-  const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
-  if (isFirefox && type === "mesh") clone.select("#oceanPattern").remove();
-  if (noLabels) {
-    clone.selectAll("#labels [data-label-type]").remove();
-    clone.selectAll("#textPaths [data-label-type]").remove();
-    clone.select("#icons #burgIcons").remove();
-  }
-  if (noWater) {
-    clone.select("#oceanBase").attr("opacity", 0);
-    clone.select("#oceanPattern").attr("opacity", 0);
-  }
-  if (noIce) clone.select("#ice").remove();
-  if (noVignette) clone.select("#vignette").remove();
-  if (noScaleBar) clone.select("#scaleBar").remove();
+    const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
+    if (isFirefox && type === "mesh") clone.select("#oceanPattern").remove();
+    if (noLabels) {
+      clone.selectAll("#labels [data-label-type]").remove();
+      clone.selectAll("#textPaths [data-label-type]").remove();
+      clone.select("#icons #burgIcons").remove();
+    }
+    if (noWater) {
+      clone.select("#oceanBase").attr("opacity", 0);
+      clone.select("#oceanPattern").attr("opacity", 0);
+    }
+    if (noIce) clone.select("#ice").remove();
+    if (noVignette) clone.select("#vignette").remove();
+    if (noScaleBar) clone.select("#scaleBar").remove();
 
-  if (type === "svg") removeUnusedElements(clone);
-  relocateRootFilter(cloneEl); // Firefox drops a root-svg filter when the svg is rasterized via an image
-  if (customization && type === "mesh") updateMeshCells(clone);
-  inlineStyle(clone);
+    if (type === "svg") removeUnusedElements(clone);
+    relocateRootFilter(cloneEl); // Firefox drops a root-svg filter when the svg is rasterized via an image
+    if (customization && type === "mesh") updateMeshCells(clone);
+    inlineStyle(clone);
 
-  // remove unused filters
-  const filters = cloneEl.querySelectorAll("filter");
-  for (let i = 0; i < filters.length; i++) {
-    const id = filters[i].id;
-    if (cloneEl.querySelector(`[filter='url(#${id})']`)) continue;
-    if (cloneEl.getAttribute("filter") === `url(#${id})`) continue;
-    filters[i].remove();
-  }
+    // remove unused filters
+    const filters = cloneEl.querySelectorAll("filter");
+    for (let i = 0; i < filters.length; i++) {
+      const id = filters[i].id;
+      if (cloneEl.querySelector(`[filter='url(#${id})']`)) continue;
+      if (cloneEl.getAttribute("filter") === `url(#${id})`) continue;
+      filters[i].remove();
+    }
 
-  // remove unused patterns
-  const patterns = cloneEl.querySelectorAll("pattern");
-  for (let i = 0; i < patterns.length; i++) {
-    const id = patterns[i].id;
-    if (cloneEl.querySelector(`[fill='url(#${id})']`)) continue;
-    patterns[i].remove();
-  }
+    // remove unused patterns
+    const patterns = cloneEl.querySelectorAll("pattern");
+    for (let i = 0; i < patterns.length; i++) {
+      const id = patterns[i].id;
+      if (cloneEl.querySelector(`[fill='url(#${id})']`)) continue;
+      patterns[i].remove();
+    }
 
-  // remove unused symbols
-  const symbols = cloneEl.querySelectorAll("symbol");
-  for (let i = 0; i < symbols.length; i++) {
-    const id = symbols[i].id;
-    if (cloneEl.querySelector(`use[*|href='#${id}']`)) continue;
-    symbols[i].remove();
-  }
+    // remove unused symbols
+    const symbols = cloneEl.querySelectorAll("symbol");
+    for (let i = 0; i < symbols.length; i++) {
+      const id = symbols[i].id;
+      if (cloneEl.querySelector(`use[*|href='#${id}']`)) continue;
+      symbols[i].remove();
+    }
 
-  // viewport layers only keep visible emblems live; full-map rendering materializes all of them into the clone
-  const cloneEmblems = cloneEl.getElementById("emblems")?.querySelectorAll("use") ?? [];
-  if (Layers.isOn("emblems") && cloneEmblems.length) {
-    const releaseDefinitions = await renderEmblemDefinitions(cloneEl);
-    cloneEmblems.forEach(el => {
-      const href = el.getAttribute("href") || el.getAttribute("xlink:href");
-      if (!href) return;
-      const id = href.slice(1);
-      const emblem = findEl(id);
-      if (!emblem) return;
-      cloneEl.getElementById(id)?.remove();
-      cloneDefs.append(emblem.cloneNode(true));
-    });
-    releaseDefinitions(); // the clone owns its copies now, so the map keeps only the emblems it shows
-  } else {
-    cloneDefs.querySelector("#defs-emblems")?.remove();
-  }
-
-  {
-    // replace ocean pattern href to base64; drop the image if it cannot be loaded,
-    // as an app-relative href is dead in an exported file
-    const image = cloneEl.getElementById("oceanicPattern");
-    const href = image?.getAttribute("href");
-    if (image && href) {
-      await new Promise<void>(resolve => {
-        getBase64(href, base64 => {
-          if (typeof base64 === "string") image.setAttribute("href", base64);
-          else image.remove();
-          resolve();
-        });
+    // viewport layers only keep visible emblems live; full-map rendering materializes all of them into the clone
+    const cloneEmblems = cloneEl.getElementById("emblems")?.querySelectorAll("use") ?? [];
+    if (Layers.isOn("emblems") && cloneEmblems.length) {
+      const releaseDefinitions = await renderEmblemDefinitions(cloneEl);
+      cloneEmblems.forEach(el => {
+        const href = el.getAttribute("href") || el.getAttribute("xlink:href");
+        if (!href) return;
+        const id = href.slice(1);
+        const emblem = findEl(id);
+        if (!emblem) return;
+        cloneEl.getElementById(id)?.remove();
+        cloneDefs.append(emblem.cloneNode(true));
       });
-    }
-  }
-
-  {
-    // replace texture href to base64; drop the image if it cannot be loaded
-    const image = cloneEl.querySelector("#texture > image");
-    const href = image?.getAttribute("href");
-    if (image && href) {
-      await new Promise<void>(resolve => {
-        getBase64(href, base64 => {
-          if (typeof base64 === "string") image.setAttribute("href", base64);
-          else image.remove();
-          resolve();
-        });
-      });
-    }
-  }
-
-  // add relief icons
-  if (cloneEl.getElementById("terrain")) {
-    const uniqueElements = new Set<string | null>();
-    const terrainNodes = cloneEl.getElementById("terrain")!.childNodes;
-    for (let i = 0; i < terrainNodes.length; i++) {
-      const node = terrainNodes[i] as Element;
-      const href = node.getAttribute("href") || node.getAttribute("xlink:href");
-      uniqueElements.add(href);
-      node.removeAttribute("data-i"); // rendering index is not needed outside of the app
+      releaseDefinitions(); // the clone owns its copies now, so the map keeps only the emblems it shows
+    } else {
+      cloneDefs.querySelector("#defs-emblems")?.remove();
     }
 
-    const defsRelief = svgDefs.getElementById("defs-relief");
-    for (const terrain of [...uniqueElements]) {
-      if (!terrain) continue;
-      const element = defsRelief?.querySelector(terrain);
-      if (element) cloneDefs.appendChild(element.cloneNode(true));
-    }
-  }
-
-  // add wind rose
-  if (cloneEl.getElementById("compass")) {
-    const rose = svgDefs.getElementById("defs-compass-rose");
-    if (rose) cloneDefs.appendChild(rose.cloneNode(true));
-  }
-
-  // add burs icons
-  if (cloneEl.getElementById("burgIcons")) {
-    const groups = cloneEl.getElementById("burgIcons")!.querySelectorAll("g");
-    for (const group of Array.from(groups)) {
-      if (!group.dataset.icon || cloneDefs.querySelector(group.dataset.icon)) continue;
-      const icon = svgDefs.querySelector(group.dataset.icon);
-      if (icon) cloneDefs.appendChild(icon.cloneNode(true));
-    }
-  }
-
-  // add goods icons
-  if (cloneEl.getElementById("goodsIcons") || cloneEl.getElementById("goodsBurgs")) {
-    const uniqueIcons = new Set<string>();
-    const goodsUseElements = cloneEl.querySelectorAll("#goodsIcons use, #goodsBurgs use");
-    for (const el of goodsUseElements) {
-      const href = el.getAttribute("href") || el.getAttribute("xlink:href");
-      if (href) uniqueIcons.add(href);
-    }
-    const goodsIconsDefs = svgDefs.getElementById("good-icons");
-    for (const href of uniqueIcons) {
-      const element = goodsIconsDefs?.querySelector(href);
-      if (element) cloneDefs.appendChild(element.cloneNode(true));
-    }
-  }
-
-  // add port icon
-  if (cloneEl.getElementById("anchors")) {
-    const anchor = svgDefs.getElementById("icon-anchor");
-    if (anchor) cloneDefs.appendChild(anchor.cloneNode(true));
-  }
-
-  // add grid pattern
-  if (cloneEl.getElementById("gridOverlay")?.hasChildNodes()) {
-    const type = styles.grid.options.type || "pointyHex";
-    const pattern = svgDefs.getElementById(`pattern_${type}`);
-    if (pattern) cloneDefs.appendChild(pattern.cloneNode(true));
-  }
-
-  {
-    // replace external marker icons
-    const externalMarkerImages = cloneEl.querySelectorAll<SVGImageElement>('#markers image[href]:not([href=""])');
-    const imageHrefs = Array.from(externalMarkerImages).map(img => img.getAttribute("href"));
-
-    for (const url of imageHrefs) {
-      if (!url) continue;
-      await new Promise<void>(resolve => {
-        getBase64(url, base64 => {
-          externalMarkerImages.forEach(img => {
-            if (typeof base64 === "string" && img.getAttribute("href") === url) img.setAttribute("href", base64);
+    {
+      // replace ocean pattern href to base64; drop the image if it cannot be loaded,
+      // as an app-relative href is dead in an exported file
+      const image = cloneEl.getElementById("oceanicPattern");
+      const href = image?.getAttribute("href");
+      if (image && href) {
+        await new Promise<void>(resolve => {
+          getBase64(href, base64 => {
+            if (typeof base64 === "string") image.setAttribute("href", base64);
+            else image.remove();
+            resolve();
           });
-          resolve();
         });
-      });
+      }
     }
-  }
 
-  {
-    // replace external regiment icons
-    const externalRegimentImages = cloneEl.querySelectorAll<SVGImageElement>('#armies image[href]:not([href=""])');
-    const imageHrefs = Array.from(externalRegimentImages).map(img => img.getAttribute("href"));
-
-    for (const url of imageHrefs) {
-      if (!url) continue;
-      await new Promise<void>(resolve => {
-        getBase64(url, base64 => {
-          externalRegimentImages.forEach(img => {
-            if (typeof base64 === "string" && img.getAttribute("href") === url) img.setAttribute("href", base64);
+    {
+      // replace texture href to base64; drop the image if it cannot be loaded
+      const image = cloneEl.querySelector("#texture > image");
+      const href = image?.getAttribute("href");
+      if (image && href) {
+        await new Promise<void>(resolve => {
+          getBase64(href, base64 => {
+            if (typeof base64 === "string") image.setAttribute("href", base64);
+            else image.remove();
+            resolve();
           });
-          resolve();
         });
+      }
+    }
+
+    // add relief icons
+    if (cloneEl.getElementById("terrain")) {
+      const uniqueElements = new Set<string | null>();
+      const terrainNodes = cloneEl.getElementById("terrain")!.childNodes;
+      for (let i = 0; i < terrainNodes.length; i++) {
+        const node = terrainNodes[i] as Element;
+        const href = node.getAttribute("href") || node.getAttribute("xlink:href");
+        uniqueElements.add(href);
+        node.removeAttribute("data-i"); // rendering index is not needed outside of the app
+      }
+
+      const defsRelief = svgDefs.getElementById("defs-relief");
+      for (const terrain of [...uniqueElements]) {
+        if (!terrain) continue;
+        const element = defsRelief?.querySelector(terrain);
+        if (element) cloneDefs.appendChild(element.cloneNode(true));
+      }
+    }
+
+    // add wind rose
+    if (cloneEl.getElementById("compass")) {
+      const rose = svgDefs.getElementById("defs-compass-rose");
+      if (rose) cloneDefs.appendChild(rose.cloneNode(true));
+    }
+
+    // add burs icons
+    if (cloneEl.getElementById("burgIcons")) {
+      const groups = cloneEl.getElementById("burgIcons")!.querySelectorAll("g");
+      for (const group of Array.from(groups)) {
+        if (!group.dataset.icon || cloneDefs.querySelector(group.dataset.icon)) continue;
+        const icon = svgDefs.querySelector(group.dataset.icon);
+        if (icon) cloneDefs.appendChild(icon.cloneNode(true));
+      }
+    }
+
+    // add goods icons
+    if (cloneEl.getElementById("goodsIcons") || cloneEl.getElementById("goodsBurgs")) {
+      const uniqueIcons = new Set<string>();
+      const goodsUseElements = cloneEl.querySelectorAll("#goodsIcons use, #goodsBurgs use");
+      for (const el of goodsUseElements) {
+        const href = el.getAttribute("href") || el.getAttribute("xlink:href");
+        if (href) uniqueIcons.add(href);
+      }
+      const goodsIconsDefs = svgDefs.getElementById("good-icons");
+      for (const href of uniqueIcons) {
+        const element = goodsIconsDefs?.querySelector(href);
+        if (element) cloneDefs.appendChild(element.cloneNode(true));
+      }
+    }
+
+    // add port icon
+    if (cloneEl.getElementById("anchors")) {
+      const anchor = svgDefs.getElementById("icon-anchor");
+      if (anchor) cloneDefs.appendChild(anchor.cloneNode(true));
+    }
+
+    // add grid pattern
+    if (cloneEl.getElementById("gridOverlay")?.hasChildNodes()) {
+      const type = styles.grid.options.type || "pointyHex";
+      const pattern = svgDefs.getElementById(`pattern_${type}`);
+      if (pattern) cloneDefs.appendChild(pattern.cloneNode(true));
+    }
+
+    {
+      // replace external marker icons
+      const externalMarkerImages = cloneEl.querySelectorAll<SVGImageElement>('#markers image[href]:not([href=""])');
+      const imageHrefs = Array.from(externalMarkerImages).map(img => img.getAttribute("href"));
+
+      for (const url of imageHrefs) {
+        if (!url) continue;
+        await new Promise<void>(resolve => {
+          getBase64(url, base64 => {
+            externalMarkerImages.forEach(img => {
+              if (typeof base64 === "string" && img.getAttribute("href") === url) img.setAttribute("href", base64);
+            });
+            resolve();
+          });
+        });
+      }
+    }
+
+    {
+      // replace external regiment icons
+      const externalRegimentImages = cloneEl.querySelectorAll<SVGImageElement>('#armies image[href]:not([href=""])');
+      const imageHrefs = Array.from(externalRegimentImages).map(img => img.getAttribute("href"));
+
+      for (const url of imageHrefs) {
+        if (!url) continue;
+        await new Promise<void>(resolve => {
+          getBase64(url, base64 => {
+            externalRegimentImages.forEach(img => {
+              if (typeof base64 === "string" && img.getAttribute("href") === url) img.setAttribute("href", base64);
+            });
+            resolve();
+          });
+        });
+      }
+    }
+
+    const fogMask = cloneEl.getElementById("fog");
+    if (!fogMask?.querySelector("path")) fogMask?.remove(); // the fog mask is unused until an area is revealed
+    if (!cloneEl.getElementById("regions")) cloneEl.getElementById("statePaths")?.remove(); // removed unused statePaths
+    if (!cloneEl.getElementById("labels")) cloneEl.getElementById("textPaths")?.remove(); // removed unused textPaths
+
+    // add armies style
+    if (cloneEl.getElementById("armies")) {
+      cloneEl.insertAdjacentHTML(
+        "afterbegin",
+        "<style>#armies text {stroke: none; fill: #fff; text-shadow: 0 0 4px #000; dominant-baseline: central; text-anchor: middle; font-family: Helvetica; fill-opacity: 1;}#armies text.regimentIcon {font-size: .8em;}</style>"
+      );
+    }
+
+    if (type === "svg") flattenSymbolReferences(cloneEl);
+
+    // add xlink: for href to support svg 1.1
+    if (type === "svg") {
+      cloneEl.querySelectorAll("[href]").forEach(el => {
+        const href = el.getAttribute("href");
+        el.removeAttribute("href");
+        if (href) el.setAttribute("xlink:href", href);
       });
     }
+
+    // add hatchings
+    const hatchingUsers = cloneEl.querySelectorAll(`[fill^='url(#hatch']`);
+    const hatchingFills = unique(Array.from(hatchingUsers).map(el => el.getAttribute("fill")));
+    const hatchingIds = hatchingFills.map(fill => fill!.slice(5, -1));
+    for (const hatchingId of hatchingIds) {
+      const hatching = svgDefs.getElementById(hatchingId);
+      if (hatching) cloneDefs.appendChild(hatching.cloneNode(true));
+    }
+
+    // load fonts
+    const usedFonts = getUsedFonts(cloneEl);
+    const fontsToLoad = usedFonts.filter(font => font.src);
+    if (fontsToLoad.length) {
+      const dataURLfonts = await loadFontsAsDataURI(fontsToLoad);
+
+      const fontFaces = dataURLfonts
+        .map(({ family, src, unicodeRange = "", variant = "normal" }) => {
+          return `@font-face {font-family: "${family}"; src: ${src}; unicode-range: ${unicodeRange}; font-variant: ${variant};}`;
+        })
+        .join("\n");
+
+      const style = document.createElement("style");
+      style.setAttribute("type", "text/css");
+      style.innerHTML = fontFaces;
+      cloneEl.querySelector("defs")!.appendChild(style);
+    }
+
+    clone.remove();
+
+    const serialized = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>${new XMLSerializer().serializeToString(cloneEl)}`;
+    const blob = new Blob([serialized], { type: "image/svg+xml;charset=utf-8" });
+    const url = window.URL.createObjectURL(blob);
+    window.setTimeout(() => window.URL.revokeObjectURL(url), 5000);
+    return url;
+  } finally {
+    cloneEl.remove();
   }
-
-  const fogMask = cloneEl.getElementById("fog");
-  if (!fogMask?.querySelector("path")) fogMask?.remove(); // the fog mask is unused until an area is revealed
-  if (!cloneEl.getElementById("regions")) cloneEl.getElementById("statePaths")?.remove(); // removed unused statePaths
-  if (!cloneEl.getElementById("labels")) cloneEl.getElementById("textPaths")?.remove(); // removed unused textPaths
-
-  // add armies style
-  if (cloneEl.getElementById("armies")) {
-    cloneEl.insertAdjacentHTML(
-      "afterbegin",
-      "<style>#armies text {stroke: none; fill: #fff; text-shadow: 0 0 4px #000; dominant-baseline: central; text-anchor: middle; font-family: Helvetica; fill-opacity: 1;}#armies text.regimentIcon {font-size: .8em;}</style>"
-    );
-  }
-
-  if (type === "svg") flattenSymbolReferences(cloneEl);
-
-  // add xlink: for href to support svg 1.1
-  if (type === "svg") {
-    cloneEl.querySelectorAll("[href]").forEach(el => {
-      const href = el.getAttribute("href");
-      el.removeAttribute("href");
-      if (href) el.setAttribute("xlink:href", href);
-    });
-  }
-
-  // add hatchings
-  const hatchingUsers = cloneEl.querySelectorAll(`[fill^='url(#hatch']`);
-  const hatchingFills = unique(Array.from(hatchingUsers).map(el => el.getAttribute("fill")));
-  const hatchingIds = hatchingFills.map(fill => fill!.slice(5, -1));
-  for (const hatchingId of hatchingIds) {
-    const hatching = svgDefs.getElementById(hatchingId);
-    if (hatching) cloneDefs.appendChild(hatching.cloneNode(true));
-  }
-
-  // load fonts
-  const usedFonts = getUsedFonts(cloneEl);
-  const fontsToLoad = usedFonts.filter(font => font.src);
-  if (fontsToLoad.length) {
-    const dataURLfonts = await loadFontsAsDataURI(fontsToLoad);
-
-    const fontFaces = dataURLfonts
-      .map(({ family, src, unicodeRange = "", variant = "normal" }) => {
-        return `@font-face {font-family: "${family}"; src: ${src}; unicode-range: ${unicodeRange}; font-variant: ${variant};}`;
-      })
-      .join("\n");
-
-    const style = document.createElement("style");
-    style.setAttribute("type", "text/css");
-    style.innerHTML = fontFaces;
-    cloneEl.querySelector("defs")!.appendChild(style);
-  }
-
-  clone.remove();
-
-  const serialized = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>${new XMLSerializer().serializeToString(cloneEl)}`;
-  const blob = new Blob([serialized], { type: "image/svg+xml;charset=utf-8" });
-  const url = window.URL.createObjectURL(blob);
-  window.setTimeout(() => window.URL.revokeObjectURL(url), 5000);
-  return url;
 }
 
 // resolve the font-size an em-sized symbol would inherit at this node
@@ -888,8 +892,14 @@ function loadScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const script = document.createElement("script");
     script.src = src;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error(`Cannot load script ${src}`));
+    script.onload = () => {
+      script.remove();
+      resolve();
+    };
+    script.onerror = () => {
+      script.remove();
+      reject(new Error(`Cannot load script ${src}`));
+    };
     document.head.append(script);
   });
 }

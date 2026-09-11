@@ -1,4 +1,4 @@
-import { closeDialogs, confirmationDialog, updateDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import { dialogState } from "@/components/dialog/state";
 import {
@@ -51,7 +51,7 @@ function open(): void {
 }
 
 function renderDialog(): void {
-  document.getElementById(dialogId)?.remove();
+  destroyDialog(dialogId);
 
   const html = /* html */ `
     <div id="${dialogId}" class="dialog stable editorDialog">

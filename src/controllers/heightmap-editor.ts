@@ -27,7 +27,19 @@ import { GraphOverride } from "@/generators/graph-override";
 import { removeEmblem } from "@/renderers/draw-emblems";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { downloadFile, getFileName, uploadFile } from "@/utils";
-import { ensureEl, findEl, generateSeed, getPointer, last, lim, link, minmax, rn, unique } from "../utils";
+import {
+  createFileInput,
+  ensureEl,
+  findEl,
+  generateSeed,
+  getPointer,
+  last,
+  lim,
+  link,
+  minmax,
+  rn,
+  unique
+} from "../utils";
 import { createBrushStroke } from "../utils/brushUtils";
 import type { PromptOptions } from "../utils/commonUtils";
 
@@ -39,13 +51,17 @@ declare const prompt: (text: string, options: PromptOptions, callback: (value: s
 
 type FilterState = { cellType: "all" | "land" | "water" };
 const dialogId = "heightmapEditor";
+const historyLimit = 100;
 let filterState: FilterState;
+let templateInput: HTMLInputElement | null = null;
+let converterInput: HTMLInputElement | null = null;
 
 function open(options?: { mode?: string; tool?: string }): void {
   filterState = dialogState.get(dialogId, "filters", (): FilterState => ({ cellType: "all" }));
   if (!(["all", "land", "water"] as string[]).includes(filterState.cellType)) filterState.cellType = "all";
   dialogState.set(dialogId, "filters", filterState);
   const { mode, tool } = options || {};
+  HeightmapGenerator.clearData(); // release the grid pinned by a previous editing session
   restartHistory();
   select<SVGElement, unknown>("#viewbox").selectAll("#heights").remove();
   select<SVGElement, unknown>("#viewbox").insert("g", "#terrs").attr("id", "heights");
@@ -193,11 +209,7 @@ function renderTemplateEditor(): void {
   ensureEl("templateUndo").addEventListener("click", () => restoreHistory(edits.n - 1));
   ensureEl("templateRedo").addEventListener("click", () => restoreHistory(edits.n + 1));
   ensureEl("templateSave").addEventListener("click", downloadTemplate);
-  ensureEl("templateLoad").addEventListener("click", () => ensureEl("templateToLoad").click());
-
-  ensureEl<HTMLInputElement>("templateToLoad").onchange = () => {
-    uploadFile(ensureEl<HTMLInputElement>("templateToLoad"), uploadTemplate);
-  };
+  ensureEl("templateLoad").addEventListener("click", pickTemplateFile);
 }
 
 function renderImageConverter(): void {
@@ -270,10 +282,7 @@ function renderImageConverter(): void {
     .on("touchmove mousemove", showPalleteHeight)
     .on("click", assignHeight);
 
-  ensureEl("convertImageLoad").addEventListener("click", () => ensureEl("imageToLoad").click());
-  // imageToLoad is a static file input outside the dialog; use property assignment
-  // (idempotent, replaces rather than accumulates) so re-rendering doesn't stack listeners.
-  ensureEl<HTMLInputElement>("imageToLoad").onchange = () => loadImage.call(ensureEl<HTMLInputElement>("imageToLoad"));
+  ensureEl("convertImageLoad").addEventListener("click", pickConverterImage);
   ensureEl("convertAutoLum").addEventListener("click", () => autoAssing("lum"));
   ensureEl("convertAutoHue").addEventListener("click", () => autoAssing("hue"));
   ensureEl("convertAutoFMG").addEventListener("click", () => autoAssing("scheme"));
@@ -457,6 +466,7 @@ async function finalizeHeightmap(): Promise<void> {
 
   Reflect.deleteProperty(window, "edits");
   setHistoryButtonsDisabled(true, true);
+  HeightmapGenerator.clearData(); // the edited grid is no longer needed once the editor is left
 
   customization = 0;
   ensureEl("customizationMenu").style.display = "none";
@@ -864,6 +874,13 @@ function updateHistory(noStat?: string): void {
   edits = Object.assign(edits.slice(0, step), { n: step + 1 });
   edits[step] = grid.cells.h.slice();
 
+  // drop the oldest snapshots and shift the cursor with them, keeping the relative undo position
+  if (edits.length > historyLimit) {
+    const removed = edits.length - historyLimit;
+    edits.splice(0, removed);
+    edits.n -= removed;
+  }
+
   setHistoryButtonsDisabled(edits.n <= 1, true);
   if (!noStat) {
     updateStatistics();
@@ -1067,7 +1084,7 @@ function exitBrushMode(): void {
   applyDefaultViewboxEvents();
   select<SVGSVGElement, unknown>("#map").on("dblclick.zoom", null);
   select<SVGElement, unknown>("#viewbox").on("touchmove mousemove", moveCursor);
-  select("#debug").selectAll(".lineCircle").remove();
+  select("#debug").selectAll("#brushCircle, .lineCircle").remove();
   removeCircle();
 
   ensureEl("brushesSliders").style.display = "none";
@@ -1741,6 +1758,13 @@ function downloadTemplate(): void {
   downloadFile(data, name);
 }
 
+/** Own the template file input here so repeat opens cannot stack listeners on a shared element */
+function pickTemplateFile(): void {
+  templateInput ??= createFileInput(".txt");
+  templateInput.onchange = () => uploadFile(templateInput!, uploadTemplate);
+  templateInput.click();
+}
+
 function uploadTemplate(dataLoaded: string): void {
   const steps = dataLoaded.split("\r\n");
   if (!steps.length) {
@@ -1759,9 +1783,16 @@ function uploadTemplate(dataLoaded: string): void {
   }
 }
 
+/** Own the image-converter file input here so repeat opens cannot stack listeners on a shared element */
+function pickConverterImage(): void {
+  converterInput ??= createFileInput("image/*");
+  converterInput.onchange = () => loadImage.call(converterInput!);
+  converterInput.click();
+}
+
 function openImageConverter(): void {
   if (document.getElementById("imageConverter")) return;
-  ensureEl("imageToLoad").click();
+  pickConverterImage();
   closeDialogs("#imageConverter");
 
   renderImageConverter();

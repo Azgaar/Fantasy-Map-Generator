@@ -10,7 +10,10 @@ import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { highlightEmblemElement } from "@/renderers/overlays/highlight";
 import type { Emblem } from "@/types/emblems";
 import { downloadFile, getFileName, openURL } from "@/utils";
-import { ensureEl, rn } from "../utils";
+import { createFileInput, ensureEl, rn } from "../utils";
+
+let emblemImageInput: HTMLInputElement | null = null;
+let emblemSvgInput: HTMLInputElement | null = null;
 
 type EmblemEntity = State | Province | Burg;
 
@@ -254,10 +257,13 @@ function renderDialog(): void {
   ensureEl("emblemsRegenerate").onclick = regenerate;
   ensureEl("emblemsArmoria").onclick = openInArmoria;
   ensureEl("emblemsUpload").onclick = toggleUpload;
-  ensureEl("emblemsUploadImage").onclick = () => ensureEl("emblemImageToLoad").click();
-  ensureEl("emblemsUploadSVG").onclick = () => ensureEl("emblemSVGToLoad").click();
-  ensureEl("emblemImageToLoad").onchange = () => upload("image");
-  ensureEl("emblemSVGToLoad").onchange = () => upload("svg");
+  const pickEmblem = (type: "image" | "svg") => {
+    const input = getEmblemInput(type);
+    input.onchange = () => upload(type);
+    input.click();
+  };
+  ensureEl("emblemsUploadImage").onclick = () => pickEmblem("image");
+  ensureEl("emblemsUploadSVG").onclick = () => pickEmblem("svg");
   ensureEl("emblemsDownload").onclick = toggleDownload;
   ensureEl("emblemsDownloadSVG").onclick = () => download("svg");
   ensureEl("emblemsDownloadPNG").onclick = () => download("png");
@@ -441,10 +447,19 @@ function toggleUpload(): void {
   ensureEl("emblemUploadControl").classList.toggle("hidden");
 }
 
+/** Own the emblem file inputs here so reopen never binds a second listener on a shared element */
+function getEmblemInput(type: "image" | "svg"): HTMLInputElement {
+  if (type === "image") {
+    emblemImageInput ??= createFileInput("image/*");
+    return emblemImageInput;
+  }
+  emblemSvgInput ??= createFileInput(".svg");
+  return emblemSvgInput;
+}
+
 function upload(type: "image" | "svg"): void {
   const el = currentEl;
-  const input =
-    type === "image" ? ensureEl<HTMLInputElement>("emblemImageToLoad") : ensureEl<HTMLInputElement>("emblemSVGToLoad");
+  const input = getEmblemInput(type);
   const file = input.files![0];
   input.value = "";
 

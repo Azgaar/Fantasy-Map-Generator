@@ -1,4 +1,4 @@
-import { updateDialog } from "@/components/dialog/dialog-helpers";
+import { destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import { dialogState } from "@/components/dialog/state";
 import {
@@ -89,7 +89,7 @@ function open(marketId: number): void {
 }
 
 function renderDialog(): void {
-  document.getElementById(dialogId)?.remove();
+  destroyDialog(dialogId);
   const editorHtml = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
       <div>
         ${renderEditorHeader({ dialogId, columns })}
