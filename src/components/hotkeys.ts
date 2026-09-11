@@ -31,6 +31,7 @@ function handleKeyup(event: KeyboardEvent): void {
   const shift = (shiftKey || key === "Shift") && !altKey;
   const altShift = altKey && (shiftKey || key === "Shift") && !ctrl;
   const layer = getLayerByShortcut(code);
+  const brush = getVisibleBrush();
 
   if (code === "Space") openOmnibar(event);
   else if (code === "F1") showInfo();
@@ -70,7 +71,8 @@ function handleKeyup(event: KeyboardEvent): void {
   else if ((shift || altShift) && code === "KeyE") Controllers.CellInfo.open();
   else if ((shift || altShift) && code === "KeyG") Controllers.GoodsEditor.open();
   else if ((shift || altShift) && code === "KeyJ") Controllers.JourneysOverview.open();
-  else if ((shift || altShift) && code === "Equal") Controllers.MeasurersEditor.open();
+  else if ((shift || altShift) && code === "KeyW") Controllers.WrapTool.open();
+  else if ((shift || altShift) && code === "Equal" && !brush) Controllers.MeasurersEditor.open();
   else if (key === "!") Controllers.BurgCreator.toggle();
   else if (key === "@") Controllers.LabelCreator.toggle();
   else if (key === "#") Controllers.MarkerCreator.toggle();
@@ -78,12 +80,12 @@ function handleKeyup(event: KeyboardEvent): void {
   else if (key === "%") Controllers.RouteCreator.open();
   else if (code === "BracketRight") handleBracketSizeChange(code);
   else if (code === "BracketLeft" && handleBracketSizeChange(code)) return;
-  else if (layer && !(code === "Equal" && customization)) Layers.toggle(layer);
+  else if (layer && !(code === "Equal" && (customization || brush))) Layers.toggle(layer);
   else if (code === "ArrowLeft") panMap(10, 0);
   else if (code === "ArrowRight") panMap(-10, 0);
   else if (code === "ArrowUp") panMap(0, 10);
   else if (code === "ArrowDown") panMap(0, -10);
-  else if (key === "+" || key === "-" || key === "=") handleSizeChange(key);
+  else if (key === "+" || key === "-" || key === "=") handleSizeChange(key, brush);
   else if (key === "0") resetZoom(1000);
   else if (key === "1") setMapZoom(1);
   else if (key === "2") setMapZoom(2);
@@ -96,9 +98,11 @@ function handleKeyup(event: KeyboardEvent): void {
   else if (key === "9") setMapZoom(9);
 }
 
-// only a plain Space with nothing focused: a focused control keeps its own Space, and a modified Space is not ours
+// only a plain Space with nothing focused: a focused control keeps its own Space, a modified Space is not ours,
+// and a visible brush tool owns Space for panning
 function openOmnibar(event: KeyboardEvent): void {
   if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
+  if (getVisibleBrush()) return;
   const active = document.activeElement;
   if (active && active !== document.body) return;
   Controllers.Omnibar.open();
@@ -114,19 +118,28 @@ function allowHotkeys(): boolean {
   return true;
 }
 
+const BRUSH_SIZE_INPUTS = [
+  "heightmapBrushRadius",
+  "heightmapBrushPower",
+  "heightmapLinePower",
+  "paintEditorBrush",
+  "wrapRadius"
+];
+
+/** the size control of the brush the user is currently working with, if any is on screen */
+function getVisibleBrush(): HTMLInputElement | null {
+  return BRUSH_SIZE_INPUTS.map(id => findEl<HTMLInputElement>(id)).find(element => element?.offsetParent) ?? null;
+}
+
 // "+", "-" and "=" keys on numpad. "=" is for "+" on Mac
-function handleSizeChange(key: string): void {
-  let brush: HTMLInputElement | null = null;
-
-  const brushIds = ["heightmapBrushRadius", "heightmapBrushPower", "heightmapLinePower", "paintEditorBrush"];
-  brush = brushIds.map(id => findEl<HTMLInputElement>(id)).find(element => element?.offsetParent) ?? null;
-
+function handleSizeChange(key: string, brush = getVisibleBrush()): void {
   if (brush) {
-    const change = key === "-" ? -5 : 5;
+    const step = Number(brush.dataset.keyStep) || 5;
+    const change = key === "-" ? -step : step;
     const min = Number(brush.getAttribute("min")) || 5;
     const max = Number(brush.getAttribute("max")) || 100;
-    const value = +brush.value + change;
-    brush.value = String(minmax(value, min, max));
+    brush.value = String(minmax(+brush.value + change, min, max));
+    brush.dispatchEvent(new Event("input", { bubbles: true })); // let the owning tool pick the new size up
     return;
   }
 
@@ -136,14 +149,7 @@ function handleSizeChange(key: string): void {
 
 function handleBracketSizeChange(code: string): boolean {
   const isHeightmapBrushPressed = Boolean(findEl("brushesButtons")?.querySelector("button.pressed"));
-  const hasActiveBrush =
-    isHeightmapBrushPressed ||
-    findEl("heightmapBrushRadius")?.offsetParent ||
-    findEl("heightmapBrushPower")?.offsetParent ||
-    findEl("heightmapLinePower")?.offsetParent ||
-    findEl("paintEditorBrush")?.offsetParent;
-
-  if (!hasActiveBrush) return false;
+  if (!isHeightmapBrushPressed && !getVisibleBrush()) return false;
 
   handleSizeChange(code === "BracketLeft" ? "-" : "+");
   return true;

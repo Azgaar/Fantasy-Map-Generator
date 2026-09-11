@@ -24,6 +24,8 @@ export const VERSION = "1.153.0";
 
 // new changes on top
 const latestPublicChanges = [
+  "Wrap Tool: reshape cells with a brush",
+  "Coastlines: roughness localized to coastline section",
   "Global map search (press Space to open)",
   "Diplomacy: select relation targets on the map and repair invalid relations",
   "Heightmap: option to render contour lines",
@@ -38,11 +40,7 @@ const latestPublicChanges = [
   "States and Provinces editors: annex by clicking on the map",
   "Option to redraw labels, icons and relief only after a zoom",
   "Brushes: smooth, gap-free painting at any screen refresh rate",
-  "Journey Editor and new Journeys layer",
-  "Desktop App",
-  "URL params to open specific layers or preset",
-  "Emblems rendering optimization",
-  "Dialogs state preserved between sessions"
+  "Journey Editor and new Journeys layer"
 ];
 
 export function parseMapVersion(version: string): string {

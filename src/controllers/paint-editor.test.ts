@@ -146,11 +146,12 @@ describe("PaintEditor", () => {
     expect(options.map(option => option.textContent)).toEqual(["Neutral", "North", "South"]);
   });
 
-  it("shows the hovered item from the value getter", () => {
+  it("shows the hovered item from the value getter", async () => {
     PaintEditor.open(getOptions({ getValue: () => 2 }));
     document
       .getElementById("viewbox")
       ?.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 2, clientY: 2 }));
+    await new Promise(requestAnimationFrame); // the brush answers pointer moves once per frame
 
     expect(document.getElementById("tooltip")?.textContent).toBe("South");
   });

@@ -29,7 +29,8 @@ To report a problem or propose a feature, see [Reporting bugs and suggesting ide
 [Heightmap customization](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-customization) ·
 [Heightmap template editor](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-template-editor) ·
 [Heightmap image overlay](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-image-overlay) ·
-[River Editor](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/River-Editor)
+[River Editor](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/River-Editor) ·
+[Wrap Tool](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Wrap-Tool)
 
 **World building**
 [Culture sets](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Culture-sets) ·

@@ -1957,8 +1957,9 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
       minEdge: 1,
       smoothThreshold: 0.25,
       roughnessContrast: 1.5,
-      profileHarmonics: 4,
-      lakeSmoothThreshMult: 2.0
+      roughnessScale: 60,
+      lakeSmoothThreshMult: 2.0,
+      variant: 0
     }
   };
 

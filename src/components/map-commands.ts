@@ -305,6 +305,12 @@ export const MAP_COMMANDS: MapCommand[] = [
     aliases: "rotate resize",
     run: () => Controllers.TransformTool.open()
   },
+  {
+    id: "openWrapTool",
+    name: "Open Wrap Tool",
+    aliases: "reshape cells brush",
+    run: () => Controllers.WrapTool.open()
+  },
   { id: "openMinimapButton", name: "Open Minimap", aliases: "navigation", run: () => Controllers.Minimap.open() },
   { id: "viewMesh", name: "Open 3D Scene", aliases: "view mode mesh", run: () => Controllers.View3d.open("viewMesh") },
   {
