@@ -690,6 +690,10 @@ function removeGood(good: Good) {
     }
 
     pack.goods = pack.goods.filter(g => g.i !== good.i);
+    // custom icons live outside the map svg and are never saved with the pack, drop the orphan
+    if (good.icon.startsWith("good-custom-") && !pack.goods.some(g => g.icon === good.icon)) {
+      document.getElementById(good.icon)?.remove();
+    }
     Goods.sync();
     goodsTable.refresh();
     Layers.draw("goods");

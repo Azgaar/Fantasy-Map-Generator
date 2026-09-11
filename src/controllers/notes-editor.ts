@@ -6,7 +6,7 @@ import { Controllers } from "@/controllers";
 import { NOTE_ENTITY_TYPES, type NoteEntry, type NoteRef, Notes } from "@/generators/notes";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName, speak, uploadFile } from "@/utils";
-import { ensureEl, findEl } from "../utils";
+import { createFileInput, ensureEl, findEl } from "../utils";
 import {
   canEditAsRichText,
   createRichTextEditor,
@@ -18,7 +18,7 @@ import {
 
 let quill: Quill | null = null;
 let windowed: { width: number; height: number; top: string; left: string } | null = null;
-let uploadBound = false;
+let legendsInput: HTMLInputElement | null = null;
 
 /** Open the editor on the given entity, or on the first note when called with no reference */
 function open(ref?: NoteRef): void {
@@ -187,16 +187,8 @@ function renderDialog(): void {
   ensureEl("notesFocus").addEventListener("click", validateHighlightElement);
   ensureEl("notesGenerateWithAi").addEventListener("click", openAiGenerator);
   ensureEl("notesDownload").addEventListener("click", downloadLegends);
-  ensureEl("notesUpload").addEventListener("click", () => ensureEl("legendsToLoad").click());
+  ensureEl("notesUpload").addEventListener("click", pickLegendsFile);
   ensureEl("notesRemove").addEventListener("click", triggerNotesRemove);
-
-  // the file input lives in the page, not in the dialog, so it outlives every render and is bound once
-  if (!uploadBound) {
-    uploadBound = true;
-    ensureEl<HTMLInputElement>("legendsToLoad").addEventListener("change", function (this: HTMLInputElement) {
-      uploadFile(this, uploadLegends);
-    });
-  }
 }
 
 function closeNotesEditor(): void {
@@ -377,6 +369,13 @@ function downloadLegends(): void {
   });
 
   downloadFile([CSV_HEADER, ...rows].join("\n"), `${getFileName("Notes")}.csv`);
+}
+
+/** Own the legends file input here so repeat opens cannot stack listeners on a shared element */
+function pickLegendsFile(): void {
+  legendsInput ??= createFileInput(".txt");
+  legendsInput.onchange = () => uploadFile(legendsInput!, uploadLegends);
+  legendsInput.click();
 }
 
 function uploadLegends(dataLoaded: string): void {

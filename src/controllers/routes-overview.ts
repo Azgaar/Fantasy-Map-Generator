@@ -137,6 +137,9 @@ function renderDialog(): void {
 
 function closeRoutesOverview(): void {
   destroyDialog("routesOverview");
+  const view = routesTable.view();
+  view.rows = [];
+  view.all = [];
 }
 
 function createNewRoute(): void {

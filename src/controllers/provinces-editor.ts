@@ -1278,6 +1278,10 @@ function removeAllProvinces(): void {
 function closeProvincesEditor(): void {
   if (customization === 12) exitAddProvinceMode();
   provincesAnnex.exit();
+  Controllers.ColorPicker.close();
+  const view = provincesTable.view();
+  view.rows = [];
+  view.all = [];
   $("#provincesEditor").dialog("destroy");
   ensureEl("provincesEditor").remove();
 }

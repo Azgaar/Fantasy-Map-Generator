@@ -154,6 +154,10 @@ function renderDialog(): void {
 }
 
 function closeZonesEditor(): void {
+  Controllers.ColorPicker.close();
+  const view = zonesTable.view();
+  view.rows = [];
+  view.all = [];
   $("#zonesEditor").dialog("destroy");
   ensureEl("zonesEditor").remove();
 }

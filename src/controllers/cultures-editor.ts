@@ -24,11 +24,25 @@ import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import type { Emblem } from "@/types/emblems";
 import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";
-import { abbreviate, capitalize, debounce, ensureEl, getPointer, isLand, parseTransform, ra, rn, si } from "../utils";
+import {
+  abbreviate,
+  capitalize,
+  createFileInput,
+  debounce,
+  ensureEl,
+  getPointer,
+  isLand,
+  parseTransform,
+  ra,
+  rn,
+  si
+} from "../utils";
 
 const dialogId = "culturesEditor" as const;
 const LEGEND_NAME = "Cultures"; // the legend box this editor toggles
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+let culturesInput: HTMLInputElement | null = null;
+
 const columns: EditorColumn<Culture>[] = [
   { key: "color", width: "1.2em", permanent: true },
   {
@@ -185,8 +199,7 @@ function renderDialog(): void {
   ensureEl("culturesEditNamesBase").addEventListener("click", () => Controllers.NamesbaseEditor.open());
   ensureEl("culturesAdd").addEventListener("click", enterAddCulturesMode);
   ensureEl("culturesExport").addEventListener("click", downloadCulturesCsv);
-  ensureEl("culturesImport").addEventListener("click", () => ensureEl("culturesCSVToLoad").click());
-  ensureEl("culturesCSVToLoad").addEventListener("change", uploadCulturesData);
+  ensureEl("culturesImport").addEventListener("click", pickCulturesCsv);
 }
 
 function refreshCulturesEditor(): void {
@@ -1006,6 +1019,13 @@ function closeCulturesEditor(): void {
   if (customization === 9) exitAddCultureMode();
   $("#culturesEditor").dialog("destroy");
   ensureEl("culturesEditor").remove();
+}
+
+/** Own the cultures CSV input here so repeat opens cannot stack listeners on a shared element */
+function pickCulturesCsv(): void {
+  culturesInput ??= createFileInput(".csv");
+  culturesInput.onchange = () => void uploadCulturesData.call(culturesInput!);
+  culturesInput.click();
 }
 
 async function uploadCulturesData(this: HTMLInputElement): Promise<void> {

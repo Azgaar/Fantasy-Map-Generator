@@ -3,12 +3,13 @@ import { fitMapToScreen } from "@/components/canvas";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { registerMap } from "@/components/lifecycle";
+import { pickMapFile } from "@/components/options/io-panes";
 import { syncOptionInputs } from "@/components/options/tabs/options-tab";
 import { clearMainTip, tip } from "@/components/tooltips";
+import { undraw } from "@/components/undraw";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { resetZoom } from "@/components/zoom";
 import { GraphOverride } from "@/generators/graph-override";
-import { invalidateEmblems } from "@/renderers/draw-emblems";
 import { onLegendClick } from "@/renderers/draw-legend";
 import { zonesFilter } from "@/renderers/draw-zones";
 import { Services } from "@/services";
@@ -280,9 +281,9 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       });
     }
 
+    undraw(); // every layer releases its scene and content before the loaded map takes over
     select("#map").remove();
     document.body.insertAdjacentHTML("afterbegin", data[5]);
-    invalidateEmblems(); // the viewport scene belongs to the map that was just dropped
     zonesFilter.type = "all"; // the dropped map's zone types say nothing about the loaded one
 
     // TODO: check if we need it or if LayersRegistry resolves it automatically?
@@ -295,6 +296,8 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     }
     grid = JSON.parse(data[6]);
     Grid.rebuildGraph(grid);
+    GraphOverride.clear(); // the loaded world replaces the previous one
+    HeightmapGenerator.clearData(); // the generator must not pin the replaced grid
     grid.cells.h = Uint8Array.from(data[7].split(","), Number);
     grid.cells.prec = Uint8Array.from(data[8].split(","), Number);
     grid.cells.f = Uint16Array.from(data[9].split(","), Number);
@@ -370,11 +373,12 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       });
     }
 
-    // data[45]: custom good icons
-    if (data[45]) {
-      const goodIconsDefs = document.getElementById("good-icons");
-      if (goodIconsDefs) goodIconsDefs.insertAdjacentHTML("beforeend", data[45]);
-    }
+    // data[45]: custom good icons. #good-icons lives outside the replaced map svg, clear the previous set
+    const goodIconsDefs = document.getElementById("good-icons");
+    goodIconsDefs?.querySelectorAll('[id^="good-custom-"]').forEach(icon => {
+      icon.remove();
+    });
+    if (data[45]) goodIconsDefs?.insertAdjacentHTML("beforeend", data[45]);
 
     await resolveVersionConflicts(mapVersion!, data);
 
@@ -696,7 +700,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         "Clear cache": () => clearCache(),
         "Select file": function (this: HTMLElement) {
           $(this).dialog("close");
-          ensureEl("mapToLoad").click();
+          pickMapFile();
         },
         "New map": function (this: HTMLElement) {
           $(this).dialog("close");

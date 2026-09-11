@@ -277,7 +277,11 @@ function renderDialog(): void {
 function closeStatesEditor(): void {
   if (customization === 3) exitAddStateMode();
   statesAnnex.exit();
+  Controllers.ColorPicker.close();
   select("#debug").selectAll(".highlight").remove();
+  const view = statesTable.view();
+  view.rows = [];
+  view.all = [];
   destroyDialog(dialogId);
 }
 
@@ -1607,7 +1611,7 @@ function openStateMergeDialog(): void {
       el.addEventListener("mouseenter", highlightStateOnMergeHover);
       el.addEventListener("mouseleave", stateHighlightOff);
     });
-  applyLineHighlighting("mergeStatesForm", ({ cellId }) => pack.cells.state[cellId]);
+  applyLineHighlighting("alert", ({ cellId }) => pack.cells.state[cellId]);
 
   function highlightStateOnMergeHover(event: any) {
     if (!Layers.isOn("states")) return;

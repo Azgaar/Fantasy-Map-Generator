@@ -297,6 +297,8 @@ function closeMarkerEditor(): void {
   if (ensureEl("addMarker").classList.contains("pressed")) stopMapPlacement();
   clearMainTip();
   destroyDialog("markerEditor");
+  selectedElement = null!;
+  selectedMarker = null!;
 }
 
 export const MarkersEditor = { open };

@@ -304,6 +304,7 @@ class EmblemRendererModule {
 
   remove(id: string): void {
     this.invalidate(id);
+    this.versions.delete(id);
     document.getElementById(id)?.remove();
   }
 
