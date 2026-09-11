@@ -1,5 +1,11 @@
 import { expect, test, vi } from "vitest";
-import { harvestAttributes, harvestStylesFromSvg, stripMigratedAttributes, stylesFromMap } from "./styles-legacy";
+import {
+  harvestAttributes,
+  harvestStylesFromSvg,
+  restoreEmptyBurgGroupStyles,
+  stripMigratedAttributes,
+  stylesFromMap
+} from "./styles-legacy";
 
 test("harvestAttributes derives from routes and schema", () => {
   const table = harvestAttributes();
@@ -81,6 +87,44 @@ test("a legacy style record keeps its burg/anchor groups against the DOM harvest
   expect(styles.burgIcons.burgIcons.groups.capital.attrs.fill).toBe("#000000");
   expect(styles.burgIcons.burgIcons.groups.town).toBeDefined();
   styles.burgIcons.burgIcons.groups.capital.attrs.fill = "#ffffff";
+});
+
+test("a legacy style record with an empty burg/anchor record harvests that record from the DOM", () => {
+  document.body.innerHTML = `<svg id="map">
+    <g id="burgIcons"><g id="cities" fill="#e57676" font-size="18"></g></g>
+    <g id="anchors"><g id="cities" fill="#ffffff" font-size="18"></g><g id="towns" font-size="12"></g></g>
+  </svg>`;
+  // pre-v1.150 main.js initialised the legacy record as anchors: {}, and {} counted as present
+  styles.burgIcons.anchors.groups = {};
+  harvestStylesFromSvg({ hasStyleRecord: true });
+  expect(styles.burgIcons.anchors.groups.cities.options.size).toBe(18);
+  expect(styles.burgIcons.anchors.groups.towns.options.size).toBe(12);
+  expect(styles.burgIcons.burgIcons.groups.cities).toBeUndefined(); // the filled record still wins
+  Styles.set(structuredClone(Styles.defaults));
+});
+
+test("restoreEmptyBurgGroupStyles refills an empty record from the svg and leaves a filled one alone", () => {
+  document.body.innerHTML = `<svg id="map">
+    <g id="burgIcons"><g id="cities" font-size="18"></g></g>
+    <g id="anchors"><g id="cities" font-size="18"></g><g id="towns" font-size="12"></g></g>
+  </svg>`;
+  styles.burgIcons.anchors.groups = {};
+  styles.burgIcons.burgIcons.groups.capital.options.size = 5;
+  restoreEmptyBurgGroupStyles();
+  expect(styles.burgIcons.anchors.groups.cities.options.size).toBe(18);
+  expect(styles.burgIcons.anchors.groups.towns.options.size).toBe(12);
+  expect(styles.burgIcons.anchors.groups.town).toBeDefined(); // defaults stay as fallbacks
+  expect(styles.burgIcons.burgIcons.groups.cities).toBeUndefined();
+  expect(styles.burgIcons.burgIcons.groups.capital.options.size).toBe(5);
+  Styles.set(structuredClone(Styles.defaults));
+});
+
+test("restoreEmptyBurgGroupStyles falls back to the defaults when the svg has no groups either", () => {
+  document.body.innerHTML = `<svg id="map"><g id="anchors"></g></svg>`;
+  styles.burgIcons.anchors.groups = {};
+  restoreEmptyBurgGroupStyles();
+  expect(styles.burgIcons.anchors.groups).toEqual(Styles.defaults.burgIcons.anchors.groups);
+  Styles.set(structuredClone(Styles.defaults));
 });
 
 test("save sync keeps store-authoritative zoom options when the DOM lacks the attrs", () => {
