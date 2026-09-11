@@ -1,6 +1,7 @@
 import { select } from "d3";
 import { Layers } from "@/components/layers";
-import { Notes } from "@/generators/notes";
+import { MapEntities } from "@/components/map-entities";
+import { Notes } from "@/components/notes";
 import { highlightEmblemElement } from "@/renderers/overlays/highlight";
 import type { Point } from "@/types/global";
 import {
@@ -36,20 +37,8 @@ let currentNoteId: string | null = null; // currently displayed note, to not rer
 export function showNotes(event: Event): void {
   if (findEl("notesEditor")) return;
 
-  const target = event.target as HTMLElement;
-  const parent = target.parentNode as HTMLElement;
-  const grand = parent?.parentNode as HTMLElement;
-
-  const burg = target.closest<HTMLElement>("[data-label-type='burg'][data-id], #burgIcons [data-id]");
-  // lakes and coastlines are drawn as <use> of a shared path, so they carry the feature in a data attribute
-  const feature = target.closest<HTMLElement>("#lakes [data-f], #coastline [data-f]");
-  const id = burg
-    ? `burg${burg.dataset.id}`
-    : feature
-      ? `feature_${feature.dataset.f}`
-      : target.id || parent?.id || grand?.id;
-
-  const ref = Notes.resolveElement(id);
+  const ref = MapEntities.resolveTarget(event.target instanceof Element ? event.target : null);
+  const id = ref && MapEntities.key(ref);
   const note = ref && Notes.get(ref);
 
   if (ref && note) {
@@ -59,7 +48,7 @@ export function showNotes(event: Event): void {
     const notesEl = findEl("notes");
     if (notesEl) notesEl.style.display = "block";
     const header = findEl("notesHeader");
-    if (header) header.textContent = Notes.getEntityName(ref);
+    if (header) header.textContent = MapEntities.getName(ref);
     const body = findEl("notesBody");
     if (body) body.innerHTML = note;
     return;
@@ -136,15 +125,16 @@ function getElementTip({ group, subgroup, target, event, path, cellId }: TipCont
   if (group === "emblems" && target.tagName === "use") return getEmblemTip(target, parent, event);
 
   if (group === "rivers") {
-    const riverId = Number(target.id.slice(5));
-    const river = pack.rivers.find(river => river.i === riverId);
-    return `${river ? `${river.name} ${river.type}` : ""}. Click to edit`;
+    const ref = MapEntities.resolveTarget(target);
+    return `${ref ? MapEntities.getName(ref) : ""}. Click to edit`;
   }
 
   if (group === "routes") {
-    const routeId = Number(target.id.slice(5));
-    const route = pack.routes.find(route => route.i === routeId);
-    if (route) return route.name ? `${route.name}. Click to edit the Route` : "Click to edit the Route";
+    const ref = MapEntities.resolveTarget(target);
+    if (ref && MapEntities.get(ref)) {
+      const name = MapEntities.getName(ref);
+      return name ? `${name}. Click to edit the Route` : "Click to edit the Route";
+    }
     return undefined;
   }
 

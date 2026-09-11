@@ -1,10 +1,10 @@
 import { type D3DragEvent, drag, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { stopMapPlacement } from "@/components/map-placement";
+import { Notes } from "@/components/notes";
 import { clearMainTip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
-import { Notes } from "@/generators/notes";
 import { drawMarkers, setEditedMarker } from "@/renderers/draw-markers";
 import { ensureEl, escapeHtml, findEl, isImageIcon, rn } from "../utils";
 

@@ -343,4 +343,4 @@ function downloadRegimentsData(): void {
   downloadFile(data, name);
 }
 
-export const RegimentsOverview = { open };
+export const RegimentsOverview = { open, exportCsv: downloadRegimentsData };

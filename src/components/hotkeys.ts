@@ -30,12 +30,12 @@ function handleKeyup(event: KeyboardEvent): void {
   const ctrl = ctrlKey || metaKey || key === "Control";
   const shift = (shiftKey || key === "Shift") && !altKey;
   const altShift = altKey && (shiftKey || key === "Shift") && !ctrl;
-
   const layer = getLayerByShortcut(code);
 
-  if (code === "F1") showInfo();
+  if (code === "Space") openOmnibar(event);
+  else if (code === "F1") showInfo();
   else if (code === "F2") regeneratePrompt();
-  else if (code === "F6") Services.Save.saveMap("storage");
+  else if (code === "F6") Services.Save.toStorage();
   else if (code === "F9") Services.Load.quickLoad();
   else if (code === "Tab") toggleOptions(event);
   else if (code === "Escape") {
@@ -44,8 +44,8 @@ function handleKeyup(event: KeyboardEvent): void {
   } else if (code === "Delete") removeElementOnKey();
   else if (code === "KeyO" && findEl("canvas3d")) Controllers.View3d.toggleOptions();
   else if (ctrl && code === "KeyQ") toggleSaveReminder();
-  else if (ctrl && code === "KeyS") Services.Save.saveMap("machine");
-  else if (ctrl && code === "KeyC") Services.Save.saveMap("dropbox");
+  else if (ctrl && code === "KeyS") Services.Save.toMachine();
+  else if (ctrl && code === "KeyC") Services.Save.toDropbox();
   else if (ctrl && code === "KeyZ") findEl("undo")?.click();
   else if (ctrl && code === "KeyY") findEl("redo")?.click();
   else if ((shift || altShift) && code === "KeyH") Controllers.HeightmapEditor.open();
@@ -94,6 +94,14 @@ function handleKeyup(event: KeyboardEvent): void {
   else if (key === "7") setMapZoom(7);
   else if (key === "8") setMapZoom(8);
   else if (key === "9") setMapZoom(9);
+}
+
+// only a plain Space with nothing focused: a focused control keeps its own Space, and a modified Space is not ours
+function openOmnibar(event: KeyboardEvent): void {
+  if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
+  const active = document.activeElement;
+  if (active && active !== document.body) return;
+  Controllers.Omnibar.open();
 }
 
 function allowHotkeys(): boolean {

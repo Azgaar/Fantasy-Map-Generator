@@ -16,12 +16,12 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
+import { Notes } from "@/components/notes";
 import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { ColorPicker } from "@/controllers/color-picker";
-import { Notes } from "@/generators/notes";
 import { downloadFile, getFileName } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
 import type { Deal, Market } from "../generators/markets-generator";
@@ -489,4 +489,4 @@ function closeMarketsOverview(): void {
   ensureEl("marketsOverview").remove();
 }
 
-export const MarketsOverview = { open };
+export const MarketsOverview = { open, exportCsv: downloadMarketsCsv };

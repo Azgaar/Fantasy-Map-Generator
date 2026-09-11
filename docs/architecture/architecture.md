@@ -504,6 +504,11 @@ A controller is the thin seam between a user action and the state.
 - **One object, lazily reached.** A controller exports a single named object —
   `export const StatesEditor = { open }` — and is reached through the `Controllers` registry
   (`Controllers.StatesEditor.open()`), never imported eagerly. See [Lazy module registry](#lazy-module-registry).
+- **Transient overlays own their styles.** A palette, popover, or bubble that lives only while
+  it is open may render its own `<style>` block next to its markup, scoped under its own id, so
+  the rules are created and removed with the element. Keep `public/index.css` for the shell and
+  for widgets whose markup is static in `src/index.html`. The omnibar is the reference case: its
+  stylesheet is one block in `omnibar.ts`, scoped under `#omnibar`.
 
 ## Configurations and data
 
@@ -536,7 +541,7 @@ Static content: lookup tables, templates, tuning constants, reference lists.
   config is not a service; it is state.
 - **IO is a service.** Save/load/export live in `src/services/io/`. Like controllers, each
   service/io module exports a single named object (`Save`, `Load`, `ExportMap`, …) reached
-  through the `Services` registry (`Services.Save.saveMap(...)`).
+  through the `Services` registry (`Services.Save.toMachine()`).
 - **The help gateway client is a service.** `src/services/help/` (api, auth, conversation) is the
   only code that talks to ask.azgaarsfmg.com; `controllers/help-assistant.ts` is the UI over it. The
   client keeps the Discord sign-in token in `localStorage` and only the server-issued conversation id
@@ -550,7 +555,7 @@ two typed registries — `Controllers` (built in `src/controllers/index.ts`) and
 
 - **One export per module (the convention).** Each registered module exports a single named
   object whose properties are its public methods — `export const StatesEditor = { open }`,
-  `export const Save = { saveMap, prepareMapData, saveToStorage }`. The registry key matches
+  `export const Save = { toStorage, toMachine, toDropbox, prepareMapData, writeToStorage }`. The registry key matches
   that export name. A module exposing data or a nested object wraps it in a method facade (e.g.
   `CloudStorage` flattens `Cloud.providers.dropbox`) so it fits the dispatch contract.
 - **Lazy by default, async at the call site.** `Controllers.X.method(...)` dynamically imports

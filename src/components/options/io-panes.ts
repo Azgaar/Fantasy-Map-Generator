@@ -238,7 +238,7 @@ function initialize(): void {
 
 initialize();
 
-export { showExportPane, showLoadPane, showSavePane };
+export { loadURL, openExportToPngTiles, showExportPane, showLoadPane, showSavePane };
 
 // Legacy seam: the save/load/export dialogs still live in index.html and wire these inline
 declare global {
