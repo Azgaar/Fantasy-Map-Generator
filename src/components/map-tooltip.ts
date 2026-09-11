@@ -1,7 +1,7 @@
 import { select } from "d3";
 import { Layers } from "@/components/layers";
 import { MapEntities } from "@/components/map-entities";
-import { Notes } from "@/generators/notes";
+import { Notes } from "@/components/notes";
 import { highlightEmblemElement } from "@/renderers/overlays/highlight";
 import type { Point } from "@/types/global";
 import {

@@ -3,6 +3,7 @@ import { color, min, select } from "d3";
 import { confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { type LayerId, Layers, type LayersState } from "@/components/layers";
 import { type EntityRef, MapEntities } from "@/components/map-entities";
+import { Notes } from "@/components/notes";
 import { normalizeLegacyBurgGroupFilters } from "@/components/options-legacy";
 import type { MapData } from "@/components/options-schema";
 import { RELIEF_SETS } from "@/data/relief-icons";
@@ -11,7 +12,6 @@ import type { GraphOverrides } from "@/generators/graph-override";
 import { type Label, type LabelNameMode, Labels as LabelsGenerator } from "@/generators/labels-generator";
 import { getDefaultMarkerName, type Marker } from "@/generators/markers-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
-import { Notes } from "@/generators/notes";
 import {
   labelGroupFromLegacy,
   migrateStyles,

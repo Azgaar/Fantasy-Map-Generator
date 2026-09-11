@@ -2,9 +2,9 @@
 
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
+import { Notes } from "@/components/notes";
 import { tip } from "@/components/tooltips";
 import { GraphOverride } from "@/generators/graph-override";
-import { Notes } from "@/generators/notes";
 import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
 import { savedMessage } from "@/services/platform";

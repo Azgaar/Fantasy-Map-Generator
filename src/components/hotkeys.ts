@@ -19,6 +19,7 @@ function handleKeydown(event: KeyboardEvent): void {
   if (altKey && !ctrlKey && !shiftKey) event.preventDefault(); // disallow plain alt key combinations
   if (ctrlKey && ["KeyS", "KeyC"].includes(code)) event.preventDefault(); // disallow CTRL + S and CTRL + C
   if (["F1", "F2", "F6", "F9", "Tab"].includes(code)) event.preventDefault(); // disallow default Fn and Tab
+  if (code === "Space" && document.activeElement instanceof HTMLButtonElement) event.preventDefault(); // opens search instead
 }
 
 function handleKeyup(event: KeyboardEvent): void {
@@ -32,7 +33,7 @@ function handleKeyup(event: KeyboardEvent): void {
   const altShift = altKey && (shiftKey || key === "Shift") && !ctrl;
   const layer = getLayerByShortcut(code);
 
-  if (code === "Space") openOmnibar();
+  if (code === "Space") openOmnibar(event);
   else if (code === "F1") showInfo();
   else if (code === "F2") regeneratePrompt();
   else if (code === "F6") Services.Save.toStorage();
@@ -96,9 +97,13 @@ function handleKeyup(event: KeyboardEvent): void {
   else if (key === "9") setMapZoom(9);
 }
 
-function openOmnibar() {
+// a clicked button keeps the focus, and a closed dialog hands it back to its opener: neither may take the Space
+function openOmnibar(event: KeyboardEvent): void {
   const active = document.activeElement;
-  if (active && active !== document.body) return;
+  if (active instanceof HTMLButtonElement) {
+    event.preventDefault();
+    active.blur();
+  } else if (active && active !== document.body) return;
   Controllers.Omnibar.open();
 }
 

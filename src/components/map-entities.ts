@@ -219,7 +219,10 @@ class EntityLookup {
       scale: 3,
       layers: id => [this.byId(pack.features, id)?.type === "lake" ? "lakes" : "coastline"],
       entity: id => this.byId(pack.features, id),
-      name: id => this.byId(pack.features, id)?.name || "",
+      name: id => {
+        const feature = this.byId(pack.features, id);
+        return feature ? feature.name || `${feature.subtype || feature.type} ${id}` : "";
+      },
       refs: () => this.refsOf("feature", pack.features, true),
       element: id => `feature_${id}`,
       highlight: id => `#map use[data-f='${id}']`,
@@ -249,7 +252,7 @@ class EntityLookup {
       layers: ["journeys"],
       entity: id => this.byId(pack.journeys, id),
       name: id => this.byId(pack.journeys, id)?.name || "",
-      refs: () => this.refsOf("journey", pack.journeys, true),
+      refs: () => this.refsOf("journey", pack.journeys), // the first journey is 0
       element: id => `journey${id}`,
       position: id => {
         const points = this.byId(pack.journeys, id)?.segments?.flatMap(segment => segment.points) || [];

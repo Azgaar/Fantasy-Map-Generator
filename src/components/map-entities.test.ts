@@ -133,11 +133,29 @@ describe("shared entity geometry and context", () => {
       { i: 5, removed: true }
     ] as unknown as typeof pack.routes;
     pack.biomes = [{ i: 0, name: "Marine" }] as typeof pack.biomes;
+    pack.journeys = [{ i: 0, name: "The Long Road", segments: [] }] as unknown as typeof pack.journeys;
     expect(MapEntities.collect("route").map(({ ref }) => ref.id)).toEqual([0]);
     expect(MapEntities.collect("biome").map(({ ref }) => ref.id)).toEqual([0]);
+    expect(MapEntities.collect("journey").map(({ ref }) => ref.id)).toEqual([0]); // the default journey
     expect(MapEntities.collect("state").map(({ ref }) => ref.id)).toEqual([1]);
     pack.burgs[1].removed = true;
     expect(MapEntities.get({ type: "burg", id: 1 })).toBeUndefined();
+  });
+
+  it("titles an unnamed feature by its subtype and id, so islands stay distinct", () => {
+    pack.features = [
+      0,
+      { i: 1, type: "island", subtype: "isle" },
+      { i: 2, type: "island", subtype: "isle" },
+      { i: 3, type: "ocean" },
+      { i: 4, type: "lake", subtype: "freshwater", name: "Mirror Lake" }
+    ] as unknown as typeof pack.features;
+    expect(MapEntities.collect("feature").map(({ ref }) => MapEntities.getName(ref))).toEqual([
+      "isle 1",
+      "isle 2",
+      "ocean 3",
+      "Mirror Lake"
+    ]);
   });
 
   it("resolves sparse IDs and regiment zero without relying on array positions", () => {

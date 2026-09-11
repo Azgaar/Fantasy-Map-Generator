@@ -1,10 +1,10 @@
 import type Quill from "quill";
 import { confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { ENTITY_TYPES, type EntityRef, MapEntities } from "@/components/map-entities";
+import { type NoteEntry, Notes } from "@/components/notes";
 import { tip } from "@/components/tooltips";
 import { viewport } from "@/components/viewport";
 import { Controllers } from "@/controllers";
-import { type NoteEntry, Notes } from "@/generators/notes";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName, speak, uploadFile } from "@/utils";
 import { ensureEl, findEl } from "../utils";

@@ -248,7 +248,7 @@ cover `name` alongside `note` — it is the same lookup. Serves `heightmap-edito
 
 ### New
 
-- `src/generators/notes.ts` — note get/set/clear and aggregation for the editor and font scan.
+- `src/components/notes.ts` — note get/set/clear and aggregation for the editor and font scan.
 - `src/components/map-entities.ts` — shared entity definitions, lookup, references, names, context, geometry, and SVG resolution.
 
 ### Docs
