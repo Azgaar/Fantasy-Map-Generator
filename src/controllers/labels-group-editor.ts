@@ -4,7 +4,7 @@ import { LAYER_TOGGLES } from "@/components/options/tabs/layers-tab";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { LABEL_TYPES, type LabelGroup, type LabelNameMode, type LabelType } from "@/generators/labels-generator";
-import { getLabelsData } from "@/renderers/labels/label-data";
+import { getLabelsIndex } from "@/renderers/labels/label-data";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { ensureEl } from "@/utils";
 
@@ -122,7 +122,7 @@ function countLabelsByGroup(): Map<string, number> {
   const counts = new Map<string, number>();
   const increment = (name: string) => counts.set(name, (counts.get(name) ?? 0) + 1);
 
-  const labels = getLabelsData();
+  const labels = getLabelsIndex();
   labels.forEach(label => void increment(label.group));
 
   return counts;
@@ -324,7 +324,7 @@ function rowToGroup(row: HTMLTableRowElement): LabelGroup {
 }
 
 function replaceGroupInEntities(oldName: string, newName: string): void {
-  const labels = getLabelsData();
+  const labels = getLabelsIndex();
   for (const { type, entityId, group } of labels) {
     if (group === oldName) Labels.setGroup({ type, entityId, group: newName });
   }

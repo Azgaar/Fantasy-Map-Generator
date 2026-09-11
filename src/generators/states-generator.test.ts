@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 describe("StatesModule.collectTaxes", () => {
   let StatesModule: any;
@@ -152,5 +152,51 @@ describe("StatesModule.collectTaxes", () => {
     expect(globalThis.pack.states[0].treasury).toBe(0);
     // State 1 has no deal credit and only poll tax (0 here), so treasury stays 0
     expect(globalThis.pack.states[1].treasury).toBe(0);
+  });
+});
+
+describe("StatesModule.generateDiplomacy", () => {
+  let StatesModule: any;
+
+  beforeEach(async () => {
+    globalThis.TIME = false;
+    globalThis.options = { year: 100 } as any;
+    // 0.5 makes P(0.8) true and rw() pick no Rival, so the vassal branch runs and no war is declared
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    await import("./states-generator");
+    StatesModule = (globalThis as any).States;
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("skips removed states when vassals copy their suzerain's relations", () => {
+    // state 2 is a large state bordering the small state 3, which becomes its vassal; state 4 is far away
+    const cellState = [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 4];
+    globalThis.pack = {
+      cells: {
+        i: cellState.map((_, i) => i),
+        h: cellState.map(() => 30),
+        state: cellState,
+        area: cellState.map(() => 10),
+        f: cellState.map(() => 1)
+      },
+      states: [
+        { i: 0, name: "Neutrals" },
+        { i: 1, removed: true },
+        { i: 2, name: "A", neighbors: [3], center: 0, expansionism: 1, campaigns: [] },
+        { i: 3, name: "B", neighbors: [2], center: 10, expansionism: 1, campaigns: [] },
+        { i: 4, name: "C", neighbors: [], center: 11, expansionism: 1, campaigns: [] }
+      ]
+    } as any;
+
+    expect(() => StatesModule.generateDiplomacy()).not.toThrow();
+
+    const { states } = globalThis.pack;
+    expect(states[1].diplomacy).toBeUndefined();
+    expect(states[2].diplomacy).toEqual(["x", "x", "x", "Suzerain", "Neutral"]);
+    expect(states[3].diplomacy).toEqual(["x", "x", "Vassal", "x", "Neutral"]);
+    expect(states[4].diplomacy).toEqual(["x", "x", "Neutral", "Neutral", "x"]);
   });
 });

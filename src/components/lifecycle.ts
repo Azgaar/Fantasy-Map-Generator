@@ -154,6 +154,7 @@ interface MapHistoryEntry {
 
 // every map this session put on screen, oldest first; the last one is what is on screen now
 globalThis.mapHistory = [];
+const MAP_HISTORY_LIMIT = 100;
 
 /** Take note of a map that is now on screen, and announce it */
 export function registerMap(created: number = Date.now()): void {
@@ -165,6 +166,7 @@ export function registerMap(created: number = Date.now()): void {
     created: created,
     registeredAt: Date.now()
   });
+  if (mapHistory.length > MAP_HISTORY_LIMIT) mapHistory.splice(0, mapHistory.length - MAP_HISTORY_LIMIT);
 
   // the public seam test automation and external integrations wait on; the id is the creation date
   window.dispatchEvent(new CustomEvent("map:generated", { detail: { seed: options.map.seed, mapId: created } }));

@@ -1,4 +1,5 @@
 // Canonical generation sequence, as a declared pipeline instead of a hand-written call list. See docs/architecture/generation-pipeline.md.
+import { GraphOverride } from "@/generators/graph-override";
 import { Pipeline, type PipelineStep } from "@/generators/pipeline";
 import { Population } from "@/generators/population-generator";
 import type { GridGraph } from "@/types/GridGraph";
@@ -13,7 +14,13 @@ const generationPipelineSteps = [
   { id: "mapSize", run: () => Coordinates.generate() },
   { id: "temperatures", run: () => Temperature.generate() },
   { id: "precipitation", run: () => Precipitation.generate() },
-  { id: "clearPack", run: () => Pack.clear() },
+  {
+    id: "clearPack",
+    run: () => {
+      Pack.clear();
+      GraphOverride.clear(); // the old graph is gone, do not pin its vertices
+    }
+  },
   { id: "regraph", run: () => Pack.generate() },
   { id: "markupPack", run: () => Features.markupPack() },
   { id: "defaultRuler", run: () => Measurers.createDefaultRuler() },

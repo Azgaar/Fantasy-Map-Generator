@@ -76,8 +76,9 @@ export const coastlineSettings = z.strictObject({
   minEdge: nonNegative,
   smoothThreshold: nonNegative,
   roughnessContrast: nonNegative,
-  profileHarmonics: count,
-  lakeSmoothThreshMult: nonNegative
+  roughnessScale: nonNegative,
+  lakeSmoothThreshMult: nonNegative,
+  variant: count
 });
 
 /** where the map sits on the globe */

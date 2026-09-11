@@ -62,6 +62,43 @@ describe("getFeaturePath", () => {
     expect(Coastline.getFeaturePath(island)).not.toBe(path);
   });
 
+  it("reshuffles every coastline on a new variant, and comes back on the old one", () => {
+    const path = Coastline.getFeaturePath(island);
+
+    Coastline.update({ variant: 1 });
+    const reshuffled = Coastline.getFeaturePath(island);
+    expect(reshuffled).not.toBe(path);
+
+    Coastline.update({ variant: 0 });
+    expect(Coastline.getFeaturePath(island)).toBe(path); // a variant is a choice, not a one-way roll
+  });
+
+  it("keeps a vertex edit local: the rest of the coastline is untouched", () => {
+    // a ring of vertices, so a moved one has coastline on both sides of it to disturb
+    const count = 24;
+    pack.vertices.p = Array.from({ length: count }, (_, i) => {
+      const angle = (2 * Math.PI * i) / count;
+      return [50 + 40 * Math.cos(angle), 50 + 40 * Math.sin(angle)];
+    });
+    const feature = { i: 1, type: "island", vertices: pack.vertices.p.map((_, i) => i) } as unknown as Feature;
+
+    const before = Coastline.getFeaturePath(feature);
+    const [x, y] = pack.vertices.p[6];
+    pack.vertices.p[6] = [x + 1.5, y + 1.5];
+    const after = Coastline.getFeaturePath(feature);
+
+    expect(after).not.toBe(before);
+
+    // the path is a list of commands: only the ones around the moved vertex may differ
+    const commands = (path: string) => path.match(/[MLQC][^MLQCZ]*/g) ?? [];
+    const [a, b] = [commands(before), commands(after)];
+    const kept = new Set(b);
+    const changed = a.filter(command => !kept.has(command));
+
+    expect(changed.length).toBeGreaterThan(0);
+    expect(changed.length).toBeLessThan(a.length / 4); // a stream-indexed noise changed every one of them
+  });
+
   it("applies the settings of the loaded map", () => {
     const rough = Coastline.getFeaturePath(island).length;
 

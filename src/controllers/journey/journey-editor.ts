@@ -16,6 +16,7 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
+import { Notes } from "@/components/notes";
 import type { FillBoxElement } from "@/components/shared/fill-box";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
@@ -25,7 +26,6 @@ import {
   getCellPoint,
   resolveCellPlace
 } from "@/generators/journeys/journey-places";
-import { Notes } from "@/generators/notes";
 import { startJourneyTravel, stopJourneyTravel } from "@/renderers/journey-travel";
 import type { Journey, JourneySegment } from "@/types/Journey";
 import {

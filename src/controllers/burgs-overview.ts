@@ -1,5 +1,5 @@
 import { pack as packLayout, select, stratify } from "d3";
-import { closeDialogs, confirmationDialog, updateDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import { dialogState } from "@/components/dialog/state";
@@ -17,7 +17,7 @@ import { Controllers } from "@/controllers";
 import type { Burg } from "@/generators/burgs-generator";
 import { removeEmblem } from "@/renderers/draw-emblems";
 import { downloadFile, getFileName, getHeight, getLatitude, getLongitude, uploadFile } from "@/utils";
-import { convertTemperature, ensureEl, getTemperatureLikeness, rn, si } from "../utils";
+import { convertTemperature, createFileInput, ensureEl, getTemperatureLikeness, rn, si } from "../utils";
 
 type Filters = { stateId?: number | null; cultureId?: number | null };
 type FilterState = { search: string; stateId: number; cultureId: number };
@@ -25,6 +25,7 @@ type FilterState = { search: string; stateId: number; cultureId: number };
 const dialogId = "burgsOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 let filterState: FilterState;
+let burgNamesInput: HTMLInputElement | null = null;
 
 const columns: EditorColumn<Burg>[] = [
   { key: "locate", width: "0.8em", permanent: true },
@@ -142,7 +143,7 @@ function open(filters: Filters = {}): void {
 }
 
 function renderDialog(): void {
-  document.getElementById("burgsOverview")?.remove();
+  destroyDialog("burgsOverview");
   const HTML = /* html */ `<div id="burgsOverview" class="dialog stable editorDialog">
       <div id="burgsBody" class="table">${renderEditorHeader({ dialogId, columns })}</div>
       <div id="burgsFilters" data-tip="Apply a filter" class="editorFilters">
@@ -225,9 +226,6 @@ function renderDialog(): void {
   ensureEl("addNewBurg").addEventListener("click", () => void Controllers.BurgCreator.toggle());
   ensureEl("burgsExport").addEventListener("click", downloadBurgsData);
   ensureEl("burgNamesImport").addEventListener("click", renameBurgsInBulk);
-  ensureEl("burgsListToLoad").addEventListener("change", function (this: HTMLInputElement) {
-    uploadFile(this, importBurgNames);
-  });
   ensureEl("burgsLockAll").addEventListener("click", toggleLockAll);
   ensureEl("burgsRemoveAll").addEventListener("click", triggerAllBurgsRemove);
 }
@@ -728,12 +726,19 @@ function renameBurgsInBulk(): void {
         const name = `${getFileName("Burg names")}.txt`;
         downloadFile(data, name);
       },
-      Upload: () => ensureEl("burgsListToLoad").click(),
+      Upload: pickBurgNamesFile,
       Cancel: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }
   });
+}
+
+/** Own the burg-names file input here so repeat opens cannot stack listeners on a shared element */
+function pickBurgNamesFile(): void {
+  burgNamesInput ??= createFileInput(".txt,.csv");
+  burgNamesInput.onchange = () => uploadFile(burgNamesInput!, importBurgNames);
+  burgNamesInput.click();
 }
 
 function importBurgNames(dataLoaded: string): void {
@@ -821,4 +826,4 @@ function updateLockAllIcon(): void {
   ensureEl("burgsLockAll").className = allLocked ? "icon-lock-open" : "icon-lock";
 }
 
-export const BurgsOverview = { open };
+export const BurgsOverview = { open, showChart: showBurgsChart, exportCsv: downloadBurgsData };
