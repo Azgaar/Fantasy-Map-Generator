@@ -5,14 +5,14 @@ import { ENTITY_TYPES, type EntityDisplay, type EntityTarget, MapEntities } from
 import { tip } from "@/components/tooltips";
 import { viewport } from "@/components/viewport";
 import { zoomTo } from "@/components/zoom";
-import { getLabelsData } from "@/renderers/labels/label-data";
-import type { LabelData } from "@/renderers/labels/labels";
+import { getLabelsIndex, type LabelIndexEntry } from "@/renderers/labels/label-data";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import type { Point } from "@/types/global";
 import { findEl } from "@/utils";
 
 interface SearchFields {
-  names: string[];
+  name: string;
+  alias: string; // the name with its context, an ordering tier below the name itself
   note?: string;
   normalizedNote?: string;
 }
@@ -39,7 +39,7 @@ interface EntityResult extends BaseResult {
 interface LabelResult extends BaseResult {
   kind: "label";
   target: EntityTarget;
-  label: LabelData;
+  label: LabelIndexEntry;
 }
 
 type Result = CommandResult | EntityResult | LabelResult;
@@ -96,7 +96,7 @@ class OmnibarController {
       id: command.id,
       name: command.name,
       context: "Command",
-      fields: { names: [normalize(command.name), normalize(command.aliases)] },
+      fields: { name: normalize(command.name), alias: normalize(command.aliases) },
       command
     }));
     if (typeof pack === "undefined" || !pack.cells?.i?.length) return commands;
@@ -123,7 +123,7 @@ class OmnibarController {
     }
 
     // entity labels are listed apart from their owners
-    for (const label of getLabelsData()) {
+    for (const label of getLabelsIndex()) {
       if (!label.text) continue;
       const type = label.type === "added" ? "addedLabel" : label.type;
       const owner = entities.get(MapEntities.key({ type, id: label.entityId }));
@@ -145,7 +145,8 @@ class OmnibarController {
   private fields({ name, alias, note }: { name: string; alias: string; note?: string }): SearchFields {
     const text = plainText(note || "");
     return {
-      names: [normalize(name), normalize(alias)],
+      name: normalize(name),
+      alias: normalize(alias),
       note: text,
       normalizedNote: text ? normalize(text) : undefined
     };
@@ -385,6 +386,7 @@ class OmnibarController {
           event.preventDefault();
         }
         this.keys.delete(event.code);
+        if (event.key === "Meta") this.keys.clear(); // macOS skips keyup for keys released under Cmd
         this.cleanup();
       },
       options
@@ -437,22 +439,24 @@ class OmnibarController {
       )
       .filter(row => row.score > 0)
       .sort((a, b) => b.score - a.score || a.order - b.order)
-      .slice(0, RESULT_LIMIT)
+      .slice(0, commandsOnly ? Infinity : RESULT_LIMIT) // a bare > lists every command
       .map(row => row.result);
 
     this.selected = 0;
     this.renderResults(query);
   }
 
+  /** Name matches, then alias and context matches, then note matches; recent commands lead an empty query */
   private score(result: Result, query: string, commandsOnly: boolean, recent: number): number {
     if (query) {
-      const name = Math.max(0, ...result.fields.names.map(name => match(name, query)));
+      const name = match(result.fields.name, query);
+      const alias = match(result.fields.alias, query);
       const note = result.fields.normalizedNote?.includes(query) ? 100 : 0;
-      return Math.max(name && name + 200, note);
+      return Math.max(name && name + 400, alias && alias + 200, note);
     }
-    if (commandsOnly) return 1000 - Math.max(recent, 0); // every command, with the recent ones first
-    if (result.kind !== "command" || recent < 0) return 0;
-    return 1000 - recent;
+    if (result.kind !== "command") return 0;
+    if (recent >= 0) return 1000 - recent;
+    return commandsOnly ? 1 : 0; // a bare > lists every command, with the recent ones first
   }
 
   private renderResults(query: string): void {
@@ -582,7 +586,7 @@ class OmnibarController {
 
   private navigate(
     target: EntityTarget,
-    { label, display }: { label?: LabelData; display?: EntityDisplay } = {}
+    { label, display }: { label?: LabelIndexEntry; display?: EntityDisplay } = {}
   ): void {
     const layers: LayerId[] = label ? ["labels"] : display?.layers || [];
     const points = label

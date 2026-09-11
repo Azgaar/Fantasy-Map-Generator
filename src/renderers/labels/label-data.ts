@@ -9,14 +9,26 @@ import type { LabelData } from "@/renderers/labels/labels";
 import type { Point } from "@/types/global";
 import { fitStateLabel } from "./fit-state-label";
 
+/** A label without its geometry: what search and lists need, and all that is cheap to build */
+export type LabelIndexEntry = Pick<LabelData, "id" | "entityId" | "type" | "group" | "text" | "anchor" | "dx" | "dy">;
+
 export function getLabelsData(): LabelData[] {
+  return build(true);
+}
+
+/** Every label's identity and anchor, skipping path fitting: state fitting and river meandering dominate the full build */
+export function getLabelsIndex(): LabelIndexEntry[] {
+  return build(false);
+}
+
+function build(geometry: boolean): LabelData[] {
   const byType: Record<LabelType, LabelData[]> = {
-    state: collect(pack.states, buildStateLabel, true),
+    state: collect(pack.states, state => buildStateLabel(state, geometry), true),
     province: collect(pack.provinces, buildProvinceLabel, true),
     added: collect(pack.addedLabels, buildAddedLabel, true),
     burg: collect(pack.burgs, buildBurgLabel, true),
-    river: collect(pack.rivers, buildRiverLabel, true),
-    route: collect(pack.routes, buildRouteLabel)
+    river: collect(pack.rivers, river => buildRiverLabel(river, geometry), true),
+    route: collect(pack.routes, route => buildRouteLabel(route, geometry))
   };
   return Object.values(byType).flat();
 }
@@ -24,11 +36,11 @@ export function getLabelsData(): LabelData[] {
 function collect<T extends { i: number }>(
   entities: T[],
   build: (entity: T) => LabelData | undefined,
-  excudeZero = false
+  excludeZero = false
 ): LabelData[] {
   const labels: LabelData[] = [];
   for (const entity of entities) {
-    if (excudeZero && !entity.i) continue;
+    if (excludeZero && !entity.i) continue;
     const label = build(entity);
     if (label) labels.push(label);
   }
@@ -63,13 +75,15 @@ function buildProvinceLabel(province: Province): LabelData | undefined {
   };
 }
 
-function buildStateLabel(state: State): LabelData | undefined {
+function buildStateLabel(state: State, geometry: boolean): LabelData | undefined {
   if (state.removed) return undefined;
   const group = state.label?.group || "state";
   const customPath = getCustomPath(state.label);
 
-  const fitted = customPath || isPlainText(state.label) ? null : fitStateLabel(state, group);
-  if (fitted && !fitted.pathPoints.length) return undefined; // state has no cells to fit the label into
+  const fits = !customPath && !isPlainText(state.label);
+  if (fits && !state.cells) return undefined; // state has no cells to fit the label into
+  const fitted = fits && geometry ? fitStateLabel(state, group) : null;
+  if (fitted && !fitted.pathPoints.length) return undefined;
 
   const text = state.label?.text ?? fitted?.text ?? getStateName(state, group);
   if (!text) return undefined;
@@ -87,14 +101,15 @@ function buildStateLabel(state: State): LabelData | undefined {
   };
 }
 
-function buildRiverLabel(river: River): LabelData | undefined {
+function buildRiverLabel(river: River, geometry: boolean): LabelData | undefined {
   if (!river.cells?.length || !river.name) return undefined;
   const anchor = getMiddleCellPoint(river.cells);
   if (!anchor) return undefined; // no on-map cell to anchor to
   const customPath = getCustomPath(river.label);
-  const defaultPath = isPlainText(river.label)
-    ? undefined
-    : formatPathPoints(Rivers.addMeandering(river.cells, river.points));
+  const defaultPath =
+    geometry && !isPlainText(river.label)
+      ? formatPathPoints(Rivers.addMeandering(river.cells, river.points))
+      : undefined;
   return {
     ...river.label,
     id: `riverLabel${river.i}`,
@@ -107,10 +122,10 @@ function buildRiverLabel(river: River): LabelData | undefined {
   };
 }
 
-function buildRouteLabel(route: Route): LabelData | undefined {
+function buildRouteLabel(route: Route, geometry: boolean): LabelData | undefined {
   if (!route.name) return undefined;
   const customPath = getCustomPath(route.label);
-  const defaultPath = isPlainText(route.label) ? undefined : formatPathPoints(route.points);
+  const defaultPath = geometry && !isPlainText(route.label) ? formatPathPoints(route.points) : undefined;
   return {
     ...route.label,
     id: `routeLabel${route.i}`,

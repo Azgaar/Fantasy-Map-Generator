@@ -1,5 +1,8 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import { getLabelsData } from "./label-data";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { getLabelsData, getLabelsIndex } from "./label-data";
+
+const fitStateLabel = vi.hoisted(() => vi.fn(() => ({ pathPoints: [[1, 1]], text: "West", fontSize: 100 })));
+vi.mock("./fit-state-label", () => ({ fitStateLabel }));
 
 // river.cells carries -1 as a sentinel for "runs off the map edge" (see river-generator,
 // which resolves it with projectToNearestEdge). Cell -1 has no entry in pack.cells.p.
@@ -78,4 +81,39 @@ it("includes the first route, whose valid ID is zero", () => {
   const label = getLabelsData().find(label => label.type === "route");
   expect(label?.entityId).toBe(0);
   expect(label?.text).toBe("Old Road");
+});
+
+describe("labels index", () => {
+  beforeEach(() => {
+    stubPack([{ i: 1, name: "Kobat", type: "River", cells: [0, 1, 2], points: [] }]);
+    pack.states = [
+      { i: 0 },
+      { i: 1, name: "West", fullName: "Kingdom of West", cells: 5, center: 1 }
+    ] as typeof pack.states;
+    globalThis.Rivers = { addMeandering: vi.fn(() => []) } as any;
+    fitStateLabel.mockClear();
+  });
+
+  it("names and anchors every label without fitting state paths or meandering rivers", () => {
+    const index = getLabelsIndex();
+    expect(index.map(label => [label.id, label.text])).toEqual([
+      ["stateLabel1", "Kingdom of West"],
+      ["riverLabel1", "Kobat River"]
+    ]);
+    expect(index.find(label => label.type === "river")?.anchor).toEqual([10, 10]);
+    expect(fitStateLabel).not.toHaveBeenCalled();
+    expect(Rivers.addMeandering).not.toHaveBeenCalled();
+  });
+
+  it("skips a state with no cells, as the full build does", () => {
+    pack.states[1].cells = 0;
+    expect(getLabelsIndex().find(label => label.type === "state")).toBeUndefined();
+    expect(getLabelsData().find(label => label.type === "state")).toBeUndefined();
+    expect(fitStateLabel).not.toHaveBeenCalled();
+  });
+
+  it("still fits state labels for the full build", () => {
+    expect(getLabelsData().find(label => label.type === "state")?.text).toBe("West");
+    expect(fitStateLabel).toHaveBeenCalledTimes(1);
+  });
 });

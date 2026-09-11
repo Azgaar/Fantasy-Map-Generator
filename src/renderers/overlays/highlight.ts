@@ -1,6 +1,6 @@
 import { easeBounceOut, easeLinear, easeSinIn, interpolateString, select, transition } from "d3";
 import { viewport } from "@/components/viewport";
-import { parseTransform } from "@/utils";
+import { minmax, parseTransform } from "@/utils";
 
 const debugLayer = () => select<SVGGElement, unknown>("#debug");
 
@@ -23,7 +23,7 @@ export function highlightArea(box: DOMRect, zoom?: number, transformAttr: string
   if (layer.select(".highlighted").size()) return; // allow only 1 highlighted element simultaneously
 
   const enter = transition().duration(1000).ease(easeBounceOut);
-  const padding = 100 / viewport.scale;
+  const padding = minmax(Math.max(box.width, box.height) / 4, 8, 60); // map units: the view may still be zooming
 
   layer
     .append("rect")

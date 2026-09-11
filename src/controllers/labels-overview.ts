@@ -14,7 +14,7 @@ import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { calculateLabelSpread, type LabelSpreadPatch } from "@/controllers/label-spread";
 import { LABEL_TYPES, type Label, type LabelType } from "@/generators/labels-generator";
-import { getLabelsData } from "@/renderers/labels/label-data";
+import { getLabelsData, getLabelsIndex } from "@/renderers/labels/label-data";
 import type { LabelData } from "@/renderers/labels/labels";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { ensureEl, findEl } from "@/utils";
@@ -459,7 +459,7 @@ function cancelSpread(): void {
 }
 
 function takeLabelSnapshot(): LabelSnapshot[] {
-  return getLabelsData().map(({ type, entityId }) => {
+  return getLabelsIndex().map(({ type, entityId }) => {
     const label = Labels.getEntity(type, entityId)?.label;
     return { type, entityId, label: label === undefined ? undefined : structuredClone(label) };
   });

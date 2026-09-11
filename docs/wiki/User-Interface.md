@@ -206,6 +206,10 @@ The buttons correspond to those of the save window.
 
 Reset zoom to its initial position.
 
+## Search
+
+Open the search Omnibar.
+
 # Layers
 
 Additional layers of information can be displayed on the map to enrich it.

@@ -97,8 +97,8 @@ function handleKeyup(event: KeyboardEvent): void {
 }
 
 function openOmnibar() {
-  if (document.getSelection()?.toString()) return;
-  if (findEl("wrapTool")) return;
+  const active = document.activeElement;
+  if (active && active !== document.body) return;
   Controllers.Omnibar.open();
 }
 

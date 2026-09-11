@@ -30,13 +30,14 @@ vi.mock("@/services/versioning", () => ({ cleanupData: vi.fn() }));
 vi.mock("@/renderers/overlays/highlight", () => ({ highlightElement: mocks.highlight }));
 vi.mock("@/components/zoom", () => ({ zoomTo: mocks.zoom }));
 vi.mock("@/components/viewport", () => ({ viewport: { width: 1000, height: 800, scale: 1 } }));
-vi.mock("@/renderers/labels/label-data", () => ({ getLabelsData: mocks.labels }));
+vi.mock("@/renderers/labels/label-data", () => ({ getLabelsIndex: mocks.labels }));
 vi.mock("@/components/dialog/dialog-helpers", () => ({ refreshEditors: vi.fn() }));
 vi.mock("@/components/tooltips", () => ({ tip: mocks.tip }));
 vi.mock("@/controllers", () => ({
   Controllers: new Proxy({}, { get: () => ({ open: mocks.open, toggle: mocks.open, openDefault: mocks.open }) })
 }));
 
+import { MAP_COMMANDS } from "@/components/map-commands";
 import { Omnibar } from "./omnibar";
 
 function input(): HTMLInputElement {
@@ -389,6 +390,31 @@ describe("Omnibar public behavior", () => {
     Omnibar.open();
     expect(rows()).toHaveLength(1);
     expect(rows()[0].textContent).toContain("Add Burg");
+  });
+
+  it("lists every command on a bare >, the recent ones first", () => {
+    localStorage.setItem("fmg-omnibar-history", JSON.stringify(["zoomIn", "showInfo"]));
+    Omnibar.open();
+    search(">");
+    const names = rows().map(row => row.querySelector(".omnibar-name")?.textContent);
+    expect(names.slice(0, 2)).toEqual(["Zoom In", "Show App Info"]);
+    expect(names.length).toBe(MAP_COMMANDS.length);
+  });
+
+  it("ranks a name match above entities that only mention the query in their context", () => {
+    pack.provinces = Array.from({ length: 60 }, (_, index) => ({
+      i: index + 1,
+      name: `Shire ${index + 1}`,
+      state: 1,
+      center: 1
+    })) as typeof pack.provinces;
+    mocks.labels.mockReturnValue([
+      { id: "stateLabel1", entityId: 1, type: "state", group: "state", text: "Westreach", anchor: [10, 20] }
+    ] as never[]);
+    Omnibar.open();
+    search("westreach");
+    const names = rows().map(row => row.querySelector(".omnibar-name")?.textContent);
+    expect(names.slice(0, 3)).toEqual(["Westreach", "Kingdom of Westreach", "Shire 1"]); // exact, partial, context
   });
 
   it("allows command execution when storage is unavailable", async () => {
