@@ -1,28 +1,27 @@
 // Save the whole .map project to storage, machine or cloud
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
+import { Notes } from "@/components/notes";
 import { tip } from "@/components/tooltips";
 import { GraphOverride } from "@/generators/graph-override";
-import { Notes } from "@/generators/notes";
 import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
 import { savedMessage } from "@/services/platform";
 import { VERSION } from "@/services/versioning";
 import { ensureEl, getFileName, link, parseError, rn } from "@/utils";
 
-type SaveMethod = "storage" | "machine" | "dropbox";
+type Writer = (mapData: string, filename: string) => void | Promise<void>;
 
-async function saveMap(method: SaveMethod): Promise<void> {
+const toStorage = (): Promise<void> => save(mapData => writeToStorage(mapData, true));
+const toMachine = (): Promise<void> => save(writeToMachine);
+const toDropbox = (): Promise<void> => save(writeToDropbox);
+
+async function save(write: Writer): Promise<void> {
   if (customization) return tip("Map cannot be saved in EDIT mode, please complete the edit and retry", false, "error");
   closeDialogs("#alert");
 
   try {
-    const mapData = prepareMapData();
-    const filename = `${getFileName()}.map`;
-
-    if (method === "storage") await saveToStorage(mapData, true);
-    if (method === "machine") saveToMachine(mapData, filename);
-    if (method === "dropbox") await saveToDropbox(mapData, filename);
+    await write(prepareMapData(), `${getFileName()}.map`);
   } catch (error) {
     ERROR && console.error(error);
     alertMessage.innerHTML = /* html */ `An error occurred while saving the map. If the issue persists, please copy the message below and report it on ${link(
@@ -37,7 +36,7 @@ async function saveMap(method: SaveMethod): Promise<void> {
       buttons: {
         Retry: function (this: HTMLElement) {
           $(this).dialog("close");
-          saveMap(method);
+          save(write);
         },
         Close: function (this: HTMLElement) {
           $(this).dialog("close");
@@ -65,7 +64,12 @@ function prepareMapData(): string {
   const settings = JSON.stringify(options.map); // what the map is; the requests and preferences stay out
   const measurers = JSON.stringify(pack.measurers ?? []);
   const journeys = JSON.stringify(pack.journeys ?? []);
-  const fonts = JSON.stringify(getUsedFonts(ensureEl("map") as Element as SVGSVGElement, Notes.getTexts()));
+  const fonts = JSON.stringify(
+    getUsedFonts(
+      ensureEl("map") as Element as SVGSVGElement,
+      Notes.list().map(entry => entry.note)
+    )
+  );
   const layers = JSON.stringify(Layers.state);
   const graphOverride = JSON.stringify(GraphOverride.state);
 
@@ -196,14 +200,14 @@ function prepareMapData(): string {
 }
 
 // save map file to indexedDB
-async function saveToStorage(mapData: string, showTip = false): Promise<void> {
+async function writeToStorage(mapData: string, showTip = false): Promise<void> {
   const blob = new Blob([mapData], { type: "text/plain" });
   await ldb.set("lastMap", blob);
   showTip && tip("Map is saved to the browser storage", false, "success");
 }
 
 // download map file
-function saveToMachine(mapData: string, filename: string): void {
+function writeToMachine(mapData: string, filename: string): void {
   const blob = new Blob([mapData], { type: "text/plain" });
   const URL = window.URL.createObjectURL(blob);
 
@@ -216,9 +220,9 @@ function saveToMachine(mapData: string, filename: string): void {
   setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
 }
 
-async function saveToDropbox(mapData: string, filename: string): Promise<void> {
+async function writeToDropbox(mapData: string, filename: string): Promise<void> {
   await Services.Cloud.save(filename, mapData);
   tip("Map is saved to your Dropbox", true, "success", 8000);
 }
 
-export const Save = { saveMap, prepareMapData, saveToStorage };
+export const Save = { toStorage, toMachine, toDropbox, prepareMapData, writeToStorage };

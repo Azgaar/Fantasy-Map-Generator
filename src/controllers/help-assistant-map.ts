@@ -68,13 +68,18 @@ let busy = false;
 let turnContext = "";
 let noteLabel: string | null = null;
 
-const session = createSession(() => ({
-  key: ensureEl<HTMLInputElement>("helpMapKey").value,
-  model: ensureEl<HTMLSelectElement>("helpMapModel").value,
-  context: turnContext
-}));
+let mountVersion = 0;
+const makeSession = () =>
+  createSession(() => ({
+    key: ensureEl<HTMLInputElement>("helpMapKey").value,
+    model: ensureEl<HTMLSelectElement>("helpMapModel").value,
+    context: turnContext
+  }));
+let session = makeSession();
 
 export function mountMapPanel(target: HTMLElement): void {
+  mountVersion++;
+  session = makeSession();
   host = target;
   conversation = forCurrentMap();
   target.innerHTML = panelHtml();
@@ -88,19 +93,21 @@ export function mountMapPanel(target: HTMLElement): void {
 
 // Called on every switch into the panel: the note chip and the suggestions follow the notes editor
 export function refreshMapContext(): void {
+  const version = mountVersion;
   void noteChipLabel().then(label => {
-    if (!host || !document.getElementById("helpMapContext")) return;
+    if (version !== mountVersion || !host || !document.getElementById("helpMapContext")) return;
     label = getSelection()?.label ?? label;
     noteLabel = label;
     const chip = ensureEl("helpMapContext");
     chip.hidden = label === null;
     chip.textContent = label === null ? "" : `Here: ${label} ×`;
     if (isEmpty(conversation)) renderTranscript();
-    ensureEl("helpMapInput").focus();
+    if (panelVisible()) ensureEl("helpMapInput").focus();
   });
 }
 
 export function unmountMapPanel(): void {
+  mountVersion++;
   destroyDialog("helpMapNotePreview");
   window.removeEventListener("assistant-context", refreshMapContext);
   session.cancel();
@@ -123,6 +130,10 @@ export function newMapConversation(): void {
   renderUsage();
 }
 
+function panelVisible(): boolean {
+  return Boolean(host?.isConnected && !host.closest("[hidden]"));
+}
+
 function panelHtml(): string {
   return /* html */ `
     <div id="helpMapSetup" class="helpMapSetup" hidden>
@@ -130,7 +141,7 @@ function panelHtml(): string {
     </div>
     <div id="helpMapLog" class="helpAssistantLog" role="log" aria-live="polite"></div>
     <div id="helpMapAllowance" class="helpMapUsage" aria-live="polite"></div>
-    <div id="helpMapContext" class="helpMapContext" hidden></div>
+    <button type="button" id="helpMapContext" class="helpMapContext" title="Clear selected context" hidden></button>
     <div class="helpAssistantComposer">
       <textarea id="helpMapInput" rows="1" aria-label="Your message"
         placeholder="Ask about FMG, explore this map, or edit notes…"></textarea>
@@ -396,7 +407,7 @@ function updateSendButton(): void {
   button.disabled = !busy && !ensureEl<HTMLTextAreaElement>("helpMapInput").value.trim();
 }
 
-async function send(text?: string): Promise<void> {
+export async function send(text?: string): Promise<void> {
   if (busy) return;
   if (customization) {
     tip("Please exit the customization mode first", false, "error");
@@ -449,20 +460,25 @@ async function send(text?: string): Promise<void> {
   updateSendButton();
   showThinking("Thinking…");
   const thread = conversation;
+  const version = mountVersion;
+  const activeSession = session;
   const record = (entry: Entry) => {
-    if (conversation === thread) addEntry(entry);
+    if (version === mountVersion && conversation === thread) addEntry(entry);
     else {
       thread.entries.push(entry);
       touch(thread);
     }
   };
   try {
-    const openNote = await Controllers.NotesEditor.current();
+    const editorNote = await Controllers.NotesEditor.current();
+    const selected = getSelection();
+    const openNote = editorNote && (!selected || selected.target === editorNote.id) ? editorNote : null;
     const passage = openNote ? await Controllers.NotesEditor.assistantSelection() : null;
+    if (version !== mountVersion) return;
     turnContext = openNote
       ? `Open note target: ${openNote.id}. ${passage ? "A passage is selected: use read_note and propose_note with scope selection." : "Read it with read_note before editing."}`
       : "";
-    await session.ask(thread, question, {
+    await activeSession.ask(thread, question, {
       onText: answer => record({ kind: "message", role: "assistant", text: answer }),
       onScript: code => addEntry({ kind: "script", code }),
       onScriptResult: result => completeStep(result),
@@ -479,7 +495,7 @@ async function send(text?: string): Promise<void> {
   } catch (error) {
     const aborted = error instanceof DOMException && error.name === "AbortError";
     const message = (error instanceof Error && error.message) || String(error);
-    if (model === "hosted" && !aborted && error instanceof HelpApiError) {
+    if (version === mountVersion && model === "hosted" && !aborted && error instanceof HelpApiError) {
       showProviderSetup(
         "The FMG-provided connection could not complete your request. You can retry later, or choose your own provider in Settings."
       );
@@ -489,13 +505,15 @@ async function send(text?: string): Promise<void> {
     }
     record({ kind: "message", role: aborted ? "system" : "error", text: aborted ? "Stopped." : message });
   } finally {
-    busy = false;
-    currentStep = null;
-    hideThinking();
-    touch(conversation);
-    if (document.getElementById("helpMapInput")) {
-      updateSendButton();
-      ensureEl("helpMapInput").focus();
+    touch(thread);
+    if (version === mountVersion) {
+      busy = false;
+      currentStep = null;
+      hideThinking();
+      if (document.getElementById("helpMapInput")) {
+        updateSendButton();
+        if (panelVisible()) ensureEl("helpMapInput").focus();
+      }
     }
   }
 }

@@ -18,10 +18,10 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
+import { Notes } from "@/components/notes";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { Notes } from "@/generators/notes";
 import { downloadFile, getFileName, rn } from "@/utils";
 import type { Good } from "../generators/goods-generator";
 import { isDealRecord, isMfgRecord } from "../generators/production-generator";
@@ -82,11 +82,20 @@ const columns: EditorColumn<Good>[] = [
 ];
 const goodsTable = initEditorTable<Good>({ getData: getGoodsData, onUpdate: renderGoodsPage });
 
-function open() {
+/** With a good id, the Goods layer shows only that good */
+function open(goodId?: number) {
   if (customization) return;
   filterState = dialogState.get(dialogId, "filters", () => ({ visibleTags: [] as string[] }));
   closeDialogs("#goodsEditor, .stable");
 
+  if (goodId !== undefined) {
+    for (const good of pack.goods) good.visible = good.i === goodId;
+    if (filterState.visibleTags.length) {
+      filterState.visibleTags = [];
+      dialogState.set(dialogId, "filters", filterState);
+    }
+    if (Layers.has("goods")) Layers.draw("goods");
+  }
   Layers.show("goods");
 
   renderDialog();
@@ -707,4 +716,4 @@ function closeGoodsEditor() {
   ensureEl("goodsEditor").remove();
 }
 
-export const GoodsEditor = { open };
+export const GoodsEditor = { open, exportCsv: downloadGoodsData };

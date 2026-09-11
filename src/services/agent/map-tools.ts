@@ -1,4 +1,5 @@
-import { type NoteRef, Notes } from "@/generators/notes";
+import { type EntityRef, MapEntities } from "@/components/map-entities";
+import { Notes } from "@/components/notes";
 import type { PackedGraph } from "@/types/PackedGraph";
 import { MAX_RESULT, type ToolCall, validateCall } from "./contract";
 
@@ -6,9 +7,9 @@ export interface Selection {
   target: string;
   label: string;
   mapId: string;
-  cell: number;
-  x: number;
-  y: number;
+  cell?: number;
+  x?: number;
+  y?: number;
 }
 export interface NoteProposal {
   id: string;
@@ -24,6 +25,11 @@ let knownMap: PackedGraph | undefined;
 let knownCells: PackedGraph["cells"] | undefined;
 let epoch = "";
 let selection: Selection | undefined;
+export function resetMapContext(): void {
+  knownMap = undefined;
+  knownCells = undefined;
+  selection = undefined;
+}
 export function mapId(): string {
   if (typeof pack === "undefined") return "no-map";
   if (pack !== knownMap || pack.cells !== knownCells) {
@@ -40,10 +46,14 @@ export function setSelection(value?: Selection): void {
   selection = value;
   window.dispatchEvent(new Event("assistant-context"));
 }
-export function noteRef(target: string): NoteRef {
+export function selectEntity(ref: EntityRef): void {
+  if (!MapEntities.get(ref)) throw new Error("This entity no longer exists");
+  setSelection({ target: MapEntities.key(ref), label: MapEntities.getName(ref), mapId: mapId() });
+}
+export function noteRef(target: string): EntityRef {
   if (!/^[A-Za-z]+:\d+(?:-\d+)?$/.test(target)) throw new Error("Invalid note target");
-  const ref = Notes.parseKey(target);
-  if (!ref || !Notes.exists(ref)) throw new Error("This entity no longer exists");
+  const ref = MapEntities.parseKey(target);
+  if (!ref || !MapEntities.get(ref)) throw new Error("This entity no longer exists");
   return ref;
 }
 export function selectionsAt(x: number, y: number, element?: Element | null): Selection[] {
@@ -69,7 +79,7 @@ export function selectionsAt(x: number, y: number, element?: Element | null): Se
     try {
       const label = target.startsWith("cell:")
         ? `Location ${Math.round(x)}, ${Math.round(y)}`
-        : Notes.getEntityName(noteRef(target));
+        : MapEntities.getName(noteRef(target));
       return [{ target, label: label || target, mapId: mapId(), cell, x, y }];
     } catch {
       return [];
@@ -90,7 +100,7 @@ function position(target: string): { cell: number; x: number; y: number } {
     if (!Number.isInteger(cell) || !point) throw new Error("Unknown cell");
     return { cell, x: point[0], y: point[1] };
   }
-  const point = Notes.getPosition(noteRef(target));
+  const point = MapEntities.getPosition(noteRef(target));
   if (!point) throw new Error("This entity has no location");
   const cell = Pack.findCell(point[0], point[1]);
   if (cell === undefined) throw new Error("Location outside map");
@@ -218,7 +228,7 @@ export async function placeContext(target: string, signal?: AbortSignal): Promis
     target,
     mapId: epoch,
     location: { cell, x: Math.round(x), y: Math.round(y) },
-    name: target.startsWith("cell:") ? target : clip(Notes.getEntityName(noteRef(target))),
+    name: target.startsWith("cell:") ? target : clip(MapEntities.getName(noteRef(target))),
     province: relation("province"),
     state: relation("state"),
     culture: relation("culture"),
@@ -317,7 +327,7 @@ export async function executeMapTool(
         revision: version,
         scope: selection ? "selection" : "note",
         html: readHtml,
-        name: clip(Notes.getEntityName(ref))
+        name: clip(MapEntities.getName(ref))
       });
     if (version !== call.input.revision) throw new Error("Read the current note before proposing changes");
     const fragment = proposedNoteHtml(String(call.input.html));
@@ -334,7 +344,7 @@ export async function executeMapTool(
     onProposal({
       id: crypto.randomUUID(),
       target,
-      label: clip(Notes.getEntityName(ref)),
+      label: clip(MapEntities.getName(ref)),
       mapId: epoch,
       before,
       html,

@@ -39,3 +39,7 @@ Use `npm run dev`. In development only, set `localStorage["fmg-help-gateway"]` t
 Unit tests cover the Here selector, native session contracts, note conflicts and Undo, selected-passage formatting, history migration/expiry, cancellation and a synthetic 70 MB payload remaining local. TypeScript, Biome checks on changed files, and the production build are part of validation.
 
 Before rollout, use representative real maps around 70 MB to measure local scan latency, responsiveness and actual outbound traffic for hosted and personal providers. Manually check zoomed Here placement, note Apply/Undo and map save/reload, provider/sign-in changes and moderator reporting in staging. Unit tests do not establish real-provider quality or large-map browser performance; Playwright is not run automatically in this repository.
+
+## Omnibar integration
+
+On `feat/omnibar-assistant`, all assistant entry points open the expanding omnibar. See [Omnibar assistant](omnibar-assistant.md) for interaction and lifecycle details. Notes now use `components/notes.ts`; entity references and lookup use `MapEntities`. The hosted API and approved tool contract are unchanged.

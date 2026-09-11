@@ -696,4 +696,4 @@ function downloadMilitaryData(): void {
   downloadFile(data, name);
 }
 
-export const MilitaryOverview = { open };
+export const MilitaryOverview = { open, exportCsv: downloadMilitaryData };

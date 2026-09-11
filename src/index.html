@@ -129,7 +129,7 @@
     </style>
     <link
       rel="preload"
-      href="index.css?v=9d9b6d89"
+      href="index.css?v=b3a0c802"
       as="style"
       onload="
         this.onload = null;
@@ -402,7 +402,8 @@
           <button id="exportButton" data-tip="Select format to download image or export map data">Export</button>
           <button id="saveButton" data-tip="Save fully-functional map file">Save</button>
           <button id="loadButton" data-tip="Load fully-functional map (.map or .gz formats)">Load</button>
-          <button id="zoomReset" data-tip="Reset map zoom" data-shortcut="0 (zero)">Reset Zoom</button>
+          <button id="zoomReset" data-tip="Reset map zoom" data-shortcut="0 (zero)">Zoom out</button>
+          <button id="searchButton" data-tip="Search map and commands" data-shortcut="Space">Search</button>
         </div>
       </div>
     </div>
@@ -589,7 +590,7 @@
         <div style="margin-top: 0.3em">
           <strong>Save map to</strong>
           <button
-            onclick="window.Services.Save.saveMap('machine')"
+            onclick="window.Services.Save.toMachine()"
             data-tip="Download map file to your local disk"
             data-shortcut="Ctrl + S"
             style="font-weight: 600"
@@ -598,13 +599,13 @@
           </button>
           <button
             id="saveToDropboxButton"
-            onclick="window.Services.Save.saveMap('dropbox')"
+            onclick="window.Services.Save.toDropbox()"
             data-tip="Save map file to your Dropbox"
             data-shortcut="Ctrl + C"
           >
             dropbox
           </button>
-          <button onclick="window.Services.Save.saveMap('storage')" data-tip="Save the project to browser storage only" data-shortcut="F6">
+          <button onclick="window.Services.Save.toStorage()" data-tip="Save the project to browser storage only" data-shortcut="F6">
             browser
           </button>
         </div>

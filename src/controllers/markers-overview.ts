@@ -437,4 +437,4 @@ function exportMarkers(): void {
   downloadFile(data, fileName);
 }
 
-export const MarkersOverview = { open };
+export const MarkersOverview = { open, exportCsv: exportMarkers };

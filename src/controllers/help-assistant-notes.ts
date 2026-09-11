@@ -2,7 +2,8 @@
 // in the notes editor, the write_note tool, and its undo. Writes go through the notes editor bridge
 // (Controllers.NotesEditor, lazy) so an open editor stays in sync.
 
-import { Notes } from "@/generators/notes";
+import { MapEntities } from "@/components/map-entities";
+import { Notes } from "@/components/notes";
 import type { Entry, NoteState } from "@/services/agent/conversations";
 import type { ToolInput } from "@/services/agent/providers";
 import type { AgentTool, ToolOutcome } from "@/services/agent/session";
@@ -42,9 +43,9 @@ Inline styles are kept, classes and scripts are not. Notes cannot be changed any
 
 // Notes live on their entity (pack.burgs[12].note), so a note is read through the store by key or element id
 function noteById(id: string): Note | undefined {
-  const ref = Notes.parseKey(id) ?? Notes.resolveElement(id);
-  if (!ref || !Notes.exists(ref)) return undefined;
-  return { id: Notes.key(ref), name: Notes.getEntityName(ref), legend: Notes.get(ref) || "" };
+  const ref = MapEntities.parseKey(id) ?? MapEntities.resolveElement(id);
+  if (!ref || !MapEntities.get(ref)) return undefined;
+  return { id: MapEntities.key(ref), name: MapEntities.getName(ref), legend: Notes.get(ref) || "" };
 }
 
 export async function noteContext(): Promise<string | null> {

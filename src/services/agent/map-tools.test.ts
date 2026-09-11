@@ -1,6 +1,7 @@
 import { webcrypto } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { Notes } from "@/generators/notes";
+import { MapEntities } from "@/components/map-entities";
+import { Notes } from "@/components/notes";
 import {
   applyProposal,
   executeMapTool,
@@ -15,7 +16,7 @@ import {
 vi.mock("@/controllers/notes-editor", () => ({
   NotesEditor: {
     write: (target: string, html: string) => {
-      const ref = Notes.parseKey(target)!;
+      const ref = MapEntities.parseKey(target)!;
       Notes.set(ref, html);
       return { id: target, legend: html };
     }

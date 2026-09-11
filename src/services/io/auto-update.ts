@@ -2,6 +2,8 @@
 import { color, min, select } from "d3";
 import { confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { type LayerId, Layers, type LayersState } from "@/components/layers";
+import { type EntityRef, MapEntities } from "@/components/map-entities";
+import { Notes } from "@/components/notes";
 import { normalizeLegacyBurgGroupFilters } from "@/components/options-legacy";
 import type { MapData } from "@/components/options-schema";
 import { RELIEF_SETS } from "@/data/relief-icons";
@@ -10,7 +12,6 @@ import type { GraphOverrides } from "@/generators/graph-override";
 import { type Label, type LabelNameMode, Labels as LabelsGenerator } from "@/generators/labels-generator";
 import { getDefaultMarkerName, type Marker } from "@/generators/markers-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
-import { type NoteRef, Notes } from "@/generators/notes";
 import {
   labelGroupFromLegacy,
   migrateStyles,
@@ -1892,7 +1893,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     const orphan = (note: LegacyNote) => void (note.legend && unattachedNotes.push(note));
 
     // the labels editor titled a state or province note with the short name, the entity name is the full one
-    const shortName = (ref: NoteRef): string | undefined =>
+    const shortName = (ref: EntityRef): string | undefined =>
       ref.type === "state"
         ? pack.states?.find(({ i }) => i === ref.id)?.name
         : ref.type === "province"
@@ -1902,7 +1903,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     const notedMarkers = new Set<Marker>();
 
     for (const note of legacyNotes) {
-      const ref = Notes.resolveElement(noteRenames.get(note.id) ?? note.id);
+      const ref = MapEntities.resolveElement(noteRenames.get(note.id) ?? note.id);
       if (!ref) {
         orphan(note);
         continue;
@@ -1925,7 +1926,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
       // a note titled differently from its entity keeps that title as a heading, so nothing is lost.
       // an untitled note was titled with its own element id, which is no title at all
-      const named = note.name === note.id || note.name === Notes.getEntityName(ref) || note.name === shortName(ref);
+      const named = note.name === note.id || note.name === MapEntities.getName(ref) || note.name === shortName(ref);
       const heading = note.name && !named ? `<h3>${note.name}</h3>` : "";
       if (!Notes.append(ref, note.legend && `${heading}${note.legend}`) && ref.type !== "regiment") orphan(note);
     }

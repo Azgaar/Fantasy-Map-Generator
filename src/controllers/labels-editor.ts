@@ -2,12 +2,13 @@ import { curveNatural, type D3DragEvent, drag, line, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { fitContent } from "@/components/dialog/fit-content";
 import { Layers } from "@/components/layers";
+import { MapEntities } from "@/components/map-entities";
+import { Notes } from "@/components/notes";
 import { showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { viewport } from "@/components/viewport";
 import { Controllers } from "@/controllers";
 import type { Label, LabelType } from "@/generators/labels-generator";
-import { Notes } from "@/generators/notes";
 import { UNNAMED_ROUTE } from "@/generators/routes-generator";
 import type { Point } from "@/generators/voronoi";
 import { createLabelArc } from "@/renderers/labels/label-arc";
@@ -514,7 +515,7 @@ function toggleLabelVisibility(): void {
 }
 
 function editLabelLegend(): void {
-  const ref = Notes.resolveElement(label.id); // burgLabel3 -> the burg, stateLabel1 -> the state, and so on
+  const ref = MapEntities.resolveElement(label.id); // burgLabel3 -> the burg, stateLabel1 -> the state, and so on
   if (ref) void Controllers.NotesEditor.open(ref);
 }
 

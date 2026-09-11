@@ -1,13 +1,28 @@
 // @vitest-environment jsdom
 import { webcrypto } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { Notes } from "@/generators/notes";
-import { mapId, type NoteProposal } from "@/services/agent/map-tools";
+import { MapEntities } from "@/components/map-entities";
+import { Notes } from "@/components/notes";
+import { mapId, type NoteProposal, selectEntity, setSelection } from "@/services/agent/map-tools";
+import type { SessionConfig } from "@/services/agent/session";
+
+const editorApi = vi.hoisted(() => ({ current: vi.fn(), assistantSelection: vi.fn() }));
+const sessionApi = vi.hoisted(() => ({ context: "", ask: vi.fn() }));
+vi.mock("@/services/agent/session", () => ({
+  createSession: (config: () => SessionConfig) => ({
+    ask: async () => {
+      sessionApi.context = config().context ?? "";
+      sessionApi.ask();
+    },
+    cancel: vi.fn()
+  })
+}));
 
 vi.mock("@/controllers/notes-editor", () => ({
   NotesEditor: {
+    ...editorApi,
     write: (target: string, html: string) => {
-      Notes.set(Notes.parseKey(target)!, html);
+      Notes.set(MapEntities.parseKey(target)!, html);
       return { id: target, legend: html };
     }
   }
@@ -34,8 +49,15 @@ vi.mock("./help-assistant-notes", () => ({
   undoEdit: vi.fn(async () => {})
 }));
 
-import { current } from "@/services/agent/conversations";
-import { mountMapPanel, NOTE_SUGGESTIONS, needsKey, refreshMapContext, unmountMapPanel } from "./help-assistant-map";
+import { create, current } from "@/services/agent/conversations";
+import {
+  mountMapPanel,
+  NOTE_SUGGESTIONS,
+  needsKey,
+  refreshMapContext,
+  send,
+  unmountMapPanel
+} from "./help-assistant-map";
 import { undoEdit } from "./help-assistant-notes";
 
 const w = globalThis as unknown as Record<string, unknown>;
@@ -48,8 +70,13 @@ beforeEach(() => {
   document.body.innerHTML = `<div id="host"></div>`;
   w.mapId = 1;
   w.customization = 0;
+  create();
   window.$ = vi.fn(() => ({ dialog: vi.fn() })) as unknown as typeof window.$;
   notesApi.label = null;
+  setSelection();
+  sessionApi.ask.mockClear();
+  editorApi.current.mockReset();
+  editorApi.assistantSelection.mockReset();
 });
 
 afterEach(() => {
@@ -68,6 +95,30 @@ describe("needsKey", () => {
 });
 
 describe("map panel", () => {
+  it("uses explicit search context ahead of a different note open in an editor", async () => {
+    vi.stubGlobal("crypto", webcrypto);
+    vi.stubGlobal("pack", { cells: {}, burgs: [{ i: 0 }, { i: 1, name: "Aukiz" }] });
+    editorApi.current.mockResolvedValue({ id: "burg:2", name: "Other city", legend: "Other note" });
+    mountMapPanel(el("host"));
+    selectEntity({ type: "burg", id: 1 });
+    await send("Draft a note for this burg");
+    expect(sessionApi.ask).toHaveBeenCalledOnce();
+    expect(sessionApi.context).toBe("");
+    expect(editorApi.assistantSelection).not.toHaveBeenCalled();
+  });
+
+  it("keeps the selected passage context when the editor matches the selected entity", async () => {
+    vi.stubGlobal("crypto", webcrypto);
+    vi.stubGlobal("pack", { cells: {}, burgs: [{ i: 0 }, { i: 1, name: "Aukiz" }] });
+    editorApi.current.mockResolvedValue({ id: "burg:1", name: "Aukiz", legend: "The capital" });
+    editorApi.assistantSelection.mockResolvedValue({ index: 0, length: 3, html: "The" });
+    mountMapPanel(el("host"));
+    selectEntity({ type: "burg", id: 1 });
+    await send("Rewrite this passage");
+    expect(sessionApi.context).toContain("Open note target: burg:1");
+    expect(sessionApi.context).toContain("scope selection");
+  });
+
   it("opens a sanitized, read-only draft when Preview is clicked and returns focus on Close", () => {
     vi.stubGlobal("pack", { cells: {}, burgs: [{ i: 0 }, { i: 1, name: "Kimelea", note: "<p>Original</p>" }] });
     let options: { close: () => void; buttons: { Close: () => void } } | undefined;
