@@ -246,11 +246,27 @@ export function stylesFromMap(root: ParentNode = document): Styles {
   return presetFromLegacy(bags, { onUnknown: "skip" });
 }
 
+// a map migrated before the empty-record check above kept an empty burg icon / anchor record that
+// nothing could refill (the editor drops edits to a missing group); the restored svg still has the groups
+export function restoreEmptyBurgGroupStyles(): void {
+  const empty = (["burgIcons", "anchors"] as const).filter(type => !Object.keys(styles.burgIcons[type].groups).length);
+  if (!empty.length) return;
+  const harvested = stylesFromMap();
+  for (const type of empty) styles.burgIcons[type].groups = harvested.burgIcons[type].groups;
+}
+
 // migration for pre v1.150 maps: harvest the DOM
 export function harvestStylesFromSvg({ hasStyleRecord = false } = {}): void {
   const harvested = stylesFromMap();
   harvested.labels = structuredClone(styles.labels);
-  if (hasStyleRecord) harvested.burgIcons = structuredClone(styles.burgIcons);
+  // pre-v1.150 main.js initialised the legacy record as burgIcons: {}, anchors: {}, so an empty
+  // record means "never filled", and the svg groups are the only source of their styling
+  if (hasStyleRecord) {
+    for (const type of ["burgIcons", "anchors"] as const) {
+      if (Object.keys(styles.burgIcons[type].groups).length)
+        harvested.burgIcons[type] = structuredClone(styles.burgIcons[type]);
+    }
+  }
   harvested.relief.options = structuredClone(styles.relief.options);
   // post-migration maps carry no rescale/data-width attrs, so the store owns these
   // options; a loaded old map's attrs win here until the load-time strip removes them
@@ -721,6 +737,7 @@ const stylesLegacyBridge = {
   harvestAttributes,
   stylesFromMap,
   harvestStylesFromSvg,
+  restoreEmptyBurgGroupStyles,
   stripDisplay,
   migrateStyles,
   restoreStrippedLayerStyles,

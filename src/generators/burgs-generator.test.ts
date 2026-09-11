@@ -445,6 +445,27 @@ describe("ensureBurgGroupStyles", () => {
     expect(burgIcons.groups.fortresses).not.toBe(burgIcons.groups.town);
     expect(anchors.groups.fortresses).toEqual(townAnchor);
   });
+
+  it("seeds from the shipped defaults when a record has no group to copy", async () => {
+    globalThis.window = globalThis.window || ({} as any);
+    await import("./burgs-generator");
+    const Burgs = (globalThis as any).Burgs;
+
+    options.map.burgs.groups = [{ name: "cities" }] as never;
+    const town = { attrs: { fill: "#aaa" }, options: { size: 1, icon: "#icon-burg" } };
+    const townAnchor = { attrs: { fill: "#bbb" }, options: { size: 2 } };
+    (globalThis as any).Styles = {
+      defaults: { burgIcons: { burgIcons: { groups: { town } }, anchors: { groups: { town: townAnchor } } } }
+    };
+    (globalThis as any).styles = { burgIcons: { burgIcons: { groups: {} }, anchors: { groups: {} } } };
+
+    Burgs.ensureBurgGroupStyles();
+
+    const { burgIcons, anchors } = (globalThis as any).styles.burgIcons;
+    expect(burgIcons.groups.cities).toEqual(town);
+    expect(burgIcons.groups.cities).not.toBe(town);
+    expect(anchors.groups.cities).toEqual(townAnchor);
+  });
 });
 
 describe("BurgsModule.parseStoredGroups", () => {

@@ -8,6 +8,7 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { resetZoom } from "@/components/zoom";
 import { GraphOverride } from "@/generators/graph-override";
+import { restoreEmptyBurgGroupStyles } from "@/generators/styles-legacy";
 import { invalidateEmblems } from "@/renderers/draw-emblems";
 import { onLegendClick } from "@/renderers/draw-legend";
 import { zonesFilter } from "@/renderers/draw-zones";
@@ -380,6 +381,8 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
 
     const styleRecord = data[48] ? safeParseJSON(data[48]) : undefined; // data[48] should be already migrated by auto-update
     Styles.set(Styles.parse(styleRecord));
+    restoreEmptyBurgGroupStyles();
+    Burgs.ensureBurgGroupStyles();
 
     if (data[50]) Layers.restore(JSON.parse(data[50]));
     if (data[51]) GraphOverride.restore(JSON.parse(data[51]));
