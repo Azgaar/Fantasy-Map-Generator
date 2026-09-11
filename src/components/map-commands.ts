@@ -35,7 +35,9 @@ export interface MapCommand {
   matches?: (query: string) => boolean; // queries the command answers beyond its name and aliases
 }
 
+/** Ordered by priority: the omnibar breaks score ties by definition order */
 export const MAP_COMMANDS: MapCommand[] = [
+  // assistant
   {
     id: "helpAssistant",
     name: "Ask AI: Azgaar Assistant",
@@ -43,18 +45,45 @@ export const MAP_COMMANDS: MapCommand[] = [
     matches: isQuestion,
     run: () => Controllers.HelpAssistant.open()
   },
+  // map lifecycle
+  { id: "newMap", name: "Generate New Map", aliases: "regenerate random create", run: () => regeneratePrompt() },
   {
-    id: "startTour",
-    name: "Start Interactive Tour",
-    aliases: "help guide tutorial",
-    run: () => Services.UiTour.start()
+    id: "saveToMachine",
+    name: "Save Map File",
+    aliases: "save .map disk",
+    run: () => Services.Save.toMachine()
   },
-  { id: "getApp", name: "Get Desktop App", aliases: "install download electron", run: () => Services.AppOffer.open() },
   {
-    id: "editBiomesButton",
-    name: "Open Biomes Editor",
-    aliases: "environment terrain",
-    run: () => Controllers.BiomesEditor.open()
+    id: "loadFromFile",
+    name: "Load Map from File",
+    aliases: "open upload disk",
+    run: () => ensureEl("mapToLoad").click()
+  },
+  { id: "quickLoad", name: "Quick Load Map", aliases: "browser storage restore", run: () => Services.Load.quickLoad() },
+  {
+    id: "saveToStorage",
+    name: "Save Map to browser storage",
+    aliases: "browser storage",
+    run: () => Services.Save.toStorage()
+  },
+  { id: "saveToDropbox", name: "Save Map to Dropbox", aliases: "cloud", run: () => Services.Save.toDropbox() },
+  { id: "loadFromURL", name: "Load Map from URL", aliases: "open link", run: () => loadURL() },
+  { id: "saveButton", name: "Show Save Panel", aliases: "store dialog", run: () => showSavePane() },
+  { id: "loadButton", name: "Load Map", aliases: "open dialog", run: () => showLoadPane() },
+  { id: "exportButton", name: "Export Map", aliases: "download image data dialog", run: () => showExportPane() },
+  { id: "copyMapURL", name: "Copy Map URL", aliases: "seed link share clipboard", run: () => copyMapURL() },
+  {
+    id: "seedHistory",
+    name: "Show Seed History",
+    aliases: "previous maps restore",
+    run: () => showSeedHistoryDialog()
+  },
+  // editors and overviews
+  {
+    id: "editStatesButton",
+    name: "Open States Editor",
+    aliases: "countries kingdoms nations",
+    run: () => Controllers.StatesEditor.open()
   },
   {
     id: "overviewBurgsButton",
@@ -63,82 +92,16 @@ export const MAP_COMMANDS: MapCommand[] = [
     run: () => Controllers.BurgsOverview.open()
   },
   {
-    id: "editCoastlineSettings",
-    name: "Open Coastline Editor",
-    aliases: "coast islands oceans",
-    run: () => Controllers.CoastlineEditor.open()
-  },
-  {
     id: "editCulturesButton",
     name: "Open Cultures Editor",
     aliases: "people",
     run: () => Controllers.CulturesEditor.open()
   },
   {
-    id: "editDiplomacyButton",
-    name: "Open Diplomacy Editor",
-    aliases: "relations allies wars",
-    run: () => Controllers.DiplomacyEditor.open()
-  },
-  {
-    id: "editEmblemButton",
-    name: "Open Emblems Editor",
-    aliases: "heraldry coat of arms",
-    run: () => Controllers.EmblemsEditor.openDefault()
-  },
-  {
-    id: "editGoods",
-    name: "Open Goods Editor",
-    aliases: "resources products economy",
-    run: () => Controllers.GoodsEditor.open()
-  },
-  {
-    id: "editHeightmapButton",
-    name: "Edit Heightmap",
-    aliases: "terrain elevation",
-    run: () => Controllers.HeightmapEditor.open()
-  },
-  {
-    id: "overviewMarkersButton",
-    name: "Open Markers Overview",
-    aliases: "points of interest",
-    run: () => Controllers.MarkersOverview.open()
-  },
-  {
-    id: "overviewMarketsButton",
-    name: "Open Markets Overview",
-    aliases: "economy trade",
-    run: () => Controllers.MarketsOverview.open()
-  },
-  {
-    id: "editMeasurersButton",
-    name: "Open Measurers Editor",
-    aliases: "rulers distances",
-    run: () => Controllers.MeasurersEditor.open()
-  },
-  {
-    id: "overviewLabelsButton",
-    name: "Open Labels Overview",
-    aliases: "text typography",
-    run: () => Controllers.LabelsOverview.open()
-  },
-  {
-    id: "overviewMilitaryButton",
-    name: "Open Military Overview",
-    aliases: "armies regiments",
-    run: () => Controllers.MilitaryOverview.open()
-  },
-  {
-    id: "editNamesBaseButton",
-    name: "Open Namesbase Editor",
-    aliases: "names language",
-    run: () => Controllers.NamesbaseEditor.open()
-  },
-  {
-    id: "editNotesButton",
-    name: "Open Notes Editor",
-    aliases: "lore descriptions legends",
-    run: () => Controllers.NotesEditor.open()
+    id: "editReligions",
+    name: "Open Religions Editor",
+    aliases: "faith beliefs",
+    run: () => Controllers.ReligionsEditor.open()
   },
   {
     id: "editProvincesButton",
@@ -147,10 +110,22 @@ export const MAP_COMMANDS: MapCommand[] = [
     run: () => Controllers.ProvincesEditor.open()
   },
   {
-    id: "editReligions",
-    name: "Open Religions Editor",
-    aliases: "faith beliefs",
-    run: () => Controllers.ReligionsEditor.open()
+    id: "editHeightmapButton",
+    name: "Edit Heightmap",
+    aliases: "terrain elevation",
+    run: () => Controllers.HeightmapEditor.open()
+  },
+  {
+    id: "editBiomesButton",
+    name: "Open Biomes Editor",
+    aliases: "environment terrain",
+    run: () => Controllers.BiomesEditor.open()
+  },
+  {
+    id: "editDiplomacyButton",
+    name: "Open Diplomacy Editor",
+    aliases: "relations allies wars",
+    run: () => Controllers.DiplomacyEditor.open()
   },
   {
     id: "overviewRiversButton",
@@ -165,22 +140,53 @@ export const MAP_COMMANDS: MapCommand[] = [
     run: () => Controllers.RoutesOverview.open()
   },
   {
-    id: "overviewJourneysButton",
-    name: "Open Journeys Overview",
-    aliases: "travel quests",
-    run: () => Controllers.JourneysOverview.open()
+    id: "overviewMarkersButton",
+    name: "Open Markers Overview",
+    aliases: "points of interest",
+    run: () => Controllers.MarkersOverview.open()
   },
   {
-    id: "editStatesButton",
-    name: "Open States Editor",
-    aliases: "countries kingdoms nations",
-    run: () => Controllers.StatesEditor.open()
+    id: "overviewLabelsButton",
+    name: "Open Labels Overview",
+    aliases: "text typography",
+    run: () => Controllers.LabelsOverview.open()
   },
   {
-    id: "editTradeAnimationButton",
-    name: "Open Trade Animation Editor",
-    aliases: "economy",
-    run: () => Controllers.TradeAnimationEditor.open()
+    id: "editZonesButton",
+    name: "Open Zones Editor",
+    aliases: "areas regions",
+    run: () => Controllers.ZonesEditor.open()
+  },
+  {
+    id: "overviewMilitaryButton",
+    name: "Open Military Overview",
+    aliases: "armies regiments",
+    run: () => Controllers.MilitaryOverview.open()
+  },
+  {
+    id: "regiments",
+    name: "Open Regiments Overview",
+    aliases: "military armies",
+    run: () => Controllers.RegimentsOverview.open()
+  },
+  {
+    id: "editEmblemButton",
+    name: "Open Emblems Editor",
+    aliases: "heraldry coat of arms",
+    run: () => Controllers.EmblemsEditor.openDefault()
+  },
+  {
+    id: "editNotesButton",
+    name: "Open Notes Editor",
+    aliases: "lore descriptions legends",
+    run: () => Controllers.NotesEditor.open()
+  },
+  { id: "lore", name: "Open Map Lore", aliases: "description history story", run: () => Controllers.LoreEditor.open() },
+  {
+    id: "editNamesBaseButton",
+    name: "Open Namesbase Editor",
+    aliases: "names language",
+    run: () => Controllers.NamesbaseEditor.open()
   },
   {
     id: "editUnitsButton",
@@ -189,10 +195,76 @@ export const MAP_COMMANDS: MapCommand[] = [
     run: () => Controllers.UnitsEditor.open()
   },
   {
-    id: "editZonesButton",
-    name: "Open Zones Editor",
-    aliases: "areas regions",
-    run: () => Controllers.ZonesEditor.open()
+    id: "editCoastlineSettings",
+    name: "Open Coastline Editor",
+    aliases: "coast islands oceans",
+    run: () => Controllers.CoastlineEditor.open()
+  },
+  {
+    id: "editMeasurersButton",
+    name: "Open Measurers Editor",
+    aliases: "rulers distances",
+    run: () => Controllers.MeasurersEditor.open()
+  },
+  {
+    id: "editGoods",
+    name: "Open Goods Editor",
+    aliases: "resources products economy",
+    run: () => Controllers.GoodsEditor.open()
+  },
+  {
+    id: "overviewMarketsButton",
+    name: "Open Markets Overview",
+    aliases: "economy trade",
+    run: () => Controllers.MarketsOverview.open()
+  },
+  {
+    id: "productionChains",
+    name: "Open Production Chains",
+    aliases: "goods recipes economy",
+    run: () => Controllers.ProductionChains.open()
+  },
+  {
+    id: "editTradeAnimationButton",
+    name: "Open Trade Animation Editor",
+    aliases: "economy",
+    run: () => Controllers.TradeAnimationEditor.open()
+  },
+  {
+    id: "overviewJourneysButton",
+    name: "Open Journeys Overview",
+    aliases: "travel quests",
+    run: () => Controllers.JourneysOverview.open()
+  },
+  {
+    id: "transports",
+    name: "Open Transports Editor",
+    aliases: "journeys travel speed",
+    run: () => Controllers.TransportEditor.open()
+  },
+  {
+    id: "burgGroups",
+    name: "Open Burg Groups Editor",
+    aliases: "settlements cities towns villages types",
+    run: () => Controllers.BurgGroupEditor.open()
+  },
+  {
+    id: "labelGroups",
+    name: "Open Label Groups Editor",
+    aliases: "labels text typography fonts",
+    run: () => Controllers.LabelGroupsConfigurator.open()
+  },
+  {
+    id: "routeGroups",
+    name: "Open Route Groups Editor",
+    aliases: "roads paths trails types",
+    run: () => Controllers.RouteGroupsEditor.open()
+  },
+  {
+    id: "world",
+    name: "Open World Configurator",
+    aliases: "climate size latitude temperature",
+    run: () => Controllers.WorldConfigurator.open()
   },
   {
     id: "overviewCellsButton",
@@ -206,6 +278,41 @@ export const MAP_COMMANDS: MapCommand[] = [
     aliases: "statistics graphs",
     run: () => Controllers.ChartsOverview.open()
   },
+  // adding elements
+  {
+    id: "addBurgTool",
+    name: "Add Burg",
+    aliases: "add burgs settlement city town village",
+    run: () => Controllers.BurgCreator.toggle()
+  },
+  { id: "addLabel", name: "Add Label", aliases: "text", run: () => Controllers.LabelCreator.toggle() },
+  { id: "addMarker", name: "Add Marker", aliases: "point of interest", run: () => Controllers.MarkerCreator.toggle() },
+  { id: "addRiver", name: "Add River", aliases: "waterway", run: () => Controllers.RiverAutoCreator.toggle() },
+  { id: "drawRiver", name: "Draw River", aliases: "add waterway manually", run: () => Controllers.RiverCreator.open() },
+  { id: "addRoute", name: "Add Route", aliases: "road trail path", run: () => Controllers.RouteCreator.open() },
+  // map tools
+  {
+    id: "selectHeightmap",
+    name: "Select Heightmap Template",
+    aliases: "precreated generation options",
+    run: () => Controllers.HeightmapSelection.open()
+  },
+  { id: "openSubmapTool", name: "Create Submap", aliases: "generate region", run: () => Controllers.SubmapTool.open() },
+  {
+    id: "openTransformTool",
+    name: "Transform Map",
+    aliases: "rotate resize",
+    run: () => Controllers.TransformTool.open()
+  },
+  { id: "openMinimapButton", name: "Open Minimap", aliases: "navigation", run: () => Controllers.Minimap.open() },
+  { id: "viewMesh", name: "Open 3D Scene", aliases: "view mode mesh", run: () => Controllers.View3d.open("viewMesh") },
+  {
+    id: "viewGlobe",
+    name: "Open Globe View",
+    aliases: "view mode planet",
+    run: () => Controllers.View3d.open("viewGlobe")
+  },
+  // charts
   {
     id: "showStatesChart",
     name: "Show States Chart",
@@ -242,24 +349,19 @@ export const MAP_COMMANDS: MapCommand[] = [
     aliases: "diplomacy chronicle wars",
     run: () => Controllers.DiplomacyEditor.showHistory()
   },
-  { id: "openMinimapButton", name: "Open Minimap", aliases: "navigation", run: () => Controllers.Minimap.open() },
-  { id: "openSubmapTool", name: "Create Submap", aliases: "generate region", run: () => Controllers.SubmapTool.open() },
+  // regeneration
   {
-    id: "openTransformTool",
-    name: "Transform Map",
-    aliases: "rotate resize",
-    run: () => Controllers.TransformTool.open()
+    id: "regenerateStates",
+    name: "Regenerate States",
+    aliases: "generate countries kingdoms",
+    run: () => confirmRegeneration(regenerateStates)
   },
   {
-    id: "addBurgTool",
-    name: "Add Burg",
-    aliases: "add burgs settlement city town village",
-    run: () => Controllers.BurgCreator.toggle()
+    id: "regenerateProvinces",
+    name: "Regenerate Provinces",
+    aliases: "generate counties",
+    run: () => confirmRegeneration(regenerateProvinces)
   },
-  { id: "addLabel", name: "Add Label", aliases: "text", run: () => Controllers.LabelCreator.toggle() },
-  { id: "addMarker", name: "Add Marker", aliases: "point of interest", run: () => Controllers.MarkerCreator.toggle() },
-  { id: "addRiver", name: "Add River", aliases: "waterway", run: () => Controllers.RiverAutoCreator.toggle() },
-  { id: "addRoute", name: "Add Route", aliases: "road trail path", run: () => Controllers.RouteCreator.open() },
   {
     id: "regenerateBurgs",
     name: "Regenerate Burgs",
@@ -271,78 +373,6 @@ export const MAP_COMMANDS: MapCommand[] = [
     name: "Regenerate Cultures",
     aliases: "generate people",
     run: () => confirmRegeneration(regenerateCultures)
-  },
-  {
-    id: "regenerateEconomy",
-    name: "Regenerate Economy",
-    aliases: "generate trade",
-    run: () => confirmRegeneration(regenerateEconomy)
-  },
-  {
-    id: "regenerateEmblems",
-    name: "Regenerate Emblems",
-    aliases: "generate heraldry",
-    run: () => confirmRegeneration(regenerateEmblems)
-  },
-  {
-    id: "regenerateGoods",
-    name: "Regenerate Goods",
-    aliases: "generate resources",
-    run: () => confirmRegeneration(regenerateGoods)
-  },
-  {
-    id: "regenerateIce",
-    name: "Regenerate Ice",
-    aliases: "generate glaciers icebergs",
-    run: () => confirmRegeneration(regenerateIce)
-  },
-  {
-    id: "regenerateStateLabels",
-    name: "Regenerate State Labels",
-    aliases: "generate text placement",
-    run: () => confirmRegeneration(regenerateStateLabels)
-  },
-  {
-    id: "regenerateMarkers",
-    name: "Regenerate Markers",
-    aliases: "generate points of interest",
-    run: () => confirmRegeneration(regenerateMarkers)
-  },
-  {
-    id: "regenerateMarkets",
-    name: "Regenerate Markets",
-    aliases: "generate economy",
-    run: () => confirmRegeneration(regenerateMarkets)
-  },
-  {
-    id: "regenerateMilitary",
-    name: "Regenerate Military",
-    aliases: "generate armies regiments",
-    run: () => confirmRegeneration(regenerateMilitary)
-  },
-  {
-    id: "regeneratePopulation",
-    name: "Regenerate Population",
-    aliases: "generate people",
-    run: () => confirmRegeneration(regeneratePopulation)
-  },
-  {
-    id: "regenerateProduction",
-    name: "Regenerate Production",
-    aliases: "generate trade economy",
-    run: () => confirmRegeneration(regenerateProduction)
-  },
-  {
-    id: "regenerateProvinces",
-    name: "Regenerate Provinces",
-    aliases: "generate counties",
-    run: () => confirmRegeneration(regenerateProvinces)
-  },
-  {
-    id: "regenerateReliefIcons",
-    name: "Regenerate Relief",
-    aliases: "generate mountains forests",
-    run: () => confirmRegeneration(regenerateReliefIcons)
   },
   {
     id: "regenerateReligions",
@@ -363,10 +393,28 @@ export const MAP_COMMANDS: MapCommand[] = [
     run: () => confirmRegeneration(regenerateRoutes)
   },
   {
-    id: "regenerateStates",
-    name: "Regenerate States",
-    aliases: "generate countries kingdoms",
-    run: () => confirmRegeneration(regenerateStates)
+    id: "regenerateStateLabels",
+    name: "Regenerate State Labels",
+    aliases: "generate text placement",
+    run: () => confirmRegeneration(regenerateStateLabels)
+  },
+  {
+    id: "regenerateReliefIcons",
+    name: "Regenerate Relief",
+    aliases: "generate mountains forests",
+    run: () => confirmRegeneration(regenerateReliefIcons)
+  },
+  {
+    id: "regenerateEmblems",
+    name: "Regenerate Emblems",
+    aliases: "generate heraldry",
+    run: () => confirmRegeneration(regenerateEmblems)
+  },
+  {
+    id: "regenerateMarkers",
+    name: "Regenerate Markers",
+    aliases: "generate points of interest",
+    run: () => confirmRegeneration(regenerateMarkers)
   },
   {
     id: "regenerateZones",
@@ -375,93 +423,64 @@ export const MAP_COMMANDS: MapCommand[] = [
     run: event => confirmRegeneration(() => regenerateZones(event))
   },
   {
+    id: "regenerateMilitary",
+    name: "Regenerate Military",
+    aliases: "generate armies regiments",
+    run: () => confirmRegeneration(regenerateMilitary)
+  },
+  {
+    id: "regeneratePopulation",
+    name: "Regenerate Population",
+    aliases: "generate people",
+    run: () => confirmRegeneration(regeneratePopulation)
+  },
+  {
+    id: "regenerateGoods",
+    name: "Regenerate Goods",
+    aliases: "generate resources",
+    run: () => confirmRegeneration(regenerateGoods)
+  },
+  {
+    id: "regenerateMarkets",
+    name: "Regenerate Markets",
+    aliases: "generate economy",
+    run: () => confirmRegeneration(regenerateMarkets)
+  },
+  {
+    id: "regenerateProduction",
+    name: "Regenerate Production",
+    aliases: "generate trade economy",
+    run: () => confirmRegeneration(regenerateProduction)
+  },
+  {
+    id: "regenerateEconomy",
+    name: "Regenerate Economy",
+    aliases: "generate trade",
+    run: () => confirmRegeneration(regenerateEconomy)
+  },
+  {
+    id: "regenerateIce",
+    name: "Regenerate Ice",
+    aliases: "generate glaciers icebergs",
+    run: () => confirmRegeneration(regenerateIce)
+  },
+  {
     id: "configRegenerateMarkers",
     name: "Configure Marker Generation",
     aliases: "markers settings",
     run: () => Controllers.MarkersSettings.open()
   },
-  {
-    id: "world",
-    name: "Open World Configurator",
-    aliases: "climate size latitude temperature",
-    run: () => Controllers.WorldConfigurator.open()
-  },
-  { id: "lore", name: "Open Map Lore", aliases: "description history story", run: () => Controllers.LoreEditor.open() },
-  {
-    id: "regiments",
-    name: "Open Regiments Overview",
-    aliases: "military armies",
-    run: () => Controllers.RegimentsOverview.open()
-  },
-  {
-    id: "productionChains",
-    name: "Open Production Chains",
-    aliases: "goods recipes economy",
-    run: () => Controllers.ProductionChains.open()
-  },
-  {
-    id: "burgGroups",
-    name: "Open Burg Groups Editor",
-    aliases: "settlements cities towns villages types",
-    run: () => Controllers.BurgGroupEditor.open()
-  },
-  {
-    id: "labelGroups",
-    name: "Open Label Groups Editor",
-    aliases: "labels text typography fonts",
-    run: () => Controllers.LabelGroupsConfigurator.open()
-  },
-  {
-    id: "routeGroups",
-    name: "Open Route Groups Editor",
-    aliases: "roads paths trails types",
-    run: () => Controllers.RouteGroupsEditor.open()
-  },
-  {
-    id: "transports",
-    name: "Open Transports Editor",
-    aliases: "journeys travel speed",
-    run: () => Controllers.TransportEditor.open()
-  },
-  { id: "drawRiver", name: "Draw River", aliases: "add waterway manually", run: () => Controllers.RiverCreator.open() },
-  {
-    id: "selectHeightmap",
-    name: "Select Heightmap Template",
-    aliases: "precreated generation options",
-    run: () => Controllers.HeightmapSelection.open()
-  },
-  { id: "newMap", name: "Generate New Map", aliases: "regenerate random create", run: () => regeneratePrompt() },
-  {
-    id: "seedHistory",
-    name: "Show Seed History",
-    aliases: "previous maps restore",
-    run: () => showSeedHistoryDialog()
-  },
-  { id: "copyMapURL", name: "Copy Map URL", aliases: "seed link share clipboard", run: () => copyMapURL() },
-  { id: "saveButton", name: "Show Save Panel", aliases: "store dialog", run: () => showSavePane() },
-  {
-    id: "saveToMachine",
-    name: "Save Map File",
-    aliases: "save .map disk",
-    run: () => Services.Save.toMachine()
-  },
-  { id: "saveToDropbox", name: "Save Map to Dropbox", aliases: "cloud", run: () => Services.Save.toDropbox() },
-  {
-    id: "saveToStorage",
-    name: "Save Map to browser storage",
-    aliases: "browser storage",
-    run: () => Services.Save.toStorage()
-  },
-  { id: "loadButton", name: "Load Map", aliases: "open dialog", run: () => showLoadPane() },
-  {
-    id: "loadFromFile",
-    name: "Load Map from File",
-    aliases: "open upload disk",
-    run: () => ensureEl("mapToLoad").click()
-  },
-  { id: "loadFromURL", name: "Load Map from URL", aliases: "open link", run: () => loadURL() },
-  { id: "quickLoad", name: "Quick Load Map", aliases: "browser storage restore", run: () => Services.Load.quickLoad() },
-  { id: "exportButton", name: "Export Map", aliases: "download image data dialog", run: () => showExportPane() },
+  // view and menu
+  { id: "zoomReset", name: "Reset Zoom", aliases: "fit view whole map", run: () => resetZoom(1000) },
+  { id: "zoomIn", name: "Zoom In", aliases: "view closer", run: () => changeMapZoom(1.2) },
+  { id: "zoomOut", name: "Zoom Out", aliases: "view farther", run: () => changeMapZoom(0.8) },
+  { id: "toggleOptions", name: "Toggle Menu", aliases: "options panel show hide", run: () => toggleOptions() },
+  { id: "layersTab", name: "Open Layers Tab", aliases: "menu panel", run: () => openTab("layersTab") },
+  { id: "styleTab", name: "Open Style Tab", aliases: "menu panel editor", run: () => openTab("styleTab") },
+  { id: "optionsTab", name: "Open Options Tab", aliases: "menu panel settings", run: () => openTab("optionsTab") },
+  { id: "toolsTab", name: "Open Tools Tab", aliases: "menu panel", run: () => openTab("toolsTab") },
+  { id: "aboutTab", name: "Open About Tab", aliases: "menu panel info credits", run: () => openTab("aboutTab") },
+  // export
   {
     id: "exportSvg",
     name: "Export as SVG",
@@ -471,6 +490,30 @@ export const MAP_COMMANDS: MapCommand[] = [
   { id: "exportPng", name: "Export as PNG", aliases: "download image", run: () => Services.ExportMap.exportToPng() },
   { id: "exportJpeg", name: "Export as JPEG", aliases: "download image", run: () => Services.ExportMap.exportToJpeg() },
   { id: "exportTiles", name: "Export as PNG Tiles", aliases: "download zip", run: () => openExportToPngTiles() },
+  {
+    id: "exportJsonFull",
+    name: "Export Full JSON",
+    aliases: "download data",
+    run: () => Services.ExportJson.exportToJson("Full")
+  },
+  {
+    id: "exportJsonMinimal",
+    name: "Export Minimal JSON",
+    aliases: "download data",
+    run: () => Services.ExportJson.exportToJson("Minimal")
+  },
+  {
+    id: "exportJsonPackCells",
+    name: "Export Pack Cells JSON",
+    aliases: "download data",
+    run: () => Services.ExportJson.exportToJson("PackCells")
+  },
+  {
+    id: "exportJsonGridCells",
+    name: "Export Grid Cells JSON",
+    aliases: "download data",
+    run: () => Services.ExportJson.exportToJson("GridCells")
+  },
   {
     id: "exportGeoJsonCells",
     name: "Export Cells as GeoJSON",
@@ -502,40 +545,16 @@ export const MAP_COMMANDS: MapCommand[] = [
     run: () => Services.ExportMap.saveGeoJsonZones()
   },
   {
-    id: "exportJsonFull",
-    name: "Export Full JSON",
-    aliases: "download data",
-    run: () => Services.ExportJson.exportToJson("Full")
-  },
-  {
-    id: "exportJsonMinimal",
-    name: "Export Minimal JSON",
-    aliases: "download data",
-    run: () => Services.ExportJson.exportToJson("Minimal")
-  },
-  {
-    id: "exportJsonPackCells",
-    name: "Export Pack Cells JSON",
-    aliases: "download data",
-    run: () => Services.ExportJson.exportToJson("PackCells")
-  },
-  {
-    id: "exportJsonGridCells",
-    name: "Export Grid Cells JSON",
-    aliases: "download data",
-    run: () => Services.ExportJson.exportToJson("GridCells")
+    id: "exportCsvBurgs",
+    name: "Export Burgs as CSV",
+    aliases: "download table settlements cities towns",
+    run: () => Controllers.BurgsOverview.exportCsv()
   },
   {
     id: "exportCsvBiomes",
     name: "Export Biomes as CSV",
     aliases: "download table environment terrain",
     run: () => Controllers.BiomesEditor.exportCsv()
-  },
-  {
-    id: "exportCsvBurgs",
-    name: "Export Burgs as CSV",
-    aliases: "download table settlements cities towns",
-    run: () => Controllers.BurgsOverview.exportCsv()
   },
   {
     id: "exportCsvRelations",
@@ -568,16 +587,16 @@ export const MAP_COMMANDS: MapCommand[] = [
     run: () => Controllers.MilitaryOverview.exportCsv()
   },
   {
-    id: "exportCsvNotes",
-    name: "Export Notes as CSV",
-    aliases: "download table lore legends descriptions",
-    run: () => Controllers.NotesEditor.exportCsv()
-  },
-  {
     id: "exportCsvRegiments",
     name: "Export Regiments as CSV",
     aliases: "download table military armies",
     run: () => Controllers.RegimentsOverview.exportCsv()
+  },
+  {
+    id: "exportCsvNotes",
+    name: "Export Notes as CSV",
+    aliases: "download table lore legends descriptions",
+    run: () => Controllers.NotesEditor.exportCsv()
   },
   {
     id: "exportCsvZones",
@@ -585,24 +604,15 @@ export const MAP_COMMANDS: MapCommand[] = [
     aliases: "download table areas regions",
     run: () => Controllers.ZonesEditor.exportCsv()
   },
-  { id: "toggleOptions", name: "Toggle Menu", aliases: "options panel show hide", run: () => toggleOptions() },
-  { id: "layersTab", name: "Open Layers Tab", aliases: "menu panel", run: () => openTab("layersTab") },
-  { id: "styleTab", name: "Open Style Tab", aliases: "menu panel editor", run: () => openTab("styleTab") },
-  { id: "optionsTab", name: "Open Options Tab", aliases: "menu panel settings", run: () => openTab("optionsTab") },
-  { id: "toolsTab", name: "Open Tools Tab", aliases: "menu panel", run: () => openTab("toolsTab") },
-  { id: "aboutTab", name: "Open About Tab", aliases: "menu panel info credits", run: () => openTab("aboutTab") },
-  { id: "zoomReset", name: "Reset Zoom", aliases: "fit view whole map", run: () => resetZoom(1000) },
-  { id: "zoomIn", name: "Zoom In", aliases: "view closer", run: () => changeMapZoom(1.2) },
-  { id: "zoomOut", name: "Zoom Out", aliases: "view farther", run: () => changeMapZoom(0.8) },
-  { id: "viewMesh", name: "Open 3D Scene", aliases: "view mode mesh", run: () => Controllers.View3d.open("viewMesh") },
+  // help and app
   {
-    id: "viewGlobe",
-    name: "Open Globe View",
-    aliases: "view mode planet",
-    run: () => Controllers.View3d.open("viewGlobe")
+    id: "startTour",
+    name: "Start Interactive Tour",
+    aliases: "help guide tutorial",
+    run: () => Services.UiTour.start()
   },
-  { id: "savePresetButton", name: "Save Layers Preset", aliases: "displayed layers", run: () => savePreset() },
   { id: "showInfo", name: "Show App Info", aliases: "about version help", run: () => showInfo() },
+  { id: "getApp", name: "Get Desktop App", aliases: "install download electron", run: () => Services.AppOffer.open() },
   {
     id: "toggleSaveReminder",
     name: "Toggle Save Reminder",
@@ -615,6 +625,8 @@ export const MAP_COMMANDS: MapCommand[] = [
     aliases: "restore defaults clear cache reload",
     run: () => cleanupData()
   },
+  // layers
+  { id: "savePresetButton", name: "Save Layers Preset", aliases: "displayed layers", run: () => savePreset() },
   ...Object.entries(LAYER_PRESETS).map(([id, label]) => ({
     id: `preset:${id}`,
     name: `Apply Layers Preset: ${label}`,
