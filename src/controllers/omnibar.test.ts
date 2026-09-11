@@ -55,6 +55,7 @@ function key(code: string, key = code): void {
 }
 
 beforeEach(() => {
+  vi.useFakeTimers(); // the palette highlights during the zoom, so its timing is part of its behavior
   document.body.innerHTML =
     '<svg id="map"></svg><button id="addBurgTool">Add burg</button><button id="regenerateRivers">Regenerate rivers</button>';
   Element.prototype.scrollIntoView = vi.fn();
@@ -99,7 +100,8 @@ beforeEach(() => {
 });
 afterEach(() => {
   window.dispatchEvent(new Event("blur"));
-  Omnibar.dismiss(true);
+  Omnibar.close();
+  vi.useRealTimers();
   vi.restoreAllMocks();
 });
 
@@ -237,7 +239,7 @@ describe("Omnibar public behavior", () => {
     expect(JSON.parse(localStorage.getItem("fmg-omnibar-history")!)).toEqual(["addBurgTool"]);
   });
 
-  it("navigates and highlights a feature without opening an editor", () => {
+  it("navigates and highlights a feature without opening an editor", async () => {
     const icon = document.createElementNS("http://www.w3.org/2000/svg", "use");
     icon.id = "burg1";
     document.getElementById("map")!.append(icon);
@@ -247,23 +249,28 @@ describe("Omnibar public behavior", () => {
     expect(rows()[0].querySelector(".omnibar-detail")?.textContent).toBe("Burg · Kingdom of Westreach");
     key("Enter");
     expect(mocks.show).toHaveBeenCalledWith("burgIcons", "labels");
-    expect(mocks.zoom).toHaveBeenCalledWith(10, 20, 8, 1500, expect.any(Function));
+    expect(mocks.zoom).toHaveBeenCalledWith(10, 20, 8, 1500);
+
+    await vi.advanceTimersByTimeAsync(750);
     expect(mocks.highlight).toHaveBeenCalledWith(icon);
     expect(mocks.open).not.toHaveBeenCalled();
     expect(localStorage.getItem("fmg-omnibar-history")).toBeNull();
   });
 
-  it("waits for zoom completion before locating and highlighting the destination", () => {
+  it("starts the highlight while the view is still moving, not after the zoom settles", async () => {
     mocks.zoom.mockImplementationOnce(() => {});
     Omnibar.open();
     search("Aldor");
-    key("Enter");
-    expect(mocks.highlight).not.toHaveBeenCalled();
 
     const icon = document.createElementNS("http://www.w3.org/2000/svg", "use");
     icon.id = "burg1";
     document.getElementById("map")!.append(icon);
-    mocks.zoom.mock.calls[0][4]!();
+
+    key("Enter");
+    await vi.advanceTimersByTimeAsync(749);
+    expect(mocks.highlight).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(1);
     expect(mocks.highlight).toHaveBeenCalledWith(icon);
   });
 
@@ -285,11 +292,11 @@ describe("Omnibar public behavior", () => {
     expect(rows()[0].querySelector(".omnibar-detail")?.textContent).toBe("Route · roads · Aldor – Ruins");
     key("Enter");
     expect(mocks.show).toHaveBeenCalledWith("routes");
-    expect(mocks.zoom).toHaveBeenCalledWith(160, 30, 650 / 300, 1500, expect.any(Function));
+    expect(mocks.zoom).toHaveBeenCalledWith(160, 30, 650 / 300, 1500);
     expect(mocks.open).not.toHaveBeenCalled();
   });
 
-  it.each(["lake", "island"] as const)("reveals and highlights a %s using its boundary", type => {
+  it.each(["lake", "island"] as const)("reveals and highlights a %s using its boundary", async type => {
     pack.features = [
       { i: 1, name: "Silverwater", type, subtype: "Freshwater", vertices: [0, 1] }
     ] as typeof pack.features;
@@ -308,12 +315,14 @@ describe("Omnibar public behavior", () => {
     expect(rows()[0].querySelector(".omnibar-detail")?.textContent).toBe(`${type} · Freshwater`);
     key("Enter");
     expect(mocks.show).toHaveBeenCalledWith(type === "lake" ? "lakes" : "coastline");
-    expect(mocks.zoom).toHaveBeenCalledWith(30, 40, 3, 1500, expect.any(Function));
+    expect(mocks.zoom).toHaveBeenCalledWith(30, 40, 3, 1500);
+    expect(mocks.highlight).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(750);
     expect(mocks.highlight).toHaveBeenCalledWith(shape);
     expect(mocks.open).not.toHaveBeenCalled();
   });
 
-  it("locates a label separately from its owner without opening an editor", () => {
+  it("locates a label separately from its owner without opening an editor", async () => {
     mocks.labels.mockReturnValue([
       { id: "burgLabel1", type: "burg", entityId: 1, text: "Aldor", group: "burg", anchor: [50, 60] }
     ] as never[]);
@@ -323,7 +332,8 @@ describe("Omnibar public behavior", () => {
     const label = rows().find(row => row.textContent?.includes("Label · Burg"))!;
     expect(label.querySelector(".icon-font")).not.toBeNull();
     label.click();
-    expect(mocks.zoom).toHaveBeenCalledWith(50, 60, 8, 1500, expect.any(Function));
+    expect(mocks.zoom).toHaveBeenCalledWith(50, 60, 8, 1500);
+    await vi.advanceTimersByTimeAsync(750);
     expect(mocks.highlight).not.toHaveBeenCalled();
     expect(mocks.open).not.toHaveBeenCalled();
   });
@@ -332,7 +342,7 @@ describe("Omnibar public behavior", () => {
     Omnibar.open();
     search("Kingdom of Westreach");
     key("Enter");
-    expect(mocks.zoom).toHaveBeenCalledWith(30, 40, 2, 1500, expect.any(Function));
+    expect(mocks.zoom).toHaveBeenCalledWith(30, 40, 2, 1500);
     expect(mocks.open).not.toHaveBeenCalled();
   });
 
@@ -346,23 +356,35 @@ describe("Omnibar public behavior", () => {
     expect(mocks.tip).not.toHaveBeenCalled();
   });
 
-  it("rejects stale targets after map replacement or regeneration", () => {
+  it("refuses a target the current map no longer holds", () => {
     Omnibar.open();
     search("Aldor");
-    pack = { ...pack, burgs: [...pack.burgs] };
+    const before = mocks.zoom.mock.calls.length;
+
+    // a map mutated in place without announcing itself: the record still points at the old entity
+    pack.burgs[1] = { i: 1, name: "Aldor", x: 10, y: 20, state: 1, removed: true } as (typeof pack.burgs)[number];
     key("Enter");
+
+    expect(mocks.zoom.mock.calls.length).toBe(before);
     expect(mocks.open).not.toHaveBeenCalled();
-    expect(document.querySelector("#omnibar-status")?.textContent).toContain("Map changed");
-    pack.burgs[1] = { ...pack.burgs[1], name: "Replacement" };
-    key("Enter");
-    expect(mocks.open).not.toHaveBeenCalled();
+  });
+
+  it("refreshes its records when a new map arrives while it is open", () => {
+    Omnibar.open();
+    expect(rows().some(row => row.textContent?.includes("Aldor"))).toBe(false);
+
+    pack.burgs.push({ i: 3, name: "Newstead", x: 5, y: 5, state: 1 } as (typeof pack.burgs)[number]);
+    window.dispatchEvent(new Event("map:generated"));
+
+    search("Newstead");
+    expect(rows().some(row => row.textContent?.includes("Newstead"))).toBe(true);
   });
 
   it("ignores malformed history and removes stale or duplicate command IDs", () => {
     localStorage.setItem("fmg-omnibar-history", "bad JSON");
     Omnibar.open();
     expect(rows()).toHaveLength(0);
-    Omnibar.dismiss(true);
+    Omnibar.close();
     localStorage.setItem("fmg-omnibar-history", JSON.stringify(["gone", "addBurgTool", "addBurgTool", 1]));
     Omnibar.open();
     expect(rows()).toHaveLength(1);

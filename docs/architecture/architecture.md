@@ -504,6 +504,11 @@ A controller is the thin seam between a user action and the state.
 - **One object, lazily reached.** A controller exports a single named object —
   `export const StatesEditor = { open }` — and is reached through the `Controllers` registry
   (`Controllers.StatesEditor.open()`), never imported eagerly. See [Lazy module registry](#lazy-module-registry).
+- **Transient overlays own their styles.** A palette, popover, or bubble that lives only while
+  it is open may render its own `<style>` block next to its markup, scoped under its own id, so
+  the rules are created and removed with the element. Keep `public/index.css` for the shell and
+  for widgets whose markup is static in `src/index.html`. The omnibar is the reference case: its
+  stylesheet is one block in `omnibar.ts`, scoped under `#omnibar`.
 
 ## Configurations and data
 

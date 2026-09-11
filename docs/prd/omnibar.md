@@ -29,7 +29,7 @@ Follow VS Code command-palette interaction conventions, adapted to the map and i
 17. As a user, I want result types and context, so repeated names remain distinguishable.
 18. As a writer, I want note and description text searched, with a matching excerpt, so remembered lore can lead me to a feature.
 19. As a user, I want hidden and offscreen entities to remain searchable, so visibility does not determine discoverability.
-20. As a user, I want selecting a feature to reveal it, navigate to it, and highlight it without opening an editor.
+20. As a user, I want selecting a feature to reveal it, navigate to it, and highlight it as the view moves, without opening an editor.
 21. As a user, I want editor-opening commands and layer toggles available alongside entity results.
 22. As a user, I want generation commands to use the same workflows and confirmations as their existing buttons.
 23. As a user, I want unavailable commands visible with a reason, so I understand what mode or prerequisite prevents their use.
@@ -45,12 +45,13 @@ Follow VS Code command-palette interaction conventions, adapted to the map and i
 
 - Plain, unmodified Space opens search on keydown only when the map/background owns focus. Do not insert the opening Space into the query.
 - Ignore repeats, composition events, active text selections, already-handled events, editable content, focused interactive controls, and scrollable UI contexts. Preserve modified Space combinations.
-- The current hotkey guard is insufficient on its own: it excludes common fields, but not every control or editable ancestor.
+- The current hotkey guard is insufficient on its own: it excludes common fields, but not every control or editable ancestor. Do not route the palette through a keyup path: a keyup opener both fires after the browser has already handled the key and cannot skip a pan that a tool just consumed.
 - An active tool that owns Space, especially Wrap Tool panning, takes precedence. Never add a Space keyup fallback that opens search after panning.
 - Opening is idempotent. The input starts empty each time; no remembered query or automatic `>` prefix.
 - Up/Down navigates the list, Enter activates, Escape closes, and pointer click activates. Keyboard navigation keeps the current row visible. Tab must not reach the application's options-pane shortcut while the palette owns focus.
 - Disabled rows expose their reason and cannot activate. The initial selection is the first enabled result; navigation may focus disabled rows so their reason is available to keyboard and assistive-technology users.
 - Escape must not also close underlying dialogs or cancel a map tool on keyup. Restore prior connected focus on dismissal; command activation can transfer focus to its destination; feature activation returns to the map.
+- The palette has one runtime gate for map-dependent work: with no map, in edit mode, or in the 3D scene, opening is refused and, when it is already open, every row is disabled with that one reason. An open palette outlives a map that is replaced, so activation revalidates the target against the map that is on screen now.
 - Use accessible input/listbox relationships, an announced active result, disabled state, and a useful no-results message. Keep the overlay usable in a narrow viewport.
 
 ### Search and results
@@ -67,7 +68,7 @@ Follow VS Code command-palette interaction conventions, adapted to the map and i
 
 ### Coverage and activation
 
-- Search is navigation: feature results never invoke controllers. Commands remain explicit actions.
+- Search is navigation: feature results navigate or open the one editor that stands in for a non-spatial definition. Commands remain explicit actions.
 - Use type-specific icons from the existing icon font. Keep `>` for commands.
 - Each result occupies one line: icon and name on the left, smaller gray details aligned right. Note excerpts share that details field.
 - Use a neutral light background with the configured dialog opacity, compact spacing, and a light border/shadow. Theme colors are accents for focus, selection edges, and matching text only.
@@ -76,11 +77,12 @@ Follow VS Code command-palette interaction conventions, adapted to the map and i
 - Include burgs, states, provinces, cultures, religions, rivers, lakes, routes, markers, zones, journeys, markets, regiments, and all supported label types.
 - Include meaningful named biomes, goods, and geographic features where the application provides a useful editor, overview, or notes destination. Derive location from real geometry or placement; do not invent a point for a non-spatial definition.
 - Unnamed decorative relief, raw vertices, every individual cell, and derived transaction rows are not useful global entity results. Their relevant tools remain commands. Lack of a name alone must not exclude an otherwise recognizable entity with a useful generated title or ID context.
-- Selecting a spatial result reveals required layers, centers or frames the target at a useful scale, ensures any required SVG has materialized, and highlights its rendered element, if present. Feature results never open editors. Large territories and long paths should not use the same tight zoom as a burg.
+- Selecting a spatial result reveals required layers and centers or frames the target at a useful scale. Highlighting starts on a fixed delay after the zoom begins, so the outline animates in while the view is still moving; it must not wait for the zoom to settle. Highlighting is best-effort: the target element may not be drawn yet, and a miss is not an error. Feature results navigate instead of dispatching commands; a non-spatial definition with a useful editor opens it. Large territories and long paths should not use the same tight zoom as a burg.
 - Labels are separate results for state, province, burg, river, route, and added labels. Resolve their group dependencies and viewport rendering before highlighting an existing label. Preserve label text and style; do not silently rewrite visibility policies to force an unsupported state.
-- Commands cover user-facing editor/overview opening, creation tools, layer toggles, and generation workflows. Support is explicit configuration, not reflection over every internal method.
+- Commands cover user-facing editor/overview opening, creation tools, layer toggles, generation workflows, and the export and chart actions the shell and editors expose. Support is explicit configuration, not reflection over every internal method. Three result kinds exist: commands dispatch one of these entries, entities and labels navigate.
 - Reuse existing action entry points and their mode guards. Generation commands launch existing confirmation flows, including the application's remembered “do not ask again” choice; never invoke lower-level generators as a shortcut.
-- Disabled commands remain searchable with a concise reason. Check availability again immediately before activation.
+- A result with no map location either opens its editor when the application provides one, or reports that it has no location. It never invents a point, and it never falls through to an unrelated zoom.
+- Disabled rows expose the reason they are disabled and cannot activate. Check availability again immediately before activation.
 - Close after an accepted activation. Prevent repeated Enter from launching the same action twice while dispatch is pending. Surface a useful message if a destination fails to load or is no longer available.
 
 ### Recent commands
@@ -92,23 +94,26 @@ Follow VS Code command-palette interaction conventions, adapted to the map and i
 
 ## Implementation Decisions
 
-- The TypeScript controller in `src/controllers/omnibar.ts` contains a non-exported class and a single exported omnibar instance. Its only public methods are `open` and `close`. It is registered in the lazy controller registry and loaded on first use, so nothing of it sits in the initial bundle.
+- The TypeScript controller in `src/controllers/omnibar.ts` contains a non-exported class and a single exported omnibar instance. Its only public methods are `open` and `close`. Everything else — dismissal, availability, ranking, rendering — stays private, and tests drive the palette through those two methods plus the rendered input and list. It is registered in the lazy controller registry and loaded on first use, so nothing of it sits in the initial bundle.
 - The class owns DOM and scoped styles, listeners, focus, search records, ranking, result rendering, and history. Entity enumeration, geometry, and command definitions live in shared modules with small interfaces.
+- The palette styles itself. Its rules live in the `<style>` element the class renders into its own root, scoped under `#omnibar`, and they leave with it on close. Keep the global stylesheet free of omnibar rules, so the feature can be understood, restyled, or deleted from one file.
 - `src/components/map-commands.ts` defines one command list with stable IDs, names, aliases, and direct function calls. Both the Tools tab and Omnibar use it; generation keeps its existing confirmations, session preference, redraws, and refreshes. Commands do not click buttons.
-- `src/utils/map-entities.ts` owns shared references, lookup, names, context, anchor positions, full geometry, keys, and SVG target resolution, plus the per-type display settings search needs: kind, icon, layers to reveal, zoom scale, and the shape to highlight. Notes owns note storage and delegates entity access to this module. Tooltips reuse target resolution and names without collecting search results or computing geometry on hover.
-- Omnibar enumerates every entity type from that one configuration, adds label results from the label data, and owns map navigation, highlighting only after zoom completion. It has no per-type knowledge of its own and no dependency on the Notes generator.
+- `src/components/map-entities.ts` owns shared references, lookup, names, context, anchor positions, full geometry, keys, and SVG target resolution, plus the per-type display settings search needs: kind, icon, layers to reveal, zoom scale, and the shape to highlight. Notes owns note storage and delegates entity access to this module. Tooltips reuse target resolution and names without collecting search results or computing geometry on hover.
+- Omnibar enumerates every entity type from that one configuration, adds label results from the label data, and owns map navigation, including when highlighting starts during the zoom. It has no per-type knowledge of its own and no dependency on the Notes generator.
+- A result is one of a command, an entity, or a label — never a partial mix. Model them as distinct shapes so activation reads the kind it handles, without optional fields or non-null assertions.
 - No provider framework, generic command bus, plugin system, new service registry, event bus, runtime registration API, or production dependency.
 - Integrate through the existing hotkey module with a small delegation: Space is a regular hotkey that opens the controller through the registry. Focus and key-swallowing rules stay inside the class. Do not add an omnibar global.
-- Reuse existing Controllers, Layers, viewport, highlighting, and rendering APIs. Keep click-to-edit dispatch in viewbox events separate from search navigation.
+- Reuse existing Controllers, Layers, viewport, highlighting, and rendering APIs. Keep click-to-edit dispatch in viewbox events separate from search navigation. Track staleness through the existing `map:generated` signal instead of comparing entity or container identities: it already fires after generation, load, submap, and transform.
 - Keep integration focused on shared command/entity consumers; avoid duplicating editor workflows or introducing a registration framework.
 - No map schema, save format, or generator changes. Only the command history is persisted.
 
 ## Testing Decisions
 
 - Verify public behavior, not private matching helpers or configuration implementation. Drive the public keyboard/open/close API and the rendered input/list, and observe calls to existing controller/layer/action boundaries.
-- Cover mixed ranking, `>` filtering, note text, duplicate names and separate labels, disabled activation, recent command persistence, and stale targets after map replacement.
+- Cover mixed ranking, `>` filtering, note text, duplicate names and separate labels, disabled activation, recent command persistence, and stale targets after map replacement. Assert that the highlight begins during the zoom rather than after it settles.
 - Cover Space in plain map context versus fields, rich text, buttons, scrolling, repeats, composition, modifiers, and a tool-consumed event. Check Escape and Enter across both keydown and keyup.
-- Follow repository Vitest conventions. Focused Node/jsdom suites cover the public API; browser testing remains manual. Do not export internals or create fake public methods to simplify tests.
+- Follow repository Vitest conventions. Focused Node/jsdom suites cover the public API; browser testing remains manual. Do not export internals or create fake public methods to simplify tests: close the palette the way a user does — Escape, or a click outside.
+- Building the search records must not parse notes that do not exist. Extraction is skipped for an entity with no note, so opening the palette stays cheap on a map with thousands of entities and a handful of notes.
 - Run focused applicable tests and the TypeScript/Vite build after implementation. Do not automatically run Playwright, including the Playwright-backed Vitest browser suite, per repository instructions. Keep manual keyboard/browser acceptance explicit until those tests are authorized.
 
 ## Out of Scope

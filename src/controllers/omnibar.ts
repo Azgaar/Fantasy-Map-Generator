@@ -11,27 +11,57 @@ import { highlightElement } from "@/renderers/overlays/highlight";
 import type { Point } from "@/types/global";
 import { findEl } from "@/utils";
 
-interface Result {
+interface SearchFields {
+  names: string[];
+  note?: string;
+  normalizedNote?: string;
+}
+
+interface BaseResult {
   id: string;
   name: string;
   context: string;
-  names: string[];
-  note: string;
-  normalizedNote?: string;
-  icon: string;
-  command?: MapCommand;
-  target?: EntityTarget;
-  display?: EntityDisplay;
-  label?: LabelData; // navigate to the label text rather than to the entity itself
+  fields: SearchFields;
 }
 
-class OmnibarController {
-  private readonly config = {
-    historyKey: "fmg-omnibar-history",
-    historyLimit: 10,
-    resultLimit: 50
-  };
+interface CommandResult extends BaseResult {
+  kind: "command";
+  command: MapCommand;
+}
 
+interface EntityResult extends BaseResult {
+  kind: "entity";
+  target: EntityTarget;
+  display: EntityDisplay;
+}
+
+/** A label is not always its owner's element: it navigates to the text, not to the owner */
+interface LabelResult extends BaseResult {
+  kind: "label";
+  target: EntityTarget;
+  label: LabelData;
+}
+
+type Result = CommandResult | EntityResult | LabelResult;
+
+/** A record matched by one query, kept together with the score the sort uses */
+interface Scored {
+  result: Result;
+  score: number;
+  order: number;
+}
+
+const HISTORY_KEY = "fmg-omnibar-history";
+const HISTORY_LIMIT = 10;
+const RESULT_LIMIT = 50;
+
+/** Identifies the map the current records were collected from: a replacement recycles ids and entities */
+let mapGeneration = 0;
+window.addEventListener("map:generated", () => mapGeneration++);
+
+const textTemplate = document.createElement("template");
+
+class OmnibarController {
   private root?: HTMLDivElement;
   private input?: HTMLInputElement;
   private list?: HTMLDivElement;
@@ -43,8 +73,7 @@ class OmnibarController {
   private results: Result[] = [];
   private history: string[] = [];
   private selected = -1;
-  private map?: typeof pack;
-  private cells?: typeof pack.cells;
+  private generation = mapGeneration;
   private busy = false;
 
   open(): void {
@@ -52,8 +81,7 @@ class OmnibarController {
     if (this.busy) return;
 
     this.previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
-    this.map = pack;
-    this.cells = this.map?.cells;
+    this.generation = mapGeneration;
     this.records = this.collect();
     this.history = this.readHistory();
 
@@ -64,16 +92,15 @@ class OmnibarController {
   }
 
   private collect(): Result[] {
-    const records: Result[] = MAP_COMMANDS.map(command => ({
+    const commands: CommandResult[] = MAP_COMMANDS.map(command => ({
+      kind: "command",
       id: command.id,
       name: command.name,
       context: "Command",
-      names: [this.normalize(command.name), this.normalize(command.aliases)],
-      note: "",
-      icon: "",
+      fields: { names: [this.normalize(command.name), this.normalize(command.aliases)] },
       command
     }));
-    if (!this.map) return records;
+    if (typeof pack === "undefined" || !pack.cells?.i?.length) return commands;
 
     const entities = new Map<string, Result>();
     for (const type of ENTITY_TYPES) {
@@ -84,8 +111,15 @@ class OmnibarController {
         const name = MapEntities.getName(ref) || entity.name || display.kind;
         const context = [display.kind, MapEntities.getContext(ref)].filter(Boolean).join(" · ");
         const alias = entity.name || name;
-        const result = { id: `entity:${key}`, name, context, icon: display.icon, target, display };
-        entities.set(key, this.entityResult(result, alias));
+        entities.set(key, {
+          kind: "entity",
+          id: `entity:${key}`,
+          name,
+          context,
+          fields: this.fields({ name, alias: `${alias} ${context}`, note: entity.note }),
+          target,
+          display
+        });
       }
     }
 
@@ -94,34 +128,43 @@ class OmnibarController {
       if (!label.text) continue;
       const type = label.type === "added" ? "addedLabel" : label.type;
       const owner = entities.get(MapEntities.key({ type, id: label.entityId }));
-      if (!owner) continue;
-      if (label.type === "added") {
-        owner.label = label;
-        continue;
-      }
-      const id = `label:${label.id}`;
+      if (!owner || owner.kind !== "entity") continue;
+      if (label.type === "added") continue; // an added label is its own entity, so its own result already carries the text
       const name = label.text.replaceAll("|", " ");
-      const { context, target } = owner;
-      const result = { id, name, context: `Label · ${context}`, icon: "icon-font", target, label };
-      entities.set(id, this.entityResult(result));
+      entities.set(`label:${label.id}`, {
+        kind: "label",
+        id: `label:${label.id}`,
+        name,
+        context: `Label · ${owner.context}`,
+        fields: this.fields({ name, alias: `${owner.name} ${owner.context}` }),
+        target: owner.target,
+        label
+      });
     }
-    return [...records, ...entities.values()];
+    return [...commands, ...entities.values()];
   }
 
-  private entityResult(result: Omit<Result, "names" | "note">, alias = result.name): Result {
-    const note = this.plainText(result.target!.entity.note || "");
-    const names = [this.normalize(result.name), this.normalize(`${alias} ${result.context}`)];
-    return { ...result, names, note, normalizedNote: this.normalize(note) };
+  private fields({ name, alias, note }: { name: string; alias: string; note?: string }): SearchFields {
+    const text = this.plainText(note || "");
+    return {
+      names: [this.normalize(name), this.normalize(alias)],
+      note: text,
+      normalizedNote: text ? this.normalize(text) : undefined
+    };
   }
 
-  private navigate(result: Result): void {
-    const { target, display, label } = result;
-    const ref = target!.ref;
+  private navigate(
+    target: EntityTarget,
+    { label, display }: { label?: LabelData; display?: EntityDisplay } = {}
+  ): void {
     const layers: LayerId[] = label ? ["labels"] : display?.layers || [];
     const points = label
       ? [[label.anchor[0] + (label.dx || 0), label.anchor[1] + (label.dy || 0)] as Point]
-      : MapEntities.getPoints(ref);
-    if (!points.length) return void tip("This element has no map location", false, "warn", 4000);
+      : MapEntities.getPoints(target.ref);
+    if (!points.length) {
+      this.report("This element has no map location", "warn");
+      return;
+    }
 
     Layers.show(...layers);
     const group = label && options.map.labels.groups.find(group => group.name === label.group);
@@ -130,8 +173,9 @@ class OmnibarController {
     let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity]; // a loop: a territory can have too many cells to spread
     for (const [x, y] of points)
       [x0, y0, x1, y1] = [Math.min(x0, x), Math.min(y0, y), Math.max(x1, x), Math.max(y1, y)];
+    const cap = label ? 8 : (display?.scale ?? 8);
     const fit = Math.min(
-      label ? 8 : display!.scale,
+      cap,
       (viewport.width * 0.65) / Math.max(1, x1 - x0),
       (viewport.height * 0.65) / Math.max(1, y1 - y0)
     );
@@ -139,8 +183,9 @@ class OmnibarController {
     if (group) scale = Math.max(group.zoom.min ?? 1, Math.min(group.zoom.max ?? 20, scale));
 
     zoomTo((x0 + x1) / 2, (y0 + y1) / 2, scale, 1500);
+    // the outline animates in while the view is still moving: the target element may not be drawn yet, so a miss is fine
     setTimeout(() => {
-      const elementId = MapEntities.getElementId(ref);
+      const elementId = label ? label.id : MapEntities.getElementId(target.ref);
       const element = label
         ? findEl(label.id)
         : (display?.highlight && document.querySelector(display.highlight)) || (elementId ? findEl(elementId) : null);
@@ -149,11 +194,13 @@ class OmnibarController {
   }
 
   private plainText(html: string): string {
-    const template = document.createElement("template");
-    template.innerHTML = html;
-    for (const node of template.content.querySelectorAll("script, style")) node.remove();
-    for (const node of template.content.querySelectorAll("br, p, div, li")) node.append(" ");
-    return (template.content.textContent || "").replace(/\s+/g, " ").trim();
+    if (!html) return ""; // most entities carry no note, and parsing each of them is the expensive part
+    textTemplate.innerHTML = html;
+    for (const node of textTemplate.content.querySelectorAll("script, style")) node.remove();
+    for (const node of textTemplate.content.querySelectorAll("br, p, div, li")) node.append(" ");
+    const text = textTemplate.content.textContent || "";
+    textTemplate.innerHTML = "";
+    return text.replace(/\s+/g, " ").trim();
   }
 
   private normalize(text: string): string {
@@ -161,7 +208,6 @@ class OmnibarController {
   }
 
   private match(text: string, query: string): number {
-    if (!/[\p{L}\p{N}]/u.test(query)) return 0;
     if (text === query) return 1000;
     if (text.startsWith(query)) return 850;
     if (text.includes(query)) return 700;
@@ -170,27 +216,35 @@ class OmnibarController {
     return words.length > 1 && words.every(word => text.includes(word)) ? 600 : 0;
   }
 
+  private score(result: Result, query: string, commandsOnly: boolean, recent: number): number {
+    if (query) {
+      const name = Math.max(0, ...result.fields.names.map(name => this.match(name, query)));
+      const note = result.fields.normalizedNote?.includes(query) ? 100 : 0;
+      return Math.max(name && name + 200, note);
+    }
+    if (commandsOnly) return 1000 - Math.max(recent, 0); // every command, with the recent ones first
+    if (result.kind !== "command" || recent < 0) return 0;
+    return 1000 - recent;
+  }
+
   private search(): void {
     const value = this.input?.value.trim() || "";
     const commandsOnly = value.startsWith(">");
     const query = this.normalize(commandsOnly ? value.slice(1) : value);
+    const searchable = !query || /[\p{L}\p{N}]/u.test(query); // a punctuation-only query matches nothing
 
     this.results = this.records
-      .filter(result => !commandsOnly || result.command)
-      .map((result, order) => {
-        const recent = this.history.indexOf(result.id);
-        const nameScore = Math.max(...result.names.map(name => this.match(name, query)));
-        const noteScore = /[\p{L}\p{N}]/u.test(query) && result.normalizedNote?.includes(query) ? 100 : 0;
-        const score = query
-          ? Math.max(nameScore ? nameScore + 200 : 0, noteScore)
-          : result.command && (commandsOnly || recent >= 0)
-            ? 1000 - (recent < 0 ? this.history.length : recent)
-            : 0;
-        return { result, score, order };
-      })
+      .filter(result => !commandsOnly || result.kind === "command")
+      .map(
+        (result, order): Scored => ({
+          result,
+          order,
+          score: searchable ? this.score(result, query, commandsOnly, this.history.indexOf(result.id)) : 0
+        })
+      )
       .filter(row => row.score > 0)
       .sort((a, b) => b.score - a.score || a.order - b.order)
-      .slice(0, this.config.resultLimit)
+      .slice(0, RESULT_LIMIT)
       .map(row => row.result);
 
     this.selected = 0;
@@ -391,8 +445,10 @@ class OmnibarController {
       row.setAttribute("aria-disabled", String(Boolean(unavailable)));
 
       const prefix = document.createElement("span");
-      prefix.className = `omnibar-icon ${result.icon}`;
-      if (result.command) prefix.textContent = ">";
+      prefix.className = "omnibar-icon";
+      if (result.kind === "command") {
+        prefix.textContent = ">"; // commands are marked, entities carry a type icon
+      } else prefix.classList.add(result.kind === "label" ? "icon-font" : result.display.icon);
       prefix.setAttribute("aria-hidden", "true");
 
       const title = document.createElement("span");
@@ -401,16 +457,17 @@ class OmnibarController {
 
       const detail = document.createElement("span");
       detail.className = "omnibar-detail";
-      const layer = result.command?.layer;
+      const layer = result.kind === "command" ? result.command.layer : undefined;
       detail.textContent =
         unavailable || `${result.context}${layer ? ` · ${Layers.isOn(layer) ? "Visible" : "Hidden"}` : ""}`;
       row.append(prefix, title, detail);
 
-      const previewNote = result.display?.previewNote;
-      if (result.note && (previewNote || (query && result.normalizedNote?.includes(query)))) {
+      const note = result.kind === "entity" ? result.fields : undefined;
+      const previewNote = result.kind === "entity" && result.display.previewNote;
+      if (note?.note && (previewNote || (query && note.normalizedNote?.includes(query)))) {
         const snippet = document.createElement("span");
-        const start = previewNote ? 0 : Math.max(0, (result.normalizedNote || "").indexOf(query) - 35);
-        this.highlight(snippet, `${start ? "…" : ""}${result.note.slice(start, start + 60)}`, query);
+        const start = previewNote ? 0 : Math.max(0, (note.normalizedNote || "").indexOf(query) - 35);
+        this.highlight(snippet, `${start ? "…" : ""}${note.note.slice(start, start + 60)}`, query);
         detail.append(" · ", snippet);
       }
 
@@ -484,7 +541,7 @@ class OmnibarController {
         event.stopImmediatePropagation();
         if (event.isComposing) return;
         if (["Escape", "Enter", "ArrowDown", "ArrowUp", "Tab"].includes(event.key)) event.preventDefault();
-        if (event.key === "Escape") this.dismiss(true);
+        if (event.key === "Escape") this.close();
         else if (event.key === "Enter" && !event.repeat) void this.activate(this.selected);
         else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
           const count = this.results.length;
@@ -510,7 +567,7 @@ class OmnibarController {
     window.addEventListener(
       "pointerdown",
       event => {
-        if (this.root && !this.root.contains(event.target as Node)) this.dismiss(true);
+        if (this.root && !this.root.contains(event.target as Node)) this.close();
       },
       options
     );
@@ -519,17 +576,35 @@ class OmnibarController {
       "blur",
       () => {
         this.keys.clear();
-        this.dismiss(true);
+        this.close();
+      },
+      { signal: this.events.signal }
+    );
+
+    // a generated, loaded or transformed map recycles ids, so the records must come from the map on screen now
+    window.addEventListener(
+      "map:generated",
+      () => {
+        console.log("map:generated");
+        if (!this.root) return;
+        this.generation = mapGeneration;
+        this.records = this.collect();
+        this.search();
+        this.report("The map changed. Select a current result.");
       },
       { signal: this.events.signal }
     );
   }
 
-  dismiss(restore: boolean): void {
+  /** Close the palette, restoring the focus it took when asked to */
+  close(): void {
+    this.dismiss(true);
+  }
+
+  private dismiss(restore: boolean): void {
     this.root?.remove();
     this.root = this.input = this.list = this.status = undefined;
     this.records = this.results = [];
-    this.map = this.cells = undefined;
     if (restore && this.previousFocus?.isConnected) this.previousFocus.focus();
     this.previousFocus = undefined;
     this.cleanup();
@@ -544,18 +619,12 @@ class OmnibarController {
   private async activate(index: number): Promise<void> {
     const result = this.results[index];
     if (!result || this.busy) return;
-    const reason = this.getMapActionUnavailable();
-    if (reason) {
-      if (this.status) this.status.textContent = reason;
-      return;
-    }
+    if (this.unavailable()) return;
 
-    if (!result.command && !this.current(result)) {
+    if (result.kind !== "command" && !this.current(result)) {
       this.records = this.collect();
-      this.map = pack;
-      this.cells = pack.cells;
       this.search();
-      if (this.status) this.status.textContent = "Map changed. Select a current result.";
+      this.report("The map changed. Select a current result.");
       return;
     }
 
@@ -563,10 +632,14 @@ class OmnibarController {
     this.dismiss(false);
 
     try {
-      if (result.command) {
+      if (result.kind === "command") {
         await result.command.run();
         this.remember(result.id);
-      } else if (result.label || !MapEntities.open(result.target!.ref)) this.navigate(result);
+      } else if (result.kind === "label") {
+        this.navigate(result.target, { label: result.label });
+      } else if (!MapEntities.open(result.target.ref)) {
+        this.navigate(result.target, { display: result.display }); // the entity has no editor, so reveal it instead
+      }
     } catch {
       tip("Could not open the search result. Please try again.", false, "error");
     } finally {
@@ -574,19 +647,32 @@ class OmnibarController {
     }
   }
 
-  private current(result: Result): boolean {
-    if (this.map !== pack || this.cells !== pack.cells || !result.target) return false;
+  private current(result: EntityResult | LabelResult): boolean {
+    if (this.generation !== mapGeneration) return false;
     return MapEntities.get(result.target.ref) === result.target.entity;
+  }
+
+  private report(message: string, type?: "warn" | "error"): void {
+    if (type) tip(message, false, type, 4000);
+    else if (this.status) this.status.textContent = message;
+  }
+
+  /** Report why the current map cannot run a search action; true while it cannot */
+  private unavailable(): boolean {
+    const reason = this.getMapActionUnavailable();
+    if (!reason) return false;
+    this.report(reason);
+    return true;
   }
 
   private readHistory(): string[] {
     try {
-      const stored: unknown = JSON.parse(localStorage.getItem(this.config.historyKey) || "[]");
-      const commands = new Set(this.records.filter(r => r.command).map(r => r.id));
+      const stored: unknown = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+      const commands = new Set(this.records.filter(result => result.kind === "command").map(result => result.id));
       return Array.isArray(stored)
         ? [...new Set(stored.filter((id): id is string => typeof id === "string" && commands.has(id)))].slice(
             0,
-            this.config.historyLimit
+            HISTORY_LIMIT
           )
         : [];
     } catch {
@@ -595,9 +681,9 @@ class OmnibarController {
   }
 
   private remember(id: string): void {
-    this.history = [id, ...this.history.filter(previous => previous !== id)].slice(0, this.config.historyLimit);
+    this.history = [id, ...this.history.filter(previous => previous !== id)].slice(0, HISTORY_LIMIT);
     try {
-      localStorage.setItem(this.config.historyKey, JSON.stringify(this.history));
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(this.history));
     } catch {
       /* Storage is optional. */
     }
