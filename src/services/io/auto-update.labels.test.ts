@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Options } from "@/components/options-model";
 import "@/generators/added-labels";
-import "@/generators/features";
+import "@/generators/features-generator";
 import { Labels } from "@/generators/labels-generator";
 import "@/generators/styles";
 import * as versioning from "@/services/versioning";

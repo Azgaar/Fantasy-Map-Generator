@@ -25,6 +25,8 @@ export const VERSION = "1.153.0";
 // new changes on top
 const latestPublicChanges = [
   "Wrap Tool: reshape cells with a brush",
+  "Geographical Features Overview",
+  "Coastline Editor: customizable per feature",
   "Coastlines: roughness localized to coastline section",
   "Global map search (press Space to open)",
   "Diplomacy: select relation targets on the map and repair invalid relations",
@@ -102,7 +104,7 @@ export async function clearCache(): Promise<void> {
   location.reload();
 }
 
-export const ARROW_TIP_KEY = "disable_click_arrow_tooltip";
+export const ARROW_TIP_KEY = "fmg-disable-click-arrow-tooltip";
 
 export async function cleanupData(): Promise<void> {
   localStorage.clear();

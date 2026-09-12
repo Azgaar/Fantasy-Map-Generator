@@ -142,7 +142,7 @@ describe("shared entity geometry and context", () => {
     expect(MapEntities.get({ type: "burg", id: 1 })).toBeUndefined();
   });
 
-  it("titles an unnamed feature by its subtype and id, so islands stay distinct; oceans are no feature", () => {
+  it("titles an unnamed feature by its subtype and id, so islands stay distinct; oceans are listed too", () => {
     pack.features = [
       0,
       { i: 1, type: "island", subtype: "isle" },
@@ -153,6 +153,7 @@ describe("shared entity geometry and context", () => {
     expect(MapEntities.collect("feature").map(({ ref }) => MapEntities.getName(ref))).toEqual([
       "isle 1",
       "isle 2",
+      "ocean 3",
       "Mirror Lake"
     ]);
   });

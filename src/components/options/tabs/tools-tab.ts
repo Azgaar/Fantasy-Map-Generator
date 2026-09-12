@@ -14,7 +14,7 @@ const TEMPLATE = /* html */ `
     </button>
     <button
       id="editCoastlineSettings"
-      data-tip="Click to open Coastline Settings Editor"
+      data-tip="Click to open Coastline Editor"
     >
       Coastlines
     </button>
@@ -30,6 +30,9 @@ const TEMPLATE = /* html */ `
     </button>
     <button id="editEmblemButton" data-tip="Click to open Emblem Editor" data-shortcut="Shift + Y">
       Emblems
+    </button>
+    <button id="overviewFeaturesButton" data-tip="Click to open Geographical Features Overview" data-shortcut="Shift + F">
+      Features
     </button>
     <button id="editGoods" data-tip="Click to open Goods Editor" data-shortcut="Shift + G">Goods</button>
     <button

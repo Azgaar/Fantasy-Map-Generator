@@ -72,7 +72,7 @@ the pipeline, since it depends only on name bases and the seeded random source.
 | Settlement & politics    | `burgs`, `states`, `routes`, `religions`                      | `pack.burgs`, `pack.states`, `pack.routes`, `pack.religions`                    |
 | Specification            | `burgsSpecify`, `stateStatistics`, `stateForms`               | burg types, state stats and forms                                               |
 | Provinces                | `provinces`, `provincePoles`                                  | `pack.provinces`                                                                |
-| Naming polish            | `riversSpecify`, `lakeNames`                                  | river and lake names                                                            |
+| Naming polish            | `riversSpecify`, `featureNames`                               | river and feature (island, ocean, lake) names                                   |
 | Economy                  | `markets`, `production`, `taxes`                              | `pack.markets`, `cells.market`, `pack.deals`, burg/state treasuries             |
 | Overlays                 | `military`, `markers`, `zones`, `addedLabels`                 | regiments, markers, zones, labels                                               |
 | Finalise                 | `journeys`                                                    | journeys                                                                        |
@@ -119,7 +119,7 @@ flowchart TD
     relig["religions<br/><i>writes: pack.religions</i>"]
     spec["burgsSpecify + stateStatistics + stateForms"]
     prov["provinces + provincePoles<br/><i>writes: pack.provinces</i>"]
-    names["riversSpecify + lakeNames"]
+    names["riversSpecify + featureNames"]
     econ["markets + production + taxes<br/><i>writes: pack.markets, deals, cells.market</i>"]
     mil["military + markers + zones + addedLabels"]
     journeys["journeys"]

@@ -214,7 +214,7 @@ class EntityLookup {
       }
     },
     feature: {
-      label: "Lakes and landmasses",
+      label: "Geographical features",
       kind: id => this.byId(pack.features, id)?.type || "Feature",
       icon: "icon-globe",
       scale: 3,
@@ -224,8 +224,7 @@ class EntityLookup {
         const feature = this.byId(pack.features, id);
         return feature ? feature.name || `${feature.subtype || feature.type} ${id}` : "";
       },
-      refs: () =>
-        this.refsOf("feature", pack.features, true).filter(ref => this.byId(pack.features, ref.id)?.type !== "ocean"),
+      refs: () => this.refsOf("feature", pack.features, true),
       element: id => `feature_${id}`,
       highlight: id => `#map use[data-f='${id}']`,
       position: id => this.cellPoint(this.byId(pack.features, id)?.firstCell),

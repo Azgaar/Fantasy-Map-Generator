@@ -108,11 +108,6 @@ This document outlines the expected data structure. Current data model described
     }
   },
 
-  // planned: a feature may carry its own `coastline` block of the same shape, overriding the map-level
-  // one for that island or lake alone. The generator already takes its settings per call
-  // (`Coastline.fractalize(points, seed, settings)`), so the work is the feature record, the IO round
-  // trip and an editor entry point — not the fractalization itself
-
   "layers": {
     "order": ["ocean", "landmass", "heightmap", "lakes", "rivers", "states", "borders", "labels", "scaleBar"],
     "active": ["heightmap", "lakes", "rivers", "states", "borders", "labels", "scaleBar"]

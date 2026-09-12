@@ -737,7 +737,7 @@ function restoreRiskedData(): void {
 
   if (erosionAllowed) {
     Rivers.specify();
-    Lakes.defineNames();
+    Features.defineNames();
   }
 
   const gridToPackMap = new Map<number, number[]>();

@@ -13,5 +13,8 @@ export function drawLakes(layer: Layer): void {
     uses[group].push(`<use href="#feature_${feature.i}" data-f="${feature.i}"></use>`);
   }
 
-  for (const group of groups) group.innerHTML = uses[group.id]?.join("") || "";
+  for (const group of groups) {
+    (group as SVGGElement).dataset.group = group.id; // custom groups miss the data-group the registry stamps on declared ones
+    group.innerHTML = uses[group.id]?.join("") || "";
+  }
 }

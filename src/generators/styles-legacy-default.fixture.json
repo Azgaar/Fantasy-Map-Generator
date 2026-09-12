@@ -162,9 +162,9 @@
     "filter": null
   },
   "#sea_island": {
-    "opacity": 0.5,
+    "opacity": 0.7,
     "stroke": "#1f3846",
-    "stroke-width": 0.5,
+    "stroke-width": 0.3,
     "filter": null,
     "auto-filter": 1
   },

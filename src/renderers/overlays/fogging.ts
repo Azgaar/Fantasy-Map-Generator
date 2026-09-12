@@ -12,8 +12,9 @@ export function drawFogging(layer: Layer): void {
   if (!isRevealed) return void element.replaceChildren();
   if (element.hasChildNodes()) return; // already showing: the mask alone changed
 
-  element.innerHTML = /* html */ `<rect x="0" y="0" width="100%" height="100%"></rect>
-    <rect x="0" y="0" width="100%" height="100%" fill="#e8f0f6" filter="url(#splotch)"></rect>`;
+  const { width, height } = options.map.graph; // cover the graph, not the viewport
+  element.innerHTML = /* html */ `<rect x="0" y="0" width="${width}" height="${height}"></rect>
+    <rect x="0" y="0" width="${width}" height="${height}" fill="#e8f0f6" filter="url(#splotch)"></rect>`;
 
   const fogging = select(element);
   fogging.attr("opacity", 0).transition(fadeIn()).attr("opacity", styles.fogging.attrs.opacity);

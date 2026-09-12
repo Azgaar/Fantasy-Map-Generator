@@ -4,7 +4,10 @@ import { Layers } from "@/components/layers";
 import { Notes } from "@/components/notes";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
-import type { Feature } from "@/generators/features";
+import { type Feature, LAKE_SUBTYPES } from "@/generators/features-generator";
+import { GraphOverride } from "@/generators/graph-override";
+import { Styles } from "@/generators/styles";
+import { drawFeaturePath } from "@/renderers/draw-landmass";
 import { getArea, getAreaUnit, speak } from "@/utils";
 import { ensureEl, findEl, rand, si } from "../utils";
 import { getHeight } from "../utils/unitUtils";
@@ -42,12 +45,18 @@ function renderDialog(): void {
         <input id="lakeName" data-tip="Type to rename the lake" autocorrect="off" spellcheck="false" />
         <span id="lakeNameSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
       </div>
-      <div data-tip="Type to change lake type (group)">
-        <div class="label" style="width: 4.8em">Type:</div>
+      <div data-tip="Lake subtype. Generators read it: burgs cannot port on dry, frozen or lava lakes">
+        <div class="label" style="width: 7em">Subtype:</div>
+        <select id="lakeSubtype" data-tip="Select lake subtype">
+          ${LAKE_SUBTYPES.map(subtype => `<option value="${subtype}">${subtype}</option>`).join("")}
+        </select>
+      </div>
+      <div data-tip="Rendering group: the svg group the lake is drawn in. Does not affect generation">
+        <div class="label" style="width: 4.8em">Group:</div>
         <span id="lakeGroupRemove" data-tip="Remove the group" class="icon-trash-empty pointer"></span>
-        <span id="lakeGroupAdd" data-tip="Create a new type (group) for the lake" class="icon-plus pointer"></span>
-        <select id="lakeGroup" data-tip="Select lake type (group)"></select>
-        <input id="lakeGroupName" placeholder="type name" data-tip="Provide a name for the new group" style="display: none" />
+        <span id="lakeGroupAdd" data-tip="Create a new group for the lake" class="icon-plus pointer"></span>
+        <select id="lakeGroup" data-tip="Select lake rendering group"></select>
+        <input id="lakeGroupName" placeholder="group name" data-tip="Provide a name for the new group" style="display: none" />
         <span id="lakeEditStyle" data-tip="Edit lake group style in Style Editor" class="icon-brush pointer"></span>
       </div>
       <div data-tip="Lake area in selected units">
@@ -98,6 +107,7 @@ function renderDialog(): void {
   ensureEl("lakeNameSpeak").addEventListener("click", () => speak(ensureEl<HTMLInputElement>("lakeName").value));
   ensureEl("lakeNameCulture").addEventListener("click", generateNameCulture);
   ensureEl("lakeNameRandom").addEventListener("click", generateNameRandom);
+  ensureEl("lakeSubtype").addEventListener("change", changeLakeSubtype);
   ensureEl("lakeGroup").addEventListener("change", changeLakeGroup);
   ensureEl("lakeGroupAdd").addEventListener("click", toggleNewGroupInput);
   ensureEl("lakeGroupName").addEventListener("change", createNewGroup);
@@ -116,6 +126,7 @@ function updateLakeValues(): void {
 
   const l = getLake();
   ensureEl<HTMLInputElement>("lakeName").value = l.name;
+  ensureEl<HTMLSelectElement>("lakeSubtype").value = l.subtype || "freshwater";
   ensureEl<HTMLInputElement>("lakeArea").value = `${si(getArea(l.area))} ${getAreaUnit()}`;
 
   const length = polygonLength(l.vertices.map(v => vertices.p[v] as [number, number]));
@@ -140,13 +151,66 @@ function updateLakeValues(): void {
   ensureEl<HTMLInputElement>("lakeOutlet").value = outlet ?? "no";
 }
 
+function drawLakeVertices(): void {
+  const vertices = getLake().vertices;
+
+  const neibCells: number[] = unique(vertices.flatMap(v => pack.vertices.c[v]));
+  select("#debug")
+    .select("#vertices")
+    .selectAll<SVGPolygonElement, number>("polygon")
+    .data(neibCells)
+    .enter()
+    .append("polygon")
+    .attr("points", (d: number) => String(Pack.getPolygon(d)))
+    .attr("data-c", (d: number) => d);
+
+  select<SVGGElement, unknown>("#debug")
+    .select("#vertices")
+    .selectAll<SVGCircleElement, number>("circle")
+    .data(vertices)
+    .enter()
+    .append("circle")
+    .attr("cx", (d: number) => pack.vertices.p[d][0])
+    .attr("cy", (d: number) => pack.vertices.p[d][1])
+    .attr("r", 0.4)
+    .attr("data-v", (d: number) => d)
+    .call(drag<SVGCircleElement, number>().on("drag", handleVertexDrag).on("end", handleVertexDragEnd))
+    .on("mousemove", () =>
+      tip("Drag to move the vertex. Please use for fine-tuning only! Edit heightmap to change actual cell heights")
+    );
+}
+
+function handleVertexDrag(this: SVGCircleElement, event: any, vertexId: number): void {
+  const x = rn(event.x, 2);
+  const y = rn(event.y, 2);
+  this.setAttribute("cx", String(x));
+  this.setAttribute("cy", String(y));
+
+  GraphOverride.movePackVertex(vertexId, [x, y]);
+
+  const feature = getLake();
+
+  drawFeaturePath(feature);
+  ensureEl<HTMLInputElement>("lakeArea").value = `${si(getArea(feature.area))} ${getAreaUnit()}`;
+
+  // update cell
+  select("#debug")
+    .select("#vertices")
+    .selectAll<SVGPolygonElement, number>("polygon")
+    .attr("points", d => String(Pack.getPolygon(d)));
+}
+
+function handleVertexDragEnd(): void {
+  Layers.draw("states", "provinces", "borders", "biomes", "religions", "cultures");
+}
+
 function changeName(this: HTMLInputElement): void {
   getLake().name = this.value;
 }
 
 function generateNameCulture(): void {
   const lake = getLake();
-  lake.name = ensureEl<HTMLInputElement>("lakeName").value = Lakes.getName(lake);
+  lake.name = ensureEl<HTMLInputElement>("lakeName").value = Features.getName(lake);
 }
 
 function generateNameRandom(): void {
@@ -154,13 +218,15 @@ function generateNameRandom(): void {
   lake.name = ensureEl<HTMLInputElement>("lakeName").value = Names.getBase(rand(Names.nameBases.length - 1));
 }
 
-const isLakeType = (group: string) => Layers.get("lakes").children.some(child => child.id === group);
+function changeLakeSubtype(this: HTMLSelectElement): void {
+  getLake().subtype = this.value; // subtype is domain data, the rendering group is left alone
+}
+
+const isStockGroup = (group: string) => group in Styles.defaults.lakes.groups;
 function assignGroup(elements: Element[], group: string): void {
   for (const element of elements) {
     const feature = pack.features[+(element.getAttribute("data-f") || 0)];
-    if (!feature) continue;
-    if (isLakeType(group)) feature.subtype = group; // a default group is the lake subtype as well
-    feature.group = group;
+    if (feature) feature.group = group;
   }
 }
 
@@ -217,11 +283,17 @@ function createNewGroup(this: HTMLInputElement): void {
 
   // just rename if only 1 element left
   const oldGroup = selectedLake.node()!.parentNode as SVGGElement;
-  const basic = isLakeType(oldGroup.id);
+  // the store is authoritative: seed an entry so style edits and presets can address the group
+  const template = styles.lakes.groups[oldGroup.id] || styles.lakes.groups.freshwater;
+  styles.lakes.groups[group] ??= structuredClone(template);
+
+  const basic = isStockGroup(oldGroup.id);
   if (!basic && oldGroup.childElementCount === 1) {
     ensureEl<HTMLSelectElement>("lakeGroup").selectedOptions[0].remove();
     ensureEl<HTMLSelectElement>("lakeGroup").options.add(new Option(group, group, false, true));
+    if (oldGroup.id !== group) delete styles.lakes.groups[oldGroup.id];
     oldGroup.id = group;
+    oldGroup.dataset.group = group;
     assignGroup(Array.from(oldGroup.children), group);
     toggleNewGroupInput();
     ensureEl<HTMLInputElement>("lakeGroupName").value = "";
@@ -232,6 +304,7 @@ function createNewGroup(this: HTMLInputElement): void {
   const newGroup = (selectedLake.node()!.parentNode as SVGGElement).cloneNode(false) as SVGGElement;
   ensureEl("lakes").appendChild(newGroup);
   newGroup.id = group;
+  newGroup.dataset.group = group;
   ensureEl<HTMLSelectElement>("lakeGroup").options.add(new Option(group, group, false, true));
   ensureEl(group).appendChild(selectedLake.node()!);
   assignGroup([selectedLake.node()!], group);
@@ -242,7 +315,7 @@ function createNewGroup(this: HTMLInputElement): void {
 
 function removeLakeGroup(): void {
   const group = (selectedLake.node()!.parentNode as SVGGElement).id;
-  if (isLakeType(group)) {
+  if (isStockGroup(group)) {
     tip("This is one of the default groups, it cannot be removed", false, "error");
     return;
   }
@@ -263,6 +336,7 @@ function removeLakeGroup(): void {
           freshwater.appendChild(groupEl.childNodes[0]);
         }
         groupEl.remove();
+        delete styles.lakes.groups[group];
         ensureEl<HTMLSelectElement>("lakeGroup").selectedOptions[0].remove();
         ensureEl<HTMLSelectElement>("lakeGroup").value = "freshwater";
       },

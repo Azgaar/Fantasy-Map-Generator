@@ -325,6 +325,17 @@ test("store-format loads strip retired option attributes from the restored svg",
   expect(document.getElementById("markets")?.getAttribute("data-icon")).toBeNull();
 });
 
+test("custom lake groups are harvested from the svg with freshwater as the template", () => {
+  document.body.innerHTML = `<svg id="map"><g id="lakes"><g id="freshwater"></g><g id="my_lakes" fill="#123456" opacity="0.3"></g></g></svg>`;
+  harvestStylesFromSvg();
+  const custom = styles.lakes.groups.my_lakes;
+  expect(custom.attrs.fill).toBe("#123456");
+  expect(custom.attrs.opacity).toBe(0.3);
+  expect(custom.attrs.stroke).toBe(Styles.defaults.lakes.groups.freshwater.attrs.stroke);
+  expect(document.getElementById("my_lakes")?.dataset.group).toBe("my_lakes");
+  Styles.set(structuredClone(Styles.defaults));
+});
+
 test("opacity stranded on a layer group moves to the style groups the store keeps it on", () => {
   // the old style editor wrote to the layer group itself while the layer had no groups to pick
   document.body.innerHTML = `<svg id="map">
@@ -334,7 +345,7 @@ test("opacity stranded on a layer group moves to the style groups the store keep
   harvestStylesFromSvg();
   expect(styles.coastline.sea_island.attrs.opacity).toBe(0.5);
   expect(styles.coastline.lake_island.attrs.opacity).toBe(0.5);
-  expect(styles.lakes.freshwater.attrs.opacity).toBe(0.7);
+  expect(styles.lakes.groups.freshwater.attrs.opacity).toBe(0.7);
   expect(styles.routes.groups.roads.attrs.opacity).toBe(0.4);
 
   stripMigratedAttributes();

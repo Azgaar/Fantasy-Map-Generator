@@ -20,6 +20,7 @@ export const Controllers = createRegistry({
   EmblemsEditor: () => import("@/controllers/emblems-editor").then(m => m.EmblemsEditor),
   GoodEditor: () => import("@/controllers/good-editor").then(m => m.GoodEditor),
   GoodsEditor: () => import("@/controllers/goods-editor").then(m => m.GoodsEditor),
+  FeaturesOverview: () => import("@/controllers/features-overview").then(m => m.FeaturesOverview),
   HeightmapEditor: () => import("@/controllers/heightmap-editor").then(m => m.HeightmapEditor),
   HeightmapSelection: () => import("@/controllers/heightmap-selection").then(m => m.HeightmapSelection),
   HelpAssistant: () => import("@/controllers/help-assistant").then(m => m.HelpAssistant),

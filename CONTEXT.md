@@ -64,6 +64,7 @@
 - **Pack**: The aggregate world state (contains `burgs`, `states`, `cultures`, etc.).
 - **Cell**: The smallest indivisible unit of the map.
 - **Burg**: A settlement. Grouped into `States`.
+- **Feature**: An island, lake or ocean. Its `subtype` is domain classification (generators read it); its `group` is only the SVG group it is drawn in.
 - **Label**: Text attached to a State, Burg, or user-defined path. Labels select typography from a shared Label Group.
 - **Invariants**: Saving a `.map` file MUST preserve the exact world state so it can be reloaded identically.
 

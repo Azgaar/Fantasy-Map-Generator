@@ -5,7 +5,7 @@ import "./precipitation-generator";
 import "./coordinates";
 import "./pack-generator";
 import "./heightmap-generator";
-import "./features";
+import "./features-generator";
 import "./names-generator";
 import "./lakes";
 import "./river-generator";

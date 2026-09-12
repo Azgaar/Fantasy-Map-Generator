@@ -11,7 +11,7 @@ type PresetRoute = {
   options?: Record<string, string>;
   bools?: string[];
   strings?: string[]; // options that must stay strings
-  kind?: "label" | "burg" | "route";
+  kind?: "label" | "burg" | "route" | "lake";
   drop?: string[];
   ownAttrs?: boolean;
 };
@@ -31,12 +31,12 @@ const PRESET_ROUTES: Record<string, PresetRoute> = {
   "#compass": { path: ["compass"] },
   "#compass > use": { path: ["compass", "compassRose"] },
   "#rivers": { path: ["rivers"] },
-  "#freshwater": { path: ["lakes", "freshwater"] },
-  "#salt": { path: ["lakes", "salt"] },
-  "#sinkhole": { path: ["lakes", "sinkhole"] },
-  "#frozen": { path: ["lakes", "frozen"] },
-  "#lava": { path: ["lakes", "lava"] },
-  "#dry": { path: ["lakes", "dry"] },
+  "#freshwater": { path: ["lakes", "groups", "freshwater"] },
+  "#salt": { path: ["lakes", "groups", "salt"] },
+  "#sinkhole": { path: ["lakes", "groups", "sinkhole"] },
+  "#frozen": { path: ["lakes", "groups", "frozen"] },
+  "#lava": { path: ["lakes", "groups", "lava"] },
+  "#dry": { path: ["lakes", "groups", "dry"] },
   "#sea_island": { path: ["coastline", "sea_island"], options: { "auto-filter": "autoFilter" } },
   "#lake_island": { path: ["coastline", "lake_island"] },
   "#terrs > #landHeights": {
@@ -144,6 +144,7 @@ const STRANDED_OPACITY_LAYERS = [
 ] as const;
 
 const DEFAULT_ROUTE_GROUPS = Object.keys(Styles.defaults.routes.groups);
+const DEFAULT_LAKE_GROUPS = Object.keys(Styles.defaults.lakes.groups);
 const LABEL_SCHEMA_ATTRS = Object.keys(Object.values(Styles.defaults.labels.groups)[0].attrs);
 const BURG_SCHEMA_ATTRS = Object.keys(Object.values(Styles.defaults.burgIcons.burgIcons.groups)[0].attrs);
 
@@ -220,6 +221,14 @@ export function stylesFromMap(root: ParentNode = document): Styles {
     }
   }
 
+  for (const el of root.querySelectorAll<SVGGElement>("#lakes > g")) {
+    if (el.id) el.dataset.group = el.id;
+    if (el.id && !DEFAULT_LAKE_GROUPS.includes(el.id)) {
+      // no nullables: an attr the custom group never carried keeps the freshwater default
+      bags[`#lakes > g#${el.id}`] = harvestBag(el, Object.keys(Styles.defaults.lakes.groups.freshwater.attrs), []);
+    }
+  }
+
   for (const el of root.querySelectorAll("#burgIcons > g")) {
     if (el.id)
       bags[`#burgIcons > g#${el.id}`] = harvestBag(
@@ -261,7 +270,7 @@ export function harvestStylesFromSvg({ hasStyleRecord = false } = {}): void {
   const strandedOpacity: Record<(typeof STRANDED_OPACITY_LAYERS)[number], { attrs: { opacity: number | null } }[]> = {
     regions: [harvested.states.statesBody],
     terrs: Object.values(harvested.heightmap),
-    lakes: Object.values(harvested.lakes),
+    lakes: Object.values(harvested.lakes.groups),
     coastline: Object.values(harvested.coastline),
     borders: Object.values(harvested.borders),
     routes: Object.values(harvested.routes.groups),
@@ -353,9 +362,11 @@ export function styleNodeFor(element: string, group: string): { node: object; la
           ? `#${element} > g#${group}`
           : element === "routes"
             ? `#routes > g#${group}`
-            : element === "terrs"
-              ? `#terrs > #${group}`
-              : `#${group}`;
+            : element === "lakes"
+              ? `#lakes > g#${group}`
+              : element === "terrs"
+                ? `#terrs > #${group}`
+                : `#${group}`;
   const route = routeFor(selector);
   if (!route) return undefined;
   const node = getPath(styles, route.path);
@@ -372,6 +383,8 @@ function routeFor(selector: string): PresetRoute | undefined {
   if (anchor) return { path: ["burgIcons", "anchors", "groups", anchor[1]], kind: "burg" };
   const routeGroup = selector.match(/^#routes > g#(.+)$/);
   if (routeGroup) return { path: ["routes", "groups", routeGroup[1]], kind: "route" };
+  const lakeGroup = selector.match(/^#lakes > g#(.+)$/);
+  if (lakeGroup) return PRESET_ROUTES[`#${lakeGroup[1]}`] ?? { path: ["lakes", "groups", lakeGroup[1]], kind: "lake" };
   const emblem = selector.match(/^#emblems > #(.+)$/);
   if (emblem) return { path: ["emblems", emblem[1]], options: { "data-size": "size" } };
   return undefined;
@@ -585,7 +598,9 @@ export function presetFromLegacy(
           ? labelGroupFromLegacy
           : route.kind === "burg"
             ? burgGroupFromLegacy
-            : routeGroupFromLegacy;
+            : route.kind === "lake"
+              ? lakeGroupFromLegacy
+              : routeGroupFromLegacy;
       parent[route.path.at(-1) as string] = fromLegacy(bag);
       continue;
     }
@@ -672,6 +687,22 @@ function routeGroupFromLegacy(legacy: object): Styles["routes"]["groups"][string
       mask: strOr(bag.mask, null)
     }
   };
+}
+
+type LakeGroupStyle = Styles["lakes"]["groups"][string];
+
+// a custom lake group: the template's attrs under whatever the legacy bag carries
+function lakeGroupFromLegacy(legacy: object, template: LakeGroupStyle = Styles.defaults.lakes.groups.freshwater) {
+  const group = structuredClone(template) as LakeGroupStyle;
+  const attrs = group.attrs as Record<string, unknown>;
+  for (const [key, value] of Object.entries(legacy)) if (key in attrs) attrs[key] = coerceLegacyAttr(key, value);
+  return group;
+}
+
+/** A custom lake group that lived only in the svg: its element attrs over the template (freshwater by default) */
+export function lakeGroupFromSvg(el: Element, template?: LakeGroupStyle): LakeGroupStyle {
+  const attrs = Object.keys((template ?? Styles.defaults.lakes.groups.freshwater).attrs);
+  return lakeGroupFromLegacy(harvestBag(el, attrs, []), template); // no nullables: an attr never carried keeps the template's
 }
 
 // the attrs at a store path that accept null, i.e. may be harvested as "attribute not set"

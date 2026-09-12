@@ -138,7 +138,6 @@ a {
 }
 
 #lakes,
-#coastline,
 #armies,
 #ice,
 #emblems,
@@ -2235,7 +2234,7 @@ svg.button {
 }
 
 #worldControls {
-  width: 16em;
+  width: 18em;
   display: inline-block;
   vertical-align: top;
 }

@@ -79,10 +79,9 @@ export function showMapTooltip(point: Point, event: Event, cellId: number, gridC
   if (!path[path.length - 8]) return;
 
   const group = path[path.length - 7].id;
-  const subgroup = path[path.length - 8].id;
   const isLand = pack.cells.h[cellId] >= 20;
 
-  const elementTip = getElementTip({ group, subgroup, target, event, path, cellId });
+  const elementTip = getElementTip({ group, target, event, path, cellId });
   if (elementTip !== undefined) {
     tip(elementTip);
     return;
@@ -93,7 +92,6 @@ export function showMapTooltip(point: Point, event: Event, cellId: number, gridC
 
 interface TipContext {
   group: string;
-  subgroup: string;
   target: SVGElement;
   event: Event;
   path: HTMLElement[];
@@ -104,7 +102,7 @@ interface TipContext {
  * Get the tooltip for the hovered element.
  * Returns undefined if the element is not interactive, so the layer tip is shown instead
  */
-function getElementTip({ group, subgroup, target, event, path, cellId }: TipContext): string | undefined {
+function getElementTip({ group, target, event, path, cellId }: TipContext): string | undefined {
   const parent = target.parentNode as SVGElement;
   const burgElement = target.closest<SVGElement>("[data-label-type='burg'][data-id], #burgIcons [data-id]");
   if (burgElement) {
@@ -151,12 +149,11 @@ function getElementTip({ group, subgroup, target, event, path, cellId }: TipCont
   if (group === "goods") return getGoodsTip(target, cellId) ?? "";
 
   if (group === "lakes" && pack.cells.h[cellId] < 20) {
-    const lakeId = Number(target.dataset.f);
-    const name = pack.features[lakeId]?.name;
-    return `${subgroup === "freshwater" ? name : `${name} ${subgroup}`} lake. Click to edit`;
+    const lake = pack.features[Number(target.dataset.f)];
+    const kind = lake?.subtype && lake.subtype !== "freshwater" ? `${lake.subtype} ` : ""; // what it is, not where it is drawn
+    const name = lake?.name ? `${lake.name} ` : "";
+    return `${name}${kind}lake. Click to edit`;
   }
-
-  if (group === "coastline") return "Click to edit the coastline";
 
   if (group === "zones") {
     const zoneId = Number(path[path.length - 8].dataset.id);

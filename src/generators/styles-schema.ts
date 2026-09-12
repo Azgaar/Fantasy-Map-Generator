@@ -89,7 +89,7 @@ export const stylesSchema = z.strictObject({
     compassRose: z.strictObject({ attrs: z.strictObject({ transform }) })
   }),
   rivers: z.strictObject({ attrs: z.strictObject({ opacity, fill: color, filter }) }),
-  lakes: z.strictObject({ freshwater: lake, salt: lake, sinkhole: lake, frozen: lake, lava: lake, dry: lake }),
+  lakes: z.strictObject({ groups: z.record(z.string(), lake) }), // stock groups plus user-created ones
   coastline: z.strictObject({
     // autoFilter is FMG's own zoom-driven filter pick, not a stored attribute
     sea_island: z.strictObject({

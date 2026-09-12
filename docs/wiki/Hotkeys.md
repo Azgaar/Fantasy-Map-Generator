@@ -89,6 +89,7 @@ Tools (<kbd>Alt</kbd> + <kbd>Shift</kbd> works as an alternative to <kbd>Shift</
 - <kbd>Shift</kbd> + <kbd>A</kbd> - open Data Charts
 - <kbd>Shift</kbd> + <kbd>T</kbd> - open Burgs Overview
 - <kbd>Shift</kbd> + <kbd>V</kbd> - open Rivers Overview
+- <kbd>Shift</kbd> + <kbd>F</kbd> - open Geographical Features Overview
 - <kbd>Shift</kbd> + <kbd>U</kbd> - open Routes Overview
 - <kbd>Shift</kbd> + <kbd>M</kbd> - open Military Overview
 - <kbd>Shift</kbd> + <kbd>K</kbd> - open Markers Overview
