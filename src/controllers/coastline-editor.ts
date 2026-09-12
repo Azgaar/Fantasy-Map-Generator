@@ -2,10 +2,11 @@ import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers"
 import { Controllers } from "@/controllers";
 import { Coastline, type CoastlineSettings, type FractalizedShape } from "@/generators/coastline-generator";
 import type { Feature } from "@/generators/features-generator";
+import { drawFeaturePath } from "@/renderers/draw-landmass";
 import type { Point } from "@/types/global";
-import { ensureEl, findEl } from "../utils";
+import { ensureEl, escapeHtml, findEl } from "@/utils";
 
-interface SliderDef {
+interface InputParams {
   id: string;
   label: string;
   tip: string;
@@ -15,7 +16,7 @@ interface SliderDef {
   key: keyof Omit<CoastlineSettings, "enabled">;
 }
 
-const INPUTS_CONFIG: SliderDef[] = [
+const INPUTS_CONFIG: InputParams[] = [
   {
     id: "coastMaxDepth",
     label: "Detail",
@@ -149,7 +150,7 @@ function open(featureId?: number): void {
   if (customization) return;
   closeDialogs(".stable");
   destroyDialog("coastlineSettingsDialog");
-  document.body.insertAdjacentHTML(
+  ensureEl("dialogs").insertAdjacentHTML(
     "beforeend",
     `<div id="coastlineSettingsDialog" style="display:none" class="dialog"></div>`
   );
@@ -214,7 +215,7 @@ function applyChange(change: Partial<CoastlineSettings>): void {
   if (selectedFeature) {
     const firstChange = !selectedFeature.coastline; // the feature gets its own settings
     selectedFeature.coastline = { ...(selectedFeature.coastline || Coastline.settings), ...change };
-    findEl(`feature_${selectedFeature.i}`)?.setAttribute("d", Coastline.getFeaturePath(selectedFeature)); // every layer uses this path
+    drawFeaturePath(selectedFeature);
     if (firstChange) syncScope();
   } else {
     Coastline.update(change);
@@ -227,7 +228,7 @@ function applyChange(change: Partial<CoastlineSettings>): void {
 function dropOwnSettings(): void {
   if (!selectedFeature) return;
   delete selectedFeature.coastline;
-  findEl(`feature_${selectedFeature.i}`)?.setAttribute("d", Coastline.getFeaturePath(selectedFeature));
+  drawFeaturePath(selectedFeature);
   syncScope();
   syncForm();
   updatePreviews();
@@ -271,7 +272,7 @@ function buildDialogHTML(): string {
   const scopeOptions = features
     .map(
       feature =>
-        `<option value="${feature.i}" ${feature === selectedFeature ? "selected" : ""}>${featureLabel(feature)}</option>`
+        `<option value="${feature.i}" ${feature === selectedFeature ? "selected" : ""}>${escapeHtml(featureLabel(feature))}</option>`
     )
     .join("");
 
@@ -314,7 +315,7 @@ function buildDialogHTML(): string {
             <span id="coastEnabledThumb" style="position:absolute; top:2px; left:${settings.enabled ? "18px" : "2px"};width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3)"></span>
           </span>
         </label>
-        <div style="display:flex; align-items:center; gap:0.4em" data-tip="A ready-made look. Sets every slider except Variant, tune from there">
+        <div style="display:flex; align-items:center; gap:0.4em" data-tip="A ready-made look. Sets every slider, tune from there">
           <span style="color:#999">Preset</span>
           ${presetButtons}
         </div>
@@ -482,8 +483,7 @@ function magnification(vertices: number) {
   if (vertices < 650) return 10;
   if (vertices < 2000) return 12;
   if (vertices < 4000) return 14;
-  if (vertices < 10000) return 20;
-  return 8;
+  return 20;
 }
 
 const ROUGH_COLOR = "#c85520";

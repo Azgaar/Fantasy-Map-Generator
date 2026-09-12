@@ -27,6 +27,7 @@ import {
   capitalize,
   downloadFile,
   ensureEl,
+  escapeHtml,
   findEl,
   getArea,
   getAreaUnit,
@@ -190,6 +191,7 @@ function renderDialog(): void {
 
 function closeFeaturesOverview(): void {
   destroyDialog(dialogId);
+  oceanAreas = new Map();
   const view = featuresTable.view();
   view.rows = [];
   view.all = [];
@@ -281,7 +283,7 @@ function renderFeaturesPage(view: TableView<Feature>): void {
   for (const feature of view.rows) {
     lines += /* html */ `<div class="states" data-id="${feature.i}">
       <span data-tip="Locate the feature" data-col="locate" class="icon-target"></span>
-      <input data-tip="Feature name" class="featureName stateName" value="${feature.name || ""}" placeholder="${UNNAMED}" data-col="name" />
+      <input data-tip="Feature name" class="featureName stateName" value="${escapeHtml(feature.name || "")}" placeholder="${UNNAMED}" data-col="name" />
       ${renderTypeCell(feature)}
       ${renderGroupCell(feature, Object.keys(styles.lakes.groups))}
       ${renderAreaCell(feature, unit)}

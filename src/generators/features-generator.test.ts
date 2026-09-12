@@ -94,6 +94,17 @@ describe("feature user data across a re-markup", () => {
   it("does nothing without a capture", () => {
     expect(() => Features.restoreUserData([])).not.toThrow();
   });
+
+  it("carries own coastline settings to the new feature", () => {
+    const coastline = { enabled: false } as Feature["coastline"];
+    setPack([1, 1, 1, 2, 2, 2], [EMPTY, { i: 1, type: "lake" }, { i: 2, type: "island", coastline }]);
+    const captured = capture();
+
+    setPack([3, 3, 3, 4, 4, 4], [EMPTY, EMPTY, EMPTY, { i: 3, type: "lake" }, { i: 4, type: "island" }]);
+    Features.restoreUserData(captured);
+
+    expect(pack.features[4].coastline).toBe(coastline);
+  });
 });
 
 describe("feature naming", () => {

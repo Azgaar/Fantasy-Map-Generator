@@ -481,8 +481,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
     // v1.6 changed lakes data
     for (const f of pack.features) {
-      f.name = f.name || Features.getName(f);
-      if (f.type !== "lake") continue;
+      if (f?.type !== "lake") continue;
       if (f.evaporation) continue;
 
       f.flux = f.flux || f.cells * 3;

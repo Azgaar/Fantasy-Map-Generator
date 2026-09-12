@@ -33,7 +33,7 @@ This glossary covers core terminology, data structures, and concepts used throug
 - **Heightmap**: A grid of elevation values used to generate terrain.
 - **Feature**: A contiguous area of cells enclosed by a coastline or the map border: an island, a lake or an ocean. Features are produced by the heightmap and can only be added or removed through it.
 - **Feature Type**: What a Feature fundamentally is: `island`, `lake` or `ocean`. Derived from geography, never user-editable.
-- **Feature Subtype**: The Feature's classification within its type (`continent`/`island`/`isle`/`lake_island`; `freshwater`/`salt`/`dry`/`sinkhole`/`frozen`/`lava`). Domain-meaningful: generators read it. User-editable. _Avoid_: kind, class
+- **Feature Subtype**: The Feature's classification within its type (`continent`/`island`/`isle`/`lake_island`; `freshwater`/`salt`/`dry`/`sinkhole`/`frozen`/`lava`; `ocean`/`sea`/`gulf`). Domain-meaningful: generators read it. User-editable, regeneration classifies it again. _Avoid_: kind, class
 - **Feature Group**: The SVG group a Feature is drawn in. Purely a rendering choice with no domain meaning, independent of the Subtype. Lakes may use stock or user-created groups; islands are fixed to `sea_island` / `lake_island`. _Avoid_: style group, layer group
 - **River**: A water flow starting from a source cell and following the heightmap down to a lake or ocean.
 - **Lake**: A fresh or salt water body contained entirely within land cells.

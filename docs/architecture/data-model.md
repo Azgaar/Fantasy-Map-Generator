@@ -75,6 +75,7 @@ Features represent separate locked areas like islands, lakes and oceans.
 - - `vertices`: `number[]` - indexes of vertices around the feature (perimetric vertices)
 - - `name`: `string` - generated for every feature: islands and lakes in the culture of their first (shore) cell, oceans with an English adjective or the map side they lie on (_Azure_, _Northern_), the subtype noun is shown separately; any feature can be renamed in the Features Overview. Empty shows as _Unnamed_ in the Features Overview
 - - `note`: `string` - optional. The user's note (legend) about the feature, as html. Removed with it
+- - `coastline`: `object` - optional. The feature's own coastline settings (same shape as `options.map.coastline`), set in the Coastline Editor; the map-level settings no longer apply to it. Islands and lakes only
 
 ## Specific cells data
 

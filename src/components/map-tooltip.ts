@@ -150,8 +150,9 @@ function getElementTip({ group, target, event, path, cellId }: TipContext): stri
 
   if (group === "lakes" && pack.cells.h[cellId] < 20) {
     const lake = pack.features[Number(target.dataset.f)];
-    const kind = lake?.subtype && lake.subtype !== "freshwater" ? ` ${lake.subtype}` : ""; // what it is, not where it is drawn
-    return `${lake?.name ?? ""}${kind} lake. Click to edit`;
+    const kind = lake?.subtype && lake.subtype !== "freshwater" ? `${lake.subtype} ` : ""; // what it is, not where it is drawn
+    const name = lake?.name ? `${lake.name} ` : "";
+    return `${name}${kind}lake. Click to edit`;
   }
 
   if (group === "zones") {

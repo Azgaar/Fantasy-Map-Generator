@@ -38,22 +38,24 @@ Subtype / Group):
 - Adding or removing features — that is the Heightmap Editor's job.
 - User-defined subtypes. The subtype set is fixed per type.
 - Editing island groups. `sea_island` / `lake_island` stay derived from geography.
-- Promoting oceans to first-class (subtype, outline, children such as seas and gulfs). Oceans are
-  listed read-only; a later feature hierarchy may build on this.
+- An ocean outline or feature hierarchy (children such as seas and gulfs). Oceans get a size-based
+  subtype (`ocean | sea | gulf`), a name and a note, but no shape of their own.
 - Feature labels on the map. Feature names are data only (tooltips, notes, omnibar).
 
 ## Data model
 
-No new fields. Rules made explicit:
-
 - `feature.subtype` — fixed set per type. Island: `continent | island | isle | lake_island`.
-  Lake: `freshwater | salt | dry | sinkhole | frozen | lava`. Ocean: unset.
-- `feature.group` — lake: any `#lakes > g` id (stock or custom); island: `sea_island` or
+  Lake: `freshwater | salt | dry | sinkhole | frozen | lava`. Ocean: `ocean | sea | gulf` by cell count.
+- `feature.group` — lake: any `styles.lakes.groups` id (stock or custom); island: `sea_island` or
   `lake_island`, derived; ocean: unset.
-- `feature.name` — optional, empty when unnamed. The Overview shows an unnamed feature as _Unnamed_;
-  `MapEntities.getName` (notes, search) falls back to `"{subtype || type} {id}"` where a title is required.
+- `feature.name` — generated for every feature (islands and lakes by the culture of the shore,
+  oceans by an adjective or the map side); the user can rename or clear it. The Overview shows a
+  cleared name as _Unnamed_; `MapEntities.getName` (notes, search) falls back to `"{subtype || type} {id}"`.
+- `feature.coastline` — new, optional. The feature's own coastline settings (Coastline Editor),
+  overriding the map-level ones.
 - Changing subtype has **no cascade**: ports, goods, markers stay as they are until the user
-  regenerates them, like every other editor.
+  regenerates them, like every other editor. Regeneration (Update World, rivers) classifies every
+  feature again, as it does for every generated attribute.
 
 ### Styles
 

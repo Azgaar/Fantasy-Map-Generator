@@ -15,6 +15,7 @@ export interface CapturedFeature {
   note?: string;
   type: FeatureType;
   gridCells: Set<number>;
+  coastline?: CoastlineSettings;
 }
 
 export interface Feature {
@@ -330,9 +331,11 @@ class FeatureModule {
 
     const captured: CapturedFeature[] = [];
     for (const feature of pack.features) {
-      if (!feature?.i || (!feature.name && !feature.note)) continue;
+      if (!feature?.i || (!feature.name && !feature.note && !feature.coastline)) continue;
       const gridCells = gridCellsByFeature.get(feature.i);
-      if (gridCells?.size) captured.push({ name: feature.name, note: feature.note, type: feature.type, gridCells });
+      if (!gridCells?.size) continue;
+      const { name, note, type, coastline } = feature;
+      captured.push({ name, note, type, gridCells, coastline });
     }
 
     return captured;
@@ -376,8 +379,10 @@ class FeatureModule {
 
       takenFeatures.add(featureId);
       takenCaptures.add(index);
-      if (captured[index].name) feature.name = captured[index].name;
-      if (captured[index].note) feature.note = captured[index].note;
+      const { name, note, coastline } = captured[index];
+      if (name) feature.name = name;
+      if (note) feature.note = note;
+      if (coastline) feature.coastline = coastline;
     }
   }
 
