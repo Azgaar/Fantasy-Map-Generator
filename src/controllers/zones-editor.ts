@@ -357,6 +357,7 @@ function toggleLegend(): void {
   const isFiltered = filterBy !== "all";
   const visibleZones = pack.zones.filter(zone => !zone.hidden && (!isFiltered || zone.type === filterBy));
   const data = visibleZones.map(({ i, name, color }) => [`zone${i}`, color, name]);
+  if (!data.length) return void tip("No zones to show", false, "error");
   drawLegend(LEGEND_NAME, data);
 }
 

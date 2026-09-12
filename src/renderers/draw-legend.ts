@@ -111,7 +111,9 @@ export function redrawLegend(): void {
 
   for (const node of getBoxes()) {
     const name = node.dataset.legend ?? "";
-    const data: LegendItem[] = (node.getAttribute("data") || "").split("|").map(line => line.split(","));
+    // a box with no items stores an empty string, which splits into one blank row
+    const stored = (node.getAttribute("data") || "").split("|").filter(Boolean);
+    const data: LegendItem[] = stored.map(line => line.split(","));
     drawLegend(name, data);
   }
 }

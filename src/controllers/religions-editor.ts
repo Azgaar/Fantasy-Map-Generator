@@ -765,6 +765,7 @@ function toggleLegend(): void {
     .filter(r => r.i && !r.removed && r.area)
     .sort((a, b) => (b.area ?? 0) - (a.area ?? 0))
     .map(r => [r.i, r.color, r.name]);
+  if (!data.length) return void tip("No religions to show", false, "error");
   drawLegend(LEGEND_NAME, data);
 }
 

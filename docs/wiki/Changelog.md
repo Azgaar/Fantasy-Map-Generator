@@ -15,6 +15,7 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Geographical Features Overview [1.153.0]
 - Coastline Editor: customizable per feature [1.153.0]
 - Wrap Tool: reshape cells with a brush [1.153.0]
+- Wrap Tool: reshape cells with a brush; it replaces per-vertex dragging in the Coastline and Lake editors [1.153.0]
 - Coastlines: local roughness instead of global [1.153.0]
 - Legend boxes for States, Cultures, Religions, Biomes and Zones can be shown at the same time by _[esullivan9](https://github.com/esullivan9)_
 - Diplomacy: click states on the map to select relation targets, repair invalid pairs in the editor or matrix, and record only actual changes in bulk edits

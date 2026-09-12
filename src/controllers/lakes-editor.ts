@@ -1,16 +1,15 @@
-import { drag, mean, min, polygonLength, type Selection, select } from "d3";
+import { mean, min, polygonLength, type Selection, select } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { Notes } from "@/components/notes";
 import { tip } from "@/components/tooltips";
-import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { type Feature, LAKE_SUBTYPES } from "@/generators/features-generator";
 import { GraphOverride } from "@/generators/graph-override";
 import { Styles } from "@/generators/styles";
 import { drawFeaturePath } from "@/renderers/draw-landmass";
 import { getArea, getAreaUnit, speak } from "@/utils";
-import { ensureEl, findEl, rand, rn, si, unique } from "../utils";
+import { ensureEl, findEl, rand, si } from "../utils";
 import { getHeight } from "../utils/unitUtils";
 
 let selectedLake: Selection<SVGElement, unknown, HTMLElement, unknown>;
@@ -22,12 +21,9 @@ function open(element: SVGElement): void {
 
   renderDialog();
 
-  select("#debug").append("g").attr("id", "vertices");
   selectedLake = select<SVGElement, unknown>(element) as unknown as typeof selectedLake;
   updateLakeValues();
   selectLakeGroup();
-  drawLakeVertices();
-  select<SVGElement, unknown>("#viewbox").on("touchmove mousemove", null);
 
   $("#lakeEditor").dialog({
     title: "Edit Lake",
@@ -361,8 +357,6 @@ function editLakeLegend(): void {
 }
 
 function closeLakesEditor(): void {
-  select("#debug").select("#vertices").remove();
-  applyDefaultViewboxEvents();
   destroyDialog("lakeEditor");
   selectedLake = null!;
 }
