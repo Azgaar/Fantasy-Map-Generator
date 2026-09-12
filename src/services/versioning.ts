@@ -104,7 +104,7 @@ export async function clearCache(): Promise<void> {
   location.reload();
 }
 
-export const ARROW_TIP_KEY = "disable_click_arrow_tooltip";
+export const ARROW_TIP_KEY = "fmg-disable-click-arrow-tooltip";
 
 export async function cleanupData(): Promise<void> {
   localStorage.clear();

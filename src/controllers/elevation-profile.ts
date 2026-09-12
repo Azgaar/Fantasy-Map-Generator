@@ -17,7 +17,7 @@ import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers"
 import { tip } from "@/components/tooltips";
 import { downloadFile, getFileName, getHeight, getLatitude, getLongitude } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
-import type { Feature } from "../generators/features";
+import type { Feature } from "../generators/features-generator";
 import type { Province } from "../generators/provinces-generator";
 import type { State } from "../generators/states-generator";
 import { ensureEl, getPointer, rn } from "../utils";

@@ -6,7 +6,7 @@ import type { Emblem } from "@/types/emblems";
 import { safeParseJSON } from "@/utils/stringUtils";
 import { each, gauss, minmax, normalize, P, rn } from "../utils";
 import { type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
-import { NON_NAVIGABLE_LAKE_SUBTYPES } from "./features";
+import { NON_NAVIGABLE_LAKE_SUBTYPES } from "./features-generator";
 import type { Label } from "./labels-generator";
 import { Population } from "./population-generator";
 import type { ProductionRecord } from "./production-generator";

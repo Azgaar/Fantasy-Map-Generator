@@ -15,7 +15,7 @@ import {
 import { Layers } from "@/components/layers";
 import { Notes } from "@/components/notes";
 import { Controllers } from "@/controllers";
-import { type Feature, type FeatureType, ISLAND_SUBTYPES, LAKE_SUBTYPES } from "@/generators/features";
+import { type Feature, type FeatureType, ISLAND_SUBTYPES, LAKE_SUBTYPES } from "@/generators/features-generator";
 import { highlightArea, highlightOutline } from "@/renderers/overlays/highlight";
 import {
   capitalize,

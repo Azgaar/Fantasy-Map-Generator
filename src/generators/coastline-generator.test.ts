@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { Options } from "@/components/options-model";
 import { Coastline } from "./coastline-generator";
-import type { Feature } from "./features";
+import type { Feature } from "./features-generator";
 
 const island = {
   i: 1,

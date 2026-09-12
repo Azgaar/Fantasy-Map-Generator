@@ -1,7 +1,7 @@
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Controllers } from "@/controllers";
 import { Coastline, type CoastlineSettings, type FractalizedShape } from "@/generators/coastline-generator";
-import type { Feature } from "@/generators/features";
+import type { Feature } from "@/generators/features-generator";
 import type { Point } from "@/types/global";
 import { ensureEl, findEl } from "../utils";
 
@@ -15,7 +15,7 @@ interface SliderDef {
   key: keyof Omit<CoastlineSettings, "enabled">;
 }
 
-const SLIDER_DEFS: SliderDef[] = [
+const INPUTS_CONFIG: SliderDef[] = [
   {
     id: "coastMaxDepth",
     label: "Detail depth",
@@ -143,13 +143,7 @@ const COAST_PRESETS: Record<string, Omit<CoastlineSettings, "enabled" | "variant
   }
 };
 
-const PROFILE_SAMPLES = 256; // points sampled around the preview island for the roughness graph
-const PREVIEW_CENTER: Point = [700, 450]; // the previews sit on an island of map size, so the
-const PREVIEW_RADIUS = 200; // settings read the same here as they do on the map
-
 let scope: Feature | null = null; // the feature the editor shapes, or the whole map
-const current = (): CoastlineSettings => scope?.coastline || Coastline.settings;
-const previewSeed = () => Coastline.seedFrom(`preview_coastline_${current().variant}`);
 
 function open(featureId?: number): void {
   if (customization) return;
@@ -170,6 +164,7 @@ function open(featureId?: number): void {
       destroyDialog("coastlineSettingsDialog");
     }
   });
+  updatePreviews(); // the canvases take their size from the dialog, which is only known once it is shown
 }
 
 /** the whole dialog follows the scope: the controls show its settings, the previews its shape */
@@ -184,7 +179,7 @@ function setScope(feature: Feature | null): void {
   ensureEl("coastScopeReset").addEventListener("click", dropOwnSettings);
 
   const resetTo = scope ? Coastline.settings : Coastline.getDefaultSettings(); // for a feature, the map settings are the baseline
-  for (const { id, key } of SLIDER_DEFS) {
+  for (const { id, key } of INPUTS_CONFIG) {
     const slider = ensureEl<HTMLInputElement>(id);
 
     slider.addEventListener("input", e => {
@@ -207,7 +202,7 @@ function setScope(feature: Feature | null): void {
   for (const name of Object.keys(COAST_PRESETS)) {
     ensureEl<HTMLButtonElement>(`coastPreset_${name}`).addEventListener("click", () => {
       const preset = COAST_PRESETS[name];
-      for (const { id, key } of SLIDER_DEFS) {
+      for (const { id, key } of INPUTS_CONFIG) {
         if (key in preset) ensureEl<HTMLInputElement>(id).value = String(preset[key as keyof typeof preset]);
       }
       applyChange(preset);
@@ -218,7 +213,7 @@ function setScope(feature: Feature | null): void {
 function applyChange(change: Partial<CoastlineSettings>): void {
   if (scope) {
     const firstChange = !scope.coastline; // the feature gets its own settings
-    scope.coastline = { ...current(), ...change };
+    scope.coastline = { ...(scope.coastline || Coastline.settings), ...change };
     findEl(`feature_${scope.i}`)?.setAttribute("d", Coastline.getFeaturePath(scope)); // every layer uses this path
     if (firstChange) syncScope();
   } else {
@@ -240,8 +235,8 @@ function dropOwnSettings(): void {
 
 /** the controls show the settings in effect */
 function syncForm(): void {
-  const settings = current();
-  for (const { id, key } of SLIDER_DEFS) ensureEl<HTMLInputElement>(id).value = String(settings[key]);
+  const settings = scope?.coastline || Coastline.settings;
+  for (const { id, key } of INPUTS_CONFIG) ensureEl<HTMLInputElement>(id).value = String(settings[key]);
 
   const { enabled } = settings;
   ensureEl<HTMLInputElement>("coastEnabled").checked = enabled;
@@ -262,12 +257,11 @@ function syncScope(): void {
   void Controllers.FeaturesOverview.refresh();
 }
 
-// "Kenon (lake) •": the mark says the feature has its own settings
 const featureLabel = (feature: Feature) =>
-  `${feature.name ? `${feature.name} (${feature.type})` : `Unnamed ${feature.type} #${feature.i}`}${feature.coastline ? " •" : ""}`;
+  `${feature.name ? `${feature.name} • ${feature.subtype} ${feature.type}` : `Unnamed ${feature.subtype || feature.type} #${feature.i}`}${feature.coastline ? " •" : ""}`;
 
 function buildDialogHTML(): string {
-  const settings = current();
+  const settings = scope?.coastline || Coastline.settings;
   const features = pack.features
     .filter(feature => feature?.type === "island" || feature?.type === "lake")
     .sort((a, b) => a.type.localeCompare(b.type) || b.area - a.area);
@@ -278,20 +272,19 @@ function buildDialogHTML(): string {
     .join("");
 
   const presetButtons = Object.keys(COAST_PRESETS)
-    .map(name => `<button id="coastPreset_${name}" style="font-size:.85em; padding:2px 8px">${name}</button>`)
+    .map(name => `<button id="coastPreset_${name}" style="padding:0.2em 0.8em">${name}</button>`)
     .join("");
 
-  const rows = SLIDER_DEFS.map(({ id, label, tip, min, max, step, key }) => {
+  const rows = INPUTS_CONFIG.map(({ id, label, tip, min, max, step, key }) => {
     const hidden = scope?.type === "island" && key === "lakeSmoothThreshMult"; // lake shores only
     return /* html */ `
       <tr data-tip="${tip}" ${hidden ? "hidden" : ""}>
-        <td style="padding:2px 0; white-space:nowrap">${label}</td>
-        <td style="padding:2px 4px">
+        <td style="padding:0.2em 0; white-space:nowrap">${label}</td>
+        <td style="padding:0 0.3em">
           <slider-input id="${id}" min="${min}" max="${max}" step="${step}" value="${settings[key]}"></slider-input>
         </td>
-        <td style="padding:2px 0">
-          <button id="${id}Reset" title="${scope ? "Reset to the map setting" : "Reset to default"}"
-            style="font-size:.8em; padding:1px 5px; cursor:pointer">↺</button>
+        <td style="padding:0.2em 0">
+          <button id="${id}Reset" title="Reset to default" style="font-size:.8em; padding:1px 5px; cursor:pointer">↺</button>
         </td>
       </tr>`;
   }).join("");
@@ -301,11 +294,12 @@ function buildDialogHTML(): string {
         #coastlineSettingsDialog slider-input input[type=range] { width:100%; }
       </style>
       <div style="display:flex; align-items:center; gap:0.5em; margin-bottom:0.5em">
-        <select id="coastScopeSelect" style="flex:1; min-width:0; height: 18px" data-tip="What to shape: every coastline of the map, or one island or lake. A feature with its own settings is marked with •; it is not affected by the map settings">
-          <option value="0" ${scope ? "" : "selected"}>Map default</option>
+        <select id="coastScopeSelect" style="flex:1; min-width:0; height: 18px" data-tip="Select feature. Features with custom settings are bullet-marked">
+          <option value="0" ${scope ? "" : "selected"}>Map defaults</option>
           ${scopeOptions}
         </select>
-        <button id="coastScopeReset" style="display:${scope?.coastline ? "" : "none"}" data-tip="Reset to follow global map settings">Reset</button>
+        <button id="coastScopeReset" style="display:${scope?.coastline ? "" : "none"}" data-tip="Reset to follow global map settings">Reset to global</button>
+        <span style="display:${scope && !scope.coastline ? "" : "none"}">uses global settings</span>
       </div>
       <div style="display:flex; justify-content:space-between; gap:0.5em; margin-bottom:0.5em; padding-bottom:0.5em; border-bottom:1px solid #ddd">
         <label style="display:flex; align-items:center; gap:0.5em; cursor:pointer; user-select:none" data-tip="Enable or disable coastline fractalization. When disabled, coastlines are simple arcs between feature vertices. Enabling adds naturalistic roughness but can increase rendering time, especially at high detail levels.">
@@ -316,80 +310,104 @@ function buildDialogHTML(): string {
           </span>
         </label>
         <div style="display:flex; align-items:center; gap:0.4em">
-          <span style="color:#999; font-size:.9em">Preset</span>
+          <span style="color:#999">Preset</span>
           ${presetButtons}
         </div>
       </div>
       <div id="coastSliders" style="width: 100%">
         <table style="border-collapse:collapse; width:100%">
           <colgroup>
-            <col style="width:35%">
-            <col style="width:60%">
+            <col style="width:30%">
+            <col style="width:65%">
             <col style="width:5%">
           </colgroup>
           <tbody>${rows}</tbody>
         </table>
       </div>
-      <div style="display:flex; gap:0.5em; margin-top:0.5em; align-items:flex-start">
-        <div style="flex:1;min-width:0">
-          <div style="color:#999; font-size:.85em; margin-bottom:3px">Roughness profile</div>
-          <canvas id="coastRoughnessGraph" width="auto" height="100" style="display:block"></canvas>
+      <div style="margin-top:0.5em">
+        <div style="display:flex; justify-content:space-between; color:#999; font-size:.85em; margin-bottom:0.2em">
+          <span>Shape preview</span>
+          <span id="coastPreviewStats" data-tip="Costline drawing cost and the share of points in rough zones"></span>
         </div>
-        <div>
-          <div style="color:#999; font-size:.85em; margin-bottom:3px">Shape preview</div>
-          <canvas id="coastShapePreview" width="100" height="100" style="display:block"></canvas>
-        </div>
+        <canvas id="coastShapePreview" style="display:block; height:170px"></canvas>
+        <canvas id="coastRoughnessGraph" style="display:block; height:56px"></canvas>
       </div>
 `;
 }
 
-/** The previews are built from the scoped feature itself, or from a stock island of map size so the settings read the same as on the map */
-function previewSubject(): {
-  outline: Point[];
-  shape: FractalizedShape;
-  profile: Float32Array;
-  threshold: number;
-  lake: boolean;
-} {
-  if (scope) {
-    const settings = Coastline.shoreSettings(scope);
-    const outline = Coastline.getFeatureOutline(scope);
-    const seed = Coastline.featureSeed(scope.i, settings);
-    const profile = Coastline.sampleRoughness(seed, resample(outline, PROFILE_SAMPLES), settings);
-    return {
-      outline,
-      shape: Coastline.getFeatureShape(scope, outline),
-      profile,
-      threshold: settings.smoothThreshold,
-      lake: scope.type === "lake"
-    };
-  }
+const ROUGH_COLOR = "#c85520";
+const CALM_COLOR = "#18a888";
 
-  const settings = current();
-  const [cx, cy] = PREVIEW_CENTER;
-  const ring = Array.from({ length: PROFILE_SAMPLES }, (_, i) => {
-    const angle = (2 * Math.PI * i) / PROFILE_SAMPLES - Math.PI / 2;
-    return [cx + PREVIEW_RADIUS * Math.cos(angle), cy + PREVIEW_RADIUS * Math.sin(angle)] as Point;
-  });
-  const outline: Point[] = [
-    [cx, cy - PREVIEW_RADIUS],
-    [cx + PREVIEW_RADIUS, cy],
-    [cx, cy + PREVIEW_RADIUS],
-    [cx - PREVIEW_RADIUS, cy]
-  ];
-  const shape = settings.enabled
-    ? Coastline.fractalize(outline, previewSeed(), settings)
-    : { points: outline, origIndices: [0, 1, 2, 3] };
-  const profile = Coastline.sampleRoughness(previewSeed(), ring, settings);
-  return { outline, shape, profile, threshold: settings.smoothThreshold, lake: false };
+interface PreviewPart {
+  shape: FractalizedShape; // the coastline as drawn on the map
+  rough: (boolean | null)[]; // per raw edge: subdivided as rough, left a calm arc, or null along the map border
+  lake: boolean;
 }
+
+interface PreviewSubject {
+  parts: PreviewPart[];
+  samples: Point[]; // a walk along every coast, PROFILE_SAMPLES points in all
+  profile: Float32Array; // roughness at each sample
+  roughSamples: number;
+  points: number;
+}
+
+const PROFILE_SAMPLES = 256; // points sampled around the preview island for the roughness graph
+/** The previews are built from the map itself: the scoped feature, or every island and lake, with the settings each is drawn with */
+function previewSubject(): PreviewSubject {
+  const features = scope ? [scope] : pack.features.filter(feature => feature && feature.type !== "ocean");
+  const outlines = features.map(feature => Coastline.getFeatureOutline(feature));
+  const perimeters = outlines.map(perimeter);
+  const total = perimeters.reduce((sum, length) => sum + length, 0) || 1;
+  const onBorder = ([x, y]: Point) =>
+    x === 0 || y === 0 || x === options.map.graph.width || y === options.map.graph.height;
+
+  const parts: PreviewPart[] = [];
+  const samples: Point[] = [];
+  const profile: number[] = [];
+  let roughSamples = 0;
+  let points = 0;
+
+  features.forEach((feature, i) => {
+    const outline = outlines[i];
+    if (outline.length < 3) return;
+    const settings = Coastline.shoreSettings(feature);
+    const seed = Coastline.featureSeed(feature.i, settings);
+    const shape = Coastline.getFeatureShape(feature, outline);
+    const rough = shape.origIndices.map((start, j) => {
+      // the roughness the edge was subdivided with: at its midpoint. Fractalization off: every edge stays a calm arc
+      const a = shape.points[start];
+      const b = shape.points[shape.origIndices[(j + 1) % shape.origIndices.length]];
+      if (onBorder(a) && onBorder(b)) return null;
+      if (!settings.enabled) return false;
+      return Coastline.roughnessAt(seed, (a[0] + b[0]) / 2, (a[1] + b[1]) / 2, settings) >= settings.smoothThreshold;
+    });
+    parts.push({ shape, rough, lake: feature.type === "lake" });
+    points += shape.points.length;
+
+    const count = Math.max(2, Math.round((PROFILE_SAMPLES * perimeters[i]) / total));
+    const own = resample(outline, count).filter(point => !onBorder(point)); // the border is never a coast
+    const roughness = Coastline.sampleRoughness(seed, own, settings);
+    samples.push(...own);
+    profile.push(...roughness);
+    if (settings.enabled) roughSamples += roughness.filter(value => value >= settings.smoothThreshold).length;
+  });
+
+  return { parts, samples, profile: Float32Array.from(profile), roughSamples, points };
+}
+
+const perimeter = (polygon: Point[]) =>
+  polygon.reduce((sum, [x, y], i) => {
+    const [nx, ny] = polygon[(i + 1) % polygon.length];
+    return sum + Math.hypot(nx - x, ny - y);
+  }, 0);
 
 /** `count` points evenly spaced along the closed polygon: a walk along the coast for the roughness graph */
 function resample(polygon: Point[], count: number): Point[] {
   const n = polygon.length;
   const lengths = polygon.map(([x, y], i) => Math.hypot(polygon[(i + 1) % n][0] - x, polygon[(i + 1) % n][1] - y));
   const total = lengths.reduce((sum, length) => sum + length, 0);
-  if (!total) return polygon;
+  if (!total) return [];
 
   const step = total / count;
   const points: Point[] = [];
@@ -411,193 +429,247 @@ function resample(polygon: Point[], count: number): Point[] {
 
 function updatePreviews(): void {
   const subject = previewSubject();
-  drawRoughnessGraph(ensureEl<HTMLCanvasElement>("coastRoughnessGraph"), subject);
   drawShapePreview(ensureEl<HTMLCanvasElement>("coastShapePreview"), subject);
+  drawRoughnessGraph(ensureEl<HTMLCanvasElement>("coastRoughnessGraph"), subject);
+
+  const share = Math.round((100 * subject.roughSamples) / (subject.profile.length || 1));
+  ensureEl("coastPreviewStats").textContent = `${subject.points} points · ${share}% rough`;
 }
 
-function drawRoughnessGraph(
-  canvas: HTMLCanvasElement,
-  { profile, threshold }: ReturnType<typeof previewSubject>
-): void {
-  const W = canvas.width;
-  const H = canvas.height;
+/** Crisp on any screen: the buffer follows the css size and the pixel ratio, drawing is in css pixels */
+function prepareCanvas(canvas: HTMLCanvasElement): {
+  ctx: CanvasRenderingContext2D;
+  W: number;
+  H: number;
+  dpr: number;
+} {
+  const dpr = window.devicePixelRatio || 1;
+  canvas.style.width = `${ensureEl("coastSliders").clientWidth}px`; // the dialog shrinks to fit, so a percent width resolves against nothing
+  const W = canvas.clientWidth;
+  const H = canvas.clientHeight;
+  canvas.width = Math.round(W * dpr);
+  canvas.height = Math.round(H * dpr);
   const ctx = canvas.getContext("2d")!;
-  ctx.clearRect(0, 0, W, H);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, W, H, dpr };
+}
 
-  const thresh = Math.min(Math.max(threshold, 0), 1);
-  const threshY = H * (1 - thresh);
-  const baseY = H;
+function magnification(points: number) {
+  if (points < 100) return 0;
+  if (points < 200) return 2;
+  if (points < 1000) return 4;
+  if (points < 1500) return 6;
+  if (points < 2000) return 8;
+  if (points < 3000) return 10;
+  if (points < 10000) return 12;
+  if (points < 20000) return 14;
+  if (points < 50000) return 20;
+  return 8;
+}
 
-  // Pre-compute curve points
-  const xs: number[] = [];
-  const ys: number[] = [];
-  for (let i = 0; i <= PROFILE_SAMPLES; i++) {
-    xs.push((i / PROFILE_SAMPLES) * W);
-    ys.push(H * (1 - profile[i % PROFILE_SAMPLES]));
-  }
+function drawShapePreview(canvas: HTMLCanvasElement, { parts, samples, profile, points: count }: PreviewSubject): void {
+  const { ctx, W, H, dpr } = prepareCanvas(canvas);
+  if (!W || !H || !parts.length) return;
+  const points = parts.flatMap(part => part.shape.points);
+  const xs = points.map(([x]) => x);
+  const ys = points.map(([, y]) => y);
+  const [minX, maxX, minY, maxY] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+  const extent = Math.max(maxX - minX, maxY - minY) || 1;
+  const PAD = 10;
+  const scale = Math.min((W - 2 * PAD) / (maxX - minX || 1), (H - 2 * PAD) / (maxY - minY || 1));
+  const center: Point = [(minX + maxX) / 2, (minY + maxY) / 2];
+  const lakeAlone = parts.length === 1 && parts[0].lake; // a lake on its own sits in land
 
-  // Helper: fill area under curve clipped to a horizontal band
-  const fillBand = (clipTop: number, clipBot: number, color: string): void => {
-    const h = clipBot - clipTop;
-    if (h <= 0) return;
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(0, clipTop, W, h);
-    ctx.clip();
-    ctx.beginPath();
-    ctx.moveTo(xs[0], ys[0]);
-    for (let i = 1; i < xs.length; i++) ctx.lineTo(xs[i], ys[i]);
-    ctx.lineTo(xs[xs.length - 1], baseY);
-    ctx.lineTo(xs[0], baseY);
-    ctx.closePath();
-    ctx.fillStyle = color;
-    ctx.fill();
-    ctx.restore();
+  const paths = parts.map(({ shape }) => new Path2D(`${Coastline.buildPath(shape)}Z`)); // map units: every view is a transform
+  const indices = parts.map((_, i) => i);
+  const islands = indices.filter(i => !parts[i].lake);
+  const lakes = indices.filter(i => parts[i].lake);
+
+  /** paint the coasts with `zoom` css px per map unit, map point `at` placed at canvas point `to` */
+  const paint = (zoom: number, at: Point, to: Point, fringe: number): void => {
+    ctx.setTransform(dpr * zoom, 0, 0, dpr * zoom, dpr * (to[0] - at[0] * zoom), dpr * (to[1] - at[1] * zoom));
+    const px = 1 / zoom; // one css pixel in map units
+
+    const water = ctx.createRadialGradient(at[0], at[1], 0, at[0], at[1], extent);
+    water.addColorStop(0, "#cce5f5");
+    water.addColorStop(1, "#6aa4cb");
+    const land = ctx.createRadialGradient(center[0], center[1], 0, center[0], center[1], extent * 0.7);
+    land.addColorStop(0, "#d8c87a");
+    land.addColorStop(0.5, "#9cbc60");
+    land.addColorStop(1, "#5c8e40");
+
+    // the fringe is drawn under the fill that follows it, so it shows on the far side of the coast only
+    const fringes = (indices: number[]) => {
+      ctx.lineWidth = fringe * 2 * px; // half of it is under the fill
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round"; // a jagged stretch turns sharply: a miter would spike out of the coast
+      ctx.globalAlpha = 0.85;
+      for (const i of indices) {
+        const { shape, rough } = parts[i];
+        const N = shape.points.length;
+        shape.origIndices.forEach((start, j) => {
+          if (rough[j] === null) return;
+          const end = shape.origIndices[(j + 1) % shape.origIndices.length];
+          ctx.strokeStyle = rough[j] ? ROUGH_COLOR : CALM_COLOR;
+          ctx.beginPath();
+          for (let k = start; k !== end; k = (k + 1) % N) {
+            const [x, y] = shape.points[k];
+            k === start ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+          }
+          ctx.lineTo(...shape.points[end]);
+          ctx.stroke();
+        });
+      }
+      ctx.globalAlpha = 1;
+    };
+    const fill = (indices: number[], style: CanvasGradient) => {
+      ctx.fillStyle = style;
+      for (const i of indices) ctx.fill(paths[i]);
+    };
+
+    ctx.fillStyle = lakeAlone ? land : water;
+    ctx.fillRect(at[0] - extent * 4, at[1] - extent * 4, extent * 8, extent * 8);
+    fringes(islands);
+    fill(islands, land);
+    fringes(lakes);
+    fill(lakes, water);
+
+    ctx.strokeStyle = "#5c4526";
+    ctx.lineWidth = 1 * px;
+    ctx.lineJoin = "round";
+    for (const path of paths) ctx.stroke(path);
   };
 
-  // Helper: stroke curve clipped to a horizontal band
-  const strokeBand = (clipTop: number, clipBot: number, color: string): void => {
-    const h = clipBot - clipTop;
-    if (h <= 0) return;
+  paint(scale, center, [W / 2, H / 2], 0.5);
+
+  const MAGNIFICATION = magnification(count);
+  if (MAGNIFICATION) {
+    const focus = samples[profile.indexOf(Math.max(...profile))];
+    const R = Math.min(W, H) * 0.24;
+    const zoom = scale * MAGNIFICATION;
+    const half = R / zoom; // map units shown around the focus
+    const insetCenter: Point = [W - R - 10, H - R - 10];
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.save();
     ctx.beginPath();
-    ctx.rect(0, clipTop, W, h);
+    ctx.arc(insetCenter[0], insetCenter[1], R, 0, Math.PI * 2);
     ctx.clip();
+    paint(zoom, focus, insetCenter, 0.5);
+    ctx.restore();
+
+    // where the magnifier looks, and the magnifier itself
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(
+      W / 2 + (focus[0] - center[0]) * scale,
+      H / 2 + (focus[1] - center[1]) * scale,
+      Math.max(half * scale, 4),
+      0,
+      Math.PI * 2
+    );
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(insetCenter[0], insetCenter[1], R, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    ctx.font = "bold 9px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(`×${MAGNIFICATION}`, insetCenter[0], insetCenter[1] + R - 5);
+  }
+
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const { enabled } = scope?.coastline || Coastline.settings;
+  if (!enabled) drawOffBadge(ctx, W);
+}
+
+function drawRoughnessGraph(canvas: HTMLCanvasElement, { profile, points: count }: PreviewSubject): void {
+  const { ctx, W, H } = prepareCanvas(canvas);
+  if (!W || !H || !profile.length) return;
+  const { enabled, smoothThreshold } = scope?.coastline || Coastline.settings;
+
+  const thresh = Math.min(Math.max(smoothThreshold, 0), 1);
+  const threshY = H * (1 - thresh);
+  const n = profile.length;
+  const xs = Array.from({ length: n + 1 }, (_, i) => (i / n) * W);
+  const ys = Array.from({ length: n + 1 }, (_, i) => H * (1 - profile[i % n]));
+
+  const curve = () => {
     ctx.beginPath();
     ctx.moveTo(xs[0], ys[0]);
     for (let i = 1; i < xs.length; i++) ctx.lineTo(xs[i], ys[i]);
+  };
+
+  // the curve, filled and stroked, clipped to the band of each zone
+  const band = (top: number, bottom: number, color: string, fill: string): void => {
+    if (bottom <= top) return;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, top, W, bottom - top);
+    ctx.clip();
+    curve();
+    ctx.lineTo(xs[n], H);
+    ctx.lineTo(xs[0], H);
+    ctx.closePath();
+    ctx.fillStyle = fill;
+    ctx.fill();
+    curve();
     ctx.strokeStyle = color;
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1.2;
     ctx.stroke();
     ctx.restore();
   };
+  band(0, threshY, ROUGH_COLOR, "rgba(210,90,30,0.2)");
+  band(threshY, H, CALM_COLOR, "rgba(30,165,135,0.2)");
 
-  // Rough zone (above threshold): warm orange
-  fillBand(0, threshY, "rgba(210,90,30,0.20)");
-  strokeBand(0, threshY, "#c85520");
-
-  // Smooth zone (below threshold): cool teal
-  fillBand(threshY, baseY, "rgba(30,165,135,0.20)");
-  strokeBand(threshY, baseY, "#18a888");
-
-  // Threshold dashed line
   ctx.save();
-  ctx.beginPath();
   ctx.setLineDash([4, 3]);
-  ctx.moveTo(0, threshY);
-  ctx.lineTo(W, threshY);
   ctx.strokeStyle = "rgba(30,140,100,0.75)";
   ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, threshY);
+  ctx.lineTo(W, threshY);
   ctx.stroke();
-  ctx.setLineDash([]);
   ctx.restore();
 
-  // Zone labels
+  // where the magnifier above looks
+  if (magnification(count)) {
+    const x = ((profile.indexOf(Math.max(...profile)) + 0.5) / n) * W;
+    ctx.strokeStyle = "rgba(0,0,0,0.45)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, H);
+    ctx.stroke();
+  }
+
   ctx.font = "bold 8px sans-serif";
   ctx.textAlign = "left";
   if (threshY > 12) {
-    ctx.fillStyle = "#c85520";
-    ctx.fillText("ROUGH", 12, 11);
+    ctx.fillStyle = ROUGH_COLOR;
+    ctx.fillText("ROUGH", 4, 10);
   }
-  if (baseY - threshY > 10) {
-    ctx.fillStyle = "#18a888";
-    ctx.fillText("CALM", 12, baseY - 4);
+  if (H - threshY > 10) {
+    ctx.fillStyle = CALM_COLOR;
+    ctx.fillText("CALM", 4, H - 3);
   }
 
-  if (!current().enabled) {
-    ctx.fillStyle = "rgba(0,0,0,0.38)";
-    ctx.fillRect(0, 0, W, H);
-  }
+  if (!enabled) drawOffBadge(ctx, W);
 }
 
-function drawShapePreview(
-  canvas: HTMLCanvasElement,
-  { outline, shape, lake }: ReturnType<typeof previewSubject>
-): void {
-  const W = canvas.width;
-  const H = canvas.height;
-  const ctx = canvas.getContext("2d")!;
-  ctx.clearRect(0, 0, W, H);
-
-  // the shape is built in map units, then fitted into the canvas
-  const xs = shape.points.map(([x]) => x);
-  const ys = shape.points.map(([, y]) => y);
-  const [minX, maxX, minY, maxY] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
-  const PAD = 8;
-  const scale = Math.min((W - 2 * PAD) / (maxX - minX || 1), (H - 2 * PAD) / (maxY - minY || 1));
-  const cx = W / 2;
-  const cy = H / 2;
-  const r = (Math.max(maxX - minX, maxY - minY) * scale) / 2;
-  const toCanvas = ([x, y]: Point): Point => [
-    cx + (x - (minX + maxX) / 2) * scale,
-    cy + (y - (minY + maxY) / 2) * scale
-  ];
-  const path = new Path2D(
-    `${Coastline.buildPath({ points: shape.points.map(toCanvas), origIndices: shape.origIndices })}Z`
-  );
-
-  // Water — radial gradient, lighter at centre; land — with a drop shadow. A lake is water inside land
-  const waterGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(W, H) * 0.85);
-  waterGrad.addColorStop(0, "#cce5f5");
-  waterGrad.addColorStop(1, "#6aa4cb");
-  const landGrad = ctx.createRadialGradient(cx - r * 0.1, cy - r * 0.1, r * 0.05, cx, cy, r * 1.1);
-  landGrad.addColorStop(0, "#d8c87a");
-  landGrad.addColorStop(0.5, "#9cbc60");
-  landGrad.addColorStop(1, "#5c8e40");
-
-  ctx.fillStyle = lake ? landGrad : waterGrad;
-  ctx.fillRect(0, 0, W, H);
-
-  ctx.save();
-  ctx.shadowColor = "rgba(0,20,60,0.35)";
-  ctx.shadowBlur = 8;
-  ctx.shadowOffsetX = 3;
-  ctx.shadowOffsetY = 3;
-  ctx.fillStyle = lake ? waterGrad : landGrad;
-  ctx.fill(path);
-  ctx.restore();
-
-  // Coastline stroke
-  ctx.strokeStyle = "#5c4526";
-  ctx.lineWidth = 1.5;
-  ctx.stroke(path);
-
-  // Original polygon skeleton — the raw input before fractalization
-  const origPts = outline.map(toCanvas);
-  ctx.beginPath();
-  for (let j = 0; j < origPts.length; j++) {
-    const [x, y] = origPts[j];
-    j === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-  }
-  ctx.closePath();
-  ctx.strokeStyle = "rgba(255,255,255,0.45)";
-  ctx.lineWidth = 0.8;
-  ctx.setLineDash([3, 3]);
-  ctx.stroke();
-  ctx.setLineDash([]);
-
-  // Original vertex dots: on the stock island only, a feature has too many
-  for (const [x, y] of scope ? [] : origPts) {
-    ctx.beginPath();
-    ctx.arc(x, y, 2.5, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(255,255,255,0.85)";
-    ctx.fill();
-    ctx.strokeStyle = "rgba(60,40,10,0.55)";
-    ctx.lineWidth = 0.8;
-    ctx.stroke();
-  }
-
-  if (!current().enabled) {
-    ctx.fillStyle = "rgba(0,0,0,0.38)";
-    ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = "#fff";
-    ctx.font = "bold 11px sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("OFF", cx, cy);
-    ctx.textBaseline = "alphabetic";
-    ctx.textAlign = "left";
-  }
+/** fractalization off: the previews still show the map, marked as such */
+function drawOffBadge(ctx: CanvasRenderingContext2D, W: number): void {
+  ctx.font = "bold 9px sans-serif";
+  ctx.textAlign = "right";
+  ctx.textBaseline = "top";
+  ctx.fillStyle = "rgba(0,0,0,0.55)";
+  ctx.fillRect(W - 30, 4, 26, 13);
+  ctx.fillStyle = "#fff";
+  ctx.fillText("OFF", W - 7, 6);
+  ctx.textBaseline = "alphabetic";
+  ctx.textAlign = "left";
 }
 
 export const CoastlineEditor = { open };

@@ -1,6 +1,6 @@
 import { mean, min } from "d3";
 import { isLand, rn, unique } from "../utils";
-import type { Feature } from "./features";
+import type { Feature } from "./features-generator";
 
 declare global {
   var Lakes: LakesModule;

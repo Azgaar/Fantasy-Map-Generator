@@ -154,8 +154,6 @@ function getElementTip({ group, target, event, path, cellId }: TipContext): stri
     return `${lake?.name ?? ""}${kind} lake. Click to edit`;
   }
 
-  if (group === "coastline") return "Click to edit the coastline";
-
   if (group === "zones") {
     const zoneId = Number(path[path.length - 8].dataset.id);
     const zone = pack.zones.find(zone => zone.i === zoneId);

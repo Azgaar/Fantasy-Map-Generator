@@ -6,7 +6,7 @@ import { tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { Coastline } from "@/generators/coastline-generator";
-import { type Feature, LAKE_SUBTYPES } from "@/generators/features";
+import { type Feature, LAKE_SUBTYPES } from "@/generators/features-generator";
 import { GraphOverride } from "@/generators/graph-override";
 import { getArea, getAreaUnit, speak } from "@/utils";
 import { ensureEl, findEl, rand, rn, si, unique } from "../utils";

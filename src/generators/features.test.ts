@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
-import type { CapturedFeature, Feature } from "./features";
+import type { CapturedFeature, Feature } from "./features-generator";
 
 const EMPTY = undefined; // pack.features holds a 0 placeholder and gaps where a feature id is unused
 
@@ -13,7 +13,7 @@ function setPack(featureIds: number[], features: (Partial<Feature> | undefined)[
 
 describe("feature user data across a re-markup", () => {
   beforeAll(async () => {
-    await import("./features");
+    await import("./features-generator");
   });
 
   beforeEach(() => {

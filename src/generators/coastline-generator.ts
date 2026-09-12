@@ -1,6 +1,6 @@
 import type { Point } from "@/types/global";
 import { clipPoly, minmax, round } from "../utils";
-import type { Feature } from "./features";
+import type { Feature } from "./features-generator";
 
 declare global {
   // vendored lib, loaded as a classic script from public/libs/simplify.js
