@@ -1,15 +1,12 @@
-import { drag, mean, min, polygonLength, type Selection, select } from "d3";
+import { mean, min, polygonLength, type Selection, select } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { Notes } from "@/components/notes";
 import { tip } from "@/components/tooltips";
-import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { Coastline } from "@/generators/coastline-generator";
 import type { Feature } from "@/generators/features";
-import { GraphOverride } from "@/generators/graph-override";
 import { getArea, getAreaUnit, speak } from "@/utils";
-import { ensureEl, findEl, rand, rn, si, unique } from "../utils";
+import { ensureEl, findEl, rand, si } from "../utils";
 import { getHeight } from "../utils/unitUtils";
 
 let selectedLake: Selection<SVGElement, unknown, HTMLElement, unknown>;
@@ -21,12 +18,9 @@ function open(element: SVGElement): void {
 
   renderDialog();
 
-  select("#debug").append("g").attr("id", "vertices");
   selectedLake = select<SVGElement, unknown>(element) as unknown as typeof selectedLake;
   updateLakeValues();
   selectLakeGroup();
-  drawLakeVertices();
-  select<SVGElement, unknown>("#viewbox").on("touchmove mousemove", null);
 
   $("#lakeEditor").dialog({
     title: "Edit Lake",
@@ -144,62 +138,6 @@ function updateLakeValues(): void {
   inletsInput.value = inlets ? String(inlets.length) : "no";
   inletsInput.title = inlets ? inlets.join(", ") : "";
   ensureEl<HTMLInputElement>("lakeOutlet").value = outlet ?? "no";
-}
-
-function drawLakeVertices(): void {
-  const vertices = getLake().vertices;
-
-  const neibCells: number[] = unique(vertices.flatMap(v => pack.vertices.c[v]));
-  select("#debug")
-    .select("#vertices")
-    .selectAll<SVGPolygonElement, number>("polygon")
-    .data(neibCells)
-    .enter()
-    .append("polygon")
-    .attr("points", (d: number) => String(Pack.getPolygon(d)))
-    .attr("data-c", (d: number) => d);
-
-  select<SVGGElement, unknown>("#debug")
-    .select("#vertices")
-    .selectAll<SVGCircleElement, number>("circle")
-    .data(vertices)
-    .enter()
-    .append("circle")
-    .attr("cx", (d: number) => pack.vertices.p[d][0])
-    .attr("cy", (d: number) => pack.vertices.p[d][1])
-    .attr("r", 0.4)
-    .attr("data-v", (d: number) => d)
-    .call(drag<SVGCircleElement, number>().on("drag", handleVertexDrag).on("end", handleVertexDragEnd))
-    .on("mousemove", () =>
-      tip("Drag to move the vertex. Please use for fine-tuning only! Edit heightmap to change actual cell heights")
-    );
-}
-
-function handleVertexDrag(this: SVGCircleElement, event: any, vertexId: number): void {
-  const x = rn(event.x, 2);
-  const y = rn(event.y, 2);
-  this.setAttribute("cx", String(x));
-  this.setAttribute("cy", String(y));
-
-  GraphOverride.movePackVertex(vertexId, [x, y]);
-
-  const feature = getLake();
-
-  // update lake path
-  select<SVGElement, unknown>("#deftemp")
-    .select(`#featurePaths > path#feature_${feature.i}`)
-    .attr("d", Coastline.getFeaturePath(feature));
-  ensureEl<HTMLInputElement>("lakeArea").value = `${si(getArea(feature.area))} ${getAreaUnit()}`;
-
-  // update cell
-  select("#debug")
-    .select("#vertices")
-    .selectAll<SVGPolygonElement, number>("polygon")
-    .attr("points", d => String(Pack.getPolygon(d)));
-}
-
-function handleVertexDragEnd(): void {
-  Layers.draw("states", "provinces", "borders", "biomes", "religions", "cultures");
 }
 
 function changeName(this: HTMLInputElement): void {
@@ -345,8 +283,6 @@ function editLakeLegend(): void {
 }
 
 function closeLakesEditor(): void {
-  select("#debug").select("#vertices").remove();
-  applyDefaultViewboxEvents();
   destroyDialog("lakeEditor");
   selectedLake = null!;
 }
