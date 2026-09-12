@@ -241,9 +241,9 @@
   "coastline": {
     "sea_island": {
       "attrs": {
-        "opacity": 0.5,
+        "opacity": 0.7,
         "stroke": "#1f3846",
-        "stroke-width": 0.5,
+        "stroke-width": 0.3,
         "stroke-dasharray": null,
         "stroke-linecap": null,
         "filter": null

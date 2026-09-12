@@ -131,7 +131,7 @@ const COAST_PRESETS: Record<string, Omit<CoastlineSettings, "enabled" | "variant
     roughnessScale: 120,
     lakeSmoothThreshMult: 2.5
   },
-  Archipelago: {
+  Skerries: {
     maxDepth: 4,
     baseAmplitude: 1.8,
     amplitudeDecay: 0.88,
@@ -143,7 +143,7 @@ const COAST_PRESETS: Record<string, Omit<CoastlineSettings, "enabled" | "variant
   }
 };
 
-let scope: Feature | null = null; // the feature the editor shapes, or the whole map
+let selectedFeature: Feature | null = null; // the feature the editor shapes, or the whole map
 
 function open(featureId?: number): void {
   if (customization) return;
@@ -153,32 +153,32 @@ function open(featureId?: number): void {
     "beforeend",
     `<div id="coastlineSettingsDialog" style="display:none" class="dialog"></div>`
   );
-  setScope(featureId ? pack.features[featureId] : null);
+  setFeature(featureId ? pack.features[featureId] : null);
 
   $("#coastlineSettingsDialog").dialog({
     title: "Coastline Settings",
     resizable: false,
     position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
     close: () => {
-      scope = null;
+      selectedFeature = null;
       destroyDialog("coastlineSettingsDialog");
     }
   });
-  updatePreviews(); // the canvases take their size from the dialog, which is only known once it is shown
+  updatePreviews();
 }
 
 /** the whole dialog follows the scope: the controls show its settings, the previews its shape */
-function setScope(feature: Feature | null): void {
-  scope = feature;
+function setFeature(feature: Feature | null): void {
+  selectedFeature = feature;
   ensureEl("coastlineSettingsDialog").innerHTML = buildDialogHTML();
   updatePreviews();
 
   ensureEl<HTMLSelectElement>("coastScopeSelect").addEventListener("change", function () {
-    setScope(pack.features[+this.value] || null);
+    setFeature(pack.features[+this.value] || null);
   });
   ensureEl("coastScopeReset").addEventListener("click", dropOwnSettings);
 
-  const resetTo = scope ? Coastline.settings : Coastline.getDefaultSettings(); // for a feature, the map settings are the baseline
+  const resetTo = selectedFeature ? Coastline.settings : Coastline.getDefaultSettings(); // for a feature, the map settings are the baseline
   for (const { id, key } of INPUTS_CONFIG) {
     const slider = ensureEl<HTMLInputElement>(id);
 
@@ -211,10 +211,10 @@ function setScope(feature: Feature | null): void {
 }
 
 function applyChange(change: Partial<CoastlineSettings>): void {
-  if (scope) {
-    const firstChange = !scope.coastline; // the feature gets its own settings
-    scope.coastline = { ...(scope.coastline || Coastline.settings), ...change };
-    findEl(`feature_${scope.i}`)?.setAttribute("d", Coastline.getFeaturePath(scope)); // every layer uses this path
+  if (selectedFeature) {
+    const firstChange = !selectedFeature.coastline; // the feature gets its own settings
+    selectedFeature.coastline = { ...(selectedFeature.coastline || Coastline.settings), ...change };
+    findEl(`feature_${selectedFeature.i}`)?.setAttribute("d", Coastline.getFeaturePath(selectedFeature)); // every layer uses this path
     if (firstChange) syncScope();
   } else {
     Coastline.update(change);
@@ -225,9 +225,9 @@ function applyChange(change: Partial<CoastlineSettings>): void {
 
 /** back to the map settings: the feature is outlined like every other one again */
 function dropOwnSettings(): void {
-  if (!scope) return;
-  delete scope.coastline;
-  findEl(`feature_${scope.i}`)?.setAttribute("d", Coastline.getFeaturePath(scope));
+  if (!selectedFeature) return;
+  delete selectedFeature.coastline;
+  findEl(`feature_${selectedFeature.i}`)?.setAttribute("d", Coastline.getFeaturePath(selectedFeature));
   syncScope();
   syncForm();
   updatePreviews();
@@ -235,7 +235,7 @@ function dropOwnSettings(): void {
 
 /** the controls show the settings in effect */
 function syncForm(): void {
-  const settings = scope?.coastline || Coastline.settings;
+  const settings = selectedFeature?.coastline || Coastline.settings;
   for (const { id, key } of INPUTS_CONFIG) ensureEl<HTMLInputElement>(id).value = String(settings[key]);
 
   const { enabled } = settings;
@@ -250,10 +250,10 @@ function syncForm(): void {
 
 /** a feature got its own settings or lost them: the selector, the remove button and the overview follow */
 function syncScope(): void {
-  if (!scope) return;
+  if (!selectedFeature) return;
   const select = ensureEl<HTMLSelectElement>("coastScopeSelect");
-  select.options[select.selectedIndex].text = featureLabel(scope);
-  ensureEl("coastScopeReset").style.display = scope.coastline ? "" : "none";
+  select.options[select.selectedIndex].text = featureLabel(selectedFeature);
+  ensureEl("coastScopeReset").style.display = selectedFeature.coastline ? "" : "none";
   void Controllers.FeaturesOverview.refresh();
 }
 
@@ -261,13 +261,14 @@ const featureLabel = (feature: Feature) =>
   `${feature.name ? `${feature.name} • ${feature.subtype} ${feature.type}` : `Unnamed ${feature.subtype || feature.type} #${feature.i}`}${feature.coastline ? " •" : ""}`;
 
 function buildDialogHTML(): string {
-  const settings = scope?.coastline || Coastline.settings;
+  const settings = selectedFeature?.coastline || Coastline.settings;
   const features = pack.features
     .filter(feature => feature?.type === "island" || feature?.type === "lake")
     .sort((a, b) => a.type.localeCompare(b.type) || b.area - a.area);
   const scopeOptions = features
     .map(
-      feature => `<option value="${feature.i}" ${feature === scope ? "selected" : ""}>${featureLabel(feature)}</option>`
+      feature =>
+        `<option value="${feature.i}" ${feature === selectedFeature ? "selected" : ""}>${featureLabel(feature)}</option>`
     )
     .join("");
 
@@ -276,14 +277,14 @@ function buildDialogHTML(): string {
     .join("");
 
   const rows = INPUTS_CONFIG.map(({ id, label, tip, min, max, step, key }) => {
-    const hidden = scope?.type === "island" && key === "lakeSmoothThreshMult"; // lake shores only
+    const hidden = selectedFeature?.type === "island" && key === "lakeSmoothThreshMult"; // lake shores only
     return /* html */ `
       <tr data-tip="${tip}" ${hidden ? "hidden" : ""}>
-        <td style="padding:0.2em 0; white-space:nowrap">${label}</td>
-        <td style="padding:0 0.3em">
+        <td style="white-space:nowrap">${label}</td>
+        <td>
           <slider-input id="${id}" min="${min}" max="${max}" step="${step}" value="${settings[key]}"></slider-input>
         </td>
-        <td style="padding:0.2em 0">
+        <td style="padding:0.2em">
           <button id="${id}Reset" title="Reset to default" style="font-size:.8em; padding:1px 5px; cursor:pointer">↺</button>
         </td>
       </tr>`;
@@ -295,11 +296,11 @@ function buildDialogHTML(): string {
       </style>
       <div style="display:flex; align-items:center; gap:0.5em; margin-bottom:0.5em">
         <select id="coastScopeSelect" style="flex:1; min-width:0; height: 18px" data-tip="Select feature. Features with custom settings are bullet-marked">
-          <option value="0" ${scope ? "" : "selected"}>Map defaults</option>
+          <option value="0" ${selectedFeature ? "" : "selected"}>Map defaults</option>
           ${scopeOptions}
         </select>
-        <button id="coastScopeReset" style="display:${scope?.coastline ? "" : "none"}" data-tip="Reset to follow global map settings">Reset to global</button>
-        <span style="display:${scope && !scope.coastline ? "" : "none"}">uses global settings</span>
+        <button id="coastScopeReset" style="display:${selectedFeature?.coastline ? "" : "none"}" data-tip="Reset to follow global map settings">Reset to global</button>
+        <span style="display:${selectedFeature && !selectedFeature.coastline ? "" : "none"}">uses global settings</span>
       </div>
       <div style="display:flex; justify-content:space-between; gap:0.5em; margin-bottom:0.5em; padding-bottom:0.5em; border-bottom:1px solid #ddd">
         <label style="display:flex; align-items:center; gap:0.5em; cursor:pointer; user-select:none" data-tip="Enable or disable coastline fractalization. When disabled, coastlines are simple arcs between feature vertices. Enabling adds naturalistic roughness but can increase rendering time, especially at high detail levels.">
@@ -314,7 +315,7 @@ function buildDialogHTML(): string {
           ${presetButtons}
         </div>
       </div>
-      <div id="coastSliders" style="width: 100%">
+      <div id="coastSliders" style="max-width: 35em">
         <table style="border-collapse:collapse; width:100%">
           <colgroup>
             <col style="width:30%">
@@ -327,16 +328,13 @@ function buildDialogHTML(): string {
       <div style="margin-top:0.5em">
         <div style="display:flex; justify-content:space-between; color:#999; font-size:.85em; margin-bottom:0.2em">
           <span>Shape preview</span>
-          <span id="coastPreviewStats" data-tip="Costline drawing cost and the share of points in rough zones"></span>
+          <span id="coastPreviewStats" data-tip="Coastline rendering cost"></span>
         </div>
         <canvas id="coastShapePreview" style="display:block; height:170px"></canvas>
         <canvas id="coastRoughnessGraph" style="display:block; height:56px"></canvas>
       </div>
 `;
 }
-
-const ROUGH_COLOR = "#c85520";
-const CALM_COLOR = "#18a888";
 
 interface PreviewPart {
   shape: FractalizedShape; // the coastline as drawn on the map
@@ -348,14 +346,18 @@ interface PreviewSubject {
   parts: PreviewPart[];
   samples: Point[]; // a walk along every coast, PROFILE_SAMPLES points in all
   profile: Float32Array; // roughness at each sample
+  focus: number; // sample the magnifier looks at: chosen under the default settings, so it stays put while they are tuned
   roughSamples: number;
   points: number;
+  vertices: number; // outline vertices before fractalization: what the feature is, whatever the settings
 }
 
 const PROFILE_SAMPLES = 256; // points sampled around the preview island for the roughness graph
 /** The previews are built from the map itself: the scoped feature, or every island and lake, with the settings each is drawn with */
 function previewSubject(): PreviewSubject {
-  const features = scope ? [scope] : pack.features.filter(feature => feature && feature.type !== "ocean");
+  const features = selectedFeature
+    ? [selectedFeature]
+    : pack.features.filter(feature => feature && feature.type !== "ocean");
   const outlines = features.map(feature => Coastline.getFeatureOutline(feature));
   const perimeters = outlines.map(perimeter);
   const total = perimeters.reduce((sum, length) => sum + length, 0) || 1;
@@ -367,6 +369,10 @@ function previewSubject(): PreviewSubject {
   const profile: number[] = [];
   let roughSamples = 0;
   let points = 0;
+  let vertices = 0;
+  let focus = 0;
+  let focusRoughness = -1;
+  const defaults = Coastline.getDefaultSettings();
 
   features.forEach((feature, i) => {
     const outline = outlines[i];
@@ -384,16 +390,22 @@ function previewSubject(): PreviewSubject {
     });
     parts.push({ shape, rough, lake: feature.type === "lake" });
     points += shape.points.length;
+    vertices += outline.length;
 
     const count = Math.max(2, Math.round((PROFILE_SAMPLES * perimeters[i]) / total));
     const own = resample(outline, count).filter(point => !onBorder(point)); // the border is never a coast
     const roughness = Coastline.sampleRoughness(seed, own, settings);
+    Coastline.sampleRoughness(Coastline.featureSeed(feature.i, defaults), own, defaults).forEach((value, j) => {
+      if (value <= focusRoughness) return;
+      focusRoughness = value;
+      focus = samples.length + j;
+    });
     samples.push(...own);
     profile.push(...roughness);
     if (settings.enabled) roughSamples += roughness.filter(value => value >= settings.smoothThreshold).length;
   });
 
-  return { parts, samples, profile: Float32Array.from(profile), roughSamples, points };
+  return { parts, samples, profile: Float32Array.from(profile), focus, roughSamples, points, vertices };
 }
 
 const perimeter = (polygon: Point[]) =>
@@ -433,7 +445,9 @@ function updatePreviews(): void {
   drawRoughnessGraph(ensureEl<HTMLCanvasElement>("coastRoughnessGraph"), subject);
 
   const share = Math.round((100 * subject.roughSamples) / (subject.profile.length || 1));
-  ensureEl("coastPreviewStats").textContent = `${subject.points} points · ${share}% rough`;
+  const complexity = subject.points / (subject.vertices || 1);
+  ensureEl("coastPreviewStats").textContent =
+    `${subject.points} points · ${complexity === 1 ? "default" : `${complexity.toFixed(1)}x`} complexity · ${share}% rough`;
 }
 
 /** Crisp on any screen: the buffer follows the css size and the pixel ratio, drawing is in css pixels */
@@ -454,20 +468,28 @@ function prepareCanvas(canvas: HTMLCanvasElement): {
   return { ctx, W, H, dpr };
 }
 
-function magnification(points: number) {
-  if (points < 100) return 0;
-  if (points < 200) return 2;
-  if (points < 1000) return 4;
-  if (points < 1500) return 6;
-  if (points < 2000) return 8;
-  if (points < 3000) return 10;
-  if (points < 10000) return 12;
-  if (points < 20000) return 14;
-  if (points < 50000) return 20;
+/** by outline vertices, not fractalized points: the zoom is a property of the feature, the settings do not shift it */
+function magnification(vertices: number) {
+  if (vertices < 20) return 0;
+  if (vertices < 40) return 2;
+  if (vertices < 200) return 4;
+  if (vertices < 300) return 6;
+  if (vertices < 450) return 8;
+  if (vertices < 650) return 10;
+  if (vertices < 2000) return 12;
+  if (vertices < 4000) return 14;
+  if (vertices < 10000) return 20;
   return 8;
 }
 
-function drawShapePreview(canvas: HTMLCanvasElement, { parts, samples, profile, points: count }: PreviewSubject): void {
+const ROUGH_COLOR = "#c85520";
+const CALM_COLOR = "#18a888";
+const GREY_COLOR = "#888888";
+
+function drawShapePreview(
+  canvas: HTMLCanvasElement,
+  { parts, samples, focus: focusIndex, vertices }: PreviewSubject
+): void {
   const { ctx, W, H, dpr } = prepareCanvas(canvas);
   if (!W || !H || !parts.length) return;
   const points = parts.flatMap(part => part.shape.points);
@@ -542,9 +564,9 @@ function drawShapePreview(canvas: HTMLCanvasElement, { parts, samples, profile, 
 
   paint(scale, center, [W / 2, H / 2], 0.5);
 
-  const MAGNIFICATION = magnification(count);
-  if (MAGNIFICATION) {
-    const focus = samples[profile.indexOf(Math.max(...profile))];
+  const MAGNIFICATION = magnification(vertices);
+  if (MAGNIFICATION && samples.length) {
+    const focus = samples[focusIndex];
     const R = Math.min(W, H) * 0.24;
     const zoom = scale * MAGNIFICATION;
     const half = R / zoom; // map units shown around the focus
@@ -581,14 +603,14 @@ function drawShapePreview(canvas: HTMLCanvasElement, { parts, samples, profile, 
   }
 
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const { enabled } = scope?.coastline || Coastline.settings;
+  const { enabled } = selectedFeature?.coastline || Coastline.settings;
   if (!enabled) drawOffBadge(ctx, W);
 }
 
-function drawRoughnessGraph(canvas: HTMLCanvasElement, { profile, points: count }: PreviewSubject): void {
+function drawRoughnessGraph(canvas: HTMLCanvasElement, { profile, focus, vertices }: PreviewSubject): void {
   const { ctx, W, H } = prepareCanvas(canvas);
   if (!W || !H || !profile.length) return;
-  const { enabled, smoothThreshold } = scope?.coastline || Coastline.settings;
+  const { enabled, smoothThreshold } = selectedFeature?.coastline || Coastline.settings;
 
   const thresh = Math.min(Math.max(smoothThreshold, 0), 1);
   const threshY = H * (1 - thresh);
@@ -635,8 +657,8 @@ function drawRoughnessGraph(canvas: HTMLCanvasElement, { profile, points: count 
   ctx.restore();
 
   // where the magnifier above looks
-  if (magnification(count)) {
-    const x = ((profile.indexOf(Math.max(...profile)) + 0.5) / n) * W;
+  if (magnification(vertices)) {
+    const x = ((focus + 0.5) / n) * W;
     ctx.strokeStyle = "rgba(0,0,0,0.45)";
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -646,15 +668,9 @@ function drawRoughnessGraph(canvas: HTMLCanvasElement, { profile, points: count 
   }
 
   ctx.font = "bold 8px sans-serif";
-  ctx.textAlign = "left";
-  if (threshY > 12) {
-    ctx.fillStyle = ROUGH_COLOR;
-    ctx.fillText("ROUGH", 4, 10);
-  }
-  if (H - threshY > 10) {
-    ctx.fillStyle = CALM_COLOR;
-    ctx.fillText("CALM", 4, H - 3);
-  }
+  ctx.fillStyle = GREY_COLOR;
+  if (threshY > 12) ctx.fillText("ROUGH", 4, 10);
+  if (H - threshY > 10) ctx.fillText("CALM", 4, H - 3);
 
   if (!enabled) drawOffBadge(ctx, W);
 }
