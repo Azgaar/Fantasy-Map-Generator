@@ -8,6 +8,7 @@ import { Controllers } from "@/controllers";
 import { Coastline } from "@/generators/coastline-generator";
 import { type Feature, LAKE_SUBTYPES } from "@/generators/features-generator";
 import { GraphOverride } from "@/generators/graph-override";
+import { Styles } from "@/generators/styles";
 import { getArea, getAreaUnit, speak } from "@/utils";
 import { ensureEl, findEl, rand, rn, si, unique } from "../utils";
 import { getHeight } from "../utils/unitUtils";
@@ -228,7 +229,7 @@ function changeLakeSubtype(this: HTMLSelectElement): void {
   getLake().subtype = this.value; // subtype is domain data, the rendering group is left alone
 }
 
-const isStockGroup = (group: string) => Layers.get("lakes").children.some(child => child.id === group);
+const isStockGroup = (group: string) => group in Styles.defaults.lakes.groups;
 function assignGroup(elements: Element[], group: string): void {
   for (const element of elements) {
     const feature = pack.features[+(element.getAttribute("data-f") || 0)];

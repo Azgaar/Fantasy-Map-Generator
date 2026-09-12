@@ -106,7 +106,7 @@ Filter state persists through `dialogState` like the other overviews.
 
 ### Edits
 
-- Rename: writes `feature.name`, deletes it when empty.
+- Rename: writes `feature.name`, empty when cleared.
 - Subtype: writes `feature.subtype` only.
 - Group (lake): writes `feature.group`, moves the `<use>` to the new `<g>` (or `Layers.draw("lakes")`).
 

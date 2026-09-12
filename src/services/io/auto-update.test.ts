@@ -305,14 +305,16 @@ describe("v1.145.2 moved vertices recovery", () => {
 describe("v1.146 rendering groups", () => {
   beforeEach(() => {
     globalThis.pack = {
+      cells: { culture: [0], p: [[10, 10]] },
       features: [
         0,
-        { i: 1, type: "island", group: "continent" },
-        { i: 2, type: "island", group: "lake_island" },
-        { i: 3, type: "lake", group: "salt" },
-        { i: 4, type: "lake", group: "freshwater" } // the old group is the classification
+        { i: 1, type: "island", group: "continent", firstCell: 0 },
+        { i: 2, type: "island", group: "lake_island", firstCell: 0 },
+        { i: 3, type: "lake", group: "salt", firstCell: 0 },
+        { i: 4, type: "lake", group: "freshwater", firstCell: 0 } // the old group is the classification
       ]
     } as unknown as typeof globalThis.pack;
+    globalThis.Names = { getCulture: () => "Named" } as unknown as typeof Names;
 
     document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox">
       <g id="coastline">
@@ -420,14 +422,23 @@ describe("v1.153.0 feature subtype and lake group styles", () => {
 
   beforeEach(() => {
     globalThis.pack = {
+      cells: {
+        culture: [1, 1],
+        p: [
+          [10, 10],
+          [20, 20]
+        ]
+      },
       features: [
         0,
-        { i: 1, type: "ocean", subtype: "ocean", group: "sea_island" }, // v1.146 gave oceans both
-        { i: 2, type: "island", subtype: "isle", group: "sea_island" },
-        { i: 3, type: "lake", subtype: "my_lakes", group: "my_lakes" }, // the old lake editor copied the group name
-        { i: 4, type: "lake", subtype: "salt", group: "freshwater" }
+        { i: 1, type: "ocean", subtype: "ocean", group: "sea_island", firstCell: 0, cells: 500 }, // v1.146 gave oceans both
+        { i: 2, type: "island", subtype: "isle", group: "sea_island", firstCell: 1 },
+        { i: 3, type: "lake", subtype: "my_lakes", group: "my_lakes", firstCell: 1, name: "My Lake" }, // the old lake editor copied the group name
+        { i: 4, type: "lake", subtype: "salt", group: "freshwater", firstCell: 1 }
       ]
     } as unknown as typeof globalThis.pack;
+    globalThis.grid = { cells: { i: new Array(1000) } } as unknown as typeof grid;
+    globalThis.Names = { getCulture: () => "Named" } as unknown as typeof Names;
 
     document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox">
       <g id="lakes">
@@ -437,16 +448,25 @@ describe("v1.153.0 feature subtype and lake group styles", () => {
     </g></svg>`;
   });
 
-  it("keeps stock subtypes, resets invented ones and clears the ocean", () => {
+  it("keeps stock subtypes, resets invented ones and clears the ocean group", () => {
     resolveVersionConflicts("1.152.0", []);
 
-    expect(pack.features.slice(1).map(feature => feature.subtype)).toEqual([undefined, "isle", "freshwater", "salt"]);
+    expect(pack.features.slice(1).map(feature => feature.subtype)).toEqual(["ocean", "isle", "freshwater", "salt"]);
     expect(pack.features.slice(1).map(feature => feature.group)).toEqual([
       undefined,
       "sea_island",
       "my_lakes", // the rendering group is untouched
       "freshwater"
     ]);
+  });
+
+  it("names the features that had no name and keeps the existing ones", () => {
+    resolveVersionConflicts("1.152.0", []);
+
+    expect(pack.features[1].name).toBeTruthy();
+    expect(pack.features[2].name).toBe("Named");
+    expect(pack.features[3].name).toBe("My Lake");
+    expect(pack.features[4].name).toBe("Named");
   });
 
   it("nests the stock lake styles under groups and harvests custom groups from the svg", () => {

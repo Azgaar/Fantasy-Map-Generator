@@ -27,8 +27,8 @@ The subtype list is fixed: you can pick a different one, but you cannot invent y
 
 ## Columns
 
-* **Locate** (the target icon) — zoom to the feature. Oceans have no outline to zoom to
-* **Feature** — the name. Every feature is named by the generator: islands and lakes in the language of the culture on their first cell, oceans with a descriptive name around their subtype (_Azure Sea_, _Gulf of Storms_, _Northern Ocean_). Type a name to change it; clear the field to make it _Unnamed_
+* **Locate** (the target icon) — zoom to the feature. An ocean has no outline, so the zoom covers its cells
+* **Feature** — the name. Every feature is named by the generator: islands and lakes in the language of the culture on their first cell, oceans with an adjective or the side of the map they lie on (_Azure_, _Northern_) — the subtype (_Sea_, _Gulf_) is shown in its own column. Type a name to change it; clear the field to make it _Unnamed_
 * **Type** — the subtype, shown as _Freshwater lake_, _Isle_ or _Sea_. Editable for every feature; the type itself (island, lake, ocean) comes from the heightmap and cannot be changed. _Lake island_ is shown as plain text: an island is inside a lake or it is not, and that is decided by geography
 * **Group** — editable for lakes only. Islands show their group as text, since `sea_island` and `lake_island` follow from where the island sits
 * **Area** — the area in the selected units. A feature that reaches the map border (every ocean, and islands cut by the edge) continues beyond the map, so its area is an estimate marked with `~`: the feature is assumed to keep its share of the map over the whole globe. Hover the value to see the area inside the map
@@ -70,7 +70,7 @@ The filters are remembered while the map is open, and the footer shows how many 
 
 ## Oceans
 
-Oceans are listed for completeness and are largely read-only: no subtype, no group, no outline to locate. You can still name one and give it a note — useful when your world has a named sea — though the note will not pop up on map hover, since an ocean has no shape to hover over. Open it from the _Notes Editor_ or the search bar instead.
+Oceans have a subtype (_Ocean_, _Sea_ or _Gulf_ by size) but no group and no coastline settings of their own. You can name one and give it a note — useful when your world has a named sea — though the note will not pop up on map hover, since an ocean has no shape to hover over. Open it from the _Notes Editor_ or the search bar instead.
 
 ## Lake groups
 

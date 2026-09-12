@@ -147,7 +147,7 @@ let selectedFeature: Feature | null = null; // the feature the editor shapes, or
 
 function open(featureId?: number): void {
   if (customization) return;
-  closeDialogs("#culturesEditor, .stable");
+  closeDialogs(".stable");
   destroyDialog("coastlineSettingsDialog");
   document.body.insertAdjacentHTML(
     "beforeend",
@@ -257,7 +257,7 @@ function syncScope(): void {
   ensureEl("coastScopeFollows").style.display = selectedFeature && !selectedFeature.coastline ? "" : "none";
   ensureEl("coastScopeMap").style.display = selectedFeature ? "none" : "";
 
-  void Controllers.FeaturesOverview.refresh();
+  if (findEl("featuresOverview")) void Controllers.FeaturesOverview.refresh(); // only when open: skip loading the chunk
 }
 
 const featureLabel = (feature: Feature) =>

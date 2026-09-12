@@ -1,18 +1,6 @@
 import Alea from "alea";
 import { polygonArea } from "d3";
-import {
-  capitalize,
-  clipPoly,
-  connectVertices,
-  distanceSquared,
-  isLand,
-  isWater,
-  P,
-  ra,
-  rn,
-  rw,
-  TYPED_ARRAY_MAX
-} from "../utils";
+import { clipPoly, connectVertices, distanceSquared, isLand, isWater, P, ra, rn, TYPED_ARRAY_MAX } from "../utils";
 import type { CoastlineSettings } from "./coastline-generator";
 
 declare global {
@@ -478,14 +466,13 @@ class FeatureModule {
     return Names.getCulture(pack.cells.culture[cell]);
   }
 
-  // oceans belong to no culture: a descriptive name around the subtype noun
+  // oceans belong to no culture: an adjective or the map side, the subtype noun is shown separately
   private getOceanName(feature: Feature) {
     if (P(0.8)) return ra(ADJECTIVES);
     const [x, y] = pack.cells.p[feature.firstCell];
     const { width, height } = options.map.graph;
     const [dx, dy] = [x / width - 0.5, y / height - 0.5];
-    const side = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? "Western" : "Eastern") : dy < 0 ? "Northern" : "Southern";
-    return side;
+    return Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? "Western" : "Eastern") : dy < 0 ? "Northern" : "Southern";
   }
 }
 
@@ -538,7 +525,6 @@ const ADJECTIVES = [
   "Shattered",
   "Shining",
   "Shadowy",
-  "Silent",
   "Silent",
   "Sirenic",
   "Sleeping",

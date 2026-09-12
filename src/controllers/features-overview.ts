@@ -106,10 +106,6 @@ function renderAreaCell(feature: Feature, unit: string): string {
   return `<div data-tip="${tip}" data-col="area">~${area}</div>`;
 }
 
-function getLakeGroups() {
-  return Array.from(Layers.get("lakes").getEl().children).map(group => group.id);
-}
-
 function getFilteredFeatures(): Feature[] {
   const search = filterState.search.toLowerCase().trim();
 
@@ -280,7 +276,6 @@ function renderFeaturesPage(view: TableView<Feature>): void {
   });
 
   const unit = getAreaUnit();
-  const lakeGroups = getLakeGroups();
   let lines = "";
 
   for (const feature of view.rows) {
@@ -288,9 +283,9 @@ function renderFeaturesPage(view: TableView<Feature>): void {
       <span data-tip="Locate the feature" data-col="locate" class="icon-target"></span>
       <input data-tip="Feature name" class="featureName stateName" value="${feature.name || ""}" placeholder="${UNNAMED}" data-col="name" />
       ${renderTypeCell(feature)}
-      ${renderGroupCell(feature, lakeGroups)}
+      ${renderGroupCell(feature, Object.keys(styles.lakes.groups))}
       ${renderAreaCell(feature, unit)}
-      <span data-tip="${feature.type === "lake" && "Edit the lake"}" data-col="edit" class="${feature.type === "lake" ? "icon-pencil" : "placeholder"}"></span>
+      ${feature.type === "lake" ? `<span data-tip="Edit the lake" data-col="edit" class="icon-pencil"></span>` : `<span data-col="edit" class="placeholder"></span>`}
       ${
         feature.type === "ocean"
           ? `<span data-col="coastline" class="placeholder"></span>`
@@ -357,10 +352,14 @@ function zoomToFeature(this: HTMLElement): void {
       : feature.vertices.map(vertex => pack.vertices.p[vertex]).filter(Boolean);
   if (!points.length) return;
 
-  const xs = points.map(([x]) => x);
-  const ys = points.map(([, y]) => y);
-  const [x, y] = [Math.min(...xs), Math.min(...ys)];
-  highlightArea({ x, y, width: Math.max(...xs) - x, height: Math.max(...ys) - y }, 3);
+  let [minX, minY, maxX, maxY] = [Infinity, Infinity, -Infinity, -Infinity];
+  for (const [x, y] of points) {
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
+  }
+  highlightArea({ x: minX, y: minY, width: maxX - minX, height: maxY - minY }, 3);
 }
 
 function changeName(this: HTMLInputElement): void {

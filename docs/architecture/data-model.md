@@ -73,7 +73,7 @@ Features represent separate locked areas like islands, lakes and oceans.
 - - `cells`: `number` - number of cells in feature
 - - `firstCell`: `number` - index of the first (top left) cell in feature
 - - `vertices`: `number[]` - indexes of vertices around the feature (perimetric vertices)
-- - `name`: `string` - generated for every feature: islands and lakes in the culture of their first (shore) cell, oceans as a descriptive English name around the subtype noun (_Azure Sea_, _Gulf of Storms_, _Northern Ocean_); any feature can be renamed in the Features Overview. Empty shows as _Unnamed_ in the Features Overview
+- - `name`: `string` - generated for every feature: islands and lakes in the culture of their first (shore) cell, oceans with an English adjective or the map side they lie on (_Azure_, _Northern_), the subtype noun is shown separately; any feature can be renamed in the Features Overview. Empty shows as _Unnamed_ in the Features Overview
 - - `note`: `string` - optional. The user's note (legend) about the feature, as html. Removed with it
 
 ## Specific cells data

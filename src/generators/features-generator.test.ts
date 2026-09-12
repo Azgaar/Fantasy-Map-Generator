@@ -139,17 +139,18 @@ describe("feature naming", () => {
     expect(Features.getOceanSubtype(pack.features[4])).toBe("gulf");
   });
 
-  it("describes oceans around their subtype noun instead of a culture name", () => {
-    pack.features[3].subtype = "sea";
+  it("names oceans with an adjective or a map side instead of a culture name", () => {
     for (let i = 0; i < 20; i++) {
-      expect(Features.getName(pack.features[3])).toMatch(/^(\w+ Sea|Sea of \w+)$/);
+      expect(Features.getName(pack.features[3])).toMatch(/^(\w+|Western|Eastern|Northern|Southern)$/);
+      expect(Features.getName(pack.features[3])).not.toMatch(/^name-of-/);
     }
   });
 
   it("names only the features without a name", () => {
     Features.defineNames();
     expect(pack.features[1].name).toBe("name-of-1");
-    expect(pack.features[3].name).toMatch(/Ocean/);
+    expect(pack.features[3].name).toBeTruthy();
+    expect(pack.features[3].name).not.toMatch(/^name-of-/);
     expect(pack.features[4].name).toBe("Kept Sea");
   });
 });
