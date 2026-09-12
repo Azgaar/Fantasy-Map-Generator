@@ -20,7 +20,7 @@ Each feature carries three labels, and they mean different things:
 * **Subtype** — the classification within the type. Generators read it, so it carries meaning: `dry`, `frozen` and `lava` lakes cannot be sailed and get no ports, `isle` affects how cultures and provinces form, and several subtypes affect where goods and markers appear
   * islands: `continent`, `island`, `isle`, `lake_island`
   * lakes: `freshwater`, `salt`, `dry`, `sinkhole`, `frozen`, `lava`
-  * oceans have none
+  * oceans: `ocean`, `sea`, `gulf` — by size, and the noun the generated name is built around
 * **Group** — the SVG group the feature is drawn in, and nothing more. It decides appearance, never behaviour. Two lakes can share a subtype and be drawn differently, or share a group and behave differently
 
 The subtype list is fixed: you can pick a different one, but you cannot invent your own. Groups are the opposite — you can create as many as you like.
@@ -28,8 +28,8 @@ The subtype list is fixed: you can pick a different one, but you cannot invent y
 ## Columns
 
 * **Locate** (the target icon) — zoom to the feature. Oceans have no outline to zoom to
-* **Feature** — the name. Only lakes are named by the generator, so most islands and every ocean start out as _Unnamed_. Type a name to set one; clear the field to make it _Unnamed_ again
-* **Type** — the subtype, shown as _Freshwater lake_ or _Isle_. Editable for islands and lakes; the type itself (island, lake, ocean) comes from the heightmap and cannot be changed. _Lake island_ is shown as plain text: an island is inside a lake or it is not, and that is decided by geography
+* **Feature** — the name. Every feature is named by the generator: islands and lakes in the language of the culture on their first cell, oceans with a descriptive name around their subtype (_Azure Sea_, _Gulf of Storms_, _Northern Ocean_). Type a name to change it; clear the field to make it _Unnamed_
+* **Type** — the subtype, shown as _Freshwater lake_, _Isle_ or _Sea_. Editable for every feature; the type itself (island, lake, ocean) comes from the heightmap and cannot be changed. _Lake island_ is shown as plain text: an island is inside a lake or it is not, and that is decided by geography
 * **Group** — editable for lakes only. Islands show their group as text, since `sea_island` and `lake_island` follow from where the island sits
 * **Area** — the area in the selected units. A feature that reaches the map border (every ocean, and islands cut by the edge) continues beyond the map, so its area is an estimate marked with `~`: the feature is assumed to keep its share of the map over the whole globe. Hover the value to see the area inside the map
 * **Coastline** (the polygon icon) — open the _Coastline Editor_ for this feature alone, see below. Islands and lakes only, oceans have no outline

@@ -15,7 +15,13 @@ import {
 import { Layers } from "@/components/layers";
 import { Notes } from "@/components/notes";
 import { Controllers } from "@/controllers";
-import { type Feature, type FeatureType, ISLAND_SUBTYPES, LAKE_SUBTYPES } from "@/generators/features-generator";
+import {
+  type Feature,
+  type FeatureType,
+  ISLAND_SUBTYPES,
+  LAKE_SUBTYPES,
+  OCEAN_SUBTYPES
+} from "@/generators/features-generator";
 import { highlightArea, highlightOutline } from "@/renderers/overlays/highlight";
 import {
   capitalize,
@@ -53,7 +59,11 @@ const columns: EditorColumn<Feature>[] = [
 ];
 
 const TYPES: FeatureType[] = ["island", "lake", "ocean"];
-const SUBTYPES: Record<FeatureType, readonly string[]> = { island: ISLAND_SUBTYPES, lake: LAKE_SUBTYPES, ocean: [] };
+const SUBTYPES: Record<FeatureType, readonly string[]> = {
+  island: ISLAND_SUBTYPES,
+  lake: LAKE_SUBTYPES,
+  ocean: OCEAN_SUBTYPES
+};
 
 // an ocean's perimeter ring is open at the map border, so its polygon area collapses to 0
 let oceanAreas = new Map<number, number>();
@@ -198,7 +208,9 @@ function refreshOverview(): void {
 /** Subtype options follow the selected type; "all" offers every subtype */
 function updateSubtypeFilter(): void {
   const subtypes =
-    filterState.type === "all" ? [...ISLAND_SUBTYPES, ...LAKE_SUBTYPES] : SUBTYPES[filterState.type as FeatureType];
+    filterState.type === "all"
+      ? [...ISLAND_SUBTYPES, ...LAKE_SUBTYPES, ...OCEAN_SUBTYPES]
+      : SUBTYPES[filterState.type as FeatureType];
   if (!subtypes.includes(filterState.subtype)) filterState.subtype = "all";
 
   const filter = ensureEl<HTMLSelectElement>("featuresFilterSubtype");
@@ -238,7 +250,7 @@ function renderGroupCell(feature: Feature, lakeGroups: string[]): string {
   return `<div data-col="group">${brush}<select data-tip="Rendering group: the svg group the lake is drawn in. Create groups in the Lake Editor" class="featureGroup">${options}</select></div>`;
 }
 
-// "Freshwater lake", "Isle", "Lake island", "Ocean"
+// "Freshwater lake", "Isle", "Lake island", "Sea"
 function getTypeLabel(feature: Pick<Feature, "type" | "subtype">): string {
   const subtype = feature.subtype?.replace("_", " ");
   if (feature.type === "lake") return capitalize(`${subtype} ${feature.type}`);
@@ -248,8 +260,7 @@ function getTypeLabel(feature: Pick<Feature, "type" | "subtype">): string {
 // the subtype set is fixed per type; lake_island is geographic, so it stays put
 function renderTypeCell(feature: Feature): string {
   const subtypes = SUBTYPES[feature.type];
-  const fixed = !subtypes.length || feature.subtype === "lake_island";
-  if (fixed)
+  if (feature.subtype === "lake_island")
     return `<div data-tip="Feature type, defined by the heightmap" data-col="type">${getTypeLabel(feature)}</div>`;
 
   const options = subtypes
@@ -273,9 +284,8 @@ function renderFeaturesPage(view: TableView<Feature>): void {
   let lines = "";
 
   for (const feature of view.rows) {
-    const locatable = feature.type !== "ocean";
     lines += /* html */ `<div class="states" data-id="${feature.i}">
-      <span data-tip="Locate the feature" data-col="locate" class="${locatable ? "icon-target" : "placeholder"}"></span>
+      <span data-tip="Locate the feature" data-col="locate" class="icon-target"></span>
       <input data-tip="Feature name" class="featureName stateName" value="${feature.name || ""}" placeholder="${UNNAMED}" data-col="name" />
       ${renderTypeCell(feature)}
       ${renderGroupCell(feature, lakeGroups)}
@@ -336,9 +346,15 @@ function featureHighlightOff(): void {
     .remove();
 }
 
+// an ocean's vertex ring is open at the map border, so bound it by its cells
 function zoomToFeature(this: HTMLElement): void {
   const feature = getFeature(this);
-  const points = feature.vertices.map(vertex => pack.vertices.p[vertex]).filter(Boolean);
+  const points =
+    feature.type === "ocean"
+      ? Array.from(pack.cells.i)
+          .filter(cellId => pack.cells.f[cellId] === feature.i)
+          .map(cellId => pack.cells.p[cellId])
+      : feature.vertices.map(vertex => pack.vertices.p[vertex]).filter(Boolean);
   if (!points.length) return;
 
   const xs = points.map(([x]) => x);

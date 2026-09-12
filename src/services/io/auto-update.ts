@@ -8,7 +8,7 @@ import { normalizeLegacyBurgGroupFilters } from "@/components/options-legacy";
 import type { MapData } from "@/components/options-schema";
 import { RELIEF_SETS } from "@/data/relief-icons";
 import { Emblems } from "@/generators/emblems-generator";
-import { type Feature, LAKE_SUBTYPES } from "@/generators/features-generator";
+import { type Feature, LAKE_SUBTYPES, OCEAN_SUBTYPES } from "@/generators/features-generator";
 import type { GraphOverrides } from "@/generators/graph-override";
 import { type Label, type LabelNameMode, Labels as LabelsGenerator } from "@/generators/labels-generator";
 import { getDefaultMarkerName, type Marker } from "@/generators/markers-generator";
@@ -1922,16 +1922,17 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
   if (isOlderThan("1.153.0")) {
     // v1.153.0 made the feature group a pure rendering choice, separate from the subtype generators read
     const lakeSubtypes = new Set<string>(LAKE_SUBTYPES);
+    const oceanSubtypes = new Set<string>(OCEAN_SUBTYPES);
     for (const feature of pack.features) {
       if (!feature) continue;
-      if (!feature.name) feature.name = Features.getName(feature); // islands and oceans were nameless before
       if (feature.type === "ocean") {
-        // v1.146 gave oceans a landmass group and whatever the old group field held; they have neither
-        delete (feature as Partial<Feature>).subtype;
+        // oceans carried a landmass group and whatever the old group field held; they are not drawn
         delete (feature as Partial<Feature>).group;
+        if (!oceanSubtypes.has(feature.subtype)) feature.subtype = Features.getOceanSubtype(feature);
       } else if (feature.type === "lake" && !lakeSubtypes.has(feature.subtype)) {
         feature.subtype = "freshwater"; // the old lake editor wrote custom group names into the subtype
       }
+      if (!feature.name) feature.name = Features.getName(feature); // islands and oceans were nameless before
     }
 
     // custom lake groups lived only in the svg; the styles record now keeps them under lakes.groups

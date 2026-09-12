@@ -68,12 +68,12 @@ Features represent separate locked areas like islands, lakes and oceans.
 - - `land`: `boolean` - `true` if feature is land (height >= `20`)
 - - `border`: `boolean` - `true` if feature touches map border (used to separate lakes from oceans)
 - - `type`: `string` - feature type, can be `ocean`, `island` or `lake`
-- - `subtype`: `string`: feature subtype, the classification generators read. For land it is `continent`, `island`, `isle` or `lake_island`; for lake it is `freshwater`, `salt`, `dry`, `sinkhole`, `frozen` or `lava`; oceans have none. The set is fixed: users pick within it in the Features Overview (and the Lake Editor), but cannot add subtypes
+- - `subtype`: `string`: feature subtype, the classification generators read. For land it is `continent`, `island`, `isle` or `lake_island`; for lake it is `freshwater`, `salt`, `dry`, `sinkhole`, `frozen` or `lava`; for ocean it is `ocean`, `sea` or `gulf` by cell count. The set is fixed: users pick within it in the Features Overview (and the Lake Editor), but cannot add subtypes
 - - `group`: `string`: rendering group, the id of the SVG group the feature is drawn in — a pure rendering choice, independent of the subtype. Defaults to the subtype for lakes, `lake_island` for islands within lakes and `sea_island` for the rest of the land. Lakes can be moved between groups in the Features Overview, and new groups created in the Lake Editor; island groups are derived and fixed
 - - `cells`: `number` - number of cells in feature
 - - `firstCell`: `number` - index of the first (top left) cell in feature
 - - `vertices`: `number[]` - indexes of vertices around the feature (perimetric vertices)
-- - `name`: `string` - generated for every feature in the culture of its first cell (a shore cell for water); any feature can be renamed in the Features Overview. Empty shows as _Unnamed_ in the Features Overview
+- - `name`: `string` - generated for every feature: islands and lakes in the culture of their first (shore) cell, oceans as a descriptive English name around the subtype noun (_Azure Sea_, _Gulf of Storms_, _Northern Ocean_); any feature can be renamed in the Features Overview. Empty shows as _Unnamed_ in the Features Overview
 - - `note`: `string` - optional. The user's note (legend) about the feature, as html. Removed with it
 
 ## Specific cells data

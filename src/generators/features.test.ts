@@ -102,34 +102,54 @@ describe("feature naming", () => {
   });
 
   beforeEach(() => {
-    // cells: 0 island (culture 1), 1 land shore of the lake (culture 2), 2 lake, 3 ocean, 4 coast with haven in the ocean (culture 3)
+    // cells: 0 island (culture 1), 1 land shore of the lake (culture 2), 2 lake, 3 ocean
     globalThis.pack = {
       cells: {
-        i: [0, 1, 2, 3, 4],
-        culture: [1, 2, 0, 0, 3],
-        t: [2, 1, -1, -2, 1],
-        f: Uint16Array.from([1, 1, 2, 3, 1]),
-        haven: Uint32Array.from([0, 2, 0, 0, 3])
+        i: [0, 1, 2, 3],
+        culture: [1, 2, 0, 0],
+        p: [
+          [10, 10],
+          [20, 10],
+          [30, 10],
+          [5, 50]
+        ]
       },
-      cultures: [{ base: 0 }, { base: 1 }, { base: 2 }, { base: 3 }],
+      cultures: [{ base: 0 }, { base: 1 }, { base: 2 }],
       features: [
         undefined,
         { i: 1, type: "island", firstCell: 0 },
         { i: 2, type: "lake", firstCell: 2, shoreline: [1] },
-        { i: 3, type: "ocean", firstCell: 3, name: "Kept Sea" }
+        { i: 3, type: "ocean", firstCell: 3, cells: 50 },
+        { i: 4, type: "ocean", firstCell: 3, cells: 1, name: "Kept Sea" }
       ]
     } as unknown as typeof pack;
+    globalThis.grid = { cells: { i: new Array(1000) } } as unknown as typeof grid;
+    globalThis.options = { map: { graph: { width: 100, height: 100 } } } as unknown as typeof options;
     globalThis.Names = { getCulture: (culture: number) => `name-of-${culture}` } as unknown as typeof Names;
   });
 
-  it("takes the culture of the first cell for islands and of a shore cell for water", () => {
+  it("takes the culture of the first cell for islands and of a shore cell for lakes", () => {
     expect(Features.getName(pack.features[1])).toBe("name-of-1");
     expect(Features.getName(pack.features[2])).toBe("name-of-2");
-    expect(Features.getName(pack.features[3])).toBe("name-of-3");
+  });
+
+  it("sizes the ocean subtype by cell count", () => {
+    expect(Features.getOceanSubtype(pack.features[3])).toBe("ocean");
+    expect(Features.getOceanSubtype({ cells: 5 } as Feature)).toBe("sea");
+    expect(Features.getOceanSubtype(pack.features[4])).toBe("gulf");
+  });
+
+  it("describes oceans around their subtype noun instead of a culture name", () => {
+    pack.features[3].subtype = "sea";
+    for (let i = 0; i < 20; i++) {
+      expect(Features.getName(pack.features[3])).toMatch(/^(\w+ Sea|Sea of \w+)$/);
+    }
   });
 
   it("names only the features without a name", () => {
     Features.defineNames();
-    expect(pack.features.slice(1).map(feature => feature.name)).toEqual(["name-of-1", "name-of-2", "Kept Sea"]);
+    expect(pack.features[1].name).toBe("name-of-1");
+    expect(pack.features[3].name).toMatch(/Ocean/);
+    expect(pack.features[4].name).toBe("Kept Sea");
   });
 });
