@@ -452,6 +452,25 @@ class FeatureModule {
     if (feature.type === "lake") return feature.subtype || "freshwater";
     return feature.subtype === "lake_island" ? "lake_island" : "sea_island";
   }
+
+  /** Name the features that have none; existing names are the user's and stay */
+  defineNames() {
+    for (const feature of pack.features) {
+      if (feature && !feature.name) feature.name = this.getName(feature);
+    }
+  }
+
+  getName(feature: Feature): string {
+    return Names.getCulture(pack.cells.culture[this.getCultureCell(feature)]);
+  }
+
+  // water cells carry no culture, so water features borrow it from a single shore cell
+  private getCultureCell(feature: Feature): number {
+    if (feature.type === "island") return feature.firstCell;
+    if (feature.type === "lake") return feature.shoreline?.[0] ?? feature.firstCell;
+    const { i, t, f, haven } = pack.cells;
+    return i.find(cellId => t[cellId] === 1 && f[haven[cellId]] === feature.i) ?? feature.firstCell;
+  }
 }
 
 window.Features = new FeatureModule();

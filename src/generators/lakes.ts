@@ -15,13 +15,6 @@ export class LakesModule {
     return rn(minShoreHeight - this.LAKE_ELEVATION_DELTA, 2);
   }
 
-  defineNames() {
-    pack.features.forEach((feature: Feature) => {
-      if (feature.type !== "lake") return;
-      feature.name = this.getName(feature);
-    });
-  }
-
   // presets are applied before any map exists; custom groups live on the features, stock ones in the defaults
   ensureLakeGroupStyles(): void {
     const { groups } = styles.lakes;
@@ -31,12 +24,6 @@ export class LakesModule {
       if (feature?.type === "lake" && feature.group && !groups[feature.group])
         groups[feature.group] = structuredClone(template);
     }
-  }
-
-  getName(feature: Feature): string {
-    const landCell = feature.shoreline[0];
-    const culture = pack.cells.culture[landCell];
-    return Names.getCulture(culture);
   }
 
   cleanupLakeData = () => {

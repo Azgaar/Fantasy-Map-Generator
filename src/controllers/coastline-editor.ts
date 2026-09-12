@@ -254,6 +254,9 @@ function syncScope(): void {
   const select = ensureEl<HTMLSelectElement>("coastScopeSelect");
   select.options[select.selectedIndex].text = featureLabel(selectedFeature);
   ensureEl("coastScopeReset").style.display = selectedFeature.coastline ? "" : "none";
+  ensureEl("coastScopeFollows").style.display = selectedFeature && !selectedFeature.coastline ? "" : "none";
+  ensureEl("coastScopeMap").style.display = selectedFeature ? "none" : "";
+
   void Controllers.FeaturesOverview.refresh();
 }
 
@@ -299,8 +302,9 @@ function buildDialogHTML(): string {
           <option value="0" ${selectedFeature ? "" : "selected"}>Whole map</option>
           ${scopeOptions}
         </select>
-        <button id="coastScopeReset" style="display:${selectedFeature?.coastline ? "" : "none"}" data-tip="Reset to follow global map settings">Use map settings</button>
-        <span style="display:${selectedFeature && !selectedFeature.coastline ? "" : "none"}; color:#999">follows the map settings</span>
+        <button id="coastScopeReset" style="display:${selectedFeature?.coastline ? "" : "none"}" data-tip="Reset custom override and follow the global map settings">Reset to map settings</button>
+        <span id="coastScopeFollows" style="display:${selectedFeature && !selectedFeature.coastline ? "" : "none"}; color:#999">follows the map settings</span>
+        <span id="coastScopeMap" style="display:${selectedFeature ? "none" : ""}; color:#999">apply to all non-overwritten features</span>
       </div>
       <div style="display:flex; justify-content:space-between; gap:0.5em; margin-bottom:0.5em; padding-bottom:0.5em; border-bottom:1px solid #ddd">
         <label style="display:flex; align-items:center; gap:0.5em; cursor:pointer; user-select:none" data-tip="Enable or disable coastline fractalization. When disabled, coastlines are simple arcs between feature vertices. Enabling adds naturalistic roughness but can increase rendering time">
@@ -492,10 +496,15 @@ function drawShapePreview(
 ): void {
   const { ctx, W, H, dpr } = prepareCanvas(canvas);
   if (!W || !H || !parts.length) return;
-  const points = parts.flatMap(part => part.shape.points);
-  const xs = points.map(([x]) => x);
-  const ys = points.map(([, y]) => y);
-  const [minX, maxX, minY, maxY] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+  let [minX, maxX, minY, maxY] = [Infinity, -Infinity, Infinity, -Infinity]; // a loop: spreading 100K+ points overflows the call stack
+  for (const { shape } of parts) {
+    for (const [x, y] of shape.points) {
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+  }
   const extent = Math.max(maxX - minX, maxY - minY) || 1;
   const PAD = 10;
   const scale = Math.min((W - 2 * PAD) / (maxX - minX || 1), (H - 2 * PAD) / (maxY - minY || 1));

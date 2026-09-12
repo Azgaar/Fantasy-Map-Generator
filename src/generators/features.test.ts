@@ -95,3 +95,41 @@ describe("feature user data across a re-markup", () => {
     expect(() => Features.restoreUserData([])).not.toThrow();
   });
 });
+
+describe("feature naming", () => {
+  beforeAll(async () => {
+    await import("./features-generator");
+  });
+
+  beforeEach(() => {
+    // cells: 0 island (culture 1), 1 land shore of the lake (culture 2), 2 lake, 3 ocean, 4 coast with haven in the ocean (culture 3)
+    globalThis.pack = {
+      cells: {
+        i: [0, 1, 2, 3, 4],
+        culture: [1, 2, 0, 0, 3],
+        t: [2, 1, -1, -2, 1],
+        f: Uint16Array.from([1, 1, 2, 3, 1]),
+        haven: Uint32Array.from([0, 2, 0, 0, 3])
+      },
+      cultures: [{ base: 0 }, { base: 1 }, { base: 2 }, { base: 3 }],
+      features: [
+        undefined,
+        { i: 1, type: "island", firstCell: 0 },
+        { i: 2, type: "lake", firstCell: 2, shoreline: [1] },
+        { i: 3, type: "ocean", firstCell: 3, name: "Kept Sea" }
+      ]
+    } as unknown as typeof pack;
+    globalThis.Names = { getCulture: (culture: number) => `name-of-${culture}` } as unknown as typeof Names;
+  });
+
+  it("takes the culture of the first cell for islands and of a shore cell for water", () => {
+    expect(Features.getName(pack.features[1])).toBe("name-of-1");
+    expect(Features.getName(pack.features[2])).toBe("name-of-2");
+    expect(Features.getName(pack.features[3])).toBe("name-of-3");
+  });
+
+  it("names only the features without a name", () => {
+    Features.defineNames();
+    expect(pack.features.slice(1).map(feature => feature.name)).toEqual(["name-of-1", "name-of-2", "Kept Sea"]);
+  });
+});

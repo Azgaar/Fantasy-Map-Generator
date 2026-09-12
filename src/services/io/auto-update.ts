@@ -481,6 +481,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
     // v1.6 changed lakes data
     for (const f of pack.features) {
+      f.name = f.name || Features.getName(f);
       if (f.type !== "lake") continue;
       if (f.evaporation) continue;
 
@@ -492,7 +493,6 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       const evaporation = ((700 * (f.temp + 0.006 * height)) / 50 + 75) / (80 - f.temp);
       f.evaporation = rn(evaporation * f.cells);
       if (!f.shoreline) f.shoreline = Lakes.defineShoreline(f);
-      f.name = f.name || Lakes.getName(f);
       delete f.river;
     }
   }
@@ -1924,6 +1924,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     const lakeSubtypes = new Set<string>(LAKE_SUBTYPES);
     for (const feature of pack.features) {
       if (!feature) continue;
+      if (!feature.name) feature.name = Features.getName(feature); // islands and oceans were nameless before
       if (feature.type === "ocean") {
         // v1.146 gave oceans a landmass group and whatever the old group field held; they have neither
         delete (feature as Partial<Feature>).subtype;

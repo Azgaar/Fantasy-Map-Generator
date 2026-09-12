@@ -216,7 +216,7 @@ function changeName(this: HTMLInputElement): void {
 
 function generateNameCulture(): void {
   const lake = getLake();
-  lake.name = ensureEl<HTMLInputElement>("lakeName").value = Lakes.getName(lake);
+  lake.name = ensureEl<HTMLInputElement>("lakeName").value = Features.getName(lake);
 }
 
 function generateNameRandom(): void {
