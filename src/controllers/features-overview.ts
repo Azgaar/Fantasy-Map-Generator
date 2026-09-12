@@ -48,6 +48,7 @@ const columns: EditorColumn<Feature>[] = [
   },
   { key: "area", label: "Area", width: "6em", sortBy: getCalculatedArea, defaultSort: "desc" },
   { key: "edit", width: "1.4em" },
+  { key: "coastline", width: "1.4em" },
   { key: "note", width: "1.4em", permanent: true }
 ];
 
@@ -280,6 +281,11 @@ function renderFeaturesPage(view: TableView<Feature>): void {
       ${renderGroupCell(feature, lakeGroups)}
       ${renderAreaCell(feature, unit)}
       <span data-tip="${feature.type === "lake" && "Edit the lake"}" data-col="edit" class="${feature.type === "lake" ? "icon-pencil" : "placeholder"}"></span>
+      ${
+        feature.type === "ocean"
+          ? `<span data-col="coastline" class="placeholder"></span>`
+          : `<span data-tip="Edit the feature's own coastline settings" data-col="coastline" class="icon-draw-polygon pointer featureCoastline" style="${feature.coastline ? "" : "opacity:.7"}"></span>`
+      }
       ${Notes.getIcon("this feature")}
     </div>`;
   }
@@ -300,6 +306,9 @@ function renderFeaturesPage(view: TableView<Feature>): void {
   body.querySelectorAll("div span.featureGroupStyle").forEach(el => void el.addEventListener("click", editGroupStyle));
   body.querySelectorAll("div > span.icon-book").forEach(el => void el.addEventListener("click", editNote));
   body.querySelectorAll("div > span.icon-pencil").forEach(el => void el.addEventListener("click", openLakeEditor));
+  body
+    .querySelectorAll("div > span.featureCoastline")
+    .forEach(el => void el.addEventListener("click", openCoastlineEditor));
 
   renderEditorPagination(ensureEl("featuresFooter"), view, featuresTable.goto);
 }
@@ -366,6 +375,10 @@ function openLakeEditor(this: HTMLElement): void {
   if (element) void Controllers.LakesEditor.open(element);
 }
 
+function openCoastlineEditor(this: HTMLElement): void {
+  void Controllers.CoastlineEditor.open(getRowId(this));
+}
+
 function downloadFeaturesData(): void {
   const unit = getAreaUnit();
   let data = `Id,Name,Type,Subtype,Group,Area (${unit}),Map area (${unit}),Cut by border\n`;
@@ -387,4 +400,4 @@ function downloadFeaturesData(): void {
   downloadFile(data, `${getFileName("Features")}.csv`);
 }
 
-export const FeaturesOverview = { open, refresh: () => featuresTable.refresh() };
+export const FeaturesOverview = { open, refresh: () => findEl(dialogId) && featuresTable.refresh() };

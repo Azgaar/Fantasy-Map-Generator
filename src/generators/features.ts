@@ -1,6 +1,7 @@
 import Alea from "alea";
 import { polygonArea } from "d3";
 import { clipPoly, connectVertices, distanceSquared, isLand, isWater, rn, TYPED_ARRAY_MAX } from "../utils";
+import type { CoastlineSettings } from "./coastline-generator";
 
 declare global {
   var Features: FeatureModule;
@@ -29,6 +30,7 @@ export interface Feature {
   height: number;
   subtype: string; // classification within the type: continent/island/isle, ocean/sea/gulf, freshwater/salt/...
   group: string; // svg group the feature is drawn in
+  coastline?: CoastlineSettings; // own coastline settings, overriding the map-level ones
   temp: number;
   flux: number;
   evaporation: number;

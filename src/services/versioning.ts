@@ -24,8 +24,9 @@ export const VERSION = "1.153.0";
 
 // new changes on top
 const latestPublicChanges = [
-  "Geographical Features Overview",
   "Wrap Tool: reshape cells with a brush",
+  "Geographical Features Overview",
+  "Coastline Editor: customizable per feature",
   "Coastlines: roughness localized to coastline section",
   "Global map search (press Space to open)",
   "Diplomacy: select relation targets on the map and repair invalid relations",

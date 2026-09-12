@@ -81,18 +81,38 @@ class CoastlineGenerator {
     return h | 0;
   }
 
-  /** Closed SVG path of the feature outline, fractalized as configured */
-  getFeaturePath(feature: Feature): string {
+  /** The settings a feature's shore is displaced with: a lake shore is calmer by its multiplier */
+  shoreSettings(feature: Pick<Feature, "type" | "coastline">): CoastlineSettings {
+    const settings = feature.coastline || this.settings;
+    const { lakeSmoothThreshMult, smoothThreshold } = settings;
+    if (feature.type !== "lake" || lakeSmoothThreshMult === 1) return settings;
+    return { ...settings, smoothThreshold: Math.min(1, smoothThreshold * lakeSmoothThreshMult) };
+  }
+
+  /** The polygon a feature's coastline is built from: its vertices, simplified and clipped to the map */
+  getFeatureOutline(feature: Feature): Point[] {
     const points = feature.vertices.map(vertex => pack.vertices.p[vertex]);
     if (points.some(point => point === undefined)) {
-      ERROR && console.error("Undefined point in getFeaturePath");
-      return "";
+      ERROR && console.error("Undefined point in getFeatureOutline");
+      return [];
     }
 
     const simplifiedPoints = simplify(points, SIMPLIFICATION_TOLERANCE);
-    const clippedPoints = clipPoly(simplifiedPoints, options.map.graph.width, options.map.graph.height, 1);
-    const shape = this.fractalizeFeature(clippedPoints, feature);
-    return `${round(this.buildCoastlinePath(shape))}Z`;
+    return clipPoly(simplifiedPoints, options.map.graph.width, options.map.graph.height, 1);
+  }
+
+  /** The feature outline displaced into its coastline. Seeded per feature, so it keeps its shape no matter what else was generated or drawn before */
+  getFeatureShape(feature: Feature, outline = this.getFeatureOutline(feature)): FractalizedShape {
+    const settings = this.shoreSettings(feature);
+    if (outline.length < 3 || !settings.enabled) return { points: outline, origIndices: outline.map((_, i) => i) };
+    return this.fractalizePolygon(outline, this.featureSeed(feature.i, settings), settings);
+  }
+
+  /** Closed SVG path of the feature outline, fractalized as configured */
+  getFeaturePath(feature: Feature): string {
+    const outline = this.getFeatureOutline(feature);
+    if (!outline.length) return "";
+    return `${round(this.buildCoastlinePath(this.getFeatureShape(feature, outline)))}Z`;
   }
 
   /** Displace a polygon into a naturalistic coastline. Deterministic: the same seed and settings repeat the shape */
@@ -130,20 +150,6 @@ class CoastlineGenerator {
     return spread ** settings.roughnessContrast;
   }
 
-  /** Seeded per feature, so a feature keeps its shape no matter what else was generated or drawn before */
-  private fractalizeFeature(points: Point[], { i, type }: Feature): FractalizedShape {
-    const unchanged = { points, origIndices: points.map((_, index) => index) };
-    if (points.length < 3 || !this.settings.enabled) return unchanged;
-
-    const { lakeSmoothThreshMult, smoothThreshold } = this.settings;
-    const settings =
-      type === "lake" && lakeSmoothThreshMult !== 1
-        ? { ...this.settings, smoothThreshold: Math.min(1, smoothThreshold * lakeSmoothThreshMult) }
-        : this.settings;
-
-    return this.fractalizePolygon(points, this.featureSeed(i, settings), settings);
-  }
-
   private fractalizePolygon(points: Point[], seed: number, settings: CoastlineSettings): FractalizedShape {
     const n = points.length;
     const resultPts: Point[] = [];
@@ -174,7 +180,7 @@ class CoastlineGenerator {
   ): void {
     const [dx, dy] = [b[0] - a[0], b[1] - a[1]];
     const len = Math.sqrt(dx * dx + dy * dy);
-    if (depth === 0 || len < settings.minEdge) return;
+    if (depth === 0 || len < settings.minEdge || amplitude === 0) return; // no amplitude: the arc stays as it is
 
     const [mx, my] = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
     const roughness = this.roughnessAt(seed, mx, my, settings);

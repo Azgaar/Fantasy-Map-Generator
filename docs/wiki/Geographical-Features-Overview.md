@@ -32,10 +32,19 @@ The subtype list is fixed: you can pick a different one, but you cannot invent y
 * **Type** — the subtype, shown as _Freshwater lake_ or _Isle_. Editable for islands and lakes; the type itself (island, lake, ocean) comes from the heightmap and cannot be changed. _Lake island_ is shown as plain text: an island is inside a lake or it is not, and that is decided by geography
 * **Group** — editable for lakes only. Islands show their group as text, since `sea_island` and `lake_island` follow from where the island sits
 * **Area** — the area in the selected units. A feature that reaches the map border (every ocean, and islands cut by the edge) continues beyond the map, so its area is an estimate marked with `~`: the feature is assumed to keep its share of the map over the whole globe. Hover the value to see the area inside the map
+* **Coastline** (the polygon icon) — open the _Coastline Editor_ for this feature alone, see below. Islands and lakes only, oceans have no outline
 * **Note** (the book icon) — edit free text notes (legend) for the feature
 * **Edit** (the pencil) — open the _Lake Editor_. Lakes only; islands and oceans have no editor of their own
 
 Click a column header to sort by it, and use the sliders icon in the header to show or hide columns.
+
+## Coastline settings per feature
+
+The _Coastline Editor_ (_Tools_ → _Coastline_) shapes every coastline on the map at once. The selector at its top switches it to one island or lake: the first change you make there gives the feature its own settings, and from then on the map settings no longer touch it. Use it to give one continent fjords while the rest of the world keeps its gentle shores, or to calm a single lake. The polygon icon in this table opens the editor with the feature already selected.
+
+A feature with its own settings is marked with • in the selector, and the bin button next to it removes them, so the feature is outlined like every other one again. In the table, such a feature shows the polygon icon in colour. While a feature is selected, the previews show its real shape and the roughness along its own shore, and the reset arrows next to the sliders bring a value back to the map setting rather than to the default.
+
+Own settings are saved with the map.
 
 ## Changing a subtype does not regenerate anything
 
