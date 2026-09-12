@@ -42,7 +42,7 @@ Click a column header to sort by it, and use the sliders icon in the header to s
 
 The [Coastline Editor](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Coastline-Editor) (_Tools_ → _Coastlines_) shapes every coastline on the map at once. The selector at its top switches it to one island or lake: the first change you make there gives the feature its own settings, and from then on the map settings no longer touch it. Use it to give one continent fjords while the rest of the world keeps its gentle shores, or to calm a single lake. The polygon icon in this table opens the editor with the feature already selected.
 
-A feature with its own settings is marked with • in the selector, and the _Reset_ button next to it removes them, so the feature is outlined like every other one again. In the table, such a feature shows the polygon icon in colour. While a feature is selected, the preview shows its real shape — rough stretches in orange, calm ones in teal, a magnifier on the roughest one — and the roughness along its own shore; the reset arrows next to the sliders bring a value back to the map setting rather than to the default.
+A feature with its own settings is marked with • in the selector, and the _Use map settings_ button next to it removes them, so the feature is outlined like every other one again. In the table, such a feature shows the polygon icon in colour. While a feature is selected, the preview shows its real shape — rough stretches in orange, calm ones in teal, a magnifier on the roughest one — and the roughness along its own shore; the reset arrows next to the sliders bring a value back to the map setting rather than to the default.
 
 Own settings are saved with the map.
 

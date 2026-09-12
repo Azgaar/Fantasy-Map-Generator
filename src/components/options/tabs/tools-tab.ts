@@ -14,7 +14,7 @@ const TEMPLATE = /* html */ `
     </button>
     <button
       id="editCoastlineSettings"
-      data-tip="Click to open Coastline Settings Editor"
+      data-tip="Click to open Coastline Editor"
     >
       Coastlines
     </button>

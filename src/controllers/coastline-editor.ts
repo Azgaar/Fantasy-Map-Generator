@@ -18,8 +18,8 @@ interface SliderDef {
 const INPUTS_CONFIG: SliderDef[] = [
   {
     id: "coastMaxDepth",
-    label: "Detail depth",
-    tip: "Maximum recursion levels per edge. Each +1 can double point count in rough zones: 6 gives a tiny isle a real shoreline, but makes a continent heavy to draw",
+    label: "Detail",
+    tip: "How fine the shore detail is. Higher adds ever smaller bays and points but makes the map slower to draw",
     min: 1,
     max: 5,
     step: 1,
@@ -27,8 +27,8 @@ const INPUTS_CONFIG: SliderDef[] = [
   },
   {
     id: "coastBaseAmplitude",
-    label: "Roughness amplitude",
-    tip: "Peak perpendicular displacement. Scales with √(edge length) so large edges stay proportional. 0 keeps the arcs as they are, high values carve deep inlets",
+    label: "Ruggedness",
+    tip: "How far the coast bends in and out. 0 keeps the smooth arcs, high values carve deep bays and headlands",
     min: 0,
     max: 8,
     step: 0.1,
@@ -36,8 +36,8 @@ const INPUTS_CONFIG: SliderDef[] = [
   },
   {
     id: "coastAmplitudeDecay",
-    label: "Amplitude decay",
-    tip: "Amplitude multiplier per recursion level (Hurst exponent). Low = detail fades quickly into smooth curves; above 1 = the finest level is displaced the most, a spiky, crumbled shore",
+    label: "Fine detail",
+    tip: "How much the small details stand out. Low gives soft, rounded shores; high gives jagged, crumbly ones",
     min: 0.1,
     max: 1.3,
     step: 0.01,
@@ -45,8 +45,8 @@ const INPUTS_CONFIG: SliderDef[] = [
   },
   {
     id: "coastMinEdge",
-    label: "Minimum edge",
-    tip: "Edges shorter than this (map units) are never subdivided regardless of roughness. Small values let tiny isles get detail, large ones keep only the big features rough",
+    label: "Smallest edge",
+    tip: "Coast segments shorter than this stay as they are. Raise it to keep tiny isles simple and the map faster to draw",
     min: 0,
     max: 20,
     step: 0.1,
@@ -54,8 +54,8 @@ const INPUTS_CONFIG: SliderDef[] = [
   },
   {
     id: "coastSmoothThreshold",
-    label: "Smooth threshold",
-    tip: "Places where the roughness field is below this receive zero displacement → glassy arc. 0 = the whole coast is rough, 0.9 = only the rare peaks",
+    label: "Calm shores",
+    tip: "How much of the coast stays calm. 0 makes every shore rough, high values leave only a few rough stretches",
     min: 0,
     max: 0.9,
     step: 0.01,
@@ -63,8 +63,8 @@ const INPUTS_CONFIG: SliderDef[] = [
   },
   {
     id: "coastRoughnessContrast",
-    label: "Roughness contrast",
-    tip: "Power applied to the roughness field. Below 1 = roughness spread evenly along the coast; higher = sharper calm/rough transition",
+    label: "Contrast",
+    tip: "How sharply calm shores turn into rough ones. Low blends them, high gives clear-cut calm and rough coasts",
     min: 0.1,
     max: 10,
     step: 0.1,
@@ -72,8 +72,8 @@ const INPUTS_CONFIG: SliderDef[] = [
   },
   {
     id: "coastRoughnessScale",
-    label: "Roughness zone size",
-    tip: "Size of a calm or rough stretch of coast, in map units. A few units vary the shore of a single isle; hundreds give a continent a few long calm and rough coasts",
+    label: "Stretch length",
+    tip: "How long a calm or rough stretch of coast is. Small mixes them along a single isle, large gives a continent a few long coasts of each kind",
     min: 2,
     max: 600,
     step: 1,
@@ -82,7 +82,7 @@ const INPUTS_CONFIG: SliderDef[] = [
   {
     id: "coastVariant",
     label: "Variant",
-    tip: "Reshuffles the coastline. Each value is a different set of coasts, with the same character",
+    tip: "Reshuffles where the calm and rough stretches fall",
     min: 0,
     max: 99,
     step: 1,
@@ -90,8 +90,8 @@ const INPUTS_CONFIG: SliderDef[] = [
   },
   {
     id: "coastLakeSmoothThreshMult",
-    label: "Lake smooth multiplier",
-    tip: "Smooth-threshold multiplier for lake shores. 1 = same roughness as ocean, 0 = every lake shore is rough, high = glassy lakes",
+    label: "Calmer lakes",
+    tip: "How much calmer lake shores are than the sea. 1 is the same, higher gives glassy lakes, 0 makes every lake shore rough",
     min: 0,
     max: 5,
     step: 0.1,
@@ -285,7 +285,7 @@ function buildDialogHTML(): string {
           <slider-input id="${id}" min="${min}" max="${max}" step="${step}" value="${settings[key]}"></slider-input>
         </td>
         <td style="padding:0.2em">
-          <button id="${id}Reset" title="Reset to default" style="font-size:.8em; padding:1px 5px; cursor:pointer">↺</button>
+          <button id="${id}Reset" title="${selectedFeature ? "Reset to the map globals" : "Reset to default"}" style="font-size:.8em; padding:1px 5px; cursor:pointer">↺</button>
         </td>
       </tr>`;
   }).join("");
@@ -296,21 +296,21 @@ function buildDialogHTML(): string {
       </style>
       <div style="display:flex; align-items:center; gap:0.5em; margin-bottom:0.5em">
         <select id="coastScopeSelect" style="flex:1; min-width:0; height: 18px" data-tip="Select feature. Features with custom settings are bullet-marked">
-          <option value="0" ${selectedFeature ? "" : "selected"}>Map defaults</option>
+          <option value="0" ${selectedFeature ? "" : "selected"}>Whole map</option>
           ${scopeOptions}
         </select>
-        <button id="coastScopeReset" style="display:${selectedFeature?.coastline ? "" : "none"}" data-tip="Reset to follow global map settings">Reset to global</button>
-        <span style="display:${selectedFeature && !selectedFeature.coastline ? "" : "none"}">uses global settings</span>
+        <button id="coastScopeReset" style="display:${selectedFeature?.coastline ? "" : "none"}" data-tip="Reset to follow global map settings">Use map settings</button>
+        <span style="display:${selectedFeature && !selectedFeature.coastline ? "" : "none"}; color:#999">follows the map settings</span>
       </div>
       <div style="display:flex; justify-content:space-between; gap:0.5em; margin-bottom:0.5em; padding-bottom:0.5em; border-bottom:1px solid #ddd">
-        <label style="display:flex; align-items:center; gap:0.5em; cursor:pointer; user-select:none" data-tip="Enable or disable coastline fractalization. When disabled, coastlines are simple arcs between feature vertices. Enabling adds naturalistic roughness but can increase rendering time, especially at high detail levels.">
+        <label style="display:flex; align-items:center; gap:0.5em; cursor:pointer; user-select:none" data-tip="Enable or disable coastline fractalization. When disabled, coastlines are simple arcs between feature vertices. Enabling adds naturalistic roughness but can increase rendering time">
           <input id="coastEnabled" type="checkbox" ${settings.enabled ? "checked" : ""}
             style="position:absolute; opacity:0; pointer-events:none; width:0; height:0"/>
           <span id="coastEnabledTrack" style="position:relative; display:inline-block; width:36px; height:20px; border-radius:10px; background:${settings.enabled ? "#33bb88" : "#bbb"}; cursor:pointer; flex-shrink:0">
             <span id="coastEnabledThumb" style="position:absolute; top:2px; left:${settings.enabled ? "18px" : "2px"};width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3)"></span>
           </span>
         </label>
-        <div style="display:flex; align-items:center; gap:0.4em">
+        <div style="display:flex; align-items:center; gap:0.4em" data-tip="A ready-made look. Sets every slider except Variant, tune from there">
           <span style="color:#999">Preset</span>
           ${presetButtons}
         </div>
@@ -683,7 +683,7 @@ function drawOffBadge(ctx: CanvasRenderingContext2D, W: number): void {
   ctx.fillStyle = "rgba(0,0,0,0.55)";
   ctx.fillRect(W - 30, 4, 26, 13);
   ctx.fillStyle = "#fff";
-  ctx.fillText("OFF", W - 7, 6);
+  ctx.fillText("OFF", W - 8, 6);
   ctx.textBaseline = "alphabetic";
   ctx.textAlign = "left";
 }
