@@ -137,6 +137,20 @@ describe("options tab bindings", () => {
     expect(Pins.all()).toEqual({});
   });
 
+  it("leaves the default voice selected while no voice preference is set", () => {
+    const select = control("speakerVoice") as unknown as HTMLSelectElement;
+    select.options.add(new Option("Albert", "0"));
+    select.options.add(new Option("Daniel", "1"));
+    select.value = "1"; // what loadVoices picked for this browser
+
+    tab.syncOptionInputs();
+    expect(select.value).toBe("1");
+
+    options.app.ui.speakerVoice = "0";
+    tab.syncOptionInputs();
+    expect(select.value).toBe("0");
+  });
+
   it("reshapes emblems once per selection", () => {
     const shape = vi.spyOn(Emblems, "setShape");
     edit(control("emblemShape"), "heater");

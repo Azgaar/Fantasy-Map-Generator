@@ -138,7 +138,7 @@ No. /ask, mentions, in-app help and ordinary chat only ask for advice. If availa
 
 ### The map performance is poor, how can I improve it?
 
-Toggle off unnecessary layers. Be mindful of the Relief Icons layer in particular – it’s the most resource-demanding one. Open the Generator in a separate browser window, make it much smaller (about 900 x 560 pixels) and re-generate the map. Then, zoom in to see the map in detail. It will reduce the rending area and drastically improve the performance. When generating maps, set Points number to 10K. Points (cells) number highly affects performance. Toggle off map and element filters. Close all irrelevant browser tabs and applications. Use a leading edge browser (fresh versions on Chrome or Edge). Firefox is reported to be slower. Set 'Redraw on zoom' in the Options tab to 'After zoom' to redraw labels, icons and relief once per gesture instead of on every frame
+Toggle off unnecessary layers. Be mindful of the Relief Icons layer in particular – it’s the most resource-demanding one. Open the Generator in a separate browser window, make it much smaller (about 900 x 560 pixels) and re-generate the map. Then, zoom in to see the map in detail. It will reduce the rending area and drastically improve the performance. When generating maps, set Points number to 10K. Points (cells) number highly affects performance. Toggle off map and element filters. Close all irrelevant browser tabs and applications. Use a leading edge browser (fresh versions on Chrome or Edge). Firefox is reported to be slower. Set the 'Performance' preset in the Options tab to 'Speed', or open its settings and set 'Redraw on zoom' to 'After zoom' to redraw labels, icons and relief once per gesture instead of on every frame
 
 ### Who owns the maps created?
 
@@ -422,7 +422,7 @@ Follow the steps. 1. Save the map to storage. 2. Go to Options and set 'Onload b
 
 ### How the map is rendered? Is it on GPU or CPU?
 
-The map is rendered in SVG by browser. SVG rendering in GPU-supported, but it's not optimized and hence you can observe lags when there are too many elements to render. The rendering depends on browser and can only be controlled by user with 'Rendering' option. We recommend to set it to 'Best performance' in case of significant lag
+The map is rendered in SVG by browser. SVG rendering in GPU-supported, but it's not optimized and hence you can observe lags when there are too many elements to render. The rendering depends on browser and can only be controlled by user with the 'Performance' preset and its settings in the Options tab. We recommend to set it to 'Speed' in case of significant lag
 
 ### If I've changed a setting, how do I generate a new map without changing the seed number?
 

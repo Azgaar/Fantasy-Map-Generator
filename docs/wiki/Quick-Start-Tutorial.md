@@ -87,8 +87,7 @@ Generator settings:
 * _Speaker voice_: select the voice used to speak burg and other names. Voice synthesis is provided by the browser.
 * _Emblem shape_: defines shield shape used during emblems generation.
 * _Zoom extent_: minimal and maximal zoom levels. Click on the button on the right to restore the default values.
-* _Rendering_: set map rendering quality. Best quality can reduce the map performance.
-* _Redraw on zoom_: when labels, icons and relief are redrawn during a zoom or pan. _After zoom_ redraws once per gesture, which is faster on big maps but makes new content appear all at once.
+* _Performance_: a rendering preset trading visual quality for speed. Pick _Speed_ if the map feels slow. The cog button opens the detailed settings: shape rendering, state halos and redraw on zoom, each set on its own.
 * _Language_: load Google Translate and select a language to translate the interface. Automatic translation can break some functionality — use the reset icon or refresh the page if it does.
 
 There is also the _Restore default options_ button. It cancels all user changes and refreshes the page.

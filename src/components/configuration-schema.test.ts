@@ -81,8 +81,12 @@ describe("the schema describes the value, not merely its type", () => {
   });
 
   it("repairs a value outside a closed vocabulary", () => {
-    const app = { ...Options.getDefaultOptions().app, rendering: "whatever the last version called it" };
-    expect(repair("app", app).app.rendering).toBe(Options.getDefaultOptions().app.rendering);
+    const { performance } = Options.getDefaultOptions().app;
+    const app = {
+      ...Options.getDefaultOptions().app,
+      performance: { ...performance, shapeRendering: "whatever the last version called it" }
+    };
+    expect(repair("app", app).app.performance.shapeRendering).toBe(performance.shapeRendering);
   });
 
   it("repairs culture-set ids the generator does not know", () => {
