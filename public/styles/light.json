@@ -482,6 +482,7 @@
           "letter-spacing": 0,
           "font-size": "7%",
           "font-family": "IM Fell English",
+          "font-style": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
           "filter": null
         }
@@ -498,6 +499,7 @@
           "letter-spacing": 0,
           "font-size": "6%",
           "font-family": "IM Fell English",
+          "font-style": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
           "filter": null
         }
@@ -514,6 +516,7 @@
           "letter-spacing": 0,
           "font-size": "2%",
           "font-family": "IM Fell English",
+          "font-style": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.5em)",
           "filter": null
         }
@@ -530,6 +533,7 @@
           "letter-spacing": 0,
           "font-size": "2%",
           "font-family": "IM Fell English",
+          "font-style": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.5em)",
           "filter": null
         }
@@ -546,6 +550,7 @@
           "letter-spacing": 0,
           "font-size": "2%",
           "font-family": "IM Fell English",
+          "font-style": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.5em)",
           "filter": null
         }
@@ -562,6 +567,7 @@
           "letter-spacing": 0,
           "font-size": "2%",
           "font-family": "IM Fell English",
+          "font-style": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.5em)",
           "filter": null
         }
@@ -578,6 +584,7 @@
           "letter-spacing": 0,
           "font-size": "3%",
           "font-family": "IM Fell English",
+          "font-style": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
           "filter": null
         }
@@ -594,6 +601,7 @@
           "letter-spacing": 0,
           "font-size": "2%",
           "font-family": "IM Fell English",
+          "font-style": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
           "filter": null
         }
@@ -610,6 +618,7 @@
           "letter-spacing": 0,
           "font-size": "4%",
           "font-family": "IM Fell English",
+          "font-style": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
           "filter": null
         }
@@ -626,6 +635,7 @@
           "letter-spacing": 0,
           "font-size": "14%",
           "font-family": "IM Fell English",
+          "font-style": null,
           "style": "text-shadow: white 0px 0px 6px;",
           "filter": null
         }
@@ -642,6 +652,7 @@
           "letter-spacing": 0,
           "font-size": "6%",
           "font-family": "IM Fell English",
+          "font-style": null,
           "style": "text-shadow: white 0px 0px 6px;",
           "filter": null
         }
@@ -658,6 +669,7 @@
           "letter-spacing": 0,
           "font-size": "1.5%",
           "font-family": "IM Fell English",
+          "font-style": null,
           "style": "text-shadow: white 0px 0px 6px;",
           "filter": null
         }
@@ -674,6 +686,7 @@
           "letter-spacing": 0,
           "font-size": "1.5%",
           "font-family": "IM Fell English",
+          "font-style": null,
           "style": "text-shadow: white 0px 0px 4px;",
           "filter": null
         }
@@ -690,6 +703,7 @@
           "letter-spacing": 0,
           "font-size": "6%",
           "font-family": "IM Fell English",
+          "font-style": null,
           "style": "text-shadow: white 0px 0px 4px;",
           "filter": null
         }

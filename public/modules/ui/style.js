@@ -232,6 +232,12 @@ function selectStyleElement() {
     ensureEl("styleHeightmapContourColor").value = opts.contours.color;
     ensureEl("styleHeightmapContourWidth").value = opts.contours.width;
     ensureEl("styleHeightmapContourOpacity").value = opts.contours.opacity;
+    ensureEl("styleHeightmapHachures").value = opts.hachures.mode;
+    ensureEl("styleHeightmapHachureDensity").value = opts.hachures.density;
+    ensureEl("styleHeightmapHachureLength").value = opts.hachures.length;
+    ensureEl("styleHeightmapHachureColor").value = opts.hachures.color;
+    ensureEl("styleHeightmapHachureWidth").value = opts.hachures.width;
+    ensureEl("styleHeightmapHachureOpacity").value = opts.hachures.opacity;
     updateContourControls();
   }
 
@@ -301,7 +307,11 @@ function selectStyleElement() {
     styleShadowInput.value = getTextShadow(attrs.style);
 
     styleFont.style.display = "block";
+    styleFontStyleRow.style.display = "";
+    styleTextTransformRow.style.display = "";
     styleSelectFont.value = attrs["font-family"];
+    styleFontStyle.value = attrs["font-style"] || "";
+    styleTextTransform.value = getTextTransform(attrs.style);
     styleFontSize.value = fontSize;
 
     styleFontShift.style.display = "block";
@@ -353,6 +363,8 @@ function selectStyleElement() {
     styleStrokeWidthInput.value = attrs["stroke-width"] ?? 0.5;
 
     styleFont.style.display = "block";
+    styleFontStyleRow.style.display = "none"; // the legend has no font style or text transform
+    styleTextTransformRow.style.display = "none";
     styleSelectFont.value = attrs["font-family"];
     styleFontSize.value = opts.fontSize;
   }
@@ -362,6 +374,15 @@ function selectStyleElement() {
     styleOceanFill.value = styleOceanFillOutput.value = styles.ocean.base.attrs.fill;
     styleOceanPattern.value = styles.ocean.options.pattern;
     styleOceanPatternOpacity.value = styles.ocean.options.patternOpacity;
+    const hachures = styles.ocean.oceanHachures;
+    styleOceanHachures.checked = hachures.options.render;
+    styleOceanHachureDensity.value = hachures.options.density;
+    styleOceanHachureLength.value = hachures.options.length;
+    styleOceanHachureRows.value = hachures.options.rows;
+    styleOceanHachureWidth.value = hachures.options.width;
+    styleOceanHachureColor.value = hachures.attrs.fill || "#000000";
+    styleOceanHachureOpacity.value = hachures.attrs.opacity ?? 1;
+    updateCoastHachureControls();
     outlineLayers.value = styles.ocean.oceanLayers.options.outline;
   }
 
@@ -506,6 +527,7 @@ function updateGroupOptions(styleElement, layerEl) {
 }
 
 const getTextShadow = style => style?.match(/(?:^|;)\s*text-shadow\s*:\s*([^;]+)/)?.[1].trim() || "";
+const getTextTransform = style => style?.match(/(?:^|;)\s*text-transform\s*:\s*([a-z]+)/)?.[1] || "";
 const getLabelShift = style => {
   const match = style?.match(/(?:^|;)\s*transform\s*:\s*translate\(\s*(-?[\d.]+)em\s*,\s*(-?[\d.]+)em\s*\)/);
   return match ? { dx: +match[1], dy: +match[2] } : { dx: 0, dy: 0 };
@@ -661,6 +683,46 @@ styleRescaleMarkers.addEventListener("change", function () {
   invokeActiveZooming();
 });
 
+function updateCoastHachureControls() {
+  const enabled = styles.ocean.oceanHachures.options.render;
+  styleOcean.querySelectorAll("[data-coast-hachure]").forEach(row => {
+    row.style.display = enabled ? "" : "none";
+  });
+}
+
+styleOceanHachures.addEventListener("change", e => {
+  styles.ocean.oceanHachures.options.render = e.target.checked;
+  updateCoastHachureControls();
+  Layers.draw("ocean");
+});
+
+for (const [id, key] of [
+  ["styleOceanHachureDensity", "density"],
+  ["styleOceanHachureLength", "length"],
+  ["styleOceanHachureWidth", "width"],
+  ["styleOceanHachureRows", "rows"]
+]) {
+  ensureEl(id).addEventListener("input", e => {
+    if (e.target !== e.currentTarget) return; // slider-input also bubbles its inner input event
+    const control = e.currentTarget;
+    const value = +control.value;
+    if (control.value === "" || !Number.isFinite(value)) return;
+    styles.ocean.oceanHachures.options[key] = key === "rows" ? Math.round(value) : value;
+    Layers.draw("ocean");
+  });
+}
+
+styleOceanHachureColor.addEventListener("input", function () {
+  styles.ocean.oceanHachures.attrs.fill = this.value;
+  Styles.write("ocean");
+});
+
+styleOceanHachureOpacity.addEventListener("input", e => {
+  if (e.target !== e.currentTarget) return;
+  styles.ocean.oceanHachures.attrs.opacity = +e.currentTarget.value;
+  Styles.write("ocean");
+});
+
 styleOceanFill.addEventListener("input", function () {
   styles.ocean.base.attrs.fill = this.value;
   d3.select("#oceanLayers").select("rect").attr("fill", this.value);
@@ -694,6 +756,41 @@ function updateContourControls() {
   const enabled = opts.contours.mode !== "off" && !oceanBlocked;
   styleHeightmap.querySelectorAll("[data-contour-style]").forEach(row => {
     row.style.display = enabled ? "" : "none";
+  });
+
+  const hachuresSelect = ensureEl("styleHeightmapHachures");
+  hachuresSelect.disabled = oceanBlocked;
+  hachuresSelect.title = oceanBlocked ? "Enable Render ocean heights to show ocean hachures" : "";
+  const hachuresEnabled = opts.hachures.mode !== "off" && !oceanBlocked;
+  styleHeightmap.querySelectorAll("[data-hachure-style]").forEach(row => {
+    row.style.display = hachuresEnabled ? "" : "none";
+  });
+}
+
+ensureEl("styleHeightmapHachures").addEventListener("change", e => {
+  heightsOptions().hachures.mode = e.target.value;
+  updateContourControls();
+  Layers.draw("heightmap");
+});
+
+for (const [id, key] of [
+  ["styleHeightmapHachureDensity", "density"],
+  ["styleHeightmapHachureLength", "length"],
+  ["styleHeightmapHachureWidth", "width"],
+  ["styleHeightmapHachureOpacity", "opacity"],
+  ["styleHeightmapHachureColor", "color"]
+]) {
+  ensureEl(id).addEventListener("input", e => {
+    if (e.target !== e.currentTarget) return; // slider-input also bubbles its inner input event
+    const control = e.currentTarget;
+    let value = control.value;
+    if (key !== "color") {
+      if (value === "" || !Number.isFinite(+value)) return;
+      value = Math.max(+control.getAttribute("min"), Math.min(+control.getAttribute("max"), +value));
+      control.value = value;
+    }
+    heightsOptions().hachures[key] = value;
+    Layers.draw("heightmap");
   });
 }
 
@@ -978,6 +1075,18 @@ function changeFont() {
   writeSelectedAttr("font-family", styleSelectFont.value);
   if (styleElementSelect.value === "legend") Layers.draw("legend");
 }
+
+styleFontStyle.addEventListener("change", function () {
+  writeSelectedAttr("font-style", this.value || null);
+});
+
+styleTextTransform.addEventListener("change", function () {
+  // not an svg attribute, so it shares the inline style with the text shadow and the label shift
+  const groupStyle = styles.labels.groups[styleGroupSelect.value];
+  if (groupStyle) groupStyle.attrs.style = setInlineStyleProperty(groupStyle.attrs.style, "text-transform", this.value);
+  getEl().style("text-transform", this.value || null);
+  if (styleGroupSelect.value === "state") Layers.draw("labels"); // state labels are fitted to their width
+});
 
 styleShadowInput.addEventListener("input", function () {
   // the label shift transform lives in the same inline style, so merge instead of replacing

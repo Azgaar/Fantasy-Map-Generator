@@ -281,6 +281,8 @@ i.icon-lock {
 #labels {
   text-anchor: middle;
   dominant-baseline: central;
+  paint-order: stroke; /* a label stroke is a halo under the glyphs, never an outline over them */
+  stroke-linejoin: round;
   cursor: pointer;
 }
 

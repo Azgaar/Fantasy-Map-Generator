@@ -127,6 +127,36 @@ const TEMPLATE = /* html */ `
         <td>Contour opacity</td>
         <td><slider-input id="styleHeightmapContourOpacity" min="0" max="1" step="0.05"></slider-input></td>
       </tr>
+      <tr data-tip="Draw downhill pen strokes over the heightmap colors, or show only the strokes">
+        <td><label for="styleHeightmapHachures">Hachures</label></td>
+        <td>
+          <select id="styleHeightmapHachures">
+            <option value="off">Off</option>
+            <option value="overlay">Over colors</option>
+            <option value="only">Strokes only</option>
+          </select>
+        </td>
+      </tr>
+      <tr data-hachure-style data-tip="How closely the strokes are packed, relative to the default. Steep ground packs them tighter">
+        <td>Hachure density</td>
+        <td><slider-input id="styleHeightmapHachureDensity" min="0.1" max="4" step="0.1"></slider-input></td>
+      </tr>
+      <tr data-hachure-style data-tip="Stroke length, relative to the default. Strokes stop early where the slope levels off">
+        <td>Hachure length</td>
+        <td><slider-input id="styleHeightmapHachureLength" min="0.2" max="4" step="0.1"></slider-input></td>
+      </tr>
+      <tr data-hachure-style data-tip="Color of the hachure strokes">
+        <td><label for="styleHeightmapHachureColor">Hachure color</label></td>
+        <td><input id="styleHeightmapHachureColor" type="color" /></td>
+      </tr>
+      <tr data-hachure-style data-tip="Stroke width at its root, relative to the default. Gentler ground draws lighter strokes">
+        <td>Hachure width</td>
+        <td><slider-input id="styleHeightmapHachureWidth" min="0.2" max="4" step="0.1"></slider-input></td>
+      </tr>
+      <tr data-hachure-style data-tip="Opacity of the hachure strokes">
+        <td>Hachure opacity</td>
+        <td><slider-input id="styleHeightmapHachureOpacity" min="0" max="1" step="0.05"></slider-input></td>
+      </tr>
       <tr data-tip="Terracing power. Set to 0 to toggle off">
         <td>Terracing</td>
         <td>
@@ -342,6 +372,36 @@ const TEMPLATE = /* html */ `
           <output id="styleOceanFillOutput">#466eab</output>
         </td>
       </tr>
+      <tr data-tip="Draw the engraver's coastal fringe: short strokes perpendicular to the shore, fading out to sea">
+        <td colspan="2">
+          <input id="styleOceanHachures" class="checkbox" type="checkbox" />
+          <label for="styleOceanHachures" class="checkbox-label">Coastal hachures</label>
+        </td>
+      </tr>
+      <tr data-coast-hachure data-tip="How closely the strokes are packed along the coast, relative to the default">
+        <td>Hachure density</td>
+        <td><slider-input id="styleOceanHachureDensity" min="0.1" max="4" step="0.1"></slider-input></td>
+      </tr>
+      <tr data-coast-hachure data-tip="Stroke length, relative to the default">
+        <td>Hachure length</td>
+        <td><slider-input id="styleOceanHachureLength" min="0.2" max="4" step="0.1"></slider-input></td>
+      </tr>
+      <tr data-coast-hachure data-tip="Rows of strokes out from the coast, each shorter and sparser than the last">
+        <td>Hachure rows</td>
+        <td><slider-input id="styleOceanHachureRows" min="1" max="5" step="1"></slider-input></td>
+      </tr>
+      <tr data-coast-hachure data-tip="Color of the coastal strokes">
+        <td><label for="styleOceanHachureColor">Hachure color</label></td>
+        <td><input id="styleOceanHachureColor" type="color" /></td>
+      </tr>
+      <tr data-coast-hachure data-tip="Stroke width at the coast, relative to the default">
+        <td>Hachure width</td>
+        <td><slider-input id="styleOceanHachureWidth" min="0.2" max="4" step="0.1"></slider-input></td>
+      </tr>
+      <tr data-coast-hachure data-tip="Opacity of the coastal strokes">
+        <td>Hachure opacity</td>
+        <td><slider-input id="styleOceanHachureOpacity" min="0" max="1" step="0.05"></slider-input></td>
+      </tr>
     </tbody>
     <tbody id="styleBurgIcons">
       <tr data-tip="Select group icon">
@@ -547,6 +607,26 @@ const TEMPLATE = /* html */ `
         <td>
           <select id="styleSelectFont" style="width: 85%"></select>
           <button id="styleFontAdd" data-tip="Add a font" class="icon-plus sideButton"></button>
+        </td>
+      </tr>
+      <tr id="styleFontStyleRow" data-tip="Set font style">
+        <td>Font style</td>
+        <td>
+          <select id="styleFontStyle">
+            <option value="">Normal</option>
+            <option value="italic">Italic</option>
+          </select>
+        </td>
+      </tr>
+      <tr id="styleTextTransformRow" data-tip="Change the letter case of the labels as displayed">
+        <td>Text transform</td>
+        <td>
+          <select id="styleTextTransform">
+            <option value="">None</option>
+            <option value="uppercase">Uppercase</option>
+            <option value="lowercase">Lowercase</option>
+            <option value="capitalize">Capitalize</option>
+          </select>
         </td>
       </tr>
     </tbody>

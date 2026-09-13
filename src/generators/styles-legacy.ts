@@ -615,6 +615,7 @@ export function labelGroupFromLegacy(legacy: unknown): Styles["labels"]["groups"
       "letter-spacing": numOr(bag["letter-spacing"], 0),
       "font-size": strOr(bag["data-size"], null) ?? strOr(bag["font-size"], "18%") ?? "18%",
       "font-family": strOr(bag["font-family"], "Almendra SC") ?? "Almendra SC",
+      "font-style": strOr(bag["font-style"], null),
       style: labelStyleFromLegacy(bag),
       filter: strOr(bag.filter, null)
     }

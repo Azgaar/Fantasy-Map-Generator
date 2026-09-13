@@ -186,7 +186,7 @@ test("all 12 shipped presets parse as the new format with zero warnings", () => 
     .filter(f => f.endsWith(".json"))
     .map(f => path.join(presetDir, f));
   files.push(path.join(__dirname, "default-styles.json"));
-  expect(files).toHaveLength(12);
+  expect(files).toHaveLength(13);
   const warn = vi.spyOn(console, "warn");
   warn.mockClear();
   for (const file of files) {

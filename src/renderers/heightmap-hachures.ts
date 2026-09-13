@@ -1,0 +1,178 @@
+import type { Point } from "@/types/global";
+import { getHeightContourChains } from "./heightmap-contours";
+
+export interface HachureParams {
+  points: Point[]; // cell centers of the jittered square grid, then the boundary pseudo-points
+  heights: ArrayLike<number>; // one per point
+  neighbors: number[][]; // one per cell: the boundary points have none
+  triangles: number[][];
+  spacing: number;
+  cellsX: number;
+  cellsY: number;
+  inBand: (height: number) => boolean; // land or ocean cells
+  thresholds: number[]; // the levels strokes are seeded along
+  density: number; // strokes along a level, relative to the default
+  length: number; // stroke length, relative to the default
+  width: number; // stroke width at its root, relative to the default
+  seed: string;
+}
+
+const STEP = 0.25; // sampling step along a stroke, in cell spacings
+const ROW_GAP = 0.15; // gap between strokes along a level at density 1, in cell spacings
+const LENGTH = 0.5; // longest stroke at length 1, in cell spacings
+const WIDTH = 0.2; // root width of a stroke at width 1, in map units
+const ROW_SCATTER = 0.6; // a seed slides this far down the fall line at most, in cell spacings, so rows don't show
+const MIN_LENGTH = 0.15; // shortest stroke, as a share of the longest: a few strokes are mere ticks
+const FADE_STEPS = 2; // steps a stroke keeps running past the foot of the slope
+// slopes in height units per cell spacing: terrain is generated per cell, so this holds across graph densities
+const MIN_SLOPE = 1.2; // gentler ground draws nothing; a stroke reaching it is at the foot of the slope
+const FULL_SLOPE = 4; // steeper ground draws the full stroke spacing, length and width
+
+/** least-squares plane gradient (dh/dx, dh/dy) at every cell, flattened as [gx0, gy0, gx1, gy1, ...] */
+export function getSlopeGradients(points: Point[], heights: ArrayLike<number>, neighbors: number[][]): Float64Array {
+  const gradients = new Float64Array(neighbors.length * 2);
+  for (let i = 0; i < neighbors.length; i++) {
+    const [x, y] = points[i];
+    let sxx = 0;
+    let syy = 0;
+    let sxy = 0;
+    let sxh = 0;
+    let syh = 0;
+    for (const n of neighbors[i]) {
+      const dx = points[n][0] - x;
+      const dy = points[n][1] - y;
+      const dh = heights[n] - heights[i];
+      sxx += dx * dx;
+      syy += dy * dy;
+      sxy += dx * dy;
+      sxh += dx * dh;
+      syh += dy * dh;
+    }
+    const det = sxx * syy - sxy * sxy;
+    if (Math.abs(det) < 1e-9) continue;
+    gradients[i * 2] = (sxh * syy - syh * sxy) / det;
+    gradients[i * 2 + 1] = (syh * sxx - sxh * sxy) / det;
+  }
+  return gradients;
+}
+
+/**
+ * Hachures in the engraved manner: straight tapered strokes down the fall line, seeded along the
+ * elevation levels, packed and heavy where the ground is steep, thinning out towards the foot of
+ * the slope. The ground above the top level stays white, which is what draws the crest lines.
+ * Returns one filled path of stroke outlines
+ */
+export function getHachures(params: HachureParams): string {
+  const { points, heights, neighbors, triangles, spacing, cellsX, cellsY, inBand } = params;
+  const { thresholds, density, length, width, seed } = params;
+  const random = createRandom(seed);
+  const gradients = getSlopeGradients(points, heights, neighbors);
+  const weightOf = (slope: number) => Math.min(1, Math.max(0, (slope - MIN_SLOPE) / (FULL_SLOPE - MIN_SLOPE)));
+
+  const cellAt = (x: number, y: number): number => {
+    if (x < 0 || y < 0) return -1;
+    const column = Math.floor(x / spacing);
+    const row = Math.floor(y / spacing);
+    if (column >= cellsX || row >= cellsY) return -1;
+    return row * cellsX + column;
+  };
+
+  // inverse-distance blend of the cell gradients around a point: the fall line without cell-edge kinks
+  const gradientAt = (x: number, y: number, cell: number): [number, number] => {
+    let gx = 0;
+    let gy = 0;
+    let sum = 0;
+    for (const j of [cell, ...neighbors[cell]]) {
+      const w = 1 / (0.01 + (points[j][0] - x) ** 2 + (points[j][1] - y) ** 2);
+      gx += gradients[j * 2] * w;
+      gy += gradients[j * 2 + 1] * w;
+      sum += w;
+    }
+    return [gx / sum, gy / sum];
+  };
+
+  const step = spacing * STEP;
+  const gap = (spacing * ROW_GAP) / density;
+  const parts: string[] = [];
+
+  for (const chain of getHeightContourChains(points, heights, triangles, thresholds)) {
+    const row = chain.closed ? [...chain.points, chain.points[0]] : chain.points;
+    let untilNext = random() * gap;
+    for (let i = 1; i < row.length; i++) {
+      const [x0, y0] = row[i - 1];
+      const [x1, y1] = row[i];
+      const segment = Math.hypot(x1 - x0, y1 - y0);
+      let along = untilNext;
+      while (along < segment) {
+        const t = along / segment;
+        const { path, weight } = trace(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t);
+        if (path) parts.push(path);
+        // steep ground packs the strokes: the gap shrinks with the slope
+        along += gap * (1.6 - weight) * (0.8 + random() * 0.4);
+      }
+      untilNext = along - segment;
+    }
+  }
+
+  return parts.join("");
+
+  function trace(x: number, y: number): { path: string | null; weight: number } {
+    const none = { path: null, weight: 0 };
+    const cell = cellAt(x, y);
+    if (cell < 0 || !inBand(heights[cell])) return none;
+    const [gx, gy] = gradientAt(x, y, cell);
+    const magnitude = Math.hypot(gx, gy);
+    const weight = weightOf(magnitude * spacing);
+    if (!weight) return none;
+
+    const dx = -gx / magnitude;
+    const dy = -gy / magnitude;
+    const slide = random() * ROW_SCATTER * spacing;
+    x += dx * slide;
+    y += dy * slide;
+
+    // the stroke runs straight down the fall line at its root, as far as the ground stays steep
+    const longest = LENGTH * length * spacing * (0.5 + 0.5 * weight);
+    const wanted = longest * (MIN_LENGTH + (1 - MIN_LENGTH) * random() ** 1.5);
+    let run = 0;
+    let fading = 0;
+    while (run < wanted) {
+      const here = cellAt(x + dx * (run + step), y + dy * (run + step));
+      if (here < 0 || !inBand(heights[here])) break;
+      const [hx, hy] = gradientAt(x + dx * (run + step), y + dy * (run + step), here);
+      if (Math.hypot(hx, hy) * spacing < MIN_SLOPE && ++fading > FADE_STEPS) break;
+      run += step;
+    }
+    if (run < step) return { path: null, weight };
+    return {
+      path: taper(x, y, dx * Math.min(run, wanted), dy * Math.min(run, wanted), WIDTH * width * (0.4 + 0.6 * weight)),
+      weight
+    };
+  }
+}
+
+/** the outline of a straight stroke: `rootWidth` wide at (x, y), `tipWidth` wide at (x + dx, y + dy) */
+export function taper(x: number, y: number, dx: number, dy: number, rootWidth: number, tipWidth = 0): string {
+  const d = Math.hypot(dx, dy) || 1;
+  const ax = -dy / d; // across the stroke
+  const ay = dx / d;
+  const f = (v: number) => v.toFixed(2);
+  const root = `M${f(x + (ax * rootWidth) / 2)},${f(y + (ay * rootWidth) / 2)}`;
+  if (!tipWidth) {
+    return `${root}l${f(dx - (ax * rootWidth) / 2)},${f(dy - (ay * rootWidth) / 2)}l${f(-dx - (ax * rootWidth) / 2)},${f(-dy - (ay * rootWidth) / 2)}Z`;
+  }
+  const half = (rootWidth - tipWidth) / 2;
+  return `${root}l${f(dx - ax * half)},${f(dy - ay * half)}l${f(-ax * tipWidth)},${f(-ay * tipWidth)}l${f(-dx - ax * half)},${f(-dy - ay * half)}Z`;
+}
+
+/** mulberry32 over a string hash: the map seed decides the strokes, the shared PRNG stays untouched */
+export function createRandom(seed: string): () => number {
+  let state = 1779033703;
+  for (let i = 0; i < seed.length; i++) state = Math.imul(state ^ seed.charCodeAt(i), 3432918353);
+  return () => {
+    state = (state + 0x6d2b79f5) | 0;
+    let t = Math.imul(state ^ (state >>> 15), 1 | state);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}

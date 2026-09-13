@@ -265,16 +265,21 @@ class CoastlineGenerator {
 
   /** Closed SVG path of the feature outline, fractalized as configured */
   getFeaturePath(feature: Feature): string {
+    const shape = this.getFeatureShape(feature);
+    return shape ? `${round(buildCoastlinePath(shape))}Z` : "";
+  }
+
+  /** The feature outline as drawn: simplified, clipped to the map and fractalized */
+  getFeatureShape(feature: Feature): FractalizedShape | null {
     const points = feature.vertices.map(vertex => pack.vertices.p[vertex]);
     if (points.some(point => point === undefined)) {
-      ERROR && console.error("Undefined point in getFeaturePath");
-      return "";
+      ERROR && console.error("Undefined point in getFeatureShape");
+      return null;
     }
 
     const simplifiedPoints = simplify(points, SIMPLIFICATION_TOLERANCE);
     const clippedPoints = clipPoly(simplifiedPoints, options.map.graph.width, options.map.graph.height, 1);
-    const shape = this.fractalizeFeature(clippedPoints, feature);
-    return `${round(buildCoastlinePath(shape))}Z`;
+    return this.fractalizeFeature(clippedPoints, feature);
   }
 
   /** Displace a polygon into a naturalistic coastline. Deterministic: the same rand and settings repeat the shape */

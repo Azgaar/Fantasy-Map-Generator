@@ -16,7 +16,7 @@ const transform = z.string().nullable();
 const percentage = z.string().regex(/^-?\d+(\.\d+)?%$/);
 // font sizes carry legacy dialects ("6%", "12px", "18"), so no format validator
 const fontSize = z.string();
-const styleAttr = z.string().nullable(); // CSSStyleDeclaration.cssText: textShadow and transform
+const styleAttr = z.string().nullable(); // CSSStyleDeclaration.cssText: only text-shadow and the label shift transform live here
 
 const strokeAttrs = {
   stroke: color,
@@ -44,7 +44,18 @@ const heights = z.strictObject({
         width: z.number().min(0.1).max(2),
         opacity: z.number().min(0).max(1)
       })
-      .default({ mode: "off", interval: 5, color: "#5c513e", width: 0.35, opacity: 0.5 })
+      .default({ mode: "off", interval: 5, color: "#5c513e", width: 0.35, opacity: 0.5 }),
+    // downhill pen strokes, denser and longer on steeper slopes
+    hachures: z
+      .strictObject({
+        mode: z.enum(["off", "overlay", "only"]),
+        density: z.number().min(0.1).max(4),
+        length: z.number().min(0.2).max(4),
+        width: z.number().min(0.2).max(4),
+        color: z.string(),
+        opacity: z.number().min(0).max(1)
+      })
+      .default({ mode: "off", density: 1, length: 1, width: 1, color: "#5c513e", opacity: 0.65 })
   })
 });
 const burgGroup = z.strictObject({
@@ -66,7 +77,23 @@ export const stylesSchema = z.strictObject({
     oceanLayers: z.strictObject({
       attrs: z.strictObject({ filter }),
       options: z.strictObject({ outline: z.string() })
-    })
+    }),
+    // the engraver's sea: rows of wave-dashes packed against the shore and thinning out to open water
+    oceanWaves: z
+      .strictObject({
+        attrs: z.strictObject({ opacity, stroke: color, "stroke-width": strokeWidth, filter }),
+        options: z.strictObject({
+          render: z.boolean(),
+          density: z.number().min(0.1).max(4),
+          length: z.number().min(0.2).max(4),
+          reach: z.number().min(1).max(12), // cells from the shore the dashes fade out over
+          halo: z.number().min(0).max(2) // blank water along the shore, in cell spacings
+        })
+      })
+      .default({
+        attrs: { opacity: 0.5, stroke: "#1f3846", "stroke-width": 0.5, filter: null },
+        options: { render: false, density: 1, length: 1, reach: 4, halo: 0.25 }
+      })
   }),
   landmass: z.strictObject({ attrs: z.strictObject({ opacity, fill: color, filter }) }),
   texture: z.strictObject({
@@ -174,6 +201,7 @@ export const stylesSchema = z.strictObject({
           "letter-spacing": letterSpacing,
           "font-size": fontSize,
           "font-family": fontFamily,
+          "font-style": z.string().nullable().default(null),
           style: styleAttr,
           filter
         })

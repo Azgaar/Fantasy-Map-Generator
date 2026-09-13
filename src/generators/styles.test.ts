@@ -28,6 +28,16 @@ describe("parseStyles", () => {
     expect(parsed.heightmap.landHeights.attrs.opacity).toBe(0.7);
   });
 
+  test("older heightmap styles gain disabled hachures", () => {
+    const doc = structuredClone(Styles.defaults) as any;
+    delete doc.heightmap.landHeights.options.hachures;
+    const parsed = Styles.parse(doc);
+    expect(parsed.heightmap.landHeights.options.hachures).toEqual(
+      Styles.defaults.heightmap.landHeights.options.hachures
+    );
+    expect(parsed.heightmap.landHeights.options.hachures.mode).toBe("off");
+  });
+
   test("custom contour settings round-trip through serialized styles", () => {
     const doc = Styles.parse(Styles.defaults);
     doc.heightmap.landHeights.options.contours = {
