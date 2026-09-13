@@ -330,6 +330,40 @@ const TEMPLATE = /* html */ `
         </td>
       </tr>
     </tbody>
+    <tbody id="styleLakes">
+      <tr data-tip="Fine ripples along the banks, fading into open water and scaled down for small lakes">
+        <td><label for="styleLakeEmbellishment">Embellishment</label></td>
+        <td><select id="styleLakeEmbellishment">
+          <option value="none">None</option>
+          <option value="ripples">Ripples</option>
+          <option value="lines">Straight strokes</option>
+        </select></td>
+      </tr>
+      <tr data-lake-wave data-tip="How closely ripple rows are spaced">
+        <td>Density</td>
+        <td><slider-input id="styleLakeDensity" min=".1" max="4" step=".1"></slider-input></td>
+      </tr>
+      <tr data-lake-wave data-tip="Ripple length, fitted to the available water width">
+        <td>Length</td>
+        <td><slider-input id="styleLakeLength" min=".2" max="4" step=".1"></slider-input></td>
+      </tr>
+      <tr data-lake-wave data-tip="Clear water along the shoreline, relative to lake ripple scale">
+        <td>Shore gap</td>
+        <td><slider-input id="styleLakeHalo" min="0" max="2" step=".05"></slider-input></td>
+      </tr>
+      <tr data-lake-wave data-tip="Ripple stroke width in map pixels">
+        <td>Stroke width</td>
+        <td><slider-input id="styleLakeWidth" min=".05" max="2" step=".05"></slider-input></td>
+      </tr>
+      <tr data-lake-wave data-tip="Opacity of the lake ripples">
+        <td>Stroke opacity</td>
+        <td><slider-input id="styleLakeOpacity" min="0" max="1" step=".05"></slider-input></td>
+      </tr>
+      <tr data-lake-wave>
+        <td><label for="styleLakeColor">Stroke color</label></td>
+        <td><input id="styleLakeColor" type="color" /></td>
+      </tr>
+    </tbody>
     <tbody id="styleOcean">
       <tr data-tip="Select ocean pattern">
         <td>Pattern</td>

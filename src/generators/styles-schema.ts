@@ -26,7 +26,20 @@ const strokeAttrs = {
 };
 const fillAttrs = { fill: color, "fill-opacity": opacity };
 
-const lake = z.strictObject({ attrs: z.strictObject({ opacity, ...fillAttrs, ...strokeAttrs, filter }) });
+const lake = z.strictObject({
+  attrs: z.strictObject({ opacity, ...fillAttrs, ...strokeAttrs, filter }),
+  options: z
+    .strictObject({
+      embellishment: z.enum(["none", "ripples", "lines"]),
+      density: z.number().min(0.1).max(4),
+      length: z.number().min(0.2).max(4),
+      halo: z.number().min(0).max(2),
+      color: z.string(),
+      width: z.number().min(0.05).max(2),
+      opacity: z.number().min(0).max(1)
+    })
+    .default({ embellishment: "none", density: 1, length: 1, halo: 0.2, color: "#000000", width: 0.3, opacity: 0.6 })
+});
 const heights = z.strictObject({
   attrs: z.strictObject({ opacity, filter, mask }),
   options: z.strictObject({

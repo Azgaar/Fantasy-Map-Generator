@@ -206,6 +206,15 @@
         "stroke-dasharray": null,
         "stroke-linecap": null,
         "filter": null
+      },
+      "options": {
+        "embellishment": "none",
+        "density": 1,
+        "length": 1,
+        "halo": 0.2,
+        "color": "#000000",
+        "width": 0.3,
+        "opacity": 0.6
       }
     },
     "salt": {
@@ -218,6 +227,15 @@
         "stroke-dasharray": null,
         "stroke-linecap": null,
         "filter": null
+      },
+      "options": {
+        "embellishment": "none",
+        "density": 1,
+        "length": 1,
+        "halo": 0.2,
+        "color": "#000000",
+        "width": 0.3,
+        "opacity": 0.6
       }
     },
     "sinkhole": {
@@ -230,6 +248,15 @@
         "stroke-dasharray": null,
         "stroke-linecap": null,
         "filter": null
+      },
+      "options": {
+        "embellishment": "none",
+        "density": 1,
+        "length": 1,
+        "halo": 0.2,
+        "color": "#000000",
+        "width": 0.3,
+        "opacity": 0.6
       }
     },
     "frozen": {
@@ -242,6 +269,15 @@
         "stroke-dasharray": null,
         "stroke-linecap": null,
         "filter": null
+      },
+      "options": {
+        "embellishment": "none",
+        "density": 1,
+        "length": 1,
+        "halo": 0.2,
+        "color": "#000000",
+        "width": 0.3,
+        "opacity": 0.6
       }
     },
     "lava": {
@@ -254,6 +290,15 @@
         "stroke-dasharray": null,
         "stroke-linecap": null,
         "filter": "url(#crumpled)"
+      },
+      "options": {
+        "embellishment": "none",
+        "density": 1,
+        "length": 1,
+        "halo": 0.2,
+        "color": "#000000",
+        "width": 0.3,
+        "opacity": 0.6
       }
     },
     "dry": {
@@ -266,6 +311,15 @@
         "stroke-dasharray": null,
         "stroke-linecap": null,
         "filter": null
+      },
+      "options": {
+        "embellishment": "none",
+        "density": 1,
+        "length": 1,
+        "halo": 0.2,
+        "color": "#000000",
+        "width": 0.3,
+        "opacity": 0.6
       }
     }
   },

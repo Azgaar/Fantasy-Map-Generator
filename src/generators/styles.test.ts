@@ -1,4 +1,5 @@
 import { describe, expect, test, vi } from "vitest";
+import ink from "../../public/styles/ink.json";
 import { Styles } from "./styles";
 import { stylesSchema } from "./styles-schema";
 
@@ -15,6 +16,18 @@ describe("stylesSchema", () => {
 });
 
 describe("parseStyles", () => {
+  test("older lakes gain disabled embellishments and ink settings survive serialization", () => {
+    const doc = structuredClone(Styles.defaults);
+    const { options: _, ...freshwater } = doc.lakes.freshwater;
+    const parsed = Styles.parse({ ...doc, lakes: { ...doc.lakes, freshwater } });
+    expect(parsed.lakes.freshwater.options.embellishment).toBe("none");
+    expect(parsed.lakes.freshwater.attrs).toEqual(freshwater.attrs);
+    const inkStyles = Styles.parse(ink);
+    expect(inkStyles.lakes.freshwater.options.embellishment).toBe("ripples");
+    expect(inkStyles.lakes.dry.options.embellishment).toBe("none");
+    expect(Styles.parse(JSON.parse(JSON.stringify(inkStyles)))).toEqual(inkStyles);
+  });
+
   test("older heightmap styles gain disabled contours without changing their existing appearance", () => {
     const doc = structuredClone(Styles.defaults) as any;
     delete doc.heightmap.landHeights.options.contours;

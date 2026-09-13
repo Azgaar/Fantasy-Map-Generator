@@ -199,31 +199,49 @@
     "freshwater": {
       "attrs": {
         "opacity": 1,
-        "fill": "#ffffff",
+        "fill": "#f7f7f7",
         "fill-opacity": null,
         "stroke": "#000000",
         "stroke-width": 0.5,
         "stroke-dasharray": null,
         "stroke-linecap": null,
         "filter": null
+      },
+      "options": {
+        "embellishment": "ripples",
+        "density": 2,
+        "length": 0.4,
+        "halo": 0.1,
+        "color": "#000000",
+        "width": 0.2,
+        "opacity": 0.7
       }
     },
     "salt": {
       "attrs": {
         "opacity": 1,
-        "fill": "#ffffff",
+        "fill": "#f7f7f7",
         "fill-opacity": null,
         "stroke": "#000000",
         "stroke-width": 0.5,
         "stroke-dasharray": null,
         "stroke-linecap": null,
         "filter": null
+      },
+      "options": {
+        "embellishment": "ripples",
+        "density": 4,
+        "length": 0.2,
+        "halo": 0.1,
+        "color": "#000000",
+        "width": 0.2,
+        "opacity": 0.7
       }
     },
     "sinkhole": {
       "attrs": {
         "opacity": 1,
-        "fill": "#ffffff",
+        "fill": "#f7f7f7",
         "fill-opacity": null,
         "stroke": "#000000",
         "stroke-width": 0.3,

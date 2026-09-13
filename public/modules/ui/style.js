@@ -369,6 +369,15 @@ function selectStyleElement() {
     styleFontSize.value = opts.fontSize;
   }
 
+  if (styleElement === "lakes" && node?.options) {
+    ensureEl("styleLakes").style.display = "block";
+    ensureEl("styleLakeEmbellishment").value = opts.embellishment;
+    for (const key of ["density", "length", "halo", "width", "opacity", "color"]) {
+      ensureEl("styleLake" + key[0].toUpperCase() + key.slice(1)).value = opts[key];
+    }
+    updateLakeWaveControls();
+  }
+
   if (styleElement === "ocean") {
     styleOcean.style.display = "block";
     styleOceanFill.value = styleOceanFillOutput.value = styles.ocean.base.attrs.fill;
@@ -685,6 +694,27 @@ styleRescaleMarkers.addEventListener("change", function () {
   styles.markers.options.rescale = +this.checked;
   invokeActiveZooming();
 });
+
+function updateLakeWaveControls() {
+  const enabled = ensureEl("styleLakeEmbellishment").value !== "none";
+  ensureEl("styleLakes").querySelectorAll("[data-lake-wave]").forEach(row => {
+    row.style.display = enabled ? "" : "none";
+  });
+}
+
+for (const key of ["embellishment", "density", "length", "halo", "width", "opacity", "color"]) {
+  const control = ensureEl("styleLake" + key[0].toUpperCase() + key.slice(1));
+  control.addEventListener(key === "embellishment" ? "change" : "input", e => {
+    if (e.target !== e.currentTarget) return;
+    const opts = stylesLegacy.styleNodeFor("lakes", styleGroupSelect.value)?.node?.options;
+    if (!opts) return;
+    const value = ["embellishment", "color"].includes(key) ? control.value : +control.value;
+    if (control.value === "" || (typeof value === "number" && !Number.isFinite(value))) return;
+    opts[key] = value;
+    updateLakeWaveControls();
+    Layers.draw("lakes");
+  });
+}
 
 function updateCoastalWaveControls() {
   const enabled = styles.ocean.oceanWaves.options.render;
