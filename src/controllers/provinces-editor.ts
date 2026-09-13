@@ -883,6 +883,8 @@ function togglePercentageMode(): void {
 type TreeNode = any;
 
 function showChart(): void {
+  collectStatistics(); // the chart can open from search before the editor ever did
+
   // build hierarchy tree
   const getColor = (s: TreeNode): string =>
     !s.i || s.removed || s.color[0] !== "#" ? "#666" : String(d3Color(s.color)!.darker());

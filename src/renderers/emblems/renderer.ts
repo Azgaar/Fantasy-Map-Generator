@@ -304,10 +304,10 @@ class EmblemRendererModule {
 
   remove(id: string): void {
     this.invalidate(id);
-    this.versions.delete(id);
     document.getElementById(id)?.remove();
   }
 
+  /** the version only ever grows: a render still in flight can never match a later one for the same id */
   private invalidate(id: string): void {
     this.versions.set(id, (this.versions.get(id) || 0) + 1);
     this.pending.delete(id);

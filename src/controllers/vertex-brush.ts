@@ -31,7 +31,7 @@ export class VertexBrush {
   readonly before = new Map<number, Point>();
   private weights = new Map<number, number>();
   private limits = new Map<number, { origin: Point; distance: number }>();
-  private areas = new Map<number, number>();
+  private cells = new Map<number, { area: number; simple: boolean }>();
 
   constructor(
     private center: Point,
@@ -57,10 +57,13 @@ export class VertexBrush {
       const edge = edges.reduce((sum, length) => sum + length, 0) / edges.length; // the shortest one is often a sliver
       const moved = Math.hypot(point[0] - origin[0], point[1] - origin[1]);
       this.limits.set(id, { origin, distance: Math.max(edge * BUDGET, moved) });
-      for (const c of vertices.c[id]) if (c >= 0 && c < cells.i.length) this.areas.set(c, 0);
+      for (const c of vertices.c[id]) if (c >= 0 && c < cells.i.length) this.cells.set(c, { area: 0, simple: true });
     }
 
-    for (const cell of this.areas.keys()) this.areas.set(cell, polygonArea(Pack.getPolygon(cell)));
+    for (const cell of this.cells.keys()) {
+      const polygon = Pack.getPolygon(cell);
+      this.cells.set(cell, { area: polygonArea(polygon), simple: isSimple(polygon) });
+    }
   }
 
   move(point: Point): boolean {
@@ -109,13 +112,53 @@ export class VertexBrush {
     ];
   }
 
-  /** no affected cell may fold over itself or shrink away */
+  /** no affected cell may fold over itself, cross its own edges or shrink away */
   private valid(next: Map<number, Point>): boolean {
-    for (const [cell, area] of this.areas) {
+    for (const [cell, { area, simple }] of this.cells) {
       const points = pack.cells.v[cell].map(id => next.get(id) ?? pack.vertices.p[id]);
       if (polygonArea(points) * Math.sign(area) < Math.abs(area) * AREA_MARGIN) return false;
+      if (simple && !isSimple(points)) return false;
     }
 
     return true;
   }
+}
+
+/** a polygon is simple when no two non-adjacent edges cross; cells are small, so the pairwise check is cheap */
+export function isSimple(points: Point[]): boolean {
+  const n = points.length;
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 2; j < n; j++) {
+      if (i === 0 && j === n - 1) continue; // the closing edge is adjacent to the first one
+      if (segmentsCross(points[i], points[(i + 1) % n], points[j], points[(j + 1) % n])) return false;
+    }
+  }
+  return true;
+}
+
+function segmentsCross(a: Point, b: Point, c: Point, d: Point): boolean {
+  const abc = orientation(a, b, c);
+  const abd = orientation(a, b, d);
+  const cda = orientation(c, d, a);
+  const cdb = orientation(c, d, b);
+  if (abc * abd < 0 && cda * cdb < 0) return true;
+
+  // collinear overlap counts as a crossing too
+  if (abc === 0 && onSegment(a, b, c)) return true;
+  if (abd === 0 && onSegment(a, b, d)) return true;
+  if (cda === 0 && onSegment(c, d, a)) return true;
+  return cdb === 0 && onSegment(c, d, b);
+}
+
+function orientation(a: Point, b: Point, c: Point): number {
+  return Math.sign((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]));
+}
+
+function onSegment(a: Point, b: Point, p: Point): boolean {
+  return (
+    p[0] >= Math.min(a[0], b[0]) &&
+    p[0] <= Math.max(a[0], b[0]) &&
+    p[1] >= Math.min(a[1], b[1]) &&
+    p[1] <= Math.max(a[1], b[1])
+  );
 }
