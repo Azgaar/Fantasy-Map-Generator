@@ -5,7 +5,7 @@ import type { LayerId } from "@/components/layers";
 const opacity = z.number().nullable();
 const color = z.string().nullable();
 const strokeWidth = z.number().nullable();
-const strokeDasharray = z.string().nullable();
+const strokeDasharray = z.string().nullable().default(null);
 const strokeLinecap = z.string().nullable();
 const strokeLinejoin = z.string().nullable();
 const letterSpacing = z.number().nullable();
@@ -78,12 +78,19 @@ export const stylesSchema = z.strictObject({
       attrs: z.strictObject({ filter }),
       options: z.strictObject({ outline: z.string() })
     }),
-    // the engraver's sea: rows of wave-dashes packed against the shore and thinning out to open water
+    // Ocean embellishments share the coastal and distant-sea placement.
     oceanWaves: z
       .strictObject({
-        attrs: z.strictObject({ opacity, stroke: color, "stroke-width": strokeWidth, filter }),
+        attrs: z.strictObject({
+          opacity,
+          stroke: color,
+          "stroke-width": strokeWidth,
+          "stroke-dasharray": strokeDasharray,
+          filter
+        }),
         options: z.strictObject({
           render: z.boolean(),
+          type: z.enum(["waves", "lines"]).default("waves"),
           density: z.number().min(0.1).max(4),
           length: z.number().min(0.2).max(4),
           reach: z.number().min(1).max(12), // cells from the shore the dashes fade out over
@@ -91,8 +98,8 @@ export const stylesSchema = z.strictObject({
         })
       })
       .default({
-        attrs: { opacity: 0.5, stroke: "#1f3846", "stroke-width": 0.5, filter: null },
-        options: { render: false, density: 1, length: 1, reach: 4, halo: 0.25 }
+        attrs: { opacity: 0.5, stroke: "#1f3846", "stroke-width": 0.5, "stroke-dasharray": null, filter: null },
+        options: { render: false, type: "waves", density: 1, length: 1, reach: 4, halo: 0.25 }
       })
   }),
   landmass: z.strictObject({ attrs: z.strictObject({ opacity, fill: color, filter }) }),

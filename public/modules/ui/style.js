@@ -374,15 +374,18 @@ function selectStyleElement() {
     styleOceanFill.value = styleOceanFillOutput.value = styles.ocean.base.attrs.fill;
     styleOceanPattern.value = styles.ocean.options.pattern;
     styleOceanPatternOpacity.value = styles.ocean.options.patternOpacity;
-    const hachures = styles.ocean.oceanHachures;
-    styleOceanHachures.checked = hachures.options.render;
-    styleOceanHachureDensity.value = hachures.options.density;
-    styleOceanHachureLength.value = hachures.options.length;
-    styleOceanHachureRows.value = hachures.options.rows;
-    styleOceanHachureWidth.value = hachures.options.width;
-    styleOceanHachureColor.value = hachures.attrs.fill || "#000000";
-    styleOceanHachureOpacity.value = hachures.attrs.opacity ?? 1;
-    updateCoastHachureControls();
+    const waves = styles.ocean.oceanWaves;
+    styleOceanWaves.checked = waves.options.render;
+    styleOceanEmbellishmentType.value = waves.options.type;
+    styleOceanWaveDensity.value = waves.options.density;
+    styleOceanWaveLength.value = waves.options.length;
+    styleOceanWaveReach.value = waves.options.reach;
+    styleOceanWaveHalo.value = waves.options.halo;
+    styleOceanWaveWidth.value = waves.attrs["stroke-width"];
+    styleOceanWaveDasharray.value = waves.attrs["stroke-dasharray"] || "";
+    styleOceanWaveColor.value = waves.attrs.stroke || "#000000";
+    styleOceanWaveOpacity.value = waves.attrs.opacity ?? 1;
+    updateCoastalWaveControls();
     outlineLayers.value = styles.ocean.oceanLayers.options.outline;
   }
 
@@ -683,44 +686,66 @@ styleRescaleMarkers.addEventListener("change", function () {
   invokeActiveZooming();
 });
 
-function updateCoastHachureControls() {
-  const enabled = styles.ocean.oceanHachures.options.render;
-  styleOcean.querySelectorAll("[data-coast-hachure]").forEach(row => {
+function updateCoastalWaveControls() {
+  const enabled = styles.ocean.oceanWaves.options.render;
+  styleOcean.querySelectorAll("[data-coastal-wave]").forEach(row => {
     row.style.display = enabled ? "" : "none";
   });
 }
 
-styleOceanHachures.addEventListener("change", e => {
-  styles.ocean.oceanHachures.options.render = e.target.checked;
-  updateCoastHachureControls();
+styleOceanWaves.addEventListener("change", e => {
+  styles.ocean.oceanWaves.options.render = e.target.checked;
+  updateCoastalWaveControls();
+  Layers.draw("ocean");
+});
+
+styleOceanEmbellishmentType.addEventListener("change", e => {
+  styles.ocean.oceanWaves.options.type = e.target.value;
   Layers.draw("ocean");
 });
 
 for (const [id, key] of [
-  ["styleOceanHachureDensity", "density"],
-  ["styleOceanHachureLength", "length"],
-  ["styleOceanHachureWidth", "width"],
-  ["styleOceanHachureRows", "rows"]
+  ["styleOceanWaveDensity", "density"],
+  ["styleOceanWaveLength", "length"],
+  ["styleOceanWaveReach", "reach"],
+  ["styleOceanWaveHalo", "halo"]
 ]) {
   ensureEl(id).addEventListener("input", e => {
     if (e.target !== e.currentTarget) return; // slider-input also bubbles its inner input event
     const control = e.currentTarget;
     const value = +control.value;
     if (control.value === "" || !Number.isFinite(value)) return;
-    styles.ocean.oceanHachures.options[key] = key === "rows" ? Math.round(value) : value;
+    styles.ocean.oceanWaves.options[key] = value;
     Layers.draw("ocean");
   });
 }
 
-styleOceanHachureColor.addEventListener("input", function () {
-  styles.ocean.oceanHachures.attrs.fill = this.value;
+styleOceanWaveWidth.addEventListener("input", e => {
+  if (e.target !== e.currentTarget) return;
+  const value = +e.currentTarget.value;
+  if (e.currentTarget.value === "" || !Number.isFinite(value)) return;
+  styles.ocean.oceanWaves.attrs["stroke-width"] = value;
   Styles.write("ocean");
+  Layers.draw("ocean");
 });
 
-styleOceanHachureOpacity.addEventListener("input", e => {
-  if (e.target !== e.currentTarget) return;
-  styles.ocean.oceanHachures.attrs.opacity = +e.currentTarget.value;
+styleOceanWaveDasharray.addEventListener("input", function () {
+  styles.ocean.oceanWaves.attrs["stroke-dasharray"] = this.value.trim() || null;
   Styles.write("ocean");
+  Layers.draw("ocean");
+});
+
+styleOceanWaveColor.addEventListener("input", function () {
+  styles.ocean.oceanWaves.attrs.stroke = this.value;
+  Styles.write("ocean");
+  Layers.draw("ocean");
+});
+
+styleOceanWaveOpacity.addEventListener("input", e => {
+  if (e.target !== e.currentTarget) return;
+  styles.ocean.oceanWaves.attrs.opacity = +e.currentTarget.value;
+  Styles.write("ocean");
+  Layers.draw("ocean");
 });
 
 styleOceanFill.addEventListener("input", function () {

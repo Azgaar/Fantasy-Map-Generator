@@ -138,23 +138,23 @@ const TEMPLATE = /* html */ `
         </td>
       </tr>
       <tr data-hachure-style data-tip="How closely the strokes are packed, relative to the default. Steep ground packs them tighter">
-        <td>Hachure density</td>
+        <td>Density</td>
         <td><slider-input id="styleHeightmapHachureDensity" min="0.1" max="4" step="0.1"></slider-input></td>
       </tr>
       <tr data-hachure-style data-tip="Stroke length, relative to the default. Strokes stop early where the slope levels off">
-        <td>Hachure length</td>
+        <td>Length</td>
         <td><slider-input id="styleHeightmapHachureLength" min="0.2" max="4" step="0.1"></slider-input></td>
       </tr>
       <tr data-hachure-style data-tip="Color of the hachure strokes">
-        <td><label for="styleHeightmapHachureColor">Hachure color</label></td>
+        <td><label for="styleHeightmapHachureColor">Stroke color</label></td>
         <td><input id="styleHeightmapHachureColor" type="color" /></td>
       </tr>
       <tr data-hachure-style data-tip="Stroke width at its root, relative to the default. Gentler ground draws lighter strokes">
-        <td>Hachure width</td>
+        <td>Stroke width</td>
         <td><slider-input id="styleHeightmapHachureWidth" min="0.2" max="4" step="0.1"></slider-input></td>
       </tr>
       <tr data-hachure-style data-tip="Opacity of the hachure strokes">
-        <td>Hachure opacity</td>
+        <td>Opacity</td>
         <td><slider-input id="styleHeightmapHachureOpacity" min="0" max="1" step="0.05"></slider-input></td>
       </tr>
       <tr data-tip="Terracing power. Set to 0 to toggle off">
@@ -372,35 +372,52 @@ const TEMPLATE = /* html */ `
           <output id="styleOceanFillOutput">#466eab</output>
         </td>
       </tr>
-      <tr data-tip="Draw the engraver's coastal fringe: short strokes perpendicular to the shore, fading out to sea">
+      <tr data-tip="Decorate coastal and distant water around a clear offshore band">
         <td colspan="2">
-          <input id="styleOceanHachures" class="checkbox" type="checkbox" />
-          <label for="styleOceanHachures" class="checkbox-label">Coastal hachures</label>
+          <input id="styleOceanWaves" class="checkbox" type="checkbox" />
+          <label for="styleOceanWaves" class="checkbox-label">Ocean embellishment</label>
         </td>
       </tr>
-      <tr data-coast-hachure data-tip="How closely the strokes are packed along the coast, relative to the default">
-        <td>Hachure density</td>
-        <td><slider-input id="styleOceanHachureDensity" min="0.1" max="4" step="0.1"></slider-input></td>
+      <tr data-coastal-wave data-tip="Choose the shape of the ocean embellishments">
+        <td><label for="styleOceanEmbellishmentType">Type</label></td>
+        <td>
+          <select id="styleOceanEmbellishmentType">
+            <option value="waves">Waves</option>
+            <option value="lines">Straight strokes</option>
+          </select>
+        </td>
       </tr>
-      <tr data-coast-hachure data-tip="Stroke length, relative to the default">
-        <td>Hachure length</td>
-        <td><slider-input id="styleOceanHachureLength" min="0.2" max="4" step="0.1"></slider-input></td>
+      <tr data-coastal-wave data-tip="How closely embellishments are spaced, relative to the default">
+        <td>Density</td>
+        <td><slider-input id="styleOceanWaveDensity" min="0.1" max="4" step="0.1"></slider-input></td>
       </tr>
-      <tr data-coast-hachure data-tip="Rows of strokes out from the coast, each shorter and sparser than the last">
-        <td>Hachure rows</td>
-        <td><slider-input id="styleOceanHachureRows" min="1" max="5" step="1"></slider-input></td>
+      <tr data-coastal-wave data-tip="Stroke length, relative to the default">
+        <td>Length</td>
+        <td><slider-input id="styleOceanWaveLength" min="0.2" max="4" step="0.1"></slider-input></td>
       </tr>
-      <tr data-coast-hachure data-tip="Color of the coastal strokes">
-        <td><label for="styleOceanHachureColor">Hachure color</label></td>
-        <td><input id="styleOceanHachureColor" type="color" /></td>
+      <tr data-coastal-wave data-tip="Distance into the sea over which embellishments fade, in cell spacings">
+        <td>Reach</td>
+        <td><slider-input id="styleOceanWaveReach" min="1" max="12" step="0.5"></slider-input></td>
       </tr>
-      <tr data-coast-hachure data-tip="Stroke width at the coast, relative to the default">
-        <td>Hachure width</td>
-        <td><slider-input id="styleOceanHachureWidth" min="0.2" max="4" step="0.1"></slider-input></td>
+      <tr data-coastal-wave data-tip="Clear water between the coastline and waves, in cell spacings">
+        <td>Coastal gap</td>
+        <td><slider-input id="styleOceanWaveHalo" min="0" max="2" step="0.05"></slider-input></td>
       </tr>
-      <tr data-coast-hachure data-tip="Opacity of the coastal strokes">
-        <td>Hachure opacity</td>
-        <td><slider-input id="styleOceanHachureOpacity" min="0" max="1" step="0.05"></slider-input></td>
+      <tr data-coastal-wave data-tip="Color of the coastal strokes">
+        <td><label for="styleOceanWaveColor">Stroke color</label></td>
+        <td><input id="styleOceanWaveColor" type="color" /></td>
+      </tr>
+      <tr data-coastal-wave data-tip="Stroke width in map pixels">
+        <td>Stroke width</td>
+        <td><slider-input id="styleOceanWaveWidth" min="0.05" max="2" step="0.05"></slider-input></td>
+      </tr>
+      <tr data-coastal-wave data-tip="Optional SVG dash pattern, such as 3 2 or 1 2 5 2">
+        <td><label for="styleOceanWaveDasharray">Dash pattern</label></td>
+        <td><input id="styleOceanWaveDasharray" type="text" placeholder="solid" style="width: 48%" /></td>
+      </tr>
+      <tr data-coastal-wave data-tip="Opacity of the coastal strokes">
+        <td>Opacity</td>
+        <td><slider-input id="styleOceanWaveOpacity" min="0" max="1" step="0.05"></slider-input></td>
       </tr>
     </tbody>
     <tbody id="styleBurgIcons">

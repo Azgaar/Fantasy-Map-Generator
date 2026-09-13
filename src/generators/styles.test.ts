@@ -38,6 +38,33 @@ describe("parseStyles", () => {
     expect(parsed.heightmap.landHeights.options.hachures.mode).toBe("off");
   });
 
+  test("older styles gain disabled coastal waves", () => {
+    const doc = structuredClone(Styles.defaults);
+    const { oceanWaves: _, ...ocean } = doc.ocean;
+    const parsed = Styles.parse({ ...doc, ocean });
+    expect(parsed.ocean.oceanWaves).toEqual(Styles.defaults.ocean.oceanWaves);
+  });
+
+  test("existing coastal-wave styles default to Waves without losing their settings", () => {
+    const doc = structuredClone(Styles.defaults);
+    const { type: _, ...options } = { ...doc.ocean.oceanWaves.options, render: true, density: 1.5 };
+    const legacy = { ...doc, ocean: { ...doc.ocean, oceanWaves: { ...doc.ocean.oceanWaves, options } } };
+    expect(Styles.parse(legacy).ocean.oceanWaves.options).toEqual({ ...options, type: "waves" });
+  });
+
+  test("coastal wave settings round-trip through serialized styles", () => {
+    const doc = Styles.parse(Styles.defaults);
+    doc.ocean.oceanWaves.options = { render: true, type: "lines", density: 1.4, length: 2, reach: 7, halo: 0.15 };
+    doc.ocean.oceanWaves.attrs = {
+      stroke: "#343434",
+      "stroke-width": 0.4,
+      "stroke-dasharray": "3 2",
+      opacity: 0.7,
+      filter: null
+    };
+    expect(Styles.parse(JSON.parse(JSON.stringify(doc)))).toEqual(doc);
+  });
+
   test("custom contour settings round-trip through serialized styles", () => {
     const doc = Styles.parse(Styles.defaults);
     doc.heightmap.landHeights.options.contours = {

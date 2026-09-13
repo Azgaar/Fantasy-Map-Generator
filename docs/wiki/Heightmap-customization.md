@@ -35,10 +35,14 @@ Adjust **Hachure density**, **length** and **width** (each relative to the defau
 **opacity** independently for each group. Strokes are placed deterministically from the map seed, so a map redraws the same way. Hachures
 are saved with maps and custom style presets; the `ink` preset uses them in place of relief icons.
 
-The matching coastal fringe - short strokes perpendicular to the shore, fading out to sea over a few
-ever sparser rows - is an **Ocean** style: open **Style → Ocean** and tick **Coastal hachures**, then tune
-density, length, rows, color, width and opacity. Strokes are drawn on the open-sea side of every island
-only, never on lake shores, and are clipped to water.
+The `ink` preset pairs land hachures with **Ocean embellishment** under **Style → Ocean**. Choose
+**Waves** or **Straight strokes** with the **Type** selector. Both types thin away
+from the coast, then resume in the distant sea. The clear band between them follows the continents.
+
+Tune **density**, **length**, **reach**, **stroke color**, **stroke width**, **opacity**, and the clear
+**Coastal gap**, and an optional SVG **Dash pattern** such as `3 2`. Reach and gap use cell spacings; width uses map pixels. A simple mask keeps the marks
+off land and lakes. The selected type and pattern are saved with maps and style presets; older styles
+retain Waves.
 
 ### Modes
 The heightmap editor offers three different modes to choose from. Its recommended to save your map beforehand.

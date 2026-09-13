@@ -30,10 +30,12 @@
         "opacity": 0.5,
         "stroke": "#1f3846",
         "stroke-width": 0.5,
+        "stroke-dasharray": null,
         "filter": null
       },
       "options": {
         "render": false,
+        "type": "waves",
         "density": 1,
         "length": 1,
         "reach": 4,

@@ -1,11 +1,13 @@
+import type { Styles } from "@/generators/styles-schema";
 import { createRandom } from "./heightmap-hachures";
 
 export interface CoastalWaveParams {
-  width: number; // map size
+  width: number;
   height: number;
   spacing: number; // cell spacing, the unit of every length below
   /** how many cells a point lies from the shore: 1 on the coastal water cell, growing seaward, 0 on land or in a lake */
   distanceAt: (x: number, y: number) => number;
+  type?: Styles["ocean"]["oceanWaves"]["options"]["type"];
   density: number; // rows of dashes, relative to the default
   length: number; // dash length, relative to the default
   reach: number; // cells from the shore over which the dashes thin out to nothing
@@ -18,28 +20,26 @@ const DASH_GAP = 0.5; // between dashes along a row next to the shore, in cell s
 const PERIOD = 0.5; // wave length, in cell spacings
 const AMPLITUDE = 0.06; // wave height, in cell spacings
 
-/**
- * The engraver's sea: rows of short horizontal wave-dashes, packed against the shore and thinning
- * out to open water. The fade is driven by the distance from the coast, softened with noise so no
- * cell edges show. Returns one stroked path
- */
+/** Coastal dashes and a distant wave field surround a clear offshore band. */
 export function getCoastalWaves(params: CoastalWaveParams): string {
-  const { width, height, spacing, distanceAt, density, length, reach, seed } = params;
+  const { width, height, spacing, distanceAt, density, length, reach, seed, type = "waves" } = params;
   const random = createRandom(seed);
   const rowGap = (spacing * ROW_GAP) / density;
   const halfPeriod = (spacing * PERIOD) / 2;
-  const amplitude = spacing * AMPLITUDE;
+  const amplitude = Math.min(spacing * AMPLITUDE, rowGap * 0.3);
   const f = (v: number) => v.toFixed(2);
   const parts: string[] = [];
 
   for (let y = rowGap * random(); y < height; y += rowGap * (0.85 + random() * 0.3)) {
     let x = -random() * DASH * spacing;
     while (x < width) {
-      // how close to the shore this dash is: 1 at the coast, 0 out of reach; noise blurs the rings
-      const distance = distanceAt(Math.max(0, Math.min(width - 1, x + spacing)), y);
+      // Distant water resumes the wave field around the continents, independent of map edges.
+      const sampleX = Math.max(0, Math.min(width, x + spacing));
+      const coastDistance = distanceAt(sampleX, y);
+      const distance = coastDistance > reach * 2 + 1 ? 1 : coastDistance;
       const closeness = distance ? Math.max(0, 1 - (distance - 1 + random() * 1.5) / reach) : 0;
       const dash = DASH * length * spacing * (0.4 + 0.6 * random()) * (0.4 + 0.6 * closeness);
-      if (closeness && random() < closeness) parts.push(wave(x, y, dash));
+      if (closeness && random() < closeness) parts.push(mark(x, y, dash));
       // dashes crowd the shore and drift apart at sea
       x += dash + DASH_GAP * spacing * (0.5 + random()) * (1 + 3 * (1 - closeness));
     }
@@ -47,12 +47,34 @@ export function getCoastalWaves(params: CoastalWaveParams): string {
 
   return parts.join("");
 
-  /** a wavy dash: one quadratic half-wave, then smooth continuations */
-  function wave(x: number, y: number, dash: number): string {
-    const halves = Math.max(2, Math.round(dash / halfPeriod));
+  function mark(x: number, y: number, dash: number): string {
     const up = random() < 0.5 ? -1 : 1;
+    const start = `M${f(x)},${f(y)}`;
+    if (type === "lines") return `${start}h${f(dash)}`;
+    const halves = Math.max(2, Math.round(dash / halfPeriod));
     let path = `M${f(x)},${f(y)}q${f(halfPeriod / 2)},${f(amplitude * up)} ${f(halfPeriod)},0`;
     for (let i = 1; i < halves; i++) path += `t${f(halfPeriod)},0`;
     return path;
   }
+}
+
+/** Water-cell distances used only for drawing; unlike grid.cells.t these cover the full requested reach. */
+export function getCoastalDistances(heights: ArrayLike<number>, neighbors: number[][], reach: number): Uint8Array {
+  const distances = new Uint8Array(heights.length);
+  const queue: number[] = [];
+  for (let cell = 0; cell < heights.length; cell++) {
+    if (heights[cell] >= 20 || !neighbors[cell].some(next => heights[next] >= 20)) continue;
+    distances[cell] = 1;
+    queue.push(cell);
+  }
+  for (let index = 0; index < queue.length; index++) {
+    const cell = queue[index];
+    if (distances[cell] >= Math.ceil(reach) + 1) continue;
+    for (const next of neighbors[cell]) {
+      if (heights[next] >= 20 || distances[next]) continue;
+      distances[next] = distances[cell] + 1;
+      queue.push(next);
+    }
+  }
+  return distances;
 }

@@ -1,9 +1,8 @@
 import { curveBasisClosed, line } from "d3";
-import { Coastline } from "@/generators/coastline-generator";
 import { Ocean } from "@/generators/ocean-generator";
 import { rn, round } from "@/utils";
 import { ensureEl } from "@/utils/nodeUtils";
-import { getCoastalWaves } from "./coastal-waves";
+import { getCoastalDistances, getCoastalWaves } from "./coastal-waves";
 
 /**
  * The two full-graph rects the rings are drawn over: the textured pattern fill and the flat base
@@ -79,21 +78,23 @@ export function removeOcean(): void {
   for (const path of Array.from(document.querySelectorAll("#oceanLayers path"))) path.remove();
 }
 
-/** wave-dashes fading out from every sea shore, kept off the land and a halo along the coast by a mask of their own */
+/** Sparse wave dashes clipped to the sea, with a clear gap along the coast. */
 function drawCoastalWaves(): void {
   const group = ensureEl<SVGGElement>("oceanWaves");
-  const { options: waveOptions } = styles.ocean.oceanWaves;
+  for (const resource of document.querySelectorAll("#waves-mask, #waves-fade")) resource.remove();
+  const { options: waveOptions, attrs } = styles.ocean.oceanWaves;
   if (!waveOptions.render) return void group.replaceChildren();
 
   TIME && console.time("drawCoastalWaves");
   const { width, height } = options.map.graph;
   const { spacing, cellsX, cellsY, cells, features } = grid;
+  const distances = getCoastalDistances(cells.h, cells.c, waveOptions.reach * 2);
   const distanceAt = (x: number, y: number): number => {
     const column = Math.max(0, Math.min(cellsX - 1, Math.floor(x / spacing)));
     const row = Math.max(0, Math.min(cellsY - 1, Math.floor(y / spacing)));
     const cell = row * cellsX + column;
     if (cells.h[cell] >= 20 || features[cells.f[cell]]?.type === "lake") return 0;
-    return -cells.t[cell] || 1;
+    return distances[cell] || Infinity;
   };
 
   const path = getCoastalWaves({
@@ -101,27 +102,29 @@ function drawCoastalWaves(): void {
     height,
     spacing,
     distanceAt,
+    type: waveOptions.type,
     density: waveOptions.density,
     length: waveOptions.length,
     reach: waveOptions.reach,
     seed: options.map.seed
   });
-
-  // the land, widened by the halo, masks the dashes: the shore stays a clean white line
   const halo = rn(waveOptions.halo * spacing * 2, 2);
   const land = pack.features
-    .filter(feature => feature && feature.type !== "ocean")
-    .map(
-      feature =>
-        `<use href="#feature_${feature.i}" fill="${feature.type === "lake" ? "white" : "black"}" stroke="black" stroke-width="${halo}"></use>`
-    );
+    .filter(feature => feature?.land)
+    .map(feature => `<use href="#feature_${feature.i}" fill="black" stroke="black" stroke-width="${halo}"></use>`)
+    .join("");
   ensureEl("deftemp").insertAdjacentHTML(
     "beforeend",
-    /* html */ `<mask id="waves-mask"><rect x="0" y="0" width="100%" height="100%" fill="white"></rect>${land.join("")}</mask>`
+    /* html */ `<mask id="waves-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="${width}" height="${height}">
+      <rect width="${width}" height="${height}" fill="white"></rect>
+      <g stroke-linejoin="round">${land}</g>
+    </mask>`
   );
-  for (const stale of Array.from(document.querySelectorAll("#deftemp > #waves-mask")).slice(0, -1)) stale.remove();
-
-  group.innerHTML = path ? /* html */ `<path d="${path}" fill="none" mask="url(#waves-mask)"></path>` : "";
+  group.innerHTML = path
+    ? /* html */ `<path d="${path}" fill="none" stroke="${attrs.stroke ?? "none"}" stroke-width="${attrs["stroke-width"] ?? 0.5}"${
+        attrs["stroke-dasharray"] ? ` stroke-dasharray="${attrs["stroke-dasharray"]}"` : ""
+      } opacity="${attrs.opacity ?? 1}" stroke-linecap="round" mask="url(#waves-mask)"></path>`
+    : "";
   TIME && console.timeEnd("drawCoastalWaves");
 }
 
