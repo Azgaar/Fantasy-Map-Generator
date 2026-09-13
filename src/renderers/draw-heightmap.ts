@@ -27,7 +27,7 @@ import { round } from "../utils";
 import { getHeightContours, smoothContourHeights } from "./heightmap-contours";
 import { getHachures } from "./heightmap-hachures";
 
-const HACHURE_LEVEL = 3; // height units between the levels hachure strokes are seeded along
+const HACHURE_LEVEL = 4; // height units between the levels hachure strokes are seeded along
 
 const CURVE_MAP: Record<string, CurveFactory> = {
   curveBasis,
