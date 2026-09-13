@@ -85,8 +85,7 @@ class OptionsModel {
         notesPinned: false,
         emblems: { showAll: false, shape: "culture" },
         labels: { showAll: false },
-        rendering: "optimizeSpeed",
-        viewportRedraw: "continuous",
+        performance: { shapeRendering: "optimizeSpeed", stateHalos: false, viewportRedraw: "continuous" }, // "balance"
         onLoad: "random",
         zoomExtent: { min: 1, max: 20 },
         viewport: null,

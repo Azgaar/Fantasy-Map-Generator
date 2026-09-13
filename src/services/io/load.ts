@@ -5,6 +5,7 @@ import { Layers } from "@/components/layers";
 import { registerMap } from "@/components/lifecycle";
 import { pickMapFile } from "@/components/options/io-panes";
 import { syncOptionInputs } from "@/components/options/tabs/options-tab";
+import { applyPerformanceSettings } from "@/components/performance";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { undraw } from "@/components/undraw";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -266,8 +267,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     INFO && console.group(options.map.seed ? `Loaded Map ${options.map.seed}` : "Loaded Map");
     isLogGroupOpen = true;
 
-    ensureEl<HTMLInputElement>("shapeRendering").value =
-      select("#viewbox").attr("shape-rendering") || "geometricPrecision";
     if (data[34]) {
       const usedFonts = JSON.parse(data[34]);
       usedFonts.forEach((usedFont: (typeof fonts)[number]) => {
@@ -671,6 +670,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
 
     Layers.drawAll();
     applyStoredStyles();
+    applyPerformanceSettings(); // the file's SVG carries the attributes of the browser that saved it
     applyDefaultViewboxEvents();
     fitMapToScreen();
     resetZoom(0); // an opened map is shown fitted, whatever window size it was made on

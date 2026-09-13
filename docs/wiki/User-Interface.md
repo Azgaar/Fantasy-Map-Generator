@@ -547,8 +547,10 @@ Below the map settings, the Options tab holds settings that apply immediately an
 - Emblem shape: the default coat of arms shield shape.
 - Viewport size: the size of the map window on screen, in pixels. It is independent of the map size above: it is how much of the map you see at once. The button on the left fits it back to the browser window, which is what it follows until you set a size by hand.
 - Zoom extent: minimal and maximal zoom levels, `[1, 20]` by default.
-- Rendering: SVG shape-rendering mode, trading quality for speed.
-- Redraw on zoom: when labels, icons and relief are redrawn during a zoom or pan. _After zoom_ redraws once per gesture: faster on big maps, but new content appears all at once.
+- Performance: a rendering preset, _Quality_, _Balance_ or _Speed_, trading visual quality for speed. The cog button next to it opens the Performance Settings, where each parameter is set on its own; the preset then reads _Custom_ unless the parameters happen to match one:
+  - Shape rendering: the SVG `shape-rendering` hint for the map. _Geometric precision_ anti-aliases every edge, _Optimize speed_ lets the browser cut corners, _Crisp edges_ drops anti-aliasing altogether.
+  - State halos: the blurred glow along state borders. It is an SVG blur filter, which is costly on big maps.
+  - Redraw on zoom: when labels, icons and relief are redrawn during a zoom or pan. _After zoom_ redraws once per gesture: faster on big maps, but new content appears all at once.
 - Language: the interface language.
 
 The **Configure World** button opens a separate dialog where you set the map size relative to the world, its latitude and longitude shift on the globe, the temperature at the equator and both poles, and the global precipitation.

@@ -60,7 +60,7 @@ function handleZoomPerFrame(): void {
 
   window.updateMinimap?.();
   redrawTracedImage();
-  if (options.app.viewportRedraw === "continuous") ViewportLayers.schedule();
+  if (options.app.performance.viewportRedraw === "continuous") ViewportLayers.schedule();
 }
 
 /** Rewrite map content once zoom gesture settles */
@@ -97,12 +97,10 @@ function applyLabelsZoomSize(): void {
 }
 
 export function invokeActiveZooming(): void {
-  const isOptimized = ensureEl<HTMLSelectElement>("shapeRendering").value === "optimizeSpeed";
-
   if (options.map.labels.resizeOnZoom) applyLabelsZoomSize();
   ViewportLayers.renderNow();
 
-  if (!customization && !isOptimized) {
+  if (!customization && options.app.performance.stateHalos) {
     const statesHalo = select("#statesHalo");
     const desired = styles.states.statesHalo.options.width;
     const haloSize = rn(desired / viewport.scale ** 0.8, 2);

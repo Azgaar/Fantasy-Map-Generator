@@ -12,6 +12,7 @@ Check out [Dev board](https://github.com/users/Azgaar/projects/3/views/1?sumFiel
 
 Current version of the Fantasy Map Generator is the latest `master` branch. You can download it here: https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/heads/master.zip. Also see [the wiki](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#can-i-use-the-generator-offline).
 
+- Performance: a preset on the Options tab and a settings dialog [1.153.0]
 - Geographical Features Overview [1.153.0]
 - Coastline Editor: customizable per feature [1.153.0]
 - Wrap Tool: reshape cells with a brush [1.153.0]
