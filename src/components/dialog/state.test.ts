@@ -16,6 +16,26 @@ beforeEach(() => {
 });
 
 describe("dialog state", () => {
+  it("reset drops layout keys but keeps filters, then notifies the registered parts", async () => {
+    const state = await loadState();
+    state.set("burgsOverview", "filters", { search: "port" });
+    state.set("burgsOverview", "position", { top: 10, left: 20 });
+    state.set("burgsOverview", "columns", { hidden: ["treasury"], shown: [] });
+    state.set("burgsOverview", "sorting", { sortBy: "name", alphabetically: true, direction: 1 });
+
+    const calls: string[] = [];
+    state.onReset("burgsOverview", "sorting", () => calls.push("stale"));
+    state.onReset("burgsOverview", "sorting", () => calls.push("sorting"));
+    state.onReset("burgsOverview", "columns", () => calls.push("columns"));
+    state.onReset("statesEditor", "columns", () => calls.push("other dialog"));
+    state.reset("burgsOverview");
+
+    expect(calls).toEqual(["sorting", "columns"]);
+    expect(JSON.parse(localStorage.getItem("fmg-dialog-state")!)).toEqual({
+      burgsOverview: { filters: { search: "port" } }
+    });
+  });
+
   it("creates filters once per dialog", async () => {
     const state = await loadState();
     const filters = state.get("burgsOverview", "filters", () => ({ search: "", stateId: -1 }));
@@ -94,21 +114,33 @@ describe("dialog state", () => {
     ).toEqual({ sortBy: "name", alphabetically: true, direction: 1 });
   });
 
-  it("creates default sorting once per dialog", async () => {
+  it("never stores defaults, so layout is only remembered once the user changes it", async () => {
     const state = await loadState();
-    const initial = state.get("statesEditor", "sorting", () => ({
-      sortBy: "name",
-      alphabetically: true,
-      direction: 1 as const
-    }));
-    const stored = state.get("statesEditor", "sorting", () => ({
-      sortBy: "area",
-      alphabetically: false,
-      direction: -1 as const
-    }));
+    state.get("statesEditor", "sorting", () => ({ sortBy: "name", alphabetically: true, direction: 1 as const }));
+    state.get("statesEditor", "columns", () => null);
+    state.set("statesEditor", "filters", { search: "coast" });
 
-    expect(stored).toEqual(initial);
-    expect(stored?.sortBy).toBe("name");
+    expect(state.hasLayout("statesEditor")).toBe(false);
+    expect(JSON.parse(localStorage.getItem("fmg-dialog-state")!)).toEqual({
+      statesEditor: { filters: { search: "coast" } }
+    });
+
+    state.set("statesEditor", "sorting", { sortBy: "area", alphabetically: false, direction: -1 });
+    expect(state.hasLayout("statesEditor")).toBe(true);
+    expect(state.get<{ sortBy: string } | null>("statesEditor", "sorting", () => null)?.sortBy).toBe("area");
+  });
+
+  it("notifies the dialog when its stored state changes", async () => {
+    const state = await loadState();
+    const seen: boolean[] = [];
+    state.onChange("burgsOverview", () => seen.push(state.hasLayout("burgsOverview")));
+    state.onChange("statesEditor", () => seen.push(false));
+
+    state.set("burgsOverview", "position", { top: 1, left: 2 });
+    state.set("burgsOverview", "filters", { search: "port" });
+    state.reset("burgsOverview");
+
+    expect(seen).toEqual([true, true, false]);
   });
 
   it("removes one section without affecting the rest of the dialog state", async () => {

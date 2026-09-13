@@ -369,12 +369,10 @@ export function initColumnVisibility({
   dialogColumnsRegistry.set(dialogId, { columns, modeHidden: new Set() });
   applyColumnVisibility(dialogId, effectiveHidden(dialogId));
 
-  bindColumnsPicker({
-    dialogId,
-    columns,
-    onChange: () => {
-      applyColumnVisibility(dialogId, effectiveHidden(dialogId));
-      onUpdate();
-    }
-  });
+  const onChange = () => {
+    applyColumnVisibility(dialogId, effectiveHidden(dialogId));
+    onUpdate();
+  };
+  bindColumnsPicker({ dialogId, columns, onChange });
+  dialogState.onReset(dialogId, "columns", onChange);
 }
