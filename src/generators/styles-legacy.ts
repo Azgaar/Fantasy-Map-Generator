@@ -66,7 +66,7 @@ const PRESET_ROUTES: Record<string, PresetRoute> = {
   "#cults": { path: ["cultures"] },
   "#statesBody": { path: ["states", "statesBody"] },
   "#statesHalo": { path: ["states", "statesHalo"], options: { "data-width": "width" } },
-  "#provs": { path: ["provinces"], drop: ["data-size"] },
+  "#provs": { path: ["provinces"], drop: ["data-size", "fill", "font-size", "font-family"] },
   "#zones": { path: ["zones"] },
   "#stateBorders": { path: ["borders", "stateBorders"] },
   "#provinceBorders": { path: ["borders", "provinceBorders"] },
@@ -616,6 +616,7 @@ export function labelGroupFromLegacy(legacy: unknown): Styles["labels"]["groups"
       "font-size": strOr(bag["data-size"], null) ?? strOr(bag["font-size"], "18%") ?? "18%",
       "font-family": strOr(bag["font-family"], "Almendra SC") ?? "Almendra SC",
       "font-style": strOr(bag["font-style"], null),
+      "font-weight": numOr(bag["font-weight"], null),
       style: labelStyleFromLegacy(bag),
       filter: strOr(bag.filter, null)
     }

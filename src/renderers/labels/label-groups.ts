@@ -46,6 +46,7 @@ const BASE_ATTRS: LabelGroupStyle["attrs"] = {
   "font-size": "18%",
   "font-family": "Almendra SC",
   "font-style": null,
+  "font-weight": null,
   style: null,
   filter: null
 };

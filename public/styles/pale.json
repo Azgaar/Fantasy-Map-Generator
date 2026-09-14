@@ -300,9 +300,6 @@
   "provinces": {
     "attrs": {
       "opacity": 0.4,
-      "fill": "#000000",
-      "font-size": 8,
-      "font-family": "Arima Madurai",
       "filter": null
     }
   },

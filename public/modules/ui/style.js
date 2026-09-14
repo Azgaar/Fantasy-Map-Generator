@@ -308,9 +308,11 @@ function selectStyleElement() {
 
     styleFont.style.display = "block";
     styleFontStyleRow.style.display = "";
+    styleFontWeightRow.style.display = "";
     styleTextTransformRow.style.display = "";
     styleSelectFont.value = attrs["font-family"];
     styleFontStyle.value = attrs["font-style"] || "";
+    styleFontWeight.value = attrs["font-weight"] ?? "";
     styleTextTransform.value = getTextTransform(attrs.style);
     styleFontSize.value = fontSize;
 
@@ -323,6 +325,8 @@ function selectStyleElement() {
   if (styleElement === "burgIcons") {
     styleBurgIcons.style.display = "block";
     styleBurgIconsIcon.value = opts.icon;
+    styleBurgIconsIcon.style.fill = attrs.fill ?? "none";
+    styleBurgIconsIcon.style.stroke = attrs.stroke ?? "none";
     styleBurgIconsIconSize.value = opts.size;
     styleBurgIconsStrokeLinejoin.value = attrs["stroke-linejoin"] || "inherit";
     styleBurgIconsFillOpacity.value = attrs["fill-opacity"] ?? 1;
@@ -364,6 +368,7 @@ function selectStyleElement() {
 
     styleFont.style.display = "block";
     styleFontStyleRow.style.display = "none"; // the legend has no font style or text transform
+    styleFontWeightRow.style.display = "none";
     styleTextTransformRow.style.display = "none";
     styleSelectFont.value = attrs["font-family"];
     styleFontSize.value = opts.fontSize;
@@ -578,6 +583,9 @@ function writeSelectedAttr(attr, value) {
       console.error(
         `Style editor: "${attr}" is not in the styles schema for ${styleElementSelect.value} > ${styleGroupSelect.value}. The change is applied to the map but is not stored in the style`
       );
+  }
+  if (styleElementSelect.value === "burgIcons" && ["fill", "stroke"].includes(attr)) {
+    styleBurgIconsIcon.style.setProperty(attr, value ?? "none");
   }
   if (["burgIcons", "anchors"].includes(styleElementSelect.value)) Layers.draw("burgIcons");
   else getEl().attr(attr, value ?? null);
@@ -1133,6 +1141,10 @@ function changeFont() {
 
 styleFontStyle.addEventListener("change", function () {
   writeSelectedAttr("font-style", this.value || null);
+});
+
+styleFontWeight.addEventListener("change", function () {
+  writeSelectedAttr("font-weight", this.value ? +this.value : null);
 });
 
 styleTextTransform.addEventListener("change", function () {

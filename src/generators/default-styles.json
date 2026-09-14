@@ -401,9 +401,6 @@
   "provinces": {
     "attrs": {
       "opacity": 0.7,
-      "fill": "#000000",
-      "font-size": 10,
-      "font-family": "Georgia",
       "filter": null
     }
   },
@@ -584,6 +581,7 @@
           "font-size": "6%",
           "font-family": "Almendra SC",
           "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.5em)",
           "filter": null
         }
@@ -601,6 +599,7 @@
           "font-size": "5%",
           "font-family": "Almendra SC",
           "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
           "filter": null
         }
@@ -618,6 +617,7 @@
           "font-size": "2%",
           "font-family": "Almendra SC",
           "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.5em)",
           "filter": null
         }
@@ -635,6 +635,7 @@
           "font-size": "2%",
           "font-family": "Almendra SC",
           "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.5em)",
           "filter": null
         }
@@ -652,6 +653,7 @@
           "font-size": "2%",
           "font-family": "Almendra SC",
           "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.5em)",
           "filter": null
         }
@@ -669,6 +671,7 @@
           "font-size": "2%",
           "font-family": "Almendra SC",
           "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.5em)",
           "filter": null
         }
@@ -686,6 +689,7 @@
           "font-size": "3%",
           "font-family": "Almendra SC",
           "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
           "filter": null
         }
@@ -703,6 +707,7 @@
           "font-size": "2%",
           "font-family": "Almendra SC",
           "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
           "filter": null
         }
@@ -720,6 +725,7 @@
           "font-size": "4%",
           "font-family": "Almendra SC",
           "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
           "filter": null
         }
@@ -737,6 +743,7 @@
           "font-size": "22%",
           "font-family": "Almendra SC",
           "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px",
           "filter": null
         }
@@ -754,6 +761,7 @@
           "font-size": "6%",
           "font-family": "Cinzel",
           "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px",
           "filter": null
         }
@@ -771,6 +779,7 @@
           "font-size": "1.5%",
           "font-family": "Lugrasimo",
           "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 1px 6px",
           "filter": null
         }
@@ -788,6 +797,7 @@
           "font-size": "1.5%",
           "font-family": "Lugrasimo",
           "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 1px 6px",
           "filter": null
         }
@@ -805,6 +815,7 @@
           "font-size": "18%",
           "font-family": "Almendra SC",
           "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px",
           "filter": null
         }

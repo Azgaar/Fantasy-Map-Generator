@@ -10,6 +10,7 @@ const strokeLinecap = z.string().nullable();
 const strokeLinejoin = z.string().nullable();
 const letterSpacing = z.number().nullable();
 const fontFamily = z.string();
+const fontWeight = z.number().int().min(100).max(950).nullable().default(null);
 const filter = z.string().nullable();
 const mask = z.string().nullable();
 const transform = z.string().nullable();
@@ -159,15 +160,7 @@ export const stylesSchema = z.strictObject({
       options: z.strictObject({ width: z.number() })
     })
   }),
-  provinces: z.strictObject({
-    attrs: z.strictObject({
-      opacity,
-      fill: color,
-      "font-size": z.number().nullable(),
-      "font-family": fontFamily,
-      filter
-    })
-  }),
+  provinces: z.strictObject({ attrs: z.strictObject({ opacity, filter }) }),
   zones: z.strictObject({ attrs: z.strictObject({ opacity, ...strokeAttrs, filter, mask }) }),
   borders: z.strictObject({
     stateBorders: z.strictObject({ attrs: z.strictObject({ opacity, ...strokeAttrs, filter }) }),
@@ -222,6 +215,7 @@ export const stylesSchema = z.strictObject({
           "font-size": fontSize,
           "font-family": fontFamily,
           "font-style": z.string().nullable().default(null),
+          "font-weight": fontWeight,
           style: styleAttr,
           filter
         })

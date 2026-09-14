@@ -300,9 +300,6 @@
   "provinces": {
     "attrs": {
       "opacity": 0.2,
-      "fill": "#933e3e",
-      "font-size": 8,
-      "font-family": "Orbitron",
       "filter": ""
     }
   },

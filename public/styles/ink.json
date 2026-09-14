@@ -365,9 +365,6 @@
   "provinces": {
     "attrs": {
       "opacity": 0.2,
-      "fill": "#000000",
-      "font-size": 10,
-      "font-family": "Times New Roman",
       "filter": null
     }
   },

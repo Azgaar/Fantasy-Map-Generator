@@ -1,4 +1,6 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, test, vi } from "vitest";
+import cinderwood from "../../public/styles/cinderwood.json";
 import ink from "../../public/styles/ink.json";
 import { Styles } from "./styles";
 import { stylesSchema } from "./styles-schema";
@@ -149,6 +151,10 @@ describe("schema reconciliation", () => {
 
   test("labels base font-size is the css length the registry stamps", () => {
     expect(Styles.defaults.labels.attrs["font-size"]).toBe("100px");
+  });
+
+  test("label groups default font-weight to unset", () => {
+    expect(Styles.defaults.labels.groups.capital.attrs["font-weight"]).toBeNull();
   });
 });
 

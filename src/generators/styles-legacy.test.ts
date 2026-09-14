@@ -165,6 +165,12 @@ test("labelGroupFromLegacy prefers a numeric data-size over font-size, stringifi
   expect(group.attrs["font-size"]).toBe("10");
 });
 
+test("labelGroupFromLegacy keeps font-weight", () => {
+  expect(labelGroupFromLegacy({ "font-weight": "600" }).attrs["font-weight"]).toBe(600);
+  expect(labelGroupFromLegacy({ "font-weight": "950" }).attrs["font-weight"]).toBe(950);
+  expect(labelGroupFromLegacy({}).attrs["font-weight"]).toBeNull();
+});
+
 // pre-1.140 zoom auto-visibility hid a burg tier with an inline display: none, and a map saved while
 // zoomed out carries it in the group's style attribute; harvested verbatim it hides the tier forever
 test("labelGroupFromLegacy drops the zoom auto-visibility display from the style", () => {
@@ -180,13 +186,13 @@ test("labelGroupFromLegacy drops the zoom auto-visibility display from the style
 
 const presetDir = path.join(__dirname, "../../public/styles");
 
-test("all 12 shipped presets parse as the new format with zero warnings", () => {
+test("all 13 shipped presets parse as the new format with zero warnings", () => {
   const files = fs
     .readdirSync(presetDir)
     .filter(f => f.endsWith(".json"))
     .map(f => path.join(presetDir, f));
   files.push(path.join(__dirname, "default-styles.json"));
-  expect(files).toHaveLength(13);
+  expect(files).toHaveLength(14);
   const warn = vi.spyOn(console, "warn");
   warn.mockClear();
   for (const file of files) {

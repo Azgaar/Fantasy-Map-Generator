@@ -245,7 +245,11 @@ t,
   pointer-events: none;
 }
 
-#terrain,
+#terrain {
+  fill-rule: nonzero;
+  cursor: pointer;
+}
+
 #burgIcons {
   cursor: pointer;
 }

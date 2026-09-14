@@ -3,7 +3,8 @@ import type { ReliefSet, ReliefSetDefinition, ReliefTypeIcons } from "@/types/re
 export const RELIEF_SETS: Record<ReliefSet, ReliefSetDefinition> = {
   simple: { name: "Simple", base: "simple", suffix: "" },
   colored: { name: "Colored", base: "colored", suffix: "" },
-  gray: { name: "Gray", base: "colored", suffix: "-bw" }
+  gray: { name: "Gray", base: "colored", suffix: "-bw" },
+  cinderwood: { name: "Cinderwood", base: "cinderwood", suffix: "-cinderwood" }
 };
 
 export const RELIEF_ICONS: ReliefTypeIcons[] = [
@@ -30,5 +31,25 @@ export const RELIEF_ICONS: ReliefTypeIcons[] = [
   { set: "colored", type: "grass", variants: [2], zoom: 1.5 },
   { set: "colored", type: "swamp", variants: [2, 3], zoom: 1.5 },
   { set: "colored", type: "cactus", variants: [1, 2, 3], zoom: 1.5, fallback: "dune" },
-  { set: "colored", type: "deadTree", variants: [1, 2], zoom: 1.5, fallback: "dune" }
+  { set: "colored", type: "deadTree", variants: [1, 2], zoom: 1.5, fallback: "dune" },
+  ...[
+    "mount",
+    "mountSnow",
+    "vulcan",
+    "hill",
+    "dune",
+    "deciduous",
+    "conifer",
+    "coniferSnow",
+    "acacia",
+    "palm",
+    "grass",
+    "swamp",
+    "cactus",
+    "deadTree"
+  ].map(type => ({
+    set: "cinderwood" as const,
+    type,
+    variants: type === "mount" || type === "mountSnow" ? [1, 2, 3] : [1]
+  }))
 ];

@@ -134,5 +134,7 @@ export function applyOceanPattern(): void {
   if (!pattern) return;
   pattern.setAttribute("href", styles.ocean.options.pattern);
   pattern.setAttribute("opacity", String(styles.ocean.options.patternOpacity));
+  pattern.setAttribute("width", "100");
+  pattern.setAttribute("height", "100");
 }
 window.applyOceanPattern = applyOceanPattern;

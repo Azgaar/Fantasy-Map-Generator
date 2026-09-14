@@ -1,4 +1,5 @@
 // Style tab markup. The controls are still driven by the classic public/modules/ui/style.js
+import "@/components/shared/burg-icon-picker";
 import { ensureEl } from "@/utils/nodeUtils";
 
 const TEMPLATE = /* html */ `
@@ -377,6 +378,8 @@ const TEMPLATE = /* html */ `
             <option value="./images/pattern5.png">Pattern 5</option>
             <option value="./images/pattern6.png">Pattern 6</option>
             <option value="./images/kiwiroo.png">Kiwiroo</option>
+            <option value="./images/waves.png">Waves</option>
+            <option value="./images/whitecaps.png">Whitecaps</option>
           </select>
         </td>
       </tr>
@@ -456,29 +459,8 @@ const TEMPLATE = /* html */ `
     </tbody>
     <tbody id="styleBurgIcons">
       <tr data-tip="Select group icon">
-        <td>Icon</td>
-        <td>
-          <select id="styleBurgIconsIcon">
-            <option value="#icon-circle">Circle</option>
-            <option value="#icon-square">Square</option>
-            <option value="#icon-triangle">Triangle</option>
-            <option value="#icon-cross">Cross</option>
-            <option value="#icon-star">Star</option>
-            <option value="#icon-circled">Circled</option>
-            <option value="#icon-squared">Squared</option>
-            <option value="#icon-star-circled">Star circled</option>
-            <option value="#icon-star-circled-empty">Star circled empty</option>
-            <option value="#icon-star-squared">Star squared</option>
-            <option value="#icon-watabou-capital">Watabou capital</option>
-            <option value="#icon-watabou-city">Watabou city</option>
-            <option value="#icon-watabou-town">Watabou town</option>
-            <option value="#icon-watabou-village">Watabou village</option>
-            <option value="#icon-watabou-hamlet">Watabou hamlet</option>
-            <option value="#icon-watabou-fort">Watabou fort</option>
-            <option value="#icon-watabou-monastery">Watabou monastery</option>
-            <option value="#icon-watabou-caravanserai">Watabou caravanserai</option>
-            <option value="#icon-watabou-post">Watabou trade post</option>
-          </select>
+        <td colspan="2">
+          <burg-icon-picker id="styleBurgIconsIcon"></burg-icon-picker>
         </td>
       </tr>
       <tr data-tip="Set icon size">
@@ -573,6 +555,7 @@ const TEMPLATE = /* html */ `
             <option value="simple" selected>Simple</option>
             <option value="gray">Gray</option>
             <option value="colored">Colored</option>
+            <option value="cinderwood">Cinderwood</option>
           </select>
         </td>
       </tr>
@@ -666,6 +649,24 @@ const TEMPLATE = /* html */ `
           <select id="styleFontStyle">
             <option value="">Normal</option>
             <option value="italic">Italic</option>
+          </select>
+        </td>
+      </tr>
+      <tr id="styleFontWeightRow" data-tip="Set font weight from 100 to 950">
+        <td>Font weight</td>
+        <td>
+          <select id="styleFontWeight">
+            <option value="">Normal</option>
+            <option value="100">100</option>
+            <option value="200">200</option>
+            <option value="300">300</option>
+            <option value="400">400</option>
+            <option value="500">500</option>
+            <option value="600">600</option>
+            <option value="700">700</option>
+            <option value="800">800</option>
+            <option value="900">900</option>
+            <option value="950">950 (Ultra-black)</option>
           </select>
         </td>
       </tr>

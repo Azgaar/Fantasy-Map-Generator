@@ -300,9 +300,6 @@
   "provinces": {
     "attrs": {
       "opacity": 0.7,
-      "fill": "#000000",
-      "font-size": 4,
-      "font-family": "Comfortaa",
       "filter": null
     }
   },

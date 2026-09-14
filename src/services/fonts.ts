@@ -354,9 +354,6 @@ export function getUsedFonts(svg: SVGSVGElement, legends: string[] = []): FontDe
     if (font) usedFontFamilies.add(font);
   }
 
-  const provinceFont = select("#provs").attr("font-family");
-  if (provinceFont) usedFontFamilies.add(provinceFont);
-
   const legend = svg.querySelector("#legend");
   const legendFont = legend?.getAttribute("font-family");
   if (legendFont) usedFontFamilies.add(legendFont);
