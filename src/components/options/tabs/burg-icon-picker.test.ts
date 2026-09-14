@@ -73,3 +73,18 @@ test("Escape closes the chooser without changing its selection", () => {
   expect(picker.querySelector("details")!.open).toBe(false);
   expect(picker.value).toBe("#icon-circle");
 });
+
+test("port chooser offers the standard anchor and Cinderwood harbor with a selection preview", () => {
+  const picker = new BurgIconPicker();
+  picker.setAttribute("anchors", "");
+  picker.value = "#icon-anchor";
+  document.body.append(picker);
+  expect(picker.querySelector("summary")?.getAttribute("aria-label")).toBe("Choose port icon");
+  expect(picker.querySelectorAll("button")).toHaveLength(2);
+  const change = vi.fn();
+  picker.addEventListener("change", change);
+  picker.querySelector<HTMLButtonElement>('[data-icon="#icon-harbor"]')!.click();
+  expect(picker.value).toBe("#icon-harbor");
+  expect(picker.querySelector("summary use")?.getAttribute("href")).toBe(picker.value);
+  expect(change).toHaveBeenCalledOnce();
+});

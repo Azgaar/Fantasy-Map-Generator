@@ -343,6 +343,12 @@ function selectStyleElement() {
   }
 
   if (styleElement === "anchors") {
+    styleAnchors.style.display = "block";
+    styleAnchorsIcon.value = opts.icon;
+    styleAnchorsIcon.style.fill = attrs.fill ?? "none";
+    styleAnchorsIcon.style.stroke = attrs.stroke ?? "none";
+    styleAnchorsShiftX.value = opts.dx ?? 0;
+    styleAnchorsShiftY.value = opts.dy ?? 0;
     styleFill.style.display = "block";
     styleStroke.style.display = "block";
     styleStrokeWidth.style.display = "block";
@@ -586,6 +592,9 @@ function writeSelectedAttr(attr, value) {
   }
   if (styleElementSelect.value === "burgIcons" && ["fill", "stroke"].includes(attr)) {
     styleBurgIconsIcon.style.setProperty(attr, value ?? "none");
+  }
+  if (styleElementSelect.value === "anchors" && ["fill", "stroke"].includes(attr)) {
+    styleAnchorsIcon.style.setProperty(attr, value ?? "none");
   }
   if (["burgIcons", "anchors"].includes(styleElementSelect.value)) Layers.draw("burgIcons");
   else getEl().attr(attr, value ?? null);
@@ -1084,6 +1093,17 @@ stylePopulationUrbanStrokeInput.addEventListener("input", e => {
   d3.select("#population").select("#urban").attr("stroke", e.target.value);
   stylePopulationUrbanStrokeOutput.value = e.target.value;
 });
+
+function changeAnchorOption(key, value) {
+  const group = styles.burgIcons.anchors.groups[styleGroupSelect.value];
+  if (!group) return;
+  group.options[key] = value;
+  Layers.draw("burgIcons");
+}
+
+styleAnchorsIcon.addEventListener("change", e => changeAnchorOption("icon", e.target.value));
+styleAnchorsShiftX.addEventListener("input", e => changeAnchorOption("dx", +e.target.value || 0));
+styleAnchorsShiftY.addEventListener("input", e => changeAnchorOption("dy", +e.target.value || 0));
 
 const burgIconsGroup = () => styles.burgIcons.burgIcons.groups[styleGroupSelect.value];
 

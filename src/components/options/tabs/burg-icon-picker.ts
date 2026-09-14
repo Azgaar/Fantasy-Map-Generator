@@ -43,6 +43,11 @@ const icons = groups.flatMap(({ name, prefix, icons }) =>
   }))
 );
 
+const portIcons = [
+  { id: "#icon-anchor", name: "Anchor", group: "Ports", viewBox: "-23 -23 46 46" },
+  { id: "#icon-harbor", name: "Cinderwood harbor", group: "Ports", viewBox: "-28 -28 56 56" }
+];
+
 const css = document.createElement("style");
 css.textContent = /* css */ `
   burg-icon-picker { display: block; min-width: 150px; }
@@ -76,12 +81,14 @@ export class BurgIconPicker extends HTMLElement {
 
   connectedCallback(): void {
     if (this.childElementCount) return;
+    const choices = this.hasAttribute("anchors") ? portIcons : icons;
+    const groupNames = [...new Set(choices.map(icon => icon.group))];
     this.innerHTML = `<details>
-      <summary aria-label="Choose burg icon"></summary>
-      <div class="burg-icon-choices">${groups
+      <summary aria-label="Choose ${this.hasAttribute("anchors") ? "port" : "burg"} icon"></summary>
+      <div class="burg-icon-choices">${groupNames
         .map(
-          ({ name }) => `<h4>${name}</h4>
-        <div class="burg-icon-group" role="group" aria-label="${name}">${icons
+          name => `<h4>${name}</h4>
+        <div class="burg-icon-group" role="group" aria-label="${name}">${choices
           .filter(icon => icon.group === name)
           .map(
             icon =>
@@ -131,7 +138,7 @@ export class BurgIconPicker extends HTMLElement {
   private update(): void {
     const summary = this.querySelector("summary");
     if (!summary) return;
-    const icon = icons.find(icon => icon.id === this.selected);
+    const icon = [...icons, ...portIcons].find(icon => icon.id === this.selected);
     summary.innerHTML = `${preview(this.selected, icon?.viewBox || "-28 -28 56 56")}<span>${icon?.name || "Custom icon"}</span>`;
     for (const button of this.querySelectorAll<HTMLButtonElement>("button[data-icon]")) {
       button.setAttribute("aria-pressed", String(button.dataset.icon === this.selected));

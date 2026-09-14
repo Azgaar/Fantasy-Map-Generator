@@ -202,3 +202,30 @@ describe("per-attribute repair", () => {
     warn.mockRestore();
   });
 });
+
+describe("port icon styles", () => {
+  test("older anchor groups keep the anchor appearance and gain no shift", () => {
+    const legacy = Styles.parse(Styles.defaults);
+    legacy.burgIcons.anchors.groups.town.options = { size: 2, icon: "#icon-circle" };
+    const parsed = Styles.parse(legacy);
+    expect(parsed.burgIcons.anchors.groups.town.options).toEqual({ size: 2, icon: "#icon-anchor" });
+    expect(parsed.burgIcons.burgIcons.groups.town.options.icon).toBe("#icon-circle");
+  });
+
+  test("Cinderwood port settings survive saving and loading for every burg group", () => {
+    const parsed = Styles.parse(cinderwood);
+    const restored = Styles.parse(JSON.parse(JSON.stringify(parsed)));
+    const groups = restored.burgIcons.anchors.groups;
+    expect(Object.keys(groups).sort()).toEqual(Object.keys(parsed.burgIcons.burgIcons.groups).sort());
+    for (const [name, group] of Object.entries(groups)) {
+      expect(group.options).toEqual(
+        cinderwood.burgIcons.anchors.groups[name as keyof typeof cinderwood.burgIcons.anchors.groups].options
+      );
+      expect(group.options.icon).toBe("#icon-harbor");
+      expect(group.options.dx).toBeLessThan(0);
+      expect(Number.isFinite(group.options.dy)).toBe(true);
+    }
+    const source = readFileSync("src/index.html", "utf8");
+    expect(source.includes('id="icon-harbor"')).toBe(true);
+  });
+});

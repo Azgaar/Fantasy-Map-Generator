@@ -393,14 +393,12 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
       if (rose) cloneDefs.appendChild(rose.cloneNode(true));
     }
 
-    // add burs icons
-    if (cloneEl.getElementById("burgIcons")) {
-      const groups = cloneEl.getElementById("burgIcons")!.querySelectorAll("g");
-      for (const group of Array.from(groups)) {
-        if (!group.dataset.icon || cloneDefs.querySelector(group.dataset.icon)) continue;
-        const icon = svgDefs.querySelector(group.dataset.icon);
-        if (icon) cloneDefs.appendChild(icon.cloneNode(true));
-      }
+    // add burg and port icons
+    for (const group of cloneEl.querySelectorAll<SVGGElement>("#burgIcons > g, #anchors > g")) {
+      const id = group.dataset.icon?.slice(1);
+      if (!id || cloneDefs.querySelector(`[id="${CSS.escape(id)}"]`)) continue;
+      const icon = svgDefs.getElementById(id);
+      if (icon) cloneDefs.appendChild(icon.cloneNode(true));
     }
 
     // add goods icons
@@ -416,12 +414,6 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
         const element = goodsIconsDefs?.querySelector(href);
         if (element) cloneDefs.appendChild(element.cloneNode(true));
       }
-    }
-
-    // add port icon
-    if (cloneEl.getElementById("anchors")) {
-      const anchor = svgDefs.getElementById("icon-anchor");
-      if (anchor) cloneDefs.appendChild(anchor.cloneNode(true));
     }
 
     // add grid pattern

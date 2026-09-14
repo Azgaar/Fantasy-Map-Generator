@@ -73,7 +73,11 @@ const heights = z.strictObject({
 });
 const burgGroup = z.strictObject({
   attrs: z.strictObject({ opacity, ...fillAttrs, ...strokeAttrs, "stroke-linejoin": strokeLinejoin, filter }),
-  options: z.strictObject({ size: z.number(), icon: z.string() })
+  options: z.strictObject({ size: z.number(), icon: z.string(), dx: z.number().optional(), dy: z.number().optional() })
+});
+const anchorGroup = z.strictObject({
+  attrs: z.strictObject({ opacity, ...fillAttrs, ...strokeAttrs, "stroke-linejoin": strokeLinejoin, filter }),
+  options: z.strictObject({ size: z.number(), icon: z.string(), dx: z.number().optional(), dy: z.number().optional() })
 });
 const emblemGroup = z.strictObject({ options: z.strictObject({ size: z.number() }) });
 
@@ -223,7 +227,7 @@ export const stylesSchema = z.strictObject({
   }),
   burgIcons: z.strictObject({
     burgIcons: z.strictObject({ groups: z.record(z.string(), burgGroup) }),
-    anchors: z.strictObject({ groups: z.record(z.string(), burgGroup) })
+    anchors: z.strictObject({ groups: z.record(z.string(), anchorGroup) })
   }),
   goods: z.strictObject({
     goodsCells: z.strictObject({ attrs: z.strictObject({ opacity, filter }) }),

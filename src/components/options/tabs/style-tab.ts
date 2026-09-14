@@ -1,5 +1,5 @@
 // Style tab markup. The controls are still driven by the classic public/modules/ui/style.js
-import "@/components/shared/burg-icon-picker";
+import "@/components/options/tabs/burg-icon-picker";
 import { ensureEl } from "@/utils/nodeUtils";
 
 const TEMPLATE = /* html */ `
@@ -484,6 +484,18 @@ const TEMPLATE = /* html */ `
         <td>Fill opacity</td>
         <td>
           <slider-input id="styleBurgIconsFillOpacity" min="0" max="1" step=".01"></slider-input>
+        </td>
+      </tr>
+    </tbody>
+    <tbody id="styleAnchors">
+      <tr data-tip="Select the port icon for this burg group">
+        <td colspan="2"><burg-icon-picker id="styleAnchorsIcon" anchors></burg-icon-picker></td>
+      </tr>
+      <tr data-tip="Shift port icons relative to burg positions, in icon-size units">
+        <td>Icon shift</td>
+        <td>
+          <input id="styleAnchorsShiftX" type="number" step=".1" aria-label="Port icon horizontal shift" data-tip="Horizontal shift in icon-size units (positive moves right)" />
+          <input id="styleAnchorsShiftY" type="number" step=".1" aria-label="Port icon vertical shift" data-tip="Vertical shift in icon-size units (positive moves down)" />
         </td>
       </tr>
     </tbody>
