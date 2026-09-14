@@ -2636,60 +2636,89 @@
             </g>
             <circle fill="#EBE8DF" stroke-width="3" cx="0" cy="0" r="10" />
           </symbol>
-          <!-- Cinderwood illustrated settlements and atlas marks. -->
+          <!-- Main surfaces inherit Style colors; roofs, shadows and fine details keep their own palette. -->
           <symbol id="icon-cinderwood-capital" viewBox="0 0 40 40" width="1em" height="1em" overflow="visible">
-            <g transform="translate(-20 -38)" stroke-width=".55" stroke-linejoin="round">
-              <circle cx="20" cy="19" r="18" />
-              <path d="M4 34V21L8 17L12 21V34M28 34V21L32 17L36 21V34" />
-              <path d="M12 33V16H28V33M15 16Q15 7 20 6Q25 7 25 16Z" />
-              <path d="M18 10V4L20 0L22 4V10M8 17V12M32 17V12" />
-              <path d="M10 34V25H30V34M16 34V26Q20 20 24 26V34" />
-              <path d="M18 34V27Q20 24 22 27V34" />
-              <path d="M6 23V28M10 23V28M30 23V28M34 23V28M14 18V23M26 18V23M18 13V18M22 13V18" fill="none" />
-              <path d="M3 35H37M5 36H35M13 29H15M25 29H28M13 31H16M24 31H28M17 9L16 15M23 9L24 15" fill="none" stroke-width=".35" />
+            <g transform="translate(-20 -38)" stroke-width=".55" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="20" cy="20" r="17" fill="#e4d6b6" stroke="#a18b64" stroke-width=".35" />
+              <path d="M3 35Q19 31 37 35L34 37H7Z" fill="#8a8060" stroke="none" opacity=".5" />
+              <path d="M4 34V21H11V34M29 34V21H36V34M12 33V16H28V33" fill="inherit" />
+              <path d="M3 21L7 13L12 21ZM28 21L32 13L37 21Z" fill="#696c53" />
+              <path d="M14 16Q14 8 20 6Q26 8 26 16Z" fill="#ad9560" />
+              <path d="M20 6Q22 10 22 16H26Q26 9 20 6M8 21H11V34H8M25 16H28V33H25M33 21H36V34H33" fill="#6d5b42" stroke="none" opacity=".35" />
+              <path d="M18 8V4L20 0L22 4V8Z" fill="#77765a" />
+              <path d="M10 34V25H30V34M15 34V26Q20 19 25 26V34" fill="inherit" />
+              <path d="M18 34V27Q20 24 22 27V34Z" fill="#544c3c" stroke="#756346" />
+              <path d="M6 23V28M9 23V28M31 23V28M34 23V28M15 18V22M25 18V22M18 18V21M22 18V21" fill="none" stroke="#675a43" stroke-width=".8" />
+              <path d="M7 13V10M32 13V10M13 16H27M12 25H15M25 25H28M12 29H15M25 29H28M12 31H16M24 31H28M3 35H37M6 36H34" fill="none" stroke="#806e50" stroke-width=".35" />
+              <path d="M16 14Q16 10 19 8M5 20L7 16M30 20L32 16M16 25Q20 21 24 25" fill="none" stroke="#f0e3c2" stroke-width=".6" />
             </g>
           </symbol>
           <symbol id="icon-cinderwood-city" viewBox="0 0 40 40" width="1em" height="1em" overflow="visible">
-            <g transform="translate(-20 -38)" stroke-width=".55" stroke-linejoin="round">
-              <circle cx="20" cy="21" r="16" />
-              <path d="M6 34V24H15V34M23 34V20H32V34M13 34V15H24V34" />
-              <path d="M4 24L10 16L17 24ZM22 20L28 12L34 20ZM12 15L18 3L25 15Z" />
-              <path d="M18 3V0M27 14V6H30V15M16 34V28Q19 24 21 28V34" />
-              <path d="M17 18V22M21 18V22M8 27V30M12 27V30M26 24V28M30 24V28" fill="none" />
-              <path d="M4 35H35M6 36H32M14 25H23M23 31H31M7 32H14M14 13L18 6M25 18L28 14" fill="none" stroke-width=".35" />
+            <g transform="translate(-20 -38)" stroke-width=".55" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="20" cy="21" r="16" fill="#e4d6b6" stroke="#a18b64" stroke-width=".35" />
+              <path d="M3 35Q20 32 36 35L32 37H7Z" fill="#8a8060" stroke="none" opacity=".5" />
+              <path d="M6 34V24H15V34M23 34V20H32V34M13 34V15H24V34" fill="inherit" />
+              <path d="M4 24L10 16L17 24ZM22 20L28 12L34 20ZM12 15L18 3L25 15Z" fill="#72765b" />
+              <path d="M10 16L17 24H12ZM18 3L25 15H20ZM28 12L34 20H29Z" fill="#4f5848" stroke="none" />
+              <path d="M11 24H15V34H11M21 15H24V34H21M29 20H32V34H29" fill="#6d5b42" stroke="none" opacity=".3" />
+              <path d="M16 34V28Q19 24 21 28V34Z" fill="#554c3b" stroke="#756346" />
+              <path d="M27 15V7H30V17" fill="inherit" />
+              <path d="M17 18V22M21 18V22M8 27V30M12 27V30M26 24V28M30 24V28" fill="none" stroke="#675a43" stroke-width=".8" />
+              <path d="M18 3V0M26 7H31M14 25H23M23 31H31M7 32H14M4 35H35M6 36H32" fill="none" stroke="#806e50" stroke-width=".35" />
+              <path d="M7 22L10 18M15 13L18 7M25 18L28 14M14 16V23" fill="none" stroke="#e4d7b5" stroke-width=".5" />
             </g>
           </symbol>
           <symbol id="icon-cinderwood-fort" viewBox="0 0 40 40" width="1em" height="1em" overflow="visible">
-            <g transform="translate(-20 -38)" stroke-width=".55" stroke-linejoin="round">
-              <path d="M5 35V18H3V12H7V15H10V12H14V18H12V35M27 35V18H25V12H29V15H32V12H36V18H34V35" />
-              <path d="M12 34V22H16V19H20V22H24V19H28V34Z" />
-              <path d="M17 34V28Q20 23 23 28V34" />
-              <path d="M7 21V26M30 21V26M14 26H17M25 26H28M5 30H10M28 30H33M3 35H36M6 36H33" fill="none" />
-              <path d="M9 12V5L19 7L9 9" />
+            <g transform="translate(-20 -38)" stroke-width=".55" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 35Q19 32 38 35L34 37H6Z" fill="#8a8060" stroke="none" opacity=".5" />
+              <path d="M12 34V22H16V19H20V22H24V19H28V34Z" fill="inherit" />
+              <path d="M5 35V18H3V12H7V15H10V12H14V18H12V35M27 35V18H25V12H29V15H32V12H36V18H34V35" fill="inherit" />
+              <path d="M9 18H12V35H9M31 18H34V35H31" fill="#6d5b42" stroke="none" opacity=".35" />
+              <path d="M17 34V28Q20 23 23 28V34Z" fill="#534b3b" stroke="#756346" />
+              <path d="M18 28V33M20 26V33M22 28V33M18 29H22M18 31H22" fill="none" stroke="#ab946b" stroke-width=".35" />
+              <path d="M7 21V26M30 21V26" fill="none" stroke="#675a43" stroke-width="1" />
+              <path d="M4 18H13M26 18H35M14 26H17M25 26H28M5 30H10M28 30H33M13 30H16M24 30H27M6 33H10M29 33H33M3 35H36M6 36H33M9 12V3" fill="none" stroke="#806e50" stroke-width=".35" />
+              <path d="M9 3Q14 2 20 5L17 7L20 9Q14 6 9 8Z" fill="#934b3c" stroke="#704a35" stroke-width=".35" />
             </g>
           </symbol>
           <symbol id="icon-cinderwood-monastery" viewBox="0 0 40 40" width="1em" height="1em" overflow="visible">
-            <g transform="translate(-20 -38)" stroke-width=".55" stroke-linejoin="round">
-              <circle cx="20" cy="22" r="15" />
-              <path d="M7 34V22H27V34M24 34V14H31V34" />
-              <path d="M5 22L15 13L26 22ZM22 14L27 3L33 14Z" />
-              <path d="M27 3V0M25 1H29M12 34V28Q15 23 18 28V34" />
-              <path d="M26 17V21M29 17V21M21 25V29M9 25V29M4 35H34M7 36H30" fill="none" />
+            <g transform="translate(-20 -38)" stroke-width=".55" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="20" cy="22" r="15" fill="#e4d6b6" stroke="#a18b64" stroke-width=".35" />
+              <path d="M3 35Q19 32 35 35L31 37H7Z" fill="#8a8060" stroke="none" opacity=".5" />
+              <path d="M7 34V22H27V34M24 34V14H31V34" fill="inherit" />
+              <path d="M5 22L15 13L26 22ZM22 14L27 3L33 14Z" fill="#79745a" />
+              <path d="M15 13L26 22H19ZM27 3L33 14H29Z" fill="#555b49" stroke="none" />
+              <path d="M21 22H24V34H21M28 14H31V34H28" fill="#6d5b42" stroke="none" opacity=".3" />
+              <path d="M12 34V28Q15 23 18 28V34Z" fill="#574d3a" stroke="#756346" />
+              <path d="M26 17V21M29 17V21M21 25V29M9 25V29" fill="none" stroke="#675a43" stroke-width=".8" />
+              <circle cx="15" cy="22" r="1.4" fill="#ad9560" stroke="#756346" stroke-width=".4" />
+              <path d="M27 3V0M25 1H29M24 23H31M8 32H11M19 32H22M25 31H30M4 35H34M7 36H30" fill="none" stroke="#806e50" stroke-width=".35" />
+              <path d="M8 21L15 15M25 12L27 7M8 23H12" fill="none" stroke="#e4d7b5" stroke-width=".5" />
             </g>
           </symbol>
           <symbol id="icon-cinderwood-caravanserai" viewBox="0 0 40 40" width="1em" height="1em" overflow="visible">
-            <g transform="translate(-20 -38)" stroke-width=".55" stroke-linejoin="round">
-              <path d="M5 34V23L12 17H29L35 23V34ZM10 34V25H30V34" />
-              <path d="M4 23L12 17H29L36 23H29L24 20H15L11 23Z" />
-              <path d="M16 34V29Q20 23 24 29V34" />
-              <path d="M7 26V30M32 26V30M12 26V29M28 26V29M3 35H37" fill="none" />
+            <g transform="translate(-20 -38)" stroke-width=".55" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 35Q20 32 38 35L33 37H7Z" fill="#8a8060" stroke="none" opacity=".5" />
+              <path d="M5 34V23L12 17H29L35 23V34Z" fill="inherit" />
+              <path d="M11 23L15 20H24L29 23V30H11Z" fill="#78694e" />
+              <path d="M4 23L12 17H29L36 23H29L24 20H15L11 23Z" fill="#9b7653" />
+              <path d="M10 34V25H30V34" fill="inherit" />
+              <path d="M26 25H30V34H26M32 23H35V34H32" fill="#6d5b42" stroke="none" opacity=".3" />
+              <path d="M16 34V29Q20 23 24 29V34Z" fill="#544b39" stroke="#756346" />
+              <path d="M7 26V30M32 26V30M12 27V30M28 27V30" fill="none" stroke="#675a43" stroke-width=".8" />
+              <path d="M7 22L12 18H28M11 25H29M6 32H9M11 32H15M25 32H29M31 32H34M3 35H37M6 36H33" fill="none" stroke="#806e50" stroke-width=".35" />
+              <path d="M17 28Q20 25 23 28" fill="none" stroke="#dfcda4" stroke-width=".5" />
             </g>
           </symbol>
           <symbol id="icon-cinderwood-post" viewBox="0 0 40 40" width="1em" height="1em" overflow="visible">
-            <g transform="translate(-20 -38)" stroke-width=".55" stroke-linejoin="round">
-              <path d="M5 34L19 16L35 34ZM19 16L24 34M19 16V11" />
-              <path d="M14 34L19 24L23 34" />
-              <path d="M8 31L15 22M26 24L31 32M3 35H37M7 36H30" fill="none" />
+            <g transform="translate(-20 -38)" stroke-width=".55" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 35Q20 32 38 35L32 37H7Z" fill="#8a8060" stroke="none" opacity=".5" />
+              <path d="M5 34L19 16L35 34Z" fill="inherit" />
+              <path d="M19 16L35 34H24Z" fill="#a17d52" />
+              <path d="M14 34L19 24L23 34Z" fill="#584c37" stroke="#756346" />
+              <path d="M19 16L14 34H11ZM19 16L24 34H27Z" fill="#f0dfb8" stroke="none" opacity=".55" />
+              <path d="M19 16V10M8 31L15 22M26 24L31 32M7 31L3 35M32 31L37 35M3 33V36M37 33V36M3 35H37M7 36H30" fill="none" stroke="#806e50" stroke-width=".4" />
+              <path d="M19 10L27 12L19 14Z" fill="#934b3c" stroke="#704a35" stroke-width=".35" />
             </g>
           </symbol>
           <symbol id="icon-cinderwood-town" viewBox="0 0 20 20" width="1em" height="1em" overflow="visible">

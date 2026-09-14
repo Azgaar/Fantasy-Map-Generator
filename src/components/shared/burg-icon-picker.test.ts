@@ -5,16 +5,20 @@ import { BurgIconPicker } from "./burg-icon-picker";
 
 afterEach(() => document.body.replaceChildren());
 
-test("Cinderwood artwork does not override the burg group's fill and stroke colors", () => {
+test("Cinderwood illustrations retain accent colors while their main surfaces inherit group paint", () => {
   const source = new DOMParser().parseFromString(readFileSync("src/index.html", "utf8"), "text/html");
-  const symbols = source.querySelectorAll('symbol[id^="icon-cinderwood-"]');
-  expect(symbols).toHaveLength(9);
-  for (const symbol of symbols) {
-    for (const element of [symbol, ...symbol.querySelectorAll("[fill], [stroke]")]) {
-      for (const attribute of ["fill", "stroke"]) {
-        expect([null, "none", "inherit"], `${symbol.id} ${attribute}`).toContain(element.getAttribute(attribute));
-      }
+  const illustrations = ["capital", "city", "fort", "monastery", "caravanserai", "post"];
+  for (const name of illustrations) {
+    const symbol = source.getElementById(`icon-cinderwood-${name}`)!;
+    const main = symbol.querySelector('[fill="inherit"]')!;
+    expect(main, `${name} has an editable main surface`).not.toBeNull();
+    for (let element: Element | null = main; element; element = element.parentElement) {
+      expect([null, "inherit"], `${name} inherits fill`).toContain(element.getAttribute("fill"));
+      expect([null, "inherit"], `${name} inherits stroke`).toContain(element.getAttribute("stroke"));
+      if (element === symbol) break;
     }
+    expect(symbol.querySelector('[fill^="#"]'), `${name} has pre-colored details`).not.toBeNull();
+    expect(symbol.querySelector('[stroke^="#"]'), `${name} has independent detail outlines`).not.toBeNull();
   }
 });
 
