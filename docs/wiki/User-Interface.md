@@ -422,8 +422,6 @@ Each of those sets defines its design settings for each of the elements, for exa
 
 Available presets: default, ancient, gloom, pale, light, watercolor, clean, atlas, darkSeas, cyberpunk, night, monochrome, ink and cinderwood. The **+** button saves the current style as a custom preset, and the **−** button removes the selected custom preset.
 
-**Cinderwood** combines parchment land, engraved ocean currents, olive woodland and sepia relief, illustrated major settlements, and red atlas marks for smaller settlements. Enable the Heightmap layer for hachures, and the Relief and Texture layers for terrain icons and parchment. The Cinderwood relief set and Engraved currents ocean pattern can also be selected independently in Style. Burg Icons uses a thumbnail picker grouped into Atlas marks, Watabou, and Cinderwood; click a preview to apply it to the selected burg group.
-
 **+ button** Allows you to add your own set of settings.
 
 ## Global filters

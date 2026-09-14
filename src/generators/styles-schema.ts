@@ -15,9 +15,8 @@ const filter = z.string().nullable();
 const mask = z.string().nullable();
 const transform = z.string().nullable();
 const percentage = z.string().regex(/^-?\d+(\.\d+)?%$/);
-// font sizes carry legacy dialects ("6%", "12px", "18"), so no format validator
-const fontSize = z.string();
-const styleAttr = z.string().nullable(); // CSSStyleDeclaration.cssText: only text-shadow and the label shift transform live here
+const fontSize = z.string(); // font sizes carry legacy dialects ("6%", "12px", "18"), so no format validator
+const styleAttr = z.string().nullable(); // CSSStyleDeclaration.cssText: text-shadow, text-transform and label shift transform live here
 
 const strokeAttrs = {
   stroke: color,
