@@ -409,6 +409,40 @@ const TEMPLATE = /* html */ `
           <output id="styleOceanFillOutput">#466eab</output>
         </td>
       </tr>
+      <tr data-tip="Draw concentric bands that follow the coastline">
+        <td colspan="2">
+          <input id="styleOceanBands" class="checkbox" type="checkbox" />
+          <label for="styleOceanBands" class="checkbox-label">Coastline bands</label>
+        </td>
+      </tr>
+      <tr data-coastal-band data-tip="Number of bands around the coast">
+        <td>Band count</td>
+        <td><slider-input id="styleOceanBandCount" min="1" max="8" step="1"></slider-input></td>
+      </tr>
+      <tr data-coastal-band data-tip="Band spacing in map units; bands widen farther from shore">
+        <td>Band spacing</td>
+        <td><slider-input id="styleOceanBandSpacing" min="0.2" max="5" step="0.1"></slider-input></td>
+      </tr>
+      <tr data-coastal-band data-tip="Width of the dark lines separating bands">
+        <td>Outline width</td>
+        <td><slider-input id="styleOceanBandWidth" min="0.05" max="1" step="0.05"></slider-input></td>
+      </tr>
+      <tr data-coastal-band>
+        <td><label for="styleOceanBandColor">Outline color</label></td>
+        <td><input id="styleOceanBandColor" type="color" /></td>
+      </tr>
+      <tr data-coastal-band data-tip="Tint over the existing ocean, strongest near the shore">
+        <td><label for="styleOceanBandShore">Nearshore color</label></td>
+        <td><input id="styleOceanBandShore" type="color" /></td>
+      </tr>
+      <tr data-coastal-band data-tip="Strength of the nearshore tint; zero leaves only outlines over the ocean texture">
+        <td>Shading</td>
+        <td><slider-input id="styleOceanBandShade" min="0" max="1" step="0.05"></slider-input></td>
+      </tr>
+      <tr data-coastal-band>
+        <td>Band opacity</td>
+        <td><slider-input id="styleOceanBandOpacity" min="0" max="1" step="0.05"></slider-input></td>
+      </tr>
       <tr data-tip="Decorate coastal and distant water around a clear offshore band">
         <td colspan="2">
           <input id="styleOceanWaves" class="checkbox" type="checkbox" />
@@ -436,7 +470,7 @@ const TEMPLATE = /* html */ `
         <td>Reach</td>
         <td><slider-input id="styleOceanWaveReach" min="1" max="12" step="0.5"></slider-input></td>
       </tr>
-      <tr data-coastal-wave data-tip="Clear water between the coastline and waves, in cell spacings">
+      <tr data-coastal-wave data-tip="Clear water beyond the coastline bands (or shore), in cell spacings">
         <td>Coastal gap</td>
         <td><slider-input id="styleOceanWaveHalo" min="0" max="2" step="0.05"></slider-input></td>
       </tr>

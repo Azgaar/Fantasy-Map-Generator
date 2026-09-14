@@ -10,7 +10,17 @@
   "ocean": {
     "options": {
       "pattern": "./images/pattern1.png",
-      "patternOpacity": 0.2
+      "patternOpacity": 0.2,
+      "bands": {
+        "render": false,
+        "count": 5,
+        "spacing": 1.1,
+        "width": 0.25,
+        "color": "#575448",
+        "shore": "#b9b6a1",
+        "shade": 0.35,
+        "opacity": 1
+      }
     },
     "base": {
       "attrs": {

@@ -3,6 +3,7 @@ import { Ocean } from "@/generators/ocean-generator";
 import { rn, round } from "@/utils";
 import { ensureEl } from "@/utils/nodeUtils";
 import { getCoastalDistances, getCoastalWaves } from "./coastal-waves";
+import { drawCoastalBands, getCoastalBandReach } from "./draw-coastal-bands";
 
 /**
  * The two full-graph rects the rings are drawn over: the textured pattern fill and the flat base
@@ -53,6 +54,7 @@ export function drawOcean(): void {
   applyOceanPattern();
   drawOceanBase();
   drawCoastalWaves();
+  drawCoastalBands();
   const oceanLayers = ensureEl<SVGGElement>("oceanLayers");
   removeOcean();
 
@@ -88,13 +90,15 @@ function drawCoastalWaves(): void {
   TIME && console.time("drawCoastalWaves");
   const { width, height } = options.map.graph;
   const { spacing, cellsX, cellsY, cells, features } = grid;
-  const distances = getCoastalDistances(cells.h, cells.c, waveOptions.reach * 2);
+  const bandReach = getCoastalBandReach(styles.ocean.options.bands);
+  const bandCells = bandReach / spacing;
+  const distances = getCoastalDistances(cells.h, cells.c, waveOptions.reach * 2 + bandCells);
   const distanceAt = (x: number, y: number): number => {
     const column = Math.max(0, Math.min(cellsX - 1, Math.floor(x / spacing)));
     const row = Math.max(0, Math.min(cellsY - 1, Math.floor(y / spacing)));
     const cell = row * cellsX + column;
     if (cells.h[cell] >= 20 || features[cells.f[cell]]?.type === "lake") return 0;
-    return distances[cell] || Infinity;
+    return distances[cell] ? Math.max(1, distances[cell] - bandCells) : Infinity;
   };
 
   const path = getCoastalWaves({
@@ -108,7 +112,7 @@ function drawCoastalWaves(): void {
     reach: waveOptions.reach,
     seed: options.map.seed
   });
-  const halo = rn(waveOptions.halo * spacing * 2, 2);
+  const halo = rn((bandReach + waveOptions.halo * spacing) * 2, 2);
   const land = pack.features
     .filter(feature => feature?.land)
     .map(feature => `<use href="#feature_${feature.i}" fill="black" stroke="black" stroke-width="${halo}"></use>`)

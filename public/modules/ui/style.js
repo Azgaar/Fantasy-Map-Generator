@@ -394,6 +394,12 @@ function selectStyleElement() {
     styleOceanFill.value = styleOceanFillOutput.value = styles.ocean.base.attrs.fill;
     styleOceanPattern.value = styles.ocean.options.pattern;
     styleOceanPatternOpacity.value = styles.ocean.options.patternOpacity;
+    const bands = styles.ocean.options.bands;
+    ensureEl("styleOceanBands").checked = bands.render;
+    for (const key of ["count", "spacing", "width", "color", "shore", "shade", "opacity"]) {
+      ensureEl("styleOceanBand" + key[0].toUpperCase() + key.slice(1)).value = bands[key];
+    }
+    updateCoastalBandControls();
     const waves = styles.ocean.oceanWaves;
     styleOceanWaves.checked = waves.options.render;
     styleOceanEmbellishmentType.value = waves.options.type;
@@ -737,6 +743,29 @@ function updateCoastalWaveControls() {
   const enabled = styles.ocean.oceanWaves.options.render;
   styleOcean.querySelectorAll("[data-coastal-wave]").forEach(row => {
     row.style.display = enabled ? "" : "none";
+  });
+}
+
+function updateCoastalBandControls() {
+  styleOcean.querySelectorAll("[data-coastal-band]").forEach(row => {
+    row.style.display = styles.ocean.options.bands.render ? "" : "none";
+  });
+}
+
+ensureEl("styleOceanBands").addEventListener("change", e => {
+  styles.ocean.options.bands.render = e.target.checked;
+  updateCoastalBandControls();
+  Layers.draw("ocean");
+});
+
+for (const key of ["count", "spacing", "width", "color", "shore", "shade", "opacity"]) {
+  const control = ensureEl("styleOceanBand" + key[0].toUpperCase() + key.slice(1));
+  control.addEventListener("input", e => {
+    if (e.target !== e.currentTarget) return;
+    const value = ["color", "shore"].includes(key) ? control.value : +control.value;
+    if (control.value === "" || (typeof value === "number" && !Number.isFinite(value))) return;
+    styles.ocean.options.bands[key] = value;
+    Layers.draw("ocean");
   });
 }
 

@@ -9,20 +9,47 @@
   },
   "ocean": {
     "options": {
-      "pattern": "./images/kiwiroo.png",
-      "patternOpacity": 0.4
+      "pattern": "./images/pattern2.png",
+      "patternOpacity": 0.17,
+      "bands": {
+        "render": true,
+        "count": 2,
+        "spacing": 1.1,
+        "width": 0.3,
+        "color": "#b4b4af",
+        "shore": "#b9b6a1",
+        "shade": 0.4,
+        "opacity": 1
+      }
     },
     "base": {
       "attrs": {
-        "fill": "#c99f64"
+        "fill": "#e1d0bc"
       }
     },
     "oceanLayers": {
       "attrs": {
-        "filter": ""
+        "filter": null
       },
       "options": {
-        "outline": "-6,-4,-2"
+        "outline": "-6,-3,-1"
+      }
+    },
+    "oceanWaves": {
+      "attrs": {
+        "opacity": 0.5,
+        "stroke": "#1f3846",
+        "stroke-width": 0.5,
+        "stroke-dasharray": null,
+        "filter": null
+      },
+      "options": {
+        "render": true,
+        "type": "waves",
+        "density": 1,
+        "length": 1,
+        "reach": 4,
+        "halo": 0.55
       }
     }
   },
@@ -58,7 +85,22 @@
         "skip": 2,
         "relax": 1,
         "curve": "curveBasisClosed",
-        "render": false
+        "render": false,
+        "contours": {
+          "mode": "off",
+          "interval": 5,
+          "color": "#5c513e",
+          "width": 0.35,
+          "opacity": 0.5
+        },
+        "hachures": {
+          "mode": "off",
+          "density": 1,
+          "length": 1,
+          "width": 1,
+          "color": "#5c513e",
+          "opacity": 0.65
+        }
       }
     },
     "oceanHeights": {
@@ -73,7 +115,22 @@
         "skip": 0,
         "relax": 1,
         "curve": "curveBasisClosed",
-        "render": false
+        "render": false,
+        "contours": {
+          "mode": "off",
+          "interval": 5,
+          "color": "#5c513e",
+          "width": 0.35,
+          "opacity": 0.5
+        },
+        "hachures": {
+          "mode": "off",
+          "density": 1,
+          "length": 1,
+          "width": 1,
+          "color": "#5c513e",
+          "opacity": 0.65
+        }
       }
     }
   },
@@ -160,6 +217,15 @@
           "stroke-dasharray": null,
           "stroke-linecap": null,
           "filter": null
+        },
+        "options": {
+          "embellishment": "none",
+          "density": 1,
+          "length": 1,
+          "halo": 0.2,
+          "color": "#000000",
+          "width": 0.3,
+          "opacity": 0.6
         }
       },
       "salt": {
@@ -172,6 +238,15 @@
           "stroke-dasharray": null,
           "stroke-linecap": null,
           "filter": null
+        },
+        "options": {
+          "embellishment": "none",
+          "density": 1,
+          "length": 1,
+          "halo": 0.2,
+          "color": "#000000",
+          "width": 0.3,
+          "opacity": 0.6
         }
       },
       "sinkhole": {
@@ -184,6 +259,15 @@
           "stroke-dasharray": null,
           "stroke-linecap": null,
           "filter": null
+        },
+        "options": {
+          "embellishment": "none",
+          "density": 1,
+          "length": 1,
+          "halo": 0.2,
+          "color": "#000000",
+          "width": 0.3,
+          "opacity": 0.6
         }
       },
       "frozen": {
@@ -196,6 +280,15 @@
           "stroke-dasharray": null,
           "stroke-linecap": null,
           "filter": null
+        },
+        "options": {
+          "embellishment": "none",
+          "density": 1,
+          "length": 1,
+          "halo": 0.2,
+          "color": "#000000",
+          "width": 0.3,
+          "opacity": 0.6
         }
       },
       "lava": {
@@ -208,6 +301,15 @@
           "stroke-dasharray": null,
           "stroke-linecap": null,
           "filter": "url(#paper)"
+        },
+        "options": {
+          "embellishment": "none",
+          "density": 1,
+          "length": 1,
+          "halo": 0.2,
+          "color": "#000000",
+          "width": 0.3,
+          "opacity": 0.6
         }
       },
       "dry": {
@@ -220,6 +322,15 @@
           "stroke-dasharray": null,
           "stroke-linecap": null,
           "filter": null
+        },
+        "options": {
+          "embellishment": "none",
+          "density": 1,
+          "length": 1,
+          "halo": 0.2,
+          "color": "#000000",
+          "width": 0.3,
+          "opacity": 0.6
         }
       }
     }
@@ -228,7 +339,7 @@
     "sea_island": {
       "attrs": {
         "opacity": 1,
-        "stroke": "#c1a884",
+        "stroke": "#928472",
         "stroke-width": 0.3,
         "stroke-dasharray": null,
         "stroke-linecap": null,
@@ -482,6 +593,7 @@
           "font-size": "6%",
           "font-family": "UnifrakturMaguntia",
           "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, 0.85em)",
           "filter": null
         }
@@ -499,6 +611,7 @@
           "font-size": "5%",
           "font-family": "UnifrakturMaguntia",
           "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, 0.85em)",
           "filter": null
         }
@@ -516,6 +629,7 @@
           "font-size": "3%",
           "font-family": "UnifrakturMaguntia",
           "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, 0.85em)",
           "filter": null
         }
@@ -533,6 +647,7 @@
           "font-size": "2%",
           "font-family": "UnifrakturMaguntia",
           "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, 0.85em)",
           "filter": null
         }
@@ -550,6 +665,7 @@
           "font-size": "2%",
           "font-family": "UnifrakturMaguntia",
           "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, 0.85em)",
           "filter": null
         }
@@ -567,6 +683,7 @@
           "font-size": "2%",
           "font-family": "UnifrakturMaguntia",
           "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, 0.85em)",
           "filter": null
         }
@@ -584,6 +701,7 @@
           "font-size": "3%",
           "font-family": "UnifrakturMaguntia",
           "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, 0.85em)",
           "filter": null
         }
@@ -601,6 +719,7 @@
           "font-size": "2%",
           "font-family": "UnifrakturMaguntia",
           "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, 0.85em)",
           "filter": null
         }
@@ -618,6 +737,7 @@
           "font-size": "3%",
           "font-family": "UnifrakturMaguntia",
           "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, 0.85em)",
           "filter": null
         }
@@ -635,6 +755,7 @@
           "font-size": "22%",
           "font-family": "Great Vibes",
           "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px;",
           "filter": null
         }
@@ -652,6 +773,7 @@
           "font-size": "6%",
           "font-family": "Great Vibes",
           "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px;",
           "filter": null
         }
@@ -669,6 +791,7 @@
           "font-size": "1.6%",
           "font-family": "Pirata One",
           "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px;",
           "filter": null
         }
@@ -686,6 +809,7 @@
           "font-size": "1.6%",
           "font-family": "Pirata One",
           "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px;",
           "filter": null
         }
@@ -703,6 +827,7 @@
           "font-size": "18%",
           "font-family": "Times New Roman",
           "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px;",
           "filter": null
         }
@@ -1067,7 +1192,7 @@
     "options": {
       "size": 3,
       "fontSize": 5,
-      "icon": "\u2696\ufe0f"
+      "icon": "⚖️"
     }
   },
   "trade": {

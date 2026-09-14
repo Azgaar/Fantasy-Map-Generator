@@ -18,6 +18,20 @@ describe("stylesSchema", () => {
 });
 
 describe("parseStyles", () => {
+  test("older oceans gain disabled bands and Cinderwood bands survive serialization", () => {
+    const doc = structuredClone(Styles.defaults);
+    const { bands: _, ...options } = doc.ocean.options;
+    const parsed = Styles.parse({ ...doc, ocean: { ...doc.ocean, options } });
+    expect(parsed.ocean.options.bands.render).toBe(false);
+    expect(parsed.ocean.base).toEqual(doc.ocean.base);
+    const preset = Styles.parse(cinderwood);
+    expect(preset.ocean.options.bands.render).toBe(true);
+    expect(Styles.parse(JSON.parse(JSON.stringify(preset))).ocean).toEqual(preset.ocean);
+    const { shade: __, ...bands } = preset.ocean.options.bands;
+    const legacy = { ...preset, ocean: { ...preset.ocean, options: { ...preset.ocean.options, bands } } };
+    expect(Styles.parse(legacy).ocean.options.bands).toEqual({ ...bands, shade: 0.35 });
+  });
+
   test("older lakes gain disabled embellishments and ink settings survive serialization", () => {
     const doc = structuredClone(Styles.defaults);
     const { options: _, ...freshwater } = doc.lakes.freshwater;
@@ -146,7 +160,7 @@ describe("schema reconciliation", () => {
   test("ocean filter and outline live under the oceanLayers subgroup", () => {
     expect(Styles.defaults.ocean.oceanLayers.attrs.filter).toBeNull();
     expect(Styles.defaults.ocean.oceanLayers.options.outline).toBe("-6,-3,-1");
-    expect(Styles.defaults.ocean.options).toEqual({ pattern: "./images/pattern1.png", patternOpacity: 0.2 });
+    expect(Styles.defaults.ocean.options).toMatchObject({ pattern: "./images/pattern1.png", patternOpacity: 0.2 });
   });
 
   test("labels base font-size is the css length the registry stamps", () => {

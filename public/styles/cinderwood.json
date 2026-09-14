@@ -10,7 +10,17 @@
   "ocean": {
     "options": {
       "pattern": "./images/waves.png",
-      "patternOpacity": 0.8
+      "patternOpacity": 0.9,
+      "bands": {
+        "render": true,
+        "count": 4,
+        "spacing": 1.1,
+        "width": 0.25,
+        "color": "#575448",
+        "shore": "#b9b6a1",
+        "shade": 0.75,
+        "opacity": 1
+      }
     },
     "base": {
       "attrs": {
@@ -36,10 +46,10 @@
       "options": {
         "render": true,
         "type": "waves",
-        "density": 1.6,
+        "density": 1.4,
         "length": 1.4,
-        "reach": 6.5,
-        "halo": 0.9
+        "reach": 7,
+        "halo": 0.25
       }
     }
   },
@@ -328,9 +338,9 @@
   "coastline": {
     "sea_island": {
       "attrs": {
-        "opacity": 0.7,
-        "stroke": "#6f604c",
-        "stroke-width": 1,
+        "opacity": 1,
+        "stroke": "#575448",
+        "stroke-width": 0.6,
         "stroke-dasharray": null,
         "stroke-linecap": null,
         "filter": null

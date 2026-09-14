@@ -274,7 +274,7 @@ const mapLayers = [
   new Layer({
     id: "ocean",
     parent: "viewbox",
-    children: ["oceanLayers", "oceanPattern", "oceanWaves"].map(id => ({ id, tag: "g" })),
+    children: ["oceanLayers", "oceanPattern", "oceanWaves", "oceanBands"].map(id => ({ id, tag: "g" })),
     permanent: true,
     draw: drawOcean,
     erase: removeOcean

@@ -89,7 +89,31 @@ export const stylesSchema = z.strictObject({
   }),
   ocean: z.strictObject({
     // pattern/patternOpacity style #oceanicPattern, a defs resource the renderer owns
-    options: z.strictObject({ pattern: z.string(), patternOpacity: z.number() }),
+    options: z.strictObject({
+      pattern: z.string(),
+      patternOpacity: z.number(),
+      bands: z
+        .strictObject({
+          render: z.boolean(),
+          count: z.number().int().min(1).max(8),
+          spacing: z.number().min(0.2).max(5),
+          width: z.number().min(0.05).max(1),
+          color: z.string(),
+          shore: z.string(),
+          shade: z.number().min(0).max(1).default(0.35),
+          opacity: z.number().min(0).max(1)
+        })
+        .default({
+          render: false,
+          count: 5,
+          spacing: 1.1,
+          width: 0.25,
+          color: "#575448",
+          shore: "#b9b6a1",
+          shade: 0.35,
+          opacity: 1
+        })
+    }),
     base: z.strictObject({ attrs: z.strictObject({ fill: color }) }),
     oceanLayers: z.strictObject({
       attrs: z.strictObject({ filter }),
