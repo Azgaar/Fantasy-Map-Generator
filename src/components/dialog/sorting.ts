@@ -9,11 +9,16 @@ export function applySortingByHeader(dialogId: string, headerContainerId = `${di
   const container = document.getElementById(headerContainerId);
   if (!container) return;
 
+  const defaultSort = getActiveSort(container);
   restoreSortState(dialogId, container);
   applySorting(container);
   for (const header of Array.from(container.querySelectorAll<HTMLElement>(".sortable"))) {
     header.addEventListener("click", () => sortLines(dialogId, header));
   }
+  dialogState.onReset(dialogId, "sorting", () => {
+    setActiveSort(container, defaultSort);
+    applySorting(container);
+  });
 }
 
 function toggleSortIcon(dialogId: string, header: HTMLElement): void {
@@ -89,11 +94,21 @@ function restoreSortState(dialogId: string, headers: HTMLElement): void {
     return;
   }
 
+  setActiveSort(headers, sort);
+}
+
+function setActiveSort(headers: HTMLElement, sort: DialogSort | null): void {
   for (const sortable of Array.from(headers.querySelectorAll<HTMLElement>(".sortable"))) {
     for (const className of Array.from(sortable.classList)) {
       if (className.includes("icon-sort")) sortable.classList.remove(className);
     }
   }
+  if (!sort) return;
+
+  const header = Array.from(headers.querySelectorAll<HTMLElement>(".sortable")).find(
+    cell => cell.dataset.sortby === sort.sortBy
+  );
+  if (!header) return;
 
   const type = header.classList.contains("alphabetically") ? "name" : "number";
   const order = sort.direction === -1 ? "down" : "up";
@@ -121,6 +136,7 @@ export function sortData<T>(data: T[], sort: DialogSort, accessors: SortAccessor
 
 export function bindColumnSorting(dialogId: string, onSort: () => void): void {
   const headers = ensureEl(`${dialogId}Header`);
+  const defaultSort = getActiveSort(headers);
   restoreSortState(dialogId, headers);
   for (const cell of Array.from(headers.querySelectorAll<HTMLElement>(".sortable"))) {
     cell.addEventListener("click", () => {
@@ -128,6 +144,10 @@ export function bindColumnSorting(dialogId: string, onSort: () => void): void {
       onSort();
     });
   }
+  dialogState.onReset(dialogId, "sorting", () => {
+    setActiveSort(headers, defaultSort);
+    onSort();
+  });
 }
 
 export function sortDataByColumns<T>(dialogId: string, data: T[], columns: EditorColumn<T>[]): T[] {

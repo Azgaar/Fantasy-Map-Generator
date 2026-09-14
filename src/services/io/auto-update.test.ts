@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import indexHtml from "@/index.html?raw";
 import "@/generators/added-labels";
-import "@/generators/features"; // migrations call the Features module through its global
+import "@/generators/features-generator"; // migrations call the Features module through its global
 import { confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { Styles } from "@/generators/styles";
@@ -305,14 +305,16 @@ describe("v1.145.2 moved vertices recovery", () => {
 describe("v1.146 rendering groups", () => {
   beforeEach(() => {
     globalThis.pack = {
+      cells: { culture: [0], p: [[10, 10]] },
       features: [
         0,
-        { i: 1, type: "island", group: "continent" },
-        { i: 2, type: "island", group: "lake_island" },
-        { i: 3, type: "lake", group: "salt" },
-        { i: 4, type: "lake", group: "freshwater" } // the old group is the classification
+        { i: 1, type: "island", group: "continent", firstCell: 0 },
+        { i: 2, type: "island", group: "lake_island", firstCell: 0 },
+        { i: 3, type: "lake", group: "salt", firstCell: 0 },
+        { i: 4, type: "lake", group: "freshwater", firstCell: 0 } // the old group is the classification
       ]
     } as unknown as typeof globalThis.pack;
+    globalThis.Names = { getCulture: () => "Named" } as unknown as typeof Names;
 
     document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox">
       <g id="coastline">
@@ -406,6 +408,101 @@ describe("v1.151.2 label group display cleanup", () => {
     resolveVersionConflicts(VERSION, data);
 
     expect(JSON.parse(data[48]).labels.groups.hamlet.attrs.style).toBe("display: none");
+  });
+});
+
+describe("v1.153.0 feature subtype and lake group styles", () => {
+  function stylesRecord() {
+    const record = structuredClone(Styles.defaults) as unknown as { lakes: Record<string, unknown> };
+    const groups = record.lakes.groups as Record<string, { attrs: { fill: string } }>;
+    groups.freshwater.attrs.fill = "#0000ff";
+    record.lakes = groups; // v1.150-1.152 kept the stock groups directly under lakes
+    return record;
+  }
+
+  beforeEach(() => {
+    globalThis.pack = {
+      cells: {
+        culture: [1, 1],
+        p: [
+          [10, 10],
+          [20, 20]
+        ]
+      },
+      features: [
+        0,
+        { i: 1, type: "ocean", subtype: "ocean", group: "sea_island", firstCell: 0, cells: 500 }, // v1.146 gave oceans both
+        { i: 2, type: "island", subtype: "isle", group: "sea_island", firstCell: 1 },
+        { i: 3, type: "lake", subtype: "my_lakes", group: "my_lakes", firstCell: 1, name: "My Lake" }, // the old lake editor copied the group name
+        { i: 4, type: "lake", subtype: "salt", group: "freshwater", firstCell: 1 }
+      ]
+    } as unknown as typeof globalThis.pack;
+    globalThis.grid = { cells: { i: new Array(1000) } } as unknown as typeof grid;
+    globalThis.Names = { getCulture: () => "Named" } as unknown as typeof Names;
+
+    document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox">
+      <g id="lakes">
+        <g id="freshwater" data-group="freshwater"><use data-f="4"></use></g>
+        <g id="my_lakes" fill="#123456" opacity="0.3"><use data-f="3"></use></g>
+      </g>
+    </g></svg>`;
+  });
+
+  it("keeps stock subtypes, resets invented ones and clears the ocean group", () => {
+    resolveVersionConflicts("1.152.0", []);
+
+    expect(pack.features.slice(1).map(feature => feature.subtype)).toEqual(["ocean", "isle", "freshwater", "salt"]);
+    expect(pack.features.slice(1).map(feature => feature.group)).toEqual([
+      undefined,
+      "sea_island",
+      "my_lakes", // the rendering group is untouched
+      "freshwater"
+    ]);
+  });
+
+  it("names the features that had no name and keeps the existing ones", () => {
+    resolveVersionConflicts("1.152.0", []);
+
+    expect(pack.features[1].name).toBeTruthy();
+    expect(pack.features[2].name).toBe("Named");
+    expect(pack.features[3].name).toBe("My Lake");
+    expect(pack.features[4].name).toBe("Named");
+  });
+
+  it("nests the stock lake styles under groups and harvests custom groups from the svg", () => {
+    const data: string[] = [];
+    data[48] = JSON.stringify(stylesRecord());
+
+    resolveVersionConflicts("1.152.0", data);
+
+    const { groups } = JSON.parse(data[48]).lakes;
+    expect(Object.keys(groups)).toEqual([...Object.keys(Styles.defaults.lakes.groups), "my_lakes"]);
+    expect(groups.freshwater.attrs.fill).toBe("#0000ff");
+    expect(groups.my_lakes.attrs.fill).toBe("#123456");
+    expect(groups.my_lakes.attrs.opacity).toBe(0.3);
+    expect(groups.my_lakes.attrs.stroke).toBe(groups.freshwater.attrs.stroke); // the rest follows freshwater
+    expect(document.getElementById("my_lakes")?.dataset.group).toBe("my_lakes");
+  });
+
+  it("is harmless on a record already in the new shape", () => {
+    const data: string[] = [];
+    data[48] = JSON.stringify(Styles.defaults);
+
+    resolveVersionConflicts("1.152.0", data);
+
+    const { lakes } = JSON.parse(data[48]);
+    expect(Object.keys(lakes)).toEqual(["groups"]);
+    expect(lakes.groups.freshwater).toEqual(Styles.defaults.lakes.groups.freshwater);
+  });
+
+  it("leaves current maps alone", () => {
+    const data: string[] = [];
+    data[48] = JSON.stringify(stylesRecord());
+
+    resolveVersionConflicts(VERSION, data);
+
+    expect(pack.features[3].subtype).toBe("my_lakes");
+    expect(JSON.parse(data[48]).lakes.groups).toBeUndefined();
   });
 });
 

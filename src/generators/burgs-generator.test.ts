@@ -121,11 +121,11 @@ describe("BurgsModule.assignPorts — open-lake port promotion", () => {
   });
 
   // -------------------------------------------------------------------------
-  it.each(["dry", "frozen", "lava"])("does not make ports on a %s lake (cannot be sailed)", group => {
+  it.each(["dry", "frozen", "lava"])("does not make ports on a %s lake (cannot be sailed)", subtype => {
     globalThis.pack = {
       burgs: makeBurgs(),
       cells: { ...BASE_CELLS },
-      features: [null, { i: 1, type: "lake", cells: 3, group }, { i: 2, type: "ocean" }],
+      features: [null, { i: 1, type: "lake", cells: 3, subtype }, { i: 2, type: "ocean" }],
       vertices: BASE_VERTICES,
       rivers: []
     } as any;

@@ -1,0 +1,79 @@
+_Geographical Features Overview_ lists every **geographical feature** on the map — every island, every lake and every ocean the heightmap produced — in one table. Use it to find an unnamed island, name it, reclassify a lake, or see how the landmasses compare by area.
+
+Open it from _Tools_ → _Features_, or press <kbd>Shift</kbd> + <kbd>F</kbd>.
+
+## What a feature is
+
+A feature is a continuous area enclosed by a coastline or the map border:
+
+* an **island** — any landmass, from a continent down to a single-cell isle
+* a **lake** — a water body surrounded by land
+* an **ocean** — water that reaches the map border
+
+Features come from the heightmap, so **they cannot be created or removed here**. To add an island, drown one, or split a landmass in two, use _Tools_ → _Heightmap_. This Overview changes only how a feature is named, classified and drawn.
+
+## Type, subtype and group
+
+Each feature carries three labels, and they mean different things:
+
+* **Type** — `island`, `lake` or `ocean`. Decided by the shape of the terrain, and not editable
+* **Subtype** — the classification within the type. Generators read it, so it carries meaning: `dry`, `frozen` and `lava` lakes cannot be sailed and get no ports, `isle` affects how cultures and provinces form, and several subtypes affect where goods and markers appear
+  * islands: `continent`, `island`, `isle`, `lake_island`
+  * lakes: `freshwater`, `salt`, `dry`, `sinkhole`, `frozen`, `lava`
+  * oceans: `ocean`, `sea`, `gulf` — by size, and the noun the generated name is built around
+* **Group** — the SVG group the feature is drawn in, and nothing more. It decides appearance, never behaviour. Two lakes can share a subtype and be drawn differently, or share a group and behave differently
+
+The subtype list is fixed: you can pick a different one, but you cannot invent your own. Groups are the opposite — you can create as many as you like.
+
+## Columns
+
+* **Locate** (the target icon) — zoom to the feature. An ocean has no outline, so the zoom covers its cells
+* **Feature** — the name. Every feature is named by the generator: islands and lakes in the language of the culture on their first cell, oceans with an adjective or the side of the map they lie on (_Azure_, _Northern_) — the subtype (_Sea_, _Gulf_) is shown in its own column. Type a name to change it; clear the field to make it _Unnamed_
+* **Type** — the subtype, shown as _Freshwater lake_, _Isle_ or _Sea_. Editable for every feature; the type itself (island, lake, ocean) comes from the heightmap and cannot be changed. _Lake island_ is shown as plain text: an island is inside a lake or it is not, and that is decided by geography. Regenerating the world or the rivers classifies every feature again
+* **Group** — editable for lakes only. Islands show their group as text, since `sea_island` and `lake_island` follow from where the island sits
+* **Area** — the area in the selected units. A feature that reaches the map border (every ocean, and islands cut by the edge) continues beyond the map, so its area is an estimate marked with `~`: the feature is assumed to keep its share of the map over the whole globe. Hover the value to see the area inside the map
+* **Coastline** (the polygon icon) — open the _Coastline Editor_ for this feature alone, see below. Islands and lakes only, oceans have no outline
+* **Note** (the book icon) — edit free text notes (legend) for the feature
+* **Edit** (the pencil) — open the _Lake Editor_. Lakes only; islands and oceans have no editor of their own
+
+Click a column header to sort by it, and use the sliders icon in the header to show or hide columns.
+
+## Coastline settings per feature
+
+The [Coastline Editor](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Coastline-Editor) (_Tools_ → _Coastlines_) shapes every coastline on the map at once. The selector at its top switches it to one island or lake: the first change you make there gives the feature its own settings, and from then on the map settings no longer touch it. Use it to give one continent fjords while the rest of the world keeps its gentle shores, or to calm a single lake. The polygon icon in this table opens the editor with the feature already selected.
+
+A feature with its own settings is marked with • in the selector, and the _Use map settings_ button next to it removes them, so the feature is outlined like every other one again. In the table, the polygon icon of such a feature is drawn solid, a dimmed one means the map settings apply. While a feature is selected, the preview shows its real shape — rough stretches in orange, calm ones in teal, a magnifier on the roughest one — and the roughness along its own shore; the reset arrows next to the sliders bring a value back to the map setting rather than to the default.
+
+Own settings are saved with the map.
+
+## Changing a subtype does not regenerate anything
+
+Turning a freshwater lake into a dry one relabels it. It does not remove the ports on its shore, move the goods around it, or recalculate anything else — exactly like the other editors. Regenerate burgs, routes or goods yourself if you want the world to catch up.
+
+## Highlighting
+
+Hover a row to trace the feature's outline on the map. Hover the map to highlight the row for the feature under the pointer. Oceans are not drawn as a shape, so an ocean row traces the edge of its cells instead — coastlines plus the map border it touches — which tells the oceans apart when a map has several.
+
+## Filters
+
+* **Search** — matches the name (_Unnamed_ included), the type and the subtype
+* **Type** — narrow to islands, lakes or oceans
+* **Subtype** — the options follow the selected type; with the type set to _all_, every subtype is offered
+
+The filters are remembered while the map is open, and the footer shows how many features are displayed out of the total, with their combined area.
+
+## Buttons
+
+* **Refresh** — rebuild the table, for instance after editing the heightmap
+* **Heightmap** — open the _Heightmap Editor_, where features are actually added and removed
+* **Export** — save the listed features as a `.csv` file
+
+## Oceans
+
+Oceans have a subtype (_Ocean_, _Sea_ or _Gulf_ by size) but no group and no coastline settings of their own. You can name one and give it a note — useful when your world has a named sea — though the note will not pop up on map hover, since an ocean has no shape to hover over. Open it from the _Notes Editor_ or the search bar instead.
+
+## Lake groups
+
+New groups are created in the _Lake Editor_ (click a lake on the map, or use the pencil in this table): pick a lake, click the plus next to _Group_, and give the group a name. Once it exists, it appears in the Group column here for every lake, and in the _Style Editor_ under the _lakes_ element, where you can give it its own colours. The group is saved with the map.
+
+Removing a custom group in the Lake Editor moves its lakes back to _freshwater_ and drops its style. The six default groups cannot be removed.

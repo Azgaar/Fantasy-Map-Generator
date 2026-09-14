@@ -68,13 +68,21 @@ You can add and remove relief icons on the map with the Relief Editor: turn the 
 
 Rulers are managed by the Measurers Editor: Tools -> Measurers (Shift + =). There you can place a linear ruler, an opisometer (curve length), a route opisometer (a curve that sticks to routes) and a planimeter (polygon area). Remove a single measurer from the list in the editor or use the trash button to remove them all
 
-### Can I use the Coastline Editor (red dots that appear on the coast) to make changes to the land?
+### How do I change the heightmap on a small scale?
 
-You should use the Heightmap tool to do 99.9% of the changes of the map, but you can later finesse the shape with this tool
+Open Tools -> Heightmap and pick an edit mode, then use the brushes on the top right with a small radius. If the elevation is already right and you only dislike the outline, reshape the cells themselves with the Wrap Tool (Tools -> Create -> Wrap, or Shift + W)
+
+### How do I change borders on a small scale?
+
+Borders follow cells, so there are two ways to move one. To hand a piece of land to another state, province, culture, religion, biome or zone, open its editor, click the brush button at the bottom and paint over the cells. To keep the same cells but make the border line itself bend differently, use the Wrap Tool (Tools -> Create -> Wrap, or Shift + W)
+
+### How do I fine-tune the shape of a coastline, lake shore or border?
+
+Use the Wrap Tool: Tools -> Create -> Wrap (Shift + W). Drag on the map and the cell corners under the brush move with the pointer, so coastlines, lake shores and all cell-based borders bend with them. It is meant for small adjustments only — do 99.9% of the shaping with the Heightmap tool and finesse the result with Wrap
 
 ### I have white bits on the map why they are?
 
-You may have abused the coastline editor in which case regenerate the layer and do the changes of land with the Heightmap tool or you may have a way too complex shape for the generator
+You may have pushed cell shapes too far with the Wrap Tool, in which case use its Revert all button and do the changes of land with the Heightmap tool, or you may have a way too complex shape for the generator
 
 ### Does time exists?
 
@@ -130,7 +138,7 @@ No. /ask, mentions, in-app help and ordinary chat only ask for advice. If availa
 
 ### The map performance is poor, how can I improve it?
 
-Toggle off unnecessary layers. Be mindful of the Relief Icons layer in particular – it’s the most resource-demanding one. Open the Generator in a separate browser window, make it much smaller (about 900 x 560 pixels) and re-generate the map. Then, zoom in to see the map in detail. It will reduce the rending area and drastically improve the performance. When generating maps, set Points number to 10K. Points (cells) number highly affects performance. Toggle off map and element filters. Close all irrelevant browser tabs and applications. Use a leading edge browser (fresh versions on Chrome or Edge). Firefox is reported to be slower. Set 'Redraw on zoom' in the Options tab to 'After zoom' to redraw labels, icons and relief once per gesture instead of on every frame
+Toggle off unnecessary layers. Be mindful of the Relief Icons layer in particular – it’s the most resource-demanding one. Open the Generator in a separate browser window, make it much smaller (about 900 x 560 pixels) and re-generate the map. Then, zoom in to see the map in detail. It will reduce the rending area and drastically improve the performance. When generating maps, set Points number to 10K. Points (cells) number highly affects performance. Toggle off map and element filters. Close all irrelevant browser tabs and applications. Use a leading edge browser (fresh versions on Chrome or Edge). Firefox is reported to be slower. Set the 'Performance' preset in the Options tab to 'Speed', or open its settings and set 'Redraw on zoom' to 'After zoom' to redraw labels, icons and relief once per gesture instead of on every frame
 
 ### Who owns the maps created?
 
@@ -382,7 +390,7 @@ I'm just an AI bot who can help you with the tool
 
 ### Can I create a lake?
 
-To create a lake go to Tools -> Heightmap -> Risk or Erase and then depress the rigion to be below the sea level. Then complete the edit and it will create a lake there. There is no other way to do it
+To create a lake go to Tools -> Heightmap -> Risk or Erase and then depress the region to be below the sea level. Then complete the edit and it will create a lake there. There is no other way to do it. Once the lake exists you can rename it and change its subtype (freshwater, salt, dry, sinkhole, frozen, lava) in the Lake Editor or in the Features Overview (Tools -> Features)
 
 ### How do I set up the map maker in offline mode / not using a web browser, but its own app?
 
@@ -414,7 +422,7 @@ Follow the steps. 1. Save the map to storage. 2. Go to Options and set 'Onload b
 
 ### How the map is rendered? Is it on GPU or CPU?
 
-The map is rendered in SVG by browser. SVG rendering in GPU-supported, but it's not optimized and hence you can observe lags when there are too many elements to render. The rendering depends on browser and can only be controlled by user with 'Rendering' option. We recommend to set it to 'Best performance' in case of significant lag
+The map is rendered in SVG by browser. SVG rendering in GPU-supported, but it's not optimized and hence you can observe lags when there are too many elements to render. The rendering depends on browser and can only be controlled by user with the 'Performance' preset and its settings in the Options tab. We recommend to set it to 'Speed' in case of significant lag
 
 ### If I've changed a setting, how do I generate a new map without changing the seed number?
 
@@ -474,7 +482,7 @@ There's a Growth rate slider in Options that you can set to a smaller value, it 
 
 ### How can i create lakes?
 
-Tools -> Heightmap -> Erase or Risk and make sure that whatever cells you put under sea level are surrounded by land cells. It'll automatically be considered a lake
+Tools -> Heightmap -> Erase or Risk and make sure that whatever cells you put under sea level are surrounded by land cells. It'll automatically be considered a lake. See also 'Can I create a lake?' above
 
 ### Is there a way to make relief icons render above routes?
 
@@ -594,7 +602,7 @@ No, dynasties are not currently supported
 
 ### Does it give names for mountains, forests, seas and other features?
 
-Rivers and lakes are named automatically (as well as states, provinces, burgs and religions). Mountains, forests, seas and other features are not named, but you can add custom labels for them: Tools -> Add -> Label (Shift + 2), and manage them in the Labels Overview
+Rivers and lakes are named automatically (as well as states, provinces, burgs and religions). Mountains and forests are not named. Islands, oceans and lakes can be named by hand in the Features Overview (Tools -> Features), but that name is data, not a map label: it shows in tooltips, notes, search and the CSV export. To see a name drawn on the map add a custom label for it: Tools -> Add -> Label (Shift + 2), and manage them in the Labels Overview
 
 ### How can I change the language on the Tool?
 
@@ -754,7 +762,7 @@ Yes, route groups are configurable. Open a route (or the Routes Overview) and go
 
 ### How do I add my own description to a state, burg or marker?
 
-Most map objects can have a note (legend): burgs, markers, states, provinces, rivers, routes, regiments, labels, lakes and landmasses, zones, journeys, markets, cultures, religions, biomes and goods. Click on the object and use its notes button, or open Tools -> Notes to browse all notes. The notes editor is a rich text editor, so you can add formatting, links, images, and raw HTML through the source code button. A note belongs to its object: it is removed with it, and there is no way to keep a note that describes nothing
+Most map objects can have a note (legend): burgs, markers, states, provinces, rivers, routes, regiments, labels, geographical features (islands, lakes and oceans), zones, journeys, markets, cultures, religions, biomes and goods. Click on the object and use its notes button, or open Tools -> Notes to browse all notes. The notes editor is a rich text editor, so you can add formatting, links, images, and raw HTML through the source code button. A note belongs to its object: it is removed with it, and there is no way to keep a note that describes nothing
 
 ### Can AI generate descriptions for my world?
 
@@ -826,7 +834,31 @@ Use Export -> Export to GeoJSON: cells, routes, rivers, markers and zones can be
 
 ### How do I find a specific state, burg or river in a long list?
 
-Overview dialogs (Burgs, Rivers, Routes, Markers, Labels, States and others) have a search field that filters the table, sortable columns, and pagination for big maps. The sliders button in the dialog header lets you show or hide columns. Click on the target icon in a row to zoom to that element on the map
+Overview dialogs (Burgs, Rivers, Routes, Markers, Labels, Features, States and others) have a search field that filters the table, sortable columns, and pagination for big maps. The sliders button in the dialog header lets you show or hide columns. Click on the target icon in a row to zoom to that element on the map
+
+### Is there a list of all islands, lakes and oceans on my map?
+
+Yes, open Tools -> Features (Shift + F). The Geographical Features Overview lists every island, lake and ocean with its type, subtype, rendering group and area. Hover a row to trace that feature on the map, hover the map to highlight its row, and use the target icon to zoom to it. The table can be filtered by type and subtype, searched by name, sorted by any column and exported as a .csv
+
+### How do I rename an island or a landmass?
+
+Open Tools -> Features (Shift + F) and type into the name field of its row. Islands are not named by the generator, so they show as Unnamed until you name one; clearing the field makes it Unnamed again. The name is used in tooltips, notes, search and the export - to draw it on the map add a label with Tools -> Add -> Label (Shift + 2)
+
+### Why can't I add or delete a feature in the Features Overview?
+
+Islands, lakes and oceans come straight from the heightmap: an island exists because those cells are above sea level. To add or remove one, change the terrain in Tools -> Heightmap. The Features Overview only changes how an existing feature is named, classified and drawn
+
+### What is the difference between a feature's subtype and its group?
+
+The subtype says what the feature is and generators read it: dry, frozen and lava lakes cannot be sailed and get no ports, and subtypes like isle affect how cultures, provinces, goods and markers are placed. The group says only which SVG group the feature is drawn in, so it controls appearance and nothing else. They are independent - a salt lake can be drawn in the freshwater group, and two lakes in one group can have different subtypes
+
+### I changed a lake to dry (or frozen, or lava) and its ports are still there
+
+Changing a subtype relabels the feature, it does not regenerate anything - same as the other editors. Ports, goods and markers stay as they were until you regenerate them yourself (for example Tools -> Regenerate -> Burgs)
+
+### How do I give some of my lakes a different colour?
+
+Lake colours are set per group. Click a lake to open the Lake Editor, click the plus next to Group and name a new group - the lake moves into it. Then style that group in Style -> lakes, and move other lakes into it from the Group column of the Features Overview. Custom groups are saved with the map; removing one in the Lake Editor moves its lakes back to freshwater
 
 ### Can I contribute code to the project?
 

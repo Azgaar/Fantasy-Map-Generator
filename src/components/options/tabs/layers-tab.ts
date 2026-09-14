@@ -48,29 +48,32 @@ export const LAYER_TOGGLES = new Map<LayerId, LayerButton>([
   ["vignette", { label: "Vignette", shortcut: "BracketLeft", hint: "[ (left square bracket)" }]
 ]);
 
+// built-in layer presets, in the order the select shows them; the layer sets live in layers-presets
+export const LAYER_PRESETS: Record<string, string> = {
+  political: "Political map",
+  cultural: "Cultural map",
+  religions: "Religions map",
+  provinces: "Provinces map",
+  biomes: "Biomes map",
+  heightmap: "Heightmap",
+  physical: "Physical map",
+  poi: "Places of interest",
+  goods: "Goods map",
+  trade: "Trade animation",
+  military: "Military map",
+  emblems: "Emblems",
+  landmass: "Pure landmass"
+};
+
 export const getLayerByShortcut = (code: string): LayerId | undefined =>
   [...LAYER_TOGGLES].find(([, button]) => button.shortcut === code)?.[0];
 
 const TEMPLATE = /* html */ `
   <p data-tip="Select a map layers preset" style="display: inline-block">Layers preset:</p>
-  <select
-    data-tip="Select a map layers preset"
-    id="layersPreset"
-    style="width: 45%"
-  >
-    <option value="political" selected>Political map</option>
-    <option value="cultural">Cultural map</option>
-    <option value="religions">Religions map</option>
-    <option value="provinces">Provinces map</option>
-    <option value="biomes">Biomes map</option>
-    <option value="heightmap">Heightmap</option>
-    <option value="physical">Physical map</option>
-    <option value="poi">Places of interest</option>
-    <option value="goods">Goods map</option>
-    <option value="trade">Trade animation</option>
-    <option value="military">Military map</option>
-    <option value="emblems">Emblems</option>
-    <option value="landmass">Pure landmass</option>
+  <select data-tip="Select a map layers preset" id="layersPreset" style="width: 45%">
+    ${Object.entries(LAYER_PRESETS)
+      .map(([id, label]) => `<option value="${id}">${label}</option>`)
+      .join("")}
     <option hidden value="custom">Custom (not saved)</option>
   </select>
   <button

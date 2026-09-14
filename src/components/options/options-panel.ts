@@ -3,6 +3,7 @@ import { showExportPane, showLoadPane, showSavePane } from "@/components/options
 import { changeViewMode } from "@/components/options/view-mode";
 import { clearMainTip } from "@/components/tooltips";
 import { resetZoom } from "@/components/zoom";
+import { Controllers } from "@/controllers";
 import { ARROW_TIP_KEY } from "@/services/versioning";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
 
@@ -36,6 +37,12 @@ export function hideOptions(event?: Event): void {
 export function toggleOptions(event?: Event): void {
   if (ensureEl("options").style.display === "none") showOptions(event);
   else hideOptions(event);
+}
+
+/** Open the panel on the given tab */
+export function openTab(id: string): void {
+  showOptions();
+  selectTab(id);
 }
 
 /** Show the clicked tab, hiding whichever was open. Tools swaps in the customization menu instead */
@@ -106,6 +113,7 @@ function initialize(): void {
     else if (id === "exportButton") showExportPane();
     else if (id === "loadButton") void showLoadPane();
     else if (id === "zoomReset") resetZoom(1000);
+    else if (id === "searchButton") Controllers.Omnibar.open();
   });
 
   ensureEl("viewMode").addEventListener("click", changeViewMode);

@@ -1,6 +1,6 @@
 import { easeBounceOut, easeLinear, easeSinIn, interpolateString, select, transition } from "d3";
 import { viewport } from "@/components/viewport";
-import { parseTransform } from "@/utils";
+import { minmax, parseTransform } from "@/utils";
 
 const debugLayer = () => select<SVGGElement, unknown>("#debug");
 
@@ -17,27 +17,33 @@ export function highlightElement(target: Element | null, zoom?: number): void {
   highlightArea(box, zoom, element.getAttribute("transform"));
 }
 
+type Box = Pick<DOMRect, "x" | "y" | "width" | "height">;
+
 /** Draw a temporary outline around a map-space box: for content the viewport renderer may have culled */
-export function highlightArea(box: DOMRect, zoom?: number, transformAttr: string | null = null): void {
+export function highlightArea(box: Box, zoom?: number, transformAttr: string | null = null): void {
   const layer = debugLayer();
   if (layer.select(".highlighted").size()) return; // allow only 1 highlighted element simultaneously
 
   const enter = transition().duration(1000).ease(easeBounceOut);
+  const padding = minmax(Math.max(box.width, box.height) / 4, 8, 60); // map units: the view may still be zooming
 
   layer
     .append("rect")
+    .attr("x", box.x - padding)
+    .attr("y", box.y - padding)
+    .attr("width", box.width + padding * 2)
+    .attr("height", box.height + padding * 2)
+    .classed("highlighted", true)
+    .attr("transform", transformAttr)
+    .transition(enter)
     .attr("x", box.x)
     .attr("y", box.y)
     .attr("width", box.width)
     .attr("height", box.height)
-    .classed("highlighted", true)
-    .attr("transform", transformAttr)
-    .transition(enter)
-    .style("outline-offset", "0px")
     .transition()
     .duration(500)
     .ease(easeLinear)
-    .style("outline-color", "transparent")
+    .style("stroke-opacity", 0)
     .delay(1000)
     .remove();
 

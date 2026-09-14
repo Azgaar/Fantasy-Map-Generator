@@ -1,5 +1,5 @@
 import { select, sum } from "d3";
-import { closeDialogs, updateDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import { dialogState } from "@/components/dialog/state";
 import {
@@ -50,7 +50,7 @@ function open(state?: number): void {
 
 function renderDialog(): void {
   columns = getRegimentColumns();
-  document.getElementById("regimentsOverview")?.remove();
+  destroyDialog("regimentsOverview");
   const editorHtml = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
       <div id="regimentsBody" class="table" data-type="absolute">
         ${renderEditorHeader({ dialogId, columns })}
@@ -343,4 +343,4 @@ function downloadRegimentsData(): void {
   downloadFile(data, name);
 }
 
-export const RegimentsOverview = { open };
+export const RegimentsOverview = { open, exportCsv: downloadRegimentsData };

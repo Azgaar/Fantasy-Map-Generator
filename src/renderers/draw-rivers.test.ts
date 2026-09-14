@@ -7,7 +7,14 @@ import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 const mocks = vi.hoisted(() => ({ layerOn: true }));
 vi.mock("@/components/layers", () => ({ Layers: { isOn: () => mocks.layerOn } }));
 
-import { drawRivers, getRiverBox, redrawRiver, setEditedRiver, toggleBasinHighlight } from "./draw-rivers";
+import {
+  drawRivers,
+  getRiverBox,
+  redrawRiver,
+  removeRivers,
+  setEditedRiver,
+  toggleBasinHighlight
+} from "./draw-rivers";
 
 function river(i: number, x: number, basin = i): River {
   const points: [number, number][] = [
@@ -112,6 +119,18 @@ test("a river bounding box is available whether or not the river is on screen", 
   const box = getRiverBox(2)!;
   expect(box.x).toBe(499); // the course inflated by the river width
   expect(box.width).toBe(42);
+});
+
+test("erasing the layer drops the scene, not just the paths", () => {
+  drawRivers();
+  removeRivers();
+  expect(document.getElementById("rivers")!.childElementCount).toBe(0);
+  expect(getRiverBox(1)).toBeNull(); // a hidden layer holds no geometry, of this map or the previous one
+
+  ViewportLayers.renderNow();
+  expect(document.getElementById("rivers")!.childElementCount).toBe(0);
+  drawRivers();
+  expect(getRiverBox(1)).not.toBeNull();
 });
 
 test("full-map export materializes every river at once, leaving the live map culled", () => {

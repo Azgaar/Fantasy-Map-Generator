@@ -149,76 +149,78 @@
     }
   },
   "lakes": {
-    "freshwater": {
-      "attrs": {
-        "opacity": 0.62,
-        "fill": "#00050a",
-        "fill-opacity": null,
-        "stroke": "#000000",
-        "stroke-width": 0.43,
-        "stroke-dasharray": null,
-        "stroke-linecap": null,
-        "filter": "url(#dropShadow)"
-      }
-    },
-    "salt": {
-      "attrs": {
-        "opacity": 0.62,
-        "fill": "#000a0a",
-        "fill-opacity": null,
-        "stroke": "#173634",
-        "stroke-width": 1.72,
-        "stroke-dasharray": null,
-        "stroke-linecap": null,
-        "filter": "url(#dropShadow)"
-      }
-    },
-    "sinkhole": {
-      "attrs": {
-        "opacity": 1,
-        "fill": "#5bc9fd",
-        "fill-opacity": null,
-        "stroke": "#53a3b0",
-        "stroke-width": 0.7,
-        "stroke-dasharray": null,
-        "stroke-linecap": null,
-        "filter": null
-      }
-    },
-    "frozen": {
-      "attrs": {
-        "opacity": 0.95,
-        "fill": "#cdd4e7",
-        "fill-opacity": null,
-        "stroke": "#cfe0eb",
-        "stroke-width": 0,
-        "stroke-dasharray": null,
-        "stroke-linecap": null,
-        "filter": null
-      }
-    },
-    "lava": {
-      "attrs": {
-        "opacity": 0.7,
-        "fill": "#90270d",
-        "fill-opacity": null,
-        "stroke": "#f93e0c",
-        "stroke-width": 2,
-        "stroke-dasharray": null,
-        "stroke-linecap": null,
-        "filter": "url(#crumpled)"
-      }
-    },
-    "dry": {
-      "attrs": {
-        "opacity": 0.62,
-        "fill": "#c9bfa7",
-        "fill-opacity": null,
-        "stroke": "#000000",
-        "stroke-width": 1.72,
-        "stroke-dasharray": null,
-        "stroke-linecap": null,
-        "filter": "url(#dropShadow)"
+    "groups": {
+      "freshwater": {
+        "attrs": {
+          "opacity": 0.62,
+          "fill": "#00050a",
+          "fill-opacity": null,
+          "stroke": "#000000",
+          "stroke-width": 0.43,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "filter": "url(#dropShadow)"
+        }
+      },
+      "salt": {
+        "attrs": {
+          "opacity": 0.62,
+          "fill": "#000a0a",
+          "fill-opacity": null,
+          "stroke": "#173634",
+          "stroke-width": 1.72,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "filter": "url(#dropShadow)"
+        }
+      },
+      "sinkhole": {
+        "attrs": {
+          "opacity": 1,
+          "fill": "#5bc9fd",
+          "fill-opacity": null,
+          "stroke": "#53a3b0",
+          "stroke-width": 0.7,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "filter": null
+        }
+      },
+      "frozen": {
+        "attrs": {
+          "opacity": 0.95,
+          "fill": "#cdd4e7",
+          "fill-opacity": null,
+          "stroke": "#cfe0eb",
+          "stroke-width": 0,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "filter": null
+        }
+      },
+      "lava": {
+        "attrs": {
+          "opacity": 0.7,
+          "fill": "#90270d",
+          "fill-opacity": null,
+          "stroke": "#f93e0c",
+          "stroke-width": 2,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "filter": "url(#crumpled)"
+        }
+      },
+      "dry": {
+        "attrs": {
+          "opacity": 0.62,
+          "fill": "#c9bfa7",
+          "fill-opacity": null,
+          "stroke": "#000000",
+          "stroke-width": 1.72,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "filter": "url(#dropShadow)"
+        }
       }
     }
   },

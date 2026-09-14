@@ -1,12 +1,13 @@
 import Alea from "alea";
 import { polygonArea } from "d3";
-import { clipPoly, connectVertices, distanceSquared, isLand, isWater, rn, TYPED_ARRAY_MAX } from "../utils";
+import { clipPoly, connectVertices, distanceSquared, isLand, isWater, P, ra, rn, TYPED_ARRAY_MAX } from "../utils";
+import type { CoastlineSettings } from "./coastline-generator";
 
 declare global {
   var Features: FeatureModule;
 }
 
-type FeatureType = "ocean" | "lake" | "island";
+export type FeatureType = "ocean" | "lake" | "island";
 
 /* Pack features interface */
 export interface CapturedFeature {
@@ -14,6 +15,7 @@ export interface CapturedFeature {
   note?: string;
   type: FeatureType;
   gridCells: Set<number>;
+  coastline?: CoastlineSettings;
 }
 
 export interface Feature {
@@ -29,6 +31,7 @@ export interface Feature {
   height: number;
   subtype: string; // classification within the type: continent/island/isle, ocean/sea/gulf, freshwater/salt/...
   group: string; // svg group the feature is drawn in
+  coastline?: CoastlineSettings; // own coastline settings, overriding the map-level ones
   temp: number;
   flux: number;
   evaporation: number;
@@ -52,7 +55,12 @@ export interface GridFeature {
   type: FeatureType;
 }
 
-export const NON_NAVIGABLE_LAKE_GROUPS = new Set(["dry", "frozen", "lava"]);
+// the fixed subtype sets: users pick within them, but cannot invent new subtypes
+export const LAKE_SUBTYPES = ["freshwater", "salt", "dry", "sinkhole", "frozen", "lava"] as const;
+export const ISLAND_SUBTYPES = ["continent", "island", "isle", "lake_island"] as const;
+export const OCEAN_SUBTYPES = ["ocean", "sea", "gulf"] as const;
+
+export const NON_NAVIGABLE_LAKE_SUBTYPES = new Set<string>(["dry", "frozen", "lava"]);
 
 class FeatureModule {
   private DEEPER_LAND = 3;
@@ -323,9 +331,11 @@ class FeatureModule {
 
     const captured: CapturedFeature[] = [];
     for (const feature of pack.features) {
-      if (!feature?.i || (!feature.name && !feature.note)) continue;
+      if (!feature?.i || (!feature.name && !feature.note && !feature.coastline)) continue;
       const gridCells = gridCellsByFeature.get(feature.i);
-      if (gridCells?.size) captured.push({ name: feature.name, note: feature.note, type: feature.type, gridCells });
+      if (!gridCells?.size) continue;
+      const { name, note, type, coastline } = feature;
+      captured.push({ name, note, type, gridCells, coastline });
     }
 
     return captured;
@@ -369,8 +379,10 @@ class FeatureModule {
 
       takenFeatures.add(featureId);
       takenCaptures.add(index);
-      if (captured[index].name) feature.name = captured[index].name;
-      if (captured[index].note) feature.note = captured[index].note;
+      const { name, note, coastline } = captured[index];
+      if (name) feature.name = name;
+      if (note) feature.note = note;
+      if (coastline) feature.coastline = coastline;
     }
   }
 
@@ -393,8 +405,6 @@ class FeatureModule {
 
   defineGroups() {
     const gridCellsNumber = grid.cells.i.length;
-    const OCEAN_MIN_SIZE = gridCellsNumber / 25;
-    const SEA_MIN_SIZE = gridCellsNumber / 1000;
     const CONTINENT_MIN_SIZE = gridCellsNumber / 10;
     const ISLAND_MIN_SIZE = gridCellsNumber / 1000;
 
@@ -404,12 +414,6 @@ class FeatureModule {
       if (feature.cells > CONTINENT_MIN_SIZE) return "continent";
       if (feature.cells > ISLAND_MIN_SIZE) return "island";
       return "isle";
-    };
-
-    const defineOceanSubtype = (feature: Feature) => {
-      if (feature.cells > OCEAN_MIN_SIZE) return "ocean";
-      if (feature.cells > SEA_MIN_SIZE) return "sea";
-      return "gulf";
     };
 
     const defineLakeSubtype = (feature: Feature) => {
@@ -428,24 +432,126 @@ class FeatureModule {
 
     const defineSubtype = (feature: Feature) => {
       if (feature.type === "island") return defineIslandSubtype(feature);
-      if (feature.type === "ocean") return defineOceanSubtype(feature);
       if (feature.type === "lake") return defineLakeSubtype(feature);
-      throw new Error(`Markup: unknown feature type ${feature.type}`);
+      return this.getOceanSubtype(feature);
     };
 
     for (const feature of pack.features) {
-      if (!feature || feature.type === "ocean") continue;
+      if (!feature) continue;
 
       if (feature.type === "lake") feature.height = Lakes.getHeight(feature);
       feature.subtype = defineSubtype(feature);
-      feature.group = this.getDefaultGroup(feature);
+      if (feature.type !== "ocean") feature.group = this.getDefaultGroup(feature); // oceans are not drawn
     }
+  }
+
+  getOceanSubtype(feature: Feature): (typeof OCEAN_SUBTYPES)[number] {
+    const gridCellsNumber = grid.cells.i.length;
+    if (feature.cells > gridCellsNumber / 25) return "ocean";
+    if (feature.cells > gridCellsNumber / 1000) return "sea";
+    return "gulf";
   }
 
   getDefaultGroup(feature: Feature): string {
     if (feature.type === "lake") return feature.subtype || "freshwater";
     return feature.subtype === "lake_island" ? "lake_island" : "sea_island";
   }
+
+  /** Name the features that have none; existing names are the user's and stay */
+  defineNames() {
+    for (const feature of pack.features) {
+      if (feature && !feature.name) feature.name = this.getName(feature);
+    }
+  }
+
+  getName(feature: Feature): string {
+    if (feature.type === "ocean") return this.getOceanName(feature);
+    if (P(0.1)) return ra(ADJECTIVES);
+    const cell = feature.type === "lake" ? feature.shoreline?.[0] || feature.firstCell : feature.firstCell;
+    return Names.getCulture(pack.cells.culture[cell]);
+  }
+
+  // oceans belong to no culture: an adjective or the map side, the subtype noun is shown separately
+  private getOceanName(feature: Feature) {
+    if (P(0.8)) return ra(ADJECTIVES);
+    const [x, y] = pack.cells.p[feature.firstCell];
+    const { width, height } = options.map.graph;
+    const [dx, dy] = [x / width - 0.5, y / height - 0.5];
+    return Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? "Western" : "Eastern") : dy < 0 ? "Northern" : "Southern";
+  }
 }
+
+const ADJECTIVES = [
+  "Autumn",
+  "Azure",
+  "Black",
+  "Blue",
+  "Bony",
+  "Boundless",
+  "Broken",
+  "Calm",
+  "Cold",
+  "Crimson",
+  "Deep",
+  "Draconic",
+  "Dreamy",
+  "Echoing",
+  "Emerald",
+  "Endless",
+  "Far",
+  "Forbidden",
+  "Forgotten",
+  "Fortunate",
+  "Frozen",
+  "Glassy",
+  "Glittering",
+  "Golden",
+  "Great",
+  "Green",
+  "Grey",
+  "Icy",
+  "Inner",
+  "Kingly",
+  "Lost",
+  "Misty",
+  "Outer",
+  "Pale",
+  "Pearly",
+  "Reedy",
+  "Red",
+  "Restless",
+  "Roaring",
+  "Ruinous",
+  "Sailing",
+  "Salty",
+  "Sapphire",
+  "Serene",
+  "Serpentine",
+  "Shattered",
+  "Shining",
+  "Shadowy",
+  "Silent",
+  "Sirenic",
+  "Sleeping",
+  "Sorrowful",
+  "Starry",
+  "Still",
+  "Stormy",
+  "Sunlit",
+  "Summer",
+  "Tearful",
+  "Thunderous",
+  "Tidal",
+  "Yellow",
+  "Wandering",
+  "Whispering",
+  "White",
+  "Wide",
+  "Wild",
+  "Windy",
+  "Winter",
+  "Wondrous",
+  "World"
+];
 
 window.Features = new FeatureModule();

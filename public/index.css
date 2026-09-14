@@ -138,7 +138,6 @@ a {
 }
 
 #lakes,
-#coastline,
 #armies,
 #ice,
 #emblems,
@@ -2108,10 +2107,10 @@ div.textual span,
 }
 
 .highlighted {
-  outline-width: 2px;
-  outline-style: dashed;
-  outline-color: #0da6ff;
-  outline-offset: 100px;
+  stroke: #0da6ff;
+  stroke-width: 3px;
+  stroke-dasharray: 6 6;
+  vector-effect: non-scaling-stroke;
   fill: none;
 }
 
@@ -2241,7 +2240,7 @@ svg.button {
 }
 
 #worldControls {
-  width: 16em;
+  width: 18em;
   display: inline-block;
   vertical-align: top;
 }

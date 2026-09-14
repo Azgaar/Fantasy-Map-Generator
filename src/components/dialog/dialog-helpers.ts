@@ -154,8 +154,37 @@ export const destroyDialog = (id: string): void => {
   el.remove();
 };
 
+// A titlebar button next to minimize and close that forgets the remembered layout of this dialog; shown only while there is one
+function addResetButton(el: HTMLElement): void {
+  const titlebar = $(el).dialog("widget")[0]?.querySelector(".ui-dialog-titlebar");
+  if (!titlebar || titlebar.querySelector(".ui-dialog-titlebar-reset")) return;
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "ui-dialog-titlebar-reset icon-ccw";
+  button.dataset.tip = "Reset the dialog: restore its default position, columns and sorting";
+  button.setAttribute("aria-label", "Reset the dialog");
+  button.addEventListener("click", () => dialogState.reset(el.id));
+  titlebar.insertBefore(button, titlebar.querySelector(".ui-dialog-titlebar-collapse"));
+
+  const updateVisibility = () => {
+    button.hidden = !dialogState.hasLayout(el.id);
+  };
+  updateVisibility();
+  dialogState.onChange(el.id, updateVisibility);
+
+  // re-setting the option makes jQuery UI re-run its positioning with the dialog's own defaults
+  dialogState.onReset(el.id, "position", () => {
+    $(el).dialog("option", "position", $(el).dialog("option", "position"));
+  });
+}
+
 /** Restore each dialog to where the user last dragged it, and remember new drags. Called once by boot() */
 export function initDialogPositionPersistence(): void {
+  $(document).on("dialogcreate", ".dialog", function (this: HTMLElement) {
+    if (!POSITION_EXCLUDED_IDS.has(this.id)) addResetButton(this);
+  });
+
   $(document).on("dialogopen", ".dialog", function (this: HTMLElement) {
     applySavedPosition(this);
   });

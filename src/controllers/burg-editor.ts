@@ -1,10 +1,10 @@
 import { type Selection, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
+import { Notes } from "@/components/notes";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { Notes } from "@/generators/notes";
 import { removeEmblem } from "@/renderers/draw-emblems";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { getHeight, openURL, speak } from "@/utils";
@@ -834,6 +834,7 @@ function editBurgGroups(): void {
 }
 
 function closeBurgEditor(): void {
+  clearTimeout(previewSettleTimer);
   if (ensureEl("burgRelocate").classList.contains("pressed")) toggleRelocateBurg();
   selected = null;
   $("#burgEditor").dialog("destroy");

@@ -311,7 +311,7 @@ function updateWorld(): void {
   pack.cells.h = new Float32Array(heights);
   Biomes.define();
   Features.defineGroups();
-  Lakes.defineNames();
+  Features.defineNames();
 
   Layers.draw("temperature", "precipitation");
   Layers.draw("biomes", "coordinates", "rivers");

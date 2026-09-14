@@ -20,10 +20,16 @@ import { Pins } from "@/components/pins";
 import { tip } from "@/components/tooltips";
 import { isElectron } from "./platform";
 
-export const VERSION = "1.152.2";
+export const VERSION = "1.153.0";
 
 // new changes on top
 const latestPublicChanges = [
+  "Wrap Tool: reshape cells with a brush",
+  "Geographical Features Overview",
+  "Coastline Editor: customizable per feature",
+  "Coastlines: roughness localized to coastline section",
+  "Global map search (press Space to open)",
+  "Performance Settings",
   "Diplomacy: select relation targets on the map and repair invalid relations",
   "Heightmap: option to render contour lines",
   "Ability to override a burg's treasury",
@@ -37,11 +43,7 @@ const latestPublicChanges = [
   "States and Provinces editors: annex by clicking on the map",
   "Option to redraw labels, icons and relief only after a zoom",
   "Brushes: smooth, gap-free painting at any screen refresh rate",
-  "Journey Editor and new Journeys layer",
-  "Desktop App",
-  "URL params to open specific layers or preset",
-  "Emblems rendering optimization",
-  "Dialogs state preserved between sessions"
+  "Journey Editor and new Journeys layer"
 ];
 
 export function parseMapVersion(version: string): string {
@@ -103,7 +105,7 @@ export async function clearCache(): Promise<void> {
   location.reload();
 }
 
-export const ARROW_TIP_KEY = "disable_click_arrow_tooltip";
+export const ARROW_TIP_KEY = "fmg-disable-click-arrow-tooltip";
 
 export async function cleanupData(): Promise<void> {
   localStorage.clear();

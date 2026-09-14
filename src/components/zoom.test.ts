@@ -20,7 +20,6 @@ beforeEach(() => {
       <g id="emblems" style="display: none"></g>
       <g id="statesHalo"></g>
     </svg>
-    <select id="shapeRendering"><option value="optimizeSpeed" selected></option></select>
   `;
 
   const map = document.getElementById("map")!;
@@ -31,7 +30,10 @@ beforeEach(() => {
 
   Object.assign(globalThis, {
     customization: 0,
-    options: { map: { labels: { resizeOnZoom: false } }, app: { viewportRedraw: "continuous" } }
+    options: {
+      map: { labels: { resizeOnZoom: false } },
+      app: { performance: { shapeRendering: "optimizeSpeed", stateHalos: false, viewportRedraw: "continuous" } }
+    }
   });
   setViewportSize(1000, 600);
   setViewportTransform(1, 0, 0);
@@ -64,7 +66,7 @@ describe("viewport redraw during zoom", () => {
   });
 
   it("skips the per-frame redraw when set to redraw after the zoom only", () => {
-    options.app.viewportRedraw = "settled";
+    options.app.performance.viewportRedraw = "settled";
     setMapZoom(4);
 
     expect(ViewportLayers.schedule).not.toHaveBeenCalled();
@@ -74,7 +76,7 @@ describe("viewport redraw during zoom", () => {
 
 describe("invokeActiveZooming", () => {
   beforeEach(() => {
-    (document.getElementById("shapeRendering") as HTMLSelectElement).value = "auto";
+    options.app.performance.stateHalos = true;
   });
 
   it("derives statesHalo stroke-width from the store width", () => {

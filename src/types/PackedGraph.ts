@@ -2,7 +2,7 @@ import type { AddedLabel } from "@/generators/added-labels";
 import type { Biome } from "@/generators/biomes-generator";
 import type { Burg } from "@/generators/burgs-generator";
 import type { Culture } from "@/generators/cultures-generator";
-import type { Feature } from "@/generators/features";
+import type { Feature } from "@/generators/features-generator";
 import type { Good } from "@/generators/goods-generator";
 import type { Ice } from "@/generators/ice-generator";
 import type { Marker } from "@/generators/markers-generator";

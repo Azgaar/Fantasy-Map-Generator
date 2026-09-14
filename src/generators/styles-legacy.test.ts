@@ -107,7 +107,10 @@ test("R9: #terrs > #landHeights never legitimately carried data-render, so it st
 test("styleNodeFor resolves editor selections to live store nodes", () => {
   expect(styleNodeFor("rivers", "")).toEqual({ node: styles.rivers, layer: "rivers" });
   expect(styleNodeFor("rivers", "rivers")).toEqual({ node: styles.rivers, layer: "rivers" });
-  expect(styleNodeFor("lakes", "freshwater")).toEqual({ node: styles.lakes.freshwater, layer: "lakes" });
+  expect(styleNodeFor("lakes", "freshwater")).toEqual({ node: styles.lakes.groups.freshwater, layer: "lakes" });
+  styles.lakes.groups.my_lakes = structuredClone(styles.lakes.groups.freshwater);
+  expect(styleNodeFor("lakes", "my_lakes")).toEqual({ node: styles.lakes.groups.my_lakes, layer: "lakes" });
+  delete styles.lakes.groups.my_lakes;
   expect(styleNodeFor("terrs", "landHeights")).toEqual({ node: styles.heightmap.landHeights, layer: "heightmap" });
   expect(styleNodeFor("labels", "capital")).toEqual({ node: styles.labels.groups.capital, layer: "labels" });
   expect(styleNodeFor("burgIcons", "town")).toEqual({
