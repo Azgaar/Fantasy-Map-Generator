@@ -15,7 +15,8 @@ const systemPresets = [
   "night",
   "monochrome",
   "ink",
-  "cinderwood"
+  "cinderwood",
+  "frostbite"
 ];
 const customPresetPrefix = "fmgStyle_";
 
