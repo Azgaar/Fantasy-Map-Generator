@@ -75,14 +75,14 @@
   "heightmap": {
     "landHeights": {
       "attrs": {
-        "opacity": 0.5,
+        "opacity": 1,
         "filter": null,
         "mask": "url(#land)"
       },
       "options": {
-        "scheme": "#cdc79f,#c0ba8c,#aaa476,#8f8a5f,#736d49,#5f5941",
-        "terracing": 0,
-        "skip": 4,
+        "scheme": "livid",
+        "terracing": 10,
+        "skip": 0,
         "relax": 1,
         "curve": "curveBasisClosed",
         "render": false,
@@ -1210,7 +1210,7 @@
     "options": {
       "size": 3,
       "fontSize": 5,
-      "icon": "\u2696\ufe0f"
+      "icon": "⚖️"
     }
   },
   "trade": {
