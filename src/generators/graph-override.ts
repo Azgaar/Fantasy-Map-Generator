@@ -107,7 +107,10 @@ function refreshDerivedData(vertexIds: number[]): void {
     if (!feature) continue;
 
     if (feature.type === "ocean") {
-      feature.area = cells.i.reduce((sum, cellId) => (cells.f[cellId] === featureId ? sum + cells.area[cellId] : sum), 0);
+      feature.area = cells.i.reduce(
+        (sum, cellId) => (cells.f[cellId] === featureId ? sum + cells.area[cellId] : sum),
+        0
+      );
     } else if (feature.vertices?.length) {
       const points = clipPoly(
         feature.vertices.map(vertexId => vertices.p[vertexId]),
