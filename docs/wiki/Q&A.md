@@ -41,16 +41,14 @@ Open the generator, click on _Load_ and select the file. Or just drag and drop t
 `.map` files are plain text, so yes, you can edit them in any text editor. `.gz` files are gzip-compressed and have to be decompressed first. However, if you break the formatting the file won't be loading. The common error is that most text editors automatically split embedded svg into separate lines.
 
 ### Can I use the Generator offline?
-Yes, but it's more complex. You must have a source code editor ([VS Code](https://code.visualstudio.com/) is the best free one) and [node.js](https://nodejs.org) installed.
+Yes. The easiest way is the [desktop app](https://github.com/Azgaar/Fantasy-Map-Generator/releases): download the installer for your system and it works offline out of the box. The web version can also be installed as a PWA — open it once with a connection so the files get cached, after that it works offline. Fonts and textures loaded from external URLs still need a connection.
 
-Download the [source code](https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/heads/master.zip) and unzip _all files_ from the archive.
-
-Open the folder in VS Code and run `npm install` in the terminal to install dependencies. Then run `npm run dev` to start the development server. The tool will normally be available at `http://localhost:5173/Fantasy-Map-Generator/` — open the URL printed by Vite in your browser. Node.js 24 or newer is required.
-
-See [Run FMG locally](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Run-FMG-locally) for details.
+You can also run the tool from the source code, which needs [node.js](https://nodejs.org) 24 or newer: download the [source code](https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/heads/master.zip), unzip _all files_, run `npm install` and then `npm run dev`, and open the URL printed by Vite (normally `http://localhost:5173/Fantasy-Map-Generator/`). See [Run FMG locally](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Run-FMG-locally) for details.
 
 ### Is there a desktop version?
-The supported desktop-like option is a PWA. Chromium-based browsers (Chrome, Edge, etc.) may offer an **Install** button; the installed app can be opened from the desktop or app launcher. A normal browser shortcut is also possible, but this repository does not build a separate Electron app.
+Yes. Since v1.149 the Generator ships as a desktop app built on Electron. Installers for Windows (`.exe`), macOS (`.dmg`, Apple Silicon and Intel) and Linux (AppImage and `.deb`) are attached to every [release](https://github.com/Azgaar/Fantasy-Map-Generator/releases). It is the same Generator running in its own window, works offline and checks GitHub for new versions (Windows and AppImage builds install updates themselves, the others open the download page). The builds are not code-signed yet, so the system warns about an unknown developer on the first launch: on macOS right-click the app → **Open** → **Open**, on Windows **More info** → **Run anyway**. Nix users can build the same app from the flake, see [Install with Nix](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Install-with-Nix).
+
+If you prefer not to install anything, Chromium-based browsers (Chrome, Edge, etc.) offer an **Install** button that adds the web app as a PWA, which opens from the desktop or app launcher.
 
 ### Which browsers are supported?
 The Generator targets modern browsers. Chromium browsers are the primary tested environment; Firefox and other browsers may differ in performance or feature support. Internet Explorer is not supported. Browser behavior can change with browser and FMG versions, so report reproducible compatibility issues.
