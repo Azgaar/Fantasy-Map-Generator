@@ -32,7 +32,7 @@ All planning and execution use array-based structures for speed:
 - Market state: per-good `{ stock, price }`; `buyPrice` / `sellPrice` are derived on demand via `MARKET_MARGIN`
 - `productiveGoods`: **dense array** of goods with at least one recipe
 - `recipesByOutput`: **array of arrays** of recipes, indexed by `good.i`
-- `minWorkersByGood`: per-good lower bound on workers needed to produce one unit through the cheapest recipe chain
+- Planning stock: scratch inventory and market-stock arrays, reserved per recipe branch without changing the live stocks
 - `demandGoodsByCategory`: per-category candidate list, sorted by coverage weight then value
 - `path`: boolean array used as a visited set during recursive recipe planning
 
@@ -62,8 +62,8 @@ There is no split between raw and manufactured logic — planning is unified and
 For a target good:
 
 1. Try an immediate manufacture: every recipe is evaluated against inventory + market stock. If feasible within remaining workers, the immediate candidate's score is `(sellPrice × modifier − ingredientCost) × demandMultiplier`, where `modifier = getModifiers(good, burg.cell)` is the full production multiplier stack.
-2. If ingredients are missing, recursively plan one upstream manufactured ingredient. The recursion uses `path[good.i]` as a cycle guard.
-3. Reject any plan whose `workersNeeded` (current step plus lower-bound upstream chain) exceeds remaining workers.
+2. Reserve inputs for the full requested quantity. If ingredients are missing, recursively plan their manufacture against the remaining stock, using `path[good.i]` as a cycle guard. Alternative recipes get independent reservations.
+3. Add the workers required by the missing-component plans to the current manufacture. Stocked inputs cost no manufacturing workers; their purchase prices still count. Reject a chain when inputs are unavailable or the accumulated work exceeds the remaining workers.
 4. Score the chosen plan by `projectedGain / workersNeeded`, with stickiness applied at the outer decision step.
 
 Raw goods (no recipes) are terminal dependencies and are never produced by workers.
