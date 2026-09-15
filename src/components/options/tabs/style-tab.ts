@@ -601,7 +601,7 @@ const TEMPLATE = /* html */ `
             <option value="simple" selected>Simple</option>
             <option value="gray">Gray</option>
             <option value="colored">Colored</option>
-            <option value="cinderwood">Cinderwood</option>
+            <option value="illustrated">Illustrated</option>
           </select>
         </td>
       </tr>

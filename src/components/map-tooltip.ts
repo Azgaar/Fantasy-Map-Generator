@@ -109,10 +109,11 @@ function getElementTip({ group, target, event, path, cellId }: TipContext): stri
     const burgId = Number(burgElement.dataset.id);
     const burg = pack.burgs[burgId];
     if (!burg) return "Click to edit the Burg";
+    const port = burg.port ? " port" : "";
     const population = si(
       (burg.population || 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate
     );
-    return `${burg.name} ${burg.group}. Population: ${population}. Click to edit`;
+    return `${burg.name} ${burg.group}${port}. Population: ${population}. Click to edit`;
   }
 
   const labelElement = target.closest<SVGElement>("#labels [data-label-type]");

@@ -17,18 +17,18 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Ocean: coastal waves and coastal bands [1.153.0]
 - Lakes: shore ripples [1.153.0]
 - Labels: font weight, font style and text transform settings [1.153.0]
-- Burg icons: Cinderwood illustrated set; port icons pick a symbol [1.153.0]
+- Burg icons: Illustrated set; port icons pick a symbol [1.153.0]
 - Performance: a preset on the Options tab and a settings dialog [1.153.0]
 - Geographical Features Overview [1.153.0]
 - Coastline Editor: customizable per feature [1.153.0]
 - Wrap Tool: reshape cells with a brush [1.153.0]
 - Wrap Tool: reshape cells with a brush; it replaces per-vertex dragging in the Coastline and Lake editors [1.153.0]
 - Coastlines: local roughness instead of global [1.153.0]
-- Legend boxes for States, Cultures, Religions, Biomes and Zones can be shown at the same time by _[esullivan9](https://github.com/esullivan9)_
-- Diplomacy: click states on the map to select relation targets, repair invalid pairs in the editor or matrix, and record only actual changes in bulk edits
-- States and Provinces: state creation and province recolouring refresh visible map layers immediately; province recolouring also updates the editor list
+- Multiple legend boxes can be shown at the same time by _[esullivan9](https://github.com/esullivan9)_
+- Diplomacy: click states on the map to select relations
+- States and Provinces: state creation and province recolouring refresh visible map layers immediately;
 - Goods editor: Show all respects the tag filter across pages, with consistent checkbox state and displayed counts
-- Diplomacy: regenerating relations no longer fails midway (leaving "Invalid" relations) when a state has been removed and another is a vassal
+- Diplomacy: regenerating relations no longer fails when a state has been removed
 
 # Releases
 

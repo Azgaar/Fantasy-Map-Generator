@@ -2,7 +2,7 @@ import { escapeHtml } from "@/utils/stringUtils";
 
 const groups = [
   {
-    name: "Atlas marks",
+    name: "Atlas",
     prefix: "",
     icons: [
       "circle",
@@ -14,7 +14,10 @@ const groups = [
       "squared",
       "star-circled",
       "star-circled-empty",
-      "star-squared"
+      "star-squared",
+      "circle-rayed",
+      "circle-dotted",
+      "diamond-dotted"
     ]
   },
   {
@@ -23,9 +26,9 @@ const groups = [
     icons: ["capital", "city", "town", "village", "hamlet", "fort", "monastery", "caravanserai", "post"]
   },
   {
-    name: "Cinderwood",
-    prefix: "cinderwood-",
-    icons: ["capital", "city", "town", "village", "hamlet", "fort", "monastery", "caravanserai", "post"]
+    name: "Illustrated",
+    prefix: "illustrated-",
+    icons: ["palace", "burgh", "castle", "abbey", "caravanserai", "camp"]
   }
 ];
 
@@ -34,18 +37,13 @@ const icons = groups.flatMap(({ name, prefix, icons }) =>
     id: `#icon-${prefix}${icon}`,
     name: `${prefix ? `${name} ` : ""}${icon.replaceAll("-", " ")}`,
     group: name,
-    viewBox:
-      prefix === "watabou-"
-        ? "-45 -88 90 100"
-        : prefix && !["town", "village", "hamlet"].includes(icon)
-          ? "-23 -40 46 43"
-          : "-28 -28 56 56"
+    viewBox: prefix === "watabou-" ? "-45 -88 90 100" : prefix ? "-23 -40 46 43" : "-28 -28 56 56"
   }))
 );
 
 const portIcons = [
   { id: "#icon-anchor", name: "Anchor", group: "Ports", viewBox: "-23 -23 46 46" },
-  { id: "#icon-harbor", name: "Cinderwood harbor", group: "Ports", viewBox: "-28 -28 56 56" }
+  { id: "#icon-harbor", name: "Harbor", group: "Ports", viewBox: "-28 -28 56 56" }
 ];
 
 const css = document.createElement("style");
@@ -110,7 +108,6 @@ export class BurgIconPicker extends HTMLElement {
       const button = (event.target as Element).closest<HTMLButtonElement>("button[data-icon]");
       if (!button) return;
       this.value = button.dataset.icon!;
-      this.close();
       this.dispatchEvent(new Event("change", { bubbles: true }));
     });
     this.addEventListener("keydown", event => {

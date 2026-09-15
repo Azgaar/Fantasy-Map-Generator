@@ -5,11 +5,11 @@ import { BurgIconPicker } from "./burg-icon-picker";
 
 afterEach(() => document.body.replaceChildren());
 
-test("Cinderwood illustrations retain accent colors while their main surfaces inherit group paint", () => {
+test("Illustrated icons retain accent colors while their main surfaces inherit group paint", () => {
   const source = new DOMParser().parseFromString(readFileSync("src/index.html", "utf8"), "text/html");
-  const illustrations = ["capital", "city", "fort", "monastery", "caravanserai", "post"];
+  const illustrations = ["palace", "burgh", "castle", "abbey", "caravanserai", "camp"];
   for (const name of illustrations) {
-    const symbol = source.getElementById(`icon-cinderwood-${name}`)!;
+    const symbol = source.getElementById(`icon-illustrated-${name}`)!;
     const shapes = Array.from(symbol.querySelectorAll("path, circle, rect, polygon"));
     const main = shapes.find(shape => !shape.hasAttribute("fill") && !shape.hasAttribute("stroke"));
     expect(main, `${name} has an editable main surface`).toBeDefined();
@@ -25,14 +25,14 @@ test("Cinderwood illustrations retain accent colors while their main surfaces in
 test("picker previews inherit paint when the selected group's colors change", () => {
   const picker = new BurgIconPicker();
   document.body.append(picker);
-  picker.value = "#icon-cinderwood-capital";
+  picker.value = "#icon-illustrated-palace";
   picker.style.fill = "#123456";
   picker.style.stroke = "#abcdef";
   for (const use of picker.querySelectorAll("use")) {
     expect(use.getAttribute("fill")).toBeNull();
     expect(use.getAttribute("stroke")).toBeNull();
   }
-  picker.value = "#icon-cinderwood-city";
+  picker.value = "#icon-illustrated-burgh";
   expect(picker.querySelector("summary use")?.getAttribute("fill")).toBeNull();
   expect(picker.style.fill).toBe("rgb(18, 52, 86)");
   expect(picker.style.stroke).toBe("rgb(171, 205, 239)");
@@ -42,7 +42,7 @@ test("restoring a group's icon updates the preview without changing the map", ()
   const picker = new BurgIconPicker();
   const change = vi.fn();
   picker.addEventListener("change", change);
-  picker.value = "#icon-cinderwood-capital";
+  picker.value = "#icon-illustrated-palace";
   document.body.append(picker);
   expect(picker.querySelector("summary use")?.getAttribute("href")).toBe(picker.value);
   expect(picker.querySelectorAll('[aria-pressed="true"]')).toHaveLength(1);
@@ -74,7 +74,7 @@ test("Escape closes the chooser without changing its selection", () => {
   expect(picker.value).toBe("#icon-circle");
 });
 
-test("port chooser offers the standard anchor and Cinderwood harbor with a selection preview", () => {
+test("port chooser offers the standard anchor and illustrated harbor with a selection preview", () => {
   const picker = new BurgIconPicker();
   picker.setAttribute("anchors", "");
   picker.value = "#icon-anchor";

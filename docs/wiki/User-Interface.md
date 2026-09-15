@@ -360,7 +360,7 @@ The layer will only apply to the sea.
 
 ![image](https://github.com/user-attachments/assets/d4a949b7-2336-4ac7-a50f-fbc402be9bb7)
 
-Sets the element's fill color. For illustrated burg icons such as Cinderwood, fill and stroke change the main surfaces and outlines; roofs, shadows, and other pre-colored details retain their own colors.
+Sets the element's fill color. For illustrated burg icons, fill and stroke change the main surfaces and outlines; roofs, shadows, and other pre-colored details retain their own colors.
 
 ### Common style controls (Stroke related)
 

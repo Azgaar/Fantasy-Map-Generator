@@ -556,8 +556,8 @@ test.describe("style editor events drive the store", () => {
     await page.locator("#styleOpacityInput input[type=number]").fill("0.4");
 
     const stored = await page.evaluate(() => ({
-      lakeFill: (window as any).styles.lakes.freshwater.attrs.fill,
-      lakeStrokeWidth: (window as any).styles.lakes.freshwater.attrs["stroke-width"],
+      lakeFill: (window as any).styles.lakes.groups.freshwater.attrs.fill,
+      lakeStrokeWidth: (window as any).styles.lakes.groups.freshwater.attrs["stroke-width"],
       riversOpacity: (window as any).styles.rivers.attrs.opacity
     }));
     expect(stored).toEqual({ lakeFill: "#123456", lakeStrokeWidth: 3, riversOpacity: 0.4 });

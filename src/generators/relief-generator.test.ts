@@ -6,7 +6,7 @@ import { getReliefIconId } from "./relief-generator";
 
 afterEach(() => vi.unstubAllGlobals());
 
-test("every relief type can switch into and out of Cinderwood without missing artwork", () => {
+test("every relief type can switch into and out of the illustrated set without missing artwork", () => {
   const html = readFileSync("src/index.html", "utf8");
   const icons = RELIEF_ICONS.flatMap(({ set, type, variants }) =>
     variants.map(variant => ({ icon: getReliefIconId(type, variant, set), x: 10, y: 20, s: 12 }))
@@ -15,8 +15,8 @@ test("every relief type can switch into and out of Cinderwood without missing ar
   for (const set of Object.keys(RELIEF_SETS) as ReliefSet[]) {
     const relief = structuredClone(icons);
     vi.stubGlobal("pack", { relief });
-    Relief.changeSet("cinderwood");
-    expect(relief.every(({ icon }) => icon.endsWith("-cinderwood"))).toBe(true);
+    Relief.changeSet("illustrated");
+    expect(relief.every(({ icon }) => icon.endsWith("-illustrated"))).toBe(true);
     Relief.changeSet(set);
     for (const entry of relief) {
       expect(html.includes(`<symbol id="${entry.icon}"`), entry.icon).toBe(true);

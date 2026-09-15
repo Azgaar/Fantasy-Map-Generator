@@ -24,13 +24,15 @@ export const VERSION = "1.153.0";
 
 // new changes on top
 const latestPublicChanges = [
+  "Global map search (press Space to open)",
+  "New style presets: Ink, Cinderwood and Frostbite",
+  "Heightmap hachures, coastal bands and shore ripples embelishments",
+  "Labels styling: font weight, font style and text transform",
   "Wrap Tool: reshape cells with a brush",
   "Geographical Features Overview",
   "Coastline Editor: customizable per feature",
   "Coastlines: roughness localized to coastline section",
-  "Global map search (press Space to open)",
   "Performance Settings",
-  "Diplomacy: select relation targets on the map and repair invalid relations",
   "Heightmap: option to render contour lines",
   "Ability to override a burg's treasury",
   "Dialogs: preserve position between sessions",
@@ -39,11 +41,7 @@ const latestPublicChanges = [
   "Notes: kept on the element they describe, and available for more element types",
   "Notes Editor: new rich text editor Quill2",
   "Goods, Rivers, Routes, Markers, Markets and Burg icons rendering optimization",
-  "Help assistant: ask questions about the Generator in the app",
-  "States and Provinces editors: annex by clicking on the map",
-  "Option to redraw labels, icons and relief only after a zoom",
-  "Brushes: smooth, gap-free painting at any screen refresh rate",
-  "Journey Editor and new Journeys layer"
+  "Help assistant: ask questions about the Generator in the app"
 ];
 
 export function parseMapVersion(version: string): string {

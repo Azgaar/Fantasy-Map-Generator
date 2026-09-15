@@ -78,7 +78,7 @@ test("the library styles the live map through the contract", async ({ page }, te
     styles.rivers.attrs.fill = "#ff00aa";
     styles.routes.groups.roads.attrs.stroke = "#00e5ff";
     styles.routes.groups.roads.attrs["stroke-width"] = 2;
-    styles.lakes.freshwater.attrs.fill = "#ffe000";
+    styles.lakes.groups.freshwater.attrs.fill = "#ffe000";
     styles.states.statesHalo.attrs.filter = null; // null = remove
     Styles.apply("rivers", "routes", "lakes", "states");
     return {
