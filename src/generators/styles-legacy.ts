@@ -66,7 +66,7 @@ const PRESET_ROUTES: Record<string, PresetRoute> = {
   "#cults": { path: ["cultures"] },
   "#statesBody": { path: ["states", "statesBody"] },
   "#statesHalo": { path: ["states", "statesHalo"], options: { "data-width": "width" } },
-  "#provs": { path: ["provinces"], drop: ["data-size"] },
+  "#provs": { path: ["provinces"], drop: ["data-size", "fill", "font-size", "font-family"] },
   "#zones": { path: ["zones"] },
   "#stateBorders": { path: ["borders", "stateBorders"] },
   "#provinceBorders": { path: ["borders", "provinceBorders"] },
@@ -630,6 +630,8 @@ export function labelGroupFromLegacy(legacy: unknown): Styles["labels"]["groups"
       "letter-spacing": numOr(bag["letter-spacing"], 0),
       "font-size": strOr(bag["data-size"], null) ?? strOr(bag["font-size"], "18%") ?? "18%",
       "font-family": strOr(bag["font-family"], "Almendra SC") ?? "Almendra SC",
+      "font-style": strOr(bag["font-style"], null),
+      "font-weight": numOr(bag["font-weight"], null),
       style: labelStyleFromLegacy(bag),
       filter: strOr(bag.filter, null)
     }
@@ -651,7 +653,7 @@ export function stripDisplay(style: string | null): string | null {
 }
 
 // legacy wrote stored burg-group bags to the DOM verbatim with no per-key defaults; only
-// size and icon are required by the renderer (anchors ignore icon - they always draw #icon-anchor)
+// size and icon are required by the renderer (the schema turns the burg default into the anchor for ports)
 export function burgGroupFromLegacy(legacy: unknown): Styles["burgIcons"]["burgIcons"]["groups"][string] {
   const bag = legacy as Record<string, unknown>;
   return {

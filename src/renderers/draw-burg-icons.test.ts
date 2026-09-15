@@ -20,7 +20,7 @@ beforeEach(() => {
   globalThis.pack = { burgs: [{}, { i: 1, group: "town", x: 10, y: 10 }] } as never;
   styles.burgIcons.burgIcons.groups.town.options.size = 3;
   styles.burgIcons.burgIcons.groups.town.options.icon = "#icon-circle";
-  styles.burgIcons.anchors.groups.town.options.size = 3;
+  styles.burgIcons.anchors.groups.town.options = { size: 3, icon: "#icon-anchor" };
   options.map.burgs.groups = [{ name: "town", order: 0 }] as never;
 });
 
@@ -176,4 +176,37 @@ test("markup preserves special characters in group names, symbols and styles", (
   expect(group.getAttribute("fill")).toBe(fill);
   expect(group.hasAttribute("filter")).toBe(false);
   expect(document.getElementById("burg1")?.getAttribute("href")).toBe(icon);
+});
+
+test("anchor symbol and shifts survive redraw, relocation and full-map rendering", () => {
+  pack.burgs[1].port = 1;
+  Object.assign(styles.burgIcons.anchors.groups.town.options, { icon: "#icon-harbor", dx: -2, dy: 1 });
+  drawBurgIcons();
+  const anchor = document.getElementById("anchor1")!;
+  expect(anchor.getAttribute("href")).toBe("#icon-harbor");
+  expect(anchor.getAttribute("x")).toBe("4");
+  expect(anchor.getAttribute("y")).toBe("13");
+  expect(document.getElementById("burg1")?.getAttribute("x")).toBe("10");
+  expect(pack.burgs[1].x).toBe(10);
+
+  pack.burgs[1].x = 500;
+  drawBurgIcons();
+  const clone = document.getElementById("map")!.cloneNode(true) as SVGSVGElement;
+  ViewportLayers.renderTo(clone);
+  expect(clone.querySelector("#anchor1")?.getAttribute("x")).toBe("494");
+  expect(clone.querySelector("#anchor1")?.getAttribute("href")).toBe("#icon-harbor");
+  expect(document.getElementById("anchor1")).toBeNull();
+});
+
+test("viewport culling uses the shifted anchor position", () => {
+  pack.burgs[1].port = 1;
+  pack.burgs[1].x = 500;
+  Object.assign(styles.burgIcons.anchors.groups.town.options, { dx: -160, dy: 0 });
+  drawBurgIcons();
+  expect(document.getElementById("burg1")).toBeNull();
+  expect(document.getElementById("anchor1")?.getAttribute("x")).toBe("20");
+  pack.burgs[1].x = 10;
+  drawBurgIcons();
+  expect(document.getElementById("burg1")).not.toBeNull();
+  expect(document.getElementById("anchor1")).toBeNull();
 });

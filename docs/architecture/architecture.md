@@ -402,6 +402,8 @@ classic needs it.
 - Transient UI loaded only when opened (for example, the color picker) → `controllers/`
 - Draws an SVG / WebGL layer (incl. stateful animation engines like `trade-animation`) → `renderers/`
   — and the layer itself is declared in the registry in `components/layers.ts`
+- Turns coordinates into path data for one layer, or derives data only that drawing needs
+  → `renderers/<subject>.ts`, no `draw-` prefix (see [Renderers](#renderers-view))
 - Draws transient feedback that removes itself (highlight, brush circle, fog) → `renderers/overlays/`
 - Generates or simulates world data → `generators/`
 - Serializes, saves, loads, or exports state → `services/io/`
@@ -470,8 +472,17 @@ A renderer is a pure projection of state into visuals.
 
 - **Idempotent and stateless.** Drawing the same state twice yields the same output;
   re-running never accumulates. Build the layer from the current state, replace it, done.
-- **Read-only.** A renderer never mutates world data. If drawing needs a value that is not
-  in the state, that value belongs _in_ the state — compute it in a generator, not the view.
+- **Read-only.** A renderer never mutates world data. If drawing needs a _fact about the
+  world_ that is not in the state, that fact belongs _in_ the state — compute it in a
+  generator, not the view.
+- Data only the drawing needs — hachure gradients, wave-dash
+  placement, how far ripples fade from a shore — is derived per render and never stored on
+  `grid`/`pack` or saved.
+- **Split the path math from the DOM write.** `draw-*.ts` reads ambient state (`grid`, `pack`,
+  `styles`) and writes the layer. Turning coordinates into path data is a sibling module
+  without the prefix (`heightmap-contours.ts`, `heightmap-hachures.ts`, `coastal-waves.ts`,
+  `lake-ripples.ts`): pure, argument-driven, seeded, unit-tested without a DOM. It stays in
+  `renderers/` rather than `utils/` because it has one consumer and emits SVG.
 - **No business logic.** Geometry, layout, and styling only. A renderer that decides what is
   _true_ about the world is doing a generator's job.
 - **Isolate the rare stateful case.** An animation engine that owns frames or caches is the

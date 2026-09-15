@@ -360,7 +360,7 @@ The layer will only apply to the sea.
 
 ![image](https://github.com/user-attachments/assets/d4a949b7-2336-4ac7-a50f-fbc402be9bb7)
 
-Sets the element's fill color.
+Sets the element's fill color. For illustrated burg icons such as Cinderwood, fill and stroke change the main surfaces and outlines; roofs, shadows, and other pre-colored details retain their own colors.
 
 ### Common style controls (Stroke related)
 
@@ -420,7 +420,7 @@ Dropdown that allows you to choose a set of design settings for all elements.
 
 Each of those sets defines its design settings for each of the elements, for example the ancient preset defines the texture of the land to be with the image setting to be ancient small, and the Clipping setting to be No clipping.
 
-Available presets: default, ancient, gloom, pale, light, watercolor, clean, atlas, darkSeas, cyberpunk, night and monochrome. The **+** button saves the current style as a custom preset, and the **−** button removes the selected custom preset.
+Available presets: default, ancient, gloom, pale, light, watercolor, clean, atlas, darkSeas, cyberpunk, night, monochrome, ink, cinderwood and frostbite. The **+** button saves the current style as a custom preset, and the **−** button removes the selected custom preset.
 
 **+ button** Allows you to add your own set of settings.
 

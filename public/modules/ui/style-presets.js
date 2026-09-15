@@ -13,7 +13,10 @@ const systemPresets = [
   "darkSeas",
   "cyberpunk",
   "night",
-  "monochrome"
+  "monochrome",
+  "ink",
+  "cinderwood",
+  "frostbite"
 ];
 const customPresetPrefix = "fmgStyle_";
 

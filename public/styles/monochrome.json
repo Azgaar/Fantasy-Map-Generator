@@ -302,9 +302,6 @@
   "provinces": {
     "attrs": {
       "opacity": 0.7,
-      "fill": "#000000",
-      "font-size": 10,
-      "font-family": "Courier New",
       "filter": null
     }
   },
@@ -484,6 +481,7 @@
           "letter-spacing": 0,
           "font-size": "7%",
           "font-family": "Courier New",
+          "font-style": null,
           "style": "transform: translate(0em, -0.4em)",
           "filter": null
         }
@@ -500,6 +498,7 @@
           "letter-spacing": 0,
           "font-size": "7%",
           "font-family": "Courier New",
+          "font-style": null,
           "style": "transform: translate(0em, -0.4em)",
           "filter": null
         }
@@ -516,6 +515,7 @@
           "letter-spacing": 0,
           "font-size": "2%",
           "font-family": "Courier New",
+          "font-style": null,
           "style": "transform: translate(0em, -0.4em)",
           "filter": null
         }
@@ -532,6 +532,7 @@
           "letter-spacing": 0,
           "font-size": "2%",
           "font-family": "Courier New",
+          "font-style": null,
           "style": "transform: translate(0em, -0.4em)",
           "filter": null
         }
@@ -548,6 +549,7 @@
           "letter-spacing": 0,
           "font-size": "2%",
           "font-family": "Courier New",
+          "font-style": null,
           "style": "transform: translate(0em, -0.4em)",
           "filter": null
         }
@@ -564,6 +566,7 @@
           "letter-spacing": 0,
           "font-size": "2%",
           "font-family": "Courier New",
+          "font-style": null,
           "style": "transform: translate(0em, -0.4em)",
           "filter": null
         }
@@ -580,6 +583,7 @@
           "letter-spacing": 0,
           "font-size": "3%",
           "font-family": "Courier New",
+          "font-style": null,
           "style": "transform: translate(0em, -0.4em)",
           "filter": null
         }
@@ -596,6 +600,7 @@
           "letter-spacing": 0,
           "font-size": "2%",
           "font-family": "Courier New",
+          "font-style": null,
           "style": "transform: translate(0em, -0.4em)",
           "filter": null
         }
@@ -612,6 +617,7 @@
           "letter-spacing": 0,
           "font-size": "4%",
           "font-family": "Courier New",
+          "font-style": null,
           "style": "transform: translate(0em, -0.4em)",
           "filter": null
         }
@@ -628,6 +634,7 @@
           "letter-spacing": 0,
           "font-size": "18%",
           "font-family": "Courier New",
+          "font-style": null,
           "style": "text-shadow: white 0px 0px 4px;",
           "filter": null
         }
@@ -644,6 +651,7 @@
           "letter-spacing": 0,
           "font-size": "6%",
           "font-family": "Courier New",
+          "font-style": null,
           "style": "text-shadow: white 0px 0px 2px;",
           "filter": null
         }
@@ -660,6 +668,7 @@
           "letter-spacing": 0,
           "font-size": "1%",
           "font-family": "Courier New",
+          "font-style": null,
           "style": null,
           "filter": null
         }
@@ -676,6 +685,7 @@
           "letter-spacing": 0,
           "font-size": "1%",
           "font-family": "Courier New",
+          "font-style": null,
           "style": null,
           "filter": null
         }
@@ -692,6 +702,7 @@
           "letter-spacing": 0,
           "font-size": "18%",
           "font-family": "Courier New",
+          "font-style": null,
           "style": "text-shadow: white 0px 0px 4px;",
           "filter": null
         }
@@ -872,7 +883,7 @@
           },
           "options": {
             "size": 1.9,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "city": {
@@ -889,7 +900,7 @@
           },
           "options": {
             "size": 1.5,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "fort": {
@@ -906,7 +917,7 @@
           },
           "options": {
             "size": 0.7,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "monastery": {
@@ -923,7 +934,7 @@
           },
           "options": {
             "size": 0.7,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "caravanserai": {
@@ -940,7 +951,7 @@
           },
           "options": {
             "size": 0.7,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "trading_post": {
@@ -957,7 +968,7 @@
           },
           "options": {
             "size": 0.7,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "village": {
@@ -974,7 +985,7 @@
           },
           "options": {
             "size": 0.7,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "hamlet": {
@@ -991,7 +1002,7 @@
           },
           "options": {
             "size": 0.5,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "town": {
@@ -1008,7 +1019,7 @@
           },
           "options": {
             "size": 1,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         }
       }

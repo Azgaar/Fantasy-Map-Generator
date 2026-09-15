@@ -35,7 +35,19 @@ import { distanceSquared, rollups } from "./functionUtils";
 import { isLand, isWater, SEA_LEVEL } from "./heightUtils";
 import { applyOption, ensureEl, findEl, getComposedPath, getNextId, getPointer } from "./nodeUtils";
 import { connectVertices, findPath, getIsolines, getPolesOfInaccessibility, getVertexPath } from "./pathUtils";
-import { biased, each, gauss, generateSeed, getNumberInRange, P, Pint, ra, rand, rw } from "./probabilityUtils";
+import {
+  biased,
+  createRandom,
+  each,
+  gauss,
+  generateSeed,
+  getNumberInRange,
+  P,
+  Pint,
+  ra,
+  rand,
+  rw
+} from "./probabilityUtils";
 import { findAllInQuadtree } from "./quadtree";
 import {
   capitalize,
@@ -150,6 +162,7 @@ export {
   convertSpeed,
   convertTemperature,
   createFileInput,
+  createRandom,
   debounce,
   distanceSquared,
   downloadFile,

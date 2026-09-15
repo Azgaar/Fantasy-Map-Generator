@@ -24,10 +24,11 @@ export function fitStateLabel(state: State, group: string): { pathPoints: Point[
   const groupStyle = getGroupStyle({ name: group, type: "state" });
   const baseFontSize = Number.parseFloat(groupStyle.attrs["font-size"]) || 22;
   const letterSpacing = groupStyle.attrs["letter-spacing"] || 0;
+  const displayed = applyTextTransform(groupStyle.attrs.style); // uppercase runs wider than the stored name
   const basePath = getRegionLabelPath(state.i, pack.cells.state, pole, cellsNumber, 0);
 
   const fitLines = (lines: string[], fixedFontSize?: number) => {
-    const textWidth = Math.max(...lines.map(estimateTextWidth), 1) * baseFontSize;
+    const textWidth = Math.max(...lines.map(line => estimateTextWidth(displayed(line))), 1) * baseFontSize;
     const spacingWidth = Math.max(...lines.map(line => Math.max([...line].length - 1, 0))) * letterSpacing;
     const getFontSize = (pathLength: number) => {
       return ((pathLength * PATH_USAGE - spacingWidth) / textWidth) * 100;
@@ -91,6 +92,14 @@ function splitName(name: string): string[] {
     if (width < bestWidth) [bestLines, bestWidth] = [lines, width];
   }
   return bestLines;
+}
+
+/** the css text-transform of a label group's inline style, as a function of the text */
+function applyTextTransform(style: string | null): (text: string) => string {
+  const transform = style?.match(/(?:^|;)\s*text-transform\s*:\s*([a-z]+)/)?.[1];
+  if (transform === "uppercase") return text => text.toUpperCase();
+  if (transform === "lowercase") return text => text.toLowerCase();
+  return text => text;
 }
 
 export function estimateTextWidth(text: string): number {

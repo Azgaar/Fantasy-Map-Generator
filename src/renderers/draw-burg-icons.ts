@@ -35,7 +35,10 @@ function reconcileBurgIcons({ root, bounds }: ViewportRenderContext): void {
     for (const { name } of groups) {
       const groupStyle = groupStyles[name] || defaultStyle;
       const groupName = escapeHtml(name);
-      const icon = escapeHtml(isAnchor ? "#icon-anchor" : groupStyle?.options.icon || "#icon-circle");
+      const icon = escapeHtml(groupStyle?.options.icon || (isAnchor ? "#icon-anchor" : "#icon-circle"));
+      const size = groupStyle?.options.size ?? 1;
+      const dx = isAnchor ? (groupStyle?.options.dx ?? 0) * size : 0;
+      const dy = isAnchor ? (groupStyle?.options.dy ?? 0) * size : 0;
       markup.push(`<g id="${groupName}" data-group="${groupName}"`);
       if (groupStyle) {
         for (const [key, value] of Object.entries(groupStyle.attrs)) {
@@ -43,14 +46,16 @@ function reconcileBurgIcons({ root, bounds }: ViewportRenderContext): void {
         }
         markup.push(` font-size="${groupStyle.options.size}"`);
       }
-      if (!isAnchor) markup.push(` data-icon="${icon}"`);
+      markup.push(` data-icon="${icon}"`);
       markup.push(">");
 
       // Symbols overflow their viewBox; the tallest burg artwork reaches two em above its anchor.
       const padding = 2 * (Math.abs(groupStyle?.options.size ?? 1) + (groupStyle?.attrs["stroke-width"] ?? 0));
       const { x0, y0, x1, y1 } = bounds;
-      for (const { i, x, y, port } of burgsByGroup.get(name) || []) {
+      for (const { i, x: burgX, y: burgY, port } of burgsByGroup.get(name) || []) {
         if (isAnchor && !port) continue;
+        const x = burgX + dx;
+        const y = burgY + dy;
         if (x + padding < x0 || x - padding > x1 || y + padding < y0 || y - padding > y1) continue;
         markup.push(`<use id="${isAnchor ? "anchor" : "burg"}${i}" data-id="${i}" href="${icon}" x="${x}" y="${y}"/>`);
       }

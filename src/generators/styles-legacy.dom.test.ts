@@ -273,11 +273,11 @@ test("save sync lets an old map's coordinates data-size win over the store", () 
 });
 
 test("an old map omitting a non-nullable attr keeps the values it does carry", () => {
-  // #provs in pre-1.148 maps carries opacity alone
-  document.body.innerHTML = `<svg id="map"><g id="provs" opacity="0.6"></g></svg>`;
+  // #temperature in old maps may carry opacity alone
+  document.body.innerHTML = `<svg id="map"><g id="temperature" opacity="0.6"></g></svg>`;
   const result = stylesFromMap(document);
-  expect(result.provinces.attrs.opacity).toBe(0.6);
-  expect(result.provinces.attrs["font-family"]).toBe(Styles.defaults.provinces.attrs["font-family"]);
+  expect(result.temperature.attrs.opacity).toBe(0.6);
+  expect(result.temperature.attrs["font-size"]).toBe(Styles.defaults.temperature.attrs["font-size"]);
 });
 
 test("harvesting an old map does not emit values the schema rejects", () => {

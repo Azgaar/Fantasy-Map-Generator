@@ -379,6 +379,10 @@ are implementation-safe `labels-${name}` values; the logical id is always read f
 Optional group-level `data-dx` and `data-dy` values are retained in style data. Rendering derives one CSS
 translation on the parent SVG group, so the offset applies uniformly to every label in that group.
 
+Burg port symbols are styled per Burg group in `style.burgIcons.anchors.groups`. Their `options.icon`
+selects the SVG symbol, `size` sets its scale, and optional `dx` / `dy` offsets move it relative to the
+Burg in icon-size units (positive right / down). Absent offsets mean zero.
+
 ## Routes
 
 Routes data is stored as an unordered array of objects (so element id is _not_ the array index). Object structure:

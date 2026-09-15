@@ -1,4 +1,5 @@
 // Style tab markup. The controls are still driven by the classic public/modules/ui/style.js
+import "@/components/options/tabs/burg-icon-picker";
 import { ensureEl } from "@/utils/nodeUtils";
 
 const TEMPLATE = /* html */ `
@@ -126,6 +127,36 @@ const TEMPLATE = /* html */ `
       <tr data-contour-style data-tip="Opacity of the contour lines">
         <td>Contour opacity</td>
         <td><slider-input id="styleHeightmapContourOpacity" min="0" max="1" step="0.05"></slider-input></td>
+      </tr>
+      <tr data-tip="Draw downhill pen strokes over the heightmap colors, or show only the strokes">
+        <td><label for="styleHeightmapHachures">Hachures</label></td>
+        <td>
+          <select id="styleHeightmapHachures">
+            <option value="off">Off</option>
+            <option value="overlay">Over colors</option>
+            <option value="only">Strokes only</option>
+          </select>
+        </td>
+      </tr>
+      <tr data-hachure-style data-tip="How closely the strokes are packed, relative to the default. Steep ground packs them tighter">
+        <td>Density</td>
+        <td><slider-input id="styleHeightmapHachureDensity" min="0.1" max="4" step="0.1"></slider-input></td>
+      </tr>
+      <tr data-hachure-style data-tip="Stroke length, relative to the default. Strokes stop early where the slope levels off">
+        <td>Length</td>
+        <td><slider-input id="styleHeightmapHachureLength" min="0.2" max="4" step="0.1"></slider-input></td>
+      </tr>
+      <tr data-hachure-style data-tip="Color of the hachure strokes">
+        <td><label for="styleHeightmapHachureColor">Stroke color</label></td>
+        <td><input id="styleHeightmapHachureColor" type="color" /></td>
+      </tr>
+      <tr data-hachure-style data-tip="Stroke width at its root, relative to the default. Gentler ground draws lighter strokes">
+        <td>Stroke width</td>
+        <td><slider-input id="styleHeightmapHachureWidth" min="0.2" max="4" step="0.1"></slider-input></td>
+      </tr>
+      <tr data-hachure-style data-tip="Opacity of the hachure strokes">
+        <td>Opacity</td>
+        <td><slider-input id="styleHeightmapHachureOpacity" min="0" max="1" step="0.05"></slider-input></td>
       </tr>
       <tr data-tip="Terracing power. Set to 0 to toggle off">
         <td>Terracing</td>
@@ -300,6 +331,40 @@ const TEMPLATE = /* html */ `
         </td>
       </tr>
     </tbody>
+    <tbody id="styleLakes">
+      <tr data-tip="Fine ripples along the banks, fading into open water and scaled down for small lakes">
+        <td><label for="styleLakeEmbellishment">Embellishment</label></td>
+        <td><select id="styleLakeEmbellishment">
+          <option value="none">None</option>
+          <option value="ripples">Ripples</option>
+          <option value="lines">Straight strokes</option>
+        </select></td>
+      </tr>
+      <tr data-lake-wave data-tip="How closely ripple rows are spaced">
+        <td>Density</td>
+        <td><slider-input id="styleLakeDensity" min=".1" max="4" step=".1"></slider-input></td>
+      </tr>
+      <tr data-lake-wave data-tip="Ripple length, fitted to the available water width">
+        <td>Length</td>
+        <td><slider-input id="styleLakeLength" min=".2" max="4" step=".1"></slider-input></td>
+      </tr>
+      <tr data-lake-wave data-tip="Clear water along the shoreline, relative to lake ripple scale">
+        <td>Shore gap</td>
+        <td><slider-input id="styleLakeHalo" min="0" max="2" step=".05"></slider-input></td>
+      </tr>
+      <tr data-lake-wave data-tip="Ripple stroke width in map pixels">
+        <td>Stroke width</td>
+        <td><slider-input id="styleLakeWidth" min=".05" max="2" step=".05"></slider-input></td>
+      </tr>
+      <tr data-lake-wave data-tip="Opacity of the lake ripples">
+        <td>Stroke opacity</td>
+        <td><slider-input id="styleLakeOpacity" min="0" max="1" step=".05"></slider-input></td>
+      </tr>
+      <tr data-lake-wave>
+        <td><label for="styleLakeColor">Stroke color</label></td>
+        <td><input id="styleLakeColor" type="color" /></td>
+      </tr>
+    </tbody>
     <tbody id="styleOcean">
       <tr data-tip="Select ocean pattern">
         <td>Pattern</td>
@@ -313,6 +378,8 @@ const TEMPLATE = /* html */ `
             <option value="./images/pattern5.png">Pattern 5</option>
             <option value="./images/pattern6.png">Pattern 6</option>
             <option value="./images/kiwiroo.png">Kiwiroo</option>
+            <option value="./images/waves.png">Waves</option>
+            <option value="./images/whitecaps.png">Whitecaps</option>
           </select>
         </td>
       </tr>
@@ -342,32 +409,92 @@ const TEMPLATE = /* html */ `
           <output id="styleOceanFillOutput">#466eab</output>
         </td>
       </tr>
+      <tr data-tip="Draw concentric bands that follow the coastline">
+        <td colspan="2">
+          <input id="styleOceanBands" class="checkbox" type="checkbox" />
+          <label for="styleOceanBands" class="checkbox-label">Coastline bands</label>
+        </td>
+      </tr>
+      <tr data-coastal-band data-tip="Number of bands around the coast">
+        <td>Band count</td>
+        <td><slider-input id="styleOceanBandCount" min="1" max="8" step="1"></slider-input></td>
+      </tr>
+      <tr data-coastal-band data-tip="Band spacing in map units; bands widen farther from shore">
+        <td>Band spacing</td>
+        <td><slider-input id="styleOceanBandSpacing" min="0.2" max="5" step="0.1"></slider-input></td>
+      </tr>
+      <tr data-coastal-band data-tip="Width of the dark lines separating bands">
+        <td>Outline width</td>
+        <td><slider-input id="styleOceanBandWidth" min="0.05" max="1" step="0.05"></slider-input></td>
+      </tr>
+      <tr data-coastal-band>
+        <td><label for="styleOceanBandColor">Outline color</label></td>
+        <td><input id="styleOceanBandColor" type="color" /></td>
+      </tr>
+      <tr data-coastal-band data-tip="Tint over the existing ocean, strongest near the shore">
+        <td><label for="styleOceanBandShore">Nearshore color</label></td>
+        <td><input id="styleOceanBandShore" type="color" /></td>
+      </tr>
+      <tr data-coastal-band data-tip="Strength of the nearshore tint; zero leaves only outlines over the ocean texture">
+        <td>Shading</td>
+        <td><slider-input id="styleOceanBandShade" min="0" max="1" step="0.05"></slider-input></td>
+      </tr>
+      <tr data-coastal-band>
+        <td>Band opacity</td>
+        <td><slider-input id="styleOceanBandOpacity" min="0" max="1" step="0.05"></slider-input></td>
+      </tr>
+      <tr data-tip="Decorate coastal and distant water around a clear offshore band">
+        <td colspan="2">
+          <input id="styleOceanWaves" class="checkbox" type="checkbox" />
+          <label for="styleOceanWaves" class="checkbox-label">Ocean embellishment</label>
+        </td>
+      </tr>
+      <tr data-coastal-wave data-tip="Choose the shape of the ocean embellishments">
+        <td><label for="styleOceanEmbellishmentType">Type</label></td>
+        <td>
+          <select id="styleOceanEmbellishmentType">
+            <option value="waves">Waves</option>
+            <option value="lines">Straight strokes</option>
+          </select>
+        </td>
+      </tr>
+      <tr data-coastal-wave data-tip="How closely embellishments are spaced, relative to the default">
+        <td>Density</td>
+        <td><slider-input id="styleOceanWaveDensity" min="0.1" max="4" step="0.1"></slider-input></td>
+      </tr>
+      <tr data-coastal-wave data-tip="Stroke length, relative to the default">
+        <td>Length</td>
+        <td><slider-input id="styleOceanWaveLength" min="0.2" max="4" step="0.1"></slider-input></td>
+      </tr>
+      <tr data-coastal-wave data-tip="Distance into the sea over which embellishments fade, in cell spacings">
+        <td>Reach</td>
+        <td><slider-input id="styleOceanWaveReach" min="1" max="12" step="0.5"></slider-input></td>
+      </tr>
+      <tr data-coastal-wave data-tip="Clear water beyond the coastline bands (or shore), in cell spacings">
+        <td>Coastal gap</td>
+        <td><slider-input id="styleOceanWaveHalo" min="0" max="2" step="0.05"></slider-input></td>
+      </tr>
+      <tr data-coastal-wave data-tip="Color of the coastal strokes">
+        <td><label for="styleOceanWaveColor">Stroke color</label></td>
+        <td><input id="styleOceanWaveColor" type="color" /></td>
+      </tr>
+      <tr data-coastal-wave data-tip="Stroke width in map pixels">
+        <td>Stroke width</td>
+        <td><slider-input id="styleOceanWaveWidth" min="0.05" max="2" step="0.05"></slider-input></td>
+      </tr>
+      <tr data-coastal-wave data-tip="Optional SVG dash pattern, such as 3 2 or 1 2 5 2">
+        <td><label for="styleOceanWaveDasharray">Dash pattern</label></td>
+        <td><input id="styleOceanWaveDasharray" type="text" placeholder="solid" style="width: 48%" /></td>
+      </tr>
+      <tr data-coastal-wave data-tip="Opacity of the coastal strokes">
+        <td>Opacity</td>
+        <td><slider-input id="styleOceanWaveOpacity" min="0" max="1" step="0.05"></slider-input></td>
+      </tr>
     </tbody>
     <tbody id="styleBurgIcons">
       <tr data-tip="Select group icon">
-        <td>Icon</td>
-        <td>
-          <select id="styleBurgIconsIcon">
-            <option value="#icon-circle">Circle</option>
-            <option value="#icon-square">Square</option>
-            <option value="#icon-triangle">Triangle</option>
-            <option value="#icon-cross">Cross</option>
-            <option value="#icon-star">Star</option>
-            <option value="#icon-circled">Circled</option>
-            <option value="#icon-squared">Squared</option>
-            <option value="#icon-star-circled">Star circled</option>
-            <option value="#icon-star-circled-empty">Star circled empty</option>
-            <option value="#icon-star-squared">Star squared</option>
-            <option value="#icon-watabou-capital">Watabou capital</option>
-            <option value="#icon-watabou-city">Watabou city</option>
-            <option value="#icon-watabou-town">Watabou town</option>
-            <option value="#icon-watabou-village">Watabou village</option>
-            <option value="#icon-watabou-hamlet">Watabou hamlet</option>
-            <option value="#icon-watabou-fort">Watabou fort</option>
-            <option value="#icon-watabou-monastery">Watabou monastery</option>
-            <option value="#icon-watabou-caravanserai">Watabou caravanserai</option>
-            <option value="#icon-watabou-post">Watabou trade post</option>
-          </select>
+        <td colspan="2">
+          <burg-icon-picker id="styleBurgIconsIcon"></burg-icon-picker>
         </td>
       </tr>
       <tr data-tip="Set icon size">
@@ -391,6 +518,18 @@ const TEMPLATE = /* html */ `
         <td>Fill opacity</td>
         <td>
           <slider-input id="styleBurgIconsFillOpacity" min="0" max="1" step=".01"></slider-input>
+        </td>
+      </tr>
+    </tbody>
+    <tbody id="styleAnchors">
+      <tr data-tip="Select the port icon for this burg group">
+        <td colspan="2"><burg-icon-picker id="styleAnchorsIcon" anchors></burg-icon-picker></td>
+      </tr>
+      <tr data-tip="Shift port icons relative to burg positions, in icon-size units">
+        <td>Icon shift</td>
+        <td>
+          <input id="styleAnchorsShiftX" type="number" step=".1" aria-label="Port icon horizontal shift" data-tip="Horizontal shift in icon-size units (positive moves right)" />
+          <input id="styleAnchorsShiftY" type="number" step=".1" aria-label="Port icon vertical shift" data-tip="Vertical shift in icon-size units (positive moves down)" />
         </td>
       </tr>
     </tbody>
@@ -462,6 +601,7 @@ const TEMPLATE = /* html */ `
             <option value="simple" selected>Simple</option>
             <option value="gray">Gray</option>
             <option value="colored">Colored</option>
+            <option value="cinderwood">Cinderwood</option>
           </select>
         </td>
       </tr>
@@ -547,6 +687,44 @@ const TEMPLATE = /* html */ `
         <td>
           <select id="styleSelectFont" style="width: 85%"></select>
           <button id="styleFontAdd" data-tip="Add a font" class="icon-plus sideButton"></button>
+        </td>
+      </tr>
+      <tr id="styleFontStyleRow" data-tip="Set font style">
+        <td>Font style</td>
+        <td>
+          <select id="styleFontStyle">
+            <option value="">Normal</option>
+            <option value="italic">Italic</option>
+          </select>
+        </td>
+      </tr>
+      <tr id="styleFontWeightRow" data-tip="Set font weight from 100 to 950">
+        <td>Font weight</td>
+        <td>
+          <select id="styleFontWeight">
+            <option value="">Normal</option>
+            <option value="100">100</option>
+            <option value="200">200</option>
+            <option value="300">300</option>
+            <option value="400">400</option>
+            <option value="500">500</option>
+            <option value="600">600</option>
+            <option value="700">700</option>
+            <option value="800">800</option>
+            <option value="900">900</option>
+            <option value="950">950 (Ultra-black)</option>
+          </select>
+        </td>
+      </tr>
+      <tr id="styleTextTransformRow" data-tip="Change the letter case of the labels as displayed">
+        <td>Text transform</td>
+        <td>
+          <select id="styleTextTransform">
+            <option value="">None</option>
+            <option value="uppercase">Uppercase</option>
+            <option value="lowercase">Lowercase</option>
+            <option value="capitalize">Capitalize</option>
+          </select>
         </td>
       </tr>
     </tbody>
