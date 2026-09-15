@@ -465,7 +465,9 @@ describe("v1.153.0 feature subtype and lake group styles", () => {
   });
 
   it("names the features that had no name and keeps the existing ones", () => {
+    const random = vi.spyOn(Math, "random").mockReturnValue(0.5); // no adjective roll
     resolveVersionConflicts("1.152.0", []);
+    random.mockRestore();
 
     expect(pack.features[1].name).toBeTruthy();
     expect(pack.features[2].name).toBe("Named");
