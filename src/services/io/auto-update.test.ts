@@ -423,6 +423,9 @@ describe("v1.153.0 feature subtype and lake group styles", () => {
   beforeEach(() => {
     globalThis.pack = {
       cells: {
+        i: [0, 1],
+        f: [1, 2],
+        area: [30, 20],
         culture: [1, 1],
         p: [
           [10, 10],
@@ -431,7 +434,7 @@ describe("v1.153.0 feature subtype and lake group styles", () => {
       },
       features: [
         0,
-        { i: 1, type: "ocean", subtype: "ocean", group: "sea_island", firstCell: 0, cells: 500 }, // v1.146 gave oceans both
+        { i: 1, type: "ocean", subtype: "ocean", group: "sea_island", firstCell: 0, cells: 500, area: 0 }, // v1.146 gave oceans both
         { i: 2, type: "island", subtype: "isle", group: "sea_island", firstCell: 1 },
         { i: 3, type: "lake", subtype: "my_lakes", group: "my_lakes", firstCell: 1, name: "My Lake" }, // the old lake editor copied the group name
         { i: 4, type: "lake", subtype: "salt", group: "freshwater", firstCell: 1 }
@@ -458,6 +461,7 @@ describe("v1.153.0 feature subtype and lake group styles", () => {
       "my_lakes", // the rendering group is untouched
       "freshwater"
     ]);
+    expect(pack.features[1].area).toBe(30); // summed from its cells: the ocean ring is open at the border
   });
 
   it("names the features that had no name and keeps the existing ones", () => {

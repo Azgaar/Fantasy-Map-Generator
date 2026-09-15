@@ -84,7 +84,7 @@ hotkey `Shift + F`. Dialog title "Geographical Features Overview".
 | --- | --- | --- |
 | locate | zoom to the feature's vertex bbox (`highlightArea`) | islands, lakes |
 | name | text input, empty shows _Unnamed_ | all |
-| type | one column for type and subtype: `"{Subtype} lake"` for lakes, `Subtype \|\| type` otherwise, capitalized; select from the fixed subtype set | islands (except `lake_island`, shown as text), lakes; oceans show text |
+| type | one column for type and subtype: `"{Subtype} lake"` for lakes, `Subtype \|\| type` otherwise, capitalized; select from the fixed subtype set | islands (except `lake_island`, shown as text), lakes, oceans |
 | group | select of existing `#lakes > g` ids | lakes only; islands show text, oceans blank |
 | area | estimated area + unit; a feature cut by the map border (`feature.border`) is extrapolated as map area / (map size / 100) and prefixed with `~`, the tooltip gives the on-map area | no |
 | note | `Notes.getIcon` → Notes Editor `{type:"feature", id}` | all |

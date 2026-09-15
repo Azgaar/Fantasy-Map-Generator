@@ -17,7 +17,7 @@ The selector at the top decides what the editor shapes:
 * **Whole map** — every coastline of the map. Changes redraw the whole map
 * **an island or a lake** — that feature alone. The first change gives the feature its own settings, and from then on the map settings no longer touch it
 
-Islands are listed first and lakes after, each group from the largest down. A feature with its own settings is marked with **•**. The **Use map settings** button next to the selector removes them, so the feature follows the map settings again; until then the editor says _follows the map settings_.
+Islands are listed first and lakes after, each group from the largest down. A feature with its own settings is marked with **•**. The **Reset to map settings** button next to the selector removes them, so the feature follows the map settings again; until then the editor says _follows the map settings_.
 
 Own settings are saved with the map. Use them to give one continent fjords while the rest of the world keeps gentle shores, or to calm a single lake.
 

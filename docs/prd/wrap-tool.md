@@ -32,8 +32,7 @@ The tool is deliberately narrow: vertices move, nothing else does. Each vertex i
 its original position and local edge lengths, no cell may fold over itself or collapse, and the map
 frame does not move. The dialog says as much:
 
-> Use for small shape adjustments. Use the Heightmap Editor for significant changes. Other map
-> objects stay in place.
+> Use for **small shape adjustments only**. Use the Heightmap Editor for significant changes.
 
 The coastline **vertex** editor is removed with its coastline click handler and registry entry. The
 coastline settings editor (`coastline-editor`) and the Style coastline controls are untouched.
@@ -133,7 +132,7 @@ controllers use, with the standard history icons (`icon-ccw` undo, `icon-cw` red
 | Control       | Behaviour                                                                                      |
 | ------------- | ---------------------------------------------------------------------------------------------- |
 | Primary drag  | Moves vertices under the brush by pointer displacement × falloff. A click without movement is a no-op |
-| Brush size    | `Shift` + drag on the map, the `+`/`-` keys, or `slider-input#wrapRadius` (1–200 map units)     |
+| Brush size    | `Shift` + drag on the map, the `+`/`-` keys, or `slider-input#wrapRadius` (1–100 map units)     |
 | Brush outline | The shared `brush-circle` overlay on `#debug`, following the pointer                            |
 | Structure     | The affected vertices and the cells they shape, drawn on `#debug` under the brush               |
 | Undo / Redo   | One entry per stroke, `Ctrl/Cmd+Z` / `Ctrl/Cmd+Shift+Z` / `Ctrl+Y`, disabled when unavailable   |
@@ -143,23 +142,24 @@ controllers use, with the standard history icons (`icon-ccw` undo, `icon-cw` red
 
 - Falloff is smoothstep on the normalised distance: `t = 1 - distance / radius`, weight `t²(3 - 2t)`,
   zero at the brush edge.
-- **The map's own events are left alone.** The wheel still zooms, panning, hover tips, and click-to-edit
-  behave exactly as outside the tool; opening an editor by clicking the map closes the Wrap Tool the way
-  it closes any other dialog. The tool adds only a d3 drag behaviour on `#viewbox` (which stops the
-  mousedown from reaching the zoom behaviour, so a stroke never pans the map), a crosshair cursor, and
-  its own `mousemove` listener registered *alongside* the default one rather than replacing it.
+- **The brush owns the map while it is open.** The wheel still zooms and Space + drag still pans, but
+  `MapBrush.attach()` replaces the `#viewbox` `mousemove` and `click` listeners for the session, so
+  hover tips and click-to-edit are suspended and no editor opens by clicking the map. It also adds a
+  d3 drag behaviour on `#viewbox` (which stops the mousedown from reaching the zoom behaviour, so a
+  stroke never pans the map) and a crosshair cursor; `detach()` restores the defaults.
 - `Shift` + drag is a resize gesture (in `MapBrush`, so every brush tool has it): the brush grows by the
   pointer's travel in map units on both axes — right and up grow it, left and down shrink it — and
   nothing is painted, so it records no history. Shift is read once, at drag start, so a stroke never
   changes meaning halfway through.
-- Space+drag pans; `keyup` and `window.blur` clear the Space state and cancel an in-flight stroke.
+- Space+drag pans; `keyup` clears the Space state, `window.blur` clears it and cancels an in-flight
+  stroke.
 - **The tool is built for local edits.** The radius starts at 10 and goes down to 1 — well under a
   cell — so a small brush over one corner moves that corner alone. `data-key-step="1"` on the slider
   makes `+`/`-` step by one unit instead of the default five, and `Shift` + drag stays the fast way to
   cross the whole range.
 - **`+`/`-` belong to the hotkey module, not the tool.** `hotkeys.ts` resolves the visible brush size
-  input through one `getVisibleBrush()` helper (`wrapRadius` alongside the heightmap and paint brush
-  inputs) and, when one is on screen, keeps the `Equal` family away from the rulers layer and the
+  input through one `getVisibleBrush()` helper (any visible input marked `data-brush-size`, so a new
+  brush tool needs no hotkey edit) and, when one is on screen, keeps the `Equal` family away from the rulers layer and the
   Measurers editor — `+` is `Shift`+`=` on a US layout, so it used to open Measurers mid-stroke. The
   helper also drives the `[`/`]` path, the step comes from the input's optional `data-key-step`, and
   setting a size dispatches an `input` event so the owning tool picks the new value up.
@@ -235,7 +235,7 @@ feature it touches and leaves every other feature byte-identical.
 
 The settings behave as before: measured over 24 islands of assorted sizes and positions, the length a
 preset adds to an outline is within about 10% of the old algorithm — Default 6.3% → 6.5%, Rocky 17.1% →
-16.9%, Fjords 12.3% → 13.0%, Archipelago 11.3% → 12.7%, Smooth 0.8% → 0.5%. Every threshold, amplitude
+16.9%, Fjords 12.3% → 13.0%, Skerries 11.3% → 12.7%, Smooth 0.8% → 0.5%. Every threshold, amplitude
 and preset value is unchanged; only `profileHarmonics` (zone count) became `roughnessScale` (zone size
 in map units), which the load path fills from defaults for maps saved earlier — no migration needed,
 since `parseSections` strips a setting the shape no longer has and repairs the missing one.
@@ -253,10 +253,10 @@ See [future-data-model.md](../architecture/future-data-model.md).
 ### Batched overrides
 
 `GraphOverride.movePackVertices(points)` is the batch form of `movePackVertex`, which now delegates to
-it. `revert()` replaces the unused `clear()`: it puts every moved vertex back at its generated position,
-refreshes the derived areas and drops the records — the map-wide escape hatch behind the dialog's
-confirmation, covering edits from earlier sessions and from the loaded file that session history cannot
-reach. It records `[original, current]` per vertex, deletes the record when a vertex returns exactly to
+it. `revert()` sits next to `clear()` (which only drops the reference to a world being replaced): it
+puts every moved vertex back at its generated position, refreshes the derived areas and drops the
+records — the map-wide escape hatch behind the dialog's confirmation, covering edits from earlier
+sessions and from the loaded file that session history cannot reach. It records `[original, current]` per vertex, deletes the record when a vertex returns exactly to
 its original position (so undo and reset leave no residue), and calls `refreshDerivedData` **once** for
 the whole batch instead of once per vertex — a brush event touching 40 vertices refreshes each affected
 cell area and feature area a single time. Nothing else about the override representation changes, so
@@ -280,7 +280,8 @@ only; resource icons and burg plates keep their positions.
 ### Applying and cancelling
 
 Closing the dialog is cancelling, as in the paint editor: `cleanup()` moves every vertex still recorded
-in `baseline` back. Apply does not close the tool — it empties `baseline` and the history, which commits
+in `baseline` back, and `beforeClose` asks for confirmation first when there is anything to discard.
+Apply does not close the tool — it empties `baseline` and the history, which commits
 what is done and begins a fresh session, so the author can keep editing and still discard only what
 comes next. There is no Cancel button: the dialog's own close button and `Escape` are the cancel path,
 and no button should duplicate them. Committed edits are ordinary graph overrides, so Reset never
@@ -288,7 +289,7 @@ reaches past its own session — only Revert all does.
 
 ### History
 
-- Session-only, in memory: an array of `{before, after}` vertex maps plus an index, capped at 50 entries
+- Session-only, in memory: an array of `{before, after}` vertex maps plus an index, capped at 1000 entries
   with the oldest evicted. A new stroke after undo discards the redo branch.
 - One drag is one entry, computed at drag end from the vertices that actually differ from their
   pre-stroke positions.
@@ -297,8 +298,8 @@ reaches past its own session — only Revert all does.
   with the tool and its customization mode still in place. Apply clears the baseline instead, which is
   what makes the edits permanent.
 - Cancelling a stroke (Escape, blur, or the start of undo/redo/reset) restores its `before` map.
-- Close clears history, index, and baseline, after discarding the session unless it was applied.
-  History is never persisted.
+- Close asks for confirmation while unapplied edits exist, then clears history, index, and baseline,
+  discarding the session unless it was applied. History is never persisted.
 
 ### Coastline vertex editor removal
 
@@ -311,17 +312,15 @@ management is rewritten as part of this story.
 
 ## Testing Decisions
 
-- **`VertexBrush` geometry** — new focused tests on small synthetic graphs: `findVertices` returning the
-  vertices inside the radius and excluding frame ones; falloff weight at centre, mid-radius, and edge;
-  a tight-budget vertex clamped to its own limit while its neighbours move on; the budget holding across
-  repeated strokes and after a simulated save/load (override record present); a fold rejected; the
-  backoff committing a reduced displacement; non-finite pointer input rejected.
-- **`GraphOverride` batching** — extend `src/generators/graph-override.test.ts`:
-  `movePackVertices` records originals for a batch, drops the record when a vertex returns to its
-  original position, and refreshes each affected cell/feature area once per batch. The existing cases
-  for original/custom values, derived areas, and restoration against a rebuilt graph stay green.
-- **History** — stroke, cancel, undo, redo, branch, reset, and eviction restore exact vertex positions
-  and leave no override records behind after a full undo.
+- **`VertexBrush` geometry** — `src/controllers/vertex-brush.test.ts` covers the fold rules on small
+  synthetic graphs: `isSimple` on a convex polygon and a bowtie, a vertex dragged across the opposite
+  edge kept simple, and the backoff still moving it as far as the cell stays simple. Falloff, budget and
+  `findVertices` are exercised through the manual pass below, not by unit tests.
+- **`GraphOverride`** — `src/generators/graph-override.test.ts` covers original/custom values, derived
+  areas, `revert()`, and restoration against a rebuilt graph. `movePackVertices` batching has no
+  dedicated case.
+- **History** — undo, redo, reset, apply and close are verified in the manual pass; there is no
+  `wrap-tool.test.ts`.
 - **Manual browser pass** (done for this change): opening sets `customization` and `Shift + B` no longer
   opens the Biomes editor; a radius-2 brush at 12× zoom marks exactly one vertex and three cells and
   the dashed outline stays legible; a stroke closed with the dialog's close button or `Escape` leaves
@@ -348,8 +347,8 @@ management is rewritten as part of this story.
 3. The brush moves vertices on coastlines, lake shores, and inland cell boundaries alike, and a drag
    moves them far enough to reshape a coast in one stroke.
 4. Map layers do not redraw during a drag and are redrawn once when it ends.
-5. Zoom, pan, hover tips, and click behave exactly as they do with the tool closed; the wheel zooms and
-   never resizes the brush, `Shift` + drag resizes it and moves nothing, and `+`/`-` resize it without
+5. Zoom and pan behave exactly as they do with the tool closed, while hover tips and click-to-edit are
+   suspended until it closes; the wheel zooms and never resizes the brush, `Shift` + drag resizes it and moves nothing, and `+`/`-` resize it without
    toggling the rulers layer or opening the Measurers editor.
 6. `Shift + W` opens the tool, a pinned tip states how to drag and how to resize, and while it is open
    no other editor can be opened by click or shortcut.
@@ -357,7 +356,7 @@ management is rewritten as part of this story.
    the session history.
 8. Undo, redo, and reset restore vertex positions exactly; edits present before the session survive
    Reset, which clears the history and leaves the tool open; Apply commits and keeps the tool open; the
-   close button and `Escape` discard whatever followed the last Apply.
+   close button and `Escape` discard whatever followed the last Apply, after a confirmation.
 9. A brush of radius 1–3 affects a single vertex, `+`/`-` step it by one, and the brush outline stays
    legible at that size.
 10. Limits hold across repeated strokes, reopening the tool, and save/load: no cell folds over itself or
@@ -366,7 +365,7 @@ management is rewritten as part of this story.
     map record is byte-identical after a stroke and after undo.
 12. The coastline vertex editor, its registry entry, and the coastline click handler are gone; coastline
     settings and Style controls remain available; no references to the removed module remain.
-13. Focused geometry, override, and history tests pass, along with lint and build.
+13. The `vertex-brush` and `graph-override` tests pass, along with lint and build.
 
 ## Documentation
 
@@ -400,7 +399,7 @@ each pointing at the right tool for the scale of the change.
   is the interaction reference. FMG's separate graph and entity coordinate representations are exactly
   why the equivalent "everything follows" behaviour is not in this story.
 - `BUDGET` (3 average original edges), `AREA_MARGIN` (25% of the stroke-start cell area), `FRAME`, the
-  1/1024 backoff floor, and the 50-entry history cap are tuning constants in `vertex-brush.ts` and
+  1/1024 backoff floor, and the 1000-entry history cap are tuning constants in `vertex-brush.ts` and
   `wrap-tool.ts`; they can be adjusted against representative maps without changing the design.
 - The structure overlay reuses the `#vertices` group and its `public/index.css` rules, which the removed
   coastline vertex editor left behind — no new CSS, so no cache-busting bump.

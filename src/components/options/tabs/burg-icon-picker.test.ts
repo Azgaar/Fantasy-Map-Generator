@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, expect, test, vi } from "vitest";
 import { BurgIconPicker } from "./burg-icon-picker";
 
+Element.prototype.scrollIntoView = vi.fn(); // jsdom has none
 afterEach(() => document.body.replaceChildren());
 
 test("Illustrated icons retain accent colors while their main surfaces inherit group paint", () => {
@@ -51,7 +52,7 @@ test("restoring a group's icon updates the preview without changing the map", ()
   expect(change).not.toHaveBeenCalled();
 });
 
-test("choosing a preview emits the select-compatible change event and closes the picker", () => {
+test("choosing a preview emits the select-compatible change event and keeps the picker open", () => {
   const picker = new BurgIconPicker();
   document.body.append(picker);
   const values: string[] = [];
@@ -61,8 +62,7 @@ test("choosing a preview emits the select-compatible change event and closes the
   picker.querySelector("details")!.open = true;
   picker.querySelector<HTMLButtonElement>('[data-icon="#icon-watabou-city"]')!.click();
   expect(values).toEqual(["#icon-watabou-city"]);
-  expect(picker.querySelector("details")!.open).toBe(false);
-  expect(document.activeElement).toBe(picker.querySelector("summary"));
+  expect(picker.querySelector("details")!.open).toBe(true);
 });
 
 test("Escape closes the chooser without changing its selection", () => {

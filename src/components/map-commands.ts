@@ -7,6 +7,7 @@ import { regeneratePrompt } from "@/components/lifecycle";
 import {
   loadURL,
   openExportToPngTiles,
+  pickMapFile,
   showExportPane,
   showLoadPane,
   showSavePane
@@ -61,7 +62,7 @@ export const MAP_COMMANDS: MapCommand[] = [
     id: "loadFromFile",
     name: "Load Map from File",
     aliases: "open upload disk",
-    run: () => ensureEl("mapToLoad").click()
+    run: () => pickMapFile()
   },
   { id: "quickLoad", name: "Quick Load Map", aliases: "browser storage restore", run: () => Services.Load.quickLoad() },
   {

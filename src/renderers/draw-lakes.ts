@@ -24,8 +24,13 @@ export function drawLakes(layer: Layer): void {
   drawLakeEmbellishments(layer);
 }
 
-export function drawLakeEmbellishments(layer: Layer): void {
+/** the ripple masks in deftemp live as long as the ripple paths in the lake groups */
+export function removeLakeEmbellishments(): void {
   for (const node of document.querySelectorAll("[data-lake-embellishment]")) node.remove();
+}
+
+export function drawLakeEmbellishments(layer: Layer): void {
+  removeLakeEmbellishments();
   const defs = document.getElementById("deftemp");
   if (!defs) return;
   const islands = pack.features

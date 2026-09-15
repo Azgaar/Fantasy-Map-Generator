@@ -154,8 +154,6 @@ function open(featureId?: number): void {
     "beforeend",
     `<div id="coastlineSettingsDialog" style="display:none" class="dialog"></div>`
   );
-  setFeature(featureId ? pack.features[featureId] : null);
-
   $("#coastlineSettingsDialog").dialog({
     title: "Coastline Settings",
     resizable: false,
@@ -165,7 +163,7 @@ function open(featureId?: number): void {
       destroyDialog("coastlineSettingsDialog");
     }
   });
-  updatePreviews();
+  setFeature(featureId ? pack.features[featureId] : null); // once shown: the previews measure the canvas
 }
 
 /** the whole dialog follows the scope: the controls show its settings, the previews its shape */

@@ -133,18 +133,6 @@ export const generateSeed = (): string => {
   return String(Math.floor(Math.random() * 1e9));
 };
 
-/** mulberry32 over a string hash: a seeded stream independent of the shared Math.random */
-export const createRandom = (seed: string): (() => number) => {
-  let state = 1779033703;
-  for (let i = 0; i < seed.length; i++) state = Math.imul(state ^ seed.charCodeAt(i), 3432918353);
-  return () => {
-    state = (state + 0x6d2b79f5) | 0;
-    let t = Math.imul(state ^ (state >>> 15), 1 | state);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-};
-
 declare global {
   interface Window {
     rand: typeof rand;

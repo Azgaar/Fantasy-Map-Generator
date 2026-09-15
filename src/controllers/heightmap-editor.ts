@@ -975,19 +975,19 @@ function renderBrushesPanel(): void {
     </div>
     <div id="brushesSliders" style="display: none">
       <div data-tip="Change brush size. Shortcut: + to increase; – to decrease">
-        <slider-input id="heightmapBrushRadius" min="1" max="100" value="25">
+        <slider-input id="heightmapBrushRadius" data-brush-size min="1" max="100" value="25">
           <div style="width: 3.5em">Radius:</div>
         </slider-input>
       </div>
       <div data-tip="Change brush power">
-        <slider-input id="heightmapBrushPower" min="1" max="10" value="5">
+        <slider-input id="heightmapBrushPower" data-brush-size min="1" max="10" value="5">
           <div style="width: 3.5em">Power:</div>
         </slider-input>
       </div>
     </div>
     <div id="lineSlider" style="display: none">
       <div data-tip="Change tool power. Shortcut: + to increase; – to decrease">
-        <slider-input id="heightmapLinePower" min="-100" max="100" value="30">
+        <slider-input id="heightmapLinePower" data-brush-size min="-100" max="100" value="30">
           <div style="width: 5.5em">Power:</div>
         </slider-input>
       </div>

@@ -1,5 +1,5 @@
+import Alea from "alea";
 import type { Styles } from "@/generators/styles-schema";
-import { createRandom } from "@/utils";
 import { wavyDash } from "@/utils/pathUtils";
 
 export interface CoastalWaveParams {
@@ -24,12 +24,18 @@ const AMPLITUDE = 0.06; // wave height, in cell spacings
 /** Coastal dashes and a distant wave field surround a clear offshore band. */
 export function getCoastalWaves(params: CoastalWaveParams): string {
   const { width, height, spacing, distanceAt, density, length, reach, seed, type = "waves" } = params;
-  const random = createRandom(seed);
+  const random = Alea(seed);
   const rowGap = (spacing * ROW_GAP) / density;
   const halfPeriod = (spacing * PERIOD) / 2;
   const amplitude = Math.min(spacing * AMPLITUDE, rowGap * 0.3);
   const f = (v: number) => v.toFixed(2);
   const parts: string[] = [];
+  const mark = (x: number, y: number, dash: number): string => {
+    const up = random() < 0.5 ? -1 : 1;
+    if (type === "lines") return `M${f(x)},${f(y)}h${f(dash)}`;
+    const halves = Math.max(2, Math.round(dash / halfPeriod)); // whole half-periods, so the dash ends on the axis
+    return wavyDash(x, y, halves * halfPeriod, halves, amplitude * up);
+  };
 
   for (let y = rowGap * random(); y < height; y += rowGap * (0.85 + random() * 0.3)) {
     let x = -random() * DASH * spacing;
@@ -47,20 +53,9 @@ export function getCoastalWaves(params: CoastalWaveParams): string {
   }
 
   return parts.join("");
-
-  function mark(x: number, y: number, dash: number): string {
-    const up = random() < 0.5 ? -1 : 1;
-    if (type === "lines") return `M${f(x)},${f(y)}h${f(dash)}`;
-    const halves = Math.max(2, Math.round(dash / halfPeriod)); // whole half-periods, so the dash ends on the axis
-    return wavyDash(x, y, halves * halfPeriod, halves, amplitude * up);
-  }
 }
 
-/**
- * Cells from the shore for every water cell, 1 on the coastal ring, 0 on land and beyond `reach`.
- * Not grid.cells.t: that field stops at 9 cells, treats 0 as "deep ocean" in the province and
- * state generators, and is saved with the map, so widening it would alter generation and old maps.
- */
+/** Cells from the shore per water cell: 1 on the coastal ring, 0 on land and beyond `reach`. Not cells.t: it stops at 9 and is saved */
 export function getCoastalDistances(heights: ArrayLike<number>, neighbors: number[][], reach: number): Uint8Array {
   const distances = new Uint8Array(heights.length);
   const limit = Math.ceil(reach) + 1;

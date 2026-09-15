@@ -1922,12 +1922,22 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     // v1.153.0 made the feature group a pure rendering choice, separate from the subtype generators read
     const lakeSubtypes = new Set<string>(LAKE_SUBTYPES);
     const oceanSubtypes = new Set<string>(OCEAN_SUBTYPES);
+    const oceanAreas = new Map<number, number>(); // the polygon area of an ocean collapsed to 0
+    if (pack.features.some(feature => feature?.type === "ocean")) {
+      for (const cellId of pack.cells.i) {
+        const featureId = pack.cells.f[cellId];
+        if (pack.features[featureId]?.type === "ocean") {
+          oceanAreas.set(featureId, (oceanAreas.get(featureId) ?? 0) + pack.cells.area[cellId]);
+        }
+      }
+    }
     for (const feature of pack.features) {
       if (!feature) continue;
       if (feature.type === "ocean") {
         // oceans carried a landmass group and whatever the old group field held; they are not drawn
         delete (feature as Partial<Feature>).group;
         if (!oceanSubtypes.has(feature.subtype)) feature.subtype = Features.getOceanSubtype(feature);
+        feature.area = oceanAreas.get(feature.i) ?? 0;
       } else if (feature.type === "lake" && !lakeSubtypes.has(feature.subtype)) {
         feature.subtype = "freshwater"; // the old lake editor wrote custom group names into the subtype
       }

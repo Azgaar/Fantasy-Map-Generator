@@ -17,6 +17,7 @@ let source: typeof pack.vertices | null = null;
 let radius = 10;
 let brush: MapBrush | null = null;
 let events: AbortController | null = null;
+let closeConfirmed = false;
 
 function open(): void {
   if (customization || source) return;
@@ -75,6 +76,7 @@ function render(): void {
     width: "auto",
     closeOnEscape: false,
     position: { my: "right top", at: "right-10 top+10", of: "svg" },
+    beforeClose: confirmClose,
     close: cleanup
   });
 }
@@ -238,11 +240,28 @@ function close(): void {
   $("#wrapTool").dialog("close"); // the dialog calls cleanup back
 }
 
+/** unapplied edits are lost on close, so ask first; a stale source has nothing to keep */
+function confirmClose(): boolean {
+  abortStroke();
+  if (closeConfirmed || source !== pack.vertices || !restorable().size) return true;
+  confirmationDialog({
+    title: "Discard edits",
+    message: "The edits not applied yet will be discarded. Apply them first to keep them",
+    confirm: "Discard",
+    onConfirm: () => {
+      closeConfirmed = true;
+      close();
+    }
+  });
+  return false;
+}
+
 function cleanup(): void {
   abortStroke();
-  const discarded = restorable(); // what was not applied is discarded on close
+  const discarded = restorable();
   if (discarded.size) apply(discarded);
 
+  closeConfirmed = false;
   source = null;
   customization = 0;
   events?.abort();

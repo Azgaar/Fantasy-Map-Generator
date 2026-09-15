@@ -10,7 +10,7 @@ import { createBrushStroke } from "@/utils/brushUtils";
 type Stamp = (point: Point) => void;
 
 interface MapBrushOptions {
-  /** id of the size input; the hotkey module finds the brush in use by it */
+  /** id of the size input */
   id: string;
   radius?: number;
   min?: number;
@@ -48,7 +48,7 @@ export class MapBrush {
     this.currentRadius = minmax(options.radius ?? 12, min, max);
 
     this.markup = /* html */ `<div data-tip="Change brush size. Shortcut: Shift + drag on the map, or + and −">
-      <slider-input id="${id}" min="${min}" max="${max}" step="1" value="${this.currentRadius}" data-key-step="${keyStep}"
+      <slider-input id="${id}" min="${min}" max="${max}" step="1" value="${this.currentRadius}" data-key-step="${keyStep}" data-brush-size
         >${label}</slider-input>
     </div>`;
   }

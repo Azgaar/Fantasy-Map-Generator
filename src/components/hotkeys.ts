@@ -119,17 +119,10 @@ function allowHotkeys(): boolean {
   return true;
 }
 
-const BRUSH_SIZE_INPUTS = [
-  "heightmapBrushRadius",
-  "heightmapBrushPower",
-  "heightmapLinePower",
-  "paintEditorBrush",
-  "wrapRadius"
-];
-
 /** the size control of the brush the user is currently working with, if any is on screen */
 function getVisibleBrush(): HTMLInputElement | null {
-  return BRUSH_SIZE_INPUTS.map(id => findEl<HTMLInputElement>(id)).find(element => element?.offsetParent) ?? null;
+  const inputs = document.querySelectorAll<HTMLInputElement>("[data-brush-size]");
+  return [...inputs].find(element => element.offsetParent) ?? null;
 }
 
 // "+", "-" and "=" keys on numpad. "=" is for "+" on Mac

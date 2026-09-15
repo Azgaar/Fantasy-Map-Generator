@@ -211,13 +211,15 @@ class FeatureModule {
       land,
       border,
       featureId,
-      totalCells
+      totalCells,
+      cellsArea
     }: {
       firstCell: number;
       land: boolean;
       border: boolean;
       featureId: number;
       totalCells: number;
+      cellsArea: number;
     }): Feature => {
       const type = land ? "island" : border ? "ocean" : "lake";
       const [startCell, featureVertices] = getCellsData(type, firstCell);
@@ -227,7 +229,7 @@ class FeatureModule {
         options.map.graph.height
       );
       const area = polygonArea(points); // feature perimiter area
-      const absArea = Math.abs(rn(area));
+      const absArea = type === "ocean" ? cellsArea : Math.abs(rn(area)); // an ocean ring is open at the border: its polygon area collapses
 
       const feature: Partial<Feature> = {
         i: featureId,
@@ -272,6 +274,7 @@ class FeatureModule {
       const land = isLand(firstCell, pack);
       let border = Boolean(borderCells[firstCell]); // true if feature touches map border
       let totalCells = 1; // count cells in a feature
+      let cellsArea = cells.area[firstCell];
 
       while (queue.length) {
         const cellId = queue.pop() as number;
@@ -295,11 +298,12 @@ class FeatureModule {
             queue.push(neighborId);
             featureIds[neighborId] = featureId;
             totalCells++;
+            cellsArea += cells.area[neighborId];
           }
         }
       }
 
-      features.push(addFeature({ firstCell, land, border, featureId, totalCells }));
+      features.push(addFeature({ firstCell, land, border, featureId, totalCells, cellsArea }));
       queue[0] = featureIds.indexOf(this.UNMARKED); // find unmarked cell
     }
 
@@ -459,6 +463,7 @@ class FeatureModule {
 
   /** Name the features that have none; existing names are the user's and stay */
   defineNames() {
+    Math.random = Alea(options.map.seed); // the names roll the PRNG, the steps after stay put
     for (const feature of pack.features) {
       if (feature && !feature.name) feature.name = this.getName(feature);
     }

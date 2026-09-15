@@ -135,11 +135,12 @@ describe("feature naming", () => {
       ]
     } as unknown as typeof pack;
     globalThis.grid = { cells: { i: new Array(1000) } } as unknown as typeof grid;
-    globalThis.options = { map: { graph: { width: 100, height: 100 } } } as unknown as typeof options;
+    globalThis.options = { map: { seed: "1", graph: { width: 100, height: 100 } } } as unknown as typeof options;
     globalThis.Names = { getCulture: (culture: number) => `name-of-${culture}` } as unknown as typeof Names;
   });
 
   it("takes the culture of the first cell for islands and of a shore cell for lakes", () => {
+    Math.random = () => 0.5; // no adjective roll
     expect(Features.getName(pack.features[1])).toBe("name-of-1");
     expect(Features.getName(pack.features[2])).toBe("name-of-2");
   });

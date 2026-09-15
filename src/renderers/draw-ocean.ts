@@ -3,7 +3,7 @@ import { Ocean } from "@/generators/ocean-generator";
 import { rn, round } from "@/utils";
 import { ensureEl } from "@/utils/nodeUtils";
 import { getCoastalDistances, getCoastalWaves } from "./coastal-waves";
-import { drawCoastalBands, getCoastalBandReach } from "./draw-coastal-bands";
+import { drawCoastalBands, getCoastalBandReach, removeCoastalBands } from "./draw-coastal-bands";
 
 /**
  * The two full-graph rects the rings are drawn over: the textured pattern fill and the flat base
@@ -51,12 +51,12 @@ function sizeToGraph(rect: SVGRectElement): void {
 
 /** the ocean outline rings, stacked from the coast outwards so the overlap deepens the shade */
 export function drawOcean(): void {
+  removeOcean();
   applyOceanPattern();
   drawOceanBase();
   drawCoastalWaves();
   drawCoastalBands();
   const oceanLayers = ensureEl<SVGGElement>("oceanLayers");
-  removeOcean();
 
   const limits = Ocean.getLimits(styles.ocean.oceanLayers.options.outline);
   if (!limits.length) return;
@@ -75,17 +75,24 @@ export function drawOcean(): void {
   TIME && console.timeEnd("drawOcean");
 }
 
-/** drop the rings, keeping the two full-graph rects drawOceanBase owns */
+/** drop the rings, waves and bands, keeping the two full-graph rects drawOceanBase owns */
 export function removeOcean(): void {
   for (const path of Array.from(document.querySelectorAll("#oceanLayers path"))) path.remove();
+  removeCoastalWaves();
+  removeCoastalBands();
 }
 
-/** Sparse wave dashes clipped to the sea, with a clear gap along the coast. */
+function removeCoastalWaves(): void {
+  ensureEl("oceanWaves").replaceChildren();
+  document.getElementById("waves-mask")?.remove();
+}
+
+/** sparse wave dashes clipped to the sea, with a clear gap along the coast */
 function drawCoastalWaves(): void {
-  const group = ensureEl<SVGGElement>("oceanWaves");
-  for (const resource of document.querySelectorAll("#waves-mask, #waves-fade")) resource.remove();
+  removeCoastalWaves();
   const { options: waveOptions, attrs } = styles.ocean.oceanWaves;
-  if (!waveOptions.render) return void group.replaceChildren();
+  if (!waveOptions.render) return;
+  const group = ensureEl<SVGGElement>("oceanWaves");
 
   TIME && console.time("drawCoastalWaves");
   const { width, height } = options.map.graph;

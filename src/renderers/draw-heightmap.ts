@@ -49,6 +49,18 @@ const CURVE_MAP: Record<string, CurveFactory> = {
   curveStepBefore
 };
 
+// the cell surface extended to the boundary pseudo-points the Delaunay triangles reference
+function getContourSurface(smoothed: Float64Array): { points: [number, number][]; elevations: Float64Array } {
+  const points = [...grid.points, ...grid.boundary];
+  const elevations = Float64Array.from(points, ([x, y], i) => {
+    if (i < smoothed.length) return smoothed[i];
+    const column = Math.max(0, Math.min(grid.cellsX - 1, Math.floor(x / grid.spacing)));
+    const row = Math.max(0, Math.min(grid.cellsY - 1, Math.floor(y / grid.spacing)));
+    return smoothed[row * grid.cellsX + column];
+  });
+  return { points, elevations };
+}
+
 export const drawHeightmap = (): void => {
   if (customization === 1)
     return void tip("The Layer control is not available in the heightmap edit mode", false, "error");
@@ -241,18 +253,6 @@ export const drawHeightmap = (): void => {
         .append("path")
         .attr("d", path);
     }
-  }
-
-  // the cell surface extended to the boundary pseudo-points the Delaunay triangles reference
-  function getContourSurface(smoothed: Float64Array): { points: [number, number][]; elevations: Float64Array } {
-    const points = [...grid.points, ...grid.boundary];
-    const elevations = Float64Array.from(points, ([x, y], i) => {
-      if (i < smoothed.length) return smoothed[i];
-      const column = Math.max(0, Math.min(grid.cellsX - 1, Math.floor(x / grid.spacing)));
-      const row = Math.max(0, Math.min(grid.cellsY - 1, Math.floor(y / grid.spacing)));
-      return smoothed[row * grid.cellsX + column];
-    });
-    return { points, elevations };
   }
 
   // connect vertices to chain: specific case for heightmap

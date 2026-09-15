@@ -1,6 +1,6 @@
+import Alea from "alea";
 import type { Styles } from "@/generators/styles-schema";
 import type { Point } from "@/types/global";
-import { createRandom } from "@/utils";
 import { wavyDash } from "@/utils/pathUtils";
 
 export type LakeEmbellishment = Styles["lakes"]["groups"][string]["options"];
@@ -57,7 +57,7 @@ export function getLakeRipples(points: Point[], spacing: number, style: LakeEmbe
     style.embellishment === "none";
   if (blank) return { ...bounds, path: "" };
 
-  const random = createRandom(seed);
+  const random = Alea(seed);
   const path =
     Math.max(width, height) <= spacing * POND_SIZE
       ? getPondStrokes(points, spacing, style, bounds, random)

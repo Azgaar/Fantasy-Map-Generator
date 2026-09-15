@@ -30,9 +30,9 @@ The brush stops when a cell would fold over itself or collapse, and every corner
 The row at the bottom of the dialog, left to right:
 
 * **Undo** and **Redo** (the two circular arrows) — step through the strokes of the current session, one entry per drag (<kbd>Ctrl</kbd> + <kbd>Z</kbd> / <kbd>Ctrl</kbd> + <kbd>Y</kbd>)
+* **Apply** (the tick) — keep the changes made so far and carry on editing; it starts a fresh session, so what you do next can still be discarded
 * **Reset session** (the eraser) — put every corner back where it was when you opened the tool and clear the session history. The tool stays open, so you can start over without leaving it
 * **Revert all** (the bin) — drop every vertex edit ever made on this map, including edits made in earlier sessions and edits loaded from the .map file. It asks for confirmation and cannot be undone
-* **Apply** (the tick) — keep the changes made so far and carry on editing; it starts a fresh session, so what you do next can still be discarded
 
 **Closing the tool is cancelling.** The dialog's close button and <kbd>Escape</kbd> discard everything done since the last Apply — Apply is the only way to keep it. Applied edits are stored in the .map file, so they survive saving, loading and export, and a later session starts from them.
 

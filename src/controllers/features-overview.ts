@@ -66,33 +66,14 @@ const SUBTYPES: Record<FeatureType, readonly string[]> = {
   ocean: OCEAN_SUBTYPES
 };
 
-// an ocean's perimeter ring is open at the map border, so its polygon area collapses to 0
-let oceanAreas = new Map<number, number>();
-function measureOceans(): void {
-  oceanAreas = new Map();
-  const oceans = new Set(pack.features.filter(feature => feature?.type === "ocean").map(feature => feature.i));
-  if (!oceans.size) return;
-
-  for (let cellId = 0; cellId < pack.cells.i.length; cellId++) {
-    const featureId = pack.cells.f[cellId];
-    if (oceans.has(featureId)) oceanAreas.set(featureId, (oceanAreas.get(featureId) ?? 0) + pack.cells.area[cellId]);
-  }
-}
-
 const UNNAMED = "Unnamed";
 function getName(feature: Feature) {
   return feature.name || UNNAMED;
 }
 
-/** area inside the map borders */
-function getMapArea(feature: Feature) {
-  return feature.area || oceanAreas.get(feature.i) || 0;
-}
-
 // a feature cut by the map border continues beyond it: assume it keeps its share of the map over the whole globe
 function getCalculatedArea(feature: Feature) {
-  const mapArea = getMapArea(feature);
-  return feature.border ? mapArea / getGlobeCoverage() : mapArea;
+  return feature.border ? feature.area / getGlobeCoverage() : feature.area;
 }
 
 const getGlobeCoverage = () => options.map.geography.mapSize / 100;
@@ -102,7 +83,7 @@ function renderAreaCell(feature: Feature, unit: string): string {
   const estimated = feature.border && getGlobeCoverage() < 1;
   if (!estimated) return `<div data-tip="Feature area" data-col="area">${area}</div>`;
 
-  const mapArea = `${si(getArea(getMapArea(feature)))} ${unit}`;
+  const mapArea = `${si(getArea(feature.area))} ${unit}`;
   const tip = `Estimated area: the feature goes beyond the map border, its area on the map is ${mapArea}`;
   return `<div data-tip="${tip}" data-col="area">~${area}</div>`;
 }
@@ -130,7 +111,6 @@ function open(): void {
   closeDialogs(`#${dialogId}, .stable`);
 
   renderDialog();
-  measureOceans();
   updateSubtypeFilter();
   featuresTable.reset();
 
@@ -187,18 +167,17 @@ function renderDialog(): void {
   ensureEl("featuresSearch").addEventListener("input", onFilterChange);
   ensureEl("featuresFilterType").addEventListener("change", onTypeFilterChange);
   ensureEl("featuresFilterSubtype").addEventListener("change", onFilterChange);
+  bindRowActions(ensureEl("featuresBody"));
 }
 
 function closeFeaturesOverview(): void {
   destroyDialog(dialogId);
-  oceanAreas = new Map();
   const view = featuresTable.view();
   view.rows = [];
   view.all = [];
 }
 
 function refreshOverview(): void {
-  measureOceans();
   updateSubtypeFilter();
   featuresTable.reset();
 }
@@ -302,22 +281,40 @@ function renderFeaturesPage(view: TableView<Feature>): void {
   const totalArea = view.all.reduce((sum, feature) => sum + getCalculatedArea(feature), 0);
   ensureEl("featuresFooterArea").innerHTML = `${si(getArea(totalArea))} ${unit}`;
 
-  for (const line of Array.from(body.querySelectorAll<HTMLElement>(":scope > div.states"))) {
-    line.addEventListener("mouseenter", featureHighlightOn);
-    line.addEventListener("mouseleave", featureHighlightOff);
-  }
-  body.querySelectorAll("div > span.icon-target").forEach(el => void el.addEventListener("click", zoomToFeature));
-  body.querySelectorAll("div > input.featureName").forEach(el => void el.addEventListener("input", changeName));
-  body.querySelectorAll("div > select.featureSubtype").forEach(el => void el.addEventListener("change", changeSubtype));
-  body.querySelectorAll("div select.featureGroup").forEach(el => void el.addEventListener("change", changeGroup));
-  body.querySelectorAll("div span.featureGroupStyle").forEach(el => void el.addEventListener("click", editGroupStyle));
-  body.querySelectorAll("div > span.icon-book").forEach(el => void el.addEventListener("click", editNote));
-  body.querySelectorAll("div > span.icon-pencil").forEach(el => void el.addEventListener("click", openLakeEditor));
-  body
-    .querySelectorAll("div > span.featureCoastline")
-    .forEach(el => void el.addEventListener("click", openCoastlineEditor));
-
   renderEditorPagination(ensureEl("featuresFooter"), view, featuresTable.goto);
+}
+
+// one listener per event on the body serves every row
+const rowActions: Record<string, Record<string, (element: HTMLElement) => void>> = {
+  click: {
+    "span.icon-target": zoomToFeature,
+    "span.featureGroupStyle": editGroupStyle,
+    "span.icon-book": editNote,
+    "span.icon-pencil": openLakeEditor,
+    "span.featureCoastline": openCoastlineEditor
+  },
+  input: { "input.featureName": changeName },
+  change: { "select.featureSubtype": changeSubtype, "select.featureGroup": changeGroup }
+};
+
+function bindRowActions(body: HTMLElement): void {
+  for (const [type, actions] of Object.entries(rowActions)) {
+    body.addEventListener(type, event => {
+      const target = event.target as HTMLElement;
+      for (const [selector, action] of Object.entries(actions)) {
+        if (target.matches(selector)) return action(target);
+      }
+    });
+  }
+  const rowOf = (node: EventTarget | null) => (node instanceof Element ? node.closest<HTMLElement>(".states") : null);
+  body.addEventListener("mouseover", event => {
+    const row = rowOf(event.target);
+    if (row && row !== rowOf(event.relatedTarget)) featureHighlightOn(row);
+  });
+  body.addEventListener("mouseout", event => {
+    const row = rowOf(event.target);
+    if (row && row !== rowOf(event.relatedTarget)) featureHighlightOff();
+  });
 }
 
 const getFeature = (element: HTMLElement): Feature => pack.features[getRowId(element)];
@@ -328,8 +325,8 @@ const getOceanPath = (featureId: number) => {
   return getVertexPath(cellIds, pack);
 };
 
-function featureHighlightOn(this: HTMLElement): void {
-  const feature = getFeature(this);
+function featureHighlightOn(row: HTMLElement): void {
+  const feature = getFeature(row);
   if (!feature) return;
   highlightOutline(feature.type === "ocean" ? getOceanPath(feature.i) : getFeaturePath(feature.i));
 }
@@ -344,8 +341,8 @@ function featureHighlightOff(): void {
 }
 
 // an ocean's vertex ring is open at the map border, so bound it by its cells
-function zoomToFeature(this: HTMLElement): void {
-  const feature = getFeature(this);
+function zoomToFeature(element: HTMLElement): void {
+  const feature = getFeature(element);
   const points =
     feature.type === "ocean"
       ? Array.from(pack.cells.i)
@@ -364,36 +361,36 @@ function zoomToFeature(this: HTMLElement): void {
   highlightArea({ x: minX, y: minY, width: maxX - minX, height: maxY - minY }, 3);
 }
 
-function changeName(this: HTMLInputElement): void {
-  getFeature(this).name = this.value.trim();
+function changeName(input: HTMLElement): void {
+  getFeature(input).name = (input as HTMLInputElement).value.trim();
 }
 
-function changeSubtype(this: HTMLSelectElement): void {
-  getFeature(this).subtype = this.value; // no cascade: generators pick it up on the next run
+function changeSubtype(select: HTMLElement): void {
+  getFeature(select).subtype = (select as HTMLSelectElement).value; // no cascade: generators pick it up on the next run
 }
 
-function changeGroup(this: HTMLSelectElement): void {
-  getFeature(this).group = this.value;
+function changeGroup(select: HTMLElement): void {
+  getFeature(select).group = (select as HTMLSelectElement).value;
   Layers.draw("lakes");
 }
 
 // lakes are styled by #lakes > g, islands by #coastline > g
-function editGroupStyle(this: HTMLElement): void {
-  const feature = getFeature(this);
+function editGroupStyle(element: HTMLElement): void {
+  const feature = getFeature(element);
   editStyle(feature.type === "lake" ? "lakes" : "coastline", feature.group);
 }
 
-function editNote(this: HTMLElement): void {
-  void Controllers.NotesEditor.open({ type: "feature", id: getRowId(this) });
+function editNote(element: HTMLElement): void {
+  void Controllers.NotesEditor.open({ type: "feature", id: getRowId(element) });
 }
 
-function openLakeEditor(this: HTMLElement): void {
-  const element = findEl("lakes")?.querySelector<SVGElement>(`use[data-f="${getRowId(this)}"]`);
-  if (element) void Controllers.LakesEditor.open(element);
+function openLakeEditor(element: HTMLElement): void {
+  const use = findEl("lakes")?.querySelector<SVGElement>(`use[data-f="${getRowId(element)}"]`);
+  if (use) void Controllers.LakesEditor.open(use);
 }
 
-function openCoastlineEditor(this: HTMLElement): void {
-  void Controllers.CoastlineEditor.open(getRowId(this));
+function openCoastlineEditor(element: HTMLElement): void {
+  void Controllers.CoastlineEditor.open(getRowId(element));
 }
 
 function downloadFeaturesData(): void {
@@ -408,7 +405,7 @@ function downloadFeaturesData(): void {
       feature.subtype,
       feature.group,
       getArea(getCalculatedArea(feature)),
-      getArea(getMapArea(feature)),
+      getArea(feature.area),
       feature.border
     ];
     data += `${cells.join(",")}\n`;

@@ -1,5 +1,5 @@
+import Alea from "alea";
 import type { Point } from "@/types/global";
-import { createRandom } from "@/utils";
 import { getHeightContourChains } from "./heightmap-contours";
 
 export interface HachureParams {
@@ -62,16 +62,11 @@ export function getSlopeGradients(points: Point[], heights: ArrayLike<number>, n
   return gradients;
 }
 
-/**
- * Hachures in the engraved manner: straight tapered strokes down the fall line, seeded along the
- * elevation levels, packed and heavy where the ground is steep, thinning out towards the foot of
- * the slope. The ground above the top level stays white, which is what draws the crest lines.
- * Returns one filled path of stroke outlines
- */
+/** Engraved hachures: tapered strokes down the fall line, seeded along the levels, denser where steep. One filled path */
 export function getHachures(params: HachureParams): string {
   const { points, heights, neighbors, triangles, spacing, cellsX, cellsY, inBand } = params;
   const { thresholds, density, length, width, seed } = params;
-  const random = createRandom(seed);
+  const random = Alea(seed);
   const gradients = getSlopeGradients(points, heights, neighbors);
   const weightOf = (slope: number) => Math.min(1, Math.max(0, (slope - MIN_SLOPE) / (FULL_SLOPE - MIN_SLOPE)));
   let lowestLevel = Infinity;
@@ -115,31 +110,7 @@ export function getHachures(params: HachureParams): string {
   const gap = (spacing * ROW_GAP) / density;
   const parts: string[] = [];
 
-  for (const chain of getHeightContourChains(points, heights, triangles, thresholds)) {
-    const levelWeight = Math.min(1, Math.max(0, levelOf(chain.height)));
-    const levelDensity = MIN_LEVEL_DENSITY + (MAX_LEVEL_DENSITY - MIN_LEVEL_DENSITY) * levelWeight ** LEVEL_POWER;
-    if (random() > levelDensity) continue;
-    const row = chain.closed ? [...chain.points, chain.points[0]] : chain.points;
-    let untilNext = random() * gap;
-    for (let i = 1; i < row.length; i++) {
-      const [x0, y0] = row[i - 1];
-      const [x1, y1] = row[i];
-      const segment = Math.hypot(x1 - x0, y1 - y0);
-      let along = untilNext;
-      while (along < segment) {
-        const t = along / segment;
-        const { path, weight } = trace(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t);
-        if (path) parts.push(path);
-        // steep ground packs the strokes: the gap shrinks with the slope
-        along += gap * (1.6 - weight) * (0.65 + random() * 0.7);
-      }
-      untilNext = along - segment;
-    }
-  }
-
-  return parts.join("");
-
-  function trace(x: number, y: number): { path: string | null; weight: number } {
+  const trace = (x: number, y: number): { path: string | null; weight: number } => {
     const none = { path: null, weight: 0 };
     const cell = cellAt(x, y);
     if (cell < 0 || !inBand(heights[cell])) return none;
@@ -175,7 +146,31 @@ export function getHachures(params: HachureParams): string {
       path: taper(x, y, dx * Math.min(run, wanted), dy * Math.min(run, wanted), rootWidth),
       weight
     };
+  };
+
+  for (const chain of getHeightContourChains(points, heights, triangles, thresholds)) {
+    const levelWeight = Math.min(1, Math.max(0, levelOf(chain.height)));
+    const levelDensity = MIN_LEVEL_DENSITY + (MAX_LEVEL_DENSITY - MIN_LEVEL_DENSITY) * levelWeight ** LEVEL_POWER;
+    if (random() > levelDensity) continue;
+    const row = chain.closed ? [...chain.points, chain.points[0]] : chain.points;
+    let untilNext = random() * gap;
+    for (let i = 1; i < row.length; i++) {
+      const [x0, y0] = row[i - 1];
+      const [x1, y1] = row[i];
+      const segment = Math.hypot(x1 - x0, y1 - y0);
+      let along = untilNext;
+      while (along < segment) {
+        const t = along / segment;
+        const { path, weight } = trace(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t);
+        if (path) parts.push(path);
+        // steep ground packs the strokes: the gap shrinks with the slope
+        along += gap * (1.6 - weight) * (0.65 + random() * 0.7);
+      }
+      untilNext = along - segment;
+    }
   }
+
+  return parts.join("");
 }
 
 /** the outline of a straight stroke: `rootWidth` wide at (x, y), a sharp point at (x + dx, y + dy) */

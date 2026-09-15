@@ -12,6 +12,7 @@ Check out [Dev board](https://github.com/users/Azgaar/projects/3/views/1?sumFiel
 
 Current version of the Fantasy Map Generator is the latest `master` branch. You can download it here: https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/heads/master.zip. Also see [the wiki](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#can-i-use-the-generator-offline).
 
+- Omnibar: global map search, press Space to open [1.153.0]
 - Style presets: Ink, Cinderwood and Frostbite [1.153.0]
 - Heightmap: hachures alongside contour lines [1.153.0]
 - Ocean: coastal waves and coastal bands [1.153.0]
@@ -21,8 +22,8 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Performance: a preset on the Options tab and a settings dialog [1.153.0]
 - Geographical Features Overview [1.153.0]
 - Coastline Editor: customizable per feature [1.153.0]
-- Wrap Tool: reshape cells with a brush [1.153.0]
 - Wrap Tool: reshape cells with a brush; it replaces per-vertex dragging in the Coastline and Lake editors [1.153.0]
+- Dialogs: titlebar button to restore the default position, columns and sorting [1.153.0]
 - Coastlines: local roughness instead of global [1.153.0]
 - Multiple legend boxes can be shown at the same time by _[esullivan9](https://github.com/esullivan9)_
 - Diplomacy: click states on the map to select relations

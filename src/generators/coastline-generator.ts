@@ -1,3 +1,4 @@
+import Alea from "alea";
 import type { Point } from "@/types/global";
 import { clipPoly, minmax, round } from "../utils";
 import type { Feature } from "./features-generator";
@@ -41,18 +42,12 @@ const DEFAULT_COASTLINE: Readonly<CoastlineSettings> = {
 
 const SIMPLIFICATION_TOLERANCE = 0.3;
 
-// The noise is indexed by geometry, never by position in a sequence: the displacement of a segment is a
-// pure function of where that segment is, so editing one vertex leaves the rest of the coast untouched.
-
+// noise is keyed by position, not by sequence index, so editing one vertex leaves the rest of the coast untouched
 const QUANTUM = 64; // coordinates are keyed to 1/64 of a map unit, below which a move changes nothing
 const OCTAVE_WEIGHT = 0.35; // share of the roughness field coming from the half-scale octave
 const FIELD_STRETCH = 1.9; // interpolated noise clusters around ½; spread it like the profile it replaces
 
-/**
- * Owns everything coastlines: the user-tunable settings, the fractal displacement of the
- * feature outlines and the SVG path built from them. Renderers and editors ask it for a path,
- * they never fractalize on their own.
- */
+/** Owns the coastline settings, the fractal displacement and the path built from it: nobody else fractalizes */
 class CoastlineGenerator {
   /** Settings of the map on screen: a fact, read at render time and saved with the file */
   get settings(): CoastlineSettings {
@@ -71,14 +66,7 @@ class CoastlineGenerator {
 
   /** The seed a feature's coastline is generated from: its own, and the same after any redraw */
   featureSeed(featureId: number, settings = this.settings): number {
-    return this.seedFrom(`${options.map.seed}_c${featureId}_${settings.variant}`);
-  }
-
-  /** Stable integer seed for a seed string, so a map and a feature keep their coastline */
-  seedFrom(text: string): number {
-    let h = 0x811c9dc5 | 0;
-    for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 0x01000193);
-    return h | 0;
+    return Alea(`${options.map.seed}_c${featureId}_${settings.variant}`).uint32() | 0;
   }
 
   /** The settings a feature's shore is displaced with: a lake shore is calmer by its multiplier */
@@ -105,23 +93,14 @@ class CoastlineGenerator {
   getFeatureShape(feature: Feature, outline = this.getFeatureOutline(feature)): FractalizedShape {
     const settings = this.shoreSettings(feature);
     if (outline.length < 3 || !settings.enabled) return { points: outline, origIndices: outline.map((_, i) => i) };
-    return this.fractalizePolygon(outline, this.featureSeed(feature.i, settings), settings);
+    return this.fractalize(outline, this.featureSeed(feature.i, settings), settings);
   }
 
   /** Closed SVG path of the feature outline, fractalized as configured */
   getFeaturePath(feature: Feature): string {
     const outline = this.getFeatureOutline(feature);
     if (!outline.length) return "";
-    return `${round(this.buildCoastlinePath(this.getFeatureShape(feature, outline)))}Z`;
-  }
-
-  /** Displace a polygon into a naturalistic coastline. Deterministic: the same seed and settings repeat the shape */
-  fractalize(points: Point[], seed: number, settings = this.settings): FractalizedShape {
-    return this.fractalizePolygon(points, seed, settings);
-  }
-
-  buildPath(shape: FractalizedShape): string {
-    return this.buildCoastlinePath(shape);
+    return `${round(this.buildPath(this.getFeatureShape(feature, outline)))}Z`;
   }
 
   /** Roughness of the field along a line of points: which stretches of a coast are jagged and which stay calm */
@@ -133,24 +112,20 @@ class CoastlineGenerator {
     return profile;
   }
 
-  /**
-   * How rough the coast is at a place, in [0, 1]. Two octaves of value noise, so a coast has both large
-   * calm and rough stretches and smaller variation inside them. Roughness belongs to the place, not to a
-   * position along the perimeter: that is what keeps a local edit local.
-   */
+  /** Roughness at a place in [0, 1]: two octaves of value noise, keyed by position so a local edit stays local */
   roughnessAt(seed: number, x: number, y: number, settings = this.settings): number {
     const scale = Math.max(settings.roughnessScale, 1);
     const base = this.fieldAt(seed, x, y, scale);
     const detail = this.fieldAt(seed ^ 0x9e3779b9, x, y, scale / 2);
     const combined = base * (1 - OCTAVE_WEIGHT) + detail * OCTAVE_WEIGHT;
 
-    // interpolated noise clusters around ½, while the harmonic profile this replaces was stretched over
-    // its whole range; without the same spread here the contrast below would flatten every coast
+    // interpolated noise clusters around ½; spread it over the full range or the contrast flattens every coast
     const spread = minmax((combined - 0.5) * FIELD_STRETCH + 0.5, 0, 1);
     return spread ** settings.roughnessContrast;
   }
 
-  private fractalizePolygon(points: Point[], seed: number, settings: CoastlineSettings): FractalizedShape {
+  /** Displace a polygon into a naturalistic coastline. Deterministic: the same seed and settings repeat the shape */
+  fractalize(points: Point[], seed: number, settings = this.settings): FractalizedShape {
     const n = points.length;
     const resultPts: Point[] = [];
     const origIndices: number[] = [];
@@ -235,7 +210,7 @@ class CoastlineGenerator {
    * Smooth span: Q midpoint B-spline — identical to curveBasisClosed. Produces flowing arcs that hide Voronoi angularity.
    * Jagged span: centripetal Catmull-Rom (α=0.5) through every fractal sub-point. Rounds sharp kinks into gentle curves.
    */
-  private buildCoastlinePath({ points, origIndices }: FractalizedShape): string {
+  buildPath({ points, origIndices }: FractalizedShape): string {
     const N = points.length;
     const M = origIndices.length;
     if (N < 3 || M < 3) return "";

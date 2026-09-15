@@ -11,14 +11,18 @@ function bandRadius(bands: CoastalBands, index: number): number {
   return bands.spacing * (index + 0.15 * index * (index - 1));
 }
 
-export function drawCoastalBands(): void {
-  const group = ensureEl<SVGGElement>("oceanBands");
-  group.replaceChildren();
+export function removeCoastalBands(): void {
+  ensureEl("oceanBands").replaceChildren();
   for (const id of ["coastal-bands-mask", "coastal-bands-lines", "coastal-bands-shade"]) {
     document.getElementById(id)?.remove();
   }
+}
+
+export function drawCoastalBands(): void {
+  removeCoastalBands();
   const bands = styles.ocean.options.bands;
   if (!bands.render) return;
+  const group = ensureEl<SVGGElement>("oceanBands");
 
   const { width, height } = options.map.graph;
   const land = pack.features.filter(feature => feature?.land);
