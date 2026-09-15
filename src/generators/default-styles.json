@@ -217,6 +217,15 @@
           "stroke-dasharray": null,
           "stroke-linecap": null,
           "filter": null
+        },
+        "options": {
+          "embellishment": "none",
+          "density": 1,
+          "length": 1,
+          "halo": 0.2,
+          "color": "#000000",
+          "width": 0.3,
+          "opacity": 0.6
         }
       },
       "salt": {
@@ -229,6 +238,15 @@
           "stroke-dasharray": null,
           "stroke-linecap": null,
           "filter": null
+        },
+        "options": {
+          "embellishment": "none",
+          "density": 1,
+          "length": 1,
+          "halo": 0.2,
+          "color": "#000000",
+          "width": 0.3,
+          "opacity": 0.6
         }
       },
       "sinkhole": {
@@ -241,6 +259,15 @@
           "stroke-dasharray": null,
           "stroke-linecap": null,
           "filter": null
+        },
+        "options": {
+          "embellishment": "none",
+          "density": 1,
+          "length": 1,
+          "halo": 0.2,
+          "color": "#000000",
+          "width": 0.3,
+          "opacity": 0.6
         }
       },
       "frozen": {
@@ -253,6 +280,15 @@
           "stroke-dasharray": null,
           "stroke-linecap": null,
           "filter": null
+        },
+        "options": {
+          "embellishment": "none",
+          "density": 1,
+          "length": 1,
+          "halo": 0.2,
+          "color": "#000000",
+          "width": 0.3,
+          "opacity": 0.6
         }
       },
       "lava": {
@@ -265,6 +301,15 @@
           "stroke-dasharray": null,
           "stroke-linecap": null,
           "filter": "url(#crumpled)"
+        },
+        "options": {
+          "embellishment": "none",
+          "density": 1,
+          "length": 1,
+          "halo": 0.2,
+          "color": "#000000",
+          "width": 0.3,
+          "opacity": 0.6
         }
       },
       "dry": {
@@ -277,6 +322,15 @@
           "stroke-dasharray": null,
           "stroke-linecap": null,
           "filter": null
+        },
+        "options": {
+          "embellishment": "none",
+          "density": 1,
+          "length": 1,
+          "halo": 0.2,
+          "color": "#000000",
+          "width": 0.3,
+          "opacity": 0.6
         }
       }
     }
@@ -954,7 +1008,7 @@
           },
           "options": {
             "size": 1.9,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "city": {
@@ -971,7 +1025,7 @@
           },
           "options": {
             "size": 1.5,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "fort": {
@@ -988,7 +1042,7 @@
           },
           "options": {
             "size": 0.7,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "monastery": {
@@ -1005,7 +1059,7 @@
           },
           "options": {
             "size": 0.7,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "caravanserai": {
@@ -1022,7 +1076,7 @@
           },
           "options": {
             "size": 0.7,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "trading_post": {
@@ -1039,7 +1093,7 @@
           },
           "options": {
             "size": 0.7,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "village": {
@@ -1056,7 +1110,7 @@
           },
           "options": {
             "size": 0.7,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "hamlet": {
@@ -1073,7 +1127,7 @@
           },
           "options": {
             "size": 0.5,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "town": {
@@ -1090,7 +1144,7 @@
           },
           "options": {
             "size": 1,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         }
       }

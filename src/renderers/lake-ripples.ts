@@ -1,7 +1,7 @@
 import type { Styles } from "@/generators/styles-schema";
-import { createRandom } from "./heightmap-hachures";
+import { createRandom } from "@/utils";
 
-export type LakeEmbellishment = Styles["lakes"]["freshwater"]["options"];
+export type LakeEmbellishment = Styles["lakes"]["groups"][string]["options"];
 
 /** Fine shore ripples for lakes; a few open strokes for ponds. */
 export function getLakeRipples(points: [number, number][], spacing: number, style: LakeEmbellishment, seed: string) {

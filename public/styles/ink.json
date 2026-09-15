@@ -219,13 +219,13 @@
           "filter": null
         },
         "options": {
-          "embellishment": "none",
-          "density": 1,
-          "length": 1,
-          "halo": 0.2,
+          "embellishment": "ripples",
+          "density": 2,
+          "length": 0.4,
+          "halo": 0.1,
           "color": "#000000",
-          "width": 0.3,
-          "opacity": 0.6
+          "width": 0.2,
+          "opacity": 0.7
         }
       },
       "salt": {
@@ -240,13 +240,13 @@
           "filter": null
         },
         "options": {
-          "embellishment": "none",
-          "density": 1,
-          "length": 1,
-          "halo": 0.2,
+          "embellishment": "ripples",
+          "density": 4,
+          "length": 0.2,
+          "halo": 0.1,
           "color": "#000000",
-          "width": 0.3,
-          "opacity": 0.6
+          "width": 0.2,
+          "opacity": 0.7
         }
       },
       "sinkhole": {

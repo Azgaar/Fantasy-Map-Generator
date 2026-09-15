@@ -1,4 +1,5 @@
 import type { Point } from "@/types/global";
+import { createRandom } from "@/utils";
 import { getHeightContourChains } from "./heightmap-contours";
 
 export interface HachureParams {
@@ -24,7 +25,6 @@ const WIDTH = 0.2; // root width of a stroke at width 1, in map units
 const ROW_SCATTER = 0.45; // a seed slides this far down the fall line at most, in cell spacings, so rows don't show
 const ROOT_JITTER = 0.06; // lateral root jitter, in cell spacings
 const ANGLE_JITTER = 0.05; // slight heading variation, in radians
-const TIP_WIDTH = 0; // hachures finish in a sharp point
 const MIN_LENGTH = 0.15; // shortest stroke, as a share of the longest: a few strokes are mere ticks
 const FADE_STEPS = 2; // steps a stroke keeps running past the foot of the slope
 // slopes in height units per cell spacing: terrain is generated per cell, so this holds across graph densities
@@ -169,41 +169,18 @@ export function getHachures(params: HachureParams): string {
     if (run < step) return { path: null, weight };
     const rootWidth = WIDTH * width * (0.4 + 0.6 * weight) * (0.75 + random() * 0.5);
     return {
-      path: taper(
-        x,
-        y,
-        dx * Math.min(run, wanted),
-        dy * Math.min(run, wanted),
-        rootWidth,
-        rootWidth * random() * TIP_WIDTH
-      ),
+      path: taper(x, y, dx * Math.min(run, wanted), dy * Math.min(run, wanted), rootWidth),
       weight
     };
   }
 }
 
-/** the outline of a straight stroke: `rootWidth` wide at (x, y), `tipWidth` wide at (x + dx, y + dy) */
-export function taper(x: number, y: number, dx: number, dy: number, rootWidth: number, tipWidth = 0): string {
+/** the outline of a straight stroke: `rootWidth` wide at (x, y), a sharp point at (x + dx, y + dy) */
+export function taper(x: number, y: number, dx: number, dy: number, rootWidth: number): string {
   const d = Math.hypot(dx, dy) || 1;
   const ax = -dy / d; // across the stroke
   const ay = dx / d;
   const f = (v: number) => v.toFixed(2);
   const root = `M${f(x + (ax * rootWidth) / 2)},${f(y + (ay * rootWidth) / 2)}`;
-  if (!tipWidth) {
-    return `${root}l${f(dx - (ax * rootWidth) / 2)},${f(dy - (ay * rootWidth) / 2)}l${f(-dx - (ax * rootWidth) / 2)},${f(-dy - (ay * rootWidth) / 2)}Z`;
-  }
-  const half = (rootWidth - tipWidth) / 2;
-  return `${root}l${f(dx - ax * half)},${f(dy - ay * half)}l${f(-ax * tipWidth)},${f(-ay * tipWidth)}l${f(-dx - ax * half)},${f(-dy - ay * half)}Z`;
-}
-
-/** mulberry32 over a string hash: the map seed decides the strokes, the shared PRNG stays untouched */
-export function createRandom(seed: string): () => number {
-  let state = 1779033703;
-  for (let i = 0; i < seed.length; i++) state = Math.imul(state ^ seed.charCodeAt(i), 3432918353);
-  return () => {
-    state = (state + 0x6d2b79f5) | 0;
-    let t = Math.imul(state ^ (state >>> 15), 1 | state);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
+  return `${root}l${f(dx - (ax * rootWidth) / 2)},${f(dy - (ay * rootWidth) / 2)}l${f(-dx - (ax * rootWidth) / 2)},${f(-dy - (ay * rootWidth) / 2)}Z`;
 }

@@ -21,10 +21,10 @@ export function drawLakes(layer: Layer): void {
   }
 
   for (const group of groups) group.replaceChildren(...(uses[group.id] || []));
-  drawLakeEmbellishments();
+  drawLakeEmbellishments(layer);
 }
 
-export function drawLakeEmbellishments(): void {
+export function drawLakeEmbellishments(layer: Layer): void {
   for (const node of document.querySelectorAll("[data-lake-embellishment]")) node.remove();
   const defs = document.getElementById("deftemp");
   if (!defs) return;
@@ -33,9 +33,8 @@ export function drawLakeEmbellishments(): void {
     .map(feature => `<use href="#feature_${feature.i}" fill="black" stroke="black"></use>`)
     .join("");
 
-  for (const use of document.querySelectorAll("#lakes > g > use[data-f]")) {
-    const group = use.parentElement!.id as keyof typeof styles.lakes;
-    const style = styles.lakes[group]?.options;
+  for (const use of layer.getEl().querySelectorAll(":scope > g > use[data-f]")) {
+    const style = styles.lakes.groups[use.parentElement!.id]?.options;
     if (!style || style.embellishment === "none") continue;
     const feature = pack.features[Number(use.getAttribute("data-f"))];
     const points = feature.vertices.map(vertex => pack.vertices.p[vertex]);

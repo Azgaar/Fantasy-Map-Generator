@@ -193,7 +193,7 @@ function selectLakeGroup(): void {
 function changeLakeGroup(this: HTMLSelectElement): void {
   ensureEl(this.value).appendChild(selectedLake.node()!);
   assignGroup([selectedLake.node()!], this.value);
-  drawLakeEmbellishments();
+  drawLakeEmbellishments(Layers.get("lakes"));
 }
 
 function toggleNewGroupInput(): void {
@@ -243,7 +243,7 @@ function createNewGroup(this: HTMLInputElement): void {
     oldGroup.id = group;
     oldGroup.dataset.group = group;
     assignGroup(Array.from(oldGroup.children), group);
-    drawLakeEmbellishments();
+    drawLakeEmbellishments(Layers.get("lakes"));
     toggleNewGroupInput();
     ensureEl<HTMLInputElement>("lakeGroupName").value = "";
     return;
@@ -257,7 +257,7 @@ function createNewGroup(this: HTMLInputElement): void {
   ensureEl<HTMLSelectElement>("lakeGroup").options.add(new Option(group, group, false, true));
   ensureEl(group).appendChild(selectedLake.node()!);
   assignGroup([selectedLake.node()!], group);
-  drawLakeEmbellishments();
+  drawLakeEmbellishments(Layers.get("lakes"));
 
   toggleNewGroupInput();
   ensureEl<HTMLInputElement>("lakeGroupName").value = "";
@@ -286,7 +286,7 @@ function removeLakeGroup(): void {
           freshwater.appendChild(groupEl.childNodes[0]);
         }
         groupEl.remove();
-        drawLakeEmbellishments();
+        drawLakeEmbellishments(Layers.get("lakes"));
         delete styles.lakes.groups[group];
         ensureEl<HTMLSelectElement>("lakeGroup").selectedOptions[0].remove();
         ensureEl<HTMLSelectElement>("lakeGroup").value = "freshwater";

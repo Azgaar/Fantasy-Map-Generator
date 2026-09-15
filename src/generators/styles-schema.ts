@@ -71,13 +71,22 @@ const heights = z.strictObject({
       .default({ mode: "off", density: 1, length: 1, width: 1, color: "#5c513e", opacity: 0.65 })
   })
 });
+const burgGroupAttrs = z.strictObject({
+  opacity,
+  ...fillAttrs,
+  ...strokeAttrs,
+  "stroke-linejoin": strokeLinejoin,
+  filter
+});
 const burgGroup = z.strictObject({
-  attrs: z.strictObject({ opacity, ...fillAttrs, ...strokeAttrs, "stroke-linejoin": strokeLinejoin, filter }),
+  attrs: burgGroupAttrs,
   options: z.strictObject({ size: z.number(), icon: z.string(), dx: z.number().optional(), dy: z.number().optional() })
 });
+// anchors ignored icon before ports became stylable, so older records carry the burg default: keep drawing the anchor
+const anchorIcon = z.string().transform(icon => (icon === "#icon-circle" ? "#icon-anchor" : icon));
 const anchorGroup = z.strictObject({
-  attrs: z.strictObject({ opacity, ...fillAttrs, ...strokeAttrs, "stroke-linejoin": strokeLinejoin, filter }),
-  options: z.strictObject({ size: z.number(), icon: z.string(), dx: z.number().optional(), dy: z.number().optional() })
+  attrs: burgGroupAttrs,
+  options: burgGroup.shape.options.extend({ icon: anchorIcon })
 });
 const emblemGroup = z.strictObject({ options: z.strictObject({ size: z.number() }) });
 

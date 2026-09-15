@@ -1,5 +1,5 @@
 import type { Styles } from "@/generators/styles-schema";
-import { createRandom } from "./heightmap-hachures";
+import { createRandom } from "@/utils";
 
 export interface CoastalWaveParams {
   width: number;

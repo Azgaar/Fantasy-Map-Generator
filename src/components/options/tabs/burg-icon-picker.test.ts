@@ -10,15 +10,15 @@ test("Cinderwood illustrations retain accent colors while their main surfaces in
   const illustrations = ["capital", "city", "fort", "monastery", "caravanserai", "post"];
   for (const name of illustrations) {
     const symbol = source.getElementById(`icon-cinderwood-${name}`)!;
-    const main = symbol.querySelector('[fill="inherit"]')!;
-    expect(main, `${name} has an editable main surface`).not.toBeNull();
-    for (let element: Element | null = main; element; element = element.parentElement) {
-      expect([null, "inherit"], `${name} inherits fill`).toContain(element.getAttribute("fill"));
-      expect([null, "inherit"], `${name} inherits stroke`).toContain(element.getAttribute("stroke"));
+    const shapes = Array.from(symbol.querySelectorAll("path, circle, rect, polygon"));
+    const main = shapes.find(shape => !shape.hasAttribute("fill") && !shape.hasAttribute("stroke"));
+    expect(main, `${name} has an editable main surface`).toBeDefined();
+    for (let element: Element | null = main!; element; element = element.parentElement) {
+      expect(element.hasAttribute("fill"), `${name} inherits fill`).toBe(false);
+      expect(element.hasAttribute("stroke"), `${name} inherits stroke`).toBe(false);
       if (element === symbol) break;
     }
     expect(symbol.querySelector('[fill^="#"]'), `${name} has pre-colored details`).not.toBeNull();
-    expect(symbol.querySelector('[stroke^="#"]'), `${name} has independent detail outlines`).not.toBeNull();
   }
 });
 

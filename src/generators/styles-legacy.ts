@@ -653,7 +653,7 @@ export function stripDisplay(style: string | null): string | null {
 }
 
 // legacy wrote stored burg-group bags to the DOM verbatim with no per-key defaults; only
-// size and icon are required by the renderer (anchors ignore icon - they always draw #icon-anchor)
+// size and icon are required by the renderer (the schema turns the burg default into the anchor for ports)
 export function burgGroupFromLegacy(legacy: unknown): Styles["burgIcons"]["burgIcons"]["groups"][string] {
   const bag = legacy as Record<string, unknown>;
   return {

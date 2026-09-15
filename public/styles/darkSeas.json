@@ -883,7 +883,7 @@
           },
           "options": {
             "size": 1.9,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "city": {
@@ -900,7 +900,7 @@
           },
           "options": {
             "size": 2,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "fort": {
@@ -917,7 +917,7 @@
           },
           "options": {
             "size": 0.7,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "monastery": {
@@ -934,7 +934,7 @@
           },
           "options": {
             "size": 0.7,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "caravanserai": {
@@ -951,7 +951,7 @@
           },
           "options": {
             "size": 0.7,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "trading_post": {
@@ -968,7 +968,7 @@
           },
           "options": {
             "size": 0.7,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "village": {
@@ -985,7 +985,7 @@
           },
           "options": {
             "size": 0.7,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "hamlet": {
@@ -1002,7 +1002,7 @@
           },
           "options": {
             "size": 0.5,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "town": {
@@ -1019,7 +1019,7 @@
           },
           "options": {
             "size": 1.25,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         }
       }

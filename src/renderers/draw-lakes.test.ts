@@ -43,7 +43,7 @@ describe("lake embellishment rendering", () => {
     const layer = createLayer(["freshwater", "salt", "dry"]);
     document.querySelector("svg")!.insertAdjacentHTML("afterbegin", '<defs id="deftemp"></defs>');
     globalThis.styles = stylesSchema.parse(defaults);
-    styles.lakes.freshwater.options.embellishment = "ripples";
+    styles.lakes.groups.freshwater.options.embellishment = "ripples";
     globalThis.grid = { spacing: 8 } as typeof grid;
     globalThis.pack = {
       features: [
@@ -81,7 +81,7 @@ describe("lake embellishment rendering", () => {
     drawLakes(layer);
     expect(document.querySelector("svg")!.innerHTML).toBe(first);
     expect(document.querySelector("#lakes use[data-f]")).toBe(selected);
-    styles.lakes.freshwater.options.embellishment = "none";
+    styles.lakes.groups.freshwater.options.embellishment = "none";
     drawLakes(layer);
     expect(document.querySelectorAll("[data-lake-embellishment]")).toHaveLength(0);
     expect(document.querySelectorAll("#lakes use[data-f]")).toHaveLength(1);

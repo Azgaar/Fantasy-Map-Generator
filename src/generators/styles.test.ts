@@ -1,9 +1,11 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, test, vi } from "vitest";
-import cinderwood from "../../public/styles/cinderwood.json";
-import ink from "../../public/styles/ink.json";
 import { Styles } from "./styles";
 import { stylesSchema } from "./styles-schema";
+
+const readPreset = (name: string) => JSON.parse(readFileSync(`public/styles/${name}.json`, "utf8"));
+const cinderwood = readPreset("cinderwood");
+const ink = readPreset("ink");
 
 describe("stylesSchema", () => {
   test("the default styles are valid — defaults and schema cannot drift", () => {
@@ -34,13 +36,13 @@ describe("parseStyles", () => {
 
   test("older lakes gain disabled embellishments and ink settings survive serialization", () => {
     const doc = structuredClone(Styles.defaults);
-    const { options: _, ...freshwater } = doc.lakes.freshwater;
-    const parsed = Styles.parse({ ...doc, lakes: { ...doc.lakes, freshwater } });
-    expect(parsed.lakes.freshwater.options.embellishment).toBe("none");
-    expect(parsed.lakes.freshwater.attrs).toEqual(freshwater.attrs);
+    const { options: _, ...freshwater } = doc.lakes.groups.freshwater;
+    const parsed = Styles.parse({ ...doc, lakes: { groups: { ...doc.lakes.groups, freshwater } } });
+    expect(parsed.lakes.groups.freshwater.options.embellishment).toBe("none");
+    expect(parsed.lakes.groups.freshwater.attrs).toEqual(freshwater.attrs);
     const inkStyles = Styles.parse(ink);
-    expect(inkStyles.lakes.freshwater.options.embellishment).toBe("ripples");
-    expect(inkStyles.lakes.dry.options.embellishment).toBe("none");
+    expect(inkStyles.lakes.groups.freshwater.options.embellishment).toBe("ripples");
+    expect(inkStyles.lakes.groups.dry.options.embellishment).toBe("none");
     expect(Styles.parse(JSON.parse(JSON.stringify(inkStyles)))).toEqual(inkStyles);
   });
 
@@ -58,9 +60,10 @@ describe("parseStyles", () => {
   });
 
   test("older heightmap styles gain disabled hachures", () => {
-    const doc = structuredClone(Styles.defaults) as any;
-    delete doc.heightmap.landHeights.options.hachures;
-    const parsed = Styles.parse(doc);
+    const doc = structuredClone(Styles.defaults);
+    const { hachures: _, ...options } = doc.heightmap.landHeights.options;
+    const landHeights = { ...doc.heightmap.landHeights, options };
+    const parsed = Styles.parse({ ...doc, heightmap: { ...doc.heightmap, landHeights } });
     expect(parsed.heightmap.landHeights.options.hachures).toEqual(
       Styles.defaults.heightmap.landHeights.options.hachures
     );
@@ -175,11 +178,11 @@ describe("schema reconciliation", () => {
 describe("per-attribute repair", () => {
   test("an invalid attribute falls back alone, not with its whole layer", () => {
     const doc = structuredClone(Styles.defaults) as any;
-    doc.provinces.attrs.opacity = 0.6;
-    doc.provinces.attrs["font-family"] = null; // non-nullable in the schema
+    doc.temperature.attrs.opacity = 0.6;
+    doc.temperature.attrs["font-size"] = null; // non-nullable in the schema
     const parsed = Styles.parse(doc);
-    expect(parsed.provinces.attrs.opacity).toBe(0.6);
-    expect(parsed.provinces.attrs["font-family"]).toBe(Styles.defaults.provinces.attrs["font-family"]);
+    expect(parsed.temperature.attrs.opacity).toBe(0.6);
+    expect(parsed.temperature.attrs["font-size"]).toBe(Styles.defaults.temperature.attrs["font-size"]);
   });
 
   test("a layer that cannot be repaired still falls back whole", () => {
@@ -231,15 +234,15 @@ describe("port icon styles", () => {
     const restored = Styles.parse(JSON.parse(JSON.stringify(parsed)));
     const groups = restored.burgIcons.anchors.groups;
     expect(Object.keys(groups).sort()).toEqual(Object.keys(parsed.burgIcons.burgIcons.groups).sort());
-    for (const [name, group] of Object.entries(groups)) {
-      expect(group.options).toEqual(
-        cinderwood.burgIcons.anchors.groups[name as keyof typeof cinderwood.burgIcons.anchors.groups].options
-      );
-      expect(group.options.icon).toBe("#icon-harbor");
-      expect(group.options.dx).toBeLessThan(0);
-      expect(Number.isFinite(group.options.dy)).toBe(true);
-    }
     const source = readFileSync("src/index.html", "utf8");
-    expect(source.includes('id="icon-harbor"')).toBe(true);
+    const icons = new Set<string>();
+    for (const [name, group] of Object.entries(groups)) {
+      expect(group.options).toEqual(cinderwood.burgIcons.anchors.groups[name].options);
+      expect(source.includes(`id="${group.options.icon.slice(1)}"`)).toBe(true);
+      expect(Number.isFinite(group.options.dx)).toBe(true);
+      expect(Number.isFinite(group.options.dy)).toBe(true);
+      icons.add(group.options.icon);
+    }
+    expect(icons).toEqual(new Set(["#icon-anchor", "#icon-harbor"])); // shifted anchors on big burgs, harbors on small
   });
 });

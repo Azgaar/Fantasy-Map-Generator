@@ -1,4 +1,3 @@
-import { select } from "d3";
 import { tip } from "@/components/tooltips";
 import { ensureEl } from "../utils";
 
