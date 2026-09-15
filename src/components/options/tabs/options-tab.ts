@@ -69,7 +69,8 @@ const OPTION_BINDINGS: Record<string, OptionBinding> = {
     read: o => o.generation.lakeElevationLimit,
     write: (o, value) => (o.generation.lakeElevationLimit = value),
     parse: Number,
-    pin: "lakeElevationLimit"
+    pin: "lakeElevationLimit",
+    effect: () => customization === 1 && Controllers.HeightmapEditor.redrawDrainage() // the heightmap editor's overlay
   }),
   cultures: option({
     read: o => o.generation.cultures.limit,

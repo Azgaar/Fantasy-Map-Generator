@@ -34,6 +34,7 @@ const latestPublicChanges = [
   "Coastlines: roughness localized to coastline section",
   "Performance Settings",
   "Dialogs: titlebar button to restore the default position, columns and sorting",
+  "Heightmap Editor: 'Show drainage' overlay",
   "Heightmap: option to render contour lines",
   "Ability to override a burg's treasury",
   "Dialogs: preserve position between sessions",

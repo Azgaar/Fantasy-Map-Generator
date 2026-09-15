@@ -68,6 +68,10 @@ You can add and remove relief icons on the map with the Relief Editor: turn the 
 
 Rulers are managed by the Measurers Editor: Tools -> Measurers (Shift + =). There you can place a linear ruler, an opisometer (curve length), a route opisometer (a curve that sticks to routes) and a planimeter (polygon area). Remove a single measurer from the list in the editor or use the trash button to remove them all
 
+### Why do lakes appear after editing the heightmap? How do I see where water flows?
+
+Rivers need every land cell to have a lower neighbour to flow to, so on finalization the generator fills closed depressions or turns deep ones into lakes. To see them before that, tick "Show drainage" in the Tools tab while editing the heightmap: every land cell gets an arrow pointing where its water flows, thicker where more cells drain through, and depressions water cannot leave are hatched in black, or hatched in blue when they are deep enough (see the depression depth threshold) to become lakes with water erosion allowed. The view stays on while you paint and updates after each edit, so lower a rim to give a basin an outlet, or raise its floor, until the hatching is gone
+
 ### How do I change the heightmap on a small scale?
 
 Open Tools -> Heightmap and pick an edit mode, then use the brushes on the top right with a small radius. If the elevation is already right and you only dislike the outline, reshape the cells themselves with the Wrap Tool (Tools -> Create -> Wrap, or Shift + W)
