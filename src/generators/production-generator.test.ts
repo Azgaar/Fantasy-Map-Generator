@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { Burg } from "./burgs-generator";
 import type { Good } from "./goods-generator";
 import { type Market, MarketsModule } from "./markets-generator";
-import { ProductionModule } from "./production-generator";
+import { isMfgRecord, ProductionModule } from "./production-generator";
 
 const good = (i: number, name: string, value: number, recipes?: Good["recipes"]): Good => ({
   i,
@@ -43,9 +43,9 @@ beforeEach(() => {
 });
 
 function prepare(inventory: number[] = []) {
-  // biome-ignore lint/complexity/useLiteralKeys: private planner seam
+  // biome-ignore lint/complexity/useLiteralKeys: private test access
   const index = production["buildProductionIndex"](catalogue);
-  // biome-ignore lint/complexity/useLiteralKeys: private planner seam
+  // biome-ignore lint/complexity/useLiteralKeys: private test access
   const state = production["createBurgProductionState"](burg, market, index);
   state.inventory = inventory;
   return { index, state };
@@ -53,7 +53,7 @@ function prepare(inventory: number[] = []) {
 
 function plan(output: number, workers: number, inventory: number[] = []) {
   const { index, state } = prepare(inventory);
-  // biome-ignore lint/complexity/useLiteralKeys: private planner seam
+  // biome-ignore lint/complexity/useLiteralKeys: private test access
   return production["planGoodAction"](index, state, catalogue[output - 1], 1, 1, workers, {
     multiplier: 1,
     category: null
@@ -73,9 +73,9 @@ describe("manufacturing work with stocked inputs", () => {
   it("executes the engine-then-ship chain with two workers and consumes the right inputs", () => {
     burg.population = 2;
     const { index, state } = prepare();
-    // biome-ignore lint/complexity/useLiteralKeys: exercises planning and real market purchases together
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
     production["runWorkerLoop"](index, state);
-    expect(state.records.filter(record => "recipe" in record).map(record => [record.goodId, record.units])).toEqual([
+    expect(state.records.filter(isMfgRecord).map(record => [record.goodId, record.units])).toEqual([
       [4, 1],
       [5, 1]
     ]);
@@ -100,9 +100,9 @@ describe("manufacturing work with stocked inputs", () => {
     market.goods[2].stock = 2;
     market.goods[3].stock = 10;
     const { index, state } = prepare();
-    // biome-ignore lint/complexity/useLiteralKeys: exercises planning and real market purchases together
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
     production["runWorkerLoop"](index, state);
-    expect(state.records.filter(record => "recipe" in record).map(record => [record.goodId, record.units])).toEqual([
+    expect(state.records.filter(isMfgRecord).map(record => [record.goodId, record.units])).toEqual([
       [4, 1],
       [5, 1]
     ]);
@@ -147,7 +147,7 @@ describe("manufacturing work with stocked inputs", () => {
     catalogue[1].recipes = [{ 1: 1 }];
     catalogue[4].recipes = [{ 2: 1, 4: 1 }];
     market.goods[2].stock = 0;
-    market.goods[1].stock = 4; // engine uses 2 directly and another 2 through tools; ship needs one more tool
+    market.goods[1].stock = 4;
     expect(plan(5, 100)).toBeNull();
     market.goods[1].stock = 5;
     expect(plan(5, 5)?.workersNeeded).toBe(5);

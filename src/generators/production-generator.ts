@@ -482,7 +482,7 @@ export class ProductionModule {
     const missing: Ingredient[] = [];
     let marketCost = 0;
 
-    // Reserve the entire recipe before planning its missing inputs, including stock shared by its branches.
+    // Reserve shared inputs before recursing.
     for (const { goodId, amount } of recipe.ingredients) {
       quotes[goodId] ??= Markets.quoteMarket(state.market, goodId);
       const quote = quotes[goodId];
@@ -648,7 +648,7 @@ export class ProductionModule {
   ): ProductionDecision | null {
     const candidates: ProductionCandidate[] = [];
     const demandFocus = this.getDemandFocus(demandTargets, demandCoverage);
-    const quotes: MarketQuote[] = []; // stock and prices only change after a decision is executed
+    const quotes: MarketQuote[] = []; // No trades occur within a decision.
 
     let chosenGoal: GoalActionPlan | null = null;
     let activeGoal: GoalActionPlan | null = null;
