@@ -15,9 +15,14 @@ const SWATCH_X = 4;
 const SWATCH_SIZE = 16;
 const PICKER_WIDTH = 315;
 
+/** Close the picker if it is open, releasing the caller callback */
+function close(): void {
+  document.getElementById("pickerContainer")?.remove();
+}
+
 /** Open the picker for the current fill, calling back on every pick */
 function open(fill: string, callback: (fill: string) => void): void {
-  document.getElementById("pickerContainer")?.remove();
+  close();
   const container = renderPicker();
   addListeners(container, callback);
 
@@ -334,4 +339,4 @@ function onPickerDrag(this: SVGGElement, event: D3DragEvent<SVGGElement, unknown
   });
 }
 
-export const ColorPicker = { open };
+export const ColorPicker = { open, close };

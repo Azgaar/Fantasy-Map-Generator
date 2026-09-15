@@ -138,7 +138,6 @@ a {
 }
 
 #lakes,
-#coastline,
 #armies,
 #ice,
 #emblems,
@@ -245,7 +244,11 @@ t,
   pointer-events: none;
 }
 
-#terrain,
+#terrain {
+  fill-rule: nonzero;
+  cursor: pointer;
+}
+
 #burgIcons {
   cursor: pointer;
 }
@@ -281,6 +284,8 @@ i.icon-lock {
 #labels {
   text-anchor: middle;
   dominant-baseline: central;
+  paint-order: stroke; /* a label stroke is a halo under the glyphs, never an outline over them */
+  stroke-linejoin: round;
   cursor: pointer;
 }
 
@@ -2102,10 +2107,10 @@ div.textual span,
 }
 
 .highlighted {
-  outline-width: 2px;
-  outline-style: dashed;
-  outline-color: #0da6ff;
-  outline-offset: 100px;
+  stroke: #0da6ff;
+  stroke-width: 3px;
+  stroke-dasharray: 6 6;
+  vector-effect: non-scaling-stroke;
   fill: none;
 }
 
@@ -2235,7 +2240,7 @@ svg.button {
 }
 
 #worldControls {
-  width: 16em;
+  width: 18em;
   display: inline-block;
   vertical-align: top;
 }

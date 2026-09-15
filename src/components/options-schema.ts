@@ -76,8 +76,9 @@ export const coastlineSettings = z.strictObject({
   minEdge: nonNegative,
   smoothThreshold: nonNegative,
   roughnessContrast: nonNegative,
-  profileHarmonics: count,
-  lakeSmoothThreshMult: nonNegative
+  roughnessScale: nonNegative,
+  lakeSmoothThreshMult: nonNegative,
+  variant: count
 });
 
 /** where the map sits on the globe */
@@ -176,12 +177,13 @@ export const optionsSchema = z.strictObject({
   /** how the app itself behaves: applied at once, generating nothing, describing no map */
   app: z.strictObject({
     notesPinned: z.boolean(),
-    // "show everything regardless of zoom" is this browser inspecting the map, not the map itself
     emblems: z.strictObject({ showAll: z.boolean(), shape: z.string().min(1) }),
     labels: z.strictObject({ showAll: z.boolean() }),
-    rendering: z.enum(["geometricPrecision", "optimizeSpeed"]), // the viewbox shape-rendering
-    // when the viewport layers are rewritten during a zoom: every frame, or once the gesture settles
-    viewportRedraw: z.enum(["continuous", "settled"]),
+    performance: z.strictObject({
+      shapeRendering: z.enum(["geometricPrecision", "auto", "optimizeSpeed", "crispEdges"]),
+      stateHalos: z.boolean(),
+      viewportRedraw: z.enum(["continuous", "settled"])
+    }),
     onLoad: z.enum(["random", "lastSaved"]), // what the app does with no map asked for
     zoomExtent: z.strictObject({ min: positive, max: positive }).refine(({ min, max }) => min <= max, {
       message: "zoomExtent.min must not exceed max"

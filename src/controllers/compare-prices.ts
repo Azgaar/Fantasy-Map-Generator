@@ -1,4 +1,4 @@
-import { updateDialog } from "@/components/dialog/dialog-helpers";
+import { destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
   type EditorColumn,
@@ -67,7 +67,7 @@ function open(goodId?: number, anchor = "#marketsOverview"): void {
 }
 
 function renderDialog(): void {
-  document.getElementById(dialogId)?.remove();
+  destroyDialog(dialogId);
   const editorHtml = /* html */ `<div id="${dialogId}" class="dialog editorDialog">
       <div style="display:flex; align-items:center; gap:.5em; padding:.2em 0 .4em; font-size:.9em;">
         <label for="marketsGoodCompareSelect" data-tip="Select good to compare stock across markets">Good:</label>

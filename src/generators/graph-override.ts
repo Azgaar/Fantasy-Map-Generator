@@ -18,13 +18,20 @@ class GraphOverrideModule {
   private overrides: GraphOverrides = {};
 
   movePackVertex(vertexId: number, point: Point): void {
+    this.movePackVertices([[vertexId, point]]);
+  }
+
+  movePackVertices(points: Iterable<[number, Point]>): void {
     if (this.vertices !== pack.vertices) this.reset();
-
-    const [from] = this.movedVertices[vertexId] ?? [pack.vertices.p[vertexId]];
-    this.movedVertices[vertexId] = [from, point];
-    pack.vertices.p[vertexId] = point;
-
-    refreshDerivedData([vertexId]);
+    const changed: number[] = [];
+    for (const [vertexId, point] of points) {
+      const [from] = this.movedVertices[vertexId] ?? [pack.vertices.p[vertexId]];
+      if (String(from) === String(point)) delete this.movedVertices[vertexId];
+      else this.movedVertices[vertexId] = [from, point];
+      pack.vertices.p[vertexId] = point;
+      changed.push(vertexId);
+    }
+    refreshDerivedData(changed);
   }
 
   get state(): GraphOverrides {
@@ -50,8 +57,24 @@ class GraphOverrideModule {
     refreshDerivedData(restored);
   }
 
-  clear(): void {
+  /** put every moved vertex back where the generator placed it */
+  revert(): void {
+    if (this.vertices !== pack.vertices) {
+      this.reset();
+      return;
+    }
+
+    const moved = Object.entries(this.movedVertices);
+    for (const [id, [from]] of moved) pack.vertices.p[Number(id)] = from as Point;
+
     this.reset();
+    refreshDerivedData(moved.map(([id]) => Number(id)));
+  }
+
+  /** drop the reference to the world being replaced; the next move/restore starts a fresh baseline */
+  clear(): void {
+    this.vertices = null;
+    this.overrides = {};
   }
 
   private reset(): void {

@@ -1,4 +1,5 @@
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
+import { dialogState } from "@/components/dialog/state";
 import type { Limits } from "@/services/help/api";
 import { ask, getLimits, HelpApiError, OFFICIAL_ORIGIN, sendFeedback, signIn, signOut } from "@/services/help/api";
 import { getToken } from "@/services/help/auth";
@@ -71,28 +72,9 @@ function open(): void {
 
   markBubble(true);
   if (isOfficialOrigin()) {
-    addTitlebarNewChat();
+    dialogState.onReset("helpAssistant", "chat", resetConversationLog);
     void refreshLimits();
   }
-}
-
-// "New chat" belongs with close and minimize — a window action, not chat content. Putting it
-// in the titlebar keeps the body a pure transcript and inherits the FMG button styling.
-function addTitlebarNewChat(): void {
-  const titlebar = document
-    .getElementById("helpAssistant")
-    ?.closest(".ui-dialog")
-    ?.querySelector(".ui-dialog-titlebar");
-  if (!titlebar || titlebar.querySelector("#helpAssistantNewChat")) return;
-
-  const button = document.createElement("button");
-  button.type = "button";
-  button.id = "helpAssistantNewChat";
-  button.className = "helpAssistantNewChat icon-ccw";
-  button.title = "Start a new chat";
-  button.setAttribute("aria-label", "Start a new chat");
-  button.addEventListener("click", resetConversationLog);
-  titlebar.insertBefore(button, titlebar.querySelector(".ui-dialog-titlebar-collapse"));
 }
 
 function renderDialog(): void {
@@ -104,7 +86,6 @@ function renderDialog(): void {
     <style>
       #helpAssistant.ui-dialog-content { display: flex; flex-direction: column; gap: .5em; overflow: hidden; padding: .6em .7em .5em; font-family: var(--sans-serif); }
       #helpAssistant > div          { width: auto; }
-      .ui-dialog-titlebar .helpAssistantNewChat { font-size: .62em; }
 
       #helpAssistant .helpAssistantLog   { flex: 1; min-height: 0; overflow: hidden auto; padding-right: .2em; line-height: 1.4; }
       #helpAssistant .helpAssistantMsg   { display: flex; margin-bottom: .55em; }

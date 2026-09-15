@@ -228,7 +228,7 @@ function selectFeaturesLimitation(el: HTMLElement): void {
   const features = [
     { name: "capital", icon: "icon-star" },
     { name: "port", icon: "icon-anchor" },
-    { name: "citadel", icon: "icon-chess-rook" },
+    { name: "palace", icon: "icon-chess-rook" },
     { name: "walls", icon: "icon-fort-awesome" },
     { name: "plaza", icon: "icon-store" },
     { name: "temple", icon: "icon-chess-bishop" },

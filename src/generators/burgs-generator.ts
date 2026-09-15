@@ -6,7 +6,7 @@ import type { Emblem } from "@/types/emblems";
 import { safeParseJSON } from "@/utils/stringUtils";
 import { each, gauss, minmax, normalize, P, rn } from "../utils";
 import { type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
-import { NON_NAVIGABLE_LAKE_GROUPS } from "./features";
+import { NON_NAVIGABLE_LAKE_SUBTYPES } from "./features-generator";
 import type { Label } from "./labels-generator";
 import { Population } from "./population-generator";
 import type { ProductionRecord } from "./production-generator";
@@ -243,7 +243,7 @@ class BurgModule {
         const featureId = cells.f[haven];
         const feature = pack.features[featureId];
         if (!feature || feature.cells <= 1) continue; // no navigable water body
-        if (NON_NAVIGABLE_LAKE_GROUPS.has(feature.group)) continue;
+        if (NON_NAVIGABLE_LAKE_SUBTYPES.has(feature.subtype)) continue;
         if (temp[cells.g[burg.cell]] <= 0) continue; // frozen
 
         const portFeatureId =
@@ -493,12 +493,12 @@ class BurgModule {
   /** burg groups can exist without a style entry (the Burg Groups editor, presets that don't
    * list them) - without one the renderer falls back to the default group and edits never persist */
   ensureBurgGroupStyles(): void {
-    for (const type of ["burgIcons", "anchors"] as const) {
-      const { groups } = styles.burgIcons[type];
-      const template = groups.town || Object.values(groups)[0] || Styles.defaults.burgIcons[type].groups.town;
-      for (const { name } of options.map.burgs.groups) {
-        if (!groups[name]) groups[name] = structuredClone(template);
-      }
+    const { burgIcons, anchors } = styles.burgIcons;
+    const iconTemplate = burgIcons.groups.town || Object.values(burgIcons.groups)[0];
+    const anchorTemplate = anchors.groups.town || Object.values(anchors.groups)[0];
+    for (const { name } of options.map.burgs.groups) {
+      if (!burgIcons.groups[name] && iconTemplate) burgIcons.groups[name] = structuredClone(iconTemplate);
+      if (!anchors.groups[name] && anchorTemplate) anchors.groups[name] = structuredClone(anchorTemplate);
     }
   }
 

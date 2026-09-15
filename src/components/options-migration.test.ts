@@ -27,6 +27,24 @@ it("converts the pipe settings still written by master 1.151.2", () => {
   expect(safeParseJSON(data[1])).toBeTruthy();
 });
 
+it("drops a setting the current shape no longer has, and keeps the rest of the section", () => {
+  // the coastline settings lost profileHarmonics in 1.153.0: parseSections strips what it does not know
+  // and fills what is missing from the defaults, so a change like this needs no migration of its own
+  const saved = structuredClone(Options.getDefaultOptions().map) as Record<string, unknown>;
+  const coastline = { ...Options.getDefaultOptions().map.coastline, maxDepth: 3, profileHarmonics: 8 } as Record<
+    string,
+    unknown
+  >;
+  delete coastline.roughnessScale;
+  saved.coastline = coastline;
+
+  Options.applyLoaded(saved);
+
+  expect(options.map.coastline.maxDepth).toBe(3);
+  expect("profileHarmonics" in options.map.coastline).toBe(false);
+  expect(options.map.coastline.roughnessScale).toBe(Options.getDefaultOptions().map.coastline.roughnessScale);
+});
+
 it("preserves the grid's legacy requested density", () => {
   const data = legacyFile();
   data[6] = JSON.stringify({ ...JSON.parse(data[6]), cellsDesired: 100000 });

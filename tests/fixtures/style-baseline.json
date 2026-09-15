@@ -182,7 +182,9 @@
   },
   "#oceanicPattern": {
     "opacity": "0.15",
-    "href": ""
+    "href": "",
+    "width": "100",
+    "height": "100"
   },
   "#population": {
     "stroke-width": "1.6",
@@ -420,63 +422,72 @@
     "fill": "#ffffff",
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
-    "font-size": "1.9"
+    "font-size": "1.9",
+    "data-icon": "#icon-anchor"
   },
   "#anchors > g#city": {
     "opacity": "1",
     "fill": "#ffffff",
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
-    "font-size": "1.5"
+    "font-size": "1.5",
+    "data-icon": "#icon-anchor"
   },
   "#anchors > g#town": {
     "opacity": "1",
     "fill": "#ffffff",
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
-    "font-size": "1"
+    "font-size": "1",
+    "data-icon": "#icon-anchor"
   },
   "#anchors > g#village": {
     "opacity": "1",
     "fill": "#ffffff",
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
-    "font-size": "0.7"
+    "font-size": "0.7",
+    "data-icon": "#icon-anchor"
   },
   "#anchors > g#hamlet": {
     "opacity": "1",
     "fill": "#ffffff",
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
-    "font-size": "0.5"
+    "font-size": "0.5",
+    "data-icon": "#icon-anchor"
   },
   "#anchors > g#fort": {
     "opacity": "1",
     "fill": "#ffffff",
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
-    "font-size": "0.7"
+    "font-size": "0.7",
+    "data-icon": "#icon-anchor"
   },
   "#anchors > g#monastery": {
     "opacity": "1",
     "fill": "#ffffff",
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
-    "font-size": "0.7"
+    "font-size": "0.7",
+    "data-icon": "#icon-anchor"
   },
   "#anchors > g#caravanserai": {
     "opacity": "1",
     "fill": "#ffffff",
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
-    "font-size": "0.7"
+    "font-size": "0.7",
+    "data-icon": "#icon-anchor"
   },
   "#anchors > g#trading_post": {
     "opacity": "1",
     "fill": "#ffffff",
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
-    "font-size": "0.7"
+    "font-size": "0.7",
+    "data-icon": "#icon-anchor"
   },
   "#labels > [data-group=\"capital\"]": {
     "opacity": "1",

@@ -297,7 +297,7 @@ export const initializePrompt = (): void => {
   const prompt = document.getElementById("prompt");
   if (!prompt) return;
 
-  const form = prompt.querySelector("#promptForm");
+  const form = prompt.querySelector<HTMLFormElement>("#promptForm");
   if (!form) return;
 
   const defaultText = "Please provide an input";
@@ -337,22 +337,20 @@ export const initializePrompt = (): void => {
     input.style.width = promptText.length > 10 ? "100%" : "auto";
     prompt.style.display = "block";
 
-    form.addEventListener(
-      "submit",
-      (event: Event) => {
-        event.preventDefault();
-        prompt.style.display = "none";
-        const v = type === "number" ? +input.value : input.value;
-        if (callback) callback(v);
-      },
-      { once: true }
-    );
+    form.onsubmit = (event: SubmitEvent) => {
+      event.preventDefault();
+      prompt.style.display = "none";
+      form.onsubmit = null;
+      const v = type === "number" ? +input.value : input.value;
+      if (callback) callback(v);
+    };
   };
 
   const cancel = prompt.querySelector("#promptCancel");
   if (cancel) {
     cancel.addEventListener("click", () => {
       prompt.style.display = "none";
+      form.onsubmit = null;
     });
   }
 };

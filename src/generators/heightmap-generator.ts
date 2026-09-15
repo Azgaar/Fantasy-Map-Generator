@@ -19,7 +19,8 @@ class HeightmapModule {
   private width = 0;
   private height = 0;
 
-  private clearData() {
+  /** drop the graph and heights copy; the caller owns the grid, keeping it here pins a replaced world */
+  clearData() {
     this.heights = null;
     this.grid = null;
   }
@@ -589,7 +590,7 @@ class HeightmapModule {
   }
 
   fromPrecreated(graph: GridGraph, id: string, config: MapData["graph"] = options.map.graph): Promise<Uint8Array> {
-    return new Promise(resolve => {
+    return new Promise((resolve, reject) => {
       // create canvas where 1px corresponds to a cell
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
@@ -597,13 +598,17 @@ class HeightmapModule {
       canvas.width = cellsX;
       canvas.height = cellsY;
 
-      // load heightmap into image and render to canvas
       const img = new Image();
-      img.src = `./heightmaps/${id}.png`;
+      const fail = (message: string) => {
+        canvas.remove();
+        img.remove();
+        reject(new Error(message));
+      };
+
+      // load heightmap into image and render to canvas
+      img.onerror = () => fail(`Cannot load heightmap ${id}`);
       img.onload = () => {
-        if (!ctx) {
-          throw new Error("Could not get canvas context");
-        }
+        if (!ctx) return fail("Could not get canvas context");
         this.heights = this.heights || new Uint8Array(cellsX * cellsY);
         ctx.drawImage(img, 0, 0, cellsX, cellsY);
         const imageData = ctx.getImageData(0, 0, cellsX, cellsY);
@@ -613,6 +618,7 @@ class HeightmapModule {
         img.remove();
         resolve(this.heights);
       };
+      img.src = `./heightmaps/${id}.png`;
     });
   }
 

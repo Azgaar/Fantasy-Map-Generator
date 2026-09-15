@@ -57,6 +57,26 @@ describe("sorting state", () => {
     expect(dom.window.document.querySelector('[data-sortby="pop"]')!.className.includes("icon-sort")).toBe(false);
   });
 
+  it("reset returns the header to its default sorting", () => {
+    const dom = new JSDOM(`<div id="peopleHeader">
+      <div class="sortable alphabetically" data-sortby="name"></div>
+      <div class="sortable icon-sort-number-down" data-sortby="pop"></div>
+    </div>`);
+    vi.stubGlobal("document", dom.window.document);
+
+    const onSort = vi.fn();
+    bindColumnSorting("people", onSort);
+    dom.window.document.querySelector<HTMLElement>('[data-sortby="name"]')!.click();
+    dialogState.reset("people");
+
+    expect(onSort).toHaveBeenCalledTimes(2);
+    expect(dom.window.document.querySelector('[data-sortby="name"]')!.className.includes("icon-sort")).toBe(false);
+    expect(dom.window.document.querySelector('[data-sortby="pop"]')!.classList.contains("icon-sort-number-down")).toBe(
+      true
+    );
+    expect(dialogState.get("people", "sorting", () => null)).toBeNull();
+  });
+
   it("restores sorting for legacy DOM-sorted tables", () => {
     const dom = new JSDOM(`<div id="legacyHeader">
       <div class="sortable alphabetically" data-sortby="name"></div>

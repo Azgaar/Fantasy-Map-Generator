@@ -5,7 +5,7 @@ import { waitForMap } from "./wait-for-map";
 
 const PRESETS = [
   "default", "ancient", "gloom", "pale", "light", "watercolor",
-  "clean", "atlas", "darkSeas", "cyberpunk", "night", "monochrome"
+  "clean", "atlas", "darkSeas", "cyberpunk", "night", "monochrome", "ink", "cinderwood", "frostbite"
 ];
 
 function pinnedAttrs(preset: string): {oceanFill: string; landmassFill: string} {

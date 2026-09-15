@@ -13,7 +13,7 @@ import { countMaps, waitForMap, waitForNextMap } from "./wait-for-map";
 declare const changeStyle: (preset: string) => Promise<void>;
 declare const d3: { select: (selector: string) => { attr: (name: string, value: string) => unknown } };
 declare const Services: {
-  Save: { saveMap: (method: string) => Promise<void>; prepareMapData: () => string | Promise<string> };
+  Save: { toMachine: () => Promise<void>; prepareMapData: () => string | Promise<string> };
 };
 declare const styles: any;
 declare const options: { map: { style: { preset: string } } };
@@ -24,7 +24,7 @@ function readPreset(name: string): any {
 
 async function saveAsDownload(page: Page): Promise<Buffer> {
   const downloadPromise = page.waitForEvent("download");
-  await page.evaluate(() => Services.Save.saveMap("machine"));
+  await page.evaluate(() => Services.Save.toMachine());
   const download = await downloadPromise;
   return fs.readFileSync(await download.path());
 }

@@ -97,8 +97,7 @@ object. World-level prose already has a home in `options.map.lore.description`.
 
 ## Note resolution
 
-One module maps an SVG element id to an entity reference, used by the tooltip, the Notes Editor's
-focus/list, and the migration:
+`src/components/map-entities.ts` maps SVG elements to shared entity references and provides names, context, positions, and geometry. Tooltips, the Notes Editor, map search, and migration use this lookup:
 
 ```
 burg{i} | burgLabel{i}   → burgs[i]
@@ -249,8 +248,8 @@ cover `name` alongside `note` — it is the same lookup. Serves `heightmap-edito
 
 ### New
 
-- `src/generators/notes.ts` — resolution table, `getEntityLabel`, note get/set/clear,
-  aggregate walk for the editor and the font scan.
+- `src/components/notes.ts` — note get/set/clear and aggregation for the editor and font scan.
+- `src/components/map-entities.ts` — shared entity definitions, lookup, references, names, context, geometry, and SVG resolution.
 
 ### Docs
 

@@ -43,6 +43,14 @@ function buildTerritories(): void {
   sourceMarkets = pack.cells.market;
 }
 
+/** Layer teardown: drop the cached scene and the drawn content */
+export function removeMarkets(): void {
+  sourcePack = null;
+  sourceMarkets = null;
+  territories.clear();
+  document.getElementById("markets")?.replaceChildren();
+}
+
 function reconcileMarkets({ root, bounds }: ViewportRenderContext): void {
   const container = root.querySelector<SVGGElement>("#markets");
   if (!container || !Layers.isOn("markets")) return;

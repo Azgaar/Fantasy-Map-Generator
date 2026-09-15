@@ -13,7 +13,10 @@ const systemPresets = [
   "darkSeas",
   "cyberpunk",
   "night",
-  "monochrome"
+  "monochrome",
+  "ink",
+  "cinderwood",
+  "frostbite"
 ];
 const customPresetPrefix = "fmgStyle_";
 
@@ -98,6 +101,7 @@ function applyStylePreset(presetJson) {
   fillMissingLabelGroups();
   Burgs.ensureBurgGroupStyles();
   Routes.ensureRouteGroupStyles();
+  Lakes.ensureLakeGroupStyles();
   applyStoredStyles();
   applyReliefOptions(previousReliefSize);
   registerCustomScheme();
@@ -183,11 +187,17 @@ function addStylePreset() {
   isSaveStyleInitialized = true;
 
   // add listeners
+  const styleToLoad = document.createElement("input");
+  styleToLoad.type = "file";
+  styleToLoad.accept = ".json";
+  styleToLoad.style.display = "none";
+  document.body.append(styleToLoad);
+
   document.getElementById("styleSaverName").addEventListener("input", checkName);
   document.getElementById("styleSaverSave").addEventListener("click", saveStyle);
   document.getElementById("styleSaverDownload").addEventListener("click", styleDownload);
   document.getElementById("styleSaverLoad").addEventListener("click", () => styleToLoad.click());
-  document.getElementById("styleToLoad").addEventListener("change", loadStyleFile);
+  styleToLoad.addEventListener("change", loadStyleFile);
 
   function checkName() {
     const styleName = customPresetPrefix + styleSaverName.value;

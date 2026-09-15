@@ -17,7 +17,7 @@ import {
   stackOrderNone,
   sum
 } from "d3";
-import { closeDialogs, updateDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { downloadFile, getArea, getAreaUnit, getFileName, getHeight, getPrecipitation } from "@/utils";
 import { capitalize, convertTemperature, ensureEl, formatPrice, isWater, rn, si } from "../utils";
@@ -383,7 +383,7 @@ function open() {
 }
 
 function renderDialog() {
-  document.getElementById("chartsOverview")?.remove();
+  destroyDialog("chartsOverview");
   const entities = Object.entries(entitiesMap).map(([entity, { label }]): [string, string] => [entity, label]);
   const plotBy = Object.entries(quantizationMap).map(([plotBy, { label }]): [string, string] => [plotBy, label]);
 

@@ -22,6 +22,28 @@ shows more detail; every fifth contour is twice as thick. Spacing uses the map's
 or feet. The lines interpolate a gently smoothed surface without changing the terrain. These settings are
 saved with maps and custom style presets; contours are off by default.
 
+### Hachures
+
+Hachures are the engraved alternative to contours: short tapered pen strokes combed down the fall
+line, seeded along the elevation levels, packed and heavy where the ground is steep and thinning out
+towards the foot of the slope. Flat ground and the tops of crests draw nothing, so mountain ranges
+read as hatched masses with white crest lines. Open **Style → Heightmap**, choose the **landHeights**
+or **oceanHeights** group and set **Hachures** to **Over colors** or **Strokes only**. Ocean hachures
+also require **Render ocean heights** to be enabled.
+
+Adjust **Hachure density**, **length** and **width** (each relative to the default of 1), **color** and
+**opacity** independently for each group. Strokes are placed deterministically from the map seed, so a map redraws the same way. Hachures
+are saved with maps and custom style presets; the `ink` preset uses them in place of relief icons.
+
+The `ink` preset pairs land hachures with **Ocean embellishment** under **Style → Ocean**. Choose
+**Waves** or **Straight strokes** with the **Type** selector. Both types thin away
+from the coast, then resume in the distant sea. The clear band between them follows the continents.
+
+Tune **density**, **length**, **reach**, **stroke color**, **stroke width**, **opacity**, and the clear
+**Coastal gap**, and an optional SVG **Dash pattern** such as `3 2`. Reach and gap use cell spacings; width uses map pixels. A simple mask keeps the marks
+off land and lakes. The selected type and pattern are saved with maps and style presets; older styles
+retain Waves.
+
 ### Modes
 The heightmap editor offers three different modes to choose from. Its recommended to save your map beforehand.
 1. **Erase**:
