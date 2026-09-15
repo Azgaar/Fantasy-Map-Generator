@@ -1,4 +1,5 @@
 import { type Selection, select, zoom, zoomIdentity } from "d3";
+import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import type { Good } from "../generators/goods-generator";
 import { ensureEl } from "../utils";
@@ -150,7 +151,7 @@ function open() {
 }
 
 function renderDialog(): void {
-  document.getElementById("productionChainsDialog")?.remove();
+  destroyDialog("productionChainsDialog");
   const editorHtml = /* html */ `<div id="productionChainsDialog" class="dialog" style="padding:0">
       <div id="productionChainsContent" style="overflow:auto"></div>
     </div>`;

@@ -578,3 +578,10 @@ declare global {
     getVertexPath: typeof getVertexPath;
   }
 }
+
+/** An open wave dash: `halves` half-periods spanning `length` from (x, y), the first bump bending by `amplitude` */
+export function wavyDash(x: number, y: number, length: number, halves: number, amplitude: number): string {
+  const step = length / halves;
+  const f = (v: number) => v.toFixed(2);
+  return `M${f(x)},${f(y)}q${f(step / 2)},${f(amplitude)} ${f(step)},0${`t${f(step)},0`.repeat(halves - 1)}`;
+}

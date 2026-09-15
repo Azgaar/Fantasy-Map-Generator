@@ -66,10 +66,11 @@ test("a mismatched data-size/font-size pair is BLOCKED", () => {
   expect(() => presetFromLegacy(bad as any)).toThrow(/unknown legacy attribute/);
 });
 
-test("R7: #provs' dead data-size is dropped, not routed", () => {
-  const styles = presetFromLegacy({ "#provs": { "font-size": 10, "data-size": 10 } } as any);
-  expect(styles.provinces.attrs["font-size"]).toBe(10);
-  expect(JSON.stringify(styles).includes("data-size")).toBe(false);
+// province labels moved to a labels group, so #provs' text attrs are dead cargo alongside data-size
+test("R7: #provs' dead text attrs are dropped, not routed", () => {
+  const styles = presetFromLegacy({ "#provs": { "font-size": 10, "data-size": 10, "font-family": "Serif" } } as any);
+  expect(styles.provinces).toEqual(Styles.defaults.provinces);
+  expect(JSON.stringify(styles.provinces)).not.toMatch(/data-size|font-/);
 });
 
 // Pins the full custom-preset dialect: one bag per selector collectStyleData
@@ -85,16 +86,11 @@ test("R9: the legacy serializer's full attribute dialect converts with no unrout
   ).not.toHaveBeenCalled();
 });
 
-test("R9: #provs' data-size stays a ruled-drop (dead cargo) even in the full-dialect fixture", () => {
+test("R9: #provs' data-size and text attrs stay ruled-drops (dead cargo) even in the full-dialect fixture", () => {
   const styles = presetFromLegacy(serializerFixture as any);
-  expect(
-    "data-size" in (serializerFixture as any)["#provs"],
-    "the fixture must still carry the dead data-size key to exercise the drop"
-  ).toBe(true);
-  expect(
-    styles.provinces.attrs["font-size"],
-    "#provs' data-size never came from collectStyleData - it's dead cargo left beside font-size in older saves, and presetFromLegacy must drop it rather than let it clobber font-size"
-  ).toBe((serializerFixture as any)["#provs"]["font-size"]);
+  const provs = (serializerFixture as any)["#provs"];
+  expect("data-size" in provs && "font-size" in provs, "the fixture must still carry the dead keys").toBe(true);
+  expect(Object.keys(styles.provinces.attrs).sort()).toEqual(["filter", "opacity"]);
 });
 
 test("R9: #terrs > #landHeights never legitimately carried data-render, so it stays out of the fixture", () => {
@@ -107,7 +103,10 @@ test("R9: #terrs > #landHeights never legitimately carried data-render, so it st
 test("styleNodeFor resolves editor selections to live store nodes", () => {
   expect(styleNodeFor("rivers", "")).toEqual({ node: styles.rivers, layer: "rivers" });
   expect(styleNodeFor("rivers", "rivers")).toEqual({ node: styles.rivers, layer: "rivers" });
-  expect(styleNodeFor("lakes", "freshwater")).toEqual({ node: styles.lakes.freshwater, layer: "lakes" });
+  expect(styleNodeFor("lakes", "freshwater")).toEqual({ node: styles.lakes.groups.freshwater, layer: "lakes" });
+  styles.lakes.groups.my_lakes = structuredClone(styles.lakes.groups.freshwater);
+  expect(styleNodeFor("lakes", "my_lakes")).toEqual({ node: styles.lakes.groups.my_lakes, layer: "lakes" });
+  delete styles.lakes.groups.my_lakes;
   expect(styleNodeFor("terrs", "landHeights")).toEqual({ node: styles.heightmap.landHeights, layer: "heightmap" });
   expect(styleNodeFor("labels", "capital")).toEqual({ node: styles.labels.groups.capital, layer: "labels" });
   expect(styleNodeFor("burgIcons", "town")).toEqual({
@@ -165,6 +164,12 @@ test("labelGroupFromLegacy prefers a numeric data-size over font-size, stringifi
   expect(group.attrs["font-size"]).toBe("10");
 });
 
+test("labelGroupFromLegacy keeps font-weight", () => {
+  expect(labelGroupFromLegacy({ "font-weight": "600" }).attrs["font-weight"]).toBe(600);
+  expect(labelGroupFromLegacy({ "font-weight": "950" }).attrs["font-weight"]).toBe(950);
+  expect(labelGroupFromLegacy({}).attrs["font-weight"]).toBeNull();
+});
+
 // pre-1.140 zoom auto-visibility hid a burg tier with an inline display: none, and a map saved while
 // zoomed out carries it in the group's style attribute; harvested verbatim it hides the tier forever
 test("labelGroupFromLegacy drops the zoom auto-visibility display from the style", () => {
@@ -180,13 +185,13 @@ test("labelGroupFromLegacy drops the zoom auto-visibility display from the style
 
 const presetDir = path.join(__dirname, "../../public/styles");
 
-test("all 12 shipped presets parse as the new format with zero warnings", () => {
+test("all 14 shipped presets parse as the new format with zero warnings", () => {
   const files = fs
     .readdirSync(presetDir)
     .filter(f => f.endsWith(".json"))
     .map(f => path.join(presetDir, f));
   files.push(path.join(__dirname, "default-styles.json"));
-  expect(files).toHaveLength(12);
+  expect(files).toHaveLength(15);
   const warn = vi.spyOn(console, "warn");
   warn.mockClear();
   for (const file of files) {

@@ -132,11 +132,13 @@ export async function calculateLabelSpread(): Promise<LabelSpreadResult> {
   const visibleLabels = getVisibleLabels();
   if (!visibleLabels.length) return emptyResult();
 
-  const sandbox = new LabelMeasurementSandbox(visibleLabels);
+  let sandbox: LabelMeasurementSandbox | undefined;
   try {
+    const measurementSandbox = new LabelMeasurementSandbox(visibleLabels);
+    sandbox = measurementSandbox;
     const burgIconBounds = getDisplayedBurgIconBounds();
     const labelItems = visibleLabels.map(label =>
-      buildPlacementItem(label, sandbox.measure(label), sandbox, burgIconBounds)
+      buildPlacementItem(label, measurementSandbox.measure(label), measurementSandbox, burgIconBounds)
     );
     const items = [...labelItems, ...getBurgIconObstacles(burgIconBounds)];
 
@@ -150,7 +152,7 @@ export async function calculateLabelSpread(): Promise<LabelSpreadResult> {
       remainingOverlaps: solution.remainingOverlaps
     };
   } finally {
-    sandbox.destroy();
+    sandbox?.destroy();
   }
 }
 
@@ -473,10 +475,15 @@ class LabelMeasurementSandbox {
       renderedLabels?.getAttribute("font-size") || (renderedLabels && getComputedStyle(renderedLabels).fontSize);
     if (fontSize) this.root.setAttribute("font-size", fontSize);
     document.body.appendChild(this.root);
-
-    for (const groupName of new Set(labels.map(label => label.group)))
-      this.groups.set(groupName, this.createGroup(groupName));
     this.rootRect = this.root.getBoundingClientRect(); // fixed position and size, so it never moves
+
+    try {
+      for (const groupName of new Set(labels.map(label => label.group)))
+        this.groups.set(groupName, this.createGroup(groupName));
+    } catch (error) {
+      this.root.remove(); // a throwing constructor leaves no instance for the caller to destroy
+      throw error;
+    }
   }
 
   measure(label: LabelData): Measurement {

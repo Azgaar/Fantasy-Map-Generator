@@ -20,11 +20,21 @@ import { Pins } from "@/components/pins";
 import { tip } from "@/components/tooltips";
 import { isElectron } from "./platform";
 
-export const VERSION = "1.152.2";
+export const VERSION = "1.153.0";
 
 // new changes on top
 const latestPublicChanges = [
-  "Diplomacy: select relation targets on the map and repair invalid relations",
+  "Global map search (press Space to open)",
+  "New style presets: Ink, Cinderwood and Frostbite",
+  "Heightmap hachures, coastal bands and shore ripples embellishments",
+  "Labels styling: font weight, font style and text transform",
+  "Wrap Tool: reshape cells with a brush",
+  "Geographical Features Overview",
+  "Coastline Editor: customizable per feature",
+  "Coastlines: roughness localized to coastline section",
+  "Performance Settings",
+  "Dialogs: titlebar button to restore the default position, columns and sorting",
+  "Heightmap Editor: 'Show drainage' overlay",
   "Heightmap: option to render contour lines",
   "Ability to override a burg's treasury",
   "Dialogs: preserve position between sessions",
@@ -33,15 +43,7 @@ const latestPublicChanges = [
   "Notes: kept on the element they describe, and available for more element types",
   "Notes Editor: new rich text editor Quill2",
   "Goods, Rivers, Routes, Markers, Markets and Burg icons rendering optimization",
-  "Help assistant: ask questions about the Generator in the app",
-  "States and Provinces editors: annex by clicking on the map",
-  "Option to redraw labels, icons and relief only after a zoom",
-  "Brushes: smooth, gap-free painting at any screen refresh rate",
-  "Journey Editor and new Journeys layer",
-  "Desktop App",
-  "URL params to open specific layers or preset",
-  "Emblems rendering optimization",
-  "Dialogs state preserved between sessions"
+  "Help assistant: ask questions about the Generator in the app"
 ];
 
 export function parseMapVersion(version: string): string {
@@ -103,7 +105,7 @@ export async function clearCache(): Promise<void> {
   location.reload();
 }
 
-export const ARROW_TIP_KEY = "disable_click_arrow_tooltip";
+export const ARROW_TIP_KEY = "fmg-disable-click-arrow-tooltip";
 
 export async function cleanupData(): Promise<void> {
   localStorage.clear();

@@ -22,26 +22,27 @@ test.describe("Redraw on zoom option", () => {
   });
 
   test("defaults to redrawing while zooming and reconciles at gesture end", async ({page}) => {
-    expect(await page.locator("#viewportRedraw").inputValue()).toBe("continuous");
+    expect(await page.locator("#performancePreset").inputValue()).toBe("balance");
+    expect(await page.evaluate(() => (window as any).options.app.performance.viewportRedraw)).toBe("continuous");
     const before = await materialized(page);
     await wheelZoomIn(page);
     expect(await materialized(page)).not.toBe(before);
   });
 
   test("after-zoom mode still reconciles once the gesture settles and is remembered", async ({page}) => {
-    // the select sits in the collapsed options pane; drive it the way the pane's change listener sees it
+    // the preset select sits in the collapsed options pane; drive it the way the pane's change listener sees it
     await page.evaluate(() => {
-      const select = document.getElementById("viewportRedraw") as HTMLSelectElement;
-      select.value = "settled";
+      const select = document.getElementById("performancePreset") as HTMLSelectElement;
+      select.value = "speed";
       select.dispatchEvent(new Event("change", {bubbles: true}));
     });
     const before = await materialized(page);
     await wheelZoomIn(page);
     expect(await materialized(page)).not.toBe(before);
 
-    expect(await page.evaluate(() => (window as any).options.app.viewportRedraw)).toBe("settled");
+    expect(await page.evaluate(() => (window as any).options.app.performance.viewportRedraw)).toBe("settled");
     await page.reload();
     await waitForMap(page);
-    expect(await page.locator("#viewportRedraw").inputValue()).toBe("settled");
+    expect(await page.locator("#performancePreset").inputValue()).toBe("speed");
   });
 });

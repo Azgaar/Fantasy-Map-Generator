@@ -2,21 +2,26 @@
 import { color, min, select } from "d3";
 import { confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { type LayerId, Layers, type LayersState } from "@/components/layers";
+import { type EntityRef, MapEntities } from "@/components/map-entities";
+import { Notes } from "@/components/notes";
 import { normalizeLegacyBurgGroupFilters } from "@/components/options-legacy";
 import type { MapData } from "@/components/options-schema";
 import { RELIEF_SETS } from "@/data/relief-icons";
 import { Emblems } from "@/generators/emblems-generator";
+import { type Feature, LAKE_SUBTYPES, OCEAN_SUBTYPES } from "@/generators/features-generator";
 import type { GraphOverrides } from "@/generators/graph-override";
 import { type Label, type LabelNameMode, Labels as LabelsGenerator } from "@/generators/labels-generator";
 import { getDefaultMarkerName, type Marker } from "@/generators/markers-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
-import { type NoteRef, Notes } from "@/generators/notes";
 import {
   labelGroupFromLegacy,
+  lakeGroupFromSvg,
   migrateStyles,
   restoreStrippedLayerStyles,
-  stripDisplay
+  stripDisplay,
+  stylesFromMap
 } from "@/generators/styles-legacy";
+import type { Styles } from "@/generators/styles-schema";
 import type { Point } from "@/generators/voronoi";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { unfog } from "@/renderers/overlays/fogging";
@@ -477,7 +482,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
     // v1.6 changed lakes data
     for (const f of pack.features) {
-      if (f.type !== "lake") continue;
+      if (f?.type !== "lake") continue;
       if (f.evaporation) continue;
 
       f.flux = f.flux || f.cells * 3;
@@ -488,7 +493,6 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       const evaporation = ((700 * (f.temp + 0.006 * height)) / 50 + 75) / (80 - f.temp);
       f.evaporation = rn(evaporation * f.cells);
       if (!f.shoreline) f.shoreline = Lakes.defineShoreline(f);
-      f.name = f.name || Lakes.getName(f);
       delete f.river;
     }
   }
@@ -1853,7 +1857,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     const orphan = (note: LegacyNote) => void (note.legend && unattachedNotes.push(note));
 
     // the labels editor titled a state or province note with the short name, the entity name is the full one
-    const shortName = (ref: NoteRef): string | undefined =>
+    const shortName = (ref: EntityRef): string | undefined =>
       ref.type === "state"
         ? pack.states?.find(({ i }) => i === ref.id)?.name
         : ref.type === "province"
@@ -1863,7 +1867,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     const notedMarkers = new Set<Marker>();
 
     for (const note of legacyNotes) {
-      const ref = Notes.resolveElement(noteRenames.get(note.id) ?? note.id);
+      const ref = MapEntities.resolveElement(noteRenames.get(note.id) ?? note.id);
       if (!ref) {
         orphan(note);
         continue;
@@ -1886,7 +1890,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
       // a note titled differently from its entity keeps that title as a heading, so nothing is lost.
       // an untitled note was titled with its own element id, which is no title at all
-      const named = note.name === note.id || note.name === Notes.getEntityName(ref) || note.name === shortName(ref);
+      const named = note.name === note.id || note.name === MapEntities.getName(ref) || note.name === shortName(ref);
       const heading = note.name && !named ? `<h3>${note.name}</h3>` : "";
       if (!Notes.append(ref, note.legend && `${heading}${note.legend}`) && ref.type !== "regiment") orphan(note);
     }
@@ -1913,6 +1917,55 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         onConfirm: () => downloadFile(csv, `${getFileName("Unattached notes")}.csv`)
       });
     }
+  }
+
+  if (isOlderThan("1.153.0")) {
+    // v1.153.0 made the feature group a pure rendering choice, separate from the subtype generators read
+    const lakeSubtypes = new Set<string>(LAKE_SUBTYPES);
+    const oceanSubtypes = new Set<string>(OCEAN_SUBTYPES);
+    const oceanAreas = new Map<number, number>(); // the polygon area of an ocean collapsed to 0
+    if (pack.features.some(feature => feature?.type === "ocean")) {
+      for (const cellId of pack.cells.i) {
+        const featureId = pack.cells.f[cellId];
+        if (pack.features[featureId]?.type === "ocean") {
+          oceanAreas.set(featureId, (oceanAreas.get(featureId) ?? 0) + pack.cells.area[cellId]);
+        }
+      }
+    }
+    for (const feature of pack.features) {
+      if (!feature) continue;
+      if (feature.type === "ocean") {
+        // oceans carried a landmass group and whatever the old group field held; they are not drawn
+        delete (feature as Partial<Feature>).group;
+        if (!oceanSubtypes.has(feature.subtype)) feature.subtype = Features.getOceanSubtype(feature);
+        feature.area = oceanAreas.get(feature.i) ?? 0;
+      } else if (feature.type === "lake" && !lakeSubtypes.has(feature.subtype)) {
+        feature.subtype = "freshwater"; // the old lake editor wrote custom group names into the subtype
+      }
+      if (!feature.name) feature.name = Features.getName(feature); // islands and oceans were nameless before
+    }
+
+    // custom lake groups lived only in the svg; the styles record now keeps them under lakes.groups
+    const record = data[48] ? safeParseJSON(data[48]) : undefined;
+    if (record?.lakes) {
+      if (!record.lakes.groups) record.lakes = { groups: record.lakes };
+      const groups: Styles["lakes"]["groups"] = record.lakes.groups;
+      const template = groups.freshwater || Object.values(groups)[0];
+      for (const el of Array.from(document.querySelectorAll<SVGGElement>("#lakes > g"))) {
+        if (!el.id) continue;
+        el.dataset.group = el.id; // the registry stamps only its declared groups
+        if (!groups[el.id] && template) groups[el.id] = lakeGroupFromSvg(el, template);
+      }
+    }
+    const empty = (["burgIcons", "anchors"] as const).filter(type => {
+      const groups = record?.burgIcons?.[type]?.groups;
+      return groups && !Object.keys(groups).length;
+    });
+    if (empty.length) {
+      const harvested = stylesFromMap();
+      for (const type of empty) record.burgIcons[type].groups = harvested.burgIcons[type].groups;
+    }
+    if (record) data[48] = JSON.stringify(record);
   }
 }
 
@@ -1956,8 +2009,9 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
       minEdge: 1,
       smoothThreshold: 0.25,
       roughnessContrast: 1.5,
-      profileHarmonics: 4,
-      lakeSmoothThreshMult: 2.0
+      roughnessScale: 60,
+      lakeSmoothThreshMult: 2.0,
+      variant: 0
     }
   };
 

@@ -70,6 +70,17 @@ function buildScene(): void {
   sourcePack = pack;
 }
 
+/** Layer teardown: drop the cached scene and the drawn content */
+export function removeGoods(): void {
+  sourcePack = null;
+  cellProduction = [];
+  resourceIcons = [];
+  burgPlates = [];
+
+  const root = document.getElementById("goods");
+  if (root) for (const child of Array.from(root.children)) child.replaceChildren();
+}
+
 function reconcileGoods({ root, bounds }: ViewportRenderContext): void {
   if (!Layers.isOn("goods")) return;
   if (sourcePack !== pack) buildScene();

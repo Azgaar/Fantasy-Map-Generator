@@ -1,4 +1,4 @@
-import { updateDialog } from "@/components/dialog/dialog-helpers";
+import { destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
   type EditorColumn,
@@ -82,7 +82,7 @@ function open(batch: TradeBatch): void {
 }
 
 function renderDialog(): void {
-  document.getElementById(dialogId)?.remove();
+  destroyDialog(dialogId);
   const editorHtml = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
       <div>
         <div id="tradeDetailsSummary" class="totalLine"></div>
@@ -187,6 +187,7 @@ function getClientType(deal: Deal, burg: Burg, direction: "from" | "to"): string
 
 function closeTradeDetails(): void {
   clearHighlight();
+  activePoints = [];
   $(`#${dialogId}`).dialog("destroy");
   ensureEl(dialogId).remove();
 }

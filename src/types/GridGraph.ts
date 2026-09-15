@@ -1,4 +1,4 @@
-import type { GridFeature } from "@/generators/features";
+import type { GridFeature } from "@/generators/features-generator";
 import type { Cells, Vertices } from "@/generators/voronoi";
 import type { Point } from "./global";
 

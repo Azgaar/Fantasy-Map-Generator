@@ -37,6 +37,12 @@ export function drawRivers(): void {
   TIME && console.timeEnd("drawRivers");
 }
 
+/** Drop the paths and the scene behind them: a hidden layer must not keep a map's worth of geometry */
+export function removeRivers(): void {
+  scene.invalidate();
+  document.getElementById("rivers")?.replaceChildren();
+}
+
 /** Re-render a single edited river, keeping its element (and its editor handlers) in place */
 export function redrawRiver(river: River): void {
   const shape = buildShape(river);

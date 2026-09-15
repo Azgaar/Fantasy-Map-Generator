@@ -337,7 +337,7 @@ describe("one object, one key", () => {
     expect(options.app.ui.tooltipSize).toBe(20);
     expect(options.app.ui.themeColor).toBe("#123456");
     expect(options.app.ui.transparency).toBe(30);
-    expect(options.app.rendering).toBe("geometricPrecision");
+    expect(options.app.performance.shapeRendering).toBe("geometricPrecision");
     expect(options.app.onLoad).toBe("lastSaved");
     expect(options.app.emblems.shape).toBe("heater");
     expect(options.app.autosave).toEqual({ interval: 5, remind: false });

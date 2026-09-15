@@ -1,4 +1,4 @@
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { viewport } from "@/components/viewport";
 import { ensureEl, minmax, rn } from "../utils";
 
@@ -20,7 +20,7 @@ function open(): void {
 }
 
 function renderDialog(): void {
-  document.getElementById("minimap")?.remove();
+  destroyDialog("minimap");
   const html = /* html */ `<div id="minimap" class="dialog stable">
       <div id="minimapViewportWrap">
         <svg id="minimapSurface" preserveAspectRatio="xMidYMid meet" aria-label="Map minimap">

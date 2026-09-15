@@ -60,6 +60,16 @@ export function isImageIcon(icon: string): boolean {
   return /^(https?:\/\/|data:image\/)/.test(icon);
 }
 
+/** A hidden file input owned by the calling module: bind `onchange` on it, then click it */
+export function createFileInput(accept: string): HTMLInputElement {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = accept;
+  input.style.display = "none";
+  document.body.append(input);
+  return input;
+}
+
 /** Read the selected file as text and pass its content to the callback */
 export function uploadFile(input: HTMLInputElement, callback: (data: string) => void): void {
   const file = input.files?.[0];

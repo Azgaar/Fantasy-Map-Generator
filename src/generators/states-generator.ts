@@ -517,11 +517,11 @@ class StatesModule {
         const suzerain = states[f].diplomacy!.indexOf("Vassal");
 
         for (let i = 1; i < states.length; i++) {
-          if (i === f || i === suzerain) continue;
+          if (i === f || i === suzerain || states[i].removed) continue;
           states[f].diplomacy![i] = states[suzerain].diplomacy![i];
           if (states[suzerain].diplomacy![i] === "Suzerain") states[f].diplomacy![i] = "Ally";
           for (let e = 1; e < states.length; e++) {
-            if (e === f || e === suzerain) continue;
+            if (e === f || e === suzerain || states[e].removed) continue;
             if (states[e].diplomacy![suzerain] === "Suzerain" || states[e].diplomacy![suzerain] === "Vassal") continue;
             states[e].diplomacy![f] = states[e].diplomacy![suzerain];
           }

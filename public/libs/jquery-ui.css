@@ -357,6 +357,14 @@ body .ui-dialog {
   border: 1px solid #5d4651;
 }
 
+.ui-dialog .ui-dialog-titlebar-reset {
+  font-size: 0.62em;
+}
+
+.ui-dialog .ui-dialog-titlebar-reset[hidden] {
+  display: none;
+}
+
 .ui-dialog .ui-dialog-content {
   position: relative;
   border: 0;

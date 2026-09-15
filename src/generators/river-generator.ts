@@ -51,7 +51,7 @@ class RiverModule {
     this.generate();
     this.specify();
     Features.defineGroups();
-    Lakes.defineNames();
+    Features.defineNames();
   }
 
   addDownhill(initialCell: number): { error?: string } {

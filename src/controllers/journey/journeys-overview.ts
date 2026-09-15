@@ -165,6 +165,7 @@ function renderDialog(): void {
 }
 
 function renderJourneysPage(view: TableView<Journey>): void {
+  stopJourneyTravel(); // the hovered row is about to be removed, so its animation must not re-arm
   const body = ensureEl("journeysBody");
   body.querySelectorAll(":scope > .states").forEach(row => {
     row.remove();

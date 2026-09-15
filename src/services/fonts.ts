@@ -1,4 +1,3 @@
-import { select } from "d3";
 import { tip } from "@/components/tooltips";
 import { ensureEl } from "../utils";
 
@@ -128,6 +127,12 @@ window.fonts = [
       "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
   },
   {
+    family: "Iceberg",
+    src: "url(https://fonts.gstatic.com/s/iceberg/v26/8QIJdijAiM7o-qnZiI8EqprnEO0.woff2)",
+    unicodeRange:
+      "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+  },
+  {
     family: "IM Fell English",
     src: "url(https://fonts.gstatic.com/s/imfellenglish/v7/xwIisCqGFi8pff-oa9uSVAkYLEKE0CJQa8tfZYc_plY.woff2)",
     unicodeRange:
@@ -236,6 +241,12 @@ window.fonts = [
       "U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215"
   },
   {
+    family: "Snowburst One",
+    src: "url(https://fonts.gstatic.com/s/snowburstone/v21/MQpS-WezKdujBsXY3B7I-UT7SZiePgSfLbs.woff2)",
+    unicodeRange:
+      "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+  },
+  {
     family: "Tapestry",
     src: "url(https://fonts.gstatic.com/s/macondo/v21/RrQQboN9-iB1IXmOe2LE0Q.woff2)",
     unicodeRange:
@@ -268,9 +279,19 @@ window.fonts = [
 ];
 
 /** Register a font so the app can use and export it */
+const declaredFonts = new Set<string>(); // font definitions already declared to the document
+const declaredFamilies = new Set<string>(); // families already present in the font select
+
 export function declareFont(font: FontDefinition): void {
   const { family, src, ...rest } = font;
-  addFontOption(family);
+  const key = JSON.stringify(font);
+  if (declaredFonts.has(key)) return; // a repeated load must not stack options or FontFace records
+  declaredFonts.add(key);
+
+  if (!declaredFamilies.has(family)) {
+    declaredFamilies.add(family);
+    addFontOption(family);
+  }
 
   if (!src) return;
   const fontFace = new FontFace(family, src, { ...rest, display: "block" });
@@ -353,9 +374,6 @@ export function getUsedFonts(svg: SVGSVGElement, legends: string[] = []): FontDe
     const font = labelGroup.getAttribute("font-family");
     if (font) usedFontFamilies.add(font);
   }
-
-  const provinceFont = select("#provs").attr("font-family");
-  if (provinceFont) usedFontFamilies.add(provinceFont);
 
   const legend = svg.querySelector("#legend");
   const legendFont = legend?.getAttribute("font-family");

@@ -55,8 +55,14 @@ function loadScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const script = document.createElement("script");
     script.src = src;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error(`Cannot load script ${src}`));
+    script.onload = () => {
+      script.remove();
+      resolve();
+    };
+    script.onerror = () => {
+      script.remove();
+      reject(new Error(`Cannot load script ${src}`));
+    };
     document.head.append(script);
   });
 }
