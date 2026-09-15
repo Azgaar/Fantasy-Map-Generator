@@ -20,6 +20,21 @@ describe("stylesSchema", () => {
 });
 
 describe("parseStyles", () => {
+  test.each(["burgIcons", "anchors"] as const)("repairs empty %s groups without changing other styles", type => {
+    const doc = Styles.parse(Styles.defaults);
+    doc.burgIcons.burgIcons.groups.capital.options.size = 5;
+    doc.burgIcons.anchors.groups.capital.options.size = 7;
+    doc.burgIcons[type].groups = {};
+    const expected = structuredClone(doc);
+    expected.burgIcons[type].groups = structuredClone(Styles.defaults.burgIcons[type].groups);
+
+    const parsed = Styles.parse(doc);
+
+    expect(parsed).toEqual(expected);
+    expect(doc.burgIcons[type].groups).toEqual({});
+    expect(parsed.burgIcons[type].groups).not.toBe(Styles.defaults.burgIcons[type].groups);
+  });
+
   test("older oceans gain disabled bands and Cinderwood bands survive serialization", () => {
     const doc = structuredClone(Styles.defaults);
     const { bands: _, ...options } = doc.ocean.options;

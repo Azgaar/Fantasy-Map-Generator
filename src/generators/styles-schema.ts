@@ -259,8 +259,12 @@ export const stylesSchema = z.strictObject({
     )
   }),
   burgIcons: z.strictObject({
-    burgIcons: z.strictObject({ groups: z.record(z.string(), burgGroup) }),
-    anchors: z.strictObject({ groups: z.record(z.string(), anchorGroup) })
+    burgIcons: z.strictObject({
+      groups: z.record(z.string(), burgGroup).refine(groups => Object.keys(groups).length > 0)
+    }),
+    anchors: z.strictObject({
+      groups: z.record(z.string(), anchorGroup).refine(groups => Object.keys(groups).length > 0)
+    })
   }),
   goods: z.strictObject({
     goodsCells: z.strictObject({ attrs: z.strictObject({ opacity, filter }) }),

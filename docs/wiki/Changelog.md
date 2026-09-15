@@ -29,6 +29,7 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Diplomacy: click states on the map to select relations
 - States and Provinces: state creation and province recolouring refresh visible map layers immediately;
 - Goods editor: Show all respects the tag filter across pages, with consistent checkbox state and displayed counts
+- Burg icons and anchors: restore missing style groups so edited sizes survive saving and loading
 - Diplomacy: regenerating relations no longer fails when a state has been removed
 
 # Releases
