@@ -179,6 +179,7 @@ export const optionsSchema = z.strictObject({
     notesPinned: z.boolean(),
     emblems: z.strictObject({ showAll: z.boolean(), shape: z.string().min(1) }),
     labels: z.strictObject({ showAll: z.boolean() }),
+    heightmapEditor: z.strictObject({ renderOcean: z.boolean(), showDrainage: z.boolean(), allowErosion: z.boolean() }),
     performance: z.strictObject({
       shapeRendering: z.enum(["geometricPrecision", "auto", "optimizeSpeed", "crispEdges"]),
       stateHalos: z.boolean(),

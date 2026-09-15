@@ -91,6 +91,11 @@ The Heightmap Editor includes tools to help you create and customize your map. B
   - Renders or hides ocean cells in the editor preview.
   - It does not enable or disable ocean cells in the map.
 
+- **Show Drainage**:
+  - Overlays the water flow: an arrow on every land cell points to where its water goes, thicker where more cells drain through.
+  - Depressions that water cannot leave are hatched in black: they get filled on finalization. Those deeper than the depression depth threshold are hatched in blue: with water erosion allowed they become lakes instead, and the hatching around them clears as the rest drains into them. Paint an outlet or raise the floor if you don't want either.
+  - The overlay stays on while you paint and updates after every edit.
+
 - **Allow Water Erosion**:
   - Simulate water erosion effects on the terrain.
   - Adds realism to the map by shaping the landscape according to water flow.
