@@ -6,7 +6,7 @@ FMG is a hobby project, not a company. There is no account system, no user profi
 
 Map generation and editing run entirely in the browser. A generated world is never uploaded anywhere.
 
-* **Autosave** writes the current map into your browser's own storage (IndexedDB) so it can be restored when you come back. Clearing the site data removes it. You can turn autosave off in _Options → Generator settings_.
+* **Autosave** writes the current map into your browser's own storage (IndexedDB) so it can be restored when you come back. Clearing the site data removes it. You can turn autosave off in _Options → Interface settings_.
 * **Save** and **Load** work with files on your own machine.
 * **Settings** (theme, units, locked options, "don't ask again" flags) are stored in this browser's `localStorage`.
 * Nothing in this group is readable by the project.
@@ -35,7 +35,7 @@ The Assistant answers questions about using the Generator. It talks to the proje
 
 **Availability.** The gateway only accepts requests from the official site. On a self-hosted copy the panel says so and offers the wiki instead.
 
-**Turning it off.** _Options → Generator settings → Azgaar assistant → Hide_ removes the button and the panel. Nothing is sent when you do not ask a question.
+**Turning it off.** _Options → Interface settings → Azgaar assistant → Hide_ removes the button and the panel. Nothing is sent when you do not ask a question.
 
 ## Signing in with Discord
 

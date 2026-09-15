@@ -541,7 +541,7 @@ Below the map settings, the Options tab holds settings that apply immediately an
 - Interface size and Tooltip size: scale the menu and the bottom tooltip.
 - Theme color and Transparency: the color and opacity of the dialogs.
 - Autosave interval: how often the map is saved to browser storage.
-- Onload behavior: generate a new map or load the last saved one when the page opens.
+- On load: generate a new map or load the last saved one when the page opens.
 - Azgaar assistant: show or hide the help bubble in the bottom right corner, which answers questions about the Generator from the wiki and Discord knowledge.
 - Speaker voice: the voice used by the speaker buttons next to names.
 - Emblem shape: the default coat of arms shield shape.
@@ -551,7 +551,7 @@ Below the map settings, the Options tab holds settings that apply immediately an
   - Shape rendering: the SVG `shape-rendering` hint for the map. _Geometric precision_ anti-aliases every edge, _Optimize speed_ lets the browser cut corners, _Crisp edges_ drops anti-aliasing altogether.
   - State halos: the blurred glow along state borders. It is an SVG blur filter, which is costly on big maps.
   - Redraw on zoom: when labels, icons and relief are redrawn during a zoom or pan. _After zoom_ redraws once per gesture: faster on big maps, but new content appears all at once.
-- Language: the interface language.
+- Language: the **Init Google Translate** button loads Google Translate so you can pick a language. It is a machine translation and can break some page functions; the reset icon returns to English.
 
 The **Configure World** button opens a separate dialog where you set the map size relative to the world, its latitude and longitude shift on the globe, the temperature at the equator and both poles, and the global precipitation.
 
