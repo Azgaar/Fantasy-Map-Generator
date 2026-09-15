@@ -104,14 +104,18 @@ function refreshDerivedData(vertexIds: number[]): void {
   const featureIds = unique(cellIds.map(cellId => cells.f[cellId]));
   for (const featureId of featureIds) {
     const feature = features[featureId];
-    if (!feature?.vertices) continue;
+    if (!feature) continue;
 
-    const points = clipPoly(
-      feature.vertices.map(vertexId => vertices.p[vertexId]),
-      options.map.graph.width,
-      options.map.graph.height
-    );
-    feature.area = Math.abs(rn(polygonArea(points)));
+    if (feature.type === "ocean") {
+      feature.area = cells.i.reduce((sum, cellId) => (cells.f[cellId] === featureId ? sum + cells.area[cellId] : sum), 0);
+    } else if (feature.vertices?.length) {
+      const points = clipPoly(
+        feature.vertices.map(vertexId => vertices.p[vertexId]),
+        options.map.graph.width,
+        options.map.graph.height
+      );
+      feature.area = Math.abs(rn(polygonArea(points)));
+    }
   }
 }
 
