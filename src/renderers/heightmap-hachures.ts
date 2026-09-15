@@ -93,18 +93,22 @@ export function getHachures(params: HachureParams): string {
     return row * cellsX + column;
   };
 
-  // inverse-distance blend of the cell gradients around a point: the fall line without cell-edge kinks
-  const gradientAt = (x: number, y: number, cell: number): [number, number] => {
-    let gx = 0;
-    let gy = 0;
-    let sum = 0;
-    for (const j of [cell, ...neighbors[cell]]) {
+  // inverse-distance blend of the cell gradients around a point: the fall line without cell-edge kinks.
+  // Called per stroke step, so it writes to `gx`/`gy` instead of allocating a tuple
+  let gx = 0;
+  let gy = 0;
+  const blendGradient = (x: number, y: number, cell: number): void => {
+    let sum = 1 / (0.01 + (points[cell][0] - x) ** 2 + (points[cell][1] - y) ** 2);
+    gx = gradients[cell * 2] * sum;
+    gy = gradients[cell * 2 + 1] * sum;
+    for (const j of neighbors[cell]) {
       const w = 1 / (0.01 + (points[j][0] - x) ** 2 + (points[j][1] - y) ** 2);
       gx += gradients[j * 2] * w;
       gy += gradients[j * 2 + 1] * w;
       sum += w;
     }
-    return [gx / sum, gy / sum];
+    gx /= sum;
+    gy /= sum;
   };
 
   const step = spacing * STEP;
@@ -112,8 +116,6 @@ export function getHachures(params: HachureParams): string {
   const parts: string[] = [];
 
   for (const chain of getHeightContourChains(points, heights, triangles, thresholds)) {
-    // Seed mostly upper contour bands. This leaves broad low-relief terrain white while still
-    // allowing an occasional mark on foothills and coastal shelves.
     const levelWeight = Math.min(1, Math.max(0, levelOf(chain.height)));
     const levelDensity = MIN_LEVEL_DENSITY + (MAX_LEVEL_DENSITY - MIN_LEVEL_DENSITY) * levelWeight ** LEVEL_POWER;
     if (random() > levelDensity) continue;
@@ -141,9 +143,8 @@ export function getHachures(params: HachureParams): string {
     const none = { path: null, weight: 0 };
     const cell = cellAt(x, y);
     if (cell < 0 || !inBand(heights[cell])) return none;
-    const [gx, gy] = gradientAt(x, y, cell);
-    const magnitude = Math.hypot(gx, gy);
-    const weight = weightOf(magnitude * spacing);
+    blendGradient(x, y, cell);
+    const weight = weightOf(Math.hypot(gx, gy) * spacing);
     if (!weight) return none;
 
     const angle = Math.atan2(-gy, -gx) + (random() - 0.5) * ANGLE_JITTER * (0.5 + weight);
@@ -160,10 +161,12 @@ export function getHachures(params: HachureParams): string {
     let run = 0;
     let fading = 0;
     while (run < wanted) {
-      const here = cellAt(x + dx * (run + step), y + dy * (run + step));
+      const px = x + dx * (run + step);
+      const py = y + dy * (run + step);
+      const here = cellAt(px, py);
       if (here < 0 || !inBand(heights[here])) break;
-      const [hx, hy] = gradientAt(x + dx * (run + step), y + dy * (run + step), here);
-      if (Math.hypot(hx, hy) * spacing < MIN_SLOPE && ++fading > FADE_STEPS) break;
+      blendGradient(px, py, here);
+      if (Math.hypot(gx, gy) * spacing < MIN_SLOPE && ++fading > FADE_STEPS) break;
       run += step;
     }
     if (run < step) return { path: null, weight };

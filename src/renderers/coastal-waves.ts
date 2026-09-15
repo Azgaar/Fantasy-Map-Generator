@@ -1,5 +1,6 @@
 import type { Styles } from "@/generators/styles-schema";
 import { createRandom } from "@/utils";
+import { wavyDash } from "@/utils/pathUtils";
 
 export interface CoastalWaveParams {
   width: number;
@@ -49,18 +50,20 @@ export function getCoastalWaves(params: CoastalWaveParams): string {
 
   function mark(x: number, y: number, dash: number): string {
     const up = random() < 0.5 ? -1 : 1;
-    const start = `M${f(x)},${f(y)}`;
-    if (type === "lines") return `${start}h${f(dash)}`;
-    const halves = Math.max(2, Math.round(dash / halfPeriod));
-    let path = `M${f(x)},${f(y)}q${f(halfPeriod / 2)},${f(amplitude * up)} ${f(halfPeriod)},0`;
-    for (let i = 1; i < halves; i++) path += `t${f(halfPeriod)},0`;
-    return path;
+    if (type === "lines") return `M${f(x)},${f(y)}h${f(dash)}`;
+    const halves = Math.max(2, Math.round(dash / halfPeriod)); // whole half-periods, so the dash ends on the axis
+    return wavyDash(x, y, halves * halfPeriod, halves, amplitude * up);
   }
 }
 
-/** Water-cell distances used only for drawing; unlike grid.cells.t these cover the full requested reach. */
+/**
+ * Cells from the shore for every water cell, 1 on the coastal ring, 0 on land and beyond `reach`.
+ * Not grid.cells.t: that field stops at 9 cells, treats 0 as "deep ocean" in the province and
+ * state generators, and is saved with the map, so widening it would alter generation and old maps.
+ */
 export function getCoastalDistances(heights: ArrayLike<number>, neighbors: number[][], reach: number): Uint8Array {
   const distances = new Uint8Array(heights.length);
+  const limit = Math.ceil(reach) + 1;
   const queue: number[] = [];
   for (let cell = 0; cell < heights.length; cell++) {
     if (heights[cell] >= 20 || !neighbors[cell].some(next => heights[next] >= 20)) continue;
@@ -69,7 +72,7 @@ export function getCoastalDistances(heights: ArrayLike<number>, neighbors: numbe
   }
   for (let index = 0; index < queue.length; index++) {
     const cell = queue[index];
-    if (distances[cell] >= Math.ceil(reach) + 1) continue;
+    if (distances[cell] >= limit) continue;
     for (const next of neighbors[cell]) {
       if (heights[next] >= 20 || distances[next]) continue;
       distances[next] = distances[cell] + 1;
