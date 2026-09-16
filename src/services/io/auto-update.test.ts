@@ -306,6 +306,7 @@ describe("v1.146 rendering groups", () => {
   beforeEach(() => {
     globalThis.pack = {
       cells: { culture: [0], p: [[10, 10]] },
+      cultures: [{ i: 0, base: 0 }],
       features: [
         0,
         { i: 1, type: "island", group: "continent", firstCell: 0 },
@@ -476,6 +477,10 @@ describe("v1.153.0 feature subtype and lake group styles", () => {
         { i: 2, type: "island", subtype: "isle", group: "sea_island", firstCell: 1 },
         { i: 3, type: "lake", subtype: "my_lakes", group: "my_lakes", firstCell: 1, name: "My Lake" }, // the old lake editor copied the group name
         { i: 4, type: "lake", subtype: "salt", group: "freshwater", firstCell: 1 }
+      ],
+      cultures: [
+        { i: 0, base: 0 },
+        { i: 1, base: 1 }
       ]
     } as unknown as typeof globalThis.pack;
     globalThis.grid = { cells: { i: new Array(1000) } } as unknown as typeof grid;
@@ -511,6 +516,16 @@ describe("v1.153.0 feature subtype and lake group styles", () => {
     expect(pack.features[2].name).toBe("Named");
     expect(pack.features[3].name).toBe("My Lake");
     expect(pack.features[4].name).toBe("Named");
+  });
+
+  it("names a feature by an adjective when its cell points at a dropped culture", () => {
+    pack.cells.culture = [0, 7] as unknown as typeof pack.cells.culture; // no such culture in the map
+    const random = vi.spyOn(Math, "random").mockReturnValue(0.5);
+    resolveVersionConflicts("1.152.0", []);
+    random.mockRestore();
+
+    expect(pack.features[2].name).toBeTruthy();
+    expect(pack.features[2].name).not.toBe("Named");
   });
 
   it("nests the stock lake styles under groups and harvests custom groups from the svg", () => {

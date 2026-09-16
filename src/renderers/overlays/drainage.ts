@@ -1,10 +1,18 @@
 // Water drainage over a raw heightmap: flow arrows, the depressions that get filled and the lakes to be
-import { rn } from "@/utils";
+import { MIN_FLUX_TO_FORM_RIVER } from "@/generators/river-generator";
+import { minmax, rn } from "@/utils";
 import { SEA_LEVEL } from "@/utils/heightUtils";
 import { createEl, ensureEl, findEl } from "@/utils/nodeUtils";
 
-const WIDTHS = [0.5, 0.8, 1.2, 1.7, 2.4]; // stroke width per flux class, at the reference spacing
-const OPACITIES = [0.6, 0.7, 0.8, 0.9, 1];
+// arrow style per flux class: two below the river threshold in faint gray, three rivers in solid blue. Widths are at the reference spacing
+const ARROW_CLASSES = [
+  { stroke: "#888", width: 0.4, opacity: 0.8 },
+  { stroke: "#444", width: 0.5, opacity: 0.8 },
+  { stroke: "#3d9df0", width: 0.8, opacity: 1 },
+  { stroke: "#1a6fd6", width: 1, opacity: 1 },
+  { stroke: "#0a49ad", width: 1.2, opacity: 1 }
+];
+const RIVER_CLASS = 2; // first blue class
 const REFERENCE_SPACING = 14; // ~10k cells on a default-size map
 const MIN_DEPTH = 0.5; // flats get a tiny epsilon depth, real depressions at least 1
 
@@ -13,15 +21,19 @@ export function drawDrainage(lakesForm: boolean): void {
   const { cells, points, spacing } = grid;
   const lakes = lakesForm ? Grid.findDeepDepressionLakes(cells, options.generation.lakeElevationLimit) : [];
   const h = Uint8Array.from(cells.h);
-  for (const lake of lakes) for (const i of lake) h[i] = 19; // the rest drains into the new lakes
-  const { target, flux, depth } = computeDrainage({ ...cells, h });
+  for (const lake of lakes) for (const i of lake) h[i] = SEA_LEVEL - 1; // the rest drains into the new lakes
+  const { target, flux, depth, river } = computeDrainage({ ...cells, h }, computePrecipitation(h));
   const scale = spacing / REFERENCE_SPACING;
   const head = spacing * 0.25;
   const hatch = rn(spacing * 0.35, 2); // hatch step: a few lines per cell
 
-  const arrows: string[][] = WIDTHS.map(() => []);
+  const arrows: string[][] = ARROW_CLASSES.map(() => []);
   const basins: string[] = [];
-  const fluxClass = (flux: number): number => Math.min(WIDTHS.length - 1, Math.floor(Math.log2(flux) / 2));
+  // a class per factor of 4 around the river threshold: [MIN/4, MIN) is the last gray one, [MIN, 4MIN) the first blue
+  const fluxClass = (i: number): number => {
+    const cls = Math.floor(Math.log2(flux[i] / MIN_FLUX_TO_FORM_RIVER) / 2) + RIVER_CLASS;
+    return minmax(cls, 0, river[i] ? ARROW_CLASSES.length - 1 : RIVER_CLASS - 1);
+  };
   const basinOpacity = (depth: number): number => rn(Math.min(0.5 + depth / 30, 1), 2);
 
   for (const i of cells.i) {
@@ -41,14 +53,15 @@ export function drawDrainage(lakesForm: boolean): void {
     // the arrowhead: two strokes back from the tip at ±30°
     const [lx, ly] = [ex - head * (ux * 0.87 - uy * 0.5), ey - head * (uy * 0.87 + ux * 0.5)];
     const [rx, ry] = [ex - head * (ux * 0.87 + uy * 0.5), ey - head * (uy * 0.87 - ux * 0.5)];
-    arrows[fluxClass(flux[i])].push(
+    arrows[fluxClass(i)].push(
       `M${rn(sx, 1)},${rn(sy, 1)}L${rn(ex, 1)},${rn(ey, 1)}M${rn(lx, 1)},${rn(ly, 1)}L${rn(ex, 1)},${rn(ey, 1)}L${rn(rx, 1)},${rn(ry, 1)}`
     );
   }
 
   const arrowPaths = arrows.map((segments, cls) => {
     if (!segments.length) return "";
-    const attrs = `stroke-width="${rn(WIDTHS[cls] * scale, 2)}" opacity="${OPACITIES[cls]}"`;
+    const { stroke, width, opacity } = ARROW_CLASSES[cls];
+    const attrs = `stroke="${stroke}" stroke-width="${rn(width * scale, 2)}" opacity="${opacity}"`;
     return `<path d="${segments.join("")}" ${attrs}/>`;
   });
 
@@ -64,18 +77,22 @@ export function drawDrainage(lakesForm: boolean): void {
 
   getGroup().innerHTML = /* html */ `
     <pattern id="drainageHatch" width="${hatch}" height="${hatch}" patternUnits="userSpaceOnUse">
-      <path d="M0,${hatch}L${hatch},0" stroke="#000" stroke-width="${rn(0.5 * scale, 2)}"/>
+      <path d="M0,${hatch}L${hatch},0" stroke="#333" stroke-width="${rn(0.5 * scale, 2)}"/>
     </pattern>
     <pattern id="drainageLakeHatch" width="${hatch}" height="${hatch}" patternUnits="userSpaceOnUse">
       <path d="M0,0L${hatch},${hatch}" stroke="#1a5fc8" stroke-width="${rn(0.8 * scale, 2)}"/>
     </pattern>
     <g fill="url(#drainageHatch)" stroke="#000" stroke-width="${rn(0.3 * scale, 2)}">${basins.join("")}</g>
     <g fill="url(#drainageLakeHatch)" stroke="#1a5fc8" stroke-width="${rn(0.5 * scale, 2)}">${lakePolygons.join("")}</g>
-    <g fill="none" stroke="#0b2a6b" stroke-linecap="round" stroke-linejoin="round">${arrowPaths.join("")}</g>`;
+    <g fill="none">${arrowPaths.join("")}</g>`;
 }
+
+// precipitation the edited heightmap will get; the grid stays untouched
+const computePrecipitation = (h: Uint8Array): Uint8Array => Precipitation.compute(h, Temperature.compute(h));
 
 /** Remove the drainage overlay */
 export function removeDrainage(): void {
+  // TODO: do we need to clean cached data?
   findEl("drainage")?.remove();
 }
 
@@ -83,13 +100,14 @@ type DrainageCells = { i: ArrayLike<number>; c: number[][]; b: ArrayLike<number>
 
 interface Drainage {
   target: Int32Array; // outlet neighbor of a land cell, -1 for sinks
-  flux: Float32Array; // land cells draining through, itself included; sinks get the inflow only
+  flux: Float32Array; // water draining through, in the river generator's units; sinks get the inflow only
   depth: Float32Array; // fill level above the cell height, > 0 inside a depression
+  river: Uint8Array; // 1 where a river forms: enough flux and at least one more land cell on the way
 }
 
 const EPSILON = 1e-4; // makes the filled surface strictly descending across flats
 
-function computeDrainage(cells: DrainageCells): Drainage {
+function computeDrainage(cells: DrainageCells, prec: ArrayLike<number>): Drainage {
   const { c, b, h } = cells;
   const n = cells.i.length;
   const filled = new Float64Array(n);
@@ -127,11 +145,20 @@ function computeDrainage(cells: DrainageCells): Drainage {
     }
   }
 
+  const cellsNumberModifier = (Grid.getCellsDesired() / 10000) ** 0.25; // same scaling as the river generator
   land.sort((a, b) => filled[b] - filled[a]); // highest first, so the flow is passed down in one pass
   for (const i of land) {
-    flux[i] += 1;
+    flux[i] = Math.floor(flux[i] + prec[i] / cellsNumberModifier); // the generator keeps the flux in integers
     if (target[i] !== -1) flux[target[i]] += flux[i];
   }
 
-  return { target, flux, depth };
+  // the generator drops rivers of a single land cell: a river needs a land outlet or a river flowing in
+  const river = new Uint8Array(n);
+  for (const i of land) {
+    if (flux[i] < MIN_FLUX_TO_FORM_RIVER || target[i] === -1) continue;
+    if (h[target[i]] >= SEA_LEVEL) river[i] = 1;
+    river[target[i]] = 1;
+  }
+
+  return { target, flux, depth, river };
 }

@@ -183,8 +183,11 @@ export const drawHeightmap = (): void => {
     }
   }
 
+  let smoothedHeights: Float64Array | undefined; // shared by contours and hachures
+  const getSmoothedHeights = () => (smoothedHeights ??= smoothContourHeights(cells.h, cells.c));
+
   if (landOptions.contours.mode !== "off" || (renderOceanCells && oceanOptions.contours.mode !== "off")) {
-    const { points, elevations } = getContourSurface(smoothContourHeights(cells.h, cells.c));
+    const { points, elevations } = getContourSurface(getSmoothedHeights());
 
     for (const [group, options, isOcean] of [
       [land, landOptions, false],
@@ -216,7 +219,7 @@ export const drawHeightmap = (): void => {
   }
 
   if (landOptions.hachures.mode !== "off" || (renderOceanCells && oceanOptions.hachures.mode !== "off")) {
-    const smoothed = smoothContourHeights(smoothContourHeights(cells.h, cells.c), cells.c); // twice: a calm fall line
+    const smoothed = smoothContourHeights(getSmoothedHeights(), cells.c); // twice: a calm fall line
     const { points, elevations } = getContourSurface(smoothed);
     for (const [group, heightOptions, isOcean] of [
       [land, landOptions, false],

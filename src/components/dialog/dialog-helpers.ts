@@ -98,6 +98,7 @@ const REFRESHABLE_EDITORS = [
   "burgsOverviewRefresh",
   "routesOverviewRefresh",
   "riversOverviewRefresh",
+  "featuresOverviewRefresh",
   "militaryOverviewRefresh",
   "regimentsOverviewRefresh",
   "markersOverviewRefresh",
@@ -152,6 +153,7 @@ export const destroyDialog = (id: string): void => {
   if (!el) return;
   if (el.classList.contains("ui-dialog-content")) window.$(el).dialog("destroy");
   el.remove();
+  dialogState.forget(id);
 };
 
 // A titlebar button next to minimize and close that forgets the remembered layout of this dialog; shown only while there is one

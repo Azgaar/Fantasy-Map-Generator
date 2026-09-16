@@ -57,6 +57,12 @@ export const dialogState = {
     for (const handler of resetHandlers.get(dialogId)?.values() ?? []) handler();
   },
 
+  /** Drop the handlers of a destroyed dialog so its detached elements are released */
+  forget(dialogId: string): void {
+    changeHandlers.delete(dialogId);
+    resetHandlers.delete(dialogId);
+  },
+
   clear(): void {
     entries = {};
     try {

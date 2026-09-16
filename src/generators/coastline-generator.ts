@@ -49,6 +49,10 @@ const FIELD_STRETCH = 1.9; // interpolated noise clusters around ½; spread it l
 
 /** Owns the coastline settings, the fractal displacement and the path built from it: nobody else fractalizes */
 class CoastlineGenerator {
+  // the last shape built for a feature; a regenerated feature is a new object, so its entry is dropped with it
+  // TODO: does it have to be cleared on dialog close?
+  private shapes = new WeakMap<Feature, { key: string; outline: Point[]; shape: FractalizedShape }>();
+
   /** Settings of the map on screen: a fact, read at render time and saved with the file */
   get settings(): CoastlineSettings {
     return options.map.coastline;
@@ -93,8 +97,19 @@ class CoastlineGenerator {
   getFeatureShape(feature: Feature, outline = this.getFeatureOutline(feature)): FractalizedShape {
     const settings = this.shoreSettings(feature);
     if (outline.length < 3 || !settings.enabled) return { points: outline, origIndices: outline.map((_, i) => i) };
-    return this.fractalize(outline, this.featureSeed(feature.i, settings), settings);
+
+    const seed = this.featureSeed(feature.i, settings);
+    const key = `${seed}|${JSON.stringify(settings)}`;
+    const cached = this.shapes.get(feature);
+    if (cached?.key === key && this.sameOutline(cached.outline, outline)) return cached.shape;
+
+    const shape = this.fractalize(outline, seed, settings);
+    this.shapes.set(feature, { key, outline, shape });
+    return shape;
   }
+
+  private sameOutline = (a: Point[], b: Point[]) =>
+    a.length === b.length && a.every(([x, y], i) => x === b[i][0] && y === b[i][1]);
 
   /** Closed SVG path of the feature outline, fractalized as configured */
   getFeaturePath(feature: Feature): string {

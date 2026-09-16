@@ -473,7 +473,8 @@ class FeatureModule {
     if (feature.type === "ocean") return this.getOceanName(feature);
     if (P(0.1)) return ra(ADJECTIVES);
     const cell = feature.type === "lake" ? feature.shoreline?.[0] || feature.firstCell : feature.firstCell;
-    return Names.getCulture(pack.cells.culture[cell]);
+    const culture = pack.cells.culture[cell];
+    return pack.cultures[culture] ? Names.getCulture(culture) : ra(ADJECTIVES); // a loaded map may hold a dropped culture
   }
 
   // oceans belong to no culture: an adjective or the map side, the subtype noun is shown separately

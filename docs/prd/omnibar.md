@@ -50,7 +50,7 @@ Follow VS Code command-palette interaction conventions, adapted to the map and i
 - Up/Down navigates the list, Enter activates, Escape closes, and pointer click activates. Keyboard navigation keeps the current row visible. Tab must not reach the application's options-pane shortcut while the palette owns focus.
 - Disabled rows expose their reason and cannot activate. The initial selection is the first enabled result; navigation may focus disabled rows so their reason is available to keyboard and assistive-technology users.
 - Escape must not also close underlying dialogs or cancel a map tool on keyup. Restore prior connected focus on dismissal; command activation can transfer focus to its destination; feature activation returns to the map.
-- The palette has one runtime gate for map-dependent work: with no map, in edit mode, or in the 3D scene, opening is refused and, when it is already open, every row is disabled with that one reason. An open palette outlives a map that is replaced, so activation revalidates the target against the map that is on screen now.
+- The palette has one runtime gate for map-dependent work: with no map, in edit mode, or in the 3D scene, the palette still opens but every map-dependent row is disabled with that one reason. An open palette outlives a map that is replaced, so activation revalidates the target against the map that is on screen now.
 - Use accessible input/listbox relationships, an announced active result, disabled state, and a useful no-results message. Keep the overlay usable in a narrow viewport.
 
 ### Search and results

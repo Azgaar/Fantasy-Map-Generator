@@ -97,21 +97,16 @@ function refreshDerivedData(vertexIds: number[]): void {
 
   const cellIds = unique(vertexIds.flatMap(vertexId => vertices.c[vertexId])).filter(cellId => cellId < cells.i.length);
   for (const cellId of cellIds) {
-    const area = Math.abs(polygonArea(Pack.getPolygon(cellId)));
-    cells.area[cellId] = Math.min(rn(area), TYPED_ARRAY_MAX.UINT16);
+    const area = Math.min(rn(Math.abs(polygonArea(Pack.getPolygon(cellId)))), TYPED_ARRAY_MAX.UINT16);
+    const feature = features[cells.f[cellId]];
+    if (feature?.type === "ocean") feature.area += area - cells.area[cellId]; // ocean area is the sum of its cells
+    cells.area[cellId] = area;
   }
 
   const featureIds = unique(cellIds.map(cellId => cells.f[cellId]));
   for (const featureId of featureIds) {
     const feature = features[featureId];
-    if (!feature) continue;
-
-    if (feature.type === "ocean") {
-      feature.area = cells.i.reduce(
-        (sum, cellId) => (cells.f[cellId] === featureId ? sum + cells.area[cellId] : sum),
-        0
-      );
-    } else if (feature.vertices?.length) {
+    if (feature?.type !== "ocean" && feature?.vertices?.length) {
       const points = clipPoly(
         feature.vertices.map(vertexId => vertices.p[vertexId]),
         options.map.graph.width,

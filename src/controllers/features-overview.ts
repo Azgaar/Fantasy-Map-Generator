@@ -110,6 +110,7 @@ function open(): void {
   filterState = dialogState.get(dialogId, "filters", () => ({ search: "", type: "all", subtype: "all" }));
   closeDialogs(`#${dialogId}, .stable`);
 
+  oceanPaths.clear();
   renderDialog();
   updateSubtypeFilter();
   featuresTable.reset();
@@ -172,12 +173,14 @@ function renderDialog(): void {
 
 function closeFeaturesOverview(): void {
   destroyDialog(dialogId);
+  oceanPaths.clear();
   const view = featuresTable.view();
   view.rows = [];
   view.all = [];
 }
 
 function refreshOverview(): void {
+  oceanPaths.clear();
   updateSubtypeFilter();
   featuresTable.reset();
 }
@@ -319,11 +322,15 @@ function bindRowActions(body: HTMLElement): void {
 
 const getFeature = (element: HTMLElement): Feature => pack.features[getRowId(element)];
 const getFeaturePath = (featureId: number) => findEl(`feature_${featureId}`)?.getAttribute("d") ?? null;
-// oceans are not drawn, so outline their cells instead
-const getOceanPath = (featureId: number) => {
-  const cellIds = Array.from(pack.cells.i).filter(cellId => pack.cells.f[cellId] === featureId);
-  return getVertexPath(cellIds, pack);
-};
+const oceanCells = (featureId: number) => Array.from(pack.cells.i).filter(cellId => pack.cells.f[cellId] === featureId);
+
+// oceans are not drawn, so outline their cells instead; built once per dialog session
+const oceanPaths = new Map<number, string>();
+function getOceanPath(featureId: number): string {
+  const path = oceanPaths.get(featureId) ?? getVertexPath(oceanCells(featureId), pack);
+  oceanPaths.set(featureId, path);
+  return path;
+}
 
 function featureHighlightOn(row: HTMLElement): void {
   const feature = getFeature(row);
@@ -345,9 +352,7 @@ function zoomToFeature(element: HTMLElement): void {
   const feature = getFeature(element);
   const points =
     feature.type === "ocean"
-      ? Array.from(pack.cells.i)
-          .filter(cellId => pack.cells.f[cellId] === feature.i)
-          .map(cellId => pack.cells.p[cellId])
+      ? oceanCells(feature.i).map(cellId => pack.cells.p[cellId])
       : feature.vertices.map(vertex => pack.vertices.p[vertex]).filter(Boolean);
   if (!points.length) return;
 
