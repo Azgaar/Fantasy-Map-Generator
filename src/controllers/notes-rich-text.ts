@@ -144,6 +144,30 @@ export function createRichTextEditor(
 
   const quill = new Quill(host, {
     theme: "snow",
+    // Exclude video/formula: their HTML exporters interpolate unescaped values (CVE-2025-15056).
+    formats: [
+      "align",
+      "direction",
+      "indent",
+      "background",
+      "color",
+      "font",
+      "size",
+      "blockquote",
+      "code-block",
+      "header",
+      "list",
+      "bold",
+      "code",
+      "italic",
+      "link",
+      "script",
+      "strike",
+      "underline",
+      "image",
+      "table",
+      "divider"
+    ],
     placeholder: "Write the note here. It shows up in the notes box when the element is hovered or clicked",
     bounds: host, // otherwise the link tooltip is kept inside the body and drifts over the toolbar
     modules: {
