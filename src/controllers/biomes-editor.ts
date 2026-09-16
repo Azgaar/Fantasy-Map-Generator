@@ -148,7 +148,7 @@ function renderDialog(): void {
   });
 
   ensureEl("biomesEditorRefresh").addEventListener("click", refreshBiomesEditor);
-  ensureEl("biomesEditStyle").addEventListener("click", () => editStyle("biomes"));
+  ensureEl("biomesEditStyle").addEventListener("click", () => void Controllers.StyleEditor.open("biomes"));
   ensureEl("biomesLegend").addEventListener("click", toggleLegend);
   ensureEl("biomesPercentage").addEventListener("click", togglePercentageMode);
   ensureEl("biomesManually").addEventListener("click", openPaintEditor);

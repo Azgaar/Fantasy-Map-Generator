@@ -148,4 +148,3 @@ export function applyOceanPattern(): void {
   pattern.setAttribute("width", "100");
   pattern.setAttribute("height", "100");
 }
-window.applyOceanPattern = applyOceanPattern;

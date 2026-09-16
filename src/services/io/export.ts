@@ -5,6 +5,7 @@ import { tip } from "@/components/tooltips";
 import { viewport } from "@/components/viewport";
 import { renderEmblemDefinitions } from "@/renderers/draw-emblems";
 import { drawScaleBar } from "@/renderers/draw-scalebar";
+import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { getUsedFonts, loadFontsAsDataURI } from "@/services/fonts";
 import { savedMessage } from "@/services/platform";
@@ -621,7 +622,7 @@ function removeUnusedElements(clone: MapSelection): void {
 function updateMeshCells(clone: MapSelection): void {
   const renderOcean = ensureEl<HTMLInputElement>("renderOcean").checked;
   const data = renderOcean ? grid.cells.i : grid.cells.i.filter((i: number) => grid.cells.h[i] >= 20);
-  const scheme = getColorScheme(styles.heightmap.landHeights.options.scheme);
+  const scheme = HeightmapColorSchemes.get(styles.heightmap.landHeights.options.scheme);
   clone.select("#heights").attr("filter", "url(#blur1)");
   clone
     .select("#heights")
@@ -630,7 +631,7 @@ function updateMeshCells(clone: MapSelection): void {
     .join("polygon")
     .attr("points", (d: number) => String(Grid.getPolygon(d)))
     .attr("id", (d: number) => `cell${d}`)
-    .attr("stroke", (d: number) => getColor(grid.cells.h[d], scheme));
+    .attr("stroke", (d: number) => HeightmapColorSchemes.getColor(grid.cells.h[d], scheme));
 }
 
 // for each g element get inline style

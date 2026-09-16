@@ -15,6 +15,7 @@ import {
 } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
+import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
 import { downloadFile, getFileName, getHeight, getLatitude, getLongitude } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
 import type { Feature } from "../generators/features-generator";
@@ -182,7 +183,7 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
       .attr("fill", "darkgray");
 
     // Terrain elevation gradient (top = peak colour, bottom = valley colour)
-    const colors = getColorScheme("natural");
+    const colors = HeightmapColorSchemes.get("natural");
     const landGrad = defs
       .append("linearGradient")
       .attr("id", "landdef")
@@ -192,7 +193,7 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
       .attr("y2", "100%");
 
     if (chartData.mah === chartData.mih) {
-      const c = getColor(chartData.mih, colors);
+      const c = HeightmapColorSchemes.getColor(chartData.mih, colors);
       landGrad.append("stop").attr("offset", "0%").attr("style", `stop-color:${c};stop-opacity:1`);
       landGrad.append("stop").attr("offset", "100%").attr("style", `stop-color:${c};stop-opacity:1`);
     } else {
@@ -202,7 +203,7 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
         landGrad
           .append("stop")
           .attr("offset", `${(s / steps) * 100}%`)
-          .attr("style", `stop-color:${getColor(h, colors)};stop-opacity:1`);
+          .attr("style", `stop-color:${HeightmapColorSchemes.getColor(h, colors)};stop-opacity:1`);
       }
     }
 

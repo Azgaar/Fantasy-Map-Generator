@@ -63,8 +63,8 @@
   "texture": {
     "attrs": {
       "opacity": 0.6,
-      "filter": "",
-      "mask": ""
+      "filter": null,
+      "mask": null
     },
     "options": {
       "href": "./images/textures/antique-small.jpg",
@@ -202,7 +202,7 @@
     "attrs": {
       "opacity": null,
       "fill": "#a69b7d",
-      "filter": ""
+      "filter": null
     }
   },
   "lakes": {
@@ -457,8 +457,8 @@
           "stroke": "#8d502a",
           "stroke-width": 0.8,
           "stroke-dasharray": "3",
-          "stroke-linecap": "inherit",
-          "filter": "",
+          "stroke-linecap": null,
+          "filter": null,
           "mask": null
         }
       },
@@ -1300,7 +1300,7 @@
       "opacity": 0.2,
       "fill": "#000000",
       "mask": "url(#vignette-mask)",
-      "filter": ""
+      "filter": null
     },
     "options": {
       "x": "0%",

@@ -8,8 +8,7 @@ import {
   isStoreStyles,
   labelGroupFromLegacy,
   presetBagFor,
-  presetFromLegacy,
-  styleNodeFor
+  presetFromLegacy
 } from "./styles-legacy";
 import fixture from "./styles-legacy-default.fixture.json";
 import serializerFixture from "./styles-legacy-serializer.fixture.json";
@@ -74,7 +73,7 @@ test("R7: #provs' dead text attrs are dropped, not routed", () => {
 });
 
 // Pins the full custom-preset dialect: one bag per selector collectStyleData
-// (public/modules/ui/style-presets.js) could ever write, so every attribute the legacy
+// (the pre-v1.150 style-presets.js) could ever write, so every attribute the legacy
 // serializer could produce has a store home or a deliberate, tested drop.
 test("R9: the legacy serializer's full attribute dialect converts with no unrouted keys", () => {
   const warn = vi.spyOn(console, "warn");
@@ -100,44 +99,8 @@ test("R9: #terrs > #landHeights never legitimately carried data-render, so it st
   ).toBe(false);
 });
 
-test("styleNodeFor resolves editor selections to live store nodes", () => {
-  expect(styleNodeFor("rivers", "")).toEqual({ node: styles.rivers, layer: "rivers" });
-  expect(styleNodeFor("rivers", "rivers")).toEqual({ node: styles.rivers, layer: "rivers" });
-  expect(styleNodeFor("lakes", "freshwater")).toEqual({ node: styles.lakes.groups.freshwater, layer: "lakes" });
-  styles.lakes.groups.my_lakes = structuredClone(styles.lakes.groups.freshwater);
-  expect(styleNodeFor("lakes", "my_lakes")).toEqual({ node: styles.lakes.groups.my_lakes, layer: "lakes" });
-  delete styles.lakes.groups.my_lakes;
-  expect(styleNodeFor("terrs", "landHeights")).toEqual({ node: styles.heightmap.landHeights, layer: "heightmap" });
-  expect(styleNodeFor("labels", "capital")).toEqual({ node: styles.labels.groups.capital, layer: "labels" });
-  expect(styleNodeFor("burgIcons", "town")).toEqual({
-    node: styles.burgIcons.burgIcons.groups.town,
-    layer: "burgIcons"
-  });
-  expect(styleNodeFor("anchors", "capital")).toEqual({
-    node: styles.burgIcons.anchors.groups.capital,
-    layer: "burgIcons"
-  });
-  expect(styleNodeFor("regions", "statesHalo")).toEqual({ node: styles.states.statesHalo, layer: "states" });
-});
-
-test("styleNodeFor returns undefined for structural parents and unknown groups", () => {
-  // #regions, #terrs, #icons and #goods are containers: styling lives on their children
-  expect(styleNodeFor("regions", "")).toBeUndefined();
-  expect(styleNodeFor("terrs", "")).toBeUndefined();
-  expect(styleNodeFor("icons", "icons")).toBeUndefined();
-  expect(styleNodeFor("goods", "goods")).toBeUndefined();
-  expect(styleNodeFor("labels", "no-such-group")).toBeUndefined();
-  expect(styleNodeFor("burgIcons", "no-such-group")).toBeUndefined();
-});
-
 test("numeric-looking string options coerce back to strings, not schema-rejected numbers", () => {
-  const styles = presetFromLegacy(
-    { "#oceanLayers": { layers: -6 }, "#markets": { "data-icon": 8 } },
-    {
-      onUnknown: "skip"
-    }
-  );
-  expect(styles.ocean.oceanLayers.options.outline).toBe("-6");
+  const styles = presetFromLegacy({ "#markets": { "data-icon": 8 } }, { onUnknown: "skip" });
   expect(styles.markets.options.icon).toBe("8");
 });
 

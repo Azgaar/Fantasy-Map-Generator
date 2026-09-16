@@ -1043,16 +1043,6 @@ function resetLanguage(): void {
  * Restore what the tab itself shows: the lock icons, the saved style presets and the interface
  * settings. The values themselves are restored by `Options.restore` before this runs
  */
-/**
- * Custom style presets predating the `fmgStyle_` prefix kept a `style<Name>` key of their own;
- * today's are listed by public/modules/ui/style-presets.js when it builds the select
- */
-function restoreLegacyStylePresets(): void {
-  for (const key of Object.keys(localStorage)) {
-    if (key.startsWith("style")) applyOption(stylePreset, key, key.slice(5));
-  }
-}
-
 const defaultUiSize = (): number => minmax(rn(window.innerWidth / 1280, 1), 1, maxUiSize());
 
 export function restoreUi(): void {
@@ -1063,7 +1053,6 @@ export function restoreUi(): void {
   }
 
   Pins.bindIcons(ensureEl("options"), currentValue);
-  restoreLegacyStylePresets();
 
   // `syncInputs` has already put every preference in its control; these are the ones that also do
   // something the moment they are read back. See docs/architecture/configuration.md
@@ -1081,8 +1070,8 @@ export function restoreUi(): void {
   applyZoomExtent();
 }
 
-// Legacy seam: the classic style.js reads the culture set cap, the submap and transform tools
-// set the cell density, and Google's script calls back into the page by name
+// Legacy seam: the submap and transform tools set the cell density, and Google's script calls
+// back into the page by name
 declare global {
   // biome-ignore lint/suspicious/noRedeclare: legacy seam
   var changeCellsDensity: (density: number) => void;

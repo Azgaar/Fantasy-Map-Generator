@@ -5,6 +5,7 @@ import { getPointsNumber } from "@/data/graph-density";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { precreatedHeightmaps } from "@/data/precreated-heightmaps";
 import { drawHeights } from "@/renderers/draw-heightmap";
+import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
 import type { GridGraph } from "@/types/GridGraph";
 import { ensureEl, generateSeed } from "../utils";
 
@@ -184,7 +185,7 @@ function insertHtml(): void {
   const previewConfig = graphConfig;
   if (!previewGraph || !previewConfig) return;
 
-  const heightmapColorSchemeOptions = Object.keys(heightmapColorSchemes)
+  const heightmapColorSchemeOptions = HeightmapColorSchemes.names()
     .map(scheme => `<option value="${scheme}">${scheme}</option>`)
     .join("");
 
@@ -374,7 +375,7 @@ function confirmHeightmapEdit(el: HTMLElement): void {
 function getHeightmapPreview(heights: Uint8Array | null): string {
   if (!graph) return "";
 
-  const scheme = getColorScheme(ensureEl<HTMLSelectElement>("heightmapSelectionColorScheme").value);
+  const scheme = HeightmapColorSchemes.get(ensureEl<HTMLSelectElement>("heightmapSelectionColorScheme").value);
   const renderOcean = ensureEl<HTMLInputElement>("heightmapSelectionRenderOcean").checked;
   const dataUrl = drawHeights({
     heights: heights as unknown as number[],

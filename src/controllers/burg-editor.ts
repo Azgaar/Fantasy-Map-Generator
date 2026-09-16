@@ -513,7 +513,7 @@ function hideStyleSection(): void {
 function editGroupLabelStyle(): void {
   const burg = pack.burgs[getSelectedId()];
   closeDialogs(".stable");
-  editStyle("labels", burg.label?.group || burg.group);
+  void Controllers.StyleEditor.open("labels", burg.label?.group || burg.group);
 }
 
 function editBurgLabel(): void {
@@ -525,13 +525,13 @@ function editBurgLabel(): void {
 function editGroupIconStyle(): void {
   const burg = pack.burgs[getSelectedId()];
   closeDialogs(".stable");
-  editStyle("burgIcons", burg.group);
+  void Controllers.StyleEditor.open("burgIcons", burg.group);
 }
 
 function editGroupAnchorStyle(): void {
   const burg = pack.burgs[getSelectedId()];
   closeDialogs(".stable");
-  editStyle("anchors", burg.group);
+  void Controllers.StyleEditor.open("burgIcons", burg.group);
 }
 
 function getPreviewViewport(): { width: number; height: number } {

@@ -1256,7 +1256,7 @@
         "fill-opacity": null,
         "stroke": "#000000",
         "stroke-width": 1,
-        "filter": ""
+        "filter": null
       },
       "options": {
         "top": 18,

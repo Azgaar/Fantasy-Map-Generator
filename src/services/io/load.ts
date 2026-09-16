@@ -10,9 +10,13 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { undraw } from "@/components/undraw";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { resetZoom } from "@/components/zoom";
+import { Controllers } from "@/controllers";
 import { GraphOverride } from "@/generators/graph-override";
 import { onLegendClick } from "@/renderers/draw-legend";
+import { applyOceanPattern } from "@/renderers/draw-ocean";
+import { applyVignetteOptions } from "@/renderers/draw-vignette";
 import { zonesFilter } from "@/renderers/draw-zones";
+import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
 import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
 import { logStats } from "@/services/logging";
@@ -262,7 +266,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     if (!settings) throw new Error("Map settings are missing or malformed");
     Options.applyLoaded(settings);
     syncOptionInputs();
-    setStylePresetSelect();
+    await Controllers.StylePresetsEditor.init(); // the preset select follows the loaded map
 
     INFO && console.group(options.map.seed ? `Loaded Map ${options.map.seed}` : "Loaded Map");
     isLogGroupOpen = true;
@@ -401,16 +405,8 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       .on("click", onLegendClick);
 
     // add custom heightmap color scheme if any
-    if (heightmapColorSchemes) {
-      for (const { scheme } of [styles.heightmap.oceanHeights.options, styles.heightmap.landHeights.options]) {
-        if (scheme && !(scheme in heightmapColorSchemes)) addCustomColorScheme(scheme);
-      }
-    }
-
-    {
-      // add custom texture if any
-      const textureHref = styles.texture.options.href;
-      if (textureHref) updateTextureSelectValue(textureHref);
+    for (const { scheme } of [styles.heightmap.oceanHeights.options, styles.heightmap.landHeights.options]) {
+      HeightmapColorSchemes.ensure(scheme);
     }
 
     // data integrity checks
@@ -669,7 +665,9 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     }
 
     Layers.drawAll();
-    applyStoredStyles();
+    Styles.write(...(Object.keys(styles) as (keyof typeof styles)[]));
+    applyVignetteOptions(); // the defs resources are renderer-owned; their appliers shape them from the store
+    applyOceanPattern();
     applyPerformanceSettings(); // the file's SVG carries the attributes of the browser that saved it
     applyDefaultViewboxEvents();
     fitMapToScreen();

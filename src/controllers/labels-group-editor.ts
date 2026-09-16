@@ -201,7 +201,7 @@ function onBodyClick(event: Event): void {
   }
   if (button.name === "style") {
     const name = row.querySelector<HTMLInputElement>('[name="name"]')!.value.trim();
-    if (name) editStyle("labels", name);
+    if (name) void Controllers.StyleEditor.open("labels", name);
     return;
   }
   if (button.name === "list") {

@@ -14,7 +14,6 @@
   "#anchors": {},
   "#biomes": {
     "opacity": "0.7",
-    "filter": "",
     "mask": "url(#land)",
     "style": "display: none;"
   },
@@ -26,16 +25,14 @@
     "stroke": "#ffffff",
     "stroke-width": "1",
     "stroke-dasharray": "3",
-    "stroke-linecap": "round",
-    "filter": ""
+    "stroke-linecap": "round"
   },
   "#provinceBorders": {
     "opacity": "0.5",
     "stroke": "#ffffff",
     "stroke-width": "0.3",
     "stroke-dasharray": "1",
-    "stroke-linecap": "round",
-    "filter": ""
+    "stroke-linecap": "round"
   },
   "#burgIcons": {},
   "#cells": {
@@ -58,7 +55,6 @@
   },
   "#compass": {
     "opacity": "0.9",
-    "mask": "",
     "shape-rendering": "optimizespeed",
     "style": "display: none;"
   },
@@ -170,9 +166,7 @@
     "fill-opacity": "0",
     "style": "display: none;"
   },
-  "#oceanLayers": {
-    "filter": ""
-  },
+  "#oceanLayers": {},
   "#oceanBase": {
     "fill": "#05001f",
     "x": "0",
@@ -206,7 +200,6 @@
   "#provs": {
     "opacity": "0.2",
     "fill": "#933e3e",
-    "filter": "",
     "font-size": "8",
     "font-family": "Orbitron",
     "style": "display: none;"
@@ -323,7 +316,6 @@
     "opacity": "0.7",
     "stroke": "#ffffff",
     "stroke-width": "0.3",
-    "stroke-linecap": "inherit",
     "filter": "url(#dropShadow05)",
     "style": "display: none;"
   },

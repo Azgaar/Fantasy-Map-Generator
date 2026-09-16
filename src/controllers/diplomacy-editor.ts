@@ -167,7 +167,7 @@ function renderDialog(): void {
   });
 
   ensureEl("diplomacyEditorRefresh").addEventListener("click", refreshDiplomacyEditor);
-  ensureEl("diplomacyEditStyle").addEventListener("click", () => editStyle("regions"));
+  ensureEl("diplomacyEditStyle").addEventListener("click", () => void Controllers.StyleEditor.open("states"));
   ensureEl("diplomacyRegenerate").addEventListener("click", regenerateRelations);
   ensureEl("diplomacyReset").addEventListener("click", resetRelations);
   ensureEl("diplomacyShowMatrix").addEventListener("click", showRelationsMatrix);

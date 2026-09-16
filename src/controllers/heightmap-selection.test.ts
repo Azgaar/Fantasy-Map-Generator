@@ -35,8 +35,6 @@ beforeAll(async () => {
   options.map.graph = { width: 800, height: 600, points: 1000 };
   options.generation.graph = { width: 800, height: 600, density: 1 };
   globalThis.grid = Grid.generate("old", 800, 600);
-  vi.stubGlobal("heightmapColorSchemes", { test: {} });
-  vi.stubGlobal("getColorScheme", () => ({}));
   vi.stubGlobal("aleaPRNG", Alea);
   vi.stubGlobal("$", () => ({ dialog }));
   vi.stubGlobal("regeneratePrompt", regenerate);

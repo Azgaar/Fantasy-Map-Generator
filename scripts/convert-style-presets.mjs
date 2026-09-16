@@ -1,5 +1,7 @@
-// Converts legacy selector-keyed preset JSONs in public/styles to the store format, in place.
-// Run with: npx vite-node scripts/convert-style-presets.mjs
+// Rewrites style preset JSONs in place.
+//   npx vite-node scripts/convert-style-presets.mjs             legacy selector-keyed presets in public/styles → store format
+//   npx vite-node scripts/convert-style-presets.mjs --normalize  "" → null for filter/mask/dasharray, "inherit" linecaps → null,
+//                                                                over the presets, default-styles.json and the test fixtures
 import fs from "node:fs";
 import path from "node:path";
 
@@ -16,16 +18,67 @@ if (typeof globalThis.document === "undefined") {
   };
 }
 
-const { isLegacyPreset, presetFromLegacy } = await import("../src/generators/styles-legacy.ts");
+const { isLegacyPreset, presetFromLegacy, normalizeStyles } = await import("../src/generators/styles-legacy.ts");
 
-const dir = "public/styles";
-for (const file of fs.readdirSync(dir).filter(f => f.endsWith(".json"))) {
-  const target = path.join(dir, file);
-  const json = JSON.parse(fs.readFileSync(target, "utf8"));
-  if (!isLegacyPreset(json)) {
-    console.log(`${file}: skip (already converted)`);
-    continue;
+const read = file => JSON.parse(fs.readFileSync(file, "utf8"));
+const write = (file, json) => fs.writeFileSync(file, `${JSON.stringify(json, null, 2)}\n`);
+const presets = fs
+  .readdirSync("public/styles")
+  .filter(f => f.endsWith(".json"))
+  .map(f => path.join("public/styles", f));
+
+if (process.argv.includes("--normalize")) {
+  const records = [...presets, "src/generators/default-styles.json"];
+  const legacyFixtures = fs
+    .readdirSync("src/generators")
+    .filter(f => f.endsWith(".fixture.json"))
+    .map(f => path.join("src/generators", f));
+  const snapshots = fs
+    .readdirSync("tests/fixtures")
+    .filter(f => f.startsWith("style-baseline") && f.endsWith(".json"))
+    .map(f => path.join("tests/fixtures", f));
+
+  for (const file of records) rewrite(file, normalizeStyles);
+  for (const file of legacyFixtures) rewrite(file, normalizeLegacyBags);
+  for (const file of snapshots) rewrite(file, normalizeSnapshot);
+} else {
+  for (const file of presets) {
+    const json = read(file);
+    if (!isLegacyPreset(json)) {
+      console.log(`${file}: skip (already converted)`);
+      continue;
+    }
+    write(file, presetFromLegacy(json));
+    console.log(`${file}: converted`);
   }
-  fs.writeFileSync(target, JSON.stringify(presetFromLegacy(json), null, 2) + "\n");
-  console.log(`${file}: converted`);
+}
+
+function rewrite(file, normalize) {
+  const before = fs.readFileSync(file, "utf8");
+  const json = normalize(JSON.parse(before));
+  // the e2e snapshot writer adds no trailing newline; keep each file the way its writer leaves it
+  const after = JSON.stringify(json, null, 2) + (before.endsWith("\n") ? "\n" : "");
+  if (after === before) return console.log(`${file}: unchanged`);
+  fs.writeFileSync(file, after);
+  console.log(`${file}: normalized`);
+}
+
+// a legacy preset is one attr bag per selector: normalize each bag as the store's attrs
+function normalizeLegacyBags(preset) {
+  for (const bag of Object.values(preset)) normalizeStyles({ attrs: bag });
+  return preset;
+}
+
+// a DOM attribute snapshot: an attr the store now holds as null is absent from the element. #scaleBarBack
+// keeps its file attrs on load (the old rect carries no data-group), so it is left as the file has it
+function normalizeSnapshot(snapshot) {
+  for (const [selector, bag] of Object.entries(snapshot)) {
+    if (selector === "#scaleBarBack") continue;
+    const normalized = normalizeStyles({ attrs: { ...bag } }).attrs;
+    for (const [attr, value] of Object.entries(normalized)) {
+      if (value === null) delete bag[attr];
+      else bag[attr] = value;
+    }
+  }
+  return snapshot;
 }

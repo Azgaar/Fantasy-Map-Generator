@@ -434,7 +434,7 @@ function generateRandomName(): void {
 }
 
 function editGroupStyle(): void {
-  editStyle("labels", label.group);
+  void Controllers.StyleEditor.open("labels", label.group);
 }
 
 function showSizeSection(): void {

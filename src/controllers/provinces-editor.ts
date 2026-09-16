@@ -190,7 +190,7 @@ function renderDialog(): void {
   applyLineHighlighting("provincesEditor", ({ cellId }) => pack.cells.province[cellId]);
 
   ensureEl("provincesEditorRefresh").addEventListener("click", refreshProvincesEditor);
-  ensureEl("provincesEditStyle").addEventListener("click", () => editStyle("provs"));
+  ensureEl("provincesEditStyle").addEventListener("click", () => void Controllers.StyleEditor.open("provinces"));
   ensureEl("provincesFilterState").addEventListener("change", event => {
     filterState.stateId = +(event.target as HTMLSelectElement).value;
     dialogState.set(dialogId, "filters", filterState);

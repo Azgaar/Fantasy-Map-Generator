@@ -1,0 +1,444 @@
+<title>Style Editor Look and Feel</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --ground: #f6f3f4; --paper: #ffffff; --ink: #2a2226; --muted: #6e5f66; --rule: #ddd3d8;
+    --accent: #7b5a6c; --accent-ink: #ffffff; --tint: #efe6eb;
+    --change: #c0392b; --pick: #f5c542; --ok: #2f9e44;
+    /* the product's own panel palette, used inside the mockups only */
+    --fmg-main: rgb(153, 119, 135); --fmg-light: rgb(164, 139, 151); --fmg-dark: rgb(97, 73, 84); --fmg-border: #5e4fa2;
+    --sans: "Source Sans 3", "Segoe UI", system-ui, sans-serif; --mono: "IBM Plex Mono", Consolas, "SF Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --ground: #1e191c; --paper: #272125; --ink: #ede6e9; --muted: #b3a5ab; --rule: #3d343a; --accent: #c9a2b6; --accent-ink: #1e191c; --tint: #33292f; }
+  }
+  :root[data-theme="dark"] { --ground: #1e191c; --paper: #272125; --ink: #ede6e9; --muted: #b3a5ab; --rule: #3d343a; --accent: #c9a2b6; --accent-ink: #1e191c; --tint: #33292f; }
+
+  body { background: var(--ground); color: var(--ink); font: 16px/1.55 var(--sans); margin: 0; padding-block: 0 4rem; padding-inline: 16px; }
+  .wrap { max-width: 78ch; margin: 0 auto; }
+  header.top { padding-block: 3rem 1.5rem; border-bottom: 1px solid var(--rule); margin-bottom: 2rem; }
+  .eyebrow { font: 600 .75rem/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin: 0 0 .8rem; }
+  h1 { font-size: 2.1rem; line-height: 1.15; margin: 0 0 .6rem; text-wrap: balance; font-weight: 700; }
+  .lede { font-size: 1.1rem; color: var(--muted); margin: 0; max-width: 62ch; }
+  .meta { display: flex; flex-wrap: wrap; gap: .4rem 1.4rem; margin-top: 1.2rem; font: .85rem var(--mono); color: var(--muted); }
+  nav.toc { background: var(--paper); border: 1px solid var(--rule); border-radius: 6px; padding: .9rem 1.2rem; margin-bottom: 2.4rem; }
+  nav.toc ol { margin: .3rem 0 0; padding-left: 1.2rem; columns: 2; column-gap: 2rem; font-size: .95rem; }
+  nav.toc li { break-inside: avoid; padding: .1rem 0; }
+  nav.toc a, .wrap a { color: var(--accent); text-decoration: none; }
+  .wrap a:hover { text-decoration: underline; }
+  section { margin-bottom: 3rem; }
+  h2 { font-size: 1.45rem; margin: 0 0 .9rem; padding-top: .4rem; text-wrap: balance; }
+  h3 { font-size: 1.1rem; margin: 1.6rem 0 .5rem; }
+  h4 { font-size: 1rem; margin: 1.2rem 0 .3rem; }
+  p, li { max-width: 70ch; }
+  code, kbd { font: .86em var(--mono); background: var(--tint); padding: .05em .35em; border-radius: 3px; }
+  pre { background: var(--tint); border-radius: 6px; padding: .9rem 1rem; overflow-x: auto; font: .82rem/1.5 var(--mono); }
+  pre code { background: none; padding: 0; font-size: inherit; }
+  table { border-collapse: collapse; width: 100%; font-size: .93rem; margin: .6rem 0 1rem; }
+  th, td { text-align: left; vertical-align: top; padding: .45rem .6rem; border-bottom: 1px solid var(--rule); }
+  th { font-weight: 600; color: var(--muted); font-size: .8rem; letter-spacing: .06em; text-transform: uppercase; }
+  .scroll { overflow-x: auto; }
+  .verdict { background: var(--paper); border-left: 4px solid var(--accent); padding: 1rem 1.2rem; border-radius: 0 6px 6px 0; margin: 1rem 0 1.4rem; }
+  .verdict p { margin: .3rem 0; }
+  .tag { display: inline-block; font: 600 .7rem/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; padding: .3em .55em; border-radius: 3px; background: var(--tint); color: var(--accent); vertical-align: middle; }
+  .tag.keep { background: #e2f3e6; color: #1f6b30; } .tag.drop { background: #f6e1de; color: #8c2a1f; } .tag.later { background: #fbf0d0; color: #7a5a00; }
+  :root[data-theme="dark"] .tag.keep, :root:not([data-theme="light"]) .tag.keep { }
+  .checks { list-style: none; padding: 0; }
+  .checks li { padding-left: 1.7rem; position: relative; margin: .35rem 0; }
+  .checks li::before { content: "☐"; position: absolute; left: .2rem; top: 0; color: var(--accent); }
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem 1.6rem; }
+  figure { margin: 1.2rem 0 1.6rem; }
+  figcaption { font-size: .88rem; color: var(--muted); margin-top: .6rem; max-width: 70ch; }
+  .callouts { counter-reset: c; list-style: none; padding: 0; margin: .6rem 0 0; font-size: .93rem; columns: 2; column-gap: 2rem; }
+  .callouts li { break-inside: avoid; padding-left: 1.9rem; position: relative; margin: .3rem 0; }
+  .callouts li::before { counter-increment: c; content: counter(c); position: absolute; left: 0; top: .15rem; width: 1.3rem; height: 1.3rem; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font: 600 .72rem/1.3rem var(--mono); text-align: center; }
+  @media (max-width: 560px) { .callouts, nav.toc ol { columns: 1; } }
+
+  /* ---------- mockups: a faithful replica of the product panel ---------- */
+  .stage { background: #6f7a80 url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='6' height='6'><rect width='6' height='6' fill='%236f7a80'/><circle cx='1' cy='1' r='.6' fill='%23636d73'/></svg>"); border-radius: 8px; padding: 14px; display: flex; gap: 12px; align-items: flex-start; overflow-x: auto; position: relative; }
+  .fmg { font: 11px/1.3 var(--mono); color: #111; user-select: none; }
+  .panel { width: 330px; flex: none; background: var(--fmg-light); border: 1px solid var(--fmg-border); position: relative; }
+  .panel .tabs { display: flex; height: 2.2em; border-bottom: 1px solid var(--fmg-dark); }
+  .panel .tabs span { flex: 1; text-align: center; line-height: 2.2em; font-weight: 700; background: var(--fmg-main); }
+  .panel .tabs span.on { background: var(--fmg-light); }
+  .panel .tabs span:first-child { flex: 0 0 2em; }
+  .panel .body { padding: .3em .5em .5em; }
+  .row-h { display: flex; align-items: center; gap: .4em; margin: .3em 0; }
+  .row-h > b { flex: 0 0 8.5em; font-style: italic; }
+  .sel { flex: 1 1 auto; min-width: 0; height: 1.7em; background: #f5f0f2; border: 1px solid #8a7580; padding: 0 .4em; display: flex; align-items: center; justify-content: space-between; box-sizing: border-box; }
+  .sel::after { content: "▾"; opacity: .6; }
+  .ico { flex: none; width: 1.8em; height: 1.7em; border: 1px solid #8a7580; background: #f5f0f2; display: grid; place-items: center; font-size: 1em; }
+  .toolbar { display: flex; align-items: center; gap: .5em; margin: .4em 0 .2em; font-size: .92em; opacity: .9; }
+  .toolbar .btn { margin-left: auto; border: 1px solid #8a7580; background: #f5f0f2; padding: .1em .6em; }
+  .card { border: 1px solid var(--fmg-dark); border-radius: 5px; margin: .4em 0; background: rgba(255,255,255,.1); overflow: hidden; }
+  .card > .hd { display: flex; align-items: center; gap: .4em; padding: .3em .5em; background: rgba(255,255,255,.2); font-weight: 700; }
+  .card > .hd .caret { opacity: .6; width: 1em; }
+  .card > .hd .n { font-weight: 400; font-size: .85em; color: #7a2e2e; margin-left: .4em; }
+  .card > .hd .pv { margin-left: auto; display: flex; align-items: center; gap: .4em; font-weight: 400; }
+  .card > .bd { padding: .2em .5em .3em .9em; }
+  .r { display: flex; align-items: center; gap: .4em; min-height: 1.9em; position: relative; }
+  .r > label { flex: 0 0 8em; }
+  .r > .ctl { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: .3em; }
+  .r .track { flex: 1 1 auto; height: 8px; background: #d9cfd4; border-radius: 4px; position: relative; }
+  .r .track i { position: absolute; top: -3px; width: 8px; height: 14px; background: #f5f0f2; border: 1px solid #8a7580; border-radius: 2px; }
+  .r .val { width: 2.6em; text-align: right; }
+  .r .ctl .sel { height: 1.6em; }
+  .r .ctl .txt { flex: 1 1 auto; height: 1.6em; background: #f5f0f2; border: 1px solid #8a7580; padding: 0 .4em; box-sizing: border-box; color: #666; }
+  .r .swatch { width: 4.5em; height: 1em; border: 1px solid #a9a9a9; }
+  .r .hex { width: 5.2em; height: 1.6em; background: #f5f0f2; border: 1px solid #8a7580; padding: 0 .4em; box-sizing: border-box; font-size: .9em; }
+  .r .reset { flex: none; color: #7a2e2e; padding: 0 .2em; visibility: hidden; }
+  .r.changed .reset { visibility: visible; }
+  .r.changed::before { content: ""; position: absolute; left: -.5em; top: .35em; bottom: .35em; width: 3px; border-radius: 2px; background: var(--change); }
+  .chk { width: 1.2em; height: 1.2em; border: 1px solid #8a7580; background: #f5f0f2; display: inline-grid; place-items: center; }
+  .pv .sw { width: 2.6em; height: 1.3em; border: 1px solid #333; border-radius: 3px; position: relative; background: repeating-conic-gradient(#bbb 0 25%, #fff 0 50%) 0 0 / 8px 8px; }
+  .pv .sw i { position: absolute; inset: 0; }
+  .pv .sample { font-family: Georgia, serif; font-size: 1.25em; }
+  .pv .fx { font-size: .9em; opacity: .75; }
+  .footer-btns { display: flex; justify-content: space-around; padding: .4em 0 0; font-weight: 700; }
+  .callout-dot { position: absolute; width: 1.4em; height: 1.4em; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font: 600 .75em/1.85 var(--mono); text-align: center; box-shadow: 0 0 0 2px #fff; z-index: 2; }
+
+  .dlg { flex: none; background: var(--fmg-light); border: 1px solid var(--fmg-border); box-shadow: 0 4px 14px rgba(0,0,0,.35); }
+  .dlg .ttl { display: flex; align-items: center; background: var(--fmg-main); padding: .35em .6em; font-weight: 700; border-bottom: 1px solid var(--fmg-dark); }
+  .dlg .ttl span { margin-left: auto; letter-spacing: .3em; opacity: .7; }
+  .dlg .bd { padding: .4em .5em; }
+  .tree { width: 220px; }
+  .tree .filter { height: 1.7em; background: #f5f0f2; border: 1px solid #8a7580; color: #888; padding: 0 .4em; box-sizing: border-box; margin-bottom: .4em; }
+  .tree .li { display: grid; grid-template-columns: 1em 1em 1fr auto; align-items: center; gap: .4em; height: 1.9em; padding: 0 .4em; border-radius: 3px; white-space: nowrap; }
+  .tree .li.on { background: rgba(255,255,255,.45); font-weight: 700; }
+  .tree .li .cnt { opacity: .6; font-size: .9em; font-weight: 400; }
+  .tree .dot { width: .7em; height: .7em; border-radius: 50%; border: 1px solid #333; justify-self: center; }
+  .tree .dot.vis { background: var(--ok); } .tree .dot.perm { background: #999; border-color: #999; }
+  .tree .sub { margin-left: .9em; padding-left: 1.6em; border-left: 1px solid rgba(0,0,0,.15); }
+  .tree .sub .li { grid-template-columns: 1fr auto; }
+  .gallery { width: 396px; }
+  .gallery .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .4em; }
+  .gallery .pc { border: 2px solid transparent; border-radius: 4px; padding: 2px; text-align: center; text-transform: capitalize; font-size: .9em; }
+  .gallery .pc.on { border-color: var(--pick); background: rgba(255,255,255,.25); }
+  .gallery .pc .img { aspect-ratio: 16/9; border-radius: 2px; background: linear-gradient(135deg, #5a6f8f, #8ea3c2 55%, #d7d2b8 56%, #c9c39c); position: relative; overflow: hidden; }
+  .gallery .pc .img::after { content: ""; position: absolute; left: 20%; top: 25%; width: 55%; height: 50%; border-radius: 45% 55% 40% 60%; background: #d9d6b3; box-shadow: inset 0 0 0 1px #6b7a5a; }
+  .gallery .pc.dark .img { background: #1b2130; } .gallery .pc.dark .img::after { background: #3a4a63; box-shadow: inset 0 0 0 1px #8fa3c9; }
+  .gallery .pc.ink .img { background: #f3efe6; } .gallery .pc.ink .img::after { background: #fff; box-shadow: inset 0 0 0 1px #222; }
+  .gallery .pc.warm .img { background: #5f5347; } .gallery .pc.warm .img::after { background: #cdbd9c; box-shadow: inset 0 0 0 1px #4a3d31; }
+  .gallery .pc.pale .img { background: #cfd8dd; } .gallery .pc.pale .img::after { background: #f2efe6; box-shadow: inset 0 0 0 1px #8a95a0; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+<header class="top">
+  <p class="eyebrow">PRD · Fantasy Map Generator · Style tab</p>
+  <h1>Style Editor Look and Feel</h1>
+  <p class="lede">The outcome of three prototyping rounds on the Style tab, written as the specification to implement. It keeps today's structure and logic — preset, element, group, the schema's own sections — and changes how it looks and how a value is edited, reset and found.</p>
+  <div class="meta"><span>branch style-editor-migration</span><span>prototype src/controllers/style-editor/prototype/</span><span>companion docs/prd/style-editor.md</span><span>2026-09-16</span></div>
+</header>
+
+<nav class="toc" aria-label="Contents">
+  <strong>Contents</strong>
+  <ol>
+    <li><a href="#verdict">Verdict</a></li>
+    <li><a href="#settled">What prototyping settled</a></li>
+    <li><a href="#tab">The Style tab</a></li>
+    <li><a href="#rows">Rows and inputs</a></li>
+    <li><a href="#cards">Section cards and previews</a></li>
+    <li><a href="#dialogs">The two dialogs</a></li>
+    <li><a href="#rules">Behaviour rules</a></li>
+    <li><a href="#impl">Implementation map</a></li>
+    <li><a href="#accept">Acceptance criteria</a></li>
+    <li><a href="#later">Out of scope and open questions</a></li>
+  </ol>
+</nav>
+
+<section id="verdict">
+  <h2>Verdict</h2>
+  <div class="verdict">
+    <p><strong>Build the classic layout with section cards, per-value reset, an elements dialog and a presets dialog.</strong> Nothing about which store node a control writes, or when a layer redraws, changes. The schema-driven form (<code>SchemaForm</code>, <code>stylesSchema</code>, <code>styleMeta</code>) stays the source of every row.</p>
+    <p>Four ideas were validated and are in scope: <span class="tag keep">reset to preset</span> <span class="tag keep">section cards with live previews</span> <span class="tag keep">elements tree dialog</span> <span class="tag keep">preset screenshots dialog</span>. Everything else that was tried is out of scope — see <a href="#settled">§2</a> for what and why.</p>
+  </div>
+  <p>The reference implementation is prototype variant A (<code>?variant=A</code> on a dev build): <code>src/controllers/style-editor/prototype/variant-a-classic.ts</code> and <code>shared.ts</code>. It runs on the real store through the engine seam in <code>style-editor/index.ts</code>, so its behaviour is the behaviour to ship; its code is throwaway and is to be rewritten, not promoted.</p>
+</section>
+
+<section id="settled">
+  <h2>What prototyping settled</h2>
+  <p>Three rounds, fifteen variants, all driving the live store. The first round explored structure (tree pane, concern tabs, preset-first, pick-from-map, a matrix); the second kept the panel width and varied organisation and inputs; the third converged.</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Idea</th><th>Decision</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Per-row reset to the preset's value, changed rows marked</td><td><span class="tag keep">keep</span></td><td>The single most useful addition: it shows what the user did and undoes it in one click.</td></tr>
+      <tr><td>Preset screenshots as a picker</td><td><span class="tag keep">keep</span></td><td>Presets are visual; names like "gloom" and "pale" don't communicate. Lives in a dialog, not in the tab (tab space is scarce).</td></tr>
+      <tr><td>Element tree with groups and visibility</td><td><span class="tag keep">keep, as a dialog</span></td><td>Better overview than a 40-item select, but there is no room in the tab. Must not close on pick.</td></tr>
+      <tr><td>Cards with live previews</td><td><span class="tag keep">keep, on schema sections</span></td><td>The look was preferred. Regrouping fields by concern (Fill/Outline/Text) was too complex and broke the group logic — cards wrap the schema's existing sections instead.</td></tr>
+      <tr><td>Wide two-pane tab / matrix / drawer</td><td><span class="tag drop">drop</span></td><td>Changes the panel's footprint; the Menu must keep its 330px width.</td></tr>
+      <tr><td>Regrouping fields by concern</td><td><span class="tag drop">drop</span></td><td>Breaks the store's section structure and gate semantics; too complex to reason about.</td></tr>
+      <tr><td>Pick-from-map (hover names the layer, click selects)</td><td><span class="tag drop">drop</span></td><td>Intercepts map clicks; the tab must not change map behaviour. Ctrl+click on a layer button already exists.</td></tr>
+      <tr><td>Concern tabs, dense two-column grid, scrub numbers, Basic/Advanced modes, combobox, property search</td><td><span class="tag later">not now</span></td><td>None rejected outright; none needed for this iteration. Search across elements and a "Changed only" filter are the two most likely follow-ups.</td></tr>
+      <tr><td>Thumbnail of the current preset in the tab; "Matches the preset" label</td><td><span class="tag drop">drop</span></td><td>Noise. Matching is the default state and needs no label; the picture belongs to the dialog.</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section id="tab">
+  <h2>The Style tab</h2>
+  <p>Same panel, same order of rows, same width. The mock below is the target rendering of <em>Labels › capital</em> after the user changed its opacity; callouts name the parts specified in the following sections.</p>
+
+  <figure>
+    <div class="stage fmg">
+      <div class="panel">
+        <div class="tabs"><span>◀</span><span>Layers</span><span class="on">Style</span><span>Options</span><span>Tools</span><span>About</span></div>
+        <div class="body">
+          <div class="row-h"><b>Preset:</b><div class="sel">frostbite</div><span class="ico" title="Open the preset gallery">🖌</span><span class="ico">+</span><span class="callout-dot" style="right:-8px;margin-top:-18px">1</span></div>
+          <div class="row-h"><b>Element:</b><div class="sel">Labels</div><span class="ico" title="Browse all elements">⌥</span><span class="callout-dot" style="right:-8px;margin-top:-18px">2</span></div>
+          <div class="row-h"><b>Group:</b><div class="sel">capital (18)</div></div>
+          <div class="toolbar"><span>1 value differs from frostbite</span><span class="btn">↺ Reset element</span><span class="callout-dot" style="left:-8px;margin-top:-18px">3</span></div>
+          <div class="card">
+            <div class="hd"><span class="caret">▾</span>Labels · capital<span class="n">1 changed</span><span class="pv"><span class="sample" style="color:#d8e6ec;-webkit-text-stroke:.5px #000">Sample</span></span><span class="callout-dot" style="right:-8px;margin-top:-14px">5</span></div>
+            <div class="bd">
+              <div class="r changed"><label>Opacity</label><div class="ctl"><div class="track"><i style="left:48%"></i></div><span class="val">0,5</span><span class="reset">↺</span></div><span class="callout-dot" style="left:-14px">4</span></div>
+              <div class="r"><label>Fill</label><div class="ctl"><span class="swatch" style="background:#d8e6ec"></span><span class="hex">#d8e6ec</span><span class="reset">↺</span></div></div>
+              <div class="r"><label>Fill opacity</label><div class="ctl"><div class="track"><i style="right:0"></i></div><span class="val">1</span><span class="reset">↺</span></div></div>
+              <div class="r"><label>Stroke</label><div class="ctl"><span class="swatch" style="background:#000"></span><span class="hex">#000000</span><span class="reset">↺</span></div></div>
+              <div class="r"><label>Stroke width</label><div class="ctl"><div class="track"><i style="left:0"></i></div><span class="val">0</span><span class="reset">↺</span></div></div>
+              <div class="r"><label>Stroke dasharray</label><div class="ctl"><span class="txt">none</span><span class="reset">↺</span></div></div>
+              <div class="r"><label>Stroke linecap</label><div class="ctl"><div class="sel">inherit</div><span class="reset">↺</span></div></div>
+              <div class="r"><label>Letter spacing</label><div class="ctl"><div class="track"><i style="left:52%"></i></div><span class="val">0,1</span><span class="reset">↺</span></div></div>
+              <div class="r"><label>Font size</label><div class="ctl"><span class="ico">+</span><span class="ico">−</span><span class="val">7</span><div class="sel" style="flex:0 0 3em">%</div><span class="reset">↺</span></div></div>
+              <div class="r"><label>Font</label><div class="ctl"><div class="sel">Iceberg</div><span class="ico">+</span><span class="reset">↺</span></div></div>
+              <div class="r"><label>Font style</label><div class="ctl"><div class="sel">inherit</div><span class="reset">↺</span></div></div>
+              <div class="r"><label>Font weight</label><div class="ctl"><div class="sel">400</div><span class="reset">↺</span></div></div>
+              <div class="r"><label>Filter</label><div class="ctl"><div class="sel">None</div><span class="reset">↺</span></div></div>
+            </div>
+          </div>
+          <div class="footer-btns"><span>New Map</span><span>Export</span><span>Save</span><span>Load</span><span>Zoom out</span><span>Search</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption>The Style tab at 330px. Panel colours, monospace face and 11px base size are the product's existing ones; nothing in this spec restyles the Menu itself.</figcaption>
+    <ol class="callouts">
+      <li>Preset row: the existing select and +/− buttons plus a gallery button that opens the presets dialog. No thumbnail in the tab.</li>
+      <li>Element row: the existing select plus a tree button that opens the elements dialog. The Group row is unchanged and only shown for grouped elements.</li>
+      <li>Changes line: hidden while the element matches the preset; otherwise "n value(s) differ from &lt;preset&gt;" and a Reset element button.</li>
+      <li>A changed row: 3px accent on the left, a visible ↺ at the end of the control; unchanged rows reserve the space but hide the button.</li>
+      <li>Section card: header with disclosure caret, section name, change count and a live preview built only from the card's own fields.</li>
+    </ol>
+  </figure>
+
+  <h3>Layout rules</h3>
+  <ul>
+    <li>Panel width stays 330px (30em at the panel's 11px). No variant is allowed to widen the Menu.</li>
+    <li>Row order inside the tab: preset, element, group, changes line, cards. The hidden-layer banner ("Labels layer is hidden · Turn on") stays above the cards, as today.</li>
+    <li>Label column 8em, control column fills; a row is at least 1.9em tall so sliders, selects and colour inputs align.</li>
+    <li>Selects and text inputs are 1.7em tall; number inputs keep their current width. Every control keeps its current widget — slider-input, colour input, the custom font/filter/transform controls.</li>
+  </ul>
+</section>
+
+<section id="rows">
+  <h2>Rows and inputs</h2>
+  <h3>Reset to preset</h3>
+  <p>Every leaf row and every section gate compares the store value at its path with the value the <em>current preset</em> holds at the same path (see <a href="#rules">§7</a> for the baseline). When they differ the row is <em>changed</em>:</p>
+  <ul>
+    <li>A 3px vertical bar, colour <code>#c0392b</code>, at the row's left edge (outside the label, inside the card padding).</li>
+    <li>A <code>↺</code> button at the end of the control, colour <code>#7a2e2e</code>, borderless, tooltip <em>"Reset to preset value: &lt;value&gt;"</em>. Unchanged rows render the button with <code>visibility: hidden</code> so controls do not shift.</li>
+    <li>Click: write the preset value through the same change path as an edit (store write + effect), then re-render the form. The state must update live while dragging a slider, without re-rendering — recompute after the store write, on the row that fired the event.</li>
+    <li>A gate (the checkbox or select in a section header) gets the same treatment inside the header.</li>
+  </ul>
+  <h3>Colour rows</h3>
+  <p>The colour input keeps its swatch; the read-only <code>&lt;output&gt;</code> beside it becomes an editable hex field (5.2em, monospace). Typing a valid <code>#rrggbb</code> and leaving the field writes the value and syncs the swatch; an invalid value reverts to the swatch's value. Dragging the swatch updates the field live.</p>
+  <h3>Everything else</h3>
+  <p>Unchanged: sliders, selects with an <em>inherit</em> option for nullable attrs, number inputs, text inputs with <em>none</em> placeholder, and the custom controls (font picker with +, unit input, blur, transform, label style, percent, scheme, texture, icon, emoji, vignette preset, map filter).</p>
+</section>
+
+<section id="cards">
+  <h2>Section cards and previews</h2>
+  <p>Cards are the schema's sections, nothing more. The form renders exactly the <code>&lt;details&gt;</code> tree it renders today; the card is the styling of that tree.</p>
+  <ul>
+    <li>Each top-level section (<em>States body</em>, <em>States halo</em>, <em>Coastline bands</em>…) is a card: 1px border in <code>--dark-solid</code>, 5px radius, 10% white fill; header 20% white fill, 0.3em/0.5em padding, bold; body padded 0.2em 0.5em 0.3em 0.9em.</li>
+    <li>Nested sections (a section inside a section, e.g. <em>Anchors</em> under a burg-icon group) are cards inside the card body, 0.3em apart.</li>
+    <li>Rows that belong to no section — a label group, rivers, the map element — get one card titled by the selection: <em>Labels · capital</em>, <em>Rivers</em>.</li>
+    <li>Header contents, left to right: disclosure caret (▸/▾, native <code>&lt;summary&gt;</code> behaviour), section title, gate control if the section has one, change count <em>"n changed"</em> in <code>#7a2e2e</code> when n &gt; 0, and the preview pushed to the right, capped at 50% of the header width.</li>
+    <li>Cards remember open/closed per section id for the session (today's <code>details.open = true</code> default remains).</li>
+  </ul>
+  <h3>Previews</h3>
+  <p>A preview reads only the rows inside its own card, from the store, and re-renders on every input/change event of the form. It shows what the card's fields produce, in this order of preference:</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Card has</th><th>Preview</th><th>Reads</th></tr></thead>
+    <tbody>
+      <tr><td>a <code>font-family</code></td><td>the word <em>Sample</em> at 1.25em in that font</td><td>font-family, font-weight, font-style, fill (as text colour), stroke and stroke-width (as a thin text stroke)</td></tr>
+      <tr><td>a <code>fill</code> or <code>color</code>, no font</td><td>a 2.6em × 1.3em swatch over a checkerboard</td><td>fill / color, fill-opacity, falling back to opacity</td></tr>
+      <tr><td>a <code>stroke</code>, no font</td><td>a 60 × 12 SVG line</td><td>stroke, stroke-width (capped at 6 for display), stroke-dasharray, stroke-linecap, opacity</td></tr>
+      <tr><td>a <code>filter</code> that is set</td><td>the filter's name as small muted text, e.g. <em>splotch</em></td><td>filter, with <code>url(#…)</code> stripped</td></tr>
+      <tr><td>none of these</td><td>nothing</td><td>—</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>Swatch and line may appear together (a section with fill and stroke); text sample replaces both. Previews never trigger a redraw of the map.</p>
+</section>
+
+<section id="dialogs">
+  <h2>The two dialogs</h2>
+  <p>Both are ordinary jQuery UI dialogs appended to <code>#dialogs</code>, opened by the tab's buttons, destroyed on close, positioned by default at the Menu's right edge (<code>my: "left top", at: "right+10 top", of: "#options"</code>) and remembered by the existing dialog-position persistence. Neither closes on a pick; both re-render when the selection or the preset changes elsewhere.</p>
+
+  <figure>
+    <div class="stage fmg">
+      <div class="dlg tree">
+        <div class="ttl">Style elements<span>_ ✕</span></div>
+        <div class="bd">
+          <div class="filter">Filter…</div>
+          <div class="li"><span></span><span class="dot"></span><span>Biomes</span><span></span></div>
+          <div class="li"><span></span><span class="dot vis"></span><span>Borders</span><span></span></div>
+          <div class="li"><span></span><span class="dot"></span><span>Cells</span><span></span></div>
+          <div class="li"><span></span><span class="dot perm"></span><span>Coastline</span><span></span></div>
+          <div class="li"><span>▸</span><span class="dot vis"></span><span>Icons</span><span class="cnt">9</span></div>
+          <div class="li"><span>▾</span><span class="dot vis"></span><span>Labels</span><span class="cnt">14</span></div>
+          <div class="sub">
+            <div class="li"><span>river</span><span class="cnt">110</span></div>
+            <div class="li"><span>route</span><span class="cnt">163</span></div>
+            <div class="li"><span>town</span><span class="cnt">237</span></div>
+            <div class="li"><span>city</span><span class="cnt">29</span></div>
+            <div class="li on"><span>capital</span><span class="cnt">18</span></div>
+            <div class="li"><span>province</span><span class="cnt">97</span></div>
+            <div class="li"><span>state</span><span class="cnt">18</span></div>
+          </div>
+          <div class="li"><span>▸</span><span class="dot vis"></span><span>Lakes</span><span class="cnt">6</span></div>
+          <div class="li"><span></span><span class="dot perm"></span><span>Landmass</span><span></span></div>
+          <div class="li"><span></span><span class="dot"></span><span>Markers</span><span></span></div>
+        </div>
+      </div>
+      <div class="dlg gallery">
+        <div class="ttl">Style presets<span>_ ✕</span></div>
+        <div class="bd">
+          <div class="grid">
+            <div class="pc"><div class="img"></div>Default</div>
+            <div class="pc warm"><div class="img"></div>Ancient</div>
+            <div class="pc dark"><div class="img"></div>Gloom</div>
+            <div class="pc pale"><div class="img"></div>Pale</div>
+            <div class="pc pale"><div class="img"></div>Light</div>
+            <div class="pc"><div class="img"></div>Watercolor</div>
+            <div class="pc ink"><div class="img"></div>Clean</div>
+            <div class="pc pale"><div class="img"></div>Atlas</div>
+            <div class="pc dark"><div class="img"></div>DarkSeas</div>
+            <div class="pc dark"><div class="img"></div>Cyberpunk</div>
+            <div class="pc dark"><div class="img"></div>Night</div>
+            <div class="pc ink"><div class="img"></div>Monochrome</div>
+            <div class="pc ink"><div class="img"></div>Ink</div>
+            <div class="pc warm"><div class="img"></div>Cinderwood</div>
+            <div class="pc on pale"><div class="img"></div>Frostbite</div>
+            <div class="pc ink"><div class="img" style="background:#888"></div>Mine [custom]</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <figcaption>Left: the elements dialog with <em>Labels › capital</em> selected. Right: the presets dialog with the current preset outlined in gold. Both sit to the right of the Menu; the user can drag them anywhere.</figcaption>
+  </figure>
+
+  <h3>Style elements</h3>
+  <ul>
+    <li>Width 20em, height capped at 70% of the viewport with an internal scroll. Contents: a filter box, then one row per style element in the same alphabetical order as the Element select.</li>
+    <li>Row grid: caret (1em) · visibility dot (1em) · name · count. Rows are 1.9em tall; hover 25% white; the current selection 45% white and bold.</li>
+    <li>The dot is green when the layer is on, hollow when off, grey when the element is permanent or not a layer (map, landmass, fogging). Clicking it toggles the layer through <code>Layers.toggle</code> — exactly what the Layers tab does.</li>
+    <li>Grouped elements (labels, burg icons, routes, lakes) show a caret and the number of groups; clicking the caret expands a nested list, indented under a thin guide, with the same labels and counts the Group select shows ("river … 110"). Clicking a parent selects it with its first group and expands it.</li>
+    <li>The filter matches element names and group names; while filtering, matching grouped elements are shown expanded.</li>
+    <li>A pick calls the editor's <code>open(element, group)</code>; the dialog stays, re-renders and highlights the new selection. External opens (Ctrl+click on a layer button, an editor's "edit style" link) update the highlight too.</li>
+  </ul>
+
+  <h3>Style presets</h3>
+  <ul>
+    <li>Width 36em. A four-column grid of cards: a 16:9 screenshot, the display name beneath it (system names capitalised, custom ones with the <em>[custom]</em> suffix the select already uses). The current preset has a 2px <code>#f5c542</code> border and a light fill.</li>
+    <li>Clicking a card applies the preset through the same path as the select — including the once-per-session "unsaved style changes will be lost" confirmation — and the dialog stays open with the new current card highlighted.</li>
+    <li>Screenshots are shipped assets: <code>public/images/style-presets/&lt;name&gt;.png</code>, 320 × 180, one per system preset, rendered from the same seed at the same view. A preset without an image (a custom one, or a failed load) shows a neutral tile labelled <em>custom</em>. The +/− (save / remove custom) buttons stay in the tab's preset row.</li>
+  </ul>
+</section>
+
+<section id="rules">
+  <h2>Behaviour rules</h2>
+  <h3>The baseline and what counts as changed</h3>
+  <ul>
+    <li>The baseline is the parsed JSON of the <strong>current preset</strong> (<code>options.map.style.preset</code>): the bundled default, a fetched system preset, or a custom one from localStorage run through the legacy upgrader. Load all presets once, lazily, on first open of the tab; the tab renders without change marks until the baseline is ready, then decorates.</li>
+    <li>A path is <em>changed</em> when the preset <em>defines</em> that path and <code>JSON.stringify(store value ?? null) !== JSON.stringify(preset value ?? null)</code>. Paths the preset does not define — a label group added after the preset was applied, a burg group the preset never had — are never marked and have no reset.</li>
+    <li>Reset writes the preset's value (including <code>null</code>) through the editor's <code>change</code>, so the attribute is written or removed and the element's effect runs (redraw, refit of state labels, and so on).</li>
+    <li>"Reset element" resets every changed leaf of the current selection in schema order, then re-renders once.</li>
+    <li>After a preset change the baseline switches, every mark disappears (the store now equals the preset), and both dialogs re-render.</li>
+  </ul>
+  <h3>Selections that need care</h3>
+  <ul>
+    <li><strong>Burg icons</strong> compose two store records (<code>burgIcons.burgIcons.groups[g]</code> and <code>burgIcons.anchors.groups[g]</code>) into one form with an <em>Anchors</em> subsection. Reset and change detection must map a relative path back to the right record, as <code>storePath</code> does.</li>
+    <li><strong>Gated sections</strong> (bands, contours, halos): the gate control lives in the card header and keeps hiding the body when off. A reset of the gate re-renders so the body follows.</li>
+    <li><strong>Grouped elements</strong> resolve a missing group to the first one; the Group select, the toolbar and the elements dialog all follow the resolved group.</li>
+    <li><strong>Hidden layers</strong> keep the banner above the cards; the banner's "Turn on" re-renders the form.</li>
+  </ul>
+  <h3>Rendering discipline</h3>
+  <ul>
+    <li>Editing never re-renders the form: the store write, the effect, the row's changed state, the card counts, the previews and the changes line all update in place. Only a reset, a selection change or a preset change re-renders.</li>
+    <li>Previews and counts update on the form's bubbled <code>input</code> and <code>change</code> events, after the store write (a microtask/timeout later, as the prototype does).</li>
+    <li>Leaving the tab empties the form and closes both dialogs; opening it again restores the last selection, as today.</li>
+  </ul>
+</section>
+
+<section id="impl">
+  <h2>Implementation map</h2>
+  <p>The prototype code is not to be merged. Rewrite each block in its proper home; the engine seam already landed in <code>index.ts</code> is the one production change to keep.</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Piece</th><th>Where</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Engine seam: <code>resolve(element, group)</code>, <code>renderForm(container, sel)</code>, <code>change(sel, relative, value)</code>, <code>storePath</code></td><td><code>src/controllers/style-editor/index.ts</code></td><td>Already done on the branch; keep. Drop the three <code>StyleEditorPrototype</code> hooks and the <code>engine</code> export once the prototype folder is gone.</td></tr>
+      <tr><td>Tab shell: gallery button in the preset row, tree button in the element row, changes line</td><td><code>src/components/options/tabs/style-tab.ts</code></td><td>Static markup and CSS; ids <code>stylePresetGalleryButton</code>, <code>styleElementTreeButton</code>, <code>styleChanges</code>.</td></tr>
+      <tr><td>Card styling of sections, preview slot in each summary, "general" card for loose rows</td><td><code>src/components/shared/schema-form.ts</code> (CSS + a <code>section</code> hook) and <code>style-editor/index.ts</code> (titles, previews)</td><td>SchemaForm gains an option to title the root group and to leave a <code>.preview</code> slot; it must stay store-free. Previews are editor code because they read the store.</td></tr>
+      <tr><td>Baseline, changed detection, per-row reset, hex input</td><td>new <code>src/controllers/style-editor/baseline.ts</code> and <code>decorate.ts</code></td><td>Baseline loading via <code>StylePresets.load</code> + <code>Styles.parse</code> (fallback to the raw record). Unit-test the diff rules and the burg-icon path mapping.</td></tr>
+      <tr><td>Elements dialog</td><td>new <code>src/controllers/style-editor/elements-dialog.ts</code></td><td>Own markup injected into <code>#dialogs</code> on open, jQuery dialog, destroyed on close (the dialog-ownership convention). Uses <code>GROUP_SOURCES</code> for group lists and counts, <code>Layers</code> for dots.</td></tr>
+      <tr><td>Presets dialog</td><td>new <code>src/controllers/style-editor/presets-dialog.ts</code></td><td>Applies through <code>StylePresetsEditor</code>'s request path so the confirmation is honoured. <code>StylePresetsEditor</code> notifies the tab and dialogs after a change (it already calls <code>StyleEditor.refresh()</code>).</td></tr>
+      <tr><td>Preset screenshots</td><td><code>public/images/style-presets/*.png</code> + <code>scripts/render-style-thumbnails.mjs</code></td><td>Playwright script: load <code>?seed=…</code>, for each system preset apply it and rasterise <code>getMapURL("png")</code> to 320×180. Re-run when a preset changes; the pre-commit asset stamping picks the files up. Add a <code>?v=</code> cache-buster like other public assets.</td></tr>
+      <tr><td>Tests</td><td><code>baseline.test.ts</code>, <code>schema-form.dom.test.ts</code>, e2e</td><td>Diff and reset rules; card markup; the attribute-snapshot e2e baselines must stay byte-identical (this work changes no rendered styling).</td></tr>
+      <tr><td>Docs</td><td><code>docs/prd/style-editor.md</code>, <code>docs/wiki/User-Interface.md</code></td><td>Update the editor section and the wiki's Style tab description; add the two dialogs.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <h3>CSS tokens to add</h3>
+  <pre><code>--style-change: #c0392b;        /* changed-row accent */
+--style-reset: #7a2e2e;         /* ↺ and "n changed" */
+--style-pick: #f5c542;          /* current preset card */
+--style-card-fill: rgba(255,255,255,.10);
+--style-card-head: rgba(255,255,255,.20);</code></pre>
+</section>
+
+<section id="accept">
+  <h2>Acceptance criteria</h2>
+  <ul class="checks">
+    <li>The Style tab keeps its 330px width, its preset/element/group rows and the schema's section order; every control that exists today still exists and writes the same store path.</li>
+    <li>Each section renders as a card with caret, title, gate (if any), change count and preview; loose rows render in one card titled by the selection.</li>
+    <li>Changing any value marks its row and shows ↺ without re-rendering; ↺ restores the preset's value and runs the element's effect; "Reset element" clears every mark of the selection.</li>
+    <li>The changes line is absent when the selection matches the preset.</li>
+    <li>Colour rows accept a typed hex value; invalid input reverts.</li>
+    <li>Previews follow edits live and never redraw the map.</li>
+    <li>The elements dialog opens beside the Menu, lists every element and group with counts and visibility, filters, toggles layers, selects on click and stays open.</li>
+    <li>The presets dialog shows one screenshot per system preset, highlights the current one, applies on click with the existing confirmation, and stays open.</li>
+    <li>Old maps and legacy custom presets behave as before; a custom preset shows a neutral tile.</li>
+    <li>tsc, biome, vitest (node and browser) and the Playwright attribute-snapshot baselines pass unchanged.</li>
+  </ul>
+</section>
+
+<section id="later">
+  <h2>Out of scope and open questions</h2>
+  <div class="cols">
+    <div>
+      <h4>Not in this iteration</h4>
+      <ul>
+        <li>Property search across elements and a "Changed only" filter (prototype variants B/E) — the natural next step once reset exists.</li>
+        <li>Scrub numbers replacing sliders (variant C).</li>
+        <li>Any change to the store, the schema, the presets format or the renderers.</li>
+        <li>Mobile layout of the Menu.</li>
+      </ul>
+    </div>
+    <div>
+      <h4>Open questions</h4>
+      <ul>
+        <li>Should "Reset element" ask for confirmation when it touches more than, say, ten values?</li>
+        <li>Thumbnail seed and viewport: one fixed seed for all presets (recommended, so cards compare like for like) — which seed, and should the render zoom in on a region rather than the whole map?</li>
+        <li>Should the elements dialog remember its expanded state between opens?</li>
+      </ul>
+    </div>
+  </div>
+  <h3>Capturing the prototype</h3>
+  <p>Per the prototyping practice: move <code>src/controllers/style-editor/prototype/</code> (all three rounds) to a throwaway branch, link that branch from the implementation issue together with this document, and remove the prototype hooks from <code>style-editor-migration</code>.</p>
+</section>
+</div>

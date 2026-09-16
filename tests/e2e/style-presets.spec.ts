@@ -17,7 +17,7 @@ function pinnedAttrs(preset: string): {oceanFill: string; landmassFill: string} 
 
 async function switchTo(page: Page, preset: string) {
   await page.evaluate(async name => {
-    await (window as any).changeStyle(name);
+    await (window as any).Controllers.StylePresetsEditor.change(name);
   }, preset);
 }
 
@@ -148,14 +148,14 @@ test("a saved custom preset carries the retired sizes from the store", async ({p
     styles.ocean.oceanLayers.options.outline = "-6,-4,-2";
     styles.scaleBar.options.label = "posterity";
     styles.legend.options.columns = 5;
-    (window as any).addStylePreset();
   });
+  await page.evaluate(() => (window as any).Controllers.StylePresetsEditor.openSaver());
 
   const raw = await page.locator("#styleSaverJSON").inputValue();
   const roundTripped = await page.evaluate(rawJson => {
     const json = JSON.parse(rawJson);
     // the saver emits the store format now: no legacy selector keys, parseable directly
-    if ((window as any).stylesLegacy.isLegacyPreset(json)) throw new Error("saver emitted the legacy format");
+    if (Object.keys(json).some(key => key.startsWith("#"))) throw new Error("saver emitted the legacy format");
     const upgraded = (window as any).Styles.parse(json);
     return {
       coordinates: upgraded.coordinates.options.fontSize,
@@ -202,7 +202,7 @@ test("a non-style JSON is rejected by the saver, not applied as defaults", async
   await waitForMap(page);
 
   const before = await page.evaluate(() => styles.rivers.attrs.fill);
-  await page.evaluate(() => (window as any).addStylePreset());
+  await page.evaluate(() => (window as any).Controllers.StylePresetsEditor.openSaver());
   await page.evaluate(() => {
     (document.getElementById("styleSaverJSON") as HTMLTextAreaElement).value =
       JSON.stringify({road: "#D1B86E", roofType: "Gable", treeShape: "Cotton"});

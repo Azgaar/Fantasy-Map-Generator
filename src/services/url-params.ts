@@ -60,7 +60,7 @@ export async function checkLoadParameters(): Promise<void> {
 
 /** The start-up path: style, world, layers, then wherever the URL says to look */
 export async function generateMapOnLoad(config?: GenerationConfig): Promise<void> {
-  await applyStyleOnLoad(); // the previously selected default or custom style
+  await Controllers.StylePresetsEditor.applyOnLoad(); // the previously selected default or custom style
   await generate(config);
   applyLayersPreset();
   Layers.drawAll();

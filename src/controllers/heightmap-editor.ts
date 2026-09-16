@@ -25,6 +25,7 @@ import { heightmapTemplates } from "@/data/heightmap-templates";
 import { ErasePipeline } from "@/generators/generation-pipeline";
 import { GraphOverride } from "@/generators/graph-override";
 import { removeEmblem } from "@/renderers/draw-emblems";
+import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { drawDrainage, removeDrainage } from "@/renderers/overlays/drainage";
 import { downloadFile, getFileName, uploadFile } from "@/utils";
@@ -833,9 +834,7 @@ function updateHeightmap(): void {
   updateHistory();
 }
 
-function getColor(value: number, scheme = getColorScheme("bright")): string {
-  return scheme(1 - (value < 20 ? value - 5 : value) / 100);
-}
+const getColor = (value: number): string => HeightmapColorSchemes.getColor(value);
 
 // draw or update heightmap
 function mockHeightmap(): void {

@@ -22,6 +22,7 @@ import {
   range,
   select
 } from "d3";
+import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
 import { tip } from "../components/tooltips";
 import { round } from "../utils";
 import { getHeightContours, smoothContourHeights } from "./heightmap-contours";
@@ -143,7 +144,7 @@ export const drawHeightmap = (): void => {
     const heightOptions = height < 20 ? oceanOptions : landOptions;
     const fillsVisible = height < 20 ? oceanFillsVisible : landFillsVisible;
     if (!fillsVisible) continue;
-    const scheme = getColorScheme(heightOptions.scheme);
+    const scheme = HeightmapColorSchemes.get(heightOptions.scheme);
 
     if (height === 0 && renderOceanCells) {
       // draw base ocean layer
@@ -169,7 +170,7 @@ export const drawHeightmap = (): void => {
 
     if (paths[height] && paths[height]!.length >= 10) {
       const terracing = heightOptions.terracing / 10 || 0;
-      const fillColor = getColor(height, scheme);
+      const fillColor = HeightmapColorSchemes.getColor(height, scheme);
 
       if (terracing) {
         group
@@ -346,11 +347,3 @@ export const drawHeights = ({
   ctx.putImageData(imageData, 0, 0);
   return canvas.toDataURL("image/png");
 };
-
-declare global {
-  interface Window {
-    drawHeights: typeof drawHeights;
-  }
-}
-
-window.drawHeights = drawHeights; // classic public/modules/ui/style.js draws the 3d preview with it

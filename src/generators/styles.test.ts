@@ -1,6 +1,8 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, test, vi } from "vitest";
 import { Styles } from "./styles";
+import { FORMATS, isLabelStyle } from "./styles-formats";
+import { normalizeStyles } from "./styles-legacy";
 import { stylesSchema } from "./styles-schema";
 
 const readPreset = (name: string) => JSON.parse(readFileSync(`public/styles/${name}.json`, "utf8"));
@@ -16,6 +18,90 @@ describe("stylesSchema", () => {
     const routes = structuredClone(Styles.defaults.routes) as Record<string, unknown>;
     routes.bogus = {};
     expect(stylesSchema.shape.routes.safeParse(routes).success).toBe(false);
+  });
+
+  const presetFiles = readdirSync("public/styles").filter(file => file.endsWith(".json"));
+  test.each(presetFiles)("every preset in public/styles parses: %s", file => {
+    const result = stylesSchema.safeParse(readPreset(file.replace(/\.json$/, "")));
+    expect(result.error?.issues ?? []).toEqual([]);
+  });
+});
+
+describe("attr formats", () => {
+  const cases: [keyof typeof FORMATS, string[], string[]][] = [
+    [
+      "filter",
+      ["none", "url(#paper)", "sepia(0.6)", "blur(3px)", "hue-rotate(24deg) saturate(1.15) brightness(0.9)"],
+      ["", "foo", "url(paper)", "url(#a) url(#b)"]
+    ],
+    ["blurFilter", ["blur(5px)", "blur(0.5px)"], ["", "blur(5)", "url(#blur5)", "blur(5px) "]],
+    ["mask", ["url(#land)", "url(#vignette-mask)"], ["", "land", "url(#a) url(#b)"]],
+    ["strokeDasharray", ["none", "5", ".5 1", "0 4 10 4", "3 1.2 0.5 1.2"], ["", "5,2", "5 px", "inherit"]],
+    ["fontSize", ["22%", "8px", "100px", "1.5%", "18"], ["", "22 %", "px", "-2%"]],
+    ["percentage", ["0.3%", "-5%", "99.6%"], ["", "5", "5px", "5 %"]],
+    [
+      "compassTransform",
+      ["translate(80 80) scale(0.25)", "translate(80 80) scale(.25)", "translate(-1 2) scale(1)"],
+      ["", "translate(80 80)", "scale(1) translate(1 1)", "translate(1, 1) scale(1)"]
+    ]
+  ];
+  test.each(cases)("%s accepts its format and rejects the rest", (_name, valid, invalid) => {
+    const format = FORMATS[_name];
+    for (const value of valid) expect(format.test(value), value).toBe(true);
+    for (const value of invalid) expect(format.test(value), value).toBe(false);
+  });
+
+  test("a label style is a cssText of shadow, transform, variant and shift", () => {
+    for (const value of [
+      "text-shadow: white 0px 0px 4px",
+      "text-shadow: #d3c9ae 0px 0px 1px; text-transform: uppercase; transform: translate(0em, 0.3em)",
+      "font-variant: small-caps; text-shadow: -0.2px -0.2px 0 #f6fbfc, 0.35px 0.35px 0 #10222e;",
+      "transform: translate(0em, -0.45em)",
+      "text-shadow: none;"
+    ])
+      expect(isLabelStyle(value), value).toBe(true);
+    for (const value of ["display: none", "transform: translate(1px, 1px)", "text-transform: bold", "color: red"])
+      expect(isLabelStyle(value), value).toBe(false);
+  });
+
+  test("enums pin the lists the editor offers", () => {
+    const schema = stylesSchema.shape;
+    expect(schema.grid.shape.options.shape.type.safeParse("pointyHex").success).toBe(true);
+    expect(schema.grid.shape.options.shape.type.safeParse("hex").success).toBe(false);
+    expect(schema.relief.shape.options.shape.set.safeParse("illustrated").success).toBe(true);
+    expect(schema.relief.shape.options.shape.set.safeParse("fancy").success).toBe(false);
+    expect(schema.ocean.shape.oceanLayers.shape.options.shape.outline.safeParse("-6,-3,-1").success).toBe(true);
+    expect(schema.ocean.shape.oceanLayers.shape.options.shape.outline.safeParse("-1").success).toBe(false);
+    const heights = schema.heightmap.shape.landHeights.shape.options.shape;
+    expect(heights.curve.safeParse("curveStep").success).toBe(true);
+    expect(heights.curve.safeParse("curveBasis").success).toBe(false);
+    const label = stylesSchema.shape.labels.shape.groups.valueType.shape.attrs.shape;
+    expect(label["font-style"].safeParse("italic").success).toBe(true);
+    expect(label["font-style"].safeParse("normal").success).toBe(false);
+    expect(label["stroke-linecap"].safeParse("inherit").success).toBe(false);
+    expect(label["stroke-linecap"].safeParse(null).success).toBe(true);
+    expect(schema.map.shape.attrs.shape.filter.safeParse("").success).toBe(false);
+  });
+});
+
+describe("normalizeStyles", () => {
+  test('"" and "inherit" become null where they meant "not set", other strings are trimmed', () => {
+    const doc = structuredClone(Styles.defaults) as any;
+    doc.biomes.attrs.filter = "";
+    doc.biomes.attrs.mask = " url(#land) ";
+    doc.zones.attrs["stroke-linecap"] = "inherit";
+    doc.zones.attrs["stroke-dasharray"] = "";
+    doc.scaleBar.options.label = "";
+    doc.vignette.options.filter = "blur(30px) ";
+    const normalized = normalizeStyles(doc);
+    expect(normalized).toBe(doc);
+    expect(doc.biomes.attrs.filter).toBeNull();
+    expect(doc.biomes.attrs.mask).toBe("url(#land)");
+    expect(doc.zones.attrs["stroke-linecap"]).toBeNull();
+    expect(doc.zones.attrs["stroke-dasharray"]).toBeNull();
+    expect(doc.scaleBar.options.label).toBe("");
+    expect(doc.vignette.options.filter).toBe("blur(30px)");
+    expect(stylesSchema.safeParse(doc).success).toBe(true);
   });
 });
 

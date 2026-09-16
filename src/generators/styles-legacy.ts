@@ -1,6 +1,7 @@
 // Conversions between the legacy `style` object shapes and the styles store
 import "./styles";
 import { Layers } from "@/components/layers";
+import { FONT_WEIGHTS } from "@/data/style-choices";
 import { safeParseJSON } from "@/utils";
 import type { Styles } from "./styles-schema";
 import { stylesSchema } from "./styles-schema";
@@ -356,29 +357,6 @@ export function harvestStylesFromSvg({ hasStyleRecord = false } = {}): void {
   Styles.set(harvested);
 }
 
-// The style editor's element/group selection resolves through the same route table the preset
-// upgrader uses; the first path segment is the store layer to rewrite.
-export function styleNodeFor(element: string, group: string): { node: object; layer: keyof Styles } | undefined {
-  const selector =
-    !group || group === element
-      ? `#${element}`
-      : element === "labels"
-        ? `#labels > #${group}`
-        : element === "burgIcons" || element === "anchors"
-          ? `#${element} > g#${group}`
-          : element === "routes"
-            ? `#routes > g#${group}`
-            : element === "lakes"
-              ? `#lakes > g#${group}`
-              : element === "terrs"
-                ? `#terrs > #${group}`
-                : `#${group}`;
-  const route = routeFor(selector);
-  if (!route) return undefined;
-  const node = getPath(styles, route.path);
-  return node ? { node, layer: route.path[0] as keyof Styles } : undefined;
-}
-
 function routeFor(selector: string): PresetRoute | undefined {
   if (selector in PRESET_ROUTES) return PRESET_ROUTES[selector];
   const label = selector.match(/^#labels > #(.+)$/);
@@ -505,10 +483,8 @@ export function presetBagFor(
   return undefined;
 }
 
-// v1.145-1.147 saved maps with the layer styling stripped out
-export async function restoreStrippedLayerStyles(): Promise<void> {
-  const [, preset] = await getStylePreset(options.map.style.preset || "default");
-
+// v1.145-1.147 saved maps with the layer styling stripped out; `preset` is the map's style preset record
+export function restoreStrippedLayerStyles(preset: Record<string, unknown>): void {
   const isBareGroup = (group: Element, declared: Record<string, string> = {}): boolean => {
     const ignored = new Set(["id", "style", "data-layer", "data-group", ...Object.keys(declared)]);
     return Array.from(group.attributes).every(attribute => ignored.has(attribute.name));
@@ -571,6 +547,30 @@ export function stripMigratedAttributes(): void {
   }
 }
 
+// attrs that meant "not set" as "" or "inherit" before the schema pinned their formats (v1.154.0)
+const EMPTY_MEANS_UNSET = new Set(["filter", "mask", "stroke-dasharray"]);
+const INHERIT_MEANS_UNSET = new Set(["stroke-linecap", "stroke-linejoin"]);
+
+/** Rewrite a store-format record in place so its string attrs match the schema formats */
+export function normalizeStyles<T>(record: T): T {
+  const visit = (node: unknown, bag: boolean): void => {
+    if (typeof node !== "object" || node === null) return;
+    for (const [key, value] of Object.entries(node)) {
+      if (typeof value === "object") {
+        visit(value, key === "attrs" || key === "options");
+        continue;
+      }
+      if (!bag || typeof value !== "string") continue;
+      const trimmed = value.trim();
+      const unset =
+        (EMPTY_MEANS_UNSET.has(key) && trimmed === "") || (INHERIT_MEANS_UNSET.has(key) && trimmed === "inherit");
+      (node as Record<string, unknown>)[key] = unset ? null : trimmed;
+    }
+  };
+  visit(record, false);
+  return record;
+}
+
 export function isLegacyPreset(json: object): boolean {
   return Object.keys(json).some(key => key.startsWith("#"));
 }
@@ -618,7 +618,7 @@ export function presetFromLegacy(
     applyPresetBag(node, bag, route, selector, onUnknown);
   }
 
-  return Styles.parse(built);
+  return Styles.parse(normalizeStyles(built));
 }
 
 export function labelGroupFromLegacy(legacy: unknown): Styles["labels"]["groups"][string] {
@@ -632,12 +632,12 @@ export function labelGroupFromLegacy(legacy: unknown): Styles["labels"]["groups"
       stroke: strOr(bag.stroke, "#3a3a3a"),
       "stroke-width": numOr(bag["stroke-width"], 0),
       "stroke-dasharray": strOr(bag["stroke-dasharray"], null),
-      "stroke-linecap": strOr(bag["stroke-linecap"], null),
+      "stroke-linecap": oneOf(bag["stroke-linecap"], LINECAPS),
       "letter-spacing": numOr(bag["letter-spacing"], 0),
       "font-size": strOr(bag["data-size"], null) ?? strOr(bag["font-size"], "18%") ?? "18%",
       "font-family": strOr(bag["font-family"], "Almendra SC") ?? "Almendra SC",
-      "font-style": strOr(bag["font-style"], null),
-      "font-weight": numOr(bag["font-weight"], null),
+      "font-style": oneOf(bag["font-style"], ["italic", "oblique"]),
+      "font-weight": oneOf(numOr(bag["font-weight"], null), FONT_WEIGHTS),
       style: labelStyleFromLegacy(bag),
       filter: strOr(bag.filter, null)
     }
@@ -670,8 +670,8 @@ export function burgGroupFromLegacy(legacy: unknown): Styles["burgIcons"]["burgI
       stroke: strOr(bag.stroke, null),
       "stroke-width": numOr(bag["stroke-width"], null),
       "stroke-dasharray": strOr(bag["stroke-dasharray"], null),
-      "stroke-linecap": strOr(bag["stroke-linecap"], null),
-      "stroke-linejoin": strOr(bag["stroke-linejoin"], null),
+      "stroke-linecap": oneOf(bag["stroke-linecap"], LINECAPS),
+      "stroke-linejoin": oneOf(bag["stroke-linejoin"], ["miter", "round", "bevel"]),
       filter: strOr(bag.filter, null)
     },
     options: {
@@ -690,9 +690,9 @@ function routeGroupFromLegacy(legacy: object): Styles["routes"]["groups"][string
       stroke: strOr(bag.stroke, null),
       "stroke-width": numOr(bag["stroke-width"], null),
       "stroke-dasharray": strOr(bag["stroke-dasharray"], null),
-      "stroke-linecap": strOr(bag["stroke-linecap"], null),
+      "stroke-linecap": oneOf(bag["stroke-linecap"], LINECAPS),
       filter: strOr(bag.filter, null),
-      mask: strOr(bag.mask, null)
+      mask: oneOf(bag.mask, ["url(#land)", "url(#water)"])
     }
   };
 }
@@ -735,6 +735,13 @@ function strOr(value: unknown, fallback: string | null): string | null {
   return value === undefined || value === "" ? fallback : value === null ? null : String(value);
 }
 
+const LINECAPS = ["butt", "round", "square"] as const;
+
+// a legacy value outside the fixed list ("inherit", a stray weight) means "not set"
+function oneOf<T extends string | number>(value: unknown, allowed: readonly T[]): T | null {
+  return allowed.includes(value as T) ? (value as T) : null;
+}
+
 function getPath(obj: any, path: string[]): any {
   return path.reduce((o, k) => (o == null ? undefined : o[k]), obj);
 }
@@ -745,29 +752,4 @@ function coerce(v: unknown): unknown {
 
 function coerceLegacyAttr(key: string, value: unknown): unknown {
   return key === "stroke-dasharray" && typeof value === "number" ? String(value) : coerce(value);
-}
-
-// the legacy preset pipeline (public/modules/ui/style-presets.js) converts through these
-// only the classic public/modules/ui/style*.js scripts read this bridge
-const stylesLegacyBridge = {
-  styleNodeFor,
-  presetBagFor,
-  labelGroupFromLegacy,
-  burgGroupFromLegacy,
-  presetFromLegacy,
-  isLegacyPreset,
-  isStoreStyles,
-  harvestAttributes,
-  stylesFromMap,
-  harvestStylesFromSvg,
-  stripDisplay,
-  migrateStyles,
-  restoreStrippedLayerStyles,
-  stripMigratedAttributes
-};
-
-globalThis.stylesLegacy = stylesLegacyBridge;
-
-declare global {
-  var stylesLegacy: typeof stylesLegacyBridge;
 }

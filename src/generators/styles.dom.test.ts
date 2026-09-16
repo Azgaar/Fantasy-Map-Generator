@@ -85,3 +85,27 @@ describe("applyStyles", () => {
     expect(Layers.draw).not.toHaveBeenCalled();
   });
 });
+
+describe("writeAttr", () => {
+  test("sets or removes the one attribute at a store path, through groups and records", () => {
+    const rivers = mount("rivers");
+    styles.rivers.attrs.fill = "#abcdef";
+    Styles.writeAttr(["rivers", "attrs", "fill"]);
+    expect(rivers.getAttribute("fill")).toBe("#abcdef");
+    styles.rivers.attrs.filter = null;
+    rivers.setAttribute("filter", "url(#stale)");
+    Styles.writeAttr(["rivers", "attrs", "filter"]);
+    expect(rivers.hasAttribute("filter")).toBe(false);
+
+    const routes = mount("routes", ["roads"]);
+    styles.routes.groups.roads.attrs.stroke = "#111111";
+    Styles.writeAttr(["routes", "groups", "roads", "attrs", "stroke"]);
+    expect(routes.querySelector('[data-group="roads"]')?.getAttribute("stroke")).toBe("#111111");
+
+    const states = mount("states", ["statesHalo"]);
+    styles.states.statesHalo.attrs.opacity = 0.3;
+    Styles.writeAttr(["states", "statesHalo", "attrs", "opacity"]);
+    expect(states.querySelector('[data-group="statesHalo"]')?.getAttribute("opacity")).toBe("0.3");
+    expect(Layers.draw).not.toHaveBeenCalled();
+  });
+});

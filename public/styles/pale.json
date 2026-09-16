@@ -121,7 +121,7 @@
       "stroke-dasharray": "5",
       "stroke-linecap": "square",
       "filter": null,
-      "mask": ""
+      "mask": null
     },
     "options": {
       "fontSize": 15
@@ -253,7 +253,7 @@
     "attrs": {
       "opacity": 0.8,
       "filter": null,
-      "mask": ""
+      "mask": null
     },
     "options": {
       "set": "simple",
@@ -1067,7 +1067,7 @@
     "options": {
       "size": 3,
       "fontSize": 5,
-      "icon": "\u2696\ufe0f"
+      "icon": "⚖️"
     }
   },
   "trade": {

@@ -1067,7 +1067,7 @@
     "options": {
       "size": 3,
       "fontSize": 5,
-      "icon": "\u2696\ufe0f"
+      "icon": "⚖️"
     }
   },
   "trade": {
@@ -1131,7 +1131,7 @@
         "fill-opacity": null,
         "stroke": "#000000",
         "stroke-width": 1,
-        "filter": ""
+        "filter": null
       },
       "options": {
         "top": 18,

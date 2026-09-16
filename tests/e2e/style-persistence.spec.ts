@@ -10,7 +10,6 @@ import { countMaps, waitForMap, waitForNextMap } from "./wait-for-map";
 // stays absent rather than getting backfilled from Styles.defaults, and a DOM-only #terrain write
 // survives because the relief overlay no longer clobbers it.
 
-declare const changeStyle: (preset: string) => Promise<void>;
 declare const d3: { select: (selector: string) => { attr: (name: string, value: string) => unknown } };
 declare const Services: {
   Save: { toMachine: () => Promise<void>; prepareMapData: () => string | Promise<string> };
@@ -51,7 +50,7 @@ test.describe("style persistence round trips", () => {
     await waitForMap(page);
 
     await page.evaluate(() => sessionStorage.setItem("styleChangeConfirmed", "true"));
-    await page.evaluate(() => changeStyle("ancient"));
+    await page.evaluate(() => (window as any).Controllers.StylePresetsEditor.change("ancient"));
 
     const expectedFill = readPreset("ancient").ocean.base.attrs.fill;
     const beforeFill = await page.locator("#oceanBase").getAttribute("fill");
@@ -260,7 +259,7 @@ test.describe("style persistence round trips", () => {
     await waitForMap(page);
 
     await page.evaluate(() => sessionStorage.setItem("styleChangeConfirmed", "true"));
-    await page.evaluate(() => changeStyle("clean"));
+    await page.evaluate(() => (window as any).Controllers.StylePresetsEditor.change("clean"));
 
     expect(await page.locator("#statesHalo").getAttribute("filter")).toBeNull();
 
@@ -323,7 +322,7 @@ test.describe("style persistence round trips", () => {
       .replace('<g id="markets"', '<g id="markets" font-size="66" data-icon="Z"')
       .replace('<g id="goodsIcons"', '<g id="goodsIcons" data-circle="0"')
       .replace('<g id="texture"', '<g id="texture" data-href="./z.jpg" data-x="66" data-y="66"')
-      .replace('<g id="oceanLayers"', '<g id="oceanLayers" layers="-6"')
+      .replace('<g id="oceanLayers"', '<g id="oceanLayers" layers="-6,-4,-2"')
       .replace('<g id="scaleBar"', '<g id="scaleBar" data-bar-size="4" data-x="40" data-y="40" data-label="stale"')
       .replace(
         '<rect id="scaleBarBack"',
@@ -393,7 +392,7 @@ test.describe("style persistence round trips", () => {
     expect(afterLoad.smallFamilyAttrs).toEqual([null, null, null, null]);
     expect(afterLoad.gridScale).toBe(9);
     expect(afterLoad.contentAttrs).toEqual([null, null, null, null, null]);
-    expect(afterLoad.oceanOutline).toBe("-6");
+    expect(afterLoad.oceanOutline).toBe("-6,-4,-2");
     expect(afterLoad.geometryAttrs).toEqual([null, null, null, null]);
     expect(afterLoad.scaleBarSize).toBe(4);
     expect(afterLoad.rescale).toBe(0);

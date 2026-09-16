@@ -19,7 +19,7 @@
     },
     "oceanLayers": {
       "attrs": {
-        "filter": ""
+        "filter": null
       },
       "options": {
         "outline": "-6,-3,-1"
@@ -80,7 +80,7 @@
   "biomes": {
     "attrs": {
       "opacity": 0.7,
-      "filter": "",
+      "filter": null,
       "mask": "url(#land)"
     }
   },
@@ -132,7 +132,7 @@
       "opacity": 0.9,
       "transform": null,
       "filter": null,
-      "mask": "",
+      "mask": null,
       "shape-rendering": "optimizespeed"
     },
     "compassRose": {
@@ -302,7 +302,7 @@
   "provinces": {
     "attrs": {
       "opacity": 0.2,
-      "filter": ""
+      "filter": null
     }
   },
   "zones": {
@@ -311,7 +311,7 @@
       "stroke": "#ffffff",
       "stroke-width": 0.3,
       "stroke-dasharray": null,
-      "stroke-linecap": "inherit",
+      "stroke-linecap": null,
       "filter": "url(#dropShadow05)",
       "mask": null
     }
@@ -324,7 +324,7 @@
         "stroke-width": 1,
         "stroke-dasharray": "3",
         "stroke-linecap": "round",
-        "filter": ""
+        "filter": null
       }
     },
     "provinceBorders": {
@@ -334,7 +334,7 @@
         "stroke-width": 0.3,
         "stroke-dasharray": "1",
         "stroke-linecap": "round",
-        "filter": ""
+        "filter": null
       }
     }
   },
@@ -1067,7 +1067,7 @@
     "options": {
       "size": 3,
       "fontSize": 5,
-      "icon": "\u2696\ufe0f"
+      "icon": "⚖️"
     }
   },
   "trade": {
@@ -1131,7 +1131,7 @@
         "fill-opacity": null,
         "stroke": "#000000",
         "stroke-width": 1,
-        "filter": ""
+        "filter": null
       },
       "options": {
         "top": 23,

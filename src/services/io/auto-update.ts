@@ -17,6 +17,7 @@ import {
   labelGroupFromLegacy,
   lakeGroupFromSvg,
   migrateStyles,
+  normalizeStyles,
   restoreStrippedLayerStyles,
   stripDisplay,
   stylesFromMap
@@ -25,6 +26,7 @@ import type { Styles } from "@/generators/styles-schema";
 import type { Point } from "@/generators/voronoi";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { unfog } from "@/renderers/overlays/fogging";
+import { StylePresets } from "@/services/style-presets";
 import { compareVersions } from "@/services/versioning";
 import type { ReliefSet } from "@/types/relief";
 import {
@@ -921,8 +923,10 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
     if (!select("#compass").selectAll("*").size()) {
       select("#compass").style("display", "none");
-      select("#compass").append("use").attr("xlink:href", "#defs-compass-rose");
-      shiftCompass();
+      select("#compass")
+        .append("use")
+        .attr("xlink:href", "#defs-compass-rose")
+        .attr("transform", styles.compass.compassRose.attrs.transform);
     }
   }
 
@@ -1826,7 +1830,10 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   if (isOlderThan("1.150.0")) {
     // v1.145-1.147 stripped the layer style from saved maps; the migration harvest reads what this re-seeds
-    if (!isOlderThan("1.145.0") && isOlderThan("1.148.0")) await restoreStrippedLayerStyles();
+    if (!isOlderThan("1.145.0") && isOlderThan("1.148.0")) {
+      const { styles: preset } = await StylePresets.load(options.map.style.preset || "default");
+      restoreStrippedLayerStyles(preset as Record<string, unknown>);
+    }
     // v1.150.0 made the styles store the source of truth
     data[48] = await migrateStyles(data[48]);
   }
@@ -1966,6 +1973,12 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       for (const type of empty) record.burgIcons[type].groups = harvested.burgIcons[type].groups;
     }
     if (record) data[48] = JSON.stringify(record);
+  }
+
+  if (isOlderThan("1.154.0")) {
+    // v1.154.0 pinned the string attr formats: "" and "inherit" used to stand for "not set"
+    const record = data[48] ? safeParseJSON(data[48]) : undefined;
+    if (record) data[48] = JSON.stringify(normalizeStyles(record));
   }
 }
 

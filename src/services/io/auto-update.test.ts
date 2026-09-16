@@ -18,11 +18,11 @@ beforeEach(() => {
   options.map.labels.groups = [];
   options.map.style.preset = "default";
   globalThis.pack = { features: [] } as unknown as typeof globalThis.pack; // migrations run against a loaded map
-  (globalThis as typeof globalThis & { getStylePreset: () => Promise<[string, object]> }).getStylePreset = async () => [
-    "default",
-    {}
-  ];
 });
+
+vi.mock("@/services/style-presets", () => ({
+  StylePresets: { load: async () => ({ name: "default", styles: {} }) }
+}));
 
 it.each([18, 180])("keeps legacy custom labels after saving and reloading a font size of %s", async fontSize => {
   const data = readFileSync("tests/fixtures/1.139.4.map", "utf8").split("\r\n");

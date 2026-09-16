@@ -2,7 +2,7 @@
   "#map": {
     "background-color": "#111111",
     "filter": "url(#test-filter)",
-    "data-filter": "url(#test-data-filter)"
+    "data-filter": "sepia"
   },
   "#armies": {
     "font-size": 11,
@@ -15,7 +15,7 @@
   "#biomes": {
     "opacity": 0.42,
     "filter": "url(#test)",
-    "mask": "url(#test-mask)"
+    "mask": "url(#water)"
   },
   "#stateBorders": {
     "opacity": 0.42,
@@ -38,7 +38,7 @@
     "stroke": "#112233",
     "stroke-width": 0.5,
     "filter": "url(#test)",
-    "mask": "url(#test-mask)"
+    "mask": "url(#water)"
   },
   "#gridOverlay": {
     "opacity": 0.42,
@@ -52,7 +52,7 @@
     "stroke-linecap": "round",
     "transform": "translate(1 1)",
     "filter": "url(#test)",
-    "mask": "url(#test-mask)"
+    "mask": "url(#water)"
   },
   "#coordinates": {
     "opacity": 0.42,
@@ -63,13 +63,13 @@
     "stroke-dasharray": "4 2",
     "stroke-linecap": "round",
     "filter": "url(#test)",
-    "mask": "url(#test-mask)"
+    "mask": "url(#water)"
   },
   "#compass": {
     "opacity": 0.42,
     "transform": "translate(1 1)",
     "filter": "url(#test)",
-    "mask": "url(#test-mask)",
+    "mask": "url(#water)",
     "shape-rendering": "crispEdges"
   },
   "#compass > use": {
@@ -209,7 +209,7 @@
   "#terrain": {
     "opacity": 0.42,
     "filter": "url(#test)",
-    "mask": "url(#test-mask)",
+    "mask": "url(#water)",
     "set": "colored",
     "size": 2,
     "density": 0.6
@@ -235,7 +235,7 @@
     "stroke-dasharray": "4 2",
     "stroke-linecap": "round",
     "filter": "url(#test)",
-    "mask": "url(#test-mask)"
+    "mask": "url(#water)"
   },
   "#trails": {
     "opacity": 0.42,
@@ -244,7 +244,7 @@
     "stroke-dasharray": "4 2",
     "stroke-linecap": "round",
     "filter": "url(#test)",
-    "mask": "url(#test-mask)"
+    "mask": "url(#water)"
   },
   "#searoutes": {
     "opacity": 0.42,
@@ -253,7 +253,7 @@
     "stroke-dasharray": "4 2",
     "stroke-linecap": "round",
     "filter": "url(#test)",
-    "mask": "url(#test-mask)"
+    "mask": "url(#water)"
   },
   "#statesBody": {
     "opacity": 0.42,
@@ -263,7 +263,7 @@
     "opacity": 0.42,
     "data-width": 8,
     "stroke-width": 0.5,
-    "filter": "url(#test)"
+    "filter": "blur(3px)"
   },
   "#provs": {
     "opacity": 0.42,
@@ -308,7 +308,7 @@
   "#texture": {
     "opacity": 0.42,
     "filter": "url(#test)",
-    "mask": "url(#test-mask)",
+    "mask": "url(#water)",
     "data-x": 5,
     "data-y": 6,
     "data-href": "./images/textures/test.jpg"
@@ -320,17 +320,17 @@
     "stroke-dasharray": "4 2",
     "stroke-linecap": "round",
     "filter": "url(#test)",
-    "mask": "url(#test-mask)"
+    "mask": "url(#water)"
   },
   "#oceanLayers": {
     "filter": "url(#test)",
-    "layers": "-3,-1"
+    "layers": "-6,-4,-2"
   },
   "#oceanBase": {
     "fill": "#445566"
   },
   "#oceanicPattern": {
-    "href": "./images/test.png",
+    "href": "./images/pattern2.png",
     "opacity": 0.15
   },
   "#terrs #oceanHeights": {
@@ -340,7 +340,7 @@
     "terracing": 2,
     "skip": 3,
     "relax": 1,
-    "curve": "curveBasis",
+    "curve": "curveLinear",
     "filter": "url(#test)",
     "mask": "url(#test-mask)"
   },
@@ -350,7 +350,7 @@
     "terracing": 2,
     "skip": 3,
     "relax": 1,
-    "curve": "curveBasis",
+    "curve": "curveLinear",
     "filter": "url(#test)",
     "mask": "url(#test-mask)"
   },
@@ -375,7 +375,7 @@
     "fill": "#445566",
     "stroke": "#112233",
     "stroke-width": 0.5,
-    "style": "italic",
+    "style": "text-shadow: white 0 0 1px",
     "letter-spacing": 1,
     "data-size": 10,
     "font-size": 8.3,

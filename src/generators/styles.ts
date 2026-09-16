@@ -1,7 +1,7 @@
 import { type LayerId, Layers } from "@/components/layers";
 import { parseSections, type TemplateLookup } from "@/utils/schemaUtils";
 import defaultStyles from "./default-styles.json";
-import { type StyleLayerId, type Styles as StylesData, stylesSchema } from "./styles-schema";
+import { type StyleElement, type Styles as StylesData, stylesSchema } from "./styles-schema";
 
 const DEFAULT_STYLES: DeepReadonly<StylesData> = stylesSchema.parse(defaultStyles);
 globalThis.styles = structuredClone(DEFAULT_STYLES);
@@ -24,7 +24,7 @@ function set(data: StylesData): void {
 }
 
 // attrs go onto the DOM by data-layer/data-group; options never do (renderers read the store)
-function write(...ids: StyleLayerId[]): void {
+function write(...ids: StyleElement[]): void {
   for (const id of ids) {
     const root = document.querySelector(`[data-layer="${id}"]`);
     if (!root) continue;
@@ -32,9 +32,27 @@ function write(...ids: StyleLayerId[]): void {
   }
 }
 
-function apply(...ids: StyleLayerId[]): void {
+function apply(...ids: StyleElement[]): void {
   write(...ids);
-  Layers.draw(...ids.filter((id): id is StyleLayerId & LayerId => id !== "map"));
+  Layers.draw(...ids.filter((id): id is StyleElement & LayerId => id !== "map"));
+}
+
+/** Set or remove the one attribute at a store path (`[layer, ..., "attrs", name]`) on its element */
+function writeAttr(path: string[]): void {
+  const [id, ...rest] = path;
+  const name = rest.at(-1);
+  let el: Element | null = document.querySelector(`[data-layer="${id}"]`);
+  let node: any = styles[id as StyleElement];
+  for (const key of rest.slice(0, -1)) {
+    node = node?.[key];
+    if (key === "attrs") break;
+    if (key === "groups") continue; // the record itself has no element: its entries do
+    el = el?.querySelector(`[data-group="${CSS.escape(key)}"]`) ?? null;
+  }
+  if (!el || !name) return;
+  const value = node?.[name];
+  if (value === null || value === undefined) el.removeAttribute(name);
+  else el.setAttribute(name, String(value));
 }
 
 function writeNode(el: Element, node: object): void {
@@ -62,7 +80,7 @@ type DeepReadonly<T> = T extends (...args: any[]) => any
     ? { readonly [K in keyof T]: DeepReadonly<T[K]> }
     : T;
 
-export const Styles = { defaults: DEFAULT_STYLES, parse, set, write, apply };
+export const Styles = { defaults: DEFAULT_STYLES, parse, set, write, writeAttr, apply };
 
 type StylesApi = typeof Styles;
 

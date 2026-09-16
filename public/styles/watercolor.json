@@ -345,7 +345,7 @@
           "opacity": 0.9,
           "stroke": "#969696",
           "stroke-width": 0.7,
-          "stroke-dasharray": "",
+          "stroke-dasharray": null,
           "stroke-linecap": "butt",
           "filter": null,
           "mask": null
@@ -356,7 +356,7 @@
           "opacity": 0.9,
           "stroke": "#969696",
           "stroke-width": 0.4,
-          "stroke-dasharray": "",
+          "stroke-dasharray": null,
           "stroke-linecap": "butt",
           "filter": null,
           "mask": null
@@ -367,7 +367,7 @@
           "opacity": 0.9,
           "stroke": "#969696",
           "stroke-width": 0.7,
-          "stroke-dasharray": "",
+          "stroke-dasharray": null,
           "stroke-linecap": "round",
           "filter": null,
           "mask": null
@@ -1067,7 +1067,7 @@
     "options": {
       "size": 3,
       "fontSize": 5,
-      "icon": "\u2696\ufe0f"
+      "icon": "⚖️"
     }
   },
   "trade": {

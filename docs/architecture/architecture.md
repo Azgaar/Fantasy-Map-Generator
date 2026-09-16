@@ -281,6 +281,20 @@ Reusable styles belong in the global `style` object. Existing entity-specific vi
 overrides, such as one label's size or offset, may remain with that entity's data. They
 are exceptions to a reusable group style, not another global styling system.
 
+## Schema-driven editor
+
+The Style tab is not hand-written: `Controllers.StyleEditor` renders the selected
+element's subtree of `stylesSchema` with `SchemaForm` (`src/components/shared/schema-form.ts`)
+at open time. The schema says what a value is — type, range, choices, nullability, and the
+format a string attr is pinned to; a typed zod registry (`styleMeta`) adds what a form
+cannot derive: the control kind (colour, filter, font, …), label, tip, a gate that switches
+a subsection on, or `hidden` for a stored field that is never edited. The editor says what
+happens when a value changes (`style-editor/effects.ts`): an attr is written to its one
+element through `Styles.writeAttr`, an option redraws the layer, and a short table holds
+the exceptions. A schema field cannot exist without UI — `styles-schema.test.ts` walks every
+leaf and fails on one with no control. Presets are loaded by `services/style-presets.ts` and
+applied by `Controllers.StylePresetsEditor`.
+
 ## Presets and persistence
 
 Built-in presets, custom presets, and the style stored in a `.map` file use the same

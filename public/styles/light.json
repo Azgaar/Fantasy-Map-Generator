@@ -37,7 +37,7 @@
     "attrs": {
       "opacity": 0.4,
       "filter": null,
-      "mask": ""
+      "mask": null
     },
     "options": {
       "href": "./images/textures/plaster.jpg",
@@ -121,7 +121,7 @@
       "stroke-dasharray": "5",
       "stroke-linecap": "square",
       "filter": null,
-      "mask": ""
+      "mask": null
     },
     "options": {
       "fontSize": 15
@@ -253,7 +253,7 @@
     "attrs": {
       "opacity": 0.6,
       "filter": null,
-      "mask": ""
+      "mask": null
     },
     "options": {
       "set": "colored",
@@ -346,7 +346,7 @@
           "stroke": "#95481a",
           "stroke-width": 0.8,
           "stroke-dasharray": "2",
-          "stroke-linecap": "inherit",
+          "stroke-linecap": null,
           "filter": null,
           "mask": null
         }
@@ -1067,7 +1067,7 @@
     "options": {
       "size": 3,
       "fontSize": 5,
-      "icon": "\u2696\ufe0f"
+      "icon": "⚖️"
     }
   },
   "trade": {

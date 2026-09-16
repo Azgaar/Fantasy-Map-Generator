@@ -18,7 +18,7 @@
 - `src/data/`: Static content / reference data (e.g., supporters list, heightmap templates).
 - `src/types/`: Shared TypeScript interfaces and domain models.
 - `src/utils/`: Generic helper functions.
-- `public/`: Static assets and NON-MIGRATED JS Code in `public/modules`. `public/libs/` holds vendored third-party scripts for legacy code only — new `src/` code imports deps from npm (no `src/libs/`).
+- `public/`: Static assets. `public/libs/` holds vendored third-party scripts loaded by `index.html` — new `src/` code imports deps from npm (no `src/libs/`). The last classic `public/modules` script was retired with the schema-driven style editor.
 - `electron/`: Main process, preload script and self-update of the desktop app; the renderer is the same `src/` build, served from the `app://` scheme.
 - `docs/`: Domain, architectural documentation and user-facing wiki.
 - `src/index.html`: **CAUTION**: Currently a 9K-line monolith containing the entire UI structure, SVG `<defs>`, and CSS filters.

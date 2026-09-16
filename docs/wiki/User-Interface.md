@@ -300,17 +300,19 @@ The style tab allows applying design settings, both in general to the entire map
 
 This is the final stage in the preparation of the map, after all its logic is ready.
 
-After choosing an element for design (eg Anchor Icons or biomes), you can customize its design with a variety of controls.
+After choosing an element for design (e.g. Icons or Biomes), you can customize its design with a variety of controls. The controls are built from the element's style definition, so every stored value has a row. An element's named parts (the states body and halo, the land and ocean heights, the scale bar background, the ocean bands and embellishments) are shown as collapsible sections under the element's own rows; a section that can be switched on or off carries its switch in the header.
 
 For many of the elements there are the same design controls with the same functionality, below is their breakdown:
 
 ![image](https://github.com/user-attachments/assets/f4277f5d-e45a-440c-83f6-52f2e02cab71)
 
-Sometimes, elements are divided into groups. For example, by default, lakes are divided into 6 groups: fresh water, salt water, dry, etc.
+Sometimes, elements are divided into groups. For example, by default, lakes are divided into 6 groups: fresh water, salt water, dry, etc. Labels, Icons, Routes and Lakes have a Group dropdown; the burg icon and the port icon of a burg group are styled together, the port icon in the Anchors section.
 
 You can customize the display of each of the groups separately, for example, a freshwater lake can be drawn in blue, and a saltwater lake can be drawn in red.
 
 Note that next to the group, there is a number that records how many elements there are from the group.
+
+If the layer of the selected element is hidden, a notice above the controls offers to turn it on.
 
 ### Opacity
 
@@ -336,13 +338,13 @@ This is known as a filter, because you put a "lens" over the object that makes a
 
 Filters: none, Blur 0.2, Blur 1, Blur 3, Blur 5, Blur 7, Blur 10, Splotch, Blurred Splotch, Shadow 2, Shadow 0.1, Shadow 0.5, Outline, Pencil, Turbulence, Paper, Crumpled, Grayscale, Sepia, Dingy and Tint.
 
-### Clipping
+### Clip to
 
 ![image](https://github.com/user-attachments/assets/333f4c01-e7b6-4282-9518-b7f2da6433a2)
 
 Dropdown that allows you to choose whether the layer will apply to the land, the sea, or both.
 
-#### No clipping
+#### Inherit (no clipping)
 
 The layer will apply to the entire map, including the sea and including the land.
 
@@ -392,17 +394,15 @@ Determines the font of the text relevant to the element.
 
 ### Common style controls (dotted lines related)
 
-#### Stroke dash
+#### Stroke dasharray and Stroke linecap
 
 ![image](https://github.com/user-attachments/assets/6d467a97-a379-4e5a-9d69-d775ab850b23)
 
-This style control contains 2 parts of data.
+Two rows describe a dashed line.
 
-The number determines the spacing between the dash marks that make up the dashed line.
+The dasharray is a list of numbers, e.g. `5 2`: the dash length and the spacing between the dashes. Leave it empty for a solid line.
 
-Value 0 determines that there will be no spaces. The higher the value, the greater the distance between dashes.
-
-The dropdown allows you to determine the appearance of the ends of the dash endcaps that make up the dashed line.
+The linecap dropdown allows you to determine the appearance of the ends of the dashes that make up the dashed line.
 
 Butt – The dashes have no effect. The line ends exactly at the ends of its starting and ending points, without extending the line beyond these ends.
 
@@ -410,7 +410,7 @@ Square - There is a small addition along the line. More precisely, adds a rectan
 
 Round - Expand the line at its end using a semicircle, whose diameter is equal to the width of the line.
 
-Inherit - takes the varian of its parent elements, basically a default value.
+Inherit - takes the variant of its parent elements, basically a default value. Every dropdown with an "inherit" entry works this way: the value is left unset.
 
 ## Style presets
 
