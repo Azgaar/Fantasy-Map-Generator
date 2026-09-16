@@ -1,9 +1,10 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { createServer } from "node:http";
+import path from "node:path";
 import { expect, type Page, test as base } from "@playwright/test";
 
-const worker = readFileSync(new URL("../../public/sw.js", import.meta.url), "utf8");
+const worker = readFileSync(path.join(__dirname, "../../public/sw.js"), "utf8");
 const revision = (content: string) => createHash("sha256").update(content).digest("hex").slice(0, 8);
 
 interface Site {
