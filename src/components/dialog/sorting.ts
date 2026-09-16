@@ -3,6 +3,7 @@ import { type DialogSort, dialogState } from "./state";
 import type { EditorColumn } from "./table";
 
 type SortAccessors<T> = Record<string, (item: T) => string | number>;
+const columnSorts = new WeakMap<HTMLElement, DialogSort[]>();
 
 /** Make every .sortable header in the container sort the lines below it */
 export function applySortingByHeader(dialogId: string, headerContainerId = `${dialogId}Header`): void {
@@ -145,6 +146,7 @@ export function bindColumnSorting(dialogId: string, onSort: () => void): void {
     });
   }
   dialogState.onReset(dialogId, "sorting", () => {
+    columnSorts.delete(headers);
     setActiveSort(headers, defaultSort);
     onSort();
   });
@@ -158,5 +160,9 @@ export function sortDataByColumns<T>(dialogId: string, data: T[], columns: Edito
   for (const column of columns) {
     if (column.sortBy) accessors[column.key] = column.sortBy;
   }
-  return sortData(data, sort, accessors);
+  const sorts = [sort, ...(columnSorts.get(headers) || []).filter(previous => previous.sortBy !== sort.sortBy)];
+  columnSorts.set(headers, sorts);
+  // Earlier columns break ties when the table rebuilds its data.
+  for (const previous of sorts.toReversed()) sortData(data, previous, accessors);
+  return data;
 }
