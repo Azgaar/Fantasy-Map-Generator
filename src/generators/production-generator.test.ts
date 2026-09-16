@@ -175,3 +175,40 @@ describe("manufacturing work with stocked inputs", () => {
     expect(plan(5, 2)?.workersNeeded).toBe(2);
   });
 });
+
+describe("freighter with 20 engines and a 700-steel hull", () => {
+  beforeEach(() => {
+    catalogue.push(good(6, "Iron", 1));
+    catalogue[2].recipes = [{ 1: 1, 6: 1 }];
+    catalogue[4].recipes = [{ 3: 700, 4: 20 }];
+    catalogue[4].value = 1000000;
+    market.goods[1].stock = 940;
+    market.goods[2].stock = 40;
+    market.goods[5].price = 1000000;
+    market.goods[6] = { stock: 900, price: 1 };
+    Goods.sync();
+  });
+
+  it.each([
+    [900, 21],
+    [700, 221],
+    [0, 921]
+  ])("needs %i stocked steel to finish within %i workers", (steelStock, workers) => {
+    market.goods[3].stock = steelStock;
+    expect(plan(5, workers - 1)).toBeNull();
+    expect(plan(5, workers)?.workersNeeded).toBe(workers);
+  });
+
+  it("executes the full steel, engine and ship chain within one burg's worker cap", () => {
+    market.goods[3].stock = 0;
+    burg.population = 921;
+    const { index, state } = prepare();
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    production["runWorkerLoop"](index, state);
+    const records = state.records.filter(isMfgRecord);
+    expect(records.filter(record => record.goodId === 3)).toHaveLength(900);
+    expect(records.filter(record => record.goodId === 4)).toHaveLength(20);
+    expect(state.inventory[5]).toBe(1);
+    expect([1, 2, 6].map(id => market.goods[id].stock)).toEqual([0, 0, 0]);
+  });
+});
