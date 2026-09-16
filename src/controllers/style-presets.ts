@@ -5,6 +5,7 @@ import { invokeActiveZooming } from "@/components/zoom";
 import { Controllers } from "@/controllers";
 import { Styles } from "@/generators/styles";
 import { isLegacyPreset, isStoreStyles, presetFromLegacy } from "@/generators/styles-legacy";
+import type { Styles as StylesData } from "@/generators/styles-schema";
 import { applyOceanPattern } from "@/renderers/draw-ocean";
 import { applyVignetteOptions } from "@/renderers/draw-vignette";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
@@ -45,15 +46,21 @@ function syncSelect(): void {
 const isKnownStyleFormat = (json: unknown): boolean =>
   typeof json === "object" && json !== null && (isLegacyPreset(json) || isStoreStyles(json));
 
+/** A preset record in store shape, whichever format it was saved in; undefined for what is not a preset */
+export function parsePreset(presetJson: unknown): StylesData | undefined {
+  if (!isKnownStyleFormat(presetJson)) return undefined;
+  return isLegacyPreset(presetJson as object)
+    ? presetFromLegacy(presetJson as Record<string, Record<string, unknown>>, { onUnknown: "skip" })
+    : Styles.parse(presetJson);
+}
+
 /** Put a preset record into the store and onto the map. Used by load and by every UI path */
 function applyPreset(presetJson: unknown): void {
-  if (!isKnownStyleFormat(presetJson)) {
+  const parsed = parsePreset(presetJson);
+  if (!parsed) {
     tip("The file is not a style preset - the current style is kept", false, "error", 5000);
     return;
   }
-  const parsed = isLegacyPreset(presetJson as object)
-    ? presetFromLegacy(presetJson as Record<string, Record<string, unknown>>, { onUnknown: "skip" })
-    : Styles.parse(presetJson);
 
   const previousReliefSize = styles.relief.options.size;
   Styles.set(parsed);
@@ -94,6 +101,7 @@ async function applyOnLoad(): Promise<void> {
   init();
 }
 
+/** Apply a preset the way the select does: once per session the user confirms losing unsaved changes */
 function requestChange(name: string): void {
   if (sessionStorage.getItem(CONFIRMED_KEY)) return void change(name);
 
@@ -245,4 +253,4 @@ function remove(): void {
   });
 }
 
-export const StylePresetsEditor = { init, applyOnLoad, applyPreset, change, openSaver, remove };
+export const StylePresetsEditor = { init, applyOnLoad, applyPreset, requestChange, change, openSaver, remove };

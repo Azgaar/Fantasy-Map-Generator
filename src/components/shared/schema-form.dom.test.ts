@@ -60,7 +60,7 @@ describe("SchemaForm.render", () => {
   test("renders one row per leaf with the standard control for its kind", () => {
     const { form } = mount();
     expect(field(form, "attrs.fill").querySelector("input[type=color]")).not.toBeNull();
-    expect(field(form, "attrs.fill").querySelector("output")?.value).toBe("#123456");
+    expect(field(form, "attrs.fill").querySelector<HTMLInputElement>("input.hex")?.value).toBe("#123456");
     expect(field(form, "attrs.opacity").querySelector("slider-input")).not.toBeNull();
     expect(field(form, "attrs.opacity").dataset.tip).toBe("Opacity");
     expect(field(form, "attrs.stroke-dasharray").querySelector("input[type=text]")).not.toBeNull();
@@ -71,6 +71,23 @@ describe("SchemaForm.render", () => {
     expect(form.querySelector('[data-field="groups"]')).toBeNull(); // records are never walked
   });
 
+  test("a typed hex writes and syncs the swatch, an invalid one reverts", () => {
+    const { form, onChange } = mount();
+    const swatch = field(form, "attrs.fill").querySelector<HTMLInputElement>("input[type=color]")!;
+    const hex = field(form, "attrs.fill").querySelector<HTMLInputElement>("input.hex")!;
+    hex.value = " #ABCDEF ";
+    fire(hex, "change");
+    expect(onChange).toHaveBeenLastCalledWith(["attrs", "fill"], "#abcdef");
+    expect(swatch.value).toBe("#abcdef");
+    expect(hex.value).toBe("#abcdef");
+
+    onChange.mockClear();
+    hex.value = "#abc";
+    fire(hex, "change");
+    expect(onChange).not.toHaveBeenCalled();
+    expect(hex.value).toBe("#abcdef");
+  });
+
   test("attrs and options are flattened, other objects are subsections", () => {
     const { form } = mount();
     expect(form.querySelector('[data-section="attrs"]')).toBeNull();
@@ -78,7 +95,21 @@ describe("SchemaForm.render", () => {
     const box = form.querySelector<HTMLDetailsElement>('[data-section="box"]')!;
     expect(box.tagName).toBe("DETAILS");
     expect(box.querySelector("summary")?.textContent).toBe("Box");
+    expect(box.querySelector("summary > .preview")).not.toBeNull(); // the slot the caller fills
     expect(box.querySelector('[data-field="box.attrs.fill"]')).not.toBeNull();
+    expect(field(form, "attrs.fill").parentElement).toBe(form); // loose rows stay at the root
+  });
+
+  test("a root title gathers the loose rows in a section of their own, sections stay beside it", () => {
+    const { form } = mount({ rootTitle: "Rivers" });
+    const root = form.querySelector<HTMLDetailsElement>(':scope > details[data-section=""]')!;
+    expect(root.querySelector("summary > .title")?.textContent).toBe("Rivers");
+    expect(root.open).toBe(true);
+    expect(field(form, "attrs.fill").closest("details")).toBe(root);
+    expect(field(form, "options.count").closest("details")).toBe(root);
+    expect(form.querySelector('[data-section="box"]')?.parentElement).toBe(form);
+    expect(form.querySelector('[data-section="options.waves"]')?.parentElement).toBe(form);
+    expect(root.querySelector("details")).toBeNull();
   });
 
   test("a custom flatten swaps which containers stay inline", () => {
@@ -94,7 +125,7 @@ describe("SchemaForm.render", () => {
     color.value = "#abcdef";
     fire(color, "input");
     expect(onChange).toHaveBeenLastCalledWith(["attrs", "fill"], "#abcdef");
-    expect(field(form, "attrs.fill").querySelector("output")?.value).toBe("#abcdef");
+    expect(field(form, "attrs.fill").querySelector<HTMLInputElement>("input.hex")?.value).toBe("#abcdef");
 
     const slider = field(form, "attrs.opacity").querySelector<HTMLElement & { value: string }>("slider-input")!;
     expect(slider.value).toBe("1"); // null shows as nullAs

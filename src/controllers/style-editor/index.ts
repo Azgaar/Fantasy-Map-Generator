@@ -12,9 +12,13 @@ import { Styles } from "@/generators/styles";
 import { type StyleElement, styleMeta, stylesSchema } from "@/generators/styles-schema";
 import { applyVignetteOptions } from "@/renderers/draw-vignette";
 import { ensureEl, findEl } from "@/utils";
+import { Baseline, storePath, storeValue } from "./baseline";
 import { CUSTOM_CONTROLS, destroyControlDialogs, updateGridSizeReadout } from "./controls";
+import { FormDecoration } from "./decorate";
 import { effectFor, fitLabelRanges, type Selection } from "./effects";
-import { GROUP_SOURCES, type GroupEntry } from "./groups";
+import { ElementsDialog } from "./elements-dialog";
+import { GROUP_SOURCES, type GroupEntry, listElements } from "./groups";
+import { PresetsDialog } from "./presets-dialog";
 
 const ELEMENT_ALIASES: Record<string, StyleElement> = {
   regions: "states",
@@ -40,17 +44,37 @@ const groupSelect = () => ensureEl<HTMLSelectElement>("styleGroupSelect");
 
 let wired = false;
 let glowTimer: number | undefined;
+let baseline: Baseline | undefined; // the current preset, once loaded
+let baselineName = "";
+let decoration: FormDecoration | undefined;
+const elementsDialog = new ElementsDialog(
+  () => ({ element: elementSelect().value as StyleElement, group: groupSelect().value }),
+  open
+);
+const presetsDialog = new PresetsDialog();
 
 function wire(): void {
   if (wired) return;
   wired = true;
-  const elements = (Object.keys(stylesSchema.shape) as StyleElement[])
-    .map(id => ({ id, label: layerLabel(id) }))
-    .sort((a, b) => a.label.localeCompare(b.label));
-  elementSelect().replaceChildren(...elements.map(({ id, label }) => new Option(label, id)));
+  elementSelect().replaceChildren(...listElements().map(({ id, label }) => new Option(label, id)));
   elementSelect().value = "states";
   elementSelect().addEventListener("change", () => open(elementSelect().value as StyleElement));
   groupSelect().addEventListener("change", () => render());
+  ensureEl("styleElementTreeButton").addEventListener("click", () => elementsDialog.open());
+  ensureEl("stylePresetGalleryButton").addEventListener("click", () => presetsDialog.open());
+}
+
+// the marks compare with the current preset; until it is loaded the form renders plain, then gets decorated
+function ensureBaseline(): void {
+  const name = options.map.style.preset || "default";
+  if (name === baselineName) return;
+  baselineName = name;
+  baseline = undefined;
+  void Baseline.load(name).then(loaded => {
+    if (baselineName !== name) return;
+    baseline = loaded;
+    decoration?.setBaseline(baseline);
+  });
 }
 
 /** Show the editor for an element (and a group); with no arguments, whatever is selected */
@@ -73,10 +97,13 @@ function refresh(): void {
   render();
 }
 
-/** Empty the form and drop what the controls opened; called when the tab is left */
+/** Empty the form and drop what the controls and the tab opened; called when the tab is left */
 function close(): void {
   findEl("styleForm")?.replaceChildren();
+  decoration = undefined;
   destroyControlDialogs();
+  elementsDialog.close();
+  presetsDialog.close();
 }
 
 function glow(withGroup: boolean): void {
@@ -144,21 +171,10 @@ function selection(): Resolved {
   return sel;
 }
 
-// the composed burgIcons form addresses two records; every other relative path hangs off the selection
-function storePath(sel: Resolved, relative: string[]): string[] {
-  if (sel.element === "burgIcons" && relative[0] === "anchors") {
-    return ["burgIcons", "anchors", "groups", sel.group ?? "", ...relative.slice(1)];
-  }
-  return [...sel.path, ...relative];
-}
-
-const getPath = (root: unknown, path: string[]): any =>
-  path.reduce<any>((node, key) => (node == null ? undefined : node[key]), root);
-
 /** Set one value on the store and run its effect; `relative` is a path below the selection's node */
 function change(sel: Resolved, relative: string[], value: unknown): void {
   const path = storePath(sel, relative);
-  const node = getPath(styles, path.slice(0, -1));
+  const node = storeValue(sel, relative.slice(0, -1)) as Record<string, unknown> | undefined;
   const key = path.at(-1)!;
   if (!node) return;
   const previous = node[key];
@@ -171,24 +187,36 @@ function change(sel: Resolved, relative: string[], value: unknown): void {
 /** Render the selection's form into a container; the standard container is #styleForm */
 function renderForm(form: HTMLElement, sel: Resolved): void {
   form.replaceChildren();
+  decoration = undefined;
   destroyControlDialogs();
   if (!sel.value) return;
 
   if (sel.layer && !Layers.isOn(sel.layer)) form.append(banner(sel.layer, () => renderForm(form, sel)));
 
   const onChange = (relative: string[], value: unknown): void => change(sel, relative, value);
-  form.append(SchemaForm.render(sel.schema, sel.value, { meta: styleMeta, controls: CUSTOM_CONTROLS, onChange }));
+  const rootTitle = sel.group ? `${layerLabel(sel.element)}: ${sel.group}` : layerLabel(sel.element);
+  form.append(
+    SchemaForm.render(sel.schema, sel.value, { meta: styleMeta, controls: CUSTOM_CONTROLS, rootTitle, onChange })
+  );
   decorate(form, sel);
+
+  decoration = new FormDecoration(form, sel, baseline, (relative, value) => {
+    change(sel, relative, value);
+    renderForm(form, sel);
+  });
 }
 
 function render(): void {
+  ensureBaseline();
   renderForm(ensureEl("styleForm"), selection());
+  elementsDialog.refresh();
+  presetsDialog.refresh();
 }
 
 function banner(layer: LayerId, rerender: () => void): HTMLElement {
   const banner = document.createElement("div");
   banner.className = "banner";
-  banner.append(`${layerLabel(layer)} layer is hidden `);
+  banner.append(`${layerLabel(layer)} layer is hidden. `);
   const link = document.createElement("a");
   link.textContent = "Turn on";
   link.addEventListener("click", () => {
@@ -244,7 +272,7 @@ function decorate(form: HTMLElement, sel: Resolved): void {
       }
     );
     row.querySelector(".ctl")!.append(control);
-    form.querySelector(".schema-form")?.prepend(row);
+    rootBody(form).prepend(row);
   }
 
   if (sel.element === "emblems") {
@@ -268,9 +296,13 @@ function decorate(form: HTMLElement, sel: Resolved): void {
       invokeActiveZooming();
     });
     row.querySelector(".ctl")!.append(checkbox, label);
-    form.querySelector(".schema-form")?.append(row);
+    rootBody(form).append(row);
   }
 }
+
+// the extra rows sit with the element's own rows, in the card SchemaForm titled by the selection
+const rootBody = (form: HTMLElement): Element =>
+  form.querySelector('.schema-form > details[data-section=""] > .body') ?? form.querySelector(".schema-form")!;
 
 function extraRow(label: string, tip: string): HTMLElement {
   const row = document.createElement("div");

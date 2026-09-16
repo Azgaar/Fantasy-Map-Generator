@@ -1,9 +1,6 @@
-// A form built from a zod object schema: the schema says what a value is, the registry meta how it is
-// edited, the caller what happens when it changes. No store, no layers, no map in here
+// A form built from a zod object schema
 import type { z } from "zod";
 
-// The control a field is edited with. The first six ship with SchemaForm; the rest name a control the
-// caller registers through `controls`, so a schema can say "this is a font" without owning the widget
 export type ControlKind =
   | "checkbox"
   | "select"
@@ -26,11 +23,9 @@ export type ControlKind =
   | "vignettePreset"
   | "mapFilter";
 
-// What a form needs beyond the type: the semantics of a field the schema alone cannot name. Registered
-// on the leaf or on an object; a wrapper's entry (nullable, default) overrides the leaf's
 export type FieldMeta = {
   control?: ControlKind; // overrides the derived control
-  label?: string; // default: key → sentence case ("stroke-width" → "Stroke width", "dx" → "Shift x")
+  label?: string; // default: key → sentence case ("stroke-width" → "Stroke width")
   tip?: string; // the row's data-tip
   step?: number; // sliders; default 1 for int, 0.01 for a range ≤ 2, else 0.1
   range?: [number, number]; // slider bounds for a number the schema leaves unbounded; widened to hold the stored value
@@ -64,10 +59,15 @@ type RenderOptions = {
   meta: Meta;
   controls?: Partial<Record<ControlKind, ControlFactory>>; // merged over the standard ones
   flatten?: (key: string) => boolean; // default: key === "attrs" || key === "options"
+  rootTitle?: string; // wraps the rows outside any section in a section of their own, `data-section=""`
   onChange: (path: string[], value: unknown) => void;
 };
 
-type Ctx = Required<Omit<RenderOptions, "controls">> & { controls: Record<string, ControlFactory | undefined> };
+type Ctx = Required<Omit<RenderOptions, "controls" | "rootTitle">> & {
+  controls: Record<string, ControlFactory | undefined>;
+  root: HTMLElement;
+  rootBody?: () => HTMLElement; // where a root-level row goes when the root is titled
+};
 
 const GATE_OFF = new Set<unknown>([false, "off", "none"]);
 const defaultFlatten = (key: string) => key === "attrs" || key === "options";
@@ -178,19 +178,26 @@ function walk(schema: z.ZodObject, meta: Meta, options: { records?: boolean } = 
 const getPath = (value: unknown, path: string[]): unknown =>
   path.reduce<unknown>((node, key) => (node == null ? undefined : (node as Record<string, unknown>)[key]), value);
 
+// sections are cards: a header with the caret, title, gate and a preview slot; the body holds the rows
 const STYLE = /* css */ `
-  .schema-form .row { display: flex; align-items: center; gap: .4em; min-height: 1.9em; }
-  .schema-form .row > label { flex: 0 0 8.5em; }
+  .schema-form .row { display: flex; align-items: center; gap: .4em; min-height: 1.9em; position: relative; }
+  .schema-form .row > label { flex: 0 0 8em; }
   .schema-form .row > .ctl { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: .3em; }
   .schema-form .row > .ctl > select, .schema-form .row > .ctl > input[type="text"], .schema-form .row > .ctl > input[type="number"], .schema-form .row > .ctl > slider-input { flex: 1 1 auto; min-width: 0; }
   .schema-form .row > .ctl > input[type="number"] { max-width: 6em; }
-  .schema-form .row > .ctl > output { min-width: 4.5em; }
-  .schema-form details { margin: .2em 0 .2em 0; }
-  .schema-form details > summary { display: flex; align-items: center; gap: .4em; cursor: pointer; font-weight: 700; padding: .2em 0; }
-  .schema-form details > summary > span { flex: 0 1 auto; min-width: 8.5em; }
-  .schema-form details > summary > .gate { flex: 1 1 auto; display: flex; align-items: center; gap: .3em; font-weight: 400; }
-  .schema-form details > summary > .gate > select { flex: 1 1 auto; min-width: 0; }
-  .schema-form details > .body { padding-left: .6em; border-left: 1px solid var(--dark-solid, #999); margin-left: .2em; }
+  .schema-form .row > .ctl > input.hex { flex: 0 0 5.2em; font-family: var(--monospace, monospace); font-size: .9em; }
+  .schema-form details[data-section] { margin: .4em 0; border: 1px solid var(--dark-solid, #999); border-radius: 3px; background: var(--style-card-fill, rgba(255, 255, 255, .1)); overflow: hidden; }
+  .schema-form details[data-section] details[data-section] { margin: .3em 0; }
+  .schema-form details[data-section] > summary { display: flex; align-items: center; gap: .4em; cursor: pointer; font-weight: 700; padding: .3em .5em; list-style: none; background: var(--style-card-head, rgba(255, 255, 255, .2)); }
+  .schema-form details[data-section] > summary::-webkit-details-marker { display: none; }
+  .schema-form details[data-section] > summary::before { content: "▸"; flex: none; width: 1em; opacity: .6; }
+  .schema-form details[data-section][open] > summary::before { content: "▾"; }
+  .schema-form details[data-section] > summary > .title { flex: none; white-space: nowrap; }
+  .schema-form details[data-section] > summary > .gate { flex: 1 1 auto; display: flex; align-items: center; gap: .3em; font-weight: 400; }
+  .schema-form details[data-section] > summary > .gate > select { flex: 1 1 auto; min-width: 0; }
+  .schema-form details[data-section] > summary > .preview { margin-left: auto; flex: 0 1 auto; max-width: 50%; display: flex; align-items: center; justify-content: flex-end; gap: .4em; font-weight: 400; min-width: 0; overflow: hidden; }
+  .schema-form details[data-section] > summary > .preview:empty { display: none; }
+  .schema-form details[data-section] > .body { padding: .1em .5em; }
 `;
 
 let styleInjected = false;
@@ -208,12 +215,42 @@ function render(schema: z.ZodObject, value: object, options: RenderOptions): HTM
     meta: options.meta,
     controls: { ...STANDARD_CONTROLS, ...options.controls },
     flatten: options.flatten ?? defaultFlatten,
-    onChange: options.onChange
+    onChange: options.onChange,
+    root: document.createElement("div")
   };
   const root = document.createElement("div");
   root.className = "schema-form";
+  ctx.root = root;
+  if (options.rootTitle) {
+    let body: HTMLElement | undefined;
+    ctx.rootBody = () => {
+      if (body) return body;
+      const card = section(options.rootTitle!, "");
+      body = card.querySelector<HTMLElement>(".body")!;
+      root.append(card);
+      return body;
+    };
+  }
   renderInto(root, schema, value, [], ctx);
   return root;
+}
+
+function section(title: string, id: string): HTMLDetailsElement {
+  const details = document.createElement("details");
+  details.open = true;
+  details.dataset.section = id;
+  const summary = document.createElement("summary");
+  const span = document.createElement("span");
+  span.className = "title";
+  span.textContent = title;
+  summary.append(span);
+  const preview = document.createElement("span");
+  preview.className = "preview";
+  summary.append(preview);
+  const body = document.createElement("div");
+  body.className = "body";
+  details.append(summary, body);
+  return details;
 }
 
 // rows of an object: flattened containers recurse in place, other objects become subsections
@@ -237,7 +274,8 @@ function renderInto(
       continue;
     }
     if (meta.hidden) continue;
-    container.append(renderRow(fieldSpec(key, child, ctx.meta, childPath), getPath(value, [key]), ctx));
+    const target = container === ctx.root && ctx.rootBody ? ctx.rootBody() : container;
+    target.append(renderRow(fieldSpec(key, child, ctx.meta, childPath), getPath(value, [key]), ctx));
   }
 }
 
@@ -249,16 +287,10 @@ function renderSection(
   ctx: Ctx,
   meta: FieldMeta
 ): HTMLElement {
-  const details = document.createElement("details");
-  details.open = true;
-  details.dataset.section = path.join(".");
-  const summary = document.createElement("summary");
-  const title = document.createElement("span");
-  title.textContent = meta.label ?? labelOf(key);
-  summary.append(title);
-  details.append(summary);
-  const body = document.createElement("div");
-  body.className = "body";
+  const details = section(meta.label ?? labelOf(key), path.join("."));
+  const summary = details.querySelector("summary")!;
+  const preview = summary.querySelector(".preview")!;
+  const body = details.querySelector<HTMLElement>(".body")!;
 
   let gatePath: string[] | undefined;
   if (meta.gate) {
@@ -278,13 +310,12 @@ function renderSection(
           body.hidden = GATE_OFF.has(next);
         })
       );
-      summary.append(gate);
+      summary.insertBefore(gate, preview);
       body.hidden = GATE_OFF.has(gateValue);
     }
   }
 
   renderInto(body, schema, value, path, ctx, gatePath);
-  details.append(body);
   return details;
 }
 
@@ -414,19 +445,32 @@ export function toColorInput(value: unknown): string {
   return "#000000";
 }
 
+// the swatch and an editable hex beside it: a valid #rrggbb typed in writes and syncs the swatch, anything else reverts
 const color: ControlFactory = (_spec, value, set) => {
   const wrapper = document.createElement("span");
   wrapper.style.display = "contents";
   const input = document.createElement("input");
   input.type = "color";
   input.value = toColorInput(value);
-  const output = document.createElement("output");
-  output.value = typeof value === "string" ? value : "";
+  const hex = document.createElement("input");
+  hex.type = "text";
+  hex.className = "hex";
+  hex.spellcheck = false;
+  hex.value = typeof value === "string" ? value : "";
   input.addEventListener("input", () => {
-    output.value = input.value;
+    hex.value = input.value;
     set(input.value);
   });
-  wrapper.append(input, output);
+  hex.addEventListener("change", () => {
+    const next = hex.value.trim().toLowerCase();
+    if (!/^#[0-9a-f]{6}$/.test(next)) {
+      hex.value = input.value;
+      return;
+    }
+    input.value = hex.value = next;
+    set(next);
+  });
+  wrapper.append(input, hex);
   return wrapper;
 };
 

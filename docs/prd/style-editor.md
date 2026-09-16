@@ -38,6 +38,11 @@ src/controllers/style-editor/effects.ts    path → side effect (§3)
 src/controllers/style-editor/groups.ts     GROUP_SOURCES (§3)
 src/controllers/style-editor/controls.ts   the custom controls the editor registers (§3)
 src/controllers/style-editor/effects.test.ts
+src/controllers/style-editor/baseline.ts   the current preset as the baseline: storePath, diffAt (§5)
+src/controllers/style-editor/decorate.ts   changed marks, reset buttons, card counts and previews (§5)
+src/controllers/style-editor/elements-dialog.ts  the Style elements dialog (§5)
+src/controllers/style-editor/presets-dialog.ts   the Style presets gallery (§5)
+src/controllers/style-editor/baseline.test.ts
 src/controllers/style-presets.ts           apply/change/save/remove + Style Saver dialog (§4)
 src/services/style-presets.ts              preset sources: bundle, fetch, localStorage (§4)
 src/services/style-presets.test.ts
@@ -305,7 +310,7 @@ export const GROUP_SOURCES: Record<string, GroupSource> = {
 `stylesSchema.shape[element]` or the record's `.valueType` (for `burgIcons`, a composed object of both entries).
 
 **Rendering.** `open` empties `#styleForm`, prepends the hidden-layer banner when `!Layers.isOn(layer)`
-(`<div class="banner">Heightmap layer is hidden <a>Turn on</a></div>` → `Layers.show(layer)` + re-render),
+(`<div class="banner">Heightmap layer is hidden. <a>Turn on</a></div>` → `Layers.show(layer)` + re-render),
 then appends `SchemaForm.render(schema, node, { meta: styleMeta, controls: CUSTOM_CONTROLS, onChange })`.
 `onChange(path, value)` does two things:
 
@@ -463,6 +468,54 @@ export const HeightmapColorSchemes = { get, getColor, names, add, ensure }; // e
 
 imported, no bridge, `global.ts` loses the four declarations.
 
+### 5. Look and feel — cards, reset to preset, two dialogs
+
+The outcome of three prototyping rounds (the PRD `Style Editor Look and Feel`): the structure and the logic
+above stay, what changes is how a value is shown, reset and found. Nothing about which store node a control
+writes, or when a layer redraws, changes, and the Menu keeps its 330px width.
+
+**Cards.** `SchemaForm` renders every section as a card: a `<details data-section>` whose `<summary>` holds
+the caret, the title, the gate control if any, and an empty `.preview` slot. With `rootTitle` the rows that
+belong to no section go into a card of their own (`data-section=""`) titled by the selection (_Labels ·
+capital_, _Rivers_); the editor's extra rows (vignette preset, emblems show-all) join it. The form stays
+store-free; the editor fills the slots.
+
+**Baseline** (`baseline.ts`, class `Baseline`). `Baseline.load(name)` is the parsed record of the current
+preset (`options.map.style.preset`) via `StylePresets.load` + `parsePreset`, cached for system presets,
+re-read for custom ones (they can be re-saved). `diffAt(sel, relative)` is the one question the decoration
+asks: a path is _changed_ when the preset defines it (every container exists and the leaf is an own key) and
+`JSON.stringify(store ?? null) !== JSON.stringify(preset ?? null)`; a path the preset never had — a label
+group added later, a burg group it lacked — is undefined and never marked. `storePath` maps the composed
+burg-icon form (`anchors.*`) back to the anchors record.
+
+**Decoration** (`decorate.ts`, class `FormDecoration`). Built over a freshly rendered form: every
+`[data-field]` (row or gate) gets a `↺` button (`visibility: hidden` unless changed, so nothing shifts) and a
+`.changed` class with the 3px accent; each card header gets a preview built only from its own rows, read from the store: a text sample for a `font-family`, a swatch for a `fill`/`color`, a 60×12
+line for a `stroke`, the filter name for a set `filter`. Edits never re-render: the form's bubbled
+`input`/`change` events re-mark the row that fired, a tick after the store write, and refresh the previews. A reset writes the preset value through `change` (so the effect runs) and re-renders; the tab
+renders plain until the baseline has loaded, then `setBaseline` decorates. There is no whole-element reset:
+selecting the preset again is that. Cards remember open/closed per element and section for the session.
+The colour control's `<output>` became an editable hex field: a valid `#rrggbb` on `change` writes and syncs
+the swatch, anything else reverts.
+
+**Dialogs.** Two classes the editor instantiates once (`ElementsDialog`, `PresetsDialog`); both build a
+jQuery UI dialog on `open` and destroy it on `close`, placed at the Menu's right edge and remembered by the
+dialog-position persistence; neither closes on a pick and both re-render when the selection or the preset
+changes (`render()` calls their `refresh`, the editor's `close()` closes them).
+
+- `elements-dialog.ts` — every element in the Element select's order with a visibility dot (green on,
+  hollow off, grey permanent or not a layer; a click toggles through `Layers.toggle`), grouped elements
+  with a caret and the `GROUP_SOURCES` entries and counts underneath, a filter box over element and group
+  names. A pick calls `open(element, group)`; the class takes the `current` selection getter and the
+  `onPick` callback so it needs nothing from `index.ts`.
+- `presets-dialog.ts` — a four-column grid of `public/images/style-presets/<name>.png` (320×180, one per
+  system preset, rendered by `scripts/render-style-thumbnails.mjs` from one seed; a custom preset or a
+  failed load shows a neutral tile), the current preset outlined. A click goes through
+  `StylePresetsEditor.requestChange`, so the once-per-session confirmation is honoured.
+
+Tokens: `--style-change`, `--style-reset`, `--style-pick`, `--style-card-fill`, `--style-card-head`, set by
+`style-tab.ts`; `schema-form.ts` uses the card ones with fallbacks.
+
 ## Migration
 
 Every step lands green (tsc, vitest, e2e) and the attribute-snapshot baselines stay byte-identical — a style
@@ -498,7 +551,8 @@ edit must render the same before and after.
 ## Verification
 
 - Unit: `schema-form.dom.test.ts` (render each kind, change → `onChange`, gate collapse, null round-trip,
-  flatten); `styles-schema.test.ts` completeness (every leaf edited or `hidden`) and format cases (a value
+  flatten, the hex input, the titled root card); `baseline.test.ts` (diff rules, the burg-icon path mapping,
+  the cache); `styles-schema.test.ts` completeness (every leaf edited or `hidden`) and format cases (a value
   per regex, valid and invalid); `effects.test.ts` (path → which stub fired); `style-presets.test.ts`
   (fallback chain, custom CRUD, unknown name → default).
 - E2E: the existing style specs re-pointed at `data-field`; `style-parity` baselines unchanged through every

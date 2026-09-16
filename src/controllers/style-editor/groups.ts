@@ -1,8 +1,17 @@
-// What the Group select lists for a grouped element, and how many things use each entry
+// What the Element and Group selects list: every style element by label, and for a grouped element its
+// groups with how many things use each
+import { layerLabel } from "@/data/layer-labels";
+import { type StyleElement, stylesSchema } from "@/generators/styles-schema";
 import { getLabelsData } from "@/renderers/labels/label-data";
 
 export type GroupEntry = { id: string; label: string };
 type GroupSource = () => GroupEntry[];
+
+export function listElements(): { id: StyleElement; label: string }[] {
+  return (Object.keys(stylesSchema.shape) as StyleElement[])
+    .map(id => ({ id, label: layerLabel(id) }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+}
 
 const countBy = <T>(items: readonly T[], key: (item: T) => string | undefined): Map<string, number> => {
   const counts = new Map<string, number>();

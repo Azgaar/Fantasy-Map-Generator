@@ -300,7 +300,15 @@ The style tab allows applying design settings, both in general to the entire map
 
 This is the final stage in the preparation of the map, after all its logic is ready.
 
-After choosing an element for design (e.g. Icons or Biomes), you can customize its design with a variety of controls. The controls are built from the element's style definition, so every stored value has a row. An element's named parts (the states body and halo, the land and ocean heights, the scale bar background, the ocean bands and embellishments) are shown as collapsible sections under the element's own rows; a section that can be switched on or off carries its switch in the header.
+After choosing an element for design (e.g. Icons or Biomes), you can customize its design with a variety of controls. The controls are built from the element's style definition, so every stored value has a row. The rows are grouped into cards: the element's own rows in a card titled by the selection (e.g. *Labels · capital*), and the element's named parts (the states body and halo, the land and ocean heights, the scale bar background, the ocean bands and embellishments) in a card each. A card folds by its header; a card that can be switched on or off carries its switch in the header. The header also shows a live preview of what the card's own values produce: a text sample for a font, a color swatch for a fill, a line for a stroke and the filter name when a filter is set.
+
+### Changed values and reset
+
+Every value is compared with the current style preset. A value that differs is marked with a red bar on the left of its row and gets a ↺ button that resets it to the preset's value. To discard every change, select the preset again. Values the preset does not define (a label or burg group added after the preset was applied) are never marked. Color rows accept a typed hex value (`#rrggbb`) next to the swatch; an invalid value reverts.
+
+### Style elements dialog
+
+The button next to the Element dropdown opens the **Style elements** dialog: a list of every element with its layer visibility (green: on, hollow: off, grey: always shown or not a layer), and, for elements with groups, a fold-out list of the groups with how many things use each. Clicking a name selects it in the editor and the dialog stays open; clicking the dot turns the layer on or off, like the Layers tab does; the filter box narrows the list by element or group name.
 
 For many of the elements there are the same design controls with the same functionality, below is their breakdown:
 
@@ -421,6 +429,8 @@ Dropdown that allows you to choose a set of design settings for all elements.
 Each of those sets defines its design settings for each of the elements, for example the ancient preset defines the texture of the land to be with the image setting to be ancient small, and the Clipping setting to be No clipping.
 
 Available presets: default, ancient, gloom, pale, light, watercolor, clean, atlas, darkSeas, cyberpunk, night, monochrome, ink, cinderwood and frostbite. The **+** button saves the current style as a custom preset, and the **−** button removes the selected custom preset.
+
+The brush button next to the dropdown opens the **Style presets** dialog: a gallery with a screenshot of every system preset (all rendered from the same map), the current one outlined. Clicking a card applies the preset the same way the dropdown does, and the dialog stays open. Custom presets are listed with a neutral tile.
 
 **+ button** Allows you to add your own set of settings.
 
