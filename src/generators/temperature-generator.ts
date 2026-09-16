@@ -7,8 +7,13 @@ declare global {
 class TemperatureModule {
   /** calculate the temperature of every grid cell from its latitude and altitude */
   generate(): void {
+    grid.cells.temp = this.compute(grid.cells.h);
+  }
+
+  /** temperature of every grid cell for the given heights, the grid itself stays untouched */
+  compute(h: ArrayLike<number>): Int8Array {
     const { cells, cellsX, points } = grid;
-    cells.temp = new Int8Array(cells.i.length);
+    const temp = new Int8Array(cells.i.length);
 
     const {
       equator: temperatureEquator,
@@ -50,9 +55,11 @@ class TemperatureModule {
       DEBUG.temperature && console.info(`${rn(rowLatitude)}° sea temperature: ${rn(seaLevelTemp)}°C`);
 
       for (let cellId = rowCellId; cellId < rowCellId + cellsX; cellId++) {
-        cells.temp[cellId] = minmax(seaLevelTemp - getAltitudeDrop(cells.h[cellId]), -128, 127);
+        temp[cellId] = minmax(seaLevelTemp - getAltitudeDrop(h[cellId]), -128, 127);
       }
     }
+
+    return temp;
   }
 }
 

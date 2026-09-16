@@ -83,6 +83,19 @@ test("a legacy style record keeps its burg/anchor groups against the DOM harvest
   styles.burgIcons.burgIcons.groups.capital.attrs.fill = "#ffffff";
 });
 
+test("a legacy style record with an empty burg/anchor record harvests that record from the DOM", () => {
+  document.body.innerHTML = `<svg id="map">
+    <g id="burgIcons"><g id="cities" fill="#e57676" font-size="18"></g></g>
+    <g id="anchors"><g id="cities" fill="#ffffff" font-size="18"></g><g id="towns" font-size="12"></g></g>
+  </svg>`;
+  styles.burgIcons.anchors.groups = {};
+  harvestStylesFromSvg({ hasStyleRecord: true });
+  expect(styles.burgIcons.anchors.groups.cities.options.size).toBe(18);
+  expect(styles.burgIcons.anchors.groups.towns.options.size).toBe(12);
+  expect(styles.burgIcons.burgIcons.groups.cities).toBeUndefined();
+  Styles.set(structuredClone(Styles.defaults));
+});
+
 test("save sync keeps store-authoritative zoom options when the DOM lacks the attrs", () => {
   document.body.innerHTML = `<svg id="map"><g id="markers"></g><g id="regions"><g id="statesHalo"></g></g></svg>`;
   styles.markers.options.rescale = 0;
@@ -273,11 +286,11 @@ test("save sync lets an old map's coordinates data-size win over the store", () 
 });
 
 test("an old map omitting a non-nullable attr keeps the values it does carry", () => {
-  // #provs in pre-1.148 maps carries opacity alone
-  document.body.innerHTML = `<svg id="map"><g id="provs" opacity="0.6"></g></svg>`;
+  // #temperature in old maps may carry opacity alone
+  document.body.innerHTML = `<svg id="map"><g id="temperature" opacity="0.6"></g></svg>`;
   const result = stylesFromMap(document);
-  expect(result.provinces.attrs.opacity).toBe(0.6);
-  expect(result.provinces.attrs["font-family"]).toBe(Styles.defaults.provinces.attrs["font-family"]);
+  expect(result.temperature.attrs.opacity).toBe(0.6);
+  expect(result.temperature.attrs["font-size"]).toBe(Styles.defaults.temperature.attrs["font-size"]);
 });
 
 test("harvesting an old map does not emit values the schema rejects", () => {
@@ -325,6 +338,17 @@ test("store-format loads strip retired option attributes from the restored svg",
   expect(document.getElementById("markets")?.getAttribute("data-icon")).toBeNull();
 });
 
+test("custom lake groups are harvested from the svg with freshwater as the template", () => {
+  document.body.innerHTML = `<svg id="map"><g id="lakes"><g id="freshwater"></g><g id="my_lakes" fill="#123456" opacity="0.3"></g></g></svg>`;
+  harvestStylesFromSvg();
+  const custom = styles.lakes.groups.my_lakes;
+  expect(custom.attrs.fill).toBe("#123456");
+  expect(custom.attrs.opacity).toBe(0.3);
+  expect(custom.attrs.stroke).toBe(Styles.defaults.lakes.groups.freshwater.attrs.stroke);
+  expect(document.getElementById("my_lakes")?.dataset.group).toBe("my_lakes");
+  Styles.set(structuredClone(Styles.defaults));
+});
+
 test("opacity stranded on a layer group moves to the style groups the store keeps it on", () => {
   // the old style editor wrote to the layer group itself while the layer had no groups to pick
   document.body.innerHTML = `<svg id="map">
@@ -334,7 +358,7 @@ test("opacity stranded on a layer group moves to the style groups the store keep
   harvestStylesFromSvg();
   expect(styles.coastline.sea_island.attrs.opacity).toBe(0.5);
   expect(styles.coastline.lake_island.attrs.opacity).toBe(0.5);
-  expect(styles.lakes.freshwater.attrs.opacity).toBe(0.7);
+  expect(styles.lakes.groups.freshwater.attrs.opacity).toBe(0.7);
   expect(styles.routes.groups.roads.attrs.opacity).toBe(0.4);
 
   stripMigratedAttributes();

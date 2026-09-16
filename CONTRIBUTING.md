@@ -36,7 +36,7 @@ Before opening a Pull Request, ensure your code meets the following technical ga
 - All automated tests must pass.
 - The linter must pass with zero errors/warnings.
 - The production build must complete clean with no errors.
-- If your change alters user-visible behaviour, update the changelog in the root.
+- If your change alters user-visible behaviour, add an entry to [`docs/wiki/Changelog.md`](./docs/wiki/Changelog.md).
 
 ## 4. Pull Request and Review Process
 

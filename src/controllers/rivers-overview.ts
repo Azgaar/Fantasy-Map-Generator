@@ -171,6 +171,9 @@ function renderDialog(): void {
 
 function closeRiversOverview(): void {
   destroyDialog("riversOverview");
+  const view = riversTable.view();
+  view.rows = [];
+  view.all = [];
 }
 
 function createNewRiver(): void {

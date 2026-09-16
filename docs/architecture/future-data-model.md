@@ -102,8 +102,9 @@ This document outlines the expected data structure. Current data model described
       "minEdge": 1,
       "smoothThreshold": 0.25,
       "roughnessContrast": 1.5,
-      "profileHarmonics": 4,
-      "lakeSmoothThreshMult": 2
+      "roughnessScale": 60,
+      "lakeSmoothThreshMult": 2,
+      "variant": 0
     }
   },
 

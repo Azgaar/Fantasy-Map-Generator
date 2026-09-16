@@ -150,13 +150,9 @@ class GridModule {
 
   /** turn depressions that cannot pour to water into lakes */
   addDeepDepressionLakes(): void {
-    const elevationLimit = options.generation.lakeElevationLimit;
-    if (elevationLimit === 80) return;
-
     const { cells, features } = grid;
-    const { c, h, b } = cells;
 
-    const addLake = (lakeCells: number[]) => {
+    for (const lakeCells of this.findDeepDepressionLakes(cells, options.generation.lakeElevationLimit)) {
       const featureId = features.length;
 
       for (const i of lakeCells) {
@@ -164,13 +160,22 @@ class GridModule {
         cells.t[i] = -1;
         cells.f[i] = featureId;
 
-        for (const n of c[i]) {
+        for (const n of cells.c[i]) {
           if (!lakeCells.includes(n)) cells.t[n] = 1; // the lake shore is a coastline now
         }
       }
 
       features.push({ i: featureId, land: false, border: false, type: "lake" });
-    };
+    }
+  }
+
+  /** cell groups of the land depressions that cannot pour to water within the elevation limit: the lakes to be */
+  findDeepDepressionLakes(cells: Pick<GridCells, "i" | "c" | "b" | "h">, elevationLimit: number): number[][] {
+    if (elevationLimit === 80) return [];
+
+    const { c, b } = cells;
+    const h = Uint8Array.from(cells.h); // lakes form in turn: an earlier one is the water a later check can reach
+    const lakes: number[][] = [];
 
     for (const i of cells.i) {
       if (b[i] || h[i] < SEA_LEVEL) continue;
@@ -199,8 +204,13 @@ class GridModule {
         }
       }
 
-      if (deep) addLake([i, ...c[i].filter(n => h[n] === h[i])]);
+      if (!deep) continue;
+      const lakeCells = [i, ...c[i].filter(n => h[n] === h[i])];
+      for (const cell of lakeCells) h[cell] = 19;
+      lakes.push(lakeCells);
     }
+
+    return lakes;
   }
 
   /** near sea lakes get a lot of water inflow, most of them should break the threshold and flow out to sea (see Ancylus Lake) */

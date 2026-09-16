@@ -5,6 +5,7 @@ import { meander, projectToNearestEdge } from "../utils/pathUtils";
 import type { Label } from "./labels-generator";
 import type { Point } from "./voronoi";
 
+export const MIN_FLUX_TO_FORM_RIVER = 30;
 export const MIN_NAVIGABLE_FLUX = 100;
 
 export interface River {
@@ -51,7 +52,7 @@ class RiverModule {
     this.generate();
     this.specify();
     Features.defineGroups();
-    Lakes.defineNames();
+    Features.defineNames();
   }
 
   addDownhill(initialCell: number): { error?: string } {
@@ -178,7 +179,6 @@ class RiverModule {
     };
 
     const drainWater = () => {
-      const MIN_FLUX_TO_FORM_RIVER = 30;
       const cellsNumberModifier = (options.map.graph.points / 10000) ** 0.25;
 
       const prec = grid.cells.prec;

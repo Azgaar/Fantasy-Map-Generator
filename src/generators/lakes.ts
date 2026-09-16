@@ -1,6 +1,6 @@
 import { mean, min } from "d3";
 import { isLand, rn, unique } from "../utils";
-import type { Feature } from "./features";
+import type { Feature } from "./features-generator";
 
 declare global {
   var Lakes: LakesModule;
@@ -15,17 +15,15 @@ export class LakesModule {
     return rn(minShoreHeight - this.LAKE_ELEVATION_DELTA, 2);
   }
 
-  defineNames() {
-    pack.features.forEach((feature: Feature) => {
-      if (feature.type !== "lake") return;
-      feature.name = this.getName(feature);
-    });
-  }
-
-  getName(feature: Feature): string {
-    const landCell = feature.shoreline[0];
-    const culture = pack.cells.culture[landCell];
-    return Names.getCulture(culture);
+  // presets are applied before any map exists; custom groups live on the features, stock ones in the defaults
+  ensureLakeGroupStyles(): void {
+    const { groups } = styles.lakes;
+    const template = groups.freshwater || Object.values(groups)[0];
+    if (!template) return;
+    for (const feature of pack.features ?? []) {
+      if (feature?.type === "lake" && feature.group && !groups[feature.group])
+        groups[feature.group] = structuredClone(template);
+    }
   }
 
   cleanupLakeData = () => {

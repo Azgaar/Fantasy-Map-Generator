@@ -136,11 +136,11 @@ test.describe("style editor events drive the store", () => {
   });
 
   test("states halo width slider writes the store and re-derives stroke-width on zoom", async ({ page }) => {
-    // invokeActiveZooming only re-derives the halo width when rendering isn't in the fast
-    // "optimizeSpeed" mode (the default) - switch to "Best quality" through the real Options tab
+    // invokeActiveZooming only re-derives the halo width when the halos are on, which the default
+    // "balance" preset leaves off - switch to "quality" through the real Options tab
     await page.evaluate(() => (window as any).showOptions());
     await page.locator("#optionsTab").click();
-    await page.locator("#shapeRendering").selectOption("geometricPrecision");
+    await page.locator("#performancePreset").selectOption("quality");
 
     await openStyleElement(page, "regions");
 
@@ -556,8 +556,8 @@ test.describe("style editor events drive the store", () => {
     await page.locator("#styleOpacityInput input[type=number]").fill("0.4");
 
     const stored = await page.evaluate(() => ({
-      lakeFill: (window as any).styles.lakes.freshwater.attrs.fill,
-      lakeStrokeWidth: (window as any).styles.lakes.freshwater.attrs["stroke-width"],
+      lakeFill: (window as any).styles.lakes.groups.freshwater.attrs.fill,
+      lakeStrokeWidth: (window as any).styles.lakes.groups.freshwater.attrs["stroke-width"],
       riversOpacity: (window as any).styles.rivers.attrs.opacity
     }));
     expect(stored).toEqual({ lakeFill: "#123456", lakeStrokeWidth: 3, riversOpacity: 0.4 });

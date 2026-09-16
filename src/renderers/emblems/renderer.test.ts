@@ -1,11 +1,15 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { HeraldicEmblem } from "@/types/emblems";
 
 import { EmblemRenderer } from "./renderer";
 
 beforeEach(() => {
   document.body.innerHTML = /* html */ `<svg><g id="coas"></g></svg>`;
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 describe("EmblemRenderer", () => {
@@ -37,6 +41,26 @@ describe("EmblemRenderer", () => {
     await pending;
 
     expect(document.getElementById("stateCOA1")?.dataset.custom).toBe("true");
+  });
+
+  it("ignores a removed render that settles after the id is recreated", async () => {
+    let releaseCharge!: () => void;
+    const charge = new Promise<void>(resolve => {
+      releaseCharge = resolve;
+    });
+    const response = { ok: true, text: () => charge.then(() => "<svg><g><path/></g></svg>") };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response));
+
+    const old: HeraldicEmblem = { t1: "gules", shield: "heater", charges: [{ charge: "lion", t: "or", p: "e" }] };
+    const replacement: HeraldicEmblem = { t1: "azure", shield: "heater" };
+    const stale = EmblemRenderer.trigger("stateCOA1", old);
+    EmblemRenderer.remove("stateCOA1");
+    await EmblemRenderer.trigger("stateCOA1", replacement);
+
+    releaseCharge();
+    await stale;
+
+    expect(document.querySelector<SVGElement>("#stateCOA1")!.dataset.coa).toBe(JSON.stringify(replacement));
   });
 
   it("cancels a pending change when the latest request restores the rendered definition", async () => {

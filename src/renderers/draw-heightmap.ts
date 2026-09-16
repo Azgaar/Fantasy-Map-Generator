@@ -25,6 +25,9 @@ import {
 import { tip } from "../components/tooltips";
 import { round } from "../utils";
 import { getHeightContours, smoothContourHeights } from "./heightmap-contours";
+import { getHachures } from "./heightmap-hachures";
+
+const HACHURE_LEVEL = 4; // height units between the levels hachure strokes are seeded along
 
 const CURVE_MAP: Record<string, CurveFactory> = {
   curveBasis,
@@ -46,6 +49,18 @@ const CURVE_MAP: Record<string, CurveFactory> = {
   curveStepBefore
 };
 
+// the cell surface extended to the boundary pseudo-points the Delaunay triangles reference
+function getContourSurface(smoothed: Float64Array): { points: [number, number][]; elevations: Float64Array } {
+  const points = [...grid.points, ...grid.boundary];
+  const elevations = Float64Array.from(points, ([x, y], i) => {
+    if (i < smoothed.length) return smoothed[i];
+    const column = Math.max(0, Math.min(grid.cellsX - 1, Math.floor(x / grid.spacing)));
+    const row = Math.max(0, Math.min(grid.cellsY - 1, Math.floor(y / grid.spacing)));
+    return smoothed[row * grid.cellsX + column];
+  });
+  return { points, elevations };
+}
+
 export const drawHeightmap = (): void => {
   if (customization === 1)
     return void tip("The Layer control is not available in the heightmap edit mode", false, "error");
@@ -65,8 +80,9 @@ export const drawHeightmap = (): void => {
 
   const landOptions = styles.heightmap.landHeights.options;
   const oceanOptions = styles.heightmap.oceanHeights.options;
-  const landFillsVisible = landOptions.contours.mode !== "only";
-  const oceanFillsVisible = oceanOptions.contours.mode !== "only";
+  const linesOnly = (o: typeof landOptions) => o.contours.mode === "only" || o.hachures.mode === "only";
+  const landFillsVisible = !linesOnly(landOptions);
+  const oceanFillsVisible = !linesOnly(oceanOptions);
 
   // ocean cells
   const renderOceanCells = oceanOptions.render;
@@ -167,15 +183,11 @@ export const drawHeightmap = (): void => {
     }
   }
 
+  let smoothedHeights: Float64Array | undefined; // shared by contours and hachures
+  const getSmoothedHeights = () => (smoothedHeights ??= smoothContourHeights(cells.h, cells.c));
+
   if (landOptions.contours.mode !== "off" || (renderOceanCells && oceanOptions.contours.mode !== "off")) {
-    const points = [...grid.points, ...grid.boundary];
-    const smoothed = smoothContourHeights(cells.h, cells.c);
-    const elevations = Float64Array.from(points, ([x, y], i) => {
-      if (i < cells.h.length) return smoothed[i];
-      const column = Math.max(0, Math.min(grid.cellsX - 1, Math.floor(x / grid.spacing)));
-      const row = Math.max(0, Math.min(grid.cellsY - 1, Math.floor(y / grid.spacing)));
-      return smoothed[row * grid.cellsX + column];
-    });
+    const { points, elevations } = getContourSurface(getSmoothedHeights());
 
     for (const [group, options, isOcean] of [
       [land, landOptions, false],
@@ -203,6 +215,46 @@ export const drawHeightmap = (): void => {
           .attr("data-height", contour.height)
           .attr("stroke-width", contours.width * (contour.major ? 2 : 1));
       }
+    }
+  }
+
+  if (landOptions.hachures.mode !== "off" || (renderOceanCells && oceanOptions.hachures.mode !== "off")) {
+    const smoothed = smoothContourHeights(getSmoothedHeights(), cells.c); // twice: a calm fall line
+    const { points, elevations } = getContourSurface(smoothed);
+    for (const [group, heightOptions, isOcean] of [
+      [land, landOptions, false],
+      [ocean, oceanOptions, true]
+    ] as const) {
+      const hachures = heightOptions.hachures;
+      if (hachures.mode === "off" || (isOcean && !renderOceanCells)) continue;
+      const path = getHachures({
+        points,
+        heights: elevations,
+        neighbors: cells.c,
+        triangles: vertices.c,
+        spacing: grid.spacing,
+        cellsX: grid.cellsX,
+        cellsY: grid.cellsY,
+        inBand: isOcean ? h => h < 20 : h => h >= 20,
+        thresholds: isOcean
+          ? range(20 - HACHURE_LEVEL, 0, -HACHURE_LEVEL)
+          : range(20 + HACHURE_LEVEL, 100, HACHURE_LEVEL),
+        density: hachures.density,
+        length: hachures.length,
+        width: hachures.width,
+        seed: options.map.seed
+      });
+      if (!path) continue;
+      group
+        .append("g")
+        .attr("class", "heightmap-hachures")
+        .attr("fill", hachures.color)
+        .attr("fill-rule", "nonzero")
+        .attr("opacity", hachures.opacity)
+        .attr("mask", isOcean ? "url(#water)" : "url(#land)")
+        .attr("pointer-events", "none")
+        .append("path")
+        .attr("d", path);
     }
   }
 

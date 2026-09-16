@@ -1,8 +1,13 @@
 import { hsl, select } from "d3";
 import { applyZoomExtent, fitMapToScreen, setViewport } from "@/components/canvas";
-import { Layers } from "@/components/layers";
 import { DEFAULT_THEME_COLOR } from "@/components/options-model";
 import type { OptionsData } from "@/components/options-schema";
+import {
+  applyPerformancePreset,
+  applyPerformanceSettings,
+  onPerformanceChange,
+  resolvePerformancePreset
+} from "@/components/performance";
 import { Pins } from "@/components/pins";
 import { generateMapWithSeed, showSeedHistoryDialog } from "@/components/seed";
 import { tip } from "@/components/tooltips";
@@ -20,6 +25,7 @@ import { toggleAssistant } from "@/services/assistant";
 import { copyMapURL } from "@/services/url-params";
 import { applyOption, ensureEl, findEl } from "@/utils/nodeUtils";
 import { minmax, rn } from "@/utils/numberUtils";
+import { PerformanceSettings } from "../performance-settings";
 
 interface OptionBinding {
   read: (config: OptionsData) => string | number | null;
@@ -63,7 +69,8 @@ const OPTION_BINDINGS: Record<string, OptionBinding> = {
     read: o => o.generation.lakeElevationLimit,
     write: (o, value) => (o.generation.lakeElevationLimit = value),
     parse: Number,
-    pin: "lakeElevationLimit"
+    pin: "lakeElevationLimit",
+    effect: () => customization === 1 && Controllers.HeightmapEditor.redrawDrainage() // the heightmap editor's overlay
   }),
   cultures: option({
     read: o => o.generation.cultures.limit,
@@ -139,7 +146,7 @@ const OPTION_BINDINGS: Record<string, OptionBinding> = {
     effect: value => toggleAssistant(value === "show")
   }),
   speakerVoice: option({
-    read: o => o.app.ui.speakerVoice,
+    read: o => o.app.ui.speakerVoice || null, // unset keeps the default voice loadVoices picked
     write: (o, value) => (o.app.ui.speakerVoice = value),
     parse: String
   }),
@@ -149,17 +156,7 @@ const OPTION_BINDINGS: Record<string, OptionBinding> = {
     parse: String,
     effect: changeEmblemShape
   }),
-  shapeRendering: option({
-    read: o => o.app.rendering,
-    write: (o, value) => (o.app.rendering = value),
-    parse: value => (value === "geometricPrecision" ? "geometricPrecision" : "optimizeSpeed"),
-    effect: setRendering
-  }),
-  viewportRedraw: option({
-    read: o => o.app.viewportRedraw,
-    write: (o, value) => (o.app.viewportRedraw = value),
-    parse: value => (value === "settled" ? "settled" : "continuous")
-  }),
+  performancePreset: { read: o => resolvePerformancePreset(o.app.performance), update: applyPerformancePreset },
   onloadBehavior: option({
     read: o => o.app.onLoad,
     write: (o, value) => (o.app.onLoad = value),
@@ -442,6 +439,21 @@ const TEMPLATE = /* html */ `
       </td>
       <td></td>
     </tr>
+    <tr data-tip="Rendering preset: visual quality traded for speed. Pick 'Speed' if the map feels slow">
+      <td></td>
+      <td>Performance</td>
+      <td>
+        <select id="performancePreset" data-option="performancePreset">
+          <option value="quality">Quality</option>
+          <option value="balance" selected>Balance</option>
+          <option value="speed">Speed</option>
+          <option value="custom" disabled hidden>Custom</option>
+        </select>
+      </td>
+      <td>
+        <i data-tip="Open the performance settings" id="openPerformanceSettings" class="icon-cog"></i>
+      </td>
+    </tr>
     <tr data-tip="Toggle Azgaar Assistant (help bubble on the bottom right corner)">
       <td></td>
       <td>Azgaar assistant</td>
@@ -589,30 +601,6 @@ const TEMPLATE = /* html */ `
         ></i>
       </td>
     </tr>
-    <tr data-tip="Select a rendering mode. Choose 'Best performance' if the map feels slow">
-      <td></td>
-      <td>Rendering</td>
-      <td>
-        <select id="shapeRendering" data-option="shapeRendering">
-          <option value="geometricPrecision">Best quality</option>
-          <option value="optimizeSpeed" selected>Best performance</option>
-        </select>
-      </td>
-      <td></td>
-    </tr>
-    <tr
-      data-tip="When labels, icons and relief are redrawn during a zoom or pan. 'After zoom' redraws once per gesture: faster on big maps, but new content appears all at once"
-    >
-      <td></td>
-      <td>Redraw on zoom</td>
-      <td>
-        <select id="viewportRedraw" data-option="viewportRedraw">
-          <option value="continuous" selected>While zooming</option>
-          <option value="settled">After zoom</option>
-        </select>
-      </td>
-      <td></td>
-    </tr>
     <tr
       data-tip="Load Google Translate and select a language. Automatic translation can break some page functions. If this happens, reset the language to English or refresh the page"
     >
@@ -657,6 +645,7 @@ const pendingInputs = new WeakMap<HTMLElement, string>();
 ensureEl("optionsContent").innerHTML = TEMPLATE;
 addListeners();
 loadVoices();
+onPerformanceChange(() => syncOption("performancePreset")); // the preset follows the fields, wherever they change
 
 function addListeners(): void {
   const content = ensureEl("optionsContent");
@@ -674,6 +663,7 @@ function addListeners(): void {
     else if (target.id === "viewportFit") fitViewportToWindow();
     else if (target.id === "zoomExtentDefault") restoreDefaultZoomExtent();
     else if (target.id === "translateExtent") toggleTranslateExtent(target);
+    else if (target.id === "openPerformanceSettings") PerformanceSettings.open();
     else if (target.id === "speakerTest") testSpeaker();
     else if (target.id === "themeColorRestore") restoreDefaultThemeColor();
     else if (target.id === "loadGoogleTranslateButton") loadGoogleTranslate();
@@ -939,14 +929,6 @@ function changeDialogsTheme(themeColor: string, transparency: number): void {
   for (const [name, value] of variables) document.documentElement.style.setProperty(name, value);
 }
 
-function setRendering(value: string): void {
-  select("#viewbox").attr("shape-rendering", value);
-
-  const isFast = value === "optimizeSpeed";
-  select("#statesHalo").style("display", isFast ? "none" : (null as unknown as string));
-  if (!isFast && pack.cells && select("#statesHalo").selectAll("*").size() === 0) Layers.draw("states");
-}
-
 function changeZoomExtent(value: string): void {
   const minInput = optionInput("zoomExtentMin");
   const maxInput = optionInput("zoomExtentMax");
@@ -1085,7 +1067,7 @@ export function restoreUi(): void {
 
   // `syncInputs` has already put every preference in its control; these are the ones that also do
   // something the moment they are read back. See docs/architecture/configuration.md
-  const { ui, rendering, emblems } = options.app;
+  const { ui, emblems } = options.app;
 
   Emblems.setShape(emblems.shape);
   changeTooltipSize(ui.tooltipSize);
@@ -1095,7 +1077,7 @@ export function restoreUi(): void {
   changeUiSize(ui.size ?? defaultUiSize());
 
   changeDialogsTheme(ui.themeColor, ui.transparency);
-  setRendering(rendering);
+  applyPerformanceSettings();
   applyZoomExtent();
 }
 

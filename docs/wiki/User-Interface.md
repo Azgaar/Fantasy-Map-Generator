@@ -202,9 +202,13 @@ Loading a previously saved map.
 
 The buttons correspond to those of the save window.
 
-## Reset Zoom
+## Zoom out
 
 Reset zoom to its initial position.
+
+## Search
+
+Open the search Omnibar.
 
 # Layers
 
@@ -356,7 +360,7 @@ The layer will only apply to the sea.
 
 ![image](https://github.com/user-attachments/assets/d4a949b7-2336-4ac7-a50f-fbc402be9bb7)
 
-Sets the element's fill color.
+Sets the element's fill color. For illustrated burg icons, fill and stroke change the main surfaces and outlines; roofs, shadows, and other pre-colored details retain their own colors.
 
 ### Common style controls (Stroke related)
 
@@ -416,7 +420,7 @@ Dropdown that allows you to choose a set of design settings for all elements.
 
 Each of those sets defines its design settings for each of the elements, for example the ancient preset defines the texture of the land to be with the image setting to be ancient small, and the Clipping setting to be No clipping.
 
-Available presets: default, ancient, gloom, pale, light, watercolor, clean, atlas, darkSeas, cyberpunk, night and monochrome. The **+** button saves the current style as a custom preset, and the **−** button removes the selected custom preset.
+Available presets: default, ancient, gloom, pale, light, watercolor, clean, atlas, darkSeas, cyberpunk, night, monochrome, ink, cinderwood and frostbite. The **+** button saves the current style as a custom preset, and the **−** button removes the selected custom preset.
 
 **+ button** Allows you to add your own set of settings.
 
@@ -537,15 +541,17 @@ Below the map settings, the Options tab holds settings that apply immediately an
 - Interface size and Tooltip size: scale the menu and the bottom tooltip.
 - Theme color and Transparency: the color and opacity of the dialogs.
 - Autosave interval: how often the map is saved to browser storage.
-- Onload behavior: generate a new map or load the last saved one when the page opens.
+- On load: generate a new map or load the last saved one when the page opens.
 - Azgaar assistant: show or hide the help bubble in the bottom right corner, which answers questions about the Generator from the wiki and Discord knowledge.
 - Speaker voice: the voice used by the speaker buttons next to names.
 - Emblem shape: the default coat of arms shield shape.
 - Viewport size: the size of the map window on screen, in pixels. It is independent of the map size above: it is how much of the map you see at once. The button on the left fits it back to the browser window, which is what it follows until you set a size by hand.
 - Zoom extent: minimal and maximal zoom levels, `[1, 20]` by default.
-- Rendering: SVG shape-rendering mode, trading quality for speed.
-- Redraw on zoom: when labels, icons and relief are redrawn during a zoom or pan. _After zoom_ redraws once per gesture: faster on big maps, but new content appears all at once.
-- Language: the interface language.
+- Performance: a rendering preset, _Quality_, _Balance_ or _Speed_, trading visual quality for speed. The cog button next to it opens the Performance Settings, where each parameter is set on its own; the preset then reads _Custom_ unless the parameters happen to match one:
+  - Shape rendering: the SVG `shape-rendering` hint for the map. _Geometric precision_ anti-aliases every edge, _Optimize speed_ lets the browser cut corners, _Crisp edges_ drops anti-aliasing altogether.
+  - State halos: the blurred glow along state borders. It is an SVG blur filter, which is costly on big maps.
+  - Redraw on zoom: when labels, icons and relief are redrawn during a zoom or pan. _After zoom_ redraws once per gesture: faster on big maps, but new content appears all at once.
+- Language: the **Init Google Translate** button loads Google Translate so you can pick a language. It is a machine translation and can break some page functions; the reset icon returns to English.
 
 The **Configure World** button opens a separate dialog where you set the map size relative to the world, its latitude and longitude shift on the globe, the temperature at the equator and both poles, and the global precipitation.
 

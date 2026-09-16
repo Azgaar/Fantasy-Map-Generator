@@ -10,10 +10,10 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
+import { Notes } from "@/components/notes";
 import type { FillBoxElement } from "@/components/shared/fill-box";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
-import { Notes } from "@/generators/notes";
 import type { Zone } from "@/generators/zones-generator";
 import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { zonesFilter } from "@/renderers/draw-zones";
@@ -154,6 +154,10 @@ function renderDialog(): void {
 }
 
 function closeZonesEditor(): void {
+  Controllers.ColorPicker.close();
+  const view = zonesTable.view();
+  view.rows = [];
+  view.all = [];
   $("#zonesEditor").dialog("destroy");
   ensureEl("zonesEditor").remove();
 }
@@ -353,6 +357,7 @@ function toggleLegend(): void {
   const isFiltered = filterBy !== "all";
   const visibleZones = pack.zones.filter(zone => !zone.hidden && (!isFiltered || zone.type === filterBy));
   const data = visibleZones.map(({ i, name, color }) => [`zone${i}`, color, name]);
+  if (!data.length) return void tip("No zones to show", false, "error");
   drawLegend(LEGEND_NAME, data);
 }
 
@@ -495,4 +500,4 @@ function zoneRemove(zone: Zone): void {
   });
 }
 
-export const ZonesEditor = { open };
+export const ZonesEditor = { open, exportCsv: downloadZonesData };

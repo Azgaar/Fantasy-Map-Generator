@@ -132,7 +132,7 @@ There is no separate `updateMarketDemand` step; demand factors are recomputed pe
 
 - `productiveGoods`: dense array of manufacturable goods
 - `recipesByOutput`: array of arrays of recipes, indexed by `good.i`
-- `minWorkersByGood`: lower-bound worker count per good through the cheapest recipe chain
+- Planning stock: scratch inventory and market-stock arrays, reserved per recipe branch without changing the live stocks
 - `demandGoodsByCategory`: per-category sorted candidate lists for the demand-fill phase
 - `path`: boolean array used as a visited set during recursive recipe planning
 

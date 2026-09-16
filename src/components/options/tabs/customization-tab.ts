@@ -17,11 +17,15 @@ const TEMPLATE = /* html */ `
       <input id="renderOcean" class="checkbox" type="checkbox" />
       <label for="renderOcean" class="checkbox-label">Render ocean cells</label>
     </div>
+    <div data-tip="Show where water flows: arrows point downhill, hatching marks depressions that get filled, blue hatching marks the ones deep enough to become lakes">
+      <input id="showDrainage" class="checkbox" type="checkbox" />
+      <label for="showDrainage" class="checkbox-label">Show drainage</label>
+    </div>
     <div
       id="allowErosionBox"
       data-tip="Regenerate rivers and allow water flow to change heights and form new lakes. Recommended"
     >
-      <input id="allowErosion" class="checkbox" type="checkbox" checked />
+      <input id="allowErosion" class="checkbox" type="checkbox" />
       <label for="allowErosion" class="checkbox-label">Allow water erosion</label>
     </div>
     <div

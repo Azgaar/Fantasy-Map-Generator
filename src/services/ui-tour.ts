@@ -11,7 +11,10 @@ function closeOptionsPanel() {
   }
 }
 
+let activeTour: ReturnType<typeof driver> | null = null;
+
 function start() {
+  if (activeTour?.isActive()) return;
   closeOptionsPanel();
 
   const tour = driver({
@@ -41,11 +44,11 @@ function start() {
         });
       }
     },
-    onDestroyStarted: () => {
+    onDestroyed: () => {
+      activeTour = null;
       document.removeEventListener("keydown", handleKeydown);
       hideHeightmapCustomizationPanel();
       closeDialogs();
-      tour.destroy();
       closeOptionsPanel();
     },
     steps: [
@@ -383,6 +386,7 @@ function start() {
     }
   }
 
+  activeTour = tour;
   document.addEventListener("keydown", handleKeydown);
   tour.drive();
 }
