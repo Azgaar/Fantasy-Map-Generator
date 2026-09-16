@@ -565,6 +565,39 @@ describe("v1.153.0 feature subtype and lake group styles", () => {
   });
 });
 
+describe("v1.61 ocean pattern migration", () => {
+  it("writes an empty href for a map that had no pattern", async () => {
+    document.body.innerHTML = /* html */ `<svg id="map"><defs><pattern id="oceanic"><rect></rect></pattern></defs><g id="viewbox"></g></svg>`;
+    const compare = vi.spyOn(versioning, "compareVersions");
+    compare.mockImplementation((_a, b) => ({ isOlder: b === "1.61.0", isNewer: false, isEqual: false }));
+    try {
+      await resolveVersionConflicts("1.60.0", []);
+    } finally {
+      compare.mockRestore();
+    }
+
+    const image = document.getElementById("oceanicPattern")!;
+    expect(image.getAttribute("href")).toBe("");
+    expect(image.getAttribute("width")).toBe("100");
+  });
+
+  it.each([
+    ['width="100"', ""],
+    ["./images/pattern3.png", "./images/pattern3.png"]
+  ])("v1.153.2 heals the stored pattern %s to %s", async (pattern, expected) => {
+    document.body.innerHTML = /* html */ `<svg id="map"><defs><pattern id="oceanic"><image id="oceanicPattern" href="${pattern}"></image></pattern></defs><g id="viewbox"></g></svg>`;
+    const record = structuredClone(Styles.defaults) as { ocean: { options: { pattern: string } } };
+    record.ocean.options.pattern = pattern;
+    const data: string[] = [];
+    data[48] = JSON.stringify(record);
+
+    await resolveVersionConflicts("1.153.1", data);
+
+    expect(JSON.parse(data[48]).ocean.options.pattern).toBe(expected);
+    expect(document.getElementById("oceanicPattern")!.getAttribute("href")).toBe(expected);
+  });
+});
+
 describe("missing svg defs", () => {
   const getDeftempIds = () => Array.from(document.querySelectorAll("#deftemp > *"), node => node.id);
 
