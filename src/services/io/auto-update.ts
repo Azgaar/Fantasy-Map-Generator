@@ -553,7 +553,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     const pattern = document.getElementById("oceanic")!;
     const filter = pattern.firstElementChild!.getAttribute("filter");
     const href = filter ? `./images/${filter.replace("url(#", "").replace(")", "")}.png` : "";
-    pattern.innerHTML = /* html */ `<image id="oceanicPattern" href=${href} width="100" height="100" opacity="0.2"></image>`;
+    pattern.innerHTML = /* html */ `<image id="oceanicPattern" href="${href}" width="100" height="100" opacity="0.2"></image>`;
   }
 
   if (isOlderThan("1.62.0")) {

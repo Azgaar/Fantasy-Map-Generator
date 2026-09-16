@@ -565,6 +565,23 @@ describe("v1.153.0 feature subtype and lake group styles", () => {
   });
 });
 
+describe("v1.61 ocean pattern migration", () => {
+  it("writes an empty href for a map that had no pattern", async () => {
+    document.body.innerHTML = /* html */ `<svg id="map"><defs><pattern id="oceanic"><rect></rect></pattern></defs><g id="viewbox"></g></svg>`;
+    const compare = vi.spyOn(versioning, "compareVersions");
+    compare.mockImplementation((_a, b) => ({ isOlder: b === "1.61.0", isNewer: false, isEqual: false }));
+    try {
+      await resolveVersionConflicts("1.60.0", []);
+    } finally {
+      compare.mockRestore();
+    }
+
+    const image = document.getElementById("oceanicPattern")!;
+    expect(image.getAttribute("href")).toBe("");
+    expect(image.getAttribute("width")).toBe("100");
+  });
+});
+
 describe("missing svg defs", () => {
   const getDeftempIds = () => Array.from(document.querySelectorAll("#deftemp > *"), node => node.id);
 
