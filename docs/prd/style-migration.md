@@ -24,6 +24,8 @@ Today styling lives in four places: the legacy `style` JS object (`labels.groups
 
 **7. Delete the legacy layer.** _(done)_ Save serializes the store directly — the save-time harvest and its authority gates are load-only migration code now (`syncStylesFromMap` runs solely for record-less old maps, like the preset upgrader it lives beside forever). The preset projection is gone. `removeBurgIcons` and `removePrecipitation` erase overrides are deleted (uniform `eraseContent` is safe).
 
+**8. The editor from the schema.** The Style tab is built from `stylesSchema` at open time and `style.js` / `style-presets.js` go — see `style-editor.md`.
+
 ## Invariants
 
 - Steps 2–4: the applier writes every attribute renderers still read. An options attribute leaves the DOM only in the same PR that migrates its last reader (step 5) — never earlier.

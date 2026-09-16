@@ -63,7 +63,7 @@
   "texture": {
     "attrs": {
       "opacity": 0.2,
-      "filter": "sepia(0.6)",
+      "filter": "url(#filter-sepia)",
       "mask": null
     },
     "options": {
@@ -76,7 +76,7 @@
     "landHeights": {
       "attrs": {
         "opacity": 1,
-        "filter": "sepia(0.8)",
+        "filter": "url(#filter-sepia)",
         "mask": "url(#land)"
       },
       "options": {

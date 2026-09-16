@@ -10,6 +10,7 @@ This glossary covers core terminology, data structures, and concepts used throug
 - **Pack**: The main data object containing all world data (cells, burgs, states, cultures, etc.), created after 'repacking' the grid to discard most of ocean cells and add more cells along the coasts.
 - **Layer**: A visual or logical overlay on the map (e.g., rivers, biomes, elevation).
 - **SVG Layer**: A named group of SVG elements for a specific map feature.
+- **Style element**: One top-level entry of the style store (`StyleElement`, a key of `stylesSchema`): a Layer's style, or `map` for whole-map filters. It is what the Style tab edits one at a time. Close to Layer, not equal: `map` is not a Layer, and parts of a Layer (burg anchors, the states halo) are not Style elements.
 - **Seed**: The value used for random number generation (reproducibility).
 
 ## Separation of Concerns
