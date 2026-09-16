@@ -13,7 +13,9 @@ Repacking is a process of amending an initial [voronoi diagram](https://en.wikip
 
 ## Voronoi data
 
-Both `grid` and `pack` objects include data representing voronoi diagrams and their inner connections. Both initial and repacked voronoi can be build from the initial set of points, so this data is stored in memory only. It does not included into the .map file and getting calculated on map load.
+Both `grid` and `pack` contain Voronoi geometry and connectivity. The generated geometry is rebuilt from its points when a map is loaded. User edits are stored separately as graph overrides and applied after rebuilding.
+
+The Wrap Tool records moved packed vertices in `GraphOverride.state.pack.vertices.p`, keyed by vertex id, as `[originalPoint, editedPoint]` pairs. This state is saved in map record `51`. On load, an edit is restored only if the rebuilt vertex still has the recorded original coordinates; edits that no longer fit the graph are discarded. Moving or restoring vertices also refreshes cell and feature areas. See [`graph-override.ts`](../../src/generators/graph-override.ts).
 
 ### Grid object
 
@@ -69,11 +71,12 @@ Features represent separate locked areas like islands, lakes and oceans.
 - - `border`: `boolean` - `true` if feature touches map border (used to separate lakes from oceans)
 - - `type`: `string` - feature type, can be `ocean`, `island` or `lake`
 - - `subtype`: `string`: feature subtype, the classification generators read. For land it is `continent`, `island`, `isle` or `lake_island`; for lake it is `freshwater`, `salt`, `dry`, `sinkhole`, `frozen` or `lava`; for ocean it is `ocean`, `sea` or `gulf` by cell count. The set is fixed: users pick within it in the Features Overview (and the Lake Editor), but cannot add subtypes
-- - `group`: `string`: rendering group, the id of the SVG group the feature is drawn in — a pure rendering choice, independent of the subtype. Defaults to the subtype for lakes, `lake_island` for islands within lakes and `sea_island` for the rest of the land. Lakes can be moved between groups in the Features Overview, and new groups created in the Lake Editor; island groups are derived and fixed
+- - `group`: `string`: rendering group, the id of the SVG group the feature is drawn in — a pure rendering choice, independent of the subtype. Defaults to the subtype for lakes, `lake_island` for islands within lakes and `sea_island` for the rest of the land. Lakes can be moved between groups in the Features Overview, and new groups created in the Lake Editor; island groups are derived and fixed. Oceans have no rendering group
 - - `cells`: `number` - number of cells in feature
+- - `area`: `number` - feature area in map units squared. Islands and lakes use their polygon area; oceans sum the areas of their cells. The Features Overview converts this to display units and estimates the globe-wide area for features touching the map border
 - - `firstCell`: `number` - index of the first (top left) cell in feature
 - - `vertices`: `number[]` - indexes of vertices around the feature (perimetric vertices)
-- - `name`: `string` - generated for every feature: islands and lakes in the culture of their first (shore) cell, oceans with an English adjective or the map side they lie on (_Azure_, _Northern_), the subtype noun is shown separately; any feature can be renamed in the Features Overview. Empty shows as _Unnamed_ in the Features Overview
+- - `name`: `string` - generated for every feature. Islands use the culture of their first land cell and lakes use a shore cell, with a one-in-ten chance of an English adjective instead. Oceans use an English adjective or the map side they lie on (_Azure_, _Northern_); the subtype noun is shown separately. Any feature can be renamed in the Features Overview. Empty shows as _Unnamed_
 - - `note`: `string` - optional. The user's note (legend) about the feature, as html. Removed with it
 - - `coastline`: `object` - optional. The feature's own coastline settings (same shape as `options.map.coastline`), set in the Coastline Editor; the map-level settings no longer apply to it. Islands and lakes only
 
@@ -151,7 +154,7 @@ Burgs (settlements) data is stored as an array of objects with strict element or
 - `state`: `number` - burg state id
 - `feature`: `number` - burg feature id (id of a landmass)
 - `population`: `number` - burg population in population points
-- `type`: `string` - burg type, see [culture types](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Culture_types)
+- `type`: `string` - burg type, see [culture types](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Culture-types)
 - `group`: `string` - Burg classification and rendering group. It is also the default Label Group for the Burg label
 - `label`: `Label` - optional Burg-label overrides. Burg labels use the Burg name, coordinates, and `burg.group` by default; `label.group` can override only the label group
 - `coa`: `object` - emblem object, data model is the same as in [Armoria](https://github.com/Azgaar/Armoria) and covered in [API documentation](https://github.com/Azgaar/armoria-api#readme). The only additional fields are optional `size`: `number`, `x`: `number` and `y`: `number` that controls the emblem position on the map (if it's not default). If emblem is loaded by user, then the value is `{ custom: true }` and cannot be displayed in Armoria

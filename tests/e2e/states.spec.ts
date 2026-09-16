@@ -171,6 +171,7 @@ test.describe("Diplomacy", () => {
   test.beforeEach(async ({ page }) => {
     errors = [];
     page.on("pageerror", error => errors.push(error.message));
+    await page.addInitScript(() => localStorage.setItem("version", "99.0.0"));
     await page.goto("/?seed=diplomacy-parcel&width=1600&height=1000");
     await waitForMap(page);
     ids = await page.evaluate(() => {

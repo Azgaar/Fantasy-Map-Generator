@@ -4,7 +4,7 @@ This page covers hotkeys available in _Fantasy Map Generator_. Hotkeys are ignor
 
 General:
 
-- <kbd>Space</kbd> - open the search Omnibar
+- <kbd>Space</kbd> - open the [Omnibar](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Omnibar)
 - <kbd>F1</kbd> - show info
 - <kbd>F2</kbd> - generate new map
 - <kbd>F6</kbd> - quick save
@@ -111,6 +111,14 @@ Heightmap editor:
 
 - <kbd>Ctrl</kbd> + <kbd>Z</kbd> - undo an action
 - <kbd>Ctrl</kbd> + <kbd>Y</kbd> - redo an action
+
+Omnibar (while its search field is focused):
+
+- <kbd>↑</kbd> / <kbd>↓</kbd> - select the previous / next result
+- <kbd>Enter</kbd> - open the result or run the selected command
+- <kbd>Escape</kbd> - close the Omnibar
+
+Start a query with **>** to show commands only.
 
 Wrap Tool:
 
