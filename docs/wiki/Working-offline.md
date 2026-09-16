@@ -3,6 +3,7 @@
 *Known Limitations:*
 
 * Fonts and textures loaded from external URLs require an internet connection unless they have been downloaded or embedded locally.
-* A production build or installed PWA can work without network access after its assets have been cached.
+* The installed PWA downloads the full app for offline use. Open it while online and allow the download to finish before disconnecting. Failed downloads are retried when the app is reopened or the connection returns.
+* Ordinary browser tabs cache files as they are used. Editors and other resources that have not been downloaded may be unavailable offline.
 
 The desktop app is an Electron build of the same code and needs no browser; the source of the app is in the `electron` directory of the repository.
