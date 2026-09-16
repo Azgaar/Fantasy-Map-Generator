@@ -35,19 +35,6 @@ describe("parseStyles", () => {
     expect(parsed.burgIcons[type].groups).not.toBe(Styles.defaults.burgIcons[type].groups);
   });
 
-  test("wipes an ocean pattern that is not an image reference", () => {
-    // the 1.61 migration wrote the literal text width="100" as the pattern of "no pattern" maps
-    const doc = structuredClone(Styles.defaults);
-    const parse = (pattern: string) => {
-      const ocean = { ...doc.ocean, options: { ...doc.ocean.options, pattern } };
-      return Styles.parse({ ...doc, ocean }).ocean.options.pattern;
-    };
-    expect(parse('width="100"')).toBe("");
-    expect(parse("")).toBe("");
-    expect(parse("./images/pattern3.png")).toBe("./images/pattern3.png");
-    expect(parse("data:image/png;base64,AAAA")).toBe("data:image/png;base64,AAAA");
-  });
-
   test("older oceans gain disabled bands and Cinderwood bands survive serialization", () => {
     const doc = structuredClone(Styles.defaults);
     const { bands: _, ...options } = doc.ocean.options;

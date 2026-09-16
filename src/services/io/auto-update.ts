@@ -1967,6 +1967,18 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     }
     if (record) data[48] = JSON.stringify(record);
   }
+
+  if (isOlderThan("1.153.2")) {
+    // the 1.61 step wrote the "no pattern" href unquoted, leaving the text width="100" as the pattern
+    const isBroken = (href: unknown) => typeof href === "string" && href !== "" && !/^(\.\/images\/|data:)/.test(href);
+    const image = document.getElementById("oceanicPattern");
+    if (image && isBroken(image.getAttribute("href"))) image.setAttribute("href", "");
+    const record = data[48] ? safeParseJSON(data[48]) : undefined;
+    if (isBroken(record?.ocean?.options?.pattern)) {
+      record.ocean.options.pattern = "";
+      data[48] = JSON.stringify(record);
+    }
+  }
 }
 
 export function migrateLegacySettings(mapVersion: string, data: string[]): void {

@@ -99,8 +99,7 @@ export const stylesSchema = z.strictObject({
   ocean: z.strictObject({
     // pattern/patternOpacity style #oceanicPattern, a defs resource the renderer owns
     options: z.strictObject({
-      // "no pattern" maps migrated before the 1.61 href was quoted carry the text width="100" instead
-      pattern: z.string().transform(href => (/^(\.\/images\/|data:)/.test(href) ? href : "")),
+      pattern: z.string(),
       patternOpacity: z.number(),
       bands: z
         .strictObject({
