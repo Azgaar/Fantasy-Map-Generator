@@ -10,7 +10,7 @@ The coastline detail follows the cells too, and only where you edit: the fractal
 from the shape of each stretch of coast, so nudging one corner leaves the rest of the island exactly as
 it was.
 
-Nothing else moves. Burgs, rivers, routes, labels, relief icons, markers, military units and journeys stay exactly where they are, so a large pull can leave a port sitting away from its new coastline. Cell heights, populations, cultures and every other generated value are untouched too: the shapes change, the world data does not.
+Burgs, rivers, routes, labels, relief icons, markers, military units and journeys stay where they are, so a large pull can leave a port sitting away from its new coastline. Cell heights, populations and cultural assignments are unchanged. Cell and feature areas are recalculated to match the edited shapes.
 
 For anything bigger than a nudge — creating an island, turning land into water, raising a mountain range — use _Tools_ → _Heightmap_ instead.
 

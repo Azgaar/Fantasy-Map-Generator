@@ -14,7 +14,7 @@ The performance mainly depends on the number of visible elements and visible map
 * Toggle off map and element filters.
 * Close all irrelevant browser tabs and applications.
 * Use a leading edge browser (fresh versions on Chrome or Edge). Firefox is reported to be slower.
-* Set the _Performance_ preset in the Options tab to _Speed_, or open its settings and set _Redraw on zoom_ to _After zoom_: labels, icons and relief are redrawn once per gesture instead of on every frame.
+* Set the _Performance_ preset in the Options tab to _Speed_, or open its settings and set _Redraw on zoom_ to _After zoom_: labels, icons and relief are redrawn once per gesture instead of on every frame. See [Performance settings](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Performance-settings) for the preset comparison.
 
 ### Who owns the maps created?
 You. The Generator is licensed under [MIT license](https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE) and derivative works such as maps are free of charge. You can sell them or make them available for free.
