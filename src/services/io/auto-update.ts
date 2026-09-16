@@ -18,7 +18,8 @@ import {
   lakeGroupFromSvg,
   migrateStyles,
   restoreStrippedLayerStyles,
-  stripDisplay
+  stripDisplay,
+  stylesFromMap
 } from "@/generators/styles-legacy";
 import type { Styles } from "@/generators/styles-schema";
 import type { Point } from "@/generators/voronoi";
@@ -1955,8 +1956,16 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         el.dataset.group = el.id; // the registry stamps only its declared groups
         if (!groups[el.id] && template) groups[el.id] = lakeGroupFromSvg(el, template);
       }
-      data[48] = JSON.stringify(record);
     }
+    const empty = (["burgIcons", "anchors"] as const).filter(type => {
+      const groups = record?.burgIcons?.[type]?.groups;
+      return groups && !Object.keys(groups).length;
+    });
+    if (empty.length) {
+      const harvested = stylesFromMap();
+      for (const type of empty) record.burgIcons[type].groups = harvested.burgIcons[type].groups;
+    }
+    if (record) data[48] = JSON.stringify(record);
   }
 }
 

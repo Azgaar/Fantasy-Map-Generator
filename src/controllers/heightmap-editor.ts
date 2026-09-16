@@ -26,6 +26,7 @@ import { ErasePipeline } from "@/generators/generation-pipeline";
 import { GraphOverride } from "@/generators/graph-override";
 import { removeEmblem } from "@/renderers/draw-emblems";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
+import { drawDrainage, removeDrainage } from "@/renderers/overlays/drainage";
 import { downloadFile, getFileName, uploadFile } from "@/utils";
 import {
   createFileInput,
@@ -51,6 +52,7 @@ declare const prompt: (text: string, options: PromptOptions, callback: (value: s
 
 type FilterState = { cellType: "all" | "land" | "water" };
 const dialogId = "heightmapEditor";
+const EDITOR_OPTIONS = ["renderOcean", "showDrainage", "allowErosion"] as const; // the customization menu checkboxes
 const historyLimit = 100;
 let filterState: FilterState;
 let templateInput: HTMLInputElement | null = null;
@@ -306,7 +308,26 @@ function addToolbarListeners(): void {
   ensureEl("heightmapPreview").addEventListener("click", toggleHeightmapPreview);
   ensureEl("heightmap3DView").addEventListener("click", changeViewMode);
   ensureEl("finalizeHeightmap").addEventListener("click", finalizeHeightmap);
-  ensureEl("renderOcean").addEventListener("click", mockHeightmap);
+  for (const key of EDITOR_OPTIONS) {
+    ensureEl<HTMLInputElement>(key).addEventListener("change", function () {
+      Options.set(o => (o.app.heightmapEditor[key] = this.checked));
+      if (key === "renderOcean") mockHeightmap();
+      if (key !== "renderOcean") toggleDrainage();
+    });
+  }
+}
+
+function toggleDrainage(): void {
+  if (options.app.heightmapEditor.showDrainage) redrawDrainage();
+  else removeDrainage();
+}
+
+// the overlay follows the heightmap, the erosion setting and the lake elevation limit, while the editor is active
+function redrawDrainage(): void {
+  if (customization !== 1 || !options.app.heightmapEditor.showDrainage) return;
+  // erosion turns deep depressions into lakes, but not in Keep mode where it never runs
+  const mode = ensureEl("heightmapEditMode").innerHTML;
+  drawDrainage(mode !== "keep" && options.app.heightmapEditor.allowErosion);
 }
 
 function showModeDialog(tool?: string): void {
@@ -353,6 +374,7 @@ function enterHeightmapEditMode(mode: string, tool?: string): void {
   ensureEl("customizationMenu").style.display = "block";
   ensureEl("toolsTab").classList.add("active");
   ensureEl("heightmapEditMode").innerHTML = mode;
+  for (const key of EDITOR_OPTIONS) ensureEl<HTMLInputElement>(key).checked = options.app.heightmapEditor[key];
 
   if (mode === "erase") {
     undraw();
@@ -403,6 +425,7 @@ function enterHeightmapEditMode(mode: string, tool?: string): void {
   layersPreset.value = "heightmap";
   layersPreset.disabled = true;
   mockHeightmap();
+  redrawDrainage();
 
   select<SVGElement, unknown>("#viewbox").on("touchmove mousemove", moveCursor);
   select<SVGSVGElement, unknown>("#map").on("dblclick.zoom", null);
@@ -499,6 +522,7 @@ async function finalizeHeightmap(): Promise<void> {
   }
 
   select<SVGElement, unknown>("#viewbox").selectAll("#heights").remove();
+  removeDrainage();
   Layers.draw("ocean", "landmass", "lakes", "coastline");
   Layers.set(storedLayers);
 }
@@ -511,7 +535,7 @@ async function regenerateErasedData(): Promise<void> {
   pack.religions = [];
   pack.relief = [];
 
-  const erosionAllowed = ensureEl<HTMLInputElement>("allowErosion").checked;
+  const erosionAllowed = options.app.heightmapEditor.allowErosion;
   await ErasePipeline.run({ erosion: erosionAllowed });
 }
 
@@ -548,7 +572,7 @@ export const createAvailableLandCellFinder = (cells: {
 function restoreRiskedData(): void {
   INFO && console.group("Edit Heightmap");
   TIME && console.time("restoreRiskedData");
-  const erosionAllowed = ensureEl<HTMLInputElement>("allowErosion").checked;
+  const erosionAllowed = options.app.heightmapEditor.allowErosion;
 
   // assign pack data to grid cells
   const l = grid.cells.i.length;
@@ -816,7 +840,7 @@ function getColor(value: number, scheme = getColorScheme("bright")): string {
 // draw or update heightmap
 function mockHeightmap(): void {
   const cellIds = Array.from(grid.cells.i);
-  const data = ensureEl<HTMLInputElement>("renderOcean").checked ? cellIds : cellIds.filter(i => grid.cells.h[i] >= 20);
+  const data = options.app.heightmapEditor.renderOcean ? cellIds : cellIds.filter(i => grid.cells.h[i] >= 20);
 
   select<SVGElement, unknown>("#viewbox")
     .select("#heights")
@@ -830,11 +854,11 @@ function mockHeightmap(): void {
 
 // draw or update heightmap for a selection of cells
 function mockHeightmapSelection(selection: number[]): void {
-  const ocean = ensureEl<HTMLInputElement>("renderOcean").checked;
+  const renderOcean = options.app.heightmapEditor.renderOcean;
 
   selection.forEach(i => {
     let cell: any = select<SVGElement, unknown>("#viewbox").select("#heights").select(`#cell${i}`);
-    if (!ocean && grid.cells.h[i] < 20) {
+    if (!renderOcean && grid.cells.h[i] < 20) {
       cell.remove();
       return;
     }
@@ -884,9 +908,15 @@ function updateHistory(noStat?: string): void {
   setHistoryButtonsDisabled(edits.n <= 1, true);
   if (!noStat) {
     updateStatistics();
-    if (document.getElementById("preview")) drawHeightmapPreview();
-    if (document.getElementById("canvas3d")) Controllers.View3d.redraw();
+    redrawDerivedViews();
   }
+}
+
+// the views derived from the heightmap: the preview, the 3D scene and the drainage overlay
+function redrawDerivedViews(): void {
+  if (document.getElementById("preview")) drawHeightmapPreview();
+  if (document.getElementById("canvas3d")) Controllers.View3d.redraw();
+  redrawDrainage();
 }
 
 // restoreHistory
@@ -897,9 +927,7 @@ function restoreHistory(step: number): void {
   grid.cells.h = edits[edits.n - 1].slice();
   mockHeightmap();
   updateStatistics();
-
-  if (document.getElementById("preview")) drawHeightmapPreview();
-  if (document.getElementById("canvas3d")) Controllers.View3d.redraw();
+  redrawDerivedViews();
 }
 
 // restart edits from 1st step
@@ -1729,8 +1757,7 @@ function executeTemplate(): void {
   grid.cells.h = HeightmapGenerator.getHeights()!;
   updateStatistics();
   mockHeightmap();
-  if (document.getElementById("preview")) drawHeightmapPreview();
-  if (document.getElementById("canvas3d")) Controllers.View3d.redraw();
+  redrawDerivedViews();
 }
 
 function downloadTemplate(): void {
@@ -2177,7 +2204,7 @@ function downloadPreview(): void {
   };
 }
 
-export const HeightmapEditor = { open };
+export const HeightmapEditor = { open, redrawDrainage };
 
 declare global {
   var edits: Uint8Array[] & { n: number };

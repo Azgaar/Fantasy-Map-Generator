@@ -68,7 +68,7 @@ Toggle map layers:
 - <kbd>/</kbd> - toggle Scale bar
 - <kbd>[</kbd> - toggle Vignette when no brush is active
 
-The Markets layer has no hotkey — toggle it from the Layers tab.
+The Markets and Journeys layers have no hotkey — toggle them from the Layers tab.
 
 Tools (<kbd>Alt</kbd> + <kbd>Shift</kbd> works as an alternative to <kbd>Shift</kbd>):
 

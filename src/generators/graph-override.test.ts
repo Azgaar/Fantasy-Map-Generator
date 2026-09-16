@@ -35,6 +35,43 @@ const createGraph = () => ({
   features: [0, { i: 1, vertices: [1, 2, 3, 4], area: 400 }]
 });
 
+// 2 land cells (feature 1) + 2 ocean cells (feature 2, empty vertices)
+const createGraphWithOcean = () => ({
+  cells: {
+    i: [0, 1, 2, 3],
+    v: [
+      [0, 1, 2],
+      [0, 2, 3],
+      [0, 3, 4],
+      [0, 4, 1]
+    ],
+    f: [1, 1, 2, 2],
+    area: new Uint16Array([100, 100, 150, 150])
+  },
+  vertices: {
+    p: [
+      [10, 10],
+      [0, 0],
+      [20, 0],
+      [20, 20],
+      [0, 20]
+    ],
+    c: [
+      [0, 1, 2, 3],
+      [0, 1],
+      [0, 1],
+      [1, 2],
+      [2, 3]
+    ],
+    v: [[], [], [], [], []]
+  },
+  features: [
+    0,
+    { i: 1, type: "island", vertices: [1, 2, 3, 4], area: 200 },
+    { i: 2, type: "ocean", vertices: [], area: 300 }
+  ]
+});
+
 beforeEach(() => {
   globalThis.pack = createGraph() as unknown as typeof globalThis.pack;
   options.map.graph = { width: 100, height: 100, points: 100 };
@@ -158,5 +195,17 @@ describe("GraphOverride", () => {
         }
       }
     });
+  });
+
+  it("preserves ocean area as cell-area sum when a vertex is moved", () => {
+    globalThis.pack = createGraphWithOcean() as unknown as typeof globalThis.pack;
+    GraphOverride.revert();
+
+    GraphOverride.movePackVertex(0, [12, 12]);
+
+    const oceanArea = pack.features[2].area;
+    const cellAreaSum = pack.cells.area[2] + pack.cells.area[3];
+    expect(oceanArea).toBe(cellAreaSum);
+    expect(oceanArea).toBeGreaterThan(0);
   });
 });

@@ -411,6 +411,44 @@ describe("v1.151.2 label group display cleanup", () => {
   });
 });
 
+describe("v1.153.0 empty burg style groups", () => {
+  it.each(["burgIcons", "anchors"] as const)("recovers %s sizes and preserves them across saving", async type => {
+    document.body.innerHTML = `<svg id="map">
+      <g id="burgIcons"><g id="cities" font-size="18"></g></g>
+      <g id="anchors"><g id="cities" font-size="18"></g><g id="towns" font-size="12"></g></g>
+    </svg>`;
+    const record = Styles.parse(Styles.defaults);
+    record.burgIcons.burgIcons.groups.capital.options.size = 5;
+    record.burgIcons.anchors.groups.capital.options.size = 7;
+    record.burgIcons[type].groups = {};
+    const data: string[] = [];
+    data[48] = JSON.stringify(record);
+
+    await resolveVersionConflicts("1.152.0", data);
+    const parsed = Styles.parse(JSON.parse(data[48]));
+    const other = type === "anchors" ? "burgIcons" : "anchors";
+    expect(parsed.burgIcons[type].groups.cities.options.size).toBe(18);
+    expect(parsed.burgIcons[other]).toEqual(record.burgIcons[other]);
+    parsed.burgIcons[type].groups.cities.options.size = 6;
+    data[48] = JSON.stringify(parsed);
+
+    await resolveVersionConflicts(VERSION, data);
+    expect(Styles.parse(JSON.parse(data[48]))).toEqual(parsed);
+  });
+
+  it("uses parser defaults when empty groups have no saved SVG styles", async () => {
+    const record = Styles.parse(Styles.defaults);
+    record.burgIcons.burgIcons.groups = {};
+    record.burgIcons.anchors.groups = {};
+    const data: string[] = [];
+    data[48] = JSON.stringify(record);
+
+    await resolveVersionConflicts("1.152.0", data);
+
+    expect(Styles.parse(JSON.parse(data[48])).burgIcons).toEqual(Styles.defaults.burgIcons);
+  });
+});
+
 describe("v1.153.0 feature subtype and lake group styles", () => {
   function stylesRecord() {
     const record = structuredClone(Styles.defaults) as unknown as { lakes: Record<string, unknown> };
@@ -465,7 +503,9 @@ describe("v1.153.0 feature subtype and lake group styles", () => {
   });
 
   it("names the features that had no name and keeps the existing ones", () => {
+    const random = vi.spyOn(Math, "random").mockReturnValue(0.5); // no adjective roll
     resolveVersionConflicts("1.152.0", []);
+    random.mockRestore();
 
     expect(pack.features[1].name).toBeTruthy();
     expect(pack.features[2].name).toBe("Named");

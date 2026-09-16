@@ -25,10 +25,12 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Wrap Tool: reshape cells with a brush; it replaces per-vertex dragging in the Coastline and Lake editors [1.153.0]
 - Dialogs: titlebar button to restore the default position, columns and sorting [1.153.0]
 - Coastlines: local roughness instead of global [1.153.0]
+- Heightmap Editor: "Show drainage" overlay [1.153.0]
 - Multiple legend boxes can be shown at the same time by _[esullivan9](https://github.com/esullivan9)_
 - Diplomacy: click states on the map to select relations
 - States and Provinces: state creation and province recolouring refresh visible map layers immediately;
 - Goods editor: Show all respects the tag filter across pages, with consistent checkbox state and displayed counts
+- Burg icons and anchors: restore missing style groups so edited sizes survive saving and loading
 - Diplomacy: regenerating relations no longer fails when a state has been removed
 
 # Releases

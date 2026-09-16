@@ -83,6 +83,19 @@ test("a legacy style record keeps its burg/anchor groups against the DOM harvest
   styles.burgIcons.burgIcons.groups.capital.attrs.fill = "#ffffff";
 });
 
+test("a legacy style record with an empty burg/anchor record harvests that record from the DOM", () => {
+  document.body.innerHTML = `<svg id="map">
+    <g id="burgIcons"><g id="cities" fill="#e57676" font-size="18"></g></g>
+    <g id="anchors"><g id="cities" fill="#ffffff" font-size="18"></g><g id="towns" font-size="12"></g></g>
+  </svg>`;
+  styles.burgIcons.anchors.groups = {};
+  harvestStylesFromSvg({ hasStyleRecord: true });
+  expect(styles.burgIcons.anchors.groups.cities.options.size).toBe(18);
+  expect(styles.burgIcons.anchors.groups.towns.options.size).toBe(12);
+  expect(styles.burgIcons.burgIcons.groups.cities).toBeUndefined();
+  Styles.set(structuredClone(Styles.defaults));
+});
+
 test("save sync keeps store-authoritative zoom options when the DOM lacks the attrs", () => {
   document.body.innerHTML = `<svg id="map"><g id="markers"></g><g id="regions"><g id="statesHalo"></g></g></svg>`;
   styles.markers.options.rescale = 0;

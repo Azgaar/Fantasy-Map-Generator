@@ -259,7 +259,13 @@ export function stylesFromMap(root: ParentNode = document): Styles {
 export function harvestStylesFromSvg({ hasStyleRecord = false } = {}): void {
   const harvested = stylesFromMap();
   harvested.labels = structuredClone(styles.labels);
-  if (hasStyleRecord) harvested.burgIcons = structuredClone(styles.burgIcons);
+  // Empty legacy records need the saved SVG styles.
+  if (hasStyleRecord) {
+    for (const type of ["burgIcons", "anchors"] as const) {
+      if (Object.keys(styles.burgIcons[type].groups).length)
+        harvested.burgIcons[type] = structuredClone(styles.burgIcons[type]);
+    }
+  }
   harvested.relief.options = structuredClone(styles.relief.options);
   // post-migration maps carry no rescale/data-width attrs, so the store owns these
   // options; a loaded old map's attrs win here until the load-time strip removes them
