@@ -610,7 +610,7 @@ No, dynasties are not currently supported
 
 ### Does it give names for mountains, forests, seas and other features?
 
-Rivers and lakes are named automatically (as well as states, provinces, burgs and religions). Mountains and forests are not named. Islands, oceans and lakes can be named by hand in the Features Overview (Tools -> Features), but that name is data, not a map label: it shows in tooltips, notes, search and the CSV export. To see a name drawn on the map add a custom label for it: Tools -> Add -> Label (Shift + 2), and manage them in the Labels Overview
+Rivers, lakes, islands and oceans are named automatically, as well as states, provinces, burgs and religions. Mountains and forests are not named. Rename islands, oceans and lakes in the Features Overview (Tools -> Features). A geographical feature's name is used in tooltips, notes, search and the CSV export; to draw it on the map, add a label with Tools -> Add -> Label (Shift + 2), and manage it in the Labels Overview
 
 ### How can I change the language on the Tool?
 
@@ -664,6 +664,14 @@ You cannot import it, but you can set it up using the Biomes Editor in Tools
 
 Yes. Open Style -> Heightmap. The Contours option draws elevation contours over the heightmap colors or as lines only, with configurable spacing and color (every fifth contour is heavier). The Hachures option adds short strokes along the slopes, with density, length and color settings. Both are rendering styles, they don't change the heights
 
+### How do I use the new Ink, Cinderwood and Frostbite styles?
+
+Select the preset at the top of the Style tab. Their effects can also be applied separately: Style -> Heightmap has hachures, Style -> Ocean has waves or straight strokes and coastline bands, and Style -> Lakes has ripples or straight strokes per lake group. Style -> Relief Icons and Style -> Burg Icons offer Illustrated symbols; Style -> Burg Anchors lets you choose an anchor or harbor symbol with its own size and offset. Style -> Labels has font weight, italic and text transform controls. See the step-by-step guide: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Map-embellishments
+
+### What do Quality, Balance and Speed change?
+
+These Performance presets are in the Options tab. Quality shows state halos and redraws while zooming; Balance hides halos and still redraws while zooming; Speed hides halos and redraws after a zoom or pan ends. The cog opens the individual settings, including the browser's shape-rendering hint. The preset reads Custom if your choices do not match a preset. Each reset arrow restores that setting's Balance value; selecting Balance restores all three. The settings affect display, not generated map data. See https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Performance-settings
+
 ### How do i customize heightmap color?
 
 You can select one of the available heightmap color schemes or create a custom one in Style -> heightmap element
@@ -716,6 +724,10 @@ Open Tools -> States: there is a Treasury column, and clicking on a value opens 
 
 Tools -> Regenerate has the relevant buttons: Goods re-places bonus resources on the cells, Markets rebuilds markets and their territories, Production recalculates production and trade deals, and Economy does all of it at once, including state taxes. The Goods and Markets editors have the same buttons at the bottom of the dialog
 
+### Why is a market not making an expensive product even though its ingredients exist?
+
+Production also depends on demand, prices, available workers and competing recipes. From 1.153.0, the planner uses ingredients already in inventory or market stock before counting the work needed to manufacture missing components, including nested recipes. This fixes inflated worker requirements that could block complex products. It does not force a particular product to be made: input costs still count and the whole chain must fit the burg's remaining workers. After loading an older map, use Tools -> Regenerate -> Production to recalculate with the corrected planner. Keep a saved copy first if you want to compare the old results
+
 ### Can I place a resource where I want? How to assign goods to cells manually?
 
 Yes. Open Tools -> Goods, click on the brush button and paint the good on the map. A cell can hold only one good. Where a good can appear automatically is defined by its distribution expression, which you can edit in the good's own dialog - see the Goods spread functions wiki page: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Goods-spread-functions
@@ -746,7 +758,7 @@ Use the Layers preset select at the top of the Layers tab: Political, Cultural, 
 
 ### Is there a search? How do I find a burg, state or river by name?
 
-Yes, press Space (or click Search at the bottom of the menu) to open the Omnibar. Type a name to find states, provinces, burgs, cultures, religions, rivers, routes, markers, features, zones, journeys, markets, regiments and labels, and notes are searched as well. Select a result to open its editor, or to zoom to it if it has none. The same box runs commands: type a tool or layer name to open the editor or toggle the layer
+Yes, press Space (or click Search at the bottom of the menu) to open the Omnibar. Search names and notes for states, provinces, burgs, cultures, religions, biomes, goods, rivers, routes, markers, features, zones, journeys, markets, regiments and labels. Select a result to open its editor; labels and entities without an editor are located and highlighted on the map. Start a query with > to show commands only. Arrow keys select, Enter runs the result, and Escape closes the search. The last ten commands are remembered between sessions. See https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Omnibar
 
 ### Is there a minimap?
 
@@ -822,7 +834,7 @@ A Legend box is a titled list of colored elements drawn on the map. The States, 
 
 ### A dialog opened off-screen or with a weird size. How do I reset it?
 
-Dialog positions and sizes are remembered by the browser between sessions. Once a dialog has been moved or resized, a reset button (circular arrow) appears in its title bar next to the minimize and close buttons: it restores the default position and, for tables, the default columns and sorting
+Dialog positions and sizes are remembered by the browser between sessions. When a dialog has a saved position, column layout or sort, a reset button (circular arrow) appears in its title bar next to minimize and close. It restores the default position and, for tables, the default columns and sorting. Table filters and map data are kept
 
 ### Can I highlight one state and dim the rest?
 
@@ -860,13 +872,17 @@ Use Export -> Export to GeoJSON: cells, routes, rivers, markers and zones can be
 
 Overview dialogs (Burgs, Rivers, Routes, Markers, Labels, Features, States and others) have a search field that filters the table, sortable columns, and pagination for big maps. The sliders button in the dialog header lets you show or hide columns. Click on the target icon in a row to zoom to that element on the map
 
+### How do I keep burgs alphabetical within each province?
+
+In Tools -> Burgs, click the Burg column header to sort names alphabetically, then click Province to sort provinces alphabetically. Click a header again if you need to reverse its direction. The latest column is the main sort, and earlier sorts break ties, so burg names stay alphabetical inside each province. No modifier key is needed. The default or saved order stays in use until a header is clicked. The last primary sort is saved between sessions; reapply the earlier sorts after reopening the dialog. The circular-arrow Reset button in the title bar restores the default sorting, columns and position
+
 ### Is there a list of all islands, lakes and oceans on my map?
 
 Yes, open Tools -> Features (Shift + F). The Geographical Features Overview lists every island, lake and ocean with its type, subtype, rendering group and area. Hover a row to trace that feature on the map, hover the map to highlight its row, and use the target icon to zoom to it. The table can be filtered by type and subtype, searched by name, sorted by any column and exported as a .csv
 
 ### How do I rename an island or a landmass?
 
-Open Tools -> Features (Shift + F) and type into the name field of its row. Islands are not named by the generator, so they show as Unnamed until you name one; clearing the field makes it Unnamed again. The name is used in tooltips, notes, search and the export - to draw it on the map add a label with Tools -> Add -> Label (Shift + 2)
+Open Tools -> Features (Shift + F) and type into the name field of its row. Islands, lakes and oceans receive generated names in 1.153.0; compatible older maps receive missing names on load. Clearing a name displays Unnamed in the table. The name is used in tooltips, notes, search and the export; to draw it on the map, add a label with Tools -> Add -> Label (Shift + 2)
 
 ### Why can't I add or delete a feature in the Features Overview?
 

@@ -19,7 +19,7 @@ These elements appear in many places in the UI, for example in the various windo
 
 ### Windows
 
-Such as the various editors.
+Editors and overviews open in dialogs. Their positions and sizes are remembered in the browser. When a dialog has a saved position, column layout or sort, a circular-arrow **Reset** button appears in its title bar beside minimize and close. It restores the default position, columns and sorting. It leaves table filters and map data in place.
 
 ### Legends
 
@@ -40,6 +40,10 @@ Such as the tables that appear in the overview windows.
 If the element has a numerical value, it will be possible to sort in ascending or descending order.
 
 If the element has an alphabetical value, it will be possible to sort alphabetically, in ascending or descending order.
+
+Click a column header to sort by it; click it again to reverse the direction. In overview tables, earlier sorts break ties in the latest column. For example, open the Burgs Overview, sort **Burg** alphabetically, then sort **Province** alphabetically: provinces are ordered by name, and burgs remain alphabetical within each province. No modifier key is needed.
+
+The existing default or saved sort applies until you click a header. The browser remembers the last primary sort; reapply earlier tie-break sorts after reopening the dialog. Use the title-bar **Reset** button to restore the default sorting and columns.
 
 The sorting criterion will appear next to the column of the table, for example:
 
@@ -208,7 +212,7 @@ Reset zoom to its initial position.
 
 ## Search
 
-Open the search Omnibar.
+Open the [Omnibar](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Omnibar), also available with <kbd>Space</kbd>. Search names and notes, select a result to open its editor or locate it, or start with **>** to search commands only.
 
 # Layers
 
@@ -422,6 +426,8 @@ Each of those sets defines its design settings for each of the elements, for exa
 
 Available presets: default, ancient, gloom, pale, light, watercolor, clean, atlas, darkSeas, cyberpunk, night, monochrome, ink, cinderwood and frostbite. The **+** button saves the current style as a custom preset, and the **−** button removes the selected custom preset.
 
+For Ink, Cinderwood and Frostbite, and the hachures, ocean waves, coastal bands, lake ripples, illustrated icons and label controls they use, see [Map embellishments](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Map-embellishments).
+
 **+ button** Allows you to add your own set of settings.
 
 ## Global filters
@@ -433,6 +439,8 @@ Allows global filters to be applied to all map elements: Grayscale, Sepia, Dingy
 ## Heightmap styling
 
 Contains some common style controls and the following controls:
+
+The **Contours** and **Hachures** controls add elevation lines or downhill strokes, either over the colors or on their own. Select **landHeights** or **oceanHeights** to style them separately; ocean effects also require **Render ocean heights**. See [Hachures](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Map-embellishments#hachures).
 
 ### Terracing slider
 
@@ -548,10 +556,12 @@ Below the map settings, the Options tab holds settings that apply immediately an
 - Viewport size: the size of the map window on screen, in pixels. It is independent of the map size above: it is how much of the map you see at once. The button on the left fits it back to the browser window, which is what it follows until you set a size by hand.
 - Zoom extent: minimal and maximal zoom levels, `[1, 20]` by default.
 - Performance: a rendering preset, _Quality_, _Balance_ or _Speed_, trading visual quality for speed. The cog button next to it opens the Performance Settings, where each parameter is set on its own; the preset then reads _Custom_ unless the parameters happen to match one:
-  - Shape rendering: the SVG `shape-rendering` hint for the map. _Geometric precision_ anti-aliases every edge, _Optimize speed_ lets the browser cut corners, _Crisp edges_ drops anti-aliasing altogether.
+  - Shape rendering: a browser hint for drawing edges. The effect varies by browser; _Optimize speed_ does not guarantee faster rendering, and _Crisp edges_ can remove edge smoothing.
   - State halos: the blurred glow along state borders. It is an SVG blur filter, which is costly on big maps.
   - Redraw on zoom: when labels, icons and relief are redrawn during a zoom or pan. _After zoom_ redraws once per gesture: faster on big maps, but new content appears all at once.
 - Language: the **Init Google Translate** button loads Google Translate so you can pick a language. It is a machine translation and can break some page functions; the reset icon returns to English.
+
+See [Performance settings](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Performance-settings) for the preset comparison and how to restore the default **Balance** settings.
 
 The **Configure World** button opens a separate dialog where you set the map size relative to the world, its latitude and longitude shift on the globe, the temperature at the equator and both poles, and the global precipitation.
 
