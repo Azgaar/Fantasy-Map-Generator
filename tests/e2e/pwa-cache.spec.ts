@@ -31,6 +31,7 @@ const test = base.extend<{ site: Site }>({
         [`app-${version}.js`, `window.build = ${version};`],
         ["legacy.js", legacyScript],
         [`editor-${version}.js`, `export default ${version};`],
+        [`editor-${version}.css`, `body { --editor-version: ${version}; }`],
         ["unchanged.json", "{}"]
       ]);
       const manifest = JSON.stringify(
@@ -52,7 +53,13 @@ const test = base.extend<{ site: Site }>({
       response.setHeader("Cache-Control", "no-store");
       response.setHeader(
         "Content-Type",
-        path.endsWith(".js") ? "text/javascript" : path.endsWith(".html") ? "text/html" : "application/json"
+        path.endsWith(".js")
+          ? "text/javascript"
+          : path.endsWith(".html")
+            ? "text/html"
+            : path.endsWith(".css")
+              ? "text/css"
+              : "application/json"
       );
       if (failures.has(path)) {
         response.writeHead(503).end("Unavailable");
@@ -132,10 +139,12 @@ test("web visits cache only requested assets, including URLs with version stamps
   await page.reload();
   expect(site.requests).not.toContain("editor-1.js");
   expect(site.requests).not.toContain("unchanged.json");
-  expect(await page.evaluate(async () => {
-    const url = "./editor-1.js?v=test";
-    return (await import(url)).default;
-  })).toBe(1);
+  expect(
+    await page.evaluate(async () => {
+      const url = "./editor-1.js?v=test";
+      return (await import(url)).default;
+    })
+  ).toBe(1);
   await context.setOffline(true);
   await page.reload();
   expect(await openEditor(page, 1)).toBe(1);
@@ -152,6 +161,21 @@ test("PWA requests share one download and cache unopened editors", async ({ page
   await expect(page).toHaveTitle("Build 1");
   expect(await page.evaluate("window.legacy")).toBe(1);
   expect(await openEditor(page, 1)).toBe(1);
+});
+
+test("retained scripts and styles still load after the server removes the previous build", async ({ page, site }) => {
+  await register(page, site);
+  expect(await cacheOffline(page)).toEqual([true]);
+  site.publish(2);
+  await update(page);
+  expect((await page.request.get(`${site.url}editor-1.js`)).status()).toBe(404);
+  expect((await page.request.get(`${site.url}editor-1.css`)).status()).toBe(404);
+
+  expect(await openEditor(page, 1)).toBe(1);
+  await page.addStyleTag({ url: `${site.url}editor-1.css` });
+  expect(await page.evaluate(() => getComputedStyle(document.body).getPropertyValue("--editor-version").trim())).toBe(
+    "1"
+  );
 });
 
 test("web updates and failed PWA downloads preserve the last complete offline build", async ({

@@ -90,6 +90,11 @@ setCatchHandler(async ({request}) => {
   return (await cache.match(request, {ignoreSearch: true})) || Response.error();
 });
 
+const retainedAssets = {
+  cachedResponseWillBeUsed: async ({request, cachedResponse}) =>
+    cachedResponse || caches.match(request, {cacheName: assets.cacheName, ignoreSearch: true})
+};
+
 // Google-hosted scripts (analytics) are left to the browser: with a blocker installed the
 // request never gets a response, and a worker strategy would surface that as an uncaught error
 registerRoute(
@@ -101,7 +106,8 @@ registerRoute(
     cacheName: "fmg-scripts",
     plugins: [
       new CacheableResponsePlugin({statuses: [0, 200]}),
-      new ExpirationPlugin({maxEntries: 100, maxAgeSeconds: 30 * DAY})
+      new ExpirationPlugin({maxEntries: 100, maxAgeSeconds: 30 * DAY}),
+      retainedAssets
     ]
   })
 );
@@ -112,7 +118,8 @@ registerRoute(
     cacheName: "fmg-stylesheets",
     plugins: [
       new CacheableResponsePlugin({statuses: [0, 200]}),
-      new ExpirationPlugin({maxEntries: 100, maxAgeSeconds: 30 * DAY})
+      new ExpirationPlugin({maxEntries: 100, maxAgeSeconds: 30 * DAY}),
+      retainedAssets
     ]
   })
 );
@@ -123,7 +130,8 @@ registerRoute(
     cacheName: "fmg-libs",
     plugins: [
       new CacheableResponsePlugin({statuses: [0, 200]}),
-      new ExpirationPlugin({maxEntries: 100, maxAgeSeconds: 30 * DAY})
+      new ExpirationPlugin({maxEntries: 100, maxAgeSeconds: 30 * DAY}),
+      retainedAssets
     ]
   })
 );
@@ -134,7 +142,8 @@ registerRoute(
     cacheName: "fmg-json",
     plugins: [
       new CacheableResponsePlugin({statuses: [0, 200]}),
-      new ExpirationPlugin({maxEntries: 100, maxAgeSeconds: 30 * DAY})
+      new ExpirationPlugin({maxEntries: 100, maxAgeSeconds: 30 * DAY}),
+      retainedAssets
     ]
   })
 );
@@ -145,7 +154,8 @@ registerRoute(
     cacheName: "fmg-images",
     plugins: [
       new CacheableResponsePlugin({statuses: [0, 200]}),
-      new ExpirationPlugin({maxEntries: 100, maxAgeSeconds: 60 * DAY})
+      new ExpirationPlugin({maxEntries: 100, maxAgeSeconds: 60 * DAY}),
+      retainedAssets
     ]
   })
 );
@@ -156,7 +166,8 @@ registerRoute(
     cacheName: "fmg-charges",
     plugins: [
       new CacheableResponsePlugin({statuses: [0, 200]}),
-      new ExpirationPlugin({maxEntries: 100, maxAgeSeconds: 60 * DAY})
+      new ExpirationPlugin({maxEntries: 100, maxAgeSeconds: 60 * DAY}),
+      retainedAssets
     ]
   })
 );
@@ -167,7 +178,8 @@ registerRoute(
     cacheName: "fmg-fonts",
     plugins: [
       new CacheableResponsePlugin({statuses: [0, 200]}),
-      new ExpirationPlugin({maxEntries: 100, maxAgeSeconds: 60 * DAY})
+      new ExpirationPlugin({maxEntries: 100, maxAgeSeconds: 60 * DAY}),
+      retainedAssets
     ]
   })
 );
