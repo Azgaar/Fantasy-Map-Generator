@@ -111,8 +111,7 @@ describe("parseStoredOptions", () => {
   });
 
   it("keeps stored flags but repairs ones of the wrong type", () => {
-    const parsed = labels.parseStoredOptions(JSON.stringify({ resizeOnZoom: false, showAll: "yes" }));
-    expect(parsed.resizeOnZoom).toBe(false);
+    const parsed = labels.parseStoredOptions(JSON.stringify({ showAll: "yes" }));
     expect(parsed.showAll).toBe(labels.getDefaultOptions().showAll);
   });
 });

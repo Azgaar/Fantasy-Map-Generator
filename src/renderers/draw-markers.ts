@@ -1,8 +1,8 @@
 import { Layers } from "@/components/layers";
+import { zoomFontSize } from "@/components/viewport";
 import type { Marker } from "@/generators/markers-generator";
 import { ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import { isImageIcon } from "@/utils/fileUtils";
-import { rn } from "@/utils/numberUtils";
 import { escapeHtml } from "@/utils/stringUtils";
 
 const layer = ViewportLayers.register({ id: "markers", render: reconcileMarkers });
@@ -59,7 +59,7 @@ function reconcileMarkers({ root, bounds }: ViewportRenderContext): void {
   const container = root.querySelector<SVGGElement>("#markers");
   if (!container || !Layers.isOn("markers")) return;
 
-  const rescale = options.map.markers.resizeOnZoom;
+  const fontSize = zoomFontSize(bounds.scale); // a marker is sized in em, so it follows the zoom as the text does
   const anyPinned = pack.markers.some(marker => marker.pinned);
   const selected = root === document && editedMarker ? container.querySelector(`#marker${editedMarker.i}`) : null;
   const markup: string[] = [];
@@ -69,9 +69,12 @@ function reconcileMarkers({ root, bounds }: ViewportRenderContext): void {
     const edited = root === document && marker === editedMarker;
     if (marker.hidden) continue;
     if (!edited && ((anyPinned && !marker.pinned) || (visibleMarkerIds && !visibleMarkerIds.has(marker.i)))) continue;
-    const { x, y, size } = getMarkerGeometry(marker, rescale, bounds.scale);
-    if (!edited && (x > bounds.x1 || y > bounds.y1 || x + size < bounds.x0 || y + size < bounds.y0)) continue;
-    const html = /*html*/ `<svg id="marker${marker.i}" viewBox="0 0 30 30" width="${size}" height="${size}" x="${x}" y="${y}">${getMarkerContent(marker)}</svg>`;
+    const { x, y, size = 30 } = marker;
+    const drawn = (size / 100) * fontSize; // the box in map units, for culling
+    if (!edited && (x - drawn / 2 > bounds.x1 || y - drawn > bounds.y1 || x + drawn / 2 < bounds.x0 || y < bounds.y0))
+      continue;
+    // the box sits at the marker point; its content is shifted so the pin's tip is the point
+    const html = /*html*/ `<svg id="marker${marker.i}" viewBox="0 0 30 30" width="${size / 100}em" height="${size / 100}em" x="${x}" y="${y}" overflow="visible">${getMarkerContent(marker)}</svg>`;
     if (edited) selectedMarkup = html;
     else markup.push(html);
   }
@@ -88,15 +91,11 @@ function reconcileMarkers({ root, bounds }: ViewportRenderContext): void {
   }
 }
 
-function getMarkerGeometry({ x, y, size = 30 }: Marker, rescale: boolean, scale: number) {
-  const zoomSize = rescale ? Math.max(rn(size / 5 + 24 / scale, 2), 1) : size;
-  return { x: rn(x - zoomSize / 2, 1), y: rn(y - zoomSize, 1), size: zoomSize };
-}
-
 function getMarkerContent({ icon, dx = 50, dy = 50, px = 12, pin, fill, stroke }: Marker): string {
   const isExternal = isImageIcon(icon);
-  return /* html */ `
+  return /* html */ `<g transform="translate(-15 -30)">
       <g>${getPin(pin, fill, stroke)}</g>
       <text x="${dx}%" y="${dy}%" font-size="${px}px" >${isExternal ? "" : escapeHtml(icon)}</text>
-      <image x="${dx / 2}%" y="${dy / 2}%" width="${px}px" height="${px}px" href="${isExternal ? escapeHtml(icon) : ""}" />`;
+      <image x="${dx / 2}%" y="${dy / 2}%" width="${px}px" height="${px}px" href="${isExternal ? escapeHtml(icon) : ""}" />
+    </g>`;
 }

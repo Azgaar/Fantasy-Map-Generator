@@ -30,7 +30,6 @@ function open(): void {
       },
       Restore: () => {
         const defaults = Labels.getDefaultOptions();
-        ensureEl<HTMLInputElement>("labelsResizeOnZoom").checked = defaults.resizeOnZoom;
         ensureEl<HTMLInputElement>("labelsShowAll").checked = defaults.showAll;
         addRows(defaults.groups);
       },
@@ -78,7 +77,6 @@ function renderDialog(): void {
         <label data-tip="Groups referenced by labels but not defined here. Such labels are not rendered until they are reassigned to an existing group"><strong>Missing groups:</strong> <span id="labelGroupsMissing"></span></label>
       </div>
       <div style="display:flex; gap:1.2em; align-items:center; margin:.6em 0 0">
-        <label data-tip="Automatically scale label font size as you zoom in or out"><input id="labelsResizeOnZoom" class="checkbox" type="checkbox" ${options.map.labels.resizeOnZoom ? "checked" : ""}><span class="checkbox-label">Resize labels on zoom</span></label>
         <label data-tip="Ignore zoom bounds and show all labels regardless of the current zoom level"><input id="labelsShowAll" class="checkbox" type="checkbox" ${options.app.labels.showAll ? "checked" : ""}><span class="checkbox-label">Show all labels <small>[slow]</small></span></label>
         <div style="padding: 0.5em 0; font-style: italic;">To change Burg Groups open <a id="labelGroupsBurgGroupsLink" style="text-decoration: underline;">Burg Group Configurator</a>.</div>
       </div>
@@ -294,7 +292,6 @@ function submitForm(event: Event): void {
   });
 
   options.map.labels.groups = rows.map(rowToGroup); // this map's set, and what the next map starts from
-  options.map.labels.resizeOnZoom = ensureEl<HTMLInputElement>("labelsResizeOnZoom").checked;
   Options.set(o => (o.app.labels.showAll = ensureEl<HTMLInputElement>("labelsShowAll").checked));
 
   for (const group of options.map.labels.groups) styles.labels.groups[group.name] ??= getGroupStyle(group);

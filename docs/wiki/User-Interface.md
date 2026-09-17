@@ -300,7 +300,7 @@ The style tab allows applying design settings, both in general to the entire map
 
 This is the final stage in the preparation of the map, after all its logic is ready.
 
-After choosing an element for design (e.g. Icons or Biomes), you can customize its design with a variety of controls. The controls are built from the element's style definition, so every stored value has a row. The rows are grouped into cards: the element's own rows in a card titled by the selection (e.g. *Labels · capital*), and the element's named parts (the states body and halo, the land and ocean heights, the scale bar background, the ocean bands and embellishments) in a card each. A card folds by its header; a card that can be switched on or off carries its switch in the header. The header also shows a live preview of what the card's own values produce: a text sample for a font, a color swatch for a fill, a line for a stroke and the filter name when a filter is set.
+After choosing an element for design (e.g. Icons or Biomes), you can customize its design with a variety of controls. The controls are built from the element's style definition, so every stored value has a row. The rows are grouped into cards: the element's own rows in a card titled by the selection (e.g. _Labels · capital_), and the element's named parts (the states body and halo, the land and ocean heights, the scale bar background, the ocean bands and embellishments) in a card each. A card folds by its header; a card that can be switched on or off carries its switch in the header. The header also shows a live preview of what the card's own values produce: a text sample for a font, a color swatch for a fill, a line for a stroke and the filter name when a filter is set.
 
 ### Changed values and reset
 
@@ -346,7 +346,7 @@ This is known as a filter, because you put a "lens" over the object that makes a
 
 Filters: none, Blur 0.2, Blur 1, Blur 3, Blur 5, Blur 7, Blur 10, Splotch, Blurred Splotch, Shadow 2, Shadow 0.1, Shadow 0.5, Outline, Pencil, Turbulence, Paper, Crumpled, Grayscale, Sepia, Dingy and Tint.
 
-### Clip to
+### Clip
 
 ![image](https://github.com/user-attachments/assets/333f4c01-e7b6-4282-9518-b7f2da6433a2)
 

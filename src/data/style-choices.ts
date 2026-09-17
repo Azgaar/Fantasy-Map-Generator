@@ -2,7 +2,7 @@ export const LINECAPS = { butt: "Butt", round: "Round", square: "Square" };
 export const LINEJOINS = { miter: "Miter", round: "Round", bevel: "Bevel" };
 export const FONT_STYLES = { italic: "Italic" };
 export const FONT_WEIGHTS = [100, 200, 300, 400, 500, 600, 700, 800, 900, 950] as const;
-export const CLIPS = { "url(#land)": "Clip water", "url(#water)": "Clip land" };
+export const CLIPS = { "url(#land)": "water", "url(#water)": "land" };
 
 export const HEIGHTMAP_CURVES = { curveBasisClosed: "Curved", curveLinear: "Linear", curveStep: "Rectangular" };
 export const CONTOUR_MODES = { off: "Off", overlay: "Over colors", only: "Lines only" };

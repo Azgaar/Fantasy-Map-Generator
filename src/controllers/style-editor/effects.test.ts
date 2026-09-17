@@ -50,7 +50,6 @@ describe("effectAt", () => {
     expect(at("rulers.attrs.stroke-dasharray")).toBe("draw");
     expect(at("rulers.attrs.font-size")).toBe("draw");
     expect(at("states.statesHalo.attrs.stroke-width")).toBe("zoom");
-    expect(at("labels.attrs.font-size")).toBe("zoom");
     expect(at("map.attrs.filter")).toBe("write");
     expect(at("ocean.pattern.attrs.href")).toBe("write");
     expect(at("coordinates.attrs.font-size")).toBe("draw");

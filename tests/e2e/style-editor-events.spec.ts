@@ -43,72 +43,34 @@ test.describe("style editor events drive the store", () => {
     await page.waitForTimeout(500);
   });
 
-  test("markers rescale checkbox writes the store and stops zoom rescaling", async ({ page }) => {
+  test("markers are sized in em, so the viewbox font size scales them with the zoom", async ({ page }) => {
     // deterministic marker: don't depend on the generator having placed one for this seed. The
-    // markers layer is off by default, so turn it on through the real registry API (the same
-    // path the layer-toggle button drives) to get it drawn. It sits at the map centre, which the
-    // viewport renderer keeps drawn at every zoom level this test uses.
+    // markers layer is off by default, so turn it on through the real registry API. It sits at the
+    // map centre, which the viewport renderer keeps drawn at every zoom level this test uses
     const markerId = await page.evaluate(() => {
-      const pack = (window as any).pack;
-      pack.markers = pack.markers || [];
-      const i = pack.markers.length;
-      pack.markers.push({
+      const i = (window as any).pack.markers.length;
+      (window as any).pack.markers.push({
         i,
-        type: "custom",
-        icon: "♨",
-        x: 640,
-        y: 360,
-        dx: 50,
-        dy: 50,
-        px: 12,
-        size: 30,
-        pin: "bubble",
-        fill: "#fff",
-        stroke: "#000",
+        icon: "X",
+        x: (window as any).options.map.graph.width / 2,
+        y: (window as any).options.map.graph.height / 2,
         cell: 0
       });
       (window as any).Layers.show("markers");
       return i;
     });
 
-    await openStyleElement(page, "markers");
-    await expect(page.locator(`${f("resizeOnZoom")} input`)).toBeChecked();
+    const marker = page.locator(`#marker${markerId}`);
+    await expect(marker).toHaveAttribute("width", "0.3em");
+    const before = await marker.evaluate(el => el.getBoundingClientRect().width);
 
-    const readMarkerAttrs = (id: number) =>
-      page.evaluate(markerId => {
-        const el = document.getElementById(`marker${markerId}`)!;
-        return {
-          width: el.getAttribute("width"),
-          height: el.getAttribute("height"),
-          x: el.getAttribute("x"),
-          y: el.getAttribute("y")
-        };
-      }, id);
-
-    const before = await readMarkerAttrs(markerId);
-
-    // real control: click the visible label bound to the checkbox (input[type=checkbox] is
-    // display:none per FMG's checkbox pattern - the label carries the click target)
-    await page.locator(`${f("resizeOnZoom")} label.checkbox-label`).click();
-    await expect(page.locator(`${f("resizeOnZoom")} input`)).not.toBeChecked();
-
-    // (1) immediate effect: the change handler already calls invokeActiveZooming(), and with
-    // rescale now off it must leave the marker's geometry untouched
-    const afterToggle = await readMarkerAttrs(markerId);
-    expect(afterToggle).toEqual(before);
-
-    // (2) the map option
-    const storeValue = await page.evaluate(() => (window as any).options.map.markers.resizeOnZoom);
-    expect(storeValue).toBe(false);
-
-    // (3) survival across invokeActiveZooming() at a changed zoom
-    await page.evaluate(() => (window as any).setMapZoom(6));
+    await page.evaluate(() => (window as any).setMapZoom(4));
     await page.waitForTimeout(50);
     await page.evaluate(() => (window as any).invokeActiveZooming());
-    const afterZoom = await readMarkerAttrs(markerId);
-    expect(afterZoom).toEqual(before);
+    await expect(page.locator("#viewbox")).toHaveAttribute("font-size", "62.5px");
+    const after = await marker.evaluate(el => el.getBoundingClientRect().width);
+    expect(after / before).toBeCloseTo(4 * 0.625, 1); // the map scaled 4x, the em 0.625x
 
-    // (4) the retired attribute never lands on the group element
     expect(await page.locator("#markers").getAttribute("rescale")).toBeNull();
   });
 

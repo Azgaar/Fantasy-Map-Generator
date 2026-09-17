@@ -40,7 +40,6 @@ The record is keyed by **style element**: every map layer, plus `map` for the wh
     "options": { "type": "pointyHex", "scale": 1 }
   },
   "labels": {
-    "attrs": { "font-size": "100px" },
     "groups": {
       "capital": {
         "attrs": { "font-family": "Almendra SC", "font-size": "22%" }
@@ -59,11 +58,13 @@ The record is keyed by **style element**: every map layer, plus `map` for the wh
   `pattern` / `oceanLayers` / `oceanWaves`, legend `box`, scale bar `back`, the emblem, goods and
   coastline parts) are fixed children of their element, each with a `data-group` of the same name.
 - **A font size is an attr**, in px on the layer (`legend.attrs["font-size"]: "13px"`), and its
-  texts size by inheritance; a label group's is a `%` of the labels layer's base. An `options` size
-  (`markets.options.iconSize`, `military.options.boxSize`) is a renderer input, not a font.
-- **A zoom-derived attr keeps its base in the store.** The zoom writes what it derives — the labels
-  layer `font-size` and the halo `stroke-width` scaled to the viewport, the coordinates `font-size`
-  on redraw — over the stored base; the store never holds the derived value.
+  texts size by inheritance; a label group's is a `%` of the viewbox font size, which is 100px at
+  scale 1 and which the zoom scales half-way — so anything sized in `%` or `em` (label groups, the
+  markers) follows the zoom, per frame or once it settles as `viewportRedraw` says. An `options`
+  size (`markets.options.iconSize`, `military.options.boxSize`) is a renderer input, not a font.
+- **A zoom-derived attr keeps its base in the store.** The zoom writes what it derives — the halo
+  `stroke-width` scaled to the viewport, the coordinates `font-size` on redraw — over the stored
+  base; the store never holds the derived value.
 - **`groups` records** are user-defined and unbounded: `labels.groups`, `routes.groups`,
   `lakes.groups`, and the two burg records `burgIcons.burgIcons.groups` / `burgIcons.anchors.groups`
   keyed by the same burg group names.
@@ -83,7 +84,7 @@ composes it back. The store never holds a half-written string.
 | halo/vignette blur      | `blur(5px)`                                                                                          |
 | `mask`                  | `url(#id)`; the layers that clip to land/water pick from a `clip` enum                               |
 | `stroke-dasharray`      | `none` or space-separated lengths                                                                    |
-| label group `font-size` | `22%` — relative to the labels layer, which the zoom sizes in px                                     |
+| label group `font-size` | `22%` — relative to the viewbox font size, which the zoom scales                                     |
 | other `font-size`       | `8px`                                                                                                |
 | compass `transform`     | `translate(x y) scale(s)`                                                                            |
 | label group `style`     | cssText limited to `text-shadow`, `text-transform`, `font-variant`, `transform: translate(…em, …em)` |
@@ -103,7 +104,7 @@ const strokeWidth = meta(z.number().min(0), {
   label: "Width",
   nullAs: 0,
   range: [0, 10],
-  tip: "…",
+  tip: "…"
 });
 ```
 
@@ -147,7 +148,7 @@ Styles.apply(...elements); // write + Layers.draw
 - **`write` skips `options`** — they are renderer inputs. Renderers read `styles.<element>.options`
   directly when they draw (`draw-grid` reads `styles.grid.options`, `draw-legend` the columns).
 - **`writeAttr` is the edit path.** The zoom (`invokeActiveZooming`) rewrites a few attrs on every
-  zoom step — `#labels font-size`, the states halo `stroke-width` — so rewriting a whole layer after
+  zoom step — the states halo `stroke-width` — so rewriting a whole layer after
   one edit would snap those back to the stored value. An edit writes exactly one attribute;
   `Styles.write` of whole elements is the preset-apply and load path, and both are followed by
   `invokeActiveZooming`.
@@ -201,7 +202,7 @@ reached only from the load migrations (`auto-update.ts`) and `parsePreset`:
 - selector-keyed presets (`"#stateBorders": { … }`, `"#labels > #states"`) → `presetFromLegacy`
 - maps saved before the store was the source of truth → `stylesFromMap` harvests the SVG attributes,
   `restoreStrippedLayerStyles` re-seeds what a few versions stripped
-- `normalizeStyles` rewrites older records to the current shape and formats: the v1.155.0 folding
+- `normalizeStyles` rewrites older records to the current shape and formats: folding
   of mirrored fields into their attrs (`map.options.dataFilter` → `map.attrs.filter`, the halo
   `width`, the `fontSize` options, the ocean pattern options → `ocean.pattern.attrs`), then `""` →
   `null`, `inherit` → `null`, the font-size units
@@ -237,9 +238,7 @@ The element select lists `Object.keys(stylesSchema.shape)` by their layer label.
 count of the things using it (labels per group, burgs and ports, routes, lakes). Named subgroups are
 not a selection: they render inline as collapsible cards under the element's own rows, so an
 element is seen whole. `burgIcons` composes its two records so one group select serves both: the
-icon rows flat, the anchor rows as an "Anchors" card. A grouped element whose layer carries attrs of
-its own (the labels base `font-size`) shows them under an "All groups" card, addressed by the
-`layer` prefix.
+icon rows flat, the anchor rows as an "Anchors" card.
 
 `resolve` turns the selection into a store node, its schema subtree and a path
 (`["labels", "groups", "capital"]`); a group that no longer exists falls back to the first.
@@ -289,7 +288,7 @@ above it — and falls back to the store convention:
 
 The declared ones: `draw` on an attr whose renderer bakes it into the drawing (the grid, rulers,
 ocean waves and scale bar attrs, the legend and coordinates fonts, every burg icon field); `zoom` on
-an attr the zoom derives from (the labels base size, the halo width): written, then the zoom re-run;
+an attr the zoom derives from (the halo width): written, then the zoom re-run;
 `changeReliefSet` / `resizeRelief` / `regenerateRelief`; `applyVignette` for the mask rect;
 `refitStateLabels` on a label group's typography, because state labels are fitted to their outline.
 `effects.test.ts` asserts which name a path resolves to and which stub each name fires.
@@ -317,9 +316,9 @@ re-renders. There is no whole-element reset — selecting the preset again is th
 ### The rows that are not fields
 
 A handful of extras the editor appends by hand: the grid "Cell size" readout under `options.scale`,
-the vignette preset select (assigns a ready-made look into `styles.vignette` and re-renders), and two
-options that are not style but users look for here: `options.app.emblems.showAll` under emblems and
-`options.map.markers.resizeOnZoom` under markers.
+the vignette preset select (assigns a ready-made look into `styles.vignette` and re-renders), and
+`options.app.emblems.showAll` under emblems — an app preference, not style, but users look for it
+there.
 
 ### Invariants and lifecycle
 

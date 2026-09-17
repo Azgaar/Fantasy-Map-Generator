@@ -188,7 +188,6 @@ test("save sync keeps store armies and grid options when their marker attrs are 
   styles.grid.options.scale = 2;
   harvestStylesFromSvg();
   expect(styles.military.options.boxSize).toBe(4);
-  expect(styles.military.attrs["font-size"]).toBe("8px");
   expect(styles.grid.options.scale).toBe(2);
 });
 
@@ -198,7 +197,6 @@ test("save sync lets an old map's armies, grid and map-filter attrs win; auto-fi
   styles.grid.options.scale = 2;
   harvestStylesFromSvg();
   expect(styles.military.options.boxSize).toBe(5);
-  expect(styles.military.attrs["font-size"]).toBe("10px");
   expect(styles.grid.options).toEqual({ type: "square", scale: 3, dx: 1, dy: 2 });
   expect(styles.map.attrs.filter).toBe("url(#filter-tint)");
   expect(styles.coastline.sea_island).toEqual({ attrs: styles.coastline.sea_island.attrs });

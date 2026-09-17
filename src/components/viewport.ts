@@ -2,6 +2,8 @@
 // behavior in components/zoom.ts. Everything in screen space reads its geometry from here
 export const viewport = { width: 0, height: 0, scale: 1, x: 0, y: 0 };
 
+export const zoomFontSize = (scale: number): number => Math.max(Math.round(((100 + 100 / scale) / 2) * 100) / 100, 1);
+
 /** Set the svg resolution */
 export function setViewportSize(width: number, height: number): void {
   viewport.width = width;

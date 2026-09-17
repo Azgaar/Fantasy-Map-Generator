@@ -459,13 +459,13 @@ test.describe("Map loading", () => {
     const migrated = await page.evaluate(() => {
       const labels = options.map.labels;
       return {
-        resizeOnZoom: labels.resizeOnZoom,
+        keys: Object.keys(labels), // resizeOnZoom is a browser performance setting since v1.155.0
         showAll: options.app.labels.showAll,
         stateMode: labels.groups.find(group => group.type === "state")?.mode
       };
     });
 
-    expect(migrated).toEqual({ resizeOnZoom: false, showAll: false, stateMode: "full" });
+    expect(migrated).toEqual({ keys: ["groups"], showAll: false, stateMode: "full" });
   });
 
   // v1.142.0 moved relief icons from the #terrain group to pack.relief and renders only the ones

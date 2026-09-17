@@ -567,9 +567,6 @@
     }
   },
   "labels": {
-    "attrs": {
-      "font-size": "100px"
-    },
     "groups": {
       "capital": {
         "attrs": {
@@ -1206,7 +1203,6 @@
       "stroke-dasharray": null,
       "stroke-linecap": null,
       "fill-opacity": 0.8,
-      "font-size": "8px",
       "filter": null
     },
     "options": {

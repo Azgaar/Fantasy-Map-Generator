@@ -351,7 +351,6 @@ the Label Editor lets the user switch for any label regardless of its type. The 
 
 Ordered Label Group policy is stored in `options.map.labels`, so it travels with the `.map` file:
 
-- `resizeOnZoom`: `boolean` - whether the parent `#labels` font size scales with map zoom
 - `groups`: `LabelGroupOptions[]` - ordered group definitions
 
 `showAll`, the override for per-group active state, zoom bounds and layer dependencies, is a

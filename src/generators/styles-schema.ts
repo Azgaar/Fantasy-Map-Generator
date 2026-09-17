@@ -168,7 +168,7 @@ const blurFilter = meta(z.string().regex(FORMATS.blurFilter), {
 const mask = hidden(z.string().regex(FORMATS.mask).nullable());
 
 // the layers that clip to land or water offer the two masks
-const clip = choice(CLIPS, { label: "Clip to", tip: "Set clipping. Only non-clipped part will be visible" }).nullable();
+const clip = choice(CLIPS, { label: "Clip", tip: "Set clipping. Only non-clipped part will be visible" }).nullable();
 
 const transform = hidden(z.string().nullable()); // a raw layer transform, not a style choice
 
@@ -209,6 +209,17 @@ const shift = (axis: string, reach: number, step: number, tip: string) =>
   number({ label: `Shift ${axis}`, range: [-reach, reach], step, tip });
 
 // --- feature parts ----------------------------------------------------------------------------------
+const borders = z.strictObject({
+  attrs: z.strictObject({
+    stroke: variant(stroke, { group: undefined }),
+    opacity,
+    "stroke-width": variant(strokeWidth, { group: undefined }),
+    "stroke-dasharray": variant(strokeDasharray, { group: undefined }),
+    "stroke-linecap": variant(strokeLinecap, { group: undefined }),
+    filter
+  })
+});
+
 const lake = z.strictObject({
   attrs: z.strictObject({ opacity, ...fillAttrs, ...strokeAttrs, filter }),
   options: meta(
@@ -564,10 +575,7 @@ export const stylesSchema = z.strictObject({
   }),
   provinces: z.strictObject({ attrs: z.strictObject({ opacity, filter }) }),
   zones: z.strictObject({ attrs: z.strictObject({ opacity, ...strokeAttrs, filter, mask: clip }) }),
-  borders: z.strictObject({
-    stateBorders: z.strictObject({ attrs: z.strictObject({ opacity, ...strokeAttrs, filter }) }),
-    provinceBorders: z.strictObject({ attrs: z.strictObject({ opacity, ...strokeAttrs, filter }) })
-  }),
+  borders: z.strictObject({ stateBorders: borders, provinceBorders: borders }),
   routes: z.strictObject({
     groups: z.record(
       z.string(),

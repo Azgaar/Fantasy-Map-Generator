@@ -178,7 +178,7 @@ const STYLE = /* css */ `
   .schema-form details[data-section] > summary > .gate > select { flex: 1 1 auto; min-width: 0; }
   .schema-form details[data-section] > summary > .preview { margin-left: auto; flex: 0 1 auto; max-width: 50%; display: flex; align-items: center; justify-content: flex-end; gap: .4em; font-weight: 400; min-width: 0; overflow: hidden; }
   .schema-form details[data-section] > summary > .preview:empty { display: none; }
-  .schema-form details[data-section] > .body { padding: .3em .5em; }
+  .schema-form details[data-section] > .body { padding: .3em .3em .3em .5em; }
 `;
 
 let styleInjected = false;

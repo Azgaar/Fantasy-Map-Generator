@@ -137,7 +137,6 @@ export const mapSchema = z.strictObject({
   style: z.strictObject({ preset: z.string().min(1) }),
   burgs: z.strictObject({ groups: z.array(burgGroup) }),
   labels: z.strictObject({ groups: z.array(labelGroup) }),
-  markers: z.strictObject({ resizeOnZoom: z.boolean() }), // keep the screen size on zoom, else scale with the map
   military: z.strictObject({ units: z.array(militaryUnit) }),
   transports: z.array(transport),
   coastline: coastlineSettings
@@ -184,7 +183,6 @@ export const optionsSchema = z.strictObject({
     performance: z.strictObject({
       shapeRendering: z.enum(["geometricPrecision", "auto", "optimizeSpeed", "crispEdges"]),
       stateHalos: z.boolean(),
-      resizeTextOnZoom: z.boolean(), // the viewbox font size follows the zoom, so %-sized text does
       viewportRedraw: z.enum(["continuous", "settled"])
     }),
     onLoad: z.enum(["random", "lastSaved"]), // what the app does with no map asked for

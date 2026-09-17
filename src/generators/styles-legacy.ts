@@ -25,7 +25,7 @@ const SELECTOR_ALIASES: Record<string, string> = {
 
 const PRESET_ROUTES: Record<string, PresetRoute> = {
   "#map": { path: ["map"], drop: ["background-color", "data-filter"] }, // the filter attr carries the pick
-  "#armies": { path: ["military"], options: { "box-size": "boxSize" } },
+  "#armies": { path: ["military"], options: { "box-size": "boxSize" }, drop: ["font-size"] }, // sized from the box
   "#biomes": { path: ["biomes"] },
   "#cells": { path: ["cells"] },
   "#gridOverlay": { path: ["grid"], options: { type: "type", scale: "scale", dx: "dx", dy: "dy" } },
@@ -99,7 +99,7 @@ const PRESET_ROUTES: Record<string, PresetRoute> = {
     strings: ["icon"]
   },
   "#tradeAnimation": { path: ["trade"] },
-  "#markers": { path: ["markers"], drop: ["rescale"] }, // moved to options.map.markers.resizeOnZoom
+  "#markers": { path: ["markers"], drop: ["rescale"] }, // markers are sized in em: they follow the zoom as text does
   "#ruler": { path: ["rulers"], rename: { "data-size": "font-size" } },
   "#scaleBar": {
     path: ["scaleBar"],
@@ -553,7 +553,7 @@ const fontSizeWithUnit = (path: string[], value: string): string => {
   return `${size}${path[0] === "labels" && path[1] === "groups" ? "%" : "px"}`;
 };
 
-// v1.155.0 folded the fields that mirrored or duplicated an attr into the attr itself
+// version ? folded the fields that mirrored or duplicated an attr into the attr itself
 function upgradeShape(record: any): void {
   const px = (n: unknown) => (typeof n === "number" ? `${n}px` : n);
   const attrs = (node: any) => (node.attrs ??= {});
@@ -577,7 +577,9 @@ function upgradeShape(record: any): void {
     delete record.ocean.options.patternOpacity;
   }
   toAttr(record.states?.statesHalo, "width", "stroke-width");
-  toAttr(record.military, "fontSize", "font-size", px);
+  delete record.military?.options?.fontSize; // the renderer sizes the font from the box
+  delete record.military?.attrs?.["font-size"];
+  delete record.labels?.attrs; // the viewbox carries the base the groups size from
   toAttr(record.coordinates, "fontSize", "font-size", px);
   toAttr(record.rulers, "fontSize", "font-size", px);
   toAttr(record.legend, "fontSize", "font-size", px);

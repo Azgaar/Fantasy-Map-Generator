@@ -1,16 +1,15 @@
 // Quality traded for speed: three independent settings, and the presets that name common combinations
 import { Layers } from "@/components/layers";
 import type { OptionsData } from "@/components/options-schema";
-import { applyZoomFontSize } from "@/components/zoom";
 import { findEl } from "@/utils/nodeUtils";
 
 export type PerformanceSettings = OptionsData["app"]["performance"];
 export type PerformancePreset = keyof typeof PERFORMANCE_PRESETS;
 
 export const PERFORMANCE_PRESETS = {
-  quality: { shapeRendering: "geometricPrecision", stateHalos: true, resizeTextOnZoom: true, viewportRedraw: "continuous" },
-  balance: { shapeRendering: "optimizeSpeed", stateHalos: false, resizeTextOnZoom: true, viewportRedraw: "continuous" },
-  speed: { shapeRendering: "optimizeSpeed", stateHalos: false, resizeTextOnZoom: false, viewportRedraw: "settled" }
+  quality: { shapeRendering: "geometricPrecision", stateHalos: true, viewportRedraw: "continuous" },
+  balance: { shapeRendering: "optimizeSpeed", stateHalos: false, viewportRedraw: "continuous" },
+  speed: { shapeRendering: "optimizeSpeed", stateHalos: false, viewportRedraw: "settled" }
 } as const satisfies Record<string, PerformanceSettings>;
 
 /** The preset the settings amount to. Derived, never stored: a preset is a name for its values */
@@ -52,7 +51,6 @@ function change(write: (o: OptionsData) => void): void {
 export function applyPerformanceSettings(): void {
   const { shapeRendering, stateHalos } = options.app.performance;
   findEl("viewbox")?.setAttribute("shape-rendering", shapeRendering);
-  applyZoomFontSize();
 
   const halo = findEl("statesHalo");
   if (!halo) return;

@@ -110,26 +110,25 @@ describe("normalizeStyles", () => {
     doc.labels.groups.capital.attrs["font-size"] = "6px"; // 6px of the 100px layer is 6%
     doc.labels.groups.city.attrs["font-size"] = "5";
     doc.labels.groups.town.attrs["font-size"] = " 4.5% ";
-    doc.labels.attrs["font-size"] = "100";
     doc.temperature.attrs["font-size"] = "8%";
-    doc.scaleBar.attrs["font-size"] = 10; // a pre-v1.155 number
+    doc.scaleBar.attrs["font-size"] = 10; // a pre-v1.154 number
     normalizeStyles(doc);
     expect(doc.labels.groups.capital.attrs["font-size"]).toBe("6%");
     expect(doc.labels.groups.city.attrs["font-size"]).toBe("5%");
     expect(doc.labels.groups.town.attrs["font-size"]).toBe("4.5%");
-    expect(doc.labels.attrs["font-size"]).toBe("100px");
     expect(doc.temperature.attrs["font-size"]).toBe("8px");
     expect(doc.scaleBar.attrs["font-size"]).toBe("10px");
     expect(stylesSchema.safeParse(doc).success).toBe(true);
   });
 
-  test("a pre-v1.155 record folds its mirrored fields into the attrs", () => {
+  test("a pre-v1.154 record folds its mirrored fields into the attrs", () => {
     const doc = structuredClone(Styles.defaults) as any;
     doc.map = { attrs: { filter: null }, options: { dataFilter: "sepia" } };
     doc.ocean.options = { pattern: "./images/waves.png", patternOpacity: 0.4, bands: doc.ocean.options.bands };
     delete doc.ocean.pattern;
     doc.states.statesHalo = { attrs: { opacity: 0.4, filter: null }, options: { width: 12 } };
     doc.military.options = { fontSize: 8, boxSize: 4 };
+    doc.labels.attrs = { "font-size": "100px" };
     doc.coordinates.options = { fontSize: 14 };
     doc.rulers.options = { fontSize: 24 };
     doc.legend.options = { fontSize: 11, x: 50, y: 60, columns: 5 };
@@ -144,8 +143,9 @@ describe("normalizeStyles", () => {
     expect(doc.ocean.pattern).toEqual({ attrs: { href: "./images/waves.png", opacity: 0.4 } });
     expect(doc.ocean.options).toEqual({ bands: Styles.defaults.ocean.options.bands });
     expect(doc.states.statesHalo).toEqual({ attrs: { opacity: 0.4, filter: null, "stroke-width": 12 } });
-    expect(doc.military.attrs["font-size"]).toBe("8px");
+    expect(doc.military.attrs["font-size"]).toBeUndefined();
     expect(doc.military.options).toEqual({ boxSize: 4 });
+    expect(doc.labels.attrs).toBeUndefined();
     expect(doc.coordinates.attrs["font-size"]).toBe("14px");
     expect(doc.coordinates.options).toBeUndefined();
     expect(doc.rulers.attrs["font-size"]).toBe("24px");
@@ -324,10 +324,6 @@ describe("schema reconciliation", () => {
     expect(Styles.defaults.ocean.pattern.attrs).toEqual({ href: "./images/pattern1.png", opacity: 0.2 });
   });
 
-  test("labels base font-size is the css length the registry stamps", () => {
-    expect(Styles.defaults.labels.attrs["font-size"]).toBe("100px");
-  });
-
   test("label groups default font-weight to unset", () => {
     expect(Styles.defaults.labels.groups.capital.attrs["font-weight"]).toBeNull();
   });
@@ -347,7 +343,7 @@ describe("per-attribute repair", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const doc = structuredClone(Styles.defaults) as any;
     doc.labels.groups.capital.attrs.stroke = "#ffffff";
-    doc.labels.groups.capital.attrs["stroke-width"] = null; // pre-1.155 presets
+    doc.labels.groups.capital.attrs["stroke-width"] = null; // pre-1.154 presets
     delete doc.labels.groups.city.attrs["stroke-width"];
     const parsed = Styles.parse(doc);
     expect(parsed.labels.groups.capital.attrs.stroke).toBe("#ffffff");

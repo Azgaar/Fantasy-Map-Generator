@@ -1832,8 +1832,6 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       restoreStrippedLayerStyles(preset as Record<string, unknown>);
     }
     // v1.150.0 made the styles store the source of truth
-    const rescale = document.getElementById("markers")?.getAttribute("rescale"); // a map option since v1.155.0
-    if (rescale !== null && rescale !== undefined) options.map.markers.resizeOnZoom = rescale !== "0";
     data[48] = await migrateStyles(data[48]);
   }
 
@@ -1974,21 +1972,26 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     if (record) data[48] = JSON.stringify(record);
   }
 
-  if (isOlderThan("1.155.0")) {
-    // v1.154.0 pinned the string attr formats: "" and "inherit" used to stand for "not set";
-    // v1.155.0 folded the fields that mirrored an attr into the attr and made the markers rescale a map option
+  if (isOlderThan("1.154.0")) {
+    // v1.154.0 pinned the string attr formats ("" and "inherit" used to stand for "not set") and folded
+    // the fields that mirrored an attr into the attr
     const record = data[48] ? safeParseJSON(data[48]) : undefined;
-    if (record) {
-      const rescale = record.markers?.options?.rescale;
-      if (rescale !== undefined) options.map.markers.resizeOnZoom = Boolean(Number(rescale));
-      data[48] = JSON.stringify(normalizeStyles(record));
-    }
+    if (record) data[48] = JSON.stringify(normalizeStyles(record));
     // the ocean pattern tile lives in its layer now, and an id clash would shadow it
     for (const tile of document.querySelectorAll("pattern#oceanic")) if (!tile.closest("#oceanPattern")) tile.remove();
+    document.getElementById("labels")?.removeAttribute("font-size"); // the viewbox carries the base the groups size from
   }
 }
 
 export function migrateLegacySettings(mapVersion: string, data: string[]): void {
+  if (compareVersions(mapVersion, "1.154.0").isOlder && data[1]?.trimStart().startsWith("{")) {
+    // v1.154.0 sizes the viewbox font with the zoom for everything, so the labels flag is gone
+    const settings = safeParseJSON(data[1]);
+    if (settings?.labels) {
+      delete settings.labels.resizeOnZoom;
+      data[1] = JSON.stringify(settings);
+    }
+  }
   if (!compareVersions(mapVersion, "1.152.0").isOlder || data[1]?.trimStart().startsWith("{")) return;
 
   // v1.152.0 replaced the legacy pipe-delimited settings string with the map's settings object
@@ -2015,8 +2018,7 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
       temperature: { unit: "\u00B0C" },
       population: { scale: 1000, urbanization: { rate: 1, density: 10 } }
     },
-    labels: { resizeOnZoom: true, groups: [] as MapData["labels"]["groups"] },
-    markers: { resizeOnZoom: true }, // the svg's rescale attr sets it once the styles migrate
+    labels: { groups: [] as MapData["labels"]["groups"] },
     style: { preset: "default" },
     military: { units: [] as MapData["military"]["units"] },
     transports: [] as MapData["transports"],
@@ -2070,7 +2072,10 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
   if (Array.isArray(oldSettings19)) migrated.climate.winds = oldSettings19;
   const oldOptions = (Array.isArray(oldSettings19) ? null : oldSettings19) ?? {};
 
-  if (oldOptions.labels) migrated.labels = oldOptions.labels;
+  if (oldOptions.labels) {
+    const { resizeOnZoom: _, ...labels } = oldOptions.labels; // the zoom sizes all text since v1.154.0
+    migrated.labels = labels;
+  }
   if (oldOptions.military) migrated.military.units = oldOptions.military;
   if (oldOptions.transports) migrated.transports = oldOptions.transports;
   if (oldOptions.coastline) migrated.coastline = oldOptions.coastline;
@@ -2102,7 +2107,6 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
   if (oldOptions.eraShort) migrated.lore.calendar.eraShort = oldOptions.eraShort;
 
   // v1.140.0 moved the label settings into the labels section and the naming mode onto the state group
-  if (oldSettings[23]) migrated.labels.resizeOnZoom = Boolean(Number(oldSettings[23]));
   // a pre-1.140 map carries no groups at all, so there is usually nothing here to write the mode onto
   if (oldOptions.stateLabelsMode) {
     const stateGroup = migrated.labels.groups.find(group => group.type === "state");

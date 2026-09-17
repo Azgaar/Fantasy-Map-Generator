@@ -1,6 +1,6 @@
 import { type D3ZoomEvent, select, zoom, zoomIdentity, zoomTransform } from "d3";
 import { Layers } from "@/components/layers";
-import { setViewportTransform, viewport } from "@/components/viewport";
+import { setViewportTransform, viewport, zoomFontSize } from "@/components/viewport";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
 import { rn } from "@/utils/numberUtils";
@@ -52,7 +52,7 @@ function handleZoomPerFrame(): void {
 
   if (didScaleChange) {
     Layers.draw("scaleBar");
-    applyZoomFontSize();
+    if (options.app.performance.viewportRedraw === "continuous") applyZoomFontSize();
   }
 
   if (didPositionChange) Layers.draw("coordinates");
@@ -90,11 +90,9 @@ function redrawTracedImage(): void {
   context.drawImage(image, 0, 0, canvas.width, canvas.height);
 }
 
-/** The viewbox font size, 100px at scale 1: everything sized in % or em follows the zoom, half-way */
-export function applyZoomFontSize(): void {
-  const scaled = options.app.performance.resizeTextOnZoom;
-  const fontSize = scaled ? Math.max(rn((100 + 100 / viewport.scale) / 2, 2), 1) : 100;
-  findEl("viewbox")?.setAttribute("font-size", `${fontSize}px`);
+/** The viewbox font size follows the zoom; per frame or once it settles, as the viewport redraw does */
+function applyZoomFontSize(): void {
+  findEl("viewbox")?.setAttribute("font-size", `${zoomFontSize(viewport.scale)}px`);
 }
 
 export function invokeActiveZooming(): void {

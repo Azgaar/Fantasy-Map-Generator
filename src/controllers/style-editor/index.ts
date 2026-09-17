@@ -261,23 +261,6 @@ function decorate(form: HTMLElement, sel: Resolved): void {
     rootBody(form).prepend(row);
   }
 
-  if (sel.element === "markers") {
-    const row = extraRow(
-      "Constant size",
-      "Keep the same size on any map scale, turn off to scale markers with the map"
-    );
-    row.dataset.field = "resizeOnZoom";
-    row.querySelector(".ctl")!.append(
-      appCheckbox("markersResizeOnZoom", options.map.markers.resizeOnZoom, checked => {
-        Options.set(options => {
-          options.map.markers.resizeOnZoom = checked;
-        });
-        invokeActiveZooming();
-      })
-    );
-    rootBody(form).append(row);
-  }
-
   if (sel.element === "emblems") {
     const row = extraRow(
       "Show all",

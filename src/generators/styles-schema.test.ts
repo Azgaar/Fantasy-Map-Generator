@@ -42,7 +42,7 @@ describe("styles schema metadata", () => {
     expect(byPath["rivers.attrs.opacity"].spec).toMatchObject({ kind: "slider", min: 0, max: 1, nullAs: 1 });
     expect(byPath["zones.attrs.stroke-width"].spec).toMatchObject({ kind: "slider", min: 0, max: 10, nullAs: 0 });
     expect(byPath["zones.attrs.filter"].spec.kind).toBe("filter");
-    expect(byPath["zones.attrs.mask"].spec).toMatchObject({ kind: "select", label: "Clip to" });
+    expect(byPath["zones.attrs.mask"].spec).toMatchObject({ kind: "select", label: "Clip" });
     expect(byPath["fogging.attrs.mask"].hidden).toBe(true);
     expect(byPath["temperature.attrs.font-size"].spec).toMatchObject({ kind: "px", min: 1, max: 40 });
     expect(byPath["labels.groups.*.attrs.font-size"].spec).toMatchObject({ kind: "percent", group: "Font" });
@@ -58,7 +58,6 @@ describe("styles schema metadata", () => {
     expect(byPath["markets.options.icon"].spec.kind).toBe("emoji");
     expect(byPath["map.attrs.filter"].spec).toMatchObject({ kind: "select", nullable: true, label: "Filter" });
     expect(byPath["ocean.pattern.attrs.href"].spec).toMatchObject({ kind: "select", label: "Image" });
-    expect(byPath["labels.attrs.font-size"].spec).toMatchObject({ kind: "px", min: 20, max: 300 });
     expect(byPath["legend.attrs.font-size"].spec).toMatchObject({ kind: "px", group: "Font", label: "Size" });
     expect(byPath["states.statesHalo.attrs.stroke-width"].spec).toMatchObject({ kind: "slider", min: 0, max: 30 });
   });
