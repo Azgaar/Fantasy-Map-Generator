@@ -14,7 +14,7 @@ export const FORMATS = {
   /** `none` or space-separated lengths: `5`, `.5 1`, `0 4 10 4` */
   strokeDasharray: /^(none|\d*\.?\d+( \d*\.?\d+)*)$/,
   /** a label group's font size, relative to the labels layer: `22%` */
-  fontSize: /^\d+(\.\d+)?%$/,
+  fontSizePercent: /^\d+(\.\d+)?%$/,
   /** an absolute font size: `8px` */
   fontSizePx: /^\d+(\.\d+)?px$/,
   percentage: /^-?\d+(\.\d+)?%$/,
