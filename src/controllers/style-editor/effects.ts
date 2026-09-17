@@ -38,11 +38,6 @@ const EFFECTS: Record<StyleEffect, Run> = {
   regenerateRelief: change => {
     Relief.generate();
     draw(change);
-  },
-  refitStateLabels: change => {
-    write(change);
-    const type = options.map.labels.groups.find(group => group.name === change.sel.group)?.type;
-    if (type === "state") Layers.draw("labels");
   }
 };
 

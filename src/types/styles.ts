@@ -5,10 +5,6 @@ import type { stylesSchema } from "@/generators/styles-schema";
 /** The controls the form engine ships; a caller registers more under its own names */
 export type StandardControl = "checkbox" | "select" | "slider" | "number" | "text" | "color" | "percent" | "px";
 
-/** A slider whose range and step follow a sibling number, live: `to` names the sibling (a "22%" string
- * reads as 22); the range is widened to hold the stored value */
-export type Fit = { to: string; range: (source: number) => [number, number]; step?: (source: number) => number };
-
 /** How a schema field is edited, registered on the zod node */
 export type FieldMeta<Control extends string = StandardControl> = {
   control?: Control; // overrides the derived control
@@ -21,7 +17,6 @@ export type FieldMeta<Control extends string = StandardControl> = {
   hidden?: true; // stored, never edited
   gate?: string; // on a nested object: the key (or dotted path) that switches the rest of the section on
   group?: string; // a caption over the consecutive fields sharing it; their labels read under it ("Stroke" → "Width")
-  fit?: Fit;
 };
 
 // --- the style form (src/generators/styles-schema.ts) -------------------------------------------------

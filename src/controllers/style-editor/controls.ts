@@ -17,12 +17,14 @@ import { burgIcon, burgIconPreview } from "@/data/burg-icons";
 import { TEXTURES } from "@/data/textures";
 import { drawHeights } from "@/renderers/draw-heightmap";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
+import { getLabelsIndex } from "@/renderers/labels/label-data";
 import { addGoogleFont, addLocalFont, addWebFont } from "@/services/fonts";
 import type { StandardControl, StyleControl } from "@/types/styles";
 import { ensureEl, findEl, rn, toHEX } from "@/utils";
 import { BURG_ICON_DIALOG, openBurgIconDialog, paintBurgIconDialog } from "./burg-icon-dialog";
+import { FONT_DIALOG, openFontDialog } from "./font-dialog";
 
-const OPEN_DIALOGS = ["addFontDialog", "textureUrlDialog", "heightmapSchemeDialog", BURG_ICON_DIALOG];
+const OPEN_DIALOGS = ["addFontDialog", "textureUrlDialog", "heightmapSchemeDialog", BURG_ICON_DIALOG, FONT_DIALOG];
 
 /** Dialogs a control may have left open; the editor calls it on close */
 export function destroyControlDialogs(): void {
@@ -63,26 +65,40 @@ const filter: ControlFactory = (spec, value, set) => {
   return select;
 };
 
-// the loaded font families, plus the dialog that adds one
+// the current family drawn in itself; the families open in a dialog that renders the group's labels in each
 const font: ControlFactory = (_spec, value, set) => {
-  const select = el("select");
-  const fill = (selected: string) => {
-    select.replaceChildren(...fonts.map(({ family }) => new Option(family, family)));
-    for (const option of select.options) option.style.fontFamily = option.value;
-    if (selected && !fonts.some(font => font.family === selected)) select.add(new Option(selected, selected));
-    select.value = selected;
+  const button = pickButton();
+  let current = typeof value === "string" ? value : "";
+  const show = () => {
+    button.textContent = current || "none";
+    button.style.fontFamily = current;
   };
-  fill(typeof value === "string" ? value : "");
-  select.addEventListener("change", () => set(select.value));
-  const add = sideButton("icon-plus", "Add a font");
-  add.addEventListener("click", () =>
-    openAddFontDialog(family => {
-      fill(family);
-      set(family);
+  show();
+  button.addEventListener("click", () =>
+    openFontDialog({
+      selected: current,
+      sample: fontSample(),
+      onPick: family => {
+        current = family;
+        show();
+        set(family);
+      },
+      onAdd: openAddFontDialog
     })
   );
-  return inline(select, add);
+  return button;
 };
+
+// what the selected label group says, so the dialog previews the map's own words; other elements get a stock sample
+function fontSample(): string {
+  const element = ensureEl<HTMLSelectElement>("styleElementSelect").value;
+  if (element !== "labels") return element === "legend" ? "Legend" : "Sample";
+  const group = ensureEl<HTMLSelectElement>("styleGroupSelect").value;
+  const texts = getLabelsIndex()
+    .filter(label => label.group === group && label.text)
+    .map(label => label.text);
+  return [...new Set(texts)].slice(0, 2).join(", ") || "Sample";
+}
 
 function openAddFontDialog(onAdded: (family: string) => void): void {
   destroyDialog("addFontDialog");
@@ -125,31 +141,34 @@ function openAddFontDialog(onAdded: (family: string) => void): void {
     urlInput.style.display = method.value === "fontURL" ? "inline" : "none";
   });
 
+  const add = async () => {
+    const family = nameInput.value.trim();
+    const src = urlInput.value.trim();
+    if (!family) return tip("Please provide a font name", false, "error");
+    const exists =
+      method.value === "fontURL"
+        ? fonts.some(font => font.family === family && font.src === `url('${src}')`)
+        : fonts.some(font => font.family === family);
+    if (exists) return tip("The font is already added", false, "error");
+
+    const added =
+      method.value === "fontURL"
+        ? addWebFont(family, src)
+        : method.value === "googleFont"
+          ? await addGoogleFont(family)
+          : addLocalFont(family);
+    if (added) onAdded(added);
+    $(dialog).dialog("close");
+  };
+
   $(dialog).dialog({
     title: "Add custom font",
     width: "26em",
     position: { my: "center", at: "center", of: "svg" },
     close: () => destroyDialog("addFontDialog"),
     buttons: {
-      Add: async function (this: HTMLElement) {
-        const family = nameInput.value.trim();
-        const src = urlInput.value.trim();
-        if (!family) return tip("Please provide a font name", false, "error");
-        const exists =
-          method.value === "fontURL"
-            ? fonts.some(font => font.family === family && font.src === `url('${src}')`)
-            : fonts.some(font => font.family === family);
-        if (exists) return tip("The font is already added", false, "error");
-
-        const added =
-          method.value === "fontURL"
-            ? addWebFont(family, src)
-            : method.value === "googleFont"
-              ? await addGoogleFont(family)
-              : addLocalFont(family);
-        if (added) onAdded(added);
-        $(this).dialog("close");
-      },
+      // jQuery 3.1 takes an async function for a props object, so the button handler stays sync
+      Add: () => void add(),
       Cancel: function (this: HTMLElement) {
         $(this).dialog("close");
       }

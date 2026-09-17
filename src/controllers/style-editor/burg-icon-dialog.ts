@@ -1,20 +1,19 @@
-// The burg icon dialog: every icon of the sets a group may use, drawn in the group's own paint; a click
-// picks one and keeps the dialog open so the map shows the choice
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
-import { BURG_ICONS, type BurgIcon, burgIconPreview, PORT_ICONS } from "@/data/burg-icons";
+import { BURG_ICONS, burgIconPreview, PORT_ICONS } from "@/data/burg-icons";
 import { ensureEl, findEl } from "@/utils";
 
 export const BURG_ICON_DIALOG = "burgIconDialog";
 
 const STYLE = /* css */ `
-  #burgIconDialog .choices { display: grid; grid-template-columns: repeat(5, 5em); gap: 4px; }
+  #burgIconDialog .choices { display: grid; grid-template-columns: repeat(7, 5em); gap: .3em; }
+  #burgIconDialog > div { width: 100%; }
   #burgIconDialog h4 { margin: .6em 0 .3em; }
   #burgIconDialog h4:first-child { margin-top: 0; }
-  #burgIconDialog button { width: 100%; min-width: 0; margin: 0; padding: 4px 2px; border: 1px solid transparent; border-radius: 3px; background: #e6dfce; color: #493f32; cursor: pointer; white-space: normal; }
-  #burgIconDialog button:hover { background: #f4eddb; border-color: #8a7252; }
-  #burgIconDialog button.pressed { background: #fff3cd; border: 2px solid #8a3c32; padding: 3px 1px; }
+  #burgIconDialog button { width: 100%; min-width: 0; margin: 0; padding: .3em .2em; border: 1px solid transparent; border-radius: 0; white-space: normal; }
+  #burgIconDialog button:hover { border-color: var(--dark-solid); }
+  #burgIconDialog button.pressed { border: 1px solid var(--dark-solid); }
   #burgIconDialog button svg { display: block; width: 100%; height: 42px; overflow: visible; pointer-events: none; }
-  #burgIconDialog button span { display: block; font-size: 9px; line-height: 12px; text-transform: capitalize; overflow-wrap: anywhere; }
+  #burgIconDialog button span { display: block; font-size: 0.9em; line-height: 1em; opacity: .7; text-transform: capitalize; overflow-wrap: anywhere; }
 `;
 
 type Options = {
@@ -26,44 +25,37 @@ type Options = {
 };
 
 /** The dialog's content: the icon sets, the selected one pressed */
-export function renderChoices(anchors: boolean, selected: string): HTMLElement {
+export function renderChoices(anchors: boolean, selected: string): string {
   const icons = anchors ? PORT_ICONS : BURG_ICONS;
-  const content = document.createElement("div");
-  for (const group of new Set(icons.map(icon => icon.group))) {
-    const title = document.createElement("h4");
-    title.textContent = group;
-    const grid = document.createElement("div");
-    grid.className = "choices";
-    grid.append(...icons.filter(icon => icon.group === group).map(icon => choice(icon, icon.id === selected)));
-    content.append(title, grid);
-  }
-  return content;
-}
-
-function choice(icon: BurgIcon, pressed: boolean): HTMLButtonElement {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.dataset.icon = icon.id;
-  button.title = icon.name;
-  button.classList.toggle("pressed", pressed);
-  button.innerHTML = `${burgIconPreview(icon)}<span>${icon.name}</span>`;
-  return button;
+  return [...new Set(icons.map(icon => icon.group))]
+    .map(
+      group => /* html */ `
+        <h4>${group}</h4>
+        <div class="choices">
+          ${icons
+            .filter(icon => icon.group === group)
+            .map(
+              icon => /* html */ `
+                <button type="button" data-icon="${icon.id}" title="${icon.name}" class="${icon.id === selected ? "pressed" : ""}">
+                  ${burgIconPreview(icon)}<span>${icon.name}</span>
+                </button>`
+            )
+            .join("")}
+        </div>`
+    )
+    .join("");
 }
 
 export function openBurgIconDialog({ anchors, selected, fill, stroke, onPick }: Options): void {
   destroyDialog(BURG_ICON_DIALOG);
-  if (!findEl("burgIconDialogStyle")) {
-    const style = document.createElement("style");
-    style.id = "burgIconDialogStyle";
-    style.textContent = STYLE;
-    document.head.append(style);
-  }
-
-  const dialog = document.createElement("div");
-  dialog.id = BURG_ICON_DIALOG;
-  dialog.className = "dialog";
-  dialog.style.display = "none";
-  dialog.append(renderChoices(anchors, selected));
+  ensureEl("dialogs").insertAdjacentHTML(
+    "beforeend",
+    /* html */ `<div id="${BURG_ICON_DIALOG}" class="dialog">
+      <style>${STYLE}</style>
+      ${renderChoices(anchors, selected)}
+    </div>`
+  );
+  const dialog = ensureEl(BURG_ICON_DIALOG);
   paintBurgIconDialog(fill, stroke, dialog);
   dialog.addEventListener("click", event => {
     const button = (event.target as Element).closest<HTMLButtonElement>("button[data-icon]");
@@ -72,7 +64,6 @@ export function openBurgIconDialog({ anchors, selected, fill, stroke, onPick }: 
     button.classList.add("pressed");
     onPick(button.dataset.icon!);
   });
-  ensureEl("dialogs").append(dialog);
 
   $(dialog).dialog({
     title: anchors ? "Select port icon" : "Select burg icon",

@@ -19,8 +19,7 @@ import {
   RELIEF_STYLES,
   WAVE_TYPES
 } from "@/data/style-choices";
-import type { Fit, StyleMeta } from "@/types/styles";
-import { rn } from "@/utils";
+import type { StyleMeta } from "@/types/styles";
 import { hexColor } from "@/utils/schemaUtils";
 import { FORMATS, isLabelStyle } from "./styles-formats";
 
@@ -364,7 +363,6 @@ export const stylesSchema = z.strictObject({
   }),
   cells: z.strictObject({ attrs: z.strictObject({ ...strokeGroup, filter, mask: clip }) }),
   coastline: z.strictObject({ sea_island: coastline, lake_island: coastline }),
-  // density defines icon placement: changing it regenerates the icons, not just restyles them
   compass: z.strictObject({
     attrs: z.strictObject({ opacity, transform, filter, mask: clip }),
     compassRose: z.strictObject({
@@ -396,9 +394,7 @@ export const stylesSchema = z.strictObject({
     provinceEmblems: emblemGroup,
     burgEmblems: emblemGroup
   }),
-  // the groups size in % of the viewbox font size, which the zoom scales
   fogging: z.strictObject({ attrs: z.strictObject({ opacity, fill, mask, filter }) }),
-  // the geometry options shape #vignette-rect, the mask rect in defs the renderer owns
   goods: z.strictObject({
     goodsCells: z.strictObject({ attrs: z.strictObject({ opacity, filter }) }),
     goodsIcons: z.strictObject({
@@ -451,9 +447,8 @@ export const stylesSchema = z.strictObject({
       dy: shift("y", 100, 1, "Shift by y axis in pixels")
     })
   }),
-  // the labels are sized from the base font size by the zoom, so a size change is a redraw
   heightmap: z.strictObject({ landHeights, oceanHeights }),
-  ice: z.strictObject({ attrs: z.strictObject({ opacity, fill: fillGroup.fill, ...strokeGroup, filter }) }),
+  ice: z.strictObject({ attrs: z.strictObject({ opacity, fill, ...strokeGroup, filter }) }),
   journeys: z.strictObject({ attrs: z.strictObject({ opacity, ...dashGroup, filter, mask: clip }) }),
   labels: z.strictObject({
     groups: z.record(
@@ -513,10 +508,8 @@ export const stylesSchema = z.strictObject({
       })
     )
   }),
-  // both records are keyed by the burg groups; the editor shows a group's icon and anchor together.
-  // The icon groups are rebuilt from the store on any change
   lakes: z.strictObject({ groups: z.record(z.string(), lake) }), // stock groups plus user-created ones
-  landmass: z.strictObject({ attrs: z.strictObject({ opacity, fill: fillGroup.fill, filter }) }),
+  landmass: z.strictObject({ attrs: z.strictObject({ opacity, fill, filter }) }),
   legend: z.strictObject({
     attrs: z.strictObject({
       ...strokeGroup,
@@ -548,11 +541,7 @@ export const stylesSchema = z.strictObject({
   }),
   markers: z.strictObject({ attrs: z.strictObject({ opacity, filter }) }),
   markets: z.strictObject({
-    attrs: z.strictObject({
-      ...fillGroup,
-      ...strokeGroup,
-      filter
-    }),
+    attrs: z.strictObject({ ...fillGroup, ...strokeGroup, filter }),
     options: z.strictObject({
       size: number({
         label: "Marker size",
@@ -570,12 +559,7 @@ export const stylesSchema = z.strictObject({
     })
   }),
   military: z.strictObject({
-    attrs: z.strictObject({
-      opacity,
-      ...strokeGroup,
-      "fill-opacity": fillGroup["fill-opacity"],
-      filter
-    }),
+    attrs: z.strictObject({ opacity, ...strokeGroup, "fill-opacity": fillGroup["fill-opacity"], filter }),
     options: z.strictObject({
       boxSize: number({
         range: [0, 10],
@@ -584,13 +568,11 @@ export const stylesSchema = z.strictObject({
       })
     })
   }),
-  // the renderer bakes the stroke into each measurer
   ocean: z.strictObject({
     options: z.strictObject({ bands: coastlineBands }),
     base: z.strictObject({
-      attrs: z.strictObject({ fill: fillGroup.fill })
+      attrs: z.strictObject({ fill })
     }),
-    // the tiled image the ocean is patterned with
     pattern: z.strictObject({
       attrs: z.strictObject({
         href: choice(OCEAN_PATTERNS, { label: "Image", tip: "Select ocean pattern" }),
@@ -615,7 +597,7 @@ export const stylesSchema = z.strictObject({
     })
   }),
   precipitation: z.strictObject({
-    attrs: z.strictObject({ opacity, fill: fillGroup.fill, ...strokeGroup, filter, mask: clip })
+    attrs: z.strictObject({ opacity, fill, ...strokeGroup, filter, mask: clip })
   }),
   provinces: z.strictObject({ attrs: z.strictObject({ opacity, filter }) }),
   relief: z.strictObject({
@@ -641,7 +623,7 @@ export const stylesSchema = z.strictObject({
     })
   }),
   religions: z.strictObject({ attrs: z.strictObject({ opacity, ...strokeGroup, filter }) }),
-  rivers: z.strictObject({ attrs: z.strictObject({ opacity, fill: fillGroup.fill, filter }) }),
+  rivers: z.strictObject({ attrs: z.strictObject({ opacity, fill, filter }) }),
   routes: z.strictObject({
     groups: z.record(
       z.string(),
@@ -651,11 +633,9 @@ export const stylesSchema = z.strictObject({
   rulers: z.strictObject({
     attrs: meta(z.strictObject({ opacity, ...dashGroup, "font-size": fontSizePx, filter }), { effect: "draw" })
   }),
-  // attrs and options alike lay the bar out
   scaleBar: meta(
     z.strictObject({
-      attrs: z.strictObject({ opacity, fill: fillGroup.fill, "font-size": fontSizePx }),
-      // `label` names the unit under the bar; `x`/`y` place it, as percentages of the map extent
+      attrs: z.strictObject({ opacity, fill, "font-size": fontSizePx }),
       options: z.strictObject({
         barSize: number({ label: "Bar size", range: [0.5, 5], step: 0.1, tip: "Set bar size" }),
         label: text({ tip: "Type scale bar label, leave blank to hide label" }),
@@ -683,7 +663,6 @@ export const stylesSchema = z.strictObject({
     }),
     { effect: "draw" }
   ),
-  // the font lays the boxes out, so it redraws them
   states: z.strictObject({
     statesBody: z.strictObject({ attrs: z.strictObject({ opacity, filter }) }),
     // rendered only when performance is set to best quality; the zoom scales the width it writes
@@ -698,8 +677,8 @@ export const stylesSchema = z.strictObject({
   temperature: z.strictObject({
     attrs: z.strictObject({
       fill: variant(fill, { group: "Label" }),
-      "font-size": variant(fontSizePx, { group: "Label" }),
       "fill-opacity": fillGroup["fill-opacity"],
+      "font-size": variant(fontSizePx, { group: "Label" }),
       ...strokeGroup,
       filter,
       mask: clip
@@ -719,7 +698,7 @@ export const stylesSchema = z.strictObject({
   }),
   trade: z.strictObject({ attrs: z.strictObject({ opacity, filter }) }),
   vignette: z.strictObject({
-    attrs: z.strictObject({ opacity, fill: fillGroup.fill, mask, filter }),
+    attrs: z.strictObject({ opacity, fill, mask, filter }),
     options: meta(
       z.strictObject({
         x: variant(percentage, {
