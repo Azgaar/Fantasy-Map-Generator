@@ -253,7 +253,7 @@ const labelStyle: ControlFactory = (spec, value, set) => {
   transform.addEventListener("change", emit);
   return rows(
     withTip(row("Shadow", shadow), "Set text shadow, e.g. white 0 0 4px"),
-    withTip(row("Letter case", transform), "Change the letter case of the labels as displayed"),
+    withTip(row("Case", transform), "Change the letter case of the labels as displayed"),
     withTip(row("Shift x", dx), "Shift the labels along x, in em"),
     withTip(row("Shift y", dy), "Shift the labels along y, in em")
   );

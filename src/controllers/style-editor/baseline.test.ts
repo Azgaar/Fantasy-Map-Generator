@@ -8,8 +8,8 @@ vi.mock("@/services/style-presets", () => ({
   }
 }));
 
-import { StylePresets } from "@/services/style-presets";
-import { parsePreset } from "../style-presets";
+import { StylePresetsService } from "@/services/style-presets";
+import { parsePreset } from "../style-preset";
 import { Baseline, type PathSelection, storePath } from "./baseline";
 
 const sel = (element: string, group?: string, path?: string[]): PathSelection =>
@@ -25,7 +25,7 @@ const PRESET = {
 };
 
 async function baseline(): Promise<Baseline> {
-  vi.mocked(StylePresets.load).mockResolvedValue({ name: "fmgStyle_test", styles: PRESET });
+  vi.mocked(StylePresetsService.load).mockResolvedValue({ name: "fmgStyle_test", styles: PRESET });
   return (await Baseline.load("fmgStyle_test"))!;
 }
 
@@ -103,21 +103,21 @@ describe("Baseline.diffAt", () => {
 
 describe("Baseline.load", () => {
   test("parses the loaded preset and caches system presets only", async () => {
-    vi.mocked(StylePresets.load).mockImplementation(async name => ({ name, styles: { map: {} } }));
+    vi.mocked(StylePresetsService.load).mockImplementation(async name => ({ name, styles: { map: {} } }));
     expect(await Baseline.load("ink")).toBeInstanceOf(Baseline);
     expect(await Baseline.load("ink")).toBe(await Baseline.load("ink"));
-    expect(StylePresets.load).toHaveBeenCalledTimes(1);
+    expect(StylePresetsService.load).toHaveBeenCalledTimes(1);
     await Baseline.load("fmgStyle_mine");
     await Baseline.load("fmgStyle_mine");
-    expect(StylePresets.load).toHaveBeenCalledTimes(3);
+    expect(StylePresetsService.load).toHaveBeenCalledTimes(3);
     expect(parsePreset).toHaveBeenCalledWith({ map: {} });
   });
 
   test("is undefined when the name resolves to another preset or is not a preset", async () => {
-    vi.mocked(StylePresets.load).mockResolvedValue({ name: "default", styles: {} });
+    vi.mocked(StylePresetsService.load).mockResolvedValue({ name: "default", styles: {} });
     expect(await Baseline.load("fmgStyle_gone")).toBeUndefined();
     vi.mocked(parsePreset).mockReturnValueOnce(undefined);
-    vi.mocked(StylePresets.load).mockResolvedValue({ name: "fmgStyle_junk", styles: 42 });
+    vi.mocked(StylePresetsService.load).mockResolvedValue({ name: "fmgStyle_junk", styles: 42 });
     expect(await Baseline.load("fmgStyle_junk")).toBeUndefined();
   });
 });

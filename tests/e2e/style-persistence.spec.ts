@@ -70,7 +70,7 @@ test.describe("style persistence round trips", () => {
     // the name travels with the map, so the Style tab shows which preset the styles came from
     const preset = await page.evaluate(() => ({
       option: options.map.style.preset,
-      select: (document.getElementById("stylePreset") as HTMLSelectElement).value
+      select: (document.getElementById("stylePresetSelector") as HTMLSelectElement).value
     }));
     expect(preset).toEqual({ option: "ancient", select: "ancient" });
   });
@@ -95,7 +95,7 @@ test.describe("style persistence round trips", () => {
 
     const preset = await page.evaluate(() => ({
       option: options.map.style.preset,
-      select: (document.getElementById("stylePreset") as HTMLSelectElement).value
+      select: (document.getElementById("stylePresetSelector") as HTMLSelectElement).value
     }));
     expect(preset).toEqual({ option: "cyberpunk", select: "cyberpunk" });
   });
@@ -113,7 +113,7 @@ test.describe("style persistence round trips", () => {
 
     const preset = await page.evaluate(() => ({
       option: options.map.style.preset,
-      select: (document.getElementById("stylePreset") as HTMLSelectElement).value
+      select: (document.getElementById("stylePresetSelector") as HTMLSelectElement).value
     }));
     expect(preset).toEqual({ option: "custom-from-another-browser", select: "default" });
   });

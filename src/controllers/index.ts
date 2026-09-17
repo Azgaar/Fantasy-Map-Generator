@@ -67,7 +67,7 @@ export const Controllers = createRegistry({
   RoutesOverview: () => import("@/controllers/routes-overview").then(m => m.RoutesOverview),
   StatesEditor: () => import("@/controllers/states-editor").then(m => m.StatesEditor),
   StyleEditor: () => import("@/controllers/style-editor").then(m => m.StyleEditor),
-  StylePresetsEditor: () => import("@/controllers/style-presets").then(m => m.StylePresetsEditor),
+  StylePresetsEditor: () => import("@/controllers/style-preset").then(m => m.StylePreset),
   SubmapTool: () => import("@/controllers/submap-tool").then(m => m.SubmapTool),
   TemperatureGraph: () => import("@/controllers/temperature-graph").then(m => m.TemperatureGraph),
   TradeAnimationEditor: () => import("@/controllers/trade-animation-editor").then(m => m.TradeAnimationEditor),

@@ -26,7 +26,7 @@ import type { Styles } from "@/generators/styles-schema";
 import type { Point } from "@/generators/voronoi";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { unfog } from "@/renderers/overlays/fogging";
-import { StylePresets } from "@/services/style-presets";
+import { StylePresetsService } from "@/services/style-presets";
 import { compareVersions } from "@/services/versioning";
 import type { ReliefSet } from "@/types/relief";
 import {
@@ -1831,7 +1831,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
   if (isOlderThan("1.150.0")) {
     // v1.145-1.147 stripped the layer style from saved maps; the migration harvest reads what this re-seeds
     if (!isOlderThan("1.145.0") && isOlderThan("1.148.0")) {
-      const { styles: preset } = await StylePresets.load(options.map.style.preset || "default");
+      const { styles: preset } = await StylePresetsService.load(options.map.style.preset || "default");
       restoreStrippedLayerStyles(preset as Record<string, unknown>);
     }
     // v1.150.0 made the styles store the source of truth

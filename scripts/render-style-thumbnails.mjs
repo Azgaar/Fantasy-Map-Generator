@@ -16,14 +16,27 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 
-const WIDTH = 320;
-const HEIGHT = 180;
-const MAP_WIDTH = 1280; // same aspect as the thumbnail, so the whole map fits without cropping
-const MAP_HEIGHT = 720;
+const WIDTH = 720;
+const HEIGHT = 450;
+const MAP_WIDTH = 1440;
+const MAP_HEIGHT = 900;
 
 const SYSTEM_PRESETS = [
-  "default", "ancient", "gloom", "pale", "light", "watercolor", "clean", "atlas",
-  "darkSeas", "cyberpunk", "night", "monochrome", "ink", "cinderwood", "frostbite"
+  "default",
+  "ancient",
+  "gloom",
+  "pale",
+  "light",
+  "watercolor",
+  "clean",
+  "atlas",
+  "darkSeas",
+  "cyberpunk",
+  "night",
+  "monochrome",
+  "ink",
+  "cinderwood",
+  "frostbite"
 ];
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");

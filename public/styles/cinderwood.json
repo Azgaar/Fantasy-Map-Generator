@@ -589,11 +589,11 @@
           "stroke-width": 0.4,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0.1,
-          "font-size": "5%",
           "font-family": "Cinzel",
+          "font-size": "5%",
           "font-style": null,
           "font-weight": 900,
+          "letter-spacing": 0.1,
           "style": "text-shadow: #d3c9ae 0px 0px 1px; text-transform: uppercase",
           "filter": null
         }
@@ -607,11 +607,11 @@
           "stroke-width": 0.4,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0.1,
-          "font-size": "3%",
           "font-family": "Cinzel",
+          "font-size": "3%",
           "font-style": null,
           "font-weight": 900,
+          "letter-spacing": 0.1,
           "style": "text-shadow: #d3c9ae 0px 0px 1px; text-transform: uppercase; transform: translate(0em, 0.3em)",
           "filter": null
         }
@@ -625,11 +625,11 @@
           "stroke-width": 0.3,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0.1,
-          "font-size": "2.5%",
           "font-family": "Cinzel",
+          "font-size": "2.5%",
           "font-style": null,
           "font-weight": 900,
+          "letter-spacing": 0.1,
           "style": "text-shadow: #d3c9ae 0px 0px 1px; text-transform: uppercase; transform: translate(0em, 0.5em)",
           "filter": null
         }
@@ -643,11 +643,11 @@
           "stroke-width": 0.3,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0.1,
-          "font-size": "2.5%",
           "font-family": "Cinzel",
+          "font-size": "2.5%",
           "font-style": null,
           "font-weight": 900,
+          "letter-spacing": 0.1,
           "style": "text-shadow: #d3c9ae 0px 0px 1px; text-transform: uppercase; transform: translate(0em, 0.5em)",
           "filter": null
         }
@@ -661,11 +661,11 @@
           "stroke-width": 0.3,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0.1,
-          "font-size": "2.5%",
           "font-family": "Cinzel",
+          "font-size": "2.5%",
           "font-style": null,
           "font-weight": 900,
+          "letter-spacing": 0.1,
           "style": "text-shadow: #d3c9ae 0px 0px 1px; text-transform: uppercase; transform: translate(0em, 0.6em)",
           "filter": null
         }
@@ -679,11 +679,11 @@
           "stroke-width": 0.3,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0.1,
-          "font-size": "2.5%",
           "font-family": "Cinzel",
+          "font-size": "2.5%",
           "font-style": null,
           "font-weight": 900,
+          "letter-spacing": 0.1,
           "style": "text-shadow: #d3c9ae 0px 0px 1px; text-transform: uppercase; transform: translate(0em, 0.6em)",
           "filter": null
         }
@@ -697,11 +697,11 @@
           "stroke-width": 0.2,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0.05,
-          "font-size": "2%",
           "font-family": "Cinzel",
+          "font-size": "2%",
           "font-style": null,
           "font-weight": 900,
+          "letter-spacing": 0.05,
           "style": "text-shadow: #d3c9ae 0px 0px 1px; text-transform: uppercase; transform: translate(0em, 1.45em)",
           "filter": null
         }
@@ -715,11 +715,11 @@
           "stroke-width": 0.3,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0.1,
-          "font-size": "1.8%",
           "font-family": "Cinzel",
+          "font-size": "1.8%",
           "font-style": null,
           "font-weight": 900,
+          "letter-spacing": 0.1,
           "style": "text-shadow: #d3c9ae 0px 0px 1px; text-transform: uppercase; transform: translate(0em, 1.5em)",
           "filter": null
         }
@@ -733,11 +733,11 @@
           "stroke-width": 0.2,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0.1,
-          "font-size": "2.5%",
           "font-family": "Cinzel",
+          "font-size": "2.5%",
           "font-style": null,
           "font-weight": 900,
+          "letter-spacing": 0.1,
           "style": "text-shadow: #d3c9ae 0px 0px 1px; text-transform: uppercase; transform: translate(0em, 1.7em)",
           "filter": null
         }
@@ -751,11 +751,11 @@
           "stroke-width": 0.5,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 1.2,
-          "font-size": "9%",
           "font-family": "Cinzel",
+          "font-size": "9%",
           "font-style": null,
           "font-weight": 900,
+          "letter-spacing": 1.2,
           "style": "text-shadow: #d3c9ae 0px 0px 2px; text-transform: uppercase;",
           "filter": null
         }
@@ -769,11 +769,11 @@
           "stroke-width": 0.3,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0.3,
-          "font-size": "5%",
           "font-family": "Cinzel",
+          "font-size": "5%",
           "font-style": null,
           "font-weight": 900,
+          "letter-spacing": 0.3,
           "style": "text-shadow: #d3c9ae 0px 0px 2px; text-transform: uppercase;",
           "filter": null
         }
@@ -787,11 +787,11 @@
           "stroke-width": 0.25,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0.1,
-          "font-size": "1%",
           "font-family": "Cinzel",
+          "font-size": "1%",
           "font-style": null,
           "font-weight": 900,
+          "letter-spacing": 0.1,
           "style": "text-shadow: #d3c9ae 0px 0px 2px;",
           "filter": null
         }
@@ -805,11 +805,11 @@
           "stroke-width": 0.25,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0.1,
-          "font-size": "1%",
           "font-family": "Cinzel",
+          "font-size": "1%",
           "font-style": null,
           "font-weight": 900,
+          "letter-spacing": 0.1,
           "style": "text-shadow: #d3c9ae 0px 0px 2px;",
           "filter": null
         }
@@ -823,11 +823,11 @@
           "stroke-width": 0.4,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0.8,
-          "font-size": "9%",
           "font-family": "Cinzel",
+          "font-size": "9%",
           "font-style": null,
           "font-weight": 900,
+          "letter-spacing": 0.8,
           "style": "text-shadow: #d3c9ae 0px 0px 2px; text-transform: uppercase;",
           "filter": null
         }

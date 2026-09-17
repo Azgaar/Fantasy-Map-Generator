@@ -17,7 +17,7 @@ import { FormDecoration } from "./decorate";
 import { effectFor, fitLabelRanges, type Selection } from "./effects";
 import { ElementsDialog } from "./elements-dialog";
 import { GROUP_SOURCES, type GroupEntry, listElements } from "./groups";
-import { PresetsDialog } from "./presets-dialog";
+import { PresetSelector } from "./preset-selector";
 
 const ELEMENT_ALIASES: Record<string, StyleElement> = {
   regions: "states",
@@ -50,7 +50,7 @@ const elementsDialog = new ElementsDialog(
   () => ({ element: elementSelect().value as StyleElement, group: groupSelect().value }),
   open
 );
-const presetsDialog = new PresetsDialog();
+const presetsDialog = new PresetSelector();
 
 function wire(): void {
   if (wired) return;

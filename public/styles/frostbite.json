@@ -589,11 +589,11 @@
           "stroke-width": 0,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0.1,
-          "font-size": "7%",
           "font-family": "Iceberg",
+          "font-size": "7%",
           "font-style": null,
           "font-weight": 400,
+          "letter-spacing": 0.1,
           "style": "text-shadow: -0.2px -0.2px 0 #f6fbfc, 0.35px 0.35px 0 #10222e; transform: translate(0em, 0.8em)",
           "filter": null
         }
@@ -607,11 +607,11 @@
           "stroke-width": 0.1,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0.1,
-          "font-size": "5%",
           "font-family": "Iceberg",
+          "font-size": "5%",
           "font-style": null,
           "font-weight": 400,
+          "letter-spacing": 0.1,
           "style": "font-variant: small-caps; text-shadow: -0.2px -0.2px 0 #f6fbfc, 0.35px 0.35px 0 #10222e; transform: translate(0em, 0.7em)",
           "filter": null
         }
@@ -625,11 +625,11 @@
           "stroke-width": 0.1,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0.1,
-          "font-size": "3%",
           "font-family": "Iceberg",
+          "font-size": "3%",
           "font-style": null,
           "font-weight": 400,
+          "letter-spacing": 0.1,
           "style": "font-variant: small-caps; text-shadow: -0.2px -0.2px 0 #f6fbfc, 0.35px 0.35px 0 #10222e; transform: translate(0em, 0.8em)",
           "filter": null
         }
@@ -643,11 +643,11 @@
           "stroke-width": 0.1,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0.1,
-          "font-size": "3%",
           "font-family": "Iceberg",
+          "font-size": "3%",
           "font-style": null,
           "font-weight": 400,
+          "letter-spacing": 0.1,
           "style": "font-variant: small-caps; text-shadow: -0.2px -0.2px 0 #f6fbfc, 0.35px 0.35px 0 #10222e; transform: translate(0em, 0.8em)",
           "filter": null
         }
@@ -661,11 +661,11 @@
           "stroke-width": 0.1,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0.1,
-          "font-size": "3%",
           "font-family": "Iceberg",
+          "font-size": "3%",
           "font-style": null,
           "font-weight": 400,
+          "letter-spacing": 0.1,
           "style": "font-variant: small-caps; text-shadow: -0.2px -0.2px 0 #f6fbfc, 0.35px 0.35px 0 #10222e; transform: translate(0em, 0.8em)",
           "filter": null
         }
@@ -679,11 +679,11 @@
           "stroke-width": 0.1,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0.1,
-          "font-size": "3%",
           "font-family": "Iceberg",
+          "font-size": "3%",
           "font-style": null,
           "font-weight": 400,
+          "letter-spacing": 0.1,
           "style": "font-variant: small-caps; text-shadow: -0.2px -0.2px 0 #f6fbfc, 0.35px 0.35px 0 #10222e; transform: translate(0em, 0.8em)",
           "filter": null
         }
@@ -697,11 +697,11 @@
           "stroke-width": 0.1,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0.1,
-          "font-size": "3%",
           "font-family": "Iceberg",
+          "font-size": "3%",
           "font-style": null,
           "font-weight": 400,
+          "letter-spacing": 0.1,
           "style": "font-variant: small-caps; text-shadow: -0.2px -0.2px 0 #f6fbfc, 0.35px 0.35px 0 #10222e; transform: translate(0em, 0.75em)",
           "filter": null
         }
@@ -715,11 +715,11 @@
           "stroke-width": 0.1,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0.1,
-          "font-size": "2.5%",
           "font-family": "Iceberg",
+          "font-size": "2.5%",
           "font-style": null,
           "font-weight": 400,
+          "letter-spacing": 0.1,
           "style": "font-variant: small-caps; text-shadow: -0.2px -0.2px 0 #f6fbfc, 0.35px 0.35px 0 #10222e; transform: translate(0em, 0.75em)",
           "filter": null
         }
@@ -733,11 +733,11 @@
           "stroke-width": 0.1,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0.1,
-          "font-size": "4%",
           "font-family": "Iceberg",
+          "font-size": "4%",
           "font-style": null,
           "font-weight": 400,
+          "letter-spacing": 0.1,
           "style": "font-variant: small-caps; text-shadow: -0.2px -0.2px 0 #f6fbfc, 0.35px 0.35px 0 #10222e; transform: translate(0em, 0.7em)",
           "filter": null
         }
@@ -751,11 +751,11 @@
           "stroke-width": 0,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 2,
-          "font-size": "14%",
           "font-family": "Iceberg",
+          "font-size": "14%",
           "font-style": null,
           "font-weight": 400,
+          "letter-spacing": 2,
           "style": "text-transform: uppercase; text-shadow: -0.25px -0.25px 0 #f6fbfc, 0.6px 0.6px 0 #110022",
           "filter": null
         }
@@ -769,11 +769,11 @@
           "stroke-width": 0.1,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0.2,
-          "font-size": "6%",
           "font-family": "Iceberg",
+          "font-size": "6%",
           "font-style": null,
           "font-weight": 400,
+          "letter-spacing": 0.2,
           "style": "text-transform: uppercase; text-shadow: -0.25px -0.25px 0 #f6fbfc, 0.6px 0.6px 0 #10222e",
           "filter": null
         }
@@ -787,11 +787,11 @@
           "stroke-width": 0,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "1%",
           "font-family": "Snowburst One",
+          "font-size": "1%",
           "font-style": null,
           "font-weight": 400,
+          "letter-spacing": 0,
           "style": "text-shadow: -0.2px -0.2px 0 #f6fbfc, 0.35px 0.35px 0 #10222e",
           "filter": null
         }
@@ -805,11 +805,11 @@
           "stroke-width": 0,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "1%",
           "font-family": "Tapestry",
+          "font-size": "1%",
           "font-style": null,
           "font-weight": 400,
+          "letter-spacing": 0,
           "style": "text-shadow: -0.2px -0.2px 0 #f6fbfc, 0.35px 0.35px 0 #10222e",
           "filter": null
         }
@@ -823,11 +823,11 @@
           "stroke-width": 0,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0.8,
-          "font-size": "5%",
           "font-family": "Tapestry",
+          "font-size": "5%",
           "font-style": null,
           "font-weight": 400,
+          "letter-spacing": 0.8,
           "style": "text-shadow: -0.2px -0.2px 0 #f6fbfc, 0.35px 0.35px 0 #10222e",
           "filter": null
         }

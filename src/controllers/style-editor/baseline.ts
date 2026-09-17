@@ -1,8 +1,8 @@
 // The preset the store is compared with: a row whose value differs from the current preset's is
 // "changed" and can be reset to it. The preset must define the path; what it never had is never marked
 import type { StyleElement, Styles as StylesData } from "@/generators/styles-schema";
-import { StylePresets } from "@/services/style-presets";
-import { parsePreset } from "../style-presets";
+import { StylePresetsService } from "@/services/style-presets";
+import { parsePreset } from "../style-preset";
 
 export type PathSelection = { element: StyleElement; group?: string; path: string[] };
 export type Diff = { changed: boolean; presetValue: unknown };
@@ -32,7 +32,7 @@ export class Baseline {
     const cached = Baseline.cache.get(name);
     if (cached) return cached;
 
-    const pending = StylePresets.load(name).then(({ name: resolved, styles }) => {
+    const pending = StylePresetsService.load(name).then(({ name: resolved, styles }) => {
       if (resolved !== name) return undefined;
       try {
         const record = parsePreset(styles);
@@ -42,7 +42,7 @@ export class Baseline {
         return undefined;
       }
     });
-    if (StylePresets.isSystem(name)) Baseline.cache.set(name, pending);
+    if (StylePresetsService.isSystem(name)) Baseline.cache.set(name, pending);
     return pending;
   }
 

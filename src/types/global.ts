@@ -17,7 +17,6 @@ declare global {
 
   // Elements the browser exposes as globals by their id. New code should use `ensureEl` instead
   var alertMessage: HTMLElement;
-  var stylePreset: HTMLSelectElement;
 
   // Vendored libraries, each loaded by its own <script> tag in index.html
   var $: (selector: any) => any; // jQuery + jQuery UI

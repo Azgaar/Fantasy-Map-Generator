@@ -589,11 +589,11 @@
           "stroke-width": 0.5,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "7%",
           "font-family": "Times New Roman",
+          "font-size": "7%",
           "font-style": "italic",
           "font-weight": null,
+          "letter-spacing": 0,
           "style": "transform: translate(0em, -0.45em)",
           "filter": null
         }
@@ -607,11 +607,11 @@
           "stroke-width": 0.5,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "6%",
           "font-family": "Times New Roman",
+          "font-size": "6%",
           "font-style": "italic",
           "font-weight": null,
+          "letter-spacing": 0,
           "style": "transform: translate(0em, -0.45em)",
           "filter": null
         }
@@ -625,11 +625,11 @@
           "stroke-width": 0.4,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "5%",
           "font-family": "Times New Roman",
+          "font-size": "5%",
           "font-style": "italic",
           "font-weight": null,
+          "letter-spacing": 0,
           "style": "transform: translate(0em, -0.45em)",
           "filter": null
         }
@@ -643,11 +643,11 @@
           "stroke-width": 0.4,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "4%",
           "font-family": "Times New Roman",
+          "font-size": "4%",
           "font-style": "italic",
           "font-weight": null,
+          "letter-spacing": 0,
           "style": "transform: translate(0em, -0.45em)",
           "filter": null
         }
@@ -661,11 +661,11 @@
           "stroke-width": 0.4,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "3%",
           "font-family": "Times New Roman",
+          "font-size": "3%",
           "font-style": "italic",
           "font-weight": null,
+          "letter-spacing": 0,
           "style": "transform: translate(0em, -0.45em)",
           "filter": null
         }
@@ -679,11 +679,11 @@
           "stroke-width": 0.4,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "3%",
           "font-family": "Times New Roman",
+          "font-size": "3%",
           "font-style": "italic",
           "font-weight": null,
+          "letter-spacing": 0,
           "style": "transform: translate(0em, -0.45em)",
           "filter": null
         }
@@ -697,11 +697,11 @@
           "stroke-width": 0.4,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "3%",
           "font-family": "Times New Roman",
+          "font-size": "3%",
           "font-style": "italic",
           "font-weight": null,
+          "letter-spacing": 0,
           "style": "transform: translate(0em, -0.45em)",
           "filter": null
         }
@@ -715,11 +715,11 @@
           "stroke-width": 0.4,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "3%",
           "font-family": "Times New Roman",
+          "font-size": "3%",
           "font-style": "italic",
           "font-weight": null,
+          "letter-spacing": 0,
           "style": "transform: translate(0em, -0.45em)",
           "filter": null
         }
@@ -733,11 +733,11 @@
           "stroke-width": 0.4,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "3%",
           "font-family": "Times New Roman",
+          "font-size": "3%",
           "font-style": "italic",
           "font-weight": null,
+          "letter-spacing": 0,
           "style": "transform: translate(0em, -0.45em)",
           "filter": null
         }
@@ -751,11 +751,11 @@
           "stroke-width": 3,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 3,
-          "font-size": "22%",
           "font-family": "Times New Roman",
+          "font-size": "22%",
           "font-style": null,
           "font-weight": null,
+          "letter-spacing": 3,
           "style": "text-shadow: white 0px 0px 4px; text-transform: uppercase",
           "filter": null
         }
@@ -769,11 +769,11 @@
           "stroke-width": 1,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0.2,
-          "font-size": "6%",
           "font-family": "Times New Roman",
+          "font-size": "6%",
           "font-style": null,
           "font-weight": null,
+          "letter-spacing": 0.2,
           "style": "text-shadow: white 0px 0px 4px; text-transform: uppercase",
           "filter": null
         }
@@ -787,11 +787,11 @@
           "stroke-width": 0.3,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "3%",
           "font-family": "Times New Roman",
+          "font-size": "3%",
           "font-style": "italic",
           "font-weight": null,
+          "letter-spacing": 0,
           "style": null,
           "filter": null
         }
@@ -805,11 +805,11 @@
           "stroke-width": 0.3,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "3%",
           "font-family": "Times New Roman",
+          "font-size": "3%",
           "font-style": "italic",
           "font-weight": null,
+          "letter-spacing": 0,
           "style": null,
           "filter": null
         }
@@ -823,11 +823,11 @@
           "stroke-width": 1,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 2,
-          "font-size": "10%",
           "font-family": "Times New Roman",
+          "font-size": "10%",
           "font-style": null,
           "font-weight": null,
+          "letter-spacing": 2,
           "style": null,
           "filter": null
         }

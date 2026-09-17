@@ -305,6 +305,19 @@ describe("per-attribute repair", () => {
     expect(parsed.temperature.attrs["font-size"]).toBe(Styles.defaults.temperature.attrs["font-size"]);
   });
 
+  test("a label group with no stroke width stores 0: unset would render at the SVG default of 1", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const doc = structuredClone(Styles.defaults) as any;
+    doc.labels.groups.capital.attrs.stroke = "#ffffff";
+    doc.labels.groups.capital.attrs["stroke-width"] = null; // pre-1.155 presets
+    delete doc.labels.groups.city.attrs["stroke-width"];
+    const parsed = Styles.parse(doc);
+    expect(parsed.labels.groups.capital.attrs.stroke).toBe("#ffffff");
+    expect(parsed.labels.groups.capital.attrs["stroke-width"]).toBe(0);
+    expect(parsed.labels.groups.city.attrs["stroke-width"]).toBe(0);
+    warn.mockRestore();
+  });
+
   test("a layer that cannot be repaired still falls back whole", () => {
     const parsed = Styles.parse({ ...Styles.defaults, provinces: "not a layer" });
     expect(parsed.provinces).toEqual(Styles.defaults.provinces);

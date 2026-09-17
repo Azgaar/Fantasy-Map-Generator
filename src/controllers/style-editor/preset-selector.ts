@@ -2,11 +2,11 @@
 // through the same confirmed path as the select; the dialog stays open and follows the change
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Controllers } from "@/controllers";
-import { StylePresets, SYSTEM_PRESETS } from "@/services/style-presets";
+import { StylePresetsService, SYSTEM_PRESETS } from "@/services/style-presets";
 import { VERSION } from "@/services/versioning";
 import { ensureEl, findEl } from "@/utils";
 
-const ID = "stylePresets";
+const ID = "presetSelector" as const;
 
 const STYLE = /* css */ `
   #${ID} { padding: .4em .5em; }
@@ -19,7 +19,7 @@ const STYLE = /* css */ `
   #${ID} .pc .name { display: block; text-transform: capitalize; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 `;
 
-export class PresetsDialog {
+export class PresetSelector {
   open(): void {
     if (findEl(ID)) return void this.render();
 
@@ -38,13 +38,9 @@ export class PresetsDialog {
       title: "Style presets",
       width: "36em",
       position: { my: "left top", at: "right+10 top", of: "#options" },
-      close: () => this.close()
+      close: () => destroyDialog(ID)
     });
     this.render();
-  }
-
-  close(): void {
-    destroyDialog(ID);
   }
 
   /** Re-render after the preset changed or a custom one was saved or removed; a no-op while closed */
@@ -60,17 +56,17 @@ export class PresetsDialog {
     const grid = findEl(ID)?.querySelector(".grid");
     if (!grid) return;
 
-    const cards = [...SYSTEM_PRESETS, ...StylePresets.listCustom()].map(name => {
+    const cards = [...SYSTEM_PRESETS, ...StylePresetsService.listCustom()].map(name => {
       const card = document.createElement("div");
       card.className = "pc";
       card.dataset.name = name;
-      card.dataset.tip = `Apply the ${StylePresets.displayName(name)} preset`;
+      card.dataset.tip = `Apply the ${StylePresetsService.displayName(name)} preset`;
       card.classList.toggle("on", name === this.current());
       // a custom preset, or a screenshot that fails to load, shows the neutral tile
-      const image = StylePresets.isSystem(name)
+      const image = StylePresetsService.isSystem(name)
         ? `<img src="./images/style-presets/${name}.png?v=${VERSION}" alt="" onerror="this.replaceWith('custom')" />`
         : "custom";
-      card.innerHTML = /* html */ `<div class="img">${image}</div><span class="name">${StylePresets.displayName(name)}</span>`;
+      card.innerHTML = /* html */ `<div class="img">${image}</div><span class="name">${StylePresetsService.displayName(name)}</span>`;
       return card;
     });
     grid.replaceChildren(...cards);

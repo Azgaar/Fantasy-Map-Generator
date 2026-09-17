@@ -9,21 +9,18 @@ import type { Styles as StylesData } from "@/generators/styles-schema";
 import { applyOceanPattern } from "@/renderers/draw-ocean";
 import { applyVignetteOptions } from "@/renderers/draw-vignette";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
-import { CUSTOM_PREFIX, StylePresets, SYSTEM_PRESETS } from "@/services/style-presets";
+import { CUSTOM_PREFIX, StylePresetsService, SYSTEM_PRESETS } from "@/services/style-presets";
 import { applyOption, downloadFile, ensureEl, isValidJSON, openURL, uploadFile } from "@/utils";
 
-const CONFIRMED_KEY = "styleChangeConfirmed"; // session-scoped: ask once per session
-
-const select = () => ensureEl<HTMLSelectElement>("stylePreset");
-
+const id = "stylePreset" as const;
 let wired = false;
 
 /** Fill the preset select from the system list and localStorage, and make it follow the map's preset */
 function init(): void {
-  const el = select();
+  const el = ensureEl<HTMLSelectElement>(id);
   el.replaceChildren(
     ...SYSTEM_PRESETS.map(name => new Option(name, name)),
-    ...StylePresets.listCustom().map(name => new Option(StylePresets.displayName(name), name))
+    ...StylePresetsService.listCustom().map(name => new Option(StylePresetsService.displayName(name), name))
   );
   if (!wired) {
     wired = true;
@@ -36,11 +33,11 @@ function init(): void {
 
 // the select follows options.map.style.preset: a preset this browser doesn't have falls back to default
 function syncSelect(): void {
-  const el = select();
+  const el = ensureEl<HTMLSelectElement>(id);
   const preset = options.map.style.preset || "default";
   const isKnown = Array.from(el.options).some(option => option.value === preset);
   el.value = el.dataset.old = isKnown ? preset : "default";
-  ensureEl("removeStyleButton").style.display = StylePresets.isSystem(el.value) ? "none" : "inline-block";
+  ensureEl("removeStyleButton").style.display = StylePresetsService.isSystem(el.value) ? "none" : "inline-block";
 }
 
 const isKnownStyleFormat = (json: unknown): boolean =>
@@ -95,11 +92,13 @@ function fillMissingLabelGroups(): void {
 
 /** The start-up path: the previously selected default or custom style */
 async function applyOnLoad(): Promise<void> {
-  const { name, styles: preset } = await StylePresets.load(options.map.style.preset || "default");
+  const { name, styles: preset } = await StylePresetsService.load(options.map.style.preset || "default");
   applyPreset(preset);
   options.map.style.preset = name; // the fallback preset, if the stored one is gone
   init();
 }
+
+const CONFIRMED_KEY = "fmg-style-change-confirmed"; // session-scoped: ask once per session
 
 /** Apply a preset the way the select does: once per session the user confirms losing unsaved changes */
 function requestChange(name: string): void {
@@ -114,13 +113,13 @@ function requestChange(name: string): void {
       void change(name);
     },
     onCancel: () => {
-      select().value = select().dataset.old ?? "default";
+      ensureEl<HTMLSelectElement>(id).value = ensureEl<HTMLSelectElement>(id).dataset.old ?? "default";
     }
   });
 }
 
 async function change(desired: string): Promise<void> {
-  const { name, styles: preset } = await StylePresets.load(desired);
+  const { name, styles: preset } = await StylePresetsService.load(desired);
   options.map.style.preset = name;
   Options.save();
   applyWithUiRefresh(preset);
@@ -167,13 +166,15 @@ function openSaver(): void {
   fileInput.style.display = "none";
   dialog.append(fileInput);
 
-  nameInput.value = select().value.replace(CUSTOM_PREFIX, "");
+  nameInput.value = ensureEl<HTMLSelectElement>(id).value.replace(CUSTOM_PREFIX, "");
   jsonInput.value = JSON.stringify(styles, null, 2);
 
   const checkName = () => {
     const name = CUSTOM_PREFIX + nameInput.value;
-    if (StylePresets.isSystem(name) || StylePresets.isSystem(nameInput.value)) nameTip.textContent = "default";
-    else if (Array.from(select().options).some(option => option.value === name)) nameTip.textContent = "existing";
+    if (StylePresetsService.isSystem(name) || StylePresetsService.isSystem(nameInput.value))
+      nameTip.textContent = "default";
+    else if (Array.from(ensureEl<HTMLSelectElement>(id).options).some(option => option.value === name))
+      nameTip.textContent = "existing";
     else nameTip.textContent = "new";
   };
   checkName();
@@ -190,10 +191,10 @@ function openSaver(): void {
       return tip("You cannot overwrite default preset, please change the name", false, "error");
 
     const name = CUSTOM_PREFIX + desiredName;
-    applyOption(select(), name, `${desiredName} [custom]`);
+    applyOption(ensureEl<HTMLSelectElement>(id), name, `${desiredName} [custom]`);
     options.map.style.preset = name;
     Options.save();
-    StylePresets.saveCustom(name, json);
+    StylePresetsService.saveCustom(name, json);
     applyWithUiRefresh(JSON.parse(json));
     tip("Style preset is saved and applied", false, "success", 4000);
     $(dialog).dialog("close");
@@ -238,19 +239,19 @@ function openSaver(): void {
 }
 
 function remove(): void {
-  const name = select().value;
-  if (StylePresets.isSystem(name)) return void tip("Cannot remove system preset", false, "error");
+  const name = ensureEl<HTMLSelectElement>(id).value;
+  if (StylePresetsService.isSystem(name)) return void tip("Cannot remove system preset", false, "error");
 
   confirmationDialog({
     title: "Remove style preset",
     message: "Are you sure you want to remove the style preset? This action cannot be undone.",
     confirm: "Remove",
     onConfirm: () => {
-      StylePresets.removeCustom(name);
-      select().selectedOptions[0]?.remove();
+      StylePresetsService.removeCustom(name);
+      ensureEl<HTMLSelectElement>(id).selectedOptions[0]?.remove();
       void change("default");
     }
   });
 }
 
-export const StylePresetsEditor = { init, applyOnLoad, applyPreset, requestChange, change, openSaver, remove };
+export const StylePreset = { init, applyOnLoad, applyPreset, requestChange, change, openSaver, remove };

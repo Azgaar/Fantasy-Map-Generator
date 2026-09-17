@@ -589,11 +589,11 @@
           "stroke-width": 0,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "6%",
           "font-family": "Almendra SC",
+          "font-size": "6%",
           "font-style": null,
           "font-weight": null,
+          "letter-spacing": 0,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.5em)",
           "filter": null
         }
@@ -607,11 +607,11 @@
           "stroke-width": 0,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "5%",
           "font-family": "Almendra SC",
+          "font-size": "5%",
           "font-style": null,
           "font-weight": null,
+          "letter-spacing": 0,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
           "filter": null
         }
@@ -625,11 +625,11 @@
           "stroke-width": 0,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "2%",
           "font-family": "Almendra SC",
+          "font-size": "2%",
           "font-style": null,
           "font-weight": null,
+          "letter-spacing": 0,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.5em)",
           "filter": null
         }
@@ -643,11 +643,11 @@
           "stroke-width": 0,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "2%",
           "font-family": "Almendra SC",
+          "font-size": "2%",
           "font-style": null,
           "font-weight": null,
+          "letter-spacing": 0,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.5em)",
           "filter": null
         }
@@ -661,11 +661,11 @@
           "stroke-width": 0,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "2%",
           "font-family": "Almendra SC",
+          "font-size": "2%",
           "font-style": null,
           "font-weight": null,
+          "letter-spacing": 0,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.5em)",
           "filter": null
         }
@@ -679,11 +679,11 @@
           "stroke-width": 0,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "2%",
           "font-family": "Almendra SC",
+          "font-size": "2%",
           "font-style": null,
           "font-weight": null,
+          "letter-spacing": 0,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.5em)",
           "filter": null
         }
@@ -697,11 +697,11 @@
           "stroke-width": 0,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "3%",
           "font-family": "Almendra SC",
+          "font-size": "3%",
           "font-style": null,
           "font-weight": null,
+          "letter-spacing": 0,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
           "filter": null
         }
@@ -715,11 +715,11 @@
           "stroke-width": 0,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "2%",
           "font-family": "Almendra SC",
+          "font-size": "2%",
           "font-style": null,
           "font-weight": null,
+          "letter-spacing": 0,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
           "filter": null
         }
@@ -733,11 +733,11 @@
           "stroke-width": 0,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "4%",
           "font-family": "Almendra SC",
+          "font-size": "4%",
           "font-style": null,
           "font-weight": null,
+          "letter-spacing": 0,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
           "filter": null
         }
@@ -751,11 +751,11 @@
           "stroke-width": 0,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "22%",
           "font-family": "Almendra SC",
+          "font-size": "22%",
           "font-style": null,
           "font-weight": null,
+          "letter-spacing": 0,
           "style": "text-shadow: white 0px 0px 4px",
           "filter": null
         }
@@ -769,11 +769,11 @@
           "stroke-width": 0,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "6%",
           "font-family": "Cinzel",
+          "font-size": "6%",
           "font-style": null,
           "font-weight": null,
+          "letter-spacing": 0,
           "style": "text-shadow: white 0px 0px 4px",
           "filter": null
         }
@@ -787,11 +787,11 @@
           "stroke-width": 0,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "1.5%",
           "font-family": "Lugrasimo",
+          "font-size": "1.5%",
           "font-style": null,
           "font-weight": null,
+          "letter-spacing": 0,
           "style": "text-shadow: white 0px 1px 6px",
           "filter": null
         }
@@ -805,11 +805,11 @@
           "stroke-width": 0,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "1.5%",
           "font-family": "Lugrasimo",
+          "font-size": "1.5%",
           "font-style": null,
           "font-weight": null,
+          "letter-spacing": 0,
           "style": "text-shadow: white 0px 1px 6px",
           "filter": null
         }
@@ -823,11 +823,11 @@
           "stroke-width": 0,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "18%",
           "font-family": "Almendra SC",
+          "font-size": "18%",
           "font-style": null,
           "font-weight": null,
+          "letter-spacing": 0,
           "style": "text-shadow: white 0px 0px 4px",
           "filter": null
         }
@@ -1192,7 +1192,7 @@
     "options": {
       "size": 3,
       "fontSize": 5,
-      "icon": "\u2696\ufe0f"
+      "icon": "⚖️"
     }
   },
   "trade": {

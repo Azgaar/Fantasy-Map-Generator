@@ -62,6 +62,13 @@ const strokeWidth = meta(z.number().min(0), {
   range: [0, 10],
   tip: "Set stroke width"
 }).nullable();
+// label groups are the only holder of their width: unset would render at the SVG default of 1, so 0 is stored
+const labelStrokeWidth = meta(z.number().min(0), {
+  group: "Stroke",
+  label: "Width",
+  range: [0, 10],
+  tip: "Set stroke width"
+}).default(0);
 const strokeDasharray = meta(z.string().regex(FORMATS.strokeDasharray), {
   group: "Stroke",
   label: "Dash array",
@@ -126,7 +133,7 @@ const labelStyle = meta(z.string().refine(isLabelStyle), {
   control: "labelStyle",
   group: "Text",
   label: "Style",
-  tip: "Set text shadow, letter case and label shift"
+  tip: "Set text shadow, case and shift"
 }).nullable();
 
 const strokeAttrs = {
@@ -563,6 +570,7 @@ export const stylesSchema = z.strictObject({
           opacity,
           ...fillAttrs,
           ...strokeAttrs,
+          "stroke-width": labelStrokeWidth,
           "font-family": fontFamily,
           "font-size": fontSize,
           "font-style": fontStyle,

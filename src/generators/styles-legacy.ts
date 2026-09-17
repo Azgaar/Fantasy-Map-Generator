@@ -642,7 +642,7 @@ export function labelGroupFromLegacy(legacy: unknown): Styles["labels"]["groups"
       fill: strOr(bag.fill, "#3e3e4b"),
       "fill-opacity": numOr(bag["fill-opacity"], null),
       stroke: strOr(bag.stroke, "#3a3a3a"),
-      "stroke-width": numOr(bag["stroke-width"], 0),
+      "stroke-width": numOr(bag["stroke-width"], 0) ?? 0,
       "stroke-dasharray": strOr(bag["stroke-dasharray"], null),
       "stroke-linecap": oneOf(bag["stroke-linecap"], LINECAPS),
       "letter-spacing": numOr(bag["letter-spacing"], 0),

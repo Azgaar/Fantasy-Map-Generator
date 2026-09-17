@@ -2,6 +2,8 @@
 //   npx vite-node scripts/convert-style-presets.mjs             legacy selector-keyed presets in public/styles → store format
 //   npx vite-node scripts/convert-style-presets.mjs --normalize  "" → null for filter/mask/dasharray, "inherit" linecaps → null,
 //                                                                over the presets, default-styles.json and the test fixtures
+//   npx vite-node scripts/convert-style-presets.mjs --schema     presets and default-styles.json rewritten as the schema
+//                                                                parses them: newer sections filled in, keys in schema order
 import fs from "node:fs";
 import path from "node:path";
 
@@ -19,6 +21,7 @@ if (typeof globalThis.document === "undefined") {
 }
 
 const { isLegacyPreset, presetFromLegacy, normalizeStyles } = await import("../src/generators/styles-legacy.ts");
+const { stylesSchema } = await import("../src/generators/styles-schema.ts");
 
 const read = file => JSON.parse(fs.readFileSync(file, "utf8"));
 const write = (file, json) => fs.writeFileSync(file, `${JSON.stringify(json, null, 2)}\n`);
@@ -27,8 +30,11 @@ const presets = fs
   .filter(f => f.endsWith(".json"))
   .map(f => path.join("public/styles", f));
 
-if (process.argv.includes("--normalize")) {
-  const records = [...presets, "src/generators/default-styles.json"];
+const records = [...presets, "src/generators/default-styles.json"];
+
+if (process.argv.includes("--schema")) {
+  for (const file of records) rewrite(file, json => stylesSchema.parse(normalizeStyles(json)));
+} else if (process.argv.includes("--normalize")) {
   const legacyFixtures = fs
     .readdirSync("src/generators")
     .filter(f => f.endsWith(".fixture.json"))
