@@ -22,7 +22,7 @@ interface MapBrushOptions {
   spacing?: (radius: number) => number;
   /** stamp where the stroke begins, before any movement. Off for a tool whose click means something else */
   stampOnStart?: boolean;
-  /** also stamp each drag position; for assignment tools, not cumulative height/vertex edits */
+  /** Stamp each drag position too; only for non-accumulating tools. */
   stampOnMove?: boolean;
   /** a stroke begins: return what to do with the points it covers */
   onStart?: (point: Point, radius: number) => Stamp | undefined;

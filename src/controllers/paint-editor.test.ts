@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { Point } from "@/types/global";
 import type { PaintEditorOptions } from "./paint-editor";
 import { PaintEditor } from "./paint-editor";
 import "@/generators/pack-generator"; // registers the Pack global the editor finds cells with
@@ -26,7 +27,7 @@ const getOptions = (overrides: Partial<PaintEditorOptions> = {}): PaintEditorOpt
 });
 
 async function dragBrush(
-  points: [number, number][] = [
+  points: Point[] = [
     [1, 1],
     [2, 2]
   ]
@@ -190,17 +191,10 @@ describe("PaintEditor", () => {
     const onApply = vi.fn();
     PaintEditor.open(getOptions({ onApply })); // default radius 12: stamps every 6px
 
-    const viewbox = document.getElementById("viewbox")!;
-    const eventView = document.defaultView!;
-    const mouseEvent = (type: string, init: MouseEventInit) => {
-      const event = new eventView.MouseEvent(type, init);
-      Object.defineProperty(event, "view", { value: eventView });
-      return event;
-    };
-    viewbox.dispatchEvent(mouseEvent("mousedown", { bubbles: true, button: 0, clientX: 1, clientY: 1 }));
-    eventView.dispatchEvent(mouseEvent("mousemove", { bubbles: true, buttons: 1, clientX: 61, clientY: 1 })); // one event
-    eventView.dispatchEvent(mouseEvent("mouseup", { bubbles: true, button: 0, clientX: 61, clientY: 1 }));
-    await new Promise(resolve => setTimeout(resolve, 0));
+    await dragBrush([
+      [1, 1],
+      [61, 1]
+    ]);
     document.getElementById("paintEditorApply")?.click();
 
     const changes = onApply.mock.calls[0][0] as ReadonlyMap<number, number>;
