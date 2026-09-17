@@ -9,8 +9,9 @@ vi.mock("@/services/style-presets", () => ({
 }));
 
 import { StylePresetsService } from "@/services/style-presets";
+import type { PathSelection } from "@/types/styles";
 import { parsePreset } from "../style-preset";
-import { Baseline, type PathSelection, storePath } from "./baseline";
+import { Baseline, storePath } from "./baseline";
 
 const sel = (element: string, group?: string, path?: string[]): PathSelection =>
   ({ element, group, path: path ?? (group ? [element, "groups", group] : [element]) }) as PathSelection;

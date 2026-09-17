@@ -1,6 +1,9 @@
-import type { Styles } from "@/generators/styles-schema";
+import type { StylesData } from "@/types/styles";
 
-type VignettePreset = { attrs: Partial<Styles["vignette"]["attrs"]>; options: Partial<Styles["vignette"]["options"]> };
+type VignettePreset = {
+  attrs: Partial<StylesData["vignette"]["attrs"]>;
+  options: Partial<StylesData["vignette"]["options"]>;
+};
 export const VIGNETTE_PRESETS: Record<string, VignettePreset> = {
   default: {
     attrs: { opacity: 0.3, fill: "#000000", filter: null },

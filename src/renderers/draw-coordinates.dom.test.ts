@@ -15,7 +15,7 @@ beforeEach(() => {
 });
 
 test("drawCoordinates sizes labels from the store, ignoring data-size", () => {
-  styles.coordinates.options.fontSize = 20;
+  styles.coordinates.attrs["font-size"] = "20px";
   document.getElementById("coordinates")!.setAttribute("data-size", "99");
 
   drawCoordinates();

@@ -2,8 +2,8 @@
 import "./styles";
 import { Layers } from "@/components/layers";
 import { FONT_WEIGHTS } from "@/data/style-choices";
+import type { StylesData } from "@/types/styles";
 import { safeParseJSON } from "@/utils";
-import type { Styles } from "./styles-schema";
 import { stylesSchema } from "./styles-schema";
 
 // selector -> store path, plus the legacy-key -> option-name renames for that node.
@@ -12,6 +12,7 @@ type PresetRoute = {
   options?: Record<string, string>;
   bools?: string[];
   strings?: string[]; // options that must stay strings
+  rename?: Record<string, string>; // legacy attr -> the attr the store keeps it as
   kind?: "label" | "burg" | "route" | "lake";
   drop?: string[];
   ownAttrs?: boolean;
@@ -23,13 +24,14 @@ const SELECTOR_ALIASES: Record<string, string> = {
 };
 
 const PRESET_ROUTES: Record<string, PresetRoute> = {
-  "#map": { path: ["map"], options: { "data-filter": "dataFilter" }, drop: ["background-color"] },
-  "#armies": { path: ["military"], options: { "font-size": "fontSize", "box-size": "boxSize" } },
+  "#map": { path: ["map"], drop: ["background-color", "data-filter"] }, // the filter attr carries the pick
+  "#armies": { path: ["military"], options: { "box-size": "boxSize" } },
   "#biomes": { path: ["biomes"] },
   "#cells": { path: ["cells"] },
   "#gridOverlay": { path: ["grid"], options: { type: "type", scale: "scale", dx: "dx", dy: "dy" } },
-  "#coordinates": { path: ["coordinates"], options: { "data-size": "fontSize", "font-size": "fontSize" } },
-  "#compass": { path: ["compass"] },
+  // #coordinates' font-size is the zoom-derived render value; data-size is the base
+  "#coordinates": { path: ["coordinates"], rename: { "data-size": "font-size" }, drop: ["font-size"] },
+  "#compass": { path: ["compass"], drop: ["shape-rendering"] },
   "#compass > use": { path: ["compass", "compassRose"] },
   "#rivers": { path: ["rivers"] },
   "#freshwater": { path: ["lakes", "groups", "freshwater"] },
@@ -38,7 +40,7 @@ const PRESET_ROUTES: Record<string, PresetRoute> = {
   "#frozen": { path: ["lakes", "groups", "frozen"] },
   "#lava": { path: ["lakes", "groups", "lava"] },
   "#dry": { path: ["lakes", "groups", "dry"] },
-  "#sea_island": { path: ["coastline", "sea_island"], options: { "auto-filter": "autoFilter" } },
+  "#sea_island": { path: ["coastline", "sea_island"], drop: ["auto-filter"] },
   "#lake_island": { path: ["coastline", "lake_island"] },
   "#terrs > #landHeights": {
     path: ["heightmap", "landHeights"],
@@ -66,7 +68,8 @@ const PRESET_ROUTES: Record<string, PresetRoute> = {
   "#relig": { path: ["religions"] },
   "#cults": { path: ["cultures"] },
   "#statesBody": { path: ["states", "statesBody"] },
-  "#statesHalo": { path: ["states", "statesHalo"], options: { "data-width": "width" } },
+  // #statesHalo's stroke-width is the zoom-derived render value; data-width is the base
+  "#statesHalo": { path: ["states", "statesHalo"], rename: { "data-width": "stroke-width" }, drop: ["stroke-width"] },
   "#provs": { path: ["provinces"], drop: ["data-size", "fill", "font-size", "font-family"] },
   "#zones": { path: ["zones"] },
   "#stateBorders": { path: ["borders", "stateBorders"] },
@@ -75,7 +78,7 @@ const PRESET_ROUTES: Record<string, PresetRoute> = {
   "#trails": { path: ["routes", "groups", "trails"] },
   "#searoutes": { path: ["routes", "groups", "searoutes"] },
   "#journeys": { path: ["journeys"] },
-  "#temperature": { path: ["temperature"] },
+  "#temperature": { path: ["temperature"], rename: { opacity: "stroke-opacity" } },
   "#ice": { path: ["ice"] },
   "#prec": { path: ["precipitation"] },
   "#population": { path: ["population"] },
@@ -92,12 +95,12 @@ const PRESET_ROUTES: Record<string, PresetRoute> = {
   "#goodsBurgs": { path: ["goods", "goodsBurgs"], options: { "data-size": "size" } },
   "#markets": {
     path: ["markets"],
-    options: { "data-size": "size", "font-size": "fontSize", "data-icon": "icon" },
+    options: { "data-size": "size", "font-size": "iconSize", "data-icon": "icon" },
     strings: ["icon"]
   },
   "#tradeAnimation": { path: ["trade"] },
-  "#markers": { path: ["markers"], options: { rescale: "rescale" } },
-  "#ruler": { path: ["rulers"], options: { "data-size": "fontSize", "font-size": "fontSize" } },
+  "#markers": { path: ["markers"], drop: ["rescale"] }, // moved to options.map.markers.resizeOnZoom
+  "#ruler": { path: ["rulers"], rename: { "data-size": "font-size" } },
   "#scaleBar": {
     path: ["scaleBar"],
     options: { "data-bar-size": "barSize", "data-x": "x", "data-y": "y", "data-label": "label" },
@@ -109,13 +112,9 @@ const PRESET_ROUTES: Record<string, PresetRoute> = {
   },
   "#legend": {
     path: ["legend"],
-    options: {
-      "data-size": "fontSize",
-      "font-size": "fontSize",
-      "data-x": "x",
-      "data-y": "y",
-      "data-columns": "columns"
-    }
+    options: { "data-columns": "columns" },
+    rename: { "data-size": "font-size" },
+    drop: ["data-x", "data-y"]
   },
   "#legendBox": { path: ["legend", "box"] },
   "#fogging": { path: ["fogging"] },
@@ -127,7 +126,7 @@ const PRESET_ROUTES: Record<string, PresetRoute> = {
   },
   "#oceanLayers": { path: ["ocean", "oceanLayers"], options: { layers: "outline" }, strings: ["outline"] },
   "#oceanBase": { path: ["ocean", "base"] },
-  "#oceanicPattern": { path: ["ocean"], options: { href: "pattern", opacity: "patternOpacity" } },
+  "#oceanicPattern": { path: ["ocean", "pattern"] },
   "#landmass": { path: ["landmass"] }
 };
 
@@ -185,7 +184,7 @@ function migrateLegacyStyleObj(obj: unknown): void {
     };
 }
 
-export function stylesFromMap(root: ParentNode = document): Styles {
+export function stylesFromMap(root: ParentNode = document): StylesData {
   const bags: Record<string, Record<string, unknown>> = {};
 
   for (const [selector, attrs] of Object.entries(harvestAttributes())) {
@@ -268,10 +267,6 @@ export function harvestStylesFromSvg({ hasStyleRecord = false } = {}): void {
     }
   }
   harvested.relief.options = structuredClone(styles.relief.options);
-  // post-migration maps carry no rescale/data-width attrs, so the store owns these
-  // options; a loaded old map's attrs win here until the load-time strip removes them
-  if (!document.getElementById("markers")?.hasAttribute("rescale"))
-    harvested.markers.options = structuredClone(styles.markers.options);
 
   // the pre-v1.150 style editor wrote to the layer group itself whenever the layer had no groups
   const strandedOpacity: Record<(typeof STRANDED_OPACITY_LAYERS)[number], { attrs: { opacity: number | null } }[]> = {
@@ -291,19 +286,6 @@ export function harvestStylesFromSvg({ hasStyleRecord = false } = {}): void {
     for (const group of groups) group.attrs.opacity = Number(opacity) || null;
   }
 
-  if (!document.getElementById("statesHalo")?.hasAttribute("data-width"))
-    harvested.states.statesHalo.options = structuredClone(styles.states.statesHalo.options);
-  // gated on data-size alone: #coordinates' font-size is the zoom-derived render value, never the base
-  if (!document.getElementById("coordinates")?.hasAttribute("data-size"))
-    harvested.coordinates.options = structuredClone(styles.coordinates.options);
-  if (!document.getElementById("ruler")?.hasAttribute("data-size"))
-    harvested.rulers.options = structuredClone(styles.rulers.options);
-  if (!document.getElementById("legend")?.hasAttribute("data-size"))
-    harvested.legend.options.fontSize = styles.legend.options.fontSize;
-  if (!document.getElementById("legend")?.hasAttribute("data-x")) {
-    harvested.legend.options.x = styles.legend.options.x;
-    harvested.legend.options.y = styles.legend.options.y;
-  }
   if (!document.getElementById("legend")?.hasAttribute("data-columns"))
     harvested.legend.options.columns = styles.legend.options.columns;
   for (const key of ["stateEmblems", "provinceEmblems", "burgEmblems"] as const) {
@@ -325,12 +307,8 @@ export function harvestStylesFromSvg({ hasStyleRecord = false } = {}): void {
     harvested.military.options = structuredClone(styles.military.options);
   if (!document.getElementById("gridOverlay")?.hasAttribute("type"))
     harvested.grid.options = structuredClone(styles.grid.options);
-  if (!document.getElementById("map")?.hasAttribute("data-filter"))
-    harvested.map.options.dataFilter = styles.map.options.dataFilter;
-  if (!document.getElementById("sea_island")?.hasAttribute("auto-filter"))
-    harvested.coastline.sea_island.options.autoFilter = styles.coastline.sea_island.options.autoFilter;
   if (!document.getElementById("markets")?.hasAttribute("font-size"))
-    harvested.markets.options.fontSize = styles.markets.options.fontSize;
+    harvested.markets.options.iconSize = styles.markets.options.iconSize;
   if (!document.getElementById("markets")?.hasAttribute("data-icon"))
     harvested.markets.options.icon = styles.markets.options.icon;
   if (!document.getElementById("goodsIcons")?.hasAttribute("data-circle"))
@@ -390,6 +368,15 @@ function applyPresetBag(
 ): void {
   const rest: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(bag)) if (key !== "id" && !route.drop?.includes(key)) rest[key] = value;
+  for (const [from, to] of Object.entries(route.rename ?? {})) {
+    if (!(from in rest)) continue;
+    if (rest[to] != null && rest[to] !== rest[from]) {
+      fail(onUnknown, `unknown legacy attribute "${from}" on "${selector}" conflicts with "${to}"`);
+      continue;
+    }
+    rest[to] = rest[from];
+    delete rest[from];
+  }
 
   const seen: Record<string, unknown> = {};
   for (const [legacyKey, optionKey] of Object.entries(route.options ?? {})) {
@@ -429,7 +416,14 @@ export function harvestAttributes(): Record<string, string[]> {
   const table: Record<string, string[]> = {};
   for (const [selector, route] of Object.entries(PRESET_ROUTES)) {
     const attrs = route.ownAttrs === false ? [] : attrKeysAt(route.path);
-    table[selector] = [...new Set([...attrs, ...Object.keys(route.options ?? {}), ...(route.drop ?? [])])];
+    table[selector] = [
+      ...new Set([
+        ...attrs,
+        ...Object.keys(route.options ?? {}),
+        ...Object.keys(route.rename ?? {}),
+        ...(route.drop ?? [])
+      ])
+    ];
   }
   return table;
 }
@@ -559,8 +553,47 @@ const fontSizeWithUnit = (path: string[], value: string): string => {
   return `${size}${path[0] === "labels" && path[1] === "groups" ? "%" : "px"}`;
 };
 
-/** Rewrite a store-format record in place so its string attrs match the schema formats */
+// v1.155.0 folded the fields that mirrored or duplicated an attr into the attr itself
+function upgradeShape(record: any): void {
+  const px = (n: unknown) => (typeof n === "number" ? `${n}px` : n);
+  const attrs = (node: any) => (node.attrs ??= {});
+  // an option that became an attr; the options bag goes when nothing is left in it
+  const toAttr = (node: any, option: string, attr: string, map: (v: unknown) => unknown = v => v) => {
+    if (node?.options?.[option] !== undefined) attrs(node)[attr] = map(node.options[option]);
+    delete node?.options?.[option];
+    if (node?.options && !Object.keys(node.options).length) delete node.options;
+  };
+  const rename = (bag: any, from: string, to: string) => {
+    if (bag?.[from] === undefined) return;
+    bag[to] = bag[from];
+    delete bag[from];
+  };
+
+  toAttr(record.map, "dataFilter", "filter", picked => (picked ? `url(#filter-${picked})` : null));
+  if (record.ocean?.options && "pattern" in record.ocean.options) {
+    const { pattern, patternOpacity } = record.ocean.options;
+    record.ocean.pattern = { attrs: { href: pattern, opacity: patternOpacity ?? 1 } };
+    delete record.ocean.options.pattern;
+    delete record.ocean.options.patternOpacity;
+  }
+  toAttr(record.states?.statesHalo, "width", "stroke-width");
+  toAttr(record.military, "fontSize", "font-size", px);
+  toAttr(record.coordinates, "fontSize", "font-size", px);
+  toAttr(record.rulers, "fontSize", "font-size", px);
+  toAttr(record.legend, "fontSize", "font-size", px);
+  for (const key of ["x", "y"]) delete record.legend?.options?.[key];
+  if (record.scaleBar?.attrs) record.scaleBar.attrs["font-size"] = px(record.scaleBar.attrs["font-size"] ?? 10);
+  rename(record.temperature?.attrs, "opacity", "stroke-opacity");
+  rename(record.markets?.options, "fontSize", "iconSize");
+  delete record.markers?.options;
+  delete record.coastline?.sea_island?.options;
+  delete record.compass?.attrs?.["shape-rendering"];
+  delete record.heightmap?.landHeights?.options?.render;
+}
+
+/** Rewrite a store-format record in place so it matches the current schema: the shape and the string formats */
 export function normalizeStyles<T>(record: T): T {
+  if (typeof record === "object" && record !== null) upgradeShape(record);
   const visit = (node: unknown, path: string[], bag: boolean): void => {
     if (typeof node !== "object" || node === null) return;
     for (const [key, value] of Object.entries(node)) {
@@ -594,7 +627,7 @@ export function isStoreStyles(json: unknown): boolean {
 export function presetFromLegacy(
   legacy: Record<string, Record<string, unknown>>,
   opts: { onUnknown?: "throw" | "skip" } = {}
-): Styles {
+): StylesData {
   const onUnknown = opts.onUnknown ?? "throw";
   const built = structuredClone(Styles.defaults) as any;
 
@@ -633,7 +666,7 @@ export function presetFromLegacy(
   return Styles.parse(normalizeStyles(built));
 }
 
-export function labelGroupFromLegacy(legacy: unknown): Styles["labels"]["groups"][string] {
+export function labelGroupFromLegacy(legacy: unknown): StylesData["labels"]["groups"][string] {
   const bag = legacy as Record<string, unknown>;
   const opacity = numOr(bag.opacity, 1);
   return {
@@ -672,7 +705,7 @@ export function stripDisplay(style: string | null): string | null {
 
 // legacy wrote stored burg-group bags to the DOM verbatim with no per-key defaults; only
 // size and icon are required by the renderer (the schema turns the burg default into the anchor for ports)
-export function burgGroupFromLegacy(legacy: unknown): Styles["burgIcons"]["burgIcons"]["groups"][string] {
+export function burgGroupFromLegacy(legacy: unknown): StylesData["burgIcons"]["burgIcons"]["groups"][string] {
   const bag = legacy as Record<string, unknown>;
   return {
     attrs: {
@@ -694,7 +727,7 @@ export function burgGroupFromLegacy(legacy: unknown): Styles["burgIcons"]["burgI
   };
 }
 
-function routeGroupFromLegacy(legacy: object): Styles["routes"]["groups"][string] {
+function routeGroupFromLegacy(legacy: object): StylesData["routes"]["groups"][string] {
   const bag = legacy as Record<string, unknown>;
   return {
     attrs: {
@@ -709,7 +742,7 @@ function routeGroupFromLegacy(legacy: object): Styles["routes"]["groups"][string
   };
 }
 
-type LakeGroupStyle = Styles["lakes"]["groups"][string];
+type LakeGroupStyle = StylesData["lakes"]["groups"][string];
 
 // a custom lake group: the template's attrs under whatever the legacy bag carries
 function lakeGroupFromLegacy(legacy: object, template: LakeGroupStyle = Styles.defaults.lakes.groups.freshwater) {
@@ -762,6 +795,7 @@ function coerce(v: unknown): unknown {
   return v === "null" ? null : v;
 }
 
+// a bare number for a string attr keeps its value as a string; a font size gets its unit in normalizeStyles
 function coerceLegacyAttr(key: string, value: unknown): unknown {
-  return key === "stroke-dasharray" && typeof value === "number" ? String(value) : coerce(value);
+  return ["stroke-dasharray", "font-size"].includes(key) && typeof value === "number" ? String(value) : coerce(value);
 }

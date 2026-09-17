@@ -96,49 +96,35 @@ test("a legacy style record with an empty burg/anchor record harvests that recor
   Styles.set(structuredClone(Styles.defaults));
 });
 
-test("save sync keeps store-authoritative zoom options when the DOM lacks the attrs", () => {
-  document.body.innerHTML = `<svg id="map"><g id="markers"></g><g id="regions"><g id="statesHalo"></g></g></svg>`;
-  styles.markers.options.rescale = 0;
-  styles.states.statesHalo.options.width = 7;
+test("the halo's zoom-derived stroke-width is dropped: data-width is the base, the default stands in for it", () => {
+  document.body.innerHTML = `<svg id="map"><g id="markers" rescale="1"></g><g id="regions"><g id="statesHalo" stroke-width="0.7"></g></g></svg>`;
   harvestStylesFromSvg();
-  expect(styles.markers.options.rescale).toBe(0);
-  expect(styles.states.statesHalo.options.width).toBe(7);
+  expect(styles.states.statesHalo.attrs["stroke-width"]).toBe(Styles.defaults.states.statesHalo.attrs["stroke-width"]);
+  expect(styles.markers).toEqual(Styles.defaults.markers); // rescale is a map option now
+  document.body.innerHTML = `<svg id="map"><g id="regions"><g id="statesHalo" data-width="13" stroke-width="0.7"></g></g></svg>`;
+  harvestStylesFromSvg();
+  expect(styles.states.statesHalo.attrs["stroke-width"]).toBe(13);
 });
 
-test("save sync lets an old map's attrs win when present", () => {
-  document.body.innerHTML = `<svg id="map"><g id="markers" rescale="1"></g><g id="regions"><g id="statesHalo" data-width="13"></g></g></svg>`;
-  styles.markers.options.rescale = 0;
-  harvestStylesFromSvg();
-  expect(styles.markers.options.rescale).toBe(1);
-  expect(styles.states.statesHalo.options.width).toBe(13);
-});
-
-test("save sync keeps the store's coordinates size when data-size is absent, even beside a derived font-size", () => {
+test("the coordinates' zoom-derived font-size is dropped: data-size is the base", () => {
   document.body.innerHTML = `<svg id="map"><g id="coordinates" font-size="6.6"></g></svg>`;
-  styles.coordinates.options.fontSize = 20;
   harvestStylesFromSvg();
-  expect(styles.coordinates.options.fontSize).toBe(20);
+  expect(styles.coordinates.attrs["font-size"]).toBe(Styles.defaults.coordinates.attrs["font-size"]);
+  document.body.innerHTML = `<svg id="map"><g id="coordinates" data-size="20" font-size="6.6"></g></svg>`;
+  harvestStylesFromSvg();
+  expect(styles.coordinates.attrs["font-size"]).toBe("20px");
 });
 
-test("save sync keeps store ruler and legend sizes when data-size is absent", () => {
+test("ruler and legend font sizes come from data-size or the font-size attr, in px; the legend anchor is dropped", () => {
   document.body.innerHTML = `<svg id="map"><g id="ruler"></g><g id="legend" font-size="13" font-family="Almendra SC" data-x="88" data-columns="8"></g></svg>`;
-  styles.rulers.options.fontSize = 26;
-  styles.legend.options.fontSize = 17;
-  styles.legend.options.x = 50;
   harvestStylesFromSvg();
-  expect(styles.rulers.options.fontSize).toBe(26);
-  expect(styles.legend.options.fontSize).toBe(17);
-  // legend geometry is not in this family: the data-x attr stays authoritative
-  expect(styles.legend.options.x).toBe(88);
-});
-
-test("save sync lets an old map's ruler and legend data-size win", () => {
+  expect(styles.rulers.attrs["font-size"]).toBe(Styles.defaults.rulers.attrs["font-size"]);
+  expect(styles.legend.attrs["font-size"]).toBe("13px");
+  expect(styles.legend.options).toEqual({ columns: 8 });
   document.body.innerHTML = `<svg id="map"><g id="ruler" data-size="30" font-size="30"></g><g id="legend" data-size="11" font-size="11" font-family="Almendra SC"></g></svg>`;
-  styles.rulers.options.fontSize = 26;
-  styles.legend.options.fontSize = 17;
   harvestStylesFromSvg();
-  expect(styles.rulers.options.fontSize).toBe(30);
-  expect(styles.legend.options.fontSize).toBe(11);
+  expect(styles.rulers.attrs["font-size"]).toBe("30px");
+  expect(styles.legend.attrs["font-size"]).toBe("11px");
 });
 
 test("save sync keeps store emblem, goods and market sizes when data-size is absent", () => {
@@ -157,7 +143,7 @@ test("save sync keeps store emblem, goods and market sizes when data-size is abs
   expect(styles.markets.options.size).toBe(6);
   // per-key: the siblings still harvest from their attrs
   expect(styles.goods.goodsIcons.options.circle).toBe(true);
-  expect(styles.markets.options.fontSize).toBe(5);
+  expect(styles.markets.options.iconSize).toBe(5);
 });
 
 test("save sync lets an old map's emblem, goods and market data-size win", () => {
@@ -196,42 +182,37 @@ test("save sync lets an old map's heightmap attrs win when scheme is present", (
   expect(styles.heightmap.oceanHeights.options.render).toBe(true);
 });
 
-test("save sync keeps store armies, grid, map-filter and auto-filter options when their marker attrs are absent", () => {
+test("save sync keeps store armies and grid options when their marker attrs are absent", () => {
   document.body.innerHTML = `<svg id="map"><g id="armies" font-size="8"></g><g id="gridOverlay"></g><g id="sea_island"></g></svg>`;
   styles.military.options.boxSize = 4;
-  styles.military.options.fontSize = 8;
   styles.grid.options.scale = 2;
-  styles.map.options.dataFilter = "sepia";
-  styles.coastline.sea_island.options.autoFilter = 0;
   harvestStylesFromSvg();
   expect(styles.military.options.boxSize).toBe(4);
+  expect(styles.military.attrs["font-size"]).toBe("8px");
   expect(styles.grid.options.scale).toBe(2);
-  expect(styles.map.options.dataFilter).toBe("sepia");
-  expect(styles.coastline.sea_island.options.autoFilter).toBe(0);
 });
 
-test("save sync lets an old map's armies, grid, map-filter and auto-filter attrs win", () => {
-  document.body.innerHTML = `<svg id="map" data-filter="tint"><g id="armies" box-size="5" font-size="10"></g><g id="gridOverlay" type="square" scale="3" dx="1" dy="2"></g><g id="sea_island" auto-filter="1"></g></svg>`;
+test("save sync lets an old map's armies, grid and map-filter attrs win; auto-filter is dropped", () => {
+  document.body.innerHTML = `<svg id="map" filter="url(#filter-tint)" data-filter="tint"><g id="armies" box-size="5" font-size="10"></g><g id="gridOverlay" type="square" scale="3" dx="1" dy="2"></g><g id="sea_island" auto-filter="1"></g></svg>`;
   styles.military.options.boxSize = 4;
   styles.grid.options.scale = 2;
-  styles.map.options.dataFilter = null;
-  styles.coastline.sea_island.options.autoFilter = 0;
   harvestStylesFromSvg();
   expect(styles.military.options.boxSize).toBe(5);
+  expect(styles.military.attrs["font-size"]).toBe("10px");
   expect(styles.grid.options).toEqual({ type: "square", scale: 3, dx: 1, dy: 2 });
-  expect(styles.map.options.dataFilter).toBe("tint");
-  expect(styles.coastline.sea_island.options.autoFilter).toBe(1);
+  expect(styles.map.attrs.filter).toBe("url(#filter-tint)");
+  expect(styles.coastline.sea_island).toEqual({ attrs: styles.coastline.sea_island.attrs });
 });
 
 test("save sync keeps store markets, goods-circle, texture and ocean-outline options when their attrs are absent", () => {
   document.body.innerHTML = `<svg id="map"><g id="markets"></g><g id="goods"><g id="goodsIcons"></g></g><g id="texture"></g><g id="oceanLayers"></g></svg>`;
-  styles.markets.options.fontSize = 11;
+  styles.markets.options.iconSize = 11;
   styles.markets.options.icon = "X";
   styles.goods.goodsIcons.options.circle = false;
   styles.texture.options.x = 40;
   styles.ocean.oceanLayers.options.outline = "-6,-4,-2";
   harvestStylesFromSvg();
-  expect(styles.markets.options.fontSize).toBe(11);
+  expect(styles.markets.options.iconSize).toBe(11);
   expect(styles.markets.options.icon).toBe("X");
   expect(styles.goods.goodsIcons.options.circle).toBe(false);
   expect(styles.texture.options.x).toBe(40);
@@ -240,12 +221,12 @@ test("save sync keeps store markets, goods-circle, texture and ocean-outline opt
 
 test("save sync lets an old map's markets, goods-circle, texture and ocean-outline attrs win", () => {
   document.body.innerHTML = `<svg id="map"><g id="markets" data-size="3" font-size="7" data-icon="Y"></g><g id="goods"><g id="goodsIcons" data-circle="1"></g></g><g id="texture" data-href="./t.jpg" data-x="5" data-y="6"></g><g id="oceanLayers" layers="-6"></g></svg>`;
-  styles.markets.options.fontSize = 11;
+  styles.markets.options.iconSize = 11;
   styles.goods.goodsIcons.options.circle = false;
   styles.texture.options.x = 40;
   styles.ocean.oceanLayers.options.outline = "-6,-4,-2";
   harvestStylesFromSvg();
-  expect(styles.markets.options.fontSize).toBe(7);
+  expect(styles.markets.options.iconSize).toBe(7);
   expect(styles.markets.options.icon).toBe("Y");
   expect(styles.goods.goodsIcons.options.circle).toBe(true);
   expect(styles.texture.options).toEqual({ href: "./t.jpg", x: 5, y: 6 });
@@ -278,18 +259,11 @@ test("save sync lets an old map's scaleBar and label-shift attrs win", () => {
   expect(stylesFromMap(document).labels.groups.capital.attrs.style).toBe("transform: translate(0.7em, -0.2em)");
 });
 
-test("save sync lets an old map's coordinates data-size win over the store", () => {
-  document.body.innerHTML = `<svg id="map"><g id="coordinates" data-size="14"></g></svg>`;
-  styles.coordinates.options.fontSize = 20;
-  harvestStylesFromSvg();
-  expect(styles.coordinates.options.fontSize).toBe(14);
-});
-
 test("an old map omitting a non-nullable attr keeps the values it does carry", () => {
-  // #temperature in old maps may carry opacity alone
+  // #temperature in old maps may carry opacity alone, which the store keeps as the stroke opacity
   document.body.innerHTML = `<svg id="map"><g id="temperature" opacity="0.6"></g></svg>`;
   const result = stylesFromMap(document);
-  expect(result.temperature.attrs.opacity).toBe(0.6);
+  expect(result.temperature.attrs["stroke-opacity"]).toBe(0.6);
   expect(result.temperature.attrs["font-size"]).toBe(Styles.defaults.temperature.attrs["font-size"]);
 });
 

@@ -1,44 +1,10 @@
 // A form built from a zod object schema
 import type { z } from "zod";
-
-export type ControlKind =
-  | "checkbox"
-  | "select"
-  | "slider"
-  | "number"
-  | "text"
-  | "color"
-  | "filter"
-  | "mask"
-  | "percent"
-  | "px"
-  | "font"
-  | "blur"
-  | "transform"
-  | "labelStyle"
-  | "scheme"
-  | "texture"
-  | "icon"
-  | "emoji"
-  | "vignettePreset"
-  | "mapFilter";
-
-export type FieldMeta = {
-  control?: ControlKind; // overrides the derived control
-  label?: string; // default: key → sentence case ("stroke-width" → "Stroke width")
-  tip?: string; // the row's data-tip
-  step?: number; // sliders; default 1 for int, 0.01 for a range ≤ 2, else 0.1
-  range?: [number, number]; // slider bounds for a number the schema leaves unbounded; widened to hold the stored value
-  choices?: Record<string, string>; // labels for enum values, keyed by value
-  nullAs?: number | string; // what an unset attr shows as (opacity null → 1, filter null → "")
-  hidden?: true; // stored, never edited
-  gate?: string; // on a nested object: the key (or dotted path) that switches the rest of the section on
-  group?: string; // a caption over the consecutive fields sharing it; their labels read under it ("Stroke" → "Width")
-};
+import type { FieldMeta, Fit, StandardControl } from "@/types/styles";
 
 export type FieldSpec = {
   path: string[]; // from the schema root passed in, e.g. ["attrs", "fill"]
-  kind: ControlKind;
+  kind: string; // a standard control or one the caller registered
   label: string;
   tip?: string;
   min?: number;
@@ -55,11 +21,11 @@ export type FieldSpec = {
 
 export type ControlFactory = (spec: FieldSpec, value: unknown, set: (value: unknown) => void) => HTMLElement;
 
-type Meta = z.core.$ZodRegistry<FieldMeta>;
+type Meta = z.core.$ZodRegistry<FieldMeta<string>>;
 
 type RenderOptions = {
   meta: Meta;
-  controls?: Partial<Record<ControlKind, ControlFactory>>; // merged over the standard ones
+  controls?: Record<string, ControlFactory>; // merged over the standard ones
   flatten?: (key: string) => boolean; // default: key === "attrs" || key === "options"
   rootTitle?: string; // wraps the rows outside any section in a section of their own, `data-section=""`
   onChange: (path: string[], value: unknown) => void;
@@ -69,6 +35,7 @@ type Ctx = Required<Omit<RenderOptions, "controls" | "rootTitle">> & {
   controls: Record<string, ControlFactory | undefined>;
   root: HTMLElement;
   rootBody?: () => HTMLElement; // where a root-level row goes when the root is titled
+  fitted: { field: HTMLElement; source: string; fit: Fit }[]; // the rows to refit when their source changes
 };
 
 const GATE_OFF = new Set<unknown>([false, "off", "none"]);
@@ -81,7 +48,7 @@ export const unsetValue = (spec: FieldSpec): null | undefined => (spec.optional 
 function unwrap(
   schema: z.ZodType,
   meta: Meta
-): { leaf: z.ZodType; meta: FieldMeta; nullable: boolean; optional: boolean } {
+): { leaf: z.ZodType; meta: FieldMeta<string>; nullable: boolean; optional: boolean } {
   const wrappers: z.ZodType[] = [];
   let nullable = false;
   let optional = false;
@@ -125,7 +92,7 @@ function fieldSpec(key: string, schema: z.ZodType, meta: Meta, path: string[] = 
   const options: readonly (string | number)[] | undefined =
     type === "enum" ? leafAny.options : type === "literal" ? [...def.values] : undefined;
 
-  const derived: ControlKind =
+  const derived: StandardControl =
     type === "boolean" ? "checkbox" : options ? "select" : type === "number" ? (bounded ? "slider" : "number") : "text";
 
   const valueType = type === "boolean" || type === "number" || type === "string" ? type : "unknown";
@@ -231,8 +198,13 @@ function render(schema: z.ZodObject, value: object, options: RenderOptions): HTM
     meta: options.meta,
     controls: { ...STANDARD_CONTROLS, ...options.controls },
     flatten: options.flatten ?? defaultFlatten,
-    onChange: options.onChange,
-    root: document.createElement("div")
+    onChange: (path, value) => {
+      options.onChange(path, value);
+      const source = path.join(".");
+      for (const entry of ctx.fitted) if (entry.source === source) refit(entry.field, entry.fit, value);
+    },
+    root: document.createElement("div"),
+    fitted: []
   };
   const root = document.createElement("div");
   root.className = "schema-form";
@@ -301,19 +273,41 @@ function renderInto(
     }
     if (meta.hidden) continue;
     const target = container === ctx.root && ctx.rootBody ? ctx.rootBody() : container;
-    place(target, fieldSpec(key, child, ctx.meta, childPath), getPath(value, [key]), ctx);
+    const spec = fieldSpec(key, child, ctx.meta, childPath);
+    if (meta.fit) Object.assign(spec, fitted(meta.fit, getPath(value, [meta.fit.to])));
+    const field = place(target, spec, getPath(value, [key]), ctx);
+    if (meta.fit) ctx.fitted.push({ field, source: [...path, meta.fit.to].join("."), fit: meta.fit });
   }
 }
 
+const fitted = (fit: Fit, source: unknown): Pick<FieldSpec, "min" | "max" | "step"> => {
+  const n = Number.parseFloat(String(source ?? ""));
+  if (!Number.isFinite(n)) return {};
+  const [min, max] = fit.range(n);
+  return fit.step ? { min, max, step: fit.step(n) } : { min, max };
+};
+
+function refit(field: HTMLElement, fit: Fit, source: unknown): void {
+  const slider = field.querySelector("slider-input");
+  const { min, max, step } = fitted(fit, source);
+  if (!slider || min === undefined || max === undefined) return;
+  const current = Number((slider as HTMLElement & { value: string }).value) || 0;
+  slider.setAttribute("min", String(Math.min(min, current)));
+  slider.setAttribute("max", String(Math.max(max, current)));
+  if (step !== undefined) slider.setAttribute("step", String(step));
+}
+
 // a field's row goes under its group's caption: the run of consecutive fields sharing the group
-function place(container: HTMLElement, spec: FieldSpec, value: unknown, ctx: Ctx): void {
+function place(container: HTMLElement, spec: FieldSpec, value: unknown, ctx: Ctx): HTMLElement {
   let target = container;
   if (spec.group) {
     const last = container.lastElementChild as HTMLElement | null;
     target = last?.classList.contains("group") && last.dataset.group === spec.group ? last : group(spec.group);
     if (target !== last) container.append(target);
   }
-  target.append(renderRow(spec, value, ctx));
+  const field = renderRow(spec, value, ctx);
+  target.append(field);
+  return field;
 }
 
 function group(name: string): HTMLElement {
@@ -333,7 +327,7 @@ function renderSection(
   value: unknown,
   path: string[],
   ctx: Ctx,
-  meta: FieldMeta
+  meta: FieldMeta<string>
 ): HTMLElement {
   const details = section(meta.label ?? labelOf(key), path.join("."));
   const summary = details.querySelector("summary")!;
@@ -375,6 +369,24 @@ function resolveSchema(schema: z.ZodObject, path: string[]): z.ZodType | undefin
     node = (leaf?.shape as Record<string, z.ZodType> | undefined)?.[key];
   }
   return node;
+}
+
+/** The merged meta of every schema along a path, leaf first; a record's key steps into its value type */
+function metaAlong<M extends FieldMeta<string>>(
+  schema: z.ZodType,
+  path: string[],
+  registry: z.core.$ZodRegistry<M>
+): M[] {
+  const meta = registry as unknown as Meta;
+  const out: M[] = [];
+  let node: z.ZodType | undefined = schema;
+  for (const key of path) {
+    if (!node) break;
+    const { leaf } = unwrap(node, meta);
+    node = isRecord(leaf) ? (leaf as any).valueType : (leaf as z.ZodObject).shape?.[key];
+    if (node) out.unshift(unwrap(node, meta).meta as M);
+  }
+  return out;
 }
 
 function unwrapObject(schema: z.ZodType): z.ZodObject | undefined {
@@ -570,7 +582,7 @@ const withUnit =
     return inline(input, unit);
   };
 
-export const STANDARD_CONTROLS: Record<string, ControlFactory | undefined> = {
+export const STANDARD_CONTROLS: Record<StandardControl, ControlFactory> = {
   checkbox,
   select,
   slider,
@@ -581,4 +593,4 @@ export const STANDARD_CONTROLS: Record<string, ControlFactory | undefined> = {
   px: withUnit("px")
 };
 
-export const SchemaForm = { render, fieldSpec, walk, unwrap };
+export const SchemaForm = { render, fieldSpec, walk, unwrap, metaAlong };

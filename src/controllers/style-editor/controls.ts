@@ -4,7 +4,6 @@ import { interpolateRgb, interpolateRgbBasis, scaleSequential } from "d3";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import {
   type ControlFactory,
-  type ControlKind,
   type FieldSpec,
   inline,
   row,
@@ -16,10 +15,10 @@ import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { burgIcon, burgIconPreview } from "@/data/burg-icons";
 import { TEXTURES } from "@/data/textures";
-import { VIGNETTE_PRESETS } from "@/data/vignette-presets";
 import { drawHeights } from "@/renderers/draw-heightmap";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
 import { addGoogleFont, addLocalFont, addWebFont } from "@/services/fonts";
+import type { StandardControl, StyleControl } from "@/types/styles";
 import { ensureEl, findEl, rn, toHEX } from "@/utils";
 import { BURG_ICON_DIALOG, openBurgIconDialog, paintBurgIconDialog } from "./burg-icon-dialog";
 
@@ -497,39 +496,6 @@ const emoji: ControlFactory = (_spec, value, set) => {
 };
 
 // not a field: assigns a ready-made look into the vignette and asks the editor to re-render
-const vignettePreset: ControlFactory = (_spec, _value, set) => {
-  const select = selectOf(
-    [["", "Select a preset…"], ...Object.keys(VIGNETTE_PRESETS).map(name => [name, name] as [string, string])],
-    ""
-  );
-  select.addEventListener("change", () => select.value && set(select.value));
-  return select;
-};
-
-// the four global filters as radio buttons
-const mapFilter: ControlFactory = (spec, value, set) => {
-  const wrapper = el("span", { id: "mapFilters", style: "display: flex; gap: .3em; flex-wrap: wrap" });
-  for (const option of spec.options ?? []) {
-    const id = String(option);
-    const button = el("button", {
-      id,
-      className: "radio",
-      textContent: spec.choices?.[id] ?? id,
-      style: "flex: 1 1 auto; padding: 4px 0"
-    });
-    button.classList.toggle("pressed", value === id);
-    button.addEventListener("click", () => {
-      const pressed = button.classList.contains("pressed");
-      for (const b of wrapper.querySelectorAll(".pressed")) b.classList.remove("pressed");
-      if (pressed) return set(unsetValue(spec));
-      button.classList.add("pressed");
-      set(id);
-    });
-    wrapper.append(button);
-  }
-  return wrapper;
-};
-
 /** The friendly grid size next to the scale input: `scale × 25 × units.scale unit` */
 export function updateGridSizeReadout(): void {
   const output = findEl<HTMLOutputElement>("styleGridSizeFriendly");
@@ -538,7 +504,7 @@ export function updateGridSizeReadout(): void {
   output.value = `${rn(styles.grid.options.scale * 25 * scale, 2)} ${unit}`;
 }
 
-export const CUSTOM_CONTROLS: Partial<Record<ControlKind, ControlFactory>> = {
+export const CUSTOM_CONTROLS: Record<Exclude<StyleControl, StandardControl>, ControlFactory> = {
   filter,
   font,
   blur,
@@ -547,7 +513,5 @@ export const CUSTOM_CONTROLS: Partial<Record<ControlKind, ControlFactory>> = {
   scheme,
   texture,
   icon,
-  emoji,
-  vignettePreset,
-  mapFilter
+  emoji
 };

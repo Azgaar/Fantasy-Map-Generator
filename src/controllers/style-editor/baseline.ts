@@ -1,21 +1,20 @@
 // The preset the store is compared with: a row whose value differs from the current preset's is
 // "changed" and can be reset to it. The preset must define the path; what it never had is never marked
-import type { StyleElement, Styles as StylesData } from "@/generators/styles-schema";
-import { StylePresetsService } from "@/services/style-presets";
-import { parsePreset } from "../style-preset";
 
-export type PathSelection = { element: StyleElement; group?: string; path: string[] };
-export type Diff = { changed: boolean; presetValue: unknown };
+import { StylePresetsService } from "@/services/style-presets";
+import type { PathSelection, StylesData } from "@/types/styles";
+import { parsePreset } from "../style-preset";
 
 const getPath = (root: unknown, path: string[]): any =>
   path.reduce<any>((node, key) => (node == null ? undefined : node[key]), root);
 
-/** The store path of a form field: the composed burgIcons form addresses two records, every other
- * relative path hangs off the selection's node */
+/** The store path of a form field: the composed burgIcons form addresses two records, a group form's
+ * `layer` card the layer itself, every other relative path hangs off the selection's node */
 export function storePath(sel: PathSelection, relative: string[]): string[] {
   if (sel.element === "burgIcons" && relative[0] === "anchors") {
     return ["burgIcons", "anchors", "groups", sel.group ?? "", ...relative.slice(1)];
   }
+  if (sel.group && relative[0] === "layer") return [sel.element, ...relative.slice(1)]; // the layer's own attrs card
   return [...sel.path, ...relative];
 }
 
@@ -50,7 +49,7 @@ export class Baseline {
 
   /** How the store compares with the preset at a path relative to the selection; undefined when the preset
    * does not define it (every container must exist and the leaf must be an own key) */
-  diffAt(sel: PathSelection, relative: string[]): Diff | undefined {
+  diffAt(sel: PathSelection, relative: string[]): { changed: boolean; presetValue: unknown } | undefined {
     const path = storePath(sel, relative);
     const parent = getPath(this.record, path.slice(0, -1));
     if (typeof parent !== "object" || parent === null || !Object.hasOwn(parent, path.at(-1)!)) return undefined;

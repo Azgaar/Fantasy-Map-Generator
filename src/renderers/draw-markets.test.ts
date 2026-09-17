@@ -38,7 +38,7 @@ beforeEach(() => {
     ],
     burgs: [{}, { i: 1, x: 50, y: 50 }, { i: 2, x: 550, y: 50 }]
   } as never;
-  styles.markets.options = { size: 3, fontSize: 5, icon: "🛒" };
+  styles.markets.options = { size: 3, iconSize: 5, icon: "🛒" };
   setViewportSize(100, 100);
   setViewportTransform(1, 0, 0);
   vi.mocked(getIsolines)

@@ -80,7 +80,7 @@ describe("invokeActiveZooming", () => {
   });
 
   it("derives statesHalo stroke-width from the store width", () => {
-    styles.states.statesHalo.options.width = 8;
+    styles.states.statesHalo.attrs["stroke-width"] = 8;
     setViewportTransform(2, viewport.x, viewport.y);
     invokeActiveZooming();
     const halo = document.getElementById("statesHalo")!;

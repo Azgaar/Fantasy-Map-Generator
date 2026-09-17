@@ -92,7 +92,8 @@ function redrawTracedImage(): void {
 }
 
 function applyLabelsZoomSize(): void {
-  const fontSize = Math.max(Math.round(((100 + 100 / viewport.scale) / 2) * 100) / 100, 1);
+  const base = Number.parseFloat(styles.labels.attrs["font-size"]) || 100;
+  const fontSize = Math.max(rn((base + base / viewport.scale) / 2, 2), 1);
   select("#labels").attr("font-size", `${fontSize}px`);
 }
 
@@ -102,7 +103,7 @@ export function invokeActiveZooming(): void {
 
   if (!customization && options.app.performance.stateHalos) {
     const statesHalo = select("#statesHalo");
-    const desired = styles.states.statesHalo.options.width;
+    const desired = styles.states.statesHalo.attrs["stroke-width"] ?? 0;
     const haloSize = rn(desired / viewport.scale ** 0.8, 2);
     statesHalo.attr("stroke-width", haloSize).style("display", haloSize > 0.1 ? "block" : "none");
   }

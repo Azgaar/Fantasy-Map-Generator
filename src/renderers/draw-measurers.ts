@@ -7,17 +7,12 @@ import { getArea, getAreaUnit, last, rn, round, si } from "@/utils";
 const openCurveGen = line<Point>().curve(curveCatmullRom.alpha(0.5));
 const closedCurveGen = line<Point>().curve(curveCatmullRomClosed.alpha(0.5));
 
-// style defaults, overridable through the store (Style tab)
-export const DEFAULT_STROKE_WIDTH = 2;
-export const DEFAULT_DASHARRAY = "10";
-
-type MeasurerStyle = { strokeWidth: number; dasharray: string; fontSize: number };
+// the layer's stroke, baked into each measurer's parts; the font sizes by inheritance
+type MeasurerStyle = { strokeWidth: number; dasharray: string };
 
 function getMeasurerStyle(): MeasurerStyle {
-  const { attrs, options } = styles.rulers;
-  const strokeWidth = attrs["stroke-width"] || DEFAULT_STROKE_WIDTH;
-  const dasharray = attrs["stroke-dasharray"] ?? DEFAULT_DASHARRAY;
-  return { strokeWidth, dasharray, fontSize: options.fontSize };
+  const { attrs } = styles.rulers;
+  return { strokeWidth: attrs["stroke-width"] ?? 1, dasharray: attrs["stroke-dasharray"] ?? "none" };
 }
 
 const getDistance = (length: number): string =>
@@ -37,10 +32,10 @@ const RENDERERS: Record<MeasurerType, (measurer: Measurer, style: MeasurerStyle)
   Planimeter: renderPlanimeter
 };
 
-function renderRuler(measurer: Measurer, { strokeWidth, dasharray, fontSize }: MeasurerStyle): void {
+function renderRuler(measurer: Measurer, { strokeWidth, dasharray }: MeasurerStyle): void {
   const points = measurer.points.join(" ");
 
-  const el = select("#ruler").append<SVGGElement>("g").attr("class", "ruler").attr("font-size", fontSize);
+  const el = select("#ruler").append<SVGGElement>("g").attr("class", "ruler");
   el.append("polyline")
     .attr("points", points)
     .attr("class", "white")
@@ -79,10 +74,10 @@ function renderRuler(measurer: Measurer, { strokeWidth, dasharray, fontSize }: M
   el.append("text").attr("dx", ".35em").attr("dy", "-.45em").attr("x", x).attr("y", y).text(getDistance(length));
 }
 
-function renderPathMeasurer(measurer: Measurer, { strokeWidth, dasharray, fontSize }: MeasurerStyle): void {
+function renderPathMeasurer(measurer: Measurer, { strokeWidth, dasharray }: MeasurerStyle): void {
   const path = round(openCurveGen(measurer.points) || "");
 
-  const el = select("#ruler").append<SVGGElement>("g").attr("class", "opisometer").attr("font-size", fontSize);
+  const el = select("#ruler").append<SVGGElement>("g").attr("class", "opisometer");
   const white = el
     .append<SVGPathElement>("path")
     .attr("d", path)
@@ -110,10 +105,10 @@ function renderPathMeasurer(measurer: Measurer, { strokeWidth, dasharray, fontSi
   el.append("text").attr("dx", ".35em").attr("dy", "-.45em").attr("x", x2).attr("y", y2).text(getDistance(length));
 }
 
-function renderPlanimeter(measurer: Measurer, { strokeWidth, dasharray, fontSize }: MeasurerStyle): void {
+function renderPlanimeter(measurer: Measurer, { strokeWidth, dasharray }: MeasurerStyle): void {
   const path = round(closedCurveGen(measurer.points) || "");
 
-  const el = select("#ruler").append<SVGGElement>("g").attr("class", "planimeter").attr("font-size", fontSize);
+  const el = select("#ruler").append<SVGGElement>("g").attr("class", "planimeter");
   el.append("path")
     .attr("d", path)
     .attr("class", "planimeter")

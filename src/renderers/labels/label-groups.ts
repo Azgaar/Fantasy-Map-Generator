@@ -1,7 +1,7 @@
 import type { LabelGroup, LabelType } from "@/generators/labels-generator";
-import type { Styles } from "@/generators/styles-schema";
+import type { StylesData } from "@/types/styles";
 
-type LabelGroupStyle = Styles["labels"]["groups"][string];
+type LabelGroupStyle = StylesData["labels"]["groups"][string];
 
 export function renderLabelGroups(root: ParentNode = document): void {
   const labels = root.querySelector<SVGGElement>("#labels");

@@ -1,6 +1,7 @@
 // What the form shows beyond its rows: the changed marks with their reset buttons, the per-card previews,
 // and which cards the user folded. Edits update all of it in place
-import type { Baseline, PathSelection } from "./baseline";
+import type { PathSelection } from "@/types/styles";
+import type { Baseline } from "./baseline";
 import { storeValue } from "./baseline";
 
 const folded = new Map<string, boolean>(); // section open state per element, for the session

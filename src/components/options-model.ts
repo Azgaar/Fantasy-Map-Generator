@@ -65,6 +65,7 @@ class OptionsModel {
         style: { preset: "default" },
         burgs: { groups: Burgs.getDefaultGroups() },
         labels: { resizeOnZoom: true, groups: Labels.getDefaultGroups() },
+        markers: { resizeOnZoom: true },
         military: { units: Military.getDefaultOptions() },
         transports: Transports.getDefaults(),
         coastline: Coastline.getDefaultSettings()

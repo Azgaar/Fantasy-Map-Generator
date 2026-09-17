@@ -1,7 +1,8 @@
 import { type LayerId, Layers } from "@/components/layers";
+import type { StyleElement, StylesData } from "@/types/styles";
 import { parseSections, type TemplateLookup } from "@/utils/schemaUtils";
 import defaultStyles from "./default-styles.json";
-import { type StyleElement, type Styles as StylesData, stylesSchema } from "./styles-schema";
+import { stylesSchema } from "./styles-schema";
 
 const DEFAULT_STYLES: DeepReadonly<StylesData> = stylesSchema.parse(defaultStyles);
 globalThis.styles = structuredClone(DEFAULT_STYLES);
@@ -86,7 +87,7 @@ type StylesApi = typeof Styles;
 
 declare global {
   /** the live style record, read bare across every layer and replaced wholesale on load */
-  var styles: import("./styles-schema").Styles;
+  var styles: StylesData;
   // biome-ignore lint/suspicious/noRedeclare: the bridge registered just below
   var Styles: StylesApi;
 }

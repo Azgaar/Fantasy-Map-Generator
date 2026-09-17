@@ -2,9 +2,8 @@
 // selects in the editor and the dialog stays open, following the selection
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { type LayerId, Layers } from "@/components/layers";
-import type { StyleElement } from "@/generators/styles-schema";
+import type { StyleElement, StyleSelection } from "@/types/styles";
 import { ensureEl, findEl } from "@/utils";
-import type { Selection } from "./effects";
 import { GROUP_SOURCES, listElements } from "./groups";
 
 const ID = "styleElements";
@@ -31,7 +30,7 @@ export class ElementsDialog {
   private unsubscribe?: () => void;
 
   constructor(
-    private readonly current: () => Selection,
+    private readonly current: () => StyleSelection,
     private readonly onPick: (element: StyleElement, group?: string) => void
   ) {}
 

@@ -22,13 +22,13 @@ import {
   stripDisplay,
   stylesFromMap
 } from "@/generators/styles-legacy";
-import type { Styles } from "@/generators/styles-schema";
 import type { Point } from "@/generators/voronoi";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { unfog } from "@/renderers/overlays/fogging";
 import { StylePresetsService } from "@/services/style-presets";
 import { compareVersions } from "@/services/versioning";
 import type { ReliefSet } from "@/types/relief";
+import type { StylesData } from "@/types/styles";
 import {
   downloadFile,
   ensureEl,
@@ -1794,9 +1794,6 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
           <rect x="0" y="0" width="100%" height="100%" fill="white" stroke="none"></rect>
         </mask>
       </g>
-      <pattern id="oceanic" width="100" height="100" patternUnits="userSpaceOnUse">
-        <image id="oceanicPattern" href="./images/pattern1.png" opacity="0.2"></image>
-      </pattern>
       <mask id="vignette-mask">
         <rect x="0" y="0" width="100%" height="100%" fill="white"></rect>
         <rect id="vignette-rect" fill="black" x="0.3%" y="0.4%" width="99.4%" height="99.2%" rx="5%" ry="5%" filter="blur(20px)"></rect>
@@ -1835,6 +1832,8 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       restoreStrippedLayerStyles(preset as Record<string, unknown>);
     }
     // v1.150.0 made the styles store the source of truth
+    const rescale = document.getElementById("markers")?.getAttribute("rescale"); // a map option since v1.155.0
+    if (rescale !== null && rescale !== undefined) options.map.markers.resizeOnZoom = rescale !== "0";
     data[48] = await migrateStyles(data[48]);
   }
 
@@ -1956,7 +1955,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     const record = data[48] ? safeParseJSON(data[48]) : undefined;
     if (record?.lakes) {
       if (!record.lakes.groups) record.lakes = { groups: record.lakes };
-      const groups: Styles["lakes"]["groups"] = record.lakes.groups;
+      const groups: StylesData["lakes"]["groups"] = record.lakes.groups;
       const template = groups.freshwater || Object.values(groups)[0];
       for (const el of Array.from(document.querySelectorAll<SVGGElement>("#lakes > g"))) {
         if (!el.id) continue;
@@ -1975,10 +1974,17 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     if (record) data[48] = JSON.stringify(record);
   }
 
-  if (isOlderThan("1.154.0")) {
-    // v1.154.0 pinned the string attr formats: "" and "inherit" used to stand for "not set"
+  if (isOlderThan("1.155.0")) {
+    // v1.154.0 pinned the string attr formats: "" and "inherit" used to stand for "not set";
+    // v1.155.0 folded the fields that mirrored an attr into the attr and made the markers rescale a map option
     const record = data[48] ? safeParseJSON(data[48]) : undefined;
-    if (record) data[48] = JSON.stringify(normalizeStyles(record));
+    if (record) {
+      const rescale = record.markers?.options?.rescale;
+      if (rescale !== undefined) options.map.markers.resizeOnZoom = Boolean(Number(rescale));
+      data[48] = JSON.stringify(normalizeStyles(record));
+    }
+    // the ocean pattern tile lives in its layer now, and an id clash would shadow it
+    for (const tile of document.querySelectorAll("pattern#oceanic")) if (!tile.closest("#oceanPattern")) tile.remove();
   }
 }
 
@@ -2010,6 +2016,7 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
       population: { scale: 1000, urbanization: { rate: 1, density: 10 } }
     },
     labels: { resizeOnZoom: true, groups: [] as MapData["labels"]["groups"] },
+    markers: { resizeOnZoom: true }, // the svg's rescale attr sets it once the styles migrate
     style: { preset: "default" },
     military: { units: [] as MapData["military"]["units"] },
     transports: [] as MapData["transports"],

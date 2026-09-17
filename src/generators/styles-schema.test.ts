@@ -1,14 +1,14 @@
 // A field cannot exist without UI: every leaf of the styles schema either resolves to a control the
 // editor can build or is marked hidden. Fails in the PR that adds the field
 import { describe, expect, test } from "vitest";
-import { type ControlKind, SchemaForm } from "@/components/shared/schema-form";
+import { SchemaForm } from "@/components/shared/schema-form";
+import type { StandardControl, StyleControl } from "@/types/styles";
 import { styleMeta, stylesSchema } from "./styles-schema";
 
-const STANDARD: ControlKind[] = ["checkbox", "select", "slider", "number", "text", "color", "percent", "px"];
+const STANDARD: StandardControl[] = ["checkbox", "select", "slider", "number", "text", "color", "percent", "px"];
 // the kinds the style editor registers (src/controllers/style-editor/controls.ts)
-const CUSTOM: ControlKind[] = [
+const CUSTOM: Exclude<StyleControl, StandardControl>[] = [
   "filter",
-  "mask",
   "font",
   "blur",
   "transform",
@@ -16,9 +16,7 @@ const CUSTOM: ControlKind[] = [
   "scheme",
   "texture",
   "icon",
-  "emoji",
-  "vignettePreset",
-  "mapFilter"
+  "emoji"
 ];
 const KNOWN = new Set<string>([...STANDARD, ...CUSTOM]);
 
@@ -58,22 +56,19 @@ describe("styles schema metadata", () => {
     expect(byPath["heightmap.landHeights.options.scheme"].spec.kind).toBe("scheme");
     expect(byPath["texture.options.href"].spec.kind).toBe("texture");
     expect(byPath["markets.options.icon"].spec.kind).toBe("emoji");
-    expect(byPath["map.options.dataFilter"].spec.kind).toBe("mapFilter");
-    expect(byPath["markers.options.rescale"].spec).toMatchObject({ kind: "checkbox", valueType: "number" });
+    expect(byPath["map.attrs.filter"].spec).toMatchObject({ kind: "select", nullable: true, label: "Filter" });
+    expect(byPath["ocean.pattern.attrs.href"].spec).toMatchObject({ kind: "select", label: "Image" });
+    expect(byPath["labels.attrs.font-size"].spec).toMatchObject({ kind: "px", min: 20, max: 300 });
+    expect(byPath["legend.attrs.font-size"].spec).toMatchObject({ kind: "px", group: "Font", label: "Size" });
+    expect(byPath["states.statesHalo.attrs.stroke-width"].spec).toMatchObject({ kind: "slider", min: 0, max: 30 });
   });
 
   test("the fields the editor never shows are hidden", () => {
     for (const path of [
-      "coastline.sea_island.options.autoFilter",
-      "labels.attrs.font-size",
-      "map.attrs.filter",
-      "states.statesHalo.attrs.stroke-width",
-      "military.options.fontSize",
-      "heightmap.landHeights.options.render",
-      "legend.options.x",
       "grid.attrs.transform",
-      "compass.attrs.shape-rendering",
-      "vignette.attrs.mask"
+      "compass.attrs.transform",
+      "vignette.attrs.mask",
+      "fogging.attrs.mask"
     ]) {
       expect(byPath[path]?.hidden, path).toBe(true);
     }
@@ -83,7 +78,7 @@ describe("styles schema metadata", () => {
 
   test("labels come from the meta or the key, and read under their group or row", () => {
     expect(byPath["zones.attrs.stroke-width"].spec).toMatchObject({ group: "Stroke", label: "Width" });
-    expect(byPath["ocean.options.patternOpacity"].spec).toMatchObject({ group: "Pattern", label: "Opacity" });
+    expect(byPath["temperature.attrs.stroke-opacity"].spec).toMatchObject({ group: "Stroke", label: "Opacity" });
     expect(byPath["burgIcons.anchors.groups.*.options.dx"].spec).toMatchObject({
       kind: "slider",
       label: "Shift x",

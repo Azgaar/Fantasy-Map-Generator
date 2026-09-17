@@ -1,7 +1,7 @@
-import type { Styles } from "@/generators/styles-schema";
+import type { StylesData } from "@/types/styles";
 import { createEl, ensureEl } from "@/utils/nodeUtils";
 
-type CoastalBands = Styles["ocean"]["options"]["bands"];
+type CoastalBands = StylesData["ocean"]["options"]["bands"];
 
 export function getCoastalBandReach(bands: CoastalBands): number {
   return bands.render && bands.opacity > 0 ? bandRadius(bands, bands.count) : 0;

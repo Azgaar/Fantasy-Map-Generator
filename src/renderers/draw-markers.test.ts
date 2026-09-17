@@ -18,7 +18,7 @@ beforeEach(() => {
   mocks.layerOn = true;
   document.body.innerHTML = '<svg id="map"><g id="markers"></g></svg>';
   globalThis.pack = { markers: [marker(1), marker(2, 500)] } as never;
-  styles.markers.options.rescale = 1;
+  options.map.markers.resizeOnZoom = true;
   setViewportSize(100, 100);
   setViewportTransform(1, 0, 0);
   setMarkersFilter(null);
@@ -65,7 +65,7 @@ test("zoom sizing respects the rescale option and full-map export uses scale one
   ViewportLayers.renderTo(clone);
   expect(clone.querySelectorAll("#markers > svg")).toHaveLength(2);
 
-  styles.markers.options.rescale = 0;
+  options.map.markers.resizeOnZoom = false;
   pack.markers[0].size = 60;
   drawMarkers();
   expect(document.getElementById("marker1")?.getAttribute("width")).toBe("60");

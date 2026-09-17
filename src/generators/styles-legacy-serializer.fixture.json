@@ -1,7 +1,7 @@
 {
   "#map": {
     "background-color": "#111111",
-    "filter": "url(#test-filter)",
+    "filter": "url(#filter-sepia)",
     "data-filter": "sepia"
   },
   "#armies": {

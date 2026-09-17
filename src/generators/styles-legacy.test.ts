@@ -30,8 +30,12 @@ test("converts the frozen default preset without warnings", () => {
   expect(warn).not.toHaveBeenCalled();
   expect(styles.relief.options).toEqual({ set: "simple", size: 1, density: 0.4 });
   expect(styles.ocean.oceanLayers.options.outline).toBe("-6,-3,-1");
-  expect(styles.ocean.options.patternOpacity).toBe(0.2);
-  expect(styles.military.options).toEqual({ fontSize: 6, boxSize: 3 });
+  expect(styles.ocean.pattern.attrs).toEqual({ href: "./images/pattern1.png", opacity: 0.2 });
+  expect(styles.military.options).toEqual({ boxSize: 3 });
+  expect(styles.military.attrs["font-size"]).toBe("6px");
+  expect(styles.coordinates.attrs["font-size"]).toBe("12px");
+  expect(styles.states.statesHalo.attrs["stroke-width"]).toBe(10);
+  expect(styles.legend.options).toEqual({ columns: 8 });
   expect(styles.labels.groups.capital.attrs["font-family"]).toBe("Almendra SC");
   expect(styles.burgIcons.burgIcons.groups.capital.options.icon).toBe("#icon-square");
 });
@@ -55,9 +59,13 @@ test("R5: an attribute absent from the legacy bag keeps the default, not null", 
   expect(styles.military.attrs["stroke-linecap"]).toBe(Styles.defaults.military.attrs["stroke-linecap"]);
 });
 
-test("sea_island's legacy auto-filter routes to options.autoFilter", () => {
-  const styles = presetFromLegacy(fixture as any);
-  expect(styles.coastline.sea_island.options.autoFilter).toBe(1);
+test("the zoom-derived render values are dropped for their base: #coordinates font-size, #statesHalo stroke-width", () => {
+  const styles = presetFromLegacy({
+    "#coordinates": { "data-size": 14, "font-size": 3.2 },
+    "#statesHalo": { "data-width": 8, "stroke-width": 0.5 }
+  } as any);
+  expect(styles.coordinates.attrs["font-size"]).toBe("14px");
+  expect(styles.states.statesHalo.attrs["stroke-width"]).toBe(8);
 });
 
 test("a mismatched data-size/font-size pair is BLOCKED", () => {

@@ -137,6 +137,7 @@ export const mapSchema = z.strictObject({
   style: z.strictObject({ preset: z.string().min(1) }),
   burgs: z.strictObject({ groups: z.array(burgGroup) }),
   labels: z.strictObject({ resizeOnZoom: z.boolean(), groups: z.array(labelGroup) }),
+  markers: z.strictObject({ resizeOnZoom: z.boolean() }), // keep the screen size on zoom, else scale with the map
   military: z.strictObject({ units: z.array(militaryUnit) }),
   transports: z.array(transport),
   coastline: coastlineSettings

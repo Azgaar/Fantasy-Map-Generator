@@ -59,7 +59,7 @@ function reconcileMarkers({ root, bounds }: ViewportRenderContext): void {
   const container = root.querySelector<SVGGElement>("#markers");
   if (!container || !Layers.isOn("markers")) return;
 
-  const rescale = styles.markers.options.rescale;
+  const rescale = options.map.markers.resizeOnZoom;
   const anyPinned = pack.markers.some(marker => marker.pinned);
   const selected = root === document && editedMarker ? container.querySelector(`#marker${editedMarker.i}`) : null;
   const markup: string[] = [];
@@ -88,7 +88,7 @@ function reconcileMarkers({ root, bounds }: ViewportRenderContext): void {
   }
 }
 
-function getMarkerGeometry({ x, y, size = 30 }: Marker, rescale: number, scale: number) {
+function getMarkerGeometry({ x, y, size = 30 }: Marker, rescale: boolean, scale: number) {
   const zoomSize = rescale ? Math.max(rn(size / 5 + 24 / scale, 2), 1) : size;
   return { x: rn(x - zoomSize / 2, 1), y: rn(y - zoomSize, 1), size: zoomSize };
 }

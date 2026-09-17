@@ -29,7 +29,7 @@ The record is keyed by **style element**: every map layer, plus `map` for the wh
 | node      | what it holds                                      | goes to                          |
 | --------- | -------------------------------------------------- | -------------------------------- |
 | `attrs`   | SVG attributes, by their SVG name (`stroke-width`) | the element, as they are         |
-| `options` | renderer inputs (`fontSize`, `scheme`, `icon`, …)  | the renderer, read from `styles` |
+| `options` | renderer inputs (`scheme`, `icon`, `boxSize`, …)   | the renderer, read from `styles` |
 | `groups`  | a record of user-named entries sharing one shape   | one child element per entry      |
 
 ```json
@@ -49,15 +49,21 @@ The record is keyed by **style element**: every map layer, plus `map` for the wh
   },
   "states": {
     "statesBody": { "attrs": { "opacity": 0.4 } },
-    "statesHalo": { "attrs": {}, "options": { "width": 10 } }
+    "statesHalo": { "attrs": { "stroke-width": 10, "filter": "blur(3.5px)" } }
   }
 }
 ```
 
 - `null` on an attr means "attribute not set" — written as `removeAttribute`.
 - **Named subgroups** (`statesBody` / `statesHalo`, `landHeights` / `oceanHeights`, ocean `base` /
-  `oceanLayers` / `oceanWaves`, legend `box`, scale bar `back`, the emblem, goods and coastline parts)
-  are fixed children of their element, each with a `data-group` of the same name.
+  `pattern` / `oceanLayers` / `oceanWaves`, legend `box`, scale bar `back`, the emblem, goods and
+  coastline parts) are fixed children of their element, each with a `data-group` of the same name.
+- **A font size is an attr**, in px on the layer (`legend.attrs["font-size"]: "13px"`), and its
+  texts size by inheritance; a label group's is a `%` of the labels layer's base. An `options` size
+  (`markets.options.iconSize`, `military.options.boxSize`) is a renderer input, not a font.
+- **A zoom-derived attr keeps its base in the store.** The zoom writes what it derives — the labels
+  layer `font-size` and the halo `stroke-width` scaled to the viewport, the coordinates `font-size`
+  on redraw — over the stored base; the store never holds the derived value.
 - **`groups` records** are user-defined and unbounded: `labels.groups`, `routes.groups`,
   `lakes.groups`, and the two burg records `burgIcons.burgIcons.groups` / `burgIcons.anchors.groups`
   keyed by the same burg group names.
@@ -102,15 +108,23 @@ const strokeWidth = meta(z.number().min(0), {
 ```
 
 `FieldMeta` names the control kind when the type is not enough (`color`, `filter`, `font`, …), the
-label and tip, a slider `range` for an unbounded number, `nullAs` (what an unset attr shows as),
-`hidden` for a stored value that is never edited (`transform`, defs `mask` references, the layer-level
-`labels.attrs.font-size` the zoom owns), `gate` on a nested object (the key that switches the rest of
-the section on) and `group` (a caption over a run of fields: **Stroke** › Color, Width, Dash array).
+label and tip, a slider `range` and `step` for an unbounded number, `nullAs` (what an unset attr
+shows as), `hidden` for a stored value that is never edited (`transform`, defs `mask` references, the
+layer-level `labels.attrs.font-size` the zoom owns), `gate` on a nested object (the key that switches
+the rest of the section on), `group` (a caption over a run of fields: **Stroke** › Color, Width, Dash
+array) and `fit` (a slider whose range and step follow a sibling number, live: a label group's
+stroke width and letter spacing follow its `font-size`).
+
+`StyleMeta` adds `effect`: the name of what the editor runs after the value changes, set on a field
+or on a whole node (the nearest wins). The schema is the one place that says which field does what;
+the editor only implements the names (see [Effects](#effects)). Every type of the style system —
+the form vocabulary, the style form's additions, the record, the editor's selection — is in
+`src/types/styles.ts`, generic first.
 
 Shared constants (`fill`, `opacity`, `strokeAttrs`, `fontFamily`) are declared once and spread into
 many elements; a use site that needs different meta registers on a `.clone()` so the shared instance
-stays untouched. What the schema does **not** say is behaviour — what to redraw, where a select's
-options come from — that is the editor's (see [Effects](#effects)).
+stays untouched. What the schema does **not** say is where a select's options come from — that is
+the control's.
 
 ## The store — `Styles`
 
@@ -131,17 +145,17 @@ Styles.apply(...elements); // write + Layers.draw
   section. Custom group names have no default of their own, so any stock group of the same record
   stands in as the template.
 - **`write` skips `options`** — they are renderer inputs. Renderers read `styles.<element>.options`
-  directly when they draw (`draw-grid` reads `styles.grid.options`, `draw-legend` the columns and
-  position).
+  directly when they draw (`draw-grid` reads `styles.grid.options`, `draw-legend` the columns).
 - **`writeAttr` is the edit path.** The zoom (`invokeActiveZooming`) rewrites a few attrs on every
   zoom step — `#labels font-size`, the states halo `stroke-width` — so rewriting a whole layer after
   one edit would snap those back to the stored value. An edit writes exactly one attribute;
   `Styles.write` of whole elements is the preset-apply and load path, and both are followed by
   `invokeActiveZooming`.
-- **Defs resources are renderer-owned.** The ocean pattern, the vignette mask rect and the
-  heightmap colour schemes are shaped from the store by their renderer's applier
-  (`applyOceanPattern`, `applyVignetteOptions`, `HeightmapColorSchemes.ensure`), called after a
-  wholesale `set`.
+- **Defs resources are renderer-owned.** The vignette mask rect and the heightmap colour schemes
+  are shaped from the store by their renderer's applier (`applyVignetteOptions`,
+  `HeightmapColorSchemes.ensure`), called after a wholesale `set`. The ocean pattern is not one: its
+  `<pattern>` lives in the ocean layer, so the tile image is an ordinary `data-group="pattern"`
+  element the store writes.
 
 ## Presets and persistence
 
@@ -187,8 +201,10 @@ reached only from the load migrations (`auto-update.ts`) and `parsePreset`:
 - selector-keyed presets (`"#stateBorders": { … }`, `"#labels > #states"`) → `presetFromLegacy`
 - maps saved before the store was the source of truth → `stylesFromMap` harvests the SVG attributes,
   `restoreStrippedLayerStyles` re-seeds what a few versions stripped
-- `normalizeStyles` rewrites older records to the current formats (`""` → `null`, `inherit` →
-  `null`, the font-size units)
+- `normalizeStyles` rewrites older records to the current shape and formats: the v1.155.0 folding
+  of mirrored fields into their attrs (`map.options.dataFilter` → `map.attrs.filter`, the halo
+  `width`, the `fontSize` options, the ocean pattern options → `ocean.pattern.attrs`), then `""` →
+  `null`, `inherit` → `null`, the font-size units
 
 The store never sees a legacy value: conversion happens before `Styles.parse`, and a value that still
 fails afterwards is repaired with a warning like any other.
@@ -221,7 +237,9 @@ The element select lists `Object.keys(stylesSchema.shape)` by their layer label.
 count of the things using it (labels per group, burgs and ports, routes, lakes). Named subgroups are
 not a selection: they render inline as collapsible cards under the element's own rows, so an
 element is seen whole. `burgIcons` composes its two records so one group select serves both: the
-icon rows flat, the anchor rows as an "Anchors" card.
+icon rows flat, the anchor rows as an "Anchors" card. A grouped element whose layer carries attrs of
+its own (the labels base `font-size`) shows them under an "All groups" card, addressed by the
+`layer` prefix.
 
 `resolve` turns the selection into a store node, its schema subtree and a path
 (`["labels", "groups", "capital"]`); a group that no longer exists falls back to the first.
@@ -255,25 +273,26 @@ option source and any dialog it opens: `filter` (the map's `<defs>` filters), `f
 families plus the add-font dialog), `blur`, `transform` (the compass placement as three sliders),
 `labelStyle` (shadow, letter case and shift as four rows), `scheme` (heightmap colour schemes plus a
 gradient builder), `texture` (bundled textures plus a URL dialog), `icon` (the burg / port icon
-picker), `emoji` (markets, through the icon selector), `mapFilter` (the four global filters as
-radios) and `vignettePreset`. A composed control parses the stored string into parts and calls
-`set` with the whole string back. `close` destroys whatever dialogs they opened.
+picker) and `emoji` (markets, through the icon selector). A composed control parses the stored
+string into parts and calls `set` with the whole string back. `close` destroys whatever dialogs they
+opened.
 
 ### Effects
 
-`style-editor/effects.ts` decides what happens after the store is written. The default is the
-store convention:
+What happens after the store is written is declared in the schema as `effect` (`StyleEffect`, a
+closed set of names) and run by `style-editor/effects.ts`, a dictionary of name → function.
+`effectAt(path)` takes the effect declared nearest to the store path — on the field, else on a node
+above it — and falls back to the store convention:
 
-- an `attrs` path → `Styles.writeAttr(path)`: the one attribute onto its element, no redraw
-- an `options` path → `Layers.draw(layer)`: the renderer reads the store again
+- an `attrs` path → `write`: `Styles.writeAttr(path)`, the one attribute onto its element, no redraw
+- an `options` path → `draw`: `Layers.draw(layer)`, the renderer reads the store again
 
-A short table holds the exceptions, matched by path regex: the grid and rulers bake their stroke
-into the drawing (write, then draw); burg icon groups are rebuilt from the store; relief set / size /
-density go through `Relief`; the map filter option mirrors itself into `map.attrs.filter`; the halo
-`width` option writes the halo `stroke-width`; the vignette and ocean pattern options go to their
-defs appliers; a typography change on a label group of type `state` redraws labels because state
-labels are fitted to their outline; a label group's `font-size` also refits its stroke and spacing
-slider ranges. `effects.test.ts` asserts, for a table of paths, which stub fires.
+The declared ones: `draw` on an attr whose renderer bakes it into the drawing (the grid, rulers,
+ocean waves and scale bar attrs, the legend and coordinates fonts, every burg icon field); `zoom` on
+an attr the zoom derives from (the labels base size, the halo width): written, then the zoom re-run;
+`changeReliefSet` / `resizeRelief` / `regenerateRelief`; `applyVignette` for the mask rect;
+`refitStateLabels` on a label group's typography, because state labels are fitted to their outline.
+`effects.test.ts` asserts which name a path resolves to and which stub each name fires.
 
 ### Baseline and decoration
 
@@ -298,9 +317,9 @@ re-renders. There is no whole-element reset — selecting the preset again is th
 ### The rows that are not fields
 
 A handful of extras the editor appends by hand: the grid "Cell size" readout under `options.scale`,
-the vignette preset picker (assigns a ready-made look into `styles.vignette` and re-renders), and
-`options.app.emblems.showAll` under emblems — an app preference, not style, but users look for it
-there.
+the vignette preset select (assigns a ready-made look into `styles.vignette` and re-renders), and two
+options that are not style but users look for here: `options.app.emblems.showAll` under emblems and
+`options.map.markers.resizeOnZoom` under markers.
 
 ### Invariants and lifecycle
 

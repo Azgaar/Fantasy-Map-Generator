@@ -5,11 +5,10 @@ import { invokeActiveZooming } from "@/components/zoom";
 import { Controllers } from "@/controllers";
 import { Styles } from "@/generators/styles";
 import { isLegacyPreset, isStoreStyles, presetFromLegacy } from "@/generators/styles-legacy";
-import type { Styles as StylesData } from "@/generators/styles-schema";
-import { applyOceanPattern } from "@/renderers/draw-ocean";
 import { applyVignetteOptions } from "@/renderers/draw-vignette";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
 import { CUSTOM_PREFIX, StylePresetsService, SYSTEM_PRESETS } from "@/services/style-presets";
+import type { StylesData } from "@/types/styles";
 import { applyOption, downloadFile, ensureEl, isValidJSON, openURL, uploadFile } from "@/utils";
 
 const id = "stylePreset" as const;
@@ -69,7 +68,6 @@ function applyPreset(presetJson: unknown): void {
   Styles.write(...(Object.keys(styles) as (keyof typeof styles)[]));
   // the defs resources are renderer-owned; their appliers shape them from the store
   applyVignetteOptions();
-  applyOceanPattern();
 
   const { set, size } = styles.relief.options;
   if (size && size / previousReliefSize !== 1) Relief.changeSize(size / previousReliefSize);

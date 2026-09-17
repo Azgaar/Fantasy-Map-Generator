@@ -13,7 +13,6 @@ import { resetZoom } from "@/components/zoom";
 import { Controllers } from "@/controllers";
 import { GraphOverride } from "@/generators/graph-override";
 import { onLegendClick } from "@/renderers/draw-legend";
-import { applyOceanPattern } from "@/renderers/draw-ocean";
 import { applyVignetteOptions } from "@/renderers/draw-vignette";
 import { zonesFilter } from "@/renderers/draw-zones";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
@@ -666,8 +665,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
 
     Layers.drawAll();
     Styles.write(...(Object.keys(styles) as (keyof typeof styles)[]));
-    applyVignetteOptions(); // the defs resources are renderer-owned; their appliers shape them from the store
-    applyOceanPattern();
+    applyVignetteOptions(); // the vignette mask is renderer-owned; its applier shapes it from the store
     applyPerformanceSettings(); // the file's SVG carries the attributes of the browser that saved it
     applyDefaultViewboxEvents();
     fitMapToScreen();

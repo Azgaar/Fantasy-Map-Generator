@@ -1,8 +1,9 @@
 // What the Element and Group selects list: every style element by label, and for a grouped element its
 // groups with how many things use each
 import { layerLabel } from "@/data/layer-labels";
-import { type StyleElement, stylesSchema } from "@/generators/styles-schema";
+import { stylesSchema } from "@/generators/styles-schema";
 import { getLabelsData } from "@/renderers/labels/label-data";
+import type { StyleElement } from "@/types/styles";
 
 export type GroupEntry = { id: string; label: string };
 type GroupSource = () => GroupEntry[];

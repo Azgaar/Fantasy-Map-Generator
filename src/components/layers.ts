@@ -391,7 +391,6 @@ const mapLayers = [
   new Layer({
     id: "labels",
     parent: "viewbox",
-    attrs: { "font-size": "100px" },
     draw: drawLabels,
     erase: removeLabels
   }),

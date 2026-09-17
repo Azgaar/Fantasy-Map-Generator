@@ -8,13 +8,14 @@ import { invokeActiveZooming } from "@/components/zoom";
 import { layerLabel } from "@/data/layer-labels";
 import { VIGNETTE_PRESETS } from "@/data/vignette-presets";
 import { Styles } from "@/generators/styles";
-import { type StyleElement, styleMeta, stylesSchema } from "@/generators/styles-schema";
+import { styleMeta, stylesSchema } from "@/generators/styles-schema";
 import { applyVignetteOptions } from "@/renderers/draw-vignette";
+import type { StyleElement, StyleSelection } from "@/types/styles";
 import { ensureEl, findEl } from "@/utils";
 import { Baseline, storePath, storeValue } from "./baseline";
 import { CUSTOM_CONTROLS, destroyControlDialogs, updateGridSizeReadout } from "./controls";
 import { FormDecoration } from "./decorate";
-import { effectFor, fitLabelRanges, type Selection } from "./effects";
+import { runEffect } from "./effects";
 import { ElementsDialog } from "./elements-dialog";
 import { GROUP_SOURCES, type GroupEntry, listElements } from "./groups";
 import { PresetSelector } from "./preset-selector";
@@ -115,7 +116,7 @@ function glow(withGroup: boolean): void {
   }, 1500);
 }
 
-type Resolved = Selection & {
+type Resolved = StyleSelection & {
   path: string[];
   schema: z.ZodObject;
   value: object | undefined;
@@ -153,11 +154,19 @@ function resolve(element: StyleElement, wanted?: string): Resolved {
     return { element, group, layer, path: ["burgIcons", "burgIcons", "groups", group], schema, value, entries };
   }
 
-  const record = (stylesSchema.shape[element] as z.ZodObject).shape.groups as z.ZodRecord;
-  const schema = record.valueType as z.ZodObject;
-  const value = (styles[element] as { groups: Record<string, object> }).groups[group];
+  // the group's fields, and the attrs the layer itself carries (the labels base size) as a card of their own
+  const elementSchema = stylesSchema.shape[element] as z.ZodObject;
+  const record = elementSchema.shape.groups as z.ZodRecord;
+  const groupValue = (styles[element] as { groups: Record<string, object> }).groups[group];
+  const layerAttrs = elementSchema.shape.attrs as z.ZodObject | undefined;
+  const schema = layerAttrs
+    ? z.strictObject({ ...(record.valueType as z.ZodObject).shape, layer: LAYER_CARD(layerAttrs) })
+    : (record.valueType as z.ZodObject);
+  const value = layerAttrs && groupValue ? { ...groupValue, layer: { attrs: (styles[element] as any).attrs } } : groupValue;
   return { element, group, layer, path: [element, "groups", group], schema, value, entries };
 }
+
+const LAYER_CARD = (attrs: z.ZodObject) => z.strictObject({ attrs }).register(styleMeta, { label: "All groups" });
 
 // the group list comes first: it settles which store node the form reads
 function selection(): Resolved {
@@ -179,7 +188,7 @@ function change(sel: Resolved, relative: string[], value: unknown): void {
   const previous = node[key];
   if (value === undefined) delete node[key];
   else node[key] = value;
-  effectFor(path)(sel, value, previous, path);
+  runEffect({ sel, path, value, previous });
   if (sel.element === "grid") updateGridSizeReadout();
 }
 
@@ -228,11 +237,6 @@ function banner(layer: LayerId, rerender: () => void): HTMLElement {
 
 // the rows that are not fields: readouts, preset pickers and the one app option users look for here
 function decorate(form: HTMLElement, sel: Resolved): void {
-  if (sel.element === "labels" && sel.group) {
-    const attrs = styles.labels.groups[sel.group]?.attrs;
-    if (attrs) fitLabelRanges(Number.parseFloat(attrs["font-size"]) || 18, attrs);
-  }
-
   if (sel.element === "grid") {
     const row = extraRow("Cell size", "Distance between grid cell centers (in map scale)");
     const output = document.createElement("output");
@@ -250,28 +254,36 @@ function decorate(form: HTMLElement, sel: Resolved): void {
   if (sel.element === "vignette") {
     const row = extraRow("Preset", "Select a precreated vignette");
     row.dataset.field = "preset";
-    const control = CUSTOM_CONTROLS.vignettePreset!(
-      {
-        path: ["preset"],
-        kind: "vignettePreset",
-        label: "Preset",
-        nullable: false,
-        optional: false,
-        valueType: "string"
-      },
-      "",
-      name => {
-        const preset = VIGNETTE_PRESETS[String(name)];
-        if (!preset) return;
-        Object.assign(styles.vignette.attrs, preset.attrs);
-        Object.assign(styles.vignette.options, preset.options);
-        Styles.write("vignette");
-        applyVignetteOptions();
-        renderForm(form, sel);
-      }
-    );
-    row.querySelector(".ctl")!.append(control);
+    const select = document.createElement("select");
+    select.append(new Option("Select a preset…", ""), ...Object.keys(VIGNETTE_PRESETS).map(name => new Option(name)));
+    select.addEventListener("change", () => {
+      const preset = VIGNETTE_PRESETS[select.value];
+      if (!preset) return;
+      Object.assign(styles.vignette.attrs, preset.attrs);
+      Object.assign(styles.vignette.options, preset.options);
+      Styles.write("vignette");
+      applyVignetteOptions();
+      renderForm(form, sel);
+    });
+    row.querySelector(".ctl")!.append(select);
     rootBody(form).prepend(row);
+  }
+
+  if (sel.element === "markers") {
+    const row = extraRow(
+      "Constant size",
+      "Keep the same size on any map scale, turn off to scale markers with the map"
+    );
+    row.dataset.field = "resizeOnZoom";
+    row.querySelector(".ctl")!.append(
+      appCheckbox("markersResizeOnZoom", options.map.markers.resizeOnZoom, checked => {
+        Options.set(options => {
+          options.map.markers.resizeOnZoom = checked;
+        });
+        invokeActiveZooming();
+      })
+    );
+    rootBody(form).append(row);
   }
 
   if (sel.element === "emblems") {
@@ -280,23 +292,32 @@ function decorate(form: HTMLElement, sel: Resolved): void {
       "Show emblem groups even if their size is too small or too big at the current scale"
     );
     row.dataset.field = "showAll";
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.className = "checkbox";
-    checkbox.id = "showAllEmblems";
-    checkbox.checked = options.app.emblems.showAll;
-    const label = document.createElement("label");
-    label.className = "checkbox-label";
-    label.htmlFor = checkbox.id;
-    checkbox.addEventListener("input", () => {
-      Options.set(options => {
-        options.app.emblems.showAll = checkbox.checked;
-      });
-      invokeActiveZooming();
-    });
-    row.querySelector(".ctl")!.append(checkbox, label);
+    row.querySelector(".ctl")!.append(
+      appCheckbox("showAllEmblems", options.app.emblems.showAll, checked => {
+        Options.set(options => {
+          options.app.emblems.showAll = checked;
+        });
+        invokeActiveZooming();
+      })
+    );
     rootBody(form).append(row);
   }
+}
+
+// the styled checkbox with its label, for the app options that sit among the style rows
+function appCheckbox(id: string, checked: boolean, onInput: (checked: boolean) => void): DocumentFragment {
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.className = "checkbox";
+  checkbox.id = id;
+  checkbox.checked = checked;
+  const label = document.createElement("label");
+  label.className = "checkbox-label";
+  label.htmlFor = id;
+  checkbox.addEventListener("input", () => onInput(checkbox.checked));
+  const fragment = document.createDocumentFragment();
+  fragment.append(checkbox, label);
+  return fragment;
 }
 
 // the extra rows sit with the element's own rows, in the card SchemaForm titled by the selection

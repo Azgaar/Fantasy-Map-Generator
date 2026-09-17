@@ -583,7 +583,6 @@ describe("missing svg defs", () => {
       "fog"
     ]);
     expect(document.querySelector("#fog rect")).not.toBeNull();
-    expect(document.getElementById("oceanicPattern")).not.toBeNull();
     expect(document.getElementById("vignette-rect")).not.toBeNull();
   });
 

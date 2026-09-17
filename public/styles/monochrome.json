@@ -2,15 +2,10 @@
   "map": {
     "attrs": {
       "filter": "url(#filter-grayscale)"
-    },
-    "options": {
-      "dataFilter": "grayscale"
     }
   },
   "ocean": {
     "options": {
-      "pattern": "",
-      "patternOpacity": 0.2,
       "bands": {
         "render": false,
         "count": 5,
@@ -25,6 +20,12 @@
     "base": {
       "attrs": {
         "fill": "#000000"
+      }
+    },
+    "pattern": {
+      "attrs": {
+        "href": "",
+        "opacity": 0.2
       }
     },
     "oceanLayers": {
@@ -85,7 +86,6 @@
         "skip": 0,
         "relax": 1,
         "curve": "curveBasisClosed",
-        "render": false,
         "contours": {
           "mode": "off",
           "interval": 5,
@@ -177,11 +177,9 @@
       "stroke-width": 1,
       "stroke-dasharray": "5",
       "stroke-linecap": null,
+      "font-size": "12px",
       "filter": null,
       "mask": null
-    },
-    "options": {
-      "fontSize": 12
     }
   },
   "compass": {
@@ -189,8 +187,7 @@
       "opacity": 0.8,
       "transform": null,
       "filter": null,
-      "mask": "url(#water)",
-      "shape-rendering": "optimizespeed"
+      "mask": "url(#water)"
     },
     "compassRose": {
       "attrs": {
@@ -344,9 +341,6 @@
         "stroke-dasharray": null,
         "stroke-linecap": null,
         "filter": null
-      },
-      "options": {
-        "autoFilter": 0
       }
     },
     "lake_island": {
@@ -404,9 +398,6 @@
         "opacity": 0.4,
         "stroke-width": 10,
         "filter": "blur(5px)"
-      },
-      "options": {
-        "width": 10
       }
     }
   },
@@ -498,13 +489,13 @@
   },
   "temperature": {
     "attrs": {
-      "opacity": null,
       "fill": "#000000",
       "fill-opacity": 0.3,
       "stroke": null,
       "stroke-width": 1.8,
       "stroke-dasharray": null,
       "stroke-linecap": null,
+      "stroke-opacity": null,
       "font-size": "8px",
       "filter": null,
       "mask": null
@@ -1191,7 +1182,7 @@
     },
     "options": {
       "size": 3,
-      "fontSize": 5,
+      "iconSize": 5,
       "icon": "⚖️"
     }
   },
@@ -1205,9 +1196,6 @@
     "attrs": {
       "opacity": null,
       "filter": null
-    },
-    "options": {
-      "rescale": 1
     }
   },
   "military": {
@@ -1218,10 +1206,10 @@
       "stroke-dasharray": null,
       "stroke-linecap": null,
       "fill-opacity": 1,
+      "font-size": "6px",
       "filter": null
     },
     "options": {
-      "fontSize": 6,
       "boxSize": 3
     }
   },
@@ -1231,17 +1219,15 @@
       "stroke-width": 2,
       "stroke-dasharray": "10",
       "stroke-linecap": null,
+      "font-size": "20px",
       "filter": null
-    },
-    "options": {
-      "fontSize": 20
     }
   },
   "scaleBar": {
     "attrs": {
       "opacity": 1,
       "fill": "#ffffff",
-      "font-size": 8
+      "font-size": "8px"
     },
     "options": {
       "barSize": 1.5,
@@ -1272,12 +1258,10 @@
       "stroke-width": 2.5,
       "stroke-dasharray": "0 4 10 4",
       "stroke-linecap": "round",
-      "font-family": "Courier New"
+      "font-family": "Courier New",
+      "font-size": "13px"
     },
     "options": {
-      "fontSize": 13,
-      "x": 99,
-      "y": 93,
       "columns": 8
     },
     "box": {

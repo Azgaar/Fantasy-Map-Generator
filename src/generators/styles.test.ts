@@ -112,14 +112,52 @@ describe("normalizeStyles", () => {
     doc.labels.groups.town.attrs["font-size"] = " 4.5% ";
     doc.labels.attrs["font-size"] = "100";
     doc.temperature.attrs["font-size"] = "8%";
-    doc.scaleBar.attrs["font-size"] = 10; // a number stays as it is
+    doc.scaleBar.attrs["font-size"] = 10; // a pre-v1.155 number
     normalizeStyles(doc);
     expect(doc.labels.groups.capital.attrs["font-size"]).toBe("6%");
     expect(doc.labels.groups.city.attrs["font-size"]).toBe("5%");
     expect(doc.labels.groups.town.attrs["font-size"]).toBe("4.5%");
     expect(doc.labels.attrs["font-size"]).toBe("100px");
     expect(doc.temperature.attrs["font-size"]).toBe("8px");
-    expect(doc.scaleBar.attrs["font-size"]).toBe(10);
+    expect(doc.scaleBar.attrs["font-size"]).toBe("10px");
+    expect(stylesSchema.safeParse(doc).success).toBe(true);
+  });
+
+  test("a pre-v1.155 record folds its mirrored fields into the attrs", () => {
+    const doc = structuredClone(Styles.defaults) as any;
+    doc.map = { attrs: { filter: null }, options: { dataFilter: "sepia" } };
+    doc.ocean.options = { pattern: "./images/waves.png", patternOpacity: 0.4, bands: doc.ocean.options.bands };
+    delete doc.ocean.pattern;
+    doc.states.statesHalo = { attrs: { opacity: 0.4, filter: null }, options: { width: 12 } };
+    doc.military.options = { fontSize: 8, boxSize: 4 };
+    doc.coordinates.options = { fontSize: 14 };
+    doc.rulers.options = { fontSize: 24 };
+    doc.legend.options = { fontSize: 11, x: 50, y: 60, columns: 5 };
+    doc.temperature.attrs = { ...doc.temperature.attrs, opacity: 0.7 };
+    doc.markets.options = { size: 3, fontSize: 6, icon: "x" };
+    doc.markers.options = { rescale: 1 };
+    doc.coastline.sea_island.options = { autoFilter: 1 };
+    doc.compass.attrs["shape-rendering"] = "optimizespeed";
+    doc.heightmap.landHeights.options.render = true;
+    normalizeStyles(doc);
+    expect(doc.map).toEqual({ attrs: { filter: "url(#filter-sepia)" } });
+    expect(doc.ocean.pattern).toEqual({ attrs: { href: "./images/waves.png", opacity: 0.4 } });
+    expect(doc.ocean.options).toEqual({ bands: Styles.defaults.ocean.options.bands });
+    expect(doc.states.statesHalo).toEqual({ attrs: { opacity: 0.4, filter: null, "stroke-width": 12 } });
+    expect(doc.military.attrs["font-size"]).toBe("8px");
+    expect(doc.military.options).toEqual({ boxSize: 4 });
+    expect(doc.coordinates.attrs["font-size"]).toBe("14px");
+    expect(doc.coordinates.options).toBeUndefined();
+    expect(doc.rulers.attrs["font-size"]).toBe("24px");
+    expect(doc.legend.attrs["font-size"]).toBe("11px");
+    expect(doc.legend.options).toEqual({ columns: 5 });
+    expect(doc.temperature.attrs.opacity).toBeUndefined();
+    expect(doc.temperature.attrs["stroke-opacity"]).toBe(0.7);
+    expect(doc.markets.options).toEqual({ size: 3, iconSize: 6, icon: "x" });
+    expect(doc.markers.options).toBeUndefined();
+    expect(doc.coastline.sea_island.options).toBeUndefined();
+    expect(doc.compass.attrs["shape-rendering"]).toBeUndefined();
+    expect(doc.heightmap.landHeights.options.render).toBeUndefined();
     expect(stylesSchema.safeParse(doc).success).toBe(true);
   });
 });
@@ -283,7 +321,7 @@ describe("schema reconciliation", () => {
   test("ocean filter and outline live under the oceanLayers subgroup", () => {
     expect(Styles.defaults.ocean.oceanLayers.attrs.filter).toBeNull();
     expect(Styles.defaults.ocean.oceanLayers.options.outline).toBe("-6,-3,-1");
-    expect(Styles.defaults.ocean.options).toMatchObject({ pattern: "./images/pattern1.png", patternOpacity: 0.2 });
+    expect(Styles.defaults.ocean.pattern.attrs).toEqual({ href: "./images/pattern1.png", opacity: 0.2 });
   });
 
   test("labels base font-size is the css length the registry stamps", () => {
@@ -298,10 +336,10 @@ describe("schema reconciliation", () => {
 describe("per-attribute repair", () => {
   test("an invalid attribute falls back alone, not with its whole layer", () => {
     const doc = structuredClone(Styles.defaults) as any;
-    doc.temperature.attrs.opacity = 0.6;
+    doc.temperature.attrs["stroke-opacity"] = 0.6;
     doc.temperature.attrs["font-size"] = null; // non-nullable in the schema
     const parsed = Styles.parse(doc);
-    expect(parsed.temperature.attrs.opacity).toBe(0.6);
+    expect(parsed.temperature.attrs["stroke-opacity"]).toBe(0.6);
     expect(parsed.temperature.attrs["font-size"]).toBe(Styles.defaults.temperature.attrs["font-size"]);
   });
 

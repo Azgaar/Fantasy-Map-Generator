@@ -7,7 +7,6 @@ export const drawMilitary = (): void => {
 
   select<SVGGElement, unknown>("#armies").selectAll("g").remove();
   // regiment labels size by inheritance from the group
-  select<SVGGElement, unknown>("#armies").attr("font-size", styles.military.options.fontSize);
   for (const state of pack.states) {
     if (!state.i || state.removed) continue;
     drawRegimentsRenderer(state.military || [], state.i);

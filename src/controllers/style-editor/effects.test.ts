@@ -3,24 +3,19 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 vi.mock("@/generators/styles", () => ({ Styles: { writeAttr: vi.fn(), write: vi.fn() } }));
 vi.mock("@/components/layers", () => ({ Layers: { draw: vi.fn() } }));
 vi.mock("@/components/zoom", () => ({ invokeActiveZooming: vi.fn() }));
-vi.mock("@/renderers/draw-ocean", () => ({ applyOceanPattern: vi.fn() }));
 vi.mock("@/renderers/draw-vignette", () => ({ applyVignetteOptions: vi.fn() }));
 
 import { Layers } from "@/components/layers";
 import { invokeActiveZooming } from "@/components/zoom";
 import { Styles } from "@/generators/styles";
-import { applyOceanPattern } from "@/renderers/draw-ocean";
 import { applyVignetteOptions } from "@/renderers/draw-vignette";
-import { effectFor, type Selection } from "./effects";
+import type { StyleSelection } from "@/types/styles";
+import { effectAt, runEffect } from "./effects";
 
 const relief = { changeSet: vi.fn(), changeSize: vi.fn(), generate: vi.fn() };
 vi.stubGlobal("Relief", relief);
 
 const store = () => ({
-  map: { attrs: { filter: null as string | null }, options: { dataFilter: null } },
-  rulers: { attrs: { "stroke-dasharray": null as string | null } },
-  states: { statesHalo: { attrs: { "stroke-width": 0 }, options: { width: 0 } } },
-  military: { options: { fontSize: 0, boxSize: 0 } },
   labels: { groups: { state: { attrs: { "stroke-width": 0, "letter-spacing": 0 } } } }
 });
 
@@ -33,13 +28,42 @@ beforeEach(() => {
   ] as typeof options.map.labels.groups;
 });
 
-const run = (path: string, value: unknown = 1, previous: unknown = 1, sel: Partial<Selection> = {}) => {
+const run = (path: string, value: unknown = 1, previous: unknown = 1, sel: Partial<StyleSelection> = {}) => {
   const [element] = path.split(".");
-  const selection = { element, layer: element === "map" ? undefined : element, ...sel } as Selection;
-  effectFor(path.split("."))(selection, value, previous, path.split("."));
+  const selection = { element, layer: element === "map" ? undefined : element, ...sel } as StyleSelection;
+  runEffect({ sel: selection, path: path.split("."), value, previous });
 };
 
-describe("effectFor", () => {
+const at = (path: string) => effectAt(path.split("."));
+
+describe("effectAt", () => {
+  test("the store convention: attrs write, options draw", () => {
+    expect(at("rivers.attrs.fill")).toBe("write");
+    expect(at("texture.options.x")).toBe("draw");
+    expect(at("lakes.groups.freshwater.attrs.fill")).toBe("write");
+    expect(at("emblems.stateEmblems.options.size")).toBe("draw");
+  });
+
+  test("a declared effect: on the field, or on the nearest node above it", () => {
+    expect(at("relief.options.size")).toBe("resizeRelief");
+    expect(at("grid.attrs.stroke-width")).toBe("draw");
+    expect(at("rulers.attrs.stroke-dasharray")).toBe("draw");
+    expect(at("rulers.attrs.font-size")).toBe("draw");
+    expect(at("states.statesHalo.attrs.stroke-width")).toBe("zoom");
+    expect(at("labels.attrs.font-size")).toBe("zoom");
+    expect(at("map.attrs.filter")).toBe("write");
+    expect(at("ocean.pattern.attrs.href")).toBe("write");
+    expect(at("coordinates.attrs.font-size")).toBe("draw");
+    expect(at("burgIcons.anchors.groups.town.attrs.fill")).toBe("draw");
+    expect(at("scaleBar.back.attrs.fill")).toBe("draw");
+    expect(at("labels.groups.state.attrs.font-family")).toBe("refitStateLabels");
+    expect(at("labels.groups.state.attrs.fill")).toBe("write");
+    expect(at("legend.attrs.font-family")).toBe("draw");
+    expect(at("legend.attrs.stroke")).toBe("write");
+  });
+});
+
+describe("runEffect", () => {
   test("an attr writes its one attribute, no redraw", () => {
     run("rivers.attrs.fill", "#123456");
     expect(Styles.writeAttr).toHaveBeenCalledWith(["rivers", "attrs", "fill"]);
@@ -60,12 +84,6 @@ describe("effectFor", () => {
     expect(Layers.draw).toHaveBeenCalledWith("ocean");
   });
 
-  test("a cleared ruler dash means solid, not the default pattern", () => {
-    run("rulers.attrs.stroke-dasharray", null);
-    expect(styles.rulers.attrs["stroke-dasharray"]).toBe("none");
-    expect(Layers.draw).toHaveBeenCalledWith("rulers");
-  });
-
   test("relief options reach the generator", () => {
     run("relief.options.set", "gray");
     expect(relief.changeSet).toHaveBeenCalledWith("gray");
@@ -77,22 +95,13 @@ describe("effectFor", () => {
     expect(Layers.draw).toHaveBeenCalledWith("relief");
   });
 
-  test("markers rescale re-runs the zoom, the defs resources their appliers", () => {
-    run("markers.options.rescale", 0);
+  test("a zoom-derived attr is written, then the zoom re-run; the vignette goes to its applier", () => {
+    run("states.statesHalo.attrs.stroke-width", 12);
+    expect(Styles.writeAttr).toHaveBeenCalledWith(["states", "statesHalo", "attrs", "stroke-width"]);
     expect(invokeActiveZooming).toHaveBeenCalled();
-    run("ocean.options.patternOpacity", 0.5);
-    expect(applyOceanPattern).toHaveBeenCalled();
     run("vignette.options.rx", "5%");
     expect(applyVignetteOptions).toHaveBeenCalled();
     expect(Layers.draw).not.toHaveBeenCalled();
-  });
-
-  test("the map filter mirrors the option onto the hidden attr", () => {
-    run("map.options.dataFilter", "sepia");
-    expect(styles.map.attrs.filter).toBe("url(#filter-sepia)");
-    expect(Styles.writeAttr).toHaveBeenCalledWith(["map", "attrs", "filter"]);
-    run("map.options.dataFilter", null);
-    expect(styles.map.attrs.filter).toBeNull();
   });
 
   test("label typography refits state labels only", () => {
@@ -106,24 +115,12 @@ describe("effectFor", () => {
     expect(Layers.draw).not.toHaveBeenCalled();
   });
 
-  test("the halo width and the military box size keep their mirrored fields in step", () => {
-    run("states.statesHalo.options.width", 5);
-    expect(styles.states.statesHalo.attrs["stroke-width"]).toBe(5);
-    expect(Styles.writeAttr).toHaveBeenCalledWith(["states", "statesHalo", "attrs", "stroke-width"]);
-    run("military.options.boxSize", 4);
-    expect(styles.military.options.fontSize).toBe(8);
-    expect(Layers.draw).toHaveBeenCalledWith("military");
-  });
-
-  test("scale bar, legend font and emblem sizes redraw", () => {
+  test("scale bar, legend font and burg icons redraw", () => {
     run("scaleBar.back.attrs.fill", "#ffffff");
     expect(Styles.writeAttr).toHaveBeenCalledWith(["scaleBar", "back", "attrs", "fill"]);
-    run("scaleBar.options.barSize", 2);
     expect(Layers.draw).toHaveBeenCalledWith("scaleBar");
     run("legend.attrs.font-family", "Arial");
     expect(Layers.draw).toHaveBeenCalledWith("legend");
-    run("emblems.stateEmblems.options.size", 2);
-    expect(Layers.draw).toHaveBeenCalledWith("emblems");
     run("burgIcons.burgIcons.groups.town.attrs.fill", "#ffffff");
     expect(Layers.draw).toHaveBeenCalledWith("burgIcons");
   });

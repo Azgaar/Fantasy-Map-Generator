@@ -72,7 +72,7 @@ test.describe("style editor events drive the store", () => {
     });
 
     await openStyleElement(page, "markers");
-    await expect(page.locator(`${f("options.rescale")} input`)).toBeChecked();
+    await expect(page.locator(`${f("resizeOnZoom")} input`)).toBeChecked();
 
     const readMarkerAttrs = (id: number) =>
       page.evaluate(markerId => {
@@ -89,18 +89,17 @@ test.describe("style editor events drive the store", () => {
 
     // real control: click the visible label bound to the checkbox (input[type=checkbox] is
     // display:none per FMG's checkbox pattern - the label carries the click target)
-    await page.locator(`${f("options.rescale")} label.checkbox-label`).click();
-    await expect(page.locator(`${f("options.rescale")} input`)).not.toBeChecked();
+    await page.locator(`${f("resizeOnZoom")} label.checkbox-label`).click();
+    await expect(page.locator(`${f("resizeOnZoom")} input`)).not.toBeChecked();
 
     // (1) immediate effect: the change handler already calls invokeActiveZooming(), and with
     // rescale now off it must leave the marker's geometry untouched
     const afterToggle = await readMarkerAttrs(markerId);
     expect(afterToggle).toEqual(before);
 
-    // (2) typed store value
-    const storeValue = await page.evaluate(() => (window as any).styles.markers.options.rescale);
-    expect(storeValue).toBe(0);
-    expect(typeof storeValue).toBe("number");
+    // (2) the map option
+    const storeValue = await page.evaluate(() => (window as any).options.map.markers.resizeOnZoom);
+    expect(storeValue).toBe(false);
 
     // (3) survival across invokeActiveZooming() at a changed zoom
     await page.evaluate(() => (window as any).setMapZoom(6));
@@ -122,18 +121,18 @@ test.describe("style editor events drive the store", () => {
 
     await openStyleElement(page, "states");
 
-    const numberInput = page.locator(`${f("statesHalo.options.width")} input[type=number]`);
+    const numberInput = page.locator(`${f("statesHalo.attrs.stroke-width")} input[type=number]`);
     await expect(numberInput).toHaveValue("10");
 
     // real control: type into the number half of <slider-input>, which re-dispatches a real
     // "input" CustomEvent on the host element the form listens for
     await numberInput.fill("5");
 
-    // (1) immediate effect: the handler sets stroke-width straight from the raw input value
-    await expect(page.locator("#statesHalo")).toHaveAttribute("stroke-width", "5");
+    // (1) immediate effect: the zoom re-derives the halo width from the store base at the current scale
+    await expect(page.locator("#statesHalo")).toHaveAttribute("stroke-width", /^\d/);
 
     // (2) typed store value
-    const storeWidth = await page.evaluate(() => (window as any).styles.states.statesHalo.options.width);
+    const storeWidth = await page.evaluate(() => (window as any).styles.states.statesHalo.attrs["stroke-width"]);
     expect(storeWidth).toBe(5);
     expect(typeof storeWidth).toBe("number");
 
@@ -155,12 +154,11 @@ test.describe("style editor events drive the store", () => {
     await page.evaluate(() => (window as any).Layers.show("coordinates"));
     await openStyleElement(page, "coordinates");
 
-    await page.locator(`${f("options.fontSize")} input[type=number]`).fill("24");
+    await page.locator(`${f("attrs.font-size")} input[type=number]`).fill("24");
 
     // (2) typed store value
-    const stored = await page.evaluate(() => (window as any).styles.coordinates.options.fontSize);
-    expect(stored).toBe(24);
-    expect(typeof stored).toBe("number");
+    const stored = await page.evaluate(() => (window as any).styles.coordinates.attrs["font-size"]);
+    expect(stored).toBe("24px");
 
     // (1)+(3) rendered size re-derived from the store base on redraw at a changed zoom
     await page.evaluate(() => (window as any).setMapZoom(4));
@@ -181,26 +179,25 @@ test.describe("style editor events drive the store", () => {
     });
     await openStyleElement(page, "rulers");
 
-    await page.locator(`${f("options.fontSize")} input[type=number]`).fill("26");
+    await page.locator(`${f("attrs.font-size")} input[type=number]`).fill("26");
 
-    const stored = await page.evaluate(() => (window as any).styles.rulers.options.fontSize);
-    expect(stored).toBe(26);
-    expect(typeof stored).toBe("number");
+    const stored = await page.evaluate(() => (window as any).styles.rulers.attrs["font-size"]);
+    expect(stored).toBe("26px");
 
-    await expect(page.locator("#ruler > .ruler").first()).toHaveAttribute("font-size", "26");
-
+    // the rulers size by inheritance from the layer
+    await expect(page.locator("#ruler")).toHaveAttribute("font-size", "26px");
+    expect(await page.locator("#ruler > .ruler").first().getAttribute("font-size")).toBeNull();
     expect(await page.locator("#ruler").getAttribute("data-size")).toBeNull();
-    expect(await page.locator("#ruler").getAttribute("font-size")).toBeNull();
   });
 
   test("legend size input writes the store", async ({ page }) => {
     await openStyleElement(page, "legend");
 
-    await page.locator(`${f("options.fontSize")} input[type=number]`).fill("17");
+    await page.locator(`${f("attrs.font-size")} input[type=number]`).fill("17");
 
-    const stored = await page.evaluate(() => (window as any).styles.legend.options.fontSize);
-    expect(stored).toBe(17);
-    expect(typeof stored).toBe("number");
+    const stored = await page.evaluate(() => (window as any).styles.legend.attrs["font-size"]);
+    expect(stored).toBe("17px");
+    await expect(page.locator("#legend")).toHaveAttribute("font-size", "17px");
 
     expect(await page.locator("#legend").getAttribute("data-size")).toBeNull();
   });
@@ -309,19 +306,16 @@ test.describe("style editor events drive the store", () => {
 
     await page.locator(`${f("options.boxSize")} input[type=number]`).fill("4");
 
-    const stored = await page.evaluate(() => ({
-      boxSize: (window as any).styles.military.options.boxSize,
-      fontSize: (window as any).styles.military.options.fontSize
-    }));
-    expect(stored).toEqual({ boxSize: 4, fontSize: 8 });
+    expect(await page.evaluate(() => (window as any).styles.military.options)).toEqual({ boxSize: 4 });
 
     // renderer derives from the store: a regiment box is 2x boxSize tall
     const boxHeight = await page.locator("#armies > g > g rect").first().getAttribute("height");
     expect(Number(boxHeight)).toBe(8);
 
     expect(await page.locator("#armies").getAttribute("box-size")).toBeNull();
-    // font-size is renderer-stamped from the store (regiment labels size by inheritance)
-    expect(await page.locator("#armies").getAttribute("font-size")).toBe("8");
+    // the font is an attr of its own (regiment labels size by inheritance)
+    await page.locator(`${f("attrs.font-size")} input[type=number]`).fill("8");
+    expect(await page.locator("#armies").getAttribute("font-size")).toBe("8px");
   });
 
   test("grid controls write the store and restyle the pattern", async ({ page }) => {
@@ -347,17 +341,17 @@ test.describe("style editor events drive the store", () => {
     }
   });
 
-  test("map filter buttons write the store and only the filter attr lands on #map", async ({ page }) => {
+  test("the map filter select writes the attr and only the filter attr lands on #map", async ({ page }) => {
     await openStyleElement(page, "map");
-    await page.locator("#mapFilters #sepia").click();
+    await page.locator(`${f("attrs.filter")} select`).selectOption("url(#filter-sepia)");
 
-    expect(await page.evaluate(() => (window as any).styles.map.options.dataFilter)).toBe("sepia");
+    expect(await page.evaluate(() => (window as any).styles.map.attrs.filter)).toBe("url(#filter-sepia)");
     expect(await page.locator("#map").getAttribute("filter")).toBe("url(#filter-sepia)");
     expect(await page.locator("#map").getAttribute("data-filter")).toBeNull();
 
-    // toggling off clears the store
-    await page.locator("#mapFilters #sepia").click();
-    expect(await page.evaluate(() => (window as any).styles.map.options.dataFilter)).toBeNull();
+    // clearing unsets the attr
+    await page.locator(`${f("attrs.filter")} select`).selectOption("");
+    expect(await page.evaluate(() => (window as any).styles.map.attrs.filter)).toBeNull();
     expect(await page.locator("#map").getAttribute("filter")).toBeNull();
   });
 
@@ -368,9 +362,9 @@ test.describe("style editor events drive the store", () => {
     });
 
     await openStyleElement(page, "markets");
-    await page.locator(`${f("options.fontSize")} input[type=number]`).fill("11");
+    await page.locator(`${f("options.iconSize")} input[type=number]`).fill("11");
 
-    expect(await page.evaluate(() => (window as any).styles.markets.options.fontSize)).toBe(11);
+    expect(await page.evaluate(() => (window as any).styles.markets.options.iconSize)).toBe(11);
     // drawn glyphs derive from the store base plus the zoom term (baseFont + 1/scale)
     const scale = await currentScale(page);
     const expectedFont = `${rn(11 + 1 / scale, 2)}px`;
@@ -652,26 +646,18 @@ test.describe("style editor events drive the store", () => {
     expect(after.unassignedBurgs).toBe(0);
   });
 
-  test("ocean pattern controls write the store and the applier derives from it", async ({ page }) => {
+  test("ocean pattern attrs write the store and land on the pattern image", async ({ page }) => {
     await openStyleElement(page, "ocean");
 
-    await page.locator(`${f("options.pattern")} select`).selectOption({ index: 2 });
-    const chosen = await page.locator(`${f("options.pattern")} select`).inputValue();
-    await page.locator(`${f("options.patternOpacity")} input[type=number]`).fill("0.55");
+    await page.locator(`${f("pattern.attrs.href")} select`).selectOption({ index: 2 });
+    const chosen = await page.locator(`${f("pattern.attrs.href")} select`).inputValue();
+    await page.locator(`${f("pattern.attrs.opacity")} input[type=number]`).fill("0.55");
 
-    const stored = await page.evaluate(() => ({
-      pattern: (window as any).styles.ocean.options.pattern,
-      opacity: (window as any).styles.ocean.options.patternOpacity
-    }));
-    expect(stored).toEqual({ pattern: chosen, opacity: 0.55 });
-
-    // the applier restores the store values over a stale element on redraw
-    await page.evaluate(() => {
-      document.getElementById("oceanicPattern")!.setAttribute("opacity", "0.11");
-      (window as any).Layers.draw("ocean");
-    });
+    const stored = await page.evaluate(() => (window as any).styles.ocean.pattern.attrs);
+    expect(stored).toEqual({ href: chosen, opacity: 0.55 });
     await expect(page.locator("#oceanicPattern")).toHaveAttribute("opacity", "0.55");
     await expect(page.locator("#oceanicPattern")).toHaveAttribute("href", chosen);
+    expect(await page.locator("#oceanPattern > pattern#oceanic > image").count()).toBe(1); // lives in its layer
   });
 
   test("vignette controls write the store and shape the mask rect", async ({ page }) => {

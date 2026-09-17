@@ -56,7 +56,7 @@ function reconcileMarkets({ root, bounds }: ViewportRenderContext): void {
   if (!container || !Layers.isOn("markets")) return;
   if (sourcePack !== pack || sourceMarkets !== pack.cells.market) buildTerritories();
 
-  const { size, fontSize: baseFont, icon } = styles.markets.options;
+  const { size, iconSize: baseFont, icon } = styles.markets.options;
   const radius = Math.max(rn(size + 1 / bounds.scale, 2), 2);
   const fontSize = Math.max(rn(baseFont + 1 / bounds.scale, 2), 2);
   const strokeWidth = rn(radius / 8, 2);
