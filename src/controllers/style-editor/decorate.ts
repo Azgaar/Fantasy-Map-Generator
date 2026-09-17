@@ -58,7 +58,8 @@ export class FormDecoration {
       const diff = this.baseline?.diffAt(this.sel, relativeOf(field));
       if (diff) this.reset(relativeOf(field), diff.presetValue);
     });
-    (field.querySelector(":scope > .ctl") ?? field).append(button);
+    // a composite field's rows: the button sits on the first; a row part or a gate takes it itself
+    (field.querySelector(":scope > .ctl, :scope > .row > .ctl") ?? field).append(button);
   }
 
   private markAll(): void {
@@ -70,7 +71,7 @@ export class FormDecoration {
   private mark(field: HTMLElement): void {
     const diff = this.baseline?.diffAt(this.sel, relativeOf(field));
     field.classList.toggle("changed", diff?.changed ?? false);
-    const button = field.querySelector<HTMLElement>(":scope > .ctl > .reset, :scope > .reset");
+    const button = field.querySelector<HTMLElement>(".reset");
     if (button && diff) {
       const value = diff.presetValue;
       const text = value == null ? "unset" : typeof value === "object" ? JSON.stringify(value) : String(value);

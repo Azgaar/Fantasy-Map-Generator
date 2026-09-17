@@ -13,8 +13,10 @@ export const FORMATS = {
   mask: /^url\(#[\w-]+\)$/,
   /** `none` or space-separated lengths: `5`, `.5 1`, `0 4 10 4` */
   strokeDasharray: /^(none|\d*\.?\d+( \d*\.?\d+)*)$/,
-  /** a number with an optional unit: `22%`, `8px`, `18` */
-  fontSize: /^\d+(\.\d+)?(%|px)?$/,
+  /** a label group's font size, relative to the labels layer: `22%` */
+  fontSize: /^\d+(\.\d+)?%$/,
+  /** an absolute font size: `8px` */
+  fontSizePx: /^\d+(\.\d+)?px$/,
   percentage: /^-?\d+(\.\d+)?%$/,
   /** the compass rose placement: `translate(80 80) scale(0.25)` */
   compassTransform: /^translate\(-?\d*\.?\d+ -?\d*\.?\d+\) scale\(\d*\.?\d+\)$/,

@@ -3,7 +3,7 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { z } from "zod";
 import "./slider-input";
-import { type FieldMeta, SchemaForm } from "./schema-form";
+import { type FieldMeta, row, rows, SchemaForm } from "./schema-form";
 
 const meta = z.registry<FieldMeta>();
 
@@ -221,6 +221,89 @@ describe("SchemaForm.render", () => {
     await new Promise(resolve => setTimeout(resolve, 0));
     expect(waves.open).toBe(true);
     expect(waves.querySelector<HTMLInputElement>("summary input")!.checked).toBe(true);
+  });
+});
+
+describe("SchemaForm layout metas", () => {
+  const layoutMeta = z.registry<FieldMeta>();
+  const layout = z.strictObject({
+    attrs: z.strictObject({
+      stroke: z.string().register(layoutMeta, { control: "color", group: "Stroke", label: "Color" }),
+      "stroke-width": z.number().min(0).max(10).register(layoutMeta, { group: "Stroke", label: "Width" }),
+      opacity: z.number().min(0).max(1),
+      fill: z.string().register(layoutMeta, { control: "color", group: "Fill", label: "Color" }),
+      "font-size": z.string().register(layoutMeta, { control: "percent", range: [1, 40] }),
+      style: z.string().register(layoutMeta, { control: "labelStyle" })
+    }),
+    options: z.strictObject({
+      x: z.string().register(layoutMeta, { control: "percent" }),
+      size: z.string().register(layoutMeta, { control: "px" })
+    })
+  });
+  const layoutValue = {
+    attrs: { stroke: "#000000", "stroke-width": 1, opacity: 1, fill: "#ffffff", "font-size": "22%", style: "" },
+    options: { x: "5%", size: "8px" }
+  };
+  // a composite control: its rows stand in place of the field's row
+  const labelStyle = (_spec: unknown, _value: unknown, set: (v: unknown) => void) => {
+    const shadow = document.createElement("input");
+    shadow.addEventListener("input", () => set(`text-shadow: ${shadow.value}`));
+    const dx = document.createElement("input");
+    dx.type = "number";
+    return rows(row("Shadow", shadow), row("Shift x", dx));
+  };
+  const mountLayout = () => {
+    const onChange = vi.fn();
+    const form = SchemaForm.render(layout, layoutValue, { meta: layoutMeta, onChange, controls: { labelStyle } });
+    document.body.append(form);
+    return { form, onChange };
+  };
+
+  test("a run of grouped fields sits under a caption with short labels, a run of one reads as a plain row", () => {
+    const { form } = mountLayout();
+    const stroke = form.querySelector<HTMLElement>('.group[data-group="Stroke"]')!;
+    expect(stroke.querySelector(".caption")?.textContent).toBe("Stroke");
+    expect([...stroke.querySelectorAll(".row > label")].map(l => l.textContent)).toEqual(["Color", "Width"]);
+    expect(field(form, "attrs.stroke").closest(".group")).toBe(stroke);
+    expect(field(form, "attrs.opacity").closest(".group")).toBeNull();
+    expect(form.querySelector('.group[data-group="Fill"]')).toBeNull();
+    expect(field(form, "attrs.fill").querySelector("label")?.textContent).toBe("Fill color");
+  });
+
+  test("a unit control is a slider with its unit when ranged, a number input beside its unit otherwise", () => {
+    const { form, onChange } = mountLayout();
+    const size = field(form, "attrs.font-size");
+    expect(size.querySelector("slider-input")).not.toBeNull();
+    expect(size.querySelector(".unit")?.textContent).toBe("%");
+    const number = size.querySelector<HTMLInputElement>("input[type=number]")!;
+    expect(number.value).toBe("22");
+    number.value = "10";
+    fire(number, "input");
+    expect(onChange).toHaveBeenLastCalledWith(["attrs", "font-size"], "10%");
+
+    const x = field(form, "options.x");
+    expect(x.querySelector("slider-input")).toBeNull();
+    const input = x.querySelector<HTMLInputElement>("input[type=number]")!;
+    expect(input.value).toBe("5");
+    input.value = "7.5";
+    fire(input, "input");
+    expect(onChange).toHaveBeenLastCalledWith(["options", "x"], "7.5%");
+
+    const px = field(form, "options.size").querySelector<HTMLInputElement>("input[type=number]")!;
+    px.value = "12";
+    fire(px, "input");
+    expect(onChange).toHaveBeenLastCalledWith(["options", "size"], "12px");
+  });
+
+  test("a composite control's rows stand in place of the field's row", () => {
+    const { form, onChange } = mountLayout();
+    const style = field(form, "attrs.style");
+    expect(style.classList.contains("rows")).toBe(true);
+    expect([...style.querySelectorAll(".row > label")].map(l => l.textContent)).toEqual(["Shadow", "Shift x"]);
+    const shadow = style.querySelector<HTMLInputElement>("input")!;
+    shadow.value = "white 0 0 4px";
+    fire(shadow, "input");
+    expect(onChange).toHaveBeenLastCalledWith(["attrs", "style"], "text-shadow: white 0 0 4px");
   });
 });
 

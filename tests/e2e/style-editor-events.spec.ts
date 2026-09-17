@@ -155,8 +155,7 @@ test.describe("style editor events drive the store", () => {
     await page.evaluate(() => (window as any).Layers.show("coordinates"));
     await openStyleElement(page, "coordinates");
 
-    await page.locator(`${f("options.fontSize")} input`).fill("24");
-    await page.locator(`${f("options.fontSize")} input`).dispatchEvent("input");
+    await page.locator(`${f("options.fontSize")} input[type=number]`).fill("24");
 
     // (2) typed store value
     const stored = await page.evaluate(() => (window as any).styles.coordinates.options.fontSize);
@@ -182,8 +181,7 @@ test.describe("style editor events drive the store", () => {
     });
     await openStyleElement(page, "rulers");
 
-    await page.locator(`${f("options.fontSize")} input`).fill("26");
-    await page.locator(`${f("options.fontSize")} input`).dispatchEvent("input");
+    await page.locator(`${f("options.fontSize")} input[type=number]`).fill("26");
 
     const stored = await page.evaluate(() => (window as any).styles.rulers.options.fontSize);
     expect(stored).toBe(26);
@@ -198,8 +196,7 @@ test.describe("style editor events drive the store", () => {
   test("legend size input writes the store", async ({ page }) => {
     await openStyleElement(page, "legend");
 
-    await page.locator(`${f("options.fontSize")} input`).fill("17");
-    await page.locator(`${f("options.fontSize")} input`).dispatchEvent("input");
+    await page.locator(`${f("options.fontSize")} input[type=number]`).fill("17");
 
     const stored = await page.evaluate(() => (window as any).styles.legend.options.fontSize);
     expect(stored).toBe(17);
@@ -337,7 +334,7 @@ test.describe("style editor events drive the store", () => {
       [f("options.dx"), "10"],
       [f("options.dy"), "5"]
     ] as const) {
-      await page.locator(`${input} input`).fill(value);
+      await page.locator(`${input} input[type=number]`).fill(value);
     }
 
     const stored = await page.evaluate(() => (window as any).styles.grid.options);
@@ -394,7 +391,7 @@ test.describe("style editor events drive the store", () => {
     await page.evaluate(() => (window as any).Layers.show("texture"));
     await openStyleElement(page, "texture");
 
-    await page.locator(`${f("options.x")} input`).fill("40");
+    await page.locator(`${f("options.x")} input[type=number]`).fill("40");
 
     const stored = await page.evaluate(() => (window as any).styles.texture.options);
     expect(stored.x).toBe(40);
@@ -425,7 +422,7 @@ test.describe("style editor events drive the store", () => {
       [f("options.x"), "50"],
       [f("back.options.top"), "12"]
     ] as const) {
-      await page.locator(`${input} input`).fill(value);
+      await page.locator(`${input} input[type=number]`).fill(value);
     }
     await page.locator(`${f("options.label")} input`).fill("here be dragons");
 
@@ -681,7 +678,7 @@ test.describe("style editor events drive the store", () => {
     await page.evaluate(() => (window as any).Layers.show("vignette"));
     await openStyleElement(page, "vignette");
 
-    await page.locator(`${f("options.x")} input`).fill("7");
+    await page.locator(`${f("options.x")} input[type=number]`).fill("7");
     await page.locator(`${f("options.filter")} input[type=number]`).fill("12");
 
     const stored = await page.evaluate(() => (window as any).styles.vignette.options);

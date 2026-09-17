@@ -2,17 +2,28 @@
 // and the composed ones call `set` with the whole string the schema format expects
 import { interpolateRgb, interpolateRgbBasis, scaleSequential } from "d3";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
-import { type ControlFactory, type ControlKind, STANDARD_CONTROLS, unsetValue } from "@/components/shared/schema-form";
+import {
+  type ControlFactory,
+  type ControlKind,
+  type FieldSpec,
+  inline,
+  row,
+  rows,
+  STANDARD_CONTROLS,
+  unsetValue
+} from "@/components/shared/schema-form";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
+import { burgIcon, burgIconPreview } from "@/data/burg-icons";
 import { TEXTURES } from "@/data/textures";
 import { VIGNETTE_PRESETS } from "@/data/vignette-presets";
 import { drawHeights } from "@/renderers/draw-heightmap";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
 import { addGoogleFont, addLocalFont, addWebFont } from "@/services/fonts";
 import { ensureEl, findEl, rn, toHEX } from "@/utils";
+import { BURG_ICON_DIALOG, openBurgIconDialog, paintBurgIconDialog } from "./burg-icon-dialog";
 
-const OPEN_DIALOGS = ["addFontDialog", "textureUrlDialog", "heightmapSchemeDialog"];
+const OPEN_DIALOGS = ["addFontDialog", "textureUrlDialog", "heightmapSchemeDialog", BURG_ICON_DIALOG];
 
 /** Dialogs a control may have left open; the editor calls it on close */
 export function destroyControlDialogs(): void {
@@ -40,9 +51,6 @@ const sideButton = (icon: string, tipText: string): HTMLButtonElement => {
   return button;
 };
 
-const number = (value: number, props: Props<"input"> = {}): HTMLInputElement =>
-  el("input", { type: "number", value: String(value), style: "width: 4.5em", ...props });
-
 // url(#id) from the map's own filter defs, or none
 const filter: ControlFactory = (spec, value, set) => {
   const entries: [string, string][] = [["", "None"]];
@@ -58,7 +66,6 @@ const filter: ControlFactory = (spec, value, set) => {
 
 // the loaded font families, plus the dialog that adds one
 const font: ControlFactory = (_spec, value, set) => {
-  const wrapper = el("span", { style: "display: contents" });
   const select = el("select");
   const fill = (selected: string) => {
     select.replaceChildren(...fonts.map(({ family }) => new Option(family, family)));
@@ -75,8 +82,7 @@ const font: ControlFactory = (_spec, value, set) => {
       set(family);
     })
   );
-  wrapper.append(select, add);
-  return wrapper;
+  return inline(select, add);
 };
 
 function openAddFontDialog(onAdded: (family: string) => void): void {
@@ -152,78 +158,40 @@ function openAddFontDialog(onAdded: (family: string) => void): void {
   });
 }
 
-const parseUnit = (value: unknown): { size: number; unit: string } => {
-  const match = String(value ?? "").match(/^(\d*\.?\d+)(%|px)?$/);
-  return { size: match ? Number(match[1]) : 0, unit: match?.[2] ?? "" };
-};
-
-// a font size: number and unit, with the classic +/- nudge
-const unit: ControlFactory = (_spec, value, set) => {
-  const wrapper = el("span", { style: "display: contents" });
-  const current = parseUnit(value);
-  const input = number(current.size, { min: "0.1", step: "0.1" });
-  const units: [string, string][] = [
-    ["%", "%"],
-    ["px", "px"]
-  ];
-  if (!current.unit) units.unshift(["", "—"]);
-  const unitSelect = selectOf(units, current.unit);
-  unitSelect.style.width = "4em";
-  const emit = () => {
-    const size = Number(input.value);
-    if (!Number.isFinite(size) || size <= 0) return;
-    set(`${size}${unitSelect.value}`);
-  };
-  const nudge = (delta: number) => {
-    input.value = String(Math.min(999, Math.max(0.1, rn(Number(input.value) + delta, 1))));
-    emit();
-  };
-  const plus = el("button", { className: "whiteButton", textContent: "+" });
-  plus.dataset.tip = "Increase font";
-  const minus = el("button", { className: "whiteButton", textContent: "-" });
-  minus.dataset.tip = "Decrease font";
-  plus.addEventListener("click", () => nudge(0.1));
-  minus.addEventListener("click", () => nudge(-0.1));
-  input.addEventListener("input", emit);
-  unitSelect.addEventListener("change", emit);
-  wrapper.append(plus, minus, input, unitSelect);
-  return wrapper;
-};
-
 const parseBlur = (value: unknown): number =>
   Number.parseFloat(String(value ?? "").match(/blur\(([^)]+)\)/)?.[1] ?? "") || 0;
 
 // blur(Npx), null at 0
 const blur: ControlFactory = (spec, value, set) => {
-  const wrapper = el("span", { style: "display: contents" });
   const slider = STANDARD_CONTROLS.slider!({ ...spec, step: spec.step ?? 0.1, nullAs: 0 }, parseBlur(value), next => {
     const px = Number(next);
     set(px > 0 ? `blur(${px}px)` : unsetValue(spec));
   });
-  wrapper.append(slider, el("span", { textContent: "px" }));
-  return wrapper;
+  return inline(slider, "px");
 };
 
-// translate(x y) scale(s) for the compass rose
+const withTip = <T extends HTMLElement>(node: T, tip: string): T => {
+  node.dataset.tip = tip;
+  return node;
+};
+
+type Slider = HTMLElement & { value: string };
+const sliderOf = (spec: FieldSpec, bounds: Partial<FieldSpec>, value: number, onInput: () => void): Slider =>
+  STANDARD_CONTROLS.slider!({ ...spec, kind: "slider", ...bounds }, value, onInput) as Slider;
+
+// translate(x y) scale(s) for the compass rose: a slider per part, the shifts reach across the map
 const transform: ControlFactory = (spec, value, set) => {
-  const wrapper = el("span", { style: "display: flex; flex-wrap: wrap; align-items: center; gap: .3em; width: 100%" });
   const match = String(value ?? "").match(/translate\((-?[\d.]+) (-?[\d.]+)\) scale\(([\d.]+)\)/);
-  const x = number(match ? Number(match[1]) : 80);
-  x.dataset.tip = "Shift by x axis in pixels";
-  const y = number(match ? Number(match[2]) : 80);
-  y.dataset.tip = "Shift by y axis in pixels";
-  const scale = STANDARD_CONTROLS.slider!(
-    { ...spec, kind: "slider", min: 0.02, max: 1, step: 0.01, label: "Size" },
-    match ? Number(match[3]) : 0.25,
-    () => emit()
+  const emit = () => set(`translate(${x.value} ${y.value}) scale(${scale.value})`);
+  const { width, height } = options.map.graph;
+  const x = sliderOf(spec, { min: 0, max: width, step: 1 }, match ? Number(match[1]) : 80, emit);
+  const y = sliderOf(spec, { min: 0, max: height, step: 1 }, match ? Number(match[2]) : 80, emit);
+  const scale = sliderOf(spec, { min: 0.02, max: 1, step: 0.01 }, match ? Number(match[3]) : 0.25, emit);
+  return rows(
+    withTip(row("Shift x", x), "Shift the rose along x, in pixels"),
+    withTip(row("Shift y", y), "Shift the rose along y, in pixels"),
+    withTip(row("Size", scale), "Scale the rose")
   );
-  scale.style.flex = "1 1 100%";
-  const emit = () =>
-    set(`translate(${x.value || 0} ${y.value || 0}) scale(${(scale as HTMLElement & { value: string }).value})`);
-  x.addEventListener("input", emit);
-  y.addEventListener("input", emit);
-  wrapper.append(el("span", { textContent: "x" }), x, el("span", { textContent: "y" }), y, scale);
-  return wrapper;
 };
 
 type LabelStyle = { shadow: string; transform: string; dx: number; dy: number; rest: string[] };
@@ -256,32 +224,19 @@ export function composeLabelStyle({ shadow, transform, dx, dy, rest }: LabelStyl
   return declarations.length ? declarations.join("; ") : null;
 }
 
-// text shadow, letter case and the label shift, kept in one cssText
+// text shadow, letter case and the label shift, kept in one cssText: a row each
 const labelStyle: ControlFactory = (spec, value, set) => {
-  const wrapper = el("span", { style: "display: flex; flex-wrap: wrap; align-items: center; gap: .3em; width: 100%" });
   const parsed = parseLabelStyle(value);
-  const shadow = el("input", {
-    type: "text",
-    value: parsed.shadow,
-    placeholder: "text shadow",
-    style: "flex: 1 1 100%"
-  });
-  shadow.dataset.tip = "Set text shadow, e.g. white 0 0 4px";
+  const shadow = el("input", { type: "text", value: parsed.shadow, placeholder: "none" });
   const transform = selectOf(
     [
-      ["", "No text transform"],
+      ["", "As is"],
       ["uppercase", "Uppercase"],
       ["lowercase", "Lowercase"],
       ["capitalize", "Capitalize"]
     ],
     parsed.transform
   );
-  transform.style.flex = "1 1 100%";
-  transform.dataset.tip = "Change the letter case of the labels as displayed";
-  const dx = number(parsed.dx, { min: "-5", max: "5", step: "0.01" });
-  dx.dataset.tip = "Set label shift along X axis, in em";
-  const dy = number(parsed.dy, { min: "-5", max: "5", step: "0.01" });
-  dy.dataset.tip = "Set label shift along Y axis, in em";
   const emit = () => {
     const next = composeLabelStyle({
       shadow: shadow.value.trim(),
@@ -292,28 +247,20 @@ const labelStyle: ControlFactory = (spec, value, set) => {
     });
     set(next ?? unsetValue(spec));
   };
+  const dx = sliderOf(spec, { min: -2, max: 2, step: 0.01 }, parsed.dx, emit);
+  const dy = sliderOf(spec, { min: -2, max: 2, step: 0.01 }, parsed.dy, emit);
   shadow.addEventListener("input", emit);
   transform.addEventListener("change", emit);
-  dx.addEventListener("input", emit);
-  dy.addEventListener("input", emit);
-  wrapper.append(shadow, transform, el("span", { textContent: "shift x" }), dx, el("span", { textContent: "y" }), dy);
-  return wrapper;
-};
-
-// "5%"
-const percent: ControlFactory = (_spec, value, set) => {
-  const wrapper = el("span", { style: "display: contents" });
-  const input = number(Number.parseFloat(String(value ?? "")) || 0, { step: "0.1" });
-  input.addEventListener("input", () => {
-    if (input.value !== "" && Number.isFinite(Number(input.value))) set(`${Number(input.value)}%`);
-  });
-  wrapper.append(input, el("span", { textContent: "%" }));
-  return wrapper;
+  return rows(
+    withTip(row("Shadow", shadow), "Set text shadow, e.g. white 0 0 4px"),
+    withTip(row("Letter case", transform), "Change the letter case of the labels as displayed"),
+    withTip(row("Shift x", dx), "Shift the labels along x, in em"),
+    withTip(row("Shift y", dy), "Shift the labels along y, in em")
+  );
 };
 
 // a heightmap colour scheme, built-in or a custom gradient
 const scheme: ControlFactory = (_spec, value, set) => {
-  const wrapper = el("span", { style: "display: contents" });
   const current = typeof value === "string" ? value : "bright";
   HeightmapColorSchemes.ensure(current);
   const select = selectOf(
@@ -329,8 +276,7 @@ const scheme: ControlFactory = (_spec, value, set) => {
       set(stops);
     })
   );
-  wrapper.append(select, add);
-  return wrapper;
+  return inline(select, add);
 };
 
 function openSchemeBuilder(current: string, onCreate: (stops: string) => void): void {
@@ -430,7 +376,6 @@ function openSchemeBuilder(current: string, onCreate: (stops: string) => void): 
 
 // a bundled texture or any image URL
 const texture: ControlFactory = (_spec, value, set) => {
-  const wrapper = el("span", { style: "display: contents" });
   const current = typeof value === "string" ? value : "";
   const entries: [string, string][] = Object.entries(TEXTURES);
   if (current && !(current in TEXTURES)) entries.push([current, current.split("/").pop()!.slice(0, 20)]);
@@ -444,8 +389,7 @@ const texture: ControlFactory = (_spec, value, set) => {
       set(url);
     })
   );
-  wrapper.append(select, add);
-  return wrapper;
+  return inline(select, add);
 };
 
 function openTextureUrlDialog(onApply: (url: string) => void): void {
@@ -485,42 +429,67 @@ function openTextureUrlDialog(onApply: (url: string) => void): void {
   });
 }
 
-// <burg-icon-picker>, previewed in the group's fill and stroke as they are edited
-const icon: ControlFactory = (spec, value, set) => {
-  const picker = document.createElement("burg-icon-picker") as HTMLElement & { value: string };
-  if (spec.path.includes("anchors")) picker.setAttribute("anchors", "");
-  picker.value = typeof value === "string" ? value : "";
-  picker.addEventListener("change", () => set(picker.value));
+// a button that opens a picker dialog: the current value drawn, and a caret
+const pickButton = (): HTMLButtonElement => el("button", { type: "button", className: "pick" });
 
-  // the fill and stroke rows of the same group are siblings rendered after this control
+// the group's icon, drawn in its fill and stroke as they are edited; the sets open in a dialog
+const icon: ControlFactory = (spec, value, set) => {
+  const anchors = spec.path.includes("anchors");
+  const button = pickButton();
+  let current = typeof value === "string" ? value : "";
+  const show = () => {
+    const icon = burgIcon(current);
+    button.innerHTML = `${burgIconPreview(icon)}<span>${icon.name}</span>`;
+  };
+  show();
+
+  // the fill and stroke rows of the same group are siblings rendered before this control
+  const paint = { fill: "none", stroke: "none" };
+  const applyPaint = () => {
+    button.style.fill = paint.fill;
+    button.style.stroke = paint.stroke;
+    paintBurgIconDialog(paint.fill, paint.stroke);
+  };
   queueMicrotask(() => {
-    const form = picker.closest(".schema-form");
+    const form = button.closest(".schema-form");
     const prefix = spec.path.slice(0, -2);
-    const outputs = ["fill", "stroke"].map(attr => ({
-      attr,
-      output: form?.querySelector<HTMLOutputElement>(`[data-field="${[...prefix, "attrs", attr].join(".")}"] output`)
-    }));
-    const paint = () => {
-      for (const { attr, output } of outputs) picker.style.setProperty(attr, output?.value || "none");
-    };
-    paint();
-    const observer = new MutationObserver(paint);
-    for (const { output } of outputs)
-      if (output) observer.observe(output, { childList: true, characterData: true, subtree: true });
+    for (const attr of ["fill", "stroke"] as const) {
+      const hex = form?.querySelector<HTMLInputElement>(
+        `[data-field="${[...prefix, "attrs", attr].join(".")}"] input.hex`
+      );
+      const read = () => {
+        paint[attr] = hex?.value || "none";
+        applyPaint();
+      };
+      read();
+      hex?.addEventListener("input", read);
+      hex?.addEventListener("change", read);
+    }
   });
-  return picker;
+
+  button.addEventListener("click", () =>
+    openBurgIconDialog({
+      anchors,
+      selected: current,
+      ...paint,
+      onPick: id => {
+        current = id;
+        show();
+        set(id);
+      }
+    })
+  );
+  return button;
 };
 
 // the market marker emoji, through the Icon Selector
 const emoji: ControlFactory = (_spec, value, set) => {
-  const button = el("button", {
-    type: "button",
-    textContent: String(value ?? ""),
-    style: "background: none; padding: 0"
-  });
+  const button = pickButton();
+  const symbol = el("span", { className: "emoji", textContent: String(value ?? "") });
+  button.append(symbol, el("span", { textContent: "change" }));
   button.addEventListener("click", () => {
-    void Controllers.IconSelector.open(button.textContent ?? "", next => {
-      button.textContent = next;
+    void Controllers.IconSelector.open(symbol.textContent ?? "", next => {
+      symbol.textContent = next;
       set(next);
     });
   });
@@ -572,11 +541,9 @@ export function updateGridSizeReadout(): void {
 export const CUSTOM_CONTROLS: Partial<Record<ControlKind, ControlFactory>> = {
   filter,
   font,
-  unit,
   blur,
   transform,
   labelStyle,
-  percent,
   scheme,
   texture,
   icon,

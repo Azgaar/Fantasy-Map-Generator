@@ -19,7 +19,7 @@ test("stylesFromMap harvests attrs, options and dynamic groups with legacy prece
   expect(styles.rivers.attrs.fill).toBe("#5d97bb");
   expect(styles.rivers.attrs.opacity).toBe(0.9);
   expect(styles.grid.options.type).toBe("pointyHex");
-  expect(styles.labels.groups.state.attrs["font-size"]).toBe("22");
+  expect(styles.labels.groups.state.attrs["font-size"]).toBe("22%"); // a group's size takes the unit the schema pins
   expect(styles.burgIcons.burgIcons.groups.capital.options.size).toBe(2);
 });
 

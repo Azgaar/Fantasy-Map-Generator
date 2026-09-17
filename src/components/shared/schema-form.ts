@@ -10,12 +10,12 @@ export type ControlKind =
   | "color"
   | "filter"
   | "mask"
+  | "percent"
+  | "px"
   | "font"
-  | "unit"
   | "blur"
   | "transform"
   | "labelStyle"
-  | "percent"
   | "scheme"
   | "texture"
   | "icon"
@@ -33,6 +33,7 @@ export type FieldMeta = {
   nullAs?: number | string; // what an unset attr shows as (opacity null → 1, filter null → "")
   hidden?: true; // stored, never edited
   gate?: string; // on a nested object: the key (or dotted path) that switches the rest of the section on
+  group?: string; // a caption over the consecutive fields sharing it; their labels read under it ("Stroke" → "Width")
 };
 
 export type FieldSpec = {
@@ -49,6 +50,7 @@ export type FieldSpec = {
   optional: boolean; // an unset optional is undefined, an unset nullable is null
   nullAs?: number | string;
   valueType: "boolean" | "number" | "string" | "unknown"; // the leaf's own type, for controls that adapt (a checkbox over a 0/1 number)
+  group?: string;
 };
 
 export type ControlFactory = (spec: FieldSpec, value: unknown, set: (value: unknown) => void) => HTMLElement;
@@ -101,8 +103,6 @@ const isRecord = (schema: z.ZodType): boolean => (schema as any).def?.type === "
 
 /** Sentence case from a key: "stroke-width" → "Stroke width", "patternOpacity" → "Pattern opacity" */
 export function labelOf(key: string): string {
-  if (key === "dx") return "Shift x";
-  if (key === "dy") return "Shift y";
   const words = key
     .replace(/[-_]/g, " ")
     .replace(/([a-z\d])([A-Z])/g, "$1 $2")
@@ -146,17 +146,18 @@ function fieldSpec(key: string, schema: z.ZodType, meta: Meta, path: string[] = 
     nullable,
     optional,
     nullAs: fieldMeta.nullAs,
-    valueType
+    valueType,
+    group: fieldMeta.group
   };
 }
 
-export type WalkedField = { spec: FieldSpec; hidden: boolean };
+export type WalkedField = { spec: FieldSpec; hidden: boolean; gate: boolean }; // a gate renders in its section's header
 
 /** Every leaf of an object schema in declaration order. Records are skipped unless `records` is set,
  * which descends into their value type under a `*` segment */
 function walk(schema: z.ZodObject, meta: Meta, options: { records?: boolean } = {}): WalkedField[] {
   const out: WalkedField[] = [];
-  const visit = (node: z.ZodObject, nodePath: string[]) => {
+  const visit = (node: z.ZodObject, nodePath: string[], gate?: string) => {
     for (const [key, child] of Object.entries(node.shape as Record<string, z.ZodType>)) {
       const { leaf, meta: childMeta } = unwrap(child, meta);
       if (isRecord(leaf)) {
@@ -165,10 +166,19 @@ function walk(schema: z.ZodObject, meta: Meta, options: { records?: boolean } = 
         continue;
       }
       if (isObject(leaf)) {
-        visit(leaf, [...nodePath, key]);
+        visit(
+          leaf,
+          [...nodePath, key],
+          childMeta.gate ? [...nodePath, key, ...childMeta.gate.split(".")].join(".") : gate
+        );
         continue;
       }
-      out.push({ spec: fieldSpec(key, child, meta, [...nodePath, key]), hidden: Boolean(childMeta.hidden) });
+      const path = [...nodePath, key];
+      out.push({
+        spec: fieldSpec(key, child, meta, path),
+        hidden: Boolean(childMeta.hidden),
+        gate: path.join(".") === gate
+      });
     }
   };
   visit(schema, []);
@@ -178,14 +188,20 @@ function walk(schema: z.ZodObject, meta: Meta, options: { records?: boolean } = 
 const getPath = (value: unknown, path: string[]): unknown =>
   path.reduce<unknown>((node, key) => (node == null ? undefined : (node as Record<string, unknown>)[key]), value);
 
-// sections are cards: a header with the caret, title, gate and a preview slot; the body holds the rows
+// sections are cards: a header with the caret, title, gate and a preview slot; the body holds the rows.
+// A row is a label column and a control column; every control fills its column so the columns line up
 const STYLE = /* css */ `
-  .schema-form .row { display: flex; align-items: center; gap: .4em; min-height: 1.9em; position: relative; }
-  .schema-form .row > label { flex: 0 0 8em; }
+  .schema-form .row { display: flex; align-items: center; gap: .4em; min-height: 1.9em; }
+  .schema-form .row > label { flex: 0 0 8em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .schema-form .row > .ctl { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: .3em; }
-  .schema-form .row > .ctl > select, .schema-form .row > .ctl > input[type="text"], .schema-form .row > .ctl > input[type="number"], .schema-form .row > .ctl > slider-input { flex: 1 1 auto; min-width: 0; }
-  .schema-form .row > .ctl > input[type="number"] { max-width: 6em; }
-  .schema-form .row > .ctl > input.hex { flex: 0 0 5.2em; font-family: var(--monospace, monospace); font-size: .9em; }
+  .schema-form .ctl > select, .schema-form .ctl > input[type="text"], .schema-form .ctl > slider-input, .schema-form .ctl > .inline { flex: 1 1 0; min-width: 0; }
+  .schema-form .inline { display: flex; align-items: center; gap: .3em; }
+  .schema-form .inline > select, .schema-form .inline > input[type="text"], .schema-form .inline > input[type="number"], .schema-form .inline > slider-input { flex: 1 1 0; min-width: 0; }
+  .schema-form .unit { flex: none; opacity: .7; }
+  .schema-form .rows { display: contents; }
+  .schema-form .group { margin: .2em 0 .3em; padding-left: .5em; border-left: 2px solid var(--style-group-line, rgba(0, 0, 0, .15)); }
+  .schema-form .group > .caption { font-size: .85em; line-height: 1.8em; text-transform: uppercase; letter-spacing: .05em; opacity: .7; }
+  .schema-form .group .row > label { flex-basis: calc(8em - .5em - 2px); }
   .schema-form details[data-section] { margin: .4em 0; border: 1px solid var(--dark-solid, #999); border-radius: 3px; background: var(--style-card-fill, rgba(255, 255, 255, .1)); overflow: hidden; }
   .schema-form details[data-section] details[data-section] { margin: .3em 0; }
   .schema-form details[data-section] > summary { display: flex; align-items: center; gap: .4em; cursor: pointer; font-weight: 700; padding: .3em .5em; list-style: none; background: var(--style-card-head, rgba(255, 255, 255, .2)); }
@@ -232,7 +248,17 @@ function render(schema: z.ZodObject, value: object, options: RenderOptions): HTM
     };
   }
   renderInto(root, schema, value, [], ctx);
+  for (const block of root.querySelectorAll<HTMLElement>(".group")) unwrapLoneGroup(block);
   return root;
+}
+
+// a caption over one row says nothing: the row reads as a plain one, "Stroke" + "Width" → "Stroke width"
+function unwrapLoneGroup(block: HTMLElement): void {
+  const rows = block.querySelectorAll(".row");
+  if (rows.length !== 1) return;
+  const label = rows[0].querySelector(":scope > label")!;
+  label.textContent = `${block.dataset.group} ${label.textContent!.toLowerCase()}`;
+  block.replaceWith(rows[0]);
 }
 
 function section(title: string, id: string): HTMLDetailsElement {
@@ -275,8 +301,30 @@ function renderInto(
     }
     if (meta.hidden) continue;
     const target = container === ctx.root && ctx.rootBody ? ctx.rootBody() : container;
-    target.append(renderRow(fieldSpec(key, child, ctx.meta, childPath), getPath(value, [key]), ctx));
+    place(target, fieldSpec(key, child, ctx.meta, childPath), getPath(value, [key]), ctx);
   }
+}
+
+// a field's row goes under its group's caption: the run of consecutive fields sharing the group
+function place(container: HTMLElement, spec: FieldSpec, value: unknown, ctx: Ctx): void {
+  let target = container;
+  if (spec.group) {
+    const last = container.lastElementChild as HTMLElement | null;
+    target = last?.classList.contains("group") && last.dataset.group === spec.group ? last : group(spec.group);
+    if (target !== last) container.append(target);
+  }
+  target.append(renderRow(spec, value, ctx));
+}
+
+function group(name: string): HTMLElement {
+  const block = document.createElement("div");
+  block.className = "group";
+  block.dataset.group = name;
+  const caption = document.createElement("div");
+  caption.className = "caption";
+  caption.textContent = name;
+  block.append(caption);
+  return block;
 }
 
 function renderSection(
@@ -335,24 +383,61 @@ function unwrapObject(schema: z.ZodType): z.ZodObject | undefined {
   return node?.def?.type === "object" ? node : undefined;
 }
 
+// a composite control brings its own rows (see `rows`) and stands in place of the field's row
 function renderRow(spec: FieldSpec, value: unknown, ctx: Ctx): HTMLElement {
-  const row = document.createElement("div");
-  row.className = "row";
-  row.dataset.field = spec.path.join(".");
-  if (spec.tip) row.dataset.tip = spec.tip;
-  const label = document.createElement("label");
-  label.textContent = spec.label;
+  const ctl = control(spec, value, ctx);
+  const field = ctl.classList.contains("rows") ? ctl : row(spec.label, ctl);
+  field.dataset.field = spec.path.join(".");
+  if (spec.tip) field.dataset.tip = spec.tip;
+  return field;
+}
+
+function control(spec: FieldSpec, value: unknown, ctx: Ctx): HTMLElement {
+  const factory = ctx.controls[spec.kind];
+  if (factory) return factory(spec, value, next => ctx.onChange(spec.path, next));
+  console.error(`SchemaForm: no control registered for "${spec.kind}" at ${spec.path.join(".")}`);
+  const missing = document.createElement("span");
+  missing.textContent = `unknown control: ${spec.kind}`;
+  return missing;
+}
+
+// --- the building blocks a control may compose ---
+
+/** A row: the label column and the control column */
+export function row(label: string, ...controls: HTMLElement[]): HTMLElement {
+  const el = document.createElement("div");
+  el.className = "row";
+  const text = document.createElement("label");
+  text.textContent = label;
   const ctl = document.createElement("div");
   ctl.className = "ctl";
-  const factory = ctx.controls[spec.kind];
-  if (factory) ctl.append(factory(spec, value, next => ctx.onChange(spec.path, next)));
-  else {
-    ctl.textContent = `unknown control: ${spec.kind}`;
-    console.error(`SchemaForm: no control registered for "${spec.kind}" at ${spec.path.join(".")}`);
-  }
-  row.append(label, ctl);
-  return row;
+  ctl.append(...controls);
+  el.append(text, ctl);
+  return el;
 }
+
+/** The rows of a composite control, rendered in place of the field's own row */
+export function rows(...items: HTMLElement[]): HTMLElement {
+  const el = document.createElement("div");
+  el.className = "rows";
+  el.append(...items);
+  return el;
+}
+
+/** A control of several elements that together fill the column */
+export function inline(...items: (HTMLElement | string)[]): HTMLElement {
+  const el = document.createElement("span");
+  el.className = "inline";
+  el.append(...items.map(item => (typeof item === "string" ? unit(item) : item)));
+  return el;
+}
+
+const unit = (text: string): HTMLElement => {
+  const el = document.createElement("span");
+  el.className = "unit";
+  el.textContent = text;
+  return el;
+};
 
 // --- the standard controls ---
 
@@ -447,14 +532,13 @@ export function toColorInput(value: unknown): string {
 
 // the swatch and an editable hex beside it: a valid #rrggbb typed in writes and syncs the swatch, anything else reverts
 const color: ControlFactory = (_spec, value, set) => {
-  const wrapper = document.createElement("span");
-  wrapper.style.display = "contents";
   const input = document.createElement("input");
   input.type = "color";
   input.value = toColorInput(value);
   const hex = document.createElement("input");
   hex.type = "text";
   hex.className = "hex";
+  hex.placeholder = "none";
   hex.spellcheck = false;
   hex.value = typeof value === "string" ? value : "";
   input.addEventListener("input", () => {
@@ -470,9 +554,21 @@ const color: ControlFactory = (_spec, value, set) => {
     input.value = hex.value = next;
     set(next);
   });
-  wrapper.append(input, hex);
-  return wrapper;
+  return inline(input, hex);
 };
+
+// a number stored with its unit ("22%", "8px"): a slider when the field has a range, else a number input
+const withUnit =
+  (unit: string): ControlFactory =>
+  (spec, value, set) => {
+    const parsed = Number.parseFloat(String(value ?? ""));
+    const numeric = Number.isFinite(parsed) ? parsed : value == null ? null : 0;
+    const bounded = spec.min !== undefined && spec.max !== undefined;
+    const input = (bounded ? slider : number)({ ...spec, valueType: "number" }, numeric, next =>
+      set(next == null ? next : `${next}${unit}`)
+    );
+    return inline(input, unit);
+  };
 
 export const STANDARD_CONTROLS: Record<string, ControlFactory | undefined> = {
   checkbox,
@@ -480,7 +576,9 @@ export const STANDARD_CONTROLS: Record<string, ControlFactory | undefined> = {
   slider,
   number,
   text,
-  color
+  color,
+  percent: withUnit("%"),
+  px: withUnit("px")
 };
 
 export const SchemaForm = { render, fieldSpec, walk, unwrap };

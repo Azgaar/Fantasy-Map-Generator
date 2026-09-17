@@ -551,23 +551,35 @@ export function stripMigratedAttributes(): void {
 const EMPTY_MEANS_UNSET = new Set(["filter", "mask", "stroke-dasharray"]);
 const INHERIT_MEANS_UNSET = new Set(["stroke-linecap", "stroke-linejoin"]);
 
+// a font size used to take any unit; the schema pins one per element, so the number keeps its value and
+// takes that unit: a label group is relative to the layer (which is 100px before the zoom), the rest absolute
+const fontSizeWithUnit = (path: string[], value: string): string => {
+  const size = Number.parseFloat(value);
+  if (!Number.isFinite(size)) return value;
+  return `${size}${path[0] === "labels" && path[1] === "groups" ? "%" : "px"}`;
+};
+
 /** Rewrite a store-format record in place so its string attrs match the schema formats */
 export function normalizeStyles<T>(record: T): T {
-  const visit = (node: unknown, bag: boolean): void => {
+  const visit = (node: unknown, path: string[], bag: boolean): void => {
     if (typeof node !== "object" || node === null) return;
     for (const [key, value] of Object.entries(node)) {
       if (typeof value === "object") {
-        visit(value, key === "attrs" || key === "options");
+        visit(value, [...path, key], key === "attrs" || key === "options");
         continue;
       }
       if (!bag || typeof value !== "string") continue;
       const trimmed = value.trim();
       const unset =
         (EMPTY_MEANS_UNSET.has(key) && trimmed === "") || (INHERIT_MEANS_UNSET.has(key) && trimmed === "inherit");
-      (node as Record<string, unknown>)[key] = unset ? null : trimmed;
+      (node as Record<string, unknown>)[key] = unset
+        ? null
+        : key === "font-size"
+          ? fontSizeWithUnit(path, trimmed)
+          : trimmed;
     }
   };
-  visit(record, false);
+  visit(record, [], false);
   return record;
 }
 

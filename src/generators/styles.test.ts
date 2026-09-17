@@ -37,7 +37,8 @@ describe("attr formats", () => {
     ["blurFilter", ["blur(5px)", "blur(0.5px)"], ["", "blur(5)", "url(#blur5)", "blur(5px) "]],
     ["mask", ["url(#land)", "url(#vignette-mask)"], ["", "land", "url(#a) url(#b)"]],
     ["strokeDasharray", ["none", "5", ".5 1", "0 4 10 4", "3 1.2 0.5 1.2"], ["", "5,2", "5 px", "inherit"]],
-    ["fontSize", ["22%", "8px", "100px", "1.5%", "18"], ["", "22 %", "px", "-2%"]],
+    ["fontSize", ["22%", "1.5%"], ["", "22 %", "8px", "18", "-2%"]],
+    ["fontSizePx", ["8px", "100px", "1.5px"], ["", "8 px", "22%", "18", "-2px"]],
     ["percentage", ["0.3%", "-5%", "99.6%"], ["", "5", "5px", "5 %"]],
     [
       "compassTransform",
@@ -101,6 +102,24 @@ describe("normalizeStyles", () => {
     expect(doc.zones.attrs["stroke-dasharray"]).toBeNull();
     expect(doc.scaleBar.options.label).toBe("");
     expect(doc.vignette.options.filter).toBe("blur(30px)");
+    expect(stylesSchema.safeParse(doc).success).toBe(true);
+  });
+
+  test("a font size keeps its number and takes the unit its element pins", () => {
+    const doc = structuredClone(Styles.defaults) as any;
+    doc.labels.groups.capital.attrs["font-size"] = "6px"; // 6px of the 100px layer is 6%
+    doc.labels.groups.city.attrs["font-size"] = "5";
+    doc.labels.groups.town.attrs["font-size"] = " 4.5% ";
+    doc.labels.attrs["font-size"] = "100";
+    doc.temperature.attrs["font-size"] = "8%";
+    doc.scaleBar.attrs["font-size"] = 10; // a number stays as it is
+    normalizeStyles(doc);
+    expect(doc.labels.groups.capital.attrs["font-size"]).toBe("6%");
+    expect(doc.labels.groups.city.attrs["font-size"]).toBe("5%");
+    expect(doc.labels.groups.town.attrs["font-size"]).toBe("4.5%");
+    expect(doc.labels.attrs["font-size"]).toBe("100px");
+    expect(doc.temperature.attrs["font-size"]).toBe("8px");
+    expect(doc.scaleBar.attrs["font-size"]).toBe(10);
     expect(stylesSchema.safeParse(doc).success).toBe(true);
   });
 });

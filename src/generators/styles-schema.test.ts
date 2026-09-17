@@ -4,17 +4,15 @@ import { describe, expect, test } from "vitest";
 import { type ControlKind, SchemaForm } from "@/components/shared/schema-form";
 import { styleMeta, stylesSchema } from "./styles-schema";
 
-const STANDARD: ControlKind[] = ["checkbox", "select", "slider", "number", "text", "color"];
+const STANDARD: ControlKind[] = ["checkbox", "select", "slider", "number", "text", "color", "percent", "px"];
 // the kinds the style editor registers (src/controllers/style-editor/controls.ts)
 const CUSTOM: ControlKind[] = [
   "filter",
   "mask",
   "font",
-  "unit",
   "blur",
   "transform",
   "labelStyle",
-  "percent",
   "scheme",
   "texture",
   "icon",
@@ -47,9 +45,10 @@ describe("styles schema metadata", () => {
     expect(byPath["zones.attrs.stroke-width"].spec).toMatchObject({ kind: "slider", min: 0, max: 10, nullAs: 0 });
     expect(byPath["zones.attrs.filter"].spec.kind).toBe("filter");
     expect(byPath["zones.attrs.mask"].spec).toMatchObject({ kind: "select", label: "Clip to" });
-    expect(byPath["fogging.attrs.mask"].spec.kind).toBe("text");
-    expect(byPath["temperature.attrs.font-size"].spec.kind).toBe("unit");
-    expect(byPath["vignette.options.x"].spec.kind).toBe("percent");
+    expect(byPath["fogging.attrs.mask"].hidden).toBe(true);
+    expect(byPath["temperature.attrs.font-size"].spec).toMatchObject({ kind: "px", min: 1, max: 40 });
+    expect(byPath["labels.groups.*.attrs.font-size"].spec).toMatchObject({ kind: "percent", group: "Font" });
+    expect(byPath["vignette.options.x"].spec).toMatchObject({ kind: "percent", label: "Position x", min: 0, max: 100 });
     expect(byPath["compass.compassRose.attrs.transform"].spec.kind).toBe("transform");
     expect(byPath["labels.groups.*.attrs.style"].spec.kind).toBe("labelStyle");
     expect(byPath["labels.groups.*.attrs.font-weight"].spec).toMatchObject({
@@ -71,7 +70,10 @@ describe("styles schema metadata", () => {
       "states.statesHalo.attrs.stroke-width",
       "military.options.fontSize",
       "heightmap.landHeights.options.render",
-      "legend.options.x"
+      "legend.options.x",
+      "grid.attrs.transform",
+      "compass.attrs.shape-rendering",
+      "vignette.attrs.mask"
     ]) {
       expect(byPath[path]?.hidden, path).toBe(true);
     }
@@ -79,13 +81,21 @@ describe("styles schema metadata", () => {
     expect(byPath["labels.groups.*.attrs.font-size"].hidden).toBe(false);
   });
 
-  test("labels come from the meta or the key", () => {
-    expect(byPath["rivers.attrs.stroke-width"]?.spec.label ?? byPath["zones.attrs.stroke-width"].spec.label).toBe(
-      "Stroke width"
-    );
-    expect(byPath["ocean.options.patternOpacity"].spec.label).toBe("Pattern opacity");
-    expect(byPath["burgIcons.anchors.groups.*.options.dx"].spec.label).toBe("Shift x");
+  test("labels come from the meta or the key, and read under their group or row", () => {
+    expect(byPath["zones.attrs.stroke-width"].spec).toMatchObject({ group: "Stroke", label: "Width" });
+    expect(byPath["ocean.options.patternOpacity"].spec).toMatchObject({ group: "Pattern", label: "Opacity" });
+    expect(byPath["burgIcons.anchors.groups.*.options.dx"].spec).toMatchObject({
+      kind: "slider",
+      label: "Shift x",
+      nullAs: 0
+    });
     expect(byPath["heightmap.landHeights.options.skip"].spec.label).toBe("Reduce layers");
+    expect(byPath["heightmap.landHeights.options.relax"].spec.label).toBe("Simplify line");
+  });
+
+  test("no label needs a second line: the column holds 13 characters", () => {
+    const long = fields.filter(({ spec, hidden, gate }) => !hidden && !gate && spec.label.length > 13);
+    expect(long.map(({ spec }) => `${spec.path.join(".")}: ${spec.label}`)).toEqual([]);
   });
 
   test("tips survive on the fields the classic tab described", () => {

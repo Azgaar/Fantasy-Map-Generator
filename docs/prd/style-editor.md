@@ -40,6 +40,8 @@ src/controllers/style-editor/controls.ts   the custom controls the editor regist
 src/controllers/style-editor/effects.test.ts
 src/controllers/style-editor/baseline.ts   the current preset as the baseline: storePath, diffAt (§5)
 src/controllers/style-editor/decorate.ts   changed marks, reset buttons, card counts and previews (§5)
+src/controllers/style-editor/burg-icon-dialog.ts  the burg/port icon dialog (§3)
+src/data/burg-icons.ts                     the burg and port icon sets (§3)
 src/controllers/style-editor/elements-dialog.ts  the Style elements dialog (§5)
 src/controllers/style-editor/presets-dialog.ts   the Style presets gallery (§5)
 src/controllers/style-editor/baseline.test.ts
@@ -68,15 +70,15 @@ export type ControlKind =
   | "slider"
   | "number"
   | "text"
-  | "color" // standard, SchemaForm ships them
+  | "color"
+  | "percent"
+  | "px" // standard, SchemaForm ships them
   | "filter"
   | "mask"
   | "font"
-  | "unit"
   | "blur"
   | "transform"
   | "labelStyle"
-  | "percent"
   | "scheme"
   | "texture"
   | "icon"
@@ -85,12 +87,14 @@ export type ControlKind =
   | "mapFilter"; // the editor registers them
 export type FieldMeta = {
   control?: ControlKind; // overrides the derived control
-  label?: string; // default: key → sentence case ("stroke-width" → "Stroke width", "dx" → "Shift x")
+  label?: string; // default: key → sentence case ("stroke-width" → "Stroke width")
   tip?: string; // the row's data-tip
   step?: number; // sliders; default 1 for int, 0.01 for a range ≤ 2, else 0.1
+  range?: [number, number]; // slider bounds for a number the schema leaves unbounded; widened to hold the stored value
   nullAs?: number | string; // what an unset attr shows as (opacity null → 1, filter null → "")
   hidden?: true; // stored, never edited: autoFilter, labels.attrs.font-size, map.attrs.filter
   gate?: string; // on a nested object: the key (or dotted path) that switches the rest of the section on
+  group?: string; // a caption over the consecutive fields sharing it; their labels read under it ("Stroke" → "Width")
 };
 
 const color = hexColor.nullable().register(styleMeta, { control: "color" });
@@ -104,9 +108,27 @@ const contours = z
 `ZodDefault → ZodNullable → leaf` to find it. A use site that needs different meta than the constant's — the halo
 `filter` is a `blur`, `landHeights` must not gate on `render` while `oceanHeights` does, the layer-level
 `labels.attrs.font-size` is `hidden` — registers on a **`.clone()`**: `register` on the shared instance would
-mark every use, and a clone keeps the format while taking its own entry (verified on zod 4.4). Labels are derived from the key so the shared constants need no per-use text; a nested
-object (`contours`, `bands`, `oceanWaves`, `statesHalo`) becomes a subsection titled by its key,
-`attrs`/`options` are flattened (the store convention, not a UI one).
+mark every use. A clone reads its parent's entry under its own (zod 4 registries follow `parent`), so a
+variant overrides what it names and keeps the rest; it clears a key it must not inherit with `undefined`
+(`group: undefined` on the temperature label colour). Labels are derived from the key unless the meta
+names one; a nested object (`contours`, `bands`, `oceanWaves`, `statesHalo`) becomes a subsection titled by
+its key, `attrs`/`options` are flattened (the store convention, not a UI one).
+
+**Layout metas.** The form is one narrow column, so the schema also says how fields sit together:
+
+- `group` gathers a run of consecutive fields under a small caption and gives each a short label — the
+  shared `stroke`, `stroke-width`, `stroke-dasharray`, `stroke-linecap` read as **Stroke** › Color, Width,
+  Dash array, Linecap; `fill`/`fill-opacity` as **Fill** › Color, Opacity; the font attrs as **Font** ›
+  Family, Size, Style, Weight, Spacing. A run of one is not a group: the row reads "Stroke width".
+- No label is longer than 13 characters (`styles-schema.test.ts` guards it): the column shows it on one
+  line, and the CSS clips anything longer rather than wrapping.
+- Every number is a slider (`range` where zod has no bounds), the x/y shifts included: a slider per axis
+  ("Shift x", "Shift y") — two sliders never fit one line of the 300px panel, and a dragged offset beats a
+  typed one. The compass shift reaches across the map (`options.map.graph`), the others take a fixed reach
+  the stored value widens.
+- Raw layer attrs the classic tab never exposed stay `hidden`: `transform`, `shape-rendering`, and the defs
+  `mask` references (`url(#fog)`, `url(#vignette-mask)`); the land/water `clip` choice is the one mask
+  users pick.
 
 **Can the zod schema be the whole config?** For _field semantics_ — type, range, choices, nullability,
 default, control, label, tip, gating — yes, and the registry keeps it typed without touching validation. For
@@ -134,9 +156,13 @@ The formats (each a named const in `styles-schema.ts`, each with a valid/invalid
 - `stroke-dasharray` → `/^(none|\d*\.?\d+( \d*\.?\d+)*)$/` (presets carry `.5 1`).
 - `stroke-linecap` → `z.enum(["butt", "round", "square"]).nullable()`, `stroke-linejoin` likewise; `null`
   is "inherit".
-- `fontSize` → `/^\d+(\.\d+)?(%|px)?$/` (`control: "unit"`); `percentage` keeps its regex (`control:
-"percent"`); compass rose `transform` → `/^translate\(x y\) scale\(s\)$/` (`control: "transform"`);
-  label `style` → a cssText refined to `text-shadow`, `text-transform`, `transform: translate(…em, …em)`
+- `fontSize` → `/^\d+(\.\d+)?%$/` for a label group (relative to the labels layer, which the zoom sizes in
+  px) and `fontSizePx` → `/^\d+(\.\d+)?px$/` for the layer and the temperature labels: the unit is the
+  schema's choice, not the user's (`control: "percent"` / `"px"`, a slider with the unit beside it).
+  `normalizeStyles` (the v1.154.0 auto-update) keeps the number and rewrites the unit, so a `6px` label
+  group — 6px of the 100px layer — becomes `6%`. `percentage` keeps its regex (`control: "percent"`);
+  compass rose `transform` → `/^translate\(x y\) scale\(s\)$/` (`control: "transform"`); label
+  `style` → a cssText refined to `text-shadow`, `text-transform`, `transform: translate(…em, …em)`
   (`control: "labelStyle"`).
 - Enums where the editor already offers a fixed list: `grid.options.type`, `heightmap.options.curve`
   (`curveBasisClosed | curveLinear | curveStep`), `relief.options.set`, `oceanLayers.options.outline`,
@@ -385,21 +411,22 @@ side effect fires — with `Styles`, `Layers`, `Relief` stubbed.
 | filter         | `*.attrs.filter`           | `<option>`s from `#filters > filter[id][name]`, "None" first                                                                                                        | `url(#id)` / `null`                                                                            |
 | mask           | `*.attrs.mask`             | the `mask` enum                                                                                                                                                     | —                                                                                              |
 | font           | `attrs.font-family`        | `fonts` list + `+` button → add-font dialog (owned here; `fonts.ts` `addGoogleFont/addLocalFont/addWebFont` return the family and stop touching `#styleSelectFont`) | —                                                                                              |
-| unit           | `font-size` strings        | number + `%`/`px` select                                                                                                                                            | `"22%"`                                                                                        |
 | blur           | halo/vignette `filter`     | `<slider-input 0…10 step .1>` + "px"                                                                                                                                | `blur(5px)` / `null` at 0                                                                      |
-| transform      | compass rose               | x, y numbers + scale slider                                                                                                                                         | `translate(x y) scale(s)`                                                                      |
-| labelStyle     | label `attrs.style`        | shadow text, transform select, dx/dy numbers (em)                                                                                                                   | `text-shadow: …; text-transform: …; transform: translate(dx em, dy em)`, `null` when all empty |
-| percent        | vignette geometry          | number + "%"                                                                                                                                                        | `"5%"`                                                                                         |
+| transform      | compass rose               | three rows: Shift x, Shift y (sliders over the map extent), Size slider                                                                                             | `translate(x y) scale(s)`                                                                      |
+| labelStyle     | label `attrs.style`        | four rows under the Text caption: Shadow text, Letter case select, Shift x, Shift y sliders (em)                                                                    | `text-shadow: …; text-transform: …; transform: translate(dx em, dy em)`, `null` when all empty |
 | scheme         | heightmap `options.scheme` | `HeightmapColorSchemes.names()` + `+` → gradient builder dialog (ported from `style.js`, adds via `addCustomScheme`)                                                | —                                                                                              |
 | texture        | `texture.options.href`     | the texture list (moves from the template to `src/data/textures.ts`) + `+` → URL dialog with preview                                                                | —                                                                                              |
-| icon           | burg/anchor `options.icon` | `<burg-icon-picker>` (exists); `fill`/`stroke` rows update its preview through a `MutationObserver` on the row values, not a special case in `onChange`             | —                                                                                              |
-| emoji          | `markets.options.icon`     | button → `Controllers.IconSelector.open(current, set)`                                                                                                              | —                                                                                              |
+| icon           | burg/anchor `options.icon` | a `.pick` button drawing the icon in the group's fill/stroke (read from the colour rows' hex inputs) → `burg-icon-dialog.ts`, the sets from `data/burg-icons.ts`; a pick applies and keeps the dialog open | —                                                                                              |
+| emoji          | `markets.options.icon`     | a `.pick` button → `Controllers.IconSelector.open(current, set)`                                                                                                    | —                                                                                              |
 | vignettePreset | (no field: an extras row)  | `VIGNETTE_PRESETS` select; applying assigns into `styles.vignette` and calls `refresh()`                                                                            | —                                                                                              |
 | mapFilter      | `map.options.dataFilter`   | the four radio buttons; on change also sets `styles.map.attrs.filter = url(#filter-id)` (`map.attrs.filter` is `hidden`)                                            | —                                                                                              |
 
-Two decorations, not rows: grid `options.scale` appends a friendly size (`scale × 25 × units.scale unit`,
-re-computed on `input`, exported for `units-editor.ts` which calls it today), and `relief.options.density`
-carries the "regenerates the icons" tip from the schema meta.
+A composite control (`transform`, `labelStyle`) returns `rows(...)` — its own labelled rows stand in place
+of the field's row and carry the field's `data-field`; the reset button sits on the first. `percent` and
+`px` are standard: a number with its unit, a slider when the field has a range, a number input in a row
+part. Two decorations, not rows: grid `options.scale` is followed by a "Cell size" readout row (`scale × 25
+× units.scale unit`, re-computed on `input`, exported for `units-editor.ts` which calls it today), and
+`relief.options.density` carries the "regenerates the icons" tip from the schema meta.
 
 **Extras.** `options.app.emblems.showAll` is not style; the editor appends it as one hand-written row under
 `emblems` (`extras: Partial<Record<StyleElement, () => HTMLElement>>` with exactly one entry) so users find it where
@@ -410,10 +437,12 @@ layer) empties `#styleForm` and destroys any dialog the controls opened. The Sty
 dialogs are created by their owners and removed on close; `#styleSaver` and `#addFontDialog` leave
 `index.html`.
 
-**UX.** Rows keep the two-column table look (label column 8.5em, control fills the rest); subsections are
-`<details>` with the header carrying the gate; colour rows show the hex; sliders are `<slider-input>`; the
-hidden-layer banner offers a one-click turn-on; opened from another editor, the selects glow. Stable
-`data-field` addresses replace the `#styleFontSize`-style ids in the eight e2e specs.
+**UX.** Rows keep the two-column table look (label column 8em, one line, control fills the rest); every
+control fills its column so the columns line up — a colour is swatch + hex, a font select + its `+`
+button, a slider + its unit; subsections are `<details>` with the header carrying the gate; group captions
+and row pairs come from the schema (§1); the hidden-layer banner offers a one-click turn-on; opened from
+another editor, the selects glow. Stable `data-field` addresses replace the `#styleFontSize`-style ids in
+the eight e2e specs.
 
 ### 4. Presets — `src/services/style-presets.ts` + `src/controllers/style-presets.ts`
 

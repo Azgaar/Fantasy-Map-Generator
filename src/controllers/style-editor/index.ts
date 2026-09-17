@@ -1,6 +1,5 @@
 // The Style tab's editor
 import "@/components/shared/slider-input";
-import "@/components/options/tabs/burg-icon-picker";
 import { z } from "zod";
 import { type LayerId, Layers } from "@/components/layers";
 import { openTab } from "@/components/options/options-panel";
@@ -235,16 +234,16 @@ function decorate(form: HTMLElement, sel: Resolved): void {
   }
 
   if (sel.element === "grid") {
-    const scale = form.querySelector('[data-field="options.scale"] .ctl');
+    const row = extraRow("Cell size", "Distance between grid cell centers (in map scale)");
     const output = document.createElement("output");
     output.id = "styleGridSizeFriendly";
-    output.dataset.tip = "Distance between grid cell centers (in map scale)";
     const link = document.createElement("a");
     link.href = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Scale-and-distance#grids";
     link.target = "_blank";
     link.innerHTML =
       '<span data-tip="Open wiki article scale and distance to know about grid scale" class="icon-info-circled pointer"></span>';
-    scale?.append(output, link);
+    row.querySelector(".ctl")!.append(output, link);
+    form.querySelector('[data-field="options.scale"]')?.after(row);
     updateGridSizeReadout();
   }
 
@@ -277,7 +276,7 @@ function decorate(form: HTMLElement, sel: Resolved): void {
 
   if (sel.element === "emblems") {
     const row = extraRow(
-      "Show all emblems",
+      "Show all",
       "Show emblem groups even if their size is too small or too big at the current scale"
     );
     row.dataset.field = "showAll";
