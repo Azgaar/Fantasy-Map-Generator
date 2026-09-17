@@ -1,14 +1,15 @@
-// Rewrites style preset JSONs in place.
-//   npx vite-node scripts/convert-style-presets.mjs             legacy selector-keyed presets in public/styles → store format
-//   npx vite-node scripts/convert-style-presets.mjs --normalize  "" → null for filter/mask/dasharray, "inherit" linecaps → null,
-//                                                                over the presets, default-styles.json and the test fixtures
-//   npx vite-node scripts/convert-style-presets.mjs --schema     presets and default-styles.json rewritten as the schema
-//                                                                parses them: newer sections filled in, keys in schema order
+// Rewrites default-styles.json and the presets in public/styles in place as the current schema
+// parses them: elements alphabetical, their keys in schema order, legacy shapes upgraded, missing
+// values filled in.
+//   npx vite-node scripts/convert-style-presets.mjs
+// The defaults are the template every preset is repaired from, so they go first: a key the schema
+// no longer knows is stripped, a nullable key it gained is set to null, anything else is reported
+// for a hand-picked value. The presets are then parsed the way the app parses them.
 import fs from "node:fs";
 import path from "node:path";
 
-// the legacy module chain pulls in renderer/component modules with unconditional window/document
-// side effects; import them lazily after stubbing a minimal DOM so the script runs under plain node
+// the styles module chain pulls in renderer/component modules with unconditional window/document
+// side effects; import them lazily after stubbing a minimal DOM so the script runs under node
 if (typeof globalThis.window === "undefined") globalThis.window = globalThis;
 if (typeof globalThis.document === "undefined") {
   globalThis.document = {
@@ -20,71 +21,55 @@ if (typeof globalThis.document === "undefined") {
   };
 }
 
-const { isLegacyPreset, presetFromLegacy, normalizeStyles } = await import("../src/generators/styles-legacy.ts");
-const { stylesSchema } = await import("../src/generators/styles-schema.ts");
-
-const read = file => JSON.parse(fs.readFileSync(file, "utf8"));
-const write = (file, json) => fs.writeFileSync(file, `${JSON.stringify(json, null, 2)}\n`);
+const DEFAULTS = "src/generators/default-styles.json";
 const presets = fs
   .readdirSync("public/styles")
   .filter(f => f.endsWith(".json"))
   .map(f => path.join("public/styles", f));
 
-const records = [...presets, "src/generators/default-styles.json"];
+const { stylesSchema } = await import("../src/generators/styles-schema.ts");
+rewrite(DEFAULTS, json => byElement(repairDefaults(json)));
 
-if (process.argv.includes("--schema")) {
-  for (const file of records) rewrite(file, json => stylesSchema.parse(normalizeStyles(json)));
-} else if (process.argv.includes("--normalize")) {
-  const legacyFixtures = fs
-    .readdirSync("src/generators")
-    .filter(f => f.endsWith(".fixture.json"))
-    .map(f => path.join("src/generators", f));
-  const snapshots = fs
-    .readdirSync("tests/fixtures")
-    .filter(f => f.startsWith("style-baseline") && f.endsWith(".json"))
-    .map(f => path.join("tests/fixtures", f));
+// importing the store module parses the defaults, so it loads only once they are repaired
+const { Styles } = await import("../src/generators/styles.ts");
+const { normalizeStyles } = await import("../src/generators/styles-legacy.ts");
+for (const file of presets) rewrite(file, json => byElement(Styles.parse(normalizeStyles(json))));
 
-  for (const file of records) rewrite(file, normalizeStyles);
-  for (const file of legacyFixtures) rewrite(file, normalizeLegacyBags);
-  for (const file of snapshots) rewrite(file, normalizeSnapshot);
-} else {
-  for (const file of presets) {
-    const json = read(file);
-    if (!isLegacyPreset(json)) {
-      console.log(`${file}: skip (already converted)`);
-      continue;
-    }
-    write(file, presetFromLegacy(json));
-    console.log(`${file}: converted`);
-  }
-}
-
-function rewrite(file, normalize) {
+function rewrite(file, parse) {
   const before = fs.readFileSync(file, "utf8");
-  const json = normalize(JSON.parse(before));
-  // the e2e snapshot writer adds no trailing newline; keep each file the way its writer leaves it
-  const after = JSON.stringify(json, null, 2) + (before.endsWith("\n") ? "\n" : "");
+  const after = `${JSON.stringify(parse(JSON.parse(before)), null, 2)}\n`;
   if (after === before) return console.log(`${file}: unchanged`);
   fs.writeFileSync(file, after);
-  console.log(`${file}: normalized`);
+  console.log(`${file}: rewritten`);
 }
 
-// a legacy preset is one attr bag per selector: normalize each bag as the store's attrs
-function normalizeLegacyBags(preset) {
-  for (const bag of Object.values(preset)) normalizeStyles({ attrs: bag });
-  return preset;
+// top-level keys alphabetical; each element keeps the schema's key order
+function byElement(styles) {
+  return Object.fromEntries(Object.entries(styles).sort(([a], [b]) => a.localeCompare(b)));
 }
 
-// a DOM attribute snapshot: an attr the store now holds as null is absent from the element. #scaleBarBack
-// keeps its file attrs on load (the old rect carries no data-group), so it is left as the file has it
-function normalizeSnapshot(snapshot) {
-  for (const [selector, bag] of Object.entries(snapshot)) {
-    if (selector === "#scaleBarBack") continue;
-    const normalized = normalizeStyles({ attrs: { ...bag } }).attrs;
-    for (const [attr, value] of Object.entries(normalized)) {
-      if (value === null) delete bag[attr];
-      else bag[attr] = value;
+function repairDefaults(json) {
+  for (;;) {
+    const result = stylesSchema.safeParse(json);
+    if (result.success) return result.data;
+
+    let progressed = false;
+    for (const issue of result.error.issues) {
+      const at = depth => issue.path.slice(0, depth).reduce((node, key) => node?.[key], json);
+      if (issue.code === "unrecognized_keys") {
+        // the path is the object holding the keys
+        const holder = at(issue.path.length);
+        for (const key of issue.keys) if (holder && key in holder) progressed = delete holder[key];
+      } else if (issue.input === undefined) {
+        const parent = at(issue.path.length - 1);
+        if (!parent || issue.path.at(-1) in parent) continue;
+        parent[issue.path.at(-1)] = null;
+        progressed = true;
+      }
     }
+    if (progressed) continue;
+
+    for (const issue of result.error.issues) console.error(`${DEFAULTS}: ${issue.path.join(".")}: ${issue.message}`);
+    process.exit(1);
   }
-  return snapshot;
 }

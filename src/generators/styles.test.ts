@@ -37,7 +37,7 @@ describe("attr formats", () => {
     ["blurFilter", ["blur(5px)", "blur(0.5px)"], ["", "blur(5)", "url(#blur5)", "blur(5px) "]],
     ["mask", ["url(#land)", "url(#vignette-mask)"], ["", "land", "url(#a) url(#b)"]],
     ["strokeDasharray", ["none", "5", ".5 1", "0 4 10 4", "3 1.2 0.5 1.2"], ["", "5,2", "5 px", "inherit"]],
-    ["fontSize", ["22%", "1.5%"], ["", "22 %", "8px", "18", "-2%"]],
+    ["fontSizePercent", ["22%", "1.5%"], ["", "22 %", "8px", "18", "-2%"]],
     ["fontSizePx", ["8px", "100px", "1.5px"], ["", "8 px", "22%", "18", "-2px"]],
     ["percentage", ["0.3%", "-5%", "99.6%"], ["", "5", "5px", "5 %"]],
     [
