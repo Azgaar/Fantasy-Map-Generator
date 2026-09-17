@@ -23,11 +23,14 @@ const countBy = <T>(items: readonly T[], key: (item: T) => string | undefined): 
   return counts;
 };
 
+// labels and burgs list top-down: the group drawn on top (states, capitals) is the one most often styled
 export const GROUP_SOURCES: Record<string, GroupSource> = {
   labels: () => {
     // count from the label data: the culled DOM only holds labels rendered at this zoom
     const counts = countBy(getLabelsData(), label => label.group);
-    return options.map.labels.groups.map(({ name }) => ({ id: name, label: `${name} (${counts.get(name) ?? 0})` }));
+    return options.map.labels.groups
+      .map(({ name }) => ({ id: name, label: `${name} (${counts.get(name) ?? 0})` }))
+      .reverse();
   },
   burgIcons: () => {
     const burgs = pack.burgs.filter(burg => burg.i && !burg.removed);
@@ -37,7 +40,7 @@ export const GROUP_SOURCES: Record<string, GroupSource> = {
       burg => burg.group
     );
     return [...options.map.burgs.groups]
-      .sort((a, b) => a.order - b.order)
+      .sort((a, b) => b.order - a.order)
       .map(({ name }) => ({ id: name, label: `${name} (${all.get(name) ?? 0} burgs, ${ports.get(name) ?? 0} ports)` }));
   },
   routes: () => {

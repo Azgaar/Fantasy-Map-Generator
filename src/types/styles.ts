@@ -48,8 +48,7 @@ export type StyleEffect =
   | "applyVignette" // reshape the vignette mask in defs
   | "changeReliefSet" // restyle the placed relief icons
   | "resizeRelief" // scale the placed relief icons by the ratio
-  | "regenerateRelief" // place the relief icons anew
-  | "refitStateLabels"; // state labels are fitted to their outline: redraw them
+  | "regenerateRelief"; // place the relief icons anew
 
 export type StyleMeta = FieldMeta<StyleControl> & { effect?: StyleEffect };
 

@@ -373,12 +373,12 @@ function confirmHeightmapEdit(el: HTMLElement): void {
 }
 
 function getHeightmapPreview(heights: Uint8Array | null): string {
-  if (!graph) return "";
+  if (!graph || !heights?.length) return "";
 
   const scheme = HeightmapColorSchemes.get(ensureEl<HTMLSelectElement>("heightmapSelectionColorScheme").value);
   const renderOcean = ensureEl<HTMLInputElement>("heightmapSelectionRenderOcean").checked;
   const dataUrl = drawHeights({
-    heights: heights as unknown as number[],
+    heights,
     width: graph.cellsX,
     height: graph.cellsY,
     scheme,

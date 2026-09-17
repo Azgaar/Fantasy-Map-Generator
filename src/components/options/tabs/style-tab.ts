@@ -38,12 +38,13 @@ const STYLE = /* css */ `
   #styleForm { margin-top: .4em; }
   #styleForm .banner { color: darkred; font-weight: 700; margin: .3em 0; }
   #styleForm .banner a { cursor: pointer; text-decoration: underline; }
-  #styleForm .pick { flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: .4em; padding: .15em .4em; border: 0; border-radius: 2px; background: #ffffff; color: inherit; text-align: left; text-transform: capitalize; }
+  #styleForm .pick { margin: 0; flex: 1 1 0; display: flex; align-items: center; gap: .4em; padding: 0.1em .4em; background: #ffffff; font-size: smaller; }
   #styleForm .pick::after { content: "▾"; margin-left: auto; opacity: .6; }
-  #styleForm .pick > svg { flex: none; width: 1.6em; height: 1.6em; overflow: visible; }
+  #styleForm .pick > svg { flex: none; width: 1.4em; height: 1.4em; overflow: visible; }
   #styleForm .pick > .emoji { font-size: 1.3em; line-height: 1; }
   #styleForm .reset { flex: none; visibility: hidden; border: 0; background: none; box-shadow: none; color: var(--style-reset); padding: 0 .2em; margin: 0; cursor: pointer; }
   #styleForm .changed .reset { visibility: visible; }
+  #styleForm .reset.blank { visibility: hidden; }
   #styleForm details[data-section] > summary:has(> .gate.changed) { box-shadow: inset 3px 0 0 var(--style-change); }
   #styleForm summary > .preview > .sample { font-size: 1.25em; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #styleForm summary > .preview > .sw { width: 2.6em; height: 1.3em; border: 1px solid #333; border-radius: 3px; position: relative; overflow: hidden; background: repeating-conic-gradient(#bbb 0 25%, #fff 0 50%) 0 0 / 8px 8px; }

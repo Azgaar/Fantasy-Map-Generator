@@ -13,7 +13,7 @@ type PresetRoute = {
   bools?: string[];
   strings?: string[]; // options that must stay strings
   rename?: Record<string, string>; // legacy attr -> the attr the store keeps it as
-  kind?: "label" | "burg" | "route" | "lake";
+  kind?: "label" | "burg" | "anchor" | "route" | "lake";
   drop?: string[];
   ownAttrs?: boolean;
 };
@@ -173,7 +173,7 @@ function migrateLegacyStyleObj(obj: unknown): void {
 
   if (legacy.anchors)
     styles.burgIcons.anchors.groups = Object.fromEntries(
-      Object.entries(legacy.anchors).map(([name, group]) => [name, burgGroupFromLegacy(group)])
+      Object.entries(legacy.anchors).map(([name, group]) => [name, anchorGroupFromLegacy(group)])
     );
 
   if (legacy.relief)
@@ -342,7 +342,7 @@ function routeFor(selector: string): PresetRoute | undefined {
   const burg = selector.match(/^#burgIcons > g#(.+)$/);
   if (burg) return { path: ["burgIcons", "burgIcons", "groups", burg[1]], kind: "burg" };
   const anchor = selector.match(/^#anchors > g#(.+)$/);
-  if (anchor) return { path: ["burgIcons", "anchors", "groups", anchor[1]], kind: "burg" };
+  if (anchor) return { path: ["burgIcons", "anchors", "groups", anchor[1]], kind: "anchor" };
   const routeGroup = selector.match(/^#routes > g#(.+)$/);
   if (routeGroup) return { path: ["routes", "groups", routeGroup[1]], kind: "route" };
   const lakeGroup = selector.match(/^#lakes > g#(.+)$/);
@@ -651,9 +651,11 @@ export function presetFromLegacy(
           ? labelGroupFromLegacy
           : route.kind === "burg"
             ? burgGroupFromLegacy
-            : route.kind === "lake"
-              ? lakeGroupFromLegacy
-              : routeGroupFromLegacy;
+            : route.kind === "anchor"
+              ? anchorGroupFromLegacy
+              : route.kind === "lake"
+                ? lakeGroupFromLegacy
+                : routeGroupFromLegacy;
       parent[route.path.at(-1) as string] = fromLegacy(bag);
       continue;
     }
@@ -705,8 +707,7 @@ export function stripDisplay(style: string | null): string | null {
   return declarations.filter(declaration => declaration && !/^display\s*:/.test(declaration)).join("; ") || null;
 }
 
-// legacy wrote stored burg-group bags to the DOM verbatim with no per-key defaults; only
-// size and icon are required by the renderer (the schema turns the burg default into the anchor for ports)
+// legacy wrote stored burg-group bags to the DOM verbatim with no per-key defaults; only size and icon are required by the renderer
 export function burgGroupFromLegacy(legacy: unknown): StylesData["burgIcons"]["burgIcons"]["groups"][string] {
   const bag = legacy as Record<string, unknown>;
   return {
@@ -727,6 +728,13 @@ export function burgGroupFromLegacy(legacy: unknown): StylesData["burgIcons"]["b
       icon: strOr(bag["data-icon"], null) ?? "#icon-circle"
     }
   };
+}
+
+// anchors ignored data-icon before ports became stylable, so older records carry no icon or the burg default
+export function anchorGroupFromLegacy(legacy: unknown) {
+  const group = burgGroupFromLegacy(legacy);
+  if (group.options.icon === "#icon-circle") group.options.icon = "#icon-anchor";
+  return group;
 }
 
 function routeGroupFromLegacy(legacy: object): StylesData["routes"]["groups"][string] {

@@ -319,7 +319,7 @@ export const drawHeights = ({
   scheme,
   renderOcean
 }: {
-  heights: number[];
+  heights: Uint8Array<ArrayBufferLike>;
   width: number;
   height: number;
   scheme: (value: number) => string;

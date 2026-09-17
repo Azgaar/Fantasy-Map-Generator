@@ -252,9 +252,9 @@ const labelStyle: ControlFactory = (spec, value, set) => {
   transform.addEventListener("change", emit);
   return rows(
     withTip(row("Shadow", shadow), "Set text shadow, e.g. white 0 0 4px"),
-    withTip(row("Case", transform), "Change the letter case of the labels as displayed"),
-    withTip(row("Shift x", dx), "Shift the labels along x, in em"),
-    withTip(row("Shift y", dy), "Shift the labels along y, in em")
+    withTip(row("Case", transform), "Change the letter case"),
+    withTip(row("Shift x", dx), "Shift the labels along x"),
+    withTip(row("Shift y", dy), "Shift the labels along y")
   );
 };
 
@@ -295,11 +295,11 @@ function openSchemeBuilder(current: string, onCreate: (stops: string) => void): 
 
   const renderPreview = () => {
     ensureEl<HTMLImageElement>("heightmapSchemePreview").src = drawHeights({
-      heights: grid.cells.h as unknown as number[],
+      heights: grid.cells.h,
       width: grid.cellsX,
       height: grid.cellsY,
       scheme: scaleSequential(interpolateRgbBasis(stops)),
-      renderOcean: false
+      renderOcean: styles.heightmap.oceanHeights.options.render
     });
   };
   const renderGradient = () => {
@@ -355,7 +355,6 @@ function openSchemeBuilder(current: string, onCreate: (stops: string) => void): 
   $(dialog).dialog({
     resizable: false,
     title: "Create heightmap color scheme",
-    width: "28em",
     position: { my: "center top+150", at: "center top", of: "svg" },
     close: () => destroyDialog("heightmapSchemeDialog"),
     buttons: {

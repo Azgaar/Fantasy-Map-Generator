@@ -1,10 +1,5 @@
-// Rewrites default-styles.json and the presets in public/styles in place as the current schema
-// parses them: elements alphabetical, their keys in schema order, legacy shapes upgraded, missing
-// values filled in.
-//   npx vite-node scripts/convert-style-presets.mjs
-// The defaults are the template every preset is repaired from, so they go first: a key the schema
-// no longer knows is stripped, a nullable key it gained is set to null, anything else is reported
-// for a hand-picked value. The presets are then parsed the way the app parses them.
+// Rewrites default-styles.json and the presets in public/styles to follow styles-schema.ts
+// npx vite-node scripts/convert-style-presets.mjs
 import fs from "node:fs";
 import path from "node:path";
 

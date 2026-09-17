@@ -289,8 +289,7 @@ above it — and falls back to the store convention:
 The declared ones: `draw` on an attr whose renderer bakes it into the drawing (the grid, rulers,
 ocean waves and scale bar attrs, the legend and coordinates fonts, every burg icon field); `zoom` on
 an attr the zoom derives from (the halo width): written, then the zoom re-run;
-`changeReliefSet` / `resizeRelief` / `regenerateRelief`; `applyVignette` for the mask rect;
-`refitStateLabels` on a label group's typography, because state labels are fitted to their outline.
+`changeReliefSet` / `resizeRelief` / `regenerateRelief`; `applyVignette` for the mask rect.
 `effects.test.ts` asserts which name a path resolves to and which stub each name fires.
 
 ### Baseline and decoration

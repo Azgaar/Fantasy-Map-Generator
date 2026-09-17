@@ -59,8 +59,15 @@ export class FormDecoration {
       const diff = this.baseline?.diffAt(this.sel, relativeOf(field));
       if (diff) this.reset(relativeOf(field), diff.presetValue);
     });
-    // a composite field's rows: the button sits on the first; a row part or a gate takes it itself
-    (field.querySelector(":scope > .ctl, :scope > .row > .ctl") ?? field).append(button);
+    // a composite field's rows: the button sits on the first, the others get a blank of the same width
+    // so all the rows' controls line up; a row part or a gate takes it itself
+    const [first, ...rest] = Array.from(field.querySelectorAll(":scope > .ctl, :scope > .row > .ctl"));
+    (first ?? field).append(button);
+    for (const slot of rest) {
+      const blank = button.cloneNode() as HTMLElement;
+      blank.classList.add("blank");
+      slot.append(blank);
+    }
   }
 
   private markAll(): void {

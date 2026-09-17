@@ -55,7 +55,7 @@ describe("effectAt", () => {
     expect(at("coordinates.attrs.font-size")).toBe("draw");
     expect(at("burgIcons.anchors.groups.town.attrs.fill")).toBe("draw");
     expect(at("scaleBar.back.attrs.fill")).toBe("draw");
-    expect(at("labels.groups.state.attrs.font-family")).toBe("refitStateLabels");
+    expect(at("labels.groups.state.attrs.font-family")).toBe("draw");
     expect(at("labels.groups.state.attrs.fill")).toBe("write");
     expect(at("legend.attrs.font-family")).toBe("draw");
     expect(at("legend.attrs.stroke")).toBe("write");

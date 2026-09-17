@@ -224,6 +224,7 @@ t,
 #statesBody,
 #provincesBody,
 #relig,
+#biomes,
 #cults {
   mask: url(#land);
 }
