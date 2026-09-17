@@ -52,8 +52,7 @@ function handleZoomPerFrame(): void {
 
   if (didScaleChange) {
     Layers.draw("scaleBar");
-
-    if (options.map.labels.resizeOnZoom) applyLabelsZoomSize();
+    applyZoomFontSize();
   }
 
   if (didPositionChange) Layers.draw("coordinates");
@@ -91,14 +90,15 @@ function redrawTracedImage(): void {
   context.drawImage(image, 0, 0, canvas.width, canvas.height);
 }
 
-function applyLabelsZoomSize(): void {
-  const base = Number.parseFloat(styles.labels.attrs["font-size"]) || 100;
-  const fontSize = Math.max(rn((base + base / viewport.scale) / 2, 2), 1);
-  select("#labels").attr("font-size", `${fontSize}px`);
+/** The viewbox font size, 100px at scale 1: everything sized in % or em follows the zoom, half-way */
+export function applyZoomFontSize(): void {
+  const scaled = options.app.performance.resizeTextOnZoom;
+  const fontSize = scaled ? Math.max(rn((100 + 100 / viewport.scale) / 2, 2), 1) : 100;
+  findEl("viewbox")?.setAttribute("font-size", `${fontSize}px`);
 }
 
 export function invokeActiveZooming(): void {
-  if (options.map.labels.resizeOnZoom) applyLabelsZoomSize();
+  applyZoomFontSize();
   ViewportLayers.renderNow();
 
   if (!customization && options.app.performance.stateHalos) {

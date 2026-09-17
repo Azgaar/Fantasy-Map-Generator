@@ -44,7 +44,7 @@ function renderRuler(measurer: Measurer, { strokeWidth, dasharray }: MeasurerSty
   el.append("polyline")
     .attr("points", points)
     .attr("class", "gray")
-    .attr("stroke-width", rn(strokeWidth * 1.2, 2))
+    .attr("stroke-width", strokeWidth)
     .attr("stroke-dasharray", dasharray);
 
   const circles = el

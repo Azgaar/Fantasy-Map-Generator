@@ -64,7 +64,7 @@ class OptionsModel {
         },
         style: { preset: "default" },
         burgs: { groups: Burgs.getDefaultGroups() },
-        labels: { resizeOnZoom: true, groups: Labels.getDefaultGroups() },
+        labels: { groups: Labels.getDefaultGroups() },
         markers: { resizeOnZoom: true },
         military: { units: Military.getDefaultOptions() },
         transports: Transports.getDefaults(),
@@ -87,7 +87,12 @@ class OptionsModel {
         emblems: { showAll: false, shape: "culture" },
         labels: { showAll: false },
         heightmapEditor: { renderOcean: false, showDrainage: false, allowErosion: true },
-        performance: { shapeRendering: "optimizeSpeed", stateHalos: false, viewportRedraw: "continuous" }, // "balance"
+        performance: {
+          shapeRendering: "optimizeSpeed",
+          stateHalos: false,
+          resizeTextOnZoom: true,
+          viewportRedraw: "continuous"
+        }, // "balance"
         onLoad: "random",
         zoomExtent: { min: 1, max: 20 },
         viewport: null,

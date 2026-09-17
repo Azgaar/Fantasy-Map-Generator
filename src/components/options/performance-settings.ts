@@ -46,6 +46,15 @@ const SETTINGS: Setting[] = [
     ]
   },
   {
+    key: "resizeTextOnZoom",
+    label: "Text on zoom",
+    tip: "Scale labels and other %-sized text half-way with the zoom, so they stay readable zoomed out. Every zoom step then re-lays the text out",
+    choices: [
+      { value: "true", label: "Scaled" },
+      { value: "false", label: "Fixed" }
+    ]
+  },
+  {
     key: "viewportRedraw",
     label: "Redraw on zoom",
     tip: "When labels, icons and relief are redrawn during a zoom or pan. 'After zoom' redraws once per gesture: faster on big maps, but new content appears all at once",
@@ -92,7 +101,7 @@ function render(): void {
 
 /** A select carries strings; the field decides what the string means */
 function update(key: keyof Settings, raw: string): void {
-  if (key === "stateHalos") setPerformanceSetting(key, raw === "true");
+  if (key === "stateHalos" || key === "resizeTextOnZoom") setPerformanceSetting(key, raw === "true");
   else setPerformanceSetting(key, raw as Settings[typeof key]);
 }
 

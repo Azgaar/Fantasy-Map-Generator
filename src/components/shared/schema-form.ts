@@ -155,10 +155,8 @@ function walk(schema: z.ZodObject, meta: Meta, options: { records?: boolean } = 
 const getPath = (value: unknown, path: string[]): unknown =>
   path.reduce<unknown>((node, key) => (node == null ? undefined : (node as Record<string, unknown>)[key]), value);
 
-// sections are cards: a header with the caret, title, gate and a preview slot; the body holds the rows.
-// A row is a label column and a control column; every control fills its column so the columns line up
 const STYLE = /* css */ `
-  .schema-form .row { display: flex; align-items: center; gap: .4em; min-height: 1.9em; }
+  .schema-form .row { display: flex; align-items: center; gap: .3em; line-height: 1.5; }
   .schema-form .row > label { flex: 0 0 8em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .schema-form .row > .ctl { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: .3em; }
   .schema-form .ctl > select, .schema-form .ctl > input[type="text"], .schema-form .ctl > slider-input, .schema-form .ctl > .inline { flex: 1 1 0; min-width: 0; }
@@ -166,8 +164,8 @@ const STYLE = /* css */ `
   .schema-form .inline > select, .schema-form .inline > input[type="text"], .schema-form .inline > input[type="number"], .schema-form .inline > slider-input { flex: 1 1 0; min-width: 0; }
   .schema-form .unit { flex: none; opacity: .7; }
   .schema-form .rows { display: contents; }
-  .schema-form .group { margin: .2em 0 .3em; padding-left: .5em; border-left: 2px solid var(--style-group-line, rgba(0, 0, 0, .15)); }
-  .schema-form .group > .caption { font-size: .85em; line-height: 1.8em; text-transform: uppercase; letter-spacing: .05em; opacity: .7; }
+  .schema-form .group { margin: .6em 0; padding-left: .5em; border-left: 2px solid var(--style-group-line, rgba(0, 0, 0, .15)); }
+  .schema-form .group > .caption { font-size: .8em; line-height: 1; text-transform: uppercase; letter-spacing: .05em; opacity: .7; }
   .schema-form .group .row > label { flex-basis: calc(8em - .5em - 2px); }
   .schema-form details[data-section] { margin: .4em 0; border: 1px solid var(--dark-solid, #999); border-radius: 3px; background: var(--style-card-fill, rgba(255, 255, 255, .1)); overflow: hidden; }
   .schema-form details[data-section] details[data-section] { margin: .3em 0; }
@@ -180,7 +178,7 @@ const STYLE = /* css */ `
   .schema-form details[data-section] > summary > .gate > select { flex: 1 1 auto; min-width: 0; }
   .schema-form details[data-section] > summary > .preview { margin-left: auto; flex: 0 1 auto; max-width: 50%; display: flex; align-items: center; justify-content: flex-end; gap: .4em; font-weight: 400; min-width: 0; overflow: hidden; }
   .schema-form details[data-section] > summary > .preview:empty { display: none; }
-  .schema-form details[data-section] > .body { padding: .1em .5em; }
+  .schema-form details[data-section] > .body { padding: .3em .5em; }
 `;
 
 let styleInjected = false;
@@ -220,17 +218,7 @@ function render(schema: z.ZodObject, value: object, options: RenderOptions): HTM
     };
   }
   renderInto(root, schema, value, [], ctx);
-  for (const block of root.querySelectorAll<HTMLElement>(".group")) unwrapLoneGroup(block);
   return root;
-}
-
-// a caption over one row says nothing: the row reads as a plain one, "Stroke" + "Width" → "Stroke width"
-function unwrapLoneGroup(block: HTMLElement): void {
-  const rows = block.querySelectorAll(".row");
-  if (rows.length !== 1) return;
-  const label = rows[0].querySelector(":scope > label")!;
-  label.textContent = `${block.dataset.group} ${label.textContent!.toLowerCase()}`;
-  block.replaceWith(rows[0]);
 }
 
 function section(title: string, id: string): HTMLDetailsElement {

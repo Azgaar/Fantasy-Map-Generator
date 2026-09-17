@@ -128,11 +128,7 @@ export class LabelsModule {
   }
 
   getDefaultOptions() {
-    return {
-      resizeOnZoom: true,
-      showAll: false,
-      groups: this.getDefaultGroups()
-    };
+    return { showAll: false, groups: this.getDefaultGroups() };
   }
 
   /** a value persisted by an older build can be structurally valid and still leave the renderer with
@@ -148,11 +144,7 @@ export class LabelsModule {
     this.restoreMissingTypes(groups);
 
     const flag = (value: unknown, fallback: boolean) => (typeof value === "boolean" ? value : fallback);
-    return {
-      resizeOnZoom: flag(parsed.resizeOnZoom, defaults.resizeOnZoom),
-      showAll: flag(parsed.showAll, defaults.showAll),
-      groups
-    };
+    return { showAll: flag(parsed.showAll, defaults.showAll), groups };
   }
 
   /** a type left without any group draws no labels at all, so give it the module defaults back */

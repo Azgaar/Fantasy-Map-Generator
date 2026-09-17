@@ -154,19 +154,11 @@ function resolve(element: StyleElement, wanted?: string): Resolved {
     return { element, group, layer, path: ["burgIcons", "burgIcons", "groups", group], schema, value, entries };
   }
 
-  // the group's fields, and the attrs the layer itself carries (the labels base size) as a card of their own
-  const elementSchema = stylesSchema.shape[element] as z.ZodObject;
-  const record = elementSchema.shape.groups as z.ZodRecord;
-  const groupValue = (styles[element] as { groups: Record<string, object> }).groups[group];
-  const layerAttrs = elementSchema.shape.attrs as z.ZodObject | undefined;
-  const schema = layerAttrs
-    ? z.strictObject({ ...(record.valueType as z.ZodObject).shape, layer: LAYER_CARD(layerAttrs) })
-    : (record.valueType as z.ZodObject);
-  const value = layerAttrs && groupValue ? { ...groupValue, layer: { attrs: (styles[element] as any).attrs } } : groupValue;
+  const record = (stylesSchema.shape[element] as z.ZodObject).shape.groups as z.ZodRecord;
+  const schema = record.valueType as z.ZodObject;
+  const value = (styles[element] as { groups: Record<string, object> }).groups[group];
   return { element, group, layer, path: [element, "groups", group], schema, value, entries };
 }
-
-const LAYER_CARD = (attrs: z.ZodObject) => z.strictObject({ attrs }).register(styleMeta, { label: "All groups" });
 
 // the group list comes first: it settles which store node the form reads
 function selection(): Resolved {

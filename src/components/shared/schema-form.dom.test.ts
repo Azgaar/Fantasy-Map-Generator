@@ -272,15 +272,16 @@ describe("SchemaForm layout metas", () => {
     return { form, onChange };
   };
 
-  test("a run of grouped fields sits under a caption with short labels, a run of one reads as a plain row", () => {
+  test("a run of grouped fields sits under a caption with short labels, a run of one too", () => {
     const { form } = mountLayout();
     const stroke = form.querySelector<HTMLElement>('.group[data-group="Stroke"]')!;
     expect(stroke.querySelector(".caption")?.textContent).toBe("Stroke");
     expect([...stroke.querySelectorAll(".row > label")].map(l => l.textContent)).toEqual(["Color", "Width"]);
     expect(field(form, "attrs.stroke").closest(".group")).toBe(stroke);
     expect(field(form, "attrs.opacity").closest(".group")).toBeNull();
-    expect(form.querySelector('.group[data-group="Fill"]')).toBeNull();
-    expect(field(form, "attrs.fill").querySelector("label")?.textContent).toBe("Fill color");
+    const fill = form.querySelector<HTMLElement>('.group[data-group="Fill"]')!;
+    expect(fill.querySelector(".caption")?.textContent).toBe("Fill");
+    expect(field(form, "attrs.fill").querySelector("label")?.textContent).toBe("Color");
   });
 
   test("a unit control is a slider with its unit when ranged, a number input beside its unit otherwise", () => {

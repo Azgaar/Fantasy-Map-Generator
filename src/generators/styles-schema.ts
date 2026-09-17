@@ -65,6 +65,13 @@ const fillOpacity = variant(opacity, {
   tip: "Set fill opacity. 0: transparent, 1: solid"
 });
 
+const strokeOpacity = variant(opacity, {
+  group: "Stroke",
+  label: "Opacity",
+  nullAs: 1,
+  tip: "Set stroke opacity. 0: transparent, 1: solid"
+});
+
 const stroke = variant(color, { control: "color", group: "Stroke", label: "Color", tip: "Set stroke color" });
 
 const strokeWidth = meta(z.number().min(0), {
@@ -114,16 +121,6 @@ const fontSizePx = meta(z.string().regex(FORMATS.fontSizePx), {
   label: "Size",
   range: [1, 40],
   tip: "Set font size in pixels"
-});
-
-// the base every label group sizes from; the zoom writes a scale-derived value on top of it
-const labelsFontSize = variant(fontSizePx, {
-  group: undefined,
-  label: "Base size",
-  range: [20, 300],
-  step: 1,
-  effect: "zoom",
-  tip: "Base font size of all label groups: each group is sized relative to it"
 });
 
 const fontStyle = choice(FONT_STYLES, {
@@ -580,21 +577,11 @@ export const stylesSchema = z.strictObject({
   journeys: z.strictObject({ attrs: z.strictObject({ opacity, ...dashAttrs, filter, mask: clip }) }),
   temperature: z.strictObject({
     attrs: z.strictObject({
-      fill: variant(fill, { control: "color", group: undefined, label: "Labels color", tip: "Set labels color" }),
-      "fill-opacity": variant(opacity, {
-        group: "Fill",
-        label: "Opacity",
-        nullAs: 1,
-        tip: "Set transparency of the temperature areas. 0: transparent, 1: solid"
-      }),
+      fill: variant(fill, { group: "Label", tip: "Set labels color" }),
+      "font-size": variant(fontSizePx, { group: "Label" }),
+      "fill-opacity": variant(fillOpacity, { group: "Fill" }),
       ...strokeAttrs,
-      "stroke-opacity": variant(opacity, {
-        group: "Stroke",
-        label: "Opacity",
-        nullAs: 1,
-        tip: "Set transparency of the isotherm lines. 0: transparent, 1: solid"
-      }),
-      "font-size": variant(fontSizePx, { group: undefined, label: "Labels size", tip: "Set labels size in pixels" }),
+      "stroke-opacity": strokeOpacity,
       filter,
       mask: clip
     })
@@ -630,8 +617,8 @@ export const stylesSchema = z.strictObject({
     provinceEmblems: emblemGroup,
     burgEmblems: emblemGroup
   }),
+  // the groups size in % of the viewbox font size, which the zoom scales
   labels: z.strictObject({
-    attrs: z.strictObject({ "font-size": labelsFontSize }),
     groups: z.record(
       z.string(),
       z.strictObject({
@@ -697,7 +684,7 @@ export const stylesSchema = z.strictObject({
         tip: "Set market territory zone fill transparency. Defaults to transparent"
       }),
       "stroke-width": strokeWidth,
-      "stroke-opacity": variant(opacity, { group: "Stroke", label: "Opacity", nullAs: 1, tip: "Set stroke opacity" }),
+      "stroke-opacity": strokeOpacity,
       filter
     }),
     options: z.strictObject({
@@ -726,7 +713,6 @@ export const stylesSchema = z.strictObject({
         nullAs: 1,
         tip: "Set fill transparency. Set to 0 to make it fully transparent"
       }),
-      "font-size": fontSizePx,
       filter
     }),
     options: z.strictObject({

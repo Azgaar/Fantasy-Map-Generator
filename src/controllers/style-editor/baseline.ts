@@ -8,13 +8,12 @@ import { parsePreset } from "../style-preset";
 const getPath = (root: unknown, path: string[]): any =>
   path.reduce<any>((node, key) => (node == null ? undefined : node[key]), root);
 
-/** The store path of a form field: the composed burgIcons form addresses two records, a group form's
- * `layer` card the layer itself, every other relative path hangs off the selection's node */
+/** The store path of a form field: the composed burgIcons form addresses two records, every other
+ * relative path hangs off the selection's node */
 export function storePath(sel: PathSelection, relative: string[]): string[] {
   if (sel.element === "burgIcons" && relative[0] === "anchors") {
     return ["burgIcons", "anchors", "groups", sel.group ?? "", ...relative.slice(1)];
   }
-  if (sel.group && relative[0] === "layer") return [sel.element, ...relative.slice(1)]; // the layer's own attrs card
   return [...sel.path, ...relative];
 }
 
