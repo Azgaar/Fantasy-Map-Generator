@@ -76,6 +76,7 @@ function open(options: OpenPaintEditorOptions): void {
     radius: defaultBrushRadius,
     onStart: startPainting,
     stampOnStart: false, // a plain click selects the painted item instead
+    stampOnMove: true,
     onClick: selectPaintedItem,
     onMove: showCellTip
   });
