@@ -468,7 +468,7 @@ function declareProvinceIndependence(provinceId: number): [number, number] | und
   const capital = burgs[burgId];
   capital.capital = 1;
   Burgs.changeGroup(capital);
-  Layers.draw("burgIcons", "labels");
+  Layers.draw("icons", "labels");
 
   // move all burgs to a new state
   province.burgs!.forEach(b => {

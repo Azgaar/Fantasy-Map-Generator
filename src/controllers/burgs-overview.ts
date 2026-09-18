@@ -124,7 +124,7 @@ function open(filters: Filters = {}): void {
   if (customization) return;
   filterState = dialogState.get(dialogId, "filters", () => ({ search: "", stateId: -1, cultureId: -1 }));
   closeDialogs(`#${dialogId}, .stable`);
-  Layers.show("burgIcons", "labels");
+  Layers.show("icons", "labels");
 
   if (filters.stateId != null) filterState.stateId = filters.stateId;
   if (filters.cultureId != null) filterState.cultureId = filters.cultureId;
@@ -206,7 +206,7 @@ function renderDialog(): void {
   applyLineHighlighting(dialogId, ({ target, cellId }) => {
     const burgId = pack.cells.burg[cellId];
     if (burgId) return burgId;
-    const burg = target.closest<SVGElement>("#labels [data-label-type='burg'][data-id], #burgIcons [data-id]");
+    const burg = target.closest<SVGElement>("#labels [data-label-type='burg'][data-id], #icons [data-id]");
     return burg ? Number(burg.dataset.id) : undefined;
   });
 
@@ -465,7 +465,7 @@ function triggerBurgRemove(this: HTMLElement): void {
       Burgs.remove(burgId);
       removeEmblem("burg", burgId);
       burgsTable.refresh();
-      Layers.draw("burgIcons", "labels");
+      Layers.draw("icons", "labels");
     }
   });
 }
@@ -804,7 +804,7 @@ function triggerAllBurgsRemove(): void {
           removeEmblem("burg", b.i);
         });
       burgsTable.refresh();
-      Layers.draw("burgIcons", "labels");
+      Layers.draw("icons", "labels");
     }
   });
 }

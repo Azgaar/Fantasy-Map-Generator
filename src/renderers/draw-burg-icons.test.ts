@@ -15,31 +15,31 @@ beforeEach(() => {
   setViewportTransform(1, 0, 0);
   (globalThis as Record<string, unknown>).TIME = false;
   document.body.innerHTML = `<svg id="map">
-      <g id="icons"><g id="burgIcons"></g><g id="anchors"></g></g>
+      <g id="icons"></g>
     </svg>`;
   globalThis.pack = { burgs: [{}, { i: 1, group: "town", x: 10, y: 10 }] } as never;
-  styles.burgIcons.burgIcons.groups.town.options.size = 3;
-  styles.burgIcons.burgIcons.groups.town.options.icon = "#icon-circle";
-  styles.burgIcons.anchors.groups.town.options = { size: 3, icon: "#icon-anchor" };
+  styles.icons.groups.town.groups.icons.options.size = 3;
+  styles.icons.groups.town.groups.icons.options.icon = "#icon-circle";
+  styles.icons.groups.town.groups.anchors.options = { size: 3, icon: "#icon-anchor" };
   options.map.burgs.groups = [{ name: "town", order: 0 }] as never;
 });
 
 test("drawBurgIcons styles groups from the store, ignoring stale DOM attrs", () => {
-  styles.burgIcons.burgIcons.groups.town.attrs.fill = "#123456";
-  styles.burgIcons.burgIcons.groups.town.options.size = 3;
+  styles.icons.groups.town.groups.icons.attrs.fill = "#123456";
+  styles.icons.groups.town.groups.icons.options.size = 3;
 
   drawBurgIcons();
-  const first = document.querySelector<SVGGElement>("#burgIcons > g#town")!;
+  const first = document.querySelector<SVGGElement>('#icons > g#town > [data-group="icons"]')!;
   expect(first.getAttribute("fill")).toBe("#123456");
 
   // simulate the retired editor-writes-DOM model leaving a stale value
   first.setAttribute("fill", "#ff0000");
-  styles.burgIcons.burgIcons.groups.town.attrs.fill = "#123456";
+  styles.icons.groups.town.groups.icons.attrs.fill = "#123456";
 
   drawBurgIcons();
-  const redrawn = document.querySelector<SVGGElement>("#burgIcons > g#town")!;
+  const redrawn = document.querySelector<SVGGElement>('#icons > g#town > [data-group="icons"]')!;
   expect(redrawn.getAttribute("fill")).toBe("#123456");
-  expect(styles.burgIcons.burgIcons.groups.town.attrs.fill).toBe("#123456");
+  expect(styles.icons.groups.town.groups.icons.attrs.fill).toBe("#123456");
   expect(redrawn.getAttribute("font-size")).toBe("3");
 });
 
@@ -69,12 +69,12 @@ test("full-map export includes offscreen burgs without changing the live viewpor
   drawBurgIcons();
   const clone = document.getElementById("map")!.cloneNode(true) as SVGSVGElement;
   ViewportLayers.renderTo(clone);
-  expect(clone.querySelectorAll("#burgIcons use")).toHaveLength(2);
+  expect(clone.querySelectorAll('#icons [data-group="icons"] use')).toHaveLength(2);
   expect(clone.querySelector("#anchor2")).not.toBeNull();
   expect(document.getElementById("burg2")).toBeNull();
   expect(document.getElementById("anchor2")).toBeNull();
   ViewportLayers.renderTo(clone);
-  expect(clone.querySelectorAll("#burgIcons use")).toHaveLength(2);
+  expect(clone.querySelectorAll('#icons [data-group="icons"] use')).toHaveLength(2);
 });
 
 test("redrawing applies relocation, port changes, deletion and replacement map data", () => {
@@ -101,17 +101,17 @@ test("group order, fallback styles and empty groups survive culling and reassign
   pack.burgs[1].group = "custom";
   pack.burgs[1].port = 1;
   drawBurgIcons();
-  expect(Array.from(document.querySelectorAll("#burgIcons > g"), group => group.id)).toEqual(["custom", "town"]);
-  expect(document.querySelector("#burgIcons > #custom")?.getAttribute("font-size")).toBe("3");
-  expect(document.querySelector("#anchors > #custom > #anchor1")).not.toBeNull();
-  expect(document.querySelector("#burgIcons > #town")?.childElementCount).toBe(0);
+  expect(Array.from(document.querySelectorAll("#icons > g"), group => group.id)).toEqual(["custom", "town"]);
+  expect(document.querySelector('#icons > #custom > [data-group="icons"]')?.getAttribute("font-size")).toBe("3");
+  expect(document.querySelector('#icons > #custom > [data-group="anchors"] > #anchor1')).not.toBeNull();
+  expect(document.querySelectorAll("#icons > #town use")).toHaveLength(0);
 
   pack.burgs[1].group = "town";
   options.map.burgs.groups = options.map.burgs.groups.filter(group => group.name !== "custom");
   drawBurgIcons();
-  expect(document.querySelector("#burgIcons > #custom")).toBeNull();
-  expect(document.querySelector("#burgIcons > #town > #burg1")).not.toBeNull();
-  expect(document.querySelector("#anchors > #town > #anchor1")).not.toBeNull();
+  expect(document.querySelector("#icons > #custom")).toBeNull();
+  expect(document.querySelector('#icons > #town > [data-group="icons"] > #burg1')).not.toBeNull();
+  expect(document.querySelector('#icons > #town > [data-group="anchors"] > #anchor1')).not.toBeNull();
 });
 
 test("symbol and size edits apply to offscreen icons and account for overflowing artwork", () => {
@@ -119,12 +119,12 @@ test("symbol and size edits apply to offscreen icons and account for overflowing
   pack.burgs[1].port = 1;
   drawBurgIcons();
   expect(document.getElementById("burg1")).toBeNull();
-  styles.burgIcons.burgIcons.groups.town.options.size = 20;
-  styles.burgIcons.burgIcons.groups.town.options.icon = "#icon-watabou-city";
+  styles.icons.groups.town.groups.icons.options.size = 20;
+  styles.icons.groups.town.groups.icons.options.icon = "#icon-watabou-city";
   drawBurgIcons();
   expect(document.getElementById("burg1")?.getAttribute("href")).toBe("#icon-watabou-city");
   expect(document.getElementById("anchor1")).toBeNull();
-  styles.burgIcons.anchors.groups.town.options.size = 20;
+  styles.icons.groups.town.groups.anchors.options.size = 20;
   drawBurgIcons();
   expect(document.getElementById("anchor1")).not.toBeNull();
 });
@@ -132,8 +132,7 @@ test("symbol and size edits apply to offscreen icons and account for overflowing
 test("viewport reconciliation does not repopulate a hidden layer", () => {
   drawBurgIcons();
   mocks.layerOn = false;
-  document.getElementById("burgIcons")!.replaceChildren();
-  document.getElementById("anchors")!.replaceChildren();
+  document.getElementById("icons")!.replaceChildren();
   ViewportLayers.renderNow();
   expect(document.querySelectorAll("#icons use")).toHaveLength(0);
   mocks.layerOn = true;
@@ -143,13 +142,11 @@ test("viewport reconciliation does not repopulate a hidden layer", () => {
 
 test("loaded legacy markup is replaced by the current icon projection", () => {
   pack.burgs[1].port = 1;
-  document.getElementById("burgIcons")!.innerHTML =
-    '<g id="town"><circle id="burg1" data-id="1" r="5"/><use id="burg99" data-id="99"/></g>';
-  document.getElementById("anchors")!.innerHTML =
-    '<g id="town"><use id="anchor1" data-id="1" width="8" height="8" transform="translate(20,20)"/></g>';
+  document.getElementById("icons")!.innerHTML =
+    '<g id="town" data-group="town"><g data-group="icons"><circle id="burg1" data-id="1" r="5"/><use id="burg99" data-id="99"/></g><g data-group="anchors"><use id="anchor1" data-id="1" width="8" height="8" transform="translate(20,20)"/></g></g>';
   drawBurgIcons();
-  expect(document.querySelector("#burgIcons circle")).toBeNull();
-  expect(document.querySelectorAll("#burgIcons use")).toHaveLength(1);
+  expect(document.querySelector("#icons circle")).toBeNull();
+  expect(document.querySelectorAll('#icons [data-group="icons"] use')).toHaveLength(1);
   expect(document.getElementById("burg1")?.tagName).toBe("use");
   const anchor = document.getElementById("anchor1")!;
   expect(anchor.getAttribute("transform")).toBeNull();
@@ -164,23 +161,24 @@ test("markup preserves special characters in group names, symbols and styles", (
   const fill = 'url(#pattern-&"fill)';
   options.map.burgs.groups[0].name = name;
   pack.burgs[1].group = name;
-  styles.burgIcons.burgIcons.groups.town.options.icon = icon;
-  styles.burgIcons.burgIcons.groups.town.attrs.fill = fill;
-  styles.burgIcons.burgIcons.groups.town.attrs.filter = null;
+  styles.icons.groups.town.groups.icons.options.icon = icon;
+  styles.icons.groups.town.groups.icons.attrs.fill = fill;
+  styles.icons.groups.town.groups.icons.attrs.filter = null;
 
   drawBurgIcons();
-  const group = document.querySelector("#burgIcons > g")!;
+  const group = document.querySelector("#icons > g")!;
+  const icons = group.querySelector('[data-group="icons"]')!;
   expect(group.id).toBe(name);
   expect(group.getAttribute("data-group")).toBe(name);
-  expect(group.getAttribute("data-icon")).toBe(icon);
-  expect(group.getAttribute("fill")).toBe(fill);
-  expect(group.hasAttribute("filter")).toBe(false);
+  expect(icons.getAttribute("data-icon")).toBe(icon);
+  expect(icons.getAttribute("fill")).toBe(fill);
+  expect(icons.hasAttribute("filter")).toBe(false);
   expect(document.getElementById("burg1")?.getAttribute("href")).toBe(icon);
 });
 
 test("anchor symbol and shifts survive redraw, relocation and full-map rendering", () => {
   pack.burgs[1].port = 1;
-  Object.assign(styles.burgIcons.anchors.groups.town.options, { icon: "#icon-harbor", dx: -2, dy: 1 });
+  Object.assign(styles.icons.groups.town.groups.anchors.options, { icon: "#icon-harbor", dx: -2, dy: 1 });
   drawBurgIcons();
   const anchor = document.getElementById("anchor1")!;
   expect(anchor.getAttribute("href")).toBe("#icon-harbor");
@@ -201,7 +199,7 @@ test("anchor symbol and shifts survive redraw, relocation and full-map rendering
 test("viewport culling uses the shifted anchor position", () => {
   pack.burgs[1].port = 1;
   pack.burgs[1].x = 500;
-  Object.assign(styles.burgIcons.anchors.groups.town.options, { dx: -160, dy: 0 });
+  Object.assign(styles.icons.groups.town.groups.anchors.options, { dx: -160, dy: 0 });
   drawBurgIcons();
   expect(document.getElementById("burg1")).toBeNull();
   expect(document.getElementById("anchor1")?.getAttribute("x")).toBe("20");

@@ -1,5 +1,5 @@
 import { type LayerId, Layers } from "@/components/layers";
-import type { StyleElement, StylesData } from "@/types/styles";
+import { NODE_KEYS, type StyleElement, type StylesData } from "@/types/styles";
 import { parseSections, type TemplateLookup } from "@/utils/schemaUtils";
 import defaultStyles from "./default-styles.json";
 import { stylesSchema } from "./styles-schema";
@@ -53,9 +53,8 @@ function writeAttr(path: string[]): void {
 
   for (const [index, key] of keys.entries()) {
     node = node == null ? undefined : (node as Record<string, unknown>)[key];
-    const isAttrsBag = index === keys.length - 1;
-    // the attrs bag and a groups record address no element of their own; every group name does
-    if (isAttrsBag || (key === "groups" && isGroupsRecord(node))) continue;
+    // the attrs bag and the structural `groups` key address no element of their own; a group name does
+    if (index === keys.length - 1 || key === "groups") continue;
     element = element?.querySelector(`[data-group="${CSS.escape(key)}"]`) ?? null;
   }
 
@@ -65,12 +64,6 @@ function writeAttr(path: string[]): void {
   else element.setAttribute(name, String(value));
 }
 
-/** A `groups` record maps names to group nodes; every group shape carries an attrs bag */
-const isGroupsRecord = (value: unknown): boolean =>
-  typeof value === "object" && value !== null && Object.values(value as object).every(isGroupNode);
-
-const isGroupNode = (value: unknown): boolean => typeof value === "object" && value !== null && "attrs" in value;
-
 function writeNode(el: Element, node: object): void {
   for (const [key, value] of Object.entries(node)) {
     if (key === "options") continue;
@@ -79,13 +72,13 @@ function writeNode(el: Element, node: object): void {
         if (v === null || v === undefined) el.removeAttribute(name);
         else el.setAttribute(name, String(v));
       }
-    } else {
-      // a named subgroup (roads, statesHalo, ...) or a groups record of them
-      const entries = key === "groups" ? Object.entries(value as object) : [[key, value] as const];
-      for (const [group, groupNode] of entries) {
-        const child = el.querySelector(`[data-group="${CSS.escape(group)}"]`);
-        if (child) writeNode(child, groupNode as object);
-      }
+      continue;
+    }
+    if (key !== "groups") continue; // the tree holds nothing else
+    for (const [group, groupNode] of Object.entries(value as object)) {
+      if (NODE_KEYS.has(group)) continue; // reserved, never a group name
+      const child = el.querySelector(`[data-group="${CSS.escape(group)}"]`);
+      if (child) writeNode(child, groupNode as object);
     }
   }
 }

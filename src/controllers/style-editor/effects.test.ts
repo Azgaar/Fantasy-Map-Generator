@@ -41,7 +41,7 @@ describe("effectAt", () => {
     expect(at("rivers.attrs.fill")).toBe("write");
     expect(at("texture.options.x")).toBe("draw");
     expect(at("lakes.groups.freshwater.attrs.fill")).toBe("write");
-    expect(at("emblems.stateEmblems.options.size")).toBe("draw");
+    expect(at("emblems.groups.stateEmblems.options.size")).toBe("draw");
   });
 
   test("a declared effect: on the field, or on the nearest node above it", () => {
@@ -49,13 +49,13 @@ describe("effectAt", () => {
     expect(at("grid.attrs.stroke-width")).toBe("draw");
     expect(at("rulers.attrs.stroke-dasharray")).toBe("draw");
     expect(at("rulers.attrs.font-size")).toBe("draw");
-    expect(at("states.statesHalo.attrs.stroke-width")).toBe("zoom");
+    expect(at("states.groups.statesHalo.attrs.stroke-width")).toBe("zoom");
     expect(at("map.attrs.filter")).toBe("write");
-    expect(at("ocean.pattern.attrs.href")).toBe("write");
+    expect(at("ocean.groups.pattern.attrs.href")).toBe("write");
     expect(at("coordinates.attrs.font-size")).toBe("draw");
-    expect(at("burgIcons.anchors.groups.town.attrs.fill")).toBe("write");
-    expect(at("burgIcons.anchors.groups.town.options.icon")).toBe("draw");
-    expect(at("scaleBar.back.attrs.fill")).toBe("draw");
+    expect(at("icons.groups.town.groups.anchors.attrs.fill")).toBe("write");
+    expect(at("icons.groups.town.groups.anchors.options.icon")).toBe("draw");
+    expect(at("scaleBar.groups.back.attrs.fill")).toBe("draw");
     expect(at("labels.groups.state.attrs.font-family")).toBe("draw");
     expect(at("labels.groups.state.attrs.fill")).toBe("write");
     expect(at("legend.attrs.font-family")).toBe("draw");
@@ -80,7 +80,7 @@ describe("runEffect", () => {
     run("grid.attrs.stroke-width", 2);
     expect(Styles.writeAttr).toHaveBeenCalledWith(["grid", "attrs", "stroke-width"]);
     expect(Layers.draw).toHaveBeenCalledWith("grid");
-    run("ocean.oceanWaves.attrs.stroke", "#000000");
+    run("ocean.groups.oceanWaves.attrs.stroke", "#000000");
     expect(Layers.draw).toHaveBeenCalledWith("ocean");
   });
 
@@ -96,8 +96,8 @@ describe("runEffect", () => {
   });
 
   test("a zoom-derived attr is written, then the zoom re-run; the vignette goes to its applier", () => {
-    run("states.statesHalo.attrs.stroke-width", 12);
-    expect(Styles.writeAttr).toHaveBeenCalledWith(["states", "statesHalo", "attrs", "stroke-width"]);
+    run("states.groups.statesHalo.attrs.stroke-width", 12);
+    expect(Styles.writeAttr).toHaveBeenCalledWith(["states", "groups", "statesHalo", "attrs", "stroke-width"]);
     expect(invokeActiveZooming).toHaveBeenCalled();
     run("vignette.options.rx", "5%");
     expect(applyVignetteOptions).toHaveBeenCalled();
@@ -115,14 +115,14 @@ describe("runEffect", () => {
   });
 
   test("scale bar and legend font redraw; a burg icon attr goes onto its group", () => {
-    run("scaleBar.back.attrs.fill", "#ffffff");
-    expect(Styles.writeAttr).toHaveBeenCalledWith(["scaleBar", "back", "attrs", "fill"]);
+    run("scaleBar.groups.back.attrs.fill", "#ffffff");
+    expect(Styles.writeAttr).toHaveBeenCalledWith(["scaleBar", "groups", "back", "attrs", "fill"]);
     expect(Layers.draw).toHaveBeenCalledWith("scaleBar");
     run("legend.attrs.font-family", "Arial");
     expect(Layers.draw).toHaveBeenCalledWith("legend");
     vi.clearAllMocks();
-    run("burgIcons.burgIcons.groups.town.attrs.fill", "#ffffff");
-    expect(Styles.writeAttr).toHaveBeenCalledWith(["burgIcons", "burgIcons", "groups", "town", "attrs", "fill"]);
+    run("icons.groups.town.groups.icons.attrs.fill", "#ffffff");
+    expect(Styles.writeAttr).toHaveBeenCalledWith(["icons", "groups", "town", "groups", "icons", "attrs", "fill"]);
     expect(Layers.draw).not.toHaveBeenCalled();
   });
 });

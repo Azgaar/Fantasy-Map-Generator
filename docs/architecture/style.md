@@ -24,13 +24,18 @@ architectural summary is in [architecture.md](./architecture.md#map-styling).
 ## The record
 
 The record is keyed by **style element**: every map layer, plus `map` for the whole-map filter.
-`StyleElement = keyof Styles`. Each element is a tree of three node kinds:
+`StyleElement = keyof Styles`. Every element is a **node**, and a node carries the same three bags at
+every level:
 
-| node      | what it holds                                      | goes to                          |
+| bag       | what it holds                                      | goes to                          |
 | --------- | -------------------------------------------------- | -------------------------------- |
 | `attrs`   | SVG attributes, by their SVG name (`stroke-width`) | the element, as they are         |
 | `options` | renderer inputs (`scheme`, `icon`, `boxSize`, …)   | the renderer, read from `styles` |
-| `groups`  | a record of user-named entries sharing one shape   | one child element per entry      |
+| `groups`  | named child nodes, fixed or user-created           | one child element per entry      |
+
+`attrs`, `options` and `groups` are reserved, so a group is never named one of them. A **group entry is
+a node too**, so groups nest to any depth — a burg group holds its `icons` and `anchors`. The tree
+mirrors the DOM tree: every `groups` entry addresses one `data-group` child of its parent's element.
 
 ```json
 {
@@ -41,22 +46,34 @@ The record is keyed by **style element**: every map layer, plus `map` for the wh
   },
   "labels": {
     "groups": {
-      "capital": {
-        "attrs": { "font-family": "Almendra SC", "font-size": "22%" }
-      }
+      "capital": { "attrs": { "font-family": "Almendra SC", "font-size": "22%" } }
     }
   },
   "states": {
-    "statesBody": { "attrs": { "opacity": 0.4 } },
-    "statesHalo": { "attrs": { "stroke-width": 10, "filter": "blur(3.5px)" } }
+    "groups": {
+      "statesBody": { "attrs": { "opacity": 0.4 } },
+      "statesHalo": { "attrs": { "stroke-width": 10, "filter": "blur(3.5px)" } }
+    }
+  },
+  "icons": {
+    "groups": {
+      "capital": {
+        "groups": {
+          "icons": { "attrs": { "fill": "#ffffff" }, "options": { "size": 2, "icon": "#icon-square" } },
+          "anchors": { "attrs": { "fill": "#ffffff" }, "options": { "size": 1.9, "icon": "#icon-anchor" } }
+        }
+      }
+    }
   }
 }
 ```
 
 - `null` on an attr means "attribute not set" — written as `removeAttribute`.
-- **Named subgroups** (`statesBody` / `statesHalo`, `landHeights` / `oceanHeights`, ocean `base` /
-  `pattern` / `oceanLayers` / `oceanWaves`, legend `box`, scale bar `back`, the emblem, goods and
-  coastline parts) are fixed children of their element, each with a `data-group` of the same name.
+- **Fixed groups** (`statesBody` / `statesHalo`, `landHeights` / `oceanHeights`, ocean `base` /
+  `pattern` / `oceanLayers` / `oceanWaves`, legend `box`, scale bar `back`, the emblem / goods /
+  coastline parts, a burg group's `icons` / `anchors`) are a closed set, declared in the schema.
+  **User groups** (`labels.groups`, `routes.groups`, `lakes.groups`, `icons.groups`) are unbounded
+  and keyed by the map's own group names — the editor's group select lists those.
 - **A font size is an attr**, in px on the layer (`legend.attrs["font-size"]: "13px"`), and its
   texts size by inheritance; a label group's is a `%` of the viewbox font size, which is 100px at
   scale 1 and which the zoom scales half-way — so anything sized in `%` or `em` (label groups, the
@@ -67,11 +84,9 @@ The record is keyed by **style element**: every map layer, plus `map` for the wh
 - **A zoom-derived attr keeps its base in the store.** The zoom writes what it derives — the halo
   `stroke-width` scaled to the viewport, the coordinates `font-size` on redraw — over the stored
   base; the store never holds the derived value.
-- **`groups` records** are user-defined and unbounded: `labels.groups`, `routes.groups`,
-  `lakes.groups`, and the two burg records `burgIcons.burgIcons.groups` / `burgIcons.anchors.groups`
-  keyed by the same burg group names.
-- `attrs` and `options` are the store's convention, not the UI's: the form flattens them and shows
-  each named subgroup as a section.
+- `attrs` and `options` are the store's convention, not the UI's: the form flattens them and renders
+  every `groups` entry as a card — a user group's entries drive the group select, a fixed group's
+  entries render inline.
 
 ### Formats
 
@@ -204,10 +219,12 @@ reached only from the load migrations (`auto-update.ts`) and `parsePreset`:
 - selector-keyed presets (`"#stateBorders": { … }`, `"#labels > #states"`) → `presetFromLegacy`
 - maps saved before the store was the source of truth → `stylesFromMap` harvests the SVG attributes,
   `restoreStrippedLayerStyles` re-seeds what a few versions stripped
-- `normalizeStyles` rewrites older records to the current shape and formats: folding
-  of mirrored fields into their attrs (`map.options.dataFilter` → `map.attrs.filter`, the halo
-  `width`, the `fontSize` options, the ocean pattern options → `ocean.pattern.attrs`), dropping the
-  retired ones (`markers.options.rescale`, `military.options.fontSize`), then `""` → `null`,
+- `normalizeStyles` rewrites older records to the current shape and formats: folding the fixed
+  children under their element's `groups`, renaming the `burgIcons` element to `icons` and its two
+  records into one entry per group, folding
+  the mirrored fields into their attrs (`map.options.dataFilter` → `map.attrs.filter`, the halo
+  `width`, the `fontSize` options, the ocean pattern options → `ocean.groups.pattern.attrs`), dropping
+  the retired ones (`markers.options.rescale`, `military.options.fontSize`), then `""` → `null`,
   `inherit` → `null`, the font-size units
 - a value repair that is about the map rather than the format lives in the migration itself, next
   to its version (the anchors that carried the burg icon before ports were stylable)
@@ -241,11 +258,12 @@ same style element, so there is no alias table to keep in step.
 ### Selection speaks the store
 
 The element select lists `Object.keys(stylesSchema.shape)` by their layer label. An element with a
-`groups` record shows the group select, filled by `GROUP_SOURCES` (`dialogs.ts`) — each entry with a
-count of the things using it (labels per group, burgs and ports, routes, lakes). Named subgroups are
-not a selection: they render inline as collapsible cards under the element's own rows, so an
-element is seen whole. `burgIcons` composes its two records so one group select serves both: the
-icon rows flat, the anchor rows as an "Anchors" card.
+user `groups` record shows the group select, filled by `GROUP_SOURCES` (`dialogs.ts`) — each entry
+with a count of the things using it (labels per group, burgs and ports, routes, lakes). A fixed
+`groups` record is not a selection: its entries render inline as collapsible cards under the
+element's own rows, so an element is seen whole. `icons` is one user record whose entries hold
+their own `icons` and `anchors` groups, so one group select serves both and the anchor rows are a
+card inside the group.
 
 `resolve` turns the selection into a store node, its schema subtree and a path
 (`["labels", "groups", "capital"]`); a group that no longer exists falls back to the first.
@@ -260,9 +278,10 @@ registry, an `onChange`, and optional extra controls. It knows nothing of `style
   its meta and derives the control: boolean → checkbox, enum → select, bounded number → slider,
   number → number input, string → text; `meta.control` overrides.
 - **Walking** iterates the shape in declaration order. `attrs` and `options` are flattened into the
-  parent; any other object becomes a card — `<details data-section="options.contours">` with the
-  title, the gate control and a preview slot in its `<summary>`. A gated card hides its body while
-  the gate is `false | "off" | "none"`. With `rootTitle` the element's own rows get a card too.
+  parent; a `groups` node is structural and renders one card per entry, recursively; any other object
+  becomes a card — `<details data-section="options.contours">` with the title, the gate control and a
+  preview slot in its `<summary>`. A gated card hides its body while the gate is `false | "off" |
+  "none"`. With `rootTitle` the element's own rows get a card too.
 - **Rows** are `<div class="row" data-field="attrs.fill">` with a label and the control; the
   `data-field` path is relative to the rendered root, so it is stable across groups and is what the
   e2e specs address.

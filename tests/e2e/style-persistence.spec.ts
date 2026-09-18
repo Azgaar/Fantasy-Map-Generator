@@ -52,7 +52,7 @@ test.describe("style persistence round trips", () => {
     await page.evaluate(() => sessionStorage.setItem("styleChangeConfirmed", "true"));
     await page.evaluate(() => (window as any).Controllers.StylePresetsEditor.change("ancient"));
 
-    const expectedFill = readPreset("ancient").ocean.base.attrs.fill;
+    const expectedFill = readPreset("ancient").ocean.groups.base.attrs.fill;
     const beforeFill = await page.locator("#oceanBase").getAttribute("fill");
     expect(beforeFill).toBe(expectedFill);
 
@@ -60,7 +60,7 @@ test.describe("style persistence round trips", () => {
     await reload(page, buffer, "style-persistence-preset-reloaded");
 
     const after = await page.evaluate(() => ({
-      store: styles.ocean.base.attrs.fill,
+      store: styles.ocean.groups.base.attrs.fill,
       dom: document.getElementById("oceanBase")?.getAttribute("fill")
     }));
 
@@ -184,7 +184,7 @@ test.describe("style persistence round trips", () => {
     const harvested = await page.evaluate(() => ({
       riversStore: styles.rivers.attrs.fill,
       riversDom: document.getElementById("rivers")?.getAttribute("fill"),
-      statesHaloWidth: styles.states.statesHalo.attrs["stroke-width"]
+      statesHaloWidth: styles.states.groups.statesHalo.attrs["stroke-width"]
     }));
 
     expect(harvested.riversDom).toBe("#6738bc");
@@ -226,10 +226,10 @@ test.describe("style persistence round trips", () => {
     await page.waitForTimeout(1000);
 
     const harvested = await page.evaluate(() => ({
-      iconFill: styles.burgIcons.burgIcons.groups.cities?.attrs?.fill ?? null,
-      iconSize: styles.burgIcons.burgIcons.groups.cities?.options?.size ?? null,
-      anchorFill: styles.burgIcons.anchors.groups.cities?.attrs?.fill ?? null,
-      anchorSize: styles.burgIcons.anchors.groups.cities?.options?.size ?? null
+      iconFill: styles.icons.groups.cities?.groups.icons.attrs?.fill ?? null,
+      iconSize: styles.icons.groups.cities?.groups.icons.options?.size ?? null,
+      anchorFill: styles.icons.groups.cities?.groups.anchors.attrs?.fill ?? null,
+      anchorSize: styles.icons.groups.cities?.groups.anchors.options?.size ?? null
     }));
 
     // this fixture postdates the 1.109 size-doubling migration, so the sizes harvest as written
@@ -240,8 +240,8 @@ test.describe("style persistence round trips", () => {
 
     const savedAgain = await saveAsDownload(page);
     const record = JSON.parse(savedAgain.toString("utf8").split("\r\n")[48]);
-    expect(record.burgIcons.burgIcons.groups.cities.options.size).toBe(0.9);
-    expect(record.burgIcons.anchors.groups.cities.options.size).toBe(2.2);
+    expect(record.icons.groups.cities.groups.icons.options.size).toBe(0.9);
+    expect(record.icons.groups.cities.groups.anchors.options.size).toBe(2.2);
   });
 
   test("preset-nulled attr stays absent: a preset switch survives a save and load with no backfill", async ({
@@ -267,7 +267,7 @@ test.describe("style persistence round trips", () => {
     await reload(page, buffer, "style-persistence-null-preset-reloaded");
 
     const after = await page.evaluate(() => ({
-      store: styles.states.statesHalo.attrs.filter,
+      store: styles.states.groups.statesHalo.attrs.filter,
       dom: document.getElementById("statesHalo")?.getAttribute("filter")
     }));
 
@@ -349,7 +349,7 @@ test.describe("style persistence round trips", () => {
         document.getElementById("landHeights")?.getAttribute(a)
       ),
       oceanRenderAttr: document.getElementById("oceanHeights")?.getAttribute("data-render"),
-      landScheme: styles.heightmap.landHeights.options.scheme,
+      landScheme: styles.heightmap.groups.landHeights.options.scheme,
       smallFamilyAttrs: [
         document.getElementById("armies")?.getAttribute("box-size"),
         document.getElementById("gridOverlay")?.getAttribute("type"),
@@ -364,7 +364,7 @@ test.describe("style persistence round trips", () => {
         document.getElementById("texture")?.getAttribute("data-href"),
         document.getElementById("oceanLayers")?.getAttribute("layers")
       ],
-      oceanOutline: styles.ocean.oceanLayers.options.outline,
+      oceanOutline: styles.ocean.groups.oceanLayers.options.outline,
       geometryAttrs: [
         document.getElementById("scaleBar")?.getAttribute("data-bar-size"),
         document.getElementById("scaleBarBack")?.getAttribute("data-top"),
@@ -373,7 +373,7 @@ test.describe("style persistence round trips", () => {
       ],
       scaleBarSize: styles.scaleBar.options.barSize,
       markersOptions: styles.markers.options,
-      haloWidth: styles.states.statesHalo.attrs["stroke-width"],
+      haloWidth: styles.states.groups.statesHalo.attrs["stroke-width"],
       coordinatesSize: styles.coordinates.attrs["font-size"]
     }));
 
@@ -402,13 +402,13 @@ test.describe("style persistence round trips", () => {
     // flip values through the store the way the real editor handlers do, then run a REAL save:
     // since step 7 the record serializes the store directly, no harvest in between
     await page.evaluate(() => {
-      styles.states.statesHalo.attrs["stroke-width"] = 3;
+      styles.states.groups.statesHalo.attrs["stroke-width"] = 3;
       styles.coordinates.attrs["font-size"] = "21px";
     });
 
     const savedAgain = await saveAsDownload(page);
     const record = JSON.parse(savedAgain.toString("utf8").split("\r\n")[48]);
-    expect(record.states.statesHalo.attrs["stroke-width"]).toBe(3);
+    expect(record.states.groups.statesHalo.attrs["stroke-width"]).toBe(3);
     expect(record.coordinates.attrs["font-size"]).toBe("21px");
   });
 

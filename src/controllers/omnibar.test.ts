@@ -273,7 +273,7 @@ describe("Omnibar public behavior", () => {
     expect(rows()[0].querySelector(".icon-home")).not.toBeNull();
     expect(rows()[0].querySelector(".omnibar-detail")?.textContent).toBe("Burg · Kingdom of Westreach");
     key("Enter");
-    expect(mocks.show).toHaveBeenCalledWith("burgIcons", "labels");
+    expect(mocks.show).toHaveBeenCalledWith("icons", "labels");
     expect(mocks.zoom).toHaveBeenCalledWith(10, 20, 8, 1500);
 
     await vi.advanceTimersByTimeAsync(750);

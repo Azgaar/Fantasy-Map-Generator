@@ -79,8 +79,8 @@ export const drawHeightmap = (): void => {
   const used = new Uint8Array(cells.i.length);
   const heights = Array.from(cells.i).sort((a, b) => cells.h[a] - cells.h[b]);
 
-  const landOptions = styles.heightmap.landHeights.options;
-  const oceanOptions = styles.heightmap.oceanHeights.options;
+  const landOptions = styles.heightmap.groups.landHeights.options;
+  const oceanOptions = styles.heightmap.groups.oceanHeights.options;
   const linesOnly = (o: typeof landOptions) => o.contours.mode === "only" || o.hachures.mode === "only";
   const landFillsVisible = !linesOnly(landOptions);
   const oceanFillsVisible = !linesOnly(oceanOptions);

@@ -405,7 +405,10 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       .on("click", onLegendClick);
 
     // add custom heightmap color scheme if any
-    for (const { scheme } of [styles.heightmap.oceanHeights.options, styles.heightmap.landHeights.options]) {
+    for (const { scheme } of [
+      styles.heightmap.groups.oceanHeights.options,
+      styles.heightmap.groups.landHeights.options
+    ]) {
       HeightmapColorSchemes.ensure(scheme);
     }
 

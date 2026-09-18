@@ -101,7 +101,7 @@ export function invokeActiveZooming(): void {
 
   if (!customization && options.app.performance.stateHalos) {
     const statesHalo = select("#statesHalo");
-    const desired = styles.states.statesHalo.attrs["stroke-width"] ?? 0;
+    const desired = styles.states.groups.statesHalo.attrs["stroke-width"] ?? 0;
     const haloSize = rn(desired / viewport.scale ** 0.8, 2);
     statesHalo.attr("stroke-width", haloSize).style("display", haloSize > 0.1 ? "block" : "none");
   }

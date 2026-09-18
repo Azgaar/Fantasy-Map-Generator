@@ -54,6 +54,9 @@ export type StylesData = z.infer<typeof stylesSchema>;
 /** A map layer's style, or `map` for the whole-map filter */
 export type StyleElement = keyof StylesData;
 
+/** The bags every style node may carry; reserved, so a group name may never be one of them */
+export const NODE_KEYS: ReadonlySet<string> = new Set(["attrs", "options", "groups"]);
+
 // --- the editor (src/controllers/style-editor) --------------------------------------------------------
 
 /** What the Style tab shows: an element, its group when it has a record of them, and the layer it is drawn on */

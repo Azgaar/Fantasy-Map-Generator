@@ -1,6 +1,6 @@
 // The Style tab's editor
 import "@/components/shared/slider-input";
-import { z } from "zod";
+import type { z } from "zod";
 import { type LayerId, Layers } from "@/components/layers";
 import { openTab } from "@/components/options/options-panel";
 import { SchemaForm } from "@/components/shared/schema-form";
@@ -140,20 +140,6 @@ class StyleEditorController {
 
     const entries = groupEntriesFor(element);
     const group = entries.some(entry => entry.id === wanted) ? wanted! : (entries[0]?.id ?? "");
-
-    if (element === "burgIcons") {
-      // one group select serves both records: the burg icon rows flat, the anchors as a subsection
-      const burgGroup = stylesSchema.shape.burgIcons.shape.burgIcons.shape.groups.valueType;
-      const anchorGroup = stylesSchema.shape.burgIcons.shape.anchors.shape.groups.valueType;
-      const schema = z.strictObject({
-        ...burgGroup.shape,
-        anchors: anchorGroup.register(styleMeta, { label: "Anchors" })
-      });
-      const icons = styles.burgIcons.burgIcons.groups[group];
-      const value = icons ? { ...icons, anchors: styles.burgIcons.anchors.groups[group] } : undefined;
-      return { element, group, layer, path: ["burgIcons", "burgIcons", "groups", group], schema, value, entries };
-    }
-
     const record = (stylesSchema.shape[element] as z.ZodObject).shape.groups as z.ZodRecord;
     const schema = record.valueType as z.ZodObject;
     const value = (styles[element] as { groups: Record<string, object> }).groups[group];

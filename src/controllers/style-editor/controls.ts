@@ -331,7 +331,7 @@ function openSchemeBuilder(current: string, onCreate: (stops: string) => void): 
       width: grid.cellsX,
       height: grid.cellsY,
       scheme: scaleSequential(interpolateRgbBasis(stops)),
-      renderOcean: styles.heightmap.oceanHeights.options.render
+      renderOcean: styles.heightmap.groups.oceanHeights.options.render
     });
   };
   const renderGradient = () => {

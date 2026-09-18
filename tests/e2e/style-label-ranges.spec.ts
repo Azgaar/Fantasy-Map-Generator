@@ -35,6 +35,6 @@ test.describe("Style editor slider ranges", () => {
 
   test("other elements get the default stroke range", async ({ page }) => {
     await page.evaluate(() => (window as any).Controllers.StyleEditor.open("borders"));
-    expect((await sliderRange(page, "stateBorders.attrs.stroke-width")).max).toBe(10);
+    expect((await sliderRange(page, "groups.stateBorders.attrs.stroke-width")).max).toBe(10);
   });
 });

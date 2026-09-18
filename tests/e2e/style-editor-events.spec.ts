@@ -38,7 +38,7 @@ test.describe("style editor events drive the store", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/?seed=style-editor-events&width=1280&height=720");
     await waitForMap(page);
-    await page.waitForSelector("#burgIcons > g", { state: "attached", timeout: 60000 });
+    await page.waitForSelector("#icons > g", { state: "attached", timeout: 60000 });
     await page.waitForSelector("#labels > g", { state: "attached", timeout: 60000 });
     await page.waitForTimeout(500);
   });
@@ -83,7 +83,7 @@ test.describe("style editor events drive the store", () => {
 
     await openStyleElement(page, "states");
 
-    const numberInput = page.locator(`${f("statesHalo.attrs.stroke-width")} input[type=number]`);
+    const numberInput = page.locator(`${f("groups.statesHalo.attrs.stroke-width")} input[type=number]`);
     await expect(numberInput).toHaveValue("10");
 
     // real control: type into the number half of <slider-input>, which re-dispatches a real
@@ -94,7 +94,7 @@ test.describe("style editor events drive the store", () => {
     await expect(page.locator("#statesHalo")).toHaveAttribute("stroke-width", /^\d/);
 
     // (2) typed store value
-    const storeWidth = await page.evaluate(() => (window as any).styles.states.statesHalo.attrs["stroke-width"]);
+    const storeWidth = await page.evaluate(() => (window as any).styles.states.groups.statesHalo.attrs["stroke-width"]);
     expect(storeWidth).toBe(5);
     expect(typeof storeWidth).toBe("number");
 
@@ -168,17 +168,17 @@ test.describe("style editor events drive the store", () => {
     await openStyleElement(page, "emblems");
 
     for (const [input, value] of [
-      [f("stateEmblems.options.size"), "1.5"],
-      [f("provinceEmblems.options.size"), "0.5"],
-      [f("burgEmblems.options.size"), "2"]
+      [f("groups.stateEmblems.options.size"), "1.5"],
+      [f("groups.provinceEmblems.options.size"), "0.5"],
+      [f("groups.burgEmblems.options.size"), "2"]
     ] as const) {
       await page.locator(`${input} input[type=number]`).fill(value);
     }
 
     const stored = await page.evaluate(() => ({
-      state: (window as any).styles.emblems.stateEmblems.options.size,
-      province: (window as any).styles.emblems.provinceEmblems.options.size,
-      burg: (window as any).styles.emblems.burgEmblems.options.size
+      state: (window as any).styles.emblems.groups.stateEmblems.options.size,
+      province: (window as any).styles.emblems.groups.provinceEmblems.options.size,
+      burg: (window as any).styles.emblems.groups.burgEmblems.options.size
     }));
     expect(stored).toEqual({ state: 1.5, province: 0.5, burg: 2 });
 
@@ -191,12 +191,12 @@ test.describe("style editor events drive the store", () => {
     await page.evaluate(() => (window as any).Layers.show("goods"));
     await openStyleElement(page, "goods");
 
-    await page.locator(`${f("goodsIcons.options.size")} input[type=number]`).fill("9");
-    await page.locator(`${f("goodsBurgs.options.size")} input[type=number]`).fill("7");
+    await page.locator(`${f("groups.goodsIcons.options.size")} input[type=number]`).fill("9");
+    await page.locator(`${f("groups.goodsBurgs.options.size")} input[type=number]`).fill("7");
 
     const stored = await page.evaluate(() => ({
-      icons: (window as any).styles.goods.goodsIcons.options.size,
-      burgs: (window as any).styles.goods.goodsBurgs.options.size
+      icons: (window as any).styles.goods.groups.goodsIcons.options.size,
+      burgs: (window as any).styles.goods.groups.goodsBurgs.options.size
     }));
     expect(stored).toEqual({ icons: 9, burgs: 7 });
 
@@ -225,22 +225,22 @@ test.describe("style editor events drive the store", () => {
     await openStyleElement(page, "heightmap");
 
     // ocean subsection: the render-ocean gate in its header, then scheme select and terracing slider
-    await page.locator(`${f("oceanHeights.options.render")} label.checkbox-label`).click();
-    await page.locator(`${f("oceanHeights.options.scheme")} select`).selectOption("monochrome");
-    await page.locator(`${f("oceanHeights.options.terracing")} input[type=number]`).fill("3");
+    await page.locator(`${f("groups.oceanHeights.options.render")} label.checkbox-label`).click();
+    await page.locator(`${f("groups.oceanHeights.options.scheme")} select`).selectOption("monochrome");
+    await page.locator(`${f("groups.oceanHeights.options.terracing")} input[type=number]`).fill("3");
 
     // land subsection: skip, relax, curve
-    await page.locator(`${f("landHeights.options.skip")} input[type=number]`).fill("2");
-    await page.locator(`${f("landHeights.options.relax")} input[type=number]`).fill("1");
-    await page.locator(`${f("landHeights.options.curve")} select`).selectOption("curveLinear");
+    await page.locator(`${f("groups.landHeights.options.skip")} input[type=number]`).fill("2");
+    await page.locator(`${f("groups.landHeights.options.relax")} input[type=number]`).fill("1");
+    await page.locator(`${f("groups.landHeights.options.curve")} select`).selectOption("curveLinear");
 
     const stored = await page.evaluate(() => ({
-      oceanScheme: (window as any).styles.heightmap.oceanHeights.options.scheme,
-      oceanTerracing: (window as any).styles.heightmap.oceanHeights.options.terracing,
-      oceanRender: (window as any).styles.heightmap.oceanHeights.options.render,
-      landSkip: (window as any).styles.heightmap.landHeights.options.skip,
-      landRelax: (window as any).styles.heightmap.landHeights.options.relax,
-      landCurve: (window as any).styles.heightmap.landHeights.options.curve
+      oceanScheme: (window as any).styles.heightmap.groups.oceanHeights.options.scheme,
+      oceanTerracing: (window as any).styles.heightmap.groups.oceanHeights.options.terracing,
+      oceanRender: (window as any).styles.heightmap.groups.oceanHeights.options.render,
+      landSkip: (window as any).styles.heightmap.groups.landHeights.options.skip,
+      landRelax: (window as any).styles.heightmap.groups.landHeights.options.relax,
+      landCurve: (window as any).styles.heightmap.groups.landHeights.options.curve
     }));
     expect(stored).toEqual({
       oceanScheme: "monochrome",
@@ -335,10 +335,10 @@ test.describe("style editor events drive the store", () => {
     }
 
     await openStyleElement(page, "goods");
-    const before = await page.evaluate(() => (window as any).styles.goods.goodsIcons.options.circle);
-    await page.locator(`${f("goodsIcons.options.circle")} label.checkbox-label`).click();
-    expect(await page.evaluate(() => (window as any).styles.goods.goodsIcons.options.circle)).toBe(!before);
-    expect(typeof (await page.evaluate(() => (window as any).styles.goods.goodsIcons.options.circle))).toBe("boolean");
+    const before = await page.evaluate(() => (window as any).styles.goods.groups.goodsIcons.options.circle);
+    await page.locator(`${f("groups.goodsIcons.options.circle")} label.checkbox-label`).click();
+    expect(await page.evaluate(() => (window as any).styles.goods.groups.goodsIcons.options.circle)).toBe(!before);
+    expect(typeof (await page.evaluate(() => (window as any).styles.goods.groups.goodsIcons.options.circle))).toBe("boolean");
     expect(await page.locator("#goodsIcons").getAttribute("data-circle")).toBeNull();
   });
 
@@ -361,9 +361,9 @@ test.describe("style editor events drive the store", () => {
   test("ocean outline select writes the store and redraws the layers", async ({ page }) => {
     await openStyleElement(page, "ocean");
 
-    await page.locator(`${f("oceanLayers.options.outline")} select`).selectOption("-6,-4,-2");
+    await page.locator(`${f("groups.oceanLayers.options.outline")} select`).selectOption("-6,-4,-2");
 
-    expect(await page.evaluate(() => (window as any).styles.ocean.oceanLayers.options.outline)).toBe("-6,-4,-2");
+    expect(await page.evaluate(() => (window as any).styles.ocean.groups.oceanLayers.options.outline)).toBe("-6,-4,-2");
     expect(await page.locator("#oceanLayers").getAttribute("layers")).toBeNull();
     expect(await page.evaluate(() => document.querySelectorAll("#oceanLayers > path").length)).toBe(3);
   });
@@ -375,7 +375,7 @@ test.describe("style editor events drive the store", () => {
     for (const [input, value] of [
       [f("options.barSize"), "2.5"],
       [f("options.x"), "50"],
-      [f("back.options.top"), "12"]
+      [f("groups.back.options.top"), "12"]
     ] as const) {
       await page.locator(`${input} input[type=number]`).fill(value);
     }
@@ -385,7 +385,7 @@ test.describe("style editor events drive the store", () => {
       barSize: (window as any).styles.scaleBar.options.barSize,
       x: (window as any).styles.scaleBar.options.x,
       label: (window as any).styles.scaleBar.options.label,
-      top: (window as any).styles.scaleBar.back.options.top
+      top: (window as any).styles.scaleBar.groups.back.options.top
     }));
     expect(stored).toEqual({ barSize: 2.5, x: 50, label: "here be dragons", top: 12 });
 
@@ -408,18 +408,18 @@ test.describe("style editor events drive the store", () => {
     await page.evaluate(() => (window as any).Layers.show("scaleBar"));
     await openStyleElement(page, "scaleBar");
 
-    await page.locator(`${f("back.attrs.opacity")} input[type=number]`).fill("0.65");
-    await page.locator(`${f("back.attrs.stroke-width")} input[type=number]`).fill("2.5");
+    await page.locator(`${f("groups.back.attrs.opacity")} input[type=number]`).fill("0.65");
+    await page.locator(`${f("groups.back.attrs.stroke-width")} input[type=number]`).fill("2.5");
     for (const [input, value] of [
-      [f("back.attrs.fill"), "#123456"],
-      [f("back.attrs.stroke"), "#654321"]
+      [f("groups.back.attrs.fill"), "#123456"],
+      [f("groups.back.attrs.stroke"), "#654321"]
     ] as const) {
       await page.locator(`${input} input[type=color]`).fill(value);
       await page.locator(`${input} input[type=color]`).dispatchEvent("input");
     }
 
     const expected = { opacity: 0.65, fill: "#123456", stroke: "#654321", "stroke-width": 2.5 };
-    expect(await page.evaluate(() => (window as any).styles.scaleBar.back.attrs)).toMatchObject(expected);
+    expect(await page.evaluate(() => (window as any).styles.scaleBar.groups.back.attrs)).toMatchObject(expected);
 
     // what load does after restoring the svg: the edit must be what the store writes back
     await page.evaluate(() => (window as any).Styles.write("scaleBar"));
@@ -542,38 +542,39 @@ test.describe("style editor events drive the store", () => {
   });
 
   test("burg icon controls write the store and the redraw derives from it", async ({ page }) => {
-    await openStyleElement(page, "burgIcons");
+    await openStyleElement(page, "icons");
     const group = await page.evaluate(() => (window as any).styleGroupSelect.value);
 
-    await page.locator(`${f("options.size")} input[type=number]`).fill("2.5");
-    await page.locator(`${f("attrs.fill-opacity")} input[type=number]`).fill("0.6");
-    await page.locator(`${f("attrs.stroke-linejoin")} select`).selectOption("round");
+    await page.locator(`${f("groups.icons.options.size")} input[type=number]`).fill("2.5");
+    await page.locator(`${f("groups.icons.attrs.fill-opacity")} input[type=number]`).fill("0.6");
+    await page.locator(`${f("groups.icons.attrs.stroke-linejoin")} select`).selectOption("round");
 
     const stored = await page.evaluate(
       g => ({
-        size: (window as any).styles.burgIcons.burgIcons.groups[g].options.size,
-        fillOpacity: (window as any).styles.burgIcons.burgIcons.groups[g].attrs["fill-opacity"],
-        linejoin: (window as any).styles.burgIcons.burgIcons.groups[g].attrs["stroke-linejoin"]
+        size: (window as any).styles.icons.groups[g].groups.icons.options.size,
+        fillOpacity: (window as any).styles.icons.groups[g].groups.icons.attrs["fill-opacity"],
+        linejoin: (window as any).styles.icons.groups[g].groups.icons.attrs["stroke-linejoin"]
       }),
       group
     );
     expect(stored).toEqual({ size: 2.5, fillOpacity: 0.6, linejoin: "round" });
 
-    // the live group carries the presentation; a full redraw keeps the store values
-    await page.evaluate(() => (window as any).Layers.draw("burgIcons"));
-    const el = page.locator(`#burgIcons > g#${group}`);
+    // the live group part carries the presentation; a full redraw keeps the store values
+    await page.evaluate(() => (window as any).Layers.draw("icons"));
+    const el = page.locator(`#icons > g#${group} > [data-group="icons"]`);
     await expect(el).toHaveAttribute("font-size", "2.5");
     await expect(el).toHaveAttribute("fill-opacity", "0.6");
 
     // anchors size writes its own store node without minting data-size
     const anchorGroup = group;
-    await page.locator(`${f("anchors.options.size")} input[type=number]`).fill("1.8");
+    await page.locator(`${f("groups.anchors.options.size")} input[type=number]`).fill("1.8");
     const anchorStored = await page.evaluate(
-      g => (window as any).styles.burgIcons.anchors.groups[g].options.size,
+      g => (window as any).styles.icons.groups[g].groups.anchors.options.size,
       anchorGroup
     );
     expect(anchorStored).toBe(1.8);
-    expect(await page.locator(`#anchors > g#${anchorGroup}`).getAttribute("data-size")).toBeNull();
+    const anchors = page.locator(`#icons > g#${anchorGroup} > [data-group="anchors"]`);
+    expect(await anchors.getAttribute("data-size")).toBeNull();
   });
 
   test("a new map starts from the previous definition sets, repaired so nothing is undrawable", async ({ page }) => {
@@ -610,11 +611,11 @@ test.describe("style editor events drive the store", () => {
   test("ocean pattern attrs write the store and land on the pattern image", async ({ page }) => {
     await openStyleElement(page, "ocean");
 
-    await page.locator(`${f("pattern.attrs.href")} select`).selectOption({ index: 2 });
-    const chosen = await page.locator(`${f("pattern.attrs.href")} select`).inputValue();
-    await page.locator(`${f("pattern.attrs.opacity")} input[type=number]`).fill("0.55");
+    await page.locator(`${f("groups.pattern.attrs.href")} select`).selectOption({ index: 2 });
+    const chosen = await page.locator(`${f("groups.pattern.attrs.href")} select`).inputValue();
+    await page.locator(`${f("groups.pattern.attrs.opacity")} input[type=number]`).fill("0.55");
 
-    const stored = await page.evaluate(() => (window as any).styles.ocean.pattern.attrs);
+    const stored = await page.evaluate(() => (window as any).styles.ocean.groups.pattern.attrs);
     expect(stored).toEqual({ href: chosen, opacity: 0.55 });
     await expect(page.locator("#oceanicPattern")).toHaveAttribute("opacity", "0.55");
     await expect(page.locator("#oceanicPattern")).toHaveAttribute("href", chosen);
@@ -663,9 +664,9 @@ test.describe("style editor events drive the store", () => {
     await page.evaluate(() => (window as any).Layers.show("compass"));
     await openStyleElement(page, "compass");
 
-    await page.locator(`${f("compassRose.attrs.transform")} input[type=number]`).first().fill("30");
+    await page.locator(`${f("groups.compassRose.attrs.transform")} input[type=number]`).first().fill("30");
 
-    const stored = await page.evaluate(() => (window as any).styles.compass.compassRose.attrs.transform);
+    const stored = await page.evaluate(() => (window as any).styles.compass.groups.compassRose.attrs.transform);
     expect(stored).toContain("translate(30");
     await expect(page.locator("#compass use")).toHaveAttribute("transform", stored);
   });

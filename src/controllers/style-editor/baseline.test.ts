@@ -19,9 +19,15 @@ const sel = (element: string, group?: string, path?: string[]): PathSelection =>
 const PRESET = {
   rivers: { attrs: { opacity: null, fill: "#5d97bb", filter: null } },
   labels: { groups: { capital: { attrs: { opacity: 1, "stroke-linecap": null } } } },
-  burgIcons: {
-    burgIcons: { groups: { city: { attrs: { fill: "#ffffff" }, options: { size: 1 } } } },
-    anchors: { groups: { city: { attrs: { fill: "#000000" } } } }
+  icons: {
+    groups: {
+      city: {
+        groups: {
+          icons: { attrs: { fill: "#ffffff" }, options: { size: 1 } },
+          anchors: { attrs: { fill: "#000000" } }
+        }
+      }
+    }
   }
 };
 
@@ -41,9 +47,15 @@ beforeEach(() => {
         mine: { attrs: { opacity: 0.5 } }
       }
     },
-    burgIcons: {
-      burgIcons: { groups: { city: { attrs: { fill: "#ffffff" }, options: { size: 1 } } } },
-      anchors: { groups: { city: { attrs: { fill: "#000000" } } } }
+    icons: {
+      groups: {
+        city: {
+          groups: {
+            icons: { attrs: { fill: "#ffffff" }, options: { size: 1 } },
+            anchors: { attrs: { fill: "#000000" } }
+          }
+        }
+      }
     }
   });
 });
@@ -60,14 +72,23 @@ describe("storePath", () => {
     ]);
   });
 
-  test("routes the composed burg icon form to its two records", () => {
-    const burg = sel("burgIcons", "city", ["burgIcons", "burgIcons", "groups", "city"]);
-    expect(storePath(burg, ["attrs", "fill"])).toEqual(["burgIcons", "burgIcons", "groups", "city", "attrs", "fill"]);
-    expect(storePath(burg, ["anchors", "attrs", "fill"])).toEqual([
-      "burgIcons",
-      "anchors",
+  test("hangs a burg group's parts off the group's own path", () => {
+    const burg = sel("icons", "city", ["icons", "groups", "city"]);
+    expect(storePath(burg, ["groups", "icons", "attrs", "fill"])).toEqual([
+      "icons",
       "groups",
       "city",
+      "groups",
+      "icons",
+      "attrs",
+      "fill"
+    ]);
+    expect(storePath(burg, ["groups", "anchors", "attrs", "fill"])).toEqual([
+      "icons",
+      "groups",
+      "city",
+      "groups",
+      "anchors",
       "attrs",
       "fill"
     ]);
@@ -93,12 +114,19 @@ describe("Baseline.diffAt", () => {
     expect(preset.diffAt(sel("labels", "capital"), ["attrs", "stroke-linecap"])?.changed).toBe(true);
   });
 
-  test("maps the anchors subsection to the anchors record", async () => {
+  test("compares a burg group's anchors part", async () => {
     const preset = await baseline();
-    const burg = sel("burgIcons", "city", ["burgIcons", "burgIcons", "groups", "city"]);
-    styles.burgIcons.anchors.groups.city.attrs.fill = "#123456";
-    expect(preset.diffAt(burg, ["attrs", "fill"])?.changed).toBe(false);
-    expect(preset.diffAt(burg, ["anchors", "attrs", "fill"])).toEqual({ changed: true, presetValue: "#000000" });
+    const burg = sel("icons", "city", ["icons", "groups", "city"]);
+    styles.icons.groups.city.groups.icons.attrs.fill = "#123456";
+    expect(preset.diffAt(burg, ["groups", "icons", "attrs", "fill"])).toEqual({
+      changed: true,
+      presetValue: "#ffffff"
+    });
+    styles.icons.groups.city.groups.anchors.attrs.fill = "#123456";
+    expect(preset.diffAt(burg, ["groups", "anchors", "attrs", "fill"])).toEqual({
+      changed: true,
+      presetValue: "#000000"
+    });
   });
 });
 

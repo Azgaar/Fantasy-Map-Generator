@@ -55,8 +55,7 @@ test("a legacy svg group id resolves to its layer's style element", () => {
 
 test("a declared child resolves to the layer that owns it, and ids pass through", () => {
   expect(elementFor("goodsIcons")).toBe("goods");
-  expect(elementFor("anchors")).toBe("burgIcons");
-  expect(elementFor("icons")).toBe("burgIcons");
+  expect(elementFor("icons")).toBe("icons");
   expect(elementFor("statesHalo")).toBe("states");
   expect(elementFor("rivers")).toBe("rivers");
   expect(elementFor("map")).toBe("map");

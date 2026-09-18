@@ -33,7 +33,7 @@ const PRESET_ROUTES: Record<string, PresetRoute> = {
   "#gridOverlay": { path: ["grid"], options: { type: "type", scale: "scale", dx: "dx", dy: "dy" } },
   "#coordinates": { path: ["coordinates"], rename: { "data-size": "font-size" }, drop: ["font-size"] },
   "#compass": { path: ["compass"], drop: ["shape-rendering"] },
-  "#compass > use": { path: ["compass", "compassRose"] },
+  "#compass > use": { path: ["compass", "groups", "compassRose"] },
   "#rivers": { path: ["rivers"] },
   "#freshwater": { path: ["lakes", "groups", "freshwater"] },
   "#salt": { path: ["lakes", "groups", "salt"] },
@@ -41,10 +41,13 @@ const PRESET_ROUTES: Record<string, PresetRoute> = {
   "#frozen": { path: ["lakes", "groups", "frozen"] },
   "#lava": { path: ["lakes", "groups", "lava"] },
   "#dry": { path: ["lakes", "groups", "dry"] },
-  "#sea_island": { path: ["coastline", "sea_island"], drop: ["auto-filter", "stroke-dasharray", "stroke-linecap"] },
-  "#lake_island": { path: ["coastline", "lake_island"], drop: ["stroke-dasharray", "stroke-linecap"] },
+  "#sea_island": {
+    path: ["coastline", "groups", "sea_island"],
+    drop: ["auto-filter", "stroke-dasharray", "stroke-linecap"]
+  },
+  "#lake_island": { path: ["coastline", "groups", "lake_island"], drop: ["stroke-dasharray", "stroke-linecap"] },
   "#terrs > #landHeights": {
-    path: ["heightmap", "landHeights"],
+    path: ["heightmap", "groups", "landHeights"],
     options: {
       scheme: "scheme",
       terracing: "terracing",
@@ -54,7 +57,7 @@ const PRESET_ROUTES: Record<string, PresetRoute> = {
     }
   },
   "#terrs > #oceanHeights": {
-    path: ["heightmap", "oceanHeights"],
+    path: ["heightmap", "groups", "oceanHeights"],
     options: {
       scheme: "scheme",
       terracing: "terracing",
@@ -68,13 +71,17 @@ const PRESET_ROUTES: Record<string, PresetRoute> = {
   "#terrain": { path: ["relief"], options: { set: "set", size: "size", density: "density" } },
   "#relig": { path: ["religions"] },
   "#cults": { path: ["cultures"] },
-  "#statesBody": { path: ["states", "statesBody"] },
+  "#statesBody": { path: ["states", "groups", "statesBody"] },
   // #statesHalo's stroke-width is the zoom-derived render value; data-width is the base
-  "#statesHalo": { path: ["states", "statesHalo"], rename: { "data-width": "stroke-width" }, drop: ["stroke-width"] },
+  "#statesHalo": {
+    path: ["states", "groups", "statesHalo"],
+    rename: { "data-width": "stroke-width" },
+    drop: ["stroke-width"]
+  },
   "#provs": { path: ["provinces"], drop: ["data-size", "fill", "font-size", "font-family"] },
   "#zones": { path: ["zones"] },
-  "#stateBorders": { path: ["borders", "stateBorders"] },
-  "#provinceBorders": { path: ["borders", "provinceBorders"] },
+  "#stateBorders": { path: ["borders", "groups", "stateBorders"] },
+  "#provinceBorders": { path: ["borders", "groups", "provinceBorders"] },
   "#roads": { path: ["routes", "groups", "roads"] },
   "#trails": { path: ["routes", "groups", "trails"] },
   "#searoutes": { path: ["routes", "groups", "searoutes"] },
@@ -83,17 +90,17 @@ const PRESET_ROUTES: Record<string, PresetRoute> = {
   "#ice": { path: ["ice"] },
   "#prec": { path: ["precipitation"] },
   "#population": { path: ["population"] },
-  "#rural": { path: ["population", "rural"] },
-  "#urban": { path: ["population", "urban"] },
+  "#rural": { path: ["population", "groups", "rural"] },
+  "#urban": { path: ["population", "groups", "urban"] },
   "#emblems": { path: ["emblems"] },
   "#texture": { path: ["texture"], options: { "data-href": "href", "data-x": "x", "data-y": "y" } },
-  "#goodsCells": { path: ["goods", "goodsCells"] },
+  "#goodsCells": { path: ["goods", "groups", "goodsCells"] },
   "#goodsIcons": {
-    path: ["goods", "goodsIcons"],
+    path: ["goods", "groups", "goodsIcons"],
     options: { "data-size": "size", "data-circle": "circle" },
     bools: ["circle"]
   },
-  "#goodsBurgs": { path: ["goods", "goodsBurgs"], options: { "data-size": "size" } },
+  "#goodsBurgs": { path: ["goods", "groups", "goodsBurgs"], options: { "data-size": "size" } },
   "#markets": {
     path: ["markets"],
     options: { "data-size": "size", "font-size": "iconSize", "data-icon": "icon" },
@@ -109,7 +116,7 @@ const PRESET_ROUTES: Record<string, PresetRoute> = {
     strings: ["label"]
   },
   "#scaleBarBack": {
-    path: ["scaleBar", "back"],
+    path: ["scaleBar", "groups", "back"],
     options: { "data-top": "top", "data-right": "right", "data-bottom": "bottom", "data-left": "left" }
   },
   "#legend": {
@@ -118,7 +125,7 @@ const PRESET_ROUTES: Record<string, PresetRoute> = {
     rename: { "data-size": "font-size" },
     drop: ["data-x", "data-y"]
   },
-  "#legendBox": { path: ["legend", "box"] },
+  "#legendBox": { path: ["legend", "groups", "box"] },
   "#fogging": { path: ["fogging"] },
   "#vignette": { path: ["vignette"] },
   "#vignette-rect": {
@@ -126,9 +133,9 @@ const PRESET_ROUTES: Record<string, PresetRoute> = {
     options: { x: "x", y: "y", width: "width", height: "height", rx: "rx", ry: "ry", filter: "filter" },
     ownAttrs: false
   },
-  "#oceanLayers": { path: ["ocean", "oceanLayers"], options: { layers: "outline" }, strings: ["outline"] },
-  "#oceanBase": { path: ["ocean", "base"] },
-  "#oceanicPattern": { path: ["ocean", "pattern"] },
+  "#oceanLayers": { path: ["ocean", "groups", "oceanLayers"], options: { layers: "outline" }, strings: ["outline"] },
+  "#oceanBase": { path: ["ocean", "groups", "base"] },
+  "#oceanicPattern": { path: ["ocean", "groups", "pattern"] },
   "#landmass": { path: ["landmass"] }
 };
 
@@ -148,7 +155,7 @@ const STRANDED_OPACITY_LAYERS = [
 const DEFAULT_ROUTE_GROUPS = Object.keys(Styles.defaults.routes.groups);
 const DEFAULT_LAKE_GROUPS = Object.keys(Styles.defaults.lakes.groups);
 const LABEL_SCHEMA_ATTRS = Object.keys(Object.values(Styles.defaults.labels.groups)[0].attrs);
-const BURG_SCHEMA_ATTRS = Object.keys(Object.values(Styles.defaults.burgIcons.burgIcons.groups)[0].attrs);
+const BURG_SCHEMA_ATTRS = Object.keys(Object.values(Styles.defaults.icons.groups)[0].groups.icons.attrs);
 
 // The v1.150.0 style migration auto-update
 export async function migrateStyles(legacyStyleString: string | undefined): Promise<string> {
@@ -176,15 +183,18 @@ function migrateLegacyStyleObj(obj: unknown): void {
       Object.entries(legacy.labels.groups).map(([name, group]) => [name, labelGroupFromLegacy(group)])
     );
 
-  if (legacy.burgIcons)
-    styles.burgIcons.burgIcons.groups = Object.fromEntries(
-      Object.entries(legacy.burgIcons).map(([name, group]) => [name, burgGroupFromLegacy(group)])
-    );
-
-  if (legacy.anchors)
-    styles.burgIcons.anchors.groups = Object.fromEntries(
-      Object.entries(legacy.anchors).map(([name, group]) => [name, anchorGroupFromLegacy(group)])
-    );
+  if (legacy.burgIcons || legacy.anchors) {
+    const groups = styles.icons.groups;
+    const names = new Set([...Object.keys(legacy.burgIcons ?? {}), ...Object.keys(legacy.anchors ?? {})]);
+    for (const name of names) {
+      groups[name] = {
+        groups: {
+          icons: burgGroupFromLegacy(legacy.burgIcons?.[name]),
+          anchors: anchorGroupFromLegacy(legacy.anchors?.[name])
+        }
+      };
+    }
+  }
 
   if (legacy.relief)
     styles.relief.options = {
@@ -270,25 +280,22 @@ export function harvestStylesFromSvg({ hasStyleRecord = false } = {}): void {
   const harvested = stylesFromMap();
   harvested.labels = structuredClone(styles.labels);
   // Empty legacy records need the saved SVG styles.
-  if (hasStyleRecord) {
-    for (const type of ["burgIcons", "anchors"] as const) {
-      if (Object.keys(styles.burgIcons[type].groups).length)
-        harvested.burgIcons[type] = structuredClone(styles.burgIcons[type]);
-    }
+  if (hasStyleRecord && Object.keys(styles.icons.groups).length) {
+    harvested.icons.groups = structuredClone(styles.icons.groups);
   }
   harvested.relief.options = structuredClone(styles.relief.options);
 
   // the pre-v1.150 style editor wrote to the layer group itself whenever the layer had no groups
   const strandedOpacity: Record<(typeof STRANDED_OPACITY_LAYERS)[number], { attrs: { opacity: number | null } }[]> = {
-    regions: [harvested.states.statesBody],
-    terrs: Object.values(harvested.heightmap),
+    regions: [harvested.states.groups.statesBody],
+    terrs: Object.values(harvested.heightmap.groups),
     lakes: Object.values(harvested.lakes.groups),
-    coastline: Object.values(harvested.coastline),
-    borders: Object.values(harvested.borders),
+    coastline: Object.values(harvested.coastline.groups),
+    borders: Object.values(harvested.borders.groups),
     routes: Object.values(harvested.routes.groups),
     labels: Object.values(harvested.labels.groups),
-    burgIcons: Object.values(harvested.burgIcons.burgIcons.groups),
-    anchors: Object.values(harvested.burgIcons.anchors.groups)
+    burgIcons: Object.values(harvested.icons.groups).map(entry => entry.groups.icons),
+    anchors: Object.values(harvested.icons.groups).map(entry => entry.groups.anchors)
   };
   for (const [layer, groups] of Object.entries(strandedOpacity)) {
     const opacity = document.getElementById(layer)?.getAttribute("opacity");
@@ -300,18 +307,18 @@ export function harvestStylesFromSvg({ hasStyleRecord = false } = {}): void {
     harvested.legend.options.columns = styles.legend.options.columns;
   for (const key of ["stateEmblems", "provinceEmblems", "burgEmblems"] as const) {
     if (!document.getElementById(key)?.hasAttribute("data-size"))
-      harvested.emblems[key].options = structuredClone(styles.emblems[key].options);
+      harvested.emblems.groups[key].options = structuredClone(styles.emblems.groups[key].options);
   }
   // per-key: goodsIcons' circle and markets' fontSize/icon are still attr-authoritative
   if (!document.getElementById("goodsIcons")?.hasAttribute("data-size"))
-    harvested.goods.goodsIcons.options.size = styles.goods.goodsIcons.options.size;
+    harvested.goods.groups.goodsIcons.options.size = styles.goods.groups.goodsIcons.options.size;
   if (!document.getElementById("goodsBurgs")?.hasAttribute("data-size"))
-    harvested.goods.goodsBurgs.options = structuredClone(styles.goods.goodsBurgs.options);
+    harvested.goods.groups.goodsBurgs.options = structuredClone(styles.goods.groups.goodsBurgs.options);
   if (!document.getElementById("markets")?.hasAttribute("data-size"))
     harvested.markets.options.size = styles.markets.options.size;
   for (const key of ["landHeights", "oceanHeights"] as const) {
     if (!document.getElementById(key)?.hasAttribute("scheme"))
-      harvested.heightmap[key].options = structuredClone(styles.heightmap[key].options);
+      harvested.heightmap.groups[key].options = structuredClone(styles.heightmap.groups[key].options);
   }
   if (!document.getElementById("armies")?.hasAttribute("box-size"))
     harvested.military.options = structuredClone(styles.military.options);
@@ -322,15 +329,15 @@ export function harvestStylesFromSvg({ hasStyleRecord = false } = {}): void {
   if (!document.getElementById("markets")?.hasAttribute("data-icon"))
     harvested.markets.options.icon = styles.markets.options.icon;
   if (!document.getElementById("goodsIcons")?.hasAttribute("data-circle"))
-    harvested.goods.goodsIcons.options.circle = styles.goods.goodsIcons.options.circle;
+    harvested.goods.groups.goodsIcons.options.circle = styles.goods.groups.goodsIcons.options.circle;
   if (!document.getElementById("texture")?.hasAttribute("data-href"))
     harvested.texture.options = structuredClone(styles.texture.options);
   if (!document.getElementById("oceanLayers")?.hasAttribute("layers"))
-    harvested.ocean.oceanLayers.options.outline = styles.ocean.oceanLayers.options.outline;
+    harvested.ocean.groups.oceanLayers.options.outline = styles.ocean.groups.oceanLayers.options.outline;
   if (!document.getElementById("scaleBar")?.hasAttribute("data-bar-size"))
     harvested.scaleBar.options = structuredClone(styles.scaleBar.options);
   if (!document.getElementById("scaleBarBack")?.hasAttribute("data-top"))
-    harvested.scaleBar.back.options = structuredClone(styles.scaleBar.back.options);
+    harvested.scaleBar.groups.back.options = structuredClone(styles.scaleBar.groups.back.options);
   // the layer registry stamps its declared attrs after this runs, so a map predating one
   // harvests it as null; the store keeps the attr until the element itself carries it
   for (const layer of Layers.all) {
@@ -350,15 +357,15 @@ function routeFor(selector: string): PresetRoute | undefined {
   const label = selector.match(/^#labels > #(.+)$/);
   if (label) return { path: ["labels", "groups", label[1]], kind: "label" };
   const burg = selector.match(/^#burgIcons > g#(.+)$/);
-  if (burg) return { path: ["burgIcons", "burgIcons", "groups", burg[1]], kind: "burg" };
+  if (burg) return { path: ["icons", "groups", burg[1], "groups", "icons"], kind: "burg" };
   const anchor = selector.match(/^#anchors > g#(.+)$/);
-  if (anchor) return { path: ["burgIcons", "anchors", "groups", anchor[1]], kind: "anchor" };
+  if (anchor) return { path: ["icons", "groups", anchor[1], "groups", "anchors"], kind: "anchor" };
   const routeGroup = selector.match(/^#routes > g#(.+)$/);
   if (routeGroup) return { path: ["routes", "groups", routeGroup[1]], kind: "route" };
   const lakeGroup = selector.match(/^#lakes > g#(.+)$/);
   if (lakeGroup) return PRESET_ROUTES[`#${lakeGroup[1]}`] ?? { path: ["lakes", "groups", lakeGroup[1]], kind: "lake" };
   const emblem = selector.match(/^#emblems > #(.+)$/);
-  if (emblem) return { path: ["emblems", emblem[1]], options: { "data-size": "size" } };
+  if (emblem) return { path: ["emblems", "groups", emblem[1]], options: { "data-size": "size" } };
   return undefined;
 }
 
@@ -575,10 +582,68 @@ type ShapeNode = { attrs?: Record<string, unknown>; options?: Record<string, unk
 const asNode = (value: unknown): ShapeNode | undefined =>
   typeof value === "object" && value !== null ? (value as ShapeNode) : undefined;
 
+// the fixed children that moved under their element's `groups` in v1.154.0
+const FOLDED_CHILDREN: Record<string, string[]> = {
+  borders: ["stateBorders", "provinceBorders"],
+  coastline: ["sea_island", "lake_island"],
+  compass: ["compassRose"],
+  emblems: ["stateEmblems", "provinceEmblems", "burgEmblems"],
+  goods: ["goodsCells", "goodsIcons", "goodsBurgs"],
+  heightmap: ["landHeights", "oceanHeights"],
+  legend: ["box"],
+  ocean: ["base", "pattern", "oceanLayers", "oceanWaves"],
+  population: ["rural", "urban"],
+  scaleBar: ["back"],
+  states: ["statesBody", "statesHalo"]
+};
+
+/** v1.154.0 folded every fixed named child under its element's `groups`, renamed burgIcons to icons and merged its two parts */
+function foldChildrenIntoGroups(root: ShapeNode): void {
+  const nodeAt = (parent: ShapeNode, key: string): ShapeNode => {
+    let node = asNode(parent[key]);
+    if (!node) {
+      node = {};
+      parent[key] = node;
+    }
+    return node;
+  };
+
+  for (const [element, children] of Object.entries(FOLDED_CHILDREN)) {
+    const node = asNode(root[element]);
+    if (!node) continue;
+    const groups = nodeAt(node, "groups");
+    for (const child of children) {
+      if (node[child] === undefined) continue;
+      groups[child] = node[child];
+      delete node[child];
+    }
+  }
+
+  // the element was named burgIcons before v1.154.0
+  const element = asNode(root.icons) ?? asNode(root.burgIcons);
+  if (!element) return;
+  if (root.icons !== element) {
+    root.icons = element;
+    delete root.burgIcons;
+  }
+
+  const oldIcons = asNode(element.burgIcons)?.groups as Record<string, unknown> | undefined;
+  const oldAnchors = asNode(element.anchors)?.groups as Record<string, unknown> | undefined;
+  if (!oldIcons && !oldAnchors) return;
+
+  const groups = nodeAt(element, "groups");
+  const partsOf = (name: string): ShapeNode => nodeAt(nodeAt(groups, name), "groups");
+  for (const [name, part] of Object.entries(oldIcons ?? {})) partsOf(name).icons = part;
+  for (const [name, part] of Object.entries(oldAnchors ?? {})) partsOf(name).anchors = part;
+  delete element.burgIcons;
+  delete element.anchors;
+}
+
 // version ? folded the fields that mirrored or duplicated an attr into the attr itself
 function upgradeShape(record: unknown): void {
   const root = asNode(record);
   if (!root) return;
+  foldChildrenIntoGroups(root);
 
   const px = (n: unknown) => (typeof n === "number" ? `${n}px` : n);
   const attrs = (node: ShapeNode): Record<string, unknown> => (node.attrs ??= {});
@@ -600,13 +665,20 @@ function upgradeShape(record: unknown): void {
 
   toAttr(root.map, "dataFilter", "filter", picked => (picked ? `url(#filter-${picked})` : null));
   const ocean = asNode(root.ocean);
-  if (ocean?.options && "pattern" in ocean.options) {
-    const { pattern, patternOpacity } = ocean.options;
-    ocean.pattern = { attrs: { href: pattern, opacity: patternOpacity ?? 1 } };
-    delete ocean.options.pattern;
-    delete ocean.options.patternOpacity;
+  if (ocean) {
+    let groups = asNode(ocean.groups);
+    if (!groups) {
+      groups = {};
+      ocean.groups = groups;
+    }
+    if (ocean.options && "pattern" in ocean.options) {
+      const { pattern, patternOpacity } = ocean.options as { pattern: unknown; patternOpacity: unknown };
+      groups.pattern = { attrs: { href: pattern, opacity: patternOpacity ?? 1 } };
+      delete (ocean.options as Record<string, unknown>).pattern;
+      delete (ocean.options as Record<string, unknown>).patternOpacity;
+    }
   }
-  toAttr(asNode(root.states)?.statesHalo, "width", "stroke-width");
+  toAttr(asNode(asNode(root.states)?.groups)?.statesHalo, "width", "stroke-width");
   const military = asNode(root.military);
   if (military?.options) delete military.options.fontSize; // the renderer sizes the font from the box
   if (military?.attrs) delete military.attrs["font-size"];
@@ -623,11 +695,11 @@ function upgradeShape(record: unknown): void {
   rename(asNode(root.markets)?.options, "fontSize", "iconSize");
   const markers = asNode(root.markers);
   if (markers) delete markers.options;
-  const seaIsland = asNode(asNode(root.coastline)?.sea_island);
+  const seaIsland = asNode(asNode(asNode(root.coastline)?.groups)?.sea_island);
   if (seaIsland) delete seaIsland.options;
   const compassAttrs = asNode(root.compass)?.attrs;
   if (compassAttrs) delete compassAttrs["shape-rendering"];
-  const landHeights = asNode(asNode(root.heightmap)?.landHeights);
+  const landHeights = asNode(asNode(asNode(root.heightmap)?.groups)?.landHeights);
   if (landHeights?.options) delete landHeights.options.render;
 }
 
@@ -679,6 +751,16 @@ export function presetFromLegacy(
       continue;
     }
     if (route.kind) {
+      if (route.kind === "burg" || route.kind === "anchor") {
+        // `#burgIcons > g#name` and `#anchors > g#name` are the two parts of one burg group
+        const name = route.path[2];
+        const groups = built.icons.groups;
+        const entry = groups[name] ?? structuredClone(groups.town ?? Object.values(groups)[0]);
+        if (route.kind === "burg") entry.groups.icons = burgGroupFromLegacy(bag);
+        else entry.groups.anchors = anchorGroupFromLegacy(bag);
+        groups[name] = entry;
+        continue;
+      }
       const parent = getPath(built, route.path.slice(0, -1)) as Record<string, unknown> | undefined;
       if (!parent) {
         fail(onUnknown, `unknown legacy selector "${selector}"`);
@@ -687,13 +769,9 @@ export function presetFromLegacy(
       const fromLegacy =
         route.kind === "label"
           ? labelGroupFromLegacy
-          : route.kind === "burg"
-            ? burgGroupFromLegacy
-            : route.kind === "anchor"
-              ? anchorGroupFromLegacy
-              : route.kind === "lake"
-                ? lakeGroupFromLegacy
-                : routeGroupFromLegacy;
+          : route.kind === "lake"
+            ? lakeGroupFromLegacy
+            : routeGroupFromLegacy;
       parent[route.path.at(-1) as string] = fromLegacy(bag);
       continue;
     }
@@ -747,9 +825,12 @@ export function stripDisplay(style: string | null): string | null {
   return declarations.filter(declaration => declaration && !/^display\s*:/.test(declaration)).join("; ") || null;
 }
 
+type BurgIconsPart = StylesData["icons"]["groups"][string]["groups"]["icons"];
+type BurgAnchorsPart = StylesData["icons"]["groups"][string]["groups"]["anchors"];
+
 // legacy wrote stored burg-group bags to the DOM verbatim with no per-key defaults; only size and icon are required by the renderer
-export function burgGroupFromLegacy(legacy: unknown): StylesData["burgIcons"]["burgIcons"]["groups"][string] {
-  const bag = legacy as Record<string, unknown>;
+export function burgGroupFromLegacy(legacy: unknown): BurgIconsPart {
+  const bag = (legacy ?? {}) as Record<string, unknown>;
   return {
     attrs: {
       opacity: numOr(bag.opacity, null),
@@ -772,10 +853,10 @@ export function burgGroupFromLegacy(legacy: unknown): StylesData["burgIcons"]["b
 }
 
 // anchors ignored data-icon before ports became stylable, so older records carry no icon or the burg default
-export function anchorGroupFromLegacy(legacy: unknown) {
+export function anchorGroupFromLegacy(legacy: unknown): BurgAnchorsPart {
   const group = burgGroupFromLegacy(legacy);
   if (group.options.icon === "#icon-circle") group.options.icon = "#icon-anchor";
-  return group;
+  return group as BurgAnchorsPart;
 }
 
 function routeGroupFromLegacy(legacy: object): StylesData["routes"]["groups"][string] {

@@ -1,7 +1,7 @@
 // Update an old map file to the current version
 import { color, min, select } from "d3";
 import { confirmationDialog } from "@/components/dialog/dialog-helpers";
-import { type LayerId, Layers, type LayersState } from "@/components/layers";
+import { type LayerId, Layers, type LayersState, resolveLayerId } from "@/components/layers";
 import { type EntityRef, MapEntities } from "@/components/map-entities";
 import { Notes } from "@/components/notes";
 import { normalizeLegacyBurgGroupFilters } from "@/components/options-legacy";
@@ -76,7 +76,7 @@ const LEGACY_LAYER_IDS: Record<string, LayerId> = {
   togglePrecipitation: "precipitation",
   togglePopulation: "population",
   toggleEmblems: "emblems",
-  toggleBurgIcons: "burgIcons",
+  toggleIcons: "icons",
   toggleLabels: "labels",
   toggleMilitary: "military",
   toggleMarkers: "markers",
@@ -926,7 +926,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       select("#compass")
         .append("use")
         .attr("xlink:href", "#defs-compass-rose")
-        .attr("transform", styles.compass.compassRose.attrs.transform);
+        .attr("transform", styles.compass.groups.compassRose.attrs.transform);
     }
   }
 
@@ -1619,7 +1619,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         has("prec", "circle") && "precipitation",
         has("population", "line") && "population",
         shown("emblems") && has("emblems", "use") && "emblems",
-        shown("icons") && "burgIcons",
+        shown("icons") && "icons",
         (labelsState ? labelsState === "true" : filled("labels")) && "labels",
         shown("armies") && filled("armies") && "military",
         has("markers", "svg") && "markers",
@@ -1966,8 +1966,16 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       return groups && !Object.keys(groups).length;
     });
     if (empty.length) {
+      // the harvest is already the merged shape; split it back into the two records this version keeps
       const harvested = stylesFromMap();
-      for (const type of empty) record.burgIcons[type].groups = harvested.burgIcons[type].groups;
+      for (const type of empty) {
+        record.burgIcons[type].groups = Object.fromEntries(
+          Object.entries(harvested.icons.groups).map(([name, entry]) => [
+            name,
+            type === "burgIcons" ? entry.groups.icons : entry.groups.anchors
+          ])
+        );
+      }
     }
     if (record) data[48] = JSON.stringify(record);
   }
@@ -1984,7 +1992,17 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     }
     // the ocean pattern tile lives in its layer now, and an id clash would shadow it
     for (const tile of document.querySelectorAll("pattern#oceanic")) if (!tile.closest("#oceanPattern")) tile.remove();
+    // a burg group element hangs directly off the layer now, with its anchor part inside it
+    document.getElementById("anchors")?.remove();
+    document.getElementById("burgIcons")?.remove();
     document.getElementById("labels")?.removeAttribute("font-size"); // the viewbox carries the base the groups size from
+    // the icons layer was named burgIcons when this state was saved; an unknown id would restore it as off
+    const layers = data[50] ? (safeParseJSON(data[50]) as LayersState | null) : undefined;
+    if (layers)
+      data[50] = JSON.stringify({
+        order: (layers.order ?? []).map(resolveLayerId),
+        active: (layers.active ?? []).map(resolveLayerId)
+      });
   }
 }
 
@@ -1994,6 +2012,11 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
     const settings = safeParseJSON(data[1]);
     if (settings?.labels) {
       delete settings.labels.resizeOnZoom;
+      // a group tied to the icons layer was saved under the layer's old id
+      for (const group of settings.labels.groups ?? []) {
+        if (typeof group?.layerDependency === "string")
+          group.layerDependency = resolveLayerId(group.layerDependency) as LayerId;
+      }
       data[1] = JSON.stringify(settings);
     }
   }
@@ -2125,13 +2148,10 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
 
   if (compareVersions(mapVersion, "1.144.0").isOlder && Array.isArray(migrated.labels?.groups)) {
     for (const group of migrated.labels.groups) {
-      if (
-        group &&
-        typeof group.layerDependency === "string" &&
-        Object.hasOwn(LEGACY_LAYER_IDS, group.layerDependency)
-      ) {
-        group.layerDependency = LEGACY_LAYER_IDS[group.layerDependency];
-      }
+      if (!group || typeof group.layerDependency !== "string") continue;
+      group.layerDependency = Object.hasOwn(LEGACY_LAYER_IDS, group.layerDependency)
+        ? LEGACY_LAYER_IDS[group.layerDependency]
+        : (resolveLayerId(group.layerDependency) as LayerId);
     }
   }
 

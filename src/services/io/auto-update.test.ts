@@ -96,7 +96,7 @@ describe("v1.144 layer id migration", () => {
   });
 
   it("maps exceptional legacy toggle ids and preserves unknown dependencies", () => {
-    const groups = ["toggleHeight", "toggleMarketsLayer", "toggleBurgIcons", "toggleScaleBar", "customLayer"].map(
+    const groups = ["toggleHeight", "toggleMarketsLayer", "toggleIcons", "toggleScaleBar", "customLayer"].map(
       (layerDependency, index) => ({
         name: `group-${index}`,
         type: "added",
@@ -115,7 +115,7 @@ describe("v1.144 layer id migration", () => {
     expect(migratedGroups.map(group => group.layerDependency)).toEqual([
       "heightmap",
       "markets",
-      "burgIcons",
+      "icons",
       "scaleBar",
       "customLayer"
     ]);
@@ -413,55 +413,86 @@ describe("v1.151.2 label group display cleanup", () => {
 });
 
 describe("v1.153.0 empty burg style groups", () => {
-  it.each(["burgIcons", "anchors"] as const)("recovers %s sizes and preserves them across saving", async type => {
+  /** the pre-v1.154 shape: two records keyed by the same burg group names */
+  function legacyBurgRecord() {
+    const record = JSON.parse(JSON.stringify(Styles.defaults));
+    delete record.icons;
+    record.burgIcons = { burgIcons: { groups: {} }, anchors: { groups: {} } };
+    return record;
+  }
+
+  it("recovers empty records from the saved SVG and preserves them across saving", async () => {
     document.body.innerHTML = `<svg id="map">
       <g id="burgIcons"><g id="cities" font-size="18"></g></g>
       <g id="anchors"><g id="cities" font-size="18"></g><g id="towns" font-size="12"></g></g>
     </svg>`;
-    const record = Styles.parse(Styles.defaults);
-    record.burgIcons.burgIcons.groups.capital.options.size = 5;
-    record.burgIcons.anchors.groups.capital.options.size = 7;
-    record.burgIcons[type].groups = {};
     const data: string[] = [];
-    data[48] = JSON.stringify(record);
+    data[48] = JSON.stringify(legacyBurgRecord());
 
     await resolveVersionConflicts("1.152.0", data);
     const parsed = Styles.parse(JSON.parse(data[48]));
-    const other = type === "anchors" ? "burgIcons" : "anchors";
-    expect(parsed.burgIcons[type].groups.cities.options.size).toBe(18);
-    expect(parsed.burgIcons[other]).toEqual(record.burgIcons[other]);
-    parsed.burgIcons[type].groups.cities.options.size = 6;
+    expect(parsed.icons.groups.cities.groups.icons.options.size).toBe(18);
+    expect(parsed.icons.groups.cities.groups.anchors.options.size).toBe(18);
+    expect(parsed.icons.groups.towns.groups.anchors.options.size).toBe(12);
+    parsed.icons.groups.cities.groups.icons.options.size = 6;
     data[48] = JSON.stringify(parsed);
 
     await resolveVersionConflicts(VERSION, data);
-    expect(Styles.parse(JSON.parse(data[48]))).toEqual(parsed);
+    expect(Styles.parse(JSON.parse(data[48])).icons.groups.cities.groups.icons.options.size).toBe(6);
   });
 
   it("uses parser defaults when empty groups have no saved SVG styles", async () => {
-    const record = Styles.parse(Styles.defaults);
-    record.burgIcons.burgIcons.groups = {};
-    record.burgIcons.anchors.groups = {};
     const data: string[] = [];
-    data[48] = JSON.stringify(record);
+    data[48] = JSON.stringify(legacyBurgRecord());
 
     await resolveVersionConflicts("1.152.0", data);
 
-    expect(Styles.parse(JSON.parse(data[48])).burgIcons).toEqual(Styles.defaults.burgIcons);
+    expect(Styles.parse(JSON.parse(data[48])).icons).toEqual(Styles.defaults.icons);
   });
 });
 
 describe("v1.154.0 style record normalization", () => {
   it("restores the anchor icon on port groups that carry the burg default", async () => {
-    const record = Styles.parse(Styles.defaults);
-    record.burgIcons.anchors.groups.town.options = { size: 2, icon: "#icon-circle" };
-    record.burgIcons.burgIcons.groups.town.options.icon = "#icon-circle";
+    const record = JSON.parse(JSON.stringify(Styles.defaults));
+    const icons = structuredClone(record.icons.groups.town.groups.icons);
+    icons.options.icon = "#icon-circle";
+    const anchors = structuredClone(record.icons.groups.town.groups.anchors);
+    anchors.options = { size: 2, icon: "#icon-circle" };
+    delete record.icons;
+    record.burgIcons = { burgIcons: { groups: { town: icons } }, anchors: { groups: { town: anchors } } };
     const data: string[] = [];
     data[48] = JSON.stringify(record);
 
     await resolveVersionConflicts("1.153.0", data);
     const parsed = Styles.parse(JSON.parse(data[48]));
-    expect(parsed.burgIcons.anchors.groups.town.options).toEqual({ size: 2, icon: "#icon-anchor" });
-    expect(parsed.burgIcons.burgIcons.groups.town.options.icon).toBe("#icon-circle");
+    expect(parsed.icons.groups.town.groups.anchors.options).toEqual({ size: 2, icon: "#icon-anchor" });
+    expect(parsed.icons.groups.town.groups.icons.options.icon).toBe("#icon-circle");
+  });
+
+  it("carries the icons layer rename into the saved layer state", async () => {
+    const data: string[] = [];
+    data[50] = JSON.stringify({ order: ["emblems", "burgIcons", "labels"], active: ["burgIcons", "labels"] });
+
+    await resolveVersionConflicts("1.153.0", data);
+
+    const state = JSON.parse(data[50]);
+    expect(state).toEqual({ order: ["emblems", "icons", "labels"], active: ["icons", "labels"] });
+    Layers.restore(state);
+    // an id the registry does not know would restore the layer as off
+    expect(Layers.isOn("icons")).toBe(true);
+  });
+
+  it("points a label group's dependency at the renamed icons layer", () => {
+    const data: string[] = [];
+    data[1] = JSON.stringify({
+      labels: { resizeOnZoom: true, groups: [{ name: "ports", layerDependency: "burgIcons" }] }
+    });
+
+    migrateLegacySettings("1.153.0", data);
+
+    const settings = JSON.parse(data[1]);
+    expect(settings.labels.resizeOnZoom).toBeUndefined();
+    expect(settings.labels.groups[0].layerDependency).toBe("icons");
   });
 });
 

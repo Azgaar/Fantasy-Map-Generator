@@ -544,7 +544,7 @@ async function createLabels() {
     }
 
     // icons
-    if (Layers.isOn("burgIcons")) {
+    if (Layers.isOn("icons")) {
       const geometry = getIconGeometry(burg.group!, burgOptions.iconSize);
       const material = getIconMaterial(burg.group!, burgOptions.iconColor);
       const iconMesh = new Three.Mesh(geometry, material);

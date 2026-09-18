@@ -34,7 +34,6 @@ const PARENT_EDITORS: Record<string, Opener> = {
 const GRAND_EDITORS: Record<string, Opener> = {
   emblems: target => Controllers.EmblemsEditor.open(undefined, undefined, undefined, target),
   routes: target => Controllers.RouteEditor.open(target.id),
-  burgIcons: target => Controllers.BurgEditor.open(Number(target.dataset.id)),
   journeys: (_target, parent) => Controllers.JourneyEditor.open(Number(parent.id.replace("journey", ""))),
   markers: target => Controllers.MarkersEditor.open(undefined, target),
   ruler: () => Controllers.MeasurersEditor.open(),
@@ -47,6 +46,7 @@ const GRAND_EDITORS: Record<string, Opener> = {
 };
 
 const GREAT_EDITORS: Record<string, Opener> = {
+  icons: target => Controllers.BurgEditor.open(Number(target.dataset.id)),
   markers: target => Controllers.MarkersEditor.open(undefined, target),
   ruler: () => Controllers.MeasurersEditor.open(),
   armies: (_target, parent) => Controllers.RegimentEditor.open(`#${parent.id}`)

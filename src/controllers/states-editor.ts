@@ -1004,7 +1004,7 @@ function stateRemove(stateId: number): void {
 
   select("#debug").selectAll(".highlight").remove();
 
-  Layers.draw("burgIcons", "labels", "military", "borders", "provinces", "states");
+  Layers.draw("icons", "labels", "military", "borders", "provinces", "states");
   refreshStatesEditor();
 }
 
@@ -1487,7 +1487,7 @@ function addState(this: SVGElement, event: MouseEvent): void {
   burgs[burgId].capital = 1;
   burgs[burgId].state = newState;
   Burgs.changeGroup(burgs[burgId], null);
-  Layers.draw("burgIcons", "labels", "routes");
+  Layers.draw("icons", "labels", "routes");
 
   if (event.shiftKey === false) exitAddStateMode();
 
@@ -1743,7 +1743,7 @@ function mergeStates(statesToMerge: number[], rulingStateId: number): void {
 
   if (!pack.states[rulingStateId].label) delete pack.states[rulingStateId].label;
 
-  Layers.draw("states", "borders", "burgIcons", "labels", "provinces");
+  Layers.draw("states", "borders", "icons", "labels", "provinces");
   refreshStatesEditor();
 }
 

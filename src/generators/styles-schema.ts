@@ -1,7 +1,7 @@
-// The shape of the styles record: one entry per style element, each a tree of
-//   attrs — SVG attributes, written to the element as they are; `null` means "attribute not set"
+// The shape of styles: one root node per style element. Every node carries the same three bags:
+//   attrs   — SVG attributes, written to the element as they are; `null` means "attribute not set"
 //   options — renderer inputs, never written to the DOM
-//   groups — a record of user-named entries (label groups, lake types, …) sharing one shape
+//   groups  — named child nodes, fixed (statesBody, oceanWaves) or user-created (label groups)
 import { z } from "zod";
 import { GRID_TYPES } from "@/data/grid-types";
 import { OCEAN_OUTLINES, OCEAN_PATTERNS } from "@/data/ocean-patterns";
@@ -345,26 +345,33 @@ const padding = (side: string) =>
 // on change run scripts/convert-style-presets.mjs to automatically update style presets
 export const stylesSchema = z.strictObject({
   biomes: z.strictObject({ attrs: z.strictObject({ opacity, filter }) }),
-  borders: z.strictObject({ stateBorders: borders, provinceBorders: borders }),
-  burgIcons: z.strictObject({
-    burgIcons: z.strictObject({
-      groups: z.record(z.string(), burgGroup).refine(groups => Object.keys(groups).length > 0)
-    }),
-    anchors: z.strictObject({
-      groups: z.record(z.string(), anchorGroup).refine(groups => Object.keys(groups).length > 0)
-    })
+  borders: z.strictObject({ groups: z.strictObject({ stateBorders: borders, provinceBorders: borders }) }),
+  icons: z.strictObject({
+    groups: z
+      .record(
+        z.string(),
+        z.strictObject({
+          groups: z.strictObject({
+            icons: meta(burgGroup, { label: "Icons" }),
+            anchors: meta(anchorGroup, { label: "Anchors" })
+          })
+        })
+      )
+      .refine(groups => Object.keys(groups).length > 0)
   }),
   cells: z.strictObject({ attrs: z.strictObject({ ...strokeGroup, filter, mask: clip }) }),
-  coastline: z.strictObject({ sea_island: coastline, lake_island: coastline }),
+  coastline: z.strictObject({ groups: z.strictObject({ sea_island: coastline, lake_island: coastline }) }),
   compass: z.strictObject({
     attrs: z.strictObject({ opacity, transform, filter, mask: clip }),
-    compassRose: z.strictObject({
-      attrs: z.strictObject({
-        transform: meta(z.string().regex(FORMATS.compassTransform), {
-          control: "transform",
-          label: "Placement",
-          tip: "Set wind (compass) rose shift and size"
-        }).nullable()
+    groups: z.strictObject({
+      compassRose: z.strictObject({
+        attrs: z.strictObject({
+          transform: meta(z.string().regex(FORMATS.compassTransform), {
+            control: "transform",
+            label: "Placement",
+            tip: "Set wind (compass) rose shift and size"
+          }).nullable()
+        })
       })
     })
   }),
@@ -383,38 +390,42 @@ export const stylesSchema = z.strictObject({
   cultures: z.strictObject({ attrs: z.strictObject({ opacity, ...strokeGroup, filter }) }),
   emblems: z.strictObject({
     attrs: z.strictObject({ opacity, "stroke-width": variant(strokeWidth, { label: "Stroke Width" }), filter }),
-    stateEmblems: emblemGroup,
-    provinceEmblems: emblemGroup,
-    burgEmblems: emblemGroup
+    groups: z.strictObject({
+      stateEmblems: emblemGroup,
+      provinceEmblems: emblemGroup,
+      burgEmblems: emblemGroup
+    })
   }),
   fogging: z.strictObject({ attrs: z.strictObject({ opacity, fill, mask, filter }) }),
   goods: z.strictObject({
-    goodsCells: z.strictObject({ attrs: z.strictObject({ opacity, filter }) }),
-    goodsIcons: z.strictObject({
-      attrs: z.strictObject({ opacity, "stroke-width": variant(strokeWidth, { label: "Stroke Width" }), filter }),
-      options: z.strictObject({
-        size: number({
-          label: "Marker size",
-          range: [1, 20],
-          step: 0.5,
-          tip: "Set good marker (icon and circle) size in pixels"
-        }),
-        circle: flag({ label: "Show circle", tip: "Show or hide circle around good icons" })
-      })
-    }),
-    goodsBurgs: z.strictObject({
-      attrs: z.strictObject({
-        opacity,
-        stroke: strokeGroup.stroke,
-        "stroke-width": strokeGroup["stroke-width"],
-        filter
+    groups: z.strictObject({
+      goodsCells: z.strictObject({ attrs: z.strictObject({ opacity, filter }) }),
+      goodsIcons: z.strictObject({
+        attrs: z.strictObject({ opacity, "stroke-width": variant(strokeWidth, { label: "Stroke Width" }), filter }),
+        options: z.strictObject({
+          size: number({
+            label: "Marker size",
+            range: [1, 20],
+            step: 0.5,
+            tip: "Set good marker (icon and circle) size in pixels"
+          }),
+          circle: flag({ label: "Show circle", tip: "Show or hide circle around good icons" })
+        })
       }),
-      options: z.strictObject({
-        size: number({
-          label: "Plate size",
-          range: [1, 12],
-          step: 0.5,
-          tip: "Set burg production plate icon size in pixels. Plate and font scale together with it"
+      goodsBurgs: z.strictObject({
+        attrs: z.strictObject({
+          opacity,
+          stroke: strokeGroup.stroke,
+          "stroke-width": strokeGroup["stroke-width"],
+          filter
+        }),
+        options: z.strictObject({
+          size: number({
+            label: "Plate size",
+            range: [1, 12],
+            step: 0.5,
+            tip: "Set burg production plate icon size in pixels. Plate and font scale together with it"
+          })
         })
       })
     })
@@ -440,7 +451,7 @@ export const stylesSchema = z.strictObject({
       dy: shift("y", 100, 1, "Shift by y axis in pixels")
     })
   }),
-  heightmap: z.strictObject({ landHeights, oceanHeights }),
+  heightmap: z.strictObject({ groups: z.strictObject({ landHeights, oceanHeights }) }),
   ice: z.strictObject({ attrs: z.strictObject({ opacity, fill, ...strokeGroup, filter }) }),
   journeys: z.strictObject({ attrs: z.strictObject({ opacity, ...dashGroup, filter, mask: clip }) }),
   labels: z.strictObject({
@@ -517,12 +528,14 @@ export const stylesSchema = z.strictObject({
         tip: "Set maximum number of items in one column"
       })
     }),
-    box: meta(
-      z.strictObject({
-        attrs: z.strictObject(fillGroup)
-      }),
-      { label: "Background" }
-    )
+    groups: z.strictObject({
+      box: meta(
+        z.strictObject({
+          attrs: z.strictObject(fillGroup)
+        }),
+        { label: "Background" }
+      )
+    })
   }),
   map: z.strictObject({
     attrs: z.strictObject({
@@ -570,30 +583,34 @@ export const stylesSchema = z.strictObject({
   }),
   ocean: z.strictObject({
     options: z.strictObject({ bands: coastlineBands }),
-    base: z.strictObject({
-      attrs: z.strictObject({ fill })
-    }),
-    pattern: z.strictObject({
-      attrs: z.strictObject({
-        href: choice(OCEAN_PATTERNS, { label: "Image", tip: "Select ocean pattern" }),
-        opacity
-      })
-    }),
-    oceanLayers: z.strictObject({
-      attrs: z.strictObject({ filter }),
-      options: z.strictObject({
-        outline: choice(OCEAN_OUTLINES, { label: "Ocean layers", tip: "Define the coast outline contours scheme" })
-      })
-    }),
-    oceanWaves
+    groups: z.strictObject({
+      base: z.strictObject({
+        attrs: z.strictObject({ fill })
+      }),
+      pattern: z.strictObject({
+        attrs: z.strictObject({
+          href: choice(OCEAN_PATTERNS, { label: "Image", tip: "Select ocean pattern" }),
+          opacity
+        })
+      }),
+      oceanLayers: z.strictObject({
+        attrs: z.strictObject({ filter }),
+        options: z.strictObject({
+          outline: choice(OCEAN_OUTLINES, { label: "Ocean layers", tip: "Define the coast outline contours scheme" })
+        })
+      }),
+      oceanWaves
+    })
   }),
   population: z.strictObject({
     attrs: z.strictObject({ opacity, ...dashGroup, filter, mask: clip }),
-    rural: z.strictObject({
-      attrs: z.strictObject({ stroke })
-    }),
-    urban: z.strictObject({
-      attrs: z.strictObject({ stroke })
+    groups: z.strictObject({
+      rural: z.strictObject({
+        attrs: z.strictObject({ stroke })
+      }),
+      urban: z.strictObject({
+        attrs: z.strictObject({ stroke })
+      })
     })
   }),
   precipitation: z.strictObject({
@@ -645,35 +662,39 @@ export const stylesSchema = z.strictObject({
         x: number({ group: "Position", range: [0, 100], step: 0.1, tip: "Scale bar right edge, in percents" }),
         y: number({ group: "Position", range: [0, 100], step: 0.1, tip: "Scale bar bottom edge, in percents" })
       }),
-      back: meta(
-        z.strictObject({
-          attrs: z.strictObject({
-            opacity,
-            ...fillGroup,
-            stroke: strokeGroup.stroke,
-            "stroke-width": strokeGroup["stroke-width"],
-            filter
+      groups: z.strictObject({
+        back: meta(
+          z.strictObject({
+            attrs: z.strictObject({
+              opacity,
+              ...fillGroup,
+              stroke: strokeGroup.stroke,
+              "stroke-width": strokeGroup["stroke-width"],
+              filter
+            }),
+            options: z.strictObject({
+              top: padding("Top"),
+              right: padding("Right"),
+              bottom: padding("Bottom"),
+              left: padding("Left")
+            })
           }),
-          options: z.strictObject({
-            top: padding("Top"),
-            right: padding("Right"),
-            bottom: padding("Bottom"),
-            left: padding("Left")
-          })
-        }),
-        { label: "Background" }
-      )
+          { label: "Background" }
+        )
+      })
     }),
     { effect: "draw" }
   ),
   states: z.strictObject({
-    statesBody: z.strictObject({ attrs: z.strictObject({ opacity, filter }) }),
-    // rendered only when performance is set to best quality; the zoom scales the width it writes
-    statesHalo: z.strictObject({
-      attrs: z.strictObject({
-        opacity,
-        "stroke-width": variant(strokeWidth, { range: [0, 30], step: 0.1, effect: "zoom" }),
-        filter: blurFilter
+    groups: z.strictObject({
+      statesBody: z.strictObject({ attrs: z.strictObject({ opacity, filter }) }),
+      // rendered only when performance is set to best quality; the zoom scales the width it writes
+      statesHalo: z.strictObject({
+        attrs: z.strictObject({
+          opacity,
+          "stroke-width": variant(strokeWidth, { range: [0, 30], step: 0.1, effect: "zoom" }),
+          filter: blurFilter
+        })
       })
     })
   }),

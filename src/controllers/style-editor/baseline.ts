@@ -6,12 +6,8 @@ import { StylePresetsService } from "@/services/style-presets";
 import type { PathSelection, StylesData } from "@/types/styles";
 import { getPath } from "@/utils/objectUtils";
 
-/** The store path of a form field: the composed burgIcons form addresses two records, every other
- * relative path hangs off the selection's node */
+/** The store path of a form field: the selection's path down to its node, plus the field's own path */
 export function storePath(sel: PathSelection, relative: string[]): string[] {
-  if (sel.element === "burgIcons" && relative[0] === "anchors") {
-    return ["burgIcons", "anchors", "groups", sel.group ?? "", ...relative.slice(1)];
-  }
   return [...sel.path, ...relative];
 }
 

@@ -16,7 +16,7 @@ function drawOceanBase(): void {
   if (!pattern.querySelector(":scope > pattern")) {
     const tile = createSvgEl("pattern", { id: "oceanic", width: "100", height: "100", patternUnits: "userSpaceOnUse" });
     const image = createSvgEl("image", { id: "oceanicPattern", "data-group": "pattern", width: "100", height: "100" });
-    for (const [name, value] of Object.entries(styles.ocean.pattern.attrs)) {
+    for (const [name, value] of Object.entries(styles.ocean.groups.pattern.attrs)) {
       if (value !== null) image.setAttribute(name, String(value));
     }
     tile.append(image);
@@ -33,7 +33,7 @@ function drawOceanBase(): void {
     prepend(layers, createSvgEl("rect", { id: "oceanBase", "data-group": "base" })); // the style store addresses it by group
   sizeToGraph(baseRect);
 
-  const { fill } = styles.ocean.base.attrs;
+  const { fill } = styles.ocean.groups.base.attrs;
   if (fill === null) baseRect.removeAttribute("fill");
   else baseRect.setAttribute("fill", fill);
 }
@@ -69,7 +69,7 @@ export function drawOcean(): void {
   drawCoastalBands();
   const oceanLayers = ensureEl<SVGGElement>("oceanLayers");
 
-  const limits = Ocean.getLimits(styles.ocean.oceanLayers.options.outline);
+  const limits = Ocean.getLimits(styles.ocean.groups.oceanLayers.options.outline);
   if (!limits.length) return;
 
   TIME && console.time("drawOcean");
@@ -101,7 +101,7 @@ function removeCoastalWaves(): void {
 /** sparse wave dashes clipped to the sea, with a clear gap along the coast */
 function drawCoastalWaves(): void {
   removeCoastalWaves();
-  const { options: waveOptions, attrs } = styles.ocean.oceanWaves;
+  const { options: waveOptions, attrs } = styles.ocean.groups.oceanWaves;
   if (!waveOptions.render) return;
   const group = ensureEl<SVGGElement>("oceanWaves");
 

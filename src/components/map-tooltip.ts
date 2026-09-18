@@ -104,7 +104,7 @@ interface TipContext {
  */
 function getElementTip({ group, target, event, path, cellId }: TipContext): string | undefined {
   const parent = target.parentNode as SVGElement;
-  const burgElement = target.closest<SVGElement>("[data-label-type='burg'][data-id], #burgIcons [data-id]");
+  const burgElement = target.closest<SVGElement>("[data-label-type='burg'][data-id], #icons [data-id]");
   if (burgElement) {
     const burgId = Number(burgElement.dataset.id);
     const burg = pack.burgs[burgId];

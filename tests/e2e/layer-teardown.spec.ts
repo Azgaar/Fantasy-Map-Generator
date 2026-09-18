@@ -72,29 +72,29 @@ test.describe("layer teardown keeps user data", () => {
   });
 
   test("burg icons keep group styles edited while the layer is on", async ({ page }) => {
-    const capitals = page.locator("#burgIcons > #capital");
+    const capitals = page.locator('#icons > #capital > [data-group="icons"]');
     await expect(capitals).toBeAttached();
 
     // the Style editor writes the store; the groups fully recreate from it on every draw
     await page.evaluate(() => {
-      styles.burgIcons.burgIcons.groups.capital.attrs.fill = "#123456";
-      document.querySelector("#burgIcons > #capital")!.setAttribute("fill", "#123456");
+      styles.icons.groups.capital.groups.icons.attrs.fill = "#123456";
+      document.querySelector('#icons > #capital > [data-group="icons"]')!.setAttribute("fill", "#123456");
     });
 
-    await page.evaluate(() => (window as any).Layers.hide("burgIcons"));
-    await page.evaluate(() => (window as any).Layers.show("burgIcons"));
+    await page.evaluate(() => (window as any).Layers.hide("icons"));
+    await page.evaluate(() => (window as any).Layers.show("icons"));
     expect(await capitals.getAttribute("fill")).toBe("#123456");
-    expect(await page.locator("#burgIcons > #capital use").count()).toBeGreaterThan(0);
+    expect(await page.locator("#icons > #capital use").count()).toBeGreaterThan(0);
   });
 
   test("showing a layer that is already on does not redraw it", async ({ page }) => {
     // a redraw rebuilds every burg <use>, so a marker set on one of them would not survive it
-    await page.evaluate(() => (window as any).Layers.show("burgIcons"));
-    await page.evaluate(() => document.querySelector("#burgIcons use")!.setAttribute("data-probe", "1"));
+    await page.evaluate(() => (window as any).Layers.show("icons"));
+    await page.evaluate(() => document.querySelector("#icons use")!.setAttribute("data-probe", "1"));
 
-    await page.evaluate(() => (window as any).Layers.show("burgIcons", "labels"));
+    await page.evaluate(() => (window as any).Layers.show("icons", "labels"));
 
-    expect(await page.locator("#burgIcons use[data-probe]").count()).toBe(1);
+    expect(await page.locator("#icons use[data-probe]").count()).toBe(1);
   });
 
   test("texture renders nothing when no image is set", async ({ page }) => {
@@ -177,14 +177,14 @@ test.describe("layer teardown keeps user data", () => {
     await expect(base).toBeAttached();
 
     await page.evaluate(() => {
-      styles.ocean.oceanLayers.options.outline = "none";
+      styles.ocean.groups.oceanLayers.options.outline = "none";
       (window as any).Layers.draw("ocean");
     });
     expect(await rings.count()).toBe(0); // the renderer clears its own content, style.js no longer does
     await expect(base).toBeAttached(); // the base rect is not outline content
 
     await page.evaluate(() => {
-      styles.ocean.oceanLayers.options.outline = "-6,-3,-1";
+      styles.ocean.groups.oceanLayers.options.outline = "-6,-3,-1";
       (window as any).Layers.draw("ocean");
     });
     expect(await rings.count()).toBe(drawn);
@@ -248,8 +248,8 @@ test.describe("layer teardown keeps user data", () => {
     await page.evaluate(() => (window as any).showOptions());
     await page.locator("#styleTab").click();
     await page.locator("#styleElementSelect").selectOption("goods");
-    await page.locator('#styleForm [data-field="goodsIcons.options.size"] input[type=number]').fill("2");
-    await expect.poll(() => page.evaluate(() => (window as any).styles.goods.goodsIcons.options.size)).toBe(2);
+    await page.locator('#styleForm [data-field="groups.goodsIcons.options.size"] input[type=number]').fill("2");
+    await expect.poll(() => page.evaluate(() => (window as any).styles.goods.groups.goodsIcons.options.size)).toBe(2);
 
     expect(await page.locator("#goods > * > *").count()).toBe(0);
   });

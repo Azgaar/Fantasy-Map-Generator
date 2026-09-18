@@ -283,7 +283,7 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
     if (noLabels) {
       clone.selectAll("#labels [data-label-type]").remove();
       clone.selectAll("#textPaths [data-label-type]").remove();
-      clone.select("#icons #burgIcons").remove();
+      clone.selectAll("#icons [data-group='icons']").remove();
     }
     if (noWater) {
       clone.select("#oceanBase").attr("opacity", 0);
@@ -398,7 +398,7 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
     }
 
     // add burg and port icons
-    for (const group of cloneEl.querySelectorAll<SVGGElement>("#burgIcons > g, #anchors > g")) {
+    for (const group of cloneEl.querySelectorAll<SVGGElement>("#icons [data-icon]")) {
       const id = group.dataset.icon?.slice(1);
       if (!id || cloneDefs.querySelector(`[id="${CSS.escape(id)}"]`)) continue;
       const icon = svgDefs.getElementById(id);
@@ -625,7 +625,7 @@ function removeUnusedElements(clone: MapSelection): void {
 function updateMeshCells(clone: MapSelection): void {
   const renderOcean = ensureEl<HTMLInputElement>("renderOcean").checked;
   const data = renderOcean ? grid.cells.i : grid.cells.i.filter((i: number) => grid.cells.h[i] >= 20);
-  const scheme = HeightmapColorSchemes.get(styles.heightmap.landHeights.options.scheme);
+  const scheme = HeightmapColorSchemes.get(styles.heightmap.groups.landHeights.options.scheme);
   clone.select("#heights").attr("filter", "url(#blur1)");
   clone
     .select("#heights")

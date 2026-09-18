@@ -176,9 +176,9 @@ test.describe("map layers", () => {
   });
 
   test("anchors layer", async () => {
-    const anchors = sharedPage.locator("#anchors");
-    await expect(anchors).toBeAttached();
-    const html = await anchors.evaluate(el => el.outerHTML);
+    const anchors = sharedPage.locator('#icons [data-group="anchors"]');
+    await expect(anchors.first()).toBeAttached();
+    const html = await anchors.evaluateAll(elements => elements.map(element => element.outerHTML).join(""));
     expect(html).toMatchSnapshot("anchors.html");
   });
 

@@ -21,7 +21,7 @@ function toggle(): void {
   );
   document.getElementById("addNewBurg")?.classList.add("pressed");
 
-  Layers.show("burgIcons", "labels");
+  Layers.show("icons", "labels");
 }
 
 function addOnClick(event: MouseEvent): void {
@@ -41,7 +41,7 @@ function addOnClick(event: MouseEvent): void {
   const burgId = Burgs.add(point);
   redrawEmblem("burg", burgId);
   refreshEditors();
-  Layers.draw("burgIcons", "labels", "routes");
+  Layers.draw("icons", "labels", "routes");
 
   if (!event.shiftKey) stop();
 }

@@ -493,12 +493,14 @@ class BurgModule {
   /** burg groups can exist without a style entry (the Burg Groups editor, presets that don't
    * list them) - without one the renderer falls back to the default group and edits never persist */
   ensureBurgGroupStyles(): void {
-    const { burgIcons, anchors } = styles.burgIcons;
-    const iconTemplate = burgIcons.groups.town || Object.values(burgIcons.groups)[0];
-    const anchorTemplate = anchors.groups.town || Object.values(anchors.groups)[0];
+    const { groups } = styles.icons;
+    const template = groups.town || Object.values(groups)[0];
+    if (!template) return;
     for (const { name } of options.map.burgs.groups) {
-      if (!burgIcons.groups[name] && iconTemplate) burgIcons.groups[name] = structuredClone(iconTemplate);
-      if (!anchors.groups[name] && anchorTemplate) anchors.groups[name] = structuredClone(anchorTemplate);
+      const entry = groups[name] ?? structuredClone(template);
+      groups[name] = entry;
+      entry.groups.icons ??= structuredClone(template.groups.icons);
+      entry.groups.anchors ??= structuredClone(template.groups.anchors);
     }
   }
 

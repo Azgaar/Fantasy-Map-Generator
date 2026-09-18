@@ -55,6 +55,7 @@ type Ctx = Required<Omit<RenderOptions, "controls" | "rootTitle">> & {
 };
 
 const GATE_OFF = new Set<unknown>([false, "off", "none"]);
+const GROUPS = "groups";
 const defaultFlatten = (key: string) => key === "attrs" || key === "options";
 
 /** The unset value a control emits for a cleared field */
@@ -136,18 +137,19 @@ function fieldSpec(key: string, schema: z.ZodType, meta: Meta, path: string[] = 
 
 export type WalkedField = { spec: FieldSpec; hidden: boolean; gate: boolean }; // a gate renders in its section's header
 
-/** Every leaf of an object schema in declaration order. Records are skipped unless `records` is set,
- * which descends into their value type under a `*` segment */
-function walk(schema: z.ZodObject, meta: Meta, options: { records?: boolean } = {}): WalkedField[] {
+/** Every leaf of a node schema in declaration order, descending `groups` entries recursively. A user
+ * `groups` record contributes its value type under a `*` segment; a fixed groups object its named entries */
+function walk(schema: z.ZodObject, meta: Meta): WalkedField[] {
   const out: WalkedField[] = [];
+
   const visit = (node: z.ZodObject, nodePath: string[], gate?: string) => {
     for (const [key, child] of Object.entries(node.shape as Record<string, z.ZodType>)) {
       const { leaf, meta: childMeta } = unwrap(child, meta);
-      if (isRecord(leaf)) {
-        const valueType = unwrapObject(internals(leaf).def?.valueType);
-        if (options.records && valueType) visit(valueType, [...nodePath, key, "*"]);
+      if (key === GROUPS) {
+        walkGroups(leaf, [...nodePath, key], gate);
         continue;
       }
+      if (isRecord(leaf)) continue; // a record outside `groups` is not part of the tree
       if (isObject(leaf)) {
         visit(
           leaf,
@@ -164,6 +166,21 @@ function walk(schema: z.ZodObject, meta: Meta, options: { records?: boolean } = 
       });
     }
   };
+
+  const walkGroups = (groups: z.ZodType, nodePath: string[], gate?: string) => {
+    const entries: [string, z.ZodType | undefined][] = isRecord(groups)
+      ? [["*", internals(groups).def?.valueType]]
+      : Object.entries((groups as z.ZodObject).shape as Record<string, z.ZodType>);
+    for (const [name, entry] of entries) {
+      if (!entry) continue;
+      const { leaf, meta: entryMeta } = unwrap(entry, meta);
+      const node = unwrapObject(leaf);
+      if (!node) continue;
+      const entryPath = [...nodePath, name];
+      visit(node, entryPath, entryMeta.gate ? [...entryPath, ...entryMeta.gate.split(".")].join(".") : gate);
+    }
+  };
+
   visit(schema, []);
   return out;
 }
@@ -247,7 +264,8 @@ function section(title: string, id: string): HTMLDetailsElement {
   return details;
 }
 
-// rows of an object: flattened containers recurse in place, other objects become subsections
+// rows of a node: flattened bags recurse in place, a `groups` node renders its entries, other objects
+// become subsections
 function renderInto(
   container: HTMLElement,
   schema: z.ZodObject,
@@ -260,7 +278,11 @@ function renderInto(
     const childPath = [...path, key];
     if (skip && skip.join(".") === childPath.join(".")) continue;
     const { leaf, meta } = unwrap(child, ctx.meta);
-    if (isRecord(leaf)) continue;
+    if (key === GROUPS) {
+      renderGroups(container, leaf, getPath(value, [key]), childPath, ctx);
+      continue;
+    }
+    if (isRecord(leaf)) continue; // a record outside `groups` is not part of the tree
     if (isObject(leaf)) {
       const childValue = getPath(value, [key]);
       if (!meta.gate && ctx.flatten(key)) renderInto(container, leaf, childValue, childPath, ctx, skip);
@@ -270,6 +292,27 @@ function renderInto(
     if (meta.hidden) continue;
     const target = container === ctx.root && ctx.rootBody ? ctx.rootBody() : container;
     place(target, fieldSpec(key, child, ctx.meta, childPath), getPath(value, [key]), ctx);
+  }
+}
+
+/** A `groups` node is structural: it renders one card per entry — a fixed groups object from the schema,
+ * a user record from the store. Entries are nodes, so their own groups recurse the same way */
+function renderGroups(container: HTMLElement, schema: z.ZodType, value: unknown, path: string[], ctx: Ctx): void {
+  const valueType = internals(schema).def?.valueType;
+  const entries: [string, z.ZodType | undefined, unknown][] = isRecord(schema)
+    ? Object.entries((value as Record<string, unknown>) ?? {}).map(([name, entry]) => [name, valueType, entry])
+    : Object.entries((schema as z.ZodObject).shape as Record<string, z.ZodType>).map(([name, entry]) => [
+        name,
+        entry,
+        getPath(value, [name])
+      ]);
+
+  for (const [name, entrySchema, entryValue] of entries) {
+    if (!entrySchema) continue;
+    const { leaf, meta } = unwrap(entrySchema, ctx.meta);
+    const node = unwrapObject(leaf);
+    if (!node) continue;
+    container.append(renderSection(name, node, entryValue, [...path, name], ctx, meta));
   }
 }
 

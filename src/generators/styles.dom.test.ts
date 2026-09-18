@@ -56,18 +56,21 @@ describe("applyStyles", () => {
     expect(() => Styles.apply("labels")).not.toThrow();
   });
 
-  test("burg icon and anchor groups are addressed through their containers", () => {
-    const el = mount("burgIcons", ["burgIcons", "anchors"]);
-    for (const container of el.children) {
+  test("burg icon and anchor parts are addressed through their group element", () => {
+    const el = mount("icons");
+    const group = document.createElementNS(SVG, "g");
+    group.setAttribute("data-group", "capital");
+    for (const part of ["icons", "anchors"]) {
       const g = document.createElementNS(SVG, "g");
-      g.setAttribute("data-group", "capital");
-      container.append(g);
+      g.setAttribute("data-group", part);
+      group.append(g);
     }
-    styles.burgIcons.burgIcons.groups.capital.attrs.fill = "#111111";
-    styles.burgIcons.anchors.groups.capital.attrs.fill = "#222222";
-    Styles.apply("burgIcons");
-    expect(el.querySelector('[data-group="burgIcons"] > [data-group="capital"]')?.getAttribute("fill")).toBe("#111111");
-    expect(el.querySelector('[data-group="anchors"] > [data-group="capital"]')?.getAttribute("fill")).toBe("#222222");
+    el.append(group);
+    styles.icons.groups.capital.groups.icons.attrs.fill = "#111111";
+    styles.icons.groups.capital.groups.anchors.attrs.fill = "#222222";
+    Styles.apply("icons");
+    expect(el.querySelector('[data-group="capital"] > [data-group="icons"]')?.getAttribute("fill")).toBe("#111111");
+    expect(el.querySelector('[data-group="capital"] > [data-group="anchors"]')?.getAttribute("fill")).toBe("#222222");
   });
 
   test("a missing layer element is a no-op, the rest still apply", () => {
@@ -103,8 +106,8 @@ describe("writeAttr", () => {
     expect(routes.querySelector('[data-group="roads"]')?.getAttribute("stroke")).toBe("#111111");
 
     const states = mount("states", ["statesHalo"]);
-    styles.states.statesHalo.attrs.opacity = 0.3;
-    Styles.writeAttr(["states", "statesHalo", "attrs", "opacity"]);
+    styles.states.groups.statesHalo.attrs.opacity = 0.3;
+    Styles.writeAttr(["states", "groups", "statesHalo", "attrs", "opacity"]);
     expect(states.querySelector('[data-group="statesHalo"]')?.getAttribute("opacity")).toBe("0.3");
     expect(Layers.draw).not.toHaveBeenCalled();
   });

@@ -1,5 +1,11 @@
 import { expect, test, vi } from "vitest";
-import { harvestAttributes, harvestStylesFromSvg, stripMigratedAttributes, stylesFromMap } from "./styles-legacy";
+import {
+  harvestAttributes,
+  harvestStylesFromSvg,
+  migrateStyles,
+  stripMigratedAttributes,
+  stylesFromMap
+} from "./styles-legacy";
 
 test("harvestAttributes derives from routes and schema", () => {
   const table = harvestAttributes();
@@ -20,7 +26,7 @@ test("stylesFromMap harvests attrs, options and dynamic groups with legacy prece
   expect(styles.rivers.attrs.opacity).toBe(0.9);
   expect(styles.grid.options.type).toBe("pointyHex");
   expect(styles.labels.groups.state.attrs["font-size"]).toBe("22%"); // a group's size takes the unit the schema pins
-  expect(styles.burgIcons.burgIcons.groups.capital.options.size).toBe(2);
+  expect(styles.icons.groups.capital.groups.icons.options.size).toBe(2);
 });
 
 test("inline style wins over the attribute; empty attribute still counts", () => {
@@ -63,10 +69,10 @@ test("record-less sync harvests burg/anchor groups from the DOM, size dialect in
   </svg>`;
   harvestStylesFromSvg();
   // a map with no style record at all: its DOM groups are the only source of their styling
-  expect(styles.burgIcons.burgIcons.groups.largetowns.attrs.fill).toBe("#fffff0");
-  expect(styles.burgIcons.burgIcons.groups.largetowns.options.size).toBe(0.8);
-  expect(styles.burgIcons.anchors.groups.largetowns.options.size).toBe(1.6);
-  expect(styles.burgIcons.burgIcons.groups.capital).toBeDefined(); // defaults stay as fallbacks
+  expect(styles.icons.groups.largetowns.groups.icons.attrs.fill).toBe("#fffff0");
+  expect(styles.icons.groups.largetowns.groups.icons.options.size).toBe(0.8);
+  expect(styles.icons.groups.largetowns.groups.anchors.options.size).toBe(1.6);
+  expect(styles.icons.groups.capital).toBeDefined(); // defaults stay as fallbacks
   Styles.set(structuredClone(Styles.defaults));
 });
 
@@ -75,12 +81,12 @@ test("a legacy style record keeps its burg/anchor groups against the DOM harvest
     <g id="burgIcons"><g id="capital" fill="#00ff00" font-size="3"></g></g>
     <g id="anchors"><g id="capital" fill="#00ff00" font-size="3"></g></g>
   </svg>`;
-  styles.burgIcons.burgIcons.groups.capital.attrs.fill = "#000000";
-  styles.burgIcons.burgIcons.groups.town = structuredClone(styles.burgIcons.burgIcons.groups.capital);
+  styles.icons.groups.capital.groups.icons.attrs.fill = "#000000";
+  styles.icons.groups.town = structuredClone(styles.icons.groups.capital);
   harvestStylesFromSvg({ hasStyleRecord: true });
-  expect(styles.burgIcons.burgIcons.groups.capital.attrs.fill).toBe("#000000");
-  expect(styles.burgIcons.burgIcons.groups.town).toBeDefined();
-  styles.burgIcons.burgIcons.groups.capital.attrs.fill = "#ffffff";
+  expect(styles.icons.groups.capital.groups.icons.attrs.fill).toBe("#000000");
+  expect(styles.icons.groups.town).toBeDefined();
+  styles.icons.groups.capital.groups.icons.attrs.fill = "#ffffff";
 });
 
 test("a legacy style record with an empty burg/anchor record harvests that record from the DOM", () => {
@@ -88,22 +94,24 @@ test("a legacy style record with an empty burg/anchor record harvests that recor
     <g id="burgIcons"><g id="cities" fill="#e57676" font-size="18"></g></g>
     <g id="anchors"><g id="cities" fill="#ffffff" font-size="18"></g><g id="towns" font-size="12"></g></g>
   </svg>`;
-  styles.burgIcons.anchors.groups = {};
+  styles.icons.groups = {};
   harvestStylesFromSvg({ hasStyleRecord: true });
-  expect(styles.burgIcons.anchors.groups.cities.options.size).toBe(18);
-  expect(styles.burgIcons.anchors.groups.towns.options.size).toBe(12);
-  expect(styles.burgIcons.burgIcons.groups.cities).toBeUndefined();
+  expect(styles.icons.groups.cities.groups.anchors.options.size).toBe(18);
+  expect(styles.icons.groups.towns.groups.anchors.options.size).toBe(12);
+  expect(styles.icons.groups.cities.groups.icons.attrs.fill).toBe("#e57676");
   Styles.set(structuredClone(Styles.defaults));
 });
 
 test("the halo's zoom-derived stroke-width is dropped: data-width is the base, the default stands in for it", () => {
   document.body.innerHTML = `<svg id="map"><g id="markers" rescale="1"></g><g id="regions"><g id="statesHalo" stroke-width="0.7"></g></g></svg>`;
   harvestStylesFromSvg();
-  expect(styles.states.statesHalo.attrs["stroke-width"]).toBe(Styles.defaults.states.statesHalo.attrs["stroke-width"]);
+  expect(styles.states.groups.statesHalo.attrs["stroke-width"]).toBe(
+    Styles.defaults.states.groups.statesHalo.attrs["stroke-width"]
+  );
   expect(styles.markers).toEqual(Styles.defaults.markers); // rescale is a map option now
   document.body.innerHTML = `<svg id="map"><g id="regions"><g id="statesHalo" data-width="13" stroke-width="0.7"></g></g></svg>`;
   harvestStylesFromSvg();
-  expect(styles.states.statesHalo.attrs["stroke-width"]).toBe(13);
+  expect(styles.states.groups.statesHalo.attrs["stroke-width"]).toBe(13);
 });
 
 test("the coordinates' zoom-derived font-size is dropped: data-size is the base", () => {
@@ -131,18 +139,18 @@ test("save sync keeps store emblem, goods and market sizes when data-size is abs
   document.body.innerHTML = `<svg id="map"><g id="emblems"><g id="stateEmblems"></g><g id="provinceEmblems"></g><g id="burgEmblems"></g></g>
     <g id="goods"><g id="goodsIcons" data-circle="1"></g><g id="goodsBurgs"></g></g>
     <g id="markets" font-size="5" data-icon="X"></g></svg>`;
-  styles.emblems.stateEmblems.options.size = 1.5;
-  styles.goods.goodsIcons.options.size = 9;
-  styles.goods.goodsIcons.options.circle = false;
-  styles.goods.goodsBurgs.options.size = 7;
+  styles.emblems.groups.stateEmblems.options.size = 1.5;
+  styles.goods.groups.goodsIcons.options.size = 9;
+  styles.goods.groups.goodsIcons.options.circle = false;
+  styles.goods.groups.goodsBurgs.options.size = 7;
   styles.markets.options.size = 6;
   harvestStylesFromSvg();
-  expect(styles.emblems.stateEmblems.options.size).toBe(1.5);
-  expect(styles.goods.goodsIcons.options.size).toBe(9);
-  expect(styles.goods.goodsBurgs.options.size).toBe(7);
+  expect(styles.emblems.groups.stateEmblems.options.size).toBe(1.5);
+  expect(styles.goods.groups.goodsIcons.options.size).toBe(9);
+  expect(styles.goods.groups.goodsBurgs.options.size).toBe(7);
   expect(styles.markets.options.size).toBe(6);
   // per-key: the siblings still harvest from their attrs
-  expect(styles.goods.goodsIcons.options.circle).toBe(true);
+  expect(styles.goods.groups.goodsIcons.options.circle).toBe(true);
   expect(styles.markets.options.iconSize).toBe(5);
 });
 
@@ -150,36 +158,36 @@ test("save sync lets an old map's emblem, goods and market data-size win", () =>
   document.body.innerHTML = `<svg id="map"><g id="emblems"><g id="stateEmblems" data-size="2"></g><g id="provinceEmblems" data-size="2"></g><g id="burgEmblems" data-size="2"></g></g>
     <g id="goods"><g id="goodsIcons" data-size="4" data-circle="1"></g><g id="goodsBurgs" data-size="5"></g></g>
     <g id="markets" data-size="8" font-size="5" data-icon="X"></g></svg>`;
-  styles.emblems.stateEmblems.options.size = 1;
-  styles.goods.goodsIcons.options.size = 9;
-  styles.goods.goodsBurgs.options.size = 7;
+  styles.emblems.groups.stateEmblems.options.size = 1;
+  styles.goods.groups.goodsIcons.options.size = 9;
+  styles.goods.groups.goodsBurgs.options.size = 7;
   styles.markets.options.size = 6;
   harvestStylesFromSvg();
-  expect(styles.emblems.stateEmblems.options.size).toBe(2);
-  expect(styles.goods.goodsIcons.options.size).toBe(4);
-  expect(styles.goods.goodsBurgs.options.size).toBe(5);
+  expect(styles.emblems.groups.stateEmblems.options.size).toBe(2);
+  expect(styles.goods.groups.goodsIcons.options.size).toBe(4);
+  expect(styles.goods.groups.goodsBurgs.options.size).toBe(5);
   expect(styles.markets.options.size).toBe(8);
 });
 
 test("save sync keeps store heightmap options when the scheme attr is absent", () => {
   document.body.innerHTML = `<svg id="map"><g id="terrs"><g id="landHeights"></g><g id="oceanHeights"></g></g></svg>`;
-  styles.heightmap.landHeights.options.scheme = "#001122,#334455";
-  styles.heightmap.landHeights.options.terracing = 4;
-  styles.heightmap.oceanHeights.options.render = true;
+  styles.heightmap.groups.landHeights.options.scheme = "#001122,#334455";
+  styles.heightmap.groups.landHeights.options.terracing = 4;
+  styles.heightmap.groups.oceanHeights.options.render = true;
   harvestStylesFromSvg();
-  expect(styles.heightmap.landHeights.options.scheme).toBe("#001122,#334455");
-  expect(styles.heightmap.landHeights.options.terracing).toBe(4);
-  expect(styles.heightmap.oceanHeights.options.render).toBe(true);
+  expect(styles.heightmap.groups.landHeights.options.scheme).toBe("#001122,#334455");
+  expect(styles.heightmap.groups.landHeights.options.terracing).toBe(4);
+  expect(styles.heightmap.groups.oceanHeights.options.render).toBe(true);
 });
 
 test("save sync lets an old map's heightmap attrs win when scheme is present", () => {
   document.body.innerHTML = `<svg id="map"><g id="terrs"><g id="landHeights" scheme="olive" terracing="2" skip="1" relax="1" curve="curveLinear"></g><g id="oceanHeights" scheme="bright" terracing="0" skip="0" relax="0" curve="curveBasisClosed" data-render="1"></g></g></svg>`;
-  styles.heightmap.landHeights.options.scheme = "monochrome";
-  styles.heightmap.oceanHeights.options.render = false;
+  styles.heightmap.groups.landHeights.options.scheme = "monochrome";
+  styles.heightmap.groups.oceanHeights.options.render = false;
   harvestStylesFromSvg();
-  expect(styles.heightmap.landHeights.options.scheme).toBe("olive");
-  expect(styles.heightmap.landHeights.options.terracing).toBe(2);
-  expect(styles.heightmap.oceanHeights.options.render).toBe(true);
+  expect(styles.heightmap.groups.landHeights.options.scheme).toBe("olive");
+  expect(styles.heightmap.groups.landHeights.options.terracing).toBe(2);
+  expect(styles.heightmap.groups.oceanHeights.options.render).toBe(true);
 });
 
 test("save sync keeps store armies and grid options when their marker attrs are absent", () => {
@@ -199,47 +207,47 @@ test("save sync lets an old map's armies, grid and map-filter attrs win; auto-fi
   expect(styles.military.options.boxSize).toBe(5);
   expect(styles.grid.options).toEqual({ type: "square", scale: 3, dx: 1, dy: 2 });
   expect(styles.map.attrs.filter).toBe("url(#filter-tint)");
-  expect(styles.coastline.sea_island).toEqual({ attrs: styles.coastline.sea_island.attrs });
+  expect(styles.coastline.groups.sea_island).toEqual({ attrs: styles.coastline.groups.sea_island.attrs });
 });
 
 test("save sync keeps store markets, goods-circle, texture and ocean-outline options when their attrs are absent", () => {
   document.body.innerHTML = `<svg id="map"><g id="markets"></g><g id="goods"><g id="goodsIcons"></g></g><g id="texture"></g><g id="oceanLayers"></g></svg>`;
   styles.markets.options.iconSize = 11;
   styles.markets.options.icon = "X";
-  styles.goods.goodsIcons.options.circle = false;
+  styles.goods.groups.goodsIcons.options.circle = false;
   styles.texture.options.x = 40;
-  styles.ocean.oceanLayers.options.outline = "-6,-4,-2";
+  styles.ocean.groups.oceanLayers.options.outline = "-6,-4,-2";
   harvestStylesFromSvg();
   expect(styles.markets.options.iconSize).toBe(11);
   expect(styles.markets.options.icon).toBe("X");
-  expect(styles.goods.goodsIcons.options.circle).toBe(false);
+  expect(styles.goods.groups.goodsIcons.options.circle).toBe(false);
   expect(styles.texture.options.x).toBe(40);
-  expect(styles.ocean.oceanLayers.options.outline).toBe("-6,-4,-2");
+  expect(styles.ocean.groups.oceanLayers.options.outline).toBe("-6,-4,-2");
 });
 
 test("save sync lets an old map's markets, goods-circle, texture and ocean-outline attrs win", () => {
   document.body.innerHTML = `<svg id="map"><g id="markets" data-size="3" font-size="7" data-icon="Y"></g><g id="goods"><g id="goodsIcons" data-circle="1"></g></g><g id="texture" data-href="./t.jpg" data-x="5" data-y="6"></g><g id="oceanLayers" layers="-6"></g></svg>`;
   styles.markets.options.iconSize = 11;
-  styles.goods.goodsIcons.options.circle = false;
+  styles.goods.groups.goodsIcons.options.circle = false;
   styles.texture.options.x = 40;
-  styles.ocean.oceanLayers.options.outline = "-6,-4,-2";
+  styles.ocean.groups.oceanLayers.options.outline = "-6,-4,-2";
   harvestStylesFromSvg();
   expect(styles.markets.options.iconSize).toBe(7);
   expect(styles.markets.options.icon).toBe("Y");
-  expect(styles.goods.goodsIcons.options.circle).toBe(true);
+  expect(styles.goods.groups.goodsIcons.options.circle).toBe(true);
   expect(styles.texture.options).toEqual({ href: "./t.jpg", x: 5, y: 6 });
-  expect(styles.ocean.oceanLayers.options.outline).toBe("-6");
+  expect(styles.ocean.groups.oceanLayers.options.outline).toBe("-6");
 });
 
 test("save sync keeps store scaleBar and label-shift styles when their attrs are absent", () => {
   document.body.innerHTML = `<svg id="map"><g id="scaleBar" font-size="10"><rect id="scaleBarBack" data-group="back" fill="#ffffff"></rect></g>
     <g id="labels"><g data-group="capital" font-size="6%" font-family="Almendra SC"></g></g></svg>`;
   styles.scaleBar.options.barSize = 5;
-  styles.scaleBar.back.options.top = 12;
+  styles.scaleBar.groups.back.options.top = 12;
   styles.labels.groups.capital.attrs.style = "transform: translate(1.5em, 0em)";
   harvestStylesFromSvg();
   expect(styles.scaleBar.options.barSize).toBe(5);
-  expect(styles.scaleBar.back.options.top).toBe(12);
+  expect(styles.scaleBar.groups.back.options.top).toBe(12);
   // labels are store-authoritative on save (step 4): the missing attr changes nothing
   expect(styles.labels.groups.capital.attrs.style).toBe("transform: translate(1.5em, 0em)");
   styles.labels.groups.capital.attrs.style = null;
@@ -252,7 +260,7 @@ test("save sync lets an old map's scaleBar and label-shift attrs win", () => {
   harvestStylesFromSvg();
   // the label and where the author put the bar are part of its style, and travel with it
   expect(styles.scaleBar.options).toEqual({ barSize: 2, x: 40, y: 41, label: "old" });
-  expect(styles.scaleBar.back.options).toEqual({ top: 3, right: 4, bottom: 5, left: 6 });
+  expect(styles.scaleBar.groups.back.options).toEqual({ top: 3, right: 4, bottom: 5, left: 6 });
   // the record-less LOAD path still harvests the label shift off an old map's attrs
   expect(stylesFromMap(document).labels.groups.capital.attrs.style).toBe("transform: translate(0.7em, -0.2em)");
 });
@@ -284,9 +292,9 @@ test("a child group the map predates leaves its parent's styling in place", () =
   // pre-1.143 maps have no #sea_island: the layer group itself is styled
   document.body.innerHTML = `<svg id="map"><g id="coastline" opacity="0.5" stroke-width="0.7"></g></svg>`;
   const result = stylesFromMap(document);
-  expect(Styles.defaults.coastline.sea_island.attrs["stroke-width"]).not.toBeNull();
-  expect(result.coastline.sea_island.attrs["stroke-width"]).toBeNull();
-  expect(result.coastline.sea_island.attrs.opacity).toBeNull();
+  expect(Styles.defaults.coastline.groups.sea_island.attrs["stroke-width"]).not.toBeNull();
+  expect(result.coastline.groups.sea_island.attrs["stroke-width"]).toBeNull();
+  expect(result.coastline.groups.sea_island.attrs.opacity).toBeNull();
 });
 
 test("store-format loads strip retired option attributes from the restored svg", () => {
@@ -328,8 +336,8 @@ test("opacity stranded on a layer group moves to the style groups the store keep
     <g id="lakes" opacity="0.7"></g>
     <g id="routes" opacity="0.4" fill="none"><g id="roads" opacity="0.9"></g></g></svg>`;
   harvestStylesFromSvg();
-  expect(styles.coastline.sea_island.attrs.opacity).toBe(0.5);
-  expect(styles.coastline.lake_island.attrs.opacity).toBe(0.5);
+  expect(styles.coastline.groups.sea_island.attrs.opacity).toBe(0.5);
+  expect(styles.coastline.groups.lake_island.attrs.opacity).toBe(0.5);
   expect(styles.lakes.groups.freshwater.attrs.opacity).toBe(0.7);
   expect(styles.routes.groups.roads.attrs.opacity).toBe(0.4);
 
@@ -337,5 +345,30 @@ test("opacity stranded on a layer group moves to the style groups the store keep
   expect(document.getElementById("coastline")?.getAttribute("opacity")).toBeNull();
   expect(document.getElementById("lakes")?.getAttribute("opacity")).toBeNull();
   expect(document.getElementById("routes")?.getAttribute("fill")).toBe("none"); // not opacity, left alone
+  Styles.set(structuredClone(Styles.defaults));
+});
+
+test("a pre-1.150 style object's burg and anchor records land under the icons element", async () => {
+  document.body.innerHTML = `<svg id="map">
+    <g id="burgIcons"><g id="capital" fill="#111111" font-size="9"></g></g>
+    <g id="anchors"><g id="capital" fill="#222222" font-size="9"></g></g>
+  </svg>`;
+
+  const migrated = JSON.parse(
+    await migrateStyles(
+      JSON.stringify({
+        burgIcons: { capital: { fill: "#ffffff", "font-size": 2, "data-icon": "#icon-square" } },
+        anchors: { capital: { fill: "#000000", "font-size": 1.9, "data-icon": "#icon-anchor" } }
+      })
+    )
+  );
+
+  // the record outranks the DOM harvest, as it did before the rename
+  expect(migrated.icons.groups.capital.groups.icons.attrs.fill).toBe("#ffffff");
+  expect(migrated.icons.groups.capital.groups.icons.options.icon).toBe("#icon-square");
+  expect(migrated.icons.groups.capital.groups.anchors.attrs.fill).toBe("#000000");
+  expect(migrated.icons.groups.capital.groups.anchors.options.size).toBe(1.9);
+  expect(migrated.burgIcons).toBeUndefined();
+
   Styles.set(structuredClone(Styles.defaults));
 });

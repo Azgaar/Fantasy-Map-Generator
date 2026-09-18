@@ -723,7 +723,7 @@ function regenerateStates(): void {
   if (warning) tip(warning, false, "warn");
 
   unfog();
-  Layers.draw("states", "borders", "provinces", "labels", "burgIcons", "military", "goods", "emblems");
+  Layers.draw("states", "borders", "provinces", "labels", "icons", "military", "goods", "emblems");
 }
 
 function regenerateProvinces(): void {
@@ -734,7 +734,7 @@ function regenerateProvinces(): void {
 
 function regenerateBurgs(): void {
   Burgs.regenerate();
-  Layers.draw("burgIcons", "labels", "routes", "population", "goods", "emblems");
+  Layers.draw("icons", "labels", "routes", "population", "goods", "emblems");
 }
 
 function regenerateGoods(): void {

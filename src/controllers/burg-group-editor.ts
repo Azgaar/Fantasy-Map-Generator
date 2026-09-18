@@ -422,7 +422,7 @@ function submitForm(event: Event): void {
   window.Labels.ensureBurgLabelGroups();
   window.Burgs.ensureBurgGroupStyles();
 
-  Layers.draw("burgIcons");
+  Layers.draw("icons");
   Layers.draw("labels");
   refreshEditors();
 

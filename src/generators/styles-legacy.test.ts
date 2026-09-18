@@ -7,6 +7,7 @@ import {
   isLegacyPreset,
   isStoreStyles,
   labelGroupFromLegacy,
+  normalizeStyles,
   presetBagFor,
   presetFromLegacy
 } from "./styles-legacy";
@@ -29,14 +30,14 @@ test("converts the frozen default preset without warnings", () => {
   const styles = presetFromLegacy(fixture as any);
   expect(warn).not.toHaveBeenCalled();
   expect(styles.relief.options).toEqual({ set: "simple", size: 1, density: 0.4 });
-  expect(styles.ocean.oceanLayers.options.outline).toBe("-6,-3,-1");
-  expect(styles.ocean.pattern.attrs).toEqual({ href: "./images/pattern1.png", opacity: 0.2 });
+  expect(styles.ocean.groups.oceanLayers.options.outline).toBe("-6,-3,-1");
+  expect(styles.ocean.groups.pattern.attrs).toEqual({ href: "./images/pattern1.png", opacity: 0.2 });
   expect(styles.military.options).toEqual({ boxSize: 3 });
   expect(styles.coordinates.attrs["font-size"]).toBe("12px");
-  expect(styles.states.statesHalo.attrs["stroke-width"]).toBe(10);
+  expect(styles.states.groups.statesHalo.attrs["stroke-width"]).toBe(10);
   expect(styles.legend.options).toEqual({ columns: 8 });
   expect(styles.labels.groups.capital.attrs["font-family"]).toBe("Almendra SC");
-  expect(styles.burgIcons.burgIcons.groups.capital.options.icon).toBe("#icon-square");
+  expect(styles.icons.groups.capital.groups.icons.options.icon).toBe("#icon-square");
 });
 
 test("unknown selector throws by default, skips on request", () => {
@@ -64,7 +65,7 @@ test("the zoom-derived render values are dropped for their base: #coordinates fo
     "#statesHalo": { "data-width": 8, "stroke-width": 0.5 }
   } as any);
   expect(styles.coordinates.attrs["font-size"]).toBe("14px");
-  expect(styles.states.statesHalo.attrs["stroke-width"]).toBe(8);
+  expect(styles.states.groups.statesHalo.attrs["stroke-width"]).toBe(8);
 });
 
 test("a mismatched data-size/font-size pair is BLOCKED", () => {
@@ -204,4 +205,58 @@ test("presetBagFor tries selectors in order and returns undefined when none reso
   const preset = { map: {}, routes: { groups: { roads: { attrs: { opacity: 0.9 } } } } };
   expect(presetBagFor(preset, "#roads", "#routes > #roads")).toEqual({ opacity: 0.9 });
   expect(presetBagFor(preset, "#nonexistent")).toBeUndefined();
+});
+
+test("normalizeStyles folds the pre-1.154 fixed children under their element's groups", () => {
+  const record: any = {
+    states: { statesBody: { attrs: { opacity: 1 } }, statesHalo: { attrs: { opacity: 0.4 } } },
+    ocean: { options: { bands: {} }, base: { attrs: { fill: "#000" } } },
+    legend: { attrs: {}, box: { attrs: { fill: "#fff" } } },
+    scaleBar: { attrs: {}, back: { attrs: {} } }
+  };
+
+  normalizeStyles(record);
+
+  expect(record.states).toEqual({
+    groups: { statesBody: { attrs: { opacity: 1 } }, statesHalo: { attrs: { opacity: 0.4 } } }
+  });
+  expect(record.ocean.groups.base).toEqual({ attrs: { fill: "#000" } });
+  expect(record.ocean.options).toEqual({ bands: {} });
+  expect(record.legend.groups.box).toEqual({ attrs: { fill: "#fff" } });
+  expect(record.scaleBar.groups.back).toEqual({ attrs: {} });
+});
+
+test("normalizeStyles merges the two burg records into one entry per group and renames the element", () => {
+  const record: any = {
+    burgIcons: {
+      burgIcons: { groups: { capital: { attrs: { fill: "#fff" }, options: { size: 2 } } } },
+      anchors: { groups: { capital: { attrs: { fill: "#000" }, options: { size: 1.9 } }, port: { attrs: {} } } }
+    }
+  };
+
+  normalizeStyles(record);
+
+  expect(record.burgIcons).toBeUndefined();
+  expect(record.icons.groups.capital).toEqual({
+    groups: {
+      icons: { attrs: { fill: "#fff" }, options: { size: 2 } },
+      anchors: { attrs: { fill: "#000" }, options: { size: 1.9 } }
+    }
+  });
+  expect(record.icons.groups.port.groups.icons).toBeUndefined();
+  expect(record.icons.groups.port.groups.anchors).toEqual({ attrs: {} });
+  expect(record.icons.burgIcons).toBeUndefined();
+  expect(record.icons.anchors).toBeUndefined();
+});
+
+test("normalizeStyles leaves a record already in the current shape alone", () => {
+  const record: any = {
+    states: { groups: { statesBody: { attrs: {} } } },
+    icons: { groups: { capital: { groups: { icons: { attrs: {} }, anchors: { attrs: {} } } } } }
+  };
+  const before = structuredClone(record);
+
+  normalizeStyles(record);
+
+  expect(record).toEqual(before);
 });

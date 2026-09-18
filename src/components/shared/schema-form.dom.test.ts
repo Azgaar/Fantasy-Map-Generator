@@ -367,3 +367,38 @@ describe("SchemaForm.fieldSpec", () => {
     ).toMatchObject({ kind: "icon" });
   });
 });
+
+describe("the groups rule", () => {
+  const node = z.strictObject({
+    attrs: z.strictObject({ opacity: z.number() }),
+    groups: z.strictObject({
+      left: z.strictObject({ attrs: z.strictObject({ x: z.number() }) }),
+      right: z.strictObject({
+        groups: z.strictObject({ deep: z.strictObject({ attrs: z.strictObject({ y: z.number() }) }) })
+      })
+    })
+  });
+
+  test("a groups node renders one card per entry, recursively, and never as a card of its own", () => {
+    const record = {
+      attrs: { opacity: 1 },
+      groups: { left: { attrs: { x: 2 } }, right: { groups: { deep: { attrs: { y: 3 } } } } }
+    };
+    const form = SchemaForm.render(node, record, { meta, onChange: vi.fn() });
+    document.body.append(form);
+    expect(form.querySelector('[data-section="groups"]')).toBeNull();
+    expect(form.querySelector('[data-field="attrs.opacity"]')).not.toBeNull();
+    expect(form.querySelector('[data-field="groups.left.attrs.x"]')).not.toBeNull();
+    expect(form.querySelector('[data-field="groups.right.groups.deep.attrs.y"]')).not.toBeNull();
+  });
+
+  test("a user record renders its entries from the value", () => {
+    const record = z.strictObject({
+      groups: z.record(z.string(), z.strictObject({ attrs: z.strictObject({ x: z.number() }) }))
+    });
+    const form = SchemaForm.render(record, { groups: { mine: { attrs: { x: 1 } } } }, { meta, onChange: vi.fn() });
+    document.body.append(form);
+    expect(form.querySelector('[data-section="groups.mine"]')).not.toBeNull();
+    expect(form.querySelector('[data-field="groups.mine.attrs.x"]')).not.toBeNull();
+  });
+});

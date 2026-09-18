@@ -29,7 +29,7 @@ export const drawCellsValue = (data: unknown[], points: Point[]): void => {
 export const drawPolygons = (data: number[], _terrs: any, grid: any): void => {
   const maximum: number = max(data) as number;
   const minimum: number = min(data) as number;
-  const scheme = HeightmapColorSchemes.get(styles.heightmap.landHeights.options.scheme);
+  const scheme = HeightmapColorSchemes.get(styles.heightmap.groups.landHeights.options.scheme);
 
   data = data.map(d => 1 - normalize(d, minimum, maximum));
   select("#debug").selectAll("polygon").remove();

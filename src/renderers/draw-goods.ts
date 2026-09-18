@@ -195,7 +195,7 @@ function renderCellProduction(bounds: Box): string {
 }
 
 function renderResourceIcons(bounds: Box): string {
-  const { circle: drawCircle, size: iconSize } = styles.goods.goodsIcons.options;
+  const { circle: drawCircle, size: iconSize } = styles.goods.groups.goodsIcons.options;
   const half = iconSize / 2;
   const markup: string[] = [];
 
@@ -213,7 +213,7 @@ function renderResourceIcons(bounds: Box): string {
 
 function renderBurgPlates(bounds: Box): string {
   // plate icon size is user-defined; the rest of the geometry and font scale with it
-  const plateIcon = styles.goods.goodsBurgs.options.size;
+  const plateIcon = styles.goods.groups.goodsBurgs.options.size;
   const scale = plateIcon / PLATE_ICON;
   const plateFont = PLATE_FONT * scale;
   const plateGap = PLATE_GAP * scale;

@@ -26,11 +26,11 @@ let previewLayoutLocked = false;
 function open(id: number | string): void {
   if (customization) return;
   closeDialogs(".stable");
-  Layers.show("burgIcons", "labels");
+  Layers.show("icons", "labels");
 
   selectedId = +id;
   selected = select<any, unknown>("#labels").select(`[data-label-type='burg'][data-id='${id}']`);
-  if (!selected.size()) selected = select<any, unknown>("#burgIcons").select(`[data-id='${id}']`);
+  if (!selected.size()) selected = select<any, unknown>("#icons").select(`[data-id='${id}']`);
 
   renderDialog();
   updateGroupsList();
@@ -360,7 +360,7 @@ function changeGroup(this: HTMLSelectElement): void {
   const id = getSelectedId();
   const burg = pack.burgs[id];
   Burgs.changeGroup(burg, this.value);
-  Layers.draw("burgIcons", "labels");
+  Layers.draw("icons", "labels");
 }
 
 function changeType(this: HTMLSelectElement): void {
@@ -444,7 +444,7 @@ function togglePort(burgId: number): void {
 
     burg.port = portFeatureId;
   }
-  Layers.draw("burgIcons");
+  Layers.draw("icons");
 }
 
 function toggleCapital(burgId: number): void {
@@ -472,7 +472,7 @@ function toggleCapital(burgId: number): void {
   const oldCapital = burgs[oldCapitalId];
   oldCapital.capital = 0;
   Burgs.changeGroup(oldCapital);
-  Layers.draw("burgIcons", "labels");
+  Layers.draw("icons", "labels");
 }
 
 function toggleBurgLockButton(): void {
@@ -525,13 +525,13 @@ function editBurgLabel(): void {
 function editGroupIconStyle(): void {
   const burg = pack.burgs[getSelectedId()];
   closeDialogs(".stable");
-  void Controllers.StyleEditor.open("burgIcons", burg.group);
+  void Controllers.StyleEditor.open("icons", burg.group);
 }
 
 function editGroupAnchorStyle(): void {
   const burg = pack.burgs[getSelectedId()];
   closeDialogs(".stable");
-  void Controllers.StyleEditor.open("burgIcons", burg.group);
+  void Controllers.StyleEditor.open("icons", burg.group);
 }
 
 function getPreviewViewport(): { width: number; height: number } {
@@ -769,7 +769,7 @@ function relocateBurgOnClick(this: SVGGElement, event: any): void {
 
   // the label snaps back to the relocated burg, so its custom path is no longer valid
   if (burg.label) Object.assign(burg.label, { dx: 0, dy: 0, pathPoints: undefined });
-  Layers.draw("burgIcons", "labels");
+  Layers.draw("icons", "labels");
 
   if (event.shiftKey === false) toggleRelocateBurg();
 }
@@ -822,7 +822,7 @@ function removeSelectedBurg(): void {
       onConfirm: () => {
         Burgs.remove(burgId);
         removeEmblem("burg", burgId);
-        Layers.draw("burgIcons", "labels");
+        Layers.draw("icons", "labels");
         $("#burgEditor").dialog("close");
       }
     });

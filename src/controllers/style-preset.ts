@@ -4,7 +4,7 @@ import { tip } from "@/components/tooltips";
 import { invokeActiveZooming } from "@/components/zoom";
 import { Controllers } from "@/controllers";
 import { Styles } from "@/generators/styles";
-import { isLegacyPreset, isStoreStyles, presetFromLegacy } from "@/generators/styles-legacy";
+import { isLegacyPreset, isStoreStyles, normalizeStyles, presetFromLegacy } from "@/generators/styles-legacy";
 import { applyVignetteOptions } from "@/renderers/draw-vignette";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
 import { CUSTOM_PREFIX, StylePresetsService, SYSTEM_PRESETS } from "@/services/style-presets";
@@ -45,9 +45,11 @@ const isKnownStyleFormat = (json: unknown): boolean =>
 /** A preset record in store shape, whichever format it was saved in; undefined for what is not a preset */
 export function parsePreset(presetJson: unknown): StylesData | undefined {
   if (!isKnownStyleFormat(presetJson)) return undefined;
-  return isLegacyPreset(presetJson as object)
-    ? presetFromLegacy(presetJson as Record<string, Record<string, unknown>>, { onUnknown: "skip" })
-    : Styles.parse(presetJson);
+  if (isLegacyPreset(presetJson as object))
+    return presetFromLegacy(presetJson as Record<string, Record<string, unknown>>, { onUnknown: "skip" });
+  // a preset file saved before v1.154.0 is store-shaped but in an older layout; normalize a copy, the
+  // default preset is the shared record
+  return Styles.parse(normalizeStyles(structuredClone(presetJson)));
 }
 
 /** Put a preset record into the store and onto the map. Used by load and by every UI path */
@@ -70,7 +72,7 @@ function applyPreset(presetJson: unknown): void {
   if (size && size / previousReliefSize !== 1) Relief.changeSize(size / previousReliefSize);
   if (set) Relief.changeSet(set as Parameters<typeof Relief.changeSet>[0]);
 
-  for (const { options } of [styles.heightmap.landHeights, styles.heightmap.oceanHeights]) {
+  for (const { options } of [styles.heightmap.groups.landHeights, styles.heightmap.groups.oceanHeights]) {
     HeightmapColorSchemes.ensure(options.scheme);
   }
 }

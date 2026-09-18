@@ -12,7 +12,7 @@ function pinnedAttrs(preset: string): {oceanFill: string; landmassFill: string} 
   const file =
     preset === "default" ? "../../src/generators/default-styles.json" : `../../public/styles/${preset}.json`;
   const json = JSON.parse(fs.readFileSync(path.join(__dirname, file), "utf8"));
-  return {oceanFill: json.ocean.base.attrs.fill, landmassFill: json.landmass.attrs.fill};
+  return {oceanFill: json.ocean.groups.base.attrs.fill, landmassFill: json.landmass.attrs.fill};
 }
 
 async function switchTo(page: Page, preset: string) {
@@ -73,7 +73,7 @@ test("every shipped preset applies through the store with no console errors", as
 
   await page.goto("/?seed=test-seed&width=1280&height=720");
   await waitForMap(page);
-  await page.waitForSelector("#burgIcons > g", {state: "attached", timeout: 60000});
+  await page.waitForSelector("#icons > g", {state: "attached", timeout: 60000});
   await page.waitForSelector("#labels > g", {state: "attached", timeout: 60000});
   await page.waitForTimeout(500);
 
@@ -98,7 +98,7 @@ test("every shipped preset applies through the store with no console errors", as
 test("relief icon size round-trips through a preset switch and back", async ({page}) => {
   await page.goto("/?seed=test-seed&width=1280&height=720");
   await waitForMap(page);
-  await page.waitForSelector("#burgIcons > g", {state: "attached", timeout: 60000});
+  await page.waitForSelector("#icons > g", {state: "attached", timeout: 60000});
   await page.waitForSelector("#labels > g", {state: "attached", timeout: 60000});
   await page.waitForTimeout(500);
 
@@ -135,17 +135,17 @@ test("a saved custom preset carries the retired sizes from the store", async ({p
     styles.coordinates.attrs["font-size"] = "23px";
     styles.rulers.attrs["font-size"] = "24px";
     styles.legend.attrs["font-size"] = "25px";
-    styles.emblems.provinceEmblems.options.size = 1.4;
-    styles.goods.goodsIcons.options.size = 9;
-    styles.goods.goodsBurgs.options.size = 7;
+    styles.emblems.groups.provinceEmblems.options.size = 1.4;
+    styles.goods.groups.goodsIcons.options.size = 9;
+    styles.goods.groups.goodsBurgs.options.size = 7;
     styles.markets.options.size = 8;
-    styles.heightmap.landHeights.options.terracing = 5;
-    styles.heightmap.oceanHeights.options.render = true;
+    styles.heightmap.groups.landHeights.options.terracing = 5;
+    styles.heightmap.groups.oceanHeights.options.render = true;
     styles.military.options.boxSize = 4;
     styles.grid.options.scale = 2;
     styles.markets.options.icon = "K";
     styles.texture.options.x = 33;
-    styles.ocean.oceanLayers.options.outline = "-6,-4,-2";
+    styles.ocean.groups.oceanLayers.options.outline = "-6,-4,-2";
     styles.scaleBar.options.label = "posterity";
     styles.legend.options.columns = 5;
   });
@@ -161,17 +161,17 @@ test("a saved custom preset carries the retired sizes from the store", async ({p
       coordinates: upgraded.coordinates.attrs["font-size"],
       rulers: upgraded.rulers.attrs["font-size"],
       legend: upgraded.legend.attrs["font-size"],
-      provinceEmblems: upgraded.emblems.provinceEmblems.options.size,
-      goodsIcons: upgraded.goods.goodsIcons.options.size,
-      goodsBurgs: upgraded.goods.goodsBurgs.options.size,
+      provinceEmblems: upgraded.emblems.groups.provinceEmblems.options.size,
+      goodsIcons: upgraded.goods.groups.goodsIcons.options.size,
+      goodsBurgs: upgraded.goods.groups.goodsBurgs.options.size,
       markets: upgraded.markets.options.size,
-      landTerracing: upgraded.heightmap.landHeights.options.terracing,
-      oceanRender: upgraded.heightmap.oceanHeights.options.render,
+      landTerracing: upgraded.heightmap.groups.landHeights.options.terracing,
+      oceanRender: upgraded.heightmap.groups.oceanHeights.options.render,
       armiesBox: upgraded.military.options.boxSize,
       gridScale: upgraded.grid.options.scale,
       marketsIcon: upgraded.markets.options.icon,
       textureX: upgraded.texture.options.x,
-      oceanOutline: upgraded.ocean.oceanLayers.options.outline,
+      oceanOutline: upgraded.ocean.groups.oceanLayers.options.outline,
       scaleBarLabel: upgraded.scaleBar.options.label,
       legendColumns: upgraded.legend.options.columns
     };

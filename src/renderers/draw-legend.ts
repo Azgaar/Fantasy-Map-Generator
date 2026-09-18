@@ -27,8 +27,8 @@ export function drawLegend(name: string, data: LegendItem[]): void {
 
   // the store owns the box styling and the column count; the box is redrawn from it every time
   const itemsInCol = styles.legend.options.columns;
-  const backColor = styles.legend.box.attrs.fill;
-  const opacity = Number(styles.legend.box.attrs["fill-opacity"]);
+  const backColor = styles.legend.groups.box.attrs.fill;
+  const opacity = Number(styles.legend.groups.box.attrs["fill-opacity"]);
   const fontSize = Number.parseFloat(styles.legend.attrs["font-size"]); // the texts size by inheritance
 
   // TODO: a renderer should not own controls. Move this to a proper legend component once one exists
