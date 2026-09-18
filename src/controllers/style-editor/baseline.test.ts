@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
-vi.mock("../style-presets", () => ({ parsePreset: vi.fn((json: unknown) => json) }));
+vi.mock("../style-preset", () => ({ parsePreset: vi.fn((json: unknown) => json) }));
 vi.mock("@/services/style-presets", () => ({
-  StylePresets: {
+  StylePresetsService: {
     load: vi.fn(),
     isSystem: (name: string) => name === "ink" || name === "default"
   }

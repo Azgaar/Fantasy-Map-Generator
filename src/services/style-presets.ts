@@ -1,4 +1,3 @@
-import { tip } from "@/components/tooltips";
 import { Styles } from "@/generators/styles";
 import { normalizeStyles } from "@/generators/styles-legacy";
 import { VERSION } from "@/services/versioning";
@@ -48,19 +47,18 @@ class StylePresetsStore {
     localStorage.removeItem(name);
   }
 
-  /** The preset by name, or the default when it is missing or broken */
-  async load(name: string): Promise<{ name: string; styles: unknown }> {
+  /** The preset by name, or the default when it is missing or broken: `error` then says why */
+  async load(name: string): Promise<{ name: string; styles: unknown; error?: string }> {
     if (this.isSystem(name)) return { name, styles: await this.fetchSystem(name) };
 
     const stored = localStorage.getItem(name);
     if (stored && isValidJSON(stored)) return { name, styles: normalizeStyles(JSON.parse(stored)) };
 
     const error = stored
-      ? `Custom style ${name} stored in localStorage is not valid. Applying default style`
-      : `Custom style ${name} is not found in localStorage. Applying default style`;
+      ? `Custom style ${name} stored in localStorage is not valid`
+      : `Custom style ${name} is not found in localStorage`;
     ERROR && console.error(error);
-    tip(error, false, "error", 8000);
-    return { name: "default", styles: await this.fetchSystem("default") };
+    return { name: "default", styles: await this.fetchSystem("default"), error };
   }
 
   private async fetchSystem(name: string): Promise<unknown> {

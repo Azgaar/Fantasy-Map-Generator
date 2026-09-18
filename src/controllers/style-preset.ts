@@ -88,11 +88,22 @@ function fillMissingLabelGroups(): void {
   }
 }
 
+// the preset by name; when it is gone or broken, the default with a tip saying so
+async function loadPreset(name: string): Promise<{ name: string; styles: unknown }> {
+  const loaded = await StylePresetsService.load(name);
+  if (loaded.error) tip(`${loaded.error}. Applying default style`, false, "error", 8000);
+  return loaded;
+}
+
 /** The start-up path: the previously selected default or custom style */
 async function applyOnLoad(): Promise<void> {
-  const { name, styles: preset } = await StylePresetsService.load(options.map.style.preset || "default");
+  const desired = options.map.style.preset || "default";
+  const { name, styles: preset } = await loadPreset(desired);
   applyPreset(preset);
-  options.map.style.preset = name; // the fallback preset, if the stored one is gone
+  if (name !== desired) {
+    options.map.style.preset = name; // the fallback preset, if the stored one is gone
+    Options.save();
+  }
   init();
 }
 
@@ -117,7 +128,7 @@ function requestChange(name: string): void {
 }
 
 async function change(desired: string): Promise<void> {
-  const { name, styles: preset } = await StylePresetsService.load(desired);
+  const { name, styles: preset } = await loadPreset(desired);
   options.map.style.preset = name;
   Options.save();
   applyWithUiRefresh(preset);

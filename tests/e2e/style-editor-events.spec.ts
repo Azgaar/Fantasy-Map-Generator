@@ -25,7 +25,7 @@ async function openStyleElement(page: Page, element: string): Promise<void> {
   await page.evaluate(() => (window as any).showOptions());
   await page.locator("#styleTab").click();
   await page.locator("#styleElementSelect").selectOption(element);
-  await page.locator("#styleForm .row").first().waitFor();
+  await page.locator("#styleForm .row").first().waitFor({ state: "attached" }); // a gated card may hide its rows
 }
 
 async function currentScale(page: Page): Promise<number> {
@@ -275,9 +275,8 @@ test.describe("style editor events drive the store", () => {
     expect(Number(boxHeight)).toBe(8);
 
     expect(await page.locator("#armies").getAttribute("box-size")).toBeNull();
-    // the font is an attr of its own (regiment labels size by inheritance)
-    await page.locator(`${f("attrs.font-size")} input[type=number]`).fill("8");
-    expect(await page.locator("#armies").getAttribute("font-size")).toBe("8px");
+    // the regiment font follows the box: no attr of its own
+    expect(await page.locator("#armies").getAttribute("font-size")).toBe("8");
   });
 
   test("grid controls write the store and restyle the pattern", async ({ page }) => {
@@ -644,20 +643,20 @@ test.describe("style editor events drive the store", () => {
     await expect(page.locator("#vignette-rect")).toHaveAttribute("rx", "50%");
   });
 
-  test("a preset switch keeps the zoom-derived label container size", async ({ page }) => {
+  test("a preset switch keeps the zoom-derived viewbox font size", async ({ page }) => {
     await page.evaluate(() => (window as any).setMapZoom(4));
     await page.waitForTimeout(300);
-    const zoomed = await page.locator("#labels").getAttribute("font-size");
+    const zoomed = await page.locator("#viewbox").getAttribute("font-size");
     expect(zoomed).not.toBe("100px");
 
     await page.evaluate(async () => {
-      sessionStorage.setItem("styleChangeConfirmed", "true");
+      sessionStorage.setItem("fmg-style-change-confirmed", "true");
       await (window as any).Controllers.StylePresetsEditor.change("pale");
     });
     await page.waitForTimeout(200);
 
-    // the store base (100px) must not stick - the container re-derives for the current zoom
-    await expect(page.locator("#labels")).toHaveAttribute("font-size", zoomed!);
+    // the viewbox is not a style element: the zoom-derived size stays through the preset apply
+    await expect(page.locator("#viewbox")).toHaveAttribute("font-size", zoomed!);
   });
 
   test("compass shift writes the rose transform through the store", async ({ page }) => {

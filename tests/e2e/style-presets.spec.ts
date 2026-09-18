@@ -132,9 +132,9 @@ test("a saved custom preset carries the retired sizes from the store", async ({p
   await waitForMap(page);
 
   await page.evaluate(() => {
-    styles.coordinates.options.fontSize = 23;
-    styles.rulers.options.fontSize = 24;
-    styles.legend.options.fontSize = 25;
+    styles.coordinates.attrs["font-size"] = "23px";
+    styles.rulers.attrs["font-size"] = "24px";
+    styles.legend.attrs["font-size"] = "25px";
     styles.emblems.provinceEmblems.options.size = 1.4;
     styles.goods.goodsIcons.options.size = 9;
     styles.goods.goodsBurgs.options.size = 7;
@@ -158,9 +158,9 @@ test("a saved custom preset carries the retired sizes from the store", async ({p
     if (Object.keys(json).some(key => key.startsWith("#"))) throw new Error("saver emitted the legacy format");
     const upgraded = (window as any).Styles.parse(json);
     return {
-      coordinates: upgraded.coordinates.options.fontSize,
-      rulers: upgraded.rulers.options.fontSize,
-      legend: upgraded.legend.options.fontSize,
+      coordinates: upgraded.coordinates.attrs["font-size"],
+      rulers: upgraded.rulers.attrs["font-size"],
+      legend: upgraded.legend.attrs["font-size"],
       provinceEmblems: upgraded.emblems.provinceEmblems.options.size,
       goodsIcons: upgraded.goods.goodsIcons.options.size,
       goodsBurgs: upgraded.goods.goodsBurgs.options.size,
@@ -178,9 +178,9 @@ test("a saved custom preset carries the retired sizes from the store", async ({p
   }, raw);
 
   expect(roundTripped).toEqual({
-    coordinates: 23,
-    rulers: 24,
-    legend: 25,
+    coordinates: "23px",
+    rulers: "24px",
+    legend: "25px",
     provinceEmblems: 1.4,
     goodsIcons: 9,
     goodsBurgs: 7,

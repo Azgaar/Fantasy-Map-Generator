@@ -37,8 +37,9 @@ function reconcileBurgIcons({ root, bounds }: ViewportRenderContext): void {
       const groupName = escapeHtml(name);
       const icon = escapeHtml(groupStyle?.options.icon || (isAnchor ? "#icon-anchor" : "#icon-circle"));
       const size = groupStyle?.options.size ?? 1;
-      const dx = isAnchor ? (groupStyle?.options.dx ?? 0) * size : 0;
-      const dy = isAnchor ? (groupStyle?.options.dy ?? 0) * size : 0;
+      const shift = isAnchor ? (groupStyle?.options as { dx?: number; dy?: number } | undefined) : undefined;
+      const dx = (shift?.dx ?? 0) * size;
+      const dy = (shift?.dy ?? 0) * size;
       markup.push(`<g id="${groupName}" data-group="${groupName}"`);
       if (groupStyle) {
         for (const [key, value] of Object.entries(groupStyle.attrs)) {

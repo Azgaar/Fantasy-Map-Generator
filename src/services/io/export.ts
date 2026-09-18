@@ -2,7 +2,7 @@ import type { Selection } from "d3";
 import { select } from "d3";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
-import { viewport } from "@/components/viewport";
+import { viewport, zoomFontSize } from "@/components/viewport";
 import { renderEmblemDefinitions } from "@/renderers/draw-emblems";
 import { drawScaleBar } from "@/renderers/draw-scalebar";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
@@ -269,7 +269,10 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
     if (fullMap) {
       // reset transform to show the whole map
       clone.attr("width", options.map.graph.width).attr("height", options.map.graph.height);
-      clone.select("#viewbox").attr("transform", null);
+      clone
+        .select("#viewbox")
+        .attr("transform", null)
+        .attr("font-size", `${zoomFontSize(1)}px`); // the zoom-derived base, at scale 1
       ViewportLayers.renderTo(cloneEl);
 
       if (!noScaleBar) drawScaleBar(cloneEl, 1, options.map.graph.width, options.map.graph.height);

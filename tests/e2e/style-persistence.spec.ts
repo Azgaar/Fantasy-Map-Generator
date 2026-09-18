@@ -70,7 +70,7 @@ test.describe("style persistence round trips", () => {
     // the name travels with the map, so the Style tab shows which preset the styles came from
     const preset = await page.evaluate(() => ({
       option: options.map.style.preset,
-      select: (document.getElementById("stylePresetSelector") as HTMLSelectElement).value
+      select: (document.getElementById("stylePreset") as HTMLSelectElement).value
     }));
     expect(preset).toEqual({ option: "ancient", select: "ancient" });
   });
@@ -95,7 +95,7 @@ test.describe("style persistence round trips", () => {
 
     const preset = await page.evaluate(() => ({
       option: options.map.style.preset,
-      select: (document.getElementById("stylePresetSelector") as HTMLSelectElement).value
+      select: (document.getElementById("stylePreset") as HTMLSelectElement).value
     }));
     expect(preset).toEqual({ option: "cyberpunk", select: "cyberpunk" });
   });
@@ -113,7 +113,7 @@ test.describe("style persistence round trips", () => {
 
     const preset = await page.evaluate(() => ({
       option: options.map.style.preset,
-      select: (document.getElementById("stylePresetSelector") as HTMLSelectElement).value
+      select: (document.getElementById("stylePreset") as HTMLSelectElement).value
     }));
     expect(preset).toEqual({ option: "custom-from-another-browser", select: "default" });
   });
@@ -184,7 +184,7 @@ test.describe("style persistence round trips", () => {
     const harvested = await page.evaluate(() => ({
       riversStore: styles.rivers.attrs.fill,
       riversDom: document.getElementById("rivers")?.getAttribute("fill"),
-      statesHaloWidth: styles.states.statesHalo.options.width
+      statesHaloWidth: styles.states.statesHalo.attrs["stroke-width"]
     }));
 
     expect(harvested.riversDom).toBe("#6738bc");
@@ -372,9 +372,9 @@ test.describe("style persistence round trips", () => {
         document.getElementById("legend")?.getAttribute("data-columns")
       ],
       scaleBarSize: styles.scaleBar.options.barSize,
-      rescale: styles.markers.options.rescale,
-      haloWidth: styles.states.statesHalo.options.width,
-      coordinatesSize: styles.coordinates.options.fontSize
+      markersOptions: styles.markers.options,
+      haloWidth: styles.states.statesHalo.attrs["stroke-width"],
+      coordinatesSize: styles.coordinates.attrs["font-size"]
     }));
 
     // The retired attrs are gone immediately. Legacy migration harvests their values into the
@@ -395,23 +395,21 @@ test.describe("style persistence round trips", () => {
     expect(afterLoad.oceanOutline).toBe("-6,-4,-2");
     expect(afterLoad.geometryAttrs).toEqual([null, null, null, null]);
     expect(afterLoad.scaleBarSize).toBe(4);
-    expect(afterLoad.rescale).toBe(0);
+    expect(afterLoad.markersOptions).toBeUndefined(); // markers are sized in em since v1.154: rescale is gone
     expect(afterLoad.haloWidth).toBe(7);
-    expect(afterLoad.coordinatesSize).toBe(55);
+    expect(afterLoad.coordinatesSize).toBe("55px");
 
     // flip values through the store the way the real editor handlers do, then run a REAL save:
     // since step 7 the record serializes the store directly, no harvest in between
     await page.evaluate(() => {
-      styles.markers.options.rescale = 0;
-      styles.states.statesHalo.options.width = 3;
-      styles.coordinates.options.fontSize = 21;
+      styles.states.statesHalo.attrs["stroke-width"] = 3;
+      styles.coordinates.attrs["font-size"] = "21px";
     });
 
     const savedAgain = await saveAsDownload(page);
     const record = JSON.parse(savedAgain.toString("utf8").split("\r\n")[48]);
-    expect(record.markers.options.rescale).toBe(0);
-    expect(record.states.statesHalo.options.width).toBe(3);
-    expect(record.coordinates.options.fontSize).toBe(21);
+    expect(record.states.statesHalo.attrs["stroke-width"]).toBe(3);
+    expect(record.coordinates.attrs["font-size"]).toBe("21px");
   });
 
   test("save serializes the store: a rogue DOM-only attr does not leak into the record", async ({ page, context }) => {

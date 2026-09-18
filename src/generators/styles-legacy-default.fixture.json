@@ -263,7 +263,7 @@
     "opacity": 0.9,
     "fill": "#f1f8fe",
     "stroke": "#e8f0f6",
-    "stroke-width": 0.5,
+    "stroke-width": 0,
     "filter": "url(#dropShadow01)"
   },
   "#emblems": {
@@ -693,7 +693,7 @@
     "opacity": 1,
     "stroke-width": 1,
     "fill-opacity": 0.03,
-    "stroke-opacity": 0.8,
+    "stroke-opacity": 0.9,
     "data-size": 3,
     "font-size": 5,
     "data-icon": "⚖️",

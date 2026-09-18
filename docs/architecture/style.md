@@ -60,8 +60,10 @@ The record is keyed by **style element**: every map layer, plus `map` for the wh
 - **A font size is an attr**, in px on the layer (`legend.attrs["font-size"]: "13px"`), and its
   texts size by inheritance; a label group's is a `%` of the viewbox font size, which is 100px at
   scale 1 and which the zoom scales half-way — so anything sized in `%` or `em` (label groups, the
-  markers) follows the zoom, per frame or once it settles as `viewportRedraw` says. An `options`
-  size (`markets.options.iconSize`, `military.options.boxSize`) is a renderer input, not a font.
+  markers) follows the zoom, per frame or once it settles as `viewportRedraw` says. There is no
+  switch for it: `labels.resizeOnZoom` and `markers.options.rescale` were retired with v1.154. An
+  `options` size (`markets.options.iconSize`, `military.options.boxSize`) is a renderer input, not a
+  font; the regiment font follows the box.
 - **A zoom-derived attr keeps its base in the store.** The zoom writes what it derives — the halo
   `stroke-width` scaled to the viewport, the coordinates `font-size` on redraw — over the stored
   base; the store never holds the derived value.
@@ -110,11 +112,10 @@ const strokeWidth = meta(z.number().min(0), {
 
 `FieldMeta` names the control kind when the type is not enough (`color`, `filter`, `font`, …), the
 label and tip, a slider `range` and `step` for an unbounded number, `nullAs` (what an unset attr
-shows as), `hidden` for a stored value that is never edited (`transform`, defs `mask` references, the
-layer-level `labels.attrs.font-size` the zoom owns), `gate` on a nested object (the key that switches
-the rest of the section on), `group` (a caption over a run of fields: **Stroke** › Color, Width, Dash
-array) and `fit` (a slider whose range and step follow a sibling number, live: a label group's
-stroke width and letter spacing follow its `font-size`).
+shows as), `hidden` for a stored value that is never edited (`transform`, defs `mask` references),
+`gate` on a nested object (the key that switches
+the rest of the section on) and `group` (a caption over a run of fields: **Stroke** › Color, Width,
+Dash array).
 
 `StyleMeta` adds `effect`: the name of what the editor runs after the value changes, set on a field
 or on a whole node (the nearest wins). The schema is the one place that says which field does what;
@@ -171,15 +172,16 @@ and the style saved in a `.map` all use the schema; there is no second format.
 - **System presets** are the fifteen names in `SYSTEM_PRESETS`: `default` ships in the bundle, the
   rest are fetched from `public/styles/<name>.json`. `public/images/style-presets/<name>.png` is each
   one's thumbnail for the gallery.
-- **Custom presets** live in `localStorage` under `fmgStyle_<name>` — an app preference by scope,
-  but the same schema as map state.
+- **Custom presets** live in `localStorage` under `fmg-style-<name>` (older ones under
+  `fmgStyle_<name>`) — an app preference by scope, but the same schema as map state.
 
-`src/services/style-presets.ts` is the source: `StylePresets.load(name)` resolves a name to a record
-(custom → `localStorage`, `default` → bundle, else fetch) and falls back to `default` with one
-`console.error` when the preset is missing or broken; `saveCustom`, `removeCustom`, `listCustom`,
-`displayName`, `isSystem` are the rest. It reads no map state.
+`src/services/style-presets.ts` is the source: `StylePresetsService.load(name)` resolves a name to a
+record (custom → `localStorage`, `default` → bundle, else fetch) and falls back to `default` with an
+`error` message when the preset is missing or broken — the caller that applies the fallback shows it,
+a comparison does not; `saveCustom`, `removeCustom`, `listCustom`, `displayName`, `isSystem` are the
+rest. It reads no map state and shows no UI.
 
-`Controllers.StylePresetsEditor` (`src/controllers/style-presets.ts`) applies a preset to the map:
+`Controllers.StylePresetsEditor` (`src/controllers/style-preset.ts`) applies a preset to the map:
 
 1. `parsePreset` — a legacy selector-keyed file is converted, a store-shaped one is `Styles.parse`d;
    anything else is refused with a tip.
@@ -204,8 +206,11 @@ reached only from the load migrations (`auto-update.ts`) and `parsePreset`:
   `restoreStrippedLayerStyles` re-seeds what a few versions stripped
 - `normalizeStyles` rewrites older records to the current shape and formats: folding
   of mirrored fields into their attrs (`map.options.dataFilter` → `map.attrs.filter`, the halo
-  `width`, the `fontSize` options, the ocean pattern options → `ocean.pattern.attrs`), then `""` →
-  `null`, `inherit` → `null`, the font-size units
+  `width`, the `fontSize` options, the ocean pattern options → `ocean.pattern.attrs`), dropping the
+  retired ones (`markers.options.rescale`, `military.options.fontSize`), then `""` → `null`,
+  `inherit` → `null`, the font-size units
+- a value repair that is about the map rather than the format lives in the migration itself, next
+  to its version (the anchors that carried the burg icon before ports were stylable)
 
 The store never sees a legacy value: conversion happens before `Styles.parse`, and a value that still
 fails afterwards is repaired with a warning like any other.
@@ -287,14 +292,14 @@ above it — and falls back to the store convention:
 - an `options` path → `draw`: `Layers.draw(layer)`, the renderer reads the store again
 
 The declared ones: `draw` on an attr whose renderer bakes it into the drawing (the grid, rulers,
-ocean waves and scale bar attrs, the legend and coordinates fonts, every burg icon field); `zoom` on
-an attr the zoom derives from (the halo width): written, then the zoom re-run;
+ocean waves and scale bar attrs, the legend and coordinates fonts, a label group's typography); `zoom`
+on an attr the zoom derives from (the halo width): written, then the zoom re-run;
 `changeReliefSet` / `resizeRelief` / `regenerateRelief`; `applyVignette` for the mask rect.
 `effects.test.ts` asserts which name a path resolves to and which stub each name fires.
 
 ### Baseline and decoration
 
-The current preset (`options.map.style.preset`, loaded through `StylePresets` and cached) is the
+The current preset (`options.map.style.preset`, loaded through `StylePresetsService` and cached) is the
 **baseline** the form is compared with (`baseline.ts`). A field is _changed_ when the preset defines
 the path and its value differs; a path the preset never had (a label group added later) is never
 marked. `decorate.ts` marks changed rows with an accent and a per-field reset button (a reset writes

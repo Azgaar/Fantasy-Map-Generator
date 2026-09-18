@@ -6,7 +6,7 @@ const FILTER_FUNCTION =
 
 export const FORMATS = {
   /** `none`, a defs filter `url(#id)`, or a CSS filter-function list (cinderwood ships `sepia(0.6)`) */
-  filter: new RegExp(`^(none|url\\(#[\\w-]+\\)|${FILTER_FUNCTION}( |$))+$`),
+  filter: new RegExp(`^(none|url\\(#[\\w-]+\\)|${FILTER_FUNCTION}( ${FILTER_FUNCTION})*)$`),
   /** the halo and vignette blur: `blur(5px)` */
   blurFilter: /^blur\(\d+(\.\d+)?px\)$/,
   /** a defs mask: `url(#fog)`, `url(#land)` */

@@ -53,7 +53,8 @@ describe("effectAt", () => {
     expect(at("map.attrs.filter")).toBe("write");
     expect(at("ocean.pattern.attrs.href")).toBe("write");
     expect(at("coordinates.attrs.font-size")).toBe("draw");
-    expect(at("burgIcons.anchors.groups.town.attrs.fill")).toBe("draw");
+    expect(at("burgIcons.anchors.groups.town.attrs.fill")).toBe("write");
+    expect(at("burgIcons.anchors.groups.town.options.icon")).toBe("draw");
     expect(at("scaleBar.back.attrs.fill")).toBe("draw");
     expect(at("labels.groups.state.attrs.font-family")).toBe("draw");
     expect(at("labels.groups.state.attrs.fill")).toBe("write");
@@ -103,24 +104,25 @@ describe("runEffect", () => {
     expect(Layers.draw).not.toHaveBeenCalled();
   });
 
-  test("label typography refits state labels only", () => {
+  test("label typography is written, then the labels are laid out again; a paint attr only writes", () => {
     run("labels.groups.state.attrs.font-family", "Arial", "Georgia", { group: "state" });
     expect(Styles.writeAttr).toHaveBeenCalledWith(["labels", "groups", "state", "attrs", "font-family"]);
     expect(Layers.draw).toHaveBeenCalledWith("labels");
     vi.clearAllMocks();
-    run("labels.groups.city.attrs.font-family", "Arial", "Georgia", { group: "city" });
-    expect(Layers.draw).not.toHaveBeenCalled();
     run("labels.groups.city.attrs.fill", "#000000", null, { group: "city" });
+    expect(Styles.writeAttr).toHaveBeenCalledWith(["labels", "groups", "city", "attrs", "fill"]);
     expect(Layers.draw).not.toHaveBeenCalled();
   });
 
-  test("scale bar, legend font and burg icons redraw", () => {
+  test("scale bar and legend font redraw; a burg icon attr goes onto its group", () => {
     run("scaleBar.back.attrs.fill", "#ffffff");
     expect(Styles.writeAttr).toHaveBeenCalledWith(["scaleBar", "back", "attrs", "fill"]);
     expect(Layers.draw).toHaveBeenCalledWith("scaleBar");
     run("legend.attrs.font-family", "Arial");
     expect(Layers.draw).toHaveBeenCalledWith("legend");
+    vi.clearAllMocks();
     run("burgIcons.burgIcons.groups.town.attrs.fill", "#ffffff");
-    expect(Layers.draw).toHaveBeenCalledWith("burgIcons");
+    expect(Styles.writeAttr).toHaveBeenCalledWith(["burgIcons", "burgIcons", "groups", "town", "attrs", "fill"]);
+    expect(Layers.draw).not.toHaveBeenCalled();
   });
 });

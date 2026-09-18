@@ -234,10 +234,7 @@ describe("SchemaForm layout metas", () => {
       opacity: z.number().min(0).max(1),
       fill: z.string().register(layoutMeta, { control: "color", group: "Fill", label: "Color" }),
       "font-size": z.string().register(layoutMeta, { control: "percent", range: [1, 40] }),
-      "letter-spacing": z.number().register(layoutMeta, {
-        range: [-10, 10],
-        fit: { to: "font-size", range: size => [-size / 4, size], step: size => size / 100 }
-      }),
+      "letter-spacing": z.number().register(layoutMeta, { range: [-10, 10] }),
       style: z.string().register(layoutMeta, { control: "labelStyle" })
     }),
     options: z.strictObject({
@@ -309,15 +306,10 @@ describe("SchemaForm layout metas", () => {
     expect(onChange).toHaveBeenLastCalledWith(["options", "size"], "12px");
   });
 
-  test("a fitted slider follows its sibling, live, and stays wide enough for its value", () => {
+  test("a slider stays wide enough for a stored value beyond its range", () => {
     const { form } = mountLayout();
     const spacing = field(form, "attrs.letter-spacing").querySelector<HTMLInputElement>("input[type=range]")!;
-    expect([spacing.min, spacing.max, spacing.step]).toEqual(["-5.5", "30", "0.22"]); // 30 is beyond the fit
-
-    const size = field(form, "attrs.font-size").querySelector<HTMLInputElement>("input[type=number]")!;
-    size.value = "4";
-    fire(size, "input");
-    expect([spacing.min, spacing.max, spacing.step]).toEqual(["-1", "30", "0.04"]);
+    expect([spacing.min, spacing.max]).toEqual(["-10", "30"]);
   });
 
   test("a composite control's rows stand in place of the field's row", () => {

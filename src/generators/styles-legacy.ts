@@ -26,10 +26,9 @@ const SELECTOR_ALIASES: Record<string, string> = {
 const PRESET_ROUTES: Record<string, PresetRoute> = {
   "#map": { path: ["map"], drop: ["background-color", "data-filter"] }, // the filter attr carries the pick
   "#armies": { path: ["military"], options: { "box-size": "boxSize" }, drop: ["font-size"] }, // sized from the box
-  "#biomes": { path: ["biomes"] },
-  "#cells": { path: ["cells"] },
+  "#biomes": { path: ["biomes"], drop: ["mask"] },
+  "#cells": { path: ["cells"], rename: { opacity: "stroke-opacity" } },
   "#gridOverlay": { path: ["grid"], options: { type: "type", scale: "scale", dx: "dx", dy: "dy" } },
-  // #coordinates' font-size is the zoom-derived render value; data-size is the base
   "#coordinates": { path: ["coordinates"], rename: { "data-size": "font-size" }, drop: ["font-size"] },
   "#compass": { path: ["compass"], drop: ["shape-rendering"] },
   "#compass > use": { path: ["compass", "compassRose"] },
@@ -40,8 +39,8 @@ const PRESET_ROUTES: Record<string, PresetRoute> = {
   "#frozen": { path: ["lakes", "groups", "frozen"] },
   "#lava": { path: ["lakes", "groups", "lava"] },
   "#dry": { path: ["lakes", "groups", "dry"] },
-  "#sea_island": { path: ["coastline", "sea_island"], drop: ["auto-filter"] },
-  "#lake_island": { path: ["coastline", "lake_island"] },
+  "#sea_island": { path: ["coastline", "sea_island"], drop: ["auto-filter", "stroke-dasharray", "stroke-linecap"] },
+  "#lake_island": { path: ["coastline", "lake_island"], drop: ["stroke-dasharray", "stroke-linecap"] },
   "#terrs > #landHeights": {
     path: ["heightmap", "landHeights"],
     options: {
@@ -96,7 +95,8 @@ const PRESET_ROUTES: Record<string, PresetRoute> = {
   "#markets": {
     path: ["markets"],
     options: { "data-size": "size", "font-size": "iconSize", "data-icon": "icon" },
-    strings: ["icon"]
+    strings: ["icon"],
+    drop: ["opacity", "fill"]
   },
   "#tradeAnimation": { path: ["trade"] },
   "#markers": { path: ["markers"], drop: ["rescale"] }, // markers are sized in em: they follow the zoom as text does
@@ -679,9 +679,11 @@ export function labelGroupFromLegacy(legacy: unknown): StylesData["labels"]["gro
       fill: strOr(bag.fill, "#3e3e4b"),
       "fill-opacity": numOr(bag["fill-opacity"], null),
       stroke: strOr(bag.stroke, "#3a3a3a"),
+      "stroke-opacity": numOr(bag["stroke-opacity"], null),
       "stroke-width": numOr(bag["stroke-width"], 0) ?? 0,
       "stroke-dasharray": strOr(bag["stroke-dasharray"], null),
       "stroke-linecap": oneOf(bag["stroke-linecap"], LINECAPS),
+      "stroke-linejoin": oneOf(bag["stroke-linejoin"], LINEJOINS),
       "letter-spacing": numOr(bag["letter-spacing"], 0),
       "font-size": strOr(bag["data-size"], null) ?? strOr(bag["font-size"], "18%") ?? "18%",
       "font-family": strOr(bag["font-family"], "Almendra SC") ?? "Almendra SC",
@@ -716,10 +718,11 @@ export function burgGroupFromLegacy(legacy: unknown): StylesData["burgIcons"]["b
       fill: strOr(bag.fill, null),
       "fill-opacity": numOr(bag["fill-opacity"], null),
       stroke: strOr(bag.stroke, null),
+      "stroke-opacity": numOr(bag["stroke-opacity"], null),
       "stroke-width": numOr(bag["stroke-width"], null),
       "stroke-dasharray": strOr(bag["stroke-dasharray"], null),
       "stroke-linecap": oneOf(bag["stroke-linecap"], LINECAPS),
-      "stroke-linejoin": oneOf(bag["stroke-linejoin"], ["miter", "round", "bevel"]),
+      "stroke-linejoin": oneOf(bag["stroke-linejoin"], LINEJOINS),
       filter: strOr(bag.filter, null)
     },
     options: {
@@ -743,9 +746,11 @@ function routeGroupFromLegacy(legacy: object): StylesData["routes"]["groups"][st
     attrs: {
       opacity: numOr(bag.opacity, null),
       stroke: strOr(bag.stroke, null),
+      "stroke-opacity": numOr(bag["stroke-opacity"], null),
       "stroke-width": numOr(bag["stroke-width"], null),
       "stroke-dasharray": strOr(bag["stroke-dasharray"], null),
       "stroke-linecap": oneOf(bag["stroke-linecap"], LINECAPS),
+      "stroke-linejoin": oneOf(bag["stroke-linejoin"], LINEJOINS),
       filter: strOr(bag.filter, null),
       mask: oneOf(bag.mask, ["url(#land)", "url(#water)"])
     }
@@ -791,6 +796,7 @@ function strOr(value: unknown, fallback: string | null): string | null {
 }
 
 const LINECAPS = ["butt", "round", "square"] as const;
+const LINEJOINS = ["miter", "round", "bevel"] as const;
 
 // a legacy value outside the fixed list ("inherit", a stray weight) means "not set"
 function oneOf<T extends string | number>(value: unknown, allowed: readonly T[]): T | null {

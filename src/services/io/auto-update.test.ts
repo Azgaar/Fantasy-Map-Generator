@@ -21,7 +21,7 @@ beforeEach(() => {
 });
 
 vi.mock("@/services/style-presets", () => ({
-  StylePresets: { load: async () => ({ name: "default", styles: {} }) }
+  StylePresetsService: { load: async () => ({ name: "default", styles: {} }) }
 }));
 
 it.each([18, 180])("keeps legacy custom labels after saving and reloading a font size of %s", async fontSize => {
@@ -447,6 +447,21 @@ describe("v1.153.0 empty burg style groups", () => {
     await resolveVersionConflicts("1.152.0", data);
 
     expect(Styles.parse(JSON.parse(data[48])).burgIcons).toEqual(Styles.defaults.burgIcons);
+  });
+});
+
+describe("v1.154.0 style record normalization", () => {
+  it("restores the anchor icon on port groups that carry the burg default", async () => {
+    const record = Styles.parse(Styles.defaults);
+    record.burgIcons.anchors.groups.town.options = { size: 2, icon: "#icon-circle" };
+    record.burgIcons.burgIcons.groups.town.options.icon = "#icon-circle";
+    const data: string[] = [];
+    data[48] = JSON.stringify(record);
+
+    await resolveVersionConflicts("1.153.0", data);
+    const parsed = Styles.parse(JSON.parse(data[48]));
+    expect(parsed.burgIcons.anchors.groups.town.options).toEqual({ size: 2, icon: "#icon-anchor" });
+    expect(parsed.burgIcons.burgIcons.groups.town.options.icon).toBe("#icon-circle");
   });
 });
 

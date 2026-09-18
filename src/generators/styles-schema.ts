@@ -382,7 +382,7 @@ export const stylesSchema = z.strictObject({
       "stroke-width": strokeWidth,
       "stroke-dasharray": strokeDasharray,
       "stroke-linecap": strokeLinecap,
-      "font-size": fontSizePx,
+      "font-size": variant(fontSizePx, { effect: "draw" }), // the renderer derives the drawn size from it
       filter,
       mask: clip
     })
@@ -649,8 +649,8 @@ export const stylesSchema = z.strictObject({
       options: z.strictObject({
         barSize: number({ label: "Bar size", range: [0.5, 5], step: 0.1, tip: "Set bar size" }),
         label: text({ tip: "Type scale bar label, leave blank to hide label" }),
-        x: number({ group: "Positon", range: [0, 100], step: 0.1, tip: "Scale bar right edge, in percents" }),
-        y: number({ group: "Positon", range: [0, 100], step: 0.1, tip: "Scale bar bottom edge, in percents" })
+        x: number({ group: "Position", range: [0, 100], step: 0.1, tip: "Scale bar right edge, in percents" }),
+        y: number({ group: "Position", range: [0, 100], step: 0.1, tip: "Scale bar bottom edge, in percents" })
       }),
       back: meta(
         z.strictObject({

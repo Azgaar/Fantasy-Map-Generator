@@ -1,6 +1,6 @@
 // A form built from a zod object schema
 import type { z } from "zod";
-import type { FieldMeta, Fit, StandardControl } from "@/types/styles";
+import type { FieldMeta, StandardControl } from "@/types/styles";
 
 export type FieldSpec = {
   path: string[]; // from the schema root passed in, e.g. ["attrs", "fill"]
@@ -35,7 +35,6 @@ type Ctx = Required<Omit<RenderOptions, "controls" | "rootTitle">> & {
   controls: Record<string, ControlFactory | undefined>;
   root: HTMLElement;
   rootBody?: () => HTMLElement; // where a root-level row goes when the root is titled
-  fitted: { field: HTMLElement; source: string; fit: Fit }[]; // the rows to refit when their source changes
 };
 
 const GATE_OFF = new Set<unknown>([false, "off", "none"]);
@@ -196,13 +195,8 @@ function render(schema: z.ZodObject, value: object, options: RenderOptions): HTM
     meta: options.meta,
     controls: { ...STANDARD_CONTROLS, ...options.controls },
     flatten: options.flatten ?? defaultFlatten,
-    onChange: (path, value) => {
-      options.onChange(path, value);
-      const source = path.join(".");
-      for (const entry of ctx.fitted) if (entry.source === source) refit(entry.field, entry.fit, value);
-    },
-    root: document.createElement("div"),
-    fitted: []
+    onChange: options.onChange,
+    root: document.createElement("div")
   };
   const root = document.createElement("div");
   root.className = "schema-form";
@@ -261,41 +255,19 @@ function renderInto(
     }
     if (meta.hidden) continue;
     const target = container === ctx.root && ctx.rootBody ? ctx.rootBody() : container;
-    const spec = fieldSpec(key, child, ctx.meta, childPath);
-    if (meta.fit) Object.assign(spec, fitted(meta.fit, getPath(value, [meta.fit.to])));
-    const field = place(target, spec, getPath(value, [key]), ctx);
-    if (meta.fit) ctx.fitted.push({ field, source: [...path, meta.fit.to].join("."), fit: meta.fit });
+    place(target, fieldSpec(key, child, ctx.meta, childPath), getPath(value, [key]), ctx);
   }
 }
 
-const fitted = (fit: Fit, source: unknown): Pick<FieldSpec, "min" | "max" | "step"> => {
-  const n = Number.parseFloat(String(source ?? ""));
-  if (!Number.isFinite(n)) return {};
-  const [min, max] = fit.range(n);
-  return fit.step ? { min, max, step: fit.step(n) } : { min, max };
-};
-
-function refit(field: HTMLElement, fit: Fit, source: unknown): void {
-  const slider = field.querySelector("slider-input");
-  const { min, max, step } = fitted(fit, source);
-  if (!slider || min === undefined || max === undefined) return;
-  const current = Number((slider as HTMLElement & { value: string }).value) || 0;
-  slider.setAttribute("min", String(Math.min(min, current)));
-  slider.setAttribute("max", String(Math.max(max, current)));
-  if (step !== undefined) slider.setAttribute("step", String(step));
-}
-
 // a field's row goes under its group's caption: the run of consecutive fields sharing the group
-function place(container: HTMLElement, spec: FieldSpec, value: unknown, ctx: Ctx): HTMLElement {
+function place(container: HTMLElement, spec: FieldSpec, value: unknown, ctx: Ctx): void {
   let target = container;
   if (spec.group) {
     const last = container.lastElementChild as HTMLElement | null;
     target = last?.classList.contains("group") && last.dataset.group === spec.group ? last : group(spec.group);
     if (target !== last) container.append(target);
   }
-  const field = renderRow(spec, value, ctx);
-  target.append(field);
-  return field;
+  target.append(renderRow(spec, value, ctx));
 }
 
 function group(name: string): HTMLElement {

@@ -50,12 +50,14 @@ describe("StylePresets.load", () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     expect(await StylePresetsService.load(`${CUSTOM_PREFIX}gone`)).toEqual({
       name: "default",
-      styles: Styles.defaults
+      styles: Styles.defaults,
+      error: `Custom style ${CUSTOM_PREFIX}gone is not found in localStorage`
     });
     StylePresetsService.saveCustom(`${CUSTOM_PREFIX}broken`, "{not json");
     expect(await StylePresetsService.load(`${CUSTOM_PREFIX}broken`)).toEqual({
       name: "default",
-      styles: Styles.defaults
+      styles: Styles.defaults,
+      error: `Custom style ${CUSTOM_PREFIX}broken stored in localStorage is not valid`
     });
     expect(error).toHaveBeenCalledTimes(2);
     error.mockRestore();
@@ -66,14 +68,14 @@ describe("custom presets", () => {
   test("save, list, display and remove", () => {
     const name = `${CUSTOM_PREFIX}mine`;
     StylePresetsService.saveCustom(name, "{}");
-    localStorage.setItem("styleOld", "{}"); // a pre-prefix custom preset
+    localStorage.setItem("fmgStyle_old", "{}"); // the pre-1.154 prefix
     localStorage.setItem("unrelated", "1");
-    expect(StylePresetsService.listCustom().sort()).toEqual([name, "styleOld"]);
+    expect(StylePresetsService.listCustom().sort()).toEqual([name, "fmgStyle_old"]);
     expect(StylePresetsService.displayName(name)).toBe("mine [custom]");
-    expect(StylePresetsService.displayName("styleOld")).toBe("Old");
+    expect(StylePresetsService.displayName("fmgStyle_old")).toBe("old [custom]");
     expect(StylePresetsService.displayName("ink")).toBe("ink");
     StylePresetsService.removeCustom(name);
-    expect(StylePresetsService.listCustom()).toEqual(["styleOld"]);
+    expect(StylePresetsService.listCustom()).toEqual(["fmgStyle_old"]);
   });
 
   test("isSystem knows the shipped names", () => {

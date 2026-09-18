@@ -32,7 +32,7 @@ describe("attr formats", () => {
     [
       "filter",
       ["none", "url(#paper)", "sepia(0.6)", "blur(3px)", "hue-rotate(24deg) saturate(1.15) brightness(0.9)"],
-      ["", "foo", "url(paper)", "url(#a) url(#b)"]
+      ["", "foo", "url(paper)", "url(#a) url(#b)", "nonenone", "url(#a)url(#b)", "sepia(0.6) none", "blur(3px) "]
     ],
     ["blurFilter", ["blur(5px)", "blur(0.5px)"], ["", "blur(5)", "url(#blur5)", "blur(5px) "]],
     ["mask", ["url(#land)", "url(#vignette-mask)"], ["", "land", "url(#a) url(#b)"]],
@@ -89,7 +89,7 @@ describe("normalizeStyles", () => {
   test('"" and "inherit" become null where they meant "not set", other strings are trimmed', () => {
     const doc = structuredClone(Styles.defaults) as any;
     doc.biomes.attrs.filter = "";
-    doc.biomes.attrs.mask = " url(#land) ";
+    doc.cells.attrs.mask = " url(#land) ";
     doc.zones.attrs["stroke-linecap"] = "inherit";
     doc.zones.attrs["stroke-dasharray"] = "";
     doc.scaleBar.options.label = "";
@@ -97,7 +97,7 @@ describe("normalizeStyles", () => {
     const normalized = normalizeStyles(doc);
     expect(normalized).toBe(doc);
     expect(doc.biomes.attrs.filter).toBeNull();
-    expect(doc.biomes.attrs.mask).toBe("url(#land)");
+    expect(doc.cells.attrs.mask).toBe("url(#land)");
     expect(doc.zones.attrs["stroke-linecap"]).toBeNull();
     expect(doc.zones.attrs["stroke-dasharray"]).toBeNull();
     expect(doc.scaleBar.options.label).toBe("");
@@ -388,14 +388,6 @@ describe("per-attribute repair", () => {
 });
 
 describe("port icon styles", () => {
-  test("older anchor groups keep the anchor appearance and gain no shift", () => {
-    const legacy = Styles.parse(Styles.defaults);
-    legacy.burgIcons.anchors.groups.town.options = { size: 2, icon: "#icon-circle" };
-    const parsed = Styles.parse(legacy);
-    expect(parsed.burgIcons.anchors.groups.town.options).toEqual({ size: 2, icon: "#icon-anchor" });
-    expect(parsed.burgIcons.burgIcons.groups.town.options.icon).toBe("#icon-circle");
-  });
-
   test("Cinderwood port settings survive saving and loading for every burg group", () => {
     const parsed = Styles.parse(cinderwood);
     const restored = Styles.parse(JSON.parse(JSON.stringify(parsed)));

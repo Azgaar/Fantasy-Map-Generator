@@ -1973,10 +1973,15 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
   }
 
   if (isOlderThan("1.154.0")) {
-    // v1.154.0 pinned the string attr formats ("" and "inherit" used to stand for "not set") and folded
-    // the fields that mirrored an attr into the attr
+    // v1.154.0 pinned the string attr formats and folded the fields that mirrored an attr into the attr
     const record = data[48] ? safeParseJSON(data[48]) : undefined;
-    if (record) data[48] = JSON.stringify(normalizeStyles(record));
+    if (record) {
+      // anchors ignored their icon before ports became stylable, so older records carry the burg default
+      for (const group of Object.values(record.burgIcons?.anchors?.groups ?? {}) as { options?: { icon?: string } }[]) {
+        if (group?.options?.icon === "#icon-circle") group.options.icon = "#icon-anchor";
+      }
+      data[48] = JSON.stringify(normalizeStyles(record));
+    }
     // the ocean pattern tile lives in its layer now, and an id clash would shadow it
     for (const tile of document.querySelectorAll("pattern#oceanic")) if (!tile.closest("#oceanPattern")) tile.remove();
     document.getElementById("labels")?.removeAttribute("font-size"); // the viewbox carries the base the groups size from

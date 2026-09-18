@@ -11,7 +11,6 @@
   },
   "#anchors": {},
   "#biomes": {
-    "mask": "url(#land)",
     "style": "display: none;"
   },
   "#borders": {
@@ -51,7 +50,6 @@
   "#compass": {
     "opacity": "0.8",
     "mask": "url(#water)",
-    "shape-rendering": "optimizespeed",
     "style": "display: none;"
   },
   "#coordinates": {
@@ -59,6 +57,7 @@
     "stroke": "#d4d4d4",
     "stroke-width": "1",
     "stroke-dasharray": "5",
+    "font-size": "12px",
     "style": "display: none;"
   },
   "#cults": {
@@ -106,7 +105,7 @@
     "opacity": "0.9",
     "fill": "#f1f8fe",
     "stroke": "#e8f0f6",
-    "stroke-width": "0.5",
+    "stroke-width": "0",
     "filter": "url(#dropShadow01)"
   },
   "#labels": {},
@@ -157,16 +156,16 @@
     "stroke-width": "2.5",
     "stroke-dasharray": "0 4 10 4",
     "stroke-linecap": "round",
+    "font-size": "13px",
     "font-family": "Almendra SC"
   },
   "#markers": {
     "style": "display: none;"
   },
   "#markets": {
-    "opacity": "1",
     "fill-opacity": "0.03",
     "stroke-width": "1",
-    "stroke-opacity": "0.8",
+    "stroke-opacity": "0.9",
     "style": "display: none;"
   },
   "#oceanLayers": {},
@@ -250,12 +249,13 @@
   "#ruler": {
     "stroke-width": "2",
     "stroke-dasharray": "10",
+    "font-size": "20px",
     "style": "display: none;"
   },
   "#scaleBar": {
     "opacity": "1",
     "fill": "#353540",
-    "font-size": "10"
+    "font-size": "10px"
   },
   "#scaleBarBack": {
     "opacity": "0.2",

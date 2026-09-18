@@ -84,7 +84,7 @@ describe("styles schema metadata", () => {
       nullAs: 0
     });
     expect(byPath["heightmap.landHeights.options.skip"].spec.label).toBe("Reduce layers");
-    expect(byPath["heightmap.landHeights.options.relax"].spec.label).toBe("Simplify line");
+    expect(byPath["heightmap.landHeights.options.relax"].spec.label).toBe("Simplify");
   });
 
   test("no label needs a second line: the column holds 13 characters", () => {
