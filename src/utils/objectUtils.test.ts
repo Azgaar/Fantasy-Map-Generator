@@ -1,5 +1,25 @@
 import { describe, expect, it } from "vitest";
-import { deepMerge } from "./objectUtils";
+import { deepMerge, getPath } from "./objectUtils";
+
+describe("getPath", () => {
+  const record = { labels: { groups: { capital: { attrs: { fill: "#fff" } } } } };
+
+  it("walks nested objects by key", () => {
+    expect(getPath(record, ["labels", "groups", "capital", "attrs", "fill"])).toBe("#fff");
+  });
+
+  it("returns undefined as soon as a step is missing", () => {
+    expect(getPath(record, ["labels", "groups", "missing", "attrs"])).toBeUndefined();
+  });
+
+  it("does not walk into a primitive", () => {
+    expect(getPath(record, ["labels", "groups", "capital", "attrs", "fill", "more"])).toBeUndefined();
+  });
+
+  it("returns the root itself for an empty path", () => {
+    expect(getPath(record, [])).toBe(record);
+  });
+});
 
 describe("deepMerge", () => {
   it("merges nested objects key by key, keeping what the source does not carry", () => {

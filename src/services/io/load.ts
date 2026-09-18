@@ -386,6 +386,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
 
     const styleRecord = data[48] ? safeParseJSON(data[48]) : undefined; // data[48] should be already migrated by auto-update
     Styles.set(Styles.parse(styleRecord));
+    await Controllers.StylePresetsEditor.ensureGroupStyles();
 
     if (data[50]) Layers.restore(JSON.parse(data[50]));
     if (data[51]) GraphOverride.restore(JSON.parse(data[51]));
@@ -664,7 +665,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     }
 
     Layers.drawAll();
-    Styles.write(...(Object.keys(styles) as (keyof typeof styles)[]));
+    Styles.writeAll();
     applyVignetteOptions(); // the vignette mask is renderer-owned; its applier shapes it from the store
     applyPerformanceSettings(); // the file's SVG carries the attributes of the browser that saved it
     applyDefaultViewboxEvents();

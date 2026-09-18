@@ -15,14 +15,14 @@ import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { burgIcon, burgIconPreview } from "@/data/burg-icons";
 import { TEXTURES } from "@/data/textures";
+import { FORMATS } from "@/generators/styles-formats";
 import { drawHeights } from "@/renderers/draw-heightmap";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
 import { getLabelsIndex } from "@/renderers/labels/label-data";
 import { addGoogleFont, addLocalFont, addWebFont } from "@/services/fonts";
 import type { StandardControl, StyleControl } from "@/types/styles";
 import { ensureEl, findEl, rn, toHEX } from "@/utils";
-import { BURG_ICON_DIALOG, openBurgIconDialog, paintBurgIconDialog } from "./burg-icon-dialog";
-import { FONT_DIALOG, openFontDialog } from "./font-dialog";
+import { BURG_ICON_DIALOG, FONT_DIALOG, openBurgIconDialog, openFontDialog, paintBurgIconDialog } from "./dialogs";
 
 const OPEN_DIALOGS = ["addFontDialog", "textureUrlDialog", "heightmapSchemeDialog", BURG_ICON_DIALOG, FONT_DIALOG];
 
@@ -176,16 +176,29 @@ function openAddFontDialog(onAdded: (family: string) => void): void {
   });
 }
 
-const parseBlur = (value: unknown): number =>
-  Number.parseFloat(String(value ?? "").match(/blur\(([^)]+)\)/)?.[1] ?? "") || 0;
-
 // blur(Npx), null at 0
 const blur: ControlFactory = (spec, value, set) => {
-  const slider = STANDARD_CONTROLS.slider!({ ...spec, step: spec.step ?? 0.1, nullAs: 0 }, parseBlur(value), next => {
+  const current = Number.parseFloat(String(value ?? "").match(/blur\(([^)]+)\)/)?.[1] ?? "") || 0;
+  const slider = STANDARD_CONTROLS.slider!({ ...spec, step: spec.step ?? 0.1, nullAs: 0 }, current, next => {
     const px = Number(next);
     set(px > 0 ? `blur(${px}px)` : unsetValue(spec));
   });
   return inline(slider, "px");
+};
+
+// a dash array the schema pins the format of, so a half-typed value never reaches the store
+const dash: ControlFactory = (spec, value, set) => {
+  const input = el("input", {
+    type: "text",
+    value: value == null || value === "none" ? "" : String(value),
+    placeholder: "none"
+  });
+  input.addEventListener("input", () => {
+    const next = input.value.trim();
+    if (!next || next === "none") set(unsetValue(spec));
+    else if (FORMATS.strokeDasharray.test(next)) set(next);
+  });
+  return input;
 };
 
 const withTip = <T extends HTMLElement>(node: T, tip: string): T => {
@@ -215,7 +228,7 @@ const transform: ControlFactory = (spec, value, set) => {
 type LabelStyle = { shadow: string; transform: string; dx: number; dy: number; rest: string[] };
 
 /** The label cssText split into the parts the control edits and the declarations it keeps as they are */
-export function parseLabelStyle(style: unknown): LabelStyle {
+function parseLabelStyle(style: unknown): LabelStyle {
   const parsed: LabelStyle = { shadow: "", transform: "", dx: 0, dy: 0, rest: [] };
   for (const declaration of String(style ?? "").split(";")) {
     const [property, ...valueParts] = declaration.split(":");
@@ -232,7 +245,7 @@ export function parseLabelStyle(style: unknown): LabelStyle {
   return parsed;
 }
 
-export function composeLabelStyle({ shadow, transform, dx, dy, rest }: LabelStyle): string | null {
+function composeLabelStyle({ shadow, transform, dx, dy, rest }: LabelStyle): string | null {
   const declarations = [
     ...rest,
     shadow && `text-shadow: ${shadow}`,
@@ -525,6 +538,7 @@ export const CUSTOM_CONTROLS: Record<Exclude<StyleControl, StandardControl>, Con
   filter,
   font,
   blur,
+  dash,
   transform,
   labelStyle,
   scheme,

@@ -27,6 +27,7 @@ export type StyleControl =
   | "filter"
   | "font"
   | "blur"
+  | "dash"
   | "transform"
   | "labelStyle"
   | "scheme"

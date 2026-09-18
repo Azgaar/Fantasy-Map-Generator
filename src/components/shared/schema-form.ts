@@ -1,6 +1,7 @@
 // A form built from a zod object schema
 import type { z } from "zod";
 import type { FieldMeta, StandardControl } from "@/types/styles";
+import { getPath } from "@/utils/objectUtils";
 
 export type FieldSpec = {
   path: string[]; // from the schema root passed in, e.g. ["attrs", "fill"]
@@ -166,9 +167,6 @@ function walk(schema: z.ZodObject, meta: Meta, options: { records?: boolean } = 
   visit(schema, []);
   return out;
 }
-
-const getPath = (value: unknown, path: string[]): unknown =>
-  path.reduce<unknown>((node, key) => (node == null ? undefined : (node as Record<string, unknown>)[key]), value);
 
 const STYLE = /* css */ `
   .schema-form .row { display: flex; align-items: center; gap: .3em; line-height: 1.5; }
@@ -511,17 +509,28 @@ const text: ControlFactory = (spec, value, set) => {
   return el;
 };
 
-/** "#abc" → "#aabbcc": the color input only takes 6-digit hex */
+/** "#abc" → "#aabbcc": the swatch only takes 6-digit hex */
 export function toColorInput(value: unknown): string {
   if (typeof value !== "string") return "#000000";
-  const hex = value.trim();
-  if (/^#[0-9a-f]{3}$/i.test(hex)) return `#${[...hex.slice(1)].map(c => c + c).join("")}`;
-  if (/^#[0-9a-f]{6}/i.test(hex)) return hex.slice(0, 7).toLowerCase();
+  const hex = value.trim().replace(/^#/, "").toLowerCase();
+  if (/^[0-9a-f]{3}$/.test(hex)) return `#${[...hex].map(c => c + c).join("")}`;
+  if (/^[0-9a-f]{4}$/.test(hex)) return `#${[...hex.slice(0, 3)].map(c => c + c).join("")}`;
+  if (/^[0-9a-f]{6}$/.test(hex) || /^[0-9a-f]{8}$/.test(hex)) return `#${hex.slice(0, 6)}`;
   return "#000000";
 }
 
-// the swatch and an editable hex beside it: a valid #rrggbb typed in writes and syncs the swatch, anything else reverts
+/** The alpha suffix a stored 4/8-digit color carries, so the swatch can put it back */
+function alphaOf(value: unknown): string {
+  const hex = typeof value === "string" ? value.trim() : "";
+  if (/^#[0-9a-f]{8}$/i.test(hex)) return hex.slice(7).toLowerCase();
+  if (/^#[0-9a-f]{4}$/i.test(hex)) return hex.slice(4).toLowerCase().repeat(2);
+  return "";
+}
+
+// the swatch and an editable hex beside it: a valid #rrggbb typed in writes and syncs the swatch, anything
+// else reverts; the swatch keeps the alpha suffix of a stored 4/8-digit color, which it cannot show
 const color: ControlFactory = (_spec, value, set) => {
+  const alpha = alphaOf(value);
   const input = document.createElement("input");
   input.type = "color";
   input.value = toColorInput(value);
@@ -532,8 +541,9 @@ const color: ControlFactory = (_spec, value, set) => {
   hex.spellcheck = false;
   hex.value = typeof value === "string" ? value : "";
   input.addEventListener("input", () => {
-    hex.value = input.value;
-    set(input.value);
+    const next = input.value + alpha;
+    hex.value = next;
+    set(next);
   });
   hex.addEventListener("change", () => {
     const next = hex.value.trim().toLowerCase();

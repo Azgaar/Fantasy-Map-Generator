@@ -2,9 +2,10 @@
 import "./styles";
 import type { z } from "zod";
 import { Layers } from "@/components/layers";
-import { FONT_WEIGHTS } from "@/data/style-choices";
+import { FONT_STYLES, FONT_WEIGHTS, LINECAPS, LINEJOINS } from "@/data/style-choices";
 import type { StylesData } from "@/types/styles";
 import { safeParseJSON } from "@/utils";
+import { getPath } from "@/utils/objectUtils";
 import { stylesSchema } from "./styles-schema";
 
 // selector -> store path, plus the legacy-key -> option-name renames for that node.
@@ -719,12 +720,12 @@ export function labelGroupFromLegacy(legacy: unknown): StylesData["labels"]["gro
       "stroke-opacity": numOr(bag["stroke-opacity"], null),
       "stroke-width": numOr(bag["stroke-width"], 0) ?? 0,
       "stroke-dasharray": strOr(bag["stroke-dasharray"], null),
-      "stroke-linecap": oneOf(bag["stroke-linecap"], LINECAPS),
-      "stroke-linejoin": oneOf(bag["stroke-linejoin"], LINEJOINS),
+      "stroke-linecap": oneOf(bag["stroke-linecap"], LINECAP_VALUES),
+      "stroke-linejoin": oneOf(bag["stroke-linejoin"], LINEJOIN_VALUES),
       "letter-spacing": numOr(bag["letter-spacing"], 0),
       "font-size": strOr(bag["data-size"], null) ?? strOr(bag["font-size"], "18%") ?? "18%",
       "font-family": strOr(bag["font-family"], "Almendra SC") ?? "Almendra SC",
-      "font-style": oneOf(bag["font-style"], ["italic", "oblique"]),
+      "font-style": oneOf(bag["font-style"], FONT_STYLE_VALUES),
       "font-weight": oneOf(numOr(bag["font-weight"], null), FONT_WEIGHTS),
       style: labelStyleFromLegacy(bag),
       filter: strOr(bag.filter, null)
@@ -758,8 +759,8 @@ export function burgGroupFromLegacy(legacy: unknown): StylesData["burgIcons"]["b
       "stroke-opacity": numOr(bag["stroke-opacity"], null),
       "stroke-width": numOr(bag["stroke-width"], null),
       "stroke-dasharray": strOr(bag["stroke-dasharray"], null),
-      "stroke-linecap": oneOf(bag["stroke-linecap"], LINECAPS),
-      "stroke-linejoin": oneOf(bag["stroke-linejoin"], LINEJOINS),
+      "stroke-linecap": oneOf(bag["stroke-linecap"], LINECAP_VALUES),
+      "stroke-linejoin": oneOf(bag["stroke-linejoin"], LINEJOIN_VALUES),
       filter: strOr(bag.filter, null)
     },
     options: {
@@ -786,8 +787,8 @@ function routeGroupFromLegacy(legacy: object): StylesData["routes"]["groups"][st
       "stroke-opacity": numOr(bag["stroke-opacity"], null),
       "stroke-width": numOr(bag["stroke-width"], null),
       "stroke-dasharray": strOr(bag["stroke-dasharray"], null),
-      "stroke-linecap": oneOf(bag["stroke-linecap"], LINECAPS),
-      "stroke-linejoin": oneOf(bag["stroke-linejoin"], LINEJOINS),
+      "stroke-linecap": oneOf(bag["stroke-linecap"], LINECAP_VALUES),
+      "stroke-linejoin": oneOf(bag["stroke-linejoin"], LINEJOIN_VALUES),
       filter: strOr(bag.filter, null),
       mask: oneOf(bag.mask, ["url(#land)", "url(#water)"])
     }
@@ -835,16 +836,17 @@ function strOr(value: unknown, fallback: string | null): string | null {
   return value === undefined || value === "" ? fallback : value === null ? null : String(value);
 }
 
-const LINECAPS = ["butt", "round", "square"] as const;
-const LINEJOINS = ["miter", "round", "bevel"] as const;
+type Linecap = keyof typeof LINECAPS;
+type Linejoin = keyof typeof LINEJOINS;
+type FontStyle = keyof typeof FONT_STYLES;
+
+const LINECAP_VALUES = Object.keys(LINECAPS) as Linecap[];
+const LINEJOIN_VALUES = Object.keys(LINEJOINS) as Linejoin[];
+const FONT_STYLE_VALUES = Object.keys(FONT_STYLES) as FontStyle[];
 
 // a legacy value outside the fixed list ("inherit", a stray weight) means "not set"
 function oneOf<T extends string | number>(value: unknown, allowed: readonly T[]): T | null {
   return allowed.includes(value as T) ? (value as T) : null;
-}
-
-function getPath(obj: unknown, path: string[]): unknown {
-  return path.reduce<unknown>((o, k) => (o == null ? undefined : (o as Record<string, unknown>)[k]), obj);
 }
 
 function coerce(v: unknown): unknown {

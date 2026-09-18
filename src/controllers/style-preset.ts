@@ -60,12 +60,9 @@ function applyPreset(presetJson: unknown): void {
 
   const previousReliefSize = styles.relief.options.size;
   Styles.set(parsed);
-  fillMissingLabelGroups();
-  Burgs.ensureBurgGroupStyles();
-  Routes.ensureRouteGroupStyles();
-  Lakes.ensureLakeGroupStyles();
+  ensureGroupStyles();
 
-  Styles.write(...(Object.keys(styles) as (keyof typeof styles)[]));
+  Styles.writeAll();
   // the defs resources are renderer-owned; their appliers shape them from the store
   applyVignetteOptions();
 
@@ -86,6 +83,14 @@ function fillMissingLabelGroups(): void {
     const defaultGroupStyle = styles.labels.groups[Labels.getFallbackGroup(group.type).name];
     if (defaultGroupStyle) styles.labels.groups[group.name] = structuredClone(defaultGroupStyle);
   }
+}
+
+/** Give every group the map knows a store entry: a preset and an opened map both go through here */
+export function ensureGroupStyles(): void {
+  fillMissingLabelGroups();
+  Burgs.ensureBurgGroupStyles();
+  Routes.ensureRouteGroupStyles();
+  Lakes.ensureLakeGroupStyles();
 }
 
 // the preset by name; when it is gone or broken, the default with a tip saying so
@@ -263,4 +268,13 @@ function remove(): void {
   });
 }
 
-export const StylePreset = { init, applyOnLoad, applyPreset, requestChange, change, openSaver, remove };
+export const StylePreset = {
+  init,
+  applyOnLoad,
+  applyPreset,
+  ensureGroupStyles,
+  requestChange,
+  change,
+  openSaver,
+  remove
+};

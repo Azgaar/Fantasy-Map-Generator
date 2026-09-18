@@ -11,6 +11,7 @@ const CUSTOM: Exclude<StyleControl, StandardControl>[] = [
   "filter",
   "font",
   "blur",
+  "dash",
   "transform",
   "labelStyle",
   "scheme",
@@ -42,6 +43,7 @@ describe("styles schema metadata", () => {
     expect(byPath["rivers.attrs.opacity"].spec).toMatchObject({ kind: "slider", min: 0, max: 1, nullAs: 1 });
     expect(byPath["zones.attrs.stroke-width"].spec).toMatchObject({ kind: "slider", min: 0, max: 10, nullAs: 0 });
     expect(byPath["zones.attrs.filter"].spec.kind).toBe("filter");
+    expect(byPath["zones.attrs.stroke-dasharray"].spec.kind).toBe("dash");
     expect(byPath["zones.attrs.mask"].spec).toMatchObject({ kind: "select", label: "Clip" });
     expect(byPath["fogging.attrs.mask"].hidden).toBe(true);
     expect(byPath["temperature.attrs.font-size"].spec).toMatchObject({ kind: "px", min: 1, max: 40 });

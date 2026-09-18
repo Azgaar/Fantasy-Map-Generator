@@ -1,5 +1,15 @@
 // Working with plain objects: the merge every restore path goes through
 
+/** The value at a path, or undefined as soon as a step is missing or is not an object */
+export function getPath(root: unknown, path: readonly string[]): unknown {
+  let node = root;
+  for (const key of path) {
+    if (typeof node !== "object" || node === null) return undefined;
+    node = (node as Record<string, unknown>)[key];
+  }
+  return node;
+}
+
 /** A `{}` literal or a null-prototype object - not an array, a Date or a class instance */
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return false;

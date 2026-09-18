@@ -89,6 +89,20 @@ describe("SchemaForm.render", () => {
     expect(hex.value).toBe("#abcdef");
   });
 
+  test("the swatch keeps the alpha of a stored 8-digit color it cannot show", () => {
+    const onChange = vi.fn();
+    const record = value();
+    record.attrs.fill = "#ff000080";
+    const form = SchemaForm.render(schema, record, { meta, onChange });
+    document.body.append(form);
+    const swatch = field(form, "attrs.fill").querySelector<HTMLInputElement>("input[type=color]")!;
+    expect(swatch.value).toBe("#ff0000");
+
+    swatch.value = "#00ff00";
+    fire(swatch, "input");
+    expect(onChange).toHaveBeenLastCalledWith(["attrs", "fill"], "#00ff0080");
+  });
+
   test("attrs and options are flattened, other objects are subsections", () => {
     const { form } = mount();
     expect(form.querySelector('[data-section="attrs"]')).toBeNull();

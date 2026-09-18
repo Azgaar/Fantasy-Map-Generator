@@ -4,9 +4,7 @@
 import { parsePreset } from "@/controllers/style-preset";
 import { StylePresetsService } from "@/services/style-presets";
 import type { PathSelection, StylesData } from "@/types/styles";
-
-const getPath = (root: unknown, path: string[]): unknown =>
-  path.reduce<unknown>((node, key) => (node == null ? undefined : (node as Record<string, unknown>)[key]), root);
+import { getPath } from "@/utils/objectUtils";
 
 /** The store path of a form field: the composed burgIcons form addresses two records, every other
  * relative path hangs off the selection's node */

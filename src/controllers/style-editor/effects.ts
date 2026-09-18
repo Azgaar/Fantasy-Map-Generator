@@ -8,37 +8,13 @@ import { applyVignetteOptions } from "@/renderers/draw-vignette";
 import type { ReliefSet } from "@/types/relief";
 import type { StyleChange, StyleEffect } from "@/types/styles";
 
-type Run = (change: StyleChange) => void;
-
-const num = (value: unknown): number => (typeof value === "number" ? value : Number(value) || 0);
-
-const write: Run = ({ path }) => Styles.writeAttr(path);
-
-const draw: Run = change => {
-  if (change.path.includes("attrs")) write(change);
-  if (change.sel.layer) Layers.draw(change.sel.layer);
+const writeAttr = (change: StyleChange): void => {
+  if (change.path.includes("attrs")) Styles.writeAttr(change.path);
 };
 
-const EFFECTS: Record<StyleEffect, Run> = {
-  write,
-  draw,
-  zoom: change => {
-    if (change.path.includes("attrs")) write(change);
-    invokeActiveZooming();
-  },
-  applyVignette: () => applyVignetteOptions(),
-  changeReliefSet: change => {
-    Relief.changeSet(change.value as ReliefSet);
-    draw(change);
-  },
-  resizeRelief: change => {
-    if (num(change.previous)) Relief.changeSize(num(change.value) / num(change.previous));
-    draw(change);
-  },
-  regenerateRelief: change => {
-    Relief.generate();
-    draw(change);
-  }
+const redraw = (change: StyleChange): void => {
+  writeAttr(change);
+  if (change.sel.layer) Layers.draw(change.sel.layer);
 };
 
 /** The effect declared nearest to a store path, else the store convention: attrs write, options draw */
@@ -47,4 +23,35 @@ export function effectAt(path: string[]): StyleEffect {
   return declared?.effect ?? (path.includes("attrs") ? "write" : "draw");
 }
 
-export const runEffect = (change: StyleChange): void => EFFECTS[effectAt(change.path)](change);
+/** Run what a change declares, or what the store convention gives it */
+export function runEffect(change: StyleChange): void {
+  switch (effectAt(change.path)) {
+    case "write":
+      Styles.writeAttr(change.path);
+      return;
+    case "draw":
+      redraw(change);
+      return;
+    case "zoom":
+      writeAttr(change);
+      invokeActiveZooming();
+      return;
+    case "applyVignette":
+      applyVignetteOptions();
+      return;
+    case "changeReliefSet":
+      Relief.changeSet(change.value as ReliefSet);
+      redraw(change);
+      return;
+    case "resizeRelief": {
+      const previous = Number(change.previous) || 0;
+      if (previous) Relief.changeSize((Number(change.value) || 0) / previous);
+      redraw(change);
+      return;
+    }
+    case "regenerateRelief":
+      Relief.generate();
+      redraw(change);
+      return;
+  }
+}

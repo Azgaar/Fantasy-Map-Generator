@@ -233,13 +233,15 @@ stylesSchema + styleMeta  ──►  SchemaForm.render(schema, node, …)  ─�
 `src/components/options/tabs/style-tab.ts` injects the static part into the Options panel: the
 preset row (select, `+`, `−`, gallery button), the element select with the elements-dialog button,
 the group select, and an empty `#styleForm`. No rows, no state. Selecting the tab calls
-`StyleEditor.open()`; other editors call `open(element, group)` (legacy ids such as `regions` or
-`terrs` are aliased to store keys), which glows the selects for a moment.
+`StyleEditor.open()`; other editors call `open(element, group)`. An editor may still name an element
+by its svg group id (`regions`, `terrs`, `goodsIcons`); the editor derives the store key from the
+layers registry, where a layer's own id, its element id and its declared children all address the
+same style element, so there is no alias table to keep in step.
 
 ### Selection speaks the store
 
 The element select lists `Object.keys(stylesSchema.shape)` by their layer label. An element with a
-`groups` record shows the group select, filled by `GROUP_SOURCES` (`groups.ts`) — each entry with a
+`groups` record shows the group select, filled by `GROUP_SOURCES` (`dialogs.ts`) — each entry with a
 count of the things using it (labels per group, burgs and ports, routes, lakes). Named subgroups are
 not a selection: they render inline as collapsible cards under the element's own rows, so an
 element is seen whole. `burgIcons` composes its two records so one group select serves both: the
@@ -274,17 +276,17 @@ The standard controls are checkbox, select, slider (`<slider-input>`), number, t
 
 `style-editor/controls.ts` adds the controls that need map knowledge or a format, each owning its
 option source and any dialog it opens: `filter` (the map's `<defs>` filters), `font` (loaded
-families plus the add-font dialog), `blur`, `transform` (the compass placement as three sliders),
-`labelStyle` (shadow, letter case and shift as four rows), `scheme` (heightmap colour schemes plus a
-gradient builder), `texture` (bundled textures plus a URL dialog), `icon` (the burg / port icon
-picker) and `emoji` (markets, through the icon selector). A composed control parses the stored
-string into parts and calls `set` with the whole string back. `close` destroys whatever dialogs they
-opened.
+families plus the add-font dialog), `blur`, `dash` (a dash array the schema format is checked
+against), `transform` (the compass placement as three sliders), `labelStyle` (shadow, letter case and
+shift as four rows), `scheme` (heightmap colour schemes plus a gradient builder), `texture` (bundled
+textures plus a URL dialog), `icon` (the burg / port icon picker) and `emoji` (markets, through the
+icon selector). A composed control parses the stored string into parts and calls `set` with the whole
+string back. `close` destroys whatever dialogs they opened.
 
 ### Effects
 
 What happens after the store is written is declared in the schema as `effect` (`StyleEffect`, a
-closed set of names) and run by `style-editor/effects.ts`, a dictionary of name → function.
+closed set of names) and run by `style-editor/effects.ts`.
 `effectAt(path)` takes the effect declared nearest to the store path — on the field, else on a node
 above it — and falls back to the store convention:
 
@@ -302,13 +304,17 @@ on an attr the zoom derives from (the halo width): written, then the zoom re-run
 The current preset (`options.map.style.preset`, loaded through `StylePresetsService` and cached) is the
 **baseline** the form is compared with (`baseline.ts`). A field is _changed_ when the preset defines
 the path and its value differs; a path the preset never had (a label group added later) is never
-marked. `decorate.ts` marks changed rows with an accent and a per-field reset button (a reset writes
-the preset value through the normal change path, so its effect runs), gives each card header a
-preview built from its own rows (a font sample, a fill swatch, a stroke line, a filter name), and
-remembers which cards the user folded for the session. Edits update the marks in place; nothing
-re-renders. There is no whole-element reset — selecting the preset again is that.
+marked. The `FormDecoration` class in `style-editor/index.ts` marks changed rows with an accent and a
+per-field reset button (a reset writes the preset value through the normal change path, so its effect
+runs), gives each card header a preview built from its own rows (a font sample, a fill swatch, a
+stroke line, a filter name), and remembers which cards the user folded for the session. Edits update
+the marks in place; nothing re-renders. There is no whole-element reset — selecting the preset again
+is that.
 
 ### Dialogs
+
+`style-editor/dialogs.ts` holds the panels the tab opens, alongside the element and group listings
+they share with the editor:
 
 - **Elements dialog** — every element in the select's order with a visibility dot (a click toggles
   the layer), grouped elements expandable to their groups with counts, and a filter box.

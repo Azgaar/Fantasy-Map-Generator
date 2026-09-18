@@ -33,6 +33,11 @@ function write(...ids: StyleElement[]): void {
   }
 }
 
+/** Write every element, the preset-apply and load path */
+function writeAll(): void {
+  write(...(Object.keys(styles) as StyleElement[]));
+}
+
 function apply(...ids: StyleElement[]): void {
   write(...ids);
   Layers.draw(...ids.filter((id): id is StyleElement & LayerId => id !== "map"));
@@ -42,19 +47,29 @@ function apply(...ids: StyleElement[]): void {
 function writeAttr(path: string[]): void {
   const [id, ...rest] = path;
   const name = rest.at(-1);
-  let el: Element | null = document.querySelector(`[data-layer="${id}"]`);
+  const keys = rest.slice(0, -1); // the attrs bag with the groups above it
+  let element = document.querySelector(`[data-layer="${id}"]`);
   let node: unknown = styles[id as StyleElement];
-  for (const key of rest.slice(0, -1)) {
+
+  for (const [index, key] of keys.entries()) {
     node = node == null ? undefined : (node as Record<string, unknown>)[key];
-    if (key === "attrs") break;
-    if (key === "groups") continue; // the record itself has no element: its entries do
-    el = el?.querySelector(`[data-group="${CSS.escape(key)}"]`) ?? null;
+    const isAttrsBag = index === keys.length - 1;
+    // the attrs bag and a groups record address no element of their own; every group name does
+    if (isAttrsBag || (key === "groups" && isGroupsRecord(node))) continue;
+    element = element?.querySelector(`[data-group="${CSS.escape(key)}"]`) ?? null;
   }
-  if (!el || !name) return;
+
+  if (!element || !name) return;
   const value = node == null ? undefined : (node as Record<string, unknown>)[name];
-  if (value === null || value === undefined) el.removeAttribute(name);
-  else el.setAttribute(name, String(value));
+  if (value === null || value === undefined) element.removeAttribute(name);
+  else element.setAttribute(name, String(value));
 }
+
+/** A `groups` record maps names to group nodes; every group shape carries an attrs bag */
+const isGroupsRecord = (value: unknown): boolean =>
+  typeof value === "object" && value !== null && Object.values(value as object).every(isGroupNode);
+
+const isGroupNode = (value: unknown): boolean => typeof value === "object" && value !== null && "attrs" in value;
 
 function writeNode(el: Element, node: object): void {
   for (const [key, value] of Object.entries(node)) {
@@ -81,7 +96,7 @@ type DeepReadonly<T> = T extends (...args: never[]) => unknown
     ? { readonly [K in keyof T]: DeepReadonly<T[K]> }
     : T;
 
-export const Styles = { defaults: DEFAULT_STYLES, parse, set, write, writeAttr, apply };
+export const Styles = { defaults: DEFAULT_STYLES, parse, set, write, writeAll, writeAttr, apply };
 
 type StylesApi = typeof Styles;
 

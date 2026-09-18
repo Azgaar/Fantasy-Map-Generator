@@ -1,4 +1,4 @@
-// The shape of the styles record: one entry per style element (a layer, or `map`), each a tree of
+// The shape of the styles record: one entry per style element, each a tree of
 //   attrs — SVG attributes, written to the element as they are; `null` means "attribute not set"
 //   options — renderer inputs, never written to the DOM
 //   groups — a record of user-named entries (label groups, lake types, …) sharing one shape
@@ -62,6 +62,7 @@ const strokeWidth = meta(z.number().min(0), {
 }).nullable();
 
 const strokeDasharray = meta(z.string().regex(FORMATS.strokeDasharray), {
+  control: "dash",
   label: "Dash array",
   tip: "Set stroke dash array, e.g. 5 2"
 })
@@ -309,16 +310,9 @@ const burgGroup = z.strictObject({
   })
 });
 
-const anchorGroup = z.strictObject({
-  attrs: z.strictObject({
-    opacity,
-    ...fillGroup,
-    ...strokeGroup,
-    filter
-  }),
-  options: z.strictObject({
-    size: number({ label: "Icon size", range: [0.01, 100], step: 0.01, tip: "Set icon size" }),
-    icon: text({ control: "icon", tip: "Select icon" }),
+// a port group takes the burg group and adds the shift of its own
+const anchorGroup = burgGroup.extend({
+  options: burgGroup.shape.options.extend({
     dx: meta(z.number().optional(), {
       label: "Shift x",
       range: [-5, 5],

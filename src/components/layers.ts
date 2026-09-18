@@ -21,7 +21,7 @@ import { drawMeasurers } from "@/renderers/draw-measurers";
 import { drawMilitary } from "@/renderers/draw-military";
 import { drawOcean, removeOcean } from "@/renderers/draw-ocean";
 import { drawPopulation } from "@/renderers/draw-population";
-import { drawPrecipitation, removePrecipitation } from "@/renderers/draw-precipitation";
+import { drawPrecipitation } from "@/renderers/draw-precipitation";
 import { drawProvinces } from "@/renderers/draw-provinces";
 import { drawRelief, removeRelief } from "@/renderers/draw-relief-icons";
 import { drawReligions } from "@/renderers/draw-religions";
@@ -361,13 +361,7 @@ const mapLayers = [
     draw: () => TradeAnimation.start(),
     erase: () => TradeAnimation.stop()
   }),
-  new Layer({
-    id: "precipitation",
-    element: "prec",
-    parent: "viewbox",
-    draw: drawPrecipitation,
-    erase: removePrecipitation
-  }),
+  new Layer({ id: "precipitation", element: "prec", parent: "viewbox", draw: drawPrecipitation }),
   new Layer({
     id: "population",
     parent: "viewbox",

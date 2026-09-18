@@ -10,112 +10,309 @@ import { VIGNETTE_PRESETS } from "@/data/vignette-presets";
 import { Styles } from "@/generators/styles";
 import { styleMeta, stylesSchema } from "@/generators/styles-schema";
 import { applyVignetteOptions } from "@/renderers/draw-vignette";
-import type { StyleElement, StyleSelection } from "@/types/styles";
+import type { PathSelection, StyleElement, StyleSelection } from "@/types/styles";
 import { ensureEl, findEl } from "@/utils";
 import { Baseline, storePath, storeValue } from "./baseline";
 import { CUSTOM_CONTROLS, destroyControlDialogs, updateGridSizeReadout } from "./controls";
-import { FormDecoration } from "./decorate";
+import {
+  ElementsDialog,
+  elementFor,
+  type GroupEntry,
+  groupEntriesFor,
+  hasGroups,
+  listElements,
+  PresetSelector
+} from "./dialogs";
 import { runEffect } from "./effects";
-import { ElementsDialog } from "./elements-dialog";
-import { GROUP_SOURCES, type GroupEntry, listElements } from "./groups";
-import { PresetSelector } from "./preset-selector";
 
-const ELEMENT_ALIASES: Record<string, StyleElement> = {
-  regions: "states",
-  terrs: "heightmap",
-  cults: "cultures",
-  relig: "religions",
-  provs: "provinces",
-  armies: "military",
-  terrain: "relief",
-  ruler: "rulers",
-  prec: "precipitation",
-  gridOverlay: "grid",
-  goodsIcons: "goods",
-  goodsBurgs: "goods",
-  goodsCells: "goods",
-  anchors: "burgIcons",
-  icons: "burgIcons",
-  tradeAnimation: "trade"
-};
+class StyleEditorController {
+  private wired = false;
+  private glowTimer?: number;
+  private baselineName = "";
+  private current?: Resolved;
+  private decoration?: FormDecoration;
+  private readonly elementsDialog: ElementsDialog;
+  private readonly presetsDialog = new PresetSelector();
 
-const elementSelect = () => ensureEl<HTMLSelectElement>("styleElementSelect");
-const groupSelect = () => ensureEl<HTMLSelectElement>("styleGroupSelect");
-
-let wired = false;
-let glowTimer: number | undefined;
-let baseline: Baseline | undefined; // the current preset, once loaded
-let baselineName = "";
-let decoration: FormDecoration | undefined;
-const elementsDialog = new ElementsDialog(
-  () => ({ element: elementSelect().value as StyleElement, group: groupSelect().value }),
-  open
-);
-const presetsDialog = new PresetSelector();
-
-function wire(): void {
-  if (wired) return;
-  wired = true;
-  elementSelect().replaceChildren(...listElements().map(({ id, label }) => new Option(label, id)));
-  elementSelect().value = "states";
-  elementSelect().addEventListener("change", () => open(elementSelect().value as StyleElement));
-  groupSelect().addEventListener("change", () => render());
-  ensureEl("styleElementTreeButton").addEventListener("click", () => elementsDialog.open());
-  ensureEl("stylePresetGalleryButton").addEventListener("click", () => presetsDialog.open());
-}
-
-// the marks compare with the current preset; until it is loaded the form renders plain, then gets decorated
-function ensureBaseline(): void {
-  const name = options.map.style.preset || "default";
-  if (name === baselineName) return;
-  baselineName = name;
-  baseline = undefined;
-  void Baseline.load(name).then(loaded => {
-    if (baselineName !== name) return;
-    baseline = loaded;
-    decoration?.setBaseline(baseline);
-  });
-}
-
-/** Show the editor for an element (and a group); with no arguments, whatever is selected */
-function open(element?: string, group?: string): void {
-  wire();
-  if (element) {
-    elementSelect().value = ELEMENT_ALIASES[element] ?? element;
-    if (group) groupSelect().replaceChildren(new Option(group, group, true, true));
-    else groupSelect().replaceChildren();
+  constructor() {
+    this.elementsDialog = new ElementsDialog(
+      () => ({ element: this.elementSelect.value as StyleElement, group: this.groupSelect.value }),
+      (element, group) => this.open(element, group)
+    );
   }
-  const wasActive = findEl("styleTab")?.classList.contains("active");
-  openTab("styleTab"); // opens the editor through selectTab when the tab was not active
-  if (wasActive) render();
-  if (element) glow(Boolean(group));
+
+  private get elementSelect(): HTMLSelectElement {
+    return ensureEl("styleElementSelect");
+  }
+
+  private get groupSelect(): HTMLSelectElement {
+    return ensureEl("styleGroupSelect");
+  }
+
+  /** Show the editor for an element (and a group); with no arguments, whatever is selected */
+  open(element?: string, group?: string): void {
+    this.wire();
+    if (element) {
+      this.elementSelect.value = elementFor(element);
+      if (group) this.groupSelect.replaceChildren(new Option(group, group, true, true));
+      else this.groupSelect.replaceChildren();
+    }
+    const wasActive = findEl("styleTab")?.classList.contains("active");
+    openTab("styleTab"); // opens the editor through selectTab when the tab was not active
+    if (wasActive) this.render();
+    if (element) this.glow(Boolean(group));
+  }
+
+  /** Re-render the current selection from the store, e.g. after a preset change */
+  refresh(): void {
+    if (!this.wired || !findEl("styleForm")) return;
+    this.render();
+  }
+
+  /** Empty the form and drop what the controls and the tab opened; called when the tab is left */
+  close(): void {
+    findEl("styleForm")?.replaceChildren();
+    this.decoration?.detach();
+    this.current = undefined;
+    destroyControlDialogs();
+    this.elementsDialog.close();
+    this.presetsDialog.close();
+  }
+
+  private wire(): void {
+    if (this.wired) return;
+    this.wired = true;
+    this.elementSelect.replaceChildren(...listElements().map(({ id, label }) => new Option(label, id)));
+    this.elementSelect.value = "states";
+    this.elementSelect.addEventListener("change", () => this.open(this.elementSelect.value as StyleElement));
+    this.groupSelect.addEventListener("change", () => this.render());
+    ensureEl("styleElementTreeButton").addEventListener("click", () => this.elementsDialog.open());
+    ensureEl("stylePresetGalleryButton").addEventListener("click", () => this.presetsDialog.open());
+  }
+
+  // the marks compare with the current preset; until it is loaded the form renders plain, then gets decorated
+  private ensureBaseline(): void {
+    const name = options.map.style.preset || "default";
+    if (name === this.baselineName) return;
+    this.baselineName = name;
+    this.decoration?.setBaseline(undefined);
+    void Baseline.load(name).then(loaded => {
+      if (this.baselineName !== name) return;
+      this.decoration?.setBaseline(loaded);
+    });
+  }
+
+  private render(): void {
+    this.ensureBaseline();
+    this.renderForm(this.selection());
+    this.elementsDialog.refresh();
+    this.presetsDialog.refresh();
+  }
+
+  // the group list comes first: it settles which store node the form reads
+  private selection(): Resolved {
+    const sel = this.resolve(this.elementSelect.value as StyleElement, this.groupSelect.value);
+    const select = this.groupSelect;
+    const row = select.closest<HTMLElement>(".group-row") ?? select;
+    row.style.display = sel.entries ? "" : "none";
+    select.replaceChildren(
+      ...(sel.entries ?? []).map(
+        entry => new Option(entry.count ? `${entry.label} (${entry.count})` : entry.label, entry.id)
+      )
+    );
+    if (sel.group) select.value = sel.group;
+    return sel;
+  }
+
+  /** The store node, schema and group list a selection addresses; a group that is gone falls back to the first */
+  private resolve(element: StyleElement, wanted?: string): Resolved {
+    const layer = Layers.has(element) ? (element as LayerId) : undefined;
+
+    if (!hasGroups(element)) {
+      return {
+        element,
+        layer,
+        path: [element],
+        schema: stylesSchema.shape[element] as z.ZodObject,
+        value: styles[element]
+      };
+    }
+
+    const entries = groupEntriesFor(element);
+    const group = entries.some(entry => entry.id === wanted) ? wanted! : (entries[0]?.id ?? "");
+
+    if (element === "burgIcons") {
+      // one group select serves both records: the burg icon rows flat, the anchors as a subsection
+      const burgGroup = stylesSchema.shape.burgIcons.shape.burgIcons.shape.groups.valueType;
+      const anchorGroup = stylesSchema.shape.burgIcons.shape.anchors.shape.groups.valueType;
+      const schema = z.strictObject({
+        ...burgGroup.shape,
+        anchors: anchorGroup.register(styleMeta, { label: "Anchors" })
+      });
+      const icons = styles.burgIcons.burgIcons.groups[group];
+      const value = icons ? { ...icons, anchors: styles.burgIcons.anchors.groups[group] } : undefined;
+      return { element, group, layer, path: ["burgIcons", "burgIcons", "groups", group], schema, value, entries };
+    }
+
+    const record = (stylesSchema.shape[element] as z.ZodObject).shape.groups as z.ZodRecord;
+    const schema = record.valueType as z.ZodObject;
+    const value = (styles[element] as { groups: Record<string, object> }).groups[group];
+    return { element, group, layer, path: [element, "groups", group], schema, value, entries };
+  }
+
+  private renderForm(sel: Resolved): void {
+    this.current = sel;
+    const form = ensureEl("styleForm");
+    this.decoration?.detach(); // the rows below are about to be replaced
+    form.replaceChildren();
+    destroyControlDialogs();
+    if (!sel.value) return;
+
+    if (sel.layer && !Layers.isOn(sel.layer)) form.append(this.banner(sel.layer));
+
+    const rootTitle = sel.group ? `${layerLabel(sel.element)}: ${sel.group}` : layerLabel(sel.element);
+    form.append(
+      SchemaForm.render(sel.schema, sel.value, {
+        meta: styleMeta,
+        controls: CUSTOM_CONTROLS,
+        rootTitle,
+        onChange: (relative, value) => this.change(relative, value)
+      })
+    );
+    this.addExtraRows(form, sel);
+
+    // one decoration per editor: the form element outlives every render, so its listeners must not stack
+    this.decoration ??= new FormDecoration(form, (relative, value) => {
+      this.change(relative, value);
+      if (this.current) this.renderForm(this.current);
+    });
+    this.decoration.attach(sel);
+  }
+
+  /** Set one value on the store and run its effect; `relative` is a path below the selection's node */
+  private change(relative: string[], value: unknown): void {
+    const sel = this.current;
+    if (!sel) return;
+    const path = storePath(sel, relative);
+    const node = storeValue(sel, relative.slice(0, -1)) as Record<string, unknown> | undefined;
+    if (!node) return;
+    const key = path.at(-1)!;
+    const previous = node[key];
+    if (value === undefined) delete node[key];
+    else node[key] = value;
+    runEffect({ sel, path, value, previous });
+    if (sel.element === "grid") updateGridSizeReadout();
+  }
+
+  private banner(layer: LayerId): HTMLElement {
+    const banner = document.createElement("div");
+    banner.className = "banner";
+    banner.append(`${layerLabel(layer)} layer is hidden. `);
+    const link = document.createElement("a");
+    link.textContent = "Turn on";
+    link.addEventListener("click", () => {
+      Layers.show(layer);
+      if (this.current) this.renderForm(this.current);
+    });
+    banner.append(link);
+    return banner;
+  }
+
+  /** The body of the card SchemaForm titles by the selection, where the element's own rows live */
+  private rootBody(form: HTMLElement): Element {
+    return form.querySelector('.schema-form > details[data-section=""] > .body') ?? form.querySelector(".schema-form")!;
+  }
+
+  /** A row outside the schema: a label and an empty control slot */
+  private extraRow(label: string, tip: string): HTMLElement {
+    const row = document.createElement("div");
+    row.className = "row";
+    row.dataset.tip = tip;
+    row.innerHTML = /* html */ `<label>${label}</label><div class="ctl"></div>`;
+    return row;
+  }
+
+  /** The styled checkbox with its label, for the app options that sit among the style rows */
+  private appCheckbox(id: string, checked: boolean, onInput: (checked: boolean) => void): DocumentFragment {
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.className = "checkbox";
+    checkbox.id = id;
+    checkbox.checked = checked;
+    const label = document.createElement("label");
+    label.className = "checkbox-label";
+    label.htmlFor = id;
+    checkbox.addEventListener("input", () => onInput(checkbox.checked));
+    const fragment = document.createDocumentFragment();
+    fragment.append(checkbox, label);
+    return fragment;
+  }
+
+  // the rows that are not fields: readouts, preset pickers and the one app option users look for here
+  private addExtraRows(form: HTMLElement, sel: Resolved): void {
+    if (sel.element === "grid") {
+      const row = this.extraRow("Cell size", "Distance between grid cell centers (in map scale)");
+      const output = document.createElement("output");
+      output.id = "styleGridSizeFriendly";
+      const link = document.createElement("a");
+      link.href = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Scale-and-distance#grids";
+      link.target = "_blank";
+      link.innerHTML =
+        '<span data-tip="Open wiki article scale and distance to know about grid scale" class="icon-info-circled pointer"></span>';
+      row.querySelector(".ctl")!.append(output, link);
+      form.querySelector('[data-field="options.scale"]')?.after(row);
+      updateGridSizeReadout();
+    }
+
+    // not a field: assigns a ready-made look into the vignette and asks the editor to re-render
+    if (sel.element === "vignette") {
+      const row = this.extraRow("Preset", "Select a precreated vignette");
+      row.dataset.field = "preset";
+      const select = document.createElement("select");
+      select.append(new Option("Select a preset…", ""), ...Object.keys(VIGNETTE_PRESETS).map(name => new Option(name)));
+      select.addEventListener("change", () => {
+        const preset = VIGNETTE_PRESETS[select.value];
+        if (!preset) return;
+        Object.assign(styles.vignette.attrs, preset.attrs);
+        Object.assign(styles.vignette.options, preset.options);
+        Styles.write("vignette");
+        applyVignetteOptions();
+        this.renderForm(sel);
+      });
+      row.querySelector(".ctl")!.append(select);
+      this.rootBody(form).prepend(row);
+    }
+
+    if (sel.element === "emblems") {
+      const row = this.extraRow(
+        "Show all",
+        "Show emblem groups even if their size is too small or too big at the current scale"
+      );
+      row.dataset.field = "showAll";
+      row.querySelector(".ctl")!.append(
+        this.appCheckbox("showAllEmblems", options.app.emblems.showAll, checked => {
+          Options.set(options => {
+            options.app.emblems.showAll = checked;
+          });
+          invokeActiveZooming();
+        })
+      );
+      this.rootBody(form).append(row);
+    }
+  }
+
+  private glow(withGroup: boolean): void {
+    this.elementSelect.classList.add("glow");
+    this.groupSelect.classList.toggle("glow", withGroup);
+    window.clearTimeout(this.glowTimer);
+    this.glowTimer = window.setTimeout(() => {
+      this.elementSelect.classList.remove("glow");
+      this.groupSelect.classList.remove("glow");
+    }, 1500);
+  }
 }
 
-/** Re-render the current selection from the store, e.g. after a preset change */
-function refresh(): void {
-  if (!wired || !findEl("styleForm")) return;
-  render();
-}
-
-/** Empty the form and drop what the controls and the tab opened; called when the tab is left */
-function close(): void {
-  findEl("styleForm")?.replaceChildren();
-  decoration = undefined;
-  destroyControlDialogs();
-  elementsDialog.close();
-  presetsDialog.close();
-}
-
-function glow(withGroup: boolean): void {
-  elementSelect().classList.add("glow");
-  groupSelect().classList.toggle("glow", withGroup);
-  window.clearTimeout(glowTimer);
-  glowTimer = window.setTimeout(() => {
-    elementSelect().classList.remove("glow");
-    groupSelect().classList.remove("glow");
-  }, 1500);
-}
-
+/** What the editor resolves a selection to: the store node, its schema subtree and the path to it */
 type Resolved = StyleSelection & {
   path: string[];
   schema: z.ZodObject;
@@ -123,189 +320,186 @@ type Resolved = StyleSelection & {
   entries?: GroupEntry[]; // the group list of a grouped element
 };
 
-/** The store node, schema and group list a selection addresses; a group that is gone falls back to the first */
-function resolve(element: StyleElement, wanted?: string): Resolved {
-  const source = element in GROUP_SOURCES ? GROUP_SOURCES[element] : undefined;
-  const layer = Layers.has(element) ? (element as LayerId) : undefined;
+class FormDecoration {
+  private readonly folded = new Map<string, boolean>(); // section open state per element, for the session
+  private cards: HTMLDetailsElement[] = [];
+  private selection?: PathSelection;
+  private baseline?: Baseline;
 
-  if (!source) {
-    return {
-      element,
-      layer,
-      path: [element],
-      schema: stylesSchema.shape[element] as z.ZodObject,
-      value: styles[element]
+  /** `reset` writes a preset value and re-renders the form */
+  constructor(
+    private readonly form: HTMLElement,
+    private readonly reset: (relative: string[], value: unknown) => void
+  ) {
+    // the control has written the store by the time the event bubbles here; a tick later is safe for every widget
+    const onEdit = (event: Event) => {
+      const field = (event.target as Element | null)?.closest<HTMLElement>("[data-field]");
+      if (!field || !form.contains(field)) return;
+      window.setTimeout(() => {
+        this.mark(field);
+        this.updatePreviews();
+      }, 0);
     };
+    form.addEventListener("input", onEdit);
+    form.addEventListener("change", onEdit);
   }
 
-  const entries = source();
-  const group = entries.some(entry => entry.id === wanted) ? wanted! : (entries[0]?.id ?? "");
+  /** Look at the form as freshly rendered for `sel`: restore the folded cards and draw the preset marks */
+  attach(sel: PathSelection): void {
+    this.selection = sel;
+    this.cards = Array.from(this.form.querySelectorAll<HTMLDetailsElement>("details[data-section]"));
+    for (const card of this.cards) {
+      const key = `${sel.element}/${card.dataset.section}`;
+      if (this.folded.has(key)) card.open = this.folded.get(key)!;
+      card.addEventListener("toggle", () => this.folded.set(key, card.open));
+    }
+    for (const field of this.fields) this.addResetButton(field);
+    this.markAll();
+  }
 
-  if (element === "burgIcons") {
-    // one group select serves both records: the burg icon rows flat, the anchors as a subsection
-    const burgGroup = stylesSchema.shape.burgIcons.shape.burgIcons.shape.groups.valueType;
-    const anchorGroup = stylesSchema.shape.burgIcons.shape.anchors.shape.groups.valueType;
-    const schema = z.strictObject({
-      ...burgGroup.shape,
-      anchors: anchorGroup.register(styleMeta, { label: "Anchors" })
+  /** The form is gone; drop what pointed at it */
+  detach(): void {
+    this.cards = [];
+    this.selection = undefined;
+  }
+
+  /** The tab renders before the preset is loaded; once it is, the marks appear */
+  setBaseline(baseline: Baseline | undefined): void {
+    this.baseline = baseline;
+    this.markAll();
+  }
+
+  private get fields(): HTMLElement[] {
+    return Array.from(this.form.querySelectorAll<HTMLElement>("[data-field]"));
+  }
+
+  private relativeOf(field: HTMLElement): string[] {
+    return field.dataset.field!.split(".");
+  }
+
+  private addResetButton(field: HTMLElement): void {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "reset icon-ccw";
+    button.addEventListener("click", event => {
+      event.stopPropagation();
+      const relative = this.relativeOf(field);
+      const diff = this.baseline?.diffAt(this.selection!, relative);
+      if (diff) this.reset(relative, diff.presetValue);
     });
-    const icons = styles.burgIcons.burgIcons.groups[group];
-    const value = icons ? { ...icons, anchors: styles.burgIcons.anchors.groups[group] } : undefined;
-    return { element, group, layer, path: ["burgIcons", "burgIcons", "groups", group], schema, value, entries };
+    // a composite field's rows: the button sits on the first, the others get a blank of the same width
+    // so all the rows' controls line up; a row part or a gate takes it itself
+    const slots = Array.from(field.querySelectorAll<HTMLElement>(":scope > .ctl, :scope > .row > .ctl"));
+    if (!slots.length) {
+      field.append(button);
+      return;
+    }
+    slots[0].append(button);
+    for (const slot of slots.slice(1)) {
+      const blank = button.cloneNode() as HTMLElement;
+      blank.classList.add("blank");
+      slot.append(blank);
+    }
   }
 
-  const record = (stylesSchema.shape[element] as z.ZodObject).shape.groups as z.ZodRecord;
-  const schema = record.valueType as z.ZodObject;
-  const value = (styles[element] as { groups: Record<string, object> }).groups[group];
-  return { element, group, layer, path: [element, "groups", group], schema, value, entries };
-}
-
-// the group list comes first: it settles which store node the form reads
-function selection(): Resolved {
-  const sel = resolve(elementSelect().value as StyleElement, groupSelect().value);
-  const select = groupSelect();
-  const row = select.closest<HTMLElement>(".group-row") ?? select;
-  row.style.display = sel.entries ? "" : "none";
-  select.replaceChildren(...(sel.entries ?? []).map(({ id, label }) => new Option(label, id)));
-  if (sel.group) select.value = sel.group;
-  return sel;
-}
-
-/** Set one value on the store and run its effect; `relative` is a path below the selection's node */
-function change(sel: Resolved, relative: string[], value: unknown): void {
-  const path = storePath(sel, relative);
-  const node = storeValue(sel, relative.slice(0, -1)) as Record<string, unknown> | undefined;
-  const key = path.at(-1)!;
-  if (!node) return;
-  const previous = node[key];
-  if (value === undefined) delete node[key];
-  else node[key] = value;
-  runEffect({ sel, path, value, previous });
-  if (sel.element === "grid") updateGridSizeReadout();
-}
-
-/** Render the selection's form into a container; the standard container is #styleForm */
-function renderForm(form: HTMLElement, sel: Resolved): void {
-  form.replaceChildren();
-  decoration = undefined;
-  destroyControlDialogs();
-  if (!sel.value) return;
-
-  if (sel.layer && !Layers.isOn(sel.layer)) form.append(banner(sel.layer, () => renderForm(form, sel)));
-
-  const onChange = (relative: string[], value: unknown): void => change(sel, relative, value);
-  const rootTitle = sel.group ? `${layerLabel(sel.element)}: ${sel.group}` : layerLabel(sel.element);
-  form.append(
-    SchemaForm.render(sel.schema, sel.value, { meta: styleMeta, controls: CUSTOM_CONTROLS, rootTitle, onChange })
-  );
-  decorate(form, sel);
-
-  decoration = new FormDecoration(form, sel, baseline, (relative, value) => {
-    change(sel, relative, value);
-    renderForm(form, sel);
-  });
-}
-
-function render(): void {
-  ensureBaseline();
-  renderForm(ensureEl("styleForm"), selection());
-  elementsDialog.refresh();
-  presetsDialog.refresh();
-}
-
-function banner(layer: LayerId, rerender: () => void): HTMLElement {
-  const banner = document.createElement("div");
-  banner.className = "banner";
-  banner.append(`${layerLabel(layer)} layer is hidden. `);
-  const link = document.createElement("a");
-  link.textContent = "Turn on";
-  link.addEventListener("click", () => {
-    Layers.show(layer);
-    rerender();
-  });
-  banner.append(link);
-  return banner;
-}
-
-// the rows that are not fields: readouts, preset pickers and the one app option users look for here
-function decorate(form: HTMLElement, sel: Resolved): void {
-  if (sel.element === "grid") {
-    const row = extraRow("Cell size", "Distance between grid cell centers (in map scale)");
-    const output = document.createElement("output");
-    output.id = "styleGridSizeFriendly";
-    const link = document.createElement("a");
-    link.href = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Scale-and-distance#grids";
-    link.target = "_blank";
-    link.innerHTML =
-      '<span data-tip="Open wiki article scale and distance to know about grid scale" class="icon-info-circled pointer"></span>';
-    row.querySelector(".ctl")!.append(output, link);
-    form.querySelector('[data-field="options.scale"]')?.after(row);
-    updateGridSizeReadout();
+  private markAll(): void {
+    for (const field of this.fields) this.mark(field);
+    this.updatePreviews();
   }
 
-  // not a field: assigns a ready-made look into the vignette and asks the editor to re-render
-  if (sel.element === "vignette") {
-    const row = extraRow("Preset", "Select a precreated vignette");
-    row.dataset.field = "preset";
-    const select = document.createElement("select");
-    select.append(new Option("Select a preset…", ""), ...Object.keys(VIGNETTE_PRESETS).map(name => new Option(name)));
-    select.addEventListener("change", () => {
-      const preset = VIGNETTE_PRESETS[select.value];
-      if (!preset) return;
-      Object.assign(styles.vignette.attrs, preset.attrs);
-      Object.assign(styles.vignette.options, preset.options);
-      Styles.write("vignette");
-      applyVignetteOptions();
-      renderForm(form, sel);
-    });
-    row.querySelector(".ctl")!.append(select);
-    rootBody(form).prepend(row);
+  // a changed field shows its reset button; the button's tip names the value it restores
+  private mark(field: HTMLElement): void {
+    if (!this.selection) return;
+    const diff = this.baseline?.diffAt(this.selection, this.relativeOf(field));
+    field.classList.toggle("changed", diff?.changed ?? false);
+    const button = field.querySelector<HTMLElement>(".reset");
+    if (!button || !diff) return;
+    const value = diff.presetValue;
+    const text = value == null ? "unset" : typeof value === "object" ? JSON.stringify(value) : String(value);
+    button.dataset.tip = `Reset to preset value: ${text}`;
   }
 
-  if (sel.element === "emblems") {
-    const row = extraRow(
-      "Show all",
-      "Show emblem groups even if their size is too small or too big at the current scale"
-    );
-    row.dataset.field = "showAll";
-    row.querySelector(".ctl")!.append(
-      appCheckbox("showAllEmblems", options.app.emblems.showAll, checked => {
-        Options.set(options => {
-          options.app.emblems.showAll = checked;
-        });
-        invokeActiveZooming();
-      })
-    );
-    rootBody(form).append(row);
+  private updatePreviews(): void {
+    if (!this.selection) return;
+    for (const card of this.cards) {
+      card.querySelector<HTMLElement>("summary > .preview")!.replaceChildren(...this.preview(card));
+    }
+  }
+
+  // what the card's own rows (not a nested card's) produce, read from the store: a text sample for a font,
+  // else a swatch for a fill and a line for a stroke; the filter's name when one is set
+  private preview(card: HTMLDetailsElement): Element[] {
+    const selection = this.selection!;
+    const values: Record<string, unknown> = {};
+    for (const field of this.fields) {
+      if (field.closest("details[data-section]") !== card) continue;
+      const relative = this.relativeOf(field);
+      values[relative.at(-1)!] = storeValue(selection, relative);
+    }
+    const text = (key: string): string | undefined =>
+      typeof values[key] === "string" ? String(values[key]) : undefined;
+    const number = (key: string, fallback: number): number =>
+      typeof values[key] === "number" ? Number(values[key]) : fallback;
+
+    const font = text("font-family");
+    const fill = text("fill") ?? text("color");
+    const stroke = text("stroke");
+    const filter = text("filter");
+    const preview: Element[] = [];
+
+    if (font) {
+      const sample = document.createElement("span");
+      sample.className = "sample";
+      sample.textContent = "Sample";
+      sample.style.fontFamily = font;
+      sample.style.fontWeight = String(values["font-weight"] ?? "");
+      sample.style.fontStyle = text("font-style") ?? "";
+      sample.style.color = fill ?? "";
+      const strokeWidth = number("stroke-width", 0);
+      if (stroke && strokeWidth > 0) sample.style.webkitTextStroke = `${Math.min(strokeWidth, 1)}px ${stroke}`;
+      preview.push(sample);
+    } else {
+      if (fill) {
+        const swatch = document.createElement("span");
+        swatch.className = "sw";
+        const color = document.createElement("i");
+        color.style.background = fill;
+        color.style.opacity = String(number("fill-opacity", number("opacity", 1)));
+        swatch.append(color);
+        preview.push(swatch);
+      }
+      if (stroke) {
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.setAttribute("class", "ln");
+        svg.setAttribute("width", "60");
+        svg.setAttribute("height", "12");
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line.setAttribute("x1", "0");
+        line.setAttribute("y1", "6");
+        line.setAttribute("x2", "60");
+        line.setAttribute("y2", "6");
+        line.setAttribute("stroke", stroke);
+        line.setAttribute("stroke-width", String(Math.min(number("stroke-width", 1), 6)));
+        line.setAttribute("opacity", String(number("opacity", 1)));
+        const dash = text("stroke-dasharray");
+        if (dash && dash !== "none") line.setAttribute("stroke-dasharray", dash);
+        const linecap = text("stroke-linecap");
+        if (linecap) line.setAttribute("stroke-linecap", linecap);
+        svg.append(line);
+        preview.push(svg);
+      }
+    }
+    if (filter && filter !== "none") {
+      // url(#splotch) → "splotch"; a CSS function list → its function names
+      const name =
+        filter.match(/^url\(#(.+)\)$/)?.[1] ?? Array.from(filter.matchAll(/([a-z-]+)\(/g), m => m[1]).join(", ");
+      const fx = document.createElement("span");
+      fx.className = "fx";
+      fx.textContent = name;
+      preview.push(fx);
+    }
+    return preview;
   }
 }
 
-// the styled checkbox with its label, for the app options that sit among the style rows
-function appCheckbox(id: string, checked: boolean, onInput: (checked: boolean) => void): DocumentFragment {
-  const checkbox = document.createElement("input");
-  checkbox.type = "checkbox";
-  checkbox.className = "checkbox";
-  checkbox.id = id;
-  checkbox.checked = checked;
-  const label = document.createElement("label");
-  label.className = "checkbox-label";
-  label.htmlFor = id;
-  checkbox.addEventListener("input", () => onInput(checkbox.checked));
-  const fragment = document.createDocumentFragment();
-  fragment.append(checkbox, label);
-  return fragment;
-}
-
-// the extra rows sit with the element's own rows, in the card SchemaForm titled by the selection
-const rootBody = (form: HTMLElement): Element =>
-  form.querySelector('.schema-form > details[data-section=""] > .body') ?? form.querySelector(".schema-form")!;
-
-function extraRow(label: string, tip: string): HTMLElement {
-  const row = document.createElement("div");
-  row.className = "row";
-  row.dataset.tip = tip;
-  row.innerHTML = /* html */ `<label>${label}</label><div class="ctl"></div>`;
-  return row;
-}
-
-export const StyleEditor = { open, refresh, close };
+export const StyleEditor = new StyleEditorController();
