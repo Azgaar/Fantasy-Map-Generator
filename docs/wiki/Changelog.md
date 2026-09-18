@@ -12,6 +12,12 @@ Check out [Dev board](https://github.com/users/Azgaar/projects/3/views/1?sumFiel
 
 Current version of the Fantasy Map Generator is the latest `master` branch. You can download it here: https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/heads/master.zip. Also see [the wiki](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#can-i-use-the-generator-offline).
 
+- Style: the Style tab is rebuilt as a schema-driven editor [1.154.0]
+
+# Releases
+
+**[1.153.0](https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/tags/v1.153.0.zip) - 2026-09-16**:
+
 - Omnibar: global map search, press Space to open [1.153.0]
 - Style presets: Ink, Cinderwood and Frostbite [1.153.0]
 - Heightmap: hachures alongside contour lines [1.153.0]
@@ -33,9 +39,7 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Burg icons and anchors: restore missing style groups so edited sizes survive saving and loading
 - Diplomacy: regenerating relations no longer fails when a state has been removed
 
-# Releases
-
-**[1.152.0](https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/tags/v1.152.0.zip) - 2026-09-TBD**:
+**[1.152.0](https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/tags/v1.152.0.zip) - 2026-09-09**:
 
 - Options full rework [1.152.0]
 - Map name and era moved to the Set Lore dialog [1.152.0]

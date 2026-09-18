@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
-vi.mock("../style-preset", () => ({ parsePreset: vi.fn((json: unknown) => json) }));
+vi.mock("@/controllers/style-preset", () => ({ parsePreset: vi.fn((json: unknown) => json) }));
 vi.mock("@/services/style-presets", () => ({
   StylePresetsService: {
     load: vi.fn(),
@@ -8,9 +8,9 @@ vi.mock("@/services/style-presets", () => ({
   }
 }));
 
+import { parsePreset } from "@/controllers/style-preset";
 import { StylePresetsService } from "@/services/style-presets";
 import type { PathSelection } from "@/types/styles";
-import { parsePreset } from "../style-preset";
 import { Baseline, storePath } from "./baseline";
 
 const sel = (element: string, group?: string, path?: string[]): PathSelection =>

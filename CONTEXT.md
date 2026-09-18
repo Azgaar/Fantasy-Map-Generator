@@ -13,7 +13,7 @@
 - `src/generators/`: Generators containing simulation logic (e.g., `heightmap-generator.ts`, `cultures-generator.ts`).
 - `src/controllers/`: The UI layer — editors and tools that mutate state, plus read-only overviews/dialogs that present it.
 - `src/renderers/`: Code responsible for transforming world data into SVG overlays.
-- `src/io/`: Serialization and persistence — save, load, export (legacy `public/modules/io/`).
+- `src/services/io/`: Serialization and persistence — save, load, export.
 - `src/services/`: App-shell & platform lifecycle, unrelated to map state (e.g., PWA installation, auto-update).
 - `src/data/`: Static content / reference data (e.g., supporters list, heightmap templates).
 - `src/types/`: Shared TypeScript interfaces and domain models.

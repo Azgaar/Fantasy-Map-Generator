@@ -215,7 +215,6 @@ const heightOptions = z.strictObject({
   hachures
 });
 const landHeights = z.strictObject({ attrs: z.strictObject({ opacity, filter, mask }), options: heightOptions });
-// the ocean is drawn on request: the flag gates the whole section
 const oceanHeights = meta(
   z.strictObject({
     attrs: landHeights.shape.attrs,

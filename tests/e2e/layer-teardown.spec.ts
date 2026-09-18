@@ -241,15 +241,15 @@ test.describe("layer teardown keeps user data", () => {
     await expect.poll(renderedShield).toBe("swiss");
   });
 
-  // style.js used to call the renderers straight, drawing into layers the user has turned off
+  // the editor used to call the renderers straight, drawing into layers the user has turned off
   test("a style change does not render into a layer that is off", async ({ page }) => {
     expect(await page.evaluate(() => (window as any).Layers.isOn("goods"))).toBe(false);
 
-    await page.evaluate(() => {
-      const input = document.getElementById("styleGoodsSize") as HTMLInputElement;
-      input.value = "2";
-      input.dispatchEvent(new Event("change"));
-    });
+    await page.evaluate(() => (window as any).showOptions());
+    await page.locator("#styleTab").click();
+    await page.locator("#styleElementSelect").selectOption("goods");
+    await page.locator('#styleForm [data-field="goodsIcons.options.size"] input[type=number]').fill("2");
+    await expect.poll(() => page.evaluate(() => (window as any).styles.goods.goodsIcons.options.size)).toBe(2);
 
     expect(await page.locator("#goods > * > *").count()).toBe(0);
   });

@@ -93,7 +93,6 @@ async function main() {
     const query = `seed=${encodeURIComponent(seed)}&width=${MAP_WIDTH}&height=${MAP_HEIGHT}`;
     await page.goto(`${url}${url.includes("?") ? "&" : "?"}${query}`);
     await page.waitForFunction(() => (window.mapHistory?.length ?? 0) > 0, undefined, { timeout: 120000 });
-    await page.evaluate(() => sessionStorage.setItem("styleChangeConfirmed", "true"));
 
     for (const name of presets) {
       const base64 = await thumbnail(page, name);

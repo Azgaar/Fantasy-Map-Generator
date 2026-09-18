@@ -1,5 +1,6 @@
 // Conversions between the legacy `style` object shapes and the styles store
 import "./styles";
+import type { z } from "zod";
 import { Layers } from "@/components/layers";
 import { FONT_WEIGHTS } from "@/data/style-choices";
 import type { StylesData } from "@/types/styles";
@@ -159,8 +160,16 @@ export async function migrateStyles(legacyStyleString: string | undefined): Prom
   return JSON.stringify(styles);
 }
 
+// the shape of the legacy JS `style` object this upgrader absorbs
+type LegacyStyleObj = {
+  labels?: { groups?: Record<string, unknown> };
+  burgIcons?: Record<string, unknown>;
+  anchors?: Record<string, unknown>;
+  relief?: { set?: unknown; size?: unknown; density?: unknown };
+};
+
 function migrateLegacyStyleObj(obj: unknown): void {
-  const legacy = (typeof obj === "object" ? obj : {}) as Record<string, any>;
+  const legacy = (typeof obj === "object" && obj !== null ? obj : {}) as LegacyStyleObj;
   if (legacy.labels?.groups)
     styles.labels.groups = Object.fromEntries(
       Object.entries(legacy.labels.groups).map(([name, group]) => [name, labelGroupFromLegacy(group)])
@@ -324,8 +333,8 @@ export function harvestStylesFromSvg({ hasStyleRecord = false } = {}): void {
   // the layer registry stamps its declared attrs after this runs, so a map predating one
   // harvests it as null; the store keeps the attr until the element itself carries it
   for (const layer of Layers.all) {
-    const node = (harvested as Record<string, any>)[layer.id]?.attrs;
-    const stored = (styles as Record<string, any>)[layer.id]?.attrs;
+    const node = (harvested as unknown as Record<string, { attrs?: Record<string, unknown> }>)[layer.id]?.attrs;
+    const stored = (styles as unknown as Record<string, { attrs?: Record<string, unknown> }>)[layer.id]?.attrs;
     if (!node || !stored) continue;
     const el = document.getElementById(layer.elementId);
     for (const attr of Object.keys(layer.params.attrs ?? {})) {
@@ -357,15 +366,19 @@ function fail(onUnknown: "throw" | "skip", message: string): void {
   else throw new Error(message);
 }
 
+// a node of a preset record: its attrs and options bags, navigated by the route table
+type PresetNode = { attrs?: Record<string, unknown>; options?: Record<string, unknown> };
+
 // overlays a legacy bag onto a node already seeded with its Styles.defaults value: an absent
 // key leaves the default in place (legacy left it alone), an explicit null clears it.
 function applyPresetBag(
-  node: any,
+  node: PresetNode,
   bag: Record<string, unknown>,
   route: PresetRoute,
   selector: string,
   onUnknown: "throw" | "skip"
 ): void {
+  const options = node.options;
   const rest: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(bag)) if (key !== "id" && !route.drop?.includes(key)) rest[key] = value;
   for (const [from, to] of Object.entries(route.rename ?? {})) {
@@ -388,11 +401,12 @@ function applyPresetBag(
       continue;
     }
     seen[optionKey] = value;
-    node.options[optionKey] = route.bools?.includes(optionKey)
-      ? Boolean(Number(value))
-      : route.strings?.includes(optionKey) && value != null
-        ? String(value)
-        : value;
+    if (options)
+      options[optionKey] = route.bools?.includes(optionKey)
+        ? Boolean(Number(value))
+        : route.strings?.includes(optionKey) && value != null
+          ? String(value)
+          : value;
   }
 
   if (node.attrs && route.ownAttrs !== false) {
@@ -451,8 +465,8 @@ function harvestBag(
 ): Record<string, string | number | null> {
   const bag: Record<string, string | number | null> = {};
   for (const attr of attrs) {
-    const inline = (el as HTMLElement).style?.[attr as any];
-    const value = inline ? inline : el.getAttribute(attr);
+    const inline = (el as HTMLElement).style?.[attr as unknown as keyof CSSStyleDeclaration];
+    const value = typeof inline === "string" && inline ? inline : el.getAttribute(attr);
     if (value !== null && value !== undefined) bag[attr] = harvestValue(value);
     else if (nullableAttrs.includes(attr)) bag[attr] = null;
   }
@@ -462,12 +476,13 @@ function harvestBag(
 /** A legacy '#'-keyed preset carries the attr bag directly; a store-format preset (every system
  * preset since v1.150) resolves through the same selector route table the preset upgrader uses */
 export function presetBagFor(
-  preset: Record<string, any>,
+  preset: Record<string, unknown>,
   ...selectors: string[]
 ): Record<string, string | number | null> | undefined {
   for (const selector of selectors) {
     if (!isStoreStyles(preset)) {
-      if (preset[selector]) return preset[selector];
+      const bag = preset[selector];
+      if (bag) return bag as Record<string, string | number | null>;
       continue;
     }
     const route = routeFor(selector);
@@ -553,44 +568,66 @@ const fontSizeWithUnit = (path: string[], value: string): string => {
   return `${size}${path[0] === "labels" && path[1] === "groups" ? "%" : "px"}`;
 };
 
+// a record node walked by key, without committing to the shape a given version wrote
+type ShapeNode = { attrs?: Record<string, unknown>; options?: Record<string, unknown>; [key: string]: unknown };
+
+const asNode = (value: unknown): ShapeNode | undefined =>
+  typeof value === "object" && value !== null ? (value as ShapeNode) : undefined;
+
 // version ? folded the fields that mirrored or duplicated an attr into the attr itself
-function upgradeShape(record: any): void {
+function upgradeShape(record: unknown): void {
+  const root = asNode(record);
+  if (!root) return;
+
   const px = (n: unknown) => (typeof n === "number" ? `${n}px` : n);
-  const attrs = (node: any) => (node.attrs ??= {});
+  const attrs = (node: ShapeNode): Record<string, unknown> => (node.attrs ??= {});
   // an option that became an attr; the options bag goes when nothing is left in it
-  const toAttr = (node: any, option: string, attr: string, map: (v: unknown) => unknown = v => v) => {
-    if (node?.options?.[option] !== undefined) attrs(node)[attr] = map(node.options[option]);
-    delete node?.options?.[option];
-    if (node?.options && !Object.keys(node.options).length) delete node.options;
+  const toAttr = (node: unknown, option: string, attr: string, map: (v: unknown) => unknown = v => v) => {
+    const target = asNode(node);
+    const options = target?.options;
+    if (!target || !options) return;
+    if (options[option] !== undefined) attrs(target)[attr] = map(options[option]);
+    delete options[option];
+    if (!Object.keys(options).length) delete target.options;
   };
-  const rename = (bag: any, from: string, to: string) => {
-    if (bag?.[from] === undefined) return;
-    bag[to] = bag[from];
-    delete bag[from];
+  const rename = (bag: unknown, from: string, to: string) => {
+    const target = asNode(bag);
+    if (!target || target[from] === undefined) return;
+    target[to] = target[from];
+    delete target[from];
   };
 
-  toAttr(record.map, "dataFilter", "filter", picked => (picked ? `url(#filter-${picked})` : null));
-  if (record.ocean?.options && "pattern" in record.ocean.options) {
-    const { pattern, patternOpacity } = record.ocean.options;
-    record.ocean.pattern = { attrs: { href: pattern, opacity: patternOpacity ?? 1 } };
-    delete record.ocean.options.pattern;
-    delete record.ocean.options.patternOpacity;
+  toAttr(root.map, "dataFilter", "filter", picked => (picked ? `url(#filter-${picked})` : null));
+  const ocean = asNode(root.ocean);
+  if (ocean?.options && "pattern" in ocean.options) {
+    const { pattern, patternOpacity } = ocean.options;
+    ocean.pattern = { attrs: { href: pattern, opacity: patternOpacity ?? 1 } };
+    delete ocean.options.pattern;
+    delete ocean.options.patternOpacity;
   }
-  toAttr(record.states?.statesHalo, "width", "stroke-width");
-  delete record.military?.options?.fontSize; // the renderer sizes the font from the box
-  delete record.military?.attrs?.["font-size"];
-  delete record.labels?.attrs; // the viewbox carries the base the groups size from
-  toAttr(record.coordinates, "fontSize", "font-size", px);
-  toAttr(record.rulers, "fontSize", "font-size", px);
-  toAttr(record.legend, "fontSize", "font-size", px);
-  for (const key of ["x", "y"]) delete record.legend?.options?.[key];
-  if (record.scaleBar?.attrs) record.scaleBar.attrs["font-size"] = px(record.scaleBar.attrs["font-size"] ?? 10);
-  rename(record.temperature?.attrs, "opacity", "stroke-opacity");
-  rename(record.markets?.options, "fontSize", "iconSize");
-  delete record.markers?.options;
-  delete record.coastline?.sea_island?.options;
-  delete record.compass?.attrs?.["shape-rendering"];
-  delete record.heightmap?.landHeights?.options?.render;
+  toAttr(asNode(root.states)?.statesHalo, "width", "stroke-width");
+  const military = asNode(root.military);
+  if (military?.options) delete military.options.fontSize; // the renderer sizes the font from the box
+  if (military?.attrs) delete military.attrs["font-size"];
+  const labels = asNode(root.labels);
+  if (labels) delete labels.attrs; // the viewbox carries the base the groups size from
+  toAttr(root.coordinates, "fontSize", "font-size", px);
+  toAttr(root.rulers, "fontSize", "font-size", px);
+  toAttr(root.legend, "fontSize", "font-size", px);
+  const legendOptions = asNode(root.legend)?.options;
+  if (legendOptions) for (const key of ["x", "y"]) delete legendOptions[key];
+  const scaleBar = asNode(root.scaleBar);
+  if (scaleBar?.attrs) scaleBar.attrs["font-size"] = px(scaleBar.attrs["font-size"] ?? 10);
+  rename(asNode(root.temperature)?.attrs, "opacity", "stroke-opacity");
+  rename(asNode(root.markets)?.options, "fontSize", "iconSize");
+  const markers = asNode(root.markers);
+  if (markers) delete markers.options;
+  const seaIsland = asNode(asNode(root.coastline)?.sea_island);
+  if (seaIsland) delete seaIsland.options;
+  const compassAttrs = asNode(root.compass)?.attrs;
+  if (compassAttrs) delete compassAttrs["shape-rendering"];
+  const landHeights = asNode(asNode(root.heightmap)?.landHeights);
+  if (landHeights?.options) delete landHeights.options.render;
 }
 
 /** Rewrite a store-format record in place so it matches the current schema: the shape and the string formats */
@@ -631,7 +668,7 @@ export function presetFromLegacy(
   opts: { onUnknown?: "throw" | "skip" } = {}
 ): StylesData {
   const onUnknown = opts.onUnknown ?? "throw";
-  const built = structuredClone(Styles.defaults) as any;
+  const built = structuredClone(Styles.defaults) as unknown as StylesData;
 
   for (const [rawSelector, bag] of Object.entries(legacy)) {
     const selector = SELECTOR_ALIASES[rawSelector] ?? rawSelector;
@@ -641,7 +678,7 @@ export function presetFromLegacy(
       continue;
     }
     if (route.kind) {
-      const parent = getPath(built, route.path.slice(0, -1));
+      const parent = getPath(built, route.path.slice(0, -1)) as Record<string, unknown> | undefined;
       if (!parent) {
         fail(onUnknown, `unknown legacy selector "${selector}"`);
         continue;
@@ -659,7 +696,7 @@ export function presetFromLegacy(
       parent[route.path.at(-1) as string] = fromLegacy(bag);
       continue;
     }
-    const node = getPath(built, route.path);
+    const node = getPath(built, route.path) as PresetNode | undefined;
     if (!node) {
       fail(onUnknown, `unknown legacy selector "${selector}"`);
       continue;
@@ -775,12 +812,15 @@ export function lakeGroupFromSvg(el: Element, template?: LakeGroupStyle): LakeGr
 
 // the attrs at a store path that accept null, i.e. may be harvested as "attribute not set"
 function nullableAttrsAt(path: string[]): string[] {
-  let node: any = stylesSchema;
-  for (const key of [...path, "attrs"]) node = node?.shape?.[key];
-  const shape = node?.shape;
+  let node: unknown = stylesSchema;
+  for (const key of [...path, "attrs"]) node = asZodObject(node)?.shape?.[key];
+  const shape = asZodObject(node)?.shape;
   if (!shape) return [];
   return Object.keys(shape).filter(attr => shape[attr].safeParse(null).success);
 }
+
+const asZodObject = (value: unknown): { shape?: Record<string, z.ZodType> } | undefined =>
+  typeof value === "object" && value !== null ? (value as { shape?: Record<string, z.ZodType> }) : undefined;
 
 function toNumber(value: unknown, fallback: number): number {
   const n = Number(value);
@@ -803,8 +843,8 @@ function oneOf<T extends string | number>(value: unknown, allowed: readonly T[])
   return allowed.includes(value as T) ? (value as T) : null;
 }
 
-function getPath(obj: any, path: string[]): any {
-  return path.reduce((o, k) => (o == null ? undefined : o[k]), obj);
+function getPath(obj: unknown, path: string[]): unknown {
+  return path.reduce<unknown>((o, k) => (o == null ? undefined : (o as Record<string, unknown>)[k]), obj);
 }
 
 function coerce(v: unknown): unknown {

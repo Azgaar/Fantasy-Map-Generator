@@ -513,7 +513,6 @@ const emoji: ControlFactory = (_spec, value, set) => {
   return button;
 };
 
-// not a field: assigns a ready-made look into the vignette and asks the editor to re-render
 /** The friendly grid size next to the scale input: `scale × 25 × units.scale unit` */
 export function updateGridSizeReadout(): void {
   const output = findEl<HTMLOutputElement>("styleGridSizeFriendly");

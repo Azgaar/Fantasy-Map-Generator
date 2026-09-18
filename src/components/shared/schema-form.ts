@@ -23,6 +23,22 @@ export type ControlFactory = (spec: FieldSpec, value: unknown, set: (value: unkn
 
 type Meta = z.core.$ZodRegistry<FieldMeta<string>>;
 
+// zod keeps a node's internals on `def` and its checks' format on `_zod`; these are the fields read here
+type ZodInternals = {
+  def?: {
+    type?: string;
+    innerType?: z.ZodType;
+    in?: z.ZodType;
+    values?: readonly (string | number)[];
+    valueType?: z.ZodType;
+  };
+  minValue?: unknown;
+  maxValue?: unknown;
+  options?: readonly (string | number)[];
+  _zod?: { bag?: { format?: string } };
+};
+const internals = (schema: z.ZodType): ZodInternals => schema as unknown as ZodInternals;
+
 type RenderOptions = {
   meta: Meta;
   controls?: Record<string, ControlFactory>; // merged over the standard ones
@@ -51,21 +67,22 @@ function unwrap(
   const wrappers: z.ZodType[] = [];
   let nullable = false;
   let optional = false;
-  let node: any = schema;
+  let node: z.ZodType = schema;
   for (;;) {
-    const type = node.def?.type;
+    const def = internals(node).def;
+    const type = def?.type;
     if (type === "nullable") nullable = true;
     else if (type === "optional") optional = true;
     else if (type !== "default" && type !== "pipe") break;
     wrappers.push(node);
-    node = type === "pipe" ? node.def.in : node.def.innerType;
+    node = (type === "pipe" ? def?.in : def?.innerType) as z.ZodType;
   }
   const merged = Object.assign({}, meta.get(node), ...wrappers.reverse().map(wrapper => meta.get(wrapper)));
   return { leaf: node, meta: merged, nullable, optional };
 }
 
-const isObject = (schema: z.ZodType): schema is z.ZodObject => (schema as any).def?.type === "object";
-const isRecord = (schema: z.ZodType): boolean => (schema as any).def?.type === "record";
+const isObject = (schema: z.ZodType): schema is z.ZodObject => internals(schema).def?.type === "object";
+const isRecord = (schema: z.ZodType): boolean => internals(schema).def?.type === "record";
 
 /** Sentence case from a key: "stroke-width" → "Stroke width", "patternOpacity" → "Pattern opacity" */
 export function labelOf(key: string): string {
@@ -78,24 +95,23 @@ export function labelOf(key: string): string {
 
 function fieldSpec(key: string, schema: z.ZodType, meta: Meta, path: string[] = [key]): FieldSpec {
   const { leaf, meta: fieldMeta, nullable, optional } = unwrap(schema, meta);
-  const def: any = (leaf as any).def;
-  const type: string = def?.type;
-  const leafAny = leaf as any;
+  const intern = internals(leaf);
+  const type = intern.def?.type;
 
   const finite = (n: unknown): n is number => typeof n === "number" && Number.isFinite(n);
-  let min = finite(leafAny.minValue) ? leafAny.minValue : undefined;
-  let max = finite(leafAny.maxValue) ? leafAny.maxValue : undefined;
+  let min = finite(intern.minValue) ? intern.minValue : undefined;
+  let max = finite(intern.maxValue) ? intern.maxValue : undefined;
   if (fieldMeta.range) [min, max] = fieldMeta.range;
   const bounded = min !== undefined && max !== undefined;
 
   const options: readonly (string | number)[] | undefined =
-    type === "enum" ? leafAny.options : type === "literal" ? [...def.values] : undefined;
+    type === "enum" ? intern.options : type === "literal" ? [...(intern.def?.values ?? [])] : undefined;
 
   const derived: StandardControl =
     type === "boolean" ? "checkbox" : options ? "select" : type === "number" ? (bounded ? "slider" : "number") : "text";
 
   const valueType = type === "boolean" || type === "number" || type === "string" ? type : "unknown";
-  const isInt = leafAny._zod?.bag?.format === "safeint";
+  const isInt = intern._zod?.bag?.format === "safeint";
   const step =
     fieldMeta.step ?? (type === "number" ? (isInt ? 1 : bounded && max! - min! <= 2 ? 0.01 : 0.1) : undefined);
 
@@ -127,7 +143,7 @@ function walk(schema: z.ZodObject, meta: Meta, options: { records?: boolean } = 
     for (const [key, child] of Object.entries(node.shape as Record<string, z.ZodType>)) {
       const { leaf, meta: childMeta } = unwrap(child, meta);
       if (isRecord(leaf)) {
-        const valueType = unwrapObject((leaf as any).valueType);
+        const valueType = unwrapObject(internals(leaf).def?.valueType);
         if (options.records && valueType) visit(valueType, [...nodePath, key, "*"]);
         continue;
       }
@@ -343,16 +359,18 @@ function metaAlong<M extends FieldMeta<string>>(
   for (const key of path) {
     if (!node) break;
     const { leaf } = unwrap(node, meta);
-    node = isRecord(leaf) ? (leaf as any).valueType : (leaf as z.ZodObject).shape?.[key];
+    node = isRecord(leaf) ? internals(leaf).def?.valueType : (leaf as z.ZodObject).shape?.[key];
     if (node) out.unshift(unwrap(node, meta).meta as M);
   }
   return out;
 }
 
-function unwrapObject(schema: z.ZodType): z.ZodObject | undefined {
-  let node: any = schema;
-  while (node && ["default", "nullable", "optional"].includes(node.def?.type)) node = node.def.innerType;
-  return node?.def?.type === "object" ? node : undefined;
+function unwrapObject(schema: z.ZodType | undefined): z.ZodObject | undefined {
+  let node = schema;
+  while (node && ["default", "nullable", "optional"].includes(internals(node).def?.type ?? "")) {
+    node = internals(node).def?.innerType;
+  }
+  return node && internals(node).def?.type === "object" ? (node as z.ZodObject) : undefined;
 }
 
 // a composite control brings its own rows (see `rows`) and stands in place of the field's row

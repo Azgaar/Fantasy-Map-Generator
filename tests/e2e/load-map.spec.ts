@@ -459,7 +459,7 @@ test.describe("Map loading", () => {
     const migrated = await page.evaluate(() => {
       const labels = options.map.labels;
       return {
-        keys: Object.keys(labels), // resizeOnZoom is a browser performance setting since v1.155.0
+        keys: Object.keys(labels), // resizeOnZoom was retired in v1.154.0: the zoom sizes all text
         showAll: options.app.labels.showAll,
         stateMode: labels.groups.find(group => group.type === "state")?.mode
       };

@@ -243,6 +243,7 @@ function decorate(form: HTMLElement, sel: Resolved): void {
     updateGridSizeReadout();
   }
 
+  // not a field: assigns a ready-made look into the vignette and asks the editor to re-render
   if (sel.element === "vignette") {
     const row = extraRow("Preset", "Select a precreated vignette");
     row.dataset.field = "preset";

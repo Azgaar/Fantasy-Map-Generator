@@ -43,15 +43,15 @@ function writeAttr(path: string[]): void {
   const [id, ...rest] = path;
   const name = rest.at(-1);
   let el: Element | null = document.querySelector(`[data-layer="${id}"]`);
-  let node: any = styles[id as StyleElement];
+  let node: unknown = styles[id as StyleElement];
   for (const key of rest.slice(0, -1)) {
-    node = node?.[key];
+    node = node == null ? undefined : (node as Record<string, unknown>)[key];
     if (key === "attrs") break;
     if (key === "groups") continue; // the record itself has no element: its entries do
     el = el?.querySelector(`[data-group="${CSS.escape(key)}"]`) ?? null;
   }
   if (!el || !name) return;
-  const value = node?.[name];
+  const value = node == null ? undefined : (node as Record<string, unknown>)[name];
   if (value === null || value === undefined) el.removeAttribute(name);
   else el.setAttribute(name, String(value));
 }
@@ -75,7 +75,7 @@ function writeNode(el: Element, node: object): void {
   }
 }
 
-type DeepReadonly<T> = T extends (...args: any[]) => any
+type DeepReadonly<T> = T extends (...args: never[]) => unknown
   ? T
   : T extends object
     ? { readonly [K in keyof T]: DeepReadonly<T[K]> }
