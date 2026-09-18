@@ -16,6 +16,7 @@ export interface Province {
   lock?: boolean;
   center: number;
   burg: number;
+  culture?: number; // official culture; older maps fall back to the center cell
   name: string;
   formName: string;
   fullName: string;
@@ -143,6 +144,7 @@ class ProvinceModule {
         provinces.push({
           i: provinceId,
           state: s.i,
+          culture: c,
           center,
           burg: burg.i!,
           name,
@@ -291,6 +293,7 @@ class ProvinceModule {
         provinces.push({
           i: provinceId,
           state: s.i,
+          culture: c,
           center,
           burg,
           name: name!,

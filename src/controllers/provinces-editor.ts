@@ -18,19 +18,21 @@ import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { Cultures } from "@/generators/cultures-generator";
 import { Emblems } from "@/generators/emblems-generator";
 import type { Province } from "@/generators/provinces-generator";
 import { redrawEmblem, redrawEmblems, removeEmblem } from "@/renderers/draw-emblems";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement, highlightOutline } from "@/renderers/overlays/highlight";
-import { applyOption, downloadFile, getArea, getAreaUnit, getFileName, speak } from "@/utils";
+import { applyOption, downloadFile, escapeHtml, getArea, getAreaUnit, getFileName, speak } from "@/utils";
 import { ensureEl, findEl, getPointer, getRandomColor, isLand, P, rand, rn, si, unique } from "../utils";
 
 const dialogId = "provincesEditor" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 let filterState: { stateId: number };
 
+const getProvinceCulture = (province: Province) => province.culture ?? pack.cells.culture[province.center];
 const getProvinceArea = (province: Province) => getArea(province.area!);
 const getProvincePopulation = (province: Province) =>
   rn(
@@ -61,6 +63,14 @@ const columns: EditorColumn<Province>[] = [
     label: "Capital",
     width: "7em",
     sortBy: province => (province.burg ? pack.burgs[province.burg]?.name || "" : ""),
+    sortType: "alpha"
+  },
+  {
+    key: "culture",
+    label: "Culture",
+    width: "10em",
+    mobileHidden: true,
+    sortBy: province => pack.cultures[getProvinceCulture(province)]?.name || "",
     sortType: "alpha"
   },
   {
@@ -328,6 +338,13 @@ function renderProvincesPage(view: TableView<Province>): void {
         <span data-tip="Province capital. Click to zoom into view" class="icon-star-empty pointer ${p.burg ? "" : "placeholder"}"></span>
         <select data-tip="Province capital. Click to select from burgs within the state. No capital means the province is governed from the state capital" class="cultureBase ${p.burgs!.length ? "" : "placeholder"}">${p.burgs!.length ? getCapitalOptions(p.burgs!, p.burg) : ""}</select>
       </div>
+      <select data-col="culture" class="provinceCulture">${pack.cultures
+        .filter(culture => !culture.removed)
+        .map(
+          culture =>
+            `<option value="${culture.i}" ${culture.i === getProvinceCulture(p) ? "selected" : ""}>${escapeHtml(culture.name)}</option>`
+        )
+        .join("")}</select>
       <input data-col="state" data-tip="Province owner" class="provinceOwner" value="${stateName}" disabled>
       <div data-col="burgs">
         <span data-tip="Click to overview province burgs" class="icon-dot-circled pointer"></span>
@@ -366,6 +383,22 @@ function renderProvincesPage(view: TableView<Province>): void {
   body.querySelectorAll("div.states").forEach(el => {
     el.addEventListener("mouseenter", provinceHighlightOn);
     el.addEventListener("mouseleave", provinceHighlightOff);
+  });
+
+  body.querySelectorAll<HTMLSelectElement>(".provinceCulture").forEach(select => {
+    const showCultureTip = () => {
+      const province = pack.provinces[+select.closest<HTMLElement>(".states")!.dataset.id!];
+      const name = escapeHtml(pack.cultures[getProvinceCulture(province)].name);
+      const breakdown = escapeHtml(Cultures.getPopulationBreakdown("province", province.i));
+      select.dataset.tip = `Official culture: ${name}<br>Culture breakdown: ${breakdown}`;
+      tip(select.dataset.tip);
+    };
+    select.addEventListener("mouseenter", showCultureTip);
+    select.addEventListener("focus", showCultureTip);
+    select.addEventListener("change", () => {
+      pack.provinces[+select.closest<HTMLElement>(".states")!.dataset.id!].culture = +select.value;
+      showCultureTip();
+    });
   });
 
   updateDialog(dialogId, { width: "fit-content", position });
@@ -689,7 +722,7 @@ function editProvinceName(province: number): void {
   applyOption(ensureEl("provinceNameEditorSelectForm"), p.formName);
   ensureEl<HTMLInputElement>("provinceNameEditorFull").value = p.fullName;
 
-  const cultureId = pack.cells.culture[p.center];
+  const cultureId = getProvinceCulture(p);
   ensureEl("provinceCultureDisplay").innerText = pack.cultures[cultureId].name;
 
   $("#provinceNameEditor").dialog({
@@ -800,10 +833,10 @@ function renderNameEditor(): void {
       </div>
       <div
         id="provinceCultureName"
-        data-tip="Dominant culture in the province. This defines culture-based naming. Can be changed via the Cultures Editor"
+        data-tip="Official culture of the province. This defines culture-based naming. Can be changed in the Provinces Editor"
         style="margin-top: 0.2em"
       >
-        Dominant culture:&nbsp;<span id="provinceCultureDisplay"></span>
+        Official culture:&nbsp;<span id="provinceCultureDisplay"></span>
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", nameEditorHtml);
@@ -827,7 +860,7 @@ function closeProvinceNameEditor(): void {
 
 function regenerateShortNameCulture(): void {
   const province = +ensureEl("provinceNameEditor").dataset.province!;
-  const culture = pack.cells.culture[pack.provinces[province].center];
+  const culture = getProvinceCulture(pack.provinces[province]);
   const name = Names.getState(Names.getCultureShort(culture), culture);
   ensureEl<HTMLInputElement>("provinceNameEditorShort").value = name;
 }
@@ -1179,7 +1212,7 @@ function addProvince(this: SVGElement, event: any): void {
   const type = Burgs.getType(center, port);
   const coa = Emblems.generate(parent, kinship, +P(0.1), type);
   coa.shield = Emblems.getShield(c, state);
-  provinces.push({ i: province, state, center, burg, name, formName, fullName, color, coa } as Province);
+  provinces.push({ i: province, state, center, burg, culture: c, name, formName, fullName, color, coa } as Province);
   redrawEmblem("province", province);
 
   cells.province[center] = province;
@@ -1230,11 +1263,12 @@ function recolorProvinces(): void {
 function downloadProvincesData(): void {
   const unit =
     options.map.units.area.unit === "square" ? `${options.map.units.distance.unit}2` : options.map.units.area.unit;
-  let data = `Id,Province,Full Name,Form,State,Color,Capital,Area ${unit},Total Population,Rural Population,Urban Population,Burgs\n`; // headers
+  let data = `Id,Province,Full Name,Form,State,Color,Capital,Culture,Area ${unit},Total Population,Rural Population,Urban Population,Burgs\n`; // headers
 
   for (const province of getProvincesData()) {
     const capital = province.burg ? pack.burgs[province.burg].name : "";
-    data += `${province.i},${province.name},${province.fullName},${province.formName},${pack.states[province.state].name},${province.color},${capital},${getProvinceArea(province)},${getProvincePopulation(province)},${Math.round(province.rural! * options.map.units.population.scale)},${Math.round(province.urban! * options.map.units.population.scale * options.map.units.population.urbanization.rate)},${province.burgs!.length}\n`;
+    const culture = pack.cultures[getProvinceCulture(province)].name;
+    data += `${province.i},${province.name},${province.fullName},${province.formName},${pack.states[province.state].name},${province.color},${capital},${culture},${getProvinceArea(province)},${getProvincePopulation(province)},${Math.round(province.rural! * options.map.units.population.scale)},${Math.round(province.urban! * options.map.units.population.scale * options.map.units.population.urbanization.rate)},${province.burgs!.length}\n`;
   }
 
   const name = `${getFileName("Provinces")}.csv`;

@@ -17,6 +17,7 @@ import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { Cultures } from "@/generators/cultures-generator";
 import { Emblems } from "@/generators/emblems-generator";
 import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
@@ -25,7 +26,7 @@ import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement, highlightOutline } from "@/renderers/overlays/highlight";
-import { applyOption, downloadFile, getArea, getAreaUnit, getFileName, speak } from "@/utils";
+import { applyOption, downloadFile, escapeHtml, getArea, getAreaUnit, getFileName, speak } from "@/utils";
 import {
   ensureEl,
   formatPrice,
@@ -404,9 +405,7 @@ function renderStatesPage(view: TableView<State>): void {
         <span data-tip="State capital. Click to zoom into view" class="icon-star-empty pointer"></span>
         <div data-tip="Capital name" class="stateCapital">${capital}</div>
       </div>
-      <select data-tip="Dominant culture. Click to change" class="stateCulture" data-col="culture">${getCultureOptions(
-        s.culture
-      )}</select>
+      <select class="stateCulture" data-col="culture">${getCultureOptions(s.culture)}</select>
       <div data-col="burgs">
         <span data-tip="Click to overview state burgs" style="padding-right: 1px" class="icon-dot-circled pointer"></span>
         <div data-tip="Burgs count" class="stateBurgs">${s.burgs}</div>
@@ -447,6 +446,11 @@ function renderStatesPage(view: TableView<State>): void {
   });
   body.insertAdjacentHTML("beforeend", lines);
 
+  body.querySelectorAll<HTMLSelectElement>(".stateCulture").forEach(select => {
+    select.addEventListener("mouseenter", () => showStateCultureTip(select));
+    select.addEventListener("focus", () => showStateCultureTip(select));
+  });
+
   // update footer
   ensureEl("statesFooterStates").innerHTML = String(pack.states.filter(s => s.i && !s.removed).length);
   ensureEl("statesFooterBurgs").innerHTML = String(totalBurgs);
@@ -470,6 +474,15 @@ function renderStatesPage(view: TableView<State>): void {
     togglePercentageMode();
   }
   updateDialog(dialogId, { width: "fit-content", position });
+}
+
+function showStateCultureTip(select: HTMLSelectElement): void {
+  const state = pack.states[+select.closest<HTMLElement>(".states")!.dataset.id!];
+  if (!state.i) return;
+  const name = escapeHtml(pack.cultures[state.culture].name);
+  const breakdown = escapeHtml(Cultures.getPopulationBreakdown("state", state.i));
+  select.dataset.tip = `Official culture: ${name}<br>Culture breakdown: ${breakdown}`;
+  tip(select.dataset.tip);
 }
 
 function getCultureOptions(culture: number): string {
@@ -931,6 +944,7 @@ function stateCapitalZoomIn(state: number): void {
 function stateChangeCulture(state: number, line: HTMLElement, value: string): void {
   pack.states[state].culture = +value;
   line.dataset.base = String(+value);
+  showStateCultureTip(line.querySelector<HTMLSelectElement>(".stateCulture")!);
 }
 
 function stateChangeType(state: number, line: HTMLElement, value: string): void {
@@ -1411,6 +1425,7 @@ function adjustProvinces(affectedProvinces: number[]): void {
     provinces.push({
       i: newProvinceId,
       state: stateId,
+      culture,
       center,
       burg: burgId,
       name,

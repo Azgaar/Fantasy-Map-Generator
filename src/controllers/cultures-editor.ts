@@ -727,6 +727,9 @@ function removeCulture(cultureId: number): void {
   states.forEach((s: any) => {
     if (s.culture === cultureId) s.culture = 0;
   });
+  pack.provinces.forEach(province => {
+    if (province.culture === cultureId) province.culture = 0;
+  });
   cells.culture.forEach((c: number, i: number) => {
     if (c === cultureId) cells.culture[i] = 0;
   });

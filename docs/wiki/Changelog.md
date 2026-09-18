@@ -12,6 +12,8 @@ Check out [Dev board](https://github.com/users/Azgaar/projects/3/views/1?sumFiel
 
 Current version of the Fantasy Map Generator is the latest `master` branch. You can download it here: https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/heads/master.zip. Also see [the wiki](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#can-i-use-the-generator-offline).
 
+- States and Provinces editors: official Culture column with population breakdown on hover; province culture column by _[inviktos](https://github.com/inviktos)_.
+
 # Releases
 
 **[1.153.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.153.0) - 2026-09-16**:

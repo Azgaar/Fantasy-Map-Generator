@@ -1,6 +1,18 @@
 import { max, quadtree, range } from "d3";
 import { Emblems } from "@/generators/emblems-generator";
-import { abbreviate, biased, getColors, getRandomColor, minmax, P, rand, rn, rw } from "../utils";
+import {
+  abbreviate,
+  biased,
+  getCellPopulation,
+  getColors,
+  getRandomColor,
+  isLand,
+  minmax,
+  P,
+  rand,
+  rn,
+  rw
+} from "../utils";
 
 /** The named culture sets the user picks from: how many cultures each holds and how often it is rolled */
 export const CULTURE_SETS: Record<string, { name: string; max: number; probability: number }> = {
@@ -49,6 +61,27 @@ export const DEFAULT_CULTURE_TYPE: CultureType = "Generic";
 
 class CulturesGenerator {
   cells: any;
+
+  /** Population composition of one state or province, calculated only when requested. */
+  getPopulationBreakdown(entity: "state" | "province", id: number): string {
+    const { cells, cultures } = pack;
+    const populations = new Map<number, number>();
+    let total = 0;
+    for (const cell of cells.i) {
+      if (cells[entity][cell] !== id || !isLand(cell, pack)) continue;
+      const [rural, urban] = getCellPopulation(cell, pack);
+      const population = rural + urban;
+      if (!population) continue;
+      const culture = cells.culture[cell];
+      populations.set(culture, (populations.get(culture) || 0) + population);
+      total += population;
+    }
+    if (!total) return "No population";
+    return [...populations]
+      .sort(([a, populationA], [b, populationB]) => populationB - populationA || a - b)
+      .map(([culture, population]) => `${cultures[culture].name} ${rn((population / total) * 100, 1)}%`)
+      .join(", ");
+  }
 
   getRandomShield() {
     const type = rw(Emblems.shields.types);
@@ -1354,6 +1387,9 @@ class CulturesGenerator {
 
     pack.states = pack.states.map(state =>
       !state.i || state.removed ? state : { ...state, culture: pack.cells.culture[state.center] }
+    );
+    pack.provinces = pack.provinces.map(province =>
+      !province.i || province.removed ? province : { ...province, culture: pack.cells.culture[province.center] }
     );
     pack.burgs = pack.burgs.map(burg =>
       !burg.i || burg.removed ? burg : { ...burg, culture: pack.cells.culture[burg.cell] }

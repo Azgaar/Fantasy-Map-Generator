@@ -24,6 +24,7 @@ export const VERSION = "1.153.1";
 
 // new changes on top
 const latestPublicChanges = [
+  "Province Culture column and population breakdowns on hover in States and Provinces editors",
   "Global map search (press Space to open)",
   "New style presets: Ink, Cinderwood and Frostbite",
   "Heightmap hachures, coastal bands and shore ripples embellishments",
