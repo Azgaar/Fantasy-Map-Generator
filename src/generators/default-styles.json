@@ -1058,7 +1058,7 @@
   "markets": {
     "attrs": {
       "fill-opacity": 0.03,
-      "stroke-opacity": null,
+      "stroke-opacity": 0.9,
       "stroke-width": 1,
       "stroke-dasharray": null,
       "stroke-linecap": null,
