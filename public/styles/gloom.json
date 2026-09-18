@@ -1057,14 +1057,11 @@
   },
   "markets": {
     "attrs": {
-      "fill": null,
       "fill-opacity": 0,
-      "stroke": null,
       "stroke-opacity": null,
       "stroke-width": 1,
       "stroke-dasharray": null,
       "stroke-linecap": null,
-      "stroke-linejoin": null,
       "filter": null
     },
     "options": {
@@ -1310,8 +1307,8 @@
   "temperature": {
     "attrs": {
       "fill": "#62001b",
-      "font-size": "11px",
       "fill-opacity": 0.3,
+      "font-size": "11px",
       "stroke": null,
       "stroke-opacity": 1,
       "stroke-width": 2,

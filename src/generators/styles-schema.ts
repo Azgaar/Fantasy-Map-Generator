@@ -541,7 +541,14 @@ export const stylesSchema = z.strictObject({
   }),
   markers: z.strictObject({ attrs: z.strictObject({ opacity, filter }) }),
   markets: z.strictObject({
-    attrs: z.strictObject({ ...fillGroup, ...strokeGroup, filter }),
+    attrs: z.strictObject({
+      "fill-opacity": fillGroup["fill-opacity"],
+      "stroke-opacity": variant(strokeOpacity, { group: "Stroke" }),
+      "stroke-width": variant(strokeWidth, { group: "Stroke" }),
+      "stroke-dasharray": variant(strokeDasharray, { group: "Stroke" }),
+      "stroke-linecap": variant(strokeLinecap, { group: "Stroke" }),
+      filter
+    }),
     options: z.strictObject({
       size: number({
         label: "Marker size",
@@ -559,7 +566,7 @@ export const stylesSchema = z.strictObject({
     })
   }),
   military: z.strictObject({
-    attrs: z.strictObject({ opacity, ...strokeGroup, "fill-opacity": fillGroup["fill-opacity"], filter }),
+    attrs: z.strictObject({ opacity, "fill-opacity": fillGroup["fill-opacity"], ...strokeGroup, filter }),
     options: z.strictObject({
       boxSize: number({
         range: [0, 10],
@@ -631,7 +638,10 @@ export const stylesSchema = z.strictObject({
     )
   }),
   rulers: z.strictObject({
-    attrs: meta(z.strictObject({ opacity, ...dashGroup, "font-size": fontSizePx, filter }), { effect: "draw" })
+    attrs: meta(
+      z.strictObject({ opacity, ...dashGroup, "font-size": variant(fontSizePx, { group: "Label" }), filter }),
+      { effect: "draw" }
+    )
   }),
   scaleBar: meta(
     z.strictObject({
@@ -639,8 +649,8 @@ export const stylesSchema = z.strictObject({
       options: z.strictObject({
         barSize: number({ label: "Bar size", range: [0.5, 5], step: 0.1, tip: "Set bar size" }),
         label: text({ tip: "Type scale bar label, leave blank to hide label" }),
-        x: number({ label: "Position x", range: [0, 100], step: 0.1, tip: "Scale bar right edge, in percents" }),
-        y: number({ label: "Position y", range: [0, 100], step: 0.1, tip: "Scale bar bottom edge, in percents" })
+        x: number({ group: "Positon", range: [0, 100], step: 0.1, tip: "Scale bar right edge, in percents" }),
+        y: number({ group: "Positon", range: [0, 100], step: 0.1, tip: "Scale bar bottom edge, in percents" })
       }),
       back: meta(
         z.strictObject({

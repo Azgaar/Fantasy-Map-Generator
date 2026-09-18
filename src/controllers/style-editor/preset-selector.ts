@@ -48,6 +48,10 @@ export class PresetSelector {
     if (findEl(ID)) this.render();
   }
 
+  close(): void {
+    destroyDialog(ID);
+  }
+
   private current(): string {
     return options.map.style.preset || "default";
   }

@@ -81,7 +81,7 @@ function reconcileMarkets({ root, bounds }: ViewportRenderContext): void {
     const territoryMarkup = showTerritory
       ? /*html*/ `<clipPath id="market-clip-${market.i}"><path d="${territory.path}"/></clipPath>
         <path class="fill" d="${territory.path}" fill="${fill}" stroke="none"/>
-        <path class="border" d="${territory.path}" fill="none" stroke="${stroke}" stroke-width="0.7" clip-path="url(#market-clip-${market.i})"/>`
+        <path class="border" d="${territory.path}" fill="none" stroke="${stroke}" clip-path="url(#market-clip-${market.i})"/>`
       : "";
     const centerMarkup = showCenter
       ? /*html*/ `<circle cx="${center.x}" cy="${center.y}" r="${radius}" fill="${fill}" fill-opacity="1" stroke="${stroke}" stroke-width="${strokeWidth}"/>

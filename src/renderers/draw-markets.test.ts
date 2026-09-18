@@ -165,3 +165,10 @@ test("delegated hover ignores movement within a market and highlights rebuilt gr
   animations.at(-1)!.onfinish!();
   expect(document.querySelector("#market1 .highlight")).toBeNull();
 });
+
+test("territory borders inherit the layer's stroke style", () => {
+  drawMarkets();
+  const border = document.querySelector("#market1 .border")!;
+  expect(border.getAttribute("stroke-width")).toBeNull();
+  expect(border.getAttribute("stroke-dasharray")).toBeNull();
+});
