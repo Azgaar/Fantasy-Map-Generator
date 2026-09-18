@@ -10,7 +10,17 @@
   "ocean": {
     "options": {
       "pattern": "./images/pattern3.png",
-      "patternOpacity": 0.2
+      "patternOpacity": 0.2,
+      "bands": {
+        "render": true,
+        "count": 1,
+        "spacing": 1.2,
+        "width": 0.35,
+        "color": "#667280",
+        "shore": "#acbebd",
+        "shade": 1,
+        "opacity": 1
+      }
     },
     "base": {
       "attrs": {
@@ -23,6 +33,23 @@
       },
       "options": {
         "outline": "-6,-4,-2"
+      }
+    },
+    "oceanWaves": {
+      "attrs": {
+        "opacity": 0.5,
+        "stroke": "#1f3846",
+        "stroke-width": 0.5,
+        "stroke-dasharray": null,
+        "filter": null
+      },
+      "options": {
+        "render": false,
+        "type": "waves",
+        "density": 1,
+        "length": 1,
+        "reach": 4,
+        "halo": 0.25
       }
     }
   },
@@ -58,7 +85,22 @@
         "skip": 1,
         "relax": 2,
         "curve": "curveBasisClosed",
-        "render": false
+        "render": false,
+        "contours": {
+          "mode": "off",
+          "interval": 5,
+          "color": "#5c513e",
+          "width": 0.35,
+          "opacity": 0.5
+        },
+        "hachures": {
+          "mode": "off",
+          "density": 1,
+          "length": 1,
+          "width": 1,
+          "color": "#5c513e",
+          "opacity": 0.65
+        }
       }
     },
     "oceanHeights": {
@@ -73,7 +115,22 @@
         "skip": 0,
         "relax": 1,
         "curve": "curveBasisClosed",
-        "render": true
+        "render": true,
+        "contours": {
+          "mode": "off",
+          "interval": 5,
+          "color": "#5c513e",
+          "width": 0.35,
+          "opacity": 0.5
+        },
+        "hachures": {
+          "mode": "off",
+          "density": 1,
+          "length": 1,
+          "width": 1,
+          "color": "#5c513e",
+          "opacity": 0.65
+        }
       }
     }
   },
@@ -149,76 +206,132 @@
     }
   },
   "lakes": {
-    "freshwater": {
-      "attrs": {
-        "opacity": 0.5,
-        "fill": "#a6c1fd",
-        "fill-opacity": null,
-        "stroke": "#5f799d",
-        "stroke-width": 0.7,
-        "stroke-dasharray": null,
-        "stroke-linecap": null,
-        "filter": null
-      }
-    },
-    "salt": {
-      "attrs": {
-        "opacity": 0.5,
-        "fill": "#409b8a",
-        "fill-opacity": null,
-        "stroke": "#388985",
-        "stroke-width": 0.7,
-        "stroke-dasharray": null,
-        "stroke-linecap": null,
-        "filter": null
-      }
-    },
-    "sinkhole": {
-      "attrs": {
-        "opacity": 1,
-        "fill": "#5bc9fd",
-        "fill-opacity": null,
-        "stroke": "#53a3b0",
-        "stroke-width": 0.7,
-        "stroke-dasharray": null,
-        "stroke-linecap": null,
-        "filter": null
-      }
-    },
-    "frozen": {
-      "attrs": {
-        "opacity": 0.95,
-        "fill": "#cdd4e7",
-        "fill-opacity": null,
-        "stroke": "#cfe0eb",
-        "stroke-width": 0,
-        "stroke-dasharray": null,
-        "stroke-linecap": null,
-        "filter": null
-      }
-    },
-    "lava": {
-      "attrs": {
-        "opacity": 0.7,
-        "fill": "#90270d",
-        "fill-opacity": null,
-        "stroke": "#f93e0c",
-        "stroke-width": 2,
-        "stroke-dasharray": null,
-        "stroke-linecap": null,
-        "filter": "url(#crumpled)"
-      }
-    },
-    "dry": {
-      "attrs": {
-        "opacity": 0.7,
-        "fill": "#c9bfa7",
-        "fill-opacity": null,
-        "stroke": "#8e816f",
-        "stroke-width": 0.7,
-        "stroke-dasharray": null,
-        "stroke-linecap": null,
-        "filter": null
+    "groups": {
+      "freshwater": {
+        "attrs": {
+          "opacity": 0.5,
+          "fill": "#a6c1fd",
+          "fill-opacity": null,
+          "stroke": "#5f799d",
+          "stroke-width": 0.7,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "filter": null
+        },
+        "options": {
+          "embellishment": "none",
+          "density": 1,
+          "length": 1,
+          "halo": 0.2,
+          "color": "#000000",
+          "width": 0.3,
+          "opacity": 0.6
+        }
+      },
+      "salt": {
+        "attrs": {
+          "opacity": 0.5,
+          "fill": "#409b8a",
+          "fill-opacity": null,
+          "stroke": "#388985",
+          "stroke-width": 0.7,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "filter": null
+        },
+        "options": {
+          "embellishment": "none",
+          "density": 1,
+          "length": 1,
+          "halo": 0.2,
+          "color": "#000000",
+          "width": 0.3,
+          "opacity": 0.6
+        }
+      },
+      "sinkhole": {
+        "attrs": {
+          "opacity": 1,
+          "fill": "#5bc9fd",
+          "fill-opacity": null,
+          "stroke": "#53a3b0",
+          "stroke-width": 0.7,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "filter": null
+        },
+        "options": {
+          "embellishment": "none",
+          "density": 1,
+          "length": 1,
+          "halo": 0.2,
+          "color": "#000000",
+          "width": 0.3,
+          "opacity": 0.6
+        }
+      },
+      "frozen": {
+        "attrs": {
+          "opacity": 0.95,
+          "fill": "#cdd4e7",
+          "fill-opacity": null,
+          "stroke": "#cfe0eb",
+          "stroke-width": 0,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "filter": null
+        },
+        "options": {
+          "embellishment": "none",
+          "density": 1,
+          "length": 1,
+          "halo": 0.2,
+          "color": "#000000",
+          "width": 0.3,
+          "opacity": 0.6
+        }
+      },
+      "lava": {
+        "attrs": {
+          "opacity": 0.7,
+          "fill": "#90270d",
+          "fill-opacity": null,
+          "stroke": "#f93e0c",
+          "stroke-width": 2,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "filter": "url(#crumpled)"
+        },
+        "options": {
+          "embellishment": "none",
+          "density": 1,
+          "length": 1,
+          "halo": 0.2,
+          "color": "#000000",
+          "width": 0.3,
+          "opacity": 0.6
+        }
+      },
+      "dry": {
+        "attrs": {
+          "opacity": 0.7,
+          "fill": "#c9bfa7",
+          "fill-opacity": null,
+          "stroke": "#8e816f",
+          "stroke-width": 0.7,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "filter": null
+        },
+        "options": {
+          "embellishment": "none",
+          "density": 1,
+          "length": 1,
+          "halo": 0.2,
+          "color": "#000000",
+          "width": 0.3,
+          "opacity": 0.6
+        }
       }
     }
   },
@@ -300,9 +413,6 @@
   "provinces": {
     "attrs": {
       "opacity": 0.7,
-      "fill": "#000000",
-      "font-size": 10,
-      "font-family": "Georgia",
       "filter": null
     }
   },
@@ -482,6 +592,8 @@
           "letter-spacing": null,
           "font-size": "7%",
           "font-family": "Underdog",
+          "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
           "filter": null
         }
@@ -498,6 +610,8 @@
           "letter-spacing": null,
           "font-size": "6%",
           "font-family": "Underdog",
+          "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 2px; transform: translate(0em, -0.7em);",
           "filter": null
         }
@@ -514,6 +628,8 @@
           "letter-spacing": null,
           "font-size": "2%",
           "font-family": "Underdog",
+          "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -2em);",
           "filter": null
         }
@@ -530,6 +646,8 @@
           "letter-spacing": null,
           "font-size": "2%",
           "font-family": "Underdog",
+          "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -1.8em);",
           "filter": null
         }
@@ -546,6 +664,8 @@
           "letter-spacing": null,
           "font-size": "2%",
           "font-family": "Underdog",
+          "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -1em);",
           "filter": null
         }
@@ -562,6 +682,8 @@
           "letter-spacing": null,
           "font-size": "2%",
           "font-family": "Underdog",
+          "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -1.2em);",
           "filter": null
         }
@@ -578,6 +700,8 @@
           "letter-spacing": null,
           "font-size": "3%",
           "font-family": "Underdog",
+          "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.6em)",
           "filter": null
         }
@@ -594,6 +718,8 @@
           "letter-spacing": null,
           "font-size": "2%",
           "font-family": "Underdog",
+          "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -1em);",
           "filter": null
         }
@@ -610,6 +736,8 @@
           "letter-spacing": null,
           "font-size": "4%",
           "font-family": "Underdog",
+          "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 2px; transform: translate(0em, -0.6em)",
           "filter": null
         }
@@ -626,6 +754,8 @@
           "letter-spacing": 0,
           "font-size": "20%",
           "font-family": "Underdog",
+          "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0 0 2px;",
           "filter": null
         }
@@ -642,6 +772,8 @@
           "letter-spacing": 0,
           "font-size": "6%",
           "font-family": "Underdog",
+          "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0 0 2px;",
           "filter": null
         }
@@ -658,6 +790,8 @@
           "letter-spacing": 0,
           "font-size": "2%",
           "font-family": "Underdog",
+          "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0 0 2px;",
           "filter": null
         }
@@ -674,6 +808,8 @@
           "letter-spacing": 0,
           "font-size": "2%",
           "font-family": "Underdog",
+          "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0 0 2px;",
           "filter": null
         }
@@ -690,6 +826,8 @@
           "letter-spacing": 0,
           "font-size": "18%",
           "font-family": "Underdog",
+          "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0 0 4px;",
           "filter": null
         }
@@ -870,7 +1008,7 @@
           },
           "options": {
             "size": 1.9,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "city": {
@@ -887,7 +1025,7 @@
           },
           "options": {
             "size": 1.2,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "fort": {
@@ -904,7 +1042,7 @@
           },
           "options": {
             "size": 0.7,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "monastery": {
@@ -921,7 +1059,7 @@
           },
           "options": {
             "size": 0.7,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "caravanserai": {
@@ -938,7 +1076,7 @@
           },
           "options": {
             "size": 0.7,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "trading_post": {
@@ -955,7 +1093,7 @@
           },
           "options": {
             "size": 0.7,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "village": {
@@ -972,7 +1110,7 @@
           },
           "options": {
             "size": 0.7,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "hamlet": {
@@ -989,7 +1127,7 @@
           },
           "options": {
             "size": 0.5,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "town": {
@@ -1006,7 +1144,7 @@
           },
           "options": {
             "size": 1,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         }
       }
@@ -1107,9 +1245,9 @@
     },
     "options": {
       "barSize": 2,
+      "label": "",
       "x": 99,
-      "y": 99,
-      "label": ""
+      "y": 99
     },
     "back": {
       "attrs": {

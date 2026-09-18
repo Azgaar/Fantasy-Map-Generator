@@ -1,6 +1,5 @@
 // Where the map sits on the globe: its share of the world and the resulting lat/lon box
-import { stored } from "@/utils/preferences";
-import { ensureEl, gauss, P, rn } from "../utils";
+import { gauss, P, rn } from "../utils";
 
 declare global {
   var Coordinates: CoordinatesModule;
@@ -56,38 +55,38 @@ const RANDOM_SIZE: Record<string, [number, number, number, number]> = {
 };
 
 class CoordinatesModule {
-  /** define map size and position on the globe based on the heightmap template and a random factor */
-  defineMapSize(): void {
-    const [size, latitude, longitude] = this.getSizeAndPosition();
-    const randomize = new URL(window.location.href).searchParams.get("options") === "default"; // ignore stored options
-    if (randomize || !stored("mapSize")) options.mapSize = size;
-    if (randomize || !stored("latitude")) options.latitude = latitude;
-    if (randomize || !stored("longitude")) options.longitude = longitude;
+  generate(): void {
+    const partial = grid.features.some(feature => feature.land && feature.border);
+    const [mapSize, latitude, longitude] = this.getSizeAndPosition(options.generation.template, partial);
+    const requested = options.generation.geography;
+    const geography = options.map.geography;
+    geography.mapSize = requested.mapSize ?? mapSize;
+    geography.latitude = requested.latitude ?? latitude;
+    geography.longitude = requested.longitude ?? longitude;
+    this.calculate();
   }
 
   /** calculate the map lat/lon box from its size and position */
   calculate(): void {
-    const sizeFraction = options.mapSize / 100;
-    const latShift = options.latitude / 100;
-    const lonShift = options.longitude / 100;
+    const sizeFraction = options.map.geography.mapSize / 100;
+    const latShift = options.map.geography.latitude / 100;
+    const lonShift = options.map.geography.longitude / 100;
 
     const latT = rn(sizeFraction * 180, 1);
     const latN = rn(90 - (180 - latT) * latShift, 1);
     const latS = rn(latN - latT, 1);
 
-    const lonT = rn(Math.min((graphWidth / graphHeight) * latT, 360), 1);
+    const lonT = rn(Math.min((options.map.graph.width / options.map.graph.height) * latT, 360), 1);
     const lonE = rn(180 - (360 - lonT) * lonShift, 1);
     const lonW = rn(lonE - lonT, 1);
 
-    mapCoordinates = { latT, latN, latS, lonT, lonW, lonE };
+    options.map.geography.coordinates = { latT, latN, latS, lonT, lonW, lonE };
   }
 
-  private getSizeAndPosition(): SizeAndPosition {
-    const template = ensureEl<HTMLInputElement>("templateInput").value; // heightmap template
+  private getSizeAndPosition(template: string, isPartial: boolean): SizeAndPosition {
     const realWorldPosition = TEMPLATE_POSITIONS[template];
     if (realWorldPosition) return realWorldPosition;
 
-    const isPartial = grid.features.some(f => f.land && f.border); // land goes over the map borders
     if (!isPartial && P(WHOLE_WORLD_CHANCE[template] ?? 0)) return [100, 50, 50];
 
     const maxSize = isPartial ? 80 : 100;
@@ -101,4 +100,6 @@ class CoordinatesModule {
   }
 }
 
-window.Coordinates = new CoordinatesModule();
+// biome-ignore lint/suspicious/noRedeclare: legacy global and module export
+export const Coordinates = new CoordinatesModule();
+window.Coordinates = Coordinates;

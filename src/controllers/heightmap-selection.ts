@@ -1,14 +1,17 @@
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { syncOptionInputs } from "@/components/options/tabs/options-tab";
+import { Pins } from "@/components/pins";
+import { getPointsNumber } from "@/data/graph-density";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { precreatedHeightmaps } from "@/data/precreated-heightmaps";
 import { drawHeights } from "@/renderers/draw-heightmap";
 import type { GridGraph } from "@/types/GridGraph";
-import { applyOption } from "@/utils";
-import { lock } from "@/utils/preferences";
 import { ensureEl, generateSeed } from "../utils";
 
 const initialSeed = generateSeed();
-let graph = getGraph(grid);
+type GraphConfig = ReturnType<typeof getGraphConfig>;
+let graphConfig: GraphConfig | null = getGraphConfig();
+let graph: GridGraph | null = getGraph();
 
 appendStyleSheet();
 insertHtml();
@@ -17,14 +20,20 @@ addListeners();
 function open(): void {
   closeDialogs(".stable");
 
-  const $templateInput = ensureEl<HTMLInputElement>("templateInput");
-  setSelected($templateInput.value);
-  graph = getGraph(graph);
+  setSelected(options.generation.template);
+  graphConfig = getGraphConfig();
+  graph = getGraph();
+  ensureEl("heightmapSelection").style.setProperty(
+    "--preview-aspect-ratio",
+    `${graphConfig.width}/${graphConfig.height}`
+  );
+  redrawAll();
 
   $("#heightmapSelection").dialog({
     title: "Select Heightmap",
     resizable: false,
     position: { my: "center", at: "center", of: "svg" },
+    close: onClose,
     buttons: {
       Cancel: function (this: HTMLElement) {
         $(this).dialog("close");
@@ -32,24 +41,34 @@ function open(): void {
       Select: function (this: HTMLElement) {
         const id = getSelected();
         if (!id) return;
-        applyOption($templateInput, id, getName(id));
-        lock("template");
+        Options.set(o => (o.generation.template = id));
+        syncOptionInputs();
+        Pins.set("template", options.generation.template);
 
         $(this).dialog("close");
       },
       "New Map": function (this: HTMLElement) {
         const id = getSelected();
         if (!id) return;
-        applyOption($templateInput, id, getName(id));
-        lock("template");
+        Options.set(o => (o.generation.template = id));
+        syncOptionInputs();
+        Pins.set("template", options.generation.template);
 
         const seed = getSeed();
-        regeneratePrompt({ seed, graph });
+        const previewGraph = graph;
+        const previewConfig = graphConfig;
+        if (previewGraph && previewConfig) regeneratePrompt({ seed, graph: previewGraph, ...previewConfig });
 
         $(this).dialog("close");
       }
     }
   });
+}
+
+function onClose(): void {
+  graph = null;
+  graphConfig = null;
+  HeightmapGenerator.clearData(); // the generator pins the preview graph it last measured
 }
 
 function appendStyleSheet(): void {
@@ -134,7 +153,7 @@ function appendStyleSheet(): void {
 
     .heightmap-selection article > img {
       width: 100%;
-      aspect-ratio: ${graphWidth}/${graphHeight};
+      aspect-ratio: var(--preview-aspect-ratio);
       border-radius: 8px;
       object-fit: fill;
     }
@@ -161,6 +180,10 @@ function appendStyleSheet(): void {
 }
 
 function insertHtml(): void {
+  const previewGraph = graph;
+  const previewConfig = graphConfig;
+  if (!previewGraph || !previewConfig) return;
+
   const heightmapColorSchemeOptions = Object.keys(heightmapColorSchemes)
     .map(scheme => `<option value="${scheme}">${scheme}</option>`)
     .join("");
@@ -209,7 +232,7 @@ function insertHtml(): void {
     .map(key => {
       const name = heightmapTemplates[key].name;
       Math.random = aleaPRNG(initialSeed);
-      const heights = HeightmapGenerator.fromTemplate(graph, key);
+      const heights = HeightmapGenerator.fromTemplate(previewGraph, key, previewConfig);
 
       return /* html */ `<article data-id="${key}" data-seed="${initialSeed}">
         <img src="${getHeightmapPreview(heights)}" alt="${name}" />
@@ -271,35 +294,49 @@ function getSeed(): string | undefined {
   return ensureEl("heightmapSelection").querySelector<HTMLElement>(".selected")?.dataset?.seed;
 }
 
-function getName(id: string): string {
-  const isTemplate = id in heightmapTemplates;
-  return isTemplate ? heightmapTemplates[id].name : precreatedHeightmaps[id].name;
+function getGraphConfig() {
+  const { width, height, density } = options.generation.graph;
+  return { width, height, points: getPointsNumber(density) };
 }
 
-function getGraph(currentGraph: GridGraph): GridGraph {
-  const newGraph = Grid.shouldRegenerate(currentGraph, seed, graphWidth, graphHeight)
-    ? Grid.generate(seed, graphWidth, graphHeight)
-    : structuredClone(currentGraph);
-  Grid.resetHeights(newGraph);
-  return newGraph;
+function getGraph(): GridGraph {
+  const { width, height, points } = graphConfig ?? getGraphConfig();
+  const current = options.map.graph;
+  if (current.width !== width || current.height !== height || current.points !== points) {
+    return Grid.generate(initialSeed, width, height, points);
+  }
+  const preview = structuredClone(grid);
+  Grid.resetHeights(preview);
+  return preview;
 }
 
 function drawTemplatePreview(id: string): void {
-  const heights = HeightmapGenerator.fromTemplate(graph, id);
+  const previewGraph = graph;
+  const previewConfig = graphConfig;
+  if (!previewGraph || !previewConfig) return;
+
+  const heights = HeightmapGenerator.fromTemplate(previewGraph, id, previewConfig);
   const dataUrl = getHeightmapPreview(heights);
   const article = ensureEl("heightmapSelection").querySelector(`[data-id="${id}"]`);
   article?.querySelector("img")?.setAttribute("src", dataUrl);
 }
 
 async function drawPrecreatedHeightmap(id: string): Promise<void> {
-  const heights = await HeightmapGenerator.fromPrecreated(graph, id);
+  const previewGraph = graph;
+  const previewConfig = graphConfig;
+  if (!previewGraph || !previewConfig) return;
+
+  const heights = await HeightmapGenerator.fromPrecreated(previewGraph, id, previewConfig);
+  if (previewGraph !== graph) return;
   const dataUrl = getHeightmapPreview(heights);
   const article = ensureEl("heightmapSelection").querySelector(`[data-id="${id}"]`);
   article?.querySelector("img")?.setAttribute("src", dataUrl);
 }
 
 function regeneratePreview(article: HTMLElement, id: string): void {
-  graph = getGraph(graph);
+  if (!graph) return;
+
+  Grid.resetHeights(graph);
   const seed = generateSeed();
   article.dataset.seed = seed;
   Math.random = aleaPRNG(seed);
@@ -307,7 +344,9 @@ function regeneratePreview(article: HTMLElement, id: string): void {
 }
 
 function redrawAll(): void {
-  graph = getGraph(graph);
+  if (!graph) return;
+
+  Grid.resetHeights(graph);
   const articles = ensureEl("heightmapSelection").querySelectorAll<HTMLElement>("article");
   for (const article of articles) {
     const { id, seed } = article.dataset;
@@ -333,6 +372,8 @@ function confirmHeightmapEdit(el: HTMLElement): void {
 }
 
 function getHeightmapPreview(heights: Uint8Array | null): string {
+  if (!graph) return "";
+
   const scheme = getColorScheme(ensureEl<HTMLSelectElement>("heightmapSelectionColorScheme").value);
   const renderOcean = ensureEl<HTMLInputElement>("heightmapSelectionRenderOcean").checked;
   const dataUrl = drawHeights({

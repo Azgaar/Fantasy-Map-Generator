@@ -1,6 +1,12 @@
+import { applyGraphSize, fitMapToScreen } from "@/components/canvas";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
+import { registerMap } from "@/components/lifecycle";
+import { cellsDensityColor, changeCellsDensity } from "@/components/options/tabs/options-tab";
+import { undraw } from "@/components/undraw";
+import { POINTS_BY_DENSITY } from "@/data/graph-density";
 import { Resample } from "@/generators/resample";
+import { logStats } from "@/services/logging";
 import { ensureEl, rn } from "../utils";
 
 let mouseIsDown = false;
@@ -32,8 +38,8 @@ function open(): void {
 function renderDialog(): void {
   destroyDialog("transformTool");
 
-  const pointsValue = ensureEl<HTMLInputElement>("pointsInput").value;
-  const cells = cellsDensityMap[+pointsValue];
+  const pointsValue = String(options.generation.graph.density);
+  const cells = POINTS_BY_DENSITY[+pointsValue];
 
   const html = /* html */ `<div id="transformTool" class="dialog">
     <div style="padding-top: 0.5em; width: 40em; font-weight: bold">
@@ -54,7 +60,7 @@ function renderDialog(): void {
       <div>Points number</div>
       <div>
         <input id="transformPointsInput" type="range" min="1" max="13" value="${pointsValue}" />
-        <output id="transformPointsFormatted" style="color: ${getCellsDensityColor(cells)}">${cells / 1000}K</output>
+        <output id="transformPointsFormatted" style="color: ${cellsDensityColor(cells)}">${cells / 1000}K</output>
       </div>
       <div>Shift</div>
       <div>
@@ -104,14 +110,14 @@ function cleanup(): void {
 
 async function loadPreview(): Promise<void> {
   const width = Math.min(400, window.innerWidth * 0.5);
-  const previewScale = width / graphWidth;
-  const height = graphHeight * previewScale;
+  const previewScale = width / options.map.graph.width;
+  const height = options.map.graph.height * previewScale;
 
   ensureEl("transformPreview").style.width = `${width}px`;
   ensureEl("transformPreview").style.height = `${height}px`;
 
-  const options = { noWater: true, fullMap: true, noLabels: true, noScaleBar: true, noVignette: true, noIce: true };
-  const url = await window.Services.ExportMap.getMapURL("png", options);
+  const urlOptions = { noWater: true, fullMap: true, noLabels: true, noScaleBar: true, noVignette: true, noIce: true };
+  const url = await window.Services.ExportMap.getMapURL("png", urlOptions);
   const SCALE = 4;
 
   const img = new Image();
@@ -127,15 +133,15 @@ async function loadPreview(): Promise<void> {
 }
 
 function handlePointsInput(e: Event): void {
-  const cells = cellsDensityMap[+(e.target as HTMLInputElement).value];
+  const cells = POINTS_BY_DENSITY[+(e.target as HTMLInputElement).value];
   const output = ensureEl<HTMLOutputElement>("transformPointsFormatted");
   output.value = `${cells / 1000}K`;
-  output.style.color = getCellsDensityColor(cells);
+  output.style.color = cellsDensityColor(cells);
 }
 
 function handleInput(): void {
   const width = Math.min(400, window.innerWidth * 0.5);
-  const previewScale = width / graphWidth;
+  const previewScale = width / options.map.graph.width;
 
   const angleDegrees = ensureEl<HTMLInputElement>("transformAngleInput").value;
   ensureEl<HTMLOutputElement>("transformAngleOutput").value = angleDegrees;
@@ -158,7 +164,7 @@ function handleInput(): void {
 
 function handleMousedown(e: MouseEvent): void {
   const width = Math.min(400, window.innerWidth * 0.5);
-  const previewScale = width / graphWidth;
+  const previewScale = width / options.map.graph.width;
 
   mouseIsDown = true;
   const shiftX = +ensureEl<HTMLInputElement>("transformShiftX").value;
@@ -176,7 +182,7 @@ function handleMousemove(e: MouseEvent): void {
   e.preventDefault();
 
   const width = Math.min(400, window.innerWidth * 0.5);
-  const previewScale = width / graphWidth;
+  const previewScale = width / options.map.graph.width;
 
   ensureEl<HTMLInputElement>("transformShiftX").value = String(Math.round(mouseX + e.clientX / previewScale));
   ensureEl<HTMLInputElement>("transformShiftY").value = String(Math.round(mouseY + e.clientY / previewScale));
@@ -193,8 +199,8 @@ function transformMap(): void {
   INFO && console.group("transformMap");
 
   const transformPointsValue = ensureEl<HTMLInputElement>("transformPointsInput").value;
-  const globalPointsValue = ensureEl<HTMLInputElement>("pointsInput").value;
-  if (transformPointsValue !== globalPointsValue) changeCellsDensity(transformPointsValue);
+  const globalPointsValue = String(options.generation.graph.density);
+  if (transformPointsValue !== globalPointsValue) changeCellsDensity(+transformPointsValue);
 
   const [projection, inverse] = getProjection();
 
@@ -206,12 +212,15 @@ function transformMap(): void {
 
   Layers.drawAll();
 
+  registerMap(); // a transformed map is a new map: it gets its own id and history entry
+  logStats();
+
   INFO && console.groupEnd();
 }
 
 function getProjection(): [(x: number, y: number) => [number, number], (x: number, y: number) => [number, number]] {
-  const centerX = graphWidth / 2;
-  const centerY = graphHeight / 2;
+  const centerX = options.map.graph.width / 2;
+  const centerY = options.map.graph.height / 2;
   const shiftX = +ensureEl<HTMLInputElement>("transformShiftX").value;
   const shiftY = +ensureEl<HTMLInputElement>("transformShiftY").value;
   const angle = (+ensureEl<HTMLInputElement>("transformAngleInput").value / 180) * Math.PI;

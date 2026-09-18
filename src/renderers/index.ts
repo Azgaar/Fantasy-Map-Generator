@@ -10,6 +10,8 @@ import "./draw-legend";
 import "./draw-markers";
 import "./draw-military";
 import "./draw-relief-icons";
+import "./draw-rivers";
+import "./draw-routes";
 import "./draw-measurers";
 import "./draw-journeys";
 import "./draw-scalebar";

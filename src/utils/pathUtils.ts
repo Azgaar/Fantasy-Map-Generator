@@ -305,13 +305,14 @@ export const connectVertices = ({
     else if (v2 !== previous && c2 !== c3) next = v2;
     else if (v3 !== previous && c1 !== c3) next = v3;
 
-    if (next >= vertices.c.length) {
+    // a hull half-edge has no opposite triangle, so `vertices.v` holds -1 for it
+    if (next < 0 || next >= vertices.c.length) {
       window.ERROR && console.error("ConnectVertices: next vertex is out of bounds");
       break;
     }
 
     if (next === current) {
-      window.ERROR && console.error("ConnectVertices: next vertex is not found");
+      window.ERROR && console.error("ConnectVertices: next vertex is not found", { startingVertex, current });
       break;
     }
 
@@ -576,4 +577,11 @@ declare global {
     getIsolines: typeof getIsolines;
     getVertexPath: typeof getVertexPath;
   }
+}
+
+/** An open wave dash: `halves` half-periods spanning `length` from (x, y), the first bump bending by `amplitude` */
+export function wavyDash(x: number, y: number, length: number, halves: number, amplitude: number): string {
+  const step = length / halves;
+  const f = (v: number) => v.toFixed(2);
+  return `M${f(x)},${f(y)}q${f(step / 2)},${f(amplitude)} ${f(step)},0${`t${f(step)},0`.repeat(halves - 1)}`;
 }

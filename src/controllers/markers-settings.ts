@@ -2,7 +2,7 @@ import { destroyDialog, refreshEditors } from "@/components/dialog/dialog-helper
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
-import { ensureEl } from "@/utils";
+import { ensureEl, escapeHtml, isImageIcon } from "@/utils";
 
 const DIALOG_ID = "markersSettings";
 
@@ -66,14 +66,14 @@ function drawConfigTable(): void {
   </tr></thead>`;
 
   const lines = Markers.getConfig().map(({ type, icon, multiplier }) => {
-    const isExternal = icon.startsWith("http") || icon.startsWith("data:image");
+    const isExternal = isImageIcon(icon);
     return /* html */ `<tr>
       <td><input class="type" value="${type}" /></td>
       <td style="position: relative">
-        <img class="image" src="${isExternal ? icon : ""}" ${
+        <img class="image" src="${isExternal ? escapeHtml(icon) : ""}" ${
           isExternal ? "" : "hidden"
         } style="width:1.2em; height:1.2em; vertical-align: middle;">
-        <span class="emoji" style="font-size:1.2em">${isExternal ? "" : icon}</span>
+        <span class="emoji" style="font-size:1.2em">${isExternal ? "" : escapeHtml(icon)}</span>
         <button class="changeIcon icon-pencil"></button>
       </td>
       <td><input class="multiplier" type="number" min="0" max="100" step="0.1" value="${multiplier}" /></td>
@@ -91,7 +91,7 @@ function drawConfigTable(): void {
       if (!image || !emoji) return;
 
       Controllers.IconSelector.open(image.getAttribute("src") || emoji.textContent || "", value => {
-        const isExternal = value.startsWith("http") || value.startsWith("data:image");
+        const isExternal = isImageIcon(value);
         image.setAttribute("src", isExternal ? value : "");
         image.hidden = !isExternal;
         emoji.textContent = isExternal ? "" : value;

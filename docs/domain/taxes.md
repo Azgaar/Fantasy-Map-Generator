@@ -31,7 +31,7 @@ Anarchy collapses to exactly 0. Neutrals (state 0) always have rates 0 and treas
 
 ## Collection (`States.collectTaxes`)
 
-Called from `public/main.js` after `Production.produce()` and `Markets.runGlobalTrade()`:
+Run by the generation pipeline after `Production.produce()` and `Markets.runGlobalTrade()`:
 
 1. Reset every non-neutral state's `treasury` to 0.
 2. For each `deal` with a `tax` field, look up the seller state (burg's state for burg sellers; the market's center burg's state for market sellers) and credit `state.treasury += deal.tax`.
@@ -43,9 +43,11 @@ This is the only writer of `state.treasury` outside the editor (which can also w
 
 The States Editor exposes a Treasury column. Clicking a treasury value opens a dialog with editable `salesTax`, `pollTax`, and `treasury` fields plus a read-only revenue breakdown. Rate edits do not retroactively change deals — they take effect on the next production regeneration.
 
+The Burg Editor exposes `burg.treasury` the same way: the field is editable, and the value the user enters stands until the next production run overwrites it. Nothing recalculates production, deals or the owning state's treasury to match — a hand-set balance is an assertion about the burg, not a transaction.
+
 ## Backward compatibility
 
-When loading an older save (`auto-update.js`), the migration runs `States.defineTaxRates(state)` for every non-neutral state and resets `treasury = 0`. The migrated rates are jittered exactly like newly generated states (same gauss formula on the form-based base) — so the same world reloaded twice keeps stable rates after the first migration, but loading a pre-1.123 file produces rates that differ from the legacy hard-coded `0.2` salesTax. Any custom per-state tax edits made under the old regime are overwritten.
+When loading an older save (`auto-update.ts`), the migration runs `States.defineTaxRates(state)` for every non-neutral state and resets `treasury = 0`. The migrated rates are jittered exactly like newly generated states (same gauss formula on the form-based base) — so the same world reloaded twice keeps stable rates after the first migration, but loading a pre-1.123 file produces rates that differ from the legacy hard-coded `0.2` salesTax. Any custom per-state tax edits made under the old regime are overwritten.
 
 ## Out of scope
 
@@ -59,5 +61,5 @@ When loading an older save (`auto-update.js`), the migration runs `States.define
 - [`src/generators/states-generator.ts`](../../src/generators/states-generator.ts) — rate generation, `collectTaxes`
 - [`src/generators/markets-generator.ts`](../../src/generators/markets-generator.ts) — `sell`, `runGlobalTrade` tax wiring
 - [`src/generators/production-generator.ts`](../../src/generators/production-generator.ts) — burg-sell deduction
-- [`public/modules/dynamic/editors/states-editor.js`](../../public/modules/dynamic/editors/states-editor.js) — Treasury column + dialog
-- [`public/modules/dynamic/auto-update.js`](../../public/modules/dynamic/auto-update.js) — migration
+- [`src/controllers/states-editor.ts`](../../src/controllers/states-editor.ts) — Treasury column + dialog
+- [`src/services/io/auto-update.ts`](../../src/services/io/auto-update.ts) — migration

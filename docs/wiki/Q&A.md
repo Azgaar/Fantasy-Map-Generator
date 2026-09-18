@@ -1,7 +1,10 @@
-Here I want to answer the most common questions _Fantasy Map Generator_ (FMG) users may have. Please feel free to raise a new [issue](https://github.com/Azgaar/Fantasy-Map-Generator/issues) in order to request additional answers.
+Here I want to answer the most common questions _Fantasy Map Generator_ (FMG) users may have. Ask additional questions in [Q&A discussions](https://github.com/Azgaar/Fantasy-Map-Generator/discussions/new?category=q-a).
 
 ### I have issues with the Generator, what should I do?
-Please try to reproduce the issue on your own. If it's reproducible, please log [an issue](https://github.com/Azgaar/Fantasy-Map-Generator/issues). A lot of issues are caused by browsers, please also try to use incognito mode and/or another browser. I recommend Chrome as the fastest browser in terms of svg rendering.
+Search existing issues, then use the [bug report form](https://github.com/Azgaar/Fantasy-Map-Generator/issues/new?template=bug_report.yml). Include the FMG version, browser/OS, steps, expected and actual results, and the affected `.map` file in a ZIP archive when relevant. If practical, try a private window or another browser and mention the result. You can also use the Discord assistant's `/bug` command when available; a moderator reviews the report before GitHub submission. See [reporting instructions and examples](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Reporting-bugs-and-ideas).
+
+### How do I suggest a feature or follow development?
+Search [Ideas discussions](https://github.com/Azgaar/Fantasy-Map-Generator/discussions/categories/ideas) and the [FMG dev board](https://github.com/users/Azgaar/projects/3). Upvote an existing idea or [submit a new one](https://github.com/Azgaar/Fantasy-Map-Generator/discussions/new?category=ideas), explaining the problem and your use case. In Discord, `/idea` opens a report form when available; moderators review it before submission. Votes help maintainers assess demand but do not promise a release date. Ordinary chat and assistant questions do not file reports automatically.
 
 ### The map performance is poor, how can I improve it?
 The performance mainly depends on the number of visible elements and visible map area. The optimization strategies are: 
@@ -11,12 +14,13 @@ The performance mainly depends on the number of visible elements and visible map
 * Toggle off map and element filters.
 * Close all irrelevant browser tabs and applications.
 * Use a leading edge browser (fresh versions on Chrome or Edge). Firefox is reported to be slower.
+* Set the _Performance_ preset in the Options tab to _Speed_, or open its settings and set _Redraw on zoom_ to _After zoom_: labels, icons and relief are redrawn once per gesture instead of on every frame. See [Performance settings](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Performance-settings) for the preset comparison.
 
 ### Who owns the maps created?
 You. The Generator is licensed under [MIT license](https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE) and derivative works such as maps are free of charge. You can sell them or make them available for free.
 
 ### My saved map is not working properly. What should I do?
-If there is no version conflict, please [raise a defect](https://github.com/Azgaar/Fantasy-Map-Generator/issues/new). Compatible older maps are auto-updated when loaded. Maps older than `0.70.0`, maps from a newer version, and invalid files require the matching Generator version or a repair/recreation. The tool is under development and version conflicts are inevitable.
+If there is no version conflict, please [report the problem](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Reporting-bugs-and-ideas#report-a-bug) with the affected file and the versions used to save and load it. Compatible older maps are auto-updated when loaded. Maps older than `0.70.0`, maps from a newer version, and invalid files require the matching Generator version or a repair/recreation. The tool is under development and version conflicts are inevitable.
 
 ### Can I export a created map?
 Sure, there are a number of available options: 
@@ -37,16 +41,14 @@ Open the generator, click on _Load_ and select the file. Or just drag and drop t
 `.map` files are plain text, so yes, you can edit them in any text editor. `.gz` files are gzip-compressed and have to be decompressed first. However, if you break the formatting the file won't be loading. The common error is that most text editors automatically split embedded svg into separate lines.
 
 ### Can I use the Generator offline?
-Yes, but it's more complex. You must have a source code editor ([VS Code](https://code.visualstudio.com/) is the best free one) and [node.js](https://nodejs.org) installed.
+Yes. The easiest way is the [desktop app](https://github.com/Azgaar/Fantasy-Map-Generator/releases): download the installer for your system and it works offline out of the box. The web version can also be installed as a PWA — open it once with a connection so the files get cached, after that it works offline. Fonts and textures loaded from external URLs still need a connection.
 
-Download the [source code](https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/heads/master.zip) and unzip _all files_ from the archive.
-
-Open the folder in VS Code and run `npm install` in the terminal to install dependencies. Then run `npm run dev` to start the development server. The tool will normally be available at `http://localhost:5173/Fantasy-Map-Generator/` — open the URL printed by Vite in your browser. Node.js 24 or newer is required.
-
-See [Run FMG locally](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Run-FMG-locally) for details.
+You can also run the tool from the source code, which needs [node.js](https://nodejs.org) 24 or newer: download the [source code](https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/heads/master.zip), unzip _all files_, run `npm install` and then `npm run dev`, and open the URL printed by Vite (normally `http://localhost:5173/Fantasy-Map-Generator/`). See [Run FMG locally](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Run-FMG-locally) for details.
 
 ### Is there a desktop version?
-The supported desktop-like option is a PWA. Chromium-based browsers (Chrome, Edge, etc.) may offer an **Install** button; the installed app can be opened from the desktop or app launcher. A normal browser shortcut is also possible, but this repository does not build a separate Electron app.
+Yes. Since v1.149 the Generator ships as a desktop app built on Electron. Installers for Windows (`.exe`), macOS (`.dmg`, Apple Silicon and Intel) and Linux (AppImage and `.deb`) are attached to every [release](https://github.com/Azgaar/Fantasy-Map-Generator/releases). It is the same Generator running in its own window, works offline and checks GitHub for new versions (Windows and AppImage builds install updates themselves, the others open the download page). The builds are not code-signed yet, so the system warns about an unknown developer on the first launch: on macOS right-click the app → **Open** → **Open**, on Windows **More info** → **Run anyway**. Nix users can build the same app from the flake, see [Install with Nix](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Install-with-Nix).
+
+If you prefer not to install anything, Chromium-based browsers (Chrome, Edge, etc.) offer an **Install** button that adds the web app as a PWA, which opens from the desktop or app launcher.
 
 ### Which browsers are supported?
 The Generator targets modern browsers. Chromium browsers are the primary tested environment; Firefox and other browsers may differ in performance or feature support. Internet Explorer is not supported. Browser behavior can change with browser and FMG versions, so report reproducible compatibility issues.
@@ -67,7 +69,7 @@ It's my nickname, it has no meaning. The name of the tool is _Azgaar's Fantasy M
 It's my meta-project. A CK2-style genealogical game focused on genetics. Generally a wedding/dynasty breeding simulator (see the [screenshot](https://i2.wp.com/azgaar.files.wordpress.com/2018/02/screenshot-2018-2-9-dynasty-v0-11.png)). It's in pre-alpha and currently on hold, so no demo is available. 
 
 ### How can I help to improve the Generator?
-Just use it, log defects and suggest enhancements (please use the [issues](https://github.com/Azgaar/Fantasy-Map-Generator/issues) page for both cases). Share the Generator link within your community! Post on FB, Twitter etc. 
+Use it, [report bugs](https://github.com/Azgaar/Fantasy-Map-Generator/issues/new?template=bug_report.yml), and [suggest or upvote ideas](https://github.com/Azgaar/Fantasy-Map-Generator/discussions/categories/ideas). See [examples and Discord reporting options](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Reporting-bugs-and-ideas). Share the Generator link within your community!
 
 We need a good video-tutorial. Please contact me if you have a video-blog and want to help.
 

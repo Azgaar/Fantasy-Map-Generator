@@ -1,5 +1,7 @@
 import { select } from "d3";
 import { Layers } from "@/components/layers";
+import { MapEntities } from "@/components/map-entities";
+import { Notes } from "@/components/notes";
 import { highlightEmblemElement } from "@/renderers/overlays/highlight";
 import type { Point } from "@/types/global";
 import {
@@ -35,29 +37,24 @@ let currentNoteId: string | null = null; // currently displayed note, to not rer
 export function showNotes(event: Event): void {
   if (findEl("notesEditor")) return;
 
-  const target = event.target as HTMLElement;
-  const parent = target.parentNode as HTMLElement;
-  const grand = parent?.parentNode as HTMLElement;
+  const ref = MapEntities.resolveTarget(event.target instanceof Element ? event.target : null);
+  const id = ref && MapEntities.key(ref);
+  const note = ref && Notes.get(ref);
 
-  const burg = target.closest<HTMLElement>("[data-label-type='burg'][data-id], #burgIcons [data-id]");
-  const id = burg ? `burg${burg.dataset.id}` : target.id || parent?.id || grand?.id;
-
-  const note = notes.find(note => note.id === id);
-
-  if (note?.legend) {
+  if (ref && note) {
     if (currentNoteId === id) return;
-    currentNoteId = id;
+    currentNoteId = id ?? null;
 
     const notesEl = findEl("notes");
     if (notesEl) notesEl.style.display = "block";
     const header = findEl("notesHeader");
-    if (header) header.innerHTML = note.name;
+    if (header) header.textContent = MapEntities.getName(ref);
     const body = findEl("notesBody");
-    if (body) body.innerHTML = note.legend;
+    if (body) body.innerHTML = note;
     return;
   }
 
-  if (options.pinNotes || findEl("markerEditor") || (event as MouseEvent).shiftKey) return;
+  if (options.app.notesPinned || findEl("markerEditor") || (event as MouseEvent).shiftKey) return;
 
   const notesEl = findEl("notes");
   if (notesEl) notesEl.style.display = "none";
@@ -82,10 +79,9 @@ export function showMapTooltip(point: Point, event: Event, cellId: number, gridC
   if (!path[path.length - 8]) return;
 
   const group = path[path.length - 7].id;
-  const subgroup = path[path.length - 8].id;
   const isLand = pack.cells.h[cellId] >= 20;
 
-  const elementTip = getElementTip({ group, subgroup, target, event, path, cellId });
+  const elementTip = getElementTip({ group, target, event, path, cellId });
   if (elementTip !== undefined) {
     tip(elementTip);
     return;
@@ -96,7 +92,6 @@ export function showMapTooltip(point: Point, event: Event, cellId: number, gridC
 
 interface TipContext {
   group: string;
-  subgroup: string;
   target: SVGElement;
   event: Event;
   path: HTMLElement[];
@@ -107,34 +102,38 @@ interface TipContext {
  * Get the tooltip for the hovered element.
  * Returns undefined if the element is not interactive, so the layer tip is shown instead
  */
-function getElementTip({ group, subgroup, target, event, path, cellId }: TipContext): string | undefined {
+function getElementTip({ group, target, event, path, cellId }: TipContext): string | undefined {
   const parent = target.parentNode as SVGElement;
   const burgElement = target.closest<SVGElement>("[data-label-type='burg'][data-id], #burgIcons [data-id]");
   if (burgElement) {
     const burgId = Number(burgElement.dataset.id);
     const burg = pack.burgs[burgId];
     if (!burg) return "Click to edit the Burg";
-    const population = si((burg.population || 0) * populationRate * urbanization);
-    return `${burg.name} ${burg.group}. Population: ${population}. Click to edit`;
+    const port = burg.port ? " port" : "";
+    const population = si(
+      (burg.population || 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate
+    );
+    return `${burg.name} ${burg.group}${port}. Population: ${population}. Click to edit`;
   }
 
-  const text = target.textContent.replaceAll("|", "");
-  if (target.closest("#labels [data-label-type]")) return `${text}. Click to edit the label`;
+  const labelElement = target.closest<SVGElement>("#labels [data-label-type]");
+  if (labelElement) return `${getLabelText(labelElement)}. Click to edit the label`;
 
   if (group === "armies") return `${(parent as SVGElement & { dataset: DOMStringMap }).dataset.name}. Click to edit`;
 
   if (group === "emblems" && target.tagName === "use") return getEmblemTip(target, parent, event);
 
   if (group === "rivers") {
-    const riverId = Number(target.id.slice(5));
-    const river = pack.rivers.find(river => river.i === riverId);
-    return `${river ? `${river.name} ${river.type}` : ""}. Click to edit`;
+    const ref = MapEntities.resolveTarget(target);
+    return `${ref ? MapEntities.getName(ref) : ""}. Click to edit`;
   }
 
   if (group === "routes") {
-    const routeId = Number(target.id.slice(5));
-    const route = pack.routes.find(route => route.i === routeId);
-    if (route) return route.name ? `${route.name}. Click to edit the Route` : "Click to edit the Route";
+    const ref = MapEntities.resolveTarget(target);
+    if (ref && MapEntities.get(ref)) {
+      const name = MapEntities.getName(ref);
+      return name ? `${name}. Click to edit the Route` : "Click to edit the Route";
+    }
     return undefined;
   }
 
@@ -151,12 +150,11 @@ function getElementTip({ group, subgroup, target, event, path, cellId }: TipCont
   if (group === "goods") return getGoodsTip(target, cellId) ?? "";
 
   if (group === "lakes" && pack.cells.h[cellId] < 20) {
-    const lakeId = Number(target.dataset.f);
-    const name = pack.features[lakeId]?.name;
-    return `${subgroup === "freshwater" ? name : `${name} ${subgroup}`} lake. Click to edit`;
+    const lake = pack.features[Number(target.dataset.f)];
+    const kind = lake?.subtype && lake.subtype !== "freshwater" ? `${lake.subtype} ` : "";
+    const name = lake?.name ? `${lake.name} ` : "";
+    return `${name}${kind}lake. Click to edit`;
   }
-
-  if (group === "coastline") return "Click to edit the coastline";
 
   if (group === "zones") {
     const zoneId = Number(path[path.length - 8].dataset.id);
@@ -167,6 +165,15 @@ function getElementTip({ group, subgroup, target, event, path, cellId }: TipCont
   if (group === "ice") return "Click to edit the Ice";
 
   return undefined;
+}
+
+/** Get the full label text, joining lines of multi-line labels rendered as tspans */
+function getLabelText(labelElement: SVGElement): string {
+  const tspans = labelElement.querySelectorAll("tspan");
+  const text = tspans.length
+    ? Array.from(tspans, tspan => tspan.textContent ?? "").join(" ")
+    : (labelElement.textContent ?? "");
+  return text.replaceAll("|", " ").trim();
 }
 
 function getEmblemTip(target: SVGElement, parent: SVGElement, event: Event): string {

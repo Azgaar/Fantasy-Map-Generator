@@ -1,7 +1,5 @@
 // Reading and writing local files, plus naming downloads and exports.
 
-import { ensureEl } from "./nodeUtils";
-
 /** Build a filename from the map name, optional type and current time */
 export function getFileName(dataType?: string): string {
   const pad = (value: number) => String(value).padStart(2, "0");
@@ -16,7 +14,7 @@ export function getFileName(dataType?: string): string {
   ].join("-");
 
   const type = dataType ? `${dataType} ` : "";
-  return `${ensureEl<HTMLInputElement>("mapName").value} ${type}${dateString}`;
+  return `${options.map.lore.name} ${type}${dateString}`;
 }
 
 /** Download data as a file */
@@ -29,6 +27,47 @@ export function downloadFile(data: BlobPart, name: string, type = "text/plain"):
   link.click();
 
   window.setTimeout(() => window.URL.revokeObjectURL(url), 2000);
+}
+
+/** Strip Inkscape/Sodipodi attributes and Noun Project credits; null if the markup has no svg */
+export function sanitizeSvgIcon(svgText: string): SVGElement | null {
+  const container = document.createElement("html");
+  container.innerHTML = svgText;
+
+  for (const element of Array.from(container.querySelectorAll("*"))) {
+    for (const attr of element.getAttributeNames()) {
+      if (attr.includes("inkscape") || attr.includes("sodipodi")) element.removeAttribute(attr);
+    }
+  }
+
+  if (svgText.includes("from the Noun Project")) {
+    container.querySelectorAll("text").forEach(text => void text.remove());
+  }
+
+  return container.querySelector("svg");
+}
+
+/** UTF-8 safe base64 data URI */
+export function svgToDataUri(svgText: string): string {
+  const bytes = new TextEncoder().encode(svgText);
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return `data:image/svg+xml;base64,${btoa(binary)}`;
+}
+
+/** Whether an icon value is an image URL rather than an emoji or text glyph */
+export function isImageIcon(icon: string): boolean {
+  return /^(https?:\/\/|data:image\/)/.test(icon);
+}
+
+/** A hidden file input owned by the calling module: bind `onchange` on it, then click it */
+export function createFileInput(accept: string): HTMLInputElement {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = accept;
+  input.style.display = "none";
+  document.body.append(input);
+  return input;
 }
 
 /** Read the selected file as text and pass its content to the callback */

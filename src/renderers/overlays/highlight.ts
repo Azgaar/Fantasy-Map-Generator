@@ -1,5 +1,6 @@
-import { easeBounceOut, easeLinear, easeSinIn, select, transition } from "d3";
-import { parseTransform } from "@/utils";
+import { easeBounceOut, easeLinear, easeSinIn, interpolateString, select, transition } from "d3";
+import { viewport } from "@/components/viewport";
+import { minmax, parseTransform } from "@/utils";
 
 const debugLayer = () => select<SVGGElement, unknown>("#debug");
 
@@ -12,27 +13,37 @@ function getBBox(element: Element): DOMRect {
 export function highlightElement(target: Element | null, zoom?: number): void {
   const element = target as SVGGraphicsElement | null;
   if (!element) return;
+  const box = element.tagName === "svg" ? getBBox(element) : element.getBBox();
+  highlightArea(box, zoom, element.getAttribute("transform"));
+}
+
+type Box = Pick<DOMRect, "x" | "y" | "width" | "height">;
+
+/** Draw a temporary outline around a map-space box: for content the viewport renderer may have culled */
+export function highlightArea(box: Box, zoom?: number, transformAttr: string | null = null): void {
   const layer = debugLayer();
   if (layer.select(".highlighted").size()) return; // allow only 1 highlighted element simultaneously
 
-  const box = element.tagName === "svg" ? getBBox(element) : element.getBBox();
-  const transformAttr = element.getAttribute("transform");
   const enter = transition().duration(1000).ease(easeBounceOut);
+  const padding = minmax(Math.max(box.width, box.height) / 4, 8, 60); // map units: the view may still be zooming
 
   layer
     .append("rect")
+    .attr("x", box.x - padding)
+    .attr("y", box.y - padding)
+    .attr("width", box.width + padding * 2)
+    .attr("height", box.height + padding * 2)
+    .classed("highlighted", true)
+    .attr("transform", transformAttr)
+    .transition(enter)
     .attr("x", box.x)
     .attr("y", box.y)
     .attr("width", box.width)
     .attr("height", box.height)
-    .classed("highlighted", true)
-    .attr("transform", transformAttr)
-    .transition(enter)
-    .style("outline-offset", "0px")
     .transition()
     .duration(500)
     .ease(easeLinear)
-    .style("outline-color", "transparent")
+    .style("stroke-opacity", 0)
     .delay(1000)
     .remove();
 
@@ -41,7 +52,7 @@ export function highlightElement(target: Element | null, zoom?: number): void {
   const [shiftX, shiftY] = parseTransform(transformAttr || "");
   const x = box.x + box.width / 2 + (Number(shiftX) || 0);
   const y = box.y + box.height / 2 + (Number(shiftY) || 0);
-  zoomTo(x, y, scale > 2 ? scale : zoom, 1600);
+  zoomTo(x, y, viewport.scale > 2 ? viewport.scale : zoom, 1600);
 }
 
 /** Animate the area or place an emblem belongs to */
@@ -102,4 +113,26 @@ export function highlightEmblemElement(type: string, element: { i: number; [key:
     .attr("stroke-dashoffset", d => d[2])
     .attr("opacity", 0)
     .remove();
+}
+
+/** Trace a path outline in red, animated along its length. Removed by the callers' highlight-off */
+export function highlightOutline(d: string | null): void {
+  if (!d) return;
+  const path = debugLayer()
+    .append("path")
+    .attr("class", "highlight")
+    .attr("d", d)
+    .attr("fill", "none")
+    .attr("stroke", "red")
+    .attr("stroke-width", 1)
+    .attr("opacity", 1)
+    .attr("filter", "url(#blur1)");
+
+  const totalLength = (path.node() as SVGPathElement).getTotalLength();
+  const duration = (totalLength + 5000) / 2;
+  const interpolate = interpolateString(`0, ${totalLength}`, `${totalLength}, ${totalLength}`);
+  path
+    .transition()
+    .duration(duration)
+    .attrTween("stroke-dasharray", () => interpolate);
 }

@@ -3,7 +3,8 @@ import type { ReliefSet, ReliefSetDefinition, ReliefTypeIcons } from "@/types/re
 export const RELIEF_SETS: Record<ReliefSet, ReliefSetDefinition> = {
   simple: { name: "Simple", base: "simple", suffix: "" },
   colored: { name: "Colored", base: "colored", suffix: "" },
-  gray: { name: "Gray", base: "colored", suffix: "-bw" }
+  gray: { name: "Gray", base: "colored", suffix: "-bw" },
+  illustrated: { name: "Illustrated", base: "illustrated", suffix: "-illustrated" }
 };
 
 export const RELIEF_ICONS: ReliefTypeIcons[] = [
@@ -16,7 +17,7 @@ export const RELIEF_ICONS: ReliefTypeIcons[] = [
   { set: "simple", type: "swamp", variants: [1], zoom: 2 },
   { set: "simple", type: "grass", variants: [1], zoom: 3, scale: 1.2 },
   { set: "simple", type: "dune", variants: [1], zoom: 1.5 },
-
+  // colored; gray has the same set colored
   { set: "colored", type: "mount", variants: [2, 3, 4, 5, 6, 7] },
   { set: "colored", type: "mountSnow", variants: [1, 2, 3, 4, 5, 6], fallback: "mount" },
   { set: "colored", type: "vulcan", variants: [1, 2, 3], fallback: "mount" },
@@ -30,5 +31,20 @@ export const RELIEF_ICONS: ReliefTypeIcons[] = [
   { set: "colored", type: "grass", variants: [2], zoom: 1.5 },
   { set: "colored", type: "swamp", variants: [2, 3], zoom: 1.5 },
   { set: "colored", type: "cactus", variants: [1, 2, 3], zoom: 1.5, fallback: "dune" },
-  { set: "colored", type: "deadTree", variants: [1, 2], zoom: 1.5, fallback: "dune" }
+  { set: "colored", type: "deadTree", variants: [1, 2], zoom: 1.5, fallback: "dune" },
+  // illustrated
+  { set: "illustrated", type: "mount", variants: [1, 2, 3] },
+  { set: "illustrated", type: "mountSnow", variants: [1, 2, 3] },
+  { set: "illustrated", type: "vulcan", variants: [1] },
+  { set: "illustrated", type: "hill", variants: [1] },
+  { set: "illustrated", type: "dune", variants: [1] },
+  { set: "illustrated", type: "deciduous", variants: [1] },
+  { set: "illustrated", type: "conifer", variants: [1] },
+  { set: "illustrated", type: "coniferSnow", variants: [1] },
+  { set: "illustrated", type: "acacia", variants: [1] },
+  { set: "illustrated", type: "palm", variants: [1] },
+  { set: "illustrated", type: "grass", variants: [1] },
+  { set: "illustrated", type: "swamp", variants: [1] },
+  { set: "illustrated", type: "cactus", variants: [1] },
+  { set: "illustrated", type: "deadTree", variants: [1] }
 ];

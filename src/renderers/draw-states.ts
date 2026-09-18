@@ -6,7 +6,7 @@ export function drawStates(): void {
   TIME && console.time("drawStates");
   const { cells, states } = pack;
 
-  const renderHalo = ensureEl<HTMLSelectElement>("shapeRendering").value === "geometricPrecision";
+  const renderHalo = options.app.performance.stateHalos;
   const isolines = getIsolines(pack, cellId => cells.state[cellId], { fill: true, waterGap: true, halo: renderHalo });
 
   const clipPaths: string[] = [];

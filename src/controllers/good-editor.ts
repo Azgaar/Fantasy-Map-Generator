@@ -6,7 +6,10 @@ import { capitalize, rn } from "@/utils";
 import { CULTURE_TYPES } from "../generators/cultures-generator";
 import type { DemandCategory, Good } from "../generators/goods-generator";
 import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY } from "../generators/goods-generator";
-import { ensureEl, getRandomColor, unique } from "../utils";
+import { createFileInput, ensureEl, getRandomColor, sanitizeSvgIcon, unique } from "../utils";
+
+let iconImageInput: HTMLInputElement | null = null;
+let iconSvgInput: HTMLInputElement | null = null;
 
 function open(editedGood?: Good, onUpdate?: () => void) {
   const icons = Array.from(ensureEl("good-icons").querySelectorAll("symbol")).map(el => el.id);
@@ -481,10 +484,13 @@ function open(editedGood?: Good, onUpdate?: () => void) {
       iconSelect.innerHTML += `<option value="${id}">${id}</option>`;
       iconSelect.value = id;
     };
-    ensureEl("newGoodUploadIconRaster").onclick = () => (ensureEl("imageToLoad") as HTMLInputElement).click();
-    ensureEl("newGoodUploadIconVector").onclick = () => (ensureEl("svgToLoad") as HTMLInputElement).click();
-    ensureEl("imageToLoad").onchange = () => uploadImage("image", onIconUpload);
-    ensureEl("svgToLoad").onchange = () => uploadImage("svg", onIconUpload);
+    const pickIcon = (type: "image" | "svg") => {
+      const input = getIconInput(type);
+      input.onchange = () => uploadImage(type, onIconUpload);
+      input.click();
+    };
+    ensureEl("newGoodUploadIconRaster").onclick = () => pickIcon("image");
+    ensureEl("newGoodUploadIconVector").onclick = () => pickIcon("svg");
   }
 }
 
@@ -499,8 +505,18 @@ function getMultiplierEntityName(dim: MultiplierDimKey, id: string): string {
   return pack.biomes[+id]?.name ?? `Biome ${id}`;
 }
 
+/** Own the icon file inputs here so reopen never binds a second listener on a shared element */
+function getIconInput(type: "image" | "svg"): HTMLInputElement {
+  if (type === "image") {
+    iconImageInput ??= createFileInput("image/*");
+    return iconImageInput;
+  }
+  iconSvgInput ??= createFileInput(".svg");
+  return iconSvgInput;
+}
+
 function uploadImage(type: "image" | "svg", callback: (type: string, id: string) => void) {
-  const input = ensureEl<HTMLInputElement>(type === "image" ? "imageToLoad" : "svgToLoad");
+  const input = getIconInput(type);
   const file = input.files![0];
   input.value = "";
 
@@ -527,19 +543,7 @@ function uploadImage(type: "image" | "svg", callback: (type: string, id: string)
       const svg = /*html*/ `<svg id="${id}" xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><image x="0" y="0" width="200" height="200" href="${result}"/></svg>`;
       goodIcons.insertAdjacentHTML("beforeend", svg);
     } else {
-      const el = document.createElement("html");
-      el.innerHTML = result;
-
-      el.querySelectorAll("*").forEach(el => {
-        const attributes = el.getAttributeNames();
-        attributes.forEach(attr => {
-          if (attr.includes("inkscape") || attr.includes("sodipodi")) el.removeAttribute(attr);
-        });
-      });
-
-      if (result.includes("from the Noun Project")) el.querySelectorAll("text").forEach(textEl => void textEl.remove());
-
-      const svg = el.querySelector("svg");
+      const svg = sanitizeSvgIcon(result);
       if (!svg)
         return void tip(
           "The file should be prepared for load to FMG. If you don't know why it's happening, try to upload raster image",

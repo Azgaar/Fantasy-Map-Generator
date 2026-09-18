@@ -1,4 +1,4 @@
-export type ReliefSet = "simple" | "colored" | "gray";
+export type ReliefSet = "simple" | "colored" | "gray" | "illustrated";
 
 export interface ReliefSetDefinition {
   name: string;

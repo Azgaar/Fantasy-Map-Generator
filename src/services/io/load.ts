@@ -1,15 +1,23 @@
 import { select } from "d3";
+import { fitMapToScreen } from "@/components/canvas";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
+import { registerMap } from "@/components/lifecycle";
+import { pickMapFile } from "@/components/options/io-panes";
+import { syncOptionInputs } from "@/components/options/tabs/options-tab";
+import { applyPerformanceSettings } from "@/components/performance";
 import { clearMainTip, tip } from "@/components/tooltips";
+import { undraw } from "@/components/undraw";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import { resetZoom } from "@/components/zoom";
 import { GraphOverride } from "@/generators/graph-override";
-import { invalidateEmblems } from "@/renderers/draw-emblems";
-import { clearLegend } from "@/renderers/draw-legend";
+import { onLegendClick } from "@/renderers/draw-legend";
+import { zonesFilter } from "@/renderers/draw-zones";
 import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
+import { logStats } from "@/services/logging";
 import { clearCache, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
-import { applyOption, ensureEl, escapeHtml, last, link, minmax, parseError, rn, safeParseJSON } from "@/utils";
+import { ensureEl, escapeHtml, last, link, parseError, rn, safeParseJSON } from "@/utils";
 
 async function quickLoad(): Promise<void> {
   const blob = await ldb.get("lastMap");
@@ -48,7 +56,8 @@ async function createSharableDropboxLink(): Promise<void> {
 }
 
 function loadMapPrompt(blob: Blob): void {
-  const workingTime = (Date.now() - last(mapHistory).created) / 60000; // minutes
+  const current = mapHistory.at(-1);
+  const workingTime = current ? (Date.now() - current.registeredAt) / 60000 : 0; // minutes
   if (workingTime < 5) {
     loadLastSavedMap();
     return;
@@ -239,83 +248,25 @@ function showUploadMessage(type: string, mapData: string[] | null, mapVersion: s
 }
 
 async function parseLoadedData(data: string[], mapVersion: string | null): Promise<void> {
-  let loadGroupOpen = false;
+  let isLogGroupOpen = false;
 
   try {
-    // exit customization
-    if (typeof window.closeDialogs === "function") closeDialogs();
+    const { migrateLegacySettings, resolveVersionConflicts } = await import("./auto-update"); // TODO: don't load if not required
+
+    closeDialogs();
     customization = 0;
     if (ensureEl("customizationMenu").offsetParent) ensureEl("styleTab").click();
 
-    {
-      const params = data[0].split("|");
-      if (params[3]) {
-        seed = params[3];
-        ensureEl<HTMLInputElement>("optionsSeed").value = seed;
-      }
-      if (INFO) {
-        console.group(params[3] ? `Loaded Map ${seed}` : "Loaded Map");
-        loadGroupOpen = true;
-      }
-      if (params[4]) graphWidth = +params[4];
-      if (params[5]) graphHeight = +params[5];
-      mapId = params[6] ? +params[6] : Date.now();
-    }
+    migrateLegacySettings(mapVersion!, data);
+    const settings = data[1] ? safeParseJSON(data[1]) : null;
+    if (!settings) throw new Error("Map settings are missing or malformed");
+    Options.applyLoaded(settings);
+    syncOptionInputs();
+    setStylePresetSelect();
 
-    {
-      const settings = data[1].split("|");
-      if (settings[0]) applyOption(distanceUnitInput, settings[0]);
-      if (settings[1]) {
-        ensureEl<HTMLInputElement>("distanceScaleInput").value = settings[1];
-        distanceScale = +settings[1];
-      }
-      if (settings[2]) areaUnit.value = settings[2];
-      if (settings[3]) applyOption(heightUnit, settings[3]);
-      if (settings[4]) heightExponentInput.value = settings[4];
-      if (settings[5]) temperatureScale.value = settings[5];
-      // setting 6-11 (scaleBar) are part of style now, kept as "" in newer versions for compatibility
-      if (settings[12]) {
-        ensureEl<HTMLInputElement>("populationRateInput").value = settings[12];
-        populationRate = +settings[12];
-      }
-      if (settings[13]) {
-        ensureEl<HTMLInputElement>("urbanizationInput").value = settings[13];
-        urbanization = +settings[13];
-      }
-      if (settings[19]) options = JSON.parse(settings[19]);
-      // settings 14, 15, 18, 25 (world configuration) are part of options now, only read for old maps
-      if (settings[14]) options.mapSize = minmax(+settings[14], 1, 100);
-      if (settings[15]) options.latitude = minmax(+settings[15], 0, 100);
-      if (settings[18]) options.prec = minmax(+settings[18], 0, 500);
-      options.mapSize ??= 100;
-      options.latitude ??= 50;
-      options.prec ??= 100;
-      options.labels ??= Labels.getDefaultOptions();
-      options.emblems ??= { showAll: false };
-      options.emblems.showAll ??= false;
-      options.burgs ??= { groups: Burgs.getDefaultGroups() };
-      // setting 16 and 17 (temperature) are part of options now, kept as "" in newer versions for compatibility
-      if (settings[16]) options.temperatureEquator = +settings[16];
-      if (settings[17]) options.temperatureNorthPole = options.temperatureSouthPole = +settings[17];
-      if (settings[20]) mapName.value = settings[20];
-      // if (settings[21]) hideLabels.checked = Boolean(+settings[21]); // moved to options.labels.showAll
-      if (settings[22]) stylePreset.value = settings[22];
-      // if (settings[23]) rescaleLabels.checked = Boolean(+settings[23]); // moved to options.labels.resizeOnZoom
-      if (settings[24]) {
-        ensureEl<HTMLInputElement>("urbanDensityInput").value = settings[24];
-        urbanDensity = +settings[24];
-      }
-      if (settings[25]) options.longitude = minmax(+settings[25], 0, 100);
-      options.longitude ??= 50;
-      if (settings[26]) ensureEl<HTMLInputElement>("growthRate").value = settings[26];
-    }
-    // ensureEl<HTMLInputElement>("stateLabelsModeInput").value = options.stateLabelsMode; // moved to options.labels.groups[group].mode
-    ensureEl<HTMLInputElement>("yearInput").value = String(options.year);
-    ensureEl<HTMLInputElement>("eraInput").value = options.era;
-    ensureEl<HTMLInputElement>("shapeRendering").value =
-      select("#viewbox").attr("shape-rendering") || "geometricPrecision";
-    if (data[2]) mapCoordinates = JSON.parse(data[2]);
-    if (data[4]) notes = JSON.parse(data[4]);
+    INFO && console.group(options.map.seed ? `Loaded Map ${options.map.seed}` : "Loaded Map");
+    isLogGroupOpen = true;
+
     if (data[34]) {
       const usedFonts = JSON.parse(data[34]);
       usedFonts.forEach((usedFont: (typeof fonts)[number]) => {
@@ -329,9 +280,10 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       });
     }
 
+    undraw(); // every layer releases its scene and content before the loaded map takes over
     select("#map").remove();
     document.body.insertAdjacentHTML("afterbegin", data[5]);
-    invalidateEmblems(); // the viewport scene belongs to the map that was just dropped
+    zonesFilter.type = "all"; // the dropped map's zone types say nothing about the loaded one
 
     // TODO: check if we need it or if LayersRegistry resolves it automatically?
     const viewbox = select("#viewbox");
@@ -343,6 +295,8 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     }
     grid = JSON.parse(data[6]);
     Grid.rebuildGraph(grid);
+    GraphOverride.clear(); // the loaded world replaces the previous one
+    HeightmapGenerator.clearData(); // the generator must not pin the replaced grid
     grid.cells.h = Uint8Array.from(data[7].split(","), Number);
     grid.cells.prec = Uint8Array.from(data[8].split(","), Number);
     grid.cells.f = Uint16Array.from(data[9].split(","), Number);
@@ -418,13 +372,13 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       });
     }
 
-    // data[45]: custom good icons
-    if (data[45]) {
-      const goodIconsDefs = document.getElementById("good-icons");
-      if (goodIconsDefs) goodIconsDefs.insertAdjacentHTML("beforeend", data[45]);
-    }
+    // data[45]: custom good icons. #good-icons lives outside the replaced map svg, clear the previous set
+    const goodIconsDefs = document.getElementById("good-icons");
+    goodIconsDefs?.querySelectorAll('[id^="good-custom-"]').forEach(icon => {
+      icon.remove();
+    });
+    if (data[45]) goodIconsDefs?.insertAdjacentHTML("beforeend", data[45]);
 
-    const { resolveVersionConflicts } = await import("./auto-update"); // TODO: don't load if not required
     await resolveVersionConflicts(mapVersion!, data);
 
     const styleRecord = data[48] ? safeParseJSON(data[48]) : undefined; // data[48] should be already migrated by auto-update
@@ -443,8 +397,8 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       .on("mousemove", () => tip("Click to open Units Editor"))
       .on("click", () => window.Controllers.UnitsEditor.open());
     select("#legend")
-      .on("mousemove", () => tip("Drag to change the position. Click to hide the legend"))
-      .on("click", () => clearLegend());
+      .on("mousemove", () => tip("Drag to change the position. Click to hide the legend box"))
+      .on("click", onLegendClick);
 
     // add custom heightmap color scheme if any
     if (heightmapColorSchemes) {
@@ -535,7 +489,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         invalidCells.forEach(i => {
           cells.r[i] = 0;
         });
-        select("#rivers").select(`river${r}`).remove();
         ERROR && console.error("[Data integrity] Invalid river", r, "is assigned to cells", invalidCells);
       });
 
@@ -687,9 +640,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
             const domElements = document.querySelectorAll<HTMLElement>(`#marker${marker.i}`);
             if (domElements[1]) domElements[1].id = `marker${nextId}`; // rename 2nd dom element
 
-            const noteElements = notes.filter(note => note.id === `marker${marker.i}`);
-            if (noteElements[1]) noteElements[1].id = `marker${nextId}`; // rename 2nd note
-
             marker.i = nextId;
             nextId += 1;
           } else {
@@ -720,12 +670,19 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
 
     Layers.drawAll();
     applyStoredStyles();
+    applyPerformanceSettings(); // the file's SVG carries the attributes of the browser that saved it
     applyDefaultViewboxEvents();
+    fitMapToScreen();
+    resetZoom(0); // an opened map is shown fitted, whatever window size it was made on
     focusOn();
     invokeActiveZooming();
-    fitMapToScreen();
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - uploadTimeStart) / 1000, 2)}s`);
+
+    Options.persist(); // the migrations run after the adoption, and they change the map too
+
+    const mapCreatedAt = +data[0].split("|")[6] || Date.now();
+    registerMap(mapCreatedAt);
     logStats();
     tip("Map is successfully loaded", true, "success", 7000);
   } catch (error) {
@@ -743,7 +700,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         "Clear cache": () => clearCache(),
         "Select file": function (this: HTMLElement) {
           $(this).dialog("close");
-          ensureEl("mapToLoad").click();
+          pickMapFile();
         },
         "New map": function (this: HTMLElement) {
           $(this).dialog("close");
@@ -756,7 +713,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       position: { my: "center", at: "center", of: "svg" }
     });
   } finally {
-    if (loadGroupOpen) console.groupEnd();
+    if (isLogGroupOpen) console.groupEnd();
   }
 }
 

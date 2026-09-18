@@ -1,0 +1,563 @@
+import Alea from "alea";
+import { polygonArea } from "d3";
+import { clipPoly, connectVertices, distanceSquared, isLand, isWater, P, ra, rn, TYPED_ARRAY_MAX } from "../utils";
+import type { CoastlineSettings } from "./coastline-generator";
+
+declare global {
+  var Features: FeatureModule;
+}
+
+export type FeatureType = "ocean" | "lake" | "island";
+
+/* Pack features interface */
+export interface CapturedFeature {
+  name: string;
+  note?: string;
+  type: FeatureType;
+  gridCells: Set<number>;
+  coastline?: CoastlineSettings;
+}
+
+export interface Feature {
+  i: number;
+  type: FeatureType;
+  land: boolean;
+  border: boolean;
+  cells: number;
+  firstCell: number;
+  vertices: number[];
+  area: number;
+  shoreline: number[];
+  height: number;
+  subtype: string; // classification within the type: continent/island/isle, ocean/sea/gulf, freshwater/salt/...
+  group: string; // svg group the feature is drawn in
+  coastline?: CoastlineSettings; // own coastline settings, overriding the map-level ones
+  temp: number;
+  flux: number;
+  evaporation: number;
+  name: string;
+
+  // River related
+  inlets?: number[];
+  outlet?: number;
+  river?: number;
+  enteringFlux?: number;
+  closed?: boolean;
+  outCell?: number;
+
+  note?: string;
+}
+
+export interface GridFeature {
+  i: number;
+  land: boolean;
+  border: boolean;
+  type: FeatureType;
+}
+
+// the fixed subtype sets: users pick within them, but cannot invent new subtypes
+export const LAKE_SUBTYPES = ["freshwater", "salt", "dry", "sinkhole", "frozen", "lava"] as const;
+export const ISLAND_SUBTYPES = ["continent", "island", "isle", "lake_island"] as const;
+export const OCEAN_SUBTYPES = ["ocean", "sea", "gulf"] as const;
+
+export const NON_NAVIGABLE_LAKE_SUBTYPES = new Set<string>(["dry", "frozen", "lava"]);
+
+class FeatureModule {
+  private DEEPER_LAND = 3;
+  private LANDLOCKED = 2;
+  private LAND_COAST = 1;
+  private UNMARKED = 0;
+  private WATER_COAST = -1;
+  private DEEP_WATER = -2;
+
+  /**
+   * calculate distance to coast for every cell
+   */
+  private markup({
+    distanceField,
+    neighbors,
+    start,
+    increment,
+    limit = TYPED_ARRAY_MAX.INT8
+  }: {
+    distanceField: Int8Array;
+    neighbors: number[][];
+    start: number;
+    increment: number;
+    limit?: number;
+  }) {
+    for (let distance = start, marked = Infinity; marked > 0 && distance !== limit; distance += increment) {
+      marked = 0;
+      const prevDistance = distance - increment;
+      for (let cellId = 0; cellId < neighbors.length; cellId++) {
+        if (distanceField[cellId] !== prevDistance) continue;
+
+        for (const neighborId of neighbors[cellId]) {
+          if (distanceField[neighborId] !== this.UNMARKED) continue;
+          distanceField[neighborId] = distance;
+          marked++;
+        }
+      }
+    }
+  }
+
+  /**
+   * mark Grid features (ocean, lakes, islands) and calculate distance field
+   */
+  markupGrid() {
+    Math.random = Alea(options.map.seed); // get the same result on heightmap edit in Erase mode
+
+    const { h: heights, c: neighbors, b: borderCells, i } = grid.cells;
+    const cellsNumber = i.length;
+    const distanceField = new Int8Array(cellsNumber); // gird.cells.t
+    const featureIds = new Uint16Array(cellsNumber); // gird.cells.f
+    const features: GridFeature[] = [];
+
+    const queue = [0];
+    for (let featureId = 1; queue[0] !== -1; featureId++) {
+      const firstCell = queue[0];
+      featureIds[firstCell] = featureId;
+
+      const land = heights[firstCell] >= 20;
+      let border = false; // set true if feature touches map edge
+
+      while (queue.length) {
+        const cellId = queue.pop() as number;
+        if (!border && borderCells[cellId]) border = true;
+
+        for (const neighborId of neighbors[cellId]) {
+          const isNeibLand = heights[neighborId] >= 20;
+
+          if (land === isNeibLand && featureIds[neighborId] === this.UNMARKED) {
+            featureIds[neighborId] = featureId;
+            queue.push(neighborId);
+          } else if (land && !isNeibLand) {
+            distanceField[cellId] = this.LAND_COAST;
+            distanceField[neighborId] = this.WATER_COAST;
+          }
+        }
+      }
+
+      const type = land ? "island" : border ? "ocean" : "lake";
+      features.push({ i: featureId, land, border, type });
+
+      queue[0] = featureIds.indexOf(this.UNMARKED); // find unmarked cell
+    }
+
+    // markup deep ocean cells
+    this.markup({
+      distanceField,
+      neighbors,
+      start: this.DEEP_WATER,
+      increment: -1,
+      limit: -10
+    });
+    grid.cells.t = distanceField;
+    grid.cells.f = featureIds;
+    grid.features = [0 as unknown as GridFeature, ...features];
+  }
+
+  /**
+   * mark PackedGraph features (oceans, lakes, islands) and calculate distance field
+   */
+  markupPack() {
+    const defineHaven = (cellId: number) => {
+      const waterCells = neighbors[cellId].filter((index: number) => isWater(index, pack));
+      const distances = waterCells.map((neibCellId: number) => distanceSquared(cells.p[cellId], cells.p[neibCellId]));
+      const closest = distances.indexOf(Math.min.apply(Math, distances));
+
+      haven[cellId] = waterCells[closest];
+      harbor[cellId] = waterCells.length;
+    };
+
+    const getCellsData = (featureType: string, firstCell: number): [number, number[]] => {
+      if (featureType === "ocean") return [firstCell, []];
+
+      const getType = (cellId: number) => featureIds[cellId];
+      const type = getType(firstCell);
+      const ofSameType = (cellId: number) => getType(cellId) === type;
+      const ofDifferentType = (cellId: number) => getType(cellId) !== type;
+
+      const startCell = findOnBorderCell(firstCell);
+      const featureVertices = getFeatureVertices(startCell);
+      return [startCell, featureVertices];
+
+      function findOnBorderCell(firstCell: number) {
+        const isOnBorder = (cellId: number) => borderCells[cellId] || neighbors[cellId].some(ofDifferentType);
+        if (isOnBorder(firstCell)) return firstCell;
+
+        const startCell = cells.i.filter(ofSameType).find(isOnBorder);
+        if (startCell === undefined)
+          throw new Error(`Markup: firstCell ${firstCell} is not on the feature or map border`);
+
+        return startCell;
+      }
+
+      function getFeatureVertices(startCell: number) {
+        const startingVertex = cells.v[startCell].find((v: number) => vertices.c[v].some(ofDifferentType));
+        if (startingVertex === undefined) throw new Error(`Markup: startingVertex for cell ${startCell} is not found`);
+
+        return connectVertices({
+          vertices,
+          startingVertex,
+          ofSameType,
+          closeRing: false
+        });
+      }
+    };
+
+    const addFeature = ({
+      firstCell,
+      land,
+      border,
+      featureId,
+      totalCells,
+      cellsArea
+    }: {
+      firstCell: number;
+      land: boolean;
+      border: boolean;
+      featureId: number;
+      totalCells: number;
+      cellsArea: number;
+    }): Feature => {
+      const type = land ? "island" : border ? "ocean" : "lake";
+      const [startCell, featureVertices] = getCellsData(type, firstCell);
+      const points = clipPoly(
+        featureVertices.map((vertex: number) => vertices.p[vertex]),
+        options.map.graph.width,
+        options.map.graph.height
+      );
+      const area = polygonArea(points); // feature perimiter area
+      const absArea = type === "ocean" ? cellsArea : Math.abs(rn(area)); // an ocean ring is open at the border: its polygon area collapses
+
+      const feature: Partial<Feature> = {
+        i: featureId,
+        type,
+        land,
+        border,
+        cells: totalCells,
+        firstCell: startCell,
+        vertices: featureVertices,
+        area: absArea,
+        shoreline: [],
+        height: 0
+      };
+
+      if (type === "lake") {
+        if (area > 0) feature.vertices = (feature.vertices as number[]).reverse();
+        feature.shoreline = Lakes.defineShoreline(feature as Feature);
+        feature.height = Lakes.getHeight(feature as Feature);
+      }
+
+      return {
+        ...feature
+      } as Feature;
+    };
+
+    const { cells, vertices } = pack;
+    const { c: neighbors, b: borderCells, i } = cells;
+    const packCellsNumber = i.length;
+    if (!packCellsNumber) return; // no cells -> there is nothing to do
+
+    const distanceField = new Int8Array(packCellsNumber); // pack.cells.t
+    const featureIds = new Uint16Array(packCellsNumber); // pack.cells.f
+    const haven = new Uint32Array(packCellsNumber); // haven: opposite water cell
+    const harbor = new Uint8Array(packCellsNumber); // harbor: number of adjacent water cells
+    const features: Feature[] = [];
+
+    const queue = [0];
+    for (let featureId = 1; queue[0] !== -1; featureId++) {
+      const firstCell = queue[0];
+      featureIds[firstCell] = featureId;
+
+      const land = isLand(firstCell, pack);
+      let border = Boolean(borderCells[firstCell]); // true if feature touches map border
+      let totalCells = 1; // count cells in a feature
+      let cellsArea = cells.area[firstCell];
+
+      while (queue.length) {
+        const cellId = queue.pop() as number;
+        if (borderCells[cellId]) border = true;
+
+        for (const neighborId of neighbors[cellId]) {
+          const isNeibLand = isLand(neighborId, pack);
+
+          if (land && !isNeibLand) {
+            distanceField[cellId] = this.LAND_COAST;
+            distanceField[neighborId] = this.WATER_COAST;
+            if (!haven[cellId]) defineHaven(cellId);
+          } else if (land && isNeibLand) {
+            if (distanceField[neighborId] === this.UNMARKED && distanceField[cellId] === this.LAND_COAST)
+              distanceField[neighborId] = this.LANDLOCKED;
+            else if (distanceField[cellId] === this.UNMARKED && distanceField[neighborId] === this.LAND_COAST)
+              distanceField[cellId] = this.LANDLOCKED;
+          }
+
+          if (!featureIds[neighborId] && land === isNeibLand) {
+            queue.push(neighborId);
+            featureIds[neighborId] = featureId;
+            totalCells++;
+            cellsArea += cells.area[neighborId];
+          }
+        }
+      }
+
+      features.push(addFeature({ firstCell, land, border, featureId, totalCells, cellsArea }));
+      queue[0] = featureIds.indexOf(this.UNMARKED); // find unmarked cell
+    }
+
+    this.markup({
+      distanceField,
+      neighbors,
+      start: this.DEEPER_LAND,
+      increment: 1
+    }); // markup pack land
+    this.markup({
+      distanceField,
+      neighbors,
+      start: this.DEEP_WATER,
+      increment: -1,
+      limit: -10
+    }); // markup pack water
+
+    pack.cells.t = distanceField;
+    pack.cells.f = featureIds;
+    pack.cells.haven = haven;
+    pack.cells.harbor = harbor;
+    pack.features = [0 as unknown as Feature, ...features];
+  }
+
+  /** Grid cells a feature covered, plus the data the user owns, so a re-markup can hand it back */
+  captureUserData(): CapturedFeature[] {
+    const gridCellsByFeature = this.mapGridCellsByFeature();
+    if (!gridCellsByFeature) return [];
+
+    const captured: CapturedFeature[] = [];
+    for (const feature of pack.features) {
+      if (!feature?.i || (!feature.name && !feature.note && !feature.coastline)) continue;
+      const gridCells = gridCellsByFeature.get(feature.i);
+      if (!gridCells?.size) continue;
+      const { name, note, type, coastline } = feature;
+      captured.push({ name, note, type, gridCells, coastline });
+    }
+
+    return captured;
+  }
+
+  /** Hand the captured data to whichever new feature covers most of the old one, dropping the rest */
+  restoreUserData(captured: CapturedFeature[]): void {
+    const { cells, features } = pack;
+    if (!captured.length || !cells?.f) return;
+
+    const capturedByGridCell = new Map<number, number>();
+    captured.forEach((item, index) => {
+      for (const gridCell of item.gridCells) capturedByGridCell.set(gridCell, index);
+    });
+
+    const overlaps = new Map<string, number>(); // `${featureId}:${capturedIndex}` -> shared grid cells
+    for (let i = 0; i < cells.f.length; i++) {
+      const featureId = cells.f[i];
+      if (!featureId) continue;
+      const index = capturedByGridCell.get(cells.g[i]);
+      if (index === undefined) continue;
+      const key = `${featureId}:${index}`;
+      overlaps.set(key, (overlaps.get(key) || 0) + 1);
+    }
+
+    const matches = Array.from(overlaps, ([key, overlap]) => {
+      const [featureId, index] = key.split(":").map(Number);
+      return { featureId, index, overlap };
+    }).sort((a, b) => b.overlap - a.overlap);
+
+    const takenFeatures = new Set<number>();
+    const takenCaptures = new Set<number>();
+
+    for (const { featureId, index, overlap } of matches) {
+      if (takenFeatures.has(featureId) || takenCaptures.has(index)) continue;
+      if (overlap * 2 < captured[index].gridCells.size) continue; // the old feature is mostly gone
+
+      const feature = features[featureId];
+      if (!feature) continue;
+      if (feature.type !== captured[index].type) continue; // a lake raised to land is not the island covering it
+
+      takenFeatures.add(featureId);
+      takenCaptures.add(index);
+      const { name, note, coastline } = captured[index];
+      if (name) feature.name = name;
+      if (note) feature.note = note;
+      if (coastline) feature.coastline = coastline;
+    }
+  }
+
+  private mapGridCellsByFeature(): Map<number, Set<number>> | undefined {
+    const { cells } = pack;
+    if (!cells?.f || !cells.g || !pack.features) return undefined;
+
+    const gridCellsByFeature = new Map<number, Set<number>>();
+    for (let i = 0; i < cells.f.length; i++) {
+      const featureId = cells.f[i];
+      if (!featureId) continue;
+
+      const gridCells = gridCellsByFeature.get(featureId) ?? new Set<number>();
+      gridCells.add(cells.g[i]);
+      gridCellsByFeature.set(featureId, gridCells);
+    }
+
+    return gridCellsByFeature;
+  }
+
+  defineGroups() {
+    const gridCellsNumber = grid.cells.i.length;
+    const CONTINENT_MIN_SIZE = gridCellsNumber / 10;
+    const ISLAND_MIN_SIZE = gridCellsNumber / 1000;
+
+    const defineIslandSubtype = (feature: Feature) => {
+      const prevFeature = pack.features[pack.cells.f[feature.firstCell - 1]];
+      if (prevFeature && prevFeature.type === "lake") return "lake_island";
+      if (feature.cells > CONTINENT_MIN_SIZE) return "continent";
+      if (feature.cells > ISLAND_MIN_SIZE) return "island";
+      return "isle";
+    };
+
+    const defineLakeSubtype = (feature: Feature) => {
+      if (feature.temp < -3) return "frozen";
+      if (feature.height > 60 && feature.cells < 10 && feature.firstCell % 10 === 0) return "lava";
+
+      if (!feature.inlets && !feature.outlet) {
+        if (feature.evaporation > feature.flux * 4) return "dry";
+        if (feature.cells < 3 && feature.firstCell % 10 === 0) return "sinkhole";
+      }
+
+      if (!feature.outlet && feature.evaporation > feature.flux) return "salt";
+
+      return "freshwater";
+    };
+
+    const defineSubtype = (feature: Feature) => {
+      if (feature.type === "island") return defineIslandSubtype(feature);
+      if (feature.type === "lake") return defineLakeSubtype(feature);
+      return this.getOceanSubtype(feature);
+    };
+
+    for (const feature of pack.features) {
+      if (!feature) continue;
+
+      if (feature.type === "lake") feature.height = Lakes.getHeight(feature);
+      feature.subtype = defineSubtype(feature);
+      if (feature.type !== "ocean") feature.group = this.getDefaultGroup(feature); // oceans are not drawn
+    }
+  }
+
+  getOceanSubtype(feature: Feature): (typeof OCEAN_SUBTYPES)[number] {
+    const gridCellsNumber = grid.cells.i.length;
+    if (feature.cells > gridCellsNumber / 25) return "ocean";
+    if (feature.cells > gridCellsNumber / 1000) return "sea";
+    return "gulf";
+  }
+
+  getDefaultGroup(feature: Feature): string {
+    if (feature.type === "lake") return feature.subtype || "freshwater";
+    return feature.subtype === "lake_island" ? "lake_island" : "sea_island";
+  }
+
+  /** Name the features that have none; existing names are the user's and stay */
+  defineNames() {
+    Math.random = Alea(options.map.seed); // the names roll the PRNG, the steps after stay put
+    for (const feature of pack.features) {
+      if (feature && !feature.name) feature.name = this.getName(feature);
+    }
+  }
+
+  getName(feature: Feature): string {
+    if (feature.type === "ocean") return this.getOceanName(feature);
+    if (P(0.1)) return ra(ADJECTIVES);
+    const cell = feature.type === "lake" ? feature.shoreline?.[0] || feature.firstCell : feature.firstCell;
+    const culture = pack.cells.culture[cell];
+    return pack.cultures[culture] ? Names.getCulture(culture) : ra(ADJECTIVES); // a loaded map may hold a dropped culture
+  }
+
+  // oceans belong to no culture: an adjective or the map side, the subtype noun is shown separately
+  private getOceanName(feature: Feature) {
+    if (P(0.8)) return ra(ADJECTIVES);
+    const [x, y] = pack.cells.p[feature.firstCell];
+    const { width, height } = options.map.graph;
+    const [dx, dy] = [x / width - 0.5, y / height - 0.5];
+    return Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? "Western" : "Eastern") : dy < 0 ? "Northern" : "Southern";
+  }
+}
+
+const ADJECTIVES = [
+  "Autumn",
+  "Azure",
+  "Black",
+  "Blue",
+  "Bony",
+  "Boundless",
+  "Broken",
+  "Calm",
+  "Cold",
+  "Crimson",
+  "Deep",
+  "Draconic",
+  "Dreamy",
+  "Echoing",
+  "Emerald",
+  "Endless",
+  "Far",
+  "Forbidden",
+  "Forgotten",
+  "Fortunate",
+  "Frozen",
+  "Glassy",
+  "Glittering",
+  "Golden",
+  "Great",
+  "Green",
+  "Grey",
+  "Icy",
+  "Inner",
+  "Kingly",
+  "Lost",
+  "Misty",
+  "Outer",
+  "Pale",
+  "Pearly",
+  "Reedy",
+  "Red",
+  "Restless",
+  "Roaring",
+  "Ruinous",
+  "Sailing",
+  "Salty",
+  "Sapphire",
+  "Serene",
+  "Serpentine",
+  "Shattered",
+  "Shining",
+  "Shadowy",
+  "Silent",
+  "Sirenic",
+  "Sleeping",
+  "Sorrowful",
+  "Starry",
+  "Still",
+  "Stormy",
+  "Sunlit",
+  "Summer",
+  "Tearful",
+  "Thunderous",
+  "Tidal",
+  "Yellow",
+  "Wandering",
+  "Whispering",
+  "White",
+  "Wide",
+  "Wild",
+  "Windy",
+  "Winter",
+  "Wondrous",
+  "World"
+];
+
+window.Features = new FeatureModule();

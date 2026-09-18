@@ -1,4 +1,5 @@
 import Alea from "alea";
+import { viewport } from "@/components/viewport";
 import type { LabelType } from "@/generators/labels-generator";
 import { getGroupStyle, writeGroupStyle } from "@/renderers/labels/label-groups";
 import { createLabelElements } from "@/renderers/labels/label-markup";
@@ -131,17 +132,19 @@ export async function calculateLabelSpread(): Promise<LabelSpreadResult> {
   const visibleLabels = getVisibleLabels();
   if (!visibleLabels.length) return emptyResult();
 
-  const sandbox = new LabelMeasurementSandbox(visibleLabels);
+  let sandbox: LabelMeasurementSandbox | undefined;
   try {
+    const measurementSandbox = new LabelMeasurementSandbox(visibleLabels);
+    sandbox = measurementSandbox;
     const burgIconBounds = getDisplayedBurgIconBounds();
     const labelItems = visibleLabels.map(label =>
-      buildPlacementItem(label, sandbox.measure(label), sandbox, burgIconBounds)
+      buildPlacementItem(label, measurementSandbox.measure(label), measurementSandbox, burgIconBounds)
     );
     const items = [...labelItems, ...getBurgIconObstacles(burgIconBounds)];
 
     await nextFrame();
     const ids = items.map(item => item.id).sort();
-    const solution = optimizeLabelPlacements(items, mapBounds(), `${seed}|${ids.join("|")}`);
+    const solution = optimizeLabelPlacements(items, mapBounds(), `${options.map.seed}|${ids.join("|")}`);
     return {
       patches: getPatches(visibleLabels, solution.selected),
       displayedLabels: visibleLabels.length,
@@ -149,7 +152,7 @@ export async function calculateLabelSpread(): Promise<LabelSpreadResult> {
       remainingOverlaps: solution.remainingOverlaps
     };
   } finally {
-    sandbox.destroy();
+    sandbox?.destroy();
   }
 }
 
@@ -183,7 +186,7 @@ function buildBurgCandidates(
     iconBounds: iconBounds ?? pointBounds(label.anchor),
     gap: toMapUnits(BURG_ICON_GAP_SCREEN),
     changePenalty: getBurgChangePenalty(current.bounds),
-    displacementScale: scale
+    displacementScale: viewport.scale
   });
 }
 
@@ -231,7 +234,7 @@ function getBurgLabelCandidates({
 }
 
 function getBurgChangePenalty(bounds: LabelBounds): number {
-  const screenHeight = (bounds.y2 - bounds.y1) * Math.max(scale, 1);
+  const screenHeight = (bounds.y2 - bounds.y1) * Math.max(viewport.scale, 1);
   return BASE_BURG_PLACEMENT_CHANGE_PENALTY * (screenHeight / BASE_BURG_SCREEN_HEIGHT) ** 2;
 }
 
@@ -462,20 +465,25 @@ class LabelMeasurementSandbox {
 
   constructor(labels: LabelData[]) {
     this.root = document.createElementNS(SVG_NS, "svg");
-    this.root.setAttribute("width", String(graphWidth));
-    this.root.setAttribute("height", String(graphHeight));
-    this.root.setAttribute("viewBox", `0 0 ${graphWidth} ${graphHeight}`);
+    this.root.setAttribute("width", String(options.map.graph.width));
+    this.root.setAttribute("height", String(options.map.graph.height));
+    this.root.setAttribute("viewBox", `0 0 ${options.map.graph.width} ${options.map.graph.height}`);
     this.root.setAttribute("aria-hidden", "true");
-    this.root.style.cssText = `position:fixed;left:0;top:0;width:${graphWidth}px;height:${graphHeight}px;overflow:visible;opacity:0;pointer-events:none;z-index:-1`;
+    this.root.style.cssText = `position:fixed;left:0;top:0;width:${options.map.graph.width}px;height:${options.map.graph.height}px;overflow:visible;opacity:0;pointer-events:none;z-index:-1`;
     const renderedLabels = document.querySelector<SVGGElement>("#labels");
     const fontSize =
       renderedLabels?.getAttribute("font-size") || (renderedLabels && getComputedStyle(renderedLabels).fontSize);
     if (fontSize) this.root.setAttribute("font-size", fontSize);
     document.body.appendChild(this.root);
-
-    for (const groupName of new Set(labels.map(label => label.group)))
-      this.groups.set(groupName, this.createGroup(groupName));
     this.rootRect = this.root.getBoundingClientRect(); // fixed position and size, so it never moves
+
+    try {
+      for (const groupName of new Set(labels.map(label => label.group)))
+        this.groups.set(groupName, this.createGroup(groupName));
+    } catch (error) {
+      this.root.remove(); // a throwing constructor leaves no instance for the caller to destroy
+      throw error;
+    }
   }
 
   measure(label: LabelData): Measurement {
@@ -539,7 +547,7 @@ class LabelMeasurementSandbox {
   }
 
   private createGroup(groupName: string): SVGGElement {
-    const groupOptions = options.labels.groups.find(group => group.name === groupName);
+    const groupOptions = options.map.labels.groups.find(group => group.name === groupName);
     if (!groupOptions) throw new Error(`Label Group not found: ${groupName}`);
     const group = document.createElementNS(SVG_NS, "g");
     writeGroupStyle(group, getGroupStyle(groupOptions));
@@ -626,7 +634,7 @@ function transformRectToRootBounds(
 
 /** Screen-space distances stay constant on screen, so convert them with the current zoom */
 function toMapUnits(screenValue: number): number {
-  return screenValue / Math.max(scale, MINIMUM_SCALE);
+  return screenValue / Math.max(viewport.scale, MINIMUM_SCALE);
 }
 
 function padBounds(bounds: LabelBounds, screenPadding = LABEL_PADDING_SCREEN): LabelBounds {
@@ -670,7 +678,7 @@ function getOutsideArea(bounds: LabelBounds, map = mapBounds()): number {
 }
 
 function mapBounds(): LabelBounds {
-  return { x1: 0, y1: 0, x2: graphWidth, y2: graphHeight };
+  return { x1: 0, y1: 0, x2: options.map.graph.width, y2: options.map.graph.height };
 }
 
 function fitsPath(measurement: Measurement, startOffset: number): boolean {

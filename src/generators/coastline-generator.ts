@@ -1,7 +1,7 @@
 import Alea from "alea";
 import type { Point } from "@/types/global";
-import { clipPoly, round } from "../utils";
-import type { Feature } from "./features";
+import { clipPoly, minmax, round } from "../utils";
+import type { Feature } from "./features-generator";
 
 declare global {
   // vendored lib, loaded as a classic script from public/libs/simplify.js
@@ -14,10 +14,11 @@ export interface CoastlineSettings {
   baseAmplitude: number; // peak displacement (scales with √edgeLength)
   amplitudeDecay: number; // amplitude multiplier per recursion level
   minEdge: number; // edges shorter than this are never subdivided
-  smoothThreshold: number; // profile values below this → zero displacement
-  roughnessContrast: number; // power applied to normalised roughness profile
-  profileHarmonics: number; // cosine harmonics → rough-zone count (1 = one big zone, 8 = many small)
+  smoothThreshold: number; // roughness values below this → zero displacement
+  roughnessContrast: number; // power applied to the roughness field
+  roughnessScale: number; // size of a calm or rough stretch of coast, in map units
   lakeSmoothThreshMult: number; // smooth-threshold multiplier for lake shores (1 = same as ocean, higher = calmer)
+  variant: number; // reshuffles the coastlines of the map, changing nothing else about them
 }
 
 export interface FractalizedShape {
@@ -25,7 +26,8 @@ export interface FractalizedShape {
   origIndices: number[]; // index in points[] where original vertex i lives
 }
 
-const DEFAULT_SETTINGS: Readonly<CoastlineSettings> = {
+/** The coastline every new map starts from. The one definition of these values */
+const DEFAULT_COASTLINE: Readonly<CoastlineSettings> = {
   enabled: true,
   maxDepth: 4,
   baseAmplitude: 1.5,
@@ -33,294 +35,254 @@ const DEFAULT_SETTINGS: Readonly<CoastlineSettings> = {
   minEdge: 1,
   smoothThreshold: 0.25,
   roughnessContrast: 1.5,
-  profileHarmonics: 4,
-  lakeSmoothThreshMult: 2.0
+  roughnessScale: 60,
+  lakeSmoothThreshMult: 2.0,
+  variant: 0
 };
 
-const STORAGE_KEY = "coastline-settings";
 const SIMPLIFICATION_TOLERANCE = 0.3;
 
-const PROFILE_SIZE = 256;
+// noise is keyed by position, not by sequence index, so editing one vertex leaves the rest of the coast untouched
+const QUANTUM = 64; // coordinates are keyed to 1/64 of a map unit, below which a move changes nothing
+const OCTAVE_WEIGHT = 0.35; // share of the roughness field coming from the half-scale octave
+const FIELD_STRETCH = 1.9; // interpolated noise clusters around ½; spread it like the profile it replaces
 
-// Build a smooth closed roughness envelope via sum-of-cosine harmonics.
-// Intrinsically seam-free; result raised to `contrast` power for calm/rough contrast.
-function makeRoughnessProfile(rand: () => number, contrast: number, numHarmonics = 4): Float32Array {
-  const profile = new Float32Array(PROFILE_SIZE);
-  for (let k = 1; k <= numHarmonics; k++) {
-    const amp = rand();
-    const phase = rand() * Math.PI * 2;
-    for (let i = 0; i < PROFILE_SIZE; i++) {
-      profile[i] += amp * Math.cos((2 * Math.PI * k * i) / PROFILE_SIZE + phase);
-    }
-  }
-  let min = Infinity,
-    max = -Infinity;
-  for (const v of profile) {
-    if (v < min) min = v;
-    if (v > max) max = v;
-  }
-  const range = max - min || 1;
-  for (let i = 0; i < PROFILE_SIZE; i++) {
-    profile[i] = ((profile[i] - min) / range) ** contrast;
-  }
-  return profile;
-}
-
-/** Linear interpolation into the envelope at normalised perimeter position t ∈ [0, 1). */
-function sampleProfile(profile: Float32Array, t: number): number {
-  const pos = (((t % 1) + 1) % 1) * PROFILE_SIZE;
-  const i = Math.floor(pos) % PROFILE_SIZE;
-  const f = pos - Math.floor(pos);
-  return profile[i] * (1 - f) + profile[(i + 1) % PROFILE_SIZE] * f;
-}
-
-/** Circular midpoint of two normalised perimeter positions, handling the 0/1 seam. */
-function midT(t0: number, t1: number): number {
-  const diff = t1 - t0;
-  if (Math.abs(diff) <= 0.5) return t0 + diff / 2;
-  const t = t0 + (diff - Math.sign(diff)) / 2;
-  return ((t % 1) + 1) % 1;
-}
-
-/** Recursively subdivide an edge, inserting displaced midpoints in rough zones. */
-function subdivideEdge(
-  x0: number,
-  y0: number,
-  x1: number,
-  y1: number,
-  t0: number,
-  t1: number,
-  depth: number,
-  amplitude: number,
-  profile: Float32Array,
-  rand: () => number,
-  resultPts: [number, number][],
-  settings: CoastlineSettings
-): void {
-  const dx = x1 - x0;
-  const dy = y1 - y0;
-  const len = Math.sqrt(dx * dx + dy * dy);
-  if (depth === 0 || len < settings.minEdge) return;
-
-  const tm = midT(t0, t1);
-  const roughness = sampleProfile(profile, tm);
-  if (roughness < settings.smoothThreshold) return;
-
-  const px = -dy / len;
-  const py = dx / len;
-  const disp = (rand() - 0.5) * Math.sqrt(len) * amplitude * roughness;
-  const mx = (x0 + x1) / 2 + px * disp;
-  const my = (y0 + y1) / 2 + py * disp;
-
-  const nextAmp = amplitude * settings.amplitudeDecay;
-  subdivideEdge(x0, y0, mx, my, t0, tm, depth - 1, nextAmp, profile, rand, resultPts, settings);
-  resultPts.push([mx, my]);
-  subdivideEdge(mx, my, x1, y1, tm, t1, depth - 1, nextAmp, profile, rand, resultPts, settings);
-}
-
-function fractalize(points: [number, number][], rand: () => number, settings: CoastlineSettings): FractalizedShape {
-  const profile = makeRoughnessProfile(rand, settings.roughnessContrast, settings.profileHarmonics);
-
-  const n = points.length;
-  let total = 0;
-  const segLens = new Array<number>(n);
-  for (let i = 0; i < n; i++) {
-    const [x0, y0] = points[i];
-    const [x1, y1] = points[(i + 1) % n];
-    const dx = x1 - x0;
-    const dy = y1 - y0;
-    segLens[i] = Math.sqrt(dx * dx + dy * dy);
-    total += segLens[i];
-  }
-
-  if (total < 1e-9) return { points, origIndices: points.map((_, i) => i) }; // exclude degenerate polygon
-
-  let cum = 0;
-  const tParams = new Array<number>(n);
-  for (let i = 0; i < n; i++) {
-    tParams[i] = cum / total;
-    cum += segLens[i];
-  }
-
-  const resultPts: [number, number][] = [];
-  const origIndices: number[] = [];
-
-  for (let i = 0; i < n; i++) {
-    origIndices.push(resultPts.length);
-    resultPts.push(points[i]);
-    if (isOnBorder(points[i]) && isOnBorder(points[(i + 1) % n])) continue; // Skip edges running along the map border
-
-    const [x0, y0] = points[i];
-    const [x1, y1] = points[(i + 1) % n];
-    subdivideEdge(
-      x0,
-      y0,
-      x1,
-      y1,
-      tParams[i],
-      tParams[(i + 1) % n],
-      settings.maxDepth,
-      settings.baseAmplitude,
-      profile,
-      rand,
-      resultPts,
-      settings
-    );
-  }
-
-  return { points: resultPts, origIndices };
-}
-
-function isOnBorder([x, y]: [number, number]) {
-  return x === 0 || x === graphWidth || y === 0 || y === graphHeight;
-}
-
-/**
- * Build a closed SVG path string applying the correct curve algorithm per span:
- * Smooth span: Q midpoint B-spline — identical to curveBasisClosed. Produces flowing arcs that hide Voronoi angularity.
- * Jagged span: centripetal Catmull-Rom (α=0.5) through every fractal sub-point. Rounds sharp kinks into gentle curves.
- */
-function buildCoastlinePath({ points, origIndices }: FractalizedShape): string {
-  const N = points.length;
-  const M = origIndices.length;
-  if (N < 3 || M < 3) return "";
-
-  const smooth: boolean[] = new Array(M);
-  for (let i = 0; i < M; i++) {
-    const a = origIndices[i];
-    const b = origIndices[(i + 1) % M];
-    smooth[i] = (b > a ? b - a : b + N - a) === 1;
-  }
-
-  // Start at the B-spline midpoint of the last→first span when that span is
-  // smooth so the closed loop is fully seamless; otherwise start at vertex 0.
-  const p0 = points[origIndices[0]];
-  const pL = points[origIndices[M - 1]];
-  let atMid = smooth[M - 1];
-  const sx = atMid ? (pL[0] + p0[0]) / 2 : p0[0];
-  const sy = atMid ? (pL[1] + p0[1]) / 2 : p0[1];
-  const d: string[] = [`M${sx},${sy}`];
-
-  for (let i = 0; i < M; i++) {
-    const ci = origIndices[i];
-    const ni = origIndices[(i + 1) % M];
-    const [cpx, cpy] = points[ci];
-
-    if (smooth[i]) {
-      // Q midpoint B-spline ≡ curveBasisClosed.
-      // When arriving from a jagged span the cursor is already at cpx,cpy
-      // so just line to the midpoint instead of emitting a degenerate Q.
-      const [npx, npy] = points[ni];
-      const mx = (cpx + npx) / 2;
-      const my = (cpy + npy) / 2;
-      d.push(atMid ? `Q${cpx},${cpy} ${mx},${my}` : `L${mx},${my}`);
-      atMid = true;
-    } else {
-      // Step from the B-spline midpoint to the original vertex when needed.
-      if (atMid) d.push(`L${cpx},${cpy}`);
-
-      // Centripetal Catmull-Rom through every fractal sub-segment.
-      const end = ni > ci ? ni : ni + N;
-      for (let j = ci; j < end; j++) {
-        const a = points[j % N];
-        const b = points[(j + 1) % N];
-        const prev = points[(j - 1 + N) % N];
-        const nnext = points[(j + 2) % N];
-        // Catmull-Rom tangents → Hermite control points (tension ≈ 0.25 for less radical curvature).
-        const cp1x = a[0] + (b[0] - prev[0]) / 8;
-        const cp1y = a[1] + (b[1] - prev[1]) / 8;
-        const cp2x = b[0] - (nnext[0] - a[0]) / 8;
-        const cp2y = b[1] - (nnext[1] - a[1]) / 8;
-        d.push(`C${cp1x},${cp1y} ${cp2x},${cp2y} ${b[0]},${b[1]}`);
-      }
-      atMid = false;
-    }
-  }
-
-  return d.join("");
-}
-
-/**
- * Owns everything coastlines: the user-tunable settings, the fractal displacement of the
- * feature outlines and the SVG path built from them. Renderers and editors ask it for a path,
- * they never fractalize on their own.
- */
+/** Owns the coastline settings, the fractal displacement and the path built from it: nobody else fractalizes */
 class CoastlineGenerator {
-  readonly PROFILE_SIZE = PROFILE_SIZE;
+  // the last shape built for a feature; a regenerated feature is a new object, so its entry is dropped with it
+  // TODO: does it have to be cleared on dialog close?
+  private shapes = new WeakMap<Feature, { key: string; outline: Point[]; shape: FractalizedShape }>();
 
-  /**
-   * Settings of the current map. Kept in options, so they are saved to the .map file and the
-   * coastlines are reproduced exactly on reload. A map saved before the settings existed (or a
-   * brand new map) starts from the last values the user picked
-   */
+  /** Settings of the map on screen: a fact, read at render time and saved with the file */
   get settings(): CoastlineSettings {
-    options.coastline ??= this.getStoredSettings();
-    return options.coastline;
+    return options.map.coastline;
   }
 
-  /** Apply a user change: it defines the coastlines of this map and the defaults for the next one */
+  /** Apply a user change: it shapes this map, and the next map starts from it */
   update(change: Partial<CoastlineSettings>): void {
-    const settings = Object.assign(this.settings, change);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+    Object.assign(options.map.coastline, change);
+    Options.save();
   }
 
   getDefaultSettings(): CoastlineSettings {
-    return { ...DEFAULT_SETTINGS };
+    return { ...DEFAULT_COASTLINE };
   }
 
-  /** Closed SVG path of the feature outline, fractalized as configured */
-  getFeaturePath(feature: Feature): string {
+  /** The seed a feature's coastline is generated from: its own, and the same after any redraw */
+  featureSeed(featureId: number, settings = this.settings): number {
+    return Alea(`${options.map.seed}_c${featureId}_${settings.variant}`).uint32() | 0;
+  }
+
+  /** The settings a feature's shore is displaced with: a lake shore is calmer by its multiplier */
+  shoreSettings(feature: Pick<Feature, "type" | "coastline">): CoastlineSettings {
+    const settings = feature.coastline || this.settings;
+    const { lakeSmoothThreshMult, smoothThreshold } = settings;
+    if (feature.type !== "lake" || lakeSmoothThreshMult === 1) return settings;
+    return { ...settings, smoothThreshold: Math.min(1, smoothThreshold * lakeSmoothThreshMult) };
+  }
+
+  /** The polygon a feature's coastline is built from: its vertices, simplified and clipped to the map */
+  getFeatureOutline(feature: Feature): Point[] {
     const points = feature.vertices.map(vertex => pack.vertices.p[vertex]);
     if (points.some(point => point === undefined)) {
-      ERROR && console.error("Undefined point in getFeaturePath");
-      return "";
+      ERROR && console.error("Undefined point in getFeatureOutline");
+      return [];
     }
 
     const simplifiedPoints = simplify(points, SIMPLIFICATION_TOLERANCE);
-    const clippedPoints = clipPoly(simplifiedPoints, graphWidth, graphHeight, 1);
-    const shape = this.fractalizeFeature(clippedPoints, feature);
-    return `${round(buildCoastlinePath(shape))}Z`;
+    return clipPoly(simplifiedPoints, options.map.graph.width, options.map.graph.height, 1);
   }
 
-  /** Displace a polygon into a naturalistic coastline. Deterministic: the same rand and settings repeat the shape */
-  fractalize(points: Point[], rand: () => number, settings = this.settings): FractalizedShape {
-    return fractalize(points, rand, settings);
+  /** The feature outline displaced into its coastline. Seeded per feature, so it keeps its shape no matter what else was generated or drawn before */
+  getFeatureShape(feature: Feature, outline = this.getFeatureOutline(feature)): FractalizedShape {
+    const settings = this.shoreSettings(feature);
+    if (outline.length < 3 || !settings.enabled) return { points: outline, origIndices: outline.map((_, i) => i) };
+
+    const seed = this.featureSeed(feature.i, settings);
+    const key = `${seed}|${JSON.stringify(settings)}`;
+    const cached = this.shapes.get(feature);
+    if (cached?.key === key && this.sameOutline(cached.outline, outline)) return cached.shape;
+
+    const shape = this.fractalize(outline, seed, settings);
+    this.shapes.set(feature, { key, outline, shape });
+    return shape;
   }
 
-  buildPath(shape: FractalizedShape): string {
-    return buildCoastlinePath(shape);
+  private sameOutline = (a: Point[], b: Point[]) =>
+    a.length === b.length && a.every(([x, y], i) => x === b[i][0] && y === b[i][1]);
+
+  /** Closed SVG path of the feature outline, fractalized as configured */
+  getFeaturePath(feature: Feature): string {
+    const outline = this.getFeatureOutline(feature);
+    if (!outline.length) return "";
+    return `${round(this.buildPath(this.getFeatureShape(feature, outline)))}Z`;
   }
 
-  /** Roughness envelope along the perimeter: which parts of the coast are jagged and which stay calm */
-  getRoughnessProfile(rand: () => number, contrast: number, harmonics: number): Float32Array {
-    return makeRoughnessProfile(rand, contrast, harmonics);
-  }
-
-  /** Seeded per feature, so a feature keeps its shape no matter what else was generated or drawn before */
-  private fractalizeFeature(points: Point[], { i, type }: Feature): FractalizedShape {
-    const unchanged = { points, origIndices: points.map((_, index) => index) };
-    if (points.length < 3 || !this.settings.enabled) return unchanged;
-
-    const { lakeSmoothThreshMult, smoothThreshold } = this.settings;
-    const settings =
-      type === "lake" && lakeSmoothThreshMult !== 1
-        ? { ...this.settings, smoothThreshold: Math.min(1, smoothThreshold * lakeSmoothThreshMult) }
-        : this.settings;
-
-    return fractalize(points, Alea(`${seed}_c${i}`), settings);
-  }
-
-  /** The values the user picked last, falling back to the defaults for keys the stored data misses */
-  private getStoredSettings(): CoastlineSettings {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return this.getDefaultSettings();
-
-    try {
-      return { ...DEFAULT_SETTINGS, ...JSON.parse(stored) };
-    } catch (error) {
-      ERROR && console.error("Invalid stored coastline settings", error);
-      return this.getDefaultSettings();
+  /** Roughness of the field along a line of points: which stretches of a coast are jagged and which stay calm */
+  sampleRoughness(seed: number, points: Point[], settings = this.settings): Float32Array {
+    const profile = new Float32Array(points.length);
+    for (let i = 0; i < points.length; i++) {
+      profile[i] = this.roughnessAt(seed, points[i][0], points[i][1], settings);
     }
+    return profile;
+  }
+
+  /** Roughness at a place in [0, 1]: two octaves of value noise, keyed by position so a local edit stays local */
+  roughnessAt(seed: number, x: number, y: number, settings = this.settings): number {
+    const scale = Math.max(settings.roughnessScale, 1);
+    const base = this.fieldAt(seed, x, y, scale);
+    const detail = this.fieldAt(seed ^ 0x9e3779b9, x, y, scale / 2);
+    const combined = base * (1 - OCTAVE_WEIGHT) + detail * OCTAVE_WEIGHT;
+
+    // interpolated noise clusters around ½; spread it over the full range or the contrast flattens every coast
+    const spread = minmax((combined - 0.5) * FIELD_STRETCH + 0.5, 0, 1);
+    return spread ** settings.roughnessContrast;
+  }
+
+  /** Displace a polygon into a naturalistic coastline. Deterministic: the same seed and settings repeat the shape */
+  fractalize(points: Point[], seed: number, settings = this.settings): FractalizedShape {
+    const n = points.length;
+    const resultPts: Point[] = [];
+    const origIndices: number[] = [];
+
+    for (let i = 0; i < n; i++) {
+      origIndices.push(resultPts.length);
+      resultPts.push(points[i]);
+
+      const [a, b] = [points[i], points[(i + 1) % n]];
+      if (this.isOnBorder(a) && this.isOnBorder(b)) continue; // skip edges running along the map border
+
+      this.subdivideEdge(a, b, settings.maxDepth, settings.baseAmplitude, seed, resultPts, settings);
+    }
+
+    return { points: resultPts, origIndices };
+  }
+
+  /** Recursively subdivide an edge, inserting displaced midpoints in rough zones */
+  private subdivideEdge(
+    a: Point,
+    b: Point,
+    depth: number,
+    amplitude: number,
+    seed: number,
+    resultPts: Point[],
+    settings: CoastlineSettings
+  ): void {
+    const [dx, dy] = [b[0] - a[0], b[1] - a[1]];
+    const len = Math.sqrt(dx * dx + dy * dy);
+    if (depth === 0 || len < settings.minEdge || amplitude === 0) return; // no amplitude: the arc stays as it is
+
+    const [mx, my] = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+    const roughness = this.roughnessAt(seed, mx, my, settings);
+    if (roughness < settings.smoothThreshold) return;
+
+    const disp = (this.segmentNoise(seed, a, b, depth) - 0.5) * Math.sqrt(len) * amplitude * roughness;
+    const mid: Point = [mx + (-dy / len) * disp, my + (dx / len) * disp];
+
+    const nextAmp = amplitude * settings.amplitudeDecay;
+    this.subdivideEdge(a, mid, depth - 1, nextAmp, seed, resultPts, settings);
+    resultPts.push(mid);
+    this.subdivideEdge(mid, b, depth - 1, nextAmp, seed, resultPts, settings);
+  }
+
+  /** One displacement per segment, keyed by the segment's own ends */
+  private segmentNoise(seed: number, [x0, y0]: Point, [x1, y1]: Point, depth: number): number {
+    const quantize = (value: number) => Math.round(value * QUANTUM);
+    return this.noise(seed, quantize(x0), quantize(y0), quantize(x1), quantize(y1), depth);
+  }
+
+  /** Smoothstep-interpolated value noise on a lattice of `scale` map units */
+  private fieldAt(seed: number, x: number, y: number, scale: number): number {
+    const [fx, fy] = [x / scale, y / scale];
+    const [ix, iy] = [Math.floor(fx), Math.floor(fy)];
+    const [tx, ty] = [fx - ix, fy - iy];
+    const [sx, sy] = [tx * tx * (3 - 2 * tx), ty * ty * (3 - 2 * ty)];
+
+    const corner = (cx: number, cy: number) => this.noise(seed, cx, cy);
+    const top = corner(ix, iy) * (1 - sx) + corner(ix + 1, iy) * sx;
+    const bottom = corner(ix, iy + 1) * (1 - sx) + corner(ix + 1, iy + 1) * sx;
+    return top * (1 - sy) + bottom * sy;
+  }
+
+  /** Deterministic value in [0, 1) for a tuple of integers (murmur3-style mixing) */
+  private noise(seed: number, ...values: number[]): number {
+    let h = seed | 0;
+    for (const value of values) {
+      h = Math.imul(h ^ (value | 0), 0x5bd1e995);
+      h ^= h >>> 13;
+    }
+    h = Math.imul(h ^ (h >>> 16), 0x85ebca6b);
+    h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+  }
+
+  private isOnBorder([x, y]: Point): boolean {
+    return x === 0 || x === options.map.graph.width || y === 0 || y === options.map.graph.height;
+  }
+
+  /**
+   * Build a closed SVG path string applying the correct curve algorithm per span:
+   * Smooth span: Q midpoint B-spline — identical to curveBasisClosed. Produces flowing arcs that hide Voronoi angularity.
+   * Jagged span: centripetal Catmull-Rom (α=0.5) through every fractal sub-point. Rounds sharp kinks into gentle curves.
+   */
+  buildPath({ points, origIndices }: FractalizedShape): string {
+    const N = points.length;
+    const M = origIndices.length;
+    if (N < 3 || M < 3) return "";
+
+    const smooth: boolean[] = new Array(M);
+    for (let i = 0; i < M; i++) {
+      const a = origIndices[i];
+      const b = origIndices[(i + 1) % M];
+      smooth[i] = (b > a ? b - a : b + N - a) === 1;
+    }
+
+    // Start at the B-spline midpoint of the last→first span when that span is
+    // smooth so the closed loop is fully seamless; otherwise start at vertex 0.
+    const p0 = points[origIndices[0]];
+    const pL = points[origIndices[M - 1]];
+    let atMid = smooth[M - 1];
+    const sx = atMid ? (pL[0] + p0[0]) / 2 : p0[0];
+    const sy = atMid ? (pL[1] + p0[1]) / 2 : p0[1];
+    const d: string[] = [`M${sx},${sy}`];
+
+    for (let i = 0; i < M; i++) {
+      const ci = origIndices[i];
+      const ni = origIndices[(i + 1) % M];
+      const [cpx, cpy] = points[ci];
+
+      if (smooth[i]) {
+        // Q midpoint B-spline ≡ curveBasisClosed.
+        // When arriving from a jagged span the cursor is already at cpx,cpy
+        // so just line to the midpoint instead of emitting a degenerate Q.
+        const [npx, npy] = points[ni];
+        const mx = (cpx + npx) / 2;
+        const my = (cpy + npy) / 2;
+        d.push(atMid ? `Q${cpx},${cpy} ${mx},${my}` : `L${mx},${my}`);
+        atMid = true;
+      } else {
+        // Step from the B-spline midpoint to the original vertex when needed.
+        if (atMid) d.push(`L${cpx},${cpy}`);
+
+        // Centripetal Catmull-Rom through every fractal sub-segment.
+        const end = ni > ci ? ni : ni + N;
+        for (let j = ci; j < end; j++) {
+          const a = points[j % N];
+          const b = points[(j + 1) % N];
+          const prev = points[(j - 1 + N) % N];
+          const nnext = points[(j + 2) % N];
+          // Catmull-Rom tangents → Hermite control points (tension ≈ 0.25 for less radical curvature).
+          const cp1x = a[0] + (b[0] - prev[0]) / 8;
+          const cp1y = a[1] + (b[1] - prev[1]) / 8;
+          const cp2x = b[0] - (nnext[0] - a[0]) / 8;
+          const cp2y = b[1] - (nnext[1] - a[1]) / 8;
+          d.push(`C${cp1x},${cp1y} ${cp2x},${cp2y} ${b[0]},${b[1]}`);
+        }
+        atMid = false;
+      }
+    }
+
+    return d.join("");
   }
 }
 

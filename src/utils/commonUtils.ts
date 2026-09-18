@@ -297,7 +297,7 @@ export const initializePrompt = (): void => {
   const prompt = document.getElementById("prompt");
   if (!prompt) return;
 
-  const form = prompt.querySelector("#promptForm");
+  const form = prompt.querySelector<HTMLFormElement>("#promptForm");
   if (!form) return;
 
   const defaultText = "Please provide an input";
@@ -337,22 +337,20 @@ export const initializePrompt = (): void => {
     input.style.width = promptText.length > 10 ? "100%" : "auto";
     prompt.style.display = "block";
 
-    form.addEventListener(
-      "submit",
-      (event: Event) => {
-        event.preventDefault();
-        prompt.style.display = "none";
-        const v = type === "number" ? +input.value : input.value;
-        if (callback) callback(v);
-      },
-      { once: true }
-    );
+    form.onsubmit = (event: SubmitEvent) => {
+      event.preventDefault();
+      prompt.style.display = "none";
+      form.onsubmit = null;
+      const v = type === "number" ? +input.value : input.value;
+      if (callback) callback(v);
+    };
   };
 
   const cancel = prompt.querySelector("#promptCancel");
   if (cancel) {
     cancel.addEventListener("click", () => {
       prompt.style.display = "none";
+      form.onsubmit = null;
     });
   }
 };
@@ -366,8 +364,7 @@ export const speak = (text: string): void => {
 
   const voices = speechSynthesis.getVoices();
   if (voices.length) {
-    const voiceId = Number((document.getElementById("speakerVoice") as HTMLSelectElement).value);
-    speaker.voice = voices[voiceId];
+    speaker.voice = voices[Number(options.app.ui.speakerVoice)] ?? speaker.voice;
   }
 
   speechSynthesis.speak(speaker);
@@ -384,16 +381,4 @@ declare global {
     link: typeof link;
     isCtrlClick: typeof isCtrlClick;
   }
-
-  // Global variables defined in main.js
-  var mapCoordinates: {
-    latT?: number;
-    latN?: number;
-    latS?: number;
-    lonT?: number;
-    lonW?: number;
-    lonE?: number;
-  };
-  var graphWidth: number;
-  var graphHeight: number;
 }

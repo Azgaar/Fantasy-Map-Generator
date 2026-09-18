@@ -30,7 +30,6 @@ test("inline style wins over the attribute; empty attribute still counts", () =>
   // real browsers normalize an inline color declaration to rgb(); the fixture is real DOM
   // (browser test mode), so we pin to that rather than the literal "#bbb" spelling
   expect(styles.rivers.attrs.fill).toBe("rgb(187, 187, 187)");
-  expect(styles.scaleBar.options.label).toBe("");
 });
 
 test("syncStylesFromMap harvests the DOM but keeps store-authoritative domains", () => {
@@ -82,6 +81,19 @@ test("a legacy style record keeps its burg/anchor groups against the DOM harvest
   expect(styles.burgIcons.burgIcons.groups.capital.attrs.fill).toBe("#000000");
   expect(styles.burgIcons.burgIcons.groups.town).toBeDefined();
   styles.burgIcons.burgIcons.groups.capital.attrs.fill = "#ffffff";
+});
+
+test("a legacy style record with an empty burg/anchor record harvests that record from the DOM", () => {
+  document.body.innerHTML = `<svg id="map">
+    <g id="burgIcons"><g id="cities" fill="#e57676" font-size="18"></g></g>
+    <g id="anchors"><g id="cities" fill="#ffffff" font-size="18"></g><g id="towns" font-size="12"></g></g>
+  </svg>`;
+  styles.burgIcons.anchors.groups = {};
+  harvestStylesFromSvg({ hasStyleRecord: true });
+  expect(styles.burgIcons.anchors.groups.cities.options.size).toBe(18);
+  expect(styles.burgIcons.anchors.groups.towns.options.size).toBe(12);
+  expect(styles.burgIcons.burgIcons.groups.cities).toBeUndefined();
+  Styles.set(structuredClone(Styles.defaults));
 });
 
 test("save sync keeps store-authoritative zoom options when the DOM lacks the attrs", () => {
@@ -243,13 +255,11 @@ test("save sync lets an old map's markets, goods-circle, texture and ocean-outli
 test("save sync keeps store scaleBar and label-shift styles when their attrs are absent", () => {
   document.body.innerHTML = `<svg id="map"><g id="scaleBar" font-size="10"><rect id="scaleBarBack" data-group="back" fill="#ffffff"></rect></g>
     <g id="labels"><g data-group="capital" font-size="6%" font-family="Almendra SC"></g></g></svg>`;
-  styles.scaleBar.options.x = 50;
-  styles.scaleBar.options.label = "here";
+  styles.scaleBar.options.barSize = 5;
   styles.scaleBar.back.options.top = 12;
   styles.labels.groups.capital.attrs.style = "transform: translate(1.5em, 0em)";
   harvestStylesFromSvg();
-  expect(styles.scaleBar.options.x).toBe(50);
-  expect(styles.scaleBar.options.label).toBe("here");
+  expect(styles.scaleBar.options.barSize).toBe(5);
   expect(styles.scaleBar.back.options.top).toBe(12);
   // labels are store-authoritative on save (step 4): the missing attr changes nothing
   expect(styles.labels.groups.capital.attrs.style).toBe("transform: translate(1.5em, 0em)");
@@ -259,8 +269,9 @@ test("save sync keeps store scaleBar and label-shift styles when their attrs are
 test("save sync lets an old map's scaleBar and label-shift attrs win", () => {
   document.body.innerHTML = `<svg id="map"><g id="scaleBar" data-bar-size="2" data-x="40" data-y="41" data-label="old" font-size="10"><rect id="scaleBarBack" data-group="back" data-top="3" data-right="4" data-bottom="5" data-left="6" fill="#ffffff"></rect></g>
     <g id="labels"><g data-group="capital" data-dx="0.7" data-dy="-0.2" font-size="6%" font-family="Almendra SC"></g></g></svg>`;
-  styles.scaleBar.options.x = 50;
+  styles.scaleBar.options.barSize = 5;
   harvestStylesFromSvg();
+  // the label and where the author put the bar are part of its style, and travel with it
   expect(styles.scaleBar.options).toEqual({ barSize: 2, x: 40, y: 41, label: "old" });
   expect(styles.scaleBar.back.options).toEqual({ top: 3, right: 4, bottom: 5, left: 6 });
   // the record-less LOAD path still harvests the label shift off an old map's attrs
@@ -275,11 +286,11 @@ test("save sync lets an old map's coordinates data-size win over the store", () 
 });
 
 test("an old map omitting a non-nullable attr keeps the values it does carry", () => {
-  // #provs in pre-1.148 maps carries opacity alone
-  document.body.innerHTML = `<svg id="map"><g id="provs" opacity="0.6"></g></svg>`;
+  // #temperature in old maps may carry opacity alone
+  document.body.innerHTML = `<svg id="map"><g id="temperature" opacity="0.6"></g></svg>`;
   const result = stylesFromMap(document);
-  expect(result.provinces.attrs.opacity).toBe(0.6);
-  expect(result.provinces.attrs["font-family"]).toBe(Styles.defaults.provinces.attrs["font-family"]);
+  expect(result.temperature.attrs.opacity).toBe(0.6);
+  expect(result.temperature.attrs["font-size"]).toBe(Styles.defaults.temperature.attrs["font-size"]);
 });
 
 test("harvesting an old map does not emit values the schema rejects", () => {
@@ -327,6 +338,17 @@ test("store-format loads strip retired option attributes from the restored svg",
   expect(document.getElementById("markets")?.getAttribute("data-icon")).toBeNull();
 });
 
+test("custom lake groups are harvested from the svg with freshwater as the template", () => {
+  document.body.innerHTML = `<svg id="map"><g id="lakes"><g id="freshwater"></g><g id="my_lakes" fill="#123456" opacity="0.3"></g></g></svg>`;
+  harvestStylesFromSvg();
+  const custom = styles.lakes.groups.my_lakes;
+  expect(custom.attrs.fill).toBe("#123456");
+  expect(custom.attrs.opacity).toBe(0.3);
+  expect(custom.attrs.stroke).toBe(Styles.defaults.lakes.groups.freshwater.attrs.stroke);
+  expect(document.getElementById("my_lakes")?.dataset.group).toBe("my_lakes");
+  Styles.set(structuredClone(Styles.defaults));
+});
+
 test("opacity stranded on a layer group moves to the style groups the store keeps it on", () => {
   // the old style editor wrote to the layer group itself while the layer had no groups to pick
   document.body.innerHTML = `<svg id="map">
@@ -336,7 +358,7 @@ test("opacity stranded on a layer group moves to the style groups the store keep
   harvestStylesFromSvg();
   expect(styles.coastline.sea_island.attrs.opacity).toBe(0.5);
   expect(styles.coastline.lake_island.attrs.opacity).toBe(0.5);
-  expect(styles.lakes.freshwater.attrs.opacity).toBe(0.7);
+  expect(styles.lakes.groups.freshwater.attrs.opacity).toBe(0.7);
   expect(styles.routes.groups.roads.attrs.opacity).toBe(0.4);
 
   stripMigratedAttributes();

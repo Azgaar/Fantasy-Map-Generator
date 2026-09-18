@@ -1,8 +1,9 @@
 import { test, expect } from "@playwright/test";
+import { waitForMap } from "./wait-for-map";
 
 // Regression test: temperature must be shown in the scale selected in the Units Editor
 // (https://github.com/Azgaar/Fantasy-Map-Generator/issues — burg CSV export and burg
-// editor showed Celsius even when Fahrenheit was selected)
+// editor showed Celsius even when another scale was selected)
 test.describe("Temperature units", () => {
   test.beforeEach(async ({ context, page }) => {
     await context.clearCookies();
@@ -17,18 +18,18 @@ test.describe("Temperature units", () => {
     await page.goto("/?seed=test-temperature&width=1280&height=720");
 
     // Wait for map generation to complete
-    await page.waitForFunction(
-      () => (window as any).mapId !== undefined,
-      { timeout: 60000 }
-    );
+    await waitForMap(page);
 
     // Additional wait for any rendering/animations to settle
     await page.waitForTimeout(500);
 
-    // Select Fahrenheit as in the Units Editor
-    await page.evaluate(() => {
+    // Pick a scale in the Units Editor. Kelvin is never a default, so a reading in K proves the
+    // selected scale was used rather than the one the browser locale would have given anyway
+    await page.evaluate(async () => {
+      await (window as any).Controllers.UnitsEditor.open();
       const select = document.getElementById("temperatureScale") as HTMLSelectElement;
-      select.value = "°F";
+      select.value = "K";
+      select.dispatchEvent(new Event("change", { bubbles: true }));
     });
   });
 
@@ -42,7 +43,7 @@ test.describe("Temperature units", () => {
     });
 
     const temperature = await page.locator("#burgTemperature").textContent();
-    expect(temperature).toMatch(/^-?[\d.]+°F$/);
+    expect(temperature).toMatch(/^-?[\d.]+K$/);
   });
 
   test("burgs CSV export should use the selected scale", async ({ page }) => {
@@ -67,7 +68,7 @@ test.describe("Temperature units", () => {
     expect(dataRows.length).toBeGreaterThan(0);
     for (const row of dataRows) {
       const temperature = row.split(",")[temperatureIndex];
-      expect(temperature).toMatch(/^-?[\d.]+°F$/);
+      expect(temperature).toMatch(/^-?[\d.]+K$/);
     }
   });
 });

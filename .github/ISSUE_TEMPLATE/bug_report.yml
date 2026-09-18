@@ -3,6 +3,9 @@ description: Report a problem
 labels: ["pending review"]
 assignees: [Azgaar]
 body:
+  - type: markdown
+    attributes:
+      value: Search [existing issues](https://github.com/Azgaar/Fantasy-Map-Generator/issues?q=is%3Aissue) before posting. See the [reporting guide](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Reporting-bugs-and-ideas) for an example. Feature suggestions belong in [Ideas discussions](https://github.com/Azgaar/Fantasy-Map-Generator/discussions/new?category=ideas).
   - type: textarea
     id: description
     attributes:

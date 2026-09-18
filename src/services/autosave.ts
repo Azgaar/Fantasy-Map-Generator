@@ -2,7 +2,7 @@
 
 import { tip } from "@/components/tooltips";
 import { Services } from "@/services";
-import { ensureEl, ra } from "@/utils";
+import { ra } from "@/utils";
 
 const MINUTE = 60000; // minute in milliseconds
 
@@ -10,7 +10,7 @@ export function initiateAutosave(): void {
   let lastSavedAt = Date.now();
 
   async function autosave() {
-    const timeoutMinutes = ensureEl<HTMLInputElement>("autosaveIntervalOutput").valueAsNumber;
+    const timeoutMinutes = options.app.autosave.interval;
     if (!timeoutMinutes) return;
 
     const diffInMinutes = (Date.now() - lastSavedAt) / MINUTE;
@@ -19,7 +19,7 @@ export function initiateAutosave(): void {
 
     try {
       tip("Autosave: saving map...", false, "warn", 3000);
-      await Services.Save.saveToStorage(await Services.Save.prepareMapData());
+      await Services.Save.writeToStorage(await Services.Save.prepareMapData());
       tip("Autosave: map is saved", false, "success", 2000);
 
       lastSavedAt = Date.now();
@@ -37,7 +37,7 @@ let reminderInterval: ReturnType<typeof setInterval> | undefined;
 let reminderActive = false;
 
 function startSaveReminder(): void {
-  if (localStorage.getItem("noReminder")) return;
+  if (!options.app.autosave.remind) return;
   const message = [
     "Please don't forget to save the project to desktop from time to time",
     "Please remember to save the map to your desktop",
@@ -61,11 +61,11 @@ export function toggleSaveReminder(): void {
   if (reminderActive) {
     tip("Save reminder is turned off. Press CTRL+Q again to re-initiate", true, "warn", 2000);
     clearInterval(reminderInterval);
-    localStorage.setItem("noReminder", "true");
+    Options.set(o => (o.app.autosave.remind = false));
     reminderActive = false;
   } else {
     tip("Save reminder is turned on. Press CTRL+Q to turn off", true, "warn", 2000);
-    localStorage.removeItem("noReminder");
+    Options.set(o => (o.app.autosave.remind = true));
     startSaveReminder();
   }
 }

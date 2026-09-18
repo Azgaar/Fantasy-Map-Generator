@@ -1,19 +1,26 @@
 // Canonical generation sequence, as a declared pipeline instead of a hand-written call list. See docs/architecture/generation-pipeline.md.
+import { GraphOverride } from "@/generators/graph-override";
 import { Pipeline, type PipelineStep } from "@/generators/pipeline";
 import { Population } from "@/generators/population-generator";
 import type { GridGraph } from "@/types/GridGraph";
+import { Coordinates } from "./coordinates";
 
 const generationPipelineSteps = [
-  { id: "grid", run: ({ seed: expectedSeed, graph }) => Grid.prepare(expectedSeed, graph) },
+  { id: "grid", run: ({ graph }) => Grid.prepare(graph) },
   { id: "heightmap", run: () => HeightmapGenerator.generate() },
   { id: "markupGrid", run: () => Features.markupGrid() },
   { id: "depressionLakes", run: () => Grid.addDeepDepressionLakes() },
   { id: "nearSeaLakes", run: () => Grid.openNearSeaLakes() },
-  { id: "mapSize", run: () => Coordinates.defineMapSize() },
-  { id: "mapCoordinates", run: () => Coordinates.calculate() },
+  { id: "mapSize", run: () => Coordinates.generate() },
   { id: "temperatures", run: () => Temperature.generate() },
   { id: "precipitation", run: () => Precipitation.generate() },
-  { id: "clearPack", run: () => Pack.clear() },
+  {
+    id: "clearPack",
+    run: () => {
+      Pack.clear();
+      GraphOverride.clear(); // the old graph is gone, do not pin its vertices
+    }
+  },
   { id: "regraph", run: () => Pack.generate() },
   { id: "markupPack", run: () => Features.markupPack() },
   { id: "defaultRuler", run: () => Measurers.createDefaultRuler() },
@@ -35,7 +42,7 @@ const generationPipelineSteps = [
   { id: "provinces", run: () => Provinces.generate() },
   { id: "provincePoles", run: () => Provinces.getPoles() },
   { id: "riversSpecify", run: () => Rivers.specify() },
-  { id: "lakeNames", run: () => Lakes.defineNames() },
+  { id: "featureNames", run: () => Features.defineNames() },
   { id: "markets", run: () => Markets.generate() },
   { id: "production", run: () => Production.produce() },
   { id: "taxes", run: () => States.collectTaxes() },
@@ -43,14 +50,12 @@ const generationPipelineSteps = [
   { id: "markers", run: () => Markers.generate() },
   { id: "zones", run: () => Zones.generate() },
   { id: "addedLabels", run: () => AddedLabels.initiate() },
-  { id: "mapName", run: () => Names.getMapName(false) },
-  { id: "journeys", run: () => Journeys.generate() } // last: it draws from the PRNG, so it must not shift the steps above
+  { id: "journeys", run: () => Journeys.generate() }
 ] as const satisfies PipelineStep<string, GenerationContext>[];
 
 type GenerationPipelineStepId = (typeof generationPipelineSteps)[number]["id"];
 
 type GenerationContext = {
-  seed?: string; // seed if the caller wants a specific one
   graph?: GridGraph; // pre-created grid to use instead of generating one
 };
 export const GenerationPipeline = new Pipeline<GenerationPipelineStepId, GenerationContext>(
@@ -84,7 +89,7 @@ const erasePipelineSteps = [
   { id: "provinces", run: () => Provinces.generate() },
   { id: "provincePoles", run: () => Provinces.getPoles() },
   { id: "riversSpecify", run: () => Rivers.specify() },
-  { id: "lakeNames", run: () => Lakes.defineNames() },
+  { id: "featureNames", run: () => Features.defineNames() },
   { id: "markets", run: () => Markets.generate() },
   { id: "production", run: () => Production.produce() },
   { id: "taxes", run: () => States.collectTaxes() },

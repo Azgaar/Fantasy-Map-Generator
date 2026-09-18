@@ -59,7 +59,7 @@ function addLines(): void {
     .selectAll<SVGGElement, unknown>("g")
     .nodes()
     .map(el => {
-      const count = el.children.length;
+      const count = pack.routes.filter((route: Route) => route.group === el.id).length;
       return /* html */ `<div data-id="${el.id}" class="states" style="display: flex; justify-content: space-between;">
           <span>${el.id} (${count})</span>
           <div style="width: auto; display: flex; gap: 0.4em;">
@@ -115,8 +115,11 @@ function removeGroup(group: string): void {
     confirm: "Remove",
     onConfirm: () => {
       pack.routes.filter((r: Route) => r.group === group).forEach(Routes.remove);
-      if (!DEFAULT_GROUPS.includes(group)) select("#routes").select(`#${group}`).remove();
-      Layers.draw("labels");
+      if (!DEFAULT_GROUPS.includes(group)) {
+        select("#routes").select(`#${group}`).remove();
+        delete styles.routes.groups[group];
+      }
+      Layers.draw("routes", "labels");
       addLines();
     }
   });

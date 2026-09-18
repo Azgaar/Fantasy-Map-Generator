@@ -1,6 +1,6 @@
 import { color, easeSinInOut, select, transition } from "d3";
 import type { Regiment } from "../generators/military-generator";
-import { rn } from "../utils";
+import { isImageIcon, rn } from "../utils";
 
 export const drawMilitary = (): void => {
   TIME && console.time("drawMilitary");
@@ -64,14 +64,14 @@ const drawRegimentsRenderer = (regiments: Regiment[], s: number): void => {
     .attr("text-rendering", "optimizeSpeed")
     .attr("x", d => x(d) - size)
     .attr("y", d => d.y)
-    .text(d => (d.icon!.startsWith("http") || d.icon!.startsWith("data:image") ? "" : d.icon!));
+    .text(d => (isImageIcon(d.icon!) ? "" : d.icon!));
   g.append("image")
     .attr("class", "regimentImage")
     .attr("x", d => x(d) - h)
     .attr("y", d => y(d))
     .attr("height", h)
     .attr("width", h)
-    .attr("href", d => (d.icon!.startsWith("http") || d.icon!.startsWith("data:image") ? d.icon! : ""));
+    .attr("href", d => (isImageIcon(d.icon!) ? d.icon! : ""));
 };
 
 export const drawRegiment = (reg: Regiment, stateId: number): void => {
@@ -118,14 +118,14 @@ export const drawRegiment = (reg: Regiment, stateId: number): void => {
     .attr("text-rendering", "optimizeSpeed")
     .attr("x", x1 - size)
     .attr("y", reg.y)
-    .text(reg.icon!.startsWith("http") || reg.icon!.startsWith("data:image") ? "" : reg.icon!);
+    .text(isImageIcon(reg.icon!) ? "" : reg.icon!);
   g.append("image")
     .attr("class", "regimentImage")
     .attr("x", x1 - h)
     .attr("y", y1)
     .attr("height", h)
     .attr("width", h)
-    .attr("href", reg.icon!.startsWith("http") || reg.icon!.startsWith("data:image") ? reg.icon! : "");
+    .attr("href", isImageIcon(reg.icon!) ? reg.icon! : "");
 };
 
 // move one regiment to another

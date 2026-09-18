@@ -1,6 +1,6 @@
 _The current stable version is available [here](https://azgaar.github.io/Fantasy-Map-Generator)._
 
-Notable used-facing changes to the project should be documented in this file. The purpose of a changelog entry is to document the noteworthy difference and communicate them clearly to end users.
+Notable user-facing changes to the project should be documented in this file. The purpose of a changelog entry is to document the noteworthy difference and communicate it clearly to end users.
 
 Compatible `.gz` and `.map` files from `v0.70.0` onward are checked and auto-updated when loaded. Maps older than `v0.70.0` are considered ancient and require the matching old Generator version. To use an old version click on a link to download an archive. Unzip all files and [run the Tool locally](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Run-FMG-locally).
 
@@ -12,12 +12,62 @@ Check out [Dev board](https://github.com/users/Azgaar/projects/3/views/1?sumFiel
 
 Current version of the Fantasy Map Generator is the latest `master` branch. You can download it here: https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/heads/master.zip. Also see [the wiki](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#can-i-use-the-generator-offline).
 
+- States and Provinces editors: official Culture column with population breakdown on hover; province culture column by _[inviktos](https://github.com/inviktos)_.
+
 # Releases
 
-**1.151.1 - 2026-09-03**:
+**[1.153.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.153.0) - 2026-09-16**:
 
-- Brushes stamp by distance travelled: smooth, gap-free painting at any refresh rate by _[barrulus](https://github.com/barrulus)_ [1.151.1]
-- Provinces Editor: added a sortable Dominant Culture column based on rural and urban population by _[inviktos](https://github.com/inviktos)_ [1.151.1]
+[Release walkthrough and screenshots](https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/docs/updates/v1.153.0/v1.153.0%20-%20Omnibar.md).
+
+- Omnibar: global map search, press Space to open [1.153.0]
+- Style presets: Ink, Cinderwood and Frostbite [1.153.0]
+- Heightmap: hachures alongside contour lines [1.153.0]
+- Ocean: coastal waves and coastal bands [1.153.0]
+- Lakes: shore ripples [1.153.0]
+- Labels: font weight, font style and text transform settings [1.153.0]
+- Burg icons: Illustrated set; port icons pick a symbol [1.153.0]
+- Performance: a preset on the Options tab and a settings dialog [1.153.0]
+- Geographical Features Overview [1.153.0]
+- Coastline Editor: customizable per feature [1.153.0]
+- Wrap Tool: reshape cells with a brush; it replaces per-vertex dragging in the Coastline and Lake editors [1.153.0]
+- Dialogs: titlebar button to restore the default position, columns and sorting [1.153.0]
+- Coastlines: local roughness instead of global [1.153.0]
+- Heightmap Editor: "Show drainage" overlay [1.153.0]
+- Features: generated names for islands and oceans; lake subtype and rendering group are independent
+- Relief icons: Illustrated set; new Cinzel, Iceberg and Snowburst One fonts
+- Overview tables: cascading sorting keeps earlier column sorts as tie-breakers
+- Production: manufacturing chains use available stock before budgeting workers for missing ingredients
+- Burg icons and anchors: restore missing style groups so edited sizes survive saving and loading
+- Diplomacy: regenerating relations no longer fails when a state has been removed
+- Legends: empty legends no longer redraw as an "undefined" row
+- Fog of war: the cover spans the full map, including areas outside the viewport
+- Memory: closing editors releases their listeners, detached elements and retained map references
+
+**[1.152.1](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.152.1) - 2026-09-11**:
+
+- Legend boxes for States, Cultures, Religions, Biomes and Zones can be shown at the same time by _[esullivan9](https://github.com/esullivan9)_
+- Diplomacy: click states on the map to select relation targets, repair invalid pairs in the editor or matrix, and record only actual changes in bulk edits
+- States and Provinces: state creation and province recolouring refresh visible map layers immediately; province recolouring also updates the editor list
+- Goods editor: Show all respects the tag filter across pages, with consistent checkbox state and displayed counts
+
+**[1.152.0](https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/tags/v1.152.0.zip)**:
+
+- Options full rework [1.152.0]
+- Map name and era moved to the Set Lore dialog [1.152.0]
+- Notes rework: notes as entities param [1.152.0]
+- Preserve dialog positions between sessions [1.152.0]
+- Ability to override a burg's treasury [1.152.0]
+- Goods: moved to viewport renderer [1.152.0]
+- Burg icons: moved to viewport renderer [1.152.0]
+- Markers and markets: moved to viewport renderer [1.152.0]
+- Rivers and Routes: moved to viewport renderer [1.152.0]
+- Heightmap: option to render contour lines [1.152.0]
+- Notes Editor: TinyMCE replaced with Quill 2 by _[barrulus](https://github.com/barrulus)_ [1.152.0]
+- Help assistant: ask questions about FMG by _[barrulus](https://github.com/barrulus)_ [1.151.2]
+- Annex states and provinces by clicking on the map by _[barrulus](https://github.com/barrulus)_ [1.151.2]
+- Option to redraw labels, icons and relief only after a zoom by _[barrulus](https://github.com/barrulus)_ [1.151.2]
+- Brushes stamp by distance travelled by _[barrulus](https://github.com/barrulus)_ [1.151.1]
 
 **[1.150.0](https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/tags/v1.150.0.zip) - 2026-09-05**:
 
@@ -83,7 +133,7 @@ From now on the tool CANNOT be run without the build step and uses Typescript fo
 
 - Burg Groups configuration and related logic [1.109.0]
 - Significantly reduce amount of ocean ice generated [1.108.3]
-- Ability to set custom image as Marker or Regiment icon (started by _[Issac411](Issac411)_) [1.107.00]
+- Ability to set custom image as Marker or Regiment icon (started by _[Issac411](https://github.com/Issac411)_) [1.107.00]
 - Submap and Transform tools rework [1.106.00]
 - AI Assistant Bot [1.105.00]
 - Layers rendering major refactoring [1.104.00]

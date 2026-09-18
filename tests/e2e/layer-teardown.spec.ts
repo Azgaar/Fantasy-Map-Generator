@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { waitForMap } from "./wait-for-map";
 
 // page globals, resolved inside page.evaluate
 declare let customization: number;
@@ -18,7 +19,7 @@ test.describe("layer teardown keeps user data", () => {
     });
 
     await page.goto("/?seed=test-seed&width=1280&height=720");
-    await page.waitForFunction(() => (window as any).mapId !== undefined, { timeout: 60000 });
+    await waitForMap(page);
     await page.waitForTimeout(500);
   });
 

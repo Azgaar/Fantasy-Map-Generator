@@ -1,6 +1,6 @@
 import { mean, min } from "d3";
-import { ensureEl, isLand, rn, unique } from "../utils";
-import type { Feature } from "./features";
+import { isLand, rn, unique } from "../utils";
+import type { Feature } from "./features-generator";
 
 declare global {
   var Lakes: LakesModule;
@@ -15,17 +15,15 @@ export class LakesModule {
     return rn(minShoreHeight - this.LAKE_ELEVATION_DELTA, 2);
   }
 
-  defineNames() {
-    pack.features.forEach((feature: Feature) => {
-      if (feature.type !== "lake") return;
-      feature.name = this.getName(feature);
-    });
-  }
-
-  getName(feature: Feature): string {
-    const landCell = feature.shoreline[0];
-    const culture = pack.cells.culture[landCell];
-    return Names.getCulture(culture);
+  // presets are applied before any map exists; custom groups live on the features, stock ones in the defaults
+  ensureLakeGroupStyles(): void {
+    const { groups } = styles.lakes;
+    const template = groups.freshwater || Object.values(groups)[0];
+    if (!template) return;
+    for (const feature of pack.features ?? []) {
+      if (feature?.type === "lake" && feature.group && !groups[feature.group])
+        groups[feature.group] = structuredClone(template);
+    }
   }
 
   cleanupLakeData = () => {
@@ -60,7 +58,7 @@ export class LakesModule {
     };
 
     const getLakeEvaporation = (lake: Feature) => {
-      const height = (lake.height - 18) ** Number(heightExponentInput.value); // height in meters
+      const height = (lake.height - 18) ** options.map.units.height.exponent; // height in meters
       const evaporation = ((700 * (lake.temp + 0.006 * height)) / 50 + 75) / (80 - lake.temp); // based on Penman formula, [1-11]
       return rn(evaporation * lake.cells);
     };
@@ -86,7 +84,7 @@ export class LakesModule {
   // check if lake can be potentially open (not in deep depression)
   detectCloseLakes(h: number[] | Uint8Array) {
     const { cells } = pack;
-    const ELEVATION_LIMIT = +(ensureEl("lakeElevationLimitOutput") as HTMLInputElement)?.value;
+    const ELEVATION_LIMIT = options.generation.lakeElevationLimit;
 
     pack.features.forEach(feature => {
       if (feature.type !== "lake") return;

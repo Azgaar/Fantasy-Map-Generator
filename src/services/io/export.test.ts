@@ -45,9 +45,11 @@ function makeSvg(rootFilter: string | null, withViewbox = true): SVGSVGElement {
   }
   svg.appendChild(defs);
   if (withViewbox) {
-    const viewbox = document.createElementNS(SVG_NS, "g");
-    viewbox.id = "viewbox";
-    svg.appendChild(viewbox);
+    for (const id of ["viewbox", "scaleBar"]) {
+      const group = document.createElementNS(SVG_NS, "g");
+      group.id = id;
+      svg.appendChild(group);
+    }
   }
   return svg;
 }
@@ -58,6 +60,12 @@ describe("relocateRootFilter", () => {
     relocateRootFilter(svg);
     expect(svg.getAttribute("filter")).toBeNull();
     expect(svg.querySelector("#viewbox")?.getAttribute("filter")).toBe("url(#filter-tint)");
+  });
+
+  it("applies the same filter to the scale bar, which sits outside #viewbox", () => {
+    const svg = makeSvg("url(#filter-tint)");
+    relocateRootFilter(svg);
+    expect(svg.querySelector("#scaleBar")?.getAttribute("filter")).toBe("url(#filter-tint)");
   });
 
   it("gives every filter an explicit region covering the viewport", () => {

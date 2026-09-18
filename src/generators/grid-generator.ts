@@ -3,7 +3,7 @@ import Alea from "alea";
 import { min } from "d3";
 import type { GridCells, GridGraph } from "@/types/GridGraph";
 import type { Point } from "@/types/global";
-import { ensureEl, rn, SEA_LEVEL } from "@/utils";
+import { rn, SEA_LEVEL } from "@/utils";
 import { calculateVoronoi } from "./voronoi";
 
 declare global {
@@ -11,10 +11,14 @@ declare global {
 }
 
 class GridModule {
-  generate(seed: string, width: number, height: number): GridGraph {
+  prepare(graph?: GridGraph): void {
+    if (graph) this.resetHeights(graph);
+    grid = graph ?? this.generate(options.map.seed, options.map.graph.width, options.map.graph.height);
+  }
+
+  generate(seed: string, width: number, height: number, cellsDesired = this.getCellsDesired()): GridGraph {
     Math.random = Alea(seed); // reset PRNG
 
-    const cellsDesired = this.getCellsDesired();
     const spacing = this.getSpacing(cellsDesired, width, height);
     const boundary = this.getBoundaryPoints(width, height, spacing);
 
@@ -25,9 +29,7 @@ class GridModule {
     const { cells, vertices } = calculateVoronoi(points, boundary);
 
     const graph = {
-      seed,
       spacing,
-      cellsDesired,
       cellsX: this.getCellsCount(spacing, width),
       cellsY: this.getCellsCount(spacing, height),
       boundary,
@@ -38,27 +40,6 @@ class GridModule {
     this.resetHeights(graph);
 
     return graph;
-  }
-
-  /** check whether the graph still fits the requested seed and canvas size */
-  shouldRegenerate(graph: GridGraph, expectedSeed: string | undefined, width: number, height: number): boolean {
-    if (expectedSeed && expectedSeed !== graph.seed) return true;
-
-    const cellsDesired = this.getCellsDesired();
-    if (cellsDesired !== graph.cellsDesired) return true;
-
-    const spacing = this.getSpacing(cellsDesired, width, height);
-    if (graph.spacing !== spacing) return true;
-    return graph.cellsX !== this.getCellsCount(spacing, width) || graph.cellsY !== this.getCellsCount(spacing, height);
-  }
-
-  /** make the global grid fit the requested seed and canvas size, keeping the current one if it does */
-  prepare(expectedSeed?: string, precreated?: GridGraph): void {
-    if (this.shouldRegenerate(grid, expectedSeed, graphWidth, graphHeight)) {
-      grid = precreated ?? this.generate(seed, graphWidth, graphHeight);
-    } else {
-      this.resetHeights(grid);
-    }
   }
 
   /**
@@ -79,7 +60,7 @@ class GridModule {
 
   /** number of cells requested by the user, the generated number is close but not equal to it */
   getCellsDesired(): number {
-    return +(ensureEl<HTMLInputElement>("pointsInput").dataset.cells || 0);
+    return options.map.graph.points;
   }
 
   /** cell index at the given coordinates, resolved by the regular square grid the points sit on */
@@ -169,13 +150,9 @@ class GridModule {
 
   /** turn depressions that cannot pour to water into lakes */
   addDeepDepressionLakes(): void {
-    const elevationLimit = +ensureEl<HTMLOutputElement>("lakeElevationLimitOutput").value;
-    if (elevationLimit === 80) return;
-
     const { cells, features } = grid;
-    const { c, h, b } = cells;
 
-    const addLake = (lakeCells: number[]) => {
+    for (const lakeCells of this.findDeepDepressionLakes(cells, options.generation.lakeElevationLimit)) {
       const featureId = features.length;
 
       for (const i of lakeCells) {
@@ -183,13 +160,22 @@ class GridModule {
         cells.t[i] = -1;
         cells.f[i] = featureId;
 
-        for (const n of c[i]) {
+        for (const n of cells.c[i]) {
           if (!lakeCells.includes(n)) cells.t[n] = 1; // the lake shore is a coastline now
         }
       }
 
       features.push({ i: featureId, land: false, border: false, type: "lake" });
-    };
+    }
+  }
+
+  /** cell groups of the land depressions that cannot pour to water within the elevation limit: the lakes to be */
+  findDeepDepressionLakes(cells: Pick<GridCells, "i" | "c" | "b" | "h">, elevationLimit: number): number[][] {
+    if (elevationLimit === 80) return [];
+
+    const { c, b } = cells;
+    const h = Uint8Array.from(cells.h); // lakes form in turn: an earlier one is the water a later check can reach
+    const lakes: number[][] = [];
 
     for (const i of cells.i) {
       if (b[i] || h[i] < SEA_LEVEL) continue;
@@ -218,13 +204,18 @@ class GridModule {
         }
       }
 
-      if (deep) addLake([i, ...c[i].filter(n => h[n] === h[i])]);
+      if (!deep) continue;
+      const lakeCells = [i, ...c[i].filter(n => h[n] === h[i])];
+      for (const cell of lakeCells) h[cell] = 19;
+      lakes.push(lakeCells);
     }
+
+    return lakes;
   }
 
   /** near sea lakes get a lot of water inflow, most of them should break the threshold and flow out to sea (see Ancylus Lake) */
   openNearSeaLakes(): void {
-    if (ensureEl<HTMLInputElement>("templateInput").value === "Atoll") return; // no need for Atolls
+    if (options.generation.template === "Atoll") return; // no need for Atolls
 
     const { cells, features } = grid;
     if (!features.find(f => f.type === "lake")) return; // no lakes

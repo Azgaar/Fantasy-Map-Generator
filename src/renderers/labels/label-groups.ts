@@ -8,7 +8,7 @@ export function renderLabelGroups(root: ParentNode = document): void {
   if (!labels) throw new Error("Labels container not found");
 
   labels.replaceChildren();
-  for (const groupOptions of options.labels.groups) {
+  for (const groupOptions of options.map.labels.groups) {
     renderLabelGroup(labels, groupOptions);
   }
 }
@@ -45,6 +45,8 @@ const BASE_ATTRS: LabelGroupStyle["attrs"] = {
   "letter-spacing": 0,
   "font-size": "18%",
   "font-family": "Almendra SC",
+  "font-style": null,
+  "font-weight": null,
   style: null,
   filter: null
 };

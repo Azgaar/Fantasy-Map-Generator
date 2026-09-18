@@ -5,7 +5,7 @@ _The tutorial describes the current UI; exact labels and screenshots may change.
 Also watch the [video tutorial](https://www.youtube.com/playlist?list=PLtgiuDC8iVR2gIG8zMTRn7T_L0arl9h1C).
 
 ## Introduction
-_Fantasy Map Generator_ is a tool that creates highly customizable fantasy worlds for you. It runs in a browser and does not require any software installation. It’s free and you can use created maps for any purposes including commercial.
+_Fantasy Map Generator_ is a tool that creates highly customizable fantasy worlds for you. It runs in a browser and does not require any software installation; a [desktop app](https://github.com/Azgaar/Fantasy-Map-Generator/releases) for Windows, macOS and Linux is also available. It’s free and you can use created maps for any purposes including commercial.
 
 The tool generates a new fantasy map on opening. The map is auto-generated, but it doesn’t mean that you cannot control the generation. To open the controls click on the arrow button at the top left corner of the screen or press <kbd>Tab</kbd>. You can either change the generation parameters and generate a new map, or edit the current map. You can also create a new map from scratch using paint brushes.
 
@@ -57,15 +57,13 @@ The only reliable method is to have a `.map` file saved on your machine, prefera
 There are also a few ways how you can get the map _image_ or map _data_. Click on **Export** and use one of the options there. Please note that image (png, svg, or jpeg) is not a fully-functional `.map` file and cannot be loaded back to the tool. Consider it as a screenshot.
 
 ## Generation and UI settings
-Let’s move to the settings overview. Open the Menu and click on the _Options_ tab. There are multiple options split into 2 categories. Map generation options require a new map to be applied. Generator settings are getting applied immediately on change.
+Let’s move to the settings overview. Open the Menu and click on the _Options_ tab. There are multiple options split into 2 categories. Map settings require a new map to be applied. Interface settings are getting applied immediately on change.
 
 ![options](https://github.com/user-attachments/assets/65fefee6-cdc7-439f-83e2-374c21f9a455)
 
-* _Canvas size_: the size of the map in pixels. There is no way to change the map size after the map generation and it's always advised to use the default value. The button on the left resets the size back to the default.
+* _Map size_: the coordinate extent of the map in pixels. There is no way to change the map size after the map generation and it's always advised to use the default value. The button on the left resets the size back to the default (the browser window size). It is not the same as the _Viewport size_ below, which only sets how much of the map you see at once.
 * _Map seed_: a number defining random values generation. If options and map size are the same, two maps generated with the same seed will be exactly the same. The seed cannot store user’s changes, so please don’t use it as a save function. The small button on the left allows to browse through generated seeds and restore previous maps if map options where not locked.
 * _Points number_: the number of generated points and cells. The more points are generated, the more detailed the map. Points number highly affects performance, so 10K is the recommended value.
-* _Map name_: the name of the map or the world. Click on button with arrows to re-generate the name.
-* _Year and era_: current year of the world and the era name. Used for some text generation.
 * _Heightmap_: template to be applied on heightmap generation. Basically a type of the landmass: high island, continents, archipelago etc. You can create your own template or change the existing in the _Template Editor_ (part of the _Heightmap Editor_ tools).
 * _Cultures number_: the number of cultures to be generated. Cultures can be edited via the _Cultures Editor_.
 * _Cultures set_: a set of cultures to be used for map generation. Can be a list of real-world-like or fantasy cultures.
@@ -76,21 +74,22 @@ Let’s move to the settings overview. Open the Menu and click on the _Options_ 
 * _Burgs number_: the number of burgs (settlements) to be generated. If there is not enough suitable space for the requested number, the Generator will place fewer. Set it to `auto` to let the Generator decide.
 * _Religions number_: the number of religions to be generated. Controls only the number of organized religions and cults. Religions can be edited via the _Religions Editor_.
 
-Generator settings:
+Interface settings:
 * _Interface size_: size of the control panes. If the GUI size is too small, please also check out browser's zoom level (<kbd>Ctrl +</kbd>, <kbd>Ctrl -</kbd>).
 * _Tooltip size_: size of the tooltips displayed at the bottom of the screen.
 * _Theme color_: main color of the control panes.
 * _Transparency_: opacity of the control panes.
 * _Autosave interval_: number of minutes the map should be auto-saved to browser memory. Set to `0` to disable the autosave.
-* _Onload behavior_: define what should be done when Generator is opened: a new map generated or a previously saved map auto-opened.
-* _Azgaar assistant_: show or hide the in-app chat assistant.
+* _On load_: define what should be done when Generator is opened: a new map generated or a previously saved map auto-opened.
+* _Azgaar assistant_: show or hide the help bubble in the bottom right corner, which answers questions about using the Generator.
 * _Speaker voice_: select the voice used to speak burg and other names. Voice synthesis is provided by the browser.
 * _Emblem shape_: defines shield shape used during emblems generation.
+* _Viewport size_: the size of the map window on screen in pixels. The button on the left fits it back to the browser window.
 * _Zoom extent_: minimal and maximal zoom levels. Click on the button on the right to restore the default values.
-* _Rendering_: set map rendering quality. Best quality can reduce the map performance.
+* _Performance_: a rendering preset trading visual quality for speed. Pick _Speed_ if the map feels slow. The cog button opens the detailed settings: shape rendering, state halos and redraw on zoom, each set on its own.
 * _Language_: load Google Translate and select a language to translate the interface. Automatic translation can break some functionality — use the reset icon or refresh the page if it does.
 
-There is also the _Restore default options_ button. It cancels all user changes and refreshes the page.
+Below the tables there are three buttons. _Configure World_ opens the climate and globe position dialog (see the next section). _Set Lore_ opens the Lore Editor, where you name the map, set the current year and era (used to date state history and battle reports) and write a description of the world. _Reset Options_ cancels all user changes and refreshes the page.
 
 ## Climate configuration
 Click on _Configure World_ to set up map position on a globe and climate. Toggle biomes, precipitation or temperature layers on to see how configuration changes affect the map.

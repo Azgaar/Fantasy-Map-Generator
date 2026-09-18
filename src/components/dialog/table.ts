@@ -1,11 +1,11 @@
+import { isMobile } from "@/services/platform";
 import { capitalize, findEl } from "@/utils";
 import { dialogState } from "./state";
 
 const EDITOR_PAGE_SIZE = 100;
 const EDITOR_PAGE_SIZE_MOBILE = 20;
 
-// MOBILE is a bare global set by main.js after ES modules evaluate, so it must be read lazily here, never at module scope
-const defaultPageSize = () => (typeof MOBILE !== "undefined" && MOBILE ? EDITOR_PAGE_SIZE_MOBILE : EDITOR_PAGE_SIZE);
+const defaultPageSize = () => (isMobile() ? EDITOR_PAGE_SIZE_MOBILE : EDITOR_PAGE_SIZE);
 
 export type TableView<T> = { rows: T[]; all: T[]; page: number; totalPages: number; total: number };
 
@@ -163,8 +163,7 @@ export function loadHiddenColumns(dialogId: string, columns: EditorColumn[]): Se
   const defaults = columns.filter(column => column.hidden).map(column => column.key);
   const saved = dialogState.get<ColumnVisibilityState | null>(dialogId, "columns", () => null);
   if (saved === null) {
-    const mobile = typeof MOBILE !== "undefined" && MOBILE;
-    if (mobile) defaults.push(...columns.filter(column => column.mobileHidden).map(column => column.key));
+    if (isMobile()) defaults.push(...columns.filter(column => column.mobileHidden).map(column => column.key));
   }
 
   const hidden = new Set(defaults.filter(key => configurable.has(key)));
@@ -253,16 +252,25 @@ function bindColumnsPicker({
   onChange: (hidden: Set<string>) => void;
 }): void {
   const popupId = `${dialogId}ColumnsPicker`;
-  let closePopup: (() => void) | null = null;
+  const dialog = document.getElementById(dialogId);
+  let detachPopup: (() => void) | null = null;
+
+  const cleanup = () => {
+    detachPopup?.();
+    detachPopup = null;
+  };
 
   const button = findEl(`${dialogId}ColumnsButton`);
   if (!button) return;
+  // a destroyDialog() close does not fire dialogclose, so the mousedown handler below also cleans up
+  if (dialog) $(dialog).one("dialogclose", cleanup);
   button.addEventListener("click", () => {
     const existing = document.getElementById(popupId);
     if (existing) {
-      closePopup?.();
+      cleanup();
       return;
     }
+    cleanup();
     const hidden = loadHiddenColumns(dialogId, columns);
     const popup = document.createElement("div");
     popup.id = popupId;
@@ -336,15 +344,14 @@ function bindColumnsPicker({
     };
     positionPopup();
 
-    closePopup = () => {
+    detachPopup = () => {
       popup.remove();
       document.removeEventListener("mousedown", close);
     };
 
     const close = (event: MouseEvent) => {
-      if (!popup.contains(event.target as Node) && event.target !== button) {
-        closePopup?.();
-      }
+      // the owning dialog may be gone (destroyDialog does not fire dialogclose); drop the stale handler
+      if (!button.isConnected || (!popup.contains(event.target as Node) && event.target !== button)) cleanup();
     };
     document.addEventListener("mousedown", close);
   });
@@ -362,12 +369,10 @@ export function initColumnVisibility({
   dialogColumnsRegistry.set(dialogId, { columns, modeHidden: new Set() });
   applyColumnVisibility(dialogId, effectiveHidden(dialogId));
 
-  bindColumnsPicker({
-    dialogId,
-    columns,
-    onChange: () => {
-      applyColumnVisibility(dialogId, effectiveHidden(dialogId));
-      onUpdate();
-    }
-  });
+  const onChange = () => {
+    applyColumnVisibility(dialogId, effectiveHidden(dialogId));
+    onUpdate();
+  };
+  bindColumnsPicker({ dialogId, columns, onChange });
+  dialogState.onReset(dialogId, "columns", onChange);
 }

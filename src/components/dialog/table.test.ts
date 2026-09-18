@@ -1,5 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { dialogState } from "./state";
+
+// the layout the tables default to depends on the device, which only platform.ts answers for
+const { device } = vi.hoisted(() => ({ device: { isMobile: false } }));
+vi.mock("@/services/platform", async importOriginal => ({
+  ...(await importOriginal<typeof import("@/services/platform")>()),
+  isMobile: () => device.isMobile
+}));
+
 import {
   buildTracks,
   type EditorColumn,
@@ -15,7 +23,7 @@ import {
 const items = (n: number) => Array.from({ length: n }, (_, i) => i + 1);
 
 afterEach(() => {
-  delete (globalThis as Record<string, unknown>).MOBILE;
+  device.isMobile = false;
 });
 
 describe("initEditorTable", () => {
@@ -65,12 +73,12 @@ describe("initEditorTable", () => {
 
 describe("mobile defaults", () => {
   it("pages 250 items into 3 pages when not mobile, 13 pages of 20 when mobile", () => {
-    (globalThis as Record<string, unknown>).MOBILE = false;
+    device.isMobile = false;
     const desktop = initEditorTable({ getData: () => items(250), onUpdate: () => {} });
     desktop.refresh();
     expect(desktop.view().totalPages).toBe(3);
 
-    (globalThis as Record<string, unknown>).MOBILE = true;
+    device.isMobile = true;
     const mobile = initEditorTable({ getData: () => items(250), onUpdate: () => {} });
     mobile.refresh();
     expect(mobile.view().totalPages).toBe(13);
@@ -132,30 +140,30 @@ describe("hidden columns persistence", () => {
     { key: "treasury", label: "Treasury" }
   ];
 
-  it("defaults to mobileHidden columns when nothing is stored and MOBILE is true", () => {
-    (globalThis as Record<string, unknown>).MOBILE = true;
+  it("defaults to mobileHidden columns when nothing is stored and the device is mobile", () => {
+    device.isMobile = true;
     expect(loadHiddenColumns("burgsOverview", MOBILE_COLUMNS)).toEqual(new Set(["population"]));
   });
 
-  it("defaults to nothing hidden when nothing is stored and MOBILE is false", () => {
-    (globalThis as Record<string, unknown>).MOBILE = false;
+  it("defaults to nothing hidden when nothing is stored and the device is not mobile", () => {
+    device.isMobile = false;
     expect(loadHiddenColumns("burgsOverview", MOBILE_COLUMNS).size).toBe(0);
   });
 
   it("honours an explicitly stored empty array over mobile defaults", () => {
-    (globalThis as Record<string, unknown>).MOBILE = true;
+    device.isMobile = true;
     saveHiddenColumns("burgsOverview", new Set(), MOBILE_COLUMNS);
     expect(loadHiddenColumns("burgsOverview", MOBILE_COLUMNS).size).toBe(0);
   });
 
   it("honours an explicitly stored set over mobile defaults", () => {
-    (globalThis as Record<string, unknown>).MOBILE = true;
+    device.isMobile = true;
     saveHiddenColumns("burgsOverview", new Set(["treasury"]), MOBILE_COLUMNS);
     expect(loadHiddenColumns("burgsOverview", MOBILE_COLUMNS)).toEqual(new Set(["treasury"]));
   });
 
   it("combines hidden and mobileHidden defaults on mobile", () => {
-    (globalThis as Record<string, unknown>).MOBILE = true;
+    device.isMobile = true;
     const columns = [...MOBILE_COLUMNS, { key: "type", label: "Type", hidden: true }];
     expect(loadHiddenColumns("burgsOverview", columns)).toEqual(new Set(["population", "type"]));
   });

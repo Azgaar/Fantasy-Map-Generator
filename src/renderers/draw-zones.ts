@@ -1,9 +1,12 @@
 import type { Zone } from "@/generators/zones-generator";
-import { ensureEl, findEl, getVertexPath } from "@/utils";
+import { ensureEl, getVertexPath } from "@/utils";
+
+// not read off the editor's select: the paint editor destroys that dialog mid-redraw (#1810)
+export const zonesFilter = { type: "all" };
 
 export function drawZones(): void {
-  const filterBy = findEl<HTMLSelectElement>("zonesFilterType")?.value;
-  const isFiltered = filterBy && filterBy !== "all";
+  const { type: filterBy } = zonesFilter;
+  const isFiltered = filterBy !== "all";
   const visibleZones = pack.zones.filter(
     ({ hidden, cells, type }) => !hidden && cells.length && (!isFiltered || type === filterBy)
   );

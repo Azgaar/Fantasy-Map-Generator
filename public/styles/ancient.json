@@ -9,20 +9,47 @@
   },
   "ocean": {
     "options": {
-      "pattern": "./images/kiwiroo.png",
-      "patternOpacity": 0.4
+      "pattern": "./images/pattern2.png",
+      "patternOpacity": 0.17,
+      "bands": {
+        "render": true,
+        "count": 2,
+        "spacing": 1.1,
+        "width": 0.3,
+        "color": "#b4b4af",
+        "shore": "#b9b6a1",
+        "shade": 0.4,
+        "opacity": 1
+      }
     },
     "base": {
       "attrs": {
-        "fill": "#c99f64"
+        "fill": "#e1d0bc"
       }
     },
     "oceanLayers": {
       "attrs": {
-        "filter": ""
+        "filter": null
       },
       "options": {
-        "outline": "-6,-4,-2"
+        "outline": "-6,-3,-1"
+      }
+    },
+    "oceanWaves": {
+      "attrs": {
+        "opacity": 0.5,
+        "stroke": "#1f3846",
+        "stroke-width": 0.5,
+        "stroke-dasharray": null,
+        "filter": null
+      },
+      "options": {
+        "render": true,
+        "type": "waves",
+        "density": 1,
+        "length": 1,
+        "reach": 4,
+        "halo": 0.55
       }
     }
   },
@@ -58,7 +85,22 @@
         "skip": 2,
         "relax": 1,
         "curve": "curveBasisClosed",
-        "render": false
+        "render": false,
+        "contours": {
+          "mode": "off",
+          "interval": 5,
+          "color": "#5c513e",
+          "width": 0.35,
+          "opacity": 0.5
+        },
+        "hachures": {
+          "mode": "off",
+          "density": 1,
+          "length": 1,
+          "width": 1,
+          "color": "#5c513e",
+          "opacity": 0.65
+        }
       }
     },
     "oceanHeights": {
@@ -73,7 +115,22 @@
         "skip": 0,
         "relax": 1,
         "curve": "curveBasisClosed",
-        "render": false
+        "render": false,
+        "contours": {
+          "mode": "off",
+          "interval": 5,
+          "color": "#5c513e",
+          "width": 0.35,
+          "opacity": 0.5
+        },
+        "hachures": {
+          "mode": "off",
+          "density": 1,
+          "length": 1,
+          "width": 1,
+          "color": "#5c513e",
+          "opacity": 0.65
+        }
       }
     }
   },
@@ -149,76 +206,132 @@
     }
   },
   "lakes": {
-    "freshwater": {
-      "attrs": {
-        "opacity": 0.6,
-        "fill": "#c8d6e0",
-        "fill-opacity": null,
-        "stroke": "#968d6e",
-        "stroke-width": 0.7,
-        "stroke-dasharray": null,
-        "stroke-linecap": null,
-        "filter": null
-      }
-    },
-    "salt": {
-      "attrs": {
-        "opacity": 0.5,
-        "fill": "#339482",
-        "fill-opacity": null,
-        "stroke": "#836a34",
-        "stroke-width": 0.7,
-        "stroke-dasharray": null,
-        "stroke-linecap": null,
-        "filter": null
-      }
-    },
-    "sinkhole": {
-      "attrs": {
-        "opacity": 1,
-        "fill": "#c3d6df",
-        "fill-opacity": null,
-        "stroke": "#b29062",
-        "stroke-width": 0.7,
-        "stroke-dasharray": null,
-        "stroke-linecap": null,
-        "filter": null
-      }
-    },
-    "frozen": {
-      "attrs": {
-        "opacity": 0.95,
-        "fill": "#cdd4e7",
-        "fill-opacity": null,
-        "stroke": "#cfe0eb",
-        "stroke-width": 0,
-        "stroke-dasharray": null,
-        "stroke-linecap": null,
-        "filter": null
-      }
-    },
-    "lava": {
-      "attrs": {
-        "opacity": 0.7,
-        "fill": "#a04e18",
-        "fill-opacity": null,
-        "stroke": "#835520",
-        "stroke-width": 2,
-        "stroke-dasharray": null,
-        "stroke-linecap": null,
-        "filter": "url(#paper)"
-      }
-    },
-    "dry": {
-      "attrs": {
-        "opacity": 0.7,
-        "fill": "#c6b795",
-        "fill-opacity": null,
-        "stroke": "#8e816f",
-        "stroke-width": 0.7,
-        "stroke-dasharray": null,
-        "stroke-linecap": null,
-        "filter": null
+    "groups": {
+      "freshwater": {
+        "attrs": {
+          "opacity": 0.6,
+          "fill": "#c8d6e0",
+          "fill-opacity": null,
+          "stroke": "#968d6e",
+          "stroke-width": 0.7,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "filter": null
+        },
+        "options": {
+          "embellishment": "none",
+          "density": 1,
+          "length": 1,
+          "halo": 0.2,
+          "color": "#000000",
+          "width": 0.3,
+          "opacity": 0.6
+        }
+      },
+      "salt": {
+        "attrs": {
+          "opacity": 0.5,
+          "fill": "#339482",
+          "fill-opacity": null,
+          "stroke": "#836a34",
+          "stroke-width": 0.7,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "filter": null
+        },
+        "options": {
+          "embellishment": "none",
+          "density": 1,
+          "length": 1,
+          "halo": 0.2,
+          "color": "#000000",
+          "width": 0.3,
+          "opacity": 0.6
+        }
+      },
+      "sinkhole": {
+        "attrs": {
+          "opacity": 1,
+          "fill": "#c3d6df",
+          "fill-opacity": null,
+          "stroke": "#b29062",
+          "stroke-width": 0.7,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "filter": null
+        },
+        "options": {
+          "embellishment": "none",
+          "density": 1,
+          "length": 1,
+          "halo": 0.2,
+          "color": "#000000",
+          "width": 0.3,
+          "opacity": 0.6
+        }
+      },
+      "frozen": {
+        "attrs": {
+          "opacity": 0.95,
+          "fill": "#cdd4e7",
+          "fill-opacity": null,
+          "stroke": "#cfe0eb",
+          "stroke-width": 0,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "filter": null
+        },
+        "options": {
+          "embellishment": "none",
+          "density": 1,
+          "length": 1,
+          "halo": 0.2,
+          "color": "#000000",
+          "width": 0.3,
+          "opacity": 0.6
+        }
+      },
+      "lava": {
+        "attrs": {
+          "opacity": 0.7,
+          "fill": "#a04e18",
+          "fill-opacity": null,
+          "stroke": "#835520",
+          "stroke-width": 2,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "filter": "url(#paper)"
+        },
+        "options": {
+          "embellishment": "none",
+          "density": 1,
+          "length": 1,
+          "halo": 0.2,
+          "color": "#000000",
+          "width": 0.3,
+          "opacity": 0.6
+        }
+      },
+      "dry": {
+        "attrs": {
+          "opacity": 0.7,
+          "fill": "#c6b795",
+          "fill-opacity": null,
+          "stroke": "#8e816f",
+          "stroke-width": 0.7,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "filter": null
+        },
+        "options": {
+          "embellishment": "none",
+          "density": 1,
+          "length": 1,
+          "halo": 0.2,
+          "color": "#000000",
+          "width": 0.3,
+          "opacity": 0.6
+        }
       }
     }
   },
@@ -226,7 +339,7 @@
     "sea_island": {
       "attrs": {
         "opacity": 1,
-        "stroke": "#c1a884",
+        "stroke": "#928472",
         "stroke-width": 0.3,
         "stroke-dasharray": null,
         "stroke-linecap": null,
@@ -300,9 +413,6 @@
   "provinces": {
     "attrs": {
       "opacity": 0.7,
-      "fill": "#000000",
-      "font-size": 10,
-      "font-family": "Georgia",
       "filter": null
     }
   },
@@ -482,6 +592,8 @@
           "letter-spacing": 0,
           "font-size": "6%",
           "font-family": "UnifrakturMaguntia",
+          "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, 0.85em)",
           "filter": null
         }
@@ -498,6 +610,8 @@
           "letter-spacing": 0,
           "font-size": "5%",
           "font-family": "UnifrakturMaguntia",
+          "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, 0.85em)",
           "filter": null
         }
@@ -514,6 +628,8 @@
           "letter-spacing": 0,
           "font-size": "3%",
           "font-family": "UnifrakturMaguntia",
+          "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, 0.85em)",
           "filter": null
         }
@@ -530,6 +646,8 @@
           "letter-spacing": 0,
           "font-size": "2%",
           "font-family": "UnifrakturMaguntia",
+          "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, 0.85em)",
           "filter": null
         }
@@ -546,6 +664,8 @@
           "letter-spacing": 0,
           "font-size": "2%",
           "font-family": "UnifrakturMaguntia",
+          "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, 0.85em)",
           "filter": null
         }
@@ -562,6 +682,8 @@
           "letter-spacing": 0,
           "font-size": "2%",
           "font-family": "UnifrakturMaguntia",
+          "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, 0.85em)",
           "filter": null
         }
@@ -578,6 +700,8 @@
           "letter-spacing": 0,
           "font-size": "3%",
           "font-family": "UnifrakturMaguntia",
+          "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, 0.85em)",
           "filter": null
         }
@@ -594,6 +718,8 @@
           "letter-spacing": 0,
           "font-size": "2%",
           "font-family": "UnifrakturMaguntia",
+          "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, 0.85em)",
           "filter": null
         }
@@ -610,6 +736,8 @@
           "letter-spacing": 0,
           "font-size": "3%",
           "font-family": "UnifrakturMaguntia",
+          "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, 0.85em)",
           "filter": null
         }
@@ -626,8 +754,10 @@
           "letter-spacing": 0,
           "font-size": "22%",
           "font-family": "Great Vibes",
+          "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px;",
-          "filter": "url(#filter-sepia)"
+          "filter": null
         }
       },
       "province": {
@@ -642,8 +772,10 @@
           "letter-spacing": 0,
           "font-size": "6%",
           "font-family": "Great Vibes",
+          "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px;",
-          "filter": "url(#filter-sepia)"
+          "filter": null
         }
       },
       "route": {
@@ -655,11 +787,13 @@
           "stroke-width": 0,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "2%",
-          "font-family": "Great Vibes",
+          "letter-spacing": 0.1,
+          "font-size": "1.6%",
+          "font-family": "Pirata One",
+          "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px;",
-          "filter": "url(#filter-sepia)"
+          "filter": null
         }
       },
       "river": {
@@ -671,11 +805,13 @@
           "stroke-width": 0,
           "stroke-dasharray": null,
           "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "2%",
-          "font-family": "Great Vibes",
+          "letter-spacing": 0.1,
+          "font-size": "1.6%",
+          "font-family": "Pirata One",
+          "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px;",
-          "filter": "url(#filter-sepia)"
+          "filter": null
         }
       },
       "added": {
@@ -690,8 +826,10 @@
           "letter-spacing": 0,
           "font-size": "18%",
           "font-family": "Times New Roman",
+          "font-style": null,
+          "font-weight": null,
           "style": "text-shadow: white 0px 0px 4px;",
-          "filter": "url(#filter-sepia)"
+          "filter": null
         }
       }
     }
@@ -870,7 +1008,7 @@
           },
           "options": {
             "size": 1.5,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "city": {
@@ -887,7 +1025,7 @@
           },
           "options": {
             "size": 1.5,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "fort": {
@@ -904,7 +1042,7 @@
           },
           "options": {
             "size": 1,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "monastery": {
@@ -921,7 +1059,7 @@
           },
           "options": {
             "size": 1,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "caravanserai": {
@@ -938,7 +1076,7 @@
           },
           "options": {
             "size": 1,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "trading_post": {
@@ -955,7 +1093,7 @@
           },
           "options": {
             "size": 1,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "village": {
@@ -972,7 +1110,7 @@
           },
           "options": {
             "size": 1,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "hamlet": {
@@ -989,7 +1127,7 @@
           },
           "options": {
             "size": 1,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         },
         "town": {
@@ -1006,7 +1144,7 @@
           },
           "options": {
             "size": 1,
-            "icon": "#icon-circle"
+            "icon": "#icon-anchor"
           }
         }
       }
@@ -1107,9 +1245,9 @@
     },
     "options": {
       "barSize": 2,
+      "label": "",
       "x": 99,
-      "y": 99,
-      "label": ""
+      "y": 99
     },
     "back": {
       "attrs": {

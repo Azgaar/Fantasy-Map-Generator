@@ -1,4 +1,4 @@
-import { updateDialog } from "@/components/dialog/dialog-helpers";
+import { destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
   type EditorColumn,
@@ -47,9 +47,9 @@ const columns: EditorColumn<TradeDetailRow>[] = [
     key: "value",
     label: "Value",
     width: "3.6em",
+    permanent: true,
     sortBy: item => item.value
-  },
-  { key: "actions", width: "1.2em", permanent: true }
+  }
 ];
 
 const tradeDetailsTable = initEditorTable<TradeDetailRow>({
@@ -82,7 +82,7 @@ function open(batch: TradeBatch): void {
 }
 
 function renderDialog(): void {
-  document.getElementById(dialogId)?.remove();
+  destroyDialog(dialogId);
   const editorHtml = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
       <div>
         <div id="tradeDetailsSummary" class="totalLine"></div>
@@ -170,7 +170,8 @@ function renderTradeDetailsPage(view: TableView<TradeDetailRow>): void {
     2
   );
   ensureEl("tradeDetailsBody").innerHTML = html.join("");
-  ensureEl("tradeDetailsFooterDistance").innerHTML = `${rn(length * distanceScale)} ${distanceUnitInput.value}`;
+  ensureEl("tradeDetailsFooterDistance").innerHTML =
+    `${rn(length * options.map.units.distance.scale)} ${options.map.units.distance.unit}`;
   ensureEl("tradeDetailsFooterUnits").innerHTML = String(rn(totalUnits, 2));
   ensureEl("tradeDetailsFooterValue").innerHTML = formatPrice(totalValue);
 
@@ -186,6 +187,7 @@ function getClientType(deal: Deal, burg: Burg, direction: "from" | "to"): string
 
 function closeTradeDetails(): void {
   clearHighlight();
+  activePoints = [];
   $(`#${dialogId}`).dialog("destroy");
   ensureEl(dialogId).remove();
 }

@@ -1,9 +1,10 @@
-Welcome to the ***Fantasy Map Generator*** wiki!
+Welcome to the **_Fantasy Map Generator_** wiki!
 
 _These pages are maintained in [docs/wiki](https://github.com/Azgaar/Fantasy-Map-Generator/tree/master/docs/wiki) in the main repository and mirrored here automatically — please open a pull request instead of editing the wiki directly._
 
-## Introduction 
-_**Fantasy Map Generator**_ (FMG) is a free tool that [procedurally generates](https://en.wikipedia.org/wiki/Procedural_generation) highly customizable fantasy maps. You can use auto-generated maps or create your own world from scratch. 
+## Introduction
+
+_**Fantasy Map Generator**_ (FMG) is a free tool that [procedurally generates](https://en.wikipedia.org/wiki/Procedural_generation) highly customizable fantasy maps. You can use auto-generated maps or create your own world from scratch.
 
 The project is under active development. Join our [Discord server](https://discordapp.com/invite/X7E84HU) and [Reddit forum](https://www.reddit.com/r/FantasyMapGenerator) for the latest updates and to get help from the community.
 
@@ -12,21 +13,32 @@ The project is under active development. Join our [Discord server](https://disco
 [Current Generator version](https://azgaar.github.io/Fantasy-Map-Generator/) |
 [Changelog](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog) |
 [Blog](https://azgaar.wordpress.com/) |
-[Development board](https://trello.com/b/7x832DG4/fantasy-map-generator)
+[Development board](https://github.com/users/Azgaar/projects/3)
+
+To report a problem or propose a feature, see [Reporting bugs and suggesting ideas](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Reporting-bugs-and-ideas), including GitHub forms, Discord reporting, and examples.
 
 ## Wiki pages
 
 **Getting started**
 [Quick Start Tutorial](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Quick-Start-Tutorial) ·
 [User Interface](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/User-Interface) ·
+[Omnibar](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Omnibar) ·
 [Hotkeys](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys) ·
-[Q&A](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A)
+[Q&A](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A) ·
+[Report a bug or suggest an idea](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Reporting-bugs-and-ideas)
 
 **Terrain**
 [Heightmap customization](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-customization) ·
 [Heightmap template editor](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-template-editor) ·
 [Heightmap image overlay](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-image-overlay) ·
-[River Editor](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/River-Editor)
+[River Editor](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/River-Editor) ·
+[Coastline Editor](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Coastline-Editor) ·
+[Geographical Features overview](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Geographical-Features-Overview) ·
+[Wrap Tool](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Wrap-Tool)
+
+**Appearance and performance**
+[Map embellishments](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Map-embellishments) ·
+[Performance settings](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Performance-settings)
 
 **World building**
 [Culture sets](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Culture-sets) ·
@@ -45,18 +57,19 @@ The project is under active development. Join our [Discord server](https://disco
 [URL parameters](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/URL-parameters) ·
 [GIS data export](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export) ·
 [Ollama text generation](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Ollama-text-generation) ·
-[Dependencies](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Dependencies)
+[Dependencies](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Dependencies) ·
+[Policy](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Policy)
 
-## How can I use the tool? 
+## How can I use the tool?
 
-* *Exploration* - click on the _New map!_ button to get a random map. Open the _Layers_ tab (press <kbd>Tab</kbd>) and select a desired layers preset. Zoom in and explore the generated world
+- _Exploration_ - click on the _New map!_ button to get a random map. Open the _Layers_ tab (press <kbd>Tab</kbd>) and select a desired layers preset. Zoom in and explore the generated world
 
-* *Tuning* - go to _Options_, change the default settings like map template and states number and generate a new map to better fit your needs
+- _Tuning_ - go to _Options_, change the default settings like map template and states number and generate a new map to better fit your needs
 
-* *Customization* - open the _Tools_ tab, select one of the available editors and change the map in any desired way
+- _Customization_ - open the _Tools_ tab, select one of the available editors and change the map in any desired way
 
-* *Controlled generation* - open the _Tools_ tab, then click on _Heightmap_ and select an _Erase_ mode. Click on _Template editor_ and create your own heightmap template. Apply the template to see the result. Don't forget to share good templates with the community
+- _Controlled generation_ - open the _Tools_ tab, then click on _Heightmap_ and select an _Erase_ mode. Click on _Template editor_ and create your own heightmap template. Apply the template to see the result. Don't forget to share good templates with the community
 
-* *Conversion* - if you already have a map image and want to re-create it in a generator, open the _Image converter_ (the button next to _Template editor_), load the image and fine-tune the conversion into a heightmap. Then edit the map using the _Tools_ provided
+- _Conversion_ - if you already have a map image and want to re-create it in a generator, open the _Image converter_ (the button next to _Template editor_), load the image and fine-tune the conversion into a heightmap. Then edit the map using the _Tools_ provided
 
-* *Drawing* - use the _Paint brushes_ to draw a map from scratch. It may takes a lot of time, so I would recommend you to follow the _Controlled generation_ approach to get a basic landmass and then use _Paint brushes_ for a fine-tuning
+- _Drawing_ - use the _Paint brushes_ to draw a map from scratch. It may takes a lot of time, so I would recommend you to follow the _Controlled generation_ approach to get a basic landmass and then use _Paint brushes_ for a fine-tuning

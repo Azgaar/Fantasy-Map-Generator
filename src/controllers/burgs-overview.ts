@@ -1,5 +1,5 @@
 import { pack as packLayout, select, stratify } from "d3";
-import { closeDialogs, confirmationDialog, updateDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import { dialogState } from "@/components/dialog/state";
@@ -17,7 +17,7 @@ import { Controllers } from "@/controllers";
 import type { Burg } from "@/generators/burgs-generator";
 import { removeEmblem } from "@/renderers/draw-emblems";
 import { downloadFile, getFileName, getHeight, getLatitude, getLongitude, uploadFile } from "@/utils";
-import { convertTemperature, ensureEl, getTemperatureLikeness, rn, si } from "../utils";
+import { convertTemperature, createFileInput, ensureEl, getTemperatureLikeness, rn, si } from "../utils";
 
 type Filters = { stateId?: number | null; cultureId?: number | null };
 type FilterState = { search: string; stateId: number; cultureId: number };
@@ -25,6 +25,7 @@ type FilterState = { search: string; stateId: number; cultureId: number };
 const dialogId = "burgsOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 let filterState: FilterState;
+let burgNamesInput: HTMLInputElement | null = null;
 
 const columns: EditorColumn<Burg>[] = [
   { key: "locate", width: "0.8em", permanent: true },
@@ -76,7 +77,7 @@ const columns: EditorColumn<Burg>[] = [
     label: "Population",
     width: "7em",
     defaultSort: "desc",
-    sortBy: b => b.population! * populationRate * urbanization
+    sortBy: b => b.population! * options.map.units.population.scale * options.map.units.population.urbanization.rate
   },
   {
     key: "grossproduct",
@@ -109,7 +110,9 @@ const columns: EditorColumn<Burg>[] = [
     sortType: "alpha",
     sortBy: b => (b.capital && b.port ? "a-capital-port" : b.capital ? "c-capital" : b.port ? "p-port" : "z-burg")
   },
-  { key: "actions", width: "3.2em", permanent: true, align: "right" }
+  { key: "edit", width: "1.1em" },
+  { key: "lock", width: "1.1em" },
+  { key: "remove", width: "1.4em", permanent: true }
 ];
 
 const burgsTable = initEditorTable<Burg>({
@@ -140,7 +143,7 @@ function open(filters: Filters = {}): void {
 }
 
 function renderDialog(): void {
-  document.getElementById("burgsOverview")?.remove();
+  destroyDialog("burgsOverview");
   const HTML = /* html */ `<div id="burgsOverview" class="dialog stable editorDialog">
       <div id="burgsBody" class="table">${renderEditorHeader({ dialogId, columns })}</div>
       <div id="burgsFilters" data-tip="Apply a filter" class="editorFilters">
@@ -223,9 +226,6 @@ function renderDialog(): void {
   ensureEl("addNewBurg").addEventListener("click", () => void Controllers.BurgCreator.toggle());
   ensureEl("burgsExport").addEventListener("click", downloadBurgsData);
   ensureEl("burgNamesImport").addEventListener("click", renameBurgsInBulk);
-  ensureEl("burgsListToLoad").addEventListener("change", function (this: HTMLInputElement) {
-    uploadFile(this, importBurgNames);
-  });
   ensureEl("burgsLockAll").addEventListener("click", toggleLockAll);
   ensureEl("burgsRemoveAll").addEventListener("click", triggerAllBurgsRemove);
 }
@@ -316,7 +316,8 @@ function renderBurgsPage(view: TableView<Burg>): void {
   let totalTreasury = 0;
 
   for (const b of view.all) {
-    const population = b.population! * populationRate * urbanization;
+    const population =
+      b.population! * options.map.units.population.scale * options.map.units.population.urbanization.rate;
     const grossProduct = rn(b.product || 0, 2);
     const productPerCapita = rn(b.population! > 0 ? (b.product || 0) / b.population! : 0, 2);
     const treasury = rn(b.treasury || 0, 2);
@@ -327,7 +328,8 @@ function renderBurgsPage(view: TableView<Burg>): void {
   }
 
   for (const b of view.rows) {
-    const population = b.population! * populationRate * urbanization;
+    const population =
+      b.population! * options.map.units.population.scale * options.map.units.population.urbanization.rate;
     const grossProduct = rn(b.product || 0, 2);
     const productPerCapita = rn(b.population! > 0 ? (b.product || 0) / b.population! : 0, 2);
     const treasury = rn(b.treasury || 0, 2);
@@ -380,13 +382,11 @@ function renderBurgsPage(view: TableView<Burg>): void {
           <span data-tip="${b.port ? " This burg is a port" : "This burg is NOT a port"}"
           class="icon-anchor${b.port ? "" : " inactive"}" style="font-size: .9em; padding: 0 1px;"></span>
         </div>
-        <div data-col="actions">
-          <span data-tip="Edit burg" class="icon-pencil"></span>
-          <span class="locks pointer ${
-            b.lock ? "icon-lock" : "icon-lock-open inactive"
-          }" onmouseover="showElementLockTip(event)"></span>
-          <span data-tip="Remove burg" class="icon-trash-empty"></span>
-        </div>
+        <span data-col="edit" data-tip="Edit burg" class="icon-pencil"></span>
+        <span data-col="lock" class="locks pointer ${
+          b.lock ? "icon-lock" : "icon-lock-open inactive"
+        }" onmouseover="showElementLockTip(event)"></span>
+        <span data-col="remove" data-tip="Remove burg" class="icon-trash-empty"></span>
       </div>`;
   }
   body.insertAdjacentHTML("beforeend", lines);
@@ -566,7 +566,9 @@ function showBurgsChart(): void {
     select(ev.target).transition().duration(1500).attr("stroke", "#c13119");
     const name = d.data.name;
     const parent = d.parent.data.name;
-    const population = si(d.value * populationRate * urbanization);
+    const population = si(
+      d.value * options.map.units.population.scale * options.map.units.population.urbanization.rate
+    );
 
     ensureEl("burgsInfo").innerHTML = /* html */ `${name}. ${parent}. Population: ${population}`;
     burgHighlightOn(ev);
@@ -663,7 +665,7 @@ function showBurgsChart(): void {
 }
 
 function downloadBurgsData(): void {
-  let data = `Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Group,Population,X,Y,Latitude,Longitude,Elevation (${heightUnit.value}),Temperature,Temperature likeness,Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town,Emblem,Preview link\n`; // headers
+  let data = `Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Group,Population,X,Y,Latitude,Longitude,Elevation (${options.map.units.height.unit}),Temperature,Temperature likeness,Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town,Emblem,Preview link\n`; // headers
   const valid = pack.burgs.filter(b => b.i && !b.removed); // all valid burgs
 
   valid.forEach(b => {
@@ -677,13 +679,13 @@ function downloadBurgsData(): void {
     data += `${pack.cultures[b.culture!].name},`;
     data += `${pack.religions[pack.cells.religion[b.cell]].name},`;
     data += `${b.group},`;
-    data += `${rn(b.population! * populationRate * urbanization)},`;
+    data += `${rn(b.population! * options.map.units.population.scale * options.map.units.population.urbanization.rate)},`;
 
     // add geography data
     data += `${b.x},`;
     data += `${b.y},`;
-    data += `${getLatitude(b.y, mapCoordinates, graphHeight, 2)},`;
-    data += `${getLongitude(b.x, mapCoordinates, graphWidth, 2)},`;
+    data += `${getLatitude(b.y, options.map.geography.coordinates, options.map.graph.height, 2)},`;
+    data += `${getLongitude(b.x, options.map.geography.coordinates, options.map.graph.width, 2)},`;
     data += `${parseInt(getHeight(pack.cells.h[b.cell]), 10)},`;
     const temperature = grid.cells.temp[pack.cells.g[b.cell]];
     data += `${convertTemperature(temperature)},`;
@@ -724,12 +726,19 @@ function renameBurgsInBulk(): void {
         const name = `${getFileName("Burg names")}.txt`;
         downloadFile(data, name);
       },
-      Upload: () => ensureEl("burgsListToLoad").click(),
+      Upload: pickBurgNamesFile,
       Cancel: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }
   });
+}
+
+/** Own the burg-names file input here so repeat opens cannot stack listeners on a shared element */
+function pickBurgNamesFile(): void {
+  burgNamesInput ??= createFileInput(".txt,.csv");
+  burgNamesInput.onchange = () => uploadFile(burgNamesInput!, importBurgNames);
+  burgNamesInput.click();
 }
 
 function importBurgNames(dataLoaded: string): void {
@@ -817,4 +826,4 @@ function updateLockAllIcon(): void {
   ensureEl("burgsLockAll").className = allLocked ? "icon-lock-open" : "icon-lock";
 }
 
-export const BurgsOverview = { open };
+export const BurgsOverview = { open, showChart: showBurgsChart, exportCsv: downloadBurgsData };

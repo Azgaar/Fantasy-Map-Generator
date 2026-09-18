@@ -7,10 +7,19 @@ declare global {
 class TemperatureModule {
   /** calculate the temperature of every grid cell from its latitude and altitude */
   generate(): void {
-    const { cells, cellsX, points } = grid;
-    cells.temp = new Int8Array(cells.i.length);
+    grid.cells.temp = this.compute(grid.cells.h);
+  }
 
-    const { temperatureEquator, temperatureNorthPole, temperatureSouthPole } = options;
+  /** temperature of every grid cell for the given heights, the grid itself stays untouched */
+  compute(h: ArrayLike<number>): Int8Array {
+    const { cells, cellsX, points } = grid;
+    const temp = new Int8Array(cells.i.length);
+
+    const {
+      equator: temperatureEquator,
+      northPole: temperatureNorthPole,
+      southPole: temperatureSouthPole
+    } = options.map.climate.temperature;
     const tropics = [16, -20]; // tropics zone
     const tropicalGradient = 0.15;
 
@@ -20,7 +29,7 @@ class TemperatureModule {
     const tempSouthTropic = temperatureEquator + tropics[1] * tropicalGradient;
     const southernGradient = (tempSouthTropic - temperatureSouthPole) / (90 + tropics[1]);
 
-    const exponent = +heightExponentInput.value;
+    const exponent = options.map.units.height.exponent;
 
     const getSeaLevelTemperature = (latitude: number) => {
       const isTropical = latitude <= 16 && latitude >= -20;
@@ -39,14 +48,18 @@ class TemperatureModule {
 
     for (let rowCellId = 0; rowCellId < cells.i.length; rowCellId += cellsX) {
       const [, y] = points[rowCellId];
-      const rowLatitude = mapCoordinates.latN! - (y / graphHeight) * mapCoordinates.latT!; // [90; -90]
+      const rowLatitude =
+        options.map.geography.coordinates.latN -
+        (y / options.map.graph.height) * options.map.geography.coordinates.latT; // [90; -90]
       const seaLevelTemp = getSeaLevelTemperature(rowLatitude);
       DEBUG.temperature && console.info(`${rn(rowLatitude)}° sea temperature: ${rn(seaLevelTemp)}°C`);
 
       for (let cellId = rowCellId; cellId < rowCellId + cellsX; cellId++) {
-        cells.temp[cellId] = minmax(seaLevelTemp - getAltitudeDrop(cells.h[cellId]), -128, 127);
+        temp[cellId] = minmax(seaLevelTemp - getAltitudeDrop(h[cellId]), -128, 127);
       }
     }
+
+    return temp;
   }
 }
 

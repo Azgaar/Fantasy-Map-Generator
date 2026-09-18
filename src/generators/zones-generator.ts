@@ -12,6 +12,7 @@ export interface Zone {
   cells: number[];
   color: string;
   hidden?: boolean;
+  note?: string;
 }
 
 type ZoneGenerator = (usedCells: Uint8Array) => void;
@@ -437,9 +438,8 @@ class ZonesModule {
     if (!volcanoe) return;
     usedCells[volcanoe.cell] = 1;
 
-    const note = notes.find(n => n.id === `marker${volcanoe.i}`);
-    if (note) note.legend = note.legend.replace("Active volcano", "Erupting volcano");
-    const name = note ? `${note.name.replace(" Volcano", "")} Eruption` : "Volcano Eruption";
+    if (volcanoe.note) volcanoe.note = volcanoe.note.replace("Active volcano", "Erupting volcano");
+    const name = volcanoe.name ? `${volcanoe.name.replace(" Volcano", "")} Eruption` : "Volcano Eruption";
 
     const cellsArray: number[] = [];
     const queue = [volcanoe.cell];

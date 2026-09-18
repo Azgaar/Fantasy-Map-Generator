@@ -1,4 +1,4 @@
-import type { GridFeature } from "@/generators/features";
+import type { GridFeature } from "@/generators/features-generator";
 import type { Cells, Vertices } from "@/generators/voronoi";
 import type { Point } from "./global";
 
@@ -13,9 +13,7 @@ export interface GridCells extends Cells {
 
 /** the initial graph: a jittered square grid of points and its Voronoi diagram. See `PackedGraph` for the repacked one */
 export interface GridGraph {
-  seed: string;
-  spacing: number; // distance between points before jittering
-  cellsDesired: number; // requested number of cells, the actual number is close to it
+  spacing: number; // distance between points before jittering, derived from the requested cell count
   cellsX: number; // number of cells in a row
   cellsY: number; // number of cells in a column
   boundary: Point[]; // pseudo-points along the map edge, not real cells

@@ -32,6 +32,10 @@ To get a blank map go Tools -> Heightmap -> Erase and use the brushes on the top
 
 Labels are shown and hidden based on zoom bounds defined per label group. Open Tools -> Labels and click on the groups configuration button. There you can check 'Show all labels' to ignore zoom bounds completely, or raise the max zoom value for a specific group
 
+### How do I force state labels to show the full state name?
+
+The name form is set per label group and no longer in Options, where it used to be the 'stateLabelsMode' setting. Open Tools -> Labels, click on the groups configuration button and set the state group's 'Mode' to 'full'. The default 'auto' uses the full name when it fits the state's area well enough and switches to the short name when it does not, while 'short' always uses the short name. Mode applies to state and province groups only
+
 ### How do I import an image? Can I put an image to create world based on it?
 
 Yes, it can be done via the Image Converter. Go to Tools -> Heightmap -> Erase -> Image converter
@@ -42,11 +46,11 @@ This its because the border of states or provinces follow the border of the cell
 
 ### Why is there no autosave?
 
-There is an autosave. Go to Options -> Generator settings -> Autosave interval and set the interval in minutes (0 disables it). The map is saved to the browser storage, and browser storage can be cleared accidentally, so also save .map file backups to your machine from time to time
+There is an autosave. Go to Options -> Interface settings -> Autosave interval and set the interval in minutes (0 disables it). The map is saved to the browser storage, and browser storage can be cleared accidentally, so also save .map file backups to your machine from time to time
 
 ### Why is there no undo button?
 
-There is no global undo for the whole map, but undo and redo (Ctrl + Z / Ctrl + Y) work in the editors that support it: Heightmap brushes and Template Editor, Paint brushes, Notes Editor, Routes Overview and Transform tool. It's still recommended to save the project as a .map file at least once every 30 minutes of work
+There is no global undo for the whole map, but undo and redo (Ctrl + Z / Ctrl + Y) work in the editors that support it: Heightmap brushes and Template Editor, Paint brushes, Wrap Tool, Notes Editor, Routes Overview and Transform tool. It's still recommended to save the project as a .map file at least once every 30 minutes of work
 
 ### Can I increase the number of cells?
 
@@ -54,7 +58,7 @@ Not on an already generated map directly, but you can rebuild the map with a dif
 
 ### Can I export map data as a text file?
 
-Map data can be exported, but only a little of it can be imported back. Overview editors (Burgs, Rivers, Routes, Markers, States, Military and others) have a download button that saves their table as a .csv file, and the Export menu offers GeoJSON (cells, routes, rivers, markers, zones) and JSON (full, minimal, pack cells, grid cells). The text data you can upload back is burg names (.txt or .csv), namesbases, notes (legends) and heightmap templates
+Map data can be exported, but only a little of it can be imported back. Overview editors (Burgs, Rivers, Routes, Markers, States, Military and others) have a download button that saves their table as a .csv file, and the Export menu offers GeoJSON (cells, routes, rivers, markers, zones) and JSON (full, minimal, pack cells, grid cells). The text data you can upload back is burg names (.txt or .csv), namesbases, notes (legends, as a .csv of `type,id,note` rows addressing map objects that exist) and heightmap templates
 
 ### Can I add new relief icons?
 
@@ -64,17 +68,33 @@ You can add and remove relief icons on the map with the Relief Editor: turn the 
 
 Rulers are managed by the Measurers Editor: Tools -> Measurers (Shift + =). There you can place a linear ruler, an opisometer (curve length), a route opisometer (a curve that sticks to routes) and a planimeter (polygon area). Remove a single measurer from the list in the editor or use the trash button to remove them all
 
-### Can I use the Coastline Editor (red dots that appear on the coast) to make changes to the land?
+### Why do lakes appear after editing the heightmap? How do I see where water flows?
 
-You should use the Heightmap tool to do 99.9% of the changes of the map, but you can later finesse the shape with this tool
+Rivers need every land cell to have a lower neighbour to flow to, so on finalization the generator fills closed depressions or turns deep ones into lakes. To see them before that, tick "Show drainage" in the Tools tab while editing the heightmap: every land cell gets an arrow pointing where its water flows, thicker where more cells drain through, and depressions water cannot leave are hatched in black, or hatched in blue when they are deep enough (see the depression depth threshold) to become lakes with water erosion allowed. The view stays on while you paint and updates after each edit, so lower a rim to give a basin an outlet, or raise its floor, until the hatching is gone
+
+### How do I change the heightmap on a small scale?
+
+Open Tools -> Heightmap and pick an edit mode, then use the brushes on the top right with a small radius. If the elevation is already right and you only dislike the outline, reshape the cells themselves with the Wrap Tool (Tools -> Create -> Wrap, or Shift + W)
+
+### How do I change borders on a small scale?
+
+Borders follow cells, so there are two ways to move one. To hand a piece of land to another state, province, culture, religion, biome or zone, open its editor, click the brush button at the bottom and paint over the cells. To keep the same cells but make the border line itself bend differently, use the Wrap Tool (Tools -> Create -> Wrap, or Shift + W)
+
+### How do I make the coastlines more rugged or smoother?
+
+Open Tools -> Coastlines. The Coastline Editor controls how the outline of every island and lake is drawn: how rough the shores are, how deep the bays cut and where the rough stretches fall, with the Smooth, Rocky, Fjords and Skerries presets as starting points. It works on the whole map or on a single feature, so one continent can get fjords while the rest stays gentle; per-feature settings are saved with the map. Only the drawn outline changes, cells, ports and routes stay as they are. To move the coastline itself edit the heightmap, or use the Wrap Tool for small nudges. See https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Coastline-Editor
+
+### How do I fine-tune the shape of a coastline, lake shore or border?
+
+Use the Wrap Tool: Tools -> Create -> Wrap (Shift + W). Drag on the map and the cell corners under the brush move with the pointer, so coastlines, lake shores and all cell-based borders bend with them. It is meant for small adjustments only — do 99.9% of the shaping with the Heightmap tool and finesse the result with Wrap
 
 ### I have white bits on the map why they are?
 
-You may have abused the coastline editor in which case regenerate the layer and do the changes of land with the Heightmap tool or you may have a way too complex shape for the generator
+You may have pushed cell shapes too far with the Wrap Tool, in which case use its Revert all button and do the changes of land with the Heightmap tool, or you may have a way too complex shape for the generator
 
 ### Does time exists?
 
-There is no a thing as time at the moment on the generator. The era and year thing in Options is just to define time messages on legends of military regiments, battles and similar things with a date on the notes
+There is no a thing as time at the moment on the generator. The era and year thing in Options -> Set Lore is just to define time messages on legends of military regiments, battles and similar things with a date on the notes
 
 ### I have made the menu too big. How to put it normal again?
 
@@ -114,11 +134,19 @@ Burg is an internal name used for all settlements in the Fantasy Map Generator. 
 
 ### I have issues with the Generator, what should I do?
 
-Please try to reproduce the issue on your own. If it's reproducible, please log an issue on GitHub or Discord. A lot of issues are caused by browsers, please also try to use incognito mode and/or another browser. We recommend Chrome as the fastest browser in terms of svg rendering
+Search existing issues, then report bugs at https://github.com/Azgaar/Fantasy-Map-Generator/issues/new?template=bug_report.yml. Include the FMG version, browser/OS, steps, expected and actual results, and the affected .map file in a ZIP archive when relevant. In Discord, use /bug when available or ask for help in #fmg-bugs. Bot reports need moderator approval before GitHub submission; ordinary chat and /ask do not file reports. Examples: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Reporting-bugs-and-ideas
+
+### What should a useful bug report look like?
+
+Example wording, not a known current bug: "A burg name reverts after saving and loading. FMG [version], [browser/version], [OS]. Load the attached map, rename Northport to Southport, save to machine, reload and load the saved file. Expected: Southport. Actual: Northport, on every attempt." Include the affected .map file in a ZIP archive, screenshots/error text where relevant, and the closest Theme or Not sure. If practical, mention whether a private window or another browser changes the result
+
+### Does telling the assistant about a bug submit it to GitHub?
+
+No. /ask, mentions, in-app help and ordinary chat only ask for advice. If available, /bug or /idea opens a reporting form; the message menu may also offer Apps -> Report this as a bug or Report this as an idea. A moderator reviews the report before it creates a GitHub issue/discussion or adds details to an existing item. Pending review is not confirmation of submission. Follow the resulting GitHub link. If reporting is unavailable, use the GitHub forms or ask a Discord moderator for help
 
 ### The map performance is poor, how can I improve it?
 
-Toggle off unnecessary layers. Be mindful of the Relief Icons layer in particular – it’s the most resource-demanding one. Open the Generator in a separate browser window, make it much smaller (about 900 x 560 pixels) and re-generate the map. Then, zoom in to see the map in detail. It will reduce the rending area and drastically improve the performance. When generating maps, set Points number to 10K. Points (cells) number highly affects performance. Toggle off map and element filters. Close all irrelevant browser tabs and applications. Use a leading edge browser (fresh versions on Chrome or Edge). Firefox is reported to be slower
+Toggle off unnecessary layers. Be mindful of the Relief Icons layer in particular – it’s the most resource-demanding one. Open the Generator in a separate browser window, make it much smaller (about 900 x 560 pixels) and re-generate the map. Then, zoom in to see the map in detail. It will reduce the rending area and drastically improve the performance. When generating maps, set Points number to 10K. Points (cells) number highly affects performance. Toggle off map and element filters. Close all irrelevant browser tabs and applications. Use a leading edge browser (fresh versions on Chrome or Edge). Firefox is reported to be slower. Set the 'Performance' preset in the Options tab to 'Speed', or open its settings and set 'Redraw on zoom' to 'After zoom' to redraw labels, icons and relief once per gesture instead of on every frame
 
 ### Who owns the maps created?
 
@@ -126,7 +154,7 @@ You. The Generator is licensed under MIT license and derivative works such as ma
 
 ### My saved map is not working properly. What should I do?
 
-If there is no version conflict, please raise a defect on GitHub. Compatible maps from v0.70.0 onward are checked and auto-updated when loaded. Older maps are considered ancient and require the matching old version of the Generator, there is no way to update them. The tool is under development and version conflicts are inevitable
+If there is no version conflict, use https://github.com/Azgaar/Fantasy-Map-Generator/issues/new?template=bug_report.yml and attach the affected .map file in a ZIP archive, the exact error, and the versions used to save and load it. Compatible maps from v0.70.0 onward are checked and auto-updated when loaded. Older maps are considered ancient and require the matching old version of the Generator, there is no way to update them. See https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Reporting-bugs-and-ideas for reporting help
 
 ### Can I export a created map?
 
@@ -142,11 +170,11 @@ Open the generator, click on Load and select the file. Or just drag and drop the
 
 ### Can I use the Generator offline?
 
-Yes, you can with some limitations. The easiest way is to install the PWA. Make sure you open the App when you have a connection so that all required files can be cached on your machine, after that the PWA should work offline. Another option is to run the tool locally from the source code, but it requires a build step now: install Node.js, then run `npm install` and `npm run dev`, see the Run FMG locally wiki page. Please note that assets loaded from external URLs, like alternative Fonts or Styles, are not available offline
+Yes, you can with some limitations. The easiest way is the desktop app: download the installer for Windows, macOS or Linux from https://github.com/Azgaar/Fantasy-Map-Generator/releases, it works offline out of the box. The web version can be installed as a PWA: make sure you open the App when you have a connection so that all required files can be cached on your machine, after that the PWA should work offline. Another option is to run the tool locally from the source code, but it requires a build step: install Node.js 24 or newer, then run `npm install` and `npm run dev`, see the Run FMG locally wiki page. Please note that assets loaded from external URLs, like alternative Fonts or Styles, are not available offline
 
 ### Is there a desktop version?
 
-There is no separate desktop application, but the web app can be installed as a PWA and behaves like a desktop application. Chromium-based browsers (Chrome, Edge, etc.) offer an 'Install' button in the address bar, alternatively use Chrome menu -> Cast, save and share -> Install page as app. The installed tool is added to your desktop and can be opened like a normal app. Internet connection is required for the first run, after that it may work offline with some limitations
+Yes. Since v1.149 there is a desktop app built on Electron, with installers for Windows (.exe), macOS (.dmg, Apple Silicon and Intel) and Linux (AppImage and .deb) attached to every release at https://github.com/Azgaar/Fantasy-Map-Generator/releases. It's the same Generator running in its own window, works offline and checks GitHub for updates (Windows and AppImage builds install updates themselves, the others open the download page). The builds are not code-signed yet, so the system warns about an unknown developer on the first launch: on macOS right-click the app -> Open -> Open, on Windows click More info -> Run anyway. Nix users can run `nix run github:Azgaar/Fantasy-Map-Generator` instead, see the Install with Nix wiki page: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Install-with-Nix. If you prefer not to install anything, the web app can still be installed as a PWA: Chromium-based browsers (Chrome, Edge, etc.) offer an 'Install' button in the address bar, alternatively use Chrome menu -> Cast, save and share -> Install page as app
 
 ### Which browsers are supported?
 
@@ -166,7 +194,7 @@ It's a nickname of the Generator creator, it has no meaning. The full name of th
 
 ### How can I help to improve the Generator?
 
-Just use it, log defects and suggest enhancements. Share the Generator link within your community! Post on FB, Twitter etc. We also accept donations on Patreon (https://www.patreon.com/azgaar)
+Use it, report bugs through https://github.com/Azgaar/Fantasy-Map-Generator/issues/new?template=bug_report.yml, and suggest or upvote ideas at https://github.com/Azgaar/Fantasy-Map-Generator/discussions/categories/ideas. Reporting examples and Discord options: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Reporting-bugs-and-ideas. Share the Generator link within your community. We also accept donations on Patreon (https://www.patreon.com/azgaar)
 
 ### What is the team behind the project?
 
@@ -234,7 +262,7 @@ You can use Battle Simulator. It allows to simulate battles between two or more 
 
 ### How can I upload a new icon for cities?
 
-Custom icons for burgs are not supported. You can set a custom image (an image URL or a data URI) as an icon for Markers and for Military regiments via the Select Icon dialog
+Custom burg icons cannot be uploaded, but every burg group can use one of the bundled symbol sets: select the group in Style -> Burg Icons and pick an icon from the Atlas, Watabou or Illustrated sets; ports get a separate anchor or harbor symbol in Style -> Burg Anchors. Custom images are supported for Markers and for Military regiments: the Select Icon dialog accepts any emoji, an image URL or an image file uploaded from your machine
 
 ### How can I create a new country?
 
@@ -290,11 +318,11 @@ Not really. Lakes are derived from the heightmap, so a new lake requires a heigh
 
 ### I have issues with download. The button disappeared after I clicked it. Even though I didnt download the app
 
-You can also install the tool using Chrome menu. Chome menu -> Cast, save and share -> Install page as app...
+The browser's Install button only appears until the PWA is installed, check your desktop or app launcher. You can also install the tool using Chrome menu: Chrome menu -> Cast, save and share -> Install page as app. If you want a regular installer instead, download the desktop app from https://github.com/Azgaar/Fantasy-Map-Generator/releases
 
 ### Is there an app?
 
-There is no native app, it's a browser tool, but you can install it as a PWA (Chrome and other Chromium browsers offer the Install button, or use Chrome menu -> Cast, save and share -> Install page as app). It runs in its own window and works offline once cached
+There is a desktop app for Windows, macOS and Linux, download the installer from https://github.com/Azgaar/Fantasy-Map-Generator/releases. There is no mobile app. The web version can also be installed as a PWA (Chrome and other Chromium browsers offer the Install button, or use Chrome menu -> Cast, save and share -> Install page as app), it runs in its own window and works offline once cached
 
 ### I want to move the point at which the ice caps start further away from the equator, but I don't want to change my biomes. Any ideas?
 
@@ -338,11 +366,11 @@ Go to Tools -> Units and change the '1 map pixel' distance scale. To change how 
 
 ### How to merge provinces?
 
-Open the Provinces Editor, filter the list by the state the provinces belong to and click on the 'Merge several provinces into one' button at the dialog bottom. Provinces of different states cannot be merged, reassign them in the States Editor first. Alternatively remove a province and repaint its territory to another one with the Paint brush
+Open the Provinces Editor and click the 'Annex provinces' button (crown icon) at the dialog bottom. Click the province that absorbs the others on the map, then click the provinces to annex; hold Shift to keep annexing several. A confirmation lists what will be merged, so a mis-click can be cancelled. To pick from a list instead, filter by the state the provinces belong to and use the 'Merge several provinces into one' button. Provinces of different states cannot be merged, reassign them in the States Editor first. Alternatively remove a province and repaint its territory to another one with the Paint brush
 
 ### Can you colour in the relief icons?
 
-You cannot change the colors of individual icons, but you can make them semi-transparent and color what is below. There are also three icon sets to choose from - Simple, Colored and Gray - select the set in Style -> Relief Icons or in the Relief Editor
+You cannot change the colors of individual icons, but you can make them semi-transparent and color what is below. There are also four icon sets to choose from - Simple, Colored, Gray and Illustrated - select the set in Style -> Relief Icons or in the Relief Editor
 
 ### My landmass color turned transparent (so it shows the ocean) and i don't know how can i do it back
 
@@ -354,11 +382,15 @@ You need to change the namesbase of the culture where you're spawning states and
 
 ### Hi, where is the right place to suggest new features?
 
-Suggest new featured on our Discord server on #fmg-suggestions channel
+Search and upvote existing ideas at https://github.com/Azgaar/Fantasy-Map-Generator/discussions/categories/ideas, or submit one at https://github.com/Azgaar/Fantasy-Map-Generator/discussions/new?category=ideas. Describe the problem, proposed behavior and an example use case. In Discord, use /idea when available or discuss it in #fmg-suggestions; bot reports need moderator approval before GitHub submission. Development is tracked at https://github.com/users/Azgaar/projects/3
+
+### What should a useful feature suggestion look like?
+
+Example: "Group journeys by campaign in the Journeys Overview. I run two campaigns on one map and currently prefix journey names; selecting Northern campaign would show only that group's journeys." Search existing ideas and issues first, choose a Theme or Not sure, and explain your use case. Votes help maintainers understand demand but do not guarantee implementation or a release date. If an idea already links to an issue, follow that issue rather than filing a duplicate
 
 ### Can I speak with a real human?
 
-You can speak with meatbags on Discord
+Ask the community or a moderator in the FMG Discord server: https://discord.com/invite/X7E84HU. Use #fmg-bugs for problems and #fmg-suggestions for ideas. You can also ask usage questions at https://github.com/Azgaar/Fantasy-Map-Generator/discussions/new?category=q-a
 
 ### Who are you?
 
@@ -366,11 +398,11 @@ I'm just an AI bot who can help you with the tool
 
 ### Can I create a lake?
 
-To create a lake go to Tools -> Heightmap -> Risk or Erase and then depress the rigion to be below the sea level. Then complete the edit and it will create a lake there. There is no other way to do it
+To create a lake go to Tools -> Heightmap -> Risk or Erase and then depress the region to be below the sea level. Then complete the edit and it will create a lake there. There is no other way to do it. Once the lake exists you can rename it and change its subtype (freshwater, salt, dry, sinkhole, frozen, lava) in the Lake Editor or in the Features Overview (Tools -> Features)
 
 ### How do I set up the map maker in offline mode / not using a web browser, but its own app?
 
-Install the tool as a PWA: use the Install button offered by Chromium-based browsers, or Chrome menu -> Cast, save and share -> Install page as app. It's the same web app running in its own window, there is no Electron-based desktop build. Open it once online so the files get cached, then it works offline with some limitations
+Download the desktop app: installers for Windows, macOS and Linux are attached to each release at https://github.com/Azgaar/Fantasy-Map-Generator/releases. It's the same Generator packaged as an Electron app, it runs in its own window and works offline. Alternatively install the web version as a PWA: use the Install button offered by Chromium-based browsers, or Chrome menu -> Cast, save and share -> Install page as app, and open it once online so the files get cached. In both cases assets loaded from external URLs, like alternative fonts or textures, still need a connection
 
 ### Is there a licensing agreement for things generated by the tool?
 
@@ -394,11 +426,11 @@ You can set States number to 0 in Options and regenerate. Cultures number cannot
 
 ### How to make map to open in specific zoom and focus on specific area on load?
 
-Follow the steps. 1. Save the map to storage. 2. Go to Options and set 'Onload behavior' to 'Open last saved map'. 3. Add URL parameters to make it look like this: https://azgaar.github.io/Fantasy-Map-Generator/?scale=4&x=800&y=200. 4. Change scale, x and y values as you need and use the link
+Follow the steps. 1. Save the map to storage. 2. Go to Options -> Interface settings and set 'On load' to 'Open last saved map'. 3. Add URL parameters to make it look like this: https://azgaar.github.io/Fantasy-Map-Generator/?scale=4&x=800&y=200. 4. Change scale, x and y values as you need and use the link
 
 ### How the map is rendered? Is it on GPU or CPU?
 
-The map is rendered in SVG by browser. SVG rendering in GPU-supported, but it's not optimized and hence you can observe lags when there are too many elements to render. The rendering depends on browser and can only be controlled by user with 'Rendering' option. We recommend to set it to 'Best performance' in case of significant lag
+The map is rendered in SVG by browser. SVG rendering in GPU-supported, but it's not optimized and hence you can observe lags when there are too many elements to render. The rendering depends on browser and can only be controlled by user with the 'Performance' preset and its settings in the Options tab. We recommend to set it to 'Speed' in case of significant lag
 
 ### If I've changed a setting, how do I generate a new map without changing the seed number?
 
@@ -438,7 +470,7 @@ Underwater towns and cultures are not supported. However some users suggested a 
 
 ### Is there a travelling time calculator or such built in?
 
-There is no travel time calculator. You can measure distances with the Measurers Editor (Tools -> Measurers): the ruler, opisometer and route opisometer report length in your distance units. For markers there is also a 'Markers in Radius' tool that lists all markers within a given distance. You can set the current year and era name in Options, but time is not simulated
+Yes, use Journeys: Tools -> Journeys (Shift + J). A journey is a named trip made of legs, each with its own transport (on foot, horseback, carriage, sailing ship, aircraft and so on, editable in the Transport Types dialog). The route of a leg is found automatically along roads, sea lanes and navigable rivers, and its distance, speed and travel time are calculated from the transport's speed and hours of travel per day. Journeys are drawn on their own layer and saved with the map. To just measure a distance use the Measurers Editor (Tools -> Measurers): the ruler, opisometer and route opisometer report length in your distance units. See the Journeys wiki page: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Journeys
 
 ### In the Style editor, for Heightmap element, what does the Reduce layers slider do?
 
@@ -458,7 +490,7 @@ There's a Growth rate slider in Options that you can set to a smaller value, it 
 
 ### How can i create lakes?
 
-Tools -> Heightmap -> Erase or Risk and make sure that whatever cells you put under sea level are surrounded by land cells. It'll automatically be considered a lake
+Tools -> Heightmap -> Erase or Risk and make sure that whatever cells you put under sea level are surrounded by land cells. It'll automatically be considered a lake. See also 'Can I create a lake?' above
 
 ### Is there a way to make relief icons render above routes?
 
@@ -506,7 +538,7 @@ Each state must have a capital. So to remove the capital burg, you need to reass
 
 ### Do you take suggestions?
 
-Yes, please suggest new features or changes on our Discord server
+Yes. Search and upvote Ideas discussions or submit a new suggestion at https://github.com/Azgaar/Fantasy-Map-Generator/discussions/new?category=ideas. In Discord, use /idea when available or #fmg-suggestions for discussion. Bot reports wait for moderator approval; a chat message alone does not create a GitHub item. See https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Reporting-bugs-and-ideas for examples
 
 ### Where can I set population settings?
 
@@ -530,11 +562,19 @@ Not really. The size mostly depends on the points number and cannot be changed f
 
 ### How to clean this chat dialog? How can I remove the chat history?
 
-You can open the website cdn.openwidget.com, then Open the Dev Console (F12) and type `localStorage.clear();` there. It will remove the chat history
+The assistant remembers the conversation for the current browser tab only, and the service forgets it two hours after the last question. Close the tab or open the Generator in a new one to start fresh; the assistant marks the boundary with a 'new conversation' line
 
 ### How can I toggle you off? How can I hide the Assistant?
 
-To hide the Assistant, go to Options -> Generator settings and set `Azgaar assistant` to Hide
+To hide the Assistant, go to Options -> Interface settings and set `Azgaar assistant` to Hide
+
+### The assistant says 'No questions left today'. What now?
+
+Questions are budgeted per day to keep the shared service affordable. Anonymous use gets a small allowance; click 'Sign in' at the bottom of the assistant panel to sign in with Discord for a larger one. The wiki and the Discord server hold the same knowledge the assistant answers from
+
+### What does the assistant send, and where?
+
+Only the question you type and a conversation id go to the project's help gateway at ask.azgaarsfmg.com; nothing from your map or browser is sent. Answers are drawn from the wiki and Discord knowledge. Signing in with Discord stores a token in this browser, and 'Sign out' removes it. Questions are kept for 90 days to improve the documentation; the 'Policy' link at the bottom of the panel opens the full details at https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Policy
 
 ### How to make a river?
 
@@ -550,7 +590,7 @@ You can create a new Regiment using the Regiments Overview. In can open if you c
 
 ### How do I merge countries?
 
-To merge states (countries) open the States Editor from Tools and click on the "Merge several states into one" button at the dialog bottom. Then select states you want to merge
+To merge states (countries) open the States Editor from Tools and click the "Annex states" button (crown icon) at the dialog bottom. Click the state that annexes the others on the map, then click the states to annex; hold Shift to keep annexing several. A confirmation lists what will be removed, so a mis-click can be cancelled. To pick from a list instead, use the "Merge several states into one" button next to it and tick the states to merge
 
 ### How to start a war?
 
@@ -570,7 +610,7 @@ No, dynasties are not currently supported
 
 ### Does it give names for mountains, forests, seas and other features?
 
-Rivers and lakes are named automatically (as well as states, provinces, burgs and religions). Mountains, forests, seas and other features are not named, but you can add custom labels for them: Tools -> Add -> Label (Shift + 2), and manage them in the Labels Overview
+Rivers, lakes, islands and oceans are named automatically, as well as states, provinces, burgs and religions. Mountains and forests are not named. Rename islands, oceans and lakes in the Features Overview (Tools -> Features). A geographical feature's name is used in tooltips, notes, search and the CSV export; to draw it on the map, add a label with Tools -> Add -> Label (Shift + 2), and manage it in the Labels Overview
 
 ### How can I change the language on the Tool?
 
@@ -620,6 +660,18 @@ No, temperature can only be set for the entire world
 
 You cannot import it, but you can set it up using the Biomes Editor in Tools
 
+### Can I draw contour lines or hachures on the heightmap?
+
+Yes. Open Style -> Heightmap. The Contours option draws elevation contours over the heightmap colors or as lines only, with configurable spacing and color (every fifth contour is heavier). The Hachures option adds short strokes along the slopes, with density, length and color settings. Both are rendering styles, they don't change the heights
+
+### How do I use the new Ink, Cinderwood and Frostbite styles?
+
+Select the preset at the top of the Style tab. Their effects can also be applied separately: Style -> Heightmap has hachures, Style -> Ocean has waves or straight strokes and coastline bands, and Style -> Lakes has ripples or straight strokes per lake group. Style -> Relief Icons and Style -> Burg Icons offer Illustrated symbols; Style -> Burg Anchors lets you choose an anchor or harbor symbol with its own size and offset. Style -> Labels has font weight, italic and text transform controls. See the step-by-step guide: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Map-embellishments
+
+### What do Quality, Balance and Speed change?
+
+These Performance presets are in the Options tab. Quality shows state halos and redraws while zooming; Balance hides halos and still redraws while zooming; Speed hides halos and redraws after a zoom or pan ends. The cog opens the individual settings, including the browser's shape-rendering hint. The preset reads Custom if your choices do not match a preset. Each reset arrow restores that setting's Balance value; selecting Balance restores all three. The settings affect display, not generated map data. See https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Performance-settings
+
 ### How do i customize heightmap color?
 
 You can select one of the available heightmap color schemes or create a custom one in Style -> heightmap element
@@ -648,6 +700,10 @@ Yes. FMG has an economy layer: cells can hold a resource (good), rural populatio
 
 Goods are resources and products like grain, iron, wood or wine. Raw goods are produced by the rural population depending on the biome, and a cell can also hold a bonus resource that boosts one specific good there. Manufactured goods are produced in burgs from recipes, using ingredients bought on the market. Open Tools -> Goods to see the full list with production and stock numbers, filter goods by tags, add your own good, or click on a good to edit its value, demand and multipliers
 
+### Can I use my own images for goods? How do I change a good's icon?
+
+Yes. Open Tools -> Goods and click on a good (or the plus button to add a new one) to open its dialog. The Icon row has a dropdown with the bundled icons and two upload buttons next to it: one for a raster image (png, jpg and so on) and one for an SVG file. The file should be up to 200 kB, 48 x 48 px and under 10 kB is recommended. Uploaded icons are saved inside the .map file, so they survive reload. The colored circle behind the icon is the good's color, set in the same dialog
+
 ### What is a market?
 
 A market is a regional economic hub anchored at a burg. Markets are placed on the biggest burgs (capitals and ports get a bonus) and their territories expand over the surrounding cells following routes and avoiding mountains and state borders. Every flow of goods passes through a market: rural cells deliver their production, burgs buy ingredients and sell products, and markets trade surpluses with each other. Toggle the Markets layer to see the territories, click on a territory to open the Market Stock dialog, or open Tools -> Markets for the overview
@@ -662,11 +718,15 @@ After production every market compares its prices with other markets and buys wh
 
 ### Where can I see how rich a state is? What are the taxes?
 
-Open Tools -> States: there is a Treasury column, and clicking on a value opens the taxes dialog for that state. Each state has a Sales tax, applied to deals where the state is the seller, and a Poll tax, a flat fee per population point. Base rates depend on the state form (a Theocracy taxes sales heavily, a Monarchy taxes people more, an Anarchy collects nothing) and are randomized a bit per state. Neutral lands collect nothing
+Open Tools -> States: there is a Treasury column, and clicking on a value opens the taxes dialog for that state. Each state has a Sales tax, applied to deals where the state is the seller, and a Poll tax, a flat fee per population point. Base rates depend on the state form (a Theocracy taxes sales heavily, a Monarchy taxes people more, an Anarchy collects nothing) and are randomized a bit per state. Neutral lands collect nothing. A burg has a treasury of its own, shown in the Burg Editor: it is what the burg has left after buying ingredients and selling its production, and you can type any value there if you want a rich or a broke burg. Production is not recalculated to match, and the next economy regeneration overwrites it
 
 ### How do I regenerate the economy?
 
 Tools -> Regenerate has the relevant buttons: Goods re-places bonus resources on the cells, Markets rebuilds markets and their territories, Production recalculates production and trade deals, and Economy does all of it at once, including state taxes. The Goods and Markets editors have the same buttons at the bottom of the dialog
+
+### Why is a market not making an expensive product even though its ingredients exist?
+
+Production also depends on demand, prices, available workers and competing recipes. From 1.153.0, the planner uses ingredients already in inventory or market stock before counting the work needed to manufacture missing components, including nested recipes. This fixes inflated worker requirements that could block complex products. It does not force a particular product to be made: input costs still count and the whole chain must fit the burg's remaining workers. After loading an older map, use Tools -> Regenerate -> Production to recalculate with the corrected planner. Keep a saved copy first if you want to compare the old results
 
 ### Can I place a resource where I want? How to assign goods to cells manually?
 
@@ -695,6 +755,10 @@ Yes. The 3D settings dialog has a screenshot button that saves the current view 
 ### How do I switch between political, cultural and other map types?
 
 Use the Layers preset select at the top of the Layers tab: Political, Cultural, Religions, Provinces, Biomes, Heightmap, Physical, Places of interest, Goods, Trade animation, Military, Emblems and Pure landmass. You can also toggle individual layers and save the current combination as your own preset with the plus button
+
+### Is there a search? How do I find a burg, state or river by name?
+
+Yes, press Space (or click Search at the bottom of the menu) to open the Omnibar. Search names and notes for states, provinces, burgs, cultures, religions, biomes, goods, rivers, routes, markers, features, zones, journeys, markets, regiments and labels. Select a result to open its editor; labels and entities without an editor are located and highlighted on the map. Start a query with > to show commands only. Arrow keys select, Enter runs the result, and Escape closes the search. The last ten commands are remembered between sessions. See https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Omnibar
 
 ### Is there a minimap?
 
@@ -730,7 +794,7 @@ Yes, route groups are configurable. Open a route (or the Routes Overview) and go
 
 ### How do I add my own description to a state, burg or marker?
 
-Every map object can have a note (legend). Click on the object and use its notes button, or open Tools -> Notes to browse all notes. The notes editor is a rich text editor, so you can add formatting, links, images, and raw HTML through the source code button
+Most map objects can have a note (legend): burgs, markers, states, provinces, rivers, routes, regiments, labels, geographical features (islands, lakes and oceans), zones, journeys, markets, cultures, religions, biomes and goods. Click on the object and use its notes button, or open Tools -> Notes to browse all notes. The notes editor is a rich text editor, so you can add formatting, links, images, and raw HTML through the source code button. A note belongs to its object: it is removed with it, and there is no way to keep a note that describes nothing
 
 ### Can AI generate descriptions for my world?
 
@@ -742,7 +806,7 @@ Emblems are generated for states, provinces and burgs and drawn in the Emblems l
 
 ### How do markers work? Can I add my own marker types?
 
-Markers are icons for points of interest. Generated markers follow placement rules (a bridge needs a river and so on) and get a note attached. Add your own with Tools -> Add -> Marker (Shift + 3) and click on the map, then click the marker to change its type, icon (any emoji or an image URL), size, pin shape and colors - style changes apply to all markers of the same type. Tools -> Markers lists all markers, filters them by state, culture and type and exports them as .csv, and the generation settings dialog sets the number multiplier per type
+Markers are icons for points of interest. Generated markers follow placement rules (a bridge needs a river and so on) and get a note attached. Add your own with Tools -> Add -> Marker (Shift + 3) and click on the map, then click the marker to change its type, icon (any emoji, an image URL or an uploaded image file), size, pin shape and colors - style changes apply to all markers of the same type. Tools -> Markers lists all markers, filters them by state, culture and type and exports them as .csv, and the generation settings dialog sets the number multiplier per type
 
 ### How do I protect my manual changes from being overwritten by regeneration?
 
@@ -766,7 +830,11 @@ Yes. In the Style editor, next to a font select there is a plus button that open
 
 ### What is the Legend box and how do I use it?
 
-The Legend box is a text box drawn on the map. The States, Cultures, Religions, Biomes and Zones editors have a 'Toggle Legend box' button that fills it with the list of the corresponding elements. The box can be dragged around the map and restyled in Style -> Legend
+A Legend box is a titled list of colored elements drawn on the map. The States, Cultures, Religions, Biomes and Zones editors have a 'Toggle Legend box' button that shows or hides the box for that editor. The boxes are independent: you can have as many of them on the map at once as you like, which is handy when exporting the map as an image. A new box is placed next to the ones already shown, on whichever side has room. Each box can be dragged around the map on its own, is hidden by clicking it, and they all share the styling in Style -> Legend. Where you drag a box is remembered by your browser rather than saved into the map, the same way editor dialog positions are
+
+### A dialog opened off-screen or with a weird size. How do I reset it?
+
+Dialog positions and sizes are remembered by the browser between sessions. When a dialog has a saved position, column layout or sort, a reset button (circular arrow) appears in its title bar next to minimize and close. It restores the default position and, for tables, the default columns and sorting. Table filters and map data are kept
 
 ### Can I highlight one state and dim the rest?
 
@@ -802,7 +870,35 @@ Use Export -> Export to GeoJSON: cells, routes, rivers, markers and zones can be
 
 ### How do I find a specific state, burg or river in a long list?
 
-Overview dialogs (Burgs, Rivers, Routes, Markers, Labels, States and others) have a search field that filters the table, sortable columns, and pagination for big maps. The sliders button in the dialog header lets you show or hide columns. Click on the target icon in a row to zoom to that element on the map
+Overview dialogs (Burgs, Rivers, Routes, Markers, Labels, Features, States and others) have a search field that filters the table, sortable columns, and pagination for big maps. The sliders button in the dialog header lets you show or hide columns. Click on the target icon in a row to zoom to that element on the map
+
+### How do I keep burgs alphabetical within each province?
+
+In Tools -> Burgs, click the Burg column header to sort names alphabetically, then click Province to sort provinces alphabetically. Click a header again if you need to reverse its direction. The latest column is the main sort, and earlier sorts break ties, so burg names stay alphabetical inside each province. No modifier key is needed. The default or saved order stays in use until a header is clicked. The last primary sort is saved between sessions; reapply the earlier sorts after reopening the dialog. The circular-arrow Reset button in the title bar restores the default sorting, columns and position
+
+### Is there a list of all islands, lakes and oceans on my map?
+
+Yes, open Tools -> Features (Shift + F). The Geographical Features Overview lists every island, lake and ocean with its type, subtype, rendering group and area. Hover a row to trace that feature on the map, hover the map to highlight its row, and use the target icon to zoom to it. The table can be filtered by type and subtype, searched by name, sorted by any column and exported as a .csv
+
+### How do I rename an island or a landmass?
+
+Open Tools -> Features (Shift + F) and type into the name field of its row. Islands, lakes and oceans receive generated names in 1.153.0; compatible older maps receive missing names on load. Clearing a name displays Unnamed in the table. The name is used in tooltips, notes, search and the export; to draw it on the map, add a label with Tools -> Add -> Label (Shift + 2)
+
+### Why can't I add or delete a feature in the Features Overview?
+
+Islands, lakes and oceans come straight from the heightmap: an island exists because those cells are above sea level. To add or remove one, change the terrain in Tools -> Heightmap. The Features Overview only changes how an existing feature is named, classified and drawn
+
+### What is the difference between a feature's subtype and its group?
+
+The subtype says what the feature is and generators read it: dry, frozen and lava lakes cannot be sailed and get no ports, and subtypes like isle affect how cultures, provinces, goods and markers are placed. The group says only which SVG group the feature is drawn in, so it controls appearance and nothing else. They are independent - a salt lake can be drawn in the freshwater group, and two lakes in one group can have different subtypes
+
+### I changed a lake to dry (or frozen, or lava) and its ports are still there
+
+Changing a subtype relabels the feature, it does not regenerate anything - same as the other editors. Ports, goods and markers stay as they were until you regenerate them yourself (for example Tools -> Regenerate -> Burgs)
+
+### How do I give some of my lakes a different colour?
+
+Lake colours are set per group. Click a lake to open the Lake Editor, click the plus next to Group and name a new group - the lake moves into it. Then style that group in Style -> lakes, and move other lakes into it from the Group column of the Features Overview. Custom groups are saved with the map; removing one in the Lake Editor moves its lakes back to freshwater
 
 ### Can I contribute code to the project?
 

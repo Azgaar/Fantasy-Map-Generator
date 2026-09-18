@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { waitForMap } from "./wait-for-map";
 
 const MAP_URL = "/?seed=test-seed&width=1280&height=720";
 
@@ -9,7 +10,7 @@ async function loadMap(page: Page): Promise<void> {
     sessionStorage.clear();
   });
   await page.goto(MAP_URL);
-  await page.waitForFunction(() => (window as any).mapId !== undefined, { timeout: 60000 });
+  await waitForMap(page);
   await page.waitForTimeout(500);
 }
 

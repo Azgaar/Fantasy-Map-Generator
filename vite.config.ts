@@ -3,7 +3,7 @@ import { fileURLToPath, URL } from "node:url";
 /**
  * The desktop app ships the same renderer, minus the parts that only make sense on the web:
  * Google Analytics (a program that phones home on launch is a different bargain than a web page),
- * and the PWA plumbing, which `public/main.js` already skips under Electron
+ * and the PWA plumbing, which `services/platform.ts` already skips under Electron
  */
 const stripWebOnlyTags = {
   name: "strip-web-only-tags",
@@ -21,7 +21,7 @@ export default ({ mode }: { mode: string }) => ({
   build: {
     outDir: mode === "electron" ? "../dist-electron/renderer" : "../dist",
     assetsDir: "./",
-    emptyOutDir: mode === "electron"
+    emptyOutDir: true // outDir sits outside root, so Vite would otherwise keep every past build's chunks
   },
   publicDir: "../public",
   resolve: {

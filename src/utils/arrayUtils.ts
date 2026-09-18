@@ -3,7 +3,7 @@
  * @param {Array} array - The array to get the last element from
  * @returns The last element of the array
  */
-export const last = <T>(array: T[]): T => {
+export const last = <T>(array: readonly T[]): T => {
   return array[array.length - 1];
 };
 

@@ -11,8 +11,8 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
-import type { FillBoxElement } from "@/components/fill-box";
 import { Layers } from "@/components/layers";
+import type { FillBoxElement } from "@/components/shared/fill-box";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { cellEndpointLabel, getCellPoint } from "@/generators/journeys/journey-places";
@@ -165,6 +165,7 @@ function renderDialog(): void {
 }
 
 function renderJourneysPage(view: TableView<Journey>): void {
+  stopJourneyTravel(); // the hovered row is about to be removed, so its animation must not re-arm
   const body = ensureEl("journeysBody");
   body.querySelectorAll(":scope > .states").forEach(row => {
     row.remove();

@@ -2,6 +2,7 @@ import { driver } from "driver.js";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { ensureEl } from "@/utils/nodeUtils";
 import "driver.js/dist/driver.css";
+import { showExportPane } from "@/components/options/io-panes";
 
 function closeOptionsPanel() {
   const options = ensureEl("options");
@@ -10,7 +11,10 @@ function closeOptionsPanel() {
   }
 }
 
+let activeTour: ReturnType<typeof driver> | null = null;
+
 function start() {
+  if (activeTour?.isActive()) return;
   closeOptionsPanel();
 
   const tour = driver({
@@ -40,11 +44,11 @@ function start() {
         });
       }
     },
-    onDestroyStarted: () => {
+    onDestroyed: () => {
+      activeTour = null;
       document.removeEventListener("keydown", handleKeydown);
       hideHeightmapCustomizationPanel();
       closeDialogs();
-      tour.destroy();
       closeOptionsPanel();
     },
     steps: [
@@ -382,6 +386,7 @@ function start() {
     }
   }
 
+  activeTour = tour;
   document.addEventListener("keydown", handleKeydown);
   tour.drive();
 }

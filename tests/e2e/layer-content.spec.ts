@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { waitForMap } from "./wait-for-map";
 
 // Emblems and ice both clear their rendered content when hidden and rebuild it from world state when shown.
 // Emblems retain their declared category groups, but the viewport-rendered <use> elements are rematerialized.
@@ -13,7 +14,7 @@ test.describe("layer content on hide and show", () => {
     });
 
     await page.goto("/?seed=test-seed&width=1280&height=720");
-    await page.waitForFunction(() => (window as any).mapId !== undefined, { timeout: 60000 });
+    await waitForMap(page);
     await page.waitForTimeout(500);
   });
 
@@ -86,7 +87,11 @@ test.describe("layer content on hide and show", () => {
     await expect(fogging).toBeVisible();
     expect(await rects.count()).toBe(2);
 
-    await page.evaluate(() => (window as any).unfog());
+    // clearing the last revealed shape empties the overlay, the way unfog() does on a focus reset
+    await page.evaluate(() => {
+      document.querySelectorAll("#fog path").forEach(path => path.remove());
+      (window as any).Layers.draw("fogging");
+    });
     expect(await rects.count()).toBe(0); // no revealed area left: the overlay empties itself
   });
 });

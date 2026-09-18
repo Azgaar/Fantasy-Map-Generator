@@ -16,35 +16,35 @@
  */
 
 import { dialogState } from "@/components/dialog/state";
+import { Pins } from "@/components/pins";
 import { tip } from "@/components/tooltips";
 import { isElectron } from "./platform";
 
-export const VERSION = "1.151.1";
+export const VERSION = "1.153.1";
 
 // new changes on top
 const latestPublicChanges = [
-  "Provinces Editor: dominant culture column",
-  "Brushes: smooth, gap-free painting at any screen refresh rate",
-  "Journey Editor and new Journeys layer",
-  "Desktop App",
-  "URL params to open specific layers or preset",
-  "Emblems rendering optimization",
-  "Dialogs state preserved between sessions",
-  "Paint Area dialogs rework",
-  "Relief icons: improved performance",
-  "Configurable table columns",
-  "Labels: improved performance",
-  "Labels Overview",
-  "Route and river labels",
-  "Economic simulation",
-  "Trade animation",
-  "Navigable rivers",
-  "3D view: eroded terrain",
-  "3D view: satellite texture",
-  "Jagged coastlines",
-  "Heightmap Editor: Fill brush",
-  "Editors: undo button",
-  "Minimap"
+  "Province Culture column and population breakdowns on hover in States and Provinces editors",
+  "Global map search (press Space to open)",
+  "New style presets: Ink, Cinderwood and Frostbite",
+  "Heightmap hachures, coastal bands and shore ripples embellishments",
+  "Labels styling: font weight, font style and text transform",
+  "Wrap Tool: reshape cells with a brush",
+  "Geographical Features Overview",
+  "Coastline Editor: customizable per feature",
+  "Coastlines: roughness localized to coastline section",
+  "Performance Settings",
+  "Dialogs: titlebar button to restore the default position, columns and sorting",
+  "Heightmap Editor: 'Show drainage' overlay",
+  "Heightmap: option to render contour lines",
+  "Ability to override a burg's treasury",
+  "Dialogs: preserve position between sessions",
+  "Options rework: map settings are stored with the map, preferences with the browser",
+  "Map name and era moved to Set Lore dialog",
+  "Notes: kept on the element they describe, and available for more element types",
+  "Notes Editor: new rich text editor Quill2",
+  "Goods, Rivers, Routes, Markers, Markets and Burg icons rendering optimization",
+  "Help assistant: ask questions about the Generator in the app"
 ];
 
 export function parseMapVersion(version: string): string {
@@ -106,11 +106,16 @@ export async function clearCache(): Promise<void> {
   location.reload();
 }
 
+export const ARROW_TIP_KEY = "fmg-disable-click-arrow-tooltip";
+
 export async function cleanupData(): Promise<void> {
   localStorage.clear();
   dialogState.clear();
   localStorage.setItem("version", VERSION);
-  localStorage.setItem("disable_click_arrow_tooltip", "true");
+
+  Options.reset();
+  Pins.clearAll();
+  localStorage.setItem(ARROW_TIP_KEY, "true");
   await clearCache();
 }
 
