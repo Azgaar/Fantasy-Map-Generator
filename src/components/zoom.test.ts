@@ -92,10 +92,14 @@ describe("invokeActiveZooming", () => {
     expect(halo.getAttribute("stroke-width")).toBe(String(rn(8 / 2 ** 0.8, 2)));
   });
 
-  it("sizes the viewbox font half-way with the zoom", () => {
+  it("sizes the viewbox font by the inverse square root of the zoom", () => {
     const viewbox = document.getElementById("viewbox")!;
     setViewportTransform(4, viewport.x, viewport.y);
     invokeActiveZooming();
-    expect(viewbox.getAttribute("font-size")).toBe("62.5px"); // (100 + 100 / 4) / 2
+    expect(viewbox.getAttribute("font-size")).toBe("50px"); // 100 / sqrt(4)
+
+    setViewportTransform(20, viewport.x, viewport.y);
+    invokeActiveZooming();
+    expect(viewbox.getAttribute("font-size")).toBe("22.36px"); // 100 / sqrt(20)
   });
 });

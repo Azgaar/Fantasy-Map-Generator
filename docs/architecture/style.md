@@ -76,11 +76,12 @@ mirrors the DOM tree: every `groups` entry addresses one `data-group` child of i
   and keyed by the map's own group names — the editor's group select lists those.
 - **A font size is an attr**, in px on the layer (`legend.attrs["font-size"]: "13px"`), and its
   texts size by inheritance; a label group's is a `%` of the viewbox font size, which is 100px at
-  scale 1 and which the zoom scales half-way — so anything sized in `%` or `em` (label groups, the
-  markers) follows the zoom, per frame or once it settles as `viewportRedraw` says. There is no
-  switch for it: `labels.resizeOnZoom` and `markers.options.rescale` were retired with v1.154. An
-  `options` size (`markets.options.iconSize`, `military.options.boxSize`) is a renderer input, not a
-  font; the regiment font follows the box.
+  scale 1 and which the zoom scales by the inverse square root of the scale (the geometric
+  half-way between a map-fixed and a screen-fixed size) — so anything sized in `%` or `em` (label
+  groups, the markers) follows the zoom, per frame or once it settles as `viewportRedraw` says.
+  There is no switch for it: `labels.resizeOnZoom` and `markers.options.rescale` were retired with
+  v1.154. An `options` size (`markets.options.iconSize`, `military.options.boxSize`) is a renderer
+  input, not a font; the regiment font follows the box.
 - **A zoom-derived attr keeps its base in the store.** The zoom writes what it derives — the halo
   `stroke-width` scaled to the viewport, the coordinates `font-size` on redraw — over the stored
   base; the store never holds the derived value.

@@ -67,9 +67,9 @@ test.describe("style editor events drive the store", () => {
     await page.evaluate(() => (window as any).setMapZoom(4));
     await page.waitForTimeout(50);
     await page.evaluate(() => (window as any).invokeActiveZooming());
-    await expect(page.locator("#viewbox")).toHaveAttribute("font-size", "62.5px");
+    await expect(page.locator("#viewbox")).toHaveAttribute("font-size", "50px");
     const after = await marker.evaluate(el => el.getBoundingClientRect().width);
-    expect(after / before).toBeCloseTo(4 * 0.625, 1); // the map scaled 4x, the em 0.625x
+    expect(after / before).toBeCloseTo(4 * 0.5, 1); // the map scaled 4x, the em 0.5x
 
     expect(await page.locator("#markers").getAttribute("rescale")).toBeNull();
   });
