@@ -346,7 +346,7 @@ const padding = (side: string) =>
 export const stylesSchema = z.strictObject({
   biomes: z.strictObject({ attrs: z.strictObject({ opacity, filter }) }),
   borders: z.strictObject({ groups: z.strictObject({ stateBorders: borders, provinceBorders: borders }) }),
-  icons: z.strictObject({
+  burgIcons: z.strictObject({
     groups: z
       .record(
         z.string(),

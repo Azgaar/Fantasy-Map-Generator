@@ -375,7 +375,7 @@ const mapLayers = [
     draw: drawEmblems,
     erase: removeEmblems
   }),
-  new Layer({ id: "icons", parent: "viewbox", draw: drawBurgIcons }),
+  new Layer({ id: "burgIcons", parent: "viewbox", draw: drawBurgIcons }),
   new Layer({
     id: "labels",
     parent: "viewbox",
@@ -400,12 +400,6 @@ const mapLayers = [
 ];
 
 export type LayerId = (typeof mapLayers)[number]["id"];
-
-/** Layer ids renamed after they became the persisted identity (v1.154.0 renamed burgIcons to icons) */
-const RENAMED_LAYER_IDS: Readonly<Record<string, LayerId>> = { burgIcons: "icons" };
-
-/** The id a layer has now, for state persisted before a rename */
-export const resolveLayerId = (id: string): string => RENAMED_LAYER_IDS[id] ?? id;
 
 declare global {
   var Layers: LayersRegistry<LayerId>;

@@ -1,7 +1,7 @@
 // Update an old map file to the current version
 import { color, min, select } from "d3";
 import { confirmationDialog } from "@/components/dialog/dialog-helpers";
-import { type LayerId, Layers, type LayersState, resolveLayerId } from "@/components/layers";
+import { type LayerId, Layers, type LayersState } from "@/components/layers";
 import { type EntityRef, MapEntities } from "@/components/map-entities";
 import { Notes } from "@/components/notes";
 import { normalizeLegacyBurgGroupFilters } from "@/components/options-legacy";
@@ -76,7 +76,7 @@ const LEGACY_LAYER_IDS: Record<string, LayerId> = {
   togglePrecipitation: "precipitation",
   togglePopulation: "population",
   toggleEmblems: "emblems",
-  toggleIcons: "icons",
+  toggleBurgIcons: "burgIcons",
   toggleLabels: "labels",
   toggleMilitary: "military",
   toggleMarkers: "markers",
@@ -383,7 +383,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
     // v1.3 added militry layer
     select("#viewbox")
-      .insert("g", "#icons")
+      .insert("g", "#burgIcons")
       .attr("id", "armies")
       .attr("opacity", 1)
       .attr("fill-opacity", 1)
@@ -1019,7 +1019,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   if (isOlderThan("1.105.0")) {
     // v1.104.0 introduced some bugs with layers visibility
-    select("#viewbox").select("#icons").style("display", null);
+    select("#viewbox").select("#burgIcons").style("display", null);
     select("#viewbox").select("#ice").style("display", null);
     select("#viewbox").select("#regions").style("display", null);
     select("#viewbox").select("#armies").style("display", null);
@@ -1619,7 +1619,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         has("prec", "circle") && "precipitation",
         has("population", "line") && "population",
         shown("emblems") && has("emblems", "use") && "emblems",
-        shown("icons") && "icons",
+        shown("icons") && "burgIcons",
         (labelsState ? labelsState === "true" : filled("labels")) && "labels",
         shown("armies") && filled("armies") && "military",
         has("markers", "svg") && "markers",
@@ -1970,7 +1970,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       const harvested = stylesFromMap();
       for (const type of empty) {
         record.burgIcons[type].groups = Object.fromEntries(
-          Object.entries(harvested.icons.groups).map(([name, entry]) => [
+          Object.entries(harvested.burgIcons.groups).map(([name, entry]) => [
             name,
             type === "burgIcons" ? entry.groups.icons : entry.groups.anchors
           ])
@@ -1995,14 +1995,8 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     // a burg group element hangs directly off the layer now, with its anchor part inside it
     document.getElementById("anchors")?.remove();
     document.getElementById("burgIcons")?.remove();
+    document.getElementById("icons")?.remove(); // the layer group itself: it is #burgIcons now
     document.getElementById("labels")?.removeAttribute("font-size"); // the viewbox carries the base the groups size from
-    // the icons layer was named burgIcons when this state was saved; an unknown id would restore it as off
-    const layers = data[50] ? (safeParseJSON(data[50]) as LayersState | null) : undefined;
-    if (layers)
-      data[50] = JSON.stringify({
-        order: (layers.order ?? []).map(resolveLayerId),
-        active: (layers.active ?? []).map(resolveLayerId)
-      });
   }
 }
 
@@ -2012,11 +2006,6 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
     const settings = safeParseJSON(data[1]);
     if (settings?.labels) {
       delete settings.labels.resizeOnZoom;
-      // a group tied to the icons layer was saved under the layer's old id
-      for (const group of settings.labels.groups ?? []) {
-        if (typeof group?.layerDependency === "string")
-          group.layerDependency = resolveLayerId(group.layerDependency) as LayerId;
-      }
       data[1] = JSON.stringify(settings);
     }
   }
@@ -2148,10 +2137,13 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
 
   if (compareVersions(mapVersion, "1.144.0").isOlder && Array.isArray(migrated.labels?.groups)) {
     for (const group of migrated.labels.groups) {
-      if (!group || typeof group.layerDependency !== "string") continue;
-      group.layerDependency = Object.hasOwn(LEGACY_LAYER_IDS, group.layerDependency)
-        ? LEGACY_LAYER_IDS[group.layerDependency]
-        : (resolveLayerId(group.layerDependency) as LayerId);
+      if (
+        group &&
+        typeof group.layerDependency === "string" &&
+        Object.hasOwn(LEGACY_LAYER_IDS, group.layerDependency)
+      ) {
+        group.layerDependency = LEGACY_LAYER_IDS[group.layerDependency];
+      }
     }
   }
 

@@ -283,7 +283,7 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
     if (noLabels) {
       clone.selectAll("#labels [data-label-type]").remove();
       clone.selectAll("#textPaths [data-label-type]").remove();
-      clone.selectAll("#icons [data-group='icons']").remove();
+      clone.selectAll("#burgIcons [data-group='icons']").remove();
     }
     if (noWater) {
       clone.select("#oceanBase").attr("opacity", 0);
@@ -398,7 +398,7 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
     }
 
     // add burg and port icons
-    for (const group of cloneEl.querySelectorAll<SVGGElement>("#icons [data-icon]")) {
+    for (const group of cloneEl.querySelectorAll<SVGGElement>("#burgIcons [data-icon]")) {
       const id = group.dataset.icon?.slice(1);
       if (!id || cloneDefs.querySelector(`[id="${CSS.escape(id)}"]`)) continue;
       const icon = svgDefs.getElementById(id);

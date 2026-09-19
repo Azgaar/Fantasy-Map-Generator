@@ -64,8 +64,8 @@ test("every styles address resolves in the generated map's DOM", async ({ page }
   // dynamic groups: renderers stamp what they create
   for (const selector of [
     '[data-layer="labels"] [data-group]',
-    '[data-layer="icons"] [data-group]',
-    '[data-layer="icons"] [data-group="anchors"]'
+    '[data-layer="burgIcons"] [data-group]',
+    '[data-layer="burgIcons"] [data-group="anchors"]'
   ]) {
     expect(await page.locator(selector).count(), selector).toBeGreaterThan(0);
   }

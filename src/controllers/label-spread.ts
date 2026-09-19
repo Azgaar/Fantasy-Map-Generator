@@ -359,7 +359,7 @@ function getDisplayedBurgIconBounds(): Map<number, LabelBounds> {
 
   const inverse = screenMatrix.inverse();
   const boundsByBurg = new Map<number, LabelBounds>();
-  const icons = document.querySelectorAll<SVGGraphicsElement>("#icons use[data-id]");
+  const icons = document.querySelectorAll<SVGGraphicsElement>("#burgIcons use[data-id]");
   for (const icon of icons) {
     const id = Number(icon.dataset.id);
     const rect = icon.getBoundingClientRect();

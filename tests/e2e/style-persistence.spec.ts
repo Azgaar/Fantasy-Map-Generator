@@ -226,10 +226,10 @@ test.describe("style persistence round trips", () => {
     await page.waitForTimeout(1000);
 
     const harvested = await page.evaluate(() => ({
-      iconFill: styles.icons.groups.cities?.groups.icons.attrs?.fill ?? null,
-      iconSize: styles.icons.groups.cities?.groups.icons.options?.size ?? null,
-      anchorFill: styles.icons.groups.cities?.groups.anchors.attrs?.fill ?? null,
-      anchorSize: styles.icons.groups.cities?.groups.anchors.options?.size ?? null
+      iconFill: styles.burgIcons.groups.cities?.groups.icons.attrs?.fill ?? null,
+      iconSize: styles.burgIcons.groups.cities?.groups.icons.options?.size ?? null,
+      anchorFill: styles.burgIcons.groups.cities?.groups.anchors.attrs?.fill ?? null,
+      anchorSize: styles.burgIcons.groups.cities?.groups.anchors.options?.size ?? null
     }));
 
     // this fixture postdates the 1.109 size-doubling migration, so the sizes harvest as written
@@ -240,8 +240,8 @@ test.describe("style persistence round trips", () => {
 
     const savedAgain = await saveAsDownload(page);
     const record = JSON.parse(savedAgain.toString("utf8").split("\r\n")[48]);
-    expect(record.icons.groups.cities.groups.icons.options.size).toBe(0.9);
-    expect(record.icons.groups.cities.groups.anchors.options.size).toBe(2.2);
+    expect(record.burgIcons.groups.cities.groups.icons.options.size).toBe(0.9);
+    expect(record.burgIcons.groups.cities.groups.anchors.options.size).toBe(2.2);
   });
 
   test("preset-nulled attr stays absent: a preset switch survives a save and load with no backfill", async ({

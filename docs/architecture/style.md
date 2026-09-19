@@ -55,7 +55,7 @@ mirrors the DOM tree: every `groups` entry addresses one `data-group` child of i
       "statesHalo": { "attrs": { "stroke-width": 10, "filter": "blur(3.5px)" } }
     }
   },
-  "icons": {
+  "burgIcons": {
     "groups": {
       "capital": {
         "groups": {
@@ -220,8 +220,8 @@ reached only from the load migrations (`auto-update.ts`) and `parsePreset`:
 - maps saved before the store was the source of truth → `stylesFromMap` harvests the SVG attributes,
   `restoreStrippedLayerStyles` re-seeds what a few versions stripped
 - `normalizeStyles` rewrites older records to the current shape and formats: folding the fixed
-  children under their element's `groups`, renaming the `burgIcons` element to `icons` and its two
-  records into one entry per group, folding
+  children under their element's `groups`, merging the two burg records into one entry per group,
+  folding
   the mirrored fields into their attrs (`map.options.dataFilter` → `map.attrs.filter`, the halo
   `width`, the `fontSize` options, the ocean pattern options → `ocean.groups.pattern.attrs`), dropping
   the retired ones (`markers.options.rescale`, `military.options.fontSize`), then `""` → `null`,
@@ -261,7 +261,7 @@ The element select lists `Object.keys(stylesSchema.shape)` by their layer label.
 user `groups` record shows the group select, filled by `GROUP_SOURCES` (`dialogs.ts`) — each entry
 with a count of the things using it (labels per group, burgs and ports, routes, lakes). A fixed
 `groups` record is not a selection: its entries render inline as collapsible cards under the
-element's own rows, so an element is seen whole. `icons` is one user record whose entries hold
+element's own rows, so an element is seen whole. `burgIcons` is one user record whose entries hold
 their own `icons` and `anchors` groups, so one group select serves both and the anchor rows are a
 card inside the group.
 

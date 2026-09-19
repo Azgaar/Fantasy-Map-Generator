@@ -37,8 +37,8 @@ const TARGETS = [
   "#texture", "#tradeAnimation", "#vignette", "#vignette-rect", "#zones",
   // every burg-icon and anchor group type the two maps carry - the style tree addresses these
   // per group part, so a partial list would let a whole group class drift unnoticed
-  ...BURG_GROUPS.map(group => `#icons > g#${group} > [data-group="icons"]`),
-  ...BURG_GROUPS.map(group => `#icons > g#${group} > [data-group="anchors"]`),
+  ...BURG_GROUPS.map(group => `#burgIcons > g#${group} > [data-group="icons"]`),
+  ...BURG_GROUPS.map(group => `#burgIcons > g#${group} > [data-group="anchors"]`),
   // label groups render as <g id="labels-capital" data-group="capital">; addressed by data-group
   // because that is what the group is keyed by everywhere but its element id
   ...LABEL_GROUPS.map(group => `#labels > [data-group="${group}"]`)
@@ -87,8 +87,8 @@ test("styled attributes match the pre-migration baseline", async ({page}) => {
   await page.locator("#mapToLoad").setInputFiles(path.join(__dirname, "../fixtures/1.112.1.map"));
   await waitForMap(page);
   // burg icon, anchor and label groups render late - under full-suite load a fixed delay races the draw
-  await page.waitForSelector("#icons > g", {state: "attached", timeout: 120000});
-  await page.waitForSelector("#icons > g [data-group=\"anchors\"]", {state: "attached", timeout: 120000});
+  await page.waitForSelector("#burgIcons > g", {state: "attached", timeout: 120000});
+  await page.waitForSelector("#burgIcons > g [data-group=\"anchors\"]", {state: "attached", timeout: 120000});
   await page.waitForSelector("#labels > g", {state: "attached", timeout: 120000});
   await page.waitForTimeout(500);
 
@@ -118,8 +118,8 @@ test("styled attributes on a freshly generated map match the preset-apply baseli
   await page.goto("/");
   await page.waitForFunction(() => Boolean((window as any).pack?.cells?.i?.length), {timeout: 120000});
   await waitForMap(page);
-  await page.waitForSelector("#icons > g", {state: "attached", timeout: 120000});
-  await page.waitForSelector("#icons > g [data-group=\"anchors\"]", {state: "attached", timeout: 120000});
+  await page.waitForSelector("#burgIcons > g", {state: "attached", timeout: 120000});
+  await page.waitForSelector("#burgIcons > g [data-group=\"anchors\"]", {state: "attached", timeout: 120000});
   await page.waitForSelector("#labels > g", {state: "attached", timeout: 120000});
   await page.waitForTimeout(500);
 

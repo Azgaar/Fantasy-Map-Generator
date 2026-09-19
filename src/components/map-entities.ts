@@ -138,7 +138,7 @@ class EntityLookup {
       kind: "Burg",
       icon: "icon-home",
       scale: 8,
-      layers: ["icons", "labels"],
+      layers: ["burgIcons", "labels"],
       entity: id => this.byId(pack.burgs, id),
       name: id => this.byId(pack.burgs, id)?.name || "",
       refs: () => this.refsOf("burg", pack.burgs, true),
@@ -480,7 +480,7 @@ class EntityLookup {
         const ref = this.parseKey(`${type}:${id}`);
         if (ref) return ref;
       }
-      if (id !== null && element.closest("#icons")) {
+      if (id !== null && element.closest("#burgIcons")) {
         const ref = this.parseKey(`burg:${id}`);
         if (ref) return ref;
       }

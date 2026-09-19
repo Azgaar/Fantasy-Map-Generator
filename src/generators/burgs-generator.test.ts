@@ -431,14 +431,14 @@ describe("ensureBurgGroupStyles", () => {
     const town = { attrs: { fill: "#aaa" }, options: { size: 1, icon: "#icon-burg" } };
     const townAnchor = { attrs: { fill: "#bbb" }, options: { size: 2 } };
     (globalThis as any).styles = {
-      icons: {
+      burgIcons: {
         groups: { town: { groups: { icons: structuredClone(town), anchors: structuredClone(townAnchor) } } }
       }
     };
 
     Burgs.ensureBurgGroupStyles();
 
-    const { groups } = (globalThis as any).styles.icons;
+    const { groups } = (globalThis as any).styles.burgIcons;
     expect(groups.town.groups.icons).toEqual(town);
     expect(groups.fortresses.groups.icons).toEqual(town);
     expect(groups.fortresses.groups.icons).not.toBe(groups.town.groups.icons);

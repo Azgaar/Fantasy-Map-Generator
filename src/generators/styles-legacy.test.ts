@@ -37,7 +37,7 @@ test("converts the frozen default preset without warnings", () => {
   expect(styles.states.groups.statesHalo.attrs["stroke-width"]).toBe(10);
   expect(styles.legend.options).toEqual({ columns: 8 });
   expect(styles.labels.groups.capital.attrs["font-family"]).toBe("Almendra SC");
-  expect(styles.icons.groups.capital.groups.icons.options.icon).toBe("#icon-square");
+  expect(styles.burgIcons.groups.capital.groups.icons.options.icon).toBe("#icon-square");
 });
 
 test("unknown selector throws by default, skips on request", () => {
@@ -226,7 +226,7 @@ test("normalizeStyles folds the pre-1.154 fixed children under their element's g
   expect(record.scaleBar.groups.back).toEqual({ attrs: {} });
 });
 
-test("normalizeStyles merges the two burg records into one entry per group and renames the element", () => {
+test("normalizeStyles merges the two burg records into one entry per group", () => {
   const record: any = {
     burgIcons: {
       burgIcons: { groups: { capital: { attrs: { fill: "#fff" }, options: { size: 2 } } } },
@@ -236,23 +236,22 @@ test("normalizeStyles merges the two burg records into one entry per group and r
 
   normalizeStyles(record);
 
-  expect(record.burgIcons).toBeUndefined();
-  expect(record.icons.groups.capital).toEqual({
+  expect(record.burgIcons.groups.capital).toEqual({
     groups: {
       icons: { attrs: { fill: "#fff" }, options: { size: 2 } },
       anchors: { attrs: { fill: "#000" }, options: { size: 1.9 } }
     }
   });
-  expect(record.icons.groups.port.groups.icons).toBeUndefined();
-  expect(record.icons.groups.port.groups.anchors).toEqual({ attrs: {} });
-  expect(record.icons.burgIcons).toBeUndefined();
-  expect(record.icons.anchors).toBeUndefined();
+  expect(record.burgIcons.groups.port.groups.icons).toBeUndefined();
+  expect(record.burgIcons.groups.port.groups.anchors).toEqual({ attrs: {} });
+  expect(record.burgIcons.burgIcons).toBeUndefined();
+  expect(record.burgIcons.anchors).toBeUndefined();
 });
 
 test("normalizeStyles leaves a record already in the current shape alone", () => {
   const record: any = {
     states: { groups: { statesBody: { attrs: {} } } },
-    icons: { groups: { capital: { groups: { icons: { attrs: {} }, anchors: { attrs: {} } } } } }
+    burgIcons: { groups: { capital: { groups: { icons: { attrs: {} }, anchors: { attrs: {} } } } } }
   };
   const before = structuredClone(record);
 

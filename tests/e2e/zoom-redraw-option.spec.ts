@@ -5,7 +5,7 @@ import { waitForMap } from "./wait-for-map";
 // pending, so it cannot catch a reconcile that never runs after human-paced gestures
 const materialized = (page: Page) =>
   page.evaluate(() =>
-    [...document.querySelectorAll("#icons use, #labels [data-label-type]")].map(el => el.id).join(",")
+    [...document.querySelectorAll("#burgIcons use, #labels [data-label-type]")].map(el => el.id).join(",")
   );
 
 async function wheelZoomIn(page: Page) {

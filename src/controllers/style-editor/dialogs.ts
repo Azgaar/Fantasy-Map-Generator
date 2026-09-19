@@ -53,7 +53,7 @@ const GROUP_SOURCES: Partial<Record<StyleElement, () => GroupEntry[]>> = {
       .map(({ name }) => ({ id: name, label: name, count: String(counts.get(name) ?? 0) }))
       .reverse();
   },
-  icons: () => {
+  burgIcons: () => {
     const burgs = pack.burgs.filter(burg => burg.i && !burg.removed);
     const all = countBy(burgs, burg => burg.group);
     const ports = countBy(

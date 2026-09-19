@@ -53,8 +53,8 @@ describe("effectAt", () => {
     expect(at("map.attrs.filter")).toBe("write");
     expect(at("ocean.groups.pattern.attrs.href")).toBe("write");
     expect(at("coordinates.attrs.font-size")).toBe("draw");
-    expect(at("icons.groups.town.groups.anchors.attrs.fill")).toBe("write");
-    expect(at("icons.groups.town.groups.anchors.options.icon")).toBe("draw");
+    expect(at("burgIcons.groups.town.groups.anchors.attrs.fill")).toBe("write");
+    expect(at("burgIcons.groups.town.groups.anchors.options.icon")).toBe("draw");
     expect(at("scaleBar.groups.back.attrs.fill")).toBe("draw");
     expect(at("labels.groups.state.attrs.font-family")).toBe("draw");
     expect(at("labels.groups.state.attrs.fill")).toBe("write");
@@ -121,8 +121,8 @@ describe("runEffect", () => {
     run("legend.attrs.font-family", "Arial");
     expect(Layers.draw).toHaveBeenCalledWith("legend");
     vi.clearAllMocks();
-    run("icons.groups.town.groups.icons.attrs.fill", "#ffffff");
-    expect(Styles.writeAttr).toHaveBeenCalledWith(["icons", "groups", "town", "groups", "icons", "attrs", "fill"]);
+    run("burgIcons.groups.town.groups.icons.attrs.fill", "#ffffff");
+    expect(Styles.writeAttr).toHaveBeenCalledWith(["burgIcons", "groups", "town", "groups", "icons", "attrs", "fill"]);
     expect(Layers.draw).not.toHaveBeenCalled();
   });
 });

@@ -174,7 +174,7 @@ test.describe("Map loading", () => {
         coastline: !!document.getElementById("coastline"),
         rivers: !!document.getElementById("rivers"),
         borders: !!document.getElementById("borders"),
-        burgs: !!document.getElementById("icons"),
+        burgs: !!document.getElementById("burgIcons"),
         labels: !!document.getElementById("labels")
       };
     });

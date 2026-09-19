@@ -73,7 +73,7 @@ test("every shipped preset applies through the store with no console errors", as
 
   await page.goto("/?seed=test-seed&width=1280&height=720");
   await waitForMap(page);
-  await page.waitForSelector("#icons > g", {state: "attached", timeout: 60000});
+  await page.waitForSelector("#burgIcons > g", {state: "attached", timeout: 60000});
   await page.waitForSelector("#labels > g", {state: "attached", timeout: 60000});
   await page.waitForTimeout(500);
 
@@ -98,7 +98,7 @@ test("every shipped preset applies through the store with no console errors", as
 test("relief icon size round-trips through a preset switch and back", async ({page}) => {
   await page.goto("/?seed=test-seed&width=1280&height=720");
   await waitForMap(page);
-  await page.waitForSelector("#icons > g", {state: "attached", timeout: 60000});
+  await page.waitForSelector("#burgIcons > g", {state: "attached", timeout: 60000});
   await page.waitForSelector("#labels > g", {state: "attached", timeout: 60000});
   await page.waitForTimeout(500);
 

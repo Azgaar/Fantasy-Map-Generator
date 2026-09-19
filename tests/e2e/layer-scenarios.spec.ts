@@ -309,7 +309,7 @@ test.describe("layer scenarios", () => {
     await expect(page.locator("#layersPreset")).toHaveValue("religions");
     const active = await page.evaluate(() => Layers.state.active.slice().sort());
     expect(active).toEqual(
-      ["borders", "icons", "labels", "lakes", "religions", "rivers", "routes", "scaleBar", "vignette"].sort()
+      ["borders", "burgIcons", "labels", "lakes", "religions", "rivers", "routes", "scaleBar", "vignette"].sort()
     );
     expect(await page.evaluate(() => localStorage.getItem("preset"))).toBe("religions");
     expect(await visibilityDrift(page)).toEqual([]);

@@ -222,7 +222,7 @@ describe("shared entity geometry and context", () => {
 
 describe("map event targets", () => {
   it.each([
-    ['<g id="icons"><g data-id="0"><circle id="target"/></g></g>', { type: "burg", id: 0 }],
+    ['<g id="burgIcons"><g data-id="0"><circle id="target"/></g></g>', { type: "burg", id: 0 }],
     [
       '<g id="labels"><text data-label-type="burg" data-id="2"><tspan id="target"/></text></g>',
       { type: "burg", id: 2 }

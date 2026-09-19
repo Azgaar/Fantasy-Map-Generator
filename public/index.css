@@ -241,7 +241,7 @@ t,
   fill-rule: nonzero;
 }
 
-#icons [data-group="anchors"] {
+#burgIcons [data-group="anchors"] {
   pointer-events: none;
 }
 
@@ -250,7 +250,7 @@ t,
   cursor: pointer;
 }
 
-#icons {
+#burgIcons {
   cursor: pointer;
 }
 

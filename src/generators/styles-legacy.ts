@@ -155,7 +155,7 @@ const STRANDED_OPACITY_LAYERS = [
 const DEFAULT_ROUTE_GROUPS = Object.keys(Styles.defaults.routes.groups);
 const DEFAULT_LAKE_GROUPS = Object.keys(Styles.defaults.lakes.groups);
 const LABEL_SCHEMA_ATTRS = Object.keys(Object.values(Styles.defaults.labels.groups)[0].attrs);
-const BURG_SCHEMA_ATTRS = Object.keys(Object.values(Styles.defaults.icons.groups)[0].groups.icons.attrs);
+const BURG_SCHEMA_ATTRS = Object.keys(Object.values(Styles.defaults.burgIcons.groups)[0].groups.icons.attrs);
 
 // The v1.150.0 style migration auto-update
 export async function migrateStyles(legacyStyleString: string | undefined): Promise<string> {
@@ -184,7 +184,7 @@ function migrateLegacyStyleObj(obj: unknown): void {
     );
 
   if (legacy.burgIcons || legacy.anchors) {
-    const groups = styles.icons.groups;
+    const groups = styles.burgIcons.groups;
     const names = new Set([...Object.keys(legacy.burgIcons ?? {}), ...Object.keys(legacy.anchors ?? {})]);
     for (const name of names) {
       groups[name] = {
@@ -280,8 +280,8 @@ export function harvestStylesFromSvg({ hasStyleRecord = false } = {}): void {
   const harvested = stylesFromMap();
   harvested.labels = structuredClone(styles.labels);
   // Empty legacy records need the saved SVG styles.
-  if (hasStyleRecord && Object.keys(styles.icons.groups).length) {
-    harvested.icons.groups = structuredClone(styles.icons.groups);
+  if (hasStyleRecord && Object.keys(styles.burgIcons.groups).length) {
+    harvested.burgIcons.groups = structuredClone(styles.burgIcons.groups);
   }
   harvested.relief.options = structuredClone(styles.relief.options);
 
@@ -294,8 +294,8 @@ export function harvestStylesFromSvg({ hasStyleRecord = false } = {}): void {
     borders: Object.values(harvested.borders.groups),
     routes: Object.values(harvested.routes.groups),
     labels: Object.values(harvested.labels.groups),
-    burgIcons: Object.values(harvested.icons.groups).map(entry => entry.groups.icons),
-    anchors: Object.values(harvested.icons.groups).map(entry => entry.groups.anchors)
+    burgIcons: Object.values(harvested.burgIcons.groups).map(entry => entry.groups.icons),
+    anchors: Object.values(harvested.burgIcons.groups).map(entry => entry.groups.anchors)
   };
   for (const [layer, groups] of Object.entries(strandedOpacity)) {
     const opacity = document.getElementById(layer)?.getAttribute("opacity");
@@ -357,9 +357,9 @@ function routeFor(selector: string): PresetRoute | undefined {
   const label = selector.match(/^#labels > #(.+)$/);
   if (label) return { path: ["labels", "groups", label[1]], kind: "label" };
   const burg = selector.match(/^#burgIcons > g#(.+)$/);
-  if (burg) return { path: ["icons", "groups", burg[1], "groups", "icons"], kind: "burg" };
+  if (burg) return { path: ["burgIcons", "groups", burg[1], "groups", "icons"], kind: "burg" };
   const anchor = selector.match(/^#anchors > g#(.+)$/);
-  if (anchor) return { path: ["icons", "groups", anchor[1], "groups", "anchors"], kind: "anchor" };
+  if (anchor) return { path: ["burgIcons", "groups", anchor[1], "groups", "anchors"], kind: "anchor" };
   const routeGroup = selector.match(/^#routes > g#(.+)$/);
   if (routeGroup) return { path: ["routes", "groups", routeGroup[1]], kind: "route" };
   const lakeGroup = selector.match(/^#lakes > g#(.+)$/);
@@ -597,7 +597,7 @@ const FOLDED_CHILDREN: Record<string, string[]> = {
   states: ["statesBody", "statesHalo"]
 };
 
-/** v1.154.0 folded every fixed named child under its element's `groups`, renamed burgIcons to icons and merged its two parts */
+/** v1.154.0 folded every fixed named child under its element's `groups` and merged the two burg records */
 function foldChildrenIntoGroups(root: ShapeNode): void {
   const nodeAt = (parent: ShapeNode, key: string): ShapeNode => {
     let node = asNode(parent[key]);
@@ -619,13 +619,9 @@ function foldChildrenIntoGroups(root: ShapeNode): void {
     }
   }
 
-  // the element was named burgIcons before v1.154.0
-  const element = asNode(root.icons) ?? asNode(root.burgIcons);
+  // the two burg records, keyed by the same group names, became the icons and anchors parts
+  const element = asNode(root.burgIcons);
   if (!element) return;
-  if (root.icons !== element) {
-    root.icons = element;
-    delete root.burgIcons;
-  }
 
   const oldIcons = asNode(element.burgIcons)?.groups as Record<string, unknown> | undefined;
   const oldAnchors = asNode(element.anchors)?.groups as Record<string, unknown> | undefined;
@@ -754,7 +750,7 @@ export function presetFromLegacy(
       if (route.kind === "burg" || route.kind === "anchor") {
         // `#burgIcons > g#name` and `#anchors > g#name` are the two parts of one burg group
         const name = route.path[2];
-        const groups = built.icons.groups;
+        const groups = built.burgIcons.groups;
         const entry = groups[name] ?? structuredClone(groups.town ?? Object.values(groups)[0]);
         if (route.kind === "burg") entry.groups.icons = burgGroupFromLegacy(bag);
         else entry.groups.anchors = anchorGroupFromLegacy(bag);
@@ -825,8 +821,8 @@ export function stripDisplay(style: string | null): string | null {
   return declarations.filter(declaration => declaration && !/^display\s*:/.test(declaration)).join("; ") || null;
 }
 
-type BurgIconsPart = StylesData["icons"]["groups"][string]["groups"]["icons"];
-type BurgAnchorsPart = StylesData["icons"]["groups"][string]["groups"]["anchors"];
+type BurgIconsPart = StylesData["burgIcons"]["groups"][string]["groups"]["icons"];
+type BurgAnchorsPart = StylesData["burgIcons"]["groups"][string]["groups"]["anchors"];
 
 // legacy wrote stored burg-group bags to the DOM verbatim with no per-key defaults; only size and icon are required by the renderer
 export function burgGroupFromLegacy(legacy: unknown): BurgIconsPart {

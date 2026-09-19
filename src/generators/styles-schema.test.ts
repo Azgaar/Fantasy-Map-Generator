@@ -62,7 +62,7 @@ describe("styles schema metadata", () => {
 
   test("the walk reaches the grouped records and the nested subgroups", () => {
     expect(byPath["labels.groups.*.attrs.font-family"].spec.kind).toBe("font");
-    expect(byPath["icons.groups.*.groups.anchors.options.icon"].spec.kind).toBe("icon");
+    expect(byPath["burgIcons.groups.*.groups.anchors.options.icon"].spec.kind).toBe("icon");
     expect(byPath["lakes.groups.*.options.embellishment"].spec.kind).toBe("select");
     expect(byPath["states.groups.statesHalo.attrs.filter"].spec.kind).toBe("blur");
     expect(byPath["heightmap.groups.oceanHeights.options.contours.mode"].spec.kind).toBe("select");
@@ -114,7 +114,7 @@ describe("styles schema metadata", () => {
   test("labels come from the meta or the key, and read under their group or row", () => {
     expect(byPath["zones.attrs.stroke-width"].spec).toMatchObject({ group: "Stroke", label: "Width" });
     expect(byPath["temperature.attrs.stroke-opacity"].spec).toMatchObject({ group: "Stroke", label: "Opacity" });
-    expect(byPath["icons.groups.*.groups.anchors.options.dx"].spec).toMatchObject({
+    expect(byPath["burgIcons.groups.*.groups.anchors.options.dx"].spec).toMatchObject({
       kind: "slider",
       label: "Shift x",
       nullAs: 0

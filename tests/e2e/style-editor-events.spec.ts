@@ -38,7 +38,7 @@ test.describe("style editor events drive the store", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/?seed=style-editor-events&width=1280&height=720");
     await waitForMap(page);
-    await page.waitForSelector("#icons > g", { state: "attached", timeout: 60000 });
+    await page.waitForSelector("#burgIcons > g", { state: "attached", timeout: 60000 });
     await page.waitForSelector("#labels > g", { state: "attached", timeout: 60000 });
     await page.waitForTimeout(500);
   });
@@ -542,7 +542,7 @@ test.describe("style editor events drive the store", () => {
   });
 
   test("burg icon controls write the store and the redraw derives from it", async ({ page }) => {
-    await openStyleElement(page, "icons");
+    await openStyleElement(page, "burgIcons");
     const group = await page.evaluate(() => (window as any).styleGroupSelect.value);
 
     await page.locator(`${f("groups.icons.options.size")} input[type=number]`).fill("2.5");
@@ -551,17 +551,17 @@ test.describe("style editor events drive the store", () => {
 
     const stored = await page.evaluate(
       g => ({
-        size: (window as any).styles.icons.groups[g].groups.icons.options.size,
-        fillOpacity: (window as any).styles.icons.groups[g].groups.icons.attrs["fill-opacity"],
-        linejoin: (window as any).styles.icons.groups[g].groups.icons.attrs["stroke-linejoin"]
+        size: (window as any).styles.burgIcons.groups[g].groups.icons.options.size,
+        fillOpacity: (window as any).styles.burgIcons.groups[g].groups.icons.attrs["fill-opacity"],
+        linejoin: (window as any).styles.burgIcons.groups[g].groups.icons.attrs["stroke-linejoin"]
       }),
       group
     );
     expect(stored).toEqual({ size: 2.5, fillOpacity: 0.6, linejoin: "round" });
 
     // the live group part carries the presentation; a full redraw keeps the store values
-    await page.evaluate(() => (window as any).Layers.draw("icons"));
-    const el = page.locator(`#icons > g#${group} > [data-group="icons"]`);
+    await page.evaluate(() => (window as any).Layers.draw("burgIcons"));
+    const el = page.locator(`#burgIcons > g#${group} > [data-group="icons"]`);
     await expect(el).toHaveAttribute("font-size", "2.5");
     await expect(el).toHaveAttribute("fill-opacity", "0.6");
 
@@ -569,11 +569,11 @@ test.describe("style editor events drive the store", () => {
     const anchorGroup = group;
     await page.locator(`${f("groups.anchors.options.size")} input[type=number]`).fill("1.8");
     const anchorStored = await page.evaluate(
-      g => (window as any).styles.icons.groups[g].groups.anchors.options.size,
+      g => (window as any).styles.burgIcons.groups[g].groups.anchors.options.size,
       anchorGroup
     );
     expect(anchorStored).toBe(1.8);
-    const anchors = page.locator(`#icons > g#${anchorGroup} > [data-group="anchors"]`);
+    const anchors = page.locator(`#burgIcons > g#${anchorGroup} > [data-group="anchors"]`);
     expect(await anchors.getAttribute("data-size")).toBeNull();
   });
 

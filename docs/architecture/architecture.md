@@ -523,9 +523,9 @@ permanent child elements and static attributes, and the `draw` / `erase` functio
 The active set and the layer order are serialized with the map (`data[50]`) and re-applied with
 `Layers.restore` on load, which adopts the state without redrawing content the loaded SVG already
 carries. `restore` tolerates version skew in both directions: unknown ids are ignored, and layers
-the file predates slot in after their registration-order predecessor. A layer renamed between
-versions is remapped from its old id at load (`resolveLayerId`), so a saved state, a stored layer
-preset and a shared `?layers=` link keep naming the same layer.
+the file predates slot in after their registration-order predecessor. A layer id never changes; when
+a layer's svg group id does, `auto-update` removes the stale group before the restore and the
+registry recreates it under the current id.
 
 ---
 

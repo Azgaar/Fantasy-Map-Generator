@@ -493,7 +493,7 @@ class BurgModule {
   /** burg groups can exist without a style entry (the Burg Groups editor, presets that don't
    * list them) - without one the renderer falls back to the default group and edits never persist */
   ensureBurgGroupStyles(): void {
-    const { groups } = styles.icons;
+    const { groups } = styles.burgIcons;
     const template = groups.town || Object.values(groups)[0];
     if (!template) return;
     for (const { name } of options.map.burgs.groups) {

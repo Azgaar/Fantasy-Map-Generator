@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // The registry is tested against fake layers: ordering, activation and restore are guaranteed without a real map.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { Layer, LayersRegistry, type LayersState, Layers as MapLayers, resolveLayerId } from "./layers";
+import { Layer, LayersRegistry, type LayersState, Layers as MapLayers } from "./layers";
 
 let Layers: LayersRegistry;
 
@@ -456,13 +456,5 @@ describe("subscribe", () => {
     unsubscribe();
     Layers.show("a");
     expect(listener).toHaveBeenCalledTimes(2);
-  });
-});
-
-describe("resolveLayerId", () => {
-  it("resolves an id persisted before a rename and passes the rest through", () => {
-    expect(resolveLayerId("burgIcons")).toBe("icons");
-    expect(resolveLayerId("icons")).toBe("icons");
-    expect(resolveLayerId("labels")).toBe("labels");
   });
 });

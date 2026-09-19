@@ -1,21 +1,21 @@
 // Layer presets: named sets of layers the user can switch between, stored in localStorage
 import { ensureEl } from "@/utils";
 import { confirmationDialog } from "./dialog/dialog-helpers";
-import { type LayerId, Layers, resolveLayerId } from "./layers";
+import { type LayerId, Layers } from "./layers";
 import { LAYER_TOGGLES } from "./options/tabs/layers-tab";
 
 const DEFAULT_PRESETS: Record<string, LayerId[]> = {
-  political: ["borders", "icons", "ice", "labels", "lakes", "rivers", "routes", "scaleBar", "states", "vignette"],
-  cultural: ["borders", "icons", "cultures", "labels", "lakes", "rivers", "routes", "scaleBar", "vignette"],
-  religions: ["borders", "icons", "labels", "lakes", "religions", "rivers", "routes", "scaleBar", "vignette"],
-  provinces: ["borders", "icons", "labels", "lakes", "provinces", "rivers", "scaleBar", "vignette"],
+  political: ["borders", "burgIcons", "ice", "labels", "lakes", "rivers", "routes", "scaleBar", "states", "vignette"],
+  cultural: ["borders", "burgIcons", "cultures", "labels", "lakes", "rivers", "routes", "scaleBar", "vignette"],
+  religions: ["borders", "burgIcons", "labels", "lakes", "religions", "rivers", "routes", "scaleBar", "vignette"],
+  provinces: ["borders", "burgIcons", "labels", "lakes", "provinces", "rivers", "scaleBar", "vignette"],
   biomes: ["biomes", "ice", "lakes", "rivers", "scaleBar", "vignette"],
   heightmap: ["heightmap", "lakes", "rivers", "vignette"],
   physical: ["coordinates", "heightmap", "ice", "lakes", "rivers", "scaleBar", "vignette"],
-  poi: ["borders", "icons", "heightmap", "ice", "lakes", "markers", "rivers", "routes", "scaleBar", "vignette"],
+  poi: ["borders", "burgIcons", "heightmap", "ice", "lakes", "markers", "rivers", "routes", "scaleBar", "vignette"],
   goods: [
     "borders",
-    "icons",
+    "burgIcons",
     "cells",
     "goods",
     "lakes",
@@ -26,9 +26,20 @@ const DEFAULT_PRESETS: Record<string, LayerId[]> = {
     "trade",
     "vignette"
   ],
-  trade: ["borders", "icons", "lakes", "rivers", "routes", "scaleBar", "states", "trade", "vignette"],
-  military: ["borders", "icons", "labels", "lakes", "military", "rivers", "routes", "scaleBar", "states", "vignette"],
-  emblems: ["borders", "icons", "emblems", "ice", "lakes", "rivers", "routes", "scaleBar", "states", "vignette"],
+  trade: ["borders", "burgIcons", "lakes", "rivers", "routes", "scaleBar", "states", "trade", "vignette"],
+  military: [
+    "borders",
+    "burgIcons",
+    "labels",
+    "lakes",
+    "military",
+    "rivers",
+    "routes",
+    "scaleBar",
+    "states",
+    "vignette"
+  ],
+  emblems: ["borders", "burgIcons", "emblems", "ice", "lakes", "rivers", "routes", "scaleBar", "states", "vignette"],
   landmass: ["scaleBar"]
 };
 
@@ -40,9 +51,8 @@ function restoreCustomPresets(): void {
   if (!stored) return;
 
   for (const name in stored) {
-    const ids = stored[name].map(id => resolveLayerId(id) as LayerId);
-    if (!ids.every(id => Layers.has(id))) continue;
-    presets[name] = ids;
+    if (!stored[name].every(id => Layers.has(id))) continue;
+    presets[name] = stored[name];
     if (!DEFAULT_PRESETS[name]) ensureEl<HTMLSelectElement>("layersPreset").add(new Option(name, name));
   }
 }
@@ -62,7 +72,7 @@ export function applyURLLayers(params: URLSearchParams): void {
   if (layersParam) {
     const ids = layersParam
       .split(",")
-      .map(s => resolveLayerId(s.trim()))
+      .map(s => s.trim())
       .filter(id => Layers.has(id));
     if (ids.length) {
       Layers.set(ids);

@@ -4,7 +4,7 @@ import { ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport
 import type { StylesData } from "@/types/styles";
 import { escapeHtml } from "@/utils/stringUtils";
 
-const layer = ViewportLayers.register({ id: "icons", render: reconcileBurgIcons });
+const layer = ViewportLayers.register({ id: "burgIcons", render: reconcileBurgIcons });
 
 export const drawBurgIcons = (): void => {
   TIME && console.time("drawBurgIcons");
@@ -13,13 +13,13 @@ export const drawBurgIcons = (): void => {
 };
 
 type BurgPart =
-  | StylesData["icons"]["groups"][string]["groups"]["icons"]
-  | StylesData["icons"]["groups"][string]["groups"]["anchors"];
+  | StylesData["burgIcons"]["groups"][string]["groups"]["icons"]
+  | StylesData["burgIcons"]["groups"][string]["groups"]["anchors"];
 
 type Bounds = { x0: number; y0: number; x1: number; y1: number };
 
 function reconcileBurgIcons({ root, bounds }: ViewportRenderContext): void {
-  if (!Layers.isOn("icons")) return;
+  if (!Layers.isOn("burgIcons")) return;
 
   const burgsByGroup = new Map<string, Burg[]>();
   for (const burg of pack.burgs) {
@@ -29,10 +29,10 @@ function reconcileBurgIcons({ root, bounds }: ViewportRenderContext): void {
     else burgsByGroup.set(burg.group, [burg]);
   }
 
-  const container = root.querySelector<SVGGElement>("#icons");
+  const container = root.querySelector<SVGGElement>("#burgIcons");
   if (!container) return;
 
-  const stylesByGroup = styles.icons.groups;
+  const stylesByGroup = styles.burgIcons.groups;
   const fallback = stylesByGroup.town ?? Object.values(stylesByGroup)[0];
   const markup: string[] = [];
 

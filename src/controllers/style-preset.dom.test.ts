@@ -12,7 +12,7 @@ function legacyStorePreset(): Record<string, any> {
   old.states.statesHalo = old.states.groups.statesHalo;
   delete old.states.groups;
 
-  const town = old.icons.groups.town;
+  const town = old.burgIcons.groups.town;
   town.groups.icons.attrs.fill = "#123456";
   const custom = structuredClone(town);
   custom.groups.icons.attrs.fill = "#abcdef";
@@ -20,17 +20,16 @@ function legacyStorePreset(): Record<string, any> {
     burgIcons: { groups: { town: town.groups.icons, custom: custom.groups.icons } },
     anchors: { groups: { town: town.groups.anchors, custom: custom.groups.anchors } }
   };
-  delete old.icons;
   return old;
 }
 
-test("a store-format preset saved before v1.154.0 still parses after the fold and the rename", () => {
+test("a store-format preset saved before v1.154.0 still parses after the fold", () => {
   const warn = vi.spyOn(console, "warn");
 
   const parsed = parsePreset(legacyStorePreset());
 
-  expect(parsed?.icons.groups.custom.groups.icons.attrs.fill).toBe("#abcdef");
-  expect(parsed?.icons.groups.town.groups.icons.attrs.fill).toBe("#123456");
+  expect(parsed?.burgIcons.groups.custom.groups.icons.attrs.fill).toBe("#abcdef");
+  expect(parsed?.burgIcons.groups.town.groups.icons.attrs.fill).toBe("#123456");
   expect(parsed?.borders.groups.stateBorders).toBeDefined();
   expect(parsed?.states.groups.statesBody).toBeDefined();
   expect(warn).not.toHaveBeenCalled();

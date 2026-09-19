@@ -167,13 +167,13 @@ describe("normalizeStyles", () => {
 describe("parseStyles", () => {
   test("repairs an empty icons groups record without changing other styles", () => {
     const doc = Styles.parse(Styles.defaults);
-    doc.icons.groups = {};
+    doc.burgIcons.groups = {};
 
     const parsed = Styles.parse(doc);
 
-    expect(parsed.icons.groups).toEqual(Styles.defaults.icons.groups);
-    expect(doc.icons.groups).toEqual({});
-    expect(parsed.icons.groups).not.toBe(Styles.defaults.icons.groups);
+    expect(parsed.burgIcons.groups).toEqual(Styles.defaults.burgIcons.groups);
+    expect(doc.burgIcons.groups).toEqual({});
+    expect(parsed.burgIcons.groups).not.toBe(Styles.defaults.burgIcons.groups);
   });
 
   test("older oceans gain disabled bands and Cinderwood bands survive serialization", () => {
@@ -397,13 +397,13 @@ describe("port icon styles", () => {
   test("Cinderwood port settings survive saving and loading for every burg group", () => {
     const parsed = Styles.parse(cinderwood);
     const restored = Styles.parse(JSON.parse(JSON.stringify(parsed)));
-    const groups = restored.icons.groups;
-    expect(Object.keys(groups).sort()).toEqual(Object.keys(parsed.icons.groups).sort());
+    const groups = restored.burgIcons.groups;
+    expect(Object.keys(groups).sort()).toEqual(Object.keys(parsed.burgIcons.groups).sort());
     const source = readFileSync("src/index.html", "utf8");
     const icons = new Set<string>();
     for (const [name, group] of Object.entries(groups)) {
       const anchor = group.groups.anchors;
-      expect(anchor.options).toEqual(cinderwood.icons.groups[name].groups.anchors.options);
+      expect(anchor.options).toEqual(cinderwood.burgIcons.groups[name].groups.anchors.options);
       expect(source.includes(`id="${anchor.options.icon.slice(1)}"`)).toBe(true);
       expect(Number.isFinite(anchor.options.dx)).toBe(true);
       expect(Number.isFinite(anchor.options.dy)).toBe(true);

@@ -19,7 +19,7 @@ const sel = (element: string, group?: string, path?: string[]): PathSelection =>
 const PRESET = {
   rivers: { attrs: { opacity: null, fill: "#5d97bb", filter: null } },
   labels: { groups: { capital: { attrs: { opacity: 1, "stroke-linecap": null } } } },
-  icons: {
+  burgIcons: {
     groups: {
       city: {
         groups: {
@@ -47,7 +47,7 @@ beforeEach(() => {
         mine: { attrs: { opacity: 0.5 } }
       }
     },
-    icons: {
+    burgIcons: {
       groups: {
         city: {
           groups: {
@@ -73,9 +73,9 @@ describe("storePath", () => {
   });
 
   test("hangs a burg group's parts off the group's own path", () => {
-    const burg = sel("icons", "city", ["icons", "groups", "city"]);
+    const burg = sel("burgIcons", "city", ["burgIcons", "groups", "city"]);
     expect(storePath(burg, ["groups", "icons", "attrs", "fill"])).toEqual([
-      "icons",
+      "burgIcons",
       "groups",
       "city",
       "groups",
@@ -84,7 +84,7 @@ describe("storePath", () => {
       "fill"
     ]);
     expect(storePath(burg, ["groups", "anchors", "attrs", "fill"])).toEqual([
-      "icons",
+      "burgIcons",
       "groups",
       "city",
       "groups",
@@ -116,13 +116,13 @@ describe("Baseline.diffAt", () => {
 
   test("compares a burg group's anchors part", async () => {
     const preset = await baseline();
-    const burg = sel("icons", "city", ["icons", "groups", "city"]);
-    styles.icons.groups.city.groups.icons.attrs.fill = "#123456";
+    const burg = sel("burgIcons", "city", ["burgIcons", "groups", "city"]);
+    styles.burgIcons.groups.city.groups.icons.attrs.fill = "#123456";
     expect(preset.diffAt(burg, ["groups", "icons", "attrs", "fill"])).toEqual({
       changed: true,
       presetValue: "#ffffff"
     });
-    styles.icons.groups.city.groups.anchors.attrs.fill = "#123456";
+    styles.burgIcons.groups.city.groups.anchors.attrs.fill = "#123456";
     expect(preset.diffAt(burg, ["groups", "anchors", "attrs", "fill"])).toEqual({
       changed: true,
       presetValue: "#000000"

@@ -26,7 +26,7 @@ test("stylesFromMap harvests attrs, options and dynamic groups with legacy prece
   expect(styles.rivers.attrs.opacity).toBe(0.9);
   expect(styles.grid.options.type).toBe("pointyHex");
   expect(styles.labels.groups.state.attrs["font-size"]).toBe("22%"); // a group's size takes the unit the schema pins
-  expect(styles.icons.groups.capital.groups.icons.options.size).toBe(2);
+  expect(styles.burgIcons.groups.capital.groups.icons.options.size).toBe(2);
 });
 
 test("inline style wins over the attribute; empty attribute still counts", () => {
@@ -69,10 +69,10 @@ test("record-less sync harvests burg/anchor groups from the DOM, size dialect in
   </svg>`;
   harvestStylesFromSvg();
   // a map with no style record at all: its DOM groups are the only source of their styling
-  expect(styles.icons.groups.largetowns.groups.icons.attrs.fill).toBe("#fffff0");
-  expect(styles.icons.groups.largetowns.groups.icons.options.size).toBe(0.8);
-  expect(styles.icons.groups.largetowns.groups.anchors.options.size).toBe(1.6);
-  expect(styles.icons.groups.capital).toBeDefined(); // defaults stay as fallbacks
+  expect(styles.burgIcons.groups.largetowns.groups.icons.attrs.fill).toBe("#fffff0");
+  expect(styles.burgIcons.groups.largetowns.groups.icons.options.size).toBe(0.8);
+  expect(styles.burgIcons.groups.largetowns.groups.anchors.options.size).toBe(1.6);
+  expect(styles.burgIcons.groups.capital).toBeDefined(); // defaults stay as fallbacks
   Styles.set(structuredClone(Styles.defaults));
 });
 
@@ -81,12 +81,12 @@ test("a legacy style record keeps its burg/anchor groups against the DOM harvest
     <g id="burgIcons"><g id="capital" fill="#00ff00" font-size="3"></g></g>
     <g id="anchors"><g id="capital" fill="#00ff00" font-size="3"></g></g>
   </svg>`;
-  styles.icons.groups.capital.groups.icons.attrs.fill = "#000000";
-  styles.icons.groups.town = structuredClone(styles.icons.groups.capital);
+  styles.burgIcons.groups.capital.groups.icons.attrs.fill = "#000000";
+  styles.burgIcons.groups.town = structuredClone(styles.burgIcons.groups.capital);
   harvestStylesFromSvg({ hasStyleRecord: true });
-  expect(styles.icons.groups.capital.groups.icons.attrs.fill).toBe("#000000");
-  expect(styles.icons.groups.town).toBeDefined();
-  styles.icons.groups.capital.groups.icons.attrs.fill = "#ffffff";
+  expect(styles.burgIcons.groups.capital.groups.icons.attrs.fill).toBe("#000000");
+  expect(styles.burgIcons.groups.town).toBeDefined();
+  styles.burgIcons.groups.capital.groups.icons.attrs.fill = "#ffffff";
 });
 
 test("a legacy style record with an empty burg/anchor record harvests that record from the DOM", () => {
@@ -94,11 +94,11 @@ test("a legacy style record with an empty burg/anchor record harvests that recor
     <g id="burgIcons"><g id="cities" fill="#e57676" font-size="18"></g></g>
     <g id="anchors"><g id="cities" fill="#ffffff" font-size="18"></g><g id="towns" font-size="12"></g></g>
   </svg>`;
-  styles.icons.groups = {};
+  styles.burgIcons.groups = {};
   harvestStylesFromSvg({ hasStyleRecord: true });
-  expect(styles.icons.groups.cities.groups.anchors.options.size).toBe(18);
-  expect(styles.icons.groups.towns.groups.anchors.options.size).toBe(12);
-  expect(styles.icons.groups.cities.groups.icons.attrs.fill).toBe("#e57676");
+  expect(styles.burgIcons.groups.cities.groups.anchors.options.size).toBe(18);
+  expect(styles.burgIcons.groups.towns.groups.anchors.options.size).toBe(12);
+  expect(styles.burgIcons.groups.cities.groups.icons.attrs.fill).toBe("#e57676");
   Styles.set(structuredClone(Styles.defaults));
 });
 
@@ -348,7 +348,7 @@ test("opacity stranded on a layer group moves to the style groups the store keep
   Styles.set(structuredClone(Styles.defaults));
 });
 
-test("a pre-1.150 style object's burg and anchor records land under the icons element", async () => {
+test("a pre-1.150 style object's burg and anchor records land under the burgIcons element", async () => {
   document.body.innerHTML = `<svg id="map">
     <g id="burgIcons"><g id="capital" fill="#111111" font-size="9"></g></g>
     <g id="anchors"><g id="capital" fill="#222222" font-size="9"></g></g>
@@ -363,12 +363,11 @@ test("a pre-1.150 style object's burg and anchor records land under the icons el
     )
   );
 
-  // the record outranks the DOM harvest, as it did before the rename
-  expect(migrated.icons.groups.capital.groups.icons.attrs.fill).toBe("#ffffff");
-  expect(migrated.icons.groups.capital.groups.icons.options.icon).toBe("#icon-square");
-  expect(migrated.icons.groups.capital.groups.anchors.attrs.fill).toBe("#000000");
-  expect(migrated.icons.groups.capital.groups.anchors.options.size).toBe(1.9);
-  expect(migrated.burgIcons).toBeUndefined();
+  // the record outranks the DOM harvest
+  expect(migrated.burgIcons.groups.capital.groups.icons.attrs.fill).toBe("#ffffff");
+  expect(migrated.burgIcons.groups.capital.groups.icons.options.icon).toBe("#icon-square");
+  expect(migrated.burgIcons.groups.capital.groups.anchors.attrs.fill).toBe("#000000");
+  expect(migrated.burgIcons.groups.capital.groups.anchors.options.size).toBe(1.9);
 
   Styles.set(structuredClone(Styles.defaults));
 });

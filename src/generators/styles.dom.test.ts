@@ -57,7 +57,7 @@ describe("applyStyles", () => {
   });
 
   test("burg icon and anchor parts are addressed through their group element", () => {
-    const el = mount("icons");
+    const el = mount("burgIcons");
     const group = document.createElementNS(SVG, "g");
     group.setAttribute("data-group", "capital");
     for (const part of ["icons", "anchors"]) {
@@ -66,9 +66,9 @@ describe("applyStyles", () => {
       group.append(g);
     }
     el.append(group);
-    styles.icons.groups.capital.groups.icons.attrs.fill = "#111111";
-    styles.icons.groups.capital.groups.anchors.attrs.fill = "#222222";
-    Styles.apply("icons");
+    styles.burgIcons.groups.capital.groups.icons.attrs.fill = "#111111";
+    styles.burgIcons.groups.capital.groups.anchors.attrs.fill = "#222222";
+    Styles.apply("burgIcons");
     expect(el.querySelector('[data-group="capital"] > [data-group="icons"]')?.getAttribute("fill")).toBe("#111111");
     expect(el.querySelector('[data-group="capital"] > [data-group="anchors"]')?.getAttribute("fill")).toBe("#222222");
   });
