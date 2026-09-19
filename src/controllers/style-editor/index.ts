@@ -129,13 +129,8 @@ class StyleEditorController {
     const layer = Layers.has(element) ? (element as LayerId) : undefined;
 
     if (!hasGroups(element)) {
-      return {
-        element,
-        layer,
-        path: [element],
-        schema: stylesSchema.shape[element] as z.ZodObject,
-        value: styles[element]
-      };
+      const schema = stylesSchema.shape[element];
+      return { element, layer, path: [element], schema, value: styles[element] };
     }
 
     const entries = groupEntriesFor(element);

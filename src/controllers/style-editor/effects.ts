@@ -36,9 +36,6 @@ export function runEffect(change: StyleChange): void {
       writeAttr(change);
       invokeActiveZooming();
       return;
-    case "applyVignette":
-      applyVignetteOptions();
-      return;
     case "changeReliefSet":
       Relief.changeSet(change.value as ReliefSet);
       redraw(change);

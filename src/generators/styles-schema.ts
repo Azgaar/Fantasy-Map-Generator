@@ -5,6 +5,7 @@
 import { z } from "zod";
 import { GRID_TYPES } from "@/data/grid-types";
 import { OCEAN_OUTLINES, OCEAN_PATTERNS } from "@/data/ocean-patterns";
+import { RELIEF_CHOISES } from "@/data/relief-icons";
 import {
   CLIPS,
   CONTOUR_MODES,
@@ -620,7 +621,7 @@ export const stylesSchema = z.strictObject({
   relief: z.strictObject({
     attrs: z.strictObject({ opacity, filter, mask: clip }),
     options: z.strictObject({
-      set: choice(RELIEF_STYLES, {
+      set: choice(RELIEF_CHOISES, {
         label: "Style",
         effect: "changeReliefSet",
         tip: "Select set of relief icons. Existing icons are restyled, not regenerated"
@@ -753,7 +754,7 @@ export const stylesSchema = z.strictObject({
         }),
         filter: variant(blurFilter, { range: [0, 400], step: 1, tip: "Set vignette blur propagation, in pixels" })
       }),
-      { effect: "applyVignette" }
+      { effect: "draw" }
     )
   }),
   zones: z.strictObject({ attrs: z.strictObject({ opacity, ...strokeGroup, filter, mask: clip }) })

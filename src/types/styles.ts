@@ -41,7 +41,6 @@ export type StyleEffect =
   | "write" // the one attr onto its element, nothing redrawn
   | "draw" // redraw the element's layer; an attr is written first
   | "zoom" // re-run the active zooming, which derives what it writes from the attr; the attr is written first
-  | "applyVignette" // reshape the vignette mask in defs
   | "changeReliefSet" // restyle the placed relief icons
   | "resizeRelief" // scale the placed relief icons by the ratio
   | "regenerateRelief"; // place the relief icons anew

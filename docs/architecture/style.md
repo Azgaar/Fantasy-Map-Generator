@@ -281,7 +281,7 @@ registry, an `onChange`, and optional extra controls. It knows nothing of `style
   parent; a `groups` node is structural and renders one card per entry, recursively; any other object
   becomes a card — `<details data-section="options.contours">` with the title, the gate control and a
   preview slot in its `<summary>`. A gated card hides its body while the gate is `false | "off" |
-  "none"`. With `rootTitle` the element's own rows get a card too.
+"none"`. With `rootTitle` the element's own rows get a card too.
 - **Rows** are `<div class="row" data-field="attrs.fill">` with a label and the control; the
   `data-field` path is relative to the rendered root, so it is stable across groups and is what the
   e2e specs address.
@@ -315,7 +315,7 @@ above it — and falls back to the store convention:
 The declared ones: `draw` on an attr whose renderer bakes it into the drawing (the grid, rulers,
 ocean waves and scale bar attrs, the legend and coordinates fonts, a label group's typography); `zoom`
 on an attr the zoom derives from (the halo width): written, then the zoom re-run;
-`changeReliefSet` / `resizeRelief` / `regenerateRelief`; `applyVignette` for the mask rect.
+`changeReliefSet` / `resizeRelief` / `regenerateRelief` for the mask rect.
 `effects.test.ts` asserts which name a path resolves to and which stub each name fires.
 
 ### Baseline and decoration

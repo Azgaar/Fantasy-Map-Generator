@@ -81,8 +81,6 @@ const GROUP_SOURCES: Partial<Record<StyleElement, () => GroupEntry[]>> = {
   }
 };
 
-// --- the elements tree -----------------------------------------------------------------------------
-
 const ELEMENTS_ID = "styleElements";
 const ELEMENTS_STYLE = /* css */ `
   #${ELEMENTS_ID} { padding: .4em .5em; }
