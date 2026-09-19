@@ -315,7 +315,8 @@ above it — and falls back to the store convention:
 The declared ones: `draw` on an attr whose renderer bakes it into the drawing (the grid, rulers,
 ocean waves and scale bar attrs, the legend and coordinates fonts, a label group's typography); `zoom`
 on an attr the zoom derives from (the halo width): written, then the zoom re-run;
-`changeReliefSet` / `resizeRelief` / `regenerateRelief` for the mask rect.
+`changeReliefSet` / `resizeRelief` / `regenerateRelief` for the relief icons. A vignette option takes the
+same `draw`: the renderer reshapes the defs mask and redraws the layer.
 `effects.test.ts` asserts which name a path resolves to and which stub each name fires.
 
 ### Baseline and decoration
@@ -367,5 +368,5 @@ there.
 2. Give it a value in `default-styles.json`. Older presets and maps are repaired from the defaults
    on parse, so they keep working; give the system presets their own value where the look differs.
 3. An attr needs nothing else. An option is read by its renderer from `styles.<element>.options`.
-4. Add an entry to `EFFECTS` only if the default (write the attr / redraw the layer) is wrong.
+4. Give the field an `effect` in its meta only if the default (write the attr / redraw the layer) is wrong.
 5. The form renders it; `styles-schema.test.ts` fails if the meta leaves it without a control.

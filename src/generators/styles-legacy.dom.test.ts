@@ -210,6 +210,12 @@ test("save sync lets an old map's armies, grid and map-filter attrs win; auto-fi
   expect(styles.coastline.groups.sea_island).toEqual({ attrs: styles.coastline.groups.sea_island.attrs });
 });
 
+test("save sync recovers the map filter from data-filter alone", () => {
+  document.body.innerHTML = `<svg id="map" data-filter="sepia"></svg>`;
+  harvestStylesFromSvg();
+  expect(styles.map.attrs.filter).toBe("url(#filter-sepia)");
+});
+
 test("save sync keeps store markets, goods-circle, texture and ocean-outline options when their attrs are absent", () => {
   document.body.innerHTML = `<svg id="map"><g id="markets"></g><g id="goods"><g id="goodsIcons"></g></g><g id="texture"></g><g id="oceanLayers"></g></svg>`;
   styles.markets.options.iconSize = 11;

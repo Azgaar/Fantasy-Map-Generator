@@ -93,8 +93,9 @@ function reconcileMarkers({ root, bounds }: ViewportRenderContext): void {
 
 function getMarkerContent({ icon, dx = 50, dy = 50, px = 12, pin, fill, stroke }: Marker): string {
   const isExternal = isImageIcon(icon);
+  // the one group carries the shift, so the pin's tip lands on the marker point at any box size
   return /* html */ `<g transform="translate(-15 -30)">
-      <g>${getPin(pin, fill, stroke)}</g>
+      ${getPin(pin, fill, stroke)}
       <text x="${dx}%" y="${dy}%" font-size="${px}px" >${isExternal ? "" : escapeHtml(icon)}</text>
       <image x="${dx / 2}%" y="${dy / 2}%" width="${px}px" height="${px}px" href="${isExternal ? escapeHtml(icon) : ""}" />
     </g>`;

@@ -68,9 +68,10 @@ test("the zoom-derived render values are dropped for their base: #coordinates fo
   expect(styles.states.groups.statesHalo.attrs["stroke-width"]).toBe(8);
 });
 
-test("a mismatched data-size/font-size pair is BLOCKED", () => {
-  const bad = { "#ruler": { "data-size": 20, "font-size": 21 } };
-  expect(() => presetFromLegacy(bad as any)).toThrow(/unknown legacy attribute/);
+// the legacy base (data-size) is the authority; the plain font-size beside it is the zoom-derived render value
+test("a base beside its render value wins: #ruler data-size over font-size", () => {
+  const styles = presetFromLegacy({ "#ruler": { "data-size": 20, "font-size": 21 } } as any);
+  expect(styles.rulers.attrs["font-size"]).toBe("20px");
 });
 
 // province labels moved to a labels group, so #provs' text attrs are dead cargo alongside data-size

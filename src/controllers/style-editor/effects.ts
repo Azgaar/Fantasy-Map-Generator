@@ -4,7 +4,6 @@ import { SchemaForm } from "@/components/shared/schema-form";
 import { invokeActiveZooming } from "@/components/zoom";
 import { Styles } from "@/generators/styles";
 import { styleMeta, stylesSchema } from "@/generators/styles-schema";
-import { applyVignetteOptions } from "@/renderers/draw-vignette";
 import type { ReliefSet } from "@/types/relief";
 import type { StyleChange, StyleEffect } from "@/types/styles";
 

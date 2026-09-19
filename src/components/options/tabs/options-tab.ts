@@ -820,9 +820,9 @@ function changeStatesNumber(count: number): void {
   const capitalSize = Math.max(rn(6 - count / 20), 3);
   const stateSize = Math.max(rn(18 - count / 6), 4);
   if (styles.labels.groups.capital) styles.labels.groups.capital.attrs["font-size"] = `${capitalSize}%`;
-  if (styles.labels.groups.states) styles.labels.groups.states.attrs["font-size"] = `${stateSize}%`;
+  if (styles.labels.groups.state) styles.labels.groups.state.attrs["font-size"] = `${stateSize}%`;
   select("#labels").select("[data-group='capital']").attr("font-size", `${capitalSize}%`);
-  select("#labels").select("[data-group='states']").attr("font-size", `${stateSize}%`);
+  select("#labels").select("[data-group='state']").attr("font-size", `${stateSize}%`);
 }
 
 /** Re-shield every emblem that has not been customised, and re-render the ones on screen */

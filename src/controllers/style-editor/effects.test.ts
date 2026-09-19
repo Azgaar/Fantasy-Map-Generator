@@ -3,12 +3,10 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 vi.mock("@/generators/styles", () => ({ Styles: { writeAttr: vi.fn(), write: vi.fn() } }));
 vi.mock("@/components/layers", () => ({ Layers: { draw: vi.fn() } }));
 vi.mock("@/components/zoom", () => ({ invokeActiveZooming: vi.fn() }));
-vi.mock("@/renderers/draw-vignette", () => ({ applyVignetteOptions: vi.fn() }));
 
 import { Layers } from "@/components/layers";
 import { invokeActiveZooming } from "@/components/zoom";
 import { Styles } from "@/generators/styles";
-import { applyVignetteOptions } from "@/renderers/draw-vignette";
 import type { StyleSelection } from "@/types/styles";
 import { effectAt, runEffect } from "./effects";
 
@@ -60,6 +58,7 @@ describe("effectAt", () => {
     expect(at("labels.groups.state.attrs.fill")).toBe("write");
     expect(at("legend.attrs.font-family")).toBe("draw");
     expect(at("legend.attrs.stroke")).toBe("write");
+    expect(at("vignette.options.rx")).toBe("draw");
   });
 });
 
@@ -95,13 +94,12 @@ describe("runEffect", () => {
     expect(Layers.draw).toHaveBeenCalledWith("relief");
   });
 
-  test("a zoom-derived attr is written, then the zoom re-run; the vignette goes to its applier", () => {
+  test("a zoom-derived attr is written, then the zoom re-run; a vignette option redraws its layer", () => {
     run("states.groups.statesHalo.attrs.stroke-width", 12);
     expect(Styles.writeAttr).toHaveBeenCalledWith(["states", "groups", "statesHalo", "attrs", "stroke-width"]);
     expect(invokeActiveZooming).toHaveBeenCalled();
     run("vignette.options.rx", "5%");
-    expect(applyVignetteOptions).toHaveBeenCalled();
-    expect(Layers.draw).not.toHaveBeenCalled();
+    expect(Layers.draw).toHaveBeenCalledWith("vignette"); // the renderer's applier reshapes the defs mask
   });
 
   test("label typography is written, then the labels are laid out again; a paint attr only writes", () => {

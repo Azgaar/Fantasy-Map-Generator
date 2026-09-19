@@ -146,7 +146,7 @@ function applyWithUiRefresh(preset: unknown): void {
   syncSelect();
   Layers.drawAll(); // a style change can affect any layer, so redraw the active ones
   invokeActiveZooming();
-  void Controllers.StyleEditor.refresh();
+  void Controllers.StyleEditor.refresh(true);
 }
 
 function openSaver(): void {

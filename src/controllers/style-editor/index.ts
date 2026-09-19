@@ -64,8 +64,9 @@ class StyleEditorController {
   }
 
   /** Re-render the current selection from the store, e.g. after a preset change */
-  refresh(): void {
+  refresh(reloadBaseline = false): void {
     if (!this.wired || !findEl("styleForm")) return;
+    if (reloadBaseline) this.baselineName = ""; // a custom preset may have been re-saved under the same name
     this.render();
   }
 

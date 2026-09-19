@@ -492,13 +492,16 @@ const checkbox: ControlFactory = (spec, value, set) => {
 
 const select: ControlFactory = (spec, value, set) => {
   const el = document.createElement("select");
-  if (spec.nullable || spec.optional) el.add(new Option("inherit", ""));
+  // "" is the unset sentinel only where the field has one: a real empty-string choice keeps its meaning
+  const emptyChoice = spec.options?.some(option => String(option) === "") ?? false;
+  const unsettable = (spec.nullable || spec.optional) && !emptyChoice;
+  if (unsettable) el.add(new Option("inherit", ""));
   for (const option of spec.options ?? []) {
     el.add(new Option(spec.choices?.[String(option)] ?? String(option), String(option)));
   }
   el.value = value == null ? "" : String(value);
   el.addEventListener("change", () => {
-    if (el.value === "") return set(unsetValue(spec));
+    if (el.value === "" && unsettable) return set(unsetValue(spec));
     const option = spec.options?.find(option => String(option) === el.value);
     set(option ?? el.value);
   });

@@ -5,7 +5,7 @@
 import { z } from "zod";
 import { GRID_TYPES } from "@/data/grid-types";
 import { OCEAN_OUTLINES, OCEAN_PATTERNS } from "@/data/ocean-patterns";
-import { RELIEF_CHOISES } from "@/data/relief-icons";
+import { RELIEF_CHOICES } from "@/data/relief-icons";
 import {
   CLIPS,
   CONTOUR_MODES,
@@ -17,7 +17,6 @@ import {
   LINECAPS,
   LINEJOINS,
   MAP_FILTERS,
-  RELIEF_STYLES,
   WAVE_TYPES
 } from "@/data/style-choices";
 import type { StyleMeta } from "@/types/styles";
@@ -621,7 +620,7 @@ export const stylesSchema = z.strictObject({
   relief: z.strictObject({
     attrs: z.strictObject({ opacity, filter, mask: clip }),
     options: z.strictObject({
-      set: choice(RELIEF_CHOISES, {
+      set: choice(RELIEF_CHOICES, {
         label: "Style",
         effect: "changeReliefSet",
         tip: "Select set of relief icons. Existing icons are restyled, not regenerated"

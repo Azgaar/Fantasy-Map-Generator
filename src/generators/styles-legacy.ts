@@ -26,7 +26,8 @@ const SELECTOR_ALIASES: Record<string, string> = {
 };
 
 const PRESET_ROUTES: Record<string, PresetRoute> = {
-  "#map": { path: ["map"], drop: ["background-color", "data-filter"] }, // the filter attr carries the pick
+  // legacy kept the pick in data-filter, the store in the filter attr: normalizeStyles folds the option into it
+  "#map": { path: ["map"], options: { "data-filter": "dataFilter" }, drop: ["background-color"] },
   "#armies": { path: ["military"], options: { "box-size": "boxSize" }, drop: ["font-size"] }, // sized from the box
   "#biomes": { path: ["biomes"], drop: ["mask"] },
   "#cells": { path: ["cells"], rename: { opacity: "stroke-opacity" } },
@@ -386,15 +387,14 @@ function applyPresetBag(
   selector: string,
   onUnknown: "throw" | "skip"
 ): void {
+  // a route may map a legacy attr into an option the schema no longer declares; normalizeStyles folds it away
+  if (route.options && !node.options) node.options = {};
   const options = node.options;
   const rest: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(bag)) if (key !== "id" && !route.drop?.includes(key)) rest[key] = value;
   for (const [from, to] of Object.entries(route.rename ?? {})) {
     if (!(from in rest)) continue;
-    if (rest[to] != null && rest[to] !== rest[from]) {
-      fail(onUnknown, `unknown legacy attribute "${from}" on "${selector}" conflicts with "${to}"`);
-      continue;
-    }
+    // the legacy base (data-size, data-width, opacity) outranks the render value beside it
     rest[to] = rest[from];
     delete rest[from];
   }
@@ -540,6 +540,8 @@ export function stripMigratedAttributes(): void {
 
   // layer-level opacity the style groups took over on harvest: left here it composites over them
   for (const layer of STRANDED_OPACITY_LAYERS) strip(layer, "opacity");
+  // the store keeps the legacy opacity of these as stroke-opacity; left here it composites over it
+  for (const id of ["cells", "temperature"]) strip(id, "opacity");
   strip("markers", "rescale", "pinned");
   strip("statesHalo", "data-width");
   strip("coordinates", "data-size");
@@ -688,6 +690,9 @@ function upgradeShape(record: unknown): void {
   const scaleBar = asNode(root.scaleBar);
   if (scaleBar?.attrs) scaleBar.attrs["font-size"] = px(scaleBar.attrs["font-size"] ?? 10);
   rename(asNode(root.temperature)?.attrs, "opacity", "stroke-opacity");
+  rename(asNode(root.cells)?.attrs, "opacity", "stroke-opacity");
+  const biomes = asNode(root.biomes);
+  if (biomes?.attrs) delete biomes.attrs.mask; // the schema dropped the mask
   rename(asNode(root.markets)?.options, "fontSize", "iconSize");
   const markers = asNode(root.markers);
   if (markers) delete markers.options;

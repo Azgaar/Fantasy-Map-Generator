@@ -668,10 +668,6 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   transform: translate(0px, 1px);
 }
 
-#styleSelectFont > option {
-  font-size: 2em;
-}
-
 #sticked {
   display: flex;
   justify-content: space-evenly;
@@ -771,11 +767,6 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   user-select: none; /* the items are re-rendered, so jQuery disableSelection cannot hold */
 }
 
-#mapFilters > button {
-  width: 23%;
-  padding: 4px 0;
-}
-
 #viewMode > button {
   padding: 0.35em;
   margin: 0.3em 0.3em 0.6em 0.3em;
@@ -864,38 +855,6 @@ fieldset {
   fill: #fff;
   stroke: #000;
   stroke-width: 5px;
-}
-
-#styleContent table {
-  border-spacing: 0;
-  margin-left: 0.2em;
-  width: 100%;
-}
-
-#styleContent table tr {
-  width: 100%;
-  display: table;
-}
-
-#styleContent table td:nth-of-type(1) {
-  width: 34.2%;
-}
-
-#styleElements tbody,
-#styleElements caption {
-  display: none;
-}
-
-#styleIsOff {
-  color: darkred;
-  font-weight: 700;
-  text-align: left;
-}
-
-#styleElements .whiteButton {
-  padding: 0 0.8em;
-  border: 0;
-  background-color: #ffffff !important;
 }
 
 .overflow-table {

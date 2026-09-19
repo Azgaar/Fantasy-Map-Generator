@@ -110,7 +110,7 @@ test("an offscreen edited marker stays attached until editing ends", () => {
   drawMarkers();
   expect(document.getElementById("marker2")).toBe(element);
   expect(element?.querySelector("image")?.getAttribute("href")).toBe(edited.icon);
-  expect(element?.querySelector("g > g")?.childElementCount).toBe(0); // no pin
+  expect(element?.querySelector("g > path, g > circle")).toBeNull(); // no pin
   expect(element?.classList.contains("draggable")).toBe(true);
   expect(element?.namespaceURI).toBe("http://www.w3.org/2000/svg");
   element!.dispatchEvent(new Event("click"));
