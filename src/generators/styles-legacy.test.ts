@@ -227,6 +227,23 @@ test("normalizeStyles folds the pre-1.154 fixed children under their element's g
   expect(record.scaleBar.groups.back).toEqual({ attrs: {} });
 });
 
+test("normalizeStyles converts legacy CSS colors to hex", () => {
+  const record: any = {
+    rivers: { attrs: { fill: "rgb(18, 52, 86)", stroke: "rgba(0, 0, 0, 0.5)", filter: "url(#dropShadow05)" } },
+    ocean: { groups: { base: { attrs: { fill: "#466eab" } } }, options: { color: "rgb(1, 2, 3)" } }
+  };
+
+  normalizeStyles(record);
+
+  expect(record.rivers.attrs).toEqual({
+    fill: "#123456",
+    stroke: "#00000080",
+    filter: "url(#dropShadow05)"
+  });
+  expect(record.ocean.groups.base.attrs.fill).toBe("#466eab");
+  expect(record.ocean.options.color).toBe("#010203");
+});
+
 test("normalizeStyles merges the two burg records into one entry per group", () => {
   const record: any = {
     burgIcons: {

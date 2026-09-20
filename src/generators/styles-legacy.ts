@@ -5,6 +5,7 @@ import { OCEAN_PATTERNS } from "@/data/ocean-patterns";
 import { FONT_STYLES, FONT_WEIGHTS, LINECAPS, LINEJOINS, MAP_FILTERS } from "@/data/style-choices";
 import type { StylesData } from "@/types/styles";
 import { safeParseJSON } from "@/utils";
+import { toColorHex } from "@/utils/colorUtils";
 import { getPath } from "@/utils/objectUtils";
 import { Styles } from "./styles";
 import { stylesSchema } from "./styles-schema";
@@ -156,6 +157,8 @@ const STRANDED_OPACITY_LAYERS = [
 
 const DEFAULT_ROUTE_GROUPS = Object.keys(Styles.defaults.routes.groups);
 const DEFAULT_LAKE_GROUPS = Object.keys(Styles.defaults.lakes.groups);
+// the attr and option keys the schema types as colors
+const COLOR_KEYS = new Set(["fill", "stroke", "color", "shore"]);
 const LABEL_SCHEMA_ATTRS = Object.keys(Object.values(Styles.defaults.labels.groups)[0].attrs);
 const BURG_SCHEMA_ATTRS = Object.keys(Object.values(Styles.defaults.burgIcons.groups)[0].groups.icons.attrs);
 
@@ -351,6 +354,7 @@ export function harvestStylesFromSvg({ hasStyleRecord = false } = {}): void {
       if (attr in node && !el?.hasAttribute(attr)) node[attr] = stored[attr];
     }
   }
+  normalizeColorValues(harvested);
   Styles.set(harvested);
 }
 
@@ -475,9 +479,12 @@ function harvestBag(
   const bag: Record<string, string | number | null> = {};
   for (const attr of attrs) {
     const inline = (el as HTMLElement).style?.[attr as unknown as keyof CSSStyleDeclaration];
-    const value = typeof inline === "string" && inline ? inline : el.getAttribute(attr);
-    if (value !== null && value !== undefined) bag[attr] = harvestValue(value);
-    else if (nullableAttrs.includes(attr)) bag[attr] = null;
+    const raw = typeof inline === "string" && inline ? inline : el.getAttribute(attr);
+    if (raw !== null && raw !== undefined) {
+      // the browser serializes a computed color as rgb(), the store keeps hex
+      const value = harvestValue(raw);
+      bag[attr] = COLOR_KEYS.has(attr) && typeof value === "string" ? toColorHex(value) : value;
+    } else if (nullableAttrs.includes(attr)) bag[attr] = null;
   }
   return bag;
 }
@@ -746,7 +753,25 @@ export function normalizeStyles<T>(record: T): T {
     }
   };
   visit(record, [], false);
+  normalizeColorValues(record);
   return record;
+}
+
+/** Convert every color-typed attr and option in a store record to hex, in place */
+export function normalizeColorValues(record: unknown): void {
+  const visit = (node: unknown, bag: boolean): void => {
+    if (typeof node !== "object" || node === null) return;
+    for (const [key, value] of Object.entries(node)) {
+      if (typeof value === "object") {
+        visit(value, key === "attrs" || key === "options");
+        continue;
+      }
+      if (bag && typeof value === "string" && COLOR_KEYS.has(key)) {
+        (node as Record<string, unknown>)[key] = toColorHex(value);
+      }
+    }
+  };
+  visit(record, false);
 }
 
 export function isLegacyPreset(json: object): boolean {

@@ -34,9 +34,8 @@ test("inline style wins over the attribute; empty attribute still counts", () =>
   document.body.innerHTML = `<svg id="map"><g id="rivers" fill="#aaa" style="fill: #bbb"></g>
     <g id="scaleBar" data-label=""></g></svg>`;
   const styles = stylesFromMap(document);
-  // real browsers normalize an inline color declaration to rgb(); the fixture is real DOM
-  // (browser test mode), so we pin to that rather than the literal "#bbb" spelling
-  expect(styles.rivers.attrs.fill).toBe("rgb(187, 187, 187)");
+  // the browser normalizes the inline declaration to rgb(), which the harvest folds back to hex
+  expect(styles.rivers.attrs.fill).toBe("#bbbbbb");
 });
 
 test("syncStylesFromMap harvests the DOM but keeps store-authoritative domains", () => {
@@ -233,17 +232,17 @@ test("save sync keeps store markets, goods-circle, texture and ocean-outline opt
 });
 
 test("save sync lets an old map's markets, goods-circle, texture and ocean-outline attrs win", () => {
-  document.body.innerHTML = `<svg id="map"><g id="markets" data-size="3" font-size="7" data-icon="Y"></g><g id="goods"><g id="goodsIcons" data-circle="1"></g></g><g id="texture" data-href="./t.jpg" data-x="5" data-y="6"></g><g id="oceanLayers" layers="-6"></g></svg>`;
+  document.body.innerHTML = `<svg id="map"><g id="markets" data-size="3" font-size="7" data-icon="Y"></g><g id="goods"><g id="goodsIcons" data-circle="1"></g></g><g id="texture" data-href="./t.jpg" data-x="5" data-y="6"></g><g id="oceanLayers" layers="-6,-4,-2"></g></svg>`;
   styles.markets.options.iconSize = 11;
   styles.goods.groups.goodsIcons.options.circle = false;
   styles.texture.options.x = 40;
-  styles.ocean.groups.oceanLayers.options.outline = "-6,-4,-2";
+  styles.ocean.groups.oceanLayers.options.outline = "-6,-3,-1";
   harvestStylesFromSvg();
   expect(styles.markets.options.iconSize).toBe(7);
   expect(styles.markets.options.icon).toBe("Y");
   expect(styles.goods.groups.goodsIcons.options.circle).toBe(true);
   expect(styles.texture.options).toEqual({ href: "./t.jpg", x: 5, y: 6 });
-  expect(styles.ocean.groups.oceanLayers.options.outline).toBe("-6");
+  expect(styles.ocean.groups.oceanLayers.options.outline).toBe("-6,-4,-2");
 });
 
 test("save sync keeps store scaleBar and label-shift styles when their attrs are absent", () => {
