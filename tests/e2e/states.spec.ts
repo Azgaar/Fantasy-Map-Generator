@@ -89,6 +89,69 @@ test.describe("States", () => {
     expect(militaryResult.statesWithMilitary).toBeGreaterThanOrEqual(0);
   });
 
+  test("merging as provinces keeps each merged state as a province of the ruling state", async ({page}) => {
+    await page.click("#optionsTrigger");
+    await page.click("#toolsTab");
+    await page.click("#editStatesButton");
+    await page.waitForSelector("#statesEditor", {state: "visible", timeout: 5000});
+
+    const [ruler, child] = await page.evaluate(() =>
+      pack.states
+        .filter(s => s.i && !s.removed)
+        .slice(0, 2)
+        .map(s => ({
+          i: s.i,
+          name: s.name,
+          formName: s.formName,
+          coa: JSON.stringify(s.coa),
+          provinces: pack.provinces.filter(p => p.i && !p.removed && p.state === s.i).map(p => p.i),
+          cells: pack.cells.state.filter(id => id === s.i).length
+        }))
+    );
+    expect(child.provinces.length).toBeGreaterThan(0);
+
+    await page.click("#statesMerge");
+    await page.check(`#mergeStatesForm input[name="rulingState"][value="${ruler.i}"]`);
+    await page.click(`label[for="selectState${child.i}"]`);
+    await page.click(".ui-dialog:has(#alert) .ui-dialog-buttonpane button:first-child");
+
+    await page.check("#mergeStatesAsProvinces");
+    await page.click(".ui-dialog:has(#alert) .ui-dialog-buttonpane button:first-child");
+    await page.waitForTimeout(300);
+
+    const result = await page.evaluate(
+      ([r, c, oldProvinces]) => {
+        const {states, provinces, cells} = pack;
+        const province = provinces.find(p => p.i && !p.removed && p.state === r && p.name === states[c].name)!;
+        let provinceCells = 0;
+        for (let i = 0; i < cells.province.length; i++) if (cells.province[i] === province.i) provinceCells++;
+        return {
+          stateRemoved: Boolean(states[c].removed),
+          formName: province.formName,
+          fullName: province.fullName,
+          coa: JSON.stringify(province.coa),
+          color: province.color,
+          provinceCells,
+          oldProvincesRemoved: oldProvinces.every((i: number) => provinces[i].removed),
+          listed: states[r].provinces!.includes(province.i),
+          layerOn: Layers.isOn("provinces")
+        };
+      },
+      [ruler.i, child.i, child.provinces] as const
+    );
+    expect(result).toEqual({
+      stateRemoved: true,
+      formName: child.formName,
+      fullName: `${child.name} ${child.formName}`,
+      coa: child.coa,
+      color: expect.stringMatching(/^#[0-9a-f]{6}$/),
+      provinceCells: child.cells,
+      oldProvincesRemoved: true,
+      listed: true,
+      layerOn: true
+    });
+  });
+
   test("painting states applies after the States Editor closes", async ({page}) => {
     const pageErrors: string[] = [];
     page.on("pageerror", error => pageErrors.push(error.message));
@@ -139,8 +202,10 @@ declare const Services: {
 };
 declare const pack: {
   states: import("@/generators/states-generator").State[];
-  cells: { state: Uint16Array; p: [number, number][] };
+  provinces: import("@/generators/provinces-generator").Province[];
+  cells: { state: Uint16Array; province: Uint16Array; p: [number, number][] };
 };
+declare const Layers: { isOn: (id: string) => boolean };
 
 test.describe("Diplomacy", () => {
   let ids: number[];

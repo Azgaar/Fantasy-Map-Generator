@@ -1659,16 +1659,18 @@ function openStateMergeDialog(): void {
 
 function confirmStatesMerge(statesToMerge: number[], rulingStateId: number, onConfirm?: () => void): void {
   const rulingState = pack.states[rulingStateId];
+  const ruler = `${stateEmblem(rulingState.i)}${rulingState.name}`;
   confirmationDialog({
     title: "Merge states",
     // prettier-ignore
     message: /* html */ `
       <p>The following states will be <strong>removed</strong>: ${statesToMerge.map(stateId => `${stateEmblem(stateId)}${(pack.states)[stateId].name}`).join(", ")}.</p>
-      <p>Removed states data (burgs, provinces, regiments) will be assigned to ${stateEmblem(rulingState.i)}${rulingState.name}.</p>
+      <p>Removed states data (burgs, provinces, regiments) will be assigned to ${ruler}.</p>
+      <label style="display: flex; align-items: center"><input id="mergeStatesAsProvinces" class="checkbox native" type="checkbox"> Keep each removed state as a province of ${ruler}, replacing its own provinces</label>
       <p>Are you sure you want to merge states? This action cannot be reverted.</p>`,
     confirm: "Merge",
     onConfirm: () => {
-      mergeStates(statesToMerge, rulingStateId);
+      mergeStates(statesToMerge, rulingStateId, ensureEl<HTMLInputElement>("mergeStatesAsProvinces").checked);
       onConfirm?.();
     }
   });
@@ -1684,7 +1686,7 @@ const statesAnnex = createAnnexMode({
   commit: (rulingStateId, statesToMerge) => confirmStatesMerge(statesToMerge, rulingStateId)
 });
 
-function mergeStates(statesToMerge: number[], rulingStateId: number): void {
+function mergeStates(statesToMerge: number[], rulingStateId: number, asProvinces = false): void {
   const rulingState = pack.states[rulingStateId];
   const rulingStateArmy = ensureEl(`army${rulingStateId}`);
 
@@ -1713,6 +1715,8 @@ function mergeStates(statesToMerge: number[], rulingStateId: number): void {
     });
 
     select(`#armies g#army${stateId}`).remove();
+
+    if (asProvinces) demoteToProvince(state, rulingState);
   });
 
   // reassing burgs
@@ -1740,11 +1744,43 @@ function mergeStates(statesToMerge: number[], rulingStateId: number): void {
   select("#debug").selectAll(".highlight").remove();
 
   States.getPoles();
+  if (asProvinces) Provinces.getPoles();
 
   if (!pack.states[rulingStateId].label) delete pack.states[rulingStateId].label;
 
   Layers.draw("states", "borders", "burgIcons", "labels", "provinces");
+  if (asProvinces) Layers.show("provinces");
   refreshStatesEditor();
+}
+
+function demoteToProvince(state: State, rulingState: State): void {
+  const { cells, provinces, burgs } = pack;
+  const provinceId = provinces.length;
+
+  provinces.forEach(province => {
+    if (province.state !== state.i || province.removed) return;
+    removeEmblem("province", province.i);
+    provinces[province.i] = { i: province.i, removed: true } as Province;
+  });
+  cells.state.forEach((s: number, i: number) => {
+    if (s === state.i) cells.province[i] = provinceId;
+  });
+
+  const burg = state.capital;
+  const formName = state.formName || "Province";
+  provinces.push({
+    i: provinceId,
+    state: rulingState.i,
+    center: burg ? burgs[burg].cell : state.center,
+    burg,
+    name: state.name,
+    formName,
+    fullName: `${state.name} ${formName}`,
+    color: getMixedColor(state.color!),
+    coa: state.coa
+  } as Province);
+  rulingState.provinces!.push(provinceId);
+  redrawEmblem("province", provinceId);
 }
 
 function downloadStatesCsv(): void {
