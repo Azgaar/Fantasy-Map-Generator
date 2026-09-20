@@ -13,7 +13,7 @@ import { applyVignetteOptions } from "@/renderers/draw-vignette";
 import type { PathSelection, StyleElement, StyleSelection } from "@/types/styles";
 import { ensureEl, findEl } from "@/utils";
 import { Baseline, storePath, storeValue } from "./baseline";
-import { CUSTOM_CONTROLS, destroyControlDialogs, updateGridSizeReadout } from "./controls";
+import { CUSTOM_CONTROLS, destroyControlDialogs, fontSample, updateGridSizeReadout } from "./controls";
 import {
   ElementsDialog,
   elementFor,
@@ -24,6 +24,7 @@ import {
   PresetSelector
 } from "./dialogs";
 import { runEffect } from "./effects";
+import { cardPreview, NEUTRAL, type PreviewValues, sampleColor } from "./preview";
 
 class StyleEditorController {
   private wired = false;
@@ -188,6 +189,8 @@ class StyleEditorController {
     else node[key] = value;
     runEffect({ sel, path, value, previous });
     if (sel.element === "grid") updateGridSizeReadout();
+    // a control whose dialog wrote the store fires no form event, so the previews follow the store
+    this.decoration?.refreshPreview();
   }
 
   private banner(layer: LayerId): HTMLElement {
@@ -311,6 +314,8 @@ class FormDecoration {
   private cards: HTMLDetailsElement[] = [];
   private selection?: PathSelection;
   private baseline?: Baseline;
+  private sample = "Sample"; // the words a font sample shows, read once per render from the map
+  private neutral = NEUTRAL;
 
   /** `reset` writes a preset value and re-renders the form */
   constructor(
@@ -321,10 +326,7 @@ class FormDecoration {
     const onEdit = (event: Event) => {
       const field = (event.target as Element | null)?.closest<HTMLElement>("[data-field]");
       if (!field || !form.contains(field)) return;
-      window.setTimeout(() => {
-        this.mark(field);
-        this.updatePreviews();
-      }, 0);
+      window.setTimeout(() => this.mark(field), 0);
     };
     form.addEventListener("input", onEdit);
     form.addEventListener("change", onEdit);
@@ -333,6 +335,8 @@ class FormDecoration {
   /** Look at the form as freshly rendered for `sel`: restore the folded cards and draw the preset marks */
   attach(sel: PathSelection): void {
     this.selection = sel;
+    this.sample = fontSample().split(",")[0]; // one name is enough for the header
+    this.neutral = sampleColor();
     this.cards = Array.from(this.form.querySelectorAll<HTMLDetailsElement>("details[data-section]"));
     for (const card of this.cards) {
       const key = `${sel.element}/${card.dataset.section}`;
@@ -353,6 +357,11 @@ class FormDecoration {
   setBaseline(baseline: Baseline | undefined): void {
     this.baseline = baseline;
     this.markAll();
+  }
+
+  /** A value reached the store; the previews follow once a gate has switched its body and marked itself */
+  refreshPreview(): void {
+    window.setTimeout(() => this.updatePreviews(), 0);
   }
 
   private get fields(): HTMLElement[] {
@@ -412,79 +421,18 @@ class FormDecoration {
     }
   }
 
-  // what the card's own rows (not a nested card's) produce, read from the store: a text sample for a font,
-  // else a swatch for a fill and a line for a stroke; the filter's name when one is set
+  // what the card's own rows (not a nested card's) produce, read from the store as the two bags a
+  // node carries; the card's gate is off when its body is hidden
   private preview(card: HTMLDetailsElement): Element[] {
-    const selection = this.selection!;
-    const values: Record<string, unknown> = {};
+    const values: PreviewValues = { attrs: {}, options: {} };
     for (const field of this.fields) {
       if (field.closest("details[data-section]") !== card) continue;
       const relative = this.relativeOf(field);
-      values[relative.at(-1)!] = storeValue(selection, relative);
+      const bag = relative[0] === "options" ? values.options : values.attrs;
+      bag[relative.at(-1)!] = storeValue(this.selection!, relative);
     }
-    const text = (key: string): string | undefined =>
-      typeof values[key] === "string" ? String(values[key]) : undefined;
-    const number = (key: string, fallback: number): number =>
-      typeof values[key] === "number" ? Number(values[key]) : fallback;
-
-    const font = text("font-family");
-    const fill = text("fill") ?? text("color");
-    const stroke = text("stroke");
-    const filter = text("filter");
-    const preview: Element[] = [];
-
-    if (font) {
-      const sample = document.createElement("span");
-      sample.className = "sample";
-      sample.textContent = "Sample";
-      sample.style.fontFamily = font;
-      sample.style.fontWeight = String(values["font-weight"] ?? "");
-      sample.style.fontStyle = text("font-style") ?? "";
-      sample.style.color = fill ?? "";
-      const strokeWidth = number("stroke-width", 0);
-      if (stroke && strokeWidth > 0) sample.style.webkitTextStroke = `${Math.min(strokeWidth, 1)}px ${stroke}`;
-      preview.push(sample);
-    } else {
-      if (fill) {
-        const swatch = document.createElement("span");
-        swatch.className = "sw";
-        const color = document.createElement("i");
-        color.style.background = fill;
-        color.style.opacity = String(number("fill-opacity", number("opacity", 1)));
-        swatch.append(color);
-        preview.push(swatch);
-      }
-      if (stroke) {
-        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        svg.setAttribute("class", "ln");
-        svg.setAttribute("width", "60");
-        svg.setAttribute("height", "12");
-        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-        line.setAttribute("x1", "0");
-        line.setAttribute("y1", "6");
-        line.setAttribute("x2", "60");
-        line.setAttribute("y2", "6");
-        line.setAttribute("stroke", stroke);
-        line.setAttribute("stroke-width", String(Math.min(number("stroke-width", 1), 6)));
-        line.setAttribute("opacity", String(number("opacity", 1)));
-        const dash = text("stroke-dasharray");
-        if (dash && dash !== "none") line.setAttribute("stroke-dasharray", dash);
-        const linecap = text("stroke-linecap");
-        if (linecap) line.setAttribute("stroke-linecap", linecap);
-        svg.append(line);
-        preview.push(svg);
-      }
-    }
-    if (filter && filter !== "none") {
-      // url(#splotch) → "splotch"; a CSS function list → its function names
-      const name =
-        filter.match(/^url\(#(.+)\)$/)?.[1] ?? Array.from(filter.matchAll(/([a-z-]+)\(/g), m => m[1]).join(", ");
-      const fx = document.createElement("span");
-      fx.className = "fx";
-      fx.textContent = name;
-      preview.push(fx);
-    }
-    return preview;
+    const off = card.querySelector<HTMLElement>(":scope > .body")?.hidden ?? false;
+    return cardPreview(values, { sample: this.sample, off, neutral: this.neutral });
   }
 }
 

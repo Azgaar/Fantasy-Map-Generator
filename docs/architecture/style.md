@@ -328,10 +328,15 @@ The current preset (`options.map.style.preset`, loaded through `StylePresetsServ
 the path and its value differs; a path the preset never had (a label group added later) is never
 marked. The `FormDecoration` class in `style-editor/index.ts` marks changed rows with an accent and a
 per-field reset button (a reset writes the preset value through the normal change path, so its effect
-runs), gives each card header a preview built from its own rows (a font sample, a fill swatch, a
-stroke line, a filter name), and remembers which cards the user folded for the session. Edits update
-the marks in place; nothing re-renders. There is no whole-element reset — selecting the preset again
-is that.
+runs), gives each card header a preview of its own rows by `style-editor/preview.ts`, and remembers
+which cards the user folded for the session. The preview slot has a fixed height, so a header does not
+move with what it shows: one chip carries the card's fill and stroke together, a card that sets a font
+shows the map's own words in it, a colour scheme its ramp, a texture its image, a burg icon or emoji
+the icon, a grid its own pattern tile, and a card that sets no colour of its own is sampled in the
+theme's darkest tone at the card's opacity and width. A filter the card sets is applied to whatever the
+preview draws and named in its tip, and a card whose gate is off is dimmed. A value written by a
+control's own dialog (a font, an icon) refreshes the previews too. Edits update the marks in place;
+nothing re-renders. There is no whole-element reset — selecting the preset again is that.
 
 ### Dialogs
 

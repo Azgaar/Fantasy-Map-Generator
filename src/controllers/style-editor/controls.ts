@@ -89,8 +89,9 @@ const font: ControlFactory = (_spec, value, set) => {
   return button;
 };
 
-// what the selected label group says, so the dialog previews the map's own words; other elements get a stock sample
-function fontSample(): string {
+// what the selected label group says, so the dialog and the card preview show the map's own words;
+// other elements get a stock sample
+export function fontSample(): string {
   const element = ensureEl<HTMLSelectElement>("styleElementSelect").value;
   if (element !== "labels") return element === "legend" ? "Legend" : "Sample";
   const group = ensureEl<HTMLSelectElement>("styleGroupSelect").value;

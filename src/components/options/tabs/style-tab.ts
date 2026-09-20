@@ -46,11 +46,15 @@ const STYLE = /* css */ `
   #styleForm .changed .reset { visibility: visible; }
   #styleForm .reset.blank { visibility: hidden; }
   #styleForm details[data-section] > summary:has(> .gate.changed) { box-shadow: inset 3px 0 0 var(--style-change); }
+  #styleForm summary > .preview { display: flex; height: 1.6em; } /* reserved, so every header is the same height */
   #styleForm summary > .preview > .sample { font-size: 1.25em; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #styleForm summary > .preview > .sw { width: 2.6em; height: 1.3em; border: 1px solid #333; border-radius: 3px; position: relative; overflow: hidden; background: repeating-conic-gradient(#bbb 0 25%, #fff 0 50%) 0 0 / 8px 8px; }
-  #styleForm summary > .preview > .sw > i { position: absolute; inset: 0; }
-  #styleForm summary > .preview > .ln { flex: none; }
-  #styleForm summary > .preview > .fx { font-size: .9em; opacity: .75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #styleForm summary > .preview > .chip { flex: none; width: 2.95em; height: 1.6em; overflow: visible; }
+  #styleForm summary > .preview > .ramp { flex: none; width: 2.6em; height: .9em; border: 1px solid #333; border-radius: 3px; }
+  #styleForm summary > .preview > .tex { flex: none; width: 1.8em; height: 1.5em; border: 1px solid #333; border-radius: 3px; background-size: cover; background-position: center; }
+  #styleForm summary > .preview > .icon { flex: none; display: flex; }
+  #styleForm summary > .preview > .icon > svg { width: 1.5em; height: 1.5em; overflow: visible; }
+  #styleForm summary > .preview > .emoji { font-size: 1.35em; line-height: 1; }
+  #styleForm summary > .preview > .off { opacity: .45; }
 `;
 
 ensureEl("styleContent").innerHTML = TEMPLATE;
