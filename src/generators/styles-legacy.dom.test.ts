@@ -1,4 +1,5 @@
 import { expect, test, vi } from "vitest";
+import { Styles } from "./styles";
 import {
   harvestAttributes,
   harvestStylesFromSvg,

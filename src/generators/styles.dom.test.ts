@@ -73,6 +73,33 @@ describe("applyStyles", () => {
     expect(el.querySelector('[data-group="capital"] > [data-group="anchors"]')?.getAttribute("fill")).toBe("#222222");
   });
 
+  test("a burg group named icons is not confused with another group's icons part", () => {
+    const el = mount("burgIcons");
+    const town = document.createElementNS(SVG, "g");
+    town.setAttribute("data-group", "town");
+    const townIcons = document.createElementNS(SVG, "g");
+    townIcons.setAttribute("data-group", "icons");
+    town.append(townIcons);
+    el.append(town);
+
+    const namedIcons = document.createElementNS(SVG, "g");
+    namedIcons.setAttribute("data-group", "icons"); // a burg group carrying the part's own name
+    const iconsPart = document.createElementNS(SVG, "g");
+    iconsPart.setAttribute("data-group", "icons");
+    const anchorsPart = document.createElementNS(SVG, "g");
+    anchorsPart.setAttribute("data-group", "anchors");
+    namedIcons.append(iconsPart, anchorsPart);
+    el.append(namedIcons);
+
+    styles.burgIcons.groups.icons = structuredClone(styles.burgIcons.groups.town);
+    styles.burgIcons.groups.icons.groups.icons.attrs.fill = "#123123";
+    styles.burgIcons.groups.town.groups.icons.attrs.fill = "#456456";
+    Styles.apply("burgIcons");
+
+    expect(townIcons.getAttribute("fill")).toBe("#456456"); // the town group's own part
+    expect(iconsPart.getAttribute("fill")).toBe("#123123"); // the group named icons, not the town part
+  });
+
   test("a missing layer element is a no-op, the rest still apply", () => {
     const el = mount("rivers");
     styles.rivers.attrs.fill = "#654321";

@@ -1,11 +1,12 @@
 // Conversions between the legacy `style` object shapes and the styles store
-import "./styles";
 import type { z } from "zod";
 import { Layers } from "@/components/layers";
-import { FONT_STYLES, FONT_WEIGHTS, LINECAPS, LINEJOINS } from "@/data/style-choices";
+import { OCEAN_PATTERNS } from "@/data/ocean-patterns";
+import { FONT_STYLES, FONT_WEIGHTS, LINECAPS, LINEJOINS, MAP_FILTERS } from "@/data/style-choices";
 import type { StylesData } from "@/types/styles";
 import { safeParseJSON } from "@/utils";
 import { getPath } from "@/utils/objectUtils";
+import { Styles } from "./styles";
 import { stylesSchema } from "./styles-schema";
 
 // selector -> store path, plus the legacy-key -> option-name renames for that node.
@@ -570,6 +571,12 @@ export function stripMigratedAttributes(): void {
 const EMPTY_MEANS_UNSET = new Set(["filter", "mask", "stroke-dasharray"]);
 const INHERIT_MEANS_UNSET = new Set(["stroke-linecap", "stroke-linejoin"]);
 
+// the fields the schema pins to a closed list, by their store path: a value outside it is "not set"
+const CHOICE_AT: Record<string, Record<string, string>> = {
+  "map.attrs.filter": MAP_FILTERS,
+  "ocean.groups.pattern.attrs.href": OCEAN_PATTERNS
+};
+
 // a font size used to take any unit; the schema pins one per element, so the number keeps its value and
 // takes that unit: a label group is relative to the layer (which is 100px before the zoom), the rest absolute
 const fontSizeWithUnit = (path: string[], value: string): string => {
@@ -698,6 +705,13 @@ function upgradeShape(record: unknown): void {
   if (markers) delete markers.options;
   const seaIsland = asNode(asNode(asNode(root.coastline)?.groups)?.sea_island);
   if (seaIsland) delete seaIsland.options;
+  // the schema dropped the coastline dash/linecap and the markets fill/opacity
+  for (const key of ["sea_island", "lake_island"]) {
+    const attrs = asNode(asNode(asNode(root.coastline)?.groups)?.[key])?.attrs;
+    if (attrs) for (const attr of ["stroke-dasharray", "stroke-linecap"]) delete attrs[attr];
+  }
+  const marketAttrs = asNode(root.markets)?.attrs;
+  if (marketAttrs) for (const attr of ["fill", "opacity"]) delete marketAttrs[attr];
   const compassAttrs = asNode(root.compass)?.attrs;
   if (compassAttrs) delete compassAttrs["shape-rendering"];
   const landHeights = asNode(asNode(asNode(root.heightmap)?.groups)?.landHeights);
@@ -716,6 +730,12 @@ export function normalizeStyles<T>(record: T): T {
       }
       if (!bag || typeof value !== "string") continue;
       const trimmed = value.trim();
+      // a fixed-list value the schema does not know means "not set", not a substituted default look
+      const choices = CHOICE_AT[[...path, key].join(".")];
+      if (choices) {
+        (node as Record<string, unknown>)[key] = trimmed in choices ? trimmed : null;
+        continue;
+      }
       const unset =
         (EMPTY_MEANS_UNSET.has(key) && trimmed === "") || (INHERIT_MEANS_UNSET.has(key) && trimmed === "inherit");
       (node as Record<string, unknown>)[key] = unset

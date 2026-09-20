@@ -158,7 +158,7 @@ class StyleEditorController {
         meta: styleMeta,
         controls: CUSTOM_CONTROLS,
         rootTitle,
-        onChange: (relative, value) => this.change(relative, value)
+        onChange: (relative, value) => this.change(relative, value, sel)
       })
     );
     this.addExtraRows(form, sel);
@@ -171,10 +171,14 @@ class StyleEditorController {
     this.decoration.attach(sel);
   }
 
-  /** Set one value on the store and run its effect; `relative` is a path below the selection's node */
-  private change(relative: string[], value: unknown): void {
-    const sel = this.current;
+  /** Set one value on the store and run its effect; `relative` is a path below the selection's node.
+   * `sel` is the selection the form was rendered for, so a control whose dialog outlives a re-render
+   * still writes to the element it belongs to */
+  private change(relative: string[], value: unknown, sel: Resolved | undefined = this.current): void {
     if (!sel) return;
+    // only a value the schema declares and accepts reaches the store, whoever wrote it and whenever
+    const field = SchemaForm.fieldAt(sel.schema, relative);
+    if (!field || (value !== undefined && !field.safeParse(value).success)) return;
     const path = storePath(sel, relative);
     const node = storeValue(sel, relative.slice(0, -1)) as Record<string, unknown> | undefined;
     if (!node) return;

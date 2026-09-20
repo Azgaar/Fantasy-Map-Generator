@@ -146,14 +146,15 @@ the control's.
 
 ## The store — `Styles`
 
-`src/generators/styles.ts` owns the `styles` global and the API over it. It is a model singleton, so
-it lives with the generators, not in `data/`.
+`src/generators/styles.ts` owns the `styles` global and the API over it. It is a class singleton
+(`StylesStore`) holding the record the global points at, so it lives with the generators, not in `data/`.
 
 ```ts
 Styles.defaults; // the parsed default preset (src/generators/default-styles.json), deep-readonly
 Styles.parse(json); // unknown → Styles: per-section validation, repair from defaults, one warning
 Styles.set(record); // replace the global wholesale
 Styles.write(...elements); // walk the element's tree and put every attr on its data-layer/data-group element
+Styles.writeAll(); // write every element
 Styles.writeAttr(path); // set or remove the one attribute at [element, …, "attrs", name]
 Styles.apply(...elements); // write + Layers.draw
 ```

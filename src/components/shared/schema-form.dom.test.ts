@@ -83,10 +83,17 @@ describe("SchemaForm.render", () => {
     expect(hex.value).toBe("#abcdef");
 
     onChange.mockClear();
-    hex.value = "#abc";
+    hex.value = "#abc"; // 3 digits is a colour: stored as typed, the swatch expands it
+    fire(hex, "change");
+    expect(onChange).toHaveBeenLastCalledWith(["attrs", "fill"], "#abc");
+    expect(swatch.value).toBe("#aabbcc");
+    expect(hex.value).toBe("#abc");
+
+    onChange.mockClear();
+    hex.value = "#abcde"; // 5 digits is not a colour
     fire(hex, "change");
     expect(onChange).not.toHaveBeenCalled();
-    expect(hex.value).toBe("#abcdef");
+    expect(hex.value).toBe("#abc");
   });
 
   test("the swatch keeps the alpha of a stored 8-digit color it cannot show", () => {
@@ -400,5 +407,25 @@ describe("the groups rule", () => {
     document.body.append(form);
     expect(form.querySelector('[data-section="groups.mine"]')).not.toBeNull();
     expect(form.querySelector('[data-field="groups.mine.attrs.x"]')).not.toBeNull();
+  });
+});
+
+describe("SchemaForm.fieldAt", () => {
+  test("resolves the schema a field path declares; an undeclared path has none", () => {
+    expect(SchemaForm.fieldAt(schema, ["attrs", "fill"])).toBeDefined();
+    expect(SchemaForm.fieldAt(schema, ["options", "waves", "density"])).toBeDefined();
+    expect(SchemaForm.fieldAt(schema, ["box", "attrs", "fill"])).toBeDefined();
+    expect(SchemaForm.fieldAt(schema, ["attrs", "missing"])).toBeUndefined();
+    expect(SchemaForm.fieldAt(schema, ["options", "waves", "missing"])).toBeUndefined();
+  });
+
+  test("the resolved leaf is what a write is checked against", () => {
+    const opacity = SchemaForm.fieldAt(schema, ["attrs", "opacity"])!;
+    expect(opacity.safeParse(0.5).success).toBe(true);
+    expect(opacity.safeParse(null).success).toBe(true);
+    expect(opacity.safeParse(2).success).toBe(false);
+    const density = SchemaForm.fieldAt(schema, ["options", "waves", "density"])!;
+    expect(density.safeParse(1).success).toBe(true);
+    expect(density.safeParse(9).success).toBe(false);
   });
 });

@@ -12,6 +12,7 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { resetZoom } from "@/components/zoom";
 import { Controllers } from "@/controllers";
 import { GraphOverride } from "@/generators/graph-override";
+import { Styles } from "@/generators/styles";
 import { onLegendClick } from "@/renderers/draw-legend";
 import { applyVignetteOptions } from "@/renderers/draw-vignette";
 import { zonesFilter } from "@/renderers/draw-zones";

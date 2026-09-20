@@ -529,12 +529,10 @@ export const stylesSchema = z.strictObject({
       })
     }),
     groups: z.strictObject({
-      box: meta(
-        z.strictObject({
-          attrs: z.strictObject(fillGroup)
-        }),
-        { label: "Background" }
-      )
+      box: meta(z.strictObject({ attrs: z.strictObject(fillGroup) }), {
+        label: "Background",
+        effect: "draw"
+      })
     })
   }),
   map: z.strictObject({

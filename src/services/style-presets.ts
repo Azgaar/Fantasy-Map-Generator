@@ -49,7 +49,15 @@ class StylePresetsStore {
 
   /** The preset by name, or the default when it is missing or broken: `error` then says why */
   async load(name: string): Promise<{ name: string; styles: unknown; error?: string }> {
-    if (this.isSystem(name)) return { name, styles: await this.fetchSystem(name) };
+    if (this.isSystem(name)) {
+      try {
+        return { name, styles: await this.fetchSystem(name) };
+      } catch (error) {
+        const message = `Cannot fetch style preset ${name}`;
+        ERROR && console.error(`${message}. Applying default style`, error);
+        return { name: "default", styles: Styles.defaults, error: message };
+      }
+    }
 
     const stored = localStorage.getItem(name);
     if (stored && isValidJSON(stored)) return { name, styles: normalizeStyles(JSON.parse(stored)) };
@@ -64,13 +72,9 @@ class StylePresetsStore {
   private async fetchSystem(name: string): Promise<unknown> {
     // the default preset ships in the bundle (src/generators/default-styles.json)
     if (name === "default") return Styles.defaults;
-    try {
-      const response = await fetch(`./styles/${name}.json?v=${VERSION}`);
-      return await response.json();
-    } catch (error) {
-      ERROR && console.error(`Cannot fetch style preset ${name}. Applying default style`, error);
-      return Styles.defaults;
-    }
+    const response = await fetch(`./styles/${name}.json?v=${VERSION}`);
+    if (!response.ok) throw new Error(`Style preset ${name} is not available (${response.status})`);
+    return await response.json();
   }
 }
 

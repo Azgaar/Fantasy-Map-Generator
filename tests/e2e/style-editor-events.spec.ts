@@ -421,8 +421,8 @@ test.describe("style editor events drive the store", () => {
     const expected = { opacity: 0.65, fill: "#123456", stroke: "#654321", "stroke-width": 2.5 };
     expect(await page.evaluate(() => (window as any).styles.scaleBar.groups.back.attrs)).toMatchObject(expected);
 
-    // what load does after restoring the svg: the edit must be what the store writes back
-    await page.evaluate(() => (window as any).Styles.write("scaleBar"));
+    // a preset apply rewrites every element from the store, the way a load does: the edit must survive it
+    await page.evaluate(() => (window as any).Controllers.StylePresetsEditor.applyPreset((window as any).styles));
     const back = page.locator("#scaleBarBack");
     await expect(back).toHaveAttribute("opacity", "0.65");
     await expect(back).toHaveAttribute("fill", "#123456");

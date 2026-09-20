@@ -16,6 +16,8 @@ export type FieldSpec = {
   nullable: boolean;
   optional: boolean; // an unset optional is undefined, an unset nullable is null
   nullAs?: number | string;
+  schemaMin?: number; // the schema's own bound, which a control may not write past
+  schemaMax?: number;
   valueType: "boolean" | "number" | "string" | "unknown"; // the leaf's own type, for controls that adapt (a checkbox over a 0/1 number)
   group?: string;
 };
@@ -101,8 +103,10 @@ function fieldSpec(key: string, schema: z.ZodType, meta: Meta, path: string[] = 
   const type = intern.def?.type;
 
   const finite = (n: unknown): n is number => typeof n === "number" && Number.isFinite(n);
-  let min = finite(intern.minValue) ? intern.minValue : undefined;
-  let max = finite(intern.maxValue) ? intern.maxValue : undefined;
+  const schemaMin = finite(intern.minValue) ? intern.minValue : undefined;
+  const schemaMax = finite(intern.maxValue) ? intern.maxValue : undefined;
+  let min = schemaMin;
+  let max = schemaMax;
   if (fieldMeta.range) [min, max] = fieldMeta.range;
   const bounded = min !== undefined && max !== undefined;
 
@@ -130,6 +134,8 @@ function fieldSpec(key: string, schema: z.ZodType, meta: Meta, path: string[] = 
     nullable,
     optional,
     nullAs: fieldMeta.nullAs,
+    schemaMin,
+    schemaMax,
     valueType,
     group: fieldMeta.group
   };
@@ -408,10 +414,27 @@ function metaAlong<M extends FieldMeta<string>>(
 
 function unwrapObject(schema: z.ZodType | undefined): z.ZodObject | undefined {
   let node = schema;
-  while (node && ["default", "nullable", "optional"].includes(internals(node).def?.type ?? "")) {
-    node = internals(node).def?.innerType;
+  while (node) {
+    const def = internals(node).def;
+    const type = def?.type;
+    if (type === "pipe") {
+      node = def?.in;
+      continue;
+    }
+    if (type !== "default" && type !== "nullable" && type !== "optional") break;
+    node = def?.innerType;
   }
   return node && internals(node).def?.type === "object" ? (node as z.ZodObject) : undefined;
+}
+
+/** The leaf schema a path relative to a node schema declares, or undefined when it declares none */
+function fieldAt(schema: z.ZodObject, path: string[]): z.ZodType | undefined {
+  let node: z.ZodType | undefined = schema;
+  for (const key of path) {
+    node = unwrapObject(node)?.shape?.[key];
+    if (!node) return undefined;
+  }
+  return node;
 }
 
 // a composite control brings its own rows (see `rows`) and stands in place of the field's row
@@ -508,19 +531,28 @@ const select: ControlFactory = (spec, value, set) => {
   return el;
 };
 
+/** The schema's own bound is the one a control may not write past; its `range` only sizes the slider */
+const clamp = (value: number, min: number | undefined, max: number | undefined): number => {
+  if (min !== undefined && value < min) return min;
+  if (max !== undefined && value > max) return max;
+  return value;
+};
+
 const slider: ControlFactory = (spec, value, set) => {
   const current = typeof value === "number" ? value : typeof spec.nullAs === "number" ? spec.nullAs : (spec.min ?? 0);
   // a stored value beyond the range keeps the range wide enough to hold it; parsed from markup because
   // the component builds its inputs in the constructor, which createElement forbids
+  const min = Math.min(spec.min ?? 0, current);
+  const max = Math.max(spec.max ?? 100, current);
   const holder = document.createElement("span");
-  holder.innerHTML = /* html */ `<slider-input min="${Math.min(spec.min ?? 0, current)}" max="${Math.max(spec.max ?? 100, current)}" step="${spec.step ?? 1}" value="${current}"></slider-input>`;
+  holder.innerHTML = /* html */ `<slider-input min="${min}" max="${max}" step="${spec.step ?? 1}" value="${current}"></slider-input>`;
   const el = holder.firstElementChild as HTMLElement & { value: string };
   el.remove();
   el.addEventListener("input", event => {
     if (event.target !== el) return; // the inner inputs bubble their own event before the component's
     const next = Number(el.value);
     if (el.value === "" || !Number.isFinite(next)) return;
-    set(next);
+    set(clamp(next, spec.schemaMin, spec.schemaMax)); // typing past the drag range is allowed, the schema is not
   });
   return el;
 };
@@ -538,7 +570,7 @@ const number: ControlFactory = (spec, value, set) => {
       return; // a non-nullable number keeps its last value
     }
     const next = Number(el.value);
-    if (Number.isFinite(next)) set(next);
+    if (Number.isFinite(next)) set(clamp(next, spec.schemaMin, spec.schemaMax));
   });
   return el;
 };
@@ -573,10 +605,14 @@ function alphaOf(value: unknown): string {
   return "";
 }
 
-// the swatch and an editable hex beside it: a valid #rrggbb typed in writes and syncs the swatch, anything
+/** A hex colour the store accepts: #rgb, #rgba, #rrggbb or #rrggbbaa */
+const HEX_COLOR = /^#([0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/;
+
+// the swatch and an editable hex beside it: a hex colour typed in writes and syncs the swatch, anything
 // else reverts; the swatch keeps the alpha suffix of a stored 4/8-digit color, which it cannot show
 const color: ControlFactory = (_spec, value, set) => {
-  const alpha = alphaOf(value);
+  let alpha = alphaOf(value);
+  let shown = typeof value === "string" ? value.trim().toLowerCase() : "";
   const input = document.createElement("input");
   input.type = "color";
   input.value = toColorInput(value);
@@ -585,20 +621,24 @@ const color: ControlFactory = (_spec, value, set) => {
   hex.className = "hex";
   hex.placeholder = "none";
   hex.spellcheck = false;
-  hex.value = typeof value === "string" ? value : "";
+  hex.value = shown;
+  const write = (next: string) => {
+    alpha = alphaOf(next);
+    shown = next;
+    input.value = toColorInput(next);
+    hex.value = next;
+    set(next);
+  };
   input.addEventListener("input", () => {
     const next = input.value + alpha;
+    shown = next;
     hex.value = next;
     set(next);
   });
   hex.addEventListener("change", () => {
     const next = hex.value.trim().toLowerCase();
-    if (!/^#[0-9a-f]{6}$/.test(next)) {
-      hex.value = input.value;
-      return;
-    }
-    input.value = hex.value = next;
-    set(next);
+    if (HEX_COLOR.test(next)) write(next);
+    else hex.value = shown; // revert to the last written value
   });
   return inline(input, hex);
 };
@@ -627,4 +667,4 @@ export const STANDARD_CONTROLS: Record<StandardControl, ControlFactory> = {
   px: withUnit("px")
 };
 
-export const SchemaForm = { render, fieldSpec, walk, unwrap, metaAlong };
+export const SchemaForm = { render, fieldSpec, walk, unwrap, metaAlong, fieldAt };

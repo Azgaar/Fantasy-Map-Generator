@@ -23,15 +23,31 @@ describe("StylePresets.load", () => {
 
   test("a system preset is fetched by name", async () => {
     const preset = { map: {} };
-    fetchMock.mockResolvedValue({ json: async () => preset });
+    fetchMock.mockResolvedValue({ ok: true, json: async () => preset });
     expect(await StylePresetsService.load("ink")).toEqual({ name: "ink", styles: preset });
     expect(fetchMock.mock.calls[0][0]).toMatch(/^\.\/styles\/ink\.json\?v=/);
   });
 
-  test("a failed fetch falls back to the default with one console.error and keeps the name", async () => {
+  test("a failed fetch falls back to the default with one console.error and the error message", async () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     fetchMock.mockRejectedValue(new Error("offline"));
-    expect(await StylePresetsService.load("ink")).toEqual({ name: "ink", styles: Styles.defaults });
+    expect(await StylePresetsService.load("ink")).toEqual({
+      name: "default",
+      styles: Styles.defaults,
+      error: "Cannot fetch style preset ink"
+    });
+    expect(error).toHaveBeenCalledTimes(1);
+    error.mockRestore();
+  });
+
+  test("a preset the server refuses resolves to the default with an error", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    fetchMock.mockResolvedValue({ ok: false, status: 404, json: async () => ({}) });
+    expect(await StylePresetsService.load("ink")).toEqual({
+      name: "default",
+      styles: Styles.defaults,
+      error: "Cannot fetch style preset ink"
+    });
     expect(error).toHaveBeenCalledTimes(1);
     error.mockRestore();
   });

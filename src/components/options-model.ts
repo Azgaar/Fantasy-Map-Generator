@@ -292,7 +292,7 @@ class OptionsModel {
   }
 }
 
-// biome-ignore lint/suspicious/noRedeclare: legacy seam, as in styles.ts
+// biome-ignore lint/suspicious/noRedeclare: legacy seam
 export const Options = new OptionsModel();
 globalThis.Options = Options;
 globalThis.options = Options.getDefaultOptions();

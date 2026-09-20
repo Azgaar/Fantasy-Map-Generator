@@ -152,30 +152,35 @@ test("a saved custom preset carries the retired sizes from the store", async ({p
   await page.evaluate(() => (window as any).Controllers.StylePresetsEditor.openSaver());
 
   const raw = await page.locator("#styleSaverJSON").inputValue();
-  const roundTripped = await page.evaluate(rawJson => {
-    const json = JSON.parse(rawJson);
-    // the saver emits the store format now: no legacy selector keys, parseable directly
-    if (Object.keys(json).some(key => key.startsWith("#"))) throw new Error("saver emitted the legacy format");
-    const upgraded = (window as any).Styles.parse(json);
+  // the saver emits the store format now: no legacy selector keys, parseable directly
+  const emitted = JSON.parse(raw) as Record<string, unknown>;
+  expect(Object.keys(emitted).some(key => key.startsWith("#"))).toBe(false);
+
+  // the save path parses that JSON through the store and applies it: the retired sizes must survive
+  await page.locator("#styleSaverName").fill("round-trip");
+  await page.locator("#styleSaverSave").click();
+
+  const roundTripped = await page.evaluate(() => {
+    const store = styles;
     return {
-      coordinates: upgraded.coordinates.attrs["font-size"],
-      rulers: upgraded.rulers.attrs["font-size"],
-      legend: upgraded.legend.attrs["font-size"],
-      provinceEmblems: upgraded.emblems.groups.provinceEmblems.options.size,
-      goodsIcons: upgraded.goods.groups.goodsIcons.options.size,
-      goodsBurgs: upgraded.goods.groups.goodsBurgs.options.size,
-      markets: upgraded.markets.options.size,
-      landTerracing: upgraded.heightmap.groups.landHeights.options.terracing,
-      oceanRender: upgraded.heightmap.groups.oceanHeights.options.render,
-      armiesBox: upgraded.military.options.boxSize,
-      gridScale: upgraded.grid.options.scale,
-      marketsIcon: upgraded.markets.options.icon,
-      textureX: upgraded.texture.options.x,
-      oceanOutline: upgraded.ocean.groups.oceanLayers.options.outline,
-      scaleBarLabel: upgraded.scaleBar.options.label,
-      legendColumns: upgraded.legend.options.columns
+      coordinates: store.coordinates.attrs["font-size"],
+      rulers: store.rulers.attrs["font-size"],
+      legend: store.legend.attrs["font-size"],
+      provinceEmblems: store.emblems.groups.provinceEmblems.options.size,
+      goodsIcons: store.goods.groups.goodsIcons.options.size,
+      goodsBurgs: store.goods.groups.goodsBurgs.options.size,
+      markets: store.markets.options.size,
+      landTerracing: store.heightmap.groups.landHeights.options.terracing,
+      oceanRender: store.heightmap.groups.oceanHeights.options.render,
+      armiesBox: store.military.options.boxSize,
+      gridScale: store.grid.options.scale,
+      marketsIcon: store.markets.options.icon,
+      textureX: store.texture.options.x,
+      oceanOutline: store.ocean.groups.oceanLayers.options.outline,
+      scaleBarLabel: store.scaleBar.options.label,
+      legendColumns: store.legend.options.columns
     };
-  }, raw);
+  });
 
   expect(roundTripped).toEqual({
     coordinates: "23px",

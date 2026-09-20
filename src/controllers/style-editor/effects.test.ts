@@ -58,6 +58,7 @@ describe("effectAt", () => {
     expect(at("labels.groups.state.attrs.fill")).toBe("write");
     expect(at("legend.attrs.font-family")).toBe("draw");
     expect(at("legend.attrs.stroke")).toBe("write");
+    expect(at("legend.groups.box.attrs.fill")).toBe("draw"); // every shown box is redrawn from the store
     expect(at("vignette.options.rx")).toBe("draw");
   });
 });

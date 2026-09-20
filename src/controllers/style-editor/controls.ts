@@ -15,7 +15,7 @@ import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { burgIcon, burgIconPreview } from "@/data/burg-icons";
 import { TEXTURES } from "@/data/textures";
-import { FORMATS } from "@/generators/styles-formats";
+import { FORMATS, isLabelStyle } from "@/generators/styles-formats";
 import { drawHeights } from "@/renderers/draw-heightmap";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
 import { getLabelsIndex } from "@/renderers/labels/label-data";
@@ -276,7 +276,10 @@ const labelStyle: ControlFactory = (spec, value, set) => {
       dy: Number(dy.value) || 0,
       rest: parsed.rest
     });
-    set(next ?? unsetValue(spec));
+    // the schema pins the declarations a label style may carry: a half-typed one never reaches the store
+    const valid = next === null || isLabelStyle(next);
+    shadow.style.borderColor = valid ? "" : "var(--style-change)";
+    if (valid) set(next ?? unsetValue(spec));
   };
   const dx = sliderOf(spec, { min: -2, max: 2, step: 0.01 }, parsed.dx, emit);
   const dy = sliderOf(spec, { min: -2, max: 2, step: 0.01 }, parsed.dy, emit);
