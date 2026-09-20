@@ -41,6 +41,7 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Legends: empty legends no longer redraw as an "undefined" row
 - Fog of war: the cover spans the full map, including areas outside the viewport
 - Memory: closing editors releases their listeners, detached elements and retained map references
+- States Editor: merging states can keep each merged state as a province of the ruling state by _[barrulus](https://github.com/barrulus)_
 
 **[1.152.1](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.152.1) - 2026-09-11**:
 
