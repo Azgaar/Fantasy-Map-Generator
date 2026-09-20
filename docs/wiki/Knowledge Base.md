@@ -590,7 +590,7 @@ You can create a new Regiment using the Regiments Overview. In can open if you c
 
 ### How do I merge countries?
 
-To merge states (countries) open the States Editor from Tools and click the "Annex states" button (crown icon) at the dialog bottom. Click the state that annexes the others on the map, then click the states to annex; hold Shift to keep annexing several. A confirmation lists what will be removed, so a mis-click can be cancelled. To pick from a list instead, use the "Merge several states into one" button next to it and tick the states to merge
+To merge states (countries) open the States Editor from Tools and click the "Annex states" button (crown icon) at the dialog bottom. Click the state that annexes the others on the map, then click the states to annex; hold Shift to keep annexing several. A confirmation lists what will be removed, so a mis-click can be cancelled. To pick from a list instead, use the "Merge several states into one" button next to it and tick the states to merge. Tick the checkbox in the confirmation to keep each annexed state as a province of the annexing state, named and colored after the former state and carrying its emblem
 
 ### How to start a war?
 
