@@ -18,10 +18,26 @@ export const savedMessage = (name: string): string =>
 export function registerServiceWorker(): void {
   if (!("serviceWorker" in navigator) || !isProduction() || isElectron()) return;
 
+  const standalone = window.matchMedia("(display-mode: standalone)");
+  const cacheOffline = (installed = false): void => {
+    if (!installed && !standalone.matches && !navigator.standalone) return;
+    if (!navigator.onLine) return;
+
+    navigator.serviceWorker.ready
+      .then(({ active }) => active?.postMessage({ type: "CACHE_OFFLINE" }))
+      .catch(error => console.error("Offline caching request failed: ", error));
+  };
+
+  window.addEventListener("appinstalled", () => cacheOffline(true));
+  window.addEventListener("online", () => cacheOffline());
+  standalone.addEventListener("change", () => cacheOffline());
+  navigator.serviceWorker.addEventListener("controllerchange", () => cacheOffline());
+
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch(error => {
-      console.error("ServiceWorker registration failed: ", error);
-    });
+    navigator.serviceWorker
+      .register("./sw.js")
+      .then(() => cacheOffline())
+      .catch(error => console.error("ServiceWorker registration failed: ", error));
   });
 }
 
@@ -31,5 +47,6 @@ declare global {
   }
   interface Navigator {
     userAgentData?: { mobile?: boolean };
+    standalone?: boolean;
   }
 }

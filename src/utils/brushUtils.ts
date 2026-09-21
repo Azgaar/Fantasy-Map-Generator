@@ -2,9 +2,12 @@ export interface BrushStroke {
   moveTo(x: number, y: number): void;
 }
 
-// stamps every `spacing` px of pointer travel, not per pointer event: per-event brushes paint faster
-// on high-refresh monitors and leave gaps on fast swipes. The first moveTo stamps in place
-export function createBrushStroke(spacing: number, stamp: (x: number, y: number) => void): BrushStroke {
+// Interpolate spaced stamps; stampOnMove also covers each pointer position.
+export function createBrushStroke(
+  spacing: number,
+  stamp: (x: number, y: number) => void,
+  stampOnMove = false
+): BrushStroke {
   let stampX = 0;
   let stampY = 0;
   let started = false;
@@ -26,6 +29,12 @@ export function createBrushStroke(spacing: number, stamp: (x: number, y: number)
         stampY += (y - stampY) * t;
         stamp(stampX, stampY);
         distance -= spacing;
+      }
+
+      if (stampOnMove && (x !== stampX || y !== stampY)) {
+        stampX = x;
+        stampY = y;
+        stamp(x, y);
       }
     }
   };

@@ -1,4 +1,4 @@
-import { type D3ZoomEvent, select, zoom, zoomIdentity, zoomTransform } from "d3";
+import { type D3ZoomEvent, interpolateZoom, select, type ZoomView, zoom, zoomIdentity, zoomTransform } from "d3";
 import { Layers } from "@/components/layers";
 import { setViewportTransform, viewport, zoomFontSize } from "@/components/viewport";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
@@ -6,7 +6,7 @@ import { ensureEl, findEl } from "@/utils/nodeUtils";
 import { rn } from "@/utils/numberUtils";
 
 const DEFAULT_SCALE_EXTENT: [number, number] = [1, 20];
-const zoomBehavior = zoom<SVGSVGElement, unknown>().scaleExtent(DEFAULT_SCALE_EXTENT);
+const zoomBehavior = zoom<SVGSVGElement, unknown>().scaleExtent(DEFAULT_SCALE_EXTENT).interpolate(constrainedFlight);
 
 export function applyZoomBehavior(): void {
   select<SVGSVGElement, unknown>("#map").call(zoomBehavior.on("zoom", onZoom).on("end", handleZoomEnd));
@@ -107,10 +107,47 @@ export function invokeActiveZooming(): void {
   }
 }
 
-/** Zoom to a specific point */
+/** Zoom to a specific point, centred where the extents allow */
 export function zoomTo(x: number, y: number, z = 8, duration = 2000): void {
-  const transform = zoomIdentity.translate(x * -z + viewport.width / 2, y * -z + viewport.height / 2).scale(z);
-  select<SVGSVGElement, unknown>("#map").transition().duration(duration).call(zoomBehavior.transform, transform);
+  const [min, max] = zoomBehavior.scaleExtent();
+  const k = Math.min(Math.max(z, min), max);
+  const transform = constrainTransform(
+    zoomIdentity.translate(x * -k + viewport.width / 2, y * -k + viewport.height / 2).scale(k)
+  );
+  const selection = select<SVGSVGElement, unknown>("#map");
+
+  if (duration) selection.transition().duration(duration).call(zoomBehavior.transform, transform);
+  else zoomBehavior.transform(selection, transform);
+}
+
+/** Pull a transform inside the scale and translate extents: d3 does this for gestures, not for `transform` */
+function constrainTransform(transform: ReturnType<typeof zoomIdentity.scale>) {
+  return zoomBehavior.constrain()(
+    transform,
+    [
+      [0, 0],
+      [viewport.width, viewport.height]
+    ],
+    zoomBehavior.translateExtent()
+  );
+}
+
+/** d3 plans a fly-over between two views that dips below the cover scale; keep every frame inside the extents */
+function constrainedFlight(a: ZoomView, b: ZoomView) {
+  const flight = interpolateZoom(a, b);
+  const constrained = (t: number) => constrainView(flight(t));
+  constrained.duration = flight.duration;
+  return constrained;
+}
+
+/** A view is the map point under the viewport centre and the viewport's longer side in map units */
+function constrainView([cx, cy, span]: ZoomView): ZoomView {
+  const { width, height } = viewport;
+  const side = Math.max(width, height);
+  const [min, max] = zoomBehavior.scaleExtent();
+  const k = Math.min(Math.max(side / span, min), max);
+  const { x, y } = constrainTransform(zoomIdentity.translate(width / 2 - cx * k, height / 2 - cy * k).scale(k));
+  return [(width / 2 - x) / k, (height / 2 - y) / k, side / k];
 }
 
 /** Reset zoom to the initial view: the map origin at the smallest scale the extents allow */

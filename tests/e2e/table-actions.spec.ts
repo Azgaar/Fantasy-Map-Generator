@@ -208,7 +208,10 @@ test.describe("Goods display filter", () => {
   test.beforeEach(async ({ page }) => {
     errors = [];
     page.on("pageerror", error => errors.push(error.message));
-    await page.addInitScript(() => localStorage.setItem("version", "99.0.0"));
+    await page.addInitScript(() => {
+      localStorage.setItem("version", "99.0.0");
+      localStorage.setItem("fmg-locks", JSON.stringify({ points: 1 }));
+    });
     await page.goto("/?seed=goods-filter&width=1600&height=1000");
     await waitForMap(page);
     initial = await page.evaluate(() => {

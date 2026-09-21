@@ -22,6 +22,8 @@ interface MapBrushOptions {
   spacing?: (radius: number) => number;
   /** stamp where the stroke begins, before any movement. Off for a tool whose click means something else */
   stampOnStart?: boolean;
+  /** Stamp each drag position too; only for non-accumulating tools. */
+  stampOnMove?: boolean;
   /** a stroke begins: return what to do with the points it covers */
   onStart?: (point: Point, radius: number) => Stamp | undefined;
   onEnd?: (radius: number) => void;
@@ -138,7 +140,8 @@ export class MapBrush {
 
     const stamp = this.options.onStart?.(origin, radius);
     const step = this.options.spacing(radius);
-    const stroke = stamp && step > 0 ? createBrushStroke(step, (x, y) => stamp([x, y])) : null;
+    const stroke =
+      stamp && step > 0 ? createBrushStroke(step, (x, y) => stamp([x, y]), this.options.stampOnMove) : null;
     let started = false;
 
     if (stroke && this.options.stampOnStart !== false) {

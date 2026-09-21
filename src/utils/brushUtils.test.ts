@@ -66,4 +66,44 @@ describe("createBrushStroke", () => {
     for (let i = 0; i < 100; i++) stroke.moveTo(i % 2, 0); // jitter in place
     expect(stamps).toEqual([[0, 0]]);
   });
+
+  it("can paint each pointer position while interpolating fast movement", () => {
+    const { stamps, stamp } = record();
+    const stroke = createBrushStroke(10, stamp, true);
+    stroke.moveTo(0, 0);
+    stroke.moveTo(1, 0);
+    stroke.moveTo(26, 0);
+    expect(stamps).toEqual([
+      [0, 0],
+      [1, 0],
+      [11, 0],
+      [21, 0],
+      [26, 0]
+    ]);
+  });
+
+  it("follows short turns without cutting across them when painting each position", () => {
+    const { stamps, stamp } = record();
+    const stroke = createBrushStroke(10, stamp, true);
+    stroke.moveTo(0, 0);
+    stroke.moveTo(8, 0);
+    stroke.moveTo(8, 8);
+    expect(stamps).toEqual([
+      [0, 0],
+      [8, 0],
+      [8, 8]
+    ]);
+  });
+
+  it("does not duplicate a stamp at an exact step or stationary pointer", () => {
+    const { stamps, stamp } = record();
+    const stroke = createBrushStroke(10, stamp, true);
+    stroke.moveTo(0, 0);
+    stroke.moveTo(10, 0);
+    stroke.moveTo(10, 0);
+    expect(stamps).toEqual([
+      [0, 0],
+      [10, 0]
+    ]);
+  });
 });

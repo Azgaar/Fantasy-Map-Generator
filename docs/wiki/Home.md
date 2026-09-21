@@ -22,6 +22,7 @@ To report a problem or propose a feature, see [Reporting bugs and suggesting ide
 **Getting started**
 [Quick Start Tutorial](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Quick-Start-Tutorial) ·
 [User Interface](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/User-Interface) ·
+[Omnibar](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Omnibar) ·
 [Hotkeys](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys) ·
 [Q&A](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A) ·
 [Report a bug or suggest an idea](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Reporting-bugs-and-ideas)
@@ -34,6 +35,10 @@ To report a problem or propose a feature, see [Reporting bugs and suggesting ide
 [Coastline Editor](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Coastline-Editor) ·
 [Geographical Features overview](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Geographical-Features-Overview) ·
 [Wrap Tool](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Wrap-Tool)
+
+**Appearance and performance**
+[Map embellishments](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Map-embellishments) ·
+[Performance settings](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Performance-settings)
 
 **World building**
 [Culture sets](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Culture-sets) ·

@@ -74,6 +74,27 @@ describe("rich text editor", () => {
     expect(getEditorHtml(quill)).toBe("");
   });
 
+  it.each([
+    [
+      "video",
+      '<iframe class="ql-video" src="https://example.com/&quot;&gt;&lt;img src=x onerror=alert(1)&gt;"></iframe>'
+    ],
+    ["formula", '<span class="ql-formula" data-value="&lt;img src=x onerror=alert(1)&gt;"></span>']
+  ])("rejects pasted %s embeds before HTML export (CVE-2025-15056)", (format, html) => {
+    vi.stubGlobal("katex", { render: vi.fn() });
+    try {
+      setEditorHtml(quill, `<p>before</p>${html}<p>after</p>`);
+      const output = document.createElement("template");
+      output.innerHTML = getEditorHtml(quill);
+      expect(output.content.querySelector("[onerror], iframe, .ql-formula")).toBeNull();
+      expect(quill.getContents().ops.some(op => typeof op.insert === "object" && format in op.insert)).toBe(false);
+      expect(output.content.textContent).toContain("before");
+      expect(output.content.textContent).toContain("after");
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("keeps the line breaks and the entities of a generated plain text note", () => {
     setEditorHtml(quill, "A battle of the Campaign. \r\nDate: 100 AD.\n\nSpoils: gold &amp; silver");
     expect(quill.getText()).toBe("A battle of the Campaign. \nDate: 100 AD.\n\nSpoils: gold & silver\n");
@@ -83,6 +104,20 @@ describe("rich text editor", () => {
   it("keeps inline code", () => {
     setEditorHtml(quill, "<p>a <code>inline</code> b</p>");
     expect(getEditorHtml(quill)).toBe("<p>a <code>inline</code> b</p>");
+  });
+
+  it("preserves headings, scripts and images with restricted formats", () => {
+    setEditorHtml(
+      quill,
+      '<h2>Title</h2><p>H<sub>2</sub>O x<sup>2</sup></p><p><img src="https://example.com/map.png" alt="Map"></p>'
+    );
+    const html = getEditorHtml(quill);
+    expect(html).toContain("<h2>Title</h2>");
+    expect(html).toContain("H<sub>2</sub>O x<sup>2</sup>");
+    expect(html).toContain('src="https://example.com/map.png"');
+    expect(html).toContain('alt="Map"');
+    setEditorHtml(quill, html);
+    expect(getEditorHtml(quill)).toBe(html);
   });
 
   it("inserts a rule between text, preserves it on reload, and undoes it in one step", () => {
