@@ -619,15 +619,16 @@ describe("v1.61 ocean pattern migration", () => {
     ["./images/pattern3.png", "./images/pattern3.png"]
   ])("v1.153.2 heals the stored pattern %s to %s", async (pattern, expected) => {
     document.body.innerHTML = /* html */ `<svg id="map"><defs><pattern id="oceanic"><image id="oceanicPattern" href="${pattern}"></image></pattern></defs><g id="viewbox"></g></svg>`;
-    const record = structuredClone(Styles.defaults) as { ocean: { options: { pattern: string } } };
+    // a pre-1.154.0 record kept the pattern in the ocean options; the 1.154.0 step moves it to the pattern group
+    const record = structuredClone(Styles.defaults) as unknown as { ocean: { options: Record<string, unknown> } };
     record.ocean.options.pattern = pattern;
     const data: string[] = [];
     data[48] = JSON.stringify(record);
 
     await resolveVersionConflicts("1.153.1", data);
 
-    expect(JSON.parse(data[48]).ocean.options.pattern).toBe(expected);
-    expect(document.getElementById("oceanicPattern")!.getAttribute("href")).toBe(expected);
+    expect(JSON.parse(data[48]).ocean.groups.pattern.attrs.href).toBe(expected);
+    expect(document.getElementById("oceanicPattern")).toBeNull(); // the stray defs tile is dropped; the renderer rebuilds it
   });
 });
 
