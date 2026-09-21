@@ -1979,7 +1979,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     }
     if (record) data[48] = JSON.stringify(record);
   }
-  
+
   if (isOlderThan("1.153.2")) {
     // the 1.61 step wrote the "no pattern" href unquoted, leaving the text width="100" as the pattern
     const isBroken = (href: unknown) => typeof href === "string" && href !== "" && !/^(\.\/images\/|data:)/.test(href);
