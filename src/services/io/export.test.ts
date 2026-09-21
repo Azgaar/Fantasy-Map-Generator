@@ -45,7 +45,7 @@ function makeSvg(rootFilter: string | null, withViewbox = true): SVGSVGElement {
   }
   svg.appendChild(defs);
   if (withViewbox) {
-    for (const id of ["viewbox", "scaleBar"]) {
+    for (const id of ["viewbox", "scaleBar", "vignette", "legend"]) {
       const group = document.createElementNS(SVG_NS, "g");
       group.id = id;
       svg.appendChild(group);
@@ -55,30 +55,45 @@ function makeSvg(rootFilter: string | null, withViewbox = true): SVGSVGElement {
 }
 
 describe("relocateRootFilter", () => {
-  it("moves the filter attribute from the root svg to the #viewbox group", () => {
+  it("filters the map and viewport overlays together without changing their order or transforms", () => {
     const svg = makeSvg("url(#filter-tint)");
+    const viewbox = svg.querySelector("#viewbox")!;
+    viewbox.setAttribute("transform", "translate(20,-30) scale(0.5)");
+    const scaleBar = svg.querySelector("#scaleBar")!;
+    scaleBar.setAttribute("transform", "translate(700,500)");
     relocateRootFilter(svg);
+    const wrapper = viewbox.parentElement!;
     expect(svg.getAttribute("filter")).toBeNull();
-    expect(svg.querySelector("#viewbox")?.getAttribute("filter")).toBe("url(#filter-tint)");
+    expect(wrapper.parentElement).toBe(svg);
+    expect(wrapper.getAttribute("filter")).toBe("url(#filter-tint)");
+    expect(wrapper.hasAttribute("transform")).toBe(false);
+    expect(Array.from(wrapper.children, child => child.id)).toEqual(["viewbox", "scaleBar", "vignette", "legend"]);
+    expect(viewbox.getAttribute("transform")).toBe("translate(20,-30) scale(0.5)");
+    expect(scaleBar.getAttribute("transform")).toBe("translate(700,500)");
+    expect(viewbox.hasAttribute("filter")).toBe(false);
+    expect(scaleBar.hasAttribute("filter")).toBe(false);
   });
 
-  it("applies the same filter to the scale bar, which sits outside #viewbox", () => {
+  it("preserves filter definitions and existing layer filters", () => {
     const svg = makeSvg("url(#filter-tint)");
+    const defs = svg.querySelector("defs")!;
+    const shadow = svg.querySelector("#dropShadow01")!;
+    shadow.setAttribute("x", "-20%");
+    shadow.setAttribute("width", "140%");
+    const definitions = defs.outerHTML;
+    svg.querySelector("#scaleBar")!.setAttribute("filter", "url(#dropShadow01)");
     relocateRootFilter(svg);
-    expect(svg.querySelector("#scaleBar")?.getAttribute("filter")).toBe("url(#filter-tint)");
+    expect(defs.parentElement).toBe(svg);
+    expect(defs.outerHTML).toBe(definitions);
+    expect(svg.querySelector("#scaleBar")?.getAttribute("filter")).toBe("url(#dropShadow01)");
   });
 
-  it("gives every filter an explicit region covering the viewport", () => {
+  it("does not wrap or apply the filter twice", () => {
     const svg = makeSvg("url(#filter-tint)");
     relocateRootFilter(svg);
-    for (const id of ["filter-tint", "dropShadow01"]) {
-      const filter = svg.querySelector(`#${id}`)!;
-      expect(filter.getAttribute("filterUnits")).toBe("userSpaceOnUse");
-      expect(filter.getAttribute("x")).toBe("0");
-      expect(filter.getAttribute("y")).toBe("0");
-      expect(filter.getAttribute("width")).toBe("100%");
-      expect(filter.getAttribute("height")).toBe("100%");
-    }
+    const once = svg.outerHTML;
+    relocateRootFilter(svg);
+    expect(svg.outerHTML).toBe(once);
   });
 
   it("leaves other filters untouched when the root svg has no filter", () => {

@@ -587,23 +587,15 @@ export function flattenSymbolReferences(svg: SVGSVGElement): void {
   });
 }
 
-// Inkscape can't render filters on the root svg element and miscomposites default filter regions on large groups,
-// so move the global filter to the drawn groups and give all filters an explicit full-viewport region
+// Filter the whole composition outside the zoom transform; Firefox and Inkscape need an inner group.
 export function relocateRootFilter(svg: SVGSVGElement): void {
   const filter = svg.getAttribute("filter");
-  const viewbox = svg.querySelector("#viewbox");
-  if (!filter || !viewbox) return;
+  if (!filter || !svg.querySelector("#viewbox")) return;
+  const wrapper = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  wrapper.setAttribute("filter", filter);
+  for (const group of svg.querySelectorAll(":scope > g")) wrapper.appendChild(group);
+  svg.appendChild(wrapper);
   svg.removeAttribute("filter");
-  viewbox.setAttribute("filter", filter);
-  svg.querySelector("#scaleBar")?.setAttribute("filter", filter);
-
-  svg.querySelectorAll("filter").forEach(filterEl => {
-    filterEl.setAttribute("filterUnits", "userSpaceOnUse");
-    filterEl.setAttribute("x", "0");
-    filterEl.setAttribute("y", "0");
-    filterEl.setAttribute("width", "100%");
-    filterEl.setAttribute("height", "100%");
-  });
 }
 
 // remove hidden g elements and g elements without children to make downloaded svg smaller in size
