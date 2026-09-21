@@ -34,7 +34,7 @@ test("the port set offers the anchor and the harbor without a heading", () => {
 
 test("the previews inherit the paint set on the dialog, never their own", () => {
   const dialog = document.createElement("div");
-  dialog.append(render("burgs", "#burgs-circle"));
+  dialog.append(render("burgs", "#burgs-atlas-circle"));
   document.body.append(dialog);
   paintBurgIconDialog("#123456", "#abcdef", dialog);
   for (const use of dialog.querySelectorAll("use")) {

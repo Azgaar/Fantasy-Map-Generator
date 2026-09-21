@@ -467,7 +467,7 @@ describe("v1.154.0 style record normalization", () => {
     await resolveVersionConflicts("1.153.0", data);
     const parsed = Styles.parse(JSON.parse(data[48]));
     expect(parsed.burgIcons.groups.town.groups.anchors.options).toEqual({ size: 2, icon: "#ports-anchor" });
-    expect(parsed.burgIcons.groups.town.groups.icons.options.icon).toBe("#burgs-circle");
+    expect(parsed.burgIcons.groups.town.groups.icons.options.icon).toBe("#burgs-atlas-circle");
   });
 
   it("drops the old #icons layer element so the #burgIcons layer takes over", async () => {

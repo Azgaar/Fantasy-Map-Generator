@@ -1993,7 +1993,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     if (record) {
       // anchors ignored their icon before ports became stylable (a pre-1.150 record is already renamed)
       for (const group of Object.values(record.burgIcons?.anchors?.groups ?? {}) as { options?: { icon?: string } }[]) {
-        if (group?.options?.icon === "#icon-circle" || group?.options?.icon === "#burgs-circle") {
+        if (group?.options?.icon === "#icon-circle" || group?.options?.icon === "#burgs-atlas-circle") {
           group.options.icon = "#ports-anchor";
         }
       }

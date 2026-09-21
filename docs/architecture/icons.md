@@ -5,14 +5,15 @@ Artwork lives in `src/assets/icons/` as standalone SVG files, one directory per 
 ```
 src/assets/icons/
   relief/{simple,colored,gray,illustrated}/<type>-<variant>.svg    set relief-<set>   id relief-simple-mount-1
-  burgs/<name>.svg, burgs/<style>/<name>.svg                       set burgs          id burgs-circle, burgs-watabou-capital
+  burgs/<style>/<name>.svg                                         set burgs          id burgs-atlas-circle, burgs-watabou-capital
   ports/<name>.svg                                                 set ports          id ports-anchor
   goods/<name>.svg                                                 set goods          id goods-wood
 ```
 
 **Symbol id = set id + `-` + file path within the set, with `/` as `-`.** Nothing composes ids by hand:
-`IconSets.symbolId(set, file)` is the one rule, `IconSets.setForId(id)` inverts it. A burg style is a
-subdirectory (`burgs/watabou/`), so a styled name carries its directory, and the picker groups by it.
+`IconSets.symbolId(set, file)` is the one rule, `IconSets.setForId(id)` inverts it. Every burg style is a
+subdirectory (`burgs/atlas/`, `burgs/watabou/`, `burgs/illustrated/`), so a name carries its style and
+the picker groups by it.
 
 ## Defining a set
 
@@ -47,7 +48,7 @@ To add:
 
 - **artwork to an existing set** — drop the file in the directory. No code changes. The picker (burgs, goods)
   or the union (relief) sees it.
-- **a burg style** — a subdirectory under `burgs/`; its name becomes the picker heading.
+- **a burg style** — a subdirectory under `burgs/` like `atlas/`; its name becomes the picker heading.
 - **a relief set** — a directory under `relief/` and its name in `Relief.sets`.
 - **a relief type or variant** — extend `Relief.types`, provide artwork and a fallback, run the coverage tests.
 - **a new family** — give its model an `IconSet` and list the model in `IconSetRegistry.sets()`; its
@@ -117,6 +118,7 @@ reflects the map as it was when it started. Failed sets fail the export.
 
 Version 1.154 moved the icons out of `index.html` and derived every symbol id from its file path. It
 migrates old relief ids (`relief-mount-3-bw`) into descriptors after the style migrations, recovering pins
-against the incoming map's styles, and renames `#icon-<name>` to `#burgs-<name>` / `#ports-<name>` in
+against the incoming map's styles, and renames `#icon-<name>` to `#burgs-atlas-<name>` (or `#burgs-<name>`
+for names that already carried their style) / `#ports-<name>` in
 style records (`styles-legacy.ts`, so presets are covered too), `good-<name>` to `goods-<name>` and
 `good-custom-<id>` to `custom-goods-<id>` in `pack.goods` and field 45.

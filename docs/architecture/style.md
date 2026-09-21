@@ -59,7 +59,7 @@ mirrors the DOM tree: every `groups` entry addresses one `data-group` child of i
     "groups": {
       "capital": {
         "groups": {
-          "icons": { "attrs": { "fill": "#ffffff" }, "options": { "size": 2, "icon": "#burgs-square" } },
+          "icons": { "attrs": { "fill": "#ffffff" }, "options": { "size": 2, "icon": "#burgs-atlas-square" } },
           "anchors": { "attrs": { "fill": "#ffffff" }, "options": { "size": 1.9, "icon": "#ports-anchor" } }
         }
       }

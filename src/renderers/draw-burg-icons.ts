@@ -54,7 +54,7 @@ function reconcileBurgIcons({ root, bounds }: ViewportRenderContext): void {
 
 /** One part of a burg group — the icons or the anchors — as its own data-group element */
 function part(name: "icons" | "anchors", style: BurgPart, burgs: Burg[], bounds: Bounds, anchors: boolean): string {
-  const icon = escapeHtml(style.options.icon || (anchors ? "#ports-anchor" : "#burgs-circle"));
+  const icon = escapeHtml(style.options.icon || (anchors ? "#ports-anchor" : "#burgs-atlas-circle"));
   const size = style.options.size ?? 1;
   const shift = anchors ? (style.options as { dx?: number; dy?: number }) : undefined;
   const dx = (shift?.dx ?? 0) * size;

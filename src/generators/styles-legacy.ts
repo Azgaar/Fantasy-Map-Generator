@@ -895,7 +895,7 @@ export function burgGroupFromLegacy(legacy: unknown): BurgIconsPart {
     options: {
       // pre-1.9x maps carry the group size as a bare `size` attr instead of font-size
       size: toNumber(bag["font-size"], toNumber(bag.size, 1)),
-      icon: burgIconId(strOr(bag["data-icon"], null)) ?? "#burgs-circle"
+      icon: burgIconId(strOr(bag["data-icon"], null)) ?? "#burgs-atlas-circle"
     }
   };
 }
@@ -903,16 +903,18 @@ export function burgGroupFromLegacy(legacy: unknown): BurgIconsPart {
 // anchors ignored data-icon before ports became stylable, so older records carry no icon or the burg default
 export function anchorGroupFromLegacy(legacy: unknown): BurgAnchorsPart {
   const group = burgGroupFromLegacy(legacy);
-  if (group.options.icon === "#burgs-circle") group.options.icon = "#ports-anchor";
+  if (group.options.icon === "#burgs-atlas-circle") group.options.icon = "#ports-anchor";
   return group as BurgAnchorsPart;
 }
 
-/** Symbol ids were `#icon-<name>` for burgs and ports alike before v1.154 derived them from the set directories */
+/** Symbol ids were `#icon-<name>` for burgs and ports alike before v1.154 derived them from the set directories:
+ * the plain glyphs are the `atlas` style, `watabou-*` and `illustrated-*` already carried their style */
 export function burgIconId(id: string | null): string | null {
   const legacy = id?.match(/^#icon-(.+)$/)?.[1];
   if (!legacy) return id;
   if (legacy === "anchor" || legacy === "harbor") return `#ports-${legacy}`;
-  return `#burgs-${legacy}`;
+  if (legacy.startsWith("watabou-") || legacy.startsWith("illustrated-")) return `#burgs-${legacy}`;
+  return `#burgs-atlas-${legacy}`;
 }
 
 function routeGroupFromLegacy(legacy: object): StylesData["routes"]["groups"][string] {

@@ -451,14 +451,11 @@ type BurgIconDialogOptions = {
   onPick: (id: string) => void;
 };
 
-const ROOT_GROUP = "Atlas"; // the set's own files; a subdirectory is a styled group named after it
-
-/** The dialog's content: the set's files grouped by directory, the selected one pressed */
+/** The dialog's content: the set's files grouped by directory (a style), the selected one pressed */
 export function renderChoices(set: BurgIconSetId, selected: string): string {
   const groups = new Map<string, string[]>();
   for (const file of IconSets.files(set)) {
-    const slash = file.lastIndexOf("/");
-    const group = slash < 0 ? ROOT_GROUP : capitalize(file.slice(0, slash));
+    const group = capitalize(file.slice(0, Math.max(0, file.lastIndexOf("/"))));
     groups.set(group, [...(groups.get(group) ?? []), file]);
   }
   return [...groups]

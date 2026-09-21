@@ -371,7 +371,7 @@ test("a pre-1.150 style object's burg and anchor records land under the burgIcon
 
   // the record outranks the DOM harvest
   expect(migrated.burgIcons.groups.capital.groups.icons.attrs.fill).toBe("#ffffff");
-  expect(migrated.burgIcons.groups.capital.groups.icons.options.icon).toBe("#burgs-square");
+  expect(migrated.burgIcons.groups.capital.groups.icons.options.icon).toBe("#burgs-atlas-square");
   expect(migrated.burgIcons.groups.capital.groups.anchors.attrs.fill).toBe("#000000");
   expect(migrated.burgIcons.groups.capital.groups.anchors.options.size).toBe(1.9);
 

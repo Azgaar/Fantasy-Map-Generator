@@ -78,16 +78,16 @@ is derived from the directories rather than pinned by hand.
 ```
 src/assets/icons/
   relief/{simple,colored,gray,illustrated}/<type>-<variant>.svg   set relief-<set>  → id relief-<set>-<type>-<variant>
-  burgs/<name>.svg, burgs/<style>/<name>.svg                       set burgs         → id burgs-circle, burgs-watabou-capital
+  burgs/<style>/<name>.svg                                         set burgs         → id burgs-atlas-circle, burgs-watabou-capital
   ports/<name>.svg                                                 set ports         → id ports-anchor
   goods/<name>.svg                                                 set goods         → id goods-wood
 ```
 
 **Symbol id = set id + `-` + file path within the set, `/` as `-`.** Every set is a directory of the
 same format; there is no per-set prefix, container or catalog, and no code composes an id except
-`IconSets.symbolId`. Burg styles are subdirectories, so a styled name carries its directory and the
-picker groups by it; ports are their own set because the anchor picker lists only them. Burg, port and
-goods ids therefore change (`#icon-circle` → `#burgs-circle`, `#icon-anchor` → `#ports-anchor`,
+`IconSets.symbolId`. Every burg style is a subdirectory (`atlas`, `watabou`, `illustrated`), so a name
+carries its style and the picker groups by it; ports are their own set because the anchor picker lists only them. Burg, port and
+goods ids therefore change (`#icon-circle` → `#burgs-atlas-circle`, `#icon-anchor` → `#ports-anchor`,
 `good-wood` → `goods-wood`) and the 1.154 migration rewrites them wherever they are stored. Relief ids
 gain the set and are renumbered from 1 in every set: colored `mount-2..7` → `mount-1..6`, `hill-2..5` →
 `hill-1..4`, `dune-2` → `dune-1`, `deciduous-2,3` → `deciduous-1,2`, `conifer/acacia/palm/grass-2` →
@@ -362,7 +362,7 @@ Loaded definitions stay cached even when their original consumer is gone.
   Each must work as the first goods consumer opened in a session, with the goods layer off and neither
   goods editor previously opened.
 - The burg and port pickers in the Style Editor list `IconSets.files(set)` grouped by subdirectory
-  (`Atlas` for the set's own files, the directory name otherwise) and await the set before rendering,
+  (every burg style, `atlas` included, is a directory) and await the set before rendering,
   because a preview frames a symbol with its own viewBox read from the loaded set. The `icon` control
   shows the current icon at once and redraws when the set lands.
 
@@ -423,7 +423,8 @@ in the document until the burgs set loads, so the rewrite only ever replaced it 
 **Symbol ids.** Because ids derive from paths, the same step renames the stored ids. Style records go
 through `normalizeStyles` (`styles-legacy.ts`), which every style path already runs — `.map` field 48,
 localStorage presets and the shipped presets — so `#icon-anchor|harbor` → `#ports-…` and every other
-`#icon-<name>` → `#burgs-<name>` on `burgIcons` icons and anchors. The 1.154 step then rewrites
+`#icon-<name>` → `#burgs-atlas-<name>`, or `#burgs-<name>` for the `watabou-`/`illustrated-` names that
+already carried their style, on `burgIcons` icons and anchors. The 1.154 step then rewrites
 `pack.goods[].icon` (`good-<name>` → `goods-<name>`, `good-custom-<id>` → `custom-goods-<id>`) and the
 ids of the field-45 elements already inserted into the defs. `default-styles.json` and
 `public/styles/*.json` are updated in place.

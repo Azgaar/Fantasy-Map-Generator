@@ -57,7 +57,9 @@ test("anchored art keeps its frame, sized in em, with the anchor at the frame's 
       '<g transform="translate(-6 -6)"><path d="M0 0"/></g></symbol>'
   );
   const symbols = IconSets.symbols(IconSets.get("burgs"), directory("burgs"));
-  expect(symbols.includes('<symbol id="burgs-circle" viewBox="-6 -6 12 12" width="1.2em" height="1.2em"')).toBe(true);
+  expect(symbols.includes('<symbol id="burgs-atlas-circle" viewBox="-6 -6 12 12" width="1.2em" height="1.2em"')).toBe(
+    true
+  );
   expect(
     symbols.includes('<symbol id="burgs-watabou-capital" viewBox="-6.2 -19.3 12.6 20.8" width="1.26em" height="2.08em"')
   ).toBe(true);

@@ -20,7 +20,7 @@ beforeEach(() => {
     </svg>`;
   globalThis.pack = { burgs: [{}, { i: 1, group: "town", x: 10, y: 10 }] } as never;
   styles.burgIcons.groups.town.groups.icons.options.size = 3;
-  styles.burgIcons.groups.town.groups.icons.options.icon = "#burgs-circle";
+  styles.burgIcons.groups.town.groups.icons.options.icon = "#burgs-atlas-circle";
   styles.burgIcons.groups.town.groups.anchors.options = { size: 3, icon: "#ports-anchor" };
   options.map.burgs.groups = [{ name: "town", order: 0 }] as never;
 });
