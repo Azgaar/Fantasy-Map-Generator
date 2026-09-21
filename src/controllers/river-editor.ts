@@ -126,7 +126,7 @@ function openRiverCreator(): void {
 }
 
 function openRiverStyle(): void {
-  editStyle("rivers");
+  void Controllers.StyleEditor.open("rivers");
 }
 
 function getRiver(): River {

@@ -12,11 +12,11 @@ Check out [Dev board](https://github.com/users/Azgaar/projects/3/views/1?sumFiel
 
 Current version of the Fantasy Map Generator is the latest `master` branch. You can download it here: https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/heads/master.zip. Also see [the wiki](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#can-i-use-the-generator-offline).
 
+- Style: the Style tab is rebuilt as a schema-driven editor [1.154.0]
+
 # Releases
 
-**[1.153.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.153.0) - 2026-09-16**:
-
-[Release walkthrough and screenshots](https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/docs/updates/v1.153.0/v1.153.0%20-%20Omnibar.md).
+**[1.153.0](https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/tags/v1.153.0.zip) - 2026-09-16**:
 
 - Omnibar: global map search, press Space to open [1.153.0]
 - Style presets: Ink, Cinderwood and Frostbite [1.153.0]

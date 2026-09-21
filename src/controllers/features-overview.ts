@@ -382,7 +382,7 @@ function changeGroup(select: HTMLElement): void {
 // lakes are styled by #lakes > g, islands by #coastline > g
 function editGroupStyle(element: HTMLElement): void {
   const feature = getFeature(element);
-  editStyle(feature.type === "lake" ? "lakes" : "coastline", feature.group);
+  void Controllers.StyleEditor.open(feature.type === "lake" ? "lakes" : "coastline", feature.group);
 }
 
 function editNote(element: HTMLElement): void {

@@ -17,16 +17,18 @@ import {
   labelGroupFromLegacy,
   lakeGroupFromSvg,
   migrateStyles,
+  normalizeStyles,
   restoreStrippedLayerStyles,
   stripDisplay,
   stylesFromMap
 } from "@/generators/styles-legacy";
-import type { Styles } from "@/generators/styles-schema";
 import type { Point } from "@/generators/voronoi";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { unfog } from "@/renderers/overlays/fogging";
+import { StylePresetsService } from "@/services/style-presets";
 import { compareVersions } from "@/services/versioning";
 import type { ReliefSet } from "@/types/relief";
+import type { StylesData } from "@/types/styles";
 import {
   downloadFile,
   ensureEl,
@@ -381,7 +383,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
     // v1.3 added militry layer
     select("#viewbox")
-      .insert("g", "#icons")
+      .insert("g", "#burgIcons")
       .attr("id", "armies")
       .attr("opacity", 1)
       .attr("fill-opacity", 1)
@@ -921,8 +923,10 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
     if (!select("#compass").selectAll("*").size()) {
       select("#compass").style("display", "none");
-      select("#compass").append("use").attr("xlink:href", "#defs-compass-rose");
-      shiftCompass();
+      select("#compass")
+        .append("use")
+        .attr("xlink:href", "#defs-compass-rose")
+        .attr("transform", styles.compass.groups.compassRose.attrs.transform);
     }
   }
 
@@ -1015,7 +1019,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   if (isOlderThan("1.105.0")) {
     // v1.104.0 introduced some bugs with layers visibility
-    select("#viewbox").select("#icons").style("display", null);
+    select("#viewbox").select("#burgIcons").style("display", null);
     select("#viewbox").select("#ice").style("display", null);
     select("#viewbox").select("#regions").style("display", null);
     select("#viewbox").select("#armies").style("display", null);
@@ -1790,9 +1794,6 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
           <rect x="0" y="0" width="100%" height="100%" fill="white" stroke="none"></rect>
         </mask>
       </g>
-      <pattern id="oceanic" width="100" height="100" patternUnits="userSpaceOnUse">
-        <image id="oceanicPattern" href="./images/pattern1.png" opacity="0.2"></image>
-      </pattern>
       <mask id="vignette-mask">
         <rect x="0" y="0" width="100%" height="100%" fill="white"></rect>
         <rect id="vignette-rect" fill="black" x="0.3%" y="0.4%" width="99.4%" height="99.2%" rx="5%" ry="5%" filter="blur(20px)"></rect>
@@ -1826,7 +1827,10 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   if (isOlderThan("1.150.0")) {
     // v1.145-1.147 stripped the layer style from saved maps; the migration harvest reads what this re-seeds
-    if (!isOlderThan("1.145.0") && isOlderThan("1.148.0")) await restoreStrippedLayerStyles();
+    if (!isOlderThan("1.145.0") && isOlderThan("1.148.0")) {
+      const { styles: preset } = await StylePresetsService.load(options.map.style.preset || "default");
+      restoreStrippedLayerStyles(preset as Record<string, unknown>);
+    }
     // v1.150.0 made the styles store the source of truth
     data[48] = await migrateStyles(data[48]);
   }
@@ -1949,7 +1953,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     const record = data[48] ? safeParseJSON(data[48]) : undefined;
     if (record?.lakes) {
       if (!record.lakes.groups) record.lakes = { groups: record.lakes };
-      const groups: Styles["lakes"]["groups"] = record.lakes.groups;
+      const groups: StylesData["lakes"]["groups"] = record.lakes.groups;
       const template = groups.freshwater || Object.values(groups)[0];
       for (const el of Array.from(document.querySelectorAll<SVGGElement>("#lakes > g"))) {
         if (!el.id) continue;
@@ -1962,8 +1966,16 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       return groups && !Object.keys(groups).length;
     });
     if (empty.length) {
+      // the harvest is already the merged shape; split it back into the two records this version keeps
       const harvested = stylesFromMap();
-      for (const type of empty) record.burgIcons[type].groups = harvested.burgIcons[type].groups;
+      for (const type of empty) {
+        record.burgIcons[type].groups = Object.fromEntries(
+          Object.entries(harvested.burgIcons.groups).map(([name, entry]) => [
+            name,
+            type === "burgIcons" ? entry.groups.icons : entry.groups.anchors
+          ])
+        );
+      }
     }
     if (record) data[48] = JSON.stringify(record);
   }
@@ -1979,9 +1991,36 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       data[48] = JSON.stringify(record);
     }
   }
+
+  if (isOlderThan("1.154.0")) {
+    // v1.154.0 pinned the string attr formats and folded the fields that mirrored an attr into the attr
+    const record = data[48] ? safeParseJSON(data[48]) : undefined;
+    if (record) {
+      // anchors ignored their icon before ports became stylable
+      for (const group of Object.values(record.burgIcons?.anchors?.groups ?? {}) as { options?: { icon?: string } }[]) {
+        if (group?.options?.icon === "#icon-circle") group.options.icon = "#icon-anchor";
+      }
+      data[48] = JSON.stringify(normalizeStyles(record));
+    }
+    // the ocean pattern tile lives in its layer now, and an id clash would shadow it
+    for (const tile of document.querySelectorAll("pattern#oceanic")) if (!tile.closest("#oceanPattern")) tile.remove();
+    // a burg group element hangs directly off the layer now, with its anchor part inside it
+    document.getElementById("anchors")?.remove();
+    document.getElementById("burgIcons")?.remove();
+    document.getElementById("icons")?.remove(); // the layer group itself: it is #burgIcons now
+    document.getElementById("labels")?.removeAttribute("font-size"); // the viewbox carries the base the groups size from
+  }
 }
 
 export function migrateLegacySettings(mapVersion: string, data: string[]): void {
+  if (compareVersions(mapVersion, "1.154.0").isOlder && data[1]?.trimStart().startsWith("{")) {
+    // v1.154.0 sizes the viewbox font with the zoom for everything, so the labels flag is gone
+    const settings = safeParseJSON(data[1]);
+    if (settings?.labels) {
+      delete settings.labels.resizeOnZoom;
+      data[1] = JSON.stringify(settings);
+    }
+  }
   if (!compareVersions(mapVersion, "1.152.0").isOlder || data[1]?.trimStart().startsWith("{")) return;
 
   // v1.152.0 replaced the legacy pipe-delimited settings string with the map's settings object
@@ -2008,7 +2047,7 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
       temperature: { unit: "\u00B0C" },
       population: { scale: 1000, urbanization: { rate: 1, density: 10 } }
     },
-    labels: { resizeOnZoom: true, groups: [] as MapData["labels"]["groups"] },
+    labels: { groups: [] as MapData["labels"]["groups"] },
     style: { preset: "default" },
     military: { units: [] as MapData["military"]["units"] },
     transports: [] as MapData["transports"],
@@ -2062,7 +2101,10 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
   if (Array.isArray(oldSettings19)) migrated.climate.winds = oldSettings19;
   const oldOptions = (Array.isArray(oldSettings19) ? null : oldSettings19) ?? {};
 
-  if (oldOptions.labels) migrated.labels = oldOptions.labels;
+  if (oldOptions.labels) {
+    const { resizeOnZoom: _, ...labels } = oldOptions.labels; // the zoom sizes all text since v1.154.0
+    migrated.labels = labels;
+  }
   if (oldOptions.military) migrated.military.units = oldOptions.military;
   if (oldOptions.transports) migrated.transports = oldOptions.transports;
   if (oldOptions.coastline) migrated.coastline = oldOptions.coastline;
@@ -2094,7 +2136,6 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
   if (oldOptions.eraShort) migrated.lore.calendar.eraShort = oldOptions.eraShort;
 
   // v1.140.0 moved the label settings into the labels section and the naming mode onto the state group
-  if (oldSettings[23]) migrated.labels.resizeOnZoom = Boolean(Number(oldSettings[23]));
   // a pre-1.140 map carries no groups at all, so there is usually nothing here to write the mode onto
   if (oldOptions.stateLabelsMode) {
     const stateGroup = migrated.labels.groups.find(group => group.type === "state");

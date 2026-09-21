@@ -354,7 +354,6 @@ the Label Editor lets the user switch for any label regardless of its type. The 
 
 Ordered Label Group policy is stored in `options.map.labels`, so it travels with the `.map` file:
 
-- `resizeOnZoom`: `boolean` - whether the parent `#labels` font size scales with map zoom
 - `groups`: `LabelGroupOptions[]` - ordered group definitions
 
 `showAll`, the override for per-group active state, zoom bounds and layer dependencies, is a
@@ -382,9 +381,10 @@ are implementation-safe `labels-${name}` values; the logical id is always read f
 Optional group-level `data-dx` and `data-dy` values are retained in style data. Rendering derives one CSS
 translation on the parent SVG group, so the offset applies uniformly to every label in that group.
 
-Burg port symbols are styled per Burg group in `style.burgIcons.anchors.groups`. Their `options.icon`
-selects the SVG symbol, `size` sets its scale, and optional `dx` / `dy` offsets move it relative to the
-Burg in icon-size units (positive right / down). Absent offsets mean zero.
+Burg port symbols are styled per Burg group in `styles.burgIcons.groups.<name>.groups.anchors`. Their
+`options.icon` selects the SVG symbol, `size` sets its scale, and optional `dx` / `dy` offsets move it
+relative to the Burg in icon-size units (positive right / down). Absent offsets mean zero. The same
+group entry's `groups.icons` holds the Burg icon's own attrs and options.
 
 ## Routes
 

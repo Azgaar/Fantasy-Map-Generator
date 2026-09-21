@@ -7,9 +7,9 @@ import {
   isLegacyPreset,
   isStoreStyles,
   labelGroupFromLegacy,
+  normalizeStyles,
   presetBagFor,
-  presetFromLegacy,
-  styleNodeFor
+  presetFromLegacy
 } from "./styles-legacy";
 import fixture from "./styles-legacy-default.fixture.json";
 import serializerFixture from "./styles-legacy-serializer.fixture.json";
@@ -30,11 +30,14 @@ test("converts the frozen default preset without warnings", () => {
   const styles = presetFromLegacy(fixture as any);
   expect(warn).not.toHaveBeenCalled();
   expect(styles.relief.options).toEqual({ set: "simple", size: 1, density: 0.4 });
-  expect(styles.ocean.oceanLayers.options.outline).toBe("-6,-3,-1");
-  expect(styles.ocean.options.patternOpacity).toBe(0.2);
-  expect(styles.military.options).toEqual({ fontSize: 6, boxSize: 3 });
+  expect(styles.ocean.groups.oceanLayers.options.outline).toBe("-6,-3,-1");
+  expect(styles.ocean.groups.pattern.attrs).toEqual({ href: "./images/pattern1.png", opacity: 0.2 });
+  expect(styles.military.options).toEqual({ boxSize: 3 });
+  expect(styles.coordinates.attrs["font-size"]).toBe("12px");
+  expect(styles.states.groups.statesHalo.attrs["stroke-width"]).toBe(10);
+  expect(styles.legend.options).toEqual({ columns: 8 });
   expect(styles.labels.groups.capital.attrs["font-family"]).toBe("Almendra SC");
-  expect(styles.burgIcons.burgIcons.groups.capital.options.icon).toBe("#icon-square");
+  expect(styles.burgIcons.groups.capital.groups.icons.options.icon).toBe("#icon-square");
 });
 
 test("unknown selector throws by default, skips on request", () => {
@@ -56,14 +59,19 @@ test("R5: an attribute absent from the legacy bag keeps the default, not null", 
   expect(styles.military.attrs["stroke-linecap"]).toBe(Styles.defaults.military.attrs["stroke-linecap"]);
 });
 
-test("sea_island's legacy auto-filter routes to options.autoFilter", () => {
-  const styles = presetFromLegacy(fixture as any);
-  expect(styles.coastline.sea_island.options.autoFilter).toBe(1);
+test("the zoom-derived render values are dropped for their base: #coordinates font-size, #statesHalo stroke-width", () => {
+  const styles = presetFromLegacy({
+    "#coordinates": { "data-size": 14, "font-size": 3.2 },
+    "#statesHalo": { "data-width": 8, "stroke-width": 0.5 }
+  } as any);
+  expect(styles.coordinates.attrs["font-size"]).toBe("14px");
+  expect(styles.states.groups.statesHalo.attrs["stroke-width"]).toBe(8);
 });
 
-test("a mismatched data-size/font-size pair is BLOCKED", () => {
-  const bad = { "#ruler": { "data-size": 20, "font-size": 21 } };
-  expect(() => presetFromLegacy(bad as any)).toThrow(/unknown legacy attribute/);
+// the legacy base (data-size) is the authority; the plain font-size beside it is the zoom-derived render value
+test("a base beside its render value wins: #ruler data-size over font-size", () => {
+  const styles = presetFromLegacy({ "#ruler": { "data-size": 20, "font-size": 21 } } as any);
+  expect(styles.rulers.attrs["font-size"]).toBe("20px");
 });
 
 // province labels moved to a labels group, so #provs' text attrs are dead cargo alongside data-size
@@ -74,7 +82,7 @@ test("R7: #provs' dead text attrs are dropped, not routed", () => {
 });
 
 // Pins the full custom-preset dialect: one bag per selector collectStyleData
-// (public/modules/ui/style-presets.js) could ever write, so every attribute the legacy
+// (the pre-v1.150 style-presets.js) could ever write, so every attribute the legacy
 // serializer could produce has a store home or a deliberate, tested drop.
 test("R9: the legacy serializer's full attribute dialect converts with no unrouted keys", () => {
   const warn = vi.spyOn(console, "warn");
@@ -100,44 +108,8 @@ test("R9: #terrs > #landHeights never legitimately carried data-render, so it st
   ).toBe(false);
 });
 
-test("styleNodeFor resolves editor selections to live store nodes", () => {
-  expect(styleNodeFor("rivers", "")).toEqual({ node: styles.rivers, layer: "rivers" });
-  expect(styleNodeFor("rivers", "rivers")).toEqual({ node: styles.rivers, layer: "rivers" });
-  expect(styleNodeFor("lakes", "freshwater")).toEqual({ node: styles.lakes.groups.freshwater, layer: "lakes" });
-  styles.lakes.groups.my_lakes = structuredClone(styles.lakes.groups.freshwater);
-  expect(styleNodeFor("lakes", "my_lakes")).toEqual({ node: styles.lakes.groups.my_lakes, layer: "lakes" });
-  delete styles.lakes.groups.my_lakes;
-  expect(styleNodeFor("terrs", "landHeights")).toEqual({ node: styles.heightmap.landHeights, layer: "heightmap" });
-  expect(styleNodeFor("labels", "capital")).toEqual({ node: styles.labels.groups.capital, layer: "labels" });
-  expect(styleNodeFor("burgIcons", "town")).toEqual({
-    node: styles.burgIcons.burgIcons.groups.town,
-    layer: "burgIcons"
-  });
-  expect(styleNodeFor("anchors", "capital")).toEqual({
-    node: styles.burgIcons.anchors.groups.capital,
-    layer: "burgIcons"
-  });
-  expect(styleNodeFor("regions", "statesHalo")).toEqual({ node: styles.states.statesHalo, layer: "states" });
-});
-
-test("styleNodeFor returns undefined for structural parents and unknown groups", () => {
-  // #regions, #terrs, #icons and #goods are containers: styling lives on their children
-  expect(styleNodeFor("regions", "")).toBeUndefined();
-  expect(styleNodeFor("terrs", "")).toBeUndefined();
-  expect(styleNodeFor("icons", "icons")).toBeUndefined();
-  expect(styleNodeFor("goods", "goods")).toBeUndefined();
-  expect(styleNodeFor("labels", "no-such-group")).toBeUndefined();
-  expect(styleNodeFor("burgIcons", "no-such-group")).toBeUndefined();
-});
-
 test("numeric-looking string options coerce back to strings, not schema-rejected numbers", () => {
-  const styles = presetFromLegacy(
-    { "#oceanLayers": { layers: -6 }, "#markets": { "data-icon": 8 } },
-    {
-      onUnknown: "skip"
-    }
-  );
-  expect(styles.ocean.oceanLayers.options.outline).toBe("-6");
+  const styles = presetFromLegacy({ "#markets": { "data-icon": 8 } }, { onUnknown: "skip" });
   expect(styles.markets.options.icon).toBe("8");
 });
 
@@ -234,4 +206,74 @@ test("presetBagFor tries selectors in order and returns undefined when none reso
   const preset = { map: {}, routes: { groups: { roads: { attrs: { opacity: 0.9 } } } } };
   expect(presetBagFor(preset, "#roads", "#routes > #roads")).toEqual({ opacity: 0.9 });
   expect(presetBagFor(preset, "#nonexistent")).toBeUndefined();
+});
+
+test("normalizeStyles folds the pre-1.154 fixed children under their element's groups", () => {
+  const record: any = {
+    states: { statesBody: { attrs: { opacity: 1 } }, statesHalo: { attrs: { opacity: 0.4 } } },
+    ocean: { options: { bands: {} }, base: { attrs: { fill: "#000" } } },
+    legend: { attrs: {}, box: { attrs: { fill: "#fff" } } },
+    scaleBar: { attrs: {}, back: { attrs: {} } }
+  };
+
+  normalizeStyles(record);
+
+  expect(record.states).toEqual({
+    groups: { statesBody: { attrs: { opacity: 1 } }, statesHalo: { attrs: { opacity: 0.4 } } }
+  });
+  expect(record.ocean.groups.base).toEqual({ attrs: { fill: "#000" } });
+  expect(record.ocean.options).toEqual({ bands: {} });
+  expect(record.legend.groups.box).toEqual({ attrs: { fill: "#fff" } });
+  expect(record.scaleBar.groups.back).toEqual({ attrs: {} });
+});
+
+test("normalizeStyles converts legacy CSS colors to hex", () => {
+  const record: any = {
+    rivers: { attrs: { fill: "rgb(18, 52, 86)", stroke: "rgba(0, 0, 0, 0.5)", filter: "url(#dropShadow05)" } },
+    ocean: { groups: { base: { attrs: { fill: "#466eab" } } }, options: { color: "rgb(1, 2, 3)" } }
+  };
+
+  normalizeStyles(record);
+
+  expect(record.rivers.attrs).toEqual({
+    fill: "#123456",
+    stroke: "#00000080",
+    filter: "url(#dropShadow05)"
+  });
+  expect(record.ocean.groups.base.attrs.fill).toBe("#466eab");
+  expect(record.ocean.options.color).toBe("#010203");
+});
+
+test("normalizeStyles merges the two burg records into one entry per group", () => {
+  const record: any = {
+    burgIcons: {
+      burgIcons: { groups: { capital: { attrs: { fill: "#fff" }, options: { size: 2 } } } },
+      anchors: { groups: { capital: { attrs: { fill: "#000" }, options: { size: 1.9 } }, port: { attrs: {} } } }
+    }
+  };
+
+  normalizeStyles(record);
+
+  expect(record.burgIcons.groups.capital).toEqual({
+    groups: {
+      icons: { attrs: { fill: "#fff" }, options: { size: 2 } },
+      anchors: { attrs: { fill: "#000" }, options: { size: 1.9 } }
+    }
+  });
+  expect(record.burgIcons.groups.port.groups.icons).toBeUndefined();
+  expect(record.burgIcons.groups.port.groups.anchors).toEqual({ attrs: {} });
+  expect(record.burgIcons.burgIcons).toBeUndefined();
+  expect(record.burgIcons.anchors).toBeUndefined();
+});
+
+test("normalizeStyles leaves a record already in the current shape alone", () => {
+  const record: any = {
+    states: { groups: { statesBody: { attrs: {} } } },
+    burgIcons: { groups: { capital: { groups: { icons: { attrs: {} }, anchors: { attrs: {} } } } } }
+  };
+  const before = structuredClone(record);
+
+  normalizeStyles(record);
+
+  expect(record).toEqual(before);
 });

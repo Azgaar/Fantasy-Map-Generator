@@ -56,7 +56,7 @@ function reconcileMarkets({ root, bounds }: ViewportRenderContext): void {
   if (!container || !Layers.isOn("markets")) return;
   if (sourcePack !== pack || sourceMarkets !== pack.cells.market) buildTerritories();
 
-  const { size, fontSize: baseFont, icon } = styles.markets.options;
+  const { size, iconSize: baseFont, icon } = styles.markets.options;
   const radius = Math.max(rn(size + 1 / bounds.scale, 2), 2);
   const fontSize = Math.max(rn(baseFont + 1 / bounds.scale, 2), 2);
   const strokeWidth = rn(radius / 8, 2);
@@ -81,7 +81,7 @@ function reconcileMarkets({ root, bounds }: ViewportRenderContext): void {
     const territoryMarkup = showTerritory
       ? /*html*/ `<clipPath id="market-clip-${market.i}"><path d="${territory.path}"/></clipPath>
         <path class="fill" d="${territory.path}" fill="${fill}" stroke="none"/>
-        <path class="border" d="${territory.path}" fill="none" stroke="${stroke}" stroke-width="0.7" clip-path="url(#market-clip-${market.i})"/>`
+        <path class="border" d="${territory.path}" fill="none" stroke="${stroke}" clip-path="url(#market-clip-${market.i})"/>`
       : "";
     const centerMarkup = showCenter
       ? /*html*/ `<circle cx="${center.x}" cy="${center.y}" r="${radius}" fill="${fill}" fill-opacity="1" stroke="${stroke}" stroke-width="${strokeWidth}"/>

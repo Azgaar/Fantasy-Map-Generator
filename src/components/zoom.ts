@@ -1,6 +1,6 @@
 import { type D3ZoomEvent, interpolateZoom, select, type ZoomView, zoom, zoomIdentity, zoomTransform } from "d3";
 import { Layers } from "@/components/layers";
-import { setViewportTransform, viewport } from "@/components/viewport";
+import { setViewportTransform, viewport, zoomFontSize } from "@/components/viewport";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
 import { rn } from "@/utils/numberUtils";
@@ -52,8 +52,7 @@ function handleZoomPerFrame(): void {
 
   if (didScaleChange) {
     Layers.draw("scaleBar");
-
-    if (options.map.labels.resizeOnZoom) applyLabelsZoomSize();
+    if (options.app.performance.viewportRedraw === "continuous") applyZoomFontSize();
   }
 
   if (didPositionChange) Layers.draw("coordinates");
@@ -91,18 +90,18 @@ function redrawTracedImage(): void {
   context.drawImage(image, 0, 0, canvas.width, canvas.height);
 }
 
-function applyLabelsZoomSize(): void {
-  const fontSize = Math.max(Math.round(((100 + 100 / viewport.scale) / 2) * 100) / 100, 1);
-  select("#labels").attr("font-size", `${fontSize}px`);
+/** The viewbox font size follows the zoom; per frame or once it settles, as the viewport redraw does */
+function applyZoomFontSize(): void {
+  findEl("viewbox")?.setAttribute("font-size", `${zoomFontSize(viewport.scale)}px`);
 }
 
 export function invokeActiveZooming(): void {
-  if (options.map.labels.resizeOnZoom) applyLabelsZoomSize();
+  applyZoomFontSize();
   ViewportLayers.renderNow();
 
   if (!customization && options.app.performance.stateHalos) {
     const statesHalo = select("#statesHalo");
-    const desired = styles.states.statesHalo.options.width;
+    const desired = styles.states.groups.statesHalo.attrs["stroke-width"] ?? 0;
     const haloSize = rn(desired / viewport.scale ** 0.8, 2);
     statesHalo.attr("stroke-width", haloSize).style("display", haloSize > 0.1 ? "block" : "none");
   }

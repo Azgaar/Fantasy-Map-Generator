@@ -21,7 +21,7 @@ import { drawMeasurers } from "@/renderers/draw-measurers";
 import { drawMilitary } from "@/renderers/draw-military";
 import { drawOcean, removeOcean } from "@/renderers/draw-ocean";
 import { drawPopulation } from "@/renderers/draw-population";
-import { drawPrecipitation, removePrecipitation } from "@/renderers/draw-precipitation";
+import { drawPrecipitation } from "@/renderers/draw-precipitation";
 import { drawProvinces } from "@/renderers/draw-provinces";
 import { drawRelief, removeRelief } from "@/renderers/draw-relief-icons";
 import { drawReligions } from "@/renderers/draw-religions";
@@ -361,13 +361,7 @@ const mapLayers = [
     draw: () => TradeAnimation.start(),
     erase: () => TradeAnimation.stop()
   }),
-  new Layer({
-    id: "precipitation",
-    element: "prec",
-    parent: "viewbox",
-    draw: drawPrecipitation,
-    erase: removePrecipitation
-  }),
+  new Layer({ id: "precipitation", element: "prec", parent: "viewbox", draw: drawPrecipitation }),
   new Layer({
     id: "population",
     parent: "viewbox",
@@ -381,17 +375,10 @@ const mapLayers = [
     draw: drawEmblems,
     erase: removeEmblems
   }),
-  new Layer({
-    id: "burgIcons",
-    element: "icons",
-    parent: "viewbox",
-    children: ["burgIcons", "anchors"].map(id => ({ id, tag: "g" })),
-    draw: drawBurgIcons
-  }),
+  new Layer({ id: "burgIcons", parent: "viewbox", draw: drawBurgIcons }),
   new Layer({
     id: "labels",
     parent: "viewbox",
-    attrs: { "font-size": "100px" },
     draw: drawLabels,
     erase: removeLabels
   }),
@@ -418,7 +405,7 @@ declare global {
   var Layers: LayersRegistry<LayerId>;
 }
 
-// biome-ignore lint/suspicious/noRedeclare: legacy seam for public/modules/**/*.js
+// biome-ignore lint/suspicious/noRedeclare: legacy seam, exposed on window
 export const Layers = new LayersRegistry(mapLayers);
 
 window.Layers = Layers;

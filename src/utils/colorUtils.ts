@@ -10,21 +10,20 @@ import {
 } from "d3";
 
 /**
- * Convert RGB or RGBA color to HEX
- * @param {string} rgba - The RGB or RGBA color string
- * @returns {string} - The HEX color string
+ * A CSS color as HEX: hex is kept as written, rgb/rgba, hsl and a color name go through d3-color.
+ * A translucent color becomes an 8-digit hex; "" means the value is not a color at all.
  */
-export const toHEX = (rgba: string): string => {
-  if (rgba.charAt(0) === "#") return rgba;
+export const toHEX = (cssColor: string): string => {
+  const value = cssColor.trim();
+  if (value.startsWith("#")) return value;
 
-  const matches = rgba.match(/^rgba?[\s+]?\([\s+]?(\d+)[\s+]?,[\s+]?(\d+)[\s+]?,[\s+]?(\d+)[\s+]?/i);
-  return matches && matches.length === 4
-    ? "#" +
-        `0${parseInt(matches[1], 10).toString(16)}`.slice(-2) +
-        `0${parseInt(matches[2], 10).toString(16)}`.slice(-2) +
-        `0${parseInt(matches[3], 10).toString(16)}`.slice(-2)
-    : "";
+  const parsed = color(value);
+  if (!parsed) return "";
+  return parsed.opacity < 1 ? parsed.formatHex8() : parsed.formatHex();
 };
+
+/** Any CSS color as HEX; a value that is not a color (a pattern url, an empty string) is unchanged */
+export const toColorHex = (value: string): string => toHEX(value) || value;
 
 /** Predefined set of 12 distinct pastel colors */
 export const C_12 = [

@@ -133,7 +133,7 @@
     </style>
     <link
       rel="preload"
-      href="index.css?v=6d72b32d"
+      href="index.css?v=3d8f09db"
       as="style"
       onload="
         this.onload = null;
@@ -323,23 +323,23 @@
             <rect x="0" y="0" width="100%" height="100%" fill="white" stroke="none" />
           </mask>
         </g>
-        <pattern id="oceanic" width="100" height="100" patternUnits="userSpaceOnUse">
-          <image id="oceanicPattern" href="./images/pattern1.png" opacity="0.2"></image>
-        </pattern>
         <mask id="vignette-mask">
           <rect x="0" y="0" width="100%" height="100%" fill="white"></rect>
           <rect id="vignette-rect" fill="black"></rect>
         </mask>
       </defs>
-      <g id="viewbox"></g>
+      <g id="viewbox" font-size="100px"></g>
       <g id="scaleBar">
         <rect id="scaleBarBack" data-group="back"></rect>
       </g>
     </svg>
     <div id="loading">
       <svg width="100%" height="100%">
+        <pattern id="loading-pattern" width="100" height="100" patternUnits="userSpaceOnUse">
+          <image href="./images/pattern1.png" width="100" height="100" opacity="0.2"></image>
+        </pattern>
         <rect x="-1%" y="-1%" width="102%" height="102%" fill="#466eab" />
-        <rect x="-1%" y="-1%" width="102%" height="102%" fill="url(#oceanic)" />
+        <rect x="-1%" y="-1%" width="102%" height="102%" fill="url(#loading-pattern)" />
       </svg>
       <svg id="loading-rose" width="100%" height="100%" viewBox="0 0 700 700">
         <use href="#defs-compass-rose" x="50%" y="50%" />
@@ -422,89 +422,6 @@
       </span>
     </button>
     <div id="dialogs">
-      <div id="styleSaver" class="dialog stable textual" style="display: none">
-        <div id="styleSaverHeader" style="padding: 2px 0">
-          <span>Preset name:</span>
-          <input
-            id="styleSaverName"
-            data-tip="Enter style preset name"
-            placeholder="Preset name"
-            style="width: 12em"
-            required
-          />
-          <span
-            id="styleSaverTip"
-            data-tip="Shows whether there is already a preset with this name"
-            class="italic"
-          ></span>
-        </div>
-        <div id="styleSaverBody" style="padding: 2px 0; width: 100%">
-          <span>Style JSON:</span>
-          <textarea
-            id="styleSaverJSON"
-            rows="18"
-            data-tip="Style JSON is getting formed based the current settings, but can be entered manually"
-            placeholder="Paste any valid style data in JSON format"
-            autocorrect="off"
-            spellcheck="false"
-          ></textarea>
-        </div>
-        <div id="styleSaverBottom">
-          <button id="styleSaverSave" data-tip="Save current JSON as a new style preset" class="icon-check"></button>
-          <button
-            id="styleSaverDownload"
-            data-tip="Download the style as a .json file (can be opened in any text editor)"
-            class="icon-download"
-          ></button>
-          <button id="styleSaverLoad" data-tip="Open previously downloaded style file" class="icon-upload"></button>
-          <button
-            id="styleSaverCA"
-            data-tip="Find or share custom style preset on Cartography Assets portal"
-            class="icon-drafting-compass"
-            onclick="openURL('https://cartographyassets.com/asset-category/specific-assets/azgaars-generator/styles/')"
-          ></button>
-        </div>
-      </div>
-      <div id="addFontDialog" style="display: none" class="dialog">
-        <span>There are 3 ways to add a custom font:</span>
-        <p>
-          <strong>Google font</strong>. Open <a href="https://fonts.google.com/" target="_blank">Google Fonts</a>, find
-          a font you like and enter its name to the field below.
-        </p>
-        <p>
-          <strong>Local font</strong>. If you have a font
-          <a
-            href="https://faqs.skillcrush.com/article/275-downloading-installing-a-font-on-your-computer"
-            target="_blank"
-            >installed on your computer</a
-          >, just provide the font name. Make sure the browser is reloaded after the installation. The font won't work
-          on machines not having it installed. Good source of fonts are
-          <a href="https://fontesk.com" target="_blank">Fontdesk</a> and
-          <a href="https://www.dafont.com" target="_blank">DaFont</a>.
-        </p>
-        <p>
-          <strong>Font URL</strong>. Provide font name and link to the font file hosted online. The best free font
-          hostings are <a href="https://fonts.google.com/" target="_blank">Google Fonts</a> and
-          <a target="_blank" href="https://www.cdnfonts.com">CDN Fonts</a>. To get font file open the link to css
-          provided by these services and manually copy the link to <code>woff2</code> of desired variant. To add another
-          variant (e.g. Cyrillic), add the font one more time under the same name, but with another URL
-        </p>
-        <div style="margin-top: 0.3em" data-tip="Select font adding method">
-          <select id="addFontMethod">
-            <option value="googleFont" selected>Google font</option>
-            <option value="localFont">Local font</option>
-            <option value="fontURL">Font URL</option>
-          </select>
-          <input id="addFontNameInput" placeholder="font family" style="width: 15em" />
-          <div>
-            <input
-              id="addFontURLInput"
-              placeholder="font file URL"
-              style="width: 22.6em; margin-top: 0.1em; display: none"
-            />
-          </div>
-        </div>
-      </div>
       <div id="exportMapData" style="display: none" class="dialog">
         <div style="margin-bottom: 0.3em; font-weight: bold">Download image</div>
         <div>
@@ -3609,8 +3526,6 @@
     <script defer src="libs/alea.min.js?v1.105.0"></script>
     <script defer src="libs/polylabel.min.js?v1.105.0"></script>
     <script defer src="libs/simplify.js?v1.105.6"></script>
-    <script defer src="modules/ui/style-presets.js?v=8c45692f"></script>
-    <script defer src="modules/ui/style.js?v=704aa9ac"></script>
     <script defer src="libs/rgbquant.min.js"></script>
     <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
   </body>

@@ -31,8 +31,13 @@ beforeEach(() => {
   Object.assign(globalThis, {
     customization: 0,
     options: {
-      map: { labels: { resizeOnZoom: false } },
-      app: { performance: { shapeRendering: "optimizeSpeed", stateHalos: false, viewportRedraw: "continuous" } }
+      app: {
+        performance: {
+          shapeRendering: "optimizeSpeed",
+          stateHalos: false,
+          viewportRedraw: "continuous"
+        }
+      }
     }
   });
   setViewportSize(1000, 600);
@@ -125,10 +130,21 @@ describe("invokeActiveZooming", () => {
   });
 
   it("derives statesHalo stroke-width from the store width", () => {
-    styles.states.statesHalo.options.width = 8;
+    styles.states.groups.statesHalo.attrs["stroke-width"] = 8;
     setViewportTransform(2, viewport.x, viewport.y);
     invokeActiveZooming();
     const halo = document.getElementById("statesHalo")!;
     expect(halo.getAttribute("stroke-width")).toBe(String(rn(8 / 2 ** 0.8, 2)));
+  });
+
+  it("sizes the viewbox font by the inverse square root of the zoom", () => {
+    const viewbox = document.getElementById("viewbox")!;
+    setViewportTransform(4, viewport.x, viewport.y);
+    invokeActiveZooming();
+    expect(viewbox.getAttribute("font-size")).toBe("50px"); // 100 / sqrt(4)
+
+    setViewportTransform(20, viewport.x, viewport.y);
+    invokeActiveZooming();
+    expect(viewbox.getAttribute("font-size")).toBe("22.36px"); // 100 / sqrt(20)
   });
 });

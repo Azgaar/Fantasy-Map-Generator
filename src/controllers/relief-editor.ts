@@ -146,7 +146,7 @@ ${iconsHtml()}
       el.addEventListener("click", changeIcon);
     });
 
-  ensureEl("reliefEditStyle").addEventListener("click", () => editStyle("terrain"));
+  ensureEl("reliefEditStyle").addEventListener("click", () => void Controllers.StyleEditor.open("relief"));
   ensureEl("reliefCopy").addEventListener("click", copyIcon);
   ensureEl("reliefMoveFront").addEventListener("click", () => moveIcon("front"));
   ensureEl("reliefMoveBack").addEventListener("click", () => moveIcon("back"));

@@ -38,7 +38,7 @@ beforeEach(() => {
     ],
     burgs: [{}, { i: 1, x: 50, y: 50 }, { i: 2, x: 550, y: 50 }]
   } as never;
-  styles.markets.options = { size: 3, fontSize: 5, icon: "🛒" };
+  styles.markets.options = { size: 3, iconSize: 5, icon: "🛒" };
   setViewportSize(100, 100);
   setViewportTransform(1, 0, 0);
   vi.mocked(getIsolines)
@@ -164,4 +164,11 @@ test("delegated hover ignores movement within a market and highlights rebuilt gr
   highlightMarketOff(1);
   animations.at(-1)!.onfinish!();
   expect(document.querySelector("#market1 .highlight")).toBeNull();
+});
+
+test("territory borders inherit the layer's stroke style", () => {
+  drawMarkets();
+  const border = document.querySelector("#market1 .border")!;
+  expect(border.getAttribute("stroke-width")).toBeNull();
+  expect(border.getAttribute("stroke-dasharray")).toBeNull();
 });

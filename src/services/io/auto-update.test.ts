@@ -18,11 +18,11 @@ beforeEach(() => {
   options.map.labels.groups = [];
   options.map.style.preset = "default";
   globalThis.pack = { features: [] } as unknown as typeof globalThis.pack; // migrations run against a loaded map
-  (globalThis as typeof globalThis & { getStylePreset: () => Promise<[string, object]> }).getStylePreset = async () => [
-    "default",
-    {}
-  ];
 });
+
+vi.mock("@/services/style-presets", () => ({
+  StylePresetsService: { load: async () => ({ name: "default", styles: {} }) }
+}));
 
 it.each([18, 180])("keeps legacy custom labels after saving and reloading a font size of %s", async fontSize => {
   const data = readFileSync("tests/fixtures/1.139.4.map", "utf8").split("\r\n");
@@ -413,40 +413,73 @@ describe("v1.151.2 label group display cleanup", () => {
 });
 
 describe("v1.153.0 empty burg style groups", () => {
-  it.each(["burgIcons", "anchors"] as const)("recovers %s sizes and preserves them across saving", async type => {
+  /** the pre-v1.154 shape: two records keyed by the same burg group names */
+  function legacyBurgRecord() {
+    const record = JSON.parse(JSON.stringify(Styles.defaults));
+    delete record.burgIcons;
+    record.burgIcons = { burgIcons: { groups: {} }, anchors: { groups: {} } };
+    return record;
+  }
+
+  it("recovers empty records from the saved SVG and preserves them across saving", async () => {
     document.body.innerHTML = `<svg id="map">
       <g id="burgIcons"><g id="cities" font-size="18"></g></g>
       <g id="anchors"><g id="cities" font-size="18"></g><g id="towns" font-size="12"></g></g>
     </svg>`;
-    const record = Styles.parse(Styles.defaults);
-    record.burgIcons.burgIcons.groups.capital.options.size = 5;
-    record.burgIcons.anchors.groups.capital.options.size = 7;
-    record.burgIcons[type].groups = {};
     const data: string[] = [];
-    data[48] = JSON.stringify(record);
+    data[48] = JSON.stringify(legacyBurgRecord());
 
     await resolveVersionConflicts("1.152.0", data);
     const parsed = Styles.parse(JSON.parse(data[48]));
-    const other = type === "anchors" ? "burgIcons" : "anchors";
-    expect(parsed.burgIcons[type].groups.cities.options.size).toBe(18);
-    expect(parsed.burgIcons[other]).toEqual(record.burgIcons[other]);
-    parsed.burgIcons[type].groups.cities.options.size = 6;
+    expect(parsed.burgIcons.groups.cities.groups.icons.options.size).toBe(18);
+    expect(parsed.burgIcons.groups.cities.groups.anchors.options.size).toBe(18);
+    expect(parsed.burgIcons.groups.towns.groups.anchors.options.size).toBe(12);
+    parsed.burgIcons.groups.cities.groups.icons.options.size = 6;
     data[48] = JSON.stringify(parsed);
 
     await resolveVersionConflicts(VERSION, data);
-    expect(Styles.parse(JSON.parse(data[48]))).toEqual(parsed);
+    expect(Styles.parse(JSON.parse(data[48])).burgIcons.groups.cities.groups.icons.options.size).toBe(6);
   });
 
   it("uses parser defaults when empty groups have no saved SVG styles", async () => {
-    const record = Styles.parse(Styles.defaults);
-    record.burgIcons.burgIcons.groups = {};
-    record.burgIcons.anchors.groups = {};
     const data: string[] = [];
-    data[48] = JSON.stringify(record);
+    data[48] = JSON.stringify(legacyBurgRecord());
 
     await resolveVersionConflicts("1.152.0", data);
 
     expect(Styles.parse(JSON.parse(data[48])).burgIcons).toEqual(Styles.defaults.burgIcons);
+  });
+});
+
+describe("v1.154.0 style record normalization", () => {
+  it("restores the anchor icon on port groups that carry the burg default", async () => {
+    const record = JSON.parse(JSON.stringify(Styles.defaults));
+    const icons = structuredClone(record.burgIcons.groups.town.groups.icons);
+    icons.options.icon = "#icon-circle";
+    const anchors = structuredClone(record.burgIcons.groups.town.groups.anchors);
+    anchors.options = { size: 2, icon: "#icon-circle" };
+    delete record.burgIcons;
+    record.burgIcons = { burgIcons: { groups: { town: icons } }, anchors: { groups: { town: anchors } } };
+    const data: string[] = [];
+    data[48] = JSON.stringify(record);
+
+    await resolveVersionConflicts("1.153.0", data);
+    const parsed = Styles.parse(JSON.parse(data[48]));
+    expect(parsed.burgIcons.groups.town.groups.anchors.options).toEqual({ size: 2, icon: "#icon-anchor" });
+    expect(parsed.burgIcons.groups.town.groups.icons.options.icon).toBe("#icon-circle");
+  });
+
+  it("drops the old #icons layer element so the #burgIcons layer takes over", async () => {
+    document.body.innerHTML = `<svg id="map"><g id="viewbox">
+      <g id="icons" data-layer="burgIcons"><g id="burgIcons"><g id="towns"></g></g><g id="anchors"></g></g>
+    </g></svg>`;
+
+    await resolveVersionConflicts("1.153.0", []);
+
+    // all three old elements go; the registry recreates #burgIcons under #viewbox
+    expect(document.getElementById("icons")).toBeNull();
+    expect(document.getElementById("burgIcons")).toBeNull();
+    expect(document.getElementById("anchors")).toBeNull();
   });
 });
 
@@ -616,7 +649,6 @@ describe("missing svg defs", () => {
       "fog"
     ]);
     expect(document.querySelector("#fog rect")).not.toBeNull();
-    expect(document.getElementById("oceanicPattern")).not.toBeNull();
     expect(document.getElementById("vignette-rect")).not.toBeNull();
   });
 

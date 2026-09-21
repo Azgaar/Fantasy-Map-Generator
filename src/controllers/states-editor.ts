@@ -225,7 +225,7 @@ function renderDialog(): void {
   });
 
   ensureEl("statesEditorRefresh").addEventListener("click", refreshStatesEditor);
-  ensureEl("statesEditStyle").addEventListener("click", () => editStyle("regions"));
+  ensureEl("statesEditStyle").addEventListener("click", () => void Controllers.StyleEditor.open("states"));
   ensureEl("statesLegend").addEventListener("click", toggleLegend);
   ensureEl("statesPercentage").addEventListener("click", togglePercentageMode);
   ensureEl("statesChart").addEventListener("click", showStatesChart);

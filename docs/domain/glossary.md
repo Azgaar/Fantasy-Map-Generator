@@ -10,6 +10,7 @@ This glossary covers core terminology, data structures, and concepts used throug
 - **Pack**: The main data object containing all world data (cells, burgs, states, cultures, etc.), created after 'repacking' the grid to discard most of ocean cells and add more cells along the coasts.
 - **Layer**: A visual or logical overlay on the map (e.g., rivers, biomes, elevation).
 - **SVG Layer**: A named group of SVG elements for a specific map feature.
+- **Style element**: One top-level entry of the style store (`StyleElement`, a key of `stylesSchema`): a Layer's style, or `map` for whole-map filters. It is what the Style tab edits one at a time. Close to Layer, not equal: `map` is not a Layer, and parts of a Layer (burg anchors, the states halo) are not Style elements.
 - **Seed**: The value used for random number generation (reproducibility).
 
 ## Separation of Concerns
@@ -20,7 +21,7 @@ This glossary covers core terminology, data structures, and concepts used throug
 - **Overview**: A read-only Controller that presents world data without mutating it (e.g., production-overview, market-overview, charts-overview).
 - **Renderer**: The system that visualizes world data as SVG or WebGL graphics (`src/renderers/`).
 - **Service**: App-shell / platform & asset infrastructure, unrelated to map domain state (e.g., PWA installation, auto-update, the font catalog & loading). Cross-cutting (may be consumed by IO, UI, and rendering alike) but owns no world data. Lives in `src/services/`.
-- **IO**: Serialization and persistence — save, load, export, cloud storage (`src/io/`, legacy `public/modules/io/`).
+- **IO**: Serialization and persistence — save, load, export, cloud storage (`src/services/io/`).
 
 ## World Data & State
 

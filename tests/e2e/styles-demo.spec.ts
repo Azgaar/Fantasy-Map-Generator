@@ -14,8 +14,12 @@ const DEFAULT_STYLES = stylesSchema.parse(defaultStyles);
 const ADDRESSES: string[][] = [];
 for (const [layer, node] of Object.entries(DEFAULT_STYLES)) {
   ADDRESSES.push([layer]);
-  for (const key of Object.keys(node as Record<string, unknown>)) {
-    if (key === "attrs" || key === "options" || key === "groups") continue;
+  for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
+    if (key === "attrs" || key === "options") continue;
+    if (key === "groups") {
+      for (const name of Object.keys(value as Record<string, unknown>)) ADDRESSES.push([layer, name]);
+      continue;
+    }
     ADDRESSES.push([layer, key]);
   }
 }
@@ -60,8 +64,8 @@ test("every styles address resolves in the generated map's DOM", async ({ page }
   // dynamic groups: renderers stamp what they create
   for (const selector of [
     '[data-layer="labels"] [data-group]',
-    '[data-layer="burgIcons"] [data-group="burgIcons"] [data-group]',
-    '[data-layer="burgIcons"] [data-group="anchors"] [data-group]'
+    '[data-layer="burgIcons"] [data-group]',
+    '[data-layer="burgIcons"] [data-group="anchors"]'
   ]) {
     expect(await page.locator(selector).count(), selector).toBeGreaterThan(0);
   }
@@ -79,7 +83,7 @@ test("the library styles the live map through the contract", async ({ page }, te
     styles.routes.groups.roads.attrs.stroke = "#00e5ff";
     styles.routes.groups.roads.attrs["stroke-width"] = 2;
     styles.lakes.groups.freshwater.attrs.fill = "#ffe000";
-    styles.states.statesHalo.attrs.filter = null; // null = remove
+    styles.states.groups.statesHalo.attrs.filter = null; // null = remove
     Styles.apply("rivers", "routes", "lakes", "states");
     return {
       riverFill: document.querySelector('[data-layer="rivers"]')?.getAttribute("fill"),

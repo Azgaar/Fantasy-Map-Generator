@@ -2,9 +2,10 @@ import type { Selection } from "d3";
 import { select } from "d3";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
-import { viewport } from "@/components/viewport";
+import { viewport, zoomFontSize } from "@/components/viewport";
 import { renderEmblemDefinitions } from "@/renderers/draw-emblems";
 import { drawScaleBar } from "@/renderers/draw-scalebar";
+import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { getUsedFonts, loadFontsAsDataURI } from "@/services/fonts";
 import { savedMessage } from "@/services/platform";
@@ -268,7 +269,10 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
     if (fullMap) {
       // reset transform to show the whole map
       clone.attr("width", options.map.graph.width).attr("height", options.map.graph.height);
-      clone.select("#viewbox").attr("transform", null);
+      clone
+        .select("#viewbox")
+        .attr("transform", null)
+        .attr("font-size", `${zoomFontSize(1)}px`); // the zoom-derived base, at scale 1
       ViewportLayers.renderTo(cloneEl);
 
       if (!noScaleBar) drawScaleBar(cloneEl, 1, options.map.graph.width, options.map.graph.height);
@@ -279,7 +283,7 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
     if (noLabels) {
       clone.selectAll("#labels [data-label-type]").remove();
       clone.selectAll("#textPaths [data-label-type]").remove();
-      clone.select("#icons #burgIcons").remove();
+      clone.selectAll("#burgIcons [data-group='icons']").remove();
     }
     if (noWater) {
       clone.select("#oceanBase").attr("opacity", 0);
@@ -394,7 +398,7 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
     }
 
     // add burg and port icons
-    for (const group of cloneEl.querySelectorAll<SVGGElement>("#burgIcons > g, #anchors > g")) {
+    for (const group of cloneEl.querySelectorAll<SVGGElement>("#burgIcons [data-icon]")) {
       const id = group.dataset.icon?.slice(1);
       if (!id || cloneDefs.querySelector(`[id="${CSS.escape(id)}"]`)) continue;
       const icon = svgDefs.getElementById(id);
@@ -621,7 +625,7 @@ function removeUnusedElements(clone: MapSelection): void {
 function updateMeshCells(clone: MapSelection): void {
   const renderOcean = ensureEl<HTMLInputElement>("renderOcean").checked;
   const data = renderOcean ? grid.cells.i : grid.cells.i.filter((i: number) => grid.cells.h[i] >= 20);
-  const scheme = getColorScheme(styles.heightmap.landHeights.options.scheme);
+  const scheme = HeightmapColorSchemes.get(styles.heightmap.groups.landHeights.options.scheme);
   clone.select("#heights").attr("filter", "url(#blur1)");
   clone
     .select("#heights")
@@ -630,7 +634,7 @@ function updateMeshCells(clone: MapSelection): void {
     .join("polygon")
     .attr("points", (d: number) => String(Grid.getPolygon(d)))
     .attr("id", (d: number) => `cell${d}`)
-    .attr("stroke", (d: number) => getColor(grid.cells.h[d], scheme));
+    .attr("stroke", (d: number) => HeightmapColorSchemes.getColor(grid.cells.h[d], scheme));
 }
 
 // for each g element get inline style

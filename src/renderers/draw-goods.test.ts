@@ -59,8 +59,8 @@ beforeEach(() => {
   globalThis.Pack = { getPolygon: (cellId: number) => pack.cells.v[cellId].map(v => pack.vertices.p[v]) } as never;
   getCellProduction.mockReset().mockImplementation(cellId => (cellId === 0 ? { 1: 4 } : { 2: 8 }) as Production);
   getBurgProduction.mockReset().mockImplementation(burg => (burg.i === 1 ? { 1: 5, 2: 2 } : { 2: 9 }) as Production);
-  styles.goods.goodsIcons.options = { size: 4, circle: true };
-  styles.goods.goodsBurgs.options = { size: 3 };
+  styles.goods.groups.goodsIcons.options = { size: 4, circle: true };
+  styles.goods.groups.goodsBurgs.options = { size: 3 };
   setViewportSize(100, 100);
   setViewportTransform(1, 0, 0);
 });
@@ -102,9 +102,9 @@ test("style options are applied on the next frame, without rebuilding the scene"
   expect(document.querySelector("#goodsIcons circle")?.getAttribute("r")).toBe("2");
   expect(document.querySelector("#goodsIcons use")?.getAttribute("width")).toBe("4");
 
-  styles.goods.goodsIcons.options.size = 10;
-  styles.goods.goodsIcons.options.circle = false;
-  styles.goods.goodsBurgs.options.size = 6;
+  styles.goods.groups.goodsIcons.options.size = 10;
+  styles.goods.groups.goodsIcons.options.circle = false;
+  styles.goods.groups.goodsBurgs.options.size = 6;
   ViewportLayers.renderNow();
   expect(document.querySelector("#goodsIcons circle")).toBeNull();
   expect(document.querySelector("#goodsIcons use")?.getAttribute("width")).toBe("10");

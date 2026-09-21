@@ -7,6 +7,8 @@ export const RELIEF_SETS: Record<ReliefSet, ReliefSetDefinition> = {
   illustrated: { name: "Illustrated", base: "illustrated", suffix: "-illustrated" }
 };
 
+export const RELIEF_CHOICES = Object.fromEntries(Object.entries(RELIEF_SETS).map(([key, value]) => [key, value.name]));
+
 export const RELIEF_ICONS: ReliefTypeIcons[] = [
   { set: "simple", type: "mount", variants: [1] },
   { set: "simple", type: "hill", variants: [1] },

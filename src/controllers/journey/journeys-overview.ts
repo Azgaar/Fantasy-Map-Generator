@@ -152,7 +152,7 @@ function renderDialog(): void {
   });
   ensureEl("journeyCreateNew").addEventListener("click", createEmptyJourney);
   ensureEl("journeyGenerateStory").addEventListener("click", generateRandomJourney);
-  ensureEl("journeysEditStyle").addEventListener("click", () => editStyle("journeys"));
+  ensureEl("journeysEditStyle").addEventListener("click", () => void Controllers.StyleEditor.open("journeys"));
   ensureEl("journeysEditTransport").addEventListener("click", () => void Controllers.TransportEditor.open());
   ensureEl("journeysExport").addEventListener("click", downloadJourneysData);
   ensureEl("journeysLockAll").addEventListener("click", toggleLockAll);

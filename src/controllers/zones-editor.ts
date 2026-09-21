@@ -110,7 +110,7 @@ function renderDialog(): void {
   ensureEl("zonesFilterType").addEventListener("click", updateFilters);
   ensureEl("zonesFilterType").addEventListener("change", filterZonesByType);
   ensureEl("zonesEditorRefresh").addEventListener("click", zonesTable.refresh);
-  ensureEl("zonesEditStyle").addEventListener("click", () => editStyle("zones"));
+  ensureEl("zonesEditStyle").addEventListener("click", () => void Controllers.StyleEditor.open("zones"));
   ensureEl("zonesLegend").addEventListener("click", toggleLegend);
   ensureEl("zonesPercentage").addEventListener("click", togglePercentageMode);
   ensureEl("zonesManually").addEventListener("click", openPaintEditor);

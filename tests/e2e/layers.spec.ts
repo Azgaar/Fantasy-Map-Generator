@@ -169,16 +169,16 @@ test.describe("map layers", () => {
 
   // Settlement layers
   test("burgs/icons layer", async () => {
-    const icons = sharedPage.locator("#icons");
+    const icons = sharedPage.locator("#burgIcons");
     await expect(icons).toBeAttached();
     const html = await icons.evaluate(el => el.outerHTML);
-    expect(html).toMatchSnapshot("icons.html");
+    expect(html).toMatchSnapshot("burgIcons.html");
   });
 
   test("anchors layer", async () => {
-    const anchors = sharedPage.locator("#anchors");
-    await expect(anchors).toBeAttached();
-    const html = await anchors.evaluate(el => el.outerHTML);
+    const anchors = sharedPage.locator('#burgIcons [data-group="anchors"]');
+    await expect(anchors.first()).toBeAttached();
+    const html = await anchors.evaluateAll(elements => elements.map(element => element.outerHTML).join(""));
     expect(html).toMatchSnapshot("anchors.html");
   });
 

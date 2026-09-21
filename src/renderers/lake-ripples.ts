@@ -1,9 +1,9 @@
 import Alea from "alea";
-import type { Styles } from "@/generators/styles-schema";
 import type { Point } from "@/types/global";
+import type { StylesData } from "@/types/styles";
 import { wavyDash } from "@/utils/pathUtils";
 
-export type LakeEmbellishment = Styles["lakes"]["groups"][string]["options"];
+export type LakeEmbellishment = StylesData["lakes"]["groups"][string]["options"];
 
 export interface LakeRipples {
   path: string;

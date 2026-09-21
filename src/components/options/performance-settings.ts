@@ -48,7 +48,7 @@ const SETTINGS: Setting[] = [
   {
     key: "viewportRedraw",
     label: "Redraw on zoom",
-    tip: "When labels, icons and relief are redrawn during a zoom or pan. 'After zoom' redraws once per gesture: faster on big maps, but new content appears all at once",
+    tip: "When labels, icons and relief are redrawn and text re-sized during a zoom or pan. 'After zoom' does it once per gesture: faster on big maps, but new content appears all at once",
     choices: [
       { value: "continuous", label: "While zooming" },
       { value: "settled", label: "After zoom" }

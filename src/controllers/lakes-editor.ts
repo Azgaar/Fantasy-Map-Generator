@@ -300,7 +300,7 @@ function removeLakeGroup(): void {
 
 function editGroupStyle(): void {
   const g = (selectedLake.node()!.parentNode as SVGGElement).id;
-  editStyle("lakes", g);
+  void Controllers.StyleEditor.open("lakes", g);
 }
 
 function editLakeLegend(): void {

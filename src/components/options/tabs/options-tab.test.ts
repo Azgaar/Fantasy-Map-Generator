@@ -8,6 +8,7 @@ import { toggleAssistant } from "@/services/assistant";
 
 vi.mock("@/components/layers", () => ({ Layers: { draw: vi.fn() } }));
 vi.mock("@/components/zoom", () => ({
+  applyZoomFontSize: vi.fn(),
   constrainZoom: vi.fn(),
   setMapZoom: vi.fn(),
   setTranslateExtent: vi.fn(),

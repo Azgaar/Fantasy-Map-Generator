@@ -205,14 +205,9 @@ function renderDialog(): void {
             class="icon-font"
           ></button>
           <button
-            id="burgEditIconStyle"
-            data-tip="Edit icon style for burg group in Style Editor"
+            id="burgEditGroupStyle"
+            data-tip="Edit icon and anchor style for the burg group in Style Editor"
             class="icon-dot-circled"
-          ></button>
-          <button
-            id="burgEditAnchorStyle"
-            data-tip="Edit port icon (anchor) style for burg group in Style Editor"
-            class="icon-anchor"
           ></button>
         </div>
         <button id="burgEditLabel" data-tip="Edit this burg label" class="icon-font"></button>
@@ -263,8 +258,7 @@ function renderDialog(): void {
   ensureEl("burgStyleShow").addEventListener("click", showStyleSection);
   ensureEl("burgStyleHide").addEventListener("click", hideStyleSection);
   ensureEl("burgEditLabelStyle").addEventListener("click", editGroupLabelStyle);
-  ensureEl("burgEditIconStyle").addEventListener("click", editGroupIconStyle);
-  ensureEl("burgEditAnchorStyle").addEventListener("click", editGroupAnchorStyle);
+  ensureEl("burgEditGroupStyle").addEventListener("click", editGroupStyle);
 
   ensureEl("burgEmblem").addEventListener("click", openEmblemEdit);
   ensureEl("burgSetPreviewLink").addEventListener("click", setCustomPreview);
@@ -307,7 +301,6 @@ function updateBurgValues(): void {
   );
   ensureEl("burgWealth").innerHTML = `🟡 ${rn(b.population! > 0 ? (b.product || 0) / b.population! : 0, 2)}`;
   ensureEl<HTMLInputElement>("burgTreasury").value = String(rn(b.treasury || 0, 2));
-  ensureEl("burgEditAnchorStyle").style.display = +b.port! ? "inline-block" : "none";
 
   // update list and select culture
   const cultureSelect = ensureEl<HTMLSelectElement>("burgCulture");
@@ -414,7 +407,6 @@ function toggleFeature(this: HTMLElement): void {
 
   this.classList.toggle("inactive", !(burg as any)[feature]);
 
-  ensureEl("burgEditAnchorStyle").style.display = burg.port ? "inline-block" : "none";
   updateBurgPreview(burg);
 }
 
@@ -513,7 +505,7 @@ function hideStyleSection(): void {
 function editGroupLabelStyle(): void {
   const burg = pack.burgs[getSelectedId()];
   closeDialogs(".stable");
-  editStyle("labels", burg.label?.group || burg.group);
+  void Controllers.StyleEditor.open("labels", burg.label?.group || burg.group);
 }
 
 function editBurgLabel(): void {
@@ -522,16 +514,11 @@ function editBurgLabel(): void {
   Controllers.LabelsEditor.open("burg", id);
 }
 
-function editGroupIconStyle(): void {
+// the group form carries both the icons and the anchors parts
+function editGroupStyle(): void {
   const burg = pack.burgs[getSelectedId()];
   closeDialogs(".stable");
-  editStyle("burgIcons", burg.group);
-}
-
-function editGroupAnchorStyle(): void {
-  const burg = pack.burgs[getSelectedId()];
-  closeDialogs(".stable");
-  editStyle("anchors", burg.group);
+  void Controllers.StyleEditor.open("burgIcons", burg.group);
 }
 
 function getPreviewViewport(): { width: number; height: number } {
