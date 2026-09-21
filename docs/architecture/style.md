@@ -317,7 +317,8 @@ above it — and falls back to the store convention:
 The declared ones: `draw` on an attr whose renderer bakes it into the drawing (the grid, rulers,
 ocean waves and scale bar attrs, the legend and coordinates fonts, a label group's typography); `zoom`
 on an attr the zoom derives from (the halo width): written, then the zoom re-run;
-`changeReliefSet` / `resizeRelief` / `regenerateRelief` for the relief icons. A vignette option takes the
+`regenerateRelief` for the relief icons (the icon size is a plain `draw`—it is a render multiplier).
+A vignette option takes the
 same `draw`: the renderer reshapes the defs mask and redraws the layer.
 `effects.test.ts` asserts which name a path resolves to and which stub each name fires.
 

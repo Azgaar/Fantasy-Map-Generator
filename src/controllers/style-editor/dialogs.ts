@@ -1,5 +1,6 @@
 // Every dialog the Style tab opens, plus the element and group listings the dialogs and the editor share
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
+import { IconSets } from "@/components/icon-sets";
 import { Layers } from "@/components/layers";
 import { Controllers } from "@/controllers";
 import { BURG_ICONS, burgIconPreview, PORT_ICONS } from "@/data/burg-icons";
@@ -471,7 +472,14 @@ export function renderChoices(anchors: boolean, selected: string): string {
     .join("");
 }
 
-export function openBurgIconDialog({ anchors, selected, fill, stroke, onPick }: BurgIconDialogOptions): void {
+export async function openBurgIconDialog({
+  anchors,
+  selected,
+  fill,
+  stroke,
+  onPick
+}: BurgIconDialogOptions): Promise<void> {
+  void IconSets.ensure("burgs");
   destroyDialog(BURG_ICON_DIALOG);
   ensureEl("dialogs").insertAdjacentHTML(
     "beforeend",

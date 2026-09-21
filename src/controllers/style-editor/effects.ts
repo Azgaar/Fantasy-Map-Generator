@@ -4,7 +4,7 @@ import { SchemaForm } from "@/components/shared/schema-form";
 import { invokeActiveZooming } from "@/components/zoom";
 import { Styles } from "@/generators/styles";
 import { styleMeta, stylesSchema } from "@/generators/styles-schema";
-import type { ReliefSet } from "@/types/relief";
+
 import type { StyleChange, StyleEffect } from "@/types/styles";
 
 const writeAttr = (change: StyleChange): void => {
@@ -35,16 +35,6 @@ export function runEffect(change: StyleChange): void {
       writeAttr(change);
       invokeActiveZooming();
       return;
-    case "changeReliefSet":
-      Relief.changeSet(change.value as ReliefSet);
-      redraw(change);
-      return;
-    case "resizeRelief": {
-      const previous = Number(change.previous) || 0;
-      if (previous) Relief.changeSize((Number(change.value) || 0) / previous);
-      redraw(change);
-      return;
-    }
     case "regenerateRelief":
       Relief.generate();
       redraw(change);

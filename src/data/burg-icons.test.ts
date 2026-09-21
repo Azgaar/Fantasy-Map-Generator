@@ -3,15 +3,19 @@ import { readFileSync } from "node:fs";
 import { expect, test } from "vitest";
 import { BURG_ICONS, burgIcon, PORT_ICONS } from "./burg-icons";
 
-const source = new DOMParser().parseFromString(readFileSync("src/index.html", "utf8"), "text/html");
+const source = (id: string) =>
+  new DOMParser().parseFromString(
+    readFileSync(`src/assets/icons/burgs/${id.replace("#icon-", "")}.svg`, "utf8"),
+    "image/svg+xml"
+  ).documentElement;
 
-test("every listed icon is a symbol in index.html", () => {
-  for (const { id } of [...BURG_ICONS, ...PORT_ICONS]) expect(source.getElementById(id.slice(1)), id).not.toBeNull();
+test("every listed icon has a standalone SVG", () => {
+  for (const { id } of [...BURG_ICONS, ...PORT_ICONS]) expect(source(id).tagName, id).toBe("svg");
 });
 
 test("Illustrated icons retain accent colors while their main surfaces inherit group paint", () => {
   for (const { id, name } of BURG_ICONS.filter(icon => icon.group === "Illustrated")) {
-    const symbol = source.getElementById(id.slice(1))!;
+    const symbol = source(id);
     const shapes = Array.from(symbol.querySelectorAll("path, circle, rect, polygon"));
     const main = shapes.find(shape => !shape.hasAttribute("fill") && !shape.hasAttribute("stroke"));
     expect(main, `${name} has an editable main surface`).toBeDefined();

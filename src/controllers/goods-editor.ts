@@ -17,6 +17,7 @@ import {
   setModeHiddenColumns,
   type TableView
 } from "@/components/dialog/table";
+import { IconSets } from "@/components/icon-sets";
 import { Layers } from "@/components/layers";
 import { Notes } from "@/components/notes";
 import { clearMainTip, tip } from "@/components/tooltips";
@@ -83,7 +84,8 @@ const columns: EditorColumn<Good>[] = [
 const goodsTable = initEditorTable<Good>({ getData: getGoodsData, onUpdate: renderGoodsPage });
 
 /** With a good id, the Goods layer shows only that good */
-function open(goodId?: number) {
+async function open(goodId?: number): Promise<void> {
+  void IconSets.ensure("goods");
   if (customization) return;
   filterState = dialogState.get(dialogId, "filters", () => ({ visibleTags: [] as string[] }));
   closeDialogs("#goodsEditor, .stable");

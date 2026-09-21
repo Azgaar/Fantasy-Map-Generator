@@ -9,6 +9,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
+import { IconSets } from "@/components/icon-sets";
 import { tip } from "@/components/tooltips";
 import { downloadFile, getFileName } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
@@ -65,7 +66,8 @@ const marketDealsTable = initEditorTable<Deal>({
   onUpdate: renderMarketDealsPage
 });
 
-function open(marketId: number): void {
+async function open(marketId: number): Promise<void> {
+  void IconSets.ensure("goods");
   const market = Markets.get(marketId);
   if (!market) {
     tip("Invalid market. The selected market does not exist", true, "error", 5000);

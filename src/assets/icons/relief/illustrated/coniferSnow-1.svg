@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
+<g stroke="#6d5a3d" stroke-width=".55" stroke-linecap="round" stroke-linejoin="round">
+<g>
+<path d="M13,18L13,21.2M10.6,21.2L15.4,21.2" fill="none" />
+<path d="M9,18L11.4,14.8L9.8,14.8L13,8.4L16.2,14.8L14.6,14.8L17,18Z" fill="#b8b9a0" />
+<path d="M10.6,14.8L12.2,12.4M13.8,16.4L15.4,14" fill="none" stroke-width=".35" />
+</g>
+<g>
+<path d="M25,19L25,22M22.75,22L27.25,22" fill="none" />
+<path d="M21.25,19L23.5,16L22,16L25,10L28,16L26.5,16L28.75,19Z" fill="#b8b9a0" />
+<path d="M22.75,16L24.25,13.75M25.75,17.5L27.25,15.25" fill="none" stroke-width=".35" />
+</g>
+<g>
+<path d="M8,27L8,29.8M5.9,29.8L10.1,29.8" fill="none" />
+<path d="M4.5,27L6.6,24.2L5.2,24.2L8,18.6L10.8,24.2L9.4,24.2L11.5,27Z" fill="#b8b9a0" />
+<path d="M5.9,24.2L7.3,22.1M8.7,25.6L10.1,23.5" fill="none" stroke-width=".35" />
+</g>
+<g>
+<path d="M19,26L19,30M16,30L22,30" fill="none" />
+<path d="M14,26L17,22L15,22L19,14L23,22L21,22L24,26Z" fill="#b8b9a0" />
+<path d="M16,22L18,19M20,24L22,21" fill="none" stroke-width=".35" />
+</g>
+<g>
+<path d="M30,28L30,30.8M27.9,30.8L32.1,30.8" fill="none" />
+<path d="M26.5,28L28.6,25.2L27.2,25.2L30,19.6L32.8,25.2L31.4,25.2L33.5,28Z" fill="#b8b9a0" />
+<path d="M27.9,25.2L29.3,23.1M30.7,26.6L32.1,24.5" fill="none" stroke-width=".35" />
+</g>
+</g>
+</svg>

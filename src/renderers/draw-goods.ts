@@ -6,6 +6,7 @@ import {
   type ViewportRenderContext
 } from "@/renderers/viewport/viewport-renderer";
 import type { PackedGraph } from "@/types/PackedGraph";
+import { IconSets } from "../components/icon-sets";
 import { normalize, rn } from "../utils";
 
 const layer = ViewportLayers.register({ id: "goods", render: reconcileGoods });
@@ -55,8 +56,9 @@ interface BurgPlate {
   entries: PlateEntry[];
 }
 
-export function drawGoods(): void {
+export async function drawGoods(): Promise<void> {
   TIME && console.time("drawGoods");
+  await IconSets.ensure("goods");
   buildScene();
   layer.render();
   TIME && console.timeEnd("drawGoods");
@@ -83,7 +85,7 @@ export function removeGoods(): void {
 
 function reconcileGoods({ root, bounds }: ViewportRenderContext): void {
   if (!Layers.isOn("goods")) return;
-  if (sourcePack !== pack) buildScene();
+  if (sourcePack !== pack || root !== document) buildScene();
 
   const cells = root.querySelector<SVGGElement>("#goodsCells");
   if (cells) cells.innerHTML = renderCellProduction(bounds);

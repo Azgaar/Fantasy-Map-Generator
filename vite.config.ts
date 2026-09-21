@@ -21,7 +21,16 @@ export default ({ mode }: { mode: string }) => ({
   build: {
     outDir: mode === "electron" ? "../dist-electron/renderer" : "../dist",
     assetsDir: "./",
-    emptyOutDir: true // outDir sits outside root, so Vite would otherwise keep every past build's chunks
+    emptyOutDir: true, // outDir sits outside root, so Vite would otherwise keep every past build's chunks
+    rollupOptions: {
+      output: {
+        // icon-sets.ts loads each directory's SVGs on demand; keep one chunk per directory
+        manualChunks(id: string) {
+          const folder = id.match(/src\/assets\/icons\/(.+)\/[^/]+\.svg/)?.[1];
+          return folder ? `icons-${folder.replace(/\//g, "-")}` : undefined;
+        }
+      }
+    }
   },
   publicDir: "../public",
   resolve: {

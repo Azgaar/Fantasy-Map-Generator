@@ -1,5 +1,6 @@
 import type { Selection } from "d3";
 import { select } from "d3";
+import { type IconSetId, IconSets } from "@/components/icon-sets";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { viewport, zoomFontSize } from "@/components/viewport";
@@ -245,6 +246,46 @@ async function exportToPngTiles(): Promise<void> {
   }
 }
 
+const iconReferences = (root: ParentNode): string[] =>
+  Array.from(root.querySelectorAll("use")).flatMap(use =>
+    [use.getAttribute("href"), use.getAttribute("xlink:href")]
+      .filter((href): href is string => !!href?.startsWith("#"))
+      .map(href => href.slice(1))
+  );
+
+/** Capture map-carried art before waiting; missing built-ins are completed from immutable chunks. */
+function captureIconDefinitions(clone: SVGSVGElement, source: SVGSVGElement): () => Promise<void> {
+  const defs = clone.querySelector("defs")!;
+  const required = new Set<IconSetId>();
+  const visited = new Set<string>();
+  const pending: string[] = [];
+  const visit = (id: string, capture: boolean): void => {
+    if (visited.has(id)) return;
+    visited.add(id);
+    const set = IconSets.setForId(id);
+    if (set) required.add(set);
+    let definition = clone.getElementById(id);
+    if (!definition) {
+      // After the snapshot, only chunk-owned definitions may be read from the live document.
+      const candidate = source.getElementById(id);
+      const original =
+        capture || (set && candidate && source.getElementById(`icons-${set}`)?.contains(candidate)) ? candidate : null;
+      if (original) {
+        definition = original.cloneNode(true) as Element;
+        defs.appendChild(definition);
+      } else if (capture && set) pending.push(id);
+      else if (!capture && set) throw new Error(`Missing icon definition: ${id}`);
+    }
+    if (definition) for (const target of iconReferences(definition)) visit(target, capture);
+  };
+  for (const id of iconReferences(clone)) visit(id, true);
+  return async () => {
+    await Promise.all([...required].map(set => IconSets.load(set, { retry: true })));
+    for (const id of pending) visited.delete(id);
+    for (const id of pending) visit(id, false);
+  };
+}
+
 // parse map svg to object url
 async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<string> {
   const {
@@ -273,10 +314,11 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
         .select("#viewbox")
         .attr("transform", null)
         .attr("font-size", `${zoomFontSize(1)}px`); // the zoom-derived base, at scale 1
-      ViewportLayers.renderTo(cloneEl);
 
       if (!noScaleBar) drawScaleBar(cloneEl, 1, options.map.graph.width, options.map.graph.height);
     }
+
+    ViewportLayers.renderTo(cloneEl, fullMap ? undefined : ViewportLayers.getVisibleBounds());
 
     const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
     if (isFirefox && type === "mesh") clone.select("#oceanPattern").remove();
@@ -322,6 +364,9 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
       if (cloneEl.querySelector(`use[*|href='#${id}']`)) continue;
       symbols[i].remove();
     }
+
+    const completeIcons = captureIconDefinitions(cloneEl, svgDefs);
+    await completeIcons();
 
     // viewport layers only keep visible emblems live; full-map rendering materializes all of them into the clone
     const cloneEmblems = cloneEl.getElementById("emblems")?.querySelectorAll("use") ?? [];
@@ -372,52 +417,10 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
       }
     }
 
-    // add relief icons
-    if (cloneEl.getElementById("terrain")) {
-      const uniqueElements = new Set<string | null>();
-      const terrainNodes = cloneEl.getElementById("terrain")!.childNodes;
-      for (let i = 0; i < terrainNodes.length; i++) {
-        const node = terrainNodes[i] as Element;
-        const href = node.getAttribute("href") || node.getAttribute("xlink:href");
-        uniqueElements.add(href);
-        node.removeAttribute("data-i"); // rendering index is not needed outside of the app
-      }
-
-      const defsRelief = svgDefs.getElementById("defs-relief");
-      for (const terrain of [...uniqueElements]) {
-        if (!terrain) continue;
-        const element = defsRelief?.querySelector(terrain);
-        if (element) cloneDefs.appendChild(element.cloneNode(true));
-      }
-    }
-
     // add wind rose
     if (cloneEl.getElementById("compass")) {
       const rose = svgDefs.getElementById("defs-compass-rose");
       if (rose) cloneDefs.appendChild(rose.cloneNode(true));
-    }
-
-    // add burg and port icons
-    for (const group of cloneEl.querySelectorAll<SVGGElement>("#burgIcons [data-icon]")) {
-      const id = group.dataset.icon?.slice(1);
-      if (!id || cloneDefs.querySelector(`[id="${CSS.escape(id)}"]`)) continue;
-      const icon = svgDefs.getElementById(id);
-      if (icon) cloneDefs.appendChild(icon.cloneNode(true));
-    }
-
-    // add goods icons
-    if (cloneEl.getElementById("goodsIcons") || cloneEl.getElementById("goodsBurgs")) {
-      const uniqueIcons = new Set<string>();
-      const goodsUseElements = cloneEl.querySelectorAll("#goodsIcons use, #goodsBurgs use");
-      for (const el of goodsUseElements) {
-        const href = el.getAttribute("href") || el.getAttribute("xlink:href");
-        if (href) uniqueIcons.add(href);
-      }
-      const goodsIconsDefs = svgDefs.getElementById("good-icons");
-      for (const href of uniqueIcons) {
-        const element = goodsIconsDefs?.querySelector(href);
-        if (element) cloneDefs.appendChild(element.cloneNode(true));
-      }
     }
 
     // add grid pattern
@@ -600,8 +603,6 @@ export function relocateRootFilter(svg: SVGSVGElement): void {
 
 // remove hidden g elements and g elements without children to make downloaded svg smaller in size
 function removeUnusedElements(clone: MapSelection): void {
-  if (!select("#terrain").selectAll("use").size()) clone.select("#defs-relief").remove();
-
   for (let empty = 1; empty; ) {
     empty = 0;
     clone.selectAll<SVGGElement, unknown>("g").each(function () {

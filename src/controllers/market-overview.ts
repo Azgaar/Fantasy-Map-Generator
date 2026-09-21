@@ -9,6 +9,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
+import { IconSets } from "@/components/icon-sets";
 import { Layers } from "@/components/layers";
 import { Notes } from "@/components/notes";
 import { clearMainTip, tip } from "@/components/tooltips";
@@ -55,7 +56,8 @@ const marketOverviewTable = initEditorTable<MarketGoodRow>({
   onUpdate: renderMarketOverviewPage
 });
 
-function open(marketId: number): void {
+async function open(marketId: number): Promise<void> {
+  void IconSets.ensure("goods");
   if (customization) return;
 
   const market = Markets.get(marketId);

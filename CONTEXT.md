@@ -21,8 +21,8 @@
 - `public/`: Static assets. `public/libs/` holds vendored third-party scripts loaded by `index.html` — new `src/` code imports deps from npm (no `src/libs/`). The last classic `public/modules` script was retired with the schema-driven style editor.
 - `electron/`: Main process, preload script and self-update of the desktop app; the renderer is the same `src/` build, served from the `app://` scheme.
 - `docs/`: Domain, architectural documentation and user-facing wiki.
-- `src/index.html`: **CAUTION**: Currently a 9K-line monolith containing the entire UI structure, SVG `<defs>`, and CSS filters.
-- `tests/e2e/`: Playwright end-to-end tests. Never automatically run Playwright tests when developing.
+- `src/index.html`: **CAUTION**: The shared page template contains the map structure and app shell (~44KB).
+- `tests/e2e/`: Playwright end-to-end tests. Never automatically run Playwright tests when developing, they are too slow.
 
 # FMG 2.0 Architecture Rules
 
@@ -71,7 +71,7 @@
 # Known Sharp Edges
 
 - **Legacy Globals**: The codebase heavily relies on implicit global state (`pack` and `grid` on the `window`). Be extremely cautious when refactoring these to explicit parameters.
-- **`index.html`**: A massive monolith serving as the primary UI template. It can easily break if structural tags are accidentally nested incorrectly.
+- **`index.html`**: The shared app-shell and map SVG template. It can easily break if structural tags are accidentally nested incorrectly.
 
 # Important Files
 

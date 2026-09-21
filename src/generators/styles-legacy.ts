@@ -203,7 +203,7 @@ function migrateLegacyStyleObj(obj: unknown): void {
 
   if (legacy.relief)
     styles.relief.options = {
-      set: strOr(legacy.relief.set, null) ?? "simple",
+      set: Relief.sets.find(set => set === legacy.relief?.set) ?? "simple",
       size: toNumber(legacy.relief.size, 1),
       density: toNumber(legacy.relief.density, 0.4)
     };

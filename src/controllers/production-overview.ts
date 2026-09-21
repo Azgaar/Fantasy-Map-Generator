@@ -1,3 +1,4 @@
+import { IconSets } from "@/components/icon-sets";
 import { tip } from "@/components/tooltips";
 import type { Burg } from "../generators/burgs-generator";
 import type { DemandCategory } from "../generators/goods-generator";
@@ -9,7 +10,8 @@ import { formatPrice, rn } from "../utils";
 
 type Type = "MFG" | "BUY" | "SELL" | "LOCAL";
 
-function open(burgId: number): void {
+async function open(burgId: number): Promise<void> {
+  void IconSets.ensure("goods");
   if (customization) return;
   const burg = pack.burgs[burgId];
   if (!burg || burg.removed) {

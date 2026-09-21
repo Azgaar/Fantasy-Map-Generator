@@ -399,12 +399,13 @@ describe("port icon styles", () => {
     const restored = Styles.parse(JSON.parse(JSON.stringify(parsed)));
     const groups = restored.burgIcons.groups;
     expect(Object.keys(groups).sort()).toEqual(Object.keys(parsed.burgIcons.groups).sort());
-    const source = readFileSync("src/index.html", "utf8");
     const icons = new Set<string>();
     for (const [name, group] of Object.entries(groups)) {
       const anchor = group.groups.anchors;
       expect(anchor.options).toEqual(cinderwood.burgIcons.groups[name].groups.anchors.options);
-      expect(source.includes(`id="${anchor.options.icon.slice(1)}"`)).toBe(true);
+      expect(readFileSync(`src/assets/icons/burgs/${anchor.options.icon.slice(6)}.svg`, "utf8").includes("<svg")).toBe(
+        true
+      );
       expect(Number.isFinite(anchor.options.dx)).toBe(true);
       expect(Number.isFinite(anchor.options.dy)).toBe(true);
       icons.add(anchor.options.icon);

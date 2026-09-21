@@ -1,4 +1,5 @@
 import { destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
+import { GOOD_ICON_ROOTS, IconSets } from "@/components/icon-sets";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
@@ -11,8 +12,7 @@ import { createFileInput, ensureEl, getRandomColor, sanitizeSvgIcon, unique } fr
 let iconImageInput: HTMLInputElement | null = null;
 let iconSvgInput: HTMLInputElement | null = null;
 
-function open(editedGood?: Good, onUpdate?: () => void) {
-  const icons = Array.from(ensureEl("good-icons").querySelectorAll("symbol")).map(el => el.id);
+async function open(editedGood?: Good, onUpdate?: () => void): Promise<void> {
   const demandCoverageState: Partial<Record<DemandCategory, number>> = { ...(editedGood?.demandCoverage || {}) };
   const biomeOutputState: Partial<Record<number, number>> = { ...(editedGood?.biomeOutput || {}) };
 
@@ -55,6 +55,16 @@ function open(editedGood?: Good, onUpdate?: () => void) {
 
   let dialog: HTMLElement;
   renderDialog();
+
+  const options = Array.from(document.querySelectorAll(GOOD_ICON_ROOTS)).map(el => el.id);
+  if (!options.length) {
+    void IconSets.ensure("goods").then(() => {
+      const select = document.querySelector<HTMLSelectElement>("#newGoodIcon");
+      if (!select) return;
+      select.innerHTML = getIconOptionsHtml();
+      select.value = editedGood?.icon ?? select.value;
+    });
+  }
 
   $(dialog!).dialog({
     width: "30em",
@@ -244,7 +254,7 @@ function open(editedGood?: Good, onUpdate?: () => void) {
 
           <label for="newGoodIcon">Icon*</label>
           <div class="ge-inline">
-            <select id="newGoodIcon" class="ge-icon-select">${icons.map(icon => `<option value="${icon}" ${editedGood?.icon === icon ? "selected" : ""}>${icon}</option>`).join("")}</select>
+            <select id="newGoodIcon" class="ge-icon-select">${getIconOptionsHtml()}</select>
             <svg class="ge-icon-preview" width="2em" height="2em">
               <circle id="newGoodIconCircle" cx="50%" cy="50%" r="42%" fill="${editedGood?.color || "#ff5959"}" stroke="${Goods.getStroke(editedGood?.color || "#ff5959")}"/>
               <use id="newGoodIconPreview" href="#${editedGood?.icon || "good-unknown"}" x="10%" y="10%" width="80%" height="80%"/>
@@ -491,6 +501,13 @@ function open(editedGood?: Good, onUpdate?: () => void) {
     };
     ensureEl("newGoodUploadIconRaster").onclick = () => pickIcon("image");
     ensureEl("newGoodUploadIconVector").onclick = () => pickIcon("svg");
+  }
+
+  function getIconOptionsHtml(): string {
+    return Array.from(document.querySelectorAll(GOOD_ICON_ROOTS))
+      .map(el => el.id)
+      .map(icon => `<option value="${icon}" ${editedGood?.icon === icon ? "selected" : ""}>${icon}</option>`)
+      .join("");
   }
 }
 

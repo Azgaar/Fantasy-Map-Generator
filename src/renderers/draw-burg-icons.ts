@@ -3,14 +3,16 @@ import type { Burg } from "@/generators/burgs-generator";
 import { ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import type { StylesData } from "@/types/styles";
 import { escapeHtml } from "@/utils/stringUtils";
+import { IconSets } from "../components/icon-sets";
 
 const layer = ViewportLayers.register({ id: "burgIcons", render: reconcileBurgIcons });
 
-export const drawBurgIcons = (): void => {
+export async function drawBurgIcons(): Promise<void> {
   TIME && console.time("drawBurgIcons");
+  await IconSets.ensure("burgs");
   layer.render();
   TIME && console.timeEnd("drawBurgIcons");
-};
+}
 
 type BurgPart =
   | StylesData["burgIcons"]["groups"][string]["groups"]["icons"]

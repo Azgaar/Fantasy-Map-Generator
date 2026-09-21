@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" width="1em" height="1em" overflow="visible">
+<circle cx="0" cy="0" r="5" />
+<polygon
+points="0,-5 1.5,-1.5 5,-1.5 2,1.5 3,5 0,3 -3,5 -2,1.5 -5,-1.5 -1.5,-1.5"
+transform="scale(0.78 0.78)"
+/>
+</svg>

@@ -5,7 +5,6 @@
 import { z } from "zod";
 import { GRID_TYPES } from "@/data/grid-types";
 import { OCEAN_OUTLINES, OCEAN_PATTERNS } from "@/data/ocean-patterns";
-import { RELIEF_CHOICES } from "@/data/relief-icons";
 import {
   CLIPS,
   CONTOUR_MODES,
@@ -19,6 +18,7 @@ import {
   MAP_FILTERS,
   WAVE_TYPES
 } from "@/data/style-choices";
+import "@/generators/relief-generator"; // installs the Relief global the schema reads its catalog from
 import type { StyleMeta } from "@/types/styles";
 import { hexColor } from "@/utils/schemaUtils";
 import { FORMATS, isLabelStyle } from "./styles-formats";
@@ -618,16 +618,16 @@ export const stylesSchema = z.strictObject({
   relief: z.strictObject({
     attrs: z.strictObject({ opacity, filter, mask: clip }),
     options: z.strictObject({
-      set: choice(RELIEF_CHOICES, {
+      set: meta(z.enum(Relief.sets), {
         label: "Style",
-        effect: "changeReliefSet",
+        effect: "draw",
         tip: "Select set of relief icons. Existing icons are restyled, not regenerated"
       }),
       size: number({
         range: [0.2, 4],
         step: 0.01,
-        effect: "resizeRelief",
-        tip: "Define the size of relief icons. Existing icons are resized, not regenerated"
+        effect: "draw",
+        tip: "Define the size of relief icons. A render multiplier: the map data is not changed"
       }),
       density: number({
         range: [0.3, 0.8],

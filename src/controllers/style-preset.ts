@@ -60,17 +60,12 @@ function applyPreset(presetJson: unknown): void {
     return;
   }
 
-  const previousReliefSize = styles.relief.options.size;
   Styles.set(parsed);
   ensureGroupStyles();
 
   Styles.writeAll();
   // the defs resources are renderer-owned; their appliers shape them from the store
   applyVignetteOptions();
-
-  const { set, size } = styles.relief.options;
-  if (size && size / previousReliefSize !== 1) Relief.changeSize(size / previousReliefSize);
-  if (set) Relief.changeSet(set as Parameters<typeof Relief.changeSet>[0]);
 
   for (const { options } of [styles.heightmap.groups.landHeights, styles.heightmap.groups.oceanHeights]) {
     HeightmapColorSchemes.ensure(options.scheme);

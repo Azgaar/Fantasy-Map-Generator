@@ -423,18 +423,19 @@ Ice data is stored as an array of objects with `i` not necessary equal to the el
 
 ## Relief
 
-Relief (terrain) icons are stored in `pack.relief: ReliefIcon[]`. The array order defines the rendering order: icons are sorted by their bottom edge, so the closer ones are drawn on top. Object structure:
+Relief icons are stored in `pack.relief: ReliefIcon[]`. Array order determines drawing
+order; generation sorts by the icon's anchor (the sampled cell point, its box centre). Each icon is
+`{ type, variant?, set?, x, y, s }`, stored as
+plain JSON with no parse/serialize step. `type` names a logical relief type and `variant` a permanent
+variant slot; the renderer resolves an absent `variant` to 1, so stored and drawn data never differ.
+`set` is an optional explicit pin; absent means follow the style.
 
-- `icon`: `string` - id of the symbol in `#defs-relief`, without the leading `#`, e.g. `relief-mount-3`
-- `x`: `number` - left edge position
-- `y`: `number` - top edge position
-- `s`: `number` - icon size, used as both width and height
-
-Generation settings live in the global style object as `style.relief`, serialized with the rest of the style at data index 48. Before v1.142.0 they were `set`, `size` and `density` attributes on the `#terrain` group:
-
-- `set`: `string` - icons set: `simple`, `colored` or `gray`
-- `size`: `number` - base icon size multiplier
-- `density`: `number` - how densely icons are placed
+`styles.relief.options` holds `set` (`simple`, `colored`, `gray`, `illustrated`), `size` and `density`,
+serialized with the style store in field 48. `s` is the base size; `size` is a render multiplier that
+scales the icon about its anchor at draw time, so neither a set nor a size change edits `pack.relief`
+and the array order stays a valid z-order.
+Every union slot resolves in every set via real artwork or deterministic aliases. See [Icons](icons.md)
+for layout, fallback resolution and migration conventions. Custom relief and burg art are not supported.
 
 ## Measurers
 

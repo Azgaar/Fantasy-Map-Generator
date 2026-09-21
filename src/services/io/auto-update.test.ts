@@ -942,3 +942,97 @@ describe("v1.152.0 notes moved onto entities", () => {
     ]);
   });
 });
+
+describe("v1.154 relief descriptors", () => {
+  const stylesPayload = (set: string, size = 1): string => {
+    const record = JSON.parse(JSON.stringify(Styles.parse(undefined)));
+    record.relief.options.set = set;
+    record.relief.options.size = size;
+    return JSON.stringify(record);
+  };
+
+  // isolate one version step: the migration runs after the style steps, without unrelated DOM setup
+  const runMigration = async (mapVersion: string, data: string[], versions: string[]): Promise<void> => {
+    const compare = vi.spyOn(versioning, "compareVersions");
+    compare.mockImplementation((_a, b) => ({
+      isOlder: !!b && versions.includes(b),
+      isNewer: false,
+      isEqual: false
+    }));
+    try {
+      await resolveVersionConflicts(mapVersion, data);
+    } finally {
+      compare.mockRestore();
+    }
+  };
+
+  const migrate = async (icons: unknown[], set: string, size = 1): Promise<typeof pack.relief> => {
+    document.body.innerHTML = '<svg id="map"><defs id="deftemp"/><g id="viewbox"><g id="terrain"></g></g></svg>';
+    const data: string[] = [];
+    data[48] = stylesPayload(set, size);
+    globalThis.pack = { relief: structuredClone(icons) } as unknown as typeof pack;
+    await runMigration("1.153.1", data, ["1.154.0"]);
+    return pack.relief;
+  };
+
+  it("renumbers variants and recovers pins against the incoming map's set", async () => {
+    const relief = await migrate(
+      [
+        { icon: "relief-mount-1", x: 1, y: 2, s: 3 },
+        { icon: "relief-mount-7", x: 1, y: 2, s: 3 },
+        { icon: "relief-hill-5-bw", x: 1, y: 2, s: 3 },
+        { icon: "relief-mount-3-illustrated", x: 1, y: 2, s: 3 },
+        { icon: "relief-mountSnow-6-bw", x: 1, y: 2, s: 3 },
+        { icon: "relief-cactus-3", x: 1, y: 2, s: 3 },
+        { icon: "relief-swamp-3", x: 1, y: 2, s: 3 }
+      ],
+      "colored"
+    );
+
+    expect(relief).toEqual([
+      { type: "mount", variant: 1, set: "simple", x: 1, y: 2, s: 3 },
+      { type: "mount", variant: 6, x: 1, y: 2, s: 3 },
+      { type: "hill", variant: 4, set: "gray", x: 1, y: 2, s: 3 },
+      { type: "mount", variant: 3, set: "illustrated", x: 1, y: 2, s: 3 },
+      { type: "mountSnow", variant: 6, set: "gray", x: 1, y: 2, s: 3 },
+      { type: "cactus", variant: 3, x: 1, y: 2, s: 3 },
+      { type: "swamp", variant: 2, x: 1, y: 2, s: 3 }
+    ]);
+  });
+
+  it("uses the incoming map's set, not the previously open map's style", async () => {
+    globalThis.styles = Styles.parse(undefined);
+    styles.relief.options.set = "simple";
+    const relief = await migrate([{ icon: "relief-mount-2", x: 0, y: 0, s: 1 }], "colored");
+    expect(relief).toEqual([{ type: "mount", variant: 1, x: 0, y: 0, s: 1 }]);
+  });
+
+  it("lifts SVG relief out of #terrain and resolves its descriptor", async () => {
+    document.body.innerHTML =
+      '<svg id="map"><defs id="deftemp"/><g id="viewbox"><g id="terrain" set="gray" size="1" density="0.4"><use href="#relief-mount-3-bw" x="12" y="23" width="14"/></g></g></svg>';
+    const data: string[] = [];
+    data[48] = stylesPayload("gray");
+    globalThis.pack = { relief: [], features: [] } as unknown as typeof pack;
+    await runMigration("1.141.0", data, ["1.142.0", "1.154.0"]);
+    expect(pack.relief).toEqual([{ type: "mount", variant: 2, x: 12, y: 23, s: 14 }]);
+  });
+
+  it("compensates old simple grass exactly once", async () => {
+    const once = await migrate([{ icon: "relief-grass-1", x: 12.25, y: 33.76, s: 12 }], "simple");
+    expect(once[0]).toEqual({ type: "grass", variant: 1, x: 13.25, y: 34.76, s: 10 });
+    const twice = await migrate(structuredClone(once), "simple");
+    expect(twice).toEqual(once);
+  });
+
+  it("gives the old style size back to the data, now that size is a render multiplier", async () => {
+    const relief = await migrate([{ icon: "relief-mount-3", x: 10, y: 20, s: 12 }], "colored", 2);
+    expect(relief).toEqual([{ type: "mount", variant: 2, x: 13, y: 23, s: 6 }]);
+  });
+
+  it("keeps an unrecognised legacy id from failing the load", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const relief = await migrate([{ icon: "relief-mystery-1", x: 0, y: 0, s: 1 }], "simple");
+    expect(relief).toEqual([]);
+    warn.mockRestore();
+  });
+});

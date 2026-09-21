@@ -1,5 +1,4 @@
 // Save the whole .map project to storage, machine or cloud
-
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { Notes } from "@/components/notes";

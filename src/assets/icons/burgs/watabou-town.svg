@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="1em" height="1em" overflow="visible">
+<g transform="translate(0 -10) scale(2 2)">
+<path
+fill="#EBE8DF"
+d="M18.9-2H2.6l.5-9 7.8-14 7.8 14 .2 9M27-2H19l-.2-9-7.8-14 2 .4 2 .1 2-.1 2-.5 7.8 14L27-2 Z"
+/>
+<path d="M26.7-11h-8l-7.8-14 2 .4 2 .1 2-.1 2-.5 7.8 14" />
+<path fill="#4D3F36" stroke="none" d="M12-2H9.8v-5.4l.4-1h1.5l.5 1V-2" />
+<path
+fill="#EBE8DF"
+d="M-10.3.4h-19.6l.4-8 4-17.2 4.8.5 4.7.2 4.8-.2 4.7-.5-4 17.1.2 8m-19.2-8h19m8.4 8h-8.2l-.2-8 4-17 4 17 .4 8Z"
+/>
+<path d="M-10.5-7.7h-19l4-17 4.8.4 4.7.2 4.8-.2 4.7-.5-4 17.1" />
+<path fill="#4D3F36" stroke="none" d="M-24-1.3h1.7v-4.1l-.4-.7h-1l-.2.7v4.1" />
+<path
+fill="#EBE8DF"
+d="M-1.4 5H-17l.8-15 7.2-13.1 7.3 13 .4 15.2M7 5h-8.4L-1.8-10-9-23.1l2 .3 2 .2 2-.2 2-.3 7.3 13L7 4 Z"
+/>
+<path d="M6.2-10h-8L-9-23.1l2 .3 2 .2 2-.2 2-.3 7.3 13" />
+<path fill="#4D3F36" stroke="none" d="M-7.9 5h-2.4V-.3l.5-1h1.5l.4 1v5.5" />
+</g>
+<circle fill="#EBE8DF" stroke-width="3" cx="0" cy="0" r="10" />
+</svg>

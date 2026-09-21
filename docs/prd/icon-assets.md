@@ -6,8 +6,8 @@ and are not affected.
 
 ## Problem Statement
 
-`src/index.html` is 570KB and **389KB of it is icon markup**: relief 303KB (95 symbols in four sets),
-burg and port icons 29KB (32 symbols), goods 57KB (72 symbols). Relief is the bulk, and it is the one
+`src/index.html` is 570KB and **511KB of it is icon markup**: relief 303KB (95 symbols in four sets),
+burg and port icons 29KB (32 symbols), goods 188KB (72 symbols). Relief is the bulk, and it is the one
 block a map never needs in full. This has four costs:
 
 - **Startup bloat.** Every visitor downloads and parses all four relief sets although a map uses one.
@@ -90,17 +90,17 @@ in every set: colored `mount-2..7` → `mount-1..6`, `hill-2..5` → `hill-1..4`
 `deciduous-2,3` → `deciduous-1,2`, `conifer/acacia/palm/grass-2` → `-1`, `swamp-2,3` → `swamp-1,2`.
 The other types already start at 1.
 
-Each set directory carries a one-line module so that Vite emits one chunk per set:
-
-```ts
-export default import.meta.glob("./*.svg", { eager: true, query: "?raw", import: "default" }) as Record<string, string>;
-```
+No per-set index module: `components/icon-sets.ts` globs every SVG with
+`import.meta.glob("@/assets/icons/**/*.svg", { query: "?raw", import: "default" })` and a
+`manualChunks` rule in `vite.config.ts` groups the per-file lazy loaders into one chunk per directory,
+keyed by the directory path.
 
 ### Source file convention
 
 - Root `<svg xmlns="http://www.w3.org/2000/svg" viewBox="…">` with exactly the attributes the symbol
   needs; burg icons keep `width="1em" height="1em" overflow="visible"` (1em = the group's `size`).
-- Attribution in `<metadata description="…" source="…" license="…"/>`, as the goods already do.
+- Attribution in `<metadata description="…" source="…" license="…"/>` where the source art carried it,
+  as the goods already do. The relief and burg sets have none to carry over.
 - Never `<title>`: through `<use>` it becomes a hover tooltip on every instance.
 - Inner details of recolourable icons (burgs, goods) are strokes and fills without hard-coded colours
   where the group is expected to colour them.
@@ -108,11 +108,14 @@ export default import.meta.glob("./*.svg", { eager: true, query: "?raw", import:
   artwork, so the registry carries no size override. Shrink the `100 × 100` viewBox by `1.2` around
   its center `(50, 50)`. The migration below compensates existing instances to preserve their appearance.
 
-### Registry (`src/data/relief-icons.ts`, `src/types/relief.ts`)
+### Model (`src/generators/relief-generator.ts`)
 
-The registry describes the **id space**, not the sets. `RELIEF_TYPES` declares the union of slots every
-set is measured against—`variants` is the widest coverage any one set has—so a stored `type`/`variant`
-resolves in all four sets, pinned or not, and a style change can never invalidate it. Which slots a set
+The model is one class, `ReliefModel`, instantiated on the `Relief` global like `Goods`, `Markets` and
+`Production`; callers use that global and do not import the class. Nothing hangs off the module as a
+stray function. `Relief.types`
+declares the union of slots every set is measured against—`variants` is the widest coverage any one set
+has—so a stored `type`/`variant` resolves in all four sets, pinned or not, and a style change can never
+invalidate it. Which slots a set
 draws is its directory listing, and a set that fills fewer of them aliases the rest at load time. There
 is no per-set registry entry: the old `base`/`suffix` mapping is gone and all four sets are peers.
 
@@ -122,10 +125,8 @@ without changing their descriptors. This is accepted; missing artwork is planned
 release. Released slots must not be renumbered, reassigned or removed without a data migration.
 
 ```ts
-export const RELIEF_SETS = ["simple", "colored", "gray", "illustrated"] as const;
-export type ReliefSet = (typeof RELIEF_SETS)[number];
-
-export const RELIEF_TYPES = [
+const SETS = ["simple", "colored", "gray", "illustrated"] as const;
+const TYPES = [
   { type: "mount", variants: 6 },
   { type: "mountSnow", variants: 6, fallback: "mount" },
   { type: "vulcan", variants: 3, fallback: "mount" },
@@ -142,28 +143,39 @@ export const RELIEF_TYPES = [
   { type: "deadTree", variants: 2, zoom: 1.5, fallback: "dune" }
 ] as const;
 
-export type ReliefIconType = (typeof RELIEF_TYPES)[number]["type"];
+export type ReliefSet = (typeof SETS)[number];
+export type ReliefIconType = (typeof TYPES)[number]["type"];
 
 export interface ReliefType {
   type: ReliefIconType;
   variants: number; // widest coverage across the sets
-  zoom?: number; // editor preview magnification, 1 by default
+  zoom?: number; // editor preview magnification
   fallback?: ReliefIconType;
 }
+TYPES satisfies readonly ReliefType[];
 
-RELIEF_TYPES satisfies readonly ReliefType[];
-
-// the state stores these three fields; only the renderer turns them into a symbol id.
-// the reserved custom branch is under Custom icons
+// the map stores this ref as it is; the renderer resolves the absent variant to 1 and the absent set to the style
 export type ReliefIconRef = { type: ReliefIconType; variant?: number; set?: ReliefSet };
-export const reliefSymbolId = (icon: ReliefIconRef, styleSet: ReliefSet) =>
-  `relief-${icon.set ?? styleSet}-${icon.type}-${icon.variant ?? 1}`;
+export type ReliefIcon = ReliefIconRef & { x: number; y: number; s: number };
+
+export class ReliefModel {
+  readonly sets = SETS;
+  readonly types = TYPES;
+  symbolId(icon: ReliefIconRef, styleSet: ReliefSet): string;
+  variantsOf(type: ReliefIconType): number;
+  isType(type: string): type is ReliefIconType;
+  anchorY(icon: ReliefIcon): number;
+  readonly byAnchor: (a: ReliefIcon, b: ReliefIcon) => number;
+  generate(): ReliefIcon[];
+}
 ```
 
 Infer the catalog before checking it against `ReliefType`, so fallback names are checked without a
-circular initializer constraint. Shared types live in `src/types/relief.ts` and use type-only imports
-of the catalog constants; the snippet shows both files together. Types constrain application code;
-loaded JSON still needs runtime validation. Variants are `1..variants` in every set. For a missing
+circular initializer constraint. The relief model owns its catalog, descriptor types and symbol id, the
+way `Burg` and `Good` live with their generators; `services/io` only calls into it. The descriptor is
+stored as plain JSON — no zod schema, no `parseRelief`/`serializeRelief` — and the renderer resolves
+what the data leaves out, so the stored and drawn shapes are the same. Variants
+are `1..variants` in every set. For a missing
 slot, collect the set's available artwork for that type in numeric variant order; if none exists,
 follow the type's `fallback` chain until artwork is available. Select
 `available[(variant - 1) % available.length]`. Only actual files are candidates, never aliases.
@@ -173,29 +185,37 @@ numbers or changing map data. Exact artwork always wins. For illustrated mountai
 
 `zoom` is the editor preview magnification; it is per type too, so the editor looks the same in every
 set. Dropping a file for a declared slot needs no code change; only a genuinely new type, or a variant
-past `variants`, edits the registry, because that changes the id space every set is measured against.
+past `variants`, edits the catalog, because that changes the id space every set is measured against.
 `RELIEF_CHOICES`, `ReliefSetDefinition` (with its `base`/`suffix`) and `ReliefTypeIcons` go away;
-`styles-schema.ts` uses `z.enum(RELIEF_SETS)` and derives any choice-label metadata locally by
+`styles-schema.ts` uses `z.enum(Relief.sets)` and derives any choice-label metadata locally by
 capitalizing each value. The Relief Editor iterates the tuple and capitalizes its labels too; no
 name-to-name map is stored in the catalog. `src/data/burg-icons.ts` keeps its `SETS`, `BURG_ICONS`
 and `PORT_ICONS`.
 
-### Loader (`src/renderers/icon-sets.ts`)
+### Loader (`src/components/icon-sets.ts`)
+
+One class per chunk plus a registry over them, in the shape of the layers registry:
 
 ```ts
-const SPRITES = {
-  "relief-simple": { prefix: "relief-simple-", files: () => import("@/assets/icons/relief/simple") },
-  // relief-colored, relief-gray, relief-illustrated
-  burgs: { prefix: "icon-", files: () => import("@/assets/icons/burgs") },
-  goods: { prefix: "good-", files: () => import("@/assets/icons/goods") }
-};
-export type IconSet = keyof typeof SPRITES;
-export const isIconSetLoaded = (set: IconSet): boolean;
-export function loadIconSet(set: IconSet, options?: { retry?: boolean }): Promise<void>;
+class IconChunk {
+  readonly id: IconSetId;
+  get isLoaded(): boolean;
+  load(options?: { retry?: boolean }): Promise<void>; // one shared attempt per set; rejects on failure
+  ensure(options?: { retry?: boolean }): Promise<void>; // renderers: a reported failure lets the draw continue
+}
+export class IconSetRegistry {
+  isLoaded(id: IconSetId): boolean;
+  load(id: IconSetId, options?: { retry?: boolean }): Promise<void>;
+  ensure(id: IconSetId, options?: { retry?: boolean }): Promise<void>;
+  ensureAll(ids: readonly IconSetId[], options?: { retry?: boolean }): Promise<void>;
+  reliefSets(icons: readonly ReliefIconRef[], styleSet: ReliefSet): IconSetId[];
+  setForId(id: string): IconSetId | undefined;
+}
+export const IconSets = new IconSetRegistry();
 ```
 
-`loadIconSet` rewrites each file's root `<svg …>` to `<symbol id="…" …>` (dropping `xmlns*`), then walks
-the union: for every `RELIEF_TYPES` slot the set has no file for it emits an alias symbol using the
+The chunk rewrites each file's root `<svg …>` to `<symbol id="…" …>` (dropping `xmlns*`), then walks
+the union: for every `Relief.types` slot the set has no file for it emits an alias symbol using the
 deterministic selection rule above, so every `type`/`variant` a map can hold resolves in every set,
 pinned or not. The result is injected into `#defElements defs` as `<g id="icons-<set>">`.
 Goods use `<g id="icons-goods">` inside `<g id="good-icons">`; the latter stays empty in `index.html`.
@@ -203,34 +223,30 @@ Goods use `<g id="icons-goods">` inside `<g id="good-icons">`; the latter stays 
 Every loader **appends** and never clears or replaces its container's children, because a container can
 hold runtime art that no chunk provides. That matters for goods today: custom user-uploaded icons are
 appended by the good editor and restored from map field `data[45]` on load, so a chunk that arrives after
-the map must not wipe them. `isIconSetLoaded` tracks the chunk only and never inspects the container.
+the map must not wipe them. `isLoaded` tracks the chunk only and never inspects the container.
 
 The `<svg>`→`<symbol>` rewrite and the alias walk are plain string work on the glob's values, so
 `icon-sets.test.ts` runs in the node project; only the injection touches the DOM.
 
-Renderers call `loadIconSet(set)` at the top of their draw and, if the set was not loaded yet, redraw
-their layer when the promise resolves. The synchronous draw proceeds regardless; browsers also resolve
-`<use>` targets that appear later. Relief loads the style's set plus every distinct `set` pinned in
-`pack.relief`, so a forked map pulls those chunks too while a fresh one pulls a single chunk. The Relief
-Editor loads a set on demand when the author picks it in the set control.
-Every controller that displays goods icons also loads the goods set on entry, independently of map
-layer visibility. Export awaits the required chunks as described below; a later live redraw cannot
-repair an already serialized export.
+Renderers **await** the chunks at the top of their draw and then draw once—there is no redraw callback
+and no `Layers.draw` from inside a draw. Relief awaits the style's set plus every distinct `set` pinned
+in `pack.relief`, so a forked map pulls those chunks too while a fresh one pulls a single chunk. The
+Relief Editor awaits a set when the author picks it. Every controller that displays goods icons triggers
+the goods load on entry, independently of map layer visibility, and opens immediately: the browser
+resolves `<use>` targets once the symbols appear, so no dialog waits for icons. Only the good editor's
+icon picker needs the symbols present, so it fills its select when the chunk lands. Export awaits the
+required chunks as described below; a later live redraw cannot repair an already serialized export.
 
 Loading shares one pending promise per set and marks the set loaded only after conversion, alias
 validation and injection succeed. Prepare the complete built-in group before appending it, so a failed
 attempt leaves no partial group or duplicate ids on retry. On failure, log the set and original error
 with `console.error` and show an error-type UI tip naming the affected icons and suggesting retry or
-reload. Report once per failed attempt, not once per waiting consumer; every caller handles rejection.
-Keep the failed state so viewport redraws do not create a retry or notification loop. An explicit set
-selection, controller reopening or export request may pass `{ retry: true }` to start another attempt;
-concurrent retries still share one promise. If retry fails again, the tip recommends reloading the page.
-No automatic retry timer is needed.
-
-Completion redraws the current layer state only if it is still enabled. Controller continuations check
-that the same opening and set selection are still active before drawing previews; closing a controller
-or choosing another set makes the earlier continuation obsolete. Successfully loaded definitions can
-remain cached even when their original consumer is gone.
+reload, once per failed attempt rather than once per waiting consumer. Keep the failed state so viewport
+redraws do not create a retry or notification loop; `ensure` never rejects, so a failed draw simply
+shows no icons. An explicit set selection or export request may pass `{ retry: true }` to start another
+attempt; concurrent retries still share one promise. If retry fails again, the tip recommends reloading
+the page. No automatic retry timer is needed. Loaded definitions stay cached even when their original
+consumer is gone.
 
 ### Data model and generator
 
@@ -240,24 +256,33 @@ remain cached even when their original consumer is gone.
 - `Relief.generate` writes `type` and `variant` (picked uniformly from the union, regardless of set) and
   never writes `set`, so generated icons follow the style and a later style change cannot put a stored
   icon out of range. `changeSet`, `pickIcon`, `getTypeIcons`, `findType` and `getReliefIconId` are
-  deleted; `changeSize` stays.
-- Serialization is canonical so `load → save` is stable: the in-memory icon always carries `variant` and
-  `save.ts` drops it when it is `1`; `set` is written only when pinned.
+  deleted; `changeSize` goes too — icon size is a render multiplier, not data.
+- `styles.relief.options.size` is a **render multiplier**: the renderer draws each icon at `s * size`,
+  anchored at its centre, and the slider just redraws. The anchor matters: `pack.relief` is ordered by
+  the icon's anchor (the sampled cell point at the box centre), so keeping the drawn centre equal to
+  `y + s / 2` keeps that order a valid z-order. The box bottom is not the anchor — the art is padded
+  differently inside each `viewBox`, so sorting by `y + s` would add half the icon size and float big
+  mountains in front of smaller hills. `pack.relief` is never scaled by the slider.
+  Generation bakes the base footprint only, and the 1.154 migration divides old sizes by the incoming
+  map's size, moving `x`/`y` so the anchor is unchanged, then re-sorts by that anchor.
+- `pack.relief` is stored as plain JSON: the descriptor is JSON-serializable by nature, `save.ts`
+  stringifies it and `load.ts` assigns the parsed field. No zod schema and no
+  `parseRelief`/`serializeRelief`; the renderer resolves an absent `variant` to 1, so what is stored
+  and what is drawn are the same shape.
 - `coniferSnow` stops being a relief-side temperature branch. It becomes a normal entry in the cold
   biome icon weights (`biomes-generator.ts`, Taiga today), and the `type === "conifer" && temp < 0` swap
   in `getBiomeIcon` is deleted, so the biome-icon path no longer reads temperature. The height-based
-  `mountSnow` pick in `getReliefIcon` is unrelated and stays. `RELIEF_TYPES` gets no biome flag.
+  `mountSnow` pick in `getReliefIcon` is unrelated and stays. `Relief.types` gets no biome flag.
   Biome data intentionally owns tree-icon selection for now, including the snowy-tree weights; this
   is a behavior change, not an equivalent rewrite of the temperature rule. More intelligent selection
   using temperature or other factors belongs at the biome level in later work.
-- The `changeReliefSet` style effect and the preset applier only redraw the layer—that is what preserves
-  pins: a style change rewrites no data at all.
 
 ### Renderers and export
 
 - `draw-relief-icons.ts` writes the symbol id from the descriptor:
-  `#relief-${icon.set ?? styles.relief.options.set}-${icon.type}-${icon.variant ?? 1}`;
-  `draw-burg-icons.ts` and `draw-goods.ts` load their set.
+  `#relief-${icon.set ?? styles.relief.options.set}-${icon.type}-${icon.variant ?? 1}`, and draws it at
+  `s * styles.relief.options.size` about its anchor;
+  `draw-burg-icons.ts` and `draw-goods.ts` await their set, then draw.
 - `services/io/export.ts` uses the map as it is when export starts. Before the first asynchronous wait,
   create the export clone and synchronously reconcile its icons from current state for the requested
   viewport or full-map bounds. Capture referenced map-carried definitions, including custom goods,
@@ -281,23 +306,25 @@ remain cached even when their original consumer is gone.
 
 - Relief Editor: the **Set** control stays, but becomes `Default (style)` plus the four sets, and writes
   the icon's `set` pin only for a concrete choice; `Default` is what an unpinned icon shows. The grid is
-  `RELIEF_TYPES` × variants for the icon's effective set, and picking another set in the control loads
+  `Relief.types` × variants for the icon's effective set, and picking another set in the control awaits
   that chunk before drawing previews (the editor builds all four grids eagerly today, which would defeat
   the split). Grid entries carry `data-type="mount"`, `data-variant="3"` and `data-set`, and previews go
   through `<use href="#relief-<icon.set ?? style>-mount-3">`.
-- Good editor and goods editor await `loadIconSet("goods")` before enumerating icon roots:
+- The good editor enumerates icon roots for its picker:
   `#good-icons > #icons-goods > symbol[id^="good-"]` for built-ins and
   `#good-icons > svg[id^="good-custom-"]` for uploads. Container groups and descendants inside artwork
-  are never picker entries, even when they have ids.
+  are never picker entries, even when they have ids. It opens at once and refills the select when the
+  goods chunk lands.
 - Market overview, market deals overview, trade details, production overview and production chains
-  also await `loadIconSet("goods")` on entry before drawing icons. Each must work as the first goods
-  consumer opened in a session, with the goods layer off and neither goods editor previously opened.
-- Burg icon pickers in the Style Editor await `loadIconSet("burgs")` before drawing previews.
+  trigger the goods load on entry and draw icons immediately; `<use>` resolves once the symbols exist.
+  Each must work as the first goods consumer opened in a session, with the goods layer off and neither
+  goods editor previously opened.
+- Burg icon pickers in the Style Editor trigger the burgs load and draw their `<use>` previews, which
+  the browser resolves when the chunk lands.
 
 ### Custom icons
 
-A map can carry art no chunk provides. Goods support this today and the split must not break it; burgs
-and relief are seams left deliberately for later.
+A map can carry art no chunk provides. Only goods support this; the split must not break it.
 
 **Goods (in scope).** The upload path is unchanged: the editor appends `<svg id="good-custom-<id>">`
 (wrapped raster or sanitized SVG) to `#good-icons`, `save.ts` stores the `outerHTML` of
@@ -308,30 +335,15 @@ before migrations run. Three rules keep that working after the move:
   children alone;
 - the export pass copies the referenced element by id, whatever its tag;
 - the good editor uses the icon-root selectors above. The container holds custom `<svg>` roots beside
-  the built-in group; `good-editor.ts:15` lists only symbols today, so a restored custom icon is missing
-  from the dropdown until this is fixed. A broad `[id]` query would also list containers and artwork
-  internals.
+  the built-in group, so the picker selects both and excludes containers and artwork internals.
 
-**Burgs and relief (out of scope).** Documented so the seams exist rather than being discovered later:
-
-- Burgs already render unknown ids—`burgIcon` falls back to a "custom icon" entry and `burgIconPreview`
-  draws `<use href>`—so what is missing is an upload path, a map field beside `data[45]`, picker
-  enumeration of custom ids, and excluding custom ids from the "listed icons have a file" test. The
-  append-only loader rule is what keeps it possible.
-- Relief composes its symbol id from `set`/`type`/`variant`, so custom relief art cannot be a normal slot
-  without either overriding a chunk symbol (coupling the loader to map data) or living in its own id
-  space. Reserve `relief-custom-<id>` now and give the descriptor a custom branch, so the composed id
-  never has to be overridden:
-
-  ```ts
-  type ReliefIcon =
-    | { type: ReliefIconType; variant?: number; set?: ReliefSet; x: number; y: number; s: number }
-    | { custom: string; x: number; y: number; s: number };
-  // reliefSymbolId: custom ? `relief-custom-${custom}` : `relief-${set ?? style}-${type}-${variant ?? 1}`
-  ```
+**Burgs and relief (not supported).** No upload path, map field, picker enumeration or custom id
+namespace exists, and the descriptor has no custom branch. Adding one later means a map field beside
+`data[45]`, picker enumeration, and — for relief — either an id space of its own or a symbol the loader
+does not compose away. The append-only loader rule is what keeps that possible.
 
   A custom relief icon is set-independent, so a style change leaves it alone, and the editor grid lists
-  `RELIEF_TYPES` plus the custom symbols the map carries, the way the goods picker does.
+  
 
 ### Migration (`services/io/auto-update.ts`, next version)
 
@@ -367,14 +379,17 @@ in the document until the burgs set loads, so the rewrite only ever replaced it 
 
 ## Testing Decisions
 
-- `src/data/relief-icons.test.ts` (node): reads `src/assets/icons/relief/<set>/` with `fs` and fails on a
-  file whose type is not in `RELIEF_TYPES` or whose variant exceeds `variants`. It also asserts the union
-  is tight (each type's highest declared variant exists in some set, and each set's files for a type run
-  contiguously from 1) and prints the derived coverage table. The gap list is a property of the
-  directories, so there is no `KNOWN_GAPS` constant to maintain (today: simple fills 9 of 34 slots,
-  colored and gray 34, illustrated 18).
-- `relief-generator.test.ts`: every union slot resolves in every set through the alias rule, and a
-  generated icon is `{ type, variant }` with no `set`; the `index.html` scan goes.
+- `relief-generator.test.ts` (node): the catalog lives here now, so it also holds the directory coverage
+  check — reads `src/assets/icons/relief/<set>/` with `fs` and fails on a file whose type is not in
+  `Relief.types` or whose variant exceeds `variants`. It asserts the union is tight (each type's highest
+  declared variant exists in some set, and each set's files for a type run contiguously from 1), prints
+  the derived coverage table, and covers the plain-JSON descriptor round-trip and the
+  style-switch-leaves-descriptors-untouched property. The gap list is a property of the directories, so
+  there is no `KNOWN_GAPS` constant to maintain (today: simple fills 9 of 34 slots, colored and gray 34,
+  illustrated 18). A generated icon is `{ type, variant }` with no `set` and a size independent of
+  `styles.relief.options.size`; the `index.html` scan goes.
+- `draw-relief-icons.test.ts` (jsdom): the style size scales the `<use>` geometry about the icon's anchor
+  and leaves `pack.relief` untouched; a big icon above a smaller one stays behind it at every size.
 - `burg-icons.test.ts` and `styles.test.ts`: listed and preset icons have a file in
   `src/assets/icons/burgs/`. The jsdom assertions that parse `src/index.html` move to the extracted
   `<svg>`; the "Illustrated icons retain accent colors while their main surfaces inherit group paint"
@@ -393,19 +408,21 @@ in the document until the burgs set loads, so the rewrite only ever replaced it 
   simple; its colored icons remain unpinned. Cover pre-v1.142 maps through the full migration chain.
   Verify simple grass preserves its rendered footprint and center within floating-point tolerance,
   including resized icons and mixed-set pins; other grass sets are unchanged and reloading the migrated
-  save applies no second compensation. Keep the existing "restores every defs element index.html
-  declares" test, whose expected list is sliced out of `@/index.html?raw` and shrinks with the move.
+  save applies no second compensation. A map whose style size is not 1 has its old sizes divided by it,
+  so the new render multiplier reproduces the original appearance exactly. Keep the existing "restores
+  every defs element index.html declares" test, whose expected list is sliced out of `@/index.html?raw`
+  and shrinks with the move.
 - Export tests hold chunk promises pending while requesting SVG and PNG immediately after a layer is
   enabled or a relief set changes. Export must wait, use the descriptors captured when export started,
   and include pinned sets and all alias targets. While pending, switch the style again, edit an icon,
   or load another map with different custom goods; the exported icons and custom definitions must
   still match the initial snapshot. Test nested references, deduplication/cycles, and chunk rejection.
-- Controller tests open each goods-consuming overview, trade details and production chains first,
-  with the goods layer off and no loaded goods chunk. Verify they await loading and then show icons.
-  Also close a waiting controller or change the relief picker set before loading completes; stale
-  continuations must not rebuild the closed UI or overwrite the newer selection.
-- A `pack.relief` round-trip: `save → load → save` is byte-identical with `variant: 1` and an unpinned
-  `set` omitted, and a style switch leaves `pack.relief` untouched while changing what is drawn.
+- Controller tests trigger each goods-consuming overview, trade details and production chains with the
+  goods layer off and no loaded goods chunk, and verify the goods load starts on entry. Editors no
+  longer wait for icons, so there is no stale continuation to guard: the picker refills when the chunk
+  lands, and the browser resolves `<use>` on its own.
+- A `pack.relief` round-trip: the descriptor survives `JSON.stringify` → `JSON.parse` unchanged, and a
+  style switch leaves `pack.relief` untouched while changing what is drawn.
 - Custom goods: `data[45]` round-trips a `good-custom-*` `<svg>`, a chunk loading after the map does not
   remove it, the export pass copies it by id, and the editor picker lists it. Include ids on the
   built-in container and nested artwork elements; only built-in and custom icon roots enter the picker.
@@ -418,12 +435,13 @@ in the document until the burgs set loads, so the rewrite only ever replaced it 
 ## Acceptance Criteria
 
 - `src/index.html` no longer contains `#defs-relief`, `#defs-icons` or the built-in goods symbols, and
-  `#good-icons` stays in it as an empty container, filled only at runtime. It is ~180KB, down from 570KB.
+  `#good-icons` stays in it as an empty container, filled only at runtime. It is ~44KB, down from 570KB.
 - A fresh map loads exactly one relief chunk (its style's set), plus one per set pinned in the map, the
   burgs chunk and, when the goods layer or any goods-consuming controller needs it, the goods chunk.
   The worker still precaches all of them for offline use.
 - Switching the relief set in the Style Editor redraws unpinned icons in the new set and leaves pinned
-  icons alone; `pack.relief` is byte-identical before and after.
+  icons alone; `pack.relief` is byte-identical before and after. Moving the size slider scales the drawn
+  icons the same way, without touching `pack.relief`.
 - Every union slot renders in every set, either as its own art or as an alias, pinned or not.
 - Missing slots use available artwork deterministically across redraws, reloads and exports. Filling
   a slot with new artwork updates existing maps automatically while their descriptors stay unchanged.
@@ -435,8 +453,8 @@ in the document until the burgs set loads, so the rewrite only ever replaced it 
   Icon choices and custom art reflect the map at export start even if the live map changes while
   loading. A chunk failure reports an export error rather than silently omitting icons.
 - Failed icon loads produce a console error and an error-type UI tip identifying the affected set.
-  Redraws do not repeatedly retry or report the same failure; an explicit user action can retry, and
-  a closed controller or obsolete set selection is never restored by a late completion.
+  Redraws do not repeatedly retry or report the same failure; an explicit user action can retry. A
+  failed draw shows no icons and never blocks a dialog or a controller.
 - The Relief Editor places, selects, replaces and removes icons and can pin one to a set, with `Default`
   meaning the style.
 - Custom goods icons survive save, load, the editor picker and both exports unchanged.
@@ -445,8 +463,8 @@ in the document until the burgs set loads, so the rewrite only ever replaced it 
 
 ## Documentation
 
-- `docs/architecture/data-model.md`: `ReliefIcon` is `{ type, variant?, set? }` plus position and size;
-  `set` is a pin that defaults to the style, and `{ custom }` is reserved for map-carried art.
+- `docs/architecture/data-model.md`: `ReliefIcon` is `{ type, variant?, set?, x, y, s }`, stored as
+  plain JSON; `set` is a pin that defaults to the style.
 - New `docs/architecture/icons.md`: layout, the union and alias rule, source-file convention, current
   coverage per set, the custom-icon containers and reserved id spaces, how to add an icon, a variant or a
   set.
@@ -462,8 +480,8 @@ in the document until the burgs set loads, so the rewrite only ever replaced it 
 - Deriving the gray set from the colored one at load time (their geometry differs; gray is its own art).
 - Rasterized sprites, icon fonts or a WebGL renderer.
 - Heraldic charges, marker images and textures, which already live in `public/`.
-- Uploading custom art for relief and burgs. The seams are documented under Custom icons; this change
-  only guarantees the existing goods flow and reserves `relief-custom-<id>` for later.
+- Uploading custom art for relief and burgs. This change only guarantees the existing goods flow; the
+  other two have no upload path, map field or custom id namespace.
 
 ## Further Notes
 
@@ -475,9 +493,9 @@ in the document until the burgs set loads, so the rewrite only ever replaced it 
 - Mixed sets on one map stay supported, now explicitly: an unpinned icon follows the style, a pinned one
   keeps its set. The defect was not the mixing but that the global set was implicit in every id and
   `changeSet` rewrote it away.
-- `pack.relief` is a large part of a save—about 18% of a 4.35MB map with 12,750 icons—and `.map` files are
-  plain text, so the descriptor omits `variant: 1` and an unpinned `set`. That keeps the new format
-  smaller than today's set-specific ids.
+- `pack.relief` is a large part of a save—about 18% of a 4.35MB map with 12,750 icons—so the descriptor
+  is kept as small as the data allows: an absent `variant` means 1 and an absent `set` means the style,
+  and both are stored only when they carry information.
 - The service worker precaches every build file, so the split saves first-paint fetch and parse, not
   cache size.
 - The first draw after a set change runs before its chunk resolves and is redrawn when the promise
