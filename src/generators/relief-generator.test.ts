@@ -17,6 +17,12 @@ test("z-order follows the icon anchor, not the box bottom", () => {
   expect([smallBelow, bigAbove].sort(Relief.byAnchor)).toEqual([bigAbove, smallBelow]);
 });
 
+test("a stored descriptor carries no default value", () => {
+  expect(Relief.ref("mount")).toEqual({ type: "mount" });
+  expect(Relief.ref("mount", 1, "gray")).toEqual({ type: "mount", set: "gray" });
+  expect(Relief.ref("mount", 3, "gray")).toEqual({ type: "mount", variant: 3, set: "gray" });
+});
+
 test("generates logical union variants with no set pin", () => {
   vi.stubGlobal("styles", { relief: { options: { size: 1, density: 1, set: "simple" } } });
   vi.stubGlobal("grid", { cells: { temp: [10] } });

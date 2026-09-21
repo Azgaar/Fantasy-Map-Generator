@@ -403,13 +403,12 @@ describe("port icon styles", () => {
     for (const [name, group] of Object.entries(groups)) {
       const anchor = group.groups.anchors;
       expect(anchor.options).toEqual(cinderwood.burgIcons.groups[name].groups.anchors.options);
-      expect(readFileSync(`src/assets/icons/burgs/${anchor.options.icon.slice(6)}.svg`, "utf8").includes("<svg")).toBe(
-        true
-      );
+      const file = `src/assets/icons/${anchor.options.icon.slice(1).replace("-", "/")}.svg`; // the port set's file
+      expect(readFileSync(file, "utf8").includes("<svg")).toBe(true);
       expect(Number.isFinite(anchor.options.dx)).toBe(true);
       expect(Number.isFinite(anchor.options.dy)).toBe(true);
       icons.add(anchor.options.icon);
     }
-    expect(icons).toEqual(new Set(["#icon-anchor", "#icon-harbor"])); // shifted anchors on big burgs, harbors on small
+    expect(icons).toEqual(new Set(["#ports-anchor", "#ports-harbor"])); // shifted anchors on big burgs, harbors on small
   });
 });

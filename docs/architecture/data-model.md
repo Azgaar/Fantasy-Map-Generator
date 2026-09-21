@@ -426,7 +426,8 @@ Ice data is stored as an array of objects with `i` not necessary equal to the el
 Relief icons are stored in `pack.relief: ReliefIcon[]`. Array order determines drawing
 order; generation sorts by the icon's anchor (the sampled cell point, its box centre). Each icon is
 `{ type, variant?, set?, x, y, s }`, stored as
-plain JSON with no parse/serialize step. `type` names a logical relief type and `variant` a permanent
+plain JSON with no parse/serialize step. `Relief.ref` builds every descriptor, so a default `variant`
+of 1 is never written. `type` names a logical relief type and `variant` a permanent
 variant slot; the renderer resolves an absent `variant` to 1, so stored and drawn data never differ.
 `set` is an optional explicit pin; absent means follow the style.
 
@@ -453,7 +454,7 @@ Goods (tradable resources and products) are stored in `pack.goods: Good[]`, wher
 - `tags`: `string[]` - free-form classification tags (used for filtering in the Goods Editor)
 - `value`: `number` - base price per unit; the anchor for all market pricing
 - `unit`: `string` - unit of measure label (e.g. `kg`, `barrel`)
-- `icon`: `string` - id of the SVG symbol used for the good's map/UI icon
+- `icon`: `string` - id of the SVG symbol used for the good's map/UI icon: `goods-<file>` from the goods icon set, or `custom-goods-<id>` for art the map carries in field 45 (see `icons.md`)
 - `color`: `string` - good color in hex
 - `chance`: `number` - placement chance (0–100) for raw/hybrid goods. Manufactured-only goods are `0`. Optional
 - `distribution`: `string` - JS expression evaluated per cell to decide where the raw good is placed (uses the distribution method table; see [goods_schema.md](../domain/goods_schema.md)). Optional

@@ -3,6 +3,8 @@ import { beforeEach, expect, test, vi } from "vitest";
 import { IconSets } from "@/components/icon-sets";
 import { setViewportSize } from "@/components/viewport";
 import { Styles } from "@/generators/styles";
+import "@/generators/burgs-generator"; // the models own the set definitions the export resolves ids against
+import "@/generators/goods-generator";
 import { drawRelief } from "@/renderers/draw-relief-icons";
 import { ExportMap } from "./export";
 
@@ -14,17 +16,21 @@ vi.mock("@/components/icon-sets", async original => {
     ...actual,
     IconSets: {
       setForId: actual.IconSets.setForId.bind(actual.IconSets),
-      reliefSets: actual.IconSets.reliefSets.bind(actual.IconSets),
-      load: vi.fn(),
-      ensureAll: vi.fn().mockResolvedValue(undefined)
+      containerId: actual.IconSets.containerId.bind(actual.IconSets),
+      retry: vi.fn(),
+      isLoaded: vi.fn(),
+      loadAll: vi.fn()
     }
   };
 });
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(IconSets.retry).mockResolvedValue();
+  vi.mocked(IconSets.isLoaded).mockReturnValue(true);
+  vi.mocked(IconSets.loadAll).mockResolvedValue();
   document.body.innerHTML =
-    '<svg id="map" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><defs/><g id="viewbox"><g id="terrain"/><g id="goodsIcons"><use href="#good-custom-map" width="10" height="10"/></g></g></svg><svg id="defElements"><defs><g id="good-icons"><svg id="good-custom-map" viewBox="0 0 10 10"><path d="M1 1"/></svg></g></defs></svg>';
+    '<svg id="map" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><defs/><g id="viewbox"><g id="terrain"/><g id="goodsIcons"><use href="#custom-goods-map" width="10" height="10"/></g></g></svg><svg id="defElements"><defs><svg id="custom-goods-map" viewBox="0 0 10 10"><path d="M1 1"/></svg></defs></svg>';
   globalThis.styles = Styles.parse(undefined);
   styles.relief.options.set = "simple";
   globalThis.pack = {
@@ -43,7 +49,7 @@ test.each(["svg", "png"])(
   "%s export waits and uses the start-of-export relief and custom goods snapshot",
   async type => {
     let finish!: () => void;
-    vi.mocked(IconSets.load).mockReturnValue(
+    vi.mocked(IconSets.retry).mockReturnValue(
       new Promise<void>(resolve => {
         finish = resolve;
       })
@@ -60,12 +66,12 @@ test.each(["svg", "png"])(
     });
     await Promise.resolve();
     expect(done).toBe(false);
-    expect(IconSets.load).toHaveBeenCalledWith("relief-illustrated", { retry: true });
-    expect(IconSets.load).toHaveBeenCalledWith("relief-gray", { retry: true });
+    expect(IconSets.retry).toHaveBeenCalledWith("relief-illustrated");
+    expect(IconSets.retry).toHaveBeenCalledWith("relief-gray");
     styles.relief.options.set = "colored";
     pack.relief[0] = { type: "grass", variant: 1, x: 1, y: 1, s: 4 };
     const defs = document.querySelector("#defElements defs")!;
-    document.querySelector("#good-custom-map")!.innerHTML = '<path d="M99 99"/>';
+    document.querySelector("#custom-goods-map")!.innerHTML = '<path d="M99 99"/>';
     globalThis.pack = { relief: [] } as unknown as typeof pack;
     defs.insertAdjacentHTML(
       "beforeend",
@@ -88,26 +94,25 @@ test.each(["svg", "png"])(
 
 test("failed icon chunks reject the export and clean up its clone", async () => {
   drawRelief();
-  vi.mocked(IconSets.load).mockRejectedValue(new Error("chunk failed"));
-  await expect(ExportMap.getMapURL("png", { noScaleBar: true })).rejects.toThrow("chunk failed");
+  vi.mocked(IconSets.isLoaded).mockReturnValue(false);
+  await expect(ExportMap.getMapURL("png", { noScaleBar: true })).rejects.toThrow("Failed to load relief-");
   expect(document.getElementById("fantasyMap")).toBeNull();
   expect(window.URL.createObjectURL).not.toHaveBeenCalled();
 });
 
 test.each(["svg", "png"])("%s export copies nested and cyclic definitions once", async type => {
   globalThis.pack = { relief: [] } as unknown as typeof pack;
-  vi.mocked(IconSets.load).mockResolvedValue();
-  document.querySelector("#good-custom-map")!.innerHTML = '<path d="M1 1"/><use href="#good-custom-nested"/>';
+  document.querySelector("#custom-goods-map")!.innerHTML = '<path d="M1 1"/><use href="#custom-goods-nested"/>';
   document
     .querySelector("#defElements defs")!
-    .insertAdjacentHTML("beforeend", '<symbol id="good-custom-nested"><use href="#good-custom-map"/></symbol>');
+    .insertAdjacentHTML("beforeend", '<symbol id="custom-goods-nested"><use href="#custom-goods-map"/></symbol>');
 
   const serialize = vi.spyOn(XMLSerializer.prototype, "serializeToString");
   await ExportMap.getMapURL(type, { fullMap: true, noScaleBar: true });
   const output = serialize.mock.results.at(-1)!.value as string;
 
-  expect(output.match(/id="good-custom-map"/g)).toHaveLength(1);
-  expect(output.match(/id="good-custom-nested"/g)).toHaveLength(1);
-  expect(output).not.toContain("good-unknown");
+  expect(output.match(/id="custom-goods-map"/g)).toHaveLength(1);
+  expect(output.match(/id="custom-goods-nested"/g)).toHaveLength(1);
+  expect(output).not.toContain("goods-unknown");
   serialize.mockRestore();
 });

@@ -1,6 +1,6 @@
 // A style card's header preview:
-import { burgIcon, burgIconPreview } from "@/data/burg-icons";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
+import { burgIconPreview } from "./icon-preview";
 
 export type PreviewValues = { attrs: Record<string, unknown>; options: Record<string, unknown> };
 
@@ -264,7 +264,7 @@ function thumbnail(href: string): HTMLElement {
 function iconChip(id: string, read: Read): HTMLElement {
   const span = document.createElement("span");
   span.className = "icon";
-  span.innerHTML = burgIconPreview(burgIcon(id));
+  span.innerHTML = burgIconPreview(id);
   span.style.fill = read.text("fill") ?? "none";
   span.style.stroke = read.text("stroke") ?? "none";
   return span;

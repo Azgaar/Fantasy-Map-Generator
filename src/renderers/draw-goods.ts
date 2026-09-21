@@ -1,3 +1,4 @@
+import { IconSets } from "@/components/icon-sets";
 import { Layers } from "@/components/layers";
 import {
   type Box,
@@ -6,7 +7,6 @@ import {
   type ViewportRenderContext
 } from "@/renderers/viewport/viewport-renderer";
 import type { PackedGraph } from "@/types/PackedGraph";
-import { IconSets } from "../components/icon-sets";
 import { normalize, rn } from "../utils";
 
 const layer = ViewportLayers.register({ id: "goods", render: reconcileGoods });
@@ -58,7 +58,7 @@ interface BurgPlate {
 
 export async function drawGoods(): Promise<void> {
   TIME && console.time("drawGoods");
-  await IconSets.ensure("goods");
+  await IconSets.load("goods");
   buildScene();
   layer.render();
   TIME && console.timeEnd("drawGoods");

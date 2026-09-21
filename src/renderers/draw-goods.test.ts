@@ -5,7 +5,7 @@ import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 
 const mocks = vi.hoisted(() => ({ layerOn: true }));
 vi.mock("@/components/layers", () => ({ Layers: { isOn: () => mocks.layerOn } }));
-vi.mock("@/components/icon-sets", () => ({ IconSets: { ensure: vi.fn().mockResolvedValue(undefined) } }));
+vi.mock("@/components/icon-sets", () => ({ IconSets: { load: vi.fn().mockResolvedValue(undefined) } }));
 
 import "@/generators/styles";
 import { drawGoods } from "./draw-goods";
@@ -46,8 +46,8 @@ beforeEach(() => {
       ]
     },
     goods: [
-      { i: 1, name: "Grain", color: "#ff0000", icon: "icon-grain", visible: true },
-      { i: 2, name: "Iron", color: "#00ff00", icon: "icon-iron", visible: true }
+      { i: 1, name: "Grain", color: "#ff0000", icon: "goods-grain", visible: true },
+      { i: 2, name: "Iron", color: "#00ff00", icon: "goods-iron", visible: true }
     ],
     burgs: [{}, { i: 1, x: 50, y: 60, production: {} }, { i: 2, x: 550, y: 60, production: {} }]
   } as never;

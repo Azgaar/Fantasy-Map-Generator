@@ -1,5 +1,5 @@
 import { destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
-import { GOOD_ICON_ROOTS, IconSets } from "@/components/icon-sets";
+import { IconSets } from "@/components/icon-sets";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
@@ -8,6 +8,12 @@ import { CULTURE_TYPES } from "../generators/cultures-generator";
 import type { DemandCategory, Good } from "../generators/goods-generator";
 import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY } from "../generators/goods-generator";
 import { createFileInput, ensureEl, getRandomColor, sanitizeSvgIcon, unique } from "../utils";
+
+/** picker entries: the set's files plus the custom art the editor uploads beside the loaded sets */
+export const goodIconIds = (): string[] => [
+  ...IconSets.files(Goods.iconSet.id).map(file => IconSets.symbolId(Goods.iconSet.id, file)),
+  ...Array.from(document.querySelectorAll(`${IconSets.defs} > [id^="${Goods.customIconPrefix}"]`), el => el.id)
+];
 
 let iconImageInput: HTMLInputElement | null = null;
 let iconSvgInput: HTMLInputElement | null = null;
@@ -56,15 +62,7 @@ async function open(editedGood?: Good, onUpdate?: () => void): Promise<void> {
   let dialog: HTMLElement;
   renderDialog();
 
-  const options = Array.from(document.querySelectorAll(GOOD_ICON_ROOTS)).map(el => el.id);
-  if (!options.length) {
-    void IconSets.ensure("goods").then(() => {
-      const select = document.querySelector<HTMLSelectElement>("#newGoodIcon");
-      if (!select) return;
-      select.innerHTML = getIconOptionsHtml();
-      select.value = editedGood?.icon ?? select.value;
-    });
-  }
+  void IconSets.retry(Goods.iconSet.id); // the previews resolve once the symbols land
 
   $(dialog!).dialog({
     width: "30em",
@@ -257,7 +255,7 @@ async function open(editedGood?: Good, onUpdate?: () => void): Promise<void> {
             <select id="newGoodIcon" class="ge-icon-select">${getIconOptionsHtml()}</select>
             <svg class="ge-icon-preview" width="2em" height="2em">
               <circle id="newGoodIconCircle" cx="50%" cy="50%" r="42%" fill="${editedGood?.color || "#ff5959"}" stroke="${Goods.getStroke(editedGood?.color || "#ff5959")}"/>
-              <use id="newGoodIconPreview" href="#${editedGood?.icon || "good-unknown"}" x="10%" y="10%" width="80%" height="80%"/>
+              <use id="newGoodIconPreview" href="#${editedGood?.icon || "goods-unknown"}" x="10%" y="10%" width="80%" height="80%"/>
             </svg>
             <button id="newGoodUploadIconRaster" class="icon-upload" data-tip="Upload raster icon"></button>
             <button id="newGoodUploadIconVector" class="icon-upload-cloud" data-tip="Upload vector (SVG) icon"></button>
@@ -504,8 +502,7 @@ async function open(editedGood?: Good, onUpdate?: () => void): Promise<void> {
   }
 
   function getIconOptionsHtml(): string {
-    return Array.from(document.querySelectorAll(GOOD_ICON_ROOTS))
-      .map(el => el.id)
+    return goodIconIds()
       .map(icon => `<option value="${icon}" ${editedGood?.icon === icon ? "selected" : ""}>${icon}</option>`)
       .join("");
   }
@@ -553,8 +550,8 @@ function uploadImage(type: "image" | "svg", callback: (type: string, id: string)
     if (!target) return;
 
     const result = target.result as string;
-    const id = `good-custom-${Math.random().toString(36).slice(-6)}`;
-    const goodIcons = ensureEl("good-icons");
+    const id = `${Goods.customIconPrefix}${Math.random().toString(36).slice(-6)}`;
+    const goodIcons = document.querySelector(IconSets.defs)!;
 
     if (type === "image") {
       const svg = /*html*/ `<svg id="${id}" xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><image x="0" y="0" width="200" height="200" href="${result}"/></svg>`;

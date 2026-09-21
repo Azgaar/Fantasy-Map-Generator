@@ -1,6 +1,7 @@
 import { select } from "d3";
 import { fitMapToScreen } from "@/components/canvas";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { IconSets } from "@/components/icon-sets";
 import { Layers } from "@/components/layers";
 import { registerMap } from "@/components/lifecycle";
 import { pickMapFile } from "@/components/options/io-panes";
@@ -376,12 +377,10 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       });
     }
 
-    // data[45]: custom good icons. #good-icons lives outside the replaced map svg, clear the previous set
-    const goodIconsDefs = document.getElementById("good-icons");
-    goodIconsDefs?.querySelectorAll('[id^="good-custom-"]').forEach(icon => {
-      icon.remove();
-    });
-    if (data[45]) goodIconsDefs?.insertAdjacentHTML("beforeend", data[45]);
+    // data[45]: custom good icons. They live beside the icon sets outside the replaced map svg, clear the previous set
+    const defs = document.querySelector(IconSets.defs);
+    for (const icon of defs?.querySelectorAll(`[id^="${Goods.customIconPrefix}"]`) ?? []) icon.remove();
+    if (data[45]) defs?.insertAdjacentHTML("beforeend", data[45]);
 
     await resolveVersionConflicts(mapVersion!, data);
 

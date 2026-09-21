@@ -36,7 +36,7 @@ function pickedRef(element: SVGElement): ReliefIconRef | null {
   const type = element.dataset.type as ReliefIconType | undefined;
   if (!type) return null;
   const set = ensureEl<HTMLSelectElement>("reliefEditorSet").value as ReliefSet | "";
-  return { type, variant: Number(element.dataset.variant) || 1, ...(set ? { set } : {}) };
+  return Relief.ref(type, Number(element.dataset.variant) || 1, set || undefined);
 }
 
 function open(element: SVGElement): void {
@@ -388,7 +388,7 @@ async function loadPreviews(): Promise<void> {
   container.replaceChildren();
   const set = (ensureEl<HTMLSelectElement>("reliefEditorSet").value || styles.relief.options.set) as ReliefSet;
   try {
-    await IconSets.ensure(`relief-${set}`, { retry: true });
+    await IconSets.retry(Relief.iconSetId(set));
     if (request !== previewRequest || !container.isConnected) return;
     container.innerHTML = setIconsHtml(set);
     updateReliefIconSelected(set);

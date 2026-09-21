@@ -1,4 +1,5 @@
 import { extent, polygonContains } from "d3";
+import type { IconSet } from "@/types/icons";
 import { minmax, rn } from "@/utils";
 
 const SETS = ["simple", "colored", "gray", "illustrated"] as const;
@@ -20,6 +21,7 @@ const TYPES = [
 ] as const;
 
 export type ReliefSet = (typeof SETS)[number];
+export type ReliefIconSetId = `relief-${ReliefSet}`;
 export type ReliefIconType = (typeof TYPES)[number]["type"];
 
 export interface ReliefType {
@@ -34,9 +36,21 @@ TYPES satisfies readonly ReliefType[];
 export type ReliefIconRef = { type: ReliefIconType; variant?: number; set?: ReliefSet };
 export type ReliefIcon = ReliefIconRef & { x: number; y: number; s: number };
 
+/** a union slot the set has no artwork for, drawn through another of the set's drawings */
+export interface ReliefSlot {
+  name: string;
+  target: string;
+}
+
 export class ReliefModel {
   readonly sets = SETS;
   readonly types = TYPES;
+  /** one icon set per relief set: its directory, plus a symbol for every union slot it draws no file for */
+  readonly iconSets: readonly (IconSet & { id: ReliefIconSetId })[] = SETS.map(set => ({
+    id: this.iconSetId(set),
+    folder: `relief/${set}`,
+    aliases: (names: readonly string[]) => this.aliasSlots(set, names)
+  }));
 
   generate(): ReliefIcon[] {
     TIME && console.time("generateRelief");
@@ -47,10 +61,8 @@ export class ReliefModel {
     const sizeModifier = 0.2 * iconSize;
 
     // an absent variant means 1, so it is only stored when it carries information
-    const pickVariant = (type: ReliefIconType): ReliefIconRef => {
-      const variant = 1 + Math.floor(Math.random() * this.variantsOf(type));
-      return variant > 1 ? { type, variant } : { type };
-    };
+    const pickVariant = (type: ReliefIconType): ReliefIconRef =>
+      this.ref(type, 1 + Math.floor(Math.random() * this.variantsOf(type)));
     const getBiomeIcon = (biomeIcons: string[]) => {
       const type = biomeIcons[Math.floor(Math.random() * biomeIcons.length)];
       return pickVariant(this.isType(type) ? type : "grass");
@@ -111,8 +123,60 @@ export class ReliefModel {
     return relief;
   }
 
+  iconSetId(set: ReliefSet): ReliefIconSetId {
+    return `relief-${set}`;
+  }
+
   symbolId(icon: ReliefIconRef, styleSet: ReliefSet): string {
-    return `relief-${icon.set ?? styleSet}-${icon.type}-${icon.variant ?? 1}`;
+    return `${this.iconSetId(icon.set ?? styleSet)}-${icon.type}-${icon.variant ?? 1}`;
+  }
+
+  /** every icon set a draw needs: the style's set plus each explicit pin in the map */
+  requiredIconSets(icons: readonly ReliefIconRef[], styleSet: ReliefSet): ReliefIconSetId[] {
+    const sets = new Set<ReliefIconSetId>([this.iconSetId(styleSet)]);
+    for (const icon of icons) if (icon.set) sets.add(this.iconSetId(icon.set));
+    return [...sets];
+  }
+
+  /** the stored descriptor: an absent field means its default, so only informative fields are written */
+  ref(type: ReliefIconType, variant = 1, set?: ReliefSet): ReliefIconRef {
+    return { type, ...(variant > 1 ? { variant } : {}), ...(set ? { set } : {}) };
+  }
+
+  /**
+   * The union slots a set draws no file for, each aliased to the set's own artwork. Exact art wins;
+   * a type without any follows the catalog's fallback chain, and only real files are candidates.
+   */
+  aliasSlots(set: ReliefSet, artwork: readonly string[], catalog: readonly ReliefType[] = this.types): ReliefSlot[] {
+    const slots: ReliefSlot[] = [];
+    for (const { type, variants } of catalog) {
+      for (let variant = 1; variant <= variants; variant++) {
+        if (artwork.includes(`${type}-${variant}`)) continue;
+        slots.push({ name: `${type}-${variant}`, target: this.resolveSlot(type, variant, artwork, catalog, set) });
+      }
+    }
+    return slots;
+  }
+
+  private resolveSlot(
+    type: ReliefIconType,
+    variant: number,
+    artwork: readonly string[],
+    catalog: readonly ReliefType[],
+    set: ReliefSet
+  ): string {
+    const visited = new Set<string>();
+    let fallback: ReliefIconType | undefined = type;
+    while (fallback && !visited.has(fallback)) {
+      const name: ReliefIconType = fallback;
+      visited.add(name);
+      const candidates = artwork
+        .filter(key => key.startsWith(`${name}-`))
+        .sort((a, b) => Number(a.split("-").pop()) - Number(b.split("-").pop()));
+      if (candidates.length) return candidates[(variant - 1) % candidates.length];
+      fallback = catalog.find(entry => entry.type === name)?.fallback;
+    }
+    throw new Error(`No artwork for relief-${set}/${type}-${variant}`);
   }
 
   variantsOf(type: ReliefIconType): number {

@@ -1,7 +1,7 @@
+import { IconSets } from "@/components/icon-sets";
 import { Layers } from "@/components/layers";
 import type { ReliefIcon } from "@/generators/relief-generator";
 import { Scene, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
-import { IconSets } from "../components/icon-sets";
 
 interface ReliefSceneIcon {
   id: string;
@@ -16,7 +16,7 @@ export async function drawRelief(): Promise<void> {
   TIME && console.time("drawRelief");
   if (!pack.relief?.length) Relief.generate();
   scene.replace(pack.relief.map((data, i) => ({ id: String(i), data })));
-  await IconSets.ensureAll(IconSets.reliefSets(pack.relief ?? [], styles.relief.options.set));
+  await IconSets.loadAll(Relief.requiredIconSets(pack.relief, styles.relief.options.set));
   layer.render();
   TIME && console.timeEnd("drawRelief");
 }

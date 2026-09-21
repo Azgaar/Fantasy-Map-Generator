@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import indexHtml from "@/index.html?raw";
 import "@/generators/added-labels";
 import "@/generators/features-generator"; // migrations call the Features module through its global
+import "@/generators/goods-generator"; // the goods icon namespace the 1.154 step migrates into
 import { confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { Styles } from "@/generators/styles";
@@ -465,8 +466,8 @@ describe("v1.154.0 style record normalization", () => {
 
     await resolveVersionConflicts("1.153.0", data);
     const parsed = Styles.parse(JSON.parse(data[48]));
-    expect(parsed.burgIcons.groups.town.groups.anchors.options).toEqual({ size: 2, icon: "#icon-anchor" });
-    expect(parsed.burgIcons.groups.town.groups.icons.options.icon).toBe("#icon-circle");
+    expect(parsed.burgIcons.groups.town.groups.anchors.options).toEqual({ size: 2, icon: "#ports-anchor" });
+    expect(parsed.burgIcons.groups.town.groups.icons.options.icon).toBe("#burgs-circle");
   });
 
   it("drops the old #icons layer element so the #burgIcons layer takes over", async () => {
@@ -975,6 +976,25 @@ describe("v1.154 relief descriptors", () => {
     return pack.relief;
   };
 
+  it("renames goods symbols into the set namespace and uploads into the reserved custom one", async () => {
+    document.body.innerHTML =
+      '<svg id="map"><defs id="deftemp"/><g id="viewbox"><g id="terrain"></g></g></svg><svg id="defElements"><defs><svg id="good-custom-ab12"/></defs></svg>';
+    const data: string[] = [];
+    data[48] = stylesPayload("colored");
+    globalThis.pack = {
+      relief: [],
+      goods: [{ icon: "good-wood" }, { icon: "good-salted-fish" }, { icon: "good-custom-ab12" }, { icon: "goods-tea" }]
+    } as unknown as typeof pack;
+    await runMigration("1.153.1", data, ["1.154.0"]);
+    expect(pack.goods.map(good => good.icon)).toEqual([
+      "goods-wood",
+      "goods-salted-fish",
+      "custom-goods-ab12",
+      "goods-tea"
+    ]);
+    expect(document.querySelector("#defElements defs > svg")?.id).toBe("custom-goods-ab12");
+  });
+
   it("renumbers variants and recovers pins against the incoming map's set", async () => {
     const relief = await migrate(
       [
@@ -990,7 +1010,7 @@ describe("v1.154 relief descriptors", () => {
     );
 
     expect(relief).toEqual([
-      { type: "mount", variant: 1, set: "simple", x: 1, y: 2, s: 3 },
+      { type: "mount", set: "simple", x: 1, y: 2, s: 3 }, // an absent variant means 1, so it is not stored
       { type: "mount", variant: 6, x: 1, y: 2, s: 3 },
       { type: "hill", variant: 4, set: "gray", x: 1, y: 2, s: 3 },
       { type: "mount", variant: 3, set: "illustrated", x: 1, y: 2, s: 3 },
@@ -1004,7 +1024,7 @@ describe("v1.154 relief descriptors", () => {
     globalThis.styles = Styles.parse(undefined);
     styles.relief.options.set = "simple";
     const relief = await migrate([{ icon: "relief-mount-2", x: 0, y: 0, s: 1 }], "colored");
-    expect(relief).toEqual([{ type: "mount", variant: 1, x: 0, y: 0, s: 1 }]);
+    expect(relief).toEqual([{ type: "mount", x: 0, y: 0, s: 1 }]);
   });
 
   it("lifts SVG relief out of #terrain and resolves its descriptor", async () => {
@@ -1019,7 +1039,7 @@ describe("v1.154 relief descriptors", () => {
 
   it("compensates old simple grass exactly once", async () => {
     const once = await migrate([{ icon: "relief-grass-1", x: 12.25, y: 33.76, s: 12 }], "simple");
-    expect(once[0]).toEqual({ type: "grass", variant: 1, x: 13.25, y: 34.76, s: 10 });
+    expect(once[0]).toEqual({ type: "grass", x: 13.25, y: 34.76, s: 10 });
     const twice = await migrate(structuredClone(once), "simple");
     expect(twice).toEqual(once);
   });

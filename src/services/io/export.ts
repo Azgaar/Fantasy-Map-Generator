@@ -246,43 +246,62 @@ async function exportToPngTiles(): Promise<void> {
   }
 }
 
-const iconReferences = (root: ParentNode): string[] =>
-  Array.from(root.querySelectorAll("use")).flatMap(use =>
-    [use.getAttribute("href"), use.getAttribute("xlink:href")]
-      .filter((href): href is string => !!href?.startsWith("#"))
-      .map(href => href.slice(1))
-  );
-
 /** Capture map-carried art before waiting; missing built-ins are completed from immutable chunks. */
 function captureIconDefinitions(clone: SVGSVGElement, source: SVGSVGElement): () => Promise<void> {
   const defs = clone.querySelector("defs")!;
   const required = new Set<IconSetId>();
+  const missing = new Set<string>();
   const visited = new Set<string>();
-  const pending: string[] = [];
-  const visit = (id: string, capture: boolean): void => {
+
+  const iconReferences = (root: ParentNode): string[] =>
+    Array.from(root.querySelectorAll("use")).flatMap(use =>
+      [use.getAttribute("href"), use.getAttribute("xlink:href")]
+        .filter((href): href is string => !!href?.startsWith("#"))
+        .map(href => href.slice(1))
+    );
+
+  // the snapshot may reference art no chunk provides (custom goods), so copy whatever it points at
+  const capture = (id: string): void => {
     if (visited.has(id)) return;
     visited.add(id);
-    const set = IconSets.setForId(id);
-    if (set) required.add(set);
     let definition = clone.getElementById(id);
     if (!definition) {
-      // After the snapshot, only chunk-owned definitions may be read from the live document.
-      const candidate = source.getElementById(id);
-      const original =
-        capture || (set && candidate && source.getElementById(`icons-${set}`)?.contains(candidate)) ? candidate : null;
+      const original = source.getElementById(id);
       if (original) {
         definition = original.cloneNode(true) as Element;
         defs.appendChild(definition);
-      } else if (capture && set) pending.push(id);
-      else if (!capture && set) throw new Error(`Missing icon definition: ${id}`);
+      }
     }
-    if (definition) for (const target of iconReferences(definition)) visit(target, capture);
+    if (definition) {
+      for (const target of iconReferences(definition)) capture(target);
+      return;
+    }
+    const set = IconSets.setForId(id);
+    if (!set) return;
+    required.add(set);
+    missing.add(id);
   };
-  for (const id of iconReferences(clone)) visit(id, true);
+  for (const id of iconReferences(clone)) capture(id);
+
+  // after the wait only chunk-owned definitions may be read from the live document
+  const resolve = (id: string): void => {
+    if (clone.getElementById(id)) return;
+    const set = IconSets.setForId(id);
+    if (!set) return;
+    const original = source.getElementById(id);
+    if (!original || !source.getElementById(IconSets.containerId(set))?.contains(original)) {
+      throw new Error(`Missing icon definition: ${id}`);
+    }
+    const copy = original.cloneNode(true) as Element;
+    defs.appendChild(copy);
+    for (const target of iconReferences(copy)) resolve(target);
+  };
+
   return async () => {
-    await Promise.all([...required].map(set => IconSets.load(set, { retry: true })));
-    for (const id of pending) visited.delete(id);
-    for (const id of pending) visit(id, false);
+    await Promise.all([...required].map(set => IconSets.retry(set)));
+    const failed = [...required].find(set => !IconSets.isLoaded(set));
+    if (failed) throw new Error(`Failed to load ${failed} icons`);
+    for (const id of missing) resolve(id);
   };
 }
 

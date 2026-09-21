@@ -48,7 +48,7 @@
             },
             "options": {
               "size": 2,
-              "icon": "#icon-star-circled"
+              "icon": "#burgs-star-circled"
             }
           },
           "anchors": {
@@ -66,7 +66,7 @@
             },
             "options": {
               "size": 0.6,
-              "icon": "#icon-anchor"
+              "icon": "#ports-anchor"
             }
           }
         }
@@ -88,7 +88,7 @@
             },
             "options": {
               "size": 1.8,
-              "icon": "#icon-circled"
+              "icon": "#burgs-circled"
             }
           },
           "anchors": {
@@ -106,7 +106,7 @@
             },
             "options": {
               "size": 0.6,
-              "icon": "#icon-anchor"
+              "icon": "#ports-anchor"
             }
           }
         }
@@ -128,7 +128,7 @@
             },
             "options": {
               "size": 0.7,
-              "icon": "#icon-square"
+              "icon": "#burgs-square"
             }
           },
           "anchors": {
@@ -146,7 +146,7 @@
             },
             "options": {
               "size": 0.7,
-              "icon": "#icon-anchor"
+              "icon": "#ports-anchor"
             }
           }
         }
@@ -168,7 +168,7 @@
             },
             "options": {
               "size": 0.8,
-              "icon": "#icon-cross"
+              "icon": "#burgs-cross"
             }
           },
           "anchors": {
@@ -186,7 +186,7 @@
             },
             "options": {
               "size": 0.5,
-              "icon": "#icon-anchor"
+              "icon": "#ports-anchor"
             }
           }
         }
@@ -208,7 +208,7 @@
             },
             "options": {
               "size": 0.7,
-              "icon": "#icon-triangle"
+              "icon": "#burgs-triangle"
             }
           },
           "anchors": {
@@ -226,7 +226,7 @@
             },
             "options": {
               "size": 0.7,
-              "icon": "#icon-anchor"
+              "icon": "#ports-anchor"
             }
           }
         }
@@ -248,7 +248,7 @@
             },
             "options": {
               "size": 0.7,
-              "icon": "#icon-triangle"
+              "icon": "#burgs-triangle"
             }
           },
           "anchors": {
@@ -266,7 +266,7 @@
             },
             "options": {
               "size": 0.7,
-              "icon": "#icon-anchor"
+              "icon": "#ports-anchor"
             }
           }
         }
@@ -288,7 +288,7 @@
             },
             "options": {
               "size": 0.8,
-              "icon": "#icon-circle"
+              "icon": "#burgs-circle"
             }
           },
           "anchors": {
@@ -306,7 +306,7 @@
             },
             "options": {
               "size": 0.5,
-              "icon": "#icon-anchor"
+              "icon": "#ports-anchor"
             }
           }
         }
@@ -328,7 +328,7 @@
             },
             "options": {
               "size": 0.5,
-              "icon": "#icon-circle"
+              "icon": "#burgs-circle"
             }
           },
           "anchors": {
@@ -346,7 +346,7 @@
             },
             "options": {
               "size": 0.4,
-              "icon": "#icon-anchor"
+              "icon": "#ports-anchor"
             }
           }
         }
@@ -368,7 +368,7 @@
             },
             "options": {
               "size": 1,
-              "icon": "#icon-circle"
+              "icon": "#burgs-circle"
             }
           },
           "anchors": {
@@ -386,7 +386,7 @@
             },
             "options": {
               "size": 0.6,
-              "icon": "#icon-anchor"
+              "icon": "#ports-anchor"
             }
           }
         }

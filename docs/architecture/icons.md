@@ -1,83 +1,122 @@
 # Icon assets
 
-Artwork lives in `src/assets/icons/` as standalone SVG files. Relief has four peer directories:
-`relief/{simple,colored,gray,illustrated}/<type>-<variant>.svg`. Burg and port artwork lives in
-`burgs/<name>.svg`; goods in `goods/<name>.svg`. `components/icon-sets.ts` globs every file with
-`import.meta.glob(…, { query: "?raw" })` and a `manualChunks` rule in `vite.config.ts` groups the
-per-file loaders into one hashed lazy chunk per directory. The service worker precaches these chunks
-for offline use, including Electron's `app://` deployment.
+Artwork lives in `src/assets/icons/` as standalone SVG files, one directory per **icon set**:
 
-At first use, the loader converts each SVG root into a symbol and appends a complete group to
-`#defElements defs`. IDs are `relief-<set>-<type>-<variant>`, `icon-<name>` and `good-<name>`.
-Goods have an extra container: `#good-icons > #icons-goods`. Loading never replaces existing children.
-`components/icon-sets.ts` holds one `IconChunk` class per set and an `IconSetRegistry` singleton
-(`IconSets`): `load` returns the shared attempt and rejects on failure, `ensure` never rejects so a
-renderer draws without icons, and every renderer awaits the chunks before drawing. No dialog waits for
-icons — the browser resolves `<use>` targets once the symbols exist. Failed attempts leave no partial
-definitions, report once, and stay failed until an explicit selection or export requests a retry.
+```
+src/assets/icons/
+  relief/{simple,colored,gray,illustrated}/<type>-<variant>.svg    set relief-<set>   id relief-simple-mount-1
+  burgs/<name>.svg, burgs/<style>/<name>.svg                       set burgs          id burgs-circle, burgs-watabou-capital
+  ports/<name>.svg                                                 set ports          id ports-anchor
+  goods/<name>.svg                                                 set goods          id goods-wood
+```
+
+**Symbol id = set id + `-` + file path within the set, with `/` as `-`.** Nothing composes ids by hand:
+`IconSets.symbolId(set, file)` is the one rule, `IconSets.setForId(id)` inverts it. A burg style is a
+subdirectory (`burgs/watabou/`), so a styled name carries its directory, and the picker groups by it.
+
+## Defining a set
+
+A set is an `IconSet` (`src/types/icons.ts`), and the **model that draws it owns it**:
+
+```ts
+interface IconSet {
+  id: string; // the chunk id and the symbol id prefix
+  folder: string; // the directory under src/assets/icons/
+  em?: number; // user units per em: anchored art, sized in em by the loader
+  aliases?: (names: readonly string[]) => IconAlias[]; // symbols for ids the directory does not draw
+}
+```
+
+- `Relief.iconSets` — one per relief set (`relief/<set>`), with `aliases` resolving the union slots the
+  directory has no file for (`Relief.aliasSlots`).
+- `Burgs.iconSets` — `burgs` and `ports`, both `em: 10`.
+- `Goods.iconSet` — `goods`, plus `Goods.customIconPrefix` for map-carried uploads.
+
+`components/icon-sets.ts` is family-agnostic: `IconSetRegistry.sets()` lists the models, and every set goes through
+the same steps — glob the directory (`import.meta.glob(?raw)`, one hashed lazy chunk per set via
+`manualChunks` in `vite.config.ts`), turn each `<svg>` root into `<symbol id>`, apply `em` framing if
+declared, append `aliases` if declared, inject the whole group as `<g id="icons-<set>">` into
+`#defElements defs`. `IconSetRegistry` (`IconSets`) owns loading: `load` returns the shared attempt and
+never rejects, `retry` starts a fresh attempt for an explicit demand (a picker, an export), `isLoaded`
+answers after the fact, `files(set)` lists the directory synchronously (pickers need no chunk to list
+choices). Failed attempts leave no partial definitions, report once, and stay failed until a `retry`;
+renderer redraws never retry. Export asserts `isLoaded` after the wait, so a chunk that never arrived
+fails the export instead of silently dropping icons.
+
+To add:
+
+- **artwork to an existing set** — drop the file in the directory. No code changes. The picker (burgs, goods)
+  or the union (relief) sees it.
+- **a burg style** — a subdirectory under `burgs/`; its name becomes the picker heading.
+- **a relief set** — a directory under `relief/` and its name in `Relief.sets`.
+- **a relief type or variant** — extend `Relief.types`, provide artwork and a fallback, run the coverage tests.
+- **a new family** — give its model an `IconSet` and list the model in `IconSetRegistry.sets()`; its
+  renderer awaits `IconSets.load(id)` before drawing. Declare `em` if the art is anchored, `aliases` if
+  some ids must resolve without a file.
+
+## Anchored art (`em`)
+
+Burg and port art is drawn around its anchor, the origin, at **10 user units per em**: the plain circle
+(`r=5`) is 1em wide, so a group `size` of 1 draws it 1 map unit wide. The loader keeps the file's frame,
+sizes the symbol in em (`width="1.26em"`) and translates the art so the anchor sits at the frame's corner;
+`<use x y>` under the group's `font-size` then lands the anchor on the burg with the art overflowing
+around it. Inherited `stroke-width` resolves in the art's own units, so a `scale()` wrapper preserves
+both the size and the stroke weight of art drawn at another scale. Previews (`style-editor/icon-preview.ts`)
+frame a symbol with its own viewBox, read from the loaded set.
 
 ## Logical relief slots
 
-`generators/relief-generator.ts` owns the relief model in `ReliefModel`, instantiated on the `Relief`
-global like the other generator models: the set names and type catalog as fields, plus `symbolId`,
-`variantsOf`, `isType`, `anchorY` and `byAnchor`. A descriptor contains `{ type, variant?, set? }`
-and is stored as it is — `pack.relief` is plain JSON with no parse/serialize step. The renderer resolves
-the absent `variant` to 1 and the absent `set` to `styles.relief.options.set`, so stored data and drawn
-data never diverge and a style change never edits relief state. `s` is the icon's base size;
-`styles.relief.options.size` is a render multiplier anchored at the icon's centre (the z-order key), never written
-back. Custom relief and burg art are not supported yet.
+`Relief.types` declares the union of `type`/`variant` slots every set is measured against; a stored
+descriptor `{ type, variant?, set? }` resolves in all four sets, pinned or not, and a style change never
+edits `pack.relief`. The renderer resolves the absent `variant` to 1 and the absent `set` to
+`styles.relief.options.set`; `s` is the base size and `styles.relief.options.size` a render multiplier
+anchored at the icon's centre (the z-order key).
 
-Each set resolves all 34 union slots. Exact files win. For a missing slot, collect real files of the
-same type in numeric variant order. If there are none, follow the catalog's fallback type chain.
-Select `available[(variant - 1) % available.length]` and emit an alias symbol containing a `<use>`.
-Aliases are never candidates. A missing terminal target or an unproductive cycle is an error.
-Thus illustrated mountain slots 4–6 alias drawings 1–3, deterministically and without changing data.
-Filling a slot updates existing maps, including pinned icons. Released slots must never be renumbered,
-reassigned or removed without migration.
+Each set resolves all 34 union slots. `Relief.aliasSlots` owns the rule: exact files win. For a missing
+slot, collect real files of the same type in numeric variant order; if there are none, follow the
+catalog's fallback type chain. Select `available[(variant - 1) % available.length]` and emit an alias
+symbol containing a `<use>`. Aliases are never candidates; a missing terminal target or an unproductive
+cycle is an error. Filling a slot updates existing maps, including pinned icons. Released slots must never
+be renumbered, reassigned or removed without migration.
 
 Current coverage (the unit test derives the full missing-slot list from directories):
 
-| Set | Real artwork | Aliased slots |
-| --- | ---: | ---: |
-| simple | 9 | 25 |
-| colored | 34 | 0 |
-| gray | 34 | 0 |
-| illustrated | 18 | 16 |
+| Set         | Real artwork | Aliased slots |
+| ----------- | -----------: | ------------: |
+| simple      |            9 |            25 |
+| colored     |           34 |             0 |
+| gray        |           34 |             0 |
+| illustrated |           18 |            16 |
 
 ## Editing artwork
 
-Use a root `<svg xmlns="http://www.w3.org/2000/svg" viewBox="…">` and preserve the attributes needed
-by the symbol. Burg icons retain `width="1em" height="1em" overflow="visible"`; the owning group's
-font size controls their scale. Preserve inherited fills and strokes on recolourable surfaces and
-intentional accent colours. Store attribution in `<metadata description="…" source="…" license="…"/>` when
-the artwork came from a third party (goods do; relief and burgs are in-project art with none).
-Do not add `<title>`: SVG use instances would display unwanted tooltips. Proportions belong in the
-viewBox, not catalog size overrides. Simple grass's viewBox is shrunk by 1.2 around (50, 50).
-
-- To fill an existing relief slot, add its SVG file to the set directory. No registry change is needed.
-- To add a variant or type, extend the union, provide artwork and any fallback, and run the coverage tests.
-- To add a set, add its directory, its name in `Relief.sets`, and its lazy entry in the loader.
-- To add burg or port artwork, add its file and picker entry in `data/burg-icons.ts`.
-- To add goods artwork, add its file. The picker discovers built-in roots automatically.
+Every file is a plain, previewable SVG: a root `<svg xmlns="http://www.w3.org/2000/svg" viewBox="…">`
+whose viewBox frames the art, with no sizing or overflow attributes. Anchored art has the origin inside
+its frame (a negative viewBox origin). Preserve inherited fills and strokes on recolourable surfaces and
+intentional accent colours. Credit third-party art in a `<desc>` element — the goods and the Watabou
+burg icons do; the relief and in-project burg art carry none. Do not add `<title>`: `<use>` instances
+would display it as a tooltip. Proportions belong in the viewBox, not in code. UI glyphs are not icon-set
+assets: a button that needs one inlines its SVG in its own markup.
 
 ## Map-carried art and exports
 
-Custom goods remain direct `<svg id="good-custom-<id>">` children of `#good-icons`. Map field 45
-persists them; loading clears the previous map's custom art without touching built-ins. Pickers list
-only `#good-icons > #icons-goods > symbol[id^="good-"]` and
-`#good-icons > svg[id^="good-custom-"]`, excluding containers and artwork internals.
-
-Burg and relief upload interfaces are not implemented. Neither has an upload path, a map field, picker
-enumeration or a custom id namespace yet; a later change would add them. Loaders stay append-only to
-preserve that seam.
+A map can carry art no set provides. Its ids use the reserved namespace `custom-<set>-…`
+(`IconSets.customPrefix`), never a set's own, so the registry needs no special case. Only goods use it
+today: the good editor appends `<svg id="custom-goods-<id>">` to `#defElements defs` beside the loaded
+groups, map field 45 persists them, and loading clears the previous map's uploads without touching the
+groups. The good editor lists `IconSets.files("goods")` plus those uploads. Burg and relief uploads are
+not implemented; the append-only loader and the reserved namespace are the seam for them.
 
 `export.ts` reconciles its clone for the requested bounds before its first asynchronous wait, captures
-referenced map-carried definitions, and derives the required chunks from those references.
-It then waits for the chunks and walks local `href`/`xlink:href` dependencies, copying by ID regardless
-of tag and deduplicating cycles. Only immutable built-in definitions can be read after waiting.
-This snapshot preserves the original icon choices and custom goods if the live map changes meanwhile.
-The walk finishes before SVG symbol flattening or PNG serialization. Failed chunks fail the export.
+referenced map-carried definitions, and derives the required sets from the remaining references through
+`setForId`. It then waits for the sets and walks local `href`/`xlink:href` dependencies, copying by id
+regardless of tag and deduplicating cycles. Only loaded groups may be read after waiting, so the export
+reflects the map as it was when it started. Failed sets fail the export.
 
-Version 1.154 migrates historical symbol IDs into descriptors after style migrations. It recovers pins
-against the incoming map's styles, renumbers shared colored/gray types, and compensates old simple
-grass dimensions once while preserving their center and rendered footprint.
+## History
+
+Version 1.154 moved the icons out of `index.html` and derived every symbol id from its file path. It
+migrates old relief ids (`relief-mount-3-bw`) into descriptors after the style migrations, recovering pins
+against the incoming map's styles, and renames `#icon-<name>` to `#burgs-<name>` / `#ports-<name>` in
+style records (`styles-legacy.ts`, so presets are covered too), `good-<name>` to `goods-<name>` and
+`good-custom-<id>` to `custom-goods-<id>` in `pack.goods` and field 45.

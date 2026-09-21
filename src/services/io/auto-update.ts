@@ -88,6 +88,8 @@ const LEGACY_LAYER_IDS: Record<string, LayerId> = {
 export async function resolveVersionConflicts(mapVersion: string, data: string[]): Promise<void> {
   const isOlderThan = (tagVersion: string) => compareVersions(mapVersion, tagVersion).isOlder;
   const noteRenames = new Map<string, string>(); // legacy element id -> the id the element has now
+  type LegacyReliefIcon = { icon: string; x: number; y: number; s: number };
+  let extractedRelief: LegacyReliefIcon[] | null = null; // read by the 1.154 relief step
 
   if (isOlderThan("1.139.0")) {
     // v1.139.0 moved biomes data from the legacy pipe-delimited format to pack.biomes.
@@ -1532,14 +1534,12 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
       const iconElements = Array.from(terrainEl.querySelectorAll("use"));
       if (iconElements.length) {
-        (pack as unknown as { relief: { icon: string; x: number; y: number; s: number }[] }).relief = iconElements.map(
-          useEl => ({
-            icon: (useEl.getAttribute("href") || useEl.getAttribute("xlink:href") || "").replace("#", ""),
-            x: rn(Number(useEl.getAttribute("x")), 2),
-            y: rn(Number(useEl.getAttribute("y")), 2),
-            s: rn(Number(useEl.getAttribute("width")), 2)
-          })
-        );
+        extractedRelief = iconElements.map(useEl => ({
+          icon: (useEl.getAttribute("href") || useEl.getAttribute("xlink:href") || "").replace("#", ""),
+          x: rn(Number(useEl.getAttribute("x")), 2),
+          y: rn(Number(useEl.getAttribute("y")), 2),
+          s: rn(Number(useEl.getAttribute("width")), 2)
+        }));
         terrainEl.replaceChildren();
       } else {
         terrainEl.style.display = "none";
@@ -1991,9 +1991,11 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     // v1.154.0 pinned the string attr formats and folded the fields that mirrored an attr into the attr
     const record = data[48] ? safeParseJSON(data[48]) : undefined;
     if (record) {
-      // anchors ignored their icon before ports became stylable
+      // anchors ignored their icon before ports became stylable (a pre-1.150 record is already renamed)
       for (const group of Object.values(record.burgIcons?.anchors?.groups ?? {}) as { options?: { icon?: string } }[]) {
-        if (group?.options?.icon === "#icon-circle") group.options.icon = "#icon-anchor";
+        if (group?.options?.icon === "#icon-circle" || group?.options?.icon === "#burgs-circle") {
+          group.options.icon = "#ports-anchor";
+        }
       }
       data[48] = JSON.stringify(normalizeStyles(record));
     }
@@ -2008,8 +2010,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     // v1.154.0 changed the relief icons data format
     const { set: incomingSet, size: incomingSize } = Styles.parse(data[48] ? safeParseJSON(data[48]) : undefined).relief
       .options;
-    type LegacyRelief = { icon: string; x: number; y: number; s: number };
-    function migrateReliefIcon(icon: LegacyRelief, styleSet: ReliefSet, styleSize: number): ReliefIcon {
+    function migrateReliefIcon(icon: LegacyReliefIcon, styleSet: ReliefSet, styleSize: number): ReliefIcon {
       const match = icon.icon.match(/^relief-(\w+)-(\d+)(-bw|-illustrated)?$/);
       if (!match) throw new Error(`Invalid legacy relief icon: ${icon.icon}`);
       const [, type, number, suffix] = match;
@@ -2040,13 +2041,15 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       const base = s / styleSize;
       x += (s - base) / 2;
       y += (s - base) / 2;
-      return { type: type as ReliefIconType, variant, ...(set !== styleSet ? { set } : {}), x, y, s: base };
+      return { ...Relief.ref(type as ReliefIconType, variant, set !== styleSet ? set : undefined), x, y, s: base };
     }
 
-    pack.relief = (pack.relief ?? []).flatMap(icon => {
-      if (!("icon" in icon)) return [icon];
+    const storedRelief: (ReliefIcon | LegacyReliefIcon)[] = extractedRelief ?? pack.relief ?? [];
+    const isLegacyReliefIcon = (icon: ReliefIcon | LegacyReliefIcon): icon is LegacyReliefIcon => "icon" in icon;
+    pack.relief = storedRelief.flatMap(icon => {
+      if (!isLegacyReliefIcon(icon)) return [icon];
       try {
-        return [migrateReliefIcon(icon as LegacyRelief, incomingSet, incomingSize || 1)];
+        return [migrateReliefIcon(icon, incomingSet, incomingSize || 1)];
       } catch {
         console.warn(`Skipping unknown legacy relief icon: ${icon.icon}`);
         return [];
@@ -2054,6 +2057,12 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     });
     // old saves order by the box bottom; the renderer keeps the icon's centre in place
     pack.relief.sort(Relief.byAnchor);
+
+    // v1.154.0 derives symbol ids from the icon set directories: good-<name> is goods-<name>, uploads are custom-goods-<id>
+    const goodIconId = (icon: string): string =>
+      icon.replace(/^good-custom-/, Goods.customIconPrefix).replace(/^good-/, `${Goods.iconSet.id}-`);
+    for (const good of pack.goods ?? []) if (good.icon) good.icon = goodIconId(good.icon);
+    for (const art of document.querySelectorAll('[id^="good-custom-"]')) art.id = goodIconId(art.id);
   }
 }
 

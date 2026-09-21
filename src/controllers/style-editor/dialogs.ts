@@ -3,14 +3,15 @@ import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { IconSets } from "@/components/icon-sets";
 import { Layers } from "@/components/layers";
 import { Controllers } from "@/controllers";
-import { BURG_ICONS, burgIconPreview, PORT_ICONS } from "@/data/burg-icons";
 import { layerLabel } from "@/data/layer-labels";
+import type { BurgIconSetId } from "@/generators/burgs-generator";
 import { stylesSchema } from "@/generators/styles-schema";
 import { getLabelsData } from "@/renderers/labels/label-data";
 import { StylePresetsService, SYSTEM_PRESETS } from "@/services/style-presets";
 import { VERSION } from "@/services/versioning";
 import type { StyleElement, StyleSelection } from "@/types/styles";
-import { ensureEl, escapeHtml, findEl } from "@/utils";
+import { capitalize, ensureEl, escapeHtml, findEl } from "@/utils";
+import { burgIconPreview } from "./icon-preview";
 
 export function listElements(): { id: StyleElement; label: string }[] {
   return (Object.keys(stylesSchema.shape) as StyleElement[])
@@ -450,22 +451,30 @@ type BurgIconDialogOptions = {
   onPick: (id: string) => void;
 };
 
-/** The dialog's content: the icon sets, the selected one pressed */
-export function renderChoices(anchors: boolean, selected: string): string {
-  const icons = anchors ? PORT_ICONS : BURG_ICONS;
-  return [...new Set(icons.map(icon => icon.group))]
+const ROOT_GROUP = "Atlas"; // the set's own files; a subdirectory is a styled group named after it
+
+/** The dialog's content: the set's files grouped by directory, the selected one pressed */
+export function renderChoices(set: BurgIconSetId, selected: string): string {
+  const groups = new Map<string, string[]>();
+  for (const file of IconSets.files(set)) {
+    const slash = file.lastIndexOf("/");
+    const group = slash < 0 ? ROOT_GROUP : capitalize(file.slice(0, slash));
+    groups.set(group, [...(groups.get(group) ?? []), file]);
+  }
+  return [...groups]
     .map(
-      group => /* html */ `
-        <h4>${group}</h4>
+      ([group, files]) => /* html */ `
+        ${groups.size > 1 ? `<h4>${group}</h4>` : ""}
         <div class="choices">
-          ${icons
-            .filter(icon => icon.group === group)
-            .map(
-              icon => /* html */ `
-                <button type="button" data-icon="${icon.id}" title="${icon.name}" class="${icon.id === selected ? "pressed" : ""}">
-                  ${burgIconPreview(icon)}<span>${icon.name}</span>
-                </button>`
-            )
+          ${files
+            .map(file => {
+              const id = `#${IconSets.symbolId(set, file)}`;
+              const name = file.slice(file.lastIndexOf("/") + 1).replaceAll("-", " ");
+              return /* html */ `
+                <button type="button" data-icon="${id}" title="${name}" class="${id === selected ? "pressed" : ""}">
+                  ${burgIconPreview(id)}<span>${name}</span>
+                </button>`;
+            })
             .join("")}
         </div>`
     )
@@ -479,13 +488,14 @@ export async function openBurgIconDialog({
   stroke,
   onPick
 }: BurgIconDialogOptions): Promise<void> {
-  void IconSets.ensure("burgs");
+  const set: BurgIconSetId = anchors ? "ports" : "burgs";
+  await IconSets.retry(set); // the previews frame themselves from the loaded symbols
   destroyDialog(BURG_ICON_DIALOG);
   ensureEl("dialogs").insertAdjacentHTML(
     "beforeend",
     /* html */ `<div id="${BURG_ICON_DIALOG}" class="dialog">
       <style>${BURG_ICON_STYLE}</style>
-      ${renderChoices(anchors, selected)}
+      ${renderChoices(set, selected)}
     </div>`
   );
   const dialog = ensureEl(BURG_ICON_DIALOG);

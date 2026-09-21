@@ -11,7 +11,7 @@ import { formatPrice, rn } from "../utils";
 type Type = "MFG" | "BUY" | "SELL" | "LOCAL";
 
 async function open(burgId: number): Promise<void> {
-  void IconSets.ensure("goods");
+  void IconSets.retry("goods");
   if (customization) return;
   const burg = pack.burgs[burgId];
   if (!burg || burg.removed) {

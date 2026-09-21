@@ -24,10 +24,12 @@ export default ({ mode }: { mode: string }) => ({
     emptyOutDir: true, // outDir sits outside root, so Vite would otherwise keep every past build's chunks
     rollupOptions: {
       output: {
-        // icon-sets.ts loads each directory's SVGs on demand; keep one chunk per directory
+        // icon-sets.ts loads each set's SVGs on demand; one chunk per set: relief sets are subdirectories
         manualChunks(id: string) {
-          const folder = id.match(/src\/assets\/icons\/(.+)\/[^/]+\.svg/)?.[1];
-          return folder ? `icons-${folder.replace(/\//g, "-")}` : undefined;
+          const path = id.match(/src\/assets\/icons\/(.+)\/[^/]+\.svg/)?.[1];
+          if (!path) return undefined;
+          const [family, set] = path.split("/");
+          return family === "relief" ? `icons-relief-${set}` : `icons-${family}`;
         }
       }
     }

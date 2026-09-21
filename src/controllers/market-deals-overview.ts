@@ -67,7 +67,7 @@ const marketDealsTable = initEditorTable<Deal>({
 });
 
 async function open(marketId: number): Promise<void> {
-  void IconSets.ensure("goods");
+  void IconSets.retry("goods");
   const market = Markets.get(marketId);
   if (!market) {
     tip("Invalid market. The selected market does not exist", true, "error", 5000);

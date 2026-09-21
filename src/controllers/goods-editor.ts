@@ -85,7 +85,7 @@ const goodsTable = initEditorTable<Good>({ getData: getGoodsData, onUpdate: rend
 
 /** With a good id, the Goods layer shows only that good */
 async function open(goodId?: number): Promise<void> {
-  void IconSets.ensure("goods");
+  void IconSets.retry("goods");
   if (customization) return;
   filterState = dialogState.get(dialogId, "filters", () => ({ visibleTags: [] as string[] }));
   closeDialogs("#goodsEditor, .stable");
@@ -702,7 +702,7 @@ function removeGood(good: Good) {
 
     pack.goods = pack.goods.filter(g => g.i !== good.i);
     // custom icons live outside the map svg and are never saved with the pack, drop the orphan
-    if (good.icon.startsWith("good-custom-") && !pack.goods.some(g => g.icon === good.icon)) {
+    if (good.icon.startsWith(Goods.customIconPrefix) && !pack.goods.some(g => g.icon === good.icon)) {
       document.getElementById(good.icon)?.remove();
     }
     Goods.sync();

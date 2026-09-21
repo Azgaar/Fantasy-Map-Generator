@@ -283,12 +283,12 @@ test.describe("map layers", () => {
     await expect(marketsEl).toBeAttached();
     await expect(marketsEl.locator("g[data-id]").first()).toBeAttached();
 
-    // Good icons are <use> elements pointing to a #good-* SVG symbol
+    // Good icons are <use> elements pointing to a #goods-* SVG symbol
     const icons = goodsEl.locator("use");
     await expect(icons.first()).toBeAttached();
 
     const href = await icons.first().getAttribute("href");
-    expect(href).toMatch(/^#good-/);
+    expect(href).toMatch(/^#goods-/);
 
     const html = await goodsEl.evaluate(el => el.outerHTML);
     expect(html).toMatchSnapshot("goods.html");

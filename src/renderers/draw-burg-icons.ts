@@ -1,15 +1,15 @@
+import { IconSets } from "@/components/icon-sets";
 import { Layers } from "@/components/layers";
 import type { Burg } from "@/generators/burgs-generator";
 import { ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import type { StylesData } from "@/types/styles";
 import { escapeHtml } from "@/utils/stringUtils";
-import { IconSets } from "../components/icon-sets";
 
 const layer = ViewportLayers.register({ id: "burgIcons", render: reconcileBurgIcons });
 
 export async function drawBurgIcons(): Promise<void> {
   TIME && console.time("drawBurgIcons");
-  await IconSets.ensure("burgs");
+  await IconSets.loadAll(Burgs.iconSets.map(set => set.id));
   layer.render();
   TIME && console.timeEnd("drawBurgIcons");
 }
@@ -54,7 +54,7 @@ function reconcileBurgIcons({ root, bounds }: ViewportRenderContext): void {
 
 /** One part of a burg group — the icons or the anchors — as its own data-group element */
 function part(name: "icons" | "anchors", style: BurgPart, burgs: Burg[], bounds: Bounds, anchors: boolean): string {
-  const icon = escapeHtml(style.options.icon || (anchors ? "#icon-anchor" : "#icon-circle"));
+  const icon = escapeHtml(style.options.icon || (anchors ? "#ports-anchor" : "#burgs-circle"));
   const size = style.options.size ?? 1;
   const shift = anchors ? (style.options as { dx?: number; dy?: number }) : undefined;
   const dx = (shift?.dx ?? 0) * size;

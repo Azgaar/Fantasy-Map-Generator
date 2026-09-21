@@ -59,7 +59,7 @@ const tradeDetailsTable = initEditorTable<TradeDetailRow>({
 });
 
 async function open(batch: TradeBatch): Promise<void> {
-  void IconSets.ensure("goods");
+  void IconSets.retry("goods");
   if (!batch?.deals.length) return;
 
   activeBatch = batch;
