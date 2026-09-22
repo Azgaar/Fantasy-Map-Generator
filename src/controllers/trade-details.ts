@@ -8,6 +8,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
+import { IconSets } from "@/components/icon-sets";
 import type { Burg } from "../generators/burgs-generator";
 import type { Deal } from "../generators/markets-generator";
 import type { Point } from "../generators/voronoi";
@@ -58,6 +59,7 @@ const tradeDetailsTable = initEditorTable<TradeDetailRow>({
 });
 
 function open(batch: TradeBatch): void {
+  void IconSets.retry("goods");
   if (!batch?.deals.length) return;
 
   activeBatch = batch;

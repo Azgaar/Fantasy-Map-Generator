@@ -1,5 +1,8 @@
 // Browser-mode tests (vitest.browser.config.ts): what a style card's header preview draws
 import { afterEach, expect, test } from "vitest";
+import "@/generators/relief-generator"; // the models own the icon set definitions the chip resolves ids against
+import "@/generators/burgs-generator";
+import "@/generators/goods-generator";
 import { cardPreview, type PreviewValues, sampleColor } from "./preview";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -124,9 +127,9 @@ test("a colour scheme, a texture and an icon each get their own preview", () => 
   expect(texture.className).toBe("tex");
   expect(texture.getAttribute("style")).toContain('url("./images/textures/marble-big.jpg")');
 
-  const [icon] = preview({ attrs: { fill: "#fff", stroke: "#000" }, options: { icon: "#icon-anchor" } });
+  const [icon] = preview({ attrs: { fill: "#fff", stroke: "#000" }, options: { icon: "#ports-anchor" } });
   expect(icon.className).toBe("icon");
-  expect(icon.querySelector("use")?.getAttribute("href")).toBe("#icon-anchor");
+  expect(icon.querySelector("use")?.getAttribute("href")).toBe("#ports-anchor");
 
   const [emoji] = preview({ options: { icon: "⚓" } });
   expect(emoji.className).toBe("emoji");

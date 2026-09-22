@@ -1,6 +1,6 @@
 // Save the whole .map project to storage, machine or cloud
-
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { IconSets } from "@/components/icon-sets";
 import { Layers } from "@/components/layers";
 import { Notes } from "@/components/notes";
 import { tip } from "@/components/tooltips";
@@ -120,8 +120,7 @@ function prepareMapData(): string {
   const styleData = JSON.stringify(styles);
 
   // store custom good icons
-  const goodIconsEl = ensureEl("good-icons");
-  const customGoodIcons = Array.from(goodIconsEl.querySelectorAll('[id^="good-custom-"]') || [])
+  const customGoodIcons = IconSets.customIcons(Goods.iconSet.id)
     .map(el => el.outerHTML)
     .join("")
     .replace(/[\r\n]+/g, " "); // map data is split by CRLF on load

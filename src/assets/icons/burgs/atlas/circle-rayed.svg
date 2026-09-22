@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-6 -6 12 12">
+<g transform="scale(.5)">
+<circle r="7" />
+<circle r="1" fill="none" />
+<path d="M0-11V-9M0 9V11M-11 0H-9M9 0H11" fill="none" />
+</g>
+</svg>

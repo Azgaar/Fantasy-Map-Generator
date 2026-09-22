@@ -48,7 +48,7 @@
             },
             "options": {
               "size": 18,
-              "icon": "#icon-illustrated-palace"
+              "icon": "#burgs-illustrated-palace"
             }
           },
           "anchors": {
@@ -66,7 +66,7 @@
             },
             "options": {
               "size": 2.5,
-              "icon": "#icon-anchor",
+              "icon": "#ports-anchor",
               "dx": 0,
               "dy": -1.5
             }
@@ -90,7 +90,7 @@
             },
             "options": {
               "size": 7,
-              "icon": "#icon-illustrated-burgh"
+              "icon": "#burgs-illustrated-burgh"
             }
           },
           "anchors": {
@@ -108,7 +108,7 @@
             },
             "options": {
               "size": 1.2,
-              "icon": "#icon-anchor",
+              "icon": "#ports-anchor",
               "dx": 0,
               "dy": -1.25
             }
@@ -132,7 +132,7 @@
             },
             "options": {
               "size": 7,
-              "icon": "#icon-illustrated-castle"
+              "icon": "#burgs-illustrated-castle"
             }
           },
           "anchors": {
@@ -150,7 +150,7 @@
             },
             "options": {
               "size": 1.4,
-              "icon": "#icon-anchor",
+              "icon": "#ports-anchor",
               "dx": 0,
               "dy": -0.9
             }
@@ -174,7 +174,7 @@
             },
             "options": {
               "size": 7,
-              "icon": "#icon-illustrated-abbey"
+              "icon": "#burgs-illustrated-abbey"
             }
           },
           "anchors": {
@@ -192,7 +192,7 @@
             },
             "options": {
               "size": 1.5,
-              "icon": "#icon-anchor",
+              "icon": "#ports-anchor",
               "dx": 0,
               "dy": -0.9
             }
@@ -216,7 +216,7 @@
             },
             "options": {
               "size": 7,
-              "icon": "#icon-illustrated-caravanserai"
+              "icon": "#burgs-illustrated-caravanserai"
             }
           },
           "anchors": {
@@ -234,7 +234,7 @@
             },
             "options": {
               "size": 1.4,
-              "icon": "#icon-anchor",
+              "icon": "#ports-anchor",
               "dx": 0,
               "dy": -0.9
             }
@@ -258,7 +258,7 @@
             },
             "options": {
               "size": 8,
-              "icon": "#icon-illustrated-camp"
+              "icon": "#burgs-illustrated-camp"
             }
           },
           "anchors": {
@@ -276,7 +276,7 @@
             },
             "options": {
               "size": 1.3,
-              "icon": "#icon-anchor",
+              "icon": "#ports-anchor",
               "dx": 0,
               "dy": -0.8
             }
@@ -300,7 +300,7 @@
             },
             "options": {
               "size": 1.6,
-              "icon": "#icon-diamond-dotted"
+              "icon": "#burgs-atlas-diamond-dotted"
             }
           },
           "anchors": {
@@ -318,7 +318,7 @@
             },
             "options": {
               "size": 1.4,
-              "icon": "#icon-harbor",
+              "icon": "#ports-harbor",
               "dx": 0,
               "dy": 0
             }
@@ -342,7 +342,7 @@
             },
             "options": {
               "size": 1.3,
-              "icon": "#icon-diamond-dotted"
+              "icon": "#burgs-atlas-diamond-dotted"
             }
           },
           "anchors": {
@@ -360,7 +360,7 @@
             },
             "options": {
               "size": 1.1,
-              "icon": "#icon-harbor",
+              "icon": "#ports-harbor",
               "dx": 0,
               "dy": 0
             }
@@ -384,7 +384,7 @@
             },
             "options": {
               "size": 2,
-              "icon": "#icon-circle-dotted"
+              "icon": "#burgs-atlas-circle-dotted"
             }
           },
           "anchors": {
@@ -402,7 +402,7 @@
             },
             "options": {
               "size": 1.9,
-              "icon": "#icon-harbor",
+              "icon": "#ports-harbor",
               "dx": 0,
               "dy": 0
             }

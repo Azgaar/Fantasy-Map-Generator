@@ -4,12 +4,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import indexHtml from "@/index.html?raw";
 import "@/generators/added-labels";
 import "@/generators/features-generator"; // migrations call the Features module through its global
+import "@/generators/goods-generator"; // the goods icon namespace the 1.154 step migrates into
 import { confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { Styles } from "@/generators/styles";
 import * as versioning from "@/services/versioning";
 import { VERSION } from "@/services/versioning";
 import { downloadFile } from "@/utils";
+import { safeParseJSON } from "@/utils/stringUtils";
 import { migrateLegacySettings, resolveVersionConflicts } from "./auto-update";
 
 beforeEach(() => {
@@ -465,8 +467,8 @@ describe("v1.154.0 style record normalization", () => {
 
     await resolveVersionConflicts("1.153.0", data);
     const parsed = Styles.parse(JSON.parse(data[48]));
-    expect(parsed.burgIcons.groups.town.groups.anchors.options).toEqual({ size: 2, icon: "#icon-anchor" });
-    expect(parsed.burgIcons.groups.town.groups.icons.options.icon).toBe("#icon-circle");
+    expect(parsed.burgIcons.groups.town.groups.anchors.options).toEqual({ size: 2, icon: "#ports-anchor" });
+    expect(parsed.burgIcons.groups.town.groups.icons.options.icon).toBe("#burgs-atlas-circle");
   });
 
   it("drops the old #icons layer element so the #burgIcons layer takes over", async () => {
@@ -940,5 +942,135 @@ describe("v1.152.0 notes moved onto entities", () => {
       '"burg99","Lost Town","dropped, with a ""quote"""',
       '"someLegacyThing","Older still","dropped too"'
     ]);
+  });
+});
+
+describe("v1.154 relief descriptors", () => {
+  const stylesPayload = (set: string, size = 1): string => {
+    const record = JSON.parse(JSON.stringify(Styles.parse(undefined)));
+    record.relief.options.set = set;
+    record.relief.options.size = size;
+    return JSON.stringify(record);
+  };
+
+  // isolate one version step: the migration runs after the style steps, without unrelated DOM setup
+  const runMigration = async (mapVersion: string, data: string[], versions: string[]): Promise<void> => {
+    const compare = vi.spyOn(versioning, "compareVersions");
+    compare.mockImplementation((_a, b) => ({
+      isOlder: !!b && versions.includes(b),
+      isNewer: false,
+      isEqual: false
+    }));
+    try {
+      await resolveVersionConflicts(mapVersion, data);
+    } finally {
+      compare.mockRestore();
+    }
+  };
+
+  const migrate = async (icons: unknown[], set: string, size = 1): Promise<typeof pack.relief> => {
+    document.body.innerHTML = '<svg id="map"><defs id="deftemp"/><g id="viewbox"><g id="terrain"></g></g></svg>';
+    const data: string[] = [];
+    data[48] = stylesPayload(set, size);
+    globalThis.pack = { relief: structuredClone(icons) } as unknown as typeof pack;
+    await runMigration("1.153.1", data, ["1.154.0"]);
+    return pack.relief;
+  };
+
+  it("renames goods symbols into the set namespace and uploads into the reserved custom one", async () => {
+    document.body.innerHTML =
+      '<svg id="map"><defs id="deftemp"/><g id="viewbox"><g id="terrain"></g></g></svg><svg id="defElements"><defs><svg id="good-custom-ab12"/></defs></svg>';
+    const data: string[] = [];
+    data[48] = stylesPayload("colored");
+    globalThis.pack = {
+      relief: [],
+      goods: [{ icon: "good-wood" }, { icon: "good-salted-fish" }, { icon: "good-custom-ab12" }, { icon: "goods-tea" }]
+    } as unknown as typeof pack;
+    await runMigration("1.153.1", data, ["1.154.0"]);
+    expect(pack.goods.map(good => good.icon)).toEqual([
+      "goods-wood",
+      "goods-salted-fish",
+      "custom-goods-ab12",
+      "goods-tea"
+    ]);
+    expect(document.querySelector("#defElements defs > svg")?.id).toBe("custom-goods-ab12");
+  });
+
+  it("renumbers variants and recovers pins against the incoming map's set", async () => {
+    const relief = await migrate(
+      [
+        { icon: "relief-mount-1", x: 1, y: 2, s: 3 },
+        { icon: "relief-mount-7", x: 1, y: 2, s: 3 },
+        { icon: "relief-hill-5-bw", x: 1, y: 2, s: 3 },
+        { icon: "relief-mount-3-illustrated", x: 1, y: 2, s: 3 },
+        { icon: "relief-mountSnow-6-bw", x: 1, y: 2, s: 3 },
+        { icon: "relief-cactus-3", x: 1, y: 2, s: 3 },
+        { icon: "relief-swamp-3", x: 1, y: 2, s: 3 }
+      ],
+      "colored"
+    );
+
+    expect(relief).toEqual([
+      { type: "mount", set: "simple", x: 1, y: 2, s: 3 }, // an absent variant means 1, so it is not stored
+      { type: "mount", variant: 6, x: 1, y: 2, s: 3 },
+      { type: "hill", variant: 4, set: "gray", x: 1, y: 2, s: 3 },
+      { type: "mount", variant: 3, set: "illustrated", x: 1, y: 2, s: 3 },
+      { type: "mountSnow", variant: 6, set: "gray", x: 1, y: 2, s: 3 },
+      { type: "cactus", variant: 3, x: 1, y: 2, s: 3 },
+      { type: "swamp", variant: 2, x: 1, y: 2, s: 3 }
+    ]);
+  });
+
+  it("uses the incoming map's set, not the previously open map's style", async () => {
+    globalThis.styles = Styles.parse(undefined);
+    styles.relief.options.set = "simple";
+    const relief = await migrate([{ icon: "relief-mount-2", x: 0, y: 0, s: 1 }], "colored");
+    expect(relief).toEqual([{ type: "mount", x: 0, y: 0, s: 1 }]);
+  });
+
+  it("lifts SVG relief out of #terrain and resolves its descriptor", async () => {
+    document.body.innerHTML =
+      '<svg id="map"><defs id="deftemp"/><g id="viewbox"><g id="terrain" set="gray" size="1" density="0.4"><use href="#relief-mount-3-bw" x="12" y="23" width="14"/></g></g></svg>';
+    const data: string[] = [];
+    data[48] = stylesPayload("gray");
+    globalThis.pack = { relief: [], features: [] } as unknown as typeof pack;
+    await runMigration("1.141.0", data, ["1.142.0", "1.154.0"]);
+    expect(pack.relief).toEqual([{ type: "mount", variant: 2, x: 12, y: 23, s: 14 }]);
+  });
+
+  it("recovers a pre-1.142 map's set and size through the whole chain, with no style record to read", async () => {
+    // the 1.142 step lifts the terrain attributes into the styles global, the 1.150 step serializes that into
+    // data[48], and the 1.154 step must read the record rather than the global the previously open map left
+    globalThis.styles = Styles.parse(undefined);
+    styles.relief.options.set = "simple";
+    document.body.innerHTML =
+      '<svg id="map"><defs id="deftemp"/><g id="viewbox"><g id="terrain" set="colored" size="2" density="0.4"><use href="#relief-mount-3" x="10" y="20" width="12"/><use href="#relief-mount-1" x="0" y="0" width="4"/></g></g></svg>';
+    const data: string[] = [];
+    globalThis.pack = { relief: [], features: [] } as unknown as typeof pack;
+    await runMigration("1.141.0", data, ["1.142.0", "1.150.0", "1.154.0"]);
+    expect(Styles.parse(safeParseJSON(data[48])).relief.options).toMatchObject({ set: "colored", size: 2 });
+    expect(pack.relief).toEqual([
+      { type: "mount", set: "simple", x: 1, y: 1, s: 2 },
+      { type: "mount", variant: 2, x: 13, y: 23, s: 6 }
+    ]);
+  });
+
+  it("compensates old simple grass exactly once", async () => {
+    const once = await migrate([{ icon: "relief-grass-1", x: 12.25, y: 33.76, s: 12 }], "simple");
+    expect(once[0]).toEqual({ type: "grass", x: 13.25, y: 34.76, s: 10 });
+    const twice = await migrate(structuredClone(once), "simple");
+    expect(twice).toEqual(once);
+  });
+
+  it("gives the old style size back to the data, now that size is a render multiplier", async () => {
+    const relief = await migrate([{ icon: "relief-mount-3", x: 10, y: 20, s: 12 }], "colored", 2);
+    expect(relief).toEqual([{ type: "mount", variant: 2, x: 13, y: 23, s: 6 }]);
+  });
+
+  it("keeps an unrecognised legacy id from failing the load", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const relief = await migrate([{ icon: "relief-mystery-1", x: 0, y: 0, s: 1 }], "simple");
+    expect(relief).toEqual([]);
+    warn.mockRestore();
   });
 });

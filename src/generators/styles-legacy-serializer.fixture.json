@@ -423,7 +423,7 @@
   },
   "#burgIcons > g#capital": {
     "opacity": 0.42,
-    "data-icon": "#icon-test",
+    "data-icon": "#burgs-test",
     "font-size": 2,
     "fill": "#445566",
     "fill-opacity": 0.55,

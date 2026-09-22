@@ -1,3 +1,4 @@
+import { IconSets } from "@/components/icon-sets";
 import { Layers } from "@/components/layers";
 import {
   type Box,
@@ -55,8 +56,9 @@ interface BurgPlate {
   entries: PlateEntry[];
 }
 
-export function drawGoods(): void {
+export async function drawGoods(): Promise<void> {
   TIME && console.time("drawGoods");
+  await IconSets.load("goods");
   buildScene();
   layer.render();
   TIME && console.timeEnd("drawGoods");
@@ -83,7 +85,7 @@ export function removeGoods(): void {
 
 function reconcileGoods({ root, bounds }: ViewportRenderContext): void {
   if (!Layers.isOn("goods")) return;
-  if (sourcePack !== pack) buildScene();
+  if (sourcePack !== pack || root !== document) buildScene();
 
   const cells = root.querySelector<SVGGElement>("#goodsCells");
   if (cells) cells.innerHTML = renderCellProduction(bounds);

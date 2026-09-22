@@ -428,7 +428,7 @@ describe("ensureBurgGroupStyles", () => {
     const Burgs = (globalThis as any).Burgs;
 
     options.map.burgs.groups = [{ name: "town" }, { name: "fortresses" }] as never;
-    const town = { attrs: { fill: "#aaa" }, options: { size: 1, icon: "#icon-burg" } };
+    const town = { attrs: { fill: "#aaa" }, options: { size: 1, icon: "#burgs-burg" } };
     const townAnchor = { attrs: { fill: "#bbb" }, options: { size: 2 } };
     (globalThis as any).styles = {
       burgIcons: {

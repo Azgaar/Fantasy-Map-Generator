@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-2.9 -4.7 5.8 6.2">
+<desc>Burg icon by Watabou (Oleg Dolya), from the Medieval Fantasy City Generator. Source: https://watabou.itch.io/medieval-fantasy-city-generator. Attribution appreciated.</desc>
+<g transform="scale(.1)">
+<g transform="translate(-120 -95) scale(2 2)">
+<path
+fill="#EBE8DF"
+d="M63 48H48.6l.4-8.7 6.8-12.2 6.8 12.2.2 8.7m8.3 0h-8.3l-.2-8.7L56 27.1l2 .3 2 .2 2-.2 2-.3 6.8 12.2.5 8.7"
+/>
+<path d="M70.7 39.3h-8L56 27.1l2 .3 2 .2 2-.2 2-.3 6.8 12.2" />
+<path fill="#4D3F36" d="M57.1 48h-2.4v-5.4l.5-1h1.4l.5 1V48" />
+</g>
+<circle fill="#EBE8DF" stroke-width="3" cx="0" cy="0" r="10" />
+</g>
+</svg>

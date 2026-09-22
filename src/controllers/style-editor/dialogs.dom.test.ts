@@ -1,35 +1,40 @@
 // Browser-mode tests (vitest.browser.config.ts): the icon picker's choices and the registry-derived lookup
 import { afterEach, expect, test } from "vitest";
+import "@/generators/relief-generator"; // the models own the set definitions the picker lists
+import "@/generators/burgs-generator";
+import "@/generators/goods-generator";
 import { elementFor, paintBurgIconDialog, renderChoices } from "./dialogs";
 
 afterEach(() => document.body.replaceChildren());
 
-const render = (anchors: boolean, selected: string) => {
+const render = (set: "burgs" | "ports", selected: string) => {
   const content = document.createElement("div");
-  content.innerHTML = renderChoices(anchors, selected);
+  content.innerHTML = renderChoices(set, selected);
   return content;
 };
 
-test("the burg sets are listed by group with the current icon pressed", () => {
-  const content = render(false, "#icon-watabou-city");
-  expect([...content.querySelectorAll("h4")].map(h => h.textContent)).toEqual(["Atlas", "Watabou", "Illustrated"]);
+test("the burg set is listed by directory with the current icon pressed", () => {
+  const content = render("burgs", "#burgs-watabou-city");
+  expect([...content.querySelectorAll("h4")].map(h => h.textContent)).toEqual(["Atlas", "Illustrated", "Watabou"]);
   expect(content.querySelectorAll("button[data-icon]").length).toBeGreaterThan(20);
   const pressed = content.querySelectorAll("button.pressed");
   expect(pressed).toHaveLength(1);
-  expect(pressed[0].getAttribute("data-icon")).toBe("#icon-watabou-city");
+  expect(pressed[0].getAttribute("data-icon")).toBe("#burgs-watabou-city");
+  expect(pressed[0].getAttribute("title")).toBe("city");
 });
 
-test("the port set offers the anchor and the harbor", () => {
-  const content = render(true, "#icon-anchor");
+test("the port set offers the anchor and the harbor without a heading", () => {
+  const content = render("ports", "#ports-anchor");
+  expect(content.querySelector("h4")).toBeNull();
   expect([...content.querySelectorAll<HTMLElement>("button[data-icon]")].map(b => b.dataset.icon)).toEqual([
-    "#icon-anchor",
-    "#icon-harbor"
+    "#ports-anchor",
+    "#ports-harbor"
   ]);
 });
 
 test("the previews inherit the paint set on the dialog, never their own", () => {
   const dialog = document.createElement("div");
-  dialog.append(render(false, "#icon-circle"));
+  dialog.append(render("burgs", "#burgs-atlas-circle"));
   document.body.append(dialog);
   paintBurgIconDialog("#123456", "#abcdef", dialog);
   for (const use of dialog.querySelectorAll("use")) {

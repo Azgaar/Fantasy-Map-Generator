@@ -3,6 +3,7 @@ import { AUTO_BURG_LIMIT } from "@/components/options-schema";
 import { Emblems } from "@/generators/emblems-generator";
 import type { BurgGroup } from "@/types/burg-groups";
 import type { Emblem } from "@/types/emblems";
+import type { IconSet } from "@/types/icons";
 import { safeParseJSON } from "@/utils/stringUtils";
 import { each, gauss, minmax, normalize, P, rn } from "../utils";
 import { type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
@@ -57,6 +58,13 @@ type PortCandidate = {
 };
 
 class BurgModule {
+  /** the burg icons (styled subdirectories included) and the port anchors, drawn around the anchor at
+   * 10 user units per em, so a `size` of 1 draws the plain circle 1em wide */
+  readonly iconSets = [
+    { id: "burgs", folder: "burgs", em: 10 },
+    { id: "ports", folder: "ports", em: 10 }
+  ] as const satisfies readonly IconSet[];
+
   generate() {
     const { cells } = pack;
 
@@ -911,5 +919,7 @@ declare global {
 
 // biome-ignore lint/suspicious/noRedeclare: legacy seam
 export const Burgs = new BurgModule();
+
+export type BurgIconSetId = (typeof Burgs.iconSets)[number]["id"];
 
 window.Burgs = Burgs;

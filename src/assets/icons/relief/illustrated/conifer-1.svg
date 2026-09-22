@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
+<g stroke="#6d5a3d" stroke-width=".55" stroke-linecap="round" stroke-linejoin="round">
+<g transform="translate(13 18) scale(.8)">
+<path d="M-.35 0L-.5 3.5H.5L.3 0Z" fill="#a18c69" stroke-width=".35" />
+<path d="M0-12L2.5-7.5L1.6-7.7L4-3.8L2.9-4.1L5 0Q2 .6 0 .3Q-2 1-4.7 0L-2.8-3.8L-4-3.5L-1.8-7.3L-2.7-7.1Z" fill="#838060" />
+<path d="M0-12L.5-6.5L-.3-4L1 0.3Q3 .5 5 0L2.9-4.1L4-3.8L1.6-7.7L2.5-7.5Z" fill="#727758" stroke="none" opacity=".45" />
+<path d="M-1-8.5L-1.7-7.4M-1-5L-2-3.5M1.5-2.5L2.5-1" fill="none" stroke-width=".35" />
+<path d="M-2.8 3.8H2.8" fill="none" stroke-width=".4" />
+</g>
+<g transform="translate(25 19) scale(.75)">
+<path d="M-.35 0L-.5 3.5H.5L.3 0Z" fill="#a18c69" stroke-width=".35" />
+<path d="M0-12L2.5-7.5L1.6-7.7L4-3.8L2.9-4.1L5 0Q2 .6 0 .3Q-2 1-4.7 0L-2.8-3.8L-4-3.5L-1.8-7.3L-2.7-7.1Z" fill="#838060" />
+<path d="M0-12L.5-6.5L-.3-4L1 0.3Q3 .5 5 0L2.9-4.1L4-3.8L1.6-7.7L2.5-7.5Z" fill="#727758" stroke="none" opacity=".45" />
+<path d="M-1-8.5L-1.7-7.4M-1-5L-2-3.5M1.5-2.5L2.5-1" fill="none" stroke-width=".35" />
+<path d="M-2.8 3.8H2.8" fill="none" stroke-width=".4" />
+</g>
+<g transform="translate(8 27) scale(.7)">
+<path d="M-.35 0L-.5 3.5H.5L.3 0Z" fill="#a18c69" stroke-width=".35" />
+<path d="M0-12L2.5-7.5L1.6-7.7L4-3.8L2.9-4.1L5 0Q2 .6 0 .3Q-2 1-4.7 0L-2.8-3.8L-4-3.5L-1.8-7.3L-2.7-7.1Z" fill="#838060" />
+<path d="M0-12L.5-6.5L-.3-4L1 0.3Q3 .5 5 0L2.9-4.1L4-3.8L1.6-7.7L2.5-7.5Z" fill="#727758" stroke="none" opacity=".45" />
+<path d="M-1-8.5L-1.7-7.4M-1-5L-2-3.5M1.5-2.5L2.5-1" fill="none" stroke-width=".35" />
+<path d="M-2.8 3.8H2.8" fill="none" stroke-width=".4" />
+</g>
+<g transform="translate(19 26)">
+<path d="M-.35 0L-.5 3.5H.5L.3 0Z" fill="#a18c69" stroke-width=".35" />
+<path d="M0-12L2.5-7.5L1.6-7.7L4-3.8L2.9-4.1L5 0Q2 .6 0 .3Q-2 1-4.7 0L-2.8-3.8L-4-3.5L-1.8-7.3L-2.7-7.1Z" fill="#838060" />
+<path d="M0-12L.5-6.5L-.3-4L1 0.3Q3 .5 5 0L2.9-4.1L4-3.8L1.6-7.7L2.5-7.5Z" fill="#727758" stroke="none" opacity=".45" />
+<path d="M-1-8.5L-1.7-7.4M-1-5L-2-3.5M1.5-2.5L2.5-1" fill="none" stroke-width=".35" />
+<path d="M-2.8 3.8H2.8" fill="none" stroke-width=".4" />
+</g>
+<g transform="translate(30 28) scale(.7)">
+<path d="M-.35 0L-.5 3.5H.5L.3 0Z" fill="#a18c69" stroke-width=".35" />
+<path d="M0-12L2.5-7.5L1.6-7.7L4-3.8L2.9-4.1L5 0Q2 .6 0 .3Q-2 1-4.7 0L-2.8-3.8L-4-3.5L-1.8-7.3L-2.7-7.1Z" fill="#838060" />
+<path d="M0-12L.5-6.5L-.3-4L1 0.3Q3 .5 5 0L2.9-4.1L4-3.8L1.6-7.7L2.5-7.5Z" fill="#727758" stroke="none" opacity=".45" />
+<path d="M-1-8.5L-1.7-7.4M-1-5L-2-3.5M1.5-2.5L2.5-1" fill="none" stroke-width=".35" />
+<path d="M-2.8 3.8H2.8" fill="none" stroke-width=".4" />
+</g>
+</g>
+</svg>

@@ -2,6 +2,7 @@
 // and the composed ones call `set` with the whole string the schema format expects
 import { interpolateRgb, interpolateRgbBasis, scaleSequential } from "d3";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
+import { IconSets } from "@/components/icon-sets";
 import {
   type ControlFactory,
   type FieldSpec,
@@ -13,7 +14,6 @@ import {
 } from "@/components/shared/schema-form";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
-import { burgIcon, burgIconPreview } from "@/data/burg-icons";
 import { TEXTURES } from "@/data/textures";
 import { FORMATS, isLabelStyle } from "@/generators/styles-formats";
 import { drawHeights } from "@/renderers/draw-heightmap";
@@ -23,6 +23,7 @@ import { addGoogleFont, addLocalFont, addWebFont } from "@/services/fonts";
 import type { StandardControl, StyleControl } from "@/types/styles";
 import { ensureEl, findEl, rn, toHEX } from "@/utils";
 import { BURG_ICON_DIALOG, FONT_DIALOG, openBurgIconDialog, openFontDialog, paintBurgIconDialog } from "./dialogs";
+import { burgIconPreview } from "./icon-preview";
 
 const OPEN_DIALOGS = ["addFontDialog", "textureUrlDialog", "heightmapSchemeDialog", BURG_ICON_DIALOG, FONT_DIALOG];
 
@@ -472,10 +473,10 @@ const icon: ControlFactory = (spec, value, set) => {
   const button = pickButton();
   let current = typeof value === "string" ? value : "";
   const show = () => {
-    const icon = burgIcon(current);
-    button.innerHTML = `${burgIconPreview(icon)}<span>${icon.name}</span>`;
+    button.innerHTML = `${burgIconPreview(current)}<span>${IconSets.name(current)}</span>`;
   };
   show();
+  void IconSets.load(anchors ? "ports" : "burgs").then(show); // the preview frames itself from the loaded symbol
 
   // the fill and stroke rows of the same group are siblings rendered before this control
   const paint = { fill: "none", stroke: "none" };

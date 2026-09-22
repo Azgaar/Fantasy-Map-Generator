@@ -1,18 +1,20 @@
 // Update an old map file to the current version
 import { color, min, select } from "d3";
 import { confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { IconSets } from "@/components/icon-sets";
 import { type LayerId, Layers, type LayersState } from "@/components/layers";
 import { type EntityRef, MapEntities } from "@/components/map-entities";
 import { Notes } from "@/components/notes";
 import { normalizeLegacyBurgGroupFilters } from "@/components/options-legacy";
 import type { MapData } from "@/components/options-schema";
-import { RELIEF_SETS } from "@/data/relief-icons";
 import { Emblems } from "@/generators/emblems-generator";
 import { type Feature, LAKE_SUBTYPES, OCEAN_SUBTYPES } from "@/generators/features-generator";
 import type { GraphOverrides } from "@/generators/graph-override";
 import { type Label, type LabelNameMode, Labels as LabelsGenerator } from "@/generators/labels-generator";
 import { getDefaultMarkerName, type Marker } from "@/generators/markers-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
+import type { ReliefIcon, ReliefIconType, ReliefSet } from "@/generators/relief-generator";
+import { Styles } from "@/generators/styles";
 import {
   labelGroupFromLegacy,
   lakeGroupFromSvg,
@@ -27,7 +29,6 @@ import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { unfog } from "@/renderers/overlays/fogging";
 import { StylePresetsService } from "@/services/style-presets";
 import { compareVersions } from "@/services/versioning";
-import type { ReliefSet } from "@/types/relief";
 import type { StylesData } from "@/types/styles";
 import {
   downloadFile,
@@ -88,6 +89,8 @@ const LEGACY_LAYER_IDS: Record<string, LayerId> = {
 export async function resolveVersionConflicts(mapVersion: string, data: string[]): Promise<void> {
   const isOlderThan = (tagVersion: string) => compareVersions(mapVersion, tagVersion).isOlder;
   const noteRenames = new Map<string, string>(); // legacy element id -> the id the element has now
+  type LegacyReliefIcon = { icon: string; x: number; y: number; s: number };
+  let extractedRelief: LegacyReliefIcon[] | null = null; // read by the 1.154 relief step
 
   if (isOlderThan("1.139.0")) {
     // v1.139.0 moved biomes data from the legacy pipe-delimited format to pack.biomes.
@@ -1103,13 +1106,6 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         if (!this.dataset.dy) this.dataset.dy = "-0.4";
       });
 
-    const anchorSymbol = ensureEl("icon-anchor");
-    if (anchorSymbol) {
-      anchorSymbol.outerHTML = /* html */ `<symbol id="icon-anchor" viewBox="0 0 30 30" width="1em" height="1em" overflow="visible">
-        <path d="m 1.003,-9.873 c 0,-0.547 -0.453,-1 -1,-1 -0.547,0 -1,0.453 -1,1 0,0.547 0.453,1 1,1 0.547,0 1,-0.453 1,-1 z m 13,14.5 v 5.5 c 0,0.203 -0.125,0.391 -0.313,0.469 -0.063,0.016 -0.125,0.031 -0.187,0.031 -0.125,0 -0.25,-0.047 -0.359,-0.141 L 11.691,9.033 c -2.453,2.953 -6.859,4.844 -11.688,4.844 -4.829,0 -9.234,-1.891 -11.688,-4.844 l -1.453,1.453 c -0.094,0.094 -0.234,0.141 -0.359,0.141 -0.063,0 -0.125,-0.016 -0.187,-0.031 -0.187,-0.078 -0.313,-0.266 -0.313,-0.469 v -5.5 c 0,-0.281 0.219,-0.5 0.5,-0.5 h 5.5 c 0.203,0 0.391,0.125 0.469,0.313 0.078,0.188 0.031,0.391 -0.109,0.547 L -9.2,6.55 c 1.406,1.891 4.109,3.266 7.203,3.687 V 0.128 h -3 c -0.547,0 -1,-0.453 -1,-1 v -2 c 0,-0.547 0.453,-1 1,-1 h 3 v -2.547 c -1.188,-0.688 -2,-1.969 -2,-3.453 0,-2.203 1.797,-4 4,-4 2.203,0 4,1.797 4,4 0,1.484 -0.812,2.766 -2,3.453 v 2.547 h 3 c 0.547,0 1,0.453 1,1 v 2 c 0,0.547 -0.453,1 -1,1 h -3 V 10.237 C 5.097,9.815 7.8,8.44 9.206,6.55 L 7.643,4.987 C 7.502,4.831 7.456,4.628 7.534,4.44 7.612,4.252 7.8,4.127 8.003,4.127 h 5.5 c 0.281,0 0.5,0.219 0.5,0.5 z"/>
-      </symbol>`;
-    }
-
     const validBurgs = pack.burgs.filter(b => b.i && !b.removed);
     const populations = validBurgs.map(b => b.population ?? 0).sort((a, b) => a - b);
     validBurgs.forEach(burg => {
@@ -1531,7 +1527,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       // v1.142.0 moved the relief style from the #terrain attributes to the style store
       const set = terrainEl.getAttribute("set");
       styles.relief.options = {
-        set: set && set in RELIEF_SETS ? (set as ReliefSet) : "simple",
+        set: set && Relief.sets.includes(set as ReliefSet) ? (set as ReliefSet) : "simple",
         size: Number(terrainEl.getAttribute("size")) || 1,
         density: Number(terrainEl.getAttribute("density")) || 0.4
       };
@@ -1539,7 +1535,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
       const iconElements = Array.from(terrainEl.querySelectorAll("use"));
       if (iconElements.length) {
-        pack.relief = iconElements.map(useEl => ({
+        extractedRelief = iconElements.map(useEl => ({
           icon: (useEl.getAttribute("href") || useEl.getAttribute("xlink:href") || "").replace("#", ""),
           x: rn(Number(useEl.getAttribute("x")), 2),
           y: rn(Number(useEl.getAttribute("y")), 2),
@@ -1996,9 +1992,11 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     // v1.154.0 pinned the string attr formats and folded the fields that mirrored an attr into the attr
     const record = data[48] ? safeParseJSON(data[48]) : undefined;
     if (record) {
-      // anchors ignored their icon before ports became stylable
+      // anchors ignored their icon before ports became stylable (a pre-1.150 record is already renamed)
       for (const group of Object.values(record.burgIcons?.anchors?.groups ?? {}) as { options?: { icon?: string } }[]) {
-        if (group?.options?.icon === "#icon-circle") group.options.icon = "#icon-anchor";
+        if (group?.options?.icon === "#icon-circle" || group?.options?.icon === "#burgs-atlas-circle") {
+          group.options.icon = "#ports-anchor";
+        }
       }
       data[48] = JSON.stringify(normalizeStyles(record));
     }
@@ -2009,6 +2007,63 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     document.getElementById("burgIcons")?.remove();
     document.getElementById("icons")?.remove(); // the layer group itself: it is #burgIcons now
     document.getElementById("labels")?.removeAttribute("font-size"); // the viewbox carries the base the groups size from
+
+    // v1.154.0 changed the relief icons data format
+    const { set: incomingSet, size: incomingSize } = Styles.parse(data[48] ? safeParseJSON(data[48]) : undefined).relief
+      .options;
+    function migrateReliefIcon(icon: LegacyReliefIcon, styleSet: ReliefSet, styleSize: number): ReliefIcon {
+      const match = icon.icon.match(/^relief-(\w+)-(\d+)(-bw|-illustrated)?$/);
+      if (!match) throw new Error(`Invalid legacy relief icon: ${icon.icon}`);
+      const [, type, number, suffix] = match;
+      if (!Relief.isType(type)) throw new Error(`Unknown legacy relief type: ${type}`);
+      const shared = ["mount", "hill", "dune", "deciduous", "conifer", "acacia", "palm", "grass", "swamp"].includes(
+        type
+      );
+      const n = Number(number);
+      const set =
+        suffix === "-bw"
+          ? "gray"
+          : suffix === "-illustrated"
+            ? "illustrated"
+            : shared && n === 1
+              ? "simple"
+              : "colored";
+      const variant = suffix !== "-illustrated" && shared && n > 1 ? n - 1 : n;
+      let { x, y, s } = icon;
+      if (icon.icon === "relief-grass-1") {
+        // the extracted art carries the old 1.2 scale in its viewBox: shrink the drawn box around its center
+        const drawn = s / 1.2;
+        x += (s - drawn) / 2;
+        y += (s - drawn) / 2;
+        s = drawn;
+      }
+      // size is a render multiplier now and the renderer anchors it at the icon's centre, so the stored
+      // base is drawn / size and x/y move to keep that centre — the array's z-order key — in place
+      const base = s / styleSize;
+      x += (s - base) / 2;
+      y += (s - base) / 2;
+      return { ...Relief.ref(type as ReliefIconType, variant, set !== styleSet ? set : undefined), x, y, s: base };
+    }
+
+    const storedRelief: (ReliefIcon | LegacyReliefIcon)[] = extractedRelief ?? pack.relief ?? [];
+    const isLegacyReliefIcon = (icon: ReliefIcon | LegacyReliefIcon): icon is LegacyReliefIcon => "icon" in icon;
+    pack.relief = storedRelief.flatMap(icon => {
+      if (!isLegacyReliefIcon(icon)) return [icon];
+      try {
+        return [migrateReliefIcon(icon, incomingSet, incomingSize || 1)];
+      } catch {
+        console.warn(`Skipping unknown legacy relief icon: ${icon.icon}`);
+        return [];
+      }
+    });
+    // old saves order by the box bottom; the renderer keeps the icon's centre in place
+    pack.relief.sort(Relief.byAnchor);
+
+    // v1.154.0 derives symbol ids from the icon set directories: good-<name> is goods-<name>, uploads are custom-goods-<id>
+    const goodIconId = (icon: string): string =>
+      icon.replace(/^good-custom-/, IconSets.customPrefix(Goods.iconSet.id)).replace(/^good-/, `${Goods.iconSet.id}-`);
+    for (const good of pack.goods ?? []) if (good.icon) good.icon = goodIconId(good.icon);
+    for (const art of document.querySelectorAll('[id^="good-custom-"]')) art.id = goodIconId(art.id);
   }
 }
 

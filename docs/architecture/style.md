@@ -59,8 +59,8 @@ mirrors the DOM tree: every `groups` entry addresses one `data-group` child of i
     "groups": {
       "capital": {
         "groups": {
-          "icons": { "attrs": { "fill": "#ffffff" }, "options": { "size": 2, "icon": "#icon-square" } },
-          "anchors": { "attrs": { "fill": "#ffffff" }, "options": { "size": 1.9, "icon": "#icon-anchor" } }
+          "icons": { "attrs": { "fill": "#ffffff" }, "options": { "size": 2, "icon": "#burgs-atlas-square" } },
+          "anchors": { "attrs": { "fill": "#ffffff" }, "options": { "size": 1.9, "icon": "#ports-anchor" } }
         }
       }
     }
@@ -317,7 +317,8 @@ above it — and falls back to the store convention:
 The declared ones: `draw` on an attr whose renderer bakes it into the drawing (the grid, rulers,
 ocean waves and scale bar attrs, the legend and coordinates fonts, a label group's typography); `zoom`
 on an attr the zoom derives from (the halo width): written, then the zoom re-run;
-`changeReliefSet` / `resizeRelief` / `regenerateRelief` for the relief icons. A vignette option takes the
+`regenerateRelief` for the relief icons (the icon size is a plain `draw`—it is a render multiplier).
+A vignette option takes the
 same `draw`: the renderer reshapes the defs mask and redraws the layer.
 `effects.test.ts` asserts which name a path resolves to and which stub each name fires.
 
@@ -347,8 +348,8 @@ they share with the editor:
   the layer), grouped elements expandable to their groups with counts, and a filter box.
 - **Presets gallery** — a thumbnail per system preset, a neutral tile for customs, the current one
   outlined; a click goes through the same once-per-session confirmation as the select.
-- **Burg icon dialog** — the icon sets from `src/data/burg-icons.ts`, drawn in the group's current
-  fill and stroke; a pick applies and keeps the dialog open.
+- **Burg icon dialog** — the `burgs` or `ports` icon set (`docs/architecture/icons.md`) grouped by
+  directory, drawn in the group's current fill and stroke; a pick applies and keeps the dialog open.
 
 ### The rows that are not fields
 

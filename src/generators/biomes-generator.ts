@@ -54,10 +54,10 @@ function getDefaultBiomes(): Biome[] {
     { acacia: 1, grass: 9 },
     { grass: 1 },
     { acacia: 8, palm: 1 },
-    { deciduous: 1 },
+    { deciduous: 2, conifer: 1 },
     { acacia: 5, palm: 3, deciduous: 1, swamp: 1 },
-    { deciduous: 6, swamp: 1 },
-    { conifer: 1 },
+    { deciduous: 6, conifer: 1, swamp: 1 },
+    { coniferSnow: 1 },
     { grass: 1 },
     {},
     { swamp: 1 }

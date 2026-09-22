@@ -10,7 +10,7 @@ import { Styles } from "@/generators/styles";
 import type { StyleSelection } from "@/types/styles";
 import { effectAt, runEffect } from "./effects";
 
-const relief = { changeSet: vi.fn(), changeSize: vi.fn(), generate: vi.fn() };
+const relief = { generate: vi.fn() };
 vi.stubGlobal("Relief", relief);
 
 const store = () => ({
@@ -43,7 +43,7 @@ describe("effectAt", () => {
   });
 
   test("a declared effect: on the field, or on the nearest node above it", () => {
-    expect(at("relief.options.size")).toBe("resizeRelief");
+    expect(at("relief.options.size")).toBe("draw");
     expect(at("grid.attrs.stroke-width")).toBe("draw");
     expect(at("rulers.attrs.stroke-dasharray")).toBe("draw");
     expect(at("rulers.attrs.font-size")).toBe("draw");
@@ -86,9 +86,7 @@ describe("runEffect", () => {
 
   test("relief options reach the generator", () => {
     run("relief.options.set", "gray");
-    expect(relief.changeSet).toHaveBeenCalledWith("gray");
-    run("relief.options.size", 2, 1);
-    expect(relief.changeSize).toHaveBeenCalledWith(2);
+    run("relief.options.size", 2, 1); // a pure redraw: the size is a render multiplier, not data
     run("relief.options.density", 0.5);
     expect(relief.generate).toHaveBeenCalled();
     expect(Layers.draw).toHaveBeenCalledTimes(3);
