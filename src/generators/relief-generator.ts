@@ -2,7 +2,7 @@ import { extent, polygonContains } from "d3";
 import type { IconAlias, IconSet } from "@/types/icons";
 import { minmax, rn } from "@/utils";
 
-const SETS = ["simple", "colored", "gray", "illustrated"] as const;
+export const RELIEF_SETS = ["simple", "colored", "gray", "illustrated"] as const;
 const TYPES = [
   { type: "mount", variants: 6 },
   { type: "mountSnow", variants: 6, fallback: "mount" },
@@ -20,7 +20,7 @@ const TYPES = [
   { type: "deadTree", variants: 2, zoom: 1.5, fallback: "dune" }
 ] as const;
 
-export type ReliefSet = (typeof SETS)[number];
+export type ReliefSet = (typeof RELIEF_SETS)[number];
 export type ReliefIconSetId = `relief-${ReliefSet}`;
 export type ReliefIconType = (typeof TYPES)[number]["type"];
 
@@ -37,10 +37,10 @@ export type ReliefIconRef = { type: ReliefIconType; variant?: number; set?: Reli
 export type ReliefIcon = ReliefIconRef & { x: number; y: number; s: number };
 
 export class ReliefModel {
-  readonly sets = SETS;
+  readonly sets = RELIEF_SETS;
   readonly types = TYPES;
   /** one icon set per relief set: its directory, plus a symbol for every union slot it draws no file for */
-  readonly iconSets: readonly (IconSet & { id: ReliefIconSetId })[] = SETS.map(set => ({
+  readonly iconSets: readonly (IconSet & { id: ReliefIconSetId })[] = RELIEF_SETS.map(set => ({
     id: this.iconSetId(set),
     folder: `relief/${set}`,
     aliases: (names: readonly string[]) => this.aliasSlots(set, names)

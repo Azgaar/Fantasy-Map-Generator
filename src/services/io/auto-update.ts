@@ -2006,7 +2006,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     document.getElementById("anchors")?.remove();
     document.getElementById("burgIcons")?.remove();
     document.getElementById("icons")?.remove(); // the layer group itself: it is #burgIcons now
-    document.getElementById("labels")?.removeAttribute("font-size"); // the viewbox carries the base the groups size from
+    document.getElementById("labels")?.removeAttribute("font-size"); // the zoom sets the layer font the groups size from
 
     // v1.154.0 changed the relief icons data format
     const { set: incomingSet, size: incomingSize } = Styles.parse(data[48] ? safeParseJSON(data[48]) : undefined).relief
@@ -2069,7 +2069,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
 export function migrateLegacySettings(mapVersion: string, data: string[]): void {
   if (compareVersions(mapVersion, "1.154.0").isOlder && data[1]?.trimStart().startsWith("{")) {
-    // v1.154.0 sizes the viewbox font with the zoom for everything, so the labels flag is gone
+    // v1.154.0 sizes the zoomed layers' fonts with the zoom always, so the labels flag is gone
     const settings = safeParseJSON(data[1]);
     if (settings?.labels) {
       delete settings.labels.resizeOnZoom;

@@ -51,7 +51,7 @@ test("culling includes partially visible pins and uses their zoomed size", () =>
   expect(document.querySelectorAll("#markers > svg")).toHaveLength(0);
 });
 
-test("a marker is sized in em at its point, so the viewbox font size scales it; export culls at scale one", () => {
+test("a marker is sized in em at its point, so the layer font size scales it; export culls at scale one", () => {
   setViewportTransform(4, 0, 0);
   drawMarkers();
   const marker1 = document.getElementById("marker1")!;

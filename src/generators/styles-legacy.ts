@@ -695,7 +695,7 @@ function upgradeShape(record: unknown): void {
   if (military?.options) delete military.options.fontSize; // the renderer sizes the font from the box
   if (military?.attrs) delete military.attrs["font-size"];
   const labels = asNode(root.labels);
-  if (labels) delete labels.attrs; // the viewbox carries the base the groups size from
+  if (labels) delete labels.attrs; // the zoom sets the layer font the groups size from
   toAttr(root.coordinates, "fontSize", "font-size", px);
   toAttr(root.rulers, "fontSize", "font-size", px);
   toAttr(root.legend, "fontSize", "font-size", px);

@@ -16,6 +16,8 @@ beforeEach(() => {
   document.body.innerHTML = /* html */ `
     <svg id="map">
       <g id="viewbox"></g>
+      <g id="burgIcons"></g>
+      <g id="markers"></g>
       <g id="labels"></g>
       <g id="emblems" style="display: none"></g>
       <g id="statesHalo"></g>
@@ -137,14 +139,16 @@ describe("invokeActiveZooming", () => {
     expect(halo.getAttribute("stroke-width")).toBe(String(rn(8 / 2 ** 0.8, 2)));
   });
 
-  it("sizes the viewbox font by the inverse square root of the zoom", () => {
-    const viewbox = document.getElementById("viewbox")!;
+  it("sizes each zoomed layer's font on its own curve and leaves the viewbox alone", () => {
+    const fontSizes = () =>
+      ["labels", "markers", "burgIcons", "viewbox"].map(id => document.getElementById(id)!.getAttribute("font-size"));
     setViewportTransform(4, viewport.x, viewport.y);
     invokeActiveZooming();
-    expect(viewbox.getAttribute("font-size")).toBe("50px"); // 100 / sqrt(4)
+    // labels: (100 + 25) / 2; markers: 100 / sqrt(4); icons: 100 / (1 + 3 / 80)
+    expect(fontSizes()).toEqual(["62.5px", "50px", "96.39px", null]);
 
     setViewportTransform(20, viewport.x, viewport.y);
     invokeActiveZooming();
-    expect(viewbox.getAttribute("font-size")).toBe("22.36px"); // 100 / sqrt(20)
+    expect(fontSizes()).toEqual(["52.5px", "22.36px", "80.81px", null]);
   });
 });

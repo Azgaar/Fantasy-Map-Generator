@@ -3,7 +3,7 @@ import { select } from "d3";
 import { type IconSetId, IconSets } from "@/components/icon-sets";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
-import { viewport, zoomFontSize } from "@/components/viewport";
+import { viewport, ZOOM_CURVES, type ZoomedLayer, zoomFontSize } from "@/components/viewport";
 import { renderEmblemDefinitions } from "@/renderers/draw-emblems";
 import { drawScaleBar } from "@/renderers/draw-scalebar";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
@@ -333,10 +333,11 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
     if (fullMap) {
       // reset transform to show the whole map
       clone.attr("width", options.map.graph.width).attr("height", options.map.graph.height);
-      clone
-        .select("#viewbox")
-        .attr("transform", null)
-        .attr("font-size", `${zoomFontSize(1)}px`); // the zoom-derived base, at scale 1
+      clone.select("#viewbox").attr("transform", null);
+      // the zoomed layers at their scale 1 font size
+      for (const layer of Object.keys(ZOOM_CURVES) as ZoomedLayer[]) {
+        clone.select(`#${layer}`).attr("font-size", `${zoomFontSize(layer, 1)}px`);
+      }
 
       if (!noScaleBar) drawScaleBar(cloneEl, 1, options.map.graph.width, options.map.graph.height);
     }

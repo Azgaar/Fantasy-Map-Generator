@@ -20,6 +20,7 @@ import {
 } from "@/data/style-choices";
 import type { StyleMeta } from "@/types/styles";
 import { hexColor } from "@/utils/schemaUtils";
+import { RELIEF_SETS } from "./relief-generator";
 import { FORMATS, isLabelStyle } from "./styles-formats";
 
 export const styleMeta = z.registry<StyleMeta>();
@@ -617,7 +618,7 @@ export const stylesSchema = z.strictObject({
   relief: z.strictObject({
     attrs: z.strictObject({ opacity, filter, mask: clip }),
     options: z.strictObject({
-      set: meta(z.enum(Relief.sets), {
+      set: meta(z.enum(RELIEF_SETS), {
         label: "Style",
         effect: "draw",
         tip: "Select set of relief icons. Existing icons are restyled, not regenerated"

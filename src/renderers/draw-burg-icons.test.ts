@@ -41,7 +41,7 @@ test("drawBurgIcons styles groups from the store, ignoring stale DOM attrs", asy
   const redrawn = document.querySelector<SVGGElement>('#burgIcons > g#town > [data-group="icons"]')!;
   expect(redrawn.getAttribute("fill")).toBe("#123456");
   expect(styles.burgIcons.groups.town.groups.icons.attrs.fill).toBe("#123456");
-  expect(redrawn.getAttribute("font-size")).toBe("3");
+  expect(redrawn.getAttribute("font-size")).toBe("3%");
 });
 
 test("panning culls icons and anchors and repeated rendering produces the same markup", async () => {
@@ -103,7 +103,7 @@ test("group order, fallback styles and empty groups survive culling and reassign
   pack.burgs[1].port = 1;
   await drawBurgIcons();
   expect(Array.from(document.querySelectorAll("#burgIcons > g"), group => group.id)).toEqual(["custom", "town"]);
-  expect(document.querySelector('#burgIcons > #custom > [data-group="icons"]')?.getAttribute("font-size")).toBe("3");
+  expect(document.querySelector('#burgIcons > #custom > [data-group="icons"]')?.getAttribute("font-size")).toBe("3%");
   expect(document.querySelector('#burgIcons > #custom > [data-group="anchors"] > #anchor1')).not.toBeNull();
   expect(document.querySelectorAll("#burgIcons > #town use")).toHaveLength(0);
 
@@ -183,8 +183,9 @@ test("anchor symbol and shifts survive redraw, relocation and full-map rendering
   await drawBurgIcons();
   const anchor = document.getElementById("anchor1")!;
   expect(anchor.getAttribute("href")).toBe("#ports-harbor");
-  expect(anchor.getAttribute("x")).toBe("4");
-  expect(anchor.getAttribute("y")).toBe("13");
+  expect(anchor.getAttribute("x")).toBe("10");
+  expect(anchor.getAttribute("y")).toBe("10");
+  expect(anchor.parentElement?.getAttribute("style")).toBe("transform: translate(-2em, 1em)");
   expect(document.getElementById("burg1")?.getAttribute("x")).toBe("10");
   expect(pack.burgs[1].x).toBe(10);
 
@@ -192,7 +193,7 @@ test("anchor symbol and shifts survive redraw, relocation and full-map rendering
   await drawBurgIcons();
   const clone = document.getElementById("map")!.cloneNode(true) as SVGSVGElement;
   ViewportLayers.renderTo(clone);
-  expect(clone.querySelector("#anchor1")?.getAttribute("x")).toBe("494");
+  expect(clone.querySelector("#anchor1")?.getAttribute("x")).toBe("500");
   expect(clone.querySelector("#anchor1")?.getAttribute("href")).toBe("#ports-harbor");
   expect(document.getElementById("anchor1")).toBeNull();
 });
@@ -203,9 +204,27 @@ test("viewport culling uses the shifted anchor position", async () => {
   Object.assign(styles.burgIcons.groups.town.groups.anchors.options, { dx: -160, dy: 0 });
   await drawBurgIcons();
   expect(document.getElementById("burg1")).toBeNull();
-  expect(document.getElementById("anchor1")?.getAttribute("x")).toBe("20");
+  expect(document.getElementById("anchor1")?.getAttribute("x")).toBe("500");
   pack.burgs[1].x = 10;
   await drawBurgIcons();
   expect(document.getElementById("burg1")).not.toBeNull();
   expect(document.getElementById("anchor1")).toBeNull();
+});
+
+test("icons follow the layer font through the zoom and cull by their zoomed size", async () => {
+  pack.burgs[1].port = 1;
+  Object.assign(styles.burgIcons.groups.town.groups.anchors.options, { dx: 0, dy: 0 });
+  await drawBurgIcons();
+  expect(document.querySelector('[data-group="anchors"]')?.hasAttribute("style")).toBe(false);
+
+  // at scale 4 the view (with overscan) starts at x = -20 and the icon em is 3% of 96.39px = 2.89 map units,
+  // so the padding is 2 * (2.89 + stroke 1) = 7.78 and a burg at -28 is out; a map-fixed 3-unit em would keep it
+  styles.burgIcons.groups.town.groups.icons.attrs["stroke-width"] = 1;
+  pack.burgs[1].x = -28;
+  setViewportTransform(4, 0, 0);
+  ViewportLayers.renderNow();
+  expect(document.getElementById("burg1")).toBeNull();
+  setViewportTransform(1, 0, 0);
+  ViewportLayers.renderNow();
+  expect(document.getElementById("burg1")).not.toBeNull();
 });

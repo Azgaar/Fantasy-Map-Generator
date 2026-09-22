@@ -59,7 +59,7 @@ function reconcileMarkers({ root, bounds }: ViewportRenderContext): void {
   const container = root.querySelector<SVGGElement>("#markers");
   if (!container || !Layers.isOn("markers")) return;
 
-  const fontSize = zoomFontSize(bounds.scale); // a marker is sized in em, so it follows the zoom as the text does
+  const fontSize = zoomFontSize("markers", bounds.scale); // a marker is sized in em of the layer font
   const anyPinned = pack.markers.some(marker => marker.pinned);
   const selected = root === document && editedMarker ? container.querySelector(`#marker${editedMarker.i}`) : null;
   const markup: string[] = [];

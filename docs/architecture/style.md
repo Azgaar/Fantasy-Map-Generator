@@ -75,10 +75,12 @@ mirrors the DOM tree: every `groups` entry addresses one `data-group` child of i
   **User groups** (`labels.groups`, `routes.groups`, `lakes.groups`, `icons.groups`) are unbounded
   and keyed by the map's own group names — the editor's group select lists those.
 - **A font size is an attr**, in px on the layer (`legend.attrs["font-size"]: "13px"`), and its
-  texts size by inheritance; a label group's is a `%` of the viewbox font size, which is 100px at
-  scale 1 and which the zoom scales by the inverse square root of the scale (the geometric
-  half-way between a map-fixed and a screen-fixed size) — so anything sized in `%` or `em` (label
-  groups, the markers) follows the zoom, per frame or once it settles as `viewportRedraw` says.
+  texts size by inheritance; a label group's is a `%` of the labels layer font size. The zoom sets
+  the font size of the layers in `ZOOM_CURVES` (components/viewport.ts), 100px at scale 1 and each on
+  its own curve between a map-fixed and a screen-fixed size: the labels on the arithmetic mean, the
+  markers on the geometric mean, the burg icons close to map-fixed. Anything under them sized in `%`
+  or `em` (label groups, markers, burg icons) follows the zoom, per frame or once it settles as
+  `viewportRedraw` says; every other layer keeps its sizes.
   There is no switch for it: `labels.resizeOnZoom` and `markers.options.rescale` were retired with
   v1.154. An `options` size (`markets.options.iconSize`, `military.options.boxSize`) is a renderer
   input, not a font; the regiment font follows the box.
@@ -102,7 +104,7 @@ composes it back. The store never holds a half-written string.
 | halo/vignette blur      | `blur(5px)`                                                                                          |
 | `mask`                  | `url(#id)`; the layers that clip to land/water pick from a `clip` enum                               |
 | `stroke-dasharray`      | `none` or space-separated lengths                                                                    |
-| label group `font-size` | `22%` — relative to the viewbox font size, which the zoom scales                                     |
+| label group `font-size` | `22%` — relative to the labels layer font size, which the zoom scales                                |
 | other `font-size`       | `8px`                                                                                                |
 | compass `transform`     | `translate(x y) scale(s)`                                                                            |
 | label group `style`     | cssText limited to `text-shadow`, `text-transform`, `font-variant`, `transform: translate(…em, …em)` |

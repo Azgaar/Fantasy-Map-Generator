@@ -1,5 +1,6 @@
 import { IconSets } from "@/components/icon-sets";
 import { Layers } from "@/components/layers";
+import { zoomFontSize } from "@/components/viewport";
 import type { Burg } from "@/generators/burgs-generator";
 import { ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import type { StylesData } from "@/types/styles";
@@ -18,7 +19,7 @@ type BurgPart =
   | StylesData["burgIcons"]["groups"][string]["groups"]["icons"]
   | StylesData["burgIcons"]["groups"][string]["groups"]["anchors"];
 
-type Bounds = { x0: number; y0: number; x1: number; y1: number };
+type Bounds = ViewportRenderContext["bounds"];
 
 function reconcileBurgIcons({ root, bounds }: ViewportRenderContext): void {
   if (!Layers.isOn("burgIcons")) return;
@@ -57,23 +58,27 @@ function part(name: "icons" | "anchors", style: BurgPart, burgs: Burg[], bounds:
   const icon = escapeHtml(style.options.icon || (anchors ? "#ports-anchor" : "#burgs-atlas-circle"));
   const size = style.options.size ?? 1;
   const shift = anchors ? (style.options as { dx?: number; dy?: number }) : undefined;
-  const dx = (shift?.dx ?? 0) * size;
-  const dy = (shift?.dy ?? 0) * size;
+  const shiftX = shift?.dx ?? 0;
+  const shiftY = shift?.dy ?? 0;
 
   const attrs: string[] = [];
   for (const [key, value] of Object.entries(style.attrs)) {
     if (value !== null && value !== undefined) attrs.push(` ${key}="${escapeHtml(String(value))}"`);
   }
+  // The shift is in icon em, so it stays true to the icon as the zoom resizes it
+  if (shiftX || shiftY) attrs.push(` style="transform: translate(${shiftX}em, ${shiftY}em)"`);
 
-  const markup = [`<g data-group="${name}" data-icon="${icon}"${attrs.join("")} font-size="${size}">`];
+  // An icon is sized in % of the layer font, so it follows the zoom on the burg icons curve
+  const markup = [`<g data-group="${name}" data-icon="${icon}"${attrs.join("")} font-size="${size}%">`];
+  const em = (size * zoomFontSize("burgIcons", bounds.scale)) / 100; // the icon em in map units at this zoom
   // Symbols overflow their viewBox; the tallest burg artwork reaches two em above its anchor.
-  const padding = 2 * (Math.abs(size) + (style.attrs["stroke-width"] ?? 0));
+  const padding = 2 * (Math.abs(em) + (style.attrs["stroke-width"] ?? 0));
 
-  for (const { i, x: burgX, y: burgY, port } of burgs) {
+  for (const { i, x, y, port } of burgs) {
     if (anchors && !port) continue;
-    const x = burgX + dx;
-    const y = burgY + dy;
-    if (x + padding < bounds.x0 || x - padding > bounds.x1 || y + padding < bounds.y0 || y - padding > bounds.y1)
+    const cx = x + shiftX * em;
+    const cy = y + shiftY * em;
+    if (cx + padding < bounds.x0 || cx - padding > bounds.x1 || cy + padding < bounds.y0 || cy - padding > bounds.y1)
       continue;
     markup.push(`<use id="${anchors ? "anchor" : "burg"}${i}" data-id="${i}" href="${icon}" x="${x}" y="${y}"/>`);
   }
