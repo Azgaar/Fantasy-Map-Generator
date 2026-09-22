@@ -86,7 +86,7 @@ const GROUP_SOURCES: Partial<Record<StyleElement, () => GroupEntry[]>> = {
 const ELEMENTS_ID = "styleElements";
 const ELEMENTS_STYLE = /* css */ `
   #${ELEMENTS_ID} { padding: .4em .5em; }
-  #${ELEMENTS_ID} > .tree { width: auto; max-height: 400px; overflow: auto; }
+  #${ELEMENTS_ID} > .tree { width: auto; overflow: auto; }
   #${ELEMENTS_ID} input.filter { width: 100%; box-sizing: border-box; margin-bottom: .4em; }
   #${ELEMENTS_ID} .li { display: grid; grid-template-columns: 1em 1em 1fr auto; align-items: center; gap: .4em; height: 1.9em; padding: 0 .4em; border-radius: 3px; white-space: nowrap; cursor: pointer; }
   #${ELEMENTS_ID} .li:hover { background: rgba(255, 255, 255, .25); }
@@ -286,6 +286,7 @@ export class PresetSelector {
     $(dialog).dialog({
       title: "Style presets",
       width: "36em",
+      maxHeight: Math.round(window.innerHeight * 0.7),
       position: { my: "left top", at: "right+10 top", of: "#options" },
       close: () => destroyDialog(PRESETS_ID)
     });
@@ -345,7 +346,7 @@ export const FONT_DIALOG = "fontDialog";
 const FONT_STYLE = /* css */ `
   #${FONT_DIALOG} { display: flex; flex-direction: column; gap: .4em; }
   #${FONT_DIALOG} input { width: 100%; box-sizing: border-box; }
-  #${FONT_DIALOG} .choices { display: flex; flex-direction: column; gap: 0.3em; width: auto; max-height: 40vh; overflow-y: auto; }
+  #${FONT_DIALOG} .choices { display: flex; flex-direction: column; gap: 0.3em; width: auto; overflow-y: auto; }
   #${FONT_DIALOG} button { flex: none; padding: .3em .5em; border: 1px solid transparent; border-radius: 0; text-align: left; white-space: nowrap; overflow: hidden; }
   #${FONT_DIALOG} button:hover { border-color: var(--dark-solid); }
   #${FONT_DIALOG} button.pressed { border: 1px solid var(--dark-solid); }
@@ -411,6 +412,7 @@ export function openFontDialog({ selected, sample, onPick, onAdd }: FontDialogOp
     title: "Select font",
     width: "24em",
     position: { my: "center", at: "center", of: "svg" },
+    maxHeight: Math.round(window.innerHeight * 0.7),
     close: () => destroyDialog(FONT_DIALOG),
     buttons: {
       "Add font": () =>
@@ -432,6 +434,7 @@ export function openFontDialog({ selected, sample, onPick, onAdd }: FontDialogOp
 export const BURG_ICON_DIALOG = "burgIconDialog";
 
 const BURG_ICON_STYLE = /* css */ `
+  #${BURG_ICON_DIALOG} { width: auto; overflow: auto; }
   #${BURG_ICON_DIALOG} .choices { display: grid; grid-template-columns: repeat(7, 5em); gap: .3em; }
   #${BURG_ICON_DIALOG} > div { width: 100%; }
   #${BURG_ICON_DIALOG} h4 { margin: .6em 0 .3em; }
@@ -507,7 +510,7 @@ export async function openBurgIconDialog({
 
   $(dialog).dialog({
     title: anchors ? "Select port icon" : "Select burg icon",
-    width: "fit-content",
+    maxHeight: Math.round(window.innerHeight * 0.7),
     position: { my: "center", at: "center", of: "svg" },
     close: () => destroyDialog(BURG_ICON_DIALOG),
     buttons: {
