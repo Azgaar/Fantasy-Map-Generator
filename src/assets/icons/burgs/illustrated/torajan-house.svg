@@ -1,14 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-5.1 -8.8 10.2 9.2">
-<g transform="scale(.25)">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-5.1 -9.8 10.2 10.2">
+<g transform="scale(.25)" stroke-linecap="round" stroke-linejoin="round">
 <g transform="translate(-20 -38)">
+<circle cx="20" cy="19" r="18" fill="#e4d6b6" />
 <path d="M2 35Q20 32 38 35L33 37H7Z" fill="#8a8060" stroke="none" opacity=".5" />
-<path d="M9 28V35M15 28V35M26 28V35M32 28V35" fill="none" stroke-width="1.5" />
+<path d="M9 28V35M15 28V35M26 28V35M32 28V35" fill="none" stroke-width="1" />
 <path d="M8 29V18H33V29Z" />
 <path d="M3 5Q20 23 37 5L33 19Q20 27 7 19Z" fill="#8b7253" />
-<path d="M3 5Q20 19 37 5" fill="none" stroke="#ad9560" stroke-width="1.4" />
-<path d="M29 21L33 19V29H29Z" fill="black" stroke="none" opacity=".1" />
+<path d="M3 5Q20 19 37 5" fill="none" stroke="#ad9560" stroke-width="1" />
+<path d="M29 21L33 19V29H29Z" fill="#544c3c" stroke="none" opacity=".16" />
 <path d="M18 29V24H23V29Z" fill="#544c3c" />
-<path d="M11 25H14M27 25H30M18 32H23M17 35H24" fill="none" stroke-width=".9" />
+<path d="M11 25H14M27 25H30M18 32H23M17 35H24" fill="none" stroke-width=".8" />
+<path d="M6 10Q11 16 18 18M9 23V27" fill="none" stroke="white" stroke-width=".5" opacity=".35" />
 </g>
 </g>
 </svg>

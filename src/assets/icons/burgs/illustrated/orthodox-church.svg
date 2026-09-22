@@ -1,13 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="-5.1 -9.8 10.2 10.2">
-<g transform="scale(.25)">
+<g transform="scale(.25)" stroke-linecap="round" stroke-linejoin="round">
 <g transform="translate(-20 -38)">
+<circle cx="20" cy="20" r="17" fill="#e4d6b6" />
 <path d="M2 35Q20 32 38 35L33 37H7Z" fill="#8a8060" stroke="none" opacity=".5" />
 <path d="M6 34V22H13V34M15 34V15H25V34M27 34V22H34V34Z" />
 <path d="M6 22C1 17 7 16 9 12C12 16 18 17 13 22ZM15 15C8 8 17 7 20 3C23 7 32 8 25 15ZM27 22C22 17 28 16 30 12C33 16 39 17 34 22Z" fill="#738179" />
-<path d="M11 22H13V34H11M22 15H25V34H22M32 22H34V34H32" fill="black" stroke="none" opacity=".1" />
+<path d="M11 22H13V34H11M22 15H25V34H22M32 22H34V34H32" fill="#544c3c" stroke="none" opacity=".16" />
 <path d="M12 34V28L20 22L28 28V34Z" />
 <path d="M17 34V29Q20 25 23 29V34Z" fill="#544c3c" />
-<path d="M9 12V9M30 12V9M20 3V1M18.5 2H21.5M9 25V29M30 25V29M18 17V20M22 17V20" fill="none" stroke-width=".9" />
+<path d="M9 12V9M30 12V9M20 3V1M18.5 2H21.5M9 25V29M30 25V29M18 17V20M22 17V20" fill="none" stroke-width=".8" />
+<path d="M17 12Q14 10 19 7M7 20Q5 18 9 15M28 20Q26 18 30 15M13 29V32" fill="none" stroke="white" stroke-width=".5" opacity=".35" />
 </g>
 </g>
 </svg>

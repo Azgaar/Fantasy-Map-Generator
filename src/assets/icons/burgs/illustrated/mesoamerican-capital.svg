@@ -1,14 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-5.1 -9.3 10.2 9.7">
-<g transform="scale(.25)">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-5.1 -9.8 10.2 10.2">
+<g transform="scale(.25)" stroke-linecap="round" stroke-linejoin="round">
 <g transform="translate(-20 -38)">
-<circle cx="20" cy="20" r="17" fill="#e4d6b6" stroke="none" />
+<circle cx="20" cy="20" r="18" fill="#e4d6b6" />
 <path d="M2 35Q20 32 38 35L33 37H7Z" fill="#8a8060" stroke="none" opacity=".5" />
 <path d="M4 34V28H8V22H12V16H15V8H25V16H28V22H32V28H36V34Z" />
 <path d="M13 8V5H27V8ZM11 16H29V19H11ZM7 22H33V25H7ZM3 28H37V31H3Z" fill="#ab795a" />
-<path d="M22 19H25L31 34H26Z" fill="black" stroke="none" opacity=".1" />
+<path d="M22 19H25L31 34H26Z" fill="#544c3c" stroke="none" opacity=".16" />
 <path d="M14 34L18 19H22L26 34Z" />
 <path d="M18 16V10H22V16Z" fill="#544c3c" />
 <path d="M18 22H22M17 26H23M16 30H24" fill="none" stroke-width=".8" />
+<path d="M15 6H24M13 17H21M9 23H15M5 29H12" fill="none" stroke="white" stroke-width=".5" opacity=".35" />
 </g>
 </g>
 </svg>
