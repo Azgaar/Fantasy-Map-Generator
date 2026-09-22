@@ -319,7 +319,11 @@ Loaded definitions stay cached even when their original consumer is gone.
   in `getBiomeIcon` is deleted, so the biome-icon path no longer reads temperature. The height-based
   `mountSnow` pick in `getReliefIcon` is unrelated and stays. `Relief.types` gets no biome flag.
   Biome data intentionally owns tree-icon selection for now, including the snowy-tree weights; this
-  is a behavior change, not an equivalent rewrite of the temperature rule. More intelligent selection
+  is a behavior change, not an equivalent rewrite of the temperature rule. The default weights change
+  with it: Taiga becomes `{ coniferSnow: 1 }` (always snowy, whatever the temperature), and plain
+  `conifer` joins the temperate forests instead — Temperate deciduous forest `{ deciduous: 2, conifer: 1 }`
+  and Temperate rainforest `{ deciduous: 6, conifer: 1, swamp: 1 }` — so the conifer art still appears
+  on generated maps. Saved maps keep their own `pack.biomes[].icons`. More intelligent selection
   using temperature or other factors belongs at the biome level in later work.
 
 ### Renderers and export

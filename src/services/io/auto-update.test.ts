@@ -11,6 +11,7 @@ import { Styles } from "@/generators/styles";
 import * as versioning from "@/services/versioning";
 import { VERSION } from "@/services/versioning";
 import { downloadFile } from "@/utils";
+import { safeParseJSON } from "@/utils/stringUtils";
 import { migrateLegacySettings, resolveVersionConflicts } from "./auto-update";
 
 beforeEach(() => {
@@ -1035,6 +1036,23 @@ describe("v1.154 relief descriptors", () => {
     globalThis.pack = { relief: [], features: [] } as unknown as typeof pack;
     await runMigration("1.141.0", data, ["1.142.0", "1.154.0"]);
     expect(pack.relief).toEqual([{ type: "mount", variant: 2, x: 12, y: 23, s: 14 }]);
+  });
+
+  it("recovers a pre-1.142 map's set and size through the whole chain, with no style record to read", async () => {
+    // the 1.142 step lifts the terrain attributes into the styles global, the 1.150 step serializes that into
+    // data[48], and the 1.154 step must read the record rather than the global the previously open map left
+    globalThis.styles = Styles.parse(undefined);
+    styles.relief.options.set = "simple";
+    document.body.innerHTML =
+      '<svg id="map"><defs id="deftemp"/><g id="viewbox"><g id="terrain" set="colored" size="2" density="0.4"><use href="#relief-mount-3" x="10" y="20" width="12"/><use href="#relief-mount-1" x="0" y="0" width="4"/></g></g></svg>';
+    const data: string[] = [];
+    globalThis.pack = { relief: [], features: [] } as unknown as typeof pack;
+    await runMigration("1.141.0", data, ["1.142.0", "1.150.0", "1.154.0"]);
+    expect(Styles.parse(safeParseJSON(data[48])).relief.options).toMatchObject({ set: "colored", size: 2 });
+    expect(pack.relief).toEqual([
+      { type: "mount", set: "simple", x: 1, y: 1, s: 2 },
+      { type: "mount", variant: 2, x: 13, y: 23, s: 6 }
+    ]);
   });
 
   it("compensates old simple grass exactly once", async () => {

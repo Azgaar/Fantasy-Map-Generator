@@ -58,7 +58,7 @@ const tradeDetailsTable = initEditorTable<TradeDetailRow>({
   onUpdate: renderTradeDetailsPage
 });
 
-async function open(batch: TradeBatch): Promise<void> {
+function open(batch: TradeBatch): void {
   void IconSets.retry("goods");
   if (!batch?.deals.length) return;
 

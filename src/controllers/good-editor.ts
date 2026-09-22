@@ -18,7 +18,7 @@ export const goodIconIds = (): string[] => [
 let iconImageInput: HTMLInputElement | null = null;
 let iconSvgInput: HTMLInputElement | null = null;
 
-async function open(editedGood?: Good, onUpdate?: () => void): Promise<void> {
+function open(editedGood?: Good, onUpdate?: () => void): void {
   const demandCoverageState: Partial<Record<DemandCategory, number>> = { ...(editedGood?.demandCoverage || {}) };
   const biomeOutputState: Partial<Record<number, number>> = { ...(editedGood?.biomeOutput || {}) };
 

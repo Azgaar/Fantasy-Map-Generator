@@ -116,7 +116,7 @@ const FLOW_OPACITY_BASE = 0.65;
 const FLOW_OPACITY_PER_AMOUNT = 0.08;
 const FLOW_OPACITY_MAX = 0.92;
 
-async function open(): Promise<void> {
+function open(): void {
   void IconSets.retry("goods");
   const goods = [...(pack.goods as Good[])];
   if (!goods.length) {

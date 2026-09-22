@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ReliefIconType } from "@/generators/relief-generator";
+import type { ReliefIcon, ReliefIconType } from "@/generators/relief-generator";
 import { Styles } from "@/generators/styles";
 import { ReliefEditor } from "./relief-editor";
 import "@/generators/pack-generator"; // registers the Pack global the editor finds cells with
@@ -76,5 +76,30 @@ describe("ReliefEditor bulk brushes", () => {
     await swipe(0, 400);
 
     expect(pack.relief).toEqual([]);
+  });
+
+  it("brushes hit the drawn centre, which the style size scales about, not the stored box", async () => {
+    styles.relief.options.size = 4;
+    const type = await openBulkMode("reliefBulkRemove");
+    pack.relief = Array.from({ length: 21 }, (_, i) => ({ type, variant: 1, x: i * 20 - 5, y: 45, s: 10 })); // centres on y=50
+
+    await swipe(0, 400);
+
+    expect(pack.relief).toEqual([]);
+  });
+
+  it("bulk add keeps its spacing from icons drawn at a larger style size", async () => {
+    styles.relief.options.size = 4;
+    const type = await openBulkMode("reliefBulkAdd");
+    // centres every px on y=50, past both ends of the swipe so the brush never samples beside the row
+    const row: ReliefIcon[] = Array.from({ length: 441 }, (_, i) => ({ type, x: i - 22, y: 48, s: 4 }));
+    pack.relief = [...row];
+
+    await swipe(0, 400);
+
+    const added = pack.relief.filter(icon => !row.includes(icon));
+    expect(added.length).toBeGreaterThan(0);
+    // the spacing is 2 from the nearest row centre; the row is 1 apart in x and positions are rounded to 0.01
+    for (const icon of added) expect(Math.abs(icon.y + icon.s / 2 - 50)).toBeGreaterThan(1.9);
   });
 });

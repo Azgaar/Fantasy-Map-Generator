@@ -10,7 +10,7 @@ import { formatPrice, rn } from "../utils";
 
 type Type = "MFG" | "BUY" | "SELL" | "LOCAL";
 
-async function open(burgId: number): Promise<void> {
+function open(burgId: number): void {
   void IconSets.retry("goods");
   if (customization) return;
   const burg = pack.burgs[burgId];

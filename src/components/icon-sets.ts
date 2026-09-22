@@ -143,11 +143,14 @@ export class IconSetRegistry {
   /** Art drawn around its anchor: keep the frame, size it in em and move the anchor to the frame's corner,
    * so `<use x y>` under the group's font-size lands the anchor on the point and the art overflows around it */
   anchorSymbol(symbol: string, em: number): string {
-    return symbol.replace(
-      /^(<symbol\b[^>]*?)viewBox="(-?[\d.]+) (-?[\d.]+) ([\d.]+) ([\d.]+)"([^>]*)>([\s\S]*)<\/symbol>$/,
-      (_, open, x, y, w, h, rest, inner) =>
-        `${open}viewBox="${x} ${y} ${w} ${h}" width="${w / em}em" height="${h / em}em" overflow="visible"${rest}>` +
-        `<g transform="translate(${x} ${y})">${inner}</g></symbol>`
+    const match = symbol.match(
+      /^(<symbol\b[^>]*?)viewBox="(-?[\d.]+) (-?[\d.]+) ([\d.]+) ([\d.]+)"([^>]*)>([\s\S]*)<\/symbol>$/
+    );
+    if (!match) throw new Error(`Anchored art needs a plain "x y w h" viewBox: ${symbol.slice(0, 80)}`);
+    const [, open, x, y, w, h, rest, inner] = match;
+    return (
+      `${open}viewBox="${x} ${y} ${w} ${h}" width="${Number(w) / em}em" height="${Number(h) / em}em" overflow="visible"${rest}>` +
+      `<g transform="translate(${x} ${y})">${inner}</g></symbol>`
     );
   }
 

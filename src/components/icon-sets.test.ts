@@ -67,6 +67,11 @@ test("anchored art keeps its frame, sized in em, with the anchor at the frame's 
   expect(IconSets.symbols(IconSets.get("goods"), { wood: svg })).toBe(
     '<symbol id="goods-wood" viewBox="0 0 100 100"><path d="M0 0"/></symbol>'
   );
+  // a frame the loader cannot read must not slip through as unanchored art
+  expect(() => IconSets.anchorSymbol('<symbol id="burgs-x" viewBox="-6,-6,12,12"><path/></symbol>', 10)).toThrow(
+    "viewBox"
+  );
+  expect(() => IconSets.anchorSymbol('<symbol id="burgs-x"><path/></symbol>', 10)).toThrow("viewBox");
 });
 
 describe("relief alias resolution", () => {

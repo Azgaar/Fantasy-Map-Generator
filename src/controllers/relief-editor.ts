@@ -252,9 +252,8 @@ function dragToAdd(this: SVGElement, event: any): void {
   const spacing = +ensureEl<HTMLInputElement>("reliefSpacingNumber").value;
   const size = +ensureEl<HTMLInputElement>("reliefSizeNumber").value;
   const scale = styles.relief.options.size;
-  const tree = quadtree(
-    pack.relief.map(({ x, y, s }) => [x + (s * scale) / 2, y + (s * scale) / 2] as [number, number])
-  );
+  // the style size scales the drawing about the anchor, so the centre is x + s / 2 at every size
+  const tree = quadtree(pack.relief.map(({ x, y, s }) => [x + s / 2, y + s / 2] as [number, number]));
 
   const stroke = createBrushStroke(r / 2, (x, y) => {
     range(Math.ceil(r / 10)).forEach(() => {
@@ -329,11 +328,10 @@ function dragToRemove(this: SVGElement, event: any): void {
 
   const r = +ensureEl<HTMLInputElement>("reliefRadiusNumber").value;
   const icon = pressed.dataset.symbol;
-  const scale = styles.relief.options.size;
   const tree = quadtree<[number, number, ReliefIcon]>();
   for (const reliefIcon of pack.relief) {
     if (icon && Relief.symbolId(reliefIcon, styles.relief.options.set) !== icon) continue;
-    tree.add([reliefIcon.x + (reliefIcon.s * scale) / 2, reliefIcon.y + (reliefIcon.s * scale) / 2, reliefIcon]);
+    tree.add([reliefIcon.x + reliefIcon.s / 2, reliefIcon.y + reliefIcon.s / 2, reliefIcon]);
   }
 
   const stroke = createBrushStroke(r / 2, (x, y) => {

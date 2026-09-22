@@ -84,7 +84,7 @@ const columns: EditorColumn<Good>[] = [
 const goodsTable = initEditorTable<Good>({ getData: getGoodsData, onUpdate: renderGoodsPage });
 
 /** With a good id, the Goods layer shows only that good */
-async function open(goodId?: number): Promise<void> {
+function open(goodId?: number): void {
   void IconSets.retry("goods");
   if (customization) return;
   filterState = dialogState.get(dialogId, "filters", () => ({ visibleTags: [] as string[] }));

@@ -56,7 +56,7 @@ const marketOverviewTable = initEditorTable<MarketGoodRow>({
   onUpdate: renderMarketOverviewPage
 });
 
-async function open(marketId: number): Promise<void> {
+function open(marketId: number): void {
   void IconSets.retry("goods");
   if (customization) return;
 

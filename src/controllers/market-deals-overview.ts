@@ -66,7 +66,7 @@ const marketDealsTable = initEditorTable<Deal>({
   onUpdate: renderMarketDealsPage
 });
 
-async function open(marketId: number): Promise<void> {
+function open(marketId: number): void {
   void IconSets.retry("goods");
   const market = Markets.get(marketId);
   if (!market) {
