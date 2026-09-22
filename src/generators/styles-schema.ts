@@ -18,7 +18,6 @@ import {
   MAP_FILTERS,
   WAVE_TYPES
 } from "@/data/style-choices";
-import "@/generators/relief-generator"; // installs the Relief global the schema reads its catalog from
 import type { StyleMeta } from "@/types/styles";
 import { hexColor } from "@/utils/schemaUtils";
 import { FORMATS, isLabelStyle } from "./styles-formats";

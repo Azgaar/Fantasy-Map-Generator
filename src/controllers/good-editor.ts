@@ -9,12 +9,6 @@ import type { DemandCategory, Good } from "../generators/goods-generator";
 import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY } from "../generators/goods-generator";
 import { createFileInput, ensureEl, getRandomColor, sanitizeSvgIcon, unique } from "../utils";
 
-/** picker entries: the set's files plus the custom art the editor uploads beside the loaded sets */
-export const goodIconIds = (): string[] => [
-  ...IconSets.files(Goods.iconSet.id).map(file => IconSets.symbolId(Goods.iconSet.id, file)),
-  ...Array.from(document.querySelectorAll(`${IconSets.defs} > [id^="${Goods.customIconPrefix}"]`), el => el.id)
-];
-
 let iconImageInput: HTMLInputElement | null = null;
 let iconSvgInput: HTMLInputElement | null = null;
 
@@ -502,7 +496,11 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
   }
 
   function getIconOptionsHtml(): string {
-    return goodIconIds()
+    const goodIconIds = [
+      ...IconSets.files(Goods.iconSet.id).map(file => IconSets.symbolId(Goods.iconSet.id, file)),
+      ...IconSets.customIcons(Goods.iconSet.id).map(el => el.id)
+    ];
+    return goodIconIds
       .map(icon => `<option value="${icon}" ${editedGood?.icon === icon ? "selected" : ""}>${icon}</option>`)
       .join("");
   }
@@ -550,7 +548,7 @@ function uploadImage(type: "image" | "svg", callback: (type: string, id: string)
     if (!target) return;
 
     const result = target.result as string;
-    const id = `${Goods.customIconPrefix}${Math.random().toString(36).slice(-6)}`;
+    const id = `${IconSets.customPrefix(Goods.iconSet.id)}${Math.random().toString(36).slice(-6)}`;
     const goodIcons = document.querySelector(IconSets.defs)!;
 
     if (type === "image") {

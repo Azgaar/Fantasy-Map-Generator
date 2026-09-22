@@ -251,7 +251,6 @@ function captureIconDefinitions(clone: SVGSVGElement, source: SVGSVGElement): ()
   const defs = clone.querySelector("defs")!;
   const required = new Set<IconSetId>();
   const missing = new Set<string>();
-  const visited = new Set<string>();
 
   const iconReferences = (root: ParentNode): string[] =>
     Array.from(root.querySelectorAll("use")).flatMap(use =>
@@ -260,42 +259,47 @@ function captureIconDefinitions(clone: SVGSVGElement, source: SVGSVGElement): ()
         .map(href => href.slice(1))
     );
 
-  // the snapshot may reference art no chunk provides (custom goods), so copy whatever it points at
-  const capture = (id: string): void => {
-    if (visited.has(id)) return;
-    visited.add(id);
-    let definition = clone.getElementById(id);
-    if (!definition) {
-      const original = source.getElementById(id);
-      if (original) {
-        definition = original.cloneNode(true) as Element;
-        defs.appendChild(definition);
+  // copies what an id points at into the clone, then what that definition references in turn
+  const inline = (find: (id: string) => Element | null, onMissing: (id: string) => void) => {
+    const visited = new Set<string>();
+    const walk = (id: string): void => {
+      if (visited.has(id)) return;
+      visited.add(id);
+      let definition = clone.getElementById(id);
+      if (!definition) {
+        const original = find(id);
+        if (original) definition = defs.appendChild(original.cloneNode(true) as Element);
       }
-    }
-    if (definition) {
-      for (const target of iconReferences(definition)) capture(target);
-      return;
-    }
-    const set = IconSets.setForId(id);
-    if (!set) return;
-    required.add(set);
-    missing.add(id);
+      if (definition) for (const target of iconReferences(definition)) walk(target);
+      else onMissing(id);
+    };
+    return walk;
   };
+
+  // the snapshot may reference art no chunk provides (custom goods), so copy whatever it points at
+  const capture = inline(
+    id => source.getElementById(id),
+    id => {
+      const set = IconSets.setForId(id);
+      if (!set) return;
+      required.add(set);
+      missing.add(id);
+    }
+  );
   for (const id of iconReferences(clone)) capture(id);
 
   // after the wait only chunk-owned definitions may be read from the live document
-  const resolve = (id: string): void => {
-    if (clone.getElementById(id)) return;
-    const set = IconSets.setForId(id);
-    if (!set) return;
-    const original = source.getElementById(id);
-    if (!original || !source.getElementById(IconSets.containerId(set))?.contains(original)) {
-      throw new Error(`Missing icon definition: ${id}`);
+  const resolve = inline(
+    id => {
+      const set = IconSets.setForId(id);
+      if (!set) return null;
+      const original = source.getElementById(id);
+      return source.getElementById(IconSets.containerId(set))?.contains(original) ? original : null;
+    },
+    id => {
+      if (IconSets.setForId(id)) throw new Error(`Missing icon definition: ${id}`);
     }
-    const copy = original.cloneNode(true) as Element;
-    defs.appendChild(copy);
-    for (const target of iconReferences(copy)) resolve(target);
-  };
+  );
 
   return async () => {
     await Promise.all([...required].map(set => IconSets.retry(set)));

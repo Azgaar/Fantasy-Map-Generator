@@ -1,6 +1,7 @@
 // Update an old map file to the current version
 import { color, min, select } from "d3";
 import { confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { IconSets } from "@/components/icon-sets";
 import { type LayerId, Layers, type LayersState } from "@/components/layers";
 import { type EntityRef, MapEntities } from "@/components/map-entities";
 import { Notes } from "@/components/notes";
@@ -2060,7 +2061,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
     // v1.154.0 derives symbol ids from the icon set directories: good-<name> is goods-<name>, uploads are custom-goods-<id>
     const goodIconId = (icon: string): string =>
-      icon.replace(/^good-custom-/, Goods.customIconPrefix).replace(/^good-/, `${Goods.iconSet.id}-`);
+      icon.replace(/^good-custom-/, IconSets.customPrefix(Goods.iconSet.id)).replace(/^good-/, `${Goods.iconSet.id}-`);
     for (const good of pack.goods ?? []) if (good.icon) good.icon = goodIconId(good.icon);
     for (const art of document.querySelectorAll('[id^="good-custom-"]')) art.id = goodIconId(art.id);
   }

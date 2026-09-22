@@ -85,6 +85,11 @@ export class IconSetRegistry {
     return `custom-${id}-`;
   }
 
+  /** the map-carried art of a set, as inserted beside the loaded groups */
+  customIcons(id: IconSetId): Element[] {
+    return Array.from(document.querySelectorAll(`${this.defs} > [id^="${this.customPrefix(id)}"]`));
+  }
+
   /** a set's file names, known before the chunk loads: the path within the folder, `watabou/capital` */
   files(id: IconSetId): string[] {
     return [...this.loaders(this.get(id).folder).keys()];

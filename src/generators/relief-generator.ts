@@ -1,5 +1,5 @@
 import { extent, polygonContains } from "d3";
-import type { IconSet } from "@/types/icons";
+import type { IconAlias, IconSet } from "@/types/icons";
 import { minmax, rn } from "@/utils";
 
 const SETS = ["simple", "colored", "gray", "illustrated"] as const;
@@ -35,12 +35,6 @@ TYPES satisfies readonly ReliefType[];
 // the map stores this ref as it is; the renderer resolves the absent variant to 1 and the absent set to the style
 export type ReliefIconRef = { type: ReliefIconType; variant?: number; set?: ReliefSet };
 export type ReliefIcon = ReliefIconRef & { x: number; y: number; s: number };
-
-/** a union slot the set has no artwork for, drawn through another of the set's drawings */
-export interface ReliefSlot {
-  name: string;
-  target: string;
-}
 
 export class ReliefModel {
   readonly sets = SETS;
@@ -147,8 +141,8 @@ export class ReliefModel {
    * The union slots a set draws no file for, each aliased to the set's own artwork. Exact art wins;
    * a type without any follows the catalog's fallback chain, and only real files are candidates.
    */
-  aliasSlots(set: ReliefSet, artwork: readonly string[], catalog: readonly ReliefType[] = this.types): ReliefSlot[] {
-    const slots: ReliefSlot[] = [];
+  aliasSlots(set: ReliefSet, artwork: readonly string[], catalog: readonly ReliefType[] = this.types): IconAlias[] {
+    const slots: IconAlias[] = [];
     for (const { type, variants } of catalog) {
       for (let variant = 1; variant <= variants; variant++) {
         if (artwork.includes(`${type}-${variant}`)) continue;

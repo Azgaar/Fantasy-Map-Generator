@@ -1,21 +1,16 @@
 import { IconSets } from "@/components/icon-sets";
 import { Layers } from "@/components/layers";
 import type { ReliefIcon } from "@/generators/relief-generator";
-import { Scene, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
+import { ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 
-interface ReliefSceneIcon {
-  id: string;
-  data: ReliefIcon;
-}
-
-const scene = new Scene<ReliefSceneIcon>();
 const layer = ViewportLayers.register({ id: "relief", render: reconcileRelief });
+let isDrawn = false; // an erased layer draws nothing, an empty one still draws
 let frameId: number | null = null;
 
 export async function drawRelief(): Promise<void> {
   TIME && console.time("drawRelief");
   if (!pack.relief?.length) Relief.generate();
-  scene.replace(pack.relief.map((data, i) => ({ id: String(i), data })));
+  isDrawn = true;
   await IconSets.loadAll(Relief.requiredIconSets(pack.relief, styles.relief.options.set));
   layer.render();
   TIME && console.timeEnd("drawRelief");
@@ -29,32 +24,34 @@ export const redrawRelief = (): void => {
   });
 };
 
-export const getSceneReliefIcon = (id: string): ReliefIcon | undefined => scene.get(id)?.data;
+/** the icon a rendered `<use>` stands for: `data-id` is its index in `pack.relief` as of the last draw */
+export const getReliefIcon = (dataId: string): ReliefIcon | undefined => pack.relief?.[Number(dataId)];
 
 export function removeRelief(): void {
-  scene.invalidate();
+  isDrawn = false;
   document.querySelector("#terrain")?.replaceChildren();
 }
 
 function reconcileRelief(context: ViewportRenderContext): void {
   const terrain = context.root.querySelectorAll<SVGGElement>("#terrain")[0];
   if (!terrain) return;
-  if (!scene.valid || !Layers.isOn("relief")) return void terrain.replaceChildren();
+  if (!isDrawn || !Layers.isOn("relief")) return void terrain.replaceChildren();
 
   const { x0, y0, x1, y1 } = context.bounds;
-  const scale = styles.relief.options.size; // a render multiplier: the stored size stays as it is
+  const { set, size } = styles.relief.options; // size is a render multiplier: the stored size stays as it is
   const markup: string[] = [];
 
-  for (const [index, data] of (pack.relief ?? []).entries()) {
-    const id = String(index);
-    const { x, y, s } = data;
-    const icon = Relief.symbolId(data, styles.relief.options.set);
-    const drawn = s * scale;
+  for (const [index, icon] of (pack.relief ?? []).entries()) {
+    const { x, y, s } = icon;
+    const drawn = s * size;
     const shift = (drawn - s) / 2; // scale around the icon's anchor, so the drawn centre and the z-order hold
     const left = x - shift;
     const top = y - shift;
     if (left > x1 || top > y1 || left + drawn < x0 || top + drawn < y0) continue;
-    markup.push(`<use href="#${icon}" data-id="${id}" x="${left}" y="${top}" width="${drawn}" height="${drawn}"/>`);
+    const symbol = Relief.symbolId(icon, set);
+    markup.push(
+      `<use href="#${symbol}" data-id="${index}" x="${left}" y="${top}" width="${drawn}" height="${drawn}"/>`
+    );
   }
 
   terrain.innerHTML = markup.join("");

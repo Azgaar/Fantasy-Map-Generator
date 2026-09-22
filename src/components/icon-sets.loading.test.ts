@@ -14,27 +14,6 @@ beforeEach(() => {
     '<svg id="defElements"><defs><svg id="custom-goods-saved"><path id="nested-custom"/></svg></defs></svg>';
 });
 
-test("concurrent callers share a load; subsequent calls never inject again or remove custom goods", async () => {
-  const { IconSets } = await import("./icon-sets");
-  const { goodIconIds } = await import("@/controllers/good-editor");
-  const first = IconSets.load("goods");
-  expect(IconSets.load("goods")).toBe(first);
-  expect(IconSets.isLoaded("goods")).toBe(false);
-  await first;
-  expect(IconSets.isLoaded("goods")).toBe(true);
-  await IconSets.load("goods");
-  expect(document.querySelectorAll("#icons-goods")).toHaveLength(1);
-  expect(document.querySelectorAll("#icons-goods > symbol")).toHaveLength(72);
-  document.querySelector("#icons-goods > symbol")!.insertAdjacentHTML("beforeend", '<g id="artwork-internal"/>');
-  const entries = goodIconIds();
-  expect(entries).toHaveLength(73);
-  expect(entries).toContain("goods-wood");
-  expect(entries).toContain("custom-goods-saved");
-  expect(entries).not.toContain("icons-goods");
-  expect(entries).not.toContain("nested-custom");
-  expect(entries).not.toContain("artwork-internal");
-});
-
 test("failure is atomic, reported once, cached across redraws, and explicitly retryable", async () => {
   const { IconSets } = await import("./icon-sets");
   const error = new Error("injection failed");

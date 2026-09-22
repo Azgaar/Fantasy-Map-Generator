@@ -958,8 +958,6 @@ const GOODS_DATA: GoodData[] = [
 
 export class GoodsModule {
   readonly iconSet = { id: "goods", folder: "goods" } as const satisfies IconSet;
-  /** map-carried art the good editor mints, saved with the map and never provided by the set */
-  readonly customIconPrefix = `custom-${this.iconSet.id}-`;
 
   private cells!: PackedGraph["cells"];
   private cellId: number = 0;

@@ -166,18 +166,12 @@ TYPES satisfies readonly ReliefType[];
 export type ReliefIconRef = { type: ReliefIconType; variant?: number; set?: ReliefSet };
 export type ReliefIcon = ReliefIconRef & { x: number; y: number; s: number };
 
-/** a union slot the set draws no file for, drawn through another of the set's drawings */
-export interface ReliefSlot {
-  name: string;
-  target: string;
-}
-
 export class ReliefModel {
   readonly sets = SETS;
   readonly types = TYPES;
   symbolId(icon: ReliefIconRef, styleSet: ReliefSet): string;
   ref(type: ReliefIconType, variant?: number, set?: ReliefSet): ReliefIconRef;
-  aliasSlots(set: ReliefSet, artwork: readonly string[], catalog?: readonly ReliefType[]): ReliefSlot[];
+  aliasSlots(set: ReliefSet, artwork: readonly string[], catalog?: readonly ReliefType[]): IconAlias[];
   variantsOf(type: ReliefIconType): number;
   isType(type: string): type is ReliefIconType;
   anchorY(icon: ReliefIcon): number;
@@ -441,8 +435,8 @@ ids of the field-45 elements already inserted into the defs. `default-styles.jso
   declared variant exists in some set, and each set's files for a type run contiguously from 1), prints
   the derived coverage table, and covers the plain-JSON descriptor round-trip and the
   style-switch-leaves-descriptors-untouched property. The gap list is a property of the directories, so
-  there is no `KNOWN_GAPS` constant to maintain (today: simple fills 9 of 34 slots, colored and gray 34,
-  illustrated 18). A generated icon is `{ type }` or `{ type, variant }` with no `set` and a size
+  there is no `KNOWN_GAPS` constant to maintain (today: simple fills 18 of 34 slots, colored, gray and
+  illustrated 34). A generated icon is `{ type }` or `{ type, variant }` with no `set` and a size
   independent of `styles.relief.options.size`; `Relief.ref` omits both defaults, and the `index.html`
   scan goes.
 - `draw-relief-icons.test.ts` (jsdom): the style size scales the `<use>` geometry about the icon's anchor

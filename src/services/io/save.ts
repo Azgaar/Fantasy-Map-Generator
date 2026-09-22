@@ -120,7 +120,7 @@ function prepareMapData(): string {
   const styleData = JSON.stringify(styles);
 
   // store custom good icons
-  const customGoodIcons = Array.from(document.querySelectorAll(`${IconSets.defs} > [id^="${Goods.customIconPrefix}"]`))
+  const customGoodIcons = IconSets.customIcons(Goods.iconSet.id)
     .map(el => el.outerHTML)
     .join("")
     .replace(/[\r\n]+/g, " "); // map data is split by CRLF on load

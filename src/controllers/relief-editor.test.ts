@@ -11,7 +11,7 @@ vi.mock("@/components/icon-sets", () => ({
 }));
 vi.mock("@/components/viewbox-events", () => ({ applyDefaultViewboxEvents: vi.fn() }));
 vi.mock("@/components/layers", () => ({ Layers: { show: vi.fn(), draw: vi.fn() } }));
-vi.mock("@/renderers/draw-relief-icons", () => ({ redrawRelief: vi.fn(), getSceneReliefIcon: vi.fn() }));
+vi.mock("@/renderers/draw-relief-icons", () => ({ redrawRelief: vi.fn(), getReliefIcon: vi.fn() }));
 vi.mock("@/components/dialog/dialog-helpers", async importOriginal => ({
   ...(await importOriginal<typeof import("@/components/dialog/dialog-helpers")>()),
   closeDialogs: vi.fn()

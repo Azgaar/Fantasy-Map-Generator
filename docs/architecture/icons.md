@@ -31,7 +31,7 @@ interface IconSet {
 - `Relief.iconSets` — one per relief set (`relief/<set>`), with `aliases` resolving the union slots the
   directory has no file for (`Relief.aliasSlots`).
 - `Burgs.iconSets` — `burgs` and `ports`, both `em: 10`.
-- `Goods.iconSet` — `goods`, plus `Goods.customIconPrefix` for map-carried uploads.
+- `Goods.iconSet` — `goods`; map-carried uploads use `IconSets.customPrefix("goods")`.
 
 `components/icon-sets.ts` is family-agnostic: `IconSetRegistry.sets()` lists the models, and every set goes through
 the same steps — glob the directory (`import.meta.glob(?raw)`, one hashed lazy chunk per set via
@@ -84,10 +84,10 @@ Current coverage (the unit test derives the full missing-slot list from director
 
 | Set         | Real artwork | Aliased slots |
 | ----------- | -----------: | ------------: |
-| simple      |            9 |            25 |
+| simple      |           18 |            16 |
 | colored     |           34 |             0 |
 | gray        |           34 |             0 |
-| illustrated |           18 |            16 |
+| illustrated |           34 |             0 |
 
 ## Editing artwork
 
@@ -102,10 +102,11 @@ assets: a button that needs one inlines its SVG in its own markup.
 ## Map-carried art and exports
 
 A map can carry art no set provides. Its ids use the reserved namespace `custom-<set>-…`
-(`IconSets.customPrefix`), never a set's own, so the registry needs no special case. Only goods use it
-today: the good editor appends `<svg id="custom-goods-<id>">` to `#defElements defs` beside the loaded
-groups, map field 45 persists them, and loading clears the previous map's uploads without touching the
-groups. The good editor lists `IconSets.files("goods")` plus those uploads. Burg and relief uploads are
+(`IconSets.customPrefix`), never a set's own, so the registry needs no special case, and
+`IconSets.customIcons(set)` lists them. Only goods use it today: the good editor appends
+`<svg id="custom-goods-<id>">` to `#defElements defs` beside the loaded groups, map field 45 persists
+them, and loading clears the previous map's uploads without touching the groups. The good editor lists
+`IconSets.files("goods")` plus those uploads. Burg and relief uploads are
 not implemented; the append-only loader and the reserved namespace are the seam for them.
 
 `export.ts` reconciles its clone for the requested bounds before its first asynchronous wait, captures

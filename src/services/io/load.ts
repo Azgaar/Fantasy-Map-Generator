@@ -378,9 +378,8 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     }
 
     // data[45]: custom good icons. They live beside the icon sets outside the replaced map svg, clear the previous set
-    const defs = document.querySelector(IconSets.defs);
-    for (const icon of defs?.querySelectorAll(`[id^="${Goods.customIconPrefix}"]`) ?? []) icon.remove();
-    if (data[45]) defs?.insertAdjacentHTML("beforeend", data[45]);
+    for (const icon of IconSets.customIcons(Goods.iconSet.id)) icon.remove();
+    if (data[45]) document.querySelector(IconSets.defs)?.insertAdjacentHTML("beforeend", data[45]);
 
     await resolveVersionConflicts(mapVersion!, data);
 
