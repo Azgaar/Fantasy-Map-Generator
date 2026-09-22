@@ -70,9 +70,9 @@ test.describe("style persistence round trips", () => {
     // the name travels with the map, so the Style tab shows which preset the styles came from
     const preset = await page.evaluate(() => ({
       option: options.map.style.preset,
-      select: (document.getElementById("stylePreset") as HTMLSelectElement).value
+      label: document.getElementById("stylePreset")!.textContent
     }));
-    expect(preset).toEqual({ option: "ancient", select: "ancient" });
+    expect(preset).toEqual({ option: "ancient", label: "ancient" });
   });
 
   test("a legacy map's preset name is migrated out of the pipe string and into the options", async ({
@@ -95,9 +95,9 @@ test.describe("style persistence round trips", () => {
 
     const preset = await page.evaluate(() => ({
       option: options.map.style.preset,
-      select: (document.getElementById("stylePreset") as HTMLSelectElement).value
+      label: document.getElementById("stylePreset")!.textContent
     }));
-    expect(preset).toEqual({ option: "cyberpunk", select: "cyberpunk" });
+    expect(preset).toEqual({ option: "cyberpunk", label: "cyberpunk" });
   });
 
   test("an unavailable custom preset name survives a load", async ({ page, context }) => {
@@ -113,9 +113,9 @@ test.describe("style persistence round trips", () => {
 
     const preset = await page.evaluate(() => ({
       option: options.map.style.preset,
-      select: (document.getElementById("stylePreset") as HTMLSelectElement).value
+      label: document.getElementById("stylePreset")!.textContent
     }));
-    expect(preset).toEqual({ option: "custom-from-another-browser", select: "default" });
+    expect(preset).toEqual({ option: "custom-from-another-browser", label: "default" });
   });
 
   test("a DOM-only style write does not survive a save and load: the store is the authority", async ({

@@ -5,10 +5,8 @@ import { ensureEl } from "@/utils/nodeUtils";
 const TEMPLATE = /* html */ `
   <div class="head">
     <p data-tip="Select a style preset. State labels may required regeneration if font is changed">Preset:</p>
-    <select data-tip="Select a style preset" id="stylePreset" style="text-transform: capitalize"></select>
+    <button type="button" id="stylePreset" data-tip="Click to select a style preset"></button>
     <button id="addStyleButton" data-tip="Click to save current style as a new preset" class="icon-plus sideButton"></button>
-    <button id="removeStyleButton" data-tip="Click to remove current custom style preset" class="icon-minus sideButton" style="display: none"></button>
-    <button id="stylePresetGalleryButton" data-tip="Open the preset gallery: every preset as a screenshot" class="icon-brush sideButton"></button>
   </div>
   <div class="head">
     <p data-tip="Select an element to edit its style">Element:</p>
@@ -24,9 +22,6 @@ const TEMPLATE = /* html */ `
 
 const STYLE = /* css */ `
   :root {
-    --style-change: #c0392b;
-    --style-reset: #7a2e2e;
-    --style-pick: #f5c542;
     --style-card-fill: rgba(255, 255, 255, .1);
     --style-card-head: rgba(255, 255, 255, .2);
     --style-group-line: rgba(0, 0, 0, .15);
@@ -34,6 +29,9 @@ const STYLE = /* css */ `
   #styleContent .head { display: flex; align-items: center; gap: .4em; margin: .3em 0; }
   #styleContent .head > p { flex: 0 0 8.5em; margin: 0; }
   #styleContent .head > select { flex: 1 1 auto; min-width: 0; }
+  #stylePreset { flex: 1 1 auto; min-width: 0; height: 1.6em; margin: 0; padding: 0 .3em; font-size: smaller; display: flex; align-items: center; gap: .4em; background: #fff; color: #000; border: .5px solid #dbdfe6; border-top-color: #abadb3; border-radius: .5px; text-transform: capitalize; cursor: pointer; }
+  #stylePreset > span { flex: 1 1 auto; min-width: 0; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #stylePreset::after { content: "▾"; opacity: .6; }
   #styleContent .head > button.sideButton { flex: none; margin-block: 0; }
   #styleForm { margin-top: .4em; }
   #styleForm .banner { color: darkred; font-weight: 700; margin: .3em 0; }
@@ -42,10 +40,10 @@ const STYLE = /* css */ `
   #styleForm .pick::after { content: "▾"; margin-left: auto; opacity: .6; }
   #styleForm .pick > svg { flex: none; width: 1.4em; height: 1.4em; overflow: visible; }
   #styleForm .pick > .emoji { font-size: 1.3em; line-height: 1; }
-  #styleForm .reset { flex: none; visibility: hidden; border: 0; background: none; box-shadow: none; color: var(--style-reset); padding: 0 .2em; margin: 0; cursor: pointer; }
+  #styleForm .reset { flex: none; visibility: hidden; border: 0; background: none; box-shadow: none; color: var(--dark-solid); padding: 0 .2em; margin: 0; cursor: pointer; }
   #styleForm .changed .reset { visibility: visible; }
   #styleForm .reset.blank { visibility: hidden; }
-  #styleForm details[data-section] > summary:has(> .gate.changed) { box-shadow: inset 3px 0 0 var(--style-change); }
+  #styleForm details[data-section] > summary:has(> .gate.changed) { box-shadow: inset 3px 0 0 var(--dark-solid); }
   #styleForm summary > .preview { display: flex; height: 1.6em; } /* reserved, so every header is the same height */
   #styleForm summary > .preview > .sample { font-size: 1.25em; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #styleForm summary > .preview > .chip { flex: none; width: 2.95em; height: 1.6em; overflow: visible; }

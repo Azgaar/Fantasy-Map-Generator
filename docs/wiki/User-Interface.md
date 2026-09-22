@@ -428,13 +428,13 @@ Inherit - takes the variant of its parent elements, basically a default value. E
 
 ![image](https://github.com/user-attachments/assets/0fd99cd1-5e52-4d70-b137-379bda19ecb3)
 
-Dropdown that allows you to choose a set of design settings for all elements.
+The preset button shows the current preset and allows you to choose a set of design settings for all elements.
 
 Each of those sets defines its design settings for each of the elements, for example the ancient preset defines the texture of the land to be with the image setting to be ancient small, and the Clipping setting to be No clipping.
 
-Available presets: default, ancient, gloom, pale, light, watercolor, clean, atlas, darkSeas, cyberpunk, night, monochrome, ink, cinderwood and frostbite. The **+** button saves the current style as a custom preset, and the **−** button removes the selected custom preset.
+Available presets: default, ancient, gloom, pale, light, watercolor, clean, atlas, darkSeas, cyberpunk, night, monochrome, ink, cinderwood and frostbite. The **+** button saves the current style as a custom preset.
 
-The brush button next to the dropdown opens the **Style presets** dialog: a gallery with a screenshot of every system preset (all rendered from the same map), the current one outlined. Clicking a card applies the preset the same way the dropdown does, and the dialog stays open. Custom presets are listed with a neutral tile.
+Clicking the preset button opens the **Style presets** dialog: a gallery with a screenshot of every system preset (all rendered from the same map), the current one outlined. Clicking a card applies the preset, and the dialog stays open. Custom presets are listed with a neutral tile; hover one and click its trash button to remove it.
 
 **+ button** Allows you to add your own set of settings.
 

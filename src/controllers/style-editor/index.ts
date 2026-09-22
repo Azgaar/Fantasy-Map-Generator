@@ -89,7 +89,7 @@ class StyleEditorController {
     this.elementSelect.addEventListener("change", () => this.open(this.elementSelect.value as StyleElement));
     this.groupSelect.addEventListener("change", () => this.render());
     ensureEl("styleElementTreeButton").addEventListener("click", () => this.elementsDialog.open());
-    ensureEl("stylePresetGalleryButton").addEventListener("click", () => this.presetsDialog.open());
+    ensureEl("stylePreset").addEventListener("click", () => this.presetsDialog.open());
   }
 
   // the marks compare with the current preset; until it is loaded the form renders plain, then gets decorated

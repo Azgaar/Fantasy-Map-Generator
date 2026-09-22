@@ -807,10 +807,6 @@ fieldset {
   background-color: var(--header);
 }
 
-#optionsContainer span {
-  cursor: default;
-}
-
 #cellInfo {
   user-select: text;
 }

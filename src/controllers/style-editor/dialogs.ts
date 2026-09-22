@@ -258,16 +258,18 @@ export class ElementsDialog {
 const PRESETS_ID = "presetSelector";
 const PRESETS_STYLE = /* css */ `
   #${PRESETS_ID} { padding: .4em .5em; }
-  #${PRESETS_ID} > .grid { width: auto; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .4em; }
+  #${PRESETS_ID} > .grid { width: auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .4em; }
   #${PRESETS_ID} .pc { min-width: 0; border: 2px solid transparent; border-radius: 4px; padding: 2px; text-align: center; font-size: .9em; cursor: pointer; overflow: hidden; }
   #${PRESETS_ID} .pc:hover { background: rgba(255, 255, 255, .15); }
-  #${PRESETS_ID} .pc.on { border-color: var(--style-pick, #f5c542); background: rgba(255, 255, 255, .25); }
+  #${PRESETS_ID} .pc.on { border-color: var(--dark-solid); background: rgba(255, 255, 255, .25); }
   #${PRESETS_ID} .pc .img { position: relative; aspect-ratio: 16 / 9; border-radius: 2px; background: #888; display: flex; align-items: center; justify-content: center; color: #eee; font-style: italic; overflow: hidden; }
   #${PRESETS_ID} .pc .img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  #${PRESETS_ID} .pc .remove { position: absolute; top: 2px; right: 2px; margin: 0; padding: .1em .2em; font-size: .9em; opacity: 0; }
+  #${PRESETS_ID} .pc:hover .remove { opacity: 1; }
   #${PRESETS_ID} .pc .name { display: block; text-transform: capitalize; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 `;
 
-/** One screenshot per preset, the current one outlined; a click applies through the confirmed path */
+/** One screenshot per preset, the current one outlined; a click applies through the confirmed path. Custom presets can be removed */
 export class PresetSelector {
   open(): void {
     if (findEl(PRESETS_ID)) return void this.render();
@@ -279,13 +281,16 @@ export class PresetSelector {
     dialog.innerHTML = /* html */ `<style>${PRESETS_STYLE}</style><div class="grid"></div>`;
     ensureEl("dialogs").append(dialog);
     dialog.querySelector(".grid")!.addEventListener("click", event => {
-      const name = (event.target as HTMLElement).closest<HTMLElement>(".pc")?.dataset.name;
-      if (name && name !== this.current()) void Controllers.StylePresetsEditor.requestChange(name);
+      const target = event.target as HTMLElement;
+      const name = target.closest<HTMLElement>(".pc")?.dataset.name;
+      if (!name) return;
+      if (target.closest(".remove")) void Controllers.StylePresetsEditor.remove(name);
+      else if (name !== this.current()) void Controllers.StylePresetsEditor.requestChange(name);
     });
 
     $(dialog).dialog({
       title: "Style presets",
-      width: "36em",
+      width: 300,
       maxHeight: Math.round(window.innerHeight * 0.7),
       position: { my: "left top", at: "right+10 top", of: "#options" },
       close: () => destroyDialog(PRESETS_ID)
@@ -331,6 +336,10 @@ export class PresetSelector {
       image.append(screenshot);
     } else {
       image.textContent = "custom";
+      const remove = document.createElement("button");
+      remove.className = "remove icon-trash-empty";
+      remove.dataset.tip = "Remove this custom preset";
+      image.append(remove);
     }
 
     const label = document.createElement("span");
