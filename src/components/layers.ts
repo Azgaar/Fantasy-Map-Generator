@@ -326,7 +326,7 @@ const mapLayers = [
   new Layer({
     id: "routes",
     parent: "viewbox",
-    children: ["roads", "trails", "searoutes"].map(id => ({ id, tag: "g" })),
+    children: ["trails", "roads", "searoutes"].map(id => ({ id, tag: "g" })),
     draw: drawRoutes,
     erase: removeRoutes
   }),

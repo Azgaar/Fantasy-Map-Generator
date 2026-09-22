@@ -9,21 +9,21 @@
     "groups": {
       "stateBorders": {
         "attrs": {
-          "stroke": "#000000",
+          "stroke": "#2e1638",
           "opacity": 1,
-          "stroke-width": 1.01,
-          "stroke-dasharray": "0",
-          "stroke-linecap": "butt",
+          "stroke-width": 1,
+          "stroke-dasharray": "4 2 0 2",
+          "stroke-linecap": "square",
           "filter": null
         }
       },
       "provinceBorders": {
         "attrs": {
-          "stroke": "#000000",
-          "opacity": 0.8,
-          "stroke-width": 0.69,
-          "stroke-dasharray": "0",
-          "stroke-linecap": "round",
+          "stroke": "#5c3d6b",
+          "opacity": 0.9,
+          "stroke-width": 0.5,
+          "stroke-dasharray": "2 1 0 1",
+          "stroke-linecap": "square",
           "filter": null
         }
       }
@@ -36,8 +36,8 @@
           "icons": {
             "attrs": {
               "opacity": 1,
-              "fill": "#000000",
-              "fill-opacity": 0.7,
+              "fill": "#ffd23f",
+              "fill-opacity": 1,
               "stroke": "#000000",
               "stroke-opacity": null,
               "stroke-width": 1,
@@ -47,7 +47,7 @@
               "filter": null
             },
             "options": {
-              "size": 2,
+              "size": 2.4,
               "icon": "#burgs-atlas-square"
             }
           },
@@ -56,7 +56,7 @@
               "opacity": 1,
               "fill": "#ffffff",
               "fill-opacity": null,
-              "stroke": "#3e3e4b",
+              "stroke": "#000000",
               "stroke-opacity": null,
               "stroke-width": 1.2,
               "stroke-dasharray": null,
@@ -65,7 +65,7 @@
               "filter": null
             },
             "options": {
-              "size": 1.9,
+              "size": 2,
               "icon": "#ports-anchor"
             }
           }
@@ -76,8 +76,8 @@
           "icons": {
             "attrs": {
               "opacity": 1,
-              "fill": "#000000",
-              "fill-opacity": 0.7,
+              "fill": "#ffffff",
+              "fill-opacity": 1,
               "stroke": "#000000",
               "stroke-opacity": null,
               "stroke-width": 1,
@@ -88,7 +88,7 @@
             },
             "options": {
               "size": 2,
-              "icon": "#burgs-atlas-circle"
+              "icon": "#burgs-atlas-circled"
             }
           },
           "anchors": {
@@ -96,16 +96,16 @@
               "opacity": 1,
               "fill": "#ffffff",
               "fill-opacity": null,
-              "stroke": "#3e3e4b",
+              "stroke": "#000000",
               "stroke-opacity": null,
-              "stroke-width": 1.2,
+              "stroke-width": 0.4,
               "stroke-dasharray": null,
               "stroke-linecap": null,
               "stroke-linejoin": null,
               "filter": null
             },
             "options": {
-              "size": 2,
+              "size": 1.05,
               "icon": "#ports-anchor"
             }
           }
@@ -117,7 +117,7 @@
             "attrs": {
               "opacity": 1,
               "fill": "#000000",
-              "fill-opacity": 0.7,
+              "fill-opacity": 1,
               "stroke": "#000000",
               "stroke-opacity": null,
               "stroke-width": 1,
@@ -127,7 +127,7 @@
               "filter": null
             },
             "options": {
-              "size": 0.7,
+              "size": 0.8,
               "icon": "#burgs-atlas-triangle"
             }
           },
@@ -136,7 +136,7 @@
               "opacity": 1,
               "fill": "#ffffff",
               "fill-opacity": null,
-              "stroke": "#3e3e4b",
+              "stroke": "#0089ca",
               "stroke-opacity": null,
               "stroke-width": 1.2,
               "stroke-dasharray": null,
@@ -145,7 +145,7 @@
               "filter": null
             },
             "options": {
-              "size": 0.7,
+              "size": 0.8,
               "icon": "#ports-anchor"
             }
           }
@@ -157,7 +157,7 @@
             "attrs": {
               "opacity": 1,
               "fill": "#000000",
-              "fill-opacity": 0.7,
+              "fill-opacity": 1,
               "stroke": "#000000",
               "stroke-opacity": null,
               "stroke-width": 1,
@@ -167,7 +167,7 @@
               "filter": null
             },
             "options": {
-              "size": 0.7,
+              "size": 0.8,
               "icon": "#burgs-atlas-cross"
             }
           },
@@ -176,7 +176,7 @@
               "opacity": 1,
               "fill": "#ffffff",
               "fill-opacity": null,
-              "stroke": "#3e3e4b",
+              "stroke": "#0089ca",
               "stroke-opacity": null,
               "stroke-width": 1.2,
               "stroke-dasharray": null,
@@ -185,7 +185,7 @@
               "filter": null
             },
             "options": {
-              "size": 0.7,
+              "size": 0.8,
               "icon": "#ports-anchor"
             }
           }
@@ -196,8 +196,8 @@
           "icons": {
             "attrs": {
               "opacity": 1,
-              "fill": "#000000",
-              "fill-opacity": 0.7,
+              "fill": "#ffffff",
+              "fill-opacity": 1,
               "stroke": "#000000",
               "stroke-opacity": null,
               "stroke-width": 1,
@@ -207,7 +207,7 @@
               "filter": null
             },
             "options": {
-              "size": 0.7,
+              "size": 0.8,
               "icon": "#burgs-atlas-triangle"
             }
           },
@@ -216,7 +216,7 @@
               "opacity": 1,
               "fill": "#ffffff",
               "fill-opacity": null,
-              "stroke": "#3e3e4b",
+              "stroke": "#0089ca",
               "stroke-opacity": null,
               "stroke-width": 1.2,
               "stroke-dasharray": null,
@@ -225,7 +225,7 @@
               "filter": null
             },
             "options": {
-              "size": 0.7,
+              "size": 0.8,
               "icon": "#ports-anchor"
             }
           }
@@ -236,8 +236,8 @@
           "icons": {
             "attrs": {
               "opacity": 1,
-              "fill": "#000000",
-              "fill-opacity": 0.7,
+              "fill": "#ffffff",
+              "fill-opacity": 1,
               "stroke": "#000000",
               "stroke-opacity": null,
               "stroke-width": 1,
@@ -247,8 +247,8 @@
               "filter": null
             },
             "options": {
-              "size": 0.7,
-              "icon": "#burgs-atlas-triangle"
+              "size": 0.8,
+              "icon": "#burgs-atlas-diamond-dotted"
             }
           },
           "anchors": {
@@ -256,7 +256,7 @@
               "opacity": 1,
               "fill": "#ffffff",
               "fill-opacity": null,
-              "stroke": "#3e3e4b",
+              "stroke": "#0089ca",
               "stroke-opacity": null,
               "stroke-width": 1.2,
               "stroke-dasharray": null,
@@ -265,7 +265,7 @@
               "filter": null
             },
             "options": {
-              "size": 0.7,
+              "size": 0.8,
               "icon": "#ports-anchor"
             }
           }
@@ -277,7 +277,7 @@
             "attrs": {
               "opacity": 1,
               "fill": "#000000",
-              "fill-opacity": 0.7,
+              "fill-opacity": 1,
               "stroke": "#000000",
               "stroke-opacity": null,
               "stroke-width": 1,
@@ -287,7 +287,7 @@
               "filter": null
             },
             "options": {
-              "size": 0.7,
+              "size": 0.8,
               "icon": "#burgs-atlas-circle"
             }
           },
@@ -296,9 +296,9 @@
               "opacity": 1,
               "fill": "#ffffff",
               "fill-opacity": null,
-              "stroke": "#3e3e4b",
+              "stroke": "#0089ca",
               "stroke-opacity": null,
-              "stroke-width": 1.2,
+              "stroke-width": 0,
               "stroke-dasharray": null,
               "stroke-linecap": null,
               "stroke-linejoin": null,
@@ -316,9 +316,9 @@
           "icons": {
             "attrs": {
               "opacity": 1,
-              "fill": "#000000",
-              "fill-opacity": 0.7,
-              "stroke": "#000000",
+              "fill": "#555555",
+              "fill-opacity": 1,
+              "stroke": "#555555",
               "stroke-opacity": null,
               "stroke-width": 1,
               "stroke-dasharray": null,
@@ -336,7 +336,7 @@
               "opacity": 1,
               "fill": "#ffffff",
               "fill-opacity": null,
-              "stroke": "#3e3e4b",
+              "stroke": "#0089ca",
               "stroke-opacity": null,
               "stroke-width": 1.2,
               "stroke-dasharray": null,
@@ -356,8 +356,8 @@
           "icons": {
             "attrs": {
               "opacity": 1,
-              "fill": "#000000",
-              "fill-opacity": 0.7,
+              "fill": "#ffffff",
+              "fill-opacity": 1,
               "stroke": "#000000",
               "stroke-opacity": null,
               "stroke-width": 1,
@@ -367,25 +367,25 @@
               "filter": null
             },
             "options": {
-              "size": 1.2,
+              "size": 1.3,
               "icon": "#burgs-atlas-circle"
             }
           },
           "anchors": {
             "attrs": {
               "opacity": 1,
-              "fill": "#ffffff",
+              "fill": "#000000",
               "fill-opacity": null,
-              "stroke": "#3e3e4b",
+              "stroke": "#ffffff",
               "stroke-opacity": null,
-              "stroke-width": 1.2,
+              "stroke-width": 0.7,
               "stroke-dasharray": null,
               "stroke-linecap": null,
               "stroke-linejoin": null,
               "filter": null
             },
             "options": {
-              "size": 1.2,
+              "size": 1.1,
               "icon": "#ports-anchor"
             }
           }
@@ -410,16 +410,16 @@
       "sea_island": {
         "attrs": {
           "opacity": 1,
-          "stroke": "#028ac9",
-          "stroke-width": 1.01,
+          "stroke": "#0089ca",
+          "stroke-width": 0.6,
           "filter": null
         }
       },
       "lake_island": {
         "attrs": {
           "opacity": 1,
-          "stroke": "#7c8eaf",
-          "stroke-width": 0.35,
+          "stroke": "#0089ca",
+          "stroke-width": 0.3,
           "filter": null
         }
       }
@@ -555,25 +555,25 @@
           "mask": "url(#land)"
         },
         "options": {
-          "scheme": "bright",
+          "scheme": "natural",
           "terracing": 0,
           "skip": 0,
           "relax": 0,
           "curve": "curveBasisClosed",
           "contours": {
-            "mode": "off",
-            "interval": 5,
-            "color": "#5c513e",
-            "width": 0.35,
-            "opacity": 0.5
+            "mode": "only",
+            "interval": 2,
+            "color": "#b0773f",
+            "width": 0.3,
+            "opacity": 0.7
           },
           "hachures": {
             "mode": "off",
             "density": 1,
             "length": 1,
             "width": 1,
-            "color": "#5c513e",
-            "opacity": 0.65
+            "color": "#b0773f",
+            "opacity": 0.7
           }
         }
       },
@@ -590,19 +590,19 @@
           "relax": 1,
           "curve": "curveBasisClosed",
           "contours": {
-            "mode": "off",
+            "mode": "only",
             "interval": 5,
-            "color": "#5c513e",
-            "width": 0.35,
-            "opacity": 0.5
+            "color": "#0089ca",
+            "width": 0.3,
+            "opacity": 0.7
           },
           "hachures": {
             "mode": "off",
             "density": 1,
             "length": 1,
             "width": 1,
-            "color": "#5c513e",
-            "opacity": 0.65
+            "color": "#0089ca",
+            "opacity": 0.7
           },
           "render": true
         }
@@ -612,14 +612,14 @@
   "ice": {
     "attrs": {
       "opacity": 0.9,
-      "fill": "#e8f0f6",
-      "stroke": "#e8f0f6",
+      "fill": "#f4f9fc",
+      "stroke": "#6fb3dd",
       "stroke-opacity": null,
-      "stroke-width": 1,
+      "stroke-width": 0.5,
       "stroke-dasharray": null,
       "stroke-linecap": null,
       "stroke-linejoin": null,
-      "filter": "url(#dropShadow05)"
+      "filter": null
     }
   },
   "journeys": {
@@ -639,18 +639,18 @@
           "opacity": 1,
           "fill": "#000000",
           "fill-opacity": null,
-          "stroke": "#3a3a3a",
+          "stroke": "#000000",
           "stroke-opacity": null,
           "stroke-width": 0,
           "stroke-dasharray": null,
           "stroke-linecap": null,
           "stroke-linejoin": null,
-          "font-family": "Amarante",
+          "font-family": "Georgia",
           "font-size": "7%",
           "font-style": null,
-          "font-weight": null,
-          "letter-spacing": 0,
-          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
+          "font-weight": 900,
+          "letter-spacing": 0.1,
+          "style": "text-shadow: white 0px 0px 3px; text-transform: uppercase; transform: translate(0em, -0.5em)",
           "filter": null
         }
       },
@@ -659,18 +659,18 @@
           "opacity": 1,
           "fill": "#000000",
           "fill-opacity": null,
-          "stroke": "#3a3a3a",
+          "stroke": "#000000",
           "stroke-opacity": null,
           "stroke-width": 0,
           "stroke-dasharray": null,
           "stroke-linecap": null,
           "stroke-linejoin": null,
-          "font-family": "Amarante",
+          "font-family": "Georgia",
           "font-size": "6%",
           "font-style": null,
           "font-weight": null,
           "letter-spacing": 0,
-          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
+          "style": "text-shadow: white 0px 0px 3px; text-transform: uppercase; transform: translate(0em, -0.4em)",
           "filter": null
         }
       },
@@ -679,18 +679,18 @@
           "opacity": 1,
           "fill": "#000000",
           "fill-opacity": null,
-          "stroke": "#3a3a3a",
+          "stroke": "#000000",
           "stroke-opacity": null,
           "stroke-width": 0,
           "stroke-dasharray": null,
           "stroke-linecap": null,
           "stroke-linejoin": null,
-          "font-family": "Amarante",
+          "font-family": "Georgia",
           "font-size": "2%",
-          "font-style": null,
+          "font-style": "italic",
           "font-weight": null,
           "letter-spacing": 0,
-          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
+          "style": "text-shadow: white 0px 0px 3px; transform: translate(0em, -0.4em)",
           "filter": null
         }
       },
@@ -699,18 +699,18 @@
           "opacity": 1,
           "fill": "#000000",
           "fill-opacity": null,
-          "stroke": "#3a3a3a",
+          "stroke": "#000000",
           "stroke-opacity": null,
           "stroke-width": 0,
           "stroke-dasharray": null,
           "stroke-linecap": null,
           "stroke-linejoin": null,
-          "font-family": "Amarante",
+          "font-family": "Georgia",
           "font-size": "2%",
-          "font-style": null,
+          "font-style": "italic",
           "font-weight": null,
           "letter-spacing": 0,
-          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
+          "style": "text-shadow: white 0px 0px 3px; transform: translate(0em, -0.4em)",
           "filter": null
         }
       },
@@ -719,18 +719,18 @@
           "opacity": 1,
           "fill": "#000000",
           "fill-opacity": null,
-          "stroke": "#3a3a3a",
+          "stroke": "#000000",
           "stroke-opacity": null,
           "stroke-width": 0,
           "stroke-dasharray": null,
           "stroke-linecap": null,
           "stroke-linejoin": null,
-          "font-family": "Amarante",
+          "font-family": "Georgia",
           "font-size": "2%",
-          "font-style": null,
+          "font-style": "italic",
           "font-weight": null,
           "letter-spacing": 0,
-          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
+          "style": "text-shadow: white 0px 0px 3px; transform: translate(0em, -0.4em)",
           "filter": null
         }
       },
@@ -739,18 +739,18 @@
           "opacity": 1,
           "fill": "#000000",
           "fill-opacity": null,
-          "stroke": "#3a3a3a",
+          "stroke": "#000000",
           "stroke-opacity": null,
           "stroke-width": 0,
           "stroke-dasharray": null,
           "stroke-linecap": null,
           "stroke-linejoin": null,
-          "font-family": "Amarante",
+          "font-family": "Georgia",
           "font-size": "2%",
-          "font-style": null,
+          "font-style": "italic",
           "font-weight": null,
           "letter-spacing": 0,
-          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
+          "style": "text-shadow: white 0px 0px 3px; transform: translate(0em, -0.4em)",
           "filter": null
         }
       },
@@ -759,18 +759,18 @@
           "opacity": 1,
           "fill": "#000000",
           "fill-opacity": null,
-          "stroke": "#3a3a3a",
+          "stroke": "#000000",
           "stroke-opacity": null,
           "stroke-width": 0,
           "stroke-dasharray": null,
           "stroke-linecap": null,
           "stroke-linejoin": null,
-          "font-family": "Amarante",
+          "font-family": "Georgia",
           "font-size": "3%",
-          "font-style": null,
+          "font-style": "italic",
           "font-weight": null,
           "letter-spacing": 0,
-          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
+          "style": "text-shadow: white 0px 0px 3px; transform: translate(0em, -0.4em)",
           "filter": null
         }
       },
@@ -779,18 +779,18 @@
           "opacity": 1,
           "fill": "#000000",
           "fill-opacity": null,
-          "stroke": "#3a3a3a",
+          "stroke": "#000000",
           "stroke-opacity": null,
           "stroke-width": 0,
           "stroke-dasharray": null,
           "stroke-linecap": null,
           "stroke-linejoin": null,
-          "font-family": "Amarante",
+          "font-family": "Georgia",
           "font-size": "2%",
-          "font-style": null,
+          "font-style": "italic",
           "font-weight": null,
           "letter-spacing": 0,
-          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
+          "style": "text-shadow: white 0px 0px 3px; transform: translate(0em, -0.4em)",
           "filter": null
         }
       },
@@ -799,24 +799,24 @@
           "opacity": 1,
           "fill": "#000000",
           "fill-opacity": null,
-          "stroke": "#3a3a3a",
+          "stroke": "#000000",
           "stroke-opacity": null,
           "stroke-width": 0,
           "stroke-dasharray": null,
           "stroke-linecap": null,
           "stroke-linejoin": null,
-          "font-family": "Amarante",
+          "font-family": "Georgia",
           "font-size": "4%",
-          "font-style": null,
+          "font-style": "italic",
           "font-weight": null,
           "letter-spacing": 0,
-          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
+          "style": "text-shadow: white 0px 0px 3px; transform: translate(0em, -0.4em)",
           "filter": null
         }
       },
       "state": {
         "attrs": {
-          "opacity": 0.5,
+          "opacity": 0.6,
           "fill": "#000000",
           "fill-opacity": null,
           "stroke": "#000000",
@@ -825,18 +825,18 @@
           "stroke-dasharray": null,
           "stroke-linecap": null,
           "stroke-linejoin": null,
-          "font-family": "Amarante",
-          "font-size": "21%",
+          "font-family": "Georgia",
+          "font-size": "20%",
           "font-style": null,
           "font-weight": null,
-          "letter-spacing": 0,
-          "style": "text-shadow: white 0px 0px 4px;",
+          "letter-spacing": 2,
+          "style": "text-shadow: white 0px 0px 3px; text-transform: uppercase",
           "filter": null
         }
       },
       "province": {
         "attrs": {
-          "opacity": 0.5,
+          "opacity": 0.6,
           "fill": "#000000",
           "fill-opacity": null,
           "stroke": "#000000",
@@ -845,52 +845,52 @@
           "stroke-dasharray": null,
           "stroke-linecap": null,
           "stroke-linejoin": null,
-          "font-family": "Amarante",
+          "font-family": "Georgia",
           "font-size": "6%",
           "font-style": null,
           "font-weight": null,
-          "letter-spacing": 0,
-          "style": "text-shadow: white 0px 0px 4px;",
+          "letter-spacing": 1,
+          "style": "text-shadow: white 0px 0px 3px; text-transform: uppercase",
           "filter": null
         }
       },
       "route": {
         "attrs": {
-          "opacity": 0.5,
-          "fill": "#000000",
+          "opacity": 0.8,
+          "fill": "#424242",
           "fill-opacity": null,
-          "stroke": "#000000",
+          "stroke": "#ffffff",
           "stroke-opacity": null,
-          "stroke-width": 0,
+          "stroke-width": 0.06,
           "stroke-dasharray": null,
           "stroke-linecap": null,
           "stroke-linejoin": null,
-          "font-family": "Amarante",
-          "font-size": "2%",
-          "font-style": null,
+          "font-family": "Georgia",
+          "font-size": "1.2%",
+          "font-style": "italic",
           "font-weight": null,
           "letter-spacing": 0,
-          "style": "text-shadow: white 0px 0px 4px;",
+          "style": "text-shadow: white 0px 0px 1px",
           "filter": null
         }
       },
       "river": {
         "attrs": {
-          "opacity": 0.5,
-          "fill": "#000000",
+          "opacity": 1,
+          "fill": "#0089ca",
           "fill-opacity": null,
-          "stroke": "#000000",
+          "stroke": "#ffffff",
           "stroke-opacity": null,
-          "stroke-width": 0,
+          "stroke-width": 0.06,
           "stroke-dasharray": null,
           "stroke-linecap": null,
           "stroke-linejoin": null,
-          "font-family": "Amarante",
-          "font-size": "2%",
-          "font-style": null,
+          "font-family": "Georgia",
+          "font-size": "1.2%",
+          "font-style": "italic",
           "font-weight": null,
           "letter-spacing": 0,
-          "style": "text-shadow: white 0px 0px 4px;",
+          "style": "text-shadow: white 0px 0px 1px",
           "filter": null
         }
       },
@@ -905,12 +905,12 @@
           "stroke-dasharray": null,
           "stroke-linecap": null,
           "stroke-linejoin": null,
-          "font-family": "Amarante",
+          "font-family": "Georgia",
           "font-size": "18%",
           "font-style": null,
           "font-weight": null,
           "letter-spacing": 0,
-          "style": "text-shadow: white 0px 0px 4px;",
+          "style": "text-shadow: white 0px 0px 3px",
           "filter": null
         }
       }
@@ -921,11 +921,11 @@
       "freshwater": {
         "attrs": {
           "opacity": 1,
-          "fill": "#cae3f7",
+          "fill": "#d2ebf7",
           "fill-opacity": null,
           "stroke": "#0089ca",
           "stroke-opacity": null,
-          "stroke-width": 1.01,
+          "stroke-width": 0.6,
           "stroke-dasharray": null,
           "stroke-linecap": null,
           "stroke-linejoin": null,
@@ -936,7 +936,7 @@
           "density": 1,
           "length": 1,
           "halo": 0.2,
-          "color": "#000000",
+          "color": "#0089ca",
           "width": 0.3,
           "opacity": 0.6
         }
@@ -944,11 +944,11 @@
       "salt": {
         "attrs": {
           "opacity": 1,
-          "fill": "#cae3f7",
+          "fill": "#d2ebf7",
           "fill-opacity": null,
           "stroke": "#0089ca",
           "stroke-opacity": null,
-          "stroke-width": 1.01,
+          "stroke-width": 0.6,
           "stroke-dasharray": null,
           "stroke-linecap": null,
           "stroke-linejoin": null,
@@ -959,7 +959,7 @@
           "density": 1,
           "length": 1,
           "halo": 0.2,
-          "color": "#000000",
+          "color": "#0089ca",
           "width": 0.3,
           "opacity": 0.6
         }
@@ -967,11 +967,11 @@
       "sinkhole": {
         "attrs": {
           "opacity": 1,
-          "fill": "#cae3f7",
+          "fill": "#d2ebf7",
           "fill-opacity": null,
           "stroke": "#0089ca",
           "stroke-opacity": null,
-          "stroke-width": 1.01,
+          "stroke-width": 0.6,
           "stroke-dasharray": null,
           "stroke-linecap": null,
           "stroke-linejoin": null,
@@ -982,7 +982,7 @@
           "density": 1,
           "length": 1,
           "halo": 0.2,
-          "color": "#000000",
+          "color": "#0089ca",
           "width": 0.3,
           "opacity": 0.6
         }
@@ -990,11 +990,11 @@
       "frozen": {
         "attrs": {
           "opacity": 0.95,
-          "fill": "#cdd4e7",
+          "fill": "#f4f9fc",
           "fill-opacity": null,
-          "stroke": "#cfe0eb",
+          "stroke": "#6fb3dd",
           "stroke-opacity": null,
-          "stroke-width": 0,
+          "stroke-width": 0.3,
           "stroke-dasharray": null,
           "stroke-linecap": null,
           "stroke-linejoin": null,
@@ -1005,7 +1005,7 @@
           "density": 1,
           "length": 1,
           "halo": 0.2,
-          "color": "#000000",
+          "color": "#0089ca",
           "width": 0.3,
           "opacity": 0.6
         }
@@ -1028,7 +1028,7 @@
           "density": 1,
           "length": 1,
           "halo": 0.2,
-          "color": "#000000",
+          "color": "#0089ca",
           "width": 0.3,
           "opacity": 0.6
         }
@@ -1036,12 +1036,12 @@
       "dry": {
         "attrs": {
           "opacity": 1,
-          "fill": "#c9bfa7",
+          "fill": "#ebe4d0",
           "fill-opacity": null,
-          "stroke": "#8e816f",
+          "stroke": "#0089ca",
           "stroke-opacity": null,
-          "stroke-width": 0.7,
-          "stroke-dasharray": null,
+          "stroke-width": 0.5,
+          "stroke-dasharray": "1.5 1",
           "stroke-linecap": null,
           "stroke-linejoin": null,
           "filter": null
@@ -1051,7 +1051,7 @@
           "density": 1,
           "length": 1,
           "halo": 0.2,
-          "color": "#000000",
+          "color": "#0089ca",
           "width": 0.3,
           "opacity": 0.6
         }
@@ -1061,19 +1061,19 @@
   "landmass": {
     "attrs": {
       "opacity": 1,
-      "fill": "#eef6fb",
+      "fill": "#fbfaf5",
       "filter": null
     }
   },
   "legend": {
     "attrs": {
-      "stroke": "#812929",
+      "stroke": "#000000",
       "stroke-opacity": null,
-      "stroke-width": 2.5,
-      "stroke-dasharray": "0 4 10 4",
-      "stroke-linecap": "round",
+      "stroke-width": 1,
+      "stroke-dasharray": "0",
+      "stroke-linecap": "butt",
       "stroke-linejoin": null,
-      "font-family": "Almendra SC",
+      "font-family": "Georgia",
       "font-size": "13px"
     },
     "options": {
@@ -1117,13 +1117,13 @@
   "military": {
     "attrs": {
       "opacity": null,
+      "fill-opacity": 1,
       "stroke": "#000",
       "stroke-opacity": null,
       "stroke-width": 0.3,
       "stroke-dasharray": null,
       "stroke-linecap": null,
       "stroke-linejoin": null,
-      "fill-opacity": 1,
       "filter": null
     },
     "options": {
@@ -1133,26 +1133,26 @@
   "ocean": {
     "options": {
       "bands": {
-        "render": false,
-        "count": 5,
+        "render": true,
+        "count": 3,
         "spacing": 1.1,
-        "width": 0.25,
-        "color": "#575448",
-        "shore": "#b9b6a1",
-        "shade": 0.35,
-        "opacity": 1
+        "width": 0.15,
+        "color": "#0089ca",
+        "shore": "#a6d4ef",
+        "shade": 0.7,
+        "opacity": 0.5
       }
     },
     "groups": {
       "base": {
         "attrs": {
-          "fill": "#b4d2f3"
+          "fill": "#c7ecff"
         }
       },
       "pattern": {
         "attrs": {
           "href": "",
-          "opacity": 1
+          "opacity": 0.08
         }
       },
       "oceanLayers": {
@@ -1166,7 +1166,7 @@
       "oceanWaves": {
         "attrs": {
           "opacity": 0.5,
-          "stroke": "#1f3846",
+          "stroke": "#0089ca",
           "stroke-width": 0.5,
           "stroke-dasharray": null,
           "filter": null
@@ -1260,12 +1260,12 @@
       "roads": {
         "attrs": {
           "opacity": 1,
-          "stroke": "#ff2c2c",
+          "stroke": "#dc2a1e",
           "stroke-opacity": null,
-          "stroke-width": 1.05,
+          "stroke-width": 1,
           "stroke-dasharray": "0",
           "stroke-linecap": "butt",
-          "stroke-linejoin": null,
+          "stroke-linejoin": "bevel",
           "filter": null,
           "mask": null
         }
@@ -1273,12 +1273,12 @@
       "trails": {
         "attrs": {
           "opacity": 1,
-          "stroke": "#9f5122",
+          "stroke": "#ec8a1c",
           "stroke-opacity": null,
-          "stroke-width": 0.43,
+          "stroke-width": 0.45,
           "stroke-dasharray": "0",
-          "stroke-linecap": "butt",
-          "stroke-linejoin": null,
+          "stroke-linecap": "square",
+          "stroke-linejoin": "bevel",
           "filter": null,
           "mask": null
         }
@@ -1288,10 +1288,10 @@
           "opacity": 1,
           "stroke": "#0089ca",
           "stroke-opacity": null,
-          "stroke-width": 0.45,
-          "stroke-dasharray": "1 2",
-          "stroke-linecap": "round",
-          "stroke-linejoin": null,
+          "stroke-width": 0.4,
+          "stroke-dasharray": "2 1.5",
+          "stroke-linecap": "butt",
+          "stroke-linejoin": "bevel",
           "filter": null,
           "mask": null
         }
@@ -1311,7 +1311,7 @@
   "scaleBar": {
     "attrs": {
       "opacity": 1,
-      "fill": "#353540",
+      "fill": "#000000",
       "font-size": "9px"
     },
     "options": {
@@ -1343,15 +1343,15 @@
     "groups": {
       "statesBody": {
         "attrs": {
-          "opacity": 0.49,
+          "opacity": 0.2,
           "filter": null
         }
       },
       "statesHalo": {
         "attrs": {
-          "opacity": 0.4,
-          "stroke-width": 10,
-          "filter": "blur(5px)"
+          "opacity": 0.55,
+          "stroke-width": 5,
+          "filter": null
         }
       }
     }
@@ -1373,7 +1373,7 @@
   },
   "texture": {
     "attrs": {
-      "opacity": 0.2,
+      "opacity": 0.1,
       "filter": null,
       "mask": "url(#land)"
     },
