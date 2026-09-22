@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-5.1 -7.8 10.2 8.2">
+<g transform="scale(.25)">
+<g transform="translate(-20 -38)">
+<path d="M2 35Q20 32 38 35L33 37H7Z" fill="#8a8060" stroke="none" opacity=".5" />
+<path d="M19 34V25H23V19H26V12H32V19H35V25H38V34Z" />
+<path d="M24 12V9H34V12ZM22 19H36V22H22Z" fill="#ab795a" />
+<path d="M3 34V30H6V24H23V30H26V34Z" />
+<path d="M4 24L9 17H20L25 24Z" fill="#ad9560" />
+<path d="M20 24H23V30H26V34H22Z" fill="black" stroke="none" opacity=".1" />
+<path d="M12 30V25H17V30ZM28 18V14H31V18Z" fill="#544c3c" />
+<path d="M10 34V32H19V34M28 26H33M27 29H34M27 32H35" fill="none" stroke-width=".8" />
+</g>
+</g>
+</svg>
