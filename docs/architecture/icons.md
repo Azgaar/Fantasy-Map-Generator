@@ -122,7 +122,10 @@ A map can carry art no set provides. Its ids use the reserved namespace `custom-
 (`IconSets.customPrefix`), never a set's own, so the registry needs no special case, and
 `IconSets.customIcons(set)` lists them. Only goods use it today: the good editor appends
 `<svg id="custom-goods-<id>">` to `#defElements defs` beside the loaded groups, map field 45 persists
-them, and loading clears the previous map's uploads without touching the groups. The good editor lists
+the ones `pack.goods` references (unused uploads are dropped on save), and loading clears the previous
+map's uploads without touching the groups. An uploaded SVG is parsed inertly and stripped of scripting
+and external references (`sanitizeSvgIcon`), and its inner ids and classes are prefixed with the upload's
+id (`scopeSvgIcon`), so it neither collides with the document nor styles it. The good editor lists
 `IconSets.files("goods")` plus those uploads. Burg and relief uploads are
 not implemented; the append-only loader and the reserved namespace are the seam for them.
 

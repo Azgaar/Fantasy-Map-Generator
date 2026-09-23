@@ -29,22 +29,66 @@ export function downloadFile(data: BlobPart, name: string, type = "text/plain"):
   window.setTimeout(() => window.URL.revokeObjectURL(url), 2000);
 }
 
-/** Strip Inkscape/Sodipodi attributes and Noun Project credits; null if the markup has no svg */
-export function sanitizeSvgIcon(svgText: string): SVGElement | null {
-  const container = document.createElement("html");
-  container.innerHTML = svgText;
+const UNSAFE_ELEMENTS = new Set(["script", "foreignobject", "iframe", "object", "embed"]);
 
-  for (const element of Array.from(container.querySelectorAll("*"))) {
+/** Parse an uploaded svg inertly and strip scripting, external references, editor metadata and Noun Project credits; null if the markup has no svg */
+export function sanitizeSvgIcon(svgText: string): SVGElement | null {
+  const parsed = new DOMParser().parseFromString(svgText, "text/html").querySelector("svg");
+  if (!parsed) return null;
+
+  for (const element of Array.from(parsed.querySelectorAll("*"))) {
+    if (UNSAFE_ELEMENTS.has(element.localName.toLowerCase())) element.remove();
+  }
+
+  for (const element of [parsed, ...Array.from(parsed.querySelectorAll("*"))]) {
     for (const attr of element.getAttributeNames()) {
-      if (attr.includes("inkscape") || attr.includes("sodipodi")) element.removeAttribute(attr);
+      const value = element.getAttribute(attr) ?? "";
+      const isHref = attr === "href" || attr.endsWith(":href");
+      if (
+        attr.includes("inkscape") ||
+        attr.includes("sodipodi") ||
+        attr.toLowerCase().startsWith("on") ||
+        /javascript:/i.test(value.replace(/[\s\p{Cc}]/gu, "")) ||
+        (isHref && !/^\s*(#|data:image\/)/i.test(value))
+      )
+        element.removeAttribute(attr);
     }
   }
 
   if (svgText.includes("from the Noun Project")) {
-    container.querySelectorAll("text").forEach(text => void text.remove());
+    parsed.querySelectorAll("text").forEach(text => void text.remove());
   }
 
-  return container.querySelector("svg");
+  return document.importNode(parsed, true);
+}
+
+/** Prefix the ids and classes an uploaded svg declares, so it neither collides with the document nor styles it */
+export function scopeSvgIcon(svg: Element, prefix: string): void {
+  const descendants = Array.from(svg.querySelectorAll("*"));
+  const ids = new Set(descendants.map(element => element.id).filter(Boolean));
+  const classes = new Set([svg, ...descendants].flatMap(element => Array.from(element.classList)));
+  const scoped = (name: string) => `${prefix}-${name}`;
+  const pattern = (sigil: string, names: Set<string>) =>
+    new RegExp(
+      `${sigil}(${[...names].map(name => name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})(?![\\w-])`,
+      "g"
+    );
+  const idRef = ids.size ? pattern("#", ids) : null;
+  const classRef = classes.size ? pattern("\\.", classes) : null;
+
+  for (const element of [svg, ...descendants]) {
+    if (element !== svg && element.id) element.id = scoped(element.id);
+    if (element.classList.length) element.setAttribute("class", Array.from(element.classList, scoped).join(" "));
+    if (idRef)
+      for (const attr of Array.from(element.attributes))
+        attr.value = attr.value.replace(idRef, (_, id) => `#${scoped(id)}`);
+    if (element.localName === "style" && element.textContent) {
+      let css = element.textContent;
+      if (idRef) css = css.replace(idRef, (_, id) => `#${scoped(id)}`);
+      if (classRef) css = css.replace(classRef, (_, name) => `.${scoped(name)}`);
+      element.textContent = css;
+    }
+  }
 }
 
 /** UTF-8 safe base64 data URI */

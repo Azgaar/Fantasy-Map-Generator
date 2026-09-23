@@ -119,8 +119,10 @@ function prepareMapData(): string {
   const labels = JSON.stringify(pack.addedLabels || []);
   const styleData = JSON.stringify(styles);
 
-  // store custom good icons
+  // store custom good icons, dropping uploads no good uses
+  const goodIcons = new Set(pack.goods.map(good => good.icon));
   const customGoodIcons = IconSets.customIcons(Goods.iconSet.id)
+    .filter(el => goodIcons.has(el.id))
     .map(el => el.outerHTML)
     .join("")
     .replace(/[\r\n]+/g, " "); // map data is split by CRLF on load

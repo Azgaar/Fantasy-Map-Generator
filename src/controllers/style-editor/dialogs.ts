@@ -291,7 +291,7 @@ export class PresetSelector {
     $(dialog).dialog({
       title: "Style presets",
       width: 480,
-      maxHeight: Math.round(window.innerHeight * 0.7),
+      maxHeight: Math.round(window.innerHeight * 0.75),
       position: { my: "left top", at: "right+10 top", of: "#options" },
       close: () => destroyDialog(PRESETS_ID)
     });

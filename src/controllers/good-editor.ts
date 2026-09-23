@@ -7,7 +7,7 @@ import { capitalize, rn } from "@/utils";
 import { CULTURE_TYPES } from "../generators/cultures-generator";
 import type { DemandCategory, Good } from "../generators/goods-generator";
 import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY } from "../generators/goods-generator";
-import { createFileInput, ensureEl, getRandomColor, sanitizeSvgIcon, unique } from "../utils";
+import { createFileInput, ensureEl, getRandomColor, sanitizeSvgIcon, scopeSvgIcon, unique } from "../utils";
 
 let iconImageInput: HTMLInputElement | null = null;
 let iconSvgInput: HTMLInputElement | null = null;
@@ -563,10 +563,11 @@ function uploadImage(type: "image" | "svg", callback: (type: string, id: string)
           "error"
         );
 
-      const icon = goodIcons.appendChild(svg);
-      icon.id = id;
-      icon.setAttribute("width", "200");
-      icon.setAttribute("height", "200");
+      scopeSvgIcon(svg, id);
+      svg.id = id;
+      svg.setAttribute("width", "200");
+      svg.setAttribute("height", "200");
+      goodIcons.appendChild(svg);
     }
 
     callback(type, id);
