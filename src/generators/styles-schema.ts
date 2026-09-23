@@ -619,7 +619,7 @@ export const stylesSchema = z.strictObject({
     attrs: z.strictObject({
       opacity,
       stroke: variant(color, { label: "Color", tip: "Set stroke color" }).default("#23343f"),
-      "stroke-width": variant(strokeWidth, { label: "Stroke width", range: [0, 5], step: 0.1 }),
+      "stroke-width": variant(strokeWidth, { label: "Stroke width", range: [0, 5], step: 0.1 }).default(0),
       filter,
       mask: clip
     }),
