@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-<path d="m20,55 q30,-28 60,0" fill="#999999" stroke="#5c5c70" />
-<path d="m38,55 q13,-24 40,0" fill="#fff" />
-<path d="m20,58 h70 m-62,3 h50" stroke="#5c5c70" stroke-dasharray="7, 11" stroke-width="1" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50">
+<path d="m10,27.5 q15,-14 30,0" fill="#999999" />
+<path stroke="none" d="m19,27.5 q6.5,-12 20,0" fill="#fff" />
+<path d="m10,29 h35 m-31,1.5 h25" stroke-dasharray="3.5, 5.5" />
 </svg>

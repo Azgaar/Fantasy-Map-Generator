@@ -64,6 +64,15 @@ describe("effectAt", () => {
 });
 
 describe("runEffect", () => {
+  test("relief stroke edits only write the group attribute", () => {
+    run("relief.attrs.stroke-width", 2, 0);
+    expect(Styles.writeAttr).toHaveBeenCalledWith(["relief", "attrs", "stroke-width"]);
+    run("relief.attrs.stroke", "#aabbcc", "#23343f");
+    expect(Styles.writeAttr).toHaveBeenCalledWith(["relief", "attrs", "stroke"]);
+    expect(Layers.draw).not.toHaveBeenCalled();
+    expect(relief.generate).not.toHaveBeenCalled();
+  });
+
   test("an attr writes its one attribute, no redraw", () => {
     run("rivers.attrs.fill", "#123456");
     expect(Styles.writeAttr).toHaveBeenCalledWith(["rivers", "attrs", "fill"]);

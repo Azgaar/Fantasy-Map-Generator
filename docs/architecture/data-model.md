@@ -431,7 +431,7 @@ of 1 is never written. `type` names a logical relief type and `variant` a perman
 variant slot; the renderer resolves an absent `variant` to 1, so stored and drawn data never differ.
 `set` is an optional explicit pin; absent means follow the style.
 
-`styles.relief.options` holds `set` (`simple`, `colored`, `gray`, `illustrated`), `size` and `density`,
+`styles.relief.options` holds `set` (`simple`, `colored`, `gray`, `illustrated`, `stickers`), `size` and `density`,
 serialized with the style store in field 48. `s` is the base size; `size` is a render multiplier that
 scales the icon about its anchor at draw time, so neither a set nor a size change edits `pack.relief`
 and the array order stays a valid z-order.

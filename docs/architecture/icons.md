@@ -4,7 +4,7 @@ Artwork lives in `src/assets/icons/` as standalone SVG files, one directory per 
 
 ```
 src/assets/icons/
-  relief/{simple,colored,gray,illustrated}/<type>-<variant>.svg    set relief-<set>   id relief-simple-mount-1
+  relief/{simple,colored,gray,illustrated,stickers}/<type>-<variant>.svg    set relief-<set>   id relief-simple-mount-1
   burgs/<style>/<name>.svg                                         set burgs          id burgs-atlas-circle, burgs-watabou-capital
   ports/<name>.svg                                                 set ports          id ports-anchor
   goods/<name>.svg                                                 set goods          id goods-wood
@@ -68,7 +68,7 @@ frame a symbol with its own viewBox, read from the loaded set.
 ## Logical relief slots
 
 `Relief.types` declares the union of `type`/`variant` slots every set is measured against; a stored
-descriptor `{ type, variant?, set? }` resolves in all four sets, pinned or not, and a style change never
+descriptor `{ type, variant?, set? }` resolves in every set, pinned or not, and a style change never
 edits `pack.relief`. The renderer resolves the absent `variant` to 1 and the absent `set` to
 `styles.relief.options.set`; `s` is the base size and `styles.relief.options.size` a render multiplier
 anchored at the icon's centre (the z-order key).
@@ -88,6 +88,23 @@ Current coverage (the unit test derives the full missing-slot list from director
 | colored     |           34 |             0 |
 | gray        |           34 |             0 |
 | illustrated |           34 |             0 |
+| stickers    |           34 |             0 |
+
+Stickers uses hand-drawn paths and flat base and shadow colors. Its ground lines sit around 72% of the
+box for mountains, 62% for hills and trees, and 56–58% for low plants and dunes; keep this padding when
+editing artwork, as tight framing makes vegetation overwhelm the map.
+
+The relief Style Editor writes `stroke` and `stroke-width` on the relief group and every icon inherits
+them, so an icon's stroke unit is its viewBox. All icons of a type share one viewBox width, sized to the
+type's generated footprint so a width draws equally thick on every icon: 130 for mountains and volcanoes,
+50 for hills, 90 for everything else. Bring new art to that width by scaling its coordinates: a `scale()`
+wrapper keeps the art's old stroke unit.
+Every icon keeps at least one inheriting shape; fill-only shapes set `stroke="none"`. Where shading would
+cover the silhouette's stroke, a `fill="none"` copy of the silhouette is drawn over the art. Thin glyphs
+(grass, reeds, bare branches, palm fronds) sit in a `scale(k)` group with coordinates scaled by `1/k`, so
+their outline draws at `k` of the icon's weight instead of swallowing the shape. Keep structural details
+and accents, such as cattail heads and lava, as filled paths so they survive a zero width and a recolour.
+Presets set the width that restores each set's former linework: simple `1`, illustrated `1.2`, gray `0.4`.
 
 ## Editing artwork
 

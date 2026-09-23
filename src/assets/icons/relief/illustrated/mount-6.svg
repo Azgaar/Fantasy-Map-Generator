@@ -1,8 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
-<g transform="translate(0 10) scale(1 .7)" stroke="#6d5a3d" stroke-width=".55" stroke-linecap="round" stroke-linejoin="round">
-<path d="M2 33Q6 30 9 27L13 22L21 6L25 19L29 23L32 28Q35 31 38 33Q29 32 21 33Q11 34 2 33Z" fill="#c9b99a" stroke="none" />
-<path d="M21 6L21 17L19.5 21L22 24L21 26L27 33L34 32.7L28 27L26 22L23 19Z" fill="#8d7758" stroke="none" />
-<path d="M2 33Q6 30 9 27L13 22L21 6L25 19L29 23L32 28Q35 31 38 33M21 6L17.5 19L15 22L14 27L9 31M13 22L12 27M25 19L25.5 24" fill="none" stroke-width=".5" />
-<path d="M24 24L27 28M26 28L30 31M30 28L33 31M20 27L23 31" fill="none" stroke-width=".35" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130 130">
+<g transform="translate(0 32.5) scale(1 .7)" stroke-linecap="round" stroke-linejoin="round">
+<path stroke="none" d="M6.5 107.25Q19.5 97.5 29.25 87.75L42.25 71.5L68.25 19.5L81.25 61.75L94.25 74.75L104 91Q113.75 100.75 123.5 107.25Q94.25 104 68.25 107.25Q35.75 110.5 6.5 107.25Z" fill="#c9b99a" />
+<path stroke="none" d="M68.25 19.5L68.25 55.25L63.375 68.25L71.5 78L68.25 84.5L87.75 107.25L110.5 106.275L91 87.75L84.5 71.5L74.75 61.75Z" fill="#8d7758" />
+<path d="M6.5 107.25Q19.5 97.5 29.25 87.75L42.25 71.5L68.25 19.5L81.25 61.75L94.25 74.75L104 91Q113.75 100.75 123.5 107.25M68.25 19.5L56.875 61.75L48.75 71.5L45.5 87.75L29.25 100.75M42.25 71.5L39 87.75M81.25 61.75L82.875 78" fill="none" />
+<path d="M78 78L87.75 91M84.5 91L97.5 100.75M97.5 91L107.25 100.75M65 87.75L74.75 100.75" fill="none" />
 </g>
 </svg>

@@ -5,6 +5,7 @@ import type { ReliefIcon, ReliefIconType } from "@/generators/relief-generator";
 import { Styles } from "@/generators/styles";
 import { ReliefEditor } from "./relief-editor";
 import "@/generators/pack-generator"; // registers the Pack global the editor finds cells with
+import "@/generators/relief-generator"; // installs the Relief global
 
 vi.mock("@/components/icon-sets", () => ({
   IconSets: { retry: vi.fn().mockResolvedValue(undefined), reliefSetId: (set: string) => `relief-${set}` }

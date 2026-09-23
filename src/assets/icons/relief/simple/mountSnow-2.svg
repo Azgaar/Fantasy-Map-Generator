@@ -1,9 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-<path d="M39 69L52 49L68 31L81 53L96 69" fill="#fff" stroke="#5c5c70" stroke-width="1" stroke-linejoin="round" />
-<path d="M39 69L52 49L68 31L63 49L64 55L57 69Z" fill="#999999" />
-<path d="M68 31L74.5 42L68 40L65 46L61 42L57.8 42.5Z" fill="#fff" stroke="#5c5c70" stroke-width=".6" stroke-linejoin="round" />
-<path d="M3 69L20 53L38 28L51 47L70 69" fill="#fff" stroke="#5c5c70" stroke-width="1" stroke-linejoin="round" />
-<path d="M3 69L20 53L38 28L34 46L35 51L27 69Z" fill="#999999" />
-<path d="M38 28L46 39.7L39.5 37L36 43L32 39L29.8 39.4Z" fill="#fff" stroke="#5c5c70" stroke-width=".6" stroke-linejoin="round" />
-<path d="M4 71H95M13 74H88" fill="none" stroke="#5c5c70" stroke-width="1" stroke-dasharray="7, 11" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130 130">
+<path d="M50.7 89.7L67.6 63.7L88.4 40.3L105.3 68.9L124.8 89.7" fill="#fff" stroke-linejoin="round" />
+<path stroke="none" d="M50.7 89.7L67.6 63.7L88.4 40.3L81.9 63.7L83.2 71.5L74.1 89.7Z" fill="#999999" />
+<path d="M88.4 40.3L96.85 54.6L88.4 52L84.5 59.8L79.3 54.6L75.14 55.25Z" fill="#fff" stroke-linejoin="round" />
+<path d="M3.9 89.7L26 68.9L49.4 36.4L66.3 61.1L91 89.7" fill="#fff" stroke-linejoin="round" />
+<path stroke="none" d="M3.9 89.7L26 68.9L49.4 36.4L44.2 59.8L45.5 66.3L35.1 89.7Z" fill="#999999" />
+<path d="M49.4 36.4L59.8 51.61L51.35 48.1L46.8 55.9L41.6 50.7L38.74 51.22Z" fill="#fff" stroke-linejoin="round" />
+<path d="M5.2 92.3H123.5M16.9 96.2H114.4" fill="none" stroke-dasharray="9.1, 14.3" />
 </svg>

@@ -1,8 +1,8 @@
 import { extent, polygonContains } from "d3";
+import { RELIEF_SETS } from "@/data/style-choices";
 import type { IconAlias, IconSet } from "@/types/icons";
 import { minmax, rn } from "@/utils";
 
-export const RELIEF_SETS = ["simple", "colored", "gray", "illustrated"] as const;
 const TYPES = [
   { type: "mount", variants: 6 },
   { type: "mountSnow", variants: 6, fallback: "mount" },

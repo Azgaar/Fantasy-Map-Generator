@@ -5,6 +5,7 @@ import { setViewportSize } from "@/components/viewport";
 import { Styles } from "@/generators/styles";
 import "@/generators/burgs-generator"; // the models own the set definitions the export resolves ids against
 import "@/generators/goods-generator";
+import "@/generators/relief-generator";
 import { drawRelief } from "@/renderers/draw-relief-icons";
 import { ExportMap } from "./export";
 
@@ -48,6 +49,9 @@ beforeEach(() => {
 test.each(["svg", "png"])(
   "%s export waits and uses the start-of-export relief and custom goods snapshot",
   async type => {
+    const terrain = document.querySelector("#terrain")!;
+    terrain.setAttribute("stroke", "#aabbcc");
+    terrain.setAttribute("stroke-width", "0.3");
     let finish!: () => void;
     vi.mocked(IconSets.retry).mockReturnValue(
       new Promise<void>(resolve => {
@@ -80,6 +84,8 @@ test.each(["svg", "png"])(
     finish();
     expect(await pending).toBe("blob:export");
     const output = serialize.mock.results.at(-1)!.value as string;
+    expect(output).toContain('stroke="#aabbcc"');
+    expect(output).toContain('stroke-width="0.3"');
     expect(output).toContain('id="relief-illustrated-mountSnow-3"');
     expect(output).toContain('id="relief-illustrated-mountSnow-6"');
     expect(output).toContain('id="relief-gray-hill-1"');

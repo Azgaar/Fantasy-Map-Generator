@@ -1,9 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
-<g stroke="#6d5a3d" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round">
-<path d="M11 30Q15 28.6 20 29.5Q25 28.5 29 30.2Q26 32 21 31Q16 32.5 11 30Z" fill="#9aa48a" stroke="none" opacity=".5" />
-<path d="M17 29Q17.8 23 16.3 20M21 29Q20 23 22 18.5" fill="none" stroke-width=".4" />
-<path d="M17 29Q13.8 27 13 23Q16.5 25 17 29ZM19 29Q18 25.5 16.8 24Q20 25.3 19.8 29ZM21 29Q23 24 26 23Q24 27 21 29Z" fill="#838060" stroke-width=".25" />
-<path d="M16.3 21L16 18.5M22 19.5L22.4 16.8" fill="none" stroke="#8d7758" stroke-width="1" />
-<path d="M10.5 31H15M18 32.5H23M26 31H29.5" fill="none" stroke="#78816a" stroke-width=".4" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 90">
+<g stroke-linecap="round" stroke-linejoin="round">
+<path stroke="none" d="M24.75 67.5Q33.75 64.35 45 66.375Q56.25 64.125 65.25 67.95Q58.5 72 47.25 69.75Q36 73.125 24.75 67.5Z" fill="#9aa48a" opacity=".5" />
+<path d="M38.25 65.25Q40.05 51.75 36.675 45M47.25 65.25Q45 51.75 49.5 41.625" fill="none" />
+<path d="M38.25 65.25Q31.05 60.75 29.25 51.75Q37.125 56.25 38.25 65.25ZM42.75 65.25Q40.5 57.375 37.8 54Q45 56.925 44.55 65.25ZM47.25 65.25Q51.75 54 58.5 51.75Q54 60.75 47.25 65.25Z" fill="#838060" />
+<path fill="#8d7758" d="M37.792 47.116L37.117 41.491A1.125 1.125 0 0 0 34.883 41.759L35.558 47.384A1.125 1.125 0 0 0 37.792 47.116ZM50.613 44.04L51.513 37.965A1.125 1.125 0 0 0 49.287 37.635L48.387 43.71A1.125 1.125 0 0 0 50.613 44.04Z" />
+<path d="M23.625 69.75H33.75M40.5 73.125H51.75M58.5 69.75H66.375" fill="none" />
 </g>
 </svg>

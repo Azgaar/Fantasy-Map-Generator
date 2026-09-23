@@ -1117,13 +1117,13 @@
   "military": {
     "attrs": {
       "opacity": null,
+      "fill-opacity": 1,
       "stroke": "#000000",
       "stroke-opacity": null,
       "stroke-width": 0.6,
       "stroke-dasharray": null,
       "stroke-linecap": null,
       "stroke-linejoin": null,
-      "fill-opacity": 1,
       "filter": null
     },
     "options": {
@@ -1226,7 +1226,9 @@
   },
   "relief": {
     "attrs": {
-      "opacity": 0.9,
+      "opacity": 0.3,
+      "stroke": "#5c5c70",
+      "stroke-width": 1,
       "filter": null,
       "mask": null
     },

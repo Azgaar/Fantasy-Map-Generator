@@ -43,7 +43,7 @@ test.describe("style editor events drive the store", () => {
     await page.waitForTimeout(500);
   });
 
-  test("markers are sized in em, so the viewbox font size scales them with the zoom", async ({ page }) => {
+  test("markers are sized in em, so the layer font size scales them with the zoom", async ({ page }) => {
     // deterministic marker: don't depend on the generator having placed one for this seed. The
     // markers layer is off by default, so turn it on through the real registry API. It sits at the
     // map centre, which the viewport renderer keeps drawn at every zoom level this test uses
@@ -67,7 +67,7 @@ test.describe("style editor events drive the store", () => {
     await page.evaluate(() => (window as any).setMapZoom(4));
     await page.waitForTimeout(50);
     await page.evaluate(() => (window as any).invokeActiveZooming());
-    await expect(page.locator("#viewbox")).toHaveAttribute("font-size", "50px");
+    await expect(page.locator("#markers")).toHaveAttribute("font-size", "50px"); // 100 / sqrt(4)
     const after = await marker.evaluate(el => el.getBoundingClientRect().width);
     expect(after / before).toBeCloseTo(4 * 0.5, 1); // the map scaled 4x, the em 0.5x
 
@@ -562,7 +562,7 @@ test.describe("style editor events drive the store", () => {
     // the live group part carries the presentation; a full redraw keeps the store values
     await page.evaluate(() => (window as any).Layers.draw("burgIcons"));
     const el = page.locator(`#burgIcons > g#${group} > [data-group="icons"]`);
-    await expect(el).toHaveAttribute("font-size", "2.5");
+    await expect(el).toHaveAttribute("font-size", "2.5%");
     await expect(el).toHaveAttribute("fill-opacity", "0.6");
 
     // anchors size writes its own store node without minting data-size
@@ -644,11 +644,14 @@ test.describe("style editor events drive the store", () => {
     await expect(page.locator("#vignette-rect")).toHaveAttribute("rx", "50%");
   });
 
-  test("a preset switch keeps the zoom-derived viewbox font size", async ({ page }) => {
+  test("a preset switch keeps the zoom-derived layer font sizes", async ({ page }) => {
+    const layers = ["labels", "markers", "burgIcons"];
+    const fontSizes = () =>
+      page.evaluate(ids => ids.map(id => document.getElementById(id)?.getAttribute("font-size")), layers);
     await page.evaluate(() => (window as any).setMapZoom(4));
     await page.waitForTimeout(300);
-    const zoomed = await page.locator("#viewbox").getAttribute("font-size");
-    expect(zoomed).not.toBe("100px");
+    const zoomed = await fontSizes();
+    expect(zoomed).not.toContain("100px");
 
     await page.evaluate(async () => {
       sessionStorage.setItem("fmg-style-change-confirmed", "true");
@@ -656,8 +659,8 @@ test.describe("style editor events drive the store", () => {
     });
     await page.waitForTimeout(200);
 
-    // the viewbox is not a style element: the zoom-derived size stays through the preset apply
-    await expect(page.locator("#viewbox")).toHaveAttribute("font-size", zoomed!);
+    // the zoom owns these fonts: the preset apply leaves them in place
+    expect(await fontSizes()).toEqual(zoomed);
   });
 
   test("compass shift writes the rose transform through the store", async ({ page }) => {

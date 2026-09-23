@@ -51,6 +51,26 @@ test("symbol ids derive from the set and the file path; every set is a directory
   }
 });
 
+test("all relief artwork has linework inheriting stroke width and color while allowing fill-only shapes", () => {
+  // one viewBox width per type makes an inherited width draw equally thick at the generated sizes
+  const strokeUnit = (type: string) => ({ mount: 130, mountSnow: 130, vulcan: 130, hill: 50 })[type] ?? 90;
+  for (const set of Relief.iconSets) {
+    for (const [file, source] of Object.entries(directory(set.folder))) {
+      const width = Number(source.match(/viewBox="\S+ \S+ (\S+)/)?.[1]);
+      expect(width, `${set.id}/${file} viewBox width`).toBe(strokeUnit(file.replace(/-\d+$/, "")));
+      expect(source, `${set.id}/${file}`).not.toMatch(/\bstroke-width=/);
+      for (const match of source.matchAll(/\bstroke="([^"]+)"/g)) {
+        expect(match[1], `${set.id}/${file}`).toBe("none");
+      }
+      const shapes = source.match(/<(path|polygon|polyline|ellipse|circle|rect|line)\b[^>]*>/g) ?? [];
+      expect(
+        shapes.some(shape => !shape.includes('stroke="none"')),
+        `${set.id}/${file} has no stroked shape`
+      ).toBe(true);
+    }
+  }
+});
+
 test("anchored art keeps its frame, sized in em, with the anchor at the frame's corner", () => {
   expect(IconSets.anchorSymbol('<symbol id="burgs-x" viewBox="-6 -6 12 12"><path d="M0 0"/></symbol>', 10)).toBe(
     '<symbol id="burgs-x" viewBox="-6 -6 12 12" width="1.2em" height="1.2em" overflow="visible">' +

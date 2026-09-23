@@ -10,6 +10,19 @@ const cinderwood = readPreset("cinderwood");
 const ink = readPreset("ink");
 
 describe("stylesSchema", () => {
+  test("relief stroke width and color survive serialization with defaults for existing maps", () => {
+    const record = Styles.parse(Styles.defaults);
+    record.relief.attrs["stroke-width"] = 2;
+    record.relief.attrs.stroke = "#aabbcc";
+    expect(Styles.parse(JSON.parse(JSON.stringify(record))).relief.attrs).toMatchObject({
+      "stroke-width": 2,
+      stroke: "#aabbcc"
+    });
+    const { "stroke-width": _width, ...oldAttrs } = record.relief.attrs;
+    expect(stylesSchema.shape.relief.parse({ ...record.relief, attrs: oldAttrs }).attrs["stroke-width"]).toBe(0);
+    expect(stylesSchema.shape.relief.shape.attrs.shape["stroke-width"].safeParse(-1).success).toBe(false);
+  });
+
   test("the default styles are valid — defaults and schema cannot drift", () => {
     expect(stylesSchema.safeParse(Styles.defaults).success).toBe(true);
   });

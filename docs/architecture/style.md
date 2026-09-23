@@ -189,8 +189,8 @@ and the style saved in a `.map` all use the schema; there is no second format.
   migrations over `data[48]`, `Styles.parse`s and `set`s it, draws the layers, `Styles.write`s every
   element and runs the defs appliers.
 - **System presets** are the fifteen names in `SYSTEM_PRESETS`: `default` ships in the bundle, the
-  rest are fetched from `public/styles/<name>.json`. `public/images/style-presets/<name>.png` is each
-  one's thumbnail for the gallery.
+  rest are fetched from `public/styles/<name>.json`. `public/images/style-presets/<name>.avif` is each
+  one's thumbnail for the gallery, rendered by `scripts/render-style-thumbnails.mjs`.
 - **Custom presets** live in `localStorage` under `fmg-style-<name>` (older ones under
   `fmgStyle_<name>`) — an app preference by scope, but the same schema as map state.
 

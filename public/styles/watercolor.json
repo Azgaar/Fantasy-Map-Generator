@@ -1268,7 +1268,9 @@
     "attrs": {
       "opacity": 1,
       "filter": null,
-      "mask": null
+      "mask": null,
+      "stroke": "#999999",
+      "stroke-width": 0.4
     },
     "options": {
       "set": "gray",

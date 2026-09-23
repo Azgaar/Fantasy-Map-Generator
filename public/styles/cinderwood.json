@@ -1246,7 +1246,9 @@
     "attrs": {
       "opacity": 0.95,
       "filter": null,
-      "mask": "url(#land)"
+      "mask": "url(#land)",
+      "stroke": "#6d5a3d",
+      "stroke-width": 1.2
     },
     "options": {
       "set": "illustrated",

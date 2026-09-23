@@ -1,8 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
-<g stroke="#6d5a3d" stroke-width=".55" stroke-linecap="round" stroke-linejoin="round">
-<path d="M2 29C10 28 17 25 23 19C24 23 30 27 38 29Q29 31 21 30Q11 31 2 29Z" fill="#e0d8bf" stroke="none" />
-<path d="M23 19C24 23 30 27 38 29Q28 28 20 29Q16 30 13 30C19 27 23 23 23 19Z" fill="#c9b99a" stroke="none" />
-<path d="M2 29C10 28 17 25 23 19C24 23 30 27 38 29M23 19C23 23 19 27 13 30" fill="none" />
-<path d="M4 34C10 31 17 31 24 33M27 34Q31 33 36 33M7 29Q13 28 17 25.5" fill="none" stroke-width=".35" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 90">
+<g stroke-linecap="round" stroke-linejoin="round">
+<path stroke="none" d="M4.5 65.25C22.5 63 38.25 56.25 51.75 42.75C54 51.75 67.5 60.75 85.5 65.25Q65.25 69.75 47.25 67.5Q24.75 69.75 4.5 65.25Z" fill="#e0d8bf" />
+<path stroke="none" d="M51.75 42.75C54 51.75 67.5 60.75 85.5 65.25Q63 63 45 65.25Q36 67.5 29.25 67.5C42.75 60.75 51.75 51.75 51.75 42.75Z" fill="#c9b99a" />
+<path d="M4.5 65.25C22.5 63 38.25 56.25 51.75 42.75C54 51.75 67.5 60.75 85.5 65.25M51.75 42.75C51.75 51.75 42.75 60.75 29.25 67.5" fill="none" />
+<path d="M9 76.5C22.5 69.75 38.25 69.75 54 74.25M60.75 76.5Q69.75 74.25 81 74.25M15.75 65.25Q29.25 63 38.25 57.375" fill="none" />
 </g>
 </svg>

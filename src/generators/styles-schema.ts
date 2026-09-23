@@ -16,11 +16,11 @@ import {
   LINECAPS,
   LINEJOINS,
   MAP_FILTERS,
+  RELIEF_SETS,
   WAVE_TYPES
 } from "@/data/style-choices";
 import type { StyleMeta } from "@/types/styles";
 import { hexColor } from "@/utils/schemaUtils";
-import { RELIEF_SETS } from "./relief-generator";
 import { FORMATS, isLabelStyle } from "./styles-formats";
 
 export const styleMeta = z.registry<StyleMeta>();
@@ -616,7 +616,13 @@ export const stylesSchema = z.strictObject({
   }),
   provinces: z.strictObject({ attrs: z.strictObject({ opacity, filter }) }),
   relief: z.strictObject({
-    attrs: z.strictObject({ opacity, filter, mask: clip }),
+    attrs: z.strictObject({
+      opacity,
+      stroke: variant(color, { label: "Color", tip: "Set stroke color" }).default("#23343f"),
+      "stroke-width": variant(strokeWidth, { label: "Stroke width", range: [0, 5], step: 0.1 }),
+      filter,
+      mask: clip
+    }),
     options: z.strictObject({
       set: meta(z.enum(RELIEF_SETS), {
         label: "Style",

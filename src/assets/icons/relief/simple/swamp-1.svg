@@ -1,8 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 90">
 <path
-d="m 50,46 v 6 m 0,0 3,-4 m -3,4 -3,-4 m -6,4.5 h 3 m 4,0 h 4 m 4,0 3,0"
+d="m 45,41.4 v 5.4 m 0,0 2.7,-3.6 m -2.7,3.6 -2.7,-3.6 m -5.4,4.05 h 2.7 m 3.6,0 h 3.6 m 3.6,0 2.7,0"
 fill="none"
-stroke="#5c5c70"
 stroke-linecap="round"
 />
 </svg>

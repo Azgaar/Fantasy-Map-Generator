@@ -273,6 +273,8 @@
     "style": "display: none;"
   },
   "#terrain": {
+    "stroke": "#5c5c70",
+    "stroke-width": "1",
     "style": "display: none;"
   },
   "#terrs": {
@@ -321,7 +323,7 @@
     "stroke": "#3e3e4b",
     "stroke-width": "1",
     "stroke-linecap": "butt",
-    "font-size": "2",
+    "font-size": "2%",
     "data-icon": "#burgs-atlas-square"
   },
   "#burgIcons > g#city > [data-group=\"icons\"]": {
@@ -331,7 +333,7 @@
     "stroke": "#3e3e4b",
     "stroke-width": "1",
     "stroke-linecap": "butt",
-    "font-size": "1.5",
+    "font-size": "1.5%",
     "data-icon": "#burgs-atlas-circle"
   },
   "#burgIcons > g#town > [data-group=\"icons\"]": {
@@ -341,7 +343,7 @@
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
     "stroke-linecap": "butt",
-    "font-size": "1",
+    "font-size": "1%",
     "data-icon": "#burgs-atlas-circle"
   },
   "#burgIcons > g#village > [data-group=\"icons\"]": {
@@ -351,7 +353,7 @@
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
     "stroke-linecap": "butt",
-    "font-size": "0.7",
+    "font-size": "0.7%",
     "data-icon": "#burgs-atlas-circle"
   },
   "#burgIcons > g#hamlet > [data-group=\"icons\"]": {
@@ -361,7 +363,7 @@
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
     "stroke-linecap": "butt",
-    "font-size": "0.5",
+    "font-size": "0.5%",
     "data-icon": "#burgs-atlas-circle"
   },
   "#burgIcons > g#fort > [data-group=\"icons\"]": {
@@ -371,7 +373,7 @@
     "stroke": "#3e3e4b",
     "stroke-width": "1",
     "stroke-linecap": "butt",
-    "font-size": "0.7",
+    "font-size": "0.7%",
     "data-icon": "#burgs-atlas-square"
   },
   "#burgIcons > g#monastery > [data-group=\"icons\"]": {
@@ -381,7 +383,7 @@
     "stroke": "#3e3e4b",
     "stroke-width": "1",
     "stroke-linecap": "butt",
-    "font-size": "0.7",
+    "font-size": "0.7%",
     "data-icon": "#burgs-atlas-cross"
   },
   "#burgIcons > g#caravanserai > [data-group=\"icons\"]": {
@@ -391,7 +393,7 @@
     "stroke": "#3e3e4b",
     "stroke-width": "1",
     "stroke-linecap": "butt",
-    "font-size": "0.7",
+    "font-size": "0.7%",
     "data-icon": "#burgs-atlas-triangle"
   },
   "#burgIcons > g#trading_post > [data-group=\"icons\"]": {
@@ -401,7 +403,7 @@
     "stroke": "#3e3e4b",
     "stroke-width": "1",
     "stroke-linecap": "butt",
-    "font-size": "0.7",
+    "font-size": "0.7%",
     "data-icon": "#burgs-atlas-triangle"
   },
   "#burgIcons > g#capital > [data-group=\"anchors\"]": {
@@ -409,7 +411,7 @@
     "fill": "#ffffff",
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
-    "font-size": "1.9",
+    "font-size": "1.9%",
     "data-icon": "#ports-anchor"
   },
   "#burgIcons > g#city > [data-group=\"anchors\"]": {
@@ -417,7 +419,7 @@
     "fill": "#ffffff",
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
-    "font-size": "1.5",
+    "font-size": "1.5%",
     "data-icon": "#ports-anchor"
   },
   "#burgIcons > g#town > [data-group=\"anchors\"]": {
@@ -425,7 +427,7 @@
     "fill": "#ffffff",
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
-    "font-size": "1",
+    "font-size": "1%",
     "data-icon": "#ports-anchor"
   },
   "#burgIcons > g#village > [data-group=\"anchors\"]": {
@@ -433,7 +435,7 @@
     "fill": "#ffffff",
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
-    "font-size": "0.7",
+    "font-size": "0.7%",
     "data-icon": "#ports-anchor"
   },
   "#burgIcons > g#hamlet > [data-group=\"anchors\"]": {
@@ -441,7 +443,7 @@
     "fill": "#ffffff",
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
-    "font-size": "0.5",
+    "font-size": "0.5%",
     "data-icon": "#ports-anchor"
   },
   "#burgIcons > g#fort > [data-group=\"anchors\"]": {
@@ -449,7 +451,7 @@
     "fill": "#ffffff",
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
-    "font-size": "0.7",
+    "font-size": "0.7%",
     "data-icon": "#ports-anchor"
   },
   "#burgIcons > g#monastery > [data-group=\"anchors\"]": {
@@ -457,7 +459,7 @@
     "fill": "#ffffff",
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
-    "font-size": "0.7",
+    "font-size": "0.7%",
     "data-icon": "#ports-anchor"
   },
   "#burgIcons > g#caravanserai > [data-group=\"anchors\"]": {
@@ -465,7 +467,7 @@
     "fill": "#ffffff",
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
-    "font-size": "0.7",
+    "font-size": "0.7%",
     "data-icon": "#ports-anchor"
   },
   "#burgIcons > g#trading_post > [data-group=\"anchors\"]": {
@@ -473,7 +475,7 @@
     "fill": "#ffffff",
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
-    "font-size": "0.7",
+    "font-size": "0.7%",
     "data-icon": "#ports-anchor"
   },
   "#labels > [data-group=\"capital\"]": {

@@ -1,39 +1,39 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
-<g stroke="#6d5a3d" stroke-width=".55" stroke-linecap="round" stroke-linejoin="round">
-<g transform="translate(13 18) scale(.8)">
-<path d="M-.35 0L-.5 3.5H.5L.3 0Z" fill="#a18c69" stroke-width=".35" />
-<path d="M0-12L2.5-7.5L1.6-7.7L4-3.8L2.9-4.1L5 0Q2 .6 0 .3Q-2 1-4.7 0L-2.8-3.8L-4-3.5L-1.8-7.3L-2.7-7.1Z" fill="#838060" />
-<path d="M0-12L.5-6.5L-.3-4L1 0.3Q3 .5 5 0L2.9-4.1L4-3.8L1.6-7.7L2.5-7.5Z" fill="#727758" stroke="none" opacity=".45" />
-<path d="M-1-8.5L-1.7-7.4M-1-5L-2-3.5M1.5-2.5L2.5-1" fill="none" stroke-width=".35" />
-<path d="M-2.8 3.8H2.8" fill="none" stroke-width=".4" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 90">
+<g stroke-linecap="round" stroke-linejoin="round">
+<g transform="translate(29.25 40.5) scale(.8)">
+<path d="M-0.787 0L-1.125 7.875H1.125L0.675 0Z" fill="#a18c69" />
+<path d="M0-27L5.625-16.875L3.6-17.325L9-8.55L6.525-9.225L11.25 0Q4.5 1.35 0 0.675Q-4.5 2.25-10.575 0L-6.3-8.55L-9-7.875L-4.05-16.425L-6.075-15.975Z" fill="#838060" />
+<path stroke="none" d="M0-27L1.125-14.625L-0.675-9L2.25 0.675Q6.75 1.125 11.25 0L6.525-9.225L9-8.55L3.6-17.325L5.625-16.875Z" fill="#727758" opacity=".45" />
+<path d="M-2.25-19.125L-3.825-16.65M-2.25-11.25L-4.5-7.875M3.375-5.625L5.625-2.25" fill="none" />
+<path d="M-6.3 8.55H6.3" fill="none" />
 </g>
-<g transform="translate(25 19) scale(.75)">
-<path d="M-.35 0L-.5 3.5H.5L.3 0Z" fill="#a18c69" stroke-width=".35" />
-<path d="M0-12L2.5-7.5L1.6-7.7L4-3.8L2.9-4.1L5 0Q2 .6 0 .3Q-2 1-4.7 0L-2.8-3.8L-4-3.5L-1.8-7.3L-2.7-7.1Z" fill="#838060" />
-<path d="M0-12L.5-6.5L-.3-4L1 0.3Q3 .5 5 0L2.9-4.1L4-3.8L1.6-7.7L2.5-7.5Z" fill="#727758" stroke="none" opacity=".45" />
-<path d="M-1-8.5L-1.7-7.4M-1-5L-2-3.5M1.5-2.5L2.5-1" fill="none" stroke-width=".35" />
-<path d="M-2.8 3.8H2.8" fill="none" stroke-width=".4" />
+<g transform="translate(56.25 42.75) scale(.75)">
+<path d="M-0.787 0L-1.125 7.875H1.125L0.675 0Z" fill="#a18c69" />
+<path d="M0-27L5.625-16.875L3.6-17.325L9-8.55L6.525-9.225L11.25 0Q4.5 1.35 0 0.675Q-4.5 2.25-10.575 0L-6.3-8.55L-9-7.875L-4.05-16.425L-6.075-15.975Z" fill="#838060" />
+<path stroke="none" d="M0-27L1.125-14.625L-0.675-9L2.25 0.675Q6.75 1.125 11.25 0L6.525-9.225L9-8.55L3.6-17.325L5.625-16.875Z" fill="#727758" opacity=".45" />
+<path d="M-2.25-19.125L-3.825-16.65M-2.25-11.25L-4.5-7.875M3.375-5.625L5.625-2.25" fill="none" />
+<path d="M-6.3 8.55H6.3" fill="none" />
 </g>
-<g transform="translate(8 27) scale(.7)">
-<path d="M-.35 0L-.5 3.5H.5L.3 0Z" fill="#a18c69" stroke-width=".35" />
-<path d="M0-12L2.5-7.5L1.6-7.7L4-3.8L2.9-4.1L5 0Q2 .6 0 .3Q-2 1-4.7 0L-2.8-3.8L-4-3.5L-1.8-7.3L-2.7-7.1Z" fill="#838060" />
-<path d="M0-12L.5-6.5L-.3-4L1 0.3Q3 .5 5 0L2.9-4.1L4-3.8L1.6-7.7L2.5-7.5Z" fill="#727758" stroke="none" opacity=".45" />
-<path d="M-1-8.5L-1.7-7.4M-1-5L-2-3.5M1.5-2.5L2.5-1" fill="none" stroke-width=".35" />
-<path d="M-2.8 3.8H2.8" fill="none" stroke-width=".4" />
+<g transform="translate(18 60.75) scale(.7)">
+<path d="M-0.787 0L-1.125 7.875H1.125L0.675 0Z" fill="#a18c69" />
+<path d="M0-27L5.625-16.875L3.6-17.325L9-8.55L6.525-9.225L11.25 0Q4.5 1.35 0 0.675Q-4.5 2.25-10.575 0L-6.3-8.55L-9-7.875L-4.05-16.425L-6.075-15.975Z" fill="#838060" />
+<path stroke="none" d="M0-27L1.125-14.625L-0.675-9L2.25 0.675Q6.75 1.125 11.25 0L6.525-9.225L9-8.55L3.6-17.325L5.625-16.875Z" fill="#727758" opacity=".45" />
+<path d="M-2.25-19.125L-3.825-16.65M-2.25-11.25L-4.5-7.875M3.375-5.625L5.625-2.25" fill="none" />
+<path d="M-6.3 8.55H6.3" fill="none" />
 </g>
-<g transform="translate(19 26)">
-<path d="M-.35 0L-.5 3.5H.5L.3 0Z" fill="#a18c69" stroke-width=".35" />
-<path d="M0-12L2.5-7.5L1.6-7.7L4-3.8L2.9-4.1L5 0Q2 .6 0 .3Q-2 1-4.7 0L-2.8-3.8L-4-3.5L-1.8-7.3L-2.7-7.1Z" fill="#838060" />
-<path d="M0-12L.5-6.5L-.3-4L1 0.3Q3 .5 5 0L2.9-4.1L4-3.8L1.6-7.7L2.5-7.5Z" fill="#727758" stroke="none" opacity=".45" />
-<path d="M-1-8.5L-1.7-7.4M-1-5L-2-3.5M1.5-2.5L2.5-1" fill="none" stroke-width=".35" />
-<path d="M-2.8 3.8H2.8" fill="none" stroke-width=".4" />
+<g transform="translate(42.75 58.5)">
+<path d="M-0.787 0L-1.125 7.875H1.125L0.675 0Z" fill="#a18c69" />
+<path d="M0-27L5.625-16.875L3.6-17.325L9-8.55L6.525-9.225L11.25 0Q4.5 1.35 0 0.675Q-4.5 2.25-10.575 0L-6.3-8.55L-9-7.875L-4.05-16.425L-6.075-15.975Z" fill="#838060" />
+<path stroke="none" d="M0-27L1.125-14.625L-0.675-9L2.25 0.675Q6.75 1.125 11.25 0L6.525-9.225L9-8.55L3.6-17.325L5.625-16.875Z" fill="#727758" opacity=".45" />
+<path d="M-2.25-19.125L-3.825-16.65M-2.25-11.25L-4.5-7.875M3.375-5.625L5.625-2.25" fill="none" />
+<path d="M-6.3 8.55H6.3" fill="none" />
 </g>
-<g transform="translate(30 28) scale(.7)">
-<path d="M-.35 0L-.5 3.5H.5L.3 0Z" fill="#a18c69" stroke-width=".35" />
-<path d="M0-12L2.5-7.5L1.6-7.7L4-3.8L2.9-4.1L5 0Q2 .6 0 .3Q-2 1-4.7 0L-2.8-3.8L-4-3.5L-1.8-7.3L-2.7-7.1Z" fill="#838060" />
-<path d="M0-12L.5-6.5L-.3-4L1 0.3Q3 .5 5 0L2.9-4.1L4-3.8L1.6-7.7L2.5-7.5Z" fill="#727758" stroke="none" opacity=".45" />
-<path d="M-1-8.5L-1.7-7.4M-1-5L-2-3.5M1.5-2.5L2.5-1" fill="none" stroke-width=".35" />
-<path d="M-2.8 3.8H2.8" fill="none" stroke-width=".4" />
+<g transform="translate(67.5 63) scale(.7)">
+<path d="M-0.787 0L-1.125 7.875H1.125L0.675 0Z" fill="#a18c69" />
+<path d="M0-27L5.625-16.875L3.6-17.325L9-8.55L6.525-9.225L11.25 0Q4.5 1.35 0 0.675Q-4.5 2.25-10.575 0L-6.3-8.55L-9-7.875L-4.05-16.425L-6.075-15.975Z" fill="#838060" />
+<path stroke="none" d="M0-27L1.125-14.625L-0.675-9L2.25 0.675Q6.75 1.125 11.25 0L6.525-9.225L9-8.55L3.6-17.325L5.625-16.875Z" fill="#727758" opacity=".45" />
+<path d="M-2.25-19.125L-3.825-16.65M-2.25-11.25L-4.5-7.875M3.375-5.625L5.625-2.25" fill="none" />
+<path d="M-6.3 8.55H6.3" fill="none" />
 </g>
 </g>
 </svg>

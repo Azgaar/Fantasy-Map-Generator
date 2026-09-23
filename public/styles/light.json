@@ -1228,7 +1228,9 @@
     "attrs": {
       "opacity": 0.6,
       "filter": null,
-      "mask": null
+      "mask": null,
+      "stroke": "#23343f",
+      "stroke-width": 0
     },
     "options": {
       "set": "colored",

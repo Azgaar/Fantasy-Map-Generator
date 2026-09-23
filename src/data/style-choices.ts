@@ -9,6 +9,7 @@ export const CONTOUR_MODES = { off: "Off", overlay: "Over colors", only: "Lines 
 export const HACHURE_MODES = { off: "Off", overlay: "Over colors", only: "Strokes only" };
 
 export const LAKE_EMBELLISHMENTS = { none: "None", ripples: "Ripples", lines: "Straight strokes" };
+export const RELIEF_SETS = ["simple", "colored", "gray", "illustrated", "stickers"] as const;
 export const WAVE_TYPES = { waves: "Waves", lines: "Straight strokes" };
 
 export const MAP_FILTERS = {
