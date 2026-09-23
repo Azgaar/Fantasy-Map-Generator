@@ -66,9 +66,10 @@ const relations: Record<string, Relation> = {
 
 const dialogId = "diplomacyEditor" as const;
 const relationsDialogId = "diplomacyRelations";
-const painterDialogId = "diplomacyPainter";
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 let selectedDiplomacyId = 0;
+let diplomacyPaintSubjectId = 0;
+let diplomacyPaintSnapshot: { selectedId: number; diplomacy: State["diplomacy"][] } | null = null;
 const columns: EditorColumn<State>[] = [
   {
     key: "name",
@@ -83,10 +84,7 @@ const columns: EditorColumn<State>[] = [
     label: "Relations",
     width: "7em",
     permanent: true,
-    sortBy: state =>
-      diplomacyPaintMode
-        ? pack.states[selectedDiplomacyId]?.diplomacy?.[state.i] ?? ""
-        : state.diplomacy?.[selectedDiplomacyId] ?? "",
+    sortBy: state => state.diplomacy?.[selectedDiplomacyId] ?? "",
     sortType: "alpha"
   }
 ];
@@ -134,6 +132,10 @@ function open(): void {
 
 function renderDialog(): void {
   destroyDialog(dialogId);
+  const relationOptions = Object.keys(relations)
+    .map(relation => `<option value="${relation}">${relation}</option>`)
+    .join("");
+
   const editorHtml = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
       ${renderEditorHeader({ dialogId, columns })}
       <div id="diplomacyBodySection" class="table"></div>
@@ -161,6 +163,25 @@ function renderDialog(): void {
           class="icon-download"
         ></button>
       </div>
+      <div id="diplomacyPainter" style="display: none">
+        <div id="diplomacyPaintPrompt" class="info-line">Select a state on the map</div>
+        <div id="diplomacyPaintControls" style="display: none">
+          <div><b id="diplomacyPaintSubject"></b></div>
+          <div class="info-line">Choose a relation, then click target states on the map</div>
+          <label>
+            Relation:
+            <select id="diplomacyPaintRelation">
+              <option value="">Select relation</option>
+              ${relationOptions}
+            </select>
+          </label>
+          <button id="diplomacyPaintChangeState" type="button">Change State</button>
+        </div>
+        <div style="display: flex; gap: 0.4em">
+          <button id="diplomacyPaintApply" aria-label="Apply" data-tip="Apply painted changes" class="icon-check"></button>
+          <button id="diplomacyPaintCancel" aria-label="Cancel" data-tip="Cancel painted changes" class="icon-cancel"></button>
+        </div>
+      </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
   bindColumnSorting(dialogId, diplomacyTable.reset);
@@ -178,9 +199,14 @@ function renderDialog(): void {
   ensureEl("diplomacyShowMatrix").addEventListener("click", showRelationsMatrix);
   ensureEl("diplomacyHistory").addEventListener("click", showRelationsHistory);
   ensureEl("diplomacyPaint").addEventListener("click", openDiplomacyPainter);
+  ensureEl("diplomacyPaintChangeState").addEventListener("click", resetDiplomacyPainter);
+  ensureEl("diplomacyPaintApply").addEventListener("click", applyDiplomacyPainter);
+  ensureEl("diplomacyPaintCancel").addEventListener("click", cancelDiplomacyPainter);
   ensureEl("diplomacyExport").addEventListener("click", downloadDiplomacyData);
 
   ensureEl("diplomacyBodySection").addEventListener("click", ev => {
+    if (ensureEl("diplomacyPaint").classList.contains("pressed")) return;
+
     const el = ev.target as HTMLElement;
     const line = el.closest<HTMLElement>(".states");
     if (!line || line.classList.contains("Self")) return;
@@ -325,8 +351,8 @@ function selectStateOnMapClick(this: SVGElement, event: MouseEvent): void {
 }
 
 function selectRelation(subjectId: number, objectId: number, currentRelation: string): void {
+  if (findEl("diplomacyPaint")?.classList.contains("pressed")) cancelDiplomacyPainter();
   closeRelationsDialog();
-  closeDiplomacyPainter();
   const states = pack.states;
   const subject = states[subjectId];
 
@@ -470,108 +496,115 @@ function closeRelationsDialog(): void {
   if (findEl(relationsDialogId)) $(`#${relationsDialogId}`).dialog("close");
 }
 
-function openDiplomacyPainter(): void {
+function openDiplomacyPainter(this: HTMLElement): void {
+  if (this.classList.contains("pressed")) {
+    cancelDiplomacyPainter();
+    return;
+  }
+
   closeRelationsDialog();
+  diplomacyPaintSnapshot = {
+    selectedId: selectedDiplomacyId,
+    diplomacy: structuredClone(pack.states.map(state => state.diplomacy))
+  };
+  this.classList.add("pressed");
+  ensureEl("diplomacyPainter").style.display = "block";
+  resetDiplomacyPainter();
+
+  select<SVGElement, unknown>("#viewbox")
+    .style("cursor", "crosshair")
+    .on("click", paintDiplomacyOnMapClick);
+}
+
+function paintDiplomacyOnMapClick(this: SVGElement, event: MouseEvent): void {
+  const [x, y] = getPointer(event, this);
+  const cell = Pack.findCell(x, y);
+  if (cell === undefined) return;
+
+  const stateId = pack.cells.state[cell];
+  if (!stateId || !pack.states[stateId] || pack.states[stateId].removed) return;
+
+  if (!diplomacyPaintSubjectId) {
+    selectDiplomacyPaintSubject(stateId);
+    return;
+  }
+
+  if (stateId === diplomacyPaintSubjectId) return;
+
+  const newRelation = ensureEl<HTMLSelectElement>("diplomacyPaintRelation").value;
+  if (!Object.hasOwn(relations, newRelation)) {
+    tip("Please choose a relation", false, "warn");
+    return;
+  }
+
+  changeRelation(diplomacyPaintSubjectId, stateId, newRelation);
+  diplomacyTable.reset();
+  showStateRelations(diplomacyPaintSubjectId);
+
+  if (findEl("diplomacyMatrix")) showRelationsMatrix();
+}
+
+function selectDiplomacyPaintSubject(stateId: number): void {
+  diplomacyPaintSubjectId = stateId;
+  selectedDiplomacyId = stateId;
+
+  const state = pack.states[stateId];
+  ensureEl("diplomacyPaintPrompt").style.display = "none";
+  ensureEl("diplomacyPaintSubject").textContent = state.fullName || state.name;
+  ensureEl("diplomacyPaintControls").style.display = "block";
+  ensureEl<HTMLSelectElement>("diplomacyPaintRelation").value = "";
+
+  diplomacyTable.reset();
+  showStateRelations(stateId);
+  tip("Choose a relation, then click target states on the map", true);
+  updateDialog(dialogId, { width: "fit-content", position });
+}
+
+function resetDiplomacyPainter(): void {
+  diplomacyPaintSubjectId = 0;
+  ensureEl("diplomacyPaintPrompt").style.display = "block";
+  ensureEl("diplomacyPaintPrompt").textContent = "Select a state on the map";
+  ensureEl("diplomacyPaintSubject").textContent = "";
+  ensureEl("diplomacyPaintControls").style.display = "none";
+  ensureEl<HTMLSelectElement>("diplomacyPaintRelation").value = "";
+
+  showStateRelations();
+  tip("Select a state on the map", true);
+  updateDialog(dialogId, { width: "fit-content", position });
+}
+
+function applyDiplomacyPainter(): void {
   closeDiplomacyPainter();
+}
 
-  const relationOptions = Object.keys(relations)
-    .map(relation => `<option value="${relation}">${relation}</option>`)
-    .join("");
+function cancelDiplomacyPainter(): void {
+  if (diplomacyPaintSnapshot) {
+    selectedDiplomacyId = diplomacyPaintSnapshot.selectedId;
+    pack.states.forEach((state, index) => {
+      state.diplomacy = diplomacyPaintSnapshot!.diplomacy[index];
+    });
+  }
 
-  const dialog = document.createElement("div");
-  dialog.id = painterDialogId;
-  dialog.className = "dialog";
-  dialog.innerHTML = /* html */ `
-    <header>
-      <b id="diplomacyPaintSubject">Select a state on the map</b>
-    </header>
-    <div class="info-line">
-      Choose a relation, then click target states on the map to apply it.
-    </div>
-    <label>
-      Relation:
-      <select id="diplomacyPaintRelation">
-        <option value="">Select relation</option>
-        ${relationOptions}
-      </select>
-    </label>
-  `;
-
-  ensureEl("dialogs").appendChild(dialog);
-
-  let subjectId = 0;
-
-  const relationSelect = ensureEl<HTMLSelectElement>("diplomacyPaintRelation");
-  const subjectLabel = ensureEl("diplomacyPaintSubject");
-
-  const viewbox = select<SVGElement, unknown>("#viewbox");
-  const previousClick = viewbox.on("click");
-
-  viewbox.on("click", function (event: MouseEvent) {
-    const [x, y] = getPointer(event, this);
-    const cell = Pack.findCell(x, y);
-    if (cell === undefined) return;
-
-    const stateId = pack.cells.state[cell];
-    if (!stateId || !pack.states[stateId] || pack.states[stateId].removed) return;
-
-    if (!subjectId) {
-      subjectId = stateId;
-
-      const subject = pack.states[subjectId];
-      subjectLabel.textContent = subject.fullName || subject.name;
-
-      showStateRelations(subjectId);
-      tip(`Choose a relation, then click states to change their relations with ${subject.name}`, true);
-      return;
-    }
-
-    if (stateId === subjectId) return;
-
-    const newRelation = relationSelect.value;
-
-    if (!Object.hasOwn(relations, newRelation)) {
-      tip("Please choose a relation", false, "warn");
-      return;
-    }
-
-    changeRelation(subjectId, stateId, newRelation);
-
-    diplomacyTable.reset();
-    showStateRelations(subjectId);
-
-    if (findEl("diplomacyMatrix")) showRelationsMatrix();
-  });
-
-  $(dialog).dialog({
-    width: "fit-content",
-    title: "Paint relations",
-    close: () => {
-      if (previousClick) viewbox.on("click", previousClick);
-      else viewbox.on("click", null);
-
-      clearMainTip();
-      refreshDiplomacyEditor();
-      destroyDialog(painterDialogId);
-    },
-    buttons: {
-      "Change state": () => {
-        subjectId = 0;
-        subjectLabel.textContent = "Select a state on the map";
-        showStateRelations();
-        tip("Click a state on the map to select whose diplomacy you want to edit", true);
-      },
-      Done: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
-  });
-
-  tip("Click a state on the map to select whose diplomacy you want to edit", true);
+  closeDiplomacyPainter();
 }
 
 function closeDiplomacyPainter(): void {
-  if (findEl(painterDialogId)) $(`#${painterDialogId}`).dialog("close");
+  diplomacyPaintSubjectId = 0;
+  diplomacyPaintSnapshot = null;
+  ensureEl("diplomacyPaint").classList.remove("pressed");
+  ensureEl("diplomacyPainter").style.display = "none";
+  ensureEl("diplomacyPaintPrompt").style.display = "block";
+  ensureEl("diplomacyPaintSubject").textContent = "";
+  ensureEl("diplomacyPaintControls").style.display = "none";
+  ensureEl<HTMLSelectElement>("diplomacyPaintRelation").value = "";
+
+  select<SVGElement, unknown>("#viewbox")
+    .style("cursor", "crosshair")
+    .on("click", selectStateOnMapClick);
+
+  clearMainTip();
+  refreshDiplomacyEditor();
+  if (findEl("diplomacyMatrix")) showRelationsMatrix();
 }
 
 function changeRelation(subjectId: number, objectId: number, newRelation: string): void {
@@ -780,7 +813,8 @@ function downloadDiplomacyData(): void {
 
 function closeDiplomacyEditor(): void {
   closeRelationsDialog();
-  closeDiplomacyPainter();
+  if (findEl("diplomacyPaint")?.classList.contains("pressed")) cancelDiplomacyPainter();
+  diplomacyPaintSubjectId = 0;
   applyDefaultViewboxEvents();
   clearMainTip();
   const selected = ensureEl("diplomacyBodySection").querySelector("div.Self");
