@@ -227,6 +227,7 @@ function renderDialog(): void {
       #helpAssistant .helpMapEmpty > p    { margin: 0 0 .2em; opacity: .7; }
       #helpAssistant .helpMapEmpty button { max-width: 100%; padding: .3em .7em; border: 1px solid rgb(0 0 0 / 15%); border-radius: 1em; background: none; color: inherit; font: inherit; font-size: .9em; transition: .15s; }
       #helpAssistant .helpMapEmpty button:hover { border-color: var(--header); color: var(--header-active); }
+      #helpAssistant .helpMapReports      { display: flex; flex-wrap: wrap; justify-content: center; gap: .4em; margin-top: .4em; }
 
       /* the script the model ran: folded away, because the answer is the point */
       #helpAssistant .helpMapStep         { align-self: flex-start; max-width: 100%; margin-bottom: .55em; font-size: .9em; opacity: .8; }

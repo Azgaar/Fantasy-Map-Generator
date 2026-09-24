@@ -31,6 +31,7 @@ import { createSession } from "@/services/agent/session";
 import {
   canUseHostedAssistant,
   HelpApiError,
+  OFFICIAL_ORIGIN,
   PROVIDER_SETUP_MESSAGE,
   request,
   signIn,
@@ -39,7 +40,7 @@ import {
 import { getToken } from "@/services/help/auth";
 import { openURL } from "@/utils";
 import { renderMarkdown } from "@/utils/markdown";
-import { ensureEl } from "../utils";
+import { ensureEl, findEl } from "../utils";
 import { buildMessageRow, buildTypingRow } from "./help-assistant-chat";
 import { type EditEntry, noteChipLabel, undoEdit } from "./help-assistant-notes";
 
@@ -57,6 +58,10 @@ export const NOTE_SUGGESTIONS = [
   "Make it more ominous",
   "Tighten the wording, keep the facts"
 ];
+
+const REPORT_COMMAND = /^\/(bug|idea)(?:\s+([\s\S]*))?$/i;
+const REPORT_COMMANDS = ["/bug", "/idea"];
+const REPORT_UNAVAILABLE = `Reports can be submitted only on the official site: ${OFFICIAL_ORIGIN}/Fantasy-Map-Generator`;
 
 export const needsKey = (model: string, key: string): boolean =>
   model !== "hosted" && providerOf(model).id !== "local" && !key.trim();
@@ -131,6 +136,7 @@ function panelHtml(): string {
     <div id="helpMapLog" class="helpAssistantLog" role="log" aria-live="polite"></div>
     <div id="helpMapAllowance" class="helpMapUsage" aria-live="polite"></div>
     <div id="helpMapContext" class="helpMapContext" hidden></div>
+    <div id="helpMapCommands" class="helpMapUsage" hidden>/bug — report a bug · /idea — suggest an idea</div>
     <div class="helpAssistantComposer">
       <textarea id="helpMapInput" rows="1" aria-label="Your message"
         placeholder="Ask about FMG, explore this map, or edit notes…"></textarea>
@@ -221,6 +227,7 @@ function bind(): void {
   input.addEventListener("input", () => {
     resizeInput(input);
     updateSendButton();
+    updateCommandHint(input.value);
   });
   // Enter sends, Shift+Enter breaks the line — the same convention as the help chat
   input.addEventListener("keydown", event => {
@@ -229,6 +236,11 @@ function bind(): void {
     key.preventDefault();
     void send();
   });
+}
+
+function updateCommandHint(value: string): void {
+  const hint = findEl("helpMapCommands");
+  if (hint) hint.hidden = !/^\/\S*$/.test(value) || !REPORT_COMMANDS.some(command => command.startsWith(value));
 }
 
 function resizeInput(input: HTMLTextAreaElement): void {
@@ -411,6 +423,16 @@ async function send(text?: string): Promise<void> {
   const question = (text ?? input.value).trim();
   if (!question) return;
 
+  const command = REPORT_COMMAND.exec(question);
+  if (command) {
+    input.value = "";
+    resizeInput(input);
+    updateSendButton();
+    updateCommandHint("");
+    openReport(command[1].toLowerCase() as "bug" | "idea", command[2]?.trim());
+    return;
+  }
+
   const model = ensureEl<HTMLSelectElement>("helpMapModel").value;
   const key = ensureEl<HTMLInputElement>("helpMapKey").value;
   if (model === "hosted" && !canUseHostedAssistant()) {
@@ -498,6 +520,15 @@ async function send(text?: string): Promise<void> {
       ensureEl("helpMapInput").focus();
     }
   }
+}
+
+function openReport(kind: "bug" | "idea", description = ""): void {
+  if (!canUseHostedAssistant()) {
+    addEntry({ kind: "message", role: "system", text: REPORT_UNAVAILABLE });
+    return;
+  }
+  addEntry({ kind: "report", draft: { kind, title: "", description }, requestId: crypto.randomUUID() });
+  findEl("helpMapLog")?.lastElementChild?.querySelector("input")?.focus();
 }
 
 function removeConversation(): void {
@@ -700,7 +731,7 @@ function renderEntry(entry: Entry): HTMLElement {
   }
   if (entry.kind === "report") {
     const panel = document.createElement("div");
-    panel.className = "helpAssistantBubble";
+    panel.className = "helpAssistantBubble helpMapReport";
     const title = document.createElement("strong");
     title.textContent = entry.draft.kind === "bug" ? "Bug report" : "Idea";
     panel.append(title);
@@ -712,7 +743,7 @@ function renderEntry(entry: Entry): HTMLElement {
         ? [
             ["steps", "Steps to reproduce"],
             ["expected", "Expected behaviour"]
-          ]
+          ].filter(([key]) => String(entry.draft[key] ?? "").trim())
         : [])
     ]) {
       const row = document.createElement("label");
@@ -871,13 +902,30 @@ function emptyState(): HTMLElement {
     : "Ask about FMG, explore the current map, or draft and edit notes. Right-click the map to attach a place.";
   container.append(hint);
 
-  (noteLabel ? NOTE_SUGGESTIONS : MAP_SUGGESTIONS).forEach(suggestion => {
+  const chip = (label: string, onClick: () => void): HTMLButtonElement => {
     const button = document.createElement("button");
     button.type = "button";
-    button.textContent = suggestion;
-    button.addEventListener("click", () => void send(suggestion));
-    container.append(button);
+    button.textContent = label;
+    button.addEventListener("click", onClick);
+    return button;
+  };
+  (noteLabel ? NOTE_SUGGESTIONS : MAP_SUGGESTIONS).forEach(suggestion => {
+    container.append(chip(suggestion, () => void send(suggestion)));
   });
+
+  if (canUseHostedAssistant()) {
+    const reports = document.createElement("div");
+    reports.className = "helpMapReports";
+    for (const [kind, label] of [
+      ["bug", "Report a bug"],
+      ["idea", "Suggest an idea"]
+    ] as const) {
+      const button = chip(label, () => openReport(kind));
+      button.dataset.report = kind;
+      reports.append(button);
+    }
+    container.append(reports);
+  }
 
   return container;
 }

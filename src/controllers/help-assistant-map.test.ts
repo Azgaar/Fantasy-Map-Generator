@@ -34,7 +34,7 @@ vi.mock("./help-assistant-notes", () => ({
   undoEdit: vi.fn(async () => {})
 }));
 
-import { current } from "@/services/agent/conversations";
+import { create, current } from "@/services/agent/conversations";
 import { mountMapPanel, NOTE_SUGGESTIONS, needsKey, refreshMapContext, unmountMapPanel } from "./help-assistant-map";
 import { undoEdit } from "./help-assistant-notes";
 
@@ -231,7 +231,7 @@ describe("map panel", () => {
     await flush();
     expect(el("helpMapContext").hidden).toBe(false);
     expect(el("helpMapContext").textContent).toContain("Kelmora");
-    const chips = [...el("helpMapLog").querySelectorAll(".helpMapEmpty button")].map(button => button.textContent);
+    const chips = [...el("helpMapLog").querySelectorAll(".helpMapEmpty > button")].map(button => button.textContent);
     expect(chips).toEqual(NOTE_SUGGESTIONS);
   });
 
@@ -254,5 +254,124 @@ describe("map panel", () => {
     await flush();
     expect(undoEdit).toHaveBeenCalled();
     expect((entry.querySelector("button") as HTMLButtonElement).disabled).toBe(true);
+  });
+});
+
+describe("report commands", () => {
+  beforeEach(() => {
+    create();
+  });
+
+  const type = (text: string): void => {
+    const input = el<HTMLTextAreaElement>("helpMapInput");
+    input.value = text;
+    input.dispatchEvent(new Event("input"));
+  };
+  const submit = (text: string): void => {
+    type(text);
+    el<HTMLButtonElement>("helpMapSend").click();
+  };
+  const card = (): HTMLElement | null => el("helpMapLog").querySelector(".helpMapReport");
+  const fieldLabels = (report: HTMLElement): string[] =>
+    [...report.querySelectorAll("label")].map(label => label.firstChild?.textContent ?? "");
+
+  it("opens a title and description card from /bug without calling a model", () => {
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+    vi.stubGlobal("crypto", webcrypto);
+    mountMapPanel(el("host"));
+    submit("/bug Export freezes the tab");
+    const report = card()!;
+    expect(report.querySelector("strong")?.textContent).toBe("Bug report");
+    expect(fieldLabels(report)).toEqual(["Title", "Description"]);
+    expect(report.querySelector<HTMLTextAreaElement>("textarea")!.value).toBe("Export freezes the tab");
+    expect(document.activeElement).toBe(report.querySelector("input"));
+    expect(el("helpMapLog").querySelector(".helpAssistantMsg.user")).toBeNull();
+    expect(el<HTMLTextAreaElement>("helpMapInput").value).toBe("");
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("opens an idea card even when the personal provider has no key", () => {
+    vi.stubGlobal("crypto", webcrypto);
+    localStorage.setItem("fmg-ai-chat-model", "claude-sonnet-5");
+    mountMapPanel(el("host"));
+    submit("/idea");
+    expect(card()!.querySelector("strong")?.textContent).toBe("Idea");
+    expect(el("helpMapDrawer").hidden).toBe(true);
+  });
+
+  it("sends anything else, including /bugfix, to the model", () => {
+    localStorage.setItem("fmg-ai-chat-model", "claude-sonnet-5");
+    mountMapPanel(el("host"));
+    submit("/bugfix");
+    expect(card()).toBeNull();
+    expect(el("helpMapHint").hidden).toBe(false);
+  });
+
+  it("points to the official site instead of opening a card on other copies", () => {
+    availability.allowed = false;
+    localStorage.setItem("fmg-ai-chat-model", "claude-sonnet-5");
+    localStorage.setItem("fmg-ai-kl-anthropic", "test-key");
+    mountMapPanel(el("host"));
+    expect(el("helpMapLog").querySelector("button[data-report]")).toBeNull();
+    submit("/bug broken");
+    expect(card()).toBeNull();
+    expect(el("helpMapLog").textContent).toContain("official site");
+  });
+
+  it("offers bug and idea cards from the empty chat", () => {
+    vi.stubGlobal("crypto", webcrypto);
+    mountMapPanel(el("host"));
+    const buttons = [...el("helpMapLog").querySelectorAll<HTMLButtonElement>("button[data-report]")];
+    expect(buttons.map(button => button.textContent)).toEqual(["Report a bug", "Suggest an idea"]);
+    buttons[1].click();
+    expect(card()!.querySelector("strong")?.textContent).toBe("Idea");
+  });
+
+  it("lists the commands while the input starts with a slash", () => {
+    mountMapPanel(el("host"));
+    const hint = el("helpMapCommands");
+    expect(hint.hidden).toBe(true);
+    type("/");
+    expect(hint.hidden).toBe(false);
+    expect(hint.textContent).toContain("/bug");
+    expect(hint.textContent).toContain("/idea");
+    type("/b");
+    expect(hint.hidden).toBe(false);
+    type("/x");
+    expect(hint.hidden).toBe(true);
+    type("hello");
+    expect(hint.hidden).toBe(true);
+  });
+
+  it("submits only the fields shown on a command card", async () => {
+    vi.stubGlobal("crypto", webcrypto);
+    const fetch = vi.fn(async () => new Response(JSON.stringify({ receipt: "r".repeat(32) }), { status: 200 }));
+    vi.stubGlobal("fetch", fetch);
+    mountMapPanel(el("host"));
+    submit("/bug Export freezes the tab");
+    card()!.querySelector("input")!.value = "Export freezes";
+    [...card()!.querySelectorAll("button")].find(button => button.textContent === "Submit report")!.click();
+    await flush();
+    const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toMatch(/\/v2\/reports$/);
+    expect(JSON.parse(String(init.body)).draft).toEqual({
+      kind: "bug",
+      title: "Export freezes",
+      description: "Export freezes the tab"
+    });
+    expect(card()!.textContent).toContain("Submitted for review");
+  });
+
+  it("keeps structured fields a model draft filled in", () => {
+    mountMapPanel(el("host"));
+    current().entries.push({
+      kind: "report",
+      requestId: "model-draft",
+      draft: { kind: "bug", title: "Crash", description: "It crashes", steps: "1. Open", expected: "" }
+    });
+    unmountMapPanel();
+    mountMapPanel(el("host"));
+    expect(fieldLabels(card()!)).toEqual(["Title", "Description", "Steps to reproduce"]);
   });
 });
