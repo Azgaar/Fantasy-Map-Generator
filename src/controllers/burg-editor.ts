@@ -135,7 +135,7 @@ function renderDialog(): void {
               <span
                 id="burgCitadel"
                 data-tip="Shows whether the burg has a citadel (castle). Click to toggle"
-                data-feature="palace"
+                data-feature="citadel"
                 class="burgFeature icon-chess-rook"
                 style="font-size: 1.1em"
               ></span>
