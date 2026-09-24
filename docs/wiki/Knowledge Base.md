@@ -536,6 +536,10 @@ Click on the route or river. In the Editor dialog click on the button to show th
 
 Each state must have a capital. So to remove the capital burg, you need to reassign the capital status to another burg first and then remove the initial burg. Alternativelly you can remove the entire state, it will make the old capital a usual neutral burg
 
+### Why can't I delete a burg that is a market center?
+
+A market center burg cannot be removed while its market exists. Open Tools -> Markets and remove the market with the trash icon, or click on the market and use the Relocate button in the Market Stock dialog to move the center to another burg. Then remove the burg. In the Burg Editor, turning off the Market feature of a market center burg also offers to remove its market. If the Market feature is already off, turn it on and off again to get the prompt
+
 ### Do you take suggestions?
 
 Yes. Search and upvote Ideas discussions or submit a new suggestion at https://github.com/Azgaar/Fantasy-Map-Generator/discussions/new?category=ideas. In Discord, use /idea when available or #fmg-suggestions for discussion. Bot reports wait for moderator approval; a chat message alone does not create a GitHub item. See https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Reporting-bugs-and-ideas for examples
