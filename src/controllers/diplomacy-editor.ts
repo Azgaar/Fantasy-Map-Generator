@@ -417,6 +417,7 @@ function selectRelation(subjectId: number, objectId: number, currentRelation: st
           <div>
             <button id="diplomacyPaint" type="button" class="icon-brush" data-tip="Paint the chosen relation on states"></button>
             <button id="diplomacyUndo" type="button" class="icon-ccw" aria-label="Undo" data-tip="Undo last brush stroke" disabled></button>
+            <button id="diplomacyPaintCancel" type="button" class="icon-cancel" aria-label="Discard paint changes" data-tip="Discard all changes in this paint session" style="display: none"></button>
           </div>
           <div id="diplomacyBrushControls" style="display: none">${brush.markup}</div>
           <div>
@@ -534,6 +535,24 @@ function selectRelation(subjectId: number, objectId: number, currentRelation: st
     if (findEl("diplomacyMatrix")) showRelationsMatrix();
   }
 
+  function discardPaintSession(): void {
+    if (paintFrame) cancelAnimationFrame(paintFrame);
+    paintFrame = 0;
+    const strokes = [...undoStack, ...(activeStroke?.history.length ? [activeStroke] : [])];
+    for (let i = strokes.length - 1; i >= 0; i--) {
+      restoreRelations(strokes[i]);
+      removeHistory(strokes[i].history);
+    }
+    activeStroke = null;
+    undoStack.length = 0;
+    undoButton.disabled = true;
+    strokeChanged = false;
+    if (strokes.length) {
+      refreshPaintedView();
+      if (findEl("diplomacyMatrix")) showRelationsMatrix();
+    }
+  }
+
   function attachMapSelection(): void {
     viewbox.style("cursor", "crosshair").on("click", function (event: MouseEvent) {
       selectSubjectOnMap(getPointer(event, this));
@@ -543,10 +562,12 @@ function selectRelation(subjectId: number, objectId: number, currentRelation: st
   attachMapSelection();
   const paintButton = ensureEl("diplomacyPaint");
   const undoButton = ensureEl<HTMLButtonElement>("diplomacyUndo");
+  const paintCancelButton = ensureEl<HTMLButtonElement>("diplomacyPaintCancel");
   const brushControls = ensureEl("diplomacyBrushControls");
   function setBrushActive(active: boolean): void {
     brushActive = active;
     paintButton.classList.toggle("pressed", active);
+    paintCancelButton.style.display = active ? "" : "none";
     brushControls.style.display = active ? "block" : "none";
     if (active) {
       setMinimized(true);
@@ -557,12 +578,16 @@ function selectRelation(subjectId: number, objectId: number, currentRelation: st
     }
     $(dialog).dialog("option", "width", "fit-content");
   }
-  paintButton.addEventListener("click", () => setBrushActive(!brushActive));
+  function cancelPaint(): void {
+    setBrushActive(false);
+    discardPaintSession();
+    setMinimized(false);
+  }
+  paintButton.addEventListener("click", () => (brushActive ? cancelPaint() : setBrushActive(true)));
   undoButton.addEventListener("click", undoPaint);
+  paintCancelButton.addEventListener("click", cancelPaint);
 
   ensureEl("diplomacyApply").addEventListener("click", () => {
-    if (brushActive) setBrushActive(false);
-    setMinimized(false);
     const formData = new FormData(ensureEl<HTMLFormElement>("relationsForm"));
     const objectIds = [...formData.getAll("objectSelect")].map(Number);
     const newRelation = formData.get("relationSelect");
@@ -575,8 +600,12 @@ function selectRelation(subjectId: number, objectId: number, currentRelation: st
     }
     if (paintFrame) cancelAnimationFrame(paintFrame);
     paintFrame = 0;
+    activeStroke = null;
     undoStack.length = 0;
     undoButton.disabled = true;
+    strokeChanged = false;
+    if (brushActive) setBrushActive(false);
+    setMinimized(false);
     refreshPaintedView();
     if (findEl("diplomacyMatrix")) showRelationsMatrix();
   });
@@ -586,8 +615,8 @@ function selectRelation(subjectId: number, objectId: number, currentRelation: st
     width: "fit-content",
     title: `Change relations`,
     close: () => {
-      if (paintFrame) cancelAnimationFrame(paintFrame);
       if (brushActive) brush.detach();
+      discardPaintSession();
       if (previousClick) viewbox.on("click", previousClick);
       else viewbox.on("click", null);
       refreshDiplomacyEditor();
