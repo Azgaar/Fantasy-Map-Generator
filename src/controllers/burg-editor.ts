@@ -11,7 +11,7 @@ import { getHeight, openURL, speak } from "@/utils";
 import { MAX_ZOOM, PAN_ZOOM_IDENTITY, type PanZoom, panBy, zoomAt } from "@/utils/panZoomUtils";
 import type { Burg } from "../generators/burgs-generator";
 import type { Market } from "../generators/markets-generator";
-import { convertTemperature, ensureEl, getPointer, getTemperatureLikeness, rand, rn } from "../utils";
+import { convertTemperature, ensureEl, escapeHtml, getPointer, getTemperatureLikeness, rand, rn } from "../utils";
 import type { PromptOptions } from "../utils/commonUtils";
 
 declare const prompt: (text: string, options: PromptOptions, callback: (value: string | number) => void) => void;
@@ -430,7 +430,7 @@ function toggleFeature(this: HTMLElement): void {
 function confirmRemoveMarket(market: Market): void {
   confirmationDialog({
     title: "Remove market",
-    message: `This burg is the center of the market "${Markets.getName(market)}". Remove the market?<br>This action cannot be reverted`,
+    message: `This burg is the center of the market "${escapeHtml(Markets.getName(market))}". Remove the market?<br>This action cannot be reverted`,
     confirm: "Remove",
     onConfirm: () => {
       Markets.removeMarket(market.i);
