@@ -136,7 +136,7 @@ export const mapSchema = z.strictObject({
   units,
   style: z.strictObject({ preset: z.string().min(1) }),
   burgs: z.strictObject({ groups: z.array(burgGroup) }),
-  labels: z.strictObject({ resizeOnZoom: z.boolean(), groups: z.array(labelGroup) }),
+  labels: z.strictObject({ groups: z.array(labelGroup) }),
   military: z.strictObject({ units: z.array(militaryUnit) }),
   transports: z.array(transport),
   coastline: coastlineSettings

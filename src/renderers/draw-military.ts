@@ -6,8 +6,8 @@ export const drawMilitary = (): void => {
   TIME && console.time("drawMilitary");
 
   select<SVGGElement, unknown>("#armies").selectAll("g").remove();
-  // regiment labels size by inheritance from the group
-  select<SVGGElement, unknown>("#armies").attr("font-size", styles.military.options.fontSize);
+  // regiment labels size by inheritance from the group, in step with the box
+  select<SVGGElement, unknown>("#armies").attr("font-size", styles.military.options.boxSize * 2);
   for (const state of pack.states) {
     if (!state.i || state.removed) continue;
     drawRegimentsRenderer(state.military || [], state.i);
@@ -42,6 +42,7 @@ const drawRegimentsRenderer = (regiments: Regiment[], s: number): void => {
     .attr("data-state", s)
     .attr("data-id", d => d.i)
     .attr("transform", d => (d.angle ? `rotate(${d.angle})` : null))
+    .attr("font-size", size * 2)
     .attr("transform-origin", d => `${d.x}px ${d.y}px`);
   g.append("rect")
     .attr("x", d => x(d))

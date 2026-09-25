@@ -84,7 +84,6 @@ This document outlines the expected data structure. Current data model described
     },
 
     "labels": {
-      "resizeOnZoom": true,
       "groups": []
     },
 

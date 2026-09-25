@@ -96,8 +96,8 @@ land in `map.geography`, which keeps lock handling out of terrain generation.
 
 **`options.app`** is the preferences: they take effect immediately and generate nothing.
 Two rules keep the boundary sharp. **"Show all regardless of zoom" is a preference** —
-`labels.showAll` turns off zoom culling for this browser, while `labels.resizeOnZoom` decides how
-the map's own typography behaves and so belongs to `map`. And **a preference the user has not set
+`labels.showAll` turns off zoom culling for this browser; the map's own typography lives in the
+style record. And **a preference the user has not set
 is `null`, not a guess** — interface size follows the screen and the viewport follows the window
 until someone chooses otherwise, so a control's reset writes `null` rather than today's number.
 

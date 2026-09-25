@@ -117,7 +117,7 @@ function getSettings() {
     urbanDensity: options.map.units.population.urbanization.density,
     options,
     mapName: options.map.lore.name,
-    stylePreset: stylePreset.value
+    stylePreset: options.map.style.preset
   };
 }
 

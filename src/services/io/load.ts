@@ -1,6 +1,7 @@
 import { select } from "d3";
 import { fitMapToScreen } from "@/components/canvas";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { IconSets } from "@/components/icon-sets";
 import { Layers } from "@/components/layers";
 import { registerMap } from "@/components/lifecycle";
 import { pickMapFile } from "@/components/options/io-panes";
@@ -10,9 +11,13 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { undraw } from "@/components/undraw";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { resetZoom } from "@/components/zoom";
+import { Controllers } from "@/controllers";
 import { GraphOverride } from "@/generators/graph-override";
+import { Styles } from "@/generators/styles";
 import { onLegendClick } from "@/renderers/draw-legend";
+import { applyVignetteOptions } from "@/renderers/draw-vignette";
 import { zonesFilter } from "@/renderers/draw-zones";
+import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
 import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
 import { logStats } from "@/services/logging";
@@ -262,7 +267,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     if (!settings) throw new Error("Map settings are missing or malformed");
     Options.applyLoaded(settings);
     syncOptionInputs();
-    setStylePresetSelect();
+    await Controllers.StylePresetsEditor.init(); // the preset row follows the loaded map
 
     INFO && console.group(options.map.seed ? `Loaded Map ${options.map.seed}` : "Loaded Map");
     isLogGroupOpen = true;
@@ -372,17 +377,15 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       });
     }
 
-    // data[45]: custom good icons. #good-icons lives outside the replaced map svg, clear the previous set
-    const goodIconsDefs = document.getElementById("good-icons");
-    goodIconsDefs?.querySelectorAll('[id^="good-custom-"]').forEach(icon => {
-      icon.remove();
-    });
-    if (data[45]) goodIconsDefs?.insertAdjacentHTML("beforeend", data[45]);
+    // data[45]: custom good icons. They live beside the icon sets outside the replaced map svg, clear the previous set
+    for (const icon of IconSets.customIcons(Goods.iconSet.id)) icon.remove();
+    if (data[45]) document.querySelector(IconSets.defs)?.insertAdjacentHTML("beforeend", data[45]);
 
     await resolveVersionConflicts(mapVersion!, data);
 
     const styleRecord = data[48] ? safeParseJSON(data[48]) : undefined; // data[48] should be already migrated by auto-update
     Styles.set(Styles.parse(styleRecord));
+    await Controllers.StylePresetsEditor.ensureGroupStyles();
 
     if (data[50]) Layers.restore(JSON.parse(data[50]));
     if (data[51]) GraphOverride.restore(JSON.parse(data[51]));
@@ -401,16 +404,11 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       .on("click", onLegendClick);
 
     // add custom heightmap color scheme if any
-    if (heightmapColorSchemes) {
-      for (const { scheme } of [styles.heightmap.oceanHeights.options, styles.heightmap.landHeights.options]) {
-        if (scheme && !(scheme in heightmapColorSchemes)) addCustomColorScheme(scheme);
-      }
-    }
-
-    {
-      // add custom texture if any
-      const textureHref = styles.texture.options.href;
-      if (textureHref) updateTextureSelectValue(textureHref);
+    for (const { scheme } of [
+      styles.heightmap.groups.oceanHeights.options,
+      styles.heightmap.groups.landHeights.options
+    ]) {
+      HeightmapColorSchemes.ensure(scheme);
     }
 
     // data integrity checks
@@ -669,7 +667,8 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     }
 
     Layers.drawAll();
-    applyStoredStyles();
+    Styles.writeAll();
+    applyVignetteOptions(); // the vignette mask is renderer-owned; its applier shapes it from the store
     applyPerformanceSettings(); // the file's SVG carries the attributes of the browser that saved it
     applyDefaultViewboxEvents();
     fitMapToScreen();

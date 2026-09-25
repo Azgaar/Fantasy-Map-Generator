@@ -13,16 +13,16 @@
 - `src/generators/`: Generators containing simulation logic (e.g., `heightmap-generator.ts`, `cultures-generator.ts`).
 - `src/controllers/`: The UI layer — editors and tools that mutate state, plus read-only overviews/dialogs that present it.
 - `src/renderers/`: Code responsible for transforming world data into SVG overlays.
-- `src/io/`: Serialization and persistence — save, load, export (legacy `public/modules/io/`).
+- `src/services/io/`: Serialization and persistence — save, load, export.
 - `src/services/`: App-shell & platform lifecycle, unrelated to map state (e.g., PWA installation, auto-update).
 - `src/data/`: Static content / reference data (e.g., supporters list, heightmap templates).
 - `src/types/`: Shared TypeScript interfaces and domain models.
 - `src/utils/`: Generic helper functions.
-- `public/`: Static assets and NON-MIGRATED JS Code in `public/modules`. `public/libs/` holds vendored third-party scripts for legacy code only — new `src/` code imports deps from npm (no `src/libs/`).
+- `public/`: Static assets. `public/libs/` holds vendored third-party scripts loaded by `index.html` — new `src/` code imports deps from npm (no `src/libs/`). The last classic `public/modules` script was retired with the schema-driven style editor.
 - `electron/`: Main process, preload script and self-update of the desktop app; the renderer is the same `src/` build, served from the `app://` scheme.
 - `docs/`: Domain, architectural documentation and user-facing wiki.
-- `src/index.html`: **CAUTION**: Currently a 9K-line monolith containing the entire UI structure, SVG `<defs>`, and CSS filters.
-- `tests/e2e/`: Playwright end-to-end tests. Never automatically run Playwright tests when developing.
+- `src/index.html`: **CAUTION**: The shared page template contains the map structure and app shell (~44KB).
+- `tests/e2e/`: Playwright end-to-end tests. Never automatically run Playwright tests when developing, they are too slow.
 
 # FMG 2.0 Architecture Rules
 
@@ -71,7 +71,7 @@
 # Known Sharp Edges
 
 - **Legacy Globals**: The codebase heavily relies on implicit global state (`pack` and `grid` on the `window`). Be extremely cautious when refactoring these to explicit parameters.
-- **`index.html`**: A massive monolith serving as the primary UI template. It can easily break if structural tags are accidentally nested incorrectly.
+- **`index.html`**: The shared app-shell and map SVG template. It can easily break if structural tags are accidentally nested incorrectly.
 
 # Important Files
 

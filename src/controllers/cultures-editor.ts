@@ -190,7 +190,7 @@ function renderDialog(): void {
     columns,
     onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
   });
-  ensureEl("culturesEditStyle").addEventListener("click", () => editStyle("cults"));
+  ensureEl("culturesEditStyle").addEventListener("click", () => void Controllers.StyleEditor.open("cultures"));
   ensureEl("culturesLegend").addEventListener("click", toggleLegend);
   ensureEl("culturesPercentage").addEventListener("click", togglePercentageMode);
   ensureEl("culturesHeirarchy").addEventListener("click", showHierarchy);

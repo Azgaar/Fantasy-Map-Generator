@@ -49,6 +49,7 @@ export function openTab(id: string): void {
 function selectTab(id: string): void {
   const active = ensureEl("options").querySelector(".tab > button.active");
   if (active?.id === id) return;
+  if (active?.id === "styleTab") void Controllers.StyleEditor.close();
 
   active?.classList.remove("active");
   ensureEl(id).classList.add("active");
@@ -58,7 +59,7 @@ function selectTab(id: string): void {
 
   const shown = id === "toolsTab" && customization === 1 ? "customizationMenu" : TAB_CONTENT[id];
   if (shown) ensureEl(shown).style.display = "block";
-  if (id === "styleTab") window.selectStyleElement?.();
+  if (id === "styleTab") void Controllers.StyleEditor.open();
 }
 
 /** Keep every `<x>Input` and its `<x>Output` showing the same value */
@@ -128,7 +129,6 @@ declare global {
   interface Window {
     showOptions: typeof showOptions;
     hideOptions: typeof hideOptions;
-    selectStyleElement?: () => void;
   }
 }
 window.toggleOptions = toggleOptions;

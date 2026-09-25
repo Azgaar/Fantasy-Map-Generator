@@ -149,10 +149,8 @@ function dragMarker(this: SVGElement, event: D3DragEvent<SVGElement, unknown, un
     this.setAttribute("x", String(rn(dx + x, 2)));
     this.setAttribute("y", String(rn(dy + y, 2)));
 
-    const zoomSize = Number(this.getAttribute("width"));
-
-    selectedMarker.x = rn(x + dx + zoomSize / 2, 1);
-    selectedMarker.y = rn(y + dy + zoomSize, 1);
+    selectedMarker.x = rn(x + dx, 1); // the box sits at the marker point
+    selectedMarker.y = rn(y + dy, 1);
     selectedMarker.cell = Pack.findCell(selectedMarker.x, selectedMarker.y)!;
     drawMarkers();
   });

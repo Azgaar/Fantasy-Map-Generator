@@ -18,7 +18,6 @@ beforeEach(() => {
   mocks.layerOn = true;
   document.body.innerHTML = '<svg id="map"><g id="markers"></g></svg>';
   globalThis.pack = { markers: [marker(1), marker(2, 500)] } as never;
-  styles.markers.options.rescale = 1;
   setViewportSize(100, 100);
   setViewportTransform(1, 0, 0);
   setMarkersFilter(null);
@@ -52,25 +51,27 @@ test("culling includes partially visible pins and uses their zoomed size", () =>
   expect(document.querySelectorAll("#markers > svg")).toHaveLength(0);
 });
 
-test("zoom sizing respects the rescale option and full-map export uses scale one", () => {
+test("a marker is sized in em at its point, so the layer font size scales it; export culls at scale one", () => {
   setViewportTransform(4, 0, 0);
   drawMarkers();
-  expect(document.getElementById("marker1")?.getAttribute("width")).toBe("12");
+  const marker1 = document.getElementById("marker1")!;
+  expect([marker1.getAttribute("width"), marker1.getAttribute("x"), marker1.getAttribute("y")]).toEqual([
+    "0.3em",
+    "50",
+    "50"
+  ]);
+  expect(marker1.firstElementChild?.getAttribute("transform")).toBe("translate(-15 -30)"); // the pin's tip is the point
   const clone = document.getElementById("map")!.cloneNode(true) as SVGSVGElement;
   ViewportLayers.renderTo(clone);
   expect(clone.querySelectorAll("#markers > svg")).toHaveLength(2);
-  expect(clone.querySelector("#marker2")?.getAttribute("width")).toBe("30");
+  expect(clone.querySelector("#marker2")?.getAttribute("width")).toBe("0.3em");
   expect(document.getElementById("marker2")).toBeNull();
-  expect(document.getElementById("marker1")?.getAttribute("width")).toBe("12");
   ViewportLayers.renderTo(clone);
   expect(clone.querySelectorAll("#markers > svg")).toHaveLength(2);
 
-  styles.markers.options.rescale = 0;
   pack.markers[0].size = 60;
   drawMarkers();
-  expect(document.getElementById("marker1")?.getAttribute("width")).toBe("60");
-  expect(document.getElementById("marker1")?.getAttribute("x")).toBe("20");
-  expect(document.getElementById("marker1")?.getAttribute("y")).toBe("-10");
+  expect(document.getElementById("marker1")?.getAttribute("width")).toBe("0.6em");
 });
 
 test("pinning, overview filters and hidden markers apply during redraw and export", () => {
@@ -109,7 +110,7 @@ test("an offscreen edited marker stays attached until editing ends", () => {
   drawMarkers();
   expect(document.getElementById("marker2")).toBe(element);
   expect(element?.querySelector("image")?.getAttribute("href")).toBe(edited.icon);
-  expect(element?.querySelector("g")?.childElementCount).toBe(0);
+  expect(element?.querySelector("g > path, g > circle")).toBeNull(); // no pin
   expect(element?.classList.contains("draggable")).toBe(true);
   expect(element?.namespaceURI).toBe("http://www.w3.org/2000/svg");
   element!.dispatchEvent(new Event("click"));
@@ -122,7 +123,7 @@ test("offscreen edits, deletion and replacement map data are reflected when rend
   pack.markers[1].icon = "🏰";
   setViewportTransform(1, -450, 0);
   ViewportLayers.renderNow();
-  expect(document.querySelector("#marker2 > text")?.textContent).toBe("🏰");
+  expect(document.querySelector("#marker2 text")?.textContent).toBe("🏰");
   pack.markers = [marker(3, 500)];
   ViewportLayers.renderNow();
   expect(document.getElementById("marker2")).toBeNull();

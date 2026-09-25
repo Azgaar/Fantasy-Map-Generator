@@ -189,7 +189,7 @@ function renderDialog(): void {
     columns,
     onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
   });
-  ensureEl("religionsEditStyle").addEventListener("click", () => editStyle("relig"));
+  ensureEl("religionsEditStyle").addEventListener("click", () => void Controllers.StyleEditor.open("religions"));
   ensureEl("religionsLegend").addEventListener("click", toggleLegend);
   ensureEl("religionsPercentage").addEventListener("click", togglePercentageMode);
   ensureEl("religionsHeirarchy").addEventListener("click", showHierarchy);

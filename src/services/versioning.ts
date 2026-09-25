@@ -20,10 +20,12 @@ import { Pins } from "@/components/pins";
 import { tip } from "@/components/tooltips";
 import { isElectron } from "./platform";
 
-export const VERSION = "1.153.1";
+export const VERSION = "1.154.0";
 
 // new changes on top
 const latestPublicChanges = [
+  "Relief icons rework",
+  "Style Editor rework",
   "States Editor: option to keep merged states as provinces",
   "Global map search (press Space to open)",
   "New style presets: Ink, Cinderwood and Frostbite",
@@ -41,10 +43,7 @@ const latestPublicChanges = [
   "Dialogs: preserve position between sessions",
   "Options rework: map settings are stored with the map, preferences with the browser",
   "Map name and era moved to Set Lore dialog",
-  "Notes: kept on the element they describe, and available for more element types",
-  "Notes Editor: new rich text editor Quill2",
-  "Goods, Rivers, Routes, Markers, Markets and Burg icons rendering optimization",
-  "Help assistant: ask questions about the Generator in the app"
+  "Notes: kept on the element they describe, and available for more element types"
 ];
 
 export function parseMapVersion(version: string): string {

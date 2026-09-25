@@ -199,116 +199,39 @@ The same world state could theoretically support:
 
 # Map Styling
 
-Map styling is map state. The desired model is one plain, JSON-compatible `style`
-object that contains everything needed to reproduce the map appearance. SVG attributes
-and other rendered output are projections of that object, never the source of truth.
+Map appearance is map state. One plain, JSON-compatible `styles` object holds everything needed to
+reproduce how the map looks; the SVG is a projection of it and never the source of truth. Nothing
+reads a style value back from the DOM.
 
-Layer visibility, layer presets, and stacking order are separate concerns and are not part of the style model described here — they belong to the layers registry.
+The record is keyed by **style element** — a map layer, or `map` for the whole-map filter — and each
+element is a tree of three kinds of node:
 
-## Problems with the current approach
+- `attrs` — SVG attributes, written to the element as they are (`null` means "not set")
+- `options` — renderer inputs (`scheme`, `icon`, …), read from the store, never written to the DOM
+- `groups` — a record of user-named entries (label groups, lake types, …) sharing one shape
 
-The current style preset files are close to the desired serializable form, but their
-structure mirrors the rendered SVG:
+The record is declared once, as a zod schema (`src/generators/styles-schema.ts`). The TypeScript
+type, the defaults, validation on load and the Style tab's form are all derived from that one
+declaration: a style field cannot exist without a type, a default and a control.
 
-- Most style values live as attributes on SVG elements and are read back from the DOM.
-- Presets are keyed by selectors such as `#stateBorders` and `#labels > #states`.
-- SVG attributes, custom `data-*` attributes, and application options are mixed together.
-- The global `style` object covers only selected subsystems: Label Groups, Burg icon
-  groups, and anchor groups. Other styles remain attached to SVG nodes.
-- The Style UI changes the rendered SVG directly and calls drawing functions when an
-  attribute affects geometry.
+Roles, by layer:
 
-This makes the DOM part state container and part renderer output. It also couples preset
-files, saving, loading, and migration to the current SVG structure. Renaming or nesting an
-SVG group can become a data-format change even when the visible feature did not change.
+- **State** — the `styles` global, complete by construction: `Styles.parse` repairs an invalid or
+  missing section from the defaults, so no read site carries a fallback. Serialized whole into the `.map`.
+- **Renderers** — read `styles.<element>.options` when drawing; `Styles.write` puts `attrs` onto the
+  elements they drew, addressed by `data-layer` / `data-group`, never by element id.
+- **Controllers** — `Controllers.StyleEditor` is a form built from the schema at open time: it
+  mutates the store and runs the change's effect (write the one attr, or redraw the layer).
+  `Controllers.StylePresetsEditor` swaps the whole record for a preset.
+- **Services** — `services/style-presets.ts` is the preset source (bundled default, fetched system
+  presets, `localStorage` customs); it reads no map state.
 
-## Desired style object
+Layer visibility and z-order are not style — they belong to the [layers registry](#map-layers).
+Per-entity visual overrides (one label's own size) stay with the entity as exceptions to its
+group style, not a second style system.
 
-The `style` object is organized by map feature rather than by DOM selector. Related
-parts are nested, while repeated user-defined styles are stored in keyed `groups`
-objects. The following is illustrative schema:
-
-```ts
-const style = {
-  borders: {
-    state: { opacity: 0.8, stroke: "#56566d", "stroke-width": 1, "line-cap": "butt", filter: null },
-    province: { opacity: 0.8, stroke: "#56566d", "stroke-width": 0.5, "line-cap": "round", filter: null }
-  }
-};
-```
-
-Existing selector fragments become
-nested parts, for example:
-
-- `#statesBody` and `#statesHalo` become `style.states.body` and `style.states.halo`.
-- `#freshwater`, `#salt`, and the other lake types become entries in `style.lakes.groups`.
-- `#rural` and `#urban` become `style.population.rural` and `style.population.urban`.
-- `#stateEmblems`, `#provinceEmblems`, and `#burgEmblems` become nested emblem styles.
-- `#goodsCells`, `#goodsIcons`, and `#goodsBurgs` become nested parts of `style.goods`.
-- `#legendBox`, `#scaleBarBack`, and the compass rose become nested parts of their owning feature.
-
-The grouping is organizational only. It does not introduce a generic style framework,
-CSS cascade, or inheritance system. Each renderer owns the small typed style shape for
-its feature.
-
-## Naming and values
-
-- Use html snake case attributes names such as `stroke-width`, `font-size`, `data-dx`.
-- Preserve every styling capability users have today, including colors, opacity,
-  strokes, typography, filters, masks, textures, patterns, sizes, offsets, and
-  feature-specific rendering options.
-
-## Ownership and data flow
-
-The Style controller edits the serialized object and then asks the affected renderer to
-redraw:
-
-```text
-User changes a style
-        ↓
-Style controller mutates style.<feature>
-        ↓
-Feature renderer reads world data + style.<feature>
-        ↓
-SVG / WebGL / canvas output
-```
-
-The renderer translates the feature style into its output format. It may write SVG
-attributes, but it must not read those attributes back as current style. Re-rendering
-from the same world data and style must produce the same result.
-
-Reusable styles belong in the global `style` object. Existing entity-specific visual
-overrides, such as one label's size or offset, may remain with that entity's data. They
-are exceptions to a reusable group style, not another global styling system.
-
-## Presets and persistence
-
-Built-in presets, custom presets, and the style stored in a `.map` file use the same
-complete object schema.
-
-- Applying a preset replaces the current `style` object and redraws affected features.
-- Saving stores the resolved object, not only a preset name, so the map looks the same
-  when opened without access to the original preset.
-- Custom preset storage may remain an app preference, but its contents use the same
-  schema as map style state.
-- Selector-based preset files are migrated by mapping each selector and attribute to a
-  semantic object path and field.
-
-## Incremental migration
-
-Move one feature at a time:
-
-1. Define its typed style subtree and defaults.
-2. Map the corresponding bundled preset values into that subtree.
-3. Make its Style controller edit the object rather than SVG attributes.
-4. Make its renderer accept the subtree and write the resulting output.
-5. Read legacy SVG attributes only in map compatibility code, then store the converted
-   values in the style object.
-
-During migration the object can contain both modern feature subtrees and the existing
-group-style entries. Once a feature is migrated, its normal editor, renderer, save, and
-load paths must not reconstruct its style from the DOM. Existing maps and presets should
-retain their appearance throughout the conversion.
+The full model — the record, the store API, presets and persistence, legacy conversion and the
+schema-driven editor — is in [style.md](./style.md).
 
 ---
 
@@ -600,7 +523,9 @@ permanent child elements and static attributes, and the `draw` / `erase` functio
 The active set and the layer order are serialized with the map (`data[50]`) and re-applied with
 `Layers.restore` on load, which adopts the state without redrawing content the loaded SVG already
 carries. `restore` tolerates version skew in both directions: unknown ids are ignored, and layers
-the file predates slot in after their registration-order predecessor.
+the file predates slot in after their registration-order predecessor. A layer id never changes; when
+a layer's svg group id does, `auto-update` removes the stale group before the restore and the
+registry recreates it under the current id.
 
 ---
 

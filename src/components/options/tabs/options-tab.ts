@@ -820,9 +820,9 @@ function changeStatesNumber(count: number): void {
   const capitalSize = Math.max(rn(6 - count / 20), 3);
   const stateSize = Math.max(rn(18 - count / 6), 4);
   if (styles.labels.groups.capital) styles.labels.groups.capital.attrs["font-size"] = `${capitalSize}%`;
-  if (styles.labels.groups.states) styles.labels.groups.states.attrs["font-size"] = `${stateSize}%`;
+  if (styles.labels.groups.state) styles.labels.groups.state.attrs["font-size"] = `${stateSize}%`;
   select("#labels").select("[data-group='capital']").attr("font-size", `${capitalSize}%`);
-  select("#labels").select("[data-group='states']").attr("font-size", `${stateSize}%`);
+  select("#labels").select("[data-group='state']").attr("font-size", `${stateSize}%`);
 }
 
 /** Re-shield every emblem that has not been customised, and re-render the ones on screen */
@@ -1043,16 +1043,6 @@ function resetLanguage(): void {
  * Restore what the tab itself shows: the lock icons, the saved style presets and the interface
  * settings. The values themselves are restored by `Options.restore` before this runs
  */
-/**
- * Custom style presets predating the `fmgStyle_` prefix kept a `style<Name>` key of their own;
- * today's are listed by public/modules/ui/style-presets.js when it builds the select
- */
-function restoreLegacyStylePresets(): void {
-  for (const key of Object.keys(localStorage)) {
-    if (key.startsWith("style")) applyOption(stylePreset, key, key.slice(5));
-  }
-}
-
 const defaultUiSize = (): number => minmax(rn(window.innerWidth / 1280, 1), 1, maxUiSize());
 
 export function restoreUi(): void {
@@ -1063,7 +1053,6 @@ export function restoreUi(): void {
   }
 
   Pins.bindIcons(ensureEl("options"), currentValue);
-  restoreLegacyStylePresets();
 
   // `syncInputs` has already put every preference in its control; these are the ones that also do
   // something the moment they are read back. See docs/architecture/configuration.md
@@ -1081,8 +1070,8 @@ export function restoreUi(): void {
   applyZoomExtent();
 }
 
-// Legacy seam: the classic style.js reads the culture set cap, the submap and transform tools
-// set the cell density, and Google's script calls back into the page by name
+// Legacy seam: the submap and transform tools set the cell density, and Google's script calls
+// back into the page by name
 declare global {
   // biome-ignore lint/suspicious/noRedeclare: legacy seam
   var changeCellsDensity: (density: number) => void;

@@ -1,15 +1,25 @@
+import { IconSets } from "@/components/icon-sets";
 import { Layers } from "@/components/layers";
+import { zoomFontSize } from "@/components/viewport";
 import type { Burg } from "@/generators/burgs-generator";
 import { ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
+import type { StylesData } from "@/types/styles";
 import { escapeHtml } from "@/utils/stringUtils";
 
 const layer = ViewportLayers.register({ id: "burgIcons", render: reconcileBurgIcons });
 
-export const drawBurgIcons = (): void => {
+export async function drawBurgIcons(): Promise<void> {
   TIME && console.time("drawBurgIcons");
+  await IconSets.loadAll(Burgs.iconSets.map(set => set.id));
   layer.render();
   TIME && console.timeEnd("drawBurgIcons");
-};
+}
+
+type BurgPart =
+  | StylesData["burgIcons"]["groups"][string]["groups"]["icons"]
+  | StylesData["burgIcons"]["groups"][string]["groups"]["anchors"];
+
+type Bounds = ViewportRenderContext["bounds"];
 
 function reconcileBurgIcons({ root, bounds }: ViewportRenderContext): void {
   if (!Layers.isOn("burgIcons")) return;
@@ -22,46 +32,57 @@ function reconcileBurgIcons({ root, bounds }: ViewportRenderContext): void {
     else burgsByGroup.set(burg.group, [burg]);
   }
 
-  const groups = [...options.map.burgs.groups].sort((a, b) => a.order - b.order);
-  for (const type of ["burgIcons", "anchors"] as const) {
-    const container = root.querySelector<SVGGElement>(`#${type}`);
-    if (!container) continue;
-    const groupStyles = styles.burgIcons[type].groups;
-    const defaultStyle = groupStyles.town || Object.values(groupStyles)[0];
-    const isAnchor = type === "anchors";
+  const container = root.querySelector<SVGGElement>("#burgIcons");
+  if (!container) return;
 
-    const markup: string[] = [];
+  const stylesByGroup = styles.burgIcons.groups;
+  const fallback = stylesByGroup.town ?? Object.values(stylesByGroup)[0];
+  const markup: string[] = [];
 
-    for (const { name } of groups) {
-      const groupStyle = groupStyles[name] || defaultStyle;
-      const groupName = escapeHtml(name);
-      const icon = escapeHtml(groupStyle?.options.icon || (isAnchor ? "#icon-anchor" : "#icon-circle"));
-      const size = groupStyle?.options.size ?? 1;
-      const dx = isAnchor ? (groupStyle?.options.dx ?? 0) * size : 0;
-      const dy = isAnchor ? (groupStyle?.options.dy ?? 0) * size : 0;
-      markup.push(`<g id="${groupName}" data-group="${groupName}"`);
-      if (groupStyle) {
-        for (const [key, value] of Object.entries(groupStyle.attrs)) {
-          if (value !== null && value !== undefined) markup.push(` ${key}="${escapeHtml(String(value))}"`);
-        }
-        markup.push(` font-size="${groupStyle.options.size}"`);
-      }
-      markup.push(` data-icon="${icon}"`);
-      markup.push(">");
-
-      // Symbols overflow their viewBox; the tallest burg artwork reaches two em above its anchor.
-      const padding = 2 * (Math.abs(groupStyle?.options.size ?? 1) + (groupStyle?.attrs["stroke-width"] ?? 0));
-      const { x0, y0, x1, y1 } = bounds;
-      for (const { i, x: burgX, y: burgY, port } of burgsByGroup.get(name) || []) {
-        if (isAnchor && !port) continue;
-        const x = burgX + dx;
-        const y = burgY + dy;
-        if (x + padding < x0 || x - padding > x1 || y + padding < y0 || y - padding > y1) continue;
-        markup.push(`<use id="${isAnchor ? "anchor" : "burg"}${i}" data-id="${i}" href="${icon}" x="${x}" y="${y}"/>`);
-      }
-      markup.push("</g>");
-    }
-
-    container.innerHTML = markup.join("");
+  for (const { name } of [...options.map.burgs.groups].sort((a, b) => a.order - b.order)) {
+    const entry = stylesByGroup[name] ?? fallback;
+    if (!entry) continue;
+    const groupName = escapeHtml(name);
+    const burgs = burgsByGroup.get(name) ?? [];
+    markup.push(`<g id="${groupName}" data-group="${groupName}">`);
+    markup.push(part("icons", entry.groups.icons, burgs, bounds, false));
+    markup.push(part("anchors", entry.groups.anchors, burgs, bounds, true));
+    markup.push("</g>");
   }
+
+  container.innerHTML = markup.join("");
+}
+
+/** One part of a burg group — the icons or the anchors — as its own data-group element */
+function part(name: "icons" | "anchors", style: BurgPart, burgs: Burg[], bounds: Bounds, anchors: boolean): string {
+  const icon = escapeHtml(style.options.icon || (anchors ? "#ports-anchor" : "#burgs-atlas-circle"));
+  const size = style.options.size ?? 1;
+  const shift = anchors ? (style.options as { dx?: number; dy?: number }) : undefined;
+  const shiftX = shift?.dx ?? 0;
+  const shiftY = shift?.dy ?? 0;
+
+  const attrs: string[] = [];
+  for (const [key, value] of Object.entries(style.attrs)) {
+    if (value !== null && value !== undefined) attrs.push(` ${key}="${escapeHtml(String(value))}"`);
+  }
+  // The shift is in icon em, so it stays true to the icon as the zoom resizes it
+  if (shiftX || shiftY) attrs.push(` style="transform: translate(${shiftX}em, ${shiftY}em)"`);
+
+  // An icon is sized in % of the layer font, so it follows the zoom on the burg icons curve
+  const markup = [`<g data-group="${name}" data-icon="${icon}"${attrs.join("")} font-size="${size}%">`];
+  const em = (size * zoomFontSize("burgIcons", bounds.scale)) / 100; // the icon em in map units at this zoom
+  // Symbols overflow their viewBox; the tallest burg artwork reaches two em above its anchor.
+  const padding = 2 * (Math.abs(em) + (style.attrs["stroke-width"] ?? 0));
+
+  for (const { i, x, y, port } of burgs) {
+    if (anchors && !port) continue;
+    const cx = x + shiftX * em;
+    const cy = y + shiftY * em;
+    if (cx + padding < bounds.x0 || cx - padding > bounds.x1 || cy + padding < bounds.y0 || cy - padding > bounds.y1)
+      continue;
+    markup.push(`<use id="${anchors ? "anchor" : "burg"}${i}" data-id="${i}" href="${icon}" x="${x}" y="${y}"/>`);
+  }
+
+  markup.push("</g>");
+  return markup.join("");
 }

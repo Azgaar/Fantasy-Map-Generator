@@ -13,30 +13,10 @@ declare global {
     setZoomExtent: typeof import("../components/zoom").setZoomExtent;
     setTranslateExtent: typeof import("../components/zoom").setTranslateExtent;
     getLabelsData: typeof import("../renderers/labels/label-data").getLabelsData;
-    applyVignetteOptions: typeof import("../renderers/draw-vignette").applyVignetteOptions;
-    applyOceanPattern: typeof import("../renderers/draw-ocean").applyOceanPattern;
   }
 
   // Elements the browser exposes as globals by their id. New code should use `ensureEl` instead
   var alertMessage: HTMLElement;
-  var stylePreset: HTMLSelectElement;
-
-  // Still defined in public/modules/ui/style.js
-  var editStyle: (layer: string, group?: string) => void;
-  var getColorScheme: (scheme: string | null) => (t: number) => string;
-  var getColor: (height: number, scheme: (t: number) => string) => string;
-  var heightmapColorSchemes: Record<string, unknown>;
-  var addCustomColorScheme: (scheme: string) => void;
-  var updateTextureSelectValue: (href: string) => void;
-  var calculateFriendlyGridSize: () => void;
-  var changeFont: () => void;
-  var shiftCompass: () => void;
-
-  // Still defined in public/modules/ui/style-presets.js
-  var applyStyleOnLoad: () => Promise<void>;
-  var setStylePresetSelect: () => void;
-  var applyStoredStyles: () => void;
-  var getStylePreset: (desiredPreset: string) => Promise<[string, Record<string, unknown>]>;
 
   // Vendored libraries, each loaded by its own <script> tag in index.html
   var $: (selector: any) => any; // jQuery + jQuery UI

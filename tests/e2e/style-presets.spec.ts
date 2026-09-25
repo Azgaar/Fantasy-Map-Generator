@@ -12,12 +12,12 @@ function pinnedAttrs(preset: string): {oceanFill: string; landmassFill: string} 
   const file =
     preset === "default" ? "../../src/generators/default-styles.json" : `../../public/styles/${preset}.json`;
   const json = JSON.parse(fs.readFileSync(path.join(__dirname, file), "utf8"));
-  return {oceanFill: json.ocean.base.attrs.fill, landmassFill: json.landmass.attrs.fill};
+  return {oceanFill: json.ocean.groups.base.attrs.fill, landmassFill: json.landmass.attrs.fill};
 }
 
 async function switchTo(page: Page, preset: string) {
   await page.evaluate(async name => {
-    await (window as any).changeStyle(name);
+    await (window as any).Controllers.StylePresetsEditor.change(name);
   }, preset);
 }
 
@@ -132,55 +132,60 @@ test("a saved custom preset carries the retired sizes from the store", async ({p
   await waitForMap(page);
 
   await page.evaluate(() => {
-    styles.coordinates.options.fontSize = 23;
-    styles.rulers.options.fontSize = 24;
-    styles.legend.options.fontSize = 25;
-    styles.emblems.provinceEmblems.options.size = 1.4;
-    styles.goods.goodsIcons.options.size = 9;
-    styles.goods.goodsBurgs.options.size = 7;
+    styles.coordinates.attrs["font-size"] = "23px";
+    styles.rulers.attrs["font-size"] = "24px";
+    styles.legend.attrs["font-size"] = "25px";
+    styles.emblems.groups.provinceEmblems.options.size = 1.4;
+    styles.goods.groups.goodsIcons.options.size = 9;
+    styles.goods.groups.goodsBurgs.options.size = 7;
     styles.markets.options.size = 8;
-    styles.heightmap.landHeights.options.terracing = 5;
-    styles.heightmap.oceanHeights.options.render = true;
+    styles.heightmap.groups.landHeights.options.terracing = 5;
+    styles.heightmap.groups.oceanHeights.options.render = true;
     styles.military.options.boxSize = 4;
     styles.grid.options.scale = 2;
     styles.markets.options.icon = "K";
     styles.texture.options.x = 33;
-    styles.ocean.oceanLayers.options.outline = "-6,-4,-2";
+    styles.ocean.groups.oceanLayers.options.outline = "-6,-4,-2";
     styles.scaleBar.options.label = "posterity";
     styles.legend.options.columns = 5;
-    (window as any).addStylePreset();
   });
+  await page.evaluate(() => (window as any).Controllers.StylePresetsEditor.openSaver());
 
   const raw = await page.locator("#styleSaverJSON").inputValue();
-  const roundTripped = await page.evaluate(rawJson => {
-    const json = JSON.parse(rawJson);
-    // the saver emits the store format now: no legacy selector keys, parseable directly
-    if ((window as any).stylesLegacy.isLegacyPreset(json)) throw new Error("saver emitted the legacy format");
-    const upgraded = (window as any).Styles.parse(json);
+  // the saver emits the store format now: no legacy selector keys, parseable directly
+  const emitted = JSON.parse(raw) as Record<string, unknown>;
+  expect(Object.keys(emitted).some(key => key.startsWith("#"))).toBe(false);
+
+  // the save path parses that JSON through the store and applies it: the retired sizes must survive
+  await page.locator("#styleSaverName").fill("round-trip");
+  await page.locator("#styleSaverSave").click();
+
+  const roundTripped = await page.evaluate(() => {
+    const store = styles;
     return {
-      coordinates: upgraded.coordinates.options.fontSize,
-      rulers: upgraded.rulers.options.fontSize,
-      legend: upgraded.legend.options.fontSize,
-      provinceEmblems: upgraded.emblems.provinceEmblems.options.size,
-      goodsIcons: upgraded.goods.goodsIcons.options.size,
-      goodsBurgs: upgraded.goods.goodsBurgs.options.size,
-      markets: upgraded.markets.options.size,
-      landTerracing: upgraded.heightmap.landHeights.options.terracing,
-      oceanRender: upgraded.heightmap.oceanHeights.options.render,
-      armiesBox: upgraded.military.options.boxSize,
-      gridScale: upgraded.grid.options.scale,
-      marketsIcon: upgraded.markets.options.icon,
-      textureX: upgraded.texture.options.x,
-      oceanOutline: upgraded.ocean.oceanLayers.options.outline,
-      scaleBarLabel: upgraded.scaleBar.options.label,
-      legendColumns: upgraded.legend.options.columns
+      coordinates: store.coordinates.attrs["font-size"],
+      rulers: store.rulers.attrs["font-size"],
+      legend: store.legend.attrs["font-size"],
+      provinceEmblems: store.emblems.groups.provinceEmblems.options.size,
+      goodsIcons: store.goods.groups.goodsIcons.options.size,
+      goodsBurgs: store.goods.groups.goodsBurgs.options.size,
+      markets: store.markets.options.size,
+      landTerracing: store.heightmap.groups.landHeights.options.terracing,
+      oceanRender: store.heightmap.groups.oceanHeights.options.render,
+      armiesBox: store.military.options.boxSize,
+      gridScale: store.grid.options.scale,
+      marketsIcon: store.markets.options.icon,
+      textureX: store.texture.options.x,
+      oceanOutline: store.ocean.groups.oceanLayers.options.outline,
+      scaleBarLabel: store.scaleBar.options.label,
+      legendColumns: store.legend.options.columns
     };
-  }, raw);
+  });
 
   expect(roundTripped).toEqual({
-    coordinates: 23,
-    rulers: 24,
-    legend: 25,
+    coordinates: "23px",
+    rulers: "24px",
+    legend: "25px",
     provinceEmblems: 1.4,
     goodsIcons: 9,
     goodsBurgs: 7,
@@ -202,7 +207,7 @@ test("a non-style JSON is rejected by the saver, not applied as defaults", async
   await waitForMap(page);
 
   const before = await page.evaluate(() => styles.rivers.attrs.fill);
-  await page.evaluate(() => (window as any).addStylePreset());
+  await page.evaluate(() => (window as any).Controllers.StylePresetsEditor.openSaver());
   await page.evaluate(() => {
     (document.getElementById("styleSaverJSON") as HTMLTextAreaElement).value =
       JSON.stringify({road: "#D1B86E", roofType: "Gable", treeShape: "Cotton"});

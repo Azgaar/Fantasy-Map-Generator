@@ -25,8 +25,8 @@ const BURG_GROUPS = [
 const LABEL_GROUPS = [...BURG_GROUPS, "state", "province", "river", "route", "added"];
 
 const TARGETS = [
-  "#map", "#armies", "#anchors", "#biomes", "#borders", "#stateBorders", "#provinceBorders",
-  "#burgIcons", "#cells", "#coastline", "#sea_island", "#lake_island", "#compass", "#coordinates",
+  "#map", "#armies", "#biomes", "#borders", "#stateBorders", "#provinceBorders",
+  "#cells", "#coastline", "#sea_island", "#lake_island", "#compass", "#coordinates",
   "#cults", "#emblems", "#stateEmblems", "#provinceEmblems", "#burgEmblems", "#fogging",
   "#goods", "#goodsCells", "#goodsIcons", "#goodsBurgs", "#gridOverlay", "#ice", "#labels",
   "#lakes", "#freshwater", "#salt", "#sinkhole", "#frozen", "#lava", "#dry", "#landmass",
@@ -36,9 +36,9 @@ const TARGETS = [
   "#scaleBarBack", "#temperature", "#terrain", "#terrs", "#landHeights", "#oceanHeights",
   "#texture", "#tradeAnimation", "#vignette", "#vignette-rect", "#zones",
   // every burg-icon and anchor group type the two maps carry - the style tree addresses these
-  // per group, so a partial list would let a whole group class drift unnoticed
-  ...BURG_GROUPS.map(group => `#burgIcons > g#${group}`),
-  ...BURG_GROUPS.map(group => `#anchors > g#${group}`),
+  // per group part, so a partial list would let a whole group class drift unnoticed
+  ...BURG_GROUPS.map(group => `#burgIcons > g#${group} > [data-group="icons"]`),
+  ...BURG_GROUPS.map(group => `#burgIcons > g#${group} > [data-group="anchors"]`),
   // label groups render as <g id="labels-capital" data-group="capital">; addressed by data-group
   // because that is what the group is keyed by everywhere but its element id
   ...LABEL_GROUPS.map(group => `#labels > [data-group="${group}"]`)
@@ -70,13 +70,14 @@ function collectStyleSnapshot(page: Page) {
 // differ between platforms, and on a generated map it also tracks the "nice" round distance the
 // bar picks for that map's scale.
 //
-// #labels font-size is the same kind of value: applyLabelsZoomSize derives it from the current
-// zoom, and a map opens at the scale that fits it to the window, so it tracks the window size
-// against the map's extent rather than any style. Excluded from both comparisons below.
+// The zoomed layers' font-size is the same kind of value: the zoom derives it, and a map opens at
+// the scale that fits it to the window, so it tracks the window size against the map's extent
+// rather than any style. Excluded from both comparisons below.
 function stripContentDerivedLayout(snapshot: Record<string, Record<string, string>>) {
   delete snapshot["#scaleBar"]?.transform;
   delete snapshot["#scaleBarBack"]?.width;
   delete snapshot["#labels"]?.["font-size"];
+  delete snapshot["#markers"]?.["font-size"];
 }
 
 test("styled attributes match the pre-migration baseline", async ({page}) => {
@@ -88,7 +89,7 @@ test("styled attributes match the pre-migration baseline", async ({page}) => {
   await waitForMap(page);
   // burg icon, anchor and label groups render late - under full-suite load a fixed delay races the draw
   await page.waitForSelector("#burgIcons > g", {state: "attached", timeout: 120000});
-  await page.waitForSelector("#anchors > g", {state: "attached", timeout: 120000});
+  await page.waitForSelector("#burgIcons > g [data-group=\"anchors\"]", {state: "attached", timeout: 120000});
   await page.waitForSelector("#labels > g", {state: "attached", timeout: 120000});
   await page.waitForTimeout(500);
 
@@ -119,7 +120,7 @@ test("styled attributes on a freshly generated map match the preset-apply baseli
   await page.waitForFunction(() => Boolean((window as any).pack?.cells?.i?.length), {timeout: 120000});
   await waitForMap(page);
   await page.waitForSelector("#burgIcons > g", {state: "attached", timeout: 120000});
-  await page.waitForSelector("#anchors > g", {state: "attached", timeout: 120000});
+  await page.waitForSelector("#burgIcons > g [data-group=\"anchors\"]", {state: "attached", timeout: 120000});
   await page.waitForSelector("#labels > g", {state: "attached", timeout: 120000});
   await page.waitForTimeout(500);
 

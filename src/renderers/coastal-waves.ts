@@ -1,5 +1,5 @@
 import Alea from "alea";
-import type { Styles } from "@/generators/styles-schema";
+import type { StylesData } from "@/types/styles";
 import { wavyDash } from "@/utils/pathUtils";
 
 export interface CoastalWaveParams {
@@ -8,7 +8,7 @@ export interface CoastalWaveParams {
   spacing: number; // cell spacing, the unit of every length below
   /** how many cells a point lies from the shore: 1 on the coastal water cell, growing seaward, 0 on land or in a lake */
   distanceAt: (x: number, y: number) => number;
-  type?: Styles["ocean"]["oceanWaves"]["options"]["type"];
+  type?: StylesData["ocean"]["groups"]["oceanWaves"]["options"]["type"];
   density: number; // rows of dashes, relative to the default
   length: number; // dash length, relative to the default
   reach: number; // cells from the shore over which the dashes thin out to nothing

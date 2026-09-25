@@ -1,4 +1,5 @@
 import { destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
+import { IconSets } from "@/components/icon-sets";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
@@ -11,8 +12,7 @@ import { createFileInput, ensureEl, getRandomColor, sanitizeSvgIcon, unique } fr
 let iconImageInput: HTMLInputElement | null = null;
 let iconSvgInput: HTMLInputElement | null = null;
 
-function open(editedGood?: Good, onUpdate?: () => void) {
-  const icons = Array.from(ensureEl("good-icons").querySelectorAll("symbol")).map(el => el.id);
+function open(editedGood?: Good, onUpdate?: () => void): void {
   const demandCoverageState: Partial<Record<DemandCategory, number>> = { ...(editedGood?.demandCoverage || {}) };
   const biomeOutputState: Partial<Record<number, number>> = { ...(editedGood?.biomeOutput || {}) };
 
@@ -55,6 +55,8 @@ function open(editedGood?: Good, onUpdate?: () => void) {
 
   let dialog: HTMLElement;
   renderDialog();
+
+  void IconSets.retry(Goods.iconSet.id); // the previews resolve once the symbols land
 
   $(dialog!).dialog({
     width: "30em",
@@ -244,10 +246,10 @@ function open(editedGood?: Good, onUpdate?: () => void) {
 
           <label for="newGoodIcon">Icon*</label>
           <div class="ge-inline">
-            <select id="newGoodIcon" class="ge-icon-select">${icons.map(icon => `<option value="${icon}" ${editedGood?.icon === icon ? "selected" : ""}>${icon}</option>`).join("")}</select>
+            <select id="newGoodIcon" class="ge-icon-select">${getIconOptionsHtml()}</select>
             <svg class="ge-icon-preview" width="2em" height="2em">
               <circle id="newGoodIconCircle" cx="50%" cy="50%" r="42%" fill="${editedGood?.color || "#ff5959"}" stroke="${Goods.getStroke(editedGood?.color || "#ff5959")}"/>
-              <use id="newGoodIconPreview" href="#${editedGood?.icon || "good-unknown"}" x="10%" y="10%" width="80%" height="80%"/>
+              <use id="newGoodIconPreview" href="#${editedGood?.icon || "goods-unknown"}" x="10%" y="10%" width="80%" height="80%"/>
             </svg>
             <button id="newGoodUploadIconRaster" class="icon-upload" data-tip="Upload raster icon"></button>
             <button id="newGoodUploadIconVector" class="icon-upload-cloud" data-tip="Upload vector (SVG) icon"></button>
@@ -492,6 +494,16 @@ function open(editedGood?: Good, onUpdate?: () => void) {
     ensureEl("newGoodUploadIconRaster").onclick = () => pickIcon("image");
     ensureEl("newGoodUploadIconVector").onclick = () => pickIcon("svg");
   }
+
+  function getIconOptionsHtml(): string {
+    const goodIconIds = [
+      ...IconSets.files(Goods.iconSet.id).map(file => IconSets.symbolId(Goods.iconSet.id, file)),
+      ...IconSets.customIcons(Goods.iconSet.id).map(el => el.id)
+    ];
+    return goodIconIds
+      .map(icon => `<option value="${icon}" ${editedGood?.icon === icon ? "selected" : ""}>${icon}</option>`)
+      .join("");
+  }
 }
 
 type MultiplierDimKey = "cultureType" | "culture" | "state" | "religion" | "biome" | "zone";
@@ -536,8 +548,8 @@ function uploadImage(type: "image" | "svg", callback: (type: string, id: string)
     if (!target) return;
 
     const result = target.result as string;
-    const id = `good-custom-${Math.random().toString(36).slice(-6)}`;
-    const goodIcons = ensureEl("good-icons");
+    const id = `${IconSets.customPrefix(Goods.iconSet.id)}${Math.random().toString(36).slice(-6)}`;
+    const goodIcons = document.querySelector(IconSets.defs)!;
 
     if (type === "image") {
       const svg = /*html*/ `<svg id="${id}" xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><image x="0" y="0" width="200" height="200" href="${result}"/></svg>`;

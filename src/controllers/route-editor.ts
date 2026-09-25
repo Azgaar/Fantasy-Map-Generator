@@ -426,7 +426,7 @@ function editRouteLegend(): void {
 
 function editRouteGroupStyle(): void {
   const { group } = getRoute();
-  editStyle("routes", group);
+  void Controllers.StyleEditor.open("routes", group);
 }
 
 function toggleLockButton(): void {

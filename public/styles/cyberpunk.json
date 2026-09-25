@@ -1,104 +1,537 @@
 {
-  "map": {
-    "attrs": {
-      "filter": null
-    },
-    "options": {
-      "dataFilter": null
-    }
-  },
-  "ocean": {
-    "options": {
-      "pattern": "",
-      "patternOpacity": 0.15
-    },
-    "base": {
-      "attrs": {
-        "fill": "#05001f"
-      }
-    },
-    "oceanLayers": {
-      "attrs": {
-        "filter": ""
-      },
-      "options": {
-        "outline": "-6,-3,-1"
-      }
-    }
-  },
-  "landmass": {
-    "attrs": {
-      "opacity": 1,
-      "fill": "#04011e",
-      "filter": null
-    }
-  },
-  "texture": {
-    "attrs": {
-      "opacity": 0.2,
-      "filter": null,
-      "mask": "url(#water)"
-    },
-    "options": {
-      "href": "./images/textures/mercury-small.jpg",
-      "x": 0,
-      "y": 0
-    }
-  },
-  "heightmap": {
-    "landHeights": {
-      "attrs": {
-        "opacity": 0.8,
-        "filter": null,
-        "mask": "url(#land)"
-      },
-      "options": {
-        "scheme": "livid",
-        "terracing": 6,
-        "skip": 0,
-        "relax": 2,
-        "curve": "curveBasisClosed",
-        "render": false
-      }
-    },
-    "oceanHeights": {
-      "attrs": {
-        "opacity": 1,
-        "filter": null,
-        "mask": null
-      },
-      "options": {
-        "scheme": "olive",
-        "terracing": 0,
-        "skip": 0,
-        "relax": 1,
-        "curve": "curveBasisClosed",
-        "render": true
-      }
-    }
-  },
   "biomes": {
     "attrs": {
       "opacity": 0.7,
-      "filter": "",
-      "mask": "url(#land)"
+      "filter": null
+    }
+  },
+  "borders": {
+    "groups": {
+      "stateBorders": {
+        "attrs": {
+          "stroke": "#ffffff",
+          "opacity": 1,
+          "stroke-width": 1,
+          "stroke-dasharray": "3",
+          "stroke-linecap": "round",
+          "filter": null
+        }
+      },
+      "provinceBorders": {
+        "attrs": {
+          "stroke": "#ffffff",
+          "opacity": 0.5,
+          "stroke-width": 0.3,
+          "stroke-dasharray": "1",
+          "stroke-linecap": "round",
+          "filter": null
+        }
+      }
+    }
+  },
+  "burgIcons": {
+    "groups": {
+      "capital": {
+        "groups": {
+          "icons": {
+            "attrs": {
+              "opacity": 1,
+              "fill": "#ffffff",
+              "fill-opacity": 0.7,
+              "stroke": "#3e3e4b",
+              "stroke-opacity": null,
+              "stroke-width": 1,
+              "stroke-dasharray": null,
+              "stroke-linecap": "butt",
+              "stroke-linejoin": "round",
+              "filter": null
+            },
+            "options": {
+              "size": 2,
+              "icon": "#burgs-atlas-square"
+            }
+          },
+          "anchors": {
+            "attrs": {
+              "opacity": 1,
+              "fill": "#ffffff",
+              "fill-opacity": null,
+              "stroke": "#3e3e4b",
+              "stroke-opacity": null,
+              "stroke-width": 1.2,
+              "stroke-dasharray": null,
+              "stroke-linecap": null,
+              "stroke-linejoin": null,
+              "filter": null
+            },
+            "options": {
+              "size": 1.9,
+              "icon": "#ports-anchor"
+            }
+          }
+        }
+      },
+      "city": {
+        "groups": {
+          "icons": {
+            "attrs": {
+              "opacity": 1,
+              "fill": "#ffffff",
+              "fill-opacity": 0.7,
+              "stroke": "#444444",
+              "stroke-opacity": null,
+              "stroke-width": 1.2,
+              "stroke-dasharray": null,
+              "stroke-linecap": "butt",
+              "stroke-linejoin": null,
+              "filter": null
+            },
+            "options": {
+              "size": 2,
+              "icon": "#burgs-atlas-circle"
+            }
+          },
+          "anchors": {
+            "attrs": {
+              "opacity": 1,
+              "fill": "#ffffff",
+              "fill-opacity": null,
+              "stroke": "#3e3e4b",
+              "stroke-opacity": null,
+              "stroke-width": 1,
+              "stroke-dasharray": null,
+              "stroke-linecap": null,
+              "stroke-linejoin": null,
+              "filter": null
+            },
+            "options": {
+              "size": 2,
+              "icon": "#ports-anchor"
+            }
+          }
+        }
+      },
+      "fort": {
+        "groups": {
+          "icons": {
+            "attrs": {
+              "opacity": 1,
+              "fill": "#ffffff",
+              "fill-opacity": 0.7,
+              "stroke": "#3e3e4b",
+              "stroke-opacity": null,
+              "stroke-width": 1,
+              "stroke-dasharray": null,
+              "stroke-linecap": "butt",
+              "stroke-linejoin": "round",
+              "filter": null
+            },
+            "options": {
+              "size": 0.7,
+              "icon": "#burgs-atlas-triangle"
+            }
+          },
+          "anchors": {
+            "attrs": {
+              "opacity": 1,
+              "fill": "#ffffff",
+              "fill-opacity": null,
+              "stroke": "#3e3e4b",
+              "stroke-opacity": null,
+              "stroke-width": 1.2,
+              "stroke-dasharray": null,
+              "stroke-linecap": null,
+              "stroke-linejoin": null,
+              "filter": null
+            },
+            "options": {
+              "size": 0.7,
+              "icon": "#ports-anchor"
+            }
+          }
+        }
+      },
+      "monastery": {
+        "groups": {
+          "icons": {
+            "attrs": {
+              "opacity": 1,
+              "fill": "#ffffff",
+              "fill-opacity": 0.7,
+              "stroke": "#3e3e4b",
+              "stroke-opacity": null,
+              "stroke-width": 1,
+              "stroke-dasharray": null,
+              "stroke-linecap": "butt",
+              "stroke-linejoin": "round",
+              "filter": null
+            },
+            "options": {
+              "size": 0.7,
+              "icon": "#burgs-atlas-cross"
+            }
+          },
+          "anchors": {
+            "attrs": {
+              "opacity": 1,
+              "fill": "#ffffff",
+              "fill-opacity": null,
+              "stroke": "#3e3e4b",
+              "stroke-opacity": null,
+              "stroke-width": 1.2,
+              "stroke-dasharray": null,
+              "stroke-linecap": null,
+              "stroke-linejoin": null,
+              "filter": null
+            },
+            "options": {
+              "size": 0.7,
+              "icon": "#ports-anchor"
+            }
+          }
+        }
+      },
+      "caravanserai": {
+        "groups": {
+          "icons": {
+            "attrs": {
+              "opacity": 1,
+              "fill": "#ffffff",
+              "fill-opacity": 0.7,
+              "stroke": "#3e3e4b",
+              "stroke-opacity": null,
+              "stroke-width": 1,
+              "stroke-dasharray": null,
+              "stroke-linecap": "butt",
+              "stroke-linejoin": "round",
+              "filter": null
+            },
+            "options": {
+              "size": 0.7,
+              "icon": "#burgs-atlas-triangle"
+            }
+          },
+          "anchors": {
+            "attrs": {
+              "opacity": 1,
+              "fill": "#ffffff",
+              "fill-opacity": null,
+              "stroke": "#3e3e4b",
+              "stroke-opacity": null,
+              "stroke-width": 1.2,
+              "stroke-dasharray": null,
+              "stroke-linecap": null,
+              "stroke-linejoin": null,
+              "filter": null
+            },
+            "options": {
+              "size": 0.7,
+              "icon": "#ports-anchor"
+            }
+          }
+        }
+      },
+      "trading_post": {
+        "groups": {
+          "icons": {
+            "attrs": {
+              "opacity": 1,
+              "fill": "#ffffff",
+              "fill-opacity": 0.7,
+              "stroke": "#3e3e4b",
+              "stroke-opacity": null,
+              "stroke-width": 1,
+              "stroke-dasharray": null,
+              "stroke-linecap": "butt",
+              "stroke-linejoin": "round",
+              "filter": null
+            },
+            "options": {
+              "size": 0.7,
+              "icon": "#burgs-atlas-triangle"
+            }
+          },
+          "anchors": {
+            "attrs": {
+              "opacity": 1,
+              "fill": "#ffffff",
+              "fill-opacity": null,
+              "stroke": "#3e3e4b",
+              "stroke-opacity": null,
+              "stroke-width": 1.2,
+              "stroke-dasharray": null,
+              "stroke-linecap": null,
+              "stroke-linejoin": null,
+              "filter": null
+            },
+            "options": {
+              "size": 0.7,
+              "icon": "#ports-anchor"
+            }
+          }
+        }
+      },
+      "village": {
+        "groups": {
+          "icons": {
+            "attrs": {
+              "opacity": 1,
+              "fill": "#ffffff",
+              "fill-opacity": 0.7,
+              "stroke": "#3e3e4b",
+              "stroke-opacity": null,
+              "stroke-width": 1.2,
+              "stroke-dasharray": null,
+              "stroke-linecap": "butt",
+              "stroke-linejoin": "round",
+              "filter": null
+            },
+            "options": {
+              "size": 0.7,
+              "icon": "#burgs-atlas-circle"
+            }
+          },
+          "anchors": {
+            "attrs": {
+              "opacity": 1,
+              "fill": "#ffffff",
+              "fill-opacity": null,
+              "stroke": "#3e3e4b",
+              "stroke-opacity": null,
+              "stroke-width": 1.2,
+              "stroke-dasharray": null,
+              "stroke-linecap": null,
+              "stroke-linejoin": null,
+              "filter": null
+            },
+            "options": {
+              "size": 0.7,
+              "icon": "#ports-anchor"
+            }
+          }
+        }
+      },
+      "hamlet": {
+        "groups": {
+          "icons": {
+            "attrs": {
+              "opacity": 1,
+              "fill": "#ffffff",
+              "fill-opacity": 0.7,
+              "stroke": "#3e3e4b",
+              "stroke-opacity": null,
+              "stroke-width": 1.2,
+              "stroke-dasharray": null,
+              "stroke-linecap": "butt",
+              "stroke-linejoin": "round",
+              "filter": null
+            },
+            "options": {
+              "size": 0.5,
+              "icon": "#burgs-atlas-circle"
+            }
+          },
+          "anchors": {
+            "attrs": {
+              "opacity": 1,
+              "fill": "#ffffff",
+              "fill-opacity": null,
+              "stroke": "#3e3e4b",
+              "stroke-opacity": null,
+              "stroke-width": 1.2,
+              "stroke-dasharray": null,
+              "stroke-linecap": null,
+              "stroke-linejoin": null,
+              "filter": null
+            },
+            "options": {
+              "size": 0.5,
+              "icon": "#ports-anchor"
+            }
+          }
+        }
+      },
+      "town": {
+        "groups": {
+          "icons": {
+            "attrs": {
+              "opacity": 1,
+              "fill": "#ffffff",
+              "fill-opacity": 0.7,
+              "stroke": "#3e3e4b",
+              "stroke-opacity": null,
+              "stroke-width": 1.2,
+              "stroke-dasharray": null,
+              "stroke-linecap": "butt",
+              "stroke-linejoin": null,
+              "filter": null
+            },
+            "options": {
+              "size": 1,
+              "icon": "#burgs-atlas-circle"
+            }
+          },
+          "anchors": {
+            "attrs": {
+              "opacity": 1,
+              "fill": "#ffffff",
+              "fill-opacity": null,
+              "stroke": "#3e3e4b",
+              "stroke-opacity": null,
+              "stroke-width": 1,
+              "stroke-dasharray": null,
+              "stroke-linecap": null,
+              "stroke-linejoin": null,
+              "filter": null
+            },
+            "options": {
+              "size": 1,
+              "icon": "#ports-anchor"
+            }
+          }
+        }
+      }
     }
   },
   "cells": {
     "attrs": {
-      "opacity": null,
       "stroke": "#808080",
+      "stroke-opacity": null,
       "stroke-width": 0.1,
       "stroke-dasharray": null,
       "stroke-linecap": null,
+      "stroke-linejoin": null,
       "filter": null,
       "mask": null
     }
   },
+  "coastline": {
+    "groups": {
+      "sea_island": {
+        "attrs": {
+          "opacity": 0.6,
+          "stroke": "#1f3846",
+          "stroke-width": 0.7,
+          "filter": null
+        }
+      },
+      "lake_island": {
+        "attrs": {
+          "opacity": 1,
+          "stroke": "#7c8eaf",
+          "stroke-width": 0.35,
+          "filter": null
+        }
+      }
+    }
+  },
+  "compass": {
+    "attrs": {
+      "opacity": 0.9,
+      "transform": null,
+      "filter": null,
+      "mask": null
+    },
+    "groups": {
+      "compassRose": {
+        "attrs": {
+          "transform": "translate(80 80) scale(.25)"
+        }
+      }
+    }
+  },
+  "coordinates": {
+    "attrs": {
+      "stroke": "#4a4a4a",
+      "opacity": 1,
+      "stroke-width": 1,
+      "stroke-dasharray": "6",
+      "stroke-linecap": null,
+      "font-size": "14px",
+      "filter": null,
+      "mask": null
+    }
+  },
+  "cultures": {
+    "attrs": {
+      "opacity": 0.35,
+      "stroke": "#777777",
+      "stroke-opacity": null,
+      "stroke-width": 2,
+      "stroke-dasharray": null,
+      "stroke-linecap": null,
+      "stroke-linejoin": null,
+      "filter": "url(#splotch)"
+    }
+  },
+  "emblems": {
+    "attrs": {
+      "opacity": 0.75,
+      "stroke-width": 0.5,
+      "filter": null
+    },
+    "groups": {
+      "stateEmblems": {
+        "options": {
+          "size": 1
+        }
+      },
+      "provinceEmblems": {
+        "options": {
+          "size": 1
+        }
+      },
+      "burgEmblems": {
+        "options": {
+          "size": 1
+        }
+      }
+    }
+  },
+  "fogging": {
+    "attrs": {
+      "opacity": 0.98,
+      "fill": "#1b1423",
+      "mask": "url(#fog)",
+      "filter": null
+    }
+  },
+  "goods": {
+    "groups": {
+      "goodsCells": {
+        "attrs": {
+          "opacity": 1,
+          "filter": null
+        }
+      },
+      "goodsIcons": {
+        "attrs": {
+          "opacity": 1,
+          "stroke-width": 0.3,
+          "filter": "url(#dropShadow01)"
+        },
+        "options": {
+          "size": 6,
+          "circle": true
+        }
+      },
+      "goodsBurgs": {
+        "attrs": {
+          "opacity": 1,
+          "stroke": "#41414f",
+          "stroke-width": 0.2,
+          "filter": null
+        },
+        "options": {
+          "size": 3
+        }
+      }
+    }
+  },
   "grid": {
     "attrs": {
-      "opacity": 0.8,
       "stroke": "#808080",
+      "opacity": 0.8,
       "stroke-width": 0.5,
       "stroke-dasharray": null,
       "stroke-linecap": null,
@@ -113,39 +546,374 @@
       "dy": 0
     }
   },
-  "coordinates": {
-    "attrs": {
-      "opacity": 1,
-      "stroke": "#4a4a4a",
-      "stroke-width": 1,
-      "stroke-dasharray": "6",
-      "stroke-linecap": null,
-      "filter": null,
-      "mask": null
-    },
-    "options": {
-      "fontSize": 14
-    }
-  },
-  "compass": {
-    "attrs": {
-      "opacity": 0.9,
-      "transform": null,
-      "filter": null,
-      "mask": "",
-      "shape-rendering": "optimizespeed"
-    },
-    "compassRose": {
-      "attrs": {
-        "transform": "translate(80 80) scale(.25)"
+  "heightmap": {
+    "groups": {
+      "landHeights": {
+        "attrs": {
+          "opacity": 0.8,
+          "filter": null,
+          "mask": "url(#land)"
+        },
+        "options": {
+          "scheme": "livid",
+          "terracing": 6,
+          "skip": 0,
+          "relax": 2,
+          "curve": "curveBasisClosed",
+          "contours": {
+            "mode": "off",
+            "interval": 5,
+            "color": "#5c513e",
+            "width": 0.35,
+            "opacity": 0.5
+          },
+          "hachures": {
+            "mode": "off",
+            "density": 1,
+            "length": 1,
+            "width": 1,
+            "color": "#5c513e",
+            "opacity": 0.65
+          }
+        }
+      },
+      "oceanHeights": {
+        "attrs": {
+          "opacity": 1,
+          "filter": null,
+          "mask": null
+        },
+        "options": {
+          "scheme": "olive",
+          "terracing": 0,
+          "skip": 0,
+          "relax": 1,
+          "curve": "curveBasisClosed",
+          "contours": {
+            "mode": "off",
+            "interval": 5,
+            "color": "#5c513e",
+            "width": 0.35,
+            "opacity": 0.5
+          },
+          "hachures": {
+            "mode": "off",
+            "density": 1,
+            "length": 1,
+            "width": 1,
+            "color": "#5c513e",
+            "opacity": 0.65
+          },
+          "render": true
+        }
       }
     }
   },
-  "rivers": {
+  "ice": {
     "attrs": {
-      "opacity": null,
-      "fill": "#6738bc",
-      "filter": null
+      "opacity": 0.3,
+      "fill": "#919191",
+      "stroke": "#949494",
+      "stroke-opacity": null,
+      "stroke-width": 0,
+      "stroke-dasharray": null,
+      "stroke-linecap": null,
+      "stroke-linejoin": null,
+      "filter": "url(#dropShadow05)"
+    }
+  },
+  "journeys": {
+    "attrs": {
+      "opacity": 1,
+      "stroke-width": 1.8,
+      "stroke-dasharray": "0",
+      "stroke-linecap": "round",
+      "filter": null,
+      "mask": null
+    }
+  },
+  "labels": {
+    "groups": {
+      "capital": {
+        "attrs": {
+          "opacity": 1,
+          "fill": "#ffffff",
+          "fill-opacity": null,
+          "stroke": "#3a3a3a",
+          "stroke-opacity": null,
+          "stroke-width": 0,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "stroke-linejoin": null,
+          "font-family": "Orbitron",
+          "font-size": "9%",
+          "font-style": null,
+          "font-weight": null,
+          "letter-spacing": 0,
+          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
+          "filter": null
+        }
+      },
+      "city": {
+        "attrs": {
+          "opacity": 1,
+          "fill": "#ffffff",
+          "fill-opacity": null,
+          "stroke": "#3a3a3a",
+          "stroke-opacity": null,
+          "stroke-width": 0,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "stroke-linejoin": null,
+          "font-family": "Orbitron",
+          "font-size": "8%",
+          "font-style": null,
+          "font-weight": null,
+          "letter-spacing": 0,
+          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
+          "filter": null
+        }
+      },
+      "fort": {
+        "attrs": {
+          "opacity": 1,
+          "fill": "#ffffff",
+          "fill-opacity": null,
+          "stroke": "#3a3a3a",
+          "stroke-opacity": null,
+          "stroke-width": 0,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "stroke-linejoin": null,
+          "font-family": "Orbitron",
+          "font-size": "3%",
+          "font-style": null,
+          "font-weight": null,
+          "letter-spacing": 0,
+          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
+          "filter": null
+        }
+      },
+      "monastery": {
+        "attrs": {
+          "opacity": 1,
+          "fill": "#ffffff",
+          "fill-opacity": null,
+          "stroke": "#3a3a3a",
+          "stroke-opacity": null,
+          "stroke-width": 0,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "stroke-linejoin": null,
+          "font-family": "Orbitron",
+          "font-size": "3%",
+          "font-style": null,
+          "font-weight": null,
+          "letter-spacing": 0,
+          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
+          "filter": null
+        }
+      },
+      "caravanserai": {
+        "attrs": {
+          "opacity": 1,
+          "fill": "#ffffff",
+          "fill-opacity": null,
+          "stroke": "#3a3a3a",
+          "stroke-opacity": null,
+          "stroke-width": 0,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "stroke-linejoin": null,
+          "font-family": "Orbitron",
+          "font-size": "3%",
+          "font-style": null,
+          "font-weight": null,
+          "letter-spacing": 0,
+          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
+          "filter": null
+        }
+      },
+      "trading_post": {
+        "attrs": {
+          "opacity": 1,
+          "fill": "#ffffff",
+          "fill-opacity": null,
+          "stroke": "#3a3a3a",
+          "stroke-opacity": null,
+          "stroke-width": 0,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "stroke-linejoin": null,
+          "font-family": "Orbitron",
+          "font-size": "3%",
+          "font-style": null,
+          "font-weight": null,
+          "letter-spacing": 0,
+          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
+          "filter": null
+        }
+      },
+      "village": {
+        "attrs": {
+          "opacity": 1,
+          "fill": "#ffffff",
+          "fill-opacity": null,
+          "stroke": "#3a3a3a",
+          "stroke-opacity": null,
+          "stroke-width": 0,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "stroke-linejoin": null,
+          "font-family": "Orbitron",
+          "font-size": "3%",
+          "font-style": null,
+          "font-weight": null,
+          "letter-spacing": 0,
+          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
+          "filter": null
+        }
+      },
+      "hamlet": {
+        "attrs": {
+          "opacity": 1,
+          "fill": "#ffffff",
+          "fill-opacity": null,
+          "stroke": "#3a3a3a",
+          "stroke-opacity": null,
+          "stroke-width": 0,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "stroke-linejoin": null,
+          "font-family": "Orbitron",
+          "font-size": "3%",
+          "font-style": null,
+          "font-weight": null,
+          "letter-spacing": 0,
+          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
+          "filter": null
+        }
+      },
+      "town": {
+        "attrs": {
+          "opacity": 1,
+          "fill": "#ffffff",
+          "fill-opacity": null,
+          "stroke": "#3a3a3a",
+          "stroke-opacity": null,
+          "stroke-width": 0,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "stroke-linejoin": null,
+          "font-family": "Orbitron",
+          "font-size": "4%",
+          "font-style": null,
+          "font-weight": null,
+          "letter-spacing": 0,
+          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
+          "filter": null
+        }
+      },
+      "state": {
+        "attrs": {
+          "opacity": 1,
+          "fill": "#ffffff",
+          "fill-opacity": null,
+          "stroke": "#000000",
+          "stroke-opacity": null,
+          "stroke-width": 0,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "stroke-linejoin": null,
+          "font-family": "Orbitron",
+          "font-size": "18%",
+          "font-style": null,
+          "font-weight": null,
+          "letter-spacing": 0,
+          "style": "text-shadow: white 0px 0px 4px;",
+          "filter": null
+        }
+      },
+      "province": {
+        "attrs": {
+          "opacity": 1,
+          "fill": "#ffffff",
+          "fill-opacity": null,
+          "stroke": "#000000",
+          "stroke-opacity": null,
+          "stroke-width": 0,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "stroke-linejoin": null,
+          "font-family": "Orbitron",
+          "font-size": "6%",
+          "font-style": null,
+          "font-weight": null,
+          "letter-spacing": 0,
+          "style": "text-shadow: white 0px 0px 4px;",
+          "filter": null
+        }
+      },
+      "route": {
+        "attrs": {
+          "opacity": 1,
+          "fill": "#ffffff",
+          "fill-opacity": null,
+          "stroke": "#000000",
+          "stroke-opacity": null,
+          "stroke-width": 0,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "stroke-linejoin": null,
+          "font-family": "Orbitron",
+          "font-size": "1.5%",
+          "font-style": null,
+          "font-weight": null,
+          "letter-spacing": 0.1,
+          "style": "text-shadow: white 0px 0px 2px;",
+          "filter": null
+        }
+      },
+      "river": {
+        "attrs": {
+          "opacity": 1,
+          "fill": "#ffffff",
+          "fill-opacity": null,
+          "stroke": "#000000",
+          "stroke-opacity": null,
+          "stroke-width": 0,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "stroke-linejoin": null,
+          "font-family": "Orbitron",
+          "font-size": "1.5%",
+          "font-style": null,
+          "font-weight": null,
+          "letter-spacing": 0.1,
+          "style": "text-shadow: white 0px 0px 2px;",
+          "filter": null
+        }
+      },
+      "added": {
+        "attrs": {
+          "opacity": 1,
+          "fill": "#ffffff",
+          "fill-opacity": null,
+          "stroke": "#000000",
+          "stroke-opacity": null,
+          "stroke-width": 0,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "stroke-linejoin": null,
+          "font-family": "Almendra SC",
+          "font-size": "18%",
+          "font-style": null,
+          "font-weight": null,
+          "letter-spacing": 0,
+          "style": "text-shadow: white 0px 0px 4px;",
+          "filter": null
+        }
+      }
     }
   },
   "lakes": {
@@ -156,10 +924,21 @@
           "fill": "#381579",
           "fill-opacity": null,
           "stroke": "#47228c",
+          "stroke-opacity": null,
           "stroke-width": 3,
           "stroke-dasharray": null,
           "stroke-linecap": null,
+          "stroke-linejoin": null,
           "filter": null
+        },
+        "options": {
+          "embellishment": "none",
+          "density": 1,
+          "length": 1,
+          "halo": 0.2,
+          "color": "#000000",
+          "width": 0.3,
+          "opacity": 0.6
         }
       },
       "salt": {
@@ -168,10 +947,21 @@
           "fill": "#409b8a",
           "fill-opacity": null,
           "stroke": "#388985",
+          "stroke-opacity": null,
           "stroke-width": 0.7,
           "stroke-dasharray": null,
           "stroke-linecap": null,
+          "stroke-linejoin": null,
           "filter": null
+        },
+        "options": {
+          "embellishment": "none",
+          "density": 1,
+          "length": 1,
+          "halo": 0.2,
+          "color": "#000000",
+          "width": 0.3,
+          "opacity": 0.6
         }
       },
       "sinkhole": {
@@ -180,10 +970,21 @@
           "fill": "#5bc9fd",
           "fill-opacity": null,
           "stroke": "#53a3b0",
+          "stroke-opacity": null,
           "stroke-width": 0.7,
           "stroke-dasharray": null,
           "stroke-linecap": null,
+          "stroke-linejoin": null,
           "filter": null
+        },
+        "options": {
+          "embellishment": "none",
+          "density": 1,
+          "length": 1,
+          "halo": 0.2,
+          "color": "#000000",
+          "width": 0.3,
+          "opacity": 0.6
         }
       },
       "frozen": {
@@ -192,10 +993,21 @@
           "fill": "#cdd4e7",
           "fill-opacity": null,
           "stroke": "#cfe0eb",
+          "stroke-opacity": null,
           "stroke-width": 0,
           "stroke-dasharray": null,
           "stroke-linecap": null,
+          "stroke-linejoin": null,
           "filter": null
+        },
+        "options": {
+          "embellishment": "none",
+          "density": 1,
+          "length": 1,
+          "halo": 0.2,
+          "color": "#000000",
+          "width": 0.3,
+          "opacity": 0.6
         }
       },
       "lava": {
@@ -204,10 +1016,21 @@
           "fill": "#90270d",
           "fill-opacity": null,
           "stroke": "#f93e0c",
+          "stroke-opacity": null,
           "stroke-width": 2,
           "stroke-dasharray": null,
           "stroke-linecap": null,
+          "stroke-linejoin": null,
           "filter": "url(#crumpled)"
+        },
+        "options": {
+          "embellishment": "none",
+          "density": 1,
+          "length": 1,
+          "halo": 0.2,
+          "color": "#000000",
+          "width": 0.3,
+          "opacity": 0.6
         }
       },
       "dry": {
@@ -216,42 +1039,196 @@
           "fill": "#c9bfa7",
           "fill-opacity": null,
           "stroke": "#8e816f",
+          "stroke-opacity": null,
           "stroke-width": 0.7,
           "stroke-dasharray": null,
           "stroke-linecap": null,
+          "stroke-linejoin": null,
           "filter": null
+        },
+        "options": {
+          "embellishment": "none",
+          "density": 1,
+          "length": 1,
+          "halo": 0.2,
+          "color": "#000000",
+          "width": 0.3,
+          "opacity": 0.6
         }
       }
     }
   },
-  "coastline": {
-    "sea_island": {
-      "attrs": {
-        "opacity": 0.6,
-        "stroke": "#1f3846",
-        "stroke-width": 0.7,
-        "stroke-dasharray": null,
-        "stroke-linecap": null,
-        "filter": null
-      },
-      "options": {
-        "autoFilter": 1
+  "landmass": {
+    "attrs": {
+      "opacity": 1,
+      "fill": "#04011e",
+      "filter": null
+    }
+  },
+  "legend": {
+    "attrs": {
+      "stroke": "#812929",
+      "stroke-opacity": null,
+      "stroke-width": 2.5,
+      "stroke-dasharray": "0 4 10 4",
+      "stroke-linecap": "round",
+      "stroke-linejoin": null,
+      "font-family": "Almendra SC",
+      "font-size": "13px"
+    },
+    "options": {
+      "columns": 8
+    },
+    "groups": {
+      "box": {
+        "attrs": {
+          "fill": "#ffffff",
+          "fill-opacity": 0.8
+        }
+      }
+    }
+  },
+  "map": {
+    "attrs": {
+      "filter": null
+    }
+  },
+  "markers": {
+    "attrs": {
+      "opacity": 0.8,
+      "filter": null
+    }
+  },
+  "markets": {
+    "attrs": {
+      "fill-opacity": 0,
+      "stroke-opacity": 0.8,
+      "stroke-width": 1,
+      "stroke-dasharray": null,
+      "stroke-linecap": null,
+      "filter": null
+    },
+    "options": {
+      "size": 3,
+      "iconSize": 5,
+      "icon": "⚖️"
+    }
+  },
+  "military": {
+    "attrs": {
+      "opacity": null,
+      "fill-opacity": 1,
+      "stroke": "#000000",
+      "stroke-opacity": null,
+      "stroke-width": 0.6,
+      "stroke-dasharray": null,
+      "stroke-linecap": null,
+      "stroke-linejoin": null,
+      "filter": null
+    },
+    "options": {
+      "boxSize": 4
+    }
+  },
+  "ocean": {
+    "options": {
+      "bands": {
+        "render": false,
+        "count": 5,
+        "spacing": 1.1,
+        "width": 0.25,
+        "color": "#575448",
+        "shore": "#b9b6a1",
+        "shade": 0.35,
+        "opacity": 1
       }
     },
-    "lake_island": {
-      "attrs": {
-        "opacity": 1,
-        "stroke": "#7c8eaf",
-        "stroke-width": 0.35,
-        "stroke-dasharray": null,
-        "stroke-linecap": null,
-        "filter": null
+    "groups": {
+      "base": {
+        "attrs": {
+          "fill": "#05001f"
+        }
+      },
+      "pattern": {
+        "attrs": {
+          "href": "",
+          "opacity": 0.15
+        }
+      },
+      "oceanLayers": {
+        "attrs": {
+          "filter": null
+        },
+        "options": {
+          "outline": "-6,-3,-1"
+        }
+      },
+      "oceanWaves": {
+        "attrs": {
+          "opacity": 0.5,
+          "stroke": "#1f3846",
+          "stroke-width": 0.5,
+          "stroke-dasharray": null,
+          "filter": null
+        },
+        "options": {
+          "render": false,
+          "type": "waves",
+          "density": 1,
+          "length": 1,
+          "reach": 4,
+          "halo": 0.25
+        }
       }
+    }
+  },
+  "population": {
+    "attrs": {
+      "opacity": null,
+      "stroke-width": 1.6,
+      "stroke-dasharray": null,
+      "stroke-linecap": "square",
+      "filter": null,
+      "mask": null
+    },
+    "groups": {
+      "rural": {
+        "attrs": {
+          "stroke": "#5294ff"
+        }
+      },
+      "urban": {
+        "attrs": {
+          "stroke": "#5cdeff"
+        }
+      }
+    }
+  },
+  "precipitation": {
+    "attrs": {
+      "opacity": null,
+      "fill": "#003dff",
+      "stroke": "#000000",
+      "stroke-opacity": null,
+      "stroke-width": 0.1,
+      "stroke-dasharray": null,
+      "stroke-linecap": null,
+      "stroke-linejoin": null,
+      "filter": null,
+      "mask": null
+    }
+  },
+  "provinces": {
+    "attrs": {
+      "opacity": 0.2,
+      "filter": null
     }
   },
   "relief": {
     "attrs": {
-      "opacity": 0.9,
+      "opacity": 0.3,
+      "stroke": "#5c5c70",
+      "stroke-width": 1,
       "filter": null,
       "mask": null
     },
@@ -265,77 +1242,19 @@
     "attrs": {
       "opacity": 0.5,
       "stroke": "#404040",
+      "stroke-opacity": null,
       "stroke-width": 2,
       "stroke-dasharray": null,
       "stroke-linecap": null,
+      "stroke-linejoin": null,
       "filter": "url(#splotch)"
     }
   },
-  "cultures": {
+  "rivers": {
     "attrs": {
-      "opacity": 0.35,
-      "stroke": "#777777",
-      "stroke-width": 2,
-      "stroke-dasharray": null,
-      "stroke-linecap": null,
-      "filter": "url(#splotch)"
-    }
-  },
-  "states": {
-    "statesBody": {
-      "attrs": {
-        "opacity": 0,
-        "filter": null
-      }
-    },
-    "statesHalo": {
-      "attrs": {
-        "opacity": 1,
-        "stroke-width": 13,
-        "filter": "blur(8.25px)"
-      },
-      "options": {
-        "width": 13
-      }
-    }
-  },
-  "provinces": {
-    "attrs": {
-      "opacity": 0.2,
-      "filter": ""
-    }
-  },
-  "zones": {
-    "attrs": {
-      "opacity": 0.7,
-      "stroke": "#ffffff",
-      "stroke-width": 0.3,
-      "stroke-dasharray": null,
-      "stroke-linecap": "inherit",
-      "filter": "url(#dropShadow05)",
-      "mask": null
-    }
-  },
-  "borders": {
-    "stateBorders": {
-      "attrs": {
-        "opacity": 1,
-        "stroke": "#ffffff",
-        "stroke-width": 1,
-        "stroke-dasharray": "3",
-        "stroke-linecap": "round",
-        "filter": ""
-      }
-    },
-    "provinceBorders": {
-      "attrs": {
-        "opacity": 0.5,
-        "stroke": "#ffffff",
-        "stroke-width": 0.3,
-        "stroke-dasharray": "1",
-        "stroke-linecap": "round",
-        "filter": ""
-      }
+      "opacity": null,
+      "fill": "#6738bc",
+      "filter": null
     }
   },
   "routes": {
@@ -344,9 +1263,11 @@
         "attrs": {
           "opacity": 1,
           "stroke": "#c44ac0",
+          "stroke-opacity": null,
           "stroke-width": 0.9,
           "stroke-dasharray": "2 3",
           "stroke-linecap": "round",
+          "stroke-linejoin": null,
           "filter": null,
           "mask": null
         }
@@ -355,9 +1276,11 @@
         "attrs": {
           "opacity": 1,
           "stroke": "#df2654",
+          "stroke-opacity": null,
           "stroke-width": 0.2,
           "stroke-dasharray": ".5 1",
           "stroke-linecap": "round",
+          "stroke-linejoin": null,
           "filter": null,
           "mask": null
         }
@@ -366,738 +1289,15 @@
         "attrs": {
           "opacity": 0.8,
           "stroke": "#a890c6",
+          "stroke-opacity": null,
           "stroke-width": 0.6,
           "stroke-dasharray": "1.2 2.4",
           "stroke-linecap": "round",
+          "stroke-linejoin": null,
           "filter": null,
           "mask": null
         }
       }
-    }
-  },
-  "journeys": {
-    "attrs": {
-      "opacity": 1,
-      "stroke-width": 1.8,
-      "stroke-dasharray": "0",
-      "stroke-linecap": "round",
-      "filter": null,
-      "mask": null
-    }
-  },
-  "temperature": {
-    "attrs": {
-      "opacity": 0.8,
-      "fill": "#551282",
-      "fill-opacity": 0.3,
-      "stroke": null,
-      "stroke-width": 3,
-      "stroke-dasharray": "2",
-      "stroke-linecap": null,
-      "font-size": "22px",
-      "filter": null,
-      "mask": null
-    }
-  },
-  "ice": {
-    "attrs": {
-      "opacity": 0.3,
-      "fill": "#919191",
-      "stroke": "#949494",
-      "stroke-width": 0,
-      "stroke-dasharray": null,
-      "stroke-linecap": null,
-      "filter": "url(#dropShadow05)"
-    }
-  },
-  "precipitation": {
-    "attrs": {
-      "opacity": null,
-      "fill": "#003dff",
-      "stroke": "#000000",
-      "stroke-width": 0.1,
-      "stroke-dasharray": null,
-      "stroke-linecap": null,
-      "filter": null,
-      "mask": null
-    }
-  },
-  "population": {
-    "attrs": {
-      "opacity": null,
-      "stroke-width": 1.6,
-      "stroke-dasharray": null,
-      "stroke-linecap": "square",
-      "filter": null,
-      "mask": null
-    },
-    "rural": {
-      "attrs": {
-        "stroke": "#5294ff"
-      }
-    },
-    "urban": {
-      "attrs": {
-        "stroke": "#5cdeff"
-      }
-    }
-  },
-  "emblems": {
-    "attrs": {
-      "opacity": 0.75,
-      "stroke-width": 0.5,
-      "filter": null
-    },
-    "stateEmblems": {
-      "options": {
-        "size": 1
-      }
-    },
-    "provinceEmblems": {
-      "options": {
-        "size": 1
-      }
-    },
-    "burgEmblems": {
-      "options": {
-        "size": 1
-      }
-    }
-  },
-  "labels": {
-    "attrs": {
-      "font-size": "100px"
-    },
-    "groups": {
-      "capital": {
-        "attrs": {
-          "opacity": 1,
-          "fill": "#ffffff",
-          "fill-opacity": null,
-          "stroke": "#3a3a3a",
-          "stroke-width": 0,
-          "stroke-dasharray": null,
-          "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "9%",
-          "font-family": "Orbitron",
-          "font-style": null,
-          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
-          "filter": null
-        }
-      },
-      "city": {
-        "attrs": {
-          "opacity": 1,
-          "fill": "#ffffff",
-          "fill-opacity": null,
-          "stroke": "#3a3a3a",
-          "stroke-width": 0,
-          "stroke-dasharray": null,
-          "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "8%",
-          "font-family": "Orbitron",
-          "font-style": null,
-          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
-          "filter": null
-        }
-      },
-      "fort": {
-        "attrs": {
-          "opacity": 1,
-          "fill": "#ffffff",
-          "fill-opacity": null,
-          "stroke": "#3a3a3a",
-          "stroke-width": 0,
-          "stroke-dasharray": null,
-          "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "3%",
-          "font-family": "Orbitron",
-          "font-style": null,
-          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
-          "filter": null
-        }
-      },
-      "monastery": {
-        "attrs": {
-          "opacity": 1,
-          "fill": "#ffffff",
-          "fill-opacity": null,
-          "stroke": "#3a3a3a",
-          "stroke-width": 0,
-          "stroke-dasharray": null,
-          "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "3%",
-          "font-family": "Orbitron",
-          "font-style": null,
-          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
-          "filter": null
-        }
-      },
-      "caravanserai": {
-        "attrs": {
-          "opacity": 1,
-          "fill": "#ffffff",
-          "fill-opacity": null,
-          "stroke": "#3a3a3a",
-          "stroke-width": 0,
-          "stroke-dasharray": null,
-          "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "3%",
-          "font-family": "Orbitron",
-          "font-style": null,
-          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
-          "filter": null
-        }
-      },
-      "trading_post": {
-        "attrs": {
-          "opacity": 1,
-          "fill": "#ffffff",
-          "fill-opacity": null,
-          "stroke": "#3a3a3a",
-          "stroke-width": 0,
-          "stroke-dasharray": null,
-          "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "3%",
-          "font-family": "Orbitron",
-          "font-style": null,
-          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
-          "filter": null
-        }
-      },
-      "village": {
-        "attrs": {
-          "opacity": 1,
-          "fill": "#ffffff",
-          "fill-opacity": null,
-          "stroke": "#3a3a3a",
-          "stroke-width": 0,
-          "stroke-dasharray": null,
-          "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "3%",
-          "font-family": "Orbitron",
-          "font-style": null,
-          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
-          "filter": null
-        }
-      },
-      "hamlet": {
-        "attrs": {
-          "opacity": 1,
-          "fill": "#ffffff",
-          "fill-opacity": null,
-          "stroke": "#3a3a3a",
-          "stroke-width": 0,
-          "stroke-dasharray": null,
-          "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "3%",
-          "font-family": "Orbitron",
-          "font-style": null,
-          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
-          "filter": null
-        }
-      },
-      "town": {
-        "attrs": {
-          "opacity": 1,
-          "fill": "#ffffff",
-          "fill-opacity": null,
-          "stroke": "#3a3a3a",
-          "stroke-width": 0,
-          "stroke-dasharray": null,
-          "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "4%",
-          "font-family": "Orbitron",
-          "font-style": null,
-          "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
-          "filter": null
-        }
-      },
-      "state": {
-        "attrs": {
-          "opacity": 1,
-          "fill": "#ffffff",
-          "fill-opacity": null,
-          "stroke": "#000000",
-          "stroke-width": 0,
-          "stroke-dasharray": null,
-          "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "18%",
-          "font-family": "Orbitron",
-          "font-style": null,
-          "style": "text-shadow: white 0px 0px 4px;",
-          "filter": null
-        }
-      },
-      "province": {
-        "attrs": {
-          "opacity": 1,
-          "fill": "#ffffff",
-          "fill-opacity": null,
-          "stroke": "#000000",
-          "stroke-width": 0,
-          "stroke-dasharray": null,
-          "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "6%",
-          "font-family": "Orbitron",
-          "font-style": null,
-          "style": "text-shadow: white 0px 0px 4px;",
-          "filter": null
-        }
-      },
-      "route": {
-        "attrs": {
-          "opacity": 1,
-          "fill": "#ffffff",
-          "fill-opacity": null,
-          "stroke": "#000000",
-          "stroke-width": 0,
-          "stroke-dasharray": null,
-          "stroke-linecap": null,
-          "letter-spacing": 0.1,
-          "font-size": "1.5%",
-          "font-family": "Orbitron",
-          "font-style": null,
-          "style": "text-shadow: white 0px 0px 2px;",
-          "filter": null
-        }
-      },
-      "river": {
-        "attrs": {
-          "opacity": 1,
-          "fill": "#ffffff",
-          "fill-opacity": null,
-          "stroke": "#000000",
-          "stroke-width": 0,
-          "stroke-dasharray": null,
-          "stroke-linecap": null,
-          "letter-spacing": 0.1,
-          "font-size": "1.5%",
-          "font-family": "Orbitron",
-          "font-style": null,
-          "style": "text-shadow: white 0px 0px 2px;",
-          "filter": null
-        }
-      },
-      "added": {
-        "attrs": {
-          "opacity": 1,
-          "fill": "#ffffff",
-          "fill-opacity": null,
-          "stroke": "#000000",
-          "stroke-width": 0,
-          "stroke-dasharray": null,
-          "stroke-linecap": null,
-          "letter-spacing": 0,
-          "font-size": "18%",
-          "font-family": "Almendra SC",
-          "font-style": null,
-          "style": "text-shadow: white 0px 0px 4px;",
-          "filter": null
-        }
-      }
-    }
-  },
-  "burgIcons": {
-    "burgIcons": {
-      "groups": {
-        "capital": {
-          "attrs": {
-            "opacity": 1,
-            "fill": "#ffffff",
-            "fill-opacity": 0.7,
-            "stroke": "#3e3e4b",
-            "stroke-width": 1,
-            "stroke-dasharray": null,
-            "stroke-linecap": "butt",
-            "stroke-linejoin": "round",
-            "filter": null
-          },
-          "options": {
-            "size": 2,
-            "icon": "#icon-square"
-          }
-        },
-        "city": {
-          "attrs": {
-            "opacity": 1,
-            "fill": "#ffffff",
-            "fill-opacity": 0.7,
-            "stroke": "#444444",
-            "stroke-width": 1.2,
-            "stroke-dasharray": null,
-            "stroke-linecap": "butt",
-            "stroke-linejoin": null,
-            "filter": null
-          },
-          "options": {
-            "size": 2,
-            "icon": "#icon-circle"
-          }
-        },
-        "fort": {
-          "attrs": {
-            "opacity": 1,
-            "fill": "#ffffff",
-            "fill-opacity": 0.7,
-            "stroke": "#3e3e4b",
-            "stroke-width": 1,
-            "stroke-dasharray": null,
-            "stroke-linecap": "butt",
-            "stroke-linejoin": "round",
-            "filter": null
-          },
-          "options": {
-            "size": 0.7,
-            "icon": "#icon-triangle"
-          }
-        },
-        "monastery": {
-          "attrs": {
-            "opacity": 1,
-            "fill": "#ffffff",
-            "fill-opacity": 0.7,
-            "stroke": "#3e3e4b",
-            "stroke-width": 1,
-            "stroke-dasharray": null,
-            "stroke-linecap": "butt",
-            "stroke-linejoin": "round",
-            "filter": null
-          },
-          "options": {
-            "size": 0.7,
-            "icon": "#icon-cross"
-          }
-        },
-        "caravanserai": {
-          "attrs": {
-            "opacity": 1,
-            "fill": "#ffffff",
-            "fill-opacity": 0.7,
-            "stroke": "#3e3e4b",
-            "stroke-width": 1,
-            "stroke-dasharray": null,
-            "stroke-linecap": "butt",
-            "stroke-linejoin": "round",
-            "filter": null
-          },
-          "options": {
-            "size": 0.7,
-            "icon": "#icon-triangle"
-          }
-        },
-        "trading_post": {
-          "attrs": {
-            "opacity": 1,
-            "fill": "#ffffff",
-            "fill-opacity": 0.7,
-            "stroke": "#3e3e4b",
-            "stroke-width": 1,
-            "stroke-dasharray": null,
-            "stroke-linecap": "butt",
-            "stroke-linejoin": "round",
-            "filter": null
-          },
-          "options": {
-            "size": 0.7,
-            "icon": "#icon-triangle"
-          }
-        },
-        "village": {
-          "attrs": {
-            "opacity": 1,
-            "fill": "#ffffff",
-            "fill-opacity": 0.7,
-            "stroke": "#3e3e4b",
-            "stroke-width": 1.2,
-            "stroke-dasharray": null,
-            "stroke-linecap": "butt",
-            "stroke-linejoin": "round",
-            "filter": null
-          },
-          "options": {
-            "size": 0.7,
-            "icon": "#icon-circle"
-          }
-        },
-        "hamlet": {
-          "attrs": {
-            "opacity": 1,
-            "fill": "#ffffff",
-            "fill-opacity": 0.7,
-            "stroke": "#3e3e4b",
-            "stroke-width": 1.2,
-            "stroke-dasharray": null,
-            "stroke-linecap": "butt",
-            "stroke-linejoin": "round",
-            "filter": null
-          },
-          "options": {
-            "size": 0.5,
-            "icon": "#icon-circle"
-          }
-        },
-        "town": {
-          "attrs": {
-            "opacity": 1,
-            "fill": "#ffffff",
-            "fill-opacity": 0.7,
-            "stroke": "#3e3e4b",
-            "stroke-width": 1.2,
-            "stroke-dasharray": null,
-            "stroke-linecap": "butt",
-            "stroke-linejoin": null,
-            "filter": null
-          },
-          "options": {
-            "size": 1,
-            "icon": "#icon-circle"
-          }
-        }
-      }
-    },
-    "anchors": {
-      "groups": {
-        "capital": {
-          "attrs": {
-            "opacity": 1,
-            "fill": "#ffffff",
-            "fill-opacity": null,
-            "stroke": "#3e3e4b",
-            "stroke-width": 1.2,
-            "stroke-dasharray": null,
-            "stroke-linecap": null,
-            "stroke-linejoin": null,
-            "filter": null
-          },
-          "options": {
-            "size": 1.9,
-            "icon": "#icon-anchor"
-          }
-        },
-        "city": {
-          "attrs": {
-            "opacity": 1,
-            "fill": "#ffffff",
-            "fill-opacity": null,
-            "stroke": "#3e3e4b",
-            "stroke-width": 1,
-            "stroke-dasharray": null,
-            "stroke-linecap": null,
-            "stroke-linejoin": null,
-            "filter": null
-          },
-          "options": {
-            "size": 2,
-            "icon": "#icon-anchor"
-          }
-        },
-        "fort": {
-          "attrs": {
-            "opacity": 1,
-            "fill": "#ffffff",
-            "fill-opacity": null,
-            "stroke": "#3e3e4b",
-            "stroke-width": 1.2,
-            "stroke-dasharray": null,
-            "stroke-linecap": null,
-            "stroke-linejoin": null,
-            "filter": null
-          },
-          "options": {
-            "size": 0.7,
-            "icon": "#icon-anchor"
-          }
-        },
-        "monastery": {
-          "attrs": {
-            "opacity": 1,
-            "fill": "#ffffff",
-            "fill-opacity": null,
-            "stroke": "#3e3e4b",
-            "stroke-width": 1.2,
-            "stroke-dasharray": null,
-            "stroke-linecap": null,
-            "stroke-linejoin": null,
-            "filter": null
-          },
-          "options": {
-            "size": 0.7,
-            "icon": "#icon-anchor"
-          }
-        },
-        "caravanserai": {
-          "attrs": {
-            "opacity": 1,
-            "fill": "#ffffff",
-            "fill-opacity": null,
-            "stroke": "#3e3e4b",
-            "stroke-width": 1.2,
-            "stroke-dasharray": null,
-            "stroke-linecap": null,
-            "stroke-linejoin": null,
-            "filter": null
-          },
-          "options": {
-            "size": 0.7,
-            "icon": "#icon-anchor"
-          }
-        },
-        "trading_post": {
-          "attrs": {
-            "opacity": 1,
-            "fill": "#ffffff",
-            "fill-opacity": null,
-            "stroke": "#3e3e4b",
-            "stroke-width": 1.2,
-            "stroke-dasharray": null,
-            "stroke-linecap": null,
-            "stroke-linejoin": null,
-            "filter": null
-          },
-          "options": {
-            "size": 0.7,
-            "icon": "#icon-anchor"
-          }
-        },
-        "village": {
-          "attrs": {
-            "opacity": 1,
-            "fill": "#ffffff",
-            "fill-opacity": null,
-            "stroke": "#3e3e4b",
-            "stroke-width": 1.2,
-            "stroke-dasharray": null,
-            "stroke-linecap": null,
-            "stroke-linejoin": null,
-            "filter": null
-          },
-          "options": {
-            "size": 0.7,
-            "icon": "#icon-anchor"
-          }
-        },
-        "hamlet": {
-          "attrs": {
-            "opacity": 1,
-            "fill": "#ffffff",
-            "fill-opacity": null,
-            "stroke": "#3e3e4b",
-            "stroke-width": 1.2,
-            "stroke-dasharray": null,
-            "stroke-linecap": null,
-            "stroke-linejoin": null,
-            "filter": null
-          },
-          "options": {
-            "size": 0.5,
-            "icon": "#icon-anchor"
-          }
-        },
-        "town": {
-          "attrs": {
-            "opacity": 1,
-            "fill": "#ffffff",
-            "fill-opacity": null,
-            "stroke": "#3e3e4b",
-            "stroke-width": 1,
-            "stroke-dasharray": null,
-            "stroke-linecap": null,
-            "stroke-linejoin": null,
-            "filter": null
-          },
-          "options": {
-            "size": 1,
-            "icon": "#icon-anchor"
-          }
-        }
-      }
-    }
-  },
-  "goods": {
-    "goodsCells": {
-      "attrs": {
-        "opacity": 1,
-        "filter": null
-      }
-    },
-    "goodsIcons": {
-      "attrs": {
-        "opacity": 1,
-        "stroke-width": 0.3,
-        "filter": "url(#dropShadow01)"
-      },
-      "options": {
-        "size": 6,
-        "circle": true
-      }
-    },
-    "goodsBurgs": {
-      "attrs": {
-        "opacity": 1,
-        "stroke": "#41414f",
-        "stroke-width": 0.2,
-        "filter": null
-      },
-      "options": {
-        "size": 3
-      }
-    }
-  },
-  "markets": {
-    "attrs": {
-      "opacity": 1,
-      "fill": null,
-      "fill-opacity": 0,
-      "stroke-width": 1,
-      "stroke-opacity": 0.8,
-      "filter": null
-    },
-    "options": {
-      "size": 3,
-      "fontSize": 5,
-      "icon": "\u2696\ufe0f"
-    }
-  },
-  "trade": {
-    "attrs": {
-      "opacity": 1,
-      "filter": null
-    }
-  },
-  "markers": {
-    "attrs": {
-      "opacity": 0.8,
-      "filter": null
-    },
-    "options": {
-      "rescale": 1
-    }
-  },
-  "military": {
-    "attrs": {
-      "opacity": null,
-      "stroke": "#000000",
-      "stroke-width": 0.6,
-      "stroke-dasharray": null,
-      "stroke-linecap": null,
-      "fill-opacity": 1,
-      "filter": null
-    },
-    "options": {
-      "fontSize": 8,
-      "boxSize": 4
     }
   },
   "rulers": {
@@ -1106,17 +1306,15 @@
       "stroke-width": 2,
       "stroke-dasharray": "10",
       "stroke-linecap": null,
+      "font-size": "20px",
       "filter": null
-    },
-    "options": {
-      "fontSize": 20
     }
   },
   "scaleBar": {
     "attrs": {
       "opacity": 1,
       "fill": "#d0d0dc",
-      "font-size": 11
+      "font-size": "11px"
     },
     "options": {
       "barSize": 2,
@@ -1124,49 +1322,72 @@
       "x": 99,
       "y": 99
     },
-    "back": {
-      "attrs": {
-        "opacity": 0.3,
-        "fill": "#05001f",
-        "fill-opacity": null,
-        "stroke": "#000000",
-        "stroke-width": 1,
-        "filter": ""
-      },
-      "options": {
-        "top": 23,
-        "right": 18,
-        "bottom": 18,
-        "left": 12
+    "groups": {
+      "back": {
+        "attrs": {
+          "opacity": 0.3,
+          "fill": "#05001f",
+          "fill-opacity": null,
+          "stroke": "#000000",
+          "stroke-width": 1,
+          "filter": null
+        },
+        "options": {
+          "top": 23,
+          "right": 18,
+          "bottom": 18,
+          "left": 12
+        }
       }
     }
   },
-  "legend": {
+  "states": {
+    "groups": {
+      "statesBody": {
+        "attrs": {
+          "opacity": 0,
+          "filter": null
+        }
+      },
+      "statesHalo": {
+        "attrs": {
+          "opacity": 1,
+          "stroke-width": 13,
+          "filter": "blur(8.25px)"
+        }
+      }
+    }
+  },
+  "temperature": {
     "attrs": {
-      "stroke": "#812929",
-      "stroke-width": 2.5,
-      "stroke-dasharray": "0 4 10 4",
-      "stroke-linecap": "round",
-      "font-family": "Almendra SC"
+      "fill": "#551282",
+      "fill-opacity": 0.3,
+      "font-size": "22px",
+      "stroke": null,
+      "stroke-opacity": 0.8,
+      "stroke-width": 3,
+      "stroke-dasharray": "2",
+      "stroke-linecap": null,
+      "stroke-linejoin": null,
+      "filter": null,
+      "mask": null
+    }
+  },
+  "texture": {
+    "attrs": {
+      "opacity": 0.2,
+      "filter": null,
+      "mask": "url(#water)"
     },
     "options": {
-      "fontSize": 13,
-      "x": 99,
-      "y": 93,
-      "columns": 8
-    },
-    "box": {
-      "attrs": {
-        "fill": "#ffffff",
-        "fill-opacity": 0.8
-      }
+      "href": "./images/textures/mercury-small.jpg",
+      "x": 0,
+      "y": 0
     }
   },
-  "fogging": {
+  "trade": {
     "attrs": {
-      "opacity": 0.98,
-      "fill": "#1b1423",
-      "mask": "url(#fog)",
+      "opacity": 1,
       "filter": null
     }
   },
@@ -1185,6 +1406,19 @@
       "rx": "5%",
       "ry": "5%",
       "filter": "blur(20px)"
+    }
+  },
+  "zones": {
+    "attrs": {
+      "opacity": 0.7,
+      "stroke": "#ffffff",
+      "stroke-opacity": null,
+      "stroke-width": 0.3,
+      "stroke-dasharray": null,
+      "stroke-linecap": null,
+      "stroke-linejoin": null,
+      "filter": "url(#dropShadow05)",
+      "mask": null
     }
   }
 }

@@ -1,13 +1,12 @@
 import { drag, quadtree, range, select } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { IconSets } from "@/components/icon-sets";
 import { Layers } from "@/components/layers";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
-import { RELIEF_ICONS, RELIEF_SETS } from "@/data/relief-icons";
-import { getReliefIconId, type ReliefIcon } from "@/generators/relief-generator";
-import { getSceneReliefIcon, redrawRelief } from "@/renderers/draw-relief-icons";
+import type { ReliefIcon, ReliefIconRef, ReliefIconType, ReliefSet, ReliefType } from "@/generators/relief-generator";
+import { getReliefIcon, redrawRelief } from "@/renderers/draw-relief-icons";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
-import type { ReliefSet } from "@/types/relief";
 import { capitalize, ensureEl, findAllInQuadtree, getPointer, rn } from "../utils";
 import { createBrushStroke } from "../utils/brushUtils";
 
@@ -15,32 +14,30 @@ const ICON_BOX = 40; // icon preview box size in px, as defined in css
 
 let selectedIcon: ReliefIcon | null = null;
 
+let previewRequest = 0;
 const setsHtml = (): string =>
-  Object.entries(RELIEF_SETS)
-    .map(([set, { name }]) => `<option value="${set}">${name}</option>`)
-    .join("");
-
-// icons of every set, only the selected set is displayed
-const iconsHtml = (): string =>
-  Object.keys(RELIEF_SETS)
-    .map(set => `<div data-type="${set}" style="display: none">${setIconsHtml(set as ReliefSet)}</div>`)
-    .join("");
+  '<option value="">Default (style)</option>' +
+  Relief.sets.map(set => `<option value="${set}">${capitalize(set)}</option>`).join("");
 
 const setIconsHtml = (set: ReliefSet): string =>
-  RELIEF_ICONS.filter(({ set: iconsSet }) => iconsSet === RELIEF_SETS[set].base)
+  (Relief.types as readonly ReliefType[])
     .flatMap(({ type, variants, zoom = 1 }) => {
       const size = ICON_BOX * zoom;
-      const offset = 50 - 50 * zoom; // percent, keeps the zoomed icon centered in the box
-      const name = capitalize(type.replace(/([A-Z])/g, " $1").toLowerCase());
-
-      return variants.map(variant => {
-        const id = getReliefIconId(type, variant, set);
-        return /* html */ `<svg data-type="${id}" data-tip="Select ${name} icon">
-          <use href="#${id}" x="${offset}%" y="${offset}%" width="${size}" height="${size}"></use>
-        </svg>`;
+      const offset = 50 - 50 * zoom;
+      return range(1, variants + 1).map(variant => {
+        const id = Relief.symbolId({ type, variant }, set);
+        return `<svg data-type="${type}" data-variant="${variant}" data-set="${set}" data-symbol="${id}" data-tip="Select ${type} icon">
+        <use href="#${id}" x="${offset}%" y="${offset}%" width="${size}" height="${size}"/></svg>`;
       });
     })
     .join("");
+
+function pickedRef(element: SVGElement): ReliefIconRef | null {
+  const type = element.dataset.type as ReliefIconType | undefined;
+  if (!type) return null;
+  const set = ensureEl<HTMLSelectElement>("reliefEditorSet").value as ReliefSet | "";
+  return Relief.ref(type, Number(element.dataset.variant) || 1, set || undefined);
+}
 
 function open(element: SVGElement): void {
   if (customization) return;
@@ -54,7 +51,8 @@ function open(element: SVGElement): void {
 
   renderDialog();
   restoreEditMode();
-  updateReliefIconSelected();
+  ensureEl<HTMLSelectElement>("reliefEditorSet").value = selectedIcon?.set ?? "";
+  void loadPreviews();
   updateReliefSizeInput();
 
   $("#reliefEditor").dialog({
@@ -114,7 +112,7 @@ function renderDialog(): void {
       <input id="reliefSpacingNumber" oninput="reliefSpacing.value = this.value" type="number" min="2" value="5" />
     </div>
     <div id="reliefIconsDiv" data-tip="Select icon">
-${iconsHtml()}
+<div id="reliefSetIcons"></div>
       <svg id="reliefIconsSeletionAny" data-tip="Select any type of icons"><text x="50%" y="50%">Any</text></svg>
     </div>
     <div id="reliefBottom">
@@ -140,19 +138,16 @@ ${iconsHtml()}
   ensureEl("reliefSize").addEventListener("input", changeIconSize);
   ensureEl("reliefSizeNumber").addEventListener("input", changeIconSize);
   ensureEl("reliefEditorSet").addEventListener("change", changeIconsSet);
-  ensureEl("reliefIconsDiv")
-    .querySelectorAll("svg")
-    .forEach(el => {
-      el.addEventListener("click", changeIcon);
-    });
+  ensureEl("reliefIconsDiv").addEventListener("click", event => {
+    const icon = (event.target as Element).closest<SVGElement>("svg");
+    if (icon) changeIcon.call(icon);
+  });
 
-  ensureEl("reliefEditStyle").addEventListener("click", () => editStyle("terrain"));
+  ensureEl("reliefEditStyle").addEventListener("click", () => void Controllers.StyleEditor.open("relief"));
   ensureEl("reliefCopy").addEventListener("click", copyIcon);
   ensureEl("reliefMoveFront").addEventListener("click", () => moveIcon("front"));
   ensureEl("reliefMoveBack").addEventListener("click", () => moveIcon("back"));
   ensureEl("reliefRemove").addEventListener("click", removeIcon);
-
-  changeIconsSet(); // all sets are hidden in markup, show the selected one
 }
 
 function dragReliefIcon(event: any): void {
@@ -175,29 +170,20 @@ function restoreEditMode(): void {
   else if (ensureEl("reliefBulkRemove").classList.contains("pressed")) enterBulkRemoveMode();
 }
 
-function updateReliefIconSelected(): void {
+function updateReliefIconSelected(set: ReliefSet): void {
+  const container = ensureEl("reliefIconsDiv");
+  container.querySelectorAll("svg.pressed").forEach(icon => {
+    icon.classList.remove("pressed");
+  });
   if (!selectedIcon) return;
-  const reliefIconsDiv = ensureEl("reliefIconsDiv");
-  const button = reliefIconsDiv.querySelector(`svg[data-type='${selectedIcon.icon}']`);
-  if (!button) return;
-
-  reliefIconsDiv.querySelectorAll("svg.pressed").forEach(b => {
-    b.classList.remove("pressed");
-  });
-  button.classList.add("pressed");
-  reliefIconsDiv.querySelectorAll<HTMLElement>("div").forEach(b => {
-    b.style.display = "none";
-  });
-  const parent = button.parentNode as HTMLElement;
-  parent.style.display = "block";
-  ensureEl<HTMLSelectElement>("reliefEditorSet").value = parent.dataset.type!;
+  const id = Relief.symbolId(selectedIcon, set);
+  container.querySelector(`svg[data-symbol="${id}"]`)?.classList.add("pressed");
 }
 
 function updateReliefSizeInput(): void {
   if (!selectedIcon) return;
-  ensureEl<HTMLInputElement>("reliefSize").value = ensureEl<HTMLInputElement>("reliefSizeNumber").value = String(
-    rn(selectedIcon.s)
-  );
+  const size = rn(selectedIcon.s * styles.relief.options.size); // the input is the drawn size
+  ensureEl<HTMLInputElement>("reliefSize").value = ensureEl<HTMLInputElement>("reliefSizeNumber").value = String(size);
 }
 
 function enterIndividualMode(): void {
@@ -235,9 +221,9 @@ function enterBulkAddMode(): void {
   const reliefIconsDiv = ensureEl("reliefIconsDiv");
   const pressedType = reliefIconsDiv.querySelector("svg.pressed");
   if (pressedType?.id === "reliefIconsSeletionAny") {
-    // if "any" is pressed, select first type
+    // if "any" is pressed, select first type (never the "any" placeholder itself)
     ensureEl("reliefIconsSeletionAny").classList.remove("pressed");
-    reliefIconsDiv.querySelector("svg")?.classList.add("pressed");
+    reliefIconsDiv.querySelector("svg[data-type]")?.classList.add("pressed");
   }
 
   select<SVGElement, unknown>("#viewbox")
@@ -256,16 +242,16 @@ function moveBrush(this: SVGElement, event: any): void {
 
 function dragToAdd(this: SVGElement, event: any): void {
   const pressed = ensureEl("reliefIconsDiv").querySelector<SVGElement>("svg.pressed");
-  if (!pressed) {
+  const icon = pressed && pickedRef(pressed);
+  if (!icon) {
     tip("Please select an icon", false, "error");
     return;
   }
-
-  const icon = pressed.dataset.type!;
   const r = +ensureEl<HTMLInputElement>("reliefRadiusNumber").value;
   const spacing = +ensureEl<HTMLInputElement>("reliefSpacingNumber").value;
   const size = +ensureEl<HTMLInputElement>("reliefSizeNumber").value;
-
+  const scale = styles.relief.options.size;
+  // the style size scales the drawing about the anchor, so the centre is x + s / 2 at every size
   const tree = quadtree(pack.relief.map(({ x, y, s }) => [x + s / 2, y + s / 2] as [number, number]));
 
   const stroke = createBrushStroke(r / 2, (x, y) => {
@@ -278,9 +264,9 @@ function dragToAdd(this: SVGElement, event: any): void {
       if (tree.find(cx, cy, spacing)) return; // too close to existing icon
       if (pack.cells.h[Pack.findCell(cx, cy)!] < 20) return; // on water cell
 
-      const h = rn((size / 2) * (Math.random() * 0.4 + 0.8), 2);
+      const h = rn((size / scale / 2) * (Math.random() * 0.4 + 0.8), 2); // the input is the drawn size
       tree.add([cx, cy]);
-      insertIcon({ icon, x: rn(cx - h, 2), y: rn(cy - h, 2), s: rn(h * 2, 2) });
+      insertIcon({ ...icon, x: rn(cx - h, 2), y: rn(cy - h, 2), s: rn(h * 2, 2) });
     });
   });
   const [startX, startY] = getPointer(event, this);
@@ -299,14 +285,14 @@ function dragToAdd(this: SVGElement, event: any): void {
   });
 }
 
-// icons are kept sorted by their bottom edge, so the closer ones are drawn on top
+// icons are kept sorted by their anchor, so the ones placed lower are drawn on top
 function insertIcon(icon: ReliefIcon): void {
-  const bottom = icon.y + icon.s;
+  const anchor = icon.y + icon.s / 2;
   let low = 0;
   let high = pack.relief.length;
   while (low < high) {
     const mid = (low + high) >> 1;
-    if (pack.relief[mid].y + pack.relief[mid].s <= bottom) low = mid + 1;
+    if (pack.relief[mid].y + pack.relief[mid].s / 2 <= anchor) low = mid + 1;
     else high = mid;
   }
   pack.relief.splice(low, 0, icon);
@@ -340,10 +326,10 @@ function dragToRemove(this: SVGElement, event: any): void {
   }
 
   const r = +ensureEl<HTMLInputElement>("reliefRadiusNumber").value;
-  const icon = pressed.dataset.type;
+  const icon = pressed.dataset.symbol;
   const tree = quadtree<[number, number, ReliefIcon]>();
   for (const reliefIcon of pack.relief) {
-    if (icon && reliefIcon.icon !== icon) continue;
+    if (icon && Relief.symbolId(reliefIcon, styles.relief.options.set) !== icon) continue;
     tree.add([reliefIcon.x + reliefIcon.s / 2, reliefIcon.y + reliefIcon.s / 2, reliefIcon]);
   }
 
@@ -375,7 +361,7 @@ function dragToRemove(this: SVGElement, event: any): void {
 function changeIconSize(): void {
   if (!selectedIcon || !ensureEl("reliefIndividual").classList.contains("pressed")) return;
 
-  const size = +ensureEl<HTMLInputElement>("reliefSizeNumber").value;
+  const size = +ensureEl<HTMLInputElement>("reliefSizeNumber").value / styles.relief.options.size; // the input is the drawn size
   const shift = (size - selectedIcon.s) / 2;
   selectedIcon.s = size;
   selectedIcon.x = rn(selectedIcon.x - shift, 2);
@@ -384,12 +370,28 @@ function changeIconSize(): void {
 }
 
 function changeIconsSet(): void {
-  const set = ensureEl<HTMLSelectElement>("reliefEditorSet").value;
-  const reliefIconsDiv = ensureEl("reliefIconsDiv");
-  reliefIconsDiv.querySelectorAll<HTMLElement>("div").forEach(b => {
-    b.style.display = "none";
-  });
-  reliefIconsDiv.querySelector<HTMLElement>(`div[data-type='${set}']`)!.style.display = "block";
+  if (selectedIcon && ensureEl("reliefIndividual").classList.contains("pressed")) {
+    const set = ensureEl<HTMLSelectElement>("reliefEditorSet").value as ReliefSet | "";
+    if (set) selectedIcon.set = set;
+    else delete selectedIcon.set;
+    redrawRelief();
+  }
+  void loadPreviews();
+}
+
+async function loadPreviews(): Promise<void> {
+  const request = ++previewRequest;
+  const container = ensureEl("reliefSetIcons");
+  container.replaceChildren();
+  const set = (ensureEl<HTMLSelectElement>("reliefEditorSet").value || styles.relief.options.set) as ReliefSet;
+  try {
+    await IconSets.retry(Relief.iconSetId(set));
+    if (request !== previewRequest || !container.isConnected) return;
+    container.innerHTML = setIconsHtml(set);
+    updateReliefIconSelected(set);
+  } catch {
+    /* the loader reports the failed attempt */
+  }
 }
 
 function changeIcon(this: SVGElement): void {
@@ -403,7 +405,12 @@ function changeIcon(this: SVGElement): void {
   this.classList.add("pressed");
 
   if (ensureEl("reliefIndividual").classList.contains("pressed") && selectedIcon) {
-    selectedIcon.icon = this.dataset.type!;
+    const ref = pickedRef(this);
+    if (!ref) return;
+    const replacement = { ...ref, x: selectedIcon.x, y: selectedIcon.y, s: selectedIcon.s };
+    const index = pack.relief.indexOf(selectedIcon);
+    if (index >= 0) pack.relief[index] = replacement;
+    selectedIcon = replacement;
     redrawRelief();
   }
 }
@@ -438,11 +445,13 @@ function moveIcon(direction: "front" | "back"): void {
 
 function removeIcon(): void {
   const isIndividual = ensureEl("reliefTools").querySelector("button.pressed")?.id === "reliefIndividual";
-  const icon = ensureEl("reliefIconsDiv").querySelector<SVGElement>("svg.pressed")?.dataset.type;
+  const icon = ensureEl("reliefIconsDiv").querySelector<SVGElement>("svg.pressed")?.dataset.symbol;
 
   const doomed = isIndividual
     ? new Set(selectedIcon ? [selectedIcon] : [])
-    : new Set(pack.relief.filter(reliefIcon => !icon || reliefIcon.icon === icon));
+    : new Set(
+        pack.relief.filter(reliefIcon => !icon || Relief.symbolId(reliefIcon, styles.relief.options.set) === icon)
+      );
 
   if (isIndividual) alertMessage.innerHTML = "Are you sure you want to remove the icon?";
   else
@@ -471,10 +480,11 @@ function removeIcon(): void {
 function getIconData(element?: Element): ReliefIcon | null {
   if (element?.tagName !== "use") return null;
   const id = (element as SVGUseElement).dataset.id;
-  return (id && getSceneReliefIcon(id)) || null;
+  return (id && getReliefIcon(id)) || null;
 }
 
 function closeReliefEditor(): void {
+  previewRequest++;
   const wasUsingBrush = !ensureEl("reliefIndividual").classList.contains("pressed");
   select<SVGGElement, unknown>("#terrain").on(".drag", null).classed("draggable", false);
   selectedIcon = null;

@@ -9,9 +9,7 @@
     "stroke-width": "0.3",
     "style": "display: none;"
   },
-  "#anchors": {},
   "#biomes": {
-    "mask": "url(#land)",
     "style": "display: none;"
   },
   "#borders": {
@@ -31,7 +29,6 @@
     "stroke-dasharray": "0.75 0.75",
     "stroke-linecap": "butt"
   },
-  "#burgIcons": {},
   "#cells": {
     "stroke": "#808080",
     "stroke-width": "0.1",
@@ -51,7 +48,6 @@
   "#compass": {
     "opacity": "0.8",
     "mask": "url(#water)",
-    "shape-rendering": "optimizespeed",
     "style": "display: none;"
   },
   "#coordinates": {
@@ -59,6 +55,7 @@
     "stroke": "#d4d4d4",
     "stroke-width": "1",
     "stroke-dasharray": "5",
+    "font-size": "12px",
     "style": "display: none;"
   },
   "#cults": {
@@ -106,7 +103,7 @@
     "opacity": "0.9",
     "fill": "#f1f8fe",
     "stroke": "#e8f0f6",
-    "stroke-width": "0.5",
+    "stroke-width": "0",
     "filter": "url(#dropShadow01)"
   },
   "#labels": {},
@@ -157,16 +154,16 @@
     "stroke-width": "2.5",
     "stroke-dasharray": "0 4 10 4",
     "stroke-linecap": "round",
+    "font-size": "13px",
     "font-family": "Almendra SC"
   },
   "#markers": {
     "style": "display: none;"
   },
   "#markets": {
-    "opacity": "1",
     "fill-opacity": "0.03",
     "stroke-width": "1",
-    "stroke-opacity": "0.8",
+    "stroke-opacity": "0.9",
     "style": "display: none;"
   },
   "#oceanLayers": {},
@@ -250,12 +247,13 @@
   "#ruler": {
     "stroke-width": "2",
     "stroke-dasharray": "10",
+    "font-size": "20px",
     "style": "display: none;"
   },
   "#scaleBar": {
     "opacity": "1",
     "fill": "#353540",
-    "font-size": "10"
+    "font-size": "10px"
   },
   "#scaleBarBack": {
     "opacity": "0.2",
@@ -275,6 +273,8 @@
     "style": "display: none;"
   },
   "#terrain": {
+    "stroke": "#5c5c70",
+    "stroke-width": "1",
     "style": "display: none;"
   },
   "#terrs": {
@@ -316,167 +316,167 @@
     "stroke-linecap": "butt",
     "style": "display: none;"
   },
-  "#burgIcons > g#capital": {
+  "#burgIcons > g#capital > [data-group=\"icons\"]": {
     "opacity": "1",
     "fill": "#ffffff",
     "fill-opacity": "0.7",
     "stroke": "#3e3e4b",
     "stroke-width": "1",
     "stroke-linecap": "butt",
-    "font-size": "2",
-    "data-icon": "#icon-square"
+    "font-size": "2%",
+    "data-icon": "#burgs-atlas-square"
   },
-  "#burgIcons > g#city": {
+  "#burgIcons > g#city > [data-group=\"icons\"]": {
     "opacity": "1",
     "fill": "#ffffff",
     "fill-opacity": "0.7",
     "stroke": "#3e3e4b",
     "stroke-width": "1",
     "stroke-linecap": "butt",
-    "font-size": "1.5",
-    "data-icon": "#icon-circle"
+    "font-size": "1.5%",
+    "data-icon": "#burgs-atlas-circle"
   },
-  "#burgIcons > g#town": {
+  "#burgIcons > g#town > [data-group=\"icons\"]": {
     "opacity": "1",
     "fill": "#ffffff",
     "fill-opacity": "0.7",
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
     "stroke-linecap": "butt",
-    "font-size": "1",
-    "data-icon": "#icon-circle"
+    "font-size": "1%",
+    "data-icon": "#burgs-atlas-circle"
   },
-  "#burgIcons > g#village": {
+  "#burgIcons > g#village > [data-group=\"icons\"]": {
     "opacity": "1",
     "fill": "#ffffff",
     "fill-opacity": "0.7",
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
     "stroke-linecap": "butt",
-    "font-size": "0.7",
-    "data-icon": "#icon-circle"
+    "font-size": "0.7%",
+    "data-icon": "#burgs-atlas-circle"
   },
-  "#burgIcons > g#hamlet": {
+  "#burgIcons > g#hamlet > [data-group=\"icons\"]": {
     "opacity": "1",
     "fill": "#ffffff",
     "fill-opacity": "0.7",
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
     "stroke-linecap": "butt",
-    "font-size": "0.5",
-    "data-icon": "#icon-circle"
+    "font-size": "0.5%",
+    "data-icon": "#burgs-atlas-circle"
   },
-  "#burgIcons > g#fort": {
-    "opacity": "1",
-    "fill": "#ffffff",
-    "fill-opacity": "0.7",
-    "stroke": "#3e3e4b",
-    "stroke-width": "1",
-    "stroke-linecap": "butt",
-    "font-size": "0.7",
-    "data-icon": "#icon-square"
-  },
-  "#burgIcons > g#monastery": {
+  "#burgIcons > g#fort > [data-group=\"icons\"]": {
     "opacity": "1",
     "fill": "#ffffff",
     "fill-opacity": "0.7",
     "stroke": "#3e3e4b",
     "stroke-width": "1",
     "stroke-linecap": "butt",
-    "font-size": "0.7",
-    "data-icon": "#icon-cross"
+    "font-size": "0.7%",
+    "data-icon": "#burgs-atlas-square"
   },
-  "#burgIcons > g#caravanserai": {
+  "#burgIcons > g#monastery > [data-group=\"icons\"]": {
     "opacity": "1",
     "fill": "#ffffff",
     "fill-opacity": "0.7",
     "stroke": "#3e3e4b",
     "stroke-width": "1",
     "stroke-linecap": "butt",
-    "font-size": "0.7",
-    "data-icon": "#icon-triangle"
+    "font-size": "0.7%",
+    "data-icon": "#burgs-atlas-cross"
   },
-  "#burgIcons > g#trading_post": {
+  "#burgIcons > g#caravanserai > [data-group=\"icons\"]": {
     "opacity": "1",
     "fill": "#ffffff",
     "fill-opacity": "0.7",
     "stroke": "#3e3e4b",
     "stroke-width": "1",
     "stroke-linecap": "butt",
-    "font-size": "0.7",
-    "data-icon": "#icon-triangle"
+    "font-size": "0.7%",
+    "data-icon": "#burgs-atlas-triangle"
   },
-  "#anchors > g#capital": {
+  "#burgIcons > g#trading_post > [data-group=\"icons\"]": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "fill-opacity": "0.7",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1",
+    "stroke-linecap": "butt",
+    "font-size": "0.7%",
+    "data-icon": "#burgs-atlas-triangle"
+  },
+  "#burgIcons > g#capital > [data-group=\"anchors\"]": {
     "opacity": "1",
     "fill": "#ffffff",
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
-    "font-size": "1.9",
-    "data-icon": "#icon-anchor"
+    "font-size": "1.9%",
+    "data-icon": "#ports-anchor"
   },
-  "#anchors > g#city": {
+  "#burgIcons > g#city > [data-group=\"anchors\"]": {
     "opacity": "1",
     "fill": "#ffffff",
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
-    "font-size": "1.5",
-    "data-icon": "#icon-anchor"
+    "font-size": "1.5%",
+    "data-icon": "#ports-anchor"
   },
-  "#anchors > g#town": {
+  "#burgIcons > g#town > [data-group=\"anchors\"]": {
     "opacity": "1",
     "fill": "#ffffff",
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
-    "font-size": "1",
-    "data-icon": "#icon-anchor"
+    "font-size": "1%",
+    "data-icon": "#ports-anchor"
   },
-  "#anchors > g#village": {
+  "#burgIcons > g#village > [data-group=\"anchors\"]": {
     "opacity": "1",
     "fill": "#ffffff",
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
-    "font-size": "0.7",
-    "data-icon": "#icon-anchor"
+    "font-size": "0.7%",
+    "data-icon": "#ports-anchor"
   },
-  "#anchors > g#hamlet": {
+  "#burgIcons > g#hamlet > [data-group=\"anchors\"]": {
     "opacity": "1",
     "fill": "#ffffff",
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
-    "font-size": "0.5",
-    "data-icon": "#icon-anchor"
+    "font-size": "0.5%",
+    "data-icon": "#ports-anchor"
   },
-  "#anchors > g#fort": {
+  "#burgIcons > g#fort > [data-group=\"anchors\"]": {
     "opacity": "1",
     "fill": "#ffffff",
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
-    "font-size": "0.7",
-    "data-icon": "#icon-anchor"
+    "font-size": "0.7%",
+    "data-icon": "#ports-anchor"
   },
-  "#anchors > g#monastery": {
+  "#burgIcons > g#monastery > [data-group=\"anchors\"]": {
     "opacity": "1",
     "fill": "#ffffff",
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
-    "font-size": "0.7",
-    "data-icon": "#icon-anchor"
+    "font-size": "0.7%",
+    "data-icon": "#ports-anchor"
   },
-  "#anchors > g#caravanserai": {
+  "#burgIcons > g#caravanserai > [data-group=\"anchors\"]": {
     "opacity": "1",
     "fill": "#ffffff",
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
-    "font-size": "0.7",
-    "data-icon": "#icon-anchor"
+    "font-size": "0.7%",
+    "data-icon": "#ports-anchor"
   },
-  "#anchors > g#trading_post": {
+  "#burgIcons > g#trading_post > [data-group=\"anchors\"]": {
     "opacity": "1",
     "fill": "#ffffff",
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
-    "font-size": "0.7",
-    "data-icon": "#icon-anchor"
+    "font-size": "0.7%",
+    "data-icon": "#ports-anchor"
   },
   "#labels > [data-group=\"capital\"]": {
     "opacity": "1",

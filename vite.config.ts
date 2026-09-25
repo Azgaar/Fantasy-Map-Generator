@@ -21,7 +21,18 @@ export default ({ mode }: { mode: string }) => ({
   build: {
     outDir: mode === "electron" ? "../dist-electron/renderer" : "../dist",
     assetsDir: "./",
-    emptyOutDir: true // outDir sits outside root, so Vite would otherwise keep every past build's chunks
+    emptyOutDir: true, // outDir sits outside root, so Vite would otherwise keep every past build's chunks
+    rollupOptions: {
+      output: {
+        // icon-sets.ts loads each set's SVGs on demand; one chunk per set: relief sets are subdirectories
+        manualChunks(id: string) {
+          const path = id.match(/src\/assets\/icons\/(.+)\/[^/]+\.svg/)?.[1];
+          if (!path) return undefined;
+          const [family, set] = path.split("/");
+          return family === "relief" ? `icons-relief-${set}` : `icons-${family}`;
+        }
+      }
+    }
   },
   publicDir: "../public",
   resolve: {

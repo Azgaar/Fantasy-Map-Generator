@@ -13,7 +13,7 @@ returning a Promise**. Callers never write `import()` or `.then(m => …)`. An `
 registers an already-imported value so lazy vs eager is invisible to callers.
 
 Two buckets are built from the factory, each in its own layer's eager entry, and exposed on `window`
-(so legacy `public/modules/**/*.js` and inline `onclick` handlers can reach them, mirroring the old
+(so inline `onclick` handlers and the `window`-bridge code can reach them, mirroring the old
 `window.lazy`):
 
 Both buckets use the **same contract**: every registered module exports a single named object whose
@@ -56,7 +56,8 @@ exist at startup. They hold only loader thunks, so the eager cost is a few bytes
    Rollup sees the string literal inside `import()` and emits an independent chunk. Each entry keeps
    its exact resolved type, so call sites are fully typed and autocompleted.
 
-4. **Call it uniformly.** Migrated TS imports the bucket; legacy JS uses the `window` global:
+4. **Call it uniformly.** Migrated TS imports the bucket; other scripts reach the same bucket through
+   the `window` global:
 
    ```ts
    import { Controllers } from "@/controllers";
@@ -65,8 +66,6 @@ exist at startup. They hold only loader thunks, so the eager cost is a few bytes
    ```js
    window.Controllers.MarketOverview.open(id);
    ```
-
-5. **Delete the old `.js` file** from `public/modules/` once ported.
 
 ## Lazy vs eager is invisible to callers
 

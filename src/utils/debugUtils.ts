@@ -1,4 +1,5 @@
 import { curveBundle, line, max, min, select } from "d3";
+import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
 import type { Point } from "../generators/voronoi";
 import { C_12 } from "./colorUtils";
 import { normalize } from "./numberUtils";
@@ -28,7 +29,7 @@ export const drawCellsValue = (data: unknown[], points: Point[]): void => {
 export const drawPolygons = (data: number[], _terrs: any, grid: any): void => {
   const maximum: number = max(data) as number;
   const minimum: number = min(data) as number;
-  const scheme = window.getColorScheme(styles.heightmap.landHeights.options.scheme);
+  const scheme = HeightmapColorSchemes.get(styles.heightmap.groups.landHeights.options.scheme);
 
   data = data.map(d => 1 - normalize(d, minimum, maximum));
   select("#debug").selectAll("polygon").remove();
@@ -102,8 +103,6 @@ export const drawPath = (points: [number, number][], { color = "red", width = 0.
 
 declare global {
   interface Window {
-    getColorScheme: (name: string) => (t: number) => string;
-
     drawCellsValue: typeof drawCellsValue;
     drawPolygons: typeof drawPolygons;
     drawRouteConnections: typeof drawRouteConnections;

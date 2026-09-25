@@ -2,6 +2,7 @@
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { Pins } from "@/components/pins";
+import { updateGridSizeReadout } from "@/controllers/style-editor/controls";
 import { applyOption, ensureEl } from "../utils";
 import type { PromptOptions } from "../utils/commonUtils";
 
@@ -282,7 +283,7 @@ function askForCustomUnit(select: HTMLInputElement, kind: "distance" | "height")
 /** Everything measured in distance units: the scale bar and the grid size the Style tab reports */
 function redrawDistances(): void {
   Layers.draw("scaleBar");
-  calculateFriendlyGridSize();
+  updateGridSizeReadout();
 }
 
 function restoreDefaultUnits(): void {

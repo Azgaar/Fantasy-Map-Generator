@@ -3,6 +3,7 @@ import { AUTO_BURG_LIMIT } from "@/components/options-schema";
 import { Emblems } from "@/generators/emblems-generator";
 import type { BurgGroup } from "@/types/burg-groups";
 import type { Emblem } from "@/types/emblems";
+import type { IconSet } from "@/types/icons";
 import { safeParseJSON } from "@/utils/stringUtils";
 import { each, gauss, minmax, normalize, P, rn } from "../utils";
 import { type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
@@ -57,6 +58,13 @@ type PortCandidate = {
 };
 
 class BurgModule {
+  /** the burg icons (styled subdirectories included) and the port anchors, drawn around the anchor at
+   * 10 user units per em, so a `size` of 1 draws the plain circle 1em wide */
+  readonly iconSets = [
+    { id: "burgs", folder: "burgs", em: 10 },
+    { id: "ports", folder: "ports", em: 10 }
+  ] as const satisfies readonly IconSet[];
+
   generate() {
     const { cells } = pack;
 
@@ -493,12 +501,14 @@ class BurgModule {
   /** burg groups can exist without a style entry (the Burg Groups editor, presets that don't
    * list them) - without one the renderer falls back to the default group and edits never persist */
   ensureBurgGroupStyles(): void {
-    const { burgIcons, anchors } = styles.burgIcons;
-    const iconTemplate = burgIcons.groups.town || Object.values(burgIcons.groups)[0];
-    const anchorTemplate = anchors.groups.town || Object.values(anchors.groups)[0];
+    const { groups } = styles.burgIcons;
+    const template = groups.town || Object.values(groups)[0];
+    if (!template) return;
     for (const { name } of options.map.burgs.groups) {
-      if (!burgIcons.groups[name] && iconTemplate) burgIcons.groups[name] = structuredClone(iconTemplate);
-      if (!anchors.groups[name] && anchorTemplate) anchors.groups[name] = structuredClone(anchorTemplate);
+      const entry = groups[name] ?? structuredClone(template);
+      groups[name] = entry;
+      entry.groups.icons ??= structuredClone(template.groups.icons);
+      entry.groups.anchors ??= structuredClone(template.groups.anchors);
     }
   }
 
@@ -909,5 +919,7 @@ declare global {
 
 // biome-ignore lint/suspicious/noRedeclare: legacy seam
 export const Burgs = new BurgModule();
+
+export type BurgIconSetId = (typeof Burgs.iconSets)[number]["id"];
 
 window.Burgs = Burgs;

@@ -17,6 +17,7 @@ import {
   setModeHiddenColumns,
   type TableView
 } from "@/components/dialog/table";
+import { IconSets } from "@/components/icon-sets";
 import { Layers } from "@/components/layers";
 import { Notes } from "@/components/notes";
 import { clearMainTip, tip } from "@/components/tooltips";
@@ -83,7 +84,8 @@ const columns: EditorColumn<Good>[] = [
 const goodsTable = initEditorTable<Good>({ getData: getGoodsData, onUpdate: renderGoodsPage });
 
 /** With a good id, the Goods layer shows only that good */
-function open(goodId?: number) {
+function open(goodId?: number): void {
+  void IconSets.retry("goods");
   if (customization) return;
   filterState = dialogState.get(dialogId, "filters", () => ({ visibleTags: [] as string[] }));
   closeDialogs("#goodsEditor, .stable");
@@ -700,7 +702,7 @@ function removeGood(good: Good) {
 
     pack.goods = pack.goods.filter(g => g.i !== good.i);
     // custom icons live outside the map svg and are never saved with the pack, drop the orphan
-    if (good.icon.startsWith("good-custom-") && !pack.goods.some(g => g.icon === good.icon)) {
+    if (good.icon.startsWith(IconSets.customPrefix(Goods.iconSet.id)) && !pack.goods.some(g => g.icon === good.icon)) {
       document.getElementById(good.icon)?.remove();
     }
     Goods.sync();

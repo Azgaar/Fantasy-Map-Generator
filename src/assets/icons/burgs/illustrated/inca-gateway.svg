@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-5.1 -9.8 10.2 10.2">
+<g transform="scale(.25)" stroke-linecap="round" stroke-linejoin="round">
+<g transform="translate(-20 -38)">
+<circle cx="20" cy="20" r="17" fill="#e4d6b6" />
+<path d="M2 35Q20 32 38 35L33 37H7Z" fill="#8a8060" stroke="none" opacity=".5" />
+<path d="M3 34L5 23H13V34M27 34V23H35L37 34Z" />
+<path d="M10 34L13 10H27L30 34Z" />
+<path d="M12 10V7H28V10Z" fill="#9c927a" />
+<path d="M24 11H27L30 34H26Z" fill="#544c3c" stroke="none" opacity=".16" />
+<path d="M15 34L17 17H23L25 34Z" fill="#544c3c" />
+<path d="M12 15H27M11 22H16M24 22H28M10 29H15M25 29H29M4 28H10M30 28H36M7 24L8 28L6 33M33 24L32 28L34 33" fill="none" stroke-width=".8" />
+<path d="M14 12L12 29M14 8H24M6 25L5 30" fill="none" stroke="white" stroke-width=".5" opacity=".35" />
+</g>
+</g>
+</svg>
