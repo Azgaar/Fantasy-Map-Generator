@@ -109,6 +109,20 @@ their outline draws at `k` of the icon's weight instead of swallowing the shape.
 and accents, such as cattail heads and lava, as filled paths so they survive a zero width and a recolour.
 Presets set the width that restores each set's former linework: simple `1`, illustrated `1.2`, gray `0.4`.
 
+## Goods linework
+
+Every goods icon is drawn in a `0 0 100 100` frame with white bodies (`fill="#fff"`), unfilled linework
+(`fill="none"`), and rounded line caps and joins. Outlines and interior details are actual strokes that
+inherit both colour and width. Do not simulate lines with filled bands, doubled contours, or scaled
+stroke groups: a width of 2 must draw a 2-unit line throughout the set. Use simple silhouettes and sparse
+details that remain legible at marker size. Centre artwork in the frame; translation is safe because it
+does not change stroke weight. Keep the original source credits when redrawing an icon.
+
+The goods icons style sets the lines: `stroke` is their colour and `stroke-width` the circle outline, the icon
+lines drawn at 40% of it. `goodIconLines()` (`renderers/draw-goods.ts`) carries that width into the icon frame
+at the marker's proportions and writes both on every goods `<use>` — markers, burg plates and the interface,
+where `goodBadge(good)` draws a good on its circle — so a good looks the same wherever it is drawn.
+
 ## Editing artwork
 
 Every file is a plain, previewable SVG: a root `<svg xmlns="http://www.w3.org/2000/svg" viewBox="…">`
@@ -143,8 +157,10 @@ marker; `Icons.uses(id)` counts the references in each.
 `Icons.html(id)` draws an icon in the interface — editors, overviews, the picker: an inline svg boxing the
 icon in its own frame. Art takes a default paint (a burg's white fill and dark stroke) where no style colours
 it; a glyph takes the text colour. The icon picker (`controllers/icon-picker/`) takes only the current icon
-and a callback, offers one tab per source — Built-in, Emoji, Custom — and opens on the tab holding the
-current icon with its set expanded, else on Built-in.
+and a callback. Its header shows the selected icon, with Position, Replace and Remove when it is a custom
+icon, and a search over the built-in names; a side list holds the sources — Custom, Emoji & text, then each
+built-in set, a family's sets under its heading. It opens on the current icon's source, else on the first
+built-in set; a double click picks and applies.
 
 ## Authoring custom icons
 

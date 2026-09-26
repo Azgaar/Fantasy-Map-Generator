@@ -2,6 +2,7 @@ import { type Selection, select, zoom, zoomIdentity } from "d3";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Icons } from "@/components/icons";
 import { tip } from "@/components/tooltips";
+import { goodIconLines } from "@/renderers/draw-goods";
 import type { Good } from "../generators/goods-generator";
 import { ensureEl } from "../utils";
 import { C_12 } from "../utils/colorUtils";
@@ -763,7 +764,7 @@ function renderNodeContent(node: GraphNode, displayName: string): string {
   const textX = iconX + ICON_RADIUS + 5;
 
   return `<use href="${Icons.href(node.good.icon)}" x="${iconX - ICON_RADIUS}" y="${iconY - ICON_RADIUS}"
-    width="${ICON_RADIUS * 2}" height="${ICON_RADIUS * 2}"/>
+    width="${ICON_RADIUS * 2}" height="${ICON_RADIUS * 2}"${goodIconLines()}/>
   <text x="${textX}" y="${iconY - 2}" font-size="10" font-family="sans-serif"
     fill="#111" font-weight="600">${displayName}</text>
   <text x="${textX}" y="${iconY + 8}" font-size="8.5" font-family="sans-serif" fill="#888">🟡 ${node.good.value}</text>`;

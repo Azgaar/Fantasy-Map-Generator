@@ -51,12 +51,13 @@ test("an active picker can add and replace a picture", async () => {
   pictures.fromLink.mockResolvedValue(PICTURE);
   const onPick = vi.fn();
   IconPicker.open({ current: "glyph-58", onPick });
+  document.querySelector<HTMLElement>('#iconPicker nav [data-source="custom"]')!.click();
   document.querySelector<HTMLElement>('#iconPicker [data-action="link"]')!.click();
   await vi.waitFor(() => expect(onPick).toHaveBeenCalledOnce());
   const id = onPick.mock.calls[0][0];
   expect(CustomIcons.get(id)).toEqual({ id, ...PICTURE });
   pictures.fromLink.mockResolvedValue({ ...PICTURE, content: "https://example.com/replacement.png" });
-  document.querySelector<HTMLElement>(`[data-id="${id}"] [data-action="replace"]`)!.click();
+  document.querySelector<HTMLElement>('#iconPicker .currentActions [data-action="replace"]')!.click();
   document.querySelector<HTMLElement>('#iconPicker [data-action="link"]')!.click();
   await vi.waitFor(() => expect(CustomIcons.get(id)?.content).toBe("https://example.com/replacement.png"));
   expect(CustomIcons.all).toHaveLength(3);
@@ -69,6 +70,7 @@ test.each(["cancel", "reopen", "load map"])("a pending link cannot update the ma
   pictures.fromLink.mockReturnValue(pending.promise);
   const onPick = vi.fn();
   IconPicker.open({ current: "glyph-58", onPick });
+  document.querySelector<HTMLElement>('#iconPicker nav [data-source="custom"]')!.click();
   document.querySelector<HTMLElement>('#iconPicker [data-action="link"]')!.click();
   if (action === "cancel") press("iconPicker", "Cancel");
   else if (action === "reopen") IconPicker.open({ current: "glyph-59", onPick: vi.fn() });
@@ -84,7 +86,7 @@ test("a pending replacement cannot change an icon after cancellation", async () 
   const pending = deferred<typeof PICTURE>();
   pictures.fromLink.mockReturnValue(pending.promise);
   IconPicker.open({ current: "custom-a", onPick: vi.fn() });
-  document.querySelector<HTMLElement>('[data-id="custom-a"] [data-action="replace"]')!.click();
+  document.querySelector<HTMLElement>('#iconPicker .currentActions [data-action="replace"]')!.click();
   document.querySelector<HTMLElement>('#iconPicker [data-action="link"]')!.click();
   press("iconPicker", "Cancel");
   pending.resolve({ ...PICTURE, content: "https://example.com/replacement.png" });

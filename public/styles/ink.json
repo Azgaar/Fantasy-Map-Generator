@@ -507,6 +507,7 @@
       "goodsIcons": {
         "attrs": {
           "opacity": 1,
+          "stroke": "#000000",
           "stroke-width": 0.3,
           "filter": "url(#dropShadow01)"
         },

@@ -43,8 +43,8 @@ stores it the same way: a bare symbol id.
 - Every Custom icon can be **positioned** — zoomed and panned inside its frame, or fitted automatically
   to its visible content — and its picture can be **replaced**; every slot that uses it follows.
 - Uploaded raster images are downscaled to 256 px on the long side, so a phone photo does not bloat a map.
-- One **icon picker** with three tabs — **Built-in**, **Emoji**, **Custom** — replaces the three dialogs.
-  It opens on the tab holding the current icon, else on Built-in. The Custom tab points
+- One **icon picker** with a source per Icon Set, **Emoji & text** and **Custom** — replaces the three dialogs.
+  It opens on the current icon's source, else on the first built-in set. The Custom source points
   authors to open icon sources.
 - Old maps open unchanged: goods uploads and inline `data:` or URL images become Custom icons (one per
   distinct image), emoji and text become glyph references, and `#`-prefixed burg icon ids lose the `#`.
@@ -216,14 +216,17 @@ stores it the same way: a bare symbol id.
 
 - One controller replaces the Icon Selector and the burg/port icon dialog. A caller passes only the current
   reference and a callback: the picker has no per-slot variations.
-- Tabs:
-  - **Built-in**: every Icon Set as a section, grouped by its subdirectories. The current icon's set is expanded;
-    the others are collapsed headings whose chunk loads when opened. A relief set shows one variant per
-    type.
-  - **Emoji**: the emoji grid and a free-text field; either yields a glyph reference.
-  - **Custom**: the link field first, upload buttons, then the map's Custom icons with Position, Replace
-    and Remove each, and a pointer to open icon sources.
-- The picker opens on the tab holding the current icon, else on Built-in. The current icon is pressed.
+- A header shows the selected icon — its preview, name and source — with Position, Replace and Remove
+  when it is a Custom icon, and a search that finds built-in icons by name across every set.
+- A side list holds the sources, one shown at a time in a grid of unlabelled tiles (the name is the tile's
+  tip):
+  - **Custom**: the link field first, upload buttons, then the map's Custom icons, and a pointer to open
+    icon sources.
+  - **Emoji & text**: a free-text field and the emoji grid; either yields a glyph reference.
+  - **Built-in**: each Icon Set, a family's sets (relief) under its heading; a set's chunk loads when it is
+    shown, and its icons are grouped by subdirectory. A relief set shows one variant per type.
+- The picker opens on the current icon's source, else on the first built-in set, with the current icon
+  pressed and scrolled into view. A double click picks and applies.
 - A positioner dialog in the same controller: a preview framed as on the map with the frame's surroundings
   dimmed, previews at map sizes, a zoom slider and wheel zoom, drag to pan, Fit, Apply and Cancel.
 - Previews come from one shared function that boxes every icon in its own frame (anchored art keeps its
@@ -288,8 +291,9 @@ All three steps are implemented.
   `data:` URI end up pointing at one icon; image URLs become icons; emoji and text become glyph
   references; burg style and preset ids lose the `#`. Prior art: the 1.154 auto-update and
   `styles-legacy` tests.
-- **Picker:** the opening tab follows the current icon, else Built-in; the current icon's set is expanded and
-  others are collapsed; the selection is pressed; Custom tiles carry their actions. Prior art: the
+- **Picker:** the opening source follows the current icon, else the first built-in set; other sets draw
+  nothing; the selection is pressed and named in the header, which carries a Custom icon's actions; search
+  finds icons across sets. Prior art: the
   style-editor dialog DOM test for the burg icon choices, which moves here.
 - The full unit suite, `tsc` and Biome must pass; the upload, positioning, replace, New Map carry-over,
   save and reload, glyph sizing on migrated markers and marker export paths are

@@ -70,6 +70,24 @@ test("all relief artwork has linework inheriting stroke width and color while al
   }
 });
 
+test("goods art shares one frame and true strokes that inherit colour and width", () => {
+  for (const [file, source] of Object.entries(directory(Goods.iconSet.folder))) {
+    expect(source, file).toMatch(/^<svg [^>]*viewBox="0 0 100 100"/);
+    expect(source, file).toMatch(/^<svg [^>]*\bfill="none"/);
+    expect(source, file).toMatch(/stroke-linecap="round"/);
+    expect(source, file).toMatch(/stroke-linejoin="round"/);
+    expect(source, file).not.toMatch(/\btransform="[^"]*scale\(/);
+    for (const match of source.matchAll(/\bfill="([^"]+)"/g)) expect(match[1], file).toMatch(/^(none|#fff)$/);
+    expect(source, file).not.toMatch(/\bstroke-width=/);
+    for (const match of source.matchAll(/\bstroke="([^"]+)"/g)) expect(match[1], file).toBe("none");
+    const shapes = source.match(/<(path|circle|rect)\b[^>]*>/g) ?? [];
+    expect(
+      shapes.some(shape => !shape.includes('stroke="none"')),
+      `${file} has no lined shape`
+    ).toBe(true);
+  }
+});
+
 test("anchored art keeps its anchor-relative frame and may overflow it", () => {
   expect(IconSets.anchorSymbol('<symbol id="burgs-x" viewBox="-6 -6 12 12"><path d="M0 0"/></symbol>')).toBe(
     '<symbol overflow="visible" id="burgs-x" viewBox="-6 -6 12 12"><path d="M0 0"/></symbol>'

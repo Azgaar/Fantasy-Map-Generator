@@ -15,6 +15,7 @@ import { Notes } from "@/components/notes";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { goodBadge } from "@/renderers/draw-goods";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { downloadFile, getFileName } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
@@ -188,15 +189,13 @@ function renderMarketOverviewPage(view: TableView<MarketGoodRow>): void {
 
   const lines = view.rows.map(row => {
     const good = Goods.get(row.goodId)!;
-    const stroke = Goods.getStroke(good.color);
 
     return /*html*/ `<div class="states marketGood"
       data-good="${good.name}"
       data-stock="${rn(row.stock, 2)}"
       data-price="${rn(row.price, 2)}">
       <svg data-col="icon" data-tip="Good icon" width="2em" height="2em" class="goodIcon">
-        <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${stroke}"/>
-        <use href="${Icons.href(good.icon)}" x="10%" y="10%" width="80%" height="80%"/>
+        ${goodBadge(good)}
       </svg>
       <div data-col="good" data-tip="Good name" class="goodName">${good.name}</div>
       <div data-col="stock" data-tip="Good stock" class="marketGoodStock">${rn(row.stock, 2)}</div>

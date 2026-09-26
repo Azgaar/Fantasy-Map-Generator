@@ -115,6 +115,19 @@ test("style options are applied on the next frame, without rebuilding the scene"
   expect(getCellProduction).toHaveBeenCalledTimes(2);
 });
 
+test("icon lines follow the style at the marker's proportions, on markers and plates alike", async () => {
+  getBurgProduction.mockImplementation(() => ({ 1: 1 }));
+  styles.goods.groups.goodsIcons.attrs.stroke = "#123456";
+  styles.goods.groups.goodsIcons.attrs["stroke-width"] = 0.3;
+  styles.goods.groups.goodsIcons.options.size = 6;
+  await drawGoods();
+  for (const use of document.querySelectorAll("#goodsIcons use, #goodsBurgs use")) {
+    expect(use.getAttribute("stroke")).toBe("#123456");
+    expect(use.getAttribute("stroke-width")).toBe("2"); // 40% of 0.3 map units, in a 100-unit frame 6 units wide
+  }
+  expect(document.querySelectorAll("#goodsBurgs use")).not.toHaveLength(0);
+});
+
 test("burg plates keep the three biggest producers, biggest first", async () => {
   getBurgProduction.mockImplementation(() => ({ 1: 1, 2: 9 }));
   await drawGoods();

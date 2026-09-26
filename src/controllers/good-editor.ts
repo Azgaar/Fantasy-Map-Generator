@@ -3,6 +3,7 @@ import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
+import { goodIconLines } from "@/renderers/draw-goods";
 import { capitalize, rn } from "@/utils";
 import { CULTURE_TYPES } from "../generators/cultures-generator";
 import type { DemandCategory, Good } from "../generators/goods-generator";
@@ -246,7 +247,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
             <button id="newGoodIcon" type="button" class="ge-icon-select" data-tip="Select the good's icon">
               <svg class="ge-icon-preview" width="2em" height="2em">
                 <circle id="newGoodIconCircle" cx="50%" cy="50%" r="42%" fill="${editedGood?.color || "#ff5959"}" stroke="${Goods.getStroke(editedGood?.color || "#ff5959")}"/>
-                <use id="newGoodIconPreview" href="${escapeHtml(Icons.href(icon))}" x="10%" y="10%" width="80%" height="80%"/>
+                <use id="newGoodIconPreview" href="${escapeHtml(Icons.href(icon))}" x="10%" y="10%" width="80%" height="80%"${goodIconLines()}/>
               </svg>
               <span id="newGoodIconName">${escapeHtml(Icons.name(icon))}</span>
             </button>

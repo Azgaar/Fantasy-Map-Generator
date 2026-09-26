@@ -1,4 +1,4 @@
-// Browser-mode tests (vitest.browser.config.ts): the tabs and tiles the icon picker opens with
+// Browser-mode tests (vitest.browser.config.ts): the sources and tiles the icon picker opens with
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { CustomIcons, Icons } from "@/components/icons";
 import "@/generators/relief-generator"; // the models own the set definitions the picker lists
@@ -32,89 +32,124 @@ const open = (current: string, onPick = vi.fn()) => {
   return {
     dialog,
     onPick,
-    tab: () => dialog.querySelector<HTMLElement>(".tabs .pressed")?.dataset.tab,
+    source: () => dialog.querySelector<HTMLElement>("nav .active")?.dataset.source,
+    show: (source: string) => dialog.querySelector<HTMLElement>(`nav [data-source="${source}"]`)!.click(),
     pressed: () => [...dialog.querySelectorAll<HTMLElement>(".choices .pressed")].map(button => button.dataset.icon)
   };
 };
 
-test("a set icon opens Built-in on its own set, grouped by style, with the icon pressed", () => {
-  const { dialog, tab, pressed } = open("burgs-watabou-city");
-  expect(tab()).toBe("builtin");
-  const burgs = dialog.querySelector<HTMLDetailsElement>('details[data-set="burgs"]')!;
-  expect(burgs.open).toBe(true);
-  expect([...burgs.querySelectorAll("h4")].map(h => h.textContent)).toEqual(["Atlas", "Illustrated", "Watabou"]);
-  expect(dialog.querySelector<HTMLDetailsElement>('details[data-set="goods"]')!.open).toBe(false);
-  expect(dialog.querySelector('details[data-set="goods"] .choices')).toBeNull(); // unopened sets draw nothing
+test("a set icon opens on its own set, grouped by style, with the icon pressed and named", () => {
+  const { dialog, source, pressed } = open("burgs-watabou-city");
+  expect(source()).toBe("burgs");
+  expect([...dialog.querySelectorAll(".panel h4")].map(h => h.textContent)).toEqual([
+    "Atlas",
+    "Illustrated",
+    "Watabou"
+  ]);
+  expect(dialog.querySelector('[data-icon^="goods-"]')).toBeNull(); // other sets draw nothing until shown
   expect(pressed()).toEqual(["burgs-watabou-city"]);
+  expect(dialog.querySelector(".current .name")!.textContent).toBe("City");
+  expect(dialog.querySelector(".current .from")!.textContent).toBe("Burgs");
 });
 
-test("a slot opens where its current icon is: a glyph on Emoji, a custom icon on Custom", () => {
+test("the sources list the map's icons, glyphs, then each built-in set, relief sets under their family", () => {
+  const { dialog } = open("");
+  const items = [...dialog.querySelectorAll<HTMLElement>("nav h5, nav [data-source]")].map(
+    item => item.dataset.source ?? `# ${item.textContent}`
+  );
+  expect(items.slice(0, 3)).toEqual(["custom", "glyph", "# Built-in"]);
+  expect(items).toContain("# Relief");
+  expect(items.indexOf("relief-simple")).toBeGreaterThan(items.indexOf("# Relief"));
+});
+
+test("a slot opens where its current icon is: a glyph on Emoji & text, a custom icon on Custom", () => {
   options.map.customIcons = [
     { id: "custom-1a2b3c4d", kind: "image", content: "https://a.b/c.png", viewBox: "0 0 100 100" }
   ];
   const glyph = open("glyph-58-49-56");
-  expect(glyph.tab()).toBe("emoji");
+  expect(glyph.source()).toBe("glyph");
   expect(glyph.dialog.querySelector<HTMLInputElement>(".glyphText input")!.value).toBe("XIV");
 
   const custom = open("custom-1a2b3c4d");
-  expect(custom.tab()).toBe("custom");
+  expect(custom.source()).toBe("custom");
   expect(custom.pressed()).toEqual(["custom-1a2b3c4d"]);
 
-  expect(open("").tab()).toBe("builtin"); // no icon yet
+  const none = open("");
+  expect(none.source()).toBe("burgs"); // no icon yet: the first built-in set
+  expect(none.dialog.querySelector(".current .name")!.textContent).toBe("None");
 });
 
-test("picking presses the tile and hands its reference back; typed text is a glyph", () => {
-  const { dialog, onPick, pressed } = open("goods-wood");
-  dialog.querySelector<HTMLElement>('details[data-set="goods"] button[data-icon="goods-iron"]')!.click();
+test("picking presses the tile, names it in the header and hands its reference back; typed text is a glyph", () => {
+  const { dialog, onPick, pressed, show } = open("goods-wood");
+  dialog.querySelector<HTMLElement>('button[data-icon="goods-iron"]')!.click();
   expect(onPick).toHaveBeenLastCalledWith("goods-iron");
   expect(pressed()).toEqual(["goods-iron"]);
+  expect(dialog.querySelector(".current .name")!.textContent).toBe("Iron");
 
+  show("glyph");
   const input = dialog.querySelector<HTMLInputElement>(".glyphText input")!;
   input.value = "XIV";
-  input.dispatchEvent(new Event("input"));
+  input.dispatchEvent(new Event("input", { bubbles: true }));
   expect(onPick).toHaveBeenLastCalledWith("glyph-58-49-56");
 });
 
-test("a relief set offers one variant per type once opened", () => {
-  const { dialog } = open("goods-wood");
-  const relief = dialog.querySelector<HTMLDetailsElement>('details[data-set="relief-simple"]')!;
-  relief.open = true;
-  relief.dispatchEvent(new Event("toggle"));
-  const tiles = [...relief.querySelectorAll<HTMLElement>("button[data-icon]")].map(button => button.dataset.icon);
+test("a relief set offers one variant per type", () => {
+  const { dialog, show } = open("goods-wood");
+  show("relief-simple");
+  const tiles = [...dialog.querySelectorAll<HTMLElement>(".panel [data-icon]")].map(button => button.dataset.icon);
   expect(tiles).toHaveLength(Relief.types.length);
   expect(tiles).toContain("relief-simple-mount-1");
 });
 
+test("search finds built-in icons by name across the sets, and clearing it returns to the source", () => {
+  const { dialog, source } = open("goods-wood");
+  const search = dialog.querySelector<HTMLInputElement>(".search")!;
+  search.value = "anchor";
+  search.dispatchEvent(new Event("input"));
+  expect(source()).toBeUndefined();
+  expect([...dialog.querySelectorAll<HTMLElement>(".panel [data-icon]")].map(b => b.dataset.icon)).toEqual([
+    "ports-anchor"
+  ]);
+  search.value = "no such icon";
+  search.dispatchEvent(new Event("input"));
+  expect(dialog.querySelector(".panel .empty")).not.toBeNull();
+  search.value = "";
+  search.dispatchEvent(new Event("input"));
+  expect(source()).toBe("goods");
+});
+
 const LINKED = { kind: "image", content: "https://a.b/c.png", viewBox: "0 0 100 100" } as const;
 
-test("the Custom tab offers the link field first, then upload, and each icon its actions", () => {
+test("the Custom source offers the link field first, then upload; a custom icon's actions are in the header", () => {
   options.map.customIcons = [{ id: "custom-1a2b3c4d", ...LINKED }];
   const { dialog } = open("custom-1a2b3c4d");
-  const panel = dialog.querySelector('[data-panel="custom"]')!;
-  const controls = [...panel.querySelectorAll(".customAdd input, .customAdd button")].map(
+  const controls = [...dialog.querySelectorAll(".customAdd input, .customAdd button")].map(
     element => (element as HTMLElement).dataset.action ?? element.tagName
   );
   expect(controls).toEqual(["INPUT", "link", "upload"]);
-  const actions = [...panel.querySelectorAll<HTMLElement>(".customTile [data-action]")].map(
-    span => span.dataset.action
+  const actions = [...dialog.querySelectorAll<HTMLElement>(".currentActions [data-action]")].map(
+    button => button.dataset.action
   );
   expect(actions).toEqual(["position", "replace", "remove"]);
-  expect(panel.querySelectorAll(".sources a").length).toBeGreaterThan(0);
+  expect(dialog.querySelectorAll(".note a").length).toBeGreaterThan(0);
+  expect(open("goods-wood").dialog.querySelector(".currentActions")).toBeNull(); // a built-in icon has none
 });
 
 test("a linked picture becomes a new custom icon and is picked; replacing keeps the id", async () => {
   pictures.fromLink.mockResolvedValue(LINKED);
-  const { dialog, onPick } = open("");
+  const { dialog, onPick, show } = open("");
+  show("custom");
   dialog.querySelector<HTMLInputElement>(".customAdd input")!.value = "https://a.b/c.png";
   dialog.querySelector<HTMLElement>('[data-action="link"]')!.click();
   await vi.waitFor(() => expect(onPick).toHaveBeenCalled());
   const [added] = CustomIcons.all;
   expect(onPick).toHaveBeenLastCalledWith(added.id);
   expect(document.getElementById(added.id)?.tagName).toBe("symbol");
-  expect(dialog.querySelectorAll(".customTile")).toHaveLength(1);
+  expect(dialog.querySelectorAll(".panel [data-icon]")).toHaveLength(1);
+  expect(dialog.querySelector('nav [data-source="custom"] small')!.textContent).toBe("1");
 
   pictures.fromLink.mockResolvedValue({ ...LINKED, content: "https://a.b/d.png" });
-  dialog.querySelector<HTMLElement>('.customTile [data-action="replace"]')!.click();
+  dialog.querySelector<HTMLElement>('.currentActions [data-action="replace"]')!.click();
   expect(dialog.querySelector<HTMLElement>(".replacing")!.hidden).toBe(false);
   dialog.querySelector<HTMLElement>('[data-action="link"]')!.click();
   await vi.waitFor(() => expect(CustomIcons.get(added.id)?.content).toBe("https://a.b/d.png"));
@@ -126,9 +161,10 @@ test("removing tells how many slots use the icon, and removes it once confirmed"
   options.map.customIcons = [{ id: "custom-1a2b3c4d", ...LINKED }];
   vi.spyOn(Icons, "uses").mockReturnValue({ marker: 12, good: 1 });
   const { dialog } = open("custom-1a2b3c4d");
-  dialog.querySelector<HTMLElement>('.customTile [data-action="remove"]')!.click();
+  dialog.querySelector<HTMLElement>('.currentActions [data-action="remove"]')!.click();
   expect(document.getElementById("alertMessage")!.textContent).toContain("12 markers, 1 good");
   confirm.onConfirm?.();
   expect(CustomIcons.all).toEqual([]);
-  expect(dialog.querySelector(".customTile")).toBeNull();
+  expect(dialog.querySelector(".panel [data-icon]")).toBeNull();
+  expect(dialog.querySelector(".currentActions")).toBeNull();
 });
