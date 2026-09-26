@@ -3,8 +3,12 @@ import { describe, expect, it, vi } from "vitest";
 
 // fonts populates the font selector at import time, which needs the real app dom
 vi.mock("@/services/fonts", () => ({ getUsedFonts: vi.fn(), loadFontsAsDataURI: vi.fn() }));
+vi.mock("@/utils", async original => ({ ...(await original<typeof import("@/utils")>()), getBase64: vi.fn() }));
 
-import { flattenSymbolReferences, relocateRootFilter } from "./export";
+import "@/generators/relief-generator"; // the models own the set namespaces a custom icon id is told apart from
+import "@/generators/burgs-generator";
+import "@/generators/goods-generator";
+import { flattenSymbolReferences, inlineLinkedImages, relocateRootFilter } from "./export";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -189,5 +193,27 @@ describe("flattenSymbolReferences", () => {
     flattenSymbolReferences(svg);
     expect(use.getAttribute("x")).toBe("5");
     expect(use.getAttribute("transform")).toBeNull();
+  });
+});
+
+describe("inlineLinkedImages", () => {
+  it("inlines linked custom icons the host serves and drops those it does not, leaving other images alone", async () => {
+    const { getBase64 } = await import("@/utils");
+    const svg = document.createElementNS(SVG_NS, "svg");
+    svg.innerHTML = `<defs>
+        <symbol id="custom-a"><image href="https://ok.test/a.png"/></symbol>
+        <symbol id="custom-b"><image href="https://blocked.test/b.png"/></symbol>
+        <symbol id="custom-c"><image href="data:image/png;base64,AAAA"/></symbol>
+        <symbol id="goods-wood"><image href="https://ok.test/a.png"/></symbol>
+      </defs>`;
+    vi.mocked(getBase64).mockImplementation((url, callback) =>
+      callback(url.startsWith("https://ok") ? "data:image/png;base64,OK" : null)
+    );
+
+    await inlineLinkedImages(svg);
+    expect(svg.querySelector("#custom-a image")?.getAttribute("href")).toBe("data:image/png;base64,OK");
+    expect(svg.querySelector("#custom-b image")).toBeNull();
+    expect(svg.querySelector("#custom-c image")?.getAttribute("href")).toBe("data:image/png;base64,AAAA");
+    expect(svg.querySelector("#goods-wood image")?.getAttribute("href")).toBe("https://ok.test/a.png");
   });
 });

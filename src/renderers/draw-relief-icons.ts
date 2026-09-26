@@ -1,4 +1,4 @@
-import { IconSets } from "@/components/icon-sets";
+import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import type { ReliefIcon } from "@/generators/relief-generator";
 import { ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
@@ -11,7 +11,7 @@ export async function drawRelief(): Promise<void> {
   TIME && console.time("drawRelief");
   if (!pack.relief?.length) Relief.generate();
   isDrawn = true;
-  await IconSets.loadAll(Relief.requiredIconSets(pack.relief, styles.relief.options.set));
+  await Icons.loadAll(Relief.requiredIconSets(pack.relief, styles.relief.options.set));
   layer.render();
   TIME && console.timeEnd("drawRelief");
 }

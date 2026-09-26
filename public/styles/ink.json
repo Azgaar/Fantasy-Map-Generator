@@ -48,7 +48,7 @@
             },
             "options": {
               "size": 2.2,
-              "icon": "#burgs-atlas-circled"
+              "icon": "burgs-atlas-circled"
             }
           },
           "anchors": {
@@ -66,7 +66,7 @@
             },
             "options": {
               "size": 1.6,
-              "icon": "#ports-anchor"
+              "icon": "ports-anchor"
             }
           }
         }
@@ -88,7 +88,7 @@
             },
             "options": {
               "size": 1.4,
-              "icon": "#burgs-atlas-circle"
+              "icon": "burgs-atlas-circle"
             }
           },
           "anchors": {
@@ -106,7 +106,7 @@
             },
             "options": {
               "size": 1.3,
-              "icon": "#ports-anchor"
+              "icon": "ports-anchor"
             }
           }
         }
@@ -128,7 +128,7 @@
             },
             "options": {
               "size": 1.1,
-              "icon": "#burgs-atlas-circle"
+              "icon": "burgs-atlas-circle"
             }
           },
           "anchors": {
@@ -146,7 +146,7 @@
             },
             "options": {
               "size": 1,
-              "icon": "#ports-anchor"
+              "icon": "ports-anchor"
             }
           }
         }
@@ -168,7 +168,7 @@
             },
             "options": {
               "size": 0.8,
-              "icon": "#burgs-atlas-circle"
+              "icon": "burgs-atlas-circle"
             }
           },
           "anchors": {
@@ -186,7 +186,7 @@
             },
             "options": {
               "size": 0.7,
-              "icon": "#ports-anchor"
+              "icon": "ports-anchor"
             }
           }
         }
@@ -208,7 +208,7 @@
             },
             "options": {
               "size": 0.6,
-              "icon": "#burgs-atlas-circle"
+              "icon": "burgs-atlas-circle"
             }
           },
           "anchors": {
@@ -226,7 +226,7 @@
             },
             "options": {
               "size": 0.5,
-              "icon": "#ports-anchor"
+              "icon": "ports-anchor"
             }
           }
         }
@@ -248,7 +248,7 @@
             },
             "options": {
               "size": 0.9,
-              "icon": "#burgs-atlas-square"
+              "icon": "burgs-atlas-square"
             }
           },
           "anchors": {
@@ -266,7 +266,7 @@
             },
             "options": {
               "size": 0.7,
-              "icon": "#ports-anchor"
+              "icon": "ports-anchor"
             }
           }
         }
@@ -288,7 +288,7 @@
             },
             "options": {
               "size": 0.9,
-              "icon": "#burgs-atlas-cross"
+              "icon": "burgs-atlas-cross"
             }
           },
           "anchors": {
@@ -306,7 +306,7 @@
             },
             "options": {
               "size": 0.7,
-              "icon": "#ports-anchor"
+              "icon": "ports-anchor"
             }
           }
         }
@@ -328,7 +328,7 @@
             },
             "options": {
               "size": 0.9,
-              "icon": "#burgs-atlas-triangle"
+              "icon": "burgs-atlas-triangle"
             }
           },
           "anchors": {
@@ -346,7 +346,7 @@
             },
             "options": {
               "size": 0.7,
-              "icon": "#ports-anchor"
+              "icon": "ports-anchor"
             }
           }
         }
@@ -368,7 +368,7 @@
             },
             "options": {
               "size": 0.9,
-              "icon": "#burgs-atlas-triangle"
+              "icon": "burgs-atlas-triangle"
             }
           },
           "anchors": {
@@ -386,7 +386,7 @@
             },
             "options": {
               "size": 0.7,
-              "icon": "#ports-anchor"
+              "icon": "ports-anchor"
             }
           }
         }
@@ -1111,7 +1111,7 @@
     "options": {
       "size": 3,
       "iconSize": 5,
-      "icon": "⚖️"
+      "icon": "glyph-2696-fe0f"
     }
   },
   "military": {

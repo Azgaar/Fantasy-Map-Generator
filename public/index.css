@@ -149,7 +149,7 @@ a {
 }
 
 #markets > g > path,
-#markets > g > text {
+#markets > g > use {
   user-select: none;
   pointer-events: none;
 }
@@ -202,8 +202,10 @@ t,
   fill-opacity: 1;
 }
 
-#armies text.regimentIcon {
-  font-size: 0.8em;
+#armies use.regimentIcon {
+  pointer-events: none;
+  fill: #fff;
+  text-shadow: 0 0 4px #000;
 }
 
 #statesHalo {

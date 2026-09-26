@@ -9,7 +9,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
-import { IconSets } from "@/components/icon-sets";
+import { Icons } from "@/components/icons";
 import { tip } from "@/components/tooltips";
 import { downloadFile, getFileName } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
@@ -67,7 +67,7 @@ const marketDealsTable = initEditorTable<Deal>({
 });
 
 function open(marketId: number): void {
-  void IconSets.retry("goods");
+  void Icons.retry("goods");
   const market = Markets.get(marketId);
   if (!market) {
     tip("Invalid market. The selected market does not exist", true, "error", 5000);
@@ -208,7 +208,7 @@ function renderDealLine(deal: Deal): string {
   return /* html */ `<div class="states marketDeal" data-id="${deal.i}" data-good="${good.name}" data-direction="${direction}" data-units="${rn(deal.units, 2)}" data-counterparty="${counterparty.type}_${party?.name}" data-income="${dealNet}">
       <svg data-col="icon" data-tip="Good icon" width="1.3em" height="1.3em" class="goodIcon">
         <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${Goods.getStroke(good.color)}"/>
-        <use href="#${good.icon}" x="10%" y="10%" width="80%" height="80%"/>
+        <use href="${Icons.href(good.icon)}" x="10%" y="10%" width="80%" height="80%"/>
       </svg>
       <div data-col="good" data-tip="Good name" class="goodName">${good.name}</div>
       <div data-col="direction"><span class="marketBadge" style="background:${backColor}; color:${incomeColor}">${direction.toUpperCase()}</span></div>

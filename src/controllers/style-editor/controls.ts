@@ -1,8 +1,9 @@
 // The controls the style editor adds to SchemaForm: each owns its option source and any dialog it opens,
 // and the composed ones call `set` with the whole string the schema format expects
+
 import { interpolateRgb, interpolateRgbBasis, scaleSequential } from "d3";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
-import { IconSets } from "@/components/icon-sets";
+import { Icons } from "@/components/icons";
 import {
   type ControlFactory,
   type FieldSpec,
@@ -21,11 +22,10 @@ import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
 import { getLabelsIndex } from "@/renderers/labels/label-data";
 import { addGoogleFont, addLocalFont, addWebFont } from "@/services/fonts";
 import type { StandardControl, StyleControl } from "@/types/styles";
-import { ensureEl, findEl, rn, toHEX } from "@/utils";
-import { BURG_ICON_DIALOG, FONT_DIALOG, openBurgIconDialog, openFontDialog, paintBurgIconDialog } from "./dialogs";
-import { burgIconPreview } from "./icon-preview";
+import { ensureEl, escapeHtml, findEl, rn, toHEX } from "@/utils";
+import { FONT_DIALOG, openFontDialog } from "./dialogs";
 
-const OPEN_DIALOGS = ["addFontDialog", "textureUrlDialog", "heightmapSchemeDialog", BURG_ICON_DIALOG, FONT_DIALOG];
+const OPEN_DIALOGS = ["addFontDialog", "textureUrlDialog", "heightmapSchemeDialog", "iconPicker", FONT_DIALOG];
 
 /** Dialogs a control may have left open; the editor calls it on close */
 export function destroyControlDialogs(): void {
@@ -467,46 +467,19 @@ function openTextureUrlDialog(onApply: (url: string) => void): void {
 // a button that opens a picker dialog: the current value drawn, and a caret
 const pickButton = (): HTMLButtonElement => el("button", { type: "button", className: "pick" });
 
-// the group's icon, drawn in its fill and stroke as they are edited; the sets open in a dialog
-const icon: ControlFactory = (spec, value, set) => {
-  const anchors = spec.path.includes("anchors");
+// an icon slot of a style
+const icon: ControlFactory = (_spec, value, set) => {
   const button = pickButton();
   let current = typeof value === "string" ? value : "";
   const show = () => {
-    button.innerHTML = `${burgIconPreview(current)}<span>${IconSets.name(current)}</span>`;
+    const name = Icons.kind(current) === "glyph" ? "" : Icons.name(current); // a glyph is its own name
+    button.innerHTML = `${Icons.html(current)}<span>${escapeHtml(name)}</span>`;
   };
   show();
-  void IconSets.load(anchors ? "ports" : "burgs").then(show); // the preview frames itself from the loaded symbol
-
-  // the fill and stroke rows of the same group are siblings rendered before this control
-  const paint = { fill: "none", stroke: "none" };
-  const applyPaint = () => {
-    button.style.fill = paint.fill;
-    button.style.stroke = paint.stroke;
-    paintBurgIconDialog(paint.fill, paint.stroke);
-  };
-  queueMicrotask(() => {
-    const form = button.closest(".schema-form");
-    const prefix = spec.path.slice(0, -2);
-    for (const attr of ["fill", "stroke"] as const) {
-      const hex = form?.querySelector<HTMLInputElement>(
-        `[data-field="${[...prefix, "attrs", attr].join(".")}"] input.hex`
-      );
-      const read = () => {
-        paint[attr] = hex?.value || "none";
-        applyPaint();
-      };
-      read();
-      hex?.addEventListener("input", read);
-      hex?.addEventListener("change", read);
-    }
-  });
 
   button.addEventListener("click", () =>
-    openBurgIconDialog({
-      anchors,
-      selected: current,
-      ...paint,
+    Controllers.IconPicker.open({
+      current,
       onPick: id => {
         current = id;
         show();
@@ -514,20 +487,6 @@ const icon: ControlFactory = (spec, value, set) => {
       }
     })
   );
-  return button;
-};
-
-// the market marker emoji, through the Icon Selector
-const emoji: ControlFactory = (_spec, value, set) => {
-  const button = pickButton();
-  const symbol = el("span", { className: "emoji", textContent: String(value ?? "") });
-  button.append(symbol, el("span", { textContent: "change" }));
-  button.addEventListener("click", () => {
-    void Controllers.IconSelector.open(symbol.textContent ?? "", next => {
-      symbol.textContent = next;
-      set(next);
-    });
-  });
   return button;
 };
 
@@ -548,6 +507,5 @@ export const CUSTOM_CONTROLS: Record<Exclude<StyleControl, StandardControl>, Con
   labelStyle,
   scheme,
   texture,
-  icon,
-  emoji
+  icon
 };

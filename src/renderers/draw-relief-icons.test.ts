@@ -6,9 +6,7 @@ import { Styles } from "@/generators/styles";
 import { drawRelief } from "./draw-relief-icons";
 
 vi.mock("@/components/layers", () => ({ Layers: { isOn: () => true, draw: vi.fn() } }));
-vi.mock("@/components/icon-sets", () => ({
-  IconSets: { loadAll: vi.fn().mockResolvedValue(undefined), reliefSets: () => [] }
-}));
+vi.mock("@/components/icons", () => ({ Icons: { loadAll: vi.fn().mockResolvedValue(undefined) } }));
 
 beforeEach(() => {
   document.body.innerHTML = '<svg id="map"><g id="viewbox"><g id="terrain" data-layer="relief"></g></g></svg>';

@@ -40,9 +40,8 @@ test("symbol ids derive from the set and the file path; every set is a directory
   expect(IconSets.setForId("burgs-watabou-capital")).toBe("burgs");
   expect(IconSets.setForId("ports-anchor")).toBe("ports");
   expect(IconSets.setForId("relief-gray-hill-2")).toBe("relief-gray");
-  expect(IconSets.setForId(`${IconSets.customPrefix("goods")}abc`)).toBeUndefined();
-  expect(IconSets.name("#burgs-watabou-capital")).toBe("watabou capital");
-  expect(IconSets.name("#burgs-mine")).toBe("mine");
+  expect(IconSets.setForId("custom-goods-abc")).toBeUndefined();
+  expect(IconSets.setForId("glyph-1f3f0")).toBeUndefined();
   expect(() => IconSets.get("markers" as never)).toThrow("Unknown icon set");
   for (const set of [...Relief.iconSets, ...Burgs.iconSets, Goods.iconSet]) {
     const symbols = IconSets.symbols(set, directory(set.folder));
@@ -71,27 +70,21 @@ test("all relief artwork has linework inheriting stroke width and color while al
   }
 });
 
-test("anchored art keeps its frame, sized in em, with the anchor at the frame's corner", () => {
-  expect(IconSets.anchorSymbol('<symbol id="burgs-x" viewBox="-6 -6 12 12"><path d="M0 0"/></symbol>', 10)).toBe(
-    '<symbol id="burgs-x" viewBox="-6 -6 12 12" width="1.2em" height="1.2em" overflow="visible">' +
-      '<g transform="translate(-6 -6)"><path d="M0 0"/></g></symbol>'
+test("anchored art keeps its anchor-relative frame and may overflow it", () => {
+  expect(IconSets.anchorSymbol('<symbol id="burgs-x" viewBox="-6 -6 12 12"><path d="M0 0"/></symbol>')).toBe(
+    '<symbol overflow="visible" id="burgs-x" viewBox="-6 -6 12 12"><path d="M0 0"/></symbol>'
   );
   const symbols = IconSets.symbols(IconSets.get("burgs"), directory("burgs"));
-  expect(symbols.includes('<symbol id="burgs-atlas-circle" viewBox="-6 -6 12 12" width="1.2em" height="1.2em"')).toBe(
+  expect(symbols.includes('<symbol overflow="visible" id="burgs-watabou-capital" viewBox="-6.2 -19.3 12.6 20.8"')).toBe(
     true
   );
-  expect(
-    symbols.includes('<symbol id="burgs-watabou-capital" viewBox="-6.2 -19.3 12.6 20.8" width="1.26em" height="2.08em"')
-  ).toBe(true);
-  // goods and relief are drawn with an explicit box and stay as they are
+  // goods and relief are boxed in their frame and stay as they are
   expect(IconSets.symbols(IconSets.get("goods"), { wood: svg })).toBe(
     '<symbol id="goods-wood" viewBox="0 0 100 100"><path d="M0 0"/></symbol>'
   );
-  // a frame the loader cannot read must not slip through as unanchored art
-  expect(() => IconSets.anchorSymbol('<symbol id="burgs-x" viewBox="-6,-6,12,12"><path/></symbol>', 10)).toThrow(
-    "viewBox"
-  );
-  expect(() => IconSets.anchorSymbol('<symbol id="burgs-x"><path/></symbol>', 10)).toThrow("viewBox");
+  // a frame the renderer cannot read must not slip through
+  expect(() => IconSets.anchorSymbol('<symbol id="burgs-x" viewBox="-6,-6,12,12"><path/></symbol>')).toThrow("viewBox");
+  expect(() => IconSets.anchorSymbol('<symbol id="burgs-x"><path/></symbol>')).toThrow("viewBox");
 });
 
 describe("relief alias resolution", () => {

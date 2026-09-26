@@ -1,4 +1,5 @@
 import { quadtree, sum } from "d3";
+import { Icons } from "@/components/icons";
 import { findAllInQuadtree, gauss, minmax, nth, ra, rand, rn, si } from "../utils";
 import type { State } from "./states-generator";
 
@@ -455,7 +456,7 @@ class MilitaryModule {
   }
 
   getDefaultOptions() {
-    return [
+    const units = [
       {
         icon: "⚔️",
         name: "infantry",
@@ -507,6 +508,7 @@ class MilitaryModule {
         separate: 1
       }
     ];
+    return units.map(unit => ({ ...unit, icon: Icons.glyph(unit.icon) }));
   }
 
   getName(r: Regiment, regiments: Regiment[]) {
@@ -557,17 +559,17 @@ class MilitaryModule {
 
   // get default regiment emblem
   getEmblem(r: Regiment) {
-    if (!r.n && !Object.values(r.u).length) return "🔰"; // "Newbie" regiment without troops
+    if (!r.n && !Object.values(r.u).length) return Icons.glyph("🔰"); // "Newbie" regiment without troops
     if (
       !r.n &&
       pack.states[r.state].form === "Monarchy" &&
       pack.cells.burg[r.cell] &&
       pack.burgs[pack.cells.burg[r.cell]].capital
     )
-      return "👑"; // "Royal" regiment based in capital
+      return Icons.glyph("👑"); // "Royal" regiment based in capital
     const mainUnit = Object.entries(r.u).sort((a, b) => b[1] - a[1])[0][0]; // unit with more troops in regiment
     const unit = options.map.military.units.find((u: { name: string; icon: string }) => u.name === mainUnit);
-    return unit ? unit.icon : "⚔️";
+    return unit ? unit.icon : Icons.glyph("⚔️");
   }
 }
 

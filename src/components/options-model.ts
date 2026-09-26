@@ -2,6 +2,7 @@
 import { adoptLegacyOptions } from "@/components/options-legacy";
 import { AUTO_BURG_LIMIT, type MapData, mapSchema, type OptionsData, optionsSchema } from "@/components/options-schema";
 import { Pins } from "@/components/pins";
+import { tip } from "@/components/tooltips";
 import { DEFAULT_DENSITY, getPointsNumber } from "@/data/graph-density";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { DEFAULT_TRADE_ANIMATION } from "@/data/trade-animation-options";
@@ -67,6 +68,7 @@ class OptionsModel {
         labels: { groups: Labels.getDefaultGroups() },
         military: { units: Military.getDefaultOptions() },
         transports: Transports.getDefaults(),
+        customIcons: [],
         coastline: Coastline.getDefaultSettings()
       },
       generation: {
@@ -122,7 +124,16 @@ class OptionsModel {
   persist(): void {
     clearTimeout(this.saveTimer);
     this.saveTimer = 0;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(options));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(options));
+    } catch (error) {
+      // a full storage keeps the last options; the map file still holds the map's own, custom icons included
+      if (!(error instanceof DOMException && error.name === "QuotaExceededError")) throw error;
+      console.error(error);
+      const message =
+        "Browser storage is full, so the latest settings are not kept in this browser. They are safe in the .map file: save the map to keep them";
+      tip(message, false, "error", 10000);
+    }
   }
 
   /** Throw this browser's options away and start from the defaults: a reset, never a repair */
@@ -204,6 +215,7 @@ class OptionsModel {
     map.labels.groups = previous.labels.groups;
     map.military.units = previous.military.units;
     map.transports = previous.transports;
+    map.customIcons = previous.customIcons;
     map.coastline = previous.coastline;
 
     // and the requests it consumes

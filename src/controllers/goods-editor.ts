@@ -17,7 +17,7 @@ import {
   setModeHiddenColumns,
   type TableView
 } from "@/components/dialog/table";
-import { IconSets } from "@/components/icon-sets";
+import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { Notes } from "@/components/notes";
 import { clearMainTip, tip } from "@/components/tooltips";
@@ -85,7 +85,7 @@ const goodsTable = initEditorTable<Good>({ getData: getGoodsData, onUpdate: rend
 
 /** With a good id, the Goods layer shows only that good */
 function open(goodId?: number): void {
-  void IconSets.retry("goods");
+  void Icons.retry("goods");
   if (customization) return;
   filterState = dialogState.get(dialogId, "filters", () => ({ visibleTags: [] as string[] }));
   closeDialogs("#goodsEditor, .stable");
@@ -225,7 +225,7 @@ function renderGoodsPage(view: TableView<Good>) {
         <div data-col="display"><input type="checkbox" data-tip="Toggle this good on the Goods map" class="native goodDisplayed" style="margin: 0; width: 1.2em;" ${good.visible ? "checked" : ""} /></div>
         <div data-col="name" style="display:flex; align-items:center"><svg data-tip="Good icon" width="2em" height="2em" class="goodIcon">
           <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${Goods.getStroke(good.color)}"/>
-          <use href="#${good.icon}" x="10%" y="10%" width="80%" height="80%"/>
+          <use href="${Icons.href(good.icon)}" x="10%" y="10%" width="80%" height="80%"/>
         </svg><span data-tip="Good name" class="goodName">${good.name}</span></div>
         <div data-col="type" data-tip="Good types" class="goodType">${types.map(renderTypeBadge).join(" ")}</div>
         <div data-col="unit" data-tip="Unit of production" class="goodUnit">${good.unit ?? ""}</div>

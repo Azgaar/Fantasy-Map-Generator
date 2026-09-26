@@ -1,66 +1,15 @@
-import { tip } from "@/components/tooltips";
 import type { BurgIconSetId } from "@/generators/burgs-generator";
 import type { ReliefIconSetId } from "@/generators/relief-generator";
 import type { IconSet } from "@/types/icons";
 
 export type IconSetId = ReliefIconSetId | BurgIconSetId | typeof Goods.iconSet.id;
 
-/** One set's load state: concurrent callers share an attempt, a failure is cached until an explicit retry */
-class IconChunk {
-  private status: "idle" | "pending" | "loaded" | "failed" = "idle";
-  private promise: Promise<void> | null = null;
-  private attempts = 0;
-
-  constructor(
-    readonly id: string,
-    private readonly inject: () => Promise<void>
-  ) {}
-
-  get isLoaded(): boolean {
-    return this.status === "loaded";
-  }
-
-  /** The shared attempt: a cached failure is handed back as it is, so a redraw can neither start a retry nor repeat the report */
-  load(): Promise<void> {
-    return this.promise ?? this.start();
-  }
-
-  /** An explicit demand: a failed attempt is repeated, while a live one stays shared */
-  retry(): Promise<void> {
-    if (this.status === "pending" || this.status === "loaded") return this.promise ?? Promise.resolve();
-    return this.start();
-  }
-
-  private start(): Promise<void> {
-    this.status = "pending";
-    this.attempts += 1;
-    this.promise = this.attempt();
-    return this.promise;
-  }
-
-  /** never rejects: the chunk reports its own failure, once per attempt */
-  private async attempt(): Promise<void> {
-    try {
-      await this.inject();
-      this.status = "loaded";
-    } catch (error) {
-      this.status = "failed";
-      console.error(`Failed to load ${this.id} icons`, error);
-      const advice = this.attempts > 1 ? "Please reload the page." : "Reload the page or retry the action.";
-      tip(`Cannot load ${this.id} icons. ${advice}`, false, "error", 8000);
-    }
-  }
-}
-
-/** The catalog of every set, the id rule, and the loader that turns a set's files into symbols in the document */
+/** The catalog of the built-in sets: their files and the symbols they make; `Icons` puts them in the page */
 export class IconSetRegistry {
-  /** where every set's group goes; map-carried art (`custom-<set>-…`) sits beside the groups */
-  readonly defs = "#defElements defs";
   private readonly sources = import.meta.glob("@/assets/icons/**/*.svg", { query: "?raw", import: "default" });
-  private readonly chunks = new Map<string, IconChunk>();
 
   /** the models that own icon sets; a new family adds its model here, a new relief set is a directory plus its name in `Relief.sets` */
-  private sets(): readonly IconSet[] {
+  sets(): readonly IconSet[] {
     return [...Relief.iconSets, ...Burgs.iconSets, Goods.iconSet];
   }
 
@@ -75,21 +24,6 @@ export class IconSetRegistry {
     return `${set}-${name.replaceAll("/", "-")}`;
   }
 
-  /** the group a loaded set's symbols live in */
-  containerId(id: string): string {
-    return `icons-${id}`;
-  }
-
-  /** the reserved namespace of art a map carries for a set: never a symbol the set provides */
-  customPrefix(id: IconSetId): string {
-    return `custom-${id}-`;
-  }
-
-  /** the map-carried art of a set, as inserted beside the loaded groups */
-  customIcons(id: IconSetId): Element[] {
-    return Array.from(document.querySelectorAll(`${this.defs} > [id^="${this.customPrefix(id)}"]`));
-  }
-
   /** a set's file names, known before the chunk loads: the path within the folder, `watabou/capital` */
   files(id: IconSetId): string[] {
     return [...this.loaders(this.get(id).folder).keys()];
@@ -100,28 +34,17 @@ export class IconSetRegistry {
     return this.sets().find(set => symbolId.startsWith(`${set.id}-`))?.id as IconSetId | undefined;
   }
 
-  /** the human name of a symbol: its id without the set prefix */
-  name(symbolId: string): string {
-    const id = symbolId.replace(/^#/, "");
-    const set = this.setForId(id);
-    return (set ? id.slice(set.length + 1) : id).replaceAll("-", " ");
+  /** the names a picker offers for a set: its files, or the ones the set declares */
+  choices(id: IconSetId): readonly string[] {
+    return this.get(id).choices ?? this.files(id);
   }
 
-  isLoaded(id: IconSetId): boolean {
-    return this.chunk(id).isLoaded;
-  }
-
-  load(id: IconSetId): Promise<void> {
-    return this.chunk(id).load();
-  }
-
-  loadAll(ids: readonly IconSetId[]): Promise<void> {
-    return Promise.all(ids.map(id => this.load(id))).then(() => undefined);
-  }
-
-  /** an explicit demand, e.g. a picker or an export after a failed attempt */
-  retry(id: IconSetId): Promise<void> {
-    return this.chunk(id).retry();
+  /** a set's symbols, read from its lazy chunk */
+  async read(set: IconSet): Promise<string> {
+    const entries = [...this.loaders(set.folder)].map(
+      async ([name, load]) => [name, (await load()) as string] as const
+    );
+    return this.symbols(set, Object.fromEntries(await Promise.all(entries)));
   }
 
   /** Every set converts its files the same way; a set with `aliases` additionally emits a symbol per missing name */
@@ -129,7 +52,7 @@ export class IconSetRegistry {
     const names = Object.keys(files);
     const symbols = names.map(name => {
       const symbol = this.svgToSymbol(files[name], this.symbolId(set.id, name));
-      return set.em ? this.anchorSymbol(symbol, set.em) : symbol;
+      return set.em ? this.anchorSymbol(symbol) : symbol;
     });
     const aliases = (set.aliases?.(names) ?? []).map(({ name, target }) =>
       this.aliasSymbol(this.symbolId(set.id, name), this.symbolId(set.id, target))
@@ -145,18 +68,12 @@ export class IconSetRegistry {
     return `<symbol id="${id}"${attrs}>${match[2]}</symbol>`;
   }
 
-  /** Art drawn around its anchor: keep the frame, size it in em and move the anchor to the frame's corner,
-   * so `<use x y>` under the group's font-size lands the anchor on the point and the art overflows around it */
-  anchorSymbol(symbol: string, em: number): string {
-    const match = symbol.match(
-      /^(<symbol\b[^>]*?)viewBox="(-?[\d.]+) (-?[\d.]+) ([\d.]+) ([\d.]+)"([^>]*)>([\s\S]*)<\/symbol>$/
-    );
-    if (!match) throw new Error(`Anchored art needs a plain "x y w h" viewBox: ${symbol.slice(0, 80)}`);
-    const [, open, x, y, w, h, rest, inner] = match;
-    return (
-      `${open}viewBox="${x} ${y} ${w} ${h}" width="${Number(w) / em}em" height="${Number(h) / em}em" overflow="visible"${rest}>` +
-      `<g transform="translate(${x} ${y})">${inner}</g></symbol>`
-    );
+  /** Art drawn around its anchor keeps its anchor-relative frame, which a renderer reads to place it (`Icons.anchoredBox`);
+   * the art may overflow the frame, so it never clips */
+  anchorSymbol(symbol: string): string {
+    if (!/^<symbol\b[^>]*?\sviewBox="-?[\d.]+ -?[\d.]+ [\d.]+ [\d.]+"/.test(symbol))
+      throw new Error(`Anchored art needs a plain "x y w h" viewBox: ${symbol.slice(0, 80)}`);
+    return symbol.replace(/^<symbol\b/, '<symbol overflow="visible"');
   }
 
   private aliasSymbol(id: string, target: string): string {
@@ -171,29 +88,6 @@ export class IconSetRegistry {
       .map(([path, load]) => [path.slice(path.indexOf(prefix) + prefix.length).replace(/\.svg$/, ""), load] as const)
       .sort(([a], [b]) => a.localeCompare(b));
     return new Map(files);
-  }
-
-  /** Prepare the whole group before appending, so a failure leaves no partial definitions */
-  private async inject(set: IconSet): Promise<void> {
-    const entries = [...this.loaders(set.folder)].map(
-      async ([name, load]) => [name, (await load()) as string] as const
-    );
-    const files = Object.fromEntries(await Promise.all(entries));
-    const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    group.id = this.containerId(set.id);
-    group.innerHTML = this.symbols(set, files);
-    const parent = document.querySelector(this.defs);
-    if (!parent) throw new Error(`Missing icon container for ${set.id}`);
-    parent.appendChild(group);
-  }
-
-  private chunk(id: IconSetId): IconChunk {
-    const existing = this.chunks.get(id);
-    if (existing) return existing;
-    const set = this.get(id);
-    const chunk = new IconChunk(id, () => this.inject(set));
-    this.chunks.set(id, chunk);
-    return chunk;
   }
 }
 

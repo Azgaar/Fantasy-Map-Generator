@@ -32,8 +32,7 @@ export type StyleControl =
   | "labelStyle"
   | "scheme"
   | "texture"
-  | "icon"
-  | "emoji";
+  | "icon";
 
 /** What the style editor runs after a value changes; set on a field or on a whole node, the nearest wins.
  * Unset: an attr is written to its element, an option redraws the layer (src/controllers/style-editor/effects.ts) */

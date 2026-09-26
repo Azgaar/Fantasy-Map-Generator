@@ -1,12 +1,16 @@
 import fs from "node:fs";
 import path from "node:path";
 import { expect, test, vi } from "vitest";
+import "@/generators/relief-generator"; // the models own the icon sets that tell references from text
+import "@/generators/burgs-generator";
+import "@/generators/goods-generator";
 import { Styles } from "./styles";
 import {
   burgGroupFromLegacy,
   isLegacyPreset,
   isStoreStyles,
   labelGroupFromLegacy,
+  legacyIconReference,
   normalizeStyles,
   presetBagFor,
   presetFromLegacy
@@ -37,7 +41,7 @@ test("converts the frozen default preset without warnings", () => {
   expect(styles.states.groups.statesHalo.attrs["stroke-width"]).toBe(10);
   expect(styles.legend.options).toEqual({ columns: 8 });
   expect(styles.labels.groups.capital.attrs["font-family"]).toBe("Almendra SC");
-  expect(styles.burgIcons.groups.capital.groups.icons.options.icon).toBe("#burgs-atlas-square");
+  expect(styles.burgIcons.groups.capital.groups.icons.options.icon).toBe("burgs-atlas-square");
 });
 
 test("unknown selector throws by default, skips on request", () => {
@@ -110,7 +114,7 @@ test("R9: #terrs > #landHeights never legitimately carried data-render, so it st
 
 test("numeric-looking string options coerce back to strings, not schema-rejected numbers", () => {
   const styles = presetFromLegacy({ "#markets": { "data-icon": 8 } }, { onUnknown: "skip" });
-  expect(styles.markets.options.icon).toBe("8");
+  expect(styles.markets.options.icon).toBe("glyph-38"); // the text "8" as a glyph
 });
 
 test("legacy numeric stroke-dasharray values migrate to strings", () => {
@@ -276,4 +280,13 @@ test("normalizeStyles leaves a record already in the current shape alone", () =>
   normalizeStyles(record);
 
   expect(record).toEqual(before);
+});
+
+test("older icon slot values become references: `#id` loses its `#`, any other text becomes a glyph", () => {
+  expect(legacyIconReference("#burgs-atlas-circle")).toBe("burgs-atlas-circle");
+  expect(legacyIconReference("custom-goods-ab12")).toBe("custom-goods-ab12");
+  expect(legacyIconReference("hq-2")).toBe("glyph-68-71-2d-32"); // looks like an id, but is text
+  expect(legacyIconReference(" XIV ")).toBe("glyph-58-49-56");
+  expect(legacyIconReference("#️⃣")).toBe("glyph-23-fe0f-20e3"); // the keycap emoji starts with a `#`
+  expect(legacyIconReference("")).toBe("");
 });

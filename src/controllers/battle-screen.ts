@@ -1,26 +1,13 @@
 import { mean, select, sum } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { moveRegiment } from "@/renderers/draw-military";
 import type { Marker } from "../generators/markers-generator";
 import type { Regiment } from "../generators/military-generator";
-import {
-  capitalize,
-  ensureEl,
-  escapeHtml,
-  getAdjective,
-  isImageIcon,
-  last,
-  list,
-  minmax,
-  P,
-  Pint,
-  rand,
-  rn,
-  wiki
-} from "../utils";
+import { capitalize, ensureEl, escapeHtml, getAdjective, last, list, minmax, P, Pint, rand, rn, wiki } from "../utils";
 
 type Side = "attackers" | "defenders";
 
@@ -541,9 +528,7 @@ function addHeaders(): void {
 
   for (const u of options.map.military.units) {
     const label = capitalize(u.name.replace(/_/g, " "));
-    const isExternal = isImageIcon(u.icon);
-    const iconHTML = isExternal ? `<img src="${escapeHtml(u.icon)}" width="15" height="15">` : escapeHtml(u.icon);
-    headers += `<th data-tip="${label}">${iconHTML}</th>`;
+    headers += `<th data-tip="${label}">${Icons.html(u.icon)}</th>`;
   }
 
   headers += '<th data-tip="Total military">Total</th></tr></thead>';
@@ -563,12 +548,10 @@ function addRegimentToSide(side: Side, regiment: Regiment): void {
   const distance = (Math.hypot(b.y - regiment.by, b.x - regiment.bx) * options.map.units.distance.scale) | 0; // distance between regiment and its base
   const color = state.color?.[0] === "#" ? state.color : "#999";
 
-  const isExternal = isImageIcon(regiment.icon!);
-  const iconHtml = isExternal
-    ? `<image href="${escapeHtml(regiment.icon!)}" x="0.1em" y="0.1em" width="1.2em" height="1.2em"></image>`
-    : `<text x="50%" y="1em" style="text-anchor: middle">${escapeHtml(regiment.icon!)}</text>`;
+  const href = escapeHtml(Icons.href(regiment.icon ?? ""));
   const icon = `<svg width="1.4em" height="1.4em" style="margin-bottom: -.6em; stroke: #333">
-      <rect x="0" y="0" width="100%" height="100%" fill="${color}"></rect>${iconHtml}</svg>`;
+      <rect x="0" y="0" width="100%" height="100%" fill="${color}"></rect>
+      <use href="${href}" x="10%" y="10%" width="80%" height="80%" stroke="none"></use></svg>`;
   const body = `<tbody id="battle${state.i}-${regiment.i}">`;
 
   let initial = `<tr class="battleInitial"><td>${icon}</td><td class="regiment" data-tip="${
@@ -624,7 +607,7 @@ function addSide(): void {
           s.color
         }" ></svg>
         <div style="width:6em">${s.name.slice(0, 11)}</div>
-        <div style="width:1.2em">${r.icon}</div>
+        <div style="width:1.2em; display:flex">${Icons.html(r.icon ?? "")}</div>
         <div style="width:13em">${r.name.slice(0, 24)}</div>
         <div style="width:4em">${r.a}</div>
         <div style="width:4em">${distLabel}</div>
@@ -1319,7 +1302,16 @@ function applyResults(): void {
   }
 
   const i = (last(pack.markers)?.i ?? -1) + 1;
-  const marker: Marker = { i, x: b.x, y: b.y, cell: b.cell, icon: "⚔️", type: "battlefields", dy: 52, name: b.name };
+  const marker: Marker = {
+    i,
+    x: b.x,
+    y: b.y,
+    cell: b.cell,
+    icon: Icons.glyph("⚔️"),
+    type: "battlefields",
+    dy: 52,
+    name: b.name
+  };
   pack.markers.push(marker);
   Layers.draw("markers");
 

@@ -350,8 +350,8 @@ they share with the editor:
   the layer), grouped elements expandable to their groups with counts, and a filter box.
 - **Presets gallery** — a thumbnail per system preset, a neutral tile for customs, the current one
   outlined; a click goes through the same once-per-session confirmation as the select.
-- **Burg icon dialog** — the `burgs` or `ports` icon set (`docs/architecture/icons.md`) grouped by
-  directory, drawn in the group's current fill and stroke; a pick applies and keeps the dialog open.
+- **Icon picker** — an icon slot opens the shared icon picker (`docs/architecture/icons.md`) on its current
+  icon; a pick applies and keeps the dialog open.
 
 ### The rows that are not fields
 

@@ -1,6 +1,6 @@
 import { drag, quadtree, range, select } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
-import { IconSets } from "@/components/icon-sets";
+import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -385,7 +385,7 @@ async function loadPreviews(): Promise<void> {
   container.replaceChildren();
   const set = (ensureEl<HTMLSelectElement>("reliefEditorSet").value || styles.relief.options.set) as ReliefSet;
   try {
-    await IconSets.retry(Relief.iconSetId(set));
+    await Icons.retry(Relief.iconSetId(set));
     if (request !== previewRequest || !container.isConnected) return;
     container.innerHTML = setIconsHtml(set);
     updateReliefIconSelected(set);

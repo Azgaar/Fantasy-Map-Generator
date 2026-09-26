@@ -1,5 +1,6 @@
 import { type Selection, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { Notes } from "@/components/notes";
 import { clearMainTip, tip } from "@/components/tooltips";
@@ -838,7 +839,7 @@ function getProduction(pool: Record<number, number>): string {
     const { name, unit, icon } = resource;
     const unitName = production === 1 ? unit : `${unit}s`;
     html += `<span data-tip="${name}: ${production} ${unitName} per day">
-      <svg class="resIcon" width="1em" height="1em"><use href="#${icon}"></use></svg>
+      <svg class="resIcon" width="1em" height="1em"><use href="${Icons.href(icon)}"></use></svg>
       <span style="margin: 0 0.2em 0 -0.2em">${production}</span>
     </span>`;
   }

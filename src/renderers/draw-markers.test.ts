@@ -8,10 +8,13 @@ const mocks = vi.hoisted(() => ({ layerOn: true }));
 vi.mock("@/components/layers", () => ({ Layers: { isOn: () => mocks.layerOn } }));
 
 import "@/generators/styles";
+import "@/generators/relief-generator"; // the models own the icon sets references resolve against
+import "@/generators/burgs-generator";
+import "@/generators/goods-generator";
 import { drawMarkers, setEditedMarker, setMarkersFilter } from "./draw-markers";
 
 function marker(i: number, x = 50, y = 50): Marker {
-  return { i, x, y, icon: "🌋", type: "volcano", name: "Volcano", cell: 0 };
+  return { i, x, y, icon: "glyph-1f30b", type: "volcano", name: "Volcano", cell: 0 };
 }
 
 beforeEach(() => {
@@ -104,12 +107,13 @@ test("an offscreen edited marker stays attached until editing ends", () => {
   element!.classList.add("draggable");
   ViewportLayers.renderNow();
   expect(document.getElementById("marker2")).toBe(element);
-  edited.icon = "https://example.com/marker.png";
+  edited.icon = "custom-1a2b3c4d";
   edited.pin = "no";
   edited.px = 20;
   drawMarkers();
   expect(document.getElementById("marker2")).toBe(element);
-  expect(element?.querySelector("image")?.getAttribute("href")).toBe(edited.icon);
+  expect(element?.querySelector("use")?.getAttribute("href")).toBe("#custom-1a2b3c4d");
+  expect(element?.querySelector("use")?.getAttribute("width")).toBe("20");
   expect(element?.querySelector("g > path, g > circle")).toBeNull(); // no pin
   expect(element?.classList.contains("draggable")).toBe(true);
   expect(element?.namespaceURI).toBe("http://www.w3.org/2000/svg");
@@ -120,10 +124,10 @@ test("an offscreen edited marker stays attached until editing ends", () => {
 });
 
 test("offscreen edits, deletion and replacement map data are reflected when rendered", () => {
-  pack.markers[1].icon = "🏰";
+  pack.markers[1].icon = "glyph-1f3f0";
   setViewportTransform(1, -450, 0);
   ViewportLayers.renderNow();
-  expect(document.querySelector("#marker2 text")?.textContent).toBe("🏰");
+  expect(document.querySelector("#marker2 use")?.getAttribute("href")).toBe("#glyph-1f3f0");
   pack.markers = [marker(3, 500)];
   ViewportLayers.renderNow();
   expect(document.getElementById("marker2")).toBeNull();

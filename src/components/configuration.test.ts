@@ -190,6 +190,38 @@ describe("the definition sets carry to the next map", () => {
     expect(options.map.military.units[0].name).toBe("theirs");
   });
 
+  it("carries the custom icons to a new map, and a loaded map brings its own", () => {
+    const icon = {
+      id: "custom-1a2b3c4d",
+      kind: "image" as const,
+      content: "https://a.b/c.png",
+      viewBox: "0 0 100 100"
+    };
+    options.map.customIcons = [icon];
+    Options.randomize();
+    expect(options.map.customIcons).toEqual([icon]);
+
+    const theirs = { ...icon, id: "custom-5e6f7a8b" };
+    load(savedFile(map => (map.customIcons = [theirs])));
+    expect(options.map.customIcons).toEqual([theirs]);
+  });
+
+  it("drops a broken custom icon on its own, keeping the others", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const good = { id: "custom-1a2b3c4d", kind: "svg" as const, content: "<g/>", viewBox: "0 0 1e3 1e3" };
+    const broken = { ...good, id: "custom-5e6f7a8b", viewBox: "0 0 0 0" };
+    load(savedFile(map => (map.customIcons = [good, broken])));
+    expect(options.map.customIcons).toEqual([good]);
+    expect(warn.mock.calls.flat().join()).toContain("invalid custom icon");
+  });
+
+  it("opens a file saved before custom icons with an empty list and no warning", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    load(savedFile(map => delete (map as Partial<MapData>).customIcons));
+    expect(options.map.customIcons).toEqual([]);
+    expect(warn.mock.calls.flat().join()).not.toContain("customIcons");
+  });
+
   it("never leaves a set empty: the module that owns it answers for what it must hold", () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
     load(savedFile(map => (map.transports = [])));

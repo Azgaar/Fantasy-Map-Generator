@@ -10,13 +10,14 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
+import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { State } from "@/generators/states-generator";
 import { drawRegiment } from "@/renderers/draw-military";
-import { downloadFile, escapeHtml, getFileName, getLatitude, getLongitude, isImageIcon } from "@/utils";
+import { downloadFile, getFileName, getLatitude, getLongitude } from "@/utils";
 import type { Regiment } from "../generators/military-generator";
 import { capitalize, ensureEl, findEl, getPointer, last, si } from "../utils";
 
@@ -184,9 +185,7 @@ function renderRegimentsPage(view: TableView<RegimentRow>): void {
           return `<div data-col="${unitColumnKey(unit.name)}" data-tip="${capitalize(unit.name)} units number">${percentage ? percent(value, unitTotals[unit.name]) : value}</div>`;
         })
         .join("");
-      const emblem = isImageIcon(regiment.icon!)
-        ? `<img data-col="emblem" src="${escapeHtml(regiment.icon!)}" data-tip="Regiment's emblem">`
-        : `<span data-col="emblem" data-tip="Regiment's emblem">${escapeHtml(regiment.icon!)}</span>`;
+      const emblem = `<span data-col="emblem" data-tip="Regiment's emblem">${Icons.html(regiment.icon ?? "")}</span>`;
 
       return /* html */ `<div class="states" data-id="${regiment.i}" data-s="${state.i}">
         <fill-box data-col="color" data-tip="${state.fullName}" fill="${state.color}" disabled></fill-box>
@@ -300,7 +299,7 @@ function addRegimentOnClick(this: SVGGElement, event: MouseEvent): void {
     bx: x,
     by: y,
     state,
-    icon: "🛡️",
+    icon: Icons.glyph("🛡️"),
     name: "",
     t: 0,
     s: 0,
@@ -323,7 +322,7 @@ function downloadRegimentsData(): void {
     for (const r of s.military) {
       data += `${s.name},`;
       data += `${r.i},`;
-      data += `${r.icon},`;
+      data += `${Icons.glyphText(r.icon ?? "") ?? r.icon},`;
       data += `${r.name},`;
       data += `${units.map(unit => r.u[unit]).join(",")},`;
 

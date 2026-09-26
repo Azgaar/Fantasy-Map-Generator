@@ -118,14 +118,16 @@ value into the control still applies it, and it stands until the next fit re-der
 
 ### The definition sets
 
-Military unit types, transport types, burg groups, label groups and the coastline settings sit in
-`options.map` however much they look like user settings, because **entities point at them by
-name**: a set that travels separately from its entities opens a map with unresolved references.
+Military unit types, transport types, burg groups, label groups, the custom icons and the coastline
+settings sit in `options.map` however much they look like user settings, because **entities point at
+them by name or id**: a set that travels separately from its entities opens a map with unresolved
+references.
 
 They are also the set the **next** map starts from: they survive a refresh because they are in
 `options`, and `Options.randomize()` carries them across explicitly while resetting everything else
 in `options.map`. A set is never empty — the boundary repairs one that arrives empty from the
-module that owns it, because a label type with no group draws no labels.
+module that owns it, because a label type with no group draws no labels. The custom icons are the
+exception: a map may carry none.
 
 ### Locks
 

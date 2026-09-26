@@ -12,6 +12,7 @@ Check out [Dev board](https://github.com/users/Azgaar/projects/3/views/1?sumFiel
 
 Current version of the Fantasy Map Generator is the latest `master` branch. You can download it here: https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/heads/master.zip. Also see [the wiki](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#can-i-use-the-generator-offline).
 
+- Icons: one icon picker for goods, markers, regiments, unit types, burg groups and the market marker, with built-in, emoji and custom icons; custom icons are linked or uploaded once per map, positioned in their frame and reused anywhere [1.154.0]
 - Style: the Style tab is rebuilt as a schema-driven editor [1.154.0]
 - Relief: icon sets are loaded on demand, and an icon can be pinned to a set [1.154.0]
 

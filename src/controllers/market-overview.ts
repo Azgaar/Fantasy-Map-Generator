@@ -9,7 +9,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
-import { IconSets } from "@/components/icon-sets";
+import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { Notes } from "@/components/notes";
 import { clearMainTip, tip } from "@/components/tooltips";
@@ -57,7 +57,7 @@ const marketOverviewTable = initEditorTable<MarketGoodRow>({
 });
 
 function open(marketId: number): void {
-  void IconSets.retry("goods");
+  void Icons.retry("goods");
   if (customization) return;
 
   const market = Markets.get(marketId);
@@ -196,7 +196,7 @@ function renderMarketOverviewPage(view: TableView<MarketGoodRow>): void {
       data-price="${rn(row.price, 2)}">
       <svg data-col="icon" data-tip="Good icon" width="2em" height="2em" class="goodIcon">
         <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${stroke}"/>
-        <use href="#${good.icon}" x="10%" y="10%" width="80%" height="80%"/>
+        <use href="${Icons.href(good.icon)}" x="10%" y="10%" width="80%" height="80%"/>
       </svg>
       <div data-col="good" data-tip="Good name" class="goodName">${good.name}</div>
       <div data-col="stock" data-tip="Good stock" class="marketGoodStock">${rn(row.stock, 2)}</div>

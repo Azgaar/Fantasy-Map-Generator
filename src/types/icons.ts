@@ -12,6 +12,8 @@ export interface IconSet {
   em?: number;
   /** symbols for ids the directory has no file for, each drawn through one it has */
   aliases?: (names: readonly string[]) => IconAlias[];
+  /** the names a picker offers, when not every file: a relief set offers one variant per type */
+  choices?: readonly string[];
 }
 
 export interface IconAlias {

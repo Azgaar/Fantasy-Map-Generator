@@ -5,7 +5,15 @@ import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 
 const mocks = vi.hoisted(() => ({ layerOn: true }));
 vi.mock("@/components/layers", () => ({ Layers: { isOn: () => mocks.layerOn } }));
-vi.mock("@/components/icon-sets", () => ({ IconSets: { loadAll: vi.fn().mockResolvedValue(undefined) } }));
+// set art is anchored at its frame's corner here, so a group's translate is its shift alone
+vi.mock("@/components/icon-sets", () => ({ IconSets: { setForId: () => undefined } }));
+vi.mock("@/components/icons", () => ({
+  Icons: {
+    loadAll: vi.fn().mockResolvedValue(undefined),
+    href: (id: string) => `#${id}`,
+    anchoredBox: (id: string) => (/^(burgs|ports)-/.test(id) ? [0, 0, 1, 1] : null)
+  }
+}));
 
 import "@/generators/styles";
 import { drawBurgIcons } from "./draw-burg-icons";
@@ -20,8 +28,8 @@ beforeEach(() => {
     </svg>`;
   globalThis.pack = { burgs: [{}, { i: 1, group: "town", x: 10, y: 10 }] } as never;
   styles.burgIcons.groups.town.groups.icons.options.size = 3;
-  styles.burgIcons.groups.town.groups.icons.options.icon = "#burgs-atlas-circle";
-  styles.burgIcons.groups.town.groups.anchors.options = { size: 3, icon: "#ports-anchor" };
+  styles.burgIcons.groups.town.groups.icons.options.icon = "burgs-atlas-circle";
+  styles.burgIcons.groups.town.groups.anchors.options = { size: 3, icon: "ports-anchor" };
   options.map.burgs.groups = [{ name: "town", order: 0 }] as never;
 });
 
@@ -121,7 +129,7 @@ test("symbol and size edits apply to offscreen icons and account for overflowing
   await drawBurgIcons();
   expect(document.getElementById("burg1")).toBeNull();
   styles.burgIcons.groups.town.groups.icons.options.size = 20;
-  styles.burgIcons.groups.town.groups.icons.options.icon = "#burgs-watabou-city";
+  styles.burgIcons.groups.town.groups.icons.options.icon = "burgs-watabou-city";
   await drawBurgIcons();
   expect(document.getElementById("burg1")?.getAttribute("href")).toBe("#burgs-watabou-city");
   expect(document.getElementById("anchor1")).toBeNull();
@@ -151,14 +159,14 @@ test("loaded legacy markup is replaced by the current icon projection", async ()
   expect(document.getElementById("burg1")?.tagName).toBe("use");
   const anchor = document.getElementById("anchor1")!;
   expect(anchor.getAttribute("transform")).toBeNull();
-  expect(anchor.getAttribute("width")).toBeNull();
-  expect(anchor.getAttribute("height")).toBeNull();
+  expect(anchor.getAttribute("width")).toBe("1em");
+  expect(anchor.getAttribute("height")).toBe("1em");
   expect(anchor.getAttribute("x")).toBe("10");
 });
 
 test("markup preserves special characters in group names, symbols and styles", async () => {
   const name = 'town & "port"';
-  const icon = '#burgs-&"circle';
+  const icon = 'burgs-&"circle';
   const fill = 'url(#pattern-&"fill)';
   options.map.burgs.groups[0].name = name;
   pack.burgs[1].group = name;
@@ -174,12 +182,12 @@ test("markup preserves special characters in group names, symbols and styles", a
   expect(icons.getAttribute("data-icon")).toBe(icon);
   expect(icons.getAttribute("fill")).toBe(fill);
   expect(icons.hasAttribute("filter")).toBe(false);
-  expect(document.getElementById("burg1")?.getAttribute("href")).toBe(icon);
+  expect(document.getElementById("burg1")?.getAttribute("href")).toBe(`#${icon}`);
 });
 
 test("anchor symbol and shifts survive redraw, relocation and full-map rendering", async () => {
   pack.burgs[1].port = 1;
-  Object.assign(styles.burgIcons.groups.town.groups.anchors.options, { icon: "#ports-harbor", dx: -2, dy: 1 });
+  Object.assign(styles.burgIcons.groups.town.groups.anchors.options, { icon: "ports-harbor", dx: -2, dy: 1 });
   await drawBurgIcons();
   const anchor = document.getElementById("anchor1")!;
   expect(anchor.getAttribute("href")).toBe("#ports-harbor");
@@ -227,4 +235,27 @@ test("icons follow the layer font through the zoom and cull by their zoomed size
   setViewportTransform(1, 0, 0);
   ViewportLayers.renderNow();
   expect(document.getElementById("burg1")).not.toBeNull();
+});
+
+test("an icon from outside the burg sets is a 1em box centred on the burg", async () => {
+  styles.burgIcons.groups.town.groups.icons.options.icon = "glyph-1f3f0";
+  await drawBurgIcons();
+  const icons = document.querySelector('#burgIcons [data-group="icons"]')!;
+  expect(icons.getAttribute("style")).toBe("transform: translate(-0.5em, -0.5em)");
+  const burg = document.getElementById("burg1")!;
+  expect(burg.getAttribute("href")).toBe("#glyph-1f3f0");
+  expect([burg.getAttribute("width"), burg.getAttribute("height")]).toEqual(["1em", "1em"]);
+});
+
+test("clearing burg and port icons keeps them absent through redraw and export", async () => {
+  pack.burgs[1].port = 1;
+  await drawBurgIcons();
+  styles.burgIcons.groups.town.groups.icons.options.icon = "";
+  styles.burgIcons.groups.town.groups.anchors.options.icon = "";
+  await drawBurgIcons();
+  expect(document.querySelectorAll("#burgIcons use")).toHaveLength(0);
+  ViewportLayers.renderNow();
+  const clone = document.getElementById("map")!.cloneNode(true) as SVGSVGElement;
+  ViewportLayers.renderTo(clone);
+  expect(clone.querySelectorAll("#burgIcons use")).toHaveLength(0);
 });

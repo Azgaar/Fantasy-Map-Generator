@@ -1,8 +1,9 @@
+import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { zoomFontSize } from "@/components/viewport";
 import type { Marker } from "@/generators/markers-generator";
 import { ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
-import { isImageIcon } from "@/utils/fileUtils";
+import { rn } from "@/utils/numberUtils";
 import { escapeHtml } from "@/utils/stringUtils";
 
 const layer = ViewportLayers.register({ id: "markers", render: reconcileMarkers });
@@ -92,11 +93,12 @@ function reconcileMarkers({ root, bounds }: ViewportRenderContext): void {
 }
 
 function getMarkerContent({ icon, dx = 50, dy = 50, px = 12, pin, fill, stroke }: Marker): string {
-  const isExternal = isImageIcon(icon);
+  // the icon box is centred on the dx/dy point of the pin box
+  const x = rn((dx * 30) / 100 - px / 2, 2);
+  const y = rn((dy * 30) / 100 - px / 2, 2);
+  const use = icon
+    ? `<use href="${escapeHtml(Icons.href(icon))}" x="${x}" y="${y}" width="${px}" height="${px}"/>`
+    : "";
   // the one group carries the shift, so the pin's tip lands on the marker point at any box size
-  return /* html */ `<g transform="translate(-15 -30)">
-      ${getPin(pin, fill, stroke)}
-      <text x="${dx}%" y="${dy}%" font-size="${px}px" >${isExternal ? "" : escapeHtml(icon)}</text>
-      <image x="${dx / 2}%" y="${dy / 2}%" width="${px}px" height="${px}px" href="${isExternal ? escapeHtml(icon) : ""}" />
-    </g>`;
+  return /* html */ `<g transform="translate(-15 -30)">${getPin(pin, fill, stroke)}${use}</g>`;
 }

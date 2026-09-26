@@ -1,4 +1,4 @@
-import { IconSets } from "@/components/icon-sets";
+import { Icons } from "@/components/icons";
 import { tip } from "@/components/tooltips";
 import type { Burg } from "../generators/burgs-generator";
 import type { DemandCategory } from "../generators/goods-generator";
@@ -11,7 +11,7 @@ import { formatPrice, rn } from "../utils";
 type Type = "MFG" | "BUY" | "SELL" | "LOCAL";
 
 function open(burgId: number): void {
-  void IconSets.retry("goods");
+  void Icons.retry("goods");
   if (customization) return;
   const burg = pack.burgs[burgId];
   if (!burg || burg.removed) {
@@ -72,7 +72,7 @@ function open(burgId: number): void {
 
     return `<svg width="14" height="14" style="margin: -6px 2px -4px 0;">
               <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${Goods.getStroke(good.color)}"/>
-              <use href="#${good.icon}" x="10%" y="10%" width="80%" height="80%"/>
+              <use href="${Icons.href(good.icon)}" x="10%" y="10%" width="80%" height="80%"/>
             </svg>`;
   };
 

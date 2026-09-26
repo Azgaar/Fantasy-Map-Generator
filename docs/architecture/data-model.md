@@ -218,7 +218,7 @@ States (countries) data is stored as an array of objects with strict element ord
 - `bx`: `number` - regiment base x coordinate
 - `by`: `number` - regiment base y coordinate
 - `angle`: `number` - regiment rotation angle degree
-- `icon`: `number` - Unicode character to serve as an icon
+- `icon`: `string` - icon reference: a bare symbol id such as `glyph-2694-fe0f` or `custom-1a2b3c4d` (see [Icons](icons.md)); empty for none
 - `cell`: `number` - original regiment cell id
 - `state`: `number` - regiment state id
 - `name`: `string` - regiment name
@@ -298,7 +298,7 @@ Markers data is stored as an unordered array of objects (so element id is _not_ 
 
 - `i`: `number` - marker id. `'marker' + i` is used as svg element id
 - `name`: `string` - marker name, shown in the notes box header and the markers overview
-- `icon`: `number` - Unicode character (usually an [emoji](https://emojipedia.org/)) to serve as an icon
+- `icon`: `string` - icon reference: a bare symbol id such as `glyph-1f30b` or `goods-wine` (see [Icons](icons.md)); empty for none
 - `x`: `number` - marker x coordinate
 - `y`: `number` - marker y coordinate
 - `cell`: `number` - cell id, used to prevent multiple markers generation in the same cell
@@ -310,7 +310,7 @@ Markers data is stored as an unordered array of objects (so element id is _not_ 
 - `pinned`: `boolean`: if any marker is pinned, then only markers with `pinned = true` will be rendered. Optional
 - `dx`: `number` - icon x shift percent. Optional, default is `50` (50%, center)
 - `dy`: `number` - icon y shift percent. Optional, default s `50` (50%, center)
-- `px`: `number` - icon font-size in pixels. Optional, default is `12` (12px)
+- `px`: `number` - icon box size in pixels. Optional, default is `12` (12px)
 - `lock`: `boolean` - `true` if marker is locked (not affected by regeneration). Optional
 - `note`: `string` - optional. The user's note (legend) about the marker, as html. Removed with it
 
@@ -454,7 +454,7 @@ Goods (tradable resources and products) are stored in `pack.goods: Good[]`, wher
 - `tags`: `string[]` - free-form classification tags (used for filtering in the Goods Editor)
 - `value`: `number` - base price per unit; the anchor for all market pricing
 - `unit`: `string` - unit of measure label (e.g. `kg`, `barrel`)
-- `icon`: `string` - id of the SVG symbol used for the good's map/UI icon: `goods-<file>` from the goods icon set, or `custom-goods-<id>` for art the map carries in field 45 (see `icons.md`)
+- `icon`: `string` - icon reference used for the good's map/UI icon: usually `goods-<file>` from the goods icon set, or any other icon, including a custom one (see `icons.md`)
 - `color`: `string` - good color in hex
 - `chance`: `number` - placement chance (0–100) for raw/hybrid goods. Manufactured-only goods are `0`. Optional
 - `distribution`: `string` - JS expression evaluated per cell to decide where the raw good is placed (uses the distribution method table; see [goods_schema.md](../domain/goods_schema.md)). Optional

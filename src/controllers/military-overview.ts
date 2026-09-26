@@ -10,12 +10,13 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
+import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { State } from "@/generators/states-generator";
 import type { MilitaryUnit } from "@/types/Military";
-import { downloadFile, getFileName, isImageIcon } from "@/utils";
+import { downloadFile, getFileName } from "@/utils";
 import { capitalize, ensureEl, rn, sanitizeId, si, wiki } from "../utils";
 
 const dialogId = "militaryOverview" as const;
@@ -374,7 +375,7 @@ function militaryCustomize(): void {
       Apply: applyMilitaryOptions,
       Add: () =>
         addUnitLine({
-          icon: "🛡️",
+          icon: Icons.glyph("🛡️"),
           name: `custom${ensureEl<HTMLTableElement>("militaryOptionsTable").rows.length}`,
           rural: 0.2,
           urban: 0.5,
@@ -407,7 +408,10 @@ function militaryCustomize(): void {
     const type = el.dataset.type;
 
     if (type === "icon") {
-      Controllers.IconSelector.open(el.dataset.icon || "", value => setIconButton(el, value));
+      Controllers.IconPicker.open({
+        current: el.dataset.icon || "",
+        onPick: icon => setIconButton(el, icon)
+      });
       return;
     }
 
@@ -488,16 +492,7 @@ function militaryCustomize(): void {
   // may be rewritten by the browser or extensions (e.g. Google Translate wrapping text nodes in <font>)
   function setIconButton(button: HTMLElement, icon: string): void {
     button.dataset.icon = icon;
-    button.textContent = "";
-
-    if (isImageIcon(icon)) {
-      const image = document.createElement("img");
-      image.src = icon;
-      image.style.cssText = "width: 1.2em; height: 1.2em; pointer-events: none";
-      button.appendChild(image);
-    } else {
-      button.textContent = icon;
-    }
+    button.innerHTML = Icons.html(icon);
   }
 
   function restoreDefaultUnits(): void {
@@ -585,7 +580,7 @@ function militaryCustomize(): void {
       );
       const values = elements.map(el => {
         const { type, value } = (el as HTMLElement).dataset || {};
-        if (type === "icon") return (el as HTMLElement).dataset.icon?.trim() || "⠀";
+        if (type === "icon") return (el as HTMLElement).dataset.icon ?? "";
         if (type) return value ? value.split(",").map(v => parseInt(v, 10)) : null;
         if ((el as HTMLInputElement).type === "number") return +(el as HTMLInputElement).value || 0;
         if ((el as HTMLInputElement).type === "checkbox") return +(el as HTMLInputElement).checked || 0;

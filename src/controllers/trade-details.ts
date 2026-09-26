@@ -8,7 +8,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
-import { IconSets } from "@/components/icon-sets";
+import { Icons } from "@/components/icons";
 import type { Burg } from "../generators/burgs-generator";
 import type { Deal } from "../generators/markets-generator";
 import type { Point } from "../generators/voronoi";
@@ -59,7 +59,7 @@ const tradeDetailsTable = initEditorTable<TradeDetailRow>({
 });
 
 function open(batch: TradeBatch): void {
-  void IconSets.retry("goods");
+  void Icons.retry("goods");
   if (!batch?.deals.length) return;
 
   activeBatch = batch;
@@ -154,7 +154,7 @@ function renderTradeDetailsPage(view: TableView<TradeDetailRow>): void {
     return /* html */ `<div class="states tradeDeal" data-good="${good.name}" data-units="${rn(units, 2)}" data-price="${price}" data-value="${rn(value, 2)}">
     <svg data-col="icon" data-tip="Good icon" width="2em" height="2em" class="goodIcon">
       <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${Goods.getStroke(good.color)}"/>
-      <use href="#${good.icon}" x="10%" y="10%" width="80%" height="80%"></use>
+      <use href="${Icons.href(good.icon)}" x="10%" y="10%" width="80%" height="80%"></use>
     </svg>
     <div data-col="good" data-tip="Good name" class="goodName">${good.name}</div>
     <div data-col="units" class="goodUnits">${rn(units, 2)}</div>

@@ -1,12 +1,13 @@
 import { type D3DragEvent, drag, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
+import { Icons } from "@/components/icons";
 import { stopMapPlacement } from "@/components/map-placement";
 import { Notes } from "@/components/notes";
 import { clearMainTip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
 import { drawMarkers, setEditedMarker } from "@/renderers/draw-markers";
-import { ensureEl, escapeHtml, findEl, isImageIcon, rn } from "../utils";
+import { ensureEl, findEl, rn } from "../utils";
 
 let selectedElement: SVGSVGElement;
 let selectedMarker: Marker;
@@ -54,7 +55,7 @@ function renderDialog(): void {
       </div>
       <div data-tip="Marker icon" style="display: flex; align-items: center">
         <div class="label">Icon:</div>
-        <div id="markerIcon" style="font-size: 1.5em; width: 3.7em">👑</div>
+        <div id="markerIcon" style="font-size: 1.5em; width: 3.7em; display: flex"></div>
         <button id="markerIconSelect" style="width: 5em">select</button>
       </div>
       <div data-tip="Marker marker element and icon sizes in pixels">
@@ -158,9 +159,7 @@ function dragMarker(this: SVGElement, event: D3DragEvent<SVGElement, unknown, un
 
 function updateInputs(): void {
   const marker = selectedMarker;
-  ensureEl("markerIcon").innerHTML = isImageIcon(marker.icon)
-    ? `<img src="${escapeHtml(marker.icon)}" style="width: 1em; height: 1em;">`
-    : escapeHtml(marker.icon);
+  ensureEl("markerIcon").innerHTML = Icons.html(marker.icon);
 
   ensureEl<HTMLInputElement>("markerName").value = marker.name || "";
   ensureEl<HTMLInputElement>("markerType").value = marker.type || "";
@@ -185,16 +184,13 @@ function changeMarkerType(this: HTMLInputElement): void {
 }
 
 function changeMarkerIcon(): void {
-  Controllers.IconSelector.open(selectedMarker.icon, value => {
-    const isExternal = isImageIcon(value);
-    ensureEl("markerIcon").innerHTML = isExternal
-      ? `<img src="${escapeHtml(value)}" style="width: 1em; height: 1em;">`
-      : escapeHtml(value);
-
-    getSameTypeMarkers().forEach(marker => {
-      marker.icon = value;
-    });
-    drawMarkers();
+  Controllers.IconPicker.open({
+    current: selectedMarker.icon,
+    onPick: icon => {
+      ensureEl("markerIcon").innerHTML = Icons.html(icon);
+      for (const marker of getSameTypeMarkers()) marker.icon = icon;
+      drawMarkers();
+    }
   });
 }
 

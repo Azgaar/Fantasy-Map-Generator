@@ -1,4 +1,7 @@
 import { expect, test, vi } from "vitest";
+import "@/generators/relief-generator"; // the models own the icon sets that tell references from text
+import "@/generators/burgs-generator";
+import "@/generators/goods-generator";
 import { Styles } from "./styles";
 import {
   harvestAttributes,
@@ -239,7 +242,7 @@ test("save sync lets an old map's markets, goods-circle, texture and ocean-outli
   styles.ocean.groups.oceanLayers.options.outline = "-6,-3,-1";
   harvestStylesFromSvg();
   expect(styles.markets.options.iconSize).toBe(7);
-  expect(styles.markets.options.icon).toBe("Y");
+  expect(styles.markets.options.icon).toBe("glyph-59"); // the old emoji text as a glyph
   expect(styles.goods.groups.goodsIcons.options.circle).toBe(true);
   expect(styles.texture.options).toEqual({ href: "./t.jpg", x: 5, y: 6 });
   expect(styles.ocean.groups.oceanLayers.options.outline).toBe("-6,-4,-2");
@@ -371,7 +374,7 @@ test("a pre-1.150 style object's burg and anchor records land under the burgIcon
 
   // the record outranks the DOM harvest
   expect(migrated.burgIcons.groups.capital.groups.icons.attrs.fill).toBe("#ffffff");
-  expect(migrated.burgIcons.groups.capital.groups.icons.options.icon).toBe("#burgs-atlas-square");
+  expect(migrated.burgIcons.groups.capital.groups.icons.options.icon).toBe("burgs-atlas-square");
   expect(migrated.burgIcons.groups.capital.groups.anchors.attrs.fill).toBe("#000000");
   expect(migrated.burgIcons.groups.capital.groups.anchors.options.size).toBe(1.9);
 

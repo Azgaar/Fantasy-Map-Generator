@@ -1,5 +1,6 @@
 // All app configuration options, options.map saved to `.map` file as settings; docs/architecture/configuration.md
 import { z } from "zod";
+import { Icons } from "@/components/icons";
 import type { LayerId } from "@/components/layers";
 import { MAX_DENSITY, MIN_DENSITY } from "@/data/graph-density";
 import { CULTURE_SETS } from "@/generators/cultures-generator";
@@ -66,6 +67,21 @@ export const transport = z.strictObject({
   hoursPerDay: positive.max(24).optional(),
   icon: z.string().optional()
 });
+
+export const customIcon = z.strictObject({
+  id: z.string().regex(/^custom-[\w-]+$/),
+  kind: z.enum(["svg", "image"]),
+  content: z.string(),
+  viewBox: z.string().refine(viewBox => Icons.parseFrame(viewBox) !== null)
+});
+
+/** a broken icon is dropped on its own, so it never costs the map its other icons; absent in older maps */
+const customIcons = z.preprocess(value => {
+  if (!Array.isArray(value)) return [];
+  const valid = value.filter(icon => customIcon.safeParse(icon).success);
+  if (valid.length < value.length) console.warn(`Dropped ${value.length - valid.length} invalid custom icon(s)`);
+  return valid;
+}, z.array(customIcon));
 
 /** read at render time to build every feature outline */
 export const coastlineSettings = z.strictObject({
@@ -139,6 +155,7 @@ export const mapSchema = z.strictObject({
   labels: z.strictObject({ groups: z.array(labelGroup) }),
   military: z.strictObject({ units: z.array(militaryUnit) }),
   transports: z.array(transport),
+  customIcons,
   coastline: coastlineSettings
 });
 

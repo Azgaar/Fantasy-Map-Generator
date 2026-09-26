@@ -48,7 +48,7 @@
             },
             "options": {
               "size": 4,
-              "icon": "#burgs-watabou-capital"
+              "icon": "burgs-watabou-capital"
             }
           },
           "anchors": {
@@ -66,7 +66,7 @@
             },
             "options": {
               "size": 1.8,
-              "icon": "#ports-anchor",
+              "icon": "ports-anchor",
               "dx": 0,
               "dy": 0
             }
@@ -90,7 +90,7 @@
             },
             "options": {
               "size": 3.2,
-              "icon": "#burgs-watabou-city"
+              "icon": "burgs-watabou-city"
             }
           },
           "anchors": {
@@ -108,7 +108,7 @@
             },
             "options": {
               "size": 1.4,
-              "icon": "#ports-anchor",
+              "icon": "ports-anchor",
               "dx": 0,
               "dy": 0
             }
@@ -132,7 +132,7 @@
             },
             "options": {
               "size": 2.6,
-              "icon": "#burgs-watabou-fort"
+              "icon": "burgs-watabou-fort"
             }
           },
           "anchors": {
@@ -150,7 +150,7 @@
             },
             "options": {
               "size": 1,
-              "icon": "#ports-anchor",
+              "icon": "ports-anchor",
               "dx": 0,
               "dy": 0
             }
@@ -174,7 +174,7 @@
             },
             "options": {
               "size": 2.6,
-              "icon": "#burgs-watabou-monastery"
+              "icon": "burgs-watabou-monastery"
             }
           },
           "anchors": {
@@ -192,7 +192,7 @@
             },
             "options": {
               "size": 1,
-              "icon": "#ports-anchor",
+              "icon": "ports-anchor",
               "dx": 0,
               "dy": 0
             }
@@ -216,7 +216,7 @@
             },
             "options": {
               "size": 2.4,
-              "icon": "#burgs-watabou-caravanserai"
+              "icon": "burgs-watabou-caravanserai"
             }
           },
           "anchors": {
@@ -234,7 +234,7 @@
             },
             "options": {
               "size": 1,
-              "icon": "#ports-anchor",
+              "icon": "ports-anchor",
               "dx": 0,
               "dy": 0
             }
@@ -258,7 +258,7 @@
             },
             "options": {
               "size": 2.2,
-              "icon": "#burgs-watabou-post"
+              "icon": "burgs-watabou-post"
             }
           },
           "anchors": {
@@ -276,7 +276,7 @@
             },
             "options": {
               "size": 1,
-              "icon": "#ports-anchor",
+              "icon": "ports-anchor",
               "dx": 0,
               "dy": 0
             }
@@ -300,7 +300,7 @@
             },
             "options": {
               "size": 2.1,
-              "icon": "#burgs-watabou-village"
+              "icon": "burgs-watabou-village"
             }
           },
           "anchors": {
@@ -318,7 +318,7 @@
             },
             "options": {
               "size": 1,
-              "icon": "#ports-anchor",
+              "icon": "ports-anchor",
               "dx": 0,
               "dy": 0
             }
@@ -342,7 +342,7 @@
             },
             "options": {
               "size": 1.7,
-              "icon": "#burgs-watabou-hamlet"
+              "icon": "burgs-watabou-hamlet"
             }
           },
           "anchors": {
@@ -360,7 +360,7 @@
             },
             "options": {
               "size": 1,
-              "icon": "#ports-anchor",
+              "icon": "ports-anchor",
               "dx": 0,
               "dy": 0
             }
@@ -384,7 +384,7 @@
             },
             "options": {
               "size": 2.6,
-              "icon": "#burgs-watabou-town"
+              "icon": "burgs-watabou-town"
             }
           },
           "anchors": {
@@ -402,7 +402,7 @@
             },
             "options": {
               "size": 1,
-              "icon": "#ports-anchor",
+              "icon": "ports-anchor",
               "dx": 0,
               "dy": 0
             }
@@ -1129,7 +1129,7 @@
     "options": {
       "size": 3,
       "iconSize": 5,
-      "icon": "⚖️"
+      "icon": "glyph-2696-fe0f"
     }
   },
   "military": {

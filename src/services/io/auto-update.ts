@@ -1,7 +1,8 @@
 // Update an old map file to the current version
+
 import { color, min, select } from "d3";
 import { confirmationDialog } from "@/components/dialog/dialog-helpers";
-import { IconSets } from "@/components/icon-sets";
+import { CustomIcons, IMAGE_FRAME } from "@/components/icons";
 import { type LayerId, Layers, type LayersState } from "@/components/layers";
 import { type EntityRef, MapEntities } from "@/components/map-entities";
 import { Notes } from "@/components/notes";
@@ -18,6 +19,7 @@ import { Styles } from "@/generators/styles";
 import {
   labelGroupFromLegacy,
   lakeGroupFromSvg,
+  legacyIconReference,
   migrateStyles,
   normalizeStyles,
   restoreStrippedLayerStyles,
@@ -40,8 +42,11 @@ import {
   rn,
   rw,
   safeParseJSON,
+  sanitizeSvgIcon,
+  scopeSvgIcon,
   unique
 } from "@/utils";
+import { isImageIcon } from "@/utils/fileUtils";
 import { parsePathPoints } from "@/utils/pathUtils";
 
 type LegacyBurgGroup = Omit<MapData["burgs"]["groups"][number], "biomes" | "states" | "cultures" | "religions"> & {
@@ -2062,9 +2067,56 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
     // v1.154.0 derives symbol ids from the icon set directories: good-<name> is goods-<name>, uploads are custom-goods-<id>
     const goodIconId = (icon: string): string =>
-      icon.replace(/^good-custom-/, IconSets.customPrefix(Goods.iconSet.id)).replace(/^good-/, `${Goods.iconSet.id}-`);
+      icon.replace(/^good-custom-/, "custom-goods-").replace(/^good-/, `${Goods.iconSet.id}-`);
     for (const good of pack.goods ?? []) if (good.icon) good.icon = goodIconId(good.icon);
-    for (const art of document.querySelectorAll('[id^="good-custom-"]')) art.id = goodIconId(art.id);
+
+    // v1.154.0 made every icon slot a bare symbol id: goods uploads (data[45], written empty since) and inline
+    // images become custom icons, text becomes glyphs. The style record is converted by normalizeStyles above
+    if (data[45]) adoptGoodsUploads(data[45]);
+    migrateIconSlots([
+      ...(pack.goods ?? []),
+      ...(pack.markers ?? []),
+      ...(pack.states ?? []).flatMap(state => state?.military ?? []),
+      ...options.map.military.units
+    ]);
+
+    function migrateIconSlots(slots: { icon?: string }[]): void {
+      const images = new Map<string, string>(); // one custom icon per distinct inline image or URL
+      for (const slot of slots) {
+        const value = slot.icon;
+        if (!value) continue;
+        if (!isImageIcon(value)) {
+          slot.icon = legacyIconReference(value);
+          continue;
+        }
+        let id = images.get(value);
+        if (!id) {
+          id = CustomIcons.add({ kind: "image", content: value, viewBox: IMAGE_FRAME }).id;
+          images.set(value, id);
+        }
+        slot.icon = id;
+      }
+    }
+
+    function adoptGoodsUploads(markup: string): void {
+      const roots = new DOMParser().parseFromString(markup, "text/html").querySelectorAll("body > svg[id]");
+      for (const root of roots) {
+        const id = root.id.replace(/^good-custom-/, "custom-goods-");
+        if (CustomIcons.get(id)) continue;
+
+        const images = root.querySelectorAll("image");
+        const href = images[0]?.getAttribute("href") ?? images[0]?.getAttribute("xlink:href") ?? "";
+        if (images.length === 1 && root.children.length === 1 && href.startsWith("data:image/")) {
+          CustomIcons.add({ id, kind: "image", content: href, viewBox: IMAGE_FRAME });
+          continue;
+        }
+
+        const svg = sanitizeSvgIcon(root.outerHTML);
+        if (!svg) continue;
+        scopeSvgIcon(svg, id);
+        CustomIcons.add({ id, ...CustomIcons.fromSvg(svg) });
+      }
+    }
   }
 }
 

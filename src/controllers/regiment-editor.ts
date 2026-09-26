@@ -1,12 +1,13 @@
 import { type D3DragEvent, drag, easeSinInOut, select, sum, transition } from "d3";
 import { closeDialogs, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
+import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { Notes } from "@/components/notes";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { drawRegiment, moveRegiment } from "@/renderers/draw-military";
-import { escapeHtml, isImageIcon, speak } from "@/utils";
+import { drawRegiment, moveRegiment, regimentIconBox, updateRegimentIcon } from "@/renderers/draw-military";
+import { speak } from "@/utils";
 import type { Regiment } from "../generators/military-generator";
 import { capitalize, ensureEl, getPointer, last, rn } from "../utils";
 
@@ -62,7 +63,7 @@ function renderDialog(): void {
       </div>
       <div data-tip="Regiment icon" style="display: flex; align-items: center">
         <div class="label">Icon:</div>
-        <div id="regimentIcon" translate="no" style="font-size: 1.5em; width: 3.7em"></div>
+        <div id="regimentIcon" translate="no" style="font-size: 1.5em; width: 3.7em; display: flex"></div>
         <button id="regimentIconChange" style="padding: 0; width: 4.5em">change</button>
       </div>
       <div id="regimentComposition" class="table"></div>
@@ -113,9 +114,7 @@ function getRegiment(): Regiment | undefined {
 function updateRegimentData(regiment: Regiment): void {
   ensureEl("regimentType").className = regiment.n ? "icon-anchor" : "icon-users";
   ensureEl<HTMLInputElement>("regimentName").value = regiment.name;
-  ensureEl("regimentIcon").innerHTML = isImageIcon(regiment.icon!)
-    ? `<img src="${escapeHtml(regiment.icon!)}" style="width: 1em; height: 1em;">`
-    : escapeHtml(regiment.icon!);
+  ensureEl("regimentIcon").innerHTML = Icons.html(regiment.icon ?? "");
 
   const composition = ensureEl("regimentComposition");
   composition.innerHTML = options.map.military.units
@@ -211,7 +210,7 @@ function changeType(): void {
   baseRect.setAttribute("x", String(x));
   baseRect.setAttribute("width", String(reg.n ? size * 4 : size * 6));
   iconRect.setAttribute("x", String(x - size * 2));
-  icon.setAttribute("x", String(x - size));
+  icon.setAttribute("x", String(regimentIconBox(x, 0, size * 2, reg.icon).x));
   selectedRegiment.querySelector("text")!.innerHTML = String(Military.getTotal(reg));
 }
 
@@ -233,12 +232,13 @@ function changeIcon(): void {
   const regiment = getRegiment();
   if (!regiment || !selectedRegiment) return;
 
-  Controllers.IconSelector.open(regiment.icon ?? "", value => {
-    regiment.icon = value;
-    const isExternal = isImageIcon(value);
-    ensureEl("regimentIcon").innerHTML = isExternal ? `<img src="${value}" style="width: 1em; height: 1em;">` : value;
-    selectedRegiment!.querySelector(".regimentIcon")!.textContent = isExternal ? "" : value;
-    selectedRegiment!.querySelector(".regimentImage")!.setAttribute("href", isExternal ? value : "");
+  Controllers.IconPicker.open({
+    current: regiment.icon ?? "",
+    onPick: icon => {
+      regiment.icon = icon;
+      ensureEl("regimentIcon").innerHTML = Icons.html(icon);
+      updateRegimentIcon(selectedRegiment!.querySelector<SVGUseElement>(".regimentIcon")!, regiment);
+    }
   });
 }
 
@@ -350,7 +350,7 @@ function addRegimentOnClick(this: SVGGElement, event: MouseEvent): void {
     bx: x,
     by: y,
     state,
-    icon: "🛡️",
+    icon: Icons.glyph("🛡️"),
     name: "",
     t: 0,
     s: 0,
@@ -544,7 +544,6 @@ function dragRegiment(this: SVGGElement, event: D3DragEvent<SVGGElement, unknown
   const text = this.querySelector("text")!;
   const iconRect = this.querySelectorAll("rect")[1];
   const icon = this.querySelector(".regimentIcon")!;
-  const image = this.querySelector(".regimentImage")!;
 
   const self = selectedRegiment === this;
   const baseLine = select<SVGGElement, unknown>("#viewbox").select("g#regimentBase > line");
@@ -564,10 +563,9 @@ function dragRegiment(this: SVGGElement, event: D3DragEvent<SVGGElement, unknown
     text.setAttribute("y", String(y));
     iconRect.setAttribute("x", String(x1 - h));
     iconRect.setAttribute("y", String(y1));
-    icon.setAttribute("x", String(x1 - size));
-    icon.setAttribute("y", String(y));
-    image.setAttribute("x", String(x1 - h));
-    image.setAttribute("y", String(y1));
+    const box = regimentIconBox(x1, y1, h, reg.icon);
+    icon.setAttribute("x", String(box.x));
+    icon.setAttribute("y", String(box.y));
     if (self) {
       baseLine.attr("x2", x).attr("y2", y);
       rotationControl

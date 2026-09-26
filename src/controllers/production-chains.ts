@@ -1,6 +1,6 @@
 import { type Selection, select, zoom, zoomIdentity } from "d3";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
-import { IconSets } from "@/components/icon-sets";
+import { Icons } from "@/components/icons";
 import { tip } from "@/components/tooltips";
 import type { Good } from "../generators/goods-generator";
 import { ensureEl } from "../utils";
@@ -117,7 +117,7 @@ const FLOW_OPACITY_PER_AMOUNT = 0.08;
 const FLOW_OPACITY_MAX = 0.92;
 
 function open(): void {
-  void IconSets.retry("goods");
+  void Icons.retry("goods");
   const goods = [...(pack.goods as Good[])];
   if (!goods.length) {
     tip("No goods data available.", true, "warn");
@@ -762,7 +762,7 @@ function renderNodeContent(node: GraphNode, displayName: string): string {
   const iconY = CARD_HEIGHT / 2;
   const textX = iconX + ICON_RADIUS + 5;
 
-  return `<use href="#${node.good.icon}" x="${iconX - ICON_RADIUS}" y="${iconY - ICON_RADIUS}"
+  return `<use href="${Icons.href(node.good.icon)}" x="${iconX - ICON_RADIUS}" y="${iconY - ICON_RADIUS}"
     width="${ICON_RADIUS * 2}" height="${ICON_RADIUS * 2}"/>
   <text x="${textX}" y="${iconY - 2}" font-size="10" font-family="sans-serif"
     fill="#111" font-weight="600">${displayName}</text>

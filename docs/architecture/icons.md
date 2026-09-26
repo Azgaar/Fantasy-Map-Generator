@@ -31,18 +31,20 @@ interface IconSet {
 - `Relief.iconSets` — one per relief set (`relief/<set>`), with `aliases` resolving the union slots the
   directory has no file for (`Relief.aliasSlots`).
 - `Burgs.iconSets` — `burgs` and `ports`, both `em: 10`.
-- `Goods.iconSet` — `goods`; map-carried uploads use `IconSets.customPrefix("goods")`.
+- `Goods.iconSet` — `goods`.
 
-`components/icon-sets.ts` is family-agnostic: `IconSetRegistry.sets()` lists the models, and every set goes through
-the same steps — glob the directory (`import.meta.glob(?raw)`, one hashed lazy chunk per set via
-`manualChunks` in `vite.config.ts`), turn each `<svg>` root into `<symbol id>`, apply `em` framing if
-declared, append `aliases` if declared, inject the whole group as `<g id="icons-<set>">` into
-`#defElements defs`. `IconSetRegistry` (`IconSets`) owns loading: `load` returns the shared attempt and
-never rejects, `retry` starts a fresh attempt for an explicit demand (a picker, an export), `isLoaded`
-answers after the fact, `files(set)` lists the directory synchronously (pickers need no chunk to list
-choices). Failed attempts leave no partial definitions, report once, and stay failed until a `retry`;
-renderer redraws never retry. Export asserts `isLoaded` after the wait, so a chunk that never arrived
-fails the export instead of silently dropping icons.
+`components/icon-sets.ts` (`IconSets`) is the family-agnostic catalog of the built-in sets and touches no
+DOM: `sets()` lists the models, `files(set)` lists a directory synchronously (pickers need no chunk to list
+choices), and `read(set)` turns a set into symbols — glob the directory (`import.meta.glob(?raw)`, one hashed
+lazy chunk per set via `manualChunks` in `vite.config.ts`), turn each `<svg>` root into `<symbol id>`, keep
+an anchored set's frame unclipped, append `aliases` if declared.
+
+`components/icons.ts` (`Icons`) puts them in the page, as `<g data-set="<set>">` in
+`#defElements defs > g#icons-library`. `load` returns the shared attempt and never rejects, `retry` starts a
+fresh attempt for an explicit demand (a picker, an export), `isLoaded` answers after the fact. Failed
+attempts leave no partial definitions, report once, and stay failed until a `retry`; renderer redraws never
+retry. Export asserts `isLoaded` after the wait, so a chunk that never arrived fails the export instead of
+silently dropping icons.
 
 To add:
 
@@ -52,18 +54,19 @@ To add:
 - **a relief set** — a directory under `relief/` and its name in `Relief.sets`.
 - **a relief type or variant** — extend `Relief.types`, provide artwork and a fallback, run the coverage tests.
 - **a new family** — give its model an `IconSet` and list the model in `IconSetRegistry.sets()`; its
-  renderer awaits `IconSets.load(id)` before drawing. Declare `em` if the art is anchored, `aliases` if
+  renderer awaits `Icons.load(id)` before drawing. Declare `em` if the art is anchored, `aliases` if
   some ids must resolve without a file.
 
 ## Anchored art (`em`)
 
 Burg and port art is drawn around its anchor, the origin, at **10 user units per em**: the plain circle
-(`r=5`) is 1em wide, so a group `size` of 1 draws it 1 map unit wide. The loader keeps the file's frame,
-sizes the symbol in em (`width="1.26em"`) and translates the art so the anchor sits at the frame's corner;
-`<use x y>` under the group's `font-size` then lands the anchor on the burg with the art overflowing
-around it. Inherited `stroke-width` resolves in the art's own units, so a `scale()` wrapper preserves
-both the size and the stroke weight of art drawn at another scale. Previews (`style-editor/icon-preview.ts`)
-frame a symbol with its own viewBox, read from the loaded set.
+(`r=5`) is 1em wide, so a group `size` of 1 draws it 1 map unit wide. The symbol keeps the file's
+anchor-relative frame (a negative viewBox origin) and never clips it, so anywhere else it is an ordinary
+boxed icon. The burg renderer alone places it around the point: `Icons.anchoredBox(id)` is the frame
+over `em`, the group translates by its origin in em, and each `<use x y>` is as wide as the frame in em,
+under the group's `font-size`. Any other icon on a burg gets the box `[-0.5, -0.5, 1, 1]`: centred on
+the point. Inherited `stroke-width` resolves in the art's own units, so a `scale()` wrapper preserves
+both the size and the stroke weight of art drawn at another scale.
 
 ## Logical relief slots
 
@@ -116,24 +119,59 @@ burg icons do; the relief and in-project burg art carry none. Do not add `<title
 would display it as a tooltip. Proportions belong in the viewBox, not in code. UI glyphs are not icon-set
 assets: a button that needs one inlines its SVG in its own markup.
 
-## Map-carried art and exports
+## Icon references
 
-A map can carry art no set provides. Its ids use the reserved namespace `custom-<set>-…`
-(`IconSets.customPrefix`), never a set's own, so the registry needs no special case, and
-`IconSets.customIcons(set)` lists them. Only goods use it today: the good editor appends
-`<svg id="custom-goods-<id>">` to `#defElements defs` beside the loaded groups, map field 45 persists
-the ones `pack.goods` references (unused uploads are dropped on save), and loading clears the previous
-map's uploads without touching the groups. An uploaded SVG is parsed inertly and stripped of scripting
-and external references (`sanitizeSvgIcon`), and its inner ids and classes are prefixed with the upload's
-id (`scopeSvgIcon`), so it neither collides with the document nor styles it. The good editor lists
-`IconSets.files("goods")` plus those uploads. Burg and relief uploads are
-not implemented; the append-only loader and the reserved namespace are the seam for them.
+Every icon slot stores a **bare symbol id** and draws a `<use>`; the `#` is added where the href is
+written (`Icons.href`). `Icons` is the one entry point for a reference, whatever its source: its `kind`,
+`name`, `frame`, `href` and `html`. An empty reference is no icon. Three kinds of id resolve:
+
+- **Set icons** — `<set>-<path>`, loaded as above. `href` starts the set's chunk, so a marker may use a
+  goods icon; `<use>` resolves the id once the chunk lands.
+- **Glyphs** — any short text, `glyph-<code points in hex>` (`Icons.glyph`, `Icons.glyphText`). `href` builds
+  the symbol on first use in the `glyph` group: the text centred in a `0 0 100 100` frame at font size 100,
+  so a box of `n` draws it as large as `n`-sized text did. It sets no font, fill or shadow, so it takes them
+  from where it is drawn, and no stroke, which would outline emoji.
+- **Custom icons** — `custom-<8 hex>` (`custom-goods-<id>` for uploads kept from older maps), the
+  pictures in `options.map.customIcons` (`CustomIcons`, beside `Icons` in `components/icons.ts`). Each is SVG
+  markup or an image URL with its frame. `Icons.syncCustom()` rebuilds the `custom` group from the list
+  on generation, after a load and after a change; SVG content is sanitised again on the way, since a
+  file may carry anything, and an image must be an `http(s)` or `data:image/` URL.
+
+The slots are goods, markers, regiments, military unit types, burg group icons and anchors, and the market
+marker; `Icons.uses(id)` counts the references in each.
+
+`Icons.html(id)` draws an icon in the interface — editors, overviews, the picker: an inline svg boxing the
+icon in its own frame. Art takes a default paint (a burg's white fill and dark stroke) where no style colours
+it; a glyph takes the text colour. The icon picker (`controllers/icon-picker/`) takes only the current icon
+and a callback, offers one tab per source — Built-in, Emoji, Custom — and opens on the tab holding the
+current icon with its set expanded, else on Built-in.
+
+## Authoring custom icons
+
+`controllers/icon-picker/pictures.ts` turns input into a picture — kind, content, frame — and throws messages
+meant for the author. A link must be `http(s)` and load as an image. An SVG upload (up to 200 kB) is
+sanitised, keeps its root's paint on a wrapping group and is scoped to the icon's id. A raster upload
+(up to 2 MB) is redrawn at 256 px on its longer side and stored as WebP, or PNG where the browser cannot
+encode WebP. A new picture is **fitted**: a square around its visible content, padded by 5% — the SVG
+bounding box, the opaque pixels of an image, or the whole box for a link whose pixels the site does not
+share.
+
+The Custom tab adds by link or upload and picks the new icon; Replace gives an icon a new picture under
+its id, so every slot follows; Remove confirms with the uses `Icons.uses` counts and leaves the
+references to draw nothing. The positioner (`controllers/icon-picker/positioner.ts`) zooms and pans a square
+frame, writing the symbol's `viewBox` as it moves so the map and the previews follow; Cancel restores
+it and Apply stores it. Every change rebuilds the custom symbols (`Icons.syncCustom`).
+
+## Exports
 
 `export.ts` reconciles its clone for the requested bounds before its first asynchronous wait, captures
-referenced map-carried definitions, and derives the required sets from the remaining references through
-`setForId`. It then waits for the sets and walks local `href`/`xlink:href` dependencies, copying by id
-regardless of tag and deduplicating cycles. Only loaded groups may be read after waiting, so the export
-reflects the map as it was when it started. Failed sets fail the export.
+referenced definitions a chunk does not own (glyphs, custom icons), and derives the required sets from
+the remaining references through `setForId`. It then waits for the sets and walks local
+`href`/`xlink:href` dependencies, copying by id regardless of tag and deduplicating cycles. Only loaded
+groups may be read after waiting, so the export reflects the map as it was when it started. Failed sets
+fail the export. A raster export draws the SVG as an image, which fetches no external files, so linked
+custom images are inlined as base64 where the host allows it and dropped where it does not; an SVG
+export keeps its links.
 
 ## History
 
@@ -143,3 +181,10 @@ against the incoming map's styles, and renames `#icon-<name>` to `#burgs-atlas-<
 for names that already carried their style) / `#ports-<name>` in
 style records (`styles-legacy.ts`, so presets are covered too), `good-<name>` to `goods-<name>` and
 `good-custom-<id>` to `custom-goods-<id>` in `pack.goods` and field 45.
+
+Version 1.154.0 made every slot a bare icon reference. The 1.154.0 auto-update step migrates an older map,
+and generation migrates the unit types a browser keeps between maps:
+goods uploads in map field 45 become custom icons under their ids (field 45 is written empty since),
+inline `data:` images and URLs become one custom icon per distinct value, text becomes glyphs, and
+`#`-prefixed ids lose the `#`. Stored and shipped style presets are rewritten the same way by
+`normalizeStyles`.

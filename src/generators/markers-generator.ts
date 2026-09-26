@@ -1,4 +1,5 @@
 import { mean } from "d3";
+import { Icons } from "@/components/icons";
 import type { PackedGraph } from "@/types/PackedGraph";
 import {
   capitalize,
@@ -137,7 +138,7 @@ class MarkersModule {
     /*
       Default markers config:
       type - short description (snake-case)
-      icon - unicode character or url to image
+      icon - the glyph drawn in the pin, stored as its icon reference
       dx: icon offset in x direction, in pixels
       dy: icon offset in y direction, in pixels
       min: minimum number of candidates to add at least 1 marker
@@ -146,7 +147,7 @@ class MarkersModule {
       list: function to select candidates
       add: function to add marker legend
     */
-    return [
+    const config: MarkerConfig[] = [
       {
         type: "volcanoes",
         icon: "🌋",
@@ -499,6 +500,7 @@ class MarkersModule {
         add: this.addParty.bind(this)
       }
     ];
+    return config.map(marker => ({ ...marker, icon: Icons.glyph(marker.icon) }));
   }
 
   private resetConfig() {

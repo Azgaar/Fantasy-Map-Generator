@@ -1,7 +1,7 @@
 import { select } from "d3";
 import { fitMapToScreen } from "@/components/canvas";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
-import { IconSets } from "@/components/icon-sets";
+import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { registerMap } from "@/components/lifecycle";
 import { pickMapFile } from "@/components/options/io-panes";
@@ -377,15 +377,13 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       });
     }
 
-    // data[45]: custom good icons. They live beside the icon sets outside the replaced map svg, clear the previous set
-    for (const icon of IconSets.customIcons(Goods.iconSet.id)) icon.remove();
-    if (data[45]) document.querySelector(IconSets.defs)?.insertAdjacentHTML("beforeend", data[45]);
-
     await resolveVersionConflicts(mapVersion!, data);
 
     const styleRecord = data[48] ? safeParseJSON(data[48]) : undefined; // data[48] should be already migrated by auto-update
     Styles.set(Styles.parse(styleRecord));
     await Controllers.StylePresetsEditor.ensureGroupStyles();
+
+    Icons.syncCustom();
 
     if (data[50]) Layers.restore(JSON.parse(data[50]));
     if (data[51]) GraphOverride.restore(JSON.parse(data[51]));

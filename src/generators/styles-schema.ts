@@ -564,9 +564,9 @@ export const stylesSchema = z.strictObject({
         label: "Icon size",
         range: [1, 20],
         step: 0.5,
-        tip: "Set market marker emoji icon size in pixels"
+        tip: "Set market marker icon size in pixels"
       }),
-      icon: text({ control: "emoji", label: "Marker icon", tip: "Set the emoji icon shown inside the market marker" })
+      icon: text({ control: "icon", label: "Marker icon", tip: "Set the icon shown inside the market marker" })
     })
   }),
   military: z.strictObject({

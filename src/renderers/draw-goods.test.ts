@@ -5,7 +5,9 @@ import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 
 const mocks = vi.hoisted(() => ({ layerOn: true }));
 vi.mock("@/components/layers", () => ({ Layers: { isOn: () => mocks.layerOn } }));
-vi.mock("@/components/icon-sets", () => ({ IconSets: { load: vi.fn().mockResolvedValue(undefined) } }));
+vi.mock("@/components/icons", () => ({
+  Icons: { load: vi.fn().mockResolvedValue(undefined), href: (id: string) => `#${id}` }
+}));
 
 import "@/generators/styles";
 import { drawGoods } from "./draw-goods";

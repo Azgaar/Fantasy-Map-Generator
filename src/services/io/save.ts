@@ -1,6 +1,5 @@
 // Save the whole .map project to storage, machine or cloud
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
-import { IconSets } from "@/components/icon-sets";
 import { Layers } from "@/components/layers";
 import { Notes } from "@/components/notes";
 import { tip } from "@/components/tooltips";
@@ -119,14 +118,6 @@ function prepareMapData(): string {
   const labels = JSON.stringify(pack.addedLabels || []);
   const styleData = JSON.stringify(styles);
 
-  // store custom good icons, dropping uploads no good uses
-  const goodIcons = new Set(pack.goods.map(good => good.icon));
-  const customGoodIcons = IconSets.customIcons(Goods.iconSet.id)
-    .filter(el => goodIcons.has(el.id))
-    .map(el => el.outerHTML)
-    .join("")
-    .replace(/[\r\n]+/g, " "); // map data is split by CRLF on load
-
   // store name array only if not the same as default
   const defaultNameBases = Names.getNameBases();
   const namesData = Names.nameBases
@@ -186,7 +177,7 @@ function prepareMapData(): string {
     markets,
     deals,
     pack.cells.market,
-    customGoodIcons,
+    "", // deprecated custom good icons, now options.map.customIcons
     measurers,
     labels,
     styleData,

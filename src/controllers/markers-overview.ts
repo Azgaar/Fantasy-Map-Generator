@@ -9,6 +9,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
+import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { clearMainTip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -16,7 +17,7 @@ import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
 import { setMarkersFilter } from "@/renderers/draw-markers";
 import { highlightElement } from "@/renderers/overlays/highlight";
-import { downloadFile, escapeHtml, getFileName, getLatitude, getLongitude, isImageIcon } from "@/utils";
+import { downloadFile, getFileName, getLatitude, getLongitude } from "@/utils";
 import { ensureEl } from "../utils";
 
 const dialogId = "markersOverview" as const;
@@ -183,7 +184,7 @@ function populateMarkerTypeMenu(): void {
   const menu = ensureEl("markerTypeSelectMenu");
   menu.innerHTML = "";
 
-  const types = [{ type: "empty", icon: "❓" }, ...Markers.getConfig()];
+  const types = [{ type: "empty", icon: Icons.glyph("❓") }, ...Markers.getConfig()];
   types.forEach(({ icon, type }) => {
     const option = document.createElement("button");
     option.innerHTML = `${iconHtml(icon)} ${type}`;
@@ -199,9 +200,7 @@ function populateMarkerTypeMenu(): void {
 }
 
 function iconHtml(icon: string): string {
-  return isImageIcon(icon)
-    ? `<img src="${escapeHtml(icon)}" style="width:1.2em; height:1.2em; vertical-align: middle;">`
-    : escapeHtml(icon);
+  return `<span style="display: inline-flex; font-size: 1.2em; vertical-align: middle">${Icons.html(icon)}</span>`;
 }
 
 function handleLineClick(ev: MouseEvent): void {
@@ -262,11 +261,7 @@ function renderMarkersPage(view: TableView<Marker>): void {
       return /* html */ `
         <div class="states" data-id=${i} data-type="${type}">
           <div data-col="type">
-            ${
-              isImageIcon(icon)
-                ? `<img src="${escapeHtml(icon)}" data-tip="Marker icon" style="width:1.2em; height:1.2em; vertical-align: middle;">`
-                : `<span data-tip="Marker icon" style="width:1.2em">${escapeHtml(icon)}</span>`
-            }
+            <span data-tip="Marker icon" style="display: inline-flex; width: 1.2em">${Icons.html(icon)}</span>
             <span data-tip="Marker type">${type}</span>
           </div>
           <span data-col="pin" data-tip="Pin marker (display only pinned markers)" class="icon-pin ${
@@ -427,7 +422,9 @@ function exportMarkers(): void {
     const lat = getLatitude(y, options.map.geography.coordinates, options.map.graph.height, 2);
     const lon = getLongitude(x, options.map.geography.coordinates, options.map.graph.width, 2);
 
-    return [i, type, icon, name, legend, stateName, cultureName, x, y, lat, lon].join(",");
+    return [i, type, quote(Icons.glyphText(icon) ?? icon), name, legend, stateName, cultureName, x, y, lat, lon].join(
+      ","
+    );
   });
 
   const data = headers + body.join("\n");

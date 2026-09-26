@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import indexHtml from "@/index.html?raw";
 import "@/generators/added-labels";
 import "@/generators/features-generator"; // migrations call the Features module through its global
+import "@/generators/burgs-generator"; // the burg sets that tell style icon references from text
 import "@/generators/goods-generator"; // the goods icon namespace the 1.154 step migrates into
 import "@/generators/relief-generator"; // the relief set namespace the 1.154 step migrates into
 import { confirmationDialog } from "@/components/dialog/dialog-helpers";
@@ -468,8 +469,8 @@ describe("v1.154.0 style record normalization", () => {
 
     await resolveVersionConflicts("1.153.0", data);
     const parsed = Styles.parse(JSON.parse(data[48]));
-    expect(parsed.burgIcons.groups.town.groups.anchors.options).toEqual({ size: 2, icon: "#ports-anchor" });
-    expect(parsed.burgIcons.groups.town.groups.icons.options.icon).toBe("#burgs-atlas-circle");
+    expect(parsed.burgIcons.groups.town.groups.anchors.options).toEqual({ size: 2, icon: "ports-anchor" });
+    expect(parsed.burgIcons.groups.town.groups.icons.options.icon).toBe("burgs-atlas-circle");
   });
 
   it("drops the old #icons layer element so the #burgIcons layer takes over", async () => {
@@ -979,8 +980,7 @@ describe("v1.154 relief descriptors", () => {
   };
 
   it("renames goods symbols into the set namespace and uploads into the reserved custom one", async () => {
-    document.body.innerHTML =
-      '<svg id="map"><defs id="deftemp"/><g id="viewbox"><g id="terrain"></g></g></svg><svg id="defElements"><defs><svg id="good-custom-ab12"/></defs></svg>';
+    document.body.innerHTML = '<svg id="map"><defs id="deftemp"/><g id="viewbox"><g id="terrain"></g></g></svg>';
     const data: string[] = [];
     data[48] = stylesPayload("colored");
     globalThis.pack = {
@@ -994,7 +994,48 @@ describe("v1.154 relief descriptors", () => {
       "custom-goods-ab12",
       "goods-tea"
     ]);
-    expect(document.querySelector("#defElements defs > svg")?.id).toBe("custom-goods-ab12");
+  });
+
+  it("moves goods uploads and inline images into custom icons, and text into glyphs", async () => {
+    document.body.innerHTML = '<svg id="map"><defs id="deftemp"/><g id="viewbox"><g id="terrain"></g></g></svg>';
+    const data: string[] = [];
+    const legacyStyles = JSON.parse(stylesPayload("colored"));
+    legacyStyles.markets.options.icon = "⚖️";
+    legacyStyles.burgIcons.groups.city.groups.icons.options.icon = "#burgs-atlas-circle";
+    data[48] = JSON.stringify(legacyStyles);
+    data[45] =
+      '<svg id="good-custom-ab12" viewBox="0 0 20 20" fill="navy"><script>x()</script><path id="leaf" d="M0 0"/></svg>' +
+      '<svg id="custom-goods-img" viewBox="0 0 200 200"><image width="200" height="200" href="data:image/png;base64,AA"/></svg>';
+    options.map.customIcons = [];
+    options.map.military.units = [{ ...options.map.military.units[0], icon: "⚔️" }];
+    globalThis.pack = {
+      relief: [],
+      goods: [{ icon: "good-custom-ab12" }, { icon: "custom-goods-img" }],
+      markers: [{ icon: "https://a.b/c.png" }, { icon: "https://a.b/c.png" }, { icon: "🌋" }, { icon: "hq-2" }],
+      states: [{ i: 0 }, { i: 1, military: [{ icon: "XIV" }] }]
+    } as unknown as typeof pack;
+    await runMigration("1.153.1", data, ["1.154.0"]);
+
+    expect(options.map.customIcons.map(icon => [icon.id, icon.kind])).toEqual([
+      ["custom-goods-ab12", "svg"],
+      ["custom-goods-img", "image"],
+      [pack.markers[0].icon, "image"] // markers sharing an image point at one icon
+    ]);
+    const [vector, raster] = options.map.customIcons;
+    expect(vector.viewBox).toBe("0 0 20 20");
+    expect(vector.content).toContain('fill="navy"'); // the root's paint, on the wrapping group
+    expect(vector.content).toContain('id="custom-goods-ab12-leaf"');
+    expect(vector.content).not.toContain("script");
+    expect(raster).toMatchObject({ content: "data:image/png;base64,AA", viewBox: "0 0 100 100" });
+    expect(pack.goods.map(good => good.icon)).toEqual(["custom-goods-ab12", "custom-goods-img"]);
+    expect(pack.markers[1].icon).toBe(pack.markers[0].icon);
+    expect(pack.markers[2].icon).toBe("glyph-1f30b");
+    expect(pack.markers[3].icon).toBe("glyph-68-71-2d-32"); // looks like an id, but no icon set owns it
+    expect(pack.states[1].military![0].icon).toBe("glyph-58-49-56");
+    expect(options.map.military.units[0].icon).toBe("glyph-2694-fe0f");
+    const styles = JSON.parse(data[48]);
+    expect(styles.markets.options.icon).toBe("glyph-2696-fe0f");
+    expect(styles.burgIcons.groups.city.groups.icons.options.icon).toBe("burgs-atlas-circle");
   });
 
   it("renumbers variants and recovers pins against the incoming map's set", async () => {

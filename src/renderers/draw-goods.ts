@@ -1,4 +1,4 @@
-import { IconSets } from "@/components/icon-sets";
+import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import {
   type Box,
@@ -58,7 +58,7 @@ interface BurgPlate {
 
 export async function drawGoods(): Promise<void> {
   TIME && console.time("drawGoods");
-  await IconSets.load("goods");
+  await Icons.load("goods");
   buildScene();
   layer.render();
   TIME && console.timeEnd("drawGoods");
@@ -206,7 +206,7 @@ function renderResourceIcons(bounds: Box): string {
     markup.push(
       `<g data-i="${goodId}">${
         drawCircle ? `<circle cx="${x}" cy="${y}" r="${half}" fill="${color}" stroke="${stroke}" />` : ""
-      }<use href="#${icon}" x="${rn(x - half, 2)}" y="${rn(y - half, 2)}" width="${iconSize}" height="${iconSize}"/></g>`
+      }<use href="${Icons.href(icon)}" x="${rn(x - half, 2)}" y="${rn(y - half, 2)}" width="${iconSize}" height="${iconSize}"/></g>`
     );
   }
 
@@ -247,7 +247,7 @@ function renderBurgPlates(bounds: Box): string {
     let offset = plateX + platePadX;
     for (const { value, color, stroke, icon } of entries) {
       content += `<circle cx="${rn(offset + plateIcon / 2, 1)}" cy="${rn(mid, 1)}" r="${rn(plateIcon / 2, 2)}" fill="${color}" stroke="${stroke}"/>`;
-      content += `<use href="#${icon}" x="${rn(offset, 1)}" y="${rn(iconY, 1)}" width="${rn(plateIcon, 2)}" height="${rn(plateIcon, 2)}"/>`;
+      content += `<use href="${Icons.href(icon)}" x="${rn(offset, 1)}" y="${rn(iconY, 1)}" width="${rn(plateIcon, 2)}" height="${rn(plateIcon, 2)}"/>`;
       content += `<text x="${rn(offset + plateIcon + plateGap, 1)}" y="${rn(mid, 1)}" dominant-baseline="central" font-size="${rn(plateFont, 2)}px" fill="#28282f" stroke="none">${value}</text>`;
       offset += entryWidth(value) + plateEntryGap;
     }

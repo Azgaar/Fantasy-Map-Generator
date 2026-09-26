@@ -7,9 +7,7 @@ import { ReliefEditor } from "./relief-editor";
 import "@/generators/pack-generator"; // registers the Pack global the editor finds cells with
 import "@/generators/relief-generator"; // installs the Relief global
 
-vi.mock("@/components/icon-sets", () => ({
-  IconSets: { retry: vi.fn().mockResolvedValue(undefined), reliefSetId: (set: string) => `relief-${set}` }
-}));
+vi.mock("@/components/icons", () => ({ Icons: { retry: vi.fn().mockResolvedValue(undefined) } }));
 vi.mock("@/components/viewbox-events", () => ({ applyDefaultViewboxEvents: vi.fn() }));
 vi.mock("@/components/layers", () => ({ Layers: { show: vi.fn(), draw: vi.fn() } }));
 vi.mock("@/renderers/draw-relief-icons", () => ({ redrawRelief: vi.fn(), getReliefIcon: vi.fn() }));

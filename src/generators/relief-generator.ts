@@ -43,7 +43,8 @@ export class ReliefModel {
   readonly iconSets: readonly (IconSet & { id: ReliefIconSetId })[] = RELIEF_SETS.map(set => ({
     id: this.iconSetId(set),
     folder: `relief/${set}`,
-    aliases: (names: readonly string[]) => this.aliasSlots(set, names)
+    aliases: (names: readonly string[]) => this.aliasSlots(set, names),
+    choices: TYPES.map(({ type }) => `${type}-1`)
   }));
 
   generate(): ReliefIcon[] {

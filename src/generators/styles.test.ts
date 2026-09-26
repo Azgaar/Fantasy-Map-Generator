@@ -1,5 +1,8 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, test, vi } from "vitest";
+import "@/generators/relief-generator"; // the models own the icon sets that tell references from text
+import "@/generators/burgs-generator";
+import "@/generators/goods-generator";
 import { Styles } from "./styles";
 import { FORMATS, isLabelStyle } from "./styles-formats";
 import { normalizeStyles } from "./styles-legacy";
@@ -168,7 +171,7 @@ describe("normalizeStyles", () => {
     expect(doc.legend.options).toEqual({ columns: 5 });
     expect(doc.temperature.attrs.opacity).toBeUndefined();
     expect(doc.temperature.attrs["stroke-opacity"]).toBe(0.7);
-    expect(doc.markets.options).toEqual({ size: 3, iconSize: 6, icon: "x" });
+    expect(doc.markets.options).toEqual({ size: 3, iconSize: 6, icon: "glyph-78" });
     expect(doc.markers.options).toBeUndefined();
     expect(doc.coastline.groups.sea_island.options).toBeUndefined();
     expect(doc.compass.attrs["shape-rendering"]).toBeUndefined();
@@ -416,12 +419,12 @@ describe("port icon styles", () => {
     for (const [name, group] of Object.entries(groups)) {
       const anchor = group.groups.anchors;
       expect(anchor.options).toEqual(cinderwood.burgIcons.groups[name].groups.anchors.options);
-      const file = `src/assets/icons/${anchor.options.icon.slice(1).replace("-", "/")}.svg`; // the port set's file
+      const file = `src/assets/icons/${anchor.options.icon.replace("-", "/")}.svg`; // the port set's file
       expect(readFileSync(file, "utf8").includes("<svg")).toBe(true);
       expect(Number.isFinite(anchor.options.dx)).toBe(true);
       expect(Number.isFinite(anchor.options.dy)).toBe(true);
       icons.add(anchor.options.icon);
     }
-    expect(icons).toEqual(new Set(["#ports-anchor", "#ports-harbor"])); // shifted anchors on big burgs, harbors on small
+    expect(icons).toEqual(new Set(["ports-anchor", "ports-harbor"])); // shifted anchors on big burgs, harbors on small
   });
 });
