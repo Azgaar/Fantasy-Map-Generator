@@ -62,7 +62,7 @@ Map data can be exported, but only a little of it can be imported back. Overview
 
 ### Can I add new relief icons?
 
-You can add and remove relief icons on the map with the Relief Editor: turn the Relief icons layer on and click on an icon, or use the bulk add and bulk remove brushes. You can also switch between the bundled icon sets. Uploading your own relief icon graphics is not supported
+You can add and remove relief icons on the map with the Relief Editor: turn the Relief icons layer on and click on an icon, or use the bulk add and bulk remove brushes. You can also switch between the bundled icon sets. To use your own art, upload or link it as a custom icon: in the Relief Editor the "any icon" button in the bottom line gives the selected relief icon any icon, and in the Biomes Editor the Relief column sets which relief types and icons each biome's lowland relief is generated from, with a weight for each. "Apply and re-place" regenerates that biome's lowland relief right away; relief elsewhere is kept. Hills and mountains are placed by elevation and are not part of a biome's pool
 
 ### How can I use rulers in a map?
 

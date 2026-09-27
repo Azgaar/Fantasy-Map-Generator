@@ -96,7 +96,9 @@ const SLOT_NAMES: Record<IconUseKind, [string, string]> = {
   regiment: ["regiment", "regiments"],
   unit: ["unit type", "unit types"],
   burgGroup: ["burg group style", "burg group styles"],
-  market: ["market marker style", "market marker styles"]
+  market: ["market marker style", "market marker styles"],
+  relief: ["relief icon", "relief icons"],
+  biome: ["biome relief pool", "biome relief pools"]
 };
 
 let fileInput: HTMLInputElement | null = null; // one per page, so reopening never binds a second listener

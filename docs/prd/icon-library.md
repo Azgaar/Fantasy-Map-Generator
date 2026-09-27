@@ -301,8 +301,8 @@ All three steps are implemented.
 
 ## Out of Scope
 
-- **Relief placement.** Relief icons are still placed by type and variant through their descriptor; a
-  relief icon can be picked for another slot, but a relief feature cannot take a Custom icon or a glyph.
+- **Relief placement.** Superseded by [Relief Icon Pools](relief-icon-pools.md): a relief icon and a
+  biome's relief pool now take any icon reference.
 - **Custom emblems (coats of arms).** Their charges and upload flow are more involved and stay as they
   are.
 - **Transport icons.** The unused `icon` field on transport types is not a slot.

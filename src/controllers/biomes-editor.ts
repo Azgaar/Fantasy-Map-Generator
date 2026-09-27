@@ -15,12 +15,14 @@ import { Notes } from "@/components/notes";
 import type { FillBoxElement } from "@/components/shared/fill-box";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
+import { poolEntryName, ReliefPoolEditor } from "@/controllers/relief-pool-editor";
+import { fitReliefArt, poolEntryHtml } from "@/controllers/relief-previews";
 import type { Biome } from "@/generators/biomes-generator";
 import { Population } from "@/generators/population-generator";
 import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import type { PackedGraph } from "@/types/PackedGraph";
 import { downloadFile, getArea, getAreaUnit, getFileName, openURL } from "@/utils";
-import { ensureEl, getRandomColor, isLand, rn, si } from "../utils";
+import { ensureEl, escapeHtml, getRandomColor, isLand, rn, si } from "../utils";
 
 const dialogId = "biomesEditor" as const;
 const LEGEND_NAME = "Biomes"; // the legend box this editor toggles
@@ -40,6 +42,12 @@ const columns: EditorColumn<Biome>[] = [
     label: "Habitability",
     width: "6.5em",
     sortBy: biome => biome.habitability
+  },
+  {
+    key: "relief",
+    label: "Relief",
+    width: "6.5em",
+    sortBy: biome => biome.iconsDensity
   },
   {
     key: "cells",
@@ -166,6 +174,7 @@ function renderDialog(): void {
     else if (cl.contains("icon-book")) editBiomeNote(el);
     else if (cl.contains("icon-info-circled")) openWiki(el);
     else if (cl.contains("icon-trash-empty")) removeCustomBiomeLine(el);
+    else if (el.closest(".biomeRelief")) editReliefPool(el);
   });
 
   ensureEl("biomesBody").addEventListener("change", ev => {
@@ -243,6 +252,7 @@ function biomesEditorAddLines(view: TableView<Biome>, statistics: BiomeStatistic
           <span data-tip="Biome habitability percent">%</span>
           <input data-tip="Biome habitability percent. Click and set new value to change" type="number" min="0" max="9999" class="biomeHabitability" value=${habitability} />
         </div>
+        <div data-col="relief" class="hide">${reliefPoolHtml(biome)}</div>
         <div data-col="cells" class="hide"><span data-tip="Cells count" class="icon-check-empty"></span><span data-tip="Cells count" class="biomeCells">${cells}</span></div>
         <div data-col="area" class="hide"><span data-tip="Biome area" class="icon-map-o" style="padding-right: 2px"></span><span data-tip="Biome area" class="biomeArea">${si(area) + unit}</span></div>
         <div data-col="population" class="hide"><span data-tip="${populationTip}" class="icon-male"></span><span data-tip="${populationTip}" class="biomePopulation">${si(population)}</span></div>
@@ -256,6 +266,7 @@ function biomesEditorAddLines(view: TableView<Biome>, statistics: BiomeStatistic
   }
   const body = ensureEl("biomesBody");
   body.innerHTML = lines;
+  void fitReliefArt(body, styles.relief.options.set);
 
   // update footer
   for (const biome of view.all) {
@@ -290,6 +301,28 @@ function biomesEditorAddLines(view: TableView<Biome>, statistics: BiomeStatistic
     togglePercentageMode();
   }
   updateDialog(dialogId, { width: "fit-content", position });
+}
+
+const POOL_PREVIEW = 3; // entries drawn in the row, the heaviest first
+
+function reliefPoolHtml({ icons, iconsDensity }: Biome): string {
+  const entries = Object.entries(icons).sort(([, a], [, b]) => b - a);
+  const total = entries.reduce((sum, [, weight]) => sum + weight, 0);
+  const shares = entries.map(([entry, weight]) => `${poolEntryName(entry)} ${rn((weight / total) * 100)}%`).join(", ");
+  const tipText = total && iconsDensity ? `Relief: ${shares}. Density ${iconsDensity}` : "No lowland relief";
+  const previews =
+    total && iconsDensity
+      ? entries
+          .slice(0, POOL_PREVIEW)
+          .map(([entry]) => poolEntryHtml(entry, styles.relief.options.set))
+          .join("") + (entries.length > POOL_PREVIEW ? `<small>+${entries.length - POOL_PREVIEW}</small>` : "")
+      : "–";
+  return `<span class="biomeRelief pointer" data-tip="${escapeHtml(`${tipText}. Click to edit`)}">${previews}</span>`;
+}
+
+function editReliefPool(el: HTMLElement): void {
+  const biome = Number(el.closest<HTMLElement>(".biomes")!.dataset.id);
+  ReliefPoolEditor.open({ biome, onApply: refreshBiomesEditor });
 }
 
 function biomeHighlightOn(event: Event): void {
@@ -421,7 +454,7 @@ export function createCustomBiome(biomes: Biome[], color: string): Biome | null 
     color,
     habitability: 50,
     iconsDensity: 0,
-    icons: [],
+    icons: {},
     cost: 50
   };
   biomes.push(biome);

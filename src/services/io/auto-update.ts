@@ -2065,6 +2065,14 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     // old saves order by the box bottom; the renderer keeps the icon's centre in place
     pack.relief.sort(Relief.byAnchor);
 
+    // v1.154.0 stores a biome's relief pool as weights, not as a list of repeated entries
+    for (const biome of pack.biomes ?? []) {
+      const pool: unknown = biome.icons;
+      if (!Array.isArray(pool)) continue;
+      biome.icons = {};
+      for (const entry of pool) biome.icons[entry] = (biome.icons[entry] ?? 0) + 1;
+    }
+
     // v1.154.0 derives symbol ids from the icon set directories: good-<name> is goods-<name>, uploads are custom-goods-<id>
     const goodIconId = (icon: string): string =>
       icon.replace(/^good-custom-/, "custom-goods-").replace(/^good-/, `${Goods.iconSet.id}-`);

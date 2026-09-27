@@ -8,7 +8,7 @@ const createBiome = (i: number): Biome => ({
   color: `#00000${i}`,
   habitability: 50,
   iconsDensity: 0,
-  icons: [],
+  icons: {},
   cost: 50
 });
 
@@ -24,7 +24,7 @@ describe("biome editor operations", () => {
       color: "#123456",
       habitability: 50,
       iconsDensity: 0,
-      icons: [],
+      icons: {},
       cost: 50
     });
     expect(biomes[13]).toBe(biome);

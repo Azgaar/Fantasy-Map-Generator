@@ -87,6 +87,83 @@ test("a descriptor survives a plain JSON round-trip", () => {
   expect(Relief.symbolId(icons[1], "gray")).toBe("relief-gray-grass-1");
 });
 
+test("a library icon draws itself, a type its slot in its pinned or the style's set", () => {
+  const drawn = [{ type: "mount", variant: 2 }, { type: "mount", set: "gray" }, { icon: "glyph-26f0" }].map(icon =>
+    Relief.symbolId(icon as Parameters<typeof Relief.symbolId>[0], "simple")
+  );
+
+  expect(drawn).toEqual(["relief-simple-mount-2", "relief-gray-mount-1", "glyph-26f0"]);
+  expect(Relief.requiredIconSets([{ icon: "custom-a" }, { type: "hill", set: "gray" }], "simple")).toEqual([
+    "relief-simple",
+    "relief-gray"
+  ]);
+});
+
+test("a pool picks as its list of repeated entries did, at every roll", () => {
+  const pool = { dune: 3, cactus: 6, deadTree: 1 };
+  const repeated = Object.entries(pool).flatMap(([entry, weight]) => Array<string>(weight).fill(entry));
+  for (let roll = 0; roll < 1; roll += 0.001) {
+    expect(Relief.pickEntry(pool, roll)).toBe(repeated[Math.floor(roll * repeated.length)]);
+  }
+  expect(Relief.pickEntry({ grass: 0 }, 0.5)).toBeUndefined();
+  expect(Relief.pickEntry({}, 0.5)).toBeUndefined();
+});
+
+const square = () => [
+  [0, 0],
+  [20, 0],
+  [20, 20],
+  [0, 20]
+];
+
+test("a pool places its types and its icon references; an empty pool places nothing", () => {
+  vi.stubGlobal("styles", { relief: { options: { size: 1, density: 1, set: "simple" } } });
+  vi.stubGlobal("grid", { cells: { temp: [10, 10] } });
+  vi.stubGlobal("Pack", { getPolygon: square });
+  vi.stubGlobal("pack", {
+    cells: { i: [0, 1], h: [30, 30], r: [0, 0], g: [0, 1], biome: [1, 2] },
+    biomes: [{}, { iconsDensity: 250, icons: { grass: 1, "custom-a": 1 } }, { iconsDensity: 250, icons: {} }]
+  });
+
+  const icons = Relief.generate();
+
+  const drawn = new Set(icons.map(icon => Relief.symbolId(icon, "simple")));
+  expect(drawn).toEqual(new Set(["relief-simple-grass-1", "custom-a"]));
+  expect(icons.find(icon => "icon" in icon)).toEqual({
+    icon: "custom-a",
+    x: expect.any(Number),
+    y: expect.any(Number),
+    s: expect.any(Number)
+  });
+});
+
+test("re-placing a biome replaces only its lowland icons and keeps the rest in their order", () => {
+  vi.stubGlobal("styles", { relief: { options: { size: 1, density: 1, set: "simple" } } });
+  vi.stubGlobal("grid", { cells: { temp: [10, 10] } });
+  const kept = [
+    { type: "mount", x: 25, y: 0, s: 10 }, // in cell 1, another biome
+    { type: "hill", x: 25, y: 20, s: 4 }
+  ] as ReliefIcon[];
+  const replaced = { type: "grass", x: 5, y: 5, s: 4 } as ReliefIcon; // in cell 0
+  vi.stubGlobal("Pack", { getPolygon: square, findCell: (x: number) => (x < 20 ? 0 : 1) });
+  vi.stubGlobal("pack", {
+    cells: { i: [0, 1], h: [30, 30], r: [0, 0], g: [0, 1], biome: [1, 2] },
+    biomes: [{}, { iconsDensity: 250, icons: { "custom-a": 1 } }, { iconsDensity: 250, icons: { grass: 1 } }],
+    relief: [kept[0], replaced, kept[1]]
+  });
+
+  expect(Relief.lowlandIcons(1)).toEqual([replaced]);
+  Relief.regenerateBiome(1);
+
+  expect(pack.relief.includes(replaced)).toBe(false);
+  expect(pack.relief.filter(icon => kept.includes(icon))).toEqual(kept);
+  const added = pack.relief.filter(icon => !kept.includes(icon));
+  expect(added.length).toBeGreaterThan(0);
+  for (const icon of added) expect(icon).toMatchObject({ icon: "custom-a" });
+  const anchors = pack.relief.map(Relief.anchorY);
+  expect(anchors).toEqual([...anchors].sort((a, b) => a - b));
+});
+
 test("artwork directories fit a tight union of contiguous variant slots", () => {
   const coverage = Relief.sets.map(set => {
     const files = readdirSync(`src/assets/icons/relief/${set}`).filter(file => file.endsWith(".svg"));

@@ -70,6 +70,17 @@ both the size and the stroke weight of art drawn at another scale.
 
 ## Logical relief slots
 
+A relief icon is either a type slot, described below, or `{ icon }`: any icon reference, drawn as it is
+whatever the style's set. The renderer writes every `<use>` through `Icons.href`, so another family's set
+starts loading; `Relief.requiredIconSets` covers only the relief sets.
+
+A biome's **relief pool** (`pack.biomes[].icons`) weighs relief types and icon references for its lowland
+relief. Generation picks an entry with one roll against the cumulative weights in record order — the same
+entry the older list of repeated entries gave, so seeds reproduce — and a type entry then rolls its
+variant. Interface previews of relief art — the Relief Editor tiles, the pool dialog, the Biomes Editor
+column — are painted in the relief style and cropped to the drawn art (`controllers/relief-previews.ts`),
+since relief art sits small in its frame.
+
 `Relief.types` declares the union of `type`/`variant` slots every set is measured against; a stored
 descriptor `{ type, variant?, set? }` resolves in every set, pinned or not, and a style change never
 edits `pack.relief`. The renderer resolves the absent `variant` to 1 and the absent `set` to
@@ -151,8 +162,8 @@ written (`Icons.href`). `Icons` is the one entry point for a reference, whatever
   on generation, after a load and after a change; SVG content is sanitised again on the way, since a
   file may carry anything, and an image must be an `http(s)` or `data:image/` URL.
 
-The slots are goods, markers, regiments, military unit types, burg group icons and anchors, and the market
-marker; `Icons.uses(id)` counts the references in each.
+The slots are goods, markers, regiments, military unit types, burg group icons and anchors, the market
+marker, relief icons and biome relief pools; `Icons.uses(id)` counts the references in each.
 
 `Icons.html(id)` draws an icon in the interface — editors, overviews, the picker: an inline svg boxing the
 icon in its own frame, in its paint (below). The icon picker (`controllers/icon-picker/`) takes only the current icon

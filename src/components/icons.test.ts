@@ -113,12 +113,24 @@ test("every slot kind's uses of an icon are counted", () => {
   globalThis.pack = {
     goods: [{ icon: "goods-wood" }],
     markers: [{ icon: "custom-a" }, { icon: "custom-a" }],
-    states: [{ i: 0 }, { i: 1, military: [{ icon: "custom-a" }] }]
+    states: [{ i: 0 }, { i: 1, military: [{ icon: "custom-a" }] }],
+    relief: [
+      { icon: "custom-a", x: 0, y: 0, s: 1 },
+      { type: "mount", x: 0, y: 0, s: 1 }
+    ],
+    biomes: [{ icons: {} }, { icons: { grass: 3, "custom-a": 1 } }, { icons: { "custom-a": 2, "custom-b": 1 } }]
   } as unknown as typeof pack;
 
-  expect(Icons.uses("custom-a")).toEqual({ marker: 2, regiment: 1, burgGroup: 1, market: 1 });
+  expect(Icons.uses("custom-a")).toEqual({
+    marker: 2,
+    regiment: 1,
+    burgGroup: 1,
+    market: 1,
+    relief: 1,
+    biome: 2
+  });
   expect(Icons.uses("goods-wood")).toEqual({ good: 1, unit: 1 });
-  expect(Icons.uses("custom-b")).toEqual({});
+  expect(Icons.uses("custom-c")).toEqual({});
 });
 
 test("an icon's paint is its set's, a glyph's the text colour, a custom icon's none; a slot's own colours win", () => {

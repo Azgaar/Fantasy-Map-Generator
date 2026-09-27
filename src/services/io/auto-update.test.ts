@@ -979,6 +979,19 @@ describe("v1.154 relief descriptors", () => {
     return pack.relief;
   };
 
+  it("turns a biome's list of repeated relief entries into weights, in order of first appearance", async () => {
+    document.body.innerHTML = '<svg id="map"><defs id="deftemp"/><g id="viewbox"><g id="terrain"></g></g></svg>';
+    const data: string[] = [];
+    data[48] = stylesPayload("colored");
+    globalThis.pack = {
+      relief: [],
+      biomes: [{ icons: [] }, { icons: ["dune", "cactus", "dune", "deadTree", "dune"] }, { icons: { grass: 1 } }]
+    } as unknown as typeof pack;
+    await runMigration("1.153.1", data, ["1.154.0"]);
+    expect(pack.biomes.map(biome => biome.icons)).toEqual([{}, { dune: 3, cactus: 1, deadTree: 1 }, { grass: 1 }]);
+    expect(Object.keys(pack.biomes[1].icons)).toEqual(["dune", "cactus", "deadTree"]);
+  });
+
   it("renames goods symbols into the set namespace and uploads into the reserved custom one", async () => {
     document.body.innerHTML = '<svg id="map"><defs id="deftemp"/><g id="viewbox"><g id="terrain"></g></g></svg>';
     const data: string[] = [];

@@ -426,18 +426,19 @@ Ice data is stored as an array of objects with `i` not necessary equal to the el
 
 Relief icons are stored in `pack.relief: ReliefIcon[]`. Array order determines drawing
 order; generation sorts by the icon's anchor (the sampled cell point, its box centre). Each icon is
-`{ type, variant?, set?, x, y, s }`, stored as
+`{ type, variant?, set?, x, y, s }` or `{ icon, x, y, s }`, stored as
 plain JSON with no parse/serialize step. `Relief.ref` builds every descriptor, so a default `variant`
 of 1 is never written. `type` names a logical relief type and `variant` a permanent
 variant slot; the renderer resolves an absent `variant` to 1, so stored and drawn data never differ.
-`set` is an optional explicit pin; absent means follow the style.
+`set` is an optional explicit pin; absent means follow the style. `icon` is any icon reference (a Custom
+icon, a glyph, another set's art) drawn in place of a type slot; it ignores the style's set.
 
 `styles.relief.options` holds `set` (`simple`, `colored`, `gray`, `illustrated`, `stickers`), `size` and `density`,
 serialized with the style store in field 48. `s` is the base size; `size` is a render multiplier that
 scales the icon about its anchor at draw time, so neither a set nor a size change edits `pack.relief`
 and the array order stays a valid z-order.
 Every union slot resolves in every set via real artwork or deterministic aliases. See [Icons](icons.md)
-for layout, fallback resolution and migration conventions. Custom relief and burg art are not supported.
+for layout, fallback resolution and migration conventions.
 
 ## Measurers
 
@@ -485,8 +486,8 @@ Biome definitions are stored in `pack.biomes: Biome[]`, where `i` equals the arr
 - `color`: `string` - biome color in hex (e.g. `#45ff12`) or link to a hatching pattern
 - `cost`: `number` - non-negative movement cost used during culture, state and religion growth
 - `habitability`: `number` - non-negative suitability value; `0` means uninhabitable
-- `icons`: `string[]` - non-weighted relief icon pool; repeated values increase an icon's selection weight
-- `iconsDensity`: `number` - defines how packed icons can be for the biome. An integer from `0` to `150`
+- `icons`: `Record<string, number>` - the relief pool: lowland relief entries and their positive weights, in insertion order. A key is a relief type (`dune`) or an icon reference (`custom-1a2b3c4d`). Before v1.154.0 a list of repeated entries
+- `iconsDensity`: `number` - how packed the biome's lowland relief is. An integer from `0` (none) to `250`
 - `removed`: `boolean` - optional marker for a removed custom biome
 - `note`: `string` - optional. The user's note (legend) about the biome, as html. Removed with it
 

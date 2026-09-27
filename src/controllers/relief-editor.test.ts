@@ -3,11 +3,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReliefIcon, ReliefIconType } from "@/generators/relief-generator";
 import { Styles } from "@/generators/styles";
+import { getReliefIcon } from "@/renderers/draw-relief-icons";
 import { ReliefEditor } from "./relief-editor";
 import "@/generators/pack-generator"; // registers the Pack global the editor finds cells with
 import "@/generators/relief-generator"; // installs the Relief global
 
-vi.mock("@/components/icons", () => ({ Icons: { retry: vi.fn().mockResolvedValue(undefined) } }));
+vi.mock("@/components/icons", () => ({
+  Icons: { retry: vi.fn().mockResolvedValue(undefined), href: (id: string) => `#${id}` }
+}));
+
+// jsdom lays nothing out: the previews keep their frames
+Object.assign(SVGElement.prototype, { getBBox: () => ({ x: 0, y: 0, width: 0, height: 0 }) });
 vi.mock("@/components/viewbox-events", () => ({ applyDefaultViewboxEvents: vi.fn() }));
 vi.mock("@/components/layers", () => ({ Layers: { show: vi.fn(), draw: vi.fn() } }));
 vi.mock("@/renderers/draw-relief-icons", () => ({ redrawRelief: vi.fn(), getReliefIcon: vi.fn() }));
@@ -100,5 +106,24 @@ describe("ReliefEditor bulk brushes", () => {
     expect(added.length).toBeGreaterThan(0);
     // the spacing is 2 from the nearest row centre; the row is 1 apart in x and positions are rounded to 0.01
     for (const icon of added) expect(Math.abs(icon.y + icon.s / 2 - 50)).toBeGreaterThan(1.9);
+  });
+});
+
+describe("ReliefEditor any icon", () => {
+  it("draws the selected icon with an icon picked from the library, in its place", async () => {
+    const icon: ReliefIcon = { type: "mount", x: 1, y: 2, s: 3 };
+    pack.relief = [icon];
+    vi.mocked(getReliefIcon).mockReturnValue(icon);
+    globalThis.Controllers = {
+      IconPicker: { open: vi.fn(({ onPick }) => onPick("custom-a")) }
+    } as unknown as typeof Controllers;
+    const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+    use.dataset.id = "0";
+    ReliefEditor.open(use);
+
+    document.getElementById("reliefPickIcon")!.click();
+
+    expect(Controllers.IconPicker.open).toHaveBeenCalledWith(expect.objectContaining({ current: "" }));
+    expect(pack.relief).toEqual([{ icon: "custom-a", x: 1, y: 2, s: 3 }]);
   });
 });

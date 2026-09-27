@@ -284,7 +284,7 @@ Default biomes, in generator order:
 - Glacier
 - Wetland
 
-Biomes, their colors, habitability and movement cost can be edited in the Biomes Editor (<kbd>Shift</kbd> + <kbd>B</kbd>).
+Biomes, their colors, habitability and movement cost can be edited in the Biomes Editor (<kbd>Shift</kbd> + <kbd>B</kbd>). Its Relief column opens a biome's relief pool: the relief types and icons (including your own custom icons) its lowland relief is generated from, their weights, and the relief density.
 
 In general, the biomes are derived from the topographical map (which can be edited in tools or options), and from the temperature (which can be edited in configure world).
 

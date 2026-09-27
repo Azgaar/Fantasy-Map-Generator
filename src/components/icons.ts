@@ -9,7 +9,7 @@ import { escapeHtml } from "@/utils/stringUtils";
 export type IconKind = "set" | "glyph" | "custom";
 
 /** the slots that reference icons, as `Icons.uses` counts them */
-export type IconUseKind = "good" | "marker" | "regiment" | "unit" | "burgGroup" | "market";
+export type IconUseKind = "good" | "marker" | "regiment" | "unit" | "burgGroup" | "market" | "relief" | "biome";
 
 export interface CustomIcon {
   id: string; // the symbol id: `custom-<8 hex>`, or `custom-goods-<id>` for uploads kept from older maps
@@ -258,7 +258,12 @@ class IconLibrary {
       ["regiment", (pack.states ?? []).flatMap(state => state?.military ?? [])],
       ["unit", options.map.military.units],
       ["burgGroup", burgGroups],
-      ["market", [styles.markets.options]]
+      ["market", [styles.markets.options]],
+      ["relief", (pack.relief ?? []).flatMap(icon => ("icon" in icon ? [icon] : []))],
+      [
+        "biome",
+        (pack.biomes ?? []).flatMap(biome => (biome.removed ? [] : Object.keys(biome.icons).map(icon => ({ icon }))))
+      ]
     ];
     const counts: Partial<Record<IconUseKind, number>> = {};
     for (const [kind, owners] of slots) {
