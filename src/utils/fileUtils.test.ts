@@ -63,8 +63,9 @@ describe("scopeSvgIcon", () => {
     expect(svg.getAttribute("class")).toBe("custom-goods-x-cls-1 custom-goods-x");
     expect(svg.querySelector("linearGradient")?.id).toBe("custom-goods-x-a");
     const scope = ":is(.custom-goods-x, .custom-goods-x *)";
+    // #abc is a colour, not the #ab id
     expect(svg.querySelector("style")?.textContent).toBe(
-      `${scope}:is(.custom-goods-x-cls-1){fill:url(#custom-goods-x-a)}${scope}:is(#custom-goods-x-ab){stroke:#abc}`
+      `${scope}:is(.custom-goods-x-cls-1) { fill: url("#custom-goods-x-a"); }${scope}:is(#custom-goods-x-ab) { stroke: rgb(170, 187, 204); }`
     );
     const use = svg.querySelector("use")!;
     expect(use.getAttribute("href")).toBe("#custom-goods-x-ab");
@@ -82,9 +83,9 @@ describe("scopeSvgIcon", () => {
     )!;
     scopeSvgIcon(svg, "custom-1");
     const scope = ":is(.custom-1, .custom-1 *)";
-    expect(svg.querySelector("style")?.textContent).toBe(
-      `${scope}:is(path), ${scope}:is(g > :is(rect, circle)){fill:red}` +
-        `@media (min-width: 1px){${scope}:is(*){ stroke: blue }}${scope}:is(svg){opacity:0}`
+    expect(svg.querySelector("style")?.textContent?.replace(/\s+/g, " ")).toBe(
+      `${scope}:is(path, g > :is(rect, circle)) { fill: red; }` +
+        `@media (min-width: 1px) { ${scope}:is(*) { stroke: blue; } }${scope}:is(svg) { opacity: 0; }`
     );
   });
 });

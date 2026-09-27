@@ -10,7 +10,10 @@ import { IconPicker } from ".";
 const pictures = vi.hoisted(() => ({ fromLink: vi.fn(), fromFile: vi.fn(), fit: vi.fn() }));
 vi.mock("./pictures", () => ({ IconPictures: pictures }));
 
-const confirm = vi.hoisted(() => ({ onConfirm: undefined as undefined | (() => void) }));
+const confirm = vi.hoisted(() => ({
+  onConfirm: undefined as undefined | (() => void),
+  apply: undefined as undefined | (() => void)
+}));
 
 beforeEach(() => {
   (globalThis as Record<string, unknown>).options = { map: { customIcons: [] } };
@@ -21,6 +24,7 @@ beforeEach(() => {
   (globalThis as Record<string, unknown>).$ = () => ({
     dialog: (settings: { buttons?: Record<string, () => void> }) => {
       confirm.onConfirm = settings?.buttons?.Remove;
+      if (settings?.buttons?.Apply) confirm.apply = settings.buttons.Apply;
     }
   });
 });
@@ -28,7 +32,7 @@ beforeEach(() => {
 afterEach(() => document.body.replaceChildren());
 
 const open = (current: string, onPick = vi.fn()) => {
-  IconPicker.open({ current, onPick });
+  IconPicker.open({ current, onPick, live: true });
   const dialog = document.getElementById("iconPicker")!;
   return {
     dialog,
@@ -48,22 +52,15 @@ test("a set icon opens on its own subdirectory, with the icon pressed and named"
   expect(dialog.querySelector(".current .from")!.textContent).toBe("Settlements · Watabou");
 });
 
-test("the sources list the map's icons, then sections: emoji by theme, sets by subdirectory", () => {
-  const { dialog, show } = open("");
-  const items = [...dialog.querySelectorAll<HTMLElement>("nav [data-source]")].map(item =>
-    item.classList.contains("section") ? `# ${item.dataset.source}` : item.dataset.source
+test("the sources list the map's icons, then emoji by theme and sets by subdirectory under group headings", () => {
+  const { dialog } = open("");
+  const items = [...dialog.querySelectorAll<HTMLElement>("nav > *")].map(item =>
+    item.dataset.source ? item.dataset.source : `# ${item.textContent}`
   );
-  expect(items.slice(0, 3)).toEqual(["custom", "# glyph", "glyph/War & power"]);
-  expect(items).toEqual(expect.arrayContaining(["# Settlements", "burgs/watabou", "ports", "# goods", "# Relief"]));
+  expect(items.slice(0, 3)).toEqual(["custom", "# Emoji", "glyph/War & power"]);
+  expect(items).toEqual(expect.arrayContaining(["# Settlements", "burgs/watabou", "ports", "goods", "# Relief"]));
+  expect(items).not.toContain("# Goods"); // a set that is its own group stands alone
   expect(items.indexOf("relief-simple")).toBeGreaterThan(items.indexOf("# Relief"));
-
-  show("Settlements"); // a section heading shows all its entries under their labels
-  expect([...dialog.querySelectorAll(".panel h4")].map(h => h.textContent)).toEqual([
-    "Atlas",
-    "Illustrated",
-    "Watabou",
-    "Ports"
-  ]);
 });
 
 test("a slot opens where its current icon is: a glyph on Emoji, a custom icon on Custom", () => {
@@ -71,7 +68,7 @@ test("a slot opens where its current icon is: a glyph on Emoji, a custom icon on
     { id: "custom-1a2b3c4d", kind: "image", content: "https://a.b/c.png", viewBox: "0 0 100 100" }
   ];
   const glyph = open("glyph-58-49-56");
-  expect(glyph.source()).toBe("glyph");
+  expect(glyph.source()).toMatch(/^glyph\//); // typed text: the first emoji theme
   expect(glyph.dialog.querySelector<HTMLInputElement>(".glyphText input")!.value).toBe("XIV");
 
   const custom = open("custom-1a2b3c4d");
@@ -79,7 +76,7 @@ test("a slot opens where its current icon is: a glyph on Emoji, a custom icon on
   expect(custom.pressed()).toEqual(["custom-1a2b3c4d"]);
 
   const none = open("");
-  expect(none.source()).toBe("Settlements"); // no icon yet: the first built-in section
+  expect(none.source()).toBe("burgs/atlas"); // no icon yet: the first built-in entry
   expect(none.dialog.querySelector(".current .name")!.textContent).toBe("None");
 });
 
@@ -90,11 +87,20 @@ test("picking presses the tile, names it in the header and hands its reference b
   expect(pressed()).toEqual(["goods-iron"]);
   expect(dialog.querySelector(".current .name")!.textContent).toBe("Iron");
 
-  show("glyph");
+  show("glyph/War & power");
   const input = dialog.querySelector<HTMLInputElement>(".glyphText input")!;
   input.value = "XIV";
   input.dispatchEvent(new Event("input", { bubbles: true }));
   expect(onPick).toHaveBeenLastCalledWith("glyph-58-49-56");
+});
+
+test("without live, the pick is handed back on Apply only", () => {
+  const onPick = vi.fn();
+  IconPicker.open({ current: "goods-wood", onPick });
+  document.querySelector<HTMLElement>('#iconPicker button[data-icon="goods-iron"]')!.click();
+  expect(onPick).not.toHaveBeenCalled();
+  confirm.apply!();
+  expect(onPick).toHaveBeenCalledExactlyOnceWith("goods-iron");
 });
 
 test("a relief set offers every variant it has art for, and no fallback slots", () => {

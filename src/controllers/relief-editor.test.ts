@@ -9,7 +9,11 @@ import "@/generators/pack-generator"; // registers the Pack global the editor fi
 import "@/generators/relief-generator"; // installs the Relief global
 
 vi.mock("@/components/icons", () => ({
-  Icons: { retry: vi.fn().mockResolvedValue(undefined), href: (id: string) => `#${id}` }
+  Icons: {
+    retry: vi.fn().mockResolvedValue(undefined),
+    href: (id: string) => `#${id}`,
+    html: (id: string, _paint: unknown, attributes = "") => `<svg${attributes}><use href="#${id}"/></svg>`
+  }
 }));
 
 // jsdom lays nothing out: the previews keep their frames

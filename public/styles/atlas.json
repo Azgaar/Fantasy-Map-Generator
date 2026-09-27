@@ -240,7 +240,7 @@
               "fill-opacity": 1,
               "stroke": "#000000",
               "stroke-opacity": null,
-              "stroke-width": 1,
+              "stroke-width": 0.5,
               "stroke-dasharray": null,
               "stroke-linecap": "round",
               "stroke-linejoin": null,

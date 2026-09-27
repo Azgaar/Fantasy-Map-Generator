@@ -40,8 +40,6 @@ function reconcileRelief(context: ViewportRenderContext): void {
 
   const { x0, y0, x1, y1 } = context.bounds;
   const { set, size } = styles.relief.options; // size is a render multiplier: the stored size stays as it is
-  const hrefs = new Map<string, string>(); // a library icon's href starts its set loading, once per draw
-  const href = (symbol: string) => hrefs.get(symbol) ?? hrefs.set(symbol, escapeHtml(Icons.href(symbol))).get(symbol)!;
   const markup: string[] = [];
 
   for (const [index, icon] of (pack.relief ?? []).entries()) {
@@ -53,7 +51,7 @@ function reconcileRelief(context: ViewportRenderContext): void {
     if (left > x1 || top > y1 || left + drawn < x0 || top + drawn < y0) continue;
     const symbol = Relief.symbolId(icon, set);
     markup.push(
-      `<use href="${href(symbol)}" data-id="${index}" x="${left}" y="${top}" width="${drawn}" height="${drawn}"/>`
+      `<use href="${escapeHtml(Icons.href(symbol))}" data-id="${index}" x="${left}" y="${top}" width="${drawn}" height="${drawn}"/>`
     );
   }
 

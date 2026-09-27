@@ -473,6 +473,31 @@ describe("v1.154.0 style record normalization", () => {
     expect(parsed.burgIcons.groups.town.groups.icons.options.icon).toBe("burgs-atlas-circle");
   });
 
+  it("halves the outline of groups drawn with the icons that were half scale", async () => {
+    const record = JSON.parse(JSON.stringify(Styles.defaults));
+    const icons = structuredClone(record.burgIcons.groups.town.groups.icons);
+    icons.options.icon = "#icon-circle-dotted";
+    icons.attrs["stroke-width"] = 1.5;
+    const anchors = structuredClone(record.burgIcons.groups.town.groups.anchors);
+    anchors.options.icon = "#icon-harbor";
+    anchors.attrs["stroke-width"] = null;
+    const circle = structuredClone(icons);
+    circle.options.icon = "#icon-circle";
+    delete record.burgIcons;
+    record.burgIcons = {
+      burgIcons: { groups: { town: icons, city: circle } },
+      anchors: { groups: { town: anchors } }
+    };
+    const data: string[] = [];
+    data[48] = JSON.stringify(record);
+
+    await resolveVersionConflicts("1.153.0", data);
+    const { groups } = Styles.parse(JSON.parse(data[48])).burgIcons;
+    expect(groups.town.groups.icons.attrs["stroke-width"]).toBe(0.75);
+    expect(groups.town.groups.anchors.attrs["stroke-width"]).toBe(0.5);
+    expect(groups.city.groups.icons.attrs["stroke-width"]).toBe(1.5);
+  });
+
   it("drops the old #icons layer element so the #burgIcons layer takes over", async () => {
     document.body.innerHTML = `<svg id="map"><g id="viewbox">
       <g id="icons" data-layer="burgIcons"><g id="burgIcons"><g id="towns"></g></g><g id="anchors"></g></g>

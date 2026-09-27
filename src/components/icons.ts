@@ -8,8 +8,18 @@ import { escapeHtml } from "@/utils/stringUtils";
 /** where a reference resolves: a built-in set, a glyph built from its text, or a picture the map carries */
 export type IconKind = "set" | "glyph" | "custom";
 
-/** the slots that reference icons, as `Icons.uses` counts them */
-export type IconUseKind = "good" | "marker" | "regiment" | "unit" | "burgGroup" | "market" | "relief" | "biome";
+/** the slots that reference icons, as `Icons.uses` counts them, each with its singular and plural name */
+const SLOT_NAMES = {
+  good: ["good", "goods"],
+  marker: ["marker", "markers"],
+  regiment: ["regiment", "regiments"],
+  unit: ["unit type", "unit types"],
+  burgGroup: ["burg group style", "burg group styles"],
+  market: ["market marker style", "market marker styles"],
+  relief: ["relief icon", "relief icons"],
+  biome: ["biome relief pool", "biome relief pools"]
+} as const;
+export type IconUseKind = keyof typeof SLOT_NAMES;
 
 export interface CustomIcon {
   id: string; // the symbol id: `custom-<8 hex>`, or `custom-goods-<id>` for uploads kept from older maps
@@ -51,18 +61,11 @@ class CustomIconList {
     return added;
   }
 
-  /** a new picture under the same id, so every slot using the icon follows */
-  replace(id: string, picture: IconPicture): void {
+  /** a new picture or frame under the same id, so every slot using the icon follows */
+  update(id: string, patch: Partial<IconPicture>): void {
     const icon = this.get(id);
     if (!icon) return;
-    Object.assign(icon, picture);
-    Options.save();
-  }
-
-  setFrame(id: string, viewBox: string): void {
-    const icon = this.get(id);
-    if (!icon) return;
-    icon.viewBox = viewBox;
+    Object.assign(icon, patch);
     Options.save();
   }
 
@@ -93,58 +96,13 @@ function definedPaint(paint: IconPaint): IconPaint {
   return Object.fromEntries(Object.entries(paint).filter(([, value]) => value !== undefined && value !== ""));
 }
 
-/** One set's load state: concurrent callers share an attempt, a failure is cached until an explicit retry */
-class IconChunk {
-  private status: "idle" | "pending" | "loaded" | "failed" = "idle";
-  private promise: Promise<void> | null = null;
-  private attempts = 0;
-
-  constructor(
-    readonly id: string,
-    private readonly inject: () => Promise<void>
-  ) {}
-
-  get isLoaded(): boolean {
-    return this.status === "loaded";
-  }
-
-  /** The shared attempt: a cached failure is handed back as it is, so a redraw can neither start a retry nor repeat the report */
-  load(): Promise<void> {
-    return this.promise ?? this.start();
-  }
-
-  /** An explicit demand: a failed attempt is repeated, while a live one stays shared */
-  retry(): Promise<void> {
-    if (this.status === "pending" || this.status === "loaded") return this.promise ?? Promise.resolve();
-    return this.start();
-  }
-
-  private start(): Promise<void> {
-    this.status = "pending";
-    this.attempts += 1;
-    this.promise = this.attempt();
-    return this.promise;
-  }
-
-  /** never rejects: the chunk reports its own failure, once per attempt */
-  private async attempt(): Promise<void> {
-    try {
-      await this.inject();
-      this.status = "loaded";
-    } catch (error) {
-      this.status = "failed";
-      console.error(`Failed to load ${this.id} icons`, error);
-      const advice = this.attempts > 1 ? "Please reload the page." : "Reload the page or retry the action.";
-      tip(`Cannot load ${this.id} icons. ${advice}`, false, "error", 8000);
-    }
-  }
-}
-
 /** Every icon reference is a bare symbol id; its symbols live in `#defElements defs > g#icons-library > g[data-set]` */
 class IconLibrary {
   private readonly defs = "#defElements defs";
   private readonly container = "icons-library";
-  private readonly chunks = new Map<IconSetId, IconChunk>();
+  private readonly loading = new Map<IconSetId, Promise<void>>(); // the latest attempt per set
+  private readonly loaded = new Set<IconSetId>();
+  private readonly failed = new Set<IconSetId>();
 
   kind(id: string): IconKind | null {
     if (id.startsWith(GLYPH_PREFIX)) return "glyph";
@@ -188,7 +146,7 @@ class IconLibrary {
     if (kind === "glyph") this.ensureGlyph(id);
     else if (kind === "set") {
       const set = IconSets.setForId(id)!;
-      if (!this.isLoaded(set) && document.querySelector(this.defs)) void this.load(set);
+      if (!this.loading.has(set) && document.querySelector(this.defs)) void this.load(set);
     }
     return `#${id}`;
   }
@@ -213,10 +171,10 @@ class IconLibrary {
       .join("");
   }
 
-  /** An inline svg drawing an icon in the interface in its paint, or in a slot's own colours */
-  html(id: string, own?: IconPaint): string {
+  /** An inline svg drawing an icon in the interface in its paint, or in a slot's own colours; `attributes` go on the svg as they are */
+  html(id: string, own?: IconPaint, attributes = ""): string {
     if (!id) return "";
-    return /*html*/ `<svg viewBox="0 0 100 100" width="1em" height="1em" aria-hidden="true"${this.paintAttributes(id, own)}><use href="${escapeHtml(this.href(id))}" width="100" height="100"/></svg>`;
+    return /*html*/ `<svg viewBox="0 0 100 100" width="1em" height="1em" aria-hidden="true"${this.paintAttributes(id, own)}${attributes}><use href="${escapeHtml(this.href(id))}" width="100" height="100"/></svg>`;
   }
 
   /** the symbol's frame in the page, `[x, y, width, height]` */
@@ -273,17 +231,25 @@ class IconLibrary {
     return counts;
   }
 
+  /** "1 good, 12 markers" */
+  describeUses(uses: Partial<Record<IconUseKind, number>>): string {
+    return Object.entries(uses)
+      .map(([kind, count]) => `${count} ${SLOT_NAMES[kind as IconUseKind][count === 1 ? 0 : 1]}`)
+      .join(", ");
+  }
+
   /** the page group holding a set's, the glyphs' or the custom icons' symbols */
   group(set: IconSetId | "glyph" | "custom"): Element | null {
     return document.querySelector(`${this.defs} > #${this.container} > [data-set="${set}"]`);
   }
 
   isLoaded(set: IconSetId): boolean {
-    return this.chunk(set).isLoaded;
+    return this.loaded.has(set);
   }
 
+  /** the shared attempt: a cached failure is handed back as it is, so a redraw neither retries nor repeats the report */
   load(set: IconSetId): Promise<void> {
-    return this.chunk(set).load();
+    return this.loading.get(set) ?? this.attempt(set);
   }
 
   loadAll(sets: readonly IconSetId[]): Promise<void> {
@@ -292,7 +258,7 @@ class IconLibrary {
 
   /** an explicit demand, e.g. a picker or an export after a failed attempt */
   retry(set: IconSetId): Promise<void> {
-    return this.chunk(set).retry();
+    return this.failed.has(set) ? this.attempt(set) : this.load(set);
   }
 
   /** Rebuild every custom icon symbol from the map's list: startup, a map load, a change in the picker */
@@ -353,12 +319,19 @@ class IconLibrary {
     container.appendChild(group);
   }
 
-  private chunk(set: IconSetId): IconChunk {
-    const existing = this.chunks.get(set);
-    if (existing) return existing;
-    const chunk = new IconChunk(set, () => this.inject(set));
-    this.chunks.set(set, chunk);
-    return chunk;
+  /** never rejects: a failure is reported once per attempt */
+  private attempt(set: IconSetId): Promise<void> {
+    this.failed.delete(set);
+    const attempt = this.inject(set).then(
+      () => void this.loaded.add(set),
+      error => {
+        this.failed.add(set);
+        console.error(`Failed to load ${set} icons`, error);
+        tip(`Cannot load ${set} icons. Reload the page or retry the action.`, false, "error", 8000);
+      }
+    );
+    this.loading.set(set, attempt);
+    return attempt;
   }
 }
 

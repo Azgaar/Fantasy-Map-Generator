@@ -37,11 +37,11 @@ The setting applies to every lake in the group. To style one lake separately, cr
 
 ## Illustrated relief and settlements
 
-- In **Style → Relief Icons**, choose the **Illustrated** set alongside Simple, Colored and Gray.
-- In **Style → Burg Icons**, select a burg group and choose an Illustrated icon: Palace, Burgh, Castle, Abbey, Caravanserai or Camp. The group's fill and stroke recolor its icon.
-- In **Style → Burg Anchors**, select a group and choose **Anchor** or **Harbor** for its port symbols. Adjust their size and horizontal/vertical shift independently of the burg icon. Shift is measured in icon-size units; positive values move right and down.
+- In **Style → Relief**, choose the **Illustrated** set alongside Simple, Colored, Gray and Stickers.
+- In **Style → Icons**, select a burg group and pick an icon from **Settlements · Illustrated** in the icon picker, such as Palace, Burgh, Castle, Abbey, Caravanserai, Camp or one of the regional capitals, cities and forts. The group's fill and stroke recolor its icon.
+- In the **Anchors** card of the same group, choose **Anchor** or **Harbor** for its port symbols. Adjust their size and horizontal/vertical shift independently of the burg icon. Shift is measured in icon-size units; positive values move right and down.
 
-These symbol choices style existing settlements and ports. They do not turn a burg into a port or alter its population. The burg icon picker uses bundled symbols; image upload in the general Icon Selector is a separate control used by other editors.
+These symbol choices style existing settlements and ports. They do not turn a burg into a port or alter its population. The picker is the same one every icon uses, so a burg group can also take an emoji or your own uploaded art; see [Icons](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Icons).
 
 ## Label appearance
 

@@ -136,15 +136,7 @@ function open(request: ReliefPoolEditorOptions): void {
     if (entry) add(entry);
   });
   dialog.querySelector(".any")!.addEventListener("click", () => {
-    const original = pool;
-    Controllers.IconPicker.open({
-      current: "",
-      onPick: id => {
-        pool = original;
-        if (id) add(id);
-        else render();
-      }
-    });
+    Controllers.IconPicker.open({ current: "", onPick: id => id && add(id) });
   });
   entries.addEventListener("change", event => {
     const entry = entryOf(event.target);
@@ -197,24 +189,18 @@ function open(request: ReliefPoolEditorOptions): void {
 }
 
 /** place the covered cells' relief anew, once confirmed; `before` writes what the new relief follows */
-export function confirmReplace(
-  place: string,
-  covers: (cell: number) => boolean,
-  before: () => void,
-  after?: () => void
-): void {
+export function confirmReplace(place: string, covers: (cell: number) => boolean, before?: () => void): void {
   const count = pack.relief?.length ? Relief.iconsOn(covers).length : 0;
   confirmationDialog({
     title: "Re-place relief",
     message: `Replace the ${count} relief icons on ${escapeHtml(place)} with new ones? Relief elsewhere is kept`,
     confirm: "Re-place",
     onConfirm: () => {
-      before();
+      before?.();
       // an ungenerated layer places everything when it is first drawn
       if (pack.relief?.length) Relief.regenerate(covers);
       if (Layers.isOn("relief")) redrawRelief();
       else Layers.show("relief");
-      after?.();
     }
   });
 }

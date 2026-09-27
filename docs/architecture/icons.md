@@ -1,5 +1,7 @@
 # Icon assets
 
+How icons are stored, loaded and drawn. The user-facing guide is the [Icons wiki page](../wiki/Icons.md).
+
 Artwork lives in `src/assets/icons/` as standalone SVG files, one directory per **icon set**:
 
 ```
@@ -25,6 +27,7 @@ interface IconSet {
   folder: string; // the directory under src/assets/icons/
   em?: number; // user units per em: anchored art, sized in em by the loader
   aliases?: (names: readonly string[]) => IconAlias[]; // symbols for ids the directory does not draw
+  paint?: IconPaint; // what the art's open fill and stroke take where the slot sets none
 }
 ```
 
@@ -35,9 +38,10 @@ interface IconSet {
 
 `components/icon-sets.ts` (`IconSets`) is the family-agnostic catalog of the built-in sets and touches no
 DOM: `sets()` lists the models, `files(set)` lists a directory synchronously (pickers need no chunk to list
-choices), and `read(set)` turns a set into symbols — glob the directory (`import.meta.glob(?raw)`, one hashed
-lazy chunk per set via `manualChunks` in `vite.config.ts`), turn each `<svg>` root into `<symbol id>`, keep
-an anchored set's frame unclipped, append `aliases` if declared.
+choices), `owns(id)` tells whether a set draws an id from a file or an alias, and `read(set)` turns a set
+into symbols — glob the directory (`import.meta.glob(?raw)`, one hashed lazy chunk per set via
+`manualChunks` in `vite.config.ts`), turn each `<svg>` root into `<symbol id>`, keep an anchored set's frame
+unclipped, append `aliases` if declared.
 
 `components/icons.ts` (`Icons`) puts them in the page, as `<g data-set="<set>">` in
 `#defElements defs > g#icons-library`. `load` returns the shared attempt and never rejects, `retry` starts a
@@ -66,7 +70,9 @@ boxed icon. The burg renderer alone places it around the point: `Icons.anchoredB
 over `em`, the group translates by its origin in em, and each `<use x y>` is as wide as the frame in em,
 under the group's `font-size`. Any other icon on a burg gets the box `[-0.5, -0.5, 1, 1]`: centred on
 the point. Inherited `stroke-width` resolves in the art's own units, so a `scale()` wrapper preserves
-both the size and the stroke weight of art drawn at another scale.
+both the size and the stroke weight of art drawn at another scale. The flip side: a wrapper scales the
+group's outline too, so art meant to share it with the rest of its set (the `atlas` shapes, `ports/harbor`) is
+drawn at 10 units/em with no transform.
 
 ## Logical relief slots
 
@@ -164,7 +170,8 @@ written (`Icons.href`). `Icons` is the one entry point for a reference, whatever
   file may carry anything, and an image must be an `http(s)` or `data:image/` URL.
 
 The slots are goods, markers, regiments, military unit types, burg group icons and anchors, the market
-marker, relief icons and biome relief pools; `Icons.uses(id)` counts the references in each.
+marker, relief icons and the relief pools of biomes and relief rules; `Icons.uses(id)` counts the
+references in each.
 
 `Icons.html(id)` draws an icon in the interface — editors, overviews, the picker: an inline svg boxing the
 icon in its own frame, in its paint (below). The icon picker (`controllers/icon-picker/`) takes only the current icon

@@ -206,6 +206,7 @@ function changeMarkerType(this: HTMLInputElement): void {
 function changeMarkerIcon(): void {
   Controllers.IconPicker.open({
     current: selectedMarker.icon,
+    live: true,
     onPick: icon => {
       for (const marker of getSameTypeMarkers()) marker.icon = icon;
       updateIconPaint();

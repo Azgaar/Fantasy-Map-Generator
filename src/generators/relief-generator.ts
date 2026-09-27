@@ -45,11 +45,7 @@ export type ReliefPool = Record<string, number>;
 
 const SIZE_GROWTH = 0.8; // what a rule's icon size gains per height unit above the rule's lowest height
 
-/** what a rule places: its name aside */
-const placing = ({ name: _, ...rule }: ReliefRule): string => JSON.stringify(rule);
-
 export class ReliefModel {
-  private readonly placedBy = new WeakMap<object, ReliefRule[]>(); // per map
   readonly sets = RELIEF_SETS;
   readonly types = TYPES;
   /** one icon set per relief set: its directory, plus a symbol for every union slot it draws no file for */
@@ -81,48 +77,25 @@ export class ReliefModel {
     // an icon placed lower draws on top; see byAnchor for why the key is the centre, not the box bottom
     relief.sort(this.byAnchor);
     pack.relief = relief;
-    this.placedBy.set(pack, structuredClone(options.map.relief.rules));
 
     TIME && console.timeEnd("generateRelief");
     return relief;
   }
 
   /** the first relief rule a land cell matches; a cell no rule claims takes its biome's pool */
-  claim(cell: number, rules: readonly ReliefRule[] = options.map.relief.rules): ReliefRule | undefined {
+  claim(cell: number): ReliefRule | undefined {
     const height = pack.cells.h[cell];
     if (height < 20) return undefined;
     const temp = grid.cells.temp[pack.cells.g[cell]];
     const biome = pack.cells.biome[cell];
     const within = (value: number, { min, max }: { min: number | null; max: number | null }) =>
       (min === null || value >= min) && (max === null || value <= max);
-    return rules.find(
+    return options.map.relief.rules.find(
       rule =>
         within(height, rule.height) &&
         within(temp, rule.temperature) &&
         (!rule.biomes?.length || rule.biomes.includes(biome))
     );
-  }
-
-  /** the rules the map's relief was placed by; a loaded map's relief is taken to follow its own */
-  placedRules(): ReliefRule[] {
-    if (!this.placedBy.has(pack)) this.placedBy.set(pack, structuredClone(options.map.relief.rules));
-    return this.placedBy.get(pack)!;
-  }
-
-  /** whether rule edits since the relief was placed change what it places; a rename changes nothing */
-  isOutdated(): boolean {
-    return this.placedRules().map(placing).join() !== options.map.relief.rules.map(placing).join();
-  }
-
-  /** the cells whose relief the rule edits change: claimed by another rule now, or by an edited one */
-  outdatedCells(): (cell: number) => boolean {
-    const keys = new Map<ReliefRule | undefined, string>([[undefined, ""]]);
-    const key = (rule: ReliefRule | undefined) => {
-      if (!keys.has(rule)) keys.set(rule, placing(rule!));
-      return keys.get(rule)!;
-    };
-    const placed = this.placedRules();
-    return cell => key(this.claim(cell, placed)) !== key(this.claim(cell));
   }
 
   /** a cell whose relief the biome's pool places */
@@ -140,22 +113,19 @@ export class ReliefModel {
 
   /** place the given cells' relief anew by the current rules and pools; every other icon keeps its place and order */
   regenerate(covers: (cell: number) => boolean): void {
-    const outdated = this.isOutdated() ? this.outdatedCells() : null;
-    const catchesUp = !outdated || !pack.cells.i.some(cell => outdated(cell) && !covers(cell));
     const replaced = new Set(this.iconsOn(covers));
-    pack.relief = pack.relief.filter(icon => !replaced.has(icon));
     const placed: ReliefIcon[] = [];
     for (const i of pack.cells.i) if (covers(i)) this.placeCell(i, placed);
     placed.sort(this.byAnchor);
+    // merged, not re-sorted: the kept icons may be in a hand-set order
     const merged: ReliefIcon[] = [];
     let next = 0;
     for (const kept of pack.relief) {
+      if (replaced.has(kept)) continue;
       while (next < placed.length && this.byAnchor(placed[next], kept) < 0) merged.push(placed[next++]);
       merged.push(kept);
     }
-    while (next < placed.length) merged.push(placed[next++]);
-    pack.relief = merged;
-    if (catchesUp) this.placedBy.set(pack, structuredClone(options.map.relief.rules));
+    pack.relief = merged.concat(placed.slice(next));
   }
 
   /** add an icon where its anchor puts it in the drawing order */

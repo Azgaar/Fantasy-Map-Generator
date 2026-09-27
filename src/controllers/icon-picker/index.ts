@@ -1,7 +1,7 @@
 // The icon picker: one dialog for every icon slot, the Icon Library's sources in a side list
 import { confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { type IconSetId, IconSets } from "@/components/icon-sets";
-import { CustomIcons, type IconPicture, Icons, type IconUseKind } from "@/components/icons";
+import { CustomIcons, type IconPicture, Icons } from "@/components/icons";
 import { tip } from "@/components/tooltips";
 import { ICON_GROUPS } from "@/data/icons-list";
 import { capitalize, createFileInput, ensureEl, escapeHtml } from "@/utils";
@@ -10,23 +10,17 @@ import { closePositioner, openPositioner } from "./positioner";
 
 const ICON_PICKER = "iconPicker";
 
-/** one list entry: an emoji theme, a set or one subdirectory of a set */
+/** one list entry: an emoji theme, a set or one subdirectory of a set, listed under its group */
 interface Entry {
   key: string;
+  group: string;
   label: string;
   icons: string[];
   set?: IconSetId;
 }
 
-/** a heading of the side list, showing all its entries at once */
-interface Section {
-  key: string;
-  label: string;
-  entries: Entry[];
-}
-
-/** the section of each set family, in list order */
-const SECTIONS: Record<string, string> = {
+/** the group of each set family, in list order */
+const GROUPS: Record<string, string> = {
   burgs: "Settlements",
   ports: "Settlements",
   goods: "Goods",
@@ -35,7 +29,8 @@ const SECTIONS: Record<string, string> = {
 
 export interface IconPickerOptions {
   current: string;
-  onPick: (id: string) => void;
+  onPick: (id: string) => void; // on Apply; `live` also calls it on every selection and with `current` on cancel
+  live?: boolean;
 }
 
 const STYLE = /* css */ `
@@ -58,6 +53,7 @@ const STYLE = /* css */ `
   #${ICON_PICKER} nav button.active { background: #0000001a; color: inherit; font-weight: bold; }
   #${ICON_PICKER} nav button small { margin-left: .4em; opacity: .6; font-weight: normal; }
   #${ICON_PICKER} nav .section { margin-top: .5em; font-weight: bold; }
+  #${ICON_PICKER} nav div.section { padding: .25em .4em; white-space: nowrap; }
   #${ICON_PICKER} nav .entry { padding-left: 1.2em; }
   #${ICON_PICKER} .panel { position: relative; overflow-y: auto; padding: .4em 0 .4em .6em; }
   #${ICON_PICKER} .panel h4 { margin: .6em 0 .3em; font-size: .85em; opacity: .7; }
@@ -90,23 +86,13 @@ const STYLE = /* css */ `
   }
 `;
 
-const SLOT_NAMES: Record<IconUseKind, [string, string]> = {
-  good: ["good", "goods"],
-  marker: ["marker", "markers"],
-  regiment: ["regiment", "regiments"],
-  unit: ["unit type", "unit types"],
-  burgGroup: ["burg group style", "burg group styles"],
-  market: ["market marker style", "market marker styles"],
-  relief: ["relief icon", "relief icons"],
-  biome: ["biome relief pool", "biome relief pools"]
-};
-
 let fileInput: HTMLInputElement | null = null; // one per page, so reopening never binds a second listener
 
-function open({ current, onPick }: IconPickerOptions): void {
+function open({ current, onPick, live = false }: IconPickerOptions): void {
   const initial = current;
-  const sections = catalog();
-  let view = viewOf(current, sections);
+  let applied = false;
+  const entries = catalog();
+  let view = viewOf(current, entries);
   let query = "";
   let replacing: string | null = null; // the custom icon a new link or upload replaces
 
@@ -133,18 +119,18 @@ function open({ current, onPick }: IconPickerOptions): void {
   const isOpen = () => dialog.isConnected && options.map === map;
 
   const renderHead = () => {
-    dialog.querySelector(".current")!.innerHTML = renderCurrent(current, replacing, sections);
+    dialog.querySelector(".current")!.innerHTML = renderCurrent(current, replacing, entries);
   };
   const renderNav = () => {
-    nav.innerHTML = renderSources(sections, query ? null : view);
+    nav.innerHTML = renderSources(entries, query ? null : view);
   };
   const renderPanel = () => {
-    if (query) panel.innerHTML = renderResults(sections, query, current);
+    if (query) panel.innerHTML = renderResults(entries, query, current);
     else if (view === "custom") panel.innerHTML = renderCustom(current, replacing);
     else {
-      const entries = entriesOf(sections, view);
-      panel.innerHTML = (view.startsWith("glyph") ? renderGlyphText(current) : "") + renderEntries(entries, current);
-      load(entries);
+      const shown = entries.filter(({ key }) => key === view);
+      panel.innerHTML = (view.startsWith("glyph") ? renderGlyphText(current) : "") + renderEntries(shown, current);
+      load(shown);
     }
     reveal();
   };
@@ -166,7 +152,12 @@ function open({ current, onPick }: IconPickerOptions): void {
       button.classList.toggle("pressed", button.dataset.icon === id);
     }
     renderHead();
-    onPick(id);
+    if (live) onPick(id);
+  };
+  const apply = () => {
+    applied = true;
+    if (!live) onPick(current);
+    $(dialog).dialog("close");
   };
 
   const setReplacing = (id: string | null) => {
@@ -192,7 +183,7 @@ function open({ current, onPick }: IconPickerOptions): void {
       if (!isOpen() || replacing !== replacement) return;
       if (replacement) {
         closePositioner(id);
-        CustomIcons.replace(id, picture);
+        CustomIcons.update(id, picture);
         replacing = null;
         refreshCustom();
       } else {
@@ -225,7 +216,7 @@ function open({ current, onPick }: IconPickerOptions): void {
     confirmationDialog({
       title: "Remove custom icon",
       message: count
-        ? `The icon is used by ${describeUses(uses)}. ${count === 1 ? "It" : "They"} will show no icon.<br>Remove it anyway?`
+        ? `The icon is used by ${Icons.describeUses(uses)}. ${count === 1 ? "It" : "They"} will show no icon.<br>Remove it anyway?`
         : "The icon is not used on the map. Remove it?",
       confirm: "Remove",
       onConfirm: () => {
@@ -260,7 +251,7 @@ function open({ current, onPick }: IconPickerOptions): void {
   });
   // a double click picks and applies
   panel.addEventListener("dblclick", event => {
-    if ((event.target as HTMLElement).closest(".choices [data-icon]")) $(dialog).dialog("close");
+    if ((event.target as HTMLElement).closest(".choices [data-icon]")) apply();
   });
   panel.addEventListener("input", event => {
     const input = event.target as HTMLInputElement;
@@ -283,15 +274,13 @@ function open({ current, onPick }: IconPickerOptions): void {
     title: "Select icon",
     width: dialogWidth(),
     position: { my: "center", at: "center", of: "svg" },
-    close: () => destroyDialog(ICON_PICKER),
+    close: () => {
+      if (live && !applied && current !== initial) onPick(initial);
+      destroyDialog(ICON_PICKER);
+    },
     buttons: {
-      Apply: function (this: HTMLElement) {
-        $(this).dialog("close");
-      },
-      Cancel: function (this: HTMLElement) {
-        if (current !== initial) onPick(initial);
-        $(this).dialog("close");
-      }
+      Apply: apply,
+      Cancel: () => $(dialog).dialog("close")
     }
   });
   reveal(); // the panel has its height only once the dialog is laid out
@@ -303,81 +292,63 @@ function dialogWidth(): number {
   return Math.min(52 * em, (window.visualViewport?.width ?? window.innerWidth) - 16);
 }
 
-/** the side list: the emoji by theme, then the built-in sets by section, a set split by subdirectory */
-function catalog(): Section[] {
+/** the side list: the emoji by theme, then the built-in sets by group, a set split by subdirectory */
+function catalog(): Entry[] {
   const emoji = Object.entries(ICON_GROUPS).map(([label, glyphs]) => ({
     key: `glyph/${label}`,
+    group: "Emoji",
     label,
     icons: glyphs.map(glyph => Icons.glyph(glyph))
   }));
-  const builtIn = new Map<string, Entry[]>();
-  for (const { id } of IconSets.sets()) {
-    const family = id.split("-")[0];
-    const label = SECTIONS[family] ?? capitalize(family);
-    builtIn.set(label, [...(builtIn.get(label) ?? []), ...setEntries(id as IconSetId)]);
-  }
-  const order = [...new Set(Object.values(SECTIONS))];
-  const rank = (label: string) => order.indexOf(label) + 1 || order.length + 1;
-  const sets = [...builtIn]
-    .sort(([a], [b]) => rank(a) - rank(b))
-    .map(([label, entries]) => ({ key: label, label, entries }));
-  return [{ key: "glyph", label: "Emoji", entries: emoji }, ...sets];
+  const order = [...new Set(Object.values(GROUPS))];
+  const rank = (group: string) => order.indexOf(group) + 1 || order.length + 1;
+  const sets = IconSets.sets()
+    .flatMap(({ id }) => setEntries(id as IconSetId))
+    .sort((a, b) => rank(a.group) - rank(b.group));
+  return [...emoji, ...sets];
 }
 
 /** a set's entries: one per subdirectory, else the set itself */
 function setEntries(set: IconSetId): Entry[] {
-  const groups = new Map<string, string[]>();
+  const subdirectories = new Map<string, string[]>();
   for (const file of IconSets.files(set)) {
-    const group = file.slice(0, Math.max(0, file.lastIndexOf("/")));
-    groups.set(group, [...(groups.get(group) ?? []), IconSets.symbolId(set, file)]);
+    const subdirectory = file.slice(0, Math.max(0, file.lastIndexOf("/")));
+    subdirectories.set(subdirectory, [...(subdirectories.get(subdirectory) ?? []), IconSets.symbolId(set, file)]);
   }
+  const family = set.split("-")[0];
   const name = set.slice(set.indexOf("-") + 1); // relief-simple → simple
-  return [...groups].map(([group, icons]) => ({
-    key: group ? `${set}/${group}` : set,
-    label: capitalize((group || name).replaceAll(/[-/]/g, " ")),
+  return [...subdirectories].map(([subdirectory, icons]) => ({
+    key: subdirectory ? `${set}/${subdirectory}` : set,
+    group: GROUPS[family] ?? capitalize(family),
+    label: capitalize((subdirectory || name).replaceAll(/[-/]/g, " ")),
     icons,
     set
   }));
 }
 
-/** a section's entries, or the one entry keyed so */
-function entriesOf(sections: Section[], view: string): Entry[] {
-  for (const section of sections) {
-    if (section.key === view) return section.entries;
-    const entry = section.entries.find(entry => entry.key === view);
-    if (entry) return [entry];
-  }
-  return [];
-}
-
 /** the entry an icon is listed in, else the first entry of its set */
-function locate(sections: Section[], id: string): { section: Section; entry: Entry } | undefined {
+function locate(entries: Entry[], id: string): Entry | undefined {
   const set = IconSets.setForId(id);
-  const found = (match: (entry: Entry) => boolean) => {
-    for (const section of sections) {
-      const entry = section.entries.find(match);
-      if (entry) return { section, entry };
-    }
-  };
-  return found(entry => entry.icons.includes(id)) ?? (set && found(entry => entry.set === set));
+  return entries.find(entry => entry.icons.includes(id)) ?? (set && entries.find(entry => entry.set === set));
 }
 
-/** where the picker opens: the current icon's entry, else the first built-in section */
-function viewOf(current: string, sections: Section[]): string {
-  if (Icons.kind(current) === "custom") return "custom";
-  if (Icons.kind(current) === "glyph") return locate(sections, current)?.entry.key ?? "glyph";
-  return locate(sections, current)?.entry.key ?? sections.find(({ key }) => key !== "glyph")?.key ?? "glyph";
+/** where the picker opens: the current icon's entry, else the first emoji or built-in entry */
+function viewOf(current: string, entries: Entry[]): string {
+  const kind = Icons.kind(current);
+  if (kind === "custom") return "custom";
+  const entry = locate(entries, current) ?? entries.find(({ set }) => (kind === "glyph" ? !set : set));
+  return entry?.key ?? "custom";
 }
 
-/** Relief · Simple, or Goods for a section of one entry */
-function entryLabel(section: Section, entry: Entry): string {
-  return section.entries.length > 1 ? `${section.label} · ${entry.label}` : section.label;
+/** Relief · Simple, or Goods for a set that is its own group */
+function entryLabel(entry: Entry): string {
+  return entry.label === entry.group ? entry.group : `${entry.group} · ${entry.label}`;
 }
 
 /** the selected icon, with its custom icon actions */
-function renderCurrent(current: string, replacing: string | null, sections: Section[]): string {
+function renderCurrent(current: string, replacing: string | null, entries: Entry[]): string {
   const kind = Icons.kind(current);
-  const located = kind === "set" ? locate(sections, current) : undefined;
+  const located = kind === "set" ? locate(entries, current) : undefined;
   const from = !current
     ? "No icon selected"
     : kind === "glyph"
@@ -385,7 +356,7 @@ function renderCurrent(current: string, replacing: string | null, sections: Sect
       : kind === "custom"
         ? "Carried by this map"
         : located
-          ? entryLabel(located.section, located.entry)
+          ? entryLabel(located)
           : "Built-in";
   const actions =
     kind === "custom" && CustomIcons.get(current)
@@ -400,22 +371,22 @@ function renderCurrent(current: string, replacing: string | null, sections: Sect
     ${actions}`;
 }
 
-/** the map's icons, then each section: its heading shows all its entries, a section of one entry is just the entry */
-function renderSources(sections: Section[], active: string | null): string {
+/** the map's icons, then each entry under its group's heading; a set that is its own group stands alone */
+function renderSources(entries: Entry[], active: string | null): string {
   const item = (key: string, label: string, count: number, type = "") =>
     `<button type="button" data-source="${escapeHtml(key)}" class="${type} ${key === active ? "active" : ""}">${label}${count ? ` <small>${count}</small>` : ""}</button>`;
-  const list = sections.map(section => {
-    const [first] = section.entries;
-    if (section.entries.length === 1) return item(first.key, section.label, first.icons.length, "section");
-    const count = section.entries.reduce((total, entry) => total + entry.icons.length, 0);
-    const entries = section.entries.map(entry => item(entry.key, entry.label, entry.icons.length, "entry"));
-    return item(section.key, section.label, count, "section") + entries.join("");
+  let group = "";
+  const list = entries.map(entry => {
+    if (entry.label === entry.group) return item(entry.key, entry.label, entry.icons.length, "section");
+    const heading = entry.group === group ? "" : `<div class="section">${entry.group}</div>`;
+    group = entry.group;
+    return heading + item(entry.key, entry.label, entry.icons.length, "entry");
   });
   return item("custom", "Custom", CustomIcons.all.length) + list.join("");
 }
 
-/** the entries' tiles, each under its label when there are several */
-function renderEntries(entries: Entry[], current: string, headings = entries.length > 1): string {
+/** the entries' tiles, each under its label when asked */
+function renderEntries(entries: Entry[], current: string, headings = false): string {
   return entries
     .map(entry => {
       const tiles = entry.icons.map(id => tile(id, current)).join("");
@@ -430,17 +401,15 @@ function load(entries: Entry[]): void {
 }
 
 /** the built-in icons whose name holds the query, entry by entry */
-function renderResults(sections: Section[], query: string, current: string): string {
-  const found = sections.flatMap(section =>
-    section.entries
-      .filter(entry => entry.set)
-      .map(entry => ({
-        ...entry,
-        label: entryLabel(section, entry),
-        icons: entry.icons.filter(id => Icons.name(id).toLowerCase().includes(query))
-      }))
-      .filter(entry => entry.icons.length)
-  );
+function renderResults(entries: Entry[], query: string, current: string): string {
+  const found = entries
+    .filter(entry => entry.set)
+    .map(entry => ({
+      ...entry,
+      label: entryLabel(entry),
+      icons: entry.icons.filter(id => Icons.name(id).toLowerCase().includes(query))
+    }))
+    .filter(entry => entry.icons.length);
   load(found);
   return found.length
     ? renderEntries(found, current, true)
@@ -466,13 +435,6 @@ function renderCustom(current: string, replacing: string | null): string {
       <a href="https://thenounproject.com" target="_blank" rel="noopener">The Noun Project</a>,
       <a href="https://openmoji.org" target="_blank" rel="noopener">OpenMoji</a>,
       <a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia Commons</a>.</p>`;
-}
-
-/** "1 good, 12 markers" */
-function describeUses(uses: Partial<Record<IconUseKind, number>>): string {
-  return Object.entries(uses)
-    .map(([kind, count]) => `${count} ${SLOT_NAMES[kind as IconUseKind][count === 1 ? 0 : 1]}`)
-    .join(", ");
 }
 
 /** a glyph tile draws its text, sparing a symbol per glyph */

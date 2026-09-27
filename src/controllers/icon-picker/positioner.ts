@@ -138,7 +138,7 @@ export function openPositioner(id: string): void {
     buttons: {
       Apply: function (this: HTMLElement) {
         applied = true;
-        CustomIcons.setFrame(id, toViewBox(frame));
+        CustomIcons.update(id, { viewBox: toViewBox(frame) });
         $(this).dialog("close");
       },
       Cancel: function (this: HTMLElement) {

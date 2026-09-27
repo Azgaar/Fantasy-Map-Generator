@@ -1,6 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-4 -4 8 8">
-<g transform="scale(.5)">
-<circle r="7" />
-<circle r=".75" fill="none"/>
-</g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-6 -6 12 12">
+<circle r="3.5" />
+<circle r=".375" fill="none" />
 </svg>

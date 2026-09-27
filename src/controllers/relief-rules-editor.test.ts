@@ -117,7 +117,7 @@ describe("ReliefRulesEditor", () => {
     expect(options.map.relief.rules).toEqual(Relief.getDefaultRules());
   });
 
-  it("re-places only the cells whose rule changed what it places, and knows when the map caught up", () => {
+  it("re-places the relief of every cell a rule claims", () => {
     const square = () => [
       [0, 0],
       [20, 0],
@@ -131,25 +131,11 @@ describe("ReliefRulesEditor", () => {
       biomes: [],
       relief: [{ type: "mount", x: 0, y: 0, s: 2 }]
     } as unknown as typeof pack;
-    ReliefRulesEditor.open(); // a new map: its relief follows its rules
+    ReliefRulesEditor.open();
     const regenerate = vi.spyOn(Relief, "regenerate");
-    const pending = () => document.getElementById("reliefRulesEditorPending")!.style.display;
-    expect(pending()).toBe("none");
-
-    edit(1, "name", "Peaks"); // a rename places nothing new
-    expect(pending()).toBe("none");
-    edit(2, "size.max", "20"); // the hills
-    expect(pending()).toBe("");
-
-    ReliefRulesEditor.open(); // reopening keeps what the map is behind on
-    expect(pending()).toBe("");
 
     press("Replace");
-    expect([0, 1, 2].map(regenerate.mock.calls[0][0])).toEqual([false, true, false]);
+    expect([0, 1, 2].map(regenerate.mock.calls[0][0])).toEqual([true, true, false]);
     expect(pack.relief.filter(icon => "type" in icon && icon.type === "hill").length).toBeGreaterThan(0);
-    expect(pending()).toBe("none");
-
-    press("Replace"); // nothing left to re-place
-    expect(regenerate).toHaveBeenCalledOnce();
   });
 });

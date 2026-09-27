@@ -480,6 +480,7 @@ const icon: ControlFactory = (_spec, value, set) => {
   button.addEventListener("click", () =>
     Controllers.IconPicker.open({
       current,
+      live: true,
       onPick: id => {
         current = id;
         show();

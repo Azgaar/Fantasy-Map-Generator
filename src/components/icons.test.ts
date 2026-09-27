@@ -46,10 +46,10 @@ test("a new id never repeats one the map holds", () => {
 
 test("replacing keeps the id, framing edits only the frame, removing leaves references alone", () => {
   const icon = CustomIcons.add({ kind: "image", content: "https://a.b/c.png", viewBox: "0 0 100 100" });
-  CustomIcons.replace(icon.id, { kind: "svg", content: "<g/>", viewBox: "0 0 10 10" });
+  CustomIcons.update(icon.id, { kind: "svg", content: "<g/>", viewBox: "0 0 10 10" });
   expect(CustomIcons.get(icon.id)).toEqual({ id: icon.id, kind: "svg", content: "<g/>", viewBox: "0 0 10 10" });
 
-  CustomIcons.setFrame(icon.id, "1 1 8 8");
+  CustomIcons.update(icon.id, { viewBox: "1 1 8 8" });
   expect(CustomIcons.get(icon.id)?.viewBox).toBe("1 1 8 8");
   expect(CustomIcons.get(icon.id)?.content).toBe("<g/>");
 

@@ -59,8 +59,8 @@ mirrors the DOM tree: every `groups` entry addresses one `data-group` child of i
     "groups": {
       "capital": {
         "groups": {
-          "icons": { "attrs": { "fill": "#ffffff" }, "options": { "size": 2, "icon": "#burgs-atlas-square" } },
-          "anchors": { "attrs": { "fill": "#ffffff" }, "options": { "size": 1.9, "icon": "#ports-anchor" } }
+          "icons": { "attrs": { "fill": "#ffffff" }, "options": { "size": 2, "icon": "burgs-atlas-square" } },
+          "anchors": { "attrs": { "fill": "#ffffff" }, "options": { "size": 1.9, "icon": "ports-anchor" } }
         }
       }
     }
@@ -302,9 +302,9 @@ option source and any dialog it opens: `filter` (the map's `<defs>` filters), `f
 families plus the add-font dialog), `blur`, `dash` (a dash array the schema format is checked
 against), `transform` (the compass placement as three sliders), `labelStyle` (shadow, letter case and
 shift as four rows), `scheme` (heightmap colour schemes plus a gradient builder), `texture` (bundled
-textures plus a URL dialog), `icon` (the burg / port icon picker) and `emoji` (markets, through the
-icon selector). A composed control parses the stored string into parts and calls `set` with the whole
-string back. `close` destroys whatever dialogs they opened.
+textures plus a URL dialog) and `icon` (any icon slot — burg groups, ports, the market marker —
+through the shared icon picker). A composed control parses the stored string into parts and calls
+`set` with the whole string back. `close` destroys whatever dialogs they opened.
 
 ### Effects
 
@@ -334,8 +334,8 @@ per-field reset button (a reset writes the preset value through the normal chang
 runs), gives each card header a preview of its own rows by `style-editor/preview.ts`, and remembers
 which cards the user folded for the session. The preview slot has a fixed height, so a header does not
 move with what it shows: one chip carries the card's fill and stroke together, a card that sets a font
-shows the map's own words in it, a colour scheme its ramp, a texture its image, a burg icon or emoji
-the icon, a grid its own pattern tile, and a card that sets no colour of its own is sampled in the
+shows the map's own words in it, a colour scheme its ramp, a texture its image, an icon slot
+its icon, a grid its own pattern tile, and a card that sets no colour of its own is sampled in the
 theme's darkest tone at the card's opacity and width. A filter the card sets is applied to whatever the
 preview draws and named in its tip, and a card whose gate is off is dimmed. A value written by a
 control's own dialog (a font, an icon) refreshes the previews too. Edits update the marks in place;

@@ -8,10 +8,12 @@ export type IconSetId = ReliefIconSetId | BurgIconSetId | typeof Goods.iconSet.i
 export class IconSetRegistry {
   private readonly sources = import.meta.glob("@/assets/icons/**/*.svg", { query: "?raw", import: "default" });
   private readonly folders = new Map<string, Map<string, () => Promise<unknown>>>(); // the glob never changes
+  private catalog: readonly IconSet[] | null = null; // the models' sets never change either
 
   /** the models that own icon sets; a new family adds its model here, a new relief set is a directory plus its name in `Relief.sets` */
   sets(): readonly IconSet[] {
-    return [...Relief.iconSets, ...Burgs.iconSets, Goods.iconSet];
+    this.catalog ??= [...Relief.iconSets, ...Burgs.iconSets, Goods.iconSet];
+    return this.catalog;
   }
 
   get(id: IconSetId): IconSet {

@@ -62,7 +62,7 @@ Map data can be exported, but only a little of it can be imported back. Overview
 
 ### Can I add new relief icons?
 
-You can add and remove relief icons on the map with the Relief Editor: turn the Relief icons layer on and click on an icon, or use the bulk add and bulk remove brushes. You can also switch between the bundled icon sets. To use your own art, upload or link it as a custom icon: in the Relief Editor the "any icon" button in the bottom line gives the selected relief icon any icon, and in the Biomes Editor the Relief column sets which relief types and icons each biome's lowland relief is generated from, with a weight for each. "Apply and re-place" regenerates that biome's lowland relief right away; relief elsewhere is kept. Hills and mountains are placed by elevation and are not part of a biome's pool
+You can add and remove relief icons on the map with the Relief Editor: turn the Relief icons layer on and click on an icon, or use the bulk add and bulk remove brushes. You can also switch between the bundled icon sets (Simple, Colored, Gray, Illustrated and Stickers). To use your own art, upload or link it as a custom icon: in the Relief Editor the plus button in the bottom line gives the selected relief icon any icon, and in the Biomes Editor the Relief column sets which relief types and icons each biome's lowland relief is generated from, with a weight for each ("Add any icon..." adds your own). "Apply and re-place" regenerates that biome's lowland relief right away; relief elsewhere is kept. Hills and mountains are placed by elevation and follow the relief rules (the mountain button in the Biomes or Relief Editor), each with its own pool that accepts any icon too. See the Icons wiki page: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Icons
 
 ### How can I use rulers in a map?
 
@@ -262,7 +262,19 @@ You can use Battle Simulator. It allows to simulate battles between two or more 
 
 ### How can I upload a new icon for cities?
 
-Custom burg icons cannot be uploaded, but every burg group can use one of the bundled symbol sets: select the group in Style -> Burg Icons and pick an icon from the Atlas, Watabou or Illustrated sets; ports get a separate anchor or harbor symbol in Style -> Burg Anchors. Custom images are supported for Markers and for Military regiments: the Select Icon dialog accepts any emoji, an image URL or an image file uploaded from your machine
+Burg icons are set per burg group: open Style -> Icons, select the group (capital, city, town and so on) and click its icon. The icon picker offers the bundled Atlas, Watabou and Illustrated settlement sets, emoji, and your own pictures: open Custom in the picker's side list, paste a link to an image or upload an SVG (up to 200 kB) or a PNG, JPEG or WebP image (up to 2 MB, shrunk to 256 px). Every burg of the group uses the icon. Ports have their own icon in the Anchors card of the same group. Bundled settlement art stands on the burg point; any other icon is centred on it. See https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Icons
+
+### How do I use my own images as icons?
+
+Every place that shows an icon - burg groups, ports, goods, markers, marker types, regiments, military units, the market marker and relief - opens the same icon picker. Open Custom in its side list and either paste a link to an image on the web (only the address is stored, so the map stays small, but the icon disappears if the site removes the image) or upload a file: an SVG up to 200 kB, or a PNG, JPEG or WebP image up to 2 MB that is shrunk to 256 px. A new icon is fitted around its visible content. Select it and use Position to zoom and pan it in its frame, Replace to swap its picture everywhere it is used at once, or the trash button to remove it (the confirmation says what uses it). The picker also links to free icon sites such as game-icons.net. Guide: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Icons
+
+### Where are custom icons stored? Will they be lost?
+
+Custom icons are part of the map: they are saved in the .map file, so a shared map shows them for everyone (linked ones only while their site is reachable). They are also kept in the browser and carried over to newly generated maps, so you do not need to add them again; loading another map replaces them with that map's icons. If the browser storage gets full, a message says the settings are not kept in the browser: save the map, the icons are safe in the file. Old maps with uploaded goods icons or image URLs in markers and regiments are converted to custom icons automatically on load
+
+### Why is my linked icon missing in the PNG export or on another computer?
+
+A linked icon is loaded from its website every time. It does not show when you are offline, when the site is down or has removed the image, and it is left out of PNG and JPEG exports when the site does not allow other pages to read its images. SVG exports keep the link. To make an icon independent of the site, download the image and upload it into the map instead: select the icon in the picker's Custom list, press Replace and upload the file - every place using it follows
 
 ### How can I create a new country?
 
@@ -370,7 +382,7 @@ Open the Provinces Editor and click the 'Annex provinces' button (crown icon) at
 
 ### Can you colour in the relief icons?
 
-You cannot change the colors of individual icons, but you can make them semi-transparent and color what is below. There are also four icon sets to choose from - Simple, Colored, Gray and Illustrated - select the set in Style -> Relief Icons or in the Relief Editor
+You cannot fill individual icons with a color, but Style -> Relief sets the outline color and width of all relief icons, and their opacity, so you can make them semi-transparent and color what is below. There are five icon sets to choose from - Simple, Colored, Gray, Illustrated and Stickers - select the set in Style -> Relief, or pin a single icon to a set in the Relief Editor. For fully custom colors, use your own art as custom icons: see the Icons wiki page https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Icons
 
 ### My landmass color turned transparent (so it shows the ocean) and i don't know how can i do it back
 
@@ -666,7 +678,7 @@ Yes. Open Style -> Heightmap. The Contours option draws elevation contours over 
 
 ### How do I use the new Ink, Cinderwood and Frostbite styles?
 
-Select the preset at the top of the Style tab. Their effects can also be applied separately: Style -> Heightmap has hachures, Style -> Ocean has waves or straight strokes and coastline bands, and Style -> Lakes has ripples or straight strokes per lake group. Style -> Relief Icons and Style -> Burg Icons offer Illustrated symbols; Style -> Burg Anchors lets you choose an anchor or harbor symbol with its own size and offset. Style -> Labels has font weight, italic and text transform controls. See the step-by-step guide: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Map-embellishments
+Select the preset at the top of the Style tab. Their effects can also be applied separately: Style -> Heightmap has hachures, Style -> Ocean has waves or straight strokes and coastline bands, and Style -> Lakes has ripples or straight strokes per lake group. Style -> Relief offers the Illustrated set, and the icon picker of Style -> Icons offers Illustrated settlement symbols; the Anchors card of a burg group lets you choose an anchor or harbor symbol with its own size and offset. Style -> Labels has font weight, italic and text transform controls. See the step-by-step guide: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Map-embellishments
 
 ### What do Quality, Balance and Speed change?
 
@@ -702,7 +714,7 @@ Goods are resources and products like grain, iron, wood or wine. Raw goods are p
 
 ### Can I use my own images for goods? How do I change a good's icon?
 
-Yes. Open Tools -> Goods and click on a good (or the plus button to add a new one) to open its dialog. The Icon row has a dropdown with the bundled icons and two upload buttons next to it: one for a raster image (png, jpg and so on) and one for an SVG file. The file should be up to 200 kB, 48 x 48 px and under 10 kB is recommended. Uploaded icons are saved inside the .map file, so they survive reload. The colored circle behind the icon is the good's color, set in the same dialog
+Yes. Open Tools -> Goods and click on a good (or the plus button to add a new one) to open its dialog, then click its icon to open the icon picker. Pick a bundled goods icon, any other bundled icon or emoji, or open Custom to paste a link to an image or upload an SVG (up to 200 kB) or a PNG, JPEG or WebP image (up to 2 MB, shrunk to 256 px). Custom icons are saved inside the .map file and can be reused by other goods, markers or burgs. The colored circle behind the icon is the good's color, set in the same dialog; the line color of bundled goods icons is set in Style -> Goods
 
 ### What is a market?
 
@@ -806,7 +818,7 @@ Emblems are generated for states, provinces and burgs and drawn in the Emblems l
 
 ### How do markers work? Can I add my own marker types?
 
-Markers are icons for points of interest. Generated markers follow placement rules (a bridge needs a river and so on) and get a note attached. Add your own with Tools -> Add -> Marker (Shift + 3) and click on the map, then click the marker to change its type, icon (any emoji, an image URL or an uploaded image file), size, pin shape and colors - style changes apply to all markers of the same type. Tools -> Markers lists all markers, filters them by state, culture and type and exports them as .csv, and the generation settings dialog sets the number multiplier per type
+Markers are icons for points of interest. Generated markers follow placement rules (a bridge needs a river and so on) and get a note attached. Add your own with Tools -> Add -> Marker (Shift + 3) and click on the map, then click the marker to change its type, icon (a bundled icon, any emoji or short text, or your own linked or uploaded image, chosen in the icon picker), size, pin shape, pin colors and icon colors - style changes apply to all markers of the same type. Tools -> Markers lists all markers, filters them by state, culture and type and exports them as .csv, and the generation settings dialog sets the number multiplier per type
 
 ### How do I protect my manual changes from being overwritten by regeneration?
 

@@ -4,15 +4,10 @@ import { Icons } from "@/components/icons";
 import type { ReliefPool, ReliefSet } from "@/generators/relief-generator";
 import { capitalize, escapeHtml, rn } from "@/utils";
 
-/** the relief style's stroke, as the map draws it on the relief group */
-function reliefPaint(): string {
-  const { stroke, "stroke-width": width } = styles.relief.attrs;
-  return `${stroke ? ` stroke="${escapeHtml(stroke)}"` : ""} stroke-width="${width ?? 0}"`;
-}
-
-/** a relief set symbol, to be cropped by `fitReliefArt`; `attributes` go on the svg as they are */
+/** a relief set symbol in the relief style's stroke, as the map draws it, to be cropped by `fitReliefArt` */
 export function reliefArtHtml(id: string, attributes = ""): string {
-  return `<svg data-fit viewBox="0 0 100 100" aria-hidden="true"${reliefPaint()}${attributes}><use href="${escapeHtml(Icons.href(id))}" width="100" height="100"/></svg>`;
+  const { stroke, "stroke-width": strokeWidth } = styles.relief.attrs;
+  return Icons.html(id, { stroke: stroke ?? undefined, strokeWidth: strokeWidth ?? 0 }, ` data-fit${attributes}`);
 }
 
 /** a relief pool entry: a type in the given set, or any other icon as the library draws it */

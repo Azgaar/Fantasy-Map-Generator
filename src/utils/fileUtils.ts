@@ -101,55 +101,18 @@ export function scopeSvgIcon(svg: Element, prefix: string): void {
 
 /** Confine a stylesheet's rules to `scope` and its descendants; at-rules other than @media and @supports are dropped */
 function scopeCss(css: string, scope: string): string {
-  const source = css.replace(/\/\*[\s\S]*?\*\//g, "");
-  let scoped = "";
-  let start = 0;
-  while (start < source.length) {
-    const open = source.indexOf("{", start);
-    if (open < 0) break;
-    const statement = source.indexOf(";", start);
-    if (statement >= 0 && statement < open) {
-      start = statement + 1; // @import, @charset, @namespace
-      continue;
+  const sheet = new CSSStyleSheet();
+  sheet.replaceSync(css);
+  const confine = (group: CSSStyleSheet | CSSGroupingRule) => {
+    for (let index = group.cssRules.length - 1; index >= 0; index--) {
+      const rule = group.cssRules[index];
+      if (rule instanceof CSSStyleRule) rule.selectorText = `:is(${scope}, ${scope} *):is(${rule.selectorText})`;
+      else if (rule instanceof CSSMediaRule || rule instanceof CSSSupportsRule) confine(rule);
+      else group.deleteRule(index);
     }
-    const close = blockEnd(source, open);
-    const prelude = source.slice(start, open).trim();
-    const body = source.slice(open + 1, close);
-    if (/^@(media|supports)\b/i.test(prelude)) scoped += `${prelude}{${scopeCss(body, scope)}}`;
-    else if (prelude && !prelude.startsWith("@")) {
-      const selectors = splitSelectors(prelude).map(selector => `:is(${scope}, ${scope} *):is(${selector})`);
-      scoped += `${selectors.join(", ")}{${body}}`;
-    }
-    start = close + 1;
-  }
-  return scoped;
-}
-
-/** the index of the brace closing the block opened at `open` */
-function blockEnd(css: string, open: number): number {
-  let depth = 0;
-  for (let index = open; index < css.length; index++) {
-    if (css[index] === "{") depth++;
-    else if (css[index] === "}" && --depth === 0) return index;
-  }
-  return css.length;
-}
-
-/** a selector list's selectors, commas inside :is() and friends kept */
-function splitSelectors(list: string): string[] {
-  const selectors: string[] = [];
-  let depth = 0;
-  let start = 0;
-  for (let index = 0; index < list.length; index++) {
-    if (list[index] === "(") depth++;
-    else if (list[index] === ")") depth--;
-    else if (list[index] === "," && !depth) {
-      selectors.push(list.slice(start, index).trim());
-      start = index + 1;
-    }
-  }
-  selectors.push(list.slice(start).trim());
-  return selectors.filter(Boolean);
+  };
+  confine(sheet);
+  return Array.from(sheet.cssRules, rule => rule.cssText).join("");
 }
 
 /** UTF-8 safe base64 data URI */

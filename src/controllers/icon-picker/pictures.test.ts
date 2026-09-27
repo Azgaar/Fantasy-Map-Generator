@@ -20,7 +20,7 @@ test("an uploaded svg keeps its root paint, is scoped to the icon and loses its 
   expect(picture.viewBox).toBe("0 0 20 20"); // nothing to measure in jsdom: the file's own frame
   expect(picture.content).toMatch(/^<g fill="navy" stroke="#000" class="custom-1a2b3c4d">/); // the stylesheet's scope
   expect(picture.content).toContain('id="custom-1a2b3c4d-leaf"');
-  expect(picture.content).toContain(":is(.custom-1a2b3c4d, .custom-1a2b3c4d *):is(.custom-1a2b3c4d-a){fill:red}");
+  expect(picture.content).toContain(":is(.custom-1a2b3c4d, .custom-1a2b3c4d *):is(.custom-1a2b3c4d-a) { fill: red; }");
   expect(picture.content).not.toContain("script");
   expect(picture.content).not.toContain("onclick");
 });

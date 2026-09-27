@@ -3,7 +3,6 @@ import { confirmationDialog, destroyDialog, updateDialog } from "@/components/di
 import { limitationTip, pickLimitation } from "@/components/dialog/limitation-picker";
 import { type EditorColumn, initColumnVisibility, renderEditorHeader } from "@/components/dialog/table";
 import type { ReliefRule } from "@/components/options-schema";
-import { tip } from "@/components/tooltips";
 import { ensureEl, escapeHtml, getHeight, minmax } from "@/utils";
 import { confirmReplace, ReliefPoolEditor } from "./relief-pool-editor";
 import { fitReliefArt, poolPreviewHtml } from "./relief-previews";
@@ -31,7 +30,6 @@ const STYLE = /* css */ `
   #${dialogId} .rulePool small { font-size: .35em; opacity: .7; }
   #${dialogId} .ruleBiomes { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   #${dialogId} .empty { margin: .4em; font-style: italic; opacity: .7; }
-  #${dialogId}Pending { color: #b0413e; }
 `;
 
 function open(): void {
@@ -44,12 +42,11 @@ function open(): void {
       <div id="${dialogId}Body" class="table"></div>
       <div class="totalLine">
         <div style="margin-left: 4px">First match wins. Land no rule claims takes its biome's relief pool</div>
-        <div id="${dialogId}Pending" style="margin-left: 4px">Not on the map yet: re-place relief to apply</div>
       </div>
       <div class="editorToolbar">
         <button id="${dialogId}Add" data-tip="Add a rule, checked last" class="icon-plus"></button>
         <button id="${dialogId}Restore" data-tip="Restore the default hills and mountains" class="icon-ccw"></button>
-        <button id="${dialogId}Replace" data-tip="Re-place the relief where the rules changed it" class="icon-arrows-cw"></button>
+        <button id="${dialogId}Replace" data-tip="Re-place the relief the rules claim, to apply the edits" class="icon-arrows-cw"></button>
       </div>
     </div>`
   );
@@ -71,7 +68,7 @@ function open(): void {
   });
   ensureEl(`${dialogId}Add`).addEventListener("click", addRule);
   ensureEl(`${dialogId}Restore`).addEventListener("click", restoreDefaults);
-  ensureEl(`${dialogId}Replace`).addEventListener("click", replaceChanged);
+  ensureEl(`${dialogId}Replace`).addEventListener("click", replaceClaimed);
   render();
 
   $(`#${dialogId}`).dialog({
@@ -106,8 +103,6 @@ function render(): void {
       )
       .join("") || `<p class="empty">No rules: all land takes its biome's relief pool</p>`;
 
-  // .totalLine rows override [hidden]
-  ensureEl(`${dialogId}Pending`).style.display = Relief.isOutdated() ? "" : "none";
   void fitReliefArt(body, styles.relief.options.set);
 }
 
@@ -208,10 +203,8 @@ function restoreDefaults(): void {
   });
 }
 
-/** re-place only the cells whose relief the rule edits change */
-function replaceChanged(): void {
-  if (Relief.isOutdated()) confirmReplace("cells whose rule changed", Relief.outdatedCells(), () => {}, render);
-  else tip("The map's relief already follows the rules", false, "info");
+function replaceClaimed(): void {
+  confirmReplace("the cells the rules claim", cell => !!Relief.claim(cell));
 }
 
 export const ReliefRulesEditor = { open };

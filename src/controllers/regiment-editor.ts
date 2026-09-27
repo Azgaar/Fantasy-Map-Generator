@@ -233,6 +233,7 @@ function changeIcon(): void {
 
   Controllers.IconPicker.open({
     current: regiment.icon ?? "",
+    live: true,
     onPick: icon => {
       regiment.icon = icon;
       ensureEl("regimentIcon").innerHTML = Icons.html(icon);

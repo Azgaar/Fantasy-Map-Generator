@@ -76,13 +76,13 @@ test("a pool picker previews one addition, applies a double click once and undoe
 
   add();
   document.querySelector<HTMLElement>('#iconPicker .choices [data-icon="custom-b"]')!.click();
-  expect(weight("custom-b")).toBe("1");
+  expect(weight("custom-b")).toBeUndefined(); // added on Apply only
   press("iconPicker", "Cancel");
   expect(weight("custom-b")).toBeUndefined();
   expect(weight("custom-a")).toBe("3");
 
   add();
-  document.querySelector<HTMLElement>('#iconPicker nav [data-source="glyph"]')!.click();
+  document.querySelector<HTMLElement>('#iconPicker nav [data-source^="glyph/"]')!.click();
   const input = document.querySelector<HTMLInputElement>("#iconPicker .glyphText input")!;
   for (const text of ["X", "XI", "XIV"]) {
     input.value = text;
@@ -99,7 +99,7 @@ test("a pool picker previews one addition, applies a double click once and undoe
 test("an active picker can add and replace a picture", async () => {
   pictures.fromLink.mockResolvedValue(PICTURE);
   const onPick = vi.fn();
-  IconPicker.open({ current: "glyph-58", onPick });
+  IconPicker.open({ current: "glyph-58", onPick, live: true });
   document.querySelector<HTMLElement>('#iconPicker nav [data-source="custom"]')!.click();
   document.querySelector<HTMLElement>('#iconPicker [data-action="link"]')!.click();
   await vi.waitFor(() => expect(onPick).toHaveBeenCalledOnce());
@@ -118,7 +118,7 @@ test.each(["cancel", "reopen", "load map"])("a pending link cannot update the ma
   const pending = deferred<typeof PICTURE>();
   pictures.fromLink.mockReturnValue(pending.promise);
   const onPick = vi.fn();
-  IconPicker.open({ current: "glyph-58", onPick });
+  IconPicker.open({ current: "glyph-58", onPick, live: true });
   document.querySelector<HTMLElement>('#iconPicker nav [data-source="custom"]')!.click();
   document.querySelector<HTMLElement>('#iconPicker [data-action="link"]')!.click();
   if (action === "cancel") press("iconPicker", "Cancel");

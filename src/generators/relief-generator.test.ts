@@ -179,9 +179,11 @@ test("a land cell takes the first rule it matches, with a null bound open", () =
     undefined, // lowland: the biome's pool
     undefined // water
   ]);
-  expect(Relief.claim(0, [mountains, snowy])).toBe(mountains); // the order decides
+  options.map.relief.rules = [mountains, snowy];
+  expect(Relief.claim(0)).toBe(mountains); // the order decides
   const taigaHills = { ...hills, height: { min: 50, max: 100 }, biomes: [9] };
-  expect([0, 2].map(cell => Relief.claim(cell, [taigaHills]))).toEqual([taigaHills, undefined]); // grassland is not taiga
+  options.map.relief.rules = [taigaHills];
+  expect([0, 2].map(cell => Relief.claim(cell))).toEqual([taigaHills, undefined]); // grassland is not taiga
 });
 
 test("a rule places one entry per cell, sized by height; a cell no rule claims takes its biome's pool", () => {
@@ -230,29 +232,6 @@ test("a rule with an empty pool claims its cells and places nothing there", () =
   });
 
   expect(Relief.generate()).toEqual([]);
-});
-
-test("the relief knows when rule edits leave it behind, until a re-place covers every changed cell", () => {
-  vi.stubGlobal("styles", { relief: { options: { size: 1, density: 1, set: "simple" } } });
-  vi.stubGlobal("grid", { cells: { temp: [10, 10] } });
-  vi.stubGlobal("Pack", { getPolygon: square, findCell: (x: number) => (x < 20 ? 0 : 1) });
-  vi.stubGlobal("pack", {
-    cells: { i: [0, 1], h: [60, 30], r: [0, 0], g: [0, 1], biome: [1, 1] },
-    biomes: [{}, { iconsDensity: 250, icons: { grass: 1 } }]
-  });
-  Relief.generate();
-  expect(Relief.isOutdated()).toBe(false);
-
-  options.map.relief.rules[0].name = "Peaks"; // a rename places nothing new
-  expect(Relief.isOutdated()).toBe(false);
-  options.map.relief.rules[2].icons = { vulcan: 1 }; // the hills, on cell 0
-  expect(Relief.isOutdated()).toBe(true);
-  expect([0, 1].map(Relief.outdatedCells())).toEqual([true, false]);
-
-  Relief.regenerate(cell => Relief.isPoolCell(cell, 1)); // the lowland only
-  expect(Relief.isOutdated()).toBe(true);
-  Relief.regenerate(Relief.outdatedCells());
-  expect(Relief.isOutdated()).toBe(false);
 });
 
 test("artwork directories fit a tight union of contiguous variant slots", () => {

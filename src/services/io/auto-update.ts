@@ -2003,7 +2003,22 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
           group.options.icon = "#ports-anchor";
         }
       }
-      data[48] = JSON.stringify(normalizeStyles(record));
+      normalizeStyles(record);
+      // these icons were drawn at half scale, outline included; their files are now at the set's scale
+      const halfScale = [
+        "burgs-atlas-circle-dotted",
+        "burgs-atlas-circle-rayed",
+        "burgs-atlas-diamond-dotted",
+        "ports-harbor"
+      ];
+      type Part = { attrs?: Record<string, unknown>; options?: { icon?: string } };
+      for (const entry of Object.values(record.burgIcons?.groups ?? {}) as { groups?: Record<string, Part> }[]) {
+        for (const part of Object.values(entry?.groups ?? {})) {
+          if (!part?.attrs || !halfScale.includes(part.options?.icon ?? "")) continue;
+          part.attrs["stroke-width"] = ((part.attrs["stroke-width"] as number | null) ?? 1) / 2;
+        }
+      }
+      data[48] = JSON.stringify(record);
     }
     // the ocean pattern tile lives in its layer now, and an id clash would shadow it
     for (const tile of document.querySelectorAll("pattern#oceanic")) if (!tile.closest("#oceanPattern")) tile.remove();

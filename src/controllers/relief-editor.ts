@@ -397,6 +397,7 @@ function pickAnyIcon(): void {
   const original = selectedIcon;
   Controllers.IconPicker.open({
     current: "icon" in original ? original.icon : "",
+    live: true,
     onPick: id => {
       if (!selectedIcon) return;
       const { x, y, s } = original;
