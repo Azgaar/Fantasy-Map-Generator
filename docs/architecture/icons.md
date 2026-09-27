@@ -189,7 +189,9 @@ so a layer's CSS paint still wins.
 
 `controllers/icon-picker/pictures.ts` turns input into a picture — kind, content, frame — and throws messages
 meant for the author. A link must be `http(s)` and load as an image. An SVG upload (up to 200 kB) is
-sanitised, keeps its root's paint on a wrapping group and is scoped to the icon's id. A raster upload
+sanitised (CSS `url()`s and `@import`s reaching outside the file are dropped), keeps its root's paint on a
+wrapping group and is scoped to the icon's id: its ids and classes are prefixed, and its stylesheet rules
+apply only inside the group, which carries the icon's id as a class. A raster upload
 (up to 2 MB) is redrawn at 256 px on its longer side and stored as WebP, or PNG where the browser cannot
 encode WebP. A new picture is **fitted**: a square around its visible content, padded by 5% — the SVG
 bounding box, the opaque pixels of an image, or the whole box for a link whose pixels the site does not
@@ -199,7 +201,8 @@ The Custom tab adds by link or upload and picks the new icon; Replace gives an i
 its id, so every slot follows; Remove confirms with the uses `Icons.uses` counts and leaves the
 references to draw nothing. The positioner (`controllers/icon-picker/positioner.ts`) zooms and pans a square
 frame, writing the symbol's `viewBox` as it moves so the map and the previews follow; Cancel restores
-it and Apply stores it. Every change rebuilds the custom symbols (`Icons.syncCustom`).
+it and Apply stores it. Add, Replace and Remove rebuild the custom symbols (`Icons.syncCustom`); Replace and
+Remove cancel a positioner open on that icon.
 
 ## Exports
 
@@ -223,7 +226,7 @@ style records (`styles-legacy.ts`, so presets are covered too), `good-<name>` to
 `good-custom-<id>` to `custom-goods-<id>` in `pack.goods` and field 45.
 
 Version 1.154.0 made every slot a bare icon reference. The 1.154.0 auto-update step migrates an older map,
-and generation migrates the unit types a browser keeps between maps:
+and startup (`adoptLegacyIconSlots` after restoring the options) migrates the unit types a browser keeps between maps:
 goods uploads in map field 45 become custom icons under their ids (field 45 is written empty since),
 inline `data:` images and URLs become one custom icon per distinct value, text becomes glyphs, and
 `#`-prefixed ids lose the `#`. Stored and shipped style presets are rewritten the same way by

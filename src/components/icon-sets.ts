@@ -7,6 +7,7 @@ export type IconSetId = ReliefIconSetId | BurgIconSetId | typeof Goods.iconSet.i
 /** The catalog of the built-in sets: their files and the symbols they make; `Icons` puts them in the page */
 export class IconSetRegistry {
   private readonly sources = import.meta.glob("@/assets/icons/**/*.svg", { query: "?raw", import: "default" });
+  private readonly folders = new Map<string, Map<string, () => Promise<unknown>>>(); // the glob never changes
 
   /** the models that own icon sets; a new family adds its model here, a new relief set is a directory plus its name in `Relief.sets` */
   sets(): readonly IconSet[] {
@@ -32,6 +33,15 @@ export class IconSetRegistry {
   /** the set a symbol id belongs to, or none for map-carried and foreign art */
   setForId(symbolId: string): IconSetId | undefined {
     return this.sets().find(set => symbolId.startsWith(`${set.id}-`))?.id as IconSetId | undefined;
+  }
+
+  /** whether a set draws `symbolId`, from a file or an alias; `setForId` only matches the prefix */
+  owns(symbolId: string): boolean {
+    const set = this.setForId(symbolId);
+    if (!set) return false;
+    const names = this.files(set);
+    const drawn = [...names, ...(this.get(set).aliases?.(names) ?? []).map(alias => alias.name)];
+    return drawn.some(name => this.symbolId(set, name) === symbolId);
   }
 
   /** a set's symbols, read from its lazy chunk */
@@ -77,12 +87,16 @@ export class IconSetRegistry {
 
   /** a set's files by name (the path within its folder without `.svg`), each with its lazy source loader */
   private loaders(folder: string): Map<string, () => Promise<unknown>> {
+    const cached = this.folders.get(folder);
+    if (cached) return cached;
     const prefix = `/assets/icons/${folder}/`;
     const files = Object.entries(this.sources)
       .filter(([path]) => path.includes(prefix))
       .map(([path, load]) => [path.slice(path.indexOf(prefix) + prefix.length).replace(/\.svg$/, ""), load] as const)
       .sort(([a], [b]) => a.localeCompare(b));
-    return new Map(files);
+    const loaders = new Map(files);
+    this.folders.set(folder, loaders);
+    return loaders;
   }
 }
 

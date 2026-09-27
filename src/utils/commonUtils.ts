@@ -178,7 +178,12 @@ export const getBase64 = (url: string, callback: (result: string | ArrayBuffer |
     ERROR && console.error(`Cannot load image ${url}: network error`);
     callback(null);
   };
+  xhr.ontimeout = () => {
+    ERROR && console.error(`Cannot load image ${url}: timed out`);
+    callback(null);
+  };
   xhr.open("GET", url);
+  xhr.timeout = 15000; // a host that never answers must not hang an export
   xhr.responseType = "blob";
   xhr.send();
 };

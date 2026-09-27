@@ -3,7 +3,7 @@
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { CustomIcons, Icons } from "@/components/icons";
 import { tip } from "@/components/tooltips";
-import { ensureEl } from "@/utils";
+import { ensureEl, escapeHtml } from "@/utils";
 import { IconPictures } from "./pictures";
 
 const DIALOG = "iconPositioner";
@@ -25,23 +25,29 @@ const STYLE = /* css */ `
 /** The frame as a center and a side: the positioner keeps frames square */
 type Frame = { x: number; y: number; side: number };
 
+/** Cancel the positioner, or only the one positioning icon `id`: its frame is stale once the picture changes */
+export function closePositioner(id?: string): void {
+  const dialog = document.getElementById(DIALOG);
+  if (dialog && (!id || dialog.dataset.icon === id)) $(dialog).dialog("close");
+}
+
 export function openPositioner(id: string): void {
   const icon = CustomIcons.get(id);
-  const symbol = document.getElementById(id);
-  if (!icon || !symbol) return;
+  if (!icon || !document.getElementById(id)) return;
+  // looked up on every change: a sync of the custom icons replaces the symbol
+  const setSymbolFrame = (viewBox: string) => document.getElementById(id)?.setAttribute("viewBox", viewBox);
 
   const original = icon.viewBox;
   const reference = toFrame(original);
   let frame = { ...reference };
 
-  const previous = document.getElementById(DIALOG);
-  if (previous) $(previous).dialog("close");
+  closePositioner();
   ensureEl("dialogs").insertAdjacentHTML(
     "beforeend",
-    /* html */ `<div id="${DIALOG}" class="dialog">
+    /* html */ `<div id="${DIALOG}" class="dialog" data-icon="${escapeHtml(id)}">
       <style>${STYLE}</style>
       <div class="stage" data-tip="Drag to pan, scroll to zoom">
-        <svg><g class="art"${Icons.paintAttributes(id)}>${symbol.innerHTML}</g><path class="shade" fill="#000" fill-opacity=".45" fill-rule="evenodd"/><rect class="edge" fill="none" stroke="#d0240f" vector-effect="non-scaling-stroke" stroke-dasharray="4 3"/></svg>
+        <svg><g class="art"${Icons.paintAttributes(id)}>${document.getElementById(id)!.innerHTML}</g><path class="shade" fill="#000" fill-opacity=".45" fill-rule="evenodd"/><rect class="edge" fill="none" stroke="#d0240f" vector-effect="non-scaling-stroke" stroke-dasharray="4 3"/></svg>
       </div>
       <div class="controls">
         <span>Zoom</span>
@@ -77,7 +83,7 @@ export function openPositioner(id: string): void {
     for (const [name, value] of Object.entries({ x: frameLeft, y: frameTop, width: side, height: side }))
       edge.setAttribute(name, String(value));
     slider.value = String(Math.log2(reference.side / side));
-    symbol.setAttribute("viewBox", toViewBox(frame));
+    setSymbolFrame(toViewBox(frame));
   };
   show(frame);
 
@@ -95,7 +101,7 @@ export function openPositioner(id: string): void {
     stage.setPointerCapture(event.pointerId);
     let last = { x: event.clientX, y: event.clientY };
     const move = (moved: PointerEvent) => {
-      const unitsPerPixel = (frame.side * (1 + 2 * MARGIN)) / stage.clientWidth;
+      const unitsPerPixel = (frame.side * (1 + 2 * MARGIN)) / stage.getBoundingClientRect().width;
       show({
         ...frame,
         x: frame.x - (moved.clientX - last.x) * unitsPerPixel,
@@ -103,8 +109,14 @@ export function openPositioner(id: string): void {
       });
       last = { x: moved.clientX, y: moved.clientY };
     };
+    const end = () => {
+      stage.removeEventListener("pointermove", move);
+      stage.removeEventListener("pointerup", end);
+      stage.removeEventListener("pointercancel", end);
+    };
     stage.addEventListener("pointermove", move);
-    stage.addEventListener("pointerup", () => stage.removeEventListener("pointermove", move), { once: true });
+    stage.addEventListener("pointerup", end);
+    stage.addEventListener("pointercancel", end);
   });
 
   dialog.querySelector(".fit")!.addEventListener("click", async () => {
@@ -120,7 +132,7 @@ export function openPositioner(id: string): void {
     width: "20em",
     position: { my: "center", at: "center", of: "svg" },
     close: () => {
-      if (!applied) symbol.setAttribute("viewBox", original);
+      if (!applied) setSymbolFrame(original);
       destroyDialog(DIALOG);
     },
     buttons: {

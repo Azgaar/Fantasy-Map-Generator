@@ -17,9 +17,9 @@ import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
 import { Relief, type ReliefIcon, type ReliefIconType, type ReliefSet } from "@/generators/relief-generator";
 import { Styles } from "@/generators/styles";
 import {
+  adoptLegacyIconSlots,
   labelGroupFromLegacy,
   lakeGroupFromSvg,
-  legacyIconReference,
   migrateStyles,
   normalizeStyles,
   restoreStrippedLayerStyles,
@@ -46,7 +46,6 @@ import {
   scopeSvgIcon,
   unique
 } from "@/utils";
-import { isImageIcon } from "@/utils/fileUtils";
 import { parsePathPoints } from "@/utils/pathUtils";
 
 type LegacyBurgGroup = Omit<MapData["burgs"]["groups"][number], "biomes" | "states" | "cultures" | "religions"> & {
@@ -2081,30 +2080,12 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     // v1.154.0 made every icon slot a bare symbol id: goods uploads (data[45], written empty since) and inline
     // images become custom icons, text becomes glyphs. The style record is converted by normalizeStyles above
     if (data[45]) adoptGoodsUploads(data[45]);
-    migrateIconSlots([
+    adoptLegacyIconSlots([
       ...(pack.goods ?? []),
       ...(pack.markers ?? []),
       ...(pack.states ?? []).flatMap(state => state?.military ?? []),
       ...options.map.military.units
     ]);
-
-    function migrateIconSlots(slots: { icon?: string }[]): void {
-      const images = new Map<string, string>(); // one custom icon per distinct inline image or URL
-      for (const slot of slots) {
-        const value = slot.icon;
-        if (!value) continue;
-        if (!isImageIcon(value)) {
-          slot.icon = legacyIconReference(value);
-          continue;
-        }
-        let id = images.get(value);
-        if (!id) {
-          id = CustomIcons.add({ kind: "image", content: value, viewBox: IMAGE_FRAME }).id;
-          images.set(value, id);
-        }
-        slot.icon = id;
-      }
-    }
 
     function adoptGoodsUploads(markup: string): void {
       const roots = new DOMParser().parseFromString(markup, "text/html").querySelectorAll("body > svg[id]");

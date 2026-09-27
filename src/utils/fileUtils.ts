@@ -30,6 +30,7 @@ export function downloadFile(data: BlobPart, name: string, type = "text/plain"):
 }
 
 const UNSAFE_ELEMENTS = new Set(["script", "foreignobject", "iframe", "object", "embed"]);
+const EXTERNAL_URL = /url\((?!\s*['"]?\s*(#|data:))[^)]*\)/gi; // a CSS url() that fetches from outside the file
 
 /** Parse an uploaded svg inertly and strip scripting, external references, editor metadata and Noun Project credits; null if the markup has no svg */
 export function sanitizeSvgIcon(svgText: string): SVGElement | null {
@@ -52,7 +53,12 @@ export function sanitizeSvgIcon(svgText: string): SVGElement | null {
         (isHref && !/^\s*(#|data:image\/)/i.test(value))
       )
         element.removeAttribute(attr);
+      else if (value.includes("url(")) element.setAttribute(attr, value.replace(EXTERNAL_URL, "none"));
     }
+  }
+
+  for (const style of Array.from(parsed.querySelectorAll("style"))) {
+    style.textContent = (style.textContent ?? "").replace(/@import[^;]*;?/gi, "").replace(EXTERNAL_URL, "none");
   }
 
   if (svgText.includes("from the Noun Project")) {
@@ -62,7 +68,8 @@ export function sanitizeSvgIcon(svgText: string): SVGElement | null {
   return document.importNode(parsed, true);
 }
 
-/** Prefix the ids and classes an uploaded svg declares, so it neither collides with the document nor styles it */
+/** Prefix the ids and classes an uploaded svg declares and confine its stylesheets to its root, marked by the
+ * `prefix` class, so it neither collides with the document nor styles it */
 export function scopeSvgIcon(svg: Element, prefix: string): void {
   const descendants = Array.from(svg.querySelectorAll("*"));
   const ids = new Set(descendants.map(element => element.id).filter(Boolean));
@@ -86,9 +93,63 @@ export function scopeSvgIcon(svg: Element, prefix: string): void {
       let css = element.textContent;
       if (idRef) css = css.replace(idRef, (_, id) => `#${scoped(id)}`);
       if (classRef) css = css.replace(classRef, (_, name) => `.${scoped(name)}`);
-      element.textContent = css;
+      element.textContent = scopeCss(css, `.${prefix}`);
     }
   }
+  svg.classList.add(prefix);
+}
+
+/** Confine a stylesheet's rules to `scope` and its descendants; at-rules other than @media and @supports are dropped */
+function scopeCss(css: string, scope: string): string {
+  const source = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  let scoped = "";
+  let start = 0;
+  while (start < source.length) {
+    const open = source.indexOf("{", start);
+    if (open < 0) break;
+    const statement = source.indexOf(";", start);
+    if (statement >= 0 && statement < open) {
+      start = statement + 1; // @import, @charset, @namespace
+      continue;
+    }
+    const close = blockEnd(source, open);
+    const prelude = source.slice(start, open).trim();
+    const body = source.slice(open + 1, close);
+    if (/^@(media|supports)\b/i.test(prelude)) scoped += `${prelude}{${scopeCss(body, scope)}}`;
+    else if (prelude && !prelude.startsWith("@")) {
+      const selectors = splitSelectors(prelude).map(selector => `:is(${scope}, ${scope} *):is(${selector})`);
+      scoped += `${selectors.join(", ")}{${body}}`;
+    }
+    start = close + 1;
+  }
+  return scoped;
+}
+
+/** the index of the brace closing the block opened at `open` */
+function blockEnd(css: string, open: number): number {
+  let depth = 0;
+  for (let index = open; index < css.length; index++) {
+    if (css[index] === "{") depth++;
+    else if (css[index] === "}" && --depth === 0) return index;
+  }
+  return css.length;
+}
+
+/** a selector list's selectors, commas inside :is() and friends kept */
+function splitSelectors(list: string): string[] {
+  const selectors: string[] = [];
+  let depth = 0;
+  let start = 0;
+  for (let index = 0; index < list.length; index++) {
+    if (list[index] === "(") depth++;
+    else if (list[index] === ")") depth--;
+    else if (list[index] === "," && !depth) {
+      selectors.push(list.slice(start, index).trim());
+      start = index + 1;
+    }
+  }
+  selectors.push(list.slice(start).trim());
+  return selectors.filter(Boolean);
 }
 
 /** UTF-8 safe base64 data URI */

@@ -251,7 +251,7 @@ stores it the same way: a bare symbol id.
     that looks like an id stays text; an empty value stays empty;
   - `#`-prefixed ids in burg group styles lose the `#`, in the map's styles and in stored presets
     (`styles-legacy.ts`); `default-styles.json` and the shipped presets are edited once;
-  - the unit types a browser keeps between maps are migrated on New Map as well as on load.
+  - the unit types a browser keeps between maps are migrated when the options are restored at startup.
 - A custom icon the settings schema rejects is dropped on its own, so one broken entry never costs a map
   its other icons.
 

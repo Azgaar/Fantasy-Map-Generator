@@ -1,8 +1,7 @@
 // The app and map lifecycle: start the app, erase what is on screen, generate a new world, put it back
-
 import { applyGraphSize, fitMapToScreen } from "@/components/canvas";
 import { closeDialogs, confirmationDialog, initDialogPositionPersistence } from "@/components/dialog/dialog-helpers";
-import { CustomIcons, Icons, IMAGE_FRAME } from "@/components/icons";
+import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { hideLoading, showLoading } from "@/components/loading";
 import { restoreUi, syncOptionInputs } from "@/components/options/tabs/options-tab";
@@ -17,7 +16,7 @@ import { invokeActiveZooming, resetZoom } from "@/components/zoom";
 import { Controllers } from "@/controllers";
 import { getPointsNumber } from "@/data/graph-density";
 import { GenerationPipeline } from "@/generators/generation-pipeline";
-import { legacyIconReference } from "@/generators/styles-legacy";
+import { adoptLegacyIconSlots } from "@/generators/styles-legacy";
 import { initiateAutosave } from "@/services/autosave";
 import { stashCallbackToken } from "@/services/help/auth";
 import { logStats } from "@/services/logging";
@@ -25,7 +24,7 @@ import { registerServiceWorker } from "@/services/platform";
 import { checkLoadParameters } from "@/services/url-params";
 import { cleanupData } from "@/services/versioning";
 import type { GridGraph } from "@/types/GridGraph";
-import { debounce, ensureEl, findEl, isImageIcon, parseError } from "@/utils";
+import { debounce, ensureEl, findEl, parseError } from "@/utils";
 
 /** Bring the app up */
 export async function boot(): Promise<void> {
@@ -35,6 +34,7 @@ export async function boot(): Promise<void> {
   initDialogPositionPersistence();
 
   Options.restore();
+  adoptLegacyIconSlots(options.map.military.units); // the unit types a browser kept from before v1.154.0
   syncOptionInputs();
   restoreUi();
   setViewportSize(options.map.graph.width, options.map.graph.height);
@@ -57,12 +57,6 @@ export async function generate(config?: GenerationConfig): Promise<void> {
     Options.setGraphSize(width, height);
     setSeed(precreatedSeed);
     Options.randomize();
-    // a browser may keep unit types from before v1.154.0: an image becomes a custom icon, text a glyph
-    for (const unit of options.map.military.units) {
-      unit.icon = isImageIcon(unit.icon)
-        ? CustomIcons.add({ kind: "image", content: unit.icon, viewBox: IMAGE_FRAME }).id
-        : legacyIconReference(unit.icon);
-    }
     Icons.syncCustom(); // the carried-over custom icons, and the stored ones at startup
     if (precreatedGraph && points !== undefined) options.map.graph.points = points;
     applyGraphSize(); // TODO: DOM change, not part of generation

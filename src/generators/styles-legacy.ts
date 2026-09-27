@@ -1,12 +1,14 @@
 // Conversions between the legacy `style` object shapes and the styles store
 import type { z } from "zod";
-import { Icons } from "@/components/icons";
+import { IconSets } from "@/components/icon-sets";
+import { CustomIcons, Icons, IMAGE_FRAME } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { OCEAN_PATTERNS } from "@/data/ocean-patterns";
 import { FONT_STYLES, FONT_WEIGHTS, LINECAPS, LINEJOINS, MAP_FILTERS } from "@/data/style-choices";
 import type { StylesData } from "@/types/styles";
 import { safeParseJSON } from "@/utils";
 import { toColorHex } from "@/utils/colorUtils";
+import { isImageIcon } from "@/utils/fileUtils";
 import { getPath } from "@/utils/objectUtils";
 import { Styles } from "./styles";
 import { stylesSchema } from "./styles-schema";
@@ -913,8 +915,29 @@ export function anchorGroupFromLegacy(legacy: unknown): BurgAnchorsPart {
  * image URLs are the caller's, since they become custom icons */
 export function legacyIconReference(value: string): string {
   const trimmed = value.trim();
-  if (trimmed.startsWith("#") && Icons.kind(trimmed.slice(1))) return trimmed.slice(1);
-  return Icons.kind(trimmed) ? trimmed : Icons.glyph(trimmed);
+  const id = trimmed.startsWith("#") ? trimmed.slice(1) : trimmed;
+  // text that only looks like an id stays text
+  const isReference = Icons.glyphText(id) !== null || Icons.kind(id) === "custom" || IconSets.owns(id);
+  return isReference ? id : Icons.glyph(trimmed);
+}
+
+/** Older icon slots as references: each distinct inline image or URL becomes one custom icon */
+export function adoptLegacyIconSlots(slots: readonly { icon?: string }[]): void {
+  const images = new Map<string, string>();
+  for (const slot of slots) {
+    const value = slot.icon;
+    if (!value) continue;
+    if (!isImageIcon(value)) {
+      slot.icon = legacyIconReference(value);
+      continue;
+    }
+    let id = images.get(value);
+    if (!id) {
+      id = CustomIcons.add({ kind: "image", content: value, viewBox: IMAGE_FRAME }).id;
+      images.set(value, id);
+    }
+    slot.icon = id;
+  }
 }
 
 /** Symbol ids were `#icon-<name>` for burgs and ports alike before v1.154 derived them from the set directories:

@@ -60,10 +60,11 @@ describe("scopeSvgIcon", () => {
     )!;
     scopeSvgIcon(svg, "custom-goods-x");
     expect(svg.id).toBe("root");
-    expect(svg.getAttribute("class")).toBe("custom-goods-x-cls-1");
+    expect(svg.getAttribute("class")).toBe("custom-goods-x-cls-1 custom-goods-x");
     expect(svg.querySelector("linearGradient")?.id).toBe("custom-goods-x-a");
+    const scope = ":is(.custom-goods-x, .custom-goods-x *)";
     expect(svg.querySelector("style")?.textContent).toBe(
-      ".custom-goods-x-cls-1{fill:url(#custom-goods-x-a)} #custom-goods-x-ab{stroke:#abc}"
+      `${scope}:is(.custom-goods-x-cls-1){fill:url(#custom-goods-x-a)}${scope}:is(#custom-goods-x-ab){stroke:#abc}`
     );
     const use = svg.querySelector("use")!;
     expect(use.getAttribute("href")).toBe("#custom-goods-x-ab");
@@ -72,6 +73,32 @@ describe("scopeSvgIcon", () => {
     const path = svg.querySelectorAll("path")[1];
     expect(path.getAttribute("fill")).toBe("url('#custom-goods-x-a')");
     expect(path.getAttribute("stroke")).toBe("#abc");
+  });
+
+  it("confines element and universal rules to the icon and drops at-rules that reach outside it", () => {
+    const svg = sanitizeSvgIcon(
+      '<svg xmlns="http://www.w3.org/2000/svg"><style>/* x */ @import "a.css"; path, g > :is(rect, circle) {fill:red}' +
+        " @media (min-width: 1px) { * { stroke: blue } } @font-face { font-family: f } svg{opacity:0}</style></svg>"
+    )!;
+    scopeSvgIcon(svg, "custom-1");
+    const scope = ":is(.custom-1, .custom-1 *)";
+    expect(svg.querySelector("style")?.textContent).toBe(
+      `${scope}:is(path), ${scope}:is(g > :is(rect, circle)){fill:red}` +
+        `@media (min-width: 1px){${scope}:is(*){ stroke: blue }}${scope}:is(svg){opacity:0}`
+    );
+  });
+});
+
+describe("sanitizeSvgIcon external css", () => {
+  it("replaces url() references outside the file, keeping local and data ones", () => {
+    const svg = sanitizeSvgIcon(
+      '<svg xmlns="http://www.w3.org/2000/svg"><style>@import url(https://x.test/a.css); path{fill:url(https://x.test/p.svg#g)} rect{fill:url( "#a")}</style>' +
+        '<path style="fill:url(//x.test/p#g)" fill="url(data:image/png;base64,AA)"/></svg>'
+    )!;
+    expect(svg.outerHTML).not.toMatch(/x\.test/);
+    expect(svg.querySelector("style")?.textContent).toContain('url( "#a")');
+    expect(svg.querySelector("path")?.getAttribute("style")).toBe("fill:none");
+    expect(svg.querySelector("path")?.getAttribute("fill")).toBe("url(data:image/png;base64,AA)");
   });
 });
 

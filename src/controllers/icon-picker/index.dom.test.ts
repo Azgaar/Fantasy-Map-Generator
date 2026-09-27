@@ -119,6 +119,11 @@ test("search finds built-in icons by name across the sets, and clearing it retur
   expect([...dialog.querySelectorAll<HTMLElement>(".panel [data-icon]")].map(b => b.dataset.icon)).toEqual([
     "ports-anchor"
   ]);
+  search.value = "Timber"; // names keep their file's case
+  search.dispatchEvent(new Event("input"));
+  expect([...dialog.querySelectorAll<HTMLElement>(".panel [data-icon]")].map(b => b.dataset.icon)).toEqual([
+    "goods-tropicalTimber"
+  ]);
   search.value = "no such icon";
   search.dispatchEvent(new Event("input"));
   expect(dialog.querySelector(".panel .empty")).not.toBeNull();

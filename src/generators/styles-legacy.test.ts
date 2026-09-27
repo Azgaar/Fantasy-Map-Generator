@@ -4,8 +4,10 @@ import { expect, test, vi } from "vitest";
 import "@/generators/relief-generator"; // the models own the icon sets that tell references from text
 import "@/generators/burgs-generator";
 import "@/generators/goods-generator";
+import { Icons } from "@/components/icons";
 import { Styles } from "./styles";
 import {
+  adoptLegacyIconSlots,
   burgGroupFromLegacy,
   isLegacyPreset,
   isStoreStyles,
@@ -289,4 +291,22 @@ test("older icon slot values become references: `#id` loses its `#`, any other t
   expect(legacyIconReference(" XIV ")).toBe("glyph-58-49-56");
   expect(legacyIconReference("#️⃣")).toBe("glyph-23-fe0f-20e3"); // the keycap emoji starts with a `#`
   expect(legacyIconReference("")).toBe("");
+  expect(legacyIconReference("goods-wood")).toBe("goods-wood");
+  expect(legacyIconReference("goods-no-such-file")).toBe(Icons.glyph("goods-no-such-file")); // no set draws it
+  expect(legacyIconReference("glyph-2694")).toBe("glyph-2694");
+});
+
+test("older icon slots become references, one custom icon per distinct image", () => {
+  vi.stubGlobal("options", { map: { customIcons: [] } });
+  vi.stubGlobal("Options", { save: vi.fn() });
+  const slots = [{ icon: "https://a.b/c.png" }, { icon: "⚔️" }, { icon: "https://a.b/c.png" }, {}];
+  adoptLegacyIconSlots(slots);
+  expect(options.map.customIcons).toHaveLength(1);
+  expect(slots.map(slot => slot.icon)).toEqual([
+    options.map.customIcons[0].id,
+    "glyph-2694-fe0f",
+    slots[0].icon,
+    undefined
+  ]);
+  vi.unstubAllGlobals();
 });

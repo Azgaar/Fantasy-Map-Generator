@@ -205,12 +205,11 @@ function changeType(): void {
   const size = styles.military.options.boxSize;
   const baseRect = selectedRegiment.querySelectorAll("rect")[0];
   const iconRect = selectedRegiment.querySelectorAll("rect")[1];
-  const icon = selectedRegiment.querySelector(".regimentIcon")!;
   const x = reg.n ? reg.x - size * 2 : reg.x - size * 3;
   baseRect.setAttribute("x", String(x));
   baseRect.setAttribute("width", String(reg.n ? size * 4 : size * 6));
   iconRect.setAttribute("x", String(x - size * 2));
-  icon.setAttribute("x", String(regimentIconBox(x, 0, size * 2, reg.icon).x));
+  updateRegimentIcon(selectedRegiment.querySelector<SVGUseElement>(".regimentIcon")!, reg);
   selectedRegiment.querySelector("text")!.innerHTML = String(Military.getTotal(reg));
 }
 

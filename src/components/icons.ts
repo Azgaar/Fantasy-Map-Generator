@@ -160,7 +160,7 @@ class IconLibrary {
 
   /** The text a glyph reference draws, or null for any other reference */
   glyphText(id: string): string | null {
-    if (this.kind(id) !== "glyph") return null;
+    if (!id.startsWith(GLYPH_PREFIX)) return null;
     const points = id
       .slice(GLYPH_PREFIX.length)
       .split("-")

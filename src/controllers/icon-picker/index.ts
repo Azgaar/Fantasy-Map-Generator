@@ -6,7 +6,7 @@ import { tip } from "@/components/tooltips";
 import { ICON_GROUPS } from "@/data/icons-list";
 import { capitalize, createFileInput, ensureEl, escapeHtml } from "@/utils";
 import { IconPictures } from "./pictures";
-import { openPositioner } from "./positioner";
+import { closePositioner, openPositioner } from "./positioner";
 
 const ICON_PICKER = "iconPicker";
 
@@ -191,6 +191,7 @@ function open({ current, onPick }: IconPickerOptions): void {
       const picture = await make(id);
       if (!isOpen() || replacing !== replacement) return;
       if (replacement) {
+        closePositioner(id);
         CustomIcons.replace(id, picture);
         replacing = null;
         refreshCustom();
@@ -229,6 +230,7 @@ function open({ current, onPick }: IconPickerOptions): void {
       confirm: "Remove",
       onConfirm: () => {
         if (replacing === id) replacing = null;
+        closePositioner(id);
         CustomIcons.remove(id);
         refreshCustom();
       }
@@ -435,7 +437,7 @@ function renderResults(sections: Section[], query: string, current: string): str
       .map(entry => ({
         ...entry,
         label: entryLabel(section, entry),
-        icons: entry.icons.filter(id => Icons.name(id).includes(query))
+        icons: entry.icons.filter(id => Icons.name(id).toLowerCase().includes(query))
       }))
       .filter(entry => entry.icons.length)
   );
