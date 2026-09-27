@@ -75,7 +75,8 @@ whatever the style's set. The renderer writes every `<use>` through `Icons.href`
 starts loading; `Relief.requiredIconSets` covers only the relief sets.
 
 A biome's **relief pool** (`pack.biomes[].icons`) weighs relief types and icon references for its lowland
-relief. Generation picks an entry with one roll against the cumulative weights in record order — the same
+relief; a relief rule (`options.map.relief.rules`, see [the data model](data-model.md#relief)) carries its
+own pool for the cells it claims. Generation picks an entry with one roll against the cumulative weights in record order — the same
 entry the older list of repeated entries gave, so seeds reproduce — and a type entry then rolls its
 variant. Interface previews of relief art — the Relief Editor tiles, the pool dialog, the Biomes Editor
 column — are painted in the relief style and cropped to the drawn art (`controllers/relief-previews.ts`),
@@ -123,11 +124,11 @@ Presets set the width that restores each set's former linework: simple `1`, illu
 ## Goods linework
 
 Every goods icon is drawn in a `0 0 100 100` frame with white bodies (`fill="#fff"`), unfilled linework
-(`fill="none"`), and rounded line caps and joins. Outlines and interior details are actual strokes that
-inherit both colour and width. Do not simulate lines with filled bands, doubled contours, or scaled
-stroke groups: a width of 2 must draw a 2-unit line throughout the set. Use simple silhouettes and sparse
-details that remain legible at marker size. Centre artwork in the frame; translation is safe because it
-does not change stroke weight. Keep the original source credits when redrawing an icon.
+(`fill="none"`), and rounded joins. Strokes inherit both colour and width; existing artwork may retain
+black filled details and scaled groups. When redrawing art, prefer actual strokes with rounded caps to
+filled bands or doubled contours, so the line style can recolour and resize them. Use simple silhouettes
+and sparse details that remain legible at marker size. Centre artwork in the frame and keep the original
+source credits when redrawing an icon.
 
 The goods icons style sets the lines: `stroke` is their colour and `stroke-width` the circle outline, the icon
 lines drawn at 40% of it. `goodIconLines()` (`renderers/draw-goods.ts`) carries that width into the icon frame
@@ -209,7 +210,8 @@ the remaining references through `setForId`. It then waits for the sets and walk
 groups may be read after waiting, so the export reflects the map as it was when it started. Failed sets
 fail the export. A raster export draws the SVG as an image, which fetches no external files, so linked
 custom images are inlined as base64 where the host allows it and dropped where it does not; an SVG
-export keeps its links.
+export keeps its links. Flattening symbols for SVG export preserves their frame clipping; anchored art
+and glyphs that explicitly overflow their frame remain unclipped.
 
 ## History
 

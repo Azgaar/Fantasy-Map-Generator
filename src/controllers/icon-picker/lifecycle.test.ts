@@ -2,12 +2,18 @@
 
 import { beforeEach, expect, test, vi } from "vitest";
 import { CustomIcons, type IconPicture, Icons } from "@/components/icons";
+import { ReliefPoolEditor } from "@/controllers/relief-pool-editor";
 import { IconPicker } from ".";
 import { openPositioner } from "./positioner";
+import "@/generators/relief-generator";
+import "@/generators/burgs-generator";
+import "@/generators/goods-generator";
+import "@/components/shared/slider-input";
 
 const pictures = vi.hoisted(() => ({ fromLink: vi.fn(), fromFile: vi.fn(), fit: vi.fn() }));
 vi.mock("./pictures", () => ({ IconPictures: pictures }));
 vi.mock("@/components/icon-sets", () => ({ IconSets: { sets: () => [], setForId: () => undefined } }));
+vi.mock("@/controllers", async () => ({ Controllers: { IconPicker: (await import(".")).IconPicker } }));
 
 type DialogSettings = { close?: () => void; buttons?: Record<string, (this: HTMLElement) => void> };
 const dialogs = new Map<HTMLElement, DialogSettings>();
@@ -46,6 +52,49 @@ function deferred<T>() {
   });
   return { promise, resolve };
 }
+
+test("a pool picker previews one addition, applies a double click once and undoes cancellation", () => {
+  vi.spyOn(Icons, "retry").mockResolvedValue(undefined);
+  Object.assign(SVGElement.prototype, { getBBox: () => ({ x: 0, y: 0, width: 0, height: 0 }) });
+  globalThis.styles = { relief: { options: { set: "simple" }, attrs: {} } } as typeof styles;
+  globalThis.pack = {
+    biomes: [{ i: 0, name: "Forest", iconsDensity: 120, icons: { "custom-a": 2 } }]
+  } as unknown as typeof pack;
+  ReliefPoolEditor.open({ biome: 0 });
+  const add = () => {
+    document.querySelector<HTMLElement>("#reliefPoolEditor .any")!.click();
+    document.querySelector<HTMLElement>('#iconPicker nav [data-source="custom"]')!.click();
+  };
+  const weight = (id: string) =>
+    document.querySelector<HTMLInputElement>(`#reliefPoolEditor [data-entry="${id}"] .weight`)?.value;
+  add();
+  const tile = document.querySelector<HTMLElement>('#iconPicker .choices [data-icon="custom-a"]')!;
+  tile.click();
+  tile.click();
+  tile.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+  expect(weight("custom-a")).toBe("3");
+
+  add();
+  document.querySelector<HTMLElement>('#iconPicker .choices [data-icon="custom-b"]')!.click();
+  expect(weight("custom-b")).toBe("1");
+  press("iconPicker", "Cancel");
+  expect(weight("custom-b")).toBeUndefined();
+  expect(weight("custom-a")).toBe("3");
+
+  add();
+  document.querySelector<HTMLElement>('#iconPicker nav [data-source="glyph"]')!.click();
+  const input = document.querySelector<HTMLInputElement>("#iconPicker .glyphText input")!;
+  for (const text of ["X", "XI", "XIV"]) {
+    input.value = text;
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+  press("iconPicker", "Apply");
+  expect(weight(Icons.glyph("X"))).toBeUndefined();
+  expect(weight(Icons.glyph("XI"))).toBeUndefined();
+  expect(weight(Icons.glyph("XIV"))).toBe("1");
+  press("reliefPoolEditor", "Apply");
+  expect(pack.biomes[0].icons).toEqual({ "custom-a": 3, [Icons.glyph("XIV")]: 1 });
+});
 
 test("an active picker can add and replace a picture", async () => {
   pictures.fromLink.mockResolvedValue(PICTURE);

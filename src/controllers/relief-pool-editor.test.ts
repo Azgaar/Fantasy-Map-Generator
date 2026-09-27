@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { Options } from "@/components/options-model";
 import type { Biome } from "@/generators/biomes-generator";
 import { Styles } from "@/generators/styles";
 import { ReliefPoolEditor } from "./relief-pool-editor";
@@ -101,14 +102,29 @@ describe("ReliefPoolEditor", () => {
 
   it("re-places the biome's lowland relief from the applied pool", () => {
     pack.relief = [{ type: "grass", x: 0, y: 0, s: 1 }];
-    const regenerate = vi.spyOn(Relief, "regenerateBiome").mockImplementation(() => {
+    const regenerate = vi.spyOn(Relief, "regenerate").mockImplementation(() => {
       expect(biome().icons).toEqual({ deciduous: 3, conifer: 1, grass: 1 }); // the pool is applied first
     });
-    vi.spyOn(Relief, "lowlandIcons").mockReturnValue([]);
+    vi.spyOn(Relief, "iconsOn").mockReturnValue([]);
+    const isPoolCell = vi.spyOn(Relief, "isPoolCell").mockReturnValue(true);
     click('#reliefPoolEditor .types button[data-entry="grass"]');
 
     buttons["Apply and re-place"]();
 
-    expect(regenerate).toHaveBeenCalledWith(1);
+    expect(regenerate).toHaveBeenCalledOnce();
+    regenerate.mock.calls[0][0](7);
+    expect(isPoolCell).toHaveBeenCalledWith(7, 1); // the biome's own cells
+  });
+
+  it("edits a relief rule's pool and density in place", () => {
+    const rule = Relief.getDefaultRules()[2];
+    const save = vi.spyOn(Options, "save").mockImplementation(() => {});
+    ReliefPoolEditor.open({ rule });
+    click('#reliefPoolEditor .types button[data-entry="vulcan"]');
+    buttons.Apply();
+
+    expect(rule.icons).toEqual({ hill: 1, vulcan: 1 });
+    expect(rule.density).toBe(100);
+    expect(save).toHaveBeenCalled();
   });
 });

@@ -1,12 +1,12 @@
-// A biome's relief pool: the relief types and icons its lowland relief is generated from, with their weights
+// A relief pool: the relief types and icons a biome's lowland or a relief rule places, with their weights
 import { confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
-import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
+import type { ReliefRule } from "@/components/options-schema";
 import { Controllers } from "@/controllers";
 import type { ReliefPool } from "@/generators/relief-generator";
 import { redrawRelief } from "@/renderers/draw-relief-icons";
-import { capitalize, ensureEl, escapeHtml, minmax, rn } from "@/utils";
-import { fitReliefArt, poolEntryHtml } from "./relief-previews";
+import { ensureEl, escapeHtml, minmax, rn } from "@/utils";
+import { fitReliefArt, poolEntryHtml, poolEntryName } from "./relief-previews";
 
 const DIALOG = "reliefPoolEditor";
 const MAX_DENSITY = 250;
@@ -34,27 +34,59 @@ const STYLE = /* css */ `
   #${DIALOG} .any { margin: .5em 0 0; width: 100%; }
 `;
 
-export interface ReliefPoolEditorOptions {
-  biome: number;
+export type ReliefPoolEditorOptions = ({ biome: number } | { rule: ReliefRule }) & {
   onApply?: () => void; // after the pool and density are written
+};
+
+/** what the dialog edits, and the cells whose relief it places */
+interface PoolTarget {
+  title: string;
+  place: string; // where the pool's relief goes, in a sentence
+  icons: ReliefPool;
+  density: number;
+  write: (icons: ReliefPool, density: number) => void;
+  covers: (cell: number) => boolean;
 }
 
-export const poolEntryName = (entry: string): string =>
-  Relief.isType(entry) ? Relief.labelOf(entry) : capitalize(Icons.name(entry));
+function targetOf(request: ReliefPoolEditorOptions): PoolTarget {
+  if ("rule" in request) {
+    const { rule } = request;
+    return {
+      title: `Relief rule: ${rule.name}`,
+      place: `the cells the ${rule.name} rule claims`,
+      icons: rule.icons,
+      density: rule.density,
+      write: (icons, density) => {
+        Object.assign(rule, { icons, density });
+        Options.save();
+      },
+      covers: cell => Relief.claim(cell) === rule
+    };
+  }
+  const biome = pack.biomes[request.biome];
+  return {
+    title: `Relief pool: ${biome.name}`,
+    place: `${biome.name} lowland`,
+    icons: biome.icons,
+    density: biome.iconsDensity,
+    write: (icons, density) => Object.assign(biome, { icons, iconsDensity: density }),
+    covers: cell => Relief.isPoolCell(cell, request.biome)
+  };
+}
 
-function open({ biome: biomeId, onApply }: ReliefPoolEditorOptions): void {
-  const biome = pack.biomes[biomeId];
+function open(request: ReliefPoolEditorOptions): void {
+  const target = targetOf(request);
   const { set } = styles.relief.options;
-  let pool: ReliefPool = { ...biome.icons };
+  let pool: ReliefPool = { ...target.icons };
 
   destroyDialog(DIALOG);
   ensureEl("dialogs").insertAdjacentHTML(
     "beforeend",
     /* html */ `<div id="${DIALOG}" class="dialog">
       <style>${STYLE}</style>
-      <div class="density" data-tip="How packed the biome's lowland relief is. 0 places none">
+      <div class="density" data-tip="How packed the relief is. 0 places none">
         <span>Density</span>
-        <slider-input min="0" max="${MAX_DENSITY}" step="1" value="${biome.iconsDensity}"></slider-input>
+        <slider-input min="0" max="${MAX_DENSITY}" step="1" value="${target.density}"></slider-input>
       </div>
       <div class="entries"></div>
       <div class="caption">Add a relief type, drawn in the style's relief set</div>
@@ -80,12 +112,12 @@ function open({ biome: biomeId, onApply }: ReliefPoolEditorOptions): void {
               <span class="preview">${poolEntryHtml(entry, set)}</span>
               <span class="name">${escapeHtml(poolEntryName(entry))}</span>
               <input type="number" class="weight" min="1" step="1" value="${weight}" data-tip="Weight: how often the entry is picked, relative to the others" />
-              <span class="share" data-tip="Share of the biome's lowland relief">${rn((weight / total) * 100)}%</span>
+              <span class="share" data-tip="Share of the pool's relief">${rn((weight / total) * 100)}%</span>
               <button type="button" class="icon-trash-empty" data-tip="Remove from the pool"></button>
             </div>`
           )
           .join("")
-      : `<p class="empty">The pool is empty: the biome gets no relief in lowlands</p>`;
+      : `<p class="empty">The pool is empty: ${escapeHtml(target.place)} gets no relief</p>`;
     void fitReliefArt(dialog, set);
   };
   const add = (entry: string) => {
@@ -99,9 +131,17 @@ function open({ biome: biomeId, onApply }: ReliefPoolEditorOptions): void {
     const entry = (event.target as Element).closest<HTMLElement>("button[data-entry]")?.dataset.entry;
     if (entry) add(entry);
   });
-  dialog
-    .querySelector(".any")!
-    .addEventListener("click", () => Controllers.IconPicker.open({ current: "", onPick: id => id && add(id) }));
+  dialog.querySelector(".any")!.addEventListener("click", () => {
+    const original = pool;
+    Controllers.IconPicker.open({
+      current: "",
+      onPick: id => {
+        pool = original;
+        if (id) add(id);
+        else render();
+      }
+    });
+  });
   entries.addEventListener("change", event => {
     const entry = entryOf(event.target);
     const weight = Math.round(Number((event.target as HTMLInputElement).value));
@@ -118,14 +158,13 @@ function open({ biome: biomeId, onApply }: ReliefPoolEditorOptions): void {
   render();
 
   const apply = () => {
-    biome.icons = pool;
-    biome.iconsDensity = minmax(Math.round(density.valueAsNumber) || 0, 0, MAX_DENSITY);
-    onApply?.();
+    target.write(pool, minmax(Math.round(density.valueAsNumber) || 0, 0, MAX_DENSITY));
+    request.onApply?.();
   };
   const close = () => $(dialog).dialog("close");
 
   $(dialog).dialog({
-    title: `Relief pool: ${biome.name}`,
+    title: target.title,
     width: "25em",
     resizable: false,
     position: { my: "center", at: "center", of: "svg" },
@@ -136,16 +175,9 @@ function open({ biome: biomeId, onApply }: ReliefPoolEditorOptions): void {
         close();
       },
       "Apply and re-place": () => {
-        const count = pack.relief?.length ? Relief.lowlandIcons(biomeId).length : 0;
-        confirmationDialog({
-          title: "Re-place relief",
-          message: `Replace the ${count} relief icons on ${escapeHtml(biome.name)} lowland with icons from the pool? Relief elsewhere is kept`,
-          confirm: "Re-place",
-          onConfirm: () => {
-            apply();
-            replaceRelief(biomeId);
-            close();
-          }
+        confirmReplace(target.place, target.covers, () => {
+          apply();
+          close();
         });
       },
       Cancel: close
@@ -153,11 +185,21 @@ function open({ biome: biomeId, onApply }: ReliefPoolEditorOptions): void {
   });
 }
 
-/** an ungenerated layer places everything from the pools when it is first drawn */
-function replaceRelief(biome: number): void {
-  if (pack.relief?.length) Relief.regenerateBiome(biome);
-  if (Layers.isOn("relief")) redrawRelief();
-  else Layers.show("relief");
+/** place the covered cells' relief anew, once confirmed; `before` writes what the new relief follows */
+export function confirmReplace(place: string, covers: (cell: number) => boolean, before: () => void): void {
+  const count = pack.relief?.length ? Relief.iconsOn(covers).length : 0;
+  confirmationDialog({
+    title: "Re-place relief",
+    message: `Replace the ${count} relief icons on ${escapeHtml(place)} with new ones? Relief elsewhere is kept`,
+    confirm: "Re-place",
+    onConfirm: () => {
+      before();
+      // an ungenerated layer places everything when it is first drawn
+      if (pack.relief?.length) Relief.regenerate(covers);
+      if (Layers.isOn("relief")) redrawRelief();
+      else Layers.show("relief");
+    }
+  });
 }
 
 export const ReliefPoolEditor = { open };

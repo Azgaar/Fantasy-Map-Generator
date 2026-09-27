@@ -62,6 +62,7 @@ behaving like itself).
 | heightmap template   | the generators that raise the terrain, while they run  | `generation` |
 | `cultures.set`       | marker generation branches on it long after generation | `map`        |
 | `coastline`          | building a feature path at render time                 | `map`        |
+| `relief.rules`       | re-placing a pool's relief long after generation       | `map`        |
 | `graph.width/height` | every latitude, longitude and full-map cover           | `map`        |
 | 3D erosion detail    | the 3D renderer, this session only                     | `app`        |
 
@@ -77,7 +78,7 @@ template raised the terrain and is never consulted again.
 
 **`options.map`** is cell-independent map data: the seed, the graph extent, where the map sits on
 the globe and the climate that produced its per-cell values, the culture set, lore, units, the
-style preset, the definition sets, and the coastline settings the renderer reads. Everything keyed
+style preset, the definition sets, the coastline settings the renderer reads, and the relief rules. Everything keyed
 by cell lives in `data` instead.
 
 Some of it is **derived** — `geography.coordinates` is computed from `mapSize`, `latitude`,

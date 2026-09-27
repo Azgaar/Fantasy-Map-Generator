@@ -1,6 +1,7 @@
 import { interpolateString, select, sum } from "d3";
 import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
+import { type LimitationItem, pickLimitation } from "@/components/dialog/limitation-picker";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
   type EditorColumn,
@@ -500,66 +501,17 @@ function militaryCustomize(): void {
     Military.getDefaultOptions().map((unit: MilitaryUnit) => addUnitLine(unit));
   }
 
-  function selectLimitation(
-    el: HTMLElement,
-    data: { i: number; name?: string; fullName?: string; color?: string; removed?: boolean }[]
-  ): void {
+  function selectLimitation(el: HTMLElement, items: LimitationItem[]): void {
     const type = el.dataset.type!;
-    const value = el.dataset.value;
-    const initial = value ? value.split(",").map(v => +v) : [];
-
-    const filtered = data.filter(datum => datum.i && !datum.removed);
-    const lines = filtered.map(
-      ({ i, name, fullName, color }) => /* html */ `
-          <tr data-tip="${name}">
-            <td><span style="color:${color}">⬤</span></td>
-            <td>
-              <input data-i="${i}" id="el${i}" type="checkbox" class="checkbox"
-                ${!initial.length || initial.includes(i) ? "checked" : ""} >
-              <label for="el${i}" class="checkbox-label">${fullName || name}</label>
-            </td>
-          </tr>`
-    );
-
-    ensureEl("alertMessage").innerHTML = /* html */ `<b>Limit unit by ${type}:</b>
-        <table style="margin-top:.3em">
-          <tbody>
-            ${lines.join("")}
-          </tbody>
-        </table>`;
-
-    $("#alert").dialog({
-      width: "fit-content",
+    pickLimitation({
       title: "Limit unit",
-      // release the buttons closure that captures the live pack arrays
-      close: () => $("#alert").dialog("option", "buttons", {}),
-      buttons: {
-        Invert: () => {
-          alertMessage.querySelectorAll<HTMLInputElement>("input").forEach(el => {
-            el.checked = !el.checked;
-          });
-        },
-        Apply: function () {
-          const inputs = Array.from(alertMessage.querySelectorAll<HTMLInputElement>("input"));
-          const selected = inputs.reduce<string[]>((acc, input) => {
-            if (input.checked) acc.push(input.dataset.i!);
-            return acc;
-          }, []);
-
-          if (!selected.length) {
-            tip("Select at least one element", false, "error");
-            return;
-          }
-
-          const allAreSelected = selected.length === inputs.length;
-          el.dataset.value = allAreSelected ? "" : selected.join(",");
-          el.innerHTML = allAreSelected ? "all" : "some";
-          el.setAttribute("title", getLimitTip(selected.map(Number), data));
-          $(this).dialog("close");
-        },
-        Cancel: function () {
-          $(this).dialog("close");
-        }
+      heading: `Limit unit by ${type}`,
+      items,
+      allowed: el.dataset.value ? el.dataset.value.split(",").map(Number) : [],
+      onApply: allowed => {
+        el.dataset.value = allowed.join(",");
+        el.innerHTML = getLimitText(allowed);
+        el.setAttribute("title", getLimitTip(allowed, items));
       }
     });
   }

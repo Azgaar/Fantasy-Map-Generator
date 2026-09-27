@@ -14,6 +14,7 @@ import { CULTURE_SETS } from "@/generators/cultures-generator";
 import { Labels } from "@/generators/labels-generator";
 import { Military } from "@/generators/military-generator";
 import { Names } from "@/generators/names-generator";
+import { Relief } from "@/generators/relief-generator";
 import { Transports } from "@/generators/transports-generator";
 import { safeParseJSON } from "@/utils";
 import { rn } from "@/utils/numberUtils";
@@ -69,7 +70,8 @@ class OptionsModel {
         military: { units: Military.getDefaultOptions() },
         transports: Transports.getDefaults(),
         customIcons: [],
-        coastline: Coastline.getDefaultSettings()
+        coastline: Coastline.getDefaultSettings(),
+        relief: { rules: Relief.getDefaultRules() }
       },
       generation: {
         graph: { width: 1280, height: 800, density: DEFAULT_DENSITY },
@@ -217,6 +219,7 @@ class OptionsModel {
     map.transports = previous.transports;
     map.customIcons = previous.customIcons;
     map.coastline = previous.coastline;
+    map.relief = previous.relief;
 
     // and the requests it consumes
     map.graph = { width: graph.width, height: graph.height, points: getPointsNumber(graph.density) };

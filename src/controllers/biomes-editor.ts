@@ -15,14 +15,14 @@ import { Notes } from "@/components/notes";
 import type { FillBoxElement } from "@/components/shared/fill-box";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
-import { poolEntryName, ReliefPoolEditor } from "@/controllers/relief-pool-editor";
-import { fitReliefArt, poolEntryHtml } from "@/controllers/relief-previews";
+import { ReliefPoolEditor } from "@/controllers/relief-pool-editor";
+import { fitReliefArt, poolPreviewHtml } from "@/controllers/relief-previews";
 import type { Biome } from "@/generators/biomes-generator";
 import { Population } from "@/generators/population-generator";
 import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import type { PackedGraph } from "@/types/PackedGraph";
 import { downloadFile, getArea, getAreaUnit, getFileName, openURL } from "@/utils";
-import { ensureEl, escapeHtml, getRandomColor, isLand, rn, si } from "../utils";
+import { ensureEl, getRandomColor, isLand, rn, si } from "../utils";
 
 const dialogId = "biomesEditor" as const;
 const LEGEND_NAME = "Biomes"; // the legend box this editor toggles
@@ -135,6 +135,7 @@ function renderDialog(): void {
           data-tip="Manually re-assign biomes to not follow the default moisture/temperature pattern"
           class="icon-brush"
         ></button>
+        <button id="biomesReliefRules" data-tip="Edit the relief rules: hills, mountains and other relief placed by elevation" class="icon-mountain"></button>
         <button id="biomesAdd" data-tip="Add a custom biome" class="icon-plus"></button>
         <button
           id="biomesRestore"
@@ -161,6 +162,7 @@ function renderDialog(): void {
   ensureEl("biomesPercentage").addEventListener("click", togglePercentageMode);
   ensureEl("biomesManually").addEventListener("click", openPaintEditor);
   ensureEl("biomesRestore").addEventListener("click", restoreInitialBiomes);
+  ensureEl("biomesReliefRules").addEventListener("click", () => void Controllers.ReliefRulesEditor.open());
   ensureEl("biomesAdd").addEventListener("click", addCustomBiome);
   ensureEl("biomesExport").addEventListener("click", downloadBiomesData);
 
@@ -303,21 +305,8 @@ function biomesEditorAddLines(view: TableView<Biome>, statistics: BiomeStatistic
   updateDialog(dialogId, { width: "fit-content", position });
 }
 
-const POOL_PREVIEW = 3; // entries drawn in the row, the heaviest first
-
 function reliefPoolHtml({ icons, iconsDensity }: Biome): string {
-  const entries = Object.entries(icons).sort(([, a], [, b]) => b - a);
-  const total = entries.reduce((sum, [, weight]) => sum + weight, 0);
-  const shares = entries.map(([entry, weight]) => `${poolEntryName(entry)} ${rn((weight / total) * 100)}%`).join(", ");
-  const tipText = total && iconsDensity ? `Relief: ${shares}. Density ${iconsDensity}` : "No lowland relief";
-  const previews =
-    total && iconsDensity
-      ? entries
-          .slice(0, POOL_PREVIEW)
-          .map(([entry]) => poolEntryHtml(entry, styles.relief.options.set))
-          .join("") + (entries.length > POOL_PREVIEW ? `<small>+${entries.length - POOL_PREVIEW}</small>` : "")
-      : "–";
-  return `<span class="biomeRelief pointer" data-tip="${escapeHtml(`${tipText}. Click to edit`)}">${previews}</span>`;
+  return poolPreviewHtml(icons, iconsDensity, "biomeRelief");
 }
 
 function editReliefPool(el: HTMLElement): void {

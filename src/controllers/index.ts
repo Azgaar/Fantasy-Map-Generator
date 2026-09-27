@@ -56,6 +56,7 @@ export const Controllers = createRegistry({
   RegimentEditor: () => import("@/controllers/regiment-editor").then(m => m.RegimentEditor),
   RegimentsOverview: () => import("@/controllers/regiments-overview").then(m => m.RegimentsOverview),
   ReliefEditor: () => import("@/controllers/relief-editor").then(m => m.ReliefEditor),
+  ReliefRulesEditor: () => import("@/controllers/relief-rules-editor").then(m => m.ReliefRulesEditor),
   ReligionsEditor: () => import("@/controllers/religions-editor").then(m => m.ReligionsEditor),
   RiverCreator: () => import("@/controllers/river-creator").then(m => m.RiverCreator),
   RiverAutoCreator: () => import("@/controllers/river-auto-creator").then(m => m.RiverAutoCreator),

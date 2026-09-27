@@ -286,6 +286,8 @@ Default biomes, in generator order:
 
 Biomes, their colors, habitability and movement cost can be edited in the Biomes Editor (<kbd>Shift</kbd> + <kbd>B</kbd>). Its Relief column opens a biome's relief pool: the relief types and icons (including your own custom icons) its lowland relief is generated from, their weights, and the relief density.
 
+Hills, mountains and any other relief placed by elevation follow the relief rules, opened with the mountain button in the Biomes Editor or the Relief Editor. Each rule has a height range, an optional temperature range in °C (an empty bound is open), the biomes it applies to (all by default, so e.g. desert hills can differ from forest hills), an icon size that grows with height, and its own relief pool. A land cell takes the first rule it matches, top to bottom (drag a rule by its handle to reorder); a cell no rule claims takes its biome's pool. Click a rule's relief to edit its pool. Rules are kept when a new map is generated. Editing them changes nothing on the map until you press the re-place button, which re-places the relief only where the edits change it.
+
 In general, the biomes are derived from the topographical map (which can be edited in tools or options), and from the temperature (which can be edited in configure world).
 
 ## Icons

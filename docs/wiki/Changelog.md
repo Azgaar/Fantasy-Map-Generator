@@ -16,6 +16,7 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Style: the Style tab is rebuilt as a schema-driven editor [1.154.0]
 - Relief: icon sets are loaded on demand, and an icon can be pinned to a set [1.154.0]
 - Relief: a relief icon can be any icon, custom icons included; each biome's relief pool (relief types and icons with weights) and density are editable in the Biomes Editor [1.154.0]
+- Relief: hills and mountains follow editable relief rules — height, temperature and biome limits, icon size and a relief pool per rule [1.154.0]
 
 # Releases
 

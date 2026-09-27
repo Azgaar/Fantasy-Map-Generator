@@ -576,7 +576,24 @@ export function flattenSymbolReferences(svg: SVGSVGElement): void {
       if (["viewBox", "width", "height", "overflow", "preserveAspectRatio"].includes(attr.name)) continue;
       group.setAttribute(attr.name, attr.value);
     }
-    while (symbol.firstChild) group.appendChild(symbol.firstChild);
+    let content = group;
+    if ((symbol.style.overflow || symbol.getAttribute("overflow")) !== "visible") {
+      const frame = Icons.parseFrame(symbol.getAttribute("viewBox") ?? "");
+      if (frame) {
+        const clip = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
+        clip.id = `${symbol.id}-export-clip`;
+        while (svg.getElementById(clip.id)) clip.id += "-1";
+        clip.setAttribute("clipPathUnits", "userSpaceOnUse");
+        const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        for (const [index, name] of ["x", "y", "width", "height"].entries())
+          rect.setAttribute(name, String(frame[index]));
+        clip.appendChild(rect);
+        content = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        content.setAttribute("clip-path", `url(#${clip.id})`);
+        group.append(clip, content);
+      }
+    }
+    while (symbol.firstChild) content.appendChild(symbol.firstChild);
     symbol.replaceWith(group);
   });
 }

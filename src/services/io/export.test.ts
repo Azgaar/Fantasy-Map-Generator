@@ -123,6 +123,35 @@ describe("relocateRootFilter", () => {
 describe("flattenSymbolReferences", () => {
   const iconSymbol = { viewBox: "0 0 10 10", width: "1em", height: "1em", overflow: "visible" };
 
+  it("preserves a cropped custom icon's viewport for differently sized uses", () => {
+    const svg = makeSymbolSvg({ viewBox: "25 25 50 50" }, { x: "100", y: "100", width: "20", height: "20" });
+    const symbol = svg.querySelector("symbol")!;
+    symbol.innerHTML = '<rect width="100" height="100"/>';
+    const second = svg.querySelector("use")!.cloneNode(true) as SVGUseElement;
+    second.setAttribute("width", "40");
+    second.setAttribute("height", "40");
+    svg.append(second);
+
+    flattenSymbolReferences(svg);
+
+    const clipped = svg.querySelector("[clip-path]")!;
+    expect(clipped).not.toBeNull();
+    const clipId = clipped.getAttribute("clip-path")!.slice(5, -1);
+    const rect = svg.getElementById(clipId)!.querySelector("rect")!;
+    expect(["x", "y", "width", "height"].map(attr => rect.getAttribute(attr))).toEqual(["25", "25", "50", "50"]);
+    expect([...svg.querySelectorAll("use")].map(use => use.getAttribute("transform"))).toEqual([
+      "translate(90,90) scale(0.4)",
+      "translate(80,80) scale(0.8)"
+    ]);
+    expect(clipped.querySelector('rect[width="100"]')).not.toBeNull();
+  });
+
+  it("keeps overflowing anchored art unclipped", () => {
+    const svg = makeSymbolSvg(iconSymbol, { width: "20", height: "20" });
+    flattenSymbolReferences(svg);
+    expect(svg.querySelector("clipPath")).toBeNull();
+  });
+
   it("converts an em-sized symbol use into a transform scaled by the group font-size", () => {
     const svg = makeSymbolSvg(iconSymbol, { x: "100", y: "50" }, { "font-size": "4" });
     flattenSymbolReferences(svg);

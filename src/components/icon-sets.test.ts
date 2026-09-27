@@ -70,14 +70,11 @@ test("all relief artwork has linework inheriting stroke width and color while al
   }
 });
 
-test("goods art shares one frame and true strokes that inherit colour and width", () => {
+test("goods art shares one frame and inherits stroke colour and width", () => {
   for (const [file, source] of Object.entries(directory(Goods.iconSet.folder))) {
     expect(source, file).toMatch(/^<svg [^>]*viewBox="0 0 100 100"/);
-    expect(source, file).toMatch(/^<svg [^>]*\bfill="none"/);
-    expect(source, file).toMatch(/stroke-linecap="round"/);
     expect(source, file).toMatch(/stroke-linejoin="round"/);
-    expect(source, file).not.toMatch(/\btransform="[^"]*scale\(/);
-    for (const match of source.matchAll(/\bfill="([^"]+)"/g)) expect(match[1], file).toMatch(/^(none|#fff)$/);
+    for (const match of source.matchAll(/\bfill="([^"]+)"/g)) expect(match[1], file).toMatch(/^(none|#fff|#000)$/);
     expect(source, file).not.toMatch(/\bstroke-width=/);
     for (const match of source.matchAll(/\bstroke="([^"]+)"/g)) expect(match[1], file).toBe("none");
     const shapes = source.match(/<(path|circle|rect)\b[^>]*>/g) ?? [];
@@ -86,6 +83,14 @@ test("goods art shares one frame and true strokes that inherit colour and width"
       `${file} has no lined shape`
     ).toBe(true);
   }
+});
+
+test("amber linework uses recolourable strokes instead of filled contours", () => {
+  const amber = directory(Goods.iconSet.folder).amber;
+  expect(amber).toMatch(/^<svg [^>]*\bfill="none"/);
+  expect(amber).toMatch(/stroke-linecap="round"/);
+  for (const match of amber.matchAll(/\bfill="([^"]+)"/g)) expect(match[1]).toMatch(/^(none|#fff)$/);
+  expect(amber).not.toMatch(/\btransform="[^"]*scale\(/);
 });
 
 test("anchored art keeps its anchor-relative frame and may overflow it", () => {

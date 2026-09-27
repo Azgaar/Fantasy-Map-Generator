@@ -97,6 +97,17 @@ export const coastlineSettings = z.strictObject({
   variant: count
 });
 
+/** a relief rule: which land cells it claims, and the relief it places there */
+export const reliefRule = z.strictObject({
+  name: z.string(),
+  height: z.strictObject({ min: percent.int(), max: percent.int() }),
+  temperature: z.strictObject({ min: z.number().int().nullable(), max: z.number().int().nullable() }), // °C, null is open
+  biomes: ids, // absent or empty claims every biome
+  icons: z.record(z.string(), positive),
+  density: count.max(250),
+  size: z.strictObject({ min: positive, max: positive }) // at the rule's lowest height, growing with height to max
+});
+
 /** where the map sits on the globe */
 const geography = z.strictObject({
   mapSize: percent,
@@ -156,7 +167,8 @@ export const mapSchema = z.strictObject({
   military: z.strictObject({ units: z.array(militaryUnit) }),
   transports: z.array(transport),
   customIcons,
-  coastline: coastlineSettings
+  coastline: coastlineSettings,
+  relief: z.strictObject({ rules: z.array(reliefRule) })
 });
 
 export const optionsSchema = z.strictObject({
@@ -262,6 +274,7 @@ export type OptionsSection = keyof OptionsData;
 
 /** What a `.map` file stores, and what every generator, renderer and editor reads */
 export type MapData = z.infer<typeof mapSchema>;
+export type ReliefRule = z.infer<typeof reliefRule>;
 
 // Stable lock ids use the same validators as the options they pin.
 const generation = optionsSchema.shape.generation.shape;

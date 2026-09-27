@@ -42,6 +42,10 @@ function pickedRef(element: SVGElement): ReliefIconRef | null {
   return Relief.ref(type, Number(element.dataset.variant) || 1, set || undefined);
 }
 
+function matchesTypeTile(icon: ReliefIcon, symbol: string | undefined): boolean {
+  return !symbol || ("type" in icon && Relief.symbolId(icon, styles.relief.options.set) === symbol);
+}
+
 function open(element: SVGElement): void {
   if (customization) return;
   closeDialogs(".stable");
@@ -103,6 +107,7 @@ function renderDialog(): void {
     </div>
     <div id="reliefBottom">
       <button id="reliefEditStyle" data-tip="Edit Relief Icons style in Style Editor" class="icon-adjust"></button>
+      <button id="reliefEditRules" data-tip="Edit the relief rules: hills, mountains and other relief placed by elevation" class="icon-mountain"></button>
       <button id="reliefPickIcon" data-tip="Select own your own relief icon" class="icon-plus"></button>
       <button id="reliefCopy" data-tip="Copy selected relief icon" class="icon-clone"></button>
       <button id="reliefMoveFront" data-tip="Move selected relief icon to front" class="icon-level-up"></button>
@@ -131,6 +136,7 @@ function renderDialog(): void {
   });
 
   ensureEl("reliefEditStyle").addEventListener("click", () => void Controllers.StyleEditor.open("relief"));
+  ensureEl("reliefEditRules").addEventListener("click", () => void Controllers.ReliefRulesEditor.open());
   ensureEl("reliefPickIcon").addEventListener("click", pickAnyIcon);
   ensureEl("reliefCopy").addEventListener("click", copyIcon);
   ensureEl("reliefMoveFront").addEventListener("click", () => moveIcon("front"));
@@ -302,7 +308,7 @@ function dragToRemove(this: SVGElement, event: any): void {
   const icon = pressed.dataset.symbol;
   const tree = quadtree<[number, number, ReliefIcon]>();
   for (const reliefIcon of pack.relief) {
-    if (icon && Relief.symbolId(reliefIcon, styles.relief.options.set) !== icon) continue;
+    if (!matchesTypeTile(reliefIcon, icon)) continue;
     tree.add([reliefIcon.x + reliefIcon.s / 2, reliefIcon.y + reliefIcon.s / 2, reliefIcon]);
   }
 
@@ -388,12 +394,13 @@ function changeIcon(this: SVGElement): void {
 
 function pickAnyIcon(): void {
   if (!selectedIcon) return void tip("Please select a relief icon on the map", false, "error");
+  const original = selectedIcon;
   Controllers.IconPicker.open({
-    current: "icon" in selectedIcon ? selectedIcon.icon : "",
+    current: "icon" in original ? original.icon : "",
     onPick: id => {
-      if (!id || !selectedIcon) return;
-      const { x, y, s } = selectedIcon;
-      replaceSelected({ icon: id, x, y, s });
+      if (!selectedIcon) return;
+      const { x, y, s } = original;
+      replaceSelected(id ? { icon: id, x, y, s } : original);
       updateReliefIconSelected(previewSet());
     }
   });
@@ -440,9 +447,7 @@ function removeIcon(): void {
 
   const doomed = isIndividual
     ? new Set(selectedIcon ? [selectedIcon] : [])
-    : new Set(
-        pack.relief.filter(reliefIcon => !icon || Relief.symbolId(reliefIcon, styles.relief.options.set) === icon)
-      );
+    : new Set(pack.relief.filter(reliefIcon => matchesTypeTile(reliefIcon, icon)));
 
   if (isIndividual) alertMessage.innerHTML = "Are you sure you want to remove the icon?";
   else

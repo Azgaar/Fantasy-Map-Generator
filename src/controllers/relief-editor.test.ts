@@ -63,6 +63,38 @@ afterEach(() => {
 });
 
 describe("ReliefEditor bulk brushes", () => {
+  it("type-specific removal preserves explicit references to the same artwork", async () => {
+    const type = await openBulkMode("reliefBulkRemove");
+    const reference = { icon: Relief.symbolId({ type }, styles.relief.options.set), x: 8, y: 48, s: 4 };
+    pack.relief = [{ type, x: 8, y: 48, s: 4 }, reference];
+
+    await swipe(0, 40);
+
+    expect(pack.relief).toEqual([reference]);
+    document.querySelector("#reliefIconsDiv svg.pressed")!.classList.remove("pressed");
+    document.getElementById("reliefIconsSeletionAny")!.classList.add("pressed");
+    await swipe(0, 40);
+    expect(pack.relief).toEqual([]);
+  });
+
+  it("type-specific delete-all preserves explicit references to the same artwork", async () => {
+    const type = await openBulkMode("reliefBulkRemove");
+    const reference = { icon: Relief.symbolId({ type }, styles.relief.options.set), x: 8, y: 48, s: 4 };
+    pack.relief = [{ type, x: 8, y: 48, s: 4 }, reference];
+    globalThis.alertMessage = document.createElement("div");
+    let remove: () => void = () => {};
+    window.$ = vi.fn(() => ({
+      dialog: (settings: { buttons?: { Remove?: () => void } }) => {
+        if (settings.buttons?.Remove) remove = settings.buttons.Remove;
+      }
+    })) as unknown as typeof window.$;
+
+    document.getElementById("reliefRemove")!.click();
+    remove();
+
+    expect(pack.relief).toEqual([reference]);
+  });
+
   it("places icons along the whole path of a fast swipe, not only where the pointer events landed", async () => {
     await openBulkMode("reliefBulkAdd");
 
@@ -110,6 +142,30 @@ describe("ReliefEditor bulk brushes", () => {
 });
 
 describe("ReliefEditor any icon", () => {
+  it("restores the full type descriptor when the picker cancels its preview", () => {
+    const original: ReliefIcon = { type: "mount", variant: 3, set: "gray", x: 1, y: 2, s: 3 };
+    pack.relief = [original];
+    vi.mocked(getReliefIcon).mockReturnValue(original);
+    let pick: (id: string) => void = () => {};
+    globalThis.Controllers = {
+      IconPicker: {
+        open: vi.fn(({ onPick }) => {
+          pick = onPick;
+        })
+      }
+    } as unknown as typeof Controllers;
+    const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+    use.dataset.id = "0";
+    ReliefEditor.open(use);
+    document.getElementById("reliefPickIcon")!.click();
+
+    pick("custom-a");
+    expect(pack.relief).toEqual([{ icon: "custom-a", x: 1, y: 2, s: 3 }]);
+    pick("");
+
+    expect(pack.relief[0]).toBe(original);
+  });
+
   it("draws the selected icon with an icon picked from the library, in its place", async () => {
     const icon: ReliefIcon = { type: "mount", x: 1, y: 2, s: 3 };
     pack.relief = [icon];

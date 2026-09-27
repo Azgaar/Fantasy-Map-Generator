@@ -1,4 +1,5 @@
 import { extent, polygonContains } from "d3";
+import type { ReliefRule } from "@/components/options-schema";
 import { RELIEF_SETS } from "@/data/style-choices";
 import type { IconAlias, IconSet } from "@/types/icons";
 import { minmax, rn } from "@/utils";
@@ -42,6 +43,8 @@ export type ReliefIcon = (ReliefIconRef | ReliefLibraryRef) & { x: number; y: nu
 /** a biome's relief pool: relief types and icon references, each with its weight */
 export type ReliefPool = Record<string, number>;
 
+const SIZE_GROWTH = 0.8; // what a rule's icon size gains per height unit above the rule's lowest height
+
 export class ReliefModel {
   readonly sets = RELIEF_SETS;
   readonly types = TYPES;
@@ -52,6 +55,18 @@ export class ReliefModel {
     aliases: (names: readonly string[]) => this.aliasSlots(set, names),
     paint: { stroke: "#5c5c70", strokeWidth: 1 } // the default relief style
   }));
+
+  getDefaultRules(): ReliefRule[] {
+    const any = { min: null, max: null };
+    const peaks = { height: { min: 71, max: 100 }, density: 100, size: { min: 20.8, max: 44 } };
+    const hills = { height: { min: 50, max: 70 }, density: 100, size: { min: 8, max: 12 } };
+    // cloned, so the rules share no bounds the editor would change together
+    return structuredClone<ReliefRule[]>([
+      { name: "Snowy mountains", ...peaks, temperature: { min: null, max: -1 }, icons: { mountSnow: 1 } },
+      { name: "Mountains", ...peaks, temperature: any, icons: { mount: 1 } },
+      { name: "Hills", ...hills, temperature: any, icons: { hill: 1 } }
+    ]);
+  }
 
   generate(): ReliefIcon[] {
     TIME && console.time("generateRelief");
@@ -67,21 +82,50 @@ export class ReliefModel {
     return relief;
   }
 
-  /** the icons anchored on a biome's lowland: what its pool placed, and anything placed there by hand */
-  lowlandIcons(biome: number): ReliefIcon[] {
+  /** the first relief rule a land cell matches; a cell no rule claims takes its biome's pool */
+  claim(cell: number, rules: readonly ReliefRule[] = options.map.relief.rules): ReliefRule | undefined {
+    const height = pack.cells.h[cell];
+    if (height < 20) return undefined;
+    const temp = grid.cells.temp[pack.cells.g[cell]];
+    const biome = pack.cells.biome[cell];
+    const within = (value: number, { min, max }: { min: number | null; max: number | null }) =>
+      (min === null || value >= min) && (max === null || value <= max);
+    return rules.find(
+      rule =>
+        within(height, rule.height) &&
+        within(temp, rule.temperature) &&
+        (!rule.biomes?.length || rule.biomes.includes(biome))
+    );
+  }
+
+  /** a cell whose relief the biome's pool places */
+  isPoolCell(cell: number, biome: number): boolean {
+    return pack.cells.biome[cell] === biome && pack.cells.h[cell] >= 20 && !this.claim(cell);
+  }
+
+  /** the icons anchored on the given cells, placed there by generation or by hand */
+  iconsOn(covers: (cell: number) => boolean): ReliefIcon[] {
     return pack.relief.filter(icon => {
       const cell = Pack.findCell(icon.x + icon.s / 2, icon.y + icon.s / 2);
-      return cell !== undefined && this.isLowland(cell, biome);
+      return cell !== undefined && covers(cell);
     });
   }
 
-  /** place a biome's lowland relief anew from its pool; every other icon keeps its place and order */
-  regenerateBiome(biome: number): void {
-    const replaced = new Set(this.lowlandIcons(biome));
+  /** place the given cells' relief anew by the current rules and pools; every other icon keeps its place and order */
+  regenerate(covers: (cell: number) => boolean): void {
+    const replaced = new Set(this.iconsOn(covers));
     pack.relief = pack.relief.filter(icon => !replaced.has(icon));
     const placed: ReliefIcon[] = [];
-    for (const i of pack.cells.i) if (this.isLowland(i, biome)) this.placeCell(i, placed);
-    for (const icon of placed) this.insert(icon);
+    for (const i of pack.cells.i) if (covers(i)) this.placeCell(i, placed);
+    placed.sort(this.byAnchor);
+    const merged: ReliefIcon[] = [];
+    let next = 0;
+    for (const kept of pack.relief) {
+      while (next < placed.length && this.byAnchor(placed[next], kept) < 0) merged.push(placed[next++]);
+      merged.push(kept);
+    }
+    while (next < placed.length) merged.push(placed[next++]);
+    pack.relief = merged;
   }
 
   /** add an icon where its anchor puts it in the drawing order */
@@ -119,50 +163,59 @@ export class ReliefModel {
     return TYPES.find(entry => entry.type === type)!.label;
   }
 
-  private isLowland(cell: number, biome: number): boolean {
-    const { h, biome: biomes } = pack.cells;
-    return biomes[cell] === biome && h[cell] >= 20 && h[cell] < 50;
-  }
-
   private placeCell(i: number, relief: ReliefIcon[]): void {
     const cells = pack.cells;
-    const height = cells.h[i];
-    if (height < 20) return; // no icons on water
+    if (cells.h[i] < 20) return; // no icons on water
     if (cells.r[i]) return; // no icons on rivers
-    const biome = pack.biomes[cells.biome[i]];
-    if (height < 50 && (!biome.iconsDensity || !this.pickEntry(biome.icons, 0))) return; // no icons for this biome
+    const rule = this.claim(i);
+    if (rule) this.placeRule(i, rule, relief);
+    else this.placePool(i, relief);
+  }
 
-    const { density } = styles.relief.options;
-    const iconSize = 2; // base footprint; styles.relief.options.size scales it at draw time
-    const sizeModifier = 0.2 * iconSize;
+  /** an icon for a pool entry; an absent variant means 1, so it is only stored when it carries information */
+  private entryIcon(entry: string): ReliefIconRef | ReliefLibraryRef {
+    if (!this.isType(entry)) return { icon: entry };
+    return this.ref(entry, 1 + Math.floor(Math.random() * this.variantsOf(entry)));
+  }
+
+  private placePool(i: number, relief: ReliefIcon[]): void {
+    const biome = pack.biomes[pack.cells.biome[i]];
+    if (!biome.iconsDensity || !this.pickEntry(biome.icons, 0)) return; // no icons for this biome
+
+    const iconsDensity = biome.iconsDensity / 100;
+    const radius = 2 / iconsDensity / styles.relief.options.density;
+    if (Math.random() > iconsDensity * 10) return;
+
+    for (const [cx, cy] of this.samplePoints(i, radius)) {
+      const half = (4 + Math.random()) * 2; // styles.relief.options.size scales it at draw time
+      const icon = this.entryIcon(this.pickEntry(biome.icons, Math.random())!);
+      relief.push({ ...icon, x: rn(cx - half, 2), y: rn(cy - half, 2), s: rn(half * 2, 2) });
+    }
+  }
+
+  /** one entry and variant per cell, so a cell's relief is uniform; no roll is spent where there is no choice */
+  private placeRule(i: number, rule: ReliefRule, relief: ReliefIcon[]): void {
+    const entries = Object.keys(rule.icons).filter(entry => rule.icons[entry] > 0);
+    if (!rule.density || !entries.length) return;
+    if (rule.density < 10 && Math.random() > rule.density / 10) return;
+
+    const entry = entries.length > 1 ? this.pickEntry(rule.icons, Math.random())! : entries[0];
+    const icon = this.entryIcon(entry);
+    const { height, size } = rule;
+    const s = minmax(size.min + SIZE_GROWTH * (pack.cells.h[i] - height.min), size.min, size.max);
+    const radius = 2 / (rule.density / 100) / styles.relief.options.density;
+    for (const [cx, cy] of this.samplePoints(i, radius)) {
+      relief.push({ ...icon, x: rn(cx - s / 2, 2), y: rn(cy - s / 2, 2), s: rn(s, 2) });
+    }
+  }
+
+  /** Poisson-disc points inside the cell polygon */
+  private *samplePoints(i: number, radius: number): Generator<[number, number]> {
     const polygon = Pack.getPolygon(i);
     const [minX, maxX] = extent(polygon, (p: number[]) => p[0]) as [number, number];
     const [minY, maxY] = extent(polygon, (p: number[]) => p[1]) as [number, number];
-    // an absent variant means 1, so it is only stored when it carries information
-    const pickVariant = (type: ReliefIconType): ReliefIconRef =>
-      this.ref(type, 1 + Math.floor(Math.random() * this.variantsOf(type)));
-
-    if (height < 50) {
-      const iconsDensity = biome.iconsDensity / 100;
-      const radius = 2 / iconsDensity / density;
-      if (Math.random() > iconsDensity * 10) return;
-
-      for (const [cx, cy] of poissonDiscSampler(minX, minY, maxX, maxY, radius)) {
-        if (!polygonContains(polygon, [cx, cy])) continue;
-        const h = (4 + Math.random()) * iconSize;
-        const entry = this.pickEntry(biome.icons, Math.random())!;
-        const icon = this.isType(entry) ? pickVariant(entry) : { icon: entry };
-        relief.push({ ...icon, x: rn(cx - h, 2), y: rn(cy - h, 2), s: rn(h * 2, 2) });
-      }
-      return;
-    }
-
-    const temp = grid.cells.temp[cells.g[i]];
-    const icon = pickVariant(height > 70 && temp < 0 ? "mountSnow" : height > 70 ? "mount" : "hill");
-    const h = height > 70 ? (height - 45) * sizeModifier : minmax((height - 40) * sizeModifier, 3, 6);
-    for (const [cx, cy] of poissonDiscSampler(minX, minY, maxX, maxY, 2 / density)) {
-      if (!polygonContains(polygon, [cx, cy])) continue;
-      relief.push({ ...icon, x: rn(cx - h, 2), y: rn(cy - h, 2), s: rn(h * 2, 2) });
+    for (const point of poissonDiscSampler(minX, minY, maxX, maxY, radius)) {
+      if (polygonContains(polygon, point)) yield point;
     }
   }
 
@@ -251,7 +304,9 @@ declare global {
   var Relief: ReliefModel;
 }
 
-window.Relief = new ReliefModel();
+// biome-ignore lint/suspicious/noRedeclare: legacy seam
+export const Relief = new ReliefModel();
+window.Relief = Relief;
 
 /**
  * mbostock's poissonDiscSampler implementation

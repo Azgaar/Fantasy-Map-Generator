@@ -14,7 +14,7 @@ import type { GraphOverrides } from "@/generators/graph-override";
 import { type Label, type LabelNameMode, Labels as LabelsGenerator } from "@/generators/labels-generator";
 import { getDefaultMarkerName, type Marker } from "@/generators/markers-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
-import type { ReliefIcon, ReliefIconType, ReliefSet } from "@/generators/relief-generator";
+import { Relief, type ReliefIcon, type ReliefIconType, type ReliefSet } from "@/generators/relief-generator";
 import { Styles } from "@/generators/styles";
 import {
   labelGroupFromLegacy,
@@ -2130,10 +2130,11 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
 export function migrateLegacySettings(mapVersion: string, data: string[]): void {
   if (compareVersions(mapVersion, "1.154.0").isOlder && data[1]?.trimStart().startsWith("{")) {
-    // v1.154.0 sizes the zoomed layers' fonts with the zoom always, so the labels flag is gone
     const settings = safeParseJSON(data[1]);
-    if (settings?.labels) {
-      delete settings.labels.resizeOnZoom;
+    if (settings) {
+      // v1.154.0 sizes the zoomed layers' fonts with the zoom always, so the labels flag is gone
+      if (settings.labels) delete settings.labels.resizeOnZoom;
+      settings.relief ??= { rules: Relief.getDefaultRules() }; // v1.154.0 made the fixed hills and mountains rules
       data[1] = JSON.stringify(settings);
     }
   }
@@ -2179,7 +2180,8 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
       roughnessScale: 60,
       lakeSmoothThreshMult: 2.0,
       variant: 0
-    }
+    },
+    relief: { rules: Relief.getDefaultRules() }
   };
 
   const oldHeader = data[0].split("|");

@@ -437,6 +437,13 @@ icon, a glyph, another set's art) drawn in place of a type slot; it ignores the 
 serialized with the style store in field 48. `s` is the base size; `size` is a render multiplier that
 scales the icon about its anchor at draw time, so neither a set nor a size change edits `pack.relief`
 and the array order stays a valid z-order.
+`options.map.relief.rules` decides which pool places a land cell's relief: the first **relief rule**
+whose inclusive `height` (0–100) and `temperature` (°C, a `null` bound is open) ranges hold the cell,
+and whose optional `biomes` ids include the cell's biome (absent: every biome), claims it, else the cell
+takes its biome's pool. A rule is `{ name, height, temperature, biomes?, icons, density, size }`: `icons` and `density` as a biome's pool, `size` the icon size at the rule's lowest height,
+growing 0.8 per height unit up to `size.max`. A rule picks one entry and variant per cell, and spends no
+roll where it has no choice, so the default rules reproduce the older fixed hills and mountains. Maps
+older than v1.154.0 get the default rules.
 Every union slot resolves in every set via real artwork or deterministic aliases. See [Icons](icons.md)
 for layout, fallback resolution and migration conventions.
 
