@@ -306,6 +306,7 @@ Markers data is stored as an unordered array of objects (so element id is _not_ 
 - `size`: `number` - marker size in pixels. Optional, default value is `30` (30px)
 - `fill`: `string` - marker pin fill color. Optional, default is `#fff` (white)
 - `stroke`: `string` - marker pin stroke color. Optional, default is `#000` (black)
+- `iconFill`, `iconStroke`: `string` - colors of the parts the icon leaves open. Optional, default is the icon's paint (see [Icons](icons.md#icon-paint))
 - `pin`: `string`: pin element type. Optional, default is `bubble`. Pin is not rendered if value is set to `no`
 - `pinned`: `boolean`: if any marker is pinned, then only markers with `pinned = true` will be rendered. Optional
 - `dx`: `number` - icon x shift percent. Optional, default is `50` (50%, center)

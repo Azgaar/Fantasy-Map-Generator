@@ -257,11 +257,11 @@ function onFilterChange(): void {
 
 function renderMarkersPage(view: TableView<Marker>): void {
   const lines = view.rows
-    .map(({ i, type, icon, pinned, lock }) => {
+    .map(({ i, type, icon, iconFill, iconStroke, pinned, lock }) => {
       return /* html */ `
         <div class="states" data-id=${i} data-type="${type}">
           <div data-col="type">
-            <span data-tip="Marker icon" style="display: inline-flex; width: 1.2em">${Icons.html(icon)}</span>
+            <span data-tip="Marker icon" style="display: inline-flex; width: 1.2em">${Icons.html(icon, { fill: iconFill, stroke: iconStroke })}</span>
             <span data-tip="Marker type">${type}</span>
           </div>
           <span data-col="pin" data-tip="Pin marker (display only pinned markers)" class="icon-pin ${

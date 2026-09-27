@@ -101,9 +101,9 @@ function renderMarkersList(inRange: Marker[]): void {
   ensureEl("markersRadiusCount").textContent = String(inRangeMarkers.length);
 
   ensureEl("markersRadiusList").innerHTML = inRangeMarkers
-    .map(({ i, type, icon, pinned, lock, name: markerName }) => {
+    .map(({ i, type, icon, iconFill, iconStroke, pinned, lock, name: markerName }) => {
       const name = markerName || type;
-      const iconHtml = `<span style="width:1.3em; display:flex">${Icons.html(icon)}</span>`;
+      const iconHtml = `<span style="width:1.3em; display:flex">${Icons.html(icon, { fill: iconFill, stroke: iconStroke })}</span>`;
       return /* html */ `
         <div class="states" data-id="${i}" style="display:flex; align-items:center; gap:.15em">
           ${iconHtml}

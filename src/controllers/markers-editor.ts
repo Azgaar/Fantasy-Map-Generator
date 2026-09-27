@@ -91,6 +91,12 @@ function renderDialog(): void {
         <input id="markerFill" type="color" style="width: 5em; height: 1.6em" />
         <input id="markerStroke" type="color" style="width: 5em; height: 1.6em" />
       </div>
+      <div data-tip="Icon fill and stroke colors: they paint the parts the icon leaves uncolored. Emoji keep their own colors">
+        <div class="label">Icon colors:</div>
+        <input id="markerIconFill" type="color" style="width: 5em; height: 1.6em" />
+        <input id="markerIconStroke" type="color" style="width: 5em; height: 1.6em" />
+        <i id="markerIconPaintReset" data-tip="Restore the icon's default colors" class="icon-ccw pointer"></i>
+      </div>
     </div>
     <div id="markerBottom">
       ${Notes.getButton("markerNotes", "this marker")}
@@ -113,6 +119,9 @@ function renderDialog(): void {
   ensureEl("markerPin").addEventListener("change", changeMarkerPin);
   ensureEl("markerFill").addEventListener("input", changePinFill);
   ensureEl("markerStroke").addEventListener("input", changePinStroke);
+  ensureEl("markerIconFill").addEventListener("input", changeIconFill);
+  ensureEl("markerIconStroke").addEventListener("input", changeIconStroke);
+  ensureEl("markerIconPaintReset").addEventListener("click", resetIconPaint);
   ensureEl("markerNotes").addEventListener("click", editMarkerLegend);
   ensureEl("markerRadius").addEventListener("click", openMarkersInRadius);
   ensureEl("markerLock").addEventListener("click", toggleMarkerLock);
@@ -159,7 +168,7 @@ function dragMarker(this: SVGElement, event: D3DragEvent<SVGElement, unknown, un
 
 function updateInputs(): void {
   const marker = selectedMarker;
-  ensureEl("markerIcon").innerHTML = Icons.html(marker.icon);
+  updateIconPaint();
 
   ensureEl<HTMLInputElement>("markerName").value = marker.name || "";
   ensureEl<HTMLInputElement>("markerType").value = marker.type || "";
@@ -172,6 +181,17 @@ function updateInputs(): void {
   ensureEl<HTMLInputElement>("markerStroke").value = marker.stroke || "#000000";
 
   ensureEl("markerLock").className = marker.lock ? "icon-lock" : "icon-lock-open";
+}
+
+/** the icon preview and its colors: the marker's own, else the icon's default paint */
+function updateIconPaint(): void {
+  const { icon, iconFill, iconStroke } = selectedMarker;
+  const paint = Icons.paint(icon);
+  const color = (value: string | undefined) => (value && /^#[\da-f]{6}$/i.test(value) ? value : "#000000");
+  ensureEl("markerIcon").innerHTML = Icons.html(icon, { fill: iconFill, stroke: iconStroke });
+  ensureEl<HTMLInputElement>("markerIconFill").value = color(iconFill ?? paint.fill);
+  ensureEl<HTMLInputElement>("markerIconStroke").value = color(iconStroke ?? paint.stroke);
+  ensureEl("markerIconPaintReset").style.visibility = iconFill || iconStroke ? "visible" : "hidden";
 }
 
 function changeMarkerName(this: HTMLInputElement): void {
@@ -187,8 +207,8 @@ function changeMarkerIcon(): void {
   Controllers.IconPicker.open({
     current: selectedMarker.icon,
     onPick: icon => {
-      ensureEl("markerIcon").innerHTML = Icons.html(icon);
       for (const marker of getSameTypeMarkers()) marker.icon = icon;
+      updateIconPaint();
       drawMarkers();
     }
   });
@@ -247,6 +267,27 @@ function changePinStroke(this: HTMLInputElement): void {
   getSameTypeMarkers().forEach(marker => {
     marker.stroke = stroke;
   });
+  drawMarkers();
+}
+
+function changeIconFill(this: HTMLInputElement): void {
+  for (const marker of getSameTypeMarkers()) marker.iconFill = this.value;
+  updateIconPaint();
+  drawMarkers();
+}
+
+function changeIconStroke(this: HTMLInputElement): void {
+  for (const marker of getSameTypeMarkers()) marker.iconStroke = this.value;
+  updateIconPaint();
+  drawMarkers();
+}
+
+function resetIconPaint(): void {
+  for (const marker of getSameTypeMarkers()) {
+    delete marker.iconFill;
+    delete marker.iconStroke;
+  }
+  updateIconPaint();
   drawMarkers();
 }
 

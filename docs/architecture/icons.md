@@ -155,13 +155,23 @@ The slots are goods, markers, regiments, military unit types, burg group icons a
 marker; `Icons.uses(id)` counts the references in each.
 
 `Icons.html(id)` draws an icon in the interface — editors, overviews, the picker: an inline svg boxing the
-icon in its own frame. Art takes a default paint (a burg's white fill and dark stroke) where no style colours
-it; a glyph takes the text colour. The icon picker (`controllers/icon-picker/`) takes only the current icon
+icon in its own frame, in its paint (below). The icon picker (`controllers/icon-picker/`) takes only the current icon
 and a callback. Its header shows the selected icon, with Position, Replace and Remove when it is a custom
 icon, and a search over the built-in names; a side list holds Custom, then sections — Emoji by theme,
 Settlements, Goods, Relief — whose entries are sets or a set's subdirectories; a section heading shows all
 its entries. It opens on the current icon's entry, else on the first built-in section; a double click picks
 and applies.
+
+## Icon paint
+
+Art leaves some fills and strokes open to take them from where it is drawn: a burg group's style, the goods
+lines. A set declares the `paint` those open parts take where the slot drawing it sets none — burgs and ports
+a white fill and dark outline, goods and relief their default style's lines; `Icons.paint(id)` reads it, a
+glyph's being the text colour and a custom icon's none, so the picture looks as its file does. Slots without
+paint of their own — the interface (`Icons.html`), markers and the market marker — write it on their `<use>`
+with `Icons.paintAttributes(id, own)`, a slot's own colours over it: a marker's `iconFill` and `iconStroke`.
+Styled slots (burg groups, goods, relief, regiments) keep colouring the art themselves. Attributes lose to CSS,
+so a layer's CSS paint still wins.
 
 ## Authoring custom icons
 

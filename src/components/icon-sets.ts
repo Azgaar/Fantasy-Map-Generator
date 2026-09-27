@@ -34,11 +34,6 @@ export class IconSetRegistry {
     return this.sets().find(set => symbolId.startsWith(`${set.id}-`))?.id as IconSetId | undefined;
   }
 
-  /** the names a picker offers for a set: its files, or the ones the set declares */
-  choices(id: IconSetId): readonly string[] {
-    return this.get(id).choices ?? this.files(id);
-  }
-
   /** a set's symbols, read from its lazy chunk */
   async read(set: IconSet): Promise<string> {
     const entries = [...this.loaders(set.folder)].map(

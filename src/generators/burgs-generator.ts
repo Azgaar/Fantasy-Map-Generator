@@ -14,6 +14,9 @@ import type { ProductionRecord } from "./production-generator";
 import type { River } from "./river-generator";
 import type { Point } from "./voronoi";
 
+/** the default burg style: white art with a dark outline */
+const BURG_PAINT = { fill: "#ffffff", stroke: "#3e3e4b" };
+
 export const isAutoBurgLimit = (): boolean => options.generation.burgs.limit === AUTO_BURG_LIMIT;
 
 export interface Burg {
@@ -61,8 +64,8 @@ class BurgModule {
   /** the burg icons (styled subdirectories included) and the port anchors, drawn around the anchor at
    * 10 user units per em, so a `size` of 1 draws the plain circle 1em wide */
   readonly iconSets = [
-    { id: "burgs", folder: "burgs", em: 10 },
-    { id: "ports", folder: "ports", em: 10 }
+    { id: "burgs", folder: "burgs", em: 10, paint: BURG_PAINT },
+    { id: "ports", folder: "ports", em: 10, paint: BURG_PAINT }
   ] as const satisfies readonly IconSet[];
 
   generate() {

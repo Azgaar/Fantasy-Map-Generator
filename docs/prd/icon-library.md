@@ -224,7 +224,7 @@ stores it the same way: a bare symbol id.
     icon sources.
   - **Emoji**: a free-text field and the emoji, one entry per theme; either yields a glyph reference.
   - **Built-in**: sections by use — Settlements (burg styles by subdirectory, ports), Goods, Relief (one entry
-    per set); a set's chunk loads when it is shown. A relief set shows one variant per type.
+    per set); a set's chunk loads when it is shown. A relief set shows every variant it has art for.
 - The picker opens on the current icon's entry, else on the first built-in section, with the current icon
   pressed and scrolled into view. A double click picks and applies.
 - A positioner dialog in the same controller: a preview framed as on the map with the frame's surroundings

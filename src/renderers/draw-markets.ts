@@ -64,6 +64,7 @@ function reconcileMarkets({ root, bounds }: ViewportRenderContext): void {
   const strokeWidth = rn(radius / 8, 2);
   const padding = Math.max(radius + strokeWidth / 2, iconSize);
   const href = escapeHtml(Icons.href(icon));
+  const paint = Icons.paintAttributes(icon);
   const markup: string[] = [];
 
   for (const market of pack.markets) {
@@ -88,7 +89,7 @@ function reconcileMarkets({ root, bounds }: ViewportRenderContext): void {
       : "";
     const centerMarkup = showCenter
       ? /*html*/ `<circle cx="${center.x}" cy="${center.y}" r="${radius}" fill="${fill}" fill-opacity="1" stroke="${stroke}" stroke-width="${strokeWidth}"/>
-        ${href ? `<use href="${href}" x="${rn(center.x - iconSize / 2, 2)}" y="${rn(center.y - iconSize / 2, 2)}" width="${iconSize}" height="${iconSize}" fill-opacity="1"/>` : ""}`
+        ${href ? `<use href="${href}" x="${rn(center.x - iconSize / 2, 2)}" y="${rn(center.y - iconSize / 2, 2)}" width="${iconSize}" height="${iconSize}" fill-opacity="1"${paint}/>` : ""}`
       : "";
 
     const marker = /*html*/ `<g id="market${market.i}" data-id="${market.i}">${territoryMarkup}${centerMarkup}</g>`;

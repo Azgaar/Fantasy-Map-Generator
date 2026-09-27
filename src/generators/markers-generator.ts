@@ -38,6 +38,9 @@ export interface Marker {
   pin?: string;
   fill?: string;
   stroke?: string;
+  /** the icon's open fill and stroke, over its own paint */
+  iconFill?: string;
+  iconStroke?: string;
   hidden?: boolean;
   cell: number;
   lock?: boolean;

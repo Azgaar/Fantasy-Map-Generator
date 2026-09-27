@@ -120,3 +120,16 @@ test("every slot kind's uses of an icon are counted", () => {
   expect(Icons.uses("goods-wood")).toEqual({ good: 1, unit: 1 });
   expect(Icons.uses("custom-b")).toEqual({});
 });
+
+test("an icon's paint is its set's, a glyph's the text colour, a custom icon's none; a slot's own colours win", () => {
+  expect(Icons.paint("burgs-atlas-circle")).toEqual({ fill: "#ffffff", stroke: "#3e3e4b" });
+  expect(Icons.paint("goods-wood")).toEqual({ stroke: "#000000", strokeWidth: 2 });
+  expect(Icons.paint(Icons.glyph("XIV"))).toEqual({ fill: "currentColor" });
+  expect(Icons.paint("custom-1a2b3c4d")).toEqual({});
+
+  expect(Icons.paintAttributes("goods-wood")).toBe(' stroke="#000000" stroke-width="2"');
+  expect(Icons.paintAttributes("burgs-atlas-circle", { fill: "#ff0000", stroke: undefined })).toBe(
+    ' fill="#ff0000" stroke="#3e3e4b"'
+  );
+  expect(Icons.html("custom-1a2b3c4d")).not.toMatch(/fill=|stroke=/);
+});

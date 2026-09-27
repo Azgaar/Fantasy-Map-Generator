@@ -957,7 +957,11 @@ const GOODS_DATA: GoodData[] = [
 ];
 
 export class GoodsModule {
-  readonly iconSet = { id: "goods", folder: "goods" } as const satisfies IconSet;
+  readonly iconSet = {
+    id: "goods",
+    folder: "goods",
+    paint: { stroke: "#000000", strokeWidth: 2 } // the linework of the default goods style
+  } as const satisfies IconSet;
 
   private cells!: PackedGraph["cells"];
   private cellId: number = 0;

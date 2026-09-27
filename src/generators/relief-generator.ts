@@ -44,7 +44,7 @@ export class ReliefModel {
     id: this.iconSetId(set),
     folder: `relief/${set}`,
     aliases: (names: readonly string[]) => this.aliasSlots(set, names),
-    choices: TYPES.map(({ type }) => `${type}-1`)
+    paint: { stroke: "#5c5c70", strokeWidth: 1 } // the default relief style
   }));
 
   generate(): ReliefIcon[] {

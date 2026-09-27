@@ -92,12 +92,22 @@ function reconcileMarkers({ root, bounds }: ViewportRenderContext): void {
   }
 }
 
-function getMarkerContent({ icon, dx = 50, dy = 50, px = 12, pin, fill, stroke }: Marker): string {
+function getMarkerContent({
+  icon,
+  dx = 50,
+  dy = 50,
+  px = 12,
+  pin,
+  fill,
+  stroke,
+  iconFill,
+  iconStroke
+}: Marker): string {
   // the icon box is centred on the dx/dy point of the pin box
   const x = rn((dx * 30) / 100 - px / 2, 2);
   const y = rn((dy * 30) / 100 - px / 2, 2);
   const use = icon
-    ? `<use href="${escapeHtml(Icons.href(icon))}" x="${x}" y="${y}" width="${px}" height="${px}"/>`
+    ? `<use href="${escapeHtml(Icons.href(icon))}" x="${x}" y="${y}" width="${px}" height="${px}"${Icons.paintAttributes(icon, { fill: iconFill, stroke: iconStroke })}/>`
     : "";
   // the one group carries the shift, so the pin's tip lands on the marker point at any box size
   return /* html */ `<g transform="translate(-15 -30)">${getPin(pin, fill, stroke)}${use}</g>`;

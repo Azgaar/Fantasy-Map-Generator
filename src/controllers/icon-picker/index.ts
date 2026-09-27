@@ -43,11 +43,11 @@ const STYLE = /* css */ `
   #${ICON_PICKER} > div { width: auto; }
   #${ICON_PICKER} .head { display: flex; align-items: center; gap: .6em; padding-bottom: .5em; border-bottom: 1px solid #0000001a; }
   #${ICON_PICKER} .current { display: flex; align-items: center; gap: .5em; flex: 1; min-width: 0; }
-  #${ICON_PICKER} .current .preview { flex: none; display: grid; place-items: center; width: 3.4em; height: 3.4em; font-size: 1.5em; border-radius: 4px; background: #0000000d; }
-  #${ICON_PICKER} .current .preview svg { width: 2.6em; height: 2.6em; overflow: visible; }
-  #${ICON_PICKER} .current .about { display: flex; flex-direction: column; min-width: 0; }
-  #${ICON_PICKER} .current .name { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #${ICON_PICKER} .current .from { font-size: .85em; opacity: .65; }
+  #${ICON_PICKER} .current .preview { flex: none; display: grid; place-items: center; width: 2.2em; height: 2.2em; border-radius: 4px; background: #0000000d; }
+  #${ICON_PICKER} .current .preview svg { width: 1.7em; height: 1.7em; overflow: visible; }
+  #${ICON_PICKER} .current .about { display: flex; align-items: baseline; gap: .5em; min-width: 0; white-space: nowrap; }
+  #${ICON_PICKER} .current .name { font-weight: bold; overflow: hidden; text-overflow: ellipsis; }
+  #${ICON_PICKER} .current .from { font-size: .85em; opacity: .65; overflow: hidden; text-overflow: ellipsis; }
   #${ICON_PICKER} .currentActions { display: flex; gap: .2em; margin-left: auto; }
   #${ICON_PICKER} .currentActions button { margin: 0; padding: .2em .4em; white-space: nowrap; }
   #${ICON_PICKER} .search { width: 11em; }
@@ -323,7 +323,7 @@ function catalog(): Section[] {
 /** a set's entries: one per subdirectory, else the set itself */
 function setEntries(set: IconSetId): Entry[] {
   const groups = new Map<string, string[]>();
-  for (const file of IconSets.choices(set)) {
+  for (const file of IconSets.files(set)) {
     const group = file.slice(0, Math.max(0, file.lastIndexOf("/")));
     groups.set(group, [...(groups.get(group) ?? []), IconSets.symbolId(set, file)]);
   }
@@ -459,8 +459,9 @@ function renderCustom(current: string, replacing: string | null): string {
     <div class="replacing" ${replacing ? "" : "hidden"}>Link or upload the new picture of the selected icon. <a data-action="stopReplacing">Cancel</a></div>
     ${icons.length ? `<div class="choices">${icons.join("")}</div>` : `<p class="empty">This map carries no custom icons yet.</p>`}
     <p class="note">Free icons: <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a>,
+      <a href="https://thenounproject.com" target="_blank" rel="noopener">The Noun Project</a>,
       <a href="https://openmoji.org" target="_blank" rel="noopener">OpenMoji</a>,
-      <a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia Commons</a>. Check each icon's license.</p>`;
+      <a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia Commons</a>.</p>`;
 }
 
 /** "1 good, 12 markers" */

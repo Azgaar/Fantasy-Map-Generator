@@ -1,5 +1,6 @@
 // Browser-mode tests (vitest.browser.config.ts): the sources and tiles the icon picker opens with
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { IconSets } from "@/components/icon-sets";
 import { CustomIcons, Icons } from "@/components/icons";
 import "@/generators/relief-generator"; // the models own the set definitions the picker lists
 import "@/generators/burgs-generator";
@@ -96,12 +97,17 @@ test("picking presses the tile, names it in the header and hands its reference b
   expect(onPick).toHaveBeenLastCalledWith("glyph-58-49-56");
 });
 
-test("a relief set offers one variant per type", () => {
+test("a relief set offers every variant it has art for, and no fallback slots", () => {
   const { dialog, show } = open("goods-wood");
-  show("relief-simple");
-  const tiles = [...dialog.querySelectorAll<HTMLElement>(".panel [data-icon]")].map(button => button.dataset.icon);
-  expect(tiles).toHaveLength(Relief.types.length);
-  expect(tiles).toContain("relief-simple-mount-1");
+  const tiles = (set: string) => {
+    show(set);
+    return [...dialog.querySelectorAll<HTMLElement>(".panel [data-icon]")].map(button => button.dataset.icon);
+  };
+  expect(tiles("relief-colored")).toEqual(expect.arrayContaining(["relief-colored-mount-1", "relief-colored-mount-6"]));
+  const simple = tiles("relief-simple");
+  expect(simple).toHaveLength(IconSets.files("relief-simple").length);
+  expect(simple).toContain("relief-simple-vulcan-3");
+  expect(simple).not.toContain("relief-simple-mount-6"); // an alias drawn through another file
 });
 
 test("search finds built-in icons by name across the sets, and clearing it returns to the source", () => {

@@ -31,7 +31,6 @@ export function openPositioner(id: string): void {
   if (!icon || !symbol) return;
 
   const original = icon.viewBox;
-  const { fill, stroke } = Icons.paint;
   const reference = toFrame(original);
   let frame = { ...reference };
 
@@ -42,7 +41,7 @@ export function openPositioner(id: string): void {
     /* html */ `<div id="${DIALOG}" class="dialog">
       <style>${STYLE}</style>
       <div class="stage" data-tip="Drag to pan, scroll to zoom">
-        <svg><g class="art" fill="${fill}" stroke="${stroke}">${symbol.innerHTML}</g><path class="shade" fill="#000" fill-opacity=".45" fill-rule="evenodd"/><rect class="edge" fill="none" stroke="#d0240f" vector-effect="non-scaling-stroke" stroke-dasharray="4 3"/></svg>
+        <svg><g class="art"${Icons.paintAttributes(id)}>${symbol.innerHTML}</g><path class="shade" fill="#000" fill-opacity=".45" fill-rule="evenodd"/><rect class="edge" fill="none" stroke="#d0240f" vector-effect="non-scaling-stroke" stroke-dasharray="4 3"/></svg>
       </div>
       <div class="controls">
         <span>Zoom</span>

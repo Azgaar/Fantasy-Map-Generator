@@ -12,8 +12,15 @@ export interface IconSet {
   em?: number;
   /** symbols for ids the directory has no file for, each drawn through one it has */
   aliases?: (names: readonly string[]) => IconAlias[];
-  /** the names a picker offers, when not every file: a relief set offers one variant per type */
-  choices?: readonly string[];
+  /** the paint of the art's open fill and stroke where the slot drawing it sets none */
+  paint?: IconPaint;
+}
+
+/** the fill and stroke an icon's art leaves open, in its own units */
+export interface IconPaint {
+  fill?: string;
+  stroke?: string;
+  strokeWidth?: number;
 }
 
 export interface IconAlias {

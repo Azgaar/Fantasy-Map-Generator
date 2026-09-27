@@ -1,6 +1,7 @@
 // The Icon Library: every icon a slot can reference — the built-in sets, glyphs and the map's custom icons
 import { type IconSetId, IconSets } from "@/components/icon-sets";
 import { tip } from "@/components/tooltips";
+import type { IconPaint } from "@/types/icons";
 import { sanitizeSvgIcon } from "@/utils/fileUtils";
 import { escapeHtml } from "@/utils/stringUtils";
 
@@ -87,6 +88,11 @@ class CustomIconList {
 
 export const CustomIcons = new CustomIconList();
 
+/** a slot's colours without its unset ones, so they never hide the icon's */
+function definedPaint(paint: IconPaint): IconPaint {
+  return Object.fromEntries(Object.entries(paint).filter(([, value]) => value !== undefined && value !== ""));
+}
+
 /** One set's load state: concurrent callers share an attempt, a failure is cached until an explicit retry */
 class IconChunk {
   private status: "idle" | "pending" | "loaded" | "failed" = "idle";
@@ -136,8 +142,6 @@ class IconChunk {
 
 /** Every icon reference is a bare symbol id; its symbols live in `#defElements defs > g#icons-library > g[data-set]` */
 class IconLibrary {
-  /** the paint of art drawn in the interface, where no style colours it: a burg's default look */
-  readonly paint = { fill: "#ffffff", stroke: "#3e3e4b" };
   private readonly defs = "#defElements defs";
   private readonly container = "icons-library";
   private readonly chunks = new Map<IconSetId, IconChunk>();
@@ -189,12 +193,30 @@ class IconLibrary {
     return `#${id}`;
   }
 
-  /** An inline svg drawing an icon in the interface: art in the default paint, a glyph in the text colour */
-  html(id: string): string {
+  /** The paint art takes where its slot sets none: its set's, the text colour for a glyph; a custom icon keeps its own */
+  paint(id: string): IconPaint {
+    const kind = this.kind(id);
+    if (kind === "glyph") return { fill: "currentColor" };
+    if (kind !== "set") return {};
+    return IconSets.get(IconSets.setForId(id)!).paint ?? {};
+  }
+
+  /** The paint as attributes of a `<use>` in a slot with no paint of its own: the slot's colours over the icon's */
+  paintAttributes(id: string, own: IconPaint = {}): string {
+    const { fill, stroke, strokeWidth } = { ...this.paint(id), ...definedPaint(own) };
+    return [
+      fill && ` fill="${escapeHtml(fill)}"`,
+      stroke && ` stroke="${escapeHtml(stroke)}"`,
+      strokeWidth !== undefined && ` stroke-width="${strokeWidth}"`
+    ]
+      .filter(Boolean)
+      .join("");
+  }
+
+  /** An inline svg drawing an icon in the interface in its paint, or in a slot's own colours */
+  html(id: string, own?: IconPaint): string {
     if (!id) return "";
-    const { fill, stroke } = this.paint;
-    const paint = this.kind(id) === "glyph" ? ` fill="currentColor"` : ` fill="${fill}" stroke="${stroke}"`;
-    return /*html*/ `<svg viewBox="0 0 100 100" width="1em" height="1em" aria-hidden="true"${paint}><use href="${escapeHtml(this.href(id))}" width="100" height="100"/></svg>`;
+    return /*html*/ `<svg viewBox="0 0 100 100" width="1em" height="1em" aria-hidden="true"${this.paintAttributes(id, own)}><use href="${escapeHtml(this.href(id))}" width="100" height="100"/></svg>`;
   }
 
   /** the symbol's frame in the page, `[x, y, width, height]` */
