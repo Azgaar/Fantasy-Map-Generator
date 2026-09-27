@@ -3,15 +3,35 @@ import { confirmationDialog, destroyDialog } from "@/components/dialog/dialog-he
 import { type IconSetId, IconSets } from "@/components/icon-sets";
 import { CustomIcons, type IconPicture, Icons, type IconUseKind } from "@/components/icons";
 import { tip } from "@/components/tooltips";
-import { ICONS } from "@/data/icons-list";
+import { ICON_GROUPS } from "@/data/icons-list";
 import { capitalize, createFileInput, ensureEl, escapeHtml } from "@/utils";
 import { IconPictures } from "./pictures";
 import { openPositioner } from "./positioner";
 
 const ICON_PICKER = "iconPicker";
 
-/** a built-in set, the glyphs or the map's custom icons */
-type Source = IconSetId | "glyph" | "custom";
+/** one list entry: an emoji theme, a set or one subdirectory of a set */
+interface Entry {
+  key: string;
+  label: string;
+  icons: string[];
+  set?: IconSetId;
+}
+
+/** a heading of the side list, showing all its entries at once */
+interface Section {
+  key: string;
+  label: string;
+  entries: Entry[];
+}
+
+/** the section of each set family, in list order */
+const SECTIONS: Record<string, string> = {
+  burgs: "Settlements",
+  ports: "Settlements",
+  goods: "Goods",
+  relief: "Relief"
+};
 
 export interface IconPickerOptions {
   current: string;
@@ -23,29 +43,30 @@ const STYLE = /* css */ `
   #${ICON_PICKER} > div { width: auto; }
   #${ICON_PICKER} .head { display: flex; align-items: center; gap: .6em; padding-bottom: .5em; border-bottom: 1px solid #0000001a; }
   #${ICON_PICKER} .current { display: flex; align-items: center; gap: .5em; flex: 1; min-width: 0; }
-  #${ICON_PICKER} .current .preview { flex: none; display: grid; place-items: center; width: 2.6em; height: 2.6em; font-size: 1.1em; border-radius: 4px; background: #0000000d; }
-  #${ICON_PICKER} .current .preview svg { width: 2em; height: 2em; overflow: visible; }
+  #${ICON_PICKER} .current .preview { flex: none; display: grid; place-items: center; width: 3.4em; height: 3.4em; font-size: 1.5em; border-radius: 4px; background: #0000000d; }
+  #${ICON_PICKER} .current .preview svg { width: 2.6em; height: 2.6em; overflow: visible; }
   #${ICON_PICKER} .current .about { display: flex; flex-direction: column; min-width: 0; }
   #${ICON_PICKER} .current .name { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #${ICON_PICKER} .current .from { font-size: .85em; opacity: .65; }
   #${ICON_PICKER} .currentActions { display: flex; gap: .2em; margin-left: auto; }
   #${ICON_PICKER} .currentActions button { margin: 0; padding: .2em .4em; white-space: nowrap; }
   #${ICON_PICKER} .search { width: 11em; }
-  #${ICON_PICKER} .body { display: grid; grid-template-columns: 8.5em 1fr; height: min(24em, 58vh); }
+  #${ICON_PICKER} .body { display: grid; grid-template-columns: 11.5em 1fr; height: min(32em, 64vh); }
   #${ICON_PICKER} nav { overflow-y: auto; padding: .4em .4em .4em 0; border-right: 1px solid #0000001a; }
-  #${ICON_PICKER} nav h5 { margin: .7em 0 .2em .4em; font-size: .75em; text-transform: uppercase; letter-spacing: .05em; opacity: .55; }
-  #${ICON_PICKER} nav button { display: flex; justify-content: space-between; width: 100%; margin: 0; padding: .25em .4em; border: 0; border-radius: 4px; background: none; box-shadow: none; text-align: left; }
+  #${ICON_PICKER} nav button { display: flex; justify-content: space-between; width: 100%; margin: 0; padding: .25em .4em; border: 0; border-radius: 4px; background: none; box-shadow: none; text-align: left; white-space: nowrap; }
   #${ICON_PICKER} nav button:hover { background: #0000000d; }
-  #${ICON_PICKER} nav button.active { background: #0000001a; font-weight: bold; }
+  #${ICON_PICKER} nav button.active { background: #0000001a; color: inherit; font-weight: bold; }
   #${ICON_PICKER} nav button small { margin-left: .4em; opacity: .6; font-weight: normal; }
+  #${ICON_PICKER} nav .section { margin-top: .5em; font-weight: bold; }
+  #${ICON_PICKER} nav .entry { padding-left: 1.2em; }
   #${ICON_PICKER} .panel { position: relative; overflow-y: auto; padding: .4em 0 .4em .6em; }
   #${ICON_PICKER} .panel h4 { margin: .6em 0 .3em; font-size: .85em; opacity: .7; }
   #${ICON_PICKER} .panel h4:first-child { margin-top: 0; }
-  #${ICON_PICKER} .choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(3.2em, 1fr)); gap: .3em; }
-  #${ICON_PICKER} .choices button { display: grid; place-items: center; aspect-ratio: 1; margin: 0; padding: 0; border: 1px solid transparent; border-radius: 4px; background: #0000000a; box-shadow: none; font-size: 1.5em; }
+  #${ICON_PICKER} .choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(5.4em, 1fr)); gap: .4em; }
+  #${ICON_PICKER} .choices button { display: grid; place-items: center; aspect-ratio: 1; margin: 0; padding: 0; border: 1px solid transparent; border-radius: 4px; background: #0000000a; box-shadow: none; font-size: 2.6em; }
   #${ICON_PICKER} .choices button:hover { background: #00000017; }
   #${ICON_PICKER} .choices button.pressed { border-color: var(--dark-solid); background: #0000001f; }
-  #${ICON_PICKER} .choices button svg { width: 70%; height: 70%; overflow: visible; pointer-events: none; }
+  #${ICON_PICKER} .choices button svg { width: 80%; height: 80%; overflow: visible; pointer-events: none; }
   #${ICON_PICKER} .glyphText { display: flex; align-items: center; gap: .4em; margin-bottom: .5em; }
   #${ICON_PICKER} .glyphText input { width: 6em; }
   #${ICON_PICKER} .customAdd { display: flex; gap: .3em; margin-bottom: .5em; }
@@ -62,8 +83,9 @@ const STYLE = /* css */ `
     #${ICON_PICKER} .search { width: 100%; }
     #${ICON_PICKER} .body { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
     #${ICON_PICKER} nav { display: flex; gap: .2em; overflow-x: auto; padding: .4em 0; border: 0; border-bottom: 1px solid #0000001a; }
-    #${ICON_PICKER} nav h5 { display: none; }
     #${ICON_PICKER} nav button { width: auto; white-space: nowrap; }
+    #${ICON_PICKER} nav .section, #${ICON_PICKER} nav .entry { margin: 0; padding-left: .4em; }
+    #${ICON_PICKER} .choices { grid-template-columns: repeat(auto-fill, minmax(4.4em, 1fr)); }
     #${ICON_PICKER} .panel { padding-left: 0; }
   }
 `;
@@ -81,7 +103,8 @@ let fileInput: HTMLInputElement | null = null; // one per page, so reopening nev
 
 function open({ current, onPick }: IconPickerOptions): void {
   const initial = current;
-  let source = sourceOf(current);
+  const sections = catalog();
+  let view = viewOf(current, sections);
   let query = "";
   let replacing: string | null = null; // the custom icon a new link or upload replaces
 
@@ -108,18 +131,18 @@ function open({ current, onPick }: IconPickerOptions): void {
   const isOpen = () => dialog.isConnected && options.map === map;
 
   const renderHead = () => {
-    dialog.querySelector(".current")!.innerHTML = renderCurrent(current, replacing);
+    dialog.querySelector(".current")!.innerHTML = renderCurrent(current, replacing, sections);
   };
   const renderNav = () => {
-    nav.innerHTML = renderSources(query ? null : source);
+    nav.innerHTML = renderSources(sections, query ? null : view);
   };
   const renderPanel = () => {
-    if (query) panel.innerHTML = renderResults(query, current);
-    else if (source === "glyph") panel.innerHTML = renderGlyphs(current);
-    else if (source === "custom") panel.innerHTML = renderCustom(current, replacing);
+    if (query) panel.innerHTML = renderResults(sections, query, current);
+    else if (view === "custom") panel.innerHTML = renderCustom(current, replacing);
     else {
-      panel.innerHTML = renderSet(source, current);
-      void Icons.retry(source); // an explicit demand: the previews draw once the symbols land
+      const entries = entriesOf(sections, view);
+      panel.innerHTML = (view.startsWith("glyph") ? renderGlyphText(current) : "") + renderEntries(entries, current);
+      load(entries);
     }
     reveal();
   };
@@ -127,8 +150,8 @@ function open({ current, onPick }: IconPickerOptions): void {
     const pressed = panel.querySelector<HTMLElement>(".pressed"); // the current icon in view
     panel.scrollTop = pressed ? pressed.offsetTop - panel.clientHeight / 2 : 0;
   };
-  const show = (next: Source) => {
-    source = next;
+  const show = (next: string) => {
+    view = next;
     query = "";
     search.value = "";
     renderNav();
@@ -148,13 +171,13 @@ function open({ current, onPick }: IconPickerOptions): void {
     replacing = id;
     renderHead();
     if (id) show("custom");
-    else if (source === "custom" && !query) renderPanel();
+    else if (view === "custom" && !query) renderPanel();
   };
   const refreshCustom = () => {
     Icons.syncCustom();
     renderNav();
     renderHead();
-    if (source === "custom" && !query) renderPanel();
+    if (view === "custom" && !query) renderPanel();
   };
 
   const addPicture = async (make: (id: string) => Promise<IconPicture>) => {
@@ -221,7 +244,7 @@ function open({ current, onPick }: IconPickerOptions): void {
 
   dialog.addEventListener("click", event => {
     const target = event.target as HTMLElement;
-    const next = target.closest<HTMLElement>("nav [data-source]")?.dataset.source as Source | undefined;
+    const next = target.closest<HTMLElement>("nav [data-source]")?.dataset.source;
     if (next) return show(next);
     const action = target.closest<HTMLElement>("[data-action]")?.dataset.action;
     if (action) return actions[action]?.();
@@ -270,30 +293,96 @@ function open({ current, onPick }: IconPickerOptions): void {
   reveal(); // the panel has its height only once the dialog is laid out
 }
 
-/** 42em, narrowed to the visible screen on a phone */
+/** 52em, narrowed to the visible screen on a phone */
 function dialogWidth(): number {
   const em = Number.parseFloat(getComputedStyle(document.body).fontSize) || 10;
-  return Math.min(42 * em, (window.visualViewport?.width ?? window.innerWidth) - 16);
+  return Math.min(52 * em, (window.visualViewport?.width ?? window.innerWidth) - 16);
 }
 
-/** where the current icon comes from; the first built-in set when there is none */
-function sourceOf(current: string): Source {
-  const kind = Icons.kind(current);
-  if (kind === "custom" || kind === "glyph") return kind;
-  const firstSet = IconSets.sets().find(set => !set.id.includes("-"))?.id as IconSetId | undefined;
-  return IconSets.setForId(current) ?? firstSet ?? "glyph";
+/** the side list: the emoji by theme, then the built-in sets by section, a set split by subdirectory */
+function catalog(): Section[] {
+  const emoji = Object.entries(ICON_GROUPS).map(([label, glyphs]) => ({
+    key: `glyph/${label}`,
+    label,
+    icons: glyphs.map(glyph => Icons.glyph(glyph))
+  }));
+  const builtIn = new Map<string, Entry[]>();
+  for (const { id } of IconSets.sets()) {
+    const family = id.split("-")[0];
+    const label = SECTIONS[family] ?? capitalize(family);
+    builtIn.set(label, [...(builtIn.get(label) ?? []), ...setEntries(id as IconSetId)]);
+  }
+  const order = [...new Set(Object.values(SECTIONS))];
+  const rank = (label: string) => order.indexOf(label) + 1 || order.length + 1;
+  const sets = [...builtIn]
+    .sort(([a], [b]) => rank(a) - rank(b))
+    .map(([label, entries]) => ({ key: label, label, entries }));
+  return [{ key: "glyph", label: "Emoji", entries: emoji }, ...sets];
+}
+
+/** a set's entries: one per subdirectory, else the set itself */
+function setEntries(set: IconSetId): Entry[] {
+  const groups = new Map<string, string[]>();
+  for (const file of IconSets.choices(set)) {
+    const group = file.slice(0, Math.max(0, file.lastIndexOf("/")));
+    groups.set(group, [...(groups.get(group) ?? []), IconSets.symbolId(set, file)]);
+  }
+  const name = set.slice(set.indexOf("-") + 1); // relief-simple → simple
+  return [...groups].map(([group, icons]) => ({
+    key: group ? `${set}/${group}` : set,
+    label: capitalize((group || name).replaceAll(/[-/]/g, " ")),
+    icons,
+    set
+  }));
+}
+
+/** a section's entries, or the one entry keyed so */
+function entriesOf(sections: Section[], view: string): Entry[] {
+  for (const section of sections) {
+    if (section.key === view) return section.entries;
+    const entry = section.entries.find(entry => entry.key === view);
+    if (entry) return [entry];
+  }
+  return [];
+}
+
+/** the entry an icon is listed in, else the first entry of its set */
+function locate(sections: Section[], id: string): { section: Section; entry: Entry } | undefined {
+  const set = IconSets.setForId(id);
+  const found = (match: (entry: Entry) => boolean) => {
+    for (const section of sections) {
+      const entry = section.entries.find(match);
+      if (entry) return { section, entry };
+    }
+  };
+  return found(entry => entry.icons.includes(id)) ?? (set && found(entry => entry.set === set));
+}
+
+/** where the picker opens: the current icon's entry, else the first built-in section */
+function viewOf(current: string, sections: Section[]): string {
+  if (Icons.kind(current) === "custom") return "custom";
+  if (Icons.kind(current) === "glyph") return locate(sections, current)?.entry.key ?? "glyph";
+  return locate(sections, current)?.entry.key ?? sections.find(({ key }) => key !== "glyph")?.key ?? "glyph";
+}
+
+/** Relief · Simple, or Goods for a section of one entry */
+function entryLabel(section: Section, entry: Entry): string {
+  return section.entries.length > 1 ? `${section.label} · ${entry.label}` : section.label;
 }
 
 /** the selected icon, with its custom icon actions */
-function renderCurrent(current: string, replacing: string | null): string {
+function renderCurrent(current: string, replacing: string | null, sections: Section[]): string {
   const kind = Icons.kind(current);
+  const located = kind === "set" ? locate(sections, current) : undefined;
   const from = !current
     ? "No icon selected"
-    : kind === "set"
-      ? setLabel(IconSets.setForId(current)!, true)
-      : kind === "glyph"
-        ? "Emoji & text"
-        : "Carried by this map";
+    : kind === "glyph"
+      ? "Emoji"
+      : kind === "custom"
+        ? "Carried by this map"
+        : located
+          ? entryLabel(located.section, located.entry)
+          : "Built-in";
   const actions =
     kind === "custom" && CustomIcons.get(current)
       ? /* html */ `<div class="currentActions">
@@ -307,70 +396,61 @@ function renderCurrent(current: string, replacing: string | null): string {
     ${actions}`;
 }
 
-/** the sources: the map's icons and glyphs, then the built-in sets, a family's sets under its heading */
-function renderSources(active: Source | null): string {
-  const item = (source: Source, label: string, extra = "") =>
-    `<button type="button" data-source="${source}" class="${source === active ? "active" : ""}">${label}${extra}</button>`;
-  const families = new Map<string, string[]>();
-  for (const { id } of IconSets.sets()) {
-    const family = id.includes("-") ? id.slice(0, id.indexOf("-")) : "";
-    families.set(family, [...(families.get(family) ?? []), id]);
-  }
-  const count = CustomIcons.all.length;
-  const builtIn = [...families]
-    .sort(([a], [b]) => (a ? 1 : 0) - (b ? 1 : 0))
-    .map(
-      ([family, sets]) =>
-        `<h5>${family ? capitalize(family) : "Built-in"}</h5>${sets.map(set => item(set as IconSetId, setLabel(set))).join("")}`
-    )
-    .join("");
-  return `${item("custom", "Custom", count ? ` <small>${count}</small>` : "")}${item("glyph", "Emoji & text")}${builtIn}`;
+/** the map's icons, then each section: its heading shows all its entries, a section of one entry is just the entry */
+function renderSources(sections: Section[], active: string | null): string {
+  const item = (key: string, label: string, count: number, type = "") =>
+    `<button type="button" data-source="${escapeHtml(key)}" class="${type} ${key === active ? "active" : ""}">${label}${count ? ` <small>${count}</small>` : ""}</button>`;
+  const list = sections.map(section => {
+    const [first] = section.entries;
+    if (section.entries.length === 1) return item(first.key, section.label, first.icons.length, "section");
+    const count = section.entries.reduce((total, entry) => total + entry.icons.length, 0);
+    const entries = section.entries.map(entry => item(entry.key, entry.label, entry.icons.length, "entry"));
+    return item(section.key, section.label, count, "section") + entries.join("");
+  });
+  return item("custom", "Custom", CustomIcons.all.length) + list.join("");
 }
 
-/** a set's icons grouped by subdirectory */
-function renderSet(set: IconSetId, current: string): string {
-  const groups = new Map<string, string[]>();
-  for (const file of IconSets.choices(set)) {
-    const group = file.slice(0, Math.max(0, file.lastIndexOf("/")));
-    groups.set(group, [...(groups.get(group) ?? []), file]);
-  }
-  return [...groups]
-    .map(([group, names]) => {
-      const tiles = names.map(file => {
-        const id = IconSets.symbolId(set, file);
-        return tile(id, current, Icons.html(id), Icons.name(id));
-      });
-      return `${group ? `<h4>${capitalize(group)}</h4>` : ""}<div class="choices">${tiles.join("")}</div>`;
+/** the entries' tiles, each under its label when there are several */
+function renderEntries(entries: Entry[], current: string, headings = entries.length > 1): string {
+  return entries
+    .map(entry => {
+      const tiles = entry.icons.map(id => tile(id, current)).join("");
+      return `${headings ? `<h4>${entry.label}</h4>` : ""}<div class="choices">${tiles}</div>`;
     })
     .join("");
 }
 
-/** the built-in icons whose name holds the query, set by set */
-function renderResults(query: string, current: string): string {
-  const sections = IconSets.sets().flatMap(({ id }) => {
-    const set = id as IconSetId;
-    const files = IconSets.choices(set).filter(file => Icons.name(IconSets.symbolId(set, file)).includes(query));
-    if (!files.length) return [];
-    void Icons.retry(set);
-    const tiles = files.map(file => {
-      const icon = IconSets.symbolId(set, file);
-      return tile(icon, current, Icons.html(icon), Icons.name(icon));
-    });
-    return [`<h4>${setLabel(set, true)}</h4><div class="choices">${tiles.join("")}</div>`];
-  });
-  return sections.join("") || `<p class="empty">No built-in icon is called “${escapeHtml(query)}”.</p>`;
+/** an explicit demand: the previews draw once the sets' symbols land */
+function load(entries: Entry[]): void {
+  for (const set of new Set(entries.map(entry => entry.set))) if (set) void Icons.retry(set);
 }
 
-function renderGlyphs(current: string): string {
-  const tiles = ICONS.map(glyph => tile(Icons.glyph(glyph), current, escapeHtml(glyph), glyph));
+/** the built-in icons whose name holds the query, entry by entry */
+function renderResults(sections: Section[], query: string, current: string): string {
+  const found = sections.flatMap(section =>
+    section.entries
+      .filter(entry => entry.set)
+      .map(entry => ({
+        ...entry,
+        label: entryLabel(section, entry),
+        icons: entry.icons.filter(id => Icons.name(id).includes(query))
+      }))
+      .filter(entry => entry.icons.length)
+  );
+  load(found);
+  return found.length
+    ? renderEntries(found, current, true)
+    : `<p class="empty">No built-in icon is called “${escapeHtml(query)}”.</p>`;
+}
+
+function renderGlyphText(current: string): string {
   return /* html */ `<label class="glyphText">Type any short text
       <input value="${escapeHtml(Icons.glyphText(current) ?? "")}" placeholder="XIV" />
-    </label>
-    <div class="choices">${tiles.join("")}</div>`;
+    </label>`;
 }
 
 function renderCustom(current: string, replacing: string | null): string {
-  const icons = CustomIcons.all.map(({ id }) => tile(id, current, Icons.html(id), "Custom icon"));
+  const icons = CustomIcons.all.map(({ id }) => tile(id, current));
   return /* html */ `<div class="customAdd">
       <input type="url" placeholder="Paste a link to an image" data-tip="A linked image keeps the map small; it shows while its site serves it" />
       <button type="button" data-action="link">Add link</button>
@@ -390,17 +470,12 @@ function describeUses(uses: Partial<Record<IconUseKind, number>>): string {
     .join(", ");
 }
 
-function tile(id: string, current: string, content: string, name: string): string {
+/** a glyph tile draws its text, sparing a symbol per glyph */
+function tile(id: string, current: string): string {
   const pressed = id === current ? "pressed" : "";
-  return `<button type="button" class="${pressed}" data-icon="${escapeHtml(id)}" data-tip="${escapeHtml(capitalize(name))}">${content}</button>`;
-}
-
-/** relief-simple → Simple, or Relief · Simple with its family */
-function setLabel(id: string, withFamily = false): string {
-  const [family, ...rest] = id.split("-");
-  if (!rest.length) return capitalize(family);
-  const name = capitalize(rest.join(" "));
-  return withFamily ? `${capitalize(family)} · ${name}` : name;
+  const text = Icons.glyphText(id);
+  const content = text === null ? Icons.html(id) : escapeHtml(text);
+  return `<button type="button" class="${pressed}" data-icon="${escapeHtml(id)}" data-tip="${escapeHtml(capitalize(Icons.name(id)))}">${content}</button>`;
 }
 
 export const IconPicker = { open };

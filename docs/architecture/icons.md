@@ -158,9 +158,10 @@ marker; `Icons.uses(id)` counts the references in each.
 icon in its own frame. Art takes a default paint (a burg's white fill and dark stroke) where no style colours
 it; a glyph takes the text colour. The icon picker (`controllers/icon-picker/`) takes only the current icon
 and a callback. Its header shows the selected icon, with Position, Replace and Remove when it is a custom
-icon, and a search over the built-in names; a side list holds the sources — Custom, Emoji & text, then each
-built-in set, a family's sets under its heading. It opens on the current icon's source, else on the first
-built-in set; a double click picks and applies.
+icon, and a search over the built-in names; a side list holds Custom, then sections — Emoji by theme,
+Settlements, Goods, Relief — whose entries are sets or a set's subdirectories; a section heading shows all
+its entries. It opens on the current icon's entry, else on the first built-in section; a double click picks
+and applies.
 
 ## Authoring custom icons
 

@@ -43,7 +43,7 @@ stores it the same way: a bare symbol id.
 - Every Custom icon can be **positioned** — zoomed and panned inside its frame, or fitted automatically
   to its visible content — and its picture can be **replaced**; every slot that uses it follows.
 - Uploaded raster images are downscaled to 256 px on the long side, so a phone photo does not bloat a map.
-- One **icon picker** with a source per Icon Set, **Emoji & text** and **Custom** — replaces the three dialogs.
+- One **icon picker** with a source per Icon Set, **Emoji** and **Custom** — replaces the three dialogs.
   It opens on the current icon's source, else on the first built-in set. The Custom source points
   authors to open icon sources.
 - Old maps open unchanged: goods uploads and inline `data:` or URL images become Custom icons (one per
@@ -131,10 +131,10 @@ stores it the same way: a bare symbol id.
 
   ```ts
   interface CustomIcon {
-    id: string;              // symbol id `custom-<8 hex>`, from crypto.randomUUID
+    id: string; // symbol id `custom-<8 hex>`, from crypto.randomUUID
     kind: "svg" | "image";
-    content: string;         // svg: sanitised, scoped markup; image: http(s) URL or data: URI
-    viewBox: string;         // "x y w h": the icon frame
+    content: string; // svg: sanitised, scoped markup; image: http(s) URL or data: URI
+    viewBox: string; // "x y w h": the icon frame
   }
   ```
 
@@ -218,14 +218,14 @@ stores it the same way: a bare symbol id.
   reference and a callback: the picker has no per-slot variations.
 - A header shows the selected icon — its preview, name and source — with Position, Replace and Remove
   when it is a Custom icon, and a search that finds built-in icons by name across every set.
-- A side list holds the sources, one shown at a time in a grid of unlabelled tiles (the name is the tile's
-  tip):
+- A side list holds Custom and sections of entries, one shown at a time in a grid of large unlabelled tiles
+  (the name is the tile's tip); a section heading shows all its entries under their labels:
   - **Custom**: the link field first, upload buttons, then the map's Custom icons, and a pointer to open
     icon sources.
-  - **Emoji & text**: a free-text field and the emoji grid; either yields a glyph reference.
-  - **Built-in**: each Icon Set, a family's sets (relief) under its heading; a set's chunk loads when it is
-    shown, and its icons are grouped by subdirectory. A relief set shows one variant per type.
-- The picker opens on the current icon's source, else on the first built-in set, with the current icon
+  - **Emoji**: a free-text field and the emoji, one entry per theme; either yields a glyph reference.
+  - **Built-in**: sections by use — Settlements (burg styles by subdirectory, ports), Goods, Relief (one entry
+    per set); a set's chunk loads when it is shown. A relief set shows one variant per type.
+- The picker opens on the current icon's entry, else on the first built-in section, with the current icon
   pressed and scrolled into view. A double click picks and applies.
 - A positioner dialog in the same controller: a preview framed as on the map with the frame's surroundings
   dimmed, previews at map sizes, a zoom slider and wheel zoom, drag to pan, Fit, Apply and Cancel.

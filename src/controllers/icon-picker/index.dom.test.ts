@@ -38,31 +38,34 @@ const open = (current: string, onPick = vi.fn()) => {
   };
 };
 
-test("a set icon opens on its own set, grouped by style, with the icon pressed and named", () => {
+test("a set icon opens on its own subdirectory, with the icon pressed and named", () => {
   const { dialog, source, pressed } = open("burgs-watabou-city");
-  expect(source()).toBe("burgs");
+  expect(source()).toBe("burgs/watabou");
+  expect(dialog.querySelector('[data-icon^="burgs-atlas-"]')).toBeNull(); // other entries draw nothing until shown
+  expect(pressed()).toEqual(["burgs-watabou-city"]);
+  expect(dialog.querySelector(".current .name")!.textContent).toBe("City");
+  expect(dialog.querySelector(".current .from")!.textContent).toBe("Settlements · Watabou");
+});
+
+test("the sources list the map's icons, then sections: emoji by theme, sets by subdirectory", () => {
+  const { dialog, show } = open("");
+  const items = [...dialog.querySelectorAll<HTMLElement>("nav [data-source]")].map(item =>
+    item.classList.contains("section") ? `# ${item.dataset.source}` : item.dataset.source
+  );
+  expect(items.slice(0, 3)).toEqual(["custom", "# glyph", "glyph/War & power"]);
+  expect(items).toEqual(expect.arrayContaining(["# Settlements", "burgs/watabou", "ports", "# goods", "# Relief"]));
+  expect(items.indexOf("relief-simple")).toBeGreaterThan(items.indexOf("# Relief"));
+
+  show("Settlements"); // a section heading shows all its entries under their labels
   expect([...dialog.querySelectorAll(".panel h4")].map(h => h.textContent)).toEqual([
     "Atlas",
     "Illustrated",
-    "Watabou"
+    "Watabou",
+    "Ports"
   ]);
-  expect(dialog.querySelector('[data-icon^="goods-"]')).toBeNull(); // other sets draw nothing until shown
-  expect(pressed()).toEqual(["burgs-watabou-city"]);
-  expect(dialog.querySelector(".current .name")!.textContent).toBe("City");
-  expect(dialog.querySelector(".current .from")!.textContent).toBe("Burgs");
 });
 
-test("the sources list the map's icons, glyphs, then each built-in set, relief sets under their family", () => {
-  const { dialog } = open("");
-  const items = [...dialog.querySelectorAll<HTMLElement>("nav h5, nav [data-source]")].map(
-    item => item.dataset.source ?? `# ${item.textContent}`
-  );
-  expect(items.slice(0, 3)).toEqual(["custom", "glyph", "# Built-in"]);
-  expect(items).toContain("# Relief");
-  expect(items.indexOf("relief-simple")).toBeGreaterThan(items.indexOf("# Relief"));
-});
-
-test("a slot opens where its current icon is: a glyph on Emoji & text, a custom icon on Custom", () => {
+test("a slot opens where its current icon is: a glyph on Emoji, a custom icon on Custom", () => {
   options.map.customIcons = [
     { id: "custom-1a2b3c4d", kind: "image", content: "https://a.b/c.png", viewBox: "0 0 100 100" }
   ];
@@ -75,7 +78,7 @@ test("a slot opens where its current icon is: a glyph on Emoji & text, a custom 
   expect(custom.pressed()).toEqual(["custom-1a2b3c4d"]);
 
   const none = open("");
-  expect(none.source()).toBe("burgs"); // no icon yet: the first built-in set
+  expect(none.source()).toBe("Settlements"); // no icon yet: the first built-in section
   expect(none.dialog.querySelector(".current .name")!.textContent).toBe("None");
 });
 
