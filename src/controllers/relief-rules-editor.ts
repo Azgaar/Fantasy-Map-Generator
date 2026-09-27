@@ -3,22 +3,23 @@ import { confirmationDialog, destroyDialog, updateDialog } from "@/components/di
 import { limitationTip, pickLimitation } from "@/components/dialog/limitation-picker";
 import { type EditorColumn, initColumnVisibility, renderEditorHeader } from "@/components/dialog/table";
 import type { ReliefRule } from "@/components/options-schema";
+import { tip } from "@/components/tooltips";
 import { ensureEl, escapeHtml, getHeight, minmax } from "@/utils";
 import { confirmReplace, ReliefPoolEditor } from "./relief-pool-editor";
 import { fitReliefArt, poolPreviewHtml } from "./relief-previews";
 
-const dialogId = "reliefRulesEditor";
+const dialogId = "reliefRulesEditor" as const;
 const position = { my: "center", at: "center", of: "svg", collision: "fit" };
 
 const columns: EditorColumn[] = [
   { key: "reorder", width: "1.1em", permanent: true },
   { key: "name", label: "Name", width: "10em", permanent: true },
-  { key: "height", label: "Height", width: "5.5em", tip: "Height range, 20 (sea level) to 100", permanent: true },
-  { key: "temperature", label: "Temperature", width: "6.5em", tip: "Temperature range in °C" },
-  { key: "biomes", label: "Biomes", width: "5em", tip: "Biomes the rule claims" },
-  { key: "size", label: "Size", width: "6em", tip: "Icon size at the lowest height, growing with height" },
+  { key: "height", label: "Height", width: "7em", tip: "Height range, 20 (sea level) to 100", permanent: true },
+  { key: "temperature", label: "Temperature", width: "7em", tip: "Temperature range in °C" },
+  { key: "biomes", label: "Biomes", width: "7em", tip: "Biomes the rule claims" },
+  { key: "size", label: "Size", width: "7em", tip: "Icon size at the lowest height, growing with height" },
   { key: "relief", label: "Relief", width: "8em", permanent: true },
-  { key: "remove", width: "1.4em", permanent: true }
+  { key: "remove", width: "1.2em", permanent: true }
 ];
 
 const STYLE = /* css */ `
@@ -28,19 +29,12 @@ const STYLE = /* css */ `
   #${dialogId} .rulePool { display: inline-flex; align-items: center; gap: .15em; font-size: 2.2em; line-height: 1; }
   #${dialogId} .rulePool svg { width: 1em; height: 1em; overflow: visible; pointer-events: none; }
   #${dialogId} .rulePool small { font-size: .35em; opacity: .7; }
-  #${dialogId} .ruleBiomes { overflow: hidden; text-overflow: ellipsis; }
+  #${dialogId} .ruleBiomes { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   #${dialogId} .empty { margin: .4em; font-style: italic; opacity: .7; }
   #${dialogId}Pending { color: #b0413e; }
 `;
 
-const rules = (): ReliefRule[] => options.map.relief.rules;
-/** what a rule places, so a rename alone re-places nothing */
-const placing = ({ name: _, ...rule }: ReliefRule): string => JSON.stringify(rule);
-
-let placed: ReliefRule[] = []; // the rules the map's relief follows
-
 function open(): void {
-  placed = structuredClone(rules());
   destroyDialog(dialogId);
   ensureEl("dialogs").insertAdjacentHTML(
     "beforeend",
@@ -97,7 +91,7 @@ function render(): void {
     `${bound(`${key}.min`, min, attributes)}–${bound(`${key}.max`, max, attributes)}`;
 
   body.innerHTML =
-    rules()
+    options.map.relief.rules
       .map(
         (rule, index) => /* html */ `<div class="states" data-index="${index}">
       <span data-col="reorder" data-tip="Drag to check the rule earlier or later" class="icon-resize-vertical"></span>
@@ -112,8 +106,8 @@ function render(): void {
       )
       .join("") || `<p class="empty">No rules: all land takes its biome's relief pool</p>`;
 
-  const pending = rules().map(placing).join() !== placed.map(placing).join();
-  ensureEl(`${dialogId}Pending`).style.display = pending ? "" : "none"; // .totalLine rows override [hidden]
+  // .totalLine rows override [hidden]
+  ensureEl(`${dialogId}Pending`).style.display = Relief.isOutdated() ? "" : "none";
   void fitReliefArt(body, styles.relief.options.set);
 }
 
@@ -125,7 +119,7 @@ const biomesLabel = ({ biomes }: ReliefRule) =>
       : `${biomes.length} biomes`;
 
 const ruleOf = (element: Element): ReliefRule | undefined =>
-  rules()[Number(element.closest<HTMLElement>(".states")?.dataset.index)];
+  options.map.relief.rules[Number(element.closest<HTMLElement>(".states")?.dataset.index)];
 
 const commit = () => {
   Options.save();
@@ -144,8 +138,17 @@ function onChange(input: HTMLInputElement): void {
     if (key === "temperature") rule.temperature[bound] = value === null ? null : Math.round(value);
     else if (key === "height" && value !== null) rule.height[bound] = minmax(Math.round(value), 20, 100);
     else if (key === "size" && value) rule.size[bound] = Math.max(0.1, value);
+    keepOrdered(rule[key], bound);
   }
   commit();
+}
+
+/** a bound moved past the other one drags it along, so a range never inverts into matching nothing */
+function keepOrdered(range: { min: number | null; max: number | null }, moved: "min" | "max"): void {
+  const { min, max } = range;
+  if (min === null || max === null || min <= max) return;
+  if (moved === "min") range.max = min;
+  else range.min = max;
 }
 
 function onClick(target: Element): void {
@@ -154,7 +157,7 @@ function onClick(target: Element): void {
   if (target.closest(".rulePool")) ReliefPoolEditor.open({ rule, onApply: render });
   else if (target.closest(".ruleBiomes")) pickBiomes(rule);
   else if (target.classList.contains("icon-trash-empty")) {
-    rules().splice(rules().indexOf(rule), 1);
+    options.map.relief.rules.splice(options.map.relief.rules.indexOf(rule), 1);
     commit();
   }
 }
@@ -175,14 +178,14 @@ function pickBiomes(rule: ReliefRule): void {
 
 /** take the order the rows were dragged into */
 function reorder(): void {
-  const all = rules();
+  const all = options.map.relief.rules;
   const rows = ensureEl(`${dialogId}Body`).querySelectorAll<HTMLElement>(".states");
   options.map.relief.rules = Array.from(rows, row => all[Number(row.dataset.index)]);
   commit();
 }
 
 function addRule(): void {
-  rules().push({
+  options.map.relief.rules.push({
     name: "New rule",
     height: { min: 50, max: 100 },
     temperature: { min: null, max: null },
@@ -205,19 +208,10 @@ function restoreDefaults(): void {
   });
 }
 
-/** re-place only the cells whose relief the edits changed: claimed by another rule, or by an edited one */
+/** re-place only the cells whose relief the rule edits change */
 function replaceChanged(): void {
-  const keys = new Map<ReliefRule | undefined, string>([[undefined, ""]]);
-  const key = (rule: ReliefRule | undefined) => {
-    if (!keys.has(rule)) keys.set(rule, placing(rule!));
-    return keys.get(rule)!;
-  };
-  const previous = placed;
-  const covers = (cell: number) => key(Relief.claim(cell, previous)) !== key(Relief.claim(cell));
-  confirmReplace("cells whose rule changed", covers, () => {
-    placed = structuredClone(rules());
-    render();
-  });
+  if (Relief.isOutdated()) confirmReplace("cells whose rule changed", Relief.outdatedCells(), () => {}, render);
+  else tip("The map's relief already follows the rules", false, "info");
 }
 
 export const ReliefRulesEditor = { open };

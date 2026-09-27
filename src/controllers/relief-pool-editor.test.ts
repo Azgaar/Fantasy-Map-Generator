@@ -21,6 +21,7 @@ vi.mock("@/components/icons", () => ({
 vi.mock("@/controllers", () => ({
   Controllers: { IconPicker: { open: ({ onPick }: { onPick: (id: string) => void }) => onPick(picked.id) } }
 }));
+vi.mock("@/components/tooltips", () => ({ tip: vi.fn() }));
 vi.mock("@/components/layers", () => ({ Layers: { isOn: () => true, show: vi.fn() } }));
 vi.mock("@/renderers/draw-relief-icons", () => ({ redrawRelief: vi.fn() }));
 vi.mock("@/components/dialog/dialog-helpers", async importOriginal => ({
@@ -46,6 +47,7 @@ Object.assign(SVGElement.prototype, { getBBox: () => ({ x: 0, y: 0, width: 0, he
 beforeEach(() => {
   document.body.innerHTML = '<div id="dialogs"></div>';
   globalThis.styles = Styles.parse(undefined);
+  globalThis.options = Options.getDefaultOptions();
   globalThis.pack = {
     biomes: [{}, { i: 1, name: "Forest", iconsDensity: 120, icons: { deciduous: 3, conifer: 1 } }],
     relief: []
@@ -117,7 +119,7 @@ describe("ReliefPoolEditor", () => {
   });
 
   it("edits a relief rule's pool and density in place", () => {
-    const rule = Relief.getDefaultRules()[2];
+    const rule = options.map.relief.rules[2];
     const save = vi.spyOn(Options, "save").mockImplementation(() => {});
     ReliefPoolEditor.open({ rule });
     click('#reliefPoolEditor .types button[data-entry="vulcan"]');
@@ -126,5 +128,28 @@ describe("ReliefPoolEditor", () => {
     expect(rule.icons).toEqual({ hill: 1, vulcan: 1 });
     expect(rule.density).toBe(100);
     expect(save).toHaveBeenCalled();
+  });
+
+  it("writes nothing to a rule removed while its pool is open", () => {
+    const rule = options.map.relief.rules[2];
+    const save = vi.spyOn(Options, "save").mockImplementation(() => {});
+    save.mockClear();
+    ReliefPoolEditor.open({ rule });
+    options.map.relief.rules = options.map.relief.rules.filter(other => other !== rule);
+    click('#reliefPoolEditor .types button[data-entry="vulcan"]');
+    buttons.Apply();
+
+    expect(rule.icons).toEqual({ hill: 1 });
+    expect(save).not.toHaveBeenCalled();
+  });
+
+  it("writes nothing to a biome of a map replaced while its pool is open", () => {
+    const old = biome();
+    pack.biomes = [{}, { ...old, icons: {} }] as typeof pack.biomes;
+    click('#reliefPoolEditor .types button[data-entry="grass"]');
+    buttons["Apply and re-place"]();
+
+    expect(old.icons).toEqual({ deciduous: 3, conifer: 1 });
+    expect(biome().icons).toEqual({});
   });
 });

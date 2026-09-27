@@ -1,7 +1,7 @@
 import { interpolateString, select, sum } from "d3";
 import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
-import { type LimitationItem, pickLimitation } from "@/components/dialog/limitation-picker";
+import { type LimitationItem, limitationTip, pickLimitation } from "@/components/dialog/limitation-picker";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
   type EditorColumn,
@@ -18,7 +18,7 @@ import { Controllers } from "@/controllers";
 import type { State } from "@/generators/states-generator";
 import type { MilitaryUnit } from "@/types/Military";
 import { downloadFile, getFileName } from "@/utils";
-import { capitalize, ensureEl, rn, sanitizeId, si, wiki } from "../utils";
+import { capitalize, ensureEl, escapeHtml, rn, sanitizeId, si, wiki } from "../utils";
 
 const dialogId = "militaryOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
@@ -440,10 +440,8 @@ function militaryCustomize(): void {
     return attr?.length ? "some" : "all";
   }
 
-  function getLimitTip(attr: number[] | undefined, data: { name?: string }[] | undefined): string {
-    if (!attr?.length) return "";
-    return attr.map(i => data?.[i]?.name || "").join(", ");
-  }
+  const getLimitTip = (attr: number[] | undefined, items: readonly LimitationItem[]): string =>
+    attr?.length ? limitationTip(attr, items) : "";
 
   function addUnitLine(unit: MilitaryUnit): void {
     const { type, icon, name, rural, urban, power, crew, separate } = unit;
@@ -451,11 +449,11 @@ function militaryCustomize(): void {
     const typeOptions = types.map(t => `<option ${type === t ? "selected" : ""} value="${t}">${t}</option>`).join(" ");
 
     const getLimitButton = (attr: "biomes" | "states" | "cultures" | "religions"): string => {
-      const data = attr === "biomes" ? [] : (pack[attr] as { name?: string }[]);
+      const data = pack[attr] as LimitationItem[];
       return `<button
           data-tip="Select allowed ${attr}"
           data-type="${attr}"
-          title="${getLimitTip(unit[attr], data)}"
+          title="${escapeHtml(getLimitTip(unit[attr], data))}"
           data-value="${getLimitValue(unit[attr])}">
           ${getLimitText(unit[attr])}
         </button>`;

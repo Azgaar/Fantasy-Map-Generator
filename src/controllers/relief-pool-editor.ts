@@ -2,6 +2,7 @@
 import { confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import type { ReliefRule } from "@/components/options-schema";
+import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { ReliefPool } from "@/generators/relief-generator";
 import { redrawRelief } from "@/renderers/draw-relief-icons";
@@ -46,6 +47,7 @@ interface PoolTarget {
   density: number;
   write: (icons: ReliefPool, density: number) => void;
   covers: (cell: number) => boolean;
+  exists: () => boolean; // a removed rule or a replaced map leaves the dialog nothing to write to
 }
 
 function targetOf(request: ReliefPoolEditorOptions): PoolTarget {
@@ -60,7 +62,8 @@ function targetOf(request: ReliefPoolEditorOptions): PoolTarget {
         Object.assign(rule, { icons, density });
         Options.save();
       },
-      covers: cell => Relief.claim(cell) === rule
+      covers: cell => Relief.claim(cell) === rule,
+      exists: () => options.map.relief.rules.includes(rule)
     };
   }
   const biome = pack.biomes[request.biome];
@@ -70,7 +73,8 @@ function targetOf(request: ReliefPoolEditorOptions): PoolTarget {
     icons: biome.icons,
     density: biome.iconsDensity,
     write: (icons, density) => Object.assign(biome, { icons, iconsDensity: density }),
-    covers: cell => Relief.isPoolCell(cell, request.biome)
+    covers: cell => Relief.isPoolCell(cell, request.biome),
+    exists: () => pack.biomes[request.biome] === biome && !biome.removed
   };
 }
 
@@ -162,6 +166,7 @@ function open(request: ReliefPoolEditorOptions): void {
     request.onApply?.();
   };
   const close = () => $(dialog).dialog("close");
+  const gone = () => tip(`${target.title} no longer exists: nothing is applied`, false, "error");
 
   $(dialog).dialog({
     title: target.title,
@@ -171,14 +176,20 @@ function open(request: ReliefPoolEditorOptions): void {
     close: () => destroyDialog(DIALOG),
     buttons: {
       Apply: () => {
-        apply();
+        if (target.exists()) apply();
+        else gone();
         close();
       },
       "Apply and re-place": () => {
-        confirmReplace(target.place, target.covers, () => {
-          apply();
+        if (target.exists()) {
+          confirmReplace(target.place, target.covers, () => {
+            apply();
+            close();
+          });
+        } else {
+          gone();
           close();
-        });
+        }
       },
       Cancel: close
     }
@@ -186,7 +197,12 @@ function open(request: ReliefPoolEditorOptions): void {
 }
 
 /** place the covered cells' relief anew, once confirmed; `before` writes what the new relief follows */
-export function confirmReplace(place: string, covers: (cell: number) => boolean, before: () => void): void {
+export function confirmReplace(
+  place: string,
+  covers: (cell: number) => boolean,
+  before: () => void,
+  after?: () => void
+): void {
   const count = pack.relief?.length ? Relief.iconsOn(covers).length : 0;
   confirmationDialog({
     title: "Re-place relief",
@@ -198,6 +214,7 @@ export function confirmReplace(place: string, covers: (cell: number) => boolean,
       if (pack.relief?.length) Relief.regenerate(covers);
       if (Layers.isOn("relief")) redrawRelief();
       else Layers.show("relief");
+      after?.();
     }
   });
 }

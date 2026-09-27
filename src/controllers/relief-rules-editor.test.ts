@@ -23,6 +23,7 @@ vi.mock("@/components/dialog/limitation-picker", () => ({
   limitationTip: () => "",
   pickLimitation: ({ onApply }: { onApply: (allowed: number[]) => void }) => onApply(limitation.allowed)
 }));
+vi.mock("@/components/tooltips", () => ({ tip: vi.fn() }));
 vi.mock("@/components/layers", () => ({ Layers: { isOn: () => true, show: vi.fn() } }));
 vi.mock("@/renderers/draw-relief-icons", () => ({ redrawRelief: vi.fn() }));
 vi.mock("@/components/dialog/dialog-helpers", async importOriginal => ({
@@ -72,12 +73,22 @@ describe("ReliefRulesEditor", () => {
     edit(2, "height.min", "45");
     edit(0, "temperature.max", "");
     edit(1, "size.max", "30");
-    edit(2, "height.max", "5"); // below land: clamped
 
     const [snowy, mountains, hills] = options.map.relief.rules;
-    expect(hills.height).toEqual({ min: 45, max: 20 });
+    expect(hills.height).toEqual({ min: 45, max: 70 });
     expect(snowy.temperature).toEqual({ min: null, max: null });
     expect(mountains.size.max).toBe(30);
+  });
+
+  it("keeps a range from inverting: a bound moved past the other drags it along", () => {
+    edit(2, "height.max", "5"); // below land: clamped to 20, and the min follows
+    edit(1, "size.min", "50");
+    edit(0, "temperature.min", "3"); // above the max of -1
+
+    const [snowy, mountains, hills] = options.map.relief.rules;
+    expect(hills.height).toEqual({ min: 20, max: 20 });
+    expect(mountains.size).toEqual({ min: 50, max: 50 });
+    expect(snowy.temperature).toEqual({ min: 3, max: 3 });
   });
 
   it("limits a rule to the picked biomes, and lifts the limit when all are picked", () => {
@@ -106,27 +117,39 @@ describe("ReliefRulesEditor", () => {
     expect(options.map.relief.rules).toEqual(Relief.getDefaultRules());
   });
 
-  it("re-places only the cells whose rule changed what it places", () => {
+  it("re-places only the cells whose rule changed what it places, and knows when the map caught up", () => {
+    const square = () => [
+      [0, 0],
+      [20, 0],
+      [20, 20],
+      [0, 20]
+    ];
     globalThis.grid = { cells: { temp: [10, 10, 10] } } as unknown as typeof grid;
+    globalThis.Pack = { findCell: () => 0, getPolygon: square } as unknown as typeof Pack;
     globalThis.pack = {
-      cells: { i: [0, 1, 2], h: [80, 60, 30], g: [0, 1, 2], biome: [9, 4, 4] },
+      cells: { i: [0, 1, 2], h: [80, 60, 30], g: [0, 1, 2], r: [0, 0, 0], biome: [9, 4, 4] },
       biomes: [],
-      relief: [{}]
+      relief: [{ type: "mount", x: 0, y: 0, s: 2 }]
     } as unknown as typeof pack;
-    const regenerate = vi.spyOn(Relief, "regenerate").mockImplementation(() => {});
-    vi.spyOn(Relief, "iconsOn").mockReturnValue([]);
+    ReliefRulesEditor.open(); // a new map: its relief follows its rules
+    const regenerate = vi.spyOn(Relief, "regenerate");
+    const pending = () => document.getElementById("reliefRulesEditorPending")!.style.display;
+    expect(pending()).toBe("none");
 
     edit(1, "name", "Peaks"); // a rename places nothing new
-    edit(2, "size.max", "20"); // the hills
-
-    const pending = () => document.getElementById("reliefRulesEditorPending")!.style.display;
-    expect(pending()).toBe("");
-    press("Replace");
     expect(pending()).toBe("none");
-    const covers = regenerate.mock.calls[0][0];
-    expect([0, 1, 2].map(covers)).toEqual([false, true, false]);
+    edit(2, "size.max", "20"); // the hills
+    expect(pending()).toBe("");
 
-    press("Replace"); // the map now follows the rules
-    expect([0, 1, 2].map(regenerate.mock.calls[1][0])).toEqual([false, false, false]);
+    ReliefRulesEditor.open(); // reopening keeps what the map is behind on
+    expect(pending()).toBe("");
+
+    press("Replace");
+    expect([0, 1, 2].map(regenerate.mock.calls[0][0])).toEqual([false, true, false]);
+    expect(pack.relief.filter(icon => "type" in icon && icon.type === "hill").length).toBeGreaterThan(0);
+    expect(pending()).toBe("none");
+
+    press("Replace"); // nothing left to re-place
+    expect(regenerate).toHaveBeenCalledOnce();
   });
 });

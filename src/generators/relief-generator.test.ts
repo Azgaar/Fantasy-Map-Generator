@@ -232,6 +232,29 @@ test("a rule with an empty pool claims its cells and places nothing there", () =
   expect(Relief.generate()).toEqual([]);
 });
 
+test("the relief knows when rule edits leave it behind, until a re-place covers every changed cell", () => {
+  vi.stubGlobal("styles", { relief: { options: { size: 1, density: 1, set: "simple" } } });
+  vi.stubGlobal("grid", { cells: { temp: [10, 10] } });
+  vi.stubGlobal("Pack", { getPolygon: square, findCell: (x: number) => (x < 20 ? 0 : 1) });
+  vi.stubGlobal("pack", {
+    cells: { i: [0, 1], h: [60, 30], r: [0, 0], g: [0, 1], biome: [1, 1] },
+    biomes: [{}, { iconsDensity: 250, icons: { grass: 1 } }]
+  });
+  Relief.generate();
+  expect(Relief.isOutdated()).toBe(false);
+
+  options.map.relief.rules[0].name = "Peaks"; // a rename places nothing new
+  expect(Relief.isOutdated()).toBe(false);
+  options.map.relief.rules[2].icons = { vulcan: 1 }; // the hills, on cell 0
+  expect(Relief.isOutdated()).toBe(true);
+  expect([0, 1].map(Relief.outdatedCells())).toEqual([true, false]);
+
+  Relief.regenerate(cell => Relief.isPoolCell(cell, 1)); // the lowland only
+  expect(Relief.isOutdated()).toBe(true);
+  Relief.regenerate(Relief.outdatedCells());
+  expect(Relief.isOutdated()).toBe(false);
+});
+
 test("artwork directories fit a tight union of contiguous variant slots", () => {
   const coverage = Relief.sets.map(set => {
     const files = readdirSync(`src/assets/icons/relief/${set}`).filter(file => file.endsWith(".svg"));
