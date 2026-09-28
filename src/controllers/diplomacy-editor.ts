@@ -285,7 +285,8 @@ function stateHighlightOff(): void {
 
 function showStateRelations(sourceId?: number): void {
   const selectedLine = ensureEl("diplomacyBodySection").querySelector<HTMLElement>("div.Self");
-  const selectedId = sourceId ?? (selectedLine ? +selectedLine.dataset.id! : pack.states.find(s => s.i && !s.removed)!.i);
+  const selectedId =
+    sourceId ?? (selectedLine ? +selectedLine.dataset.id! : pack.states.find(s => s.i && !s.removed)!.i);
   if (!selectedId) return;
 
   Layers.show("states");
@@ -293,9 +294,9 @@ function showStateRelations(sourceId?: number): void {
   select<SVGGElement, unknown>("#statesBody")
     .selectAll<SVGPathElement, unknown>("path")
     .each(function () {
-      if (this.id.slice(0, 9) === "state-gap") return;  // exclude state gap element
+      if (this.id.slice(0, 9) === "state-gap") return; // exclude state gap element
       const id = +this.id.slice(5); // state id
-	  
+
       const relation =
         (sourceId === undefined ? pack.states[id].diplomacy?.[selectedId] : pack.states[selectedId].diplomacy?.[id]) ??
         "x";
@@ -346,7 +347,12 @@ function selectRelation(subjectId: number, objectId: number, currentRelation: st
         tip("Please choose a relation", false, "warn");
         return;
       }
-      activeStroke = { subjectId, relations: new Map(), history: [], subjectHadDiplomacy: !!states[subjectId].diplomacy };
+      activeStroke = {
+        subjectId,
+        relations: new Map(),
+        history: [],
+        subjectHadDiplomacy: !!states[subjectId].diplomacy
+      };
       return point => paintTargets(point, radius, relation);
     },
     onEnd: () => {
@@ -624,7 +630,8 @@ function selectRelation(subjectId: number, objectId: number, currentRelation: st
     }
   });
 
-  const minimizeButton = $(dialog).dialog("widget")[0].querySelector<HTMLButtonElement>(".ui-dialog-titlebar-collapse");
+  const widget = $(dialog).dialog("widget")[0] as HTMLElement;
+  const minimizeButton = widget.querySelector<HTMLButtonElement>(".ui-dialog-titlebar-collapse");
   if (minimizeButton) minimizeButton.dataset.tip = "Show only relation choices";
   function setMinimized(value: boolean): void {
     if (minimized === value) return;
