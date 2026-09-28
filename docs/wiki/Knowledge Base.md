@@ -160,6 +160,10 @@ If there is no version conflict, use https://github.com/Azgaar/Fantasy-Map-Gener
 
 Sure, there are a number of available options. Save to machine: .map file that can be directly loaded back to the Generator. Save to Dropbox: the same file stored in your cloud. Save to storage: map data is saved to the browser's internal database and can be loaded on page refresh; bear in mind that saving to the machine is safer since browser storage can be accidentally cleared. Export .svg: save a full map as a scalable vector image, you can open the file in a browser or edit it in a vector graphics editor. Export .png or .jpeg: save the currently displayed map fragment as a raster image, up to 8x resolution. Export to tiles as .zip: split the map into .png chunks and save them as a single archive, it allows to save giant raster images once chunks are combined. Export to GeoJSON: save cells, routes, rivers, markers or zones to be used in GIS software. Export to JSON: save the raw map data (full, minimal, pack cells or grid cells) for your own tooling
 
+### Can I choose where the map file is saved?
+
+Yes, in browsers that support it, such as Chrome and Edge. The first Save to machine asks for a file name and location; after that Save and Ctrl + S write straight to the same file, until you generate or load another map. Shift-click the Save to machine button, press Ctrl + Shift + S or use the "Save Map As…" command in the Omnibar to save a copy under another name or location. Firefox and Safari have no such picker, so the map is downloaded to the folder set in the browser's download settings
+
 ### How can I open a saved .gz or .map file?
 
 Open the generator, click on Load and select the file. Or just drag and drop the file onto the Generator window
@@ -858,7 +862,7 @@ Yes, use the focus (pin) icon. Open Tools -> States (or Provinces) and click on 
 
 ### Are there any keyboard shortcuts?
 
-Yes, plenty. The full list is on the Hotkeys wiki page: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys (F1 in the app opens the info dialog that links to it). The most used ones are Tab (toggle the menu), F2 (new map), Ctrl + S (save to machine), F6 and F9 (quick save to browser storage and quick load), single letters to toggle layers, and Shift + letter to open editors
+Yes, plenty. The full list is on the Hotkeys wiki page: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys (F1 in the app opens the info dialog that links to it). The most used ones are Tab (toggle the menu), F2 (new map), Ctrl + S (save to machine), Ctrl + Shift + S (save a copy), F6 and F9 (quick save to browser storage and quick load), single letters to toggle layers, and Shift + letter to open editors
 
 ### Where can I find the documentation?
 

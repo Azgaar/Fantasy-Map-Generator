@@ -24,7 +24,7 @@ If there is no version conflict, please [report the problem](https://github.com/
 
 ### Can I export a created map?
 Sure, there are a number of available options: 
-* Save to machine: save file can be directly loaded to the Generator.
+* Save to machine: save file can be directly loaded to the Generator. Where the browser supports it, you pick the file once and later saves update it; Shift-click saves a copy elsewhere.
 * Save to Dropbox: save file can be directly loaded to the Generator.
 * Save to storage: save map data to the browser's internal database. File will be loaded automatically on page refresh. Bear in mind that saving to desktop is safer since browser storage can be accidentally cleared
 

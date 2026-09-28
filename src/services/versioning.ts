@@ -24,26 +24,15 @@ export const VERSION = "1.154.0";
 
 // new changes on top
 const latestPublicChanges = [
-  "Relief icons rework",
-  "Style Editor rework",
-  "States Editor: option to keep merged states as provinces",
-  "Global map search (press Space to open)",
-  "New style presets: Ink, Cinderwood and Frostbite",
-  "Heightmap hachures, coastal bands and shore ripples embellishments",
-  "Labels styling: font weight, font style and text transform",
-  "Wrap Tool: reshape cells with a brush",
-  "Geographical Features Overview",
-  "Coastline Editor: customizable per feature",
-  "Coastlines: roughness localized to coastline section",
-  "Performance Settings",
-  "Dialogs: titlebar button to restore the default position, columns and sorting",
-  "Heightmap Editor: 'Show drainage' overlay",
-  "Heightmap: option to render contour lines",
-  "Ability to override a burg's treasury",
-  "Dialogs: preserve position between sessions",
-  "Options rework: map settings are stored with the map, preferences with the browser",
-  "Map name and era moved to Set Lore dialog",
-  "Notes: kept on the element they describe, and available for more element types"
+  "Icons: unified icon picker and uploader for goods, markers, regiments, burgs and emblems",
+  "Style: the Style tab is reworked",
+  "Atlas preset reworked",
+  "Relief: any icon can be a relief icon",
+  "Relief: new relief icons pack",
+  "Biome editor: editable relief icon pools",
+  "Emblems: live updates on edit in Armoria",
+  "Saving: choose the map file destination",
+  "States Editor: merged states can be kept as provinces"
 ];
 
 export function parseMapVersion(version: string): string {

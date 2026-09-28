@@ -190,7 +190,7 @@ Saving a file in .map format, which contains the current state of the map, so th
 
 #### Machine
 
-Save to local PC.
+Save to local PC. The first save asks for a file name and location; later saves (<kbd>Ctrl</kbd> + <kbd>S</kbd>) write straight to that file until another map is generated or loaded. Shift-click the button or press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd> to save a copy elsewhere. Browsers without a save-location picker (e.g. Firefox and Safari) download the file instead, to the folder set in the browser's download settings.
 
 #### Dropbox
 

@@ -50,7 +50,7 @@ exist at startup. They hold only loader thunks, so the eager cost is a few bytes
    // Controllers: resolve to the module's single exported object
    MarketOverview: () => import("@/controllers/market-overview").then(m => m.MarketOverview),
    // Services: same contract — resolve to the module's single exported object
-   Save: () => import("@/services/io/save").then(m => m.Save),
+   Load: () => import("@/services/io/load").then(m => m.Load),
    ```
 
    Rollup sees the string literal inside `import()` and emits an independent chunk. Each entry keeps
@@ -72,13 +72,14 @@ exist at startup. They hold only loader thunks, so the eager cost is a few bytes
 A loader is just `() => Promise<resolved>`. To register an already-imported (eager) module, wrap it
 with `eager(value)` from `registry.ts` — it resolves on the next microtask, so callers can't tell it
 isn't lazy. Switching a module between lazy and eager is a one-line change in `index.ts`; no call
-site changes. (All controllers are currently lazy; `eager` exists for future tuning and Services.)
+site changes. All controllers are lazy. `Services.Save` is eager: the save-location picker needs the
+click's user activation, which a module download would outlive.
 
 ## Rules
 
 - Named exports only — no module-level `window.X = new Thing()` self-registration for lazy modules
   (that pattern is for eagerly-loaded generators like `markets-generator.ts`).
-- The registry buckets in `index.ts` contain only `() => import(...)` thunks — no logic. The moment
+- The registry buckets in `index.ts` contain only `() => import(...)` thunks and `eager(...)` wrappers — no logic. The moment
   a controller is imported statically there, it stops being lazy.
 - An entry must never be made thenable: the factory's per-entry proxy returns `undefined` for `then`
   and for symbol keys, so `await Registry.Name` is a no-op rather than a phantom method call. Keep
