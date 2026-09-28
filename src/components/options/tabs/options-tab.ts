@@ -510,6 +510,7 @@ const TEMPLATE = /* html */ `
             <option value="targe2">Targe2</option>
             <option value="pavise">Pavise</option>
             <option value="wedged">Wedged</option>
+            <option value="embowed">Embowed</option>
           </optgroup>
           <optgroup label="Banner">
             <option value="flag">Flag</option>
@@ -526,6 +527,7 @@ const TEMPLATE = /* html */ `
             <option value="vesicaPiscis">Vesica Piscis</option>
             <option value="square">Square</option>
             <option value="diamond">Diamond</option>
+            <option value="hexagon">Hexagon</option>
           </optgroup>
           <optgroup label="Fantasy">
             <option value="fantasy1">Fantasy1</option>
@@ -840,7 +842,7 @@ function changeEmblemShape(shape: string): void {
     for (const culture of pack.cultures) if (!culture.removed) culture.shield = Cultures.getRandomShield();
 
   for (const state of pack.states) {
-    if (!state.i || state.removed || !state.coa || state.coa.custom) continue;
+    if (!state.i || state.removed || !state.coa || "icon" in state.coa) continue;
     const shield = specificShape || Emblems.getShield(state.culture ?? 0);
     if (shield === state.coa.shield) continue;
     state.coa.shield = shield;
@@ -848,7 +850,7 @@ function changeEmblemShape(shape: string): void {
   }
 
   for (const province of pack.provinces) {
-    if (!province.i || province.removed || !province.coa || province.coa.custom) continue;
+    if (!province.i || province.removed || !province.coa || "icon" in province.coa) continue;
     const shield = specificShape || Emblems.getShield(pack.cells.culture[province.center] ?? 0, province.state);
     if (shield === province.coa.shield) continue;
     province.coa.shield = shield;
@@ -856,7 +858,7 @@ function changeEmblemShape(shape: string): void {
   }
 
   for (const burg of pack.burgs) {
-    if (!burg.i || burg.removed || !burg.coa || burg.coa.custom) continue;
+    if (!burg.i || burg.removed || !burg.coa || "icon" in burg.coa) continue;
     const shield = specificShape || Emblems.getShield(burg.culture ?? 0, burg.state);
     if (shield === burg.coa.shield) continue;
     burg.coa.shield = shield;

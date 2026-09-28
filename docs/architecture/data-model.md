@@ -157,7 +157,7 @@ Burgs (settlements) data is stored as an array of objects with strict element or
 - `type`: `string` - burg type, see [culture types](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Culture-types)
 - `group`: `string` - Burg classification and rendering group. It is also the default Label Group for the Burg label
 - `label`: `Label` - optional Burg-label overrides. Burg labels use the Burg name, coordinates, and `burg.group` by default; `label.group` can override only the label group
-- `coa`: `object` - emblem object, data model is the same as in [Armoria](https://github.com/Azgaar/Armoria) and covered in [API documentation](https://github.com/Azgaar/armoria-api#readme). The only additional fields are optional `size`: `number`, `x`: `number` and `y`: `number` that controls the emblem position on the map (if it's not default). If emblem is loaded by user, then the value is `{ custom: true }` and cannot be displayed in Armoria
+- `coa`: `object` - heraldic emblem in [Armoria's COA format](https://github.com/Azgaar/armoria-api#readme), or picture emblem `{ icon: string, shield?: string }` referring to an icon in the library. Both forms may have optional `size`, `x` and `y` fields for map placement. A picture emblem can be clipped to a shield, but cannot be edited as heraldry in Armoria
 - `MFCG`: `number` - burg seed in [Medieval Fantasy City Generator](https://watabou.github.io/city-generator) (MFCG). If not provided, seed is combined from map seed and burg id
 - `link`: `string` - custom link to burg in MFCG. `MFCG` seed is not used if link is provided
 - `capital`: `number` - `1` if burg is a capital, `0` if not (each state has only 1 capital)
@@ -202,7 +202,7 @@ States (countries) data is stored as an array of objects with strict element ord
 - `alert`: `number` - state war alert, see [military forces page](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Military-Forces)
 - `military`: `Regiment[]` - list of state regiments, see [military forces page](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Military-Forces)
 - `label`: `Label` - optional state-label data. If absent, the renderer derives the text, path, and relative size from the State data and label mode
-- `coa`: `object` - emblem object, data model is the same as in [Armoria](https://github.com/Azgaar/Armoria) and covered in [API documentation](https://github.com/Azgaar/armoria-api#readme). The only additional fields are optional `size`: `number`, `x`: `number` and `y`: `number` that controls the emblem position on the map (if it's not default). If emblem is loaded by user, then the value is `{ custom: true }` and cannot be displayed in Armoria
+- `coa`: `object` - heraldic emblem in [Armoria's COA format](https://github.com/Azgaar/armoria-api#readme), or picture emblem `{ icon: string, shield?: string }` referring to an icon in the library. Both forms may have optional `size`, `x` and `y` fields for map placement. A picture emblem can be clipped to a shield, but cannot be edited as heraldry in Armoria
 - `salesTax`: `number` - sales tax rate `0..1` charged on deals where this state is the seller. Generated from `form` (Monarchy 0.15, Theocracy 0.25, Union 0.07, Republic 0.05, Anarchy 0), jittered per state. Always `0` for neutrals
 - `pollTax`: `number` - flat poll tax per population point (rural + urban), credited to the treasury once per cycle. Generated from `form` (Monarchy 0.20, Theocracy 0.10, Union 0.13, Republic 0.15, Anarchy 0), jittered per state. Always `0` for neutrals
 - `treasury`: `number` - accumulated state currency balance. Reset and refilled by `States.collectTaxes()` from `deal.tax` (sales tax) plus `pollTax × (rural + urban)`. Always `0` for neutrals
@@ -243,7 +243,7 @@ Provinces data is stored as an array of objects with strict element order. Eleme
 - `cells`: `number` - number of cells within the province
 - `rural`: `number` - rural (non-burg) population of province cells. In population points
 - `urban`: `number` - urban (burg) population of state province. In population points
-- `coa`: `object` - emblem object, data model is the same as in [Armoria](https://github.com/Azgaar/Armoria) and covered in [API documentation](https://github.com/Azgaar/armoria-api#readme). The only additional fields are optional `size`: `number`, `x`: `number` and `y`: `number` that controls the emblem position on the map (if it's not default). If emblem is loaded by user, then the value is `{ custom: true }` and cannot be displayed in Armoria
+- `coa`: `object` - heraldic emblem in [Armoria's COA format](https://github.com/Azgaar/armoria-api#readme), or picture emblem `{ icon: string, shield?: string }` referring to an icon in the library. Both forms may have optional `size`, `x` and `y` fields for map placement. A picture emblem can be clipped to a shield, but cannot be edited as heraldry in Armoria
 - `label`: `Label` - optional Province-label overrides. If absent, the renderer derives the text and path from Province data
 - `lock`: `boolean` - `true` if province is locked (not affected by regeneration)
 - `removed`: `boolean` - `true` if province is removed

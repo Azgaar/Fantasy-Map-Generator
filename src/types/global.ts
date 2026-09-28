@@ -26,8 +26,8 @@ declare global {
   var THREE: any; // lazy-loaded by the 3d view
   var Dropbox: any; // dropbox-sdk, loaded on demand from libs/dropbox-sdk.min.js
   var ldb: {
-    get: (key: string) => Promise<Blob | undefined>;
-    set: (key: string, value: Blob) => Promise<void>;
+    get: <T = Blob>(key: string) => Promise<T | null | undefined>; // any value IndexedDB can clone
+    set: (key: string, value: unknown) => Promise<void>;
   };
 }
 

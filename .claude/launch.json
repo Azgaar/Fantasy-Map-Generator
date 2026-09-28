@@ -13,6 +13,18 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev", "--", "--port", "5199", "--strictPort"],
       "port": 5199
+    },
+    {
+      "name": "armoria",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "../Armoria", "start", "--", "--port", "5055"],
+      "port": 5055
+    },
+    {
+      "name": "dev-armoria",
+      "runtimeExecutable": "env",
+      "runtimeArgs": ["VITE_ARMORIA_GUI=http://localhost:5055/", "npm", "run", "dev", "--", "--port", "5198", "--strictPort"],
+      "port": 5198
     }
   ]
 }

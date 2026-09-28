@@ -48,6 +48,14 @@ test("oversize files and files that are not images are refused with a message fo
   await expect(IconPictures.fromFile(huge, "custom-a")).rejects.toThrow("limit is 2 MB");
 });
 
+test("the emblem profile accepts larger SVGs and applies its own input limit", async () => {
+  const large = svgFile(`<svg viewBox="0 0 100 100"><path d="M0 0"/>${" ".repeat(210_000)}</svg>`);
+  await expect(IconPictures.fromFile(large, "custom-a", "icon")).rejects.toThrow("limit is 200 kB");
+  await expect(IconPictures.fromFile(large, "custom-a", "emblem")).resolves.toMatchObject({ kind: "svg" });
+  const huge = new File([new Uint8Array(10_000_001)], "photo.png", { type: "image/png" });
+  await expect(IconPictures.fromFile(huge, "custom-a", "emblem")).rejects.toThrow("limit is 10 MB");
+});
+
 test("a link must be a web address that opens an image; unreadable pixels keep the whole box", async () => {
   await expect(IconPictures.fromLink("javascript:alert(1)")).rejects.toThrow("http:// or https://");
   await expect(IconPictures.fromLink("ftp://a.b/c.png")).rejects.toThrow("http:// or https://");

@@ -60,8 +60,8 @@ function renderDialog(): void {
       </div>
       <div data-tip="Marker marker element and icon sizes in pixels">
         <div class="label">Size:</div>
-        <input data-tip="Marker element size in pixels" id="markerSize" type="number" min="2" max="500" style="width: 5em" />
-        <input data-tip="Marker icon sizes in pixels" id="markerIconSize" type="number" min="2" max="20" step="0.5" style="width: 5em" />
+        <input data-tip="Marker element size in pixels" id="markerSize" type="number" min="1" max="500" style="width: 5em" />
+        <input data-tip="Marker icon sizes in pixels" id="markerIconSize" type="number" min="1" max="50" step="0.1" style="width: 5em" />
       </div>
       <div data-tip="Marker icon shift (by X and by Y axis), percent. Set to 50 to position icon in center">
         <div class="label">Icon shift:</div>

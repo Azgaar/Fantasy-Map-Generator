@@ -6,7 +6,7 @@ This page explains where icons come from, how to pick them, how to bring your ow
 
 The library has three sources:
 
-- **Built-in icons** — the artwork shipped with the Generator, grouped into sets: settlements (the _Atlas_, _Watabou_ and _Illustrated_ burg styles, and port symbols), goods, and the relief sets (_Simple_, _Colored_, _Gray_, _Illustrated_ and _Stickers_). They work on every map and cost nothing to store.
+- **Built-in icons** — the artwork shipped with the Generator, grouped into sets: settlements (the _Atlas_, _Watabou_ and _Illustrated_ burg styles, and port symbols), goods, relief and heraldic charges. They work on every map and cost nothing to store.
 - **Emoji and text** — any emoji or short text such as `XIV`, `⟱` or `★`. The map stores only the text; the picture is drawn by your system's font, so emoji look different on Windows, macOS, Android and Linux.
 - **Custom icons** — pictures you add to the map yourself, by linking to an image on the web or uploading a file. They belong to the map: they are saved in its `.map` file and travel with it when you share it.
 
@@ -24,6 +24,7 @@ The library has three sources:
 | Military units | _Military Overview_ → _Units Editor_ (cog button): the icon column |
 | A relief icon | Click it on the map to open the _Relief Editor_, then the **+** button at the bottom |
 | Generated relief | _Biomes Editor_ → _Relief_ column (a biome's lowland relief), or the relief rules (mountain button) for hills and mountains: _Add any icon…_ |
+| Picture emblems | _Emblems Editor_ → picture button; see [Emblems](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Emblems) |
 
 Each of these is an **icon slot**, and every slot accepts every source.
 
@@ -33,7 +34,7 @@ Every slot above opens the same _Select icon_ dialog.
 
 - **The header** shows the icon currently selected and where it comes from. For a custom icon it also has the _Position_, _Replace_ and remove buttons.
 - **The search box** finds built-in icons by name, e.g. `castle`, `wine` or `mount`.
-- **The side list** holds _Custom_ (the map's own icons), then _Emoji_ by theme, _Settlements_, _Goods_ and _Relief_. Click a heading to see all of its groups at once, or a group to see only it. The number next to each entry is how many icons it holds.
+- **The side list** holds _Custom_ (the map's own icons), then _Emoji_ by theme, _Settlements_, _Goods_, _Relief_ and _Heraldry_. Heraldry lists charges by category. Click a group to see its art; search also finds charges by name.
 - **The tiles** — click one to select it. The map updates at once, so you can try icons before deciding.
 
 Press _Apply_ to keep the selection, or _Cancel_ to go back to the icon you started with. Double-clicking a tile selects it and closes the dialog in one step.
@@ -58,6 +59,8 @@ There are two ways:
   - a **PNG, JPEG or WebP** image up to 2 MB. It is shrunk to 256 px on its longer side and stored in a compact format, so a large photo does not bloat the map.
 
 A new icon is **fitted** automatically: its frame is squared around the visible part of the picture with a small margin, so off-centre or heavily padded art comes out centred. The new icon is selected in the slot you opened the picker from.
+
+The Emblems Editor opens the picker on _Custom_ and gives uploads more room: SVG files up to 1 MB and raster files up to 10 MB, shrunk to 1024 px on their longer side. These are input limits; a larger raster within 10 MB is scaled down automatically.
 
 The same picture added twice becomes two separate icons. The _Custom_ page links to a few sources of free icons: [game-icons.net](https://game-icons.net), [The Noun Project](https://thenounproject.com), [OpenMoji](https://openmoji.org) and [Wikimedia Commons](https://commons.wikimedia.org). Check the licence of any art you use, especially for maps you publish.
 
@@ -147,7 +150,7 @@ Before exporting, the Generator makes sure every icon set the map uses has loade
 Maps from before 1.154 open unchanged and are converted on load:
 
 - goods icons uploaded in older versions become custom icons;
-- images pasted into markers, regiments and military units as a link or a `data:` image become custom icons, one per distinct image, so a marker type used a hundred times stores its picture once. Save the map again and the file gets smaller;
+- images pasted into markers, regiments and military units as a link or a `data:` image become custom icons, one per distinct image, so a marker type used a hundred times stores its picture once. Old custom emblems migrate the same way, keeping their size and position. Save the map again and the file gets smaller;
 - emoji and text icons become emoji-and-text icons, and icon sizes stay the same.
 
 ## Troubleshooting

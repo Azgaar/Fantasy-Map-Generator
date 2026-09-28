@@ -303,9 +303,7 @@ function captureIconDefinitions(clone: SVGSVGElement, source: SVGSVGElement): ()
   );
 
   return async () => {
-    await Promise.all([...required].map(set => Icons.retry(set)));
-    const failed = [...required].find(set => !Icons.isLoaded(set));
-    if (failed) throw new Error(`Failed to load ${failed} icons`);
+    await Icons.require(required);
     for (const id of missing) resolve(id);
   };
 }
@@ -390,9 +388,6 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
       symbols[i].remove();
     }
 
-    const completeIcons = captureIconDefinitions(cloneEl, svgDefs);
-    await completeIcons();
-
     // viewport layers only keep visible emblems live; full-map rendering materializes all of them into the clone
     const cloneEmblems = cloneEl.getElementById("emblems")?.querySelectorAll("use") ?? [];
     if (Layers.isOn("emblems") && cloneEmblems.length) {
@@ -410,6 +405,9 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
     } else {
       cloneDefs.querySelector("#defs-emblems")?.remove();
     }
+
+    const completeIcons = captureIconDefinitions(cloneEl, svgDefs);
+    await completeIcons();
 
     {
       // replace ocean pattern href to base64; drop the image if it cannot be loaded,

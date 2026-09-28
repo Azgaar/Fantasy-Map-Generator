@@ -113,7 +113,13 @@ test("every slot kind's uses of an icon are counted", () => {
   globalThis.pack = {
     goods: [{ icon: "goods-wood" }],
     markers: [{ icon: "custom-a" }, { icon: "custom-a" }],
-    states: [{ i: 0 }, { i: 1, military: [{ icon: "custom-a" }] }],
+    states: [{ i: 0 }, { i: 1, military: [{ icon: "custom-a" }], coa: { icon: "custom-a" } }],
+    provinces: [{ i: 0 }, { i: 1, coa: { icon: "custom-a" } }],
+    burgs: [
+      { i: 0 },
+      { i: 1, coa: { icon: "custom-a" } },
+      { i: 2, coa: { t1: "or", charges: [{ charge: "custom-a", t: "gules", p: "e" }] } }
+    ],
     relief: [
       { icon: "custom-a", x: 0, y: 0, s: 1 },
       { type: "mount", x: 0, y: 0, s: 1 }
@@ -126,6 +132,7 @@ test("every slot kind's uses of an icon are counted", () => {
     regiment: 1,
     burgGroup: 1,
     market: 1,
+    emblem: 4,
     relief: 1,
     biome: 2
   });

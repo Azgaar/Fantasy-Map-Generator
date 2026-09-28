@@ -6,12 +6,16 @@
 export interface IconSet {
   /** the chunk id and the symbol id prefix */
   id: string;
-  /** the directory under `src/assets/icons/` */
+  /** the directory under `src/assets/icons/`; its last segment names the set in the picker */
   folder: string;
+  /** the picker heading the set is listed under */
+  group: string;
   /** user units per em for art drawn around its anchor: the loader sizes such symbols in em so `<use x y>` draws them at the group's font size */
   em?: number;
   /** symbols for ids the directory has no file for, each drawn through one it has */
   aliases?: (names: readonly string[]) => IconAlias[];
+  /** rewrites a file before it becomes a symbol, for art kept in another tool's format */
+  prepare?: (svg: string, symbolId: string) => string;
   /** the paint of the art's open fill and stroke where the slot drawing it sets none */
   paint?: IconPaint;
 }

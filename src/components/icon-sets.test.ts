@@ -43,6 +43,8 @@ test("symbol ids derive from the set and the file path; every set is a directory
   expect(IconSets.setForId("custom-goods-abc")).toBeUndefined();
   expect(IconSets.setForId("glyph-1f3f0")).toBeUndefined();
   expect(() => IconSets.get("markers" as never)).toThrow("Unknown icon set");
+  expect(IconSets.fileOf("burgs-watabou-capital")).toEqual({ set: "burgs", file: "watabou/capital" });
+  expect(IconSets.fileOf("custom-goods-abc")).toBeUndefined();
   for (const set of [...Relief.iconSets, ...Burgs.iconSets, Goods.iconSet]) {
     const symbols = IconSets.symbols(set, directory(set.folder));
     for (const file of IconSets.files(set.id as never))

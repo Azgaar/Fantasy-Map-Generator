@@ -70,6 +70,32 @@ test("custom icons are rebuilt from the map's list, beside the loaded sets and n
   expect(document.querySelector("#goods-wood")).not.toBeNull(); // the loaded sets are left alone
 });
 
+test("a change to one custom icon rebuilds only its symbol", async () => {
+  const { CustomIcons } = await import("./icons");
+  globalThis.options = { map: { customIcons: [] } } as unknown as typeof options;
+  globalThis.Options = { iconsChanged: vi.fn() } as unknown as typeof Options;
+  const svg = CustomIcons.add({ kind: "svg", content: '<path d="M0 0"/>', viewBox: "0 0 10 10" });
+  const image = CustomIcons.add({ kind: "image", content: "https://a.b/c.png", viewBox: "0 0 100 100" });
+  expect(document.querySelectorAll("#icons-library > [data-set=custom] > symbol")).toHaveLength(2);
+
+  CustomIcons.update(svg.id, { viewBox: "1 1 5 5" });
+  expect(document.getElementById(svg.id)?.getAttribute("viewBox")).toBe("1 1 5 5");
+  expect(document.querySelectorAll("#icons-library > [data-set=custom] > symbol")).toHaveLength(2);
+
+  CustomIcons.remove(image.id);
+  expect(document.getElementById(image.id)).toBeNull();
+  expect(Options.iconsChanged).toHaveBeenCalledTimes(4);
+});
+
+test("a demand that must succeed retries each set once and rejects when one stays unloaded", async () => {
+  const { Icons } = await import("./icons");
+  vi.spyOn(Icons, "retry").mockResolvedValue();
+  vi.spyOn(Icons, "isLoaded").mockImplementation(set => set === "goods");
+  await expect(Icons.require(["goods", "ports", "goods"])).rejects.toThrow("Failed to load ports icons");
+  expect(Icons.retry).toHaveBeenCalledTimes(2);
+  await expect(Icons.require(["goods"])).resolves.toBeUndefined();
+});
+
 test("a glyph symbol is built once, on first use; a set starts loading when first referenced", async () => {
   const { Icons } = await import("./icons");
   expect(Icons.href("glyph-58-49-56")).toBe("#glyph-58-49-56");

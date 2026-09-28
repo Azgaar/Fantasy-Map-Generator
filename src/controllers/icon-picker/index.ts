@@ -4,8 +4,9 @@ import { type IconSetId, IconSets } from "@/components/icon-sets";
 import { CustomIcons, type IconPicture, Icons } from "@/components/icons";
 import { tip } from "@/components/tooltips";
 import { ICON_GROUPS } from "@/data/icons-list";
+import type { IconSet } from "@/types/icons";
 import { capitalize, createFileInput, ensureEl, escapeHtml } from "@/utils";
-import { IconPictures } from "./pictures";
+import { IconPictures, type PictureProfile } from "./pictures";
 import { closePositioner, openPositioner } from "./positioner";
 
 const ICON_PICKER = "iconPicker";
@@ -19,18 +20,12 @@ interface Entry {
   set?: IconSetId;
 }
 
-/** the group of each set family, in list order */
-const GROUPS: Record<string, string> = {
-  burgs: "Settlements",
-  ports: "Settlements",
-  goods: "Goods",
-  relief: "Relief"
-};
-
 export interface IconPickerOptions {
   current: string;
   onPick: (id: string) => void; // on Apply; `live` also calls it on every selection and with `current` on cancel
   live?: boolean;
+  preferred?: "custom";
+  profile?: PictureProfile;
 }
 
 const STYLE = /* css */ `
@@ -88,11 +83,11 @@ const STYLE = /* css */ `
 
 let fileInput: HTMLInputElement | null = null; // one per page, so reopening never binds a second listener
 
-function open({ current, onPick, live = false }: IconPickerOptions): void {
+function open({ current, onPick, live = false, preferred, profile = "icon" }: IconPickerOptions): void {
   const initial = current;
   let applied = false;
   const entries = catalog();
-  let view = viewOf(current, entries);
+  let view = viewOf(current, entries, preferred);
   let query = "";
   let replacing: string | null = null; // the custom icon a new link or upload replaces
 
@@ -126,7 +121,7 @@ function open({ current, onPick, live = false }: IconPickerOptions): void {
   };
   const renderPanel = () => {
     if (query) panel.innerHTML = renderResults(entries, query, current);
-    else if (view === "custom") panel.innerHTML = renderCustom(current, replacing);
+    else if (view === "custom") panel.innerHTML = renderCustom(current, replacing, profile);
     else {
       const shown = entries.filter(({ key }) => key === view);
       panel.innerHTML = (view.startsWith("glyph") ? renderGlyphText(current) : "") + renderEntries(shown, current);
@@ -167,7 +162,6 @@ function open({ current, onPick, live = false }: IconPickerOptions): void {
     else if (view === "custom" && !query) renderPanel();
   };
   const refreshCustom = () => {
-    Icons.syncCustom();
     renderNav();
     renderHead();
     if (view === "custom" && !query) renderPanel();
@@ -204,7 +198,7 @@ function open({ current, onPick, live = false }: IconPickerOptions): void {
     fileInput.onchange = () => {
       const file = fileInput!.files?.[0];
       fileInput!.value = "";
-      if (file) void addPicture(id => IconPictures.fromFile(file, id));
+      if (file) void addPicture(id => IconPictures.fromFile(file, id, profile));
     };
     fileInput.click();
   };
@@ -300,27 +294,22 @@ function catalog(): Entry[] {
     label,
     icons: glyphs.map(glyph => Icons.glyph(glyph))
   }));
-  const order = [...new Set(Object.values(GROUPS))];
-  const rank = (group: string) => order.indexOf(group) + 1 || order.length + 1;
-  const sets = IconSets.sets()
-    .flatMap(({ id }) => setEntries(id as IconSetId))
-    .sort((a, b) => rank(a.group) - rank(b.group));
-  return [...emoji, ...sets];
+  return [...emoji, ...IconSets.sets().flatMap(setEntries)];
 }
 
-/** a set's entries: one per subdirectory, else the set itself */
-function setEntries(set: IconSetId): Entry[] {
+/** a set's entries: one per subdirectory, else the set itself, named after its folder */
+function setEntries({ id, folder, group }: IconSet): Entry[] {
+  const set = id as IconSetId;
   const subdirectories = new Map<string, string[]>();
   for (const file of IconSets.files(set)) {
     const subdirectory = file.slice(0, Math.max(0, file.lastIndexOf("/")));
     subdirectories.set(subdirectory, [...(subdirectories.get(subdirectory) ?? []), IconSets.symbolId(set, file)]);
   }
-  const family = set.split("-")[0];
-  const name = set.slice(set.indexOf("-") + 1); // relief-simple → simple
+  const name = folder.slice(folder.lastIndexOf("/") + 1); // relief/simple → simple
   return [...subdirectories].map(([subdirectory, icons]) => ({
     key: subdirectory ? `${set}/${subdirectory}` : set,
-    group: GROUPS[family] ?? capitalize(family),
-    label: capitalize((subdirectory || name).replaceAll(/[-/]/g, " ")),
+    group,
+    label: capitalize((subdirectory || name).replaceAll(/[-/]/g, " ").replace(/([a-z0-9])([A-Z])/g, "$1 $2")),
     icons,
     set
   }));
@@ -333,9 +322,10 @@ function locate(entries: Entry[], id: string): Entry | undefined {
 }
 
 /** where the picker opens: the current icon's entry, else the first emoji or built-in entry */
-function viewOf(current: string, entries: Entry[]): string {
+function viewOf(current: string, entries: Entry[], preferred?: "custom"): string {
   const kind = Icons.kind(current);
   if (kind === "custom") return "custom";
+  if (!current && preferred) return preferred;
   const entry = locate(entries, current) ?? entries.find(({ set }) => (kind === "glyph" ? !set : set));
   return entry?.key ?? "custom";
 }
@@ -422,12 +412,12 @@ function renderGlyphText(current: string): string {
     </label>`;
 }
 
-function renderCustom(current: string, replacing: string | null): string {
+function renderCustom(current: string, replacing: string | null, profile: PictureProfile): string {
   const icons = CustomIcons.all.map(({ id }) => tile(id, current));
   return /* html */ `<div class="customAdd">
       <input type="url" placeholder="Paste a link to an image" data-tip="A linked image keeps the map small; it shows while its site serves it" />
       <button type="button" data-action="link">Add link</button>
-      <button type="button" data-action="upload" data-tip="Upload an SVG file (up to 200 kB) or a PNG, JPEG or WebP image (up to 2 MB, shrunk to 256 px)">Upload</button>
+      <button type="button" data-action="upload" data-tip="Upload an SVG file (up to ${profile === "emblem" ? "1 MB" : "200 kB"}) or a PNG, JPEG or WebP image (up to ${profile === "emblem" ? "10 MB, shrunk to 1024 px" : "2 MB, shrunk to 256 px"})">Upload</button>
     </div>
     <div class="replacing" ${replacing ? "" : "hidden"}>Link or upload the new picture of the selected icon. <a data-action="stopReplacing">Cancel</a></div>
     ${icons.length ? `<div class="choices">${icons.join("")}</div>` : `<p class="empty">This map carries no custom icons yet.</p>`}

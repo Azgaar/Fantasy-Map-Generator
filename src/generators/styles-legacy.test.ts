@@ -298,7 +298,7 @@ test("older icon slot values become references: `#id` loses its `#`, any other t
 
 test("older icon slots become references, one custom icon per distinct image", () => {
   vi.stubGlobal("options", { map: { customIcons: [] } });
-  vi.stubGlobal("Options", { save: vi.fn() });
+  vi.stubGlobal("Options", { save: vi.fn(), iconsChanged: vi.fn() });
   const slots = [{ icon: "https://a.b/c.png" }, { icon: "⚔️" }, { icon: "https://a.b/c.png" }, {}];
   adoptLegacyIconSlots(slots);
   expect(options.map.customIcons).toHaveLength(1);

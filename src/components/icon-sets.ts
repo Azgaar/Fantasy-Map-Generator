@@ -1,18 +1,20 @@
 import type { BurgIconSetId } from "@/generators/burgs-generator";
+import type { ChargeIconSetId } from "@/generators/emblems-generator";
 import type { ReliefIconSetId } from "@/generators/relief-generator";
 import type { IconSet } from "@/types/icons";
 
-export type IconSetId = ReliefIconSetId | BurgIconSetId | typeof Goods.iconSet.id;
+export type IconSetId = ReliefIconSetId | BurgIconSetId | typeof Goods.iconSet.id | ChargeIconSetId;
 
 /** The catalog of the built-in sets: their files and the symbols they make; `Icons` puts them in the page */
 export class IconSetRegistry {
   private readonly sources = import.meta.glob("@/assets/icons/**/*.svg", { query: "?raw", import: "default" });
   private readonly folders = new Map<string, Map<string, () => Promise<unknown>>>(); // the glob never changes
   private catalog: readonly IconSet[] | null = null; // the models' sets never change either
+  private index: Map<string, { set: IconSetId; file: string }> | null = null;
 
-  /** the models that own icon sets; a new family adds its model here, a new relief set is a directory plus its name in `Relief.sets` */
+  /** the models that own icon sets, in picker order; a new family adds its model here, a new relief set is a directory plus its name in `Relief.sets` */
   sets(): readonly IconSet[] {
-    this.catalog ??= [...Relief.iconSets, ...Burgs.iconSets, Goods.iconSet];
+    this.catalog ??= [...Burgs.iconSets, Goods.iconSet, ...Relief.iconSets, ...window.Emblems.iconSets];
     return this.catalog;
   }
 
@@ -37,13 +39,22 @@ export class IconSetRegistry {
     return this.sets().find(set => symbolId.startsWith(`${set.id}-`))?.id as IconSetId | undefined;
   }
 
+  /** the set and file a symbol id is drawn from; none for aliases and foreign art */
+  fileOf(symbolId: string): { set: IconSetId; file: string } | undefined {
+    this.index ??= new Map(
+      this.sets().flatMap(({ id }) =>
+        this.files(id as IconSetId).map(file => [this.symbolId(id, file), { set: id as IconSetId, file }] as const)
+      )
+    );
+    return this.index.get(symbolId);
+  }
+
   /** whether a set draws `symbolId`, from a file or an alias; `setForId` only matches the prefix */
   owns(symbolId: string): boolean {
+    if (this.fileOf(symbolId)) return true;
     const set = this.setForId(symbolId);
-    if (!set) return false;
-    const names = this.files(set);
-    const drawn = [...names, ...(this.get(set).aliases?.(names) ?? []).map(alias => alias.name)];
-    return drawn.some(name => this.symbolId(set, name) === symbolId);
+    const aliases = set ? (this.get(set).aliases?.(this.files(set)) ?? []) : [];
+    return aliases.some(({ name }) => this.symbolId(set!, name) === symbolId);
   }
 
   /** a set's symbols, read from its lazy chunk */
@@ -58,7 +69,8 @@ export class IconSetRegistry {
   symbols(set: IconSet, files: Record<string, string>): string {
     const names = Object.keys(files);
     const symbols = names.map(name => {
-      const symbol = this.svgToSymbol(files[name], this.symbolId(set.id, name));
+      const id = this.symbolId(set.id, name);
+      const symbol = this.svgToSymbol(set.prepare ? set.prepare(files[name], id) : files[name], id);
       return set.em ? this.anchorSymbol(symbol) : symbol;
     });
     const aliases = (set.aliases?.(names) ?? []).map(({ name, target }) =>

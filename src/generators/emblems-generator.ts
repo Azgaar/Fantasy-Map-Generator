@@ -1,3 +1,5 @@
+import { IconSets } from "@/components/icon-sets";
+import { Icons } from "@/components/icons";
 import {
   charges,
   divisions,
@@ -9,6 +11,7 @@ import {
   typeMapping
 } from "@/data/emblems";
 import type { Emblem, EmblemCharge, EmblemOrdinary, HeraldicEmblem } from "@/types/emblems";
+import type { IconSet } from "@/types/icons";
 import { P, rw } from "@/utils";
 
 declare global {
@@ -32,17 +35,58 @@ function createTinctures() {
   };
 }
 
+export type ChargeIconSetId = `charges-${string}`;
+
+// the charge categories drawn from files: inescutcheons are built from shield paths
+const CHARGE_CATEGORIES = Object.keys(charges.types).filter(type => type !== "inescutcheon" && type !== "uploaded");
+
+/** Charge files keep Armoria's 200-unit shield space: the symbol frames the charge box and never clips,
+ * takes its tinctures from the charge group, and scopes the ids the art uses inside itself */
+function prepareCharge(svg: string, symbolId: string): string {
+  return svg
+    .replace(/^\s*<svg\b[^>]*>/, '<svg viewBox="60 60 80 80" overflow="visible">')
+    .replace(/<g id="[^"]*"/, "<g")
+    .replace(/\bid="([^"]+)"/g, `id="${symbolId}-$1"`)
+    .replace(/href="#([^"]+)"/g, `href="#${symbolId}-$1"`)
+    .replace(/url\(#([^)]+)\)/g, `url(#${symbolId}-$1)`);
+}
+
 export class EmblemsGenerator {
   private emblemShape = "culture";
 
+  /** one icon set per charge category, so a map loads only the categories its emblems use */
+  readonly iconSets: readonly (IconSet & { id: ChargeIconSetId })[] = CHARGE_CATEGORIES.map(category => ({
+    id: `charges-${category}` as ChargeIconSetId,
+    folder: `charges/${category}`,
+    group: "Heraldry",
+    prepare: prepareCharge,
+    paint: { fill: "#d7374a", stroke: "#000" } // gules, Armoria's preview tincture
+  }));
+
+  /** the icon reference of a charge name as blazons store it, `lionRampant` → `charges-beasts-lionRampant` */
+  chargeIcon(name: string): string | undefined {
+    return this.iconSets.map(({ id }) => IconSets.symbolId(id, name)).find(id => IconSets.fileOf(id));
+  }
+
+  /** what a charge stores for a picked icon: a charge set's file name, so blazons stay Armoria's; any other icon as it is */
+  chargeOf(icon: string): string {
+    const set = IconSets.setForId(icon);
+    return set?.startsWith("charges-") ? icon.slice(set.length + 1) : icon;
+  }
+
+  /** the icon a charge draws: its charge set symbol, or the library icon it names */
+  chargeArt(charge: string): string | undefined {
+    return this.chargeIcon(charge) ?? (Icons.kind(charge) ? charge : undefined);
+  }
+
   generate(
-    parent: Emblem | null | undefined,
+    parentEmblem: Emblem | null | undefined,
     kinship: number | null,
     dominion: number | null,
     type?: string
   ): HeraldicEmblem {
-    if (!parent || parent.custom) {
-      parent = null;
+    const parent = parentEmblem && "t1" in parentEmblem ? parentEmblem : null;
+    if (!parent) {
       kinship = 0;
       dominion = 0;
     }

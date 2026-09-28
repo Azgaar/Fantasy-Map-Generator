@@ -8,6 +8,7 @@ import { type EntityRef, MapEntities } from "@/components/map-entities";
 import { Notes } from "@/components/notes";
 import { normalizeLegacyBurgGroupFilters } from "@/components/options-legacy";
 import type { MapData } from "@/components/options-schema";
+import { IconPictures } from "@/controllers/icon-picker/pictures";
 import { Emblems } from "@/generators/emblems-generator";
 import { type Feature, LAKE_SUBTYPES, OCEAN_SUBTYPES } from "@/generators/features-generator";
 import type { GraphOverrides } from "@/generators/graph-override";
@@ -734,13 +735,13 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
   if (isOlderThan("1.91.0")) {
     // from 1.91.00 custom coa is moved to coa object
     pack.states.forEach(state => {
-      if ((state.coa as unknown) === "custom") state.coa = { custom: true } as typeof state.coa;
+      if ((state.coa as unknown) === "custom") state.coa = { custom: true } as unknown as typeof state.coa;
     });
     pack.provinces.forEach(province => {
-      if ((province.coa as unknown) === "custom") province.coa = { custom: true } as typeof province.coa;
+      if ((province.coa as unknown) === "custom") province.coa = { custom: true } as unknown as typeof province.coa;
     });
     pack.burgs.forEach(burg => {
-      if ((burg.coa as unknown) === "custom") burg.coa = { custom: true } as typeof burg.coa;
+      if ((burg.coa as unknown) === "custom") burg.coa = { custom: true } as unknown as typeof burg.coa;
     });
 
     // from 1.91.00 emblems don't have transform attribute
@@ -2094,6 +2095,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
     // v1.154.0 made every icon slot a bare symbol id: goods uploads (data[45], written empty since) and inline
     // images become custom icons, text becomes glyphs. The style record is converted by normalizeStyles above
+    const kept = new Set(CustomIcons.all.map(icon => icon.id));
     if (data[45]) adoptGoodsUploads(data[45]);
     adoptLegacyIconSlots([
       ...(pack.goods ?? []),
@@ -2101,6 +2103,15 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       ...(pack.states ?? []).flatMap(state => state?.military ?? []),
       ...options.map.military.units
     ]);
+
+    const emblemIcons = migrateLegacyCustomEmblems();
+
+    // old uploads were stored at full size: adopted rasters shrink to today's upload limits, emblems' to theirs
+    for (const icon of CustomIcons.all) {
+      if (kept.has(icon.id) || icon.kind !== "image") continue;
+      const content = await IconPictures.shrink(icon.content, emblemIcons.has(icon.id) ? "emblem" : "icon");
+      if (content !== icon.content) CustomIcons.update(icon.id, { content });
+    }
 
     function adoptGoodsUploads(markup: string): void {
       const roots = new DOMParser().parseFromString(markup, "text/html").querySelectorAll("body > svg[id]");
@@ -2122,6 +2133,53 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       }
     }
   }
+}
+
+/** custom emblems as picture emblems; the icons they use */
+export function migrateLegacyCustomEmblems(): Set<string> {
+  const used = new Set<string>();
+  const pictures = new Map(CustomIcons.all.filter(icon => icon.kind === "image").map(icon => [icon.content, icon.id]));
+  for (const [type, entities] of [
+    ["state", pack.states ?? []],
+    ["province", pack.provinces ?? []],
+    ["burg", pack.burgs ?? []]
+  ] as const) {
+    for (const entity of entities) {
+      const coa = entity.coa as typeof entity.coa & { custom?: boolean };
+      if (!coa?.custom) continue;
+      const definition = document.getElementById(`${type}COA${entity.i}`);
+      // a removed entity is never drawn again, so its picture would only clutter the Custom icons
+      const icon = entity.removed ? "" : legacyEmblemIcon(definition, pictures);
+      entity.coa = { icon, size: coa.size, x: coa.x, y: coa.y };
+      definition?.remove();
+      if (icon) used.add(icon);
+    }
+  }
+  return used;
+}
+
+/** A custom emblem's picture as a custom icon, one per distinct image; none when its definition is gone.
+ * Uploads are an svg holding one image since v1.89.21; earlier SVG uploads were kept as their own markup */
+function legacyEmblemIcon(definition: Element | null, pictures: Map<string, string>): string {
+  if (!definition) return "";
+  const image =
+    definition.children.length === 1 && definition.firstElementChild?.tagName === "image"
+      ? definition.firstElementChild
+      : null;
+  const content = image?.getAttribute("href") ?? image?.getAttribute("xlink:href") ?? "";
+  if (/^(data:image\/|https?:\/\/)/.test(content)) {
+    let icon = pictures.get(content);
+    if (!icon) {
+      icon = CustomIcons.add({ kind: "image", content, viewBox: IMAGE_FRAME }).id;
+      pictures.set(content, icon);
+    }
+    return icon;
+  }
+  const svg = sanitizeSvgIcon(definition.outerHTML);
+  if (!svg) return "";
+  const id = CustomIcons.newId();
+  scopeSvgIcon(svg, id);
+  return CustomIcons.add({ id, ...CustomIcons.fromSvg(svg) }).id;
 }
 
 export function migrateLegacySettings(mapVersion: string, data: string[]): void {

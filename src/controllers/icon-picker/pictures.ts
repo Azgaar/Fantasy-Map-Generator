@@ -4,20 +4,23 @@ import { CustomIcons, type IconPicture, Icons, IMAGE_FRAME } from "@/components/
 import { sanitizeSvgIcon, scopeSvgIcon } from "@/utils/fileUtils";
 import { rn } from "@/utils/numberUtils";
 
-const MAX_SVG_BYTES = 200_000;
-const MAX_RASTER_BYTES = 2_000_000;
-const MAX_RASTER_SIDE = 256;
+export type PictureProfile = "icon" | "emblem";
+const LIMITS = {
+  icon: { svg: 200_000, raster: 2_000_000, side: 256 },
+  emblem: { svg: 1_000_000, raster: 10_000_000, side: 1024 }
+};
 const PADDING = 0.05; // of the content's longer side, on every side of the fitted frame
 const OPAQUE = 8; // the alpha a pixel needs to count as content
 const LOAD_TIMEOUT = 15_000;
 
 /** An uploaded svg or raster image as the picture of icon `id`, whose ids and classes it is scoped to */
-async function fromFile(file: File, id: string): Promise<IconPicture> {
+async function fromFile(file: File, id: string, profile: PictureProfile = "icon"): Promise<IconPicture> {
+  const limits = LIMITS[profile];
   const isSvg = file.type === "image/svg+xml" || /\.svg$/i.test(file.name);
   if (isSvg) {
-    if (file.size > MAX_SVG_BYTES)
+    if (file.size > limits.svg)
       throw new Error(
-        `The SVG file is ${kilobytes(file.size)}, the limit is 200 kB. Simplify it or link to it instead`
+        `The SVG file is ${kilobytes(file.size)}, the limit is ${kilobytes(limits.svg)}. Simplify it or link to it instead`
       );
     const svg = sanitizeSvgIcon(await file.text());
     if (!svg) throw new Error("The file is not a valid SVG image");
@@ -28,14 +31,17 @@ async function fromFile(file: File, id: string): Promise<IconPicture> {
 
   if (!file.type.startsWith("image/"))
     throw new Error("The file is not an image: upload an SVG, PNG, JPEG or WebP file");
-  if (file.size > MAX_RASTER_BYTES)
-    throw new Error(`The image is ${kilobytes(file.size)}, the limit is 2 MB. Make it smaller or link to it instead`);
+  if (file.size > limits.raster)
+    throw new Error(
+      `The image is ${kilobytes(file.size)}, the limit is ${kilobytes(limits.raster)}. Make it smaller or link to it instead`
+    );
   const url = URL.createObjectURL(file);
   try {
     const canvas = rasterize(
       await loadImage(url, false).catch(() => {
         throw new Error("The file cannot be read as an image");
-      })
+      }),
+      limits.side
     );
     // WebP where the browser can encode it, PNG where it cannot
     return { kind: "image", content: canvas.toDataURL("image/webp", 0.85), viewBox: alphaFrame(canvas) };
@@ -103,8 +109,8 @@ function loadImage(url: string, crossOrigin: boolean): Promise<HTMLImageElement>
 }
 
 /** the image redrawn with its longer side at most 256 px */
-function rasterize(image: HTMLImageElement): HTMLCanvasElement {
-  const scale = Math.min(1, MAX_RASTER_SIDE / Math.max(image.naturalWidth, image.naturalHeight));
+function rasterize(image: HTMLImageElement, maxSide = LIMITS.icon.side): HTMLCanvasElement {
+  const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
   const canvas = document.createElement("canvas");
   canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
   canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
@@ -144,4 +150,14 @@ function kilobytes(bytes: number): string {
   return bytes >= 1_000_000 ? `${rn(bytes / 1_000_000, 1)} MB` : `${Math.round(bytes / 1000)} kB`;
 }
 
-export const IconPictures = { fromFile, fromLink, fit };
+/** A stored raster image redrawn within a profile's size as WebP, when that is smaller; vector art and links stay */
+async function shrink(url: string, profile: PictureProfile): Promise<string> {
+  if (!/^data:image\/(png|jpe?g|webp|gif|bmp)[;,]/i.test(url)) return url;
+  if (!document.createElement("canvas").getContext("2d")) return url; // no canvas to redraw on
+  const image = await loadImage(url, false).catch(() => null);
+  if (!image) return url;
+  const shrunk = rasterize(image, LIMITS[profile].side).toDataURL("image/webp", 0.85);
+  return shrunk.length < url.length ? shrunk : url;
+}
+
+export const IconPictures = { fromFile, fromLink, fit, shrink };

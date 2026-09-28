@@ -17,7 +17,7 @@ const confirm = vi.hoisted(() => ({
 
 beforeEach(() => {
   (globalThis as Record<string, unknown>).options = { map: { customIcons: [] } };
-  (globalThis as Record<string, unknown>).Options = { save: vi.fn() };
+  (globalThis as Record<string, unknown>).Options = { save: vi.fn(), iconsChanged: vi.fn() };
   document.body.innerHTML =
     '<div id="dialogs"></div><div id="alert"><p id="alertMessage"></p></div><div id="tooltip"></div><svg id="defElements"><defs></defs></svg>';
   // the dialog stub keeps a confirmation's Remove button, to press it as the author would

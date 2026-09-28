@@ -10,6 +10,7 @@ src/assets/icons/
   burgs/<style>/<name>.svg                                         set burgs          id burgs-atlas-circle, burgs-watabou-capital
   ports/<name>.svg                                                 set ports          id ports-anchor
   goods/<name>.svg                                                 set goods          id goods-wood
+  charges/<category>/<name>.svg                                   set charges-<category> id charges-beasts-lionRampant
 ```
 
 **Symbol id = set id + `-` + file path within the set, with `/` as `-`.** Nothing composes ids by hand:
@@ -24,9 +25,11 @@ A set is an `IconSet` (`src/types/icons.ts`), and the **model that draws it owns
 ```ts
 interface IconSet {
   id: string; // the chunk id and the symbol id prefix
-  folder: string; // the directory under src/assets/icons/
+  folder: string; // the directory under src/assets/icons/; its last segment names the set in the picker
+  group: string; // the picker heading it is listed under
   em?: number; // user units per em: anchored art, sized in em by the loader
   aliases?: (names: readonly string[]) => IconAlias[]; // symbols for ids the directory does not draw
+  prepare?: (svg: string, symbolId: string) => string; // rewrite a file before it becomes a symbol
   paint?: IconPaint; // what the art's open fill and stroke take where the slot sets none
 }
 ```
@@ -35,20 +38,22 @@ interface IconSet {
   directory has no file for (`Relief.aliasSlots`).
 - `Burgs.iconSets` — `burgs` and `ports`, both `em: 10`.
 - `Goods.iconSet` — `goods`.
+- `Emblems.iconSets` — one per charge category; `prepare` frames Armoria artwork and scopes internal ids.
 
 `components/icon-sets.ts` (`IconSets`) is the family-agnostic catalog of the built-in sets and touches no
-DOM: `sets()` lists the models, `files(set)` lists a directory synchronously (pickers need no chunk to list
-choices), `owns(id)` tells whether a set draws an id from a file or an alias, and `read(set)` turns a set
+DOM: `sets()` lists the models in picker order, `files(set)` lists a directory synchronously (pickers need no chunk
+to list choices), `fileOf(id)` names the set and file a symbol is drawn from, `owns(id)` tells whether a set draws
+an id from a file or an alias, and `read(set)` turns a set
 into symbols — glob the directory (`import.meta.glob(?raw)`, one hashed lazy chunk per set via
 `manualChunks` in `vite.config.ts`), turn each `<svg>` root into `<symbol id>`, keep an anchored set's frame
 unclipped, append `aliases` if declared.
 
 `components/icons.ts` (`Icons`) puts them in the page, as `<g data-set="<set>">` in
 `#defElements defs > g#icons-library`. `load` returns the shared attempt and never rejects, `retry` starts a
-fresh attempt for an explicit demand (a picker, an export), `isLoaded` answers after the fact. Failed
-attempts leave no partial definitions, report once, and stay failed until a `retry`; renderer redraws never
-retry. Export asserts `isLoaded` after the wait, so a chunk that never arrived fails the export instead of
-silently dropping icons.
+fresh attempt for an explicit demand (a picker), `require` retries and rejects for a demand that must succeed.
+Failed attempts leave no partial definitions, report once, and stay failed until a `retry`; renderer redraws
+never retry. Exports and emblem downloads `require` their sets, so a chunk that never arrived fails them instead
+of silently dropping icons.
 
 To add:
 
@@ -57,7 +62,7 @@ To add:
 - **a burg style** — a subdirectory under `burgs/` like `atlas/`; its name becomes the picker heading.
 - **a relief set** — a directory under `relief/` and its name in `Relief.sets`.
 - **a relief type or variant** — extend `Relief.types`, provide artwork and a fallback, run the coverage tests.
-- **a new family** — give its model an `IconSet` and list the model in `IconSetRegistry.sets()`; its
+- **a new family** — give its model an `IconSet` and list the model in `IconSetRegistry.sets()` at its picker place; its
   renderer awaits `Icons.load(id)` before drawing. Declare `em` if the art is anchored, `aliases` if
   some ids must resolve without a file.
 
@@ -164,20 +169,21 @@ written (`Icons.href`). `Icons` is the one entry point for a reference, whatever
   so a box of `n` draws it as large as `n`-sized text did. It sets no font, fill or shadow, so it takes them
   from where it is drawn, and no stroke, which would outline emoji.
 - **Custom icons** — `custom-<8 hex>` (`custom-goods-<id>` for uploads kept from older maps), the
-  pictures in `options.map.customIcons` (`CustomIcons`, beside `Icons` in `components/icons.ts`). Each is SVG
-  markup or an image URL with its frame. `Icons.syncCustom()` rebuilds the `custom` group from the list
-  on generation, after a load and after a change; SVG content is sanitised again on the way, since a
+  pictures in `options.map.customIcons` (`CustomIcons`, beside `Icons` in `components/icons.ts`), which this browser
+  keeps in IndexedDB rather than `localStorage` ([configuration](configuration.md)). Each is SVG markup or an image
+  URL with its frame. `Icons.syncCustom()` rebuilds the `custom` group from the list
+  on generation and after a load; `CustomIcons` rebuilds one icon's symbol on every add, update and remove. SVG content is sanitised again on the way, since a
   file may carry anything, and an image must be an `http(s)` or `data:image/` URL.
 
 The slots are goods, markers, regiments, military unit types, burg group icons and anchors, the market
-marker, relief icons and the relief pools of biomes and relief rules; `Icons.uses(id)` counts the
+marker, relief icons and the relief pools of biomes and relief rules, and picture emblems; `Icons.uses(id)` counts the
 references in each.
 
 `Icons.html(id)` draws an icon in the interface — editors, overviews, the picker: an inline svg boxing the
 icon in its own frame, in its paint (below). The icon picker (`controllers/icon-picker/`) takes only the current icon
 and a callback. Its header shows the selected icon, with Position, Replace and Remove when it is a custom
 icon, and a search over the built-in names; a side list holds Custom, then sections — Emoji by theme,
-Settlements, Goods, Relief — whose entries are sets or a set's subdirectories; a section heading shows all
+Settlements, Goods, Relief, Heraldry — whose entries are sets or a set's subdirectories; a section heading shows all
 its entries. It opens on the current icon's entry, else on the first built-in section; a double click picks
 and applies.
 
@@ -200,7 +206,8 @@ sanitised (CSS `url()`s and `@import`s reaching outside the file are dropped), k
 wrapping group and is scoped to the icon's id: its ids and classes are prefixed, and its stylesheet rules
 apply only inside the group, which carries the icon's id as a class. A raster upload
 (up to 2 MB) is redrawn at 256 px on its longer side and stored as WebP, or PNG where the browser cannot
-encode WebP. A new picture is **fitted**: a square around its visible content, padded by 5% — the SVG
+encode WebP. The emblem editor opens the picker with an `emblem` profile: 1 MB SVG input, 10 MB raster
+input and 1024 px on the longer raster side. A new picture is **fitted**: a square around its visible content, padded by 5% — the SVG
 bounding box, the opaque pixels of an image, or the whole box for a link whose pixels the site does not
 share.
 
@@ -208,8 +215,7 @@ The Custom tab adds by link or upload and picks the new icon; Replace gives an i
 its id, so every slot follows; Remove confirms with the uses `Icons.uses` counts and leaves the
 references to draw nothing. The positioner (`controllers/icon-picker/positioner.ts`) zooms and pans a square
 frame, writing the symbol's `viewBox` as it moves so the map and the previews follow; Cancel restores
-it and Apply stores it. Add, Replace and Remove rebuild the custom symbols (`Icons.syncCustom`); Replace and
-Remove cancel a positioner open on that icon.
+it and Apply stores it. Replace and Remove cancel a positioner open on that icon.
 
 ## Exports
 
@@ -221,7 +227,42 @@ groups may be read after waiting, so the export reflects the map as it was when 
 fail the export. A raster export draws the SVG as an image, which fetches no external files, so linked
 custom images are inlined as base64 where the host allows it and dropped where it does not; an SVG
 export keeps its links. Flattening symbols for SVG export preserves their frame clipping; anchored art
-and glyphs that explicitly overflow their frame remain unclipped.
+and glyphs that explicitly overflow their frame remain unclipped. Emblem definitions are added before
+collecting icon references, so nested charge and picture references join the export. Emblem downloads
+copy their referenced icon definitions as well.
+
+## Emblems and Armoria
+
+An emblem stores a Heraldic blazon or `{ icon, shield?, size?, x?, y? }`, a Picture emblem shown whole.
+A charge's `charge` is a built-in charge name or any icon reference (`Emblems.chargeArt` resolves both), drawn in
+the 80-unit charge box of the shield space. Its tincture fills the art's open parts; line art from a set that
+paints its strokes (goods, relief) takes the tincture as its line colour through `--tincture`, since its bodies are
+fixed; custom art gets no outline; a raster keeps its colours. Picking an icon for an emblem sets its first
+charge (`Emblems.chargeOf` stores a charge set icon by its name, so blazons stay Armoria's); Shape _None_ turns
+that charge into a Picture emblem, and choosing a shape puts a picture back on a field as its charge.
+
+`controllers/emblems/armoria.ts` reads Armoria edit links, API links and COA strings without the DOM. The
+drawability check in `drawability.ts` uses the renderer's known names. Drawable COAs stay heraldic; others
+link Armoria's SVG API render. The GUI and API URLs are constants in the reader.
+For local round-trip testing, `VITE_ARMORIA_GUI` can point an FMG development server at a local Armoria
+server (the `armoria` and `dev-armoria` preview configurations do this); production builds always use the
+published GUI origin.
+
+Armoria opened from FMG receives `from=FMG`, a `session` and `returnOrigin`. It posts
+`{ type: "armoria:coa", version: 1, session, coa, svg }` to the opener at `returnOrigin` after every edit, undo
+and redo, once editing pauses for half a second; the unchanged original is not sent. FMG accepts an update only
+from the GUI origin recorded for that session, with the session's token, while the same map is loaded; a session
+stays live until the emblem opens in Armoria again. Updates of one session apply in order. A drawable COA
+replaces the blazon; otherwise FMG sanitises the returned SVG into a Custom icon, one per session that later
+updates replace, removed once a drawable update leaves it unused.
+Armoria keeps recoloured and added tinctures in its own palette, so it sends each of them as its hex colour, as
+its API accepts (`{ "t1": "#228833" }`, or `vair-#228833-or` inside a pattern); default tinctures keep their
+names. An emblem therefore carries its exact shades, and reopening it in Armoria shows them. The renderer and the
+drawability check take hex as a tincture; pattern ids drop the `#` so `url(#…)` links stay valid. A heraldic emblem is edited in Armoria; the editor's field and charge controls appear only
+for an emblem whose main charge is a library picture, which Armoria cannot show.
+
+The service worker's install and activate steps populate its build precache. This includes every charge
+category chunk, so an emblem can load a category after the app is reopened offline.
 
 ## History
 
@@ -237,4 +278,7 @@ and startup (`adoptLegacyIconSlots` after restoring the options) migrates the un
 goods uploads in map field 45 become custom icons under their ids (field 45 is written empty since),
 inline `data:` images and URLs become one custom icon per distinct value, text becomes glyphs, and
 `#`-prefixed ids lose the `#`. Stored and shipped style presets are rewritten the same way by
-`normalizeStyles`.
+`normalizeStyles`. Custom emblems (`"custom"` before v1.91, `{ custom: true }` since) become picture emblems: one custom icon per
+distinct image, a definition holding more than a single image kept whole as SVG, and no icon for removed entities.
+Old uploads were stored at full size, so the step redraws every raster it adopts within today's upload limits, as
+WebP when that is smaller: 1024 px for emblems, 256 px for other icons. Vector art and links stay as they are.

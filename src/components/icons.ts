@@ -17,7 +17,8 @@ const SLOT_NAMES = {
   burgGroup: ["burg group style", "burg group styles"],
   market: ["market marker style", "market marker styles"],
   relief: ["relief icon", "relief icons"],
-  biome: ["biome relief pool", "biome relief pools"]
+  biome: ["biome relief pool", "biome relief pools"],
+  emblem: ["emblem", "emblems"]
 } as const;
 export type IconUseKind = keyof typeof SLOT_NAMES;
 
@@ -57,7 +58,7 @@ class CustomIconList {
   add(icon: IconPicture & { id?: string }): CustomIcon {
     const added = { ...icon, id: icon.id ?? this.newId() };
     this.all.push(added);
-    Options.save();
+    this.changed(added.id);
     return added;
   }
 
@@ -66,13 +67,18 @@ class CustomIconList {
     const icon = this.get(id);
     if (!icon) return;
     Object.assign(icon, patch);
-    Options.save();
+    this.changed(id);
   }
 
   /** references are left as they are: a slot pointing at a removed icon draws nothing */
   remove(id: string): void {
     options.map.customIcons = this.all.filter(icon => icon.id !== id);
-    Options.save();
+    this.changed(id);
+  }
+
+  private changed(id: string): void {
+    Options.iconsChanged();
+    Icons.syncCustomIcon(id);
   }
 
   /** a sanitised svg as a picture: its frame, and its art in a group that keeps the root's paint */
@@ -132,10 +138,13 @@ class IconLibrary {
     const kind = this.kind(id);
     if (kind === "glyph") return this.glyphText(id) ?? id;
     if (kind === "custom") return "custom icon";
+    const file = IconSets.fileOf(id)?.file;
     const set = IconSets.setForId(id);
-    const file = set && IconSets.files(set).find(file => IconSets.symbolId(set, file) === id);
     const name = file ? file.slice(file.lastIndexOf("/") + 1) : id.slice(set ? set.length + 1 : 0);
-    return name.replace(/-1$/, "").replaceAll("-", " ");
+    return name
+      .replace(/-1$/, "")
+      .replaceAll("-", " ")
+      .replace(/([a-z0-9])([A-Z])/g, "$1 $2");
   }
 
   /** The `<use>` href of an icon reference: a glyph symbol is built on first use, a set starts loading.
@@ -217,6 +226,14 @@ class IconLibrary {
       ["unit", options.map.military.units],
       ["burgGroup", burgGroups],
       ["market", [styles.markets.options]],
+      [
+        "emblem",
+        [...(pack.states ?? []), ...(pack.provinces ?? []), ...(pack.burgs ?? [])].flatMap(entity => {
+          const coa = entity.i && !entity.removed ? entity.coa : undefined;
+          if (!coa) return [];
+          return "icon" in coa ? [coa] : (coa.charges ?? []).map(({ charge }) => ({ icon: charge }));
+        })
+      ],
       ["relief", (pack.relief ?? []).flatMap(icon => ("icon" in icon ? [icon] : []))],
       [
         "biome",
@@ -261,10 +278,29 @@ class IconLibrary {
     return this.failed.has(set) ? this.attempt(set) : this.load(set);
   }
 
-  /** Rebuild every custom icon symbol from the map's list: startup, a map load, a change in the picker */
+  /** an explicit demand that must succeed, e.g. an export: rejects when a set still fails to load */
+  async require(sets: Iterable<IconSetId>): Promise<void> {
+    const required = [...new Set(sets)];
+    await Promise.all(required.map(set => this.retry(set)));
+    const failed = required.find(set => !this.isLoaded(set));
+    if (failed) throw new Error(`Failed to load ${failed} icons`);
+  }
+
+  /** Rebuild every custom icon symbol from the map's list: startup and a map load */
   syncCustom(icons: readonly CustomIcon[] = CustomIcons.all): void {
     const group = this.ensureGroup("custom");
     if (group) group.innerHTML = icons.map(icon => this.customSymbol(icon)).join("");
+  }
+
+  /** Rebuild one custom icon's symbol, or drop it once the icon is removed */
+  syncCustomIcon(id: string): void {
+    const group = this.ensureGroup("custom");
+    if (!group) return;
+    Array.from(group.children)
+      .find(symbol => symbol.id === id)
+      ?.remove();
+    const icon = CustomIcons.get(id);
+    if (icon) group.insertAdjacentHTML("beforeend", this.customSymbol(icon));
   }
 
   /** Glyphs inherit fill, font and shadow from where they are drawn; a stroke would outline emoji */

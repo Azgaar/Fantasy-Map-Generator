@@ -303,8 +303,6 @@ All three steps are implemented.
 
 - **Relief placement.** Superseded by [Relief Icon Pools](relief-icon-pools.md): a relief icon and a
   biome's relief pool now take any icon reference.
-- **Custom emblems (coats of arms).** Their charges and upload flow are more involved and stay as they
-  are.
 - **Transport icons.** The unused `icon` field on transport types is not a slot.
 - **Icon names, tags, search or folders** among Custom icons.
 - **Deduplication on add,** and rewriting references (Replace changes a picture, never a reference).
@@ -315,9 +313,7 @@ All three steps are implemented.
 
 - Linking is the recommended path in the interface; uploading stays available for art that has no home
   online.
-- Browser storage is limited (a few megabytes); downscaled rasters (tens of kB each) and the SVG size
-  cap keep a normal set of Custom icons far below it, and a quota error never loses data because the
-  `.map` file holds them.
+- Custom icons are kept in IndexedDB, not `localStorage`, whose few megabytes a handful of pictures would fill; the `.map` file remains their record, so browser storage never holds the only copy.
 - A linked image depends on its host: if it goes offline or blocks cross-origin requests, it disappears
   from the map or from raster exports respectively.
 - `docs/architecture/icons.md` ("Map-carried art and exports") describes the goods-only mechanism and

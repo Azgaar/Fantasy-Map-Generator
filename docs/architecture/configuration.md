@@ -9,7 +9,10 @@ sections with one storage location, one schema and one model:
 | `options.generation` | what to ask the generators for next time | never                                   |
 | `options.app`        | how this browser behaves                 | never                                   |
 
-The whole object lives in `localStorage` under `fmg-options`. `options.map` is also, byte for
+The whole object lives in `localStorage` under `fmg-options`, except `options.map.customIcons`: pictures
+outgrow `localStorage`, so this browser keeps them in IndexedDB under `fmg-custom-icons`. `Options.restoreIcons`
+reads them at boot, after `Options.restore`, and no icons are written before that read succeeds, so a database that
+cannot open never loses the ones it holds. `options.map` is also, byte for
 byte, what a `.map` file stores in its settings block: saving writes that object and loading
 replaces it, so the two cannot drift apart. There is no second object and no conversion.
 
