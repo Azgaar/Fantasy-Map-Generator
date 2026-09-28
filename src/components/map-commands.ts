@@ -132,6 +132,12 @@ export const MAP_COMMANDS: MapCommand[] = [
     run: () => Controllers.BiomesEditor.open()
   },
   {
+    id: "editReliefRules",
+    name: "Open Relief Rules Editor",
+    aliases: "terrain icons mountains hills trees biome rules",
+    run: () => Controllers.ReliefRulesEditor.open()
+  },
+  {
     id: "editDiplomacyButton",
     name: "Open Diplomacy Editor",
     aliases: "relations allies wars",
