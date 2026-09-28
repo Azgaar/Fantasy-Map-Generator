@@ -6,8 +6,8 @@ import { Styles } from "@/generators/styles";
 import { drawRelief } from "./draw-relief-icons";
 
 vi.mock("@/components/layers", () => ({ Layers: { isOn: () => true, draw: vi.fn() } }));
-vi.mock("@/components/icon-sets", () => ({
-  IconSets: { loadAll: vi.fn().mockResolvedValue(undefined), reliefSets: () => [] }
+vi.mock("@/components/icons", () => ({
+  Icons: { loadAll: vi.fn().mockResolvedValue(undefined), href: (id: string) => `#${id}` }
 }));
 
 beforeEach(() => {
@@ -53,6 +53,17 @@ test("a bigger icon above a smaller one stays behind it, at any size", async () 
     const anchors = uses.map(use => Number(use.getAttribute("y")) + Number(use.getAttribute("height")) / 2);
     expect(anchors, `size ${size}`).toEqual([20, 26]);
   }
+});
+
+test("a library icon draws itself; a type draws its pinned or the style's set", async () => {
+  pack.relief = [
+    { type: "mount", variant: 2, x: 0, y: 0, s: 4 },
+    { type: "mount", set: "gray", x: 0, y: 0, s: 4 },
+    { icon: "custom-a", x: 0, y: 0, s: 4 }
+  ];
+  await drawRelief();
+  const hrefs = Array.from(document.querySelectorAll("#terrain use"), use => use.getAttribute("href"));
+  expect(hrefs).toEqual(["#relief-simple-mount-2", "#relief-gray-mount-1", "#custom-a"]);
 });
 
 test("relief stroke width and color are group attributes shared by mixed sets without replacing icons", async () => {

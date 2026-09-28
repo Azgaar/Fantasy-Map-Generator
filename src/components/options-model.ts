@@ -1,7 +1,15 @@
 // All app configuration options, options.map saved to `.map` file as settings; docs/architecture/configuration.md
 import { adoptLegacyOptions } from "@/components/options-legacy";
-import { AUTO_BURG_LIMIT, type MapData, mapSchema, type OptionsData, optionsSchema } from "@/components/options-schema";
+import {
+  AUTO_BURG_LIMIT,
+  customIcon,
+  type MapData,
+  mapSchema,
+  type OptionsData,
+  optionsSchema
+} from "@/components/options-schema";
 import { Pins } from "@/components/pins";
+import { tip } from "@/components/tooltips";
 import { DEFAULT_DENSITY, getPointsNumber } from "@/data/graph-density";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { DEFAULT_TRADE_ANIMATION } from "@/data/trade-animation-options";
@@ -13,6 +21,7 @@ import { CULTURE_SETS } from "@/generators/cultures-generator";
 import { Labels } from "@/generators/labels-generator";
 import { Military } from "@/generators/military-generator";
 import { Names } from "@/generators/names-generator";
+import { Relief } from "@/generators/relief-generator";
 import { Transports } from "@/generators/transports-generator";
 import { safeParseJSON } from "@/utils";
 import { rn } from "@/utils/numberUtils";
@@ -27,6 +36,9 @@ declare global {
 }
 
 export const STORAGE_KEY = "fmg-options";
+/** custom icons outgrow localStorage, so this browser keeps them in IndexedDB */
+export const ICONS_STORAGE_KEY = "fmg-custom-icons";
+const ICONS_READ_TIMEOUT = 3000; // the IndexedDB helper never answers when the database cannot open
 export const DEFAULT_THEME_COLOR = "#997787";
 const SAVE_DELAY = 500;
 
@@ -35,6 +47,9 @@ const isImperial = () => ["en-US", "en-GB"].includes(locale());
 
 class OptionsModel {
   private saveTimer = 0;
+  private iconsRestored = false; // no icons are written before the stored ones are read, or they would be lost
+  private iconsRevision = 0;
+  private savedIcons: { icons: unknown; revision: number } = { icons: null, revision: -1 };
 
   /** A fresh browser's options: every value present, each from the module that owns it */
   getDefaultOptions(): OptionsData {
@@ -67,7 +82,9 @@ class OptionsModel {
         labels: { groups: Labels.getDefaultGroups() },
         military: { units: Military.getDefaultOptions() },
         transports: Transports.getDefaults(),
-        coastline: Coastline.getDefaultSettings()
+        customIcons: [],
+        coastline: Coastline.getDefaultSettings(),
+        relief: { rules: Relief.getDefaultRules() }
       },
       generation: {
         graph: { width: 1280, height: 800, density: DEFAULT_DENSITY },
@@ -118,11 +135,52 @@ class OptionsModel {
     this.saveTimer = window.setTimeout(() => this.persist(), SAVE_DELAY);
   }
 
-  /** Write the options to localStorage immediately */
+  /** The custom icons changed in place: remember them with the options */
+  iconsChanged(): void {
+    this.iconsRevision++;
+    this.save();
+  }
+
+  /** Write the options to localStorage immediately, and the custom icons to IndexedDB when they changed */
   persist(): void {
     clearTimeout(this.saveTimer);
     this.saveTimer = 0;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(options));
+    const { customIcons, ...map } = options.map;
+    this.persistIcons(customIcons);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...options, map }));
+    } catch (error) {
+      // a full storage keeps the last options; the map file still holds the map's own
+      if (!(error instanceof DOMException && error.name === "QuotaExceededError")) throw error;
+      console.error(error);
+      const message =
+        "Browser storage is full, so the latest settings are not kept in this browser. They are safe in the .map file: save the map to keep them";
+      tip(message, false, "error", 10000);
+    }
+  }
+
+  private persistIcons(icons: OptionsData["map"]["customIcons"]): void {
+    const unchanged = icons === this.savedIcons.icons && this.iconsRevision === this.savedIcons.revision;
+    if (!this.iconsRestored || unchanged || typeof ldb === "undefined") return;
+    this.savedIcons = { icons, revision: this.iconsRevision };
+    void ldb.set(ICONS_STORAGE_KEY, icons);
+  }
+
+  /** Boot, after `restore`: adopt the custom icons this browser kept, each checked on its own */
+  async restoreIcons(): Promise<void> {
+    if (typeof ldb === "undefined") return;
+    const unreadable = Symbol("unreadable");
+    const timeout = new Promise<symbol>(resolve => setTimeout(() => resolve(unreadable), ICONS_READ_TIMEOUT));
+    const stored = await Promise.race([ldb.get<unknown>(ICONS_STORAGE_KEY).catch(() => unreadable), timeout]);
+    if (stored === unreadable) return; // icons are then not written this session, so none that may be there are lost
+
+    this.iconsRestored = true;
+    if (Array.isArray(stored)) {
+      options.map.customIcons = stored.filter(icon => customIcon.safeParse(icon).success);
+      this.savedIcons = { icons: options.map.customIcons, revision: this.iconsRevision };
+    } else if (options.map.customIcons.length) {
+      this.persist(); // icons kept in localStorage by earlier versions move to IndexedDB
+    }
   }
 
   /** Throw this browser's options away and start from the defaults: a reset, never a repair */
@@ -133,6 +191,7 @@ class OptionsModel {
 
   /** Boot: adopt what this browser kept from the last session, validated and repaired */
   restore(): void {
+    this.iconsRestored = false; // until `restoreIcons` reads them again
     let stored: Record<string, unknown> = {};
     const parsed = safeParseJSON(localStorage.getItem(STORAGE_KEY) ?? "");
     if (typeof parsed === "object" && parsed !== null) stored = parsed;
@@ -204,7 +263,9 @@ class OptionsModel {
     map.labels.groups = previous.labels.groups;
     map.military.units = previous.military.units;
     map.transports = previous.transports;
+    map.customIcons = previous.customIcons;
     map.coastline = previous.coastline;
+    map.relief = previous.relief;
 
     // and the requests it consumes
     map.graph = { width: graph.width, height: graph.height, points: getPointsNumber(graph.density) };

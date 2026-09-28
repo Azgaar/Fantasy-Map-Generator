@@ -5,7 +5,9 @@ import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 
 const mocks = vi.hoisted(() => ({ layerOn: true }));
 vi.mock("@/components/layers", () => ({ Layers: { isOn: () => mocks.layerOn } }));
-vi.mock("@/components/icon-sets", () => ({ IconSets: { load: vi.fn().mockResolvedValue(undefined) } }));
+vi.mock("@/components/icons", () => ({
+  Icons: { load: vi.fn().mockResolvedValue(undefined), href: (id: string) => `#${id}` }
+}));
 
 import "@/generators/styles";
 import { drawGoods } from "./draw-goods";
@@ -111,6 +113,19 @@ test("style options are applied on the next frame, without rebuilding the scene"
   expect(document.querySelector("#goodsIcons use")?.getAttribute("width")).toBe("10");
   expect(document.querySelector("#goodsBurgs rect")?.getAttribute("height")).toBe("8.4");
   expect(getCellProduction).toHaveBeenCalledTimes(2);
+});
+
+test("icon lines follow the style at the marker's proportions, on markers and plates alike", async () => {
+  getBurgProduction.mockImplementation(() => ({ 1: 1 }));
+  styles.goods.groups.goodsIcons.attrs.stroke = "#123456";
+  styles.goods.groups.goodsIcons.attrs["stroke-width"] = 0.3;
+  styles.goods.groups.goodsIcons.options.size = 6;
+  await drawGoods();
+  for (const use of document.querySelectorAll("#goodsIcons use, #goodsBurgs use")) {
+    expect(use.getAttribute("stroke")).toBe("#123456");
+    expect(use.getAttribute("stroke-width")).toBe("2"); // 40% of 0.3 map units, in a 100-unit frame 6 units wide
+  }
+  expect(document.querySelectorAll("#goodsBurgs use")).not.toHaveLength(0);
 });
 
 test("burg plates keep the three biggest producers, biggest first", async () => {

@@ -53,9 +53,24 @@ This glossary covers core terminology, data structures, and concepts used throug
 - **Trade Batch**: All deals sharing the same ordered `(seller burg, buyer burg)` endpoints, animated as one flow on the map.
 - **Demand Category**: One of `food | utilities | construction | military | luxury`, evaluated in `DEMAND_PRIORITY` order during production and demand fill.
 - **Namesbase**: A collection of linguistic rules, prefixes, and suffixes used to procedurally generate names for map entities.
-- **Emblem**: A heraldic shield or flag representing a State, Province, or Burg.
+- **Emblem**: The sign of a State, Province or Burg: either a Heraldic emblem or a Picture emblem.
+- **Heraldic emblem**: A blazon drawn from its field, divisions, ordinaries and Charges; editable in Armoria and recoloured by its tinctures.
+- **Picture emblem**: An Emblem that holds an Icon reference and shows it whole, with no field: a pasted image or Armoria render, or a Charge shown without a shield.
+- **Charge**: A figure placed on a field, tinted by its tincture: a built-in charge by name, or any Icon Library icon by its Icon reference. Built-in Charges also form the Heraldry Icon Sets and can be used in any Icon slot.
 - **Note**: User-defined html text describing a map entity, stored on the entity as `note?: string`. Shown in the notes box when the entity's element is hovered, and edited from that entity's editor or from the Notes Editor. A note cannot exist without an entity to own it.
-- **Icon**: A small graphic representing a good, biome, or feature.
+- **Icon**: A small picture drawn for a map entity or a style — a good, burg, marker, regiment, unit type, relief feature.
+- **Icon Library**: Every icon a slot can use, in three sources: the Icon Sets, Glyphs and the map's Custom icons. What the icon picker shows, listed by source.
+- **Icon Set**: A catalogue of icons the app ships, such as `goods`, `burgs` or a relief set. _Avoid_: collection
+- **Glyph**: Short text drawn as an icon — an emoji, a symbol such as `⟱`, or letters such as `XIV`. Glyphs form a virtual Icon Set: derived from the text, never stored. _Avoid_: emoji (only one kind of glyph), text icon
+- **Custom icon**: A picture the map carries — SVG art, a raster image or a link to an image hosted elsewhere — known by an id rather than a name. Part of the map's setup, like transport types: saved with the map, replaced when another map is loaded, carried over to a new map. Replacing its picture keeps the id, so every slot follows; identical pictures added twice are two icons. _Avoid_: upload, user icon
+- **Icon reference**: The bare symbol id (`goods-wood`, `glyph-1f3f0`, `custom-1a2b3c4d`) through which a slot points at an icon from any source. An empty reference means no icon; a reference to an icon that no longer exists draws nothing. _Avoid_: image URL, inline image
+- **Icon slot**: A place that holds one icon reference: a good's icon, a marker's icon, a regiment's or unit type's icon, a burg group's icon, the market marker style, a relief icon, a relief pool entry, a Charge or a Picture emblem. Every slot accepts every source. Removing a Custom icon reports how many slots use it.
+- **Relief pool**: A weighted list of what relief is generated from: a biome's for its lowland relief, a relief rule's for the cells it claims. Each entry is a relief type, drawn in the style's relief set, or an icon reference, with a positive weight. _Avoid_: weighted icons, icon list
+- **Relief density**: How packed a pool's relief is; 0 places none.
+- **Relief rule**: A height range, an optional temperature range and an optional set of biomes that claim land cells for a relief pool, with an icon size that grows with height. Rules are checked in order and the first match wins; the defaults are snowy mountains, mountains and hills. Part of the map's setup, kept across regeneration. _Avoid_: highland zone, elevation band
+- **Lowland relief**: The relief a biome's pool places, on land no relief rule claims — below height 50 with the default rules.
+- **Icon frame**: The box around an icon's visible content, owned by the picture: fixing it fixes every use at once. Only Custom icons can be repositioned. Size and placement at a use (a marker's pin, a good's circle, a burg's anchor) belong to that use, never to the frame. _Avoid_: viewBox (the implementation), crop
+- **Anchored icon**: An icon drawn around a point rather than inside its frame — the burg and port sets, whose art stands on the burg. Any other icon on a burg is centred on the point.
 - **Label**: Display text owned by a map entity — a State, Province, Burg, River, Route, or Added Label. Every label is anchored at its entity's position and drawn as positioned text there, unless it has path points — then the text is curved along them. Any label can be switched between the two in the Label Editor.
 - **Added Label**: A free-standing map entity created by the user, whose only purpose is to carry a Label. It supplies the position that other label owners get from their own geometry.
 - **Label Group**: An ordered, reusable label policy and visual style. Policy fields live in `options.map.labels.groups`; typography and offsets live in `style.labels.groups`. Any label type can use any Label Group without changing how that entity is rendered.

@@ -1,12 +1,13 @@
 import { type D3DragEvent, drag, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
+import { Icons } from "@/components/icons";
 import { stopMapPlacement } from "@/components/map-placement";
 import { Notes } from "@/components/notes";
 import { clearMainTip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
 import { drawMarkers, setEditedMarker } from "@/renderers/draw-markers";
-import { ensureEl, escapeHtml, findEl, isImageIcon, rn } from "../utils";
+import { ensureEl, findEl, rn } from "../utils";
 
 let selectedElement: SVGSVGElement;
 let selectedMarker: Marker;
@@ -54,13 +55,13 @@ function renderDialog(): void {
       </div>
       <div data-tip="Marker icon" style="display: flex; align-items: center">
         <div class="label">Icon:</div>
-        <div id="markerIcon" style="font-size: 1.5em; width: 3.7em">👑</div>
+        <div id="markerIcon" style="font-size: 1.5em; width: 3.7em; display: flex"></div>
         <button id="markerIconSelect" style="width: 5em">select</button>
       </div>
       <div data-tip="Marker marker element and icon sizes in pixels">
         <div class="label">Size:</div>
-        <input data-tip="Marker element size in pixels" id="markerSize" type="number" min="2" max="500" style="width: 5em" />
-        <input data-tip="Marker icon sizes in pixels" id="markerIconSize" type="number" min="2" max="20" step="0.5" style="width: 5em" />
+        <input data-tip="Marker element size in pixels" id="markerSize" type="number" min="1" max="500" style="width: 5em" />
+        <input data-tip="Marker icon sizes in pixels" id="markerIconSize" type="number" min="1" max="50" step="0.1" style="width: 5em" />
       </div>
       <div data-tip="Marker icon shift (by X and by Y axis), percent. Set to 50 to position icon in center">
         <div class="label">Icon shift:</div>
@@ -90,6 +91,12 @@ function renderDialog(): void {
         <input id="markerFill" type="color" style="width: 5em; height: 1.6em" />
         <input id="markerStroke" type="color" style="width: 5em; height: 1.6em" />
       </div>
+      <div data-tip="Icon fill and stroke colors: they paint the parts the icon leaves uncolored. Emoji keep their own colors">
+        <div class="label">Icon colors:</div>
+        <input id="markerIconFill" type="color" style="width: 5em; height: 1.6em" />
+        <input id="markerIconStroke" type="color" style="width: 5em; height: 1.6em" />
+        <i id="markerIconPaintReset" data-tip="Restore the icon's default colors" class="icon-ccw pointer"></i>
+      </div>
     </div>
     <div id="markerBottom">
       ${Notes.getButton("markerNotes", "this marker")}
@@ -112,6 +119,9 @@ function renderDialog(): void {
   ensureEl("markerPin").addEventListener("change", changeMarkerPin);
   ensureEl("markerFill").addEventListener("input", changePinFill);
   ensureEl("markerStroke").addEventListener("input", changePinStroke);
+  ensureEl("markerIconFill").addEventListener("input", changeIconFill);
+  ensureEl("markerIconStroke").addEventListener("input", changeIconStroke);
+  ensureEl("markerIconPaintReset").addEventListener("click", resetIconPaint);
   ensureEl("markerNotes").addEventListener("click", editMarkerLegend);
   ensureEl("markerRadius").addEventListener("click", openMarkersInRadius);
   ensureEl("markerLock").addEventListener("click", toggleMarkerLock);
@@ -158,9 +168,7 @@ function dragMarker(this: SVGElement, event: D3DragEvent<SVGElement, unknown, un
 
 function updateInputs(): void {
   const marker = selectedMarker;
-  ensureEl("markerIcon").innerHTML = isImageIcon(marker.icon)
-    ? `<img src="${escapeHtml(marker.icon)}" style="width: 1em; height: 1em;">`
-    : escapeHtml(marker.icon);
+  updateIconPaint();
 
   ensureEl<HTMLInputElement>("markerName").value = marker.name || "";
   ensureEl<HTMLInputElement>("markerType").value = marker.type || "";
@@ -175,6 +183,17 @@ function updateInputs(): void {
   ensureEl("markerLock").className = marker.lock ? "icon-lock" : "icon-lock-open";
 }
 
+/** the icon preview and its colors: the marker's own, else the icon's default paint */
+function updateIconPaint(): void {
+  const { icon, iconFill, iconStroke } = selectedMarker;
+  const paint = Icons.paint(icon);
+  const color = (value: string | undefined) => (value && /^#[\da-f]{6}$/i.test(value) ? value : "#000000");
+  ensureEl("markerIcon").innerHTML = Icons.html(icon, { fill: iconFill, stroke: iconStroke });
+  ensureEl<HTMLInputElement>("markerIconFill").value = color(iconFill ?? paint.fill);
+  ensureEl<HTMLInputElement>("markerIconStroke").value = color(iconStroke ?? paint.stroke);
+  ensureEl("markerIconPaintReset").style.visibility = iconFill || iconStroke ? "visible" : "hidden";
+}
+
 function changeMarkerName(this: HTMLInputElement): void {
   selectedMarker.name = this.value;
   if (findEl("notesEditor")) void Controllers.NotesEditor.open({ type: "marker", id: selectedMarker.i });
@@ -185,16 +204,14 @@ function changeMarkerType(this: HTMLInputElement): void {
 }
 
 function changeMarkerIcon(): void {
-  Controllers.IconSelector.open(selectedMarker.icon, value => {
-    const isExternal = isImageIcon(value);
-    ensureEl("markerIcon").innerHTML = isExternal
-      ? `<img src="${escapeHtml(value)}" style="width: 1em; height: 1em;">`
-      : escapeHtml(value);
-
-    getSameTypeMarkers().forEach(marker => {
-      marker.icon = value;
-    });
-    drawMarkers();
+  Controllers.IconPicker.open({
+    current: selectedMarker.icon,
+    live: true,
+    onPick: icon => {
+      for (const marker of getSameTypeMarkers()) marker.icon = icon;
+      updateIconPaint();
+      drawMarkers();
+    }
   });
 }
 
@@ -251,6 +268,27 @@ function changePinStroke(this: HTMLInputElement): void {
   getSameTypeMarkers().forEach(marker => {
     marker.stroke = stroke;
   });
+  drawMarkers();
+}
+
+function changeIconFill(this: HTMLInputElement): void {
+  for (const marker of getSameTypeMarkers()) marker.iconFill = this.value;
+  updateIconPaint();
+  drawMarkers();
+}
+
+function changeIconStroke(this: HTMLInputElement): void {
+  for (const marker of getSameTypeMarkers()) marker.iconStroke = this.value;
+  updateIconPaint();
+  drawMarkers();
+}
+
+function resetIconPaint(): void {
+  for (const marker of getSameTypeMarkers()) {
+    delete marker.iconFill;
+    delete marker.iconStroke;
+  }
+  updateIconPaint();
   drawMarkers();
 }
 

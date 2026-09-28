@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { isImageIcon, sanitizeSvgIcon, svgToDataUri } from "./fileUtils";
+import { isImageIcon, sanitizeSvgIcon, scopeSvgIcon, svgToDataUri } from "./fileUtils";
 
 describe("sanitizeSvgIcon", () => {
   it("returns the svg element from the file markup", () => {
@@ -33,6 +33,73 @@ describe("sanitizeSvgIcon", () => {
 
   it("returns null when the markup has no svg", () => {
     expect(sanitizeSvgIcon("<div>not an svg</div>")).toBeNull();
+  });
+
+  it("removes scripting and external references", () => {
+    const svg = sanitizeSvgIcon(
+      '<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"><script>alert(2)</script><foreignObject><div></div></foreignObject>' +
+        '<a href="java\tscript:alert(3)"><path d="M0 0"/></a><image href="https://example.com/x.png"/><use href="#p"/>' +
+        '<image href="data:image/png;base64,AA"/><set attributeName="href" to="javascript:alert(4)"/></svg>'
+    )!;
+    expect(svg.outerHTML).not.toMatch(/alert|script|foreignObject|example\.com/i);
+    expect(svg.querySelector("use")?.getAttribute("href")).toBe("#p");
+    expect(svg.querySelectorAll("image")[1].getAttribute("href")).toBe("data:image/png;base64,AA");
+  });
+
+  it("returns an element owned by the document", () => {
+    expect(sanitizeSvgIcon('<svg xmlns="http://www.w3.org/2000/svg"/>')?.ownerDocument).toBe(document);
+  });
+});
+
+describe("scopeSvgIcon", () => {
+  it("prefixes inner ids and classes and every reference to them", () => {
+    const svg = sanitizeSvgIcon(
+      '<svg xmlns="http://www.w3.org/2000/svg" id="root" class="cls-1"><defs><style>.cls-1{fill:url(#a)} #ab{stroke:#abc}</style>' +
+        '<linearGradient id="a"/><path id="ab" d="M0 0"/></defs><use href="#ab" class="cls-1 cls-2" style="fill:url(#a)"/>' +
+        '<path fill="url(\'#a\')" stroke="#abc"/></svg>'
+    )!;
+    scopeSvgIcon(svg, "custom-goods-x");
+    expect(svg.id).toBe("root");
+    expect(svg.getAttribute("class")).toBe("custom-goods-x-cls-1 custom-goods-x");
+    expect(svg.querySelector("linearGradient")?.id).toBe("custom-goods-x-a");
+    const scope = ":is(.custom-goods-x, .custom-goods-x *)";
+    // #abc is a colour, not the #ab id
+    expect(svg.querySelector("style")?.textContent).toBe(
+      `${scope}:is(.custom-goods-x-cls-1) { fill: url("#custom-goods-x-a"); }${scope}:is(#custom-goods-x-ab) { stroke: rgb(170, 187, 204); }`
+    );
+    const use = svg.querySelector("use")!;
+    expect(use.getAttribute("href")).toBe("#custom-goods-x-ab");
+    expect(use.getAttribute("class")).toBe("custom-goods-x-cls-1 custom-goods-x-cls-2");
+    expect(use.getAttribute("style")).toBe("fill:url(#custom-goods-x-a)");
+    const path = svg.querySelectorAll("path")[1];
+    expect(path.getAttribute("fill")).toBe("url('#custom-goods-x-a')");
+    expect(path.getAttribute("stroke")).toBe("#abc");
+  });
+
+  it("confines element and universal rules to the icon and drops at-rules that reach outside it", () => {
+    const svg = sanitizeSvgIcon(
+      '<svg xmlns="http://www.w3.org/2000/svg"><style>/* x */ @import "a.css"; path, g > :is(rect, circle) {fill:red}' +
+        " @media (min-width: 1px) { * { stroke: blue } } @font-face { font-family: f } svg{opacity:0}</style></svg>"
+    )!;
+    scopeSvgIcon(svg, "custom-1");
+    const scope = ":is(.custom-1, .custom-1 *)";
+    expect(svg.querySelector("style")?.textContent?.replace(/\s+/g, " ")).toBe(
+      `${scope}:is(path, g > :is(rect, circle)) { fill: red; }` +
+        `@media (min-width: 1px) { ${scope}:is(*) { stroke: blue; } }${scope}:is(svg) { opacity: 0; }`
+    );
+  });
+});
+
+describe("sanitizeSvgIcon external css", () => {
+  it("replaces url() references outside the file, keeping local and data ones", () => {
+    const svg = sanitizeSvgIcon(
+      '<svg xmlns="http://www.w3.org/2000/svg"><style>@import url(https://x.test/a.css); path{fill:url(https://x.test/p.svg#g)} rect{fill:url( "#a")}</style>' +
+        '<path style="fill:url(//x.test/p#g)" fill="url(data:image/png;base64,AA)"/></svg>'
+    )!;
+    expect(svg.outerHTML).not.toMatch(/x\.test/);
+    expect(svg.querySelector("style")?.textContent).toContain('url( "#a")');
+    expect(svg.querySelector("path")?.getAttribute("style")).toBe("fill:none");
+    expect(svg.querySelector("path")?.getAttribute("fill")).toBe("url(data:image/png;base64,AA)");
   });
 });
 

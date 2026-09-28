@@ -127,13 +127,13 @@ test("a colour scheme, a texture and an icon each get their own preview", () => 
   expect(texture.className).toBe("tex");
   expect(texture.getAttribute("style")).toContain('url("./images/textures/marble-big.jpg")');
 
-  const [icon] = preview({ attrs: { fill: "#fff", stroke: "#000" }, options: { icon: "#ports-anchor" } });
+  const [icon] = preview({ attrs: { fill: "#fff", stroke: "#000" }, options: { icon: "ports-anchor" } });
   expect(icon.className).toBe("icon");
   expect(icon.querySelector("use")?.getAttribute("href")).toBe("#ports-anchor");
 
-  const [emoji] = preview({ options: { icon: "⚓" } });
-  expect(emoji.className).toBe("emoji");
-  expect(emoji.textContent).toBe("⚓");
+  const [glyph] = preview({ options: { icon: "glyph-2693" } });
+  expect(glyph.className).toBe("icon");
+  expect(glyph.querySelector("use")?.getAttribute("href")).toBe("#glyph-2693");
 });
 
 test("a set filter is applied to the preview and named in its tip", () => {

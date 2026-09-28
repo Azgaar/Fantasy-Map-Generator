@@ -1,7 +1,8 @@
-import { IconSets } from "@/components/icon-sets";
+import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import type { ReliefIcon } from "@/generators/relief-generator";
 import { ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
+import { escapeHtml } from "@/utils/stringUtils";
 
 const layer = ViewportLayers.register({ id: "relief", render: reconcileRelief });
 let isDrawn = false; // an erased layer draws nothing, an empty one still draws
@@ -11,7 +12,7 @@ export async function drawRelief(): Promise<void> {
   TIME && console.time("drawRelief");
   if (!pack.relief?.length) Relief.generate();
   isDrawn = true;
-  await IconSets.loadAll(Relief.requiredIconSets(pack.relief, styles.relief.options.set));
+  await Icons.loadAll(Relief.requiredIconSets(pack.relief, styles.relief.options.set));
   layer.render();
   TIME && console.timeEnd("drawRelief");
 }
@@ -50,7 +51,7 @@ function reconcileRelief(context: ViewportRenderContext): void {
     if (left > x1 || top > y1 || left + drawn < x0 || top + drawn < y0) continue;
     const symbol = Relief.symbolId(icon, set);
     markup.push(
-      `<use href="#${symbol}" data-id="${index}" x="${left}" y="${top}" width="${drawn}" height="${drawn}"/>`
+      `<use href="${escapeHtml(Icons.href(symbol))}" data-id="${index}" x="${left}" y="${top}" width="${drawn}" height="${drawn}"/>`
     );
   }
 

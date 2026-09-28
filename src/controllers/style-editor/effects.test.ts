@@ -26,10 +26,10 @@ beforeEach(() => {
   ] as typeof options.map.labels.groups;
 });
 
-const run = (path: string, value: unknown = 1, previous: unknown = 1, sel: Partial<StyleSelection> = {}) => {
+const run = (path: string, sel: Partial<StyleSelection> = {}) => {
   const [element] = path.split(".");
   const selection = { element, layer: element === "map" ? undefined : element, ...sel } as StyleSelection;
-  runEffect({ sel: selection, path: path.split("."), value, previous });
+  runEffect(selection, path.split("."));
 };
 
 const at = (path: string) => effectAt(path.split("."));
@@ -65,69 +65,69 @@ describe("effectAt", () => {
 
 describe("runEffect", () => {
   test("relief stroke edits only write the group attribute", () => {
-    run("relief.attrs.stroke-width", 2, 0);
+    run("relief.attrs.stroke-width");
     expect(Styles.writeAttr).toHaveBeenCalledWith(["relief", "attrs", "stroke-width"]);
-    run("relief.attrs.stroke", "#aabbcc", "#23343f");
+    run("relief.attrs.stroke");
     expect(Styles.writeAttr).toHaveBeenCalledWith(["relief", "attrs", "stroke"]);
     expect(Layers.draw).not.toHaveBeenCalled();
     expect(relief.generate).not.toHaveBeenCalled();
   });
 
   test("an attr writes its one attribute, no redraw", () => {
-    run("rivers.attrs.fill", "#123456");
+    run("rivers.attrs.fill");
     expect(Styles.writeAttr).toHaveBeenCalledWith(["rivers", "attrs", "fill"]);
     expect(Layers.draw).not.toHaveBeenCalled();
   });
 
   test("an option redraws the selection's layer, no write", () => {
-    run("texture.options.x", 5);
+    run("texture.options.x");
     expect(Layers.draw).toHaveBeenCalledWith("texture");
     expect(Styles.writeAttr).not.toHaveBeenCalled();
   });
 
   test("grid, rulers and ocean waves bake their stroke: write and draw", () => {
-    run("grid.attrs.stroke-width", 2);
+    run("grid.attrs.stroke-width");
     expect(Styles.writeAttr).toHaveBeenCalledWith(["grid", "attrs", "stroke-width"]);
     expect(Layers.draw).toHaveBeenCalledWith("grid");
-    run("ocean.groups.oceanWaves.attrs.stroke", "#000000");
+    run("ocean.groups.oceanWaves.attrs.stroke");
     expect(Layers.draw).toHaveBeenCalledWith("ocean");
   });
 
   test("relief options reach the generator", () => {
-    run("relief.options.set", "gray");
-    run("relief.options.size", 2, 1); // a pure redraw: the size is a render multiplier, not data
-    run("relief.options.density", 0.5);
+    run("relief.options.set");
+    run("relief.options.size"); // a pure redraw: the size is a render multiplier, not data
+    run("relief.options.density");
     expect(relief.generate).toHaveBeenCalled();
     expect(Layers.draw).toHaveBeenCalledTimes(3);
     expect(Layers.draw).toHaveBeenCalledWith("relief");
   });
 
   test("a zoom-derived attr is written, then the zoom re-run; a vignette option redraws its layer", () => {
-    run("states.groups.statesHalo.attrs.stroke-width", 12);
+    run("states.groups.statesHalo.attrs.stroke-width");
     expect(Styles.writeAttr).toHaveBeenCalledWith(["states", "groups", "statesHalo", "attrs", "stroke-width"]);
     expect(invokeActiveZooming).toHaveBeenCalled();
-    run("vignette.options.rx", "5%");
+    run("vignette.options.rx");
     expect(Layers.draw).toHaveBeenCalledWith("vignette"); // the renderer's applier reshapes the defs mask
   });
 
   test("label typography is written, then the labels are laid out again; a paint attr only writes", () => {
-    run("labels.groups.state.attrs.font-family", "Arial", "Georgia", { group: "state" });
+    run("labels.groups.state.attrs.font-family", { group: "state" });
     expect(Styles.writeAttr).toHaveBeenCalledWith(["labels", "groups", "state", "attrs", "font-family"]);
     expect(Layers.draw).toHaveBeenCalledWith("labels");
     vi.clearAllMocks();
-    run("labels.groups.city.attrs.fill", "#000000", null, { group: "city" });
+    run("labels.groups.city.attrs.fill", { group: "city" });
     expect(Styles.writeAttr).toHaveBeenCalledWith(["labels", "groups", "city", "attrs", "fill"]);
     expect(Layers.draw).not.toHaveBeenCalled();
   });
 
   test("scale bar and legend font redraw; a burg icon attr goes onto its group", () => {
-    run("scaleBar.groups.back.attrs.fill", "#ffffff");
+    run("scaleBar.groups.back.attrs.fill");
     expect(Styles.writeAttr).toHaveBeenCalledWith(["scaleBar", "groups", "back", "attrs", "fill"]);
     expect(Layers.draw).toHaveBeenCalledWith("scaleBar");
-    run("legend.attrs.font-family", "Arial");
+    run("legend.attrs.font-family");
     expect(Layers.draw).toHaveBeenCalledWith("legend");
     vi.clearAllMocks();
-    run("burgIcons.groups.town.groups.icons.attrs.fill", "#ffffff");
+    run("burgIcons.groups.town.groups.icons.attrs.fill");
     expect(Styles.writeAttr).toHaveBeenCalledWith(["burgIcons", "groups", "town", "groups", "icons", "attrs", "fill"]);
     expect(Layers.draw).not.toHaveBeenCalled();
   });

@@ -329,7 +329,7 @@ function materialize(
 }
 
 function renderDefinition(id: string, emblem: Emblem | undefined): Promise<unknown> | undefined {
-  if (!emblem || emblem.custom) return;
+  if (!emblem) return;
   return EmblemRenderer.trigger(id, emblem);
 }
 

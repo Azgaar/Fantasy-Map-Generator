@@ -12,6 +12,9 @@ vi.mock("@/utils/pathUtils", async importOriginal => ({
 }));
 
 import "@/generators/styles";
+import "@/generators/relief-generator"; // the models own the icon sets references resolve against
+import "@/generators/burgs-generator";
+import "@/generators/goods-generator";
 import { drawMarkets, highlightMarketOff, highlightMarketOn } from "./draw-markets";
 
 function territory(x: number, y = 0, size = 100): { polygons: [number, number][][] } {
@@ -38,7 +41,7 @@ beforeEach(() => {
     ],
     burgs: [{}, { i: 1, x: 50, y: 50 }, { i: 2, x: 550, y: 50 }]
   } as never;
-  styles.markets.options = { size: 3, iconSize: 5, icon: "🛒" };
+  styles.markets.options = { size: 3, iconSize: 5, icon: "glyph-1f6d2" };
   setViewportSize(100, 100);
   setViewportTransform(1, 0, 0);
   vi.mocked(getIsolines)
@@ -73,7 +76,7 @@ test("territories intersecting the viewport render even when their centers are o
 test("center artwork at the edge renders independently of its territory", () => {
   pack.burgs[2].x = 185;
   drawMarkets();
-  expect(document.querySelector("#market2 text")).not.toBeNull();
+  expect(document.querySelector("#market2 use")).not.toBeNull();
   expect(document.querySelector("#market2 .fill")).toBeNull();
   pack.burgs[2].x = 190;
   ViewportLayers.renderNow();
@@ -84,12 +87,12 @@ test("zoom updates icon sizing and full-map export restores every market at scal
   setViewportTransform(4, 0, 0);
   drawMarkets();
   expect(document.querySelector("#market1 circle")?.getAttribute("r")).toBe("3.25");
-  expect(document.querySelector("#market1 text")?.getAttribute("font-size")).toBe("5.25px");
+  expect(document.querySelector("#market1 use")?.getAttribute("width")).toBe("5.25");
   const clone = document.getElementById("map")!.cloneNode(true) as SVGSVGElement;
   ViewportLayers.renderTo(clone);
   expect(clone.querySelectorAll("#markets > g")).toHaveLength(2);
   expect(clone.querySelector("#market2 circle")?.getAttribute("r")).toBe("4");
-  expect(clone.querySelector("#market2 text")?.getAttribute("font-size")).toBe("6px");
+  expect(clone.querySelector("#market2 use")?.getAttribute("width")).toBe("6");
   expect(document.getElementById("market2")).toBeNull();
   expect(document.querySelector("#market1 circle")?.getAttribute("r")).toBe("3.25");
   const markup = clone.innerHTML;
@@ -105,14 +108,14 @@ test("redraw picks up territory painting, styles, centers and deletion", () => {
   pack.markets[0].color = "#0000ff";
   pack.markets.pop();
   pack.burgs[1].x = 70;
-  styles.markets.options.icon = "🏰";
+  styles.markets.options.icon = "glyph-1f3f0";
   styles.markets.options.size = 8;
   drawMarkets();
   expect(document.querySelector("#market1 .fill")?.getAttribute("d")).not.toBe(oldPath);
   expect(document.querySelector("#market1 .fill")?.getAttribute("fill")).toBe("#0000ff");
   expect(document.querySelector("#market1 circle")?.getAttribute("cx")).toBe("70");
   expect(document.querySelector("#market1 circle")?.getAttribute("r")).toBe("9");
-  expect(document.querySelector("#market1 text")?.textContent).toBe("🏰");
+  expect(document.querySelector("#market1 use")?.getAttribute("href")).toBe("#glyph-1f3f0");
   expect(document.querySelectorAll("#markets > g")).toHaveLength(1);
 });
 

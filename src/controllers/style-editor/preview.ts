@@ -1,6 +1,7 @@
 // A style card's header preview:
+
+import { Icons } from "@/components/icons";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
-import { burgIconPreview } from "./icon-preview";
 
 export type PreviewValues = { attrs: Record<string, unknown>; options: Record<string, unknown> };
 
@@ -60,7 +61,7 @@ export function cardPreview(values: PreviewValues, { sample, off, neutral = NEUT
 
   if (scheme) preview.push(ramp(scheme));
   else if (image) preview.push(thumbnail(image));
-  else if (icon) preview.push(icon.startsWith("#") ? iconChip(icon, read) : emojiChip(icon));
+  else if (icon) preview.push(iconChip(icon, read));
   else if (font) preview.push(textSample(font, read, sample));
   else if (tile) preview.push(tile);
   else preview.push(...shapePreview(read, live, neutral));
@@ -264,16 +265,12 @@ function thumbnail(href: string): HTMLElement {
 function iconChip(id: string, read: Read): HTMLElement {
   const span = document.createElement("span");
   span.className = "icon";
-  span.innerHTML = burgIconPreview(id);
-  span.style.fill = read.text("fill") ?? "none";
-  span.style.stroke = read.text("stroke") ?? "none";
-  return span;
-}
-
-function emojiChip(emoji: string): HTMLElement {
-  const span = document.createElement("span");
-  span.className = "emoji";
-  span.textContent = emoji;
+  span.innerHTML = Icons.html(id);
+  const svg = span.querySelector("svg");
+  if (svg) {
+    svg.style.fill = read.text("fill") ?? ""; // the style's paint over the default one
+    svg.style.stroke = read.text("stroke") ?? "";
+  }
   return span;
 }
 

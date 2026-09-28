@@ -294,7 +294,9 @@ its role. Heraldry is the current example:
 
 - `src/data/emblems/` — static heraldry catalogs
 - `src/generators/emblems-generator.ts` — emblem generation (registers `window.Emblems`)
-- `src/renderers/emblems/` — SVG drawing of emblems (registers `window.EmblemRenderer`)
+- `src/renderers/emblems/` — SVG drawing of emblems (registers `window.EmblemRenderer`). Its shields, lines,
+  patterns, templates and diapers are ported from [Armoria](https://github.com/Azgaar/Armoria), and `public/charges/`
+  is a verbatim copy of Armoria's charges: sync both from Armoria rather than editing them here
 
 ## Why no `core/`
 

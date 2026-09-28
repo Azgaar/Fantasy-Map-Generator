@@ -1,6 +1,7 @@
 import type { Selection } from "d3";
 import { select } from "d3";
 import { type IconSetId, IconSets } from "@/components/icon-sets";
+import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { viewport, ZOOM_CURVES, type ZoomedLayer, zoomFontSize } from "@/components/viewport";
@@ -294,7 +295,7 @@ function captureIconDefinitions(clone: SVGSVGElement, source: SVGSVGElement): ()
       const set = IconSets.setForId(id);
       if (!set) return null;
       const original = source.getElementById(id);
-      return source.getElementById(IconSets.containerId(set))?.contains(original) ? original : null;
+      return Icons.group(set)?.contains(original) ? original : null;
     },
     id => {
       if (IconSets.setForId(id)) throw new Error(`Missing icon definition: ${id}`);
@@ -302,9 +303,7 @@ function captureIconDefinitions(clone: SVGSVGElement, source: SVGSVGElement): ()
   );
 
   return async () => {
-    await Promise.all([...required].map(set => IconSets.retry(set)));
-    const failed = [...required].find(set => !IconSets.isLoaded(set));
-    if (failed) throw new Error(`Failed to load ${failed} icons`);
+    await Icons.require(required);
     for (const id of missing) resolve(id);
   };
 }
@@ -389,9 +388,6 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
       symbols[i].remove();
     }
 
-    const completeIcons = captureIconDefinitions(cloneEl, svgDefs);
-    await completeIcons();
-
     // viewport layers only keep visible emblems live; full-map rendering materializes all of them into the clone
     const cloneEmblems = cloneEl.getElementById("emblems")?.querySelectorAll("use") ?? [];
     if (Layers.isOn("emblems") && cloneEmblems.length) {
@@ -409,6 +405,9 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
     } else {
       cloneDefs.querySelector("#defs-emblems")?.remove();
     }
+
+    const completeIcons = captureIconDefinitions(cloneEl, svgDefs);
+    await completeIcons();
 
     {
       // replace ocean pattern href to base64; drop the image if it cannot be loaded,
@@ -454,41 +453,7 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
       if (pattern) cloneDefs.appendChild(pattern.cloneNode(true));
     }
 
-    {
-      // replace external marker icons
-      const externalMarkerImages = cloneEl.querySelectorAll<SVGImageElement>('#markers image[href]:not([href=""])');
-      const imageHrefs = Array.from(externalMarkerImages).map(img => img.getAttribute("href"));
-
-      for (const url of imageHrefs) {
-        if (!url) continue;
-        await new Promise<void>(resolve => {
-          getBase64(url, base64 => {
-            externalMarkerImages.forEach(img => {
-              if (typeof base64 === "string" && img.getAttribute("href") === url) img.setAttribute("href", base64);
-            });
-            resolve();
-          });
-        });
-      }
-    }
-
-    {
-      // replace external regiment icons
-      const externalRegimentImages = cloneEl.querySelectorAll<SVGImageElement>('#armies image[href]:not([href=""])');
-      const imageHrefs = Array.from(externalRegimentImages).map(img => img.getAttribute("href"));
-
-      for (const url of imageHrefs) {
-        if (!url) continue;
-        await new Promise<void>(resolve => {
-          getBase64(url, base64 => {
-            externalRegimentImages.forEach(img => {
-              if (typeof base64 === "string" && img.getAttribute("href") === url) img.setAttribute("href", base64);
-            });
-            resolve();
-          });
-        });
-      }
-    }
+    if (type !== "svg") await inlineLinkedImages(cloneEl);
 
     const fogMask = cloneEl.getElementById("fog");
     if (!fogMask?.querySelector("path")) fogMask?.remove(); // the fog mask is unused until an area is revealed
@@ -499,7 +464,7 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
     if (cloneEl.getElementById("armies")) {
       cloneEl.insertAdjacentHTML(
         "afterbegin",
-        "<style>#armies text {stroke: none; fill: #fff; text-shadow: 0 0 4px #000; dominant-baseline: central; text-anchor: middle; font-family: Helvetica; fill-opacity: 1;}#armies text.regimentIcon {font-size: .8em;}</style>"
+        "<style>#armies text {stroke: none; fill: #fff; text-shadow: 0 0 4px #000; dominant-baseline: central; text-anchor: middle; font-family: Helvetica; fill-opacity: 1;}#armies use.regimentIcon {fill: #fff; text-shadow: 0 0 4px #000;}</style>"
       );
     }
 
@@ -609,9 +574,52 @@ export function flattenSymbolReferences(svg: SVGSVGElement): void {
       if (["viewBox", "width", "height", "overflow", "preserveAspectRatio"].includes(attr.name)) continue;
       group.setAttribute(attr.name, attr.value);
     }
-    while (symbol.firstChild) group.appendChild(symbol.firstChild);
+    let content = group;
+    if ((symbol.style.overflow || symbol.getAttribute("overflow")) !== "visible") {
+      const frame = Icons.parseFrame(symbol.getAttribute("viewBox") ?? "");
+      if (frame) {
+        const clip = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
+        clip.id = `${symbol.id}-export-clip`;
+        while (svg.getElementById(clip.id)) clip.id += "-1";
+        clip.setAttribute("clipPathUnits", "userSpaceOnUse");
+        const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        for (const [index, name] of ["x", "y", "width", "height"].entries())
+          rect.setAttribute(name, String(frame[index]));
+        clip.appendChild(rect);
+        content = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        content.setAttribute("clip-path", `url(#${clip.id})`);
+        group.append(clip, content);
+      }
+    }
+    while (symbol.firstChild) content.appendChild(symbol.firstChild);
     symbol.replaceWith(group);
   });
+}
+
+/** linked custom icons for a raster export; see docs/architecture/icons.md#exports */
+export async function inlineLinkedImages(svg: SVGSVGElement): Promise<void> {
+  const images = Array.from(svg.querySelectorAll<SVGImageElement>('symbol image[href^="http"]')).filter(
+    image => Icons.kind(image.closest("symbol")!.id) === "custom"
+  );
+  const byUrl = new Map<string, SVGImageElement[]>();
+  for (const image of images) {
+    const url = image.getAttribute("href")!;
+    byUrl.set(url, [...(byUrl.get(url) ?? []), image]);
+  }
+  await Promise.all(
+    [...byUrl].map(
+      ([url, users]) =>
+        new Promise<void>(resolve => {
+          getBase64(url, base64 => {
+            for (const image of users) {
+              if (typeof base64 === "string") image.setAttribute("href", base64);
+              else image.remove();
+            }
+            resolve();
+          });
+        })
+    )
+  );
 }
 
 // Filter the whole composition outside the zoom transform; Firefox and Inkscape need an inner group.

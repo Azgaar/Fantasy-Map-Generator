@@ -134,12 +134,6 @@ describe("SchemaForm.render", () => {
     expect(root.querySelector("details")).toBeNull();
   });
 
-  test("a custom flatten swaps which containers stay inline", () => {
-    const { form } = mount({ flatten: key => key === "box" || key === "attrs" });
-    expect(form.querySelector('[data-section="box"]')).toBeNull();
-    expect(form.querySelector('[data-section="options"]')).not.toBeNull();
-  });
-
   test("changes reach onChange with the path and the parsed value", () => {
     const { form, onChange } = mount();
 

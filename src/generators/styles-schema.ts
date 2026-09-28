@@ -401,7 +401,15 @@ export const stylesSchema = z.strictObject({
     groups: z.strictObject({
       goodsCells: z.strictObject({ attrs: z.strictObject({ opacity, filter }) }),
       goodsIcons: z.strictObject({
-        attrs: z.strictObject({ opacity, "stroke-width": variant(strokeWidth, { label: "Stroke Width" }), filter }),
+        attrs: z.strictObject({
+          opacity,
+          stroke: variant(stroke, { label: "Icon Lines", tip: "Color of the icon lines" }),
+          "stroke-width": variant(strokeWidth, {
+            label: "Stroke Width",
+            tip: "Width of the circle outline; the icon lines are drawn at 40% of it"
+          }),
+          filter
+        }),
         options: z.strictObject({
           size: number({
             label: "Marker size",
@@ -564,9 +572,9 @@ export const stylesSchema = z.strictObject({
         label: "Icon size",
         range: [1, 20],
         step: 0.5,
-        tip: "Set market marker emoji icon size in pixels"
+        tip: "Set market marker icon size in pixels"
       }),
-      icon: text({ control: "emoji", label: "Marker icon", tip: "Set the emoji icon shown inside the market marker" })
+      icon: text({ control: "icon", label: "Marker icon", tip: "Set the icon shown inside the market marker" })
     })
   }),
   military: z.strictObject({

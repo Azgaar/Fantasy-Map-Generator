@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import indexHtml from "@/index.html?raw";
 import "@/generators/added-labels";
 import "@/generators/features-generator"; // migrations call the Features module through its global
+import "@/generators/burgs-generator"; // the burg sets that tell style icon references from text
 import "@/generators/goods-generator"; // the goods icon namespace the 1.154 step migrates into
 import "@/generators/relief-generator"; // the relief set namespace the 1.154 step migrates into
 import { confirmationDialog } from "@/components/dialog/dialog-helpers";
@@ -13,7 +14,7 @@ import * as versioning from "@/services/versioning";
 import { VERSION } from "@/services/versioning";
 import { downloadFile } from "@/utils";
 import { safeParseJSON } from "@/utils/stringUtils";
-import { migrateLegacySettings, resolveVersionConflicts } from "./auto-update";
+import { migrateLegacyCustomEmblems, migrateLegacySettings, resolveVersionConflicts } from "./auto-update";
 
 beforeEach(() => {
   document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox"></g></svg>`;
@@ -21,6 +22,65 @@ beforeEach(() => {
   options.map.labels.groups = [];
   options.map.style.preset = "default";
   globalThis.pack = { features: [] } as unknown as typeof globalThis.pack; // migrations run against a loaded map
+});
+
+it("deduplicates legacy emblem images and keeps placement", () => {
+  options.map.customIcons = [];
+  document.body.innerHTML = `<svg><defs><g id="defs-emblems">
+    <svg id="stateCOA1"><image href="data:image/png;base64,AA"/></svg>
+    <svg id="burgCOA1"><image href="data:image/png;base64,AA"/></svg>
+  </g></defs></svg>`;
+  globalThis.pack = {
+    states: [{ i: 0 }, { i: 1, coa: { custom: true, size: 2, x: 12, y: 34 } }],
+    provinces: [],
+    burgs: [{ i: 0 }, { i: 1, coa: { custom: true, size: 0.5, x: 56, y: 78 } }]
+  } as unknown as typeof pack;
+
+  migrateLegacyCustomEmblems();
+
+  expect(options.map.customIcons).toHaveLength(1);
+  expect(pack.states[1].coa).toEqual({ icon: options.map.customIcons[0].id, size: 2, x: 12, y: 34 });
+  expect(pack.burgs[1].coa).toEqual({ icon: options.map.customIcons[0].id, size: 0.5, x: 56, y: 78 });
+  expect(document.getElementById("stateCOA1")).toBeNull();
+  expect(document.getElementById("burgCOA1")).toBeNull();
+});
+
+it("turns inline svg emblems into svg icons and lost ones into no picture, never leaving a custom emblem", () => {
+  options.map.customIcons = [];
+  document.body.innerHTML = `<svg><defs><g id="defs-emblems">
+    <svg id="stateCOA1" viewBox="0 0 200 200"><path d="M0 0h200v200z"/></svg>
+  </g></defs></svg>`;
+  globalThis.pack = {
+    states: [{ i: 0 }, { i: 1, coa: { custom: true } }, { i: 2, coa: { custom: true, size: 3 } }],
+    provinces: [],
+    burgs: []
+  } as unknown as typeof pack;
+
+  migrateLegacyCustomEmblems();
+
+  expect(options.map.customIcons).toMatchObject([{ kind: "svg", viewBox: "0 0 200 200" }]);
+  expect(pack.states[1].coa).toMatchObject({ icon: options.map.customIcons[0].id });
+  expect(pack.states[2].coa).toMatchObject({ icon: "", size: 3 });
+});
+
+it("keeps a legacy SVG emblem whole even when it embeds an image, and gives removed entities no icon", () => {
+  options.map.customIcons = [];
+  document.body.innerHTML = `<svg><defs><g id="defs-emblems">
+    <svg id="stateCOA1" viewBox="0 0 100 100"><rect width="100" height="100" fill="gold"/><image href="data:image/png;base64,AA"/></svg>
+    <svg id="burgCOA1" viewBox="0 0 200 200"><image href="data:image/png;base64,BB"/></svg>
+  </g></defs></svg>`;
+  globalThis.pack = {
+    states: [{ i: 0 }, { i: 1, coa: { custom: true } }],
+    provinces: [],
+    burgs: [{ i: 0 }, { i: 1, removed: true, coa: { custom: true } }]
+  } as unknown as typeof pack;
+
+  migrateLegacyCustomEmblems();
+
+  expect(options.map.customIcons).toMatchObject([{ kind: "svg" }]);
+  expect(options.map.customIcons[0].content).toContain('fill="gold"');
+  expect(pack.burgs[1].coa).toEqual({ icon: "" });
+  expect(document.getElementById("burgCOA1")).toBeNull();
 });
 
 vi.mock("@/services/style-presets", () => ({
@@ -468,8 +528,33 @@ describe("v1.154.0 style record normalization", () => {
 
     await resolveVersionConflicts("1.153.0", data);
     const parsed = Styles.parse(JSON.parse(data[48]));
-    expect(parsed.burgIcons.groups.town.groups.anchors.options).toEqual({ size: 2, icon: "#ports-anchor" });
-    expect(parsed.burgIcons.groups.town.groups.icons.options.icon).toBe("#burgs-atlas-circle");
+    expect(parsed.burgIcons.groups.town.groups.anchors.options).toEqual({ size: 2, icon: "ports-anchor" });
+    expect(parsed.burgIcons.groups.town.groups.icons.options.icon).toBe("burgs-atlas-circle");
+  });
+
+  it("halves the outline of groups drawn with the icons that were half scale", async () => {
+    const record = JSON.parse(JSON.stringify(Styles.defaults));
+    const icons = structuredClone(record.burgIcons.groups.town.groups.icons);
+    icons.options.icon = "#icon-circle-dotted";
+    icons.attrs["stroke-width"] = 1.5;
+    const anchors = structuredClone(record.burgIcons.groups.town.groups.anchors);
+    anchors.options.icon = "#icon-harbor";
+    anchors.attrs["stroke-width"] = null;
+    const circle = structuredClone(icons);
+    circle.options.icon = "#icon-circle";
+    delete record.burgIcons;
+    record.burgIcons = {
+      burgIcons: { groups: { town: icons, city: circle } },
+      anchors: { groups: { town: anchors } }
+    };
+    const data: string[] = [];
+    data[48] = JSON.stringify(record);
+
+    await resolveVersionConflicts("1.153.0", data);
+    const { groups } = Styles.parse(JSON.parse(data[48])).burgIcons;
+    expect(groups.town.groups.icons.attrs["stroke-width"]).toBe(0.75);
+    expect(groups.town.groups.anchors.attrs["stroke-width"]).toBe(0.5);
+    expect(groups.city.groups.icons.attrs["stroke-width"]).toBe(1.5);
   });
 
   it("drops the old #icons layer element so the #burgIcons layer takes over", async () => {
@@ -978,9 +1063,21 @@ describe("v1.154 relief descriptors", () => {
     return pack.relief;
   };
 
+  it("turns a biome's list of repeated relief entries into weights, in order of first appearance", async () => {
+    document.body.innerHTML = '<svg id="map"><defs id="deftemp"/><g id="viewbox"><g id="terrain"></g></g></svg>';
+    const data: string[] = [];
+    data[48] = stylesPayload("colored");
+    globalThis.pack = {
+      relief: [],
+      biomes: [{ icons: [] }, { icons: ["dune", "cactus", "dune", "deadTree", "dune"] }, { icons: { grass: 1 } }]
+    } as unknown as typeof pack;
+    await runMigration("1.153.1", data, ["1.154.0"]);
+    expect(pack.biomes.map(biome => biome.icons)).toEqual([{}, { dune: 3, cactus: 1, deadTree: 1 }, { grass: 1 }]);
+    expect(Object.keys(pack.biomes[1].icons)).toEqual(["dune", "cactus", "deadTree"]);
+  });
+
   it("renames goods symbols into the set namespace and uploads into the reserved custom one", async () => {
-    document.body.innerHTML =
-      '<svg id="map"><defs id="deftemp"/><g id="viewbox"><g id="terrain"></g></g></svg><svg id="defElements"><defs><svg id="good-custom-ab12"/></defs></svg>';
+    document.body.innerHTML = '<svg id="map"><defs id="deftemp"/><g id="viewbox"><g id="terrain"></g></g></svg>';
     const data: string[] = [];
     data[48] = stylesPayload("colored");
     globalThis.pack = {
@@ -994,7 +1091,48 @@ describe("v1.154 relief descriptors", () => {
       "custom-goods-ab12",
       "goods-tea"
     ]);
-    expect(document.querySelector("#defElements defs > svg")?.id).toBe("custom-goods-ab12");
+  });
+
+  it("moves goods uploads and inline images into custom icons, and text into glyphs", async () => {
+    document.body.innerHTML = '<svg id="map"><defs id="deftemp"/><g id="viewbox"><g id="terrain"></g></g></svg>';
+    const data: string[] = [];
+    const legacyStyles = JSON.parse(stylesPayload("colored"));
+    legacyStyles.markets.options.icon = "⚖️";
+    legacyStyles.burgIcons.groups.city.groups.icons.options.icon = "#burgs-atlas-circle";
+    data[48] = JSON.stringify(legacyStyles);
+    data[45] =
+      '<svg id="good-custom-ab12" viewBox="0 0 20 20" fill="navy"><script>x()</script><path id="leaf" d="M0 0"/></svg>' +
+      '<svg id="custom-goods-img" viewBox="0 0 200 200"><image width="200" height="200" href="data:image/png;base64,AA"/></svg>';
+    options.map.customIcons = [];
+    options.map.military.units = [{ ...options.map.military.units[0], icon: "⚔️" }];
+    globalThis.pack = {
+      relief: [],
+      goods: [{ icon: "good-custom-ab12" }, { icon: "custom-goods-img" }],
+      markers: [{ icon: "https://a.b/c.png" }, { icon: "https://a.b/c.png" }, { icon: "🌋" }, { icon: "hq-2" }],
+      states: [{ i: 0 }, { i: 1, military: [{ icon: "XIV" }] }]
+    } as unknown as typeof pack;
+    await runMigration("1.153.1", data, ["1.154.0"]);
+
+    expect(options.map.customIcons.map(icon => [icon.id, icon.kind])).toEqual([
+      ["custom-goods-ab12", "svg"],
+      ["custom-goods-img", "image"],
+      [pack.markers[0].icon, "image"] // markers sharing an image point at one icon
+    ]);
+    const [vector, raster] = options.map.customIcons;
+    expect(vector.viewBox).toBe("0 0 20 20");
+    expect(vector.content).toContain('fill="navy"'); // the root's paint, on the wrapping group
+    expect(vector.content).toContain('id="custom-goods-ab12-leaf"');
+    expect(vector.content).not.toContain("script");
+    expect(raster).toMatchObject({ content: "data:image/png;base64,AA", viewBox: "0 0 100 100" });
+    expect(pack.goods.map(good => good.icon)).toEqual(["custom-goods-ab12", "custom-goods-img"]);
+    expect(pack.markers[1].icon).toBe(pack.markers[0].icon);
+    expect(pack.markers[2].icon).toBe("glyph-1f30b");
+    expect(pack.markers[3].icon).toBe("glyph-68-71-2d-32"); // looks like an id, but no icon set owns it
+    expect(pack.states[1].military![0].icon).toBe("glyph-58-49-56");
+    expect(options.map.military.units[0].icon).toBe("glyph-2694-fe0f");
+    const styles = JSON.parse(data[48]);
+    expect(styles.markets.options.icon).toBe("glyph-2696-fe0f");
+    expect(styles.burgIcons.groups.city.groups.icons.options.icon).toBe("burgs-atlas-circle");
   });
 
   it("renumbers variants and recovers pins against the incoming map's set", async () => {

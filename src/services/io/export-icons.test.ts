@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, expect, test, vi } from "vitest";
-import { IconSets } from "@/components/icon-sets";
+import { Icons } from "@/components/icons";
 import { setViewportSize } from "@/components/viewport";
 import { Styles } from "@/generators/styles";
 import "@/generators/burgs-generator"; // the models own the set definitions the export resolves ids against
@@ -11,25 +11,11 @@ import { ExportMap } from "./export";
 
 vi.mock("@/components/layers", () => ({ Layers: { isOn: (id: string) => id === "relief", draw: vi.fn() } }));
 vi.mock("@/services/fonts", () => ({ getUsedFonts: () => [], loadFontsAsDataURI: vi.fn() }));
-vi.mock("@/components/icon-sets", async original => {
-  const actual = await original<typeof import("@/components/icon-sets")>();
-  return {
-    ...actual,
-    IconSets: {
-      setForId: actual.IconSets.setForId.bind(actual.IconSets),
-      containerId: actual.IconSets.containerId.bind(actual.IconSets),
-      retry: vi.fn(),
-      isLoaded: vi.fn(),
-      loadAll: vi.fn()
-    }
-  };
-});
-
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(IconSets.retry).mockResolvedValue();
-  vi.mocked(IconSets.isLoaded).mockReturnValue(true);
-  vi.mocked(IconSets.loadAll).mockResolvedValue();
+  vi.spyOn(Icons, "retry").mockResolvedValue();
+  vi.spyOn(Icons, "isLoaded").mockReturnValue(true);
+  vi.spyOn(Icons, "loadAll").mockResolvedValue();
   document.body.innerHTML =
     '<svg id="map" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><defs/><g id="viewbox"><g id="terrain"/><g id="goodsIcons"><use href="#custom-goods-map" width="10" height="10"/></g></g></svg><svg id="defElements"><defs><svg id="custom-goods-map" viewBox="0 0 10 10"><path d="M1 1"/></svg></defs></svg>';
   globalThis.styles = Styles.parse(undefined);
@@ -53,7 +39,7 @@ test.each(["svg", "png"])(
     terrain.setAttribute("stroke", "#aabbcc");
     terrain.setAttribute("stroke-width", "0.3");
     let finish!: () => void;
-    vi.mocked(IconSets.retry).mockReturnValue(
+    vi.mocked(Icons.retry).mockReturnValue(
       new Promise<void>(resolve => {
         finish = resolve;
       })
@@ -70,8 +56,8 @@ test.each(["svg", "png"])(
     });
     await Promise.resolve();
     expect(done).toBe(false);
-    expect(IconSets.retry).toHaveBeenCalledWith("relief-illustrated");
-    expect(IconSets.retry).toHaveBeenCalledWith("relief-gray");
+    expect(Icons.retry).toHaveBeenCalledWith("relief-illustrated");
+    expect(Icons.retry).toHaveBeenCalledWith("relief-gray");
     styles.relief.options.set = "colored";
     pack.relief[0] = { type: "grass", variant: 1, x: 1, y: 1, s: 4 };
     const defs = document.querySelector("#defElements defs")!;
@@ -79,7 +65,7 @@ test.each(["svg", "png"])(
     globalThis.pack = { relief: [] } as unknown as typeof pack;
     defs.insertAdjacentHTML(
       "beforeend",
-      '<g id="icons-relief-illustrated"><symbol id="relief-illustrated-mountSnow-6" viewBox="0 0 100 100"><use href="#relief-illustrated-mountSnow-3" width="100" height="100"/></symbol><symbol id="relief-illustrated-mountSnow-3" viewBox="0 0 100 100"><path d="M2 2"/></symbol></g><g id="icons-relief-gray"><symbol id="relief-gray-hill-1" viewBox="0 0 100 100"><path/></symbol></g>'
+      '<g id="icons-library"><g data-set="relief-illustrated"><symbol id="relief-illustrated-mountSnow-6" viewBox="0 0 100 100"><use href="#relief-illustrated-mountSnow-3" width="100" height="100"/></symbol><symbol id="relief-illustrated-mountSnow-3" viewBox="0 0 100 100"><path d="M2 2"/></symbol></g><g data-set="relief-gray"><symbol id="relief-gray-hill-1" viewBox="0 0 100 100"><path/></symbol></g></g>'
     );
     finish();
     expect(await pending).toBe("blob:export");
@@ -100,7 +86,7 @@ test.each(["svg", "png"])(
 
 test("failed icon chunks reject the export and clean up its clone", async () => {
   drawRelief();
-  vi.mocked(IconSets.isLoaded).mockReturnValue(false);
+  vi.mocked(Icons.isLoaded).mockReturnValue(false);
   await expect(ExportMap.getMapURL("png", { noScaleBar: true })).rejects.toThrow("Failed to load relief-");
   expect(document.getElementById("fantasyMap")).toBeNull();
   expect(window.URL.createObjectURL).not.toHaveBeenCalled();

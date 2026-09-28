@@ -39,7 +39,6 @@ const STYLE = /* css */ `
   #styleForm .pick { margin: 0; flex: 1 1 0; display: flex; align-items: center; gap: .4em; padding: 0.1em .4em; background: #ffffff; font-size: smaller; }
   #styleForm .pick::after { content: "▾"; margin-left: auto; opacity: .6; }
   #styleForm .pick > svg { flex: none; width: 1.4em; height: 1.4em; overflow: visible; }
-  #styleForm .pick > .emoji { font-size: 1.3em; line-height: 1; }
   #styleForm .reset { flex: none; visibility: hidden; border: 0; background: none; box-shadow: none; color: var(--dark-solid); padding: 0 .2em; margin: 0; cursor: pointer; }
   #styleForm .changed .reset { visibility: visible; }
   #styleForm .reset.blank { visibility: hidden; }
@@ -51,7 +50,6 @@ const STYLE = /* css */ `
   #styleForm summary > .preview > .tex { flex: none; width: 1.8em; height: 1.5em; border: 1px solid #333; border-radius: 3px; background-size: cover; background-position: center; }
   #styleForm summary > .preview > .icon { flex: none; display: flex; }
   #styleForm summary > .preview > .icon > svg { width: 1.5em; height: 1.5em; overflow: visible; }
-  #styleForm summary > .preview > .emoji { font-size: 1.35em; line-height: 1; }
   #styleForm summary > .preview > .off { opacity: .45; }
 `;
 

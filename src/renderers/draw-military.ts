@@ -1,6 +1,24 @@
 import { color, easeSinInOut, select, transition } from "d3";
+import { Icons } from "@/components/icons";
 import type { Regiment } from "../generators/military-generator";
-import { isImageIcon, rn } from "../utils";
+import { rn } from "../utils";
+
+/** the icon box inside the square left of a regiment box at x1, y1 of height h */
+export const regimentIconBox = (x1: number, y1: number, h: number, icon: string) => {
+  const inset = Icons.kind(icon) === "glyph" ? h * 0.1 : 0;
+  return { x: rn(x1 - h + inset, 2), y: rn(y1 + inset, 2), size: rn(h - 2 * inset, 2) };
+};
+
+export function updateRegimentIcon(use: SVGUseElement, regiment: Regiment): void {
+  const size = styles.military.options.boxSize;
+  const x = rn(regiment.x - size * (regiment.n ? 2 : 3), 2);
+  const y = rn(regiment.y - size, 2);
+  const icon = regiment.icon ?? "";
+  const box = regimentIconBox(x, y, size * 2, icon);
+  use.setAttribute("href", Icons.href(icon));
+  for (const [name, value] of Object.entries({ x: box.x, y: box.y, width: box.size, height: box.size }))
+    use.setAttribute(name, String(value));
+}
 
 export const drawMilitary = (): void => {
   TIME && console.time("drawMilitary");
@@ -60,19 +78,11 @@ const drawRegimentsRenderer = (regiments: Regiment[], s: number): void => {
     .attr("y", d => y(d))
     .attr("width", h)
     .attr("height", h);
-  g.append("text")
+  g.append("use")
     .attr("class", "regimentIcon")
-    .attr("text-rendering", "optimizeSpeed")
-    .attr("x", d => x(d) - size)
-    .attr("y", d => d.y)
-    .text(d => (isImageIcon(d.icon!) ? "" : d.icon!));
-  g.append("image")
-    .attr("class", "regimentImage")
-    .attr("x", d => x(d) - h)
-    .attr("y", d => y(d))
-    .attr("height", h)
-    .attr("width", h)
-    .attr("href", d => (isImageIcon(d.icon!) ? d.icon! : ""));
+    .each(function (d) {
+      updateRegimentIcon(this, d);
+    });
 };
 
 export const drawRegiment = (reg: Regiment, stateId: number): void => {
@@ -114,19 +124,8 @@ export const drawRegiment = (reg: Regiment, stateId: number): void => {
     .attr("y", y1)
     .attr("width", h)
     .attr("height", h);
-  g.append("text")
-    .attr("class", "regimentIcon")
-    .attr("text-rendering", "optimizeSpeed")
-    .attr("x", x1 - size)
-    .attr("y", reg.y)
-    .text(isImageIcon(reg.icon!) ? "" : reg.icon!);
-  g.append("image")
-    .attr("class", "regimentImage")
-    .attr("x", x1 - h)
-    .attr("y", y1)
-    .attr("height", h)
-    .attr("width", h)
-    .attr("href", isImageIcon(reg.icon!) ? reg.icon! : "");
+  const use = g.append("use").attr("class", "regimentIcon").node()!;
+  updateRegimentIcon(use, reg);
 };
 
 // move one regiment to another
@@ -158,16 +157,9 @@ export const moveRegiment = (reg: Regiment, x: number, y: number): void => {
     .transition(move as any)
     .attr("x", x1(x) - h)
     .attr("y", y1(y));
+  const box = regimentIconBox(x1(x), y1(y), h, reg.icon);
   el.select(".regimentIcon")
     .transition(move as any)
-    .attr("x", x1(x) - size)
-    .attr("y", y)
-    .attr("height", "6")
-    .attr("width", "6");
-  el.select(".regimentImage")
-    .transition(move as any)
-    .attr("x", x1(x) - h)
-    .attr("y", y1(y))
-    .attr("height", "6")
-    .attr("width", "6");
+    .attr("x", box.x)
+    .attr("y", box.y);
 };

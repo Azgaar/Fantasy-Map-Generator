@@ -3,17 +3,8 @@
 
 import { parsePreset } from "@/controllers/style-preset";
 import { StylePresetsService } from "@/services/style-presets";
-import type { PathSelection, StylesData } from "@/types/styles";
+import type { StylesData } from "@/types/styles";
 import { getPath } from "@/utils/objectUtils";
-
-/** The store path of a form field: the selection's path down to its node, plus the field's own path */
-export function storePath(sel: PathSelection, relative: string[]): string[] {
-  return [...sel.path, ...relative];
-}
-
-/** What the store holds for a form field */
-export const storeValue = (sel: PathSelection, relative: string[]): unknown =>
-  getPath(styles, storePath(sel, relative));
 
 export class Baseline {
   // system presets never change; a custom one can be re-saved, so it is read again on every load
@@ -40,10 +31,9 @@ export class Baseline {
 
   private constructor(private readonly record: Readonly<StylesData>) {}
 
-  /** How the store compares with the preset at a path relative to the selection; undefined when the preset
-   * does not define it (every container must exist and the leaf must be an own key) */
-  diffAt(sel: PathSelection, relative: string[]): { changed: boolean; presetValue: unknown } | undefined {
-    const path = storePath(sel, relative);
+  /** How the store compares with the preset at a store path; undefined when the preset does not define it
+   * (every container must exist and the leaf must be an own key) */
+  diffAt(path: string[]): { changed: boolean; presetValue: unknown } | undefined {
     const parent = getPath(this.record, path.slice(0, -1));
     if (typeof parent !== "object" || parent === null || !Object.hasOwn(parent, path.at(-1)!)) return undefined;
 

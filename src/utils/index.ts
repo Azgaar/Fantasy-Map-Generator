@@ -28,6 +28,7 @@ import {
   getFileName,
   isImageIcon,
   sanitizeSvgIcon,
+  scopeSvgIcon,
   svgToDataUri,
   uploadFile
 } from "./fileUtils";
@@ -230,6 +231,7 @@ export {
   safeParseJSON,
   sanitizeId,
   sanitizeSvgIcon,
+  scopeSvgIcon,
   setInlineStyleProperty,
   si,
   speak,

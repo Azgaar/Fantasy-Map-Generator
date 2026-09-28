@@ -1,11 +1,13 @@
 import { type Selection, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { Notes } from "@/components/notes";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { removeEmblem } from "@/renderers/draw-emblems";
+import { goodIconLines } from "@/renderers/draw-goods";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { getHeight, openURL, speak } from "@/utils";
 import { MAX_ZOOM, PAN_ZOOM_IDENTITY, type PanZoom, panBy, zoomAt } from "@/utils/panZoomUtils";
@@ -860,7 +862,7 @@ function getProduction(pool: Record<number, number>): string {
     const { name, unit, icon } = resource;
     const unitName = production === 1 ? unit : `${unit}s`;
     html += `<span data-tip="${name}: ${production} ${unitName} per day">
-      <svg class="resIcon" width="1em" height="1em"><use href="#${icon}"></use></svg>
+      <svg class="resIcon" width="1em" height="1em"><use href="${Icons.href(icon)}"${goodIconLines()}></use></svg>
       <span style="margin: 0 0.2em 0 -0.2em">${production}</span>
     </span>`;
   }

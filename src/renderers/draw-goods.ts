@@ -1,4 +1,4 @@
-import { IconSets } from "@/components/icon-sets";
+import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import {
   type Box,
@@ -24,6 +24,21 @@ const PLATE_PAD_X = 1;
 const PLATE_PAD_Y = 0.6;
 const PLATE_RX = 1;
 const PLATE_FILL = "#f5f5f5";
+const ICON_FRAME = 100; // every goods icon is drawn in a 0 0 100 100 frame
+const LINEWORK = 0.4; // icon lines are this share of the circle outline
+
+/** A goods icon's `<use>` lines: the goods icons style, its width carried into the icon frame at the marker's
+ * proportions, so a plate or the interface draws the icon as the marker does */
+export function goodIconLines(): string {
+  const { attrs, options } = styles.goods.groups.goodsIcons;
+  const width = ((attrs["stroke-width"] ?? 1) * LINEWORK * ICON_FRAME) / options.size;
+  return ` stroke="${attrs.stroke ?? "none"}" stroke-width="${rn(width, 2)}"`;
+}
+
+/** A good's icon on its circle, filling any svg: the interface draws a good as the map does */
+export function goodBadge({ color, icon }: { color: string; icon: string }): string {
+  return `<circle cx="50%" cy="50%" r="42%" fill="${color}" stroke="${Goods.getStroke(color)}"/><use href="${Icons.href(icon)}" x="10%" y="10%" width="80%" height="80%"${goodIconLines()}/>`;
+}
 
 /** a producing cell: the polygon points are re-read per frame, only the visible ones */
 interface CellProduction extends Box {
@@ -58,7 +73,7 @@ interface BurgPlate {
 
 export async function drawGoods(): Promise<void> {
   TIME && console.time("drawGoods");
-  await IconSets.load("goods");
+  await Icons.load("goods");
   buildScene();
   layer.render();
   TIME && console.timeEnd("drawGoods");
@@ -199,6 +214,7 @@ function renderCellProduction(bounds: Box): string {
 function renderResourceIcons(bounds: Box): string {
   const { circle: drawCircle, size: iconSize } = styles.goods.groups.goodsIcons.options;
   const half = iconSize / 2;
+  const lines = goodIconLines();
   const markup: string[] = [];
 
   for (const { x, y, goodId, color, stroke, icon } of resourceIcons) {
@@ -206,7 +222,7 @@ function renderResourceIcons(bounds: Box): string {
     markup.push(
       `<g data-i="${goodId}">${
         drawCircle ? `<circle cx="${x}" cy="${y}" r="${half}" fill="${color}" stroke="${stroke}" />` : ""
-      }<use href="#${icon}" x="${rn(x - half, 2)}" y="${rn(y - half, 2)}" width="${iconSize}" height="${iconSize}"/></g>`
+      }<use href="${Icons.href(icon)}" x="${rn(x - half, 2)}" y="${rn(y - half, 2)}" width="${iconSize}" height="${iconSize}"${lines}/></g>`
     );
   }
 
@@ -227,6 +243,7 @@ function renderBurgPlates(bounds: Box): string {
   const entryWidth = (value: number) =>
     plateIcon + plateGap + String(value).length * charWidth + 0.4 * plateFont * 0.62;
 
+  const lines = goodIconLines();
   const markup: string[] = [];
 
   for (const { burgId, x, y, entries } of burgPlates) {
@@ -247,7 +264,7 @@ function renderBurgPlates(bounds: Box): string {
     let offset = plateX + platePadX;
     for (const { value, color, stroke, icon } of entries) {
       content += `<circle cx="${rn(offset + plateIcon / 2, 1)}" cy="${rn(mid, 1)}" r="${rn(plateIcon / 2, 2)}" fill="${color}" stroke="${stroke}"/>`;
-      content += `<use href="#${icon}" x="${rn(offset, 1)}" y="${rn(iconY, 1)}" width="${rn(plateIcon, 2)}" height="${rn(plateIcon, 2)}"/>`;
+      content += `<use href="${Icons.href(icon)}" x="${rn(offset, 1)}" y="${rn(iconY, 1)}" width="${rn(plateIcon, 2)}" height="${rn(plateIcon, 2)}"${lines}/>`;
       content += `<text x="${rn(offset + plateIcon + plateGap, 1)}" y="${rn(mid, 1)}" dominant-baseline="central" font-size="${rn(plateFont, 2)}px" fill="#28282f" stroke="none">${value}</text>`;
       offset += entryWidth(value) + plateEntryGap;
     }

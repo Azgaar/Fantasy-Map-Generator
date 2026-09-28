@@ -565,7 +565,7 @@ function cultureChangeEmblemsShape(this: HTMLSelectElement): void {
   };
 
   pack.states.forEach(state => {
-    if (state.culture !== culture || !state.i || state.removed || !state.coa || state.coa.custom) return;
+    if (state.culture !== culture || !state.i || state.removed || !state.coa || "icon" in state.coa) return;
     if (shape === state.coa.shield) return;
     state.coa.shield = shape;
     rerenderCOA(`stateCOA${state.i}`, state.coa);
@@ -577,7 +577,7 @@ function cultureChangeEmblemsShape(this: HTMLSelectElement): void {
       !province.i ||
       province.removed ||
       !province.coa ||
-      province.coa.custom
+      "icon" in province.coa
     )
       return;
     if (shape === province.coa.shield) return;
@@ -586,7 +586,7 @@ function cultureChangeEmblemsShape(this: HTMLSelectElement): void {
   });
 
   pack.burgs.forEach(burg => {
-    if (burg.culture !== culture || !burg.i || burg.removed || !burg.coa || burg.coa.custom) return;
+    if (burg.culture !== culture || !burg.i || burg.removed || !burg.coa || "icon" in burg.coa) return;
     if (shape === burg.coa.shield) return;
     burg.coa.shield = shape;
     rerenderCOA(`burgCOA${burg.i}`, burg.coa);

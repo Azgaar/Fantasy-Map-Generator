@@ -12,6 +12,8 @@ workbox.core.clientsClaim();
 const DAY = 24 * 60 * 60; // in seconds
 const precache = new PrecacheController();
 precache.addToCacheList(self.__WB_MANIFEST || []);
+self.addEventListener("install", event => event.waitUntil(precache.install(event)));
+self.addEventListener("activate", event => event.waitUntil(precache.activate(event)));
 const assets = new CacheFirst({
   cacheName: precache.strategy.cacheName,
   plugins: [...precache.strategy.plugins, new CacheableResponsePlugin({statuses: [200]})]
@@ -152,18 +154,6 @@ registerRoute(
   ({request}) => request.destination === "image",
   new CacheFirst({
     cacheName: "fmg-images",
-    plugins: [
-      new CacheableResponsePlugin({statuses: [0, 200]}),
-      new ExpirationPlugin({maxEntries: 100, maxAgeSeconds: 60 * DAY}),
-      retainedAssets
-    ]
-  })
-);
-
-registerRoute(
-  new RegExp(".svg$"),
-  new CacheFirst({
-    cacheName: "fmg-charges",
     plugins: [
       new CacheableResponsePlugin({statuses: [0, 200]}),
       new ExpirationPlugin({maxEntries: 100, maxAgeSeconds: 60 * DAY}),

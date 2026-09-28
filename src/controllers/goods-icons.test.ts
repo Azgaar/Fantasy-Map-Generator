@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
+
 import { beforeEach, expect, test, vi } from "vitest";
-import { IconSets } from "@/components/icon-sets";
+import { Icons } from "@/components/icons";
 import { GoodsEditor } from "./goods-editor";
 import { MarketDealsOverview } from "./market-deals-overview";
 import { MarketOverview } from "./market-overview";
@@ -8,18 +9,13 @@ import { ProductionChains } from "./production-chains";
 import { ProductionOverview } from "./production-overview";
 import { TradeDetails } from "./trade-details";
 
-vi.mock("@/components/icon-sets", () => ({
-  IconSets: {
-    retry: vi.fn().mockResolvedValue(undefined),
-    files: () => [],
-    symbolId: (set: string, name: string) => `${set}-${name}`,
-    defs: "#defElements defs"
-  }
+vi.mock("@/components/icons", () => ({
+  Icons: { retry: vi.fn().mockResolvedValue(undefined), href: (id: string) => `#${id}`, name: (id: string) => id }
 }));
 vi.mock("@/components/tooltips", () => ({ tip: vi.fn(), clearMainTip: vi.fn(), showMainTip: vi.fn() }));
 
 beforeEach(() => {
-  vi.mocked(IconSets.retry).mockClear();
+  vi.mocked(Icons.retry).mockClear();
   document.body.innerHTML = '<div id="dialogs"></div><svg id="defElements"><defs/></svg>';
   globalThis.customization = 1; // every dialog bails out before touching its markup
   globalThis.pack = { goods: [], burgs: [] } as unknown as typeof pack;
@@ -36,5 +32,5 @@ test.each([
   ["goods editor", () => GoodsEditor.open()]
 ])("%s requests the goods icons on entry", (_, open) => {
   open();
-  expect(IconSets.retry).toHaveBeenCalledWith("goods");
+  expect(Icons.retry).toHaveBeenCalledWith("goods");
 });

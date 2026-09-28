@@ -172,12 +172,14 @@ function openSaver(): void {
   nameInput.value = (isKnown(current) ? current : "default").replace(CUSTOM_PREFIX, "");
   jsonInput.value = JSON.stringify(styles, null, 2);
 
-  const checkName = () => {
+  // whether the name would save over a system preset, an existing custom one, or a new one
+  const nameStatus = (): "default" | "existing" | "new" => {
     const name = CUSTOM_PREFIX + nameInput.value;
-    if (StylePresetsService.isSystem(name) || StylePresetsService.isSystem(nameInput.value))
-      nameTip.textContent = "default";
-    else if (StylePresetsService.listCustom().includes(name)) nameTip.textContent = "existing";
-    else nameTip.textContent = "new";
+    if (StylePresetsService.isSystem(name) || StylePresetsService.isSystem(nameInput.value)) return "default";
+    return StylePresetsService.listCustom().includes(name) ? "existing" : "new";
+  };
+  const checkName = () => {
+    nameTip.textContent = nameStatus();
   };
   checkName();
 
@@ -189,7 +191,7 @@ function openSaver(): void {
     if (!isKnownStyleFormat(JSON.parse(json)))
       return tip("The JSON is not a style preset - nothing was saved", false, "error", 5000);
     if (!desiredName) return tip("Please provide a preset name", false, "error");
-    if (nameTip.textContent === "default")
+    if (nameStatus() === "default")
       return tip("You cannot overwrite default preset, please change the name", false, "error");
 
     const name = CUSTOM_PREFIX + desiredName;

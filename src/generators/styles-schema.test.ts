@@ -17,8 +17,7 @@ const CUSTOM: Exclude<StyleControl, StandardControl>[] = [
   "labelStyle",
   "scheme",
   "texture",
-  "icon",
-  "emoji"
+  "icon"
 ];
 const KNOWN = new Set<string>([...STANDARD, ...CUSTOM]);
 
@@ -87,7 +86,7 @@ describe("styles schema metadata", () => {
     });
     expect(byPath["heightmap.groups.landHeights.options.scheme"].spec.kind).toBe("scheme");
     expect(byPath["texture.options.href"].spec.kind).toBe("texture");
-    expect(byPath["markets.options.icon"].spec.kind).toBe("emoji");
+    expect(byPath["markets.options.icon"].spec.kind).toBe("icon");
     expect(byPath["map.attrs.filter"].spec).toMatchObject({ kind: "select", nullable: true, label: "Filter" });
     expect(byPath["ocean.groups.pattern.attrs.href"].spec).toMatchObject({ kind: "select", label: "Image" });
     expect(byPath["legend.attrs.font-size"].spec).toMatchObject({ kind: "px", group: undefined, label: "Size" });

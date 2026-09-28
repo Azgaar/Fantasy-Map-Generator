@@ -1,4 +1,5 @@
 import { mean } from "d3";
+import type { ReliefPool } from "@/generators/relief-generator";
 import { rn } from "../utils";
 
 export interface Biome {
@@ -7,7 +8,7 @@ export interface Biome {
   color: string;
   habitability: number;
   iconsDensity: number;
-  icons: string[];
+  icons: ReliefPool;
   cost: number;
   removed?: boolean;
   note?: string;
@@ -47,7 +48,7 @@ function getDefaultBiomes(): Biome[] {
   ];
   const habitability = [0, 4, 10, 22, 30, 50, 100, 80, 90, 12, 4, 0, 12];
   const iconsDensity = [0, 3, 2, 120, 120, 120, 120, 150, 150, 100, 5, 0, 250];
-  const weightedIcons: Record<string, number>[] = [
+  const icons: ReliefPool[] = [
     {},
     { dune: 3, cactus: 6, deadTree: 1 },
     { dune: 9, deadTree: 1 },
@@ -63,9 +64,6 @@ function getDefaultBiomes(): Biome[] {
     { swamp: 1 }
   ];
   const cost = [10, 200, 150, 60, 50, 70, 70, 80, 90, 200, 1000, 5000, 150];
-  const icons = weightedIcons.map(iconWeights =>
-    Object.entries(iconWeights).flatMap(([icon, weight]) => Array<string>(weight).fill(icon))
-  );
 
   return name.map((name, i) => ({
     i,

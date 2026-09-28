@@ -1,21 +1,61 @@
 import { type D3DragEvent, drag, select } from "d3";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
+import { IconSets } from "@/components/icon-sets";
+import { CustomIcons, Icons, IMAGE_FRAME } from "@/components/icons";
 import { clearMainTip, tip } from "@/components/tooltips";
+import { tinctures } from "@/data/emblems";
 import type { Burg } from "@/generators/burgs-generator";
 import { Emblems } from "@/generators/emblems-generator";
 import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
 import { type EmblemType, redrawEmblem, subscribeToEmblemReconciliation } from "@/renderers/draw-emblems";
+import { colors } from "@/renderers/emblems/colors";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { highlightEmblemElement } from "@/renderers/overlays/highlight";
-import type { Emblem } from "@/types/emblems";
-import { downloadFile, getFileName, openURL } from "@/utils";
-import { createFileInput, ensureEl, rn } from "../utils";
-
-let emblemImageInput: HTMLInputElement | null = null;
-let emblemSvgInput: HTMLInputElement | null = null;
+import { inlineLinkedImages } from "@/services/io/export";
+import type { Emblem, EmblemCharge, HeraldicEmblem } from "@/types/emblems";
+import { capitalize, downloadFile, escapeHtml, getFileName, openURL } from "@/utils";
+import { ensureEl, rn } from "../utils";
+import { ARMORIA_API, ARMORIA_GUI, armoriaRenderUrl, parseArmoria } from "./emblems/armoria";
+import { ArmoriaSessions } from "./emblems/armoria-sessions";
+import { isDrawable } from "./emblems/drawability";
+import { IconPicker } from "./icon-picker";
+import { IconPictures } from "./icon-picker/pictures";
 
 type EmblemEntity = State | Province | Burg;
+
+const SIZE_TIP = "Size of this emblem, 0 hides it. Change a whole category in Menu ⭢ Style ⭢ Emblems";
+
+const STYLE = /* css */ `
+  #emblemEditor { padding: .5em .7em .6em; }
+  #emblemEditor > div { width: auto; }
+  #emblemEditor .preview { width: 12em; height: 12em; margin: 0 auto .2em; }
+  #emblemEditor .preview svg { width: 100%; height: 100%; overflow: visible; }
+  #emblemArmiger { display: block; margin-bottom: .5em; text-align: center; }
+  #emblemEditor .fields { display: grid; grid-template-columns: 6.4em minmax(0, 1fr); align-items: center; gap: .3em .4em; }
+  #emblemEditor .fields .row { display: contents; }
+  #emblemEditor .fields .row.hidden { display: none; }
+  #emblemEditor .tincture { display: flex; align-items: center; gap: .35em; }
+  #emblemEditor .tincture select { flex: 1; min-width: 0; }
+  #emblemEditor .swatch { flex: none; width: 1.1em; height: 1.1em; border: 1px solid #0006; border-radius: 2px; }
+  #emblemEditor .fields label { white-space: nowrap; padding: .15em .35em; border-radius: 3px; transition: background-color .3s ease-out; }
+  #emblemEditor .fields label.active { background-color: #54ca7733; font-weight: bold; }
+  #emblemEditor .fields select { width: 100%; min-width: 0; margin: 0; }
+  #emblemEditor .fields hr { grid-column: 1 / -1; width: 100%; margin: .2em 0; border: 0; border-top: 1px solid #0000001f; }
+  #emblemEditor .size { display: flex; align-items: center; gap: .4em; }
+  #emblemEditor .size input[type="range"] { flex: 1; min-width: 0; margin: 0; }
+  #emblemEditor .size input[type="number"] { width: 3.8em; margin: 0; }
+  #emblemEditor .armoria { margin-top: .6em; }
+  #emblemEditor .armoria button { width: 100%; margin: 0; padding: .4em; font-weight: bold; }
+  #emblemEditor .armoria p { margin: .3em 0 0; font-size: .85em; opacity: .75; text-align: center; }
+  #emblemEditor .toolbar { display: grid; grid-template-columns: repeat(7, 1fr); gap: .25em; margin-top: .7em; }
+  #emblemEditor .control { display: flex; align-items: center; gap: .3em; margin-top: .4em; }
+  #emblemEditor .control.hidden { display: none; }
+  #emblemEditor .control input[type="text"] { flex: 1; min-width: 0; margin: 0; }
+  #emblemEditor .control input[type="number"] { width: 4.6em; margin: 0; }
+  #emblemEditor .control button { margin: 0; }
+  #emblemEditor #emblemDownloadControl button { flex: 1; }
+`;
 
 interface EmblemEl {
   i: number;
@@ -31,6 +71,17 @@ let currentType: EmblemType;
 let currentId: string;
 let currentEl: EmblemEl;
 let unsubscribeFromReconciliation: (() => void) | undefined;
+/** an emblem open in Armoria: its updates apply in order, and a blazon FMG cannot draw keeps one picture */
+interface ArmoriaTarget {
+  type: EmblemType;
+  id: number;
+  entity: EmblemEl;
+  picture?: string;
+  queue: Promise<void>;
+}
+const armoriaSessions = new ArmoriaSessions<ArmoriaTarget>();
+const armoriaGui =
+  import.meta.env.DEV && import.meta.env.VITE_ARMORIA_GUI ? import.meta.env.VITE_ARMORIA_GUI : ARMORIA_GUI;
 
 async function openDefault(): Promise<void> {
   const firstState = pack.states.find(state => state.i && !state.removed && state.coa);
@@ -68,7 +119,7 @@ function open(type?: EmblemType, id?: string, el?: EmblemEntity, target?: SVGEle
   $("#emblemEditor").dialog({
     title: "Edit Emblem",
     resizable: true,
-    width: "18.2em",
+    width: "22em",
     height: "auto",
     position: { my: "left top", at: "left+10 top+10", of: "svg", collision: "fit" },
     close: closeEmblemEditor
@@ -78,28 +129,21 @@ function open(type?: EmblemType, id?: string, el?: EmblemEntity, target?: SVGEle
 function renderDialog(): void {
   destroyDialog("emblemEditor");
   const editorHtml = /* html */ `<div id="emblemEditor" class="dialog stable">
-      <svg viewBox="0 0 200 200"><use id="emblemImage"></use></svg>
-      <div id="emblemBody">
-        <div>
-          <b id="emblemArmiger"></b>
-        </div>
+      <style>${STYLE}</style>
+      <div class="preview"><svg viewBox="0 0 200 200"><use id="emblemImage"></use></svg></div>
+      <b id="emblemArmiger"></b>
+      <div class="fields">
+        <label for="emblemStates" data-tip="Select state">State</label>
+        <select id="emblemStates" data-tip="Select state"></select>
+        <label for="emblemProvinces" data-tip="Select province in state">Province</label>
+        <select id="emblemProvinces" data-tip="Select province in state"></select>
+        <label for="emblemBurgs" data-tip="Select burg in province or state">Burg</label>
+        <select id="emblemBurgs" data-tip="Select burg in province or state"></select>
         <hr />
-        <div data-tip="Select state">
-          <div class="label">State:</div>
-          <select id="emblemStates"></select>
-        </div>
-        <div data-tip="Select province in state">
-          <div class="label">Province:</div>
-          <select id="emblemProvinces"></select>
-        </div>
-        <div data-tip="Select burg in province or state">
-          <div class="label">Burg:</div>
-          <select id="emblemBurgs"></select>
-        </div>
-        <hr />
-        <div data-tip="Select shape of the emblem">
-          <div class="label">Shape:</div>
-          <select id="emblemShapeSelector">
+        <div id="emblemShapeRow" class="row">
+        <label for="emblemShapeSelector" data-tip="Select shape of the emblem">Shape</label>
+          <select id="emblemShapeSelector" data-tip="Select shape of the emblem">
+            <option value="">None</option>
             <optgroup label="Basic">
               <option value="heater">Heater</option>
               <option value="spanish">Spanish</option>
@@ -125,6 +169,7 @@ function renderDialog(): void {
               <option value="targe2">Targe2</option>
               <option value="pavise">Pavise</option>
               <option value="wedged">Wedged</option>
+              <option value="embowed">Embowed</option>
             </optgroup>
             <optgroup label="Banner">
               <option value="flag">Flag</option>
@@ -141,6 +186,7 @@ function renderDialog(): void {
               <option value="vesicaPiscis">Vesica Piscis</option>
               <option value="square">Square</option>
               <option value="diamond">Diamond</option>
+              <option value="hexagon">Hexagon</option>
             </optgroup>
             <optgroup label="Fantasy">
               <option value="fantasy1">Fantasy1</option>
@@ -160,90 +206,47 @@ function renderDialog(): void {
             </optgroup>
           </select>
         </div>
-        <div
-          data-tip="Set size of particular Emblem. To hide set to 0. To change the entire category go to Menu ⭢ Style ⭢ Emblems"
-        >
-          <div class="label" style="width: 2.8em">Size:</div>
-          <input id="emblemSizeSlider" type="range" min="0" max="5" step=".1" style="width: 7em" />
+        <div id="emblemFieldRow" class="row">
+          <label for="emblemField" data-tip="Tincture of the field">Field</label>
+          <div class="tincture"><span class="swatch"></span><select id="emblemField"></select></div>
+        </div>
+        <div id="emblemChargeRows" class="row">
+          <label for="emblemChargeTincture" data-tip="Tincture of the main charge. A raster picture keeps its own colours">Charge</label>
+          <div class="tincture"><span class="swatch"></span><select id="emblemChargeTincture"></select></div>
+          <label for="emblemChargeSizeNumber" data-tip="Size of the main charge">Charge size</label>
+          <div class="size" data-tip="Size of the main charge">
+            <input id="emblemChargeSizeSlider" type="range" min=".2" max="3" step=".05" />
+            <input id="emblemChargeSizeNumber" type="number" min=".2" max="3" step=".05" />
+          </div>
+        </div>
+        <label for="emblemSizeNumber" data-tip="${SIZE_TIP}">Map size</label>
+        <div class="size" data-tip="${SIZE_TIP}">
+          <input id="emblemSizeSlider" type="range" min="0" max="5" step=".1" />
           <input id="emblemSizeNumber" type="number" min="0" max="5" step=".1" />
         </div>
       </div>
-      <div id="emblemsBottom">
-        <button id="emblemsRegenerate" data-tip="Regenerate emblem" class="icon-shuffle"></button>
-        <button
-          id="emblemsArmoria"
-          data-tip="Edit the emblem in Armoria - dedicated heraldry editor. Download emblem and upload it back to the map generator"
-          class="icon-brush"
-        ></button>
-        <button
-          id="emblemsDownload"
-          data-tip="Set size, select file format and download emblem image"
-          class="icon-download"
-        ></button>
-        <button
-          id="emblemsUpload"
-          data-tip="Upload png, jpg or svg image from Armoria or other sources as emblem"
-          class="icon-upload"
-        ></button>
-        <button
-          id="emblemsGallery"
-          data-tip="Download emblems gallery as html document (open in browser; downloading takes some time)"
-          class="icon-layer-group"
-        ></button>
-        <button id="emblemsFocus" data-tip="Show emblem associated area or place" class="icon-target"></button>
+      <div class="armoria">
+        <button id="emblemsArmoria" type="button" data-tip="Open the emblem in Armoria, the heraldry editor: your changes show on the map as you make them"><span class="icon-font"></span> Edit in Armoria</button>
       </div>
-      <div id="emblemUploadControl" class="hidden">
-        <button
-          id="emblemsUploadImage"
-          data-tip="Upload SVG or PNG image from any source. Make sure background is transparent"
-        >
-          Any image
-        </button>
-        <button
-          id="emblemsUploadSVG"
-          data-tip="Upload prepared SVG image (SVG from Armoria or SVG processed with 'Optimize vector' tool)"
-        >
-          Prepared SVG
-        </button>
-        <a
-          href="https://www.iloveimg.com/compress-image"
-          target="_blank"
-          data-tip="Use external tool to compress/resize raster images before upload"
-          >Comperess raster</a
-        >
-        <span> | </span>
-        <a
-          href="https://jakearchibald.github.io/svgomg"
-          target="_blank"
-          data-tip="Use external tool to optimize vector images before upload"
-          >Optimize vector</a
-        >
+      <div class="toolbar">
+        <button id="emblemsPaste" data-tip="Edit the COA string by hand, or paste an Armoria edit link, API link or COA string" class="icon-link"></button>
+        <button id="emblemsCharge" data-tip="Set the charge: choose, link or upload a picture to place on the field" class="icon-chess-knight"></button>
+        <button id="emblemsUpload" data-tip="Replace the whole emblem with a picture: choose, link or upload an image, such as a ready coat of arms" class="icon-shield-alt"></button>
+        <button id="emblemsDownload" data-tip="Download the emblem as an image" class="icon-download"></button>
+        <button id="emblemsGallery" data-tip="Download all emblems as an HTML gallery (open it in a browser; preparing takes a while)" class="icon-layer-group"></button>
+        <button id="emblemsRegenerate" data-tip="Regenerate the emblem" class="icon-shuffle"></button>
+        <button id="emblemsFocus" data-tip="Show the area or place of the emblem" class="icon-target"></button>
       </div>
-      <div id="emblemDownloadControl" class="hidden">
-        <input
-          id="emblemsDownloadSize"
-          data-tip="Set image size in pixels"
-          type="number"
-          value="500"
-          step="100"
-          min="100"
-          max="10000"
-        />
-        <button
-          id="emblemsDownloadSVG"
-          data-tip="Download as SVG: scalable vector image. Best quality, can be opened in browser or Inkscape"
-        >
-          SVG
-        </button>
-        <button id="emblemsDownloadPNG" data-tip="Download as PNG: lossless raster image with transparent background">
-          PNG
-        </button>
-        <button
-          id="emblemsDownloadJPG"
-          data-tip="Download as JPG: lossy compressed raster image with solid white background"
-        >
-          JPG
-        </button>
+      <div id="emblemPasteControl" class="control hidden">
+        <input id="emblemPaste" type="text" placeholder="Armoria link or COA string" data-tip="The emblem's COA string: edit it, or replace it with an Armoria link or COA string, then Apply" />
+        <button id="emblemPasteApply" type="button" data-tip="Apply the pasted emblem">Apply</button>
+      </div>
+      <div id="emblemDownloadControl" class="control hidden">
+        <input id="emblemsDownloadSize" data-tip="Image size in pixels" type="number" value="500" step="100" min="100" max="10000" />
+        <span>px</span>
+        <button id="emblemsDownloadSVG" data-tip="Scalable vector image: best quality, opens in a browser or Inkscape">SVG</button>
+        <button id="emblemsDownloadPNG" data-tip="Lossless raster image with a transparent background">PNG</button>
+        <button id="emblemsDownloadJPG" data-tip="Compressed raster image on a white background">JPG</button>
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
@@ -252,19 +255,22 @@ function renderDialog(): void {
   ensureEl<HTMLSelectElement>("emblemProvinces").oninput = selectProvince;
   ensureEl<HTMLSelectElement>("emblemBurgs").oninput = selectBurg;
   ensureEl<HTMLSelectElement>("emblemShapeSelector").oninput = changeShape;
+  ensureEl<HTMLSelectElement>("emblemField").oninput = changeField;
+  ensureEl<HTMLSelectElement>("emblemChargeTincture").oninput = changeChargeTincture;
+  ensureEl("emblemChargeSizeSlider").oninput = changeChargeSize;
+  ensureEl("emblemChargeSizeNumber").oninput = changeChargeSize;
   ensureEl("emblemSizeSlider").oninput = changeSize;
   ensureEl("emblemSizeNumber").oninput = changeSize;
   ensureEl("emblemsRegenerate").onclick = regenerate;
   ensureEl("emblemsArmoria").onclick = openInArmoria;
-  ensureEl("emblemsUpload").onclick = toggleUpload;
-  const pickEmblem = (type: "image" | "svg") => {
-    const input = getEmblemInput(type);
-    input.onchange = () => upload(type);
-    input.click();
+  ensureEl("emblemsCharge").onclick = () => pickPicture("charge");
+  ensureEl("emblemsUpload").onclick = () => pickPicture("whole");
+  ensureEl("emblemsPaste").onclick = () => toggleControl("emblemPasteControl");
+  ensureEl("emblemPasteApply").onclick = () => void pasteEmblem();
+  ensureEl<HTMLInputElement>("emblemPaste").onkeydown = event => {
+    if (event.key === "Enter") void pasteEmblem();
   };
-  ensureEl("emblemsUploadImage").onclick = () => pickEmblem("image");
-  ensureEl("emblemsUploadSVG").onclick = () => pickEmblem("svg");
-  ensureEl("emblemsDownload").onclick = toggleDownload;
+  ensureEl("emblemsDownload").onclick = () => toggleControl("emblemDownloadControl");
   ensureEl("emblemsDownloadSVG").onclick = () => download("svg");
   ensureEl("emblemsDownloadPNG").onclick = () => download("png");
   ensureEl("emblemsDownloadJPG").onclick = () => download("jpeg");
@@ -295,10 +301,14 @@ function updateElementSelectors(): void {
   let province = 0;
   let burg = 0;
 
-  // set active type
-  (emblemStates.parentElement as HTMLElement).className = type === "state" ? "active" : "";
-  (emblemProvinces.parentElement as HTMLElement).className = type === "province" ? "active" : "";
-  (emblemBurgs.parentElement as HTMLElement).className = type === "burg" ? "active" : "";
+  // mark the row of the emblem being edited
+  for (const [select, rowType] of [
+    [emblemStates, "state"],
+    [emblemProvinces, "province"],
+    [emblemBurgs, "burg"]
+  ] as const) {
+    select.previousElementSibling?.classList.toggle("active", type === rowType);
+  }
 
   // define selected values
   if (type === "state") state = el.i;
@@ -350,10 +360,27 @@ function updateEmblemData(): void {
   ensureEl("emblemArmiger").innerText = name ?? "";
 
   const emblemShapeSelector = ensureEl<HTMLSelectElement>("emblemShapeSelector");
-  if (el.coa.custom) emblemShapeSelector.disabled = true;
-  else {
-    emblemShapeSelector.disabled = false;
-    emblemShapeSelector.value = el.coa.shield ?? "heater";
+  emblemShapeSelector.value = el.coa.shield ?? ("icon" in el.coa ? "" : "heater");
+
+  // a coat of arms is edited in Armoria; only an emblem made from a library picture is coloured here
+  const coa = el.coa;
+  const main = mainCharge();
+  const custom = !!main && !Emblems.chargeIcon(main.charge) && !!Icons.kind(main.charge);
+  ensureEl("emblemShapeRow").classList.toggle("hidden", !custom && !("icon" in coa)); // Armoria shapes its coats of arms
+  ensureEl("emblemFieldRow").classList.toggle("hidden", !custom);
+  ensureEl("emblemChargeRows").classList.toggle("hidden", !custom);
+  if (custom && !("icon" in coa)) showTincture("emblemField", coa.t1);
+  if (custom && main) {
+    showTincture("emblemChargeTincture", main.t);
+    ensureEl<HTMLInputElement>("emblemChargeSizeSlider").value = String(main.size ?? 1);
+    ensureEl<HTMLInputElement>("emblemChargeSizeNumber").value = String(main.size ?? 1);
+  }
+
+  // the COA string to edit by hand, kept current unless it is being edited
+  const paste = ensureEl<HTMLInputElement>("emblemPaste");
+  if (document.activeElement !== paste) {
+    const blazon = armoriaCoa(coa);
+    paste.value = blazon ? JSON.stringify(blazon) : "";
   }
 
   const size = el.coa.size ?? 1;
@@ -394,11 +421,113 @@ function selectBurg(): void {
   updateElementSelectors();
 }
 
+/** a shape puts a picture on a field as its charge; "None" shows the main charge alone as the whole emblem */
 function changeShape(): void {
-  currentEl.coa.shield = ensureEl<HTMLSelectElement>("emblemShapeSelector").value;
-  const coaEl = document.getElementById(currentId);
-  if (coaEl) coaEl.remove();
-  EmblemRenderer.trigger(currentId, currentEl.coa);
+  const select = ensureEl<HTMLSelectElement>("emblemShapeSelector");
+  const shield = select.value;
+  const coa = currentEl.coa;
+  if (shield) {
+    if ("icon" in coa) currentEl.coa = pictureAsCharge(coa.icon, shield, coa);
+    else coa.shield = shield;
+  } else if (!("icon" in coa)) {
+    const icon = coa.charges?.[0] && Emblems.chargeArt(coa.charges[0].charge);
+    if (!icon) {
+      select.value = coa.shield ?? "heater";
+      tip("Only an emblem with a charge can show it without a shield", false, "warn");
+      return;
+    }
+    currentEl.coa = { icon, size: coa.size, x: coa.x, y: coa.y };
+  }
+  document.getElementById(currentId)?.remove();
+  void EmblemRenderer.trigger(currentId, currentEl.coa);
+  redrawEmblem(currentType, currentEl.i);
+  updateEmblemData();
+}
+
+/** a picture as the charge of a plain field, coloured so it stands out */
+function pictureAsCharge(icon: string, shield: string, { size, x, y }: Emblem): HeraldicEmblem {
+  return {
+    t1: "argent",
+    shield,
+    charges: [{ charge: Emblems.chargeOf(icon), t: "gules", p: "e", size: 1.5 }],
+    size,
+    x,
+    y
+  };
+}
+
+/** the charge the editor's tincture and size controls change: the first one */
+function mainCharge(): EmblemCharge | undefined {
+  const coa = currentEl.coa;
+  return "icon" in coa ? undefined : coa.charges?.[0];
+}
+
+function changeField(): void {
+  const coa = currentEl.coa;
+  if ("icon" in coa) return;
+  coa.t1 = ensureEl<HTMLSelectElement>("emblemField").value;
+  rerenderEmblem();
+}
+
+function changeChargeTincture(): void {
+  const main = mainCharge();
+  if (!main) return;
+  main.t = ensureEl<HTMLSelectElement>("emblemChargeTincture").value;
+  rerenderEmblem();
+}
+
+function changeChargeSize(event: Event): void {
+  const main = mainCharge();
+  const size = +(event.currentTarget as HTMLInputElement).value;
+  if (!main || !(size > 0)) return;
+  main.size = size;
+  rerenderEmblem();
+}
+
+function rerenderEmblem(): void {
+  void EmblemRenderer.trigger(currentId, currentEl.coa);
+  updateEmblemData();
+}
+
+const TINCTURE_GROUPS = [
+  ["Metals", tinctures.metals],
+  ["Colours", tinctures.colours],
+  ["Stains", tinctures.stains]
+] as const;
+
+/** the tincture list with the current value selected, keeping a pattern or colour it does not list */
+function showTincture(id: string, current: string): void {
+  const select = ensureEl<HTMLSelectElement>(id);
+  const listed = TINCTURE_GROUPS.some(([, list]) => current in list);
+  const own = listed ? "" : `<option value="${escapeHtml(current)}">${escapeHtml(tinctureName(current))}</option>`;
+  const groups = TINCTURE_GROUPS.map(
+    ([label, list]) =>
+      `<optgroup label="${label}">${Object.keys(list)
+        .map(tincture => `<option value="${tincture}">${capitalize(tincture)}</option>`)
+        .join("")}</optgroup>`
+  );
+  select.innerHTML = own + groups.join("");
+  select.value = current;
+  (select.previousElementSibling as HTMLElement).style.background = tinctureSwatch(current);
+}
+
+/** `vair-argent-azure` → "Vair: argent and azure" */
+function tinctureName(tincture: string): string {
+  const [pattern, first, second] = tincture.split("-");
+  if (!second) return tincture;
+  return `${capitalize(
+    pattern
+      .replace("semy_of_", "semy of ")
+      .replace(/([a-z])([A-Z])/g, "$1 $2")
+      .toLowerCase()
+  )}: ${first} and ${second}`;
+}
+
+function tinctureSwatch(tincture: string): string {
+  const [, first, second] = tincture.split("-");
+  if (second)
+    return `repeating-linear-gradient(45deg, ${colors[first] ?? first} 0 3px, ${colors[second] ?? second} 3px 6px)`;
+  return colors[tincture] ?? tincture;
 }
 
 function showArea(): void {
@@ -427,112 +556,161 @@ function regenerate(): void {
   const shield = el.coa.shield || Emblems.getShield(el.culture || parent?.culture || 0, el.state);
   const { size, x, y } = el.coa;
   el.coa = { ...Emblems.generate(parent ? parent.coa : null, 0.3, 0.1, undefined), shield, size, x, y };
-  const emblemShapeSelector = ensureEl<HTMLSelectElement>("emblemShapeSelector");
-  emblemShapeSelector.disabled = false;
-  emblemShapeSelector.value = el.coa.shield ?? "heater";
 
   EmblemRenderer.trigger(currentId, el.coa);
   redrawEmblem(currentType, currentEl.i);
+  updateEmblemData();
+}
+
+/** the emblem as an Armoria COA: its blazon without the map placement, a linked Armoria picture's blazon, else none */
+function armoriaCoa(emblem: Emblem): HeraldicEmblem | null {
+  if ("icon" in emblem) {
+    const linked = CustomIcons.get(emblem.icon);
+    if (linked?.kind !== "image" || !linked.content.startsWith(ARMORIA_API)) return null;
+    try {
+      return parseArmoria(linked.content);
+    } catch {
+      return null;
+    }
+  }
+  const { size: _size, x: _x, y: _y, ...blazon } = emblem;
+  return blazon;
 }
 
 function openInArmoria(): void {
-  const coa = currentEl.coa && !currentEl.coa.custom ? currentEl.coa : { t1: "sable" };
-  const json = JSON.stringify(coa).replaceAll("#", "%23");
-  const url = `https://azgaar.github.io/Armoria/?coa=${json}&from=FMG`;
-  openURL(url);
+  const coa = armoriaCoa(currentEl.coa) ?? { t1: "sable" };
+  if (coa.charges?.some(({ charge }) => !Emblems.chargeIcon(charge) && Icons.kind(charge)))
+    tip("Armoria cannot show pictures from the icon library: those charges are missing there", false, "warn", 6000);
+  const session = armoriaSessions.start(
+    { type: currentType, id: currentEl.i, entity: currentEl, queue: Promise.resolve() },
+    `${currentType}:${currentEl.i}`,
+    options.map,
+    new URL(armoriaGui).origin
+  );
+  const url = new URL(armoriaGui);
+  url.searchParams.set("coa", JSON.stringify(coa));
+  url.searchParams.set("from", "FMG");
+  url.searchParams.set("session", session);
+  url.searchParams.set("returnOrigin", location.origin);
+  openURL(url.href);
 }
 
-function toggleUpload(): void {
-  ensureEl("emblemDownloadControl").classList.add("hidden");
-  ensureEl("emblemUploadControl").classList.toggle("hidden");
-}
-
-/** Own the emblem file inputs here so reopen never binds a second listener on a shared element */
-function getEmblemInput(type: "image" | "svg"): HTMLInputElement {
-  if (type === "image") {
-    emblemImageInput ??= createFileInput("image/*");
-    return emblemImageInput;
+async function pasteEmblem(): Promise<void> {
+  try {
+    await applyInput(currentType, currentEl.i, parseArmoria(ensureEl<HTMLInputElement>("emblemPaste").value));
+    toggleControl("emblemPasteControl");
+  } catch (error) {
+    tip((error as Error).message, false, "error", 6000);
   }
-  emblemSvgInput ??= createFileInput(".svg");
-  return emblemSvgInput;
 }
 
-function upload(type: "image" | "svg"): void {
-  const el = currentEl;
-  const input = getEmblemInput(type);
-  const file = input.files![0];
-  input.value = "";
-
-  if (file.size > 500000) {
-    const message =
-      "File is too big, please optimize file size up to 500kB and re-upload. Recommended size is 200x200 px and up to 100kB";
-    tip(message, true, "error", 5000);
-    return;
+/** A drawable COA becomes the blazon. Any other shows as Armoria's picture: its render linked, or the SVG Armoria
+ * sent, stored in `picture` when given so repeated updates replace one icon. Returns the picture it shows, if any */
+async function applyInput(
+  type: EmblemType,
+  id: number,
+  coa: HeraldicEmblem,
+  svg?: string,
+  picture?: string
+): Promise<string | undefined> {
+  const entity = getEmblemEntity(type, id);
+  if (!entity) return picture;
+  const map = options.map;
+  const { size, x, y } = entity.coa;
+  let shown: string | undefined;
+  if (isDrawable(coa)) {
+    entity.coa = { ...coa, size, x, y };
+    // the picture an earlier update needed goes once nothing shows it
+    if (picture && CustomIcons.get(picture) && !Object.keys(Icons.uses(picture)).length) CustomIcons.remove(picture);
+  } else {
+    const reused = picture && CustomIcons.get(picture) ? picture : undefined;
+    const iconId = reused ?? CustomIcons.newId();
+    const art = svg
+      ? await IconPictures.fromFile(new File([svg], "armoria.svg", { type: "image/svg+xml" }), iconId, "emblem")
+      : { kind: "image" as const, content: armoriaRenderUrl(coa), viewBox: IMAGE_FRAME };
+    if (options.map !== map || getEmblemEntity(type, entity.i) !== entity) return picture;
+    if (reused) CustomIcons.update(reused, art);
+    else CustomIcons.add({ id: iconId, ...art });
+    entity.coa = { icon: iconId, size, x, y };
+    shown = iconId;
+    if (!reused) tip("This COA uses art FMG cannot draw; it shows as Armoria's picture", false, "warn", 5000);
   }
+  if (currentType === type && currentEl.i === id) {
+    void EmblemRenderer.trigger(currentId, entity.coa);
+    updateEmblemData();
+  }
+  redrawEmblem(type, id);
+  return shown;
+}
 
-  const reader = new FileReader();
+// an Armoria tab opened from the editor sends the blazon after every edit
+window.addEventListener("message", event => {
+  const update = armoriaSessions.receive(event, options.map);
+  if (!update) return;
+  const target = update.target;
+  target.queue = target.queue
+    .then(async () => {
+      if (getEmblemEntity(target.type, target.id) !== target.entity) return;
+      target.picture = await applyInput(target.type, target.id, update.coa, update.svg, target.picture);
+    })
+    .catch(error => tip((error as Error).message, false, "error", 6000));
+});
 
-  reader.onload = readerEvent => {
-    const result = readerEvent.target!.result as string;
-    const defsEmblems = ensureEl("defs-emblems");
-
-    let href = result; // raster images
-    if (type === "svg") {
-      const wrapper = document.createElement("html");
-      wrapper.innerHTML = result;
-
-      wrapper.querySelectorAll("*").forEach(node => {
-        if (node.id === "adobe_illustrator_pgf") node.remove(); // remove Adobe Illustrator inner data
-
-        node.getAttributeNames().forEach(attr => {
-          // remove sodipodi and inkscape attributes
-          if (attr.includes("inkscape") || attr.includes("sodipodi")) node.removeAttribute(attr);
-        });
-      });
-
-      const svgEl = wrapper.querySelector("svg");
-      if (!svgEl) {
-        tip("The file is not a valid SVG. Please use Armoria or other relevant tools", false, "error");
-        return;
+/** a library picture as the emblem's main charge, or as the whole emblem in place of shield and field */
+function pickPicture(use: "charge" | "whole"): void {
+  const entity = currentEl;
+  const type = currentType;
+  const id = currentId;
+  const map = options.map;
+  const coa = entity.coa;
+  const charge = "icon" in coa ? "" : coa.charges?.[0] ? (Emblems.chargeArt(coa.charges[0].charge) ?? "") : "";
+  IconPicker.open({
+    current: "icon" in coa ? coa.icon : use === "charge" ? charge : "",
+    preferCustom: true,
+    profile: "emblem",
+    onPick: icon => {
+      if (!icon || options.map !== map || getEmblemEntity(type, entity.i) !== entity) return;
+      const coa = entity.coa;
+      if (use === "whole") {
+        entity.coa = { icon, size: coa.size, x: coa.x, y: coa.y };
+      } else if ("icon" in coa) {
+        const shield = coa.shield ?? Emblems.getShield(entity.culture ?? 0, entity.state);
+        entity.coa = pictureAsCharge(icon, shield, coa);
+      } else {
+        const charge = Emblems.chargeOf(icon);
+        if (coa.charges?.length) coa.charges[0] = { ...coa.charges[0], charge };
+        else coa.charges = [{ charge, t: /^(argent|or)$/.test(coa.t1) ? "gules" : "or", p: "e", size: 1.5 }];
       }
-
-      const serialized = new XMLSerializer().serializeToString(svgEl);
-      href = `data:image/svg+xml;base64,${window.btoa(serialized)}`;
+      void EmblemRenderer.trigger(id, entity.coa);
+      redrawEmblem(type, entity.i);
+      if (currentEl === entity) updateEmblemData();
     }
-
-    const svg = `<svg id="${currentId}" viewBox="0 0 200 200"><image width="200" height="200" href="${href}"/></svg>`;
-    EmblemRenderer.remove(currentId);
-    defsEmblems.insertAdjacentHTML("beforeend", svg);
-
-    const customCoa: Emblem = { custom: true };
-    if (el.coa.size !== undefined) customCoa.size = el.coa.size;
-    if (el.coa.x !== undefined) customCoa.x = el.coa.x;
-    if (el.coa.y !== undefined) customCoa.y = el.coa.y;
-    el.coa = customCoa;
-    redrawEmblem(currentType, currentEl.i);
-
-    ensureEl<HTMLSelectElement>("emblemShapeSelector").disabled = true;
-  };
-
-  if (type === "image") reader.readAsDataURL(file);
-  else reader.readAsText(file);
+  });
 }
 
-function toggleDownload(): void {
-  ensureEl("emblemUploadControl").classList.add("hidden");
-  ensureEl("emblemDownloadControl").classList.toggle("hidden");
+/** show one row of the toolbar's extra controls, pressing its button; a second press hides it */
+function toggleControl(id: "emblemPasteControl" | "emblemDownloadControl"): void {
+  const controls = { emblemPasteControl: "emblemsPaste", emblemDownloadControl: "emblemsDownload" } as const;
+  for (const [control, button] of Object.entries(controls)) {
+    const shown = control === id && ensureEl(control).classList.contains("hidden");
+    ensureEl(control).classList.toggle("hidden", !shown);
+    ensureEl(button).classList.toggle("pressed", shown);
+    if (shown) ensureEl(control).querySelector("input")?.focus();
+  }
 }
 
 async function download(format: string): Promise<void> {
+  await EmblemRenderer.trigger(currentId, currentEl.coa);
   const coa = document.getElementById(currentId)!;
+  await loadEmblemIcons([coa]);
   const size = +ensureEl<HTMLInputElement>("emblemsDownloadSize").value;
-  const url = await getURL(coa, size);
+  const url = await getURL(coa, size, format !== "svg");
   const link = document.createElement("a");
   link.download = `${getFileName(`Emblem ${currentEl.fullName || currentEl.name}`)}.${format}`;
 
   if (format === "svg") downloadSVG(url, link);
   else downloadRaster(format, url, link, size);
-  ensureEl("emblemDownloadControl").classList.add("hidden");
+  toggleControl("emblemDownloadControl");
 }
 
 function downloadSVG(url: string, link: HTMLAnchorElement): void {
@@ -561,8 +739,10 @@ function downloadRaster(format: string, url: string, link: HTMLAnchorElement, si
   };
 }
 
-async function getURL(svg: Element, size: number): Promise<string> {
-  const serialized = getSVG(svg, size);
+async function getURL(svg: Element, size: number, raster: boolean): Promise<string> {
+  const clone = cloneEmblem(svg, size);
+  if (raster) await inlineLinkedImages(clone);
+  const serialized = new XMLSerializer().serializeToString(clone);
   const blob = new Blob([serialized], { type: "image/svg+xml;charset=utf-8" });
   const url = window.URL.createObjectURL(blob);
   window.setTimeout(() => window.URL.revokeObjectURL(url), 6000);
@@ -570,10 +750,47 @@ async function getURL(svg: Element, size: number): Promise<string> {
 }
 
 function getSVG(svg: Element, size: number): string {
-  const clone = svg.cloneNode(true) as Element;
+  return new XMLSerializer().serializeToString(cloneEmblem(svg, size));
+}
+
+function cloneEmblem(svg: Element, size: number): SVGSVGElement {
+  const clone = svg.cloneNode(true) as SVGSVGElement;
   clone.setAttribute("width", String(size));
   clone.setAttribute("height", String(size));
-  return new XMLSerializer().serializeToString(clone);
+  const defs =
+    clone.querySelector("defs") ??
+    clone.insertBefore(document.createElementNS("http://www.w3.org/2000/svg", "defs"), clone.firstChild);
+  const visited = new Set<string>();
+  const follow = (id: string): void => {
+    if (visited.has(id)) return;
+    visited.add(id);
+    let definition = clone.querySelector(`[id="${CSS.escape(id)}"]`);
+    if (!definition) {
+      const original = document.getElementById(id);
+      if (!original) return; // removed art draws nothing on the map either
+      definition = defs.appendChild(original.cloneNode(true) as Element);
+    }
+    for (const use of definition.querySelectorAll("use")) {
+      const href = use.getAttribute("href") ?? use.getAttribute("xlink:href");
+      if (href?.startsWith("#")) follow(href.slice(1));
+    }
+  };
+  for (const use of [...clone.querySelectorAll("use")]) {
+    const href = use.getAttribute("href") ?? use.getAttribute("xlink:href");
+    if (href?.startsWith("#")) follow(href.slice(1));
+  }
+  return clone;
+}
+
+function loadEmblemIcons(emblems: Element[]): Promise<void> {
+  const sets = emblems.flatMap(emblem =>
+    [...emblem.querySelectorAll("use")].flatMap(use => {
+      const href = use.getAttribute("href") ?? use.getAttribute("xlink:href");
+      const set = href?.startsWith("#") ? IconSets.setForId(href.slice(1)) : null;
+      return set ? [set] : [];
+    })
+  );
+  return Icons.require(sets);
 }
 
 async function downloadGallery(): Promise<void> {
@@ -582,6 +799,7 @@ async function downloadGallery(): Promise<void> {
   const validProvinces = pack.provinces.filter(p => p.i && !p.removed && p.coa);
   const validBurgs = pack.burgs.filter(b => b.i && !b.removed && b.coa);
   await renderAllEmblems(validStates, validProvinces, validBurgs);
+  await loadEmblemIcons([...document.querySelectorAll("#coas > svg")]);
 
   const back = `<a href="javascript:history.back()">Go Back</a>`;
 
