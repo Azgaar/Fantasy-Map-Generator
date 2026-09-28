@@ -86,7 +86,7 @@ export function alertDialog({ title = "Warning", message, width = "26em" }: Aler
 const REFRESHABLE_EDITORS = [
   "culturesEditorRefresh",
   "biomesEditorRefresh",
-  "diplomacyEditorRefresh",
+  "diplomacyOverviewRefresh",
   "provincesEditorRefresh",
   "religionsEditorRefresh",
   "statesEditorRefresh",

@@ -139,9 +139,9 @@ export const MAP_COMMANDS: MapCommand[] = [
   },
   {
     id: "editDiplomacyButton",
-    name: "Open Diplomacy Editor",
+    name: "Open Diplomacy Overview",
     aliases: "relations allies wars",
-    run: () => Controllers.DiplomacyEditor.open()
+    run: () => Controllers.DiplomacyOverview.open()
   },
   {
     id: "overviewFeaturesButton",
@@ -372,7 +372,7 @@ export const MAP_COMMANDS: MapCommand[] = [
     id: "showRelationsHistory",
     name: "Show Relations History",
     aliases: "diplomacy chronicle wars",
-    run: () => Controllers.DiplomacyEditor.showHistory()
+    run: () => Controllers.DiplomacyOverview.showHistory()
   },
   {
     id: "regenerateStates",
@@ -582,7 +582,7 @@ export const MAP_COMMANDS: MapCommand[] = [
     id: "exportCsvRelations",
     name: "Export Relations as CSV",
     aliases: "download table diplomacy matrix",
-    run: () => Controllers.DiplomacyEditor.exportCsv()
+    run: () => Controllers.DiplomacyOverview.exportCsv()
   },
   {
     id: "exportCsvGoods",

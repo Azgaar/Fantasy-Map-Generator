@@ -890,7 +890,6 @@ fieldset {
   outline: 2px solid var(--dark-solid);
   outline-offset: -1px;
   z-index: 1;
-  cursor: pointer;
 }
 
 .matrix-table > table td.Ally {
@@ -933,7 +932,6 @@ fieldset {
 
 .matrix-table > table td.x {
   background-color: #d4ca94;
-  cursor: initial;
 }
 
 #sizeOutput {

@@ -7,7 +7,7 @@ const TABLES: [dialogId: string, controller: string][] = [
   ["biomesEditor", "BiomesEditor"],
   ["burgsOverview", "BurgsOverview"],
   ["culturesEditor", "CulturesEditor"],
-  ["diplomacyEditor", "DiplomacyEditor"],
+  ["diplomacyOverview", "DiplomacyOverview"],
   ["goodsEditor", "GoodsEditor"],
   ["labelsOverview", "LabelsOverview"],
   ["marketsOverview", "MarketsOverview"],

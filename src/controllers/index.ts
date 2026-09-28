@@ -15,6 +15,7 @@ export const Controllers = createRegistry({
   ComparePrices: () => import("@/controllers/compare-prices").then(m => m.ComparePrices),
   CulturesEditor: () => import("@/controllers/cultures-editor").then(m => m.CulturesEditor),
   DiplomacyEditor: () => import("@/controllers/diplomacy-editor").then(m => m.DiplomacyEditor),
+  DiplomacyOverview: () => import("@/controllers/diplomacy-overview").then(m => m.DiplomacyOverview),
   DistributionEditor: () => import("@/controllers/goods-distribution-editor").then(m => m.DistributionEditor),
   ElevationProfile: () => import("@/controllers/elevation-profile").then(m => m.ElevationProfile),
   EmblemsEditor: () => import("@/controllers/emblems-editor").then(m => m.EmblemsEditor),
