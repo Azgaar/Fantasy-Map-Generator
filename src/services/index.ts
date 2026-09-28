@@ -1,4 +1,5 @@
-import { createRegistry } from "@/utils/registry";
+import { createRegistry, eager } from "@/utils/registry";
+import { Save } from "./io/save";
 import "./platform";
 import "./assistant";
 import "./autosave";
@@ -12,7 +13,7 @@ export const Services = createRegistry({
   ExportJson: () => import("@/services/io/export-json").then(m => m.ExportJson),
   ExportMap: () => import("@/services/io/export").then(m => m.ExportMap),
   Load: () => import("@/services/io/load").then(m => m.Load),
-  Save: () => import("@/services/io/save").then(m => m.Save),
+  Save: eager(Save), // the picker must not wait for a module download after a click
   UiTour: () => import("@/services/ui-tour").then(m => m.UiTour)
 });
 
