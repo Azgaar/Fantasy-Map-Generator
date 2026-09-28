@@ -172,7 +172,7 @@ function renderDialog(): void {
         <button id="emblemsRegenerate" data-tip="Regenerate emblem" class="icon-shuffle"></button>
         <button
           id="emblemsArmoria"
-          data-tip="Edit the emblem in Armoria - dedicated heraldry editor. Download emblem and upload it back map the generator"
+          data-tip="Edit the emblem in Armoria - dedicated heraldry editor. Download emblem and upload it back to the map generator"
           class="icon-brush"
         ></button>
         <button

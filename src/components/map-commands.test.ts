@@ -6,7 +6,8 @@ const mocks = vi.hoisted(() => ({
   refresh: vi.fn(),
   regenerate: vi.fn(),
   dialog: vi.fn(),
-  applyPreset: vi.fn()
+  applyPreset: vi.fn(),
+  save: vi.fn()
 }));
 vi.mock("@/components/layers", () => ({ Layers: { draw: mocks.draw, toggle: vi.fn() } }));
 vi.mock("@/components/dialog/dialog-helpers", () => ({ refreshEditors: mocks.refresh }));
@@ -22,7 +23,7 @@ vi.mock("@/components/lifecycle", () => ({ regeneratePrompt: vi.fn() }));
 vi.mock("@/components/options/io-panes", () => ({}));
 vi.mock("@/components/options/options-panel", () => ({ openTab: vi.fn(), toggleOptions: vi.fn() }));
 vi.mock("@/components/seed", () => ({ showSeedHistoryDialog: vi.fn() }));
-vi.mock("@/services", () => ({ Services: {} }));
+vi.mock("@/services", () => ({ Services: { Save: { toMachine: mocks.save } } }));
 vi.mock("@/services/autosave", () => ({ toggleSaveReminder: vi.fn() }));
 vi.mock("@/services/url-params", () => ({ copyMapURL: vi.fn() }));
 vi.mock("@/services/versioning", () => ({ cleanupData: vi.fn() }));
@@ -40,6 +41,13 @@ beforeEach(() => {
 function confirmation() {
   return mocks.dialog.mock.calls[0][0] as { buttons: { Proceed: () => void; Cancel: () => void } };
 }
+
+it("offers Save As in command search without another save button", () => {
+  MAP_COMMANDS.find(command => command.id === "saveToMachine")!.run();
+  expect(mocks.save).toHaveBeenLastCalledWith();
+  MAP_COMMANDS.find(command => command.id === "saveMapAs")!.run();
+  expect(mocks.save).toHaveBeenLastCalledWith(true);
+});
 
 describe("shared regeneration commands", () => {
   it("waits for confirmation before changing the map and refreshing its views", () => {

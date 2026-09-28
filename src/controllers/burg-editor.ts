@@ -10,7 +10,8 @@ import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { getHeight, openURL, speak } from "@/utils";
 import { MAX_ZOOM, PAN_ZOOM_IDENTITY, type PanZoom, panBy, zoomAt } from "@/utils/panZoomUtils";
 import type { Burg } from "../generators/burgs-generator";
-import { convertTemperature, ensureEl, getPointer, getTemperatureLikeness, rand, rn } from "../utils";
+import type { Market } from "../generators/markets-generator";
+import { convertTemperature, ensureEl, escapeHtml, getPointer, getTemperatureLikeness, rand, rn } from "../utils";
 import type { PromptOptions } from "../utils/commonUtils";
 
 declare const prompt: (text: string, options: PromptOptions, callback: (value: string | number) => void) => void;
@@ -135,7 +136,7 @@ function renderDialog(): void {
               <span
                 id="burgCitadel"
                 data-tip="Shows whether the burg has a citadel (castle). Click to toggle"
-                data-feature="palace"
+                data-feature="citadel"
                 class="burgFeature icon-chess-rook"
                 style="font-size: 1.1em"
               ></span>
@@ -401,6 +402,14 @@ function toggleFeature(this: HTMLElement): void {
   const feature = this.dataset.feature!;
   const value = Number(this.classList.contains("inactive"));
 
+  if (feature === "plaza" && !value) {
+    const market = pack.markets?.find(m => m.centerBurgId === burgId);
+    if (market) {
+      confirmRemoveMarket(market);
+      return;
+    }
+  }
+
   if (feature === "port") togglePort(burgId);
   else if (feature === "capital") toggleCapital(burgId);
   else (burg as any)[feature] = value;
@@ -408,6 +417,19 @@ function toggleFeature(this: HTMLElement): void {
   this.classList.toggle("inactive", !(burg as any)[feature]);
 
   updateBurgPreview(burg);
+}
+
+function confirmRemoveMarket(market: Market): void {
+  confirmationDialog({
+    title: "Remove market",
+    message: `This burg is the center of the market "${escapeHtml(Markets.getName(market))}". Remove the market?<br>This action cannot be reverted`,
+    confirm: "Remove",
+    onConfirm: () => {
+      Markets.removeMarket(market.i);
+      Layers.draw("markets");
+      updateBurgValues();
+    }
+  });
 }
 
 function togglePort(burgId: number): void {
