@@ -7,6 +7,7 @@ vi.mock("@/services", () => ({ Services: { Cloud: { save: vi.fn() } } }));
 import { notifySaveOutcome, Save } from "./save";
 
 beforeEach(() => {
+  window.dispatchEvent(new Event("map:generated"));
   document.body.innerHTML = '<div id="tooltip"></div><div id="alertMessage"></div>';
   localStorage.clear();
   vi.stubGlobal("customization", 0);

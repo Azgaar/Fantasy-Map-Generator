@@ -590,8 +590,8 @@
         <div style="margin-top: 0.3em">
           <strong>Save map to</strong>
           <button
-            onclick="window.Services.Save.toMachine()"
-            data-tip="Download map file to your local disk"
+            onclick="window.Services.Save.toMachine(event.shiftKey)"
+            data-tip="Save to the chosen file; Shift-click to choose another filename or location"
             data-shortcut="Ctrl + S"
             style="font-weight: 600"
           >
@@ -609,6 +609,10 @@
             browser
           </button>
         </div>
+        <p>
+          When supported by your browser, Save updates the chosen file. Shift-click machine or press Ctrl + Shift + S
+          to save a separate copy.
+        </p>
         <p>
           Maps are saved in <i>.map</i> format, that can be loaded back via the <i>Load</i> in menu. There is no way to
           restore the progress if file is lost. Please keep old save files on your machine or cloud storage as backups.

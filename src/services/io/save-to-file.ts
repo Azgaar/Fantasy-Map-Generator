@@ -2,33 +2,67 @@ import { downloadFile } from "@/utils/fileUtils";
 
 export type SaveOutcome = { type: "saved"; filename: string } | { type: "downloaded-fallback" } | { type: "cancelled" };
 
-export async function saveToFileSystem(prepareData: () => string, suggestedName: string): Promise<SaveOutcome> {
+let destination: FileSystemFileHandle | undefined;
+let mapRevision = 0;
+let saving = false;
+
+window.addEventListener("map:generated", () => {
+  destination = undefined;
+  mapRevision++;
+});
+
+export async function saveToFileSystem(
+  prepareData: () => string,
+  suggestedName: string,
+  saveAs = false
+): Promise<SaveOutcome> {
+  if (saving) return { type: "cancelled" };
+  saving = true;
+  try {
+    return await writeMapFile(prepareData, suggestedName, saveAs);
+  } finally {
+    saving = false;
+  }
+}
+
+async function writeMapFile(prepareData: () => string, suggestedName: string, saveAs: boolean): Promise<SaveOutcome> {
   if (typeof window.showSaveFilePicker !== "function") {
     downloadFile(prepareData(), suggestedName);
     return { type: "downloaded-fallback" };
   }
 
-  let handle: FileSystemFileHandle;
-  try {
+  const revision = mapRevision;
+  let handle = saveAs ? undefined : destination;
+  if (!handle) {
     // Pick before serializing: a large map can outlive the browser's user activation.
-    handle = await window.showSaveFilePicker({
-      suggestedName,
-      types: [{ description: "Fantasy Map Generator map", accept: { "application/octet-stream": [".map"] } }]
-    });
-  } catch (error) {
-    if ((error as { name?: string } | null)?.name === "AbortError") return { type: "cancelled" };
-    throw error;
+    try {
+      handle = await window.showSaveFilePicker({
+        suggestedName,
+        types: [{ description: "Fantasy Map Generator map", accept: { "application/octet-stream": [".map"] } }]
+      });
+    } catch (error) {
+      if ((error as { name?: string } | null)?.name === "AbortError") return { type: "cancelled" };
+      throw error;
+    }
   }
+  if (revision !== mapRevision) return { type: "cancelled" };
 
-  const mapData = prepareData();
-  const writable = await handle.createWritable();
+  let writable: FileSystemWritableFileStream | undefined;
   try {
-    await writable.write(mapData);
+    // Permission renewal, if needed, must also precede serialization.
+    writable = await handle.createWritable();
+    if (revision !== mapRevision) {
+      await writable.abort();
+      return { type: "cancelled" };
+    }
+    await writable.write(prepareData());
     await writable.close();
   } catch (error) {
-    await writable.abort().catch(() => {});
+    if (destination === handle) destination = undefined;
+    await writable?.abort().catch(() => {});
     throw error;
   }
+  if (revision === mapRevision) destination = handle;
   return { type: "saved", filename: handle.name };
 }
 

@@ -40,10 +40,17 @@ describe("save shortcut", () => {
     const keydown = new KeyboardEvent("keydown", init);
     document.body.dispatchEvent(keydown);
     expect(mocks.save).toHaveBeenCalledOnce();
+    expect(mocks.save).toHaveBeenCalledWith(false);
     expect(keydown.defaultPrevented).toBe(true);
     document.body.dispatchEvent(new KeyboardEvent("keydown", { ...init, repeat: true }));
     document.body.dispatchEvent(new KeyboardEvent("keyup", init));
     expect(mocks.save).toHaveBeenCalledOnce();
+    expect(mocks.getLayer).not.toHaveBeenCalled();
+  });
+
+  it.each(["ctrlKey", "metaKey"])("uses Save As for %s + Shift + S", modifier => {
+    press(document.body, "KeyS", "S", { [modifier]: true, shiftKey: true });
+    expect(mocks.save).toHaveBeenCalledExactlyOnceWith(true);
     expect(mocks.getLayer).not.toHaveBeenCalled();
   });
 

@@ -18,7 +18,7 @@ function handleKeydown(event: KeyboardEvent): void {
   const { code, ctrlKey, metaKey, altKey, shiftKey } = event;
   if ((ctrlKey || metaKey) && code === "KeyS") {
     event.preventDefault();
-    if (!event.repeat) Services.Save.toMachine(); // keydown supplies the file picker's user activation
+    if (!event.repeat) Services.Save.toMachine(shiftKey); // keydown supplies the file picker's user activation
     return;
   }
   if (altKey && !ctrlKey && !shiftKey) event.preventDefault(); // disallow plain alt key combinations

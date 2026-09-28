@@ -15,7 +15,7 @@ import { type SaveOutcome, saveToFileSystem } from "./save-to-file";
 type Writer = () => Promise<void>;
 
 const toStorage = (): Promise<void> => save(() => writeToStorage(prepareMapData(), true));
-const toMachine = (): Promise<void> => save(writeToMachine);
+const toMachine = (saveAs = false): Promise<void> => save(() => writeToMachine(saveAs));
 const toDropbox = (): Promise<void> => save(() => writeToDropbox(prepareMapData(), `${getFileName()}.map`));
 
 async function save(write: Writer): Promise<void> {
@@ -206,8 +206,8 @@ async function writeToStorage(mapData: string, showTip = false): Promise<void> {
   showTip && tip("Map is saved to the browser storage", false, "success");
 }
 
-async function writeToMachine(): Promise<void> {
-  notifySaveOutcome(await saveToFileSystem(prepareMapData, `${getFileName()}.map`));
+async function writeToMachine(saveAs: boolean): Promise<void> {
+  notifySaveOutcome(await saveToFileSystem(prepareMapData, `${getFileName()}.map`, saveAs));
 }
 
 export function notifySaveOutcome(outcome: SaveOutcome): void {
