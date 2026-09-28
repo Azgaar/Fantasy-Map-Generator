@@ -911,13 +911,21 @@ export function anchorGroupFromLegacy(legacy: unknown): BurgAnchorsPart {
   return group as BurgAnchorsPart;
 }
 
+/** whether a built-in set draws `id`, from a file or an alias; `setForId` only matches the prefix */
+function isSetSymbol(id: string): boolean {
+  if (IconSets.fileOf(id)) return true;
+  const set = IconSets.setForId(id);
+  const aliases = set ? (IconSets.get(set).aliases?.(IconSets.files(set)) ?? []) : [];
+  return aliases.some(({ name }) => IconSets.symbolId(set!, name) === id);
+}
+
 /** What an older icon slot value means as a reference: `#id` loses its `#`, other text becomes a glyph;
  * image URLs are the caller's, since they become custom icons */
 export function legacyIconReference(value: string): string {
   const trimmed = value.trim();
   const id = trimmed.startsWith("#") ? trimmed.slice(1) : trimmed;
   // text that only looks like an id stays text
-  const isReference = Icons.glyphText(id) !== null || Icons.kind(id) === "custom" || IconSets.owns(id);
+  const isReference = Icons.glyphText(id) !== null || Icons.kind(id) === "custom" || isSetSymbol(id);
   return isReference ? id : Icons.glyph(trimmed);
 }
 

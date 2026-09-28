@@ -24,8 +24,7 @@ A set is an `IconSet` (`src/types/icons.ts`), and the **model that draws it owns
 
 ```ts
 interface IconSet {
-  id: string; // the chunk id and the symbol id prefix
-  folder: string; // the directory under src/assets/icons/; its last segment names the set in the picker
+  id: string; // the chunk id, the symbol id prefix and the directory: relief-simple ↔ relief/simple
   group: string; // the picker heading it is listed under
   em?: number; // user units per em: anchored art, sized in em by the loader
   aliases?: (names: readonly string[]) => IconAlias[]; // symbols for ids the directory does not draw
@@ -42,8 +41,7 @@ interface IconSet {
 
 `components/icon-sets.ts` (`IconSets`) is the family-agnostic catalog of the built-in sets and touches no
 DOM: `sets()` lists the models in picker order, `files(set)` lists a directory synchronously (pickers need no chunk
-to list choices), `fileOf(id)` names the set and file a symbol is drawn from, `owns(id)` tells whether a set draws
-an id from a file or an alias, and `read(set)` turns a set
+to list choices), `fileOf(id)` names the set and file a symbol is drawn from, and `read(set)` turns a set
 into symbols — glob the directory (`import.meta.glob(?raw)`, one hashed lazy chunk per set via
 `manualChunks` in `vite.config.ts`), turn each `<svg>` root into `<symbol id>`, keep an anchored set's frame
 unclipped, append `aliases` if declared.

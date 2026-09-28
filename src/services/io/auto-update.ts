@@ -2129,7 +2129,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         const svg = sanitizeSvgIcon(root.outerHTML);
         if (!svg) continue;
         scopeSvgIcon(svg, id);
-        CustomIcons.add({ id, ...CustomIcons.fromSvg(svg) });
+        CustomIcons.add({ id, ...IconPictures.fromSvg(svg) });
       }
     }
   }
@@ -2179,7 +2179,7 @@ function legacyEmblemIcon(definition: Element | null, pictures: Map<string, stri
   if (!svg) return "";
   const id = CustomIcons.newId();
   scopeSvgIcon(svg, id);
-  return CustomIcons.add({ id, ...CustomIcons.fromSvg(svg) }).id;
+  return CustomIcons.add({ id, ...IconPictures.fromSvg(svg) }).id;
 }
 
 export function migrateLegacySettings(mapVersion: string, data: string[]): void {

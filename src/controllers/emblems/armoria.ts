@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type { HeraldicEmblem } from "@/types/emblems";
 
 export const ARMORIA_GUI = "https://azgaar.github.io/Armoria/";
@@ -27,41 +28,23 @@ function parseCoa(text: string): HeraldicEmblem {
   if (!text) throw new Error(NOT_ARMORIA);
   try {
     const value: unknown = JSON.parse(/^%7b/i.test(text) ? decodeURIComponent(text) : text);
-    if (isCoa(value)) return value;
+    if (coaSchema.safeParse(value).success) return value as HeraldicEmblem;
   } catch {
     // not JSON: reported as an invalid COA
   }
   throw new Error("The Armoria COA is not valid JSON with a field tincture");
 }
 
-export function isCoa(value: unknown): value is HeraldicEmblem {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
-  const coa = value as Record<string, unknown>;
-  if (typeof coa.t1 !== "string") return false;
-  for (const name of ["shield", "diaper"]) if (coa[name] !== undefined && typeof coa[name] !== "string") return false;
-  if (coa.division !== undefined) {
-    if (!coa.division || typeof coa.division !== "object" || Array.isArray(coa.division)) return false;
-    const division = coa.division as Record<string, unknown>;
-    if (typeof division.division !== "string" || typeof division.t !== "string") return false;
-  }
-  for (const [key, names] of [
-    ["charges", ["charge", "t", "p"]],
-    ["ordinaries", ["ordinary", "t"]]
-  ] as const) {
-    if (coa[key] === undefined) continue;
-    if (!Array.isArray(coa[key])) return false;
-    for (const item of coa[key]) {
-      if (!item || typeof item !== "object" || names.some(name => typeof item[name] !== "string")) return false;
-    }
-  }
-  if (
-    coa.inscriptions !== undefined &&
-    (!Array.isArray(coa.inscriptions) ||
-      coa.inscriptions.some(item => !item || typeof item.text !== "string" || typeof item.path !== "string"))
-  )
-    return false;
-  return true;
-}
+/** The fields FMG reads from an Armoria COA; anything else it carries is kept as it is */
+export const coaSchema = z.looseObject({
+  t1: z.string(),
+  shield: z.string().optional(),
+  diaper: z.string().optional(),
+  division: z.looseObject({ division: z.string(), t: z.string() }).optional(),
+  charges: z.array(z.looseObject({ charge: z.string(), t: z.string(), p: z.string() })).optional(),
+  ordinaries: z.array(z.looseObject({ ordinary: z.string(), t: z.string() })).optional(),
+  inscriptions: z.array(z.looseObject({ text: z.string(), path: z.string() })).optional()
+});
 
 export function armoriaRenderUrl(coa: HeraldicEmblem): string {
   const url = new URL(ARMORIA_API);

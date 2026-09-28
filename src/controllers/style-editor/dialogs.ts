@@ -1,14 +1,42 @@
 // Every dialog the Style tab opens, plus the element and group listings the dialogs and the editor share
+import { interpolateRgb, interpolateRgbBasis, scaleSequential } from "d3";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
+import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { layerLabel } from "@/data/layer-labels";
 import { stylesSchema } from "@/generators/styles-schema";
+import { drawHeights } from "@/renderers/draw-heightmap";
+import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
 import { getLabelsData } from "@/renderers/labels/label-data";
+import { addGoogleFont, addLocalFont, addWebFont } from "@/services/fonts";
 import { StylePresetsService, SYSTEM_PRESETS } from "@/services/style-presets";
 import { VERSION } from "@/services/versioning";
 import type { StyleElement, StyleSelection } from "@/types/styles";
-import { ensureEl, escapeHtml, findEl } from "@/utils";
+import { ensureEl, escapeHtml, findEl, toHEX } from "@/utils";
+
+type Props<K extends keyof HTMLElementTagNameMap> = Partial<Omit<HTMLElementTagNameMap[K], "style">> & {
+  style?: string;
+};
+export const el = <K extends keyof HTMLElementTagNameMap>(tag: K, props: Props<K> = {}): HTMLElementTagNameMap[K] => {
+  const { style, ...rest } = props;
+  const node = Object.assign(document.createElement(tag), rest);
+  if (style) node.style.cssText = style;
+  return node;
+};
+
+const controlDialogs = new Set<string>(); // opened by a form control: they go with the form
+
+/** Remember a dialog a control opened, so the form's teardown closes it */
+export function trackControlDialog(id: string): void {
+  controlDialogs.add(id);
+}
+
+/** Dialogs a control may have left open; the editor calls it on close */
+export function destroyControlDialogs(): void {
+  for (const id of controlDialogs) destroyDialog(id);
+  controlDialogs.clear();
+}
 
 export function listElements(): { id: StyleElement; label: string }[] {
   return (Object.keys(stylesSchema.shape) as StyleElement[])
@@ -347,7 +375,9 @@ export class PresetSelector {
   }
 }
 
-export const FONT_DIALOG = "fontDialog";
+// --- the controls' dialogs --------------------------------------------------------------------------
+
+const FONT_DIALOG = "fontDialog";
 
 const FONT_STYLE = /* css */ `
   #${FONT_DIALOG} { display: flex; flex-direction: column; gap: .4em; }
@@ -383,6 +413,7 @@ function fontChoices(sample: string, selected: string): string {
 
 export function openFontDialog({ selected, sample, onPick, onAdd }: FontDialogOptions): void {
   destroyDialog(FONT_DIALOG);
+  trackControlDialog(FONT_DIALOG);
   ensureEl("dialogs").insertAdjacentHTML(
     "beforeend",
     /* html */ `<div id="${FONT_DIALOG}" class="dialog">
@@ -433,4 +464,214 @@ export function openFontDialog({ selected, sample, onPick, onAdd }: FontDialogOp
     }
   });
   list.querySelector(".pressed")?.scrollIntoView({ block: "center" });
+}
+
+export function openAddFontDialog(onAdded: (family: string) => void): void {
+  destroyDialog("addFontDialog");
+  trackControlDialog("addFontDialog");
+  const dialog = el("div", { id: "addFontDialog", className: "dialog", style: "display: none" });
+  dialog.innerHTML = /* html */ `
+    <span>There are 3 ways to add a custom font:</span>
+    <p>
+      <strong>Google font</strong>. Open <a href="https://fonts.google.com/" target="_blank">Google Fonts</a>, find
+      a font you like and enter its name to the field below.
+    </p>
+    <p>
+      <strong>Local font</strong>. If you have a font
+      <a href="https://faqs.skillcrush.com/article/275-downloading-installing-a-font-on-your-computer" target="_blank">installed on your computer</a>,
+      just provide the font name. Make sure the browser is reloaded after the installation. The font won't work
+      on machines not having it installed. Good source of fonts are
+      <a href="https://fontesk.com" target="_blank">Fontdesk</a> and <a href="https://www.dafont.com" target="_blank">DaFont</a>.
+    </p>
+    <p>
+      <strong>Font URL</strong>. Provide font name and link to the font file hosted online. The best free font
+      hostings are <a href="https://fonts.google.com/" target="_blank">Google Fonts</a> and
+      <a target="_blank" href="https://www.cdnfonts.com">CDN Fonts</a>. To get font file open the link to css
+      provided by these services and manually copy the link to <code>woff2</code> of desired variant. To add another
+      variant (e.g. Cyrillic), add the font one more time under the same name, but with another URL
+    </p>
+    <div style="margin-top: 0.3em" data-tip="Select font adding method">
+      <select id="addFontMethod">
+        <option value="googleFont" selected>Google font</option>
+        <option value="localFont">Local font</option>
+        <option value="fontURL">Font URL</option>
+      </select>
+      <input id="addFontNameInput" placeholder="font family" style="width: 15em" />
+      <div><input id="addFontURLInput" placeholder="font file URL" style="width: 22.6em; margin-top: 0.1em; display: none" /></div>
+    </div>`;
+  ensureEl("dialogs").append(dialog);
+
+  const method = ensureEl<HTMLSelectElement>("addFontMethod");
+  const nameInput = ensureEl<HTMLInputElement>("addFontNameInput");
+  const urlInput = ensureEl<HTMLInputElement>("addFontURLInput");
+  method.addEventListener("change", () => {
+    urlInput.style.display = method.value === "fontURL" ? "inline" : "none";
+  });
+
+  const add = async () => {
+    const family = nameInput.value.trim();
+    const src = urlInput.value.trim();
+    if (!family) return tip("Please provide a font name", false, "error");
+    const exists =
+      method.value === "fontURL"
+        ? fonts.some(font => font.family === family && font.src === `url('${src}')`)
+        : fonts.some(font => font.family === family);
+    if (exists) return tip("The font is already added", false, "error");
+
+    const added =
+      method.value === "fontURL"
+        ? addWebFont(family, src)
+        : method.value === "googleFont"
+          ? await addGoogleFont(family)
+          : addLocalFont(family);
+    if (added) onAdded(added);
+    $(dialog).dialog("close");
+  };
+
+  $(dialog).dialog({
+    title: "Add custom font",
+    width: "26em",
+    position: { my: "center", at: "center", of: "svg" },
+    close: () => destroyDialog("addFontDialog"),
+    buttons: {
+      // jQuery 3.1 takes an async function for a props object, so the button handler stays sync
+      Add: () => void add(),
+      Cancel: function (this: HTMLElement) {
+        $(this).dialog("close");
+      }
+    }
+  });
+}
+
+export function openSchemeBuilder(current: string, onCreate: (stops: string) => void): void {
+  destroyDialog("heightmapSchemeDialog");
+  trackControlDialog("heightmapSchemeDialog");
+  const dialog = el("div", { id: "heightmapSchemeDialog", className: "dialog", style: "display: none" });
+  dialog.innerHTML = /* html */ `<div>
+    <i>Define heightmap gradient colors from high to low altitude</i>
+    <img id="heightmapSchemePreview" alt="heightmap preview" style="margin-top: 0.5em; width: 100%;" />
+    <div id="heightmapSchemeStops" style="margin-block: 0.5em; display: flex; flex-wrap: wrap;"></div>
+    <div id="heightmapSchemeGradient" style="height: 1.9em; border: 1px solid #767676;"></div>
+  </div>`;
+  ensureEl("dialogs").append(dialog);
+
+  const stops = current.startsWith("#")
+    ? current.split(",")
+    : [0, 0.25, 0.5, 0.75, 1].map(HeightmapColorSchemes.get(current)).map(toHEX);
+
+  const renderPreview = () => {
+    ensureEl<HTMLImageElement>("heightmapSchemePreview").src = drawHeights({
+      heights: grid.cells.h,
+      width: grid.cellsX,
+      height: grid.cellsY,
+      scheme: scaleSequential(interpolateRgbBasis(stops)),
+      renderOcean: styles.heightmap.groups.oceanHeights.options.render
+    });
+  };
+  const renderGradient = () => {
+    ensureEl("heightmapSchemeGradient").style.background = `linear-gradient(to right, ${stops.join(",")})`;
+  };
+  const renderStops = () => {
+    const container = ensureEl("heightmapSchemeStops");
+    container.replaceChildren();
+    stops.forEach((stop, index) => {
+      if (index) {
+        const add = el("button", {
+          className: "add",
+          textContent: "+",
+          style: "margin-top: 0.3em; height: max-content"
+        });
+        add.dataset.tip = "Add color stop in between";
+        add.addEventListener("click", () => {
+          stops.splice(index, 0, toHEX(interpolateRgb(stops[index - 1], stops[index])(0.5)));
+          renderAll();
+        });
+        container.append(add);
+      }
+      const input = el("input", { type: "color", className: "stop", value: stop, style: "width: 2.5em; border: none" });
+      input.dataset.tip = "Click to set the color";
+      input.addEventListener("input", () => {
+        stops[index] = input.value;
+        renderPreview();
+        renderGradient();
+      });
+      container.append(input);
+      if (index && index < stops.length - 1) {
+        const remove = el("button", {
+          className: "remove",
+          textContent: "x",
+          style: "margin-top: 0.3em; height: max-content"
+        });
+        remove.dataset.tip = "Remove color stop";
+        remove.addEventListener("click", () => {
+          stops.splice(index, 1);
+          renderAll();
+        });
+        container.append(remove);
+      }
+    });
+  };
+  const renderAll = () => {
+    renderPreview();
+    renderStops();
+    renderGradient();
+  };
+  renderAll();
+
+  $(dialog).dialog({
+    resizable: false,
+    title: "Create heightmap color scheme",
+    position: { my: "center top+150", at: "center top", of: "svg" },
+    close: () => destroyDialog("heightmapSchemeDialog"),
+    buttons: {
+      Create: function (this: HTMLElement) {
+        const name = stops.join(",");
+        if (HeightmapColorSchemes.has(name)) return tip("This scheme already exists", false, "error");
+        HeightmapColorSchemes.add(name);
+        onCreate(name);
+        $(this).dialog("close");
+      },
+      Cancel: function (this: HTMLElement) {
+        $(this).dialog("close");
+      }
+    }
+  });
+}
+
+export function openTextureUrlDialog(onApply: (url: string) => void): void {
+  destroyDialog("textureUrlDialog");
+  trackControlDialog("textureUrlDialog");
+  const dialog = el("div", { id: "textureUrlDialog", className: "dialog", style: "display: none" });
+  dialog.innerHTML = /* html */ `Provide a texture image URL:
+    <input id="textureURL" type="url" style="width: 100%" placeholder="http://www.example.com/image.jpg" />
+    <canvas id="texturePreview" width="256px" height="144px"></canvas>`;
+  ensureEl("dialogs").append(dialog);
+  const input = ensureEl<HTMLInputElement>("textureURL");
+  input.addEventListener("input", () => {
+    const image = new Image();
+    image.onload = () => {
+      const canvas = ensureEl<HTMLCanvasElement>("texturePreview");
+      const context = canvas.getContext("2d")!;
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    };
+    image.src = input.value;
+  });
+
+  $(dialog).dialog({
+    resizable: false,
+    title: "Load custom texture",
+    width: "28em",
+    close: () => destroyDialog("textureUrlDialog"),
+    buttons: {
+      Apply: function (this: HTMLElement) {
+        if (!input.value) return tip("Please provide a valid URL", false, "error");
+        onApply(input.value);
+        $(this).dialog("close");
+      },
+      Cancel: function (this: HTMLElement) {
+        $(this).dialog("close");
+      }
+    }
+  });
 }

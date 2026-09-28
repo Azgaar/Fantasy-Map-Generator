@@ -10,7 +10,7 @@ describe("EmblemsGenerator", () => {
   it("maps every declared charge to one file in its category", () => {
     const emblems = new EmblemsGenerator();
     const catalog = charges as unknown as Record<string, Record<string, number>>;
-    const files = emblems.iconSets.flatMap(set => IconSets.files(set.id).map(name => [set.folder.slice(8), name]));
+    const files = emblems.iconSets.flatMap(set => IconSets.files(set.id).map(name => [set.id.slice(8), name]));
     const names = files.map(([, name]) => name);
     expect(new Set(names).size).toBe(names.length);
     for (const [category, name] of files) {
@@ -18,7 +18,7 @@ describe("EmblemsGenerator", () => {
       expect(emblems.chargeIcon(name)).toBe(`charges-${category}-${name}`);
     }
     for (const set of emblems.iconSets) {
-      const category = set.folder.slice(8);
+      const category = set.id.slice(8);
       for (const name of Object.keys(catalog[category])) {
         expect(emblems.chargeIcon(name)).toBe(`charges-${category}-${name}`);
       }

@@ -8,19 +8,43 @@ import { escapeHtml } from "@/utils/stringUtils";
 /** where a reference resolves: a built-in set, a glyph built from its text, or a picture the map carries */
 export type IconKind = "set" | "glyph" | "custom";
 
-/** the slots that reference icons, as `Icons.uses` counts them, each with its singular and plural name */
-const SLOT_NAMES = {
-  good: ["good", "goods"],
-  marker: ["marker", "markers"],
-  regiment: ["regiment", "regiments"],
-  unit: ["unit type", "unit types"],
-  burgGroup: ["burg group style", "burg group styles"],
-  market: ["market marker style", "market marker styles"],
-  relief: ["relief icon", "relief icons"],
-  biome: ["biome relief pool", "biome relief pools"],
-  emblem: ["emblem", "emblems"]
-} as const;
-export type IconUseKind = keyof typeof SLOT_NAMES;
+type IconOwner = { icon?: string };
+
+/** the slots that reference icons, as `Icons.uses` counts them: their singular and plural name and their owners */
+const SLOTS = {
+  good: { names: ["good", "goods"], owners: () => pack.goods ?? [] },
+  marker: { names: ["marker", "markers"], owners: () => pack.markers ?? [] },
+  regiment: {
+    names: ["regiment", "regiments"],
+    owners: () => (pack.states ?? []).flatMap(state => state?.military ?? [])
+  },
+  unit: { names: ["unit type", "unit types"], owners: () => options.map.military.units },
+  burgGroup: {
+    names: ["burg group style", "burg group styles"],
+    owners: () =>
+      Object.values(styles.burgIcons.groups).flatMap(({ groups }) => [groups.icons.options, groups.anchors.options])
+  },
+  market: { names: ["market marker style", "market marker styles"], owners: () => [styles.markets.options] },
+  emblem: {
+    names: ["emblem", "emblems"],
+    owners: () =>
+      [...(pack.states ?? []), ...(pack.provinces ?? []), ...(pack.burgs ?? [])].flatMap(entity => {
+        const coa = entity.i && !entity.removed ? entity.coa : undefined;
+        if (!coa) return [];
+        return "icon" in coa ? [coa] : (coa.charges ?? []).map(({ charge }) => ({ icon: charge }));
+      })
+  },
+  relief: {
+    names: ["relief icon", "relief icons"],
+    owners: () => (pack.relief ?? []).flatMap(icon => ("icon" in icon ? [icon] : []))
+  },
+  biome: {
+    names: ["biome relief pool", "biome relief pools"],
+    owners: () =>
+      (pack.biomes ?? []).flatMap(biome => (biome.removed ? [] : Object.keys(biome.icons).map(icon => ({ icon }))))
+  }
+} satisfies Record<string, { names: readonly [string, string]; owners: () => readonly IconOwner[] }>;
+export type IconUseKind = keyof typeof SLOTS;
 
 export interface CustomIcon {
   id: string; // the symbol id: `custom-<8 hex>`, or `custom-goods-<id>` for uploads kept from older maps
@@ -35,7 +59,6 @@ export const IMAGE_FRAME = "0 0 100 100";
 
 const GLYPH_PREFIX = "glyph-";
 const CUSTOM_PREFIX = "custom-";
-const ROOT_FRAME_ATTRIBUTES = new Set(["id", "width", "height", "viewbox", "x", "y", "preserveaspectratio", "version"]);
 
 /** The pictures a map carries: part of its setup like the transport types, saved in `options.map.customIcons` */
 class CustomIconList {
@@ -80,19 +103,6 @@ class CustomIconList {
     Options.iconsChanged();
     Icons.syncCustomIcon(id);
   }
-
-  /** a sanitised svg as a picture: its frame, and its art in a group that keeps the root's paint */
-  fromSvg(svg: Element): IconPicture {
-    const size = (name: string) => Number.parseFloat(svg.getAttribute(name) ?? "") || 0;
-    const frame =
-      Icons.parseFrame(svg.getAttribute("viewBox") ?? "") ??
-      (size("width") && size("height") ? [0, 0, size("width"), size("height")] : [0, 0, 100, 100]);
-    const paint = Array.from(svg.attributes)
-      .filter(({ name }) => !ROOT_FRAME_ATTRIBUTES.has(name.toLowerCase()) && !name.startsWith("xmlns"))
-      .map(({ name, value }) => ` ${name}="${escapeHtml(value)}"`)
-      .join("");
-    return { kind: "svg", content: `<g${paint}>${svg.innerHTML}</g>`, viewBox: Icons.formatFrame(frame) };
-  }
 }
 
 export const CustomIcons = new CustomIconList();
@@ -107,8 +117,7 @@ class IconLibrary {
   private readonly defs = "#defElements defs";
   private readonly container = "icons-library";
   private readonly loading = new Map<IconSetId, Promise<void>>(); // the latest attempt per set
-  private readonly loaded = new Set<IconSetId>();
-  private readonly failed = new Set<IconSetId>();
+  private readonly settled = new Map<IconSetId, "loaded" | "failed">(); // the latest attempt's outcome
 
   kind(id: string): IconKind | null {
     if (id.startsWith(GLYPH_PREFIX)) return "glyph";
@@ -187,7 +196,7 @@ class IconLibrary {
   }
 
   /** the symbol's frame in the page, `[x, y, width, height]` */
-  frame(id: string): number[] | null {
+  private frame(id: string): number[] | null {
     return this.parseFrame(document.getElementById(id)?.getAttribute("viewBox") ?? "");
   }
 
@@ -215,35 +224,10 @@ class IconLibrary {
 
   /** how many slots of each kind reference an icon */
   uses(id: string): Partial<Record<IconUseKind, number>> {
-    const burgGroups = Object.values(styles.burgIcons.groups).flatMap(({ groups }) => [
-      groups.icons.options,
-      groups.anchors.options
-    ]);
-    const slots: [IconUseKind, readonly { icon?: string }[]][] = [
-      ["good", pack.goods ?? []],
-      ["marker", pack.markers ?? []],
-      ["regiment", (pack.states ?? []).flatMap(state => state?.military ?? [])],
-      ["unit", options.map.military.units],
-      ["burgGroup", burgGroups],
-      ["market", [styles.markets.options]],
-      [
-        "emblem",
-        [...(pack.states ?? []), ...(pack.provinces ?? []), ...(pack.burgs ?? [])].flatMap(entity => {
-          const coa = entity.i && !entity.removed ? entity.coa : undefined;
-          if (!coa) return [];
-          return "icon" in coa ? [coa] : (coa.charges ?? []).map(({ charge }) => ({ icon: charge }));
-        })
-      ],
-      ["relief", (pack.relief ?? []).flatMap(icon => ("icon" in icon ? [icon] : []))],
-      [
-        "biome",
-        (pack.biomes ?? []).flatMap(biome => (biome.removed ? [] : Object.keys(biome.icons).map(icon => ({ icon }))))
-      ]
-    ];
     const counts: Partial<Record<IconUseKind, number>> = {};
-    for (const [kind, owners] of slots) {
-      const count = owners.filter(owner => owner.icon === id).length;
-      if (count) counts[kind] = count;
+    for (const [kind, { owners }] of Object.entries(SLOTS)) {
+      const count = (owners() as readonly IconOwner[]).filter(owner => owner.icon === id).length;
+      if (count) counts[kind as IconUseKind] = count;
     }
     return counts;
   }
@@ -251,7 +235,7 @@ class IconLibrary {
   /** "1 good, 12 markers" */
   describeUses(uses: Partial<Record<IconUseKind, number>>): string {
     return Object.entries(uses)
-      .map(([kind, count]) => `${count} ${SLOT_NAMES[kind as IconUseKind][count === 1 ? 0 : 1]}`)
+      .map(([kind, count]) => `${count} ${SLOTS[kind as IconUseKind].names[count === 1 ? 0 : 1]}`)
       .join(", ");
   }
 
@@ -261,7 +245,7 @@ class IconLibrary {
   }
 
   isLoaded(set: IconSetId): boolean {
-    return this.loaded.has(set);
+    return this.settled.get(set) === "loaded";
   }
 
   /** the shared attempt: a cached failure is handed back as it is, so a redraw neither retries nor repeats the report */
@@ -275,7 +259,7 @@ class IconLibrary {
 
   /** an explicit demand, e.g. a picker or an export after a failed attempt */
   retry(set: IconSetId): Promise<void> {
-    return this.failed.has(set) ? this.attempt(set) : this.load(set);
+    return this.settled.get(set) === "failed" ? this.attempt(set) : this.load(set);
   }
 
   /** an explicit demand that must succeed, e.g. an export: rejects when a set still fails to load */
@@ -357,11 +341,11 @@ class IconLibrary {
 
   /** never rejects: a failure is reported once per attempt */
   private attempt(set: IconSetId): Promise<void> {
-    this.failed.delete(set);
+    this.settled.delete(set);
     const attempt = this.inject(set).then(
-      () => void this.loaded.add(set),
+      () => void this.settled.set(set, "loaded"),
       error => {
-        this.failed.add(set);
+        this.settled.set(set, "failed");
         console.error(`Failed to load ${set} icons`, error);
         tip(`Cannot load ${set} icons. Reload the page or retry the action.`, false, "error", 8000);
       }

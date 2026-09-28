@@ -57,9 +57,3 @@ export const NODE_KEYS: ReadonlySet<string> = new Set(["attrs", "options", "grou
 
 /** What the Style tab shows: an element, its group when it has a record of them, and the layer it is drawn on */
 export type StyleSelection = { element: StyleElement; group?: string; layer?: LayerId };
-
-/** One value set on the store at a path, with what it replaced */
-export type StyleChange = { sel: StyleSelection; path: string[]; value: unknown; previous: unknown };
-
-/** A selection addressed by its store path, for comparing with the preset (baseline.ts) */
-export type PathSelection = { element: StyleElement; group?: string; path: string[] };

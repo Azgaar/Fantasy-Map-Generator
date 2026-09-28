@@ -4,10 +4,8 @@
  * A model declares its sets; `components/icon-sets.ts` loads any of them the same way.
  */
 export interface IconSet {
-  /** the chunk id and the symbol id prefix */
+  /** the chunk id and the symbol id prefix; its folder is the id with the first "-" as "/" (`relief-simple` → `relief/simple`) */
   id: string;
-  /** the directory under `src/assets/icons/`; its last segment names the set in the picker */
-  folder: string;
   /** the picker heading the set is listed under */
   group: string;
   /** user units per em for art drawn around its anchor: the loader sizes such symbols in em so `<use x y>` draws them at the group's font size */

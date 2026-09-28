@@ -64,8 +64,8 @@ class BurgModule {
   /** the burg icons (styled subdirectories included) and the port anchors, drawn around the anchor at
    * 10 user units per em, so a `size` of 1 draws the plain circle 1em wide */
   readonly iconSets = [
-    { id: "burgs", folder: "burgs", group: "Settlements", em: 10, paint: BURG_PAINT },
-    { id: "ports", folder: "ports", group: "Settlements", em: 10, paint: BURG_PAINT }
+    { id: "burgs", group: "Settlements", em: 10, paint: BURG_PAINT },
+    { id: "ports", group: "Settlements", em: 10, paint: BURG_PAINT }
   ] as const satisfies readonly IconSet[];
 
   generate() {

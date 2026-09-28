@@ -9,6 +9,18 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+test("an svg becomes a picture that keeps the root's paint and frame", () => {
+  const svg = new DOMParser().parseFromString(
+    '<svg viewBox="0,0 1e3 1E3" fill="red" width="10"><path d="M0 0"/></svg>',
+    "image/svg+xml"
+  ).documentElement;
+  expect(IconPictures.fromSvg(svg)).toEqual({
+    kind: "svg",
+    content: '<g fill="red"><path d="M0 0"/></g>',
+    viewBox: "0 0 1000 1000"
+  });
+});
+
 test("an uploaded svg keeps its root paint, is scoped to the icon and loses its scripts", async () => {
   const picture = await IconPictures.fromFile(
     svgFile(

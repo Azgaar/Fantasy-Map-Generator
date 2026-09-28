@@ -666,7 +666,7 @@ function pickPicture(use: "charge" | "whole"): void {
   const charge = "icon" in coa ? "" : coa.charges?.[0] ? (Emblems.chargeArt(coa.charges[0].charge) ?? "") : "";
   IconPicker.open({
     current: "icon" in coa ? coa.icon : use === "charge" ? charge : "",
-    preferred: "custom",
+    preferCustom: true,
     profile: "emblem",
     onPick: icon => {
       if (!icon || options.map !== map || getEmblemEntity(type, entity.i) !== entity) return;

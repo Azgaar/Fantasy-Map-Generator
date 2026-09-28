@@ -298,7 +298,7 @@ The standard controls are checkbox, select, slider (`<slider-input>`), number, t
 ### Custom controls
 
 `style-editor/controls.ts` adds the controls that need map knowledge or a format, each owning its
-option source and any dialog it opens: `filter` (the map's `<defs>` filters), `font` (loaded
+option source; the dialogs they open live in `dialogs.ts`: `filter` (the map's `<defs>` filters), `font` (loaded
 families plus the add-font dialog), `blur`, `dash` (a dash array the schema format is checked
 against), `transform` (the compass placement as three sliders), `labelStyle` (shadow, letter case and
 shift as four rows), `scheme` (heightmap colour schemes plus a gradient builder), `texture` (bundled
@@ -343,8 +343,8 @@ nothing re-renders. There is no whole-element reset — selecting the preset aga
 
 ### Dialogs
 
-`style-editor/dialogs.ts` holds the panels the tab opens, alongside the element and group listings
-they share with the editor:
+`style-editor/dialogs.ts` holds every panel the tab opens, alongside the element and group listings
+they share with the editor. A dialog a control opens registers itself, and `close` destroys them all:
 
 - **Elements dialog** — every element in the select's order with a visibility dot (a click toggles
   the layer), grouped elements expandable to their groups with counts, and a filter box.

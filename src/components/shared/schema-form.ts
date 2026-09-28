@@ -45,12 +45,11 @@ const internals = (schema: z.ZodType): ZodInternals => schema as unknown as ZodI
 type RenderOptions = {
   meta: Meta;
   controls?: Record<string, ControlFactory>; // merged over the standard ones
-  flatten?: (key: string) => boolean; // default: key === "attrs" || key === "options"
   rootTitle?: string; // wraps the rows outside any section in a section of their own, `data-section=""`
   onChange: (path: string[], value: unknown) => void;
 };
 
-type Ctx = Required<Omit<RenderOptions, "controls" | "rootTitle">> & {
+type Ctx = Omit<RenderOptions, "controls" | "rootTitle"> & {
   controls: Record<string, ControlFactory | undefined>;
   root: HTMLElement;
   rootBody?: () => HTMLElement; // where a root-level row goes when the root is titled
@@ -58,31 +57,34 @@ type Ctx = Required<Omit<RenderOptions, "controls" | "rootTitle">> & {
 
 const GATE_OFF = new Set<unknown>([false, "off", "none"]);
 const GROUPS = "groups";
-const defaultFlatten = (key: string) => key === "attrs" || key === "options";
+const FLATTENED = new Set(["attrs", "options"]); // bags whose rows render in their parent's place
 
 /** The unset value a control emits for a cleared field */
 export const unsetValue = (spec: FieldSpec): null | undefined => (spec.optional ? undefined : null);
 
-// ZodDefault → ZodNullable → ZodOptional → ZodPipe → leaf; meta registered on a wrapper overrides the leaf's
+/** ZodDefault → ZodNullable → ZodOptional → ZodPipe → leaf, with the wrappers passed on the way */
+function peel(schema: z.ZodType): { leaf: z.ZodType; wrappers: z.ZodType[] } {
+  const wrappers: z.ZodType[] = [];
+  let node = schema;
+  for (;;) {
+    const def = internals(node).def;
+    const type = def?.type;
+    if (type !== "nullable" && type !== "optional" && type !== "default" && type !== "pipe") break;
+    wrappers.push(node);
+    node = (type === "pipe" ? def?.in : def?.innerType) as z.ZodType;
+  }
+  return { leaf: node, wrappers };
+}
+
+// meta registered on a wrapper overrides the leaf's
 function unwrap(
   schema: z.ZodType,
   meta: Meta
 ): { leaf: z.ZodType; meta: FieldMeta<string>; nullable: boolean; optional: boolean } {
-  const wrappers: z.ZodType[] = [];
-  let nullable = false;
-  let optional = false;
-  let node: z.ZodType = schema;
-  for (;;) {
-    const def = internals(node).def;
-    const type = def?.type;
-    if (type === "nullable") nullable = true;
-    else if (type === "optional") optional = true;
-    else if (type !== "default" && type !== "pipe") break;
-    wrappers.push(node);
-    node = (type === "pipe" ? def?.in : def?.innerType) as z.ZodType;
-  }
-  const merged = Object.assign({}, meta.get(node), ...wrappers.reverse().map(wrapper => meta.get(wrapper)));
-  return { leaf: node, meta: merged, nullable, optional };
+  const { leaf, wrappers } = peel(schema);
+  const has = (type: string) => wrappers.some(wrapper => internals(wrapper).def?.type === type);
+  const merged = Object.assign({}, meta.get(leaf), ...wrappers.reverse().map(wrapper => meta.get(wrapper)));
+  return { leaf, meta: merged, nullable: has("nullable"), optional: has("optional") };
 }
 
 const isObject = (schema: z.ZodType): schema is z.ZodObject => internals(schema).def?.type === "object";
@@ -228,16 +230,14 @@ function injectStyle(): void {
 
 function render(schema: z.ZodObject, value: object, options: RenderOptions): HTMLElement {
   injectStyle();
+  const root = document.createElement("div");
+  root.className = "schema-form";
   const ctx: Ctx = {
     meta: options.meta,
     controls: { ...STANDARD_CONTROLS, ...options.controls },
-    flatten: options.flatten ?? defaultFlatten,
     onChange: options.onChange,
-    root: document.createElement("div")
+    root
   };
-  const root = document.createElement("div");
-  root.className = "schema-form";
-  ctx.root = root;
   if (options.rootTitle) {
     let body: HTMLElement | undefined;
     ctx.rootBody = () => {
@@ -291,7 +291,7 @@ function renderInto(
     if (isRecord(leaf)) continue; // a record outside `groups` is not part of the tree
     if (isObject(leaf)) {
       const childValue = getPath(value, [key]);
-      if (!meta.gate && ctx.flatten(key)) renderInto(container, leaf, childValue, childPath, ctx, skip);
+      if (!meta.gate && FLATTENED.has(key)) renderInto(container, leaf, childValue, childPath, ctx, skip);
       else container.append(renderSection(key, leaf, childValue, childPath, ctx, meta));
       continue;
     }
@@ -361,7 +361,7 @@ function renderSection(
   if (meta.gate) {
     gatePath = [...path, ...meta.gate.split(".")];
     const gateKey = gatePath.at(-1)!;
-    const gateSchema = resolveSchema(schema, meta.gate.split("."));
+    const gateSchema = fieldAt(schema, meta.gate.split("."));
     if (gateSchema) {
       const spec = fieldSpec(gateKey, gateSchema, ctx.meta, gatePath);
       const gateValue = getPath(value, meta.gate.split("."));
@@ -384,16 +384,6 @@ function renderSection(
   return details;
 }
 
-function resolveSchema(schema: z.ZodObject, path: string[]): z.ZodType | undefined {
-  let node: z.ZodType | undefined = schema;
-  for (const key of path) {
-    if (!node) return undefined;
-    const leaf: z.ZodObject | undefined = isObject(node) ? node : unwrapObject(node);
-    node = (leaf?.shape as Record<string, z.ZodType> | undefined)?.[key];
-  }
-  return node;
-}
-
 /** The merged meta of every schema along a path, leaf first; a record's key steps into its value type */
 function metaAlong<M extends FieldMeta<string>>(
   schema: z.ZodType,
@@ -413,18 +403,8 @@ function metaAlong<M extends FieldMeta<string>>(
 }
 
 function unwrapObject(schema: z.ZodType | undefined): z.ZodObject | undefined {
-  let node = schema;
-  while (node) {
-    const def = internals(node).def;
-    const type = def?.type;
-    if (type === "pipe") {
-      node = def?.in;
-      continue;
-    }
-    if (type !== "default" && type !== "nullable" && type !== "optional") break;
-    node = def?.innerType;
-  }
-  return node && internals(node).def?.type === "object" ? (node as z.ZodObject) : undefined;
+  const leaf = schema && peel(schema).leaf;
+  return leaf && isObject(leaf) ? leaf : undefined;
 }
 
 /** The leaf schema a path relative to a node schema declares, or undefined when it declares none */

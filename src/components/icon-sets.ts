@@ -29,9 +29,14 @@ export class IconSetRegistry {
     return `${set}-${name.replaceAll("/", "-")}`;
   }
 
+  /** a set's directory under `src/assets/icons/`: `relief-simple` → `relief/simple` */
+  folder(id: string): string {
+    return id.replace("-", "/");
+  }
+
   /** a set's file names, known before the chunk loads: the path within the folder, `watabou/capital` */
   files(id: IconSetId): string[] {
-    return [...this.loaders(this.get(id).folder).keys()];
+    return [...this.loaders(this.folder(id)).keys()];
   }
 
   /** the set a symbol id belongs to, or none for map-carried and foreign art */
@@ -49,17 +54,9 @@ export class IconSetRegistry {
     return this.index.get(symbolId);
   }
 
-  /** whether a set draws `symbolId`, from a file or an alias; `setForId` only matches the prefix */
-  owns(symbolId: string): boolean {
-    if (this.fileOf(symbolId)) return true;
-    const set = this.setForId(symbolId);
-    const aliases = set ? (this.get(set).aliases?.(this.files(set)) ?? []) : [];
-    return aliases.some(({ name }) => this.symbolId(set!, name) === symbolId);
-  }
-
   /** a set's symbols, read from its lazy chunk */
   async read(set: IconSet): Promise<string> {
-    const entries = [...this.loaders(set.folder)].map(
+    const entries = [...this.loaders(this.folder(set.id))].map(
       async ([name, load]) => [name, (await load()) as string] as const
     );
     return this.symbols(set, Object.fromEntries(await Promise.all(entries)));

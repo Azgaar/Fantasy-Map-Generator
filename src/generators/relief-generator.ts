@@ -51,7 +51,6 @@ export class ReliefModel {
   /** one icon set per relief set: its directory, plus a symbol for every union slot it draws no file for */
   readonly iconSets: readonly (IconSet & { id: ReliefIconSetId })[] = RELIEF_SETS.map(set => ({
     id: this.iconSetId(set),
-    folder: `relief/${set}`,
     group: "Relief",
     aliases: (names: readonly string[]) => this.aliasSlots(set, names),
     paint: { stroke: "#5c5c70", strokeWidth: 1 } // the default relief style

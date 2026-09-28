@@ -3,18 +3,20 @@ import "@/components/shared/slider-input";
 import type { z } from "zod";
 import { type LayerId, Layers } from "@/components/layers";
 import { openTab } from "@/components/options/options-panel";
-import { SchemaForm } from "@/components/shared/schema-form";
+import { type FieldSpec, row, SchemaForm, STANDARD_CONTROLS } from "@/components/shared/schema-form";
 import { invokeActiveZooming } from "@/components/zoom";
 import { layerLabel } from "@/data/layer-labels";
 import { VIGNETTE_PRESETS } from "@/data/vignette-presets";
 import { Styles } from "@/generators/styles";
 import { styleMeta, stylesSchema } from "@/generators/styles-schema";
 import { applyVignetteOptions } from "@/renderers/draw-vignette";
-import type { PathSelection, StyleElement, StyleSelection } from "@/types/styles";
+import type { StyleElement, StyleSelection } from "@/types/styles";
 import { ensureEl, findEl } from "@/utils";
-import { Baseline, storePath, storeValue } from "./baseline";
-import { CUSTOM_CONTROLS, destroyControlDialogs, fontSample, updateGridSizeReadout } from "./controls";
+import { getPath } from "@/utils/objectUtils";
+import { Baseline } from "./baseline";
+import { CUSTOM_CONTROLS, fontSample, updateGridSizeReadout } from "./controls";
 import {
+  destroyControlDialogs,
   ElementsDialog,
   elementFor,
   type GroupEntry,
@@ -180,14 +182,13 @@ class StyleEditorController {
     // only a value the schema declares and accepts reaches the store, whoever wrote it and whenever
     const field = SchemaForm.fieldAt(sel.schema, relative);
     if (!field || (value !== undefined && !field.safeParse(value).success)) return;
-    const path = storePath(sel, relative);
-    const node = storeValue(sel, relative.slice(0, -1)) as Record<string, unknown> | undefined;
+    const path = [...sel.path, ...relative];
+    const node = getPath(styles, path.slice(0, -1)) as Record<string, unknown> | undefined;
     if (!node) return;
     const key = path.at(-1)!;
-    const previous = node[key];
     if (value === undefined) delete node[key];
     else node[key] = value;
-    runEffect({ sel, path, value, previous });
+    runEffect(sel, path);
     if (sel.element === "grid") updateGridSizeReadout();
     // a control whose dialog wrote the store fires no form event, so the previews follow the store
     this.decoration?.refreshPreview();
@@ -212,35 +213,16 @@ class StyleEditorController {
     return form.querySelector('.schema-form > details[data-section=""] > .body') ?? form.querySelector(".schema-form")!;
   }
 
-  /** A row outside the schema: a label and an empty control slot */
-  private extraRow(label: string, tip: string): HTMLElement {
-    const row = document.createElement("div");
-    row.className = "row";
-    row.dataset.tip = tip;
-    row.innerHTML = /* html */ `<label>${label}</label><div class="ctl"></div>`;
-    return row;
-  }
-
-  /** The styled checkbox with its label, for the app options that sit among the style rows */
-  private appCheckbox(id: string, checked: boolean, onInput: (checked: boolean) => void): DocumentFragment {
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.className = "checkbox";
-    checkbox.id = id;
-    checkbox.checked = checked;
-    const label = document.createElement("label");
-    label.className = "checkbox-label";
-    label.htmlFor = id;
-    checkbox.addEventListener("input", () => onInput(checkbox.checked));
-    const fragment = document.createDocumentFragment();
-    fragment.append(checkbox, label);
-    return fragment;
+  /** A row outside the schema */
+  private extraRow(label: string, tip: string, ...controls: HTMLElement[]): HTMLElement {
+    const extra = row(label, ...controls);
+    extra.dataset.tip = tip;
+    return extra;
   }
 
   // the rows that are not fields: readouts, preset pickers and the one app option users look for here
   private addExtraRows(form: HTMLElement, sel: Resolved): void {
     if (sel.element === "grid") {
-      const row = this.extraRow("Cell size", "Distance between grid cell centers (in map scale)");
       const output = document.createElement("output");
       output.id = "styleGridSizeFriendly";
       const link = document.createElement("a");
@@ -248,15 +230,13 @@ class StyleEditorController {
       link.target = "_blank";
       link.innerHTML =
         '<span data-tip="Open wiki article scale and distance to know about grid scale" class="icon-info-circled pointer"></span>';
-      row.querySelector(".ctl")!.append(output, link);
-      form.querySelector('[data-field="options.scale"]')?.after(row);
+      const extra = this.extraRow("Cell size", "Distance between grid cell centers (in map scale)", output, link);
+      form.querySelector('[data-field="options.scale"]')?.after(extra);
       updateGridSizeReadout();
     }
 
     // not a field: assigns a ready-made look into the vignette and asks the editor to re-render
     if (sel.element === "vignette") {
-      const row = this.extraRow("Preset", "Select a precreated vignette");
-      row.dataset.field = "preset";
       const select = document.createElement("select");
       select.append(new Option("Select a preset…", ""), ...Object.keys(VIGNETTE_PRESETS).map(name => new Option(name)));
       select.addEventListener("change", () => {
@@ -268,25 +248,33 @@ class StyleEditorController {
         applyVignetteOptions();
         this.renderForm(sel);
       });
-      row.querySelector(".ctl")!.append(select);
-      this.rootBody(form).prepend(row);
+      const extra = this.extraRow("Preset", "Select a precreated vignette", select);
+      extra.dataset.field = "preset";
+      this.rootBody(form).prepend(extra);
     }
 
     if (sel.element === "emblems") {
-      const row = this.extraRow(
+      const spec: FieldSpec = {
+        path: [],
+        kind: "checkbox",
+        label: "",
+        nullable: false,
+        optional: false,
+        valueType: "boolean"
+      };
+      const checkbox = STANDARD_CONTROLS.checkbox(spec, options.app.emblems.showAll, checked => {
+        Options.set(options => {
+          options.app.emblems.showAll = Boolean(checked);
+        });
+        invokeActiveZooming();
+      });
+      const extra = this.extraRow(
         "Show all",
-        "Show emblem groups even if their size is too small or too big at the current scale"
+        "Show emblem groups even if their size is too small or too big at the current scale",
+        checkbox
       );
-      row.dataset.field = "showAll";
-      row.querySelector(".ctl")!.append(
-        this.appCheckbox("showAllEmblems", options.app.emblems.showAll, checked => {
-          Options.set(options => {
-            options.app.emblems.showAll = checked;
-          });
-          invokeActiveZooming();
-        })
-      );
-      this.rootBody(form).append(row);
+      extra.dataset.field = "showAll";
+      this.rootBody(form).append(extra);
     }
   }
 
@@ -312,7 +300,7 @@ type Resolved = StyleSelection & {
 class FormDecoration {
   private readonly folded = new Map<string, boolean>(); // section open state per element, for the session
   private cards: HTMLDetailsElement[] = [];
-  private selection?: PathSelection;
+  private selection?: Resolved;
   private baseline?: Baseline;
   private sample = "Sample"; // the words a font sample shows, read once per render from the map
   private neutral = NEUTRAL;
@@ -333,7 +321,7 @@ class FormDecoration {
   }
 
   /** Look at the form as freshly rendered for `sel`: restore the folded cards and draw the preset marks */
-  attach(sel: PathSelection): void {
+  attach(sel: Resolved): void {
     this.selection = sel;
     this.sample = fontSample().split(",")[0]; // one name is enough for the header
     this.neutral = sampleColor();
@@ -372,15 +360,19 @@ class FormDecoration {
     return field.dataset.field!.split(".");
   }
 
+  /** the store path of a form field: the selection's node plus the field's own path */
+  private pathOf(field: HTMLElement): string[] {
+    return [...this.selection!.path, ...this.relativeOf(field)];
+  }
+
   private addResetButton(field: HTMLElement): void {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "reset icon-ccw";
     button.addEventListener("click", event => {
       event.stopPropagation();
-      const relative = this.relativeOf(field);
-      const diff = this.baseline?.diffAt(this.selection!, relative);
-      if (diff) this.reset(relative, diff.presetValue);
+      const diff = this.baseline?.diffAt(this.pathOf(field));
+      if (diff) this.reset(this.relativeOf(field), diff.presetValue);
     });
     // a composite field's rows: the button sits on the first, the others get a blank of the same width
     // so all the rows' controls line up; a row part or a gate takes it itself
@@ -405,7 +397,7 @@ class FormDecoration {
   // a changed field shows its reset button; the button's tip names the value it restores
   private mark(field: HTMLElement): void {
     if (!this.selection) return;
-    const diff = this.baseline?.diffAt(this.selection, this.relativeOf(field));
+    const diff = this.baseline?.diffAt(this.pathOf(field));
     field.classList.toggle("changed", diff?.changed ?? false);
     const button = field.querySelector<HTMLElement>(".reset");
     if (!button || !diff) return;
@@ -429,7 +421,7 @@ class FormDecoration {
       if (field.closest("details[data-section]") !== card) continue;
       const relative = this.relativeOf(field);
       const bag = relative[0] === "options" ? values.options : values.attrs;
-      bag[relative.at(-1)!] = storeValue(this.selection!, relative);
+      bag[relative.at(-1)!] = getPath(styles, this.pathOf(field));
     }
     const off = card.querySelector<HTMLElement>(":scope > .body")?.hidden ?? false;
     return cardPreview(values, { sample: this.sample, off, neutral: this.neutral });

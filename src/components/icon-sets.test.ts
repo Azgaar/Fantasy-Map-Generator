@@ -46,7 +46,7 @@ test("symbol ids derive from the set and the file path; every set is a directory
   expect(IconSets.fileOf("burgs-watabou-capital")).toEqual({ set: "burgs", file: "watabou/capital" });
   expect(IconSets.fileOf("custom-goods-abc")).toBeUndefined();
   for (const set of [...Relief.iconSets, ...Burgs.iconSets, Goods.iconSet]) {
-    const symbols = IconSets.symbols(set, directory(set.folder));
+    const symbols = IconSets.symbols(set, directory(IconSets.folder(set.id)));
     for (const file of IconSets.files(set.id as never))
       expect(symbols.includes(`id="${IconSets.symbolId(set.id, file)}"`), `${set.id}/${file}`).toBe(true);
   }
@@ -56,7 +56,7 @@ test("all relief artwork has linework inheriting stroke width and color while al
   // one viewBox width per type makes an inherited width draw equally thick at the generated sizes
   const strokeUnit = (type: string) => ({ mount: 130, mountSnow: 130, vulcan: 130, hill: 50 })[type] ?? 90;
   for (const set of Relief.iconSets) {
-    for (const [file, source] of Object.entries(directory(set.folder))) {
+    for (const [file, source] of Object.entries(directory(IconSets.folder(set.id)))) {
       const width = Number(source.match(/viewBox="\S+ \S+ (\S+)/)?.[1]);
       expect(width, `${set.id}/${file} viewBox width`).toBe(strokeUnit(file.replace(/-\d+$/, "")));
       expect(source, `${set.id}/${file}`).not.toMatch(/\bstroke-width=/);
@@ -73,7 +73,7 @@ test("all relief artwork has linework inheriting stroke width and color while al
 });
 
 test("goods art shares one frame and inherits stroke colour and width", () => {
-  for (const [file, source] of Object.entries(directory(Goods.iconSet.folder))) {
+  for (const [file, source] of Object.entries(directory(IconSets.folder(Goods.iconSet.id)))) {
     expect(source, file).toMatch(/^<svg [^>]*viewBox="0 0 100 100"/);
     expect(source, file).toMatch(/stroke-linejoin="round"/);
     for (const match of source.matchAll(/\bfill="([^"]+)"/g)) expect(match[1], file).toMatch(/^(none|#fff|#000)$/);
@@ -88,7 +88,7 @@ test("goods art shares one frame and inherits stroke colour and width", () => {
 });
 
 test("amber linework uses recolourable strokes instead of filled contours", () => {
-  const amber = directory(Goods.iconSet.folder).amber;
+  const amber = directory(IconSets.folder(Goods.iconSet.id)).amber;
   expect(amber).toMatch(/^<svg [^>]*\bfill="none"/);
   expect(amber).toMatch(/stroke-linecap="round"/);
   for (const match of amber.matchAll(/\bfill="([^"]+)"/g)) expect(match[1]).toMatch(/^(none|#fff)$/);
@@ -164,7 +164,7 @@ describe("relief alias resolution", () => {
   });
   test("every union slot resolves in every extracted set", () => {
     for (const set of Relief.iconSets) {
-      const symbols = IconSets.symbols(set, directory(set.folder));
+      const symbols = IconSets.symbols(set, directory(IconSets.folder(set.id)));
       for (const { type, variants } of Relief.types)
         for (let variant = 1; variant <= variants; variant++) {
           expect(symbols.includes(`id="${IconSets.symbolId(set.id, `${type}-${variant}`)}"`)).toBe(true);

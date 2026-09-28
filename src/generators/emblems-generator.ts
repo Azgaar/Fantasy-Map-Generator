@@ -57,7 +57,6 @@ export class EmblemsGenerator {
   /** one icon set per charge category, so a map loads only the categories its emblems use */
   readonly iconSets: readonly (IconSet & { id: ChargeIconSetId })[] = CHARGE_CATEGORIES.map(category => ({
     id: `charges-${category}` as ChargeIconSetId,
-    folder: `charges/${category}`,
     group: "Heraldry",
     prepare: prepareCharge,
     paint: { fill: "#d7374a", stroke: "#000" } // gules, Armoria's preview tincture

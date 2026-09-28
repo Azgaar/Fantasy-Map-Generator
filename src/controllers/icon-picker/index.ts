@@ -24,7 +24,7 @@ export interface IconPickerOptions {
   current: string;
   onPick: (id: string) => void; // on Apply; `live` also calls it on every selection and with `current` on cancel
   live?: boolean;
-  preferred?: "custom";
+  preferCustom?: boolean; // open on the Custom tab when no icon is set
   profile?: PictureProfile;
 }
 
@@ -83,11 +83,11 @@ const STYLE = /* css */ `
 
 let fileInput: HTMLInputElement | null = null; // one per page, so reopening never binds a second listener
 
-function open({ current, onPick, live = false, preferred, profile = "icon" }: IconPickerOptions): void {
+function open({ current, onPick, live = false, preferCustom, profile = "icon" }: IconPickerOptions): void {
   const initial = current;
   let applied = false;
   const entries = catalog();
-  let view = viewOf(current, entries, preferred);
+  let view = viewOf(current, entries, preferCustom);
   let query = "";
   let replacing: string | null = null; // the custom icon a new link or upload replaces
 
@@ -298,14 +298,14 @@ function catalog(): Entry[] {
 }
 
 /** a set's entries: one per subdirectory, else the set itself, named after its folder */
-function setEntries({ id, folder, group }: IconSet): Entry[] {
+function setEntries({ id, group }: IconSet): Entry[] {
   const set = id as IconSetId;
   const subdirectories = new Map<string, string[]>();
   for (const file of IconSets.files(set)) {
     const subdirectory = file.slice(0, Math.max(0, file.lastIndexOf("/")));
     subdirectories.set(subdirectory, [...(subdirectories.get(subdirectory) ?? []), IconSets.symbolId(set, file)]);
   }
-  const name = folder.slice(folder.lastIndexOf("/") + 1); // relief/simple → simple
+  const name = id.slice(id.indexOf("-") + 1); // relief-simple → simple, goods → goods
   return [...subdirectories].map(([subdirectory, icons]) => ({
     key: subdirectory ? `${set}/${subdirectory}` : set,
     group,
@@ -322,10 +322,10 @@ function locate(entries: Entry[], id: string): Entry | undefined {
 }
 
 /** where the picker opens: the current icon's entry, else the first emoji or built-in entry */
-function viewOf(current: string, entries: Entry[], preferred?: "custom"): string {
+function viewOf(current: string, entries: Entry[], preferCustom?: boolean): string {
   const kind = Icons.kind(current);
   if (kind === "custom") return "custom";
-  if (!current && preferred) return preferred;
+  if (!current && preferCustom) return "custom";
   const entry = locate(entries, current) ?? entries.find(({ set }) => (kind === "glyph" ? !set : set));
   return entry?.key ?? "custom";
 }

@@ -1,8 +1,9 @@
 // Turns a file or a link into a custom icon's picture: its kind, content and a frame fitted to what it shows.
 // Stateless; every thrown message is meant for the author
-import { CustomIcons, type IconPicture, Icons, IMAGE_FRAME } from "@/components/icons";
+import { type IconPicture, Icons, IMAGE_FRAME } from "@/components/icons";
 import { sanitizeSvgIcon, scopeSvgIcon } from "@/utils/fileUtils";
 import { rn } from "@/utils/numberUtils";
+import { escapeHtml } from "@/utils/stringUtils";
 
 export type PictureProfile = "icon" | "emblem";
 const LIMITS = {
@@ -12,6 +13,20 @@ const LIMITS = {
 const PADDING = 0.05; // of the content's longer side, on every side of the fitted frame
 const OPAQUE = 8; // the alpha a pixel needs to count as content
 const LOAD_TIMEOUT = 15_000;
+const ROOT_FRAME_ATTRIBUTES = new Set(["id", "width", "height", "viewbox", "x", "y", "preserveaspectratio", "version"]);
+
+/** A sanitised svg as a picture: its frame, and its art in a group that keeps the root's paint */
+function fromSvg(svg: Element): IconPicture {
+  const size = (name: string) => Number.parseFloat(svg.getAttribute(name) ?? "") || 0;
+  const frame =
+    Icons.parseFrame(svg.getAttribute("viewBox") ?? "") ??
+    (size("width") && size("height") ? [0, 0, size("width"), size("height")] : [0, 0, 100, 100]);
+  const paint = Array.from(svg.attributes)
+    .filter(({ name }) => !ROOT_FRAME_ATTRIBUTES.has(name.toLowerCase()) && !name.startsWith("xmlns"))
+    .map(({ name, value }) => ` ${name}="${escapeHtml(value)}"`)
+    .join("");
+  return { kind: "svg", content: `<g${paint}>${svg.innerHTML}</g>`, viewBox: Icons.formatFrame(frame) };
+}
 
 /** An uploaded svg or raster image as the picture of icon `id`, whose ids and classes it is scoped to */
 async function fromFile(file: File, id: string, profile: PictureProfile = "icon"): Promise<IconPicture> {
@@ -25,7 +40,7 @@ async function fromFile(file: File, id: string, profile: PictureProfile = "icon"
     const svg = sanitizeSvgIcon(await file.text());
     if (!svg) throw new Error("The file is not a valid SVG image");
     scopeSvgIcon(svg, id);
-    const picture = CustomIcons.fromSvg(svg);
+    const picture = fromSvg(svg);
     return { ...picture, viewBox: svgFrame(picture.content, picture.viewBox) };
   }
 
@@ -160,4 +175,4 @@ async function shrink(url: string, profile: PictureProfile): Promise<string> {
   return shrunk.length < url.length ? shrunk : url;
 }
 
-export const IconPictures = { fromFile, fromLink, fit, shrink };
+export const IconPictures = { fromSvg, fromFile, fromLink, fit, shrink };

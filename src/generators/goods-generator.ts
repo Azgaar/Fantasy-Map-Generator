@@ -959,7 +959,6 @@ const GOODS_DATA: GoodData[] = [
 export class GoodsModule {
   readonly iconSet = {
     id: "goods",
-    folder: "goods",
     group: "Goods",
     paint: { stroke: "#000000", strokeWidth: 2 } // the linework of the default goods style
   } as const satisfies IconSet;

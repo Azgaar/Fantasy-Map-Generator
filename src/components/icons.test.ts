@@ -58,18 +58,6 @@ test("replacing keeps the id, framing edits only the frame, removing leaves refe
   expect(options.map.customIcons).toEqual([]);
 });
 
-test("an svg becomes a picture that keeps the root's paint and frame", () => {
-  const svg = new DOMParser().parseFromString(
-    '<svg viewBox="0,0 1e3 1E3" fill="red" width="10"><path d="M0 0"/></svg>',
-    "image/svg+xml"
-  ).documentElement;
-  expect(CustomIcons.fromSvg(svg)).toEqual({
-    kind: "svg",
-    content: '<g fill="red"><path d="M0 0"/></g>',
-    viewBox: "0 0 1000 1000"
-  });
-});
-
 test("any short text round-trips through its glyph reference", () => {
   for (const text of ["🏰", "XIV", "⟱", "🏴‍☠️", "💃🏽", "#️⃣", "a b"])
     expect(Icons.glyphText(Icons.glyph(text))).toBe(text);

@@ -10,11 +10,7 @@ vi.mock("@/services/style-presets", () => ({
 
 import { parsePreset } from "@/controllers/style-preset";
 import { StylePresetsService } from "@/services/style-presets";
-import type { PathSelection } from "@/types/styles";
-import { Baseline, storePath } from "./baseline";
-
-const sel = (element: string, group?: string, path?: string[]): PathSelection =>
-  ({ element, group, path: path ?? (group ? [element, "groups", group] : [element]) }) as PathSelection;
+import { Baseline } from "./baseline";
 
 const PRESET = {
   rivers: { attrs: { opacity: null, fill: "#5d97bb", filter: null } },
@@ -60,70 +56,35 @@ beforeEach(() => {
   });
 });
 
-describe("storePath", () => {
-  test("hangs a relative path off the selection's node", () => {
-    expect(storePath(sel("rivers"), ["attrs", "fill"])).toEqual(["rivers", "attrs", "fill"]);
-    expect(storePath(sel("labels", "capital"), ["attrs", "opacity"])).toEqual([
-      "labels",
-      "groups",
-      "capital",
-      "attrs",
-      "opacity"
-    ]);
-  });
-
-  test("hangs a burg group's parts off the group's own path", () => {
-    const burg = sel("burgIcons", "city", ["burgIcons", "groups", "city"]);
-    expect(storePath(burg, ["groups", "icons", "attrs", "fill"])).toEqual([
-      "burgIcons",
-      "groups",
-      "city",
-      "groups",
-      "icons",
-      "attrs",
-      "fill"
-    ]);
-    expect(storePath(burg, ["groups", "anchors", "attrs", "fill"])).toEqual([
-      "burgIcons",
-      "groups",
-      "city",
-      "groups",
-      "anchors",
-      "attrs",
-      "fill"
-    ]);
-  });
-});
-
 describe("Baseline.diffAt", () => {
   test("is undefined for a path the preset does not define: a missing container or a missing key", async () => {
     const preset = await baseline();
-    expect(preset.diffAt(sel("labels", "mine"), ["attrs", "opacity"])).toBeUndefined();
-    expect(preset.diffAt(sel("rivers"), ["attrs", "mask"])).toBeUndefined();
-    expect(preset.diffAt(sel("zones"), ["attrs", "opacity"])).toBeUndefined();
+    expect(preset.diffAt(["labels", "groups", "mine", "attrs", "opacity"])).toBeUndefined();
+    expect(preset.diffAt(["rivers", "attrs", "mask"])).toBeUndefined();
+    expect(preset.diffAt(["zones", "attrs", "opacity"])).toBeUndefined();
   });
 
   test("compares by value, null and undefined alike, and carries the preset value", async () => {
     const preset = await baseline();
-    expect(preset.diffAt(sel("rivers"), ["attrs", "fill"])).toEqual({ changed: false, presetValue: "#5d97bb" });
+    expect(preset.diffAt(["rivers", "attrs", "fill"])).toEqual({ changed: false, presetValue: "#5d97bb" });
     styles.rivers.attrs.fill = "#000000";
-    expect(preset.diffAt(sel("rivers"), ["attrs", "fill"])).toEqual({ changed: true, presetValue: "#5d97bb" });
+    expect(preset.diffAt(["rivers", "attrs", "fill"])).toEqual({ changed: true, presetValue: "#5d97bb" });
     delete (styles.rivers.attrs as Record<string, unknown>).filter; // removed attr vs preset null: the same
-    expect(preset.diffAt(sel("rivers"), ["attrs", "filter"])).toEqual({ changed: false, presetValue: null });
+    expect(preset.diffAt(["rivers", "attrs", "filter"])).toEqual({ changed: false, presetValue: null });
     styles.labels.groups.capital.attrs["stroke-linecap"] = "round";
-    expect(preset.diffAt(sel("labels", "capital"), ["attrs", "stroke-linecap"])?.changed).toBe(true);
+    expect(preset.diffAt(["labels", "groups", "capital", "attrs", "stroke-linecap"])?.changed).toBe(true);
   });
 
   test("compares a burg group's anchors part", async () => {
     const preset = await baseline();
-    const burg = sel("burgIcons", "city", ["burgIcons", "groups", "city"]);
+    const burg = ["burgIcons", "groups", "city"];
     styles.burgIcons.groups.city.groups.icons.attrs.fill = "#123456";
-    expect(preset.diffAt(burg, ["groups", "icons", "attrs", "fill"])).toEqual({
+    expect(preset.diffAt([...burg, "groups", "icons", "attrs", "fill"])).toEqual({
       changed: true,
       presetValue: "#ffffff"
     });
     styles.burgIcons.groups.city.groups.anchors.attrs.fill = "#123456";
-    expect(preset.diffAt(burg, ["groups", "anchors", "attrs", "fill"])).toEqual({
+    expect(preset.diffAt([...burg, "groups", "anchors", "attrs", "fill"])).toEqual({
       changed: true,
       presetValue: "#000000"
     });
