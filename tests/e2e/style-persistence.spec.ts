@@ -23,7 +23,11 @@ function readPreset(name: string): any {
 
 async function saveAsDownload(page: Page): Promise<Buffer> {
   const downloadPromise = page.waitForEvent("download");
-  await page.evaluate(() => Services.Save.toMachine());
+  await page.evaluate(() => {
+    // This round trip captures a download, not the native file picker.
+    Object.defineProperty(window, "showSaveFilePicker", { value: undefined, configurable: true });
+    return Services.Save.toMachine();
+  });
   const download = await downloadPromise;
   return fs.readFileSync(await download.path());
 }

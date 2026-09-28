@@ -26,7 +26,7 @@ import { downloadFile, getFileName } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
 import type { Deal, Market } from "../generators/markets-generator";
 import { highlightMarketOff, highlightMarketOn } from "../renderers/draw-markets";
-import { ensureEl, formatPrice, getPointer, rn } from "../utils";
+import { ensureEl, escapeHtml, formatPrice, getPointer, rn } from "../utils";
 
 const dialogId = "marketsOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
@@ -335,7 +335,7 @@ function confirmRemoveMarket(marketId: number): void {
 
   confirmationDialog({
     title: "Remove Market",
-    message: `Are you sure you want to remove the market "${name}"?<br>This action cannot be reverted`,
+    message: `Are you sure you want to remove the market "${escapeHtml(name)}"?<br>This action cannot be reverted`,
     confirm: "Remove",
     onConfirm: () => {
       Markets.removeMarket(marketId);
