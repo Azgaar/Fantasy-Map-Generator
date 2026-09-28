@@ -1,5 +1,8 @@
 // @vitest-environment jsdom
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { MapEntities } from "@/components/map-entities";
+import { Notes } from "@/components/notes";
 import {
   type EditEntry,
   MAX_CONTEXT_CHARS,
@@ -10,12 +13,6 @@ import {
 } from "./help-assistant-notes";
 
 const w = globalThis as unknown as Record<string, unknown>;
-
-interface StoredNote {
-  id: string;
-  name: string;
-  legend: string;
-}
 
 const editor = {
   current: vi.fn(),
@@ -28,20 +25,13 @@ beforeEach(() => {
   editor.current.mockReset().mockResolvedValue(null);
   editor.getSelectionHtml.mockReset().mockResolvedValue(null);
   editor.remove.mockReset().mockResolvedValue(undefined);
-  editor.write.mockReset().mockImplementation(async (id: string, legend: string, name?: string) => {
-    const list = w.notes as StoredNote[];
-    const existing = list.find(note => note.id === id);
-    if (existing) {
-      existing.legend = legend;
-      if (name !== undefined) existing.name = name;
-      return existing;
-    }
-    const note = { id, name: name ?? id, legend };
-    list.push(note);
-    return note;
+  editor.write.mockReset().mockImplementation(async (id: string, legend: string) => {
+    const ref = MapEntities.parseKey(id)!;
+    Notes.set(ref, legend);
+    return { id, name: MapEntities.getName(ref), legend };
   });
   w.Controllers = { NotesEditor: editor };
-  w.notes = [{ id: "burg1", name: "Kelmora", legend: "<p>old</p>" }];
+  w.pack = { burgs: [0, { i: 1, name: "Kelmora", note: "<p>old</p>" }], markers: [{ i: 2, name: "Old Well" }] };
 });
 
 describe("noteContext", () => {
@@ -51,11 +41,11 @@ describe("noteContext", () => {
   });
 
   it("describes the open note and its selection", async () => {
-    editor.current.mockResolvedValue({ id: "burg1", name: "Kelmora", legend: "<p>old</p>" });
+    editor.current.mockResolvedValue({ id: "burg:1", name: "Kelmora", legend: "<p>old</p>" });
     editor.getSelectionHtml.mockResolvedValue("<p>old</p>");
     const text = await noteContext();
     expect(text).toContain("# Notes editor");
-    expect(text).toContain("`burg1`");
+    expect(text).toContain("`burg:1`");
     expect(text).toContain('"Kelmora"');
     expect(text).toContain("<p>old</p>");
     expect(text).toContain("selected");
@@ -64,11 +54,11 @@ describe("noteContext", () => {
 
   it("truncates a long legend and points at the rest", async () => {
     const legend = "x".repeat(MAX_CONTEXT_CHARS + 500);
-    editor.current.mockResolvedValue({ id: "burg1", name: "K", legend });
+    editor.current.mockResolvedValue({ id: "burg:1", name: "K", legend });
     const text = (await noteContext()) ?? "";
     expect(text).not.toContain("x".repeat(MAX_CONTEXT_CHARS + 1));
     expect(text).toContain("500 more characters");
-    expect(text).toContain('n.id === "burg1"');
+    expect(text).toContain("entity key: burg:1");
   });
 });
 
@@ -79,52 +69,73 @@ describe("writeNote", () => {
   };
 
   it("updates the open note when no id is given and records the previous state", async () => {
-    editor.current.mockResolvedValue({ id: "burg1", name: "Kelmora", legend: "<p>old</p>" });
+    editor.current.mockResolvedValue({ id: "burg:1", name: "Kelmora", legend: "<p>old</p>" });
     const { entries, onEdit } = collect();
     const outcome = await writeNote({ html: "<p>new</p>" }, onEdit);
     expect(outcome.isError).toBeFalsy();
-    expect(outcome.content).toContain("updated note burg1");
-    expect(editor.write).toHaveBeenCalledWith("burg1", "<p>new</p>", undefined);
+    expect(outcome.content).toContain("updated note burg:1");
+    expect(editor.write).toHaveBeenCalledWith("burg:1", "<p>new</p>");
     expect(entries).toEqual([
-      { kind: "edit", id: "burg1", name: "Kelmora", chars: 10, previous: { legend: "<p>old</p>", name: "Kelmora" } }
+      { kind: "edit", id: "burg:1", name: "Kelmora", chars: 10, previous: { legend: "<p>old</p>", name: "Kelmora" } }
     ]);
   });
 
   it("creates a note by id when none exists", async () => {
     const { entries, onEdit } = collect();
-    const outcome = await writeNote({ id: "marker2", name: "Old Well", html: "<p>w</p>" }, onEdit);
-    expect(outcome.content).toContain("created note marker2");
-    expect(entries[0]).toMatchObject({ id: "marker2", name: "Old Well", previous: null });
+    const outcome = await writeNote({ id: "marker:2", html: "<p>w</p>" }, onEdit);
+    expect(outcome.content).toContain("created note marker:2");
+    expect(entries[0]).toMatchObject({ id: "marker:2", name: "Old Well", previous: null });
   });
 
   it("refuses when there is neither an id nor an open note", async () => {
     const { entries, onEdit } = collect();
     const outcome = await writeNote({ html: "<p>x</p>" }, onEdit);
     expect(outcome.isError).toBe(true);
-    expect(outcome.content).toContain("burg<i>");
+    expect(outcome.content).toContain("burg:<i>");
     expect(entries).toEqual([]);
     expect(editor.write).not.toHaveBeenCalled();
   });
 
   it("refuses html the editor cannot hold", async () => {
     const { onEdit } = collect();
-    const outcome = await writeNote({ id: "burg1", html: "<iframe src='x'></iframe>" }, onEdit);
+    const outcome = await writeNote({ id: "burg:1", html: "<iframe src='x'></iframe>" }, onEdit);
     expect(outcome.isError).toBe(true);
     expect(outcome.content).toContain("cannot hold");
     expect(editor.write).not.toHaveBeenCalled();
   });
 
+  it("refuses a missing entity without recording an edit", async () => {
+    const { entries, onEdit } = collect();
+    const result = await writeNote({ id: "burg:999", html: "<p>x</p>" }, onEdit);
+    expect(result.isError).toBe(true);
+    expect(editor.write).not.toHaveBeenCalled();
+    expect(entries).toEqual([]);
+  });
+
   it("refuses a missing html field", async () => {
-    const outcome = await writeNote({ id: "burg1" }, collect().onEdit);
+    const outcome = await writeNote({ id: "burg:1" }, collect().onEdit);
     expect(outcome.isError).toBe(true);
   });
 });
 
 describe("undoEdit", () => {
-  it("restores the previous legend and name once", async () => {
+  it("leaves undo available if the entity was removed", async () => {
+    editor.write.mockRejectedValueOnce(new Error("entity is gone"));
     const entry: EditEntry = {
       kind: "edit",
-      id: "burg1",
+      id: "burg:1",
+      name: "K",
+      chars: 1,
+      previous: { legend: "old", name: "K" }
+    };
+    await expect(undoEdit(entry)).rejects.toThrow("entity is gone");
+    expect(entry.undone).not.toBe(true);
+  });
+
+  it("restores the previous note once", async () => {
+    const entry: EditEntry = {
+      kind: "edit",
+      id: "burg:1",
       name: "K2",
       chars: 1,
       previous: { legend: "<p>old</p>", name: "Kelmora" }
@@ -132,14 +143,14 @@ describe("undoEdit", () => {
     await undoEdit(entry);
     await undoEdit(entry);
     expect(editor.write).toHaveBeenCalledTimes(1);
-    expect(editor.write).toHaveBeenCalledWith("burg1", "<p>old</p>", "Kelmora");
+    expect(editor.write).toHaveBeenCalledWith("burg:1", "<p>old</p>");
     expect(entry.undone).toBe(true);
   });
 
   it("removes a note the assistant created", async () => {
-    const entry: EditEntry = { kind: "edit", id: "marker2", name: "Old Well", chars: 1, previous: null };
+    const entry: EditEntry = { kind: "edit", id: "marker:2", name: "Old Well", chars: 1, previous: null };
     await undoEdit(entry);
-    expect(editor.remove).toHaveBeenCalledWith("marker2");
+    expect(editor.remove).toHaveBeenCalledWith("marker:2");
     expect(entry.undone).toBe(true);
   });
 });

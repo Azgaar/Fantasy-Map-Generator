@@ -463,4 +463,44 @@ function toggleNotesPin(this: HTMLElement): void {
   this.classList.toggle("pressed");
 }
 
-export const NotesEditor = { open, exportCsv: downloadLegends };
+// The assistant uses stable entity keys; note titles remain the entity's own name.
+export interface Note {
+  id: string;
+  name: string;
+  legend: string;
+}
+
+function current(): Note | null {
+  if (!document.getElementById("notesEditor")) return null;
+  const ref = selectedRef();
+  if (!ref || !MapEntities.get(ref)) return null;
+  return { id: MapEntities.key(ref), name: MapEntities.getName(ref), legend: Notes.get(ref) || "" };
+}
+
+function write(id: string, legend: string): Note {
+  const ref = MapEntities.parseKey(id);
+  if (!ref || !Notes.set(ref, legend)) throw new Error(`Note entity ${id} is not found`);
+  if (document.getElementById("notesEditor")) {
+    const selected = selectedRef() ?? ref;
+    const select = ensureEl<HTMLSelectElement>("notesSelect");
+    fillSelect(select, Notes.list(), selected);
+    select.value = MapEntities.key(selected);
+    if (MapEntities.key(selected) === id) showNote(ref);
+  }
+  return { id, name: MapEntities.getName(ref), legend };
+}
+
+function remove(id: string): void {
+  // An entity can remain selected even when it no longer has a note.
+  write(id, "");
+}
+
+function getSelectionHtml(): string | null {
+  if (!document.getElementById("notesEditor") || !quill) return null;
+  const source = ensureEl<HTMLTextAreaElement>("notesSource");
+  if (!source.hidden) return source.value.slice(source.selectionStart, source.selectionEnd) || null;
+  const range = quill.getSelection();
+  return range?.length ? quill.getSemanticHTML(range.index, range.length) : null;
+}
+
+export const NotesEditor = { open, exportCsv: downloadLegends, current, write, remove, getSelectionHtml };

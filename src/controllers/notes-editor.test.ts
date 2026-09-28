@@ -4,21 +4,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/renderers/overlays/highlight", () => ({ highlightElement: () => {} }));
 vi.mock("@/components/tooltips", () => ({ tip: () => {} }));
 
+import { Notes } from "@/components/notes";
 import { NotesEditor } from "./notes-editor";
 
 const w = globalThis as unknown as Record<string, unknown>;
-const notesOf = (): { id: string; name: string; legend: string }[] =>
-  w.notes as { id: string; name: string; legend: string }[];
+const burg = { type: "burg", id: 1 } as const;
 
 beforeEach(() => {
-  document.body.innerHTML = `<div id="dialogs"></div><div id="notesHeader"></div><div id="notesBody"></div>
-    <input id="legendsToLoad" type="file" />`;
-  w.notes = [{ id: "burg1", name: "Kelmora", legend: "<p>old</p>" }];
-  w.options = { pinNotes: false };
-  w.svgWidth = 1000;
-  w.svgHeight = 600;
-  // a present tinymce short-circuits the remote editor load; no active editor means plain contenteditable
-  w.tinymce = { remove: () => {}, init: () => {}, _setBaseUrl: () => {}, activeEditor: null };
+  document.body.innerHTML = `<div id="dialogs"></div><div id="notesHeader"></div><div id="notesBody"></div>`;
+  w.pack = {
+    burgs: [0, { i: 1, name: "Kelmora", note: "<p>old</p>" }, { i: 2, name: "Varr" }],
+    markers: [{ i: 0, name: "Old Well" }]
+  };
+  w.fonts = [];
   window.$ = vi.fn(() => ({ dialog: vi.fn() })) as unknown as typeof window.$;
 });
 
@@ -32,45 +30,61 @@ describe("NotesEditor bridge", () => {
     expect(NotesEditor.getSelectionHtml()).toBeNull();
   });
 
-  it("writes to the data only while the editor is closed", () => {
-    const note = NotesEditor.write("burg1", "<p>new</p>");
-    expect(note).toEqual({ id: "burg1", name: "Kelmora", legend: "<p>new</p>" });
-    expect(notesOf()[0].legend).toBe("<p>new</p>");
+  it("writes to the entity while the editor is closed", () => {
+    const note = NotesEditor.write("burg:1", "<p>new</p>");
+    expect(note).toEqual({ id: "burg:1", name: "Kelmora", legend: "<p>new</p>" });
+    expect(Notes.get(burg)).toBe("<p>new</p>");
     expect(document.getElementById("notesEditor")).toBeNull();
   });
 
-  it("creates a missing note with the given name, defaulting to the id", () => {
-    NotesEditor.write("marker3", "<p>x</p>", "Old Well");
-    NotesEditor.write("marker4", "<p>y</p>");
-    expect(notesOf().map(n => `${n.id}:${n.name}`)).toEqual(["burg1:Kelmora", "marker3:Old Well", "marker4:marker4"]);
+  it("creates a note on a zero-id entity without changing its name", () => {
+    expect(NotesEditor.write("marker:0", "<p>x</p>")).toEqual({
+      id: "marker:0",
+      name: "Old Well",
+      legend: "<p>x</p>"
+    });
   });
 
-  it("reports and refreshes the note shown in the open editor", () => {
-    NotesEditor.open("burg1");
-    expect(NotesEditor.current()?.id).toBe("burg1");
+  it("rejects missing and deleted entities instead of creating orphan notes", () => {
+    expect(() => NotesEditor.write("marker:3", "<p>x</p>")).toThrow("not found");
+    pack.burgs[1].removed = true;
+    expect(() => NotesEditor.write("burg:1", "<p>x</p>")).toThrow("not found");
+  });
 
-    NotesEditor.write("burg1", "<p>rewritten</p>", "Kelmora the Grim");
-    expect(document.getElementById("notesLegend")?.innerHTML).toBe("<p>rewritten</p>");
+  it("refreshes Quill and the note box while preserving the entity name", () => {
+    NotesEditor.open(burg);
+    expect(NotesEditor.current()?.id).toBe("burg:1");
+    NotesEditor.write("burg:1", "<p>rewritten</p>");
+    expect(document.querySelector("#notesLegend .ql-editor")?.innerHTML).toBe("<p>rewritten</p>");
     expect(document.getElementById("notesBody")?.innerHTML).toBe("<p>rewritten</p>");
-    expect((document.getElementById("notesName") as HTMLInputElement).value).toBe("Kelmora the Grim");
+    expect(document.getElementById("notesName")?.textContent).toBe("Kelmora");
   });
 
-  it("adds a note created while another is open to the element list", () => {
-    NotesEditor.open("burg1");
-    NotesEditor.write("burg2", "<p>b</p>", "Varr");
+  it("lists newly written notes without moving the open editor", () => {
+    NotesEditor.open(burg);
+    NotesEditor.write("burg:2", "<p>b</p>");
     const options = [...(document.getElementById("notesSelect") as HTMLSelectElement).options].map(o => o.value);
-    expect(options).toEqual(["burg1", "burg2"]);
-    expect(NotesEditor.current()?.id).toBe("burg1");
+    expect(options).toEqual(["burg:1", "burg:2"]);
+    expect(NotesEditor.current()?.id).toBe("burg:1");
   });
 
-  it("removes a note and moves the open editor to the next one", () => {
-    w.notes = [
-      { id: "burg1", name: "Kelmora", legend: "<p>a</p>" },
-      { id: "burg2", name: "Varr", legend: "<p>b</p>" }
-    ];
-    NotesEditor.open("burg2");
-    NotesEditor.remove("burg2");
-    expect(notesOf().map(n => n.id)).toEqual(["burg1"]);
-    expect(NotesEditor.current()?.id).toBe("burg1");
+  it("removes a note while keeping the selected entity editable", () => {
+    NotesEditor.open(burg);
+    NotesEditor.remove("burg:1");
+    expect(Notes.get(burg)).toBeUndefined();
+    expect(NotesEditor.current()).toEqual({ id: "burg:1", name: "Kelmora", legend: "" });
+    expect(document.getElementById("notesBody")?.innerHTML).toBe("");
+  });
+
+  it("refreshes an HTML-mode note and reads its selection", () => {
+    Notes.set(burg, '<iframe src="about:blank"></iframe>');
+    NotesEditor.open(burg);
+    const source = document.getElementById("notesSource") as HTMLTextAreaElement;
+    expect(source.hidden).toBe(false);
+    source.setSelectionRange(0, 7);
+    expect(NotesEditor.getSelectionHtml()).toBe("<iframe");
+    NotesEditor.write("burg:1", "<p>rewritten</p>");
+    expect(source.hidden).toBe(true);
+    expect(document.querySelector("#notesLegend .ql-editor")?.innerHTML).toBe("<p>rewritten</p>");
   });
 });

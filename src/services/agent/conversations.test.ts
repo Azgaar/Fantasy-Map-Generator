@@ -23,7 +23,7 @@ async function freshStore(): Promise<Store> {
 
 beforeEach(() => {
   globals.localStorage = memoryStorage();
-  globals.mapId = 1;
+  globals.mapHistory = [{ created: 1 }];
   globals.WARN = false;
 });
 
@@ -63,12 +63,12 @@ describe("conversation store", () => {
   it("lets an unused conversation follow the map, and leaves a used one behind", async () => {
     const store = await freshStore();
     const empty = store.current();
-    globals.mapId = 2;
+    globals.mapHistory = [{ created: 2 }];
     expect(store.forCurrentMap().id).toBe(empty.id);
     expect(empty.mapId).toBe(2);
 
     empty.entries.push({ kind: "message", role: "user", text: "how many burgs?" });
-    globals.mapId = 3;
+    globals.mapHistory = [{ created: 3 }];
     const next = store.forCurrentMap();
     expect(next.id).not.toBe(empty.id);
     expect(store.list().length).toBe(2);

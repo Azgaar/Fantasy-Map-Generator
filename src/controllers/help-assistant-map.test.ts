@@ -29,7 +29,7 @@ const flush = (): Promise<void> => new Promise(resolve => setTimeout(resolve, 0)
 beforeEach(() => {
   localStorage.clear();
   document.body.innerHTML = `<div id="host"></div>`;
-  w.mapId = 1;
+  w.mapHistory = [{ created: 1 }];
   w.customization = 0;
   window.$ = vi.fn(() => ({ dialog: vi.fn() })) as unknown as typeof window.$;
   notesApi.label = null;

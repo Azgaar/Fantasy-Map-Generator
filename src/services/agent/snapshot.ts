@@ -2,12 +2,13 @@
 // of the mutable world state. The Prototype has no undo UI — the escape hatch is calling
 // `restoreMapSnapshot()` from the browser console.
 
+import { Styles } from "@/generators/styles";
+
 interface MapSnapshot {
   pack: typeof pack;
   grid: typeof grid;
   options: typeof options;
   styles: typeof styles;
-  notes: typeof notes;
 }
 
 let snapshot: MapSnapshot | null = null;
@@ -18,8 +19,7 @@ export function capture(): void {
       pack: structuredClone(pack),
       grid: structuredClone(grid),
       options: structuredClone(options),
-      styles: structuredClone(styles),
-      notes: structuredClone(notes)
+      styles: structuredClone(styles)
     };
   } catch (error) {
     snapshot = null;
@@ -37,7 +37,6 @@ export function restore(): boolean {
   globalThis.grid = snapshot.grid;
   globalThis.options = snapshot.options;
   Styles.set(snapshot.styles);
-  globalThis.notes = snapshot.notes;
   if (typeof Layers !== "undefined") Layers.drawAll();
   return true;
 }

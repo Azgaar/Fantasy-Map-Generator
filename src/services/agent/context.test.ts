@@ -1,10 +1,27 @@
 import { execFileSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { expect, test } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 import { buildSystemPrompt } from "./context";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "../../..");
+
+afterEach(() => vi.unstubAllGlobals());
+
+test("describes the map from v1.154 configuration without legacy globals", () => {
+  vi.stubGlobal("pack", { cells: { i: [0, 1] }, burgs: [0, { i: 1 }, { i: 2, removed: true }] });
+  vi.stubGlobal("options", {
+    map: { seed: "123", graph: { width: 800, height: 600 }, lore: { name: "Test", calendar: { year: 42, era: "AD" } } }
+  });
+  const [staticBlock, dynamicBlock] = buildSystemPrompt();
+  expect(dynamicBlock.text).toContain("name: Test");
+  expect(dynamicBlock.text).toContain("seed: 123");
+  expect(dynamicBlock.text).toContain("size: 800 × 600 map units");
+  expect(dynamicBlock.text).toContain("burgs: 1");
+  expect(dynamicBlock.text).toContain("year: 42 AD");
+  expect(staticBlock.text).toContain("pack.burgs[12].note");
+  expect(staticBlock.text).toContain("options.map.units.population.scale");
+});
 
 test("the static prompt allows notes to change only through write_note", () => {
   const [staticBlock] = buildSystemPrompt();

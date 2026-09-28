@@ -39,6 +39,8 @@ let currentId = conversations[0]?.id ?? "";
 
 export const list = (): Conversation[] => conversations;
 
+export const currentMapId = (): number => (typeof mapHistory === "undefined" ? 0 : (mapHistory.at(-1)?.created ?? 0));
+
 export function current(): Conversation {
   return conversations.find(conversation => conversation.id === currentId) ?? create();
 }
@@ -52,7 +54,7 @@ export function create(): Conversation {
   const conversation: Conversation = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     title: NEW_TITLE,
-    mapId,
+    mapId: currentMapId(),
     updated: Date.now(),
     entries: [],
     messages: [],
@@ -84,6 +86,7 @@ export function touch(conversation: Conversation): void {
 // A conversation belongs to the map it was asked about. Once the map changes the old answers are
 // stale, so an untouched conversation follows the new map and a used one is left behind.
 export function forCurrentMap(): Conversation {
+  const mapId = currentMapId();
   const conversation = current();
   if (conversation.mapId === mapId) return conversation;
   if (!conversation.entries.length) {
