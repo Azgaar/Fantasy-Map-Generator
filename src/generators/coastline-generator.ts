@@ -1,5 +1,6 @@
 import Alea from "alea";
 import type { Point } from "@/types/global";
+import { getWrappedCopies, getWrapWidth, unwrapRing } from "@/utils/wrapUtils";
 import { clipPoly, minmax, round } from "../utils";
 import type { Feature } from "./features-generator";
 
@@ -89,8 +90,11 @@ class CoastlineGenerator {
       return [];
     }
 
-    const simplifiedPoints = simplify(points, SIMPLIFICATION_TOLERANCE);
-    return clipPoly(simplifiedPoints, options.map.graph.width, options.map.graph.height, 1);
+    const { width, height } = options.map.graph;
+    const wrapWidth = getWrapWidth();
+    if (!wrapWidth) return clipPoly(simplify(points, SIMPLIFICATION_TOLERANCE), width, height, 1);
+    const ring = simplify(unwrapRing(points, wrapWidth), SIMPLIFICATION_TOLERANCE);
+    return clipPoly(ring, wrapWidth * 2, height, 1, -wrapWidth);
   }
 
   /** The feature outline displaced into its coastline. Seeded per feature, so it keeps its shape no matter what else was generated or drawn before */
@@ -115,7 +119,10 @@ class CoastlineGenerator {
   getFeaturePath(feature: Feature): string {
     const outline = this.getFeatureOutline(feature);
     if (!outline.length) return "";
-    return `${round(this.buildPath(this.getFeatureShape(feature, outline)))}Z`;
+    const { points, origIndices } = this.getFeatureShape(feature, outline);
+    return getWrappedCopies(points)
+      .map(copy => `${round(this.buildPath({ points: copy, origIndices }))}Z`)
+      .join("");
   }
 
   /** Roughness of the field along a line of points: which stretches of a coast are jagged and which stay calm */

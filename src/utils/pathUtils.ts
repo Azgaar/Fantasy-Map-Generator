@@ -3,6 +3,7 @@ import type { Point } from "@/types/global";
 import type { Vertices } from "../generators/voronoi";
 import type { PackedGraph } from "../types/PackedGraph";
 import { rn } from "./numberUtils";
+import { getWrappedCopies, unwrapPoints, unwrapRing, wrapX } from "./wrapUtils";
 
 /**
  * Generates SVG path data for filling a shape defined by a chain of vertices.
@@ -11,9 +12,10 @@ import { rn } from "./numberUtils";
  * @returns {string} SVG path data for the filled shape.
  */
 const getFillPath = (vertices: Vertices, vertexChain: number[]): string => {
-  const points = vertexChain.map(vertexId => vertices.p[vertexId]);
-  const firstPoint = points.shift();
-  return `M${firstPoint} L${points.join(" ")} Z`;
+  const ring = unwrapRing(vertexChain.map(vertexId => vertices.p[vertexId]));
+  return getWrappedCopies(ring)
+    .map(([firstPoint, ...points]) => `M${firstPoint} L${points.join(" ")} Z`)
+    .join("");
 };
 
 /**
@@ -28,23 +30,27 @@ const getBorderPath = (
   vertexChain: number[],
   discontinue: (vertexId: number) => boolean
 ): string => {
-  let discontinued = true;
-  let lastOperation = "";
-  const path = vertexChain.map(vertexId => {
-    if (discontinue(vertexId)) {
-      discontinued = true;
-      return "";
-    }
+  const copies = getWrappedCopies(unwrapPoints(vertexChain.map(vertexId => vertices.p[vertexId])));
+  const paths = copies.map(points => {
+    let discontinued = true;
+    let lastOperation = "";
+    const path = vertexChain.map((vertexId, index) => {
+      if (discontinue(vertexId)) {
+        discontinued = true;
+        return "";
+      }
 
-    const operation = discontinued ? "M" : "L";
-    discontinued = false;
-    lastOperation = operation;
+      const operation = discontinued ? "M" : "L";
+      discontinued = false;
+      lastOperation = operation;
 
-    const command = operation === "L" && operation === lastOperation ? "" : operation;
-    return ` ${command}${vertices.p[vertexId]}`;
+      const command = operation === "L" && operation === lastOperation ? "" : operation;
+      return ` ${command}${points[index]}`;
+    });
+    return path.join("").trim();
   });
 
-  return path.join("").trim();
+  return paths.join(" ");
 };
 
 /**
@@ -169,7 +175,7 @@ export const getIsolines = (
 
     if (options.polygons) {
       if (!isolines[type].polygons) isolines[type].polygons = [];
-      isolines[type].polygons.push(vertexChain.map(vertexId => vertices.p[vertexId]));
+      isolines[type].polygons.push(unwrapPoints(vertexChain.map(vertexId => vertices.p[vertexId])));
     }
 
     if (options.fill) {
@@ -257,7 +263,7 @@ export const getPolesOfInaccessibility = (
   const poles = Object.entries(isolines).map(([id, isoline]) => {
     const multiPolygon = (isoline.polygons as unknown as number[][][]).sort((a, b) => b.length - a.length);
     const [x, y] = polylabel(multiPolygon, 20);
-    return [id, [rn(x), rn(y)]];
+    return [id, [rn(wrapX(x)), rn(y)]];
   });
 
   return Object.fromEntries(poles);
@@ -429,17 +435,19 @@ export const meander = (cells: number[], cellPositions: Point[], options: Meande
   const cellCount = options.cellCount ?? cells.length;
   const isWaterCell = options.isWaterCell;
 
-  const anchorPoints: Point[] = cells.map((cell, i) => {
-    if (customAnchors?.[i]) return customAnchors[i];
-    if (cell === -1) {
-      const prevCell = cells[i - 1];
-      const prev: Point = prevCell !== undefined && prevCell >= 0 ? cellPositions[prevCell] : [0, 0];
-      if (!bounds) return prev;
-      const point = projectToNearestEdge(prev, bounds.width, bounds.height);
-      return point;
-    }
-    return cellPositions[cell];
-  });
+  const anchorPoints: Point[] = unwrapPoints(
+    cells.map((cell, i) => {
+      if (customAnchors?.[i]) return customAnchors[i];
+      if (cell === -1) {
+        const prevCell = cells[i - 1];
+        const prev: Point = prevCell !== undefined && prevCell >= 0 ? cellPositions[prevCell] : [0, 0];
+        if (!bounds) return prev;
+        const point = projectToNearestEdge(prev, bounds.width, bounds.height);
+        return point;
+      }
+      return cellPositions[cell];
+    })
+  );
 
   const points: Point[] = [];
   const anchorIndices: number[] = [];

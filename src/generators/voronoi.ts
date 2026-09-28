@@ -161,8 +161,15 @@ export class Voronoi {
  * Builds the Voronoi diagram for the given points, using the boundary pseudo-points to clip the outer cells
  * @param points - cell points
  * @param boundary - pseudo-points along the map edge, they get no cells of their own
+ * @param wrapWidth - map width to join the west and east edges into a cylinder, 0 for a flat map
  */
-export const calculateVoronoi = (points: Point[], boundary: Point[]): { cells: Cells; vertices: Vertices } => {
+export const calculateVoronoi = (
+  points: Point[],
+  boundary: Point[],
+  wrapWidth = 0
+): { cells: Cells; vertices: Vertices } => {
+  if (wrapWidth) return calculateWrappedVoronoi(points, boundary, wrapWidth);
+
   TIME && console.time("calculateDelaunay");
   const allPoints = points.concat(boundary);
   const delaunay = Delaunator.from(allPoints);
@@ -174,4 +181,139 @@ export const calculateVoronoi = (points: Point[], boundary: Point[]): { cells: C
   TIME && console.timeEnd("calculateVoronoi");
 
   return { cells, vertices };
+};
+
+/**
+ * Voronoi diagram of a map whose west and east edges meet: sites near an edge are copied past the opposite one,
+ * so seam cells get their neighbors across it. Each triangle the copies duplicate is kept once, as the image
+ * whose lowest-id site is not a copy. Vertex coordinates are wrapped into [0, width)
+ */
+const calculateWrappedVoronoi = (points: Point[], boundary: Point[], width: number) => {
+  TIME && console.time("calculateWrappedVoronoi");
+  const pointsN = points.length;
+  const sites = points.concat(boundary);
+  const sitesN = sites.length;
+
+  // the copied band must hold the circumcircle of every triangle at a cell, sparse points need a wider one
+  let margin = (3 * width) / Math.sqrt(pointsN);
+  let triangulation = triangulateWrapped(sites, pointsN, width, margin);
+  while (!triangulation) {
+    margin *= 2;
+    triangulation = triangulateWrapped(sites, pointsN, width, margin);
+  }
+  const { all, origin, triangles, halfedges, centers } = triangulation;
+
+  const trianglesN = triangles.length / 3;
+  const next = (e: number) => (e % 3 === 2 ? e - 2 : e + 1);
+  const trianglePoints = (t: number) => [triangles[3 * t], triangles[3 * t + 1], triangles[3 * t + 2]];
+
+  // a triangle of sites far from the edges has no images: its own index is the key
+  const inner = (p: number) => p < sitesN && all[p][0] >= margin && all[p][0] <= width - margin;
+  const keyOf = (t: number): number | string => {
+    const tri = trianglePoints(t);
+    if (tri.every(inner)) return t;
+    return tri
+      .map(p => origin[p])
+      .sort((a, b) => a - b)
+      .join();
+  };
+
+  const vertexIds = new Map<number | string, number>();
+  const kept: number[] = []; // vertex id -> triangle
+  for (let t = 0; t < trianglesN; t++) {
+    const tri = trianglePoints(t);
+    if (tri.every(p => origin[p] >= pointsN)) continue; // touches no cell
+    const lowest = tri.reduce((a, b) => (origin[a] < origin[b] ? a : b));
+    if (lowest >= sitesN) continue; // an image
+    const key = keyOf(t);
+    if (vertexIds.has(key)) continue;
+    vertexIds.set(key, kept.length);
+    kept.push(t);
+  }
+
+  const vertexOf = (t: number) => {
+    const id = vertexIds.get(keyOf(t));
+    if (id === undefined) throw new Error(`Wrapped Voronoi: triangle ${t} has no kept image`);
+    return id;
+  };
+
+  const inedges = new Int32Array(all.length).fill(-1);
+  for (let e = 0; e < triangles.length; e++) {
+    const p = triangles[next(e)];
+    if (halfedges[e] === -1 || inedges[p] === -1) inedges[p] = e;
+  }
+
+  const cells: Cells = { v: [], c: [], b: [], i: Uint32Array.from({ length: pointsN }, (_, i) => i) };
+  for (let p = 0; p < pointsN; p++) {
+    const edges: number[] = [];
+    const start = inedges[p];
+    let incoming = start;
+    do {
+      edges.push(incoming);
+      incoming = halfedges[next(incoming)];
+    } while (incoming !== -1 && incoming !== start && edges.length < 20);
+
+    const around = edges.map(e => origin[triangles[e]]);
+    cells.v[p] = edges.map(e => vertexOf(Math.floor(e / 3)));
+    cells.c[p] = around.filter(c => c < pointsN);
+    cells.b[p] = around.length > cells.c[p].length ? 1 : 0;
+  }
+
+  const vertices: Vertices = { p: [], v: [], c: [] };
+  kept.forEach((t, id) => {
+    const [x, y] = centers[t];
+    vertices.p[id] = [x - Math.floor(x / width) * width, y];
+    vertices.c[id] = trianglePoints(t).map(p => origin[p]);
+    vertices.v[id] = [0, 1, 2].map(k => {
+      const opposite = halfedges[3 * t + k];
+      if (opposite === -1) return -1;
+      const neighbor = Math.floor(opposite / 3);
+      return trianglePoints(neighbor).every(p => origin[p] >= pointsN) ? -1 : vertexOf(neighbor);
+    });
+  });
+
+  TIME && console.timeEnd("calculateWrappedVoronoi");
+  return { cells, vertices };
+};
+
+/** Delaunay triangulation of the sites and their copies within the margin past each edge, null if the margin is too narrow */
+const triangulateWrapped = (sites: Point[], pointsN: number, width: number, margin: number) => {
+  const all = sites.slice();
+  const origin = Array.from(sites, (_, i) => i);
+  const addImage = (x: number, y: number, siteId: number) => {
+    all.push([x, y]);
+    origin.push(siteId);
+  };
+  sites.forEach(([x, y], i) => {
+    if (x < margin) addImage(x + width, y, i);
+    if (x > width - margin) addImage(x - width, y, i);
+  });
+
+  const { triangles, halfedges } = Delaunator.from(all);
+  const centers: Point[] = [];
+  const isFullCopy = margin >= width; // every site has images on both sides: nothing wider to try
+
+  for (let t = 0; t < triangles.length / 3; t++) {
+    const a = all[triangles[3 * t]];
+    const b = all[triangles[3 * t + 1]];
+    const c = all[triangles[3 * t + 2]];
+    const [ax, ay] = a;
+    const [bx, by] = b;
+    const [cx, cy] = c;
+    const ad = ax * ax + ay * ay;
+    const bd = bx * bx + by * by;
+    const cd = cx * cx + cy * cy;
+    const D = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by));
+    const x = (ad * (by - cy) + bd * (cy - ay) + cd * (ay - by)) / D;
+    const y = (ad * (cx - bx) + bd * (ax - cx) + cd * (bx - ax)) / D;
+    centers[t] = [x, y];
+
+    if (isFullCopy) continue;
+    const touchesCell = [0, 1, 2].some(k => triangles[3 * t + k] < pointsN);
+    if (!touchesCell) continue;
+    const radius = Math.hypot(ax - x, ay - y);
+    if (x - radius < -margin || x + radius > width + margin) return null;
+  }
+
+  return { all, origin, triangles, halfedges, centers };
 };

@@ -13,14 +13,20 @@ import { rand } from "./probabilityUtils";
  *   curves from arcing away from map edges (restores original "secure clipping" behavior)
  * @returns Clipped polygon points
  */
-export const clipPoly = (points: [number, number][], graphWidth: number, graphHeight: number, secure?: number) => {
+export const clipPoly = (
+  points: [number, number][],
+  graphWidth: number,
+  graphHeight: number,
+  secure?: number,
+  left = 0
+) => {
   if (points.length < 2) return points;
   if (points.some(point => point === undefined)) {
     window.ERROR && console.error("Undefined point in clipPoly", points);
     return points;
   }
 
-  const clipped = clipPolygon(points, [0, 0, graphWidth, graphHeight]);
+  const clipped = clipPolygon(points, [left, 0, graphWidth, graphHeight]);
 
   if (!secure || !clipped.length) return clipped;
 
@@ -29,7 +35,7 @@ export const clipPoly = (points: [number, number][], graphWidth: number, graphHe
   const secured: [number, number][] = [];
   for (const point of clipped) {
     secured.push(point);
-    if (point[0] === 0 || point[0] === graphWidth || point[1] === 0 || point[1] === graphHeight) {
+    if (point[0] === left || point[0] === graphWidth || point[1] === 0 || point[1] === graphHeight) {
       secured.push(point, point);
     }
   }

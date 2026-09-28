@@ -3,6 +3,7 @@ import { polygonArea, type Quadtree, quadtree } from "d3";
 import type { Point } from "@/types/global";
 import type { PackedGraph } from "@/types/PackedGraph";
 import { findAllInQuadtree, rn, SEA_LEVEL, TYPED_ARRAY_MAX } from "@/utils";
+import { getWrapWidth, nearX, unwrapPoints, wrapX } from "@/utils/wrapUtils";
 import { calculateVoronoi } from "./voronoi";
 
 declare global {
@@ -17,6 +18,7 @@ class PackModule {
     const { cells: gridCells, points, features, spacing, boundary } = grid;
     const newCells: { p: Point[]; g: number[]; h: number[] } = { p: [], g: [], h: [] };
     const spacing2 = spacing ** 2;
+    const wrapWidth = getWrapWidth();
 
     const addNewPoint = (gridCellId: number, x: number, y: number, height: number) => {
       newCells.p.push([x, y]);
@@ -42,14 +44,15 @@ class PackModule {
           if (i > e) continue;
           if (gridCells.t[e] !== type) continue;
 
-          const dist2 = (y - points[e][1]) ** 2 + (x - points[e][0]) ** 2;
+          const ex = nearX(points[e][0], x, wrapWidth);
+          const dist2 = (y - points[e][1]) ** 2 + (x - ex) ** 2;
           if (dist2 < spacing2) continue; // too close to each other
-          addNewPoint(i, rn((x + points[e][0]) / 2, 1), rn((y + points[e][1]) / 2, 1), height);
+          addNewPoint(i, rn(wrapX((x + ex) / 2, wrapWidth), 1), rn((y + points[e][1]) / 2, 1), height);
         }
       }
     }
 
-    const { cells, vertices } = calculateVoronoi(newCells.p, boundary);
+    const { cells, vertices } = calculateVoronoi(newCells.p, boundary, wrapWidth);
     pack.vertices = vertices as PackedGraph["vertices"];
     pack.cells = cells as unknown as PackedGraph["cells"];
     pack.cells.p = newCells.p;
@@ -90,7 +93,9 @@ class PackModule {
 
   /** cell polygon points */
   getPolygon(cellId: number, graph: PackedGraph = pack): Point[] {
-    return graph.cells.v[cellId].map(vertexId => graph.vertices.p[vertexId]);
+    const polygon = graph.cells.v[cellId].map(vertexId => graph.vertices.p[vertexId]);
+    const width = getWrapWidth();
+    return width ? unwrapPoints(polygon, width, graph.cells.p[cellId][0]) : polygon;
   }
 }
 

@@ -268,7 +268,13 @@ class OptionsModel {
     map.relief = previous.relief;
 
     // and the requests it consumes
-    map.graph = { width: graph.width, height: graph.height, points: getPointsNumber(graph.density) };
+    const height = graph.wrap ? Math.round(graph.width / 2) : graph.height; // a wrapped map spans 360° by 180°
+    map.graph = {
+      width: graph.width,
+      height,
+      points: getPointsNumber(graph.density),
+      ...(graph.wrap && { wrap: true })
+    };
     map.cultures.set = cultures.set;
     options.map = map;
     this.repairSets();

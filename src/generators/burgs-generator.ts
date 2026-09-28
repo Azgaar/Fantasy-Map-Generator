@@ -5,6 +5,7 @@ import type { BurgGroup } from "@/types/burg-groups";
 import type { Emblem } from "@/types/emblems";
 import type { IconSet } from "@/types/icons";
 import { safeParseJSON } from "@/utils/stringUtils";
+import { nearPoint, wrapX } from "@/utils/wrapUtils";
 import { each, gauss, minmax, normalize, P, rn } from "../utils";
 import { type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
 import { NON_NAVIGABLE_LAKE_SUBTYPES } from "./features-generator";
@@ -321,11 +322,11 @@ class BurgModule {
     const commonVertices = cells.v[cell1].filter((vertex: number) =>
       vertices.c[vertex].some((c: number) => c === cell2)
     );
-    const [x1, y1] = vertices.p[commonVertices[0]];
-    const [x2, y2] = vertices.p[commonVertices[1]];
+    const [x1, y1] = nearPoint(vertices.p[commonVertices[0]], x0);
+    const [x2, y2] = nearPoint(vertices.p[commonVertices[1]], x0);
     const xEdge = (x1 + x2) / 2;
     const yEdge = (y1 + y2) / 2;
-    return [rn(x0 + 0.95 * (xEdge - x0), 2), rn(y0 + 0.95 * (yEdge - y0), 2)];
+    return [rn(wrapX(x0 + 0.95 * (xEdge - x0)), 2), rn(y0 + 0.95 * (yEdge - y0), 2)];
   }
 
   // Move a river burg off the river centerline onto a bank
@@ -362,8 +363,9 @@ class BurgModule {
 
     const prevCell = river.cells[idx - 1];
     const nextCell = river.cells[idx + 1];
-    const from = prevCell !== undefined && prevCell >= 0 ? cells.p[prevCell] : cells.p[cellId];
-    const to = nextCell !== undefined && nextCell >= 0 ? cells.p[nextCell] : cells.p[cellId];
+    const [x] = cells.p[cellId];
+    const from = nearPoint(prevCell !== undefined && prevCell >= 0 ? cells.p[prevCell] : cells.p[cellId], x);
+    const to = nearPoint(nextCell !== undefined && nextCell >= 0 ? cells.p[nextCell] : cells.p[cellId], x);
 
     const tx = to[0] - from[0];
     const ty = to[1] - from[1];
@@ -606,7 +608,7 @@ class BurgModule {
 
       // calculate see direction: 0 = east, 0.5 = north, 1 = west, 1.5 = south
       const [x1, y1] = cells.p[cell];
-      const [x2, y2] = cells.p[cells.haven[cell]];
+      const [x2, y2] = nearPoint(cells.p[cells.haven[cell]], x1);
       const deg = (Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI;
 
       if (deg <= 0) return rn(normalize(Math.abs(deg), 0, 180), 2);

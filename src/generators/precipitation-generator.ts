@@ -45,8 +45,17 @@ class PrecipitationModule {
       return minmax(normalLoss + diff * mod, 1, humidity);
     };
 
+    // on a wrapped map a row wind circles the globe: the first lap only brings the humidity to the seam
+    const laps = grid.wrap ? 2 : 1;
     const passWind = (sources: (number | WindBand)[], initialMaxPrec: number, next: number, steps: number) => {
       let maxPrec = initialMaxPrec;
+      const isRowWind = Math.abs(next) === 1;
+      const warmup = isRowWind ? steps * (laps - 1) : 0;
+      const cellAt = (first: number, step: number) => {
+        if (!isRowWind || laps === 1) return first + step * next;
+        const rowStart = first - (first % cellsX);
+        return rowStart + ((((first - rowStart + step * next) % cellsX) + cellsX) % cellsX);
+      };
 
       for (const source of sources) {
         let first: number;
@@ -59,23 +68,26 @@ class PrecipitationModule {
         let humidity = maxPrec - h[first]; // initial water amount
         if (humidity <= 0) continue; // if first cell in row is too elevated consider wind dry
 
-        for (let s = 0, current = first; s < steps; s++, current += next) {
+        for (let s = 0; s < steps + warmup; s++) {
+          const current = cellAt(first, s);
+          const ahead = cellAt(first, s + 1);
+          const counts = s >= warmup ? 1 : 0;
           if (temp[current] < -5) continue; // no flux in permafrost
 
           if (h[current] < SEA_LEVEL) {
-            if (h[current + next] >= SEA_LEVEL) {
-              prec[current + next] += Math.max(humidity / rand(10, 20), 1); // coastal precipitation
+            if (h[ahead] >= SEA_LEVEL) {
+              prec[ahead] += counts * Math.max(humidity / rand(10, 20), 1); // coastal precipitation
             } else {
               humidity = Math.min(humidity + 5 * modifier, maxPrec); // wind gets more humidity passing water cell
-              prec[current] += 5 * modifier; // water cells precipitation (need to correctly pour water through lakes)
+              prec[current] += counts * 5 * modifier; // water cells precipitation (need to correctly pour water through lakes)
             }
             continue;
           }
 
           // land cell
-          const isPassable = h[current + next] <= MAX_PASSABLE_ELEVATION;
-          const precipitation = isPassable ? getPrecipitation(humidity, current, next) : humidity;
-          prec[current] += precipitation;
+          const isPassable = h[ahead] <= MAX_PASSABLE_ELEVATION;
+          const precipitation = isPassable ? getPrecipitation(humidity, current, ahead - current) : humidity;
+          prec[current] += counts * precipitation;
           const evaporation = precipitation > 1.5 ? 1 : 0; // some humidity evaporates back to the atmosphere
           humidity = isPassable ? minmax(humidity - precipitation + evaporation, 0, maxPrec) : 0;
         }

@@ -1,6 +1,7 @@
 import Alea from "alea";
 import { polygonArea } from "d3";
-import { clipPoly, connectVertices, distanceSquared, isLand, isWater, P, ra, rn, TYPED_ARRAY_MAX } from "../utils";
+import { clipToMap, nearPoint } from "@/utils/wrapUtils";
+import { connectVertices, distanceSquared, isLand, isWater, P, ra, rn, TYPED_ARRAY_MAX } from "../utils";
 import type { CoastlineSettings } from "./coastline-generator";
 
 declare global {
@@ -163,7 +164,9 @@ class FeatureModule {
   markupPack() {
     const defineHaven = (cellId: number) => {
       const waterCells = neighbors[cellId].filter((index: number) => isWater(index, pack));
-      const distances = waterCells.map((neibCellId: number) => distanceSquared(cells.p[cellId], cells.p[neibCellId]));
+      const distances = waterCells.map((neibCellId: number) =>
+        distanceSquared(cells.p[cellId], nearPoint(cells.p[neibCellId], cells.p[cellId][0]))
+      );
       const closest = distances.indexOf(Math.min.apply(Math, distances));
 
       haven[cellId] = waterCells[closest];
@@ -223,11 +226,7 @@ class FeatureModule {
     }): Feature => {
       const type = land ? "island" : border ? "ocean" : "lake";
       const [startCell, featureVertices] = getCellsData(type, firstCell);
-      const points = clipPoly(
-        featureVertices.map((vertex: number) => vertices.p[vertex]),
-        options.map.graph.width,
-        options.map.graph.height
-      );
+      const points = clipToMap(featureVertices.map((vertex: number) => vertices.p[vertex]));
       const area = polygonArea(points); // feature perimiter area
       const absArea = type === "ocean" ? cellsArea : Math.abs(rn(area)); // an ocean ring is open at the border: its polygon area collapses
 

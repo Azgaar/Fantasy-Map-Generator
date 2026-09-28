@@ -209,6 +209,15 @@ const TEMPLATE = /* html */ `
       </td>
       <td></td>
     </tr>
+    <tr data-tip="Join the west and east map edges, so the map wraps around the globe without a seam. Makes the map 2:1">
+      <td></td>
+      <td>Wrap around</td>
+      <td>
+        <input id="mapWrapInput" class="checkbox" type="checkbox" />
+        <label for="mapWrapInput" class="checkbox-label">West and east edges meet</label>
+      </td>
+      <td></td>
+    </tr>
     <tr
       data-tip="Map seed number. Press 'Enter' to apply. A seed reproduces the same map only if the map size and the settings are the same"
     >
@@ -565,6 +574,15 @@ const TEMPLATE = /* html */ `
       </td>
       <td></td>
     </tr>
+    <tr data-tip="Join the west and east map edges, so the map wraps around the globe without a seam. Makes the map 2:1">
+      <td></td>
+      <td>Wrap around</td>
+      <td>
+        <input id="mapWrapInput" class="checkbox" type="checkbox" />
+        <label for="mapWrapInput" class="checkbox-label">West and east edges meet</label>
+      </td>
+      <td></td>
+    </tr>
     <tr data-tip="Set minimum and maximum possible zoom level">
       <td>
         <i data-tip="Restore the default zoom extent" id="zoomExtentDefault" class="icon-ccw"></i>
@@ -654,6 +672,10 @@ function addListeners(): void {
   const root = ensureEl("options");
   root.addEventListener("input", onOptionInput);
   root.addEventListener("change", onOptionInput);
+  ensureEl<HTMLInputElement>("mapWrapInput").addEventListener("change", event => {
+    const { checked } = event.target as HTMLInputElement;
+    Options.set(o => (o.generation.graph.wrap = checked));
+  });
 
   content.addEventListener("click", event => {
     const target = event.target as HTMLElement;
@@ -698,6 +720,7 @@ export function syncOptionInputs(): void {
   if (template && id) applyOption(template, id, heightmapTemplates[id]?.name || precreatedHeightmaps[id]?.name || id);
 
   for (const key of Object.keys(OPTION_BINDINGS)) syncOption(key);
+  ensureEl<HTMLInputElement>("mapWrapInput").checked = Boolean(options.generation.graph.wrap);
   syncManors();
   syncCellsDensity();
   syncCultures();

@@ -16,6 +16,7 @@ export interface GridGraph {
   spacing: number; // distance between points before jittering, derived from the requested cell count
   cellsX: number; // number of cells in a row
   cellsY: number; // number of cells in a column
+  wrap?: boolean; // west and east edges meet: the map is a cylinder
   boundary: Point[]; // pseudo-points along the map edge, not real cells
   points: Point[]; // jittered square grid points, one per cell
   cells: GridCells;

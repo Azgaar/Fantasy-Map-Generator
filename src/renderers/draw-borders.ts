@@ -1,4 +1,5 @@
 import { select } from "d3";
+import { getWrappedCopies, unwrapPoints } from "@/utils/wrapUtils";
 
 const bordersRenderer = () => {
   TIME && console.time("drawBorders");
@@ -102,7 +103,12 @@ const bordersRenderer = () => {
       checkVertex,
       addToChecked
     });
-    if (chain.length > 1) return `M${chain.map(cellId => vertices.p[cellId]).join(" ")}`;
+    if (chain.length > 1) {
+      const points = unwrapPoints(chain.map(vertexId => vertices.p[vertexId]));
+      return getWrappedCopies(points)
+        .map(copy => `M${copy.join(" ")}`)
+        .join(" ");
+    }
 
     return null;
   }

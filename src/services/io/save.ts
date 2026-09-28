@@ -98,8 +98,8 @@ function prepareMapData(): string {
 
   const serializedSVG = new XMLSerializer().serializeToString(cloneEl);
 
-  const { spacing, cellsX, cellsY, boundary, points, features } = grid;
-  const gridGeneral = JSON.stringify({ spacing, cellsX, cellsY, boundary, points, features });
+  const { spacing, cellsX, cellsY, wrap, boundary, points, features } = grid;
+  const gridGeneral = JSON.stringify({ spacing, cellsX, cellsY, wrap, boundary, points, features });
   const packFeatures = JSON.stringify(pack.features);
   const biomes = JSON.stringify(pack.biomes);
   const cultures = JSON.stringify(pack.cultures);

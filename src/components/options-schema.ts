@@ -155,7 +155,7 @@ const units = z.strictObject({
  */
 export const mapSchema = z.strictObject({
   seed: z.string(),
-  graph: z.strictObject({ width: positive, height: positive, points: positive }),
+  graph: z.strictObject({ width: positive, height: positive, points: positive, wrap: z.boolean().optional() }),
   geography,
   climate,
   cultures: z.strictObject({ set: cultureSetId }),
@@ -181,7 +181,8 @@ export const optionsSchema = z.strictObject({
     graph: z.strictObject({
       width: positive,
       height: positive,
-      density: count.min(MIN_DENSITY).max(MAX_DENSITY) // the Points slider step
+      density: count.min(MIN_DENSITY).max(MAX_DENSITY), // the Points slider step
+      wrap: z.boolean().optional() // join the west and east edges: a 2:1 map covering the whole globe
     }),
     geography: z.strictObject({
       mapSize: geography.shape.mapSize.nullable(),

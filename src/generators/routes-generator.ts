@@ -3,6 +3,7 @@ import { curveCatmullRom, line } from "d3";
 import Delaunator from "delaunator";
 import { distanceSquared, findPath, getAdjective, isLand, ra, rn, round, rw } from "../utils";
 import { meander } from "../utils/pathUtils";
+import { getWrappedCopies, nearPoint, unwrapPoints } from "../utils/wrapUtils";
 import type { Burg } from "./burgs-generator";
 import type { Label } from "./labels-generator";
 import type { River } from "./river-generator";
@@ -291,7 +292,8 @@ class RoutesModule {
     const habitability = pack.biomes[pack.cells.biome[next]].habitability;
     if (!habitability) return Infinity; // inhabitable cells are not passable (e.g. glacier)
 
-    const distanceCost = distanceSquared(pack.cells.p[current], pack.cells.p[next]);
+    const from = pack.cells.p[current];
+    const distanceCost = distanceSquared(from, nearPoint(pack.cells.p[next], from[0]));
     const habitabilityModifier = 1 + Math.max(100 - habitability, 0) / 1000; // [1, 1.1];
     const heightModifier = 1 + Math.max(pack.cells.h[next] - 25, 25) / 25; // [1, 3];
     const connectionModifier = this.connections.has(`${current}-${next}`) ? 0.5 : 1;
@@ -921,7 +923,13 @@ class RoutesModule {
     const lineGen = line();
     const curve = this.ROUTE_CURVES[group] || this.ROUTE_CURVES.default;
     lineGen.curve(curve);
-    const path = round(lineGen(points.map(p => [p[0], p[1]]))!, 1);
+    const polyline = unwrapPoints(points.map(([x, y]): [number, number] => [x, y]));
+    const path = round(
+      getWrappedCopies(polyline)
+        .map(copy => lineGen(copy))
+        .join(""),
+      1
+    );
     return path;
   }
 

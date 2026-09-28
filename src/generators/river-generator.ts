@@ -2,6 +2,7 @@ import Alea from "alea";
 import { curveBasis, curveCatmullRom, line, mean, min, sum } from "d3";
 import { each, rn, round, rw } from "../utils";
 import { meander, projectToNearestEdge } from "../utils/pathUtils";
+import { getWrappedCopies } from "../utils/wrapUtils";
 import type { Label } from "./labels-generator";
 import type { Point } from "./voronoi";
 
@@ -567,11 +568,15 @@ class RiverModule {
       riverPointsRight.push([x1 + sinOffset, y1 - cosOffset]);
     }
 
-    const right = this.lineGen(riverPointsRight.reverse());
-    let left = this.lineGen(riverPointsLeft) || "";
-    left = left.substring(left.indexOf("C"));
+    const rightCopies = getWrappedCopies(riverPointsRight.reverse());
+    const leftCopies = getWrappedCopies(riverPointsLeft);
+    const paths = rightCopies.map((rightPoints, index) => {
+      const right = this.lineGen(rightPoints);
+      const left = this.lineGen(leftCopies[index]) || "";
+      return right + left.substring(left.indexOf("C"));
+    });
 
-    return round(right + left, 1);
+    return round(paths.join(""), 1);
   }
 
   specify() {

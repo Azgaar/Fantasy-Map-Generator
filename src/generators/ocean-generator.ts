@@ -1,4 +1,4 @@
-import { clipPoly } from "@/utils";
+import { clipToMap, getWrappedCopies } from "@/utils/wrapUtils";
 
 /**
  * Ocean outlines: closed rings traced around the coast at a given distance from it. `t` is the
@@ -40,12 +40,8 @@ class OceanModule {
       const relaxed = chain.filter((v, index) => !(index % relax) || vertices.c[v].some((c: number) => c >= pointsN));
       if (relaxed.length < 4) continue;
 
-      const ring = clipPoly(
-        relaxed.map(v => vertices.p[v]),
-        options.map.graph.width,
-        options.map.graph.height
-      );
-      outlines.get(t)!.push(ring);
+      const ring = clipToMap(relaxed.map(v => vertices.p[v]));
+      outlines.get(t)!.push(...getWrappedCopies(ring));
     }
 
     // in limits order, so the renderer stacks the rings from the coast outwards

@@ -58,7 +58,9 @@ class CoordinatesModule {
   generate(): void {
     const partial = grid.features.some(feature => feature.land && feature.border);
     const [mapSize, latitude, longitude] = this.getSizeAndPosition(options.generation.template, partial);
-    const requested = options.generation.geography;
+    const requested = options.map.graph.wrap
+      ? { mapSize: 100, latitude: 50, longitude: 50 }
+      : options.generation.geography;
     const geography = options.map.geography;
     geography.mapSize = requested.mapSize ?? mapSize;
     geography.latitude = requested.latitude ?? latitude;

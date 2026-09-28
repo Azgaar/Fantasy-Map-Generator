@@ -4,6 +4,7 @@ import { min } from "d3";
 import type { GridCells, GridGraph } from "@/types/GridGraph";
 import type { Point } from "@/types/global";
 import { rn, SEA_LEVEL } from "@/utils";
+import { unwrapPoints } from "@/utils/wrapUtils";
 import { calculateVoronoi } from "./voronoi";
 
 declare global {
@@ -13,20 +14,36 @@ declare global {
 class GridModule {
   prepare(graph?: GridGraph): void {
     if (graph) this.resetHeights(graph);
-    grid = graph ?? this.generate(options.map.seed, options.map.graph.width, options.map.graph.height);
+    grid =
+      graph ??
+      this.generate(
+        options.map.seed,
+        options.map.graph.width,
+        options.map.graph.height,
+        this.getCellsDesired(),
+        options.map.graph.wrap
+      );
   }
 
-  generate(seed: string, width: number, height: number, cellsDesired = this.getCellsDesired()): GridGraph {
+  generate(
+    seed: string,
+    width: number,
+    height: number,
+    cellsDesired = this.getCellsDesired(),
+    wrap = false
+  ): GridGraph {
     Math.random = Alea(seed); // reset PRNG
 
-    const spacing = this.getSpacing(cellsDesired, width, height);
-    const boundary = this.getBoundaryPoints(width, height, spacing);
+    const spacing = wrap
+      ? this.getWrappedSpacing(cellsDesired, width, height)
+      : this.getSpacing(cellsDesired, width, height);
+    const boundary = wrap ? this.getCapPoints(width, height, spacing) : this.getBoundaryPoints(width, height, spacing);
 
     TIME && console.time("placePoints");
     const points = this.getJitteredPoints(width, height, spacing);
     TIME && console.timeEnd("placePoints");
 
-    const { cells, vertices } = calculateVoronoi(points, boundary);
+    const { cells, vertices } = calculateVoronoi(points, boundary, wrap ? width : 0);
 
     const graph = {
       spacing,
@@ -35,7 +52,8 @@ class GridModule {
       boundary,
       points,
       cells,
-      vertices
+      vertices,
+      ...(wrap && { wrap })
     } as GridGraph;
     this.resetHeights(graph);
 
@@ -47,7 +65,7 @@ class GridModule {
    * cells and vertices are derived from them on load
    */
   rebuildGraph(graph: GridGraph): void {
-    const { cells, vertices } = calculateVoronoi(graph.points, graph.boundary);
+    const { cells, vertices } = calculateVoronoi(graph.points, graph.boundary, this.getWrapWidth(graph));
     graph.cells = cells as GridCells;
     graph.vertices = vertices;
     this.resetHeights(graph);
@@ -56,6 +74,11 @@ class GridModule {
   /** blank the heightmap, keeping the graph itself: the heightmap generator starts from an empty canvas */
   resetHeights(graph: GridGraph): void {
     graph.cells.h = new Uint8Array(graph.points.length);
+  }
+
+  /** width of the band that joins into a cylinder, 0 for a flat map. The wrapped grid spacing divides it exactly */
+  getWrapWidth(graph: GridGraph = grid): number {
+    return graph.wrap ? graph.cellsX * graph.spacing : 0;
   }
 
   /** number of cells requested by the user, the generated number is close but not equal to it */
@@ -96,12 +119,19 @@ class GridModule {
 
   /** cell polygon points */
   getPolygon(cellId: number, graph: GridGraph = grid): Point[] {
-    return graph.cells.v[cellId].map(vertexId => graph.vertices.p[vertexId]);
+    const polygon = graph.cells.v[cellId].map(vertexId => graph.vertices.p[vertexId]);
+    const width = this.getWrapWidth(graph);
+    return width ? unwrapPoints(polygon, width, graph.points[cellId][0]) : polygon;
   }
 
   /** distance between points before jittering */
   private getSpacing(cellsDesired: number, width: number, height: number): number {
     return rn(Math.sqrt((width * height) / cellsDesired), 2);
+  }
+
+  /** a whole number of columns fits a wrapped map, so the jittered grid continues across the seam */
+  private getWrappedSpacing(cellsDesired: number, width: number, height: number): number {
+    return width / Math.round(width / this.getSpacing(cellsDesired, width, height));
   }
 
   /** number of cells fitting the given map dimension */
@@ -129,6 +159,17 @@ class GridModule {
       points.push([offset, y], [w + offset, y]);
     }
 
+    return points;
+  }
+
+  /** pseudo-points along the north and south edges of a wrapped map, evenly spread so they repeat across the seam */
+  private getCapPoints(width: number, height: number, spacing: number): Point[] {
+    const count = Math.round(width / (spacing * 2));
+    const points: Point[] = [];
+    for (let i = 0; i < count; i++) {
+      const x = ((i + 0.5) * width) / count;
+      points.push([x, -spacing], [x, height + spacing]);
+    }
     return points;
   }
 
