@@ -195,7 +195,7 @@ test.describe("States", () => {
   });
 });
 
-declare const Controllers: { DiplomacyEditor: { open: () => Promise<void> } };
+declare const Controllers: { DiplomacyOverview: { open: () => Promise<void> } };
 declare const Services: {
   Save: { prepareMapData: () => string };
   Load: { uploadMap: (file: File) => void };
@@ -248,8 +248,8 @@ test.describe("Diplomacy", () => {
       pack.states[0].diplomacy = [];
       return [a.i, b.i, c.i];
     });
-    await page.evaluate(() => Controllers.DiplomacyEditor.open());
-    await expect(page.locator("#diplomacyEditor")).toBeVisible();
+    await page.evaluate(() => Controllers.DiplomacyOverview.open());
+    await expect(page.locator("#diplomacyOverview")).toBeVisible();
   });
 
   test.afterEach(() => expect(errors).toEqual([]));
@@ -290,12 +290,12 @@ test.describe("Diplomacy", () => {
       else if (exit === "titlebar") await formDialog(page).locator(".ui-dialog-titlebar-close").click();
       else {
         await page
-          .locator(".ui-dialog:has(#diplomacyEditor) .ui-dialog-titlebar-close")
+          .locator(".ui-dialog:has(#diplomacyOverview) .ui-dialog-titlebar-close")
           .evaluate((button: HTMLButtonElement) => button.click());
       }
       await expect(page.locator("#relationsForm")).toBeHidden();
       expect(await page.evaluate(() => JSON.stringify(pack.states.map(state => state.diplomacy)))).toBe(before);
-      if (exit === "parent" || exit === "Escape") await page.evaluate(() => Controllers.DiplomacyEditor.open());
+      if (exit === "parent" || exit === "Escape") await page.evaluate(() => Controllers.DiplomacyOverview.open());
       await mapClick(page, ids[2]);
       await expect(page.locator("#diplomacyBodySection .Self")).toHaveAttribute("data-id", String(ids[2]));
     });
@@ -305,7 +305,7 @@ test.describe("Diplomacy", () => {
     await page.evaluate(([a, b]) => {
       pack.states[a].diplomacy![b] = pack.states[b].diplomacy![a] = "x";
     }, ids);
-    await page.locator("#diplomacyEditorRefresh").click();
+    await page.locator("#diplomacyOverviewRefresh").click();
     await page.locator("#diplomacyShowMatrix").click();
     const pair = page.locator(`#diplomacyMatrixBody tr[data-id="${ids[0]}"] td[data-id="${ids[1]}"]`);
     await expect(pair).toHaveText("Invalid");

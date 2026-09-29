@@ -32,7 +32,8 @@ const latestPublicChanges = [
   "Biome editor: editable relief icon pools",
   "Emblems: live updates on edit in Armoria",
   "Saving: choose the map file destination",
-  "States Editor: merged states can be kept as provinces"
+  "States Editor: keep merged states as provinces",
+  "Diplomacy Overview: set relations on map click"
 ];
 
 export function parseMapVersion(version: string): string {

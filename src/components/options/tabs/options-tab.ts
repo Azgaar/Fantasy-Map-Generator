@@ -1,4 +1,4 @@
-import { hsl, select } from "d3";
+import { hsl } from "d3";
 import { applyZoomExtent, fitMapToScreen, setViewport } from "@/components/canvas";
 import { DEFAULT_THEME_COLOR } from "@/components/options-model";
 import type { OptionsData } from "@/components/options-schema";
@@ -93,8 +93,7 @@ const OPTION_BINDINGS: Record<string, OptionBinding> = {
     read: o => o.generation.states.limit,
     write: (o, value) => (o.generation.states.limit = value),
     parse: Number,
-    pin: "statesNumber",
-    effect: changeStatesNumber
+    pin: "statesNumber"
   }),
   provincesRatio: option({
     read: o => o.generation.provinces.ratio,
@@ -815,18 +814,6 @@ export function changeCellsDensity(density: number): void {
 export const cellsDensityColor = (cells: number): string =>
   cells > 50000 ? "#b12117" : cells === 10000 ? "#053305" : "#dfdf12";
 
-/** More states means smaller labels, so they keep fitting the shrinking territories */
-function changeStatesNumber(count: number): void {
-  optionInput("statesNumber").style.color = count ? "" : "#b12117";
-
-  const capitalSize = Math.max(rn(6 - count / 20), 3);
-  const stateSize = Math.max(rn(18 - count / 6), 4);
-  if (styles.labels.groups.capital) styles.labels.groups.capital.attrs["font-size"] = `${capitalSize}%`;
-  if (styles.labels.groups.state) styles.labels.groups.state.attrs["font-size"] = `${stateSize}%`;
-  select("#labels").select("[data-group='capital']").attr("font-size", `${capitalSize}%`);
-  select("#labels").select("[data-group='state']").attr("font-size", `${stateSize}%`);
-}
-
 /** Re-shield every emblem that has not been customised, and re-render the ones on screen */
 function changeEmblemShape(shape: string): void {
   Emblems.setShape(shape);
@@ -1062,7 +1049,6 @@ export function restoreUi(): void {
 
   Emblems.setShape(emblems.shape);
   changeTooltipSize(ui.tooltipSize);
-  changeStatesNumber(options.generation.states.limit); // state label sizes follow the number of states
 
   optionInput("uiSize").max = String(maxUiSize());
   changeUiSize(ui.size ?? defaultUiSize());

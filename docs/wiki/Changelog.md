@@ -23,6 +23,7 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Emblems: live updates on edit in Armoria
 - Saving: choose the map file destination by _[spencerpruitt](https://github.com/spencerpruitt)_ and _[barrulus](https://github.com/barrulus)_
 - States Editor: merged states can be kept as provinces by _[barrulus](https://github.com/barrulus)_
+- Diplomacy Overview: set relations on map click by _[WebHead89](https://github.com/WebHead89)_
 
 # Releases
 
