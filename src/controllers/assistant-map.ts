@@ -19,15 +19,16 @@ import {
 import {
   DEFAULT_LOCAL_URL,
   DEFAULT_MODEL,
-  keyStorageFor,
+  keyStorageForProvider,
   LOCAL_MODEL,
   LOCAL_MODEL_STORAGE,
   LOCAL_URL_STORAGE,
   PROVIDERS,
+  type ProviderSpec,
   providerOf,
   registerModels
 } from "@/services/assistant/providers";
-import { cachedModels, listModels, mergeModels } from "@/services/assistant/providers-models";
+import { cachedModels, listModels, modelChoices } from "@/services/assistant/providers-models";
 import type { RunResult } from "@/services/assistant/runtime";
 import { createSession } from "@/services/assistant/session";
 import { openURL } from "@/utils";
@@ -36,6 +37,10 @@ import { ensureEl } from "../utils";
 import { type EditEntry, noteChipLabel, noteContext, undoEdit, writeNoteTool } from "./assistant-notes";
 
 const MODEL_STORAGE = "fmg-ai-chat-model";
+const MODEL_PROVIDER_STORAGE = "fmg-ai-chat-provider";
+const MODEL_AUTO_STORAGE = "fmg-ai-chat-auto-model";
+const CUSTOM_MODEL = "__custom_model__";
+const REPLACED_MODELS: Record<string, string> = { "deepseek-chat": "deepseek-flash" };
 const MAX_INPUT_HEIGHT = 120;
 
 export const MAP_SUGGESTIONS = [
@@ -58,11 +63,13 @@ let currentStep: HTMLDetailsElement | null = null;
 let busy = false;
 let turnContext = "";
 let noteLabel: string | null = null;
+let modelWasChosen = false;
 
 const session = createSession(
   () => ({
     key: ensureEl<HTMLInputElement>("assistantMapKey").value,
-    model: ensureEl<HTMLSelectElement>("assistantMapModel").value,
+    model: selectedModel(),
+    providerId: selectedProvider().id,
     context: turnContext
   }),
   [writeNoteTool(entry => addEntry(entry))]
@@ -70,6 +77,7 @@ const session = createSession(
 
 export function mountMapPanel(target: HTMLElement): void {
   host = target;
+  modelWasChosen = false;
   conversation = forCurrentMap();
   target.innerHTML = panelHtml();
   bind();
@@ -117,7 +125,7 @@ function panelHtml(): string {
     <div id="assistantMapDrawer" class="assistantMapDrawer" hidden>
       <div id="assistantMapHint" class="assistantMapHint" hidden>Add your API key to start. It stays in this browser and goes only to the provider.</div>
       <label>Provider <select id="assistantMapProvider" data-tip="Who runs the model. Each provider keeps its own key"></select></label>
-      <label>Model <select id="assistantMapModel" data-tip="Model to ask. Bigger models reason better and cost more"></select></label>
+      <label>Model <select id="assistantMapModel" data-tip="Model to ask. Bigger models reason better and cost more"></select><input id="assistantMapCustomModel" type="text" placeholder="Exact model ID" data-tip="Type any model ID supported by this provider" hidden /></label>
       <label>API key
         <input id="assistantMapKey" type="password" placeholder="API key" class="icon-key" />
         <button id="assistantMapKeyHelp" class="icon-help-circled" data-tip="Where to get the key"></button>
@@ -142,9 +150,7 @@ function bind(): void {
   });
   ensureEl("assistantMapNew").addEventListener("click", startNewConversation);
   ensureEl("assistantMapRemove").addEventListener("click", removeConversation);
-  ensureEl("assistantMapKeyHelp").addEventListener("click", () =>
-    openURL(providerOf(ensureEl<HTMLSelectElement>("assistantMapModel").value).keyLink)
-  );
+  ensureEl("assistantMapKeyHelp").addEventListener("click", () => openURL(selectedProvider().keyLink));
   ensureEl("assistantMapSend").addEventListener("click", () => {
     if (busy) session.cancel();
     else void send();
@@ -152,6 +158,7 @@ function bind(): void {
   ensureEl("assistantMapSettings").addEventListener("click", () => toggleDrawer());
   ensureEl("assistantMapStatusModel").addEventListener("click", () => toggleDrawer(true));
   ensureEl("assistantMapKey").addEventListener("input", renderStatus);
+  ensureEl("assistantMapKey").addEventListener("change", () => void refreshModels());
 
   ensureEl("assistantMapLog").addEventListener("click", event => {
     const link = (event.target as HTMLElement)?.closest?.("a[href]");
@@ -181,12 +188,24 @@ function toggleDrawer(open?: boolean): void {
 }
 
 function renderStatus(): void {
-  const model = ensureEl<HTMLSelectElement>("assistantMapModel").value;
-  const provider = providerOf(model);
+  const model = selectedModel();
+  const provider = selectedProvider();
   ensureEl("assistantMapStatusModel").textContent =
-    model === LOCAL_MODEL ? "local model" : `${model} · ${provider.label}`;
+    model === LOCAL_MODEL ? "local model" : `${model || "custom model"} · ${provider.label}`;
   const key = ensureEl<HTMLInputElement>("assistantMapKey").value;
   ensureEl("assistantMapStatusKey").textContent = provider.id === "local" ? "" : key ? "· key set" : "· no key";
+}
+
+function selectedProvider(): ProviderSpec {
+  return (
+    PROVIDERS.find(provider => provider.id === ensureEl<HTMLSelectElement>("assistantMapProvider").value) ??
+    PROVIDERS[0]
+  );
+}
+
+function selectedModel(): string {
+  const model = ensureEl<HTMLSelectElement>("assistantMapModel").value;
+  return model === CUSTOM_MODEL ? ensureEl<HTMLInputElement>("assistantMapCustomModel").value.trim() : model;
 }
 
 function setInitialValues(): void {
@@ -198,21 +217,30 @@ function setInitialValues(): void {
   providerSelect.replaceChildren();
   providerSelect.append(...PROVIDERS.map(provider => new Option(provider.label, provider.id)));
 
-  // the stored model decides the provider, not the other way round: it is the only thing persisted
-  const stored = localStorage.getItem(MODEL_STORAGE) ?? "";
-  const model = isKnownModel(stored) ? stored : DEFAULT_MODEL;
-  providerSelect.value = providerOf(model).id;
-  buildModelSelect();
-  ensureEl<HTMLSelectElement>("assistantMapModel").value = model;
+  // Saved provider is needed when a manually entered model is not in discovery results.
+  const saved = localStorage.getItem(MODEL_STORAGE) ?? "";
+  const stored = REPLACED_MODELS[saved] ?? saved;
+  const savedProvider = PROVIDERS.find(provider => provider.id === localStorage.getItem(MODEL_PROVIDER_STORAGE));
+  const known = isKnownModel(stored);
+  providerSelect.value = savedProvider?.id ?? (known ? providerOf(stored).id : providerOf(DEFAULT_MODEL).id);
+  modelWasChosen = Boolean(stored && (savedProvider || known) && localStorage.getItem(MODEL_AUTO_STORAGE) !== "true");
+  buildModelSelect(modelWasChosen ? stored : undefined);
 
   providerSelect.addEventListener("change", () => {
-    buildModelSelect(); // falls to the provider's first model
+    modelWasChosen = false;
+    ensureEl<HTMLInputElement>("assistantMapCustomModel").value = "";
+    buildModelSelect();
     loadKeyForModel();
     void refreshModels();
   });
   ensureEl("assistantMapModel").addEventListener("change", () => {
-    loadKeyForModel();
+    modelWasChosen = true;
+    loadKeyForModel(false);
     void refreshModels();
+  });
+  ensureEl("assistantMapCustomModel").addEventListener("input", () => {
+    modelWasChosen = true;
+    renderStatus();
   });
   loadKeyForModel();
   updateSendButton();
@@ -229,44 +257,54 @@ function isKnownModel(model: string): boolean {
 }
 
 // One provider's models only: a flat list across every provider is too long to pick from
-function buildModelSelect(): void {
-  const providerId = ensureEl<HTMLSelectElement>("assistantMapProvider").value;
-  const provider = PROVIDERS.find(candidate => candidate.id === providerId) ?? PROVIDERS[0];
+function buildModelSelect(saved?: string): void {
+  const provider = selectedProvider();
   const select = ensureEl<HTMLSelectElement>("assistantMapModel");
-  const previous = select.value;
+  const previous = saved ?? selectedModel();
+  const models = modelChoices(provider, cachedModels(provider.id));
   select.replaceChildren();
-  mergeModels(provider.models, cachedModels(provider.id)).forEach(model => {
+  models.forEach(model => {
     select.append(new Option(model === LOCAL_MODEL ? "custom model…" : model, model));
   });
-  // keep the choice when the list is only being refreshed, otherwise take the first model
-  const keep = [...select.options].some(option => option.value === previous);
-  select.value = keep ? previous : (select.options[0]?.value ?? "");
+  if (provider.id !== "local") select.append(new Option("Other model…", CUSTOM_MODEL));
+  const model = modelWasChosen && previous ? previous : models[0];
+  if (models.includes(model)) select.value = model;
+  else if (provider.id !== "local" && model) {
+    select.value = CUSTOM_MODEL;
+    ensureEl<HTMLInputElement>("assistantMapCustomModel").value = model;
+  } else select.value = models[0];
+  ensureEl("assistantMapCustomModel").hidden = select.value !== CUSTOM_MODEL;
 }
 
 // Ask the selected provider what its key can actually use, so new models appear without a release
 async function refreshModels(): Promise<void> {
-  const providerId = ensureEl<HTMLSelectElement>("assistantMapProvider").value;
+  const providerId = selectedProvider().id;
   const key = ensureEl<HTMLInputElement>("assistantMapKey").value;
   if (providerId !== "local" && !key) return;
   try {
     await listModels(providerId as (typeof PROVIDERS)[number]["id"], key);
-    if (document.getElementById("assistantMapModel")) buildModelSelect();
+    if (document.getElementById("assistantMapModel") && selectedProvider().id === providerId) {
+      buildModelSelect();
+      renderStatus();
+    }
   } catch {
-    // unreachable server or bad key: the curated list stands
+    // Keep cached results or the fallback when discovery fails.
   }
 }
 
 // Each provider has its own key slot, so switching models swaps the key field with it
-function loadKeyForModel(): void {
+function loadKeyForModel(loadKey = true): void {
   const model = ensureEl<HTMLSelectElement>("assistantMapModel").value;
-  const local = providerOf(model).id === "local";
+  const provider = selectedProvider();
+  const local = provider.id === "local";
   const key = ensureEl<HTMLInputElement>("assistantMapKey");
-  key.value = localStorage.getItem(keyStorageFor(model)) ?? "";
+  if (loadKey) key.value = localStorage.getItem(keyStorageForProvider(provider.id)) ?? "";
   key.placeholder = local ? "API key (optional)" : "API key";
   key.dataset.tip = local
     ? "Optional API key — most local servers need none. Sent as a Bearer token when set"
-    : `${providerOf(model).label} API key. It's stored on your machine only (browser storage) and sent directly to the provider`;
+    : `${provider.label} API key. It's stored on your machine only (browser storage) and sent directly to the provider`;
 
+  ensureEl("assistantMapCustomModel").hidden = model !== CUSTOM_MODEL;
   // Discovered local models already carry their name; only the sentinel needs the manual fields
   ensureEl("assistantMapLocal").hidden = model !== LOCAL_MODEL;
   if (model === LOCAL_MODEL) {
@@ -298,9 +336,16 @@ async function send(text?: string): Promise<void> {
   const question = (text ?? input.value).trim();
   if (!question) return;
 
-  const model = ensureEl<HTMLSelectElement>("assistantMapModel").value;
+  const provider = selectedProvider();
+  const model = selectedModel();
   const key = ensureEl<HTMLInputElement>("assistantMapKey").value;
-  if (needsKey(model, key)) {
+  if (ensureEl<HTMLSelectElement>("assistantMapModel").value === CUSTOM_MODEL && !model) {
+    toggleDrawer(true);
+    ensureEl("assistantMapCustomModel").focus();
+    tip("Please enter a model ID", true, "error", 4000);
+    return;
+  }
+  if (needsKey(provider.fallbackModel, key)) {
     toggleDrawer(true);
     ensureEl("assistantMapHint").hidden = false;
     ensureEl("assistantMapKey").focus();
@@ -317,8 +362,10 @@ async function send(text?: string): Promise<void> {
     localStorage.setItem(LOCAL_URL_STORAGE, ensureEl<HTMLInputElement>("assistantMapLocalUrl").value.trim());
     localStorage.setItem(LOCAL_MODEL_STORAGE, localModel);
   }
-  localStorage.setItem(keyStorageFor(model), key);
+  localStorage.setItem(keyStorageForProvider(provider.id), key);
   localStorage.setItem(MODEL_STORAGE, model);
+  localStorage.setItem(MODEL_PROVIDER_STORAGE, provider.id);
+  localStorage.setItem(MODEL_AUTO_STORAGE, String(!modelWasChosen));
   toggleDrawer(false);
 
   input.value = "";

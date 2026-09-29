@@ -11,7 +11,8 @@ This glossary covers core terminology, data structures, and concepts used throug
 - **Layer**: A visual or logical overlay on the map (e.g., rivers, biomes, elevation).
 - **SVG Layer**: A named group of SVG elements for a specific map feature.
 - **Style element**: One top-level entry of the style store (`StyleElement`, a key of `stylesSchema`): a Layer's style, or `map` for whole-map filters. It is what the Style tab edits one at a time. Close to Layer, not equal: `map` is not a Layer, and parts of a Layer (burg anchors, the states halo) are not Style elements.
-- **Seed**: The value used for random number generation (reproducibility).
+- **Seed**: The value used for random number generation (reproducibility). Not an identity: regenerating with the same seed makes a different Map.
+- **Map id**: The identity of a Map: the moment it was generated. Carried in the `.map` file, so a saved map keeps its id when loaded again; every new generation gets a new one. _Avoid_: seed (as an identifier)
 
 ## Separation of Concerns
 
@@ -85,3 +86,15 @@ This glossary covers core terminology, data structures, and concepts used throug
 - **Overview Tool**: A summary UI for a particular system (e.g., production-overview, market-overview).
 - **Configurator**: A UI for setting up world generation parameters.
 - **Submap**: A tool to generate a new, more detailed map strictly from a selected area of the current map.
+
+## Azgaar Assistant
+
+- **Azgaar Assistant**: The in-app chat that answers questions about the generator and about the open Map. "The Assistant" for short. _Avoid_: Azgaar Bot, Azgaar Agent, AI Chat, Help assistant, Map assistant
+- **Chat**: One exchange of questions and answers with the Assistant. It belongs to exactly one Map (by Map id) from the moment it is created and is kept only in this browser, never in the `.map` file. _Avoid_: conversation, session, thread
+- **Tier**: The Assistant's level of access for this user: Guest, Member or Key. Derived from two independent facts — signed in or not, key connected or not — never chosen. Where none applies (a self-hosted copy or the desktop app without a key) the Assistant asks for a key. _Avoid_: mode, plan
+- **Guest**: The Tier of a user who is neither signed in nor has a key connected: a small daily allowance of documentation answers. _Avoid_: free, anonymous
+- **Member**: The Tier of a user signed in with Discord and without a key: a larger daily allowance. Guest and Member together are the free tiers.
+- **Key**: The Tier of a user with their own AI provider key (or a local model) connected. "Connected" means set and not disconnected; a key the provider rejects keeps the Tier. Wins over sign-in; disconnecting the key returns the user to Guest or Member. _Avoid_: own key, BYOK, Pro
+- **Change**: One edit the Assistant made to the Map (e.g. rewriting a Note), shown in the Chat with an Undo. Undo is allowed only while the target still holds exactly what the Change wrote.
+- **Azgaar server**: The project's own server (ask.azgaarsfmg.com) that answers Guest and Member questions from the documentation. Owns the daily allowance, Discord sign-in and its own Chat memory; cannot see the Map. _Avoid_: gateway, hosted engine, documentation service, help service
+- **Provider**: The AI company (Anthropic, OpenAI, …) or local model server that answers Key-tier questions with the user's own key. _Avoid_: engine, agent

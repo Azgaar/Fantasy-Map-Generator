@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { SystemBlock } from "./context";
 import type { Message, ToolDefinition } from "./providers";
-import { keyStorageFor, providerOf } from "./providers";
-import { fromChatResponse, toChatMessages, toChatTools } from "./providers-openai";
+import { complete, keyStorageFor, providerOf } from "./providers";
+import { completeOpenAI, fromChatResponse, toChatMessages, toChatTools } from "./providers-openai";
 
 const system: SystemBlock[] = [
   { type: "text", text: "static prefix", cache_control: { type: "ephemeral" } },
@@ -73,6 +73,26 @@ describe("toChatTools", () => {
   });
 });
 
+describe("completeOpenAI", () => {
+  it("uses GPT-6 Chat Completions tool parameters without changing other providers", async () => {
+    const fetchStub = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation(async () => new Response(JSON.stringify({ choices: [] })));
+    const request = { key: "test", model: "gpt-6-sol", system, messages: [], tools: [] };
+
+    await completeOpenAI("https://api.openai.com/v1", request);
+    await completeOpenAI("https://api.mistral.ai/v1", { ...request, model: "mistral-small-latest" });
+
+    const openAI = JSON.parse(fetchStub.mock.calls[0][1]?.body as string);
+    const mistral = JSON.parse(fetchStub.mock.calls[1][1]?.body as string);
+    expect(openAI).toMatchObject({ model: "gpt-6-sol", max_completion_tokens: 4096, reasoning_effort: "none" });
+    expect(openAI).not.toHaveProperty("max_tokens");
+    expect(mistral).toMatchObject({ model: "mistral-small-latest", max_tokens: 4096 });
+    expect(mistral).not.toHaveProperty("reasoning_effort");
+    fetchStub.mockRestore();
+  });
+});
+
 describe("toChatMessages content null", () => {
   it("sends null content when an assistant turn has only tool calls", () => {
     const messages: Message[] = [
@@ -135,15 +155,24 @@ describe("fromChatResponse", () => {
 
 describe("provider routing", () => {
   it("resolves each model to its provider and key storage slot", () => {
-    expect(providerOf("qwen-flash").id).toBe("qwen");
+    expect(providerOf("qwen3.8-flash").id).toBe("qwen");
     expect(providerOf("mistral-small-latest").id).toBe("mistral");
-    expect(providerOf("deepseek-chat").id).toBe("deepseek");
-    expect(providerOf("gpt-5.6-luna").id).toBe("openai");
-    expect(providerOf("claude-haiku-4-5").id).toBe("anthropic");
-    expect(keyStorageFor("qwen-flash")).toBe("fmg-ai-kl-qwen");
+    expect(providerOf("deepseek-flash").id).toBe("deepseek");
+    expect(providerOf("gpt-6-luna").id).toBe("openai");
+    expect(providerOf("claude-sonnet-5-5").id).toBe("anthropic");
+    expect(keyStorageFor("qwen3.8-flash")).toBe("fmg-ai-kl-qwen");
   });
 
   it("throws a clear error for an unknown model", () => {
     expect(() => providerOf("gpt-2")).toThrow(/unknown model/i);
+  });
+
+  it("routes a manually entered model through the selected provider", async () => {
+    const fetchStub = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation(async () => new Response(JSON.stringify({ choices: [] })));
+    await complete({ key: "test", providerId: "mistral", model: "my-custom-model", system, messages: [], tools: [] });
+    expect(fetchStub.mock.calls[0][0]).toBe("https://api.mistral.ai/v1/chat/completions");
+    fetchStub.mockRestore();
   });
 });

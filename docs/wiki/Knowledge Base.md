@@ -606,7 +606,7 @@ Only for the 'This map' tab. 'Help' is free and needs nothing. 'This map' talks 
 
 ### Which AI providers and models can the assistant use?
 
-Anthropic, OpenAI, Mistral, Qwen, DeepSeek, and any OpenAI-compatible local server (Ollama, llama.cpp, LM Studio). Choose the provider first and the model list narrows to that provider's models. If your key can use models newer than the built-in list, they are fetched from the provider and added automatically. Bigger models reason better and cost more; you pay the provider directly
+Anthropic, OpenAI, Mistral, Qwen, DeepSeek, and any OpenAI-compatible local server (Ollama, llama.cpp, LM Studio). Choose the provider first. Without discovered models, the list shows one fallback. With a key, it fetches models from that provider and recommends the newest model in a preferred family. You can also choose "Other model" and type any model ID yourself. Bigger models reason better and cost more; you pay the provider directly
 
 ### What is sent to the AI provider by the 'This map' tab?
 

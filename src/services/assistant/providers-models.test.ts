@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { LOCAL_URL_STORAGE, providerOf, registerModels } from "./providers";
-import { cachedModels, cacheModels, filterChatModels, listModels, mergeModels } from "./providers-models";
+import { LOCAL_URL_STORAGE, PROVIDERS, providerOf, registerModels } from "./providers";
+import { cachedModels, cacheModels, filterChatModels, listModels, modelChoices } from "./providers-models";
 
 function memoryStorage(): Storage {
   const data = new Map<string, string>();
@@ -33,8 +33,8 @@ afterEach(() => {
 
 describe("filterChatModels", () => {
   it("keeps chat models and drops audio, image and embedding variants for OpenAI", () => {
-    const ids = ["gpt-5.6-luna", "gpt-audio", "text-embedding-3-small", "whisper-1", "o4-mini", "dall-e-3"];
-    expect(filterChatModels("openai", ids)).toEqual(["gpt-5.6-luna", "o4-mini"]);
+    const ids = ["gpt-6-luna", "gpt-6-astra", "gpt-audio", "text-embedding-3-small", "whisper-1", "o4-mini"];
+    expect(filterChatModels("openai", ids)).toEqual(["gpt-6-luna", "o4-mini"]);
   });
 
   it("drops embeddings, moderation and OCR models for Mistral", () => {
@@ -69,7 +69,7 @@ describe("listModels", () => {
     const models = await listModels("anthropic", "sk-a");
 
     const [url, options] = fetchStub.mock.calls[0] as unknown as [string, RequestInit];
-    expect(url).toBe("https://api.anthropic.com/v1/models");
+    expect(url).toBe("https://api.anthropic.com/v1/models?limit=1000");
     const headers = options.headers as Record<string, string>;
     expect(headers["x-api-key"]).toBe("sk-a");
     expect(headers["anthropic-dangerous-direct-browser-access"]).toBe("true");
@@ -85,6 +85,25 @@ describe("listModels", () => {
     expect(url).toBe("http://localhost:8080/v1/models");
     expect("Authorization" in ((options.headers ?? {}) as Record<string, string>)).toBe(false);
     expect(models).toEqual(["llama3.2"]);
+  });
+
+  it("reads Qwen's paginated model catalog", async () => {
+    const fetchStub = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ output: { total: 2, models: [{ model: "qwen3.8-flash" }] } }))
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ output: { total: 2, models: [{ model: "qwen3.7-plus" }] } }))
+      );
+    globals.fetch = fetchStub;
+
+    expect(await listModels("qwen", "sk-q")).toEqual(["qwen3.8-flash", "qwen3.7-plus"]);
+    expect(fetchStub).toHaveBeenCalledTimes(2);
+    const [url, options] = fetchStub.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toContain("/api/v1/models?providers=qwen&features=function-calling");
+    expect(fetchStub.mock.calls[1][0]).toContain("page_no=2");
+    expect((options.headers as Record<string, string>).Authorization).toBe("Bearer sk-q");
   });
 
   it("caches what it fetched", async () => {
@@ -108,13 +127,24 @@ describe("model cache", () => {
   });
 });
 
-describe("mergeModels", () => {
-  it("keeps curated models first and appends new discovered ones without duplicates", () => {
-    expect(mergeModels(["qwen-flash", "qwen-plus"], ["qwen-plus", "qwen-max"])).toEqual([
-      "qwen-flash",
-      "qwen-plus",
-      "qwen-max"
+describe("modelChoices", () => {
+  it("uses only the fallback before discovery and only returned models afterward", () => {
+    const qwen = PROVIDERS.find(provider => provider.id === "qwen")!;
+    expect(modelChoices(qwen, [])).toEqual(["qwen3.8-flash"]);
+    expect(modelChoices(qwen, ["qwen3.7-flash", "qwen3.9-flash", "qwen3.8-max"])).toEqual([
+      "qwen3.9-flash",
+      "qwen3.7-flash",
+      "qwen3.8-max"
     ]);
+  });
+
+  it("picks the latest family version and honors provider latest aliases", () => {
+    const anthropic = PROVIDERS.find(provider => provider.id === "anthropic")!;
+    const mistral = PROVIDERS.find(provider => provider.id === "mistral")!;
+    expect(modelChoices(anthropic, ["claude-opus-5-5", "claude-sonnet-5", "claude-sonnet-5-5"])[0]).toBe(
+      "claude-sonnet-5-5"
+    );
+    expect(modelChoices(mistral, ["mistral-small-2603", "mistral-small-latest"])[0]).toBe("mistral-small-latest");
   });
 });
 

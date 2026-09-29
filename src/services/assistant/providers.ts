@@ -40,6 +40,7 @@ export interface ToolDefinition {
 export interface CompletionRequest {
   key: string;
   model: string;
+  providerId?: ProviderSpec["id"];
   system: SystemBlock[];
   messages: Message[];
   tools: ToolDefinition[];
@@ -61,7 +62,9 @@ export interface Completion {
 export interface ProviderSpec {
   id: "anthropic" | "openai" | "mistral" | "qwen" | "deepseek" | "local";
   label: string;
-  models: string[];
+  fallbackModel: string;
+  recommendedFamily?: RegExp;
+  recommendedAlias?: string;
   keyLink: string;
   baseUrl?: string; // OpenAI-compatible endpoints only; absent for the native Anthropic adapter
 }
@@ -70,46 +73,53 @@ export const PROVIDERS: ProviderSpec[] = [
   {
     id: "anthropic",
     label: "Anthropic",
-    models: ["claude-sonnet-5", "claude-opus-4-8", "claude-haiku-4-5"],
+    fallbackModel: "claude-sonnet-5-5",
+    recommendedFamily: /^claude-sonnet-/,
     keyLink: "https://console.anthropic.com/account/keys"
   },
   {
     id: "openai",
     label: "OpenAI",
-    models: ["gpt-5.6-luna", "gpt-5.6-terra", "gpt-5-mini"],
+    fallbackModel: "gpt-6-luna",
+    recommendedFamily: /^gpt-[\d.]+-luna(?:$|-)/,
     keyLink: "https://platform.openai.com/account/api-keys",
     baseUrl: "https://api.openai.com/v1"
   },
   {
     id: "mistral",
     label: "Mistral",
-    models: ["mistral-small-latest", "mistral-medium-latest"],
+    fallbackModel: "mistral-small-latest",
+    recommendedFamily: /^mistral-small-/,
+    recommendedAlias: "mistral-small-latest",
     keyLink: "https://console.mistral.ai/api-keys",
     baseUrl: "https://api.mistral.ai/v1"
   },
   {
     id: "qwen",
     label: "Qwen",
-    models: ["qwen-flash", "qwen-plus"],
+    fallbackModel: "qwen3.8-flash",
+    recommendedFamily: /^qwen\d+(?:\.\d+)?-flash(?:$|-)/,
     keyLink: "https://modelstudio.console.alibabacloud.com/?tab=playground#/api-key",
     baseUrl: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
   },
   {
     id: "deepseek",
     label: "DeepSeek",
-    models: ["deepseek-chat"],
+    fallbackModel: "deepseek-flash",
+    recommendedFamily: /^deepseek-(?:v[\d.]+-)?flash(?:$|-)/,
+    recommendedAlias: "deepseek-flash",
     keyLink: "https://platform.deepseek.com/api_keys",
     baseUrl: "https://api.deepseek.com/v1"
   },
   {
     id: "local",
-    label: "Local",
-    models: ["local"],
+    label: "ollama",
+    fallbackModel: "local",
     keyLink: "https://ollama.com"
   }
 ];
 
-export const DEFAULT_MODEL = "claude-sonnet-5";
+export const DEFAULT_MODEL = PROVIDERS[0].fallbackModel;
 
 // Local OpenAI-compatible servers (Ollama, llama.cpp, LM Studio…). The dropdown holds one
 // sentinel entry; the endpoint and model name are the user's own and live in storage.
@@ -127,16 +137,20 @@ export function registerModels(providerId: ProviderSpec["id"], models: string[])
 
 export function providerOf(model: string): ProviderSpec {
   const provider =
-    PROVIDERS.find(candidate => candidate.models.includes(model)) ??
+    PROVIDERS.find(candidate => candidate.fallbackModel === model) ??
     PROVIDERS.find(candidate => candidate.id === discovered.get(model));
   if (!provider) throw new Error(`Unknown model: ${model}`);
   return provider;
 }
 
-export const keyStorageFor = (model: string): string => `fmg-ai-kl-${providerOf(model).id}`;
+export const keyStorageForProvider = (providerId: ProviderSpec["id"]): string => `fmg-ai-kl-${providerId}`;
+export const keyStorageFor = (model: string): string => keyStorageForProvider(providerOf(model).id);
 
 export async function complete(request: CompletionRequest): Promise<Completion> {
-  const provider = providerOf(request.model);
+  const provider = request.providerId
+    ? PROVIDERS.find(candidate => candidate.id === request.providerId)
+    : providerOf(request.model);
+  if (!provider) throw new Error(`Unknown provider: ${request.providerId}`);
   if (provider.id === "local") {
     const baseUrl = (localStorage.getItem(LOCAL_URL_STORAGE) || DEFAULT_LOCAL_URL).replace(/\/+$/, "");
     // The sentinel means "use the typed-in name"; a discovered local model is already the name

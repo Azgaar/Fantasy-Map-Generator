@@ -21,9 +21,9 @@ These are off by default. Using one means sending data to that third party under
 
 ## Azgaar Assistant
 
-The Assistant answers questions about using the Generator. It talks to the project's help gateway at `ask.azgaarsfmg.com`, which is the only FMG server involved anywhere in the tool.
+The Assistant answers questions in two ways. **Without a key**, it answers questions about using the Generator through the project's server at `ask.azgaarsfmg.com`, which is the only FMG server involved anywhere in the tool. **With your own AI key**, it also reads the map you have open, answers questions about it and edits it, through the AI provider you choose. Everything below up to _With your own AI key_ is about the first way.
 
-**What is sent.** The question you type and a conversation id. Nothing from your map, your files or your browser is sent — the Assistant cannot see the world you are working on and cannot describe it back to you.
+**What is sent.** The question you type and a conversation id. Nothing from your map, your files or your browser is sent — without a key the Assistant cannot see the world you are working on.
 
 **How long questions are kept.** Questions and the answers given to them are retained for **90 days**, then deleted. They are read only to fix wrong answers and to find gaps in the wiki. They are not published, shared or used to identify anyone.
 
@@ -36,6 +36,28 @@ The Assistant answers questions about using the Generator. It talks to the proje
 **Availability.** The gateway only accepts requests from the official site. On a self-hosted copy the panel says so and offers the wiki instead.
 
 **Turning it off.** _Options → Interface settings → Azgaar assistant → Hide_ removes the button and the panel. Nothing is sent when you do not ask a question.
+
+### With your own AI key
+
+When you connect your own key (Anthropic, OpenAI, Mistral, Qwen, DeepSeek) or a local model server, questions go **directly from your browser to that provider**, never through the project. The project never sees your questions, your map data or your key.
+
+* **What is sent to the provider.** Your question and the earlier messages of the same conversation; the Assistant's instructions, including a short summary of the open map (its name, seed and counts of states, burgs and so on); the note open in the notes editor and any text you have selected in it; and the results of the scripts the Assistant runs to read your map, which can include any data from the map. The provider handles all of it under its own terms and privacy policy.
+* **Your key** is kept in this browser's `localStorage` and sent only to its provider. It is shared with the AI text generator.
+* **Conversations** are kept in this browser's `localStorage` (the 20 most recent), never in the `.map` file and never on an FMG server. Deleting a conversation removes it; clearing the site data removes them all.
+* **Costs.** Provider usage is billed by the provider to your account. The token count in the panel is an estimate; the provider's own dashboard is authoritative.
+
+## Risks
+
+Read this before connecting your own AI key.
+
+* **The Assistant runs code in this page.** To read your map, the model writes small JavaScript programs that run in the Generator with the same access as the app itself. They are meant to be read-only, but that is an instruction to the model, not a technical barrier.
+* **Maps from other people can carry hidden instructions.** Notes, names and legends in a `.map` file you downloaded are read by the model. Text written to manipulate it ("prompt injection") could make it run a script that sends data elsewhere — including the API keys stored in this browser. Only use the Assistant on maps from sources you trust, and use a key with a spending limit.
+* **Changes to your map.** The Assistant can rewrite notes. Each change has an Undo in the panel, but save your map before large edits: autosave and your own `.map` files are the real safety net.
+* **Answers can be wrong.** Language models make mistakes, including confident ones about your map's numbers. Check anything that matters.
+
+## Disclaimer
+
+The Assistant, with or without a key, is an experimental convenience provided as is, without warranty of any kind. The project is not responsible for provider charges, for data you send to a provider you choose, for changes the Assistant makes to your maps, or for the accuracy of its answers. Using your own key means you accept your provider's terms, and you are responsible for keeping the key secure and for any use made of it.
 
 ## Signing in with Discord
 

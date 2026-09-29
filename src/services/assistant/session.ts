@@ -8,6 +8,7 @@ import {
   type Completion,
   complete,
   type Message,
+  type ProviderSpec,
   type ToolDefinition,
   type ToolInput,
   type ToolResultBlock
@@ -61,6 +62,7 @@ export interface SessionHandlers {
 export interface SessionConfig {
   key: string;
   model: string;
+  providerId?: ProviderSpec["id"];
   context?: string; // extra per-turn system text, e.g. the note open in the notes editor
 }
 
@@ -102,13 +104,14 @@ export function createSession(getConfig: () => SessionConfig, tools: AgentTool[]
 
     try {
       for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
-        const { key, model, context } = getConfig();
+        const { key, model, providerId, context } = getConfig();
         handlers.onStatus(iteration === 1 ? "Thinking" : `Thinking (step ${iteration})`);
         trimHistory(messages);
 
         const completion = await complete({
           key,
           model,
+          providerId,
           system: buildSystemPrompt(context),
           messages,
           tools: definitions,

@@ -2872,6 +2872,10 @@ body.tour-free-roam * {
   display: none;
 }
 
+#assistantMap #assistantMapCustomModel[hidden] {
+  display: none;
+}
+
 #assistantMap .assistantMapHint {
   color: #b03030;
 }

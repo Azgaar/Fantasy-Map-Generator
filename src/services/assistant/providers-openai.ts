@@ -106,6 +106,7 @@ export async function completeOpenAI(
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (key) headers.Authorization = `Bearer ${key}`;
 
+  const openAI = baseUrl === "https://api.openai.com/v1";
   const response = await fetch(`${baseUrl}/chat/completions`, {
     method: "POST",
     signal,
@@ -114,7 +115,8 @@ export async function completeOpenAI(
       model,
       messages: toChatMessages(system, messages),
       tools: toChatTools(tools),
-      max_tokens: 4096
+      ...(openAI ? { max_completion_tokens: 4096 } : { max_tokens: 4096 }),
+      ...(openAI && /^gpt-6-(sol|luna)$/.test(model) ? { reasoning_effort: "none" } : {})
     })
   });
 
