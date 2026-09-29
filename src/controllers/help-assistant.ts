@@ -10,15 +10,6 @@ import {
 } from "@/services/help/conversation";
 import { renderMarkdown } from "@/utils/markdown";
 import { ensureEl } from "../utils";
-import { mountMapPanel, refreshMapContext, unmountMapPanel } from "./help-assistant-map";
-
-// The dialog opens on Help (wiki-grounded gateway answers) unless a contextual entry point — the
-// Tools menu button or the notes editor — asks for This map, the BYOK agent over the open map.
-export type AssistantMode = "help" | "map";
-
-export interface OpenOptions {
-  mode?: AssistantMode;
-}
 
 export interface WidgetNotice {
   html: string;
@@ -54,31 +45,26 @@ function toggle(): void {
 
 // A chat panel is a companion to the map, not a modal over it: it takes the bottom-right
 // corner — over its own call button, which the title bar's close then stands in for.
-function open(options: OpenOptions = {}): void {
-  const mode = options.mode ?? "help";
-  if (isMounted()) {
-    setMode(mode);
-    $("#helpAssistant").dialog("moveToTop");
-    return;
-  }
+function open(): void {
   renderDialog();
 
   const width = Math.min(400, window.innerWidth - 24);
+  // A transcript wants all the room it can get; the self-hosted note is three lines and
+  // would just leave a tall empty panel, so only the chat gets the messenger height
   const chatHeight = Math.min(560, window.innerHeight - 140);
 
   $("#helpAssistant").dialog({
     title: "Azgaar Assistant",
     position: { my: "right bottom", at: "right-16 bottom-44", of: window },
     width,
-    height: chatHeight,
+    height: isOfficialOrigin() ? chatHeight : "auto",
     minWidth: 300,
-    minHeight: 320,
-    resizable: true,
+    minHeight: isOfficialOrigin() ? 320 : 0,
+    resizable: isOfficialOrigin(),
     close: () => {
       stopRetryTimer();
       autoRetried = false;
       markBubble(false);
-      unmountMapPanel();
       destroyDialog("helpAssistant");
     }
   });
@@ -88,7 +74,6 @@ function open(options: OpenOptions = {}): void {
     addTitlebarNewChat();
     void refreshLimits();
   }
-  setMode(mode);
 }
 
 // "New chat" belongs with close and minimize: a window action, not chat content. Its own button,
@@ -108,25 +93,6 @@ function addTitlebarNewChat(): void {
   button.setAttribute("aria-label", "Start a new chat");
   button.addEventListener("click", resetConversationLog);
   titlebar.insertBefore(button, titlebar.querySelector(".ui-dialog-titlebar-reset, .ui-dialog-titlebar-collapse"));
-}
-
-export function setMode(mode: AssistantMode): void {
-  for (const button of document.querySelectorAll<HTMLButtonElement>("#helpAssistant .helpAssistantMode")) {
-    const active = button.dataset.mode === mode;
-    button.setAttribute("aria-selected", String(active));
-    button.classList.toggle("selected", active);
-  }
-  ensureEl("helpAssistantHelp").hidden = mode !== "help";
-  const newChat = document.getElementById("helpAssistantNewChat");
-  if (newChat) newChat.hidden = mode !== "help";
-  const mapHost = ensureEl("helpAssistantMap");
-  mapHost.hidden = mode !== "map";
-  if (mode !== "map") return;
-  if (!mapHost.dataset.mounted) {
-    mountMapPanel(mapHost);
-    mapHost.dataset.mounted = "1";
-  }
-  refreshMapContext();
 }
 
 function renderDialog(): void {
@@ -238,28 +204,12 @@ function renderDialog(): void {
       </div>
     </div>`;
 
-  const modes = /* html */ `
-    <div class="helpAssistantModes" role="tablist">
-      <button type="button" class="helpAssistantMode icon-help-circled" data-mode="help" role="tab" aria-selected="true"
-        data-tip="Ask how to use the map generator — answers come from the documentation">Help</button>
-      <button type="button" class="helpAssistantMode icon-robot" data-mode="map" role="tab" aria-selected="false"
-        data-tip="Ask about, or edit, the map you have open using your own AI key">This map</button>
-    </div>`;
-
   const html = /* html */ `<div id="helpAssistant" class="dialog stable">
     ${styles}
-    ${modes}
-    <div id="helpAssistantHelp" class="helpAssistantPanel">
-      ${isOfficialOrigin() ? chat : unlisted}
-      ${bar}
-    </div>
-    <div id="helpAssistantMap" class="helpAssistantPanel" hidden></div>
+    ${isOfficialOrigin() ? chat : unlisted}
+    ${bar}
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
-
-  for (const button of document.querySelectorAll<HTMLButtonElement>("#helpAssistant .helpAssistantMode")) {
-    button.addEventListener("click", () => setMode(button.dataset.mode as AssistantMode));
-  }
 
   if (!isOfficialOrigin()) return;
   resetConversationLog();

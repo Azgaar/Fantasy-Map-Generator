@@ -330,12 +330,6 @@ export const MAP_COMMANDS: MapCommand[] = [
     aliases: "reshape cells brush",
     run: () => Controllers.WrapTool.open()
   },
-  {
-    id: "openMapAssistantButton",
-    name: "Open Map Assistant",
-    aliases: "AI chat notes",
-    run: () => Controllers.HelpAssistant.open({ mode: "map" })
-  },
   { id: "openMinimapButton", name: "Open Minimap", aliases: "navigation", run: () => Controllers.Minimap.open() },
   { id: "viewMesh", name: "Open 3D Scene", aliases: "view mode mesh", run: () => Controllers.View3d.open("viewMesh") },
   {
