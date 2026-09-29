@@ -43,6 +43,6 @@ test("per-turn context is appended to the dynamic block, never the cached one", 
 // model doc. If any of those moved, the model would be told about a codebase that no longer exists.
 test("context.generated.ts is current", () => {
   expect(() =>
-    execFileSync("node", ["scripts/generate-agent-context.mjs", "--check"], { cwd: root, encoding: "utf8" })
+    execFileSync("node", ["scripts/generate-assistant-context.mjs", "--check"], { cwd: root, encoding: "utf8" })
   ).not.toThrow();
 });

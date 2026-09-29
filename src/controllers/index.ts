@@ -24,7 +24,7 @@ export const Controllers = createRegistry({
   FeaturesOverview: () => import("@/controllers/features-overview").then(m => m.FeaturesOverview),
   HeightmapEditor: () => import("@/controllers/heightmap-editor").then(m => m.HeightmapEditor),
   HeightmapSelection: () => import("@/controllers/heightmap-selection").then(m => m.HeightmapSelection),
-  HelpAssistant: () => import("@/controllers/help-assistant").then(m => m.HelpAssistant),
+  Assistant: () => import("@/controllers/assistant").then(m => m.Assistant),
   IconPicker: () => import("@/controllers/icon-picker").then(m => m.IconPicker),
   HierarchyTree: () => import("@/controllers/hierarchy-tree").then(m => m.HierarchyTree),
   IceEditor: () => import("@/controllers/ice-editor").then(m => m.IceEditor),

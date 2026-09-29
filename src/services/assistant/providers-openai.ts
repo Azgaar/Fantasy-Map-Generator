@@ -1,4 +1,4 @@
-// Translates the agent's Anthropic-shaped conversation into the OpenAI chat/completions format
+// Translates the Assistant's Anthropic-shaped conversation into the OpenAI chat/completions format
 // spoken by OpenAI, Mistral, Qwen (DashScope compatible mode) and DeepSeek, and back.
 
 import type { SystemBlock } from "./context";

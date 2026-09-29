@@ -1,4 +1,4 @@
-// The agent loop: ask the model, run whatever tools it asks for, feed the results back, repeat
+// The Assistant tool loop: ask the model, run whatever tools it asks for, feed the results back, repeat
 // until it answers or the iteration budget runs out. `run` is built in; callers register any
 // further tools (the assistant's write_note, for instance) alongside it.
 

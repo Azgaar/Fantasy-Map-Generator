@@ -4,9 +4,9 @@
 
 import { MapEntities } from "@/components/map-entities";
 import { Notes } from "@/components/notes";
-import type { Entry, NoteState } from "@/services/agent/conversations";
-import type { ToolInput } from "@/services/agent/providers";
-import type { AgentTool, ToolOutcome } from "@/services/agent/session";
+import type { Entry, NoteState } from "@/services/assistant/conversations";
+import type { ToolInput } from "@/services/assistant/providers";
+import type { AgentTool, ToolOutcome } from "@/services/assistant/session";
 import type { Note } from "./notes-editor";
 import { canEditAsRichText } from "./notes-rich-text";
 

@@ -39,11 +39,11 @@ export interface MapCommand {
 /** Ordered by priority: the omnibar breaks score ties by definition order */
 export const MAP_COMMANDS: MapCommand[] = [
   {
-    id: "helpAssistant",
+    id: "assistant",
     name: "Ask AI: Azgaar Assistant",
     aliases: "help chat question ask faq support how why what ?",
     matches: isQuestion,
-    run: () => Controllers.HelpAssistant.open()
+    run: () => Controllers.Assistant.open()
   },
   {
     id: "startTour",
@@ -334,7 +334,7 @@ export const MAP_COMMANDS: MapCommand[] = [
     id: "openMapAssistantButton",
     name: "Open Map Assistant",
     aliases: "AI chat notes",
-    run: () => Controllers.HelpAssistant.open({ mode: "map" })
+    run: () => Controllers.Assistant.open({ mode: "map" })
   },
   { id: "openMinimapButton", name: "Open Minimap", aliases: "navigation", run: () => Controllers.Minimap.open() },
   { id: "viewMesh", name: "Open 3D Scene", aliases: "view mode mesh", run: () => Controllers.View3d.open("viewMesh") },

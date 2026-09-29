@@ -1,19 +1,27 @@
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
-import type { Limits } from "@/services/help/api";
-import { ask, getLimits, HelpApiError, OFFICIAL_ORIGIN, sendFeedback, signIn, signOut } from "@/services/help/api";
-import { getToken } from "@/services/help/auth";
+import type { Limits } from "@/services/assistant/gateway/api";
+import {
+  ask,
+  GatewayError,
+  getLimits,
+  OFFICIAL_ORIGIN,
+  sendFeedback,
+  signIn,
+  signOut
+} from "@/services/assistant/gateway/api";
+import { getToken } from "@/services/assistant/gateway/auth";
 import {
   adoptConversationId,
   clearConversationId,
   getConversationId,
   isNewConversation
-} from "@/services/help/conversation";
+} from "@/services/assistant/gateway/conversation";
 import { renderMarkdown } from "@/utils/markdown";
 import { ensureEl } from "../utils";
-import { mountMapPanel, refreshMapContext, unmountMapPanel } from "./help-assistant-map";
+import { mountMapPanel, refreshMapContext, unmountMapPanel } from "./assistant-map";
 
 // The dialog opens on Help (wiki-grounded gateway answers) unless a contextual entry point — the
-// Tools menu button or the notes editor — asks for This map, the BYOK agent over the open map.
+// Tools menu button or the notes editor — asks for This map, the own-key Assistant over the open map.
 export type AssistantMode = "help" | "map";
 
 export interface OpenOptions {
@@ -35,20 +43,20 @@ const INIT_MESSAGE =
 const isOfficialOrigin = (): boolean => location.origin === OFFICIAL_ORIGIN || import.meta.env.DEV;
 
 function isMounted(): boolean {
-  return document.getElementById("helpAssistant") !== null;
+  return document.getElementById("assistant") !== null;
 }
 
 // The call button mirrors the dialog: while the panel is up it shows a close glyph, so a
 // second click on it reads as "close" rather than "open again"
 function markBubble(isOpen: boolean): void {
-  const bubble = document.getElementById("helpAssistantBubble");
+  const bubble = document.getElementById("assistantBubble");
   if (!bubble) return;
   bubble.classList.toggle("open", isOpen);
   bubble.setAttribute("aria-expanded", String(isOpen));
 }
 
 function toggle(): void {
-  if (isMounted()) $("#helpAssistant").dialog("close");
+  if (isMounted()) $("#assistant").dialog("close");
   else open();
 }
 
@@ -58,7 +66,7 @@ function open(options: OpenOptions = {}): void {
   const mode = options.mode ?? "help";
   if (isMounted()) {
     setMode(mode);
-    $("#helpAssistant").dialog("moveToTop");
+    $("#assistant").dialog("moveToTop");
     return;
   }
   renderDialog();
@@ -66,7 +74,7 @@ function open(options: OpenOptions = {}): void {
   const width = Math.min(400, window.innerWidth - 24);
   const chatHeight = Math.min(560, window.innerHeight - 140);
 
-  $("#helpAssistant").dialog({
+  $("#assistant").dialog({
     title: "Azgaar Assistant",
     position: { my: "right bottom", at: "right-16 bottom-44", of: window },
     width,
@@ -79,7 +87,7 @@ function open(options: OpenOptions = {}): void {
       autoRetried = false;
       markBubble(false);
       unmountMapPanel();
-      destroyDialog("helpAssistant");
+      destroyDialog("assistant");
     }
   });
 
@@ -94,16 +102,13 @@ function open(options: OpenOptions = {}): void {
 // "New chat" belongs with close and minimize: a window action, not chat content. Its own button,
 // apart from the layout reset one, so it is there whether or not the dialog was ever moved
 function addTitlebarNewChat(): void {
-  const titlebar = document
-    .getElementById("helpAssistant")
-    ?.closest(".ui-dialog")
-    ?.querySelector(".ui-dialog-titlebar");
-  if (!titlebar || titlebar.querySelector("#helpAssistantNewChat")) return;
+  const titlebar = document.getElementById("assistant")?.closest(".ui-dialog")?.querySelector(".ui-dialog-titlebar");
+  if (!titlebar || titlebar.querySelector("#assistantNewChat")) return;
 
   const button = document.createElement("button");
   button.type = "button";
-  button.id = "helpAssistantNewChat";
-  button.className = "helpAssistantNewChat icon-plus";
+  button.id = "assistantNewChat";
+  button.className = "assistantNewChat icon-plus";
   button.dataset.tip = "Start a new chat";
   button.setAttribute("aria-label", "Start a new chat");
   button.addEventListener("click", resetConversationLog);
@@ -111,15 +116,15 @@ function addTitlebarNewChat(): void {
 }
 
 export function setMode(mode: AssistantMode): void {
-  for (const button of document.querySelectorAll<HTMLButtonElement>("#helpAssistant .helpAssistantMode")) {
+  for (const button of document.querySelectorAll<HTMLButtonElement>("#assistant .assistantMode")) {
     const active = button.dataset.mode === mode;
     button.setAttribute("aria-selected", String(active));
     button.classList.toggle("selected", active);
   }
-  ensureEl("helpAssistantHelp").hidden = mode !== "help";
-  const newChat = document.getElementById("helpAssistantNewChat");
+  ensureEl("assistantHelp").hidden = mode !== "help";
+  const newChat = document.getElementById("assistantNewChat");
   if (newChat) newChat.hidden = mode !== "help";
-  const mapHost = ensureEl("helpAssistantMap");
+  const mapHost = ensureEl("assistantMap");
   mapHost.hidden = mode !== "map";
   if (mode !== "map") return;
   if (!mapHost.dataset.mounted) {
@@ -130,92 +135,92 @@ export function setMode(mode: AssistantMode): void {
 }
 
 function renderDialog(): void {
-  destroyDialog("helpAssistant");
+  destroyDialog("assistant");
 
   // Panel styling lives with the panel: the dialog is built here and torn down on close, so
   // its stylesheet rides along with it instead of sitting in the global sheet
   const styles = /* html */ `
     <style>
-      #helpAssistant.ui-dialog-content { display: flex; flex-direction: column; gap: .5em; overflow: hidden; padding: .6em .7em .5em; font-family: var(--sans-serif); }
-      #helpAssistant > div          { width: auto; }
-      .ui-dialog-titlebar .helpAssistantNewChat { font-size: .62em; }
+      #assistant.ui-dialog-content { display: flex; flex-direction: column; gap: .5em; overflow: hidden; padding: .6em .7em .5em; font-family: var(--sans-serif); }
+      #assistant > div          { width: auto; }
+      .ui-dialog-titlebar .assistantNewChat { font-size: .62em; }
 
-      #helpAssistant .helpAssistantLog   { flex: 1; min-height: 0; overflow: hidden auto; padding-right: .2em; line-height: 1.4; }
-      #helpAssistant .helpAssistantMsg   { display: flex; margin-bottom: .55em; }
-      #helpAssistant .helpAssistantMsg.user { justify-content: flex-end; }
-      #helpAssistant .helpAssistantStack { display: flex; flex-direction: column; min-width: 0; max-width: 88%; }
-      #helpAssistant .helpAssistantBubble { padding: .45em .65em; border-radius: .4em; background: rgb(0 0 0 / 6%); overflow-wrap: anywhere; }
-      #helpAssistant .helpAssistantMsg.user .helpAssistantBubble   { background: var(--header); color: #ffffff; }
-      #helpAssistant .helpAssistantMsg.user .helpAssistantBubble a { color: #ffffff; }
+      #assistant .assistantLog   { flex: 1; min-height: 0; overflow: hidden auto; padding-right: .2em; line-height: 1.4; }
+      #assistant .assistantMsg   { display: flex; margin-bottom: .55em; }
+      #assistant .assistantMsg.user { justify-content: flex-end; }
+      #assistant .assistantStack { display: flex; flex-direction: column; min-width: 0; max-width: 88%; }
+      #assistant .assistantBubble { padding: .45em .65em; border-radius: .4em; background: rgb(0 0 0 / 6%); overflow-wrap: anywhere; }
+      #assistant .assistantMsg.user .assistantBubble   { background: var(--header); color: #ffffff; }
+      #assistant .assistantMsg.user .assistantBubble a { color: #ffffff; }
 
       /* answers are rendered markdown: keep block spacing tight enough to read as one message */
-      #helpAssistant .helpAssistantBubble > :first-child { margin-top: 0; }
-      #helpAssistant .helpAssistantBubble > :last-child  { margin-bottom: 0; }
-      #helpAssistant .helpAssistantBubble p              { margin: .4em 0; }
-      #helpAssistant .helpAssistantBubble :is(h3, h4, h5, h6) { margin: .6em 0 .3em; font-size: 1em; }
-      #helpAssistant .helpAssistantBubble :is(ol, ul)    { margin: .4em 0; padding-left: 1.3em; }
-      #helpAssistant .helpAssistantBubble pre            { overflow-x: auto; margin: .4em 0; padding: .4em .5em; border-radius: .3em; background: rgb(0 0 0 / 6%); font-size: .9em; }
-      #helpAssistant .helpAssistantBubble code           { font-family: var(--monospace); }
-      #helpAssistant .helpAssistantBubble table          { display: block; overflow-x: auto; border-collapse: collapse; }
-      #helpAssistant .helpAssistantBubble :is(td, th)    { padding: .15em .4em; border: 1px solid rgb(0 0 0 / 12%); }
+      #assistant .assistantBubble > :first-child { margin-top: 0; }
+      #assistant .assistantBubble > :last-child  { margin-bottom: 0; }
+      #assistant .assistantBubble p              { margin: .4em 0; }
+      #assistant .assistantBubble :is(h3, h4, h5, h6) { margin: .6em 0 .3em; font-size: 1em; }
+      #assistant .assistantBubble :is(ol, ul)    { margin: .4em 0; padding-left: 1.3em; }
+      #assistant .assistantBubble pre            { overflow-x: auto; margin: .4em 0; padding: .4em .5em; border-radius: .3em; background: rgb(0 0 0 / 6%); font-size: .9em; }
+      #assistant .assistantBubble code           { font-family: var(--monospace); }
+      #assistant .assistantBubble table          { display: block; overflow-x: auto; border-collapse: collapse; }
+      #assistant .assistantBubble :is(td, th)    { padding: .15em .4em; border: 1px solid rgb(0 0 0 / 12%); }
 
       /* three dots standing in for the answer while the gateway is thinking */
-      #helpAssistant .helpAssistantTyping   { display: flex; align-items: center; gap: .28em; padding: .65em; }
-      #helpAssistant .helpAssistantTyping i { width: .4em; height: .4em; border-radius: 50%; background: currentcolor; opacity: .35; animation: helpAssistantTyping 1.2s infinite ease-in-out; }
-      #helpAssistant .helpAssistantTyping i:nth-child(2) { animation-delay: .15s; }
-      #helpAssistant .helpAssistantTyping i:nth-child(3) { animation-delay: .3s; }
-      @keyframes helpAssistantTyping { 0%, 60%, 100% { opacity: .25; transform: none; } 30% { opacity: .8; transform: translateY(-.18em); } }
-      @media (prefers-reduced-motion: reduce) { #helpAssistant .helpAssistantTyping i { animation: none; } }
+      #assistant .assistantTyping   { display: flex; align-items: center; gap: .28em; padding: .65em; }
+      #assistant .assistantTyping i { width: .4em; height: .4em; border-radius: 50%; background: currentcolor; opacity: .35; animation: assistantTyping 1.2s infinite ease-in-out; }
+      #assistant .assistantTyping i:nth-child(2) { animation-delay: .15s; }
+      #assistant .assistantTyping i:nth-child(3) { animation-delay: .3s; }
+      @keyframes assistantTyping { 0%, 60%, 100% { opacity: .25; transform: none; } 30% { opacity: .8; transform: translateY(-.18em); } }
+      @media (prefers-reduced-motion: reduce) { #assistant .assistantTyping i { animation: none; } }
 
-      #helpAssistant .helpAssistantDivider { display: flex; align-items: center; gap: .6em; margin: .6em 0; opacity: .5; font-size: .82em; text-transform: uppercase; letter-spacing: .06em; }
-      #helpAssistant .helpAssistantDivider::before,
-      #helpAssistant .helpAssistantDivider::after { content: ""; flex: 1; height: 1px; background: currentcolor; }
+      #assistant .assistantDivider { display: flex; align-items: center; gap: .6em; margin: .6em 0; opacity: .5; font-size: .82em; text-transform: uppercase; letter-spacing: .06em; }
+      #assistant .assistantDivider::before,
+      #assistant .assistantDivider::after { content: ""; flex: 1; height: 1px; background: currentcolor; }
 
-      #helpAssistant .helpAssistantFeedback        { display: flex; gap: .2em; margin-top: .15em; }
-      #helpAssistant .helpAssistantFeedback button { padding: 0 .15em; border: none; background: none; opacity: .35; font-size: .9em; transition: .15s; }
-      #helpAssistant .helpAssistantFeedback button:hover    { opacity: .75; }
-      #helpAssistant .helpAssistantFeedback button.selected { opacity: 1; }
+      #assistant .assistantFeedback        { display: flex; gap: .2em; margin-top: .15em; }
+      #assistant .assistantFeedback button { padding: 0 .15em; border: none; background: none; opacity: .35; font-size: .9em; transition: .15s; }
+      #assistant .assistantFeedback button:hover    { opacity: .75; }
+      #assistant .assistantFeedback button.selected { opacity: 1; }
 
       /* server refusals and countdowns: loud enough to notice, quiet enough to stay out of the way */
-      #helpAssistant .helpAssistantNotice { flex: none; max-height: 30%; overflow-y: auto; padding: .45em .6em; border-left: 3px solid var(--header); border-radius: .25em; background: rgb(0 0 0 / 5%); font-size: .9em; }
-      #helpAssistant .helpAssistantNotice > :first-child { margin-top: 0; }
-      #helpAssistant .helpAssistantNotice > :last-child  { margin-bottom: 0; }
-      #helpAssistant .helpAssistantCountdown { margin-top: .3em; opacity: .7; font-variant-numeric: tabular-nums; }
+      #assistant .assistantNotice { flex: none; max-height: 30%; overflow-y: auto; padding: .45em .6em; border-left: 3px solid var(--header); border-radius: .25em; background: rgb(0 0 0 / 5%); font-size: .9em; }
+      #assistant .assistantNotice > :first-child { margin-top: 0; }
+      #assistant .assistantNotice > :last-child  { margin-bottom: 0; }
+      #assistant .assistantCountdown { margin-top: .3em; opacity: .7; font-variant-numeric: tabular-nums; }
 
-      #helpAssistant .helpAssistantComposer          { flex: none; display: flex; align-items: flex-end; gap: .4em; padding: .3em .3em .3em .5em; border: 1px solid rgb(0 0 0 / 18%); border-radius: .5em; background: rgb(255 255 255 / 55%); transition: border-color .15s; }
-      #helpAssistant .helpAssistantComposer:focus-within { border-color: var(--header); }
-      #helpAssistant .helpAssistantComposer textarea { flex: 1; min-width: 0; height: 1.7em; max-height: ${MAX_INPUT_HEIGHT}px; padding: .2em 0; border: 0; background: none; resize: none; font: inherit; line-height: 1.4; }
-      #helpAssistant .helpAssistantSend              { flex: none; display: flex; align-items: center; justify-content: center; width: 1.9em; height: 1.9em; border: 0; border-radius: .4em; background: var(--header); color: #ffffff; font-size: 1em; transition: .15s; }
-      #helpAssistant .helpAssistantSend::before      { margin: 0; }
-      #helpAssistant .helpAssistantSend:hover        { background: var(--header-active); }
-      #helpAssistant .helpAssistantSend:disabled     { opacity: .4; cursor: default; }
+      #assistant .assistantComposer          { flex: none; display: flex; align-items: flex-end; gap: .4em; padding: .3em .3em .3em .5em; border: 1px solid rgb(0 0 0 / 18%); border-radius: .5em; background: rgb(255 255 255 / 55%); transition: border-color .15s; }
+      #assistant .assistantComposer:focus-within { border-color: var(--header); }
+      #assistant .assistantComposer textarea { flex: 1; min-width: 0; height: 1.7em; max-height: ${MAX_INPUT_HEIGHT}px; padding: .2em 0; border: 0; background: none; resize: none; font: inherit; line-height: 1.4; }
+      #assistant .assistantSend              { flex: none; display: flex; align-items: center; justify-content: center; width: 1.9em; height: 1.9em; border: 0; border-radius: .4em; background: var(--header); color: #ffffff; font-size: 1em; transition: .15s; }
+      #assistant .assistantSend::before      { margin: 0; }
+      #assistant .assistantSend:hover        { background: var(--header-active); }
+      #assistant .assistantSend:disabled     { opacity: .4; cursor: default; }
 
       /* quick links and the account state: present, but plainly secondary to the transcript */
-      #helpAssistant .helpAssistantBar     { flex: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .2em .8em; padding-top: .4em; border-top: 1px solid rgb(0 0 0 / 10%); font-size: .9em; }
-      #helpAssistant .helpAssistantLinks   { display: flex; gap: .8em; }
-      #helpAssistant .helpAssistantAccount { display: flex; align-items: center; gap: .5em; opacity: .85; }
-      #helpAssistant .helpAssistantLink        { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; }
-      #helpAssistant .helpAssistantLink:hover  { color: var(--header-active); }
+      #assistant .assistantBar     { flex: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .2em .8em; padding-top: .4em; border-top: 1px solid rgb(0 0 0 / 10%); font-size: .9em; }
+      #assistant .assistantLinks   { display: flex; gap: .8em; }
+      #assistant .assistantAccount { display: flex; align-items: center; gap: .5em; opacity: .85; }
+      #assistant .assistantLink        { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; }
+      #assistant .assistantLink:hover  { color: var(--header-active); }
 
-      #helpAssistant .helpAssistantUnlisted { flex: none; line-height: 1.4; }
+      #assistant .assistantUnlisted { flex: none; line-height: 1.4; }
     </style>`;
 
   const chat = /* html */ `
-    <div id="helpAssistantLog" class="helpAssistantLog" role="log" aria-live="polite"></div>
-    <div id="helpAssistantNotice" class="helpAssistantNotice" hidden></div>
-    <div class="helpAssistantComposer">
-      <textarea id="helpAssistantQuestion" rows="1" maxlength="1000" aria-label="Your question"
+    <div id="assistantLog" class="assistantLog" role="log" aria-live="polite"></div>
+    <div id="assistantNotice" class="assistantNotice" hidden></div>
+    <div class="assistantComposer">
+      <textarea id="assistantQuestion" rows="1" maxlength="1000" aria-label="Your question"
         placeholder="Ask a question…"></textarea>
-      <button id="helpAssistantAsk" type="button" class="helpAssistantSend icon-right-big"
+      <button id="assistantAsk" type="button" class="assistantSend icon-right-big"
         title="Send (Enter)" aria-label="Send"></button>
     </div>`;
 
   // Self-hosted copies are not on the gateway's origin allowlist: explain, don't error
   const unlisted = /* html */ `
-    <div class="helpAssistantUnlisted">
-      <div class="helpAssistantMsg bot">
-        <div class="helpAssistantStack">
-          <div class="helpAssistantBubble">
+    <div class="assistantUnlisted">
+      <div class="assistantMsg bot">
+        <div class="assistantStack">
+          <div class="assistantBubble">
             <p>The free assistant is only available on the official site: <a href="https://azgaar.github.io/Fantasy-Map-Generator/" target="_blank" rel="noopener noreferrer"> azgaar.github.io/Fantasy-Map-Generator</a>. On a self-hosted copy, the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki" target="_blank" rel="noopener noreferrer">documentation</a> covers most questions.</p>
           </div>
         </div>
@@ -223,8 +228,8 @@ function renderDialog(): void {
     </div>`;
 
   const bar = /* html */ `
-    <div class="helpAssistantBar">
-      <div class="helpAssistantLinks">
+    <div class="assistantBar">
+      <div class="assistantLinks">
         <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki" target="_blank" rel="noopener noreferrer">Wiki</a>
         <a href="https://discordapp.com/invite/X7E84HU" target="_blank" rel="noopener noreferrer">Discord</a>
         <a href="https://www.reddit.com/r/FantasyMapGenerator/" target="_blank" rel="noopener noreferrer">Reddit</a>
@@ -232,41 +237,41 @@ function renderDialog(): void {
         <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Policy" target="_blank" rel="noopener noreferrer"
           title="What is sent, how long questions are kept, and the rest of the small print">Policy</a>
       </div>
-      <div class="helpAssistantAccount">
-        <span id="helpAssistantLimits"></span>
-        <span id="helpAssistantAuth"></span>
+      <div class="assistantAccount">
+        <span id="assistantLimits"></span>
+        <span id="assistantAuth"></span>
       </div>
     </div>`;
 
   const modes = /* html */ `
-    <div class="helpAssistantModes" role="tablist">
-      <button type="button" class="helpAssistantMode icon-help-circled" data-mode="help" role="tab" aria-selected="true"
+    <div class="assistantModes" role="tablist">
+      <button type="button" class="assistantMode icon-help-circled" data-mode="help" role="tab" aria-selected="true"
         data-tip="Ask how to use the map generator — answers come from the documentation">Help</button>
-      <button type="button" class="helpAssistantMode icon-robot" data-mode="map" role="tab" aria-selected="false"
+      <button type="button" class="assistantMode icon-robot" data-mode="map" role="tab" aria-selected="false"
         data-tip="Ask about, or edit, the map you have open using your own AI key">This map</button>
     </div>`;
 
-  const html = /* html */ `<div id="helpAssistant" class="dialog stable">
+  const html = /* html */ `<div id="assistant" class="dialog stable">
     ${styles}
     ${modes}
-    <div id="helpAssistantHelp" class="helpAssistantPanel">
+    <div id="assistantHelp" class="assistantPanel">
       ${isOfficialOrigin() ? chat : unlisted}
       ${bar}
     </div>
-    <div id="helpAssistantMap" class="helpAssistantPanel" hidden></div>
+    <div id="assistantMap" class="assistantPanel" hidden></div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
-  for (const button of document.querySelectorAll<HTMLButtonElement>("#helpAssistant .helpAssistantMode")) {
+  for (const button of document.querySelectorAll<HTMLButtonElement>("#assistant .assistantMode")) {
     button.addEventListener("click", () => setMode(button.dataset.mode as AssistantMode));
   }
 
   if (!isOfficialOrigin()) return;
   resetConversationLog();
 
-  ensureEl("helpAssistantAsk").addEventListener("click", () => void submit(normalizeQuestion(getQuestionInput())));
+  ensureEl("assistantAsk").addEventListener("click", () => void submit(normalizeQuestion(getQuestionInput())));
 
-  const input = ensureEl<HTMLTextAreaElement>("helpAssistantQuestion");
+  const input = ensureEl<HTMLTextAreaElement>("assistantQuestion");
   // Enter sends, Shift+Enter breaks the line — the messenger convention the panel now imitates
   input.addEventListener("keydown", event => {
     const key = event as KeyboardEvent;
@@ -288,12 +293,12 @@ function resizeInput(input: HTMLTextAreaElement): void {
 // navigates away anyway).
 function resetConversationLog(): void {
   clearConversationId();
-  const log = ensureEl("helpAssistantLog");
+  const log = ensureEl("assistantLog");
   log.textContent = "";
 
   const { row, stack } = buildMessageRow("bot");
   const bubble = document.createElement("div");
-  bubble.className = "helpAssistantBubble";
+  bubble.className = "assistantBubble";
   bubble.textContent = INIT_MESSAGE;
   stack.appendChild(bubble);
   log.appendChild(row);
@@ -302,14 +307,14 @@ function resetConversationLog(): void {
 }
 
 function getQuestionInput(): string {
-  return ensureEl<HTMLTextAreaElement>("helpAssistantQuestion").value;
+  return ensureEl<HTMLTextAreaElement>("assistantQuestion").value;
 }
 
 // isRetry marks an automatic re-submission of a rate-limited question after its countdown —
 // distinct from the user clicking Ask again, which always starts a fresh retry chain.
 async function submit(question: string | null, isRetry = false): Promise<void> {
   if (!question) return;
-  const button = ensureEl<HTMLButtonElement>("helpAssistantAsk");
+  const button = ensureEl<HTMLButtonElement>("assistantAsk");
   if (button.disabled) return;
 
   button.disabled = true;
@@ -328,7 +333,7 @@ async function submit(question: string | null, isRetry = false): Promise<void> {
     typing.remove();
     if (isNew) appendDivider();
     appendAnswer(renderMarkdown(answer), requestId);
-    const input = ensureEl<HTMLTextAreaElement>("helpAssistantQuestion");
+    const input = ensureEl<HTMLTextAreaElement>("assistantQuestion");
     input.value = "";
     resizeInput(input);
     setNotice(null);
@@ -336,7 +341,7 @@ async function submit(question: string | null, isRetry = false): Promise<void> {
   } catch (error) {
     if (!isMounted()) return;
     typing.remove();
-    if (error instanceof HelpApiError) {
+    if (error instanceof GatewayError) {
       // A poisoned/rejected id is the server's most likely reason for invalid_request — start
       // the next ask clean rather than repeating the same 400 forever.
       if (error.code === "invalid_request") clearConversationId();
@@ -353,10 +358,10 @@ async function submit(question: string | null, isRetry = false): Promise<void> {
 // Side is the whole distinction: the assistant speaks from the left, the user from the right
 function buildMessageRow(role: "user" | "bot"): { row: HTMLElement; stack: HTMLElement } {
   const row = document.createElement("div");
-  row.className = `helpAssistantMsg ${role}`;
+  row.className = `assistantMsg ${role}`;
 
   const stack = document.createElement("div");
-  stack.className = "helpAssistantStack";
+  stack.className = "assistantStack";
   row.appendChild(stack);
   return { row, stack };
 }
@@ -365,7 +370,7 @@ function buildMessageRow(role: "user" | "bot"): { row: HTMLElement; stack: HTMLE
 function appendQuestion(text: string): void {
   const { row, stack } = buildMessageRow("user");
   const bubble = document.createElement("div");
-  bubble.className = "helpAssistantBubble";
+  bubble.className = "assistantBubble";
   bubble.textContent = text;
   stack.appendChild(bubble);
   appendToLog(row);
@@ -374,7 +379,7 @@ function appendQuestion(text: string): void {
 function appendTyping(): HTMLElement {
   const { row, stack } = buildMessageRow("bot");
   const bubble = document.createElement("div");
-  bubble.className = "helpAssistantBubble helpAssistantTyping";
+  bubble.className = "assistantBubble assistantTyping";
   bubble.setAttribute("aria-label", "Thinking…");
   bubble.innerHTML = "<i></i><i></i><i></i>";
   stack.appendChild(bubble);
@@ -384,7 +389,7 @@ function appendTyping(): HTMLElement {
 
 function appendDivider(): void {
   const divider = document.createElement("div");
-  divider.className = "helpAssistantDivider";
+  divider.className = "assistantDivider";
   divider.textContent = "new conversation";
   appendToLog(divider);
 }
@@ -393,7 +398,7 @@ function appendDivider(): void {
 function appendAnswer(safeHtml: string, requestId: number | null): void {
   const { row, stack } = buildMessageRow("bot");
   const bubble = document.createElement("div");
-  bubble.className = "helpAssistantBubble";
+  bubble.className = "assistantBubble";
   bubble.innerHTML = safeHtml;
   stack.appendChild(bubble);
   // requestId null means there is nothing server-side to rate — no control (never post null)
@@ -403,7 +408,7 @@ function appendAnswer(safeHtml: string, requestId: number | null): void {
 
 export function buildFeedbackControl(requestId: number): HTMLElement {
   const row = document.createElement("div");
-  row.className = "helpAssistantFeedback";
+  row.className = "assistantFeedback";
 
   for (const rating of ["up", "down"] as const) {
     const button = document.createElement("button");
@@ -425,7 +430,7 @@ export function buildFeedbackControl(requestId: number): HTMLElement {
         previous?.setAttribute("aria-pressed", "true");
         // the shared transport already cleared the token on a 401 — resync the footer
         // instead of leaving it stuck claiming "Signed in"
-        if (error instanceof HelpApiError && error.code === "unauthorized") void refreshLimits();
+        if (error instanceof GatewayError && error.code === "unauthorized") void refreshLimits();
       });
     });
     row.appendChild(button);
@@ -434,13 +439,13 @@ export function buildFeedbackControl(requestId: number): HTMLElement {
 }
 
 function appendToLog(node: HTMLElement): void {
-  const log = ensureEl("helpAssistantLog");
+  const log = ensureEl("assistantLog");
   log.appendChild(node);
   log.scrollTop = log.scrollHeight;
 }
 
 function setNotice(safeHtml: string | null): void {
-  const notice = ensureEl("helpAssistantNotice");
+  const notice = ensureEl("assistantNotice");
   notice.hidden = safeHtml === null;
   notice.innerHTML = safeHtml ?? "";
 }
@@ -454,9 +459,9 @@ function stopRetryTimer(): void {
   retryTimer = null;
 }
 
-function applyNotice(notice: WidgetNotice, error: HelpApiError, question: string): void {
+function applyNotice(notice: WidgetNotice, error: GatewayError, question: string): void {
   setNotice(notice.html);
-  const button = ensureEl<HTMLButtonElement>("helpAssistantAsk");
+  const button = ensureEl<HTMLButtonElement>("assistantAsk");
   stopRetryTimer();
 
   if (!notice.askDisabled) return;
@@ -468,8 +473,8 @@ function applyNotice(notice: WidgetNotice, error: HelpApiError, question: string
 
   // the wait lives in the notice, not on the send button — an icon button has no room for it
   const countdown = document.createElement("div");
-  countdown.className = "helpAssistantCountdown";
-  ensureEl("helpAssistantNotice").appendChild(countdown);
+  countdown.className = "assistantCountdown";
+  ensureEl("assistantNotice").appendChild(countdown);
 
   const autoRetry = shouldAutoRetry(error, autoRetried);
   let secondsLeft = notice.retryCountdown;
@@ -494,7 +499,7 @@ function applyNotice(notice: WidgetNotice, error: HelpApiError, question: string
 const canSignIn = (): boolean => import.meta.env.DEV || location.origin === OFFICIAL_ORIGIN;
 
 function renderAuth(tier: string): void {
-  const host = document.getElementById("helpAssistantAuth");
+  const host = document.getElementById("assistantAuth");
   if (!host) return;
   host.textContent = "";
 
@@ -502,7 +507,7 @@ function renderAuth(tier: string): void {
     if (!canSignIn()) return;
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "helpAssistantLink";
+    button.className = "assistantLink";
     button.textContent = "Sign in";
     button.title = "Sign in with Discord for more questions a day";
     button.addEventListener("click", () => {
@@ -515,7 +520,7 @@ function renderAuth(tier: string): void {
 
   const out = document.createElement("button");
   out.type = "button";
-  out.className = "helpAssistantLink";
+  out.className = "assistantLink";
   out.textContent = "Sign out";
   out.addEventListener("click", () => {
     void signOut().then(() => {
@@ -529,7 +534,7 @@ function renderAuth(tier: string): void {
 async function refreshLimits(): Promise<void> {
   try {
     const limits = await getLimits();
-    ensureEl("helpAssistantLimits").textContent = limitsLabel(limits);
+    ensureEl("assistantLimits").textContent = limitsLabel(limits);
     renderAuth(limits.tier);
   } catch {
     // limits are a nicety; asking still reports the authoritative state. Render auth from
@@ -541,7 +546,7 @@ async function refreshLimits(): Promise<void> {
 
 // Declined states are designed states: the budget/quota text arrives display-ready from the
 // server (with live links) and is rendered verbatim — never composed here.
-export function noticeFor(error: HelpApiError): WidgetNotice {
+export function noticeFor(error: GatewayError): WidgetNotice {
   const html = renderMarkdown(error.message);
   switch (error.code) {
     case "cap_reached":
@@ -557,7 +562,7 @@ export function noticeFor(error: HelpApiError): WidgetNotice {
 
 // One automatic retry only where the server sent a retryAfter — never on the client's default
 // countdown, and never twice in a row for the same failure chain.
-export function shouldAutoRetry(error: HelpApiError, alreadyRetried: boolean): boolean {
+export function shouldAutoRetry(error: GatewayError, alreadyRetried: boolean): boolean {
   return error.code === "rate_limited" && error.retryAfter !== undefined && !alreadyRetried;
 }
 
@@ -572,4 +577,4 @@ export function normalizeQuestion(raw: string): string | null {
   return question;
 }
 
-export const HelpAssistant = { open, toggle };
+export const Assistant = { open, toggle };

@@ -3,14 +3,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MapEntities } from "@/components/map-entities";
 import { Notes } from "@/components/notes";
-import {
-  type EditEntry,
-  MAX_CONTEXT_CHARS,
-  noteChipLabel,
-  noteContext,
-  undoEdit,
-  writeNote
-} from "./help-assistant-notes";
+import { type EditEntry, MAX_CONTEXT_CHARS, noteChipLabel, noteContext, undoEdit, writeNote } from "./assistant-notes";
 
 const w = globalThis as unknown as Record<string, unknown>;
 

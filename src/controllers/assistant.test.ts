@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { HelpApiError } from "@/services/help/api";
+import { GatewayError } from "@/services/assistant/gateway/api";
 import { renderMarkdown } from "@/utils/markdown";
-import { buildFeedbackControl, limitsLabel, normalizeQuestion, noticeFor, shouldAutoRetry } from "./help-assistant";
+import { buildFeedbackControl, limitsLabel, normalizeQuestion, noticeFor, shouldAutoRetry } from "./assistant";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -13,34 +13,34 @@ describe("noticeFor", () => {
   const budgetCodes = ["cap_reached", "quota", "blocked"] as const;
   it.each(budgetCodes)("renders %s server text verbatim as escaped markdown and disables asking", code => {
     const message = "Budget used — see the [documentation](https://github.com/Azgaar/Fantasy-Map-Generator/wiki).";
-    const notice = noticeFor(new HelpApiError(code, message));
+    const notice = noticeFor(new GatewayError(code, message));
     expect(notice.html).toBe(renderMarkdown(message));
     expect(notice.askDisabled).toBe(true);
     expect(notice.retryCountdown).toBeUndefined();
   });
 
   it("gives rate_limited a countdown from retryAfter", () => {
-    const notice = noticeFor(new HelpApiError("rate_limited", "Slow down.", 12));
+    const notice = noticeFor(new GatewayError("rate_limited", "Slow down.", 12));
     expect(notice.askDisabled).toBe(true);
     expect(notice.retryCountdown).toBe(12);
   });
 
   it("defaults the rate_limited countdown to 30 when retryAfter is missing", () => {
-    expect(noticeFor(new HelpApiError("rate_limited", "Slow down.")).retryCountdown).toBe(30);
+    expect(noticeFor(new GatewayError("rate_limited", "Slow down.")).retryCountdown).toBe(30);
   });
 
   it("leaves asking enabled for provider_error and unreachable", () => {
-    expect(noticeFor(new HelpApiError("provider_error", "oops")).askDisabled).toBe(false);
-    expect(noticeFor(new HelpApiError("unreachable", "no net")).askDisabled).toBe(false);
+    expect(noticeFor(new GatewayError("provider_error", "oops")).askDisabled).toBe(false);
+    expect(noticeFor(new GatewayError("unreachable", "no net")).askDisabled).toBe(false);
   });
 
   it("escapes hostile markup in server messages", () => {
-    const notice = noticeFor(new HelpApiError("provider_error", '<img src=x onerror="alert(1)">'));
+    const notice = noticeFor(new GatewayError("provider_error", '<img src=x onerror="alert(1)">'));
     expect(notice.html).not.toContain("<img");
   });
 
   it("leaves asking enabled for unauthorized (signed-out is not a lockout)", () => {
-    expect(noticeFor(new HelpApiError("unauthorized", "Session expired.")).askDisabled).toBe(false);
+    expect(noticeFor(new GatewayError("unauthorized", "Session expired.")).askDisabled).toBe(false);
   });
 });
 
@@ -55,19 +55,19 @@ describe("limitsLabel", () => {
 
 describe("shouldAutoRetry", () => {
   it("auto-retries a rate_limited error with a server-sent retryAfter, once", () => {
-    const error = new HelpApiError("rate_limited", "Slow down.", 12);
+    const error = new GatewayError("rate_limited", "Slow down.", 12);
     expect(shouldAutoRetry(error, false)).toBe(true);
     expect(shouldAutoRetry(error, true)).toBe(false);
   });
 
   it("never auto-retries on the client-default countdown (no server retryAfter)", () => {
-    const error = new HelpApiError("rate_limited", "Slow down.");
+    const error = new GatewayError("rate_limited", "Slow down.");
     expect(shouldAutoRetry(error, false)).toBe(false);
   });
 
   it("never auto-retries non-rate_limited errors", () => {
-    expect(shouldAutoRetry(new HelpApiError("quota", "Budget used.", 12), false)).toBe(false);
-    expect(shouldAutoRetry(new HelpApiError("provider_error", "oops", 12), false)).toBe(false);
+    expect(shouldAutoRetry(new GatewayError("quota", "Budget used.", 12), false)).toBe(false);
+    expect(shouldAutoRetry(new GatewayError("provider_error", "oops", 12), false)).toBe(false);
   });
 });
 

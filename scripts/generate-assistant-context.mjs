@@ -1,5 +1,5 @@
-// Builds src/services/agent/context.generated.ts — the part of the AI Chat system prompt that is
-// derived from the codebase rather than written by hand. Run `npm run generate:agent-context` after
+// Builds src/services/assistant/context.generated.ts — the part of the Assistant system prompt that is
+// derived from the codebase rather than written by hand. Run `npm run generate:assistant-context` after
 // changing global declarations, the registries, or the data model doc. Pass --check to verify the
 // committed file is current without writing (used by context.test.ts).
 
@@ -8,7 +8,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const target = "src/services/agent/context.generated.ts";
+const target = "src/services/assistant/context.generated.ts";
 
 const read = path => readFileSync(join(root, path), "utf8");
 
@@ -57,7 +57,7 @@ function buildGeneratedContext() {
     DATA_MODEL: read("docs/architecture/data-model.md").trim()
   };
 
-  const header = `// GENERATED FILE — do not edit by hand.\n// Run \`npm run generate:agent-context\` to rebuild it from the sources it mirrors.\n`;
+  const header = `// GENERATED FILE — do not edit by hand.\n// Run \`npm run generate:assistant-context\` to rebuild it from the sources it mirrors.\n`;
   const body = Object.entries(sections)
     .map(([name, value]) => `export const ${name} = ${JSON.stringify(value)};`)
     .join("\n\n");
@@ -70,7 +70,7 @@ const generated = buildGeneratedContext();
 if (process.argv.includes("--check")) {
   const committed = read(target);
   if (committed !== generated) {
-    console.error(`${target} is stale. Run: npm run generate:agent-context`);
+    console.error(`${target} is stale. Run: npm run generate:assistant-context`);
     process.exit(1);
   }
   console.log(`${target} is up to date`);

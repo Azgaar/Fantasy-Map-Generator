@@ -1,6 +1,5 @@
 // Read-only is a prompt instruction, not a sandbox guarantee, so every run is preceded by a clone
-// of the mutable world state. The Prototype has no undo UI — the escape hatch is calling
-// `restoreMapSnapshot()` from the browser console.
+// of the mutable world state. The escape hatch is calling `restoreMapSnapshot()` from the console.
 
 import { Styles } from "@/generators/styles";
 
@@ -23,13 +22,13 @@ export function capture(): void {
     };
   } catch (error) {
     snapshot = null;
-    WARN && console.warn("AI Chat: failed to snapshot the map, run is not recoverable", error);
+    WARN && console.warn("Assistant: failed to snapshot the map, run is not recoverable", error);
   }
 }
 
 export function restore(): boolean {
   if (!snapshot) {
-    console.warn("AI Chat: no snapshot to restore");
+    console.warn("Assistant: no snapshot to restore");
     return false;
   }
 

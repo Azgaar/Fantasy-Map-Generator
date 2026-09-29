@@ -1,5 +1,5 @@
-// The assistant dialog's "This map" panel: the BYOK agent over the open map (formerly the AI Chat
-// dialog), with model settings in a drawer and note editing through write_note.
+// The Assistant dialog's "This map" panel: the own-key Assistant over the open map, with model
+// settings in a drawer and note editing through write_note.
 
 import { confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
@@ -15,7 +15,7 @@ import {
   remove,
   select,
   touch
-} from "@/services/agent/conversations";
+} from "@/services/assistant/conversations";
 import {
   DEFAULT_LOCAL_URL,
   DEFAULT_MODEL,
@@ -26,14 +26,14 @@ import {
   PROVIDERS,
   providerOf,
   registerModels
-} from "@/services/agent/providers";
-import { cachedModels, listModels, mergeModels } from "@/services/agent/providers-models";
-import type { RunResult } from "@/services/agent/runtime";
-import { createSession } from "@/services/agent/session";
+} from "@/services/assistant/providers";
+import { cachedModels, listModels, mergeModels } from "@/services/assistant/providers-models";
+import type { RunResult } from "@/services/assistant/runtime";
+import { createSession } from "@/services/assistant/session";
 import { openURL } from "@/utils";
 import { renderMarkdown } from "@/utils/markdown";
 import { ensureEl } from "../utils";
-import { type EditEntry, noteChipLabel, noteContext, undoEdit, writeNoteTool } from "./help-assistant-notes";
+import { type EditEntry, noteChipLabel, noteContext, undoEdit, writeNoteTool } from "./assistant-notes";
 
 const MODEL_STORAGE = "fmg-ai-chat-model";
 const MAX_INPUT_HEIGHT = 120;
@@ -61,8 +61,8 @@ let noteLabel: string | null = null;
 
 const session = createSession(
   () => ({
-    key: ensureEl<HTMLInputElement>("helpMapKey").value,
-    model: ensureEl<HTMLSelectElement>("helpMapModel").value,
+    key: ensureEl<HTMLInputElement>("assistantMapKey").value,
+    model: ensureEl<HTMLSelectElement>("assistantMapModel").value,
     context: turnContext
   }),
   [writeNoteTool(entry => addEntry(entry))]
@@ -82,13 +82,13 @@ export function mountMapPanel(target: HTMLElement): void {
 // Called on every open/switch into the panel: the note chip and the suggestions follow the notes editor
 export function refreshMapContext(): void {
   void noteChipLabel().then(label => {
-    if (!host || !document.getElementById("helpMapContext")) return;
+    if (!host || !document.getElementById("assistantMapContext")) return;
     noteLabel = label;
-    const chip = ensureEl("helpMapContext");
+    const chip = ensureEl("assistantMapContext");
     chip.hidden = label === null;
     chip.textContent = label === null ? "" : `Note: ${label}`;
     if (isEmpty(conversation)) renderTranscript();
-    ensureEl("helpMapInput").focus();
+    ensureEl("assistantMapInput").focus();
   });
 }
 
@@ -102,65 +102,65 @@ export function unmountMapPanel(): void {
 
 function panelHtml(): string {
   return /* html */ `
-    <div class="helpMapTop">
-      <select id="helpMapConversation" data-tip="Switch between conversations. Each one is sent in full with every question, so a fresh one costs less"></select>
-      <button id="helpMapNew" class="icon-plus" data-tip="Start a new conversation"></button>
-      <button id="helpMapRemove" class="icon-trash" data-tip="Delete the current conversation"></button>
+    <div class="assistantMapTop">
+      <select id="assistantMapConversation" data-tip="Switch between conversations. Each one is sent in full with every question, so a fresh one costs less"></select>
+      <button id="assistantMapNew" class="icon-plus" data-tip="Start a new conversation"></button>
+      <button id="assistantMapRemove" class="icon-trash" data-tip="Delete the current conversation"></button>
     </div>
-    <div id="helpMapLog" class="helpMapLog"></div>
-    <div id="helpMapContext" class="helpMapContext" hidden></div>
-    <div class="helpMapComposer">
-      <textarea id="helpMapInput" rows="2" placeholder="Ask about this map…" data-tip="Enter to send, Shift + Enter for a new line"></textarea>
-      <button id="helpMapSend" class="icon-right-open" data-tip="Send the message"></button>
-      <button id="helpMapSettings" class="icon-cog" data-tip="Model and API key" aria-expanded="false"></button>
+    <div id="assistantMapLog" class="assistantMapLog"></div>
+    <div id="assistantMapContext" class="assistantMapContext" hidden></div>
+    <div class="assistantMapComposer">
+      <textarea id="assistantMapInput" rows="2" placeholder="Ask about this map…" data-tip="Enter to send, Shift + Enter for a new line"></textarea>
+      <button id="assistantMapSend" class="icon-right-open" data-tip="Send the message"></button>
+      <button id="assistantMapSettings" class="icon-cog" data-tip="Model and API key" aria-expanded="false"></button>
     </div>
-    <div id="helpMapDrawer" class="helpMapDrawer" hidden>
-      <div id="helpMapHint" class="helpMapHint" hidden>Add your API key to start. It stays in this browser and goes only to the provider.</div>
-      <label>Provider <select id="helpMapProvider" data-tip="Who runs the model. Each provider keeps its own key"></select></label>
-      <label>Model <select id="helpMapModel" data-tip="Model to ask. Bigger models reason better and cost more"></select></label>
+    <div id="assistantMapDrawer" class="assistantMapDrawer" hidden>
+      <div id="assistantMapHint" class="assistantMapHint" hidden>Add your API key to start. It stays in this browser and goes only to the provider.</div>
+      <label>Provider <select id="assistantMapProvider" data-tip="Who runs the model. Each provider keeps its own key"></select></label>
+      <label>Model <select id="assistantMapModel" data-tip="Model to ask. Bigger models reason better and cost more"></select></label>
       <label>API key
-        <input id="helpMapKey" type="password" placeholder="API key" class="icon-key" />
-        <button id="helpMapKeyHelp" class="icon-help-circled" data-tip="Where to get the key"></button>
+        <input id="assistantMapKey" type="password" placeholder="API key" class="icon-key" />
+        <button id="assistantMapKeyHelp" class="icon-help-circled" data-tip="Where to get the key"></button>
       </label>
-      <div id="helpMapLocal" hidden>
-        <input id="helpMapLocalUrl" type="text" placeholder="${DEFAULT_LOCAL_URL}" data-tip="Base URL of an OpenAI-compatible local server (Ollama, llama.cpp, LM Studio). For Ollama outside localhost, allow the app origin via OLLAMA_ORIGINS" />
-        <input id="helpMapLocalModel" type="text" placeholder="model name, e.g. llama3.2" data-tip="Name of the model as your local server knows it" />
+      <div id="assistantMapLocal" hidden>
+        <input id="assistantMapLocalUrl" type="text" placeholder="${DEFAULT_LOCAL_URL}" data-tip="Base URL of an OpenAI-compatible local server (Ollama, llama.cpp, LM Studio). For Ollama outside localhost, allow the app origin via OLLAMA_ORIGINS" />
+        <input id="assistantMapLocalModel" type="text" placeholder="model name, e.g. llama3.2" data-tip="Name of the model as your local server knows it" />
       </div>
     </div>
-    <div class="helpMapStatus">
-      <button id="helpMapStatusModel" type="button" data-tip="Change the model or key"></button>
-      <span id="helpMapStatusKey"></span>
-      <span id="helpMapUsage"></span>
+    <div class="assistantMapStatus">
+      <button id="assistantMapStatusModel" type="button" data-tip="Change the model or key"></button>
+      <span id="assistantMapStatusKey"></span>
+      <span id="assistantMapUsage"></span>
     </div>`;
 }
 
 function bind(): void {
-  ensureEl("helpMapConversation").addEventListener("change", event => {
+  ensureEl("assistantMapConversation").addEventListener("change", event => {
     conversation = select((event.target as HTMLSelectElement).value);
     renderTranscript();
     renderUsage();
   });
-  ensureEl("helpMapNew").addEventListener("click", startNewConversation);
-  ensureEl("helpMapRemove").addEventListener("click", removeConversation);
-  ensureEl("helpMapKeyHelp").addEventListener("click", () =>
-    openURL(providerOf(ensureEl<HTMLSelectElement>("helpMapModel").value).keyLink)
+  ensureEl("assistantMapNew").addEventListener("click", startNewConversation);
+  ensureEl("assistantMapRemove").addEventListener("click", removeConversation);
+  ensureEl("assistantMapKeyHelp").addEventListener("click", () =>
+    openURL(providerOf(ensureEl<HTMLSelectElement>("assistantMapModel").value).keyLink)
   );
-  ensureEl("helpMapSend").addEventListener("click", () => {
+  ensureEl("assistantMapSend").addEventListener("click", () => {
     if (busy) session.cancel();
     else void send();
   });
-  ensureEl("helpMapSettings").addEventListener("click", () => toggleDrawer());
-  ensureEl("helpMapStatusModel").addEventListener("click", () => toggleDrawer(true));
-  ensureEl("helpMapKey").addEventListener("input", renderStatus);
+  ensureEl("assistantMapSettings").addEventListener("click", () => toggleDrawer());
+  ensureEl("assistantMapStatusModel").addEventListener("click", () => toggleDrawer(true));
+  ensureEl("assistantMapKey").addEventListener("input", renderStatus);
 
-  ensureEl("helpMapLog").addEventListener("click", event => {
+  ensureEl("assistantMapLog").addEventListener("click", event => {
     const link = (event.target as HTMLElement)?.closest?.("a[href]");
     if (!link) return;
     event.preventDefault();
     openURL(link.getAttribute("href") ?? "");
   });
 
-  const input = ensureEl<HTMLTextAreaElement>("helpMapInput");
+  const input = ensureEl<HTMLTextAreaElement>("assistantMapInput");
   input.addEventListener("input", () => {
     input.style.height = "auto";
     input.style.height = `${Math.min(input.scrollHeight, MAX_INPUT_HEIGHT)}px`;
@@ -174,18 +174,19 @@ function bind(): void {
 }
 
 function toggleDrawer(open?: boolean): void {
-  const drawer = ensureEl("helpMapDrawer");
+  const drawer = ensureEl("assistantMapDrawer");
   drawer.hidden = open === undefined ? !drawer.hidden : !open;
-  ensureEl("helpMapSettings").setAttribute("aria-expanded", String(!drawer.hidden));
-  if (drawer.hidden) ensureEl("helpMapHint").hidden = true;
+  ensureEl("assistantMapSettings").setAttribute("aria-expanded", String(!drawer.hidden));
+  if (drawer.hidden) ensureEl("assistantMapHint").hidden = true;
 }
 
 function renderStatus(): void {
-  const model = ensureEl<HTMLSelectElement>("helpMapModel").value;
+  const model = ensureEl<HTMLSelectElement>("assistantMapModel").value;
   const provider = providerOf(model);
-  ensureEl("helpMapStatusModel").textContent = model === LOCAL_MODEL ? "local model" : `${model} · ${provider.label}`;
-  const key = ensureEl<HTMLInputElement>("helpMapKey").value;
-  ensureEl("helpMapStatusKey").textContent = provider.id === "local" ? "" : key ? "· key set" : "· no key";
+  ensureEl("assistantMapStatusModel").textContent =
+    model === LOCAL_MODEL ? "local model" : `${model} · ${provider.label}`;
+  const key = ensureEl<HTMLInputElement>("assistantMapKey").value;
+  ensureEl("assistantMapStatusKey").textContent = provider.id === "local" ? "" : key ? "· key set" : "· no key";
 }
 
 function setInitialValues(): void {
@@ -193,7 +194,7 @@ function setInitialValues(): void {
   PROVIDERS.forEach(provider => {
     registerModels(provider.id, cachedModels(provider.id));
   });
-  const providerSelect = ensureEl<HTMLSelectElement>("helpMapProvider");
+  const providerSelect = ensureEl<HTMLSelectElement>("assistantMapProvider");
   providerSelect.replaceChildren();
   providerSelect.append(...PROVIDERS.map(provider => new Option(provider.label, provider.id)));
 
@@ -202,14 +203,14 @@ function setInitialValues(): void {
   const model = isKnownModel(stored) ? stored : DEFAULT_MODEL;
   providerSelect.value = providerOf(model).id;
   buildModelSelect();
-  ensureEl<HTMLSelectElement>("helpMapModel").value = model;
+  ensureEl<HTMLSelectElement>("assistantMapModel").value = model;
 
   providerSelect.addEventListener("change", () => {
     buildModelSelect(); // falls to the provider's first model
     loadKeyForModel();
     void refreshModels();
   });
-  ensureEl("helpMapModel").addEventListener("change", () => {
+  ensureEl("assistantMapModel").addEventListener("change", () => {
     loadKeyForModel();
     void refreshModels();
   });
@@ -229,9 +230,9 @@ function isKnownModel(model: string): boolean {
 
 // One provider's models only: a flat list across every provider is too long to pick from
 function buildModelSelect(): void {
-  const providerId = ensureEl<HTMLSelectElement>("helpMapProvider").value;
+  const providerId = ensureEl<HTMLSelectElement>("assistantMapProvider").value;
   const provider = PROVIDERS.find(candidate => candidate.id === providerId) ?? PROVIDERS[0];
-  const select = ensureEl<HTMLSelectElement>("helpMapModel");
+  const select = ensureEl<HTMLSelectElement>("assistantMapModel");
   const previous = select.value;
   select.replaceChildren();
   mergeModels(provider.models, cachedModels(provider.id)).forEach(model => {
@@ -244,12 +245,12 @@ function buildModelSelect(): void {
 
 // Ask the selected provider what its key can actually use, so new models appear without a release
 async function refreshModels(): Promise<void> {
-  const providerId = ensureEl<HTMLSelectElement>("helpMapProvider").value;
-  const key = ensureEl<HTMLInputElement>("helpMapKey").value;
+  const providerId = ensureEl<HTMLSelectElement>("assistantMapProvider").value;
+  const key = ensureEl<HTMLInputElement>("assistantMapKey").value;
   if (providerId !== "local" && !key) return;
   try {
     await listModels(providerId as (typeof PROVIDERS)[number]["id"], key);
-    if (document.getElementById("helpMapModel")) buildModelSelect();
+    if (document.getElementById("assistantMapModel")) buildModelSelect();
   } catch {
     // unreachable server or bad key: the curated list stands
   }
@@ -257,9 +258,9 @@ async function refreshModels(): Promise<void> {
 
 // Each provider has its own key slot, so switching models swaps the key field with it
 function loadKeyForModel(): void {
-  const model = ensureEl<HTMLSelectElement>("helpMapModel").value;
+  const model = ensureEl<HTMLSelectElement>("assistantMapModel").value;
   const local = providerOf(model).id === "local";
-  const key = ensureEl<HTMLInputElement>("helpMapKey");
+  const key = ensureEl<HTMLInputElement>("assistantMapKey");
   key.value = localStorage.getItem(keyStorageFor(model)) ?? "";
   key.placeholder = local ? "API key (optional)" : "API key";
   key.dataset.tip = local
@@ -267,10 +268,10 @@ function loadKeyForModel(): void {
     : `${providerOf(model).label} API key. It's stored on your machine only (browser storage) and sent directly to the provider`;
 
   // Discovered local models already carry their name; only the sentinel needs the manual fields
-  ensureEl("helpMapLocal").hidden = model !== LOCAL_MODEL;
+  ensureEl("assistantMapLocal").hidden = model !== LOCAL_MODEL;
   if (model === LOCAL_MODEL) {
-    ensureEl<HTMLInputElement>("helpMapLocalUrl").value = localStorage.getItem(LOCAL_URL_STORAGE) ?? "";
-    ensureEl<HTMLInputElement>("helpMapLocalModel").value = localStorage.getItem(LOCAL_MODEL_STORAGE) ?? "";
+    ensureEl<HTMLInputElement>("assistantMapLocalUrl").value = localStorage.getItem(LOCAL_URL_STORAGE) ?? "";
+    ensureEl<HTMLInputElement>("assistantMapLocalModel").value = localStorage.getItem(LOCAL_MODEL_STORAGE) ?? "";
   }
   renderStatus();
   updateSendButton();
@@ -279,11 +280,11 @@ function loadKeyForModel(): void {
 // The request outlives the panel when the dialog is closed mid-run, so every DOM touch below
 // tolerates a missing element — the conversation keeps the content either way
 function updateSendButton(): void {
-  const button = document.getElementById("helpMapSend") as HTMLButtonElement | null;
+  const button = document.getElementById("assistantMapSend") as HTMLButtonElement | null;
   if (!button) return;
   button.className = busy ? "icon-cancel" : "icon-right-open";
   button.dataset.tip = busy ? "Stop the current request" : "Send the message";
-  button.disabled = !busy && !ensureEl<HTMLTextAreaElement>("helpMapInput").value.trim();
+  button.disabled = !busy && !ensureEl<HTMLTextAreaElement>("assistantMapInput").value.trim();
 }
 
 async function send(text?: string): Promise<void> {
@@ -293,27 +294,27 @@ async function send(text?: string): Promise<void> {
     return;
   }
 
-  const input = ensureEl<HTMLTextAreaElement>("helpMapInput");
+  const input = ensureEl<HTMLTextAreaElement>("assistantMapInput");
   const question = (text ?? input.value).trim();
   if (!question) return;
 
-  const model = ensureEl<HTMLSelectElement>("helpMapModel").value;
-  const key = ensureEl<HTMLInputElement>("helpMapKey").value;
+  const model = ensureEl<HTMLSelectElement>("assistantMapModel").value;
+  const key = ensureEl<HTMLInputElement>("assistantMapKey").value;
   if (needsKey(model, key)) {
     toggleDrawer(true);
-    ensureEl("helpMapHint").hidden = false;
-    ensureEl("helpMapKey").focus();
+    ensureEl("assistantMapHint").hidden = false;
+    ensureEl("assistantMapKey").focus();
     return;
   }
   if (model === LOCAL_MODEL) {
-    const localModel = ensureEl<HTMLInputElement>("helpMapLocalModel").value.trim();
+    const localModel = ensureEl<HTMLInputElement>("assistantMapLocalModel").value.trim();
     if (!localModel) {
       toggleDrawer(true);
-      ensureEl("helpMapLocalModel").focus();
+      ensureEl("assistantMapLocalModel").focus();
       tip("Please enter the local model name", true, "error", 4000);
       return;
     }
-    localStorage.setItem(LOCAL_URL_STORAGE, ensureEl<HTMLInputElement>("helpMapLocalUrl").value.trim());
+    localStorage.setItem(LOCAL_URL_STORAGE, ensureEl<HTMLInputElement>("assistantMapLocalUrl").value.trim());
     localStorage.setItem(LOCAL_MODEL_STORAGE, localModel);
   }
   localStorage.setItem(keyStorageFor(model), key);
@@ -348,9 +349,9 @@ async function send(text?: string): Promise<void> {
     currentStep = null;
     hideThinking();
     touch(conversation);
-    if (document.getElementById("helpMapInput")) {
+    if (document.getElementById("assistantMapInput")) {
       updateSendButton();
-      ensureEl("helpMapInput").focus();
+      ensureEl("assistantMapInput").focus();
     }
   }
 }
@@ -390,7 +391,7 @@ function removeConversation(): void {
 // Rendering — the conversation is the source of truth, the log is rebuilt from it on every mount
 
 function renderConversations(): void {
-  const select = document.getElementById("helpMapConversation") as HTMLSelectElement | null;
+  const select = document.getElementById("assistantMapConversation") as HTMLSelectElement | null;
   if (!select) return;
 
   select.options.length = 0;
@@ -402,7 +403,7 @@ function renderConversations(): void {
 }
 
 function renderUsage(): void {
-  const line = document.getElementById("helpMapUsage");
+  const line = document.getElementById("assistantMapUsage");
   if (!line) return;
 
   const { input, output, cached } = conversation.usage;
@@ -418,7 +419,7 @@ function renderUsage(): void {
 const thousands = (value: number): string => (value < 1000 ? String(value) : `${(value / 1000).toFixed(1)}k`);
 
 function renderTranscript(): void {
-  const log = document.getElementById("helpMapLog");
+  const log = document.getElementById("assistantMapLog");
   if (!log) return;
 
   log.innerHTML = "";
@@ -433,14 +434,14 @@ function addEntry(entry: Entry): void {
   conversation.entries.push(entry);
   touch(conversation);
 
-  const log = document.getElementById("helpMapLog");
+  const log = document.getElementById("assistantMapLog");
   if (!log) return;
-  document.getElementById("helpMapEmpty")?.remove();
+  document.getElementById("assistantMapEmpty")?.remove();
   const element = renderEntry(entry);
   log.append(element);
   if (entry.kind === "script") currentStep = element as HTMLDetailsElement;
 
-  const thinking = document.getElementById("helpMapThinking");
+  const thinking = document.getElementById("assistantMapThinking");
   if (thinking) log.append(thinking);
   scrollToEnd();
 }
@@ -448,13 +449,13 @@ function addEntry(entry: Entry): void {
 function renderEntry(entry: Entry): HTMLElement {
   if (entry.kind === "message") {
     const roles: Record<MessageRole, string> = {
-      user: "helpMapUser",
-      assistant: "helpMapAssistant",
-      system: "helpMapSystem",
-      error: "helpMapError"
+      user: "assistantMapUser",
+      assistant: "assistantMapAssistant",
+      system: "assistantMapSystem",
+      error: "assistantMapError"
     };
     const element = document.createElement("div");
-    element.className = `helpMapMessage ${roles[entry.role]}`;
+    element.className = `assistantMapMessage ${roles[entry.role]}`;
     // only the model writes Markdown; everything else is shown exactly as typed
     if (entry.role === "assistant") element.innerHTML = renderMarkdown(entry.text);
     else element.textContent = entry.text;
@@ -463,7 +464,7 @@ function renderEntry(entry: Entry): HTMLElement {
   if (entry.kind === "edit") return renderEdit(entry);
 
   const details = document.createElement("details");
-  details.className = "helpMapStep";
+  details.className = "assistantMapStep";
   details.append(document.createElement("summary"), preElement(entry.code));
   setStepSummary(details, entry.result);
   if (entry.result) details.append(preElement(resultText(entry.result)));
@@ -472,7 +473,7 @@ function renderEntry(entry: Entry): HTMLElement {
 
 function renderEdit(entry: EditEntry): HTMLElement {
   const element = document.createElement("div");
-  element.className = "helpMapEdit";
+  element.className = "assistantMapEdit";
   const verb = entry.previous ? "Updated" : "Created";
   const label = (): string =>
     `${verb} note “${entry.name}” · ${thousands(entry.chars)} chars${entry.undone ? " · undone" : ""}`;
@@ -527,7 +528,7 @@ function preElement(text: string): HTMLPreElement {
 
 function emptyState(): HTMLElement {
   const container = document.createElement("div");
-  container.id = "helpMapEmpty";
+  container.id = "assistantMapEmpty";
 
   const hint = document.createElement("div");
   hint.textContent = noteLabel
@@ -547,13 +548,13 @@ function emptyState(): HTMLElement {
 }
 
 function showThinking(status: string): void {
-  const log = document.getElementById("helpMapLog");
+  const log = document.getElementById("assistantMapLog");
   if (!log) return;
 
-  let thinking = document.getElementById("helpMapThinking");
+  let thinking = document.getElementById("assistantMapThinking");
   if (!thinking) {
     thinking = document.createElement("div");
-    thinking.id = "helpMapThinking";
+    thinking.id = "assistantMapThinking";
     thinking.append(document.createElement("span"), ...[0, 1, 2].map(() => document.createElement("i")));
     log.append(thinking);
   }
@@ -565,12 +566,12 @@ function showThinking(status: string): void {
 }
 
 function hideThinking(): void {
-  document.getElementById("helpMapThinking")?.remove();
+  document.getElementById("assistantMapThinking")?.remove();
 }
 
 // Follow new content only when the user is already at the bottom, so scrolling back stays put
 function scrollToEnd(): void {
-  const log = document.getElementById("helpMapLog");
+  const log = document.getElementById("assistantMapLog");
   if (!log) return;
   const atBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 60;
   if (atBottom) log.scrollTop = log.scrollHeight;

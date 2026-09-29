@@ -2,13 +2,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/components/tooltips", () => ({ tip: vi.fn() }));
-vi.mock("@/services/agent/providers-models", () => ({
+vi.mock("@/services/assistant/providers-models", () => ({
   cachedModels: () => [],
   listModels: vi.fn().mockRejectedValue(new Error("offline")),
   mergeModels: (curated: string[]) => curated
 }));
 const notesApi = vi.hoisted(() => ({ label: null as string | null }));
-vi.mock("./help-assistant-notes", () => ({
+vi.mock("./assistant-notes", () => ({
   noteChipLabel: async () => notesApi.label,
   noteContext: async () => (notesApi.label ? `# Notes editor\n\n${notesApi.label}` : null),
   writeNoteTool: () => ({
@@ -18,9 +18,9 @@ vi.mock("./help-assistant-notes", () => ({
   undoEdit: vi.fn(async () => {})
 }));
 
-import { current } from "@/services/agent/conversations";
-import { mountMapPanel, NOTE_SUGGESTIONS, needsKey, refreshMapContext, unmountMapPanel } from "./help-assistant-map";
-import { undoEdit } from "./help-assistant-notes";
+import { current } from "@/services/assistant/conversations";
+import { mountMapPanel, NOTE_SUGGESTIONS, needsKey, refreshMapContext, unmountMapPanel } from "./assistant-map";
+import { undoEdit } from "./assistant-notes";
 
 const w = globalThis as unknown as Record<string, unknown>;
 const el = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
@@ -52,27 +52,27 @@ describe("needsKey", () => {
 describe("map panel", () => {
   it("mounts with the drawer closed and the model named in the status line", () => {
     mountMapPanel(el("host"));
-    expect(el("helpMapDrawer").hidden).toBe(true);
-    expect(el("helpMapStatusModel").textContent).toContain("claude-sonnet-5");
-    expect(el("helpMapStatusKey").textContent).toContain("no key");
-    expect(el("helpMapContext").hidden).toBe(true);
+    expect(el("assistantMapDrawer").hidden).toBe(true);
+    expect(el("assistantMapStatusModel").textContent).toContain("claude-sonnet-5");
+    expect(el("assistantMapStatusKey").textContent).toContain("no key");
+    expect(el("assistantMapContext").hidden).toBe(true);
   });
 
   it("opens the drawer with a hint instead of sending when the key is missing", () => {
     mountMapPanel(el("host"));
-    el<HTMLTextAreaElement>("helpMapInput").value = "hello";
-    el<HTMLTextAreaElement>("helpMapInput").dispatchEvent(new Event("input"));
-    el<HTMLButtonElement>("helpMapSend").click();
-    expect(el("helpMapDrawer").hidden).toBe(false);
-    expect(el("helpMapHint").hidden).toBe(false);
-    expect(document.activeElement).toBe(el("helpMapKey"));
-    expect(el("helpMapLog").querySelector(".helpMapUser")).toBeNull();
+    el<HTMLTextAreaElement>("assistantMapInput").value = "hello";
+    el<HTMLTextAreaElement>("assistantMapInput").dispatchEvent(new Event("input"));
+    el<HTMLButtonElement>("assistantMapSend").click();
+    expect(el("assistantMapDrawer").hidden).toBe(false);
+    expect(el("assistantMapHint").hidden).toBe(false);
+    expect(document.activeElement).toBe(el("assistantMapKey"));
+    expect(el("assistantMapLog").querySelector(".assistantMapUser")).toBeNull();
   });
 
   it("lists providers separately and narrows the model list to the one chosen", () => {
     mountMapPanel(el("host"));
-    const provider = el<HTMLSelectElement>("helpMapProvider");
-    const model = el<HTMLSelectElement>("helpMapModel");
+    const provider = el<HTMLSelectElement>("assistantMapProvider");
+    const model = el<HTMLSelectElement>("assistantMapModel");
 
     // the stored model decides which provider starts selected
     expect(provider.value).toBe("anthropic");
@@ -88,28 +88,28 @@ describe("map panel", () => {
     provider.dispatchEvent(new Event("change"));
     expect([...model.options].map(option => option.value)).toEqual(["mistral-small-latest", "mistral-medium-latest"]);
     expect(model.value).toBe("mistral-small-latest");
-    expect(el("helpMapStatusModel").textContent).toContain("mistral-small-latest");
+    expect(el("assistantMapStatusModel").textContent).toContain("mistral-small-latest");
   });
 
   it("shows the local server fields only for the local provider", () => {
     mountMapPanel(el("host"));
-    expect(el("helpMapLocal").hidden).toBe(true);
+    expect(el("assistantMapLocal").hidden).toBe(true);
 
-    const provider = el<HTMLSelectElement>("helpMapProvider");
+    const provider = el<HTMLSelectElement>("assistantMapProvider");
     provider.value = "local";
     provider.dispatchEvent(new Event("change"));
-    expect(el("helpMapLocal").hidden).toBe(false);
-    expect(el("helpMapStatusModel").textContent).toContain("local model");
+    expect(el("assistantMapLocal").hidden).toBe(false);
+    expect(el("assistantMapStatusModel").textContent).toContain("local model");
   });
 
   it("toggles the drawer from the gear and the status model button", () => {
     mountMapPanel(el("host"));
-    el<HTMLButtonElement>("helpMapSettings").click();
-    expect(el("helpMapDrawer").hidden).toBe(false);
-    el<HTMLButtonElement>("helpMapSettings").click();
-    expect(el("helpMapDrawer").hidden).toBe(true);
-    el<HTMLButtonElement>("helpMapStatusModel").click();
-    expect(el("helpMapDrawer").hidden).toBe(false);
+    el<HTMLButtonElement>("assistantMapSettings").click();
+    expect(el("assistantMapDrawer").hidden).toBe(false);
+    el<HTMLButtonElement>("assistantMapSettings").click();
+    expect(el("assistantMapDrawer").hidden).toBe(true);
+    el<HTMLButtonElement>("assistantMapStatusModel").click();
+    expect(el("assistantMapDrawer").hidden).toBe(false);
   });
 
   it("shows the note chip and note suggestions when the notes editor is open", async () => {
@@ -117,9 +117,9 @@ describe("map panel", () => {
     mountMapPanel(el("host"));
     refreshMapContext();
     await flush();
-    expect(el("helpMapContext").hidden).toBe(false);
-    expect(el("helpMapContext").textContent).toContain("Kelmora");
-    const chips = [...el("helpMapLog").querySelectorAll("button")].map(button => button.textContent);
+    expect(el("assistantMapContext").hidden).toBe(false);
+    expect(el("assistantMapContext").textContent).toContain("Kelmora");
+    const chips = [...el("assistantMapLog").querySelectorAll("button")].map(button => button.textContent);
     expect(chips).toEqual(NOTE_SUGGESTIONS);
   });
 
@@ -135,7 +135,7 @@ describe("map panel", () => {
     });
     unmountMapPanel();
     mountMapPanel(el("host"));
-    const entry = el("helpMapLog").querySelector(".helpMapEdit") as HTMLElement;
+    const entry = el("assistantMapLog").querySelector(".assistantMapEdit") as HTMLElement;
     expect(entry.textContent).toContain("Updated note");
     expect(entry.textContent).toContain("Kelmora");
     (entry.querySelector("button") as HTMLButtonElement).click();

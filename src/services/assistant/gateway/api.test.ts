@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ask, GATEWAY_URL, getLimits, HelpApiError, OFFICIAL_ORIGIN, sendFeedback, signOut } from "./api";
+import { ask, GATEWAY_URL, GatewayError, getLimits, OFFICIAL_ORIGIN, sendFeedback, signOut } from "./api";
 
 const jsonResponse = (status: number, body: unknown): Response =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -69,7 +69,7 @@ describe("ask", () => {
     ["blocked", 403, undefined],
     ["provider_error", 502, undefined],
     ["invalid_request", 400, undefined]
-  ])("maps a %s error body to HelpApiError with verbatim message", async (code, status, retryAfter) => {
+  ])("maps a %s error body to GatewayError with verbatim message", async (code, status, retryAfter) => {
     const errorBody = {
       error: { code, message: `server text for ${code}`, ...(retryAfter ? { retryAfter } : {}) }
     };
@@ -77,36 +77,36 @@ describe("ask", () => {
 
     const error = await ask("q").catch((e: unknown) => e);
 
-    expect(error).toBeInstanceOf(HelpApiError);
-    expect((error as HelpApiError).code).toBe(code);
-    expect((error as HelpApiError).message).toBe(`server text for ${code}`);
-    expect((error as HelpApiError).retryAfter).toBe(retryAfter);
+    expect(error).toBeInstanceOf(GatewayError);
+    expect((error as GatewayError).code).toBe(code);
+    expect((error as GatewayError).message).toBe(`server text for ${code}`);
+    expect((error as GatewayError).retryAfter).toBe(retryAfter);
   });
 
   it("maps a non-2xx with an unparseable body to provider_error", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("<html>bad gateway</html>", { status: 502 })));
     const error = await ask("q").catch((e: unknown) => e);
-    expect((error as HelpApiError).code).toBe("provider_error");
+    expect((error as GatewayError).code).toBe("provider_error");
   });
 
   it("maps a 200 with an unparseable body to provider_error", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("<html>interstitial</html>", { status: 200 })));
     const error = await ask("q").catch((e: unknown) => e);
-    expect(error).toBeInstanceOf(HelpApiError);
-    expect((error as HelpApiError).code).toBe("provider_error");
+    expect(error).toBeInstanceOf(GatewayError);
+    expect((error as GatewayError).code).toBe("provider_error");
   });
 
   it("maps a network failure to unreachable", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
     const error = await ask("q").catch((e: unknown) => e);
-    expect((error as HelpApiError).code).toBe("unreachable");
+    expect((error as GatewayError).code).toBe("unreachable");
   });
 
   it("rejects a contract-violating bodyless 204 with provider_error instead of resolving undefined", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 204 })));
     const error = await ask("q").catch((e: unknown) => e);
-    expect(error).toBeInstanceOf(HelpApiError);
-    expect((error as HelpApiError).code).toBe("provider_error");
+    expect(error).toBeInstanceOf(GatewayError);
+    expect((error as GatewayError).code).toBe("provider_error");
   });
 });
 
@@ -185,8 +185,8 @@ describe("bearer token", () => {
 
     const error = await ask("q").catch((e: unknown) => e);
 
-    expect(error).toBeInstanceOf(HelpApiError);
-    expect((error as HelpApiError).code).toBe("unauthorized");
+    expect(error).toBeInstanceOf(GatewayError);
+    expect((error as GatewayError).code).toBe("unauthorized");
     expect(removedFromLocal.includes("fmg-help-token")).toBe(true);
     expect(removedFromSession.includes("fmg-help-conversation")).toBe(true);
   });
@@ -233,13 +233,13 @@ describe("sendFeedback", () => {
     expect(Object.keys(body).sort()).toEqual(["rating", "requestId"]);
   });
 
-  it("maps a feedback error body to HelpApiError as usual", async () => {
+  it("maps a feedback error body to GatewayError as usual", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(jsonResponse(400, { error: { code: "invalid_request", message: "bad rating" } }))
     );
     const error = await sendFeedback(41, "down").catch((e: unknown) => e);
-    expect((error as HelpApiError).code).toBe("invalid_request");
+    expect((error as GatewayError).code).toBe("invalid_request");
   });
 
   it("resolves any bodyless 2xx from the transport without a parse error", async () => {

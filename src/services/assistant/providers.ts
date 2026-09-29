@@ -1,6 +1,5 @@
 // Anthropic Messages API, called straight from the browser with the user's own key — same approach
-// as the AI Text Generator. The Prototype supports one provider; the MVP adds the others behind
-// this same interface.
+// as the AI Text Generator. OpenAI-compatible providers go through providers-openai.
 
 import type { SystemBlock } from "./context";
 

@@ -19,7 +19,7 @@ export interface Limits {
   resetsAt: string;
 }
 
-export type HelpErrorCode =
+export type GatewayErrorCode =
   | "rate_limited"
   | "quota"
   | "cap_reached"
@@ -29,13 +29,13 @@ export type HelpErrorCode =
   | "unreachable"
   | "unauthorized";
 
-export class HelpApiError extends Error {
-  code: HelpErrorCode;
+export class GatewayError extends Error {
+  code: GatewayErrorCode;
   retryAfter?: number;
 
-  constructor(code: HelpErrorCode, message: string, retryAfter?: number) {
+  constructor(code: GatewayErrorCode, message: string, retryAfter?: number) {
     super(message);
-    this.name = "HelpApiError";
+    this.name = "GatewayError";
     this.code = code;
     this.retryAfter = retryAfter;
   }
@@ -65,7 +65,7 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
   try {
     response = await fetch(`${gatewayBase()}${path}`, { ...init, headers });
   } catch {
-    throw new HelpApiError("unreachable", "The assistant is unreachable. Check your connection and try again.");
+    throw new GatewayError("unreachable", "The assistant is unreachable. Check your connection and try again.");
   }
 
   if (response.ok) {
@@ -73,17 +73,17 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
     try {
       return (await response.json()) as T;
     } catch {
-      throw new HelpApiError("provider_error", "The assistant returned an unreadable response.");
+      throw new GatewayError("provider_error", "The assistant returned an unreadable response.");
     }
   }
 
   if (response.status === 401) {
     clearToken();
     clearConversationId();
-    throw new HelpApiError("unauthorized", "Your sign-in has expired. Sign in with Discord again for more questions.");
+    throw new GatewayError("unauthorized", "Your sign-in has expired. Sign in with Discord again for more questions.");
   }
 
-  let code: HelpErrorCode = "provider_error";
+  let code: GatewayErrorCode = "provider_error";
   let message = `The assistant returned an error (${response.status}).`;
   let retryAfter: number | undefined;
   try {
@@ -96,7 +96,7 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
   } catch {
     // non-JSON error body — keep the generic provider_error
   }
-  throw new HelpApiError(code, message, retryAfter);
+  throw new GatewayError(code, message, retryAfter);
 }
 
 export const ask = async (question: string, conversationId?: string): Promise<AskResponse> => {
@@ -108,7 +108,7 @@ export const ask = async (question: string, conversationId?: string): Promise<As
   });
   // /v1/ask is contractually always-bodied on a 200; a bodyless 204 (the transport's
   // shortcut resolves undefined) is a contract violation, not a silent empty answer.
-  if (!result) throw new HelpApiError("provider_error", "The assistant returned an unreadable response.");
+  if (!result) throw new GatewayError("provider_error", "The assistant returned an unreadable response.");
   return result;
 };
 

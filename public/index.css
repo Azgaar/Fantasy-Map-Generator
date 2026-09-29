@@ -2605,7 +2605,7 @@ body.tour-free-roam * {
 
 /* Assistant call button: the flat, themed circle the OpenWidget launcher used to be — a
    dark rounded badge with the glyph punched out of it, and the same press squish */
-#helpAssistantBubble {
+#assistantBubble {
   position: fixed;
   right: 16px;
   bottom: 64px; /* clear of the scale bar in the corner */
@@ -2626,19 +2626,19 @@ body.tour-free-roam * {
   z-index: 99;
 }
 
-#helpAssistantBubble:focus-visible {
+#assistantBubble:focus-visible {
   outline: 2px solid var(--dark-solid);
   outline-offset: 3px;
 }
 
 /* .ui-dialog turns selection off so dialogs drag cleanly, which also made the answers
    impossible to copy. The panel opts back in; the titlebar keeps the drag behaviour. */
-#helpAssistant {
+#assistant {
   user-select: text;
 }
 
 /* the badge alone squishes under the press, the circle stays put, as the launcher did */
-#helpAssistantBubble > .helpAssistantBubbleBadge {
+#assistantBubble > .assistantBubbleBadge {
   position: relative;
   display: flex;
   align-items: center;
@@ -2654,28 +2654,28 @@ body.tour-free-roam * {
   transition: transform 0.25s cubic-bezier(0.14, 0, 0, 1);
 }
 
-#helpAssistantBubble:active > .helpAssistantBubbleBadge {
+#assistantBubble:active > .assistantBubbleBadge {
   transform: scale(0.75);
 }
 
 /* both glyphs sit on top of each other: the question mark morphs into the rounded square
    under the pointer, and stays there while the dialog is open */
-#helpAssistantBubble .icon-help,
-#helpAssistantBubble .helpAssistantBubbleMinimize {
+#assistantBubble .icon-help,
+#assistantBubble .assistantBubbleMinimize {
   position: absolute;
   transition:
     opacity 0.2s ease-out,
     transform 0.25s cubic-bezier(0.14, 0, 0, 1);
 }
 
-#helpAssistantBubble .icon-help {
+#assistantBubble .icon-help {
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-#helpAssistantBubble .helpAssistantBubbleMinimize {
+#assistantBubble .assistantBubbleMinimize {
   inset: 0;
   width: 9px;
   height: 8px;
@@ -2686,14 +2686,14 @@ body.tour-free-roam * {
   transform: scale(0.6);
 }
 
-#helpAssistantBubble:hover .icon-help,
-#helpAssistantBubble.open .icon-help {
+#assistantBubble:hover .icon-help,
+#assistantBubble.open .icon-help {
   opacity: 0;
   transform: scale(0.6);
 }
 
-#helpAssistantBubble:hover .helpAssistantBubbleMinimize,
-#helpAssistantBubble.open .helpAssistantBubbleMinimize {
+#assistantBubble:hover .assistantBubbleMinimize,
+#assistantBubble.open .assistantBubbleMinimize {
   opacity: 1;
   transform: none;
 }
@@ -2711,10 +2711,10 @@ body.tour-free-roam * {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #helpAssistantBubble,
-  #helpAssistantBubble > .helpAssistantBubbleBadge,
-  #helpAssistantBubble .icon-help,
-  #helpAssistantBubble .helpAssistantBubbleMinimize {
+  #assistantBubble,
+  #assistantBubble > .assistantBubbleBadge,
+  #assistantBubble .icon-help,
+  #assistantBubble .assistantBubbleMinimize {
     animation: none;
     transition: none;
   }
@@ -2722,7 +2722,7 @@ body.tour-free-roam * {
 
 /* Two panels — Help (the gateway widget) and This map (the BYOK agent) — behind a segmented
    mode control. The dialog is a flex column so each panel's transcript takes the slack. */
-#helpAssistant {
+#assistant {
   display: flex;
   flex-direction: column;
   gap: 0.4em;
@@ -2730,7 +2730,7 @@ body.tour-free-roam * {
   user-select: text;
 }
 
-#helpAssistant .helpAssistantModes {
+#assistant .assistantModes {
   display: flex;
   gap: 0.25em;
   padding: 0.15em;
@@ -2739,7 +2739,7 @@ body.tour-free-roam * {
   flex: 0 0 auto;
 }
 
-#helpAssistant .helpAssistantMode {
+#assistant .assistantMode {
   flex: 1;
   padding: 0.3em 0.6em;
   border: none;
@@ -2749,49 +2749,49 @@ body.tour-free-roam * {
   opacity: 0.7;
 }
 
-#helpAssistant .helpAssistantMode::before {
+#assistant .assistantMode::before {
   margin-right: 0.35em;
 }
 
-#helpAssistant .helpAssistantMode.selected {
+#assistant .assistantMode.selected {
   background: #fff;
   box-shadow: 0 1px 2px rgb(0 0 0 / 20%);
   opacity: 1;
   font-weight: bold;
 }
 
-#helpAssistant .helpAssistantPanel {
+#assistant .assistantPanel {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
   min-height: 0;
 }
 
-#helpAssistant .helpAssistantPanel[hidden] {
+#assistant .assistantPanel[hidden] {
   display: none;
 }
 
 /* This map panel (the BYOK agent) */
-#helpAssistantMap {
+#assistantMap {
   gap: 0.3em;
 }
 
-#helpAssistantMap [hidden] {
+#assistantMap [hidden] {
   display: none;
 }
 
-#helpAssistantMap .helpMapTop {
+#assistantMap .assistantMapTop {
   display: flex;
   align-items: center;
   gap: 0.3em;
 }
 
-#helpAssistantMap .helpMapTop > select {
+#assistantMap .assistantMapTop > select {
   flex: 1;
   min-width: 0;
 }
 
-#helpAssistantMap .helpMapLog {
+#assistantMap .assistantMapLog {
   flex: 1 1 auto;
   min-height: 6em;
   overflow-y: auto;
@@ -2800,7 +2800,7 @@ body.tour-free-roam * {
   gap: 0.45em;
 }
 
-#helpAssistantMap #helpMapEmpty {
+#assistantMap #assistantMapEmpty {
   margin: auto;
   display: flex;
   flex-direction: column;
@@ -2809,18 +2809,18 @@ body.tour-free-roam * {
   text-align: center;
 }
 
-#helpAssistantMap #helpMapEmpty > div {
+#assistantMap #assistantMapEmpty > div {
   opacity: 0.7;
   max-width: 22em;
 }
 
-#helpAssistantMap #helpMapEmpty button {
+#assistantMap #assistantMapEmpty button {
   padding: 0.25em 0.7em;
   border-radius: 1em;
   cursor: pointer;
 }
 
-#helpAssistantMap .helpMapContext {
+#assistantMap .assistantMapContext {
   align-self: flex-start;
   font-size: 0.85em;
   padding: 0.1em 0.6em;
@@ -2828,20 +2828,20 @@ body.tour-free-roam * {
   background: rgb(53 66 77 / 12%);
 }
 
-#helpAssistantMap .helpMapComposer {
+#assistantMap .assistantMapComposer {
   display: flex;
   align-items: flex-end;
   gap: 0.3em;
 }
 
-#helpAssistantMap .helpMapComposer > textarea {
+#assistantMap .assistantMapComposer > textarea {
   flex: 1;
   min-width: 0;
   resize: none;
   overflow-y: auto;
 }
 
-#helpAssistantMap .helpMapDrawer {
+#assistantMap .assistantMapDrawer {
   display: flex;
   flex-direction: column;
   gap: 0.3em;
@@ -2851,32 +2851,32 @@ body.tour-free-roam * {
   font-size: 0.92em;
 }
 
-#helpAssistantMap .helpMapDrawer label {
+#assistantMap .assistantMapDrawer label {
   display: flex;
   align-items: center;
   gap: 0.4em;
 }
 
-#helpAssistantMap .helpMapDrawer select,
-#helpAssistantMap .helpMapDrawer input {
+#assistantMap .assistantMapDrawer select,
+#assistantMap .assistantMapDrawer input {
   flex: 1;
   min-width: 0;
 }
 
-#helpAssistantMap #helpMapLocal {
+#assistantMap #assistantMapLocal {
   display: flex;
   gap: 0.3em;
 }
 
-#helpAssistantMap #helpMapLocal[hidden] {
+#assistantMap #assistantMapLocal[hidden] {
   display: none;
 }
 
-#helpAssistantMap .helpMapHint {
+#assistantMap .assistantMapHint {
   color: #b03030;
 }
 
-#helpAssistantMap .helpMapStatus {
+#assistantMap .assistantMapStatus {
   display: flex;
   flex-wrap: wrap;
   gap: 0.3em 0.4em;
@@ -2885,7 +2885,7 @@ body.tour-free-roam * {
   opacity: 0.8;
 }
 
-#helpAssistantMap .helpMapStatus > button {
+#assistantMap .assistantMapStatus > button {
   background: none;
   border: none;
   padding: 0;
@@ -2893,7 +2893,7 @@ body.tour-free-roam * {
   text-decoration: underline dotted;
 }
 
-#helpAssistantMap .helpMapUser {
+#assistantMap .assistantMapUser {
   align-self: flex-end;
   max-width: 85%;
   padding: 0.3em 0.6em;
@@ -2901,43 +2901,43 @@ body.tour-free-roam * {
   background: rgba(128, 128, 128, 0.18);
 }
 
-#helpAssistantMap .helpMapAssistant {
+#assistantMap .assistantMapAssistant {
   align-self: flex-start;
   max-width: 95%;
   white-space: normal;
 }
 
-#helpAssistantMap .helpMapSystem {
+#assistantMap .assistantMapSystem {
   align-self: center;
   text-align: center;
   font-style: italic;
   opacity: 0.65;
 }
 
-#helpAssistantMap .helpMapError {
+#assistantMap .assistantMapError {
   align-self: center;
   text-align: center;
   color: #b03030;
 }
 
-#helpAssistantMap .helpMapMessage {
+#assistantMap .assistantMapMessage {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
-#helpAssistantMap .helpMapStep {
+#assistantMap .assistantMapStep {
   align-self: flex-start;
   max-width: 100%;
   font-size: 0.9em;
   opacity: 0.8;
 }
 
-#helpAssistantMap .helpMapStep summary {
+#assistantMap .assistantMapStep summary {
   cursor: pointer;
   user-select: none;
 }
 
-#helpAssistantMap .helpMapStep pre {
+#assistantMap .assistantMapStep pre {
   margin: 0.2em 0;
   padding: 0.3em 0.4em;
   max-height: 14em;
@@ -2946,7 +2946,7 @@ body.tour-free-roam * {
   background: rgba(128, 128, 128, 0.12);
 }
 
-#helpAssistantMap .helpMapEdit {
+#assistantMap .assistantMapEdit {
   align-self: flex-start;
   display: flex;
   align-items: center;
@@ -2957,11 +2957,11 @@ body.tour-free-roam * {
   font-size: 0.92em;
 }
 
-#helpAssistantMap .helpMapEdit button {
+#assistantMap .assistantMapEdit button {
   padding: 0.1em 0.4em;
 }
 
-#helpAssistantMap #helpMapThinking {
+#assistantMap #assistantMapThinking {
   align-self: flex-start;
   display: flex;
   align-items: center;
@@ -2970,23 +2970,23 @@ body.tour-free-roam * {
   opacity: 0.7;
 }
 
-#helpAssistantMap #helpMapThinking i {
+#assistantMap #assistantMapThinking i {
   width: 0.35em;
   height: 0.35em;
   border-radius: 50%;
   background: currentColor;
-  animation: helpMapBlink 1.2s infinite ease-in-out;
+  animation: assistantMapBlink 1.2s infinite ease-in-out;
 }
 
-#helpAssistantMap #helpMapThinking i:nth-child(3) {
+#assistantMap #assistantMapThinking i:nth-child(3) {
   animation-delay: 0.2s;
 }
 
-#helpAssistantMap #helpMapThinking i:nth-child(4) {
+#assistantMap #assistantMapThinking i:nth-child(4) {
   animation-delay: 0.4s;
 }
 
-@keyframes helpMapBlink {
+@keyframes assistantMapBlink {
   0%,
   70%,
   100% {
@@ -2997,45 +2997,45 @@ body.tour-free-roam * {
   }
 }
 
-#helpAssistantMap .helpMapAssistant > :first-child {
+#assistantMap .assistantMapAssistant > :first-child {
   margin-top: 0;
 }
 
-#helpAssistantMap .helpMapAssistant > :last-child {
+#assistantMap .assistantMapAssistant > :last-child {
   margin-bottom: 0;
 }
 
-#helpAssistantMap .helpMapAssistant p {
+#assistantMap .assistantMapAssistant p {
   margin: 0 0 0.4em;
 }
 
-#helpAssistantMap .helpMapAssistant h3,
-#helpAssistantMap .helpMapAssistant h4,
-#helpAssistantMap .helpMapAssistant h5,
-#helpAssistantMap .helpMapAssistant h6 {
+#assistantMap .assistantMapAssistant h3,
+#assistantMap .assistantMapAssistant h4,
+#assistantMap .assistantMapAssistant h5,
+#assistantMap .assistantMapAssistant h6 {
   margin: 0.5em 0 0.2em;
   font-size: 1em;
   font-weight: bold;
 }
 
-#helpAssistantMap .helpMapAssistant ul,
-#helpAssistantMap .helpMapAssistant ol {
+#assistantMap .assistantMapAssistant ul,
+#assistantMap .assistantMapAssistant ol {
   margin: 0.2em 0 0.4em;
   padding-left: 1.3em;
 }
 
-#helpAssistantMap .helpMapAssistant li {
+#assistantMap .assistantMapAssistant li {
   margin: 0.1em 0;
 }
 
-#helpAssistantMap .helpMapAssistant code {
+#assistantMap .assistantMapAssistant code {
   padding: 0 0.25em;
   border-radius: 0.25em;
   background: rgba(128, 128, 128, 0.16);
   font-family: monospace;
 }
 
-#helpAssistantMap .helpMapAssistant pre {
+#assistantMap .assistantMapAssistant pre {
   margin: 0.3em 0;
   padding: 0.35em 0.45em;
   overflow-x: auto;
@@ -3043,12 +3043,12 @@ body.tour-free-roam * {
   background: rgba(128, 128, 128, 0.12);
 }
 
-#helpAssistantMap .helpMapAssistant pre code {
+#assistantMap .assistantMapAssistant pre code {
   padding: 0;
   background: none;
 }
 
-#helpAssistantMap .helpMapAssistant table {
+#assistantMap .assistantMapAssistant table {
   display: block;
   width: max-content;
   max-width: 100%;
@@ -3057,31 +3057,31 @@ body.tour-free-roam * {
   border-collapse: collapse;
 }
 
-#helpAssistantMap .helpMapAssistant th,
-#helpAssistantMap .helpMapAssistant td {
+#assistantMap .assistantMapAssistant th,
+#assistantMap .assistantMapAssistant td {
   padding: 0.15em 0.45em;
   border: 1px solid rgba(128, 128, 128, 0.35);
 }
 
-#helpAssistantMap .helpMapAssistant th {
+#assistantMap .assistantMapAssistant th {
   background: rgba(128, 128, 128, 0.12);
   text-align: left;
 }
 
-#helpAssistantMap .helpMapAssistant blockquote {
+#assistantMap .assistantMapAssistant blockquote {
   margin: 0.3em 0;
   padding-left: 0.6em;
   border-left: 2px solid rgba(128, 128, 128, 0.4);
   opacity: 0.85;
 }
 
-#helpAssistantMap .helpMapAssistant hr {
+#assistantMap .assistantMapAssistant hr {
   margin: 0.4em 0;
   border: none;
   border-top: 1px solid rgba(128, 128, 128, 0.3);
 }
 
-#helpAssistantMap .helpMapAssistant a {
+#assistantMap .assistantMapAssistant a {
   text-decoration: underline;
   cursor: pointer;
 }

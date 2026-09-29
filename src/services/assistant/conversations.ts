@@ -120,6 +120,6 @@ function save(): void {
     }
     localStorage.setItem(STORAGE_KEY, json);
   } catch (error) {
-    WARN && console.warn("AI Chat: conversations could not be stored", error);
+    WARN && console.warn("Assistant: conversations could not be stored", error);
   }
 }

@@ -1,7 +1,7 @@
 import { createRegistry, eager } from "@/utils/registry";
 import { Save } from "./io/save";
 import "./platform";
-import "./assistant";
+import "./assistant/bubble";
 import "./autosave";
 import "./fonts";
 import "./url-params";
