@@ -1,9 +1,9 @@
 import {
   DEFAULT_LOCAL_URL,
+  DEFAULT_PROVIDER,
   keyStorageForProvider,
   LOCAL_MODEL_STORAGE,
   LOCAL_URL_STORAGE,
-  DEFAULT_PROVIDER,
   PROVIDERS,
   type ProviderSpec
 } from "./providers";

@@ -49,6 +49,8 @@ const MAX_QUESTION_LENGTH = 1000;
 const LAST_TIER = "fmg-assistant-last-tier";
 const LAST_MAP = "fmg-assistant-last-map";
 const WIKI = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki";
+const DISCORD = "https://discordapp.com/invite/X7E84HU";
+const PATREON = "https://www.patreon.com/azgaar";
 const PROPOSAL_ROWS = 8;
 const PROPOSAL_STATES: Record<Proposal["state"], string> = {
   proposed: "Proposed",
@@ -95,7 +97,7 @@ function open(): void {
   $(`#${dialogId}`).dialog({
     title: "Azgaar Assistant",
     position: { my: "right bottom", at: "right-16 bottom-44", of: window },
-    width: Math.min(420, window.innerWidth - 24),
+    width: Math.min(340, window.innerWidth - 24),
     height: Math.min(580, window.innerHeight - 140),
     minWidth: 300,
     minHeight: 320,
@@ -345,7 +347,8 @@ function renderDialog(): void {
 
     <div class="assistantFooter">
       <span>
-        <a href="${WIKI}" target="_blank" rel="noopener noreferrer">Wiki</a>
+        <a href="${DISCORD}" target="_blank" rel="noopener noreferrer">Discord</a>
+        <a href="${PATREON}" target="_blank" rel="noopener noreferrer">Patreon</a>
         <a href="${WIKI}/Policy" target="_blank" rel="noopener noreferrer">Policy</a>
       </span>
       <span id="assistantAccount">

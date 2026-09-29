@@ -143,7 +143,7 @@ Cultures (races, language zones) data is stored as an array of objects with stri
 
 ## Burgs
 
-Burgs (settlements) data is stored as an array of objects with strict element order. Element 0 is an empty object. If burg is removed, the element is not getting removed, but instead a `removed` attribute is added. Object structure:
+Burgs (settlements) data is stored as an array of objects with strict element order. Element 0 is the number `0`, not an object. If burg is removed, the element is not getting removed, but instead a `removed` attribute is added. Object structure:
 
 - `i`: `number` - burg id, always equal to the array index
 - `name`: `string` - burg name
@@ -154,7 +154,7 @@ Burgs (settlements) data is stored as an array of objects with strict element or
 - `state`: `number` - burg state id
 - `feature`: `number` - burg feature id (id of a landmass)
 - `population`: `number` - burg population in population points
-- `type`: `string` - burg type, see [culture types](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Culture-types)
+- `type`: `string` - the burg's culture type (Generic, River, Lake, Naval, Nomadic, Hunting, Highland), which is about geography, not rank. Capital status is `capital`; size class is `group`. See [culture types](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Culture-types)
 - `group`: `string` - Burg classification and rendering group. It is also the default Label Group for the Burg label
 - `label`: `Label` - optional Burg-label overrides. Burg labels use the Burg name, coordinates, and `burg.group` by default; `label.group` can override only the label group
 - `coa`: `object` - heraldic emblem in [Armoria's COA format](https://github.com/Azgaar/armoria-api#readme), or picture emblem `{ icon: string, shield?: string }` referring to an icon in the library. Both forms may have optional `size`, `x` and `y` fields for map placement. A picture emblem can be clipped to a shield, but cannot be edited as heraldry in Armoria
@@ -456,9 +456,9 @@ Measurers (rulers and other measuring tools drawn on top of the map) are stored 
 
 ## Goods
 
-Goods (tradable resources and products) are stored in `pack.goods: Good[]`, where `i` equals the array index. The default catalogue is built from `GOODS_DATA`. Stored in .map file. A good is _raw_ if it has a `distribution`, _manufactured_ if it has `recipes`, or _hybrid_ if it has both. Object structure:
+Goods (tradable resources and products) are stored in `pack.goods: Good[]`. Good `i` starts at `1` and is **not** the array index — use `Goods.get(i)` (backed by a sparse `goodById`) for lookups. The default catalogue is built from `GOODS_DATA`. Stored in .map file. A good is _raw_ if it has a `distribution`, _manufactured_ if it has `recipes`, or _hybrid_ if it has both. Object structure:
 
-- `i`: `number` - good id, always equal to the array index
+- `i`: `number` - good id (starts at 1, not the array index)
 - `name`: `string` - good name
 - `tags`: `string[]` - free-form classification tags (used for filtering in the Goods Editor)
 - `value`: `number` - base price per unit; the anchor for all market pricing
@@ -504,7 +504,7 @@ The temperature and moisture lookup matrix used to assign default biome ids is g
 
 Trade transaction log stored in `pack.deals: Deal[]`. Append-only within a production cycle, rebuilt on regeneration. Object structure:
 
-- `i`: `number` - deal id, equal to the array index
+- `i`: `number` - deal id; equals the array index until deals are dropped with a removed market, so look up by `i`
 - `seller`: `number` - burg id or market id of the seller
 - `sellerType`: `"burg" | "market"` - what `seller` refers to
 - `buyer`: `number` - burg id or market id of the buyer

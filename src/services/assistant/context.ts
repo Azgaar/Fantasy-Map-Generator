@@ -44,6 +44,11 @@ const GOTCHAS = `# Gotchas
 - Index 0 is reserved in states (neutrals), cultures (wildlands), religions (none) and provinces; in burgs and
   features element 0 is the number \`0\`. Cell 0 is real. Deleted entities keep their slot with \`removed: true\`:
   filter with \`x => x.i && !x.removed\`.
+- Ids are not always array indices: goods and markets start at 1 (\`pack.goods[0]\` is good 1); rivers, markers,
+  routes, zones, journeys and often deals are unordered. Look up with \`.find(x => x.i === id)\` or \`Goods.get(id)\`,
+  \`Markets.get(id)\`; never \`pack.goods[id]\`. Burg \`production\` records hold \`good\`/\`dealId\` ids: resolve each.
+- \`burg.type\` is the culture type (Generic, River, Naval…), never rank: capital is \`burg.capital\` (1/0),
+  size class is \`burg.group\`.
 - Land is \`pack.cells.h[i] >= 20\` (heights 0–100). Water body: \`pack.features[pack.cells.f[i]]\`, type ocean/lake/island.
 - Population fields are points, not people: \`burg.population\`, \`cells.pop\`, \`rural\`/\`urban\`. Never show, compare or
   chart points: convert with \`units.getPeople(rural, urban)\`, e.g. \`units.getPeople(0, burg.population)\`, then \`si\`.
