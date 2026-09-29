@@ -772,10 +772,7 @@ function importBurgNames(dataLoaded: string): void {
   alertMessage.innerHTML = message;
 
   const onConfirm = () => {
-    for (let i = 0; i < change.length; i++) {
-      const id = change[i].id;
-      pack.burgs[id].name = change[i].name;
-    }
+    for (const { id, name } of change) Burgs.rename(id, name);
     burgsTable.refresh();
     Layers.draw("labels");
   };

@@ -79,3 +79,13 @@ describe("MarkersModule.addEncounter", () => {
     expect(String(marker.note).includes("deorum.vercel.app")).toBe(true);
   });
 });
+
+describe("MarkersModule.rename", () => {
+  it("renames a marker by id", async () => {
+    await import("./markers-generator");
+    globalThis.pack = { markers: [{ i: 4, name: "Old Well" }] } as any;
+    globalThis.Markers.rename(4, "Wishing Well");
+    expect(pack.markers[0].name).toBe("Wishing Well");
+    expect(() => globalThis.Markers.rename(0, "X")).toThrow("Marker 0 does not exist");
+  });
+});

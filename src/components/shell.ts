@@ -48,8 +48,7 @@ function initAssistantBubble(): void {
  */
 function onTitlebarButtonTouch(event: TouchEvent): void {
   const target = event.target as HTMLElement | null;
-  if (target?.closest?.(".ui-dialog-titlebar-close, .ui-dialog-titlebar-collapse, .ui-dialog-titlebar-reset"))
-    event.stopPropagation();
+  if (target?.closest?.(".ui-dialog-titlebar button")) event.stopPropagation();
 }
 
 /**
@@ -160,7 +159,6 @@ export function warnIfServerless(): boolean {
 
 function removeWebOnlyControls(): void {
   findEl("getAppButton")?.remove();
-  findEl("azgaarAssistant")?.closest("tr")?.remove();
   findEl("saveToDropboxButton")?.remove();
   findEl("loadFromDropbox")?.remove();
 }

@@ -4,6 +4,7 @@ import { Emblems } from "@/generators/emblems-generator";
 import type { BurgGroup } from "@/types/burg-groups";
 import type { Emblem } from "@/types/emblems";
 import type { IconSet } from "@/types/icons";
+import { requireName } from "@/utils/languageUtils";
 import { safeParseJSON } from "@/utils/stringUtils";
 import { each, gauss, minmax, normalize, P, rn } from "../utils";
 import { type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
@@ -900,6 +901,14 @@ class BurgModule {
       const populations = validBurgs.map(b => b.population as number).sort((a, b) => a - b);
       this.defineGroup(burg, populations);
     }
+  }
+
+  /** Rename a burg; its label text follows the name */
+  rename(burgId: number, name: string): void {
+    const burg = pack.burgs[burgId];
+    if (!burg || burg.removed) throw new Error(`Burg ${burgId} does not exist`);
+    burg.name = requireName(name);
+    if (burg.label?.text !== undefined) burg.label.text = burg.name;
   }
 
   remove(burgId: number) {

@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
 import { MapEntities } from "@/components/map-entities";
 import { Notes } from "./notes";
@@ -84,4 +85,35 @@ it("collects notes on route zero and omits removed entities", () => {
   pack.burgs[1].removed = true;
   expect(Notes.list().some(entry => entry.key === "route:0")).toBe(true);
   expect(Notes.list().some(entry => entry.key === "burg:1")).toBe(false);
+});
+
+describe("Notes.write", () => {
+  it("writes the notes subset, including on a zero-id entity", () => {
+    Notes.write("burg:1", '<p><a href="https://example.com">Safe</a></p>');
+    expect(pack.burgs[1].note).toBe('<p><a href="https://example.com">Safe</a></p>');
+    Notes.write("marker:4", "");
+    expect(pack.markers[0].note).toBeUndefined();
+  });
+
+  it.each([
+    '<p onclick="alert(1)">Bad</p>',
+    '<a href="javascript:alert(1)">Bad</a>',
+    "<script>alert(1)</script>",
+    '<iframe src="https://example.com"></iframe>',
+    '<p style="background:url(javascript:alert(1))">Bad</p>'
+  ])("rejects unsafe HTML %s", html => {
+    expect(() => Notes.write("burg:1", html)).toThrow("notes subset");
+    expect(pack.burgs[1].note).toBe("A river port");
+  });
+
+  it("rejects missing and removed entities instead of creating orphan notes", () => {
+    expect(() => Notes.write("marker:3", "<p>x</p>")).toThrow("does not exist");
+    pack.burgs[1].removed = true;
+    expect(() => Notes.write("burg:1", "<p>x</p>")).toThrow("does not exist");
+  });
+
+  it("refuses a note on a record that cannot hold one", () => {
+    pack.cells = { i: [0, 1] } as unknown as typeof pack.cells;
+    expect(() => Notes.write("cell:1", "<p>x</p>")).toThrow("cannot have a note");
+  });
 });

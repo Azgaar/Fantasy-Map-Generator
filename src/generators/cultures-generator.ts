@@ -1,5 +1,6 @@
 import { max, quadtree, range } from "d3";
 import { Emblems } from "@/generators/emblems-generator";
+import { requireName } from "@/utils/languageUtils";
 import { abbreviate, biased, getColors, getRandomColor, minmax, P, rand, rn, rw } from "../utils";
 
 /** The named culture sets the user picks from: how many cultures each holds and how often it is rolled */
@@ -1346,6 +1347,17 @@ class CulturesGenerator {
         }
       });
     }
+  }
+
+  /** Rename a culture; its code is recomputed */
+  rename(cultureId: number, name: string): void {
+    const culture = pack.cultures[cultureId];
+    if (!culture || culture.removed) throw new Error(`Culture ${cultureId} does not exist`);
+    culture.name = requireName(name);
+    culture.code = abbreviate(
+      culture.name,
+      pack.cultures.flatMap(other => (other !== culture && other.code ? [other.code] : []))
+    );
   }
 
   regenerate(): void {

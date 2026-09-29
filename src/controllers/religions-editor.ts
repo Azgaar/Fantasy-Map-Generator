@@ -1,5 +1,11 @@
 import { drag, easeSinIn, select, transition } from "d3";
-import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
+import {
+  closeDialogs,
+  confirmationDialog,
+  destroyDialog,
+  noteIcon,
+  updateDialog
+} from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import { dialogState } from "@/components/dialog/state";
@@ -12,7 +18,6 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
-import { Notes } from "@/components/notes";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -20,7 +25,7 @@ import type { Religion } from "@/generators/religions-generator";
 import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";
-import { abbreviate, debounce, ensureEl, getPointer, isLand, parseTransform, rn, si } from "../utils";
+import { debounce, ensureEl, getPointer, isLand, parseTransform, rn, si } from "../utils";
 
 const dialogId = "religionsEditor" as const;
 const LEGEND_NAME = "Religions"; // the legend box this editor toggles
@@ -332,7 +337,7 @@ function religionsEditorAddLines(view: TableView<Religion>): void {
         <div data-tip="${populationTip}" class="religionPopulation pointer">${si(population)}</div>
       </div>
       ${getExpansionColumns(r)}
-      ${Notes.getIcon("this religion")}
+      ${noteIcon("this religion")}
       <span data-col="locate" data-tip="Locate the religion" class="icon-target"></span>
       <span data-col="lock" data-tip="Lock this religion" class="icon-lock${r.lock ? "" : "-open"}"></span>
       <span data-col="remove" data-tip="Remove religion" class="icon-trash-empty"></span>
@@ -518,12 +523,7 @@ function religionChangeColor(this: HTMLElement): void {
 function religionChangeName(this: HTMLInputElement): void {
   const religionId = +(this.parentNode as HTMLElement).dataset.id!;
   (this.parentNode as HTMLElement).dataset.name = this.value;
-  const religions = pack.religions;
-  religions[religionId].name = this.value;
-  religions[religionId].code = abbreviate(
-    this.value,
-    religions.flatMap(c => (c.code ? [c.code] : []))
-  );
+  if (this.value.trim()) Religions.rename(religionId, this.value);
 }
 
 function religionChangeType(this: HTMLSelectElement): void {

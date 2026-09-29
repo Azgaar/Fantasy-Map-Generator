@@ -1,4 +1,4 @@
-// Translates the Assistant's Anthropic-shaped conversation into the OpenAI chat/completions format
+// Translates the Assistant's Anthropic-shaped chat into the OpenAI chat/completions format
 // spoken by OpenAI, Mistral, Qwen (DashScope compatible mode) and DeepSeek, and back.
 
 import type { SystemBlock } from "./context";
@@ -31,18 +31,32 @@ export function toChatMessages(system: SystemBlock[], messages: Message[]): Chat
           function: { name: block.name, arguments: JSON.stringify(block.input) }
         }));
 
+      if (!text && !toolCalls.length) continue; // an empty turn is invalid: content may be null only beside tool calls
       const entry: ChatMessage = { role: "assistant", content: text || null };
       if (toolCalls.length) entry.tool_calls = toolCalls;
       chat.push(entry);
       continue;
     }
 
+    // A tool message holds text only, so images a tool returned follow its results as one user message
+    const images: ChatMessage[] = [];
     for (const block of message.content) {
       if (block.type === "text") chat.push({ role: "user", content: block.text });
       else if (block.type === "tool_result") {
-        chat.push({ role: "tool", tool_call_id: block.tool_use_id, content: block.content });
+        const parts =
+          typeof block.content === "string" ? [{ type: "text" as const, text: block.content }] : block.content;
+        const text = parts.flatMap(part => (part.type === "text" ? [part.text] : [])).join("\n");
+        chat.push({ role: "tool", tool_call_id: block.tool_use_id, content: text || "The image follows." });
+        for (const part of parts)
+          if (part.type === "image")
+            images.push({
+              type: "image_url",
+              image_url: { url: `data:${part.source.media_type};base64,${part.source.data}` }
+            });
       }
     }
+    if (images.length)
+      chat.push({ role: "user", content: [{ type: "text", text: "Images from the tools above:" }, ...images] });
   }
 
   return chat;

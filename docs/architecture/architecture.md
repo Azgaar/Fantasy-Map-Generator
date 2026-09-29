@@ -333,7 +333,7 @@ classic needs it.
 - Generates or simulates world data → `generators/`
 - Serializes, saves, loads, or exports state → `services/io/`
 - Manages browser/app lifecycle, a platform asset, or app preferences → `services/`
-- Talks to the project's Assistant gateway on the user's behalf → `services/assistant/gateway/`
+- Talks to the Azgaar server on the user's behalf → `services/assistant/azgaar-server/`
 - A constant list or template, no behavior → `data/`
 - A helper that reads no ambient state and has ≥2 consumers → `utils/`
 - A shared type / interface → `types/`
@@ -385,6 +385,10 @@ A generator turns inputs into world data.
   never depend on wall-clock time or unspecified iteration order.
 - **No view, no UI.** A generator never reads the DOM, builds SVG, or opens a dialog. If it
   needs to _show_ something, that is a renderer's or controller's job.
+- **Model classes own their edits.** An edit to an entity (`Burgs.rename`, `States.rename`,
+  `Notes.write`…) is a public method of the class that owns the data. It validates its arguments,
+  keeps dependent data consistent (labels, full names, codes) and never redraws. Editors and the
+  Assistant call the same method, so there is one implementation of each edit.
 - **Keep the data out.** Lookup tables, recipes, and tuning constants are _data_, not
   algorithm. Fixed properties of the domain stay co-located reference data
   ([Configurations and data](#configurations-and-data)); any parameter a user might want to
@@ -480,10 +484,17 @@ Static content: lookup tables, templates, tuning constants, reference lists.
 - **IO is a service.** Save/load/export live in `src/services/io/`. Like controllers, each
   service/io module exports a single named object (`Save`, `Load`, `ExportMap`, …) reached
   through the `Services` registry (`Services.Save.toMachine()`).
-- **The Assistant gateway client is a service.** `src/services/assistant/gateway/` (api, auth, conversation) is the
-  only code that talks to ask.azgaarsfmg.com; `controllers/assistant.ts` is the UI over it. The
-  client keeps the Discord sign-in token in `localStorage` and only the server-issued conversation id
-  in `sessionStorage`, never conversation content.
+- **Azgaar Assistant** has one controller, `src/controllers/assistant.ts`, for the panel, chat list, key sheet and transcript.
+  `src/controllers/assistant-map.ts` is the open map as the Assistant sees it — one `AssistantMap` object with its id,
+  per-question context and its two map tools, `read_map` and `propose_change`. Changes go through
+  `assistant-operations.ts`, a plain registry of model-class methods, and `assistant-proposals.ts`, which dry-runs a
+  batch into a Change and applies, undoes or discards it on the user's click. Services in
+  `src/services/assistant/` do not access world data or the DOM: `tier.ts` resolves Guest, Member or Key; `chats.ts`
+  persists map-bound chats in IndexedDB; `connection.ts` stores provider settings and keys in localStorage;
+  `azgaar-server/` handles free documentation answers and Discord sign-in; `provider-answerer.ts` runs the provider
+  tool loop using `providers.ts` and `providers-openai.ts`. `knowledge.ts` loads Knowledge Base sections when requested.
+  The Azgaar server receives only the question and its server chat id. A connected Provider receives the open-map context
+  and tool results directly from the browser. The Assistant never stores chats in `.map` files.
 
 ## Lazy module registry
 

@@ -5,7 +5,6 @@ import { confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { CustomIcons, IMAGE_FRAME } from "@/components/icons";
 import { type LayerId, Layers, type LayersState } from "@/components/layers";
 import { type EntityRef, MapEntities } from "@/components/map-entities";
-import { Notes } from "@/components/notes";
 import { normalizeLegacyBurgGroupFilters } from "@/components/options-legacy";
 import type { MapData } from "@/components/options-schema";
 import { IconPictures } from "@/controllers/icon-picker/pictures";
@@ -15,6 +14,7 @@ import type { GraphOverrides } from "@/generators/graph-override";
 import { type Label, type LabelNameMode, Labels as LabelsGenerator } from "@/generators/labels-generator";
 import { getDefaultMarkerName, type Marker } from "@/generators/markers-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
+import { Notes } from "@/generators/notes";
 import { Relief, type ReliefIcon, type ReliefIconType, type ReliefSet } from "@/generators/relief-generator";
 import { Styles } from "@/generators/styles";
 import {

@@ -1,580 +1,1090 @@
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
-import type { Limits } from "@/services/assistant/gateway/api";
+import { Controllers } from "@/controllers";
+import type { Answerer } from "@/services/assistant/answerer";
+import { createAzgaarServerAnswerer } from "@/services/assistant/azgaar-server/answerer";
 import {
-  ask,
-  GatewayError,
+  AzgaarServerError,
   getLimits,
+  type Limits,
   OFFICIAL_ORIGIN,
   sendFeedback,
   signIn,
   signOut
-} from "@/services/assistant/gateway/api";
-import { getToken } from "@/services/assistant/gateway/auth";
+} from "@/services/assistant/azgaar-server/api";
+import { getToken } from "@/services/assistant/azgaar-server/auth";
 import {
-  adoptConversationId,
-  clearConversationId,
-  getConversationId,
-  isNewConversation
-} from "@/services/assistant/gateway/conversation";
+  append,
+  type ChangeRow,
+  type Chat,
+  canContinue,
+  create,
+  current,
+  isLong,
+  list,
+  load,
+  type Proposal,
+  remove,
+  select,
+  type TranscriptItem,
+  touch
+} from "@/services/assistant/chats";
+import * as Connection from "@/services/assistant/connection";
+import { createProviderAnswerer } from "@/services/assistant/provider-answerer";
+import { DEFAULT_PROVIDER, PROVIDERS, type ProviderSpec } from "@/services/assistant/providers";
+import { cachedModels, listModels, modelChoices } from "@/services/assistant/providers-models";
+import { resolveTier, type Tier } from "@/services/assistant/tier";
 import { renderMarkdown } from "@/utils/markdown";
+import { capitalize, escapeHtml } from "@/utils/stringUtils";
 import { ensureEl } from "../utils";
-import { mountMapPanel, refreshMapContext, unmountMapPanel } from "./assistant-map";
+import { AssistantMap } from "./assistant-map";
+import { Proposals } from "./assistant-proposals";
+import { AssistantWidgets, type WidgetContext } from "./assistant-widgets";
 
-// The dialog opens on Help (wiki-grounded gateway answers) unless a contextual entry point — the
-// Tools menu button or the notes editor — asks for This map, the own-key Assistant over the open map.
-export type AssistantMode = "help" | "map";
+type View = "chat" | "chats" | "key";
+type AnswerItem = Extract<TranscriptItem, { kind: "answer" }>;
+type Notice = { text: string; retryAt?: number; item?: TranscriptItem };
 
-export interface OpenOptions {
-  mode?: AssistantMode;
-}
-
-export interface WidgetNotice {
-  html: string;
-  askDisabled: boolean;
-  retryCountdown?: number;
-}
-
-const DEFAULT_RETRY_SECONDS = 30;
+const dialogId = "assistant";
 const MAX_QUESTION_LENGTH = 1000;
-const MAX_INPUT_HEIGHT = 108;
-const INIT_MESSAGE =
-  "Hi! Ask anything about the Fantasy Map Generator. I cannot change maps, but I can teach you how to do it.";
+const LAST_TIER = "fmg-assistant-last-tier";
+const LAST_MAP = "fmg-assistant-last-map";
+const WIKI = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki";
+const PROPOSAL_ROWS = 8;
+const PROPOSAL_STATES: Record<Proposal["state"], string> = {
+  proposed: "Proposed",
+  applied: "Applied",
+  undone: "Undone",
+  discarded: "Discarded"
+};
 
-const isOfficialOrigin = (): boolean => location.origin === OFFICIAL_ORIGIN || import.meta.env.DEV;
+let chat: Chat | undefined;
+let view: View = "chat";
+let busy = false;
+let abort: AbortController | null = null;
+let limits: Limits | null = null;
+let notice: Notice | null = null;
+let loadFailed = false;
+let failed: { chat: Chat; question: string; from: number } | null = null; // the last question that errored
+let initialized = false;
+let noteLabel: string | null = null;
+let answerStatus = "Thinking";
+let countdownTimer: ReturnType<typeof setInterval> | null = null;
+let discoveryTimer: ReturnType<typeof setTimeout> | null = null;
+let discoveryId = 0;
 
-function isMounted(): boolean {
-  return document.getElementById("assistant") !== null;
-}
-
-// The call button mirrors the dialog: while the panel is up it shows a close glyph, so a
-// second click on it reads as "close" rather than "open again"
-function markBubble(isOpen: boolean): void {
-  const bubble = document.getElementById("assistantBubble");
-  if (!bubble) return;
-  bubble.classList.toggle("open", isOpen);
-  bubble.setAttribute("aria-expanded", String(isOpen));
-}
+const official = () =>
+  !window.electron &&
+  (location.origin === OFFICIAL_ORIGIN || (import.meta.env.DEV && Boolean(localStorage.getItem("fmg-help-gateway"))));
+const tier = (): Tier => resolveTier(official(), !!getToken(), Connection.isConnected());
+const isOpen = () => document.getElementById(dialogId) !== null;
+const el = <T extends HTMLElement = HTMLElement>(id: string): T => ensureEl<T>(id);
 
 function toggle(): void {
-  if (isMounted()) $("#assistant").dialog("close");
+  if (isOpen()) $(`#${dialogId}`).dialog("close");
   else open();
 }
 
-// A chat panel is a companion to the map, not a modal over it: it takes the bottom-right
-// corner — over its own call button, which the title bar's close then stands in for.
-function open(options: OpenOptions = {}): void {
-  const mode = options.mode ?? "help";
-  if (isMounted()) {
-    setMode(mode);
-    $("#assistant").dialog("moveToTop");
+function open(): void {
+  if (isOpen()) {
+    $(`#${dialogId}`).dialog("moveToTop");
+    void refreshContextChip();
     return;
   }
+  view = "chat";
   renderDialog();
-
-  const width = Math.min(400, window.innerWidth - 24);
-  const chatHeight = Math.min(560, window.innerHeight - 140);
-
-  $("#assistant").dialog({
+  $(`#${dialogId}`).dialog({
     title: "Azgaar Assistant",
     position: { my: "right bottom", at: "right-16 bottom-44", of: window },
-    width,
-    height: chatHeight,
+    width: Math.min(420, window.innerWidth - 24),
+    height: Math.min(580, window.innerHeight - 140),
     minWidth: 300,
     minHeight: 320,
     resizable: true,
-    close: () => {
-      stopRetryTimer();
-      autoRetried = false;
-      markBubble(false);
-      unmountMapPanel();
-      destroyDialog("assistant");
-    }
+    close: closeAssistant
   });
-
+  addChatsButton();
   markBubble(true);
-  if (isOfficialOrigin()) {
-    addTitlebarNewChat();
-    void refreshLimits();
-  }
-  setMode(mode);
+  void initialize();
 }
 
-// "New chat" belongs with close and minimize: a window action, not chat content. Its own button,
-// apart from the layout reset one, so it is there whether or not the dialog was ever moved
-function addTitlebarNewChat(): void {
-  const titlebar = document.getElementById("assistant")?.closest(".ui-dialog")?.querySelector(".ui-dialog-titlebar");
-  if (!titlebar || titlebar.querySelector("#assistantNewChat")) return;
-
-  const button = document.createElement("button");
-  button.type = "button";
-  button.id = "assistantNewChat";
-  button.className = "assistantNewChat icon-plus";
-  button.dataset.tip = "Start a new chat";
-  button.setAttribute("aria-label", "Start a new chat");
-  button.addEventListener("click", resetConversationLog);
-  titlebar.insertBefore(button, titlebar.querySelector(".ui-dialog-titlebar-reset, .ui-dialog-titlebar-collapse"));
+function closeAssistant(): void {
+  abort?.abort();
+  stopCountdown();
+  cancelDiscovery();
+  AssistantWidgets.clearMarks();
+  markBubble(false);
+  destroyDialog(dialogId);
 }
 
-export function setMode(mode: AssistantMode): void {
-  for (const button of document.querySelectorAll<HTMLButtonElement>("#assistant .assistantMode")) {
-    const active = button.dataset.mode === mode;
-    button.setAttribute("aria-selected", String(active));
-    button.classList.toggle("selected", active);
-  }
-  ensureEl("assistantHelp").hidden = mode !== "help";
-  const newChat = document.getElementById("assistantNewChat");
-  if (newChat) newChat.hidden = mode !== "help";
-  const mapHost = ensureEl("assistantMap");
-  mapHost.hidden = mode !== "map";
-  if (mode !== "map") return;
-  if (!mapHost.dataset.mounted) {
-    mountMapPanel(mapHost);
-    mapHost.dataset.mounted = "1";
-  }
-  refreshMapContext();
+function markBubble(opened: boolean): void {
+  const bubble = document.getElementById("assistantBubble");
+  bubble?.classList.toggle("open", opened);
+  bubble?.setAttribute("aria-expanded", String(opened));
 }
+
+const STYLES = /* html */ `
+  <style>
+    #assistant.ui-dialog-content { display: flex; flex-direction: column; gap: .5em; overflow: hidden; padding: .6em .7em .5em; font-family: var(--sans-serif); }
+    #assistant > * { width: auto; }
+    #assistant [hidden] { display: none !important; }
+    #assistant button { cursor: pointer; font: inherit; }
+    #assistant button:disabled { cursor: default; opacity: .5; }
+    #assistant pre, #assistant code { font-family: var(--monospace); }
+    .ui-dialog .ui-dialog-titlebar #assistantOpenChats { font-size: .62em; }
+
+    #assistantTranscript, #assistantChats, #assistantKey { flex: 1; min-height: 0; overflow: hidden auto; padding-right: .2em; line-height: 1.45; }
+
+    #assistant .assistantItem { max-width: 92%; margin: 0 0 .7em; overflow-wrap: anywhere; }
+    #assistant .assistantItem > :first-child { margin-top: 0; }
+    #assistant .assistantItem > :last-child { margin-bottom: 0; }
+    #assistant .assistantItem p { margin: .45em 0; }
+    #assistant .assistantItem :is(h1, h2, h3, h4, h5, h6) { margin: .7em 0 .3em; font-size: 1em; }
+    #assistant .assistantItem :is(ol, ul) { margin: .45em 0; padding-left: 1.3em; }
+    #assistant .assistantItem pre { overflow: auto; max-height: 14em; margin: .45em 0; padding: .4em .55em; border-radius: .3em; background: rgb(0 0 0 / 6%); white-space: pre-wrap; }
+    #assistant .assistantItem table { display: block; overflow-x: auto; margin: .45em 0; border-collapse: collapse; font-size: .92em; }
+    #assistant .assistantItem :is(td, th) { padding: .2em .5em; border: 1px solid rgb(0 0 0 / 14%); }
+    #assistant .assistantItem th { background: rgb(0 0 0 / 5%); }
+
+    #assistant .assistantQuestion { width: fit-content; margin-left: auto; padding: .45em .7em; border-radius: .8em .8em .2em .8em; background: var(--header); color: #fff; white-space: pre-wrap; }
+    #assistant .assistantAnswer { padding: .1em .1em 0; }
+    #assistant .assistantWelcome { padding: .6em .75em; border-radius: .5em; background: rgb(0 0 0 / 5%); }
+
+    #assistant .assistantStep { width: fit-content; margin: 0 0 .5em; font-size: .9em; opacity: .75; }
+    #assistant .assistantStep summary { cursor: pointer; }
+    #assistant .assistantStep.failed summary { color: #a3262e; }
+    #assistant .assistantProposal { width: 100%; overflow: hidden; border: 1px solid rgb(0 0 0 / 14%); border-radius: .55em; background: rgb(255 255 255 / 60%); }
+    #assistant .assistantProposal:is(.undone, .discarded) { opacity: .7; }
+    #assistant .assistantProposalHeader { display: flex; align-items: center; gap: .55em; padding: .5em .7em; border-bottom: 1px solid rgb(0 0 0 / 8%); background: rgb(0 0 0 / 3%); }
+    #assistant .assistantProposalState { flex: none; padding: .1em .55em; border-radius: 1em; background: var(--header); color: #fff; font-size: .72em; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
+    #assistant .assistantProposal.applied .assistantProposalState { background: #3d7a3a; }
+    #assistant .assistantProposal:is(.undone, .discarded) .assistantProposalState { background: rgb(0 0 0 / 40%); }
+    #assistant .assistantProposalSummary { flex: 1; font-weight: 600; }
+    #assistant .assistantProposalHeader .assistantButton { flex: none; padding: .1em .6em; font-size: .9em; }
+    #assistant .assistantProposalBody { display: grid; gap: .55em; padding: .55em .7em; }
+    #assistant details.assistantProposalBody:not([open]) { padding-block: .35em; }
+    #assistant .assistantProposalBody > summary { cursor: pointer; opacity: .7; font-size: .9em; }
+    #assistant .assistantChangeName { margin-bottom: .1em; font-weight: 600; }
+    #assistant .assistantChangeField { display: grid; grid-template-columns: 5.5em minmax(0, 1fr); gap: 0 .6em; padding-left: .6em; font-size: .92em; }
+    #assistant .assistantChangeField > span:first-child { opacity: .6; }
+    #assistant .assistantChangeField del { opacity: .55; }
+    #assistant .assistantChangeField i { margin: 0 .35em; font-style: normal; opacity: .45; }
+    #assistant .assistantChangeField ins { font-weight: 600; text-decoration: none; }
+    #assistant .assistantChangeField em { opacity: .6; }
+    #assistant .assistantChangeMore { opacity: .6; font-size: .9em; }
+    #assistant .assistantNotePreview { grid-column: 1 / -1; max-height: 10em; overflow: auto; margin-top: .35em; padding: .35em .6em; border-radius: .35em; background: rgb(0 0 0 / 4%); }
+    #assistant .assistantNotePreview p { margin: .3em 0; }
+    #assistant .assistantProposalFooter { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .4em; padding: .4em .7em; border-top: 1px solid rgb(0 0 0 / 8%); }
+    #assistant .assistantProposalFooter > span:first-child { opacity: .6; font-size: .88em; }
+    #assistant .assistantProposalActions { display: flex; gap: .4em; }
+    #assistant :is(.assistantEntity, .assistantCommand) { padding: 0; border: 0; background: none; color: inherit; }
+    #assistant .assistantEntity { text-decoration-line: underline; text-decoration-style: dotted; text-underline-offset: 2px; }
+    #assistant .assistantEntity:hover { color: var(--header-active); }
+    #assistant .assistantEntity > span { display: inline-block; margin-right: .35em; opacity: .55; font-size: .9em; }
+    #assistant .assistantCommand { padding: 0 .4em; border: 1px solid var(--header); border-radius: .35em; }
+    #assistant .assistantCommand:hover { background: rgb(0 0 0 / 5%); }
+    #assistant .assistantWidget { width: 100%; overflow: hidden; border: 1px solid rgb(0 0 0 / 14%); border-radius: .55em; background: rgb(255 255 255 / 60%); }
+    #assistant .assistantWidgetHeader { display: flex; align-items: center; justify-content: space-between; gap: .55em; padding: .4em .7em; border-bottom: 1px solid rgb(0 0 0 / 8%); background: rgb(0 0 0 / 3%); font-weight: 600; }
+    #assistant .assistantWidgetHeader .assistantButton { flex: none; padding: .1em .6em; font-size: .9em; font-weight: normal; }
+    #assistant .assistantWidgetHeader .assistantButton[aria-pressed="true"] { background: var(--header); color: #fff; }
+    #assistant .assistantWidgetNote { padding: .3em .7em 0; opacity: .6; font-size: .9em; }
+    #assistant .assistantWidget ul { max-height: 16em; overflow-y: auto; margin: 0; padding: .35em .7em; list-style: none; }
+    #assistant .assistantWidget li { display: flex; align-items: baseline; gap: .4em; padding: .1em 0; }
+    #assistant .assistantWidget li small { margin-left: auto; opacity: .6; text-align: right; }
+    #assistant .assistantWidget li.gone { opacity: .5; }
+    #assistant .assistantCard { padding: .6em .7em; }
+    #assistant .assistantCardHead { display: flex; align-items: center; gap: .6em; }
+    #assistant .assistantCardHead svg { flex: none; width: 3.6em; height: 3.6em; }
+    #assistant .assistantCardHead strong { display: block; font-size: 1.05em; }
+    #assistant .assistantCardHead small { opacity: .6; }
+    #assistant .assistantCard dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .15em .8em; margin: .55em 0 0; }
+    #assistant .assistantCard dt { opacity: .6; }
+    #assistant .assistantCard dd { margin: 0; }
+    #assistant .assistantCardNote { margin: .5em 0 0; opacity: .8; font-size: .92em; }
+    #assistant .assistantChart { display: grid; grid-template-columns: minmax(0, max-content) minmax(3em, 1fr) auto; align-items: center; gap: .25em .6em; padding: .45em .7em; }
+    #assistant .assistantBar { display: contents; }
+    #assistant .assistantBar > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #assistant .assistantBar > span:last-child { font-variant-numeric: tabular-nums; opacity: .75; text-align: right; }
+    #assistant .assistantBarTrack { height: .75em; border-radius: .2em; background: rgb(0 0 0 / 6%); }
+    #assistant .assistantBarTrack i { display: block; height: 100%; min-width: 1px; border-radius: .2em; background: var(--header); }
+    #assistant .assistantPie { display: flex; align-items: center; gap: .8em; padding: .45em .7em; }
+    #assistant .assistantPie svg { flex: none; width: 6.5em; height: 6.5em; }
+    #assistant .assistantPie ul { flex: 1; padding: 0; }
+    #assistant .assistantPie li i { flex: none; width: .75em; height: .75em; border-radius: .15em; }
+    #assistant .assistantChoices { margin: 0; padding: .5em .7em; }
+    #assistant .assistantChartCaption { padding: 0 .7em .45em; opacity: .6; font-size: .88em; }
+    #assistant .assistantInset { position: relative; display: grid; place-items: center; width: 100%; aspect-ratio: 480 / 300; padding: 0; border: 0; background: rgb(0 0 0 / 4%); color: inherit; }
+    #assistant .assistantInset :is(img, svg) { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+    #assistant .assistantInset span { opacity: .6; font-size: .9em; }
+    #assistant .assistantEmblem { display: block; width: 9em; height: 9em; margin: .5em auto; }
+    #assistant .assistantNoticeItem { padding: .4em .6em; border-left: 3px solid var(--header); border-radius: .25em; background: rgb(0 0 0 / 4%); font-size: .9em; }
+    #assistant .assistantDivider { display: flex; align-items: center; gap: .6em; margin: .8em 0; opacity: .5; font-size: .78em; text-transform: uppercase; letter-spacing: .06em; }
+    #assistant .assistantDivider::before, #assistant .assistantDivider::after { content: ""; flex: 1; height: 1px; background: currentcolor; }
+
+    #assistant .assistantActions { display: flex; flex-wrap: wrap; gap: .4em; margin-top: .5em; }
+    #assistant .assistantButton { padding: .25em .7em; border: 1px solid var(--header); border-radius: .35em; background: none; color: inherit; }
+    #assistant .assistantButton:hover:not(:disabled) { background: rgb(0 0 0 / 5%); }
+    #assistant .assistantPrimary { background: var(--header); color: #fff; }
+    #assistant .assistantPrimary:hover:not(:disabled) { background: var(--header-active); }
+    #assistant .assistantLink { padding: 0; border: 0; background: none; color: inherit; text-decoration: underline; }
+    #assistant .assistantLink:hover:not(:disabled) { color: var(--header-active); }
+
+    #assistant .assistantFeedback { display: flex; gap: .15em; margin-top: .2em; }
+    #assistant .assistantFeedback button { padding: 0 .2em; border: 0; background: none; opacity: .3; font-size: .9em; }
+    #assistant .assistantFeedback button:hover { opacity: .7; }
+    #assistant .assistantFeedback button[aria-pressed="true"] { opacity: 1; }
+
+    #assistant .assistantTyping { display: flex; align-items: center; gap: .28em; padding: .2em .1em; opacity: .7; }
+    #assistant .assistantTyping i { width: .4em; height: .4em; border-radius: 50%; background: currentcolor; animation: assistantTyping 1.2s infinite ease-in-out; }
+    #assistant .assistantTyping i:nth-child(2) { animation-delay: .15s; }
+    #assistant .assistantTyping i:nth-child(3) { animation-delay: .3s; margin-right: .35em; }
+    @keyframes assistantTyping { 0%, 60%, 100% { opacity: .25; transform: none; } 30% { opacity: .9; transform: translateY(-.18em); } }
+    @media (prefers-reduced-motion: reduce) { #assistant .assistantTyping i { animation: none; } }
+
+    #assistantContext { flex: none; align-self: flex-start; padding: .1em .55em; border-radius: 1em; background: rgb(0 0 0 / 6%); font-size: .9em; }
+    #assistantNotice { flex: none; max-height: 30%; overflow-y: auto; padding: .45em .6em; border-left: 3px solid var(--header); border-radius: .25em; background: rgb(0 0 0 / 5%); font-size: .9em; }
+    #assistantNotice p { margin: 0 0 .3em; }
+    #assistantCountdown { opacity: .7; font-variant-numeric: tabular-nums; }
+
+    #assistantComposer { flex: none; display: flex; align-items: flex-end; gap: .4em; padding: .3em .3em .3em .6em; border: 1px solid rgb(0 0 0 / 20%); border-radius: .6em; background: rgb(255 255 255 / 70%); }
+    #assistantComposer:focus-within { border-color: var(--header); }
+    #assistantQuestion { flex: 1; min-width: 0; height: 1.7em; max-height: 108px; padding: .2em 0; border: 0; outline: none; background: none; resize: none; font: inherit; line-height: 1.4; }
+    #assistantAsk { flex: none; display: flex; align-items: center; justify-content: center; width: 1.9em; height: 1.9em; padding: 0; border: 0; border-radius: .45em; background: var(--header); color: #fff; }
+    #assistantAsk::before { margin: 0; }
+    #assistantAsk:hover { background: var(--header-active); }
+    #assistantQuestion:placeholder-shown + #assistantAsk:not(.busy) { opacity: .45; }
+
+    #assistant .assistantFooter { flex: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .2em .8em; padding-top: .4em; border-top: 1px solid rgb(0 0 0 / 10%); font-size: .9em; }
+    #assistant .assistantFooter > span { display: flex; flex-wrap: wrap; align-items: center; gap: .2em .7em; }
+    #assistant .assistantFooter a { color: inherit; }
+    #assistantTier { padding: 0 .5em; border-radius: 1em; background: var(--header); color: #fff; }
+
+    #assistant .assistantViewHeader { display: flex; justify-content: space-between; align-items: center; padding-bottom: .45em; border-bottom: 1px solid rgb(0 0 0 / 15%); }
+    #assistant .assistantChatRow { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: .1em .6em; padding: .45em .3em; border-bottom: 1px solid rgb(0 0 0 / 8%); }
+    #assistant .assistantChatRow:hover, #assistant .assistantChatRow.current { background: rgb(0 0 0 / 4%); }
+    #assistant .assistantChatRow.current .assistantChatTitle { font-weight: bold; }
+    #assistant .assistantChatTitle { overflow: hidden; padding: 0; border: 0; background: none; color: inherit; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
+    #assistant .assistantChatRow :is(time, small) { font-size: .9em; opacity: .65; }
+    #assistant .assistantChatRow small { grid-column: 1 / -1; }
+    #assistant .assistantDelete { padding: 0 .2em; border: 0; background: none; opacity: .4; }
+    #assistant .assistantDelete:is(:hover, :focus-visible) { opacity: 1; }
+    #assistant .assistantEmpty { padding: 1em 0; opacity: .65; }
+
+    #assistantKey h3 { margin: 0 0 .4em; font-size: 1.1em; }
+    #assistantKey p { margin: 0 0 .5em; }
+    #assistantKey .assistantFields { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: .45em .6em; margin: .8em 0 .4em; }
+    #assistantKey .assistantFields :is(input, select) { width: 100%; box-sizing: border-box; }
+    #assistantKey .assistantFields a { grid-column: 2; justify-self: start; color: inherit; font-size: .9em; }
+    #assistantLocalHint { font-size: .9em; opacity: .8; }
+    #assistantDiscoveryError { min-height: 1.2em; color: #a3262e; font-size: .9em; overflow-wrap: anywhere; }
+    #assistant .assistantSheetActions { display: flex; justify-content: flex-end; gap: .5em; margin-top: .4em; }
+  </style>`;
 
 function renderDialog(): void {
-  destroyDialog("assistant");
+  destroyDialog(dialogId);
+  const providers = PROVIDERS.map(
+    provider => `<option value="${provider.id}">${provider.id === "local" ? "Local" : provider.label}</option>`
+  ).join("");
 
-  // Panel styling lives with the panel: the dialog is built here and torn down on close, so
-  // its stylesheet rides along with it instead of sitting in the global sheet
-  const styles = /* html */ `
-    <style>
-      #assistant.ui-dialog-content { display: flex; flex-direction: column; gap: .5em; overflow: hidden; padding: .6em .7em .5em; font-family: var(--sans-serif); }
-      #assistant > div          { width: auto; }
-      .ui-dialog-titlebar .assistantNewChat { font-size: .62em; }
+  const html = /* html */ `<div id="${dialogId}" class="dialog stable">
+    ${STYLES}
+    <div id="assistantTranscript" role="log" aria-live="polite" aria-label="Assistant chat"></div>
 
-      #assistant .assistantLog   { flex: 1; min-height: 0; overflow: hidden auto; padding-right: .2em; line-height: 1.4; }
-      #assistant .assistantMsg   { display: flex; margin-bottom: .55em; }
-      #assistant .assistantMsg.user { justify-content: flex-end; }
-      #assistant .assistantStack { display: flex; flex-direction: column; min-width: 0; max-width: 88%; }
-      #assistant .assistantBubble { padding: .45em .65em; border-radius: .4em; background: rgb(0 0 0 / 6%); overflow-wrap: anywhere; }
-      #assistant .assistantMsg.user .assistantBubble   { background: var(--header); color: #ffffff; }
-      #assistant .assistantMsg.user .assistantBubble a { color: #ffffff; }
-
-      /* answers are rendered markdown: keep block spacing tight enough to read as one message */
-      #assistant .assistantBubble > :first-child { margin-top: 0; }
-      #assistant .assistantBubble > :last-child  { margin-bottom: 0; }
-      #assistant .assistantBubble p              { margin: .4em 0; }
-      #assistant .assistantBubble :is(h3, h4, h5, h6) { margin: .6em 0 .3em; font-size: 1em; }
-      #assistant .assistantBubble :is(ol, ul)    { margin: .4em 0; padding-left: 1.3em; }
-      #assistant .assistantBubble pre            { overflow-x: auto; margin: .4em 0; padding: .4em .5em; border-radius: .3em; background: rgb(0 0 0 / 6%); font-size: .9em; }
-      #assistant .assistantBubble code           { font-family: var(--monospace); }
-      #assistant .assistantBubble table          { display: block; overflow-x: auto; border-collapse: collapse; }
-      #assistant .assistantBubble :is(td, th)    { padding: .15em .4em; border: 1px solid rgb(0 0 0 / 12%); }
-
-      /* three dots standing in for the answer while the gateway is thinking */
-      #assistant .assistantTyping   { display: flex; align-items: center; gap: .28em; padding: .65em; }
-      #assistant .assistantTyping i { width: .4em; height: .4em; border-radius: 50%; background: currentcolor; opacity: .35; animation: assistantTyping 1.2s infinite ease-in-out; }
-      #assistant .assistantTyping i:nth-child(2) { animation-delay: .15s; }
-      #assistant .assistantTyping i:nth-child(3) { animation-delay: .3s; }
-      @keyframes assistantTyping { 0%, 60%, 100% { opacity: .25; transform: none; } 30% { opacity: .8; transform: translateY(-.18em); } }
-      @media (prefers-reduced-motion: reduce) { #assistant .assistantTyping i { animation: none; } }
-
-      #assistant .assistantDivider { display: flex; align-items: center; gap: .6em; margin: .6em 0; opacity: .5; font-size: .82em; text-transform: uppercase; letter-spacing: .06em; }
-      #assistant .assistantDivider::before,
-      #assistant .assistantDivider::after { content: ""; flex: 1; height: 1px; background: currentcolor; }
-
-      #assistant .assistantFeedback        { display: flex; gap: .2em; margin-top: .15em; }
-      #assistant .assistantFeedback button { padding: 0 .15em; border: none; background: none; opacity: .35; font-size: .9em; transition: .15s; }
-      #assistant .assistantFeedback button:hover    { opacity: .75; }
-      #assistant .assistantFeedback button.selected { opacity: 1; }
-
-      /* server refusals and countdowns: loud enough to notice, quiet enough to stay out of the way */
-      #assistant .assistantNotice { flex: none; max-height: 30%; overflow-y: auto; padding: .45em .6em; border-left: 3px solid var(--header); border-radius: .25em; background: rgb(0 0 0 / 5%); font-size: .9em; }
-      #assistant .assistantNotice > :first-child { margin-top: 0; }
-      #assistant .assistantNotice > :last-child  { margin-bottom: 0; }
-      #assistant .assistantCountdown { margin-top: .3em; opacity: .7; font-variant-numeric: tabular-nums; }
-
-      #assistant .assistantComposer          { flex: none; display: flex; align-items: flex-end; gap: .4em; padding: .3em .3em .3em .5em; border: 1px solid rgb(0 0 0 / 18%); border-radius: .5em; background: rgb(255 255 255 / 55%); transition: border-color .15s; }
-      #assistant .assistantComposer:focus-within { border-color: var(--header); }
-      #assistant .assistantComposer textarea { flex: 1; min-width: 0; height: 1.7em; max-height: ${MAX_INPUT_HEIGHT}px; padding: .2em 0; border: 0; background: none; resize: none; font: inherit; line-height: 1.4; }
-      #assistant .assistantSend              { flex: none; display: flex; align-items: center; justify-content: center; width: 1.9em; height: 1.9em; border: 0; border-radius: .4em; background: var(--header); color: #ffffff; font-size: 1em; transition: .15s; }
-      #assistant .assistantSend::before      { margin: 0; }
-      #assistant .assistantSend:hover        { background: var(--header-active); }
-      #assistant .assistantSend:disabled     { opacity: .4; cursor: default; }
-
-      /* quick links and the account state: present, but plainly secondary to the transcript */
-      #assistant .assistantBar     { flex: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .2em .8em; padding-top: .4em; border-top: 1px solid rgb(0 0 0 / 10%); font-size: .9em; }
-      #assistant .assistantLinks   { display: flex; gap: .8em; }
-      #assistant .assistantAccount { display: flex; align-items: center; gap: .5em; opacity: .85; }
-      #assistant .assistantLink        { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; }
-      #assistant .assistantLink:hover  { color: var(--header-active); }
-
-      #assistant .assistantUnlisted { flex: none; line-height: 1.4; }
-    </style>`;
-
-  const chat = /* html */ `
-    <div id="assistantLog" class="assistantLog" role="log" aria-live="polite"></div>
-    <div id="assistantNotice" class="assistantNotice" hidden></div>
-    <div class="assistantComposer">
-      <textarea id="assistantQuestion" rows="1" maxlength="1000" aria-label="Your question"
-        placeholder="Ask a question…"></textarea>
-      <button id="assistantAsk" type="button" class="assistantSend icon-right-big"
-        title="Send (Enter)" aria-label="Send"></button>
-    </div>`;
-
-  // Self-hosted copies are not on the gateway's origin allowlist: explain, don't error
-  const unlisted = /* html */ `
-    <div class="assistantUnlisted">
-      <div class="assistantMsg bot">
-        <div class="assistantStack">
-          <div class="assistantBubble">
-            <p>The free assistant is only available on the official site: <a href="https://azgaar.github.io/Fantasy-Map-Generator/" target="_blank" rel="noopener noreferrer"> azgaar.github.io/Fantasy-Map-Generator</a>. On a self-hosted copy, the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki" target="_blank" rel="noopener noreferrer">documentation</a> covers most questions.</p>
-          </div>
-        </div>
+    <div id="assistantChats" hidden>
+      <div class="assistantViewHeader">
+        <strong>Chats</strong>
+        <button type="button" class="assistantLink" data-action="new-chat">+ New chat</button>
       </div>
-    </div>`;
-
-  const bar = /* html */ `
-    <div class="assistantBar">
-      <div class="assistantLinks">
-        <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki" target="_blank" rel="noopener noreferrer">Wiki</a>
-        <a href="https://discordapp.com/invite/X7E84HU" target="_blank" rel="noopener noreferrer">Discord</a>
-        <a href="https://www.reddit.com/r/FantasyMapGenerator/" target="_blank" rel="noopener noreferrer">Reddit</a>
-        <a href="https://www.patreon.com/azgaar" target="_blank" rel="noopener noreferrer">Patreon</a>
-        <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Policy" target="_blank" rel="noopener noreferrer"
-          title="What is sent, how long questions are kept, and the rest of the small print">Policy</a>
-      </div>
-      <div class="assistantAccount">
-        <span id="assistantLimits"></span>
-        <span id="assistantAuth"></span>
-      </div>
-    </div>`;
-
-  const modes = /* html */ `
-    <div class="assistantModes" role="tablist">
-      <button type="button" class="assistantMode icon-help-circled" data-mode="help" role="tab" aria-selected="true"
-        data-tip="Ask how to use the map generator — answers come from the documentation">Help</button>
-      <button type="button" class="assistantMode icon-robot" data-mode="map" role="tab" aria-selected="false"
-        data-tip="Ask about, or edit, the map you have open using your own AI key">This map</button>
-    </div>`;
-
-  const html = /* html */ `<div id="assistant" class="dialog stable">
-    ${styles}
-    ${modes}
-    <div id="assistantHelp" class="assistantPanel">
-      ${isOfficialOrigin() ? chat : unlisted}
-      ${bar}
+      <div id="assistantChatList"></div>
     </div>
-    <div id="assistantMap" class="assistantPanel" hidden></div>
+
+    <form id="assistantKey" hidden>
+      <h3>Connect your AI key</h3>
+      <p>Unlimited questions, and I can read and edit this map. Your key stays in this browser and goes only to the provider. I run scripts in this page to read your map. Only use me on maps from sources you trust.</p>
+      <div class="assistantFields">
+        <label for="assistantProvider">Provider</label>
+        <select id="assistantProvider">${providers}</select>
+        <label id="assistantModelLabel" for="assistantModel">Model</label>
+        <input id="assistantModel" list="assistantModels" autocomplete="off" spellcheck="false" />
+        <label for="assistantApiKey" data-remote>API key</label>
+        <input id="assistantApiKey" type="password" autocomplete="off" data-remote />
+        <a id="assistantKeyLink" target="_blank" rel="noopener noreferrer" data-remote>Where to get one</a>
+        <label for="assistantLocalUrl" data-local>Server</label>
+        <input id="assistantLocalUrl" autocomplete="off" spellcheck="false" data-local />
+      </div>
+      <datalist id="assistantModels"></datalist>
+      <p id="assistantLocalHint" data-local>ⓘ Local models need no key. Point to the server and enter the model name. Set the server's context window to at least 8k tokens (Ollama's num_ctx).</p>
+      <div id="assistantDiscoveryError" role="status"></div>
+      <div class="assistantSheetActions">
+        <button type="button" class="assistantButton" data-action="close-key">Cancel</button>
+        <button type="button" id="assistantDisconnect" class="assistantButton" data-action="disconnect">Disconnect</button>
+        <button type="submit" class="assistantButton assistantPrimary">Connect</button>
+      </div>
+    </form>
+
+    <div id="assistantContext" hidden></div>
+
+    <div id="assistantNotice" role="status" hidden>
+      <div id="assistantNoticeText"></div>
+      <div id="assistantCountdown" hidden></div>
+      <div id="assistantNoticeActions" class="assistantActions">
+        <button type="button" id="assistantRetry" class="assistantButton" data-action="retry">Retry</button>
+        <button type="button" id="assistantResend" class="assistantButton" data-action="resend">Retry</button>
+        <button type="button" id="assistantNoticeSignIn" class="assistantButton" data-action="sign-in">Sign in</button>
+        <button type="button" id="assistantNoticeKey" class="assistantButton assistantPrimary" data-action="key"></button>
+      </div>
+      <div id="assistantLong">
+        <p>This chat is getting long — each question re-sends all of it.</p>
+        <button type="button" class="assistantButton" data-action="new-chat">Start a new chat</button>
+      </div>
+    </div>
+
+    <div id="assistantComposer">
+      <textarea id="assistantQuestion" rows="1" maxlength="${MAX_QUESTION_LENGTH}" aria-label="Your question" placeholder="Ask a question…"></textarea>
+      <button id="assistantAsk" type="button"></button>
+    </div>
+
+    <div class="assistantFooter">
+      <span>
+        <a href="${WIKI}" target="_blank" rel="noopener noreferrer">Wiki</a>
+        <a href="${WIKI}/Policy" target="_blank" rel="noopener noreferrer">Policy</a>
+      </span>
+      <span id="assistantAccount">
+        <span id="assistantTier"></span>
+        <span id="assistantStatus"></span>
+        <button type="button" id="assistantSignIn" class="assistantLink" data-action="sign-in">Sign in</button>
+        <button type="button" id="assistantSignOut" class="assistantLink" data-action="sign-out">Sign out</button>
+        <button type="button" id="assistantUseKey" class="assistantLink" data-action="key"></button>
+      </span>
+    </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
-  for (const button of document.querySelectorAll<HTMLButtonElement>("#assistant .assistantMode")) {
-    button.addEventListener("click", () => setMode(button.dataset.mode as AssistantMode));
-  }
-
-  if (!isOfficialOrigin()) return;
-  resetConversationLog();
-
-  ensureEl("assistantAsk").addEventListener("click", () => void submit(normalizeQuestion(getQuestionInput())));
-
-  const input = ensureEl<HTMLTextAreaElement>("assistantQuestion");
-  // Enter sends, Shift+Enter breaks the line — the messenger convention the panel now imitates
+  el(dialogId).addEventListener("click", handleClick);
+  el("assistantAsk").addEventListener("click", () => (busy ? stop() : void send()));
+  const input = el<HTMLTextAreaElement>("assistantQuestion");
   input.addEventListener("keydown", event => {
-    const key = event as KeyboardEvent;
-    if (key.key !== "Enter" || key.shiftKey || key.isComposing) return;
-    key.preventDefault();
-    void submit(normalizeQuestion(getQuestionInput()));
+    if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
+    event.preventDefault();
+    if (!busy) void send();
   });
-  input.addEventListener("input", () => resizeInput(input));
+  input.addEventListener("input", () => fitInput(input));
+  el("assistantKey").addEventListener("submit", event => {
+    event.preventDefault();
+    connect();
+  });
+  el("assistantProvider").addEventListener("change", () => fillProvider(true));
+  el("assistantApiKey").addEventListener("input", scheduleDiscovery);
+  el("assistantLocalUrl").addEventListener("input", scheduleDiscovery);
 }
 
-function resizeInput(input: HTMLTextAreaElement): void {
-  input.style.height = "auto";
-  input.style.height = `${Math.min(input.scrollHeight, MAX_INPUT_HEIGHT)}px`;
+// The titlebar only exists once jQuery UI has built the dialog
+function addChatsButton(): void {
+  const titlebar = el(dialogId).closest(".ui-dialog")?.querySelector(".ui-dialog-titlebar");
+  if (!titlebar) return;
+  const button = document.createElement("button");
+  button.id = "assistantOpenChats";
+  button.type = "button";
+  button.className = "icon-list-bullet";
+  button.dataset.tip = "Chats";
+  button.setAttribute("aria-label", "Chats");
+  button.addEventListener("click", () => {
+    if (!busy && initialized) showView(view === "chats" ? "chat" : "chats");
+  });
+  titlebar.insertBefore(button, titlebar.querySelector(".ui-dialog-titlebar-reset, .ui-dialog-titlebar-collapse"));
+  titlebar.querySelector(".ui-dialog-titlebar-collapse")?.setAttribute("aria-label", "Minimize or restore Assistant");
+  titlebar.querySelector(".ui-dialog-titlebar-close")?.setAttribute("aria-label", "Close Assistant");
 }
 
-// Rollover must be SHOWN, not silent: whenever the conversation id is dropped, the old
-// transcript is cleared too — otherwise the next exchange reads as one continuous thread
-// that stopped making sense. Used by both "New chat" and sign-out; NOT sign-in (the page
-// navigates away anyway).
-function resetConversationLog(): void {
-  clearConversationId();
-  const log = ensureEl("assistantLog");
-  log.textContent = "";
-
-  const { row, stack } = buildMessageRow("bot");
-  const bubble = document.createElement("div");
-  bubble.className = "assistantBubble";
-  bubble.textContent = INIT_MESSAGE;
-  stack.appendChild(bubble);
-  log.appendChild(row);
-
-  setNotice(null);
+function handleClick(event: MouseEvent): void {
+  const target = (event.target as HTMLElement).closest<HTMLElement>("[data-action]");
+  if (!target || (target as HTMLButtonElement).disabled) return;
+  const { action, id, index, rating } = target.dataset;
+  if (action === "new-chat") newChat();
+  else if (action === "key") openKeySheet();
+  else if (action === "close-key") showView("chat");
+  else if (action === "disconnect") disconnect();
+  else if (action === "sign-in") signIn();
+  else if (action === "sign-out") void leaveMember();
+  else if (action === "retry") void initialize();
+  else if (action === "resend") resend();
+  else if (action === "open-chat" && id) openChat(id);
+  else if (action === "delete-chat" && id) deleteChat(id);
+  else if (action === "apply" || action === "undo" || action === "discard") decide(action, Number(index));
+  else if (action === "rate") void rateItem(Number(index), rating as "up" | "down");
+  else if (action === "entity" && id) AssistantWidgets.openEntity(id);
+  else if (action === "command" && id) AssistantWidgets.runCommand(id);
+  else if (action === "mark") toggleMarks(Number(index));
+  else if (action === "choose") choose(Number(index), Number(target.dataset.choice));
+  else if (action === "inset") revealInset(Number(index));
 }
 
-function getQuestionInput(): string {
-  return ensureEl<HTMLTextAreaElement>("assistantQuestion").value;
-}
-
-// isRetry marks an automatic re-submission of a rate-limited question after its countdown —
-// distinct from the user clicking Ask again, which always starts a fresh retry chain.
-async function submit(question: string | null, isRetry = false): Promise<void> {
-  if (!question) return;
-  const button = ensureEl<HTMLButtonElement>("assistantAsk");
-  if (button.disabled) return;
-
-  button.disabled = true;
-  if (!isRetry) appendQuestion(question);
-  const typing = appendTyping();
-
-  const sentId = getConversationId();
+async function initialize(): Promise<void> {
   try {
-    const { answer, conversationId, requestId } = await ask(question, sentId ?? undefined);
-    const isNew = isNewConversation(sentId, conversationId);
-    // Pure storage — safe to do even if the dialog was closed during a slow ask, so it runs
-    // before the isMounted() guard: otherwise closing the dialog mid-ask would lose the
-    // server-issued id and silently orphan the conversation.
-    adoptConversationId(conversationId);
-    if (!isMounted()) return;
-    typing.remove();
-    if (isNew) appendDivider();
-    appendAnswer(renderMarkdown(answer), requestId);
-    const input = ensureEl<HTMLTextAreaElement>("assistantQuestion");
-    input.value = "";
-    resizeInput(input);
-    setNotice(null);
-    autoRetried = false;
-  } catch (error) {
-    if (!isMounted()) return;
-    typing.remove();
-    if (error instanceof GatewayError) {
-      // A poisoned/rejected id is the server's most likely reason for invalid_request — start
-      // the next ask clean rather than repeating the same 400 forever.
-      if (error.code === "invalid_request") clearConversationId();
-      applyNotice(noticeFor(error), error, question);
-    } else console.error(error);
-  } finally {
-    if (isMounted()) {
-      if (!button.dataset.locked) button.disabled = false;
-      void refreshLimits();
-    }
-  }
-}
-
-// Side is the whole distinction: the assistant speaks from the left, the user from the right
-function buildMessageRow(role: "user" | "bot"): { row: HTMLElement; stack: HTMLElement } {
-  const row = document.createElement("div");
-  row.className = `assistantMsg ${role}`;
-
-  const stack = document.createElement("div");
-  stack.className = "assistantStack";
-  row.appendChild(stack);
-  return { row, stack };
-}
-
-// The question is the user's own text: insert via textContent, never as markup
-function appendQuestion(text: string): void {
-  const { row, stack } = buildMessageRow("user");
-  const bubble = document.createElement("div");
-  bubble.className = "assistantBubble";
-  bubble.textContent = text;
-  stack.appendChild(bubble);
-  appendToLog(row);
-}
-
-function appendTyping(): HTMLElement {
-  const { row, stack } = buildMessageRow("bot");
-  const bubble = document.createElement("div");
-  bubble.className = "assistantBubble assistantTyping";
-  bubble.setAttribute("aria-label", "Thinking…");
-  bubble.innerHTML = "<i></i><i></i><i></i>";
-  stack.appendChild(bubble);
-  appendToLog(row);
-  return row;
-}
-
-function appendDivider(): void {
-  const divider = document.createElement("div");
-  divider.className = "assistantDivider";
-  divider.textContent = "new conversation";
-  appendToLog(divider);
-}
-
-// renderMarkdown output only — the renderer escapes every leaf
-function appendAnswer(safeHtml: string, requestId: number | null): void {
-  const { row, stack } = buildMessageRow("bot");
-  const bubble = document.createElement("div");
-  bubble.className = "assistantBubble";
-  bubble.innerHTML = safeHtml;
-  stack.appendChild(bubble);
-  // requestId null means there is nothing server-side to rate — no control (never post null)
-  if (requestId !== null) stack.appendChild(buildFeedbackControl(requestId));
-  appendToLog(row);
-}
-
-export function buildFeedbackControl(requestId: number): HTMLElement {
-  const row = document.createElement("div");
-  row.className = "assistantFeedback";
-
-  for (const rating of ["up", "down"] as const) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.textContent = rating === "up" ? "👍" : "👎";
-    button.setAttribute("aria-label", rating === "up" ? "Good answer" : "Bad answer");
-    button.setAttribute("aria-pressed", "false");
-    button.addEventListener("click", () => {
-      const previous = row.querySelector(".selected");
-      previous?.classList.remove("selected");
-      previous?.setAttribute("aria-pressed", "false");
-      button.classList.add("selected");
-      button.setAttribute("aria-pressed", "true");
-      // a failed post is a silent nicety-miss: revert the selection, never a widget state
-      sendFeedback(requestId, rating).catch((error: unknown) => {
-        button.classList.remove("selected");
-        button.setAttribute("aria-pressed", "false");
-        previous?.classList.add("selected");
-        previous?.setAttribute("aria-pressed", "true");
-        // the shared transport already cleared the token on a 401 — resync the footer
-        // instead of leaving it stuck claiming "Signed in"
-        if (error instanceof GatewayError && error.code === "unauthorized") void refreshLimits();
-      });
-    });
-    row.appendChild(button);
-  }
-  return row;
-}
-
-function appendToLog(node: HTMLElement): void {
-  const log = ensureEl("assistantLog");
-  log.appendChild(node);
-  log.scrollTop = log.scrollHeight;
-}
-
-function setNotice(safeHtml: string | null): void {
-  const notice = ensureEl("assistantNotice");
-  notice.hidden = safeHtml === null;
-  notice.innerHTML = safeHtml ?? "";
-}
-
-let retryTimer: ReturnType<typeof setInterval> | null = null;
-let autoRetried = false;
-
-function stopRetryTimer(): void {
-  if (!retryTimer) return;
-  clearInterval(retryTimer);
-  retryTimer = null;
-}
-
-function applyNotice(notice: WidgetNotice, error: GatewayError, question: string): void {
-  setNotice(notice.html);
-  const button = ensureEl<HTMLButtonElement>("assistantAsk");
-  stopRetryTimer();
-
-  if (!notice.askDisabled) return;
-  button.disabled = true;
-  button.dataset.locked = "true";
-
-  // cap_reached/quota/blocked have no countdown: the notice text is the whole story
-  if (notice.retryCountdown === undefined) return;
-
-  // the wait lives in the notice, not on the send button — an icon button has no room for it
-  const countdown = document.createElement("div");
-  countdown.className = "assistantCountdown";
-  ensureEl("assistantNotice").appendChild(countdown);
-
-  const autoRetry = shouldAutoRetry(error, autoRetried);
-  let secondsLeft = notice.retryCountdown;
-  countdown.textContent = `Ready again in ${secondsLeft}s`;
-  retryTimer = setInterval(() => {
-    secondsLeft -= 1;
-    if (secondsLeft > 0) {
-      countdown.textContent = `Ready again in ${secondsLeft}s`;
-      return;
-    }
-    stopRetryTimer();
-    delete button.dataset.locked;
-    button.disabled = false;
-    setNotice(null);
-    if (autoRetry && isMounted()) {
-      autoRetried = true;
-      void submit(question, true);
-    }
-  }, 1000);
-}
-
-const canSignIn = (): boolean => import.meta.env.DEV || location.origin === OFFICIAL_ORIGIN;
-
-function renderAuth(tier: string): void {
-  const host = document.getElementById("assistantAuth");
-  if (!host) return;
-  host.textContent = "";
-
-  if (tier === "anonymous") {
-    if (!canSignIn()) return;
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "assistantLink";
-    button.textContent = "Sign in";
-    button.title = "Sign in with Discord for more questions a day";
-    button.addEventListener("click", () => {
-      clearConversationId();
-      signIn();
-    });
-    host.appendChild(button);
+    await load();
+    loadFailed = false;
+  } catch {
+    loadFailed = true;
+    notice = { text: "Chats could not be loaded." };
+    render();
     return;
   }
+  if (!isOpen()) return;
+  const now = tier();
+  const previousTier = localStorage.getItem(LAST_TIER);
+  const previousMap = localStorage.getItem(LAST_MAP);
+  const changed =
+    (previousTier && previousTier !== String(now)) ||
+    (previousMap !== null && Number(previousMap) !== AssistantMap.id());
+  chat = changed ? undefined : current();
+  if (!chat && now) chat = create(now, AssistantMap.id(), AssistantMap.name());
+  remember();
+  initialized = true;
+  notice = null;
+  render();
+  void refreshContextChip();
+  if (official() && now !== "key") void refreshLimits();
+}
 
-  const out = document.createElement("button");
-  out.type = "button";
-  out.className = "assistantLink";
-  out.textContent = "Sign out";
-  out.addEventListener("click", () => {
-    void signOut().then(() => {
-      resetConversationLog();
-      void refreshLimits();
-    });
+function remember(): void {
+  localStorage.setItem(LAST_TIER, String(tier()));
+  localStorage.setItem(LAST_MAP, String(AssistantMap.id()));
+}
+
+function newChat(): void {
+  if (busy || !initialized) return;
+  const now = tier();
+  chat = now ? create(now, AssistantMap.id(), AssistantMap.name()) : undefined;
+  remember();
+  clearNotice();
+  AssistantWidgets.clearMarks();
+  const input = document.getElementById("assistantQuestion") as HTMLTextAreaElement | null;
+  if (input) {
+    input.value = "";
+    fitInput(input);
+  }
+  showView("chat");
+}
+
+function openChat(id: string): void {
+  chat = select(id);
+  clearNotice();
+  AssistantWidgets.clearMarks();
+  showView("chat");
+}
+
+function deleteChat(id: string): void {
+  remove(id);
+  if (chat?.id === id) {
+    chat = undefined;
+    AssistantWidgets.clearMarks();
+  }
+  renderChats();
+}
+
+function showView(next: View): void {
+  if (view === "key" && next !== "key") cancelDiscovery();
+  view = next;
+  render();
+}
+
+function render(): void {
+  if (!isOpen()) return;
+  const readOnly = !chat || !canContinue(chat, tier(), AssistantMap.id());
+  el("assistantTranscript").hidden = view !== "chat";
+  el("assistantChats").hidden = view !== "chats";
+  el("assistantKey").hidden = view !== "key";
+  el("assistantComposer").hidden = view !== "chat" || readOnly;
+  renderContextChip();
+  const openChats = document.getElementById("assistantOpenChats") as HTMLButtonElement | null;
+  if (openChats) openChats.disabled = busy || !initialized;
+  const ask = el<HTMLButtonElement>("assistantAsk");
+  ask.className = busy ? "busy icon-cancel" : "icon-right-big";
+  ask.setAttribute("aria-label", busy ? "Stop" : "Send");
+  ask.title = busy ? "Stop" : "Send (Enter)";
+  if (view === "chat") renderTranscript();
+  if (view === "chats") renderChats();
+  renderNotice();
+  renderFooter();
+}
+
+function renderTranscript(keepScroll = false): void {
+  const log = el("assistantTranscript");
+  const top = log.scrollTop;
+  const items = chat?.items ?? [];
+  const now = tier();
+  const live = chat?.mapId === AssistantMap.id();
+  const canAsk = !busy && Boolean(chat && canContinue(chat, now, AssistantMap.id()));
+  let html = items.length ? "" : welcomeHtml(now);
+  items.forEach((item, index) => {
+    if (item !== notice?.item) html += itemHtml(item, { index, live, canAsk });
   });
-  host.appendChild(out);
+  if ((chat && !canContinue(chat, now, AssistantMap.id())) || (initialized && now && !chat)) {
+    html += /* html */ `<div class="assistantItem assistantNoticeItem">Start a new chat to continue
+      <div class="assistantActions"><button type="button" class="assistantButton" data-action="new-chat">New chat</button></div>
+    </div>`;
+  }
+  if (busy) html += `<div class="assistantTyping"><i></i><i></i><i></i>${escapeHtml(answerStatus)}…</div>`;
+  log.innerHTML = html;
+  log.scrollTop = keepScroll ? top : log.scrollHeight;
+}
+
+function welcomeHtml(now: Tier): string {
+  const note = noteLabel ? escapeHtml(noteLabel) : "";
+  const paragraphs = !now
+    ? [
+        "The free Assistant runs only on the official site. Connect your own AI key or a local model to ask questions here."
+      ]
+    : now === "key"
+      ? [
+          "Hi! Ask about the Fantasy Map Generator or this map. I can read your map, edit notes and names.",
+          note ? `I can work on the note “${note}”.` : ""
+        ]
+      : [
+          "Hi! Ask anything about the Fantasy Map Generator.",
+          `Connect your own AI key and I can read this map, answer questions about it and edit it, with no daily limit.`
+        ];
+  const connect =
+    now === "key"
+      ? ""
+      : `<div class="assistantActions"><button type="button" class="assistantButton assistantPrimary" data-action="key">🔑 Connect your AI key</button></div>`;
+  const text = paragraphs
+    .filter(Boolean)
+    .map(paragraph => `<p>${paragraph}</p>`)
+    .join("");
+  return `<div class="assistantItem assistantWelcome">${text}${connect}</div>`;
+}
+
+function itemHtml(item: TranscriptItem, context: WidgetContext): string {
+  const { index, live } = context;
+  if (item.kind === "question") return `<div class="assistantItem assistantQuestion">${escapeHtml(item.text)}</div>`;
+  if (item.kind === "answer") {
+    const feedback =
+      item.ratingId == null
+        ? ""
+        : `<div class="assistantFeedback">${(["up", "down"] as const)
+            .map(
+              rating =>
+                `<button type="button" data-action="rate" data-index="${index}" data-rating="${rating}" aria-pressed="${item.rating === rating}" aria-label="${rating === "up" ? "Good answer" : "Bad answer"}">${rating === "up" ? "👍" : "👎"}</button>`
+            )
+            .join("")}</div>`;
+    return `<div class="assistantItem assistantAnswer">${renderMarkdown(item.text, AssistantWidgets.links(live))}${feedback}</div>`;
+  }
+  if (item.kind === "step") {
+    const { result } = item;
+    const summary = !result ? "Reading the map" : result.ok ? "Read the map" : "Map read failed";
+    const output = result ? (result.ok ? [result.value, ...result.logs].join("\n") : result.error?.message) : "";
+    return /* html */ `<details class="assistantItem assistantStep${result && !result.ok ? " failed" : ""}">
+      <summary>${summary}${result ? ` · ${result.ms} ms` : ""}</summary>
+      <pre>${escapeHtml(item.code)}</pre>${output ? `<pre>${escapeHtml(output)}</pre>` : ""}
+    </details>`;
+  }
+  if (item.kind === "proposal") return proposalHtml(item.proposal, index);
+  if (item.kind === "divider") return `<div class="assistantDivider">New memory</div>`;
+  if (item.kind === "widget") return AssistantWidgets.html(item.widget, context);
+  return `<div class="assistantItem assistantNoticeItem">${renderMarkdown(item.text)}</div>`;
+}
+
+function proposalHtml(proposal: Proposal, index: number): string {
+  const { change, state } = proposal;
+  const groups: ChangeRow[][] = [];
+  for (const row of change.slice(0, PROPOSAL_ROWS)) {
+    const group = groups.at(-1);
+    if (group?.[0].key === row.key) group.push(row);
+    else groups.push([row]);
+  }
+  const more = change.length - PROPOSAL_ROWS;
+  const rows = groups
+    .map(
+      rows => /* html */ `<div class="assistantChangeEntity">
+        <div class="assistantChangeName">${escapeHtml(rows[0].entity)}</div>
+        ${rows.map(changeHtml).join("")}
+      </div>`
+    )
+    .join("");
+  const list = `${rows}${more > 0 ? `<div class="assistantChangeMore">… ${more} more change${more === 1 ? "" : "s"}</div>` : ""}`;
+  const entities = new Set(change.map(row => row.key)).size;
+  const count = `${change.length} change${change.length === 1 ? "" : "s"}${entities > 1 ? ` · ${entities} entities` : ""}`;
+
+  const button = (action: string, label: string, enabled: boolean, primary = false) =>
+    `<button type="button" class="assistantButton${primary ? " assistantPrimary" : ""}" data-action="${action}" data-index="${index}" ${enabled ? "" : "disabled"}>${label}</button>`;
+  const mapId = AssistantMap.id();
+  const canApply = Proposals.canApply(proposal, mapId);
+  const canUndo = Proposals.canUndo(proposal, mapId);
+  const actions =
+    state === "proposed"
+      ? button("discard", "Discard", true) + button("apply", canApply ? "Apply" : "Changed since", canApply, true)
+      : state === "applied"
+        ? button("undo", canUndo ? "Undo" : "Changed since", canUndo)
+        : "";
+  const body =
+    state === "proposed"
+      ? `<div class="assistantProposalBody">${list}</div>`
+      : `<details class="assistantProposalBody"><summary>Show ${count}</summary>${list}</details>`;
+
+  const footer =
+    state === "proposed"
+      ? `<div class="assistantProposalFooter"><span>${count}</span><span class="assistantProposalActions">${actions}</span></div>`
+      : "";
+
+  return /* html */ `<div class="assistantItem assistantProposal ${state}">
+    <div class="assistantProposalHeader">
+      <span class="assistantProposalState">${PROPOSAL_STATES[state]}</span>
+      <span class="assistantProposalSummary">${escapeHtml(proposal.summary)}</span>
+      ${state === "proposed" ? "" : actions}
+    </div>
+    ${body}
+    ${footer}
+  </div>`;
+}
+
+const FIELD_LABELS: Record<string, string> = { fullName: "Full name", "label.text": "Label" };
+
+// Notes passed the notes subset check in Notes.write, so the preview renders them as HTML
+function changeHtml({ field, before, after }: ChangeRow): string {
+  const label =
+    FIELD_LABELS[field] ??
+    capitalize(
+      field
+        .replace(/\./g, " ")
+        .replace(/([a-z])([A-Z])/g, "$1 $2")
+        .toLowerCase()
+    );
+  if (field === "note") {
+    const size = (value: unknown) =>
+      typeof value === "string" && value ? `${formatNumber(value.length)} characters` : "empty";
+    const preview = typeof after === "string" && after ? `<div class="assistantNotePreview">${after}</div>` : "";
+    return /* html */ `<div class="assistantChangeField">
+      <span>${label}</span>
+      <span><del>${size(before)}</del><i>→</i><ins>${size(after)}</ins></span>
+      ${preview}
+    </div>`;
+  }
+  const value = (value: unknown) => {
+    if (value === undefined || value === "") return `<em>none</em>`;
+    const shown = typeof value === "string" ? value : JSON.stringify(value);
+    return escapeHtml(shown.length > 80 ? `${shown.slice(0, 80)}…` : shown);
+  };
+  return /* html */ `<div class="assistantChangeField">
+    <span>${label}</span>
+    <span><del>${value(before)}</del><i>→</i><ins>${value(after)}</ins></span>
+  </div>`;
+}
+
+function renderChats(): void {
+  const entries = list();
+  el("assistantChatList").innerHTML = entries.length
+    ? entries.map(chatRowHtml).join("")
+    : `<div class="assistantEmpty">No chats yet.</div>`;
+}
+
+function chatRowHtml(entry: Chat): string {
+  const tokens = entry.usage.input + entry.usage.output + entry.usage.cached;
+  const meta = [
+    escapeHtml(entry.mapName) + (entry.mapId === AssistantMap.id() ? "" : " (other map)"),
+    entry.answerer === "provider" ? "🔑" : "",
+    tokens ? `${formatNumber(tokens)} tokens` : ""
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const title = escapeHtml(entry.title);
+  const updated = new Date(entry.updated);
+  return /* html */ `<div class="assistantChatRow${entry === chat ? " current" : ""}">
+    <button type="button" class="assistantChatTitle" data-action="open-chat" data-id="${entry.id}" title="${title}">${title}</button>
+    <time datetime="${updated.toISOString()}" title="${updated.toLocaleString()}">${timeAgo(entry.updated)}</time>
+    <button type="button" class="assistantDelete icon-trash" data-action="delete-chat" data-id="${entry.id}" aria-label="Delete chat ${title}"></button>
+    <small>${meta}</small>
+  </div>`;
+}
+
+function renderFooter(): void {
+  const now = tier();
+  const connection = Connection.get();
+  const local = connection.provider === "local";
+  const tokens = chat?.answerer === "provider" ? chat.usage.input + chat.usage.output + chat.usage.cached : 0;
+  el("assistantTier").hidden = now !== "guest" && now !== "member";
+  el("assistantTier").textContent = now === "member" ? "Member" : "Guest";
+  el("assistantStatus").textContent =
+    now === "key"
+      ? `${local ? "Local" : "🔑"} ${local ? connection.localModel : connection.model} · ${formatNumber(tokens)} tokens`
+      : now && limits
+        ? limitsLabel(limits)
+        : "";
+  el("assistantSignIn").hidden = now !== "guest";
+  el("assistantSignOut").hidden = now !== "member";
+  el("assistantUseKey").textContent = now === "key" ? "Key" : "Use key";
+  for (const button of el("assistantAccount").querySelectorAll("button")) button.disabled = busy || !initialized;
+}
+
+function renderNotice(): void {
+  const long = Boolean(chat && isLong(chat));
+  const live = Boolean(notice?.item && !notice.retryAt);
+  const now = tier();
+  el("assistantNotice").hidden = view !== "chat" || (!notice && !long);
+  el("assistantNoticeText").hidden = !notice;
+  el("assistantNoticeText").innerHTML = notice ? renderMarkdown(notice.text) : "";
+  el("assistantCountdown").hidden = !notice?.retryAt;
+  el("assistantCountdown").textContent = notice?.retryAt
+    ? `Retrying in ${Math.max(0, Math.ceil((notice.retryAt - Date.now()) / 1000))}s`
+    : "";
+  el("assistantRetry").hidden = !loadFailed;
+  el("assistantResend").hidden = !live || !failed || failed.chat !== chat;
+  el("assistantNoticeSignIn").hidden = !live || now !== "guest";
+  el("assistantNoticeKey").hidden = !live;
+  el("assistantNoticeKey").textContent = now === "key" ? "Key" : "🔑 Connect your AI key";
+  el("assistantNoticeActions").hidden = !loadFailed && !live;
+  el("assistantLong").hidden = !long;
+  for (const button of el("assistantNotice").querySelectorAll("button")) button.disabled = busy;
+}
+
+// The live notice sits above the composer; once the next answer arrives it moves into the transcript
+function showNotice(next: Notice): void {
+  stopCountdown();
+  notice = next;
+  if (next.retryAt) countdownTimer = setInterval(renderNotice, 1000);
+  if (isOpen()) renderNotice();
+}
+
+function clearNotice(): void {
+  stopCountdown();
+  notice = null;
+}
+
+function stopCountdown(): void {
+  if (countdownTimer) clearInterval(countdownTimer);
+  countdownTimer = null;
+}
+
+function fitInput(input: HTMLTextAreaElement): void {
+  input.style.height = "";
+  if (input.value) input.style.height = `${input.scrollHeight}px`;
+}
+
+async function refreshContextChip(): Promise<void> {
+  const note = await Controllers.NotesEditor.current();
+  noteLabel = note ? note.name || note.id : null;
+  if (!isOpen()) return;
+  renderContextChip();
+  if (view === "chat" && !chat?.items.length) renderTranscript();
+}
+
+function renderContextChip(): void {
+  el("assistantContext").textContent = noteLabel ? `Note: ${noteLabel}` : "";
+  el("assistantContext").hidden = view !== "chat" || !noteLabel;
 }
 
 async function refreshLimits(): Promise<void> {
+  if (!official() || tier() === "key") return;
   try {
-    const limits = await getLimits();
-    ensureEl("assistantLimits").textContent = limitsLabel(limits);
-    renderAuth(limits.tier);
-  } catch {
-    // limits are a nicety; asking still reports the authoritative state. Render auth from
-    // local state rather than dropping it — a signed-in user must keep the sign-out affordance
-    // even when /v1/limits is failing.
-    renderAuth(getToken() ? "member" : "anonymous");
+    limits = await getLimits();
+  } catch (error) {
+    // An expired sign-in clears its token, so the second attempt asks as a Guest
+    const expired = error instanceof AzgaarServerError && error.code === "unauthorized";
+    limits = expired ? await getLimits().catch(() => null) : null;
+  }
+  if (initialized && !busy && localStorage.getItem(LAST_TIER) !== String(tier())) newChat();
+  if (isOpen()) renderFooter();
+}
+
+async function leaveMember(): Promise<void> {
+  await signOut();
+  newChat();
+  void refreshLimits();
+}
+
+function decide(action: "apply" | "undo" | "discard", index: number): void {
+  const owner = chat;
+  const item = owner?.items[index];
+  if (!owner || item?.kind !== "proposal") return;
+  try {
+    if (action === "discard") Proposals.discard(item.proposal);
+    else if (!Proposals[action](item.proposal, AssistantMap.id()))
+      showNotice({ text: `The map changed since; ${action === "apply" ? "Apply" : "Undo"} is unavailable.` });
+    touch(owner);
+  } catch (error) {
+    showNotice({ text: error instanceof Error ? error.message : String(error) });
+  }
+  if (isOpen() && chat === owner && view === "chat") {
+    renderTranscript();
+    void refreshContextChip();
   }
 }
 
-// Declined states are designed states: the budget/quota text arrives display-ready from the
-// server (with live links) and is rendered verbatim — never composed here.
-export function noticeFor(error: GatewayError): WidgetNotice {
-  const html = renderMarkdown(error.message);
-  switch (error.code) {
-    case "cap_reached":
-    case "quota":
-    case "blocked":
-      return { html, askDisabled: true };
-    case "rate_limited":
-      return { html, askDisabled: true, retryCountdown: error.retryAfter ?? DEFAULT_RETRY_SECONDS };
-    default:
-      return { html, askDisabled: false };
+function toggleMarks(index: number): void {
+  const item = chat?.items[index];
+  if (item?.kind !== "widget" || item.widget.type !== "entities") return;
+  AssistantWidgets.toggleMarks(item.widget);
+  renderTranscript(true);
+}
+
+function revealInset(index: number): void {
+  const item = chat?.items[index];
+  if (item?.kind === "widget" && item.widget.type === "inset") AssistantWidgets.revealInset(item.widget);
+}
+
+/** A choice with operations becomes a proposal card; one without is sent as the user's next question */
+function choose(index: number, number: number): void {
+  const owner = chat;
+  const item = owner?.items[index];
+  if (!owner || item?.kind !== "widget" || item.widget.type !== "choices" || item.widget.picked !== undefined) return;
+  const { widget } = item;
+  const choice = widget.choices[number];
+  if (!choice) return;
+  if (!choice.operations) {
+    if (busy || !canContinue(owner, tier(), AssistantMap.id())) return;
+    widget.picked = number;
+    el<HTMLTextAreaElement>("assistantQuestion").value = choice.label;
+    void send();
+    return;
+  }
+  const count = owner.items.filter(entry => entry.kind === "proposal").length;
+  const proposal = Proposals.propose(choice.label, choice.operations, count + 1, AssistantMap.id());
+  if (typeof proposal === "string") {
+    showNotice({ text: proposal });
+    return;
+  }
+  widget.picked = number;
+  append(owner, { kind: "proposal", proposal });
+  touch(owner);
+  renderTranscript();
+}
+
+async function rateItem(index: number, rating: "up" | "down"): Promise<void> {
+  const owner = chat;
+  const item = owner?.items[index];
+  if (!owner || item?.kind !== "answer") return;
+  await rateAnswer(item, rating, () => {
+    touch(owner);
+    if (isOpen() && chat === owner && view === "chat") renderTranscript();
+  });
+}
+
+/** Select a rating at once; roll it back if the Azgaar server refuses it */
+export async function rateAnswer(item: AnswerItem, rating: "up" | "down", onChange: () => void): Promise<void> {
+  if (item.ratingId == null || item.rating === rating) return;
+  const previous = item.rating;
+  item.rating = rating;
+  onChange();
+  try {
+    await sendFeedback(item.ratingId, rating);
+  } catch (error) {
+    item.rating = previous;
+    onChange();
+    if (error instanceof AzgaarServerError && error.code === "unauthorized") void refreshLimits();
   }
 }
 
-// One automatic retry only where the server sent a retryAfter — never on the client's default
-// countdown, and never twice in a row for the same failure chain.
-export function shouldAutoRetry(error: GatewayError, alreadyRetried: boolean): boolean {
-  return error.code === "rate_limited" && error.retryAfter !== undefined && !alreadyRetried;
+function openKeySheet(): void {
+  if (busy) return;
+  const connection = Connection.get();
+  el<HTMLSelectElement>("assistantProvider").value = connection.provider;
+  el<HTMLInputElement>("assistantLocalUrl").value = connection.localUrl;
+  el("assistantDisconnect").hidden = !Connection.isConnected();
+  showView("key");
+  fillProvider(false);
 }
 
-export function limitsLabel(limits: Limits): string {
-  if (limits.remaining <= 0) return "No questions left today";
-  return `${limits.remaining} question${limits.remaining === 1 ? "" : "s"} left today`;
+function cancelDiscovery(): void {
+  discoveryId++;
+  if (discoveryTimer) clearTimeout(discoveryTimer);
+  discoveryTimer = null;
 }
+
+function selectedProvider(): ProviderSpec {
+  const id = el<HTMLSelectElement>("assistantProvider").value;
+  return PROVIDERS.find(provider => provider.id === id) ?? DEFAULT_PROVIDER;
+}
+
+function fillProvider(changed: boolean): void {
+  const connection = Connection.get();
+  const provider = selectedProvider();
+  const local = provider.id === "local";
+  const saved = !changed && provider.id === connection.provider;
+  const model = saved ? connection.model : provider.fallbackModel;
+  const key = saved ? connection.key : localStorage.getItem(`fmg-ai-kl-${provider.id}`) || "";
+  el<HTMLInputElement>("assistantModel").value = local ? connection.localModel : model;
+  el<HTMLInputElement>("assistantApiKey").value = local ? "" : key;
+  el("assistantModelLabel").textContent = local ? "Model name" : "Model";
+  el<HTMLAnchorElement>("assistantKeyLink").href = provider.keyLink;
+  for (const node of el("assistantKey").querySelectorAll<HTMLElement>("[data-remote]")) node.hidden = local;
+  for (const node of el("assistantKey").querySelectorAll<HTMLElement>("[data-local]")) node.hidden = !local;
+  setModels(modelChoices(provider, []));
+  void discover();
+}
+
+function setModels(models: string[]): void {
+  el("assistantModels").replaceChildren(...models.filter(model => model !== "local").map(model => new Option(model)));
+}
+
+function scheduleDiscovery(): void {
+  cancelDiscovery();
+  el("assistantDiscoveryError").textContent = "";
+  setModels([]);
+  discoveryTimer = setTimeout(() => void discover(), 350);
+}
+
+// Discovery doubles as the key check: a failure shows the provider's error but never blocks Connect
+async function discover(): Promise<void> {
+  const provider = selectedProvider();
+  const key = el<HTMLInputElement>("assistantApiKey").value.trim();
+  const url = el<HTMLInputElement>("assistantLocalUrl").value.trim();
+  const request = ++discoveryId;
+  const error = el("assistantDiscoveryError");
+  error.textContent = "";
+  if (provider.id !== "local" && !key) return setModels([]);
+  const stale = () => request !== discoveryId || !isOpen() || view !== "key";
+  try {
+    const cached = await cachedModels(provider.id, key, url);
+    if (stale()) return;
+    setModels(modelChoices(provider, cached));
+    const found = await listModels(provider.id, key, url);
+    if (!stale()) setModels(found);
+  } catch (failure) {
+    if (!stale()) error.textContent = failure instanceof Error ? failure.message : String(failure);
+  }
+}
+
+function connect(): void {
+  const provider = selectedProvider().id;
+  const local = provider === "local";
+  const model = el<HTMLInputElement>("assistantModel").value.trim();
+  const key = el<HTMLInputElement>("assistantApiKey").value.trim();
+  if (!model || (!local && !key)) {
+    el("assistantDiscoveryError").textContent = local ? "Enter a model name." : "Enter a model and API key.";
+    return;
+  }
+  const connection = Connection.get();
+  const wasConnected = Connection.isConnected();
+  Connection.save({
+    provider,
+    model: local ? "local" : model,
+    localModel: local ? model : connection.localModel,
+    localUrl: el<HTMLInputElement>("assistantLocalUrl").value.trim() || connection.localUrl,
+    key
+  });
+  if (wasConnected) showView("chat");
+  else newChat();
+}
+
+function disconnect(): void {
+  Connection.clear();
+  newChat();
+  void refreshLimits();
+}
+
+async function send(): Promise<void> {
+  if (busy || !chat || !canContinue(chat, tier(), AssistantMap.id())) return;
+  const input = el<HTMLTextAreaElement>("assistantQuestion");
+  const question = normalizeQuestion(input.value);
+  if (!question) return;
+  input.value = "";
+  fitInput(input);
+  clearNotice();
+  failed = null;
+  busy = true;
+  answerStatus = "Thinking";
+  const request = new AbortController();
+  abort = request;
+  const active = chat;
+  const from = active.items.length;
+  const visible = () => isOpen() && chat === active;
+  const onItem = (item: TranscriptItem) => {
+    append(active, item);
+    if (!visible()) return;
+    if (item.kind === "notice") showNotice({ text: item.text, retryAt: item.retryAt, item });
+    if (item.kind === "answer" && notice) {
+      clearNotice();
+      renderNotice();
+    }
+    if (view === "chat") renderTranscript();
+  };
+  const answerer: Answerer =
+    active.answerer === "provider"
+      ? createProviderAnswerer(AssistantMap.tools(active), () => AssistantMap.context(active))
+      : createAzgaarServerAnswerer();
+  render();
+  try {
+    await answerer.send(active, question, onItem, request.signal, status => {
+      answerStatus = status;
+      if (visible() && view === "chat") renderTranscript();
+    });
+  } catch (error) {
+    if (!request.signal.aborted) {
+      const item: TranscriptItem = { kind: "notice", text: error instanceof Error ? error.message : String(error) };
+      append(active, item);
+      failed = { chat: active, question, from };
+      if (chat === active) showNotice({ text: item.text, item });
+    }
+  } finally {
+    if (notice?.retryAt) clearNotice();
+    busy = false;
+    abort = null;
+    touch(active);
+    if (isOpen()) {
+      render();
+      el("assistantQuestion").focus();
+    }
+    void refreshLimits();
+  }
+}
+
+/** Ask the failed question again; a failure before any step leaves nothing of it behind */
+function resend(): void {
+  const retry = failed;
+  if (!retry || busy || chat !== retry.chat) return;
+  const tail = retry.chat.items.slice(retry.from);
+  if (tail.every(item => item.kind === "question" || item.kind === "notice")) retry.chat.items.splice(retry.from);
+  else if (tail.at(-1)?.kind === "notice") retry.chat.items.pop();
+  el<HTMLTextAreaElement>("assistantQuestion").value = retry.question;
+  void send();
+}
+
+function stop(): void {
+  abort?.abort();
+}
+
+function timeAgo(time: number): string {
+  const minutes = Math.round((Date.now() - time) / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours} h ago`;
+  const days = Math.round(hours / 24);
+  return days === 1 ? "yesterday" : days < 30 ? `${days} days ago` : new Date(time).toLocaleDateString();
+}
+
+function formatNumber(value: number): string {
+  return value < 1000 ? String(value) : `${(value / 1000).toFixed(1)}k`;
+}
+
+window.addEventListener("map:generated", () => {
+  if (!initialized || localStorage.getItem(LAST_MAP) === String(AssistantMap.id())) return;
+  stop();
+  const now = tier();
+  chat = now ? create(now, AssistantMap.id(), AssistantMap.name()) : undefined;
+  remember();
+  clearNotice();
+  AssistantWidgets.clearMarks();
+  view = "chat";
+  if (!isOpen()) return;
+  const input = el<HTMLTextAreaElement>("assistantQuestion");
+  input.value = "";
+  fitInput(input);
+  render();
+  void refreshContextChip();
+});
+
+window.addEventListener("notes:context-changed", () => {
+  if (isOpen()) void refreshContextChip();
+});
+
+export const limitsLabel = (value: Limits): string =>
+  value.remaining
+    ? `${value.remaining} question${value.remaining === 1 ? "" : "s"} left today`
+    : "No questions left today";
 
 export function normalizeQuestion(raw: string): string | null {
   const question = raw.trim();
-  if (!question.length || question.length > MAX_QUESTION_LENGTH) return null;
-  return question;
+  return question && question.length <= MAX_QUESTION_LENGTH ? question : null;
 }
 
 export const Assistant = { open, toggle };

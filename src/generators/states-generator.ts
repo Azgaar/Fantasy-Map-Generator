@@ -1,6 +1,7 @@
 import { mean, median, quadtree, sum } from "d3";
 import { Emblems } from "@/generators/emblems-generator";
 import type { Emblem } from "@/types/emblems";
+import { replaceWholeWord, requireName } from "@/utils/languageUtils";
 import {
   each,
   gauss,
@@ -851,6 +852,16 @@ class StatesModule {
     if (!state.name && state.formName) return `The ${state.formName}`;
     const adjName = adjForms.includes(state.formName) && !/-| /.test(state.name);
     return adjName ? `${getAdjective(state.name)} ${state.formName}` : `${state.formName} of ${state.name}`;
+  }
+
+  /** Rename a state; a custom full name or label keeps its pattern when the old name stands in it as a whole word */
+  rename(stateId: number, name: string): void {
+    const state = pack.states[stateId];
+    if (!state || state.removed) throw new Error(`State ${stateId} does not exist`);
+    const old = state.name;
+    state.name = requireName(name);
+    state.fullName = replaceWholeWord(state.fullName, old, state.name) ?? this.getFullName(state);
+    if (state.label?.text) state.label.text = replaceWholeWord(state.label.text, old, state.name) ?? state.label.text;
   }
 
   collectTaxes() {

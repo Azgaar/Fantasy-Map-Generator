@@ -1,8 +1,7 @@
 import { type D3DragEvent, drag, easeSinInOut, select, sum, transition } from "d3";
-import { closeDialogs, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog, noteButton, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
-import { Notes } from "@/components/notes";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -78,7 +77,7 @@ function renderDialog(): void {
         class="icon-attach"
       ></button>
       <button id="regimentRegenerateLegend" data-tip="Regenerate legend for this regiment" class="icon-retweet"></button>
-      ${Notes.getButton("regimentLegend", "this regiment")}
+      ${noteButton("regimentLegend", "this regiment")}
       <button
         id="regimentRemove"
         data-tip="Remove regiment"

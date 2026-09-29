@@ -1,4 +1,5 @@
 import { quadtree } from "d3";
+import { requireName } from "@/utils/languageUtils";
 import {
   abbreviate,
   each,
@@ -1208,6 +1209,17 @@ class ReligionsModule {
     pack.cells.religion = newReligionIds;
 
     this.checkCenters();
+  }
+
+  /** Rename a religion; its code is recomputed */
+  rename(religionId: number, name: string): void {
+    const religion = pack.religions[religionId];
+    if (!religion || religion.removed) throw new Error(`Religion ${religionId} does not exist`);
+    religion.name = requireName(name);
+    religion.code = abbreviate(
+      religion.name,
+      pack.religions.flatMap(other => (other !== religion && other.code ? [other.code] : []))
+    );
   }
 
   add(center: number) {

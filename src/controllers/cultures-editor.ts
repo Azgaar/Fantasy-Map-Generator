@@ -1,5 +1,11 @@
 import { csvParse, drag, easeSinIn, select, transition } from "d3";
-import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
+import {
+  closeDialogs,
+  confirmationDialog,
+  destroyDialog,
+  noteIcon,
+  updateDialog
+} from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
@@ -12,7 +18,6 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
-import { Notes } from "@/components/notes";
 import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -352,7 +357,7 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
           <div data-tip="${populationTip}" class="culturePopulation pointer">${si(population)}</div>
         </div>
         <div data-col="emblems">${getShapeOptions(Emblems.isDiversiform, c.shield)}</div>
-        ${Notes.getIcon("this culture")}
+        ${noteIcon("this culture")}
         <span data-col="locate" data-tip="Locate the culture" class="icon-target"></span>
         <span data-col="lock" data-tip="Lock culture" class="icon-lock${c.lock ? "" : "-open"}"></span>
         <span data-col="remove" data-tip="Remove culture" class="icon-trash-empty"></span>
@@ -506,12 +511,7 @@ function cultureChangeName(this: HTMLInputElement): void {
   const row = this.closest(".states") as HTMLElement;
   const culture = +row.dataset.id!;
   row.dataset.name = this.value;
-  const cultures = pack.cultures;
-  cultures[culture].name = this.value;
-  cultures[culture].code = abbreviate(
-    this.value,
-    cultures.flatMap(c => (c.code ? [c.code] : []))
-  );
+  if (this.value.trim()) Cultures.rename(culture, this.value);
 }
 
 function cultureRegenerateName(this: HTMLElement): void {
@@ -524,7 +524,7 @@ function cultureRegenerateName(this: HTMLElement): void {
 
   const name = Names.getCultureShort(cultureId);
   (this.parentNode as HTMLElement).querySelector<HTMLInputElement>("input.cultureName")!.value = name;
-  pack.cultures[cultureId].name = name;
+  Cultures.rename(cultureId, name);
 }
 
 function cultureChangeExpansionism(this: HTMLInputElement): void {

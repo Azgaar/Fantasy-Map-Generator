@@ -455,7 +455,7 @@ const TEMPLATE = /* html */ `
     </tr>
     <tr data-tip="Toggle Azgaar Assistant (help bubble on the bottom right corner)">
       <td></td>
-      <td>Azgaar assistant</td>
+      <td>Azgaar Assistant</td>
       <td>
         <select id="azgaarAssistant" data-option="azgaarAssistant">
           <option value="show" selected>Show</option>

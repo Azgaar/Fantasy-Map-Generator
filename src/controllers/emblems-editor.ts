@@ -1,6 +1,5 @@
 import { type D3DragEvent, drag, select } from "d3";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
-import { IconSets } from "@/components/icon-sets";
 import { CustomIcons, Icons, IMAGE_FRAME } from "@/components/icons";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { tinctures } from "@/data/emblems";
@@ -12,7 +11,7 @@ import { type EmblemType, redrawEmblem, subscribeToEmblemReconciliation } from "
 import { colors } from "@/renderers/emblems/colors";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { highlightEmblemElement } from "@/renderers/overlays/highlight";
-import { inlineLinkedImages } from "@/services/io/export";
+import { cloneEmblem, emblemURL, loadEmblemIcons } from "@/services/io/emblem-image";
 import type { Emblem, EmblemCharge, HeraldicEmblem } from "@/types/emblems";
 import { capitalize, downloadFile, escapeHtml, getFileName, openURL } from "@/utils";
 import { ensureEl, rn } from "../utils";
@@ -704,7 +703,7 @@ async function download(format: string): Promise<void> {
   const coa = document.getElementById(currentId)!;
   await loadEmblemIcons([coa]);
   const size = +ensureEl<HTMLInputElement>("emblemsDownloadSize").value;
-  const url = await getURL(coa, size, format !== "svg");
+  const url = await emblemURL(coa, size, format !== "svg");
   const link = document.createElement("a");
   link.download = `${getFileName(`Emblem ${currentEl.fullName || currentEl.name}`)}.${format}`;
 
@@ -739,58 +738,8 @@ function downloadRaster(format: string, url: string, link: HTMLAnchorElement, si
   };
 }
 
-async function getURL(svg: Element, size: number, raster: boolean): Promise<string> {
-  const clone = cloneEmblem(svg, size);
-  if (raster) await inlineLinkedImages(clone);
-  const serialized = new XMLSerializer().serializeToString(clone);
-  const blob = new Blob([serialized], { type: "image/svg+xml;charset=utf-8" });
-  const url = window.URL.createObjectURL(blob);
-  window.setTimeout(() => window.URL.revokeObjectURL(url), 6000);
-  return url;
-}
-
 function getSVG(svg: Element, size: number): string {
   return new XMLSerializer().serializeToString(cloneEmblem(svg, size));
-}
-
-function cloneEmblem(svg: Element, size: number): SVGSVGElement {
-  const clone = svg.cloneNode(true) as SVGSVGElement;
-  clone.setAttribute("width", String(size));
-  clone.setAttribute("height", String(size));
-  const defs =
-    clone.querySelector("defs") ??
-    clone.insertBefore(document.createElementNS("http://www.w3.org/2000/svg", "defs"), clone.firstChild);
-  const visited = new Set<string>();
-  const follow = (id: string): void => {
-    if (visited.has(id)) return;
-    visited.add(id);
-    let definition = clone.querySelector(`[id="${CSS.escape(id)}"]`);
-    if (!definition) {
-      const original = document.getElementById(id);
-      if (!original) return; // removed art draws nothing on the map either
-      definition = defs.appendChild(original.cloneNode(true) as Element);
-    }
-    for (const use of definition.querySelectorAll("use")) {
-      const href = use.getAttribute("href") ?? use.getAttribute("xlink:href");
-      if (href?.startsWith("#")) follow(href.slice(1));
-    }
-  };
-  for (const use of [...clone.querySelectorAll("use")]) {
-    const href = use.getAttribute("href") ?? use.getAttribute("xlink:href");
-    if (href?.startsWith("#")) follow(href.slice(1));
-  }
-  return clone;
-}
-
-function loadEmblemIcons(emblems: Element[]): Promise<void> {
-  const sets = emblems.flatMap(emblem =>
-    [...emblem.querySelectorAll("use")].flatMap(use => {
-      const href = use.getAttribute("href") ?? use.getAttribute("xlink:href");
-      const set = href?.startsWith("#") ? IconSets.setForId(href.slice(1)) : null;
-      return set ? [set] : [];
-    })
-  );
-  return Icons.require(sets);
 }
 
 async function downloadGallery(): Promise<void> {

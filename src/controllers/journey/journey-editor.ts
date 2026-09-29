@@ -3,6 +3,7 @@ import {
   closeDialogs,
   confirmationDialog,
   destroyDialog,
+  noteButton,
   updateDialog
 } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
@@ -16,7 +17,6 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
-import { Notes } from "@/components/notes";
 import type { FillBoxElement } from "@/components/shared/fill-box";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
@@ -156,7 +156,7 @@ function renderDialog(journey: Journey): void {
       <button id="journeyEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
       <button id="journeyAddSegment" data-tip="Add a segment to the journey" class="icon-plus"></button>
       <button id="journeyEditTransport" data-tip="Edit transport types" class="icon-cog"></button>
-      ${Notes.getButton("journeyLegend", "this journey")}
+      ${noteButton("journeyLegend", "this journey")}
       <button id="journeyExport" data-tip="Save journey segments as a text file (.csv)" class="icon-download"></button>
       <button id="journeyRemove" data-tip="Remove the journey" class="icon-trash"></button>
     </div>

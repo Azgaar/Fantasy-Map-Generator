@@ -160,3 +160,13 @@ describe("RiverModule helpers", () => {
     });
   });
 });
+
+describe("RiverModule.rename", () => {
+  it("renames a river by id and keeps its custom label pattern", async () => {
+    await import("./river-generator");
+    globalThis.pack = { rivers: [{ i: 7, name: "Ald", type: "River", label: { text: "Ald Falls" } }] } as any;
+    (globalThis as any).Rivers.rename(7, "Brae");
+    expect(pack.rivers[0]).toMatchObject({ name: "Brae", label: { text: "Brae Falls" } });
+    expect(() => (globalThis as any).Rivers.rename(1, "X")).toThrow("River 1 does not exist");
+  });
+});

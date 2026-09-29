@@ -193,6 +193,21 @@ export const abbreviate = (name: string, restricted: string[] = []) => {
   return code;
 };
 
+/** A usable entity name: trimmed and not empty */
+export const requireName = (name: unknown): string => {
+  const value = typeof name === "string" ? name.trim() : "";
+  if (!value) throw new Error("The name must not be empty");
+  return value;
+};
+
+/** Replace `name` where it stands as a whole word in `text` ("United Realms of Old"), or null when it does not */
+export const replaceWholeWord = (text: string | undefined, name: string, next: string): string | null => {
+  if (!text || !name) return null;
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, "u");
+  return pattern.test(text) ? text.replace(pattern, () => next) : null;
+};
+
 /**
  * Format a list of strings into a human-readable list.
  * @param array - The array of strings to be formatted.

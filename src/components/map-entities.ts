@@ -1,6 +1,7 @@
 import type { LayerId } from "@/components/layers";
 import { Controllers } from "@/controllers";
 import type { Point } from "@/types/global";
+import { capitalize } from "@/utils/stringUtils";
 
 export const ENTITY_TYPES = [
   "state",
@@ -21,7 +22,13 @@ export const ENTITY_TYPES = [
   "good"
 ] as const;
 
-export type EntityType = (typeof ENTITY_TYPES)[number];
+/** Map records a link can name besides entities: resolvable by key, but not searched and never noted */
+export const RECORD_TYPES = ["cell", "ice", "relief", "measurer", "deal", "transport", "nameBase"] as const;
+
+export type EntityType = (typeof ENTITY_TYPES)[number] | (typeof RECORD_TYPES)[number];
+
+export const isEntityType = (value: string): value is EntityType =>
+  (ENTITY_TYPES as readonly string[]).includes(value) || (RECORD_TYPES as readonly string[]).includes(value);
 
 /** A regiment is addressed by its state (`id`) and its own index (`sub`); everything else by `id` */
 export interface EntityRef {
@@ -384,6 +391,117 @@ class EntityLookup {
       points: ref => this.goodPoints(ref.id),
       context: ref => this.byId(pack.goods, ref.id)?.tags?.join(", ") || "",
       open: ref => Controllers.GoodsEditor.open(ref.id)
+    },
+    cell: {
+      label: "Cells",
+      kind: "Cell",
+      icon: "icon-dot-circled",
+      scale: 8,
+      layers: [],
+      entity: id => (id >= 0 && id < (pack.cells?.i?.length ?? 0) ? { i: id } : undefined),
+      name: id => `Cell ${id}`,
+      refs: () => Array.from(pack.cells?.i ?? [], id => ({ type: "cell" as const, id })),
+      position: id => this.cellPoint(id),
+      context: ref => this.byId(pack.biomes, pack.cells.biome?.[ref.id])?.name || ""
+    },
+    ice: {
+      label: "Ice",
+      kind: id => (this.byId(pack.ice, id)?.type === "glacier" ? "Glacier" : "Iceberg"),
+      icon: "icon-temperature-low",
+      scale: 4,
+      layers: ["ice"],
+      entity: id => this.byId(pack.ice, id),
+      name: id => {
+        const ice = this.byId(pack.ice, id);
+        return ice ? `${ice.type === "glacier" ? "Glacier" : "Iceberg"} ${id}` : "";
+      },
+      refs: () => this.refsOf("ice", pack.ice), // ice 0 is real
+      highlight: id => `#ice [data-id="${id}"]`,
+      points: ref => {
+        const ice = this.byId(pack.ice, ref.id);
+        const [dx, dy] = ice?.offset ?? [0, 0];
+        return (ice?.points ?? []).map(([x, y]) => [x + dx, y + dy]);
+      }
+    },
+    relief: {
+      label: "Relief icons",
+      kind: "Relief icon",
+      icon: "icon-mountain",
+      scale: 8,
+      layers: ["relief"],
+      entity: id => (pack.relief?.[id] ? { i: id } : undefined),
+      name: id => {
+        const icon = pack.relief?.[id];
+        return icon && "type" in icon ? capitalize(icon.type) : "Relief icon";
+      },
+      refs: () => (pack.relief ?? []).map((_, id) => ({ type: "relief" as const, id })),
+      position: id => {
+        const icon = pack.relief?.[id];
+        return icon && [icon.x, icon.y];
+      }
+    },
+    measurer: {
+      label: "Measurers",
+      kind: "Measurer",
+      icon: "icon-ruler",
+      scale: 4,
+      layers: ["rulers"],
+      entity: id => (pack.measurers?.[id] ? { i: id } : undefined),
+      name: id => pack.measurers?.[id]?.type || "",
+      refs: () => (pack.measurers ?? []).map((_, id) => ({ type: "measurer" as const, id })),
+      points: ref => pack.measurers?.[ref.id]?.points ?? [],
+      open: () => Controllers.MeasurersEditor.open()
+    },
+    deal: {
+      label: "Deals",
+      kind: "Deal",
+      icon: "icon-exchange",
+      scale: 6,
+      layers: ["markets"],
+      entity: id => this.byId(pack.deals, id),
+      name: id => {
+        const deal = this.byId(pack.deals, id);
+        return deal ? `${this.byId(pack.goods, deal.good)?.name || "Goods"} deal` : "";
+      },
+      refs: () => this.refsOf("deal", pack.deals),
+      points: ref => {
+        const deal = this.byId(pack.deals, ref.id);
+        if (!deal) return [];
+        const parties = [
+          this.getPosition({ type: deal.sellerType, id: deal.seller }),
+          this.getPosition({ type: deal.buyerType, id: deal.buyer })
+        ];
+        return parties.filter((point): point is Point => Boolean(point));
+      },
+      context: ref => {
+        const deal = this.byId(pack.deals, ref.id);
+        return deal
+          ? `${this.getName({ type: deal.sellerType, id: deal.seller })} → ${this.getName({ type: deal.buyerType, id: deal.buyer })}`
+          : "";
+      }
+    },
+    transport: {
+      label: "Transports",
+      kind: "Transport",
+      icon: "icon-ship",
+      scale: 1,
+      layers: [],
+      entity: id => this.byId(options.map.transports, id),
+      name: id => this.byId(options.map.transports, id)?.name || "",
+      refs: () => this.refsOf("transport", options.map.transports),
+      context: ref => this.byId(options.map.transports, ref.id)?.domain || "",
+      open: () => Controllers.TransportEditor.open()
+    },
+    nameBase: {
+      label: "Name bases",
+      kind: "Name base",
+      icon: "icon-book",
+      scale: 1,
+      layers: [],
+      entity: id => this.byId(Names.nameBases, id),
+      name: id => this.byId(Names.nameBases, id)?.name || "",
+      refs: () => this.refsOf("nameBase", Names.nameBases),
+      open: () => Controllers.NamesbaseEditor.open()
     }
   };
 
@@ -501,7 +619,7 @@ class EntityLookup {
 
   parseKey(key: string): EntityRef | undefined {
     const match = /^(\w+):(\d+)(?:-(\d+))?$/.exec(key);
-    if (!match || !(ENTITY_TYPES as readonly string[]).includes(match[1])) return undefined;
+    if (!match || !isEntityType(match[1])) return undefined;
     const type = match[1] as EntityType;
     if ((type === "regiment") !== (match[3] !== undefined)) return undefined;
     const id = Number(match[2]);

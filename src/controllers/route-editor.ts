@@ -1,7 +1,6 @@
 import { drag, type Selection, select } from "d3";
-import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog, noteButton } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
-import { Notes } from "@/components/notes";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
@@ -77,7 +76,7 @@ function renderDialog(): void {
       <button id="routeJoin" data-tip="Click to join the route to another route that starts or ends at the same cell" class="icon-link"></button>
       <button id="routeSplit" data-tip="Click on a control point to split the route there" class="icon-unlink"></button>
       <button id="routeElevationProfile" data-tip="Show the elevation profile for the route" class="icon-chart-area"></button>
-      ${Notes.getButton("routeLegend", "this route")}
+      ${noteButton("routeLegend", "this route")}
       <button id="routeLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
       <button id="routeRemove" data-tip="Remove route" data-shortcut="Delete" class="icon-trash fastDelete"></button>
     </div>

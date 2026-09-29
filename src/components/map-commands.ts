@@ -36,11 +36,14 @@ export interface MapCommand {
   matches?: (query: string) => boolean; // queries the command answers beyond its name and aliases
 }
 
+/** Commands an Assistant answer may link: they only open a dialog, tab or chart. Mirrored by generate-assistant-context */
+export const isLinkable = ({ id, name }: MapCommand): boolean => id !== "assistant" && /^(Open|Show|Edit) /.test(name);
+
 /** Ordered by priority: the omnibar breaks score ties by definition order */
 export const MAP_COMMANDS: MapCommand[] = [
   {
     id: "assistant",
-    name: "Ask AI: Azgaar Assistant",
+    name: "Open Azgaar Assistant",
     aliases: "help chat question ask faq support how why what ?",
     matches: isQuestion,
     run: () => Controllers.Assistant.open()
@@ -329,12 +332,6 @@ export const MAP_COMMANDS: MapCommand[] = [
     name: "Open Wrap Tool",
     aliases: "reshape cells brush",
     run: () => Controllers.WrapTool.open()
-  },
-  {
-    id: "openMapAssistantButton",
-    name: "Open Map Assistant",
-    aliases: "AI chat notes",
-    run: () => Controllers.Assistant.open({ mode: "map" })
   },
   { id: "openMinimapButton", name: "Open Minimap", aliases: "navigation", run: () => Controllers.Minimap.open() },
   { id: "viewMesh", name: "Open 3D Scene", aliases: "view mode mesh", run: () => Controllers.View3d.open("viewMesh") },

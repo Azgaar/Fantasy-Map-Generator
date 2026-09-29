@@ -1,5 +1,6 @@
 import Alea from "alea";
 import { curveBasis, curveCatmullRom, line, mean, min, sum } from "d3";
+import { replaceWholeWord, requireName } from "@/utils/languageUtils";
 import { each, rn, round, rw } from "../utils";
 import { meander, projectToNearestEdge } from "../utils/pathUtils";
 import type { Label } from "./labels-generator";
@@ -610,6 +611,15 @@ class RiverModule {
   // Danube 800m, Daugava 600m, Neva 500m, Nile 450m, Don 400m, Wisla 300m, Pripyat 150m, Bug 140m, Muchavets 40m
   getWidth(offset: number) {
     return rn((offset / 1.5) ** 1.8, 2); // mouth width in km
+  }
+
+  /** Rename a river; a custom label keeps its pattern when the old name stands in it as a whole word */
+  rename(riverId: number, name: string): void {
+    const river = pack.rivers.find(r => r.i === riverId);
+    if (!river) throw new Error(`River ${riverId} does not exist`);
+    const old = river.name;
+    river.name = requireName(name);
+    if (river.label?.text) river.label.text = replaceWholeWord(river.label.text, old, river.name) ?? river.label.text;
   }
 
   // remove river and all its tributaries

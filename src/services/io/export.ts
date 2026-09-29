@@ -39,7 +39,18 @@ export interface GetMapURLOptions {
   noIce?: boolean;
   noVignette?: boolean;
   fullMap?: boolean;
+  region?: Region;
   noViewbox?: boolean; // accepted by some callers (view-3d); currently unused here
+}
+
+/** A map-space box drawn into an image of the given pixel size */
+export interface Region {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+  width: number;
+  height: number;
 }
 
 async function exportToSvg(): Promise<void> {
@@ -101,6 +112,23 @@ async function exportToPng(): Promise<void> {
   } finally {
     TIME && console.timeEnd("exportToPng");
   }
+}
+
+/** A PNG data URL of the map region at twice its pixel size, as the map is styled and layered now */
+async function getRegionImage(region: Region): Promise<string> {
+  const url = await getMapURL("png", { region, noScaleBar: true, noVignette: true });
+  const canvas = document.createElement("canvas");
+  canvas.width = region.width * 2;
+  canvas.height = region.height * 2;
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.onerror = () => reject(new Error("Cannot draw the map region"));
+    img.src = url;
+  });
 }
 
 async function exportToJpeg(): Promise<void> {
@@ -317,7 +345,8 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
     noScaleBar = false,
     noIce = false,
     noVignette = false,
-    fullMap = false
+    fullMap = false,
+    region
   } = config;
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
   cloneEl.id = "fantasyMap";
@@ -341,7 +370,21 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
       if (!noScaleBar) drawScaleBar(cloneEl, 1, options.map.graph.width, options.map.graph.height);
     }
 
-    ViewportLayers.renderTo(cloneEl, fullMap ? undefined : ViewportLayers.getVisibleBounds());
+    let bounds = fullMap ? undefined : ViewportLayers.getVisibleBounds();
+    if (region) {
+      const { x0, y0, x1, y1, width, height } = region;
+      const scale = Math.min(width / (x1 - x0), height / (y1 - y0));
+      const x = (width - (x1 - x0) * scale) / 2 - x0 * scale;
+      const y = (height - (y1 - y0) * scale) / 2 - y0 * scale;
+      clone.attr("width", width).attr("height", height);
+      clone.select("#viewbox").attr("transform", `translate(${x} ${y}) scale(${scale})`);
+      for (const layer of Object.keys(ZOOM_CURVES) as ZoomedLayer[]) {
+        clone.select(`#${layer}`).attr("font-size", `${zoomFontSize(layer, scale)}px`);
+      }
+      bounds = { scale, x0: -x / scale, y0: -y / scale, x1: (width - x) / scale, y1: (height - y) / scale };
+    }
+
+    ViewportLayers.renderTo(cloneEl, bounds);
 
     const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
     if (isFirefox && type === "mesh") clone.select("#oceanPattern").remove();
@@ -938,6 +981,7 @@ export const ExportMap = {
   exportToJpeg,
   exportToPngTiles,
   getMapURL,
+  getRegionImage,
   saveGeoJsonCells,
   saveGeoJsonRoutes,
   saveGeoJsonRivers,

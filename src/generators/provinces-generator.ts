@@ -2,6 +2,7 @@ import Alea from "alea";
 import { max } from "d3";
 import { Emblems } from "@/generators/emblems-generator";
 import type { Emblem } from "@/types/emblems";
+import { replaceWholeWord, requireName } from "@/utils/languageUtils";
 import { gauss, generateSeed, getMixedColor, getPolesOfInaccessibility, P, rand, rw } from "../utils";
 import type { Label } from "./labels-generator";
 
@@ -326,6 +327,19 @@ class ProvinceModule {
 
     cells.province = provinceIds;
     pack.provinces = provinces;
+  }
+
+  /** Rename a province; a custom full name or label keeps its pattern when the old name stands in it as a whole word */
+  rename(provinceId: number, name: string): void {
+    const province = pack.provinces[provinceId];
+    if (!province || province.removed) throw new Error(`Province ${provinceId} does not exist`);
+    const old = province.name;
+    province.name = requireName(name);
+    province.fullName =
+      replaceWholeWord(province.fullName, old, province.name) ??
+      (province.formName ? `${province.name} ${province.formName}` : province.name);
+    if (province.label?.text)
+      province.label.text = replaceWholeWord(province.label.text, old, province.name) ?? province.label.text;
   }
 
   // calculate pole of inaccessibility for each province

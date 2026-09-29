@@ -36,6 +36,11 @@ suite("runScript", () => {
     const result = await runScript("return describe([1, 2, 3])");
     expect(result.value).toContain('"type": "Array"');
   });
+
+  test("exposes caller helpers as named variables", async () => {
+    const result = await runScript("return units.si(1370000)", { units: { si: (n: number) => `${n / 1e6}M` } });
+    expect(result.value).toBe('"1.37M"');
+  });
 });
 
 suite("serialize", () => {

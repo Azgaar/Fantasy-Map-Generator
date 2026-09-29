@@ -1,8 +1,13 @@
 import { type D3DragEvent, drag, select } from "d3";
-import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
+import {
+  closeDialogs,
+  confirmationDialog,
+  destroyDialog,
+  noteButton,
+  refreshEditors
+} from "@/components/dialog/dialog-helpers";
 import { Icons } from "@/components/icons";
 import { stopMapPlacement } from "@/components/map-placement";
-import { Notes } from "@/components/notes";
 import { clearMainTip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
@@ -30,6 +35,7 @@ function open(markerI?: number, target?: Element): void {
   }
 
   renderDialog();
+  ensureEl("markerEditor").dataset.entity = `marker:${selectedMarker.i}`;
   updateInputs();
 
   $("#markerEditor").dialog({
@@ -99,7 +105,7 @@ function renderDialog(): void {
       </div>
     </div>
     <div id="markerBottom">
-      ${Notes.getButton("markerNotes", "this marker")}
+      ${noteButton("markerNotes", "this marker")}
       <button id="markerRadius" data-tip="Show markers within a radius of this one" class="icon-dot-circled"></button>
       <button id="markerLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
       <button id="markerAdd" data-tip="Add additional marker of that type" class="icon-plus"></button>
@@ -195,7 +201,7 @@ function updateIconPaint(): void {
 }
 
 function changeMarkerName(this: HTMLInputElement): void {
-  selectedMarker.name = this.value;
+  if (this.value.trim()) Markers.rename(selectedMarker.i, this.value);
   if (findEl("notesEditor")) void Controllers.NotesEditor.open({ type: "marker", id: selectedMarker.i });
 }
 

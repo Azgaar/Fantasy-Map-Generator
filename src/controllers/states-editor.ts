@@ -1,6 +1,12 @@
 import { max, pack as packLayout, select, stratify } from "d3";
 import { createAnnexMode } from "@/components/annex-mode";
-import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
+import {
+  closeDialogs,
+  confirmationDialog,
+  destroyDialog,
+  noteIcon,
+  updateDialog
+} from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
@@ -12,7 +18,6 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
-import { Notes } from "@/components/notes";
 import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -432,7 +437,7 @@ function renderStatesPage(view: TableView<State>): void {
         <input data-tip="Expansionism (defines competitive size). Change to re-calculate states based on new value"
           class="statePower" type="number" min="0" max="99" step=".1" value=${s.expansionism} />
       </div>
-      ${Notes.getIcon("this state")}
+      ${noteIcon("this state")}
       <span data-col="locate" data-tip="Locate the state" class="icon-target"></span>
       <span data-col="focus" data-tip="Toggle state focus" class="icon-pin ${focused ? "" : " inactive"}"></span>
       <span data-col="lock" data-tip="Lock the state to protect it from re-generation" class="icon-lock${
@@ -622,7 +627,7 @@ function editStateName(state: number): void {
       if (form) s.form = form;
     }
 
-    s.name = nameInput.value;
+    if (nameChanged && nameInput.value.trim()) States.rename(s.i, nameInput.value);
     s.formName = formSelect.value;
     s.fullName = fullNameInput.value;
     if (changed && ensureEl<HTMLInputElement>("stateNameEditorUpdateLabel").checked) {

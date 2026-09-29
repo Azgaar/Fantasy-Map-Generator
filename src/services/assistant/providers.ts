@@ -17,10 +17,15 @@ export interface ToolUseBlock {
   input: ToolInput;
 }
 
+export interface ImageBlock {
+  type: "image";
+  source: { type: "base64"; media_type: "image/png"; data: string };
+}
+
 export interface ToolResultBlock {
   type: "tool_result";
   tool_use_id: string;
-  content: string;
+  content: string | (TextBlock | ImageBlock)[];
   is_error?: boolean;
 }
 
@@ -119,7 +124,7 @@ export const PROVIDERS: ProviderSpec[] = [
   }
 ];
 
-export const DEFAULT_MODEL = PROVIDERS[0].fallbackModel;
+export const DEFAULT_PROVIDER = PROVIDERS.find(provider => provider.id === "openai") ?? PROVIDERS[0];
 
 // Local OpenAI-compatible servers (Ollama, llama.cpp, LM Studio…). The dropdown holds one
 // sentinel entry; the endpoint and model name are the user's own and live in storage.
@@ -147,6 +152,8 @@ export const keyStorageForProvider = (providerId: ProviderSpec["id"]): string =>
 export const keyStorageFor = (model: string): string => keyStorageForProvider(providerOf(model).id);
 
 export async function complete(request: CompletionRequest): Promise<Completion> {
+  // An empty turn (a model that ended without a word) is rejected by every provider once it is history
+  request = { ...request, messages: request.messages.filter(message => message.content.length) };
   const provider = request.providerId
     ? PROVIDERS.find(candidate => candidate.id === request.providerId)
     : providerOf(request.model);

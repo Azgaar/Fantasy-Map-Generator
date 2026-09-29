@@ -54,6 +54,13 @@ describe("filterChatModels", () => {
 });
 
 describe("listModels", () => {
+  it("shows the provider's discovery error", async () => {
+    globals.fetch = vi.fn(
+      async () => new Response(JSON.stringify({ error: { message: "Invalid API key" } }), { status: 401 })
+    );
+    await expect(listModels("openai", "wrong")).rejects.toThrow("Invalid API key");
+  });
+
   it("fetches an OpenAI-compatible models endpoint with the bearer key", async () => {
     const fetchStub = stubFetch(["mistral-small-latest", "mistral-embed"]);
     const models = await listModels("mistral", "sk-m");
@@ -87,6 +94,14 @@ describe("listModels", () => {
     expect(models).toEqual(["llama3.2"]);
   });
 
+  it("discovers a draft local endpoint without changing the saved connection", async () => {
+    localStorage.setItem(LOCAL_URL_STORAGE, "http://localhost:8080/v1");
+    const fetchStub = stubFetch(["llama3.2"]);
+    await listModels("local", "", "http://localhost:9000/v1/");
+    expect(fetchStub.mock.calls[0][0]).toBe("http://localhost:9000/v1/models");
+    expect(localStorage.getItem(LOCAL_URL_STORAGE)).toBe("http://localhost:8080/v1");
+  });
+
   it("reads Qwen's paginated model catalog", async () => {
     const fetchStub = vi
       .fn()
@@ -109,21 +124,39 @@ describe("listModels", () => {
   it("caches what it fetched", async () => {
     stubFetch(["deepseek-chat", "deepseek-reasoner"]);
     await listModels("deepseek", "sk-d");
-    expect(cachedModels("deepseek")).toEqual(["deepseek-chat", "deepseek-reasoner"]);
+    expect(await cachedModels("deepseek", "sk-d")).toEqual(["deepseek-chat", "deepseek-reasoner"]);
   });
 });
 
 describe("model cache", () => {
-  it("round-trips models through storage", () => {
-    cacheModels("qwen", ["qwen-flash", "qwen-plus"]);
-    expect(cachedModels("qwen")).toEqual(["qwen-flash", "qwen-plus"]);
+  it("only returns models discovered with the requested key", async () => {
+    await cacheModels("openai", ["gpt-6-luna"], "key-one");
+    expect(await cachedModels("openai", "key-one")).toEqual(["gpt-6-luna"]);
+    expect(await cachedModels("openai", "key-two")).toEqual([]);
+    expect(localStorage.getItem("fmg-ai-models-openai")).not.toContain("key-one");
   });
 
-  it("expires entries older than a day", () => {
+  it("only returns local models for the same endpoint", async () => {
+    await cacheModels("local", ["llama3.2"], "", "http://localhost:8080/v1/");
+    expect(await cachedModels("local", "", "http://localhost:8080/v1")).toEqual(["llama3.2"]);
+    expect(await cachedModels("local", "", "http://localhost:9000/v1")).toEqual([]);
+  });
+
+  it("ignores legacy caches without a credential identity", async () => {
+    localStorage.setItem("fmg-ai-models-openai", JSON.stringify({ time: Date.now(), models: ["gpt-6-luna"] }));
+    expect(await cachedModels("openai", "key-one")).toEqual([]);
+  });
+
+  it("round-trips models through storage", async () => {
+    await cacheModels("qwen", ["qwen-flash", "qwen-plus"]);
+    expect(await cachedModels("qwen")).toEqual(["qwen-flash", "qwen-plus"]);
+  });
+
+  it("expires entries older than a day", async () => {
     vi.spyOn(Date, "now").mockReturnValue(1_000_000);
-    cacheModels("qwen", ["qwen-flash"]);
+    await cacheModels("qwen", ["qwen-flash"]);
     vi.spyOn(Date, "now").mockReturnValue(1_000_000 + 25 * 60 * 60 * 1000);
-    expect(cachedModels("qwen")).toEqual([]);
+    expect(await cachedModels("qwen")).toEqual([]);
   });
 });
 

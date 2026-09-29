@@ -1,6 +1,12 @@
 import { color as d3Color, easeSinIn, interpolate, select, stratify, transition, treemap } from "d3";
 import { createAnnexMode } from "@/components/annex-mode";
-import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
+import {
+  closeDialogs,
+  confirmationDialog,
+  destroyDialog,
+  noteIcon,
+  updateDialog
+} from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import { dialogState } from "@/components/dialog/state";
@@ -13,7 +19,6 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
-import { Notes } from "@/components/notes";
 import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -341,7 +346,7 @@ function renderProvincesPage(view: TableView<Province>): void {
         <span data-tip="${populationTip}" class="icon-male"></span>
         <span data-tip="${populationTip}" class="culturePopulation">${percentage ? `${rn(totals.population ? (population / totals.population) * 100 : 0)}%` : si(population)}</span>
       </div>
-      ${Notes.getIcon("this province")}
+      ${noteIcon("this province")}
       <span data-col="independence" data-tip="Declare province independence (turn non-capital province with burgs into a new state)" class="icon-flag-empty ${separable ? "" : "placeholder"}"></span>
       <span data-col="locate" data-tip="Locate the province" class="icon-target"></span>
       <span data-col="focus" data-tip="Toggle province focus" class="icon-pin ${focused ? "" : " inactive"}"></span>
@@ -860,7 +865,8 @@ function regenerateFullName(): void {
 }
 
 function applyNameChange(p: Province): void {
-  p.name = ensureEl<HTMLInputElement>("provinceNameEditorShort").value;
+  const name = ensureEl<HTMLInputElement>("provinceNameEditorShort").value;
+  if (name !== p.name && name.trim()) Provinces.rename(p.i, name);
   p.formName = ensureEl<HTMLSelectElement>("provinceNameEditorSelectForm").value;
   p.fullName = ensureEl<HTMLInputElement>("provinceNameEditorFull").value;
   Layers.draw("provinces");

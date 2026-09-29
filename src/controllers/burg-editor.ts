@@ -1,8 +1,7 @@
 import { type Selection, select } from "d3";
-import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog, noteButton } from "@/components/dialog/dialog-helpers";
 import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
-import { Notes } from "@/components/notes";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -36,6 +35,7 @@ function open(id: number | string): void {
   if (!selected.size()) selected = select<any, unknown>("#burgIcons").select(`[data-id='${id}']`);
 
   renderDialog();
+  ensureEl("burgEditor").dataset.entity = `burg:${selectedId}`;
   updateGroupsList();
   updateBurgValues();
 
@@ -227,7 +227,7 @@ function renderDialog(): void {
           data-tip="Relocate burg. Click on map to move the burg"
           class="icon-map-pin"
         ></button>
-        ${Notes.getButton("burglLegend", "this burg")}
+        ${noteButton("burglLegend", "this burg")}
         <button id="burgLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
         <button
           id="burgRemove"
@@ -337,12 +337,9 @@ function updateBurgValues(): void {
 }
 
 function changeName(): void {
-  const id = getSelectedId();
   const value = ensureEl<HTMLInputElement>("burgName").value;
-  pack.burgs[id].name = value;
-
-  if (!pack.burgs[id].label) pack.burgs[id].label = {};
-  Object.assign(pack.burgs[id].label, { text: value });
+  if (!value.trim()) return;
+  Burgs.rename(getSelectedId(), value);
   Layers.draw("labels");
 }
 

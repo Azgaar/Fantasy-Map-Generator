@@ -35,4 +35,4 @@ Loaded on demand:
 * [Three.js](https://threejs.org) with `OrbitControls`, `mapControls`, `loopsubdivison` and `OBJExporter` — the 3D scene
 * [JSZip](https://github.com/Stuk/jszip) by Stuart Knightley, David Duponchel, Franz Buchinger and António Afonso — tile export
 * [Dropbox SDK](https://github.com/dropbox/dropbox-sdk-js) — saving to and loading from Dropbox
-* Help gateway at [ask.azgaarsfmg.com](https://ask.azgaarsfmg.com) — answers the in-app help assistant; nothing is bundled, the app only calls it when a question is asked
+* Azgaar server at [ask.azgaarsfmg.com](https://ask.azgaarsfmg.com) — answers Guest and Member questions in Azgaar Assistant; the app contacts it only on the official site

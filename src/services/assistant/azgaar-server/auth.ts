@@ -1,4 +1,4 @@
-// Bearer-token storage for the Assistant gateway's Discord sign-in, and the boot-time stash that
+// Bearer-token storage for the Azgaar server's Discord sign-in, and the boot-time stash that
 // takes the token out of the OAuth callback's URL fragment.
 
 export const TOKEN_STORAGE = "fmg-help-token";

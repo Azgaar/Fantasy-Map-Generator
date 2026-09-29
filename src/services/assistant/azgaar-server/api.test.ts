@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ask, GATEWAY_URL, GatewayError, getLimits, OFFICIAL_ORIGIN, sendFeedback, signOut } from "./api";
+import { AZGAAR_SERVER_URL, AzgaarServerError, ask, getLimits, OFFICIAL_ORIGIN, sendFeedback, signOut } from "./api";
 
 const jsonResponse = (status: number, body: unknown): Response =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -8,8 +8,8 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe("constants", () => {
   it("pins the gateway base URL with no trailing slash", () => {
-    expect(GATEWAY_URL).toBe("https://ask.azgaarsfmg.com");
-    expect(GATEWAY_URL.endsWith("/")).toBe(false);
+    expect(AZGAAR_SERVER_URL).toBe("https://ask.azgaarsfmg.com");
+    expect(AZGAAR_SERVER_URL.endsWith("/")).toBe(false);
   });
 
   it("pins the official origin as scheme + host only", () => {
@@ -36,7 +36,7 @@ describe("ask", () => {
 
     expect(fetchMock).toHaveBeenCalledOnce();
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe(`${GATEWAY_URL}/v1/ask`);
+    expect(url).toBe(`${AZGAAR_SERVER_URL}/v1/ask`);
     expect(init.method).toBe("POST");
     expect(init.headers).toEqual({ "Content-Type": "application/json" });
     const body = JSON.parse(init.body as string);
@@ -69,7 +69,7 @@ describe("ask", () => {
     ["blocked", 403, undefined],
     ["provider_error", 502, undefined],
     ["invalid_request", 400, undefined]
-  ])("maps a %s error body to GatewayError with verbatim message", async (code, status, retryAfter) => {
+  ])("maps a %s error body to AzgaarServerError with verbatim message", async (code, status, retryAfter) => {
     const errorBody = {
       error: { code, message: `server text for ${code}`, ...(retryAfter ? { retryAfter } : {}) }
     };
@@ -77,36 +77,36 @@ describe("ask", () => {
 
     const error = await ask("q").catch((e: unknown) => e);
 
-    expect(error).toBeInstanceOf(GatewayError);
-    expect((error as GatewayError).code).toBe(code);
-    expect((error as GatewayError).message).toBe(`server text for ${code}`);
-    expect((error as GatewayError).retryAfter).toBe(retryAfter);
+    expect(error).toBeInstanceOf(AzgaarServerError);
+    expect((error as AzgaarServerError).code).toBe(code);
+    expect((error as AzgaarServerError).message).toBe(`server text for ${code}`);
+    expect((error as AzgaarServerError).retryAfter).toBe(retryAfter);
   });
 
   it("maps a non-2xx with an unparseable body to provider_error", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("<html>bad gateway</html>", { status: 502 })));
     const error = await ask("q").catch((e: unknown) => e);
-    expect((error as GatewayError).code).toBe("provider_error");
+    expect((error as AzgaarServerError).code).toBe("provider_error");
   });
 
   it("maps a 200 with an unparseable body to provider_error", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("<html>interstitial</html>", { status: 200 })));
     const error = await ask("q").catch((e: unknown) => e);
-    expect(error).toBeInstanceOf(GatewayError);
-    expect((error as GatewayError).code).toBe("provider_error");
+    expect(error).toBeInstanceOf(AzgaarServerError);
+    expect((error as AzgaarServerError).code).toBe("provider_error");
   });
 
   it("maps a network failure to unreachable", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
     const error = await ask("q").catch((e: unknown) => e);
-    expect((error as GatewayError).code).toBe("unreachable");
+    expect((error as AzgaarServerError).code).toBe("unreachable");
   });
 
   it("rejects a contract-violating bodyless 204 with provider_error instead of resolving undefined", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 204 })));
     const error = await ask("q").catch((e: unknown) => e);
-    expect(error).toBeInstanceOf(GatewayError);
-    expect((error as GatewayError).code).toBe("provider_error");
+    expect(error).toBeInstanceOf(AzgaarServerError);
+    expect((error as AzgaarServerError).code).toBe("provider_error");
   });
 });
 
@@ -120,7 +120,7 @@ describe("getLimits", () => {
     const limits = await getLimits();
 
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe(`${GATEWAY_URL}/v1/limits`);
+    expect(url).toBe(`${AZGAAR_SERVER_URL}/v1/limits`);
     expect(init.method).toBe("GET");
     expect(limits.remaining).toBe(3);
   });
@@ -165,18 +165,12 @@ describe("bearer token", () => {
     expect((init.headers as Record<string, string> | undefined)?.Authorization).toBeUndefined();
   });
 
-  it("maps 401 to unauthorized and clears both the stored token and the conversation id", async () => {
+  it("maps 401 to unauthorized and clears the stored token", async () => {
     const removedFromLocal: string[] = [];
-    const removedFromSession: string[] = [];
     vi.stubGlobal("localStorage", {
       getItem: () => "tok-expired",
       setItem: () => {},
       removeItem: (k: string) => void removedFromLocal.push(k)
-    });
-    vi.stubGlobal("sessionStorage", {
-      getItem: () => "convo-expired",
-      setItem: () => {},
-      removeItem: (k: string) => void removedFromSession.push(k)
     });
     vi.stubGlobal(
       "fetch",
@@ -185,10 +179,9 @@ describe("bearer token", () => {
 
     const error = await ask("q").catch((e: unknown) => e);
 
-    expect(error).toBeInstanceOf(GatewayError);
-    expect((error as GatewayError).code).toBe("unauthorized");
+    expect(error).toBeInstanceOf(AzgaarServerError);
+    expect((error as AzgaarServerError).code).toBe("unauthorized");
     expect(removedFromLocal.includes("fmg-help-token")).toBe(true);
-    expect(removedFromSession.includes("fmg-help-conversation")).toBe(true);
   });
 });
 
@@ -226,20 +219,20 @@ describe("sendFeedback", () => {
     await expect(sendFeedback(41, "up")).resolves.toBeUndefined();
 
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe(`${GATEWAY_URL}/v1/feedback`);
+    expect(url).toBe(`${AZGAAR_SERVER_URL}/v1/feedback`);
     expect(init.method).toBe("POST");
     const body = JSON.parse(init.body as string);
     expect(body).toEqual({ requestId: 41, rating: "up" });
     expect(Object.keys(body).sort()).toEqual(["rating", "requestId"]);
   });
 
-  it("maps a feedback error body to GatewayError as usual", async () => {
+  it("maps a feedback error body to AzgaarServerError as usual", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(jsonResponse(400, { error: { code: "invalid_request", message: "bad rating" } }))
     );
     const error = await sendFeedback(41, "down").catch((e: unknown) => e);
-    expect((error as GatewayError).code).toBe("invalid_request");
+    expect((error as AzgaarServerError).code).toBe("invalid_request");
   });
 
   it("resolves any bodyless 2xx from the transport without a parse error", async () => {

@@ -17,7 +17,7 @@ import { Controllers } from "@/controllers";
 import { getPointsNumber } from "@/data/graph-density";
 import { GenerationPipeline } from "@/generators/generation-pipeline";
 import { adoptLegacyIconSlots } from "@/generators/styles-legacy";
-import { stashCallbackToken } from "@/services/assistant/gateway/auth";
+import { stashCallbackToken } from "@/services/assistant/azgaar-server/auth";
 import { initiateAutosave } from "@/services/autosave";
 import { logStats } from "@/services/logging";
 import { registerServiceWorker } from "@/services/platform";

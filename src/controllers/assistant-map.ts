@@ -1,625 +1,403 @@
-// The Assistant dialog's "This map" panel: the own-key Assistant over the open map, with model
-// settings in a drawer and note editing through write_note.
-
-import { confirmationDialog } from "@/components/dialog/dialog-helpers";
-import { tip } from "@/components/tooltips";
+import { MapEntities } from "@/components/map-entities";
+import { Controllers } from "@/controllers";
+import type { MapTool } from "@/services/assistant/answerer";
+import type { ChartRow, Chat, Choice, Widget } from "@/services/assistant/chats";
+import type { ToolDefinition, ToolInput } from "@/services/assistant/providers";
+import { runScript } from "@/services/assistant/runtime";
+import type { Emblem } from "@/types/emblems";
+import { rn } from "@/utils/numberUtils";
 import {
-  type Conversation,
-  create,
-  currentMapId,
-  type Entry,
-  forCurrentMap,
-  isEmpty,
-  list,
-  type MessageRole,
-  remove,
-  select,
-  touch
-} from "@/services/assistant/conversations";
-import {
-  DEFAULT_LOCAL_URL,
-  DEFAULT_MODEL,
-  keyStorageForProvider,
-  LOCAL_MODEL,
-  LOCAL_MODEL_STORAGE,
-  LOCAL_URL_STORAGE,
-  PROVIDERS,
-  type ProviderSpec,
-  providerOf,
-  registerModels
-} from "@/services/assistant/providers";
-import { cachedModels, listModels, modelChoices } from "@/services/assistant/providers-models";
-import type { RunResult } from "@/services/assistant/runtime";
-import { createSession } from "@/services/assistant/session";
-import { openURL } from "@/utils";
-import { renderMarkdown } from "@/utils/markdown";
-import { ensureEl } from "../utils";
-import { type EditEntry, noteChipLabel, noteContext, undoEdit, writeNoteTool } from "./assistant-notes";
+  convertTemperature,
+  formatSpeed,
+  getArea,
+  getAreaUnit,
+  getCellPopulation,
+  getDistanceUnit,
+  getHeight,
+  getPeople,
+  getPrecipitation,
+  si
+} from "@/utils/unitUtils";
+import { Proposals } from "./assistant-proposals";
+import type { Note } from "./notes-editor";
 
-const MODEL_STORAGE = "fmg-ai-chat-model";
-const MODEL_PROVIDER_STORAGE = "fmg-ai-chat-provider";
-const MODEL_AUTO_STORAGE = "fmg-ai-chat-auto-model";
-const CUSTOM_MODEL = "__custom_model__";
-const REPLACED_MODELS: Record<string, string> = { "deepseek-chat": "deepseek-flash" };
-const MAX_INPUT_HEIGHT = 120;
+// The open map as the Assistant sees it: identity, per-question context and tools
 
-export const MAP_SUGGESTIONS = [
-  "Which states have no ports?",
-  "List the five largest burgs and their states",
-  "How is the land split between biomes?"
-];
+type Outcome = Awaited<ReturnType<MapTool["handle"]>>;
 
-export const NOTE_SUGGESTIONS = [
-  "Write a description for this note",
-  "Make it more ominous",
-  "Tighten the wording, keep the facts"
-];
+interface Tool {
+  definition: ToolDefinition;
+  status: string;
+  handle(input: ToolInput): Promise<Outcome>;
+}
 
-export const needsKey = (model: string, key: string): boolean => providerOf(model).id !== "local" && !key.trim();
+const NOTE_CONTEXT_CHARS = 4000;
+const MAX_WIDGET_ENTITIES = 50;
+const MAX_CHART_ROWS = 30;
+const CHANGED_MAP: Outcome = { content: "The map changed during this answer", isError: true };
 
-let host: HTMLElement | null = null;
-let conversation: Conversation;
-let currentStep: HTMLDetailsElement | null = null;
-let busy = false;
-let turnContext = "";
-let noteLabel: string | null = null;
-let modelWasChosen = false;
+function id(): number {
+  return typeof mapHistory === "undefined" ? 0 : (mapHistory.at(-1)?.created ?? 0);
+}
 
-const session = createSession(
-  () => ({
-    key: ensureEl<HTMLInputElement>("assistantMapKey").value,
-    model: selectedModel(),
-    providerId: selectedProvider().id,
-    context: turnContext
-  }),
-  [writeNoteTool(entry => addEntry(entry))]
+function name(): string {
+  return typeof options === "undefined" ? "Unnamed map" : options.map.lore.name || "Unnamed map";
+}
+
+async function context(chat: Chat): Promise<string> {
+  if (typeof pack === "undefined" || !pack.cells) return "# Current map\n\nNo map is loaded yet.";
+  const live = (items?: { i: number; removed?: boolean }[]) =>
+    items?.filter(item => item.i && !item.removed).length ?? 0;
+  const { distance, height, temperature } = options.map.units;
+  const facts = [
+    `name: ${name()}`,
+    `seed: ${options.map.seed}`,
+    `size: ${rn(options.map.graph.width * distance.scale)} × ${rn(options.map.graph.height * distance.scale)} ${distance.unit}`,
+    `units: 1 map unit = ${distance.scale} ${distance.unit}; 1 map unit² = ${rn(getArea(1), 4)} ${getAreaUnit()}; elevation in ${height.unit}; temperature in ${temperature.unit}`,
+    `cells: ${pack.cells.i.length}`,
+    `states: ${live(pack.states)}`,
+    `burgs: ${live(pack.burgs)}`,
+    `provinces: ${live(pack.provinces)}`,
+    `cultures: ${live(pack.cultures)}`,
+    `religions: ${live(pack.religions)}`,
+    `rivers: ${pack.rivers?.length ?? 0}`,
+    `markers: ${pack.markers?.length ?? 0}`
+  ];
+  const sections = [
+    `# Current map\n\n${facts.map(fact => `- ${fact}`).join("\n")}`,
+    await noteContext(),
+    outcomes(chat)
+  ];
+  return sections.filter(Boolean).join("\n\n");
+}
+
+/** What the user did with this chat's proposals; the map above already reflects the applied ones */
+function outcomes(chat: Chat): string | null {
+  const proposals = chat.items.flatMap(item => (item.kind === "proposal" ? [item.proposal] : [])).slice(-20);
+  if (!proposals.length) return null;
+  const state = {
+    proposed: "waiting for the user",
+    applied: "applied",
+    undone: "applied, then undone",
+    discarded: "discarded"
+  };
+  const lines = proposals.map(({ number, summary, state: now }) => `- #${number} ${state[now]}: ${summary}`);
+  return `# Proposals in this chat\n\n${lines.join("\n")}`;
+}
+
+async function noteContext(): Promise<string | null> {
+  const note = await Controllers.NotesEditor.current();
+  if (!note) return null;
+  const selection = await Controllers.NotesEditor.getSelectionHtml();
+  const lines = [
+    "# Notes editor",
+    "",
+    `The notes editor is open on note \`${note.id}\` ("${note.name}"). To rewrite it, propose \`Notes.write\` with the key \`${note.id}\`.`,
+    "",
+    "Current note HTML:",
+    "```html",
+    clipNote(note),
+    "```"
+  ];
+  if (selection) lines.push("", "The user has this part selected:", "```html", selection, "```");
+  return lines.join("\n");
+}
+
+function clipNote(note: Note): string {
+  if (!note.legend) return "(empty)";
+  if (note.legend.length <= NOTE_CONTEXT_CHARS) return note.legend;
+  const rest = note.legend.length - NOTE_CONTEXT_CHARS;
+  return `${note.legend.slice(0, NOTE_CONTEXT_CHARS)}\n… ${rest} more characters — read the entity's .note field with read_map for the rest (entity key: ${note.id})`;
+}
+
+// The app's own formatters, so answers read like the rest of the UI
+const UNITS = {
+  si,
+  rn,
+  getArea,
+  getAreaUnit,
+  getDistanceUnit,
+  getHeight,
+  convertTemperature,
+  getPrecipitation,
+  formatSpeed,
+  getCellPopulation,
+  getPeople
+};
+
+const readMap: Tool = {
+  status: "Reading the map",
+  definition: {
+    name: "read_map",
+    description:
+      "Run read-only JavaScript in the page. Return the result; describe(value) inspects a value. Scripts may call downloadFile for CSV or JSON.",
+    input_schema: { type: "object", properties: { code: { type: "string" } }, required: ["code"] }
+  },
+  async handle(input) {
+    const code = typeof input.code === "string" ? input.code : "";
+    const result = await runScript(code, { units: UNITS });
+    return {
+      content: result.ok ? `${result.value}\n${result.logs.join("\n")}` : result.error?.message || "Script failed",
+      item: { kind: "step", code, result },
+      isError: !result.ok
+    };
+  }
+};
+
+const OPERATIONS_SCHEMA = {
+  type: "array",
+  items: {
+    type: "object",
+    properties: { op: { type: "string" }, args: { type: "array", items: { type: ["string", "number"] } } },
+    required: ["op", "args"]
+  }
+};
+
+function proposeChange(chat: Chat): Tool {
+  return {
+    status: "Preparing a change",
+    definition: {
+      name: "propose_change",
+      description:
+        "Propose one batch of registered operations. It never changes the map: the user previews the batch and applies or discards it.",
+      input_schema: {
+        type: "object",
+        properties: {
+          summary: { type: "string" },
+          operations: OPERATIONS_SCHEMA
+        },
+        required: ["summary", "operations"]
+      }
+    },
+    async handle(input) {
+      const number = chat.items.filter(item => item.kind === "proposal").length + 1;
+      const summary = typeof input.summary === "string" && input.summary.trim() ? input.summary.trim() : "Change";
+      const proposal = Proposals.propose(summary, input.operations, number, id());
+      if (typeof proposal === "string") return { content: proposal, isError: true };
+      const count = proposal.change.length;
+      return {
+        content: `Proposal #${number} (${count} change${count === 1 ? "" : "s"}) is waiting for the user to apply or discard it. Nothing has changed yet.`,
+        item: { kind: "proposal", proposal }
+      };
+    }
+  };
+}
+
+const text = (value: unknown) => (typeof value === "string" ? value.trim() : "");
+const isLive = (key: unknown) => {
+  const ref = typeof key === "string" ? MapEntities.parseKey(key) : undefined;
+  return Boolean(ref && MapEntities.get(ref));
+};
+const missing = (key: unknown) => `No entity ${key} on this map. Keys are type:id, e.g. burg:12`;
+
+/** The widget the input describes, or the first problem for the model to fix */
+function parseWidget(input: ToolInput): Widget | string {
+  const title = text(input.title);
+  if (input.widget === "entities") {
+    const entities = Array.isArray(input.entities) ? input.entities.map(String) : [];
+    if (!entities.length || entities.length > MAX_WIDGET_ENTITIES)
+      return `entities takes 1 to ${MAX_WIDGET_ENTITIES} keys`;
+    const invalid = entities.find(key => !isLive(key));
+    return invalid ? missing(invalid) : { type: "entities", title: title || "Entities", entities };
+  }
+  if (input.widget === "card") {
+    const entity = text(input.entity);
+    if (!isLive(entity)) return missing(entity);
+    return entity.startsWith("state:") ? { type: "card", entity } : "Cards show states for now";
+  }
+  if (input.widget === "chart") {
+    if (input.chart !== "bar" && input.chart !== "pie") return "chart is bar or pie";
+    const rows = Array.isArray(input.rows) ? input.rows : [];
+    if (!rows.length || rows.length > MAX_CHART_ROWS) return `rows takes 1 to ${MAX_CHART_ROWS} items`;
+    const parsed: ChartRow[] = [];
+    for (const row of rows) {
+      const { label, value, entity } = (row ?? {}) as Record<string, unknown>;
+      if (!text(label) || typeof value !== "number" || !Number.isFinite(value) || value < 0)
+        return `Each row needs a label and a non-negative number value, got ${JSON.stringify(row)}`;
+      if (entity !== undefined && !isLive(entity)) return missing(entity);
+      parsed.push(
+        entity === undefined ? { label: text(label), value } : { label: text(label), value, entity: String(entity) }
+      );
+    }
+    if (input.chart === "pie" && !parsed.some(row => row.value > 0))
+      return "A pie needs amounts that add up to more than 0";
+    const unit = text(input.unit);
+    return { type: "chart", chart: input.chart, title: title || "Chart", ...(unit && { unit }), rows: parsed };
+  }
+  if (input.widget === "choices") {
+    const choices = Array.isArray(input.choices) ? input.choices : [];
+    if (choices.length < 2 || choices.length > 4) return "choices takes 2 to 4 options";
+    const parsed: Choice[] = [];
+    for (const [index, choice] of choices.entries()) {
+      const { label, operations } = (choice ?? {}) as Record<string, unknown>;
+      if (!text(label)) return `Choice ${index + 1} needs a label`;
+      if (operations === undefined) {
+        parsed.push({ label: text(label) });
+        continue;
+      }
+      const proposal = Proposals.propose(text(label), operations, 0, id()); // a dry run: validates, changes nothing
+      if (typeof proposal === "string") return `Choice ${index + 1}: ${proposal}`;
+      parsed.push({ label: text(label), operations: proposal.operations });
+    }
+    return { type: "choices", title: title || "Choose one", choices: parsed };
+  }
+  if (input.widget === "inset") {
+    if (input.entity !== undefined) {
+      const entity = text(input.entity);
+      const ref = MapEntities.parseKey(entity);
+      if (!ref || !MapEntities.get(ref)) return missing(entity);
+      if (!MapEntities.getPoints(ref).length) return `${entity} has no place on the map`;
+      return { type: "inset", title: title || MapEntities.getName(ref), entity };
+    }
+    const box = Array.isArray(input.box) ? input.box : [];
+    const { width, height } = options.map.graph;
+    const [x0, y0, x1, y1] = box;
+    if (
+      box.length !== 4 ||
+      !box.every(Number.isFinite) ||
+      x1 <= x0 ||
+      y1 <= y0 ||
+      x1 < 0 ||
+      y1 < 0 ||
+      x0 > width ||
+      y0 > height
+    )
+      return `An inset takes an entity key or a box [x0, y0, x1, y1] in map units within ${width} × ${height}`;
+    return { type: "inset", title: title || "Map", box: [x0, y0, x1, y1] };
+  }
+  return `Unknown widget ${JSON.stringify(input.widget)}. Available: entities, card, chart, choices, inset`;
+}
+
+// One tool per widget: a focused schema and a "use it when" description are what get widgets picked
+// The emblem widget has no tool of its own: view_emblem places it
+const WIDGET_TOOLS: Partial<Record<Widget["type"], Omit<ToolDefinition, "name">>> = {
+  entities: {
+    description:
+      "Show several map entities as a list the user can locate and ring on the map. Use it instead of a Markdown list whenever an answer names 3 or more entities (which, list, find, where are…).",
+    input_schema: {
+      type: "object",
+      properties: { title: { type: "string" }, entities: { type: "array", items: { type: "string" } } },
+      required: ["title", "entities"]
+    }
+  },
+  card: {
+    description:
+      "Show a state's profile card: emblem, full name and form, capital, population, area, burgs, culture, religion and the start of its note. Use it whenever one state is the subject (tell me about, describe, overview, who rules), then add only what the card does not say.",
+    input_schema: { type: "object", properties: { entity: { type: "string" } }, required: ["entity"] }
+  },
+  chart: {
+    description:
+      "Show numbers you computed with read_map as a chart. bar: one measure compared or ranked across items (largest states, burgs by population, top religions). pie: parts of one whole (population by culture, land by biome), given as amounts, not percentages: the chart computes shares. unit names the amounts (people, mi²). Prefer it to a table when each item has one number.",
+    input_schema: {
+      type: "object",
+      properties: {
+        chart: { type: "string", enum: ["bar", "pie"] },
+        title: { type: "string" },
+        unit: { type: "string" },
+        rows: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: { label: { type: "string" }, value: { type: "number" }, entity: { type: "string" } },
+            required: ["label", "value"]
+          }
+        }
+      },
+      required: ["chart", "title", "rows"]
+    }
+  },
+  choices: {
+    description:
+      "Offer 2-4 alternatives for the user to pick: name ideas, options, directions. Give a choice operations (as in propose_change) when picking it should change the map, such as one rename per name idea; otherwise its label becomes the user's next question. Use it instead of listing suggestions, then stop and wait.",
+    input_schema: {
+      type: "object",
+      properties: {
+        title: { type: "string" },
+        choices: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: { label: { type: "string" }, operations: OPERATIONS_SCHEMA },
+            required: ["label"]
+          }
+        }
+      },
+      required: ["title", "choices"]
+    }
+  },
+  inset: {
+    description:
+      "Show a picture of part of the map around an entity key, or a box [x0, y0, x1, y1] in map units; clicking it zooms the map there. Use it when an answer is about where something is or what a place is like.",
+    input_schema: {
+      type: "object",
+      properties: {
+        title: { type: "string" },
+        entity: { type: "string" },
+        box: { type: "array", items: { type: "number" } }
+      }
+    }
+  }
+};
+
+function showTool(type: Widget["type"], definition: Omit<ToolDefinition, "name">): Tool {
+  return {
+    definition: { name: `show_${type}`, ...definition },
+    status: "Preparing a widget",
+    async handle(input) {
+      const widget = parseWidget({ ...input, widget: type });
+      if (typeof widget === "string") return { content: widget, isError: true };
+      const content =
+        widget.type === "choices"
+          ? "The choices are waiting for the user. Stop here: their pick arrives as a proposal or as their next question."
+          : `Shown the ${widget.type} widget to the user`;
+      return { content, item: { kind: "widget", widget } };
+    }
+  };
+}
+
+const showTools = Object.entries(WIDGET_TOOLS).flatMap(([type, definition]) =>
+  definition ? [showTool(type as Widget["type"], definition)] : []
 );
 
-export function mountMapPanel(target: HTMLElement): void {
-  host = target;
-  modelWasChosen = false;
-  conversation = forCurrentMap();
-  target.innerHTML = panelHtml();
-  bind();
-  setInitialValues();
-  renderConversations();
-  renderTranscript();
-  renderUsage();
-}
+const EMBLEM_TYPES = ["state", "province", "burg"];
+const EMBLEM_SIZE = 256;
 
-// Called on every open/switch into the panel: the note chip and the suggestions follow the notes editor
-export function refreshMapContext(): void {
-  void noteChipLabel().then(label => {
-    if (!host || !document.getElementById("assistantMapContext")) return;
-    noteLabel = label;
-    const chip = ensureEl("assistantMapContext");
-    chip.hidden = label === null;
-    chip.textContent = label === null ? "" : `Note: ${label}`;
-    if (isEmpty(conversation)) renderTranscript();
-    ensureEl("assistantMapInput").focus();
-  });
-}
-
-export function unmountMapPanel(): void {
-  session.cancel();
-  busy = false;
-  currentStep = null;
-  if (host) host.innerHTML = "";
-  host = null;
-}
-
-function panelHtml(): string {
-  return /* html */ `
-    <div class="assistantMapTop">
-      <select id="assistantMapConversation" data-tip="Switch between conversations. Each one is sent in full with every question, so a fresh one costs less"></select>
-      <button id="assistantMapNew" class="icon-plus" data-tip="Start a new conversation"></button>
-      <button id="assistantMapRemove" class="icon-trash" data-tip="Delete the current conversation"></button>
-    </div>
-    <div id="assistantMapLog" class="assistantMapLog"></div>
-    <div id="assistantMapContext" class="assistantMapContext" hidden></div>
-    <div class="assistantMapComposer">
-      <textarea id="assistantMapInput" rows="2" placeholder="Ask about this map…" data-tip="Enter to send, Shift + Enter for a new line"></textarea>
-      <button id="assistantMapSend" class="icon-right-open" data-tip="Send the message"></button>
-      <button id="assistantMapSettings" class="icon-cog" data-tip="Model and API key" aria-expanded="false"></button>
-    </div>
-    <div id="assistantMapDrawer" class="assistantMapDrawer" hidden>
-      <div id="assistantMapHint" class="assistantMapHint" hidden>Add your API key to start. It stays in this browser and goes only to the provider.</div>
-      <label>Provider <select id="assistantMapProvider" data-tip="Who runs the model. Each provider keeps its own key"></select></label>
-      <label>Model <select id="assistantMapModel" data-tip="Model to ask. Bigger models reason better and cost more"></select><input id="assistantMapCustomModel" type="text" placeholder="Exact model ID" data-tip="Type any model ID supported by this provider" hidden /></label>
-      <label>API key
-        <input id="assistantMapKey" type="password" placeholder="API key" class="icon-key" />
-        <button id="assistantMapKeyHelp" class="icon-help-circled" data-tip="Where to get the key"></button>
-      </label>
-      <div id="assistantMapLocal" hidden>
-        <input id="assistantMapLocalUrl" type="text" placeholder="${DEFAULT_LOCAL_URL}" data-tip="Base URL of an OpenAI-compatible local server (Ollama, llama.cpp, LM Studio). For Ollama outside localhost, allow the app origin via OLLAMA_ORIGINS" />
-        <input id="assistantMapLocalModel" type="text" placeholder="model name, e.g. llama3.2" data-tip="Name of the model as your local server knows it" />
-      </div>
-    </div>
-    <div class="assistantMapStatus">
-      <button id="assistantMapStatusModel" type="button" data-tip="Change the model or key"></button>
-      <span id="assistantMapStatusKey"></span>
-      <span id="assistantMapUsage"></span>
-    </div>`;
-}
-
-function bind(): void {
-  ensureEl("assistantMapConversation").addEventListener("change", event => {
-    conversation = select((event.target as HTMLSelectElement).value);
-    renderTranscript();
-    renderUsage();
-  });
-  ensureEl("assistantMapNew").addEventListener("click", startNewConversation);
-  ensureEl("assistantMapRemove").addEventListener("click", removeConversation);
-  ensureEl("assistantMapKeyHelp").addEventListener("click", () => openURL(selectedProvider().keyLink));
-  ensureEl("assistantMapSend").addEventListener("click", () => {
-    if (busy) session.cancel();
-    else void send();
-  });
-  ensureEl("assistantMapSettings").addEventListener("click", () => toggleDrawer());
-  ensureEl("assistantMapStatusModel").addEventListener("click", () => toggleDrawer(true));
-  ensureEl("assistantMapKey").addEventListener("input", renderStatus);
-  ensureEl("assistantMapKey").addEventListener("change", () => void refreshModels());
-
-  ensureEl("assistantMapLog").addEventListener("click", event => {
-    const link = (event.target as HTMLElement)?.closest?.("a[href]");
-    if (!link) return;
-    event.preventDefault();
-    openURL(link.getAttribute("href") ?? "");
-  });
-
-  const input = ensureEl<HTMLTextAreaElement>("assistantMapInput");
-  input.addEventListener("input", () => {
-    input.style.height = "auto";
-    input.style.height = `${Math.min(input.scrollHeight, MAX_INPUT_HEIGHT)}px`;
-    updateSendButton();
-  });
-  input.addEventListener("keydown", event => {
-    if (!(event instanceof KeyboardEvent) || event.key !== "Enter" || event.shiftKey) return;
-    event.preventDefault();
-    void send();
-  });
-}
-
-function toggleDrawer(open?: boolean): void {
-  const drawer = ensureEl("assistantMapDrawer");
-  drawer.hidden = open === undefined ? !drawer.hidden : !open;
-  ensureEl("assistantMapSettings").setAttribute("aria-expanded", String(!drawer.hidden));
-  if (drawer.hidden) ensureEl("assistantMapHint").hidden = true;
-}
-
-function renderStatus(): void {
-  const model = selectedModel();
-  const provider = selectedProvider();
-  ensureEl("assistantMapStatusModel").textContent =
-    model === LOCAL_MODEL ? "local model" : `${model || "custom model"} · ${provider.label}`;
-  const key = ensureEl<HTMLInputElement>("assistantMapKey").value;
-  ensureEl("assistantMapStatusKey").textContent = provider.id === "local" ? "" : key ? "· key set" : "· no key";
-}
-
-function selectedProvider(): ProviderSpec {
-  return (
-    PROVIDERS.find(provider => provider.id === ensureEl<HTMLSelectElement>("assistantMapProvider").value) ??
-    PROVIDERS[0]
-  );
-}
-
-function selectedModel(): string {
-  const model = ensureEl<HTMLSelectElement>("assistantMapModel").value;
-  return model === CUSTOM_MODEL ? ensureEl<HTMLInputElement>("assistantMapCustomModel").value.trim() : model;
-}
-
-function setInitialValues(): void {
-  // Models found by earlier discovery runs must route before any fetch happens this session
-  PROVIDERS.forEach(provider => {
-    registerModels(provider.id, cachedModels(provider.id));
-  });
-  const providerSelect = ensureEl<HTMLSelectElement>("assistantMapProvider");
-  providerSelect.replaceChildren();
-  providerSelect.append(...PROVIDERS.map(provider => new Option(provider.label, provider.id)));
-
-  // Saved provider is needed when a manually entered model is not in discovery results.
-  const saved = localStorage.getItem(MODEL_STORAGE) ?? "";
-  const stored = REPLACED_MODELS[saved] ?? saved;
-  const savedProvider = PROVIDERS.find(provider => provider.id === localStorage.getItem(MODEL_PROVIDER_STORAGE));
-  const known = isKnownModel(stored);
-  providerSelect.value = savedProvider?.id ?? (known ? providerOf(stored).id : providerOf(DEFAULT_MODEL).id);
-  modelWasChosen = Boolean(stored && (savedProvider || known) && localStorage.getItem(MODEL_AUTO_STORAGE) !== "true");
-  buildModelSelect(modelWasChosen ? stored : undefined);
-
-  providerSelect.addEventListener("change", () => {
-    modelWasChosen = false;
-    ensureEl<HTMLInputElement>("assistantMapCustomModel").value = "";
-    buildModelSelect();
-    loadKeyForModel();
-    void refreshModels();
-  });
-  ensureEl("assistantMapModel").addEventListener("change", () => {
-    modelWasChosen = true;
-    loadKeyForModel(false);
-    void refreshModels();
-  });
-  ensureEl("assistantMapCustomModel").addEventListener("input", () => {
-    modelWasChosen = true;
-    renderStatus();
-  });
-  loadKeyForModel();
-  updateSendButton();
-  void refreshModels();
-}
-
-function isKnownModel(model: string): boolean {
-  try {
-    providerOf(model);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-// One provider's models only: a flat list across every provider is too long to pick from
-function buildModelSelect(saved?: string): void {
-  const provider = selectedProvider();
-  const select = ensureEl<HTMLSelectElement>("assistantMapModel");
-  const previous = saved ?? selectedModel();
-  const models = modelChoices(provider, cachedModels(provider.id));
-  select.replaceChildren();
-  models.forEach(model => {
-    select.append(new Option(model === LOCAL_MODEL ? "custom model…" : model, model));
-  });
-  if (provider.id !== "local") select.append(new Option("Other model…", CUSTOM_MODEL));
-  const model = modelWasChosen && previous ? previous : models[0];
-  if (models.includes(model)) select.value = model;
-  else if (provider.id !== "local" && model) {
-    select.value = CUSTOM_MODEL;
-    ensureEl<HTMLInputElement>("assistantMapCustomModel").value = model;
-  } else select.value = models[0];
-  ensureEl("assistantMapCustomModel").hidden = select.value !== CUSTOM_MODEL;
-}
-
-// Ask the selected provider what its key can actually use, so new models appear without a release
-async function refreshModels(): Promise<void> {
-  const providerId = selectedProvider().id;
-  const key = ensureEl<HTMLInputElement>("assistantMapKey").value;
-  if (providerId !== "local" && !key) return;
-  try {
-    await listModels(providerId as (typeof PROVIDERS)[number]["id"], key);
-    if (document.getElementById("assistantMapModel") && selectedProvider().id === providerId) {
-      buildModelSelect();
-      renderStatus();
-    }
-  } catch {
-    // Keep cached results or the fallback when discovery fails.
-  }
-}
-
-// Each provider has its own key slot, so switching models swaps the key field with it
-function loadKeyForModel(loadKey = true): void {
-  const model = ensureEl<HTMLSelectElement>("assistantMapModel").value;
-  const provider = selectedProvider();
-  const local = provider.id === "local";
-  const key = ensureEl<HTMLInputElement>("assistantMapKey");
-  if (loadKey) key.value = localStorage.getItem(keyStorageForProvider(provider.id)) ?? "";
-  key.placeholder = local ? "API key (optional)" : "API key";
-  key.dataset.tip = local
-    ? "Optional API key — most local servers need none. Sent as a Bearer token when set"
-    : `${provider.label} API key. It's stored on your machine only (browser storage) and sent directly to the provider`;
-
-  ensureEl("assistantMapCustomModel").hidden = model !== CUSTOM_MODEL;
-  // Discovered local models already carry their name; only the sentinel needs the manual fields
-  ensureEl("assistantMapLocal").hidden = model !== LOCAL_MODEL;
-  if (model === LOCAL_MODEL) {
-    ensureEl<HTMLInputElement>("assistantMapLocalUrl").value = localStorage.getItem(LOCAL_URL_STORAGE) ?? "";
-    ensureEl<HTMLInputElement>("assistantMapLocalModel").value = localStorage.getItem(LOCAL_MODEL_STORAGE) ?? "";
-  }
-  renderStatus();
-  updateSendButton();
-}
-
-// The request outlives the panel when the dialog is closed mid-run, so every DOM touch below
-// tolerates a missing element — the conversation keeps the content either way
-function updateSendButton(): void {
-  const button = document.getElementById("assistantMapSend") as HTMLButtonElement | null;
-  if (!button) return;
-  button.className = busy ? "icon-cancel" : "icon-right-open";
-  button.dataset.tip = busy ? "Stop the current request" : "Send the message";
-  button.disabled = !busy && !ensureEl<HTMLTextAreaElement>("assistantMapInput").value.trim();
-}
-
-async function send(text?: string): Promise<void> {
-  if (busy) return;
-  if (customization) {
-    tip("Please exit the customization mode first", false, "error");
-    return;
-  }
-
-  const input = ensureEl<HTMLTextAreaElement>("assistantMapInput");
-  const question = (text ?? input.value).trim();
-  if (!question) return;
-
-  const provider = selectedProvider();
-  const model = selectedModel();
-  const key = ensureEl<HTMLInputElement>("assistantMapKey").value;
-  if (ensureEl<HTMLSelectElement>("assistantMapModel").value === CUSTOM_MODEL && !model) {
-    toggleDrawer(true);
-    ensureEl("assistantMapCustomModel").focus();
-    tip("Please enter a model ID", true, "error", 4000);
-    return;
-  }
-  if (needsKey(provider.fallbackModel, key)) {
-    toggleDrawer(true);
-    ensureEl("assistantMapHint").hidden = false;
-    ensureEl("assistantMapKey").focus();
-    return;
-  }
-  if (model === LOCAL_MODEL) {
-    const localModel = ensureEl<HTMLInputElement>("assistantMapLocalModel").value.trim();
-    if (!localModel) {
-      toggleDrawer(true);
-      ensureEl("assistantMapLocalModel").focus();
-      tip("Please enter the local model name", true, "error", 4000);
-      return;
-    }
-    localStorage.setItem(LOCAL_URL_STORAGE, ensureEl<HTMLInputElement>("assistantMapLocalUrl").value.trim());
-    localStorage.setItem(LOCAL_MODEL_STORAGE, localModel);
-  }
-  localStorage.setItem(keyStorageForProvider(provider.id), key);
-  localStorage.setItem(MODEL_STORAGE, model);
-  localStorage.setItem(MODEL_PROVIDER_STORAGE, provider.id);
-  localStorage.setItem(MODEL_AUTO_STORAGE, String(!modelWasChosen));
-  toggleDrawer(false);
-
-  input.value = "";
-  input.style.height = "auto";
-  addEntry({ kind: "message", role: "user", text: question });
-  renderConversations();
-
-  busy = true;
-  updateSendButton();
-  showThinking("Thinking");
-  turnContext = (await noteContext()) ?? "";
-
-  try {
-    await session.ask(conversation, question, {
-      onText: answer => addEntry({ kind: "message", role: "assistant", text: answer }),
-      onScript: code => addEntry({ kind: "script", code }),
-      onScriptResult: result => completeStep(result),
-      onStatus: status => (status ? showThinking(status) : hideThinking()),
-      onUsage: renderUsage,
-      onTool: () => showThinking("Editing the note")
-    });
-  } catch (error) {
-    const aborted = error instanceof DOMException && error.name === "AbortError";
-    const message = (error instanceof Error && error.message) || String(error);
-    addEntry({ kind: "message", role: aborted ? "system" : "error", text: aborted ? "Stopped." : message });
-  } finally {
-    busy = false;
-    currentStep = null;
-    hideThinking();
-    touch(conversation);
-    if (document.getElementById("assistantMapInput")) {
-      updateSendButton();
-      ensureEl("assistantMapInput").focus();
-    }
-  }
-}
-
-function startNewConversation(): void {
-  if (isEmpty(conversation)) {
-    tip("This conversation is already empty", true, "warn", 3000);
-    return;
-  }
-  conversation = create();
-  renderConversations();
-  renderTranscript();
-  renderUsage();
-}
-
-function removeConversation(): void {
-  const drop = (): void => {
-    remove(conversation.id);
-    conversation = forCurrentMap();
-    renderConversations();
-    renderTranscript();
-    renderUsage();
-  };
-
-  if (isEmpty(conversation)) {
-    drop();
-    return;
-  }
-  confirmationDialog({
-    title: "Delete conversation",
-    message: `Delete "${conversation.title}"?<br />The conversation cannot be restored`,
-    confirm: "Delete",
-    onConfirm: drop
-  });
-}
-
-// Rendering — the conversation is the source of truth, the log is rebuilt from it on every mount
-
-function renderConversations(): void {
-  const select = document.getElementById("assistantMapConversation") as HTMLSelectElement | null;
-  if (!select) return;
-
-  select.options.length = 0;
-  list().forEach(item => {
-    const label = item.mapId === currentMapId() ? item.title : `${item.title} (other map)`;
-    select.options.add(new Option(label, item.id));
-  });
-  select.value = conversation.id;
-}
-
-function renderUsage(): void {
-  const line = document.getElementById("assistantMapUsage");
-  if (!line) return;
-
-  const { input, output, cached } = conversation.usage;
-  if (!input && !output) {
-    line.textContent = "";
-    return;
-  }
-  const cheap = cached ? `, ${thousands(cached)} cached` : "";
-  line.textContent = `· ${thousands(input)} sent${cheap}, ${thousands(output)} received`;
-  line.dataset.tip = "Tokens spent in this conversation. Cached tokens cost a tenth of the rest";
-}
-
-const thousands = (value: number): string => (value < 1000 ? String(value) : `${(value / 1000).toFixed(1)}k`);
-
-function renderTranscript(): void {
-  const log = document.getElementById("assistantMapLog");
-  if (!log) return;
-
-  log.innerHTML = "";
-  conversation.entries.forEach(entry => {
-    log.append(renderEntry(entry));
-  });
-  if (isEmpty(conversation)) log.append(emptyState());
-  scrollToEnd();
-}
-
-function addEntry(entry: Entry): void {
-  conversation.entries.push(entry);
-  touch(conversation);
-
-  const log = document.getElementById("assistantMapLog");
-  if (!log) return;
-  document.getElementById("assistantMapEmpty")?.remove();
-  const element = renderEntry(entry);
-  log.append(element);
-  if (entry.kind === "script") currentStep = element as HTMLDetailsElement;
-
-  const thinking = document.getElementById("assistantMapThinking");
-  if (thinking) log.append(thinking);
-  scrollToEnd();
-}
-
-function renderEntry(entry: Entry): HTMLElement {
-  if (entry.kind === "message") {
-    const roles: Record<MessageRole, string> = {
-      user: "assistantMapUser",
-      assistant: "assistantMapAssistant",
-      system: "assistantMapSystem",
-      error: "assistantMapError"
+const viewEmblem: Tool = {
+  status: "Looking at the emblem",
+  definition: {
+    name: "view_emblem",
+    description:
+      "See the emblem (coat of arms) of a state, province or burg as an image, to describe it or match lore to it. The user sees it too.",
+    input_schema: { type: "object", properties: { entity: { type: "string" } }, required: ["entity"] }
+  },
+  async handle(input) {
+    const key = text(input.entity);
+    const ref = MapEntities.parseKey(key);
+    if (!ref || !EMBLEM_TYPES.includes(ref.type))
+      return { content: "Emblems belong to states, provinces and burgs", isError: true };
+    const coa = (MapEntities.get(ref) as { coa?: Emblem } | undefined)?.coa;
+    if (!MapEntities.get(ref)) return { content: missing(key), isError: true };
+    if (!coa) return { content: `${key} has no emblem`, isError: true };
+    const { emblemPng } = await import("@/services/io/emblem-image");
+    const png = await emblemPng(`${ref.type}COA${ref.id}`, coa, EMBLEM_SIZE);
+    return {
+      content: [
+        { type: "text", text: `The emblem of ${MapEntities.getName(ref)}` },
+        { type: "image", source: { type: "base64", media_type: "image/png", data: png.slice(png.indexOf(",") + 1) } }
+      ],
+      item: { kind: "widget", widget: { type: "emblem", entity: key } }
     };
-    const element = document.createElement("div");
-    element.className = `assistantMapMessage ${roles[entry.role]}`;
-    // only the model writes Markdown; everything else is shown exactly as typed
-    if (entry.role === "assistant") element.innerHTML = renderMarkdown(entry.text);
-    else element.textContent = entry.text;
-    return element;
   }
-  if (entry.kind === "edit") return renderEdit(entry);
+};
 
-  const details = document.createElement("details");
-  details.className = "assistantMapStep";
-  details.append(document.createElement("summary"), preElement(entry.code));
-  setStepSummary(details, entry.result);
-  if (entry.result) details.append(preElement(resultText(entry.result)));
-  return details;
+/** Tools bound to the map open now: once another map loads they refuse to run */
+function tools(chat: Chat): MapTool[] {
+  const bound = id();
+  return [readMap, proposeChange(chat), ...showTools, viewEmblem].map(tool => ({
+    definition: tool.definition,
+    status: tool.status,
+    handle: async input => (bound !== id() ? CHANGED_MAP : tool.handle(input))
+  }));
 }
 
-function renderEdit(entry: EditEntry): HTMLElement {
-  const element = document.createElement("div");
-  element.className = "assistantMapEdit";
-  const verb = entry.previous ? "Updated" : "Created";
-  const label = (): string =>
-    `${verb} note “${entry.name}” · ${thousands(entry.chars)} chars${entry.undone ? " · undone" : ""}`;
-  const text = document.createElement("span");
-  text.textContent = label();
-  const undo = document.createElement("button");
-  undo.type = "button";
-  undo.className = "icon-ccw";
-  undo.textContent = " Undo";
-  undo.dataset.tip = "Put the note back the way it was before this edit";
-  undo.disabled = Boolean(entry.undone);
-  undo.addEventListener("click", () => {
-    undo.disabled = true;
-    void undoEdit(entry).then(() => {
-      text.textContent = label();
-      touch(conversation);
-    });
-  });
-  element.append(text, undo);
-  return element;
-}
-
-function completeStep(result: RunResult): void {
-  const entry = conversation.entries.at(-1);
-  if (entry?.kind === "script") entry.result = result;
-  touch(conversation);
-  if (!currentStep) return;
-
-  setStepSummary(currentStep, result);
-  currentStep.append(preElement(resultText(result)));
-  currentStep = null;
-  scrollToEnd();
-}
-
-function setStepSummary(details: HTMLDetailsElement, result?: RunResult): void {
-  const summary = details.querySelector("summary");
-  if (!summary) return;
-  if (!result) summary.textContent = "Running a script…";
-  else summary.textContent = result.ok ? `Ran a script · ${result.ms} ms` : `Script failed · ${result.ms} ms`;
-}
-
-function resultText(result: RunResult): string {
-  const logs = result.logs.length ? `${result.logs.join("\n")}\n\n` : "";
-  return result.ok ? logs + result.value : `${logs}${result.error?.message}\n${result.error?.stack}`;
-}
-
-function preElement(text: string): HTMLPreElement {
-  const element = document.createElement("pre");
-  element.textContent = text;
-  return element;
-}
-
-function emptyState(): HTMLElement {
-  const container = document.createElement("div");
-  container.id = "assistantMapEmpty";
-
-  const hint = document.createElement("div");
-  hint.textContent = noteLabel
-    ? `I can read this map and rewrite the note “${noteLabel}” in the notes editor. Every edit has an Undo.`
-    : "I can read this map and answer questions about it, and edit notes when the notes editor is open.";
-  container.append(hint);
-
-  (noteLabel ? NOTE_SUGGESTIONS : MAP_SUGGESTIONS).forEach(suggestion => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.textContent = suggestion;
-    button.addEventListener("click", () => void send(suggestion));
-    container.append(button);
-  });
-
-  return container;
-}
-
-function showThinking(status: string): void {
-  const log = document.getElementById("assistantMapLog");
-  if (!log) return;
-
-  let thinking = document.getElementById("assistantMapThinking");
-  if (!thinking) {
-    thinking = document.createElement("div");
-    thinking.id = "assistantMapThinking";
-    thinking.append(document.createElement("span"), ...[0, 1, 2].map(() => document.createElement("i")));
-    log.append(thinking);
-  }
-
-  const label = thinking.querySelector("span");
-  if (label) label.textContent = status;
-  log.append(thinking);
-  scrollToEnd();
-}
-
-function hideThinking(): void {
-  document.getElementById("assistantMapThinking")?.remove();
-}
-
-// Follow new content only when the user is already at the bottom, so scrolling back stays put
-function scrollToEnd(): void {
-  const log = document.getElementById("assistantMapLog");
-  if (!log) return;
-  const atBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 60;
-  if (atBottom) log.scrollTop = log.scrollHeight;
-}
+export const AssistantMap = { id, name, context, tools };

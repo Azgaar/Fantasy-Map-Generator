@@ -20,14 +20,15 @@ const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor as new (
   ...args: string[]
 ) => (...args: unknown[]) => Promise<unknown>;
 
-export async function runScript(code: string): Promise<RunResult> {
+/** `helpers` become named variables in the script, beside `describe` */
+export async function runScript(code: string, helpers: Record<string, unknown> = {}): Promise<RunResult> {
   const logs: string[] = [];
   const releaseConsole = captureConsole(logs);
   const started = performance.now();
 
   try {
-    const script = new AsyncFunction("describe", code);
-    const value = await script(describe);
+    const script = new AsyncFunction("describe", ...Object.keys(helpers), code);
+    const value = await script(describe, ...Object.values(helpers));
     return { ok: true, value: serialize(value), logs, ms: elapsed(started) };
   } catch (thrown) {
     const error = thrown instanceof Error ? thrown : new Error(String(thrown));

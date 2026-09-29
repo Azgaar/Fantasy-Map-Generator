@@ -1,7 +1,6 @@
 import { drag, type Selection, select } from "d3";
-import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog, noteButton } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
-import { Notes } from "@/components/notes";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { River } from "@/generators/river-generator";
@@ -34,6 +33,7 @@ function open(id: string): void {
   select("#debug").append("g").attr("id", "controlPoints");
 
   renderDialog();
+  ensureEl("riverEditor").dataset.entity = `river:${Number(id.slice(5))}`;
   updateRiverData();
 
   const river = getRiver();
@@ -99,7 +99,7 @@ function renderDialog(): void {
       <button id="riverCreateSelectingCells" data-tip="Create a new river selecting river cells" class="icon-map-pin"></button>
       <button id="riverEditStyle" data-tip="Edit style for all rivers in Style Editor" class="icon-brush"></button>
       <button id="riverElevationProfile" data-tip="Show the elevation profile for the river" class="icon-chart-area"></button>
-      ${Notes.getButton("riverLegend", "this river")}
+      ${noteButton("riverLegend", "this river")}
       <button id="riverRemove" data-tip="Remove river" data-shortcut="Delete" class="icon-trash fastDelete"></button>
     </div>
   </div>`;
@@ -270,7 +270,7 @@ function removeControlPoint(this: any): void {
 }
 
 function changeName(this: HTMLInputElement): void {
-  getRiver().name = this.value;
+  if (this.value.trim()) Rivers.rename(getRiver().i, this.value);
 }
 
 function changeType(this: HTMLInputElement): void {
@@ -279,12 +279,17 @@ function changeType(this: HTMLInputElement): void {
 
 function generateNameCulture(): void {
   const r = getRiver();
-  r.name = ensureEl<HTMLInputElement>("riverName").value = Rivers.getName(r.mouth);
+  const name = Rivers.getName(r.mouth);
+  ensureEl<HTMLInputElement>("riverName").value = name;
+  Rivers.rename(r.i, name);
 }
 
 function generateNameRandom(): void {
   const r = getRiver();
-  if (r) r.name = ensureEl<HTMLInputElement>("riverName").value = Names.getBase(rand(Names.nameBases.length - 1));
+  if (!r) return;
+  const name = Names.getBase(rand(Names.nameBases.length - 1));
+  ensureEl<HTMLInputElement>("riverName").value = name;
+  Rivers.rename(r.i, name);
 }
 
 function changeParent(this: HTMLInputElement): void {

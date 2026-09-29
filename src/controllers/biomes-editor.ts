@@ -1,5 +1,5 @@
 import { easeSinIn, select, sum, transition } from "d3";
-import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog, noteIcon, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
@@ -11,7 +11,6 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
-import { Notes } from "@/components/notes";
 import type { FillBoxElement } from "@/components/shared/fill-box";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
@@ -258,7 +257,7 @@ function biomesEditorAddLines(view: TableView<Biome>, statistics: BiomeStatistic
         <div data-col="cells" class="hide"><span data-tip="Cells count" class="icon-check-empty"></span><span data-tip="Cells count" class="biomeCells">${cells}</span></div>
         <div data-col="area" class="hide"><span data-tip="Biome area" class="icon-map-o" style="padding-right: 2px"></span><span data-tip="Biome area" class="biomeArea">${si(area) + unit}</span></div>
         <div data-col="population" class="hide"><span data-tip="${populationTip}" class="icon-male"></span><span data-tip="${populationTip}" class="biomePopulation">${si(population)}</span></div>
-        ${Notes.getIcon("this biome")}
+        ${noteIcon("this biome")}
         <span data-col="wiki" data-tip="Open Wikipedia article about the biome" class="icon-info-circled pointer"></span>
         <span data-col="remove" ${
           i > 12 && !cells ? 'data-tip="Remove the custom biome" class="icon-trash-empty"' : ""

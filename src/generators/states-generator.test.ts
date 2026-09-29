@@ -200,3 +200,35 @@ describe("StatesModule.generateDiplomacy", () => {
     expect(states[4].diplomacy).toEqual(["x", "x", "Neutral", "Neutral", "x"]);
   });
 });
+
+describe("StatesModule.rename", () => {
+  const state = (fields: object) => ({ i: 1, name: "Old", formName: "Empire", ...fields });
+
+  beforeEach(async () => {
+    await import("./states-generator");
+  });
+
+  it("keeps a custom full name and label containing the whole old name", () => {
+    globalThis.pack = {
+      states: [{ i: 0 }, state({ fullName: "United Realms of Old", label: { text: "Old|Realms" } })]
+    } as any;
+    States.rename(1, "New");
+    expect(pack.states[1]).toMatchObject({
+      name: "New",
+      fullName: "United Realms of New",
+      label: { text: "New|Realms" }
+    });
+  });
+
+  it("rebuilds a generated full name that holds the old name only inside another word", () => {
+    globalThis.pack = { states: [{ i: 0 }, state({ fullName: "Oldish Empire" })] } as any;
+    States.rename(1, "Nova");
+    expect(pack.states[1].fullName).toBe(States.getFullName(pack.states[1]));
+    expect(pack.states[1].fullName).not.toContain("Oldish");
+  });
+
+  it("rejects removed states", () => {
+    globalThis.pack = { states: [{ i: 0 }, state({ removed: true })] } as any;
+    expect(() => States.rename(1, "New")).toThrow("State 1 does not exist");
+  });
+});

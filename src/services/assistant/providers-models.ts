@@ -1,6 +1,13 @@
 // Discover models available to a key and keep one fallback for unavailable endpoints.
 
-import { DEFAULT_LOCAL_URL, LOCAL_URL_STORAGE, PROVIDERS, type ProviderSpec, registerModels } from "./providers";
+import {
+  DEFAULT_LOCAL_URL,
+  keyStorageForProvider,
+  LOCAL_URL_STORAGE,
+  PROVIDERS,
+  type ProviderSpec,
+  registerModels
+} from "./providers";
 
 const CACHE_TTL = 24 * 60 * 60 * 1000;
 
@@ -23,17 +30,18 @@ export function filterChatModels(providerId: ProviderSpec["id"], ids: string[]):
   return ids.filter(id => (!filter.include || filter.include.test(id)) && !filter.exclude?.test(id));
 }
 
-export async function listModels(providerId: ProviderSpec["id"], key: string): Promise<string[]> {
-  const models = filterChatModels(providerId, await fetchModelIds(providerId, key));
-  cacheModels(providerId, models);
+export async function listModels(providerId: ProviderSpec["id"], key: string, localUrl?: string): Promise<string[]> {
+  const endpoint = localUrl ?? localStorage.getItem(LOCAL_URL_STORAGE) ?? DEFAULT_LOCAL_URL;
+  const models = filterChatModels(providerId, await fetchModelIds(providerId, key, endpoint));
+  await cacheModels(providerId, models, key, endpoint);
   registerModels(providerId, models);
   return models;
 }
 
-async function fetchModelIds(providerId: ProviderSpec["id"], key: string): Promise<string[]> {
+async function fetchModelIds(providerId: ProviderSpec["id"], key: string, localUrl: string): Promise<string[]> {
   if (providerId === "qwen") return fetchQwenModelIds(key);
-  const response = await fetch(modelsUrl(providerId), { headers: authHeaders(providerId, key) });
-  if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+  const response = await fetch(modelsUrl(providerId, localUrl), { headers: authHeaders(providerId, key) });
+  if (!response.ok) throw new Error(await modelError(response));
   const json = await response.json();
   return (json.data ?? []).map((model: { id: string }) => model.id);
 }
@@ -43,7 +51,7 @@ async function fetchQwenModelIds(key: string): Promise<string[]> {
   for (let page = 1; ; page++) {
     const url = `https://dashscope-intl.aliyuncs.com/api/v1/models?providers=qwen&features=function-calling&page_no=${page}&page_size=100`;
     const response = await fetch(url, { headers: authHeaders("qwen", key) });
-    if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+    if (!response.ok) throw new Error(await modelError(response));
     const json = await response.json();
     const batch: { model: string }[] = json.output?.models ?? [];
     models.push(...batch.map(item => item.model));
@@ -51,10 +59,19 @@ async function fetchQwenModelIds(key: string): Promise<string[]> {
   }
 }
 
-function modelsUrl(providerId: ProviderSpec["id"]): string {
+async function modelError(response: Response): Promise<string> {
+  try {
+    const body = await response.json();
+    return body.error?.message || body.message || body.output?.message || `${response.status} ${response.statusText}`;
+  } catch {
+    return `${response.status} ${response.statusText}`;
+  }
+}
+
+function modelsUrl(providerId: ProviderSpec["id"], localUrl: string): string {
   if (providerId === "anthropic") return "https://api.anthropic.com/v1/models?limit=1000";
   if (providerId === "local") {
-    const base = (localStorage.getItem(LOCAL_URL_STORAGE) || DEFAULT_LOCAL_URL).replace(/\/+$/, "");
+    const base = (localUrl || DEFAULT_LOCAL_URL).replace(/\/+$/, "");
     return `${base}/models`;
   }
   const provider = PROVIDERS.find(candidate => candidate.id === providerId);
@@ -68,19 +85,37 @@ function authHeaders(providerId: ProviderSpec["id"], key: string): Record<string
   return key ? { Authorization: `Bearer ${key}` } : {};
 }
 
-export function cacheModels(providerId: ProviderSpec["id"], models: string[]): void {
+async function cacheIdentity(providerId: ProviderSpec["id"], key: string, localUrl?: string): Promise<string> {
+  const endpoint = modelsUrl(providerId, localUrl ?? localStorage.getItem(LOCAL_URL_STORAGE) ?? DEFAULT_LOCAL_URL);
+  const bytes = new TextEncoder().encode(`${endpoint}\n${key}`);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
+}
+
+export async function cacheModels(
+  providerId: ProviderSpec["id"],
+  models: string[],
+  key = localStorage.getItem(keyStorageForProvider(providerId)) || "",
+  localUrl?: string
+): Promise<void> {
   try {
-    localStorage.setItem(`fmg-ai-models-${providerId}`, JSON.stringify({ time: Date.now(), models }));
+    const identity = await cacheIdentity(providerId, key, localUrl);
+    localStorage.setItem(`fmg-ai-models-${providerId}`, JSON.stringify({ time: Date.now(), models, identity }));
   } catch {
-    // a full or unavailable storage only costs a refetch next time
+    // Discovery still works when storage or Web Crypto is unavailable.
   }
 }
 
-export function cachedModels(providerId: ProviderSpec["id"]): string[] {
+export async function cachedModels(
+  providerId: ProviderSpec["id"],
+  key = localStorage.getItem(keyStorageForProvider(providerId)) || "",
+  localUrl?: string
+): Promise<string[]> {
   try {
     const stored = JSON.parse(localStorage.getItem(`fmg-ai-models-${providerId}`) ?? "null");
-    if (!stored || !Array.isArray(stored.models)) return [];
-    return Date.now() - stored.time > CACHE_TTL ? [] : stored.models;
+    if (!stored || !Array.isArray(stored.models) || Date.now() - stored.time > CACHE_TTL) return [];
+    const identity = await cacheIdentity(providerId, key, localUrl);
+    return stored.identity === identity ? stored.models : [];
   } catch {
     return [];
   }

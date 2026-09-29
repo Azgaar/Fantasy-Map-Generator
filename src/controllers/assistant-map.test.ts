@@ -1,240 +1,258 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, expect, it, vi } from "vitest";
 
-vi.mock("@/components/tooltips", () => ({ tip: vi.fn() }));
-vi.mock("@/services/assistant/context", () => ({ buildSystemPrompt: () => [] }));
-vi.mock("@/services/assistant/providers-models", async importOriginal => ({
-  ...(await importOriginal<typeof import("@/services/assistant/providers-models")>()),
-  cachedModels: vi.fn(() => []),
-  listModels: vi.fn().mockRejectedValue(new Error("offline"))
+const notesEditor = vi.hoisted(() => ({
+  open: null as { id: string; name: string; legend: string } | null,
+  selection: null as string | null
 }));
-const notesApi = vi.hoisted(() => ({ label: null as string | null }));
-vi.mock("./assistant-notes", () => ({
-  noteChipLabel: async () => notesApi.label,
-  noteContext: async () => (notesApi.label ? `# Notes editor\n\n${notesApi.label}` : null),
-  writeNoteTool: () => ({
-    definition: { name: "write_note", description: "", input_schema: {} },
-    handle: async () => ({ content: "" })
-  }),
-  undoEdit: vi.fn(async () => {})
+vi.mock("@/controllers", () => ({
+  Controllers: {
+    NotesEditor: {
+      current: async () => notesEditor.open,
+      getSelectionHtml: async () => notesEditor.selection
+    }
+  }
 }));
+const propose = vi.hoisted(() => vi.fn());
+vi.mock("./assistant-proposals", () => ({ Proposals: { propose } }));
+vi.mock("@/services/io/emblem-image", () => ({ emblemPng: async () => "data:image/png;base64,QUJD" }));
 
-import { create, current } from "@/services/assistant/conversations";
-import { cachedModels, listModels } from "@/services/assistant/providers-models";
-import { mountMapPanel, NOTE_SUGGESTIONS, needsKey, refreshMapContext, unmountMapPanel } from "./assistant-map";
-import { undoEdit } from "./assistant-notes";
+import type { Chat, Proposal } from "@/services/assistant/chats";
+import { AssistantMap } from "./assistant-map";
 
-const w = globalThis as unknown as Record<string, unknown>;
-const el = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
-const flush = (): Promise<void> => new Promise(resolve => setTimeout(resolve, 0));
+const mapOptions = {
+  map: {
+    seed: "1",
+    lore: { name: "Orwin" },
+    graph: { width: 100, height: 50 },
+    units: {
+      distance: { scale: 3, unit: "mi" },
+      area: { unit: "square" },
+      height: { unit: "ft" },
+      temperature: { unit: "°C" }
+    }
+  }
+};
+const newChat = (): Chat => ({
+  id: "1",
+  title: "",
+  updated: 0,
+  answerer: "provider",
+  mapId: 42,
+  mapName: "Orwin",
+  items: [],
+  messages: [],
+  usage: { input: 0, output: 0, cached: 0 }
+});
+const proposal = (number: number, state: Proposal["state"]): Proposal => ({
+  number,
+  mapId: 42,
+  summary: `Change ${number}`,
+  operations: [],
+  change: [{ key: "burg:1", entity: "Burg Vel", field: "name", before: "Vel", after: "Saltmere" }],
+  state
+});
+let chat: Chat;
+const mapTool = (name: string) => AssistantMap.tools(chat).find(item => item.definition.name === name)!;
 
 beforeEach(() => {
-  vi.mocked(cachedModels).mockReturnValue([]);
-  vi.mocked(listModels).mockRejectedValue(new Error("offline"));
-  localStorage.clear();
-  document.body.innerHTML = `<div id="host"></div>`;
-  w.mapHistory = [{ created: 1 }];
-  w.customization = 0;
-  window.$ = vi.fn(() => ({ dialog: vi.fn() })) as unknown as typeof window.$;
-  notesApi.label = null;
-  create();
+  chat = newChat();
+  notesEditor.open = { id: "burg:1", name: "Old", legend: "<p>Old</p>" };
+  notesEditor.selection = null;
+  propose.mockReset();
+  vi.stubGlobal("mapHistory", [{ created: 42 }]);
+  vi.stubGlobal("options", mapOptions);
+  vi.stubGlobal("pack", { cells: { i: [0] }, states: [], burgs: [0, { i: 1, name: "Vel" }, { i: 2, removed: true }] });
 });
 
-afterEach(() => {
-  unmountMapPanel();
-  document.body.innerHTML = "";
+it("offers read_map, propose_change, one tool per widget and view_emblem", () => {
+  expect(AssistantMap.tools(chat).map(tool => tool.definition.name)).toEqual([
+    "read_map",
+    "propose_change",
+    "show_entities",
+    "show_card",
+    "show_chart",
+    "show_choices",
+    "show_inset",
+    "view_emblem"
+  ]);
 });
 
-describe("needsKey", () => {
-  it("is true for a cloud model without a key and false for local models", () => {
-    expect(needsKey("claude-sonnet-5-5", "")).toBe(true);
-    expect(needsKey("claude-sonnet-5-5", "  ")).toBe(true);
-    expect(needsKey("claude-sonnet-5-5", "sk-1")).toBe(false);
-    expect(needsKey("local", "")).toBe(false);
+it("shows an entities widget holding the keys", async () => {
+  const outcome = await mapTool("show_entities").handle({ title: " Ports ", entities: ["burg:1"] });
+  expect(outcome.isError).toBeFalsy();
+  expect(outcome.item).toEqual({ kind: "widget", widget: { type: "entities", title: "Ports", entities: ["burg:1"] } });
+});
+
+it("names the first key that is not a live entity, and shows nothing", async () => {
+  for (const key of ["burg:2", "burg:9", "town:1"]) {
+    const outcome = await mapTool("show_entities").handle({ title: "Ports", entities: ["burg:1", key] });
+    expect(outcome.isError).toBe(true);
+    expect(outcome.content).toContain(key);
+    expect(outcome.item).toBeUndefined();
+  }
+});
+
+it("includes the open note and selection in per-question context", async () => {
+  notesEditor.selection = "Old text";
+  const context = await AssistantMap.context(chat);
+  expect(context).toContain("name: Orwin");
+  expect(context).toContain("1 map unit = 3 mi; 1 map unit² = 9 mi²");
+  expect(context).toContain("<p>Old</p>");
+  expect(context).toContain("Old text");
+  expect(context).toContain("propose `Notes.write` with the key `burg:1`");
+});
+
+it("clips a long note while preserving its entity key", async () => {
+  notesEditor.open = { id: "burg:2", name: "Gondesthe", legend: "a".repeat(6010) };
+  const context = await AssistantMap.context(chat);
+  expect(context).toContain("10 more characters");
+  expect(context).toContain("entity key: burg:2");
+});
+
+it("returns a numbered proposal that waits for the user", async () => {
+  chat.items.push({ kind: "proposal", proposal: proposal(1, "applied") });
+  propose.mockReturnValue(proposal(2, "proposed"));
+  const operations = [{ op: "Burgs.rename", args: [1, "Saltmere"] }];
+  const result = await mapTool("propose_change").handle({ summary: " Rename ", operations });
+  expect(propose).toHaveBeenCalledWith("Rename", operations, 2, 42);
+  expect(result.content).toContain("Proposal #2 (1 change) is waiting for the user");
+  expect(result.item).toEqual({ kind: "proposal", proposal: proposal(2, "proposed") });
+});
+
+it("returns a proposal error to the model without a card", async () => {
+  propose.mockReturnValue("Unknown operation");
+  expect(await mapTool("propose_change").handle({ summary: "X", operations: [] })).toEqual({
+    content: "Unknown operation",
+    isError: true
   });
 });
 
-describe("map panel", () => {
-  it("mounts with the drawer closed and the model named in the status line", () => {
-    mountMapPanel(el("host"));
-    expect(el("assistantMapDrawer").hidden).toBe(true);
-    expect(el("assistantMapStatusModel").textContent).toContain("claude-sonnet-5-5");
-    expect(el("assistantMapStatusKey").textContent).toContain("no key");
-    expect(el("assistantMapContext").hidden).toBe(true);
+it("refuses to propose after another map loads", async () => {
+  const tool = mapTool("propose_change");
+  vi.stubGlobal("mapHistory", [{ created: 43 }]);
+  expect((await tool.handle({ summary: "X", operations: [] })).isError).toBe(true);
+  expect(propose).not.toHaveBeenCalled();
+});
+
+it("tells the model what happened to the chat's proposals", async () => {
+  chat.items.push(
+    { kind: "proposal", proposal: proposal(1, "applied") },
+    { kind: "proposal", proposal: proposal(2, "discarded") },
+    { kind: "proposal", proposal: proposal(3, "undone") },
+    { kind: "proposal", proposal: proposal(4, "proposed") }
+  );
+  const context = await AssistantMap.context(chat);
+  expect(context).toContain("- #1 applied: Change 1");
+  expect(context).toContain("- #2 discarded: Change 2");
+  expect(context).toContain("- #3 applied, then undone: Change 3");
+  expect(context).toContain("- #4 waiting for the user: Change 4");
+});
+
+it("gives read_map scripts the app's unit helpers", async () => {
+  const result = await mapTool("read_map").handle({
+    code: "return units.si(units.getArea(152000)) + ' ' + units.getAreaUnit()"
   });
+  expect(result.content).toContain("1.4M mi²");
+});
 
-  it("opens the drawer with a hint instead of sending when the key is missing", () => {
-    mountMapPanel(el("host"));
-    el<HTMLTextAreaElement>("assistantMapInput").value = "hello";
-    el<HTMLTextAreaElement>("assistantMapInput").dispatchEvent(new Event("input"));
-    el<HTMLButtonElement>("assistantMapSend").click();
-    expect(el("assistantMapDrawer").hidden).toBe(false);
-    expect(el("assistantMapHint").hidden).toBe(false);
-    expect(document.activeElement).toBe(el("assistantMapKey"));
-    expect(el("assistantMapLog").querySelector(".assistantMapUser")).toBeNull();
+it("shows a card for a state only", async () => {
+  pack.states = [
+    { i: 0, name: "Neutrals" },
+    { i: 1, name: "Orwin" }
+  ] as typeof pack.states;
+  const card = await mapTool("show_card").handle({ entity: "state:1" });
+  expect(card.item).toEqual({ kind: "widget", widget: { type: "card", entity: "state:1" } });
+  expect((await mapTool("show_card").handle({ entity: "burg:1" })).content).toBe("Cards show states for now");
+});
+
+it("shows a chart only with labelled non-negative values and live entity keys", async () => {
+  const chart = await mapTool("show_chart").handle({
+    chart: "bar",
+    title: "Size",
+    unit: "people",
+    rows: [{ label: "Vel", value: 5, entity: "burg:1" }]
   });
-
-  it("lists providers separately and narrows the model list to the one chosen", () => {
-    mountMapPanel(el("host"));
-    const provider = el<HTMLSelectElement>("assistantMapProvider");
-    const model = el<HTMLSelectElement>("assistantMapModel");
-
-    // the stored model decides which provider starts selected
-    expect(provider.value).toBe("anthropic");
-    expect([...model.options].map(option => option.value)).toEqual(["claude-sonnet-5-5", "__custom_model__"]);
-    expect(model.value).toBe("claude-sonnet-5-5");
-    expect([...provider.options].map(option => option.value)).toContain("mistral");
-
-    provider.value = "mistral";
-    provider.dispatchEvent(new Event("change"));
-    expect([...model.options].map(option => option.value)).toEqual(["mistral-small-latest", "__custom_model__"]);
-    expect(model.value).toBe("mistral-small-latest");
-    expect(el("assistantMapStatusModel").textContent).toContain("mistral-small-latest");
+  expect(chart.item).toEqual({
+    kind: "widget",
+    widget: {
+      type: "chart",
+      chart: "bar",
+      title: "Size",
+      unit: "people",
+      rows: [{ label: "Vel", value: 5, entity: "burg:1" }]
+    }
   });
+  for (const rows of [
+    [],
+    [{ label: "Vel", value: -1 }],
+    [{ label: "", value: 1 }],
+    [{ label: "Orn", value: 1, entity: "burg:2" }]
+  ])
+    expect((await mapTool("show_chart").handle({ chart: "pie", rows })).isError).toBe(true);
+  expect((await mapTool("show_chart").handle({ chart: "line", rows: [{ label: "a", value: 1 }] })).isError).toBe(true);
+  expect(
+    (await mapTool("show_chart").handle({ chart: "pie", title: "Empty", rows: [{ label: "a", value: 0 }] })).content
+  ).toBe("A pie needs amounts that add up to more than 0");
+});
 
-  it("selects the newest discovered family model", async () => {
-    vi.mocked(listModels).mockImplementation(async () => {
-      vi.mocked(cachedModels).mockReturnValue(["claude-sonnet-5-5", "claude-sonnet-5-6", "claude-opus-5-5"]);
-      return ["claude-sonnet-5-5", "claude-sonnet-5-6", "claude-opus-5-5"];
-    });
-    mountMapPanel(el("host"));
-    localStorage.setItem("fmg-ai-kl-anthropic", "sk-test");
-    const key = el<HTMLInputElement>("assistantMapKey");
-    key.value = "sk-test";
-    key.dispatchEvent(new Event("change"));
-    await flush();
-
-    const model = el<HTMLSelectElement>("assistantMapModel");
-    expect(model.value).toBe("claude-sonnet-5-6");
-    expect([...model.options].map(option => option.value)).toEqual([
-      "claude-sonnet-5-6",
-      "claude-sonnet-5-5",
-      "claude-opus-5-5",
-      "__custom_model__"
-    ]);
+it("validates each choice's operations by a dry run and names the failing choice", async () => {
+  const operations = [{ op: "Burgs.rename", args: [1, "Saltmere"] }];
+  propose.mockReturnValueOnce({ operations }).mockReturnValueOnce("Name cannot be empty");
+  const failed = await mapTool("show_choices").handle({
+    title: "Rename",
+    choices: [
+      { label: "Saltmere", operations },
+      { label: "Blank", operations: [{ op: "Burgs.rename", args: [1, ""] }] }
+    ]
   });
+  expect(failed).toMatchObject({ isError: true, content: "Choice 2: Name cannot be empty" });
 
-  it("updates a previously automatic choice when a newer family model is cached", () => {
-    localStorage.setItem("fmg-ai-chat-model", "claude-sonnet-5-5");
-    localStorage.setItem("fmg-ai-chat-provider", "anthropic");
-    localStorage.setItem("fmg-ai-chat-auto-model", "true");
-    vi.mocked(cachedModels).mockReturnValue(["claude-sonnet-5-5", "claude-sonnet-5-6"]);
-    mountMapPanel(el("host"));
-    expect(el<HTMLSelectElement>("assistantMapModel").value).toBe("claude-sonnet-5-6");
+  propose.mockReturnValueOnce({ operations });
+  const shown = await mapTool("show_choices").handle({
+    title: "Rename",
+    choices: [{ label: "Saltmere", operations }, { label: "Ask more" }]
   });
-
-  it("lets a user type a model ID and restore it with its provider", () => {
-    localStorage.setItem("fmg-ai-chat-model", "my-model-v2");
-    localStorage.setItem("fmg-ai-chat-provider", "openai");
-    mountMapPanel(el("host"));
-
-    expect(el<HTMLSelectElement>("assistantMapProvider").value).toBe("openai");
-    expect(el<HTMLSelectElement>("assistantMapModel").value).toBe("__custom_model__");
-    expect(el<HTMLInputElement>("assistantMapCustomModel").value).toBe("my-model-v2");
-    expect(el("assistantMapStatusModel").textContent).toContain("my-model-v2 · OpenAI");
+  expect(shown.item).toEqual({
+    kind: "widget",
+    widget: { type: "choices", title: "Rename", choices: [{ label: "Saltmere", operations }, { label: "Ask more" }] }
   });
+  expect(shown.content).toContain("waiting for the user");
+  expect((await mapTool("show_choices").handle({ choices: [{ label: "Only" }] })).isError).toBe(true);
+});
 
-  it("keeps a typed key while switching to a manual model", () => {
-    mountMapPanel(el("host"));
-    const key = el<HTMLInputElement>("assistantMapKey");
-    key.value = "sk-new";
-    const model = el<HTMLSelectElement>("assistantMapModel");
-    model.value = "__custom_model__";
-    model.dispatchEvent(new Event("change"));
-    const custom = el<HTMLInputElement>("assistantMapCustomModel");
-    custom.value = "claude-private-v2";
-    custom.dispatchEvent(new Event("input"));
-
-    expect(custom.hidden).toBe(false);
-    expect(key.value).toBe("sk-new");
-    expect(el("assistantMapStatusModel").textContent).toContain("claude-private-v2 · Anthropic");
+it("shows an inset of a located entity or of a box within the map", async () => {
+  const entity = await mapTool("show_inset").handle({ entity: "burg:1" });
+  expect(entity.isError).toBe(true); // Vel has no position in this fixture
+  pack.burgs[1] = { ...pack.burgs[1], x: 5, y: 5 } as (typeof pack.burgs)[number];
+  expect((await mapTool("show_inset").handle({ entity: "burg:1" })).item).toEqual({
+    kind: "widget",
+    widget: { type: "inset", title: "Vel", entity: "burg:1" }
   });
-
-  it("sends and saves a manually entered model for its selected provider", async () => {
-    const fetchStub = vi
-      .spyOn(globalThis, "fetch")
-      .mockImplementation(async () => new Response(JSON.stringify({ choices: [{ message: { content: "ok" } }] })));
-    mountMapPanel(el("host"));
-    const provider = el<HTMLSelectElement>("assistantMapProvider");
-    provider.value = "openai";
-    provider.dispatchEvent(new Event("change"));
-    const model = el<HTMLSelectElement>("assistantMapModel");
-    model.value = "__custom_model__";
-    model.dispatchEvent(new Event("change"));
-    el<HTMLInputElement>("assistantMapCustomModel").value = "my-openai-model";
-    el<HTMLInputElement>("assistantMapKey").value = "sk-test";
-    const input = el<HTMLTextAreaElement>("assistantMapInput");
-    input.value = "hello";
-    input.dispatchEvent(new Event("input"));
-    el<HTMLButtonElement>("assistantMapSend").click();
-    await vi.waitFor(() => expect(fetchStub).toHaveBeenCalled());
-
-    expect(fetchStub.mock.calls[0][0]).toBe("https://api.openai.com/v1/chat/completions");
-    expect(JSON.parse(fetchStub.mock.calls[0][1]?.body as string).model).toBe("my-openai-model");
-    expect(localStorage.getItem("fmg-ai-chat-model")).toBe("my-openai-model");
-    expect(localStorage.getItem("fmg-ai-chat-provider")).toBe("openai");
-    expect(localStorage.getItem("fmg-ai-chat-auto-model")).toBe("false");
-    await vi.waitFor(() => expect(el("assistantMapLog").textContent).toContain("ok"));
-    fetchStub.mockRestore();
+  expect((await mapTool("show_inset").handle({ title: "North", box: [0, 0, 50, 20] })).item).toEqual({
+    kind: "widget",
+    widget: { type: "inset", title: "North", box: [0, 0, 50, 20] }
   });
+  for (const box of [
+    [0, 0, 50],
+    [10, 0, 5, 20],
+    [200, 0, 300, 20]
+  ])
+    expect((await mapTool("show_inset").handle({ box })).isError).toBe(true);
+});
 
-  it("moves a saved retired model to its current replacement", () => {
-    localStorage.setItem("fmg-ai-chat-model", "deepseek-chat");
-    mountMapPanel(el("host"));
-    expect(el<HTMLSelectElement>("assistantMapProvider").value).toBe("deepseek");
-    expect(el<HTMLSelectElement>("assistantMapModel").value).toBe("deepseek-flash");
-  });
-
-  it("shows the local server fields only for the local provider", () => {
-    mountMapPanel(el("host"));
-    expect(el("assistantMapLocal").hidden).toBe(true);
-
-    const provider = el<HTMLSelectElement>("assistantMapProvider");
-    provider.value = "local";
-    provider.dispatchEvent(new Event("change"));
-    expect(el("assistantMapLocal").hidden).toBe(false);
-    expect(el("assistantMapStatusModel").textContent).toContain("local model");
-  });
-
-  it("toggles the drawer from the gear and the status model button", () => {
-    mountMapPanel(el("host"));
-    el<HTMLButtonElement>("assistantMapSettings").click();
-    expect(el("assistantMapDrawer").hidden).toBe(false);
-    el<HTMLButtonElement>("assistantMapSettings").click();
-    expect(el("assistantMapDrawer").hidden).toBe(true);
-    el<HTMLButtonElement>("assistantMapStatusModel").click();
-    expect(el("assistantMapDrawer").hidden).toBe(false);
-  });
-
-  it("shows the note chip and note suggestions when the notes editor is open", async () => {
-    notesApi.label = "Kelmora";
-    mountMapPanel(el("host"));
-    refreshMapContext();
-    await flush();
-    expect(el("assistantMapContext").hidden).toBe(false);
-    expect(el("assistantMapContext").textContent).toContain("Kelmora");
-    const chips = [...el("assistantMapLog").querySelectorAll("button")].map(button => button.textContent);
-    expect(chips).toEqual(NOTE_SUGGESTIONS);
-  });
-
-  it("renders an edit entry with a working undo", async () => {
-    mountMapPanel(el("host"));
-    // reach the renderer through the conversation store: push an entry and re-render by remounting
-    current().entries.push({
-      kind: "edit",
-      id: "burg1",
-      name: "Kelmora",
-      chars: 1200,
-      previous: { legend: "<p>o</p>", name: "Kelmora" }
-    });
-    unmountMapPanel();
-    mountMapPanel(el("host"));
-    const entry = el("assistantMapLog").querySelector(".assistantMapEdit") as HTMLElement;
-    expect(entry.textContent).toContain("Updated note");
-    expect(entry.textContent).toContain("Kelmora");
-    (entry.querySelector("button") as HTMLButtonElement).click();
-    await flush();
-    expect(undoEdit).toHaveBeenCalled();
-    expect((entry.querySelector("button") as HTMLButtonElement).disabled).toBe(true);
-  });
+it("returns an emblem as an image for the model and shows it to the user", async () => {
+  pack.states = [
+    { i: 0, name: "Neutrals" },
+    { i: 1, name: "Orwin", coa: { t1: "gules" } },
+    { i: 2, name: "Bare" }
+  ] as typeof pack.states;
+  const outcome = await mapTool("view_emblem").handle({ entity: "state:1" });
+  expect(outcome.content).toEqual([
+    { type: "text", text: "The emblem of Orwin" },
+    { type: "image", source: { type: "base64", media_type: "image/png", data: "QUJD" } }
+  ]);
+  expect(outcome.item).toEqual({ kind: "widget", widget: { type: "emblem", entity: "state:1" } });
+  expect((await mapTool("view_emblem").handle({ entity: "state:2" })).content).toBe("state:2 has no emblem");
+  expect((await mapTool("view_emblem").handle({ entity: "river:1" })).isError).toBe(true);
 });

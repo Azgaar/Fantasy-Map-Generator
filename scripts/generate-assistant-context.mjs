@@ -1,5 +1,5 @@
-// Builds src/services/assistant/context.generated.ts — the part of the Assistant system prompt that is
-// derived from the codebase rather than written by hand. Run `npm run generate:assistant-context` after
+// Builds src/services/assistant/context.generated.ts — the Assistant context derived from the codebase
+// rather than written by hand: the compact parts go into the system prompt, the rest is served by read_docs. Run `npm run generate:assistant-context` after
 // changing global declarations, the registries, or the data model doc. Pass --check to verify the
 // committed file is current without writing (used by context.test.ts).
 
@@ -27,19 +27,46 @@ function globalDeclarations() {
     .trim();
 }
 
-function generatorGlobals() {
+function generatorNames() {
   const dir = "src/generators";
   const files = readdirSync(join(root, dir))
     .filter(name => name.endsWith(".ts") && !name.endsWith(".test.ts"))
     .sort();
 
-  const declarations = files.flatMap(file =>
+  const names = files.flatMap(file =>
     extractGlobalBlocks(read(`${dir}/${file}`)).flatMap(body =>
-      [...body.matchAll(/^\s*(var .+;)$/gm)].map(([, declaration]) => declaration)
+      [...body.matchAll(/^\s*var ([A-Z]\w*):/gm)].map(([, name]) => name)
     )
   );
 
-  return [...new Set(declarations)].sort().join("\n");
+  return [...new Set(names)].sort().join(", ");
+}
+
+// Field names per data-model section, labelled so each line names a read_docs topic
+function dataFields() {
+  const lines = new Map();
+  let section = "";
+  for (const part of read("docs/architecture/data-model.md").split(/(?=^#{1,3} )/m)) {
+    const [, level, heading] = part.match(/^(#{1,3}) (.+)$/m) ?? [];
+    if (level === "##") section = heading;
+    if (!level || level === "#") continue;
+    const sub = level === "###" ? heading.replace(/ object$/, "").toLowerCase() : "";
+    const label = sub ? `${section} (${sub})` : section;
+    for (const [, name] of part.matchAll(/^(?:- )+`([\w.]+)`:/gm)) {
+      const dot = name.lastIndexOf(".");
+      const [prefix, field] = dot < 0 ? ["", name] : [name.slice(0, dot), name.slice(dot + 1)];
+      if (!lines.has(label)) lines.set(label, new Map());
+      const groups = lines.get(label);
+      if (!groups.has(prefix)) groups.set(prefix, new Set());
+      groups.get(prefix).add(field);
+    }
+  }
+  return [...lines]
+    .map(([label, groups]) => {
+      const fields = [...groups].map(([prefix, set]) => (prefix ? `${prefix}.{${[...set].join(", ")}}` : [...set].join(", ")));
+      return `${label}: ${fields.join("; ")}`;
+    })
+    .join("\n");
 }
 
 function registryKeys(path, name) {
@@ -47,14 +74,50 @@ function registryKeys(path, name) {
   return [...body.matchAll(/^ {2}(\w+):/gm)].map(([, key]) => `${name}.${key}`).join("\n");
 }
 
+// Every registered Assistant operation with its model-class method signature and doc line
+function operations() {
+  const sources = readdirSync(join(root, "src"), { recursive: true })
+    .filter(path => path.endsWith(".ts") && !path.endsWith(".test.ts") && !path.endsWith(".generated.ts"))
+    .map(path => read(`src/${path}`));
+  const registry = read("src/controllers/assistant-operations.ts");
+  return [...registry.matchAll(/^ {2}"(\w+)\.(\w+)":/gm)]
+    .map(([, model, method]) => {
+      const className = sources
+        .map(source => source.match(new RegExp(`\\b(?:var|const) ${model}(?:: | = new )(\\w+)`))?.[1])
+        .find(Boolean);
+      const source = sources.find(source => source.includes(`class ${className} `));
+      const match = source?.match(new RegExp(`(?:/\\*\\* (.+) \\*/\\n)? {2}${method}\\(([^)]*)\\)`));
+      if (!match) throw new Error(`Operation ${model}.${method} has no public method`);
+      return `${model}.${method}(${match[2]})${match[1] ? ` // ${match[1]}` : ""}`;
+    })
+    .join("\n");
+}
+
+// Commands an answer may link, by the same rule as isLinkable in map-commands.ts
+function commands() {
+  return [...read("src/components/map-commands.ts").matchAll(/id: "(\w+)",\s*name: "([^"]+)"/g)]
+    .filter(([, id, name]) => id !== "assistant" && /^(Open|Show|Edit) /.test(name))
+    .map(([, id, name]) => `${id}: ${name}`)
+    .join("\n");
+}
+
+// Every type a link key may name, entities first, from map-entities.ts
+function keyTypes() {
+  const source = read("src/components/map-entities.ts");
+  const list = name =>
+    [...(source.match(new RegExp(`${name} = \\[([^\\]]*)\\]`))?.[1] ?? "").matchAll(/"(\w+)"/g)].map(([, type]) => type);
+  return [...list("ENTITY_TYPES"), ...list("RECORD_TYPES")].join(", ");
+}
+
 function buildGeneratedContext() {
   const sections = {
     GLOBAL_DECLARATIONS: globalDeclarations(),
-    GENERATOR_GLOBALS: generatorGlobals(),
+    GENERATOR_NAMES: generatorNames(),
     REGISTRY_KEYS: [registryKeys("src/controllers/index.ts", "Controllers"), registryKeys("src/services/index.ts", "Services")].join("\n"),
-    PACKED_GRAPH_TYPES: read("src/types/PackedGraph.ts").replace(/^import .*\n/gm, "").trim(),
-    CONFIGURATION: read("docs/architecture/configuration.md").trim(),
-    DATA_MODEL: read("docs/architecture/data-model.md").trim()
+    DATA_FIELDS: dataFields(),
+    OPERATIONS: operations(),
+    COMMANDS: commands(),
+    KEY_TYPES: keyTypes()
   };
 
   const header = `// GENERATED FILE — do not edit by hand.\n// Run \`npm run generate:assistant-context\` to rebuild it from the sources it mirrors.\n`;

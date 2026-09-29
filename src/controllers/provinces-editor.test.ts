@@ -13,7 +13,7 @@ vi.mock("@/components/dialog/table", () => ({
   initEditorTable: vi.fn()
 }));
 vi.mock("@/components/annex-mode", () => ({ createAnnexMode: vi.fn() }));
-vi.mock("@/components/notes", () => ({ Notes: {} }));
+vi.mock("@/generators/notes", () => ({ Notes: {} }));
 vi.mock("@/controllers", () => ({ Controllers: {} }));
 vi.mock("@/generators/emblems-generator", () => ({ Emblems: {} }));
 vi.mock("@/renderers/draw-emblems", () => ({ redrawEmblem: vi.fn(), redrawEmblems: vi.fn(), removeEmblem: vi.fn() }));

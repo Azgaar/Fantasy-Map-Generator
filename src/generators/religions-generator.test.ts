@@ -379,3 +379,18 @@ describe("ReligionsModule origins", () => {
     });
   });
 });
+
+describe("ReligionsModule.rename", () => {
+  it("recomputes a renamed religion's code", async () => {
+    await import("./religions-generator");
+    globalThis.pack = {
+      religions: [
+        { i: 0, name: "No religion" },
+        { i: 1, name: "Old Faith", code: "OF" }
+      ]
+    } as any;
+    globalThis.Religions.rename(1, "Sun Cult");
+    expect(pack.religions[1]).toMatchObject({ name: "Sun Cult", code: "SC" });
+    expect(() => globalThis.Religions.rename(2, "X")).toThrow("Religion 2 does not exist");
+  });
+});

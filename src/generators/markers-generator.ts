@@ -1,6 +1,7 @@
 import { mean } from "d3";
 import { Icons } from "@/components/icons";
 import type { PackedGraph } from "@/types/PackedGraph";
+import { requireName } from "@/utils/languageUtils";
 import {
   capitalize,
   convertTemperature,
@@ -119,6 +120,13 @@ class MarkersModule {
     pack.markers.push(added);
     this.occupied[marker.cell] = true;
     return added;
+  }
+
+  /** Rename a marker */
+  rename(markerId: number, name: string): void {
+    const marker = pack.markers.find(m => m.i === markerId);
+    if (!marker) throw new Error(`Marker ${markerId} does not exist`);
+    marker.name = requireName(name);
   }
 
   deleteMarker(markerId: number) {

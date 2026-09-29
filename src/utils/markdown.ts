@@ -21,7 +21,10 @@ const TABLE_DIVIDER = /^\s*\|?[\s:|-]*-[\s:|-]*\|?\s*$/;
 const PLACEHOLDER = String.fromCharCode(0);
 const PLACEHOLDER_PATTERN = new RegExp(`${PLACEHOLDER}(\\d+)${PLACEHOLDER}`, "g");
 
-export function renderMarkdown(source: string): string {
+/** Renders a non-http link from its escaped label and href, or returns null to leave it as text */
+export type LinkResolver = (label: string, href: string) => string | null;
+
+export function renderMarkdown(source: string, link?: LinkResolver): string {
   const lines = source.replace(/\r\n?/g, "\n").split("\n");
   const html: string[] = [];
   let index = 0;
@@ -47,7 +50,7 @@ export function renderMarkdown(source: string): string {
     if (heading) {
       // a document h1 is far too loud inside a chat bubble, so the whole scale is shifted down
       const level = Math.min(heading[1].length + 2, 6);
-      html.push(`<h${level}>${inline(heading[2])}</h${level}>`);
+      html.push(`<h${level}>${inline(heading[2], link)}</h${level}>`);
       index++;
       continue;
     }
@@ -61,7 +64,7 @@ export function renderMarkdown(source: string): string {
     if (QUOTE.test(line)) {
       const quoted: string[] = [];
       while (index < lines.length && QUOTE.test(lines[index])) quoted.push(lines[index++].match(QUOTE)?.[1] ?? "");
-      html.push(`<blockquote>${renderMarkdown(quoted.join("\n"))}</blockquote>`);
+      html.push(`<blockquote>${renderMarkdown(quoted.join("\n"), link)}</blockquote>`);
       continue;
     }
 
@@ -73,18 +76,18 @@ export function renderMarkdown(source: string): string {
         items.push({ indent: match[1].length, ordered: /\d/.test(match[2]), text: match[3] });
         index++;
       }
-      html.push(buildList(items, 0).html);
+      html.push(buildList(items, 0, link).html);
       continue;
     }
 
     if (line.includes("|") && index + 1 < lines.length && TABLE_DIVIDER.test(lines[index + 1])) {
-      index = buildTable(lines, index, html);
+      index = buildTable(lines, index, html, link);
       continue;
     }
 
     const paragraph: string[] = [];
     while (index < lines.length && lines[index].trim() && !startsBlock(lines[index])) paragraph.push(lines[index++]);
-    html.push(`<p>${paragraph.map(inline).join("<br />")}</p>`);
+    html.push(`<p>${paragraph.map(line => inline(line, link)).join("<br />")}</p>`);
   }
 
   return html.join("");
@@ -95,19 +98,19 @@ function startsBlock(line: string): boolean {
 }
 
 // Nested lists are built by recursion so that a child list stays inside its parent's <li>
-function buildList(items: ListItem[], start: number): { html: string; next: number } {
+function buildList(items: ListItem[], start: number, link?: LinkResolver): { html: string; next: number } {
   const { indent, ordered } = items[start];
   const contents: string[] = [];
   let index = start;
 
   while (index < items.length && items[index].indent >= indent) {
     if (items[index].indent > indent && contents.length) {
-      const nested = buildList(items, index);
+      const nested = buildList(items, index, link);
       contents[contents.length - 1] += nested.html;
       index = nested.next;
       continue;
     }
-    contents.push(inline(items[index].text));
+    contents.push(inline(items[index].text, link));
     index++;
   }
 
@@ -115,7 +118,7 @@ function buildList(items: ListItem[], start: number): { html: string; next: numb
   return { html: `<${tag}>${contents.map(content => `<li>${content}</li>`).join("")}</${tag}>`, next: index };
 }
 
-function buildTable(lines: string[], start: number, html: string[]): number {
+function buildTable(lines: string[], start: number, html: string[], link?: LinkResolver): number {
   const headers = splitRow(lines[start]);
   const alignments = splitRow(lines[start + 1]).map(cell => {
     if (cell.startsWith(":") && cell.endsWith(":")) return ' style="text-align: center"';
@@ -124,7 +127,7 @@ function buildTable(lines: string[], start: number, html: string[]): number {
   });
 
   const cell = (content: string, column: number, tag: "th" | "td"): string =>
-    `<${tag}${alignments[column] ?? ""}>${inline(content)}</${tag}>`;
+    `<${tag}${alignments[column] ?? ""}>${inline(content, link)}</${tag}>`;
 
   const rows: string[] = [];
   let index = start + 2;
@@ -149,7 +152,7 @@ const splitRow = (line: string): string[] =>
 
 // Inline marks. Code spans are pulled out first so that their contents are never re-parsed, then
 // everything else is escaped before any tag of ours is introduced.
-function inline(text: string): string {
+function inline(text: string, link?: LinkResolver): string {
   const codes: string[] = [];
   const withPlaceholders = text.replace(/`([^`]+)`/g, (_, code: string) => {
     codes.push(`<code>${escapeHtml(code)}</code>`);
@@ -158,7 +161,9 @@ function inline(text: string): string {
 
   const marked = escapeHtml(withPlaceholders)
     .replace(/\[([^\]\n]+)\]\(([^)\s]+)\)/g, (whole, label: string, href: string) =>
-      /^https?:\/\//i.test(href) ? `<a href="${href}" target="_blank" rel="noopener noreferrer">${label}</a>` : whole
+      /^https?:\/\//i.test(href)
+        ? `<a href="${href}" target="_blank" rel="noopener noreferrer">${label}</a>`
+        : (link?.(label, href) ?? whole)
     )
     .replace(/(\*\*|__)(?=\S)([\s\S]*?\S)\1/g, "<strong>$2</strong>")
     .replace(/\*(?=\S)([^*\n]*\S)\*/g, "<em>$1</em>")

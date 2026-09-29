@@ -88,6 +88,12 @@ export function getFriendlyHeight([x, y]: [number, number], pack: PackedGraph, g
   return getHeight(packH < 20 ? gridH : packH);
 }
 
+/** People from population points: rural points plus urban points, which count urbanization */
+export function getPeople(rural = 0, urban = 0): number {
+  const { scale, urbanization } = options.map.units.population;
+  return Math.round(rural * scale + urban * scale * urbanization.rate);
+}
+
 /** Get [rural, urban] real-world population of a cell */
 export function getCellPopulation(cellId: number, pack: PackedGraph): [number, number] {
   const rural = pack.cells.pop[cellId] * options.map.units.population.scale;

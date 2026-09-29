@@ -45,7 +45,7 @@ const STYLE = /* css */ `
   #styleForm details[data-section] > summary:has(> .gate.changed) { box-shadow: inset 3px 0 0 var(--dark-solid); }
   #styleForm summary > .preview { display: flex; height: 1.6em; } /* reserved, so every header is the same height */
   #styleForm summary > .preview > .sample { font-size: 1.25em; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #styleForm summary > .preview > .chip { flex: none; width: 2.95em; height: 1.6em; overflow: visible; }
+  #styleForm summary > .preview > .chip { flex: none; width: 3em; height: 1.6em; overflow: visible; }
   #styleForm summary > .preview > .ramp { flex: none; width: 2.6em; height: .9em; border: 1px solid #333; border-radius: 3px; }
   #styleForm summary > .preview > .tex { flex: none; width: 1.8em; height: 1.5em; border: 1px solid #333; border-radius: 3px; background-size: cover; background-position: center; }
   #styleForm summary > .preview > .icon { flex: none; display: flex; }

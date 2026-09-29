@@ -1,0 +1,13 @@
+# Azgaar Assistant
+
+Azgaar Assistant is a chat beside the map. Open it from the bottom-right bubble, the command palette, or the Notes Editor. Press Enter to send a question and Shift+Enter for a new line. The answer appears in the same panel whether you ask about the Generator or your map. The Assistant covers the Generator, your map and world-building; it declines other topics in one line.
+
+On the official site, Guests get a small daily allowance of documentation answers. Signing in with Discord gives Members a larger allowance. The footer shows your tier and remaining questions. Free-tier questions send only your question and a server chat id to the Azgaar server; the server cannot read your map. If you ask about your map, connect your own AI key or local model.
+
+Select **Use key** to connect Anthropic, OpenAI, Mistral, Qwen, DeepSeek or a local server. The key sheet discovers the models available to your key; you can also type a model id. Discovery errors appear there but do not prevent connecting. A rejected request leaves the connection and chat in place so you can correct the key and try again. Self-hosted copies and the desktop app require a key or local model.
+
+With a key, the Assistant can read the open map, answer exact questions about it, download CSV or JSON, and propose changes: writing notes and renaming burgs, states, provinces, cultures, religions, rivers and markers. Map reads appear as collapsed steps. The Assistant never changes the map by itself. Each proposal appears as one card listing every change, before → after, including side effects such as labels and full names; a long batch shows the first rows and "… N more". Nothing changes until you press **Apply**, or you can **Discard** it; the Assistant learns which you chose. An applied proposal has **Undo**, which restores the whole batch. Apply and Undo work only while the map still holds what they expect; otherwise the button reads **Changed since**. They work in any tier and in read-only chats. Renames and notes follow exactly the same rules as the editors. The notes editor provides the open note and selected text as context.
+
+**Chats** lists every chat kept in this browser. Each belongs to the map that was open when it began. A chat from another map or answerer opens read-only; choose **New chat** to continue. Generating or loading a different map also starts a new chat. A long Key chat shows a prompt to start fresh because every question resends its history.
+
+The Assistant runs model-written JavaScript in this page to read the map. Use it only on maps from sources you trust. Your key stays in this browser and is sent directly to your provider. See the [Policy](Policy) for details.

@@ -10,6 +10,43 @@ const system: SystemBlock[] = [
 ];
 
 describe("toChatMessages", () => {
+  it("skips an empty assistant turn, which OpenAI rejects as null content", () => {
+    const messages: Message[] = [
+      { role: "user", content: [{ type: "text", text: "Pick one" }] },
+      { role: "assistant", content: [] },
+      { role: "user", content: [{ type: "text", text: "Where is Vel?" }] }
+    ];
+    expect(toChatMessages(system, messages).map(message => message.role)).toEqual(["system", "user", "user"]);
+  });
+
+  it("sends a tool's images as a user message after its text result", () => {
+    const messages: Message[] = [
+      { role: "assistant", content: [{ type: "tool_use", id: "call_1", name: "view_emblem", input: {} }] },
+      {
+        role: "user",
+        content: [
+          {
+            type: "tool_result",
+            tool_use_id: "call_1",
+            content: [
+              { type: "text", text: "The emblem of Orwin" },
+              { type: "image", source: { type: "base64", media_type: "image/png", data: "QUJD" } }
+            ]
+          }
+        ]
+      }
+    ];
+    const [, , tool, images] = toChatMessages(system, messages);
+    expect(tool).toEqual({ role: "tool", tool_call_id: "call_1", content: "The emblem of Orwin" });
+    expect(images).toEqual({
+      role: "user",
+      content: [
+        { type: "text", text: "Images from the tools above:" },
+        { type: "image_url", image_url: { url: "data:image/png;base64,QUJD" } }
+      ]
+    });
+  });
+
   it("flattens system blocks into one system message without cache markers", () => {
     const result = toChatMessages(system, []);
     expect(result).toEqual([{ role: "system", content: "static prefix\n\ncurrent map" }]);
