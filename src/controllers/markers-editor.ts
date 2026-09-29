@@ -206,7 +206,7 @@ function changeMarkerName(this: HTMLInputElement): void {
 }
 
 function changeMarkerType(this: HTMLInputElement): void {
-  selectedMarker.type = this.value;
+  if (this.value.trim()) Markers.setType(selectedMarker.i, this.value);
 }
 
 function changeMarkerIcon(): void {

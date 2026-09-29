@@ -17,6 +17,7 @@ const proposeOk = (operations: unknown) => propose("Rename", operations, 1, MAP)
 beforeAll(async () => {
   await import("@/generators/burgs-generator");
   await import("@/generators/states-generator");
+  await import("@/generators/zones-generator");
 });
 
 beforeEach(() => {
@@ -51,6 +52,25 @@ it("records a state's rebuilt full name", () => {
   ]);
 });
 
+it("applies and undoes property edits, including a field that was absent", () => {
+  pack.zones = [{ i: 1, name: "War", type: "Invasion", color: "#000000", cells: [] }] as unknown as typeof pack.zones;
+  const proposal = proposeOk([
+    { op: "States.recolor", args: [1, "#ff0000"] },
+    { op: "Zones.setHidden", args: [1, true] }
+  ]);
+  expect(proposal.change.map(row => [row.key, row.field, row.before, row.after])).toEqual([
+    ["state:1", "color", undefined, "#ff0000"],
+    ["zone:1", "hidden", undefined, true]
+  ]);
+  expect(apply(proposal, MAP)).toBe(true);
+  expect(pack.states[1].color).toBe("#ff0000");
+  expect(pack.zones[0].hidden).toBe(true);
+  expect(Layers.draw).toHaveBeenCalledWith("states", "military", "zones");
+  expect(undo(proposal, MAP)).toBe(true);
+  expect(pack.states[1].color).toBeUndefined();
+  expect("hidden" in pack.zones[0]).toBe(false);
+});
+
 it("fails the whole batch and changes nothing when one operation fails", () => {
   const map = JSON.stringify(pack);
   expect(propose("Rename", [rename(1, "Saltmere"), rename(9, "X")], 1, MAP)).toBe("Burg 9 does not exist");
@@ -60,7 +80,8 @@ it("fails the whole batch and changes nothing when one operation fails", () => {
 it("lists the registered operations for an unknown one", () => {
   const result = propose("Paint", [{ op: "Burgs.paint", args: [] }], 1, MAP);
   expect(result).toContain('Unknown operation "Burgs.paint"');
-  expect(result).toContain("Burgs.rename, States.rename");
+  expect(result).toContain("Burgs.rename, ");
+  expect(result).toContain("Zones.setHidden");
 });
 
 it("refuses a batch that changes nothing", () => {

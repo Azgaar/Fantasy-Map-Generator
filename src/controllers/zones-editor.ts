@@ -397,13 +397,15 @@ function downloadZonesData(): void {
 }
 
 function changeDescription(zone: Zone, value: string): void {
-  zone.name = value;
-  select<SVGGElement, unknown>("#zones").select(`#zone${zone.i}`).attr("data-description", value);
+  if (!value.trim()) return;
+  Zones.rename(zone.i, value);
+  select<SVGGElement, unknown>("#zones").select(`#zone${zone.i}`).attr("data-description", zone.name);
 }
 
 function changeType(zone: Zone, value: string): void {
-  zone.type = value;
-  select<SVGGElement, unknown>("#zones").select(`#zone${zone.i}`).attr("data-type", value);
+  if (!value.trim()) return;
+  Zones.setType(zone.i, value);
+  select<SVGGElement, unknown>("#zones").select(`#zone${zone.i}`).attr("data-type", zone.type);
 }
 
 function changePopulation(zone: Zone): void {

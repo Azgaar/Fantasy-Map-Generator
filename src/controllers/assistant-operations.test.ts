@@ -11,7 +11,11 @@ beforeAll(async () => {
     import("@/generators/cultures-generator"),
     import("@/generators/religions-generator"),
     import("@/generators/river-generator"),
-    import("@/generators/markers-generator")
+    import("@/generators/markers-generator"),
+    import("@/generators/biomes-generator"),
+    import("@/generators/zones-generator"),
+    import("@/generators/routes-generator"),
+    import("@/generators/features-generator")
   ]);
 });
 
@@ -20,7 +24,8 @@ it.each(Object.keys(OPERATIONS))("%s runs the public model-class method of that 
   const owner = (model === "Notes" ? Notes : globalThis[model as keyof typeof globalThis]) as Record<string, unknown>;
   expect(typeof owner[method]).toBe("function");
   const spy = vi.spyOn(owner as Record<string, () => void>, method).mockImplementation(() => {});
-  OPERATIONS[name].run("a", "b");
-  expect(spy).toHaveBeenCalledWith("a", "b");
+  const args = ["a", "b", "c"].slice(0, OPERATIONS[name].run.length);
+  OPERATIONS[name].run(...args);
+  expect(spy).toHaveBeenCalledWith(...args);
   spy.mockRestore();
 });

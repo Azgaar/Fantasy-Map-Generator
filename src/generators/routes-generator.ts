@@ -1,6 +1,7 @@
 import Alea from "alea";
 import { curveCatmullRom, line } from "d3";
 import Delaunator from "delaunator";
+import { requireName } from "@/utils/languageUtils";
 import { distanceSquared, findPath, getAdjective, isLand, ra, rn, round, rw } from "../utils";
 import { meander } from "../utils/pathUtils";
 import type { Burg } from "./burgs-generator";
@@ -200,6 +201,13 @@ class RoutesModule {
   private riverEdges: Map<number, Map<number, RiverEdge>> = new Map();
   private riversById: Map<number, River> = new Map();
   private riverGeometryCache: Map<number, { points: Point[]; anchorIndices: number[] }> = new Map();
+
+  /** Rename a route */
+  rename(routeId: number, name: string): void {
+    const route = pack.routes.find(({ i }) => i === routeId);
+    if (!route) throw new Error(`Route ${routeId} does not exist`);
+    route.name = requireName(name);
+  }
 
   regenerate(): void {
     const lockedRoutes = pack.routes.filter(route => route.lock).map((route, index) => ({ ...route, i: index }));

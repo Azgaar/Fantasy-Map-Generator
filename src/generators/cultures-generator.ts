@@ -1,6 +1,7 @@
 import { max, quadtree, range } from "d3";
 import { Emblems } from "@/generators/emblems-generator";
-import { requireName } from "@/utils/languageUtils";
+import { requireColor } from "@/utils/colorUtils";
+import { requireName, requireOneOf } from "@/utils/languageUtils";
 import { abbreviate, biased, getColors, getRandomColor, minmax, P, rand, rn, rw } from "../utils";
 
 /** The named culture sets the user picks from: how many cultures each holds and how often it is rolled */
@@ -1358,6 +1359,22 @@ class CulturesGenerator {
       culture.name,
       pack.cultures.flatMap(other => (other !== culture && other.code ? [other.code] : []))
     );
+  }
+
+  /** Set a culture's color */
+  recolor(cultureId: number, color: string): void {
+    this.living(cultureId).color = requireColor(color);
+  }
+
+  /** Set a culture's type: Generic, Hunting, Highland, River, Lake, Naval or Nomadic */
+  setType(cultureId: number, type: string): void {
+    this.living(cultureId).type = requireOneOf(type, CULTURE_TYPES, "The type");
+  }
+
+  private living(cultureId: number): Culture {
+    const culture = pack.cultures[cultureId];
+    if (!culture || culture.removed) throw new Error(`Culture ${cultureId} does not exist`);
+    return culture;
   }
 
   regenerate(): void {

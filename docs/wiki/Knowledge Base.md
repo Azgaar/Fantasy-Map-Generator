@@ -614,7 +614,7 @@ Your question, earlier messages in the chat, the Assistant's instructions, a sum
 
 ### Can Azgaar Assistant change my map?
 
-With a connected key or local model, it can propose writing entity notes and renaming burgs, states, provinces, cultures, religions, rivers and markers. It never changes the map by itself: each proposal is a card listing every change before → after, and nothing happens until you press Apply. Discard drops it. Many changes, such as renaming all coastal burgs, arrive as one card. Other changes are not supported yet, and it should tell you when it has no operation for a request.
+With a connected key or local model, it can propose writing entity notes, renaming burgs, states, provinces, cultures, religions, biomes, rivers, routes, geographical features, zones and markers, recoloring states, provinces, cultures, religions, biomes and zones, and editing details such as burg population, group, type and buildings, full names, culture types, deities, biome habitability and marker icons, types and visibility. It never changes the map by itself: each proposal is a card listing every change before → after, and nothing happens until you press Apply. Discard drops it. Many changes, such as renaming all coastal burgs, arrive as one card. Other changes are not supported yet, and it should tell you when it has no operation for a request.
 
 ### How do I undo an Assistant change?
 

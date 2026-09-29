@@ -343,8 +343,12 @@ function biomeChangeColor(fillBox: FillBoxElement): void {
 function biomeChangeName(el: HTMLInputElement): void {
   const line = el.closest<HTMLElement>(".biomes")!;
   const biome = +line.dataset.id!;
-  line.dataset.name = el.value;
-  pack.biomes[biome].name = el.value;
+  if (!el.value.trim()) {
+    el.value = pack.biomes[biome].name;
+    return;
+  }
+  Biomes.rename(biome, el.value);
+  line.dataset.name = pack.biomes[biome].name;
 }
 
 function biomeChangeHabitability(el: HTMLInputElement): void {
@@ -356,7 +360,7 @@ function biomeChangeHabitability(el: HTMLInputElement): void {
     tip("Please provide a valid number in range 0-9999", false, "error");
     return;
   }
-  pack.biomes[biome].habitability = +el.value;
+  Biomes.setHabitability(biome, +el.value);
   line.dataset.habitability = el.value;
   regeneratePopulation();
   refreshBiomesEditor();

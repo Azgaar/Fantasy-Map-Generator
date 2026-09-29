@@ -2,6 +2,7 @@ import Alea from "alea";
 import { max } from "d3";
 import { Emblems } from "@/generators/emblems-generator";
 import type { Emblem } from "@/types/emblems";
+import { requireColor } from "@/utils/colorUtils";
 import { replaceWholeWord, requireName } from "@/utils/languageUtils";
 import { gauss, generateSeed, getMixedColor, getPolesOfInaccessibility, P, rand, rw } from "../utils";
 import type { Label } from "./labels-generator";
@@ -340,6 +341,22 @@ class ProvinceModule {
       (province.formName ? `${province.name} ${province.formName}` : province.name);
     if (province.label?.text)
       province.label.text = replaceWholeWord(province.label.text, old, province.name) ?? province.label.text;
+  }
+
+  /** Set a province's color */
+  recolor(provinceId: number, color: string): void {
+    this.living(provinceId).color = requireColor(color);
+  }
+
+  /** Set a province's full name, such as "County of Vel" */
+  setFullName(provinceId: number, fullName: string): void {
+    this.living(provinceId).fullName = requireName(fullName);
+  }
+
+  private living(provinceId: number): Province {
+    const province = pack.provinces[provinceId];
+    if (!province || province.removed) throw new Error(`Province ${provinceId} does not exist`);
+    return province;
   }
 
   // calculate pole of inaccessibility for each province

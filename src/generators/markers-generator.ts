@@ -129,6 +129,29 @@ class MarkersModule {
     marker.name = requireName(name);
   }
 
+  /** Set a marker's icon: an emoji or an icon id */
+  setIcon(markerId: number, icon: string): void {
+    this.living(markerId).icon = requireName(icon);
+  }
+
+  /** Set a marker's type, a free label such as volcano or ruins */
+  setType(markerId: number, type: string): void {
+    this.living(markerId).type = requireName(type);
+  }
+
+  /** Hide or show a marker */
+  setHidden(markerId: number, hidden: boolean): void {
+    const marker = this.living(markerId);
+    if (hidden) marker.hidden = true;
+    else delete marker.hidden;
+  }
+
+  private living(markerId: number): Marker {
+    const marker = pack.markers.find(m => m.i === markerId);
+    if (!marker) throw new Error(`Marker ${markerId} does not exist`);
+    return marker;
+  }
+
   deleteMarker(markerId: number) {
     pack.markers = pack.markers.filter(m => m.i !== markerId);
   }

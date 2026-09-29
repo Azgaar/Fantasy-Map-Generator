@@ -25,6 +25,13 @@ export const toHEX = (cssColor: string): string => {
 /** Any CSS color as HEX; a value that is not a color (a pattern url, an empty string) is unchanged */
 export const toColorHex = (value: string): string => toHEX(value) || value;
 
+/** A usable fill color as HEX ("#a1b2c3" or a CSS color name), or a readable error */
+export const requireColor = (value: unknown): string => {
+  const hex = typeof value === "string" ? toHEX(value) : "";
+  if (!/^#(?:[\da-f]{3}|[\da-f]{6})$/i.test(hex)) throw new Error("The color must be a HEX color like #a1b2c3");
+  return hex;
+};
+
 /** Predefined set of 12 distinct pastel colors */
 export const C_12 = [
   "#dababf",

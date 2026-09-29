@@ -1,5 +1,7 @@
 import { mean } from "d3";
 import type { ReliefPool } from "@/generators/relief-generator";
+import { requireColor } from "@/utils/colorUtils";
+import { requireName } from "@/utils/languageUtils";
 import { rn } from "../utils";
 
 export interface Biome {
@@ -125,6 +127,28 @@ class BiomesGenerator {
       const temperature = temp[gridReference[cellId]];
       pack.cells.biome[cellId] = this.getId(moisture, temperature, height, Boolean(riverIds[cellId]));
     }
+  }
+
+  /** Rename a biome */
+  rename(biomeId: number, name: string): void {
+    this.living(biomeId).name = requireName(name);
+  }
+
+  /** Set a biome's color */
+  recolor(biomeId: number, color: string): void {
+    this.living(biomeId).color = requireColor(color);
+  }
+
+  /** Set a biome's habitability, in percent */
+  setHabitability(biomeId: number, percent: number): void {
+    if (!Number.isFinite(percent) || percent < 0) throw new Error("The habitability must be a non-negative number");
+    this.living(biomeId).habitability = percent;
+  }
+
+  private living(biomeId: number): Biome {
+    const biome = pack.biomes[biomeId];
+    if (!biome || biome.removed) throw new Error(`Biome ${biomeId} does not exist`);
+    return biome;
   }
 
   getId(moisture: number, temperature: number, height: number, hasRiver: boolean) {

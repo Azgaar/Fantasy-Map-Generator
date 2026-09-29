@@ -366,7 +366,10 @@ function zoomToFeature(element: HTMLElement): void {
 }
 
 function changeName(input: HTMLElement): void {
-  getFeature(input).name = (input as HTMLInputElement).value.trim();
+  const feature = getFeature(input);
+  const name = (input as HTMLInputElement).value.trim();
+  if (name) Features.rename(feature.i, name);
+  else feature.name = "";
 }
 
 function changeSubtype(select: HTMLElement): void {

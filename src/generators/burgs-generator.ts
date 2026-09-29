@@ -4,16 +4,18 @@ import { Emblems } from "@/generators/emblems-generator";
 import type { BurgGroup } from "@/types/burg-groups";
 import type { Emblem } from "@/types/emblems";
 import type { IconSet } from "@/types/icons";
-import { requireName } from "@/utils/languageUtils";
+import { requireName, requireOneOf } from "@/utils/languageUtils";
 import { safeParseJSON } from "@/utils/stringUtils";
 import { each, gauss, minmax, normalize, P, rn } from "../utils";
-import { type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
+import { CULTURE_TYPES, type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
 import { NON_NAVIGABLE_LAKE_SUBTYPES } from "./features-generator";
 import type { Label } from "./labels-generator";
 import { Population } from "./population-generator";
 import type { ProductionRecord } from "./production-generator";
 import type { River } from "./river-generator";
 import type { Point } from "./voronoi";
+
+const BUILDINGS = ["citadel", "shanty", "temple", "walls"] as const;
 
 /** the default burg style: white art with a dark outline */
 const BURG_PAINT = { fill: "#ffffff", stroke: "#3e3e4b" };
@@ -909,6 +911,37 @@ class BurgModule {
     if (!burg || burg.removed) throw new Error(`Burg ${burgId} does not exist`);
     burg.name = requireName(name);
     if (burg.label?.text !== undefined) burg.label.text = burg.name;
+  }
+
+  /** Set a burg's population as shown in the Burg Editor, in people */
+  setPopulation(burgId: number, people: number): void {
+    const burg = this.living(burgId);
+    const { scale, urbanization } = options.map.units.population;
+    if (!Number.isFinite(people) || people < 0) throw new Error("The population must be a non-negative number");
+    burg.population = rn(people / scale / urbanization.rate, 4);
+  }
+
+  /** Move a burg to an existing burg group */
+  setGroup(burgId: number, group: string): void {
+    const names = options.map.burgs.groups.filter(({ removed }) => !removed).map(({ name }) => name);
+    this.changeGroup(this.living(burgId), requireOneOf(group, names, "The group"));
+  }
+
+  /** Set a burg's culture type, which is about geography, not rank */
+  setType(burgId: number, type: string): void {
+    this.living(burgId).type = requireOneOf(type, CULTURE_TYPES, "The type");
+  }
+
+  /** Turn one of a burg's buildings on or off: citadel, shanty, temple or walls */
+  setBuilding(burgId: number, building: string, present: boolean): void {
+    const burg = this.living(burgId);
+    burg[requireOneOf(building, BUILDINGS, "The building")] = present ? 1 : 0;
+  }
+
+  private living(burgId: number): Burg {
+    const burg = pack.burgs[burgId];
+    if (!burg || burg.removed) throw new Error(`Burg ${burgId} does not exist`);
+    return burg;
   }
 
   remove(burgId: number) {

@@ -358,7 +358,7 @@ function changeGroup(this: HTMLSelectElement): void {
 
 function changeType(this: HTMLSelectElement): void {
   const id = getSelectedId();
-  pack.burgs[id].type = this.value as Burg["type"];
+  Burgs.setType(id, this.value);
 }
 
 function changeCulture(this: HTMLSelectElement): void {
@@ -377,12 +377,8 @@ function changePopulation(): void {
   const id = getSelectedId();
   const burg = pack.burgs[id];
 
-  pack.burgs[id].population = rn(
-    ensureEl<HTMLInputElement>("burgPopulation").valueAsNumber /
-      options.map.units.population.scale /
-      options.map.units.population.urbanization.rate,
-    4
-  );
+  const people = ensureEl<HTMLInputElement>("burgPopulation").valueAsNumber;
+  if (Number.isFinite(people) && people >= 0) Burgs.setPopulation(id, people);
   updateBurgPreview(burg);
 }
 

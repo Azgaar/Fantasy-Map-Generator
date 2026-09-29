@@ -1,4 +1,5 @@
 import { quadtree } from "d3";
+import { requireColor } from "@/utils/colorUtils";
 import { requireName } from "@/utils/languageUtils";
 import {
   abbreviate,
@@ -1220,6 +1221,22 @@ class ReligionsModule {
       religion.name,
       pack.religions.flatMap(other => (other !== religion && other.code ? [other.code] : []))
     );
+  }
+
+  /** Set a religion's color */
+  recolor(religionId: number, color: string): void {
+    this.living(religionId).color = requireColor(color);
+  }
+
+  /** Set the deity a religion worships; empty clears it */
+  setDeity(religionId: number, deity: string): void {
+    this.living(religionId).deity = String(deity ?? "").trim() || null;
+  }
+
+  private living(religionId: number): Religion {
+    const religion = pack.religions[religionId];
+    if (!religion || religion.removed) throw new Error(`Religion ${religionId} does not exist`);
+    return religion;
   }
 
   add(center: number) {

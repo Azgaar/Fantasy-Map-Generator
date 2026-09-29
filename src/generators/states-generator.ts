@@ -1,6 +1,7 @@
 import { mean, median, quadtree, sum } from "d3";
 import { Emblems } from "@/generators/emblems-generator";
 import type { Emblem } from "@/types/emblems";
+import { requireColor } from "@/utils/colorUtils";
 import { replaceWholeWord, requireName } from "@/utils/languageUtils";
 import {
   each,
@@ -862,6 +863,22 @@ class StatesModule {
     state.name = requireName(name);
     state.fullName = replaceWholeWord(state.fullName, old, state.name) ?? this.getFullName(state);
     if (state.label?.text) state.label.text = replaceWholeWord(state.label.text, old, state.name) ?? state.label.text;
+  }
+
+  /** Set a state's color */
+  recolor(stateId: number, color: string): void {
+    this.living(stateId).color = requireColor(color);
+  }
+
+  /** Set a state's full name, such as "Grand Duchy of Orwin" */
+  setFullName(stateId: number, fullName: string): void {
+    this.living(stateId).fullName = requireName(fullName);
+  }
+
+  private living(stateId: number): State {
+    const state = pack.states[stateId];
+    if (!state || state.removed) throw new Error(`State ${stateId} does not exist`);
+    return state;
   }
 
   collectTaxes() {

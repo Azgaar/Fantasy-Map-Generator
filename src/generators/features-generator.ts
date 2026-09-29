@@ -1,5 +1,6 @@
 import Alea from "alea";
 import { polygonArea } from "d3";
+import { requireName } from "@/utils/languageUtils";
 import { clipPoly, connectVertices, distanceSquared, isLand, isWater, P, ra, rn, TYPED_ARRAY_MAX } from "../utils";
 import type { CoastlineSettings } from "./coastline-generator";
 
@@ -405,6 +406,13 @@ class FeatureModule {
     }
 
     return gridCellsByFeature;
+  }
+
+  /** Rename a geographical feature: an island, lake or ocean */
+  rename(featureId: number, name: string): void {
+    const feature = pack.features[featureId];
+    if (!feature) throw new Error(`Feature ${featureId} does not exist`);
+    feature.name = requireName(name);
   }
 
   defineGroups() {

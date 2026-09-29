@@ -289,7 +289,7 @@ The model can also **look at an emblem**: `view_emblem(key)` returns the rendere
 48. As a Key-tier user, I want each map read shown as a collapsed step with its duration and result, so that I can check how an answer was reached.
 49. As a Key-tier user, I want to ask for a CSV or JSON built from my map and have it downloaded, so that I can take out exactly the data I need.
 50. As a Key-tier user, I want to ask the Assistant to write or rewrite a note, so that I can draft lore quickly.
-51. As a Key-tier user, I want to ask the Assistant to rename burgs, states, provinces, cultures, religions, rivers and markers, so that I can rework names in bulk without opening each editor.
+51. As a Key-tier user, I want to ask the Assistant to rename and recolor entities and edit their common properties (burg population, full names, marker icons…), so that I can rework them in bulk without opening each editor.
 52. As a Key-tier user with the notes editor open, I want the Assistant to know which note I'm on and what I've selected, so that "make this more ominous" does the right thing.
 53. As a Key-tier user, I want every change the Assistant wants to make shown first as a card listing each change, before → after, with nothing changed until I press Apply, so that I stay in control of my map.
 54. As a Key-tier user, I want a request that changes many things ("rename all coastal burgs") to arrive as one card that I apply in one click, so that bulk edits are quick to review and to take back.
@@ -350,7 +350,7 @@ Assistant controller (dialog, transcript view, key sheet, chat list, footer)
    ├── Operations registry (controller layer): name → model-class method, what it touches, layers to redraw
    │        │
    │        ▼
-   │   Model classes: Burgs, States, Provinces, Cultures, Religions, Rivers, Markers (generators) and Notes
+   │   Model classes: Burgs, States, Provinces, Cultures, Religions, Biomes, Rivers, Routes, Features, Zones, Markers (generators) and Notes
    │        own every operation as a public method; the entity editors call the same methods
    ├── Map context (controller layer): map summary, units, open note and selection, proposal outcomes
    │
@@ -402,7 +402,7 @@ Assistant services (no world state, no DOM)
 
 7. **Knowledge.** Nothing bulky rides in the instructions; the model fetches it. `read_help({query})` searches the Knowledge Base, the same source that grounds the Azgaar server, split on its question headings: it returns the best few sections in full plus the headings of other matches, and an exact heading returns that section. `read_docs({topics})` returns data-model sections, the configuration doc, the global declarations, the registries, the core data types or the commands a command link may name. Both load their sources lazily on first use.
 
-8. **Instructions.** Kept under about 3k tokens. A hand-written part (role, rules, units, map pitfalls, note format, link syntax, and which widget answers which kind of question) and a part generated from the codebase at build time (generator names, the registered operations with their signatures, the field names of each data-model section, and the linkable commands served by `read_docs`). A test fails when the generated part is stale or the instructions outgrow their budget.
+8. **Instructions.** Kept under about 4k tokens. A hand-written part (role, rules, units, map pitfalls, note format, link syntax, and which widget answers which kind of question) and a part generated from the codebase at build time (generator names, the registered operations with their signatures, the field names of each data-model section, and the linkable commands served by `read_docs`). A test fails when the generated part is stale or the instructions outgrow their budget.
 
 9. **Map tools (controller layer).** `read_map`, `propose_change`, one `show_*` tool per widget and `view_emblem`, plus the Knowledge tools. Each declares the status the typing indicator shows while it runs:
    - `read_map({code})` runs a script against the open map and returns its value and console output, trimmed to a size limit.
@@ -421,7 +421,7 @@ Assistant services (no world state, no DOM)
    - There are no per-type write tools. Every capability is an operation, so the model learns one write tool and one list of operations.
 
 10. **Model-class operations (the edits live with the data).** Every operation is a public method of the model class that owns the data, so there is exactly one implementation of each edit:
-    - **Signatures:** `Burgs.rename(burgId, name)`, `States.rename(stateId, name)`, `Provinces.rename`, `Cultures.rename`, `Religions.rename`, `Rivers.rename`, `Markers.rename` and `Notes.write(key, html)`.
+    - **Signatures:** `Burgs.rename(burgId, name)`, `States.recolor(stateId, color)` and `Notes.write(key, html)` are typical. The full list is the registry, and the generated instructions carry it. Every operation edits one property of one entity that the snapshot can capture: renames, recolors, and simple properties such as burg population, group, type and buildings, full names, culture type, religion deity, biome habitability, zone type and visibility, marker icon, type and visibility.
     - **One implementation, used everywhere.** The entity editors call these methods instead of assigning fields inline, so an edit gives the same result whether a user or the Assistant made it. Today each editor keeps its own copy of these rules; this removes the copies.
     - **Each method owns its invariants and dependent data**, so a rename never breaks the map:
       - a burg's label text follows its name;
@@ -530,7 +530,7 @@ Assistant services (no world state, no DOM)
 ## Out of Scope
 
 - Changes to the Azgaar server itself: limits, prompts, models. The daily numbers belong to the server; the client only displays them. The server-side follow-ups are the instruction to answer map questions with a key recommendation, and teaching the server's model the command link syntax.
-- Operations beyond the first set: renames for the seven entity types and `Notes.write`. Each further operation is one model-class method plus one registry line, and needs no new tool, UI or PRD. Recolouring, burg population and marker icons are the natural next ones.
+- Operations beyond the registry's property edits on existing entities. Each further operation is one model-class method plus one registry line, and needs no new tool, UI or PRD. Anything that changes per-cell data, routes, regiments or economy settings needs its own snapshot support first.
 - Operations that create or delete entities, or change geometry (cell ownership, heightmap, moving burgs). They need model-class methods that keep their invariants first.
 - Arbitrary writes to any field, and capturing changes made by scripts.
 - Selecting individual rows inside a proposal, and auto-apply.
@@ -546,7 +546,7 @@ Assistant services (no world state, no DOM)
 - **Simplicity first.** Every decision here takes the simplest option that works; complexity is added only in response to problems users actually report.
 - **Widget delivery order.** Entity links, command links and the entities list first; then the state card, charts and choices; then the inset and `view_emblem`; the source card last.
 - **Why "Azgaar Assistant".** It is the dialog title, the Options setting and the name used across the wiki. "Bot" suggests the Discord bot, and "Agent" describes an implementation detail of one tier.
-- **Local models.** The fixed instructions are under 3k tokens, so an 8k context window is enough. Ollama's OpenAI-compatible endpoint cannot set `num_ctx` per request, so the key sheet and the Ollama wiki page tell the user to set it on the server.
+- **Local models.** The fixed instructions are about 4k tokens, so an 8k context window is enough. Ollama's OpenAI-compatible endpoint cannot set `num_ctx` per request, so the key sheet and the Ollama wiki page tell the user to set it on the server.
 - **Default models** per provider are the first thing a Key-tier user sees and are reviewed each release.
 - **Docs that describe the Assistant:** the architecture doc's Assistant section, the glossary, the wiki's Assistant, Ollama, Omnibar, User Interface, Quick Start and Policy pages, and the Knowledge Base entries about the Assistant.
   - The glossary gains **Proposal** and **Operation**, and redefines **Change** as a proposal's recorded before and after values.

@@ -1,4 +1,6 @@
 import { max, mean } from "d3";
+import { requireColor } from "@/utils/colorUtils";
+import { requireName } from "@/utils/languageUtils";
 import { gauss, getAdjective, P, ra, rand, rw } from "../utils";
 
 declare global {
@@ -39,6 +41,34 @@ class ZonesModule {
       flood: { quantity: 1, generate: u => this.addFlood(u) },
       tsunami: { quantity: 1, generate: u => this.addTsunami(u) }
     };
+  }
+
+  /** Rename a zone; its name is its description */
+  rename(zoneId: number, name: string): void {
+    this.living(zoneId).name = requireName(name);
+  }
+
+  /** Set a zone's color */
+  recolor(zoneId: number, color: string): void {
+    this.living(zoneId).color = requireColor(color);
+  }
+
+  /** Set a zone's type, a free label such as Invasion or Disease */
+  setType(zoneId: number, type: string): void {
+    this.living(zoneId).type = requireName(type);
+  }
+
+  /** Hide or show a zone */
+  setHidden(zoneId: number, hidden: boolean): void {
+    const zone = this.living(zoneId);
+    if (hidden) zone.hidden = true;
+    else delete zone.hidden;
+  }
+
+  private living(zoneId: number): Zone {
+    const zone = pack.zones.find(({ i }) => i === zoneId);
+    if (!zone) throw new Error(`Zone ${zoneId} does not exist`);
+    return zone;
   }
 
   regenerate(globalModifier = 1): void {
