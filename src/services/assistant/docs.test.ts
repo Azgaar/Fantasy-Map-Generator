@@ -16,6 +16,15 @@ it("lists the registered operations with their signatures and doc lines", async 
   const result = await readDocs(["Operations"]);
   expect(result).toContain("Burgs.rename(burgId: number, name: string) // Rename a burg");
   expect(result).toContain("Provinces.setState(provinceId: number, stateId: number)");
+  expect(result).toContain('const LABEL_TYPES = ["state", "province", "burg", "river", "route", "added"] as const;');
+  expect(result).toContain("interface EmblemCharge extends EmblemPlacement {");
+});
+
+it("lists the heraldry the emblem generator knows", async () => {
+  const result = await readDocs(["Emblems"]);
+  expect(result).toContain("Metals: argent, or.");
+  expect(result).toMatch(/^- beasts: .*lion/m);
+  expect(result).toContain("perPale");
 });
 
 it("lists the available topics for an unknown one", async () => {

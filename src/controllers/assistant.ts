@@ -660,7 +660,13 @@ function proposalHtml(proposal: Proposal, index: number): string {
 }
 
 const FIELD_LABELS: Record<string, string> = { fullName: "Full name", "label.text": "Label" };
-const CELL_LABELS: Record<string, string> = { r: "River", fl: "Water flux", conf: "Confluence", routes: "Route links" };
+const CELL_LABELS: Record<string, string> = {
+  r: "River",
+  fl: "Water flux",
+  conf: "Confluence",
+  routes: "Route links",
+  pop: "Rural population"
+};
 
 // Notes passed the notes subset check in Notes.write, so the preview renders them as HTML
 function changeHtml({ key, field, before, after }: ChangeRow): string {

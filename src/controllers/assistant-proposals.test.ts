@@ -78,6 +78,33 @@ it("fails the whole batch and changes nothing when one operation fails", () => {
   expect(JSON.stringify(pack)).toBe(map);
 });
 
+it("refuses args that are not a list", () => {
+  expect(propose("Rename", [{ op: "Burgs.rename", args: { id: 1, name: "X" } }], 1, MAP)).toBe(
+    "The args of Burgs.rename must be a list, in the order of its parameters"
+  );
+});
+
+it("previews, applies and undoes lore edits", () => {
+  const lore = { name: "Old Map", description: "", calendar: { year: 1000, era: "Winter Era", eraShort: "WE" } };
+  vi.stubGlobal("options", { map: { lore } });
+  vi.stubGlobal("Options", { save: vi.fn() });
+  const proposal = proposeOk([
+    { op: "Lore.rename", args: ["Saltmarsh"] },
+    { op: "Lore.setYear", args: [1204] }
+  ]);
+  expect(proposal.change).toEqual([
+    { key: "lore", entity: "Map lore", field: "name", before: "Old Map", after: "Saltmarsh" },
+    { key: "lore", entity: "Map lore", field: "calendar.year", before: 1000, after: 1204 }
+  ]);
+  expect(lore.name).toBe("Old Map");
+  expect(apply(proposal, MAP)).toBe(true);
+  expect(lore).toMatchObject({ name: "Saltmarsh", calendar: { year: 1204 } });
+  expect(Options.save).toHaveBeenCalled();
+  expect(undo(proposal, MAP)).toBe(true);
+  expect(lore).toMatchObject({ name: "Old Map", calendar: { year: 1000 } });
+  vi.unstubAllGlobals();
+});
+
 it("lists the registered operations for an unknown one", () => {
   const result = propose("Paint", [{ op: "Burgs.paint", args: [] }], 1, MAP);
   expect(result).toContain('Unknown operation "Burgs.paint"');
@@ -203,6 +230,28 @@ describe("entities and cells", () => {
     ]);
     expect(proposal.change[0].after).toMatchObject({ cells: [2, 3] });
     expect(pack.zones).toHaveLength(1);
+  });
+
+  it("passes the key of what an earlier operation returned", () => {
+    const proposal = proposeOk([
+      { op: "Zones.add", args: ["Plague", "Disease", [2]] },
+      { op: "Notes.write", args: [{ result: 0, type: "zone" }, "<p>Spreads by river</p>"] }
+    ]);
+    expect(proposal.change[0].after).toMatchObject({ i: 1, note: "<p>Spreads by river</p>" });
+  });
+
+  it("records rural population as a per-cell row", () => {
+    vi.stubGlobal("options", { map: { units: { population: { scale: 1000, urbanization: { rate: 1 } } } } });
+    Object.assign(pack.cells, { h: Uint8Array.from([10, 30, 30, 30]), pop: Float32Array.from([0, 2, 1, 1]) });
+    pack.zones[0].cells = [0, 1, 2];
+    const proposal = proposeOk([{ op: "Zones.setPopulation", args: [0, 6000, 0] }]);
+    expect(proposal.change).toEqual([
+      expect.objectContaining({ key: "cells", field: "pop", before: { 1: 2, 2: 1 }, after: { 1: 4, 2: 2 } })
+    ]);
+    expect(apply(proposal, MAP)).toBe(true);
+    expect([...pack.cells.pop]).toEqual([0, 4, 2, 1]);
+    expect(Layers.draw).toHaveBeenCalledWith("population");
+    vi.unstubAllGlobals();
   });
 
   it("refuses a reference to a later operation or to one that returns nothing", () => {

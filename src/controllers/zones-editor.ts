@@ -459,35 +459,7 @@ function changePopulation(zone: Zone): void {
   });
 
   function applyPopulationChange(): void {
-    const ruralChange = +ruralPop.value / rural;
-    if (Number.isFinite(ruralChange) && ruralChange !== 1) {
-      landCells.forEach(i => {
-        pack.cells.pop[i] *= ruralChange;
-      });
-    }
-    if (!Number.isFinite(ruralChange) && +ruralPop.value > 0) {
-      const points = +ruralPop.value / options.map.units.population.scale;
-      const pop = rn(points / landCells.length);
-      landCells.forEach(i => {
-        pack.cells.pop[i] = pop;
-      });
-    }
-
-    const urbanChange = +urbanPop.value / urban;
-    if (Number.isFinite(urbanChange) && urbanChange !== 1) {
-      burgs.forEach(b => {
-        b.population = rn((b.population ?? 0) * urbanChange, 4);
-      });
-    }
-    if (!Number.isFinite(urbanChange) && +urbanPop.value > 0) {
-      const points =
-        +urbanPop.value / options.map.units.population.scale / options.map.units.population.urbanization.rate;
-      const population = rn(points / burgs.length, 4);
-      burgs.forEach(b => {
-        b.population = population;
-      });
-    }
-
+    Zones.setPopulation(zone.i, +ruralPop.value || 0, +urbanPop.value || 0);
     Layers.draw("population");
     zonesTable.refresh();
   }

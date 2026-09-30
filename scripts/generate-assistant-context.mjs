@@ -93,6 +93,49 @@ function operations() {
     .join("\n");
 }
 
+// The declarations of the types operation signatures name, and the types and constants those use in turn.
+// A type read by index (`Good["multipliers"]`) is not followed: the doc line describes that part
+function operationTypes(list) {
+  const sources = readdirSync(join(root, "src"), { recursive: true })
+    .filter(path => path.endsWith(".ts") && !path.endsWith(".test.ts") && !path.endsWith(".generated.ts"))
+    .sort()
+    .map(path => read(`src/${path}`));
+  const statement = (source, start) => {
+    let depth = 0;
+    for (let index = start; index < source.length; index++) {
+      const char = source[index];
+      if ("{(<[".includes(char)) depth++;
+      else if ("})>]".includes(char)) {
+        depth--;
+        if (!depth && char === "}" && /^\s*interface /.test(source.slice(start).replace(/^export /, "")))
+          return source.slice(start, index + 1);
+      } else if (char === ";" && !depth) return source.slice(start, index + 1);
+    }
+    return source.slice(start);
+  };
+  const declare = name => {
+    const pattern = new RegExp(`^(?:export )?(?:interface|type|const) ${name}\\b`, "m");
+    for (const source of sources) {
+      const match = pattern.exec(source);
+      if (match) return statement(source, match.index).replace(/^export /, "");
+    }
+    return null;
+  };
+  const names = text =>
+    [...text.matchAll(/\b(?:typeof )?([A-Z][A-Za-z0-9_]*)\b(?!\[")/g)].map(([, name]) => name);
+
+  const declarations = new Map();
+  const queue = list.split("\n").flatMap(line => names(line.replace(/\/\/.*$/, "").replace(/^\w+\.\w+/, "")));
+  while (queue.length) {
+    const name = queue.shift();
+    if (declarations.has(name)) continue;
+    const text = declare(name);
+    declarations.set(name, text);
+    if (text) queue.push(...names(text.replace(/^(?:interface|type|const) \w+/, "")));
+  }
+  return [...declarations.values()].filter(Boolean).join("\n");
+}
+
 // The same operations grouped by model, method names only, for the system prompt; read_docs serves the signatures
 function operationIndex(list) {
   const groups = new Map();
@@ -127,6 +170,7 @@ function buildGeneratedContext() {
     REGISTRY_KEYS: [registryKeys("src/controllers/index.ts", "Controllers"), registryKeys("src/services/index.ts", "Services")].join("\n"),
     DATA_FIELDS: dataFields(),
     OPERATIONS: operations(),
+    OPERATION_TYPES: operationTypes(operations()),
     OPERATION_INDEX: operationIndex(operations()),
     COMMANDS: commands(),
     KEY_TYPES: keyTypes()

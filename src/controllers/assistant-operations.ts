@@ -1,5 +1,6 @@
 import type { LayerId } from "@/components/layers";
 import { Emblems } from "@/generators/emblems-generator";
+import { Lore } from "@/generators/lore";
 import { Notes } from "@/generators/notes";
 
 // Operations the Assistant may propose. Each is a public model-class method; see docs/prd/assistant.md
@@ -21,7 +22,7 @@ export const OPERATIONS: Record<string, Operation> = {
   "Burgs.setPort": { run: (id, port) => Burgs.setPort(id, port), redraw: ["burgIcons"] },
   "Burgs.setCapital": { run: id => Burgs.setCapital(id), redraw: ["burgIcons", "labels"] },
   "Burgs.move": { run: (id, x, y) => Burgs.move(id, x, y), redraw: ["burgIcons", "labels", "emblems"] },
-  "Burgs.add": { run: point => Burgs.add(point), redraw: ["burgIcons", "labels", "routes", "emblems"] },
+  "Burgs.add": { run: (x, y) => Burgs.add(x, y), redraw: ["burgIcons", "labels", "routes", "emblems"] },
   "Burgs.remove": { run: id => Burgs.remove(id), redraw: ["burgIcons", "labels", "emblems"] },
   "Burgs.setTreasury": { run: (id, amount) => Burgs.setTreasury(id, amount), redraw: [] },
   "Burgs.setLocked": { run: (id, locked) => Burgs.setLocked(id, locked), redraw: [] },
@@ -29,7 +30,7 @@ export const OPERATIONS: Record<string, Operation> = {
   "States.rename": { run: (id, name) => States.rename(id, name), redraw: ["labels"] },
   "States.recolor": { run: (id, color) => States.recolor(id, color), redraw: ["states", "military"] },
   "States.setFullName": { run: (id, fullName) => States.setFullName(id, fullName), redraw: ["labels"] },
-  "States.setForm": { run: (id, formName) => States.setForm(id, formName), redraw: ["labels"] },
+  "States.setForm": { run: (id, formName, form) => States.setForm(id, formName, form), redraw: ["labels"] },
   "States.setCulture": { run: (id, culture) => States.setCulture(id, culture), redraw: [] },
   "States.setType": { run: (id, type) => States.setType(id, type), redraw: [] },
   "States.setExpansionism": { run: (id, value) => States.setExpansionism(id, value), redraw: [] },
@@ -43,6 +44,10 @@ export const OPERATIONS: Record<string, Operation> = {
   "States.setLocked": { run: (id, locked) => States.setLocked(id, locked), redraw: [] },
   "States.setChronicleEntry": { run: (index, lines) => States.setChronicleEntry(index, lines), redraw: [] },
   "States.setCells": { run: (id, cells) => States.setCells(id, cells), redraw: TERRITORY },
+  "States.setPopulation": {
+    run: (id, rural, urban) => States.setPopulation(id, rural, urban),
+    redraw: ["population"]
+  },
   "Provinces.rename": { run: (id, name) => Provinces.rename(id, name), redraw: ["provinces", "labels"] },
   "Provinces.recolor": { run: (id, color) => Provinces.recolor(id, color), redraw: ["provinces"] },
   "Provinces.setFullName": { run: (id, fullName) => Provinces.setFullName(id, fullName), redraw: ["labels"] },
@@ -56,10 +61,14 @@ export const OPERATIONS: Record<string, Operation> = {
     run: (primary, ids) => Provinces.merge(primary, ids),
     redraw: ["provinces", "borders", "labels", "emblems"]
   },
+  "Provinces.setPopulation": {
+    run: (id, rural, urban) => Provinces.setPopulation(id, rural, urban),
+    redraw: ["population"]
+  },
   "Provinces.setLocked": { run: (id, locked) => Provinces.setLocked(id, locked), redraw: [] },
   "Provinces.setCells": {
     run: (id, cells) => Provinces.setCells(id, cells),
-    redraw: ["provinces", "borders", "labels"]
+    redraw: ["provinces", "borders", "labels", "emblems"]
   },
   "Cultures.rename": { run: (id, name) => Cultures.rename(id, name), redraw: [] },
   "Cultures.recolor": { run: (id, color) => Cultures.recolor(id, color), redraw: ["cultures"] },
@@ -75,6 +84,10 @@ export const OPERATIONS: Record<string, Operation> = {
   "Cultures.setCode": { run: (id, code) => Cultures.setCode(id, code), redraw: [] },
   "Cultures.moveCenter": { run: (id, x, y) => Cultures.moveCenter(id, x, y), redraw: [] },
   "Cultures.setCells": { run: (id, cells) => Cultures.setCells(id, cells), redraw: ["cultures"] },
+  "Cultures.setPopulation": {
+    run: (id, rural, urban) => Cultures.setPopulation(id, rural, urban),
+    redraw: ["population"]
+  },
   "Religions.rename": { run: (id, name) => Religions.rename(id, name), redraw: [] },
   "Religions.recolor": { run: (id, color) => Religions.recolor(id, color), redraw: ["religions"] },
   "Religions.setDeity": { run: (id, deity) => Religions.setDeity(id, deity), redraw: [] },
@@ -90,11 +103,17 @@ export const OPERATIONS: Record<string, Operation> = {
   "Religions.setCode": { run: (id, code) => Religions.setCode(id, code), redraw: [] },
   "Religions.moveCenter": { run: (id, x, y) => Religions.moveCenter(id, x, y), redraw: [] },
   "Religions.setCells": { run: (id, cells) => Religions.setCells(id, cells), redraw: ["religions"] },
+  "Religions.setPopulation": {
+    run: (id, rural, urban) => Religions.setPopulation(id, rural, urban),
+    redraw: ["population"]
+  },
   "Biomes.rename": { run: (id, name) => Biomes.rename(id, name), redraw: [] },
   "Biomes.recolor": { run: (id, color) => Biomes.recolor(id, color), redraw: ["biomes"] },
   "Biomes.setHabitability": { run: (id, percent) => Biomes.setHabitability(id, percent), redraw: [] },
   "Biomes.add": { run: (name, color, habitability) => Biomes.add(name, color, habitability), redraw: [] },
   "Biomes.remove": { run: id => Biomes.remove(id), redraw: [] },
+  "Biomes.setCells": { run: (id, cells) => Biomes.setCells(id, cells), redraw: ["biomes"] },
+  "Biomes.restore": { run: () => Biomes.restore(), redraw: ["biomes"] },
   "Rivers.rename": { run: (id, name) => Rivers.rename(id, name), redraw: ["labels"] },
   "Rivers.setType": { run: (id, type) => Rivers.setType(id, type), redraw: ["labels"] },
   "Rivers.add": { run: (x, y) => Rivers.add(x, y), redraw: ["rivers", "labels"] },
@@ -127,6 +146,7 @@ export const OPERATIONS: Record<string, Operation> = {
   "Zones.setCells": { run: (id, cells) => Zones.setCells(id, cells), redraw: ["zones"] },
   "Zones.add": { run: (name, type, cells) => Zones.add(name, type, cells), redraw: ["zones"] },
   "Zones.remove": { run: id => Zones.remove(id), redraw: ["zones"] },
+  "Zones.setPopulation": { run: (id, rural, urban) => Zones.setPopulation(id, rural, urban), redraw: ["population"] },
   "Markers.rename": { run: (id, name) => Markers.rename(id, name), redraw: [] },
   "Markers.setIcon": { run: (id, icon) => Markers.setIcon(id, icon), redraw: ["markers"] },
   "Markers.setType": { run: (id, type) => Markers.setType(id, type), redraw: ["markers"] },
@@ -146,6 +166,7 @@ export const OPERATIONS: Record<string, Operation> = {
   "Military.rename": { run: (state, id, name) => Military.rename(state, id, name), redraw: ["military"] },
   "Military.remove": { run: (state, id) => Military.remove(state, id), redraw: ["military"] },
   "Military.add": { run: (state, x, y) => Military.add(state, x, y), redraw: ["military"] },
+  "Military.setAlert": { run: (state, alert) => Military.setAlert(state, alert), redraw: ["military"] },
   "Military.setUnits": { run: (state, id, units) => Military.setUnits(state, id, units), redraw: ["military"] },
   "Military.setNaval": { run: (state, id, naval) => Military.setNaval(state, id, naval), redraw: ["military"] },
   "Military.setIcon": { run: (state, id, icon) => Military.setIcon(state, id, icon), redraw: ["military"] },
@@ -187,5 +208,9 @@ export const OPERATIONS: Record<string, Operation> = {
   "Goods.setProduction": { run: (id, rules) => Goods.setProduction(id, rules), redraw: [] },
   "Markets.rename": { run: (id, name) => Markets.rename(id, name), redraw: ["markets"] },
   "Markets.recolor": { run: (id, color) => Markets.recolor(id, color), redraw: ["markets"] },
+  "Lore.rename": { run: name => Lore.rename(name), redraw: [] },
+  "Lore.setYear": { run: year => Lore.setYear(year), redraw: [] },
+  "Lore.setEra": { run: (era, eraShort) => Lore.setEra(era, eraShort), redraw: [] },
+  "Lore.setDescription": { run: text => Lore.setDescription(text), redraw: [] },
   "Notes.write": { run: (key, html) => Notes.write(key, html), redraw: [] }
 };

@@ -89,7 +89,7 @@ class RiverModule {
       cells.r[cell] = riverId;
       riverCells.push(cell);
 
-      const nextCell: number = cells.c[cell].sort((a, b) => heights[a] - heights[b])[0];
+      const nextCell: number = [...cells.c[cell]].sort((a, b) => heights[a] - heights[b])[0];
       if (heights[cell] <= heights[nextCell]) {
         return { error: `Cell ${cell} is depressed, river cannot flow further` };
       }
@@ -670,7 +670,7 @@ class RiverModule {
     this.updateWidth(river);
   }
 
-  /** Draw a river through cells from source to mouth; it joins the river at its last cell, if any. Returns its id */
+  /** Draw a river through cells from source to mouth, each a neighbor of the one before (`pack.cells.c`); it joins the river at its last cell, if any. Returns its id */
   create(cellIds: number[]): number {
     const { cells, rivers } = pack;
     if (!Array.isArray(cellIds) || cellIds.length < 2) throw new Error("A river needs at least 2 cells");
@@ -736,7 +736,7 @@ class RiverModule {
     return river;
   }
 
-  /** Remove a river with all its tributaries */
+  /** Remove a river with all its tributaries; lakes forget them */
   remove(riverId: number) {
     this.living(riverId);
     const cells = pack.cells;
@@ -750,6 +750,7 @@ class RiverModule {
       cells.conf[i] = 0;
     });
     pack.rivers = pack.rivers.filter(r => !riversToRemove.includes(r.i));
+    Lakes.cleanupLakeData(); // lakes drop the removed rivers from their inlets and outlet
   }
 
   getParent(r: number): number {

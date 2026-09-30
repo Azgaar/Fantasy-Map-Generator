@@ -5,6 +5,7 @@ import { requireColor } from "@/utils/colorUtils";
 import { requireName, requireOneOf } from "@/utils/languageUtils";
 import { abbreviate, biased, getColors, getRandomColor, minmax, P, rand, rn, rw } from "../utils";
 import { requireCode, requireOrigins } from "./origins";
+import { Population } from "./population-generator";
 
 /** The named culture sets the user picks from: how many cultures each holds and how often it is rolled */
 export const CULTURE_SETS: Record<string, { name: string; max: number; probability: number }> = {
@@ -1414,6 +1415,18 @@ class CulturesGenerator {
       other.origins = other.origins.filter(origin => origin !== cultureId);
       if (!other.origins.length) other.origins = [0];
     }
+  }
+
+  /** Set a culture's rural and urban population, in people: its cells and burgs scale to the totals */
+  setPopulation(cultureId: number, rural: number, urban: number): void {
+    this.living(cultureId);
+    const { cells } = pack;
+    Population.setArea(
+      Population.landCells(cell => cells.culture[cell] === cultureId),
+      Population.burgIds(burg => burg.culture === cultureId),
+      rural,
+      urban
+    );
   }
 
   /** Lock a culture so regeneration keeps it, or unlock it */

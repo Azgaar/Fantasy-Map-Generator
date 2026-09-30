@@ -410,7 +410,7 @@ Assistant services (no world state, no DOM)
    - `read_map({code})` runs a script against the open map and returns its value and console output, trimmed to a size limit.
      - Inside the script are a `describe()` helper for inspecting unfamiliar data and a `units` object with the app's own formatters (`si`, `getArea`, `getHeight`, `convertTemperature`…), so answers use the map's units exactly as the UI shows them.
      - It is read-only by instruction; scripts must never write map data. Asking the browser to save a file (CSV, JSON) is allowed and is not a change.
-   - `propose_change({summary, operations: [{op, args}]})` proposes one batch of registered operations. `op` is an operation name such as `Burgs.rename`; `args` are that method's arguments in order, as in its declared signature. `{ result: n }` in `args` stands for what operation n of the same batch returned, so one batch can create an entity and then edit it: `States.add` then `States.rename({ result: 0 }, "Varn")`.
+   - `propose_change({summary, operations: [{op, args}]})` proposes one batch of registered operations. `op` is an operation name such as `Burgs.rename`; `args` are that method's arguments in order, as in its declared signature. `{ result: n }` in `args` stands for what operation n of the same batch returned, so one batch can create an entity and then edit it: `States.add` then `States.rename({ result: 0 }, "Varn")`. `{ result: n, type: "burg" }` stands for its key, `"burg:12"`, for the operations keyed by entity (`Notes.write`, `Emblems.*`).
      - The tool never changes the map. It returns either "Proposal #N is waiting for the user" or the first error: an unknown operation (with the list of registered ones), or a method's own validation error. The model can correct the batch and try again.
    - Each `show_*` tool places one widget item and never changes the map. It returns the first problem instead, so the model can fix it. One tool per widget, not one tool with a `widget` switch: a focused schema with its own required fields, and a description that says when to use it, are what get a widget chosen at all.
      - `show_entities {title, entities}` — 1 to 50 live entity keys.
@@ -504,7 +504,7 @@ Names follow one pattern: `rename`, `recolor`, `set<Field>`, `add`, `create` or 
 | Port                                                                  | `Burgs.setPort(burgId, port)`                  | Registered |
 | State capital                                                         | `Burgs.setCapital(burgId)`                     | Registered |
 | Relocate                                                              | `Burgs.move(burgId, x, y)`                     | Registered |
-| Add (Burg creator)                                                    | `Burgs.add([x, y])`                            | Registered |
+| Add (Burg creator)                                                    | `Burgs.add(x, y)`                              | Registered |
 | Remove                                                                | `Burgs.remove(burgId)`                         | Registered |
 | Treasury                                                              | `Burgs.setTreasury(burgId, amount)`            | Registered |
 | Lock                                                                  | `Burgs.setLocked(burgId, locked)`              | Registered |
@@ -513,79 +513,79 @@ Names follow one pattern: `rename`, `recolor`, `set<Field>`, `add`, `create` or 
 
 **States**
 
-| Edit (where)                                                  | Operation                                                                                      | Status                |
-| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | --------------------- |
-| Short name, full name, form (State name editor)               | `States.rename(stateId, name)`, `setFullName(stateId, fullName)`, `setForm(stateId, formName)` | Registered            |
-| Color                                                         | `States.recolor(stateId, color)`                                                               | Registered            |
-| Culture, type, expansionism                                   | `States.setCulture`, `setType`, `setExpansionism`                                              | Registered            |
-| Diplomatic relation (Diplomacy editor)                        | `States.setRelation(stateId, otherId, relation)`                                               | Registered            |
-| Recalculate borders                                           | `States.recalculate()`                                                                         | Registered            |
-| Merge, annex                                                  | `States.merge(rulingId, stateIds)`                                                             | Registered            |
-| Add                                                           | `States.add(x, y)`                                                                             | Registered            |
-| Remove                                                        | `States.remove(stateId)`                                                                       | Registered            |
-| Capital                                                       | `Burgs.setCapital(burgId)`                                                                     | Registered            |
-| Merge keeping the merged states as provinces                  | `States.merge(rulingId, stateIds, asProvinces)`                                                | Registered            |
-| Sales tax, poll tax, treasury                                 | `States.setTaxes(stateId, salesTax, pollTax)`, `setTreasury(stateId, amount)`                  | Registered            |
-| Lock                                                          | `States.setLocked(stateId, locked)`                                                            | Registered            |
-| Chronicle entry (Diplomacy overview history)                  | `States.setChronicleEntry(index, text)`                                                        | Registered            |
-| Paint cells (States editor brush)                             | `States.setCells(stateId, cells)`                                                              | Registered            |
-| Rural and urban population                                    | `States.setPopulation(stateId, rural, urban)`                                                  | Snapshot: `cells.pop` |
-| Randomize expansion; relations drawn with the Diplomacy brush | `setExpansionism` + `recalculate`; `setRelation`                                               | Batch                 |
+| Edit (where)                                                  | Operation                                                                                                                                                  | Status     |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| Short name, full name, form (State name editor)               | `States.rename(stateId, name)`, `setFullName(stateId, fullName)`, `setForm(stateId, formName, form?)`; a listed form name sets the government (`form`) too | Registered |
+| Color                                                         | `States.recolor(stateId, color)`                                                                                                                           | Registered |
+| Culture, type, expansionism                                   | `States.setCulture`, `setType`, `setExpansionism`                                                                                                          | Registered |
+| Diplomatic relation (Diplomacy editor)                        | `States.setRelation(stateId, otherId, relation)`                                                                                                           | Registered |
+| Recalculate borders                                           | `States.recalculate()`                                                                                                                                     | Registered |
+| Merge, annex                                                  | `States.merge(rulingId, stateIds)`                                                                                                                         | Registered |
+| Add                                                           | `States.add(x, y)`                                                                                                                                         | Registered |
+| Remove                                                        | `States.remove(stateId)`                                                                                                                                   | Registered |
+| Capital                                                       | `Burgs.setCapital(burgId)`                                                                                                                                 | Registered |
+| Merge keeping the merged states as provinces                  | `States.merge(rulingId, stateIds, asProvinces)`                                                                                                            | Registered |
+| Sales tax, poll tax, treasury                                 | `States.setTaxes(stateId, salesTax, pollTax)`, `setTreasury(stateId, amount)`                                                                              | Registered |
+| Lock                                                          | `States.setLocked(stateId, locked)`                                                                                                                        | Registered |
+| Chronicle entry (Diplomacy overview history)                  | `States.setChronicleEntry(index, lines)`                                                                                                                   | Registered |
+| Paint cells (States editor brush)                             | `States.setCells(stateId, cells)`                                                                                                                          | Registered |
+| Rural and urban population                                    | `States.setPopulation(stateId, rural, urban)`                                                                                                              | Registered |
+| Randomize expansion; relations drawn with the Diplomacy brush | `setExpansionism` + `recalculate`; `setRelation`                                                                                                           | Batch      |
 
 **Provinces**
 
-| Edit (where)                                       | Operation                                           | Status                |
-| -------------------------------------------------- | --------------------------------------------------- | --------------------- |
-| Short name, full name, form (Province name editor) | `Provinces.rename`, `setFullName`, `setForm`        | Registered            |
-| Color                                              | `Provinces.recolor(provinceId, color)`              | Registered            |
-| Capital                                            | `Provinces.setCapital(provinceId, burgId)`          | Registered            |
-| Give to another state                              | `Provinces.setState(provinceId, stateId)`           | Registered            |
-| Declare independence                               | `Provinces.declareIndependence(provinceId)`         | Registered            |
-| Add                                                | `Provinces.add(x, y)`                               | Registered            |
-| Remove                                             | `Provinces.remove(provinceId)`                      | Registered            |
-| Merge, annex                                       | `Provinces.merge(primaryId, provinceIds)`           | Registered            |
-| Lock                                               | `Provinces.setLocked(provinceId, locked)`           | Registered            |
-| Paint cells                                        | `Provinces.setCells(provinceId, cells)`             | Registered            |
-| Rural and urban population                         | `Provinces.setPopulation(provinceId, rural, urban)` | Snapshot: `cells.pop` |
-| Release all, recolor by state, remove all          | `declareIndependence`, `recolor`, `remove`          | Batch                 |
+| Edit (where)                                       | Operation                                           | Status     |
+| -------------------------------------------------- | --------------------------------------------------- | ---------- |
+| Short name, full name, form (Province name editor) | `Provinces.rename`, `setFullName`, `setForm`        | Registered |
+| Color                                              | `Provinces.recolor(provinceId, color)`              | Registered |
+| Capital                                            | `Provinces.setCapital(provinceId, burgId)`          | Registered |
+| Give to another state                              | `Provinces.setState(provinceId, stateId)`           | Registered |
+| Declare independence                               | `Provinces.declareIndependence(provinceId)`         | Registered |
+| Add                                                | `Provinces.add(x, y)`                               | Registered |
+| Remove                                             | `Provinces.remove(provinceId)`                      | Registered |
+| Merge, annex                                       | `Provinces.merge(primaryId, provinceIds)`           | Registered |
+| Lock                                               | `Provinces.setLocked(provinceId, locked)`           | Registered |
+| Paint cells                                        | `Provinces.setCells(provinceId, cells)`             | Registered |
+| Rural and urban population                         | `Provinces.setPopulation(provinceId, rural, urban)` | Registered |
+| Release all, recolor by state, remove all          | `declareIndependence`, `recolor`, `remove`          | Batch      |
 
 **Cultures**
 
-| Edit (where)                                           | Operation                                                               | Status                |
-| ------------------------------------------------------ | ----------------------------------------------------------------------- | --------------------- |
-| Name, color, type, name base, expansionism             | `Cultures.rename`, `recolor`, `setType`, `setBase`, `setExpansionism`   | Registered            |
-| Recalculate borders                                    | `Cultures.recalculate()`                                                | Registered            |
-| Add, remove                                            | `Cultures.add(x, y)`, `remove(cultureId)`                               | Registered            |
-| Emblem shape                                           | `Cultures.setEmblemShape(cultureId, shape)`                             | Registered            |
-| Lock                                                   | `Cultures.setLocked(cultureId, locked)`                                 | Registered            |
-| Origins and code (Hierarchy tree)                      | `Cultures.setOrigins(cultureId, originIds)`, `setCode(cultureId, code)` | Registered            |
-| Move center (drag in the Hierarchy tree or on the map) | `Cultures.moveCenter(cultureId, x, y)`                                  | Registered            |
-| Paint cells                                            | `Cultures.setCells(cultureId, cells)`                                   | Registered            |
-| Rural and urban population                             | `Cultures.setPopulation(cultureId, rural, urban)`                       | Snapshot: `cells.pop` |
-| Regenerate the culture's burg names; import CSV        | `Burgs.rename`; `rename`, `recolor`, `setType`, `setBase`…              | Batch                 |
+| Edit (where)                                           | Operation                                                               | Status     |
+| ------------------------------------------------------ | ----------------------------------------------------------------------- | ---------- |
+| Name, color, type, name base, expansionism             | `Cultures.rename`, `recolor`, `setType`, `setBase`, `setExpansionism`   | Registered |
+| Recalculate borders                                    | `Cultures.recalculate()`                                                | Registered |
+| Add, remove                                            | `Cultures.add(x, y)`, `remove(cultureId)`                               | Registered |
+| Emblem shape                                           | `Cultures.setEmblemShape(cultureId, shape)`                             | Registered |
+| Lock                                                   | `Cultures.setLocked(cultureId, locked)`                                 | Registered |
+| Origins and code (Hierarchy tree)                      | `Cultures.setOrigins(cultureId, originIds)`, `setCode(cultureId, code)` | Registered |
+| Move center (drag in the Hierarchy tree or on the map) | `Cultures.moveCenter(cultureId, x, y)`                                  | Registered |
+| Paint cells                                            | `Cultures.setCells(cultureId, cells)`                                   | Registered |
+| Rural and urban population                             | `Cultures.setPopulation(cultureId, rural, urban)`                       | Registered |
+| Regenerate the culture's burg names; import CSV        | `Burgs.rename`; `rename`, `recolor`, `setType`, `setBase`…              | Batch      |
 
 **Religions**
 
-| Edit (where)                                                            | Operation                                                                                          | Status                |
-| ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | --------------------- |
-| Name, color, type, form, deity (also regenerated), extent, expansionism | `Religions.rename`, `recolor`, `setType`, `setForm`, `setDeity`, `setExpansion`, `setExpansionism` | Registered            |
-| Recalculate borders                                                     | `Religions.recalculate()`                                                                          | Registered            |
-| Add, remove                                                             | `Religions.add(x, y)`, `remove(religionId)`                                                        | Registered            |
-| Lock                                                                    | `Religions.setLocked(religionId, locked)`                                                          | Registered            |
-| Origins and code (Hierarchy tree)                                       | `Religions.setOrigins(religionId, originIds)`, `setCode(religionId, code)`                         | Registered            |
-| Move center                                                             | `Religions.moveCenter(religionId, x, y)`                                                           | Registered            |
-| Paint cells                                                             | `Religions.setCells(religionId, cells)`                                                            | Registered            |
-| Rural and urban population                                              | `Religions.setPopulation(religionId, rural, urban)`                                                | Snapshot: `cells.pop` |
+| Edit (where)                                                            | Operation                                                                                          | Status     |
+| ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ---------- |
+| Name, color, type, form, deity (also regenerated), extent, expansionism | `Religions.rename`, `recolor`, `setType`, `setForm`, `setDeity`, `setExpansion`, `setExpansionism` | Registered |
+| Recalculate borders                                                     | `Religions.recalculate()`                                                                          | Registered |
+| Add, remove                                                             | `Religions.add(x, y)`, `remove(religionId)`                                                        | Registered |
+| Lock                                                                    | `Religions.setLocked(religionId, locked)`                                                          | Registered |
+| Origins and code (Hierarchy tree)                                       | `Religions.setOrigins(religionId, originIds)`, `setCode(religionId, code)`                         | Registered |
+| Move center                                                             | `Religions.moveCenter(religionId, x, y)`                                                           | Registered |
+| Paint cells                                                             | `Religions.setCells(religionId, cells)`                                                            | Registered |
+| Rural and urban population                                              | `Religions.setPopulation(religionId, rural, urban)`                                                | Registered |
 
 **Biomes**
 
-| Edit (where)                                      | Operation                                             | Status                  |
-| ------------------------------------------------- | ----------------------------------------------------- | ----------------------- |
-| Name, color, habitability                         | `Biomes.rename`, `recolor`, `setHabitability`         | Registered              |
-| Add a custom biome                                | `Biomes.add(name, color, habitability)`               | Registered              |
-| Remove a custom biome no cell uses                | `Biomes.remove(biomeId)`                              | Registered              |
-| Paint cells, restore the generated biomes         | `Biomes.setCells(biomeId, cells)`, `Biomes.restore()` | Snapshot: `cells.biome` |
-| Relief icon pool and density (Relief pool editor) | `Biomes.setReliefPool(biomeId, pool, density)`        | Snapshot: relief icons  |
+| Edit (where)                                      | Operation                                             | Status                 |
+| ------------------------------------------------- | ----------------------------------------------------- | ---------------------- |
+| Name, color, habitability                         | `Biomes.rename`, `recolor`, `setHabitability`         | Registered             |
+| Add a custom biome                                | `Biomes.add(name, color, habitability)`               | Registered             |
+| Remove a custom biome no cell uses                | `Biomes.remove(biomeId)`                              | Registered             |
+| Paint cells, restore the generated biomes         | `Biomes.setCells(biomeId, cells)`, `Biomes.restore()` | Registered             |
+| Relief icon pool and density (Relief pool editor) | `Biomes.setReliefPool(biomeId, pool, density)`        | Snapshot: relief icons |
 
 **Features and lakes**
 
@@ -622,12 +622,12 @@ Names follow one pattern: `rename`, `recolor`, `set<Field>`, `add`, `create` or 
 
 **Zones**
 
-| Edit (where)                         | Operation                                         | Status                |
-| ------------------------------------ | ------------------------------------------------- | --------------------- |
-| Description, color, type, visibility | `Zones.rename`, `recolor`, `setType`, `setHidden` | Registered            |
-| Cells (Paint)                        | `Zones.setCells(zoneId, cells)`                   | Registered            |
-| Add, remove                          | `Zones.add(name, type, cells)`, `remove(zoneId)`  | Registered            |
-| Rural and urban population           | `Zones.setPopulation(zoneId, rural, urban)`       | Snapshot: `cells.pop` |
+| Edit (where)                         | Operation                                         | Status     |
+| ------------------------------------ | ------------------------------------------------- | ---------- |
+| Description, color, type, visibility | `Zones.rename`, `recolor`, `setType`, `setHidden` | Registered |
+| Cells (Paint)                        | `Zones.setCells(zoneId, cells)`                   | Registered |
+| Add, remove                          | `Zones.add(name, type, cells)`, `remove(zoneId)`  | Registered |
+| Rural and urban population           | `Zones.setPopulation(zoneId, rural, urban)`       | Registered |
 
 **Markers**
 
@@ -653,15 +653,16 @@ Names follow one pattern: `rename`, `recolor`, `set<Field>`, `add`, `create` or 
 
 **Military.** Regiments live in their state's `military` list, inside the snapshot.
 
-| Edit (where)                                         | Operation                                                                                     | Status     |
-| ---------------------------------------------------- | --------------------------------------------------------------------------------------------- | ---------- |
-| Name                                                 | `Military.rename(stateId, regimentId, name)`                                                  | Registered |
-| Remove                                               | `Military.remove(stateId, regimentId)`                                                        | Registered |
-| Add (Regiment editor, Regiments overview)            | `Military.add(stateId, x, y)`                                                                 | Registered |
-| Units, land or naval, icon                           | `Military.setUnits(stateId, regimentId, units)`, `setNaval`, `setIcon`                        | Registered |
-| Move, rotate, re-base                                | `Military.move(stateId, regimentId, x, y)`, `rotate(…, angle)`, `setBase(…, x, y)`            | Registered |
-| Split, attach to another regiment                    | `Military.split(stateId, regimentId)`, `attach(stateId, regimentId, targetStateId, targetId)` | Registered |
-| Battle results (Battle simulator), regenerate legend | `setUnits`; `Notes.write`                                                                     | Batch      |
+| Edit (where)                                                 | Operation                                                                                     | Status     |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------- | ---------- |
+| Name                                                         | `Military.rename(stateId, regimentId, name)`                                                  | Registered |
+| Remove                                                       | `Military.remove(stateId, regimentId)`                                                        | Registered |
+| Add (Regiment editor, Regiments overview)                    | `Military.add(stateId, x, y)`                                                                 | Registered |
+| Units, land or naval, icon                                   | `Military.setUnits(stateId, regimentId, units)`, `setNaval`, `setIcon`                        | Registered |
+| Move, rotate, re-base                                        | `Military.move(stateId, regimentId, x, y)`, `rotate(…, angle)`, `setBase(…, x, y)`            | Registered |
+| Split, attach to another regiment                            | `Military.split(stateId, regimentId)`, `attach(stateId, regimentId, targetStateId, targetId)` | Registered |
+| War alert (Military overview), scaling the state's regiments | `Military.setAlert(stateId, alert)`                                                           | Registered |
+| Battle results (Battle simulator), regenerate legend         | `setUnits`; `Notes.write`                                                                     | Batch      |
 
 **Emblems.** An emblem is the `coa` of a state, province or burg, inside the snapshot.
 
@@ -706,9 +707,14 @@ Names follow one pattern: `rename`, `recolor`, `set<Field>`, `add`, `create` or 
 | `Relief` — `pack.relief`       | add, remove, move, resize, change icon, copy, reorder, bulk add and remove (Relief editor)   |
 | `Ice` — `pack.ice`             | add an iceberg, resize, reshape, move, remove (Ice editor)                                   |
 | `Names` — name bases           | add, rename, edit names, length limits, doubled letters, restore defaults (Namesbase editor) |
-| `Lore` — `options.map.lore`    | map name, era, era short form, year, description (Lore editor)                               |
 
-The rows above hold `Biomes.setCells`, `restore` and `setReliefPool` and every `setPopulation`, which wait on `cells.biome`, relief icons and `cells.pop`; goods and markets wait on `cells.good` and `cells.market`.
+The rows above hold `Biomes.setReliefPool`, which waits on relief icons; goods and markets wait on `cells.good` and `cells.market`.
+
+**Lore.** The snapshot records `options.map.lore` as one record, keyed `lore`.
+
+| Edit (where)                                                      | Operation                                                                              | Status     |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ---------- |
+| Map name, year, era and its short form, description (Lore editor) | `Lore.rename(name)`, `setYear(year)`, `setEra(era, eraShort?)`, `setDescription(text)` | Registered |
 
 **Not operations.** These change what is shown, the files, the settings, or the whole map. The Assistant answers them with a command link to the right dialog or by naming the button.
 

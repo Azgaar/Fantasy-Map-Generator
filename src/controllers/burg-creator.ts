@@ -28,7 +28,7 @@ function addOnClick(event: MouseEvent): void {
   const point = pointer(event, event.currentTarget as SVGGElement);
   let burgId: number;
   try {
-    burgId = Burgs.add(point);
+    burgId = Burgs.add(...point);
   } catch (error) {
     tip(error instanceof Error ? error.message : String(error), false, "error");
     return;

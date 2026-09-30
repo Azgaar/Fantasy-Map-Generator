@@ -24,6 +24,7 @@ import {
 import { CULTURE_TYPES } from "./cultures-generator";
 import type { Label } from "./labels-generator";
 import type { Regiment } from "./military-generator";
+import { Population } from "./population-generator";
 import type { Province } from "./provinces-generator";
 
 declare global {
@@ -72,6 +73,87 @@ interface Campaign {
   start: number;
   end?: number;
 }
+
+/** Form names by the form of government they belong to, as the State name editor lists them */
+export const STATE_FORMS = {
+  Monarchy: [
+    "Beylik",
+    "Despotate",
+    "Dominion",
+    "Duchy",
+    "Emirate",
+    "Empire",
+    "Horde",
+    "Grand Duchy",
+    "Heptarchy",
+    "Khaganate",
+    "Khanate",
+    "Kingdom",
+    "Marches",
+    "Principality",
+    "Satrapy",
+    "Shogunate",
+    "Sultanate",
+    "Tsardom",
+    "Ulus",
+    "Viceroyalty"
+  ],
+  Republic: [
+    "Chancellery",
+    "City-state",
+    "Diarchy",
+    "Federation",
+    "Free City",
+    "Junta",
+    "Most Serene Republic",
+    "Oligarchy",
+    "Protectorate",
+    "Republic",
+    "Tetrarchy",
+    "Trade Company",
+    "Triumvirate"
+  ],
+  Union: [
+    "Confederacy",
+    "Confederation",
+    "Conglomerate",
+    "Commonwealth",
+    "League",
+    "Union",
+    "United Hordes",
+    "United Kingdom",
+    "United Provinces",
+    "United Republic",
+    "United States",
+    "United Tribes"
+  ],
+  Theocracy: [
+    "Bishopric",
+    "Brotherhood",
+    "Caliphate",
+    "Diocese",
+    "Divine Duchy",
+    "Divine Grand Duchy",
+    "Divine Principality",
+    "Divine Kingdom",
+    "Divine Empire",
+    "Eparchy",
+    "Exarchate",
+    "Holy State",
+    "Imamah",
+    "Patriarchate",
+    "See",
+    "Thearchy",
+    "Theocracy"
+  ],
+  Anarchy: ["Commune", "Community", "Council", "Free Territory", "Tribes"]
+} as const satisfies Record<string, readonly string[]>;
+export type StateForm = keyof typeof STATE_FORMS;
+const FORMS = Object.keys(STATE_FORMS) as StateForm[];
+
+/** The form of government a listed form name belongs to */
+export const getStateForm = (formName: string): StateForm | undefined =>
+  FORMS.find(form => (STATE_FORMS[form] as readonly string[]).includes(formName));
 
 type TaxBases = { salesTax: number; pollTax: number };
 
@@ -879,10 +961,15 @@ class StatesModule {
     this.living(stateId).fullName = requireName(fullName);
   }
 
-  /** Set a state's form, such as Kingdom or Republic; the full name is rebuilt from it */
-  setForm(stateId: number, formName: string): void {
+  /** Set a state's form name, such as Kingdom or Free City; empty clears it. Its government (Monarchy, Republic, Union, Theocracy or Anarchy) follows a listed name, or `form` for a custom one. The full name is rebuilt */
+  setForm(stateId: number, formName: string, form?: string): void {
     const state = this.living(stateId);
-    state.formName = requireName(formName);
+    if (typeof formName !== "string") throw new Error("The form name must be text");
+    const name = formName.trim();
+    const government = form === undefined ? getStateForm(name) : requireOneOf(form, FORMS, "The form");
+    if (name) state.formName = name;
+    else delete state.formName;
+    if (government) state.form = government;
     state.fullName = this.getFullName(state);
   }
 
@@ -952,7 +1039,7 @@ class StatesModule {
     if (cells.h[center] < 20) throw new Error("A state cannot be placed in the water");
     const existing = cells.burg[center];
     if (existing && burgs[existing].capital) throw new Error(`Burg ${existing} is already a capital`);
-    const capital = existing || Burgs.add([x, y]);
+    const capital = existing || Burgs.add(x, y);
     const culture = cells.culture[center];
     const basename = center % 5 === 0 ? burgs[capital].name! : Names.getCulture(culture);
     const coa = Emblems.generate(burgs[capital].coa, 0.4, null, cultures[culture].type);
@@ -1119,6 +1206,19 @@ class StatesModule {
     } as Province);
     ruling.provinces ??= [];
     ruling.provinces.push(provinceId);
+  }
+
+  /** Set a state's rural and urban population, in people: its cells and burgs scale to the totals */
+  setPopulation(stateId: number, rural: number, urban: number): void {
+    this.living(stateId);
+    const { cells } = pack;
+    Population.setArea(
+      Population.landCells(cell => cells.state[cell] === stateId),
+      Population.burgIds(burg => burg.state === stateId),
+      rural,
+      urban
+    );
+    this.collectStatistics();
   }
 
   /** Set a state's sales tax (0 to 1, on deals it sells) and poll tax (per person); they take effect when production is regenerated */

@@ -2,6 +2,7 @@ import { max, mean } from "d3";
 import { requireColor } from "@/utils/colorUtils";
 import { requireName } from "@/utils/languageUtils";
 import { gauss, getAdjective, P, ra, rand, rw } from "../utils";
+import { Population } from "./population-generator";
 
 declare global {
   var Zones: ZonesModule;
@@ -84,6 +85,17 @@ class ZonesModule {
     )
       throw new Error(`The cells must be a non-empty list of cell ids from 0 to ${count - 1}`);
     this.living(zoneId).cells = [...new Set(cells)];
+  }
+
+  /** Set the rural and urban population of a zone's land, in people: its cells and burgs scale to the totals */
+  setPopulation(zoneId: number, rural: number, urban: number): void {
+    const cells = new Set(this.living(zoneId).cells);
+    Population.setArea(
+      Population.landCells(cell => cells.has(cell)),
+      Population.burgIds(burg => cells.has(burg.cell)),
+      rural,
+      urban
+    );
   }
 
   /** Remove a zone */

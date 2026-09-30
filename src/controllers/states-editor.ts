@@ -22,7 +22,7 @@ import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import type { State } from "@/generators/states-generator";
+import { STATE_FORMS, type State } from "@/generators/states-generator";
 import { redrawEmblem, removeEmblem } from "@/renderers/draw-emblems";
 import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
@@ -596,25 +596,16 @@ function editStateName(state: number): void {
     }
   }
 
-  function applyNameChange(s: any) {
-    const nameInput = ensureEl<HTMLInputElement>("stateNameEditorShort");
-    const formSelect = ensureEl<HTMLSelectElement>("stateNameEditorSelectForm");
-    const fullNameInput = ensureEl<HTMLInputElement>("stateNameEditorFull");
+  function applyNameChange(s: State) {
+    const name = ensureEl<HTMLInputElement>("stateNameEditorShort").value.trim();
+    const formName = ensureEl<HTMLSelectElement>("stateNameEditorSelectForm").value;
+    const fullName = ensureEl<HTMLInputElement>("stateNameEditorFull").value.trim();
+    const oldFullName = s.fullName;
+    const changed = name !== s.name || formName !== (s.formName ?? "") || fullName !== oldFullName;
 
-    const nameChanged = nameInput.value !== s.name;
-    const formChanged = formSelect.value !== s.formName;
-    const fullNameChanged = fullNameInput.value !== s.fullName;
-    const changed = nameChanged || formChanged || fullNameChanged;
-
-    if (formChanged) {
-      const selected = formSelect.selectedOptions[0];
-      const form = selected.parentElement?.getAttribute("label") || null;
-      if (form) s.form = form;
-    }
-
-    if (nameChanged && nameInput.value.trim()) States.rename(s.i, nameInput.value);
-    s.formName = formSelect.value;
-    s.fullName = fullNameInput.value;
+    if (name && name !== s.name) States.rename(s.i, name);
+    if (formName !== (s.formName ?? "")) States.setForm(s.i, formName);
+    if (fullName && fullName !== oldFullName) States.setFullName(s.i, fullName);
     if (changed && ensureEl<HTMLInputElement>("stateNameEditorUpdateLabel").checked) {
       if (s.label?.text) delete s.label.text;
       Layers.draw("labels");
@@ -647,80 +638,12 @@ function renderNameEditor(): void {
         <div data-tip="State form name" class="label">Form name:</div>
         <select id="stateNameEditorSelectForm" style="width: 11em">
           <option value="">blank</option>
-          <optgroup label="Monarchy">
-            <option value="Beylik">Beylik</option>
-            <option value="Despotate">Despotate</option>
-            <option value="Dominion">Dominion</option>
-            <option value="Duchy">Duchy</option>
-            <option value="Emirate">Emirate</option>
-            <option value="Empire">Empire</option>
-            <option value="Horde">Horde</option>
-            <option value="Grand Duchy">Grand Duchy</option>
-            <option value="Heptarchy">Heptarchy</option>
-            <option value="Khaganate">Khaganate</option>
-            <option value="Khanate">Khanate</option>
-            <option value="Kingdom">Kingdom</option>
-            <option value="Marches">Marches</option>
-            <option value="Principality">Principality</option>
-            <option value="Satrapy">Satrapy</option>
-            <option value="Shogunate">Shogunate</option>
-            <option value="Sultanate">Sultanate</option>
-            <option value="Tsardom">Tsardom</option>
-            <option value="Ulus">Ulus</option>
-            <option value="Viceroyalty">Viceroyalty</option>
-          </optgroup>
-          <optgroup label="Republic">
-            <option value="Chancellery">Chancellery</option>
-            <option value="City-state">City-state</option>
-            <option value="Diarchy">Diarchy</option>
-            <option value="Federation">Federation</option>
-            <option value="Free City">Free City</option>
-            <option value="Most Serene Republic">Most Serene Republic</option>
-            <option value="Oligarchy">Oligarchy</option>
-            <option value="Protectorate">Protectorate</option>
-            <option value="Republic">Republic</option>
-            <option value="Tetrarchy">Tetrarchy</option>
-            <option value="Trade Company">Trade Company</option>
-            <option value="Triumvirate">Triumvirate</option>
-          </optgroup>
-          <optgroup label="Union">
-            <option value="Confederacy">Confederacy</option>
-            <option value="Confederation">Confederation</option>
-            <option value="Conglomerate">Conglomerate</option>
-            <option value="Commonwealth">Commonwealth</option>
-            <option value="League">League</option>
-            <option value="Union">Union</option>
-            <option value="United Hordes">United Hordes</option>
-            <option value="United Kingdom">United Kingdom</option>
-            <option value="United Provinces">United Provinces</option>
-            <option value="United Republic">United Republic</option>
-            <option value="United States">United States</option>
-            <option value="United Tribes">United Tribes</option>
-          </optgroup>
-          <optgroup label="Theocracy">
-            <option value="Bishopric">Bishopric</option>
-            <option value="Brotherhood">Brotherhood</option>
-            <option value="Caliphate">Caliphate</option>
-            <option value="Diocese">Diocese</option>
-            <option value="Divine Duchy">Divine Duchy</option>
-            <option value="Divine Grand Duchy">Divine Grand Duchy</option>
-            <option value="Divine Principality">Divine Principality</option>
-            <option value="Divine Kingdom">Divine Kingdom</option>
-            <option value="Divine Empire">Divine Empire</option>
-            <option value="Eparchy">Eparchy</option>
-            <option value="Exarchate">Exarchate</option>
-            <option value="Holy State">Holy State</option>
-            <option value="Imamah">Imamah</option>
-            <option value="Patriarchate">Patriarchate</option>
-            <option value="Theocracy">Theocracy</option>
-          </optgroup>
-          <optgroup label="Anarchy">
-            <option value="Commune">Commune</option>
-            <option value="Community">Community</option>
-            <option value="Council">Council</option>
-            <option value="Free Territory">Free Territory</option>
-            <option value="Tribes">Tribes</option>
-          </optgroup>
+          ${Object.entries(STATE_FORMS)
+            .map(
+              ([form, names]) =>
+                `<optgroup label="${form}">${names.map(name => `<option value="${name}">${name}</option>`).join("")}</optgroup>`
+            )
+            .join("")}
         </select>
         <input
           id="stateNameEditorCustomForm"
@@ -821,39 +744,7 @@ function changePopulation(stateId: number): void {
   });
 
   function applyPopulationChange() {
-    const ruralChange = +ruralPop.value / rural;
-    if (Number.isFinite(ruralChange) && ruralChange !== 1) {
-      const cells = (pack.cells.i as unknown as number[]).filter(i => pack.cells.state[i] === stateId);
-      cells.forEach(i => {
-        pack.cells.pop[i] *= ruralChange;
-      });
-    }
-    if (!Number.isFinite(ruralChange) && +ruralPop.value > 0) {
-      const points = +ruralPop.value / options.map.units.population.scale;
-      const cells = (pack.cells.i as unknown as number[]).filter(i => pack.cells.state[i] === stateId);
-      const pop = points / cells.length;
-      cells.forEach(i => {
-        pack.cells.pop[i] = pop;
-      });
-    }
-
-    const urbanChange = +urbanPop.value / urban;
-    if (Number.isFinite(urbanChange) && urbanChange !== 1) {
-      const burgs = pack.burgs.filter(b => !b.removed && b.state === stateId);
-      burgs.forEach(b => {
-        b.population = rn((b.population || 0) * urbanChange, 4);
-      });
-    }
-    if (!Number.isFinite(urbanChange) && +urbanPop.value > 0) {
-      const points =
-        +urbanPop.value / options.map.units.population.scale / options.map.units.population.urbanization.rate;
-      const burgs = pack.burgs.filter(b => !b.removed && b.state === stateId);
-      const population = rn(points / burgs.length, 4);
-      burgs.forEach(b => {
-        b.population = population;
-      });
-    }
-
+    States.setPopulation(stateId, +ruralPop.value || 0, +urbanPop.value || 0);
     Layers.draw("population");
     refreshStatesEditor();
   }

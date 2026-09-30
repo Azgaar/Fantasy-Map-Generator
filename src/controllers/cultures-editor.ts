@@ -621,7 +621,9 @@ function changePopulation(this: HTMLElement): void {
     width: "24em",
     buttons: {
       Apply: function (this: HTMLElement) {
-        applyPopulationChange(rural, urban, +ruralPop.value, +urbanPop.value, cultureId);
+        Cultures.setPopulation(cultureId, +ruralPop.value || 0, +urbanPop.value || 0);
+        Layers.draw("population");
+        refreshCulturesEditor();
         $(this).dialog("close");
       },
       Cancel: function (this: HTMLElement) {
@@ -630,48 +632,6 @@ function changePopulation(this: HTMLElement): void {
     },
     position: { my: "center", at: "center", of: "svg" }
   });
-}
-
-function applyPopulationChange(
-  oldRural: number,
-  oldUrban: number,
-  newRural: number,
-  newUrban: number,
-  culture: number
-): void {
-  const ruralChange = newRural / oldRural;
-  if (Number.isFinite(ruralChange) && ruralChange !== 1) {
-    const cells = (pack.cells.i as unknown as number[]).filter(i => pack.cells.culture[i] === culture);
-    cells.forEach(i => {
-      pack.cells.pop[i] *= ruralChange;
-    });
-  }
-  if (!Number.isFinite(ruralChange) && +newRural > 0) {
-    const points = newRural / options.map.units.population.scale;
-    const cells = (pack.cells.i as unknown as number[]).filter(i => pack.cells.culture[i] === culture);
-    const pop = rn(points / cells.length);
-    cells.forEach(i => {
-      pack.cells.pop[i] = pop;
-    });
-  }
-
-  const burgs = pack.burgs.filter(b => !b.removed && b.culture === culture);
-  const urbanChange = newUrban / oldUrban;
-  if (Number.isFinite(urbanChange) && urbanChange !== 1) {
-    burgs.forEach(b => {
-      b.population = rn((b.population ?? 0) * urbanChange, 4);
-    });
-  }
-  if (!Number.isFinite(urbanChange) && +newUrban > 0) {
-    const points = newUrban / options.map.units.population.scale / options.map.units.population.urbanization.rate;
-    const population = rn(points / burgs.length, 4);
-    burgs.forEach(b => {
-      b.population = population;
-    });
-  }
-
-  Layers.draw("population");
-  refreshCulturesEditor();
 }
 
 function cultureRegenerateBurgs(this: HTMLElement): void {
@@ -1005,15 +965,12 @@ async function uploadCulturesData(this: HTMLInputElement): Promise<void> {
     let current: any;
     if (culture.i < cultures.length) {
       current = cultures[culture.i];
+      current.removed = false;
 
-      const ratio = current.urban / (current.rural + current.urban);
-      applyPopulationChange(
-        current.rural,
-        current.urban,
-        culture.population * (1 - ratio),
-        culture.population * ratio,
-        culture.i
-      );
+      const urban = current.urban * options.map.units.population.urbanization.rate; // in rural terms
+      const ratio = current.rural + urban ? urban / (current.rural + urban) : 0;
+      if (culture.population >= 0)
+        Cultures.setPopulation(culture.i, culture.population * (1 - ratio), culture.population * ratio);
     } else {
       current = { i: cultures.length, center: ra(populated), area: 0, cells: 0, origins: [0], rural: 0, urban: 0 };
       cultures.push(current);

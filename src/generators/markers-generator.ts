@@ -171,7 +171,7 @@ class MarkersModule {
 
   /** Set a marker's icon: an emoji or an icon id */
   setIcon(markerId: number, icon: string): void {
-    this.living(markerId).icon = requireName(icon);
+    this.living(markerId).icon = Icons.reference(icon);
   }
 
   /** Set a marker's type, a free label such as volcano or ruins */
@@ -234,8 +234,8 @@ class MarkersModule {
     const cell = Pack.requireCell(x, y);
     const marker = { x: rn(x, 2), y: rn(y, 2), cell, type: requireName(type) } as Marker;
     if (name !== undefined) marker.name = requireName(name);
-    if (icon !== undefined) marker.icon = requireName(icon);
-    else if (!this.config.some(config => config.type === marker.type)) marker.icon = "❓";
+    if (icon !== undefined) marker.icon = Icons.reference(icon);
+    else if (!this.config.some(config => config.type === marker.type)) marker.icon = Icons.glyph("❓");
     return this.add(marker).i;
   }
 

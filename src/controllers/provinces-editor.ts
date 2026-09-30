@@ -521,35 +521,7 @@ function changePopulation(province: number): void {
   });
 
   function applyPopulationChange(): void {
-    const ruralChange = +ruralPop.value / rural;
-    if (Number.isFinite(ruralChange) && ruralChange !== 1) {
-      cells.forEach(i => {
-        pack.cells.pop[i] *= ruralChange;
-      });
-    }
-    if (!Number.isFinite(ruralChange) && +ruralPop.value > 0) {
-      const points = +ruralPop.value / options.map.units.population.scale;
-      const pop = rn(points / cells.length);
-      cells.forEach(i => {
-        pack.cells.pop[i] = pop;
-      });
-    }
-
-    const urbanChange = +urbanPop.value / urban;
-    if (Number.isFinite(urbanChange) && urbanChange !== 1) {
-      p.burgs!.forEach(b => {
-        pack.burgs[b].population = rn((pack.burgs[b].population ?? 0) * urbanChange, 4);
-      });
-    }
-    if (!Number.isFinite(urbanChange) && +urbanPop.value > 0) {
-      const points =
-        +urbanPop.value / options.map.units.population.scale / options.map.units.population.urbanization.rate;
-      const population = rn(points / p.burgs!.length, 4);
-      p.burgs!.forEach(b => {
-        pack.burgs[b].population = population;
-      });
-    }
-
+    Provinces.setPopulation(province, +ruralPop.value || 0, +urbanPop.value || 0);
     Layers.draw("population");
     refreshProvincesEditor();
   }
@@ -768,19 +740,21 @@ function regenerateFullName(): void {
 }
 
 function applyNameChange(p: Province): void {
-  const name = ensureEl<HTMLInputElement>("provinceNameEditorShort").value;
-  if (name !== p.name && name.trim()) Provinces.rename(p.i, name);
-  p.formName = ensureEl<HTMLSelectElement>("provinceNameEditorSelectForm").value;
-  p.fullName = ensureEl<HTMLInputElement>("provinceNameEditorFull").value;
+  const name = ensureEl<HTMLInputElement>("provinceNameEditorShort").value.trim();
+  const formName = ensureEl<HTMLSelectElement>("provinceNameEditorSelectForm").value;
+  const fullName = ensureEl<HTMLInputElement>("provinceNameEditorFull").value.trim();
+  const oldFullName = p.fullName;
+  if (name && name !== p.name) Provinces.rename(p.i, name);
+  if (formName !== (p.formName ?? "")) Provinces.setForm(p.i, formName);
+  if (fullName && fullName !== oldFullName) Provinces.setFullName(p.i, fullName);
   Layers.draw("provinces");
   Layers.draw("labels");
   refreshProvincesEditor();
 }
 
 function changeCapital(p: number, line: HTMLElement, value: string): void {
+  Provinces.setCapital(p, +value);
   line.dataset.capital = pack.burgs[+value].name;
-  pack.provinces[p].center = pack.burgs[+value].cell;
-  pack.provinces[p].burg = +value;
 }
 
 function togglePercentageMode(): void {

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { beforeAll, expect, it, vi } from "vitest";
 import { Emblems } from "@/generators/emblems-generator";
+import { Lore } from "@/generators/lore";
 import { Notes } from "@/generators/notes";
 import { OPERATIONS } from "./assistant-operations";
 
@@ -28,9 +29,10 @@ beforeAll(async () => {
 
 it.each(Object.keys(OPERATIONS))("%s runs the public model-class method of that name", name => {
   const [model, method] = name.split(".");
-  const owner = (
-    model === "Notes" ? Notes : model === "Emblems" ? Emblems : globalThis[model as keyof typeof globalThis]
-  ) as Record<string, unknown>;
+  const owner = ({ Notes, Emblems, Lore }[model] ?? globalThis[model as keyof typeof globalThis]) as Record<
+    string,
+    unknown
+  >;
   expect(typeof owner[method]).toBe("function");
   const spy = vi.spyOn(owner as Record<string, () => void>, method).mockImplementation(() => {});
   const args = ["a", "b", "c", "d", "e"].slice(0, OPERATIONS[name].run.length);

@@ -759,9 +759,8 @@ class BurgModule {
   }
 
   /** Found a burg on a free land cell at a map point; returns its id */
-  add(point: [x: number, y: number]) {
+  add(x: number, y: number): number {
     const { cells } = pack;
-    const [x, y] = Array.isArray(point) ? point : [Number.NaN, Number.NaN];
     const cellId = Pack.requireCell(x, y);
     if (cells.h[cellId] < 20) throw new Error("A burg cannot be placed in the water");
     if (cells.burg[cellId]) throw new Error(`Cell ${cellId} already has burg ${cells.burg[cellId]}`);
@@ -882,7 +881,7 @@ class BurgModule {
       .filter(state => state.i && !state.removed && !state.capital)
       .forEach(state => {
         const [x, y] = cells.p[state.center];
-        const burgId = this.add([x, y]);
+        const burgId = this.add(x, y);
         state.capital = burgId;
         state.center = pack.burgs[burgId].cell;
         const burg = pack.burgs[burgId];
@@ -955,16 +954,22 @@ class BurgModule {
       burg.port = 0;
       return;
     }
+    const water = this.portWater(burg.cell);
+    if (!water) throw new Error(`Burg ${burgId} has no navigable water to be a port on`);
+    burg.port = water;
+  }
+
+  /** The water body a burg at a cell trades by: the one it faces or drains to, or 0 */
+  private portWater(cell: number): number {
     const { cells, features } = pack;
-    const haven = cells.haven[burg.cell];
+    const haven = cells.haven[cell];
     const feature = haven ? features[cells.f[haven]] : undefined;
     const water = !haven
-      ? Rivers.resolveDrainFeature(burg.cell)
+      ? Rivers.resolveDrainFeature(cell)
       : feature?.type === "lake" && feature.outlet
         ? (Rivers.resolveLakeDrainFeature(feature.i) ?? feature.i)
         : cells.f[haven];
-    if (!water) throw new Error(`Burg ${burgId} has no navigable water to be a port on`);
-    burg.port = water;
+    return water || 0;
   }
 
   /** Make a burg the capital of the state it is in; the old capital becomes an ordinary burg */
@@ -985,7 +990,7 @@ class BurgModule {
     }
   }
 
-  /** Move a burg to a free land cell at a map point; a capital stays inside its state */
+  /** Move a burg to a free land cell at a map point; a capital stays inside its state or province. A port trades by the water at its new place, if any */
   move(burgId: number, x: number, y: number): void {
     const burg = this.living(burgId);
     const { cells } = pack;
@@ -995,11 +1000,16 @@ class BurgModule {
       throw new Error(`Cell ${cell} already has burg ${cells.burg[cell]}`);
     const state = cells.state[cell];
     if (burg.capital && state !== burg.state) throw new Error("A capital cannot be moved into another state");
+    const province = pack.provinces?.find(p => p.i && !p.removed && p.burg === burgId);
+    if (province && cells.province[cell] !== province.i)
+      throw new Error(`Burg ${burgId} is the capital of province ${province.i} and cannot leave it`);
 
     cells.burg[burg.cell] = 0;
     cells.burg[cell] = burgId;
     Object.assign(burg, { cell, state, x: rn(x, 2), y: rn(y, 2), feature: cells.f[cell] });
     if (burg.capital) pack.states[state].center = cell;
+    if (province) province.center = cell;
+    if (burg.port) burg.port = this.portWater(cell); // a port moved inland stops being one
     if (burg.label) Object.assign(burg.label, { dx: 0, dy: 0, pathPoints: undefined }); // a custom path no longer fits
   }
 

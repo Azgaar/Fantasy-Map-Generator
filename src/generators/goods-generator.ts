@@ -1,5 +1,6 @@
 import Alea from "alea";
 import { color, shuffler } from "d3";
+import { Icons } from "@/components/icons";
 import { requireColor } from "@/utils/colorUtils";
 import { requireName } from "@/utils/languageUtils";
 import type { IconSet } from "../types/icons";
@@ -1124,7 +1125,7 @@ export class GoodsModule {
 
   /** Set a good's icon: an emoji or an icon id */
   setIcon(goodId: number, icon: string): void {
-    this.living(goodId).icon = requireName(icon);
+    this.living(goodId).icon = Icons.reference(icon);
   }
 
   /** Set a good's color on the Goods layer */

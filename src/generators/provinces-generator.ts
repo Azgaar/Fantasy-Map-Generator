@@ -6,6 +6,7 @@ import { requireColor } from "@/utils/colorUtils";
 import { replaceWholeWord, requireName } from "@/utils/languageUtils";
 import { gauss, generateSeed, getMixedColor, getPolesOfInaccessibility, P, rand, rw } from "../utils";
 import type { Label } from "./labels-generator";
+import { Population } from "./population-generator";
 
 declare global {
   var Provinces: ProvinceModule;
@@ -353,11 +354,12 @@ class ProvinceModule {
     this.living(provinceId).fullName = requireName(fullName);
   }
 
-  /** Set a province's form, such as County or Duchy; the full name is rebuilt from it */
+  /** Set a province's form, such as County or Duchy; empty clears it. The full name is rebuilt from it */
   setForm(provinceId: number, formName: string): void {
     const province = this.living(provinceId);
-    province.formName = requireName(formName);
-    province.fullName = `${province.name} ${province.formName}`;
+    if (typeof formName !== "string") throw new Error("The form name must be text");
+    province.formName = formName.trim();
+    province.fullName = province.formName ? `${province.name} ${province.formName}` : province.name;
   }
 
   /** Make a burg inside a province its capital */
@@ -475,6 +477,19 @@ class ProvinceModule {
     const state = pack.states[primary.state];
     if (state?.provinces) state.provinces = state.provinces.filter(id => !ids.has(id));
     this.getPoles();
+  }
+
+  /** Set a province's rural and urban population, in people: its cells and burgs scale to the totals */
+  setPopulation(provinceId: number, rural: number, urban: number): void {
+    this.living(provinceId);
+    const { cells } = pack;
+    Population.setArea(
+      Population.landCells(cell => cells.province[cell] === provinceId),
+      Population.burgIds(burg => cells.province[burg.cell] === provinceId),
+      rural,
+      urban
+    );
+    States.collectStatistics();
   }
 
   /** Lock a province so regeneration keeps it, or unlock it */

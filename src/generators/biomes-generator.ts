@@ -172,6 +172,25 @@ class BiomesGenerator {
     pack.biomes[biomeId].removed = true;
   }
 
+  /** Paint land cells with a biome; a cell's rural population does not follow until population is regenerated */
+  setCells(biomeId: number, cellIds: number[]): void {
+    this.living(biomeId);
+    if (!biomeId) throw new Error("Biome 0 is the water biome; land cannot take it");
+    const { cells } = pack;
+    if (!Array.isArray(cellIds) || !cellIds.length) throw new Error("Name at least one cell");
+    for (const cell of cellIds) {
+      if (!Number.isInteger(cell) || cell < 0 || cell >= cells.i.length) throw new Error(`Cell ${cell} does not exist`);
+      if (cells.h[cell] < this.MIN_LAND_HEIGHT) throw new Error(`Cell ${cell} is water; biomes are painted on land`);
+    }
+    for (const cell of cellIds) cells.biome[cell] = biomeId;
+  }
+
+  /** Restore the generated biomes: their default names, colors and habitability, and the cells they cover. Custom biomes are removed */
+  restore(): void {
+    pack.biomes = this.getDefault();
+    this.define();
+  }
+
   private living(biomeId: number): Biome {
     const biome = pack.biomes[biomeId];
     if (!biome || biome.removed) throw new Error(`Biome ${biomeId} does not exist`);

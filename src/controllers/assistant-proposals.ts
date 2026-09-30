@@ -31,33 +31,53 @@ const COLLECTIONS: [EntityType, () => Item[] | undefined, boolean][] = [
 ];
 
 /** Per-cell data a proposal records; a change to any of them is one row per field */
-const CELL_FIELDS = ["burg", "state", "province", "culture", "religion", "r", "fl", "conf", "routes"] as const;
+const CELL_FIELDS = [
+  "burg",
+  "state",
+  "province",
+  "culture",
+  "religion",
+  "biome",
+  "pop",
+  "r",
+  "fl",
+  "conf",
+  "routes"
+] as const;
 const CELLS = "cells";
+
+/** Single objects a proposal records by key, compared field by field */
+const RECORDS: Record<string, { get: () => Record<string, unknown> | undefined; label: string }> = {
+  lore: { get: () => globalThis.options?.map.lore as unknown as Record<string, unknown> | undefined, label: "Map lore" }
+};
 
 const collectionOf = (type: string) => COLLECTIONS.find(([name]) => name === type);
 const isItem = (value: unknown): value is Item =>
   typeof value === "object" && value !== null && Number.isInteger((value as Item).i);
 const cellData = (field: string) => (pack.cells as unknown as Record<string, Cells | undefined> | undefined)?.[field];
 
-/** `{ result: n }` in args stands for what operation n (0-based) of the same batch returned, such as a new id */
+/** `{ result: n }` in args stands for what operation n (0-based) of the same batch returned, such as a new id;
+ * `{ result: n, type: "burg" }` stands for its key, such as "burg:12" */
 function resolve(arg: unknown, results: unknown[]): unknown {
   if (Array.isArray(arg)) return arg.map(item => resolve(item, results));
-  const n = (arg as { result?: unknown } | null)?.result;
-  if (!isContainer(arg) || Object.keys(arg).length !== 1 || !Number.isInteger(n)) return arg;
-  if ((n as number) < 0 || (n as number) >= results.length)
+  if (!isContainer(arg) || !Number.isInteger(arg.result)) return arg;
+  const { result: n, type, ...rest } = arg as { result: number; type?: unknown };
+  if (Object.keys(rest).length || (type !== undefined && typeof type !== "string")) return arg;
+  if (n < 0 || n >= results.length)
     throw new Error(`{ result: ${n} } must name an earlier operation of the batch, counted from 0`);
-  if (results[n as number] === undefined) throw new Error(`Operation ${n} returns nothing to refer to`);
-  return results[n as number];
+  if (results[n] === undefined) throw new Error(`Operation ${n} returns nothing to refer to`);
+  return type === undefined ? results[n] : `${type}:${results[n]}`;
 }
 
 function parse(operations: unknown): Batch | string {
   if (!Array.isArray(operations) || !operations.length) return "Propose at least one operation";
   const batch: Batch = [];
   for (const item of operations) {
-    const { op, args } = (item ?? {}) as { op?: unknown; args?: unknown };
+    const { op, args = [] } = (item ?? {}) as { op?: unknown; args?: unknown };
     if (typeof op !== "string" || !OPERATIONS[op])
       return `Unknown operation ${JSON.stringify(op)}. Registered operations: ${Object.keys(OPERATIONS).join(", ")}`;
-    batch.push({ op, args: Array.isArray(args) ? args : [] });
+    if (!Array.isArray(args)) return `The args of ${op} must be a list, in the order of its parameters`;
+    batch.push({ op, args });
   }
   return batch;
 }
@@ -65,6 +85,7 @@ function parse(operations: unknown): Batch | string {
 interface Snapshot {
   items: Map<string, Map<number, Item>>;
   cells: Map<string, Cells>;
+  records: Map<string, Record<string, unknown>>;
 }
 
 function snapshot(): Snapshot {
@@ -77,7 +98,12 @@ function snapshot(): Snapshot {
     if (data)
       cells.set(field, ArrayBuffer.isView(data) ? (data as unknown as Uint32Array).slice() : structuredClone(data));
   }
-  return { items, cells };
+  const records = new Map<string, Record<string, unknown>>();
+  for (const [key, { get }] of Object.entries(RECORDS)) {
+    const record = get();
+    if (record) records.set(key, structuredClone(record));
+  }
+  return { items, cells, records };
 }
 
 const isContainer = (value: unknown): value is Record<string, unknown> =>
@@ -102,7 +128,7 @@ function diff(
   return same(before, after) ? [] : [{ field: path.join("."), before, after: structuredClone(after) }];
 }
 
-function compare({ items, cells }: Snapshot): Omit<ChangeRow, "entity">[] {
+function compare({ items, cells, records }: Snapshot): Omit<ChangeRow, "entity">[] {
   const rows: Omit<ChangeRow, "entity">[] = [];
   for (const [type, list] of COLLECTIONS) {
     const copies = items.get(type)!;
@@ -128,6 +154,7 @@ function compare({ items, cells }: Snapshot): Omit<ChangeRow, "entity">[] {
     }
     if (Object.keys(after).length) rows.push({ key: CELLS, field, before, after });
   }
+  for (const [key, copy] of records) for (const row of diff(copy, RECORDS[key].get())) rows.push({ key, ...row });
   return rows;
 }
 
@@ -147,13 +174,13 @@ function read(row: ChangeRow, side: "before" | "after"): boolean {
     const data = cellData(row.field);
     return Boolean(data) && Object.entries(expected as Cells).every(([cell, value]) => same(data![+cell], value));
   }
-  const found = find(row.key);
-  if (!found) return false;
-  if (!row.field) return same(found.item, expected);
-  if (!found.item) return false;
-  const value = row.field
-    .split(".")
-    .reduce<unknown>((node, key) => (isContainer(node) ? node[key] : undefined), found.item);
+  const record = RECORDS[row.key]?.get();
+  const found = RECORDS[row.key] ? undefined : find(row.key);
+  if (!record && !found) return false;
+  if (!row.field) return same(found?.item, expected);
+  const root = record ?? found?.item;
+  if (!root) return false;
+  const value = row.field.split(".").reduce<unknown>((node, key) => (isContainer(node) ? node[key] : undefined), root);
   return same(value, expected);
 }
 
@@ -167,7 +194,8 @@ function write(row: ChangeRow, side: "before" | "after"): void {
     }
     return;
   }
-  const { list, i, item } = find(row.key)!;
+  const record = RECORDS[row.key]?.get();
+  const { list, i, item } = record ? { list: [] as Item[], i: 0, item: record as unknown as Item } : find(row.key)!;
   if (!row.field) {
     if (item) list.splice(list.indexOf(item), 1);
     if (value === undefined) return;
@@ -213,6 +241,7 @@ function name(key: string): string {
 }
 
 function label(key: string, fallback: string): string {
+  if (RECORDS[key]) return RECORDS[key].label;
   const ref = key === CELLS ? undefined : MapEntities.parseKey(key);
   if (!ref) return "Cells";
   return `${MapEntities.getDisplay(ref).kind} ${name(key) || fallback}`.trim();
@@ -278,6 +307,10 @@ function refresh(proposal: Proposal): void {
   refreshEditors();
   for (const key of new Set(proposal.change.map(row => row.key))) refreshNameInputs(key);
   if (document.getElementById("notesEditor")) void Controllers.NotesEditor.refresh();
+  if (proposal.change.some(({ key }) => RECORDS[key])) {
+    Options.save();
+    if (document.getElementById("loreEditor")) void Controllers.LoreEditor.refresh();
+  }
 }
 
 // Entity editors show the name in an input; update it only when that editor shows this entity

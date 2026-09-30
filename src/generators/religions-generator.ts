@@ -15,6 +15,7 @@ import {
   trimVowels
 } from "../utils";
 import { requireCode, requireOrigins } from "./origins";
+import { Population } from "./population-generator";
 
 declare global {
   var Religions: ReligionsModule;
@@ -1273,6 +1274,18 @@ class ReligionsModule {
       other.origins = other.origins.filter(origin => origin !== religionId);
       if (!other.origins.length) other.origins = [0];
     }
+  }
+
+  /** Set a religion's rural and urban population, in people: its cells and burgs scale to the totals */
+  setPopulation(religionId: number, rural: number, urban: number): void {
+    this.living(religionId);
+    const { cells } = pack;
+    Population.setArea(
+      Population.landCells(cell => cells.religion[cell] === religionId),
+      Population.burgIds(burg => cells.religion[burg.cell] === religionId),
+      rural,
+      urban
+    );
   }
 
   /** Lock a religion so regeneration keeps it, or unlock it */

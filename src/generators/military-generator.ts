@@ -617,6 +617,21 @@ class MilitaryModule {
     regiment.a = sum(Object.values(regiment.u));
   }
 
+  /** Set a state's war alert, the modifier of its forces (generated from 0.1 to 5): every regiment's troops scale with it */
+  setAlert(stateId: number, alert: number): void {
+    const state = pack.states[stateId];
+    if (!stateId || !state || state.removed) throw new Error(`State ${stateId} does not exist`);
+    if (typeof alert !== "number" || !(alert >= 0 && Number.isFinite(alert)))
+      throw new Error("The alert must be a non-negative number");
+    const previous = state.alert ?? 1;
+    const change = previous ? alert / previous : 0;
+    state.alert = rn(alert, 2);
+    for (const regiment of state.military ?? []) {
+      for (const unit of Object.keys(regiment.u)) regiment.u[unit] = rn(regiment.u[unit] * change);
+      regiment.a = sum(Object.values(regiment.u));
+    }
+  }
+
   /** Make a regiment a fleet or a land regiment */
   setNaval(stateId: number, regimentId: number, naval: boolean): void {
     this.living(stateId, regimentId).n = naval ? 1 : 0;
@@ -624,7 +639,7 @@ class MilitaryModule {
 
   /** Set a regiment's icon: an emoji or an icon id */
   setIcon(stateId: number, regimentId: number, icon: string): void {
-    this.living(stateId, regimentId).icon = requireName(icon);
+    this.living(stateId, regimentId).icon = Icons.reference(icon);
   }
 
   /** Move a regiment to a map point; its base stays */

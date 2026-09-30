@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { Emblems } from "./emblems-generator";
+import { Lore } from "./lore";
 
 beforeAll(async () => {
   await Promise.all([
@@ -101,6 +102,57 @@ describe("full names", () => {
   });
 });
 
+describe("state forms", () => {
+  it("sets the government with a listed form name and keeps it for a custom one", () => {
+    vi.stubGlobal("pack", {
+      states: [{ i: 0 }, { i: 1, name: "Orwin", form: "Monarchy", formName: "Kingdom", fullName: "Kingdom of Orwin" }]
+    });
+    States.setForm(1, "Free City");
+    expect(pack.states[1]).toMatchObject({ form: "Republic", formName: "Free City", fullName: "Free City of Orwin" });
+    States.setForm(1, "Holy Dominion");
+    expect(pack.states[1]).toMatchObject({ form: "Republic", formName: "Holy Dominion" });
+    States.setForm(1, "Holy Dominion", "Theocracy");
+    expect(pack.states[1].form).toBe("Theocracy");
+    States.setForm(1, "");
+    expect(pack.states[1]).toMatchObject({ form: "Theocracy", fullName: "Orwin" });
+    expect("formName" in pack.states[1]).toBe(false);
+    expect(() => States.setForm(1, "Realm", "Tyranny")).toThrow("The form must be one of");
+  });
+});
+
+describe("population", () => {
+  beforeEach(() => {
+    vi.stubGlobal("pack", {
+      states: [{ i: 0 }, { i: 1 }],
+      burgs: [0, { i: 1, cell: 1, state: 1, population: 1 }, { i: 2, cell: 2, state: 1, population: 3 }],
+      cells: {
+        i: Uint32Array.from([0, 1, 2, 3]),
+        h: Uint8Array.from([10, 30, 30, 30]),
+        state: Uint16Array.from([0, 1, 1, 0]),
+        burg: Uint16Array.from([0, 1, 2, 0]),
+        area: Float32Array.from([1, 1, 1, 1]),
+        pop: Float32Array.from([0, 1, 3, 5])
+      }
+    });
+  });
+
+  it("scales a state's cells and burgs to totals in people", () => {
+    States.setPopulation(1, 8000, 16000);
+    expect([...pack.cells.pop]).toEqual([0, 2, 6, 5]);
+    expect(pack.burgs.slice(1).map(burg => (burg as { population: number }).population)).toEqual([2, 6]);
+    expect(pack.states[1]).toMatchObject({ rural: 8, urban: 8 });
+  });
+
+  it("spreads a population evenly over an area that had none", () => {
+    pack.cells.pop.fill(0);
+    States.setPopulation(1, 4000, 0);
+    expect([...pack.cells.pop]).toEqual([0, 2, 2, 0]);
+    expect(() => States.setPopulation(1, -1, 0)).toThrow("non-negative");
+    pack.burgs[1].state = pack.burgs[2].state = 0;
+    expect(() => States.setPopulation(1, 0, 10)).toThrow("no burgs");
+  });
+});
+
 describe("Cultures and Religions", () => {
   it("setType accepts culture types only", () => {
     vi.stubGlobal("pack", { cultures: [{ i: 0 }, { i: 1, type: "Generic" }] });
@@ -156,11 +208,13 @@ describe("Routes and Features", () => {
 
 describe("Markers", () => {
   it("sets icon, type and visibility", () => {
-    vi.stubGlobal("pack", { markers: [{ i: 2, icon: "❓", type: "unknown" }] });
+    vi.stubGlobal("pack", { markers: [{ i: 2, icon: "glyph-2753", type: "unknown" }] });
     Markers.setIcon(2, "🌋");
     Markers.setType(2, "volcano");
     Markers.setHidden(2, true);
-    expect(pack.markers[0]).toMatchObject({ icon: "🌋", type: "volcano", hidden: true });
+    expect(pack.markers[0]).toMatchObject({ icon: "glyph-1f30b", type: "volcano", hidden: true });
+    Markers.setIcon(2, "glyph-2694");
+    expect(pack.markers[0].icon).toBe("glyph-2694");
     Markers.setHidden(2, false);
     expect(pack.markers[0].hidden).toBeUndefined();
     expect(() => Markers.setIcon(2, " ")).toThrow("must not be empty");
@@ -179,7 +233,13 @@ describe("Burgs: capital, move, remove", () => {
       states: [{ i: 0 }, { i: 1, capital: 1, center: 1 }],
       provinces: [{ i: 0 }, { i: 1, burg: 2 }],
       markets: [],
-      cells: { burg: [0, 1, 2, 0, 0], state: [0, 1, 1, 0, 0], h: [10, 30, 30, 30, 30], f: [0, 1, 1, 1, 1] }
+      cells: {
+        burg: [0, 1, 2, 0, 0],
+        state: [0, 1, 1, 0, 0],
+        province: [0, 1, 1, 1, 0],
+        h: [10, 30, 30, 30, 30],
+        f: [0, 1, 1, 1, 1]
+      }
     });
     vi.spyOn(Burgs, "changeGroup").mockImplementation(() => {});
   });
@@ -201,13 +261,18 @@ describe("Burgs: capital, move, remove", () => {
     expect(pack.provinces[1].burg).toBe(0);
   });
 
-  it("move takes a free land cell and keeps a capital in its state", () => {
+  it("move takes a free land cell and keeps a capital in its state and province", () => {
     vi.spyOn(Pack, "requireCell").mockImplementation((x: unknown) => x as number);
+    const portWater = vi.spyOn(Burgs as unknown as { portWater: () => number }, "portWater").mockReturnValue(0);
+    pack.burgs[2].port = 7;
     Burgs.move(2, 3, 5);
-    expect(pack.burgs[2]).toMatchObject({ cell: 3, state: 0, x: 3, y: 5 });
+    expect(pack.burgs[2]).toMatchObject({ cell: 3, state: 0, x: 3, y: 5, port: 0 });
+    expect(pack.provinces[1].center).toBe(3);
+    expect(portWater).toHaveBeenCalledWith(3);
     expect([...pack.cells.burg]).toEqual([0, 1, 0, 2, 0]);
     expect(() => Burgs.move(2, 0, 0)).toThrow("in the water");
     expect(() => Burgs.move(2, 1, 0)).toThrow("already has burg 1");
+    expect(() => Burgs.move(2, 4, 0)).toThrow("capital of province 1");
     expect(() => Burgs.move(1, 4, 0)).toThrow("cannot be moved into another state");
   });
 });
@@ -356,7 +421,7 @@ describe("Zones, Markers, Routes, labels and regiments", () => {
     expect(pack.markers.find(marker => marker.i === id)).toMatchObject({
       cell: 2,
       type: "shrine",
-      icon: "❓",
+      icon: "glyph-2753",
       name: "Old Shrine"
     });
     Markers.remove(0);
@@ -631,7 +696,39 @@ describe("Cultures and Religions: origins, codes, centers, cells and shields", (
   });
 });
 
+describe("Lore", () => {
+  it("renames the map and sets its calendar and description", () => {
+    const lore = { name: "Old", description: "", calendar: { year: 1, era: "Old Era", eraShort: "OE" } };
+    vi.stubGlobal("options", { map: { lore } });
+    Lore.rename(" Saltmarsh ");
+    Lore.setYear(1204.4);
+    Lore.setEra("Age of Ash", "AA");
+    Lore.setDescription("Wet.");
+    expect(lore).toEqual({
+      name: "Saltmarsh",
+      description: "Wet.",
+      calendar: { year: 1204, era: "Age of Ash", eraShort: "AA" }
+    });
+    Lore.setEra("Winter Era");
+    expect(lore.calendar.eraShort).toBe("WE");
+    expect(() => Lore.rename(" ")).toThrow("must not be empty");
+    expect(() => Lore.setYear(Number.NaN)).toThrow("The year must be a number");
+  });
+});
+
 describe("Biomes and Features", () => {
+  it("paints land cells with a living biome", () => {
+    vi.stubGlobal("pack", {
+      biomes: [{ i: 0 }, { i: 1 }, { i: 2, removed: true }],
+      cells: { i: [0, 1, 2], h: Uint8Array.from([10, 30, 30]), biome: Uint8Array.from([0, 1, 0]) }
+    });
+    Biomes.setCells(1, [2]);
+    expect(() => Biomes.setCells(1, [0])).toThrow("is water");
+    expect(() => Biomes.setCells(0, [1])).toThrow("water biome");
+    expect(() => Biomes.setCells(2, [1])).toThrow("Biome 2 does not exist");
+    expect([...pack.cells.biome]).toEqual([0, 1, 1]);
+  });
+
   it("adds custom biomes and removes only unused custom ones", () => {
     vi.stubGlobal("pack", {
       biomes: Array.from({ length: 13 }, (_, i) => ({ i, name: `B${i}` })),
@@ -778,6 +875,20 @@ describe("Military", () => {
     vi.stubGlobal("styles", { military: { options: { boxSize: 3 } } });
     vi.spyOn(Military, "getName").mockReturnValue("New");
     vi.spyOn(Military, "generateNote").mockImplementation(() => {});
+  });
+
+  it("sets a state's alert, scaling its regiments", () => {
+    pack.states[1].alert = 2;
+    Military.setAlert(1, 1);
+    expect(pack.states[1].alert).toBe(1);
+    expect(pack.states[1].military![0]).toMatchObject({ u: { infantry: 3, archers: 2 }, a: 5 });
+    expect(() => Military.setAlert(1, -1)).toThrow("non-negative");
+    expect(() => Military.setAlert(0, 1)).toThrow("State 0 does not exist");
+  });
+
+  it("sets regiment icons as references, turning text into a glyph", () => {
+    Military.setIcon(1, 0, "⚔️");
+    expect(pack.states[1].military![0].icon).toBe("glyph-2694-fe0f");
   });
 
   it("raises, staffs, splits and attaches regiments", () => {

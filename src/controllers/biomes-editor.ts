@@ -20,7 +20,7 @@ import type { Biome } from "@/generators/biomes-generator";
 import { Population } from "@/generators/population-generator";
 import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import type { PackedGraph } from "@/types/PackedGraph";
-import { downloadFile, getArea, getAreaUnit, getFileName, openURL } from "@/utils";
+import { downloadFile, getArea, getAreaUnit, getFileName, groupByValue, openURL } from "@/utils";
 import { ensureEl, getRandomColor, isLand, rn, si } from "../utils";
 
 const dialogId = "biomesEditor" as const;
@@ -495,7 +495,7 @@ function openPaintEditor(): void {
 }
 
 function applyBiomesChange(changes: ReadonlyMap<number, number>): void {
-  for (const [cell, biome] of changes) pack.cells.biome[cell] = biome;
+  for (const [biome, cells] of groupByValue(changes)) Biomes.setCells(biome, cells);
   if (changes.size) {
     Layers.draw("biomes");
     if (document.getElementById(dialogId)) refreshBiomesEditor();
@@ -503,8 +503,7 @@ function applyBiomesChange(changes: ReadonlyMap<number, number>): void {
 }
 
 function restoreInitialBiomes(): void {
-  pack.biomes = Biomes.getDefault();
-  Biomes.define();
+  Biomes.restore();
   Layers.draw("biomes");
   regeneratePopulation();
   refreshBiomesEditor();

@@ -84,12 +84,14 @@ const CHANGES = `# Changing the map
 \`propose_change({ summary, operations: [{ op, args }] })\` proposes ONE batch; the user previews before → after and
 applies or discards it. \`args\` go in order, e.g. \`{ op: "Burgs.rename", args: [12, "Saltmere"] }\`. \`{ result: n }\`
 stands for what operation n (from 0) of the batch returned, such as a new id: \`[{ op: "States.add", args: [410, 220] },
-{ op: "States.rename", args: [{ result: 0 }, "Varn"] }]\`. Put everything asked into one proposal; \`summary\` is a
-short card title. On a validation error nothing is proposed: fix and retry.
+{ op: "States.rename", args: [{ result: 0 }, "Varn"] }]\`; \`{ result: n, type: "burg" }\` stands for its key, "burg:12",
+for \`Notes\` and \`Emblems\`. Put everything asked into one proposal; \`summary\` is a short card title. On a validation
+error nothing is proposed: fix and retry.
 Success means the proposal is WAITING: say what you proposed, never that the map changed. Operations keep dependent
 data (labels, full names, codes, cell ownership) in sync. "Proposals in this chat" in the map context shows what the
 user did. If no operation can make a change, say so. Operations by model; ids are \`i\`, points are map units. Read
-\`read_docs(["Operations"])\` for the signatures and allowed values before using one you have not used in this chat:
+\`read_docs(["Operations"])\` for the signatures and allowed values before using one you have not used in this chat,
+and \`read_docs(["Emblems"])\` for the heraldry \`Emblems.set\` accepts:
 
 ${OPERATION_INDEX}
 

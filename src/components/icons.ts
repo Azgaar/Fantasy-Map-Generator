@@ -131,6 +131,13 @@ class IconLibrary {
     return GLYPH_PREFIX + Array.from(text, char => char.codePointAt(0)!.toString(16)).join("-");
   }
 
+  /** An icon reference from an icon id, or from the text a glyph draws such as an emoji */
+  reference(icon: unknown): string {
+    const value = typeof icon === "string" ? icon.trim() : "";
+    if (!value) throw new Error("The icon must not be empty");
+    return this.kind(value) ? value : this.glyph(value);
+  }
+
   /** The text a glyph reference draws, or null for any other reference */
   glyphText(id: string): string | null {
     if (!id.startsWith(GLYPH_PREFIX)) return null;
