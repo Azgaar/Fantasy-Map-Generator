@@ -393,3 +393,54 @@ it("retries a failed question without leaving the failure behind", async () => {
   expect(state.send.mock.calls[1][1]).toBe("Where is Vel?");
   expect(active.items.map(item => item.kind)).toEqual(["question"]);
 });
+
+/** An answer with a rating id in the open chat, drawn with its rating buttons */
+async function ratedAnswer(rating?: "up" | "down") {
+  const chats = await import("@/services/assistant/chats");
+  Assistant.open();
+  await vi.waitFor(() => expect(document.getElementById("assistantTranscript")?.textContent).toContain("Hi!"));
+  const item = { kind: "answer" as const, text: "Use the Rivers Editor", ratingId: 41, rating };
+  chats.append(chats.current()!, item);
+  document.getElementById("assistantOpenChats")!.click();
+  document.getElementById("assistantOpenChats")!.click();
+  return item;
+}
+
+const rate = (label: "Good answer" | "Bad answer") =>
+  document.querySelector<HTMLButtonElement>(`#assistantTranscript [aria-label="${label}"]`)!.click();
+
+it("selects a rating at once, posts it and moves it when the user switches", async () => {
+  const fetchMock = vi.fn(async () => new Response(null, { status: 204 }));
+  const item = await ratedAnswer();
+  vi.stubGlobal("fetch", fetchMock);
+  rate("Good answer");
+  expect(item.rating).toBe("up");
+  expect(document.querySelector('[aria-label="Good answer"]')?.getAttribute("aria-pressed")).toBe("true");
+  expect(JSON.parse((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body as string)).toEqual({
+    requestId: 41,
+    rating: "up"
+  });
+  await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+  rate("Bad answer");
+  expect(item.rating).toBe("down");
+});
+
+it("restores the previous rating when the post fails", async () => {
+  const item = await ratedAnswer("down");
+  vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("down")));
+  rate("Good answer");
+  await vi.waitFor(() => expect(item.rating).toBe("down"));
+});
+
+it("refreshes limits after an unauthorized rating", async () => {
+  const item = await ratedAnswer();
+  const fetchMock = vi.fn(async (url: string) =>
+    String(url).includes("/v1/feedback")
+      ? new Response(JSON.stringify({ error: { code: "unauthorized", message: "Session expired." } }), { status: 401 })
+      : new Response(JSON.stringify({ tier: "anonymous", remaining: 3, resetsAt: "" }), { status: 200 })
+  );
+  vi.stubGlobal("fetch", fetchMock);
+  rate("Good answer");
+  await vi.waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/v1/limits"))).toBe(true));
+  expect(item.rating).toBeUndefined();
+});

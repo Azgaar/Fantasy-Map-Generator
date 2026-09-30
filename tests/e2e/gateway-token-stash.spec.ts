@@ -1,9 +1,9 @@
 import {expect, test} from "@playwright/test";
 import { waitForMap } from "./wait-for-map";
 
-// Covers stashCallbackToken (src/services/assistant/gateway/auth.ts), run first thing in boot(): the OAuth
+// Covers stashCallbackToken (src/services/assistant/azgaar-server/auth.ts), run first thing in boot(): the OAuth
 // callback's fragment token and its token-fixation guard — the token is only accepted when this
-// client set the signin-pending flag (src/services/assistant/gateway/api.ts signIn()) before redirecting.
+// client set the signin-pending flag (signInAt in src/services/assistant/azgaar-server/auth.ts) before redirecting.
 
 test.describe("help gateway fragment token stash", () => {
   test("stores the token and scrubs the hash when sign-in was pending", async ({page}) => {

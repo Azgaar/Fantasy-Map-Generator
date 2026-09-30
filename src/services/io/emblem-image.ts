@@ -6,6 +6,13 @@ import type { Emblem } from "@/types/emblems";
 
 // An emblem as a standalone picture: for downloads, and for the Assistant to look at
 
+/** Ids of the definitions an element's `<use>` elements point to */
+const references = (element: Element): string[] =>
+  [...element.querySelectorAll("use")].flatMap(use => {
+    const href = use.getAttribute("href") ?? use.getAttribute("xlink:href");
+    return href?.startsWith("#") ? [href.slice(1)] : [];
+  });
+
 /** A self-contained copy of a rendered emblem, carrying every definition it references */
 export function cloneEmblem(svg: Element, size: number): SVGSVGElement {
   const clone = svg.cloneNode(true) as SVGSVGElement;
@@ -24,26 +31,14 @@ export function cloneEmblem(svg: Element, size: number): SVGSVGElement {
       if (!original) return; // removed art draws nothing on the map either
       definition = defs.appendChild(original.cloneNode(true) as Element);
     }
-    for (const use of definition.querySelectorAll("use")) {
-      const href = use.getAttribute("href") ?? use.getAttribute("xlink:href");
-      if (href?.startsWith("#")) follow(href.slice(1));
-    }
+    for (const id of references(definition)) follow(id);
   };
-  for (const use of [...clone.querySelectorAll("use")]) {
-    const href = use.getAttribute("href") ?? use.getAttribute("xlink:href");
-    if (href?.startsWith("#")) follow(href.slice(1));
-  }
+  for (const id of references(clone)) follow(id);
   return clone;
 }
 
 export function loadEmblemIcons(emblems: Element[]): Promise<void> {
-  const sets = emblems.flatMap(emblem =>
-    [...emblem.querySelectorAll("use")].flatMap(use => {
-      const href = use.getAttribute("href") ?? use.getAttribute("xlink:href");
-      const set = href?.startsWith("#") ? IconSets.setForId(href.slice(1)) : null;
-      return set ? [set] : [];
-    })
-  );
+  const sets = emblems.flatMap(emblem => references(emblem).flatMap(id => IconSets.setForId(id) ?? []));
   return Icons.require(sets);
 }
 

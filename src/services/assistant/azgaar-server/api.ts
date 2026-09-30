@@ -1,4 +1,4 @@
-import { clearToken, getToken, SIGNIN_PENDING } from "./auth";
+import { clearToken, getToken, signInAt } from "./auth";
 
 export const AZGAAR_SERVER_URL = "https://ask.azgaarsfmg.com";
 export const OFFICIAL_ORIGIN = "https://azgaar.github.io";
@@ -123,11 +123,7 @@ export const getLimits = (): Promise<Limits> => request<Limits>("/v1/limits", { 
 
 // Sign-in is a full-page redirect; the Azgaar server lands the user back on the app URL with
 // #token=… in the fragment (server-configured target — the client passes nothing).
-export function signIn(): void {
-  // Marks that THIS client initiated sign-in, so `stashCallbackToken` can refuse a planted #token=
-  sessionStorage.setItem(SIGNIN_PENDING, "1");
-  location.assign(`${serverBase()}/v1/auth/discord`);
-}
+export const signIn = (): void => signInAt(`${serverBase()}/v1/auth/discord`);
 
 export async function signOut(): Promise<void> {
   try {

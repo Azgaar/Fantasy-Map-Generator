@@ -128,8 +128,6 @@ function cardHtml(widget: Of<"card">, live: boolean): string {
       live
     );
 
-  const coaId = `stateCOA${state.i}`;
-  if (state.coa) void window.EmblemRenderer?.trigger(coaId, state.coa);
   const people = getPeople(state.rural, state.urban);
   const capital = pack.burgs[state.capital];
   const religion = capital ? pack.cells.religion?.[capital.cell] : undefined;
@@ -145,7 +143,7 @@ function cardHtml(widget: Of<"card">, live: boolean): string {
   const excerpt = note.length > NOTE_PREVIEW ? `${note.slice(0, NOTE_PREVIEW)}…` : note;
   return /* html */ `<div class="assistantItem assistantWidget assistantCard">
     <div class="assistantCardHead">
-      <svg viewBox="0 0 200 200" aria-hidden="true"><use href="#${coaId}"></use></svg>
+      ${emblemSvg(`stateCOA${state.i}`, state.coa)}
       <div>
         <strong>${escapeHtml(state.fullName || state.name)}</strong>
         <small>${escapeHtml(state.formName || state.form || "State")}</small>
@@ -163,18 +161,18 @@ function cardHtml(widget: Of<"card">, live: boolean): string {
   </div>`;
 }
 
+/** An emblem shown by reference, rendered on first use */
+function emblemSvg(id: string, coa: Emblem | undefined, className = ""): string {
+  if (coa) void window.EmblemRenderer?.trigger(id, coa);
+  return `<svg${className && ` class="${className}"`} viewBox="0 0 200 200" aria-hidden="true"><use href="#${id}"></use></svg>`;
+}
+
 /** The emblem the model looked at, so the user sees what it saw */
 function emblemHtml(widget: Of<"emblem">, live: boolean): string {
   const ref = live ? MapEntities.resolveKey(widget.entity) : undefined;
   const coa = ref && (MapEntities.get(ref) as { coa?: Emblem } | undefined)?.coa;
   if (!ref || !coa) return frame(`<span>${escapeHtml(widget.entity)}</span>`, "", live);
-  const id = `${ref.type}COA${ref.id}`;
-  void window.EmblemRenderer?.trigger(id, coa);
-  return frame(
-    entityLink(widget.entity, live),
-    `<svg class="assistantEmblem" viewBox="0 0 200 200" aria-hidden="true"><use href="#${id}"></use></svg>`,
-    true
-  );
+  return frame(entityLink(widget.entity, live), emblemSvg(`${ref.type}COA${ref.id}`, coa, "assistantEmblem"), true);
 }
 
 function formatValue(value: number, unit?: string): string {

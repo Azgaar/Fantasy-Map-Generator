@@ -2,8 +2,8 @@
 // takes the token out of the OAuth callback's URL fragment.
 
 export const TOKEN_STORAGE = "fmg-help-token";
-/** set by `signIn` before it redirects, read back here to refuse a token nobody asked for */
-export const SIGNIN_PENDING = "fmg-help-signin-pending";
+/** set by `signInAt` before it redirects, read back here to refuse a token nobody asked for */
+const SIGNIN_PENDING = "fmg-help-signin-pending";
 const TOKEN_FRAGMENT = "#token=";
 
 export const getToken = (): string | null => localStorage.getItem(TOKEN_STORAGE);
@@ -21,4 +21,10 @@ export function stashCallbackToken(): void {
   sessionStorage.removeItem(SIGNIN_PENDING);
   if (signInPending) storeToken(location.hash.slice(TOKEN_FRAGMENT.length));
   history.replaceState(null, "", location.pathname + location.search);
+}
+
+/** Leave for the OAuth sign-in, marking that THIS client started it */
+export function signInAt(url: string): void {
+  sessionStorage.setItem(SIGNIN_PENDING, "1");
+  location.assign(url);
 }

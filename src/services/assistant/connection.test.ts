@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { beforeEach, expect, it } from "vitest";
+import { beforeEach, expect, it, vi } from "vitest";
 import { clear, get, isConnected, save } from "./connection";
 
 beforeEach(() => localStorage.clear());
@@ -39,4 +39,17 @@ it("adopts an existing key from the previous Assistant settings", () => {
   expect(isConnected()).toBe(true);
   clear();
   expect(isConnected()).toBe(false);
+});
+
+it("remembers a model per provider and adopts the models earlier versions saved", async () => {
+  localStorage.setItem("fmg-ai-chat-provider", "anthropic");
+  localStorage.setItem("fmg-ai-chat-model", "claude-custom");
+  localStorage.setItem("fmg-ai-local-model", "llama3.2");
+  vi.resetModules();
+  const connection = await import("./connection");
+  expect(connection.get().model).toBe("claude-custom");
+  expect(connection.get("local").model).toBe("llama3.2");
+  connection.save({ provider: "mistral", model: "mistral-large-latest", key: "mistral-key", localUrl: "" });
+  expect(connection.get("anthropic").model).toBe("claude-custom");
+  expect(connection.get("mistral").model).toBe("mistral-large-latest");
 });

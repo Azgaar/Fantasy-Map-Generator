@@ -155,14 +155,13 @@ function persist(): void {
   dirty = true;
   if (saving) return;
   saving = true;
+  // IndexedDB copies the value when it stores it, and a change during a write queues one more
   void (async () => {
     try {
       while (dirty) {
         dirty = false;
-        await ldb.set(STORAGE_KEY, structuredClone(chats));
+        await ldb.set(STORAGE_KEY, chats);
       }
-    } catch (error) {
-      console.warn("Assistant chats could not be saved", error);
     } finally {
       saving = false;
     }

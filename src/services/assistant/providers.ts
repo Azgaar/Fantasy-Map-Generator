@@ -3,6 +3,7 @@
 
 import type { Connection } from "./connection";
 import type { SystemBlock } from "./context";
+import { completeOpenAI } from "./providers-openai";
 
 export interface TextBlock {
   type: "text";
@@ -120,7 +121,7 @@ export const DEFAULT_PROVIDER = providerById("openai")!;
 
 export const keyStorageForProvider = (providerId: ProviderSpec["id"]): string => `fmg-ai-kl-${providerId}`;
 
-/** The OpenAI-compatible base URL: a local server's own address, else the provider's; empty for Anthropic */
+/** The OpenAI-compatible base URL: a local server's own address, else the provider's */
 export const endpoint = (providerId: ProviderSpec["id"], localUrl = ""): string =>
   ((providerId === "local" && localUrl) || providerById(providerId)?.baseUrl || "").replace(/\/+$/, "");
 
@@ -135,10 +136,8 @@ export async function complete(request: CompletionRequest): Promise<Completion> 
   request = { ...request, messages: request.messages.filter(message => message.content.length) };
   if (!providerById(request.provider)) throw new Error(`Unknown provider: ${request.provider}`);
   if (!request.model) throw new Error("Enter a model name (e.g. llama3.2)");
-  const baseUrl = endpoint(request.provider, request.localUrl);
-  if (!baseUrl) return completeAnthropic(request);
-  const { completeOpenAI } = await import("./providers-openai");
-  return completeOpenAI(baseUrl, request);
+  if (request.provider === "anthropic") return completeAnthropic(request);
+  return completeOpenAI(endpoint(request.provider, request.localUrl), request);
 }
 
 async function completeAnthropic({

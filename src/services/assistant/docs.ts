@@ -2,10 +2,9 @@
 
 import { COMMANDS, GLOBAL_DECLARATIONS, OPERATION_TYPES, OPERATIONS, REGISTRY_KEYS } from "./context.generated";
 
-let topics: Map<string, string> | null = null; // by lowercase title
-let titles: string[] = [];
+let topics: Map<string, { title: string; text: string }> | null = null; // by lowercase title
 
-async function load(): Promise<Map<string, string>> {
+async function load(): Promise<Map<string, { title: string; text: string }>> {
   const [dataModel, configuration, packedGraph, heraldry] = await Promise.all([
     import("../../../docs/architecture/data-model.md?raw"),
     import("../../../docs/architecture/configuration.md?raw"),
@@ -30,8 +29,7 @@ async function load(): Promise<Map<string, string>> {
   );
   map.set("Emblems", emblemVocabulary(heraldry));
   map.set("Commands", `Command ids for \`[label](command:id)\` links, as \`id: name\`:\n${COMMANDS}`);
-  titles = [...map.keys()];
-  return new Map([...map].map(([title, text]) => [title.toLowerCase(), text]));
+  return new Map([...map].map(([title, text]) => [title.toLowerCase(), { title, text }]));
 }
 
 /** Topics match case-insensitively; a "(pack)"-style suffix from the field index is ignored */
@@ -45,9 +43,13 @@ export async function readDocs(requested: string[]): Promise<string> {
         .toLowerCase()
     )
   );
+  const texts = found.flatMap(topic => topic?.text ?? []);
   const unknown = requested.filter((_, index) => !found[index]);
-  if (unknown.length) found.push(`Unknown topics: ${unknown.join(", ")}. Available: ${titles.join(", ")}`);
-  return found.filter(Boolean).join("\n\n");
+  if (unknown.length)
+    texts.push(
+      `Unknown topics: ${unknown.join(", ")}. Available: ${[...topics.values()].map(topic => topic.title).join(", ")}`
+    );
+  return texts.join("\n\n");
 }
 
 /** The heraldry `Emblems.set` accepts, listed from the generator's own tables */

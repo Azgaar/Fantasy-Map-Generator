@@ -1,3 +1,4 @@
+import { markAssistantOpen } from "@/components/assistant-bubble";
 import { Controllers } from "@/controllers";
 import type { Answerer } from "@/services/assistant/answerer";
 import { createAzgaarServerAnswerer } from "@/services/assistant/azgaar-server/answerer";
@@ -40,7 +41,6 @@ import { Proposals } from "./assistant-proposals";
 import { AssistantWidgets, type WidgetContext } from "./assistant-widgets";
 
 type View = "chat" | "chats" | "key";
-type AnswerItem = Extract<TranscriptItem, { kind: "answer" }>;
 type Notice = { text: string; item?: TranscriptItem; retry?: () => void };
 
 const dialogId = "assistant";
@@ -63,15 +63,19 @@ let discoveryId = 0;
 
 const tier = (): Tier => resolveTier(isOfficial(), !!getToken(), Connection.isConnected());
 const tokens = (entry?: Chat) => (entry ? entry.usage.input + entry.usage.output + entry.usage.cached : 0);
+/** The chat takes questions: it has the current tier's answerer and its map is open */
+const writable = (entry: Chat | undefined): entry is Chat =>
+  Boolean(entry && canContinue(entry, tier(), AssistantMap.id()));
 
-// Built once and hidden on close, unlike other dialogs: an answer in flight, the draft and the scroll survive
+// Built once and hidden on close, unlike other dialogs: an answer in flight, the draft and the scroll survive,
+// so only open() and events that can fire before it check that the dialog exists
 const isBuilt = () => document.getElementById(dialogId) !== null;
 let showing = false;
 let unseen = false; // the transcript changed while hidden, so reopen at its end
 const el = <T extends HTMLElement = HTMLElement>(id: string): T => ensureEl<T>(id);
 
 function toggle(): void {
-  if (showing && isBuilt()) $(`#${dialogId}`).dialog("close");
+  if (showing) $(`#${dialogId}`).dialog("close");
   else open();
 }
 
@@ -88,7 +92,7 @@ function open(): void {
     }
     void refreshContextChip();
   }
-  markBubble(true);
+  markAssistantOpen(true);
 }
 
 function build(): void {
@@ -110,14 +114,8 @@ function build(): void {
 
 function closeAssistant(): void {
   showing = false;
-  markBubble(false);
+  markAssistantOpen(false);
   AssistantWidgets.clearMarks();
-}
-
-function markBubble(opened: boolean): void {
-  const bubble = document.getElementById("assistantBubble");
-  bubble?.classList.toggle("open", opened);
-  bubble?.setAttribute("aria-expanded", String(opened));
 }
 
 const STYLES = /* html */ `
@@ -423,12 +421,10 @@ async function initialize(): Promise<void> {
     render();
     return;
   }
-  if (!isBuilt()) return;
   const now = tier();
   openMap = AssistantMap.id();
   chat = current();
-  if (!chat || !canContinue(chat, now, AssistantMap.id()))
-    chat = now ? create(now, AssistantMap.id(), AssistantMap.name()) : undefined;
+  if (!writable(chat)) chat = now ? create(now, AssistantMap.id(), AssistantMap.name()) : undefined;
   initialized = true;
   notice = null;
   render();
@@ -442,11 +438,9 @@ function startChat(): void {
   chat = now ? create(now, AssistantMap.id(), AssistantMap.name()) : undefined;
   clearNotice();
   AssistantWidgets.clearMarks();
-  if (isBuilt()) {
-    const input = el<HTMLTextAreaElement>("assistantQuestion");
-    input.value = "";
-    fitInput(input);
-  }
+  const input = el<HTMLTextAreaElement>("assistantQuestion");
+  input.value = "";
+  fitInput(input);
   showView("chat");
 }
 
@@ -477,8 +471,7 @@ function showView(next: View): void {
 }
 
 function render(keepScroll = false): void {
-  if (!isBuilt()) return;
-  const readOnly = !chat || !canContinue(chat, tier(), AssistantMap.id());
+  const readOnly = !writable(chat);
   el("assistantTranscript").hidden = view !== "chat";
   el("assistantChats").hidden = view !== "chats";
   el("assistantKey").hidden = view !== "key";
@@ -507,12 +500,13 @@ function renderTranscript(keepScroll = false): void {
   const items = chat?.items ?? [];
   const now = tier();
   const live = chat?.mapId === AssistantMap.id();
-  const canAsk = !busy && Boolean(chat && canContinue(chat, now, AssistantMap.id()));
+  const continues = writable(chat);
+  const canAsk = !busy && continues;
   let html = items.length ? "" : welcomeHtml(now);
   items.forEach((item, index) => {
     if (item !== notice?.item) html += itemHtml(item, { index, live, canAsk });
   });
-  if ((chat && !canContinue(chat, now, AssistantMap.id())) || (initialized && now && !chat)) {
+  if (initialized && !continues && (chat || now)) {
     html += /* html */ `<div class="assistantItem assistantNoticeItem">Start a new chat to continue
       <div class="assistantActions"><button type="button" class="assistantButton" data-action="new-chat">New chat</button></div>
     </div>`;
@@ -640,7 +634,7 @@ function renderNotice(): void {
 // The live notice sits above the composer; once the next answer arrives it moves into the transcript
 function showNotice(next: Notice): void {
   notice = next;
-  if (isBuilt()) renderNotice();
+  renderNotice();
 }
 
 function clearNotice(): void {
@@ -655,7 +649,6 @@ function fitInput(input: HTMLTextAreaElement): void {
 async function refreshContextChip(): Promise<void> {
   const note = await Controllers.NotesEditor.current();
   noteLabel = note ? note.name || note.id : null;
-  if (!isBuilt()) return;
   renderContextChip();
   if (view === "chat" && !chat?.items.length) renderTranscript();
 }
@@ -675,7 +668,7 @@ async function refreshLimits(): Promise<void> {
     limits = expired ? await getLimits().catch(() => null) : null;
   }
   if (initialized && answererFor(chat?.tier ?? null) !== answererFor(tier())) newChat();
-  if (isBuilt()) renderFooter();
+  renderFooter();
 }
 
 async function leaveMember(): Promise<void> {
@@ -696,7 +689,7 @@ function decide(action: "apply" | "undo" | "redo" | "discard", index: number): v
   } catch (error) {
     showNotice({ text: error instanceof Error ? error.message : String(error) });
   }
-  if (isBuilt() && chat === owner && view === "chat") {
+  if (chat === owner && view === "chat") {
     renderTranscript();
     void refreshContextChip();
   }
@@ -723,7 +716,7 @@ function choose(index: number, number: number): void {
   const choice = widget.choices[number];
   if (!choice) return;
   if (!choice.operations) {
-    if (busy || !canContinue(owner, tier(), AssistantMap.id())) return;
+    if (busy || !writable(owner)) return;
     widget.picked = number;
     el<HTMLTextAreaElement>("assistantQuestion").value = choice.label;
     void send();
@@ -740,27 +733,22 @@ function choose(index: number, number: number): void {
   renderTranscript();
 }
 
+/** Select a rating at once; roll it back if the Azgaar server refuses it */
 async function rateItem(index: number, rating: "up" | "down"): Promise<void> {
   const owner = chat;
   const item = owner?.items[index];
-  if (!owner || item?.kind !== "answer") return;
-  await rateAnswer(item, rating, () => {
+  if (!owner || item?.kind !== "answer" || item.ratingId == null || item.rating === rating) return;
+  const show = (value?: "up" | "down") => {
+    item.rating = value;
     touch(owner);
-    if (isBuilt() && chat === owner && view === "chat") renderTranscript();
-  });
-}
-
-/** Select a rating at once; roll it back if the Azgaar server refuses it */
-export async function rateAnswer(item: AnswerItem, rating: "up" | "down", onChange: () => void): Promise<void> {
-  if (item.ratingId == null || item.rating === rating) return;
+    if (chat === owner && view === "chat") renderTranscript();
+  };
   const previous = item.rating;
-  item.rating = rating;
-  onChange();
+  show(rating);
   try {
     await sendFeedback(item.ratingId, rating);
   } catch (error) {
-    item.rating = previous;
-    onChange();
+    show(previous);
     if (error instanceof AzgaarServerError && error.code === "unauthorized") void refreshLimits();
   }
 }
@@ -819,7 +807,7 @@ async function discover(): Promise<void> {
   const error = el("assistantDiscoveryError");
   error.textContent = "";
   if (provider.id !== "local" && !key) return setModels([]);
-  const stale = () => request !== discoveryId || !isBuilt() || view !== "key";
+  const stale = () => request !== discoveryId || view !== "key";
   try {
     const found = await listModels(provider.id, key, url);
     if (!stale()) setModels(found);
@@ -855,7 +843,7 @@ function disconnect(): void {
 }
 
 async function send(): Promise<void> {
-  if (busy || !chat || !canContinue(chat, tier(), AssistantMap.id())) return;
+  if (busy || !writable(chat)) return;
   const input = el<HTMLTextAreaElement>("assistantQuestion");
   const question = normalizeQuestion(input.value);
   if (!question) return;
@@ -868,7 +856,7 @@ async function send(): Promise<void> {
   abort = request;
   const active = chat;
   const from = active.items.length;
-  const visible = () => isBuilt() && chat === active;
+  const visible = () => chat === active;
   const onItem = (item: TranscriptItem) => {
     append(active, item);
     if (!visible()) return;
@@ -899,10 +887,8 @@ async function send(): Promise<void> {
     busy = false;
     abort = null;
     touch(active);
-    if (isBuilt()) {
-      render();
-      if (showing) el("assistantQuestion").focus();
-    }
+    render();
+    if (showing) el("assistantQuestion").focus();
     void refreshLimits();
   }
 }
@@ -936,7 +922,7 @@ window.addEventListener("map:generated", () => {
   openMap = AssistantMap.id();
   stop();
   startChat();
-  if (isBuilt()) void refreshContextChip();
+  void refreshContextChip();
 });
 
 window.addEventListener("notes:context-changed", () => {
