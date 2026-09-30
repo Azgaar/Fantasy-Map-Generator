@@ -1,14 +1,14 @@
 import type { Layer } from "@/components/layers";
 import { Coastline } from "@/generators/coastline-generator";
 import type { Feature } from "@/generators/features-generator";
-import { ensureEl, findEl } from "@/utils";
+import { ensureEl, findEl, timeEnd, timeStart } from "@/utils";
 
 /**
  * The landmass is a plain rect shown through the land mask. The layer also owns the shared feature
  * geometry in defs: the coastline and lakes layers reference it, so it is drawn before both of them
  */
 export function drawLandmass(layer: Layer): void {
-  TIME && console.time("drawLandmass");
+  TIME && timeStart("drawLandmass");
 
   const paths: string[] = [];
   const landMask: string[] = [];
@@ -35,7 +35,7 @@ export function drawLandmass(layer: Layer): void {
 
   layer.getEl().innerHTML = /* html */ `<rect x="0" y="0" width="${options.map.graph.width}" height="${options.map.graph.height}" />`;
 
-  TIME && console.timeEnd("drawLandmass");
+  TIME && timeEnd("drawLandmass");
 }
 
 /** Rebuild one feature's shared path; every layer referencing it follows */

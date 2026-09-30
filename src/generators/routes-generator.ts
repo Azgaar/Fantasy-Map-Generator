@@ -1,7 +1,7 @@
 import Alea from "alea";
 import { curveCatmullRom, line } from "d3";
 import Delaunator from "delaunator";
-import { distanceSquared, findPath, getAdjective, isLand, ra, rn, round, rw } from "../utils";
+import { distanceSquared, findPath, getAdjective, isLand, ra, rn, round, rw, timeEnd, timeStart } from "../utils";
 import { meander } from "../utils/pathUtils";
 import type { Burg } from "./burgs-generator";
 import type { Label } from "./labels-generator";
@@ -405,7 +405,7 @@ class RoutesModule {
   }
 
   private generateMainRoads() {
-    TIME && console.time("generateMainRoads");
+    TIME && timeStart("generateMainRoads");
     const { capitalsByFeature } = this.sortBurgsByFeature(pack.burgs);
     const mainRoads: Route[] = [];
 
@@ -424,7 +424,7 @@ class RoutesModule {
       });
     }
 
-    TIME && console.timeEnd("generateMainRoads");
+    TIME && timeEnd("generateMainRoads");
     return mainRoads;
   }
 
@@ -440,7 +440,7 @@ class RoutesModule {
   }
 
   private generateTrails() {
-    TIME && console.time("generateTrails");
+    TIME && timeStart("generateTrails");
     const { burgsByFeature } = this.sortBurgsByFeature(pack.burgs);
     const trails: Route[] = [];
 
@@ -459,12 +459,12 @@ class RoutesModule {
       });
     }
 
-    TIME && console.timeEnd("generateTrails");
+    TIME && timeEnd("generateTrails");
     return trails;
   }
 
   private generateSeaRoutes() {
-    TIME && console.time("generateSeaRoutes");
+    TIME && timeStart("generateSeaRoutes");
     const { portsByFeature } = this.sortBurgsByFeature(pack.burgs);
     const seaRoutes: Route[] = [];
 
@@ -483,7 +483,7 @@ class RoutesModule {
       });
     }
 
-    TIME && console.timeEnd("generateSeaRoutes");
+    TIME && timeEnd("generateSeaRoutes");
     return seaRoutes;
   }
 

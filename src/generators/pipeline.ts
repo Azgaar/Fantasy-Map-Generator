@@ -1,3 +1,5 @@
+import { timeEnd, timeStart } from "@/utils";
+
 // Generic ordered-steps runner
 export interface PipelineStep<Id extends string = string, TContext = void> {
   id: Id;
@@ -15,22 +17,22 @@ export class Pipeline<Id extends string = string, TContext = void> {
 
   async run(context: TContext): Promise<void> {
     INFO && console.group(this.name);
-    TIME && console.time(this.name);
+    TIME && timeStart(this.name);
 
     try {
       for (const step of this.steps) {
-        TIME && console.time(step.id);
+        TIME && timeStart(step.id);
         try {
           await step.run(context);
         } catch (error) {
           const reason = error instanceof Error ? error.message : String(error);
           throw new Error(`${this.name} failed at step "${step.id}": ${reason}`, { cause: error });
         } finally {
-          TIME && console.timeEnd(step.id);
+          TIME && timeEnd(step.id);
         }
       }
     } finally {
-      TIME && console.timeEnd(this.name);
+      TIME && timeEnd(this.name);
       INFO && console.groupEnd();
     }
   }

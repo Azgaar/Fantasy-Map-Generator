@@ -1,6 +1,6 @@
 import Alea from "alea";
 import { curveBasis, curveCatmullRom, line, mean, min, sum } from "d3";
-import { each, rn, round, rw } from "../utils";
+import { each, rn, round, rw, timeEnd, timeStart } from "../utils";
 import { meander, projectToNearestEdge } from "../utils/pathUtils";
 import type { Label } from "./labels-generator";
 import type { Point } from "./voronoi";
@@ -167,6 +167,7 @@ class RiverModule {
   }
 
   generate(allowErosion = true) {
+    TIME && timeStart("generateRivers");
     Math.random = Alea(options.map.seed);
     const { cells, features } = pack;
 
@@ -409,6 +410,8 @@ class RiverModule {
       cells.h = Uint8Array.from(h); // apply gradient
       downcutRivers(); // downcut river beds
     }
+
+    TIME && timeEnd("generateRivers");
   }
 
   alterHeights(): number[] {

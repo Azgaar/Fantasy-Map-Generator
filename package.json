@@ -22,6 +22,7 @@
     "test": "vitest",
     "test:e2e": "playwright test",
     "test:scripts": "node --test scripts/*.test.mjs",
+    "perf:ab": "node tests/perf/ab.mjs",
     "lint": "biome check --write",
     "sync-version": "node scripts/sync-version.js",
     "stamp-assets": "node scripts/stamp-assets.js",

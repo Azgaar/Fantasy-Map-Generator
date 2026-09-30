@@ -1,6 +1,7 @@
 import { Layers } from "@/components/layers";
 import type { Marker } from "@/generators/markers-generator";
 import { ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
+import { timeEnd, timeStart } from "@/utils";
 import { isImageIcon } from "@/utils/fileUtils";
 import { rn } from "@/utils/numberUtils";
 import { escapeHtml } from "@/utils/stringUtils";
@@ -50,9 +51,9 @@ export const setMarkersFilter = (ids: number[] | null): void => {
 };
 
 export const drawMarkers = (): void => {
-  TIME && console.time("drawMarkers");
+  TIME && timeStart("drawMarkers");
   layer.render();
-  TIME && console.timeEnd("drawMarkers");
+  TIME && timeEnd("drawMarkers");
 };
 
 function reconcileMarkers({ root, bounds }: ViewportRenderContext): void {

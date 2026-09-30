@@ -15,6 +15,8 @@ import {
   rand,
   rn,
   rw,
+  timeEnd,
+  timeStart,
   trimVowels
 } from "../utils";
 import type { Label } from "./labels-generator";
@@ -269,6 +271,7 @@ class StatesModule {
   }
 
   generate() {
+    TIME && timeStart("generateStates");
     pack.states = this.createStates();
     this.expandStates();
     this.normalize();
@@ -277,10 +280,12 @@ class StatesModule {
     this.assignColors();
     this.generateCampaigns();
     this.generateDiplomacy();
+
+    TIME && timeEnd("generateStates");
   }
 
   expandStates() {
-    TIME && console.time("expandStates");
+    TIME && timeStart("expandStates");
     const { cells, states, cultures, burgs } = pack;
 
     cells.state = cells.state || new Uint16Array(cells.i.length);
@@ -343,11 +348,11 @@ class StatesModule {
       .forEach(b => {
         b.state = cells.state[b.cell]; // assign state to burgs
       });
-    TIME && console.timeEnd("expandStates");
+    TIME && timeEnd("expandStates");
   }
 
   normalize() {
-    TIME && console.time("normalizeStates");
+    TIME && timeStart("normalizeStates");
     const { cells, burgs } = pack;
 
     for (const i of cells.i) {
@@ -362,7 +367,7 @@ class StatesModule {
       if (adversaries.length <= buddies.length) continue;
       cells.state[i] = cells.state[adversaries[0]];
     }
-    TIME && console.timeEnd("normalizeStates");
+    TIME && timeEnd("normalizeStates");
   }
 
   // calculate pole of inaccessibility for each state
@@ -429,6 +434,7 @@ class StatesModule {
 
   // calculate states data like area, population etc.
   collectStatistics() {
+    TIME && timeStart("collectStatistics");
     const { cells, states } = pack;
 
     states.forEach(s => {
@@ -449,6 +455,8 @@ class StatesModule {
         states[s].burgs!++;
       }
     }
+
+    TIME && timeEnd("collectStatistics");
   }
 
   generateCampaign(state: State): Campaign[] {
@@ -483,7 +491,7 @@ class StatesModule {
 
   // generate Diplomatic Relationships
   generateDiplomacy() {
-    TIME && console.time("generateDiplomacy");
+    TIME && timeStart("generateDiplomacy");
     const { cells, states } = pack;
     states[0].diplomacy = [];
     // FIRST STATE IS ALWAYS NEUTRAL and contains the history of diplomacy
@@ -666,11 +674,12 @@ class StatesModule {
       // TODO: record war in chronicle to keep state interface clean
       chronicle.push(war as any); // add a record to diplomatical history
     }
-    TIME && console.timeEnd("generateDiplomacy");
+    TIME && timeEnd("generateDiplomacy");
   }
 
   // select a forms for listed or all valid states
   defineStateForms(list: number[] | null = null) {
+    TIME && timeStart("defineStateForms");
     const states = pack.states.filter(s => s.i && !s.removed && !s.lock);
     if (states.length < 1) return;
 
@@ -810,6 +819,8 @@ class StatesModule {
       s.salesTax = taxes.salesTax;
       s.pollTax = taxes.pollTax;
     }
+
+    TIME && timeEnd("defineStateForms");
   }
 
   defineTaxRates(state: State) {

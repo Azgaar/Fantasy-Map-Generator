@@ -6,7 +6,7 @@ import {
   type ViewportRenderContext
 } from "@/renderers/viewport/viewport-renderer";
 import type { PackedGraph } from "@/types/PackedGraph";
-import { normalize, rn } from "../utils";
+import { normalize, rn, timeEnd, timeStart } from "../utils";
 
 const layer = ViewportLayers.register({ id: "goods", render: reconcileGoods });
 let cellProduction: CellProduction[] = [];
@@ -56,10 +56,10 @@ interface BurgPlate {
 }
 
 export function drawGoods(): void {
-  TIME && console.time("drawGoods");
+  TIME && timeStart("drawGoods");
   buildScene();
   layer.render();
-  TIME && console.timeEnd("drawGoods");
+  TIME && timeEnd("drawGoods");
 }
 
 function buildScene(): void {

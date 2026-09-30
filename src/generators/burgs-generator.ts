@@ -4,7 +4,7 @@ import { Emblems } from "@/generators/emblems-generator";
 import type { BurgGroup } from "@/types/burg-groups";
 import type { Emblem } from "@/types/emblems";
 import { safeParseJSON } from "@/utils/stringUtils";
-import { each, gauss, minmax, normalize, P, rn } from "../utils";
+import { each, gauss, minmax, normalize, P, rn, timeEnd, timeStart } from "../utils";
 import { type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
 import { NON_NAVIGABLE_LAKE_SUBTYPES } from "./features-generator";
 import type { Label } from "./labels-generator";
@@ -58,6 +58,7 @@ type PortCandidate = {
 
 class BurgModule {
   generate() {
+    TIME && timeStart("generateBurgs");
     const { cells } = pack;
 
     let burgs: Burg[] = [0 as any]; // burgs array
@@ -155,6 +156,8 @@ class BurgModule {
 
     pack.burgs = burgs;
     this.assignPorts();
+
+    TIME && timeEnd("generateBurgs");
 
     function getCapitalsNumber() {
       let number = options.generation.states.limit;
@@ -554,6 +557,8 @@ class BurgModule {
   }
 
   specify() {
+    TIME && timeStart("specifyBurgs");
+
     pack.burgs.forEach(burg => {
       if (!burg.i || burg.removed || burg.lock) return;
       this.definePopulation(burg);
@@ -570,6 +575,8 @@ class BurgModule {
       if (!burg.i || burg.removed) return;
       this.defineGroup(burg, populations);
     });
+
+    TIME && timeEnd("specifyBurgs");
   }
 
   private createWatabouCityLinks(burg: Burg) {

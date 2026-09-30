@@ -1,6 +1,6 @@
 import Alea from "alea";
 import { quadtree } from "d3-quadtree";
-import { rn } from "@/utils";
+import { rn, timeEnd, timeStart } from "@/utils";
 import { minmax } from "../utils";
 import { getColors, getRandomColor } from "../utils/colorUtils";
 import type { Burg } from "./burgs-generator";
@@ -42,6 +42,7 @@ export class MarketsModule {
   }
 
   generate(regenerate: boolean = false): Market[] {
+    TIME && timeStart("generateMarkets");
     if (!regenerate) Math.random = Alea(options.map.seed);
     const markets = this.createMarkets();
     this.expandMarkets(markets);
@@ -49,6 +50,7 @@ export class MarketsModule {
     pack.markets = markets;
     pack.deals = [];
 
+    TIME && timeEnd("generateMarkets");
     return markets;
   }
 

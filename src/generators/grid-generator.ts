@@ -3,7 +3,7 @@ import Alea from "alea";
 import { min } from "d3";
 import type { GridCells, GridGraph } from "@/types/GridGraph";
 import type { Point } from "@/types/global";
-import { rn, SEA_LEVEL } from "@/utils";
+import { rn, SEA_LEVEL, timeEnd, timeStart } from "@/utils";
 import { calculateVoronoi } from "./voronoi";
 
 declare global {
@@ -22,9 +22,9 @@ class GridModule {
     const spacing = this.getSpacing(cellsDesired, width, height);
     const boundary = this.getBoundaryPoints(width, height, spacing);
 
-    TIME && console.time("placePoints");
+    TIME && timeStart("placePoints");
     const points = this.getJitteredPoints(width, height, spacing);
-    TIME && console.timeEnd("placePoints");
+    TIME && timeEnd("placePoints");
 
     const { cells, vertices } = calculateVoronoi(points, boundary);
 

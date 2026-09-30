@@ -4,7 +4,7 @@ import type { Province } from "@/generators/provinces-generator";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Scene, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import type { Emblem } from "@/types/emblems";
-import { ensureEl, findEl, minmax, rn } from "@/utils";
+import { ensureEl, findEl, minmax, rn, timeEnd, timeStart } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
 import type { State } from "../generators/states-generator";
 
@@ -70,7 +70,7 @@ function getEmblemSize(type: EmblemType, count: number): number {
 }
 
 export function drawEmblems(): void {
-  TIME && console.time("drawEmblems");
+  TIME && timeStart("drawEmblems");
   const version = ++drawVersion;
   isDrawPending = true;
   needsFullRedraw = false;
@@ -108,7 +108,7 @@ export function drawEmblems(): void {
     if (needsFullRedraw) {
       // the snapshot was taken before an edit landed: rebuild it from the current data
       needsFullRedraw = false;
-      TIME && console.timeEnd("drawEmblems");
+      TIME && timeEnd("drawEmblems");
       drawEmblems();
       return;
     }
@@ -127,7 +127,7 @@ export function drawEmblems(): void {
       scene.replace(next);
     }
     layer.render();
-    TIME && console.timeEnd("drawEmblems");
+    TIME && timeEnd("drawEmblems");
   });
 }
 

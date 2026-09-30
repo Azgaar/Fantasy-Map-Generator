@@ -7,6 +7,7 @@ import {
   type ViewportRenderContext
 } from "@/renderers/viewport/viewport-renderer";
 import type { Point } from "@/types/global";
+import { timeEnd, timeStart } from "@/utils";
 
 interface RiverShape {
   id: string;
@@ -25,7 +26,7 @@ let editedRiverId: string | null = null; // edited river is rendered even when o
 let basinColors: Map<string, string> | null = null;
 
 export function drawRivers(): void {
-  TIME && console.time("drawRivers");
+  TIME && timeStart("drawRivers");
   const shapes: RiverShape[] = [];
   for (const river of pack.rivers) {
     const shape = buildShape(river);
@@ -34,7 +35,7 @@ export function drawRivers(): void {
   scene.replace(shapes);
   if (basinColors) basinColors = getBasinColors();
   layer.render();
-  TIME && console.timeEnd("drawRivers");
+  TIME && timeEnd("drawRivers");
 }
 
 /** Drop the paths and the scene behind them: a hidden layer must not keep a map's worth of geometry */

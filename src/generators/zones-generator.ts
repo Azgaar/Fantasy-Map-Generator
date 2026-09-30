@@ -1,5 +1,5 @@
 import { max, mean } from "d3";
-import { gauss, getAdjective, P, ra, rand, rw } from "../utils";
+import { gauss, getAdjective, P, ra, rand, rw, timeEnd, timeStart } from "../utils";
 
 declare global {
   var Zones: ZonesModule;
@@ -46,6 +46,8 @@ class ZonesModule {
   }
 
   generate(globalModifier = 1) {
+    TIME && timeStart("generateZones");
+
     const usedCells = new Uint8Array(pack.cells.i.length);
     pack.zones = [];
 
@@ -54,6 +56,8 @@ class ZonesModule {
       let number = gauss(expectedNumber, expectedNumber / 2, 0, 100);
       while (number--) type.generate(usedCells);
     });
+
+    TIME && timeEnd("generateZones");
   }
 
   private addInvasion(usedCells: Uint8Array) {

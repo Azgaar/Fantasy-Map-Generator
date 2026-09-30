@@ -1,5 +1,5 @@
 import { mean } from "d3";
-import { rn } from "../utils";
+import { rn, timeEnd, timeStart } from "../utils";
 
 export interface Biome {
   i: number;
@@ -104,6 +104,7 @@ class BiomesGenerator {
   }
 
   define(): void {
+    TIME && timeStart("defineBiomes");
     if (!pack.biomes?.length) pack.biomes = this.getDefault();
 
     const { fl: flux, r: riverIds, h: heights, c: neighbors, g: gridReference } = pack.cells;
@@ -127,6 +128,8 @@ class BiomesGenerator {
       const temperature = temp[gridReference[cellId]];
       pack.cells.biome[cellId] = this.getId(moisture, temperature, height, Boolean(riverIds[cellId]));
     }
+
+    TIME && timeEnd("defineBiomes");
   }
 
   getId(moisture: number, temperature: number, height: number, hasRiver: boolean) {

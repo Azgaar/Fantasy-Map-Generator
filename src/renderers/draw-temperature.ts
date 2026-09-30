@@ -11,10 +11,10 @@ import {
   select
 } from "d3";
 import { viewport } from "@/components/viewport";
-import { connectVertices, convertTemperature, round } from "../utils";
+import { connectVertices, convertTemperature, round, timeEnd, timeStart } from "../utils";
 
 const temperatureRenderer = (): void => {
-  TIME && console.time("drawTemperature");
+  TIME && timeStart("drawTemperature");
 
   select("#temperature").selectAll("*").remove();
   const lineGen = line<[number, number]>().curve(curveBasisClosed);
@@ -129,7 +129,7 @@ const temperatureRenderer = (): void => {
     labels.push([x, y, t]);
   }
 
-  TIME && console.timeEnd("drawTemperature");
+  TIME && timeEnd("drawTemperature");
 };
 
 export { temperatureRenderer as drawTemperature };

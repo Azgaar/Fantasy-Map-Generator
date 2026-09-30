@@ -1,7 +1,6 @@
 import { curveBasisClosed, line } from "d3";
 import { Ocean } from "@/generators/ocean-generator";
-import { rn, round } from "@/utils";
-import { ensureEl } from "@/utils/nodeUtils";
+import { ensureEl, rn, round, timeEnd, timeStart } from "@/utils";
 import { getCoastalDistances, getCoastalWaves } from "./coastal-waves";
 import { drawCoastalBands, getCoastalBandReach, removeCoastalBands } from "./draw-coastal-bands";
 
@@ -61,7 +60,7 @@ export function drawOcean(): void {
   const limits = Ocean.getLimits(styles.ocean.oceanLayers.options.outline);
   if (!limits.length) return;
 
-  TIME && console.time("drawOcean");
+  TIME && timeStart("drawOcean");
 
   const opacity = rn(0.4 / limits.length, 2);
   const lineGen = line().curve(curveBasisClosed);
@@ -72,7 +71,7 @@ export function drawOcean(): void {
 
   oceanLayers.insertAdjacentHTML("beforeend", paths.join(""));
 
-  TIME && console.timeEnd("drawOcean");
+  TIME && timeEnd("drawOcean");
 }
 
 /** drop the rings, waves and bands, keeping the two full-graph rects drawOceanBase owns */
