@@ -4,7 +4,6 @@ import { AzgaarServerError, ask } from "./api";
 
 export function createAzgaarServerAnswerer(): Answerer {
   return {
-    status: () => "",
     async send(
       chat: Chat,
       question: string,

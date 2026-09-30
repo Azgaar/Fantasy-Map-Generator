@@ -17,12 +17,8 @@ vi.mock("./assistant-map", () => ({
   }
 }));
 const proposals = vi.hoisted(() => ({
-  canApply: vi.fn(() => true),
-  canUndo: vi.fn(() => true),
-  canRedo: vi.fn(() => true),
-  apply: vi.fn(() => true),
-  undo: vi.fn(() => true),
-  redo: vi.fn(() => true),
+  can: vi.fn(() => true),
+  run: vi.fn(() => true),
   discard: vi.fn(),
   propose: vi.fn()
 }));
@@ -33,7 +29,7 @@ vi.mock("@/controllers", () => ({
   }
 }));
 vi.mock("@/services/assistant/azgaar-server/answerer", () => ({
-  createAzgaarServerAnswerer: () => ({ status: () => "Guest", send: state.send })
+  createAzgaarServerAnswerer: () => ({ send: state.send })
 }));
 
 import { Assistant } from "./assistant";
@@ -43,7 +39,6 @@ beforeEach(() => {
   state.note = null;
   state.close = undefined;
   localStorage.clear();
-  localStorage.setItem("fmg-assistant-last-map", "0");
   state.send.mockReset();
   state.send.mockImplementation(
     (
@@ -236,10 +231,10 @@ it("applies, undoes and discards proposals even in a read-only chat", async () =
       item => item.textContent === label
     )!;
   button("Apply").click();
-  expect(proposals.apply).toHaveBeenCalledWith(pending, state.mapId);
+  expect(proposals.run).toHaveBeenCalledWith("apply", pending, state.mapId);
   button("Discard").click();
   expect(proposals.discard).toHaveBeenCalledWith(pending);
-  proposals.canApply.mockReturnValueOnce(false);
+  proposals.can.mockReturnValueOnce(false);
   document.getElementById("assistantOpenChats")!.click();
   document.getElementById("assistantOpenChats")!.click();
   expect(button("Changed since").disabled).toBe(true);
@@ -247,7 +242,7 @@ it("applies, undoes and discards proposals even in a read-only chat", async () =
   document.getElementById("assistantOpenChats")!.click();
   document.getElementById("assistantOpenChats")!.click();
   button("Redo").click();
-  expect(proposals.redo).toHaveBeenCalledWith(pending, state.mapId);
+  expect(proposals.run).toHaveBeenCalledWith("redo", pending, state.mapId);
 });
 
 it("renders every transcript item type and never renders user text as HTML", async () => {
@@ -391,7 +386,7 @@ it("retries a failed question without leaving the failure behind", async () => {
   const input = document.getElementById("assistantQuestion") as HTMLTextAreaElement;
   input.value = "Where is Vel?";
   document.getElementById("assistantAsk")!.click();
-  const retry = document.getElementById("assistantResend")!;
+  const retry = document.getElementById("assistantRetry")!;
   await vi.waitFor(() => expect(retry.hidden).toBe(false));
   retry.click();
   await vi.waitFor(() => expect(state.send).toHaveBeenCalledTimes(2));

@@ -117,7 +117,7 @@ Opened from _Use key_, _Key_, or any _Connect your AI key_ button. It replaces t
 ```
 
 - **Providers:** Anthropic, OpenAI, Mistral, Qwen, DeepSeek and Local.
-  - The model list comes only from discovery: the chat models the provider says this key can use, cached for a day. Until discovery returns, one default model per provider is preselected. The model field also accepts any typed model id.
+  - The model list comes only from discovery: the chat models the provider says this key can use, fetched each time the key sheet opens. Until discovery returns, one default model per provider is preselected. The model field also accepts any typed model id.
   - Local shows a server address (default Ollama) and a model name, and notes that the server's context window must be at least 8k tokens.
 - **Discovery doubles as the key check.** Entering a key fetches the model list; if that fails, the provider's error is shown inline. It never blocks **Connect**: the user may type a model id, and a failing key is handled like any other (see "A failing key changes nothing").
 - **Disconnect** forgets the key and returns the user to Guest or Member.
@@ -373,7 +373,7 @@ Assistant services (no world state, no DOM)
 
 1. **Tier (pure).** Inputs: whether the Azgaar server serves this origin, whether a sign-in token exists, whether a key is connected. Output: the tier, or none. Precedence: key > member > guest; none when the Azgaar server is unavailable and no key is connected. A user who connected a key has chosen unlimited use, so their key answers everything and the free allowance is never spent silently.
 
-2. **Answerer contract.** `send(chat, question, onItem, signal)`: the answerer appends to the chat and reports every new transcript item as it arrives. `status()` returns the footer text for its tier. Transcript items form one closed union:
+2. **Answerer contract.** `send(chat, question, onItem, signal)`: the answerer appends to the chat and reports every new transcript item as it arrives. Transcript items form one closed union:
    - `question`
    - `answer` — Markdown, optional rating id
    - `step` — a map read, with its result and duration
@@ -398,9 +398,9 @@ Assistant services (no world state, no DOM)
    - The fixed instructions are marked cacheable. The per-question map context comes from the controller and is sent separately, so it never invalidates the cache.
    - **A failing key changes nothing.** When the provider rejects a request (revoked key, no credit, outage, local server down), its message appears as a notice with _Retry_ and _Key_ buttons. _Retry_ asks the failed question again; when it failed before any step, the question and its error leave the transcript so the retry reads as one question. The key stays connected and the tier stays Key. There is no automatic disconnect and no fallback to the Azgaar server.
 
-5. **Providers.** One internal message format (text, tool calls, tool results) with two adapters: Anthropic's native Messages API, and one OpenAI-compatible adapter for OpenAI, Mistral, Qwen, DeepSeek and local servers. Model discovery asks the provider for its models, keeps only chat models and caches the list for a day; it is the only source of the model list, besides one default model per provider and any typed id. Every request is routed by the connection, not by the model name, so identical model names on two providers never collide.
+5. **Providers.** One internal message format (text, tool calls, tool results) with two adapters: Anthropic's native Messages API, and one OpenAI-compatible adapter for OpenAI, Mistral, Qwen, DeepSeek and local servers. Model discovery asks the provider for its models, keeps only chat models; it is the only source of the model list, besides one default model per provider and any typed id. Every request is routed by the connection, not by the model name, so identical model names on two providers never collide.
 
-6. **Connection.** One record: provider, model, one key per provider, local server address, local model name. It offers `get`, `save`, `clear` and `isConnected`. "Connected" means the user set a key and has not disconnected it; validity is never tracked, and discovery is the only key check. Keys are stored per provider in `localStorage`, shared with the AI text generator, and never go anywhere except their provider.
+6. **Connection.** One record: provider, model, key and local server address. A local model's name is its model, remembered apart from the remote model so switching back restores it. It offers `get` (also for a provider not yet saved, which the key sheet previews), `save`, `clear` and `isConnected`. "Connected" means the user set a key and has not disconnected it; validity is never tracked, and discovery is the only key check. Keys are stored per provider in `localStorage`, shared with the AI text generator, and never go anywhere except their provider.
 
 7. **Knowledge.** Nothing bulky rides in the instructions; the model fetches it. `read_help({query})` searches the Knowledge Base, the same source that grounds the Azgaar server, split on its question headings: it returns the best few sections in full plus the headings of other matches, and an exact heading returns that section. `read_docs({topics})` returns data-model sections, the configuration doc, the global declarations, the registries, the core data types or the commands a command link may name. Both load their sources lazily on first use.
 
@@ -433,15 +433,15 @@ Assistant services (no world state, no DOM)
     - **Each method validates its own arguments** (entity exists and is not removed, name not empty) and throws a readable message. It only changes data: model classes cannot reach renderers, so redrawing is not their job.
     - **Notes own the safe-HTML rule.** Notes render into tooltips as HTML, so `Notes.write` accepts only the notes editor's subset: no event-handler attributes, no `javascript:` URLs, no scripts or iframes. The notes editor keeps its own path for its rich-text output.
 
-11. **Operations registry (controller layer).** A plain map from operation name to a model-class method. It holds no logic of its own:
+11. **Operations registry (controller layer).** A plain map from operation name to the layers to redraw after Apply or Undo, since model classes cannot redraw themselves. The name is the model-class method it runs, so the registry holds no logic of its own:
 
     ```ts
-    "Burgs.rename":  { run: (id, name) => Burgs.rename(id, name),  redraw: ["labels"] },
-    "States.remove": { run: id => States.remove(id),               redraw: TERRITORY },
-    "Notes.write":   { run: (key, html) => Notes.write(key, html), redraw: [] },
+    "Burgs.rename": ["labels"],
+    "States.remove": TERRITORY,
+    "Notes.write": [],
     ```
 
-    - `redraw` lists the layers to redraw after Apply or Undo, since model classes cannot do it themselves.
+    - Only a registered name runs: `Burgs.rename` calls the `Burgs` model's `rename` with the proposal's arguments.
     - **Adding a capability** means adding one public method to the model class that owns the data, plus one registry line. It needs no new tool, UI or PRD.
     - The generated instructions index every registered operation, `read_docs` serves its signature and doc line, and a test fails when either is stale.
     - FMG has hundreds of possible edits, and the registry grows one well-scoped operation at a time, in the order of "Operations catalogue". Arbitrary writes are never allowed.
@@ -458,12 +458,12 @@ Assistant services (no world state, no DOM)
 
 13. **Chats.** A chat holds:
     - an id, a title (its first question) and the last-used time
-    - its answerer (`azgaar-server` or `provider`), and the map id and map name of the map open when it was created
+    - the tier it was started in, and the map id and map name of the map open when it was created
     - its transcript items, including each proposal with its Change and state, so Apply and Undo still work after a reload
     - its answerer memory: the Azgaar server's chat id, or the message history for Provider chats
     - its token usage
 
-    `canContinue(chat, tier, mapId)` is true when the chat's answerer is the current tier's answerer and its map id is the open map's. All chats are kept in IndexedDB under one key through the app's existing key-value store, with no size budget and no automatic deletion; the store loads once when the panel first opens. A Key-tier chat is **long** when its message history exceeds 100,000 characters — a string length, independent of providers and their usage reports.
+    `canContinue(chat, tier, mapId)` is true when the chat's tier has the current tier's answerer (Guest and Member share one) and its map id is the open map's. A tier or map change starts a new chat because the current chat's tier or map no longer matches. All chats are kept in IndexedDB under one key through the app's existing key-value store, with no size budget and no automatic deletion; the store loads once when the panel first opens. A Key-tier chat is **long** when its message history exceeds 100,000 characters — a string length, independent of providers and their usage reports.
 
 14. **Widgets (controller layer).**
     - **Links.** The Markdown renderer stays generic: it takes a link resolver, and only `http(s)` links render without one. The Assistant's resolver turns an entity key into an entity link and `command:<id>` into a command button, and returns nothing for anything else, which then stays plain text. Links resolve only while the chat's map is open.

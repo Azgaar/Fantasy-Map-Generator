@@ -15,7 +15,7 @@ const newChat = (): Chat => ({
   id: "1",
   title: "New chat",
   updated: 0,
-  answerer: "provider",
+  tier: "key",
   mapId: 1,
   mapName: "Map",
   items: [],
@@ -26,7 +26,7 @@ const newChat = (): Chat => ({
 beforeEach(() => {
   localStorage.clear();
   completeMock.mockReset();
-  save({ provider: "openai", model: "custom-model", key: "key", localUrl: "", localModel: "" });
+  save({ provider: "openai", model: "custom-model", key: "key", localUrl: "" });
 });
 
 it("dispatches a map tool, reports its change, and preserves provider history", async () => {
@@ -42,6 +42,7 @@ it("dispatches a map tool, reports its change, and preserves provider history", 
   const chat = newChat();
   const items: TranscriptItem[] = [];
   const tool = {
+    status: "Renaming",
     definition: { name: "rename", description: "Rename", input_schema: {} },
     handle: vi.fn(async () => ({ content: "Renamed", item: { kind: "notice" as const, text: "Changed" } }))
   };
@@ -93,7 +94,7 @@ it("keeps completed changes and fills cancelled tool results when stopped mid-ba
   const items: TranscriptItem[] = [];
   await expect(
     createProviderAnswerer(
-      [{ definition: { name: "rename", description: "", input_schema: {} }, handle }],
+      [{ status: "Renaming", definition: { name: "rename", description: "", input_schema: {} }, handle }],
       async () => "map"
     ).send(chat, "Rename two", item => items.push(item), controller.signal)
   ).rejects.toThrow();
@@ -137,6 +138,7 @@ it("shortens tool results from earlier questions before the next request", async
 
 const LOOK = { type: "tool_use", id: "look1", name: "look", input: {} };
 const imageTool = {
+  status: "Looking",
   definition: { name: "look", description: "Look", input_schema: {} },
   handle: async () => ({
     content: [

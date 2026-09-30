@@ -43,9 +43,10 @@ export interface ToolDefinition {
 }
 
 export interface CompletionRequest {
-  key: string;
+  providerId: ProviderSpec["id"];
   model: string;
-  providerId?: ProviderSpec["id"];
+  key: string;
+  baseUrl?: string; // a local server's address, in place of the provider's own
   system: SystemBlock[];
   messages: Message[];
   tools: ToolDefinition[];
@@ -60,7 +61,6 @@ export interface Usage {
 
 export interface Completion {
   content: (TextBlock | ToolUseBlock)[];
-  stopReason: string;
   usage: Usage;
 }
 
@@ -68,8 +68,6 @@ export interface ProviderSpec {
   id: "anthropic" | "openai" | "mistral" | "qwen" | "deepseek" | "local";
   label: string;
   fallbackModel: string;
-  recommendedFamily?: RegExp;
-  recommendedAlias?: string;
   keyLink: string;
   baseUrl?: string; // OpenAI-compatible endpoints only; absent for the native Anthropic adapter
 }
@@ -79,14 +77,12 @@ export const PROVIDERS: ProviderSpec[] = [
     id: "anthropic",
     label: "Anthropic",
     fallbackModel: "claude-sonnet-5-5",
-    recommendedFamily: /^claude-sonnet-/,
     keyLink: "https://console.anthropic.com/account/keys"
   },
   {
     id: "openai",
     label: "OpenAI",
     fallbackModel: "gpt-6-luna",
-    recommendedFamily: /^gpt-[\d.]+-luna(?:$|-)/,
     keyLink: "https://platform.openai.com/account/api-keys",
     baseUrl: "https://api.openai.com/v1"
   },
@@ -94,8 +90,6 @@ export const PROVIDERS: ProviderSpec[] = [
     id: "mistral",
     label: "Mistral",
     fallbackModel: "mistral-small-latest",
-    recommendedFamily: /^mistral-small-/,
-    recommendedAlias: "mistral-small-latest",
     keyLink: "https://console.mistral.ai/api-keys",
     baseUrl: "https://api.mistral.ai/v1"
   },
@@ -103,7 +97,6 @@ export const PROVIDERS: ProviderSpec[] = [
     id: "qwen",
     label: "Qwen",
     fallbackModel: "qwen3.8-flash",
-    recommendedFamily: /^qwen\d+(?:\.\d+)?-flash(?:$|-)/,
     keyLink: "https://modelstudio.console.alibabacloud.com/?tab=playground#/api-key",
     baseUrl: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
   },
@@ -111,64 +104,32 @@ export const PROVIDERS: ProviderSpec[] = [
     id: "deepseek",
     label: "DeepSeek",
     fallbackModel: "deepseek-flash",
-    recommendedFamily: /^deepseek-(?:v[\d.]+-)?flash(?:$|-)/,
-    recommendedAlias: "deepseek-flash",
     keyLink: "https://platform.deepseek.com/api_keys",
     baseUrl: "https://api.deepseek.com/v1"
   },
   {
     id: "local",
-    label: "ollama",
-    fallbackModel: "local",
-    keyLink: "https://ollama.com"
+    label: "Local",
+    fallbackModel: "",
+    keyLink: "https://ollama.com",
+    baseUrl: "http://localhost:11434/v1"
   }
 ];
 
 export const DEFAULT_PROVIDER = PROVIDERS.find(provider => provider.id === "openai") ?? PROVIDERS[0];
 
-// Local OpenAI-compatible servers (Ollama, llama.cpp, LM Studio…). The dropdown holds one
-// sentinel entry; the endpoint and model name are the user's own and live in storage.
-export const LOCAL_MODEL = "local";
-export const LOCAL_URL_STORAGE = "fmg-ai-local-url";
-export const LOCAL_MODEL_STORAGE = "fmg-ai-local-model";
-export const DEFAULT_LOCAL_URL = "http://localhost:11434/v1";
-
-// Models found through live discovery (providers-models.ts) rather than the curated lists above
-const discovered = new Map<string, ProviderSpec["id"]>();
-
-export function registerModels(providerId: ProviderSpec["id"], models: string[]): void {
-  for (const model of models) discovered.set(model, providerId);
-}
-
-export function providerOf(model: string): ProviderSpec {
-  const provider =
-    PROVIDERS.find(candidate => candidate.fallbackModel === model) ??
-    PROVIDERS.find(candidate => candidate.id === discovered.get(model));
-  if (!provider) throw new Error(`Unknown model: ${model}`);
-  return provider;
-}
-
 export const keyStorageForProvider = (providerId: ProviderSpec["id"]): string => `fmg-ai-kl-${providerId}`;
-export const keyStorageFor = (model: string): string => keyStorageForProvider(providerOf(model).id);
 
 export async function complete(request: CompletionRequest): Promise<Completion> {
   // An empty turn (a model that ended without a word) is rejected by every provider once it is history
   request = { ...request, messages: request.messages.filter(message => message.content.length) };
-  const provider = request.providerId
-    ? PROVIDERS.find(candidate => candidate.id === request.providerId)
-    : providerOf(request.model);
+  const provider = PROVIDERS.find(candidate => candidate.id === request.providerId);
   if (!provider) throw new Error(`Unknown provider: ${request.providerId}`);
-  if (provider.id === "local") {
-    const baseUrl = (localStorage.getItem(LOCAL_URL_STORAGE) || DEFAULT_LOCAL_URL).replace(/\/+$/, "");
-    // The sentinel means "use the typed-in name"; a discovered local model is already the name
-    const model = request.model === LOCAL_MODEL ? (localStorage.getItem(LOCAL_MODEL_STORAGE) ?? "") : request.model;
-    if (!model) throw new Error("Enter a local model name (e.g. llama3.2)");
-    const { completeOpenAI } = await import("./providers-openai");
-    return completeOpenAI(baseUrl, { ...request, model });
-  }
-  if (!provider.baseUrl) return completeAnthropic(request);
+  if (!request.model) throw new Error("Enter a model name (e.g. llama3.2)");
+  const baseUrl = request.baseUrl || provider.baseUrl;
+  if (!baseUrl) return completeAnthropic(request);
   const { completeOpenAI } = await import("./providers-openai");
-  return completeOpenAI(provider.baseUrl, request);
+  return completeOpenAI(baseUrl.replace(/\/+$/, ""), request);
 }
 
 async function completeAnthropic({
@@ -196,7 +157,6 @@ async function completeAnthropic({
   const json = await response.json();
   return {
     content: json.content ?? [],
-    stopReason: json.stop_reason ?? "end_turn",
     usage: {
       input: (json.usage?.input_tokens ?? 0) + (json.usage?.cache_creation_input_tokens ?? 0),
       output: json.usage?.output_tokens ?? 0,

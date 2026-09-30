@@ -1,10 +1,16 @@
 import type { Chat, TranscriptItem } from "./chats";
 import type { ToolDefinition, ToolInput, ToolResultBlock } from "./providers";
 
-export interface MapTool {
+export interface ToolOutcome {
+  content: ToolResultBlock["content"];
+  item?: TranscriptItem;
+  isError?: boolean;
+}
+
+export interface Tool {
   definition: ToolDefinition;
-  status?: string; // what the Assistant is doing while the tool runs
-  handle(input: ToolInput): Promise<{ content: ToolResultBlock["content"]; item?: TranscriptItem; isError?: boolean }>;
+  status: string; // what the Assistant is doing while the tool runs
+  handle(input: ToolInput): Promise<ToolOutcome>;
 }
 
 export interface Answerer {
@@ -15,5 +21,4 @@ export interface Answerer {
     signal: AbortSignal,
     onStatus?: (status: string) => void
   ): Promise<void>;
-  status(): string;
 }

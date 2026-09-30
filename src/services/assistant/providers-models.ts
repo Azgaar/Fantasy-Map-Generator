@@ -1,15 +1,6 @@
-// Discover models available to a key and keep one fallback for unavailable endpoints.
+// Discover the chat models a key can use
 
-import {
-  DEFAULT_LOCAL_URL,
-  keyStorageForProvider,
-  LOCAL_URL_STORAGE,
-  PROVIDERS,
-  type ProviderSpec,
-  registerModels
-} from "./providers";
-
-const CACHE_TTL = 24 * 60 * 60 * 1000;
+import { PROVIDERS, type ProviderSpec } from "./providers";
 
 // What counts as a chat model: the endpoints also list embeddings, audio, image and moderation
 // variants that cannot drive the tool loop
@@ -30,12 +21,9 @@ export function filterChatModels(providerId: ProviderSpec["id"], ids: string[]):
   return ids.filter(id => (!filter.include || filter.include.test(id)) && !filter.exclude?.test(id));
 }
 
-export async function listModels(providerId: ProviderSpec["id"], key: string, localUrl?: string): Promise<string[]> {
-  const endpoint = localUrl ?? localStorage.getItem(LOCAL_URL_STORAGE) ?? DEFAULT_LOCAL_URL;
-  const models = filterChatModels(providerId, await fetchModelIds(providerId, key, endpoint));
-  await cacheModels(providerId, models, key, endpoint);
-  registerModels(providerId, models);
-  return models;
+/** `localUrl` is the local server's address, used only by the local provider */
+export async function listModels(providerId: ProviderSpec["id"], key: string, localUrl = ""): Promise<string[]> {
+  return filterChatModels(providerId, await fetchModelIds(providerId, key, localUrl));
 }
 
 async function fetchModelIds(providerId: ProviderSpec["id"], key: string, localUrl: string): Promise<string[]> {
@@ -70,12 +58,9 @@ async function modelError(response: Response): Promise<string> {
 
 function modelsUrl(providerId: ProviderSpec["id"], localUrl: string): string {
   if (providerId === "anthropic") return "https://api.anthropic.com/v1/models?limit=1000";
-  if (providerId === "local") {
-    const base = (localUrl || DEFAULT_LOCAL_URL).replace(/\/+$/, "");
-    return `${base}/models`;
-  }
   const provider = PROVIDERS.find(candidate => candidate.id === providerId);
-  return `${provider?.baseUrl}/models`;
+  const base = (providerId === "local" && localUrl) || provider?.baseUrl || "";
+  return `${base.replace(/\/+$/, "")}/models`;
 }
 
 function authHeaders(providerId: ProviderSpec["id"], key: string): Record<string, string> {
@@ -83,73 +68,4 @@ function authHeaders(providerId: ProviderSpec["id"], key: string): Record<string
     return { "x-api-key": key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" };
   }
   return key ? { Authorization: `Bearer ${key}` } : {};
-}
-
-async function cacheIdentity(providerId: ProviderSpec["id"], key: string, localUrl?: string): Promise<string> {
-  const endpoint = modelsUrl(providerId, localUrl ?? localStorage.getItem(LOCAL_URL_STORAGE) ?? DEFAULT_LOCAL_URL);
-  const bytes = new TextEncoder().encode(`${endpoint}\n${key}`);
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
-  return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
-}
-
-export async function cacheModels(
-  providerId: ProviderSpec["id"],
-  models: string[],
-  key = localStorage.getItem(keyStorageForProvider(providerId)) || "",
-  localUrl?: string
-): Promise<void> {
-  try {
-    const identity = await cacheIdentity(providerId, key, localUrl);
-    localStorage.setItem(`fmg-ai-models-${providerId}`, JSON.stringify({ time: Date.now(), models, identity }));
-  } catch {
-    // Discovery still works when storage or Web Crypto is unavailable.
-  }
-}
-
-export async function cachedModels(
-  providerId: ProviderSpec["id"],
-  key = localStorage.getItem(keyStorageForProvider(providerId)) || "",
-  localUrl?: string
-): Promise<string[]> {
-  try {
-    const stored = JSON.parse(localStorage.getItem(`fmg-ai-models-${providerId}`) ?? "null");
-    if (!stored || !Array.isArray(stored.models) || Date.now() - stored.time > CACHE_TTL) return [];
-    const identity = await cacheIdentity(providerId, key, localUrl);
-    return stored.identity === identity ? stored.models : [];
-  } catch {
-    return [];
-  }
-}
-
-export function modelChoices(provider: ProviderSpec, discovered: string[]): string[] {
-  if (provider.id === "local")
-    return [provider.fallbackModel, ...discovered.filter(model => model !== provider.fallbackModel)];
-  const models = [...new Set(discovered.length ? discovered : [provider.fallbackModel])];
-  const recommended = recommendedModel(provider, models);
-  return [recommended, ...models.filter(model => model !== recommended)];
-}
-
-export function recommendedModel(provider: ProviderSpec, models: string[]): string {
-  if (provider.recommendedAlias && models.includes(provider.recommendedAlias)) return provider.recommendedAlias;
-  const family = models.filter(model => provider.recommendedFamily?.test(model));
-  family.sort((a, b) => compareVersions(b, a) || a.length - b.length || a.localeCompare(b));
-  return family[0] ?? models[0] ?? provider.fallbackModel;
-}
-
-function compareVersions(a: string, b: string): number {
-  const first =
-    a
-      .match(/\d+(?:[.-]\d+)*/)?.[0]
-      .split(/[.-]/)
-      .map(Number) ?? [];
-  const second =
-    b
-      .match(/\d+(?:[.-]\d+)*/)?.[0]
-      .split(/[.-]/)
-      .map(Number) ?? [];
-  for (let index = 0; index < 2; index++) {
-    const difference = (first[index] ?? 0) - (second[index] ?? 0);
-    if (difference) return difference;
-  }
-  return 0;
 }

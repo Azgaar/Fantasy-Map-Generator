@@ -37,7 +37,7 @@ const newChat = (): Chat => ({
   id: "1",
   title: "",
   updated: 0,
-  answerer: "provider",
+  tier: "key",
   mapId: 42,
   mapName: "Orwin",
   items: [],

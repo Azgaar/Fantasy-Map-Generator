@@ -54,7 +54,7 @@ export interface Chat {
   id: string;
   title: string;
   updated: number;
-  answerer: "azgaar-server" | "provider";
+  tier: NonNullable<Tier>;
   mapId: number;
   mapName: string;
   items: TranscriptItem[];
@@ -65,7 +65,6 @@ export interface Chat {
 
 const STORAGE_KEY = "fmg-assistant-chats";
 const CURRENT_KEY = "fmg-assistant-current-chat";
-const LEGACY_KEY = "fmg-ai-chat-conversations";
 const TITLE_LENGTH = 60;
 let chats: Chat[] = [];
 let currentId = "";
@@ -79,14 +78,7 @@ export async function load(): Promise<void> {
   if (loading) return loading;
   loading = (async () => {
     const value = await ldb.get<Chat[]>(STORAGE_KEY);
-    if (Array.isArray(value)) chats = value.filter(item => item?.id && Array.isArray(item.items));
-    else {
-      chats = migrateLegacyChats();
-      if (chats.length) {
-        await ldb.set(STORAGE_KEY, chats);
-        localStorage.removeItem(LEGACY_KEY);
-      }
-    }
+    chats = Array.isArray(value) ? value.filter(item => item?.id && Array.isArray(item.items)) : [];
     currentId = localStorage.getItem(CURRENT_KEY) || chats[0]?.id || "";
     loaded = true;
   })();
@@ -94,49 +86,6 @@ export async function load(): Promise<void> {
     await loading;
   } finally {
     loading = undefined;
-  }
-}
-
-function migrateLegacyChats(): Chat[] {
-  try {
-    const legacy = JSON.parse(localStorage.getItem(LEGACY_KEY) || "[]") as {
-      id: string;
-      title: string;
-      mapId: number;
-      updated: number;
-      entries: (
-        | { kind: "message"; role: "user" | "assistant" | "system" | "error"; text: string }
-        | { kind: "script"; code: string; result?: RunResult }
-        | { kind: "edit"; name: string }
-      )[];
-      messages: Message[];
-      usage: Usage;
-    }[];
-    if (!Array.isArray(legacy)) return [];
-    return legacy
-      .filter(item => item.id && Array.isArray(item.entries))
-      .map(item => ({
-        id: item.id,
-        title: item.title,
-        updated: item.updated,
-        answerer: "provider" as const,
-        mapId: item.mapId,
-        mapName: item.mapId ? `Map ${item.mapId}` : "Unknown map",
-        items: item.entries.map((entry): TranscriptItem => {
-          if (entry.kind === "script") return { kind: "step", code: entry.code, result: entry.result };
-          if (entry.kind === "edit")
-            return { kind: "notice", text: `Earlier note edit “${entry.name}” · Undo unavailable` };
-          return entry.role === "user"
-            ? { kind: "question", text: entry.text }
-            : entry.role === "assistant"
-              ? { kind: "answer", text: entry.text }
-              : { kind: "notice", text: entry.text };
-        }),
-        messages: item.messages ?? [],
-        usage: item.usage ?? { input: 0, output: 0, cached: 0 }
-      }));
-  } catch {
-    return [];
   }
 }
 
@@ -152,14 +101,12 @@ export function select(id: string): Chat | undefined {
   return selected;
 }
 
-export function create(tier: Tier, mapId: number, mapName: string): Chat {
-  const answerer = answererFor(tier);
-  if (!answerer) throw new Error("Connect a provider before starting a chat");
+export function create(tier: NonNullable<Tier>, mapId: number, mapName: string): Chat {
   const chat: Chat = {
     id: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`,
     title: "New chat",
     updated: Date.now(),
-    answerer,
+    tier,
     mapId,
     mapName,
     items: [],
@@ -194,12 +141,12 @@ export function touch(chat: Chat): void {
 }
 
 export function canContinue(chat: Chat, tier: Tier, mapId: number): boolean {
-  return chat.answerer === answererFor(tier) && chat.mapId === mapId;
+  return answererFor(chat.tier) === answererFor(tier) && chat.mapId === mapId;
 }
 
 // An image's data is not re-sent once its question is answered, so it does not count
 export const isLong = (chat: Chat): boolean =>
-  chat.answerer === "provider" &&
+  chat.tier === "key" &&
   JSON.stringify(chat.messages, (key, value) => (key === "data" && typeof value === "string" ? "" : value)).length >
     100_000;
 

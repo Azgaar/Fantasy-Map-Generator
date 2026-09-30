@@ -1,18 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { LOCAL_URL_STORAGE, PROVIDERS, providerOf, registerModels } from "./providers";
-import { cachedModels, cacheModels, filterChatModels, listModels, modelChoices } from "./providers-models";
-
-function memoryStorage(): Storage {
-  const data = new Map<string, string>();
-  return {
-    getItem: (key: string) => data.get(key) ?? null,
-    setItem: (key: string, value: string) => void data.set(key, value),
-    removeItem: (key: string) => void data.delete(key),
-    clear: () => data.clear(),
-    key: () => null,
-    length: 0
-  } as unknown as Storage;
-}
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { filterChatModels, listModels } from "./providers-models";
 
 const globals = globalThis as Record<string, unknown>;
 
@@ -22,10 +9,6 @@ function stubFetch(ids: string[]): ReturnType<typeof vi.fn> {
   globals.fetch = fetchStub;
   return fetchStub;
 }
-
-beforeEach(() => {
-  globals.localStorage = memoryStorage();
-});
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -83,10 +66,9 @@ describe("listModels", () => {
     expect(models).toEqual(["claude-sonnet-5", "claude-haiku-4-5"]);
   });
 
-  it("asks the stored local server without an auth header", async () => {
-    localStorage.setItem(LOCAL_URL_STORAGE, "http://localhost:8080/v1/");
+  it("asks the given local server without an auth header", async () => {
     const fetchStub = stubFetch(["llama3.2"]);
-    const models = await listModels("local", "");
+    const models = await listModels("local", "", "http://localhost:8080/v1/");
 
     const [url, options] = fetchStub.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("http://localhost:8080/v1/models");
@@ -94,12 +76,10 @@ describe("listModels", () => {
     expect(models).toEqual(["llama3.2"]);
   });
 
-  it("discovers a draft local endpoint without changing the saved connection", async () => {
-    localStorage.setItem(LOCAL_URL_STORAGE, "http://localhost:8080/v1");
+  it("defaults the local server to Ollama's endpoint", async () => {
     const fetchStub = stubFetch(["llama3.2"]);
-    await listModels("local", "", "http://localhost:9000/v1/");
-    expect(fetchStub.mock.calls[0][0]).toBe("http://localhost:9000/v1/models");
-    expect(localStorage.getItem(LOCAL_URL_STORAGE)).toBe("http://localhost:8080/v1");
+    await listModels("local", "");
+    expect(fetchStub.mock.calls[0][0]).toBe("http://localhost:11434/v1/models");
   });
 
   it("reads Qwen's paginated model catalog", async () => {
@@ -119,72 +99,5 @@ describe("listModels", () => {
     expect(url).toContain("/api/v1/models?providers=qwen&features=function-calling");
     expect(fetchStub.mock.calls[1][0]).toContain("page_no=2");
     expect((options.headers as Record<string, string>).Authorization).toBe("Bearer sk-q");
-  });
-
-  it("caches what it fetched", async () => {
-    stubFetch(["deepseek-chat", "deepseek-reasoner"]);
-    await listModels("deepseek", "sk-d");
-    expect(await cachedModels("deepseek", "sk-d")).toEqual(["deepseek-chat", "deepseek-reasoner"]);
-  });
-});
-
-describe("model cache", () => {
-  it("only returns models discovered with the requested key", async () => {
-    await cacheModels("openai", ["gpt-6-luna"], "key-one");
-    expect(await cachedModels("openai", "key-one")).toEqual(["gpt-6-luna"]);
-    expect(await cachedModels("openai", "key-two")).toEqual([]);
-    expect(localStorage.getItem("fmg-ai-models-openai")).not.toContain("key-one");
-  });
-
-  it("only returns local models for the same endpoint", async () => {
-    await cacheModels("local", ["llama3.2"], "", "http://localhost:8080/v1/");
-    expect(await cachedModels("local", "", "http://localhost:8080/v1")).toEqual(["llama3.2"]);
-    expect(await cachedModels("local", "", "http://localhost:9000/v1")).toEqual([]);
-  });
-
-  it("ignores legacy caches without a credential identity", async () => {
-    localStorage.setItem("fmg-ai-models-openai", JSON.stringify({ time: Date.now(), models: ["gpt-6-luna"] }));
-    expect(await cachedModels("openai", "key-one")).toEqual([]);
-  });
-
-  it("round-trips models through storage", async () => {
-    await cacheModels("qwen", ["qwen-flash", "qwen-plus"]);
-    expect(await cachedModels("qwen")).toEqual(["qwen-flash", "qwen-plus"]);
-  });
-
-  it("expires entries older than a day", async () => {
-    vi.spyOn(Date, "now").mockReturnValue(1_000_000);
-    await cacheModels("qwen", ["qwen-flash"]);
-    vi.spyOn(Date, "now").mockReturnValue(1_000_000 + 25 * 60 * 60 * 1000);
-    expect(await cachedModels("qwen")).toEqual([]);
-  });
-});
-
-describe("modelChoices", () => {
-  it("uses only the fallback before discovery and only returned models afterward", () => {
-    const qwen = PROVIDERS.find(provider => provider.id === "qwen")!;
-    expect(modelChoices(qwen, [])).toEqual(["qwen3.8-flash"]);
-    expect(modelChoices(qwen, ["qwen3.7-flash", "qwen3.9-flash", "qwen3.8-max"])).toEqual([
-      "qwen3.9-flash",
-      "qwen3.7-flash",
-      "qwen3.8-max"
-    ]);
-  });
-
-  it("picks the latest family version and honors provider latest aliases", () => {
-    const anthropic = PROVIDERS.find(provider => provider.id === "anthropic")!;
-    const mistral = PROVIDERS.find(provider => provider.id === "mistral")!;
-    expect(modelChoices(anthropic, ["claude-opus-5-5", "claude-sonnet-5", "claude-sonnet-5-5"])[0]).toBe(
-      "claude-sonnet-5-5"
-    );
-    expect(modelChoices(mistral, ["mistral-small-2603", "mistral-small-latest"])[0]).toBe("mistral-small-latest");
-  });
-});
-
-describe("registerModels", () => {
-  it("lets providerOf resolve discovered models that are not hardcoded", () => {
-    expect(() => providerOf("mistral-nemo")).toThrow(/unknown model/i);
-    registerModels("mistral", ["mistral-nemo"]);
-    expect(providerOf("mistral-nemo").id).toBe("mistral");
   });
 });

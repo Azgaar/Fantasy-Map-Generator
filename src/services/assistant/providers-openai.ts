@@ -72,7 +72,6 @@ export function toChatTools(tools: ToolDefinition[]): ChatMessage[] {
 export function fromChatResponse(json: {
   choices?: {
     message?: { content?: string | null; tool_calls?: { id: string; function: { name: string; arguments: string } }[] };
-    finish_reason?: string;
   }[];
   usage?: {
     prompt_tokens?: number;
@@ -94,12 +93,10 @@ export function fromChatResponse(json: {
     });
   }
 
-  const finishReason = json.choices?.[0]?.finish_reason ?? "stop";
   const cached = json.usage?.prompt_tokens_details?.cached_tokens ?? json.usage?.prompt_cache_hit_tokens ?? 0;
 
   return {
     content,
-    stopReason: finishReason === "tool_calls" ? "tool_use" : finishReason === "stop" ? "end_turn" : finishReason,
     usage: { input: (json.usage?.prompt_tokens ?? 0) - cached, output: json.usage?.completion_tokens ?? 0, cached }
   };
 }

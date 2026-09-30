@@ -1,5 +1,3 @@
-import { Icons } from "@/components/icons";
-import { MapEntities } from "@/components/map-entities";
 import { Controllers } from "@/controllers";
 import type { Answerer } from "@/services/assistant/answerer";
 import { createAzgaarServerAnswerer } from "@/services/assistant/azgaar-server/answerer";
@@ -15,7 +13,6 @@ import {
 import { getToken } from "@/services/assistant/azgaar-server/auth";
 import {
   append,
-  type ChangeRow,
   type Chat,
   canContinue,
   create,
@@ -23,7 +20,6 @@ import {
   isLong,
   list,
   load,
-  type Proposal,
   remove,
   select,
   type TranscriptItem,
@@ -32,43 +28,34 @@ import {
 import * as Connection from "@/services/assistant/connection";
 import { createProviderAnswerer } from "@/services/assistant/provider-answerer";
 import { DEFAULT_PROVIDER, PROVIDERS, type ProviderSpec } from "@/services/assistant/providers";
-import { cachedModels, listModels, modelChoices } from "@/services/assistant/providers-models";
+import { listModels } from "@/services/assistant/providers-models";
 import { resolveTier, type Tier } from "@/services/assistant/tier";
 import { renderMarkdown } from "@/utils/markdown";
 import { capitalize, escapeHtml } from "@/utils/stringUtils";
+import { si } from "@/utils/unitUtils";
 import { ensureEl } from "../utils";
 import { AssistantMap } from "./assistant-map";
+import { proposalHtml } from "./assistant-proposal-card";
 import { Proposals } from "./assistant-proposals";
 import { AssistantWidgets, type WidgetContext } from "./assistant-widgets";
 
 type View = "chat" | "chats" | "key";
 type AnswerItem = Extract<TranscriptItem, { kind: "answer" }>;
-type Notice = { text: string; retryAt?: number; item?: TranscriptItem };
+type Notice = { text: string; retryAt?: number; item?: TranscriptItem; retry?: () => void };
 
 const dialogId = "assistant";
 const MAX_QUESTION_LENGTH = 1000;
-const LAST_TIER = "fmg-assistant-last-tier";
-const LAST_MAP = "fmg-assistant-last-map";
 const WIKI = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki";
 const DISCORD = "https://discordapp.com/invite/X7E84HU";
 const PATREON = "https://www.patreon.com/azgaar";
-const PROPOSAL_ROWS = 8;
-const PROPOSAL_STATES: Record<Proposal["state"], string> = {
-  proposed: "Proposed",
-  applied: "Applied",
-  undone: "Undone",
-  discarded: "Discarded"
-};
-
 let chat: Chat | undefined;
 let view: View = "chat";
 let busy = false;
 let abort: AbortController | null = null;
 let limits: Limits | null = null;
 let notice: Notice | null = null;
-let loadFailed = false;
-let failed: { chat: Chat; question: string; from: number } | null = null; // the last question that errored
 let initialized = false;
+let openMap = 0; // the map id last seen: reloading the same map keeps the selected chat
 let noteLabel: string | null = null;
 let answerStatus = "Thinking";
 let countdownTimer: ReturnType<typeof setInterval> | null = null;
@@ -298,9 +285,7 @@ const STYLES = /* html */ `
   </style>`;
 
 function renderDialog(): void {
-  const providers = PROVIDERS.map(
-    provider => `<option value="${provider.id}">${provider.id === "local" ? "Local" : provider.label}</option>`
-  ).join("");
+  const providers = PROVIDERS.map(provider => `<option value="${provider.id}">${provider.label}</option>`).join("");
 
   const html = /* html */ `<div id="${dialogId}" class="dialog stable">
     ${STYLES}
@@ -345,7 +330,6 @@ function renderDialog(): void {
       <div id="assistantCountdown" hidden></div>
       <div id="assistantNoticeActions" class="assistantActions">
         <button type="button" id="assistantRetry" class="assistantButton" data-action="retry">Retry</button>
-        <button type="button" id="assistantResend" class="assistantButton" data-action="resend">Retry</button>
         <button type="button" id="assistantNoticeSignIn" class="assistantButton" data-action="sign-in">Sign in</button>
         <button type="button" id="assistantNoticeKey" class="assistantButton assistantPrimary" data-action="key"></button>
       </div>
@@ -390,7 +374,7 @@ function renderDialog(): void {
     event.preventDefault();
     connect();
   });
-  el("assistantProvider").addEventListener("change", () => fillProvider(true));
+  el("assistantProvider").addEventListener("change", fillProvider);
   el("assistantApiKey").addEventListener("input", scheduleDiscovery);
   el("assistantLocalUrl").addEventListener("input", scheduleDiscovery);
 }
@@ -423,8 +407,7 @@ function handleClick(event: MouseEvent): void {
   else if (action === "disconnect") disconnect();
   else if (action === "sign-in") signIn();
   else if (action === "sign-out") void leaveMember();
-  else if (action === "retry") void initialize();
-  else if (action === "resend") resend();
+  else if (action === "retry") notice?.retry?.();
   else if (action === "open-chat" && id) openChat(id);
   else if (action === "delete-chat" && id) deleteChat(id);
   else if (action === "apply" || action === "undo" || action === "redo" || action === "discard")
@@ -440,23 +423,17 @@ function handleClick(event: MouseEvent): void {
 async function initialize(): Promise<void> {
   try {
     await load();
-    loadFailed = false;
   } catch {
-    loadFailed = true;
-    notice = { text: "Chats could not be loaded." };
+    notice = { text: "Chats could not be loaded.", retry: () => void initialize() };
     render();
     return;
   }
   if (!isBuilt()) return;
   const now = tier();
-  const previousTier = localStorage.getItem(LAST_TIER);
-  const previousMap = localStorage.getItem(LAST_MAP);
-  const changed =
-    (previousTier && previousTier !== String(now)) ||
-    (previousMap !== null && Number(previousMap) !== AssistantMap.id());
-  chat = changed ? undefined : current();
-  if (!chat && now) chat = create(now, AssistantMap.id(), AssistantMap.name());
-  remember();
+  openMap = AssistantMap.id();
+  chat = current();
+  if (!chat || chat.tier !== now || chat.mapId !== AssistantMap.id())
+    chat = now ? create(now, AssistantMap.id(), AssistantMap.name()) : undefined;
   initialized = true;
   notice = null;
   render();
@@ -464,24 +441,22 @@ async function initialize(): Promise<void> {
   if (official() && now !== "key") void refreshLimits();
 }
 
-function remember(): void {
-  localStorage.setItem(LAST_TIER, String(tier()));
-  localStorage.setItem(LAST_MAP, String(AssistantMap.id()));
-}
-
-function newChat(): void {
-  if (busy || !initialized) return;
+/** A fresh chat for the tier and map open now; the previous one stays in the list */
+function startChat(): void {
   const now = tier();
   chat = now ? create(now, AssistantMap.id(), AssistantMap.name()) : undefined;
-  remember();
   clearNotice();
   AssistantWidgets.clearMarks();
-  const input = document.getElementById("assistantQuestion") as HTMLTextAreaElement | null;
-  if (input) {
+  if (isBuilt()) {
+    const input = el<HTMLTextAreaElement>("assistantQuestion");
     input.value = "";
     fitInput(input);
   }
   showView("chat");
+}
+
+function newChat(): void {
+  if (!busy && initialized) startChat();
 }
 
 function openChat(id: string): void {
@@ -602,152 +577,10 @@ function itemHtml(item: TranscriptItem, context: WidgetContext): string {
       <pre>${escapeHtml(item.code)}</pre>${output ? `<pre>${escapeHtml(output)}</pre>` : ""}
     </details>`;
   }
-  if (item.kind === "proposal") return proposalHtml(item.proposal, index);
+  if (item.kind === "proposal") return proposalHtml(item.proposal, index, AssistantMap.id());
   if (item.kind === "divider") return `<div class="assistantDivider">New memory</div>`;
   if (item.kind === "widget") return AssistantWidgets.html(item.widget, context);
   return `<div class="assistantItem assistantNoticeItem">${renderMarkdown(item.text)}</div>`;
-}
-
-/** An added or removed entity shows as one row, not as every field it had */
-function displayRows(change: ChangeRow[]): ChangeRow[] {
-  const whole = new Map<string, ChangeRow>();
-  for (const row of change) {
-    if (!row.field) whole.set(row.key, row);
-    else if (row.field === "removed" && row.after === true && !row.before)
-      whole.set(row.key, { ...row, field: "", before: true, after: undefined });
-  }
-  const shown = new Set<string>();
-  return change.flatMap(row => {
-    const replacement = whole.get(row.key);
-    if (!replacement) return [row];
-    if (shown.has(row.key)) return [];
-    shown.add(row.key);
-    return [replacement];
-  });
-}
-
-function proposalHtml(proposal: Proposal, index: number): string {
-  const { change, state } = proposal;
-  const shown = displayRows(change);
-  const groups: ChangeRow[][] = [];
-  for (const row of shown.slice(0, PROPOSAL_ROWS)) {
-    const group = groups.at(-1);
-    if (group?.[0].key === row.key) group.push(row);
-    else groups.push([row]);
-  }
-  const more = shown.length - PROPOSAL_ROWS;
-  const rows = groups
-    .map(
-      rows => /* html */ `<div class="assistantChangeEntity">
-        <div class="assistantChangeName">${escapeHtml(rows[0].entity)}${entityIcon(rows[0])}${wholeTag(rows[0])}</div>
-        ${rows.map(changeHtml).join("")}
-      </div>`
-    )
-    .join("");
-  const list = `${rows}${more > 0 ? `<div class="assistantChangeMore">… ${more} more change${more === 1 ? "" : "s"}</div>` : ""}`;
-  const entities = new Set(shown.map(row => row.key)).size;
-  const count = `${shown.length} change${shown.length === 1 ? "" : "s"}${entities > 1 ? ` · ${entities} entities` : ""}`;
-
-  const button = (action: string, label: string, enabled: boolean, primary = false) =>
-    `<button type="button" class="assistantButton${primary ? " assistantPrimary" : ""}" data-action="${action}" data-index="${index}" ${enabled ? "" : "disabled"}>${label}</button>`;
-  const mapId = AssistantMap.id();
-  const canApply = Proposals.canApply(proposal, mapId);
-  const canUndo = Proposals.canUndo(proposal, mapId);
-  const canRedo = Proposals.canRedo(proposal, mapId);
-  const actions =
-    state === "proposed"
-      ? button("discard", "Discard", true) + button("apply", canApply ? "Apply" : "Changed since", canApply, true)
-      : state === "applied"
-        ? button("undo", canUndo ? "Undo" : "Changed since", canUndo)
-        : state === "undone"
-          ? button("redo", canRedo ? "Redo" : "Changed since", canRedo)
-          : "";
-  const body =
-    state === "proposed"
-      ? `<div class="assistantProposalBody">${list}</div>`
-      : `<details class="assistantProposalBody"><summary>Show ${count}</summary>${list}</details>`;
-
-  const footer =
-    state === "proposed"
-      ? `<div class="assistantProposalFooter"><span>${count}</span><span class="assistantProposalActions">${actions}</span></div>`
-      : "";
-
-  return /* html */ `<div class="assistantItem assistantProposal ${state}">
-    <div class="assistantProposalHeader">
-      <span class="assistantProposalState">${PROPOSAL_STATES[state]}</span>
-      <span class="assistantProposalSummary">${escapeHtml(proposal.summary)}</span>
-      ${state === "proposed" ? "" : actions}
-    </div>
-    ${body}
-    ${footer}
-  </div>`;
-}
-
-const FIELD_LABELS: Record<string, string> = { fullName: "Full name", "label.text": "Label" };
-const CELL_LABELS: Record<string, string> = {
-  r: "River",
-  fl: "Water flux",
-  conf: "Confluence",
-  routes: "Route links",
-  pop: "Rural population"
-};
-
-/** The icon of an entity that has one, as the row holds it or the map does */
-function entityIcon({ key, field, before, after }: ChangeRow): string {
-  const whole = (field ? undefined : (after ?? before)) as { icon?: unknown } | undefined;
-  const ref = globalThis.pack && MapEntities.parseKey(key); // chats render before a map exists too
-  const icon = typeof whole === "object" ? whole?.icon : ref && (MapEntities.get(ref) as { icon?: unknown })?.icon;
-  return typeof icon === "string" && icon ? ` ${Icons.html(icon)}` : "";
-}
-
-/** An added or removed entity is tagged on its name line: the change itself, true in every card state */
-function wholeTag({ field, before }: ChangeRow): string {
-  if (field) return "";
-  const added = before === undefined;
-  return `<span class="assistantChangeTag ${added ? "add" : "remove"}">${added ? "Add" : "Remove"}</span>`;
-}
-
-// Notes passed the notes subset check in Notes.write, so the preview renders them as HTML
-function changeHtml({ key, field, before, after }: ChangeRow): string {
-  if (!field) {
-    const note = before === undefined ? (after as { note?: unknown } | undefined)?.note : undefined;
-    return typeof note === "string" && note ? `<div class="assistantNotePreview">${note}</div>` : "";
-  }
-  if (key === "cells") {
-    const count = Object.keys(after as object).length;
-    return /* html */ `<div class="assistantChangeField">
-      <span>${CELL_LABELS[field] ?? capitalize(field)}</span>
-      <span>${formatNumber(count)} cell${count === 1 ? "" : "s"}</span>
-    </div>`;
-  }
-  const label =
-    FIELD_LABELS[field] ??
-    capitalize(
-      field
-        .replace(/\./g, " ")
-        .replace(/([a-z])([A-Z])/g, "$1 $2")
-        .toLowerCase()
-    );
-  if (field === "note") {
-    const size = (value: unknown) =>
-      typeof value === "string" && value ? `${formatNumber(value.length)} characters` : "empty";
-    const preview = typeof after === "string" && after ? `<div class="assistantNotePreview">${after}</div>` : "";
-    return /* html */ `<div class="assistantChangeField">
-      <span>${label}</span>
-      <span><del>${size(before)}</del><i>→</i><ins>${size(after)}</ins></span>
-      ${preview}
-    </div>`;
-  }
-  const value = (value: unknown) => {
-    if (value === undefined || value === "") return `<em>none</em>`;
-    if (Array.isArray(value)) return `${formatNumber(value.length)} item${value.length === 1 ? "" : "s"}`;
-    const shown = typeof value === "string" ? value : JSON.stringify(value);
-    return escapeHtml(shown.length > 80 ? `${shown.slice(0, 80)}…` : shown);
-  };
-  return /* html */ `<div class="assistantChangeField">
-    <span>${label}</span>
-    <span><del>${value(before)}</del><i>→</i><ins>${value(after)}</ins></span>
-  </div>`;
 }
 
 function renderChats(): void {
@@ -761,8 +594,8 @@ function chatRowHtml(entry: Chat): string {
   const tokens = entry.usage.input + entry.usage.output + entry.usage.cached;
   const meta = [
     escapeHtml(entry.mapName) + (entry.mapId === AssistantMap.id() ? "" : " (other map)"),
-    entry.answerer === "provider" ? "🔑" : "",
-    tokens ? `${formatNumber(tokens)} tokens` : ""
+    entry.tier === "key" ? "🔑" : "",
+    tokens ? `${si(tokens)} tokens` : ""
   ]
     .filter(Boolean)
     .join(" · ");
@@ -779,13 +612,12 @@ function chatRowHtml(entry: Chat): string {
 function renderFooter(): void {
   const now = tier();
   const connection = Connection.get();
-  const local = connection.provider === "local";
-  const tokens = chat?.answerer === "provider" ? chat.usage.input + chat.usage.output + chat.usage.cached : 0;
+  const tokens = chat?.tier === "key" ? chat.usage.input + chat.usage.output + chat.usage.cached : 0;
   el("assistantTier").hidden = now !== "guest" && now !== "member";
   el("assistantTier").textContent = now === "member" ? "Member" : "Guest";
   el("assistantStatus").textContent =
     now === "key"
-      ? `${local ? "Local" : "🔑"} ${local ? connection.localModel : connection.model} · ${formatNumber(tokens)} tokens`
+      ? `${connection.provider === "local" ? "Local" : "🔑"} ${connection.model} · ${si(tokens)} tokens`
       : now && limits
         ? limitsLabel(limits)
         : "";
@@ -806,12 +638,11 @@ function renderNotice(): void {
   el("assistantCountdown").textContent = notice?.retryAt
     ? `Retrying in ${Math.max(0, Math.ceil((notice.retryAt - Date.now()) / 1000))}s`
     : "";
-  el("assistantRetry").hidden = !loadFailed;
-  el("assistantResend").hidden = !live || !failed || failed.chat !== chat;
+  el("assistantRetry").hidden = !notice?.retry;
   el("assistantNoticeSignIn").hidden = !live || now !== "guest";
   el("assistantNoticeKey").hidden = !live;
   el("assistantNoticeKey").textContent = now === "key" ? "Key" : "🔑 Connect your AI key";
-  el("assistantNoticeActions").hidden = !loadFailed && !live;
+  el("assistantNoticeActions").hidden = !notice?.retry && !live;
   el("assistantLong").hidden = !long;
   for (const button of el("assistantNotice").querySelectorAll("button")) button.disabled = busy;
 }
@@ -861,7 +692,7 @@ async function refreshLimits(): Promise<void> {
     const expired = error instanceof AzgaarServerError && error.code === "unauthorized";
     limits = expired ? await getLimits().catch(() => null) : null;
   }
-  if (initialized && !busy && localStorage.getItem(LAST_TIER) !== String(tier())) newChat();
+  if (initialized && (chat?.tier ?? null) !== tier()) newChat();
   if (isBuilt()) renderFooter();
 }
 
@@ -877,7 +708,7 @@ function decide(action: "apply" | "undo" | "redo" | "discard", index: number): v
   if (!owner || item?.kind !== "proposal") return;
   try {
     if (action === "discard") Proposals.discard(item.proposal);
-    else if (!Proposals[action](item.proposal, AssistantMap.id()))
+    else if (!Proposals.run(action, item.proposal, AssistantMap.id()))
       showNotice({ text: `The map changed since; ${capitalize(action)} is unavailable.` });
     touch(owner);
   } catch (error) {
@@ -960,7 +791,7 @@ function openKeySheet(): void {
   el<HTMLInputElement>("assistantLocalUrl").value = connection.localUrl;
   el("assistantDisconnect").hidden = !Connection.isConnected();
   showView("key");
-  fillProvider(false);
+  fillProvider();
 }
 
 function cancelDiscovery(): void {
@@ -974,25 +805,22 @@ function selectedProvider(): ProviderSpec {
   return PROVIDERS.find(provider => provider.id === id) ?? DEFAULT_PROVIDER;
 }
 
-function fillProvider(changed: boolean): void {
-  const connection = Connection.get();
+function fillProvider(): void {
   const provider = selectedProvider();
   const local = provider.id === "local";
-  const saved = !changed && provider.id === connection.provider;
-  const model = saved ? connection.model : provider.fallbackModel;
-  const key = saved ? connection.key : localStorage.getItem(`fmg-ai-kl-${provider.id}`) || "";
-  el<HTMLInputElement>("assistantModel").value = local ? connection.localModel : model;
-  el<HTMLInputElement>("assistantApiKey").value = local ? "" : key;
+  const draft = Connection.get(provider.id);
+  el<HTMLInputElement>("assistantModel").value = draft.model;
+  el<HTMLInputElement>("assistantApiKey").value = draft.key;
   el("assistantModelLabel").textContent = local ? "Model name" : "Model";
   el<HTMLAnchorElement>("assistantKeyLink").href = provider.keyLink;
   for (const node of el("assistantKey").querySelectorAll<HTMLElement>("[data-remote]")) node.hidden = local;
   for (const node of el("assistantKey").querySelectorAll<HTMLElement>("[data-local]")) node.hidden = !local;
-  setModels(modelChoices(provider, []));
+  setModels(provider.fallbackModel ? [provider.fallbackModel] : []);
   void discover();
 }
 
 function setModels(models: string[]): void {
-  el("assistantModels").replaceChildren(...models.filter(model => model !== "local").map(model => new Option(model)));
+  el("assistantModels").replaceChildren(...models.map(model => new Option(model)));
 }
 
 function scheduleDiscovery(): void {
@@ -1013,9 +841,6 @@ async function discover(): Promise<void> {
   if (provider.id !== "local" && !key) return setModels([]);
   const stale = () => request !== discoveryId || !isBuilt() || view !== "key";
   try {
-    const cached = await cachedModels(provider.id, key, url);
-    if (stale()) return;
-    setModels(modelChoices(provider, cached));
     const found = await listModels(provider.id, key, url);
     if (!stale()) setModels(found);
   } catch (failure) {
@@ -1032,14 +857,12 @@ function connect(): void {
     el("assistantDiscoveryError").textContent = local ? "Enter a model name." : "Enter a model and API key.";
     return;
   }
-  const connection = Connection.get();
   const wasConnected = Connection.isConnected();
   Connection.save({
     provider,
-    model: local ? "local" : model,
-    localModel: local ? model : connection.localModel,
-    localUrl: el<HTMLInputElement>("assistantLocalUrl").value.trim() || connection.localUrl,
-    key
+    model,
+    key: local ? "" : key,
+    localUrl: el<HTMLInputElement>("assistantLocalUrl").value.trim() || Connection.get().localUrl
   });
   if (wasConnected) showView("chat");
   else newChat();
@@ -1059,7 +882,6 @@ async function send(): Promise<void> {
   input.value = "";
   fitInput(input);
   clearNotice();
-  failed = null;
   busy = true;
   answerStatus = "Thinking";
   const request = new AbortController();
@@ -1078,7 +900,7 @@ async function send(): Promise<void> {
     if (view === "chat") renderTranscript();
   };
   const answerer: Answerer =
-    active.answerer === "provider"
+    active.tier === "key"
       ? createProviderAnswerer(AssistantMap.tools(active), () => AssistantMap.context(active))
       : createAzgaarServerAnswerer();
   render();
@@ -1091,8 +913,7 @@ async function send(): Promise<void> {
     if (!request.signal.aborted) {
       const item: TranscriptItem = { kind: "notice", text: error instanceof Error ? error.message : String(error) };
       append(active, item);
-      failed = { chat: active, question, from };
-      if (chat === active) showNotice({ text: item.text, item });
+      if (chat === active) showNotice({ text: item.text, item, retry: () => resend(active, question, from) });
     }
   } finally {
     if (notice?.retryAt) clearNotice();
@@ -1108,13 +929,12 @@ async function send(): Promise<void> {
 }
 
 /** Ask the failed question again; a failure before any step leaves nothing of it behind */
-function resend(): void {
-  const retry = failed;
-  if (!retry || busy || chat !== retry.chat) return;
-  const tail = retry.chat.items.slice(retry.from);
-  if (tail.every(item => item.kind === "question" || item.kind === "notice")) retry.chat.items.splice(retry.from);
-  else if (tail.at(-1)?.kind === "notice") retry.chat.items.pop();
-  el<HTMLTextAreaElement>("assistantQuestion").value = retry.question;
+function resend(owner: Chat, question: string, from: number): void {
+  if (busy || chat !== owner) return;
+  const tail = owner.items.slice(from);
+  if (tail.every(item => item.kind === "question" || item.kind === "notice")) owner.items.splice(from);
+  else if (tail.at(-1)?.kind === "notice") owner.items.pop();
+  el<HTMLTextAreaElement>("assistantQuestion").value = question;
   void send();
 }
 
@@ -1132,25 +952,12 @@ function timeAgo(time: number): string {
   return days === 1 ? "yesterday" : days < 30 ? `${days} days ago` : new Date(time).toLocaleDateString();
 }
 
-function formatNumber(value: number): string {
-  return value < 1000 ? String(value) : `${(value / 1000).toFixed(1)}k`;
-}
-
 window.addEventListener("map:generated", () => {
-  if (!initialized || localStorage.getItem(LAST_MAP) === String(AssistantMap.id())) return;
+  if (!initialized || openMap === AssistantMap.id()) return;
+  openMap = AssistantMap.id();
   stop();
-  const now = tier();
-  chat = now ? create(now, AssistantMap.id(), AssistantMap.name()) : undefined;
-  remember();
-  clearNotice();
-  AssistantWidgets.clearMarks();
-  view = "chat";
-  if (!isBuilt()) return;
-  const input = el<HTMLTextAreaElement>("assistantQuestion");
-  input.value = "";
-  fitInput(input);
-  render();
-  void refreshContextChip();
+  startChat();
+  if (isBuilt()) void refreshContextChip();
 });
 
 window.addEventListener("notes:context-changed", () => {

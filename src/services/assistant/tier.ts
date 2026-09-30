@@ -6,5 +6,6 @@ export function resolveTier(serverAvailable: boolean, signedIn: boolean, connect
   return signedIn ? "member" : "guest";
 }
 
+/** Who answers a tier: Guest and Member share the Azgaar server */
 export const answererFor = (tier: Tier): "provider" | "azgaar-server" | null =>
   tier === "key" ? "provider" : tier ? "azgaar-server" : null;

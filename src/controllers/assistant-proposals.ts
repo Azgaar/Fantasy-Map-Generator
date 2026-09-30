@@ -3,11 +3,13 @@ import { Layers } from "@/components/layers";
 import { type EntityType, MapEntities } from "@/components/map-entities";
 import { Controllers } from "@/controllers";
 import type { ChangeRow, Proposal } from "@/services/assistant/chats";
-import { OPERATIONS } from "./assistant-operations";
+import { OPERATIONS, runOperation } from "./assistant-operations";
 
 // Preview → Apply → Undo for batches of registered operations. See docs/prd/assistant.md
 
 type Batch = Proposal["operations"];
+type Side = "before" | "after";
+export type Action = "apply" | "undo" | "redo";
 type Item = { i: number } & Record<string, unknown>;
 type Cells = Record<number, unknown>;
 
@@ -74,7 +76,7 @@ function parse(operations: unknown): Batch | string {
   const batch: Batch = [];
   for (const item of operations) {
     const { op, args = [] } = (item ?? {}) as { op?: unknown; args?: unknown };
-    if (typeof op !== "string" || !OPERATIONS[op])
+    if (typeof op !== "string" || !Object.hasOwn(OPERATIONS, op))
       return `Unknown operation ${JSON.stringify(op)}. Registered operations: ${Object.keys(OPERATIONS).join(", ")}`;
     if (!Array.isArray(args)) return `The args of ${op} must be a list, in the order of its parameters`;
     batch.push({ op, args });
@@ -168,7 +170,7 @@ function find(key: string): { list: Item[]; indexed: boolean; i: number; item: I
   return { list, indexed: collection[2], i, item };
 }
 
-function read(row: ChangeRow, side: "before" | "after"): boolean {
+function read(row: ChangeRow, side: Side): boolean {
   const expected = row[side];
   if (row.key === CELLS) {
     const data = cellData(row.field);
@@ -184,7 +186,7 @@ function read(row: ChangeRow, side: "before" | "after"): boolean {
   return same(value, expected);
 }
 
-function write(row: ChangeRow, side: "before" | "after"): void {
+function write(row: ChangeRow, side: Side): void {
   const value = row[side];
   if (row.key === CELLS) {
     const data = cellData(row.field)!;
@@ -215,7 +217,7 @@ function write(row: ChangeRow, side: "before" | "after"): void {
 }
 
 /** Every row holds `from`, and removing an item of an indexed collection never shifts the items after it */
-function holds(change: ChangeRow[], from: "before" | "after"): boolean {
+function holds(change: ChangeRow[], from: Side): boolean {
   const to = from === "before" ? "after" : "before";
   const removed = new Set(change.filter(row => !row.field && row[to] === undefined).map(row => row.key));
   return change.every(row => {
@@ -230,7 +232,7 @@ function holds(change: ChangeRow[], from: "before" | "after"): boolean {
 }
 
 /** Rows go forward in order and back in reverse, so added items leave in the order they came */
-function put(change: ChangeRow[], side: "before" | "after"): void {
+function put(change: ChangeRow[], side: Side): void {
   const rows = side === "after" ? change : [...change].reverse();
   for (const row of rows) write(row, side);
 }
@@ -257,7 +259,7 @@ function propose(summary: string, operations: unknown, number: number, mapId: nu
   let failure: unknown = null;
   const results: unknown[] = [];
   try {
-    for (const { op, args } of batch) results.push(OPERATIONS[op].run(...(resolve(args, results) as unknown[])));
+    for (const { op, args } of batch) results.push(runOperation(op, resolve(args, results) as unknown[]));
   } catch (error) {
     failure = error;
   }
@@ -276,38 +278,23 @@ function propose(summary: string, operations: unknown, number: number, mapId: nu
   return { number, mapId, summary, operations: batch, change, state: "proposed" };
 }
 
-/** Apply only while every "before" value still holds */
-const canApply = (proposal: Proposal, mapId: number) =>
-  proposal.state === "proposed" && proposal.mapId === mapId && holds(proposal.change, "before");
+/** Each action needs one side of the change to still hold and writes the other */
+const ACTIONS: Record<Action, { from: Proposal["state"]; to: Proposal["state"]; write: Side }> = {
+  apply: { from: "proposed", to: "applied", write: "after" },
+  undo: { from: "applied", to: "undone", write: "before" },
+  redo: { from: "undone", to: "applied", write: "after" }
+};
 
-/** Undo only while every "after" value still holds */
-const canUndo = (proposal: Proposal, mapId: number) =>
-  proposal.state === "applied" && proposal.mapId === mapId && holds(proposal.change, "after");
-
-function apply(proposal: Proposal, mapId: number): boolean {
-  if (!canApply(proposal, mapId)) return false;
-  put(proposal.change, "after");
-  proposal.state = "applied";
-  refresh(proposal);
-  return true;
+function can(action: Action, proposal: Proposal, mapId: number): boolean {
+  const { from, write } = ACTIONS[action];
+  const expected = write === "after" ? "before" : "after";
+  return proposal.state === from && proposal.mapId === mapId && holds(proposal.change, expected);
 }
 
-function undo(proposal: Proposal, mapId: number): boolean {
-  if (!canUndo(proposal, mapId)) return false;
-  put(proposal.change, "before");
-  proposal.state = "undone";
-  refresh(proposal);
-  return true;
-}
-
-/** Redo an undone proposal while every "before" value still holds */
-const canRedo = (proposal: Proposal, mapId: number) =>
-  proposal.state === "undone" && proposal.mapId === mapId && holds(proposal.change, "before");
-
-function redo(proposal: Proposal, mapId: number): boolean {
-  if (!canRedo(proposal, mapId)) return false;
-  put(proposal.change, "after");
-  proposal.state = "applied";
+function run(action: Action, proposal: Proposal, mapId: number): boolean {
+  if (!can(action, proposal, mapId)) return false;
+  put(proposal.change, ACTIONS[action].write);
+  proposal.state = ACTIONS[action].to;
   refresh(proposal);
   return true;
 }
@@ -317,7 +304,7 @@ function discard(proposal: Proposal): void {
 }
 
 function refresh(proposal: Proposal): void {
-  Layers.draw(...new Set(proposal.operations.flatMap(({ op }) => OPERATIONS[op]?.redraw ?? [])));
+  Layers.draw(...new Set(proposal.operations.flatMap(({ op }) => OPERATIONS[op] ?? [])));
   refreshEditors();
   for (const key of new Set(proposal.change.map(row => row.key))) refreshNameInputs(key);
   if (document.getElementById("notesEditor")) void Controllers.NotesEditor.refresh();
@@ -347,4 +334,4 @@ function refreshNameInputs(key: string): void {
   }
 }
 
-export const Proposals = { propose, canApply, canUndo, canRedo, apply, undo, redo, discard };
+export const Proposals = { propose, can, run, discard };

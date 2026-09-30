@@ -14,7 +14,7 @@ beforeEach(() => {
   });
 });
 
-it("keeps chats from different maps and answerers, with no cap", async () => {
+it("keeps chats from different maps and tiers, with no cap", async () => {
   const chats = await import("./chats");
   await chats.load();
   const first = chats.create("guest", 1, "First map");
@@ -40,31 +40,6 @@ it("recognizes provider history beyond the long-chat threshold", async () => {
   expect(chats.isLong(chat)).toBe(false); // an image is not counted
   chat.messages.push({ role: "user", content: [{ type: "text", text: "x".repeat(100_000) }] });
   expect(chats.isLong(chat)).toBe(true);
-});
-
-it("migrates earlier map chats without offering unsafe Undo", async () => {
-  localStorage.setItem(
-    "fmg-ai-chat-conversations",
-    JSON.stringify([
-      {
-        id: "old",
-        title: "Old chat",
-        mapId: 7,
-        updated: 1,
-        entries: [
-          { kind: "message", role: "user", text: "Hello" },
-          { kind: "edit", name: "City" }
-        ],
-        messages: [],
-        usage: { input: 1, output: 2, cached: 0 }
-      }
-    ])
-  );
-  const chats = await import("./chats");
-  await chats.load();
-  expect(chats.current()?.items.map(item => item.kind)).toEqual(["question", "notice"]);
-  expect(chats.current()?.mapId).toBe(7);
-  expect(localStorage.getItem("fmg-ai-chat-conversations")).toBeNull();
 });
 
 it("retries a failed load without overwriting the saved chats", async () => {

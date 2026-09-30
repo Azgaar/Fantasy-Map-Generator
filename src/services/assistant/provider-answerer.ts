@@ -1,42 +1,52 @@
-import type { Answerer, MapTool } from "./answerer";
+import type { Answerer, Tool, ToolOutcome } from "./answerer";
 import type { Chat, TranscriptItem } from "./chats";
 import { get } from "./connection";
 import { buildSystemPrompt } from "./context";
 import { readDocs } from "./docs";
 import { searchHelp } from "./knowledge";
-import { complete, type Message, type ToolDefinition, type ToolResultBlock } from "./providers";
+import { complete, type Message, type ToolResultBlock } from "./providers";
 
-const READ_HELP: ToolDefinition = {
-  name: "read_help",
-  description:
-    "Search the Knowledge Base for how to use the generator. Returns the best-matching sections and other matching headings; pass a heading to read that section.",
-  input_schema: { type: "object", properties: { query: { type: "string" } }, required: ["query"] }
-};
-const READ_DOCS: ToolDefinition = {
-  name: "read_docs",
-  description:
-    "Read reference docs by topic: data-model sections, Configuration, Globals, Registries, PackedGraph, Operations, Commands.",
-  input_schema: {
-    type: "object",
-    properties: { topics: { type: "array", items: { type: "string" } } },
-    required: ["topics"]
+const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
+const strings = (value: unknown): string[] =>
+  Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+
+const KNOWLEDGE: Tool[] = [
+  {
+    status: "Reading help",
+    definition: {
+      name: "read_help",
+      description:
+        "Search the Knowledge Base for how to use the generator. Returns the best-matching sections and other matching headings; pass a heading to read that section.",
+      input_schema: { type: "object", properties: { query: { type: "string" } }, required: ["query"] }
+    },
+    handle: async input => ({ content: await searchHelp(String(input.query ?? "")) })
+  },
+  {
+    status: "Reading docs",
+    definition: {
+      name: "read_docs",
+      description:
+        "Read reference docs by topic: data-model sections, Configuration, Globals, Registries, PackedGraph, Operations, Commands.",
+      input_schema: {
+        type: "object",
+        properties: { topics: { type: "array", items: { type: "string" } } },
+        required: ["topics"]
+      }
+    },
+    handle: async input => ({ content: await readDocs(strings(input.topics)) })
   }
-};
-const STATUS: Record<string, string> = { read_help: "Reading help", read_docs: "Reading docs" };
+];
 const MAX_STEPS = 30;
 const KEPT_RESULTS = 4;
 const TRIMMED = "[Earlier tool result shortened]";
 const NO_VISION = "[The image is not available: this model cannot see images]";
 
-export function createProviderAnswerer(tools: MapTool[], context: () => Promise<string>): Answerer {
-  const definitions = [READ_HELP, READ_DOCS, ...tools.map(tool => tool.definition)];
+export function createProviderAnswerer(mapTools: Tool[], context: () => Promise<string>): Answerer {
+  const tools = [...KNOWLEDGE, ...mapTools];
+  const definitions = tools.map(tool => tool.definition);
   const byName = new Map(tools.map(tool => [tool.definition.name, tool]));
 
   return {
-    status: () => {
-      const connection = get();
-      return `${connection.provider === "local" ? "Local" : "🔑"} ${connection.model}`;
-    },
     async send(
       chat: Chat,
       question: string,
@@ -52,7 +62,7 @@ export function createProviderAnswerer(tools: MapTool[], context: () => Promise<
         for (let step = 0; step < MAX_STEPS; step++) {
           signal.throwIfAborted();
           onStatus?.(step ? `Thinking · step ${step + 1}` : "Thinking");
-          const { provider, model, key } = get();
+          const { provider, model, key, localUrl } = get();
           // Earlier questions keep only their answers; this one keeps its latest tool results
           const stale = [
             ...toolResults(chat.messages.slice(0, start)),
@@ -67,6 +77,7 @@ export function createProviderAnswerer(tools: MapTool[], context: () => Promise<
             providerId: provider,
             model,
             key,
+            baseUrl: provider === "local" ? localUrl : undefined,
             system,
             messages: chat.messages,
             tools: definitions,
@@ -92,46 +103,26 @@ export function createProviderAnswerer(tools: MapTool[], context: () => Promise<
           if (!calls.length) return;
           const responses: ToolResultBlock[] = [];
           for (const call of calls) {
-            if (signal.aborted) {
-              responses.push({
-                type: "tool_result",
-                tool_use_id: call.id,
-                content: "Cancelled before this tool ran.",
-                is_error: true
-              });
-              continue;
-            }
-            onStatus?.(STATUS[call.name] ?? byName.get(call.name)?.status ?? "Working");
-            try {
-              const outcome =
-                call.name === "read_help"
-                  ? { content: await searchHelp(String(call.input.query ?? "")) }
-                  : call.name === "read_docs"
-                    ? { content: await readDocs(strings(call.input.topics)) }
-                    : await byName.get(call.name)?.handle(call.input);
-              if (outcome?.item) onItem(outcome.item);
-              responses.push({
-                type: "tool_result",
-                tool_use_id: call.id,
-                content:
-                  outcome?.content ??
-                  `Unknown tool ${call.name}. Available: ${definitions.map(item => item.name).join(", ")}`,
-                is_error: outcome?.isError ?? !outcome
-              });
-            } catch (error) {
-              responses.push({
-                type: "tool_result",
-                tool_use_id: call.id,
-                content: error instanceof Error ? error.message : String(error),
-                is_error: true
-              });
-            }
+            const tool = byName.get(call.name);
+            if (!signal.aborted) onStatus?.(tool?.status ?? "Working");
+            const outcome: ToolOutcome = signal.aborted
+              ? { content: "Cancelled before this tool ran.", isError: true }
+              : tool
+                ? await tool.handle(call.input).catch(error => ({ content: errorText(error), isError: true }))
+                : { content: `Unknown tool ${call.name}. Available: ${[...byName.keys()].join(", ")}`, isError: true };
+            if (outcome.item) onItem(outcome.item);
+            responses.push({
+              type: "tool_result",
+              tool_use_id: call.id,
+              content: outcome.content,
+              is_error: outcome.isError ?? false
+            });
           }
           chat.messages.push({ role: "user", content: responses });
           rollbackTo = chat.messages.length;
           signal.throwIfAborted();
         }
-        onItem({ kind: "notice", text: "Stopped after 30 steps. Ask again to continue." });
+        onItem({ kind: "notice", text: `Stopped after ${MAX_STEPS} steps. Ask again to continue.` });
       } catch (error) {
         chat.messages.splice(rollbackTo);
         throw error;
@@ -156,6 +147,3 @@ function dropImages(messages: Message[]): boolean {
   }
   return dropped;
 }
-
-const strings = (value: unknown): string[] =>
-  Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { SystemBlock } from "./context";
 import type { Message, ToolDefinition } from "./providers";
-import { complete, keyStorageFor, providerOf } from "./providers";
+import { complete } from "./providers";
 import { completeOpenAI, fromChatResponse, toChatMessages, toChatTools } from "./providers-openai";
 
 const system: SystemBlock[] = [
@@ -115,7 +115,7 @@ describe("completeOpenAI", () => {
     const fetchStub = vi
       .spyOn(globalThis, "fetch")
       .mockImplementation(async () => new Response(JSON.stringify({ choices: [] })));
-    const request = { key: "test", model: "gpt-6-sol", system, messages: [], tools: [] };
+    const request = { providerId: "openai" as const, key: "test", model: "gpt-6-sol", system, messages: [], tools: [] };
 
     await completeOpenAI("https://api.openai.com/v1", request);
     await completeOpenAI("https://api.mistral.ai/v1", { ...request, model: "mistral-small-latest" });
@@ -141,13 +141,12 @@ describe("toChatMessages content null", () => {
 });
 
 describe("fromChatResponse", () => {
-  it("maps a text answer with usage and end_turn stop reason", () => {
+  it("maps a text answer with usage", () => {
     const completion = fromChatResponse({
-      choices: [{ message: { content: "42 burgs" }, finish_reason: "stop" }],
+      choices: [{ message: { content: "42 burgs" } }],
       usage: { prompt_tokens: 1000, completion_tokens: 20, prompt_tokens_details: { cached_tokens: 800 } }
     });
     expect(completion.content).toEqual([{ type: "text", text: "42 burgs" }]);
-    expect(completion.stopReason).toBe("end_turn");
     expect(completion.usage).toEqual({ input: 200, output: 20, cached: 800 });
   });
 
@@ -158,14 +157,12 @@ describe("fromChatResponse", () => {
           message: {
             content: null,
             tool_calls: [{ id: "call_9", function: { name: "run", arguments: '{"code":"return 2;"}' } }]
-          },
-          finish_reason: "tool_calls"
+          }
         }
       ],
       usage: { prompt_tokens: 10, completion_tokens: 5 }
     });
     expect(completion.content).toEqual([{ type: "tool_use", id: "call_9", name: "run", input: { code: "return 2;" } }]);
-    expect(completion.stopReason).toBe("tool_use");
     expect(completion.usage).toEqual({ input: 10, output: 5, cached: 0 });
   });
 
@@ -173,8 +170,7 @@ describe("fromChatResponse", () => {
     const completion = fromChatResponse({
       choices: [
         {
-          message: { tool_calls: [{ id: "c", function: { name: "run", arguments: "{broken" } }] },
-          finish_reason: "tool_calls"
+          message: { tool_calls: [{ id: "c", function: { name: "run", arguments: "{broken" } }] }
         }
       ]
     });
@@ -183,7 +179,7 @@ describe("fromChatResponse", () => {
 
   it("reads DeepSeek's cache-hit token field", () => {
     const completion = fromChatResponse({
-      choices: [{ message: { content: "ok" }, finish_reason: "stop" }],
+      choices: [{ message: { content: "ok" } }],
       usage: { prompt_tokens: 500, completion_tokens: 1, prompt_cache_hit_tokens: 400 }
     });
     expect(completion.usage).toEqual({ input: 100, output: 1, cached: 400 });
@@ -191,19 +187,6 @@ describe("fromChatResponse", () => {
 });
 
 describe("provider routing", () => {
-  it("resolves each model to its provider and key storage slot", () => {
-    expect(providerOf("qwen3.8-flash").id).toBe("qwen");
-    expect(providerOf("mistral-small-latest").id).toBe("mistral");
-    expect(providerOf("deepseek-flash").id).toBe("deepseek");
-    expect(providerOf("gpt-6-luna").id).toBe("openai");
-    expect(providerOf("claude-sonnet-5-5").id).toBe("anthropic");
-    expect(keyStorageFor("qwen3.8-flash")).toBe("fmg-ai-kl-qwen");
-  });
-
-  it("throws a clear error for an unknown model", () => {
-    expect(() => providerOf("gpt-2")).toThrow(/unknown model/i);
-  });
-
   it("routes a manually entered model through the selected provider", async () => {
     const fetchStub = vi
       .spyOn(globalThis, "fetch")

@@ -3,7 +3,7 @@ import { beforeAll, expect, it, vi } from "vitest";
 import { Emblems } from "@/generators/emblems-generator";
 import { Lore } from "@/generators/lore";
 import { Notes } from "@/generators/notes";
-import { OPERATIONS } from "./assistant-operations";
+import { OPERATIONS, runOperation } from "./assistant-operations";
 
 beforeAll(async () => {
   await Promise.all([
@@ -35,8 +35,7 @@ it.each(Object.keys(OPERATIONS))("%s runs the public model-class method of that 
   >;
   expect(typeof owner[method]).toBe("function");
   const spy = vi.spyOn(owner as Record<string, () => void>, method).mockImplementation(() => {});
-  const args = ["a", "b", "c", "d", "e", "f"].slice(0, OPERATIONS[name].run.length);
-  OPERATIONS[name].run(...args);
-  expect(spy).toHaveBeenCalledWith(...args);
+  runOperation(name, ["a", "b"]);
+  expect(spy).toHaveBeenCalledWith("a", "b");
   spy.mockRestore();
 });

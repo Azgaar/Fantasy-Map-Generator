@@ -12,7 +12,7 @@ const newChat = (): Chat => ({
   id: "local",
   title: "Help",
   updated: 0,
-  answerer: "azgaar-server",
+  tier: "guest",
   mapId: 1,
   mapName: "Secret map",
   items: [],

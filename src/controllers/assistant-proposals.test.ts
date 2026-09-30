@@ -9,7 +9,10 @@ import { Layers } from "@/components/layers";
 import type { Proposal } from "@/services/assistant/chats";
 import { Proposals } from "./assistant-proposals";
 
-const { propose, apply, undo, discard, canApply } = Proposals;
+const { propose, discard } = Proposals;
+const apply = (proposal: Proposal, mapId: number) => Proposals.run("apply", proposal, mapId);
+const undo = (proposal: Proposal, mapId: number) => Proposals.run("undo", proposal, mapId);
+const canApply = (proposal: Proposal, mapId: number) => Proposals.can("apply", proposal, mapId);
 const MAP = 42;
 const rename = (id: number, name: string) => ({ op: "Burgs.rename", args: [id, name] });
 const proposeOk = (operations: unknown) => propose("Rename", operations, 1, MAP) as Proposal;
@@ -175,15 +178,15 @@ it("refuses Undo after an overlapping proposal was applied", () => {
 
 it("redoes an undone proposal while the map still holds what it undid", () => {
   const proposal = proposeOk([rename(1, "Saltmere")]);
-  expect(Proposals.canRedo(proposal, MAP)).toBe(false);
+  expect(Proposals.can("redo", proposal, MAP)).toBe(false);
   apply(proposal, MAP);
   undo(proposal, MAP);
-  expect(Proposals.redo(proposal, MAP)).toBe(true);
+  expect(Proposals.run("redo", proposal, MAP)).toBe(true);
   expect(proposal.state).toBe("applied");
   expect(pack.burgs[1]).toMatchObject({ name: "Saltmere" });
   undo(proposal, MAP);
   pack.burgs[1].name = "Manual";
-  expect(Proposals.redo(proposal, MAP)).toBe(false);
+  expect(Proposals.run("redo", proposal, MAP)).toBe(false);
   expect(proposal.state).toBe("undone");
 });
 
@@ -297,7 +300,7 @@ describe("entities and cells", () => {
     expect(apply(manual, MAP)).toBe(true);
     expect([...pack.cells.state]).toEqual([0, 1, 2, 2]);
     pack.cells.state[3] = 1;
-    expect(Proposals.canUndo(manual, MAP)).toBe(false);
+    expect(Proposals.can("undo", manual, MAP)).toBe(false);
     pack.cells.state[3] = 2;
     expect(undo(manual, MAP)).toBe(true);
     expect([...pack.cells.state]).toEqual([0, 1, 1, 1]);
@@ -314,7 +317,7 @@ describe("entities and cells", () => {
     };
     expect(apply(added, MAP)).toBe(true);
     pack.burgs.push({ i: 4, name: "Later" } as (typeof pack.burgs)[number]);
-    expect(Proposals.canUndo(added, MAP)).toBe(false);
+    expect(Proposals.can("undo", added, MAP)).toBe(false);
     pack.burgs.pop();
     expect(undo(added, MAP)).toBe(true);
     expect(pack.burgs).toHaveLength(3);
