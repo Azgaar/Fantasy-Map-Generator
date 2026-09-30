@@ -148,7 +148,13 @@ const OPERATIONS_SCHEMA = {
   type: "array",
   items: {
     type: "object",
-    properties: { op: { type: "string" }, args: { type: "array", items: { type: ["string", "number"] } } },
+    properties: {
+      op: { type: "string" },
+      args: {
+        type: "array",
+        items: { description: "A number, string, boolean or array, or { result: n }: what operation n returned" }
+      }
+    },
     required: ["op", "args"]
   }
 };

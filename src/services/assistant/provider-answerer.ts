@@ -14,7 +14,8 @@ const READ_HELP: ToolDefinition = {
 };
 const READ_DOCS: ToolDefinition = {
   name: "read_docs",
-  description: "Read reference docs by topic: data-model sections, Configuration, Globals, Registries, PackedGraph.",
+  description:
+    "Read reference docs by topic: data-model sections, Configuration, Globals, Registries, PackedGraph, Operations, Commands.",
   input_schema: {
     type: "object",
     properties: { topics: { type: "array", items: { type: "string" } } },

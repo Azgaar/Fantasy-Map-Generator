@@ -353,9 +353,158 @@ class ProvinceModule {
     this.living(provinceId).fullName = requireName(fullName);
   }
 
+  /** Set a province's form, such as County or Duchy; the full name is rebuilt from it */
+  setForm(provinceId: number, formName: string): void {
+    const province = this.living(provinceId);
+    province.formName = requireName(formName);
+    province.fullName = `${province.name} ${province.formName}`;
+  }
+
+  /** Make a burg inside a province its capital */
+  setCapital(provinceId: number, burgId: number): void {
+    const province = this.living(provinceId);
+    const burg = pack.burgs[burgId];
+    if (!burg || burg.removed || !burgId) throw new Error(`Burg ${burgId} does not exist`);
+    if (pack.cells.province[burg.cell] !== provinceId)
+      throw new Error(`Burg ${burgId} is not in province ${provinceId}`);
+    province.burg = burgId;
+    province.center = burg.cell;
+  }
+
+  /** Give a province, with its lands and burgs, to another state */
+  setState(provinceId: number, stateId: number): void {
+    const province = this.living(provinceId);
+    const { cells, states, burgs } = pack;
+    const [from, to] = [states[province.state], states[stateId]];
+    if (!stateId || !to || to.removed) throw new Error(`State ${stateId} does not exist`);
+    if (from === to) return;
+    if (from?.capital && cells.province[burgs[from.capital]?.cell] === provinceId)
+      throw new Error(`Province ${provinceId} holds the capital of state ${province.state}; move the capital first`);
+
+    cells.province.forEach((owner, cell) => {
+      if (owner !== provinceId) return;
+      cells.state[cell] = stateId;
+      if (cells.burg[cell]) burgs[cells.burg[cell]].state = stateId;
+    });
+    if (from?.provinces) from.provinces = from.provinces.filter(id => id !== provinceId);
+    to.provinces = [...(to.provinces ?? []), provinceId];
+    province.state = stateId;
+    States.findNeighbors();
+    States.collectStatistics();
+    States.getPoles();
+  }
+
+  /** Found a province at a map point inside a state, with the cell and its neighbors in that state. Returns its id */
+  add(x: number, y: number): number {
+    const { cells, provinces, states, burgs } = pack;
+    const center = Pack.requireCell(x, y);
+    if (cells.h[center] < 20) throw new Error("A province cannot be placed in the water");
+    const state = cells.state[center];
+    if (!state) throw new Error("A province cannot be placed in neutral lands; give them to a state first");
+    const isCenter = (cell: number) => provinces.some(p => p.i && !p.removed && p.center === cell);
+    if (isCenter(center)) throw new Error(`Cell ${center} is already a province center`);
+
+    const i = provinces.length;
+    const old = provinces[cells.province[center]];
+    const burg = cells.burg[center];
+    const culture = cells.culture[center];
+    const name = burg ? burgs[burg].name! : Names.getState(Names.getCultureShort(culture), culture);
+    const formName = old?.formName || "Province";
+    const coa = Emblems.generate(
+      burg ? burgs[burg].coa : states[state].coa,
+      burg ? 0.8 : 0.4,
+      +P(0.1),
+      Burgs.getType(center, burg ? burgs[burg].port : undefined)
+    );
+    coa.shield = Emblems.getShield(culture, state);
+    const color = getMixedColor(states[state].color!, 0.2, 0);
+    provinces.push({ i, state, center, burg, name, formName, fullName: `${name} ${formName}`, color, coa });
+    states[state].provinces = [...(states[state].provinces ?? []), i];
+
+    cells.province[center] = i;
+    for (const cell of cells.c[center])
+      if (cells.h[cell] >= 20 && cells.state[cell] === state && !isCenter(cell)) cells.province[cell] = i;
+    this.getPoles();
+    return i;
+  }
+
+  /** Turn a province with a burg into a new state that takes its lands and burgs. Returns the state id */
+  declareIndependence(provinceId: number): number {
+    const province = this.living(provinceId);
+    const { cells, burgs, states } = pack;
+    const provinceCells = cells.i.filter(cell => cells.province[cell] === provinceId);
+    if (provinceCells.some(cell => burgs[cells.burg[cell]]?.capital))
+      throw new Error(`Province ${provinceId} holds its state's capital; move the capital first`);
+    const capital = burgs[province.burg];
+    if (!province.burg || !capital || capital.removed)
+      throw new Error(`Province ${provinceId} has no capital burg to become a state capital`);
+
+    const owner = states[province.state];
+    if (owner?.provinces) owner.provinces = owner.provinces.filter(id => id !== provinceId);
+    pack.provinces[provinceId] = { i: provinceId, removed: true } as Province;
+    return States.found(province.name, province.burg, province.coa, provinceCells);
+  }
+
+  /** Remove a province; its lands stay with the state */
+  remove(provinceId: number): void {
+    const province = this.living(provinceId);
+    pack.cells.province.forEach((owner, cell) => {
+      if (owner === provinceId) pack.cells.province[cell] = 0;
+    });
+    const state = pack.states[province.state];
+    if (state?.provinces) state.provinces = state.provinces.filter(id => id !== provinceId);
+    pack.provinces[provinceId] = { i: provinceId, removed: true } as Province;
+  }
+
+  /** Merge provinces of one state into a primary one, which takes their lands and burgs */
+  merge(primaryId: number, provinceIds: number[]): void {
+    const primary = this.living(primaryId);
+    if (!Array.isArray(provinceIds) || !provinceIds.length) throw new Error("Name at least one province to merge");
+    const merged = provinceIds.filter(id => id !== primaryId).map(id => this.living(id));
+    const foreign = merged.find(province => province.state !== primary.state);
+    if (foreign) throw new Error(`Province ${foreign.i} belongs to another state; merge provinces within one state`);
+    const ids = new Set(merged.map(province => province.i));
+
+    for (const province of merged) {
+      if (!primary.burg && province.burg) primary.burg = province.burg;
+      pack.provinces[province.i] = { i: province.i, removed: true } as Province;
+    }
+    pack.cells.province.forEach((owner, cell) => {
+      if (ids.has(owner)) pack.cells.province[cell] = primaryId;
+    });
+    const state = pack.states[primary.state];
+    if (state?.provinces) state.provinces = state.provinces.filter(id => !ids.has(id));
+    this.getPoles();
+  }
+
+  /** Lock a province so regeneration keeps it, or unlock it */
+  setLocked(provinceId: number, locked: boolean): void {
+    const province = this.living(provinceId);
+    if (locked) province.lock = true;
+    else delete province.lock;
+  }
+
+  /** Give land cells of the province's state to a province; another province's center cannot move */
+  setCells(provinceId: number, cellIds: number[]): void {
+    const province = this.living(provinceId);
+    const { cells, provinces } = pack;
+    if (!Array.isArray(cellIds) || !cellIds.length) throw new Error("Name at least one cell");
+    for (const cell of cellIds) {
+      if (!Number.isInteger(cell) || cell < 0 || cell >= cells.i.length) throw new Error(`Cell ${cell} does not exist`);
+      if (cells.h[cell] < 20) throw new Error(`Cell ${cell} is water; provinces hold land only`);
+      if (cells.state[cell] !== province.state)
+        throw new Error(`Cell ${cell} is not in state ${province.state}; give it to the state first`);
+      const owner = cells.province[cell];
+      if (owner && owner !== provinceId && provinces[owner]?.center === cell)
+        throw new Error(`Cell ${cell} is the center of province ${owner}; remove that province first`);
+    }
+    for (const cell of cellIds) cells.province[cell] = provinceId;
+    this.getPoles();
+  }
+
   private living(provinceId: number): Province {
     const province = pack.provinces[provinceId];
-    if (!province || province.removed) throw new Error(`Province ${provinceId} does not exist`);
+    if (!provinceId || !province || province.removed) throw new Error(`Province ${provinceId} does not exist`);
     return province;
   }
 

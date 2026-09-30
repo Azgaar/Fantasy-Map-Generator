@@ -1,8 +1,8 @@
 import Alea from "alea";
 import { polygonArea } from "d3";
-import { requireName } from "@/utils/languageUtils";
+import { requireName, requireOneOf } from "@/utils/languageUtils";
 import { clipPoly, connectVertices, distanceSquared, isLand, isWater, P, ra, rn, TYPED_ARRAY_MAX } from "../utils";
-import type { CoastlineSettings } from "./coastline-generator";
+import { Coastline, type CoastlineSettings } from "./coastline-generator";
 
 declare global {
   var Features: FeatureModule;
@@ -410,9 +410,52 @@ class FeatureModule {
 
   /** Rename a geographical feature: an island, lake or ocean */
   rename(featureId: number, name: string): void {
+    this.living(featureId).name = requireName(name);
+  }
+
+  /** Set a feature's subtype within its type: a lake's freshwater, salt, dry…, an island's continent, island or isle, an ocean's ocean, sea or gulf. Generators read it on their next run */
+  setSubtype(featureId: number, subtype: string): void {
+    const feature = this.living(featureId);
+    if (feature.subtype === "lake_island")
+      throw new Error(`Feature ${featureId} is a lake island, set by the heightmap`);
+    const subtypes = { lake: LAKE_SUBTYPES, island: ISLAND_SUBTYPES, ocean: OCEAN_SUBTYPES }[feature.type];
+    feature.subtype = requireOneOf(
+      subtype,
+      subtypes.filter(value => value !== "lake_island"),
+      "The subtype"
+    );
+  }
+
+  /** Move a lake to another lake group, which sets how it is drawn */
+  setGroup(featureId: number, group: string): void {
+    const feature = this.living(featureId);
+    if (feature.type !== "lake") throw new Error(`Feature ${featureId} is not a lake; only lakes change groups`);
+    feature.group = requireOneOf(group, Object.keys(styles.lakes.groups), "The lake group");
+  }
+
+  /** Give a feature its own coastline settings, merged over the current ones; null makes it follow the map settings again */
+  setCoastline(featureId: number, settings: Partial<CoastlineSettings> | null): void {
+    const feature = this.living(featureId);
+    if (settings === null) {
+      delete feature.coastline;
+      return;
+    }
+    const base = feature.coastline || Coastline.settings;
+    if (typeof settings !== "object" || Array.isArray(settings))
+      throw new Error("Coastline settings must be an object");
+    for (const [key, value] of Object.entries(settings)) {
+      if (!(key in base)) throw new Error(`Unknown coastline setting ${key}; known: ${Object.keys(base).join(", ")}`);
+      const expected = typeof base[key as keyof CoastlineSettings];
+      if (typeof value !== expected || (expected === "number" && !Number.isFinite(value)))
+        throw new Error(`The coastline setting ${key} must be a ${expected}`);
+    }
+    feature.coastline = { ...base, ...settings };
+  }
+
+  private living(featureId: number): Feature {
     const feature = pack.features[featureId];
-    if (!feature) throw new Error(`Feature ${featureId} does not exist`);
-    feature.name = requireName(name);
+    if (!featureId || !feature) throw new Error(`Feature ${featureId} does not exist`);
+    return feature;
   }
 
   defineGroups() {

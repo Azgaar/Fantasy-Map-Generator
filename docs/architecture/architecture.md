@@ -387,7 +387,7 @@ A generator turns inputs into world data.
   needs to _show_ something, that is a renderer's or controller's job.
 - **Model classes own their edits.** An edit to an entity (`Burgs.rename`, `States.recolor`,
   `Notes.write`…) is a public method of the class that owns the data. It validates its arguments,
-  keeps dependent data consistent (labels, full names, codes) and never redraws. Editors and the
+  keeps dependent data consistent (labels, full names, codes, cell ownership) and never redraws. Editors and the
   Assistant call the same method, so there is one implementation of each edit.
 - **Keep the data out.** Lookup tables, recipes, and tuning constants are _data_, not
   algorithm. Fixed properties of the domain stay co-located reference data

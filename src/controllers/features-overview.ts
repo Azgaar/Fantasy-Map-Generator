@@ -373,11 +373,11 @@ function changeName(input: HTMLElement): void {
 }
 
 function changeSubtype(select: HTMLElement): void {
-  getFeature(select).subtype = (select as HTMLSelectElement).value; // no cascade: generators pick it up on the next run
+  Features.setSubtype(getFeature(select).i, (select as HTMLSelectElement).value); // no cascade: generators pick it up on the next run
 }
 
 function changeGroup(select: HTMLElement): void {
-  getFeature(select).group = (select as HTMLSelectElement).value;
+  Features.setGroup(getFeature(select).i, (select as HTMLSelectElement).value);
   Layers.draw("lakes");
 }
 

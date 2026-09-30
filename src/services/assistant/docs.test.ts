@@ -12,6 +12,12 @@ it("lists the commands a command link may name", async () => {
   expect(await readDocs(["commands"])).toContain("editHeightmapButton: Edit Heightmap");
 });
 
+it("lists the registered operations with their signatures and doc lines", async () => {
+  const result = await readDocs(["Operations"]);
+  expect(result).toContain("Burgs.rename(burgId: number, name: string) // Rename a burg");
+  expect(result).toContain("Provinces.setState(provinceId: number, stateId: number)");
+});
+
 it("lists the available topics for an unknown one", async () => {
   const result = await readDocs(["pack.cells"]);
   expect(result).toContain("Unknown topics: pack.cells");

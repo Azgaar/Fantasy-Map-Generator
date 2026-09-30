@@ -8,9 +8,9 @@ import {
 } from "@/components/dialog/dialog-helpers";
 import { Icons } from "@/components/icons";
 import { stopMapPlacement } from "@/components/map-placement";
-import { clearMainTip } from "@/components/tooltips";
+import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
-import type { Marker } from "@/generators/markers-generator";
+import type { Marker, MarkerAppearance } from "@/generators/markers-generator";
 import { drawMarkers, setEditedMarker } from "@/renderers/draw-markers";
 import { ensureEl, findEl, rn } from "../utils";
 
@@ -165,9 +165,7 @@ function dragMarker(this: SVGElement, event: D3DragEvent<SVGElement, unknown, un
     this.setAttribute("x", String(rn(dx + x, 2)));
     this.setAttribute("y", String(rn(dy + y, 2)));
 
-    selectedMarker.x = rn(x + dx, 1); // the box sits at the marker point
-    selectedMarker.y = rn(y + dy, 1);
-    selectedMarker.cell = Pack.findCell(selectedMarker.x, selectedMarker.y)!;
+    Markers.move(selectedMarker.i, x + dx, y + dy); // the box sits at the marker point
     drawMarkers();
   });
 }
@@ -222,79 +220,55 @@ function changeMarkerIcon(): void {
 }
 
 function changeIconSize(this: HTMLInputElement): void {
-  const px = +this.value;
-  getSameTypeMarkers().forEach(marker => {
-    marker.px = px;
-  });
-  drawMarkers();
+  setSameTypeAppearance({ px: +this.value });
 }
 
 function changeIconShiftX(this: HTMLInputElement): void {
-  const dx = +this.value;
-  getSameTypeMarkers().forEach(marker => {
-    marker.dx = dx;
-  });
-  drawMarkers();
+  setSameTypeAppearance({ dx: +this.value });
 }
 
 function changeIconShiftY(this: HTMLInputElement): void {
-  const dy = +this.value;
-  getSameTypeMarkers().forEach(marker => {
-    marker.dy = dy;
-  });
-  drawMarkers();
+  setSameTypeAppearance({ dy: +this.value });
 }
 
 function changeMarkerSize(this: HTMLInputElement): void {
-  const size = +this.value;
-  getSameTypeMarkers().forEach(marker => {
-    marker.size = size;
-  });
-  drawMarkers();
+  setSameTypeAppearance({ size: +this.value });
 }
 
 function changeMarkerPin(this: HTMLSelectElement): void {
-  const pin = this.value;
-  getSameTypeMarkers().forEach(marker => {
-    marker.pin = pin;
-  });
-  drawMarkers();
+  setSameTypeAppearance({ pin: this.value });
 }
 
 function changePinFill(this: HTMLInputElement): void {
-  const fill = this.value;
-  getSameTypeMarkers().forEach(marker => {
-    marker.fill = fill;
-  });
-  drawMarkers();
+  setSameTypeAppearance({ fill: this.value });
 }
 
 function changePinStroke(this: HTMLInputElement): void {
-  const stroke = this.value;
-  getSameTypeMarkers().forEach(marker => {
-    marker.stroke = stroke;
-  });
-  drawMarkers();
+  setSameTypeAppearance({ stroke: this.value });
 }
 
 function changeIconFill(this: HTMLInputElement): void {
-  for (const marker of getSameTypeMarkers()) marker.iconFill = this.value;
+  setSameTypeAppearance({ iconFill: this.value });
   updateIconPaint();
-  drawMarkers();
 }
 
 function changeIconStroke(this: HTMLInputElement): void {
-  for (const marker of getSameTypeMarkers()) marker.iconStroke = this.value;
+  setSameTypeAppearance({ iconStroke: this.value });
   updateIconPaint();
-  drawMarkers();
 }
 
 function resetIconPaint(): void {
-  for (const marker of getSameTypeMarkers()) {
-    delete marker.iconFill;
-    delete marker.iconStroke;
-  }
+  setSameTypeAppearance({ iconFill: null, iconStroke: null });
   updateIconPaint();
+}
+
+/** Markers of one type share their look, as the editor shows it */
+function setSameTypeAppearance(appearance: MarkerAppearance): void {
+  try {
+    for (const marker of getSameTypeMarkers()) Markers.setAppearance(marker.i, appearance);
+  } catch (error) {
+    tip((error as Error).message, false, "error");
+  }
   drawMarkers();
 }
 
@@ -307,7 +281,7 @@ function openMarkersInRadius(): void {
 }
 
 function toggleMarkerLock(): void {
-  selectedMarker.lock = !selectedMarker.lock;
+  Markers.setLocked(selectedMarker.i, !selectedMarker.lock);
   const markerLock = ensureEl("markerLock");
   markerLock.classList.toggle("icon-lock-open");
   markerLock.classList.toggle("icon-lock");
@@ -327,7 +301,7 @@ function confirmMarkerDeletion(): void {
 }
 
 function deleteMarker(): void {
-  Markers.deleteMarker(selectedMarker.i);
+  Markers.remove(selectedMarker.i);
   drawMarkers();
   $("#markerEditor").dialog("close");
   refreshEditors();

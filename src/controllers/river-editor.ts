@@ -155,7 +155,8 @@ function updateRiverData(): void {
   ensureEl<HTMLInputElement>("riverWidthFactor").value = String(r.widthFactor);
 
   updateRiverLength(r);
-  updateRiverWidth(r);
+  Rivers.updateWidth(r);
+  showRiverWidth(r);
 }
 
 function updateRiverLength(river: River): void {
@@ -164,18 +165,7 @@ function updateRiverLength(river: River): void {
   ensureEl<HTMLInputElement>("riverLength").value = lengthUI;
 }
 
-function updateRiverWidth(river: River): void {
-  const { cells, discharge, widthFactor, sourceWidth } = river;
-  const meanderedPoints = Rivers.addMeandering(cells);
-  river.width = Rivers.getWidth(
-    Rivers.getOffset({
-      flux: discharge,
-      pointIndex: meanderedPoints.length,
-      widthFactor,
-      startingWidth: sourceWidth
-    })
-  );
-
+function showRiverWidth(river: River): void {
   const width = `${rn(river.width * options.map.units.distance.scale, 3)} ${options.map.units.distance.unit}`;
   ensureEl<HTMLInputElement>("riverWidth").value = width;
 }
@@ -274,7 +264,7 @@ function changeName(this: HTMLInputElement): void {
 }
 
 function changeType(this: HTMLInputElement): void {
-  getRiver().type = this.value;
+  if (this.value.trim()) Rivers.setType(getRiver().i, this.value);
 }
 
 function generateNameCulture(): void {
@@ -294,22 +284,27 @@ function generateNameRandom(): void {
 
 function changeParent(this: HTMLInputElement): void {
   const r = getRiver();
-  r.parent = +this.value;
-  r.basin = pack.rivers.find((river: River) => river.i === r.parent)!.basin;
+  try {
+    Rivers.setParent(r.i, +this.value);
+  } catch (error) {
+    tip((error as Error).message, false, "error");
+    this.value = String(r.parent || r.i);
+    return;
+  }
   ensureEl<HTMLInputElement>("riverBasin").value = pack.rivers.find((river: River) => river.i === r.basin)!.name;
 }
 
 function changeSourceWidth(this: HTMLInputElement): void {
   const river = getRiver();
-  river.sourceWidth = +this.value;
-  updateRiverWidth(river);
+  Rivers.setWidth(river.i, Math.max(0, +this.value || 0), river.widthFactor);
+  showRiverWidth(river);
   redrawRiver();
 }
 
 function changeWidthFactor(this: HTMLInputElement): void {
   const river = getRiver();
-  river.widthFactor = +this.value;
-  updateRiverWidth(river);
+  Rivers.setWidth(river.i, river.sourceWidth, Math.max(0, +this.value || 0));
+  showRiverWidth(river);
   redrawRiver();
 }
 

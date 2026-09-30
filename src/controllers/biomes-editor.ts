@@ -436,38 +436,10 @@ function togglePercentageMode(): void {
   }
 }
 
-export function createCustomBiome(biomes: Biome[], color: string): Biome | null {
-  const i = biomes.length;
-  if (i > 254) return null;
-
-  const biome = {
-    i,
-    name: "Custom",
-    color,
-    habitability: 50,
-    iconsDensity: 0,
-    icons: {},
-    cost: 50
-  };
-  biomes.push(biome);
-  return biome;
-}
-
-export function removeCustomBiome(biomes: Biome[], cellBiomes: ArrayLike<number>, biomeId: number): boolean {
-  const biome = biomes[biomeId];
-  if (biomeId <= 12 || !biome || biome.removed) return false;
-
-  for (let cellId = 0; cellId < cellBiomes.length; cellId++) {
-    if (cellBiomes[cellId] === biomeId) return false;
-  }
-
-  biome.removed = true;
-  return true;
-}
-
 function addCustomBiome(): void {
-  const biome = createCustomBiome(pack.biomes, getRandomColor());
-  if (!biome) {
+  try {
+    Biomes.add("Custom", getRandomColor(), 50);
+  } catch {
     tip("Maximum number of biomes reached (255), data cleansing is required", false, "error");
     return;
   }
@@ -479,7 +451,11 @@ function addCustomBiome(): void {
 function removeCustomBiomeLine(el: HTMLElement): void {
   const line = el.closest<HTMLElement>(".biomes")!;
   const biome = +line.dataset.id!;
-  if (!removeCustomBiome(pack.biomes, pack.cells.biome, biome)) return;
+  try {
+    Biomes.remove(biome);
+  } catch {
+    return;
+  }
   currentBiomeStatistics = biomesCollectStatistics();
   biomesTable.refresh();
 }

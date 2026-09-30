@@ -262,9 +262,31 @@ it("renders every transcript item type and never renders user text as HTML", asy
   expect(proposed.textContent).toContain("10 changes · 10 entities");
   expect([...proposed.querySelectorAll("button")].map(button => button.textContent)).toEqual(["Discard", "Apply"]);
   expect(applied.querySelector("summary")?.textContent).toBe("Show 1 change");
-  expect(applied.querySelector("button")?.textContent).toBe("↶ Undo");
+  expect(applied.querySelector("button")?.textContent).toBe("Undo");
   expect(log.querySelector(".assistantDivider")).not.toBeNull();
   expect(log.querySelector(".assistantNoticeItem")?.textContent).toContain("Earlier notice");
+});
+
+it("shows an added or removed entity as one row and cell changes as a count", async () => {
+  const chats = await import("@/services/assistant/chats");
+  Assistant.open();
+  await vi.waitFor(() => expect(document.getElementById("assistantTranscript")?.textContent).toContain("Hi!"));
+  const change = [
+    { key: "burg:3", entity: "Burg Vel", field: "removed", before: undefined, after: true },
+    { key: "burg:3", entity: "Burg Vel", field: "coa", before: { t1: "or" }, after: undefined },
+    { key: "zone:2", entity: "Zone Plague", field: "", before: undefined, after: { i: 2, name: "Plague" } },
+    { key: "cells", entity: "Cells", field: "state", before: { 1: 2, 5: 2 }, after: { 1: 3, 5: 3 } }
+  ];
+  const removal = { ...proposal("proposed", 0), change };
+  chats.append(chats.current()!, { kind: "proposal", proposal: removal });
+  document.getElementById("assistantOpenChats")!.click();
+  document.getElementById("assistantOpenChats")!.click();
+  const card = document.querySelector("#assistantTranscript .assistantProposal")!;
+  const rows = [...card.querySelectorAll(".assistantChangeEntity")].map(entity =>
+    entity.textContent!.replace(/\s+/g, " ").trim()
+  );
+  expect(rows).toEqual(["Burg Vel Removed", "Zone Plague Added", "Cells State 2 cells"]);
+  expect(card.textContent).toContain("3 changes · 3 entities");
 });
 
 it("renders entity links in answers and an entities widget", async () => {

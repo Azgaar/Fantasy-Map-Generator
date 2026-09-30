@@ -587,15 +587,34 @@ function itemHtml(item: TranscriptItem, context: WidgetContext): string {
   return `<div class="assistantItem assistantNoticeItem">${renderMarkdown(item.text)}</div>`;
 }
 
+/** An added or removed entity shows as one row, not as every field it had */
+function displayRows(change: ChangeRow[]): ChangeRow[] {
+  const whole = new Map<string, ChangeRow>();
+  for (const row of change) {
+    if (!row.field) whole.set(row.key, row);
+    else if (row.field === "removed" && row.after === true && !row.before)
+      whole.set(row.key, { ...row, field: "", before: true, after: undefined });
+  }
+  const shown = new Set<string>();
+  return change.flatMap(row => {
+    const replacement = whole.get(row.key);
+    if (!replacement) return [row];
+    if (shown.has(row.key)) return [];
+    shown.add(row.key);
+    return [replacement];
+  });
+}
+
 function proposalHtml(proposal: Proposal, index: number): string {
   const { change, state } = proposal;
+  const shown = displayRows(change);
   const groups: ChangeRow[][] = [];
-  for (const row of change.slice(0, PROPOSAL_ROWS)) {
+  for (const row of shown.slice(0, PROPOSAL_ROWS)) {
     const group = groups.at(-1);
     if (group?.[0].key === row.key) group.push(row);
     else groups.push([row]);
   }
-  const more = change.length - PROPOSAL_ROWS;
+  const more = shown.length - PROPOSAL_ROWS;
   const rows = groups
     .map(
       rows => /* html */ `<div class="assistantChangeEntity">
@@ -605,8 +624,8 @@ function proposalHtml(proposal: Proposal, index: number): string {
     )
     .join("");
   const list = `${rows}${more > 0 ? `<div class="assistantChangeMore">… ${more} more change${more === 1 ? "" : "s"}</div>` : ""}`;
-  const entities = new Set(change.map(row => row.key)).size;
-  const count = `${change.length} change${change.length === 1 ? "" : "s"}${entities > 1 ? ` · ${entities} entities` : ""}`;
+  const entities = new Set(shown.map(row => row.key)).size;
+  const count = `${shown.length} change${shown.length === 1 ? "" : "s"}${entities > 1 ? ` · ${entities} entities` : ""}`;
 
   const button = (action: string, label: string, enabled: boolean, primary = false) =>
     `<button type="button" class="assistantButton${primary ? " assistantPrimary" : ""}" data-action="${action}" data-index="${index}" ${enabled ? "" : "disabled"}>${label}</button>`;
@@ -641,9 +660,21 @@ function proposalHtml(proposal: Proposal, index: number): string {
 }
 
 const FIELD_LABELS: Record<string, string> = { fullName: "Full name", "label.text": "Label" };
+const CELL_LABELS: Record<string, string> = { r: "River", fl: "Water flux", conf: "Confluence", routes: "Route links" };
 
 // Notes passed the notes subset check in Notes.write, so the preview renders them as HTML
-function changeHtml({ field, before, after }: ChangeRow): string {
+function changeHtml({ key, field, before, after }: ChangeRow): string {
+  if (!field) {
+    const text = before === undefined ? "Added" : "Removed";
+    return /* html */ `<div class="assistantChangeField"><span>${text}</span><span></span></div>`;
+  }
+  if (key === "cells") {
+    const count = Object.keys(after as object).length;
+    return /* html */ `<div class="assistantChangeField">
+      <span>${CELL_LABELS[field] ?? capitalize(field)}</span>
+      <span>${formatNumber(count)} cell${count === 1 ? "" : "s"}</span>
+    </div>`;
+  }
   const label =
     FIELD_LABELS[field] ??
     capitalize(
@@ -664,6 +695,7 @@ function changeHtml({ field, before, after }: ChangeRow): string {
   }
   const value = (value: unknown) => {
     if (value === undefined || value === "") return `<em>none</em>`;
+    if (Array.isArray(value)) return `${formatNumber(value.length)} item${value.length === 1 ? "" : "s"}`;
     const shown = typeof value === "string" ? value : JSON.stringify(value);
     return escapeHtml(shown.length > 80 ? `${shown.slice(0, 80)}…` : shown);
   };

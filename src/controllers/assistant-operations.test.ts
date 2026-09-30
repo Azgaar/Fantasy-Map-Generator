@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { beforeAll, expect, it, vi } from "vitest";
+import { Emblems } from "@/generators/emblems-generator";
 import { Notes } from "@/generators/notes";
 import { OPERATIONS } from "./assistant-operations";
 
@@ -15,16 +16,24 @@ beforeAll(async () => {
     import("@/generators/biomes-generator"),
     import("@/generators/zones-generator"),
     import("@/generators/routes-generator"),
-    import("@/generators/features-generator")
+    import("@/generators/features-generator"),
+    import("@/generators/military-generator"),
+    import("@/generators/added-labels"),
+    import("@/generators/labels-generator"),
+    import("@/generators/journeys/journeys-generator"),
+    import("@/generators/goods-generator"),
+    import("@/generators/markets-generator")
   ]);
 });
 
 it.each(Object.keys(OPERATIONS))("%s runs the public model-class method of that name", name => {
   const [model, method] = name.split(".");
-  const owner = (model === "Notes" ? Notes : globalThis[model as keyof typeof globalThis]) as Record<string, unknown>;
+  const owner = (
+    model === "Notes" ? Notes : model === "Emblems" ? Emblems : globalThis[model as keyof typeof globalThis]
+  ) as Record<string, unknown>;
   expect(typeof owner[method]).toBe("function");
   const spy = vi.spyOn(owner as Record<string, () => void>, method).mockImplementation(() => {});
-  const args = ["a", "b", "c"].slice(0, OPERATIONS[name].run.length);
+  const args = ["a", "b", "c", "d", "e"].slice(0, OPERATIONS[name].run.length);
   OPERATIONS[name].run(...args);
   expect(spy).toHaveBeenCalledWith(...args);
   spy.mockRestore();

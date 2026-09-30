@@ -65,6 +65,33 @@ class ZonesModule {
     else delete zone.hidden;
   }
 
+  /** Add a zone over a list of cell ids; returns its id */
+  add(name: string, type: string, cells: number[]): number {
+    const i = pack.zones.length ? Math.max(...pack.zones.map(zone => zone.i)) + 1 : 0;
+    const zone = { i, name: requireName(name), type: requireName(type), color: `url(#hatch${i % 42})`, cells: [] };
+    pack.zones.push(zone);
+    this.setCells(i, cells);
+    return i;
+  }
+
+  /** Set the cells a zone covers, as a list of cell ids */
+  setCells(zoneId: number, cells: number[]): void {
+    const count = pack.cells.i.length;
+    if (
+      !Array.isArray(cells) ||
+      !cells.length ||
+      cells.some(cell => !Number.isInteger(cell) || cell < 0 || cell >= count)
+    )
+      throw new Error(`The cells must be a non-empty list of cell ids from 0 to ${count - 1}`);
+    this.living(zoneId).cells = [...new Set(cells)];
+  }
+
+  /** Remove a zone */
+  remove(zoneId: number): void {
+    this.living(zoneId);
+    pack.zones = pack.zones.filter(zone => zone.i !== zoneId);
+  }
+
   private living(zoneId: number): Zone {
     const zone = pack.zones.find(({ i }) => i === zoneId);
     if (!zone) throw new Error(`Zone ${zoneId} does not exist`);

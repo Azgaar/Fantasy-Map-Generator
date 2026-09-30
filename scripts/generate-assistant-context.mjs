@@ -74,7 +74,7 @@ function registryKeys(path, name) {
   return [...body.matchAll(/^ {2}(\w+):/gm)].map(([, key]) => `${name}.${key}`).join("\n");
 }
 
-// Every registered Assistant operation with its model-class method signature and doc line
+// Every registered Assistant operation with its model-class method signature and doc line, served by read_docs
 function operations() {
   const sources = readdirSync(join(root, "src"), { recursive: true })
     .filter(path => path.endsWith(".ts") && !path.endsWith(".test.ts") && !path.endsWith(".generated.ts"))
@@ -91,6 +91,17 @@ function operations() {
       return `${model}.${method}(${match[2]})${match[1] ? ` // ${match[1]}` : ""}`;
     })
     .join("\n");
+}
+
+// The same operations grouped by model, method names only, for the system prompt; read_docs serves the signatures
+function operationIndex(list) {
+  const groups = new Map();
+  for (const line of list.split("\n")) {
+    const [, model, method] = line.match(/^(\w+)\.(\w+)\(/);
+    if (!groups.has(model)) groups.set(model, []);
+    groups.get(model).push(method);
+  }
+  return [...groups].map(([model, methods]) => `${model}: ${methods.join(", ")}`).join("\n");
 }
 
 // Commands an answer may link, by the same rule as isLinkable in map-commands.ts
@@ -116,6 +127,7 @@ function buildGeneratedContext() {
     REGISTRY_KEYS: [registryKeys("src/controllers/index.ts", "Controllers"), registryKeys("src/services/index.ts", "Services")].join("\n"),
     DATA_FIELDS: dataFields(),
     OPERATIONS: operations(),
+    OPERATION_INDEX: operationIndex(operations()),
     COMMANDS: commands(),
     KEY_TYPES: keyTypes()
   };

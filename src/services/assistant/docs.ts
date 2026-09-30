@@ -1,6 +1,6 @@
 // Reference material the model reads on demand through read_docs, kept out of the system prompt
 
-import { COMMANDS, GLOBAL_DECLARATIONS, REGISTRY_KEYS } from "./context.generated";
+import { COMMANDS, GLOBAL_DECLARATIONS, OPERATIONS, REGISTRY_KEYS } from "./context.generated";
 
 let topics: Map<string, string> | null = null;
 
@@ -22,6 +22,7 @@ async function load(): Promise<Map<string, string>> {
     `Callable as \`await Controllers.X.open()\` / \`await Services.X.method()\`:\n${REGISTRY_KEYS}`
   );
   map.set("PackedGraph", `\`\`\`ts\n${packedGraph.default as string}\n\`\`\``);
+  map.set("Operations", `Operations for \`propose_change\`, with argument types:\n\`\`\`ts\n${OPERATIONS}\n\`\`\``);
   map.set("Commands", `Command ids for \`[label](command:id)\` links, as \`id: name\`:\n${COMMANDS}`);
   return map;
 }

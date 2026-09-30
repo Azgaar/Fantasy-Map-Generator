@@ -11,8 +11,8 @@ test("cached instructions contain the map rules, operations and data fields", ()
   expect(cached.text).toContain("read_help");
   expect(cached.text).toContain("read_docs");
   expect(cached.text).toContain("propose_change");
-  expect(cached.text).toContain("Burgs.rename(burgId: number, name: string)");
-  expect(cached.text).toContain("Notes.write(key: string, html: string)");
+  expect(cached.text).toMatch(/^Burgs: rename, setPopulation, /m);
+  expect(cached.text).toContain("Notes: write");
   expect(cached.text).toMatch(/^Burgs: i, name, cell/m);
   expect(cached.cache_control).toEqual({ type: "ephemeral" });
 });

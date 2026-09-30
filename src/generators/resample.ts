@@ -385,7 +385,7 @@ class Resampler {
     pack.markers = parentMap.pack.markers;
     pack.markers.forEach(marker => {
       const [x, y] = projection(marker.x, marker.y);
-      if (!this.isInMap(x, y)) Markers.deleteMarker(marker.i);
+      if (!this.isInMap(x, y)) Markers.remove(marker.i);
 
       const cell = Pack.findCell(x, y, Infinity) as number;
       marker.x = rn(x, 2);

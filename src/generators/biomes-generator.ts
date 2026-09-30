@@ -145,6 +145,33 @@ class BiomesGenerator {
     this.living(biomeId).habitability = percent;
   }
 
+  /** Add a custom biome for painting; returns its id. There can be at most 255 biomes */
+  add(name: string, color: string, habitability: number): number {
+    const biomes = pack.biomes;
+    if (biomes.length > 254) throw new Error("There can be at most 255 biomes");
+    if (!Number.isFinite(habitability) || habitability < 0)
+      throw new Error("The habitability must be a non-negative number");
+    const i = biomes.length;
+    biomes.push({
+      i,
+      name: requireName(name),
+      color: requireColor(color),
+      habitability,
+      iconsDensity: 0,
+      icons: {},
+      cost: 50
+    });
+    return i;
+  }
+
+  /** Remove a custom biome that no cell uses; the generated biomes stay */
+  remove(biomeId: number): void {
+    this.living(biomeId);
+    if (biomeId <= 12) throw new Error(`Biome ${biomeId} is a generated biome and cannot be removed`);
+    if (pack.cells.biome.includes(biomeId)) throw new Error(`Biome ${biomeId} still has cells; paint them over first`);
+    pack.biomes[biomeId].removed = true;
+  }
+
   private living(biomeId: number): Biome {
     const biome = pack.biomes[biomeId];
     if (!biome || biome.removed) throw new Error(`Biome ${biomeId} does not exist`);

@@ -1,10 +1,11 @@
+// @vitest-environment jsdom
 import { describe, expect, test } from "vitest";
-import { mergeRoutePoints } from "./route-editor";
+import { mergeRoutePoints } from "./routes-generator";
 
 const points = (...cellIds: number[]): number[][] => cellIds.map(cellId => [cellId * 10, cellId * 20, cellId]);
 const ids = (routePoints: number[][]): number[] => routePoints.map(point => point[2]);
 
-describe("route editor merging", () => {
+describe("merging route points", () => {
   test.each([
     { name: "current end to joined start", current: [1, 2, 3], joined: [3, 4, 5], expected: [1, 2, 3, 4, 5] },
     { name: "joined end to current start", current: [3, 4, 5], joined: [1, 2, 3], expected: [1, 2, 3, 4, 5] },

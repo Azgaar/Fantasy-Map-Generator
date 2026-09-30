@@ -164,7 +164,7 @@ function generateNameRandom(): void {
 }
 
 function changeLakeSubtype(this: HTMLSelectElement): void {
-  getLake().subtype = this.value; // subtype is domain data, the rendering group is left alone
+  Features.setSubtype(getLake().i, this.value); // subtype is domain data, the rendering group is left alone
 }
 
 const isStockGroup = (group: string) => group in Styles.defaults.lakes.groups;

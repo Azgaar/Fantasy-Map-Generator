@@ -149,15 +149,14 @@ function editMarketNote(): void {
 function onRenameInput(this: HTMLInputElement): void {
   const market = Markets.get(activeMarketId);
   if (!market) return;
-  const value = this.value.trim();
-  market.name = value || undefined;
+  Markets.rename(market.i, this.value);
   $("#marketOverview").dialog("option", "title", `Market Stock: ${Markets.getName(market)}`);
 }
 
 function resetMarketName(): void {
   const market = Markets.get(activeMarketId);
   if (!market) return;
-  market.name = undefined;
+  Markets.rename(market.i, "");
   ensureEl<HTMLInputElement>("marketOverviewName").value = "";
   $("#marketOverview").dialog("option", "title", `Market Stock: ${Markets.getName(market)}`);
 }

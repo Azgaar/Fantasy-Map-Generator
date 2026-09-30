@@ -1,5 +1,6 @@
 import type { LayerId } from "@/components/layers";
 import type { Point } from "@/types/global";
+import { requireOneOf } from "@/utils/languageUtils";
 import { safeParseJSON } from "@/utils/stringUtils";
 
 export const LABEL_TYPES = ["state", "province", "burg", "river", "route", "added"] as const;
@@ -34,6 +35,28 @@ export interface Label {
   pathPoints?: Point[]; // curve text along
   startOffset?: number;
 }
+
+export type LabelLayout = Partial<
+  Record<"dx" | "dy" | "fontSize" | "letterSpacing" | "startOffset", number | null> & { hidden: boolean | null }
+>;
+
+const requireNumber = (min: number, max: number) => (value: unknown) => {
+  if (typeof value !== "number" || !(value >= min && value <= max))
+    throw new Error(`Expected a number from ${min} to ${max}`);
+  return value;
+};
+
+const LAYOUT: Record<keyof LabelLayout, (value: unknown) => unknown> = {
+  dx: requireNumber(-1e5, 1e5),
+  dy: requireNumber(-1e5, 1e5),
+  fontSize: requireNumber(30, 300),
+  letterSpacing: requireNumber(0, 20),
+  startOffset: requireNumber(0, 100),
+  hidden: value => {
+    if (typeof value !== "boolean") throw new Error("hidden must be true or false");
+    return value || undefined;
+  }
+};
 
 declare global {
   var Labels: LabelsModule;
@@ -178,6 +201,25 @@ export class LabelsModule {
     return group ?? this.getFallbackGroup(type);
   }
 
+  private entitiesOf(type: LabelType): { i: number; removed?: boolean; label?: Label }[] {
+    const entities: Record<LabelType, { i: number; removed?: boolean; label?: Label }[]> = {
+      state: pack.states,
+      province: pack.provinces,
+      burg: pack.burgs,
+      river: pack.rivers,
+      route: pack.routes,
+      added: pack.addedLabels
+    };
+    return (entities[type] ?? []).filter(entity => entity?.i);
+  }
+
+  private requireEntity(type: LabelType, id: number) {
+    requireOneOf(type, LABEL_TYPES, "The label type");
+    const entity = this.getEntity(type, id);
+    if (!entity || (entity as { removed?: boolean }).removed) throw new Error(`The ${type} label ${id} does not exist`);
+    return entity;
+  }
+
   getEntity(type: LabelType, id: number) {
     const entities: Record<LabelType, { i: number; label?: Label }[]> = {
       state: pack.states,
@@ -190,10 +232,37 @@ export class LabelsModule {
     return entities[type].find(entity => entity.i === id);
   }
 
-  setGroup(label: { type: LabelType; entityId: number; group: string }): void {
-    const entity = this.getEntity(label.type, label.entityId);
-    if (!entity) return;
-    entity.label = { ...entity.label, group: label.group };
+  /** Move a label to a label group, which sets its style and when it shows */
+  setGroup(type: LabelType, id: number, group: string): void {
+    const entity = this.requireEntity(type, id);
+    requireOneOf(
+      group,
+      options.map.labels.groups.map(({ name }) => name),
+      "The label group"
+    );
+    entity.label = { ...entity.label, group };
+  }
+
+  /** Move every label of one group to another, as renaming or removing a group does */
+  regroup(from: string, to: string): void {
+    for (const type of LABEL_TYPES)
+      for (const entity of this.entitiesOf(type))
+        if (entity.label?.group === from) entity.label = { ...entity.label, group: to };
+  }
+
+  /** Adjust a label: dx and dy shift it, fontSize (30–300%) and letterSpacing (0–20 px) size its text, startOffset (0–100%) slides a label along its path, hidden hides it. null restores the automatic value */
+  setLayout(type: LabelType, id: number, layout: LabelLayout): void {
+    const entity = this.requireEntity(type, id);
+    if (typeof layout !== "object" || layout === null) throw new Error("The layout must be an object");
+    const label: Label = { ...entity.label };
+    for (const [key, value] of Object.entries(layout) as [keyof LabelLayout, unknown][]) {
+      const check = LAYOUT[key];
+      if (!check) throw new Error(`Unknown label layout ${key}; known: ${Object.keys(LAYOUT).join(", ")}`);
+      const checked = value === null ? undefined : check(value);
+      if (checked === undefined) delete label[key];
+      else Object.assign(label, { [key]: checked });
+    }
+    entity.label = label;
   }
 
   hasOverride(type: LabelType, id: number): boolean {
@@ -205,9 +274,9 @@ export class LabelsModule {
     return [dx, dy, startOffset, fontSize, letterSpacing, pathPoints, hidden].some(value => value !== undefined);
   }
 
-  resetOverride(type: LabelType, id: number): void {
-    const entity = this.getEntity(type, id);
-    if (!entity) return;
+  /** Return a label to its automatic placement and style; an added label keeps its text and group */
+  reset(type: LabelType, id: number): void {
+    const entity = this.requireEntity(type, id);
 
     if (type === "added") {
       const { text, group } = entity.label ?? {};

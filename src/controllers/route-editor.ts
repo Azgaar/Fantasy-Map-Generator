@@ -240,32 +240,11 @@ function handleControlPointClick(this: any): void {
   else removeControlPoint(controlPoint);
 
   function splitRoute(): void {
-    const oldRoutePoints = route.points.slice(0, index + 1);
-    const newRoutePoints = route.points.slice(index);
-
-    // update old route
-    route.points = oldRoutePoints;
+    const newRouteId = Routes.split(route.i, index);
     drawControlPoints(route.points);
     drawCells(route.points);
     redrawRoute(route);
-
-    // create new route
-    const newRoute = {
-      i: Routes.getNextId(),
-      group: route.group,
-      feature: route.feature,
-      name: route.name,
-      points: newRoutePoints
-    } as Route;
-    pack.routes.push(newRoute);
-
-    for (let i = 0; i < newRoute.points.length; i++) {
-      const cellId = newRoute.points[i][2];
-      const nextPoint = newRoute.points[i + 1];
-      if (nextPoint) addConnection(cellId, nextPoint[2], newRoute.i);
-    }
-
-    redrawRouteShape(newRoute);
+    redrawRouteShape(pack.routes.find((r: Route) => r.i === newRouteId)!);
     ensureEl("routeSplit").classList.remove("pressed");
   }
 
@@ -336,36 +315,11 @@ function openJoinRoutesDialog(): void {
 }
 
 function joinRoutes(route: Route, joinedRoute: Route): void {
-  const mergedPoints = mergeRoutePoints(route.points, joinedRoute.points);
-  if (!mergedPoints) return;
-  route.points = mergedPoints;
-
-  for (let i = 0; i < route.points.length; i++) {
-    const point = route.points[i];
-    const nextPoint = route.points[i + 1];
-    if (nextPoint) addConnection(point[2], nextPoint[2], route.i);
-  }
-
-  Routes.remove(joinedRoute);
+  Routes.join(route.i, joinedRoute.i);
   Layers.draw("routes");
   drawControlPoints(route.points);
   redrawRoute(route);
   drawCells(route.points);
-}
-
-export function mergeRoutePoints(routePoints: number[][], joinedPoints: number[][]): number[][] | null {
-  if (!routePoints.length || !joinedPoints.length) return null;
-
-  const routeStart = routePoints.at(0)?.[2];
-  const routeEnd = routePoints.at(-1)?.[2];
-  const joinedStart = joinedPoints.at(0)?.[2];
-  const joinedEnd = joinedPoints.at(-1)?.[2];
-
-  if (routeEnd === joinedStart) return [...routePoints, ...joinedPoints.slice(1)];
-  if (routeStart === joinedEnd) return [...joinedPoints, ...routePoints.slice(1)];
-  if (routeStart === joinedStart) return [...[...routePoints].reverse(), ...joinedPoints.slice(1)];
-  if (routeEnd === joinedEnd) return [...routePoints, ...[...joinedPoints].reverse().slice(1)];
-  return null;
 }
 
 function showCreationDialog(): void {
@@ -399,7 +353,7 @@ function changeName(this: HTMLInputElement): void {
 
 function changeGroup(this: HTMLInputElement): void {
   const route = getRoute();
-  route.group = this.value;
+  Routes.setGroup(route.i, this.value);
   redrawRouteShape(route); // the path is re-created under the new group, so re-bind the editor to it
   selectedRoute = select<SVGElement, unknown>(`#route${route.i}`).on("click", addControlPoint);
 }
@@ -430,7 +384,7 @@ function editRouteGroupStyle(): void {
 
 function toggleLockButton(): void {
   const route = getRoute();
-  route.lock = !route.lock;
+  Routes.setLocked(route.i, !route.lock);
   updateLockIcon();
 }
 
@@ -451,7 +405,7 @@ function removeRoute(): void {
     message: "Are you sure you want to remove the route? <br>This action cannot be reverted",
     confirm: "Remove",
     onConfirm: () => {
-      Routes.remove(getRoute());
+      Routes.remove(getRoute().i);
       $("#routeEditor").dialog("close");
       Layers.draw("routes", "labels");
     }

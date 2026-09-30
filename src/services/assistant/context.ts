@@ -1,7 +1,7 @@
 // Assembles the system prompt: one compact static block (cached by the provider) and one small block
 // describing the map at hand. Reference material stays out of it; the model fetches it with read_docs.
 
-import { DATA_FIELDS, GENERATOR_NAMES, KEY_TYPES, OPERATIONS } from "./context.generated";
+import { DATA_FIELDS, GENERATOR_NAMES, KEY_TYPES, OPERATION_INDEX } from "./context.generated";
 
 export interface SystemBlock {
   type: "text";
@@ -82,21 +82,32 @@ or dialog that answers a how-to, \`[Heightmap editor](command:editHeightmapButto
 const CHANGES = `# Changing the map
 
 \`propose_change({ summary, operations: [{ op, args }] })\` proposes ONE batch; the user previews before → after and
-applies or discards it. \`args\` go in order, e.g. \`{ op: "Burgs.rename", args: [12, "Saltmere"] }\`. Put everything
-asked into one proposal; \`summary\` is a short card title. On a validation error nothing is proposed: fix and retry.
+applies or discards it. \`args\` go in order, e.g. \`{ op: "Burgs.rename", args: [12, "Saltmere"] }\`. \`{ result: n }\`
+stands for what operation n (from 0) of the batch returned, such as a new id: \`[{ op: "States.add", args: [410, 220] },
+{ op: "States.rename", args: [{ result: 0 }, "Varn"] }]\`. Put everything asked into one proposal; \`summary\` is a
+short card title. On a validation error nothing is proposed: fix and retry.
 Success means the proposal is WAITING: say what you proposed, never that the map changed. Operations keep dependent
-data (labels, full names, codes) in sync. "Proposals in this chat" in the map context shows what the user did. If no
-operation can make a change, say so.
+data (labels, full names, codes, cell ownership) in sync. "Proposals in this chat" in the map context shows what the
+user did. If no operation can make a change, say so. Operations by model; ids are \`i\`, points are map units. Read
+\`read_docs(["Operations"])\` for the signatures and allowed values before using one you have not used in this chat:
 
-\`\`\`ts
-${OPERATIONS}
-\`\`\`
+${OPERATION_INDEX}
 
 Notes are HTML in an entity's \`note\` field (\`pack.burgs[12].note\`); there is no notes array. Keys are \`type:id\`
 (\`burg:12\`, \`marker:0\`, \`route:0\`; regiments \`regiment:stateId-regimentId\`) of an existing entity, whose name is
 the note's title; cells, ice, relief, measurers, deals, transports and name bases have no notes. \`Notes.write\` replaces the WHOLE note. Allowed: p, br, strong, em, u, s, a, img, ul/ol/li,
 blockquote, h1–h6, sub, sup, span, div, simple tables, inline code, hr and inline styles; no classes, handlers,
 scripts, iframes, javascript: URLs or Markdown. Keep the user's text unless asked; say in one line what changed.`;
+
+const ASKING = `# Asking first
+
+Before creating something or a sweeping change, know what the user wants. When an essential detail is missing or
+ambiguous (where, which entity, how much land), ask one short question and stop, offering likely answers with
+\`show_choices\` (a choice without operations becomes the reply). Never ask about what can be generated (names, colors,
+emblems, forms): propose it, then offer tweaks. Resolve places ("north of Vel", "on the coast") to points with
+\`read_map\`, e.g. a free land cell's \`pack.cells.p[i]\`. New states, provinces, cultures and religions start small (a
+state owns only its capital cell): to grow them, add \`Provinces.setState\` for chosen provinces, or \`recalculate()\`,
+which redraws every border of that kind; ask which when the user did not say.`;
 
 const FIELDS = `# Data fields
 
@@ -105,7 +116,7 @@ Configuration, Globals, Registries or PackedGraph.
 
 ${DATA_FIELDS}`;
 
-const staticPrompt = [ROLE, SCRIPTS, UNITS, GOTCHAS, ANSWERS, CHANGES, FIELDS].join("\n\n");
+const staticPrompt = [ROLE, SCRIPTS, UNITS, GOTCHAS, ANSWERS, CHANGES, ASKING, FIELDS].join("\n\n");
 
 // `context` is per-turn text from the UI (the note open in the notes editor); it joins the small
 // dynamic block so the large static one stays byte-identical and cacheable

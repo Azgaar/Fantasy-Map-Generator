@@ -431,8 +431,7 @@ function zoomIntoBurg(this: HTMLElement): void {
 function toggleBurgLockStatus(this: HTMLElement): void {
   const burgId = +(this.closest(".states") as HTMLElement).dataset.id!;
 
-  const burg = pack.burgs[burgId];
-  burg.lock = !burg.lock;
+  Burgs.setLocked(burgId, !pack.burgs[burgId].lock);
 
   if (this.classList.contains("icon-lock")) {
     this.classList.remove("icon-lock");
@@ -795,7 +794,7 @@ function triggerAllBurgsRemove(): void {
     confirm: "Remove",
     onConfirm: () => {
       pack.burgs
-        .filter(b => b.i && !(b.capital || b.lock))
+        .filter(b => b.i && !b.removed && !(b.capital || b.lock) && !pack.markets?.some(m => m.centerBurgId === b.i))
         .forEach(b => {
           Burgs.remove(b.i);
           removeEmblem("burg", b.i);
@@ -810,9 +809,7 @@ function toggleLockAll(): void {
   const activeBurgs = pack.burgs.filter(b => b.i && !b.removed);
   const allLocked = activeBurgs.every(burg => burg.lock);
 
-  activeBurgs.forEach(burg => {
-    burg.lock = !allLocked;
-  });
+  for (const burg of activeBurgs) Burgs.setLocked(burg.i, !allLocked);
 
   burgsTable.refresh();
   ensureEl("burgsLockAll").className = allLocked ? "icon-lock" : "icon-lock-open";

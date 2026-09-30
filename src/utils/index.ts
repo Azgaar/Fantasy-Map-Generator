@@ -1,4 +1,4 @@
-import { last, TYPED_ARRAY_MAX, unique } from "./arrayUtils";
+import { groupByValue, last, TYPED_ARRAY_MAX, unique } from "./arrayUtils";
 import { abbreviate, getAdjective, isVowel, list, nth, trimVowels } from "./languageUtils";
 import { lerp, lim, minmax, normalize, rn } from "./numberUtils";
 import "./polyfills";
@@ -200,6 +200,7 @@ export {
   getSegmentId,
   getTemperatureLikeness,
   getVertexPath,
+  groupByValue,
   initializePrompt,
   isCtrlClick,
   isImageIcon,

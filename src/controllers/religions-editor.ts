@@ -24,7 +24,7 @@ import { Controllers } from "@/controllers";
 import type { Religion } from "@/generators/religions-generator";
 import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { highlightElement } from "@/renderers/overlays/highlight";
-import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";
+import { downloadFile, getArea, getAreaUnit, getFileName, groupByValue } from "@/utils";
 import { debounce, ensureEl, getPointer, isLand, parseTransform, rn, si } from "../utils";
 
 const dialogId = "religionsEditor" as const;
@@ -529,21 +529,20 @@ function religionChangeName(this: HTMLInputElement): void {
 function religionChangeType(this: HTMLSelectElement): void {
   const religionId = +(this.parentNode as HTMLElement).dataset.id!;
   (this.parentNode as HTMLElement).dataset.type = this.value;
-  const type = this.value as (typeof pack.religions)[number]["type"];
-  pack.religions[religionId].type = type;
+  Religions.setType(religionId, this.value);
 }
 
 function religionChangeForm(this: HTMLInputElement): void {
   const religionId = +(this.parentNode as HTMLElement).dataset.id!;
   (this.parentNode as HTMLElement).dataset.form = this.value;
-  pack.religions[religionId].form = this.value;
+  if (this.value.trim()) Religions.setForm(religionId, this.value);
 }
 
 function religionChangeDeity(this: HTMLInputElement): void {
   const row = this.closest(".states") as HTMLElement;
   const religionId = +row.dataset.id!;
   row.dataset.deity = this.value;
-  pack.religions[religionId].deity = this.value;
+  Religions.setDeity(religionId, this.value);
 }
 
 function regenerateDeity(this: HTMLElement): void {
@@ -656,7 +655,7 @@ function religionChangeExtent(this: HTMLSelectElement): void {
   const row = this.closest(".states") as HTMLElement;
   const religion = +row.dataset.id!;
   row.dataset.expansion = this.value;
-  pack.religions[religion].expansion = this.value;
+  Religions.setExpansion(religion, this.value);
   recalculateReligions();
 }
 
@@ -664,7 +663,8 @@ function religionChangeExpansionism(this: HTMLInputElement): void {
   const row = this.closest(".states") as HTMLElement;
   const religion = +row.dataset.id!;
   row.dataset.expansionism = this.value;
-  pack.religions[religion].expansionism = +this.value;
+  if (!(+this.value >= 0 && +this.value <= 99)) return;
+  Religions.setExpansionism(religion, +this.value);
   recalculateReligions();
 }
 
@@ -685,17 +685,7 @@ function removeReligion(religionId: number): void {
   select("#relig").select(`#religion-gap${religionId}`).remove();
   select("#debug").select(`#religionsCenter${religionId}`).remove();
 
-  pack.cells.religion.forEach((r: number, i: number) => {
-    if (r === religionId) pack.cells.religion[i] = 0;
-  });
-  pack.religions[religionId].removed = true;
-
-  pack.religions
-    .filter(r => r.i && !r.removed)
-    .forEach(r => {
-      r.origins = (r.origins ?? []).filter((origin: number) => origin !== religionId);
-      if (!r.origins.length) r.origins = [0];
-    });
+  Religions.remove(religionId);
 
   refreshReligionsEditor();
 }
@@ -747,7 +737,11 @@ function religionCenterDrag(this: any, event: any): void {
     const cell = Pack.findCell(x, y);
     if (cell == null || pack.cells.h[cell] < 20) return; // ignore dragging on water
 
-    pack.religions[religionId].center = cell;
+    try {
+      Religions.moveCenter(religionId, x, y);
+    } catch {
+      return; // another center is there
+    }
     recalculateReligions();
   }
 
@@ -859,7 +853,7 @@ function openPaintEditor(): void {
 }
 
 function applyReligionPaint(changes: ReadonlyMap<number, number>): void {
-  for (const [cell, religion] of changes) pack.cells.religion[cell] = religion;
+  for (const [religion, cells] of groupByValue(changes)) Religions.setCells(religion, cells);
   if (changes.size) {
     Layers.draw("religions");
     if (document.getElementById(dialogId)) refreshReligionsEditor();
@@ -899,20 +893,13 @@ function exitAddReligionMode(): void {
 
 function addReligion(this: SVGElement, event: MouseEvent): void {
   const [x, y] = getPointer(event, this);
-  const center = Pack.findCell(x, y)!;
-  if (pack.cells.h[center] < 20) {
-    tip("You cannot place religion center into the water. Please click on a land cell", false, "error");
+  try {
+    Religions.add(x, y);
+  } catch (error) {
+    tip(error instanceof Error ? error.message : String(error), false, "error");
     return;
   }
-
-  const occupied = pack.religions.some(r => !r.removed && r.center === center);
-  if (occupied) {
-    tip("This cell is already a religion center. Please select a different cell", false, "error");
-    return;
-  }
-
   if (event.shiftKey === false) exitAddReligionMode();
-  Religions.add(center);
 
   Layers.draw("religions");
   refreshReligionsEditor();
@@ -970,8 +957,7 @@ function updateLockStatus(this: HTMLElement): void {
 
   const religionId = +(this.closest(".states") as HTMLElement).dataset.id!;
   const classList = this.classList;
-  const r = pack.religions[religionId];
-  r.lock = !r.lock;
+  Religions.setLocked(religionId, !pack.religions[religionId].lock);
 
   classList.toggle("icon-lock-open");
   classList.toggle("icon-lock");

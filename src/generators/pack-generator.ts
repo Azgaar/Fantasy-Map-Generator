@@ -82,6 +82,16 @@ class PackModule {
     return this.getQuadtree(graph).find(x, y, radius)?.[2];
   }
 
+  /** The cell at a point inside the map, or a readable error */
+  requireCell(x: unknown, y: unknown): number {
+    const { width, height } = options.map.graph;
+    const inside = (value: unknown, max: number): value is number =>
+      typeof value === "number" && value >= 0 && value <= max;
+    const cell = inside(x, width) && inside(y, height) ? this.findCell(x, y) : undefined;
+    if (cell === undefined) throw new Error(`The point must be inside the map: x 0–${width}, y 0–${height}`);
+    return cell;
+  }
+
   /** cell indexes within the radius from the given coordinates */
   findAll(x: number, y: number, radius: number, graph: PackedGraph = pack): number[] {
     const found = findAllInQuadtree(x, y, radius, this.getQuadtree(graph));

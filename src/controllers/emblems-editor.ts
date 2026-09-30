@@ -14,7 +14,7 @@ import { highlightEmblemElement } from "@/renderers/overlays/highlight";
 import { cloneEmblem, emblemURL, loadEmblemIcons } from "@/services/io/emblem-image";
 import type { Emblem, EmblemCharge, HeraldicEmblem } from "@/types/emblems";
 import { capitalize, downloadFile, escapeHtml, getFileName, openURL } from "@/utils";
-import { ensureEl, rn } from "../utils";
+import { ensureEl, minmax, rn } from "../utils";
 import { ARMORIA_API, ARMORIA_GUI, armoriaRenderUrl, parseArmoria } from "./emblems/armoria";
 import { ArmoriaSessions } from "./emblems/armoria-sessions";
 import { isDrawable } from "./emblems/drawability";
@@ -539,24 +539,14 @@ function changeSize(ev: Event): void {
   ensureEl<HTMLInputElement>("emblemSizeSlider").value = String(size);
   ensureEl<HTMLInputElement>("emblemSizeNumber").value = String(size);
 
-  currentEl.coa.size = size;
+  const { x, y } = currentEl.coa;
+  Emblems.place(`${currentType}:${currentEl.i}`, x ?? null, y ?? null, size);
   redrawEmblem(currentType, currentEl.i);
 }
 
 function regenerate(): void {
-  const el = currentEl;
-  let parent: EmblemEl | undefined;
-  if (currentType === "province") parent = pack.states[el.state!];
-  else if (currentType === "burg") {
-    const province = pack.cells.province[el.cell!];
-    parent = province ? pack.provinces[province] : pack.states[el.state!];
-  }
-
-  const shield = el.coa.shield || Emblems.getShield(el.culture || parent?.culture || 0, el.state);
-  const { size, x, y } = el.coa;
-  el.coa = { ...Emblems.generate(parent ? parent.coa : null, 0.3, 0.1, undefined), shield, size, x, y };
-
-  EmblemRenderer.trigger(currentId, el.coa);
+  Emblems.regenerateOne(`${currentType}:${currentEl.i}`);
+  EmblemRenderer.trigger(currentId, currentEl.coa);
   redrawEmblem(currentType, currentEl.i);
   updateEmblemData();
 }
@@ -881,8 +871,10 @@ function dragEmblem(this: SVGUseElement, event: EmblemDragEvent): void {
     const entity = type && Number.isInteger(i) ? getEmblemEntity(type, i) : undefined;
     if (!type || !entity) return;
 
-    entity.coa.x = rn(x + endEvent.x + shift, 2);
-    entity.coa.y = rn(y + endEvent.y + shift, 2);
+    const { width, height } = options.map.graph;
+    const cx = minmax(rn(x + endEvent.x + shift, 2), 0, width);
+    const cy = minmax(rn(y + endEvent.y + shift, 2), 0, height);
+    Emblems.place(`${type}:${i}`, cx, cy, entity.coa.size ?? null);
     redrawEmblem(type, i);
   });
 }

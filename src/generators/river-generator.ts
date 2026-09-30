@@ -56,6 +56,24 @@ class RiverModule {
     Features.defineNames();
   }
 
+  /** Start a river at a land point; it flows downhill to the sea, a lake or another river. Returns the river holding it */
+  add(x: number, y: number): number {
+    const { cells } = pack;
+    const cell = Pack.requireCell(x, y);
+    if (cells.h[cell] < 20) throw new Error("A river cannot start in the water");
+    if (cells.r[cell]) throw new Error(`River ${cells.r[cell]} already flows here`);
+    if (cells.b[cell]) throw new Error("A river cannot start at the map edge");
+    const lakes = pack.features.filter(feature => feature && feature.type === "lake");
+    const heights = lakes.map(lake => lake.height); // resolving depressions raises lakes only to route the flow
+    const { error } = this.addDownhill(cell);
+    if (error) throw new Error(error);
+    lakes.forEach((lake, index) => {
+      lake.height = heights[index];
+    });
+    Lakes.cleanupLakeData();
+    return cells.r[cell];
+  }
+
   addDownhill(initialCell: number): { error?: string } {
     const { cells, rivers } = pack;
     let cell = initialCell;
@@ -622,10 +640,109 @@ class RiverModule {
     if (river.label?.text) river.label.text = replaceWholeWord(river.label.text, old, river.name) ?? river.label.text;
   }
 
-  // remove river and all its tributaries
-  remove(id: number) {
+  /** Set a river's type, a free label such as River, Creek or Fork */
+  setType(riverId: number, type: string): void {
+    this.living(riverId).type = requireName(type);
+  }
+
+  /** Make a river a tributary of another, or a mainstem when the parent is itself; the basin follows */
+  setParent(riverId: number, parentId: number): void {
+    const river = this.living(riverId);
+    this.living(parentId);
+    if (parentId !== riverId && this.chain(parentId).includes(riverId))
+      throw new Error(`River ${parentId} flows into river ${riverId} and cannot be its mainstem`);
+    river.parent = parentId;
+    for (const other of pack.rivers)
+      if (other.i === riverId || this.chain(other.i).includes(riverId)) other.basin = this.getBasin(other.i);
+  }
+
+  /** Set a river's width at its source and how fast it widens downstream; its mouth width follows */
+  setWidth(riverId: number, sourceWidth: number, widthFactor: number): void {
+    const river = this.living(riverId);
+    for (const [label, value] of [
+      ["source width", sourceWidth],
+      ["width factor", widthFactor]
+    ] as const)
+      if (typeof value !== "number" || !(value >= 0 && Number.isFinite(value)))
+        throw new Error(`The ${label} must be a non-negative number`);
+    river.sourceWidth = sourceWidth;
+    river.widthFactor = widthFactor;
+    this.updateWidth(river);
+  }
+
+  /** Draw a river through cells from source to mouth; it joins the river at its last cell, if any. Returns its id */
+  create(cellIds: number[]): number {
+    const { cells, rivers } = pack;
+    if (!Array.isArray(cellIds) || cellIds.length < 2) throw new Error("A river needs at least 2 cells");
+    if (new Set(cellIds).size !== cellIds.length) throw new Error("A river passes each cell once");
+    for (const cell of cellIds)
+      if (!Number.isInteger(cell) || cell < 0 || cell >= cells.i.length) throw new Error(`Cell ${cell} does not exist`);
+    if (cells.h[cellIds[0]] < 20) throw new Error("A river cannot start in the water");
+
+    const riverId = this.getNextId(rivers);
+    const parent = cells.r[cellIds[cellIds.length - 1]] || riverId;
+    for (const cell of cellIds) if (!cells.r[cell]) cells.r[cell] = riverId;
+
+    const source = cellIds[0];
+    const mouth = parent === riverId ? cellIds[cellIds.length - 1] : cellIds[cellIds.length - 2];
+    const widthFactor = 1.2 * rn(1 / (options.map.graph.points / 10000) ** 0.25, 2);
+    const river = {
+      i: riverId,
+      source,
+      mouth,
+      discharge: cells.fl[mouth], // m3 in second
+      length: this.getApproximateLength(this.addMeandering(cellIds) as unknown as Point[]),
+      width: 0,
+      widthFactor,
+      sourceWidth: this.getSourceWidth(cells.fl[source]),
+      parent,
+      cells: cellIds,
+      basin: this.getBasin(parent),
+      name: this.getName(mouth),
+      type: "River"
+    } as River;
+    this.updateWidth(river);
+    rivers.push(river);
+    return riverId;
+  }
+
+  /** Mouth width from the discharge, the source width and the width factor */
+  updateWidth(river: River): void {
+    const { cells, discharge, widthFactor, sourceWidth } = river;
+    river.width = this.getWidth(
+      this.getOffset({
+        flux: discharge,
+        pointIndex: this.addMeandering(cells).length,
+        widthFactor,
+        startingWidth: sourceWidth
+      })
+    );
+  }
+
+  /** The rivers a river flows into, nearest first */
+  private chain(riverId: number): number[] {
+    const chain: number[] = [];
+    for (let parent = this.getParent(riverId); parent !== riverId && !chain.includes(parent); ) {
+      chain.push(parent);
+      riverId = parent;
+      parent = this.getParent(riverId);
+    }
+    return chain;
+  }
+
+  private living(riverId: number): River {
+    const river = pack.rivers.find(r => r.i === riverId);
+    if (!river) throw new Error(`River ${riverId} does not exist`);
+    return river;
+  }
+
+  /** Remove a river with all its tributaries */
+  remove(riverId: number) {
+    this.living(riverId);
     const cells = pack.cells;
-    const riversToRemove = pack.rivers.filter(r => r.i === id || r.parent === id || r.basin === id).map(r => r.i);
+    const riversToRemove = pack.rivers
+      .filter(r => r.i === riverId || r.parent === riverId || r.basin === riverId)
+      .map(r => r.i);
     cells.r.forEach((r, i) => {
       if (!r || !riversToRemove.includes(r)) return;
       cells.r[i] = 0;

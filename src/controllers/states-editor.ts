@@ -22,29 +22,14 @@ import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { Emblems } from "@/generators/emblems-generator";
-import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
-import { redrawEmblem, redrawEmblems, removeEmblem } from "@/renderers/draw-emblems";
+import { redrawEmblem, removeEmblem } from "@/renderers/draw-emblems";
 import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement, highlightOutline } from "@/renderers/overlays/highlight";
-import { applyOption, downloadFile, getArea, getAreaUnit, getFileName, speak } from "@/utils";
-import {
-  ensureEl,
-  formatPrice,
-  getAdjective,
-  getMixedColor,
-  getPointer,
-  getRandomColor,
-  isLand,
-  P,
-  ra,
-  rand,
-  rn,
-  si
-} from "../utils";
+import { applyOption, downloadFile, getArea, getAreaUnit, getFileName, groupByValue, speak } from "@/utils";
+import { ensureEl, formatPrice, getAdjective, getPointer, isLand, rand, rn, si } from "../utils";
 
 const dialogId = "statesEditor" as const;
 const LEGEND_NAME = "States"; // the legend box this editor toggles
@@ -913,9 +898,12 @@ function openTreasuryDialog(stateId: number): void {
         const newSales = Math.max(0, Math.min(1, +salesInput.value));
         const newPoll = Math.max(0, +pollInput.value);
         const newTreasury = +treasuryInput.value;
-        if (Number.isFinite(newSales)) state.salesTax = rn(newSales, 4);
-        if (Number.isFinite(newPoll)) state.pollTax = rn(newPoll, 4);
-        if (Number.isFinite(newTreasury)) state.treasury = rn(newTreasury, 2);
+        States.setTaxes(
+          stateId,
+          Number.isFinite(newSales) ? newSales : state.salesTax,
+          Number.isFinite(newPoll) ? newPoll : state.pollTax
+        );
+        if (Number.isFinite(newTreasury)) States.setTreasury(stateId, newTreasury);
         refreshStatesEditor();
         $(this).dialog("close");
       },
@@ -934,18 +922,20 @@ function stateCapitalZoomIn(state: number): void {
 }
 
 function stateChangeCulture(state: number, line: HTMLElement, value: string): void {
-  pack.states[state].culture = +value;
+  States.setCulture(state, +value);
   line.dataset.base = String(+value);
 }
 
 function stateChangeType(state: number, line: HTMLElement, value: string): void {
-  pack.states[state].type = value;
+  States.setType(state, value);
   line.dataset.type = value;
   recalculateStates();
 }
 
 function stateChangeExpansionism(state: number, line: HTMLElement, value: string): void {
-  pack.states[state].expansionism = Number(value);
+  const expansionism = Number(value);
+  if (!(expansionism >= 0 && expansionism <= 99)) return;
+  States.setExpansionism(state, expansionism);
   line.dataset.expansionism = value;
   recalculateStates();
 }
@@ -971,42 +961,9 @@ function stateRemovePrompt(state: number): void {
 
 function stateRemove(stateId: number): void {
   unfog(`focusState${stateId}`);
-
-  pack.burgs.forEach(burg => {
-    if (burg.state === stateId) {
-      burg.state = 0;
-      if (burg.capital) {
-        burg.capital = 0;
-        Burgs.changeGroup(burg, null);
-      }
-    }
-  });
-
-  pack.cells.state.forEach((s, i) => {
-    if (s === stateId) pack.cells.state[i] = 0;
-  });
-
   removeEmblem("state", stateId);
-
-  // remove provinces
-  (pack.states[stateId].provinces || []).forEach(p => {
-    pack.provinces[p] = { i: p, removed: true } as Province;
-    pack.cells.province.forEach((pr, i) => {
-      if (pr === p) pack.cells.province[i] = 0;
-    });
-
-    removeEmblem("province", p);
-  });
-
-  // clean up neighbors references from other states
-  pack.states.forEach(state => {
-    if (!state.i || state.removed || !state.neighbors) return;
-    state.neighbors = state.neighbors.filter((n: number) => n !== stateId);
-  });
-
-  delete pack.states[stateId].label;
-  pack.states[stateId] = { i: stateId, removed: true } as State;
-
+  for (const province of pack.states[stateId].provinces || []) removeEmblem("province", province);
+  States.remove(stateId);
   select("#debug").selectAll(".highlight").remove();
 
   Layers.draw("burgIcons", "labels", "military", "borders", "provinces", "states");
@@ -1210,12 +1167,9 @@ function openRegenerationMenu(): void {
 function recalculateStates(must?: boolean): void {
   if (!must && !ensureEl<HTMLInputElement>("statesAutoChange").checked) return;
 
-  States.expandStates();
   // opt-in regeneration ("auto-apply changes"), so it takes the current request for the province
   // ratio rather than a fact of the map. See docs/architecture/configuration.md#the-test
-  Provinces.generate();
-  Provinces.getPoles();
-  States.getPoles();
+  States.recalculate();
 
   Layers.draw("states", "borders", "provinces", "goods", "emblems");
   if (ensureEl<HTMLInputElement>("adjustLabels").checked) {
@@ -1266,187 +1220,19 @@ function openPaintEditor(): void {
 }
 
 function applyStatesPaint(changes: ReadonlyMap<number, number>, adjustLabels: boolean): void {
-  const { cells } = pack;
-  const affectedStates: number[] = [];
-  const affectedProvinces: number[] = [];
-
-  for (const [cell, state] of changes) {
-    affectedStates.push(cells.state[cell], state);
-    affectedProvinces.push(cells.province[cell]);
-    cells.state[cell] = state;
-    if (cells.burg[cell]) pack.burgs[cells.burg[cell]].state = state;
+  if (!changes.size) return;
+  const affectedStates = new Set<number>();
+  for (const [stateId, cells] of groupByValue(changes)) {
+    for (const cell of cells) affectedStates.add(pack.cells.state[cell]).add(stateId);
+    States.setCells(stateId, cells);
   }
 
-  if (affectedStates.length) {
-    States.getPoles();
-    adjustProvinces([...new Set(affectedProvinces)]);
-    Layers.draw("states", "borders", "provinces");
-
-    if (adjustLabels) {
-      const statesToRefit = [...new Set(affectedStates)];
-      for (const stateId of statesToRefit) {
-        if (pack.states[stateId].label) delete pack.states[stateId].label;
-      }
-      Layers.draw("labels");
-    }
-
-    if (document.getElementById(dialogId)) refreshStatesEditor();
+  Layers.draw("states", "borders", "provinces", "emblems");
+  if (adjustLabels) {
+    for (const stateId of affectedStates) delete pack.states[stateId].label;
+    Layers.draw("labels");
   }
-}
-
-function adjustProvinces(affectedProvinces: number[]): void {
-  const { cells, provinces, states, burgs } = pack as any;
-  const createdProvinces: number[] = [];
-
-  affectedProvinces.forEach(provinceId => {
-    if (!provinces[provinceId]) return; // lands without province captured => do nothing
-
-    // find states owning at least 1 province cell
-    const provCells = cells.i.filter((i: number) => cells.province[i] === provinceId);
-    const provStates = [...new Set(provCells.map((i: number) => cells.state[i]))] as number[];
-
-    // province is captured completely => change owner or remove
-    if (provinceId && provStates.length === 1) {
-      changeProvinceOwner(provinceId, provStates[0], provCells);
-      return;
-    }
-
-    // province is captured partially => split province
-    splitProvince(provinceId, provStates, provCells);
-  });
-
-  redrawEmblems(createdProvinces.map(provinceId => ["province", provinceId] as const));
-
-  function changeProvinceOwner(provinceId: number, newOwnerId: number, provinceCells: number[]) {
-    const province = provinces[provinceId];
-    const prevOwner = states[province.state];
-
-    // remove province from old owner list
-    prevOwner.provinces = prevOwner.provinces.filter((province: number) => province !== provinceId);
-
-    if (newOwnerId) {
-      // new owner is a state => change owner
-      province.state = newOwnerId;
-      states[newOwnerId].provinces.push(provinceId);
-    } else {
-      // new owner is neutral => remove province
-      provinces[provinceId] = { i: provinceId, removed: true };
-      removeEmblem("province", provinceId);
-      provinceCells.forEach(i => {
-        cells.province[i] = 0;
-      });
-    }
-  }
-
-  function splitProvince(provinceId: number, provinceStates: number[], provinceCells: number[]) {
-    const province = provinces[provinceId];
-    const prevOwner = states[province.state];
-    const provinceCenterOwner = cells.state[province.center];
-
-    provinceStates.forEach(stateId => {
-      const stateProvinceCells = provinceCells.filter(i => cells.state[i] === stateId);
-
-      if (stateId === provinceCenterOwner) {
-        // province center is owned by the same state => do nothing for this state
-        if (stateId === prevOwner.i) return;
-
-        // province center is captured by neutrals => remove province
-        if (!stateId) {
-          provinces[provinceId] = { i: provinceId, removed: true };
-          removeEmblem("province", provinceId);
-          stateProvinceCells.forEach(i => {
-            cells.province[i] = 0;
-          });
-          return;
-        }
-
-        // reassign province ownership to province center owner
-        prevOwner.provinces = prevOwner.provinces.filter((province: number) => province !== provinceId);
-        province.state = stateId;
-        province.color = getMixedColor(states[stateId].color);
-        states[stateId].provinces.push(provinceId);
-        return;
-      }
-
-      // province cells captured by neutrals => remove captured cells from province
-      if (!stateId) {
-        stateProvinceCells.forEach(i => {
-          cells.province[i] = 0;
-        });
-        return;
-      }
-
-      // a few province cells owned by state => add to closes province
-      if (stateProvinceCells.length < 20) {
-        const closestProvince = findClosestProvince(provinceId, stateId, stateProvinceCells);
-        if (closestProvince) {
-          stateProvinceCells.forEach(i => {
-            cells.province[i] = closestProvince;
-          });
-          return;
-        }
-      }
-
-      // some province cells owned by state => create new province
-      createProvince(province, stateId, stateProvinceCells);
-    });
-  }
-
-  function createProvince(oldProvince: any, stateId: number, provinceCells: number[]) {
-    const newProvinceId = provinces.length;
-    const burgCell = provinceCells.find(i => cells.burg[i]);
-    const center = burgCell ? burgCell : provinceCells[0];
-    const burgId = burgCell ? cells.burg[burgCell] : 0;
-    const burg = burgId ? burgs[burgId] : null;
-    const culture = cells.culture[center];
-
-    const nameByBurg = burgCell && P(0.5);
-    const name = nameByBurg ? burg.name : oldProvince.name || Names.getState(Names.getCultureShort(culture), culture);
-
-    const formOptions = ["Zone", "Area", "Territory", "Province"];
-    const formName = burgCell && oldProvince.formName ? oldProvince.formName : ra(formOptions);
-
-    const color = getMixedColor(states[stateId].color);
-
-    const kinship = nameByBurg ? 0.8 : 0.4;
-    const type = Burgs.getType(center, burg?.port);
-    const coa = Emblems.generate(burg?.coa || states[stateId].coa, kinship, burg ? null : 0.9, type);
-    coa.shield = Emblems.getShield(culture, stateId);
-
-    provinces.push({
-      i: newProvinceId,
-      state: stateId,
-      center,
-      burg: burgId,
-      name,
-      formName,
-      fullName: `${name} ${formName}`,
-      color,
-      coa
-    });
-
-    provinceCells.forEach(i => {
-      cells.province[i] = newProvinceId;
-    });
-
-    states[stateId].provinces.push(newProvinceId);
-    createdProvinces.push(newProvinceId);
-  }
-
-  function findClosestProvince(provinceId: number, stateId: number, sourceCells: number[]) {
-    const borderCell = sourceCells.find(i =>
-      cells.c[i].some((c: number) => {
-        return cells.state[c] === stateId && cells.province[c] && cells.province[c] !== provinceId;
-      })
-    );
-
-    const closesProvince =
-      borderCell &&
-      cells.c[borderCell]
-        .map((c: number) => cells.province[c])
-        .find((province: number) => province && province !== provinceId);
-    return closesProvince;
-  }
+  if (document.getElementById(dialogId)) refreshStatesEditor();
 }
 
 function enterAddStateMode(this: HTMLElement): void {
@@ -1466,104 +1252,21 @@ function enterAddStateMode(this: HTMLElement): void {
 }
 
 function addState(this: SVGElement, event: MouseEvent): void {
-  const { cells, states, burgs } = pack as any;
-  const point = getPointer(event, this);
-  const center = Pack.findCell(point[0], point[1])!;
-  if (cells.h[center] < 20) {
-    tip("You cannot place state into the water. Please click on a land cell", false, "error");
+  const [x, y] = getPointer(event, this);
+  const hadBurg = pack.cells.burg[Pack.findCell(x, y)!];
+  let stateId: number;
+  try {
+    stateId = States.add(x, y);
+  } catch (error) {
+    tip(error instanceof Error ? error.message : String(error), false, "error");
     return;
   }
-
-  let burgId = cells.burg[center];
-  if (burgId && burgs[burgId].capital) {
-    tip("Existing capital cannot be selected as a new state capital! Select other cell", false, "error");
-    return;
-  }
-
-  if (!burgId) {
-    burgId = Burgs.add(point as [number, number]);
-    redrawEmblem("burg", burgId);
-  }
-
-  const oldState = cells.state[center];
-  const newState = states.length;
-
-  // turn burg into a capital
-  burgs[burgId].capital = 1;
-  burgs[burgId].state = newState;
-  Burgs.changeGroup(burgs[burgId], null);
-  Layers.draw("burgIcons", "labels", "routes");
-
   if (event.shiftKey === false) exitAddStateMode();
 
-  const culture = cells.culture[center];
-  const basename = center % 5 === 0 ? burgs[burgId].name : Names.getCulture(culture);
-  const name = Names.getState(basename, culture);
-  const color = getRandomColor();
-
-  // generate emblem
-  const cultureType = pack.cultures[culture].type;
-  const coa = Emblems.generate(burgs[burgId].coa, 0.4, null, cultureType);
-  coa.shield = Emblems.getShield(culture, undefined);
-
-  // update diplomacy and reverse relations
-  const diplomacy = states.map((s: any) => {
-    if (!s.i || s.removed) return "x";
-    if (!oldState) {
-      s.diplomacy.push("Neutral");
-      return "Neutral";
-    }
-
-    let relations = states[oldState].diplomacy[s.i]; // relations between Nth state and old overlord
-    if (s.i === oldState) relations = "Enemy";
-    // new state is Enemy to its old overlord
-    else if (relations === "Ally") relations = "Suspicion";
-    else if (relations === "Friendly") relations = "Suspicion";
-    else if (relations === "Suspicion") relations = "Neutral";
-    else if (relations === "Enemy") relations = "Friendly";
-    else if (relations === "Rival") relations = "Friendly";
-    else if (relations === "Vassal") relations = "Suspicion";
-    else if (relations === "Suzerain") relations = "Enemy";
-    s.diplomacy.push(relations);
-    return relations;
-  });
-  diplomacy.push("x");
-  states[0].diplomacy.push([
-    `Independance declaration`,
-    `${name} declared its independance from ${states[oldState].name}`
-  ]);
-
-  cells.state[center] = newState;
-  cells.province[center] = 0;
-
-  states.push({
-    i: newState,
-    name,
-    diplomacy,
-    provinces: [],
-    color,
-    expansionism: 0.5,
-    capital: burgId,
-    type: "Generic",
-    center,
-    culture,
-    military: [],
-    alert: 1,
-    coa
-  });
-
-  States.getPoles();
-  States.findNeighbors();
-  States.collectStatistics();
-  States.defineStateForms([newState]);
-  adjustProvinces([cells.province[center]]);
-
-  Layers.draw("labels");
-  redrawEmblem("state", newState);
-
+  if (!hadBurg) redrawEmblem("burg", pack.states[stateId].capital);
+  redrawEmblem("state", stateId);
   Layers.hide("provinces");
-  Layers.draw("states", "borders");
-
+  Layers.draw("burgIcons", "labels", "routes", "states", "borders");
   statesTable.refresh();
 }
 
@@ -1692,100 +1395,14 @@ const statesAnnex = createAnnexMode({
 });
 
 function mergeStates(statesToMerge: number[], rulingStateId: number, asProvinces = false): void {
-  const rulingState = pack.states[rulingStateId];
-  const rulingStateArmy = ensureEl(`army${rulingStateId}`);
-
-  // remove states to be merged
-  statesToMerge.forEach(stateId => {
-    const state = pack.states[stateId];
-    state.removed = true;
-    delete pack.states[stateId].label;
-
-    removeEmblem("state", stateId);
-
-    // add merged state regiments to the ruling state
-    (state.military || []).forEach((regiment: any) => {
-      const oldId = `regiment${stateId}-${regiment.i}`;
-      const newIndex = (rulingState.military || []).length;
-      (rulingState.military || []).push({ ...regiment, i: newIndex });
-      const newId = `regiment${rulingStateId}-${newIndex}`;
-
-      const element = document.getElementById(oldId);
-      if (element) {
-        element.id = newId;
-        element.dataset.state = String(rulingStateId);
-        element.dataset.id = String(newIndex);
-        rulingStateArmy.appendChild(element);
-      }
-    });
-
-    select(`#armies g#army${stateId}`).remove();
-
-    if (asProvinces) demoteToProvince(state, rulingState);
-  });
-
-  // reassing burgs
-  pack.burgs.forEach(burg => {
-    if (statesToMerge.includes(burg.state ?? 0)) {
-      if (burg.capital) {
-        burg.capital = 0;
-        Burgs.changeGroup(burg, null);
-      }
-      burg.state = rulingStateId;
-    }
-  });
-
-  // reassign provinces
-  pack.provinces.forEach(province => {
-    if (statesToMerge.includes(province.state)) province.state = rulingStateId;
-  });
-
-  // reassing cells
-  pack.cells.state.forEach((s: number, i: number) => {
-    if (statesToMerge.includes(s)) pack.cells.state[i] = rulingStateId;
-  });
+  for (const stateId of statesToMerge) removeEmblem("state", stateId);
+  States.merge(rulingStateId, statesToMerge, asProvinces);
 
   unfog();
   select("#debug").selectAll(".highlight").remove();
-
-  States.getPoles();
-  if (asProvinces) Provinces.getPoles();
-
-  if (!pack.states[rulingStateId].label) delete pack.states[rulingStateId].label;
-
-  Layers.draw("states", "borders", "burgIcons", "labels", "provinces");
+  Layers.draw("states", "borders", "burgIcons", "labels", "provinces", "military", "emblems");
   if (asProvinces) Layers.show("provinces");
   refreshStatesEditor();
-}
-
-function demoteToProvince(state: State, rulingState: State): void {
-  const { cells, provinces, burgs } = pack;
-  const provinceId = provinces.length;
-
-  provinces.forEach(province => {
-    if (province.state !== state.i || province.removed) return;
-    removeEmblem("province", province.i);
-    provinces[province.i] = { i: province.i, removed: true } as Province;
-  });
-  cells.state.forEach((s: number, i: number) => {
-    if (s === state.i) cells.province[i] = provinceId;
-  });
-
-  const burg = state.capital;
-  const formName = state.formName || "Province";
-  provinces.push({
-    i: provinceId,
-    state: rulingState.i,
-    center: burg ? burgs[burg].cell : state.center,
-    burg,
-    name: state.name,
-    formName,
-    fullName: `${state.name} ${formName}`,
-    color: getMixedColor(state.color!),
-    coa: state.coa
-  } as Province);
-  rulingState.provinces!.push(provinceId);
-  redrawEmblem("province", provinceId);
 }
 
 function downloadStatesCsv(): void {
@@ -1823,8 +1440,7 @@ function downloadStatesCsv(): void {
 }
 
 function updateLockStatus(stateId: number, classList: DOMTokenList): void {
-  const s = pack.states[stateId];
-  s.lock = !s.lock;
+  States.setLocked(stateId, !pack.states[stateId].lock);
 
   classList.toggle("icon-lock-open");
   classList.toggle("icon-lock");

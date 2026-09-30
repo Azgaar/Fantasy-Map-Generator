@@ -570,6 +570,13 @@ export const createAvailableLandCellFinder = (cells: {
   };
 };
 
+// capitals and market centers stay: removing them would break their state or market
+function removeBurg(burg: (typeof pack.burgs)[number]): void {
+  if (burg.capital || pack.markets?.some(market => market.centerBurgId === burg.i)) return;
+  Burgs.remove(burg.i);
+  removeEmblem("burg", burg.i);
+}
+
 function restoreRiskedData(): void {
   INFO && console.group("Edit Heightmap");
   TIME && console.time("restoreRiskedData");
@@ -713,8 +720,7 @@ function restoreRiskedData(): void {
         console.error(
           `[Data integrity] Burg ${b.i} has no available land cell after Risk restoration. Removing the burg`
         );
-      Burgs.remove(b.i);
-      removeEmblem("burg", b.i);
+      removeBurg(b);
       continue;
     }
 
@@ -722,10 +728,7 @@ function restoreRiskedData(): void {
     b.feature = pack.cells.f[b.cell];
 
     pack.cells.burg[b.cell] = b.i;
-    if (!b.capital && pack.cells.h[b.cell] < 20) {
-      Burgs.remove(b.i);
-      removeEmblem("burg", b.i);
-    }
+    if (pack.cells.h[b.cell] < 20) removeBurg(b);
     if (b.capital) pack.states[b.state!].center = b.cell;
   }
 

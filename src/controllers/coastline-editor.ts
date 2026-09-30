@@ -212,7 +212,7 @@ function setFeature(feature: Feature | null): void {
 function applyChange(change: Partial<CoastlineSettings>): void {
   if (selectedFeature) {
     const firstChange = !selectedFeature.coastline; // the feature gets its own settings
-    selectedFeature.coastline = { ...(selectedFeature.coastline || Coastline.settings), ...change };
+    Features.setCoastline(selectedFeature.i, change);
     drawFeaturePath(selectedFeature);
     if (firstChange) syncScope();
   } else {
@@ -225,7 +225,7 @@ function applyChange(change: Partial<CoastlineSettings>): void {
 /** back to the map settings: the feature is outlined like every other one again */
 function dropOwnSettings(): void {
   if (!selectedFeature) return;
-  delete selectedFeature.coastline;
+  Features.setCoastline(selectedFeature.i, null);
   drawFeaturePath(selectedFeature);
   syncScope();
   syncForm();

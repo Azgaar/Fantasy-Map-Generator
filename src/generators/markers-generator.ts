@@ -1,7 +1,8 @@
 import { mean } from "d3";
 import { Icons } from "@/components/icons";
 import type { PackedGraph } from "@/types/PackedGraph";
-import { requireName } from "@/utils/languageUtils";
+import { requireColor } from "@/utils/colorUtils";
+import { requireName, requireOneOf } from "@/utils/languageUtils";
 import {
   capitalize,
   convertTemperature,
@@ -65,6 +66,45 @@ type MarkerConfig = {
   multiplier: number;
   list: (pack: PackedGraph) => number[];
   add: (marker: Marker, cell: number) => void;
+};
+
+export const MARKER_PINS = [
+  "bubble",
+  "pin",
+  "square",
+  "squarish",
+  "diamond",
+  "hex",
+  "hexy",
+  "shieldy",
+  "shield",
+  "pentagon",
+  "heptagon",
+  "circle",
+  "no"
+] as const;
+
+export type MarkerAppearance = Partial<
+  Record<"size" | "px" | "dx" | "dy", number | null> &
+    Record<"pin" | "fill" | "stroke" | "iconFill" | "iconStroke", string | null>
+>;
+
+const requireNumber = (min: number, max: number) => (value: unknown) => {
+  if (typeof value !== "number" || !(value >= min && value <= max))
+    throw new Error(`Expected a number from ${min} to ${max}`);
+  return value;
+};
+
+const APPEARANCE: Record<keyof MarkerAppearance, (value: unknown) => unknown> = {
+  size: requireNumber(1, 500),
+  px: requireNumber(1, 50),
+  dx: requireNumber(0, 100),
+  dy: requireNumber(0, 100),
+  pin: value => requireOneOf(value, MARKER_PINS, "The pin"),
+  fill: requireColor,
+  stroke: requireColor,
+  iconFill: requireColor,
+  iconStroke: requireColor
 };
 
 class MarkersModule {
@@ -146,13 +186,62 @@ class MarkersModule {
     else delete marker.hidden;
   }
 
+  /** Move a marker to a map point */
+  move(markerId: number, x: number, y: number): void {
+    const marker = this.living(markerId);
+    const cell = Pack.requireCell(x, y);
+    Object.assign(marker, { x: rn(x, 1), y: rn(y, 1), cell });
+  }
+
+  /** Pin a marker so it shows even when its type is filtered out, or unpin it */
+  setPinned(markerId: number, pinned: boolean): void {
+    const marker = this.living(markerId);
+    if (pinned) marker.pinned = true;
+    else delete marker.pinned;
+  }
+
+  /** Lock a marker so regeneration keeps it, or unlock it */
+  setLocked(markerId: number, locked: boolean): void {
+    const marker = this.living(markerId);
+    if (locked) marker.lock = true;
+    else delete marker.lock;
+  }
+
+  /** Set how a marker looks: size (marker), px (icon size), dx and dy (icon shift, %), pin shape, fill and stroke (pin), iconFill and iconStroke. null restores a default */
+  setAppearance(markerId: number, appearance: MarkerAppearance): void {
+    const marker = this.living(markerId);
+    if (typeof appearance !== "object" || appearance === null) throw new Error("The appearance must be an object");
+    const checked: Partial<Record<keyof MarkerAppearance, unknown>> = {};
+    for (const [key, value] of Object.entries(appearance)) {
+      if (!(key in APPEARANCE))
+        throw new Error(`Unknown marker appearance ${key}; known: ${Object.keys(APPEARANCE).join(", ")}`);
+      checked[key as keyof MarkerAppearance] = value === null ? null : APPEARANCE[key as keyof MarkerAppearance](value);
+    }
+    for (const [key, value] of Object.entries(checked)) {
+      if (value === null) delete marker[key as keyof MarkerAppearance];
+      else Object.assign(marker, { [key]: value });
+    }
+  }
+
   private living(markerId: number): Marker {
     const marker = pack.markers.find(m => m.i === markerId);
     if (!marker) throw new Error(`Marker ${markerId} does not exist`);
     return marker;
   }
 
-  deleteMarker(markerId: number) {
+  /** Place a marker at a map point; a type from the markers config, such as volcanoes, brings its icon and legend */
+  place(x: number, y: number, type: string, name?: string, icon?: string): number {
+    const cell = Pack.requireCell(x, y);
+    const marker = { x: rn(x, 2), y: rn(y, 2), cell, type: requireName(type) } as Marker;
+    if (name !== undefined) marker.name = requireName(name);
+    if (icon !== undefined) marker.icon = requireName(icon);
+    else if (!this.config.some(config => config.type === marker.type)) marker.icon = "❓";
+    return this.add(marker).i;
+  }
+
+  /** Remove a marker */
+  remove(markerId: number) {
+    this.living(markerId);
     pack.markers = pack.markers.filter(m => m.i !== markerId);
   }
 

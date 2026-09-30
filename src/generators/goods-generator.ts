@@ -1,8 +1,10 @@
 import Alea from "alea";
 import { color, shuffler } from "d3";
+import { requireColor } from "@/utils/colorUtils";
+import { requireName } from "@/utils/languageUtils";
 import type { IconSet } from "../types/icons";
 import type { PackedGraph } from "../types/PackedGraph";
-import type { CultureType } from "./cultures-generator";
+import { CULTURE_TYPES, type CultureType } from "./cultures-generator";
 
 export interface Good {
   i: number;
@@ -39,6 +41,14 @@ export interface Good {
 
   note?: string;
 }
+
+export type ProductionRules = Partial<{
+  chance: number | null;
+  recipes: Record<number, number>[] | null;
+  biomeOutput: Partial<Record<number, number>> | null;
+  multipliers: Good["multipliers"] | null;
+  demandCoverage: Good["demandCoverage"] | null;
+}>;
 
 export const DEMAND_PRIORITY = ["food", "utilities", "construction", "military", "luxury"] as const;
 export type DemandCategory = (typeof DEMAND_PRIORITY)[number];
@@ -1105,6 +1115,113 @@ export class GoodsModule {
 
   get(i: number): Good | undefined {
     return this.goodById[i];
+  }
+
+  /** Rename a good */
+  rename(goodId: number, name: string): void {
+    this.living(goodId).name = requireName(name);
+  }
+
+  /** Set a good's icon: an emoji or an icon id */
+  setIcon(goodId: number, icon: string): void {
+    this.living(goodId).icon = requireName(icon);
+  }
+
+  /** Set a good's color on the Goods layer */
+  recolor(goodId: number, color: string): void {
+    this.living(goodId).color = requireColor(color);
+  }
+
+  /** Set a good's base value per unit, in the map's currency; markets price it from this on the next economy run */
+  setPrice(goodId: number, value: number): void {
+    if (typeof value !== "number" || !(value >= 0 && Number.isFinite(value)))
+      throw new Error("The value must be a non-negative number");
+    this.living(goodId).value = value;
+  }
+
+  /** Set the unit a good is counted in, such as "barrel"; empty for none */
+  setUnit(goodId: number, unit: string): void {
+    if (typeof unit !== "string") throw new Error("The unit must be text");
+    this.living(goodId).unit = unit.trim();
+  }
+
+  /** Set a good's tags, such as "food, luxury" */
+  setTags(goodId: number, tags: string[]): void {
+    if (!Array.isArray(tags) || tags.some(tag => typeof tag !== "string")) throw new Error("Tags are a list of words");
+    this.living(goodId).tags = [...new Set(tags.map(tag => tag.trim().toLocaleLowerCase()).filter(Boolean))];
+  }
+
+  /** Set how a good is produced: chance (0–100), recipes ([{ goodId: amount }]), biomeOutput ({ biomeId: amount }), multipliers ({ cultureType | culture | state | religion | biome | zone: { key: factor } }), demandCoverage ({ category: share }). A key set to null clears it. Takes effect on the next economy run */
+  setProduction(goodId: number, rules: ProductionRules): void {
+    const good = this.living(goodId);
+    if (typeof rules !== "object" || rules === null) throw new Error("The production rules must be an object");
+    const nonNegative = (value: unknown, label: string) => {
+      if (typeof value !== "number" || !(value >= 0 && Number.isFinite(value)))
+        throw new Error(`${label} must be a non-negative number`);
+    };
+    const record = (value: unknown, label: string, key: (id: string) => boolean) => {
+      if (typeof value !== "object" || value === null || Array.isArray(value))
+        throw new Error(`${label} must be an object`);
+      for (const [id, amount] of Object.entries(value)) {
+        if (!key(id)) throw new Error(`${label} names an unknown ${id}`);
+        nonNegative(amount, `${label} ${id}`);
+      }
+    };
+    const isId = (id: string) => /^\d+$/.test(id); // ids of other entities; stale ones are harmless
+    const next: Partial<Good> = {};
+    for (const [key, value] of Object.entries(rules)) {
+      if (value === null) {
+        next[key as keyof ProductionRules] = undefined;
+        continue;
+      }
+      if (key === "chance") {
+        nonNegative(value, "The chance");
+        if ((value as number) > 100) throw new Error("The chance must be from 0 to 100");
+      } else if (key === "recipes") {
+        if (!Array.isArray(value)) throw new Error("Recipes are a list of { goodId: amount }");
+        for (const recipe of value) {
+          record(recipe, "A recipe", id => Boolean(this.findGood(+id)));
+          if (!Object.keys(recipe).length) throw new Error("Each recipe needs at least one ingredient");
+          if (Object.values(recipe).some(amount => !amount)) throw new Error("Recipe amounts must be positive");
+        }
+      } else if (key === "biomeOutput") record(value, "The biome output", isId);
+      else if (key === "demandCoverage")
+        record(value, "The demand coverage", id => (DEMAND_PRIORITY as readonly string[]).includes(id));
+      else if (key === "multipliers") {
+        const dimensions: Record<string, (id: string) => boolean> = {
+          cultureType: id => (CULTURE_TYPES as readonly string[]).includes(id),
+          culture: isId,
+          state: isId,
+          religion: isId,
+          biome: isId,
+          zone: isId
+        };
+        if (typeof value !== "object" || Array.isArray(value)) throw new Error("Multipliers must be an object");
+        for (const [dimension, factors] of Object.entries(value)) {
+          if (!dimensions[dimension])
+            throw new Error(`Unknown multiplier ${dimension}; known: ${Object.keys(dimensions).join(", ")}`);
+          record(factors, `The ${dimension} multiplier`, dimensions[dimension]);
+        }
+      } else
+        throw new Error(
+          `Unknown production rule ${key}; known: chance, recipes, biomeOutput, multipliers, demandCoverage`
+        );
+      next[key as keyof ProductionRules] = structuredClone(value) as never;
+    }
+    for (const [key, value] of Object.entries(next)) {
+      if (value === undefined) delete good[key as keyof ProductionRules];
+      else Object.assign(good, { [key]: value });
+    }
+  }
+
+  private findGood(goodId: number): Good | undefined {
+    return pack.goods?.find(good => good.i === goodId);
+  }
+
+  private living(goodId: number): Good {
+    const good = this.findGood(goodId);
+    if (!good) throw new Error(`Good ${goodId} does not exist`);
+    return good;
   }
 
   sync() {

@@ -600,7 +600,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       pack.routes.forEach(route => {
         if (!route.points || route.points.length < 2) {
           ERROR && console.error(`[Data integrity] Route ${route.i} has less than 2 points. Removing the route`);
-          Routes.remove(route);
+          Routes.remove(route.i);
         }
       });
 

@@ -361,12 +361,12 @@ function updateTotals(journey: Journey): void {
 
 function onNameInput(this: HTMLInputElement): void {
   const journey = getJourney();
-  if (journey) journey.name = this.value;
+  if (journey && this.value.trim()) Journeys.rename(journey.i, this.value);
 }
 
 function onTypeInput(this: HTMLInputElement): void {
   const journey = getJourney();
-  if (journey) journey.type = this.value;
+  if (journey && this.value.trim()) Journeys.setType(journey.i, this.value);
 }
 
 function onColorPick(): void {
@@ -374,7 +374,7 @@ function onColorPick(): void {
   if (!journey) return;
 
   void Controllers.ColorPicker.open(journey.color, (fill: string) => {
-    journey.color = fill;
+    Journeys.recolor(journey.i, fill);
     ensureEl<FillBoxElement>("journeyColor").fill = fill;
     segmentsTable.refresh();
   });
@@ -382,7 +382,8 @@ function onColorPick(): void {
 
 function onSegNameInput(this: HTMLInputElement): void {
   const segment = getLineSegment(this);
-  if (segment) segment.name = this.value;
+  const journey = getJourney();
+  if (segment && journey && this.value.trim()) Journeys.setSegment(journey.i, segment.i, { name: this.value });
 }
 
 function onSegTransportChange(this: HTMLSelectElement): void {
@@ -447,7 +448,7 @@ function onSegSpeedInput(this: HTMLInputElement): void {
   const journey = getJourney();
   if (!segment || !journey) return;
 
-  segment.speed = parseSpeed(+this.value || 0); // stored in km/h, typed in the user distance unit
+  Journeys.setSegment(journey.i, segment.i, { speed: Math.max(0, parseSpeed(+this.value || 0)) }); // stored in km/h, typed in the user distance unit
   // a full refresh would tear this very input out of the DOM mid-keystroke, so update in place
   syncTimeCell(this, segment);
   updateTotals(journey);
@@ -459,8 +460,9 @@ function onSegDurationInput(this: HTMLInputElement): void {
   if (!segment || !journey) return;
 
   // an emptied field is not a zero-hour leg: it gives the segment back to distance/speed
-  if (this.value.trim() === "") delete segment.duration;
-  else segment.duration = Math.max(0, +this.value || 0);
+  Journeys.setSegment(journey.i, segment.i, {
+    duration: this.value.trim() === "" ? null : Math.max(0, +this.value || 0)
+  });
   updateTotals(journey);
 }
 
@@ -469,7 +471,7 @@ function onSegColorPick(this: FillBoxElement): void {
   if (!segment) return;
 
   void Controllers.ColorPicker.open(this.fill, (fill: string) => {
-    segment.color = fill;
+    Journeys.setSegment(getJourney()!.i, segment.i, { color: fill });
     segmentsTable.refresh();
   });
 }
@@ -478,7 +480,7 @@ function onToggleSegVisible(this: HTMLElement): void {
   const segment = getLineSegment(this);
   if (!segment) return;
 
-  Journeys.toggleVisibility(segment);
+  Journeys.setSegment(getJourney()!.i, segment.i, { hidden: segment.visible !== false });
   if (segment.visible === false) pathEditor.stopEditing(segment.i); // a hidden segment can't be edited on the map
   segmentsTable.refresh();
 }
@@ -548,7 +550,7 @@ function onSegMoveUp(this: HTMLElement): void {
 
   const index = journey.segments.findIndex(segment => segment.i === getRowId(this));
   if (index <= 0) return;
-  journey.segments.splice(index - 1, 0, ...journey.segments.splice(index, 1));
+  Journeys.moveSegment(journey.i, journey.segments[index].i, index - 1);
   segmentsTable.refresh();
 }
 
@@ -563,7 +565,7 @@ function onSegDelete(this: HTMLElement): void {
     confirm: "Remove",
     onConfirm: () => {
       pathEditor.stopEditing(segment.i);
-      journey.segments = journey.segments.filter(other => other.i !== segment.i);
+      Journeys.removeSegment(journey.i, segment.i);
       segmentsTable.refresh();
     }
   });
@@ -583,7 +585,7 @@ function addSegment(): void {
   if (!journey) return;
 
   const isFirst = !journey.segments.length;
-  const { i } = Journeys.addSegment(journey);
+  const i = Journeys.addSegment(journey.i);
   segmentsTable.refresh();
 
   if (isFirst) pathEditor.pickEndpoint(i, "from", true);

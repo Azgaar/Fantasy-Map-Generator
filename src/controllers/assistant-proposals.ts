@@ -1,6 +1,6 @@
 import { refreshEditors } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
-import { type EntityRef, MapEntities } from "@/components/map-entities";
+import { type EntityType, MapEntities } from "@/components/map-entities";
 import { Controllers } from "@/controllers";
 import type { ChangeRow, Proposal } from "@/services/assistant/chats";
 import { OPERATIONS } from "./assistant-operations";
@@ -8,7 +8,47 @@ import { OPERATIONS } from "./assistant-operations";
 // Preview → Apply → Undo for batches of registered operations. See docs/prd/assistant.md
 
 type Batch = Proposal["operations"];
-type Entry = { ref: EntityRef; entity: object; copy: object };
+type Item = { i: number } & Record<string, unknown>;
+type Cells = Record<number, unknown>;
+
+/** Entity collections a proposal records, keyed by `i`. Indexed ones keep `i` equal to the array index */
+const COLLECTIONS: [EntityType, () => Item[] | undefined, boolean][] = [
+  ["burg", () => pack.burgs as unknown as Item[], true],
+  ["state", () => pack.states as unknown as Item[], true],
+  ["province", () => pack.provinces as unknown as Item[], true],
+  ["culture", () => pack.cultures as unknown as Item[], true],
+  ["religion", () => pack.religions as unknown as Item[], true],
+  ["biome", () => pack.biomes as unknown as Item[], true],
+  ["feature", () => pack.features as unknown as Item[], true],
+  ["marker", () => pack.markers as unknown as Item[], false],
+  ["zone", () => pack.zones as unknown as Item[], false],
+  ["river", () => pack.rivers as unknown as Item[], false],
+  ["route", () => pack.routes as unknown as Item[], false],
+  ["addedLabel", () => pack.addedLabels as unknown as Item[], false],
+  ["journey", () => pack.journeys as unknown as Item[], false],
+  ["market", () => pack.markets as unknown as Item[], false],
+  ["good", () => pack.goods as unknown as Item[], false]
+];
+
+/** Per-cell data a proposal records; a change to any of them is one row per field */
+const CELL_FIELDS = ["burg", "state", "province", "culture", "religion", "r", "fl", "conf", "routes"] as const;
+const CELLS = "cells";
+
+const collectionOf = (type: string) => COLLECTIONS.find(([name]) => name === type);
+const isItem = (value: unknown): value is Item =>
+  typeof value === "object" && value !== null && Number.isInteger((value as Item).i);
+const cellData = (field: string) => (pack.cells as unknown as Record<string, Cells | undefined> | undefined)?.[field];
+
+/** `{ result: n }` in args stands for what operation n (0-based) of the same batch returned, such as a new id */
+function resolve(arg: unknown, results: unknown[]): unknown {
+  if (Array.isArray(arg)) return arg.map(item => resolve(item, results));
+  const n = (arg as { result?: unknown } | null)?.result;
+  if (!isContainer(arg) || Object.keys(arg).length !== 1 || !Number.isInteger(n)) return arg;
+  if ((n as number) < 0 || (n as number) >= results.length)
+    throw new Error(`{ result: ${n} } must name an earlier operation of the batch, counted from 0`);
+  if (results[n as number] === undefined) throw new Error(`Operation ${n} returns nothing to refer to`);
+  return results[n as number];
+}
 
 function parse(operations: unknown): Batch | string {
   if (!Array.isArray(operations) || !operations.length) return "Propose at least one operation";
@@ -22,92 +62,182 @@ function parse(operations: unknown): Batch | string {
   return batch;
 }
 
-/** Copies of every entity the batch may change, by entity key */
-function snapshot(batch: Batch): Map<string, Entry> {
-  const entries = new Map<string, Entry>();
-  const add = (ref: EntityRef, entity: object) =>
-    entries.set(MapEntities.key(ref), { ref, entity, copy: structuredClone(entity) });
-  for (const { op, args } of batch) {
-    for (const touch of OPERATIONS[op].touches) {
-      if (touch !== "entity") for (const { ref, entity } of MapEntities.collect(touch)) add(ref, entity);
-      else {
-        const ref = typeof args[0] === "string" ? MapEntities.parseKey(args[0]) : undefined;
-        const entity = ref && MapEntities.get(ref);
-        if (ref && entity) add(ref, entity);
-      }
-    }
-  }
-  return entries;
+interface Snapshot {
+  items: Map<string, Map<number, Item>>;
+  cells: Map<string, Cells>;
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value) && !ArrayBuffer.isView(value);
+function snapshot(): Snapshot {
+  const items = new Map<string, Map<number, Item>>();
+  for (const [type, list] of COLLECTIONS)
+    items.set(type, new Map((list() ?? []).filter(isItem).map(item => [item.i, structuredClone(item)])));
+  const cells = new Map<string, Cells>();
+  for (const field of CELL_FIELDS) {
+    const data = cellData(field);
+    if (data)
+      cells.set(field, ArrayBuffer.isView(data) ? (data as unknown as Uint32Array).slice() : structuredClone(data));
+  }
+  return { items, cells };
+}
+
+const isContainer = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !ArrayBuffer.isView(value);
 const same = (a: unknown, b: unknown) => a === b || JSON.stringify(a) === JSON.stringify(b);
 
-function diff(before: unknown, after: unknown, path: string[] = []): Omit<ChangeRow, "key" | "entity">[] {
-  if (isRecord(before) && isRecord(after))
+/** Changed paths between two values; records and same-length arrays are compared field by field */
+function diff(
+  before: unknown,
+  after: unknown,
+  path: string[] = []
+): { field: string; before: unknown; after: unknown }[] {
+  const nested =
+    isContainer(before) &&
+    isContainer(after) &&
+    Array.isArray(before) === Array.isArray(after) &&
+    (!Array.isArray(before) || before.length === (after as unknown as unknown[]).length);
+  if (nested)
     return [...new Set([...Object.keys(before), ...Object.keys(after)])].flatMap(field =>
       diff(before[field], after[field], [...path, field])
     );
   return same(before, after) ? [] : [{ field: path.join("."), before, after: structuredClone(after) }];
 }
 
-function read(entity: object, field: string): unknown {
-  return field.split(".").reduce<unknown>((node, key) => (isRecord(node) ? node[key] : undefined), entity);
+function compare({ items, cells }: Snapshot): Omit<ChangeRow, "entity">[] {
+  const rows: Omit<ChangeRow, "entity">[] = [];
+  for (const [type, list] of COLLECTIONS) {
+    const copies = items.get(type)!;
+    const live = new Map((list() ?? []).filter(isItem).map(item => [item.i, item]));
+    for (const i of new Set([...copies.keys(), ...live.keys()])) {
+      const key = `${type}:${i}`;
+      const [before, after] = [copies.get(i), live.get(i)];
+      if (!before || !after) rows.push({ key, field: "", before, after: structuredClone(after) });
+      else for (const row of diff(before, after)) rows.push({ key, ...row });
+    }
+  }
+  for (const [field, copy] of cells) {
+    const data = cellData(field) ?? {};
+    const before: Cells = {};
+    const after: Cells = {};
+    const indexes = ArrayBuffer.isView(copy)
+      ? Array.from(copy as unknown as ArrayLike<number>, (_, index) => index)
+      : [...new Set([...Object.keys(copy), ...Object.keys(data)])].map(Number);
+    for (const index of indexes) {
+      if (copy[index] === data[index] || same(copy[index], data[index])) continue;
+      before[index] = copy[index];
+      after[index] = structuredClone(data[index]);
+    }
+    if (Object.keys(after).length) rows.push({ key: CELLS, field, before, after });
+  }
+  return rows;
 }
 
-function write(entity: object, field: string, value: unknown): void {
-  const keys = field.split(".");
+function find(key: string): { list: Item[]; indexed: boolean; i: number; item: Item | undefined } | undefined {
+  const [type, id] = key.split(":");
+  const collection = collectionOf(type);
+  const list = collection?.[1]();
+  if (!collection || !list) return undefined;
+  const i = Number(id);
+  const item = isItem(list[i]) && list[i].i === i ? list[i] : list.find(entry => isItem(entry) && entry.i === i);
+  return { list, indexed: collection[2], i, item };
+}
+
+function read(row: ChangeRow, side: "before" | "after"): boolean {
+  const expected = row[side];
+  if (row.key === CELLS) {
+    const data = cellData(row.field);
+    return Boolean(data) && Object.entries(expected as Cells).every(([cell, value]) => same(data![+cell], value));
+  }
+  const found = find(row.key);
+  if (!found) return false;
+  if (!row.field) return same(found.item, expected);
+  if (!found.item) return false;
+  const value = row.field
+    .split(".")
+    .reduce<unknown>((node, key) => (isContainer(node) ? node[key] : undefined), found.item);
+  return same(value, expected);
+}
+
+function write(row: ChangeRow, side: "before" | "after"): void {
+  const value = row[side];
+  if (row.key === CELLS) {
+    const data = cellData(row.field)!;
+    for (const [cell, next] of Object.entries(value as Cells)) {
+      if (next === undefined) delete data[+cell];
+      else data[+cell] = structuredClone(next);
+    }
+    return;
+  }
+  const { list, i, item } = find(row.key)!;
+  if (!row.field) {
+    if (item) list.splice(list.indexOf(item), 1);
+    if (value === undefined) return;
+    const at = list.findIndex(entry => isItem(entry) && entry.i > i);
+    list.splice(at < 0 ? list.length : at, 0, structuredClone(value) as Item);
+    return;
+  }
+  const keys = row.field.split(".");
   const last = keys.pop()!;
-  let node = entity as Record<string, unknown>;
+  let node = item as Record<string, unknown>;
   for (const key of keys) {
-    if (!isRecord(node[key])) node[key] = {};
+    if (!isContainer(node[key])) node[key] = {};
     node = node[key] as Record<string, unknown>;
   }
   if (value === undefined) delete node[last];
   else node[last] = structuredClone(value);
 }
 
-const entityOf = (row: ChangeRow) => {
-  const ref = MapEntities.parseKey(row.key);
-  return ref && MapEntities.get(ref);
-};
-
-const holds = (change: ChangeRow[], side: "before" | "after") =>
-  change.every(row => {
-    const entity = entityOf(row);
-    return entity !== undefined && same(read(entity, row.field), row[side]);
+/** Every row holds `from`, and removing an item of an indexed collection never shifts the items after it */
+function holds(change: ChangeRow[], from: "before" | "after"): boolean {
+  const to = from === "before" ? "after" : "before";
+  const removed = new Set(change.filter(row => !row.field && row[to] === undefined).map(row => row.key));
+  return change.every(row => {
+    if (!read(row, from)) return false;
+    if (row.field || !removed.has(row.key)) return true;
+    const { list, indexed, i } = find(row.key)!;
+    return (
+      !indexed ||
+      list.every(entry => !isItem(entry) || entry.i <= i || removed.has(`${row.key.split(":")[0]}:${entry.i}`))
+    );
   });
+}
 
+/** Rows go forward in order and back in reverse, so added items leave in the order they came */
 function put(change: ChangeRow[], side: "before" | "after"): void {
-  for (const row of change) write(entityOf(row)!, row.field, row[side]);
+  const rows = side === "after" ? change : [...change].reverse();
+  for (const row of rows) write(row, side);
+}
+
+function name(key: string): string {
+  const ref = key === CELLS ? undefined : MapEntities.parseKey(key);
+  return ref ? MapEntities.getName(ref) : "";
+}
+
+function label(key: string, fallback: string): string {
+  const ref = key === CELLS ? undefined : MapEntities.parseKey(key);
+  if (!ref) return "Cells";
+  return `${MapEntities.getDisplay(ref).kind} ${name(key) || fallback}`.trim();
 }
 
 /** Dry run: run the batch on the live map, record what changed, then restore it. All or nothing */
 function propose(summary: string, operations: unknown, number: number, mapId: number): Proposal | string {
   const batch = parse(operations);
   if (typeof batch === "string") return batch;
-  let entries: Map<string, Entry>;
-  try {
-    entries = snapshot(batch);
-  } catch (error) {
-    return error instanceof Error ? error.message : String(error);
-  }
+  const copy = snapshot();
   let failure: unknown = null;
+  const results: unknown[] = [];
   try {
-    for (const { op, args } of batch) OPERATIONS[op].run(...args);
+    for (const { op, args } of batch) results.push(OPERATIONS[op].run(...(resolve(args, results) as unknown[])));
   } catch (error) {
     failure = error;
   }
-  const rows = [...entries.values()].flatMap(({ ref, entity, copy }) =>
-    diff(copy, entity).map(row => ({ ...row, ref, entity }))
-  );
-  for (const { entity, field, before } of rows) write(entity, field, before);
+  const rows = compare(copy);
+  const names = new Map(rows.map(({ key }) => [key, name(key)])); // added entities are named only while the dry run lasts
+  put(rows as ChangeRow[], "before");
   if (failure) return failure instanceof Error ? failure.message : String(failure);
   if (!rows.length) return "These operations change nothing";
-  const change = rows.map(({ ref, field, before, after }) => ({
-    key: MapEntities.key(ref),
-    entity: `${MapEntities.getDisplay(ref).kind} ${MapEntities.getName(ref)}`,
+  const change = rows.map(({ key, field, before, after }) => ({
+    key,
+    entity: label(key, names.get(key)!),
     field,
     before,
     after

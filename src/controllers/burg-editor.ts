@@ -362,8 +362,7 @@ function changeType(this: HTMLSelectElement): void {
 }
 
 function changeCulture(this: HTMLSelectElement): void {
-  const id = getSelectedId();
-  pack.burgs[id].culture = +this.value;
+  Burgs.setCulture(getSelectedId(), +this.value);
 }
 
 function generateNameCulture(): void {
@@ -384,9 +383,11 @@ function changePopulation(): void {
 
 function changeTreasury(this: HTMLInputElement): void {
   const burg = pack.burgs[getSelectedId()];
-  const treasury = this.valueAsNumber;
-  if (Number.isFinite(treasury)) burg.treasury = rn(treasury, 2);
-  else tip("Enter a valid treasury amount", false, "error");
+  try {
+    Burgs.setTreasury(burg.i, this.valueAsNumber);
+  } catch {
+    tip("Enter a valid treasury amount", false, "error");
+  }
   this.value = String(rn(burg.treasury || 0, 2));
 }
 
@@ -407,7 +408,7 @@ function toggleFeature(this: HTMLElement): void {
 
   if (feature === "port") togglePort(burgId);
   else if (feature === "capital") toggleCapital(burgId);
-  else (burg as any)[feature] = value;
+  else Burgs.setBuilding(burgId, feature, Boolean(value));
 
   this.classList.toggle("inactive", !(burg as any)[feature]);
 
@@ -428,66 +429,31 @@ function confirmRemoveMarket(market: Market): void {
 }
 
 function togglePort(burgId: number): void {
-  const burg = pack.burgs[burgId];
-  if (burg.port) {
-    burg.port = 0;
-  } else {
-    const { cells, features } = pack;
-    const haven = cells.haven[burg.cell];
-    let portFeatureId: number | null;
-
-    if (haven) {
-      const featureId = cells.f[haven];
-      const feature = features[featureId];
-      portFeatureId =
-        feature?.type === "lake" && feature.outlet
-          ? (Rivers.resolveLakeDrainFeature(featureId) ?? featureId)
-          : featureId;
-    } else {
-      portFeatureId = Rivers.resolveDrainFeature(burg.cell);
-      if (!portFeatureId) {
-        tip("No navigable water body found downstream, cannot assign port", false, "warn");
-        return;
-      }
-    }
-
-    burg.port = portFeatureId;
-  }
-  Layers.draw("burgIcons");
+  if (tryEdit(() => Burgs.setPort(burgId, !pack.burgs[burgId].port))) Layers.draw("burgIcons");
 }
 
 function toggleCapital(burgId: number): void {
-  const { burgs, states } = pack;
-
-  if (burgs[burgId].capital) {
+  if (pack.burgs[burgId].capital) {
     tip("To change capital please assign a capital status to another burg of this state", false, "error");
     return;
   }
+  if (tryEdit(() => Burgs.setCapital(burgId))) Layers.draw("burgIcons", "labels");
+}
 
-  const stateId = burgs[burgId].state;
-  if (!stateId) {
-    tip("Neutral lands cannot have a capital", false, "error");
-    return;
+/** Run a model edit, showing its validation error as a tip; returns whether it succeeded */
+function tryEdit(edit: () => void): boolean {
+  try {
+    edit();
+    return true;
+  } catch (error) {
+    tip(error instanceof Error ? error.message : String(error), false, "error");
+    return false;
   }
-
-  const oldCapitalId = states[stateId].capital;
-  states[stateId].capital = burgId;
-  states[stateId].center = burgs[burgId].cell;
-
-  const capital = burgs[burgId];
-  capital.capital = 1;
-  Burgs.changeGroup(capital);
-
-  const oldCapital = burgs[oldCapitalId];
-  oldCapital.capital = 0;
-  Burgs.changeGroup(oldCapital);
-  Layers.draw("burgIcons", "labels");
 }
 
 function toggleBurgLockButton(): void {
   const id = getSelectedId();
-  const burg = pack.burgs[id];
-  burg.lock = !burg.lock;
+  Burgs.setLocked(id, !pack.burgs[id].lock);
 
   updateBurgLockIcon();
 }
@@ -696,8 +662,11 @@ function setCustomPreview(): void {
     "Provide custom URL to the burg map. It can be a link to a generator or just an image. Leave empty to use the default map preview",
     { default: Burgs.getPreview(burg).link || "", required: false },
     link => {
-      if (link) burg.link = String(link);
-      else delete burg.link;
+      try {
+        Burgs.setLink(id, String(link ?? ""));
+      } catch (error) {
+        tip((error as Error).message, false, "error");
+      }
       updateBurgPreview(burg);
     }
   );
@@ -737,44 +706,9 @@ function toggleRelocateBurg(): void {
 }
 
 function relocateBurgOnClick(this: SVGGElement, event: any): void {
-  const cells = pack.cells;
-  const point = getPointer(event, this);
-  const cellId = Pack.findCell(point[0], point[1])!;
-  const id = getSelectedId();
-  const burg = pack.burgs[id];
-
-  if (cells.h[cellId] < 20) {
-    tip("Cannot place burg into the water! Select a land cell", false, "error");
-    return;
-  }
-  if (cells.burg[cellId] && cells.burg[cellId] !== id) {
-    tip("There is already a burg in this cell. Please select a free cell", false, "error");
-    return;
-  }
-
-  const newState = cells.state[cellId];
-  const oldState = burg.state;
-  if (newState !== oldState && burg.capital) {
-    tip("Capital cannot be relocated into another state!", false, "error");
-    return;
-  }
-
-  const x = rn(point[0], 2);
-  const y = rn(point[1], 2);
-
-  // change data
-  cells.burg[burg.cell] = 0;
-  cells.burg[cellId] = id;
-  burg.cell = cellId;
-  burg.state = newState;
-  burg.x = x;
-  burg.y = y;
-  if (burg.capital) pack.states[newState].center = burg.cell;
-
-  // the label snaps back to the relocated burg, so its custom path is no longer valid
-  if (burg.label) Object.assign(burg.label, { dx: 0, dy: 0, pathPoints: undefined });
+  const [x, y] = getPointer(event, this);
+  if (!tryEdit(() => Burgs.move(getSelectedId(), x, y))) return;
   Layers.draw("burgIcons", "labels");
-
   if (event.shiftKey === false) toggleRelocateBurg();
 }
 

@@ -499,7 +499,7 @@ function zoneRemove(zone: Zone): void {
     message: "Are you sure you want to remove the zone? <br>This action cannot be reverted",
     confirm: "Remove",
     onConfirm: () => {
-      pack.zones = pack.zones.filter(z => z.i !== zone.i);
+      Zones.remove(zone.i);
       select<SVGGElement, unknown>("#zones").select(`#zone${zone.i}`).remove();
       unfog(`focusZone${zone.i}`);
       zonesTable.refresh();

@@ -300,19 +300,13 @@ function syncMapToFilter(filteredMarkers: Marker[], anyFilterActive: boolean): v
 }
 
 function invertPin(): void {
-  pack.markers.forEach(marker => {
-    const pinned = !marker.pinned;
-    if (pinned) {
-      marker.pinned = true;
-    } else delete marker.pinned;
-  });
-
+  for (const marker of pack.markers) Markers.setPinned(marker.i, !marker.pinned);
   Layers.draw("markers");
   markersTable.refresh();
 }
 
 function invertLock(): void {
-  pack.markers = pack.markers.map(marker => ({ ...marker, lock: !marker.lock }));
+  for (const marker of pack.markers) Markers.setLocked(marker.i, !marker.lock);
   markersTable.refresh();
 }
 
@@ -335,11 +329,7 @@ function pinMarker(el: HTMLElement, i: number): void {
   const marker = pack.markers.find(marker => marker.i === i);
   if (!marker) return;
 
-  if (marker.pinned) {
-    delete marker.pinned;
-  } else {
-    marker.pinned = true;
-  }
+  Markers.setPinned(i, !marker.pinned);
   el.classList.toggle("inactive");
   Layers.draw("markers");
 }
@@ -348,13 +338,8 @@ function toggleLockStatus(el: HTMLElement, i: number): void {
   const marker = pack.markers.find(marker => marker.i === i);
   if (!marker) return;
 
-  if (marker.lock) {
-    delete marker.lock;
-    el.className = "locks pointer icon-lock-open inactive";
-  } else {
-    marker.lock = true;
-    el.className = "locks pointer icon-lock";
-  }
+  Markers.setLocked(i, !marker.lock);
+  el.className = marker.lock ? "locks pointer icon-lock" : "locks pointer icon-lock-open inactive";
 }
 
 function triggerRemove(i: number): void {

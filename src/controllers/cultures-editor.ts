@@ -28,7 +28,7 @@ import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import type { Emblem } from "@/types/emblems";
-import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";
+import { downloadFile, getArea, getAreaUnit, getFileName, groupByValue } from "@/utils";
 import {
   abbreviate,
   capitalize,
@@ -531,7 +531,8 @@ function cultureChangeExpansionism(this: HTMLInputElement): void {
   const row = this.closest(".states") as HTMLElement;
   const culture = +row.dataset.id!;
   row.dataset.expansionism = this.value;
-  pack.cultures[culture].expansionism = +this.value;
+  if (!(+this.value >= 0 && +this.value <= 99)) return;
+  Cultures.setExpansionism(culture, +this.value);
   recalculateCultures();
 }
 
@@ -547,50 +548,28 @@ function cultureChangeBase(this: HTMLSelectElement): void {
   const row = this.closest(".states") as HTMLElement;
   const culture = +row.dataset.id!;
   const v = +this.value;
-  pack.cultures[culture].base = v;
+  Cultures.setBase(culture, v);
   row.dataset.base = String(v);
 }
 
 function cultureChangeEmblemsShape(this: HTMLSelectElement): void {
   const row = this.closest(".states") as HTMLElement;
   const culture = +row.dataset.id!;
-  const shape = this.value;
-  row.dataset.emblems = pack.cultures[culture].shield = shape;
+  Cultures.setEmblemShape(culture, this.value);
+  row.dataset.emblems = pack.cultures[culture].shield;
 
-  const rerenderCOA = (id: string, coa: Emblem) => {
+  const rerenderCOA = (id: string, coa: Emblem | undefined) => {
     const $coa = document.getElementById(id);
-    if (!$coa) return; // not rendered
+    if (!$coa || !coa) return; // not rendered
     $coa.remove();
     EmblemRenderer.trigger(id, coa);
   };
-
-  pack.states.forEach(state => {
-    if (state.culture !== culture || !state.i || state.removed || !state.coa || "icon" in state.coa) return;
-    if (shape === state.coa.shield) return;
-    state.coa.shield = shape;
-    rerenderCOA(`stateCOA${state.i}`, state.coa);
-  });
-
-  pack.provinces.forEach(province => {
-    if (
-      pack.cells.culture[province.center] !== culture ||
-      !province.i ||
-      province.removed ||
-      !province.coa ||
-      "icon" in province.coa
-    )
-      return;
-    if (shape === province.coa.shield) return;
-    province.coa.shield = shape;
-    rerenderCOA(`provinceCOA${province.i}`, province.coa);
-  });
-
-  pack.burgs.forEach(burg => {
-    if (burg.culture !== culture || !burg.i || burg.removed || !burg.coa || "icon" in burg.coa) return;
-    if (shape === burg.coa.shield) return;
-    burg.coa.shield = shape;
-    rerenderCOA(`burgCOA${burg.i}`, burg.coa);
-  });
+  for (const state of pack.states)
+    if (state.i && state.culture === culture) rerenderCOA(`stateCOA${state.i}`, state.coa);
+  for (const province of pack.provinces)
+    if (province.i && pack.cells.culture[province.center] === culture)
+      rerenderCOA(`provinceCOA${province.i}`, province.coa);
+  for (const burg of pack.burgs) if (burg?.i && burg.culture === culture) rerenderCOA(`burgCOA${burg.i}`, burg.coa);
 }
 
 function changePopulation(this: HTMLElement): void {
@@ -717,27 +696,7 @@ function removeCulture(cultureId: number): void {
   select("#cults").select(`#culture${cultureId}`).remove();
   select("#debug").select(`#cultureCenter${cultureId}`).remove();
 
-  const { burgs, states, cells, cultures } = pack as any;
-
-  burgs
-    .filter((b: any) => b.culture === cultureId)
-    .forEach((b: any) => {
-      b.culture = 0;
-    });
-  states.forEach((s: any) => {
-    if (s.culture === cultureId) s.culture = 0;
-  });
-  cells.culture.forEach((c: number, i: number) => {
-    if (c === cultureId) cells.culture[i] = 0;
-  });
-  cultures[cultureId].removed = true;
-
-  cultures
-    .filter((c: any) => c.i && !c.removed)
-    .forEach((c: any) => {
-      c.origins = (c.origins ?? []).filter((origin: number) => origin !== cultureId);
-      if (!c.origins.length) c.origins = [0];
-    });
+  Cultures.remove(cultureId);
   refreshCulturesEditor();
 }
 
@@ -811,7 +770,11 @@ function cultureCenterDrag(this: any, event: any): void {
     const cell = Pack.findCell(x, y);
     if (cell == null || pack.cells.h[cell] < 20) return; // ignore dragging on water
 
-    pack.cultures[cultureId].center = cell;
+    try {
+      Cultures.moveCenter(cultureId, x, y);
+    } catch {
+      return; // another center is there
+    }
     recalculateCultures();
   }
 
@@ -890,12 +853,8 @@ async function showHierarchy(): Promise<void> {
 
 function recalculateCultures(force?: boolean): void {
   if (force || ensureEl<HTMLInputElement>("culturesAutoChange").checked) {
-    Cultures.expand();
+    Cultures.recalculate();
     Layers.draw("cultures");
-    pack.burgs.forEach(b => {
-      if (!b.i || b.removed) return;
-      b.culture = pack.cells.culture[b.cell];
-    });
     refreshCulturesEditor();
   }
 }
@@ -918,10 +877,7 @@ function openPaintEditor(): void {
 }
 
 function applyCulturePaint(changes: ReadonlyMap<number, number>): void {
-  for (const [cell, culture] of changes) {
-    pack.cells.culture[cell] = culture;
-    if (pack.cells.burg[cell]) pack.burgs[pack.cells.burg[cell]].culture = culture;
-  }
+  for (const [culture, cells] of groupByValue(changes)) Cultures.setCells(culture, cells);
   if (changes.size) {
     Layers.draw("cultures");
     if (document.getElementById(dialogId)) refreshCulturesEditor();
@@ -959,22 +915,14 @@ function exitAddCultureMode(): void {
 }
 
 function addCulture(this: SVGElement, event: MouseEvent): void {
-  const point = getPointer(event, this);
-  const center = Pack.findCell(point[0], point[1])!;
-
-  if (pack.cells.h[center] < 20) {
-    tip("You cannot place culture center into the water. Please click on a land cell", false, "error");
+  const [x, y] = getPointer(event, this);
+  try {
+    Cultures.add(x, y);
+  } catch (error) {
+    tip(error instanceof Error ? error.message : String(error), false, "error");
     return;
   }
-
-  const occupied = pack.cultures.some(c => !c.removed && c.center === center);
-  if (occupied) {
-    tip("This cell is already a culture center. Please select a different cell", false, "error");
-    return;
-  }
-
   if (event.shiftKey === false) exitAddCultureMode();
-  Cultures.add(center);
 
   drawCultureCenters();
   culturesTable.refresh();
@@ -1123,8 +1071,7 @@ function updateLockStatus(this: HTMLElement): void {
 
   const cultureId = +(this.closest(".states") as HTMLElement).dataset.id!;
   const classList = this.classList;
-  const c = pack.cultures[cultureId];
-  c.lock = !c.lock;
+  Cultures.setLocked(cultureId, !pack.cultures[cultureId].lock);
 
   classList.toggle("icon-lock-open");
   classList.toggle("icon-lock");

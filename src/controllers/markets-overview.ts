@@ -351,7 +351,7 @@ function marketChangeFill(fillBox: FillBoxElement, marketId: number): void {
 
   const callback = (newFill: string) => {
     fillBox.fill = newFill;
-    market.color = newFill;
+    Markets.recolor(marketId, newFill);
     Layers.draw("markets");
   };
 

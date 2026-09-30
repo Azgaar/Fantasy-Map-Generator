@@ -114,7 +114,11 @@ function removeGroup(group: string): void {
       "Are you sure you want to remove the entire route group? All routes in this group will be removed.<br>This action can't be reverted",
     confirm: "Remove",
     onConfirm: () => {
-      pack.routes.filter((r: Route) => r.group === group).forEach(Routes.remove);
+      pack.routes
+        .filter((r: Route) => r.group === group)
+        .forEach(route => {
+          Routes.remove(route.i);
+        });
       if (!DEFAULT_GROUPS.includes(group)) {
         select("#routes").select(`#${group}`).remove();
         delete styles.routes.groups[group];

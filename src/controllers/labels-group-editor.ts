@@ -273,7 +273,7 @@ function submitForm(event: Event): void {
     if (newGroup.name !== oldName) {
       if (oldName) {
         // group is renamed
-        replaceGroupInEntities(oldName, newGroup.name);
+        Labels.regroup(oldName, newGroup.name);
         styles.labels.groups[newGroup.name] = styles.labels.groups[oldName];
         delete styles.labels.groups[oldName];
       } else {
@@ -287,7 +287,7 @@ function submitForm(event: Event): void {
     if (newGroupNames.has(group.name)) return;
     // group is removed
     const fallback = Labels.getFallbackGroup(group.type);
-    replaceGroupInEntities(group.name, fallback.name);
+    Labels.regroup(group.name, fallback.name);
     delete styles.labels.groups[group.name];
   });
 
@@ -318,13 +318,6 @@ function rowToGroup(row: HTMLTableRowElement): LabelGroup {
   if (Layers.has(dependency)) group.layerDependency = dependency;
   if (row.dataset.isDefault === "1") group.isDefault = true;
   return group;
-}
-
-function replaceGroupInEntities(oldName: string, newName: string): void {
-  const labels = getLabelsIndex();
-  for (const { type, entityId, group } of labels) {
-    if (group === oldName) Labels.setGroup({ type, entityId, group: newName });
-  }
 }
 
 function close(): void {

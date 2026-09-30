@@ -555,7 +555,7 @@ function makeLabelDraggable(id: string): void {
 
 function resetSelectedLabel(): void {
   const { type, entityId } = label;
-  Labels.resetOverride(type, entityId);
+  Labels.reset(type, entityId);
 
   Layers.draw("labels");
   label = { ...(getSceneLabel(type, entityId) ?? label) };
