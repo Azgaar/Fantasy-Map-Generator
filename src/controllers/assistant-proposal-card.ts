@@ -8,17 +8,7 @@ import { type Action, Proposals } from "./assistant-proposals";
 // The proposal card: a Change as rows of entity, field and before → after, with the next action
 
 const PROPOSAL_ROWS = 8;
-const STATE_LABELS: Record<Proposal["state"], string> = {
-  proposed: "Proposed",
-  applied: "Applied",
-  undone: "Undone",
-  discarded: "Discarded"
-};
-const NEXT: Partial<Record<Proposal["state"], [Action, string]>> = {
-  proposed: ["apply", "Apply"],
-  applied: ["undo", "Undo"],
-  undone: ["redo", "Redo"]
-};
+const NEXT: Partial<Record<Proposal["state"], Action>> = { proposed: "apply", applied: "undo", undone: "redo" };
 const FIELD_LABELS: Record<string, string> = { fullName: "Full name", "label.text": "Label" };
 const CELL_LABELS: Record<string, string> = {
   r: "River",
@@ -73,26 +63,23 @@ export function proposalHtml(proposal: Proposal, index: number, mapId: number): 
   const button = (action: string, label: string, enabled: boolean, primary = false) =>
     `<button type="button" class="assistantButton${primary ? " assistantPrimary" : ""}" data-action="${action}" data-index="${index}" ${enabled ? "" : "disabled"}>${label}</button>`;
   const next = NEXT[state];
-  const enabled = Boolean(next && Proposals.can(next[0], proposal, mapId));
-  const main = next ? button(next[0], enabled ? next[1] : "Changed since", enabled, state === "proposed") : "";
+  const enabled = Boolean(next && Proposals.can(next, proposal, mapId));
+  const main = next ? button(next, enabled ? capitalize(next) : "Changed since", enabled, state === "proposed") : "";
+  const proposed = state === "proposed";
 
-  if (state === "proposed")
-    return /* html */ `<div class="assistantItem assistantProposal proposed">
-      <div class="assistantProposalHeader">
-        <span class="assistantProposalState">${STATE_LABELS[state]}</span>
-        <span class="assistantProposalSummary">${escapeHtml(proposal.summary)}</span>
-      </div>
-      <div class="assistantProposalBody">${list}</div>
-      <div class="assistantProposalFooter"><span>${count}</span><span class="assistantProposalActions">${button("discard", "Discard", true)}${main}</span></div>
-    </div>`;
-
+  // a waiting proposal shows its changes with the actions below; a settled one folds them away
   return /* html */ `<div class="assistantItem assistantProposal ${state}">
     <div class="assistantProposalHeader">
-      <span class="assistantProposalState">${STATE_LABELS[state]}</span>
+      <span class="assistantProposalState">${capitalize(state)}</span>
       <span class="assistantProposalSummary">${escapeHtml(proposal.summary)}</span>
-      ${main}
+      ${proposed ? "" : main}
     </div>
-    <details class="assistantProposalBody"><summary>Show ${count}</summary>${list}</details>
+    ${
+      proposed
+        ? `<div class="assistantProposalBody">${list}</div>
+      <div class="assistantProposalFooter"><span>${count}</span><span class="assistantProposalActions">${button("discard", "Discard", true)}${main}</span></div>`
+        : `<details class="assistantProposalBody"><summary>Show ${count}</summary>${list}</details>`
+    }
   </div>`;
 }
 

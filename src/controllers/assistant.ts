@@ -4,8 +4,8 @@ import { createAzgaarServerAnswerer } from "@/services/assistant/azgaar-server/a
 import {
   AzgaarServerError,
   getLimits,
+  isOfficial,
   type Limits,
-  OFFICIAL_ORIGIN,
   sendFeedback,
   signIn,
   signOut
@@ -27,9 +27,9 @@ import {
 } from "@/services/assistant/chats";
 import * as Connection from "@/services/assistant/connection";
 import { createProviderAnswerer } from "@/services/assistant/provider-answerer";
-import { DEFAULT_PROVIDER, PROVIDERS, type ProviderSpec } from "@/services/assistant/providers";
+import { DEFAULT_PROVIDER, PROVIDERS, type ProviderSpec, providerById } from "@/services/assistant/providers";
 import { listModels } from "@/services/assistant/providers-models";
-import { resolveTier, type Tier } from "@/services/assistant/tier";
+import { answererFor, resolveTier, type Tier } from "@/services/assistant/tier";
 import { renderMarkdown } from "@/utils/markdown";
 import { capitalize, escapeHtml } from "@/utils/stringUtils";
 import { si } from "@/utils/unitUtils";
@@ -41,7 +41,7 @@ import { AssistantWidgets, type WidgetContext } from "./assistant-widgets";
 
 type View = "chat" | "chats" | "key";
 type AnswerItem = Extract<TranscriptItem, { kind: "answer" }>;
-type Notice = { text: string; retryAt?: number; item?: TranscriptItem; retry?: () => void };
+type Notice = { text: string; item?: TranscriptItem; retry?: () => void };
 
 const dialogId = "assistant";
 const MAX_QUESTION_LENGTH = 1000;
@@ -58,14 +58,11 @@ let initialized = false;
 let openMap = 0; // the map id last seen: reloading the same map keeps the selected chat
 let noteLabel: string | null = null;
 let answerStatus = "Thinking";
-let countdownTimer: ReturnType<typeof setInterval> | null = null;
 let discoveryTimer: ReturnType<typeof setTimeout> | null = null;
 let discoveryId = 0;
 
-const official = () =>
-  !window.electron &&
-  (location.origin === OFFICIAL_ORIGIN || (import.meta.env.DEV && Boolean(localStorage.getItem("fmg-help-gateway"))));
-const tier = (): Tier => resolveTier(official(), !!getToken(), Connection.isConnected());
+const tier = (): Tier => resolveTier(isOfficial(), !!getToken(), Connection.isConnected());
+const tokens = (entry?: Chat) => (entry ? entry.usage.input + entry.usage.output + entry.usage.cached : 0);
 
 // Built once and hidden on close, unlike other dialogs: an answer in flight, the draft and the scroll survive
 const isBuilt = () => document.getElementById(dialogId) !== null;
@@ -248,7 +245,6 @@ const STYLES = /* html */ `
     #assistantContext { flex: none; align-self: flex-start; padding: .1em .55em; border-radius: 1em; background: rgb(0 0 0 / 6%); font-size: .9em; }
     #assistantNotice { flex: none; max-height: 30%; overflow-y: auto; padding: .45em .6em; border-left: 3px solid var(--header); border-radius: .25em; background: rgb(0 0 0 / 5%); font-size: .9em; }
     #assistantNotice p { margin: 0 0 .3em; }
-    #assistantCountdown { opacity: .7; font-variant-numeric: tabular-nums; }
 
     #assistantComposer { flex: none; display: flex; align-items: flex-end; gap: .4em; padding: .3em .3em .3em .6em; border: 1px solid rgb(0 0 0 / 20%); border-radius: .6em; background: rgb(255 255 255 / 70%); }
     #assistantComposer:focus-within { border-color: var(--header); }
@@ -327,7 +323,6 @@ function renderDialog(): void {
 
     <div id="assistantNotice" role="status" hidden>
       <div id="assistantNoticeText"></div>
-      <div id="assistantCountdown" hidden></div>
       <div id="assistantNoticeActions" class="assistantActions">
         <button type="button" id="assistantRetry" class="assistantButton" data-action="retry">Retry</button>
         <button type="button" id="assistantNoticeSignIn" class="assistantButton" data-action="sign-in">Sign in</button>
@@ -432,13 +427,13 @@ async function initialize(): Promise<void> {
   const now = tier();
   openMap = AssistantMap.id();
   chat = current();
-  if (!chat || chat.tier !== now || chat.mapId !== AssistantMap.id())
+  if (!chat || !canContinue(chat, now, AssistantMap.id()))
     chat = now ? create(now, AssistantMap.id(), AssistantMap.name()) : undefined;
   initialized = true;
   notice = null;
   render();
   void refreshContextChip();
-  if (official() && now !== "key") void refreshLimits();
+  if (isOfficial() && now !== "key") void refreshLimits();
 }
 
 /** A fresh chat for the tier and map open now; the previous one stays in the list */
@@ -591,11 +586,11 @@ function renderChats(): void {
 }
 
 function chatRowHtml(entry: Chat): string {
-  const tokens = entry.usage.input + entry.usage.output + entry.usage.cached;
+  const used = tokens(entry);
   const meta = [
     escapeHtml(entry.mapName) + (entry.mapId === AssistantMap.id() ? "" : " (other map)"),
     entry.tier === "key" ? "🔑" : "",
-    tokens ? `${si(tokens)} tokens` : ""
+    used ? `${si(used)} tokens` : ""
   ]
     .filter(Boolean)
     .join(" · ");
@@ -612,12 +607,11 @@ function chatRowHtml(entry: Chat): string {
 function renderFooter(): void {
   const now = tier();
   const connection = Connection.get();
-  const tokens = chat?.tier === "key" ? chat.usage.input + chat.usage.output + chat.usage.cached : 0;
   el("assistantTier").hidden = now !== "guest" && now !== "member";
   el("assistantTier").textContent = now === "member" ? "Member" : "Guest";
   el("assistantStatus").textContent =
     now === "key"
-      ? `${connection.provider === "local" ? "Local" : "🔑"} ${connection.model} · ${si(tokens)} tokens`
+      ? `${connection.provider === "local" ? "Local" : "🔑"} ${connection.model} · ${si(tokens(chat))} tokens`
       : now && limits
         ? limitsLabel(limits)
         : "";
@@ -629,15 +623,11 @@ function renderFooter(): void {
 
 function renderNotice(): void {
   const long = Boolean(chat && isLong(chat));
-  const live = Boolean(notice?.item && !notice.retryAt);
+  const live = Boolean(notice?.item);
   const now = tier();
   el("assistantNotice").hidden = view !== "chat" || (!notice && !long);
   el("assistantNoticeText").hidden = !notice;
   el("assistantNoticeText").innerHTML = notice ? renderMarkdown(notice.text) : "";
-  el("assistantCountdown").hidden = !notice?.retryAt;
-  el("assistantCountdown").textContent = notice?.retryAt
-    ? `Retrying in ${Math.max(0, Math.ceil((notice.retryAt - Date.now()) / 1000))}s`
-    : "";
   el("assistantRetry").hidden = !notice?.retry;
   el("assistantNoticeSignIn").hidden = !live || now !== "guest";
   el("assistantNoticeKey").hidden = !live;
@@ -649,20 +639,12 @@ function renderNotice(): void {
 
 // The live notice sits above the composer; once the next answer arrives it moves into the transcript
 function showNotice(next: Notice): void {
-  stopCountdown();
   notice = next;
-  if (next.retryAt) countdownTimer = setInterval(renderNotice, 1000);
   if (isBuilt()) renderNotice();
 }
 
 function clearNotice(): void {
-  stopCountdown();
   notice = null;
-}
-
-function stopCountdown(): void {
-  if (countdownTimer) clearInterval(countdownTimer);
-  countdownTimer = null;
 }
 
 function fitInput(input: HTMLTextAreaElement): void {
@@ -684,7 +666,7 @@ function renderContextChip(): void {
 }
 
 async function refreshLimits(): Promise<void> {
-  if (!official() || tier() === "key") return;
+  if (!isOfficial() || tier() === "key") return;
   try {
     limits = await getLimits();
   } catch (error) {
@@ -692,7 +674,7 @@ async function refreshLimits(): Promise<void> {
     const expired = error instanceof AzgaarServerError && error.code === "unauthorized";
     limits = expired ? await getLimits().catch(() => null) : null;
   }
-  if (initialized && (chat?.tier ?? null) !== tier()) newChat();
+  if (initialized && answererFor(chat?.tier ?? null) !== answererFor(tier())) newChat();
   if (isBuilt()) renderFooter();
 }
 
@@ -755,7 +737,6 @@ function choose(index: number, number: number): void {
   }
   widget.picked = number;
   append(owner, { kind: "proposal", proposal });
-  touch(owner);
   renderTranscript();
 }
 
@@ -801,8 +782,7 @@ function cancelDiscovery(): void {
 }
 
 function selectedProvider(): ProviderSpec {
-  const id = el<HTMLSelectElement>("assistantProvider").value;
-  return PROVIDERS.find(provider => provider.id === id) ?? DEFAULT_PROVIDER;
+  return providerById(el<HTMLSelectElement>("assistantProvider").value) ?? DEFAULT_PROVIDER;
 }
 
 function fillProvider(): void {
@@ -892,7 +872,7 @@ async function send(): Promise<void> {
   const onItem = (item: TranscriptItem) => {
     append(active, item);
     if (!visible()) return;
-    if (item.kind === "notice") showNotice({ text: item.text, retryAt: item.retryAt, item });
+    if (item.kind === "notice") showNotice({ text: item.text, item });
     if (item.kind === "answer" && notice) {
       clearNotice();
       renderNotice();
@@ -916,7 +896,6 @@ async function send(): Promise<void> {
       if (chat === active) showNotice({ text: item.text, item, retry: () => resend(active, question, from) });
     }
   } finally {
-    if (notice?.retryAt) clearNotice();
     busy = false;
     abort = null;
     touch(active);

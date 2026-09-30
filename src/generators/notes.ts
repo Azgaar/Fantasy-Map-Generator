@@ -56,8 +56,8 @@ class NotesStore {
 
   /** Replace an entity's note with HTML from the notes editor's subset; empty html removes the note */
   write(key: string, html: string): void {
-    const ref = typeof key === "string" ? MapEntities.parseKey(key) : undefined;
-    if (!ref || !MapEntities.get(ref)) throw new Error(`Entity ${key} does not exist`);
+    const ref = MapEntities.resolveKey(key);
+    if (!ref) throw new Error(`Entity ${key} does not exist`);
     if (!(ENTITY_TYPES as readonly string[]).includes(ref.type)) throw new Error(`A ${ref.type} cannot have a note`);
     if (typeof html !== "string" || !NotesStore.isSafe(html))
       throw new Error(

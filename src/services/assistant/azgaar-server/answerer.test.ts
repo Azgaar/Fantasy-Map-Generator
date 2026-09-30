@@ -39,24 +39,12 @@ it("sends only the question and server chat id, marking a new server memory", as
   expect(chat.serverChatId).toBe("new-id");
 });
 
-it("shows a countdown on a rate limit and retries exactly once", async () => {
-  vi.useFakeTimers();
+it("forgets a server chat the server no longer accepts", async () => {
   askMock.mockReset();
-  askMock.mockRejectedValue(new AzgaarServerError("rate_limited", "Slow down.", 3));
-  const items: TranscriptItem[] = [];
-  const sent = createAzgaarServerAnswerer().send(
-    newChat(),
-    "Hi",
-    item => items.push(item),
-    new AbortController().signal
+  askMock.mockRejectedValue(new AzgaarServerError("invalid_request", "Unknown chat."));
+  const chat = { ...newChat(), serverChatId: "stale" };
+  await expect(createAzgaarServerAnswerer().send(chat, "Hi", () => {}, new AbortController().signal)).rejects.toThrow(
+    "Unknown chat."
   );
-  const outcome = expect(sent).rejects.toThrow("Slow down.");
-  await vi.advanceTimersByTimeAsync(3000);
-  await outcome;
-  vi.useRealTimers();
-  expect(askMock).toHaveBeenCalledTimes(2);
-  expect(items).toEqual([
-    { kind: "question", text: "Hi" },
-    { kind: "notice", text: "Slow down.", retryAt: expect.any(Number) }
-  ]);
+  expect(chat.serverChatId).toBeUndefined();
 });

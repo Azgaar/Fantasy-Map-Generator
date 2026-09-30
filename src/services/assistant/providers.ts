@@ -1,6 +1,7 @@
 // Anthropic Messages API, called straight from the browser with the user's own key — same approach
 // as the AI Text Generator. OpenAI-compatible providers go through providers-openai.
 
+import type { Connection } from "./connection";
 import type { SystemBlock } from "./context";
 
 export interface TextBlock {
@@ -42,11 +43,7 @@ export interface ToolDefinition {
   input_schema: Record<string, unknown>;
 }
 
-export interface CompletionRequest {
-  providerId: ProviderSpec["id"];
-  model: string;
-  key: string;
-  baseUrl?: string; // a local server's address, in place of the provider's own
+export interface CompletionRequest extends Connection {
   system: SystemBlock[];
   messages: Message[];
   tools: ToolDefinition[];
@@ -116,20 +113,32 @@ export const PROVIDERS: ProviderSpec[] = [
   }
 ];
 
-export const DEFAULT_PROVIDER = PROVIDERS.find(provider => provider.id === "openai") ?? PROVIDERS[0];
+export const providerById = (id: string | null | undefined): ProviderSpec | undefined =>
+  PROVIDERS.find(provider => provider.id === id);
+
+export const DEFAULT_PROVIDER = providerById("openai")!;
 
 export const keyStorageForProvider = (providerId: ProviderSpec["id"]): string => `fmg-ai-kl-${providerId}`;
+
+/** The OpenAI-compatible base URL: a local server's own address, else the provider's; empty for Anthropic */
+export const endpoint = (providerId: ProviderSpec["id"], localUrl = ""): string =>
+  ((providerId === "local" && localUrl) || providerById(providerId)?.baseUrl || "").replace(/\/+$/, "");
+
+export const anthropicHeaders = (key: string): Record<string, string> => ({
+  "x-api-key": key,
+  "anthropic-version": "2023-06-01",
+  "anthropic-dangerous-direct-browser-access": "true"
+});
 
 export async function complete(request: CompletionRequest): Promise<Completion> {
   // An empty turn (a model that ended without a word) is rejected by every provider once it is history
   request = { ...request, messages: request.messages.filter(message => message.content.length) };
-  const provider = PROVIDERS.find(candidate => candidate.id === request.providerId);
-  if (!provider) throw new Error(`Unknown provider: ${request.providerId}`);
+  if (!providerById(request.provider)) throw new Error(`Unknown provider: ${request.provider}`);
   if (!request.model) throw new Error("Enter a model name (e.g. llama3.2)");
-  const baseUrl = request.baseUrl || provider.baseUrl;
+  const baseUrl = endpoint(request.provider, request.localUrl);
   if (!baseUrl) return completeAnthropic(request);
   const { completeOpenAI } = await import("./providers-openai");
-  return completeOpenAI(baseUrl.replace(/\/+$/, ""), request);
+  return completeOpenAI(baseUrl, request);
 }
 
 async function completeAnthropic({
@@ -143,12 +152,7 @@ async function completeAnthropic({
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     signal,
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": key,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true"
-    },
+    headers: { "Content-Type": "application/json", ...anthropicHeaders(key) },
     body: JSON.stringify({ model, system, messages, tools, max_tokens: 4096 })
   });
 
@@ -165,11 +169,14 @@ async function completeAnthropic({
   };
 }
 
-async function readError(response: Response): Promise<string> {
+/** The provider's own error message, whichever of the usual shapes it comes in */
+export async function readError(response: Response): Promise<string> {
   try {
     const json = await response.json();
-    return json.error?.message || json.error || `${response.status} ${response.statusText}`;
+    const message = json.error?.message || json.error || json.message || json.output?.message;
+    if (typeof message === "string" && message) return message;
   } catch {
-    return `${response.status} ${response.statusText}`;
+    // not JSON
   }
+  return `${response.status} ${response.statusText}`;
 }

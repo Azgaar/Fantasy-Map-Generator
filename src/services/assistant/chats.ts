@@ -46,7 +46,7 @@ export type TranscriptItem =
   | { kind: "answer"; text: string; ratingId?: number | null; rating?: "up" | "down" }
   | { kind: "step"; code: string; result?: RunResult }
   | { kind: "proposal"; proposal: Proposal }
-  | { kind: "notice"; text: string; retryAt?: number }
+  | { kind: "notice"; text: string }
   | { kind: "divider" }
   | { kind: "widget"; widget: Widget };
 
@@ -73,20 +73,20 @@ let loading: Promise<void> | undefined;
 let saving = false;
 let dirty = false;
 
-export async function load(): Promise<void> {
-  if (loaded) return;
-  if (loading) return loading;
-  loading = (async () => {
-    const value = await ldb.get<Chat[]>(STORAGE_KEY);
-    chats = Array.isArray(value) ? value.filter(item => item?.id && Array.isArray(item.items)) : [];
-    currentId = localStorage.getItem(CURRENT_KEY) || chats[0]?.id || "";
-    loaded = true;
-  })();
-  try {
-    await loading;
-  } finally {
-    loading = undefined;
-  }
+/** Loads once; a failed load is retried on the next call */
+export function load(): Promise<void> {
+  loading ??= ldb.get<Chat[]>(STORAGE_KEY).then(
+    value => {
+      chats = Array.isArray(value) ? value.filter(item => item?.id && Array.isArray(item.items)) : [];
+      currentId = localStorage.getItem(CURRENT_KEY) || chats[0]?.id || "";
+      loaded = true;
+    },
+    error => {
+      loading = undefined;
+      throw error;
+    }
+  );
+  return loading;
 }
 
 export const list = (): Chat[] => [...chats].sort((a, b) => b.updated - a.updated);

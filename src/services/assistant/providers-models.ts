@@ -1,6 +1,6 @@
 // Discover the chat models a key can use
 
-import { PROVIDERS, type ProviderSpec } from "./providers";
+import { anthropicHeaders, endpoint, type ProviderSpec, readError } from "./providers";
 
 // What counts as a chat model: the endpoints also list embeddings, audio, image and moderation
 // variants that cannot drive the tool loop
@@ -29,7 +29,7 @@ export async function listModels(providerId: ProviderSpec["id"], key: string, lo
 async function fetchModelIds(providerId: ProviderSpec["id"], key: string, localUrl: string): Promise<string[]> {
   if (providerId === "qwen") return fetchQwenModelIds(key);
   const response = await fetch(modelsUrl(providerId, localUrl), { headers: authHeaders(providerId, key) });
-  if (!response.ok) throw new Error(await modelError(response));
+  if (!response.ok) throw new Error(await readError(response));
   const json = await response.json();
   return (json.data ?? []).map((model: { id: string }) => model.id);
 }
@@ -39,7 +39,7 @@ async function fetchQwenModelIds(key: string): Promise<string[]> {
   for (let page = 1; ; page++) {
     const url = `https://dashscope-intl.aliyuncs.com/api/v1/models?providers=qwen&features=function-calling&page_no=${page}&page_size=100`;
     const response = await fetch(url, { headers: authHeaders("qwen", key) });
-    if (!response.ok) throw new Error(await modelError(response));
+    if (!response.ok) throw new Error(await readError(response));
     const json = await response.json();
     const batch: { model: string }[] = json.output?.models ?? [];
     models.push(...batch.map(item => item.model));
@@ -47,25 +47,12 @@ async function fetchQwenModelIds(key: string): Promise<string[]> {
   }
 }
 
-async function modelError(response: Response): Promise<string> {
-  try {
-    const body = await response.json();
-    return body.error?.message || body.message || body.output?.message || `${response.status} ${response.statusText}`;
-  } catch {
-    return `${response.status} ${response.statusText}`;
-  }
-}
-
 function modelsUrl(providerId: ProviderSpec["id"], localUrl: string): string {
   if (providerId === "anthropic") return "https://api.anthropic.com/v1/models?limit=1000";
-  const provider = PROVIDERS.find(candidate => candidate.id === providerId);
-  const base = (providerId === "local" && localUrl) || provider?.baseUrl || "";
-  return `${base.replace(/\/+$/, "")}/models`;
+  return `${endpoint(providerId, localUrl)}/models`;
 }
 
 function authHeaders(providerId: ProviderSpec["id"], key: string): Record<string, string> {
-  if (providerId === "anthropic") {
-    return { "x-api-key": key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" };
-  }
+  if (providerId === "anthropic") return anthropicHeaders(key);
   return key ? { Authorization: `Bearer ${key}` } : {};
 }

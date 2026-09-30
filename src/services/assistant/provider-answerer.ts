@@ -62,7 +62,6 @@ export function createProviderAnswerer(mapTools: Tool[], context: () => Promise<
         for (let step = 0; step < MAX_STEPS; step++) {
           signal.throwIfAborted();
           onStatus?.(step ? `Thinking · step ${step + 1}` : "Thinking");
-          const { provider, model, key, localUrl } = get();
           // Earlier questions keep only their answers; this one keeps its latest tool results
           const stale = [
             ...toolResults(chat.messages.slice(0, start)),
@@ -73,16 +72,7 @@ export function createProviderAnswerer(mapTools: Tool[], context: () => Promise<
           });
           const system = buildSystemPrompt(await context());
           signal.throwIfAborted();
-          const request = {
-            providerId: provider,
-            model,
-            key,
-            baseUrl: provider === "local" ? localUrl : undefined,
-            system,
-            messages: chat.messages,
-            tools: definitions,
-            signal
-          };
+          const request = { ...get(), system, messages: chat.messages, tools: definitions, signal };
           // A model without vision rejects images: tell it they are unavailable and ask once more
           const completion = await complete(request).catch(error => {
             if (signal.aborted || !dropImages(chat.messages)) throw error;

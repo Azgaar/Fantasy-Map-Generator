@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AZGAAR_SERVER_URL, AzgaarServerError, ask, getLimits, OFFICIAL_ORIGIN, sendFeedback, signOut } from "./api";
 

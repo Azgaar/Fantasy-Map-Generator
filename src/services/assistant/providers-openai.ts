@@ -2,14 +2,15 @@
 // spoken by OpenAI, Mistral, Qwen (DashScope compatible mode) and DeepSeek, and back.
 
 import type { SystemBlock } from "./context";
-import type {
-  Completion,
-  CompletionRequest,
-  Message,
-  TextBlock,
-  ToolDefinition,
-  ToolInput,
-  ToolUseBlock
+import {
+  type Completion,
+  type CompletionRequest,
+  type Message,
+  readError,
+  type TextBlock,
+  type ToolDefinition,
+  type ToolInput,
+  type ToolUseBlock
 } from "./providers";
 
 type ChatMessage = Record<string, unknown>;
@@ -131,15 +132,6 @@ export async function completeOpenAI(
     })
   });
 
-  if (!response.ok) throw new Error(await readChatError(response));
+  if (!response.ok) throw new Error(await readError(response));
   return fromChatResponse(await response.json());
-}
-
-async function readChatError(response: Response): Promise<string> {
-  try {
-    const json = await response.json();
-    return json.error?.message || json.message || `${response.status} ${response.statusText}`;
-  } catch {
-    return `${response.status} ${response.statusText}`;
-  }
 }

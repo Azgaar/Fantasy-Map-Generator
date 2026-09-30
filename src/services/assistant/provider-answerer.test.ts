@@ -56,7 +56,7 @@ it("dispatches a map tool, reports its change, and preserves provider history", 
   expect(tool.handle).toHaveBeenCalledWith({ id: "burg:1", name: "New" });
   expect(chat.messages.at(-1)?.role).toBe("assistant");
   expect(chat.usage).toEqual({ input: 30, output: 5, cached: 4 });
-  expect(completeMock.mock.calls[0][0].providerId).toBe("openai");
+  expect(completeMock.mock.calls[0][0].provider).toBe("openai");
   expect(completeMock.mock.calls[0][0].system[1].text).toBe("# Current map");
 });
 

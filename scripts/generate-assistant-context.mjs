@@ -12,19 +12,20 @@ const target = "src/services/assistant/context.generated.ts";
 
 const read = path => readFileSync(join(root, path), "utf8");
 
+// Every non-test source file under src, read once
+const sources = readdirSync(join(root, "src"), { recursive: true })
+  .filter(path => path.endsWith(".ts") && !path.endsWith(".test.ts") && !path.endsWith(".generated.ts"))
+  .sort()
+  .map(path => read(`src/${path}`));
+
 // `declare global` bodies are already valid TS declarations, so they go to the model verbatim
 function extractGlobalBlocks(source) {
   return [...source.matchAll(/declare global \{\n([\s\S]*?)\n\}/g)].map(([, body]) => body);
 }
 
+// Global declarations live beside the modules that own them
 function globalDeclarations() {
-  // Global declarations now live beside the modules that own them.
-  return readdirSync(join(root, "src"), { recursive: true })
-    .filter(path => path.endsWith(".ts") && !path.endsWith(".test.ts") && !path.endsWith(".generated.ts"))
-    .sort()
-    .flatMap(path => extractGlobalBlocks(read(`src/${path}`)))
-    .join("\n")
-    .trim();
+  return sources.flatMap(extractGlobalBlocks).join("\n").trim();
 }
 
 function generatorNames() {
@@ -76,9 +77,6 @@ function registryKeys(path, name) {
 
 // Every registered Assistant operation with its model-class method signature and doc line, served by read_docs
 function operations() {
-  const sources = readdirSync(join(root, "src"), { recursive: true })
-    .filter(path => path.endsWith(".ts") && !path.endsWith(".test.ts") && !path.endsWith(".generated.ts"))
-    .map(path => read(`src/${path}`));
   const registry = read("src/controllers/assistant-operations.ts");
   return [...registry.matchAll(/^ {2}"(\w+)\.(\w+)":/gm)]
     .map(([, model, method]) => {
@@ -96,10 +94,6 @@ function operations() {
 // The declarations of the types operation signatures name, and the types and constants those use in turn.
 // A type read by index (`Good["multipliers"]`) is not followed: the doc line describes that part
 function operationTypes(list) {
-  const sources = readdirSync(join(root, "src"), { recursive: true })
-    .filter(path => path.endsWith(".ts") && !path.endsWith(".test.ts") && !path.endsWith(".generated.ts"))
-    .sort()
-    .map(path => read(`src/${path}`));
   const statement = (source, start) => {
     let depth = 0;
     for (let index = start; index < source.length; index++) {
@@ -164,14 +158,15 @@ function keyTypes() {
 }
 
 function buildGeneratedContext() {
+  const operationList = operations();
   const sections = {
     GLOBAL_DECLARATIONS: globalDeclarations(),
     GENERATOR_NAMES: generatorNames(),
     REGISTRY_KEYS: [registryKeys("src/controllers/index.ts", "Controllers"), registryKeys("src/services/index.ts", "Services")].join("\n"),
     DATA_FIELDS: dataFields(),
-    OPERATIONS: operations(),
-    OPERATION_TYPES: operationTypes(operations()),
-    OPERATION_INDEX: operationIndex(operations()),
+    OPERATIONS: operationList,
+    OPERATION_TYPES: operationTypes(operationList),
+    OPERATION_INDEX: operationIndex(operationList),
     COMMANDS: commands(),
     KEY_TYPES: keyTypes()
   };

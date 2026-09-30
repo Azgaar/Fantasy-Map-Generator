@@ -43,11 +43,6 @@ let marked: Of<"entities"> | null = null;
 /** The Assistant panel over the map: what it reveals is centred beside it */
 const panel = () => document.getElementById("assistant")?.closest(".ui-dialog")?.getBoundingClientRect();
 
-function entityRef(key: string): EntityRef | undefined {
-  const ref = MapEntities.parseKey(key);
-  return ref && MapEntities.get(ref) ? ref : undefined;
-}
-
 function linkableCommand(id: string) {
   const command = MAP_COMMANDS.find(command => command.id === id);
   return command && isLinkable(command) ? command : undefined;
@@ -66,7 +61,7 @@ const entityButton = (ref: EntityRef, label: string) =>
 
 /** A live entity as a link named after it, otherwise its fallback as text */
 function entityLink(key: string | undefined, live: boolean, fallback = ""): string {
-  const ref = live && key ? entityRef(key) : undefined;
+  const ref = live ? MapEntities.resolveKey(key) : undefined;
   return ref ? entityButton(ref, escapeHtml(MapEntities.getName(ref) || fallback)) : escapeHtml(fallback);
 }
 
@@ -79,7 +74,7 @@ function links(live: boolean): LinkResolver {
     }
     const type = href.split(":")[0];
     if (!href.includes(":") || !isEntityType(type)) return null;
-    const ref = live ? (entityRef(href) ?? byName(type, label)) : undefined;
+    const ref = live ? (MapEntities.resolveKey(href) ?? byName(type, label)) : undefined;
     return ref ? entityButton(ref, label) : label;
   };
 }
@@ -105,7 +100,7 @@ function html(widget: Widget, context: WidgetContext): string {
 function entitiesHtml(widget: Of<"entities">, { index, live }: WidgetContext): string {
   const rows = widget.entities
     .map(key => {
-      const ref = live ? entityRef(key) : undefined;
+      const ref = live ? MapEntities.resolveKey(key) : undefined;
       if (!ref) return `<li class="gone">${escapeHtml(key)}</li>`;
       const context = MapEntities.getContext(ref);
       const name = escapeHtml(MapEntities.getName(ref) || MapEntities.getDisplay(ref).kind);
@@ -124,7 +119,7 @@ function plainText(html: string): string {
 }
 
 function cardHtml(widget: Of<"card">, live: boolean): string {
-  const ref = live ? entityRef(widget.entity) : undefined;
+  const ref = live ? MapEntities.resolveKey(widget.entity) : undefined;
   const state = ref && (MapEntities.get(ref) as State | undefined);
   if (!ref || !state)
     return frame(
@@ -170,7 +165,7 @@ function cardHtml(widget: Of<"card">, live: boolean): string {
 
 /** The emblem the model looked at, so the user sees what it saw */
 function emblemHtml(widget: Of<"emblem">, live: boolean): string {
-  const ref = live ? entityRef(widget.entity) : undefined;
+  const ref = live ? MapEntities.resolveKey(widget.entity) : undefined;
   const coa = ref && (MapEntities.get(ref) as { coa?: Emblem } | undefined)?.coa;
   if (!ref || !coa) return frame(`<span>${escapeHtml(widget.entity)}</span>`, "", live);
   const id = `${ref.type}COA${ref.id}`;
@@ -188,7 +183,7 @@ function formatValue(value: number, unit?: string): string {
 }
 
 function rowLabel(row: ChartRow, live: boolean): string {
-  const ref = live && row.entity ? entityRef(row.entity) : undefined;
+  const ref = live ? MapEntities.resolveKey(row.entity) : undefined;
   return ref ? entityButton(ref, escapeHtml(row.label)) : escapeHtml(row.label);
 }
 
@@ -255,7 +250,7 @@ function choicesHtml(widget: Of<"choices">, { index, live, canAsk }: WidgetConte
 
 function insetPoints(widget: Of<"inset">): Point[] {
   if (widget.box) return [widget.box.slice(0, 2) as Point, widget.box.slice(2) as Point];
-  const ref = widget.entity ? entityRef(widget.entity) : undefined;
+  const ref = MapEntities.resolveKey(widget.entity);
   return ref ? MapEntities.getPoints(ref) : [];
 }
 
@@ -283,7 +278,7 @@ function insetRegion(widget: Of<"inset">): Region | undefined {
 
 /** A ring on the entity: the picture shows the map's current layers, which may not include it */
 function insetMark(widget: Of<"inset">, { x0, y0, x1, y1 }: Region): string {
-  const ref = widget.entity ? entityRef(widget.entity) : undefined;
+  const ref = MapEntities.resolveKey(widget.entity);
   const position = ref && (MapEntities.getPosition(ref) ?? MapEntities.getPoints(ref)[0]);
   if (!position) return "";
   const r = (x1 - x0) / 40;
@@ -325,14 +320,14 @@ function insetHtml(widget: Of<"inset">, { index, live }: WidgetContext): string 
 
 /** Zoom the map to the inset: its entity, or its box */
 function revealInset(widget: Of<"inset">): void {
-  const ref = widget.entity ? entityRef(widget.entity) : undefined;
+  const ref = MapEntities.resolveKey(widget.entity);
   if (ref) revealEntity(ref, panel());
   else reveal(insetPoints(widget), { layers: [], maxScale: 20, element: () => null, cover: panel() });
 }
 
 /** Reveal the entity on the map, or open its editor when it has no place there */
 function openEntity(key: string): void {
-  const ref = entityRef(key);
+  const ref = MapEntities.resolveKey(key);
   if (!ref) return;
   if (revealEntity(ref, panel()) || MapEntities.open(ref)) return;
   tip("This element has no map location", false, "warn", 4000);
@@ -347,7 +342,7 @@ function toggleMarks(widget: Of<"entities">): void {
     clearMarks();
     return;
   }
-  const refs = widget.entities.flatMap(key => entityRef(key) ?? []);
+  const refs = widget.entities.flatMap(key => MapEntities.resolveKey(key) ?? []);
   marked = markEntities(refs, panel()) ? widget : null;
   if (!marked) tip("These entities have no map location", false, "warn", 4000);
 }

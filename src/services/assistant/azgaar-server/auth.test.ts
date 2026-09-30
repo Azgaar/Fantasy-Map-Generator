@@ -25,22 +25,4 @@ describe("token storage", () => {
     clearToken();
     expect(getToken()).toBeNull();
   });
-
-  it("survives a throwing storage (private mode) without throwing", () => {
-    const throwing = {
-      getItem: () => {
-        throw new Error("denied");
-      },
-      setItem: () => {
-        throw new Error("denied");
-      },
-      removeItem: () => {
-        throw new Error("denied");
-      }
-    };
-    vi.stubGlobal("localStorage", throwing);
-    expect(getToken()).toBeNull();
-    expect(() => storeToken("x")).not.toThrow();
-    expect(() => clearToken()).not.toThrow();
-  });
 });

@@ -9,9 +9,10 @@ const reply = { choices: [{ message: { content: "ok" } }], usage: {} };
 let fetchStub: ReturnType<typeof vi.fn>;
 
 const request: CompletionRequest = {
-  providerId: "local",
+  provider: "local",
   model: "llama3.2",
   key: "",
+  localUrl: "",
   system: [],
   messages: [],
   tools: []
@@ -26,7 +27,7 @@ beforeEach(() => {
 
 describe("local provider", () => {
   it("routes completion to the given server address with the given model name", async () => {
-    await complete({ ...request, baseUrl: "http://localhost:8080/v1/" });
+    await complete({ ...request, localUrl: "http://localhost:8080/v1/" });
     expect(sent()[0]).toBe("http://localhost:8080/v1/chat/completions");
     expect(JSON.parse(sent()[1].body as string).model).toBe("llama3.2");
   });

@@ -628,6 +628,12 @@ class EntityLookup {
     return sub === undefined ? { type, id } : { type, id, sub };
   }
 
+  /** The ref of a key whose entity is on the map */
+  resolveKey(key: unknown): EntityRef | undefined {
+    const ref = typeof key === "string" ? this.parseKey(key) : undefined;
+    return ref && this.get(ref) ? ref : undefined;
+  }
+
   private byId<T extends { i: number }>(collection: T[] | undefined, id: number | undefined): T | undefined {
     if (!collection || id === undefined) return undefined;
     const direct = collection[id];

@@ -2,7 +2,8 @@
 
 import { COMMANDS, GLOBAL_DECLARATIONS, OPERATION_TYPES, OPERATIONS, REGISTRY_KEYS } from "./context.generated";
 
-let topics: Map<string, string> | null = null;
+let topics: Map<string, string> | null = null; // by lowercase title
+let titles: string[] = [];
 
 async function load(): Promise<Map<string, string>> {
   const [dataModel, configuration, packedGraph, heraldry] = await Promise.all([
@@ -29,15 +30,15 @@ async function load(): Promise<Map<string, string>> {
   );
   map.set("Emblems", emblemVocabulary(heraldry));
   map.set("Commands", `Command ids for \`[label](command:id)\` links, as \`id: name\`:\n${COMMANDS}`);
-  return map;
+  titles = [...map.keys()];
+  return new Map([...map].map(([title, text]) => [title.toLowerCase(), text]));
 }
 
 /** Topics match case-insensitively; a "(pack)"-style suffix from the field index is ignored */
 export async function readDocs(requested: string[]): Promise<string> {
   topics ??= await load();
-  const byKey = new Map([...topics].map(([title, text]) => [title.toLowerCase(), text]));
   const found = requested.map(topic =>
-    byKey.get(
+    topics!.get(
       topic
         .replace(/\(.*\)/, "")
         .trim()
@@ -45,7 +46,7 @@ export async function readDocs(requested: string[]): Promise<string> {
     )
   );
   const unknown = requested.filter((_, index) => !found[index]);
-  if (unknown.length) found.push(`Unknown topics: ${unknown.join(", ")}. Available: ${[...topics.keys()].join(", ")}`);
+  if (unknown.length) found.push(`Unknown topics: ${unknown.join(", ")}. Available: ${titles.join(", ")}`);
   return found.filter(Boolean).join("\n\n");
 }
 

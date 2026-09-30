@@ -182,10 +182,6 @@ function proposeChange(chat: Chat): Tool {
 }
 
 const text = (value: unknown) => (typeof value === "string" ? value.trim() : "");
-const isLive = (key: unknown) => {
-  const ref = typeof key === "string" ? MapEntities.parseKey(key) : undefined;
-  return Boolean(ref && MapEntities.get(ref));
-};
 const missing = (key: unknown) => `No entity ${key} on this map. Keys are type:id, e.g. burg:12`;
 
 interface WidgetTool extends Omit<ToolDefinition, "name"> {
@@ -208,7 +204,7 @@ const WIDGET_TOOLS: Record<Exclude<Widget["type"], "emblem">, WidgetTool> = {
       const entities = Array.isArray(input.entities) ? input.entities.map(String) : [];
       if (!entities.length || entities.length > MAX_WIDGET_ENTITIES)
         return `entities takes 1 to ${MAX_WIDGET_ENTITIES} keys`;
-      const invalid = entities.find(key => !isLive(key));
+      const invalid = entities.find(key => !MapEntities.resolveKey(key));
       return invalid ? missing(invalid) : { type: "entities", title: text(input.title) || "Entities", entities };
     }
   },
@@ -218,7 +214,7 @@ const WIDGET_TOOLS: Record<Exclude<Widget["type"], "emblem">, WidgetTool> = {
     input_schema: { type: "object", properties: { entity: { type: "string" } }, required: ["entity"] },
     parse(input) {
       const entity = text(input.entity);
-      if (!isLive(entity)) return missing(entity);
+      if (!MapEntities.resolveKey(entity)) return missing(entity);
       return entity.startsWith("state:") ? { type: "card", entity } : "Cards show states for now";
     }
   },
@@ -251,7 +247,7 @@ const WIDGET_TOOLS: Record<Exclude<Widget["type"], "emblem">, WidgetTool> = {
         const { label, value, entity } = (row ?? {}) as Record<string, unknown>;
         if (!text(label) || typeof value !== "number" || !Number.isFinite(value) || value < 0)
           return `Each row needs a label and a non-negative number value, got ${JSON.stringify(row)}`;
-        if (entity !== undefined && !isLive(entity)) return missing(entity);
+        if (entity !== undefined && !MapEntities.resolveKey(entity)) return missing(entity);
         parsed.push(
           entity === undefined ? { label: text(label), value } : { label: text(label), value, entity: String(entity) }
         );
@@ -319,8 +315,8 @@ const WIDGET_TOOLS: Record<Exclude<Widget["type"], "emblem">, WidgetTool> = {
       const title = text(input.title);
       if (input.entity !== undefined) {
         const entity = text(input.entity);
-        const ref = MapEntities.parseKey(entity);
-        if (!ref || !MapEntities.get(ref)) return missing(entity);
+        const ref = MapEntities.resolveKey(entity);
+        if (!ref) return missing(entity);
         if (!MapEntities.getPoints(ref).length) return `${entity} has no place on the map`;
         return { type: "inset", title: title || MapEntities.getName(ref), entity };
       }
@@ -370,11 +366,11 @@ const viewEmblem: Tool = {
   },
   async handle(input) {
     const key = text(input.entity);
-    const ref = MapEntities.parseKey(key);
-    if (!ref || !EMBLEM_TYPES.includes(ref.type))
+    if (!EMBLEM_TYPES.some(type => key.startsWith(`${type}:`)))
       return { content: "Emblems belong to states, provinces and burgs", isError: true };
-    const coa = (MapEntities.get(ref) as { coa?: Emblem } | undefined)?.coa;
-    if (!MapEntities.get(ref)) return { content: missing(key), isError: true };
+    const ref = MapEntities.resolveKey(key);
+    if (!ref) return { content: missing(key), isError: true };
+    const coa = (MapEntities.get(ref) as { coa?: Emblem }).coa;
     if (!coa) return { content: `${key} has no emblem`, isError: true };
     const { emblemPng } = await import("@/services/io/emblem-image");
     const png = await emblemPng(`${ref.type}COA${ref.id}`, coa, EMBLEM_SIZE);

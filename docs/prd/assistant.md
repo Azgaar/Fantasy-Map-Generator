@@ -36,7 +36,7 @@ A non-modal, resizable dialog titled **Azgaar Assistant**, docked at the bottom 
 - **Title bar:** _Chats_ (the chat list, which also holds _New chat_), minimise, close.
 - **Transcript:** Assistant messages on the left, the user's on the right. Map reads show as collapsed step rows, proposed changes as cards with Apply, Discard and, once applied, Undo, and widgets inline (see "Widgets").
 - **Context chip:** shown when the notes editor is open, e.g. `Note: Gondesthe`.
-- **Notice area:** limits, countdowns, provider errors, the "long chat" suggestion.
+- **Notice area:** limits, rate limits, provider errors, the "long chat" suggestion.
 - **Composer:** one text box and a send button that turns into Stop while answering.
 - **Footer:** _Wiki_ and _Policy_ links on the left; the tier and its account actions on the right.
 
@@ -268,7 +268,7 @@ The model can also **look at an emblem**: `view_emblem(key)` returns the rendere
 30. As a visitor, I want to sign in with Discord from the footer for a larger allowance, so that I can get more help without paying.
 31. As a Member, I want a visible sign-out in the footer, so that I control my account on a shared computer.
 32. As a Guest or Member, I want to rate an answer up or down, so that the documentation answers improve.
-33. As a Guest or Member, I want a countdown when I'm rate-limited and one automatic retry when it ends, so that I don't have to resend.
+33. As a Guest or Member, I want a rate limit to show the server's message with _Retry_, so that I can resend the question once it passes.
 34. As a Guest or Member who has run out of questions, I want the notice to offer both Discord sign-in and my own key, so that I can continue today.
 35. As a Guest or Member who asks about my map, I want the answer to tell me that this needs my own key and point me to _Use key_, so that I understand why and how to get the answer.
 36. As a Guest or Member with the notes editor open, I want the welcome message to say that my own key would let the Assistant write this note, so that I discover note editing where it helps.
@@ -378,7 +378,7 @@ Assistant services (no world state, no DOM)
    - `answer` — Markdown, optional rating id
    - `step` — a map read, with its result and duration
    - `proposal` — a proposal card: its operations, its Change and its state (proposed, applied, undone, discarded)
-   - `notice` — a limit, error or countdown, optionally with actions
+   - `notice` — a limit or error, optionally with actions
    - `divider` — the Azgaar server started a new memory
    - `widget` — one widget placed by a `show_*` tool: its type and the references it draws from
 
@@ -754,7 +754,7 @@ The rows above hold `Biomes.setReliefPool`, which waits on relief icons; goods a
 - Tests check behaviour through public interfaces: given inputs and a mocked network, assert the transcript items and the visible output — never internal state or call order.
 - **Tier:** a table test over every combination of inputs.
 - **Answerer contract:** one shared suite run against both answerers with mocked transport: the item sequence for a plain question, abort leaving history consistent, and token usage or limits reported.
-- **Azgaar server answerer:** limit notices carry the right actions per tier; rate limits give a countdown and exactly one auto-retry; an expired sign-in falls back to Guest; a new server memory emits a divider.
+- **Azgaar server answerer:** limit notices carry the right actions per tier; a rate limit is thrown like any other error and never retried on its own; an expired sign-in falls back to Guest; a new server memory emits a divider.
 - **Provider answerer:** tool dispatch, unknown-tool errors, the step limit, shortening of old tool results, the split between cached and per-question instructions, and a rejected request leaving key and tier untouched.
 - **Providers:** round-tripping the internal format through the OpenAI-compatible adapter; routing by connection; discovery filtering to chat models.
 - **Connection:** save and clear, one key per provider, local defaults.

@@ -115,7 +115,15 @@ describe("completeOpenAI", () => {
     const fetchStub = vi
       .spyOn(globalThis, "fetch")
       .mockImplementation(async () => new Response(JSON.stringify({ choices: [] })));
-    const request = { providerId: "openai" as const, key: "test", model: "gpt-6-sol", system, messages: [], tools: [] };
+    const request = {
+      provider: "openai" as const,
+      localUrl: "",
+      key: "test",
+      model: "gpt-6-sol",
+      system,
+      messages: [],
+      tools: []
+    };
 
     await completeOpenAI("https://api.openai.com/v1", request);
     await completeOpenAI("https://api.mistral.ai/v1", { ...request, model: "mistral-small-latest" });
@@ -191,7 +199,15 @@ describe("provider routing", () => {
     const fetchStub = vi
       .spyOn(globalThis, "fetch")
       .mockImplementation(async () => new Response(JSON.stringify({ choices: [] })));
-    await complete({ key: "test", providerId: "mistral", model: "my-custom-model", system, messages: [], tools: [] });
+    await complete({
+      key: "test",
+      provider: "mistral",
+      localUrl: "",
+      model: "my-custom-model",
+      system,
+      messages: [],
+      tools: []
+    });
     expect(fetchStub.mock.calls[0][0]).toBe("https://api.mistral.ai/v1/chat/completions");
     fetchStub.mockRestore();
   });

@@ -40,17 +40,12 @@ export class AzgaarServerError extends Error {
   }
 }
 // Dev-only escape hatch so a local stub can stand in for the Azgaar server
-function serverBase(): string {
-  if (import.meta.env.DEV) {
-    try {
-      const override = localStorage.getItem("fmg-help-gateway");
-      if (override) return override.replace(/\/+$/, "");
-    } catch {
-      // storage unavailable — use the Azgaar server
-    }
-  }
-  return AZGAAR_SERVER_URL;
-}
+const devServer = () => (import.meta.env.DEV && localStorage.getItem("fmg-help-gateway")) || "";
+const serverBase = () => devServer().replace(/\/+$/, "") || AZGAAR_SERVER_URL;
+
+/** The free tiers run only on the official site, outside the desktop app */
+export const isOfficial = (): boolean =>
+  !window.electron && (location.origin === OFFICIAL_ORIGIN || Boolean(devServer()));
 
 async function request<T>(path: string, init: RequestInit): Promise<T> {
   const token = getToken();
@@ -129,13 +124,8 @@ export const getLimits = (): Promise<Limits> => request<Limits>("/v1/limits", { 
 // Sign-in is a full-page redirect; the Azgaar server lands the user back on the app URL with
 // #token=… in the fragment (server-configured target — the client passes nothing).
 export function signIn(): void {
-  // Marks that THIS client initiated sign-in, so `stashCallbackToken` can refuse a #token=
-  // planted by a third party (token-fixation guard) — see the matching comment there.
-  try {
-    sessionStorage.setItem(SIGNIN_PENDING, "1");
-  } catch {
-    // storage unavailable — the stash falls back to treating this as an unsolicited token
-  }
+  // Marks that THIS client initiated sign-in, so `stashCallbackToken` can refuse a planted #token=
+  sessionStorage.setItem(SIGNIN_PENDING, "1");
   location.assign(`${serverBase()}/v1/auth/discord`);
 }
 

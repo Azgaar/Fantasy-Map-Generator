@@ -13,23 +13,23 @@ export type Action = "apply" | "undo" | "redo";
 type Item = { i: number } & Record<string, unknown>;
 type Cells = Record<number, unknown>;
 
-/** Entity collections a proposal records, keyed by `i`. Indexed ones keep `i` equal to the array index */
-const COLLECTIONS: [EntityType, () => Item[] | undefined, boolean][] = [
-  ["burg", () => pack.burgs as unknown as Item[], true],
-  ["state", () => pack.states as unknown as Item[], true],
-  ["province", () => pack.provinces as unknown as Item[], true],
-  ["culture", () => pack.cultures as unknown as Item[], true],
-  ["religion", () => pack.religions as unknown as Item[], true],
-  ["biome", () => pack.biomes as unknown as Item[], true],
-  ["feature", () => pack.features as unknown as Item[], true],
-  ["marker", () => pack.markers as unknown as Item[], false],
-  ["zone", () => pack.zones as unknown as Item[], false],
-  ["river", () => pack.rivers as unknown as Item[], false],
-  ["route", () => pack.routes as unknown as Item[], false],
-  ["addedLabel", () => pack.addedLabels as unknown as Item[], false],
-  ["journey", () => pack.journeys as unknown as Item[], false],
-  ["market", () => pack.markets as unknown as Item[], false],
-  ["good", () => pack.goods as unknown as Item[], false]
+/** Entity collections a proposal records, by their `pack` field and keyed by `i`. Indexed ones keep `i` equal to the array index */
+const COLLECTIONS: [type: EntityType, field: string, indexed: boolean][] = [
+  ["burg", "burgs", true],
+  ["state", "states", true],
+  ["province", "provinces", true],
+  ["culture", "cultures", true],
+  ["religion", "religions", true],
+  ["biome", "biomes", true],
+  ["feature", "features", true],
+  ["marker", "markers", false],
+  ["zone", "zones", false],
+  ["river", "rivers", false],
+  ["route", "routes", false],
+  ["addedLabel", "addedLabels", false],
+  ["journey", "journeys", false],
+  ["market", "markets", false],
+  ["good", "goods", false]
 ];
 
 /** Per-cell data a proposal records; a change to any of them is one row per field */
@@ -48,12 +48,12 @@ const CELL_FIELDS = [
 ] as const;
 const CELLS = "cells";
 
-/** Single objects a proposal records by key, compared field by field */
-const RECORDS: Record<string, { get: () => Record<string, unknown> | undefined; label: string }> = {
-  lore: { get: () => globalThis.options?.map.lore as unknown as Record<string, unknown> | undefined, label: "Map lore" }
-};
+/** The map's lore, recorded field by field under this key */
+const LORE = "lore";
+const lore = () => globalThis.options?.map.lore as unknown as Record<string, unknown> | undefined;
 
 const collectionOf = (type: string) => COLLECTIONS.find(([name]) => name === type);
+const itemsOf = (field: string) => (pack as unknown as Record<string, Item[] | undefined>)[field];
 const isItem = (value: unknown): value is Item =>
   typeof value === "object" && value !== null && Number.isInteger((value as Item).i);
 const cellData = (field: string) => (pack.cells as unknown as Record<string, Cells | undefined> | undefined)?.[field];
@@ -87,25 +87,21 @@ function parse(operations: unknown): Batch | string {
 interface Snapshot {
   items: Map<string, Map<number, Item>>;
   cells: Map<string, Cells>;
-  records: Map<string, Record<string, unknown>>;
+  lore?: Record<string, unknown>;
 }
 
 function snapshot(): Snapshot {
   const items = new Map<string, Map<number, Item>>();
-  for (const [type, list] of COLLECTIONS)
-    items.set(type, new Map((list() ?? []).filter(isItem).map(item => [item.i, structuredClone(item)])));
+  for (const [type, field] of COLLECTIONS)
+    items.set(type, new Map((itemsOf(field) ?? []).filter(isItem).map(item => [item.i, structuredClone(item)])));
   const cells = new Map<string, Cells>();
   for (const field of CELL_FIELDS) {
     const data = cellData(field);
     if (data)
       cells.set(field, ArrayBuffer.isView(data) ? (data as unknown as Uint32Array).slice() : structuredClone(data));
   }
-  const records = new Map<string, Record<string, unknown>>();
-  for (const [key, { get }] of Object.entries(RECORDS)) {
-    const record = get();
-    if (record) records.set(key, structuredClone(record));
-  }
-  return { items, cells, records };
+  const record = lore();
+  return { items, cells, lore: record && structuredClone(record) };
 }
 
 const isContainer = (value: unknown): value is Record<string, unknown> =>
@@ -130,11 +126,11 @@ function diff(
   return same(before, after) ? [] : [{ field: path.join("."), before, after: structuredClone(after) }];
 }
 
-function compare({ items, cells, records }: Snapshot): Omit<ChangeRow, "entity">[] {
+function compare({ items, cells, lore: loreCopy }: Snapshot): Omit<ChangeRow, "entity">[] {
   const rows: Omit<ChangeRow, "entity">[] = [];
-  for (const [type, list] of COLLECTIONS) {
+  for (const [type, field] of COLLECTIONS) {
     const copies = items.get(type)!;
-    const live = new Map((list() ?? []).filter(isItem).map(item => [item.i, item]));
+    const live = new Map((itemsOf(field) ?? []).filter(isItem).map(item => [item.i, item]));
     for (const i of new Set([...copies.keys(), ...live.keys()])) {
       const key = `${type}:${i}`;
       const [before, after] = [copies.get(i), live.get(i)];
@@ -156,14 +152,14 @@ function compare({ items, cells, records }: Snapshot): Omit<ChangeRow, "entity">
     }
     if (Object.keys(after).length) rows.push({ key: CELLS, field, before, after });
   }
-  for (const [key, copy] of records) for (const row of diff(copy, RECORDS[key].get())) rows.push({ key, ...row });
+  if (loreCopy) for (const row of diff(loreCopy, lore())) rows.push({ key: LORE, ...row });
   return rows;
 }
 
 function find(key: string): { list: Item[]; indexed: boolean; i: number; item: Item | undefined } | undefined {
   const [type, id] = key.split(":");
   const collection = collectionOf(type);
-  const list = collection?.[1]();
+  const list = collection && itemsOf(collection[1]);
   if (!collection || !list) return undefined;
   const i = Number(id);
   const item = isItem(list[i]) && list[i].i === i ? list[i] : list.find(entry => isItem(entry) && entry.i === i);
@@ -176,11 +172,9 @@ function read(row: ChangeRow, side: Side): boolean {
     const data = cellData(row.field);
     return Boolean(data) && Object.entries(expected as Cells).every(([cell, value]) => same(data![+cell], value));
   }
-  const record = RECORDS[row.key]?.get();
-  const found = RECORDS[row.key] ? undefined : find(row.key);
-  if (!record && !found) return false;
-  if (!row.field) return same(found?.item, expected);
-  const root = record ?? found?.item;
+  const found = row.key === LORE ? undefined : find(row.key);
+  const root = row.key === LORE ? lore() : found?.item;
+  if (!row.field) return Boolean(found) && same(root, expected);
   if (!root) return false;
   const value = row.field.split(".").reduce<unknown>((node, key) => (isContainer(node) ? node[key] : undefined), root);
   return same(value, expected);
@@ -196,8 +190,8 @@ function write(row: ChangeRow, side: Side): void {
     }
     return;
   }
-  const record = RECORDS[row.key]?.get();
-  const { list, i, item } = record ? { list: [] as Item[], i: 0, item: record as unknown as Item } : find(row.key)!;
+  const { list, i, item } =
+    row.key === LORE ? { list: [] as Item[], i: 0, item: lore() as unknown as Item } : find(row.key)!;
   if (!row.field) {
     if (item) list.splice(list.indexOf(item), 1);
     if (value === undefined) return;
@@ -237,14 +231,15 @@ function put(change: ChangeRow[], side: Side): void {
   for (const row of rows) write(row, side);
 }
 
+// `cells` and `lore` are not entity keys, so they parse to nothing
 function name(key: string): string {
-  const ref = key === CELLS ? undefined : MapEntities.parseKey(key);
+  const ref = MapEntities.parseKey(key);
   return ref ? MapEntities.getName(ref) : "";
 }
 
 function label(key: string, fallback: string): string {
-  if (RECORDS[key]) return RECORDS[key].label;
-  const ref = key === CELLS ? undefined : MapEntities.parseKey(key);
+  if (key === LORE) return "Map lore";
+  const ref = MapEntities.parseKey(key);
   if (!ref) return "Cells";
   const { kind } = MapEntities.getDisplay(ref);
   const shown = name(key) || fallback;
@@ -308,7 +303,7 @@ function refresh(proposal: Proposal): void {
   refreshEditors();
   for (const key of new Set(proposal.change.map(row => row.key))) refreshNameInputs(key);
   if (document.getElementById("notesEditor")) void Controllers.NotesEditor.refresh();
-  if (proposal.change.some(({ key }) => RECORDS[key])) {
+  if (proposal.change.some(({ key }) => key === LORE)) {
     Options.save();
     if (document.getElementById("loreEditor")) void Controllers.LoreEditor.refresh();
   }

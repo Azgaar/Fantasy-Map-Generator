@@ -6,29 +6,9 @@ export const TOKEN_STORAGE = "fmg-help-token";
 export const SIGNIN_PENDING = "fmg-help-signin-pending";
 const TOKEN_FRAGMENT = "#token=";
 
-export function getToken(): string | null {
-  try {
-    return localStorage.getItem(TOKEN_STORAGE);
-  } catch {
-    return null;
-  }
-}
-
-export function storeToken(token: string): void {
-  try {
-    localStorage.setItem(TOKEN_STORAGE, token);
-  } catch {
-    // storage unavailable — the user simply stays signed out
-  }
-}
-
-export function clearToken(): void {
-  try {
-    localStorage.removeItem(TOKEN_STORAGE);
-  } catch {
-    // nothing to clear
-  }
-}
+export const getToken = (): string | null => localStorage.getItem(TOKEN_STORAGE);
+export const storeToken = (token: string): void => localStorage.setItem(TOKEN_STORAGE, token);
+export const clearToken = (): void => localStorage.removeItem(TOKEN_STORAGE);
 
 /**
  * The OAuth callback comes back as `#token=<opaque token>`. Take it only when THIS client started
@@ -37,19 +17,8 @@ export function clearToken(): void {
  */
 export function stashCallbackToken(): void {
   if (!location.hash.startsWith(TOKEN_FRAGMENT)) return;
-
-  let signInPending = false;
-  try {
-    signInPending = sessionStorage.getItem(SIGNIN_PENDING) === "1";
-  } catch {
-    // storage unavailable — treat as not pending, i.e. do not accept the token
-  }
-  try {
-    sessionStorage.removeItem(SIGNIN_PENDING);
-  } catch {
-    // nothing to clear
-  }
-
+  const signInPending = sessionStorage.getItem(SIGNIN_PENDING) === "1";
+  sessionStorage.removeItem(SIGNIN_PENDING);
   if (signInPending) storeToken(location.hash.slice(TOKEN_FRAGMENT.length));
   history.replaceState(null, "", location.pathname + location.search);
 }

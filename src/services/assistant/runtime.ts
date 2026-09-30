@@ -41,6 +41,10 @@ export async function runScript(code: string, helpers: Record<string, unknown> =
 
 const elapsed = (started: number): number => Math.round(performance.now() - started);
 
+type Typed = { constructor: { name: string }; length: number; slice: (a: number, b: number) => ArrayLike<number> };
+const typed = (value: unknown): Typed | undefined =>
+  ArrayBuffer.isView(value) ? (value as unknown as Typed) : undefined;
+
 // Runtime introspection — the model's way of checking a global's actual shape instead of trusting
 // the prompt. Accepts an expression string ("pack.burgs[1]") or a value.
 export function describe(target: unknown): unknown {
@@ -59,14 +63,8 @@ function inspect(value: unknown): Record<string, unknown> {
   if (value === null) return { type: "null" };
   if (value === undefined) return { type: "undefined" };
 
-  if (ArrayBuffer.isView(value)) {
-    const typed = value as unknown as {
-      constructor: { name: string };
-      length: number;
-      slice: (a: number, b: number) => ArrayLike<number>;
-    };
-    return { type: typed.constructor.name, length: typed.length, sample: Array.from(typed.slice(0, 5)) };
-  }
+  const array = typed(value);
+  if (array) return { type: array.constructor.name, length: array.length, sample: Array.from(array.slice(0, 5)) };
 
   if (Array.isArray(value)) {
     return { type: "Array", length: value.length, sample: value.slice(0, 3).map(summarize) };
@@ -99,10 +97,8 @@ function prototypeMethods(object: object): string[] {
 // One-line type label used for nested values, so describe() stays readable at any depth
 function summarize(value: unknown): string {
   if (value === null) return "null";
-  if (ArrayBuffer.isView(value)) {
-    const typed = value as unknown as { constructor: { name: string }; length: number };
-    return `${typed.constructor.name}(${typed.length})`;
-  }
+  const array = typed(value);
+  if (array) return `${array.constructor.name}(${array.length})`;
   if (Array.isArray(value)) return `Array(${value.length})`;
   if (typeof value === "string") return `string(${value.length})`;
   if (typeof value === "object") {
@@ -122,14 +118,10 @@ export function serialize(value: unknown, limit = MAX_RESULT_CHARS): string {
   const replacer = (_key: string, item: unknown): unknown => {
     if (typeof item === "function") return `[Function ${item.name || "anonymous"}]`;
     if (typeof item === "bigint") return String(item);
-    if (ArrayBuffer.isView(item)) {
-      const typed = item as unknown as {
-        constructor: { name: string };
-        length: number;
-        slice: (a: number, b: number) => ArrayLike<number>;
-      };
-      const head = Array.from(typed.slice(0, 10)).join(", ");
-      return `[${typed.constructor.name}(${typed.length}) ${head}${typed.length > 10 ? ", …" : ""}]`;
+    const array = typed(item);
+    if (array) {
+      const head = Array.from(array.slice(0, 10)).join(", ");
+      return `[${array.constructor.name}(${array.length}) ${head}${array.length > 10 ? ", …" : ""}]`;
     }
     if (item instanceof Set) return { Set: [...item].slice(0, MAX_ARRAY_ITEMS) };
     if (item instanceof Map) return { Map: [...item.entries()].slice(0, MAX_ARRAY_ITEMS) };
