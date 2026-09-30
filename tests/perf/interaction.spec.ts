@@ -24,6 +24,13 @@ function findLatestFixture(): string {
 const FIXTURE_PATH = findLatestFixture();
 
 test("zoom and pan gesture over a loaded map", async ({ page }) => {
+  // window.mapId was the old test seam; map:generated is the one current code still dispatches
+  await page.addInitScript(() => {
+    window.addEventListener("map:generated", () => {
+      (window as unknown as { __mapLoaded?: boolean }).__mapLoaded = true;
+    });
+  });
+
   await page.goto("/");
   await page.evaluate(() => {
     localStorage.clear();
@@ -32,7 +39,7 @@ test("zoom and pan gesture over a loaded map", async ({ page }) => {
 
   await page.waitForSelector("#mapToLoad", { state: "attached" });
   await page.locator("#mapToLoad").setInputFiles(FIXTURE_PATH);
-  await page.waitForFunction(() => (window as unknown as { mapId?: unknown }).mapId !== undefined, {
+  await page.waitForFunction(() => (window as unknown as { __mapLoaded?: boolean }).__mapLoaded === true, {
     timeout: 120_000
   });
   await page.waitForTimeout(500);

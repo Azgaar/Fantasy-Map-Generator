@@ -103,14 +103,16 @@ for (const seed of SEEDS) {
       return { totalMs: perfWindow.__mapGenerated?.totalMs, stageMs: perfWindow.__perfStages };
     });
 
-    const resolvedTotalMs = totalMs ?? consoleTotalMs;
-    if (resolvedTotalMs === undefined) throw new Error(`generation for seed ${seed} never reported a total time`);
     const resolvedStageMs = Object.keys(stageMs).length ? stageMs : consoleStageMs;
+    // older code under test may report neither a totalMs event nor a "TOTAL:" console line;
+    // fall back to the sum of whatever per-stage timings did come through, so that case still
+    // contributes its stage metrics to the comparison instead of being dropped entirely
+    const summedStageMs = Object.values(resolvedStageMs).reduce((sum: number, ms) => sum + (ms as number), 0);
+    const resolvedTotalMs = totalMs ?? consoleTotalMs ?? (summedStageMs || undefined);
 
     const checksum = await page.evaluate(computeChecksum);
 
-    console.log(
-      `PERF_RESULT ${JSON.stringify({ suite: "generation", case: `seed ${seed}`, metrics: { total: resolvedTotalMs, ...resolvedStageMs }, checksum })}`
-    );
+    const metrics = resolvedTotalMs === undefined ? resolvedStageMs : { total: resolvedTotalMs, ...resolvedStageMs };
+    console.log(`PERF_RESULT ${JSON.stringify({ suite: "generation", case: `seed ${seed}`, metrics, checksum })}`);
   });
 }
