@@ -82,21 +82,28 @@ const tier = (): Tier => resolveTier(official(), !!getToken(), Connection.isConn
 
 // Built once and hidden on close, unlike other dialogs: an answer in flight, the draft and the scroll survive
 const isBuilt = () => document.getElementById(dialogId) !== null;
-let shown = false;
+let showing = false;
+let unseen = false; // the transcript changed while hidden, so reopen at its end
 const el = <T extends HTMLElement = HTMLElement>(id: string): T => ensureEl<T>(id);
 
 function toggle(): void {
-  if (shown && isBuilt()) $(`#${dialogId}`).dialog("close");
+  if (showing && isBuilt()) $(`#${dialogId}`).dialog("close");
   else open();
 }
 
 function open(): void {
-  if (!isBuilt()) build();
-  else {
-    $(`#${dialogId}`).dialog(shown ? "moveToTop" : "open");
+  if (!isBuilt()) {
+    showing = true;
+    build();
+  } else {
+    $(`#${dialogId}`).dialog(showing ? "moveToTop" : "open");
+    if (!showing) {
+      showing = true;
+      render(!unseen); // sign-in and proposal availability may have changed while hidden
+      unseen = false;
+    }
     void refreshContextChip();
   }
-  shown = true;
   markBubble(true);
 }
 
@@ -118,10 +125,9 @@ function build(): void {
 }
 
 function closeAssistant(): void {
-  shown = false;
+  showing = false;
   markBubble(false);
   AssistantWidgets.clearMarks();
-  if (view === "chat") renderTranscript(true);
 }
 
 function markBubble(opened: boolean): void {
@@ -500,7 +506,7 @@ function showView(next: View): void {
   render();
 }
 
-function render(): void {
+function render(keepScroll = false): void {
   if (!isBuilt()) return;
   const readOnly = !chat || !canContinue(chat, tier(), AssistantMap.id());
   el("assistantTranscript").hidden = view !== "chat";
@@ -514,13 +520,18 @@ function render(): void {
   ask.className = busy ? "busy icon-cancel" : "icon-right-big";
   ask.setAttribute("aria-label", busy ? "Stop" : "Send");
   ask.title = busy ? "Stop" : "Send (Enter)";
-  if (view === "chat") renderTranscript();
+  if (view === "chat") renderTranscript(keepScroll);
   if (view === "chats") renderChats();
   renderNotice();
   renderFooter();
 }
 
 function renderTranscript(keepScroll = false): void {
+  // a hidden log can't hold its scroll position, so open() renders it instead
+  if (!showing) {
+    unseen = true;
+    return;
+  }
   const log = el("assistantTranscript");
   const top = log.scrollTop;
   const items = chat?.items ?? [];
@@ -1090,7 +1101,7 @@ async function send(): Promise<void> {
     touch(active);
     if (isBuilt()) {
       render();
-      if (shown) el("assistantQuestion").focus();
+      if (showing) el("assistantQuestion").focus();
     }
     void refreshLimits();
   }
