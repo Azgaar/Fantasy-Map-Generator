@@ -1,14 +1,15 @@
 import { Layers } from "@/components/layers";
 import type { Burg } from "@/generators/burgs-generator";
 import { ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
+import { timeEnd, timeStart } from "@/utils";
 import { escapeHtml } from "@/utils/stringUtils";
 
 const layer = ViewportLayers.register({ id: "burgIcons", render: reconcileBurgIcons });
 
 export const drawBurgIcons = (): void => {
-  TIME && console.time("drawBurgIcons");
+  TIME && timeStart("drawBurgIcons");
   layer.render();
-  TIME && console.timeEnd("drawBurgIcons");
+  TIME && timeEnd("drawBurgIcons");
 };
 
 function reconcileBurgIcons({ root, bounds }: ViewportRenderContext): void {

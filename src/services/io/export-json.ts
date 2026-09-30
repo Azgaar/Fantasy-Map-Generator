@@ -2,7 +2,7 @@ import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { savedMessage } from "@/services/platform";
 import { VERSION } from "@/services/versioning";
-import { getFileName } from "@/utils";
+import { getFileName, timeEnd, timeStart } from "@/utils";
 
 type ExportJsonType = "Full" | "Minimal" | "PackCells" | "GridCells";
 
@@ -20,7 +20,7 @@ function exportToJson(type: ExportJsonType): void {
   }
   closeDialogs("#alert");
 
-  TIME && console.time("exportToJson");
+  TIME && timeStart("exportToJson");
   const mapData = typeMap[type]();
   const blob = new Blob([mapData], { type: "application/json" });
   const URL = window.URL.createObjectURL(blob);
@@ -30,7 +30,7 @@ function exportToJson(type: ExportJsonType): void {
   link.click();
   tip(savedMessage(link.download), true, "success", 7000);
   window.URL.revokeObjectURL(URL);
-  TIME && console.timeEnd("exportToJson");
+  TIME && timeEnd("exportToJson");
 }
 
 function getFullDataJson(): string {

@@ -57,11 +57,13 @@ export async function generate(config?: GenerationConfig): Promise<void> {
     if (precreatedGraph && points !== undefined) options.map.graph.points = points;
     applyGraphSize(); // TODO: DOM change, not part of generation
 
+    const generationStart = performance.now();
     await GenerationPipeline.run({ graph: precreatedGraph });
+    const totalMs = performance.now() - generationStart;
     Options.persist();
 
     syncOptionInputs();
-    registerMap();
+    registerMap(undefined, totalMs);
     logStats();
     invokeActiveZooming();
   } catch (error) {
@@ -157,7 +159,7 @@ globalThis.mapHistory = [];
 const MAP_HISTORY_LIMIT = 100;
 
 /** Take note of a map that is now on screen, and announce it */
-export function registerMap(created: number = Date.now()): void {
+export function registerMap(created: number = Date.now(), totalMs?: number): void {
   mapHistory.push({
     seed: options.map.seed,
     width: options.map.graph.width,
@@ -168,8 +170,13 @@ export function registerMap(created: number = Date.now()): void {
   });
   if (mapHistory.length > MAP_HISTORY_LIMIT) mapHistory.splice(0, mapHistory.length - MAP_HISTORY_LIMIT);
 
-  // the public seam test automation and external integrations wait on; the id is the creation date
-  window.dispatchEvent(new CustomEvent("map:generated", { detail: { seed: options.map.seed, mapId: created } }));
+  // the public seam test automation and external integrations wait on; the id is the creation date.
+  // totalMs is only present when registerMap follows a fresh generation, not a load/resample
+  const detail =
+    typeof totalMs === "number"
+      ? { seed: options.map.seed, mapId: created, totalMs }
+      : { seed: options.map.seed, mapId: created };
+  window.dispatchEvent(new CustomEvent("map:generated", { detail }));
 }
 
 declare global {

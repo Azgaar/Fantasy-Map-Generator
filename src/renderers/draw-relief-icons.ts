@@ -1,6 +1,7 @@
 import { Layers } from "@/components/layers";
 import type { ReliefIcon } from "@/generators/relief-generator";
 import { Scene, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
+import { timeEnd, timeStart } from "@/utils";
 
 interface ReliefSceneIcon {
   id: string;
@@ -12,11 +13,11 @@ const layer = ViewportLayers.register({ id: "relief", render: reconcileRelief })
 let frameId: number | null = null;
 
 export const drawRelief = (): void => {
-  TIME && console.time("drawRelief");
+  TIME && timeStart("drawRelief");
   if (!pack.relief?.length) Relief.generate();
   scene.replace(pack.relief.map((data, i) => ({ id: String(i), data })));
   layer.render();
-  TIME && console.timeEnd("drawRelief");
+  TIME && timeEnd("drawRelief");
 };
 
 export const redrawRelief = (): void => {

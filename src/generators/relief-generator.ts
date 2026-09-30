@@ -1,7 +1,7 @@
 import { extent, polygonContains } from "d3";
 import { RELIEF_ICONS, RELIEF_SETS } from "@/data/relief-icons";
 import type { ReliefSet, ReliefTypeIcons } from "@/types/relief";
-import { minmax, ra, rn } from "@/utils";
+import { minmax, ra, rn, timeEnd, timeStart } from "@/utils";
 
 declare global {
   var Relief: ReliefModule;
@@ -16,7 +16,7 @@ export interface ReliefIcon {
 
 class ReliefModule {
   generate(): ReliefIcon[] {
-    TIME && console.time("generateRelief");
+    TIME && timeStart("generateRelief");
 
     const cells = pack.cells;
     const { size, density } = styles.relief.options;
@@ -83,7 +83,7 @@ class ReliefModule {
     relief.sort((a, b) => a.y + a.s - (b.y + b.s));
     pack.relief = relief;
 
-    TIME && console.timeEnd("generateRelief");
+    TIME && timeEnd("generateRelief");
     return relief;
   }
 

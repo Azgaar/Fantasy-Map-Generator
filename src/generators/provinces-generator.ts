@@ -2,7 +2,17 @@ import Alea from "alea";
 import { max } from "d3";
 import { Emblems } from "@/generators/emblems-generator";
 import type { Emblem } from "@/types/emblems";
-import { gauss, generateSeed, getMixedColor, getPolesOfInaccessibility, P, rand, rw } from "../utils";
+import {
+  gauss,
+  generateSeed,
+  getMixedColor,
+  getPolesOfInaccessibility,
+  P,
+  rand,
+  rw,
+  timeEnd,
+  timeStart
+} from "../utils";
 import type { Label } from "./labels-generator";
 
 declare global {
@@ -78,6 +88,7 @@ class ProvinceModule {
   }
 
   generate(regenerate = false, regenerateLockedStates = false) {
+    TIME && timeStart("generateProvinces");
     const localSeed = regenerate ? generateSeed() : options.map.seed;
     Math.random = Alea(localSeed);
 
@@ -326,6 +337,8 @@ class ProvinceModule {
 
     cells.province = provinceIds;
     pack.provinces = provinces;
+
+    TIME && timeEnd("generateProvinces");
   }
 
   // calculate pole of inaccessibility for each province

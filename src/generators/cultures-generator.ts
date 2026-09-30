@@ -1,6 +1,6 @@
 import { max, quadtree, range } from "d3";
 import { Emblems } from "@/generators/emblems-generator";
-import { abbreviate, biased, getColors, getRandomColor, minmax, P, rand, rn, rw } from "../utils";
+import { abbreviate, biased, getColors, getRandomColor, minmax, P, rand, rn, rw, timeEnd, timeStart } from "../utils";
 
 /** The named culture sets the user picks from: how many cultures each holds and how often it is rolled */
 export const CULTURE_SETS: Record<string, { name: string; max: number; probability: number }> = {
@@ -1029,6 +1029,7 @@ class CulturesGenerator {
   }
 
   generate() {
+    TIME && timeStart("generateCultures");
     options.map.cultures.set = options.generation.cultures.set;
     this.cells = pack.cells;
     const cultureIds = new Uint16Array(this.cells.i.length); // cell cultures
@@ -1216,6 +1217,8 @@ class CulturesGenerator {
     cultures.forEach((c: Culture) => {
       c.base = c.base % Names.nameBases.length;
     });
+
+    TIME && timeEnd("generateCultures");
   }
 
   add(center: number) {
@@ -1257,6 +1260,7 @@ class CulturesGenerator {
   }
 
   expand() {
+    TIME && timeStart("expandCultures");
     const { cells, cultures } = pack;
 
     const queue = new FlatQueue();
@@ -1346,6 +1350,8 @@ class CulturesGenerator {
         }
       });
     }
+
+    TIME && timeEnd("expandCultures");
   }
 
   regenerate(): void {

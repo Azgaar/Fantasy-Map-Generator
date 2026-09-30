@@ -3,7 +3,7 @@ import { range as d3Range, leastIndex, mean } from "d3";
 import type { MapData } from "@/components/options-schema";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import type { GridGraph } from "@/types/GridGraph";
-import { getNumberInRange, lim, minmax, P, rand } from "../utils";
+import { getNumberInRange, lim, minmax, P, rand, timeEnd, timeStart } from "../utils";
 
 declare global {
   var HeightmapGenerator: HeightmapModule;
@@ -555,9 +555,11 @@ class HeightmapModule {
 
   /** build the heightmap from the selected template or image and store it as the graph cell heights */
   async generate(graph: GridGraph = grid, id: string = this.getSelectedId()): Promise<Uint8Array> {
+    TIME && timeStart("defineHeightmap");
     Math.random = Alea(options.map.seed); // reset PRNG
     const isTemplate = id in heightmapTemplates;
     const heights = isTemplate ? this.fromTemplate(graph, id) : await this.fromPrecreated(graph, id);
+    TIME && timeEnd("defineHeightmap");
 
     this.clearData();
     graph.cells.h = heights;

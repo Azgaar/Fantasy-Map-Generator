@@ -1,6 +1,18 @@
 import Alea from "alea";
 import { polygonArea } from "d3";
-import { clipPoly, connectVertices, distanceSquared, isLand, isWater, P, ra, rn, TYPED_ARRAY_MAX } from "../utils";
+import {
+  clipPoly,
+  connectVertices,
+  distanceSquared,
+  isLand,
+  isWater,
+  P,
+  ra,
+  rn,
+  TYPED_ARRAY_MAX,
+  timeEnd,
+  timeStart
+} from "../utils";
 import type { CoastlineSettings } from "./coastline-generator";
 
 declare global {
@@ -105,6 +117,7 @@ class FeatureModule {
    * mark Grid features (ocean, lakes, islands) and calculate distance field
    */
   markupGrid() {
+    TIME && timeStart("markupGrid");
     Math.random = Alea(options.map.seed); // get the same result on heightmap edit in Erase mode
 
     const { h: heights, c: neighbors, b: borderCells, i } = grid.cells;
@@ -155,6 +168,8 @@ class FeatureModule {
     grid.cells.t = distanceField;
     grid.cells.f = featureIds;
     grid.features = [0 as unknown as GridFeature, ...features];
+
+    TIME && timeEnd("markupGrid");
   }
 
   /**
@@ -255,6 +270,8 @@ class FeatureModule {
       } as Feature;
     };
 
+    TIME && timeStart("markupPack");
+
     const { cells, vertices } = pack;
     const { c: neighbors, b: borderCells, i } = cells;
     const packCellsNumber = i.length;
@@ -326,6 +343,7 @@ class FeatureModule {
     pack.cells.haven = haven;
     pack.cells.harbor = harbor;
     pack.features = [0 as unknown as Feature, ...features];
+    TIME && timeEnd("markupPack");
   }
 
   /** Grid cells a feature covered, plus the data the user owns, so a re-markup can hand it back */

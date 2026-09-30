@@ -2,7 +2,7 @@ import { range, type Selection, select } from "d3";
 import { tip } from "@/components/tooltips";
 import { viewport } from "@/components/viewport";
 import { Controllers } from "@/controllers";
-import { ensureEl, rn } from "../utils";
+import { ensureEl, rn, timeEnd, timeStart } from "../utils";
 
 // TODO: a renderer should not own controls. Move this to a proper scale-bar component once one exists
 function addScaleBarControls(scaleBar: Selection<SVGGElement, unknown, null, undefined>): void {
@@ -26,7 +26,7 @@ export function drawScaleBar(
 
   const renderedContent = scaleBar.select("#scaleBarContent");
   const isRendered = Boolean(renderedContent.size());
-  TIME && !isRendered && console.time("drawScaleBar");
+  TIME && !isRendered && timeStart("drawScaleBar");
 
   const unit = options.map.units.distance.unit;
   const { barSize: size, label, x: posX, y: posY } = styles.scaleBar.options;
@@ -110,7 +110,7 @@ export function drawScaleBar(
     scaleBar.attr("transform", `translate(${x},${y})`);
   }
 
-  TIME && !isRendered && console.timeEnd("drawScaleBar");
+  TIME && !isRendered && timeEnd("drawScaleBar");
 
   function getLength(): number {
     const init = 100;

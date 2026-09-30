@@ -2,6 +2,7 @@ import { color, curveBasisClosed, line } from "d3";
 import { Layers } from "@/components/layers";
 import { boundsIntersect, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import type { PackedGraph } from "@/types/PackedGraph";
+import { timeEnd, timeStart } from "@/utils";
 import { rn } from "@/utils/numberUtils";
 import { getIsolines } from "@/utils/pathUtils";
 
@@ -13,10 +14,10 @@ let sourcePack: PackedGraph | null = null;
 let sourceMarkets: Uint16Array | null = null;
 
 export function drawMarkets(): void {
-  TIME && console.time("drawMarkets");
+  TIME && timeStart("drawMarkets");
   buildTerritories();
   layer.render();
-  TIME && console.timeEnd("drawMarkets");
+  TIME && timeEnd("drawMarkets");
 }
 
 function buildTerritories(): void {
