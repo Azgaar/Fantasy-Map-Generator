@@ -417,15 +417,54 @@ describe("Zones, Markers, Routes, labels and regiments", () => {
   it("places a custom marker at a point and removes markers by id", () => {
     vi.spyOn(Pack, "requireCell").mockReturnValue(2);
     vi.stubGlobal("options", { map: { cultures: { set: "european" } } });
-    const id = Markers.place(10, 20, "shrine", "Old Shrine");
+    expect(() => Markers.place(10, 20, "shrine", { name: "Old Shrine" })).toThrow("give the marker a note");
+    const id = Markers.place(10, 20, "shrine", {
+      name: "Old Shrine",
+      note: "<p>Pilgrims leave bells here.</p>"
+    });
     expect(pack.markers.find(marker => marker.i === id)).toMatchObject({
       cell: 2,
       type: "shrine",
       icon: "glyph-2753",
-      name: "Old Shrine"
+      name: "Old Shrine",
+      note: "<p>Pilgrims leave bells here.</p>"
     });
+    expect(() => Markers.place(10, 20, "shrine", { note: "<img src=x onerror=alert(1)>" })).toThrow("notes subset");
+    expect(() => Markers.place(10, 20, "shrine", { title: "X" } as never)).toThrow("Unknown marker detail title");
     Markers.remove(0);
     expect(() => Markers.remove(0)).toThrow("Marker 0 does not exist");
+  });
+
+  it("keeps the name asked for over the one a config type generates, and its legend", () => {
+    vi.spyOn(Pack, "requireCell").mockReturnValue(2);
+    const volcano = {
+      type: "volcanoes",
+      icon: "glyph-1f30b",
+      add: (marker: { name?: string; note?: string }) => {
+        marker.name = "Mount Generated";
+        marker.note = "Dormant volcano.";
+      }
+    };
+    Object.assign(pack, {
+      cells: {
+        burg: [0, 0, 0],
+        p: [
+          [0, 0],
+          [0, 0],
+          [10, 20]
+        ]
+      }
+    });
+    const config = Markers.getConfig();
+    Markers.setConfig([volcano] as never);
+    const named = Markers.place(10, 20, "volcanoes", { name: "Grumblepeak" });
+    const unnamed = Markers.place(10, 20, "volcanoes", { icon: "🔥" });
+    const described = Markers.place(10, 20, "volcanoes", { name: "Ashcap", note: "<p>Smokes on feast days.</p>" });
+    Markers.setConfig(config);
+    const find = (id: number) => pack.markers.find(marker => marker.i === id);
+    expect(find(named)).toMatchObject({ name: "Grumblepeak", note: "Dormant volcano.", icon: "glyph-1f30b" });
+    expect(find(unnamed)).toMatchObject({ name: "Mount Generated", icon: "glyph-1f525" });
+    expect(find(described)?.note).toBe("<p>Smokes on feast days.</p>");
   });
 
   it("regroups and removes routes by id with their cell links", () => {

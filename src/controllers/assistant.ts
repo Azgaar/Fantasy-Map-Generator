@@ -1,4 +1,5 @@
-import { destroyDialog } from "@/components/dialog/dialog-helpers";
+import { Icons } from "@/components/icons";
+import { MapEntities } from "@/components/map-entities";
 import { Controllers } from "@/controllers";
 import type { Answerer } from "@/services/assistant/answerer";
 import { createAzgaarServerAnswerer } from "@/services/assistant/azgaar-server/answerer";
@@ -78,20 +79,28 @@ const official = () =>
   !window.electron &&
   (location.origin === OFFICIAL_ORIGIN || (import.meta.env.DEV && Boolean(localStorage.getItem("fmg-help-gateway"))));
 const tier = (): Tier => resolveTier(official(), !!getToken(), Connection.isConnected());
-const isOpen = () => document.getElementById(dialogId) !== null;
+
+// Built once and hidden on close, unlike other dialogs: an answer in flight, the draft and the scroll survive
+const isBuilt = () => document.getElementById(dialogId) !== null;
+let shown = false;
 const el = <T extends HTMLElement = HTMLElement>(id: string): T => ensureEl<T>(id);
 
 function toggle(): void {
-  if (isOpen()) $(`#${dialogId}`).dialog("close");
+  if (shown && isBuilt()) $(`#${dialogId}`).dialog("close");
   else open();
 }
 
 function open(): void {
-  if (isOpen()) {
-    $(`#${dialogId}`).dialog("moveToTop");
+  if (!isBuilt()) build();
+  else {
+    $(`#${dialogId}`).dialog(shown ? "moveToTop" : "open");
     void refreshContextChip();
-    return;
   }
+  shown = true;
+  markBubble(true);
+}
+
+function build(): void {
   view = "chat";
   renderDialog();
   $(`#${dialogId}`).dialog({
@@ -105,17 +114,14 @@ function open(): void {
     close: closeAssistant
   });
   addChatsButton();
-  markBubble(true);
   void initialize();
 }
 
 function closeAssistant(): void {
-  abort?.abort();
-  stopCountdown();
-  cancelDiscovery();
-  AssistantWidgets.clearMarks();
+  shown = false;
   markBubble(false);
-  destroyDialog(dialogId);
+  AssistantWidgets.clearMarks();
+  if (view === "chat") renderTranscript(true);
 }
 
 function markBubble(opened: boolean): void {
@@ -155,7 +161,6 @@ const STYLES = /* html */ `
     #assistant .assistantStep summary { cursor: pointer; }
     #assistant .assistantStep.failed summary { color: #a3262e; }
     #assistant .assistantProposal { width: 100%; overflow: hidden; border: 1px solid rgb(0 0 0 / 14%); border-radius: .55em; background: rgb(255 255 255 / 60%); }
-    #assistant .assistantProposal:is(.undone, .discarded) { opacity: .7; }
     #assistant .assistantProposalHeader { display: flex; align-items: center; gap: .55em; padding: .5em .7em; border-bottom: 1px solid rgb(0 0 0 / 8%); background: rgb(0 0 0 / 3%); }
     #assistant .assistantProposalState { flex: none; padding: .1em .55em; border-radius: 1em; background: var(--header); color: #fff; font-size: .72em; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
     #assistant .assistantProposal.applied .assistantProposalState { background: #3d7a3a; }
@@ -165,7 +170,11 @@ const STYLES = /* html */ `
     #assistant .assistantProposalBody { display: grid; gap: .55em; padding: .55em .7em; }
     #assistant details.assistantProposalBody:not([open]) { padding-block: .35em; }
     #assistant .assistantProposalBody > summary { cursor: pointer; opacity: .7; font-size: .9em; }
-    #assistant .assistantChangeName { margin-bottom: .1em; font-weight: 600; }
+    #assistant .assistantChangeName { display: flex; align-items: center; gap: .35em; margin-bottom: .1em; font-weight: 600; }
+    #assistant .assistantChangeName > svg { flex: none; }
+    #assistant .assistantChangeTag { margin-left: auto; padding: 0 .5em; border-radius: 1em; font-size: .75em; font-weight: 600; }
+    #assistant .assistantChangeTag.add { background: rgb(61 122 58 / 15%); color: #2f6a2c; }
+    #assistant .assistantChangeTag.remove { background: rgb(160 40 40 / 12%); color: #8a2a2a; }
     #assistant .assistantChangeField { display: grid; grid-template-columns: 5.5em minmax(0, 1fr); gap: 0 .6em; padding-left: .6em; font-size: .92em; }
     #assistant .assistantChangeField > span:first-child { opacity: .6; }
     #assistant .assistantChangeField del { opacity: .55; }
@@ -175,6 +184,7 @@ const STYLES = /* html */ `
     #assistant .assistantChangeMore { opacity: .6; font-size: .9em; }
     #assistant .assistantNotePreview { grid-column: 1 / -1; max-height: 10em; overflow: auto; margin-top: .35em; padding: .35em .6em; border-radius: .35em; background: rgb(0 0 0 / 4%); }
     #assistant .assistantNotePreview p { margin: .3em 0; }
+    #assistant .assistantChangeEntity > .assistantNotePreview { margin: .15em 0 0 .6em; font-size: .92em; }
     #assistant .assistantProposalFooter { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .4em; padding: .4em .7em; border-top: 1px solid rgb(0 0 0 / 8%); }
     #assistant .assistantProposalFooter > span:first-child { opacity: .6; font-size: .88em; }
     #assistant .assistantProposalActions { display: flex; gap: .4em; }
@@ -282,7 +292,6 @@ const STYLES = /* html */ `
   </style>`;
 
 function renderDialog(): void {
-  destroyDialog(dialogId);
   const providers = PROVIDERS.map(
     provider => `<option value="${provider.id}">${provider.id === "local" ? "Local" : provider.label}</option>`
   ).join("");
@@ -412,7 +421,8 @@ function handleClick(event: MouseEvent): void {
   else if (action === "resend") resend();
   else if (action === "open-chat" && id) openChat(id);
   else if (action === "delete-chat" && id) deleteChat(id);
-  else if (action === "apply" || action === "undo" || action === "discard") decide(action, Number(index));
+  else if (action === "apply" || action === "undo" || action === "redo" || action === "discard")
+    decide(action, Number(index));
   else if (action === "rate") void rateItem(Number(index), rating as "up" | "down");
   else if (action === "entity" && id) AssistantWidgets.openEntity(id);
   else if (action === "command" && id) AssistantWidgets.runCommand(id);
@@ -431,7 +441,7 @@ async function initialize(): Promise<void> {
     render();
     return;
   }
-  if (!isOpen()) return;
+  if (!isBuilt()) return;
   const now = tier();
   const previousTier = localStorage.getItem(LAST_TIER);
   const previousMap = localStorage.getItem(LAST_MAP);
@@ -491,7 +501,7 @@ function showView(next: View): void {
 }
 
 function render(): void {
-  if (!isOpen()) return;
+  if (!isBuilt()) return;
   const readOnly = !chat || !canContinue(chat, tier(), AssistantMap.id());
   el("assistantTranscript").hidden = view !== "chat";
   el("assistantChats").hidden = view !== "chats";
@@ -618,7 +628,7 @@ function proposalHtml(proposal: Proposal, index: number): string {
   const rows = groups
     .map(
       rows => /* html */ `<div class="assistantChangeEntity">
-        <div class="assistantChangeName">${escapeHtml(rows[0].entity)}</div>
+        <div class="assistantChangeName">${escapeHtml(rows[0].entity)}${entityIcon(rows[0])}${wholeTag(rows[0])}</div>
         ${rows.map(changeHtml).join("")}
       </div>`
     )
@@ -632,12 +642,15 @@ function proposalHtml(proposal: Proposal, index: number): string {
   const mapId = AssistantMap.id();
   const canApply = Proposals.canApply(proposal, mapId);
   const canUndo = Proposals.canUndo(proposal, mapId);
+  const canRedo = Proposals.canRedo(proposal, mapId);
   const actions =
     state === "proposed"
       ? button("discard", "Discard", true) + button("apply", canApply ? "Apply" : "Changed since", canApply, true)
       : state === "applied"
         ? button("undo", canUndo ? "Undo" : "Changed since", canUndo)
-        : "";
+        : state === "undone"
+          ? button("redo", canRedo ? "Redo" : "Changed since", canRedo)
+          : "";
   const body =
     state === "proposed"
       ? `<div class="assistantProposalBody">${list}</div>`
@@ -668,11 +681,26 @@ const CELL_LABELS: Record<string, string> = {
   pop: "Rural population"
 };
 
+/** The icon of an entity that has one, as the row holds it or the map does */
+function entityIcon({ key, field, before, after }: ChangeRow): string {
+  const whole = (field ? undefined : (after ?? before)) as { icon?: unknown } | undefined;
+  const ref = globalThis.pack && MapEntities.parseKey(key); // chats render before a map exists too
+  const icon = typeof whole === "object" ? whole?.icon : ref && (MapEntities.get(ref) as { icon?: unknown })?.icon;
+  return typeof icon === "string" && icon ? ` ${Icons.html(icon)}` : "";
+}
+
+/** An added or removed entity is tagged on its name line: the change itself, true in every card state */
+function wholeTag({ field, before }: ChangeRow): string {
+  if (field) return "";
+  const added = before === undefined;
+  return `<span class="assistantChangeTag ${added ? "add" : "remove"}">${added ? "Add" : "Remove"}</span>`;
+}
+
 // Notes passed the notes subset check in Notes.write, so the preview renders them as HTML
 function changeHtml({ key, field, before, after }: ChangeRow): string {
   if (!field) {
-    const text = before === undefined ? "Added" : "Removed";
-    return /* html */ `<div class="assistantChangeField"><span>${text}</span><span></span></div>`;
+    const note = before === undefined ? (after as { note?: unknown } | undefined)?.note : undefined;
+    return typeof note === "string" && note ? `<div class="assistantNotePreview">${note}</div>` : "";
   }
   if (key === "cells") {
     const count = Object.keys(after as object).length;
@@ -782,7 +810,7 @@ function showNotice(next: Notice): void {
   stopCountdown();
   notice = next;
   if (next.retryAt) countdownTimer = setInterval(renderNotice, 1000);
-  if (isOpen()) renderNotice();
+  if (isBuilt()) renderNotice();
 }
 
 function clearNotice(): void {
@@ -803,7 +831,7 @@ function fitInput(input: HTMLTextAreaElement): void {
 async function refreshContextChip(): Promise<void> {
   const note = await Controllers.NotesEditor.current();
   noteLabel = note ? note.name || note.id : null;
-  if (!isOpen()) return;
+  if (!isBuilt()) return;
   renderContextChip();
   if (view === "chat" && !chat?.items.length) renderTranscript();
 }
@@ -823,7 +851,7 @@ async function refreshLimits(): Promise<void> {
     limits = expired ? await getLimits().catch(() => null) : null;
   }
   if (initialized && !busy && localStorage.getItem(LAST_TIER) !== String(tier())) newChat();
-  if (isOpen()) renderFooter();
+  if (isBuilt()) renderFooter();
 }
 
 async function leaveMember(): Promise<void> {
@@ -832,19 +860,19 @@ async function leaveMember(): Promise<void> {
   void refreshLimits();
 }
 
-function decide(action: "apply" | "undo" | "discard", index: number): void {
+function decide(action: "apply" | "undo" | "redo" | "discard", index: number): void {
   const owner = chat;
   const item = owner?.items[index];
   if (!owner || item?.kind !== "proposal") return;
   try {
     if (action === "discard") Proposals.discard(item.proposal);
     else if (!Proposals[action](item.proposal, AssistantMap.id()))
-      showNotice({ text: `The map changed since; ${action === "apply" ? "Apply" : "Undo"} is unavailable.` });
+      showNotice({ text: `The map changed since; ${capitalize(action)} is unavailable.` });
     touch(owner);
   } catch (error) {
     showNotice({ text: error instanceof Error ? error.message : String(error) });
   }
-  if (isOpen() && chat === owner && view === "chat") {
+  if (isBuilt() && chat === owner && view === "chat") {
     renderTranscript();
     void refreshContextChip();
   }
@@ -895,7 +923,7 @@ async function rateItem(index: number, rating: "up" | "down"): Promise<void> {
   if (!owner || item?.kind !== "answer") return;
   await rateAnswer(item, rating, () => {
     touch(owner);
-    if (isOpen() && chat === owner && view === "chat") renderTranscript();
+    if (isBuilt() && chat === owner && view === "chat") renderTranscript();
   });
 }
 
@@ -972,7 +1000,7 @@ async function discover(): Promise<void> {
   const error = el("assistantDiscoveryError");
   error.textContent = "";
   if (provider.id !== "local" && !key) return setModels([]);
-  const stale = () => request !== discoveryId || !isOpen() || view !== "key";
+  const stale = () => request !== discoveryId || !isBuilt() || view !== "key";
   try {
     const cached = await cachedModels(provider.id, key, url);
     if (stale()) return;
@@ -1027,7 +1055,7 @@ async function send(): Promise<void> {
   abort = request;
   const active = chat;
   const from = active.items.length;
-  const visible = () => isOpen() && chat === active;
+  const visible = () => isBuilt() && chat === active;
   const onItem = (item: TranscriptItem) => {
     append(active, item);
     if (!visible()) return;
@@ -1060,9 +1088,9 @@ async function send(): Promise<void> {
     busy = false;
     abort = null;
     touch(active);
-    if (isOpen()) {
+    if (isBuilt()) {
       render();
-      el("assistantQuestion").focus();
+      if (shown) el("assistantQuestion").focus();
     }
     void refreshLimits();
   }
@@ -1106,7 +1134,7 @@ window.addEventListener("map:generated", () => {
   clearNotice();
   AssistantWidgets.clearMarks();
   view = "chat";
-  if (!isOpen()) return;
+  if (!isBuilt()) return;
   const input = el<HTMLTextAreaElement>("assistantQuestion");
   input.value = "";
   fitInput(input);
@@ -1115,7 +1143,7 @@ window.addEventListener("map:generated", () => {
 });
 
 window.addEventListener("notes:context-changed", () => {
-  if (isOpen()) void refreshContextChip();
+  if (isBuilt()) void refreshContextChip();
 });
 
 export const limitsLabel = (value: Limits): string =>

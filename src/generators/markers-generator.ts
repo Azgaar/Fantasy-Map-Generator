@@ -1,5 +1,6 @@
 import { mean } from "d3";
 import { Icons } from "@/components/icons";
+import { Notes } from "@/generators/notes";
 import type { PackedGraph } from "@/types/PackedGraph";
 import { requireColor } from "@/utils/colorUtils";
 import { requireName, requireOneOf } from "@/utils/languageUtils";
@@ -83,6 +84,8 @@ export const MARKER_PINS = [
   "circle",
   "no"
 ] as const;
+
+export type MarkerDetails = { name?: string; note?: string; icon?: string };
 
 export type MarkerAppearance = Partial<
   Record<"size" | "px" | "dx" | "dy", number | null> &
@@ -229,14 +232,24 @@ class MarkersModule {
     return marker;
   }
 
-  /** Place a marker at a map point; a type from the markers config, such as volcanoes, brings its icon and legend */
-  place(x: number, y: number, type: string, name?: string, icon?: string): number {
+  /** Place a marker at a map point with details: its name, legend note (HTML, as Notes.write takes) and icon (an emoji or icon id). A type from the markers config, such as volcanoes or ruins, generates all three, each replaced by the one given; any other type needs a note. Returns its id */
+  place(x: number, y: number, type: string, details: MarkerDetails = {}): number {
+    if (typeof details !== "object" || details === null || Array.isArray(details))
+      throw new Error("The marker details must be an object: { name, note, icon }");
+    const unknown = Object.keys(details).find(key => !["name", "note", "icon"].includes(key));
+    if (unknown) throw new Error(`Unknown marker detail ${unknown}; known: name, note, icon`);
+    const { name, note, icon } = details;
     const cell = Pack.requireCell(x, y);
     const marker = { x: rn(x, 2), y: rn(y, 2), cell, type: requireName(type) } as Marker;
+    const configured = this.config.some(config => config.type === marker.type);
+    if (!configured && !note) throw new Error(`Marker type ${marker.type} generates no legend; give the marker a note`);
     if (name !== undefined) marker.name = requireName(name);
     if (icon !== undefined) marker.icon = Icons.reference(icon);
-    else if (!this.config.some(config => config.type === marker.type)) marker.icon = Icons.glyph("❓");
-    return this.add(marker).i;
+    else if (!configured) marker.icon = Icons.glyph("❓");
+    const added = this.add(marker);
+    if (marker.name) added.name = marker.name; // the config type names the marker as it adds it
+    if (note) Notes.write(`marker:${added.i}`, note);
+    return added.i;
   }
 
   /** Remove a marker */

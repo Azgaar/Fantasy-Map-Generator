@@ -244,7 +244,9 @@ function label(key: string, fallback: string): string {
   if (RECORDS[key]) return RECORDS[key].label;
   const ref = key === CELLS ? undefined : MapEntities.parseKey(key);
   if (!ref) return "Cells";
-  return `${MapEntities.getDisplay(ref).kind} ${name(key) || fallback}`.trim();
+  const { kind } = MapEntities.getDisplay(ref);
+  const shown = name(key) || fallback;
+  return shown ? `${kind}: ${shown}` : kind;
 }
 
 /** Dry run: run the batch on the live map, record what changed, then restore it. All or nothing */
@@ -298,6 +300,18 @@ function undo(proposal: Proposal, mapId: number): boolean {
   return true;
 }
 
+/** Redo an undone proposal while every "before" value still holds */
+const canRedo = (proposal: Proposal, mapId: number) =>
+  proposal.state === "undone" && proposal.mapId === mapId && holds(proposal.change, "before");
+
+function redo(proposal: Proposal, mapId: number): boolean {
+  if (!canRedo(proposal, mapId)) return false;
+  put(proposal.change, "after");
+  proposal.state = "applied";
+  refresh(proposal);
+  return true;
+}
+
 function discard(proposal: Proposal): void {
   if (proposal.state === "proposed") proposal.state = "discarded";
 }
@@ -333,4 +347,4 @@ function refreshNameInputs(key: string): void {
   }
 }
 
-export const Proposals = { propose, canApply, canUndo, apply, undo, discard };
+export const Proposals = { propose, canApply, canUndo, canRedo, apply, undo, redo, discard };

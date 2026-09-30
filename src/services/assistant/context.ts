@@ -95,6 +95,8 @@ and \`read_docs(["Emblems"])\` for the heraldry \`Emblems.set\` accepts:
 
 ${OPERATION_INDEX}
 
+A marker's story is its note: place every marker with a name, a fitting note and an emoji icon,
+\`Markers.place(x, y, type, { name, note, icon })\`.
 Notes are HTML in an entity's \`note\` field (\`pack.burgs[12].note\`); there is no notes array. Keys are \`type:id\`
 (\`burg:12\`, \`marker:0\`, \`route:0\`; regiments \`regiment:stateId-regimentId\`) of an existing entity, whose name is
 the note's title; cells, ice, relief, measurers, deals, transports and name bases have no notes. \`Notes.write\` replaces the WHOLE note. Allowed: p, br, strong, em, u, s, a, img, ul/ol/li,

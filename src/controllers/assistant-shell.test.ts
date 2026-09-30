@@ -19,8 +19,10 @@ vi.mock("./assistant-map", () => ({
 const proposals = vi.hoisted(() => ({
   canApply: vi.fn(() => true),
   canUndo: vi.fn(() => true),
+  canRedo: vi.fn(() => true),
   apply: vi.fn(() => true),
   undo: vi.fn(() => true),
+  redo: vi.fn(() => true),
   discard: vi.fn(),
   propose: vi.fn()
 }));
@@ -79,6 +81,8 @@ beforeEach(() => {
 
 afterEach(async () => {
   state.close?.();
+  const ask = document.getElementById("assistantAsk");
+  if (ask?.classList.contains("busy")) ask.click(); // closing no longer stops an answer
   await new Promise(resolve => setTimeout(resolve, 0));
   vi.unstubAllGlobals();
   document.body.innerHTML = "";
@@ -171,11 +175,12 @@ it("keeps a selected read-only chat when reopening the panel or reloading the sa
   expect(chats.list()).toHaveLength(count);
 });
 
-it("ignores late UI callbacks after the panel closes", async () => {
+it("keeps the panel, its draft and a running answer when closed", async () => {
   let finish: (() => void) | undefined;
   state.send.mockImplementation(
-    (_chat, _question, onItem, _signal, onStatus) =>
+    (_chat, question, onItem, _signal, onStatus) =>
       new Promise<void>(resolve => {
+        onItem({ kind: "question", text: question });
         finish = () => {
           onStatus("Reading the map");
           onItem({ kind: "step", code: "return 1" });
@@ -185,10 +190,20 @@ it("ignores late UI callbacks after the panel closes", async () => {
   );
   Assistant.open();
   await vi.waitFor(() => expect(document.getElementById("assistantTranscript")?.textContent).toContain("Hi!"));
-  (document.getElementById("assistantQuestion") as HTMLTextAreaElement).value = "Read";
+  const input = document.getElementById("assistantQuestion") as HTMLTextAreaElement;
+  input.value = "Read";
   document.getElementById("assistantAsk")!.click();
-  state.close?.();
-  expect(() => finish?.()).not.toThrow();
+  const close = state.close;
+  close?.();
+  input.value = "draft";
+  finish?.();
+  await vi.waitFor(() => expect(document.getElementById("assistantAsk")?.classList.contains("busy")).toBe(false));
+  Assistant.open();
+  expect(state.close).toBe(close); // reopened, not rebuilt
+  expect(document.getElementById("assistantQuestion")).toBe(input);
+  expect(input.value).toBe("draft");
+  expect(document.getElementById("assistantTranscript")?.textContent).toContain("Read");
+  expect(document.querySelectorAll("#assistant")).toHaveLength(1);
 });
 
 function proposal(
@@ -228,6 +243,11 @@ it("applies, undoes and discards proposals even in a read-only chat", async () =
   document.getElementById("assistantOpenChats")!.click();
   document.getElementById("assistantOpenChats")!.click();
   expect(button("Changed since").disabled).toBe(true);
+  pending.state = "undone";
+  document.getElementById("assistantOpenChats")!.click();
+  document.getElementById("assistantOpenChats")!.click();
+  button("Redo").click();
+  expect(proposals.redo).toHaveBeenCalledWith(pending, state.mapId);
 });
 
 it("renders every transcript item type and never renders user text as HTML", async () => {
@@ -274,7 +294,13 @@ it("shows an added or removed entity as one row and cell changes as a count", as
   const change = [
     { key: "burg:3", entity: "Burg Vel", field: "removed", before: undefined, after: true },
     { key: "burg:3", entity: "Burg Vel", field: "coa", before: { t1: "or" }, after: undefined },
-    { key: "zone:2", entity: "Zone Plague", field: "", before: undefined, after: { i: 2, name: "Plague" } },
+    {
+      key: "zone:2",
+      entity: "Zone Plague",
+      field: "",
+      before: undefined,
+      after: { i: 2, name: "Plague", note: "<p>Spreads by river</p>" }
+    },
     { key: "cells", entity: "Cells", field: "state", before: { 1: 2, 5: 2 }, after: { 1: 3, 5: 3 } }
   ];
   const removal = { ...proposal("proposed", 0), change };
@@ -285,7 +311,11 @@ it("shows an added or removed entity as one row and cell changes as a count", as
   const rows = [...card.querySelectorAll(".assistantChangeEntity")].map(entity =>
     entity.textContent!.replace(/\s+/g, " ").trim()
   );
-  expect(rows).toEqual(["Burg Vel Removed", "Zone Plague Added", "Cells State 2 cells"]);
+  expect(rows).toEqual(["Burg VelRemove", "Zone PlagueAdd Spreads by river", "Cells State 2 cells"]);
+  expect([...card.querySelectorAll(".assistantChangeTag")].map(tag => tag.className)).toEqual([
+    "assistantChangeTag remove",
+    "assistantChangeTag add"
+  ]);
   expect(card.textContent).toContain("3 changes · 3 entities");
 });
 

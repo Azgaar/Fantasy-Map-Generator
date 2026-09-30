@@ -39,9 +39,9 @@ it("previews a batch with its side effects and leaves the map untouched", () => 
   expect(JSON.stringify(pack)).toBe(map);
   expect(proposal.state).toBe("proposed");
   expect(proposal.change).toEqual([
-    { key: "burg:1", entity: "Burg Vel", field: "name", before: "Vel", after: "Saltmere" },
-    { key: "burg:1", entity: "Burg Vel", field: "label.text", before: "Vel", after: "Saltmere" },
-    { key: "burg:2", entity: "Burg Orn", field: "name", before: "Orn", after: "Gull" }
+    { key: "burg:1", entity: "Burg: Vel", field: "name", before: "Vel", after: "Saltmere" },
+    { key: "burg:1", entity: "Burg: Vel", field: "label.text", before: "Vel", after: "Saltmere" },
+    { key: "burg:2", entity: "Burg: Orn", field: "name", before: "Orn", after: "Gull" }
   ]);
 });
 
@@ -119,7 +119,7 @@ it("refuses a batch that changes nothing", () => {
 it("previews a note rewrite and rejects unsafe HTML", () => {
   const proposal = proposeOk([{ op: "Notes.write", args: ["burg:1", "<p>New</p>"] }]);
   expect(proposal.change).toEqual([
-    { key: "burg:1", entity: "Burg Vel", field: "note", before: "<p>Old</p>", after: "<p>New</p>" }
+    { key: "burg:1", entity: "Burg: Vel", field: "note", before: "<p>Old</p>", after: "<p>New</p>" }
   ]);
   expect(pack.burgs[1].note).toBe("<p>Old</p>");
   expect(propose("Note", [{ op: "Notes.write", args: ["burg:1", "<script></script>"] }], 1, MAP)).toContain(
@@ -173,6 +173,20 @@ it("refuses Undo after an overlapping proposal was applied", () => {
   expect(pack.burgs[1].name).toBe("Gullhaven");
 });
 
+it("redoes an undone proposal while the map still holds what it undid", () => {
+  const proposal = proposeOk([rename(1, "Saltmere")]);
+  expect(Proposals.canRedo(proposal, MAP)).toBe(false);
+  apply(proposal, MAP);
+  undo(proposal, MAP);
+  expect(Proposals.redo(proposal, MAP)).toBe(true);
+  expect(proposal.state).toBe("applied");
+  expect(pack.burgs[1]).toMatchObject({ name: "Saltmere" });
+  undo(proposal, MAP);
+  pack.burgs[1].name = "Manual";
+  expect(Proposals.redo(proposal, MAP)).toBe(false);
+  expect(proposal.state).toBe("undone");
+});
+
 it("makes Discard final", () => {
   const proposal = proposeOk([rename(1, "Saltmere")]);
   discard(proposal);
@@ -198,7 +212,7 @@ describe("entities and cells", () => {
     const proposal = proposeOk([{ op: "Markers.remove", args: [0] }]);
     expect(pack.markers.map(({ i }) => i)).toEqual([0, 1]);
     expect(proposal.change).toEqual([
-      expect.objectContaining({ key: "marker:0", entity: "Marker Pit", field: "", after: undefined })
+      expect.objectContaining({ key: "marker:0", entity: "Marker: Pit", field: "", after: undefined })
     ]);
     expect(apply(proposal, MAP)).toBe(true);
     expect(pack.markers.map(({ i }) => i)).toEqual([1]);
@@ -211,7 +225,7 @@ describe("entities and cells", () => {
     const proposal = proposeOk([{ op: "Zones.add", args: ["Plague", "Disease", [2, 3]] }]);
     expect(pack.zones).toHaveLength(1);
     expect(proposal.change).toEqual([
-      expect.objectContaining({ key: "zone:1", entity: "Zone Plague", field: "", before: undefined })
+      expect.objectContaining({ key: "zone:1", entity: "Zone: Plague", field: "", before: undefined })
     ]);
     apply(proposal, MAP);
     expect(pack.zones[1]).toMatchObject({ i: 1, name: "Plague", cells: [2, 3] });

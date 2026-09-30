@@ -168,9 +168,9 @@ Guest and Member chats are kept short by the Azgaar server itself and never show
 The Assistant never changes the map by itself. It **proposes**, and the user decides:
 
 - A **proposal** is one batch of **operations** the model asks for in one `propose_change` call: one note rewrite, or thirty renames. It appears as one card, however many operations it holds.
-- The card previews every change as rows of entity, field, and before → after. That includes the side effects the operations make, such as a burg's label text or a state's full name. An added or removed entity is one row ("Added", "Removed"), per-cell data one row per field with the number of cells it changes ("State · 1,638 cells"). Notes show as rendered text. Long batches show the first rows and "… N more".
+- The card previews every change as rows of entity, field, and before → after. That includes the side effects the operations make, such as a burg's label text or a state's full name. Each entity is headed "Kind: Name" with its icon, if it has one. An added or removed entity is that heading tagged "Add" or "Remove" (the change itself, so it reads right before and after Apply) with its note, if any, per-cell data one row per field with the number of cells it changes ("State · 1,638 cells"). Notes show as rendered text. Long batches show the first rows and "… N more".
 - **Apply** runs the whole batch, or nothing if any part of it is no longer possible. **Discard** drops it. There is no per-row selection: to change the batch, the user asks the Assistant to revise it.
-- After Apply, the card offers **Undo**, which restores the whole batch.
+- After Apply, the card offers **Undo**, which restores the whole batch; after Undo, **Redo** applies it again.
 
 ```
 ┌ Proposed · Rename coastal burgs ─────────────────┐
@@ -187,10 +187,10 @@ The Assistant never changes the map by itself. It **proposes**, and the user dec
 └──────────────────────────────────────────────────┘
 ```
 
-A card is **Proposed**, **Applied**, **Undone** or **Discarded**. Undone and Discarded are final: to redo, the user asks again.
+A card is **Proposed**, **Applied**, **Undone** or **Discarded**. Discarded is final: to have it after all, the user asks again. Undone goes back to Applied with Redo.
 
 - Apply is allowed only while the map id matches and every "before" value still holds.
-- Undo is allowed only while every "after" value still holds.
+- Undo is allowed only while every "after" value still holds, and Redo only while every "before" value does.
 - Otherwise the button reads **Changed since** and is disabled. This protects the user's own later edits, another saved version of the map, and other proposals that touched the same data.
 - Apply and Undo need no model, so they work in any tier and in read-only chats.
 
@@ -631,14 +631,14 @@ Names follow one pattern: `rename`, `recolor`, `set<Field>`, `add`, `create` or 
 
 **Markers**
 
-| Edit (where)                                                                 | Operation                                                   | Status     |
-| ---------------------------------------------------------------------------- | ----------------------------------------------------------- | ---------- |
-| Name, icon, type, visibility                                                 | `Markers.rename`, `setIcon`, `setType`, `setHidden`         | Registered |
-| Place, remove                                                                | `Markers.place(x, y, type, name, icon)`, `remove(markerId)` | Registered |
-| Move                                                                         | `Markers.move(markerId, x, y)`                              | Registered |
-| Pin, lock                                                                    | `Markers.setPinned(markerId, pinned)`, `setLocked`          | Registered |
-| Marker size, icon size and shift, pin shape, pin fill and stroke, icon paint | `Markers.setAppearance(markerId, appearance)`               | Registered |
-| Invert pins, invert locks, remove all (Markers overview)                     | `setPinned`, `setLocked`, `remove`                          | Batch      |
+| Edit (where)                                                                 | Operation                                                             | Status     |
+| ---------------------------------------------------------------------------- | --------------------------------------------------------------------- | ---------- |
+| Name, icon, type, visibility                                                 | `Markers.rename`, `setIcon`, `setType`, `setHidden`                   | Registered |
+| Place, remove                                                                | `Markers.place(x, y, type, { name, note, icon })`, `remove(markerId)` | Registered |
+| Move                                                                         | `Markers.move(markerId, x, y)`                                        | Registered |
+| Pin, lock                                                                    | `Markers.setPinned(markerId, pinned)`, `setLocked`                    | Registered |
+| Marker size, icon size and shift, pin shape, pin fill and stroke, icon paint | `Markers.setAppearance(markerId, appearance)`                         | Registered |
+| Invert pins, invert locks, remove all (Markers overview)                     | `setPinned`, `setLocked`, `remove`                                    | Batch      |
 
 **Labels.** A label is the `label` field of a state, province, burg, river, route or added label, so every label edit is inside the snapshot.
 

@@ -35,7 +35,7 @@ it.each(Object.keys(OPERATIONS))("%s runs the public model-class method of that 
   >;
   expect(typeof owner[method]).toBe("function");
   const spy = vi.spyOn(owner as Record<string, () => void>, method).mockImplementation(() => {});
-  const args = ["a", "b", "c", "d", "e"].slice(0, OPERATIONS[name].run.length);
+  const args = ["a", "b", "c", "d", "e", "f"].slice(0, OPERATIONS[name].run.length);
   OPERATIONS[name].run(...args);
   expect(spy).toHaveBeenCalledWith(...args);
   spy.mockRestore();
