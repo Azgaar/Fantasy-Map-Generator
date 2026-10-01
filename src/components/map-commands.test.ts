@@ -28,7 +28,6 @@ vi.mock("@/services/autosave", () => ({ toggleSaveReminder: vi.fn() }));
 vi.mock("@/services/url-params", () => ({ copyMapURL: vi.fn() }));
 vi.mock("@/services/versioning", () => ({ cleanupData: vi.fn() }));
 
-import { COMMANDS } from "@/services/assistant/context.generated";
 import { isLinkable, MAP_COMMANDS } from "./map-commands";
 
 beforeEach(() => {
@@ -93,10 +92,5 @@ describe("linkable commands", () => {
     expect(linkable).not.toContain("assistant");
     for (const id of ["newMap", "quickLoad", "regenerateStates", "optionsReset", "layer:toggleRivers"])
       expect(linkable).not.toContain(id);
-  });
-
-  it("are exactly the ones the Assistant's read_docs lists", () => {
-    const listed = MAP_COMMANDS.filter(isLinkable).map(({ id, name }) => `${id}: ${name}`);
-    expect(COMMANDS.split("\n")).toEqual(listed);
   });
 });

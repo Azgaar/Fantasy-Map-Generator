@@ -105,12 +105,8 @@ it("prepends the entity type's icon to a link", () => {
   expect(answer("[Vel](burg:1)")).toContain('<span class="icon-home" aria-hidden="true"></span>Vel</button>');
 });
 
-it("links a key without a usable id by its label when exactly one entity bears it", () => {
-  expect(answer("[Vel](burg:?)")).toContain('data-id="burg:1"');
-  expect(answer("[Orwin](state:?)")).toContain('data-id="state:1"');
-  expect(answer("[Twin](burg:?)")).toBe("<p>Twin</p>");
-  expect(answer("[Orn](burg:?)")).toBe("<p>Orn</p>");
-  expect(answer("[Vel](burg:?)", false)).toBe("<p>Vel</p>");
+it("leaves a key without a usable id as its label", () => {
+  expect(answer("[Vel](burg:?)")).toBe("<p>Vel</p>");
 });
 
 it("links only allowed commands, and leaves unknown schemes alone", () => {

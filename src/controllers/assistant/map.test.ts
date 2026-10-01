@@ -128,13 +128,6 @@ it("returns a proposal error to the model without a card", async () => {
   });
 });
 
-it("refuses to propose after another map loads", async () => {
-  const tool = mapTool("propose_change");
-  vi.stubGlobal("mapHistory", [{ created: 43 }]);
-  expect((await tool.handle({ summary: "X", operations: [] })).isError).toBe(true);
-  expect(propose).not.toHaveBeenCalled();
-});
-
 it("tells the model what happened to the chat's proposals", async () => {
   chat.items.push(
     { kind: "proposal", proposal: proposal(1, "applied") },
@@ -236,7 +229,8 @@ it("shows an inset of a located entity or of a box within the map", async () => 
   for (const box of [
     [0, 0, 50],
     [10, 0, 5, 20],
-    [200, 0, 300, 20]
+    [200, 0, 300, 20],
+    [0, 0, 100, 50]
   ])
     expect((await mapTool("show_inset").handle({ box })).isError).toBe(true);
 });

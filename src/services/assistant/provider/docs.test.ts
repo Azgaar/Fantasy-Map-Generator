@@ -1,4 +1,14 @@
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
+
+vi.mock("@/components/map-commands", () => ({
+  // its import touches the DOM
+  MAP_COMMANDS: [
+    { id: "editHeightmapButton", name: "Edit Heightmap" },
+    { id: "newMap", name: "New map" }
+  ],
+  isLinkable: ({ name }: { name: string }) => name.startsWith("Edit ")
+}));
+
 import { readDocs } from "./docs";
 
 it("returns data-model sections and extra topics, ignoring case and field-index suffixes", async () => {
@@ -9,7 +19,9 @@ it("returns data-model sections and extra topics, ignoring case and field-index 
 });
 
 it("lists the commands a command link may name", async () => {
-  expect(await readDocs(["commands"])).toContain("editHeightmapButton: Edit Heightmap");
+  const commands = await readDocs(["commands"]);
+  expect(commands).toContain("editHeightmapButton: Edit Heightmap");
+  expect(commands).not.toContain("newMap");
 });
 
 it("lists the registered operations with their signatures and doc lines", async () => {

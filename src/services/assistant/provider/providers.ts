@@ -1,9 +1,9 @@
 // Anthropic Messages API, called straight from the browser with the user's own key — same approach
-// as the AI Text Generator. OpenAI-compatible providers go through providers-openai.
+// as the AI Text Generator. OpenAI-compatible providers go through openai.ts.
 
 import type { Connection } from "./connection";
 import type { SystemBlock } from "./context";
-import { completeOpenAI } from "./providers-openai";
+import { completeOpenAI } from "./openai";
 
 export interface TextBlock {
   type: "text";
@@ -85,6 +85,13 @@ export const PROVIDERS: ProviderSpec[] = [
     baseUrl: "https://api.openai.com/v1"
   },
   {
+    id: "deepseek",
+    label: "DeepSeek",
+    fallbackModel: "deepseek-flash",
+    keyLink: "https://platform.deepseek.com/api_keys",
+    baseUrl: "https://api.deepseek.com/v1"
+  },
+  {
     id: "mistral",
     label: "Mistral",
     fallbackModel: "mistral-small-latest",
@@ -97,13 +104,6 @@ export const PROVIDERS: ProviderSpec[] = [
     fallbackModel: "qwen3.8-flash",
     keyLink: "https://modelstudio.console.alibabacloud.com/?tab=playground#/api-key",
     baseUrl: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
-  },
-  {
-    id: "deepseek",
-    label: "DeepSeek",
-    fallbackModel: "deepseek-flash",
-    keyLink: "https://platform.deepseek.com/api_keys",
-    baseUrl: "https://api.deepseek.com/v1"
   },
   {
     id: "local",

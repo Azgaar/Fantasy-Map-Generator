@@ -1,5 +1,5 @@
 // Entity notes are optional HTML fields
-import { ENTITY_TYPES, type EntityRef, type EntityType, isEntityType } from "@/data/entity-types";
+import { ENTITY_TYPES, type EntityRef, MapEntities } from "@/components/map-entities";
 
 export interface NoteEntry {
   ref: EntityRef;
@@ -7,74 +7,8 @@ export interface NoteEntry {
   note: string;
 }
 
-type NoteEntity = { i: number; note?: string; removed?: boolean };
-type NoteType = (typeof ENTITY_TYPES)[number];
-
-const COLLECTIONS: Record<Exclude<NoteType, "regiment">, string> = {
-  state: "states",
-  province: "provinces",
-  burg: "burgs",
-  marker: "markers",
-  river: "rivers",
-  route: "routes",
-  feature: "features",
-  zone: "zones",
-  journey: "journeys",
-  market: "markets",
-  addedLabel: "addedLabels",
-  culture: "cultures",
-  religion: "religions",
-  biome: "biomes",
-  good: "goods"
-};
-
-const EXCLUDE_ZERO = new Set<NoteType>([
-  "state",
-  "province",
-  "burg",
-  "river",
-  "feature",
-  "market",
-  "addedLabel",
-  "culture",
-  "religion",
-  "good"
-]);
-
-const byId = (items: NoteEntity[] | undefined, id: number): NoteEntity | undefined => {
-  const item = items?.[id];
-  return item?.i === id ? item : items?.find(entry => entry?.i === id);
-};
-
-function collection(type: Exclude<NoteType, "regiment">): NoteEntity[] | undefined {
-  return (pack as unknown as Record<string, NoteEntity[] | undefined>)[COLLECTIONS[type]];
-}
-
-function entity(ref: EntityRef): NoteEntity | undefined {
-  if (ref.type === "regiment") {
-    const state = byId(pack.states as NoteEntity[], ref.id);
-    if (!state || state.removed) return undefined;
-    const regiment = byId((state as { military?: NoteEntity[] }).military, ref.sub ?? -1);
-    return regiment?.removed ? undefined : regiment;
-  }
-  if (!(ENTITY_TYPES as readonly string[]).includes(ref.type)) return undefined;
-  const item = byId(collection(ref.type as Exclude<NoteType, "regiment">), ref.id);
-  return item?.removed ? undefined : item;
-}
-
-const key = (ref: EntityRef): string =>
-  ref.type === "regiment" ? `regiment:${ref.id}-${ref.sub}` : `${ref.type}:${ref.id}`;
-
-function parseKey(value: string): EntityRef | undefined {
-  const match = /^(\w+):(\d+)(?:-(\d+))?$/.exec(value);
-  if (!match || !isEntityType(match[1])) return undefined;
-  const type: EntityType = match[1];
-  if ((type === "regiment") !== (match[3] !== undefined)) return undefined;
-  const id = Number(match[2]);
-  const sub = match[3] === undefined ? undefined : Number(match[3]);
-  if (!Number.isSafeInteger(id) || (sub !== undefined && !Number.isSafeInteger(sub))) return undefined;
-  return sub === undefined ? { type, id } : { type, id, sub };
-}
+const canHaveNote = (ref: EntityRef) => (ENTITY_TYPES as readonly string[]).includes(ref.type);
+const entity = (ref: EntityRef) => (canHaveNote(ref) ? MapEntities.get(ref) : undefined);
 
 class NotesStore {
   get(ref: EntityRef): string | undefined {
@@ -92,9 +26,9 @@ class NotesStore {
 
   /** Replace an entity's note with HTML from the notes editor's subset; empty html removes the note */
   write(key: string, html: string): void {
-    const ref = parseKey(key);
+    const ref = MapEntities.parseKey(key);
     if (!ref) throw new Error(`Entity ${key} does not exist`);
-    if (!(ENTITY_TYPES as readonly string[]).includes(ref.type)) throw new Error(`A ${ref.type} cannot have a note`);
+    if (!canHaveNote(ref)) throw new Error(`A ${ref.type} cannot have a note`);
     if (!entity(ref)) throw new Error(`Entity ${key} does not exist`);
     if (typeof html !== "string" || !this.isSafe(html))
       throw new Error(
@@ -116,26 +50,11 @@ class NotesStore {
 
   /** Every note on the map, grouped by entity type in ENTITY_TYPES order */
   list(): NoteEntry[] {
-    const entries: NoteEntry[] = [];
-    for (const type of ENTITY_TYPES) {
-      if (type === "regiment") {
-        for (const state of pack.states ?? []) {
-          if (!state?.i || state.removed) continue;
-          for (const regiment of state.military ?? []) {
-            if (!regiment?.note) continue;
-            const ref: EntityRef = { type, id: state.i, sub: regiment.i };
-            entries.push({ ref, key: key(ref), note: regiment.note });
-          }
-        }
-        continue;
-      }
-      for (const item of collection(type) ?? []) {
-        if (!item?.note || item.removed || !Number.isInteger(item.i) || (EXCLUDE_ZERO.has(type) && !item.i)) continue;
-        const ref: EntityRef = { type, id: item.i };
-        entries.push({ ref, key: key(ref), note: item.note });
-      }
-    }
-    return entries;
+    return ENTITY_TYPES.flatMap(type =>
+      MapEntities.collect(type).flatMap(({ ref, entity: { note } }) =>
+        note ? [{ ref, key: MapEntities.key(ref), note }] : []
+      )
+    );
   }
 
   /** Whether html keeps to the notes editor's subset: no event handlers, JavaScript URLs, scripts or iframes */

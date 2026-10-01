@@ -14,7 +14,7 @@ import * as versioning from "@/services/versioning";
 import { VERSION } from "@/services/versioning";
 import { downloadFile } from "@/utils";
 import { safeParseJSON } from "@/utils/stringUtils";
-import { migrateLegacyCustomEmblems, migrateLegacySettings, resolveVersionConflicts } from "./auto-update";
+import { migrateLegacySettings, resolveVersionConflicts } from "./auto-update";
 
 beforeEach(() => {
   document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox"></g></svg>`;
@@ -22,65 +22,6 @@ beforeEach(() => {
   options.map.labels.groups = [];
   options.map.style.preset = "default";
   globalThis.pack = { features: [] } as unknown as typeof globalThis.pack; // migrations run against a loaded map
-});
-
-it("deduplicates legacy emblem images and keeps placement", () => {
-  options.map.customIcons = [];
-  document.body.innerHTML = `<svg><defs><g id="defs-emblems">
-    <svg id="stateCOA1"><image href="data:image/png;base64,AA"/></svg>
-    <svg id="burgCOA1"><image href="data:image/png;base64,AA"/></svg>
-  </g></defs></svg>`;
-  globalThis.pack = {
-    states: [{ i: 0 }, { i: 1, coa: { custom: true, size: 2, x: 12, y: 34 } }],
-    provinces: [],
-    burgs: [{ i: 0 }, { i: 1, coa: { custom: true, size: 0.5, x: 56, y: 78 } }]
-  } as unknown as typeof pack;
-
-  migrateLegacyCustomEmblems();
-
-  expect(options.map.customIcons).toHaveLength(1);
-  expect(pack.states[1].coa).toEqual({ icon: options.map.customIcons[0].id, size: 2, x: 12, y: 34 });
-  expect(pack.burgs[1].coa).toEqual({ icon: options.map.customIcons[0].id, size: 0.5, x: 56, y: 78 });
-  expect(document.getElementById("stateCOA1")).toBeNull();
-  expect(document.getElementById("burgCOA1")).toBeNull();
-});
-
-it("turns inline svg emblems into svg icons and lost ones into no picture, never leaving a custom emblem", () => {
-  options.map.customIcons = [];
-  document.body.innerHTML = `<svg><defs><g id="defs-emblems">
-    <svg id="stateCOA1" viewBox="0 0 200 200"><path d="M0 0h200v200z"/></svg>
-  </g></defs></svg>`;
-  globalThis.pack = {
-    states: [{ i: 0 }, { i: 1, coa: { custom: true } }, { i: 2, coa: { custom: true, size: 3 } }],
-    provinces: [],
-    burgs: []
-  } as unknown as typeof pack;
-
-  migrateLegacyCustomEmblems();
-
-  expect(options.map.customIcons).toMatchObject([{ kind: "svg", viewBox: "0 0 200 200" }]);
-  expect(pack.states[1].coa).toMatchObject({ icon: options.map.customIcons[0].id });
-  expect(pack.states[2].coa).toMatchObject({ icon: "", size: 3 });
-});
-
-it("keeps a legacy SVG emblem whole even when it embeds an image, and gives removed entities no icon", () => {
-  options.map.customIcons = [];
-  document.body.innerHTML = `<svg><defs><g id="defs-emblems">
-    <svg id="stateCOA1" viewBox="0 0 100 100"><rect width="100" height="100" fill="gold"/><image href="data:image/png;base64,AA"/></svg>
-    <svg id="burgCOA1" viewBox="0 0 200 200"><image href="data:image/png;base64,BB"/></svg>
-  </g></defs></svg>`;
-  globalThis.pack = {
-    states: [{ i: 0 }, { i: 1, coa: { custom: true } }],
-    provinces: [],
-    burgs: [{ i: 0 }, { i: 1, removed: true, coa: { custom: true } }]
-  } as unknown as typeof pack;
-
-  migrateLegacyCustomEmblems();
-
-  expect(options.map.customIcons).toMatchObject([{ kind: "svg" }]);
-  expect(options.map.customIcons[0].content).toContain('fill="gold"');
-  expect(pack.burgs[1].coa).toEqual({ icon: "" });
-  expect(document.getElementById("burgCOA1")).toBeNull();
 });
 
 vi.mock("@/services/style-presets", () => ({

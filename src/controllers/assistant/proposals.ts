@@ -4,6 +4,7 @@ import { type EntityType, MapEntities } from "@/components/map-entities";
 import { Options } from "@/components/options-model";
 import { Controllers } from "@/controllers";
 import type { ChangeRow, Proposal } from "@/services/assistant/chats";
+import { errorText } from "@/utils/stringUtils";
 import { OPERATIONS, runOperation } from "./operations";
 import { layersFor } from "./redraw";
 
@@ -54,7 +55,6 @@ const CELLS = "cells";
 const LORE = "lore";
 const lore = () => globalThis.options?.map.lore as unknown as Record<string, unknown> | undefined;
 
-const collectionOf = (type: string) => COLLECTIONS.find(([name]) => name === type);
 const itemsOf = (field: string, map = pack) => (map as unknown as Record<string, Item[] | undefined>)[field];
 const isItem = (value: unknown): value is Item =>
   typeof value === "object" && value !== null && Number.isInteger((value as Item).i);
@@ -174,7 +174,7 @@ function compare(live: World, draft: World): Omit<ChangeRow, "entity">[] {
 
 function find(key: string): { list: Item[]; indexed: boolean; i: number; item: Item | undefined } | undefined {
   const [type, id] = key.split(":");
-  const collection = collectionOf(type);
+  const collection = COLLECTIONS.find(([name]) => name === type);
   const list = collection && itemsOf(collection[1]);
   if (!collection || !list) return undefined;
   const i = Number(id);
@@ -277,7 +277,7 @@ function propose(summary: string, operations: unknown, number: number, mapId: nu
     rows = compare(live, scratch);
     names = new Map(rows.map(({ key }) => [key, name(key)])); // added entities are named only in the draft
   } catch (error) {
-    return error instanceof Error ? error.message : String(error);
+    return errorText(error);
   } finally {
     enter(live);
   }

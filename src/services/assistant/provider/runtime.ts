@@ -1,4 +1,6 @@
 // Executes model-authored JavaScript against the live map. The script body becomes an async
+import { errorText } from "@/utils/stringUtils";
+
 // function evaluated in page scope, so every global (pack, grid, Burgs, Layers, Controllers…)
 // resolves without being injected. Only the returned value and console output travel back.
 
@@ -145,7 +147,7 @@ export function serialize(value: unknown, limit = MAX_RESULT_CHARS): string {
   try {
     text = JSON.stringify(value, replacer, 1) ?? String(value);
   } catch (error) {
-    text = `[unserializable: ${error instanceof Error ? error.message : String(error)}]`;
+    text = `[unserializable: ${errorText(error)}]`;
   }
 
   if (text.length <= limit) return text;

@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import type { SystemBlock } from "./context";
+import { completeOpenAI, fromChatResponse, toChatMessages, toChatTools } from "./openai";
 import type { Message, ToolDefinition } from "./providers";
 import { complete } from "./providers";
-import { completeOpenAI, fromChatResponse, toChatMessages, toChatTools } from "./providers-openai";
 
 const system: SystemBlock[] = [
   { type: "text", text: "static prefix", cache_control: { type: "ephemeral" } },

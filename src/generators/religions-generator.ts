@@ -1,6 +1,6 @@
 import { quadtree } from "d3";
 import { requireColor } from "@/utils/colorUtils";
-import { requireName, requireOneOf } from "@/utils/validationUtils";
+import { requireCode, requireName, requireOneOf, requireOrigins } from "@/utils/validationUtils";
 import {
   abbreviate,
   each,
@@ -14,7 +14,6 @@ import {
   rw,
   trimVowels
 } from "../utils";
-import { requireCode, requireOrigins } from "./origins";
 import { Population } from "./population-generator";
 
 declare global {

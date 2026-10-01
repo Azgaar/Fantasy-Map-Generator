@@ -1,15 +1,16 @@
 // Reference material the model reads on demand through read_docs, kept out of the system prompt
 
-import { COMMANDS, GLOBAL_DECLARATIONS, OPERATION_TYPES, OPERATIONS, REGISTRY_KEYS } from "./context.generated";
+import { GLOBAL_DECLARATIONS, OPERATION_TYPES, OPERATIONS, REGISTRY_KEYS } from "./context.generated";
 
 let topics: Map<string, { title: string; text: string }> | null = null; // by lowercase title
 
 async function load(): Promise<Map<string, { title: string; text: string }>> {
-  const [dataModel, configuration, packedGraph, heraldry] = await Promise.all([
-    import("../../../docs/architecture/data-model.md?raw"),
-    import("../../../docs/architecture/configuration.md?raw"),
-    import("../../types/PackedGraph.ts?raw"),
-    import("@/data/emblems")
+  const [dataModel, configuration, packedGraph, heraldry, { MAP_COMMANDS, isLinkable }] = await Promise.all([
+    import("../../../../docs/architecture/data-model.md?raw"),
+    import("../../../../docs/architecture/configuration.md?raw"),
+    import("../../../types/PackedGraph.ts?raw"),
+    import("@/data/emblems"),
+    import("@/components/map-commands")
   ]);
   const map = new Map<string, string>();
   for (const part of (dataModel.default as string).split(/(?=^#{1,2} )/m)) {
@@ -28,7 +29,8 @@ async function load(): Promise<Map<string, { title: string; text: string }>> {
     `Operations for \`propose_change\`, with argument types:\n\`\`\`ts\n${OPERATIONS}\n\`\`\`\n\nThe types they name:\n\`\`\`ts\n${OPERATION_TYPES}\n\`\`\``
   );
   map.set("Emblems", emblemVocabulary(heraldry));
-  map.set("Commands", `Command ids for \`[label](command:id)\` links, as \`id: name\`:\n${COMMANDS}`);
+  const commands = MAP_COMMANDS.filter(isLinkable).map(({ id, name }) => `${id}: ${name}`);
+  map.set("Commands", `Command ids for \`[label](command:id)\` links, as \`id: name\`:\n${commands.join("\n")}`);
   return new Map([...map].map(([title, text]) => [title.toLowerCase(), { title, text }]));
 }
 

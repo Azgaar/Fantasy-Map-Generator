@@ -38,7 +38,7 @@ A non-modal, resizable dialog titled **Azgaar Assistant**, docked at the bottom 
 - **Context chip:** shown when the notes editor is open, e.g. `Note: Gondesthe`.
 - **Notice area:** limits, rate limits, provider errors, the "long chat" suggestion.
 - **Composer:** one text box and a send button that turns into Stop while answering.
-- **Footer:** _Wiki_ and _Policy_ links on the left; the tier and its account actions on the right.
+- **Footer:** _Discord_, _Patreon_ and _Policy_ links on the left; the tier and its account actions on the right.
 
 Key tier, notes editor open:
 
@@ -61,7 +61,8 @@ Key tier, notes editor open:
 │ ┌──────────────────────────────────────────────────┐ │
 │ │ Ask a question…                              [➜] │ │
 │ └──────────────────────────────────────────────────┘ │
-│ Wiki · Policy · 🔑 Sonnet 5.5 · 12.4k tokens · Key   │
+│ Discord · Patreon · Policy                           │
+│                    🔑 Sonnet 5.5 · 12.4k tokens · Key │
 └──────────────────────────────────────────────────────┘
 ```
 
@@ -81,7 +82,8 @@ Guest tier, first open:
 │ ┌──────────────────────────────────────────────────┐ │
 │ │ Ask a question…                              [➜] │ │
 │ └──────────────────────────────────────────────────┘ │
-│ Wiki · Policy · 5 questions left · Sign in · Use key │
+│ Discord · Patreon · Policy                           │
+│                 5 questions left · Sign in · Use key │
 └──────────────────────────────────────────────────────┘
 ```
 
@@ -337,7 +339,7 @@ The model can also **look at an emblem**: `view_emblem(key)` returns the rendere
   - **Map tool** — a capability the Provider can call on the open map: `read_map`, `propose_change`, a `show_*` tool or `view_emblem`.
   - **Operations registry** — the map from operation names to model-class methods.
   - **Connection** — the user's provider, model and key settings.
-- **Code names follow the vocabulary.** The feature is `Assistant`: one controller and one service family under `services/assistant/`. The Azgaar server client lives in `services/assistant/azgaar-server/` and throws `AzgaarServerError`. A chat is a `Chat` in a `chats` store. The Azgaar server's wire field `conversationId` is the only place "conversation" remains, because it is the server's contract.
+- **Code names follow the vocabulary.** The feature is `Assistant`: one controller and one service family under `services/assistant/`. The Azgaar server client lives in `services/assistant/azgaar-server/` and throws `AzgaarServerError`; the Key tier's provider client lives in `services/assistant/provider/`. A chat is a `Chat` in a `chats` store. The Azgaar server's wire field `conversationId` is the only place "conversation" remains, because it is the server's contract.
 
 ### Architecture
 
@@ -416,7 +418,7 @@ Assistant services (no world state, no DOM)
      - `show_entities {title, entities}` — 1 to 50 live entity keys.
      - `show_card {entity}` — a live state key.
      - `show_chart {chart: bar | pie, title, unit?, rows: [{label, value, entity?}]}` — 1 to 30 rows of non-negative numbers; an entity key must be live.
-     - `show_inset {entity | box, title?}` — a live entity with a place on the map, or a box `[x0, y0, x1, y1]` in map units that overlaps the map.
+     - `show_inset {entity | box, title?}` — a live entity with a place on the map, or a box `[x0, y0, x1, y1]` in map units that overlaps the map. Either spans at most half the map's width and height: a whole-map inset just repeats the map.
      - `show_choices {title, choices: [{label, operations?}]}` — 2 to 4 choices. Each choice's operations are dry-run like `propose_change`, and the first failing choice is named. The result tells the model to stop and wait for the pick.
    - `view_emblem({entity})` returns the emblem of a state, province or burg as a 256 px PNG for models with vision, and places the same emblem in the transcript as an `emblem` widget. The picture is drawn by the same code as the Emblems Editor's download.
    - **Images in the provider format.** A tool result may hold text and image blocks. Anthropic takes them natively; the OpenAI-compatible adapter sends a tool's images as one user message after its text result. When a request carrying images fails, the images are replaced by a note that the model cannot see them and the request is sent once more, so a model without vision still answers. Images are shortened out of earlier questions like any tool result and do not count towards a long chat.

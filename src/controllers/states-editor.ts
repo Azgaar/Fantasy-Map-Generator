@@ -29,6 +29,7 @@ import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement, highlightOutline } from "@/renderers/overlays/highlight";
 import { applyOption, downloadFile, getArea, getAreaUnit, getFileName, groupByValue, speak } from "@/utils";
+import { errorText } from "@/utils/stringUtils";
 import { ensureEl, formatPrice, getAdjective, getPointer, isLand, rand, rn, si } from "../utils";
 
 const dialogId = "statesEditor" as const;
@@ -1149,7 +1150,7 @@ function addState(this: SVGElement, event: MouseEvent): void {
   try {
     stateId = States.add(x, y);
   } catch (error) {
-    tip(error instanceof Error ? error.message : String(error), false, "error");
+    tip(errorText(error), false, "error");
     return;
   }
   if (event.shiftKey === false) exitAddStateMode();

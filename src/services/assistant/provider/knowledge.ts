@@ -23,7 +23,7 @@ const terms = (text: string): string[] =>
     .map(word => (word.length > 3 ? word.replace(/(?:es|s)$/, "") : word));
 
 async function load(): Promise<Section[]> {
-  const source = (await import("../../../docs/wiki/Knowledge Base.md?raw")).default as string;
+  const source = (await import("../../../../docs/wiki/Knowledge Base.md?raw")).default as string;
   return source.split(/(?=^### )/m).flatMap(part => {
     const heading = part.match(/^### (.+)$/m)?.[1];
     if (!heading) return [];

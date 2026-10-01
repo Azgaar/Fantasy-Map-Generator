@@ -7,7 +7,7 @@ import { Military } from "@/generators/military-generator";
 import { Notes } from "@/generators/notes";
 
 // Model methods the Assistant may propose
-const METHODS: Record<string, string[]> = {
+export const METHODS: Record<string, string[]> = {
   Burgs: [
     "rename",
     "setPopulation",

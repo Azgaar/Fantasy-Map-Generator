@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { filterChatModels, listModels } from "./providers-models";
+import { filterChatModels, listModels } from "./models";
 
 const globals = globalThis as Record<string, unknown>;
 

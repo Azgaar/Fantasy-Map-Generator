@@ -14,8 +14,8 @@ vi.mock("./map", () => ({
   }
 }));
 vi.mock("@/controllers", () => ({ Controllers: { NotesEditor: { current: async () => null } } }));
-vi.mock("@/services/assistant/providers-models", async importOriginal => ({
-  ...(await importOriginal<typeof import("@/services/assistant/providers-models")>()),
+vi.mock("@/services/assistant/provider/models", async importOriginal => ({
+  ...(await importOriginal<typeof import("@/services/assistant/provider/models")>()),
   listModels: discovery.list
 }));
 

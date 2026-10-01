@@ -29,6 +29,7 @@ import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import type { Emblem } from "@/types/emblems";
 import { downloadFile, getArea, getAreaUnit, getFileName, groupByValue } from "@/utils";
+import { errorText } from "@/utils/stringUtils";
 import {
   abbreviate,
   capitalize,
@@ -879,7 +880,7 @@ function addCulture(this: SVGElement, event: MouseEvent): void {
   try {
     Cultures.add(x, y);
   } catch (error) {
-    tip(error instanceof Error ? error.message : String(error), false, "error");
+    tip(errorText(error), false, "error");
     return;
   }
   if (event.shiftKey === false) exitAddCultureMode();

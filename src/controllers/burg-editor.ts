@@ -10,6 +10,7 @@ import { goodIconLines } from "@/renderers/draw-goods";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { getHeight, openURL, speak } from "@/utils";
 import { MAX_ZOOM, PAN_ZOOM_IDENTITY, type PanZoom, panBy, zoomAt } from "@/utils/panZoomUtils";
+import { errorText } from "@/utils/stringUtils";
 import type { Burg } from "../generators/burgs-generator";
 import type { Market } from "../generators/markets-generator";
 import { convertTemperature, ensureEl, escapeHtml, getPointer, getTemperatureLikeness, rand, rn } from "../utils";
@@ -446,7 +447,7 @@ function tryEdit(edit: () => void): boolean {
     edit();
     return true;
   } catch (error) {
-    tip(error instanceof Error ? error.message : String(error), false, "error");
+    tip(errorText(error), false, "error");
     return false;
   }
 }

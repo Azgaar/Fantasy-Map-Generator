@@ -1,7 +1,6 @@
 import { markAssistantOpen } from "@/components/assistant-bubble";
 import { Controllers } from "@/controllers";
-import type { Answerer } from "@/services/assistant/answerer";
-import { createAzgaarServerAnswerer } from "@/services/assistant/azgaar-server/answerer";
+import { askServer } from "@/services/assistant/azgaar-server/answerer";
 import {
   AzgaarServerError,
   getLimits,
@@ -23,16 +22,16 @@ import {
   load,
   remove,
   select,
+  type Tier,
   type TranscriptItem,
   touch
 } from "@/services/assistant/chats";
-import * as Connection from "@/services/assistant/connection";
-import { createProviderAnswerer } from "@/services/assistant/provider-answerer";
-import { DEFAULT_PROVIDER, PROVIDERS, type ProviderSpec, providerById } from "@/services/assistant/providers";
-import { listModels } from "@/services/assistant/providers-models";
-import { resolveTier, type Tier } from "@/services/assistant/tier";
+import { askProvider } from "@/services/assistant/provider/answerer";
+import * as Connection from "@/services/assistant/provider/connection";
+import { listModels } from "@/services/assistant/provider/models";
+import { DEFAULT_PROVIDER, PROVIDERS, type ProviderSpec, providerById } from "@/services/assistant/provider/providers";
 import { renderMarkdown } from "@/utils/markdown";
-import { capitalize, escapeHtml } from "@/utils/stringUtils";
+import { capitalize, errorText, escapeHtml } from "@/utils/stringUtils";
 import { si } from "@/utils/unitUtils";
 import { ensureEl } from "../../utils";
 import { AssistantMap } from "./map";
@@ -45,7 +44,7 @@ type Notice = { text: string; item?: TranscriptItem; retry?: () => void };
 
 const dialogId = "assistant";
 const MAX_QUESTION_LENGTH = 1000;
-const WIKI = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki";
+const POLICY = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Policy";
 const DISCORD = "https://discordapp.com/invite/X7E84HU";
 const PATREON = "https://www.patreon.com/azgaar";
 
@@ -63,7 +62,11 @@ let answerStatus = "Thinking";
 let discoveryTimer: ReturnType<typeof setTimeout> | null = null;
 let discoveryId = 0;
 
-const tier = (): Tier => resolveTier(isOfficial(), !!getToken(), Connection.isConnected());
+const tier = (): Tier => {
+  if (Connection.isConnected()) return "key";
+  if (!isOfficial()) return null;
+  return getToken() ? "member" : "guest";
+};
 const tokens = (entry?: Chat) => (entry ? entry.usage.input + entry.usage.output + entry.usage.cached : 0);
 /** The chat takes questions: it has the current tier's answerer and its map is open */
 const writable = (entry: Chat | undefined): entry is Chat =>
@@ -343,7 +346,7 @@ function renderDialog(): void {
       <span>
         <a href="${DISCORD}" target="_blank" rel="noopener noreferrer">Discord</a>
         <a href="${PATREON}" target="_blank" rel="noopener noreferrer">Patreon</a>
-        <a href="${WIKI}/Policy" target="_blank" rel="noopener noreferrer">Policy</a>
+        <a href="${POLICY}" target="_blank" rel="noopener noreferrer">Policy</a>
       </span>
       <span id="assistantAccount">
         <span id="assistantTier"></span>
@@ -692,7 +695,7 @@ function decide(action: "apply" | "undo" | "redo" | "discard", index: number): v
       showNotice({ text: `The map changed since; ${capitalize(action)} is unavailable.` });
     touch(owner);
   } catch (error) {
-    showNotice({ text: error instanceof Error ? error.message : String(error) });
+    showNotice({ text: errorText(error) });
   }
   if (chat === owner && view === "chat") {
     renderTranscript();
@@ -817,7 +820,7 @@ async function discover(): Promise<void> {
     const found = await listModels(provider.id, key, url);
     if (!stale()) setModels(found);
   } catch (failure) {
-    if (!stale()) error.textContent = failure instanceof Error ? failure.message : String(failure);
+    if (!stale()) error.textContent = errorText(failure);
   }
 }
 
@@ -872,19 +875,22 @@ async function send(): Promise<void> {
     }
     if (view === "chat") renderTranscript();
   };
-  const answerer: Answerer =
-    active.tier === "key"
-      ? createProviderAnswerer(AssistantMap.tools(active), () => AssistantMap.context(active))
-      : createAzgaarServerAnswerer();
+  const onStatus = (status: string) => {
+    answerStatus = status;
+    if (visible() && view === "chat") renderTranscript();
+  };
   render();
   try {
-    await answerer.send(active, question, onItem, request.signal, status => {
-      answerStatus = status;
-      if (visible() && view === "chat") renderTranscript();
-    });
+    if (active.tier === "key")
+      await askProvider(active, question, onItem, request.signal, {
+        tools: AssistantMap.tools(active),
+        context: () => AssistantMap.context(active),
+        onStatus
+      });
+    else await askServer(active, question, onItem, request.signal);
   } catch (error) {
     if (!request.signal.aborted) {
-      const item: TranscriptItem = { kind: "notice", text: error instanceof Error ? error.message : String(error) };
+      const item: TranscriptItem = { kind: "notice", text: errorText(error) };
       append(active, item);
       if (chat === active) showNotice({ text: item.text, item, retry: () => resend(active, question, from) });
     }

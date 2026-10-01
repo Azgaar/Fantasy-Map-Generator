@@ -1,11 +1,39 @@
 import type { LayerId } from "@/components/layers";
 import { Controllers } from "@/controllers";
-import { ENTITY_TYPES, type EntityRef, type EntityType, isEntityType, RECORD_TYPES } from "@/data/entity-types";
 import type { Point } from "@/types/global";
 import { capitalize } from "@/utils/stringUtils";
 
-export type { EntityRef, EntityType };
-export { ENTITY_TYPES, isEntityType, RECORD_TYPES };
+export const ENTITY_TYPES = [
+  "state",
+  "province",
+  "burg",
+  "marker",
+  "river",
+  "route",
+  "feature",
+  "zone",
+  "journey",
+  "market",
+  "regiment",
+  "addedLabel",
+  "culture",
+  "religion",
+  "biome",
+  "good"
+] as const;
+
+export const RECORD_TYPES = ["cell", "ice", "relief", "measurer", "deal", "transport", "nameBase"] as const;
+
+export type EntityType = (typeof ENTITY_TYPES)[number] | (typeof RECORD_TYPES)[number];
+
+export const isEntityType = (value: string): value is EntityType =>
+  (ENTITY_TYPES as readonly string[]).includes(value) || (RECORD_TYPES as readonly string[]).includes(value);
+
+export interface EntityRef {
+  type: EntityType;
+  id: number;
+  sub?: number;
+}
 
 export interface MapEntity {
   i: number;
@@ -515,6 +543,11 @@ class EntityLookup {
     return this.types[ref.type].position?.(ref.id, ref.sub);
   }
 
+  /** One point to mark the entity by: its position, or the first point of its geometry */
+  getAnchor(ref: EntityRef): Point | undefined {
+    return this.getPosition(ref) ?? this.getPoints(ref)[0];
+  }
+
   /** Full geometry when the type has one, otherwise its anchor point */
   getPoints(ref: EntityRef): Point[] {
     const { points, cells } = this.types[ref.type];
@@ -589,7 +622,7 @@ class EntityLookup {
   parseKey(key: string): EntityRef | undefined {
     const match = /^(\w+):(\d+)(?:-(\d+))?$/.exec(key);
     if (!match || !isEntityType(match[1])) return undefined;
-    const type = match[1] as EntityType;
+    const type: EntityType = match[1];
     if ((type === "regiment") !== (match[3] !== undefined)) return undefined;
     const id = Number(match[2]);
     const sub = match[3] === undefined ? undefined : Number(match[3]);

@@ -28,9 +28,7 @@ vi.mock("@/controllers", () => ({
     NotesEditor: { current: async () => (state.note ? { id: "burg:1", name: state.note, legend: "" } : null) }
   }
 }));
-vi.mock("@/services/assistant/azgaar-server/answerer", () => ({
-  createAzgaarServerAnswerer: () => ({ send: state.send })
-}));
+vi.mock("@/services/assistant/azgaar-server/answerer", () => ({ askServer: state.send }));
 
 import { Assistant } from "./index";
 
@@ -202,11 +200,10 @@ it("keeps a selected read-only chat when reopening the panel or reloading the sa
 it("keeps the panel, its draft and a running answer when closed", async () => {
   let finish: (() => void) | undefined;
   state.send.mockImplementation(
-    (_chat, question, onItem, _signal, onStatus) =>
+    (_chat, question, onItem) =>
       new Promise<void>(resolve => {
         onItem({ kind: "question", text: question });
         finish = () => {
-          onStatus("Reading the map");
           onItem({ kind: "step", code: "return 1" });
           resolve();
         };
@@ -392,13 +389,7 @@ it("turns a picked choice into a proposal, or into the next question", async () 
     .find(button => button.textContent === "Tell me more" && !button.disabled)!
     .click();
   await vi.waitFor(() =>
-    expect(state.send).toHaveBeenCalledWith(
-      active,
-      "Tell me more",
-      expect.any(Function),
-      expect.any(AbortSignal),
-      expect.any(Function)
-    )
+    expect(state.send).toHaveBeenCalledWith(active, "Tell me more", expect.any(Function), expect.any(AbortSignal))
   );
   expect(second).toMatchObject({ picked: 0 });
 });

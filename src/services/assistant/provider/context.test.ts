@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { expect, test } from "vitest";
 import { buildSystemPrompt } from "./context";
 
-const root = join(dirname(fileURLToPath(import.meta.url)), "../../..");
+const root = join(dirname(fileURLToPath(import.meta.url)), "../../../..");
 
 test("cached instructions contain the map rules, operations and data fields", () => {
   const [cached] = buildSystemPrompt();

@@ -36,7 +36,7 @@ export interface MapCommand {
   matches?: (query: string) => boolean; // queries the command answers beyond its name and aliases
 }
 
-/** Commands an Assistant answer may link: they only open a dialog, tab or chart. Mirrored by generate-assistant-context */
+/** Commands an Assistant answer may link: they only open a dialog, tab or chart */
 export const isLinkable = ({ id, name }: MapCommand): boolean => id !== "assistant" && /^(Open|Show|Edit) /.test(name);
 
 /** Ordered by priority: the omnibar breaks score ties by definition order */

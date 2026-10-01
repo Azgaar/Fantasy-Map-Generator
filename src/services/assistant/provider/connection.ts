@@ -12,17 +12,6 @@ const LOCAL_URL_STORAGE = "fmg-ai-local-url";
 const CONNECTED_STORAGE = "fmg-assistant-connected";
 const modelStorage = (providerId: ProviderSpec["id"]) => `fmg-ai-model-${providerId}`;
 
-// Earlier versions kept one model for the saved provider and one for the local server
-for (const [legacy, providerId] of [
-  ["fmg-ai-chat-model", localStorage.getItem(PROVIDER_STORAGE)],
-  ["fmg-ai-local-model", "local"]
-] as const) {
-  const model = localStorage.getItem(legacy);
-  const provider = providerById(providerId) ?? DEFAULT_PROVIDER;
-  if (model && !localStorage.getItem(modelStorage(provider.id))) localStorage.setItem(modelStorage(provider.id), model);
-  localStorage.removeItem(legacy);
-}
-
 /** The saved connection, or what it would be with another provider: each provider keeps its own model */
 export function get(providerId?: ProviderSpec["id"]): Connection {
   const provider = providerById(providerId ?? localStorage.getItem(PROVIDER_STORAGE)) ?? DEFAULT_PROVIDER;

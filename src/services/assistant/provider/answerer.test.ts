@@ -7,9 +7,9 @@ vi.mock("./providers", async importOriginal => ({
   complete: completeMock
 }));
 
-import type { Chat, TranscriptItem } from "./chats";
+import type { Chat, TranscriptItem } from "../chats";
+import { askProvider } from "./answerer";
 import { save } from "./connection";
-import { createProviderAnswerer } from "./provider-answerer";
 
 const newChat = (): Chat => ({
   id: "1",
@@ -46,12 +46,10 @@ it("dispatches a map tool, reports its change, and preserves provider history", 
     definition: { name: "rename", description: "Rename", input_schema: {} },
     handle: vi.fn(async () => ({ content: "Renamed", item: { kind: "notice" as const, text: "Changed" } }))
   };
-  await createProviderAnswerer([tool], async () => "# Current map").send(
-    chat,
-    "Rename it",
-    item => items.push(item),
-    new AbortController().signal
-  );
+  await askProvider(chat, "Rename it", item => items.push(item), new AbortController().signal, {
+    tools: [tool],
+    context: async () => "# Current map"
+  });
   expect(items.map(item => item.kind)).toEqual(["question", "notice", "answer"]);
   expect(tool.handle).toHaveBeenCalledWith({ id: "burg:1", name: "New" });
   expect(chat.messages.at(-1)?.role).toBe("assistant");
@@ -65,12 +63,10 @@ it("keeps the connection and prior history when a provider rejects a request", a
   const chat = newChat();
   const items: TranscriptItem[] = [];
   await expect(
-    createProviderAnswerer([], async () => "map").send(
-      chat,
-      "Hello",
-      item => items.push(item),
-      new AbortController().signal
-    )
+    askProvider(chat, "Hello", item => items.push(item), new AbortController().signal, {
+      tools: [],
+      context: async () => "map"
+    })
   ).rejects.toThrow("No credit");
   expect(chat.messages).toEqual([]);
   expect(items).toEqual([{ kind: "question", text: "Hello" }]);
@@ -93,10 +89,10 @@ it("keeps completed changes and fills cancelled tool results when stopped mid-ba
   const chat = newChat();
   const items: TranscriptItem[] = [];
   await expect(
-    createProviderAnswerer(
-      [{ status: "Renaming", definition: { name: "rename", description: "", input_schema: {} }, handle }],
-      async () => "map"
-    ).send(chat, "Rename two", item => items.push(item), controller.signal)
+    askProvider(chat, "Rename two", item => items.push(item), controller.signal, {
+      tools: [{ status: "Renaming", definition: { name: "rename", description: "", input_schema: {} }, handle }],
+      context: async () => "map"
+    })
   ).rejects.toThrow();
   expect(handle).toHaveBeenCalledTimes(1);
   expect(completeMock).toHaveBeenCalledTimes(1);
@@ -111,10 +107,13 @@ it("does not contact a provider after Stop while preparing map context", async (
   const controller = new AbortController();
   const chat = newChat();
   await expect(
-    createProviderAnswerer([], async () => {
-      controller.abort();
-      return "map";
-    }).send(chat, "Question", () => {}, controller.signal)
+    askProvider(chat, "Question", () => {}, controller.signal, {
+      tools: [],
+      context: async () => {
+        controller.abort();
+        return "map";
+      }
+    })
   ).rejects.toThrow();
   expect(completeMock).not.toHaveBeenCalled();
   expect(chat.messages).toEqual([]);
@@ -132,7 +131,7 @@ it("shortens tool results from earlier questions before the next request", async
     content: [{ type: "text", text: "Done" }],
     usage: { input: 1, output: 1, cached: 0 }
   });
-  await createProviderAnswerer([], async () => "map").send(chat, "Second", () => {}, new AbortController().signal);
+  await askProvider(chat, "Second", () => {}, new AbortController().signal, { tools: [], context: async () => "map" });
   expect(chat.messages[2].content[0]).toMatchObject({ content: "[Earlier tool result shortened]" });
 });
 
@@ -158,12 +157,10 @@ it("asks once more without images when the model cannot see them", async () => {
     });
   const chat = newChat();
   const items: TranscriptItem[] = [];
-  await createProviderAnswerer([imageTool], async () => "map").send(
-    chat,
-    "Describe it",
-    item => items.push(item),
-    new AbortController().signal
-  );
+  await askProvider(chat, "Describe it", item => items.push(item), new AbortController().signal, {
+    tools: [imageTool],
+    context: async () => "map"
+  });
   expect(completeMock).toHaveBeenCalledTimes(3);
   expect(items.at(-1)).toEqual({ kind: "answer", text: "A red shield." });
   const result = chat.messages.flatMap(message => message.content).find(block => block.type === "tool_result");
@@ -174,7 +171,7 @@ it("asks once more without images when the model cannot see them", async () => {
 it("does not retry a failure when no image was sent", async () => {
   completeMock.mockRejectedValue(new Error("No credit"));
   await expect(
-    createProviderAnswerer([], async () => "map").send(newChat(), "Hi", () => {}, new AbortController().signal)
+    askProvider(newChat(), "Hi", () => {}, new AbortController().signal, { tools: [], context: async () => "map" })
   ).rejects.toThrow("No credit");
   expect(completeMock).toHaveBeenCalledTimes(1);
 });
@@ -184,19 +181,17 @@ it("shows the status a map tool declares while it runs", async () => {
     .mockResolvedValueOnce({ content: [LOOK], usage: { input: 1, output: 1, cached: 0 } })
     .mockResolvedValueOnce({ content: [{ type: "text", text: "Done." }], usage: { input: 1, output: 1, cached: 0 } });
   const statuses: string[] = [];
-  await createProviderAnswerer([{ ...imageTool, status: "Looking at the emblem" }], async () => "map").send(
-    newChat(),
-    "Describe it",
-    () => {},
-    new AbortController().signal,
-    status => statuses.push(status)
-  );
+  await askProvider(newChat(), "Describe it", () => {}, new AbortController().signal, {
+    tools: [{ ...imageTool, status: "Looking at the emblem" }],
+    context: async () => "map",
+    onStatus: status => statuses.push(status)
+  });
   expect(statuses).toContain("Looking at the emblem");
 });
 
 it("keeps no empty turn in history when the model ends without a word", async () => {
   completeMock.mockResolvedValueOnce({ content: [], usage: { input: 1, output: 0, cached: 0 } });
   const chat = newChat();
-  await createProviderAnswerer([], async () => "map").send(chat, "Pick", () => {}, new AbortController().signal);
+  await askProvider(chat, "Pick", () => {}, new AbortController().signal, { tools: [], context: async () => "map" });
   expect(chat.messages.map(message => message.role)).toEqual(["user"]);
 });

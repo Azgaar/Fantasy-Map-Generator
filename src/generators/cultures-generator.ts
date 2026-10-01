@@ -2,9 +2,8 @@ import { max, quadtree, range } from "d3";
 import { Emblems } from "@/generators/emblems-generator";
 import type { Emblem } from "@/types/emblems";
 import { requireColor } from "@/utils/colorUtils";
-import { requireName, requireOneOf } from "@/utils/validationUtils";
+import { requireCode, requireName, requireOneOf, requireOrigins } from "@/utils/validationUtils";
 import { abbreviate, biased, getColors, getRandomColor, minmax, P, rand, rn, rw } from "../utils";
-import { requireCode, requireOrigins } from "./origins";
 import { Population } from "./population-generator";
 
 /** The named culture sets the user picks from: how many cultures each holds and how often it is rolled */

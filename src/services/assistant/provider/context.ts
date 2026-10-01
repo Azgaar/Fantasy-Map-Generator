@@ -1,7 +1,14 @@
 // Assembles the system prompt: one compact static block (cached by the provider) and one small block
 // describing the map at hand. Reference material stays out of it; the model fetches it with read_docs.
 
-import { DATA_FIELDS, GENERATOR_NAMES, KEY_TYPES, OPERATION_INDEX } from "./context.generated";
+import { ENTITY_TYPES, RECORD_TYPES } from "@/components/map-entities";
+import { METHODS } from "@/controllers/assistant/operations";
+import { DATA_FIELDS, GENERATOR_NAMES } from "./context.generated";
+
+const KEY_TYPES = [...ENTITY_TYPES, ...RECORD_TYPES].join(", ");
+const OPERATION_INDEX = Object.entries(METHODS)
+  .map(([model, methods]) => `${model}: ${methods.join(", ")}`)
+  .join("\n");
 
 export interface SystemBlock {
   type: "text";

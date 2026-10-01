@@ -29,6 +29,7 @@ import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement, highlightOutline } from "@/renderers/overlays/highlight";
 import { applyOption, downloadFile, getArea, getAreaUnit, getFileName, groupByValue, speak } from "@/utils";
+import { errorText } from "@/utils/stringUtils";
 import { ensureEl, getPointer, getRandomColor, isLand, rand, rn, si, unique } from "../utils";
 
 const dialogId = "provincesEditor" as const;
@@ -458,7 +459,7 @@ function declareProvinceIndependence(provinceId: number): [number, number] | und
     removeEmblem("province", provinceId);
     return [oldStateId, newStateId];
   } catch (error) {
-    tip(error instanceof Error ? error.message : String(error), false, "error");
+    tip(errorText(error), false, "error");
   }
 }
 
@@ -1026,7 +1027,7 @@ function addProvince(this: SVGElement, event: any): void {
   try {
     province = Provinces.add(x, y);
   } catch (error) {
-    tip(error instanceof Error ? error.message : String(error), false, "error");
+    tip(errorText(error), false, "error");
     return;
   }
   if (event.shiftKey === false) exitAddProvinceMode();

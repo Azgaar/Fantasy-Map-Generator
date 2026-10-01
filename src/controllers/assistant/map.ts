@@ -1,11 +1,12 @@
 import { MapEntities } from "@/components/map-entities";
 import { Controllers } from "@/controllers";
-import type { Tool, ToolOutcome } from "@/services/assistant/answerer";
 import type { ChartRow, Chat, Choice, Widget } from "@/services/assistant/chats";
-import type { ToolDefinition, ToolInput } from "@/services/assistant/providers";
-import { runScript } from "@/services/assistant/runtime";
+import type { Tool } from "@/services/assistant/provider/answerer";
+import type { ToolDefinition, ToolInput } from "@/services/assistant/provider/providers";
+import { runScript } from "@/services/assistant/provider/runtime";
 import type { Emblem } from "@/types/emblems";
 import { rn } from "@/utils/numberUtils";
+import { getBounds } from "@/utils/pathUtils";
 import {
   convertTemperature,
   formatSpeed,
@@ -26,7 +27,6 @@ import { Proposals } from "./proposals";
 const NOTE_CONTEXT_CHARS = 4000;
 const MAX_WIDGET_ENTITIES = 50;
 const MAX_CHART_ROWS = 30;
-const CHANGED_MAP: ToolOutcome = { content: "The map changed during this answer", isError: true };
 
 function id(): number {
   return typeof mapHistory === "undefined" ? 0 : (mapHistory.at(-1)?.created ?? 0);
@@ -182,6 +182,10 @@ function proposeChange(chat: Chat): Tool {
 }
 
 const text = (value: unknown) => (typeof value === "string" ? value.trim() : "");
+/** Insets zoom into a part of the map: one spanning over half of it in either direction just shows the map */
+const isSmallInset = ([x0, y0, x1, y1]: number[]) =>
+  x1 - x0 <= options.map.graph.width / 2 && y1 - y0 <= options.map.graph.height / 2;
+
 const missing = (key: unknown) => `No entity ${key} on this map. Keys are type:id, e.g. burg:12`;
 
 interface WidgetTool extends Omit<ToolDefinition, "name"> {
@@ -302,7 +306,7 @@ const WIDGET_TOOLS: Record<Exclude<Widget["type"], "emblem">, WidgetTool> = {
   },
   inset: {
     description:
-      "Show a picture of part of the map around an entity key, or a box [x0, y0, x1, y1] in map units; clicking it zooms the map there. Use it when an answer is about where something is or what a place is like.",
+      "Show a picture of a small part of the map (at most half its width and height) around an entity key, or a box [x0, y0, x1, y1] in map units; clicking it zooms the map there. Use it when an answer is about where something is or what a place is like.",
     input_schema: {
       type: "object",
       properties: {
@@ -317,7 +321,9 @@ const WIDGET_TOOLS: Record<Exclude<Widget["type"], "emblem">, WidgetTool> = {
         const entity = text(input.entity);
         const ref = MapEntities.resolveKey(entity);
         if (!ref) return missing(entity);
-        if (!MapEntities.getPoints(ref).length) return `${entity} has no place on the map`;
+        const points = MapEntities.getPoints(ref);
+        if (!points.length) return `${entity} has no place on the map`;
+        if (!isSmallInset(getBounds(points))) return `${entity} covers too much of the map for an inset`;
         return { type: "inset", title: title || MapEntities.getName(ref), entity };
       }
       const box = Array.isArray(input.box) ? input.box : [];
@@ -334,6 +340,7 @@ const WIDGET_TOOLS: Record<Exclude<Widget["type"], "emblem">, WidgetTool> = {
         y0 > height
       )
         return `An inset takes an entity key or a box [x0, y0, x1, y1] in map units within ${width} × ${height}`;
+      if (!isSmallInset([x0, y0, x1, y1])) return "An inset shows a small part of the map, not most of it";
       return { type: "inset", title: title || "Map", box: [x0, y0, x1, y1] };
     }
   }
@@ -384,13 +391,9 @@ const viewEmblem: Tool = {
   }
 };
 
-/** Tools bound to the map open now: once another map loads they refuse to run */
+// A map change stops the answer (map:generated), so no tool outlives the map it was given for
 function tools(chat: Chat): Tool[] {
-  const bound = id();
-  return [readMap, proposeChange(chat), ...showTools, viewEmblem].map(tool => ({
-    ...tool,
-    handle: async input => (bound !== id() ? CHANGED_MAP : tool.handle(input))
-  }));
+  return [readMap, proposeChange(chat), ...showTools, viewEmblem];
 }
 
 export const AssistantMap = { id, name, context, tools };

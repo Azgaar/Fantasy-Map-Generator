@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { completeOpenAI } from "./openai";
 import { type CompletionRequest, complete } from "./providers";
-import { completeOpenAI } from "./providers-openai";
 
 const globals = globalThis as Record<string, unknown>;
 

@@ -334,6 +334,7 @@ classic needs it.
 - Serializes, saves, loads, or exports state → `services/io/`
 - Manages browser/app lifecycle, a platform asset, or app preferences → `services/`
 - Talks to the Azgaar server on the user's behalf → `services/assistant/azgaar-server/`
+- Talks to the user's own AI provider → `services/assistant/provider/`
 - A constant list or template, no behavior → `data/`
 - A helper that reads no ambient state and has ≥2 consumers → `utils/`
 - A shared type / interface → `types/`
@@ -491,10 +492,11 @@ Static content: lookup tables, templates, tuning constants, reference lists.
   `operations.ts`, a plain registry of model-class methods, and `proposals.ts`, which dry-runs a
   batch on a draft of the map into a Change and applies, undoes or discards it on the user's click.
   `redraw.ts` derives the layers to redraw from the data a Change touched. Services in
-  `src/services/assistant/` do not access world data or the DOM: `tier.ts` resolves Guest, Member or Key; `chats.ts`
-  persists map-bound chats in IndexedDB; `connection.ts` stores provider settings and keys in localStorage;
-  `azgaar-server/` handles free documentation answers and Discord sign-in; `provider-answerer.ts` runs the provider
-  tool loop using `providers.ts` and `providers-openai.ts`. `knowledge.ts` loads Knowledge Base sections when requested.
+  `src/services/assistant/` do not access world data or the DOM: `chats.ts` persists map-bound chats in IndexedDB;
+  `azgaar-server/` answers Guest and Member questions from the documentation and handles Discord sign-in; `provider/`
+  serves the Key tier: `connection.ts` stores provider settings and keys in localStorage, `answerer.ts` runs the tool
+  loop through `providers.ts` and `openai.ts`, `models.ts` discovers a key's models, `context.ts` builds the system
+  prompt, `docs.ts` and `knowledge.ts` serve `read_docs` and `read_help`, and `runtime.ts` runs `read_map` scripts.
   The Azgaar server receives only the question and its server chat id. A connected Provider receives the open-map context
   and tool results directly from the browser. The Assistant never stores chats in `.map` files.
   `read_map` runs model-written JavaScript in page scope with the app's full access, stored keys included. This is an

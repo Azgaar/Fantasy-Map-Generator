@@ -7,6 +7,7 @@ import { zoomTo } from "@/components/zoom";
 import { highlightArea, highlightElement } from "@/renderers/overlays/highlight";
 import type { Point } from "@/types/global";
 import { findEl } from "@/utils";
+import { type Box, getBounds } from "@/utils/pathUtils";
 
 // Showing things on the map: zoom to fit, show their layers, outline or ring them
 
@@ -16,14 +17,6 @@ interface RevealOptions {
   zoom?: { min?: number | null; max?: number | null };
   element: () => Element | null;
   cover?: DOMRect; // a panel over the map: the view centres in the part it leaves visible
-}
-
-type Box = [x0: number, y0: number, x1: number, y1: number];
-
-function bounds(points: Point[]): Box {
-  let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity]; // a loop: a territory can have too many cells to spread
-  for (const [x, y] of points) [x0, y0, x1, y1] = [Math.min(x0, x), Math.min(y0, y), Math.max(x1, x), Math.max(y1, y)];
-  return [x0, y0, x1, y1];
 }
 
 /** The map's visible columns beside a panel: its wider side, or the whole width when the panel leaves too little */
@@ -52,7 +45,7 @@ function zoomToFit([x0, y0, x1, y1]: Box, maxScale: number, zoom: RevealOptions[
 export function reveal(points: Point[], { layers, maxScale, zoom, element, cover }: RevealOptions): boolean {
   if (!points.length) return false;
   Layers.show(...layers);
-  const box = bounds(points);
+  const box = getBounds(points);
   zoomToFit(box, maxScale, zoom, cover);
   // the outline animates in while the view is still moving; a culled element (a river, a label) is not drawn yet,
   // so its own geometry stands in for it
@@ -82,12 +75,12 @@ const MARKS = "entityMarks";
 export function markEntities(refs: EntityRef[], cover?: DOMRect): boolean {
   clearEntityMarks();
   const located = refs.flatMap(ref => {
-    const position = MapEntities.getPosition(ref) ?? MapEntities.getPoints(ref)[0];
+    const position = MapEntities.getAnchor(ref);
     return position ? [{ ref, position }] : [];
   });
   if (!located.length) return false;
   const maxScale = Math.min(...located.map(({ ref }) => MapEntities.getDisplay(ref).scale));
-  const scale = zoomToFit(bounds(located.map(({ position }) => position)), maxScale, {}, cover);
+  const scale = zoomToFit(getBounds(located.map(({ position }) => position)), maxScale, {}, cover);
   select("#debug")
     .append("g")
     .attr("id", MARKS)

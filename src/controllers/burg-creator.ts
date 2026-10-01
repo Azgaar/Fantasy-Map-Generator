@@ -4,6 +4,7 @@ import { Layers } from "@/components/layers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import { tip } from "@/components/tooltips";
 import { redrawEmblem } from "@/renderers/draw-emblems";
+import { errorText } from "@/utils/stringUtils";
 
 function toggle(): void {
   if (isActive()) {
@@ -30,7 +31,7 @@ function addOnClick(event: MouseEvent): void {
   try {
     burgId = Burgs.add(...point);
   } catch (error) {
-    tip(error instanceof Error ? error.message : String(error), false, "error");
+    tip(errorText(error), false, "error");
     return;
   }
   redrawEmblem("burg", burgId);

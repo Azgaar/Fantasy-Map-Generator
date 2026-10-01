@@ -25,6 +25,7 @@ import type { Religion } from "@/generators/religions-generator";
 import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getArea, getAreaUnit, getFileName, groupByValue } from "@/utils";
+import { errorText } from "@/utils/stringUtils";
 import { debounce, ensureEl, getPointer, isLand, parseTransform, rn, si } from "../utils";
 
 const dialogId = "religionsEditor" as const;
@@ -866,7 +867,7 @@ function addReligion(this: SVGElement, event: MouseEvent): void {
   try {
     Religions.add(x, y);
   } catch (error) {
-    tip(error instanceof Error ? error.message : String(error), false, "error");
+    tip(errorText(error), false, "error");
     return;
   }
   if (event.shiftKey === false) exitAddReligionMode();

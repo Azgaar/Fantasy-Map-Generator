@@ -1,6 +1,8 @@
-import type { Message, Usage } from "./providers";
-import type { RunResult } from "./runtime";
-import { answererFor, type Tier } from "./tier";
+import type { Message, Usage } from "./provider/providers";
+import type { RunResult } from "./provider/runtime";
+
+/** Who asks: a Guest or Member of the Azgaar server, or the user's own key; null when no answerer is available */
+export type Tier = "guest" | "member" | "key" | null;
 
 /** One recorded value a proposal changes: an entity field before and after */
 export interface ChangeRow {
@@ -141,7 +143,8 @@ export function touch(chat: Chat): void {
 }
 
 export function canContinue(chat: Chat, tier: Tier, mapId: number): boolean {
-  return answererFor(chat.tier) === answererFor(tier) && chat.mapId === mapId;
+  // Guest and Member share the Azgaar server's answerer
+  return Boolean(tier) && (chat.tier === "key") === (tier === "key") && chat.mapId === mapId;
 }
 
 // An image's data is not re-sent once its question is answered, so it does not count

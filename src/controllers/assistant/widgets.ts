@@ -1,6 +1,6 @@
 import { schemeTableau10 } from "d3";
 import { isLinkable, MAP_COMMANDS } from "@/components/map-commands";
-import { type EntityRef, type EntityType, isEntityType, MapEntities } from "@/components/map-entities";
+import { type EntityRef, isEntityType, MapEntities } from "@/components/map-entities";
 import { clearEntityMarks, markEntities, reveal, revealEntity } from "@/components/reveal";
 import { tip } from "@/components/tooltips";
 import type { State } from "@/generators/states-generator";
@@ -10,6 +10,7 @@ import type { Emblem } from "@/types/emblems";
 import type { Point } from "@/types/global";
 import type { LinkResolver } from "@/utils/markdown";
 import { rn } from "@/utils/numberUtils";
+import { getBounds } from "@/utils/pathUtils";
 import { escapeHtml } from "@/utils/stringUtils";
 import { getArea, getAreaUnit, getPeople, si } from "@/utils/unitUtils";
 
@@ -48,14 +49,6 @@ function linkableCommand(id: string) {
   return command && isLinkable(command) ? command : undefined;
 }
 
-/** A key the model could not fill in (`religion:?`) still links when exactly one entity of its type bears the label */
-function byName(type: EntityType, label: string): EntityRef | undefined {
-  const matches = MapEntities.collect(type).filter(({ ref, entity }) =>
-    [entity.name, MapEntities.getName(ref)].some(name => name && escapeHtml(name) === label)
-  );
-  return matches.length === 1 ? matches[0].ref : undefined;
-}
-
 const entityButton = (ref: EntityRef, label: string) =>
   `<button type="button" class="assistantEntity" data-action="entity" data-id="${MapEntities.key(ref)}" data-tip="Show on the map"><span class="${MapEntities.getDisplay(ref).icon}" aria-hidden="true"></span>${label}</button>`;
 
@@ -72,9 +65,8 @@ function links(live: boolean): LinkResolver {
       const command = linkableCommand(href.slice("command:".length));
       return command ? commandButton(command.id, label) : label;
     }
-    const type = href.split(":")[0];
-    if (!href.includes(":") || !isEntityType(type)) return null;
-    const ref = live ? (MapEntities.resolveKey(href) ?? byName(type, label)) : undefined;
+    if (!href.includes(":") || !isEntityType(href.split(":")[0])) return null;
+    const ref = live ? MapEntities.resolveKey(href) : undefined;
     return ref ? entityButton(ref, label) : label;
   };
 }
@@ -256,9 +248,7 @@ function insetPoints(widget: Of<"inset">): Point[] {
 function insetRegion(widget: Of<"inset">): Region | undefined {
   const points = insetPoints(widget);
   if (!points.length) return undefined;
-  const xs = points.map(([x]) => x);
-  const ys = points.map(([, y]) => y);
-  const [x0, y0, x1, y1] = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+  const [x0, y0, x1, y1] = getBounds(points);
   const pad = widget.box ? 1 : 1.3;
   let span = [
     Math.max(x1 - x0, widget.box ? 1 : INSET_MIN_SPAN) * pad,
@@ -277,7 +267,7 @@ function insetRegion(widget: Of<"inset">): Region | undefined {
 /** A ring on the entity: the picture shows the map's current layers, which may not include it */
 function insetMark(widget: Of<"inset">, { x0, y0, x1, y1 }: Region): string {
   const ref = MapEntities.resolveKey(widget.entity);
-  const position = ref && (MapEntities.getPosition(ref) ?? MapEntities.getPoints(ref)[0]);
+  const position = ref && MapEntities.getAnchor(ref);
   if (!position) return "";
   const r = (x1 - x0) / 40;
   return `<svg viewBox="${x0} ${y0} ${x1 - x0} ${y1 - y0}" aria-hidden="true"><circle cx="${position[0]}" cy="${position[1]}" r="${r}" fill="none" stroke="#d0240f" stroke-width="${r / 4}"></circle></svg>`;

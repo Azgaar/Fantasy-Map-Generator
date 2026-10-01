@@ -1,22 +1,22 @@
-// Builds src/services/assistant/context.generated.ts — the Assistant context derived from the codebase
-// rather than written by hand: the compact parts go into the system prompt, the rest is served by read_docs. Run `npm run generate:assistant-context` after
-// changing global declarations, the registries, or the data model doc. Pass --check to verify the
-// committed file is current without writing (used by context.test.ts).
+// Builds src/services/assistant/provider/context.generated.ts — the Assistant context only source text can give:
+// global declarations, registries, data-model fields and operation signatures. Run `npm run generate:assistant-context`
+// after changing any of them. Pass --check to verify the committed file is current without writing
+// (used by context.test.ts).
 
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const target = "src/services/assistant/context.generated.ts";
+const target = "src/services/assistant/provider/context.generated.ts";
 
 const read = path => readFileSync(join(root, path), "utf8");
 
 // Every non-test source file under src, read once
-const sources = readdirSync(join(root, "src"), { recursive: true })
+const paths = readdirSync(join(root, "src"), { recursive: true })
   .filter(path => path.endsWith(".ts") && !path.endsWith(".test.ts") && !path.endsWith(".generated.ts"))
-  .sort()
-  .map(path => read(`src/${path}`));
+  .sort();
+const sources = paths.map(path => read(`src/${path}`));
 
 // `declare global` bodies are already valid TS declarations, so they go to the model verbatim
 function extractGlobalBlocks(source) {
@@ -29,17 +29,10 @@ function globalDeclarations() {
 }
 
 function generatorNames() {
-  const dir = "src/generators";
-  const files = readdirSync(join(root, dir))
-    .filter(name => name.endsWith(".ts") && !name.endsWith(".test.ts"))
-    .sort();
-
-  const names = files.flatMap(file =>
-    extractGlobalBlocks(read(`${dir}/${file}`)).flatMap(body =>
-      [...body.matchAll(/^\s*var ([A-Z]\w*):/gm)].map(([, name]) => name)
-    )
-  );
-
+  const names = sources
+    .filter((_, index) => dirname(paths[index]) === "generators")
+    .flatMap(extractGlobalBlocks)
+    .flatMap(body => [...body.matchAll(/^\s*var ([A-Z]\w*):/gm)].map(([, name]) => name));
   return [...new Set(names)].sort().join(", ");
 }
 
@@ -132,33 +125,6 @@ function operationTypes(list) {
   return [...declarations.values()].filter(Boolean).join("\n");
 }
 
-// The same operations grouped by model, method names only, for the system prompt; read_docs serves the signatures
-function operationIndex(list) {
-  const groups = new Map();
-  for (const line of list.split("\n")) {
-    const [, model, method] = line.match(/^(\w+)\.(\w+)\(/);
-    if (!groups.has(model)) groups.set(model, []);
-    groups.get(model).push(method);
-  }
-  return [...groups].map(([model, methods]) => `${model}: ${methods.join(", ")}`).join("\n");
-}
-
-// Commands an answer may link, by the same rule as isLinkable in map-commands.ts
-function commands() {
-  return [...read("src/components/map-commands.ts").matchAll(/id: "(\w+)",\s*name: "([^"]+)"/g)]
-    .filter(([, id, name]) => id !== "assistant" && /^(Open|Show|Edit) /.test(name))
-    .map(([, id, name]) => `${id}: ${name}`)
-    .join("\n");
-}
-
-// Every type a link key may name, entities first
-function keyTypes() {
-  const source = read("src/data/entity-types.ts");
-  const list = name =>
-    [...(source.match(new RegExp(`${name} = \\[([^\\]]*)\\]`))?.[1] ?? "").matchAll(/"(\w+)"/g)].map(([, type]) => type);
-  return [...list("ENTITY_TYPES"), ...list("RECORD_TYPES")].join(", ");
-}
-
 function buildGeneratedContext() {
   const operationList = operations();
   const sections = {
@@ -167,10 +133,7 @@ function buildGeneratedContext() {
     REGISTRY_KEYS: [registryKeys("src/controllers/index.ts", "Controllers"), registryKeys("src/services/index.ts", "Services")].join("\n"),
     DATA_FIELDS: dataFields(),
     OPERATIONS: operationList,
-    OPERATION_TYPES: operationTypes(operationList),
-    OPERATION_INDEX: operationIndex(operationList),
-    COMMANDS: commands(),
-    KEY_TYPES: keyTypes()
+    OPERATION_TYPES: operationTypes(operationList)
   };
 
   const header = `// GENERATED FILE — do not edit by hand.\n// Run \`npm run generate:assistant-context\` to rebuild it from the sources it mirrors.\n`;

@@ -2105,6 +2105,54 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     ]);
 
     const emblemIcons = migrateLegacyCustomEmblems();
+    /** custom emblems as picture emblems; the icons they use */
+    function migrateLegacyCustomEmblems(): Set<string> {
+      const used = new Set<string>();
+      const pictures = new Map(
+        CustomIcons.all.filter(icon => icon.kind === "image").map(icon => [icon.content, icon.id])
+      );
+      for (const [type, entities] of [
+        ["state", pack.states ?? []],
+        ["province", pack.provinces ?? []],
+        ["burg", pack.burgs ?? []]
+      ] as const) {
+        for (const entity of entities) {
+          const coa = entity.coa as typeof entity.coa & { custom?: boolean };
+          if (!coa?.custom) continue;
+          const definition = document.getElementById(`${type}COA${entity.i}`);
+          // a removed entity is never drawn again, so its picture would only clutter the Custom icons
+          const icon = entity.removed ? "" : legacyEmblemIcon(definition, pictures);
+          entity.coa = { icon, size: coa.size, x: coa.x, y: coa.y };
+          definition?.remove();
+          if (icon) used.add(icon);
+        }
+      }
+      return used;
+
+      /** A custom emblem's picture as a custom icon, one per distinct image; none when its definition is gone.
+       * Uploads are an svg holding one image since v1.89.21; earlier SVG uploads were kept as their own markup */
+      function legacyEmblemIcon(definition: Element | null, pictures: Map<string, string>): string {
+        if (!definition) return "";
+        const image =
+          definition.children.length === 1 && definition.firstElementChild?.tagName === "image"
+            ? definition.firstElementChild
+            : null;
+        const content = image?.getAttribute("href") ?? image?.getAttribute("xlink:href") ?? "";
+        if (/^(data:image\/|https?:\/\/)/.test(content)) {
+          let icon = pictures.get(content);
+          if (!icon) {
+            icon = CustomIcons.add({ kind: "image", content, viewBox: IMAGE_FRAME }).id;
+            pictures.set(content, icon);
+          }
+          return icon;
+        }
+        const svg = sanitizeSvgIcon(definition.outerHTML);
+        if (!svg) return "";
+        const id = CustomIcons.newId();
+        scopeSvgIcon(svg, id);
+        return CustomIcons.add({ id, ...IconPictures.fromSvg(svg) }).id;
+      }
+    }
 
     // old uploads were stored at full size: adopted rasters shrink to today's upload limits, emblems' to theirs
     for (const icon of CustomIcons.all) {
@@ -2133,53 +2181,6 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       }
     }
   }
-}
-
-/** custom emblems as picture emblems; the icons they use */
-export function migrateLegacyCustomEmblems(): Set<string> {
-  const used = new Set<string>();
-  const pictures = new Map(CustomIcons.all.filter(icon => icon.kind === "image").map(icon => [icon.content, icon.id]));
-  for (const [type, entities] of [
-    ["state", pack.states ?? []],
-    ["province", pack.provinces ?? []],
-    ["burg", pack.burgs ?? []]
-  ] as const) {
-    for (const entity of entities) {
-      const coa = entity.coa as typeof entity.coa & { custom?: boolean };
-      if (!coa?.custom) continue;
-      const definition = document.getElementById(`${type}COA${entity.i}`);
-      // a removed entity is never drawn again, so its picture would only clutter the Custom icons
-      const icon = entity.removed ? "" : legacyEmblemIcon(definition, pictures);
-      entity.coa = { icon, size: coa.size, x: coa.x, y: coa.y };
-      definition?.remove();
-      if (icon) used.add(icon);
-    }
-  }
-  return used;
-}
-
-/** A custom emblem's picture as a custom icon, one per distinct image; none when its definition is gone.
- * Uploads are an svg holding one image since v1.89.21; earlier SVG uploads were kept as their own markup */
-function legacyEmblemIcon(definition: Element | null, pictures: Map<string, string>): string {
-  if (!definition) return "";
-  const image =
-    definition.children.length === 1 && definition.firstElementChild?.tagName === "image"
-      ? definition.firstElementChild
-      : null;
-  const content = image?.getAttribute("href") ?? image?.getAttribute("xlink:href") ?? "";
-  if (/^(data:image\/|https?:\/\/)/.test(content)) {
-    let icon = pictures.get(content);
-    if (!icon) {
-      icon = CustomIcons.add({ kind: "image", content, viewBox: IMAGE_FRAME }).id;
-      pictures.set(content, icon);
-    }
-    return icon;
-  }
-  const svg = sanitizeSvgIcon(definition.outerHTML);
-  if (!svg) return "";
-  const id = CustomIcons.newId();
-  scopeSvgIcon(svg, id);
-  return CustomIcons.add({ id, ...IconPictures.fromSvg(svg) }).id;
 }
 
 export function migrateLegacySettings(mapVersion: string, data: string[]): void {
