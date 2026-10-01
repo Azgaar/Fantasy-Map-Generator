@@ -8,7 +8,7 @@ const state = vi.hoisted(() => ({
   close: undefined as (() => void) | undefined
 }));
 vi.mock("@/components/map-commands", () => ({ MAP_COMMANDS: [], isLinkable: () => false })); // its import touches the DOM
-vi.mock("./assistant-map", () => ({
+vi.mock("./map", () => ({
   AssistantMap: {
     id: () => state.mapId,
     name: () => "Test map",
@@ -22,7 +22,7 @@ const proposals = vi.hoisted(() => ({
   discard: vi.fn(),
   propose: vi.fn()
 }));
-vi.mock("./assistant-proposals", () => ({ Proposals: proposals }));
+vi.mock("./proposals", () => ({ Proposals: proposals }));
 vi.mock("@/controllers", () => ({
   Controllers: {
     NotesEditor: { current: async () => (state.note ? { id: "burg:1", name: state.note, legend: "" } : null) }
@@ -32,7 +32,7 @@ vi.mock("@/services/assistant/azgaar-server/answerer", () => ({
   createAzgaarServerAnswerer: () => ({ send: state.send })
 }));
 
-import { Assistant } from "./assistant";
+import { Assistant } from "./index";
 
 beforeEach(() => {
   state.mapId++;

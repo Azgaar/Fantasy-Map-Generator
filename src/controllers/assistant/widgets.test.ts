@@ -30,7 +30,7 @@ vi.mock("@/controllers", () => ({ Controllers: { GoodsEditor: { open: mocks.open
 
 import type { Widget } from "@/services/assistant/chats";
 import { renderMarkdown } from "@/utils/markdown";
-import { AssistantWidgets } from "./assistant-widgets";
+import { AssistantWidgets } from "./widgets";
 
 const answer = (text: string, live = true) => renderMarkdown(text, AssistantWidgets.links(live));
 type Entities = Extract<Widget, { type: "entities" }>;

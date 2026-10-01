@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 const discovery = vi.hoisted(() => ({ list: vi.fn() }));
 vi.mock("@/components/map-commands", () => ({ MAP_COMMANDS: [], isLinkable: () => false })); // its import touches the DOM
-vi.mock("./assistant-map", () => ({
+vi.mock("./map", () => ({
   AssistantMap: {
     id: () => 1,
     name: () => "Test map",
@@ -34,7 +34,7 @@ afterEach(() => {
 });
 
 async function openSheet(): Promise<void> {
-  const { Assistant } = await import("./assistant");
+  const { Assistant } = await import("./index");
   Assistant.open();
   await vi.waitFor(() => expect(document.getElementById("assistantAccount")?.textContent).toContain("key"));
   click("Use key");

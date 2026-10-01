@@ -1,4 +1,4 @@
-import { requireName, requireOneOf } from "@/utils/languageUtils";
+import { requireName, requireOneOf } from "@/utils/validationUtils";
 import type { Label } from "./labels-generator";
 
 declare global {

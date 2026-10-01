@@ -348,8 +348,8 @@ Assistant controller (dialog, transcript view, key sheet, chat list, footer)
    │  resolves the tier, picks the answerer, renders transcript items
    ├── Map tools (controller layer): read_map, propose_change, show, view_emblem
    ├── Widgets (controller layer): link resolver, widget rendering, reveal on the map
-   ├── Proposals (controller layer): dry run → Change → Apply / Undo / Discard, redraw
-   ├── Operations registry (controller layer): name → model-class method, layers to redraw
+   ├── Proposals (controller layer): dry run on a draft → Change → Apply / Undo / Discard, redraw the Change's layers
+   ├── Operations registry (controller layer): the model-class methods the Assistant may run
    │        │
    │        ▼
    │   Model classes: Burgs, States, Provinces, Cultures, Religions, Biomes, Rivers, Routes, Features, Zones, Markers, AddedLabels, Military (generators) and Notes
@@ -433,23 +433,22 @@ Assistant services (no world state, no DOM)
     - **Each method validates its own arguments** (entity exists and is not removed, name not empty) and throws a readable message. It only changes data: model classes cannot reach renderers, so redrawing is not their job.
     - **Notes own the safe-HTML rule.** Notes render into tooltips as HTML, so `Notes.write` accepts only the notes editor's subset: no event-handler attributes, no `javascript:` URLs, no scripts or iframes. The notes editor keeps its own path for its rich-text output.
 
-11. **Operations registry (controller layer).** A plain map from operation name to the layers to redraw after Apply or Undo, since model classes cannot redraw themselves. The name is the model-class method it runs, so the registry holds no logic of its own:
+11. **Operations registry (controller layer).** A plain allowlist of model-class methods, by model. The name is the method it runs, so the registry holds no logic of its own:
 
     ```ts
-    "Burgs.rename": ["labels"],
-    "States.remove": TERRITORY,
-    "Notes.write": [],
+    Burgs: ["rename", "setPopulation", "move", …],
+    Notes: ["write"],
     ```
 
     - Only a registered name runs: `Burgs.rename` calls the `Burgs` model's `rename` with the proposal's arguments.
-    - **Adding a capability** means adding one public method to the model class that owns the data, plus one registry line. It needs no new tool, UI or PRD.
+    - **Adding a capability** means adding one public method to the model class that owns the data, plus its name in the registry. It needs no new tool, UI or PRD.
     - The generated instructions index every registered operation, `read_docs` serves its signature and doc line, and a test fails when either is stale.
     - FMG has hundreds of possible edits, and the registry grows one well-scoped operation at a time, in the order of "Operations catalogue". Arbitrary writes are never allowed.
 
 12. **Proposals (controller layer).** One mechanism for every operation:
-    - **Dry run.** Snapshot the map data operations can change, run the operations in order, compare with the snapshot, then restore it. The snapshot is the same for every operation, so a side effect can never escape it: the entity collections (burgs, states, provinces, cultures, religions, biomes, features, markers, zones, rivers, routes, added labels, journeys, markets, goods) — every type that can hold a note — compared by `i`, and the per-cell ownership fields (burg, state, province, culture, religion, rivers, route links). A dry run takes tens of milliseconds. The comparison is the proposal's **Change**: every changed path with its before and after values, including the side effects the methods made. If any operation throws, the snapshot is restored and the whole proposal fails with that message, so a batch is all or nothing. The map is never left changed by a proposal.
+    - **Dry run.** Copy the map into a draft, run the operations in order on the draft, and compare it with the live map. The live map is never written, so proposing changes nothing, and whatever an operation writes outside the recorded data is dropped with the draft. Cell geometry, which no operation edits, is shared rather than copied. The recorded data is the same for every operation: the entity collections (burgs, states, provinces, cultures, religions, biomes, features, markers, zones, rivers, routes, added labels, journeys, markets, goods) — every type that can hold a note — compared by `i`, and the per-cell ownership fields (burg, state, province, culture, religion, rivers, route links). A dry run takes tens of milliseconds. The comparison is the proposal's **Change**: every changed path with its before and after values, including the side effects the methods made. If any operation throws, the draft is dropped and the whole proposal fails with that message, so a batch is all or nothing.
     - **Card rows** come from the Change. Paths are labelled through the entity lookup ("Burg Vel · name"), and notes are rendered as a preview.
-    - **Apply** checks that the map id matches and every "before" value still holds, writes the "after" values, redraws the registry's layers for the batch and refreshes open editors.
+    - **Apply** checks that the map id matches and every "before" value still holds, writes the "after" values, redraws the layers that show the changed data and refreshes open editors. The layers follow from the Change, not from the operations: one table maps each entity field and cell field to the layers that draw it (`controllers/assistant/redraw.ts`).
     - **Undo** checks that every "after" value still holds, then writes the "before" values in reverse order and redraws.
     - Added and removed entities are whole rows, put back at their place by `i`. Burgs, states, provinces, cultures, religions, biomes and features are addressed by array index, so an added one can be undone only while nothing of its kind was added after it.
     - A failed check shows **Changed since**. The map id is only a cheap first filter.
@@ -484,8 +483,8 @@ Assistant services (no world state, no DOM)
 Every edit the app offers, by the model class that owns it. Each has one status:
 
 - **Registered** — in the registry today.
-- **Planned** — its data is inside the dry-run snapshot; it needs one model-class method and one registry line.
-- **Snapshot** — its data is outside the snapshot (named in the row). The snapshot must record that data first; then it is one method and one line like any other.
+- **Planned** — its data is recorded by the dry run; it needs one model-class method and its name in the registry.
+- **Snapshot** — its data is not recorded by the dry run (named in the row). The Change must record that data first; then it is one method like any other.
 - **Batch** — an editor's bulk or generated action, proposed as a batch of the operations above it.
 - **No** — not an operation; see "Not operations".
 
@@ -766,12 +765,12 @@ The rows above hold `Biomes.setReliefPool`, which waits on relief icons; goods a
   - An editor test confirms the editor calls the shared method.
 - **Operations registry:** every entry points at an existing public method, and the generated operations list in the instructions is not stale.
 - **Proposals:**
-  - a dry run leaves the map unchanged;
+  - a dry run never writes the live map, even data the Change does not record;
   - added and removed entities and per-cell changes round-trip through Apply and Undo, and an added entity is not undone past a later one;
   - the Change includes side effects;
   - a failing operation fails the whole batch and changes nothing;
   - an unknown operation returns the registered list;
-  - Apply writes the batch and redraws the listed layers;
+  - Apply writes the batch and redraws the layers that show the changed data;
   - Apply and Undo are refused with "Changed since" after a manual edit, on another map, or after an overlapping proposal was applied;
   - Discard is final;
   - Apply and Undo work in a read-only chat;
@@ -785,7 +784,7 @@ The rows above hold `Biomes.setReliefPool`, which waits on relief icons; goods a
 ## Out of Scope
 
 - Changes to the Azgaar server itself: limits, prompts, models. The daily numbers belong to the server; the client only displays them. The server-side follow-ups are the instruction to answer map questions with a key recommendation, and teaching the server's model the command link syntax.
-- The edits "Operations catalogue" marks **No**. Those marked **Snapshot** wait until the snapshot records their data; each further operation is one model-class method plus one registry line, and needs no new tool, UI or PRD.
+- The edits "Operations catalogue" marks **No**. Those marked **Snapshot** wait until the Change records their data; each further operation is one model-class method plus its name in the registry, and needs no new tool, UI or PRD.
 - Arbitrary writes to any field, and capturing changes made by scripts.
 - Selecting individual rows inside a proposal, and auto-apply.
 - A sandbox for `read_map` scripts — added only if users actually hit the problem.

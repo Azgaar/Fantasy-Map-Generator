@@ -1,6 +1,7 @@
 import Alea from "alea";
 import { curveBasis, curveCatmullRom, line, mean, min, sum } from "d3";
-import { replaceWholeWord, requireName } from "@/utils/languageUtils";
+import { replaceWholeWord } from "@/utils/languageUtils";
+import { requireName } from "@/utils/validationUtils";
 import { each, rn, round, rw } from "../utils";
 import { meander, projectToNearestEdge } from "../utils/pathUtils";
 import type { Label } from "./labels-generator";

@@ -18,8 +18,8 @@ import {
   getPrecipitation,
   si
 } from "@/utils/unitUtils";
-import { Proposals } from "./assistant-proposals";
-import type { Note } from "./notes-editor";
+import type { Note } from "../notes-editor";
+import { Proposals } from "./proposals";
 
 // The open map as the Assistant sees it: identity, per-question context and tools
 

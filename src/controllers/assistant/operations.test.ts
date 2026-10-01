@@ -3,7 +3,7 @@ import { beforeAll, expect, it, vi } from "vitest";
 import { Emblems } from "@/generators/emblems-generator";
 import { Lore } from "@/generators/lore";
 import { Notes } from "@/generators/notes";
-import { OPERATIONS, runOperation } from "./assistant-operations";
+import { OPERATIONS, runOperation } from "./operations";
 
 beforeAll(async () => {
   await Promise.all([
@@ -27,7 +27,7 @@ beforeAll(async () => {
   ]);
 });
 
-it.each(Object.keys(OPERATIONS))("%s runs the public model-class method of that name", name => {
+it.each([...OPERATIONS])("%s runs the public model-class method of that name", name => {
   const [model, method] = name.split(".");
   const owner = ({ Notes, Emblems, Lore }[model] ?? globalThis[model as keyof typeof globalThis]) as Record<
     string,

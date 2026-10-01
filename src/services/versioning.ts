@@ -24,6 +24,7 @@ export const VERSION = "1.154.0";
 
 // new changes on top
 const latestPublicChanges = [
+  "Azgaar Assistant can read map data and propose changes when your own AI key is provided",
   "Icons: unified icon picker and uploader for goods, markers, regiments, burgs and emblems",
   "Style: the Style tab is reworked",
   "Atlas preset reworked",

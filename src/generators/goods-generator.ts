@@ -2,7 +2,7 @@ import Alea from "alea";
 import { color, shuffler } from "d3";
 import { Icons } from "@/components/icons";
 import { requireColor } from "@/utils/colorUtils";
-import { requireName } from "@/utils/languageUtils";
+import { requireName } from "@/utils/validationUtils";
 import type { IconSet } from "../types/icons";
 import type { PackedGraph } from "../types/PackedGraph";
 import { CULTURE_TYPES, type CultureType } from "./cultures-generator";

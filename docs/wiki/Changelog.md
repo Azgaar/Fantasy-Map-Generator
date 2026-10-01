@@ -14,6 +14,7 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 
 **[1.154.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.154.0) - 2026-10-05**:
 
+- Azgaar Assistant can read map data and propose changes when your own AI key is provided
 - Icons: unified icon picker and uploader for goods, markers, regiments, burgs and emblems
 - Style: the Style tab is reworked
 - Atlas preset reworked

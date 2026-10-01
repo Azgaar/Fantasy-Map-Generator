@@ -1,7 +1,7 @@
 import Alea from "alea";
 import { curveCatmullRom, line } from "d3";
 import Delaunator from "delaunator";
-import { requireName, requireOneOf } from "@/utils/languageUtils";
+import { requireName, requireOneOf } from "@/utils/validationUtils";
 import { distanceSquared, findPath, getAdjective, isLand, ra, rn, round, rw } from "../utils";
 import { meander } from "../utils/pathUtils";
 import type { Burg } from "./burgs-generator";

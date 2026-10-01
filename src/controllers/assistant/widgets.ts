@@ -155,7 +155,7 @@ function cardHtml(widget: Of<"card">, live: boolean): string {
       .join("")}</dl>
     ${excerpt ? `<p class="assistantCardNote">${escapeHtml(excerpt)}</p>` : ""}
     <div class="assistantActions">
-      <button type="button" class="assistantButton" data-action="entity" data-id="${widget.entity}">Locate</button>
+      <button type="button" class="assistantButton" data-action="entity" data-id="${MapEntities.key(ref)}">Locate</button>
       ${commandButton("editStatesButton", "Edit", "assistantButton")}
     </div>
   </div>`;

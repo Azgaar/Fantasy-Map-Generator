@@ -1,6 +1,6 @@
 import { quadtree, sum } from "d3";
 import { Icons } from "@/components/icons";
-import { requireName, requireOneOf } from "@/utils/languageUtils";
+import { requireName, requireOneOf } from "@/utils/validationUtils";
 import { findAllInQuadtree, gauss, minmax, nth, ra, rand, rn, si } from "../utils";
 import type { State } from "./states-generator";
 

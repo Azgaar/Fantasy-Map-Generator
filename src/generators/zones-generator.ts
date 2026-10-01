@@ -1,6 +1,6 @@
 import { max, mean } from "d3";
 import { requireColor } from "@/utils/colorUtils";
-import { requireName } from "@/utils/languageUtils";
+import { requireName } from "@/utils/validationUtils";
 import { gauss, getAdjective, P, ra, rand, rw } from "../utils";
 import { Population } from "./population-generator";
 

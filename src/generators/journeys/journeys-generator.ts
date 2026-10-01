@@ -2,7 +2,7 @@ import { DEFAULT_JOURNEY_TYPE } from "@/data/journey-lore";
 import type { Journey, JourneyPoint, JourneySegment } from "@/types/Journey";
 import { getDistanceUnitRatio, isLand } from "@/utils";
 import { getCardinalColor, requireColor } from "@/utils/colorUtils";
-import { requireName } from "@/utils/languageUtils";
+import { requireName } from "@/utils/validationUtils";
 import type { Burg } from "../burgs-generator";
 import type { Route } from "../routes-generator";
 import { MAX_HOURS_PER_DAY, type TransportDomain } from "../transports-generator";

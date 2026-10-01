@@ -34,11 +34,11 @@ import { resolveTier, type Tier } from "@/services/assistant/tier";
 import { renderMarkdown } from "@/utils/markdown";
 import { capitalize, escapeHtml } from "@/utils/stringUtils";
 import { si } from "@/utils/unitUtils";
-import { ensureEl } from "../utils";
-import { AssistantMap } from "./assistant-map";
-import { proposalHtml } from "./assistant-proposal-card";
-import { Proposals } from "./assistant-proposals";
-import { AssistantWidgets, type WidgetContext } from "./assistant-widgets";
+import { ensureEl } from "../../utils";
+import { AssistantMap } from "./map";
+import { proposalHtml } from "./proposal-card";
+import { Proposals } from "./proposals";
+import { AssistantWidgets, type WidgetContext } from "./widgets";
 
 type View = "chat" | "chats" | "key";
 type Notice = { text: string; item?: TranscriptItem; retry?: () => void };

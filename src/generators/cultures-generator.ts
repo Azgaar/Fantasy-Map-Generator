@@ -2,7 +2,7 @@ import { max, quadtree, range } from "d3";
 import { Emblems } from "@/generators/emblems-generator";
 import type { Emblem } from "@/types/emblems";
 import { requireColor } from "@/utils/colorUtils";
-import { requireName, requireOneOf } from "@/utils/languageUtils";
+import { requireName, requireOneOf } from "@/utils/validationUtils";
 import { abbreviate, biased, getColors, getRandomColor, minmax, P, rand, rn, rw } from "../utils";
 import { requireCode, requireOrigins } from "./origins";
 import { Population } from "./population-generator";

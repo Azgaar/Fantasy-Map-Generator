@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/components/map-commands", () => ({ MAP_COMMANDS: [], isLinkable: () => false })); // its import touches the DOM
 
-import { limitsLabel, normalizeQuestion } from "./assistant";
+import { limitsLabel, normalizeQuestion } from "./index";
 
 afterEach(() => {
   vi.unstubAllGlobals();

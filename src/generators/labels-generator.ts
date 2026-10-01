@@ -1,7 +1,7 @@
 import type { LayerId } from "@/components/layers";
 import type { Point } from "@/types/global";
-import { requireOneOf } from "@/utils/languageUtils";
 import { safeParseJSON } from "@/utils/stringUtils";
+import { requireOneOf } from "@/utils/validationUtils";
 
 export const LABEL_TYPES = ["state", "province", "burg", "river", "route", "added"] as const;
 

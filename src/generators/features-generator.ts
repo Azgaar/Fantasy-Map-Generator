@@ -1,6 +1,6 @@
 import Alea from "alea";
 import { polygonArea } from "d3";
-import { requireName, requireOneOf } from "@/utils/languageUtils";
+import { requireName, requireOneOf } from "@/utils/validationUtils";
 import { clipPoly, connectVertices, distanceSquared, isLand, isWater, P, ra, rn, TYPED_ARRAY_MAX } from "../utils";
 import { Coastline, type CoastlineSettings } from "./coastline-generator";
 

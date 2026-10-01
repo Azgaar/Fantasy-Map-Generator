@@ -96,7 +96,7 @@ class NotesStore {
     if (!ref) throw new Error(`Entity ${key} does not exist`);
     if (!(ENTITY_TYPES as readonly string[]).includes(ref.type)) throw new Error(`A ${ref.type} cannot have a note`);
     if (!entity(ref)) throw new Error(`Entity ${key} does not exist`);
-    if (typeof html !== "string" || !this.isSafeNoteHtml(html))
+    if (typeof html !== "string" || !this.isSafe(html))
       throw new Error(
         "Note HTML must keep to the notes subset: no event handlers, JavaScript URLs, scripts or iframes"
       );
@@ -138,7 +138,8 @@ class NotesStore {
     return entries;
   }
 
-  private isSafeNoteHtml(html: string): boolean {
+  /** Whether html keeps to the notes editor's subset: no event handlers, JavaScript URLs, scripts or iframes */
+  isSafe(html: string): boolean {
     const TAGS = new Set(
       "p div br hr span strong b em i u s strike a img ol ul li blockquote code h1 h2 h3 h4 h5 h6 sub sup table tbody tr td".split(
         " "

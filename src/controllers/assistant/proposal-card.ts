@@ -1,9 +1,10 @@
 import { Icons } from "@/components/icons";
 import { MapEntities } from "@/components/map-entities";
+import { Notes } from "@/generators/notes";
 import type { ChangeRow, Proposal } from "@/services/assistant/chats";
 import { capitalize, escapeHtml } from "@/utils/stringUtils";
 import { si } from "@/utils/unitUtils";
-import { type Action, Proposals } from "./assistant-proposals";
+import { type Action, Proposals } from "./proposals";
 
 // The proposal card: a Change as rows of entity, field and before → after, with the next action
 
@@ -98,11 +99,15 @@ function wholeTag({ field, before }: ChangeRow): string {
   return `<span class="assistantChangeTag ${added ? "add" : "remove"}">${added ? "Add" : "Remove"}</span>`;
 }
 
-// Notes passed the notes subset check in Notes.write, so the preview renders them as HTML
+const notePreview = (note: unknown): string =>
+  typeof note === "string" && note
+    ? `<div class="assistantNotePreview">${Notes.isSafe(note) ? note : escapeHtml(note)}</div>`
+    : "";
+
 function changeHtml({ key, field, before, after }: ChangeRow): string {
   if (!field) {
     const note = before === undefined ? (after as { note?: unknown } | undefined)?.note : undefined;
-    return typeof note === "string" && note ? `<div class="assistantNotePreview">${note}</div>` : "";
+    return notePreview(note);
   }
   if (key === "cells") {
     return /* html */ `<div class="assistantChangeField">
@@ -120,11 +125,10 @@ function changeHtml({ key, field, before, after }: ChangeRow): string {
     );
   if (field === "note") {
     const size = (value: unknown) => (typeof value === "string" && value ? plural(value.length, "character") : "empty");
-    const preview = typeof after === "string" && after ? `<div class="assistantNotePreview">${after}</div>` : "";
     return /* html */ `<div class="assistantChangeField">
       <span>${label}</span>
       <span><del>${size(before)}</del><i>→</i><ins>${size(after)}</ins></span>
-      ${preview}
+      ${notePreview(after)}
     </div>`;
   }
   const value = (value: unknown) => {

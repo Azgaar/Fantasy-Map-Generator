@@ -1,6 +1,6 @@
 import { quadtree } from "d3";
 import { requireColor } from "@/utils/colorUtils";
-import { requireName, requireOneOf } from "@/utils/languageUtils";
+import { requireName, requireOneOf } from "@/utils/validationUtils";
 import {
   abbreviate,
   each,

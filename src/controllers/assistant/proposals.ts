@@ -1,9 +1,11 @@
 import { refreshEditors } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { type EntityType, MapEntities } from "@/components/map-entities";
+import { Options } from "@/components/options-model";
 import { Controllers } from "@/controllers";
 import type { ChangeRow, Proposal } from "@/services/assistant/chats";
-import { OPERATIONS, runOperation } from "./assistant-operations";
+import { OPERATIONS, runOperation } from "./operations";
+import { layersFor } from "./redraw";
 
 // Preview → Apply → Undo for batches of registered operations. See docs/prd/assistant.md
 
@@ -53,10 +55,11 @@ const LORE = "lore";
 const lore = () => globalThis.options?.map.lore as unknown as Record<string, unknown> | undefined;
 
 const collectionOf = (type: string) => COLLECTIONS.find(([name]) => name === type);
-const itemsOf = (field: string) => (pack as unknown as Record<string, Item[] | undefined>)[field];
+const itemsOf = (field: string, map = pack) => (map as unknown as Record<string, Item[] | undefined>)[field];
 const isItem = (value: unknown): value is Item =>
   typeof value === "object" && value !== null && Number.isInteger((value as Item).i);
-const cellData = (field: string) => (pack.cells as unknown as Record<string, Cells | undefined> | undefined)?.[field];
+const cellData = (field: string, map = pack) =>
+  (map.cells as unknown as Record<string, Cells | undefined> | undefined)?.[field];
 
 /** `{ result: n }` in args stands for what operation n (0-based) of the same batch returned, such as a new id;
  * `{ result: n, type: "burg" }` stands for its key, such as "burg:12" */
@@ -76,32 +79,42 @@ function parse(operations: unknown): Batch | string {
   const batch: Batch = [];
   for (const item of operations) {
     const { op, args = [] } = (item ?? {}) as { op?: unknown; args?: unknown };
-    if (typeof op !== "string" || !Object.hasOwn(OPERATIONS, op))
-      return `Unknown operation ${JSON.stringify(op)}. Registered operations: ${Object.keys(OPERATIONS).join(", ")}`;
+    if (typeof op !== "string" || !OPERATIONS.has(op))
+      return `Unknown operation ${JSON.stringify(op)}. Registered operations: ${[...OPERATIONS].join(", ")}`;
     if (!Array.isArray(args)) return `The args of ${op} must be a list, in the order of its parameters`;
     batch.push({ op, args });
   }
   return batch;
 }
 
-interface Snapshot {
-  items: Map<string, Map<number, Item>>;
-  cells: Map<string, Cells>;
+/** The data operations edit: the pack and the map's lore */
+interface World {
+  pack: typeof pack;
   lore?: Record<string, unknown>;
 }
 
-function snapshot(): Snapshot {
-  const items = new Map<string, Map<number, Item>>();
-  for (const [type, field] of COLLECTIONS)
-    items.set(type, new Map((itemsOf(field) ?? []).filter(isItem).map(item => [item.i, structuredClone(item)])));
-  const cells = new Map<string, Cells>();
-  for (const field of CELL_FIELDS) {
-    const data = cellData(field);
-    if (data)
-      cells.set(field, ArrayBuffer.isView(data) ? (data as unknown as Uint32Array).slice() : structuredClone(data));
-  }
+/** Cell geometry no operation edits, shared with the draft instead of copied */
+const GEOMETRY = new Set(["v", "c", "b", "p"]);
+
+/** A copy of the live map for a dry run to write to */
+function draft(): World {
+  const { vertices, cells, ...rest } = pack;
+  const copy = { ...structuredClone(rest), vertices } as typeof pack;
+  if (cells)
+    copy.cells = Object.fromEntries(
+      Object.entries(cells).map(([field, data]) => [
+        field,
+        GEOMETRY.has(field) ? data : ArrayBuffer.isView(data) ? (data as Uint32Array).slice() : structuredClone(data)
+      ])
+    ) as typeof cells;
   const record = lore();
-  return { items, cells, lore: record && structuredClone(record) };
+  return { pack: copy, lore: record && structuredClone(record) };
+}
+
+/** Make a world the one operations see */
+function enter(world: World): void {
+  globalThis.pack = world.pack;
+  if (world.lore && globalThis.options) globalThis.options.map.lore = world.lore as unknown as typeof options.map.lore;
 }
 
 const isContainer = (value: unknown): value is Record<string, unknown> =>
@@ -123,36 +136,39 @@ function diff(
     return [...new Set([...Object.keys(before), ...Object.keys(after)])].flatMap(field =>
       diff(before[field], after[field], [...path, field])
     );
-  return same(before, after) ? [] : [{ field: path.join("."), before, after: structuredClone(after) }];
+  return same(before, after) ? [] : [{ field: path.join("."), before: structuredClone(before), after }];
 }
 
-function compare({ items, cells, lore: loreCopy }: Snapshot): Omit<ChangeRow, "entity">[] {
+/** The recorded differences from the live world to a draft. Before values are copied, as the live map changes later */
+function compare(live: World, draft: World): Omit<ChangeRow, "entity">[] {
   const rows: Omit<ChangeRow, "entity">[] = [];
+  const byId = (map: typeof pack, field: string) =>
+    new Map((itemsOf(field, map) ?? []).filter(isItem).map(item => [item.i, item]));
   for (const [type, field] of COLLECTIONS) {
-    const copies = items.get(type)!;
-    const live = new Map((itemsOf(field) ?? []).filter(isItem).map(item => [item.i, item]));
-    for (const i of new Set([...copies.keys(), ...live.keys()])) {
+    const [was, now] = [byId(live.pack, field), byId(draft.pack, field)];
+    for (const i of new Set([...was.keys(), ...now.keys()])) {
       const key = `${type}:${i}`;
-      const [before, after] = [copies.get(i), live.get(i)];
-      if (!before || !after) rows.push({ key, field: "", before, after: structuredClone(after) });
+      const [before, after] = [was.get(i), now.get(i)];
+      if (!before || !after) rows.push({ key, field: "", before: structuredClone(before), after });
       else for (const row of diff(before, after)) rows.push({ key, ...row });
     }
   }
-  for (const [field, copy] of cells) {
-    const data = cellData(field) ?? {};
+  for (const field of CELL_FIELDS) {
+    const [was, now] = [cellData(field, live.pack), cellData(field, draft.pack) ?? {}];
+    if (!was) continue;
     const before: Cells = {};
     const after: Cells = {};
-    const indexes = ArrayBuffer.isView(copy)
-      ? Array.from(copy as unknown as ArrayLike<number>, (_, index) => index)
-      : [...new Set([...Object.keys(copy), ...Object.keys(data)])].map(Number);
+    const indexes = ArrayBuffer.isView(was)
+      ? Array.from(was as unknown as ArrayLike<number>, (_, index) => index)
+      : [...new Set([...Object.keys(was), ...Object.keys(now)])].map(Number);
     for (const index of indexes) {
-      if (copy[index] === data[index] || same(copy[index], data[index])) continue;
-      before[index] = copy[index];
-      after[index] = structuredClone(data[index]);
+      if (was[index] === now[index] || same(was[index], now[index])) continue;
+      before[index] = structuredClone(was[index]);
+      after[index] = now[index];
     }
     if (Object.keys(after).length) rows.push({ key: CELLS, field, before, after });
   }
-  if (loreCopy) for (const row of diff(loreCopy, lore())) rows.push({ key: LORE, ...row });
+  if (live.lore) for (const row of diff(live.lore, draft.lore)) rows.push({ key: LORE, ...row });
   return rows;
 }
 
@@ -246,22 +262,25 @@ function label(key: string, fallback: string): string {
   return shown ? `${kind}: ${shown}` : kind;
 }
 
-/** Dry run: run the batch on the live map, record what changed, then restore it. All or nothing */
+/** Dry run on a draft of the map: the live map is never written, so proposing changes nothing. All or nothing */
 function propose(summary: string, operations: unknown, number: number, mapId: number): Proposal | string {
   const batch = parse(operations);
   if (typeof batch === "string") return batch;
-  const copy = snapshot();
-  let failure: unknown = null;
+  const live: World = { pack, lore: lore() };
+  const scratch = draft();
   const results: unknown[] = [];
+  let rows: Omit<ChangeRow, "entity">[];
+  let names: Map<string, string>;
   try {
+    enter(scratch);
     for (const { op, args } of batch) results.push(runOperation(op, resolve(args, results) as unknown[]));
+    rows = compare(live, scratch);
+    names = new Map(rows.map(({ key }) => [key, name(key)])); // added entities are named only in the draft
   } catch (error) {
-    failure = error;
+    return error instanceof Error ? error.message : String(error);
+  } finally {
+    enter(live);
   }
-  const rows = compare(copy);
-  const names = new Map(rows.map(({ key }) => [key, name(key)])); // added entities are named only while the dry run lasts
-  put(rows as ChangeRow[], "before");
-  if (failure) return failure instanceof Error ? failure.message : String(failure);
   if (!rows.length) return "These operations change nothing";
   const change = rows.map(({ key, field, before, after }) => ({
     key,
@@ -299,7 +318,7 @@ function discard(proposal: Proposal): void {
 }
 
 function refresh(proposal: Proposal): void {
-  Layers.draw(...new Set(proposal.operations.flatMap(({ op }) => OPERATIONS[op] ?? [])));
+  Layers.draw(...layersFor(proposal.change));
   refreshEditors();
   for (const key of new Set(proposal.change.map(row => row.key))) refreshNameInputs(key);
   if (document.getElementById("notesEditor")) void Controllers.NotesEditor.refresh();

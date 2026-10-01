@@ -4,10 +4,12 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/components/layers", () => ({ Layers: { draw: vi.fn() } }));
 vi.mock("@/components/dialog/dialog-helpers", () => ({ refreshEditors: vi.fn() }));
 vi.mock("@/controllers", () => ({ Controllers: { NotesEditor: { refresh: vi.fn() } } }));
+vi.mock("@/components/options-model", () => ({ Options: { save: vi.fn() } }));
 
 import { Layers } from "@/components/layers";
+import { Options } from "@/components/options-model";
 import type { Proposal } from "@/services/assistant/chats";
-import { Proposals } from "./assistant-proposals";
+import { Proposals } from "./proposals";
 
 const { propose, discard } = Proposals;
 const apply = (proposal: Proposal, mapId: number) => Proposals.run("apply", proposal, mapId);
@@ -46,6 +48,21 @@ it("previews a batch with its side effects and leaves the map untouched", () => 
     { key: "burg:1", entity: "Burg: Vel", field: "label.text", before: "Vel", after: "Saltmere" },
     { key: "burg:2", entity: "Burg: Orn", field: "name", before: "Orn", after: "Gull" }
   ]);
+});
+
+it("runs the batch on a draft, so even fields a proposal does not record stay untouched", () => {
+  const live = pack;
+  pack.zones = [{ i: 1, name: "War", cells: [] }] as unknown as typeof pack.zones;
+  const rename = vi.spyOn(Zones, "rename").mockImplementation(() => {
+    pack.zones[0].name = "Peace";
+    (pack as unknown as { deals: string[] }).deals = ["untracked"];
+  });
+  const proposal = proposeOk([{ op: "Zones.rename", args: [1, "Peace"] }]);
+  rename.mockRestore();
+  expect(pack).toBe(live);
+  expect(pack.zones[0].name).toBe("War");
+  expect("deals" in pack).toBe(false);
+  expect(proposal.change.map(row => [row.key, row.field, row.after])).toEqual([["zone:1", "name", "Peace"]]);
 });
 
 it("records a state's rebuilt full name", () => {
@@ -102,7 +119,6 @@ it("refuses args that are not a list", () => {
 it("previews, applies and undoes lore edits", () => {
   const lore = { name: "Old Map", description: "", calendar: { year: 1000, era: "Winter Era", eraShort: "WE" } };
   vi.stubGlobal("options", { map: { lore } });
-  vi.stubGlobal("Options", { save: vi.fn() });
   const proposal = proposeOk([
     { op: "Lore.rename", args: ["Saltmarsh"] },
     { op: "Lore.setYear", args: [1204] }

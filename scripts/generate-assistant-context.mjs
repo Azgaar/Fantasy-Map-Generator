@@ -77,9 +77,11 @@ function registryKeys(path, name) {
 
 // Every registered Assistant operation with its model-class method signature and doc line, served by read_docs
 function operations() {
-  const registry = read("src/controllers/assistant-operations.ts");
-  return [...registry.matchAll(/^ {2}"(\w+)\.(\w+)":/gm)]
-    .map(([, model, method]) => {
+  const registry = read("src/controllers/assistant/operations.ts").match(/const METHODS[^{]*\{\n([\s\S]*?)\n\};/)?.[1];
+  if (!registry) throw new Error("controllers/assistant/operations.ts has no METHODS registry");
+  return [...registry.matchAll(/^ {2}(\w+): \[([^\]]*)\]/gm)]
+    .flatMap(([, model, methods]) => [...methods.matchAll(/"(\w+)"/g)].map(([, method]) => [model, method]))
+    .map(([model, method]) => {
       const className = sources
         .map(source => source.match(new RegExp(`\\b(?:var|const) ${model}(?:: | = new )(\\w+)`))?.[1])
         .find(Boolean);

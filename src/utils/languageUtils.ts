@@ -193,19 +193,6 @@ export const abbreviate = (name: string, restricted: string[] = []) => {
   return code;
 };
 
-/** A usable entity name: trimmed and not empty */
-export const requireName = (name: unknown): string => {
-  const value = typeof name === "string" ? name.trim() : "";
-  if (!value) throw new Error("The name must not be empty");
-  return value;
-};
-
-/** One of the allowed values, or a readable error listing them */
-export const requireOneOf = <T extends string>(value: unknown, allowed: readonly T[], label: string): T => {
-  if (!allowed.includes(value as T)) throw new Error(`${label} must be one of: ${allowed.join(", ")}`);
-  return value as T;
-};
-
 /** Replace `name` where it stands as a whole word in `text` ("United Realms of Old"), or null when it does not */
 export const replaceWholeWord = (text: string | undefined, name: string, next: string): string | null => {
   if (!text || !name) return null;

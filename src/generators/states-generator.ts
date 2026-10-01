@@ -3,7 +3,8 @@ import { getInverseRelation, RELATIONS } from "@/data/diplomacy";
 import { Emblems } from "@/generators/emblems-generator";
 import type { Emblem } from "@/types/emblems";
 import { requireColor } from "@/utils/colorUtils";
-import { replaceWholeWord, requireName, requireOneOf } from "@/utils/languageUtils";
+import { replaceWholeWord } from "@/utils/languageUtils";
+import { requireName, requireOneOf } from "@/utils/validationUtils";
 import {
   each,
   escapeHtml,

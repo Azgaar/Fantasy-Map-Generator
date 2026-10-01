@@ -14,11 +14,11 @@ vi.mock("@/controllers", () => ({
   }
 }));
 const propose = vi.hoisted(() => vi.fn());
-vi.mock("./assistant-proposals", () => ({ Proposals: { propose } }));
+vi.mock("./proposals", () => ({ Proposals: { propose } }));
 vi.mock("@/services/io/emblem-image", () => ({ emblemPng: async () => "data:image/png;base64,QUJD" }));
 
 import type { Chat, Proposal } from "@/services/assistant/chats";
-import { AssistantMap } from "./assistant-map";
+import { AssistantMap } from "./map";
 
 const mapOptions = {
   map: {

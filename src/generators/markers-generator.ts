@@ -3,7 +3,7 @@ import { Icons } from "@/components/icons";
 import { Notes } from "@/generators/notes";
 import type { PackedGraph } from "@/types/PackedGraph";
 import { requireColor } from "@/utils/colorUtils";
-import { requireName, requireOneOf } from "@/utils/languageUtils";
+import { requireName, requireOneOf } from "@/utils/validationUtils";
 import {
   capitalize,
   convertTemperature,
