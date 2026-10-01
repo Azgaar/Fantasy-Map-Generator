@@ -75,6 +75,18 @@ it("applies and undoes property edits, including a field that was absent", () =>
   expect("hidden" in pack.zones[0]).toBe(false);
 });
 
+it("refreshes the Population layer when a burg's population changes", () => {
+  vi.stubGlobal("options", { map: { units: { population: { scale: 1000, urbanization: { rate: 1 } } } } });
+  const proposal = proposeOk([{ op: "Burgs.setPopulation", args: [1, 5000] }]);
+  expect(apply(proposal, MAP)).toBe(true);
+  expect(pack.burgs[1].population).toBe(5);
+  expect(Layers.draw).toHaveBeenCalledWith("population");
+  vi.mocked(Layers.draw).mockClear();
+  expect(undo(proposal, MAP)).toBe(true);
+  expect(Layers.draw).toHaveBeenCalledWith("population");
+  vi.unstubAllGlobals();
+});
+
 it("fails the whole batch and changes nothing when one operation fails", () => {
   const map = JSON.stringify(pack);
   expect(propose("Rename", [rename(1, "Saltmere"), rename(9, "X")], 1, MAP)).toBe("Burg 9 does not exist");

@@ -149,9 +149,9 @@ function commands() {
     .join("\n");
 }
 
-// Every type a link key may name, entities first, from map-entities.ts
+// Every type a link key may name, entities first
 function keyTypes() {
-  const source = read("src/components/map-entities.ts");
+  const source = read("src/data/entity-types.ts");
   const list = name =>
     [...(source.match(new RegExp(`${name} = \\[([^\\]]*)\\]`))?.[1] ?? "").matchAll(/"(\w+)"/g)].map(([, type]) => type);
   return [...list("ENTITY_TYPES"), ...list("RECORD_TYPES")].join(", ");

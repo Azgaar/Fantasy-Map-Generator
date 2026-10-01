@@ -95,6 +95,35 @@ it("opens one Assistant panel with one composer and no mode tabs", async () => {
   expect(input.value).toBe("partly typed");
 });
 
+it("starts a Member chat after signing in and keeps the Guest chat", async () => {
+  const chats = await import("@/services/assistant/chats");
+  await chats.load();
+  const guest = chats.create("guest", state.mapId, "Test map");
+  localStorage.setItem("fmg-help-token", "signed-in-token");
+
+  Assistant.open();
+  await vi.waitFor(() => expect(chats.current()?.tier).toBe("member"));
+  expect(chats.current()?.id).not.toBe(guest.id);
+  expect(chats.list()).toContain(guest);
+});
+
+it("starts a Guest chat if Member sign-in expires during an answer", async () => {
+  const chats = await import("@/services/assistant/chats");
+  localStorage.setItem("fmg-help-token", "signed-in-token");
+  Assistant.open();
+  await vi.waitFor(() => expect(chats.current()?.tier).toBe("member"));
+  const member = chats.current()!;
+  state.send.mockImplementation(async (_chat, _question, onItem) => {
+    onItem({ kind: "answer", text: "The session expired" });
+    localStorage.removeItem("fmg-help-token");
+  });
+
+  (document.getElementById("assistantQuestion") as HTMLTextAreaElement).value = "Tell me about this map";
+  document.getElementById("assistantAsk")!.click();
+  await vi.waitFor(() => expect(chats.current()?.tier).toBe("guest"));
+  expect(chats.current()?.id).not.toBe(member.id);
+});
+
 it("offers a key on a self-hosted origin and hides the composer", async () => {
   localStorage.removeItem("fmg-help-gateway");
   Assistant.open();

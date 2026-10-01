@@ -30,7 +30,7 @@ import * as Connection from "@/services/assistant/connection";
 import { createProviderAnswerer } from "@/services/assistant/provider-answerer";
 import { DEFAULT_PROVIDER, PROVIDERS, type ProviderSpec, providerById } from "@/services/assistant/providers";
 import { listModels } from "@/services/assistant/providers-models";
-import { answererFor, resolveTier, type Tier } from "@/services/assistant/tier";
+import { resolveTier, type Tier } from "@/services/assistant/tier";
 import { renderMarkdown } from "@/utils/markdown";
 import { capitalize, escapeHtml } from "@/utils/stringUtils";
 import { si } from "@/utils/unitUtils";
@@ -48,6 +48,7 @@ const MAX_QUESTION_LENGTH = 1000;
 const WIKI = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki";
 const DISCORD = "https://discordapp.com/invite/X7E84HU";
 const PATREON = "https://www.patreon.com/azgaar";
+
 let chat: Chat | undefined;
 let view: View = "chat";
 let busy = false;
@@ -56,6 +57,7 @@ let limits: Limits | null = null;
 let notice: Notice | null = null;
 let initialized = false;
 let openMap = 0; // the map id last seen: reloading the same map keeps the selected chat
+let observedTier: Tier = null;
 let noteLabel: string | null = null;
 let answerStatus = "Thinking";
 let discoveryTimer: ReturnType<typeof setTimeout> | null = null;
@@ -424,7 +426,9 @@ async function initialize(): Promise<void> {
   const now = tier();
   openMap = AssistantMap.id();
   chat = current();
-  if (!writable(chat)) chat = now ? create(now, AssistantMap.id(), AssistantMap.name()) : undefined;
+  if (!writable(chat) || chat?.tier !== now)
+    chat = now ? create(now, AssistantMap.id(), AssistantMap.name()) : undefined;
+  observedTier = now;
   initialized = true;
   notice = null;
   render();
@@ -436,6 +440,7 @@ async function initialize(): Promise<void> {
 function startChat(): void {
   const now = tier();
   chat = now ? create(now, AssistantMap.id(), AssistantMap.name()) : undefined;
+  observedTier = now;
   clearNotice();
   AssistantWidgets.clearMarks();
   const input = el<HTMLTextAreaElement>("assistantQuestion");
@@ -667,7 +672,7 @@ async function refreshLimits(): Promise<void> {
     const expired = error instanceof AzgaarServerError && error.code === "unauthorized";
     limits = expired ? await getLimits().catch(() => null) : null;
   }
-  if (initialized && answererFor(chat?.tier ?? null) !== answererFor(tier())) newChat();
+  if (initialized && observedTier !== tier()) newChat();
   renderFooter();
 }
 

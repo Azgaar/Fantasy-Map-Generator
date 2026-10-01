@@ -78,12 +78,12 @@ function fillSelect(select: HTMLSelectElement, entries: NoteEntry[], ref?: Entit
   for (const type of ENTITY_TYPES) {
     const typeEntries = entries.filter(entry => entry.ref.type === type);
     if (ref?.type === type && requestedKey && !listed.has(requestedKey))
-      typeEntries.unshift({ ref, key: requestedKey, label: MapEntities.getName(ref) || requestedKey, note: "" });
+      typeEntries.unshift({ ref, key: requestedKey, note: "" });
     if (!typeEntries.length) continue;
 
     const group = document.createElement("optgroup");
     group.label = MapEntities.getTypeLabel(type);
-    for (const entry of typeEntries) group.append(new Option(entry.label, entry.key));
+    for (const entry of typeEntries) group.append(new Option(MapEntities.getName(entry.ref) || entry.key, entry.key));
     select.append(group);
   }
 }

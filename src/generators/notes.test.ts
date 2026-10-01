@@ -75,8 +75,8 @@ describe("listNotes", () => {
     expect(Notes.list().some(entry => entry.key === "zone:1")).toBe(false);
   });
 
-  it("labels each entry with the entity name", () => {
-    expect(Notes.list().find(entry => entry.key === "marker:4")?.label).toBe("Mount Doom");
+  it("returns the note for each entity", () => {
+    expect(Notes.list().find(entry => entry.key === "marker:4")?.note).toBe("Active volcano");
   });
 });
 

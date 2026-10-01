@@ -3,23 +3,21 @@ import { Emblems } from "@/generators/emblems-generator";
 import { Lore } from "@/generators/lore";
 import { Notes } from "@/generators/notes";
 
-// Operations the Assistant may propose, with the layers to redraw after them. Each is a public
-// model-class method of that name; see docs/prd/assistant.md
-
 const TERRITORY: LayerId[] = ["states", "borders", "provinces", "burgIcons", "labels", "military", "emblems"];
 
+// Operations the Assistant may propose, with the layers to redraw after them
 export const OPERATIONS: Record<string, LayerId[]> = {
   "Burgs.rename": ["labels"],
-  "Burgs.setPopulation": [],
+  "Burgs.setPopulation": ["population"],
   "Burgs.setGroup": ["burgIcons", "labels"],
   "Burgs.setType": [],
   "Burgs.setBuilding": [],
   "Burgs.setCulture": [],
   "Burgs.setPort": ["burgIcons"],
   "Burgs.setCapital": ["burgIcons", "labels"],
-  "Burgs.move": ["burgIcons", "labels", "emblems"],
-  "Burgs.add": ["burgIcons", "labels", "routes", "emblems"],
-  "Burgs.remove": ["burgIcons", "labels", "emblems"],
+  "Burgs.move": ["burgIcons", "labels", "emblems", "population"],
+  "Burgs.add": ["burgIcons", "labels", "routes", "emblems", "population"],
+  "Burgs.remove": ["burgIcons", "labels", "emblems", "population"],
   "Burgs.setTreasury": [],
   "Burgs.setLocked": [],
   "Burgs.setLink": [],

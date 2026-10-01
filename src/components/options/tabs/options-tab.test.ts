@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 import { readFileSync } from "node:fs";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { toggleAssistant } from "@/components/assistant-bubble";
 import { Pins } from "@/components/pins";
 import { setMapZoom, setZoomExtent } from "@/components/zoom";
 import { Emblems } from "@/generators/emblems-generator";
-import { toggleAssistant } from "@/components/assistant-bubble";
 
 vi.mock("@/components/layers", () => ({ Layers: { draw: vi.fn() } }));
 vi.mock("@/components/zoom", () => ({

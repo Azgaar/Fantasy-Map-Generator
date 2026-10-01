@@ -1,41 +1,11 @@
 import type { LayerId } from "@/components/layers";
 import { Controllers } from "@/controllers";
+import { ENTITY_TYPES, type EntityRef, type EntityType, isEntityType, RECORD_TYPES } from "@/data/entity-types";
 import type { Point } from "@/types/global";
 import { capitalize } from "@/utils/stringUtils";
 
-export const ENTITY_TYPES = [
-  "state",
-  "province",
-  "burg",
-  "marker",
-  "river",
-  "route",
-  "feature",
-  "zone",
-  "journey",
-  "market",
-  "regiment",
-  "addedLabel",
-  "culture",
-  "religion",
-  "biome",
-  "good"
-] as const;
-
-/** Map records a link can name besides entities: resolvable by key, but not searched and never noted */
-export const RECORD_TYPES = ["cell", "ice", "relief", "measurer", "deal", "transport", "nameBase"] as const;
-
-export type EntityType = (typeof ENTITY_TYPES)[number] | (typeof RECORD_TYPES)[number];
-
-export const isEntityType = (value: string): value is EntityType =>
-  (ENTITY_TYPES as readonly string[]).includes(value) || (RECORD_TYPES as readonly string[]).includes(value);
-
-/** A regiment is addressed by its state (`id`) and its own index (`sub`); everything else by `id` */
-export interface EntityRef {
-  type: EntityType;
-  id: number;
-  sub?: number;
-}
+export type { EntityRef, EntityType };
+export { ENTITY_TYPES, isEntityType, RECORD_TYPES };
 
 export interface MapEntity {
   i: number;
@@ -94,7 +64,6 @@ const ELEMENT_PATTERNS: [RegExp, EntityType][] = [
   [/^religion(\d+)$/, "religion"],
   [/^biome(\d+)$/, "biome"]
 ];
-
 const REGIMENT_PATTERN = /^regiment(\d+)-(\d+)$/;
 const SEGMENT_PATTERN = /^segment(\d+)_\d+$/; // a journey segment carries its journey's note
 
