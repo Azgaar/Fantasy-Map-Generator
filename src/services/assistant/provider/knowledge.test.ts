@@ -14,5 +14,10 @@ it("returns just the section for an exact heading", async () => {
 });
 
 it("reports a query that matches nothing", async () => {
-  expect(await searchHelp("zzqx")).toContain("No Knowledge Base sections match");
+  expect(await searchHelp("zzqx")).toContain("No help sections match");
+});
+
+it("searches the wiki pages beside the Knowledge Base", async () => {
+  expect(await searchHelp("river source width modifier")).toContain("### River Editor › Fields");
+  expect(await searchHelp("River Editor › Fields")).toContain("Width modifier");
 });

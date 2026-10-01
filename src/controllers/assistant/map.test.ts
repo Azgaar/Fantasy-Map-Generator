@@ -204,7 +204,10 @@ it("validates each choice's operations by a dry run and names the failing choice
   propose.mockReturnValueOnce({ operations });
   const shown = await mapTool("show_choices").handle({
     title: "Rename",
-    choices: [{ label: "Saltmere", operations }, { label: "Ask more" }]
+    choices: [
+      { label: "Saltmere", operations },
+      { label: "Ask more", operations: [] }
+    ]
   });
   expect(shown.item).toEqual({
     kind: "widget",

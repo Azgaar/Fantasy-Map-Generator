@@ -55,7 +55,11 @@ it("dispatches a map tool, reports its change, and preserves provider history", 
   expect(chat.messages.at(-1)?.role).toBe("assistant");
   expect(chat.usage).toEqual({ input: 30, output: 5, cached: 4 });
   expect(completeMock.mock.calls[0][0].provider).toBe("openai");
-  expect(completeMock.mock.calls[0][0].system[1].text).toBe("# Current map");
+  expect(completeMock.mock.calls[0][0].system).toHaveLength(1);
+  expect(chat.messages[0].content).toEqual([
+    { type: "text", text: "# Current map" },
+    { type: "text", text: "Rename it" }
+  ]);
 });
 
 it("keeps the connection and prior history when a provider rejects a request", async () => {
@@ -194,4 +198,58 @@ it("keeps no empty turn in history when the model ends without a word", async ()
   const chat = newChat();
   await askProvider(chat, "Pick", () => {}, new AbortController().signal, { tools: [], context: async () => "map" });
   expect(chat.messages.map(message => message.role)).toEqual(["user"]);
+});
+
+it("keeps this question's tool results whole until they outgrow the budget", async () => {
+  const read = (id: string) => ({ type: "tool_use", id, name: "big", input: {} });
+  completeMock
+    .mockResolvedValueOnce({ content: [read("a")], usage: { input: 1, output: 1, cached: 0 } })
+    .mockResolvedValueOnce({ content: [read("b")], usage: { input: 1, output: 1, cached: 0 } })
+    .mockResolvedValueOnce({ content: [read("c")], usage: { input: 1, output: 1, cached: 0 } })
+    .mockResolvedValueOnce({ content: [{ type: "text", text: "Done" }], usage: { input: 1, output: 1, cached: 0 } });
+  const chat = newChat();
+  const big = {
+    status: "Reading",
+    definition: { name: "big", description: "", input_schema: {} },
+    handle: async () => ({ content: "x".repeat(15_000) })
+  };
+  await askProvider(chat, "Read", () => {}, new AbortController().signal, { tools: [big], context: async () => "map" });
+  const results = chat.messages.flatMap(message => message.content).filter(block => block.type === "tool_result");
+  expect(results.map(result => (result.content as string).length)).toEqual([31, 15_000, 15_000]);
+});
+
+it("sends a changed map context with the newest message and leaves the question untouched", async () => {
+  completeMock
+    .mockResolvedValueOnce({ content: [LOOK], usage: { input: 1, output: 1, cached: 0 } })
+    .mockResolvedValueOnce({ content: [LOOK], usage: { input: 1, output: 1, cached: 0 } })
+    .mockResolvedValueOnce({ content: [{ type: "text", text: "Done." }], usage: { input: 1, output: 1, cached: 0 } });
+  const contexts = ["markers: 1", "markers: 1", "markers: 2"];
+  const chat = newChat();
+  await askProvider(chat, "Place one", () => {}, new AbortController().signal, {
+    tools: [imageTool],
+    context: async () => contexts.shift()!
+  });
+  const texts = chat.messages.map(message =>
+    message.content.flatMap(block => (block.type === "text" ? [block.text] : []))
+  );
+  expect(texts[0]).toEqual(["markers: 1", "Place one"]);
+  expect(texts[2]).toEqual([]);
+  expect(texts[4]).toEqual(["markers: 2"]);
+});
+
+it("answers a call with broken arguments with their error, without running the tool", async () => {
+  completeMock
+    .mockResolvedValueOnce({
+      content: [{ type: "tool_use", id: "x", name: "look", input: { invalidArguments: "Not valid JSON" } }],
+      usage: { input: 1, output: 1, cached: 0 }
+    })
+    .mockResolvedValueOnce({ content: [{ type: "text", text: "Done." }], usage: { input: 1, output: 1, cached: 0 } });
+  const handle = vi.fn(imageTool.handle);
+  const chat = newChat();
+  await askProvider(chat, "Look", () => {}, new AbortController().signal, {
+    tools: [{ ...imageTool, handle }],
+    context: async () => "map"
+  });
+  expect(handle).not.toHaveBeenCalled();
+  expect(chat.messages[2].content[0]).toMatchObject({ content: "Not valid JSON", is_error: true });
 });

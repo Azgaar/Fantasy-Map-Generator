@@ -2,12 +2,12 @@ import { execFileSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test } from "vitest";
-import { buildSystemPrompt } from "./context";
+import { SYSTEM_PROMPT } from "./context";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "../../../..");
 
 test("cached instructions contain the map rules, operations and data fields", () => {
-  const [cached] = buildSystemPrompt();
+  const [cached] = SYSTEM_PROMPT;
   expect(cached.text).toContain("read_help");
   expect(cached.text).toContain("read_docs");
   expect(cached.text).toContain("propose_change");
@@ -19,14 +19,8 @@ test("cached instructions contain the map rules, operations and data fields", ()
 
 // About 3.5 characters per token: keeps the fixed prompt near 4k tokens, inside the 5k budget
 test("cached instructions stay compact", () => {
-  const [cached] = buildSystemPrompt();
+  const [cached] = SYSTEM_PROMPT;
   expect(cached.text.length).toBeLessThan(14_000);
-});
-
-test("per-question context stays outside the cached block", () => {
-  const [cached, dynamic] = buildSystemPrompt("# Current map\n\nname: Test");
-  expect(cached.text).not.toContain("name: Test");
-  expect(dynamic.text).toContain("name: Test");
 });
 
 test("generated context matches the codebase and Knowledge Base", () => {

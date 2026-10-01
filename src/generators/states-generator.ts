@@ -1136,6 +1136,7 @@ class StatesModule {
     for (const other of pack.states)
       if (other.i && !other.removed && other.neighbors) other.neighbors = other.neighbors.filter(n => n !== stateId);
     pack.states[stateId] = { i: stateId, removed: true } as State;
+    this.collectStatistics();
   }
 
   /** Merge states into a ruling one, which takes their lands, burgs, provinces and regiments. With `asProvinces`, each merged state becomes one province of the ruling state instead of keeping its own provinces */
@@ -1285,6 +1286,7 @@ class StatesModule {
     this.getPoles();
     this.findNeighbors();
     this.adjustProvinces([...affectedProvinces]);
+    this.collectStatistics();
   }
 
   /** Provinces whose cells changed state: wholly taken ones change owner, split ones divide or join a neighbor */

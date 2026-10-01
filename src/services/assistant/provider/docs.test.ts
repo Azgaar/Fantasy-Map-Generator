@@ -32,6 +32,16 @@ it("lists the registered operations with their signatures and doc lines", async 
   expect(result).toContain("interface EmblemCharge extends EmblemPlacement {");
 });
 
+it("lists only the asked models' operations, with types only when they name one", async () => {
+  const rivers = await readDocs(["Operations: Rivers, lore"]);
+  expect(rivers).toContain("Rivers.setWidth(riverId: number");
+  expect(rivers).toContain("Lore.setYear(year: number)");
+  expect(rivers).not.toContain("Burgs.rename");
+  expect(rivers).not.toContain("interface EmblemCharge");
+  expect(await readDocs(["Operations: Markers"])).toContain("type MarkerDetails");
+  expect(await readDocs(["Operations: Dragons"])).toContain("Unknown topics: Operations: Dragons");
+});
+
 it("lists the heraldry the emblem generator knows", async () => {
   const result = await readDocs(["Emblems"]);
   expect(result).toContain("Metals: argent, or.");

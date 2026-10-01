@@ -628,6 +628,10 @@ The project charges nothing; your chosen Provider may bill you. The footer shows
 
 There are two ways to create a new river. Open the Rivers Overview (Tools -> Rivers), click on the Add River button and then click on a map cell to spawn a river from it, the river will be created automatically. Another way is to draw a river manually with the 'Create a new river selecting river cells' button. The same automatic placement is available as Tools -> Add -> River (Shift + 4)
 
+### How do I make a river wider or narrower?
+
+Click the river to open the River Editor and change Source width (extra width at the source, 0 by default) or Width modifier (a multiplier for the whole river width, 1 by default). The mouth width follows
+
 ### Is it possible to raise the amount of cells without affecting the coastline?
 
 You can Transform the map into a new one with larger amount of cells. The new map will be based on the existing one and the Generator will try to keep the details as they were, but it's still a new map, so some data can be changed. You can find the Transform tool in Tools

@@ -293,7 +293,7 @@ const WIDGET_TOOLS: Record<Exclude<Widget["type"], "emblem">, WidgetTool> = {
       for (const [index, choice] of choices.entries()) {
         const { label, operations } = (choice ?? {}) as Record<string, unknown>;
         if (!text(label)) return `Choice ${index + 1} needs a label`;
-        if (operations === undefined) {
+        if (operations === undefined || (Array.isArray(operations) && !operations.length)) {
           parsed.push({ label: text(label) });
           continue;
         }

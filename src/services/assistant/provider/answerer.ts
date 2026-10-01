@@ -1,10 +1,17 @@
 import { errorText } from "@/utils/stringUtils";
 import type { Chat, TranscriptItem } from "../chats";
 import { get } from "./connection";
-import { buildSystemPrompt } from "./context";
+import { SYSTEM_PROMPT } from "./context";
 import { readDocs } from "./docs";
 import { searchHelp } from "./knowledge";
-import { complete, type Message, type ToolDefinition, type ToolInput, type ToolResultBlock } from "./providers";
+import {
+  complete,
+  INVALID_ARGUMENTS,
+  type Message,
+  type ToolDefinition,
+  type ToolInput,
+  type ToolResultBlock
+} from "./providers";
 
 export interface ToolOutcome {
   content: ToolResultBlock["content"];
@@ -48,7 +55,9 @@ const KNOWLEDGE: Tool[] = [
   }
 ];
 const MAX_STEPS = 30;
-const KEPT_RESULTS = 4;
+// This question's results stay whole until they outgrow the budget, then the oldest are shortened. History never
+// changes between steps otherwise, so providers serve the whole prefix from their prompt cache
+const RESULTS_BUDGET = 32_000; // characters
 const TRIMMED = "[Earlier tool result shortened]";
 const NO_VISION = "[The image is not available: this model cannot see images]";
 
@@ -72,22 +81,29 @@ export async function askProvider(
   onItem({ kind: "question", text: question });
   const start = chat.messages.length;
   let rollbackTo = start;
-  chat.messages.push({ role: "user", content: [{ type: "text", text: question }] });
+  let sentContext = "";
   try {
+    // Earlier questions keep only their answers
+    for (const result of toolResults(chat.messages.slice(0, start))) result.content = TRIMMED;
     for (let step = 0; step < MAX_STEPS; step++) {
       signal.throwIfAborted();
       onStatus?.(step ? `Thinking · step ${step + 1}` : "Thinking");
-      // Earlier questions keep only their answers; this one keeps its latest tool results
-      const stale = [
-        ...toolResults(chat.messages.slice(0, start)),
-        ...toolResults(chat.messages.slice(start)).slice(0, -KEPT_RESULTS)
-      ];
-      stale.forEach(result => {
-        result.content = TRIMMED;
-      });
-      const system = buildSystemPrompt(await context());
+      // The map context opens the question, not the byte-identical system prompt, and a changed one (after an
+      // Apply) joins the newest message, so the history before it stays cached
+      const mapContext = await context();
       signal.throwIfAborted();
-      const request = { ...get(), system, messages: chat.messages, tools: definitions, signal };
+      if (!step)
+        chat.messages.push({
+          role: "user",
+          content: [
+            { type: "text", text: mapContext },
+            { type: "text", text: question }
+          ]
+        });
+      else if (mapContext !== sentContext) chat.messages.at(-1)!.content.push({ type: "text", text: mapContext });
+      sentContext = mapContext;
+      trimToBudget(toolResults(chat.messages.slice(start)));
+      const request = { ...get(), system: SYSTEM_PROMPT, messages: chat.messages, tools: definitions, signal };
       // A model without vision rejects images: tell it they are unavailable and ask once more
       const completion = await complete(request).catch(error => {
         if (signal.aborted || !dropImages(chat.messages)) throw error;
@@ -112,9 +128,11 @@ export async function askProvider(
         if (!signal.aborted) onStatus?.(tool?.status ?? "Working");
         const outcome: ToolOutcome = signal.aborted
           ? { content: "Cancelled before this tool ran.", isError: true }
-          : tool
-            ? await tool.handle(call.input).catch(error => ({ content: errorText(error), isError: true }))
-            : { content: `Unknown tool ${call.name}. Available: ${[...byName.keys()].join(", ")}`, isError: true };
+          : INVALID_ARGUMENTS in call.input
+            ? { content: String(call.input[INVALID_ARGUMENTS]), isError: true }
+            : tool
+              ? await tool.handle(call.input).catch(error => ({ content: errorText(error), isError: true }))
+              : { content: `Unknown tool ${call.name}. Available: ${[...byName.keys()].join(", ")}`, isError: true };
         if (outcome.item) onItem(outcome.item);
         responses.push({
           type: "tool_result",
@@ -136,6 +154,19 @@ export async function askProvider(
 
 const toolResults = (messages: Message[]): ToolResultBlock[] =>
   messages.flatMap(message => message.content.filter(block => block.type === "tool_result"));
+
+const resultSize = (result: ToolResultBlock): number =>
+  typeof result.content === "string" ? result.content.length : JSON.stringify(result.content).length;
+
+/** Shorten the oldest results until the rest fit the budget; the latest result is always kept */
+function trimToBudget(results: ToolResultBlock[]): void {
+  let total = results.reduce((sum, result) => sum + resultSize(result), 0);
+  for (const result of results.slice(0, -1)) {
+    if (total <= RESULTS_BUDGET) return;
+    total -= resultSize(result) - TRIMMED.length;
+    result.content = TRIMMED;
+  }
+}
 
 /** Replace every image in the history with a note; false when there was none */
 function dropImages(messages: Message[]): boolean {

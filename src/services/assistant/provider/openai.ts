@@ -1,10 +1,12 @@
 // Translates the Assistant's Anthropic-shaped chat into the OpenAI chat/completions format
 // spoken by OpenAI, Mistral, Qwen (DashScope compatible mode) and DeepSeek, and back.
 
+import { errorText } from "@/utils/stringUtils";
 import type { SystemBlock } from "./context";
 import {
   type Completion,
   type CompletionRequest,
+  INVALID_ARGUMENTS,
   type Message,
   readError,
   type TextBlock,
@@ -104,9 +106,11 @@ export function fromChatResponse(json: {
 
 function parseArguments(raw: string): ToolInput {
   try {
-    return JSON.parse(raw);
-  } catch {
-    return {};
+    return JSON.parse(raw || "{}");
+  } catch (error) {
+    return {
+      [INVALID_ARGUMENTS]: `The arguments are not valid JSON (${errorText(error)}); a long call may have hit the output limit. Send it again, shorter if it was long`
+    };
   }
 }
 

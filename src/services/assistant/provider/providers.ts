@@ -11,6 +11,8 @@ export interface TextBlock {
 }
 
 export type ToolInput = Record<string, unknown>;
+/** Holds the error in place of arguments a provider sent as broken JSON, so the model hears why its call failed */
+export const INVALID_ARGUMENTS = "invalidArguments";
 
 export interface ToolUseBlock {
   type: "tool_use";
@@ -152,7 +154,7 @@ async function completeAnthropic({
     method: "POST",
     signal,
     headers: { "Content-Type": "application/json", ...anthropicHeaders(key) },
-    body: JSON.stringify({ model, system, messages, tools, max_tokens: 4096 })
+    body: JSON.stringify({ model, system, messages: markCached(messages), tools, max_tokens: 4096 })
   });
 
   if (!response.ok) throw new Error(await readError(response));
@@ -166,6 +168,19 @@ async function completeAnthropic({
       cached: json.usage?.cache_read_input_tokens ?? 0
     }
   };
+}
+
+/** Anthropic caches only up to a marked block: marking the latest one lets the next step reread the chat cheaply */
+export function markCached(messages: Message[]): Message[] {
+  const last = messages.at(-1);
+  if (!last?.content.length) return messages;
+  const content = [...last.content];
+  const marked: ContentBlock & { cache_control: SystemBlock["cache_control"] } = {
+    ...content.at(-1)!,
+    cache_control: { type: "ephemeral" }
+  };
+  content[content.length - 1] = marked;
+  return [...messages.slice(0, -1), { ...last, content }];
 }
 
 /** The provider's own error message, whichever of the usual shapes it comes in */

@@ -34,22 +34,42 @@ async function load(): Promise<Map<string, { title: string; text: string }>> {
   return new Map([...map].map(([title, text]) => [title.toLowerCase(), { title, text }]));
 }
 
+const TYPE_NAMES = [...OPERATION_TYPES.matchAll(/^(?:type|interface|const) (\w+)/gm)].map(match => match[1]);
+
+/** "Operations: Markers, States" lists just those models' operations, with the types only when they use one */
+function operationsOf(topic: string): { title: string; text: string } | undefined {
+  const models = topic
+    .match(/^operations\s*:(.+)$/i)?.[1]
+    .split(/[\s,]+/)
+    .filter(Boolean);
+  if (!models?.length) return undefined;
+  const prefixes = models.map(model => `${model.toLowerCase()}.`);
+  const lines = OPERATIONS.split("\n").filter(line => prefixes.some(prefix => line.toLowerCase().startsWith(prefix)));
+  if (!lines.length) return undefined;
+  const text = lines.join("\n");
+  const typed = TYPE_NAMES.some(name => new RegExp(`\\b${name}\\b`).test(text));
+  const types = typed ? `\n\nThe types they name:\n\`\`\`ts\n${OPERATION_TYPES}\n\`\`\`` : "";
+  return { title: topic, text: `Operations for \`propose_change\`:\n\`\`\`ts\n${text}\n\`\`\`${types}` };
+}
+
 /** Topics match case-insensitively; a "(pack)"-style suffix from the field index is ignored */
 export async function readDocs(requested: string[]): Promise<string> {
   topics ??= await load();
-  const found = requested.map(topic =>
-    topics!.get(
-      topic
-        .replace(/\(.*\)/, "")
-        .trim()
-        .toLowerCase()
-    )
+  const found = requested.map(
+    topic =>
+      operationsOf(topic.trim()) ??
+      topics!.get(
+        topic
+          .replace(/\(.*\)/, "")
+          .trim()
+          .toLowerCase()
+      )
   );
   const texts = found.flatMap(topic => topic?.text ?? []);
   const unknown = requested.filter((_, index) => !found[index]);
   if (unknown.length)
     texts.push(
-      `Unknown topics: ${unknown.join(", ")}. Available: ${[...topics.values()].map(topic => topic.title).join(", ")}`
+      `Unknown topics: ${unknown.join(", ")}. Available: ${[...topics.values()].map(topic => topic.title).join(", ")}, "Operations: <Model>, <Model>"`
     );
   return texts.join("\n\n");
 }

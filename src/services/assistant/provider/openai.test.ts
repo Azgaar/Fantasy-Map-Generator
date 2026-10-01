@@ -174,7 +174,7 @@ describe("fromChatResponse", () => {
     expect(completion.usage).toEqual({ input: 10, output: 5, cached: 0 });
   });
 
-  it("survives malformed tool arguments by passing an empty input", () => {
+  it("turns malformed tool arguments into an error the model is told", () => {
     const completion = fromChatResponse({
       choices: [
         {
@@ -182,7 +182,9 @@ describe("fromChatResponse", () => {
         }
       ]
     });
-    expect(completion.content).toEqual([{ type: "tool_use", id: "c", name: "run", input: {} }]);
+    const [call] = completion.content;
+    expect(call).toMatchObject({ type: "tool_use", id: "c", name: "run" });
+    expect(String((call as { input: Record<string, unknown> }).input.invalidArguments)).toContain("not valid JSON");
   });
 
   it("reads DeepSeek's cache-hit token field", () => {
