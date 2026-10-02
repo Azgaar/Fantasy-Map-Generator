@@ -479,7 +479,7 @@ const GOODS_DATA: GoodData[] = [
   },
   {
     name: "Coal",
-    tags: ["fuel"],
+    tags: ["fuel", "mineral"],
     icon: "goods-coal",
     color: "#5a6a75",
     value: 3,

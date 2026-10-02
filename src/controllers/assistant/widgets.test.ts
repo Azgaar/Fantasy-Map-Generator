@@ -25,14 +25,14 @@ vi.mock("@/components/reveal", () => ({
   clearEntityMarks: mocks.clear
 }));
 vi.mock("@/components/tooltips", () => ({ tip: vi.fn() }));
+vi.mock("@/renderers/draw-goods", () => ({ goodBadge: ({ icon }: { icon: string }) => `<use href="#${icon}"/>` }));
 vi.mock("@/services/io/export", () => ({ ExportMap: { getRegionImage: mocks.image } }));
 vi.mock("@/controllers", () => ({ Controllers: { GoodsEditor: { open: mocks.openGood } } }));
 
 import type { Widget } from "@/services/assistant/chats";
-import { renderMarkdown } from "@/utils/markdown";
 import { AssistantWidgets } from "./widgets";
 
-const answer = (text: string, live = true) => renderMarkdown(text, AssistantWidgets.links(live));
+const answer = (text: string, live = true) => AssistantWidgets.answer(text, live);
 type Entities = Extract<Widget, { type: "entities" }>;
 const widget = (): Entities => ({ type: "entities", title: "Ports <b>", entities: ["burg:1", "burg:2"] });
 const at = (index = 0, live = true, canAsk = true) => ({ index, live, canAsk });
@@ -78,7 +78,7 @@ beforeEach(() => {
       { i: 1, name: "Sun Cult" }
     ],
     cells: { religion: [0, 1] },
-    goods: [{ i: 0, name: "Salt" }]
+    goods: [{ i: 0, name: "Salt", color: "#fff", icon: "glyph-1f9c2" }]
   } as unknown as typeof pack;
   pack.burgs[1] = { ...pack.burgs[1], cell: 1 } as (typeof pack.burgs)[number];
   globalThis.options = {
@@ -103,6 +103,42 @@ it("links a live entity and keeps just the label otherwise", () => {
 
 it("prepends the entity type's icon to a link", () => {
   expect(answer("[Vel](burg:1)")).toContain('<span class="icon-home" aria-hidden="true"></span>Vel</button>');
+});
+
+it("shows a good's own badge in its link", () => {
+  expect(answer("[Salt](good:0)")).toContain(
+    '<svg class="assistantGood" viewBox="0 0 100 100" aria-hidden="true"><use href="#glyph-1f9c2"/></svg>Salt</button>'
+  );
+});
+
+it("formats a money chart as prices", () => {
+  const chart = dom(
+    AssistantWidgets.html(
+      { type: "chart", chart: "bar", title: "Treasury", unit: "money", rows: [{ label: "Vel", value: 12.345 }] },
+      at()
+    )
+  );
+  expect(chart.textContent).toContain("🟡 12.35");
+});
+
+it("links a named entity only under a label matching its name", () => {
+  expect(answer("[Orwin](state:1)")).toContain('data-id="state:1"');
+  expect(answer("[Kingdom of **Orwin**](state:1)")).toContain('data-id="state:1"');
+  expect(answer("[Vel](state:1)")).toBe("<p>Vel</p>");
+});
+
+it("turns a key written as text into a link named after its entity", () => {
+  const link = (id: string, label: string) => new RegExp(`data-id="${id}"[^>]*><span[^>]*></span>${label}</button>`);
+  expect(answer("Orwin (state:1) is old")).toMatch(link("state:1", "Orwin"));
+  expect(answer("Orwin (state:1) is old")).not.toContain("(");
+  expect(answer("**Vel** ([burg:1](burg:1))")).toMatch(
+    /<strong><button[^>]*data-id="burg:1"[^>]*>.*Vel<\/button><\/strong>/
+  );
+  expect(answer("[burg:1](burg:1) and state:1")).toMatch(link("burg:1", "Vel"));
+  expect(answer("[burg:1](burg:1) and state:1")).toMatch(link("state:1", "Orwin"));
+  expect(answer("A town (burg:1).")).toBe("<p>A town.</p>");
+  expect(answer("Orwin (state:1)", false)).toBe("<p>Orwin</p>");
+  expect(answer("`state:1` and [Vel](burg:1)")).toContain("<code>state:1</code>");
 });
 
 it("leaves a key without a usable id as its label", () => {

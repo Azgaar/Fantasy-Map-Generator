@@ -1,4 +1,4 @@
-import { MapEntities } from "@/components/map-entities";
+import { type EntityType, MapEntities } from "@/components/map-entities";
 import { Controllers } from "@/controllers";
 import type { ChartRow, Chat, Choice, Widget } from "@/services/assistant/chats";
 import type { Tool } from "@/services/assistant/provider/answerer";
@@ -9,10 +9,12 @@ import { rn } from "@/utils/numberUtils";
 import { getBounds } from "@/utils/pathUtils";
 import {
   convertTemperature,
+  formatPrice,
   formatSpeed,
   getArea,
   getAreaUnit,
   getCellPopulation,
+  getDistance,
   getDistanceUnit,
   getHeight,
   getPeople,
@@ -20,6 +22,7 @@ import {
   si
 } from "@/utils/unitUtils";
 import type { Note } from "../notes-editor";
+import { changeText } from "./proposal-card";
 import { Proposals } from "./proposals";
 
 // The open map as the Assistant sees it: identity, per-question context and tools
@@ -53,7 +56,8 @@ async function context(chat: Chat): Promise<string> {
     `cultures: ${live(pack.cultures)}`,
     `religions: ${live(pack.religions)}`,
     `rivers: ${pack.rivers?.length ?? 0}`,
-    `markers: ${pack.markers?.length ?? 0}`
+    `markers: ${pack.markers?.length ?? 0}`,
+    `chronicle entries: ${pack.states[0]?.diplomacy?.length ?? 0} (read with \`States.getChronicle()\`)`
   ];
   const sections = [
     `# Current map\n\n${facts.map(fact => `- ${fact}`).join("\n")}`,
@@ -63,9 +67,14 @@ async function context(chat: Chat): Promise<string> {
   return sections.filter(Boolean).join("\n\n");
 }
 
-/** What the user did with this chat's proposals; the map above already reflects the applied ones */
+/** What the user did with earlier questions' proposals; the map above already reflects the applied ones. This
+ * question's own come back in their tool results, and listing them here reads to the model as old news */
 function outcomes(chat: Chat): string | null {
-  const proposals = chat.items.flatMap(item => (item.kind === "proposal" ? [item.proposal] : [])).slice(-20);
+  const asked = chat.items.findLastIndex(item => item.kind === "question");
+  const proposals = chat.items
+    .slice(0, asked < 0 ? undefined : asked)
+    .flatMap(item => (item.kind === "proposal" ? [item.proposal] : []))
+    .slice(-20);
   if (!proposals.length) return null;
   const state = {
     proposed: "waiting for the user",
@@ -108,31 +117,75 @@ const UNITS = {
   rn,
   getArea,
   getAreaUnit,
+  getDistance,
   getDistanceUnit,
   getHeight,
   convertTemperature,
   getPrecipitation,
   formatSpeed,
+  formatPrice,
   getCellPopulation,
   getPeople
 };
+
+// Models name what a script returned without its id, then guess one or narrate the gap: hand them the keys
+const NAMED_TYPES: EntityType[] = [
+  "state",
+  "province",
+  "burg",
+  "culture",
+  "religion",
+  "river",
+  "marker",
+  "feature",
+  "zone",
+  "route",
+  "good"
+];
+const MAX_NAMED_KEYS = 40;
+const WORD_CHAR = /[\p{L}\p{N}]/u;
+
+function wordIndex(text: string, word: string): number {
+  for (let at = text.indexOf(word); at >= 0; at = text.indexOf(word, at + 1))
+    if (!WORD_CHAR.test(text[at - 1] ?? "") && !WORD_CHAR.test(text[at + word.length] ?? "")) return at;
+  return -1;
+}
+
+/** The keys of entities a result names, in order of mention */
+function namedKeys(text: string): string {
+  const named = new Map<string, { at: number; keys: string[] }>();
+  for (const type of NAMED_TYPES)
+    for (const { ref, entity } of MapEntities.collect(type)) {
+      const { name } = entity as { name?: unknown };
+      if (typeof name !== "string" || name.length < 3) continue;
+      const at = named.get(name)?.at ?? wordIndex(text, name);
+      if (at < 0) continue;
+      const entry = named.get(name) ?? { at, keys: [] };
+      entry.keys.push(MapEntities.key(ref));
+      named.set(name, entry);
+    }
+  const lines = [...named]
+    .sort(([, a], [, b]) => a.at - b.at)
+    .slice(0, MAX_NAMED_KEYS)
+    .map(([name, { keys }]) => `${name}: ${keys.join(", ")}`);
+  return lines.length ? `\n# Keys of the names above\n${lines.join("\n")}` : "";
+}
 
 const readMap: Tool = {
   status: "Reading the map",
   definition: {
     name: "read_map",
     description:
-      "Run read-only JavaScript in the page. Return the result; describe(value) inspects a value. Scripts may call downloadFile for CSV or JSON.",
+      "Run read-only JavaScript in the page. Return the result; describe(value) inspects a value. Scripts may call downloadFile for CSV or JSON. The result ends with the keys of map entities it names.",
     input_schema: { type: "object", properties: { code: { type: "string" } }, required: ["code"] }
   },
   async handle(input) {
     const code = typeof input.code === "string" ? input.code : "";
     const result = await runScript(code, { units: UNITS });
-    return {
-      content: result.ok ? `${result.value}\n${result.logs.join("\n")}` : result.error?.message || "Script failed",
-      item: { kind: "step", code, result },
-      isError: !result.ok
-    };
+    if (!result.ok)
+      return { content: result.error?.message || "Script failed", item: { kind: "step", code, result }, isError: true };
+    const output = `${result.value}\n${result.logs.join("\n")}`;
+    return { content: output + namedKeys(output), item: { kind: "step", code, result } };
   }
 };
 
@@ -152,6 +205,7 @@ const OPERATIONS_SCHEMA = {
 };
 
 function proposeChange(chat: Chat): Tool {
+  let last = 0; // a step's proposals reach chat.items only after all its calls ran
   return {
     status: "Preparing a change",
     definition: {
@@ -168,13 +222,14 @@ function proposeChange(chat: Chat): Tool {
       }
     },
     async handle(input) {
-      const number = chat.items.filter(item => item.kind === "proposal").length + 1;
+      const number = Math.max(last, chat.items.filter(item => item.kind === "proposal").length) + 1;
       const summary = typeof input.summary === "string" && input.summary.trim() ? input.summary.trim() : "Change";
       const proposal = Proposals.propose(summary, input.operations, number, id());
       if (typeof proposal === "string") return { content: proposal, isError: true };
+      last = number;
       const count = proposal.change.length;
       return {
-        content: `Proposal #${number} (${count} change${count === 1 ? "" : "s"}) is waiting for the user to apply or discard it. Nothing has changed yet.`,
+        content: `Proposal #${number} (${count} change${count === 1 ? "" : "s"}) is waiting for the user to apply or discard it. Nothing has changed yet. Check its change does what was asked, as the user sees it:\n${changeText(proposal.change)}`,
         item: { kind: "proposal", proposal }
       };
     }
@@ -182,6 +237,8 @@ function proposeChange(chat: Chat): Tool {
 }
 
 const text = (value: unknown) => (typeof value === "string" ? value.trim() : "");
+/** Widget titles are plain text: a Markdown link keeps just its label */
+const plain = (value: unknown) => text(value).replace(/\[([^\]]*)\]\([^)]*\)/g, "$1");
 /** Insets zoom into a part of the map: one spanning over half of it in either direction just shows the map */
 const isSmallInset = ([x0, y0, x1, y1]: number[]) =>
   x1 - x0 <= options.map.graph.width / 2 && y1 - y0 <= options.map.graph.height / 2;
@@ -209,7 +266,7 @@ const WIDGET_TOOLS: Record<Exclude<Widget["type"], "emblem">, WidgetTool> = {
       if (!entities.length || entities.length > MAX_WIDGET_ENTITIES)
         return `entities takes 1 to ${MAX_WIDGET_ENTITIES} keys`;
       const invalid = entities.find(key => !MapEntities.resolveKey(key));
-      return invalid ? missing(invalid) : { type: "entities", title: text(input.title) || "Entities", entities };
+      return invalid ? missing(invalid) : { type: "entities", title: plain(input.title) || "Entities", entities };
     }
   },
   card: {
@@ -224,7 +281,7 @@ const WIDGET_TOOLS: Record<Exclude<Widget["type"], "emblem">, WidgetTool> = {
   },
   chart: {
     description:
-      "Show numbers you computed with read_map as a chart. bar: one measure compared or ranked across items (largest states, burgs by population, top religions). pie: parts of one whole (population by culture, land by biome), given as amounts, not percentages: the chart computes shares. unit names the amounts (people, mi²). Prefer it to a table when each item has one number.",
+      'Show numbers you computed with read_map as a chart. bar: one measure compared or ranked across items (largest states, burgs by population, top religions). pie: parts of one whole (population by culture, land by biome), given as amounts, not percentages: the chart computes shares. unit names the amounts (people, mi²); "money" for prices, treasuries and taxes. Prefer it to a table when each item has one number.',
     input_schema: {
       type: "object",
       properties: {
@@ -262,7 +319,7 @@ const WIDGET_TOOLS: Record<Exclude<Widget["type"], "emblem">, WidgetTool> = {
       return {
         type: "chart",
         chart: input.chart,
-        title: text(input.title) || "Chart",
+        title: plain(input.title) || "Chart",
         ...(unit && { unit }),
         rows: parsed
       };
@@ -301,7 +358,7 @@ const WIDGET_TOOLS: Record<Exclude<Widget["type"], "emblem">, WidgetTool> = {
         if (typeof proposal === "string") return `Choice ${index + 1}: ${proposal}`;
         parsed.push({ label: text(label), operations: proposal.operations });
       }
-      return { type: "choices", title: text(input.title) || "Choose one", choices: parsed };
+      return { type: "choices", title: plain(input.title) || "Choose one", choices: parsed };
     }
   },
   inset: {
@@ -316,7 +373,7 @@ const WIDGET_TOOLS: Record<Exclude<Widget["type"], "emblem">, WidgetTool> = {
       }
     },
     parse(input) {
-      const title = text(input.title);
+      const title = plain(input.title);
       if (input.entity !== undefined) {
         const entity = text(input.entity);
         const ref = MapEntities.resolveKey(entity);

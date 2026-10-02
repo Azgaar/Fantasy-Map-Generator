@@ -59,7 +59,11 @@ const MAX_STEPS = 30;
 // changes between steps otherwise, so providers serve the whole prefix from their prompt cache
 const RESULTS_BUDGET = 32_000; // characters
 const TRIMMED = "[Earlier tool result shortened]";
+// Providers bill an image by its pixels, not its base64 length: an emblem costs about as much as this much text
+const IMAGE_SIZE = 1_000; // characters
 const NO_VISION = "[The image is not available: this model cannot see images]";
+// Text beside a lookup ("Let me check…") or a failed call is a preamble, shown only when no answer follows it
+const LOOKUP = /^(read|view)_/;
 
 export interface ProviderOptions {
   tools: Tool[]; // map tools, beside the knowledge ones
@@ -82,6 +86,7 @@ export async function askProvider(
   const start = chat.messages.length;
   let rollbackTo = start;
   let sentContext = "";
+  let preamble = "";
   try {
     // Earlier questions keep only their answers
     for (const result of toolResults(chat.messages.slice(0, start))) result.content = TRIMMED;
@@ -102,7 +107,7 @@ export async function askProvider(
         });
       else if (mapContext !== sentContext) chat.messages.at(-1)!.content.push({ type: "text", text: mapContext });
       sentContext = mapContext;
-      trimToBudget(toolResults(chat.messages.slice(start)));
+      trimToBudget(chat.messages.slice(start));
       const request = { ...get(), system: SYSTEM_PROMPT, messages: chat.messages, tools: definitions, signal };
       // A model without vision rejects images: tell it they are unavailable and ask once more
       const completion = await complete(request).catch(error => {
@@ -119,10 +124,13 @@ export async function askProvider(
         .map(block => block.text)
         .join("\n\n")
         .trim();
-      if (answer) onItem({ kind: "answer", text: answer });
       const calls = completion.content.filter(block => block.type === "tool_use");
-      if (!calls.length) return;
+      if (!calls.length) {
+        if (answer || preamble) onItem({ kind: "answer", text: answer || preamble });
+        return;
+      }
       const responses: ToolResultBlock[] = [];
+      const items: TranscriptItem[] = [];
       for (const call of calls) {
         const tool = byName.get(call.name);
         if (!signal.aborted) onStatus?.(tool?.status ?? "Working");
@@ -133,7 +141,7 @@ export async function askProvider(
             : tool
               ? await tool.handle(call.input).catch(error => ({ content: errorText(error), isError: true }))
               : { content: `Unknown tool ${call.name}. Available: ${[...byName.keys()].join(", ")}`, isError: true };
-        if (outcome.item) onItem(outcome.item);
+        if (outcome.item) items.push(outcome.item);
         responses.push({
           type: "tool_result",
           tool_use_id: call.id,
@@ -141,6 +149,13 @@ export async function askProvider(
           is_error: outcome.isError ?? false
         });
       }
+      if (answer && (calls.some(call => LOOKUP.test(call.name)) || responses.some(result => result.is_error)))
+        preamble = answer;
+      else if (answer) {
+        onItem({ kind: "answer", text: answer });
+        preamble = "";
+      }
+      for (const item of items) onItem(item);
       chat.messages.push({ role: "user", content: responses });
       rollbackTo = chat.messages.length;
       signal.throwIfAborted();
@@ -155,13 +170,17 @@ export async function askProvider(
 const toolResults = (messages: Message[]): ToolResultBlock[] =>
   messages.flatMap(message => message.content.filter(block => block.type === "tool_result"));
 
-const resultSize = (result: ToolResultBlock): number =>
-  typeof result.content === "string" ? result.content.length : JSON.stringify(result.content).length;
+const resultSize = ({ content }: ToolResultBlock): number =>
+  typeof content === "string"
+    ? content.length
+    : content.reduce((sum, part) => sum + (part.type === "text" ? part.text.length : IMAGE_SIZE), 0);
 
-/** Shorten the oldest results until the rest fit the budget; the latest result is always kept */
-function trimToBudget(results: ToolResultBlock[]): void {
+/** Shorten the oldest results until the rest fit the budget; the latest step's results are always kept whole */
+function trimToBudget(messages: Message[]): void {
+  const results = toolResults(messages);
+  const latest = toolResults(messages.slice(-1)).length;
   let total = results.reduce((sum, result) => sum + resultSize(result), 0);
-  for (const result of results.slice(0, -1)) {
+  for (const result of results.slice(0, results.length - latest)) {
     if (total <= RESULTS_BUDGET) return;
     total -= resultSize(result) - TRIMMED.length;
     result.content = TRIMMED;

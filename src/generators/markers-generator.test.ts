@@ -89,3 +89,50 @@ describe("MarkersModule.rename", () => {
     expect(() => globalThis.Markers.rename(0, "X")).toThrow("Marker 0 does not exist");
   });
 });
+
+describe("MarkersModule mines", () => {
+  it("places mines only in burgs extracting an ore or mineral, named after it", async () => {
+    await import("./markers-generator");
+    const goods = [
+      { i: 1, name: "Iron", tags: ["ore"] },
+      { i: 2, name: "Grain", tags: ["food"] }
+    ];
+    globalThis.Goods = { get: (id: number) => goods.find(good => good.i === id) } as any;
+    globalThis.pack = {
+      cells: {
+        i: [0, 1, 2, 3],
+        burg: [0, 1, 2, 3],
+        good: [1, 1, 2, 1]
+      },
+      burgs: [
+        {},
+        { name: "Ironton", population: 1, production: [{ goodId: 1, units: 2 }] },
+        { name: "Farmton", population: 1, production: [{ goodId: 2, units: 2 }] },
+        { name: "Smithton", population: 1, production: [{ goodId: 1, units: 2, recipe: [] }] }
+      ]
+    } as any;
+    const markers = globalThis.Markers as any;
+
+    expect(markers.listMines(pack)).toEqual([1]);
+    const marker = { i: 0, cell: 1 } as Marker;
+    markers.addMine(marker, 1);
+    expect(marker.name).toBe("Ironton — iron mining town");
+  });
+});
+
+describe("MarkersModule migrations", () => {
+  it("picks animals native to the biome and skips biomes without migrations", async () => {
+    await import("./markers-generator");
+    globalThis.pack = {
+      cells: { i: [0, 1, 2], h: [30, 30, 30], pop: [0, 0, 0], biome: [10, 11, 1] }
+    } as any;
+    const markers = globalThis.Markers as any;
+
+    expect(markers.listMigrations(pack)).toEqual([0, 2]);
+    const marker = { i: 0, cell: 0 } as Marker;
+    markers.addMigration(marker, 0);
+    expect(["Reindeer", "Musk oxen", "Wolves", "Foxes", "Geese", "Hares", "Owls"]).toContain(
+      marker.name.replace(" migration", "")
+    );
+  });
+});

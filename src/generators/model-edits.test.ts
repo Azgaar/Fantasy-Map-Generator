@@ -628,6 +628,9 @@ describe("States: chronicle, painting and merging as provinces", () => {
     States.setChronicleEntry(0, []);
     expect(States.getChronicle()).toHaveLength(1);
     expect(() => States.setChronicleEntry(5, ["x"])).toThrow("does not exist");
+    States.setChronicleEntry(-1, ["Treaty"]);
+    expect(States.getChronicle().at(-1)).toEqual(["Treaty"]);
+    expect(States.getChronicle()).toHaveLength(2);
   });
 
   it("gives cells to a state with their burgs and province, never another state's center", () => {

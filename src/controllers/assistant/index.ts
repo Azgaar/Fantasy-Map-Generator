@@ -185,6 +185,7 @@ const STYLES = /* html */ `
     #assistant .assistantEntity { text-decoration-line: underline; text-decoration-style: dotted; text-underline-offset: 2px; }
     #assistant .assistantEntity:hover { color: var(--header-active); }
     #assistant .assistantEntity > span { display: inline-block; margin-right: .35em; opacity: .55; font-size: .9em; }
+    #assistant .assistantEntity > .assistantGood { width: 1.2em; height: 1.2em; margin-right: .3em; vertical-align: -.25em; }
     #assistant .assistantCommand { padding: 0 .4em; border: 1px solid var(--header); border-radius: .35em; }
     #assistant .assistantCommand:hover { background: rgb(0 0 0 / 5%); }
     #assistant .assistantWidget { width: 100%; overflow: hidden; border: 1px solid rgb(0 0 0 / 14%); border-radius: .55em; background: rgb(255 255 255 / 60%); }
@@ -532,7 +533,7 @@ function welcomeHtml(now: Tier): string {
       ]
     : now === "key"
       ? [
-          "Hi! Ask about the Fantasy Map Generator or this map. I can read your map, edit notes and names.",
+          "Hi! Ask about the Fantasy Map Generator or this map. I can read and propose changes to your map.",
           note ? `I can work on the note “${note}”.` : ""
         ]
       : [
@@ -563,7 +564,7 @@ function itemHtml(item: TranscriptItem, context: WidgetContext): string {
                 `<button type="button" data-action="rate" data-index="${index}" data-rating="${rating}" aria-pressed="${item.rating === rating}" aria-label="${rating === "up" ? "Good answer" : "Bad answer"}">${rating === "up" ? "👍" : "👎"}</button>`
             )
             .join("")}</div>`;
-    return `<div class="assistantItem assistantAnswer">${renderMarkdown(item.text, AssistantWidgets.links(live))}${feedback}</div>`;
+    return `<div class="assistantItem assistantAnswer">${AssistantWidgets.answer(item.text, live)}${feedback}</div>`;
   }
   if (item.kind === "step") {
     const { result } = item;

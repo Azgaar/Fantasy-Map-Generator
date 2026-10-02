@@ -3,6 +3,7 @@
 
 import { ENTITY_TYPES, RECORD_TYPES } from "@/components/map-entities";
 import { METHODS } from "@/controllers/assistant/operations";
+import { RELATIONS } from "@/data/diplomacy";
 import { DATA_FIELDS, GENERATOR_NAMES } from "./context.generated";
 
 const KEY_TYPES = [...ENTITY_TYPES, ...RECORD_TYPES].join(", ");
@@ -32,8 +33,8 @@ const SCRIPTS = `# Scripts (read_map)
 - \`return\` the answer. Only it and console output come back, cut at 8000 characters: aggregate, count and slice;
   never return a whole entity array. Plan first: one script gathers all the answer needs, and independent calls
   share one turn. Stop reading once you can answer. On an error, fix and retry.
-- Unsure of a shape? \`return describe("pack.burgs[1]")\` (also works on singletons, e.g. \`describe("States")\`), or
-  call \`read_docs\`. Declarations lag the code mid-migration, so check when it matters.
+- Unsure of a shape? \`return describe("pack.burgs[1]")\`, an object (also works on singletons, e.g.
+  \`describe("States")\`), or call \`read_docs\`. Declarations lag the code mid-migration, so check when it matters.
 - Globals: \`pack\` (map data), \`grid\` (pre-repack grid), \`options\` (\`options.map\` holds the map's settings),
   \`styles\`, \`mapHistory\`, and generator singletons: ${GENERATOR_NAMES}. Guard anything else with \`typeof\`.
 - \`downloadFile(content, "name.csv", "text/csv")\` saves a file for the user (not a map change); name it in the answer.
@@ -41,11 +42,12 @@ const SCRIPTS = `# Scripts (read_map)
 
 const UNITS = `# Units
 
-Answer in the map's units only (e.g. "152K mi²"); never mention map units, pixels or cells unless asked. Scripts
+Answer in the map's units only (e.g. "152K mi²"); never mention map units, coordinates, pixels or cells unless asked. Scripts
 have \`units\`, the app's own formatters: \`si(n)\` → "1.4M"; \`rn(n, decimals = 0)\`; \`getArea(mapUnits²)\` with
-\`getAreaUnit()\`; \`getDistanceUnit()\` (length × \`options.map.units.distance.scale\`); \`getHeight(h)\` → "1640ft";
-\`convertTemperature(°C)\`; \`getPrecipitation(prec)\`; \`formatSpeed(km/h)\`; \`getCellPopulation(cellId, pack)\` →
-[rural, urban] people. Example: \`units.si(units.getArea(state.area)) + " " + units.getAreaUnit()\`.`;
+\`getAreaUnit()\`; \`getDistance(mapUnits)\` → "92 mi" for every distance you state, e.g. of \`Math.hypot(dx, dy)\`;
+\`getHeight(h)\` → "1640ft"; \`convertTemperature(°C)\`; \`getPrecipitation(prec)\`; \`formatSpeed(km/h)\`;
+\`formatPrice(n)\` for money; \`getCellPopulation(cellId, pack)\` → [rural, urban] people (no \`getPeople\`).
+Example: \`units.si(units.getArea(state.area)) + " " + units.getAreaUnit()\`.`;
 
 const GOTCHAS = `# Gotchas
 
@@ -55,6 +57,13 @@ const GOTCHAS = `# Gotchas
 - Ids are not always array indices: goods and markets start at 1 (\`pack.goods[0]\` is good 1); rivers, markers,
   routes, zones, journeys and often deals are unordered. Look up with \`.find(x => x.i === id)\` or \`Goods.get(id)\`,
   \`Markets.get(id)\`; never \`pack.goods[id]\`. Burg \`production\` records hold \`good\`/\`dealId\` ids: resolve each.
+- A cell's owner is \`cells.state[i]\` (0 = neutral); \`cells.s\` is a burg-site score. \`burgs\` and \`cells\` of states,
+  provinces, cultures and religions are counts: a state's cells are
+  \`pack.cells.i.filter(i => pack.cells.state[i] === id)\`, its burgs those with \`burg.state === id\`. \`center\` is a
+  cell id; capitals are \`state.capital\`, \`province.burg\`.
+- Cell arrays are typed: \`filter\` and \`map\` on them stay typed and wrap negatives (-1 → 4294967295). Use
+  \`Array.from(cells)\` before mapping to other values.
+- \`state.diplomacy[j]\`: relation to state j (${Object.keys(RELATIONS).join(", ")}); \`Enemy\` is war.
 - \`burg.type\` is the culture type (Generic, River, Naval…), never rank: capital is \`burg.capital\` (1/0),
   size class is \`burg.group\`.
 - Land is \`pack.cells.h[i] >= 20\` (heights 0–100). Water body: \`pack.features[pack.cells.f[i]]\`, type ocean/lake/island.
@@ -62,15 +71,16 @@ const GOTCHAS = `# Gotchas
   Climate is on the grid: \`grid.cells.temp[pack.cells.g[i]]\` (°C), \`grid.cells.prec[…]\`.
 - Population fields are points, not people: \`burg.population\`, \`cells.pop\`, \`rural\`/\`urban\`. Never show, compare or
   chart points: convert with \`units.getPeople(rural, urban)\`, e.g. \`units.getPeople(0, burg.population)\`, then \`si\`.
-  Only states keep \`rural\`/\`urban\`/\`area\` current. For provinces, cultures and religions sum their cells:
-  \`units.getCellPopulation(i, pack)\` gives [rural, urban] people, \`pack.cells.area[i]\` the area.
+  Only states keep \`rural\`/\`urban\`/\`area\` current. For provinces, cultures and religions sum their cells'
+  \`getCellPopulation\` and \`pack.cells.area[i]\`.
 - Areas (\`state.area\`, \`pack.cells.area[i]\`) are map units². Coordinates (\`cells.p[i]\` is [x, y]) are map units within
   \`options.map.graph.width\` × \`height\`; \`Pack.findCell(x, y)\` gives the cell. \`cells.b\` is 0/1, not boolean.`;
 
 const ANSWERS = `# Answers
 
-State only facts a result in this question gave (numbers, ranks, comparisons, terrain); leave out the rest. Text
-beside a read_* call reaches the user at once: write the answer after the reads.
+State only facts a result in this question gave (numbers, ranks, comparisons, terrain), nothing else. Name
+only UI that read_help or read_docs returned, or say it is not covered. Never repeat a proposal's content: its card
+shows it.
 
 Answer with a widget whenever one fits, with prose around it. A widget replaces the text it shows: never repeat its
 content, add only what it does not say. Pick by the question, and combine widgets when several fit:

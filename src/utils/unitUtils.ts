@@ -181,6 +181,11 @@ export function getDistanceUnit(): string {
   return options.map.units.distance.unit || "km";
 }
 
+/** A length in map units in the user distance unit, e.g. "92 mi" */
+export function getDistance(length: number): string {
+  return `${rn(length * options.map.units.distance.scale)} ${getDistanceUnit()}`;
+}
+
 /** Kilometers in one user distance unit, 0 for an unrecognized (custom) unit */
 export function getKmInDistanceUnit(): number {
   return KM_IN_DISTANCE_UNIT[getDistanceUnit()] ?? 0;

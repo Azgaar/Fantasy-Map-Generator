@@ -1,18 +1,19 @@
 import { schemeTableau10 } from "d3";
 import { isLinkable, MAP_COMMANDS } from "@/components/map-commands";
-import { type EntityRef, isEntityType, MapEntities } from "@/components/map-entities";
+import { ENTITY_TYPES, type EntityRef, isEntityType, MapEntities, RECORD_TYPES } from "@/components/map-entities";
 import { clearEntityMarks, markEntities, reveal, revealEntity } from "@/components/reveal";
 import { tip } from "@/components/tooltips";
 import type { State } from "@/generators/states-generator";
+import { goodBadge } from "@/renderers/draw-goods";
 import type { ChartRow, Widget } from "@/services/assistant/chats";
 import type { Region } from "@/services/io/export";
 import type { Emblem } from "@/types/emblems";
 import type { Point } from "@/types/global";
-import type { LinkResolver } from "@/utils/markdown";
+import { type LinkResolver, renderMarkdown } from "@/utils/markdown";
 import { rn } from "@/utils/numberUtils";
 import { getBounds } from "@/utils/pathUtils";
 import { escapeHtml } from "@/utils/stringUtils";
-import { getArea, getAreaUnit, getPeople, si } from "@/utils/unitUtils";
+import { formatPrice, getArea, getAreaUnit, getPeople, si } from "@/utils/unitUtils";
 
 // Widgets: links in answers and the items the show tool places. See docs/prd/assistant.md
 
@@ -26,6 +27,7 @@ export interface WidgetContext {
 }
 
 const NOTE_PREVIEW = 240;
+const MONEY = "money"; // the chart unit of prices, treasuries and taxes
 const INSET = { width: 480, height: 300 };
 const INSET_MIN_SPAN = 80; // map units shown around a point-like entity
 
@@ -49,8 +51,15 @@ function linkableCommand(id: string) {
   return command && isLinkable(command) ? command : undefined;
 }
 
+/** A good shows its own badge, as the map draws it; other entities their type's icon */
+function entityIcon(ref: EntityRef): string {
+  const good = ref.type === "good" ? (MapEntities.get(ref) as { color: string; icon: string } | undefined) : undefined;
+  if (good) return `<svg class="assistantGood" viewBox="0 0 100 100" aria-hidden="true">${goodBadge(good)}</svg>`;
+  return `<span class="${MapEntities.getDisplay(ref).icon}" aria-hidden="true"></span>`;
+}
+
 const entityButton = (ref: EntityRef, label: string) =>
-  `<button type="button" class="assistantEntity" data-action="entity" data-id="${MapEntities.key(ref)}" data-tip="Show on the map"><span class="${MapEntities.getDisplay(ref).icon}" aria-hidden="true"></span>${label}</button>`;
+  `<button type="button" class="assistantEntity" data-action="entity" data-id="${MapEntities.key(ref)}" data-tip="Show on the map">${entityIcon(ref)}${label}</button>`;
 
 /** A live entity as a link named after it, otherwise its fallback as text */
 function entityLink(key: string | undefined, live: boolean, fallback = ""): string {
@@ -67,8 +76,53 @@ function links(live: boolean): LinkResolver {
     }
     if (!href.includes(":") || !isEntityType(href.split(":")[0])) return null;
     const ref = live ? MapEntities.resolveKey(href) : undefined;
-    return ref ? entityButton(ref, label) : label;
+    return ref && namesMatch(ref, label) ? entityButton(ref, label) : label;
   };
+}
+
+const KEY = `(?:${[...ENTITY_TYPES, ...RECORD_TYPES].join("|")}):\\d+(?:-\\d+)?`;
+// Code spans and links are kept; a key written as text or as its own link's label is caught
+const KEY_TEXT = new RegExp(`\`[^\`\\n]*\`|\\[(${KEY})\\]\\(\\1\\)|\\[[^\\]\\n]*\\]\\([^)\\s]*\\)|\\b(${KEY})\\b`, "g");
+
+/** An answer as HTML. A key the model wrote as text becomes a link named after its entity; one in parentheses
+ * links the name before it, or is dropped */
+function answer(text: string, live: boolean): string {
+  let out = "";
+  let last = 0;
+  for (const match of text.matchAll(KEY_TEXT)) {
+    const key = match[1] ?? match[2];
+    if (!key) continue;
+    let start = match.index;
+    let end = start + match[0].length;
+    const wrapped = text[start - 1] === "(" && text[end] === ")";
+    if (wrapped) [start, end] = [start - 1, end + 1];
+    const before = text.slice(last, start);
+    const ref = live ? MapEntities.resolveKey(key) : undefined;
+    const names = ref ? [(MapEntities.get(ref) as { name?: unknown })?.name, MapEntities.getName(ref)] : [];
+    const [name] = names.filter((value): value is string => typeof value === "string" && Boolean(value));
+    if (!wrapped) out += before + (name ? `[${name}](${key})` : match[0]);
+    else {
+      const tail = before.match(/[\s*_]*$/)![0];
+      const core = before.slice(0, before.length - tail.length);
+      const named = names.find(
+        (value): value is string =>
+          typeof value === "string" && Boolean(value) && core.toLowerCase().endsWith(value.toLowerCase())
+      );
+      out += named
+        ? `${core.slice(0, -named.length)}[${core.slice(-named.length)}](${key})${tail.trimEnd()}`
+        : `${core}${tail.trimEnd()}`;
+    }
+    last = end;
+  }
+  return renderMarkdown(out + text.slice(last), links(live));
+}
+
+/** A model may guess an id for a name it never read: a named entity links only under a label that matches its name */
+function namesMatch(ref: EntityRef, label: string): boolean {
+  if ((RECORD_TYPES as readonly string[]).includes(ref.type)) return true;
+  const name = escapeHtml(MapEntities.getName(ref)).toLowerCase();
+  const text = label.replace(/[*_~]/g, "").toLowerCase(); // the label is escaped Markdown
+  return !name || !text || name.includes(text) || text.includes(name);
 }
 
 const commandButton = (id: string, label: string, className = "assistantCommand") =>
@@ -168,6 +222,7 @@ function emblemHtml(widget: Of<"emblem">, live: boolean): string {
 }
 
 function formatValue(value: number, unit?: string): string {
+  if (unit === MONEY) return formatPrice(value);
   const number = value >= 10_000 ? si(value) : String(rn(value, 2));
   return unit ? `${number} ${escapeHtml(unit)}` : number;
 }
@@ -340,4 +395,4 @@ function clearMarks(): void {
   clearEntityMarks();
 }
 
-export const AssistantWidgets = { links, html, openEntity, runCommand, revealInset, toggleMarks, clearMarks };
+export const AssistantWidgets = { answer, html, openEntity, runCommand, revealInset, toggleMarks, clearMarks };

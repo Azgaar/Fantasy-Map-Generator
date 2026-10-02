@@ -79,9 +79,12 @@ it("offers read_map, propose_change, one tool per widget and view_emblem", () =>
 });
 
 it("shows an entities widget holding the keys", async () => {
-  const outcome = await mapTool("show_entities").handle({ title: " Ports ", entities: ["burg:1"] });
+  const outcome = await mapTool("show_entities").handle({ title: " Ports of [Vel](burg:1) ", entities: ["burg:1"] });
   expect(outcome.isError).toBeFalsy();
-  expect(outcome.item).toEqual({ kind: "widget", widget: { type: "entities", title: "Ports", entities: ["burg:1"] } });
+  expect(outcome.item).toEqual({
+    kind: "widget",
+    widget: { type: "entities", title: "Ports of Vel", entities: ["burg:1"] }
+  });
 });
 
 it("names the first key that is not a live entity, and shows nothing", async () => {
@@ -120,6 +123,15 @@ it("returns a numbered proposal that waits for the user", async () => {
   expect(result.item).toEqual({ kind: "proposal", proposal: proposal(2, "proposed") });
 });
 
+it("numbers proposals of one step apart and shows the model their change", async () => {
+  propose.mockImplementation((_summary, _operations, number) => proposal(number, "proposed"));
+  const tool = mapTool("propose_change");
+  const first = await tool.handle({ summary: "A", operations: [] });
+  await tool.handle({ summary: "B", operations: [] });
+  expect(propose.mock.calls.map(call => call[2])).toEqual([1, 2]);
+  expect(first.content).toContain("Burg Vel · Name: Vel → Saltmere");
+});
+
 it("returns a proposal error to the model without a card", async () => {
   propose.mockReturnValue("Unknown operation");
   expect(await mapTool("propose_change").handle({ summary: "X", operations: [] })).toEqual({
@@ -142,11 +154,50 @@ it("tells the model what happened to the chat's proposals", async () => {
   expect(context).toContain("- #4 waiting for the user: Change 4");
 });
 
+it("leaves the current question's proposals to their tool results", async () => {
+  chat.items.push(
+    { kind: "question", text: "Rename Vel" },
+    { kind: "proposal", proposal: proposal(1, "applied") },
+    { kind: "question", text: "Rename Orwin" },
+    { kind: "proposal", proposal: proposal(2, "proposed") }
+  );
+  const context = await AssistantMap.context(chat);
+  expect(context).toContain("- #1 applied: Change 1");
+  expect(context).not.toContain("#2");
+});
+
 it("gives read_map scripts the app's unit helpers", async () => {
   const result = await mapTool("read_map").handle({
     code: "return units.si(units.getArea(152000)) + ' ' + units.getAreaUnit()"
   });
   expect(result.content).toContain("1.4M mi²");
+});
+
+it("ends a read_map result with the keys of the entities it names, in order of mention", async () => {
+  vi.stubGlobal("pack", {
+    cells: { i: [0] },
+    states: [
+      { i: 0, name: "Neutrals" },
+      { i: 1, name: "Shan" },
+      { i: 2, name: "Kami" }
+    ],
+    burgs: [
+      0,
+      { i: 1, name: "Shan" },
+      { i: 2, name: "Velport" },
+      { i: 3, name: "Vel" },
+      { i: 4, name: "Gone", removed: true }
+    ]
+  });
+  const result = await mapTool("read_map").handle({ code: "return 'Kami holds Velport; Shan; Gone; Shanty'" });
+  expect(result.content).toBe(
+    `"Kami holds Velport; Shan; Gone; Shanty"\n\n# Keys of the names above\nKami: state:2\nVelport: burg:2\nShan: state:1, burg:1`
+  );
+});
+
+it("adds no keys to a result that names no entity", async () => {
+  const result = await mapTool("read_map").handle({ code: "return 42" });
+  expect(result.content).toBe("42\n");
 });
 
 it("shows a card for a state only", async () => {

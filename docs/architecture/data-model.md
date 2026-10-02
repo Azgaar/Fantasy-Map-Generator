@@ -197,7 +197,7 @@ States (countries) data is stored as an array of objects with strict element ord
 - `urban`: `number` - urban (burg) population of state cells. In population points
 - `neighbors`: `number[]` - ids of neighboring (bordering by land) states
 - `provinces`: `number[]` - ids of state provinces
-- `diplomacy`: `string[]` - diplomatic relations status for all states. 'x' for self and neutrals. Element 0 (neutrals) `diplomacy` is used differently and contains wars story as `string[][]`
+- `diplomacy`: `string[]` - relation to each state by its id: `Ally`, `Friendly`, `Neutral`, `Suspicion`, `Enemy` (at war), `Unknown`, `Rival`, `Vassal` (of that state) or `Suzerain` (to that state); both sides hold the same relation except a vassal pair. 'x' for self and neutrals. Element 0 (neutrals) `diplomacy` is used differently and contains wars story as `string[][]`
 - `campaigns`: `object[]` - wars the state participated in. The was is defined as `start`: `number` (year), `end`: `number` (year), `name`: `string`
 - `alert`: `number` - state war alert, see [military forces page](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Military-Forces)
 - `military`: `Regiment[]` - list of state regiments, see [military forces page](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Military-Forces)

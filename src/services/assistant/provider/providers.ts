@@ -133,13 +133,25 @@ export const anthropicHeaders = (key: string): Record<string, string> => ({
   "anthropic-dangerous-direct-browser-access": "true"
 });
 
+// A busy cloud provider can hold a request open with keep-alives for good; a local model may just be slow
+const TIMEOUT_MINUTES = 3;
+
 export async function complete(request: CompletionRequest): Promise<Completion> {
   // An empty turn (a model that ended without a word) is rejected by every provider once it is history
   request = { ...request, messages: request.messages.filter(message => message.content.length) };
-  if (!providerById(request.provider)) throw new Error(`Unknown provider: ${request.provider}`);
+  const provider = providerById(request.provider);
+  if (!provider) throw new Error(`Unknown provider: ${request.provider}`);
   if (!request.model) throw new Error("Enter a model name (e.g. llama3.2)");
-  if (request.provider === "anthropic") return completeAnthropic(request);
-  return completeOpenAI(endpoint(request.provider, request.localUrl), request);
+  const timeout = provider.id === "local" ? undefined : AbortSignal.timeout(TIMEOUT_MINUTES * 60_000);
+  const signals = [request.signal, timeout].filter(signal => signal !== undefined);
+  const call = { ...request, signal: signals.length ? AbortSignal.any(signals) : undefined };
+  try {
+    if (provider.id === "anthropic") return await completeAnthropic(call);
+    return await completeOpenAI(endpoint(provider.id, request.localUrl), call);
+  } catch (error) {
+    if (!timeout?.aborted || request.signal?.aborted) throw error;
+    throw new Error(`${provider.label} did not answer in ${TIMEOUT_MINUTES} minutes. Ask again, or pick another model`);
+  }
 }
 
 async function completeAnthropic({

@@ -1247,12 +1247,15 @@ class StatesModule {
     else delete state.lock;
   }
 
-  /** Replace a chronicle entry with text lines, the first being its title. Index = length adds an entry; no lines removes it */
+  /** Replace a chronicle entry with text lines, the first being its title. Index -1 adds an entry after any the batch records before it (setRelation does); no lines removes it */
   setChronicleEntry(index: number, lines: string[]): void {
     pack.states[0].diplomacy ??= [];
     const chronicle = this.getChronicle();
+    if (index === -1) index = chronicle.length;
     if (!Number.isInteger(index) || index < 0 || index > chronicle.length)
-      throw new Error(`Chronicle entry ${index} does not exist; entries are counted from 0`);
+      throw new Error(
+        `Chronicle entry ${index} does not exist: there are ${chronicle.length}, counted from 0. Index -1 adds one`
+      );
     if (!Array.isArray(lines) || lines.some(line => typeof line !== "string" || !line.trim()))
       throw new Error("A chronicle entry is a list of non-empty text lines");
     if (!lines.length) {

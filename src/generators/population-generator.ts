@@ -91,9 +91,10 @@ class PopulationModule {
     for (const [label, value] of [
       ["rural", rural],
       ["urban", urban]
-    ] as const)
+    ] as const) {
       if (typeof value !== "number" || !(value >= 0 && Number.isFinite(value)))
         throw new Error(`The ${label} population must be a non-negative number`);
+    }
     if (rural && !cellIds.length) throw new Error("The area has no land cells to hold a rural population");
     if (urban && !burgIds.length) throw new Error("The area has no burgs to hold an urban population");
 
@@ -106,11 +107,12 @@ class PopulationModule {
 
     const urbanPoints = urban / scale / urbanization.rate;
     const urbanNow = sum(burgIds, burg => burgs[burg].population ?? 0);
-    for (const burg of burgIds)
+    for (const burg of burgIds) {
       burgs[burg].population = rn(
         urbanNow ? (burgs[burg].population ?? 0) * (urbanPoints / urbanNow) : urbanPoints / burgIds.length,
         4
       );
+    }
   }
 }
 

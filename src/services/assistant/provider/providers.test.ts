@@ -43,6 +43,29 @@ describe("local provider", () => {
   });
 });
 
+describe("cloud providers", () => {
+  const cloud = { ...request, provider: "deepseek", model: "deepseek-flash", key: "sk-x" } as const;
+  const hang = (_url: string, { signal }: RequestInit) =>
+    new Promise<Response>((_, reject) => {
+      if (signal!.aborted) reject(signal!.reason);
+      signal!.addEventListener("abort", () => reject(signal!.reason));
+    });
+
+  it("gives up on a provider that never answers", async () => {
+    vi.spyOn(AbortSignal, "timeout").mockReturnValueOnce(AbortSignal.abort(new DOMException("", "TimeoutError")));
+    fetchStub.mockImplementation(hang);
+    await expect(complete(cloud)).rejects.toThrow("DeepSeek did not answer in 3 minutes");
+  });
+
+  it("keeps a cancel a cancel", async () => {
+    const cancel = new AbortController();
+    fetchStub.mockImplementation(hang);
+    const answer = complete({ ...cloud, signal: cancel.signal });
+    cancel.abort();
+    await expect(answer).rejects.not.toThrow(/did not answer/);
+  });
+});
+
 describe("completeOpenAI auth header", () => {
   it("omits Authorization when the key is empty", async () => {
     await completeOpenAI("http://localhost:11434/v1", request);
