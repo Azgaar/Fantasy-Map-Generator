@@ -1434,4 +1434,6 @@ class StatesModule {
   }
 }
 
-window.States = new StatesModule();
+// biome-ignore lint/suspicious/noRedeclare: legacy seam
+export const States = new StatesModule();
+window.States = States;

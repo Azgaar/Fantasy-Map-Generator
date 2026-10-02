@@ -695,4 +695,6 @@ class ZonesModule {
   }
 }
 
-window.Zones = new ZonesModule();
+// biome-ignore lint/suspicious/noRedeclare: legacy seam
+export const Zones = new ZonesModule();
+window.Zones = Zones;

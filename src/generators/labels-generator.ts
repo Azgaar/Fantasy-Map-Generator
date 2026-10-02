@@ -201,8 +201,8 @@ export class LabelsModule {
     return group ?? this.getFallbackGroup(type);
   }
 
-  private entitiesOf(type: LabelType): { i: number; removed?: boolean; label?: Label }[] {
-    const entities: Record<LabelType, { i: number; removed?: boolean; label?: Label }[]> = {
+  private entitiesOf(type: LabelType): { i: number; removed?: boolean; label?: Label; group?: string }[] {
+    const entities: Record<LabelType, { i: number; removed?: boolean; label?: Label; group?: string }[]> = {
       state: pack.states,
       province: pack.provinces,
       burg: pack.burgs,
@@ -210,7 +210,7 @@ export class LabelsModule {
       route: pack.routes,
       added: pack.addedLabels
     };
-    return (entities[type] ?? []).filter(entity => entity?.i);
+    return (entities[type] ?? []).filter(entity => entity && !entity.removed && (type === "route" || entity.i));
   }
 
   private requireEntity(type: LabelType, id: number) {
@@ -246,8 +246,10 @@ export class LabelsModule {
   /** Move every label of one group to another, as renaming or removing a group does */
   regroup(from: string, to: string): void {
     for (const type of LABEL_TYPES)
-      for (const entity of this.entitiesOf(type))
-        if (entity.label?.group === from) entity.label = { ...entity.label, group: to };
+      for (const entity of this.entitiesOf(type)) {
+        const group = entity.label?.group || (type === "burg" ? entity.group : undefined) || type;
+        if (group === from) entity.label = { ...entity.label, group: to };
+      }
   }
 
   /** Adjust a label: dx and dy shift it, fontSize (30–300%) and letterSpacing (0–20 px) size its text, startOffset (0–100%) slides a label along its path, hidden hides it. null restores the automatic value */

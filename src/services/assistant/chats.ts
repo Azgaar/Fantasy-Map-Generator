@@ -13,6 +13,8 @@ export interface ChangeRow {
   after?: unknown;
   /** `after` holds items added to the end of the list at `field`, whatever else the list holds by then */
   append?: boolean;
+  /** Next entity in an ordered collection; null means the end */
+  nextId?: number | null;
 }
 
 export interface Proposal {
@@ -43,7 +45,8 @@ export type Widget =
   | { type: "chart"; chart: "bar" | "pie"; title: string; unit?: string; rows: ChartRow[] }
   | { type: "choices"; title: string; choices: Choice[]; picked?: number }
   | { type: "inset"; title: string; entity?: string; box?: [x0: number, y0: number, x1: number, y1: number] }
-  | { type: "emblem"; entity: string };
+  | { type: "emblem"; entity: string }
+  | { type: "source"; page: string };
 
 export type TranscriptItem =
   | { kind: "question"; text: string }
@@ -167,6 +170,8 @@ function persist(): void {
         dirty = false;
         await ldb.set(STORAGE_KEY, chats);
       }
+    } catch (error) {
+      ERROR && console.error("Assistant chats could not be saved", error); // the next change tries again
     } finally {
       saving = false;
     }

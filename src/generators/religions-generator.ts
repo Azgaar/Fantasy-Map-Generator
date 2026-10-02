@@ -1474,4 +1474,6 @@ class ReligionsModule {
   }
 }
 
-window.Religions = new ReligionsModule();
+// biome-ignore lint/suspicious/noRedeclare: legacy seam
+export const Religions = new ReligionsModule();
+window.Religions = Religions;

@@ -31,7 +31,6 @@ import type { Emblem } from "@/types/emblems";
 import { downloadFile, getArea, getAreaUnit, getFileName, groupByValue } from "@/utils";
 import { errorText } from "@/utils/stringUtils";
 import {
-  abbreviate,
   capitalize,
   createFileInput,
   debounce,
@@ -646,9 +645,7 @@ function cultureRegenerateBurgs(this: HTMLElement): void {
   }
 
   const cultureBurgs = pack.burgs.filter(b => b.culture === cultureId && !b.removed && !b.lock);
-  cultureBurgs.forEach(b => {
-    b.name = Names.getCulture(cultureId);
-  });
+  for (const burg of cultureBurgs) Burgs.rename(burg.i, Names.getCulture(cultureId));
   Layers.draw("labels");
   tip(`Names for ${cultureBurgs.length} burgs are regenerated`, false, "success");
 }
@@ -978,14 +975,10 @@ async function uploadCulturesData(this: HTMLInputElement): Promise<void> {
     }
 
     current.removed = false;
-    current.name = culture.name;
+    if (current.i && culture.name.trim()) Cultures.rename(current.i, culture.name);
+    else current.name = culture.name;
 
     if (current.i) {
-      current.code = abbreviate(
-        current.name,
-        cultures.map((c: any) => c.code)
-      );
-
       current.color = culture.color;
       current.expansionism = +culture.expansionism;
 

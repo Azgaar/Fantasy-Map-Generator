@@ -216,4 +216,6 @@ class BiomesGenerator {
   }
 }
 
-window.Biomes = new BiomesGenerator();
+// biome-ignore lint/suspicious/noRedeclare: legacy seam
+export const Biomes = new BiomesGenerator();
+window.Biomes = Biomes;

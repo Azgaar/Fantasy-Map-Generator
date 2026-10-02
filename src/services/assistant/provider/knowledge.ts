@@ -19,15 +19,21 @@ interface Section {
 
 let sections: Section[] | null = null;
 
+const PAGES = import.meta.glob<string>("../../../../docs/wiki/*.md", { query: "?raw", import: "default" });
+const pageName = (path: string) => path.match(/([^/]+)\.md$/)![1];
+/** Wiki pages an answer can cite, by their file name */
+export const WIKI_PAGES = Object.keys(PAGES)
+  .map(pageName)
+  .filter(page => !SKIPPED_PAGES.has(page));
+
 const terms = (text: string): string[] =>
   (text.toLowerCase().match(/[a-z0-9]+/g) ?? [])
     .filter(word => word.length > 1 && !STOP_WORDS.has(word))
     .map(word => (word.length > 3 ? word.replace(/(?:es|s)$/, "") : word));
 
 async function load(): Promise<Section[]> {
-  const pages = import.meta.glob<string>("../../../../docs/wiki/*.md", { query: "?raw", import: "default" });
   const loaded = await Promise.all(
-    Object.entries(pages).map(async ([path, read]) => [path.match(/([^/]+)\.md$/)![1], await read()] as const)
+    Object.entries(PAGES).map(async ([path, read]) => [pageName(path), await read()] as const)
   );
   return loaded.flatMap(([page, source]) => (SKIPPED_PAGES.has(page) ? [] : pageSections(page, source)));
 }

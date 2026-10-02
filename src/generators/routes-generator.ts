@@ -1081,4 +1081,6 @@ export function mergeRoutePoints(routePoints: number[][], joinedPoints: number[]
   return null;
 }
 
-window.Routes = new RoutesModule();
+// biome-ignore lint/suspicious/noRedeclare: legacy seam
+export const Routes = new RoutesModule();
+window.Routes = Routes;

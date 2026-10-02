@@ -1389,4 +1389,6 @@ class MarkersModule {
   }
 }
 
-window.Markers = new MarkersModule();
+// biome-ignore lint/suspicious/noRedeclare: legacy seam
+export const Markers = new MarkersModule();
+window.Markers = Markers;

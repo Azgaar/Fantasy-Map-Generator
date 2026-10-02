@@ -62,6 +62,7 @@ const TRIMMED = "[Earlier tool result shortened]";
 // Providers bill an image by its pixels, not its base64 length: an emblem costs about as much as this much text
 const IMAGE_SIZE = 1_000; // characters
 const NO_VISION = "[The image is not available: this model cannot see images]";
+const IMAGE_REJECTED = /image|vision|multimodal/i; // how providers word a model without vision; a 429 or outage is not retried
 // Text beside a lookup ("Let me check…") or a failed call is a preamble, shown only when no answer follows it
 const LOOKUP = /^(read|view)_/;
 const CUT_OFF =
@@ -122,7 +123,7 @@ export async function askProvider(
       const request = { ...get(), system: SYSTEM_PROMPT, messages: chat.messages, tools: definitions, signal };
       // A model without vision rejects images: tell it they are unavailable and ask once more
       const completion = await complete(request).catch(error => {
-        if (signal.aborted || !dropImages(chat.messages)) throw error;
+        if (signal.aborted || !IMAGE_REJECTED.test(errorText(error)) || !dropImages(chat.messages)) throw error;
         return complete(request);
       });
       if (signal.aborted) throw signal.reason;

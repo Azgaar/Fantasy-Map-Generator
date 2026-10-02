@@ -280,6 +280,35 @@ describe("entities and cells", () => {
     expect(pack.zones).toHaveLength(1);
   });
 
+  it.each([{ ids: [0] }, { ids: [2, 0] }, { ids: [2, 0, 1] }])(
+    "restores zone drawing order after removing $ids",
+    ({ ids }) => {
+      pack.zones = [2, 0, 1].map(i => ({ i, name: `Zone ${i}`, cells: [1] })) as typeof pack.zones;
+      const before = structuredClone(pack.zones);
+      const proposal = structuredClone(proposeOk(ids.map(id => ({ op: "Zones.remove", args: [id] }))));
+      expect(apply(proposal, MAP)).toBe(true);
+      expect(pack.zones.map(({ i }) => i)).toEqual([2, 0, 1].filter(i => !ids.includes(i)));
+      expect(undo(proposal, MAP)).toBe(true);
+      expect(pack.zones).toEqual(before);
+      expect(Proposals.run("redo", proposal, MAP)).toBe(true);
+      expect(undo(proposal, MAP)).toBe(true);
+      expect(pack.zones).toEqual(before);
+    }
+  );
+
+  it("redoes several added zones in the order they were added", () => {
+    pack.zones = [{ i: 0, name: "Zone 0", cells: [1] }] as typeof pack.zones;
+    const proposal = proposeOk([
+      { op: "Zones.add", args: ["Plague", "Disease", [2]] },
+      { op: "Zones.add", args: ["Flood", "Flood", [3]] }
+    ]);
+    expect(apply(proposal, MAP)).toBe(true);
+    const added = pack.zones.map(({ i }) => i);
+    expect(undo(proposal, MAP)).toBe(true);
+    expect(Proposals.run("redo", proposal, MAP)).toBe(true);
+    expect(pack.zones.map(({ i }) => i)).toEqual(added);
+  });
+
   it("passes what an earlier operation returned to a later one", () => {
     const proposal = proposeOk([
       { op: "Zones.add", args: ["Plague", "Disease", [2]] },

@@ -1251,4 +1251,6 @@ declare global {
   var Goods: GoodsModule;
 }
 
-window.Goods = new GoodsModule();
+// biome-ignore lint/suspicious/noRedeclare: legacy seam
+export const Goods = new GoodsModule();
+window.Goods = Goods;

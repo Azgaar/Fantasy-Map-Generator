@@ -86,7 +86,15 @@ it("opens one Assistant panel with one composer and no mode tabs", async () => {
   await vi.waitFor(() => expect(document.getElementById("assistantTranscript")?.textContent).toContain("Hi!"));
   expect(document.querySelectorAll("#assistantQuestion")).toHaveLength(1);
   expect(document.querySelector(".assistantMode")).toBeNull();
+  await vi.waitFor(() =>
+    expect(document.getElementById("assistantStatus")?.textContent).toBe("5 questions left today")
+  );
   const input = document.getElementById("assistantQuestion") as HTMLTextAreaElement;
+  for (const blank of ["  \n ", "a".repeat(1001)]) {
+    input.value = blank;
+    document.getElementById("assistantAsk")!.click();
+  }
+  expect(state.send).not.toHaveBeenCalled();
   input.value = "partly typed";
   Assistant.open();
   expect(document.getElementById("assistantQuestion")).toBe(input);
@@ -162,6 +170,7 @@ it("updates the note chip when the notes editor changes or closes", async () => 
   state.note = "Orwin";
   window.dispatchEvent(new Event("notes:context-changed"));
   await vi.waitFor(() => expect(document.getElementById("assistantContext")?.textContent).toBe("Note: Orwin"));
+  expect(document.getElementById("assistantTranscript")?.textContent).toContain("I can write the note “Orwin”");
   state.note = null;
   window.dispatchEvent(new Event("notes:context-changed"));
   await vi.waitFor(() => expect(document.getElementById("assistantContext")?.hidden).toBe(true));

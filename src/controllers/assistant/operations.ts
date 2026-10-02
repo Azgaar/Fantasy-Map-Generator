@@ -1,10 +1,23 @@
+import { AddedLabels } from "@/generators/added-labels";
+import { Biomes } from "@/generators/biomes-generator";
 import { Burgs } from "@/generators/burgs-generator";
 import { Cultures } from "@/generators/cultures-generator";
 import { Emblems } from "@/generators/emblems-generator";
+import { Features } from "@/generators/features-generator";
+import { Goods } from "@/generators/goods-generator";
+import { Journeys } from "@/generators/journeys/journeys-generator";
 import { Labels } from "@/generators/labels-generator";
 import { Lore } from "@/generators/lore";
+import { Markers } from "@/generators/markers-generator";
+import { Markets } from "@/generators/markets-generator";
 import { Military } from "@/generators/military-generator";
 import { Notes } from "@/generators/notes";
+import { Provinces } from "@/generators/provinces-generator";
+import { Religions } from "@/generators/religions-generator";
+import { Rivers } from "@/generators/river-generator";
+import { Routes } from "@/generators/routes-generator";
+import { States } from "@/generators/states-generator";
+import { Zones } from "@/generators/zones-generator";
 
 // Model methods the Assistant may propose
 export const METHODS: Record<string, string[]> = {
@@ -154,11 +167,30 @@ export const OPERATIONS = new Set(
 
 type Model = Record<string, (...args: unknown[]) => unknown>;
 
-const IMPORTED: Record<string, unknown> = { Burgs, Cultures, Emblems, Labels, Lore, Military, Notes };
+const MODELS: Record<string, unknown> = {
+  AddedLabels,
+  Biomes,
+  Burgs,
+  Cultures,
+  Emblems,
+  Features,
+  Goods,
+  Journeys,
+  Labels,
+  Lore,
+  Markers,
+  Markets,
+  Military,
+  Notes,
+  Provinces,
+  Religions,
+  Rivers,
+  Routes,
+  States,
+  Zones
+};
 
-/** Run a registered operation. Models that don't export their singleton yet are reached through their global */
 export function runOperation(op: string, args: unknown[]): unknown {
   const [name, method] = op.split(".");
-  const model = IMPORTED[name] ?? globalThis[name as keyof typeof globalThis];
-  return (model as Model)[method](...args);
+  return (MODELS[name] as Model)[method](...args);
 }

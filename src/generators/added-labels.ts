@@ -56,4 +56,6 @@ export class AddedLabelsModule {
   }
 }
 
-window.AddedLabels = new AddedLabelsModule();
+// biome-ignore lint/suspicious/noRedeclare: legacy seam
+export const AddedLabels = new AddedLabelsModule();
+window.AddedLabels = AddedLabels;

@@ -831,4 +831,6 @@ declare global {
   var Rivers: RiverModule;
 }
 
-window.Rivers = new RiverModule();
+// biome-ignore lint/suspicious/noRedeclare: legacy seam
+export const Rivers = new RiverModule();
+window.Rivers = Rivers;

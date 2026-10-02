@@ -84,7 +84,7 @@ export const MAP_COMMANDS: MapCommand[] = [
   { id: "loadFromURL", name: "Load Map from URL", aliases: "open link", run: () => loadURL() },
   { id: "saveButton", name: "Show Save Panel", aliases: "store dialog", run: () => showSavePane() },
   { id: "loadButton", name: "Load Map", aliases: "open dialog", run: () => showLoadPane() },
-  { id: "exportButton", name: "Export Map", aliases: "download image data dialog", run: () => showExportPane() },
+  { id: "exportButton", name: "Show Export Panel", aliases: "map download image data", run: () => showExportPane() },
   { id: "copyMapURL", name: "Copy Map URL", aliases: "seed link share clipboard", run: () => copyMapURL() },
   {
     id: "seedHistory",

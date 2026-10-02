@@ -158,7 +158,11 @@ If there is no version conflict, use https://github.com/Azgaar/Fantasy-Map-Gener
 
 ### Can I export a created map?
 
-Sure, there are a number of available options. Save to machine: .map file that can be directly loaded back to the Generator. Save to Dropbox: the same file stored in your cloud. Save to storage: map data is saved to the browser's internal database and can be loaded on page refresh; bear in mind that saving to the machine is safer since browser storage can be accidentally cleared. Export .svg: save a full map as a scalable vector image, you can open the file in a browser or edit it in a vector graphics editor. Export .png or .jpeg: save the currently displayed map fragment as a raster image, up to 8x resolution. Export to tiles as .zip: split the map into .png chunks and save them as a single archive, it allows to save giant raster images once chunks are combined. Export to GeoJSON: save cells, routes, rivers, markers or zones to be used in GIS software. Export to JSON: save the raw map data (full, minimal, pack cells or grid cells) for your own tooling
+Open the menu with the upper-left triangle or press Tab. Click **Export** in the menu's bottom row to open the Export dialog. For SVG, click **.svg** in the **Download image** row. Export is available from any menu tab; opening the Options tab first is unnecessary.
+
+The **Export** dialog offers .svg (the full map as a scalable vector image, viewable in a browser or editable in a vector graphics editor), .png or .jpeg (the currently displayed map fragment, up to 8x resolution), tiles (PNG chunks in a ZIP archive), GeoJSON (cells, routes, rivers, markers or zones for GIS software), and JSON (full, minimal, pack cells or grid cells for your own tooling).
+
+The separate **Save** dialog saves editable `.map` files to machine, Dropbox or browser storage. It does not contain image exports. Machine and Dropbox files can be loaded back into the Generator. Browser storage can be cleared accidentally, so keep a file backup.
 
 ### Can I export a PNG with a transparent background?
 

@@ -45,6 +45,21 @@ it("escapes a note outside the notes subset, also on an added entity", () => {
   }
 });
 
+it("loads no remote image before the note is applied", () => {
+  const host = card([
+    {
+      key: "marker:1",
+      entity: "Marker",
+      field: "note",
+      before: "",
+      after: `<p>Map <img src="https://x.test/a.png" alt="sketch"></p>`
+    }
+  ]);
+  const preview = host.querySelector(".assistantNotePreview")!;
+  expect(preview.querySelector("img")).toBeNull();
+  expect(preview.textContent).toBe("Map [sketch]");
+});
+
 it("shows values as the app does: people, money, names and the chronicle", () => {
   const text = changeText([
     { key: "burg:2", entity: "Burg: Sarester", field: "population", before: 49.968, after: 0.0999 },

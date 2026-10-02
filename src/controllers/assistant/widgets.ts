@@ -140,6 +140,7 @@ function html(widget: Widget, context: WidgetContext): string {
   if (widget.type === "choices") return choicesHtml(widget, context);
   if (widget.type === "inset") return insetHtml(widget, context);
   if (widget.type === "emblem") return emblemHtml(widget, context.live);
+  if (widget.type === "source") return sourceHtml(widget);
   return entitiesHtml(widget, context);
 }
 
@@ -219,6 +220,14 @@ function emblemHtml(widget: Of<"emblem">, live: boolean): string {
   const coa = ref && (MapEntities.get(ref) as { coa?: Emblem } | undefined)?.coa;
   if (!ref || !coa) return frame(`<span>${escapeHtml(widget.entity)}</span>`, "", live);
   return frame(entityLink(widget.entity, live), emblemSvg(`${ref.type}COA${ref.id}`, coa, "assistantEmblem"), true);
+}
+
+const WIKI = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/";
+
+function sourceHtml({ page }: Of<"source">): string {
+  const href = WIKI + encodeURIComponent(page.replace(/ /g, "-"));
+  const link = `<a href="${href}" target="_blank" rel="noopener noreferrer">${escapeHtml(page.replace(/-/g, " "))}</a>`;
+  return frame(`<span>Source</span>`, `<div class="assistantSource">📖 ${link}</div>`, true);
 }
 
 function formatValue(value: number, unit?: string): string {

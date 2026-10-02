@@ -345,3 +345,11 @@ it("shows the emblem the model looked at", () => {
   expect(emblem.querySelector(".assistantEmblem use")?.getAttribute("href")).toBe("#stateCOA1");
   expect(emblem.querySelector('[data-action="entity"]')?.textContent).toBe("Kingdom of Orwin");
 });
+
+it("links the wiki page an answer came from", () => {
+  const source = dom(AssistantWidgets.html({ type: "source", page: "Knowledge Base" }, at(0, false)));
+  const link = source.querySelector<HTMLAnchorElement>(".assistantSource a")!;
+  expect(link.href).toBe("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Knowledge-Base");
+  expect(link.textContent).toBe("Knowledge Base");
+  expect(link.target).toBe("_blank");
+});

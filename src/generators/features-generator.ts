@@ -611,4 +611,6 @@ const ADJECTIVES = [
   "World"
 ];
 
-window.Features = new FeatureModule();
+// biome-ignore lint/suspicious/noRedeclare: legacy seam
+export const Features = new FeatureModule();
+window.Features = Features;

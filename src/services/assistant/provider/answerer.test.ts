@@ -10,6 +10,7 @@ vi.mock("./providers", async importOriginal => ({
 import type { Chat, TranscriptItem } from "../chats";
 import { askProvider } from "./answerer";
 import { save } from "./connection";
+import { fromChatResponse } from "./openai";
 
 const newChat = (): Chat => ({
   id: "1",
@@ -170,6 +171,21 @@ it("asks once more without images when the model cannot see them", async () => {
   const result = chat.messages.flatMap(message => message.content).find(block => block.type === "tool_result");
   expect(JSON.stringify(result)).toContain("cannot see images");
   expect(JSON.stringify(result)).not.toContain("QUJD");
+});
+
+it("keeps the images and does not retry a failure unrelated to them", async () => {
+  completeMock
+    .mockResolvedValueOnce({ content: [LOOK], usage: { input: 1, output: 1, cached: 0 } })
+    .mockRejectedValueOnce(new Error("Rate limit reached"));
+  const chat = newChat();
+  await expect(
+    askProvider(chat, "Describe it", () => {}, new AbortController().signal, {
+      tools: [imageTool],
+      context: async () => "map"
+    })
+  ).rejects.toThrow("Rate limit reached");
+  expect(completeMock).toHaveBeenCalledTimes(2);
+  expect(JSON.stringify(chat.messages)).toContain("QUJD");
 });
 
 it("does not retry a failure when no image was sent", async () => {
@@ -393,4 +409,29 @@ it("answers a call with broken arguments with their error, without running the t
   });
   expect(handle).not.toHaveBeenCalled();
   expect(chat.messages[2].content[0]).toMatchObject({ content: "Not valid JSON", is_error: true });
+});
+
+it("lets the model correct null arguments and keeps the answer history", async () => {
+  const response = (argumentsText: string) =>
+    fromChatResponse({
+      choices: [
+        { message: { tool_calls: [{ id: argumentsText, function: { name: "look", arguments: argumentsText } }] } }
+      ]
+    });
+  completeMock
+    .mockResolvedValueOnce(response("null"))
+    .mockResolvedValueOnce(response("{}"))
+    .mockResolvedValueOnce({ content: [{ type: "text", text: "Done." }], usage: { input: 1, output: 1, cached: 0 } });
+  const handle = vi.fn(async () => ({ content: "Found it" }));
+  const chat = newChat();
+  const items: TranscriptItem[] = [];
+  await askProvider(chat, "Look", item => items.push(item), new AbortController().signal, {
+    tools: [{ ...imageTool, handle }],
+    context: async () => "map"
+  });
+  expect(handle).toHaveBeenCalledExactlyOnceWith({});
+  expect(chat.messages[2].content[0]).toMatchObject({ is_error: true });
+  expect(chat.messages[4].content[0]).toMatchObject({ content: "Found it", is_error: false });
+  expect(items.at(-1)).toEqual({ kind: "answer", text: "Done." });
+  expect(chat.messages).toHaveLength(6);
 });

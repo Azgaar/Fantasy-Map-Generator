@@ -536,4 +536,6 @@ class ProvinceModule {
   }
 }
 
-window.Provinces = new ProvinceModule();
+// biome-ignore lint/suspicious/noRedeclare: legacy seam
+export const Provinces = new ProvinceModule();
+window.Provinces = Provinces;

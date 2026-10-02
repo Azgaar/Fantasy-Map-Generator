@@ -187,6 +187,16 @@ describe("fromChatResponse", () => {
     expect(String((call as { input: Record<string, unknown> }).input.invalidArguments)).toContain("not valid JSON");
   });
 
+  it.each(["null", "true", "42", '"text"', "[]"])("rejects non-object tool arguments %s", argumentsText => {
+    const completion = fromChatResponse({
+      choices: [{ message: { tool_calls: [{ id: "c", function: { name: "run", arguments: argumentsText } }] } }]
+    });
+    expect(completion.content[0]).toMatchObject({
+      type: "tool_use",
+      input: { invalidArguments: "The arguments must be a JSON object. Send the call again with named parameters" }
+    });
+  });
+
   it("marks a reply cut off at the output limit", () => {
     expect(fromChatResponse({ choices: [{ message: { content: null }, finish_reason: "length" }] }).truncated).toBe(
       true

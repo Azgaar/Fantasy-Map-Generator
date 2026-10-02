@@ -636,4 +636,6 @@ declare global {
   var Markets: MarketsModule;
 }
 
-window.Markets = new MarketsModule();
+// biome-ignore lint/suspicious/noRedeclare: legacy seam
+export const Markets = new MarketsModule();
+window.Markets = Markets;

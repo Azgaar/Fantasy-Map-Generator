@@ -146,13 +146,22 @@ function compare(live: World, draft: World): Omit<ChangeRow, "entity">[] {
   const rows: Omit<ChangeRow, "entity">[] = [];
   const byId = (map: typeof pack, field: string) =>
     new Map((itemsOf(field, map) ?? []).filter(isItem).map(item => [item.i, item]));
-  for (const [type, field] of COLLECTIONS) {
+  for (const [type, field, indexed] of COLLECTIONS) {
     const [was, now] = [byId(live.pack, field), byId(draft.pack, field)];
     for (const i of new Set([...was.keys(), ...now.keys()])) {
       const key = `${type}:${i}`;
       const [before, after] = [was.get(i), now.get(i)];
-      if (!before || !after) rows.push({ key, field: "", before: structuredClone(before), after });
-      else for (const row of diff(before, after)) rows.push({ key, ...row });
+      if (!before || !after) {
+        const row: Omit<ChangeRow, "entity"> = { key, field: "", before: structuredClone(before), after };
+        if (!indexed) {
+          // Added items are written in order, so each goes before the next item that was already there; removed
+          // ones are restored in reverse, so the very next item is back by then
+          const list = itemsOf(field, before ? live.pack : draft.pack)!;
+          const following = list.slice(list.indexOf((before ?? after)!) + 1).filter(isItem);
+          row.nextId = (before ? following[0] : following.find(item => was.has(item.i)))?.i ?? null;
+        }
+        rows.push(row);
+      } else for (const row of diff(before, after)) rows.push({ key, ...row });
     }
   }
   for (const field of CELL_FIELDS) {
@@ -221,7 +230,9 @@ function write(row: ChangeRow, side: Side): void {
   if (!row.field) {
     if (item) list.splice(list.indexOf(item), 1);
     if (value === undefined) return;
-    const at = list.findIndex(entry => isItem(entry) && entry.i > i);
+    const at = list.findIndex(
+      entry => isItem(entry) && (row.nextId === undefined ? entry.i > i : entry.i === row.nextId)
+    );
     list.splice(at < 0 ? list.length : at, 0, structuredClone(value) as Item);
     return;
   }

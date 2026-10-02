@@ -741,4 +741,6 @@ declare global {
   var Journeys: JourneysModule;
 }
 
-window.Journeys = new JourneysModule();
+// biome-ignore lint/suspicious/noRedeclare: legacy seam
+export const Journeys = new JourneysModule();
+window.Journeys = Journeys;

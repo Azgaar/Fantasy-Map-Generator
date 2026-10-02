@@ -30,10 +30,10 @@ import { askProvider } from "@/services/assistant/provider/answerer";
 import * as Connection from "@/services/assistant/provider/connection";
 import { listModels } from "@/services/assistant/provider/models";
 import { DEFAULT_PROVIDER, PROVIDERS, type ProviderSpec, providerById } from "@/services/assistant/provider/providers";
+import { ensureEl } from "@/utils";
 import { renderMarkdown } from "@/utils/markdown";
 import { capitalize, errorText, escapeHtml } from "@/utils/stringUtils";
 import { si } from "@/utils/unitUtils";
-import { ensureEl } from "../../utils";
 import { AssistantMap } from "./map";
 import { proposalHtml } from "./proposal-card";
 import { Proposals } from "./proposals";
@@ -67,7 +67,9 @@ const tier = (): Tier => {
   if (!isOfficial()) return null;
   return getToken() ? "member" : "guest";
 };
+
 const tokens = (entry?: Chat) => (entry ? entry.usage.input + entry.usage.output + entry.usage.cached : 0);
+
 /** The chat takes questions: it has the current tier's answerer and its map is open */
 const writable = (entry: Chat | undefined): entry is Chat =>
   Boolean(entry && canContinue(entry, tier(), AssistantMap.id()));
@@ -175,7 +177,7 @@ const STYLES = /* html */ `
     #assistant .assistantChangeField ins { font-weight: 600; text-decoration: none; }
     #assistant .assistantChangeField em { opacity: .6; }
     #assistant .assistantChangeMore { opacity: .6; font-size: .9em; }
-    #assistant .assistantNotePreview { grid-column: 1 / -1; max-height: 10em; overflow: auto; margin-top: .35em; padding: .35em .6em; border-radius: .35em; background: rgb(0 0 0 / 4%); }
+    #assistant .assistantNotePreview { contain: paint; grid-column: 1 / -1; max-height: 10em; overflow: auto; margin-top: .35em; padding: .35em .6em; border-radius: .35em; background: rgb(0 0 0 / 4%); }
     #assistant .assistantNotePreview p { margin: .3em 0; }
     #assistant .assistantChangeEntity > .assistantNotePreview { margin: .15em 0 0 .6em; font-size: .92em; }
     #assistant .assistantProposalFooter { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .4em; padding: .4em .7em; border-top: 1px solid rgb(0 0 0 / 8%); }
@@ -221,6 +223,8 @@ const STYLES = /* html */ `
     #assistant .assistantInset { position: relative; display: grid; place-items: center; width: 100%; aspect-ratio: 480 / 300; padding: 0; border: 0; background: rgb(0 0 0 / 4%); color: inherit; }
     #assistant .assistantInset :is(img, svg) { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
     #assistant .assistantInset span { opacity: .6; font-size: .9em; }
+    #assistant .assistantSource { padding: .45em .7em; }
+    #assistant .assistantSource a { color: inherit; }
     #assistant .assistantEmblem { display: block; width: 9em; height: 9em; margin: .5em auto; }
     #assistant .assistantNoticeItem { padding: .4em .6em; border-left: 3px solid var(--header); border-radius: .25em; background: rgb(0 0 0 / 4%); font-size: .9em; }
     #assistant .assistantDivider { display: flex; align-items: center; gap: .6em; margin: .8em 0; opacity: .5; font-size: .78em; text-transform: uppercase; letter-spacing: .06em; }
@@ -538,7 +542,9 @@ function welcomeHtml(now: Tier): string {
         ]
       : [
           "Hi! Ask anything about the Fantasy Map Generator.",
-          `Connect your own AI key and I can read this map, answer questions about it and edit it, with no daily limit.`
+          note
+            ? `Connect your own AI key and I can write the note “${note}”, and read, answer questions about and edit this map, with no daily limit.`
+            : "Connect your own AI key and I can read this map, answer questions about it and edit it, with no daily limit."
         ];
   const connect =
     now === "key"
@@ -941,12 +947,12 @@ window.addEventListener("notes:context-changed", () => {
   if (isBuilt()) void refreshContextChip();
 });
 
-export const limitsLabel = (value: Limits): string =>
+const limitsLabel = (value: Limits): string =>
   value.remaining
     ? `${value.remaining} question${value.remaining === 1 ? "" : "s"} left today`
     : "No questions left today";
 
-export function normalizeQuestion(raw: string): string | null {
+function normalizeQuestion(raw: string): string | null {
   const question = raw.trim();
   return question && question.length <= MAX_QUESTION_LENGTH ? question : null;
 }

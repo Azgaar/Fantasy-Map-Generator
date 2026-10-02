@@ -108,7 +108,10 @@ export function fromChatResponse(json: {
 
 function parseArguments(raw: string): ToolInput {
   try {
-    return JSON.parse(raw || "{}");
+    const input: unknown = JSON.parse(raw || "{}");
+    if (typeof input !== "object" || input === null || Array.isArray(input))
+      return { [INVALID_ARGUMENTS]: "The arguments must be a JSON object. Send the call again with named parameters" };
+    return input as ToolInput;
   } catch (error) {
     return {
       [INVALID_ARGUMENTS]: `The arguments are not valid JSON (${errorText(error)}); a long call may have hit the output limit. Send it again, shorter if it was long`

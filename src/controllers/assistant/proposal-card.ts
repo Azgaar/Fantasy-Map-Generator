@@ -1,10 +1,10 @@
 import { Icons } from "@/components/icons";
 import { MapEntities } from "@/components/map-entities";
-import { Notes } from "@/generators/notes";
 import type { ChangeRow, Proposal } from "@/services/assistant/chats";
 import { rn } from "@/utils/numberUtils";
 import { capitalize, escapeHtml } from "@/utils/stringUtils";
 import { formatPrice, getPeople, si } from "@/utils/unitUtils";
+import { isSafeHtml } from "@/utils/validationUtils";
 import { type Action, Proposals } from "./proposals";
 
 // The proposal card: a Change as rows of entity, field and before → after, with the next action
@@ -26,8 +26,9 @@ const MONEY_FIELDS = new Set(["treasury", "pollTax"]);
 
 const plural = (count: number, noun: string) => `${si(count)} ${noun}${count === 1 ? "" : "s"}`;
 const isChronicle = ({ key, field }: ChangeRow) => key === "state:0" && field === "diplomacy";
+const refOf = (key: string) => (globalThis.pack ? MapEntities.parseKey(key) : undefined); // chats render before a map exists too
 const entityName = (key: string) => {
-  const ref = globalThis.pack && MapEntities.parseKey(key); // chats render before a map exists too
+  const ref = refOf(key);
   return ref ? MapEntities.getName(ref) : "";
 };
 
@@ -141,7 +142,7 @@ export function proposalHtml(proposal: Proposal, index: number, mapId: number): 
 /** The icon of an entity that has one, as the row holds it or the map does */
 function entityIcon({ key, field, before, after }: ChangeRow): string {
   const whole = (field ? undefined : (after ?? before)) as { icon?: unknown } | undefined;
-  const ref = globalThis.pack && MapEntities.parseKey(key); // chats render before a map exists too
+  const ref = refOf(key);
   const icon = typeof whole === "object" ? whole?.icon : ref && (MapEntities.get(ref) as { icon?: unknown })?.icon;
   return typeof icon === "string" && icon ? ` ${Icons.html(icon)}` : "";
 }
@@ -153,10 +154,15 @@ function wholeTag({ field, before }: ChangeRow): string {
   return `<span class="assistantChangeTag ${added ? "add" : "remove"}">${added ? "Add" : "Remove"}</span>`;
 }
 
-const notePreview = (note: unknown): string =>
-  typeof note === "string" && note
-    ? `<div class="assistantNotePreview">${Notes.isSafe(note) ? note : escapeHtml(note)}</div>`
-    : "";
+/** A proposed note stays inert until applied: no remote images load, and its styles stay inside the box */
+function notePreview(note: unknown): string {
+  if (typeof note !== "string" || !note) return "";
+  if (!isSafeHtml(note)) return `<div class="assistantNotePreview">${escapeHtml(note)}</div>`;
+  const template = document.createElement("template");
+  template.innerHTML = note;
+  for (const image of template.content.querySelectorAll("img")) image.replaceWith(`[${image.alt || "image"}]`);
+  return `<div class="assistantNotePreview">${template.innerHTML}</div>`;
+}
 
 function changeHtml(row: ChangeRow): string {
   const { key, field, before, after } = row;

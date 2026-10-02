@@ -74,8 +74,17 @@ it("offers read_map, propose_change, one tool per widget and view_emblem", () =>
     "show_chart",
     "show_choices",
     "show_inset",
+    "show_source",
     "view_emblem"
   ]);
+});
+
+it("cites a wiki page by its title in any case or spacing, and lists the pages for an unknown one", async () => {
+  const source = await mapTool("show_source").handle({ page: "river editor" });
+  expect(source.item).toEqual({ kind: "widget", widget: { type: "source", page: "River-Editor" } });
+  const unknown = await mapTool("show_source").handle({ page: "Nowhere" });
+  expect(unknown.isError).toBe(true);
+  expect(unknown.content).toContain("Knowledge Base");
 });
 
 it("shows an entities widget holding the keys", async () => {

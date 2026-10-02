@@ -2,6 +2,7 @@ import { type EntityType, MapEntities } from "@/components/map-entities";
 import { Controllers } from "@/controllers";
 import type { ChangeRow, ChartRow, Chat, Choice, Widget } from "@/services/assistant/chats";
 import type { Tool } from "@/services/assistant/provider/answerer";
+import { WIKI_PAGES } from "@/services/assistant/provider/knowledge";
 import type { ToolDefinition, ToolInput } from "@/services/assistant/provider/providers";
 import { runScript } from "@/services/assistant/provider/runtime";
 import type { Emblem } from "@/types/emblems";
@@ -426,6 +427,18 @@ const WIDGET_TOOLS: Record<Exclude<Widget["type"], "emblem">, WidgetTool> = {
         return `An inset takes an entity key or a box [x0, y0, x1, y1] in map units within ${width} × ${height}`;
       if (!isSmallInset([x0, y0, x1, y1])) return "An inset shows a small part of the map, not most of it";
       return { type: "inset", title: title || "Map", box: [x0, y0, x1, y1] };
+    }
+  },
+  source: {
+    description:
+      'Link the wiki page an answer from read_help came from, so the user can read more. page is the part of a section heading before " › ", or "Knowledge Base".',
+    input_schema: { type: "object", properties: { page: { type: "string" } }, required: ["page"] },
+    parse(input) {
+      const wanted = text(input.page)
+        .replace(/[\s-]+/g, " ")
+        .toLowerCase();
+      const page = WIKI_PAGES.find(name => name.replace(/-/g, " ").toLowerCase() === wanted);
+      return page ? { type: "source", page } : `No wiki page "${text(input.page)}". Pages: ${WIKI_PAGES.join(", ")}`;
     }
   }
 };

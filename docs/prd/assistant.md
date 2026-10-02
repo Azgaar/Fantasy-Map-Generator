@@ -452,7 +452,7 @@ Assistant services (no world state, no DOM)
     - **Card rows** come from the Change. Paths are labelled through the entity lookup ("Burg Vel · name"), and notes are rendered as a preview.
     - **Apply** checks that the map id matches and every "before" value still holds, writes the "after" values, redraws the layers that show the changed data and refreshes open editors. The layers follow from the Change, not from the operations: one table maps each entity field and cell field to the layers that draw it (`controllers/assistant/redraw.ts`).
     - **Undo** checks that every "after" value still holds, then writes the "before" values in reverse order and redraws.
-    - Added and removed entities are whole rows, put back at their place by `i`. Burgs, states, provinces, cultures, religions, biomes and features are addressed by array index, so an added one can be undone only while nothing of its kind was added after it.
+    - Added and removed entities are whole rows, keyed by `i`. Ordered collections record the next entity so Undo restores their drawing order. Burgs, states, provinces, cultures, religions, biomes and features are addressed by array index, so an added one can be undone only while nothing of its kind was added after it.
     - A failed check shows **Changed since**. The map id is only a cheap first filter.
     - **Map context after Apply.** The map context (summary, open note, selection) is recomputed after every Apply, so later steps never see stale content. Pending proposals are not part of it.
     - **Proposal outcomes.** The next question's map context lists what happened to the chat's earlier proposals.
