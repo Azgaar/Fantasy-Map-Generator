@@ -326,10 +326,10 @@ test.describe("style editor events drive the store", () => {
     await page.locator(`${f("options.iconSize")} input[type=number]`).fill("11");
 
     expect(await page.evaluate(() => (window as any).styles.markets.options.iconSize)).toBe(11);
-    // drawn glyphs derive from the store base plus the zoom term (baseFont + 1/scale)
+    // drawn icons derive from the store base plus the zoom term (iconSize + 1/scale)
     const scale = await currentScale(page);
-    const expectedFont = `${rn(11 + 1 / scale, 2)}px`;
-    await expect(page.locator("#markets text").first()).toHaveAttribute("font-size", expectedFont);
+    const expectedSize = String(Math.max(rn(11 + 1 / scale, 2), 2));
+    await expect(page.locator("#markets use").first()).toHaveAttribute("width", expectedSize);
     for (const attr of ["font-size", "data-icon", "data-size"]) {
       expect(await page.locator("#markets").getAttribute(attr), attr).toBeNull();
     }

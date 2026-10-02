@@ -211,11 +211,13 @@ test.describe("layer teardown keeps user data", () => {
 
   // the rendered shields are cached in #coas by entity id, and regeneration reuses those ids
   test("reassigned arms replace the rendered shield, whether the layer was on or off", async ({ page }) => {
-    // the shield the cached def was actually rendered from, read off its clip path id
+    // the shield the cached def was actually rendered from, matched by its clip path outline
     const renderedShield = () =>
-      page.evaluate(
-        () => document.querySelector("#coas > #stateCOA1")?.querySelector("clipPath")?.id.split("_")[0] ?? null
-      );
+      page.evaluate(() => {
+        const d = document.querySelector("#coas > #stateCOA1 #shield_stateCOA1 path")?.getAttribute("d");
+        const paths: Record<string, string> = (window as any).EmblemRenderer.shieldPaths;
+        return d ? (Object.keys(paths).find(name => paths[name] === d) ?? null) : null;
+      });
     const setArms = (shield: string) =>
       page.evaluate((value: string) => {
         (window as any).pack.states[1].coa.shield = value;

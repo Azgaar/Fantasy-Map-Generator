@@ -143,7 +143,7 @@ test("a saved custom preset carries the retired sizes from the store", async ({p
     styles.heightmap.groups.oceanHeights.options.render = true;
     styles.military.options.boxSize = 4;
     styles.grid.options.scale = 2;
-    styles.markets.options.icon = "K";
+    styles.markets.options.icon = "glyph-4b"; // the reference of the glyph "K"
     styles.texture.options.x = 33;
     styles.ocean.groups.oceanLayers.options.outline = "-6,-4,-2";
     styles.scaleBar.options.label = "posterity";
@@ -194,7 +194,7 @@ test("a saved custom preset carries the retired sizes from the store", async ({p
     oceanRender: true,
     armiesBox: 4,
     gridScale: 2,
-    marketsIcon: "K",
+    marketsIcon: "glyph-4b",
     textureX: 33,
     oceanOutline: "-6,-4,-2",
     scaleBarLabel: "posterity",
